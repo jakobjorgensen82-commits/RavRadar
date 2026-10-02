@@ -1,4 +1,19 @@
-# 2026-10-02 – offentlig532, grøn533/534, komponentworker535
+# 2026-10-02 – offentlig535, aktiv almindelig vejrhentning og reader536
+
+- [x]533/534/535 exact-head/merge/providerfri deploy/offentlig4.0.535 påc52e0bc6.
+- [x]20/day/femdage/begge modes; faktiskpc1–10/11–20 og375CSSmobil1–20/nooverflow.
+- [x] Ejerens ENEordinary37009507544 start14:54DK på535/normalbudgetter.
+- [x] Cron8348098 genaktiveret EFTERdispatch/servergenlæst, næste18:19DK/uændret.
+- [ ] Denneordinary actualrestore/save/upload/no-loss/private/Pages/terminal.
+- [x]536 kun normale inspect/record-readers primærfejl bevares ved close-fejl.
+- [x] Close-only fortsat hård;12PASS/0FAIL/1eksisterende capacitySKIP/1225.5367ms.
+- [ ]536 exact-headCI/proof/sikker levering efter aktivweather/resultatkontrol.
+- [x] Samme publicFIELD-nævner397070:92.0444758%,1Oct90.2526003%,+1.7918755pp.
+- [ ] Historikclock/genåbning/retentionETA ikke målt; alle210 waveadvarsler består.
+- [x] Nibe fresh91/118brugbar/current14DK numeric; upstreamårsag fortsat åben.
+- [ ] Stor519/fullCP-SførT/writer/kill/failure4min/runner/kapacitet/OFF separat.
+
+# HISTORISK – 2026-10-02 – offentlig532, grøn533/534, komponentworker535
 
 - [x] 533/PR501 og 534/PR502 exact-head CI/proof grønne og urørte.
 - [ ] Aktiv ordinary36988295501 faktisk save/upload/no-loss/deploy/fresh20.

@@ -1,4 +1,18 @@
-## 4.0.535 – Scoped Dask i den eksisterende komponentworker (lokal kandidat)
+## 4.0.536 – Bevar første fejl i de to normale DMI-readers (lokal kandidat)
+
+- inspect/readRecord forsøger fortsat eget close, men samtidig close-fejl
+  erstatter ikke parser/hash/readbackfejl. Close-only er fortsat hård.
+- Genbrugt BIG RED, normal eksisterende suite12PASS/0FAIL/1gammel capacitySKIP.
+  Ingen ny API/parser/hash/stat/auth/format/cap eller descriptor/OFF-stack.
+-533/534/535 er faktisk leveret/public535. Top20/datoer/begge modes/pc/mobil
+  kontrolleret. Ejerens ENEordinary37009507544 start14:54DK, cron aktiveret
+  derefter/servergenlæst næste18:19DK/uændret.536CI/produktion afventer.
+- Sammenlignelig weatherFIELD92.0444758%/397070, ikke score90.6174%/historik.
+ 210wavewarnings/288h fra SIDSTE hul, ingen kalenderETA. DEC-0283/håndbøger.
+- Ingen fysisk score/Top20/modelbinding/geometri/SQL/vejrplanændring;
+  fullCP-S-T/writer/kill/runner/kapacitet stadig åbne/OFF.
+
+## 4.0.535 – Scoped Dask i den eksisterende komponentworker (historisk kandidattekst; nu leveret)
 
 - Kun actualsubsetworker vælger threads/poolNone og genopretter config ved
   succes, primærfejl og DatasetUpdating76.533normalpilot er en anden caller.

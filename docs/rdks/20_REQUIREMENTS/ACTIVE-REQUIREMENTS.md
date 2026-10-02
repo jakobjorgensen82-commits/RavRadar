@@ -1,4 +1,22 @@
-# Aktive krav – 2026-10-02, lokal 4.0.535 og fortsat revision
+# Aktive krav – 2026-10-02 – offentlig535 og normalreader536
+
+Ejerens rækkefølge er opfyldt: alle allerede klargjorte533/534/535 sikkert
+leveret, derefter præcis én ordinary37009507544 på535, dereftercron8348098
+genaktiveret/servergenlæst/uændret18:19DK. Revisionen fortsætter sideløbende;
+ingen ny main/merge/kode-only under aktiv vejrhentning eller ekstra dispatch.
+
+536 skal bevare den normale DMI-readers første fejl og stadig afvise en
+close-only-fejl. Ingen ny API/parser/stat/hash/cap/format/auth/OFF-stack.
+Scoremodel, Top20, geometri, anvendteSQL og plan bevares. Nye versioner kræver
+RDKS/begge håndbøger/exact-headCI/relevante efterdatagates. Hele revisionen
+og komplet cache er ikke ekstra cronaktiveringskrav. Se DEC-0283.
+
+Fremtidige dækningssvar skal bruge samme vejrFIELD-nævner673×118×5 og
+hasValue;92.0444758% er seneste, score90.6174% er ikke sammenligningstallet.
+Ingen historikdato eller kausal retentiongevinst uden faktisk målt clock.
+Alle særskilte admission/log/donor/PROXY/SOURCE-afvisninger består.
+
+# Historiske krav – 2026-10-02, lokal 4.0.535 og fortsat revision
 
 Ejeren beder fortsætte alle spor: storrevisionen, Top20, pc-kolonner læst
 1–10 nedad venstre og 11–20 nedad højre, mobil 1–20, samt Nibe-diagnosen.

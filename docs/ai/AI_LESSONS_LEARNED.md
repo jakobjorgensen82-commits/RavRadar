@@ -2,6 +2,25 @@
 
 Dette dokument samler tværgående læring, som skal påvirke fremtidige tekniske beslutninger. Historiske detaljer findes i RDKS/chatarkivet; her står de generelle arbejdsregler.
 
+## 2026-10-02 – første fejl, sammenlignelige mål og faktisk cronbevis
+
+Den normale DMI-readers eget handle skal altid forsøges lukket. En samtidig
+close-fejl må ikke erstatte den første parser/readback/hashfejl; close-only
+forbliver hård. Udtag kun den allerede reproducerede normaldelta fra en stor
+OFF-kandidat, ikke descriptor/API/auth-stack. Primærfejlsbevaring er ikke
+bevis for vellykket close/writer-eksklusivitet eller national kapacitet.
+
+Hold samme dækningstype/nævner/metode over tid. PUBLIC vejrFIELD673×118×5 er
+ikke SCORE-andel, stationsobs, privat historik eller nativeproviderdækning.
+288h bølgehistorik starter efter SIDSTE ukendte hul, ikke efter chatbotten
+gav et estimat; uden clock/genåbningsevidens må kalenderETA ikke loves.
+
+Aktiveringscheckbox/toast alene er ikke serverbevis. Efter Gem genlæses
+joblisten, som viser aktivt næste tidspunkt; en først cached Inaktiv-liste
+forkastes efter rigtig reload, ikke med blind gentagen Save. Browserviewport-
+crop uden ændret innerWidth er ikke mobilbevis; faktisk375CSSframe med den
+rigtige offentlige side adskilles fra fysisktelefon. Se DEC-0283.
+
 ## Aktuel 4.0.343-læring
 
 - En samlet tidsgrænse er ikke fair service: optæl faktisk startmulighed pr. kritisk familie og produkt.

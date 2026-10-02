@@ -1,4 +1,17 @@
-# NYESTE TILLÆG – 2026-10-02 – offentlig532, grøn533/534, lokal535
+# NYESTE TILLÆG – 2026-10-02 – offentlig535, aktivordinary og lokal536
+
+Læs AGENTS/RDKS og ALLERØVERSTE privatecheckpoint; arbejd aldrig i cb79.
+533/534/535 er faktisk leveret, public535/mainc52e0bc6/samme gyldige data.
+Ejerens ONEordinary37009507544 start14:54DK, dereftercron8348098 aktiv/Gem/
+servergenlæst næste18:19DK/sammeplan. Revision genoptaget; ingen main/merge/
+kode-only/ekstraweather under aktiv hentning. Gamle pendingtekster er historik.
+536 kun normale to DMI-readers første fejl/close-only hård,12PASS/1gammel
+capacitySKIP; exact-headCI/deploy åbne. Ingen OFF-stack/hel519copy/model/SQL/cap-
+ændring. Fast FIELDcoverage92.0444758%/397070 er ikke score90.6174% eller privat
+historik. FullCP-SførT/writer/kill/runner/kapacitet og særskilte afvisninger
+består; ingen historikETA uden clock.6.1Sol/Ekstra høj uændret. Se DEC-0283.
+
+# HISTORISK TILLÆG – 2026-10-02 – offentlig532, grøn533/534, lokal535
 
 Læs AGENTS, obligatorisk RDKS og ALLERØVERSTE private BIG-checkpoint.
 535 isolerer kun allerede måltestet519-komponentworker scoped Dask threads/

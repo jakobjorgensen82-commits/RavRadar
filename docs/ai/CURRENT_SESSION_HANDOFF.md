@@ -1,4 +1,31 @@
-# AKTUELT CHECKPOINT – 2026-10-02 – offentlig532, grøn533/534, lokal535
+# AKTUELT CHECKPOINT – 2026-10-02 – offentlig535, aktivordinary og lokal536
+
+Releasebranchcodex/dmi-reader-primary-error-retention fra faktiskmain
+c52e0bc64ec2032e5f282408fc7c4f569c4e3305.533/534/535 er COMPLETE/PUBLIC via
+37004530145/37006767489/37008318988, exactsource/private/Pages/terminal kontrolleret.
+Public535/samme rr-20261002104907-210/reference09Z/210/673/complete:true.
+Top20 og actualPCdowncolumns/public375CSSmobileonecolumn/nooverflow bevist.
+
+ONEownerordinary37009507544 start14:54:06DK på535/quickfalse/defaulttom/normal.
+15:00DMI78/build110845885763 aktiv udenfailedstep; endnuikkesave/deploybevis.
+Cron8348098 DEREFTER genaktiveret/servergenlæst næste18:19DK/uændret. Følg kun
+denneONE; ingen main/merge/code-only/ekstraweather/cancel mensaktiv. Nyeste
+privatecheckpoint og ejerbeskeder har forrang; arbejd ALDRIG i cb79.
+
+536kun normalinspect/readRecord primærfejl bevares ved close-fejl;close-only
+hård/ownhandleforsøges.12PASS/1eksisterende capacitySKIP1225.5367ms. Ingen
+hel519copy/descriptor/OFF/API/format/cap/auth/model/SQLændring. CI/deploy åbne.
+Næste: versions/RDKS/bevaringskontrol/exact-headPRCI; lever først efter aktiv
+weather actualsave/upload/no-loss/private/Pages/terminal/resultatkontrol.
+
+FIELDcoverage365481/397070=92.0444758% sammehasValue/673×118×5 som1Oct90.2526003%.
+Ikke score90.6174%/stationobs/privatehistorik/nativecoverage/retentiongain.
+Genhentikke1.3GBuændret. Alle210wavewarnings,288h fraSIDSTEhul/ingenkalenderETA.
+Nibe91/118brugbar27tailunavailable;upstreamårsag åben. Full519/CP-SførT/writer/
+kill/failure4min/runner/kapacitet/OFF samt særskilte afvisninger består.
+GPT6.1Sol/Ekstra høj bevares. Se DEC-0283 og ALLERØVERSTE privatecheckpoint.
+
+# HISTORISK CHECKPOINT – 2026-10-02 – offentlig532, grøn533/534, lokal535
 
 RELEASE codex/component-worker-dask-scheduler fra verificeret534heade9bc1a50.
 535 kun faktisk Python-komponentworker scoped Dask threads/poolNone; allerede

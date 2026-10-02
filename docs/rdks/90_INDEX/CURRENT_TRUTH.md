@@ -1,4 +1,30 @@
-# NYESTE SANDHED – 2026-10-02 – offentlig532, grøn533/534, lokal535
+# NYESTE SANDHED – 2026-10-02 – offentlig535, én aktiv ordinary og lokal536
+
+533/534/535 er faktisk leveret via37004530145/37006767489/37008318988;
+mainc52e0bc6/public4.0.535 bevarer rr-20261002104907-210/reference09Z/
+210zoner/673dele/complete:true. Frisk20/day/femdage/begge modes og faktisk
+pc1–10/11–20/mobil375CSS1–20 uden overløb er bevist, ikke fysisk telefon.
+Ældre pending/stakkede beskrivelser er historiske. Se DEC-0283/checkpoint.
+
+Ejerens præcis ene ordinary37009507544 startede14:54:06DK på535c52e0bc6,
+quickfalse/defaulttom source/normalbudgetter. Reentry/terminal/mainUTC
+bestod;15:00DMI78 aktiv/ingenfailedstep, ikke save/upload/deploybevis.
+Cron8348098 er DEREFTER genaktiveret/servergenlæst, næste18:19DK; samme
+plan/payload/credentials. Ingen mainændring/merge/kode-only mens aktiv.
+
+536 udtager kun de to normale DMI-readers bevaring af primærfejl ved samtidig
+close-fejl. Eget handle lukkes forsøgsvis; close-only er fortsat hård.
+12PASS/0FAIL/1gammel optionalcapacitySKIP/1225.5367ms, ingen ny kapacitetsprøve.
+Ingen descriptor/OFF-stack/model/Top20/SQL/API/format/capændring. CI/deploy åbne.
+
+Sammenlignelig PUBLIC vejrFIELD-dækning14:24 er365481/397070=92.0444758%,
+samme673×118×5/hasValue som1Oct90.2526003%,+1.7918755pp. Score90.6174% er
+en anden måling. Ikke stationobs/privatehistorik/nativeprovider/retentionbevis.
+Alle210 bølgehistorikadvarsler består;288h fra SIDSTE hul, ingen kalenderETA.
+Nibe91/118brugbar,27unavailable fra04Z6Oct; upstreamårsag åben. Fuld519/
+CP-SførT/writer/kill/failure4min/runner/kapacitet/OFF og afvisninger består.
+
+# HISTORISK SANDHED – 2026-10-02 – offentlig532, grøn533/534, lokal535
 
 Main/public532 er ccc5a7c146a88e836b4fb578b007bcaf36c3b2af. Ejerens ene
 ordinary36988295501 er aktiv ved beregning103; ingen mainændring mens aktiv.
