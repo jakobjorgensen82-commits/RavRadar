@@ -1,4 +1,20 @@
-# 2026-10-02 – selvstændig kortkandidat4.0.528 og domænearbejde
+# 2026-10-02 – offentlig528 og afgrænset SEO-kandidat4.0.529
+
+- [x]527/528 merged og deployet med exact-head CI og efterdatagates.
+- [x] ravradar.dk strict HTTPS; apex/www-certifikat, DNS og redirects genlæst.
+- [x] Supabase Site URL og én exact-root-redirect; gammel redirect beholdt.
+- [x]528 kortbund faktisk fyldt efter zoom/resize på pc1280 og mobil375.
+- [x] Ordinary36920739569 afsluttet med actualsave+upload/no-loss og deploy.
+- [x]529 læsbar footer og tre faktiske sprogguides/canonical/hreflang/sitemap.
+- [x] Fire SEO-måltests og frosset67/8-modelcheck; ingen scoreændring.
+- [x]529 version/RDKS14/407kapitler/source47/model67/8bindinger og målkommando8/8.
+- [x] Lokalt faktisk pc-guide og375CSS-ramme/guide+footer uden vandret overløb.
+- [ ]529 exact-head CI, deploy og offentlig pc/mobil-kontrol.
+- [ ] Første naturlige528-weather på nyt domæne; cron aktiv, plan uændret.
+- [ ] Rigtig login/mail, PWA-offline og faktisk søgeindeksering/rang er ulæst.
+- [ ] Top20, stor519-driver/exklusivitet/runner-tab/nationalkapacitet består.
+
+# HISTORISK – 2026-10-02 – selvstændig kortkandidat4.0.528 og domænearbejde
 
 - [x] Kortfejl faktisk reproduceret; lille container-observer/factoryfix bevaret.
 - [x] Top20-delta bevaret separat i egen.cache; runtime igen top5 i begge stier.

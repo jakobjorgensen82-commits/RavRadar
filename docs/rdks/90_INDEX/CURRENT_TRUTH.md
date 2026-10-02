@@ -1,4 +1,23 @@
-# NYESTE SANDHED – 2026-10-02 – offentlig/main526; kortfix528 lokalt
+# NYESTE SANDHED – 2026-10-02 – offentlig/main528; søgesider4.0.529 lokalt
+
+527/528 er faktisk deployet; mainba085f6b/offentlig528, samme nyeste
+rr-20261001215041-210/210/673. Kortbund er kontrolleret på pc og mobil.
+ravradar.dk har strict HTTPS og godkendt apex/www-certifikat; Simply har kun
+eksisterende DNS Service. GitHub er fortsat kode-/deploysted. Exact-root-
+redirect til Supabase er gemt, gammel GitHub-redirect beholdt; rigtig bruger-
+login/mail og PWA-offline er ikke testet. Ingen domæne-/loginblocker nu.
+
+Ordinary36920739569 afsluttede00.49.37 med save+upload/no-loss/artifact/
+release/private/CAS/R2/Pages. Cache8390699504 er109338217 komprimerede
+Actions-byte, ikke rå/cipherkapacitet eller komplet historik. Cron aktiv,
+uændret; første naturlige528 skal observeres, ingen ekstra domænetestrun.
+
+529 er alene læsbar SEO-footer og tre faktiske lokale sprogguides med
+canonical/hreflang/sitemap/robots. Fire måltests og frossen modelcheck består;
+exact-head CI og offentlig effekt afventer. Ingen score-, top20-, data-,
+workflow- eller fysisk modelændring. Se DEC-0276. Stor519 og afvisninger består.
+
+# HISTORISK SANDHED – 2026-10-02 – offentlig/main526; kortfix528 lokalt
 
 528 er afgrænset til kortcontainerens ResizeObserver/rAF og normal
 Leaflet invalidateSize med pan:true/animate:false. Ingen nyt udsnit, zoom,

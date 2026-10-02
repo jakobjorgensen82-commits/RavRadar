@@ -1,4 +1,17 @@
-# Aktuelle issues – 2026-10-02, offentlig526 og smal lokal528
+# Aktuelle issues – 2026-10-02, offentlig528 og smal lokal529
+
+- **SEO LOKALT IMPLEMENTERET:** Læsbar footer og rigtige DA/DE/EN-guides;
+  ingen søgeranggaranti. Exact-head CI, deploy og offentlig visning afventer.
+- **DOMÆNE/KORT LEVERET:** ravradar.dk HTTPS og faktisk pc/mobil-kortbund
+  er kontrolleret. Ældre TXT-only/login/browserblocker-status er historisk.
+- **DOMÆNEOPFØLGNING:** Første naturlige528-weather, rigtig kontologin/mail
+  og offline/PWA-install er ikke testet. Ingen kunstig ekstra weatherstart.
+- **TOP20 BESTÅR:** Tilbageholdt producentbinding må ikke omgås;529 viser
+  uændret top5/femdage og scoremodel.
+- **REVISION:** Stor519-driver, writer-eksklusivitet/runner-tab/national-
+  kapacitet og særskilte sikkerhedsafvisninger er fortsat åbne.
+
+# Historiske issues – 2026-10-02, offentlig526 og smal lokal528
 
 - **KORTBUND LOKALT RETTET:** Kortfeltets ændrede højde registreres nu af den
   faktiske mapfactory. Tre målkommandoer består; exact-head/livefix afventer.

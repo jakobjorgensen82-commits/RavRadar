@@ -1,4 +1,20 @@
-# AKTUELT CHECKPOINT – 2026-10-02 – offentlig526; smal lokal4.0.528
+# AKTUELT CHECKPOINT – 2026-10-02 – offentlig528; smal SEO-kandidat4.0.529
+
+ravradar.dk er faktisk i HTTPS-drift på eksisterende GitHub Pages, uden
+Simply-webhotel.527/528 er leveret;528-kortfixet er kontrolleret på pc/mobil.
+Offentlig528 bevarer rr-20261001215041-210/210zoner/673dele. Ordinary
+36920739569 afsluttede00.49DK med faktisk cache, efterdatagates og deploy.
+Cron8348098 er aktiv/uændret; første naturlige528 forventes02.19DK.
+Ingen mainændring eller ekstra dispatch under aktiv vejrhentning.
+
+529 tilføjer kun læsbar footer og faktiske DA/DE/EN-guides med canonical,
+hreflang, robots og sitemap. Uændret scoremodel67/c557f91a…/8bindinger;
+top20 er stadig særskilt tilbageholdt. Ingen skjult ordliste eller søgerang-
+garanti. Fire måltests består; version/RDKS og exact-head CI/levering følger.
+Se DEC-0276. Stor519-optins og alle særskilte afvisninger består. Sol6.1/
+Ekstra høj er valgt; ingen model-/planændring. .cache må aldrig stages.
+
+# HISTORISK CHECKPOINT – 2026-10-02 – offentlig526; smal lokal4.0.528
 
 528 er afgrænset til kortcontainerens ResizeObserver/rAF og normal
 Leaflet invalidateSize med pan:true/animate:false. Ingen nyt udsnit, zoom,
