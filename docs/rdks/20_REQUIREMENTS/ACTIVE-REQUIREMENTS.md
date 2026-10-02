@@ -1,4 +1,15 @@
-# Aktuel Top20-reparation – 2026-10-02,4.0.532
+# Aktuel normalsti-revision – 2026-10-02,4.0.533
+
+Ejerbestilt Top20 og hele vejrhentningsrevisionen fortsætter samtidigt.
+532 er leveret/cron aktiv. Én ny konkret ejerbestilt ordinary36988295501
+på532 kører; ingen mainændring før afslutning og faktisk resultatkontrol.
+533 afgrænser kun normalCPsubset til threads/poolNone med genoprettet
+konfiguration. Ingen fysisk score/Top20/binding/SQL/retry/budget/gatelempelse.
+Eksisterende offlineprøver og sourcegruppe genbruges; exact-headCI og fulde
+relevante efterdatagates består. FuldCP/S-før-T/writer/runner/kapacitet skal
+stadig færdiggøres særskilt, ikke erklæres bevist af lokal PID. Se DEC-0280.
+
+# Historisk Top20-reparation – 2026-10-02,4.0.532
 
 REQ-NATIONAL-TOP20-0528 og DEC-0278s specifikke ejerautoritet består.
 DEC-0249s alleredegodkendte funktionslokale55s skal bevares også efter en

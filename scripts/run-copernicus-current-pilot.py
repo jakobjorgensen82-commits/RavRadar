@@ -659,6 +659,7 @@ def download_subset(
     shard_index: int,
 ) -> Path:
     import copernicusmarine
+    import dask
 
     minimum_lon, maximum_lon, minimum_lat, maximum_lat = request_bounds(targets, product)
     subset_arguments = dict(
@@ -684,7 +685,12 @@ def download_subset(
     for attempt in range(DATASET_UPDATING_MAX_ATTEMPTS):
         require_operational_time_budget()
         try:
-            response = copernicusmarine.subset(**subset_arguments)
+            # Scope this fixed NetCDF/geoseries compute to the owned pilot
+            # process instead of adopting an ambient process scheduler/pool.
+            # Arguments, worker count and budgets stay unchanged; restore
+            # the previous Dask configuration on success and every exception.
+            with dask.config.set(scheduler="threads", pool=None):
+                response = copernicusmarine.subset(**subset_arguments)
             break
         except copernicusmarine.DatasetUpdating:
             # This exception is not a RuntimeError in Toolbox 2.4.1. Convert

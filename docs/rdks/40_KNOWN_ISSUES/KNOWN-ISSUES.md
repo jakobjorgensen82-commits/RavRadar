@@ -1,4 +1,19 @@
-# Aktuelle issues – 2026-10-02 – lokal532, offentlig530
+# Aktuelle issues – 2026-10-02 – lokal533, offentlig532
+
+- **LØST532:** Exact-head/merge/kode-only/actual55s-readback/checkpoint52s/
+  Pages består, cron er genaktiveret. Gamle paused/pending532tekster er historik.
+- **TOP20 EFFEKT ÅBEN:** Leveret kode bevarer gamle5, ny20/day/to modes/
+  pc/mobil skal bevises efter ordinary36988295501, ejerbestilt11:10:54DK.
+- **NORMALCP AFGRÆNSET:** Ambient Daskprocesscheduler/pool er offline RED-
+  reproduceret;533 scoped threads/poolNone og8-case suite er måltestet,
+  men exact-headCI/sikker levering/faktisk produktionsvirkning afventer.
+- **STOPBEVIS ÅBNE:** Ikke alle threads/descendants/kill/writer/runnerloss/
+  fullCP-S-T/failure4min/nationalkapacitet. Ingen hel519copy/OFF-aktivering.
+- **ADMIN:** Faktisk anonym guard returnerer root. Ownerlogin på ny origin/
+  private-save er ikke verificeret; afklaringsspørgsmålet gentages ikke.
+- **LOGAFVISNING:** Gammelrun54-fejlkode ulæst; ingen privat rålogomvej.
+
+# HISTORISKE issues – 2026-10-02 – lokal532, offentlig530
 
 - **TOP20 DEPLOY STOPPET:** PR499 merged; code-only36976884378 fejlede54 før
   Pages. Binding/readback25–30 bestod, anvendt008 er immutabel. Offentlig530

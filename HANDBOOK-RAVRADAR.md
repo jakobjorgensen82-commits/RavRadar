@@ -1,23 +1,42 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.532
+**Håndbogsversion:** 4.0.533
 
-**Kandidatstatus:**532 reparerer en konkret teknisk fejl i Top20-overgangen.
-531 er kildeverificeret og merged, men deploy stoppede før hjemmesiden blev
-ændret. Den offentlige530 og seneste vejrdata er bevaret; vejrplanen er
-midlertidigtpauset. Score, handicap, sortering og historik er uændrede.
-Måltests består;532 exact-head/deploy og senere faktiskTop20 afventer.
-529SEO og530kadence er leveret; stor519-revisionen er separat/OFF.
+**Kandidatstatus:**533 afgrænser beregningen i den normale Copernicus-hentning.
+532 er faktisk leveret og vejrplanen genaktiveret. Én ejerbestilt almindelig
+vejrhentning36988295501 kører på532; den skal skabe de ekstra Top20-rækker.
+Gamle5 og gyldige data bevares. Score, handicap, sortering og historik er urørte.
+533 er måltestet, ikke exact-head-/produktionsbevist; stor519 er separat/OFF.
+Ældre kandidat-/pausestatus længere nede er historisk og erstattes af dette.
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.532 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.533 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=3a14f458122f5bc0ea8a60c07abbcbd68d022c0322a87e77242891f21631c852` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
 
-## 89.135 4.0.532 – Bevar beregningens sikre gemmetid
+## 89.136 4.0.533 – Copernicus beregner i sin egen proces
+
+Den normale faste Copernicus-hentning vælger Dasks lokale tråde omkring sit
+NetCDF/geoseries-kald og bruger ingen arvet pool. Det tidligere valg gendannes
+ved både succes og fejl. Samme punkter, tider, workers, budgetter og retries
+bevares; DMI kommer før Copernicus og Open-Meteo er fortsat reserve.
+
+Den eksisterende offlineprøve bruger rigtig Dask-beregning og kontrollerer
+procesidentitet samt genoprettelse ved fejl. Den eksisterende prøve af delvis
+cache, Open-Meteo-rest og genoptagelse bevares.8/8 måltests består, men det er
+ikke bevis for alle trådes/underprocessers stop eller en afsluttet storrevision.
+Exact-head kildekontrol, sikker levering og faktisk virkning er endnu åbne.
+Ingen scoremodel, Top20-binding, migration, vejrplan eller dataregel ændres.
+
+532 er offentlig med samme gyldige prognose; gemmetrin54 bestod52sekunder.
+Cron er genaktiveret, og ejerens nye ordinary kører. Gamle fem resultater
+bevares indtil ny beregning; faktisk20/day/to modes/pc/mobil er stadig åbent.
+Ingen ny kodelevering mens vejrhentningen er aktiv. Se DEC-0280.
+
+## 89.135 4.0.532 – Bevar beregningens sikre gemmetid (historisk kandidatbeskrivelse; nu leveret)
 
 Top20-overgangen havde ved en fejl sænket det beskyttede gemmekalds allerede
 godkendte tidsgrænse fra55 til30 sekunder.532 genopretter55 sekunder kun for

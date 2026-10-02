@@ -1,4 +1,15 @@
-# Aktuelt fokus – 2026-10-02, lokal4.0.532
+# Aktuelt fokus – 2026-10-02, lokal4.0.533/offentlig532
+
+Isolér normalCPsubset Daskthreads/poolNone med uændret Top20/model67/3a14
+og actualcaller/eksisterende offlineprøver. Måltests og47sourceplan består;
+exactheadCI, sikker providerfri DEC0148-levering og faktiskCPeffekt åbne.
+532 er leveret; cron genaktiveret/uændret. ONEejerbestilt ordinary36988295501
+kører på532, så ingen mainændring/merge/code-only under aktiv hentning.
+Efter actualsave/upload/no-loss/deploy kontrolleres public20/day/tomodes/
+pc/mobil. Stor519 fullCP/S-før-T/writer/kill/runner/kapacitet fortsætter
+separat/OFF. Ingen helkopi, modelændring, privat rålogomvej eller ny scheduler.
+
+# Historisk fokus – 2026-10-02, lokal4.0.532
 
 Reparer reproduceret Top20-overgangsregression append-only, exactheadCI og
 sikker providerfri levering med actual55s/checkpoint/private/R2/Pages. Offentlig

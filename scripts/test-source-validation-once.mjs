@@ -20,6 +20,10 @@ assert.ok(plan.preflight.includes('node scripts/sync-ravscore-model-binding.mjs 
 // Keep the 47 existing bounded command groups; audit regressions share the
 // existing workflow group. No check is removed and no provider is contacted.
 assert.ok(declared.length <= 47, `Kildegaten er igen blevet for bred: ${declared.length} kommandoer.`);
+assert.equal(declared.filter(command => command === 'python scripts/test-copernicus-current-pilot.py').length, 1);
+assert.ok(fs.readFileSync('scripts/test-copernicus-current-pilot.py', 'utf8').includes(
+  'runpy.run_path(str(ROOT / "scripts/test-copernicus-dataset-updating.py"), run_name="__main__")'),
+  'The existing Copernicus source group must execute the actual subset/checkpoint regression suite.');
 const invokedFiles = declared.flatMap(command => command.split(' ').filter(argument =>
   /^scripts\/test-[A-Za-z0-9_.-]+\.mjs$/.test(argument)));
 for (const file of [
