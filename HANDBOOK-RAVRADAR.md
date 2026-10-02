@@ -1,8 +1,16 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.535
+**Håndbogsversion:** 4.0.536
 
-**Kandidatstatus:**535 retter kun den eksisterende separate komponentworkers
+**Kandidatstatus:**536 bevarer kun første fejl i de to normale DMI-readers
+ved samtidig close-fejl. Close-only stopper stadig hårdt. Lokal12PASS/1gammel
+kapacitetsskip; exact-head CI og sikker levering afventer. Ingen descriptor/
+OFF-stack/model/Top20/SQL/format/capændring. Offentlig535 og533/534 er faktisk
+leveret;20/day/begge modes og ønsket pc-/375CSSmobillayout kontrolleret.
+Ejerens ene ordinary37009507544 startede14:54DK på535; cron derefter
+servergenlæst aktiv/næste18:19DK. Ingen mainændring under aktiv vejrhentning.
+
+**Historisk kandidatstatus:**535 retter kun den eksisterende separate komponentworkers
 Dask-valg.533/PR501 og534/PR502 er exact-head-grønne/urørte, ikke leveret.
 535 er lokalt23/23måltestet, ikke kilde-/produktionsverificeret. Ingen OFF-
 aktivering, score-/Top20-/binding-/SQL-/planændring. Først actualcompletion
@@ -19,12 +27,38 @@ Score, handicap, sortering og historik er urørte; stor519 er separat/OFF.
 Ældre kandidat-/pausestatus længere nede er historisk og erstattes af dette.
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.535 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.536 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=3a14f458122f5bc0ea8a60c07abbcbd68d022c0322a87e77242891f21631c852` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.139 4.0.536 – Den første læsefejl må ikke skjules
+
+De to normale DMI-filreaders forsøger altid at lukke deres eget handle.
+Hvis både læsning/validering og lukning fejler, bevares den første fejl.
+En lukningsfejl alene er stadig et hårdt stop; en delvis læsning bliver
+ikke accepteret. Ingen format-, parser-, hash/stat-, filgrænse- eller
+autentificeringsændring og ingen ny OFF-driver.12PASS/1eksisterende
+kapacitetsskip er lokal funktionstest, ikke national kapacitetsgaranti.
+Se DEC-0283;536 kildekontrol og produktion afventer.
+
+533/534/535 er sikkert leveret. Top20 er faktisk kontrolleret: fem datoer,
+to søgemåder, pc1–10 nedad venstre/11–20 nedad højre og mobil én liste.
+Den bestilte ene almindelige vejrhentning startede14:54DK på535; cron blev
+derefter aktiveret og servergenlæst med næste18:19DK. Revisionen fortsætter
+sideløbende uden produktionsændring under aktiv hentning. Hele revisionen,
+fuld cache og færdig historik er ikke ekstra krav før cronaktivering.
+
+Sammenlignelig offentlig vejrFIELD-dækning er92.0444758% af samme397070
+positioner som1Oct90.2526003%. Brugbar score90.6174% er en anden måling;
+prognosefelter er ikke stationsobservationer eller privat historik.210
+zoner har fortsat bølgehistorikadvarsel.288h=12d gælder efter SIDSTE hul;
+nye huller starter uvisheden igen. Uden målt privateclock kan vi ikke
+love en kalenderdato. Nibe har91/118brugbare timer; upstreamårsag åben.
+Scoremodel, dataregler, geometri, SQL og plan er urørte. FullCP/S-før-T,
+writer/kill/runner/kapacitet og særskilte afvisninger består.
 
 ## 89.138 4.0.535 – Den separate Copernicus-worker bruger lokale tråde
 

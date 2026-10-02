@@ -1,4 +1,27 @@
-# 2026-10-02 – lokal4.0.535, komponentworker og PUBLIC inputkontrol
+# 2026-10-02 – lokal4.0.536, offentlig535 og ejerens leveringsrækkefølge opfyldt
+
+Samtaledelta: alle klargjorte533/534/535 kørt helt igennem/providerfrit og
+kontrolleret som public535/mainc52e0bc6 med samme gyldige rr-20261002104907-210.
+Frisk20/day/femdage/begge modes og offentlig pc1–10/11–20/375CSSmobil1–20
+uden overløb bevist. Ejerbestilt ENEordinary37009507544 start14:54:06DK på
+uændret535/normalbudgetter; cron8348098 derefter aktiveret/Gem/servergenlæst
+næste18:19DK. Plan/payload/credentials uændrede. Revisionen genoptaget;
+ingen main/merge/kode-only mens aktiv, ingen ny erstatningskørsel.
+
+536 isolerer kun alreadyRED-testet normalinspectDmiForecastFile og
+readDmiForecastRecord første fejl ved samtidig close-fejl. Close-only hård.
+Release-suite12PASS/0FAIL/1gammel capacitySKIP1225.5367ms;13parent/subtestenheder,
+ikke13unikke cases. Ingen descriptor/OFF-stack/model/SQL/format/cap/APIændring.
+Exact-headCI/deploy endnu åbne. DEC-0283/begge håndbøger beskriver grænser.
+
+Ejeren kræver sammenlignelig dækning: samme397070nævner/hasValue giver92.0444758%
+mod1Oct90.2526003%,+1.7918755pp; score90.6174% er en anden måling. PUBLIC
+prognosefelter er ikke stationsobs/privatehistory/nativecoverage.210wavewarnings,
+288hclock fra SIDSTE hul, privateage/reopeningsulæst/ingenkalenderETA.
+Nibe91/118brugbar/fresh14DKcurrentnumeric,upstreamårsag åben. Full519/CP-S-T/
+writer/kill/runner/kapacitet/OFF og alle særskilte afvisninger fortsat åbne.
+
+# Historisk – 2026-10-02 – lokal4.0.535, komponentworker og PUBLIC inputkontrol
 
 Ejeren siger fortsæt alle opgaver og præciserer Lyngby-spørgsmålet: kun
 mulig sammenhæng mellem strømpil på land og hyppig top5, ikke pilflytning.

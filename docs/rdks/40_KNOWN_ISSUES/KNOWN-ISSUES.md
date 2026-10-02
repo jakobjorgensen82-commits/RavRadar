@@ -1,4 +1,18 @@
-# Aktuelle issues – 2026-10-02 – grøn 533/534, lokal535, offentlig532
+# Aktuelle issues – 2026-10-02 – offentlig535 og afgrænset lokal536
+
+-533/534/535 er leveret; gamle pending/stakkede status er erstattet. Top20
+  og kolonner er faktisk kontrolleret, ikke længere kun kunstige lokaltests.
+-536 normalinspect/record-close kunne maskere primærfejl. Lokal minimal
+  rettelse bevarer første fejl/close-only hård; CI/production afventer.
+- Ejerens ENEordinary37009507544 på535 er aktiv. Cron er efterdispatch
+  servergenlæst aktiv/18:19DK. Ingen produktionsændring mensweatheraktiv.
+- FIELD-dækning92.0444758% med fast397070nævner; score90.6174% er særskilt.
+  Fuld historik/privateclock/retentionETA er ikke bevist;210waveadvarsler.
+- Nibe91/118brugbare timer,27halehuller; upstream/marinemaskeårsag åben.
+- Stor519/fullCP-SførT/writer/kill/failure4min/runner/kapacitet og andre
+  opt-in reader-cleanups er åbne. Ingen OFF-aktivering eller logomvej.
+
+# Historiske issues – 2026-10-02 – grøn 533/534, lokal535, offentlig532
 
 - 533/PR501 og 534/PR502 er exact-head-grønne/urørte, ikke offentlige.
   Lever 533 først efter ordinary36988295501; retarget/recheck 534 til main.

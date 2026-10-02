@@ -1,4 +1,20 @@
-## 2026-10-01 – 4.0.522 faktisk offentlig; fem afgrænsede rettelser samles i 4.0.523
+## 2026-10-02 – offentlig535, én ny ordinary og normalreader536-kandidat
+
+533/534/535 blev faktisk publiceret via37004530145/37006767489/37008318988,
+senest535Pages/exactmain/terminal14:51:53DK. Mainc52e0bc6 og gyldig prognose
+rr-20261002104907-210 bevares. Frisk20/day/femdage/begge modes samt faktisk
+offentlig pc-/375CSSmobillæseretning er kontrolleret, ikke fysisktelefon.
+Derefter ejerens præcis ENEordinary37009507544 start14:54:06DK på535/normal,
+og dereftercron8348098 aktiveret/Gem/servergenlæst næste18:19DK/uændret.
+
+Revisionen fortsætter i separat536: normalinspect/readRecord første fejl
+bevares ved samtidig close-fejl;close-only hård. GenbrugtRED/testparents,
+12readerPASS/1gammel skip og særskilt14callerPASS/1gammel skip/5docchecksPASS.
+Model67/3a14/otte/source47/RDKS14/414/diff/source102 består;CI/deploy åbne.
+Ingen mainændring mens weatheraktiv. FIELD92.0444758%/397070 er sammenlignelig
+med1Oct90.2526003%, ikke score/historik/nativecoverage. Se DEC-0283.
+
+## Historisk – 2026-10-01 – 4.0.522 faktisk offentlig; fem afgrænsede rettelser samles i 4.0.523
 
 Ordinary `36843972587` bestod kl. 14.39 dansk efter source-CI og
 publicerede 4.0.522 med fulde no-loss/artifact/release/private/CAS/R2/Pages-

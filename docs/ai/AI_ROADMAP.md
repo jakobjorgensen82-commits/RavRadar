@@ -1,4 +1,17 @@
-# Aktuelt fokus – 2026-10-02, lokal4.0.535/offentlig532
+# Aktuelt fokus – 2026-10-02, lokal536/offentlig535
+
+Følg kun ejerONEordinary37009507544 på535c52e0bc6 og actualsave/upload/no-loss/
+private/CAS/R2/Pages/terminal. Cron8348098 er efterdispatch aktiv/servergenlæst
+næste18:19DK,plan uændret.533/534/535 er faktisk leveret, ikke ventende.
+536 normale readerprimærfejlretention er isoleret/måltestet; next exact-headCI,
+først merge/DEC0148 efter aktivweathercompletion/resultatkontrol. Alle gamle
+tests/model/Top20/geometri/SQL bevares. Ingen hel519copy eller OFF-aktivering.
+Fuldfactory/CP-SførT/writer/kill/failure4min/runner/nationalkapacitet åbne;
+arbejd actualcallers og eksisterende seams uden fakefactory/gatelempelse.
+Fast FIELDcoverage397070nævner92.0444758%, historikclock/retentionETA åben.
+Se DEC-0283 og nyeste privatecheckpoint; alle særskilte afvisninger består.
+
+# Historisk fokus – 2026-10-02, lokal4.0.535/offentlig532
 
 Følg ownerONEordinary36988295501 og actual efterdatagates/fresh20. Lever
 grøn533 først, retarget/recheck grøn534 til main og lever pc1–10/11–20.

@@ -25,6 +25,53 @@ const document = () => ({ schemaVersion: 2, runtime: { nextZoneCursor: 0 },
     sources: { wave: { title: 'Quotes " and slash \\; æøå 😀' } } }] } },
   partContinuity: { schemaVersion: 1, entries: [{ partId: 'PART', gzipBase64: 'synthetic' }] } });
 
+test('actual forecast readers preserve primary failure when owned close also fails', async t => {
+  for (const operation of ['inspect', 'record']) await t.test(operation, async child => {
+    const folder = await fixture(child), file = path.join(folder, 'forecast.json');
+    await fs.writeFile(file, JSON.stringify(document()));
+    const index = await inspectDmiForecastFile(file);
+    const descriptor = { ...index.zones.get('ZONE'), sha256: '0'.repeat(64) };
+    if (operation === 'inspect') await fs.writeFile(file, '{"zones":invalid}');
+    const open = fs.open.bind(fs), secondary = new Error('SYNTHETIC_CLOSE_FAILURE');
+    let closed = 0;
+    child.mock.method(fs, 'open', async (...args) => {
+      const handle = await open(...args), close = handle.close.bind(handle);
+      child.mock.method(handle, 'close', async () => {
+        await close(); closed++; throw secondary;
+      });
+      return handle;
+    });
+    await assert.rejects(operation === 'inspect' ? inspectDmiForecastFile(file)
+      : readDmiForecastRecord(index, descriptor), error => {
+      assert.notEqual(error, secondary);
+      assert.equal(error.message, operation === 'inspect'
+        ? 'DMI_FORECAST_FILE_INVALID_JSON' : 'DMI_FORECAST_FILE_CHANGED');
+      return true;
+    });
+    assert.equal(closed, 1);
+  });
+});
+
+test('actual forecast readers keep close-only failure hard', async t => {
+  for (const operation of ['inspect', 'record']) await t.test(operation, async child => {
+    const folder = await fixture(child), file = path.join(folder, 'forecast.json');
+    await fs.writeFile(file, JSON.stringify(document()));
+    const index = await inspectDmiForecastFile(file), descriptor = index.zones.get('ZONE');
+    const open = fs.open.bind(fs), secondary = new Error('SYNTHETIC_CLOSE_ONLY');
+    let closed = 0;
+    child.mock.method(fs, 'open', async (...args) => {
+      const handle = await open(...args), close = handle.close.bind(handle);
+      child.mock.method(handle, 'close', async () => {
+        await close(); closed++; throw secondary;
+      });
+      return handle;
+    });
+    await assert.rejects(operation === 'inspect' ? inspectDmiForecastFile(file)
+      : readDmiForecastRecord(index, descriptor), error => error === secondary);
+    assert.equal(closed, 1);
+  });
+});
+
 test('forecast reader accepts legacy formatting and atomic writer retains the same logical document', async t => {
   const folder = await fixture(t);
   const file = path.join(folder, 'forecast.json');

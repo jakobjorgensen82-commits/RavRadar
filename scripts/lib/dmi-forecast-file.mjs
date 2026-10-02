@@ -207,6 +207,7 @@ export async function inspectDmiForecastFile(file, {
     result.largestRecordBytes = Math.max(result.largestRecordBytes, row.bytes);
     return { offset: row.offset, bytes: row.bytes, sha256: row.sha256 };
   };
+  let failed = false;
   try {
     if (!equalStat(stat, await handle.stat())) invalid('CHANGED');
     let sawZones = false;
@@ -267,7 +268,13 @@ export async function inspectDmiForecastFile(file, {
     if (await cursor.peek() !== null || !sawZones) invalid('INVALID_JSON');
     if (!equalStat(stat, await handle.stat())) invalid('CHANGED');
     return result;
-  } finally { await handle.close(); }
+  } catch (error) {
+    failed = true;
+    throw error;
+  } finally {
+    // Close only our own handle; do not mask an earlier read/validation error.
+    try { await handle.close(); } catch (error) { if (!failed) throw error; }
+  }
 }
 
 export async function readDmiForecastRecord(index, descriptor) {
@@ -279,6 +286,7 @@ export async function readDmiForecastRecord(index, descriptor) {
   const stat = await regularFile(index.file, DMI_FORECAST_FILE_MAX_BYTES);
   if (!equalStat(index.stat, stat)) invalid('CHANGED');
   const handle = await fs.open(index.file, 'r');
+  let failed = false;
   try {
     if (!equalStat(index.stat, await handle.stat())) invalid('CHANGED');
     const bytes = Buffer.allocUnsafe(descriptor.bytes);
@@ -290,7 +298,12 @@ export async function readDmiForecastRecord(index, descriptor) {
     }
     if (digest(bytes) !== descriptor.sha256 || !equalStat(index.stat, await handle.stat())) invalid('CHANGED');
     return parseBytes(bytes);
-  } finally { await handle.close(); }
+  } catch (error) {
+    failed = true;
+    throw error;
+  } finally {
+    try { await handle.close(); } catch (error) { if (!failed) throw error; }
+  }
 }
 
 export async function readDmiForecastFile(file, options) {
