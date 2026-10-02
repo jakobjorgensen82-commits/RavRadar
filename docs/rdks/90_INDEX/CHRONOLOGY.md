@@ -1,4 +1,17 @@
-## 2026-10-02 – 537 leveret, NYejerordinary og opfordring538
+## 2026-10-02 – nyFIELDmåling, grøn538 og normalwriter539
+
+19:10DK PUBLIC12Z målt sammehasValue/673×118×5/397070:92.1794645780%, før
+09Z92.0444757851%,+0.1349887929procentpoint; ikkehistorik/score/retentionårsag.
+19:17:11DK538/PR506/exact74805d6d/CI37038700918SUCCESS/proof11242055418ROOTmatch
+14ce88e9…/URØRT, ikkeleveret. ONEownerordinary37036350223 på537 stadigaktiv;
+cron8348098aktiv/uændret22:19DK. Ingenmainændring mensaktiv.
+539STACKED på538 udtager kunnormalselectionwriterprimærfejl via2failedflags;
+close-/cleanup-onlyHARD. GenbrugtRED og2parents5subcases/13gamleparents,
+20unitsPASS443.2039ms +existingawaitedsourcewiring1/1PASS107.5073ms. Ikke
+fuld673execution/kill/kapacitet. EgenCI/publiceffekt åbne;538leveresFØRST.
+DEC-0286/beggehåndbøger89.143; full519/OFF/alleafvisninger består.
+
+## Historisk 2026-10-02 – 537 leveret, NYejerordinary og opfordring538
 
 537/PR505/exactCI37033140847/proof11238757795/renewedwriters/main1b3e172d/
 tomcontentdiff/codeonly37034344180SUCCESS18:39:36DK/public537/samme12Zdata.

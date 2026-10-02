@@ -1,4 +1,20 @@
-# 2026-10-02 – offentlig537, én aktiv ordinary og tekst538
+# 2026-10-02 – offentlig537, grøn538 og separat normalwriter539
+
+- [x]537 faktiskpublic/samme12Zdata/cron8348098aktiv-uændret22:19DK.
+- [x]538/PR506/exact74805d6d/CI37038700918SUCCESS19:17:11/proof11242055418ROOTmatch.
+- [ ] ONEownerordinary37036350223 actualsave/upload/no-loss/private/Pages/terminal.
+- [ ] Lever538FØRST efteractualordinaryresultatkontrol/renewedgates; holdheadurørt.
+- [x]539STACKED på538: kunnormalwriterførste write/sync/rename-fejl bevaret.
+- [x] Ownclose/tempcleanup forsøges; close-/cleanup-onlyHARD/ledgerbytes bevaret.
+- [x]13gamle+2genbrugteparents/5subcases:20unitsPASS443.2039ms/0skip.
+- [x] Existingawaitedsourcewiring1/1PASS107.5073ms, ikke fuld673updaterbevis.
+- [x] NyfastFIELD19:10PUBLIC12Z92.1794645780%/397070, ikkeprivathistorik/score.
+- [x]539version/RDKS539-14/sourcecritical102/model67-3a14-8bindinger/strictscope.
+- [x] Docs/privacy/modelversion/code-only4/4PASS291.9898ms/0skip, ingen fuld lokal suite.
+- [ ]539exactheadCI/retarget/safedeploy/publiceffekt EFTER538.
+- [ ] Full519/CP-SførT/writer/kill/failure4min/runner/kapacitet/OFF.
+
+# HISTORISK – 2026-10-02 – offentlig537, én aktiv ordinary og tekst538
 
 - [x]537/PR505/exactCI/proof/main1b3e172d/codeonly37034344180SUCCESS18:39DK/public537.
 - [x] Samme gyldige12Z/210/673/3a14data; faktiskpc/375CSS/DA-DE-EN tak/links.

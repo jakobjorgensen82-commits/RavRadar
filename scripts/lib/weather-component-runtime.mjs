@@ -198,10 +198,21 @@ export async function persistWeatherComponentSelections(prepared) {
   const stat = await fs.lstat(file).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
   if (stat && (!stat.isFile() || stat.isSymbolicLink())) throw new Error('WEATHER_COMPONENT_SELECTION_FILE_INVALID');
   const temporary = `${file}.${randomUUID()}.tmp`;
+  let failed = false;
   try {
     const handle = await fs.open(temporary, 'wx', 0o600);
-    try { await handle.writeFile(bytes); await handle.sync(); } finally { await handle.close(); }
+    let writeFailed = false;
+    try { await handle.writeFile(bytes); await handle.sync(); }
+    catch (error) { writeFailed = true; throw error; }
+    finally {
+      try { await handle.close(); }
+      catch (error) { if (!writeFailed) throw error; }
+    }
     await fs.rename(temporary, file);
-  } finally { await fs.rm(temporary, { force: true }); }
+  } catch (error) { failed = true; throw error; }
+  finally {
+    try { await fs.rm(temporary, { force: true }); }
+    catch (error) { if (!failed) throw error; }
+  }
   return { ...prepared.sourceMarker, selectedComponentsSha256: digest(bytes) };
 }

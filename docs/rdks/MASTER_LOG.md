@@ -1,4 +1,29 @@
-# 2026-10-02 – offentlig4.0.537 og ejerens opfordring4.0.538
+# 2026-10-02 – offentlig4.0.537, grøn4.0.538 og normalwriter4.0.539
+
+Ejeren spurgte om sammenlignelig dækning efter forrigeordinary17:53DK.
+Ingen tidligere nygenmåling siden14:24; nuONEPUBLIC12Z19:10 sammehasValue/
+673×118×5/397070 med118timehash/bytes ogstart-slutmanifestkontrol.366017=
+92.1794645780%, før365481=92.0444757851%,+0.1349887929procentpoint. Gammel
+rapport bevaret/ny-12z.json; ikke stationobs/nativeprovider/privatehistorik/
+score/kausalretention. Aktiv18:47ownerordinary37036350223 ikke med i dette tal.
+
+538/PR506/head74805d6d/CI37038700918/job110943189843 SUCCESS19:17:11DK,
+source8/unchangedtree9/proof10PASS. Kun416bytesourceproof11242055418/unexpired/
+privatePayloadIncludedfalse hentet; ROOT14ce88e9…match. HeadURØRT, ikke
+merged/deployed. LeverFØRST efteraktiveweatheractualcompletion/renewedgates.
+
+539 STACKED på538branch, kunnormalpersistWeatherComponentSelections første
+write/sync/rename-fejl vsownclose/tempcleanup. Egenclose/cleanup forsøges,
+close-/cleanup-onlyHARD, ledgerBYTEbevarelseførrename/nyledgerbevarelseefter
+validrename/ingensuccessmarker vedfejl. GenbrugtRED/testparents,20unitsPASS
+443.2039ms/0skip +existingawaitedsourcewiring1/1PASS107.5073ms, ikke fuld673-
+updaterbevis. Strictinversediff alleoldtests/otherfunctions/caller/history/
+538urørte. DEC-0286/beggehåndbøger89.143; version/RDKS/egenexactCI/publiceffekt
+åbne. Ingenmodel67/3a14/8bindings/score/Top20/SQL/priority/budget/OFF ændring.
+FullCP-SførT/writer/kill/runner/kapacitet/alleafvisninger består. Cron8348098
+aktiv22:19DK, ingenmain/merge/codeonly/extraweather/cancel underaktivordinary.
+
+# Historisk – 2026-10-02 – offentlig4.0.537 og ejerens opfordring4.0.538
 
 537/PR505/exactd00079e3/CI37033140847/ROOTproof11238757795 efter fornyede
 writers/head/base/main/proof og tomcontentdiff:main1b3e172d/code-only
