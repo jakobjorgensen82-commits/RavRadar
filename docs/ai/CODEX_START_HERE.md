@@ -1,4 +1,18 @@
-# NYESTE TILLÆG – 2026-10-02 – offentlig536 og Rav Jagt-tak537
+# NYESTE TILLÆG – 2026-10-02 – offentlig537, aktiv ordinary og opfordring538
+
+Læs AGENTS/RDKS og ALLERØVERSTE privatecheckpoint; aldrig cb79.537/PR505 er
+leveret/main1b3e172d/code-only37034344180SUCCESS18:39DK/public537/samme12Zdata.
+Cron8348098 er igen serververificeret aktiv/næste22:19DK, samme plan/payload.
+NY ejerordre startede præcis én ordinary37036350223 kl18:47:48DK på537;
+følg denne, ingen ekstra dispatch/main/merge/code-only/binding/audit mens aktiv.
+538 tilføjer KUN ejerens “Følg ham på Facebook og YouTube, og lær en masse
+spændende om rav.” direkte under takken, DA/DE/EN, eksisterende links urørt.
+GrundbogsmåltestPASS; egenexactCI/DEC0148/publiceffekt afventer. Efter actual
+weathercompletion/resultatkontrol fornyes alle gates; ingen providerhentning
+for teksten. Selection-writer isoleres senere separat; full519/OFF og alle
+afvisninger består. Ingen ny model/indsats/plan/kadence. Se DEC-0285.
+
+# HISTORISK TILLÆG – 2026-10-02 – offentlig536 og Rav Jagt-tak537
 
 Læs AGENTS/RDKS/privatecheckpoint; aldrig cb79. ONEordinary37009507544 er
 actualsaved/upload/no-loss/private/Pages/terminalSUCCESS17:53DK.536/PR504

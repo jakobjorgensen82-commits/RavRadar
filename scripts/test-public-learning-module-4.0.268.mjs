@@ -91,6 +91,13 @@ for (const text of [
   'Thank you to Rav Jagt for his illustrations and his help along the way with RavRadar.',
 ]) assert.ok(learningJourneyI18n.includes(text), `Rav Jagt-takken mangler i sprogkataloget: ${text}`);
 assert.equal([...learningJourneyI18n.matchAll(/'learn\.journey\.thanks':/g)].length, 3, 'Takken skal følge alle tre eksisterende sprog');
+assert.match(learning, /data-i18n="learn\.journey\.thanks"[^>]*>[^<]*<\/p>\s*<p data-i18n="learn\.journey\.follow">Følg ham på Facebook og YouTube, og lær en masse spændende om rav\.<\/p>\s*<p class="journey-thanks-links">/, 'Opfordringen skal stå direkte under takken og over de eksisterende klikbare links');
+for (const text of [
+  'Følg ham på Facebook og YouTube, og lær en masse spændende om rav.',
+  'Folgt ihm auf Facebook und YouTube und erfahrt viel Spannendes über Bernstein.',
+  'Follow him on Facebook and YouTube and learn lots of fascinating things about amber.',
+]) assert.ok(learningJourneyI18n.includes(text), `Rav Jagt-opfordringen mangler i sprogkataloget: ${text}`);
+assert.equal([...learningJourneyI18n.matchAll(/'learn\.journey\.follow':/g)].length, 3, 'Opfordringen skal følge alle tre eksisterende sprog');
 assert.match(learningCss, /\.journey-thanks a\{[^}]*min-height:44px/, 'De synlige links skal have god klikflade på mobil');
 assert.match(learning, /På havbunden[\s\S]*I vandsøjlen uden for revlerne[\s\S]*På ydersiden af revlerne[\s\S]*Mellem revler og strand[\s\S]*I vandkanten[\s\S]*På stranden/, 'Rav Jagts seks positioner skal stå i faglig rækkefølge');
 assert.match(

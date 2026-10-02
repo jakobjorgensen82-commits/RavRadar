@@ -1,4 +1,15 @@
-# Aktive krav – 2026-10-02 – Rav Jagt-kreditering537
+# Aktive krav – 2026-10-02 – Følg Rav Jagt538
+
+Under den allerede leverede tak ønskes: “Følg ham på Facebook og YouTube,
+og lær en masse spændende om rav.” DA/DE/EN, samme kontolinks/sikker ny fane
+og mobil klikflade. Ingen illustration-, faglig model-, data- eller CSSændring.
+537 er faktisk offentlig; cron8348098 aktiv/uændret/næste22:19DK. Følg kun
+NYejerordinary37036350223 på537/normalbudgetter. Ingen main/merge/kode-only
+under aktiv vejrhentning;538 sikkerlevering først efter actualcompletion/
+resultatkontrol/fornyede gates. Ingen ny providerhentning for teksten. Alle
+revisionens uafklarede punkter og særskilte afvisninger består. DEC-0285.
+
+# Historiske krav – 2026-10-02 – Rav Jagt-kreditering537
 
 Ejeren kræver tak til Rav Jagt for illustrationer og hjælp på den viste plads:
 under gulillustrationnote/førDel1. Ejerens præcise Facebookprofile61550028713868

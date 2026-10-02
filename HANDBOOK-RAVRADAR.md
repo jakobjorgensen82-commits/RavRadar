@@ -1,8 +1,16 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.537
+**Håndbogsversion:** 4.0.538
 
-**Kandidatstatus:**537 tilføjer ejerens tak til Rav Jagt under illustrationens
+**Kandidatstatus:**538 tilføjer under den allerede offentlige tak: “Følg ham
+på Facebook og YouTube, og lær en masse spændende om rav.” Samme links,
+CSS, illustrationer og fagligt indhold; DA/DE/EN. GrundbogsmåltestPASS,
+exactCI/DEC0148/publiceffekt åbne.537 er leveret18:39DK/main1b3e172d/samme
+12Z/210/673/3a14data; cron8348098 aktiv/server18:43/næste22:19DK/uændret.
+NYejerordinary37036350223 på537 start18:47:48DK; ingen mainændring/merge/
+kode-only mens aktiv. Stor revision og alle afvisninger består. DEC-0285.
+
+**Historisk kandidatstatus:**537 tilføjer ejerens tak til Rav Jagt under illustrationens
 gule bemærkning og før Del1 med klikbare Facebook-/YouTube-konti på DA/DE/EN.
 Ingen faglig model-, score-, data-, cache- eller SQL-runtimeændring.536 er nu
 sikkert leveret18:07DK efter ONEordinary faktisk afsluttede17:53DK med gemme-
@@ -34,14 +42,33 @@ Score, handicap, sortering og historik er urørte; stor519 er separat/OFF.
 Ældre kandidat-/pausestatus længere nede er historisk og erstattes af dette.
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.537 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.538 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=3a14f458122f5bc0ea8a60c07abbcbd68d022c0322a87e77242891f21631c852` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
 
-## 89.141 4.0.537 – Tak til Rav Jagt
+## 89.142 4.0.538 – Følg Rav Jagt og lær om rav
+
+Direkte under takken og over de eksisterende kontolinks står: “Følg ham på
+Facebook og YouTube, og lær en masse spændende om rav.” Teksten følger
+grundbogens dansk, tysk og engelsk. Samme præcise Facebook-/YouTube-konti,
+sikker ny fane, mobil klikflade, CSS og alle faglige forklaringer bevares.
+Eksisterende grundbogsmåltestPASS; exact-head CI/offentlig effekt afventer.
+Ingen ændring af score, Top20, model67/3a14/otte bindinger, geometri, vejr,
+cache eller SQL-runtime. Se DEC-0285.
+
+537/PR505 er faktisk offentlig efter kode-only37034344180SUCCESS18:39:36DK
+påmain1b3e172d med samme gyldige12Z/210/673data og målrettetpc/375CSS/sprog-
+kontrol. Cron8348098 er igen serververificeret aktiv18:43/næste22:19DK.
+Derefter bestilte ejeren én nyordinary37036350223, start18:47:48DK på537/
+normalbudgetter.538 må først leveres efter faktisk resultatkontrol og
+fornyede gates; ingen mainændring under aktiv vejrhentning eller ekstra
+providerhentning for teksten. Revisionens selectionwriter isoleres senere
+separat; full519/CP-SførT/writer/kill/runner/kapacitet/OFF stadig åbne.
+
+## 89.141 4.0.537 – Tak til Rav Jagt (historisk kandidatstatus, faktisk leveret)
 
 Grundbogen takker Rav Jagt for hans illustrationer og hjælpen undervejs med
 RavRadar, lige under den gule illustrationsbemærkning og før Del1. Synlige
