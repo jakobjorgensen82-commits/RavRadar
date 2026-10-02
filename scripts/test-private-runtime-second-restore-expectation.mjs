@@ -62,10 +62,13 @@ const marineManifest = {
   modelBinding: binding,
   contractHashes: marineOldHashes,
 };
+const currentContractHashes = await privateRuntimeContractHashes();
 const marineExpected = {
   ...expected,
-  contractHashes: { ...await privateRuntimeContractHashes(),
-    continuationStateContractSha256: marineOldHashes.continuationStateContractSha256 },
+  contractHashes: { ...currentContractHashes,
+    continuationStateContractSha256: marineOldHashes.continuationStateContractSha256,
+    // Exercise the immutable one-time Top5 handoff, not renewed Top20 authority.
+    publicProjectionContractSha256: marineOldHashes.publicProjectionContractSha256 },
   targetReferenceAt: '2026-09-24T10:00:00.000Z',
 };
 assert.notEqual(marineExpected.contractHashes.fullRuntimeContractSha256,
@@ -73,6 +76,10 @@ assert.notEqual(marineExpected.contractHashes.fullRuntimeContractSha256,
 assert.deepEqual(secondRestoreExpectation({
   expected: marineExpected, source: marineSource, manifest: marineManifest,
 }).contractHashes, marineOldHashes);
+assert.throws(() => secondRestoreExpectation({
+  expected: { ...marineExpected, contractHashes: currentContractHashes },
+  source: marineSource, manifest: marineManifest,
+}), /approved exact predecessor/, 'Top20 must not reopen the old marine exception');
 assert.throws(() => secondRestoreExpectation({
   expected: marineExpected,
   source: { ...marineSource, datasetId: 'rr-other-generation' },
@@ -168,7 +175,7 @@ for (const changed of [
   }));
 }
 const currentExpected = { ...pairedExpected,
-  contractHashes: await privateRuntimeContractHashes() };
+  contractHashes: currentContractHashes };
 const historicalBinding = { ...binding,
   modelBundleSha256: EXACT_WEATHER_PAIR_MODEL_BUNDLE_SHA256 };
 for (const [historicalSource, historicalManifest, pairedLatestAnchor] of [

@@ -2,7 +2,8 @@
 
 529/SEO og530/kadence er merged og faktisk deployet; currentmaina14f6aa4.
 Tidligere ventende/stakkede status er historisk. ravradar.dk HTTPS/GitHub-only
-og cron er uændrede. Aktiv ordinary36964052139 følger normal pipeline på530.
+og cron er uændrede. Ordinary36964052139 er SUCCESS08:39:39DK med faktisk
+gemmebetinget upload, no-loss og deploy; offentlig530/reference04Z/210/673.
 
 Top20 er ejerbestilt og særskilt teknisk godkendt efter sikkerhedsreview.
 Verificeret remote backupcodex/backup-top5-4.0.530-2026-10-02 peeler tila14f6aa4;
@@ -15,7 +16,9 @@ Streng append-only overgang og faktisk definitionsreadback omfatter den nye
 private projektor; ukendt/modstridende data afvises. Måltests består, ingen
 SQLinstallation er udført. Ny Top20 er lokalt pc/375CSS-kontrolleret, ikke
 fysisk telefon/fuldapp eller offentlig effekt. Gamle femrækkers forseglede
-indeks bevares. Exact-headCI/deploy og ny almindelig20rækkeprognose mangler.
+indeks bevares. PR499s førsteCI36974750780 fejlede to historiske testfixtures;
+de er rettet uden runtimeændring med aktuelle negative admissiontests2/2PASS.
+Ny exact-headCI/deploy og ny almindelig20rækkeprognose mangler.
 Stor519 fortsætter separat/OFF; dens fuldeCP/S/T og writer/runner/kapacitet er åbne.
 
 # NYESTE SANDHED – 2026-10-02 02:55 dansk – offentlig528; klar529 og separat530

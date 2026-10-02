@@ -13,6 +13,12 @@ Ingen SQLinstallation eller offentligTop20effekt. Exact-head/deploy og fresh
 ordinary er åbne.529/530 er faktisk leveret, gammel kandidatstatus er historisk.
 Stor519 er separat/OFF; næste arbejde følger faktiske CPwriters før S/T.
 
+08.53DK: Ordinary36964052139 afsluttede08:39:39 med ny cache og deploy.
+PR499s første exactCI36974750780 blev rød på to gamle testfixtures, som bandt
+historiske undtagelser til aktiv projektion. Kun testtargets blev korrigeret;
+aktuel Top20 afviser fortsat disse gamle undtagelser.2/2måltests består,
+ingen runtimepredicate/hashalias/donorautoritet blev ændret. NyheadCI afventer.
+
 # 2026-10-02 02:55 dansk – samtaledelta og konkret4.0.530
 
 Ejeren har bestilt kontinuerlig revision, små færdige leverancer og almindelig

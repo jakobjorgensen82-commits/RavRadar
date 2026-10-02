@@ -196,22 +196,26 @@ try {
     ...baselineContracts,
     continuationStateContractSha256:
       DMI_SCHEDULER_ONLY_PREDECESSOR.continuationStateContractSha256,
+    // Historical one-time fixtures retain their exact Top5 projection. They
+    // must not renew admission against the later Top20 public projection.
+    publicProjectionContractSha256:
+      DMI_SCHEDULER_ONLY_PREDECESSOR.publicProjectionContractSha256,
   };
   assert.notEqual(baselineContracts.continuationStateContractSha256,
     legacyCompatibleContracts.continuationStateContractSha256,
     'the current release must not silently reuse the old continuation contract');
-  assert.equal(
+  assert.notEqual(
     baselineContracts.publicProjectionContractSha256,
     DMI_SCHEDULER_ONLY_PREDECESSOR.publicProjectionContractSha256,
-    'the one-time predecessor may not cross a public projection change',
+    'Top20 changes the projection; old one-time admission must remain closed',
   );
   assert.equal(legacyCompatibleContracts.continuationStateContractSha256,
     DMI_MARINE_SEAM_PREDECESSOR.continuationStateContractSha256);
-  assert.equal(baselineContracts.publicProjectionContractSha256,
+  assert.equal(legacyCompatibleContracts.publicProjectionContractSha256,
     DMI_MARINE_SEAM_PREDECESSOR.publicProjectionContractSha256);
   assert.equal(legacyCompatibleContracts.continuationStateContractSha256,
     WEATHER_ROTATION_PREDECESSOR.continuationStateContractSha256);
-  assert.equal(baselineContracts.publicProjectionContractSha256,
+  assert.equal(legacyCompatibleContracts.publicProjectionContractSha256,
     WEATHER_ROTATION_PREDECESSOR.publicProjectionContractSha256);
   const schedulerPredecessor = {
     ...DMI_SCHEDULER_ONLY_PREDECESSOR,
@@ -227,6 +231,9 @@ try {
     contractHashes: legacyCompatibleContracts,
   };
   assert.equal(isExactDmiSchedulerPredecessor(schedulerPredecessor, schedulerExpected), true);
+  assert.equal(isExactDmiSchedulerPredecessor(schedulerPredecessor, {
+    ...schedulerExpected, contractHashes: baselineContracts,
+  }), false, 'current Top20 must not inherit the historical scheduler exception');
   for (const change of [
     { sourceHead: SOURCE_HEADS[0] },
     { datasetId: 'rr-other-generation' },
@@ -464,8 +471,14 @@ try {
     },
   };
   const hourlyV2Expected = {
-    modelBinding: ravScoreModelBinding(), contractHashes: baselineContracts,
+    modelBinding: ravScoreModelBinding(), contractHashes: {
+      ...baselineContracts,
+      publicProjectionContractSha256: PRIVATE_HOURLY_V1_PREDECESSOR.publicProjectionContractSha256,
+    },
   };
+  assert.equal(isApprovedExactWeatherPredecessor(hourlyV1Predecessor, {
+    ...hourlyV2Expected, contractHashes: baselineContracts,
+  }), false, 'current Top20 must not inherit the historical hourly-v1 exception');
   assert.equal(isApprovedExactWeatherPredecessor(hourlyV1Predecessor, hourlyV2Expected), true);
   for (const change of [
     { sourceHead: SOURCE_HEADS[0] },

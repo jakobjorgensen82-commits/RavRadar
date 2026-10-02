@@ -10,6 +10,9 @@
 - [x] Kunstig faktisk browser:20 rækker/5dage, pc2kolonner/mobil1, intet overløb.
 - [x] GemtTop5, DA/DE/EN og dag/zonevalg kontrolleret smalt.
 - [ ]531 exact-headCI, sikker levering efter aktivewriters og offentlig effekt.
+- [x] FørsteCI fandt to stale historiske projectionfixtures; kun tests rettet,
+  aktuelle gamle undtagelser forbliver afvist. Præcise2/2måltests består.
+- [x] Ordinary36964052139/530 faktisk færdig med ny cache og verificeret deploy.
 - [ ] Faktisk nyordinaryTop20; kode-onlys gamle femrækkeindeks er ikke20-bevis.
 - [ ] Stor519 fuldCP/S/T/writer/killpersist/failure4min/runner-tab/nationalkapacitet.
 

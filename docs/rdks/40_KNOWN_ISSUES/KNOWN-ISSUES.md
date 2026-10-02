@@ -6,6 +6,9 @@
   Exact-headCI/deploy og nyordinary20rækkeeffekt mangler; gamle5 bevares.
 - **BACKUP VERIFICERET:** Remote Top5-source og localZIP findes; tilbagevej
   er ny UI-Top5-levering på latestmain med bevarede nyeredata, ikke gitreset.
+- **FØRSTE CI-RØD:** To gamle projection-testfixtures rettet lokalt. Runtime
+  afviser korrekt gammel undtagelse under Top20; ingen admissionlempelse.
+  Præcise2/2måltests består, ny exact-headCI kræves.
 - **529/530 LEVERET:** Gamle ventende/stakkede status er historiske.
 - **STOR519:** FaktiskCP/S-før-T, writer/runner/kapacitet er fortsat åbne.
 - **BEGRÆNSNING:** Ingen lokal PostgreSQLudførelse eller rigtigtelefon-test.
