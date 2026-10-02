@@ -1,4 +1,16 @@
-# 2026-10-02 – offentlig536, ONEordinary færdig og tak537
+# 2026-10-02 – offentlig537, én aktiv ordinary og tekst538
+
+- [x]537/PR505/exactCI/proof/main1b3e172d/codeonly37034344180SUCCESS18:39DK/public537.
+- [x] Samme gyldige12Z/210/673/3a14data; faktiskpc/375CSS/DA-DE-EN tak/links.
+- [x] Cron8348098 genaktiveret/servergenlæst18:43/næste22:19DK/uændret.
+- [x] NYE ejerordre: én ordinary37036350223 på537 start18:47:48DK/normalbudgetter.
+- [ ] Denneordinary actualrestore/save/upload/no-loss/private/Pages/terminal.
+- [x]538 bestilt opfordring under takken, DA/DE/EN og eksisterende links bevaret.
+- [x] Eksisterende grundbogsmåltestPASS/alle gamle krav bevaret/CSS urørt.
+- [ ]538 version/RDKS/exactheadCI/DEC0148/publiceffekt efter aktivweather/resultatkontrol.
+- [ ] Selectionwriter separat; full519/CP-SførT/writer/kill/runner/kapacitet/OFF.
+
+# HISTORISK – 2026-10-02 – offentlig536, ONEordinary færdig og tak537
 
 - [x] ONEordinary37009507544 actualsaved/nyupload/cache/no-loss/private/Pages/terminal.
 - [x]536/PR504 exactCI/proof/mergeff76d473/codeonly37030746757/public53618:07DK.

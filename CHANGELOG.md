@@ -1,4 +1,15 @@
-## 4.0.537 – Tak til Rav Jagt og klikbare kontolinks (kandidat)
+## 4.0.538 – Følg Rav Jagt og lær om rav (kandidat)
+
+- Ejerens ønskede sætning står direkte under takken og over uændrede links.
+- DA/DE/EN følger eksisterende sprogvalg; CSS, fagligt indhold og links bevares.
+- Eksisterende grundbogskontrol består med alle tidligere krav bevaret.
+-537 er faktisk leveret via37034344180SUCCESS18:39DK/main1b3e172d/public537.
+- Cron8348098 er igen aktiv/uændret22:19DK. NYejerordinary37036350223 på537
+  startede18:47:48DK; ingen mainændring/merge/kode-only mens aktiv.
+-538 egenexactCI/DEC0148/offentligeffekt efter actualweathercompletion/gates.
+  Ingen score/model67/3a14/8bindinger/Top20/geometri/cache/SQL/OFFændring. DEC-0285.
+
+## 4.0.537 – Tak til Rav Jagt og klikbare kontolinks (leveret18:39DK; ældre kandidatdetaljer nedenfor)
 
 - Ejerens ønskede tak står under illustrationsbemærkningen og før Del1.
 - Præcise Facebook-/YouTube-konti som sikre HTTPS-links, DA/DE/EN og mobil.

@@ -1,4 +1,17 @@
-# Aktivt roadmap – 2026-10-02 – offentlig536 og kreditering537
+# Aktivt roadmap – 2026-10-02 – offentlig537 og separat tekst538
+
+1. Følg kun NYejerordinary37036350223 på537/1b3e172d, ingen mainændring mens aktiv.
+2. Kontrollér actualsaved/nyupload/cache/no-loss/private/Pages/reseal/terminal.
+3. Lever538 opfordring efter exactheadCI/ROOTproof/fornyedewriters/main/base/head/
+   actualweatherresultatkontrol og DEC0148; ingen ekstra providerhentning.
+4. Kontrollér offentlig tekst/links/DA-DE-EN/pc-mobil, behold aktivcron8348098.
+5. Isolér allerede måltestet normale selectionwriter, senere boundscan/receipt,
+   hver for sig modlatestapproved3a14/8bindinger; ingen whole519copy/OFF.
+6. Fortsæt actualfactory/awaitedupdater/CP-SførT/alleoutercleanup/unknownstop,
+   writer/kill/failure4min/runner/nationalkapacitet og samme FIELDmetode.
+Alle særskilte afvisninger og ukendt historikclock/Nibeupstream består.
+
+# Historisk roadmap – 2026-10-02 – offentlig536 og kreditering537
 
 1. ONEordinary37009507544 og536 er faktisk afsluttet; gentag ikke gamleordrer.
 2. Lever537tak/to Rav Jagt-kontolinks medDA/DE/EN ogegenexactCI/DEC0148/publicproof.

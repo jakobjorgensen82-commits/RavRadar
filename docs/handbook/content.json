@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.537",
+  "handbookVersion": "4.0.538",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-10-02",
   "sections": [
+    {
+      "id": "rav-jagt-follow-invitation-4-0-538",
+      "chapter": "89.142",
+      "title": "Følg Rav Jagt og lær om rav",
+      "summary": "En opfordring under takken med de samme klikbare kontolinks og tre sprog.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Under takken står nu: Følg ham på Facebook og YouTube, og lær en masse spændende om rav. De eksisterende Facebook- og YouTube-links står lige nedenunder og åbner sikkert i en ny fane.</div><p>Opfordringen følger dansk, tysk og engelsk. CSS, illustration, faglige forklaringer, score, Top20, model67/3a14/otte bindinger, geometri, vejrdata, cache og SQL-runtime bevares. Eksisterende grundbogsmåltestPASS;538 exact-head CI og offentlig effekt afventer. Se DEC-0285.</p><p>537/PR505 er faktisk leveret via kode-only37034344180SUCCESS18:39:36DK påmain1b3e172d/samme gyldige12Z/210/673data. Pc-/375CSS-/tre sprog-kreditering er kontrolleret. Cron8348098 er genaktiveret/servergenlæst18:43/næste22:19DK/uændret. Derefter startede ejerens præcis ene nye ordinary37036350223 kl18:47:48DK på537/normalbudgetter. Ingen mainændring/merge/kode-only mens aktiv;538 leveres først efter faktisk resultatkontrol og fornyede gates. Ingen ekstra providerhentning for teksten. Stor519/OFF/fullCP-SførT/writer/kill/runner/nationalkapacitet og alle særskilte afvisninger består. Ældre kandidat-/pausestatus nedenfor er historisk.</p>"
+    },
     {
       "id": "rav-jagt-learning-credit-4-0-537",
       "chapter": "89.141",
@@ -1505,7 +1512,7 @@
     {
       "id": "ravscore-final-bindings-4-0-320",
       "chapter": "88.14",
-      "title": "RavScore 4.0.537 er samlet og kryptografisk bundet",
+      "title": "RavScore 4.0.538 er samlet og kryptografisk bundet",
       "summary": "Top20-kandidaten har en ny teknisk kildebinding; fysisk scorekontrakt og Candidate G er uændrede. Gamle anvendte migrationer bevares.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den integrerede model er offentlig. RavScore 4.0.531 er en endnu ikke leveret Top20-kandidat og ændrer ikke scoreformler, vægte, handicap, sortering eller historikregler. Fem dages ravradar får op til20 resultater; Bedste områder her og nu forbliver Top5.</div><div class=\"handbook-stack\"><p><strong>Databevaring:</strong> Ny gyldig data erstatter gammel pr. sted, time og vejrdel. Et hul bevarer en stadig gyldig gammel værdi. DMI er førstevalg, Copernicus og Open-Meteo udfylder resterende huller, og vandstand forbliver DMI-only. Privat providerfremgang gemmes autentificeret og krypteret. Et gammelt autentificeret femrækkers prognoseindeks bevares; tyve resultater kræver en ny almindelig beregning og faktisk offentlig kontrol.</p><p><strong>Driftsgenopretning:</strong> En uafsluttet central overgang kan genoptages fra en holdbar privat terminalkvittering, også efter GitHubs midlertidige artifact er udløbet. Den historiske leveringsbarriere fra normalrun35463989289 er løst i normaldrift. Offentlige timefiler og startsidens ranking bevares hashbundet og installeres atomisk sammen med den kompakte hovedfil.</p><p><strong>Integreret binding:</strong> Kandidat4.0.531 er låst med <code>modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b</code> og <code>modelBundleSha256=3a14f458122f5bc0ea8a60c07abbcbd68d022c0322a87e77242891f21631c852</code> over67 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Præcis inverse20→5 genskaber hele den tidligere kildebinding; fysisk kontrakt og continuation er uændrede. Append-only <code>20261002080000_top20_display_binding.sql</code> er kandidatens bindingssuccessor. Anvendte2515/2617-migrationer er uændrede. Den nye overgang kræver den præcise gamle binding, fuld payloadvalidering og bevarede states; den er ikke særskilt SQLinstalleret eller live-verificeret her.</p><p><strong>Historisk kompatibilitet:</strong> Candidate G's inaktive binding er <code>modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8</code> og <code>modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021</code> over65 transitive filer. Candidate G kan ikke vælges i produktionsdispatch og er ikke en reserve, vi vil bruge igen. Den maskinlæsbare autoritet er <code>version.json.releaseContract.modelBindings</code>.</p><div class=\"callout\"><strong>Driftsregel:</strong> En samlet diagnostisk rapport kan markere berørte scorer som utilgængelige, men må ikke alene stoppe udgivelsen af ellers gyldige og friske vejrdata. Datatab, forkert binding, privat læk eller et artifact, der ikke kan bygges eller forsegles, er fortsat hårde stop. Backup til Top5 er et kontrolleret nyt UI-deploy på seneste main, ikke tilbageførsel af nyere vejrdata eller cache.</div></div>"
     },

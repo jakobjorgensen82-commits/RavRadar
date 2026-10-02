@@ -1,4 +1,14 @@
-# Aktuelle issues – 2026-10-02 – offentlig536 og kreditering537
+# Aktuelle issues – 2026-10-02 – offentlig537 og opfordring538
+
+-537 er leveret/publicpc-mobil-kontrolleret; cron8348098 genaktiveret/uændret.
+-538 opfordring under takken er lokalt implementeret/måltestet, ikke offentlig.
+- Følg NYejerordinary37036350223 på537; ingen mainændring mens aktiv.
+- Actualrestore/save/upload/no-loss/deploy og538exactCI/publiceffekt afventer.
+- Selection-writer isoleres senere separat; full519/CP-SførT/writer/kill/
+  failure4min/runner/kapacitet/OFF består, ingen helcopy/gatelempelse.
+- FIELDgenmåling/historyclock/Nibeupstream stadig åbne, ingen nye tal/ETA.
+
+# Historiske issues – 2026-10-02 – offentlig536 og kreditering537
 
 -536/ONEordinary er faktisk færdige, ikke ventende; saved/upload/Pages bevist.
 -537 tak/to kontolinks er lokalt implementeret; exactCI/publiceffekt afventer.

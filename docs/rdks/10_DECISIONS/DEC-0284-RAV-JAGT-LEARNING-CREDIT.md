@@ -1,6 +1,18 @@
 # DEC-0284 – Tak til Rav Jagt i den offentlige grundbog
 
-**Dato:** 2026-10-02. **Status:** Implementeret i 4.0.537-kandidaten; exact-head CI og produktion afventer.
+**Dato:** 2026-10-02. **Status:** Implementeret og offentlig i 4.0.537; ældre kandidatstatus nedenfor er historisk.
+
+## Faktisk afslutning og nyere ejerordre
+
+PR505/d00079e3/exactCI37033140847/ROOTproof11238757795 bestod før merge
+main1b3e172d efter renewedwriters/head/base/proof og tomcontentdiff.
+Kode-only37034344180SUCCESS18:39:36DK, public537/samme12Z/210/673/3a14data.
+Offentlig pc-/375CSS-/tre sprog-kreditering kontrolleret; historicalmaintenance
+SKIPPED, ikkePASS. Cron8348098 genaktiveret/servergenlæst18:43/22:19DK/uændret.
+Derefter bestilte ejeren én NYordinary37036350223 start18:47:48DK på537.
+Senere tekstønske om at følge Rav Jagt afgrænses separat i DEC-0285/538;
+ingen mainændring under aktiv vejrhentning. De gamle pending-/pausestater
+nedenfor er historik, ikke aktuelle leveringsordrer.
 
 Ejeren peger på stedet lige under den gule illustrationsbemærkning og før
 Del 1 i learn.html. Her tilføjes: “Tak til Rav Jagt for hans illustrationer

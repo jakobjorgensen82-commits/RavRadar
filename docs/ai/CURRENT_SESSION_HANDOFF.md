@@ -1,4 +1,28 @@
-# AKTUELT CHECKPOINT – 2026-10-02 – offentlig536 og tak537
+# AKTUELT CHECKPOINT – 2026-10-02 – offentlig537, aktivordinary og538
+
+Arbejd aldrig cb79; releaseweather-restart-release, dirty519 separat.537 er
+faktisk leveret:PR505/d00079e3/exactCI37033140847/ROOTproof11238757795/merge
+1b3e172d/codeonly37034344180SUCCESS18:39:36DK/public4.0.537/samme12Z/210/673/
+3a14data. Pc/375CSS/tre sprog og sikre kontolinks kontrolleret; cron8348098
+genaktiveret/servergenlæst18:43/næste22:19DK/uændret. Ikke længere ventende.
+
+NYdirekte ejerordre startede kun37036350223/attempt1 kl18:47:48DK på537/
+1b3e172d/quickfalse/defaulttom/normalbudgetter. Reentry/terminal/exactmainUTC
+bestod;DMI78 aktiv18:57/ingenfailedstep;ikke actualsave/upload/deploybevis.
+Følg denne, ingen ekstra weather/main/merge/code-only/binding/audit/oneoff/
+cancel mensaktiv. Cron forbliver aktiv;22:19 er ikke garanteret completion.
+
+538 påcodex/rav-jagt-follow-invitation fraexact1b3 tilføjer kun opfordring
+under takken: “Følg ham på Facebook og YouTube, og lær en masse spændende
+om rav.” DA/DE/EN/samme links/CSS/grundbogsindhold. MåltestPASS; egenexactCI/
+publiceffekt afventer. Efter ordinarycompletion/resultatkontrol fornyes
+writers/main/base/head/indhold/CI/unexpiredROOTproof førDEC0148kode-only
+publish_newest_saved_weather=false. Ingen providers alene for teksten.
+Selectionwriter senere separat; boundscan/receipt/full519/OFF/afvisninger
+bevares, ingen whole519copy/model/SQL/cap/gatelempelse. Samme FIELD-metode,
+Nibeupstream/historyclock og alle større integrationsbeviser stadig åbne.
+
+# HISTORISK CHECKPOINT – 2026-10-02 – offentlig536 og tak537
 
 ONEordinary37009507544SUCCESS17:53DK medactualsaved/108newupload/cache8423551163/
 no-loss/rootmatched54artifact+3release/private/CAS/R2/privacy/Pages/reseal/
