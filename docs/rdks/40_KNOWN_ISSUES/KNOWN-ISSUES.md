@@ -1,4 +1,14 @@
-# Aktuelle issues – 2026-10-02, offentlig528 og smal lokal529
+# Aktuelle issues – 2026-10-02 02:55 dansk – klar529 og lokal530
+
+- **GENKØRSELS-SLOT RETTET LOKALT:** Seneste attempt tæller på sin faktiske
+  starttid, ikke original created_at. Ukendt/modstridende timing stopper.
+  RED→måltest; ingen faktisk dublet eller ny produktionsgren målt. DEC-0277.
+- **LEVERINGSRÆKKEFØLGE:**529 er CI-grøn/urørt;530 separat stakket efter529.
+  Aktiv ordinary36945405432 på528/mainba085f6b skal afslutte før mainændring.
+- **REST:** Top20, S/T-driver/key/exklusivitet/runner-tab/kapacitet består.
+  Ingen ny cronplan, ekstra dispatch, modelrehash eller sikkerhedsgenvej.
+
+# Historiske issues – 2026-10-02, offentlig528 og smal lokal529
 
 - **SEO LOKALT IMPLEMENTERET:** Læsbar footer og rigtige DA/DE/EN-guides;
   ingen søgeranggaranti. Exact-head CI, deploy og offentlig visning afventer.

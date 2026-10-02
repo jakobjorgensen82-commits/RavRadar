@@ -1,4 +1,23 @@
-# 2026-10-02 – Domæne og528 leveret; læsbar søgekandidat4.0.529
+# 2026-10-02 02:55 dansk – samtaledelta og konkret4.0.530
+
+Ejeren har bestilt kontinuerlig revision, små færdige leverancer og almindelig
+vejrhentning, uden ændring af den fungerende scoremodel. Den kendte separate
+scheduler-risiko er nu RED-reproduceret: et genkørt gammelt run startet i samme
+slot blev fejlagtigt tilladt af kontrollen.530 retter kun seneste attempt/start.
+Eksisterende målscript består111.7246ms/én scriptcase/0skip; interne assertions
+er ikke et større unikt caseantal. Stor519 samme fix består89.4605ms/én case.
+Read-only faktisk100+79-run-metadata gav no-op under aktiv vejrhentning.
+GitHubs officielle API og to eksisterende attempt2-metadata er kontrolleret;
+ingen logs, private payloads, credentials, dispatch eller planændring.
+
+529/497/head554a82f4 er CI-grøn på36944627707/proof11201278825 og urørt.
+530 stakkes særskilt mod529; ingen ændring af dens head eller main. Naturlig
+528-weather36945405432 fortsætter. Efter faktisk completion/resultat leveres
+529 først, så530 med retarget/exact-head/sourceproof og sikker deploy. Alle
+efterdatagates, model67/8 og særskilte afvisninger består. Top20/factory/S/T/
+key/writer/runner/kapacitet er åbne; ingen ny productioneffekt påstås. DEC-0277.
+
+# Historisk – 2026-10-02 – Domæne og528 leveret; læsbar søgekandidat4.0.529
 
 Samtaledelta siden528 er nu dokumenteret: ravradar.dk har faktisk strict
 HTTPS, godkendt apex/www-certifikat, genlæst Simply-DNS og korrekte redirects.

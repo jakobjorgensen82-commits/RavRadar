@@ -1,19 +1,35 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.529
+**Håndbogsversion:** 4.0.530
 
-**Kandidatstatus:**529 tilføjer læsbar søgehjælp og tre sprogguides, ikke en
-scoreændring.527/528 og ravradar.dk HTTPS er leveret; kortbunden er faktisk
-kontrolleret på pc og mobil.529 exact-head CI og offentlig levering afventer.
-Top20 er fortsat bestilt, men særskilt tilbageholdt.
+**Kandidatstatus:**530 retter kun, hvilket startslot et genkørt vejrforsøg
+tæller i.529s søgehjælp og tre sprogguides er CI-grønne og leveres først.
+527/528 og ravradar.dk HTTPS er leveret; kortbunden er kontrolleret på pc
+og mobil.530 exact-head CI og levering afventer. Top20 er tilbageholdt.
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.529 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.530 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.127 4.0.530 – Et genkørt vejrforsøg tæller også
+
+Hvis en gammel vejrhentning bliver genkørt, beholder GitHub dens oprindelige
+oprettelsestid. RavRadars eksisterende kontrol skal derfor se på det nye
+forsøgs start, så den ikke starter endnu en hentning i samme firetimersslot.
+Et fejlet eller annulleret forsøg tæller også. En aktiv hentning spærrer
+stadig for overlap; ukendt forsøgsnummer eller forkert starttid giver stop.
+
+En gammel hentning, som blot bliver færdig sent, spærrer ikke næste slot.
+Cronplan, budgetter, cache, scoremodel og alle datakontroller er uændrede.
+Måltesten reproducerede fejlen og består efter rettelsen. Faktisk læsning
+af runhistorik gav korrekt ingen ny start under den aktive hentning, men
+en dublet eller den nye genkørselsgren er ikke observeret i produktion.
+529 leveres først;530 kræver egen GitHub-kildekontrol og senere sikker
+levering. Se DEC-0277. Ingen ny automatisk genkørsel er indført.
 
 ## 89.126 4.0.529 – Find RavRadar og læs om ravjagt på dit sprog
 
@@ -31,7 +47,7 @@ hele appen. Guide-links bliver på ravradar.dk; GitHub er fortsat eneste
 sted, hvor siden vedligeholdes og deployes.
 
 Scoremodel, sortering, prognosetal, geometri, historikadvarsler og top5 er
-urørte. Fire måltests og modelkontrol består; exact-head CI, deploy og
+urørte. Fire måltests og modelkontrol samt exact-head CI består; deploy og
 offentlig pc/mobil-kontrol skal stadig gennemføres. Rigtig kontologin/mail,
 PWA-offline og søgeindeksering er ikke målt. Se DEC-0276.
 

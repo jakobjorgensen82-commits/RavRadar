@@ -1,3 +1,13 @@
+## 4.0.530 – Et genkørt vejrforsøg tæller i sit startslot (lokal kandidat)
+
+- Den eksisterende firetimerskontrol bruger seneste forsøgs faktiske start
+  ved genkørsel, ikke blot runets oprindelige oprettelse. Ukendt eller
+  modstridende forsøgsmetadata stopper fortsat uden dispatch.
+- Ingen ny retry/cronplan/payload, ændret model eller efterdatagate. Alle
+  gamle overlap-/legacy-/tidsvinduesregler bevares. Se DEC-0277.
+-529 er CI-grøn og leveres først efter aktiv528-weather.530 er separat
+  stakket kandidat, ikke main/produktion eller målt dubletforebyggelse.
+
 ## 4.0.529 – Læsbare søgetekster på dansk, tysk og engelsk (lokal kandidat)
 
 - Diskret læsbar footer lige over Kilder, kort og licenser med naturlige

@@ -1,4 +1,12 @@
-# Aktuel levering af UI-, domæne- og SEO-ordre – 2026-10-02
+# Aktuel snæver revisionsrettelse – 2026-10-02,4.0.530
+
+DEC-0259s højst ét startet forsøg pr. slot gælder også genkørsel af et gammelt
+run.530 bruger seneste attempts faktiske start og stopper ved ukendt timing.
+Ingen ny retry/cronplan, ændret model eller gate. Måltestet, ikke leveret.
+529 er CI-grøn og leveres først efter aktiv528-weather; se DEC-0277.
+Top20 og alle eksisterende UI/domæne/SEO-ordrer og afvisninger består.
+
+# Historisk levering af UI-, domæne- og SEO-ordre – 2026-10-02
 
 - REQ-RAVRADAR-DOMAIN-001 og REQ-MAP-CONTAINER-RESIZE-0528 er faktisk
   leveret med HTTPS/DNS/redirect og pc/mobil-kortkontrol. Rigtig konto/mail,
