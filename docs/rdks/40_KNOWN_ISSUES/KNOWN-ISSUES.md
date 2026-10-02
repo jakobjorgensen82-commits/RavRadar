@@ -1,4 +1,18 @@
-# Aktuelle issues – 2026-10-02 – lokal533, offentlig532
+# Aktuelle issues – 2026-10-02 – grøn533, lokal534, offentlig532
+
+- **LÆSERETNING:** Ejerens1–10 venstre/11–20 højre er lokalt rettet i534;
+  mobil1–20/DOMorden/gamle5 bevares. Kunstig faktisk layoutkontrol består;
+  exactheadCI og offentlig effekt afventer. Ingen score/modelændring.
+- **LEVERING:**533/501/head791aeffc/CI36989653512/proof11219467236 grøn/urørt,
+  leveres først efter aktive ordinary36988295501 og faktisk resultatkontrol.
+  Derefter retarget534 til main og genkontrollér writers/head/base/content/CI.
+- **TOP20 EFFEKT:**532kode er offentlig; frisk20/day/to modes endnu ikke bevist.
+- **REVISION:**FullCP-S-T/writer/kill/failure4min/runner/nationalkapacitet er åbne.
+  Separat componenttransport er ikke533normalpilot; dirty519/OFF må ikke kopieres.
+- **ADMIN/LOG:** Afklaringsspørgsmål gentages ikke; ingen role/credentialændring
+  eller raw privatlogomvej. Alle særskilte afvisninger består. Se DEC-0281.
+
+# HISTORISKE issues – 2026-10-02 – lokal533, offentlig532
 
 - **LØST532:** Exact-head/merge/kode-only/actual55s-readback/checkpoint52s/
   Pages består, cron er genaktiveret. Gamle paused/pending532tekster er historik.

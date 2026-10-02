@@ -1,4 +1,23 @@
-# 2026-10-02 – 4.0.533 normal Copernicus-delta og aktuel samtale
+# 2026-10-02 – 4.0.534, ny Top20-kolonnerækkefølge og fortsat revision
+
+Samtaledelta: Ejeren ønsker de to pc-kolonner læst nedad,1–10 venstre og
+11–20 højre, og siger lav det/fortsæt revisionen. Mobil forbliver1–20 i én
+liste.534 sætter kun actualrenderers gridrækkeantal og pc-column-flow, uden
+ændret score, sortering, fysisk model, producent, binding, SQL eller vejrplan.
+Eksisterende rendererregression genbruges; RED før rettelse, måltests og
+kunstigt faktisk Chrome pc-/375CSS-layout består, ingen vandret overflow.
+Tab10→11, gamle5/femgridrækker, dag-/zone-/modevalg og DA/DE/EN kontrolleret
+snævert; ikke fysisk telefon/fuldapp/publiceffekt. DEC-0281/begge håndbøger ajour.
+
+533/PR501 er nu exactheadgrøn791aeffc/CI36989653512/proof11219467236 og urørt.
+534 er separat oven på533, som leveres først efter den ene aktive ejerordinary
+36988295501 på532/ccc5a7c1. Ingen mainændring mens aktiv; cron14:19DK uændret.
+Først533, så534retarget/recheck/exacthead/deploy. Nye offentlige20/datoer/modes
+skal måles, ikke opfindes. Backup/rollback og alle særskilte afvisninger består.
+Stor519 faktisk CP/S-før-T/writer/kill/failure4min/runner/kapacitet fortsætter
+separat/OFF og er ikke afsluttet. Aktuel GPT-6.1 Sol/Ekstra høj bevares.
+
+# HISTORISK – 2026-10-02 – 4.0.533 normal Copernicus-delta og aktuel samtale
 
 Ejeren ønsker fortsat Top20 OG hele vejrhentningsrevisionen færdiggjort.
 532/PR500 er nu faktisk merged/mainccc5a7c1 efter exactCI36982260948 og

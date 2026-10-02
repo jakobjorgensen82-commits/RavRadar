@@ -1,4 +1,16 @@
-# 2026-10-02 – offentlig532, afgrænset normalCP533
+# 2026-10-02 – offentlig532, grøn533, Top20-læseretning534
+
+- [x]533/PR501 exacthead791aeffc/CI36989653512/proof11219467236; urørt.
+- [ ] Aktiv ordinary36988295501 actualsave/upload/no-loss/deploy/fresh20.
+- [ ]533 sikker levering før534; ingen mainændring under aktiv vejrhentning.
+- [x] Ejerens pc-læseretning1–10/11–20 implementeret, mobil én liste1–20.
+- [x] Eksisterende rendererprøve/scoreorden og gamle5/delvis/tomtilstand bevares.
+- [x] Kunstigt faktisk Chrome pc-/375CSS-layout, Tab10→11, dag-/zone-/modevalg.
+- [ ]534 exact-headCI, retarget til main efter533, sikker deploy/offentlig pc/mobil.
+- [x] Ingen model-/binding-/SQL-/workflowadfærdsændring; DEC-0281 ajour.
+- [ ] Stor519 fullCP-S-T/writer/kill/failure4min/runner/nationalkapacitet separat/OFF.
+
+# HISTORISK – 2026-10-02 – offentlig532, afgrænset normalCP533
 
 - [x]532 PR500/exactCI36982260948/mergeccc5a7c1/kode-only36983293056 leveret.
 - [x] Actual55s-readback/checkpoint52s/private/R2/privacy/Pages/exact210/673.

@@ -1,4 +1,15 @@
-## 4.0.533 – Afgrænset Copernicus-beregning i egen proces (lokal kandidat)
+## 4.0.534 – Læs Top20 nedad i hver pc-kolonne (lokal kandidat)
+
+- Pc:1–10 til venstre,11–20 til højre. Mobil:én liste1–20, samme DOM/Taborden.
+- Gamle fem og delvise/tomme dage bevares uden opdigtede resultater eller
+  tomme gridrækker. Lange navne og eksisterende kontroller bevares.
+- Ingen scorer, sortering, fysisk model, producerantal, binding, SQL, data,
+  budget, vejrplan eller workflowgate ændres. DEC-0281/begge håndbøger ajour.
+- Måltest og kunstigt faktisk browserlayout består; exact-headCI/offentlig
+  levering er åbne.533/PR501 er grøn/urørt og leveres først efter aktiv ordinary.
+- Storrevisionen fortsætter separat/OFF; offentlig532 og cron er uændrede.
+
+## 4.0.533 – Afgrænset Copernicus-beregning i egen proces (historisk kandidattekst; nu kildekontrolleret)
 
 - Den normale faste Copernicus-geoseries/NetCDF-hentning bruger kortvarigt
   Dasks lokale threads og ingen arvet pool. Tidligere konfiguration genoprettes.

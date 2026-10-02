@@ -1,4 +1,18 @@
-# NYESTE TILLÆG – 2026-10-02 – offentlig532, lokal533
+# NYESTE TILLÆG – 2026-10-02 – offentlig532, grøn533, lokal534
+
+Læs gældende RDKS og ALLERØVERSTE BIGcheckpoint. Nyeste ejerpræcisering:
+pc-listen skal vise1–10 nedad venstre og11–20 nedad højre; mobil én liste1–20.
+534 er kun visningskandidat på verificeret533head, ikke hel dirty519kopi.
+Ingen score/model67/3a14/8binding/SQL/vejrplan ændres. Lokale målprøver og
+kunstigt faktisk pc-/375CSS-browserlayout består; exactheadCI/publiceffekt åbne.
+533/PR501/head791aeffc er exactheadgrønCI36989653512/proof11219467236 og urørt.
+Ejerens ONEordinary36988295501 kører på532/mainccc5a7c1; ingen merge/mainændring
+mens aktiv. Efter actualcompletion/resultatkontrol leveres533 FØRST, derefter
+534retarget/head/base/content/CI/writers/deploy. Cron8348098/14:19DK uændret.
+Stor519/OFF/fullCP-S-T/writer/kill/failure4min/runner/kapacitet og alle særskilte
+afvisninger består. Ingen ny model/indsats/plan, privatlogomvej eller ekstraweather.
+
+# HISTORISK TILLÆG – 2026-10-02 – offentlig532, lokal533
 
 532 er faktisk leveret/mainccc5a7c1, cron8348098 genaktiveret/uændret.
 ONEny ejerbestilt ordinary36988295501 kører fra11:10:54DK på532; lad den køre,
