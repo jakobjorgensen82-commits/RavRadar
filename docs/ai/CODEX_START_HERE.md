@@ -1,4 +1,31 @@
-# NYESTE TILLÆG – 2026-10-02 – offentlig537, grøn538 og separat writer539
+# AKTUELT CHECKPOINT – 2026-10-02 – offentlig 539 og smal CP-kandidat 540
+
+Læs ALLERØVERSTE private checkpoint, AGENTS og RDKS; arbejd aldrig i cb79.
+Offentlig/main er 4.0.539/42e1581957b513cd04fb799a61135ec47fcb8d27.
+ONEordinary37036350223 afsluttede faktisk gemning/upload/Pages/terminal kl.21:02:23;
+538 og 539 er merged og offentliggjort kl.21:21:47/21:42:04. De er ikke ventende.
+539 genbruger samme gyldige 16Z-datasæt/210 zoner/673 dele/118 timer/3a14-binding.
+Ingen vejrhentning eller SQL-runtimeændring ved disse kode-only leverancer.
+
+540 isolerer kun atomic_json, BoundedComponentTransport.download og
+save_component_bank samt præcis tre allerede eksisterende testparents fra lokal519.
+23 gamle parents er byteidentiske; streng inversdiff matcher godkendt main.
+Fem målrettede parents består på den isolerede basis:3 genbrugte/7 undercases
+og2 gamle retry-/timeoutkontroller,5PASS/0FAIL/0SKIP4.011s. Ingen gentagen BIG-fuldsuite.
+Model67/3a14/8bindinger er kontrolleret uændrede. Egen exact-head CI og deploy
+afventer. CP-no-close RED er urettet; fullCP-SførT/writer/kill/runner/nationalkapacitet
+og OFF er fortsat åbne. Ingen frozenindex/admission/executor/hel519copy/genvej.
+
+Seneste FIELD16Z er395244/397070=99.540131463%, før12Z92.179464578%,
+samme hasValue/673×118×5 og alle hashes/bytes/start-slutmanifest. Nibe har118
+brugbare timer i begge former:59HISTORY_INCOMPLETE+59fremtidigeFULL_HISTORY.
+Ikke privat historik/native-provider/score/kausal fixeffekt; ingen kalenderETA.
+Genhent ikke uændret1.42GB. Cron8348098 forbliver aktiv og uændret; ingen
+main/merge/code-only mens en vejrhentning skriver. Ingen ekstra manuel kørsel.
+Alle særskilte afvisninger består. Valgt GPT-6.1 Sol/Ekstra høj bevares; samme
+indsats er nødvendig ved dette dataintegritetsarbejde. Se DEC-0287 og89.148.
+
+# HISTORISK TILLÆG – 2026-10-02 – offentlig537, grøn538 og separat writer539
 
 Læs ALLERØVERSTE privatecheckpoint/AGENTS/RDKS; aldrig cb79. Følg kun ejerens
 ONEordinary37036350223 på537/main1b3e172d, ingen main/merge/kode-only mensaktiv.

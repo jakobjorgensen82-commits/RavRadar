@@ -1,4 +1,22 @@
-# Aktuelle issues – 2026-10-02 – offentlig537/grøn538/normalwriter539
+# Aktuelle issues – 2026-10-02 – offentlig539 og smal CP-kandidat540
+
+-538/539 er merged og publiceret; tidligere pending-/stackedstatus er historisk.
+- Tre CP-first-errorgrænser er nu isoleret i lokal540/5målparentsPASS4.011s,
+  23 gamle parents uændrede; egen CI/proof/merge/deploy/offentlig effekt mangler.
+- CP-no-close RED URETTET. Første-fejlbevarelse er ikke bevis for completedcleanup,
+  processtop, writer-eksklusivitet, kill, failure4min, runner-loss eller nationalkapacitet.
+- FullCP-SførT/authenticatedfactory/updater er fortsat åbent/OFF; normal539 har
+  ingen bound-final-scan/expectedDescriptor. Ingen skjult API-/OFF-isolation.
+- FIELD16Z99.540131463% og Nibe118brugbare/BOTH er målt, ikke privat historik/
+  lastgap/age/reopening/nativeprovider eller kausal gevinst. Ingen kalenderETA.
+- Credit ved375CSS er udenoverløb; gammel separat B-tekst om koldt vand går11px
+  ud overdoc360. Ikke patched i denne CP-kandidat eller fysisktelefonbevis.
+- Realownerlogin/private-save/PWAoffline/install/push fortsat ikke bevist;
+  ingen gentaget loginspørgsmål/credential-/rolleændring.
+
+Cron8348098 aktiv/uændret; alle særskilte afvisninger består. DEC-0287.
+
+# Historiske issues – 2026-10-02 – offentlig537/grøn538/normalwriter539
 
 - Grøn538/PR506 exactCI/proof er klar/URØRT; publiclevering afventeraktivweather.
 -539 normalwriters sekundærefejl kunne maskere primær; isoleretmål20unitsPASS,

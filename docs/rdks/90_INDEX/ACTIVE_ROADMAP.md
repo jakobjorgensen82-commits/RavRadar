@@ -1,4 +1,21 @@
-# Aktivt roadmap – 2026-10-02 – grøn538 og separat writer539
+# Aktivt roadmap – 2026-10-02 – smal540 efter faktisk leveret539
+
+1. Afslut lokal540 dokumentation/versionskontrol og egen exact-head source-CI/proof.
+2. Forny writers/main/head/base/content/unexpiredROOTproof før sikkerDEC0148false.
+3. Ingen main/merge/code-only under aktiv almindelig vejrhentning; cron8348098
+   forbliver aktiv/uændret. Ingen ekstra providerdispatch/standaloneSQL.
+4. Følg faktisk private/CAS/R2/privacy/Pages/model/main/disposition/reseal/terminal
+   og offentlig version med eksakt bevaret senest gyldigt vejr/score/historik.
+5. Fortsæt actualcaller/alloutercleanup/unknownstop/CP-SførT-integration gennem
+   eksisterende seams. CP-no-close RED/writer/kill/runner/nationalkapacitet åbne/OFF.
+
+538/539 og ONEordinary37036350223 er faktisk færdige, ikke ventende.
+540 er kun3funktioner/3genbrugte parents modapprovedmain;5målparentsPASS4.011s,
+23gamleidentiske/model67-3a14-8bindinger uændrede. FIELD16Z99.540131463% og Nibe118
+er offentlige prognosemålinger, ikke fuld historik eller kausal revisionsgevinst.
+Alle afvisninger og model/indsats/plan/kadence bevares; ingen hel519copy/frozenindex.
+
+# Historisk roadmap – 2026-10-02 – grøn538 og separat writer539
 
 1. Følg kunownerordinary37036350223 på537/main1b3; ingenmainændring mensaktiv.
 2. Actualsaved/nyupload/cache/no-loss/private/CAS/R2/privacy/Pages/reseal/terminal.

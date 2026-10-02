@@ -5,6 +5,28 @@
 
 ## Observeret årsag og afgrænsning
 
+### Tillæg2. oktober – faktisk539 og smal540, ikke færdig livscyklus
+
+ONEordinary37036350223 afsluttet21:02:23 med faktisk gemning/upload/nytcache,
+no-loss/private/CAS/R2/privacy/Pages/reseal/terminal/requireddeploy.
+538/539 merged/publiceret21:21:47/21:42:04; tidligere pendingordrer udført.
+Public539/main42e15819/samme16Z210673118/3a14/a226/8bindinger er bekræftet.
+FIELD395244/397070=99.540131463% mod12Z92.179464578% sammehasValue-metode
+og hashes/bytes; Nibe118brugbare/BOTH/59incomplete+59futureFULL_HISTORY.
+Ikke privat historik/nativeprovider/score/kausal forbedring/kalenderETA.
+
+540 udtager kun atomic_json, download og save_component_bank samt tre
+genbrugte testparents fra lokale519.23gamleparents identiske; strictinverse
+og model67-3a14-8bindingerPASS.5målparentsPASS4.011s/0skip påisolatedmainbasis;
+BIG RED/26fuldsuite ikke gentaget. Owncleanup forsøges/cleanup-onlyHARD,
+old/newcompletebytes og faktisk lille diskresume bevares. EgenCI/produktion
+afventer DEC-0287. CP-no-closeRED URETTET/fullCP-SførT/writer/kill/failure4min/
+runner/nationalkapacitet/OFF åben. Ingen frozenindex/admission/executor/API/
+hash/format/budget/SQLruntime/model-/kadenceændring; alle afvisninger består.
+Cron8348098 aktiv/uændret; ingen main/merge/code-only mensweatheraktiv.
+
+Nedenstående historiske rootcauseforløb er ikke nye dispatch- eller læseautorisationer.
+
 4.0.518 blev merged som `b076968e` efter source-CI `36696989835`.
 Normalrun `36698472505` passerede leverandørerne, men stoppede i
 historisk havstrømsreplay. Tre mulige DMI/DMI-par fra samme modelkørsel

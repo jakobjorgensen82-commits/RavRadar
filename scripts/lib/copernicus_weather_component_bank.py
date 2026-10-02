@@ -766,12 +766,22 @@ def save_component_bank(path: Path, bank: dict, *, targets: list[dict]) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary = tempfile.mkstemp(prefix="." + path.name + ".", suffix=".tmp", dir=path.parent)
+    failed = False
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
             handle.write(canonical_json(bank))
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temporary, path)
+    except BaseException:
+        failed = True
+        raise
     finally:
-        if os.path.exists(temporary):
-            os.unlink(temporary)
+        try:
+            if os.path.exists(temporary):
+                os.unlink(temporary)
+        except BaseException:
+            # Preserve the failed checkpoint; cleanup-only still rejects the
+            # caller even when a complete new bank was already committed.
+            if not failed:
+                raise

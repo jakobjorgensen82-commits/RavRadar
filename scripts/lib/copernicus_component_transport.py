@@ -54,15 +54,26 @@ def atomic_json(path: Path, value: dict) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary = tempfile.mkstemp(prefix="." + path.name, suffix=".tmp", dir=path.parent)
+    failed = False
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
             handle.write(canonical_json(value))
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temporary, path)
+    except BaseException:
+        failed = True
+        raise
     finally:
-        if os.path.exists(temporary):
-            os.unlink(temporary)
+        try:
+            if os.path.exists(temporary):
+                os.unlink(temporary)
+        except BaseException:
+            # Only this writer's own temporary file is considered here. A
+            # secondary cleanup fault must not replace a failed receipt write;
+            # cleanup-only remains hard, including after a complete replace.
+            if not failed:
+                raise
 
 
 def subset_arguments(request: dict, contract_key: str, output_directory: Path) -> dict:
@@ -277,8 +288,10 @@ class BoundedComponentTransport:
             if not self.can_continue():
                 raise ComponentTransportDeferred("CP_COMPONENT_TRANSPORT_BUDGET_REACHED")
             remaining = self.deadline - self.clock() - 5
-            with tempfile.TemporaryDirectory(prefix=".request-", dir=self.cache.directory) as folder:
-                directory = Path(folder)
+            temporary = tempfile.TemporaryDirectory(prefix=".request-", dir=self.cache.directory)
+            failed = False
+            try:
+                directory = Path(temporary.name)
                 envelope = directory / "request.json"
                 atomic_json(envelope, {"request": request, "contractKey": contract_key})
                 # Validate before spawning too; no arbitrary URLs, variables or
@@ -306,6 +319,17 @@ class BoundedComponentTransport:
                     raise ComponentTransportDeferred("CP_COMPONENT_DOWNLOAD_BYTE_BUDGET_REACHED")
                 self.downloaded_bytes += size
                 return self.cache.store(request, path)
+            except BaseException:
+                failed = True
+                raise
+            finally:
+                try:
+                    temporary.cleanup()
+                except BaseException:
+                    # Cleanup only our request folder. Preserve an earlier
+                    # worker/receipt failure; cleanup-only remains hard.
+                    if not failed:
+                        raise
         raise ComponentTransportDeferred("CP_COMPONENT_DATASET_UPDATING")
 
     def evidence_for(self, contract_key: str, target: dict, *, download: bool = True) -> dict | None:

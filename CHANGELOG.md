@@ -1,4 +1,18 @@
-## 4.0.539 – Bevar normal selection-writers første gemmefejl (separat kandidat)
+## 4.0.540 – Bevar Copernicus-kædens første gemmefejl (lokal kandidat)
+
+- Kun atomic_json, BoundedComponentTransport.download og save_component_bank:
+  første receipt/request/bankfejl bevares; egen oprydning forsøges og cleanup-only HARD.
+- Tre eksisterende testparents/7underprøver genbruges;23gamleparents byteidentiske.
+  Isoleret5målparentsPASS4.011s/0skip inklusive2gamle retry-/timeoutkontroller.
+- Gamle receipt/bankbytes, komplet nycommit og faktisk lille diskresume bevares;
+  ingen rollback/pruning/falsk last_receipt/normalproducerreturn ved fejl.
+- Model67/3a14/8bindinger/args/budgetter/format/hash/admission/OFF/SQL-runtime uændrede.
+  Egen exact-head CI/proof og sikker produktion afventer. DEC-0287/begge håndbøger89.148.
+-538/539 er faktisk leveret21:21:47/21:42:04, ordinary37036350223 færdig21:02:23.
+  FIELD16Z99.540131463% mod12Z92.179464578% samme metode; Nibe118brugbare/BOTH.
+  Ikke privat historik/nativeprovider/kausal gevinst; CP-no-close/fullrevision stadig åben.
+
+## 4.0.539 – Bevar normal selection-writers første gemmefejl (leveret; nedenstående kandidatnoter er historiske)
 
 - Kun eksisterende persistWeatherComponentSelections primærfejl vs egetclose/
   tempcleanup; close-/cleanup-onlyHARD, korrektledgerbevarelse/ingenfalsksaved.
