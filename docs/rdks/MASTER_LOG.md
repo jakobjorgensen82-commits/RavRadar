@@ -1,4 +1,23 @@
-# 2026-10-02 – Afgrænset kortfix4.0.528; faktisk domæneordre
+# 2026-10-02 – Domæne og528 leveret; læsbar søgekandidat4.0.529
+
+Samtaledelta siden528 er nu dokumenteret: ravradar.dk har faktisk strict
+HTTPS, godkendt apex/www-certifikat, genlæst Simply-DNS og korrekte redirects.
+Supabase exact-root-redirect blev gemt, gammel GitHub-redirect beholdt.
+GitHub er eneste kode-/deploysted, ingen Simply-webhotel/køb/nøgle/plan.
+527/528 er leveret; kortbund faktisk kontrolleret på pc og mobil. Ordinary
+36920739569 afsluttede00.49DK med actualsave+upload og alle efterdatagates.
+Ny offentlig datasetrr-20261001215041-210 er bevaret; ingen ny dæknings-
+eller privat retentionmåling. Cron aktiv/uændret, første naturlige528 følger.
+
+529 implementerer ejerens diskrete læsbare footer over Kilder, kort og
+licenser samt tre rigtige statiske sprogguides og canonical/hreflang/robots/
+sitemap. Google primærvejledning er kontrolleret; ingen metakeywords,
+skjult keywordliste eller indeks-/ranggaranti. Fire måltests består, model
+67/c557f91a…/8bindinger uændret. Ingen score-, top20-, workflow- eller
+dataændring. Version/RDKS/exact-head CI og offentlig effekt skal afsluttes.
+Stor519 og alle særskilte sikkerhedsafvisninger består. Se DEC-0276.
+
+# HISTORISK – 2026-10-02 – Afgrænset kortfix4.0.528; faktisk domæneordre
 
 528 er afgrænset til kortcontainerens ResizeObserver/rAF og normal
 Leaflet invalidateSize med pan:true/animate:false. Ingen nyt udsnit, zoom,

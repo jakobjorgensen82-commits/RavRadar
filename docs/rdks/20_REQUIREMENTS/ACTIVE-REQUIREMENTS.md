@@ -1,4 +1,14 @@
-# Aktuel UI-, domæne- og SEO-ordre – 2026-10-02
+# Aktuel levering af UI-, domæne- og SEO-ordre – 2026-10-02
+
+- REQ-RAVRADAR-DOMAIN-001 og REQ-MAP-CONTAINER-RESIZE-0528 er faktisk
+  leveret med HTTPS/DNS/redirect og pc/mobil-kortkontrol. Rigtig konto/mail,
+  offline/PWA og første nye-domain-weather mangler; ingen ekstra kørselsordre.
+- REQ-RAVRADAR-SEO-001 er implementeret lokalt i529 via læsbar footer og
+  faktiske DA/DE/EN-guides/canonical/hreflang/sitemap. Exact-head/levering
+  og offentlig kontrol afventer, ingen indeks-/ranggaranti. Se DEC-0276.
+- REQ-NATIONAL-TOP20-0528 er fortsat bestilt og særskilt tilbageholdt.
+
+# Historisk UI-, domæne- og SEO-ordre – 2026-10-02
 
 - **REQ-NATIONAL-TOP20-0528 – BINDENDE / SEPARAT TILBAGEHOLDT:** Fem dage,
   begge søgemåder og op til20gyldige zoner med uændret model/comparator/

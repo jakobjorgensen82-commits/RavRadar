@@ -1,4 +1,15 @@
-## 4.0.528 – Kortet følger hele sit felt (lokal kandidat)
+## 4.0.529 – Læsbare søgetekster på dansk, tysk og engelsk (lokal kandidat)
+
+- Diskret læsbar footer lige over Kilder, kort og licenser med naturlige
+  ravjagt-/udstyrstermer, via eksisterende udvidelige UI-copy.
+- Tre rigtige statiske sprogguides med lokale links, canonical og gensidig
+  hreflang samt robots/sitemap. Ingen skjult ordliste eller søgeranggaranti.
+- Scoremodel67/8bindinger, data, top5 og vejrhentning er uændrede. Ingen
+  workflow-/DNS-/loginændring eller betalt tilkøb. Se DEC-0276.
+-527/528 og ravradar.dk HTTPS er faktisk leveret;528 kortbund er kontrolleret
+  på pc/mobil. Fire529-måltests består; exact-head CI og levering afventer.
+
+## 4.0.528 – Kortet følger hele sit felt (historisk kandidattekst; nu leveret)
 
 - Kortet følger ændringer af eget felt efter indlæsning og layoutskift,
   ikke kun browservinduets resize. Ingen animation, nyt udsnit eller scoreændring.

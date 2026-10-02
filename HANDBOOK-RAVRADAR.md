@@ -1,20 +1,47 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.528
+**Håndbogsversion:** 4.0.529
 
-**Kandidatstatus:**528 er afgrænset til kortfeltets størrelse. Den uændrede
-scoremodel og tekniske binding består lokal kontrol; exact-head og offentlig
-kortkontrol afventer. Top20-ønsket er bevaret separat, ikke med denne pakke.
+**Kandidatstatus:**529 tilføjer læsbar søgehjælp og tre sprogguides, ikke en
+scoreændring.527/528 og ravradar.dk HTTPS er leveret; kortbunden er faktisk
+kontrolleret på pc og mobil.529 exact-head CI og offentlig levering afventer.
+Top20 er fortsat bestilt, men særskilt tilbageholdt.
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.528 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.529 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
 
+## 89.126 4.0.529 – Find RavRadar og læs om ravjagt på dit sprog
+
+Nederst på forsiden, lige over Kilder, kort og licenser, kommer en lille
+læsbar hjælp om ravjagt, ravkort og ravprognose. Teksten følger appens
+danske, tyske eller engelske sprog og fortæller også om kese/ravkese og
+ravlygte. Det er almindelig nyttig tekst, ikke en skjult liste af søgeord.
+
+Tre korte guides har hver sin adresse og sit eget sprog. Man kan skifte
+mellem dem og gå videre til kortet. Guiderne forklarer prognosens rolle,
+udstyr og begrænsninger; ingen garanti for fund. Søgemaskiner får korrekte
+side- og sproghenvisninger samt en oversigt over seks offentlige sider.
+Dette lover ikke en bestemt Googleplacering eller tre oversættelser af
+hele appen. Guide-links bliver på ravradar.dk; GitHub er fortsat eneste
+sted, hvor siden vedligeholdes og deployes.
+
+Scoremodel, sortering, prognosetal, geometri, historikadvarsler og top5 er
+urørte. Fire måltests og modelkontrol består; exact-head CI, deploy og
+offentlig pc/mobil-kontrol skal stadig gennemføres. Rigtig kontologin/mail,
+PWA-offline og søgeindeksering er ikke målt. Se DEC-0276.
+
 ## 89.125 4.0.528 – Kortet følger hele sit felt
+
+**Nyere leveringsstatus:**528 er leveret efter grøn exact-head CI. Faktisk
+pc/mobil-kontrol efter zoom og resize viste en fyldt kortbund uden vandret
+overløb. ravradar.dk har godkendt HTTPS; DNS/redirects og én præcis Supabase-
+rootredirect er genlæst. Intet Simply-webhotel. Ældre kandidatstatus nedenfor
+er historisk, og rigtig kontologin/mail er stadig ikke testet.
 
 Kortbiblioteket får nu besked, når indlæsning eller layout ændrer kortfeltets
 faktiske størrelse. Det skal fjerne den tomme bund uden ny zoom, animation

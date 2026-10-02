@@ -1,4 +1,17 @@
-# Aktivt roadmap – 2026-09-30, offentlig 4.0.510, main 4.0.517, lokal 4.0.518
+# Aktivt roadmap – 2026-10-02, offentlig528, lokal SEO529
+
+1. [x] Lever527/528 sikkert og kontrollér faktisk pc/mobil-kortbund.
+2. [x] ravradar.dk strict HTTPS og Supabase exact-root-redirect uden webhotel.
+3. [ ] Afslut529 læsbar SEO-footer/DA-DE-EN-guides med version/RDKS,
+   exact-head CI og faktisk pc/mobil-kontrol efter sikker levering.
+4. [ ] Følg første naturlige528-weather på nyt domæne med faktisk cache/
+   upload/no-loss/artifact/private/CAS/R2/Pages. Cron aktiv/uændret;
+   ingen mainændring under aktiv vejrhentning eller ekstra manuel teststart.
+5. [ ] Afslut kompatibel top20 uden ændring af scoremodel eller gategenvej.
+6. [ ] Fortsæt afgrænsede stor519-leverancer og fuldCP/S/T-driver/source-key-
+   handoff/eksklusivitet/runner-tab/kapacitet. Ingen helkopi af dirty519.
+
+# Historisk roadmap – 2026-09-30, offentlig 4.0.510, main 4.0.517, lokal 4.0.518
 
 1. [x] PR #485/4.0.517 exact-head-grøn og merged.
    `36677551077` gendannede eksakt fremdrift, passerede

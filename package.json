@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.528",
+  "version": "4.0.529",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -12,7 +12,7 @@
     "test:progressive-public-conditions": "node scripts/test-progressive-public-conditions-4.0.216.mjs",
     "test:public-delivery-refresh": "node scripts/test-public-delivery-refresh.mjs",
     "test:public-delivery-inventory": "node scripts/test-public-delivery-inventory.mjs",
-    "test:public-hour-delivery-pack": "node --test scripts/test-public-hour-delivery-pack.mjs scripts/test-progressive-public-conditions-4.0.216.mjs scripts/test-public-nonblocking-forecast-4.0.83.mjs scripts/test-map-zoom-refresh-4.0.88.mjs",
+    "test:public-hour-delivery-pack": "node --test scripts/test-public-hour-delivery-pack.mjs scripts/test-progressive-public-conditions-4.0.216.mjs scripts/test-public-nonblocking-forecast-4.0.83.mjs scripts/test-map-zoom-refresh-4.0.88.mjs scripts/test-public-search-pages.mjs",
     "test:current-provenance-sealing": "node --test scripts/test-current-provenance-sealing.mjs",
     "test:weather-component-composition": "node scripts/test-weather-component-composition.mjs",
     "test:weather-component-selection": "node scripts/test-weather-component-selection.mjs",
