@@ -1,4 +1,22 @@
-# 2026-10-02 – 4.0.534, ny Top20-kolonnerækkefølge og fortsat revision
+# 2026-10-02 – lokal4.0.535, komponentworker og PUBLIC inputkontrol
+
+Ejeren siger fortsæt alle opgaver og præciserer Lyngby-spørgsmålet: kun
+mulig sammenhæng mellem strømpil på land og hyppig top5, ikke pilflytning.
+Hashbundet PUBLIC time13:00DK og actual kort/scorekode viser DMI-sourcepoint
+som pilplacering, ikke scoreinput. Fælles strømdata kan stadig være fælles
+årsag; marinemaske og kausal top5-fejl er ikke bevist. Nibe har direct-current-
+huller, ikke helt tom zone; efterkontrol afventer ejerens aktive ordinary.
+
+535 isolerer allerede RED/måltestet519-delta i den separate eksisterende
+Python-komponentworker: scoped Dask threads/pool=None omkring actual subset.
+Isoleret23/23PASS11.693s,20gamle+3nye/0skip; PID/config/primærfejl/exit76
+kontrolleret. Ingen installation/providers/privateinput/OFF-driveraktivering,
+score/binding/SQL/gate-/budgetændring. DEC-0282 og begge håndbøger ajour.
+533/501 og534/502 er grønne/urørte; levering i den rækkefølge efter actual
+ordinary36988295501 completion/resultatkontrol.535 exact CI/deploy åbne.
+FuldCP/S-før-T/writer/kill/failure4min/runner/kapacitet fortsat åbne.
+
+# Historisk – 2026-10-02 – 4.0.534, ny Top20-kolonnerækkefølge og fortsat revision
 
 Samtaledelta: Ejeren ønsker de to pc-kolonner læst nedad,1–10 venstre og
 11–20 højre, og siger lav det/fortsæt revisionen. Mobil forbliver1–20 i én

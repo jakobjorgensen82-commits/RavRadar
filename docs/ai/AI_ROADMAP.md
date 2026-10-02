@@ -1,4 +1,15 @@
-# Aktuelt fokus – 2026-10-02, lokal4.0.534/offentlig532
+# Aktuelt fokus – 2026-10-02, lokal4.0.535/offentlig532
+
+Følg ownerONEordinary36988295501 og actual efterdatagates/fresh20. Lever
+grøn533 først, retarget/recheck grøn534 til main og lever pc1–10/11–20.
+535 kun separat komponentworkers scoped-Dask-delta,23/23 lokale eksisterende
+cases; exact CI/proof/sikker levering åbne. Forsink ikke klar533 med kandidat.
+Sammenlign Nibe direct-current-huller og Lyngby PUBLIC pilinput efter freshdata;
+ingen pilplacering/scorejustering eller påvist kausal top5-fejl. Fortsæt separat
+519 actualfactory/CP/S-før-T/writer/kill/failure4min/runner/kapacitet, ikke flere
+løse helpers/helkopi/OFF-aktivering/gatelempelse. Se DEC-0282/checkpoint.
+
+# Historisk fokus – 2026-10-02, lokal4.0.534/offentlig532
 
 Færdiggør ejerens pc-læseretning1–10/11–20 med mobil1–20 og samme scorer.
 533/501 er exact-head-grøn/urørt; lever først efter aktive36988295501actual

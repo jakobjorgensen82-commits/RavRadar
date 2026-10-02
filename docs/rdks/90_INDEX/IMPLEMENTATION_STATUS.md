@@ -1,4 +1,18 @@
-# 2026-10-02 – offentlig532, grøn533, Top20-læseretning534
+# 2026-10-02 – offentlig532, grøn533/534, komponentworker535
+
+- [x] 533/PR501 og 534/PR502 exact-head CI/proof grønne og urørte.
+- [ ] Aktiv ordinary36988295501 faktisk save/upload/no-loss/deploy/fresh20.
+- [ ] Lever533, retarget/recheck/lever534; ingen mainændring under weather.
+- [x] 535 kun actual komponentworker scoped Dask threads/pool=None.
+- [x] Isoleret eksisterende 23/23PASS11.693s/0skip; gammel BIG RED genbrugt.
+- [ ] 535 exact-head CI/proof/sikker deploy/actual effekt efter533/534.
+- [x] Lyngby PUBLIC selected-hour/source og pil/score-kodegrænse undersøgt.
+- [ ] Uafhængig korrekt DMI-marinemaske/evt. fælles inputårsag ikke bevist.
+- [x] Nibe PUBLIC direct-current-huller afgrænset; ikke helt tom zone.
+- [ ] Sammenlign Nibe/Lyngby efter aktuel ordinary; upstreamårsag åben.
+- [ ] Stor519 fullCP/S-før-T/writer/kill/failure4min/runner/kapacitet/OFF separat.
+
+# HISTORISK – 2026-10-02 – offentlig532, grøn533, Top20-læseretning534
 
 - [x]533/PR501 exacthead791aeffc/CI36989653512/proof11219467236; urørt.
 - [ ] Aktiv ordinary36988295501 actualsave/upload/no-loss/deploy/fresh20.

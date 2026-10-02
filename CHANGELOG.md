@@ -1,4 +1,15 @@
-## 4.0.534 – Læs Top20 nedad i hver pc-kolonne (lokal kandidat)
+## 4.0.535 – Scoped Dask i den eksisterende komponentworker (lokal kandidat)
+
+- Kun actualsubsetworker vælger threads/poolNone og genopretter config ved
+  succes, primærfejl og DatasetUpdating76.533normalpilot er en anden caller.
+- Genbrugt BIG RED og eksisterende23-case offline suite:23/23PASS11.693s.
+- Ingen OFF-aktivering, ny executor, score/Top20/binding/SQL/budget-/planændring.
+- Lyngby-pilens kildepunkt er ikke scoreinput; fælles strømdata og maritim
+  cellevaliditet er endnu ikke uafhængigt afklaret. Nibe upstreamårsag åben.
+-533/534 exact-head-grønne og urørte, leveres først efter aktive ordinary.
+ 535 kildekontrol/levering/faktisk effekt afventer; DEC-0282/begge håndbøger.
+
+## 4.0.534 – Læs Top20 nedad i hver pc-kolonne (historisk kandidattekst; CI grøn)
 
 - Pc:1–10 til venstre,11–20 til højre. Mobil:én liste1–20, samme DOM/Taborden.
 - Gamle fem og delvise/tomme dage bevares uden opdigtede resultater eller

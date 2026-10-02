@@ -1,4 +1,24 @@
-# NYESTE SANDHED – 2026-10-02 – offentlig532, grøn533, lokal534
+# NYESTE SANDHED – 2026-10-02 – offentlig532, grøn533/534, lokal535
+
+Main/public532 er ccc5a7c146a88e836b4fb578b007bcaf36c3b2af. Ejerens ene
+ordinary36988295501 er aktiv ved beregning103; ingen mainændring mens aktiv.
+Cron8348098/14:19DK er aktiv/uændret. Grøn run alene er ikke gemmebevis.
+533/PR501/head791aeffc/CI36989653512/proof11219467236 og
+534/PR502/heade9bc1a50/CI36995285388/proof11221353410 er grønne/urørte.
+534 er stacked mod533, ikke main. Lever 533 først efter faktisk resultatkontrol,
+retarget/recheck 534 og lever derefter. Ingen ændring af de verificerede heads.
+
+535 er kun lokal kandidat på534head: separat Python-komponentworker scoped
+Dask threads/pool=None og tre genbrugte tests; 23/23PASS11.693s/0skip.
+Ingen exact-head CI/deploy eller OFF-driveraktivering endnu. Model67/3a14,
+otte bindinger/fysisk kontrakta226, Top20/kolonner og SQL-adfærd er urørte.
+Lyngby-pilens PUBLIC sourcepoint indgår ikke i scoreformler; fælles strømdata
+kan dog være en fælles årsag. Ingen påvist top5-bias/marinemaske-verifikation.
+Nibe har delvise direct-current-huller, ikke en helt tom zone. Sammenlign
+begge efter aktuel fresh ordinary. Se DEC-0282 og nyeste private checkpoint.
+Fuld CP/S-før-T/writer/kill/failure4min/runner/nationalkapacitet forbliver åben.
+
+# HISTORISK SANDHED – 2026-10-02 – offentlig532, grøn533, lokal534
 
 533/PR501/head791aeffc er exact-head-grøn: CI36989653512/proof11219467236,
 urørt og ikke leveret. Først faktisk afslutning/resultatkontrol af ejerens

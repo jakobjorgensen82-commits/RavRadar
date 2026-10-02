@@ -102,10 +102,14 @@ def subset_arguments(request: dict, contract_key: str, output_directory: Path) -
 def subset_worker(envelope_path: Path, output_directory: Path) -> int:
     """Child-only provider call. Parent enforces hard wall time and byte budget."""
     import copernicusmarine
+    import dask
     envelope = json.loads(Path(envelope_path).read_text(encoding="utf-8"))
     kwargs = subset_arguments(envelope["request"], envelope["contractKey"], output_directory)
     try:
-        response = copernicusmarine.subset(**kwargs)
+        # Keep Dask compute inside this owned worker; do not adopt an ambient
+        # process/distributed pool. Restore configuration on success or error.
+        with dask.config.set(scheduler="threads", pool=None):
+            response = copernicusmarine.subset(**kwargs)
     except copernicusmarine.DatasetUpdating:
         return DATASET_UPDATING_EXIT
     path = Path(response.file_path).resolve(strict=True)

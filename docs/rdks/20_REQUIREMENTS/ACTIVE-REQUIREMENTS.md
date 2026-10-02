@@ -1,4 +1,18 @@
-# Ejerpræcisering – 2026-10-02,4.0.534 Top20-læseretning
+# Aktive krav – 2026-10-02, lokal 4.0.535 og fortsat revision
+
+Ejeren beder fortsætte alle spor: storrevisionen, Top20, pc-kolonner læst
+1–10 nedad venstre og 11–20 nedad højre, mobil 1–20, samt Nibe-diagnosen.
+Lyngby-spørgsmålet er kun kontrol af mulig sammenhæng mellem en strømpil
+på land og hyppig top5; ikke et ønske om at flytte pil eller ændre score.
+Fysisk score, geometri, central admin, Top20 og historik skal bevares.
+535 isolerer kun den separate eksisterende Python-komponentworkers scoped
+Dask threads/pool=None fra lokal519. Ingen OFF-driveraktivering, installation,
+providerkald, privat input, ny supervisor eller lempet admission. De eksisterende
+23 cases består; ikke fuld CP/S-før-T-, kill-, writer- eller kapacitetsbevis.
+533/501 og 534/502 er exact-head-grønne og urørte; de leveres først, efter
+aktiv ordinary36988295501 er afsluttet og resultatkontrolleret. Se DEC-0282.
+
+# Historisk ejerpræcisering – 2026-10-02,4.0.534 Top20-læseretning
 
 REQ-NATIONAL-TOP20-0528 og DEC-0278s bevarings-/backupkrav består. Nyeste
 ønske erstatter tværgående pc-læsning:1–10 nedad venstre,11–20 nedad højre.
