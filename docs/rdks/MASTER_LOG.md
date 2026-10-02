@@ -1,4 +1,22 @@
-# 2026-10-02 – lokal4.0.536, offentlig535 og ejerens leveringsrækkefølge opfyldt
+# 2026-10-02 – offentlig4.0.536 og ejerbestilt tak til Rav Jagt4.0.537
+
+ONEordinary37009507544SUCCESS17:53:25DK med sourcebound saved:true/newupload/
+cache8423551163/no-loss/54artifact+3release/rootplan/private/CAS/R2/privacy/
+Pages/reseal/terminal/requireddeploy.536/PR504/exacta6e9ecec/exactCI37012287199/
+unexpiredROOTproof11228249494 efter renewedwriters/main/head/base og empty
+contentdiff:mergeff76d47317:58:10DK/code-only37030746757SUCCESS18:07:32DK.
+Public536 bevarer rr-20261002143718-210/reference12Z/210/673/3a14. Ingen
+providers/standaloneSQL. HistoricalmaintenanceSKIPPED, ikkePASS.
+
+Ejeren ønsker tak ved learnillustrationsnote/førDel1 for Rav Jagts
+illustrationer og bistand, med egne konti Facebook61550028713868 og
+YouTube@ravjagt887, helst før næste vejrhentning.537 separattext/link/CSS,
+DA/DE/EN/eksisterendegrundbogstestPASS. Ingen fysisk model/data/cache/geometri/
+SQL/OFFændring. Sammecron8348098 kortpausetkunaktivering/Gem/serverInaktiv
+til nødvendigrelease; genaktivér eftersafe537. ExactCI/produktion endnuåbne.
+DEC-0284/beggehåndbøger89.141/version/RDKS følger. Revision fortsætter separat.
+
+# Historisk – 2026-10-02 – lokal4.0.536, offentlig535 og ejerens leveringsrækkefølge opfyldt
 
 Samtaledelta: alle klargjorte533/534/535 kørt helt igennem/providerfrit og
 kontrolleret som public535/mainc52e0bc6 med samme gyldige rr-20261002104907-210.

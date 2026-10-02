@@ -7,6 +7,7 @@ const learning = read('learn.html');
 const learningCss = read('learn.css');
 const learningDe = read('js/ui/learn-i18n-de.js');
 const learningEn = read('js/ui/learn-i18n-en.js');
+const learningJourneyI18n = read('js/ui/learn-i18n.js');
 const serviceWorker = read('service-worker.js');
 const infoPanel = read('js/ui/info-panel.js');
 const assistant = read('js/services/rav-assistant.js');
@@ -77,6 +78,20 @@ assert.match(learningCss, /\.coast-b\{transform:rotate\(0\)/, 'Kyst B-stregen sk
 assert.match(learning, /Koldere saltvand er normalt lidt tættere end varmere saltvand med samme saltindhold/, 'Temperaturens lille og salinitetsafhængige tæthedseffekt skal forklares nøgternt');
 assert.match(learning, /TiR96bdTRr0[\s\S]*Rav Jagt/, 'Temperaturforklaringen skal kreditere og linke til Rav Jagts video');
 assert.match(learning, /rav-jagt-where-is-amber\.svg/, 'Rav Jagts kysttværsnit skal indgå i læringskæden');
+assert.match(learning, /data-i18n="learn\.journey\.note"[\s\S]*class="journey-thanks"[\s\S]*data-i18n="learn\.journey\.thanks"[\s\S]*<section id="ravet"/, 'Takken skal stå under illustrationsbemærkningen og før Del 1');
+for (const [href, label] of [
+  ['https://www.facebook.com/profile.php?id=61550028713868&amp;locale=da_DK', 'Facebook'],
+  ['https://www.youtube.com/@ravjagt887', 'YouTube'],
+]) {
+  assert.ok(learning.includes(`<a href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`), `Rav Jagts ${label} skal have ejerens præcise HTTPS-link og sikker ny fane`);
+}
+for (const text of [
+  'Tak til Rav Jagt for hans illustrationer og hjælpen undervejs med RavRadar.',
+  'Vielen Dank an Rav Jagt für seine Illustrationen und seine Unterstützung bei der Entwicklung von RavRadar.',
+  'Thank you to Rav Jagt for his illustrations and his help along the way with RavRadar.',
+]) assert.ok(learningJourneyI18n.includes(text), `Rav Jagt-takken mangler i sprogkataloget: ${text}`);
+assert.equal([...learningJourneyI18n.matchAll(/'learn\.journey\.thanks':/g)].length, 3, 'Takken skal følge alle tre eksisterende sprog');
+assert.match(learningCss, /\.journey-thanks a\{[^}]*min-height:44px/, 'De synlige links skal have god klikflade på mobil');
 assert.match(learning, /På havbunden[\s\S]*I vandsøjlen uden for revlerne[\s\S]*På ydersiden af revlerne[\s\S]*Mellem revler og strand[\s\S]*I vandkanten[\s\S]*På stranden/, 'Rav Jagts seks positioner skal stå i faglig rækkefølge');
 assert.match(
   learning,

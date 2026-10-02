@@ -1,4 +1,17 @@
-# NYESTE TILLÆG – 2026-10-02 – offentlig535, aktivordinary og lokal536
+# NYESTE TILLÆG – 2026-10-02 – offentlig536 og Rav Jagt-tak537
+
+Læs AGENTS/RDKS/privatecheckpoint; aldrig cb79. ONEordinary37009507544 er
+actualsaved/upload/no-loss/private/Pages/terminalSUCCESS17:53DK.536/PR504
+er mergedff76d473 og codeonly37030746757SUCCESS18:07DK/public536, ikkeventende.
+Gyldigrr-20261002143718-210/reference12Z/210/673/3a14 bevares.
+537 separat ejerbestilt tak under gulillustrationnote/førDel1, præcise
+Facebook-/YouTube-konti, DA/DE/EN; ingenmodel/data/cache/SQL/OFFændring.
+Cron8348098 kortpauset KUNaktivering/Gem/serverInaktiv til nødvendigreleases;
+genaktivér straks eftersafe537. Sammeplan; ingen ekstraweather bestilt her.
+ExactCI/proof/renewedwriters/main/head/base/DEC0148 ogpubliceffekt kræves.
+Fuld519/CP-SførT/writer/kill/runner/kapacitet/alleafvisninger består.
+
+# HISTORISK TILLÆG – 2026-10-02 – offentlig535, aktivordinary og lokal536
 
 Læs AGENTS/RDKS og ALLERØVERSTE privatecheckpoint; arbejd aldrig i cb79.
 533/534/535 er faktisk leveret, public535/mainc52e0bc6/samme gyldige data.

@@ -1,4 +1,14 @@
-# Aktivt roadmap – 2026-10-02 – grøn533/534 og komponentworker535
+# Aktivt roadmap – 2026-10-02 – offentlig536 og kreditering537
+
+1. ONEordinary37009507544 og536 er faktisk afsluttet; gentag ikke gamleordrer.
+2. Lever537tak/to Rav Jagt-kontolinks medDA/DE/EN ogegenexactCI/DEC0148/publicproof.
+3. Genaktivér SAMMEcron8348098 eftersafe537; kun kortreleasepause, plan urørt.
+4. Fortsæt519actualfactory/awaitedupdater/CP-SførT og alleoutercleanup/unknownstop.
+5. Isolér allerede måltestet selectionwriter/senereboundscan/receipt smaltmod3a14.
+6. Afklarwriter/kill/failure4min/runner/nationalkapacitet; ingenOFF/gatelempelse.
+7. SammenlignFIELDmedsamme397070metode; Nibe/historyupstream/clock stadigåbne.
+
+# Historisk roadmap – 2026-10-02 – grøn533/534 og komponentworker535
 
 1. Følg ejerens ONEordinary36988295501; ingen ekstra weather/mainændring.
 2. Kontrollér actual save/upload/no-loss/private/CAS/R2/privacy/Pages/terminal.
