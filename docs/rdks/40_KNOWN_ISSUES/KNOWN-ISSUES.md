@@ -1,3 +1,19 @@
+# Aktuelle issues – 2026-10-02 – lokal531, offentlig530
+
+- **TOP20 IKKE LEVERET:** Lokal implementering og smalle måltests består.
+  Frosset producentbinding håndteres åbent via normal ny hash og append-only
+  strengt verificeret teknisk overgang. Ingen fysisk scoreændring/genvej.
+  Exact-headCI/deploy og nyordinary20rækkeeffekt mangler; gamle5 bevares.
+- **BACKUP VERIFICERET:** Remote Top5-source og localZIP findes; tilbagevej
+  er ny UI-Top5-levering på latestmain med bevarede nyeredata, ikke gitreset.
+- **FØRSTE CI-RØD:** To gamle projection-testfixtures rettet lokalt. Runtime
+  afviser korrekt gammel undtagelse under Top20; ingen admissionlempelse.
+  Præcise2/2måltests består, ny exact-headCI kræves.
+- **529/530 LEVERET:** Gamle ventende/stakkede status er historiske.
+- **STOR519:** FaktiskCP/S-før-T, writer/runner/kapacitet er fortsat åbne.
+- **BEGRÆNSNING:** Ingen lokal PostgreSQLudførelse eller rigtigtelefon-test.
+  Eksakte SQLdefinitioner og alle uændrede datakontroller skal bevises i drift.
+
 # Aktuelle issues – 2026-10-02 02:55 dansk – klar529 og lokal530
 
 - **GENKØRSELS-SLOT RETTET LOKALT:** Seneste attempt tæller på sin faktiske

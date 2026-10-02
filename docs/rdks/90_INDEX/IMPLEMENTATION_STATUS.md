@@ -1,3 +1,21 @@
+# 2026-10-02 – offentlig4.0.530 og lokal Top20/4.0.531
+
+- [x]529/497 og530/498 faktisk merged/deployet med exact-head og efterdatagates.
+- [x] Ejerens nye specifikke Top20-binding/migrations-/deploykontrolgodkendelse.
+- [x] Verificeret remoteannoteret Top5-backup og local16.428.816byteZIP/hash.
+- [x] Producent og browserfallback20 rækker; femdage, to modes og score urørt.
+- [x] Kun én67filers kildeændring; kontrakt/Candidate G/continuation uændrede.
+- [x] Append-only præcis bindingsovergang; otte consumerbindinger/readback ajour.
+- [x] Tre binding/readback-tests; særskilt4/4 pack/migration/generator-tests.
+- [x] Kunstig faktisk browser:20 rækker/5dage, pc2kolonner/mobil1, intet overløb.
+- [x] GemtTop5, DA/DE/EN og dag/zonevalg kontrolleret smalt.
+- [ ]531 exact-headCI, sikker levering efter aktivewriters og offentlig effekt.
+- [x] FørsteCI fandt to stale historiske projectionfixtures; kun tests rettet,
+  aktuelle gamle undtagelser forbliver afvist. Præcise2/2måltests består.
+- [x] Ordinary36964052139/530 faktisk færdig med ny cache og verificeret deploy.
+- [ ] Faktisk nyordinaryTop20; kode-onlys gamle femrækkeindeks er ikke20-bevis.
+- [ ] Stor519 fuldCP/S/T/writer/killpersist/failure4min/runner-tab/nationalkapacitet.
+
 # 2026-10-02 02:55 dansk – separat4.0.530 efter klar529
 
 - [x]529/497 exact-head CI36944627707 på554a82f4 og proof11201278825.

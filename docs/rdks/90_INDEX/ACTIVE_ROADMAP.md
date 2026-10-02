@@ -1,3 +1,14 @@
+# Aktivt roadmap – 2026-10-02 – lokalTop20 og sideløbende storrevision
+
+1. [x]529/SEO og530/kadence sikkert leveret; ældre releaseordrer er historiske.
+2. [x] Top5backup, specifik ejerautoritet, Top20kode og smalle lokale målprøver.
+3. [ ]531 exact-headCI; vurder activeordinary36964052139 før mainændring/deploy.
+4. [ ] Providerfri kodelevering med bevarede gamle5; næste naturligeordinary
+   skal bevise faktiske20rækker og uændrede første5/scorer på samme inputs.
+5. [ ] Fortsæt faktisk stor519CP/S/T-lifetime, ikke isoleret helperproduktion;
+   fuld writer/runner/failure4min/nationalkapacitet og senere sikker integration.
+Alle særskilte afvisninger består. Ingen helkopi af dirty519 eller blindretry.
+
 # Aktivt roadmap – 2026-10-02 02:55 dansk – lever529 før separat530
 
 1. [ ] Lad ordinary36945405432 på528/mainba085f6b afslutte; vurder faktiske gates.

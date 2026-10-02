@@ -1033,7 +1033,8 @@ function addPublicPackageChecks({
       const eligibleZoneIdSet = new Set(eligibleZoneIds);
       collector.add(dates?.includes(day?.date)
         && Array.isArray(day?.rows)
-        && day.rows.length === Math.min(5, eligibleZoneIds.length)
+        && day.rows.length === expectedStartup?.nationalForecast?.modes?.[mode]
+          ?.find(expectedDay => expectedDay.date === day?.date)?.rows?.length
         && new Set(day.rows.map(row => row?.zoneId)).size === day.rows.length
         && day.rows.every(row => eligibleZoneIdSet.has(row?.zoneId)),
       'PUBLIC_FIVE_DAY_RANKING_CONTRACT_INVALID');

@@ -1,3 +1,25 @@
+# AKTUELT CHECKPOINT – 2026-10-02 – Top20-kandidat4.0.531, offentlig530
+
+529SEO og530kadence er leveret på maina14f6aa4 med faktisk kode-only deploy
+36956830187 og36958136496. Gamle ventende/stakkede beskrivelser nedenfor er
+historiske. Stor dirty519 forbliver separat/OFF og er ikke denne levering.
+
+Ejeren godkendte udtrykkeligt Top20s afgrænsede bindings-/migrationsvalg og
+deploykontrol efter sikkerhedsreview. Se DEC-0278: remote Top5-backup og
+lokal ZIP er verificeret. Kun den frosne producentgrænse5→20 ændres; samme
+fysiske score, sortering, handicap og historik. Teknisk bundle3a14f458…/67
+og otte forbrugere; kontrakthash og Candidate G/continuation uændrede.
+Ny append-only SQL indeholder streng præcis gammelbindingsovergang og
+uændrede historiske migrationer; ingen særskilt SQLkørsel. Gamle forseglede
+femrækkeindeks bevares; faktisk Top20 kræver ny almindelig produktion.
+Målrettede tests og kunstig pc-/375CSS-browserkontrol består; exact-headCI,
+sikker levering og offentlig effekt er åbne. Ingen mainændring under aktiv
+ordinary36964052139 på530. Den er siden SUCCESS08:39:39DK med ny cache/deploy;
+aktivstatus ovenfor er historisk. PR499s første exact-headCI fejlede kun to
+historiske testfixtures; runtimeafvisningen er korrekt/urørt. Gamle positive
+tests er nu låst til gammel Top5-projektion og nye aktuelle negative består.
+Ny exact-headCI kræves. Alle særskilte afvisninger består; .cache aldrig staged.
+
 # AKTUELT CHECKPOINT – 2026-10-02 02:55 dansk – offentlig528, klar529 og separat530
 
 529/PR497/head554a82f4 har grøn exact-head CI36944627707/proof11201278825.

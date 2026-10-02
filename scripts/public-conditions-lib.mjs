@@ -918,7 +918,7 @@ export function buildPublicNationalForecast(full, { now = 0 } = {}) {
           ? pick(best.result.explanation, Object.keys(binding)) : null);
       projectModelBinding(declared);
       return [addNationalRanking({ zoneId, time: best.hour.time, result: best.result }, partsByZone.get(zoneId) || [])];
-    }).sort(compareNationalRankingRows).slice(0, 5);
+    }).sort(compareNationalRankingRows).slice(0, 20);
     return {
       date,
       rows: ranked.map(row => {

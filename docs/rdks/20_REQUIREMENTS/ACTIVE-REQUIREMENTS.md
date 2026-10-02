@@ -1,3 +1,13 @@
+# Aktuel Top20-autoritet – 2026-10-02
+
+REQ-NATIONAL-TOP20-0528 fortsætter i separat531 med fast sourcebackup.
+Ejeren godkendte specifikt nødvendige bindings-/migrationsvalg og deploykontrol.
+Fysisk scoremodel, handicap, sortering, målinger og historik må ikke ændres;
+ukendte data afvises, ingen særskilt SQLinstallation. Se DEC-0278.
+Gamle forseglede Top5-indeks skal bevares uden opdigtede ekstra resultater.
+PC/mobil kompatibilitet og actualnyordinary20rækkeeffekt kræves efter kodelevering.
+Storrevisionen fortsætter sideløbende og skal færdiggøres/leveres separat.
+
 # Aktuel snæver revisionsrettelse – 2026-10-02,4.0.530
 
 DEC-0259s højst ét startet forsøg pr. slot gælder også genkørsel af et gammelt
