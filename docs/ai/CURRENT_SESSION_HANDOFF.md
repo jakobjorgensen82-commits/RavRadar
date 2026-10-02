@@ -1,4 +1,32 @@
-# AKTUELT CHECKPOINT – 2026-10-02 – offentlig537/grøn538/normalwriter539
+# AKTUELT CHECKPOINT – 2026-10-02 – leveret539 og isoleret540
+
+ALDRIG cb79. Dirty519/c557/egen SQL-baseline bevares separat i feggesund.
+Releasebranch codex/copernicus-primary-error-retention starter på præcis
+main42e1581957b513cd04fb799a61135ec47fcb8d27; offentlig539 er kontrolleret
+med Pages/model210673/main/disposition/reseal/terminal21:42:04.
+ONEordinary37036350223 afsluttet21:02:23 med actual107saved-betinget108,
+nyt cache8431073482, no-loss,54artifact/3release og required-deploy.
+538/539 er leveret; gamle pending-/stackedordrer er udført og historiske.
+
+540 har kun tre CP-funktioners første-fejlbevarelse og tre genbrugte parents.
+Isoleret5målparentsPASS4.011s/0skip; ingen BIG RED eller26fuldsuite gentaget.
+Strictinverse: transport8dfa15fe96146dc7de550982aaa4bf4d6913727279f509264d84c6218ee060c1,
+bank87aed449ad015545a0f8a5aea3dc4adcf951d0e495c2c823a4aceae04c59db6f,
+testinsertion0a5c0a619ed34d4bf15649c8b9bd6a5a342d4a5d919ccbf8b23d17e5a6f3fde4.
+23 gamle parents og resten af modulerne er byteidentiske. Close/cleanup-only
+er HARD; owncleanup forsøges, old/newcompletebevarelse og faktisk diskresume
+bevist kun i små syntetiske callers. Ikke fuld factory/updater/CP-SførT eller
+stop/kill/writer/failure4min/runner/nationalkapacitet. CP-no-close RED urettet.
+Egen exact-head source-CI/proof, sikker DEC0148false og faktisk effekt mangler.
+
+21:45 FIELD16Z395244/397070=99.540131463%, før12Z92.179464578%, samme metode;
+Nibe118brugbare/BOTH/59incomplete+59futurefull/0unavailable. Ikke historik,
+nativeprovider eller kausal forbedring; ingen ETA/refetch af uændret1.42GB.
+Cron8348098 aktiv/uændret. Ingen main/merge/code-only under aktiv vejrhentning,
+ingen ekstra dispatch/provider/SQL/OFF/frozenmodelcopy/admissiongenvej.
+Alle afvisninger og GPT-6.1 Sol/Ekstra høj består. Se checkpoint og DEC-0287.
+
+# HISTORISK CHECKPOINT – 2026-10-02 – offentlig537/grøn538/normalwriter539
 
 ALDRIGcb79/dirty519separat. ONEownerordinary37036350223 påpublic537/main
 1b3e172d fra18:47:48DK/normalbudgetter kører; cron8348098aktiv/uændret22:19DK.

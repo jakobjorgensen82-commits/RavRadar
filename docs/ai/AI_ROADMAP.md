@@ -1,4 +1,22 @@
-# Aktuelt fokus – 2026-10-02, grøn538 og separat normalwriter539
+# Aktuelt fokus – 2026-10-02, offentlig539 og CP-kandidat540
+
+1. Bevar offentlig539/main42e15819 og cron8348098 aktiv/uændret;538/539 er leveret.
+2. Afslut540s smalle versions-/RDKS-/sourcekontrol og egen exact-head CI/proof.
+3. Forny writers/main/head/base/content/CI/unexpiredROOTproof før DEC0148false;
+   ingen merge eller kode-only under en aktiv almindelig vejrhentning.
+4. Følg faktisk private/CAS/R2/privacy/Pages/model/main/disposition/reseal/terminal
+   og offentlig version; ingen ekstra providerdispatch for at bevise koden.
+5. Fortsæt samlet CP/S-før-T og alloutercleanup/unknownstop-integration uden
+   frozenindexpatch, alternativ executor/admission, hel519copy eller OFF-aktivering.
+   CP-no-close RED/writer/kill/failure4min/runner/nationalkapacitet er fortsat åbne.
+
+540s tre faktiske funktioner/tre genbrugte testparents er isoleret mod godkendt
+main;5målparentsPASS4.011s,23 gamle parents byteidentiske, model67/3a14/8bindinger
+uændrede. FIELD16Z99.540131463% og Nibe118brugbare er faktisk målt med fast metode,
+ikke privat historik, nativeprovider eller kausal fixeffekt. Ingen uændret1.42GB-refetch.
+Alle særskilte afvisninger og valgt model/indsats/plan/kadence bevares.
+
+# Historisk fokus – 2026-10-02, grøn538 og separat normalwriter539
 
 FølgkunONEownerordinary37036350223 på537/main1b3; ingenmainændring mensaktiv.
 Cron8348098aktiv/uændret22:19DK.538/PR506/exactCI37038700918SUCCESS/proof

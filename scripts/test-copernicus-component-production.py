@@ -213,6 +213,281 @@ class ComponentProductionTests(unittest.TestCase):
         self.assertEqual(source["spatialAdmission"]["witness"]["static"]["mask"], 1)
         self.assertEqual(source["spatialAdmission"]["witness"]["dynamicReceipt"]["subsetSha256"], source["subsetSha256"])
 
+    def test_actual_transport_receipt_preserves_primary_failure_during_own_temp_cleanup(self):
+        # Actual download -> immutable cache.store -> atomic receipt writer;
+        # no provider, alternate executor or manufactured admission result.
+        request = _request(self.case["plan"], TARGET["partId"], "nws-wave", TIMES)
+        cache = self.case["cache"]
+        old_receipts = {p: p.read_bytes() for p in (cache.directory / "receipts").glob("*.json")}
+        for index, fault in enumerate(("fsync", "replace", "cleanup-only"), 1):
+            with self.subTest(fault=fault):
+                owned = {}
+                primary = OSError("SYNTHETIC_CP_RECEIPT_PRIMARY")
+                secondary = OSError("SYNTHETIC_CP_RECEIPT_CLEANUP")
+                original_mkstemp = transport_module.tempfile.mkstemp
+                original_fsync = transport_module.os.fsync
+                original_replace = transport_module.os.replace
+                original_unlink = transport_module.os.unlink
+                cleanup_calls = []
+
+                def mkstemp(*args, **kwargs):
+                    result = original_mkstemp(*args, **kwargs)
+                    if Path(kwargs.get("dir", "")) == cache.directory / "receipts":
+                        owned.update(fd=result[0], temporary=Path(result[1]))
+                    return result
+
+                def fsync(fd):
+                    if fault == "fsync" and fd == owned.get("fd"):
+                        raise primary
+                    return original_fsync(fd)
+
+                def replace(source, target):
+                    if Path(source) == owned.get("temporary"):
+                        if fault == "replace":
+                            raise primary
+                        result = original_replace(source, target)
+                        if fault == "cleanup-only":
+                            # A late own-temp race must not report success or
+                            # roll back a complete, already committed receipt.
+                            Path(source).write_text("SYNTHETIC_OWN_TEMP", encoding="utf-8")
+                        return result
+                    return original_replace(source, target)
+
+                def unlink(target, *args, **kwargs):
+                    result = original_unlink(target, *args, **kwargs)
+                    if Path(target) == owned.get("temporary"):
+                        cleanup_calls.append(1)
+                        raise secondary
+                    return result
+
+                def run(args, **_kwargs):
+                    dataset = dynamic_fixture("nws-wave")
+                    dataset["VTPK"].values[:] += index
+                    dataset.to_netcdf(Path(args[-1]) / "subset.nc", engine="h5netcdf")
+                    return SimpleNamespace(returncode=0)
+
+                transport = BoundedComponentTransport(cache, deadline_epoch=200,
+                    request_timeout_seconds=30, maximum_requests=1,
+                    maximum_download_bytes=MAX_SUBSET_BYTES, run=run,
+                    clock=lambda: 100, sleep=lambda _: None)
+                before = set((cache.directory / "receipts").glob("*.json"))
+                with patch.object(transport_module.tempfile, "mkstemp", side_effect=mkstemp), \
+                     patch.object(transport_module.os, "fsync", side_effect=fsync), \
+                     patch.object(transport_module.os, "replace", side_effect=replace), \
+                     patch.object(transport_module.os, "unlink", side_effect=unlink):
+                    with self.assertRaises(OSError) as caught:
+                        transport.download(request, "nws-wave")
+                self.assertIs(caught.exception, secondary if fault == "cleanup-only" else primary)
+                self.assertEqual(cleanup_calls, [1])
+                self.assertFalse(owned["temporary"].exists())
+                self.assertEqual(transport.request_count, 1)
+                self.assertIsNone(transport.last_receipt)
+                for path, payload in old_receipts.items():
+                    self.assertEqual(path.read_bytes(), payload)
+                new_receipts = set((cache.directory / "receipts").glob("*.json")) - before
+                if fault == "cleanup-only":
+                    self.assertEqual(len(new_receipts), 1)
+                    receipt = json.loads(next(iter(new_receipts)).read_text(encoding="utf-8"))
+                    original, loaded = cache.load_receipt(request, receipt["subsetSha256"])
+                    self.assertTrue(original.exists())
+                    self.assertEqual(loaded, receipt)
+                else:
+                    self.assertEqual(new_receipts, set())
+
+    def test_actual_acquire_preserves_receipt_error_during_owned_request_cleanup(self):
+        request = _request(self.case["plan"], TARGET["partId"], "nws-wave", TIMES)
+        cache = self.case["cache"]
+        old_receipts = {p: p.read_bytes() for p in (cache.directory / "receipts").glob("*.json")}
+        for index, fault in enumerate(("receipt-primary", "cleanup-only"), 1):
+            with self.subTest(fault=fault):
+                owned = {}
+                primary = OSError("SYNTHETIC_CP_RECEIPT_PRIMARY")
+                secondary = OSError("SYNTHETIC_CP_REQUEST_CLEANUP")
+                original_mkstemp = transport_module.tempfile.mkstemp
+                original_fsync = transport_module.os.fsync
+                original_cleanup = transport_module.tempfile.TemporaryDirectory.cleanup
+                cleanup_calls = []
+
+                def mkstemp(*args, **kwargs):
+                    result = original_mkstemp(*args, **kwargs)
+                    if Path(kwargs.get("dir", "")) == cache.directory / "receipts":
+                        owned["receipt_fd"] = result[0]
+                    return result
+
+                def fsync(fd):
+                    if fault == "receipt-primary" and fd == owned.get("receipt_fd"):
+                        raise primary
+                    return original_fsync(fd)
+
+                def cleanup(temporary):
+                    directory = Path(temporary.name)
+                    result = original_cleanup(temporary)
+                    if directory.parent == cache.directory and directory.name.startswith(".request-"):
+                        cleanup_calls.append(1)
+                        self.assertFalse(directory.exists())
+                        raise secondary
+                    return result
+
+                def run(args, **_kwargs):
+                    dataset = dynamic_fixture("nws-wave")
+                    dataset["VTPK"].values[:] += index + 10
+                    dataset.to_netcdf(Path(args[-1]) / "subset.nc", engine="h5netcdf")
+                    return SimpleNamespace(returncode=0)
+
+                transport = BoundedComponentTransport(cache, deadline_epoch=200,
+                    request_timeout_seconds=30, maximum_requests=1,
+                    maximum_download_bytes=MAX_SUBSET_BYTES, run=run,
+                    clock=lambda: 100, sleep=lambda _: None)
+                before = set((cache.directory / "receipts").glob("*.json"))
+                with patch.object(transport_module.tempfile, "mkstemp", side_effect=mkstemp), \
+                     patch.object(transport_module.os, "fsync", side_effect=fsync), \
+                     patch.object(transport_module.tempfile.TemporaryDirectory, "cleanup", cleanup):
+                    with self.assertRaises(OSError) as caught:
+                        transport.acquire_subset(request)
+                self.assertIs(caught.exception, primary if fault == "receipt-primary" else secondary)
+                self.assertEqual(cleanup_calls, [1])
+                self.assertEqual(transport.request_count, 1)
+                self.assertIsNone(transport.last_receipt)
+                for path, payload in old_receipts.items():
+                    self.assertEqual(path.read_bytes(), payload)
+                new_receipts = set((cache.directory / "receipts").glob("*.json")) - before
+                if fault == "cleanup-only":
+                    self.assertEqual(len(new_receipts), 1)
+                    receipt = json.loads(next(iter(new_receipts)).read_text(encoding="utf-8"))
+                    original, loaded = cache.load_receipt(request, receipt["subsetSha256"])
+                    self.assertTrue(original.exists())
+                    self.assertEqual(loaded, receipt)
+                else:
+                    self.assertEqual(new_receipts, set())
+
+    def test_actual_producer_checkpoint_preserves_bank_error_during_own_cleanup(self):
+        plan, bank, cache = self.case["plan"], self.case["bank"], self.case["cache"]
+        bank_path = self.case["folder"] / "bank.json"
+        before_bytes = bank_path.read_bytes()
+        before_ids = {row["recordId"] for row in bank["records"]}
+        for index, fault in enumerate(("fsync-primary", "cleanup-only"), 1):
+            with self.subTest(fault=fault):
+                owned, checkpoints, cleanup_calls = {}, [], []
+                primary = OSError("SYNTHETIC_CP_BANK_PRIMARY")
+                secondary = OSError("SYNTHETIC_CP_BANK_CLEANUP")
+                original_mkstemp = transport_module.tempfile.mkstemp
+                original_fsync = transport_module.os.fsync
+                original_replace = transport_module.os.replace
+                original_unlink = transport_module.os.unlink
+
+                def mkstemp(*args, **kwargs):
+                    result = original_mkstemp(*args, **kwargs)
+                    if (Path(kwargs.get("dir", "")) == bank_path.parent
+                            and kwargs.get("prefix") == "." + bank_path.name + "."):
+                        owned.update(fd=result[0], temporary=Path(result[1]))
+                    return result
+
+                def fsync(fd):
+                    if fault == "fsync-primary" and fd == owned.get("fd"):
+                        raise primary
+                    return original_fsync(fd)
+
+                def replace(source, target):
+                    result = original_replace(source, target)
+                    if Path(source) == owned.get("temporary") and fault == "cleanup-only":
+                        Path(source).write_text("SYNTHETIC_OWN_BANK_TEMP", encoding="utf-8")
+                    return result
+
+                def unlink(target, *args, **kwargs):
+                    result = original_unlink(target, *args, **kwargs)
+                    if Path(target) == owned.get("temporary"):
+                        cleanup_calls.append(1)
+                        raise secondary
+                    return result
+
+                def run(args, **_kwargs):
+                    dataset = dynamic_fixture("nws-wave")
+                    dataset["VTPK"].values[:] += index + 20
+                    dataset.to_netcdf(Path(args[-1]) / "subset.nc", engine="h5netcdf")
+                    return SimpleNamespace(returncode=0)
+
+                def checkpoint(value, attempts):
+                    checkpoints.append(copy.deepcopy(attempts))
+                    save_component_bank(bank_path, value, targets=plan["targets"])
+
+                transport = BoundedComponentTransport(cache, deadline_epoch=200,
+                    request_timeout_seconds=30, maximum_requests=1,
+                    maximum_download_bytes=MAX_SUBSET_BYTES, run=run,
+                    clock=lambda: 100, sleep=lambda _: None)
+                admit = RUNNER["original_component_admitter"](plan, cache)[0]
+                with patch.object(transport_module.tempfile, "mkstemp", side_effect=mkstemp), \
+                     patch.object(transport_module.os, "fsync", side_effect=fsync), \
+                     patch.object(transport_module.os, "replace", side_effect=replace), \
+                     patch.object(transport_module.os, "unlink", side_effect=unlink):
+                    with self.assertRaises(OSError) as caught:
+                        produce_component_bank(plan, bank, acquire_subset=transport.acquire_subset,
+                            acquisition_at=lambda: transport.last_receipt["acquisitionAt"],
+                            checkpoint=checkpoint, admit_spatial=admit,
+                            should_continue=transport.can_continue)
+                self.assertIs(caught.exception, primary if fault == "fsync-primary" else secondary)
+                self.assertEqual(cleanup_calls, [1])
+                self.assertFalse(owned["temporary"].exists())
+                self.assertEqual(transport.request_count, 1)
+                self.assertEqual(len(checkpoints), 1)
+                self.assertEqual(checkpoints[0][-1]["status"], "PARSED")
+                if fault == "fsync-primary":
+                    self.assertEqual(bank_path.read_bytes(), before_bytes)
+                else:
+                    saved = json.loads(bank_path.read_text(encoding="utf-8"))
+                    self.assertNotEqual(saved["bankSha256"], bank["bankSha256"])
+                    self.assertTrue(before_ids <= {row["recordId"] for row in saved["records"]})
+                    authority = RUNNER["verify_original_components"](plan, saved, cache)
+                    self.assertEqual(authority["recordFailures"], [])
+                    self.assertEqual(len(authority["stage"]["candidates"]), 3)
+
+                # A fresh actual caller reads the bank that really survived,
+                # not the failed producer's uncommitted in-memory generation.
+                # An unchanged old bank still needs one real tiny-fixture
+                # request; a complete bank needs no transport or checkpoint.
+                saved_bytes = bank_path.read_bytes()
+                saved = json.loads(saved_bytes)
+                receipts_before = {path: path.read_bytes()
+                    for path in (cache.directory / "receipts").glob("*.json")}
+                resume_cache = ComponentSubsetCache(cache.directory)
+                resume_checkpoints = []
+
+                def resume_run(args, **kwargs):
+                    if fault == "cleanup-only":
+                        self.fail("complete surviving bank must not request again")
+                    return run(args, **kwargs)
+
+                def resume_checkpoint(value, attempts):
+                    resume_checkpoints.append(copy.deepcopy(attempts))
+                    save_component_bank(bank_path, value, targets=plan["targets"])
+
+                resumed_transport = BoundedComponentTransport(resume_cache,
+                    deadline_epoch=200, request_timeout_seconds=30,
+                    maximum_requests=1, maximum_download_bytes=MAX_SUBSET_BYTES,
+                    run=resume_run, clock=lambda: 100, sleep=lambda _: None)
+                resumed_admit = RUNNER["original_component_admitter"](plan, resume_cache)[0]
+                resumed = produce_component_bank(plan, saved,
+                    acquire_subset=resumed_transport.acquire_subset,
+                    acquisition_at=lambda: resumed_transport.last_receipt["acquisitionAt"],
+                    checkpoint=resume_checkpoint, admit_spatial=resumed_admit,
+                    should_continue=resumed_transport.can_continue)
+                expected_requests = 1 if fault == "fsync-primary" else 0
+                self.assertEqual(resumed_transport.request_count, expected_requests)
+                self.assertEqual(len(resume_checkpoints), expected_requests)
+                self.assertEqual(resumed["stage"]["status"], "CANDIDATES_READY")
+                self.assertEqual(resumed["stage"]["remainingNeeds"], [])
+                self.assertEqual(len(resumed["stage"]["candidates"]), 3)
+                self.assertTrue(before_ids <= {row["recordId"] for row in resumed["bank"]["records"]})
+                self.assertEqual(json.loads(bank_path.read_bytes()), resumed["bank"])
+                for path, payload in receipts_before.items():
+                    self.assertEqual(path.read_bytes(), payload)
+                authority = RUNNER["verify_original_components"](plan, resumed["bank"], resume_cache)
+                self.assertEqual(authority["recordFailures"], [])
+                self.assertEqual(len(authority["stage"]["candidates"]), 3)
+                if fault == "cleanup-only":
+                    self.assertEqual(bank_path.read_bytes(), saved_bytes)
+                    self.assertEqual(resumed["attempts"], [])
+                    self.assertIsNone(resumed_transport.last_receipt)
+
     def test_pinned_runtime_routes_and_authority_exclude_legacy_level(self):
         self.case = prepare(self.case["folder"] / "legacy", all_components=True)
         result = self.authority()

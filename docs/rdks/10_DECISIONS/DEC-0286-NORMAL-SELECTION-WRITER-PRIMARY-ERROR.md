@@ -1,6 +1,13 @@
 # DEC-0286 – Bevar den normale selection-writers første gemmefejl
 
-**Dato:** 2026-10-02. **Status:** Implementeret og måltestet i separat 4.0.539-kandidat; egen exact-head CI og produktion afventer.
+**Dato:** 2026-10-02. **Status:** Implementeret og leveret i offentlig4.0.539; nedenstående kandidatstatus er historisk.
+
+Levering: PR507/f98fb89f/exactCI37041741537/ROOTproof blev fornyet før merge
+21:31:38 tilmain42e15819. ONEkode-only37054747976 SUCCESS21:42:04 med
+private/CAS/R2/privacy/Pages/exactmodel210673/main/disposition/reseal/terminal.
+538 var leveret først21:21:47, ordinary37036350223 actualcompletion21:02:23.
+Samme16Zvejr/score/geometri/historik/3a14/8bindinger bevaret; ingen providers/SQL.
+Dette er ikke fullCP-SførT/writer/kill/runner/nationalkapacitetsbevis.
 
 Denne afgrænsede revision udtager kun den allerede RED-reproducerede normale
 persistWeatherComponentSelections fra dirty519. Den faktisk normale updater

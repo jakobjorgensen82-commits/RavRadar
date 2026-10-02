@@ -1,8 +1,50 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.539
+**Håndbogsversion:** 4.0.540
 
-**Kandidatstatus:**539 bevarer den normale komponentgemmers første fejl,
+## 89.148 Revision – Copernicus bevarer den første gemmefejl
+
+Den offentlige version er 4.0.539. Den almindelige vejrhentning er afsluttet
+med faktisk gemning, upload, beregning og deploy. Derefter er Rav Jagt-teksten
+og den normale gemmers rettelse leveret hver for sig. Ældre omtale af ventende
+538 eller 539 er historisk og erstattet af denne status.
+
+Den nye lokale 4.0.540-kandidat retter kun tre eksisterende funktioner i
+Copernicus-kæden: gemning af kvitteringen, oprydning efter den enkelte
+hentning og gemning af komponentbanken. En senere egen oprydningsfejl må
+ikke skjule den første gemmefejl. Egen oprydning forsøges stadig. Hvis
+oprydning er den eneste fejl, stopper kaldet hårdt og melder ikke succes.
+
+Før en vellykket atomisk udskiftning bevares tidligere bank og kvitteringer
+byte for byte. En allerede komplet ny bank eller kvittering rulles ikke
+tilbage på grund af en senere oprydningsfejl. Den lille test genoptager
+fra det, der faktisk ligger på disk: en ufuldstændig bank kræver én ny
+kunstigt fremstillet fil og gemning; en komplet bank genbruges uden ny
+hentning eller gemning. Originalfiler, gamle poster og kvitteringer
+kontrolleres igen gennem den eksisterende adgangskontrol.
+
+Tre allerede eksisterende testforløb med syv underprøver er genbrugt.
+Sammen med to gamle kontroller af tidsgrænser og genforsøg består fem
+målrettede tests på den isolerede releasebasis. De 23 gamle testforløb
+og resten af de to berørte moduler er uændrede. Den store lokale testsuite
+er ikke gentaget. Model, score, Top20, geometri, kildeprioritet, argumenter,
+budgetter og tidsplan ændres ikke. Egen kildekontrol og produktion afventer.
+
+Dette er ikke bevis for sikkert processtop, eksklusiv skrivning, afbrudt
+runner eller national kapacitet. Den særskilte prøve af en startet, endnu
+ikke lukket underproces er fortsat rød og ikke rettet. Den samlede store
+revision og dens inaktive dele er stadig ikke færdige. Se DEC-0287.
+
+Den seneste offentlige dækningskontrol viser 395.244 gyldige prognosefelter
+ud af 397.070: 99,54 procent mod 92,18 procent før. Samme metode, 673 kystdele,
+118 timer og fem vejrfamilier, er brugt med filstørrelser og hashes kontrolleret.
+Nibe har brugbare vurderinger for alle 118 timer i begge jagtformer; halvdelen
+har ufuldstændig historik og halvdelen fuld historik i modellens fremtidige
+projektion. Det er ikke målt komplet privat historik eller bevis for, at en
+bestemt rettelse gav forbedringen. De rullende prognosevinduer er forskellige.
+Der loves ingen kalenderdato for fuld historik. Tidsplanen er aktiv og uændret.
+
+**Historisk kandidatstatus:**539 bevarer den normale komponentgemmers første fejl,
 selvom eget close/tempcleanup også fejler. Egen oprydning forsøges fortsat;
 close-/cleanup-only er hårde stop, ingen saved-markør ved fejl.20unitsPASS og
 én existingawaitedsourcewiringPASS, ikke fuld673updater/stop/kapacitetsbevis.
@@ -53,7 +95,7 @@ Score, handicap, sortering og historik er urørte; stor519 er separat/OFF.
 Ældre kandidat-/pausestatus længere nede er historisk og erstattes af dette.
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.539 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.540 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=3a14f458122f5bc0ea8a60c07abbcbd68d022c0322a87e77242891f21631c852` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`

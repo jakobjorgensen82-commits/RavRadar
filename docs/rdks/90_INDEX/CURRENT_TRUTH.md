@@ -1,4 +1,27 @@
-# NYESTE SANDHED – 2026-10-02 – offentlig537, grøn538 og writer539
+# NYESTE SANDHED – 2026-10-02 – faktisk offentlig539 og lokal540
+
+Offentlig539/main42e15819 er faktisk leveret via kode-only37054747976
+SUCCESS21:42:04.538/PR506 blev publiceret21:21:47;539/PR507 er også merged.
+ONEordinary37036350223 afsluttede actualsave/upload/nytcache/Pages/terminal
+21:02:23. Gamle pending538/539 og activeordinary-ordrer er udført og historiske.
+Samme16Z rr-20261002181346-210/210/673/118/3a14/a226/8bindinger; intet
+providerkald, ændret vejr/score/geometri eller SQL-runtime ved kodeleveringerne.
+
+540 er en SMAL lokal kandidat mod latestapprovedmain, kun atomic_json/download/
+save_component_bank og tre genbrugte testparents.5målparentsPASS4.011s/0skip,
+23 gamle parents identiske, strictinverse/model67/3a14/8bindingerPASS.
+Egen CI/proof/merge/deploy/offentlig effekt mangler. CP-no-close RED URETTET,
+fullCP-SførT/writer/kill/failure4min/runner/nationalkapacitet fortsat åbne/OFF.
+Ingen frozenindex/admission/executor/API/hash/format/budget/planændring.
+
+FIELD21:45:395244/397070=99.540131463%, før12Z366017/397070=92.179464578%,
++7.360666885procentpoint; sammehasValue/673×118×5/hashes/bytes/start-slutmanifest.
+Nibe118brugbare/BOTH/59incomplete+59futureFULL_HISTORY/0unavailable.
+Ikke privat historie/nativeprovider/score/kausal fixeffekt; ingen historikETA.
+Cron8348098 aktiv/uændret; ingen mainændring mensweatheraktiv/ekstraweather.
+Alle særskilte afvisninger består. DEC-0287/begge håndbøger89.148.
+
+# HISTORISK SANDHED – 2026-10-02 – offentlig537, grøn538 og writer539
 
 Offentlig537/main1b3e172d/sammegyldige12Z/210/673/3a14data, cron8348098
 aktiv/uændret22:19DK. Ejerens ONEordinary37036350223 fra18:47:48DK kører;

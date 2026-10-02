@@ -1,4 +1,28 @@
-# 2026-10-02 – offentlig4.0.537, grøn4.0.538 og normalwriter4.0.539
+# 2026-10-02 – offentlig4.0.539, faktisk dækning og isoleret4.0.540
+
+ONEordinary37036350223 afsluttede21:02:23 med saved-betinget upload/nytcache,
+no-loss/54artifact+3release/private/CAS/R2/privacy/Pages/reseal/terminal/requireddeploy.
+538/PR506 og539/PR507 er merged/publiceret21:21:47/21:42:04; tidligere pending
+ordrer er udført.539/main42e15819/samme16Z210673118/model3a14/a226/8bindinger.
+Historisk maintenance SKIPPED, ikke PASS; kode-only ingen providers/standaloneSQL.
+
+21:45 FIELD395244/397070=99.540131463%, før12Z366017/397070=92.179464578%,
++7.360666885pp. IdentiskhasValue/673×118×5/118hashes/bytes/start-slutmanifest.
+Nibe118brugbare/BOTH/59HISTORY_INCOMPLETE+59futureFULL_HISTORY/0unavailable.
+Ikke stationobs/privatehistorik/provider-native/score/kausal first-errorgevinst;
+rollingvinduer forskellige, ingen kalenderETA/refetch afuændret1.42GB.
+
+4.0.540 isolerer præcis3CPfunktioner/3genbrugte testparents fraDirty519 modmain42e15819.
+Streng inversdiff/23gamleparentsbyteidentiske; ingen andre moduledeltaer.
+Isoleret3parents/7syntetiske undercases +2gamle retry-/timeoutparents:
+5PASS/0FAIL/0SKIP4.011s. BIG RED/26fuldsuite ikke gentaget. Model67/3a14/8bindingerPASS.
+Oldreceipt/bankbytes og komplet nycommit/diskresume bevares; cleanup-onlyHARD,
+ingen normalproducerreturn/last_receipt ved fejl. EgenCI/proof/produktion åbne.
+CP-no-closeRED URETTET/fullCP-SførT/writer/kill/failure4min/runner/capacity/OFF består.
+DEC-0287/begge håndbøger89.148. Cron aktiv/uændret, ingen main underweatheraktiv.
+Alle særskilte afvisninger og6.1Sol/Ekstrahøj/model/indsats/plan/kadence uændret.
+
+# Historisk 2026-10-02 – offentlig4.0.537, grøn4.0.538 og normalwriter4.0.539
 
 Ejeren spurgte om sammenlignelig dækning efter forrigeordinary17:53DK.
 Ingen tidligere nygenmåling siden14:24; nuONEPUBLIC12Z19:10 sammehasValue/

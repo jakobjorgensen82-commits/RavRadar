@@ -1,4 +1,25 @@
-# Aktive krav – 2026-10-02 – normalwriter539 og prioriteret538
+# Aktive krav – 2026-10-02 – CP-kandidat540 efter leveret539
+
+Bevar første receipt/request/bankfejl gennem egen oprydning. Owncleanup skal
+stadig forsøges, og cleanup-only er HARD, også efter validcommit. Før fejlet
+commit bevares gammel bank/receipt byteidentisk; komplet nycommit rulles ikke
+tilbage. Ingen normalproducerreturn/last_receipt ved fejl eller orphanpruning.
+Genoptagelse læser faktisk overlevende diskbank og revaliderer originalfiler;
+ingen fakefactory/certificate/admission eller ny executor. DEC-0287.
+
+540 må kun isolere de tre måltestede funktioner/tre eksisterende testparents
+modlatestapprovedmain3a14/8bindinger; ingen hel519copy/OFF/frozenindexpatch.
+Unknownchildstop blokerer fortsat ALLE outercleanup/fallback/OM/output-grene;
+den separate CP-no-close RED må ikke skjules som løst.5målparents er ikke
+fullCP-SførT/writer/kill/failure4min/runner/nationalkapacitetsbevis.
+
+538/539 er allerede leveret, ikke ventende. Cron8348098 holdes aktiv/uændret.
+Forny relevante gates før levering; ingen main/merge/code-only under aktiv
+vejrhentning/ekstra providerdispatch. FIELD16Z99.540131463% bruger samme
+hasValue/673×118×5/397070 og hash-/bytekontrol; ikke historik/nativeprovider/
+score/kausal fixgevinst. Alle særskilte afvisninger består.
+
+# Historiske krav – 2026-10-02 – normalwriter539 og prioriteret538
 
 Den normale komponentgemmer skal bevare første write/sync/rename-fejl trods
 sekundær ownclose/tempcleanup. Egen oprydning forsøges stadig; close-/cleanup-
