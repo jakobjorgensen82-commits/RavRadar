@@ -1,4 +1,15 @@
-# Aktive krav – 2026-10-02 – offentlig535 og normalreader536
+# Aktive krav – 2026-10-02 – Rav Jagt-kreditering537
+
+Ejeren kræver tak til Rav Jagt for illustrationer og hjælp på den viste plads:
+under gulillustrationnote/førDel1. Ejerens præcise Facebookprofile61550028713868
+og YouTube@ravjagt887 skal være klikbare; DA/DE/EN/sikkernyfane/mobil bevares.
+Lever separat537 før næste vejrhentning; cron8348098 kortpauset kun nødvendigt
+releasearbejde og genaktiveres straks efter sikkerdeploy. Samme plan/payload.
+536 og ONEordinary er faktisk fuldført; ingen gentagen gammel releaseordre.
+Ingen fysisk score/model/data/cache/geometri/SQL-runtimeændring. DEC-0284.
+Fuld revision, sammenlignelig FIELDmetode og alle separate afvisninger består.
+
+# Historiske krav – 2026-10-02 – offentlig535 og normalreader536
 
 Ejerens rækkefølge er opfyldt: alle allerede klargjorte533/534/535 sikkert
 leveret, derefter præcis én ordinary37009507544 på535, dereftercron8348098

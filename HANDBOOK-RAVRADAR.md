@@ -1,8 +1,15 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.536
+**Håndbogsversion:** 4.0.537
 
-**Kandidatstatus:**536 bevarer kun første fejl i de to normale DMI-readers
+**Kandidatstatus:**537 tilføjer ejerens tak til Rav Jagt under illustrationens
+gule bemærkning og før Del1 med klikbare Facebook-/YouTube-konti på DA/DE/EN.
+Ingen faglig model-, score-, data-, cache- eller SQL-runtimeændring.536 er nu
+sikkert leveret18:07DK efter ONEordinary faktisk afsluttede17:53DK med gemme-
+og deploybevis. Cron er kort pauset til537 og genaktiveres efter sikker levering.
+537 exact-head CI og offentlig effekt afventer. Se DEC-0284.
+
+**Historisk kandidatstatus:**536 bevarer kun første fejl i de to normale DMI-readers
 ved samtidig close-fejl. Close-only stopper stadig hårdt. Lokal12PASS/1gammel
 kapacitetsskip; exact-head CI og sikker levering afventer. Ingen descriptor/
 OFF-stack/model/Top20/SQL/format/capændring. Offentlig535 og533/534 er faktisk
@@ -27,12 +34,29 @@ Score, handicap, sortering og historik er urørte; stor519 er separat/OFF.
 Ældre kandidat-/pausestatus længere nede er historisk og erstattes af dette.
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.536 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.537 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=3a14f458122f5bc0ea8a60c07abbcbd68d022c0322a87e77242891f21631c852` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.141 4.0.537 – Tak til Rav Jagt
+
+Grundbogen takker Rav Jagt for hans illustrationer og hjælpen undervejs med
+RavRadar, lige under den gule illustrationsbemærkning og før Del1. Synlige
+Facebook- og YouTube-links fører til de konti, ejeren har angivet. De åbner
+sikkert i en ny fane, og takken følger dansk, tysk og engelsk. Illustration,
+faglige forbehold, fysisk scoremodel og Top20 er ikke ændret. Se DEC-0284.
+
+536 er leveret via kode-only37030746757SUCCESS18:07:32DK påmainff76d473;
+den forudgående ordinary37009507544 afsluttede17:53:25DK med faktisk gemt
+progress/nyupload, no-loss,54artifact/3release, private/CAS/R2/privacy/Pages/
+reseal/terminal/requireddeploy. Gyldigt datasæt rr-20261002143718-210 med
+reference12Z/210zoner/673dele bevares. Cron er kort pauset for at levere537
+før næste vejrhentning; planen ændres ikke, genaktivér efter sikker deploy.
+537 er endnu en kandidat, ikke en offentlig effekt. Fuld revision og alle
+særskilte sikkerhedsafvisninger består; en tak ændrer ingen datadækning.
 
 ## 89.139 4.0.536 – Den første læsefejl må ikke skjules
 

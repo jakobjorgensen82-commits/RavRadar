@@ -1,4 +1,16 @@
-# 2026-10-02 – offentlig535, aktiv almindelig vejrhentning og reader536
+# 2026-10-02 – offentlig536, ONEordinary færdig og tak537
+
+- [x] ONEordinary37009507544 actualsaved/nyupload/cache/no-loss/private/Pages/terminal.
+- [x]536/PR504 exactCI/proof/mergeff76d473/codeonly37030746757/public53618:07DK.
+- [x] Samme gyldige rr-20261002143718-210/reference12Z/210/673/3a14 bevares.
+- [x]537 tak under illustrationnote/førDel1 og præcise sikreFacebook/YouTube-links.
+- [x] DA/DE/EN, eksisterende grundbogsmåltestPASS, alle gamle krav bevaret.
+- [ ]537 version/RDKS/exact-headCI/sikkerDEC0148/publicpc-mobil-effekt.
+- [x] Cron kortpauset/servergenlæstInaktiv til nødvendig537release, plan urørt.
+- [ ] Genaktivér SAMMEcron8348098 efter sikker537levering.
+- [ ] Full519/CP-SførT/writer/kill/failure4min/runner/nationalkapacitet/OFF.
+
+# HISTORISK – 2026-10-02 – offentlig535, aktiv almindelig vejrhentning og reader536
 
 - [x]533/534/535 exact-head/merge/providerfri deploy/offentlig4.0.535 påc52e0bc6.
 - [x]20/day/femdage/begge modes; faktiskpc1–10/11–20 og375CSSmobil1–20/nooverflow.

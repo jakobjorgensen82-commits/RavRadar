@@ -1,4 +1,14 @@
-## 4.0.536 – Bevar første fejl i de to normale DMI-readers (lokal kandidat)
+## 4.0.537 – Tak til Rav Jagt og klikbare kontolinks (kandidat)
+
+- Ejerens ønskede tak står under illustrationsbemærkningen og før Del1.
+- Præcise Facebook-/YouTube-konti som sikre HTTPS-links, DA/DE/EN og mobil.
+- Fagligt indhold, illustration, score, Top20, model/data/cache/SQL urørte.
+- ONEordinary37009507544 er faktisk færdig17:53DK/saved+upload/deploy;
+  536/PR504 er leveret via37030746757SUCCESS18:07DK/public536/samme gyldige data.
+- Cron8348098 er kort pauset KUN til denne nødvendige leverance og genaktiveres
+  efter sikker537-deploy. Samme plan; ingen ekstra vejrhentning. DEC-0284.
+
+## 4.0.536 – Bevar første fejl i de to normale DMI-readers (leveret18:07DK; ældre kandidatdetaljer nedenfor)
 
 - inspect/readRecord forsøger fortsat eget close, men samtidig close-fejl
   erstatter ikke parser/hash/readbackfejl. Close-only er fortsat hård.

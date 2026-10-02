@@ -1,4 +1,13 @@
-# Aktuelle issues – 2026-10-02 – offentlig535 og afgrænset lokal536
+# Aktuelle issues – 2026-10-02 – offentlig536 og kreditering537
+
+-536/ONEordinary er faktisk færdige, ikke ventende; saved/upload/Pages bevist.
+-537 tak/to kontolinks er lokalt implementeret; exactCI/publiceffekt afventer.
+- Cron8348098 kortpauset til537; GENAKTIVÉR efter sikker levering, samme plan.
+- Nibe91/118/27halehuller består i andet vindue; upstreamårsag fortsat åben.
+- Private historikclock/FIELDgenmåling/full519/CP-SførT/writer/kill/runner/
+  nationalkapacitet er ikke færdige; ingen skjult model/SQL/OFF/gatelempelse.
+
+# Historiske issues – 2026-10-02 – offentlig535 og afgrænset lokal536
 
 -533/534/535 er leveret; gamle pending/stakkede status er erstattet. Top20
   og kolonner er faktisk kontrolleret, ikke længere kun kunstige lokaltests.

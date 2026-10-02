@@ -1,4 +1,13 @@
-## 2026-10-02 – offentlig535, én ny ordinary og normalreader536-kandidat
+## 2026-10-02 – ONEordinary og536 afsluttet; tak537
+
+ONEordinary37009507544SUCCESS17:53DK, actualsaved/upload/newcache/fuldegates/
+deploy/terminal.536/PR504/exactCI/proof/renewedwriters mergedff76d47317:58DK,
+codeonly37030746757SUCCESS18:07:32DK/public536/samme gyldige210/673/3a14data.
+537 tilføjer ejerens tak og to Rav Jagt-kontolinks under illustrationsnote/
+førDel1, DA/DE/EN. Cron kortpausetkunaktivering/Gem/serverInaktiv for at
+levere før næsteweather; genaktivér eftersafe537. Ingen plan/modelændring.
+
+## Historisk 2026-10-02 – offentlig535, én ny ordinary og normalreader536-kandidat
 
 533/534/535 blev faktisk publiceret via37004530145/37006767489/37008318988,
 senest535Pages/exactmain/terminal14:51:53DK. Mainc52e0bc6 og gyldig prognose
