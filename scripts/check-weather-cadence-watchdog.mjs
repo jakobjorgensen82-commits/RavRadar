@@ -33,13 +33,18 @@ function readMainRuns(document, branch, label, nowMs, legacy = false) {
     !(legacy && isInertLegacyQueue(run))).map(run => {
     const createdMs = Date.parse(run.created_at);
     const updatedMs = Date.parse(run.updated_at);
+    // GitHub keeps created_at across reruns. Only the latest attempt's start
+    // occupies a new slot; updated_at is completion/activity, not a start.
+    const attemptStartedMs = run.run_attempt === 1 ? createdMs : Date.parse(run.run_started_at);
     if (!STATUSES.has(run.status) || !Number.isFinite(createdMs) ||
         !Number.isFinite(updatedMs) || updatedMs < createdMs ||
+        !Number.isSafeInteger(run.run_attempt) || run.run_attempt < 1 ||
+        !Number.isFinite(attemptStartedMs) || attemptStartedMs < createdMs || attemptStartedMs > updatedMs ||
         createdMs > nowMs + 5 * 60_000 || updatedMs > nowMs + 5 * 60_000 ||
         (run.status === 'completed' && !run.conclusion)) {
       throw new Error(`${label}: malformed main run history`);
     }
-    return { status: run.status, conclusion: run.conclusion, createdMs, updatedMs };
+    return { status: run.status, conclusion: run.conclusion, attemptStartedMs };
   });
 }
 
@@ -62,7 +67,7 @@ export function assessWeatherCadenceWatchdog({
   if (nowMs >= slotMs + LATEST_DISPATCH_MS) return decision(false, 'external-cadence-window-expired');
   const runs = [...normal, ...manual];
   if (runs.some(run => ACTIVE.has(run.status))) return decision(false, 'weather-run-active-or-queued');
-  if (runs.some(run => run.createdMs >= slotMs)) return decision(false, 'weather-run-already-started-in-slot');
+  if (runs.some(run => run.attemptStartedMs >= slotMs)) return decision(false, 'weather-run-already-started-in-slot');
   return decision(true, 'external-four-hour-weather-slot-ready');
 }
 

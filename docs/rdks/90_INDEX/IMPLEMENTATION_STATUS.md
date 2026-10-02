@@ -1,4 +1,15 @@
-# 2026-10-02 – offentlig528 og afgrænset SEO-kandidat4.0.529
+# 2026-10-02 02:55 dansk – separat4.0.530 efter klar529
+
+- [x]529/497 exact-head CI36944627707 på554a82f4 og proof11201278825.
+- [x]530 genkørsels-slotfejl RED-reproduceret og minimalt rettet.
+- [x] Eksisterende production/cadence-målscript består, alle gamle regler bevares.
+- [x] Faktisk read-only100+79-run-metadata accepteret, dispatch=false under aktiv run.
+- [ ]530 exact-head CI, retarget efter529, sikker levering og faktisk effekt.
+- [ ] Aktiv528-weather36945405432 gennem cache/upload/no-loss/deploy; ingen mainændring.
+- [ ]529 offentlig footer/guides/sitemap/robots/pc-mobil efter levering.
+- [ ] Top20 og stor519-driver/key/writer/runner/kapacitet fortsat åbne.
+
+# HISTORISK – 2026-10-02 – offentlig528 og afgrænset SEO-kandidat4.0.529
 
 - [x]527/528 merged og deployet med exact-head CI og efterdatagates.
 - [x] ravradar.dk strict HTTPS; apex/www-certifikat, DNS og redirects genlæst.

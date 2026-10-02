@@ -6,22 +6,22 @@ import {
   HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG,
   PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG,
   RECONSTRUCTED_RAVSCORE_QUALITY_FLAG,
-} from './trip-evidence-contract.js?v=4.0.529';
+} from './trip-evidence-contract.js?v=4.0.530';
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.529';
+} from '../core/ravscore-model-contract.js?v=4.0.530';
 import {
   RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY,
   assertPublicScoreAvailability,
   assertPublicRuntimeAvailability,
   canonicalPublicRuntimeJson,
   sameRavScoreModelBinding,
-} from '../core/ravscore-public-runtime-contract.js?v=4.0.529';
+} from '../core/ravscore-public-runtime-contract.js?v=4.0.530';
 import {
   assertRavScoreEvidenceTrust,
-} from '../core/ravscore-evidence-trust-contract.js?v=4.0.529';
+} from '../core/ravscore-evidence-trust-contract.js?v=4.0.530';
 
 const TRUST_FIELDS = Object.freeze([
   'schemaVersion', 'status', 'incidentId', 'decisionId', 'method', 'evidenceClassification',

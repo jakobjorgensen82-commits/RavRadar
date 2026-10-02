@@ -1,4 +1,16 @@
-# NYESTE SANDHED – 2026-10-02 – offentlig/main528; søgesider4.0.529 lokalt
+# NYESTE SANDHED – 2026-10-02 02:55 dansk – offentlig528; klar529 og separat530
+
+529/497/head554a82f4 er exact-head-CI-grøn, ikke deployet. Ordinary36945405432
+kører på uændret528/mainba085f6b; ingen merge eller ekstra dispatch. Lever529
+først efter faktisk resultatkontrol. Cron og HTTPS-domænet er uændrede.
+
+530 er kun et smalt guardfix: et genkørt forsøg tæller i sit seneste startslot,
+ikke det oprindelige runs oprettelsesdato. Ukendt timing stopper; overlap,
+legacy-undtagelser, budgetter, model og gates består. RED→måltest og faktisk
+read-only historikkompatibilitet, ikke målt dublet i produktion. Stakket mod529;
+egen exact-head CI og deploy afventer. Se DEC-0277. Stor519 og top20 er åbne.
+
+# HISTORISK SANDHED – 2026-10-02 – offentlig/main528; søgesider4.0.529 lokalt
 
 527/528 er faktisk deployet; mainba085f6b/offentlig528, samme nyeste
 rr-20261001215041-210/210/673. Kortbund er kontrolleret på pc og mobil.

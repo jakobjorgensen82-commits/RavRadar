@@ -9,6 +9,8 @@ const run = (created, updated = created, status = 'completed', branch = 'main', 
   conclusion: status === 'completed' ? conclusion : null,
   created_at: created,
   updated_at: updated,
+  run_attempt: 1,
+  run_started_at: created,
 });
 const old = run('2026-09-27T20:25:00Z', '2026-09-27T23:03:00Z');
 const inertLegacy = [
@@ -54,6 +56,28 @@ assert.equal(check({ normalRuns: { workflow_runs: [old,
   run('2026-09-28T00:18:00Z', '2026-09-28T00:18:30Z')] } }).dispatch, false);
 assert.equal(check({ manualRuns: { workflow_runs: [old,
   run('2026-09-28T00:18:00Z', '2026-09-28T00:18:30Z')] } }).dispatch, false);
+// A later GitHub attempt retains the original created_at. The actual latest
+// attempt, including a failed one, must still occupy its start slot.
+for (const entrance of ['normalRuns', 'manualRuns']) {
+  for (const conclusion of ['success', 'failure', 'cancelled']) {
+    const retried = { ...run('2026-09-27T20:25:00Z', '2026-09-28T00:18:59Z',
+      'completed', 'main', conclusion), run_attempt: 2, run_started_at: '2026-09-28T00:18:00Z' };
+    assert.equal(check({ [entrance]: { workflow_runs: [old, retried] } }).reason,
+      'weather-run-already-started-in-slot', `${entrance}: latest attempt counts, not original creation`);
+    const previousSlot = { ...retried, run_started_at: '2026-09-27T23:00:00Z' };
+    assert.equal(check({ [entrance]: { workflow_runs: [old, previousSlot] } }).dispatch, true,
+      'Completion in this slot does not move a previous-slot attempt into it');
+  }
+}
+const latestAttempt = { ...run('2026-09-27T20:25:00Z', '2026-09-28T00:18:59Z'),
+  run_attempt: 2, run_started_at: '2026-09-28T00:18:00Z' };
+for (const fields of [
+  { run_attempt: undefined }, { run_attempt: 0 }, { run_attempt: 1.5 }, { run_attempt: '2' },
+  { run_started_at: undefined }, { run_started_at: null }, { run_started_at: 'bad' },
+  { run_started_at: '2026-09-27T20:24:59Z' },
+  { run_started_at: '2026-09-28T00:19:00Z' },
+]) assert.throws(() => check({ manualRuns: { workflow_runs: [old, { ...latestAttempt, ...fields }] } }),
+  /malformed/, 'Unknown or contradictory attempt timing must not authorize dispatch');
 assert.equal(check({ normalRuns: { workflow_runs: [old,
   run('2026-09-28T00:18:00Z', '2026-09-28T00:18:59Z', 'completed', 'main', 'failure')] } }).dispatch, false,
   'A failed normal attempt is still an attempt; never blindly retry it');

@@ -1,4 +1,17 @@
-# AKTUELT CHECKPOINT – 2026-10-02 – offentlig528; smal SEO-kandidat4.0.529
+# AKTUELT CHECKPOINT – 2026-10-02 02:55 dansk – offentlig528, klar529 og separat530
+
+529/PR497/head554a82f4 har grøn exact-head CI36944627707/proof11201278825.
+Den skal leveres først efter aktiv ordinary36945405432 på uændret528/main
+ba085f6b. Cron/domæne uændret; ingen mainændring eller ekstra vejrdispatch.
+
+530 er separat stakket mod529, kun det eksisterende cadence-scripts brug af
+seneste run_attempt/starttid. RED→måltest; faktisk read-only100+79-run-vurdering
+gav ingen dispatch under aktiv run. Ingen ny retry, plan/payload, gate, model
+eller cacheadfærd. Ukendt timing fejler lukket; se DEC-0277. Egen exact-head
+CI og produktion afventer. Top20 og stor519/S/T/key/writer/runner/kapacitet
+er åbne; særskilte afvisninger består. Ingen helkopi af dirty519.
+
+# HISTORISK CHECKPOINT – 2026-10-02 – offentlig528; smal SEO-kandidat4.0.529
 
 ravradar.dk er faktisk i HTTPS-drift på eksisterende GitHub Pages, uden
 Simply-webhotel.527/528 er leveret;528-kortfixet er kontrolleret på pc/mobil.

@@ -1,4 +1,12 @@
-# Aktivt roadmap – 2026-10-02, offentlig528, lokal SEO529
+# Aktivt roadmap – 2026-10-02 02:55 dansk – lever529 før separat530
+
+1. [ ] Lad ordinary36945405432 på528/mainba085f6b afslutte; vurder faktiske gates.
+2. [ ] Lever klar529/497 efter fornyet main/head/CI/proof og ingen aktive writers.
+3. [ ]530 kræver egen exact-head CI, retarget efter529 og sikker levering.
+4. [ ] Fortsæt stor519/top20 uden helkopi, modelrehash eller OFF-aktivering.
+Cron/domæne og alle særskilte afvisninger er uændrede. Se DEC-0277/checkpoint.
+
+# Historisk roadmap – 2026-10-02, offentlig528, lokal SEO529
 
 1. [x] Lever527/528 sikkert og kontrollér faktisk pc/mobil-kortbund.
 2. [x] ravradar.dk strict HTTPS og Supabase exact-root-redirect uden webhotel.
