@@ -608,4 +608,38 @@ assert.match(checkpointTimeoutMigration,
   /alter function public\.ravradar_ravscore_checkpoint_cas\(bigint,timestamptz,jsonb\)\s+set statement_timeout = '55s';/);
 assert.doesNotMatch(checkpointTimeoutMigration, /alter (?:role|database)/i);
 
+// A later binding migration must not silently undo DEC-0249's scoped 55s
+// setting. Checking the old corrective file alone missed the Top20 reset.
+const migrationsUrl = new URL('../supabase/migrations/', import.meta.url);
+const casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.endsWith('.sql'))
+  .sort().flatMap(name => [...fs.readFileSync(new URL(name, migrationsUrl), 'utf8').matchAll(
+    /alter function public\.ravradar_ravscore_checkpoint_cas\(bigint,timestamptz,jsonb\)\s+set statement_timeout = '([^']+)';/g,
+  )].map(match => ({ migration: name, timeout: match[1] })));
+assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
+  'the final migration order must retain the established checkpoint-only 55s timeout');
+assert.equal(casTimeoutSettings.at(-1).migration,
+  '20261002094500_restore_checkpoint_cas_timeout.sql');
+const restoredTimeoutMigration = fs.readFileSync(
+  new URL(casTimeoutSettings.at(-1).migration, migrationsUrl), 'utf8',
+);
+const top20BindingMigration = fs.readFileSync(
+  new URL('20261002080000_top20_display_binding.sql', migrationsUrl), 'utf8',
+);
+const metadataFunction = sql => sql.match(
+  /create or replace function public\.ravradar_ravscore_checkpoint_contract\(\)[\s\S]*?\n\$\$;/,
+)?.[0];
+const timeoutPredicate = `      'checkpointCasStatementTimeout55Seconds', coalesce((
+        select 'statement_timeout=55s' = any (p.proconfig)
+        from pg_catalog.pg_proc p where p.oid = v_cas_oid
+      ), false),
+`;
+assert.ok(restoredTimeoutMigration.includes(timeoutPredicate));
+assert.equal(metadataFunction(restoredTimeoutMigration).replace(timeoutPredicate, '')
+  .replace("m.version::text = '20261002094500'", "m.version::text = '20261002080000'"),
+metadataFunction(top20BindingMigration),
+  'only the applied migration and new live timeout check may change metadata readback');
+assert.equal([...restoredTimeoutMigration.matchAll(/create or replace function/g)].length, 1);
+assert.doesNotMatch(restoredTimeoutMigration,
+  /alter (?:role|database)|(?:insert into|update|delete from) public\.admin_documents|create.*(?:table|trigger)|drop\s/i);
+
 console.log('Reusable production workflow interface and failure contracts passed.');

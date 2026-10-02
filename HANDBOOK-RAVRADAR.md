@@ -1,20 +1,40 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.531
+**Håndbogsversion:** 4.0.532
 
-**Kandidatstatus:**531 udvider kun fem-dageslisten til Top20 med samme
-fysiske score, sortering, handicap og historik. Backup og ejerens specifikke
-tekniske overgangsgodkendelse er dokumenteret. Måltests og smal kunstig
-pc-/375CSS-visning består; exact-headCI/deploy og ny20rækkeproduktion mangler.
+**Kandidatstatus:**532 reparerer en konkret teknisk fejl i Top20-overgangen.
+531 er kildeverificeret og merged, men deploy stoppede før hjemmesiden blev
+ændret. Den offentlige530 og seneste vejrdata er bevaret; vejrplanen er
+midlertidigtpauset. Score, handicap, sortering og historik er uændrede.
+Måltests består;532 exact-head/deploy og senere faktiskTop20 afventer.
 529SEO og530kadence er leveret; stor519-revisionen er separat/OFF.
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.531 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.532 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=3a14f458122f5bc0ea8a60c07abbcbd68d022c0322a87e77242891f21631c852` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.135 4.0.532 – Bevar beregningens sikre gemmetid
+
+Top20-overgangen havde ved en fejl sænket det beskyttede gemmekalds allerede
+godkendte tidsgrænse fra55 til30 sekunder.532 genopretter55 sekunder kun for
+samme databasefunktion. Andre budgetter og alle data-/scorekontroller bevares.
+Den anvendte migration ændres ikke; rettelsen er en ny efterfølgende migration.
+Der køres ingen særskilt SQLinstallation eller ekstra vejrhentning.
+
+Kontrollen læser også den faktiske tidsindstilling tilbage. En forkert eller
+manglende55-sekundersindstilling giver stop før levering. Måltesten fandt
+30s-reset og består efter rettelsen; faktisk database/deploy afventer.
+Den konkrete fejlkode fra den stoppede kørsel er ikke aflæst, og vi kalder ikke
+rettelsen produktionsbevist på grundlag af lokal test alene. Se DEC-0279.
+
+En kodelevering bevarer det allerede gemte femrækkeindeks. Tyve rækker skal
+senere bevises af en almindelig beregning og pc-/mobilvisning. Backup og
+kontrolleret tilbagevej består. Cron genaktiveres efter sikker levering;
+scoreformler, handicap, målinger og historik røres ikke.
 
 ## 89.133 4.0.531 – Tyve zoner på hver af fem dage
 

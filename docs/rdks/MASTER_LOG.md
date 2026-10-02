@@ -1,4 +1,17 @@
-# 2026-10-02 – 4.0.531 Top20 med verificeret backup og særskilt teknisk godkendelse
+# 2026-10-02 – 4.0.532 konkret Top20-timeoutregression
+
+Samtaledelta: Ejeren bad fortsat om Top20 og godkendte kun faste sikre
+fejlkoder, ikke private logdata. Retrieval blev fortsat afvist; ingen omvej.
+PR499/d70a91c3 exactheadCI36975932551 og mergeefd3f45d er faktisk fuldført.
+Kode-only36976884378 fejlede54 før Pages, men008-migration var anvendt.
+Cron8348098 pauset ved denne konkrete fejl, plan/payload uændret/offentlig530.
+Kilderegression30s-reset af DEC-0249s55s er RED-reproduceret, minimal append-only
+532-fix og actual metadata-readbackmåltestet2/2PASS499.8705ms. Actualfejlkode
+ikke læst,78s er ikke alene timeoutbevis. Ingen ny fysisk score/hash/capændring.
+DEC-0279/begge håndbøger/krav/status/issues ajour; exacthead/deploy/fresh20 åbne.
+Backup bevares; stor519 og særskilte11.08-/donor-/diagnosticsafvisninger består.
+
+# HISTORISK – 2026-10-02 – 4.0.531 Top20 med verificeret backup og særskilt teknisk godkendelse
 
 Ejeren bestilte Top20 efter backup og samtidig fortsat stor vejrrevision.
 Efter scoped sikkerhedsreview blev ekstra bindings-/migrationsvalg og deploy-

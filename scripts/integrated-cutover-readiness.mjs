@@ -244,6 +244,11 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20261002080000_top20_display_binding',
     filename: '20261002080000_top20_display_binding.sql',
   }),
+  Object.freeze({
+    version: '20261002094500',
+    id: '20261002094500_restore_checkpoint_cas_timeout',
+    filename: '20261002094500_restore_checkpoint_cas_timeout.sql',
+  }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
@@ -318,10 +323,6 @@ export async function expectedCheckpointCasContract({
     // by that migration rather than mixing in the older validator bodies.
     TRIP_BINDING_POLICY_SOURCE_MIGRATION.filename,
   ), 'utf8');
-  const predecessorMigration = await fs.readFile(path.join(
-    migrationsDirectory,
-    LATEST_REQUIRED_CUTOVER_MIGRATION.filename,
-  ), 'utf8');
   const definitions = [
     ['public.ravradar_ravscore_checkpoint_canonical_time', 'canonical-time validator'],
     ['public.ravradar_ravscore_checkpoint_has_forbidden_key', 'forbidden-key validator'],
@@ -335,8 +336,7 @@ export async function expectedCheckpointCasContract({
     ['public.ravradar_ravscore_checkpoint_top20_predecessor_projection',
       'exact Top5 binding predecessor projection'],
   ].map(([functionName, label]) => sqlFunctionBody(
-    functionName === 'public.ravradar_ravscore_checkpoint_predecessor_payload_valid'
-      ? predecessorMigration : migration,
+    migration,
     functionName,
     label,
   ));
@@ -874,6 +874,7 @@ function assertCheckpointDatabaseReadback(value, expectedCheckpointContract) {
     'checkpointHistoryExclusionInstalled',
     'checkpointDirectPayloadReadRestricted',
     'checkpointCasSecurityDefiner',
+    'checkpointCasStatementTimeout55Seconds',
     'checkpointCasServiceRoleExecutable',
     'checkpointCasAnonymousExecutionRejected',
     'checkpointValidatorExecutionRestricted',

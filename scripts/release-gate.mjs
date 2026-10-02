@@ -1238,6 +1238,7 @@ for(const marker of [
   '20260925150000_weather_selection_model_binding.sql',
   '20260926170000_exact_checkpoint_predecessor.sql',
   '20261002080000_top20_display_binding.sql',
+  '20261002094500_restore_checkpoint_cas_timeout.sql',
   'Prepare ten EU-restricted D1 shards, schema and durable phase',
   'Require safe D1 storage headroom',
   'Record fail-closed intent for the already-live legacy D1 installation',

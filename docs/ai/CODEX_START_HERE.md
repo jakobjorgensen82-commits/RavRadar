@@ -1,4 +1,16 @@
-# AKTUELT CHECKPOINT – 2026-10-02 – Top20-kandidat4.0.531, offentlig530
+# AKTUELT CHECKPOINT – 2026-10-02 – lokal532 Top20-reparation, offentlig530
+
+531/PR499 mergedefd3f45d efter exactheadCI36975932551/d70a91c3/proof11213148423.
+Kode-only36976884378 fejlede54 før Pages;008 er faktisk anvendt og IMMUTABEL.
+Cron8348098 PAUSET ved konkret fejl, servergenlæst/plan uændret. Offentlig530/
+seneste ordinary36964052139-data bevares. Ingen ekstraweather/cancel/blindretry.
+532 genopretter tidligeregodkendt55s efter reproduceret30s-reset. Append-only
+00945 og actual55s-readback, alle gamle CAS/state/privacygates består.2/2målPASS;
+exactheadCI/deploy/fresh20 afventer. Ingen rawprivate-logomvej eller ny model.
+Læs DEC-0279, gældende RDKS og ALLERØVERSTE private checkpoint før arbejde.
+Stor519 fortsat separat/OFF; Top20 er ikke hele revisionen.
+
+# HISTORISK CHECKPOINT – 2026-10-02 – Top20-kandidat4.0.531, offentlig530
 
 529SEO og530kadence er leveret på maina14f6aa4 med faktisk kode-only deploy
 36956830187 og36958136496. Gamle ventende/stakkede beskrivelser nedenfor er

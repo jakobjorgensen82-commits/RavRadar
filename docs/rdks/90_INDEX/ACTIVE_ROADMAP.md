@@ -1,4 +1,15 @@
-# Aktivt roadmap – 2026-10-02 – lokalTop20 og sideløbende storrevision
+# Aktivt roadmap – 2026-10-02 – lever532 efter konkret Top20-regression
+
+1. [x] Bevar seneste offentlige530-data og immutabel anvendt531-migration.
+2. [x] Reproducer30s-reset af etableret55s; minimal append-only genopretning.
+3. [ ]532 exact-headCI, nye writers/head/base/proof-gates før sikker merge.
+4. [ ] Providerfri DEC0148levering med actual55s/readback/checkpoint/private/R2/
+   Pages. Ingen blindretry; genaktivér eksisterendecron efter sikker levering.
+5. [ ] Første naturlige freshTop20 med actualpc/mobil; gamle5 bevares ved kode-only.
+6. [ ] Fortsæt separat faktisk stor519CP/S/T/writer/runner/kapacitetsrevision.
+Ingen private-logomvej, fysisk scoreændring eller særskilt SQLinstallation.
+
+# HISTORISK roadmap – 2026-10-02 – lokalTop20 og sideløbende storrevision
 
 1. [x]529/SEO og530/kadence sikkert leveret; ældre releaseordrer er historiske.
 2. [x] Top5backup, specifik ejerautoritet, Top20kode og smalle lokale målprøver.

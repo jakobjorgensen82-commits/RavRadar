@@ -1,4 +1,15 @@
-## 4.0.531 – Top20 med urørt fysisk scoremodel (lokal kandidat)
+## 4.0.532 – Bevar checkpointets godkendte tidsgrænse (lokal kandidat)
+
+- Top20-overgangen havde nulstillet checkpoint-kaldet fra den allerede
+  godkendte55s til30s. En ny append-only migration genopretter kun55s.
+- Eksisterende database-readback kræver nu også den faktiske55s-indstilling;
+  alle tidligere state-, model-, CAS-, privacy- og ACLkontroller bevares.
+- Anvendt531-migration røres ikke. Ingen ny fysisk score-, vejr-, historik-,
+  cap- eller cronplanændring. Offentlig530/seneste data er bevaret.
+-531 er merged/kildekontrolleret, men dens deploy stoppede før Pages.
+  Cron er midlertidigt pauset til sikker levering;532 exact-head/deploy afventer.
+
+## 4.0.531 – Top20 med urørt fysisk scoremodel (merged, deploy stoppet)
 
 - Fem-dageslisten udvides fra højst5 til højst20 zoner med samme scorer,
   handicap, sortering og tidsvalg. Bedsteområder nu er fortsatTop5.
