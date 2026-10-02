@@ -1,4 +1,21 @@
-# AKTUELT CHECKPOINT – 2026-10-02 – offentlig532, grøn533, lokal534
+# AKTUELT CHECKPOINT – 2026-10-02 – offentlig532, grøn533/534, lokal535
+
+RELEASE codex/component-worker-dask-scheduler fra verificeret534heade9bc1a50.
+535 kun faktisk Python-komponentworker scoped Dask threads/poolNone; allerede
+BIG RED genbrugt, isoleret23/23PASS11.693s/0skip. Model67/3a14/8/physicala226,
+Top20/kolonner, sealed requests/args/budgetter og SQL-adfærd urørte. CI/proof/
+publicering åbne. Ingen hel519copy/OFF-aktivering/fakefactory/gatelempelse.
+533/501 og534/502 exactheadgrønne/urørte, ikke offentlige. Aktiv ownerONE
+ordinary36988295501 på532/ccc5a7c1 ved beregning103; ingen mainændring.
+Efter actualsave/upload/no-loss/private/CAS/R2/privacy/Pages/terminal leveres
+533 først, derefter retarget/recheck534 til main. Klar533 må ikke forsinkes.
+Publicfresh20/day/to modes/pc/mobil og Nibe/Lyngby efterdata åbne. Lyngby
+pilsourcepoint er ikke scoreinput; fælles upstreamproblem/marinemaske ukendt.
+Adminafklaringen gentages ikke; ingen private RAWlogs/roles/credentials.
+Stor519 fullCP/S-før-T/writer/kill/failure4min/runner/kapacitet er åbne/OFF.
+Cron8348098/14:19DK og valgt6.1Sol/Ekstra høj uændrede. Se DEC-0282.
+
+# HISTORISK CHECKPOINT – 2026-10-02 – offentlig532, grøn533, lokal534
 
 RELEASE codex/top20-column-reading-order fra urørt PR501head791aeffc.
 533/501 exactCI36989653512/proof11219467236 grøn/ikke leveret.534 ændrer kun

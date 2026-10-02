@@ -1,4 +1,20 @@
-# NYESTE TILLÆG – 2026-10-02 – offentlig532, grøn533, lokal534
+# NYESTE TILLÆG – 2026-10-02 – offentlig532, grøn533/534, lokal535
+
+Læs AGENTS, obligatorisk RDKS og ALLERØVERSTE private BIG-checkpoint.
+535 isolerer kun allerede måltestet519-komponentworker scoped Dask threads/
+poolNone på verificeret534head; anden caller end533normalpilot. Eksisterende
+23/23PASS11.693s/0skip; ingen hel519kopi/OFF-driveraktivering/model/SQLændring.
+533/501/head791aeffc/CI36989653512/proof11219467236 og534/502/heade9bc1a50/
+CI36995285388/proof11221353410 er grønne/urørte. Lever533 først efter aktuel
+ordinary36988295501 actual completion/resultatkontrol; retarget/recheck534
+til main og lever derefter.535 exact CI/levering er åbne. Cron14:19DK uændret.
+Lyngby-ejeropgaven er kun mulig pil/top5-sammenhæng: PUBLIC pilposition er
+DMI-sourcepoint og ikke scoreinput; fælles inputproblem endnu ikke afklaret.
+Ingen pil/geometri/scoreændring. Nibe delvis direct-current-gap, sammenlign
+efter fresh ordinary. Stor519 actualCP/S-før-T/writer/kill/runner/kapacitet åbne.
+Alle særskilte afvisninger og valgt6.1Sol/Ekstra høj består. Se DEC-0282.
+
+# HISTORISK TILLÆG – 2026-10-02 – offentlig532, grøn533, lokal534
 
 Læs gældende RDKS og ALLERØVERSTE BIGcheckpoint. Nyeste ejerpræcisering:
 pc-listen skal vise1–10 nedad venstre og11–20 nedad højre; mobil én liste1–20.

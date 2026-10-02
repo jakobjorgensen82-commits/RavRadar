@@ -1,8 +1,16 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.534
+**Håndbogsversion:** 4.0.535
 
-**Kandidatstatus:**534 retter kun pc-listens læseretning:1–10 til venstre,
+**Kandidatstatus:**535 retter kun den eksisterende separate komponentworkers
+Dask-valg.533/PR501 og534/PR502 er exact-head-grønne/urørte, ikke leveret.
+535 er lokalt23/23måltestet, ikke kilde-/produktionsverificeret. Ingen OFF-
+aktivering, score-/Top20-/binding-/SQL-/planændring. Først actualcompletion
+af ejerens ordinary36988295501; derefter533→534→535 med egne sikre gates.
+Lyngbys pilposition er ikke scoreinput; fælles kildevaliditet og Nibes mangler
+er endnu ikke fuldt afklaret. Stor519/fullCP-S-T/stop/kapacitet forbliver åbne.
+
+**Historisk kandidatstatus:**534 retter kun pc-listens læseretning:1–10 til venstre,
 11–20 til højre, mobil fortsat1–20 i én liste.533/PR501 er exact-head-grøn,
 ikke leveret, og leveres først efter ejerens aktive vejrhentning36988295501.
 Offentlig532/mainccc5a7c1 og cron8348098/14:19DK er uændrede. Gamle5 og
@@ -11,12 +19,39 @@ Score, handicap, sortering og historik er urørte; stor519 er separat/OFF.
 Ældre kandidat-/pausestatus længere nede er historisk og erstattes af dette.
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.534 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.535 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=3a14f458122f5bc0ea8a60c07abbcbd68d022c0322a87e77242891f21631c852` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.138 4.0.535 – Den separate Copernicus-worker bruger lokale tråde
+
+Den eksisterende komponentworker vælger lokale Dask-tråde og ingen arvet
+pool omkring sit faktiske Copernicus-kald. Tidligere konfiguration gendannes
+ved succes, primærfejl og leverandørens DatasetUpdating/exit76. Dette er
+ikke533s normale pilot og aktiverer ingen endnu slukket driver. Samme
+validerede request, punkter, tider, argumenter, retries, budgetter og filer
+bevares.23/23eksisterende offlineprøver består; det er ikke nationalt stop-,
+tråd-, writer-, runner-loss- eller kapacitetsbevis. Se DEC-0282.
+
+Ejeren har kontrolleret land-/havpunkt ved Lyngby og Lodbjerg og spørger
+kun om en mulig forbindelse mellem pil på land og hyppig top5. Kortet
+viser den valgte times DMI-modelcelle. Pilens position bruges ikke i
+scoreformlen, men begge bruger strømdata; et kildeproblem kan påvirke
+begge. Der er endnu ikke påvist en kausal top5-fejl eller uafhængigt bevist
+marinemaske ved cellen. Den aktuelle score beskriver48h strøm, ikke kun
+pilens øjeblik. Ingen punkt-/pil-/modelændring er foretaget.
+
+Nibes viste datamangler er directcurrent i nogle timer, ikke en helt tom
+zone. Upstreamårsagen er åben. Begge zoner sammenlignes efter ejerens
+aktuelle vejrhentning. Ingen privat log-/donoromvej eller gatelempelse.
+
+533/534 har grøn exact-head CI og leveres først efter faktisk gemning,
+upload, no-loss og deploy af den aktive532kørsel.535 kræver egen exact-head
+og sikker kode-only-levering med uændrede gyldige data; endnu ikke offentlig.
+Scoreformler, Top20, pc/mobil, binding67/3a14/otte, SQL og vejrplan bevares.
 
 ## 89.137 4.0.534 – Top20 læses nedad i hver kolonne
 

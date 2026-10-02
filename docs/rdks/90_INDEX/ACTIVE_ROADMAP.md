@@ -1,4 +1,15 @@
-# Aktivt roadmap – 2026-10-02 – lever532 efter konkret Top20-regression
+# Aktivt roadmap – 2026-10-02 – grøn533/534 og komponentworker535
+
+1. Følg ejerens ONEordinary36988295501; ingen ekstra weather/mainændring.
+2. Kontrollér actual save/upload/no-loss/private/CAS/R2/privacy/Pages/terminal.
+3. Lever klar533 først med renewed writers/head/base/exact CI/proof.
+4. Retarget grøn534 til main, kontrollér indhold/gates og lever pc-læseretningen.
+5. Kontrollér offentlig20/day/to modes, pc/mobil samt Nibe/Lyngby efter freshdata.
+6. Færdiggør separat535 scoped-Dask-worker med version/hukommelse/exact CI.
+7. Fortsæt actual519-factory/CP/S-før-T/writer/kill/failure4min/runner/kapacitet.
+Ingen hel519kopi, OFF-aktivering, modelændring, privatlogomvej eller gatelempelse.
+
+# Historisk roadmap – 2026-10-02 – lever532 efter konkret Top20-regression
 
 1. [x] Bevar seneste offentlige530-data og immutabel anvendt531-migration.
 2. [x] Reproducer30s-reset af etableret55s; minimal append-only genopretning.

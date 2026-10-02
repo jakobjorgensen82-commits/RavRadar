@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import os
 import runpy
 import subprocess
 import sys
@@ -14,6 +15,7 @@ from types import SimpleNamespace
 
 import numpy as np
 import xarray as xr
+import dask
 
 from lib.copernicus_weather_component_bank import _request, _sealed, empty_component_bank, merge_component_read, produce_component_bank, save_component_bank
 from lib.copernicus_weather_components import CONTRACTS, MAX_SUBSET_BYTES, read_component_subset
@@ -123,6 +125,79 @@ class ComponentProductionTests(unittest.TestCase):
 
     def authority(self):
         return RUNNER["verify_original_components"](self.case["plan"], self.case["bank"], self.case["cache"])
+
+    def test_actual_subset_worker_dask_stays_in_owned_process(self):
+        # Same actual worker and sealed request, existing synthetic NetCDF;
+        # no provider call. Real Dask compute detects a new process on RED.
+        folder = self.case["folder"]
+        path = folder / "subset.nc"
+        dynamic_fixture("nws-wave").to_netcdf(path, engine="h5netcdf")
+        envelope = folder / "worker-request.json"
+        request = _request(self.case["plan"], TARGET["partId"], "nws-wave", TIMES)
+        atomic_json(envelope, {"request": request, "contractKey": "nws-wave"})
+        observed = []
+
+        def subset(**kwargs):
+            self.assertEqual(kwargs, subset_arguments(request, "nws-wave", folder))
+            observed.append(dask.delayed(os.getpid)().compute())
+            return SimpleNamespace(file_path=path)
+
+        class DatasetUpdating(Exception):
+            pass
+
+        module = SimpleNamespace(subset=subset, DatasetUpdating=DatasetUpdating)
+        with patch.dict(sys.modules, {"copernicusmarine": module}), \
+             dask.config.set(scheduler="processes", pool=None, num_workers=1):
+            self.assertEqual(transport_module.subset_worker(envelope, folder), 0)
+            self.assertEqual(dask.config.get("scheduler"), "processes")
+            self.assertIsNone(dask.config.get("pool"))
+        self.assertEqual(observed, [os.getpid()], "compute escaped the owned component worker")
+
+    def test_actual_subset_worker_restores_ambient_pool_on_primary_error(self):
+        folder = self.case["folder"]
+        envelope = folder / "worker-request.json"
+        request = _request(self.case["plan"], TARGET["partId"], "nws-wave", TIMES)
+        atomic_json(envelope, {"request": request, "contractKey": "nws-wave"})
+        ambient_pool = object()
+        primary = ValueError("SYNTHETIC_COMPONENT_SUBSET_FAILURE")
+
+        def subset(**kwargs):
+            self.assertEqual(dask.config.get("scheduler"), "threads")
+            self.assertIsNone(dask.config.get("pool"))
+            raise primary
+
+        class DatasetUpdating(Exception):
+            pass
+
+        module = SimpleNamespace(subset=subset, DatasetUpdating=DatasetUpdating)
+        with patch.dict(sys.modules, {"copernicusmarine": module}), \
+             dask.config.set(scheduler="processes", pool=ambient_pool):
+            with self.assertRaises(ValueError) as caught:
+                transport_module.subset_worker(envelope, folder)
+            self.assertIs(caught.exception, primary)
+            self.assertEqual(dask.config.get("scheduler"), "processes")
+            self.assertIs(dask.config.get("pool"), ambient_pool)
+
+    def test_actual_subset_worker_updating_exit_restores_ambient_config(self):
+        folder = self.case["folder"]
+        envelope = folder / "worker-request.json"
+        atomic_json(envelope, {"request": static_request("nws-wave", TARGET), "contractKey": "nws-wave"})
+        ambient_pool = object()
+
+        class DatasetUpdating(Exception):
+            pass
+
+        def subset(**kwargs):
+            self.assertEqual(dask.config.get("scheduler"), "threads")
+            self.assertIsNone(dask.config.get("pool"))
+            raise DatasetUpdating("SYNTHETIC_UPDATING")
+
+        module = SimpleNamespace(subset=subset, DatasetUpdating=DatasetUpdating)
+        with patch.dict(sys.modules, {"copernicusmarine": module}), \
+             dask.config.set(scheduler="processes", pool=ambient_pool):
+            self.assertEqual(transport_module.subset_worker(envelope, folder), transport_module.DATASET_UPDATING_EXIT)
+            self.assertEqual(dask.config.get("scheduler"), "processes")
+            self.assertIs(dask.config.get("pool"), ambient_pool)
 
     def store_static(self, key="nws-wave", **kwargs):
         path = self.case["folder"] / "new-static.nc"

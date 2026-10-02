@@ -1,4 +1,20 @@
-# Aktuelle issues – 2026-10-02 – grøn533, lokal534, offentlig532
+# Aktuelle issues – 2026-10-02 – grøn 533/534, lokal535, offentlig532
+
+- 533/PR501 og 534/PR502 er exact-head-grønne/urørte, ikke offentlige.
+  Lever 533 først efter ordinary36988295501; retarget/recheck 534 til main.
+- 535: separat komponentworker bruger lokalt scoped Dask threads/pool=None.
+  Eksisterende 23/23 tests består (11.693s, 0skip); exact-head CI/deploy åbne.
+  Ingen fuld tråd-/descendantstop-, writer-, runner- eller kapacitetsgaranti.
+- Top20: offentlig532 bevarer gamle fem; frisk 20/day/to modes/pc/mobil åbne.
+- Nibe: én forventet/beregnet del, 30/118 utilgængelige timer pr. mode ved
+  CURRENT_DIRECT_INPUT_NOT_READY; 88 andre timer brugbare. Upstreamårsag ukendt.
+- Lyngby: PUBLIC time13:00DK viser lokalpil fra DMI-modelcelle. Pilplacering
+  er ikke scoreinput; delt strømdata kan stadig have et fælles inputproblem.
+  Ingen påvist kausal top5-fejl eller selvstændigt bevist marinemaske.
+- Stor519/OFF/fuld CP/S-før-T/writer/kill/failure4min/runner/kapacitet åbne.
+  Adminafklaringen gentages ikke; særskilte sikkerhedsafvisninger består.
+
+# Historiske issues – 2026-10-02 – grøn533, lokal534, offentlig532
 
 - **LÆSERETNING:** Ejerens1–10 venstre/11–20 højre er lokalt rettet i534;
   mobil1–20/DOMorden/gamle5 bevares. Kunstig faktisk layoutkontrol består;
