@@ -1,4 +1,15 @@
-# Aktuel normalsti-revision – 2026-10-02,4.0.533
+# Ejerpræcisering – 2026-10-02,4.0.534 Top20-læseretning
+
+REQ-NATIONAL-TOP20-0528 og DEC-0278s bevarings-/backupkrav består. Nyeste
+ønske erstatter tværgående pc-læsning:1–10 nedad venstre,11–20 nedad højre.
+Mobil skal fortsat være én liste1–20. DOM/Taborden, scorer, sortering,
+femdage/to modes, gamle5 og delvise/tomme dage bevares. Kun visning, ingen
+frossen model/binding/migration/vejrplan ændres. Faktisk pc/mobilkontrol kræves.
+533 er exact-head-grøn/urørt og leveres først efter aktiv ordinary36988295501;
+534 separat retarget/exacthead/deploy derefter. Storrevisionen skal samtidig
+færdiggøres, men er ikke fuldCP-S-T/stop/kapacitetsbevist. Se DEC-0281.
+
+# Historisk normalsti-revision – 2026-10-02,4.0.533
 
 Ejerbestilt Top20 og hele vejrhentningsrevisionen fortsætter samtidigt.
 532 er leveret/cron aktiv. Én ny konkret ejerbestilt ordinary36988295501

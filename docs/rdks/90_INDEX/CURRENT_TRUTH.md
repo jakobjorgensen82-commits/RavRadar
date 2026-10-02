@@ -1,4 +1,20 @@
-# NYESTE SANDHED – 2026-10-02 – offentlig532, lokal533, aktiv ejerbestilt vejrhentning
+# NYESTE SANDHED – 2026-10-02 – offentlig532, grøn533, lokal534
+
+533/PR501/head791aeffc er exact-head-grøn: CI36989653512/proof11219467236,
+urørt og ikke leveret. Først faktisk afslutning/resultatkontrol af ejerens
+ordinary36988295501 på532/ccc5a7c1, derefter533 via DEC0148. Ingen mainændring
+mens aktiv. Cron8348098 og14:19DK er uændrede; grøn run alene er ikke gemmebevis.
+
+Nyeste ejerpræcisering: pc nr.1–10 nedad venstre og11–20 nedad højre; mobil
+én liste1–20.534 er en særskilt visningskandidat oven på533head. Ingen score,
+producent, model67/3a14/8bindinger, SQL, data eller workflowadfærd ændres.
+Eksisterende actualrenderer-test og kunstig faktisk pc-/375CSS-kontrol består;
+534 exact-headCI/offentlig effekt er åbne. Gamle fem bevares; frisk offentlig20
+skal stadig bevises på den aktive beregning. Efter533 retarget/recheck534 til main.
+Stor519/OFF/fullCP-S-T/writer/kill/failure4min/runner/kapacitet fortsætter separat.
+Se DEC-0281 og ALLERØVERSTE private checkpoint; alle særskilte afvisninger består.
+
+# HISTORISK SANDHED – 2026-10-02 – offentlig532, lokal533, aktiv ejerbestilt vejrhentning
 
 532/PR500 er leveret: exactCI36982260948/headfb5a3352, mainccc5a7c1,
 kode-only36983293056SUCCESS10:28:57DK, actual checkpoint54 52s/Pages/exact

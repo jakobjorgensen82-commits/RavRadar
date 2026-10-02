@@ -1,4 +1,16 @@
-# Aktuelt fokus – 2026-10-02, lokal4.0.533/offentlig532
+# Aktuelt fokus – 2026-10-02, lokal4.0.534/offentlig532
+
+Færdiggør ejerens pc-læseretning1–10/11–20 med mobil1–20 og samme scorer.
+533/501 er exact-head-grøn/urørt; lever først efter aktive36988295501actual
+save/upload/no-loss/deploy.534separat retarget/head/base/content/CI/writers
+og sikker levering derefter. Ingen mainændring under weather, ingen ekstra run.
+Faktisk offentlig20/day/to modes/pc/mobil kræves; backup/rollback bevares.
+Stor519 actualCP/S-før-T/writer/kill/failure4min/runner/nationalkapacitet
+fortsætter separat/OFF. Separate componenttransport-worker er en anden caller
+end533normalpilot; afgræns/afprøv faktisk caller før ændring, ingen generisk
+supervisor, gatelempelse, frossen modelkopi eller hel519release. Se DEC-0281.
+
+# Historisk fokus – 2026-10-02, lokal4.0.533/offentlig532
 
 Isolér normalCPsubset Daskthreads/poolNone med uændret Top20/model67/3a14
 og actualcaller/eksisterende offlineprøver. Måltests og47sourceplan består;

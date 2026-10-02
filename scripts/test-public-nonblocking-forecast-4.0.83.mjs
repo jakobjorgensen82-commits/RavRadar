@@ -28,11 +28,11 @@ console.log('OK: 5-dages prognosen bruger et kompakt indeks og starter ikke den 
 // renderer, without fetching a private/full production dataset.
 const renderer=app.slice(app.indexOf('async function renderNationalForecast()'),app.indexOf('\nfunction ensureConditionDetails'));
 const dates=Array.from({length:6},(_,i)=>`2026-10-${String(i+1).padStart(2,'0')}`);
-const list={innerHTML:'',querySelectorAll:()=>[]};
+const list={innerHTML:'',style:{setProperty:(name,value)=>{list[name]=value;}},querySelectorAll:()=>[]};
 const node={innerHTML:'',querySelector:()=>list,querySelectorAll:()=>[]};
 const state={mode:'waders',forecastRenderId:0,conditions:{},zones:{features:Array.from({length:25},(_,i)=>({properties:{id:`z${i+1}`,name:`Zone ${i+1}`}}))}};
 const env={state,nationalForecast:node,conditionDetailsReady:true,document:{querySelector:()=>null},getLanguage:()=> 'da',
-  visibleForecastDays:value=>value,emergencySnapshotReferenceAt:()=>null,
+  visibleForecastDays:value=>value,emergencySnapshotReferenceAt:()=>null,hasNumber:Number.isFinite,isCurrentForecastHour:()=>false,
   groupHoursForZone:()=>dates.map(date=>({date})),yieldToBrowser:async()=>{},
   bestForDay:zone=>({hour:{time:'2026-10-01T12:00:00Z'},result:{available:true,score:70+Number(zone.id.slice(1))}}),
   nationalRankingRow:row=>addNationalRanking(row,[]),compareNationalRankingRows,
@@ -45,4 +45,20 @@ assert.equal((node.innerHTML.match(/data-day-index=/g)||[]).length,5,'Seks input
 assert.equal((list.innerHTML.match(/data-zone-id=/g)||[]).length,20,'Top20-fallback skal vise op til tyve gyldige zoner.');
 assert.deepEqual([...list.innerHTML.matchAll(/data-zone-id="([^"]+)"/g)].map(match=>match[1]),Array.from({length:20},(_,i)=>`z${25-i}`));
 assert.ok(list.innerHTML.includes('<span class="rank">20</span>'));
+assert.equal(list['--national-column-rows'],'10','Pc skal læse nr.1–10 nedad før nr.11–20.');
+const css=await fs.readFile('style.css','utf8');
+assert.match(css,/@media\s*\(min-width:880px\)\s*\{\s*\.national-forecast-list\s*\{[^}]*grid-auto-flow:\s*column\s*;/);
+assert.match(css,/grid-template-rows:\s*repeat\(var\(--national-column-rows,1\),auto\)\s*;/);
+state.conditions.nationalForecast={modes:{waders:dates.slice(0,5).map(date=>({date,rows:Array.from({length:5},(_,i)=>({zoneId:`z${25-i}`,time:`${date}T12:00:00Z`,score:95-i,rankingDisplayScore:95-i,recommended:true}))}))}};
+assert.equal(await render(),true);
+assert.equal((list.innerHTML.match(/data-zone-id=/g)||[]).length,5,'Gammelt autentificeret Top5 skal fortsat være fem rækker.');
+assert.equal(list['--national-column-rows'],'5','Gamle fem rækker må ikke skabe fem tomme gridrækker.');
+state.mode='beach';
+for(const count of [0,1,11,20]){
+  state.conditions.nationalForecast.modes.beach=dates.slice(0,5).map(date=>({date,rows:Array.from({length:count},(_,i)=>({zoneId:`z${25-i}`,time:`${date}T12:00:00Z`,score:95-i,rankingDisplayScore:95-i,recommended:true}))}));
+  assert.equal(await render(),true);
+  assert.equal((list.innerHTML.match(/data-zone-id=/g)||[]).length,count);
+  assert.equal(list['--national-column-rows'],String(Math.max(1,Math.min(10,count))));
+  assert.deepEqual([...list.innerHTML.matchAll(/<span class="rank">(\d+)<\/span>/g)].map(match=>Number(match[1])),Array.from({length:count},(_,i)=>i+1),'DOM-rangorden skal også bevares i beach og ved delvis/ingen dækning.');
+}
 console.log('OK: Faktisk browserfallback bevarer fem dage, første fem og eksisterende sortering i Top20.');

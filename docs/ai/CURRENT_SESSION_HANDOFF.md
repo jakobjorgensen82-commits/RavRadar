@@ -1,4 +1,18 @@
-# AKTUELT CHECKPOINT – 2026-10-02 – offentlig532, lokal533, aktiv vejrhentning
+# AKTUELT CHECKPOINT – 2026-10-02 – offentlig532, grøn533, lokal534
+
+RELEASE codex/top20-column-reading-order fra urørt PR501head791aeffc.
+533/501 exactCI36989653512/proof11219467236 grøn/ikke leveret.534 ændrer kun
+pc-gridlæseretning1–10 venstre/11–20 højre; mobil1–20/DOM/Tab/scoreorden/gamle5
+bevares. Eksisterende rendererregression og kunstigt faktisk Chrome pc-/375CSS
+kontrol består;534exactheadCI/offentlig effekt åbne. Model67/3a14/8bindings,
+SQL/migrations/vejrplan er urørte. DEC-0281/begge håndbøger beskriver grænsen.
+EjerONEordinary36988295501 på532/ccc5a7c1 aktiv; ingen merge/mainændring/code-only.
+Actualsave/upload/no-loss/deploy/fresh20 kræves.533 leveres først, derefter534
+retarget til main/recheckhead/base/content/CI/writers og DEC0148. Cron14:19DK
+uændret. Stor519 faktiskCP/S-før-T/writer/kill/failure4min/runner/kapacitet/OFF
+separat; ingen færdigmelding eller helcopy. Alle sikkerhedsafvisninger består.
+
+# HISTORISK CHECKPOINT – 2026-10-02 – offentlig532, lokal533, aktiv vejrhentning
 
 Release codex/normal-copernicus-dask-scheduler fra currentmainccc5a7c1.
 532/PR500 og36983293056 er faktisk leveret, checkpoint52s/Pages/exact210/673.
