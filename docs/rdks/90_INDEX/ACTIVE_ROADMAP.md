@@ -1,4 +1,155 @@
-# Aktivt roadmap – 2026-10-02 – smal540 efter faktisk leveret539
+# AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
+
+Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10
+sluttede11:00:56–58DK. Lille416byteROOTproof11269678605 er hentet ALENE og
+matcher repository/PR509/head3d1/treeDF96aac0…/contractv2/privacyfalse/udløb2/11.
+Det er HISTORISK proof for3d1, ikke for den nu funktionelt ændrede kandidat.
+
+Actual runCopernicusComponentRuntime mistede sin primære outputfejl ved
+sekundær egen plan-rm. BIGs samme realPython/offline-parent:8PASS/2FAIL12895ms,
+ÉN unik fejl; minimal failed/catch/rethrow/try-ownrm gav10PASS12920ms/0skip.
+Kun dette direktecallerled og samme parents FIRE ekstra underprøver er
+isoleret i RELEASE541. Ingen whole519copy, provider, privatinput eller fakefactory.
+Releaseisolering: begge eksisterende parents14PASS/0FAIL/0SKIP13730.1992ms,
+12underprøver+2parents, ikke14nyeunikke tests. Faktisk child-close kommer før
+authority-/planoprydning; cleanup-only HARD; bankBYTEidentisk. Syntetisk stop
+er fortsat ikke completedOSkill/descendant/writer/runnerloss/kapacitetsbevis.
+
+Inverse runtime-diff og alle ANDRE testparents BYTEidentiske; runtimeLF
+02ac2143…/testLF a773d28e… matcher BIG. Indexcfdf…/CLI/prepare/args/budget/
+fallbackpolitik/admission/score/geometri uændrede. Native67/29ea-checkPASS;
+3eksisterende model/releaseContract/privateABI-målPASS2326.3658ms/0skip.
+CP-runtime er producerinventory, IKKE native67/Candidate65/continuation12;
+allerede etableret storageABI uændret. Native29ea/28a6/d983 og SQLoutside96b16…
+står fast; ingen ny genbinding, alias eller kompatibilitetsundtagelse.
+
+Public540/main8df/04Z og ordinary37109313340 er urørte. Metadata11:12DK:
+DMI78 stadig aktiv/no failedsteps, recovery-onlySKIPPED. Cron8348098 aktiv,
+rootdispatch/cancel/pause0. Ingen merge/main/code-only/SQLinstallation/ekstrarun
+mens aktiv. Ny funktionel commit/exactCI kræves for det KONKRETE callerfund,
+ikke statusrerun af grøn3d1. Samlet revision/fullCP-SførT/writer/kill/failure4min/
+runnerloss/nationalcapacity/BIGOFF er OPEN. Andre afvisninger består. DEC-0288.
+
+# HISTORISK TILLÆG – 2026-10-03 10:52 DK – 541s historiske fixture korrigeret; ny exact-head CI kræves
+
+PR509s førstehead8dea110e3ddcfe30716bf73a653ac0780db71fef fik source-CI
+37110262078/attempt1/job111166613925 step8FAIL10:44:55DK; tree/proof9/10
+SKIPPED, ikkePASS, intet ROOTproof. Ingen rå joblog er hentet. Afgrænset
+lokal5-filsmatrix4PASS/1FAIL2164.1192ms pegede på eksisterende protectedprivate-
+runtimeprøve: dens historiske hourly-v1→v2-positive fixture lånte forkert
+dagens NYE continuationd983 i stedet for sin præcise gamle4668. Historisk
+Top5projection var allerede explicit. Testfixture bruger nu sit immutable
+PRIVATE_HOURLY_V1_PREDECESSOR-continuationendpoint; særskilt negativ kontrol
+afviser currentd983 selv med gammelprojection. Selve produktionspredicate/
+admission/restore/parser/cipher er BYTEuændret. Ingen gammel undtagelse fornyes.
+Kun denne eksisterende fil efter fix:1PASS/0FAIL/0SKIP3546.4227ms. Tre direkte
+SQL/readiness/workflowmål3PASS523.3844ms; ikke en fuld kilde-/runtimesuite.
+Dette forklarer den lokale RED, men alle CI-fund er endnu IKKE samlet bevist.
+
+Samme ikke-offentlige541-kandidat har funktionel fixture-/dokumentationsrettelse;
+ny exact-head source-CI skal bestå på korrigeret head, ingen rerun af8dea blot
+for status. Native29ea/28a6/d983, physicalcontracts, scopedruntimebytes,
+applied008/00945, sourceplan47 og public540/main8df forbliver uændrede.
+NATURLIG37109313340 er stadig aktiv; ingen merge/main/SQLinstallation/
+code-only/providerdispatch mens aktiv. Ejerens scopedautoritet og øvrige
+afvisninger består. Allerøverste checkpoint opdateres med faktisk nyt head/CI.
+Samlet revision stadig OPEN, ingen actualprivateoriginalB-/deploypåstand.
+
+# HISTORISK – 10:30 kandidatkontroller nedenfor er fortsat evidens, ikke source-CI-success
+
+# AKTUELT TILLÆG – 2026-10-03 10:30 DK – lokal4.0.541, godkendt CP-lukning og native bindingskæde
+
+Allerøverste checkpoint og ejerens konkrete godkendelse har forrang.
+RELEASE codex/copernicus-child-close-binding/base8df23a9c har nu lokal4.0.541.
+Offentlig/main er FORTSAT4.0.540/8df med3a14/a249/4668; der er ikke merged,
+installeret SQL eller deployet noget nyt. BIG519/c557/OFF bevares separat.
+
+Kun godkendt loadCopernicusComponentAuthority: første fejl bevares og actual
+child-close kræves før settlement/egen-ydrecleanup/fallback/OM. Stopforsøg
+er ikke closebevis. Cleanup-only HARD; args/budgetter/priority/admission/
+score/centralgeometry uændrede. To genbrugte parents/8subcases/10reportedunits
+PASS8374.027ms; direkte callers/CLI og12gamleparents byteurørte. Ikke completed
+OSdescendant/kill/writer/failure4min/runnerloss/nationalcapacity/fullCP-SførT.
+
+Rigtig normal nativeclosure er integrated29ea9a19…/67 +CandidateG28a69936…/65
++afledtcontinuationd983bb08…/12. Fysiskea226/c73 og øvrige65/64/11filhashes
+uændrede. Intermediate0dfa/staleCandidate er FORKASTET, ikke alias. Metadata-
+ONLYhistoriskproof beviser immutable008c557→3a14; normalnativegate er separat.
+Ingenmodelcopy/eval/nativeplanningprobe eller SOURCEallassets-autoritet.
+
+NyLOCALappend-only20261003080000 kræverexact3a14/a249/4668 og673homogene
+oldstates, genvaliderer FULLcurrentpayload, bevarer måling/historik/time/roller/
+cipher/same-Tindhold og actual55s/pg_procreadback. Otte consumers følger29ea.
+Applied008/00945 LF103de25a…/31632e33… erimmutable. SQLparitetsecuritymål3PASS
+143.3309ms; ikke SQLexecution/livebackend/productionoriginalB-restore.
+
+Mekanisk set-version541 ændrer cache-/releaseidentiteter, ikke model-/provider-
+policy. Samtaledelta/status/issues/changelog/beggehåndbøger89.154/master/roadmaps
+er opdateret. Geodata kræver særskilt ONLYtopversiondiff førcommit. Nativeclosure/
+versions/docs/privacy/sourceplan kontrolleres målrettet; tidligere runtimeprøver
+genbruges. Egen exact-head sourceCI og normale private/gemning/artifact/deploy-
+gates mangler stadig. Ingen statuscommit/gentagen fuldsuite/gateomgåelse.
+
+NYTNATURLIGT ordinary37109313340/attempt1/exactmain8df start10:19:29DK eraktivt;
+metadata10:24DK build111164070050/DMI78start10:24:23DK/ingenfailedsteps.
+Recovery-onlySKIPPED,ikkePASS. Reentry/terminal/exactmainjobsSUCCESS.
+Dette er IKKE restore/fileCount/priorMatchedkey/nyt107saved/108upload/deploybevis.
+Ingen merge/main/productionbindingsinstallation/code-only/audit/oneoff/ekstrarun
+mens aktiv. Cron8348098 holdesaktiv/uændret; ingen rootdispatch/cancel/pause.
+
+Næste: færdiggør scope-/versionsintegritet og PR med én exact-head sourceCI;
+holdheadurørt. Efter denne ordinarys faktiskecompletion/resultcontrol fornys
+writers/main/base/head/unexpiredROOTproof og eksisterende DEC0148false/
+privateoriginalB-AAD-S/fullRuntimeContract/673state/CAS/backend/Pages/reseal/
+terminal/requireddeploy-gates. Ingen standaloneSQL/privatjoblog/admissionwiring.
+AlleANDREafvisninger består; samlet store revision og BIGOFF er fortsat OPEN.
+
+# HISTORISK – AKTUELT TILLÆG – 2026-10-03 10:05 DK – erstattet af lokal4.0.541-status ovenfor
+
+Allerøverste private checkpoint og ejerens konkrete afgrænsede godkendelse har
+forrang. RELEASE er codex/copernicus-child-close-binding på main8df23a9c;
+BIG519 forbliver separat/OFF. Ingen ny version/commit/push/CI/merge/deploy.
+
+Den godkendte låste kalder bevarer første fejl og kræver actualchild-close før
+cleanup/fallback. RuntimeindexLFcfdfdab9… og to prøvede parents er uændrede
+siden isoleret10unitsPASS8374.027ms. Ingen OSdescendant/kill/writer/runner-
+garanti eller completedfullCP-SførT. Direkte callers/CLI er byteuændrede.
+
+Konkret integrationsfejl afslørede, at sharedindex også identificerer Candidate G.
+0dfa som ENDELIG integratedbinding og "Candidate G/continuation uændret" er
+FORKASTET, ikke et produktionsresultat. Normal nativegen giver nu integrated
+29ea9a19647bf7d5edad0eee159267086d546f0d90a9f2778a77077351aad948/67files;
+Candidate G28a69936b3d9a9c655e967c5e0c352d8401e5894ef3011bbfc55c85ad37f7ce7/65;
+continuationd983bb085f75252d00f0e2585cd0e274ea86020000f99037e9054a3989a4aef6/12.
+Kun direkteindex + afledt Candidate G-hashmetadata ændres; physicala226/c73
+og øvrige65/64/11filehashes bevares. Ingen modelbody-copy/eval/alias/eksklusion.
+
+Append-only20261003080000 er LOKALT genereret; applied008/00945 LF103de25a…/
+31632e33… immutable. Exact3a14/4668/a249→29ea/d983/28a6-projektion kræver
+673homogene states og fullcurrentvalidator. Historiskc557→3a14 kædes gennem
+samme CP-bridge. Same-T bevarer alle felter bortset fra3afledte digests;
+begge helpers readback/ACL/searchpath-bundne og actual55s påkrævet. Ingen
+cipherrelabelling/SQLinstallation. Otte consumers LOKALT synkroniseret fra
+prevalideret read-onlyanchor; readiness/release/code-onlyplan peger på nyt led.
+HistoriskTop20builder bruger exacthashbundne metadata, ikke dagens closure
+som3a14; normalnativegate består separat. Alle ANDRE afvisninger består.
+
+Finalsuccessor/8consumer/install-security-paritet3PASS143.3309ms/0skip.
+Mellemtrin: metadataPASS1053.0656ms; readiness+2eksisterende private
+migration/routing-fixtures3PASS1068.108ms. Ikke endelig liveSQL/privatrestore/
+originalB-AAD-S/fullfactory/updater eller nationalkapacitetsbevis. Målrettet
+endelig sourceintegritet, resterende docs/versionspligt, exactheadCI og
+originalB/runtime/CAS/backend/postdata/publiceffekt kræves før levering.
+Ingen gentaget CP-runtime/RED/fuldsuite/status-CI. Se DEC-0288.
+
+Offentlig/main540/8df/seneste04Zrr-20261003060050-210/210/673/complete:true
+forbliver urørt. Ordinary37096157187 actualsave/cache/upload/deploy/required
+SUCCESS09:22:27DK; ingen ny weatherdispatch eller pause. Ingen frisk FIELD/
+Top20/Nibe/private-gap-aldermåling. Cron8348098 aktiv/uændret; ingen main/
+merge/bindingsinstallation/code-only under ny aktiv weatherwriter. GPT-6.1 Sol/
+Ekstra høj/model/plan/kadence uændrede; samlet revision/OFF fortsat åben.
+
+# HISTORISK – Aktivt roadmap – 2026-10-02 – smal540 efter faktisk leveret539
 
 1. Afslut lokal540 dokumentation/versionskontrol og egen exact-head source-CI/proof.
 2. Forny writers/main/head/base/content/unexpiredROOTproof før sikkerDEC0148false.

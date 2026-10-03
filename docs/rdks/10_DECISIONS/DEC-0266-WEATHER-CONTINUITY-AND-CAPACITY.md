@@ -3,7 +3,46 @@
 **Status:** Aktiv målbeslutning; genstartsleverancen er afgrænset i DEC-0268. Den samlede 4.0.519-kandidat er ikke produktionsbevist.
 **Dato:** 2026-09-30
 
+### Tillæg 3. oktober kl.09.34 — godkendt child-close isoleret, genbinding uafsluttet
+
+Ejeren valgte konkret "Godkend den afgrænsede rettelse" til den låste CP-kalder.
+Første sikre fejl bevares mod cleanup; startet child-close kræves før cleanup/
+reservehentning. Nødvendige direkte callers/tests/korrekt modelgenbinding er
+omfattet; alle andre afvisninger, adgangskrav og score/priority/geometry/budgetter
+bevares. Ingen bred kilde-/privatlog-/admissionworkflowtilladelse er givet.
+
+Efter ordinary37096157187 actualcompletion/resultkontrol/writers0 er kun
+loadCopernicusComponentAuthority og to eksisterende testparents isoleret fra
+BIG til RELEASE/main8df. De direkte callers/CLI er uændrede og awaited.
+Fejlet stop/repeatederror er ikke closebevis; cleanup-only HARD efter close.
+Isolerede10parent/subtestunitsPASS8374.027ms/0fail/0skip, fem+treunderprøver.
+IndexLFcfdfdab9…/testLF6052bb37… matcher prøvede BIG-bytes,12gamleparents
+bevares. Ikke fuld OSdescendant/kill/writer/runner/failure4min/fullCP-SførT-prøve.
+
+Normal nativebundle-builder beregner nu0dfa6c2bb7943a1e7f79d3aff10a3c90a64bd40423058b6909166e5c693b0c05/67files:
+ONLYindex og samletbundlehash i manifestet; physicalcontracta226/andre66hashes
+uændrede. Kun lokal metadata-generation, ikke modelbody-copy/eval/hashalias.
+Otte consumers er stadig stale3a14. Append-only successor/read-onlyanchor/
+exactpredecessorbridge/live55s-readback/private-runtime/historiskgate er næste
+integration. Applied008/00945 immutable; intet SQL installeret eller runtime-
+bindingsforbrug synkroniseret endnu. Ingen ny releaseversion/CI/commit/push/deploy.
+Public540/main8df/seneste04Z er urørt. Samlet revision og OFF er fortsat åbne.
+Se allerøverste checkpoint09.34 for productionproof/caveats/branchstatus.
+
 ## Observeret årsag og afgrænsning
+
+### Nyere3. oktober – sharedindex med korrekt afledt genbinding
+
+DEC-0288 og allerøverste checkpoint supersederer ovenstående09.34s lokale
+0dfa/stale8consumer-status. Sharedindex ligger også i Candidate G65; normal
+generation giver Candidate28a6, afledt continuationd983 og integrated29ea67.
+Den første0dfa var et forkastet mellemtrin, aldrig deployet. Fysiske a226/c73
+og øvrige65/64/11filehashes er uændrede, ingen alias/modelbody-copy/eksklusion.
+Append-only20261003080000/8consumers er nu LOKALT genereret/synkroniseret;
+applied008/00945 immutable, begge helpers/full673/same-T/55s readback bevares.
+Finalsource-/forbruger-/installkontrakt3PASS143.3309ms er ikke actualSQL/private-
+restore/fullfactory/productionproof. Ingen ny version/commit/push/CI/deploy;
+samletrevision og alle øvrige afvisninger/OFF består.
 
 ### Tillæg2. oktober – faktisk539 og smal540, ikke færdig livscyklus
 

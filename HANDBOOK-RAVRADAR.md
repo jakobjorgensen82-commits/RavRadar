@@ -1,8 +1,58 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.540
+**Håndbogsversion:** 4.0.541
 
-## 89.148 Revision – Copernicus bevarer den første gemmefejl
+## 89.154 4.0.541 – Copernicus skal være lukket før oprydning (lokal kandidat)
+
+Offentlig version er 4.0.540. Den seneste almindelige vejrhentning er faktisk
+gemt i cache og deployet. Den store revision er stadig ikke færdig.
+
+Ejeren har godkendt en afgrænset rettelse af den låste Copernicus-kalder.
+Ved procesfejl eller timeout bevares den første fejl. Oprydning og
+reservehentning venter på underprocessens faktiske lukningssignal. Et
+stopforsøg er ikke bevis for lukning; uden signal fortsætter kaldet med at
+vente. Fejler kun oprydningen, stopper kaldet stadig hårdt. De eksisterende
+kalderled venter allerede på dette kald. En efterfølgende målrettet prøve
+viste dog, at den direkte vejrhentningskalders egen planoprydning stadig
+kunne skjule den første outputfejl. Det samme lille forløb blev først rødt
+og er nu rettet smalt: egen oprydning forsøges stadig, uden at skjule kaldets
+primære fejl. Oprydning som eneste fejl er fortsat et hårdt stop.
+
+Den samme kildefil indgår både i den integrerede model og i reservemodellen
+Candidate G. Den korrekte normale kildeberegning skal derfor føre begge
+tekniske bindinger og den afledte historikbinding frem. En første lokal
+kontrol afviste den gamle Candidate G-binding; den blev ikke gjort grøn
+med en hashgenvej. Den endelige lokale beregning omfatter 67 og 65 filer.
+Den låste kalder, nødvendig direkte planoprydning og afledt hashmetadata
+ændres; fysiske scoreformler,
+målinger, geometri, kildeprioritet, argumenter, budgetter og tidsplan bevares.
+
+Den nye lokale databaseovergang kræver den præcise gamle binding og alle
+673 kystdelstilstande. Hele den nye tilstand kontrolleres igen. Målinger,
+historik, tid, roller og reservetilstande bevares; ukendt eller blandet input
+afvises. Den etablerede gemmetidsgrænse på 55 sekunder kontrolleres fortsat.
+Gamle installerede migrationer ændres ikke, og intet SQL er installeret.
+
+Den første samlede kildekontrol stoppede. En målrettet lokal prøve fandt,
+at en gammel test fejlagtigt brugte dagens nye historikbinding. Kun dens
+testdata er rettet til det præcise gamle forløb. En ekstra negativ kontrol
+beviser, at den nye historikbinding ikke arver den gamle undtagelse.
+Produktionsadgangen er uændret. Den korrigerede kildekontrol bestod på sit
+præcise kodepunkt. Den nye konkrete kalderrettelse kræver sin egen kontrol;
+den gamle grønne kontrol gælder ikke automatisk for ændret kode.
+
+To genbrugte prøveforløb med tolv underprøver består efter isoleringen.
+Den faktiske lille Python-proces lukkes før oprydningen, og den gamle bank
+bevares byte for byte. Den direkte planoprydning ligger ikke i scoremodellens
+kildefilsliste og ændrer ikke dens tekniske binding eller lagringskontrakt.
+
+Målrettede procesprøver og lokale bindings-/sikkerhedskontroller består.
+Det er ikke en ny offentlig version eller bevis for alle underprocessers
+stop, eksklusiv skrivning, afbrudt runner, national kapacitet eller hele
+forløbet med private originalfiler. Resterende kilde-, data- og deploykontrol
+skal bestå før levering. Andre tidligere afvisninger består. Se DEC-0288.
+
+## 89.148 Revision – Copernicus bevarer den første gemmefejl (historisk kandidatstatus; nu leveret)
 
 Den offentlige version er 4.0.539. Den almindelige vejrhentning er afsluttet
 med faktisk gemning, upload, beregning og deploy. Derefter er Rav Jagt-teksten
@@ -94,13 +144,29 @@ gyldige data bevares; frisk offentlig20 og534levering er endnu ikke bevist.
 Score, handicap, sortering og historik er urørte; stor519 er separat/OFF.
 Ældre kandidat-/pausestatus længere nede er historisk og erstattes af dette.
 
-**Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.540 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+**Aktuel offentlig modelbinding:** Den integrerede scoremodel er fortsat den eneste
+offentlige model, og scoreformlen er uændret. Offentlig 4.0.540 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=3a14f458122f5bc0ea8a60c07abbcbd68d022c0322a87e77242891f21631c852` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+**Lokal godkendt procesrettelse, endnu ikke offentlig:** Den normale
+kildeberegning er 4.0.541-kandidatens binding. 4.0.541 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og integreret bundle
+`modelBundleSha256=29ea9a19647bf7d5edad0eee159267086d546f0d90a9f2778a77077351aad948` over 67 kanonisk normaliserede transitive implementeringsfiler,
+Candidate G-bundle
+`modelBundleSha256=28a69936b3d9a9c655e967c5e0c352d8401e5894ef3011bbfc55c85ad37f7ce7` over 65 transitive filer
+og afledt continuation
+`d983bb085f75252d00f0e2585cd0e274ea86020000f99037e9054a3989a4aef6` over12filhashes.
+Kun den rettede Copernicus-kalder og afledte metadata ændres; begge fysiske
+kontrakter er uændrede. De otte lokale forbrugere følger den faktisk beregnede
+binding. Den nye snævre databaseovergang kræver præcise gamle bindinger og673
+ensartede gamle tilstande, genkontrollerer hele resultatet og bevarer historik,
+målinger, tid, roller og indhold på samme target. Offentlig continuation er
+stadig46683362…; gammel ciphertext omskrives ikke. Ingen migration er installeret.
+Kilde-, private-state- og deploygates mangler. Se DEC-0288.
 
 ## 89.143 4.0.539 – Bevar den første gemmefejl
 
