@@ -2,6 +2,27 @@
 
 **Håndbogsversion:** 4.0.541
 
+## 89.155 Skrivefri undersøgelse af Lyngby og nabozonerne
+
+Offentlig 4.0.541 er leveret. Ejeren har særskilt godkendt en læsefunktion til
+én præcis gemt krypteret pakke, efter først at have godkendt hele pakkens læsning.
+Det lokale diagnoseværktøj ændrer ikke produktversion, model, punkter eller data.
+Kildekontrol, sikker merge og faktisk læsning afventer; en lokal test er ikke
+bevis for, at den private produktionspakke allerede er åbnet.
+
+Undersøgelsen følger Lyngby/Lodbjerg, Agger og Stenbjerg. Samme valgte DMI-punkt
+leverer værdi og pil. Et Limfjordspunkt ses på land ved Lodbjerg, men de faktiske
+historiske kilder skal stadig kontrolleres. En senere svag udgående strøm kan
+godt stå sammen med høj transportscore på grund af den eksisterende48h-hukommelse.
+
+Originalpakke, digest, kilde, autentificering, model og filindhold er fastlåst.
+Kun sikre optællinger og kontrol af gemt beregning forlader læsefunktionen;
+ingen rå strømvektorer, koordinater, private stier eller fejlpayload. En matchende
+gemt tid/styrke er ikke i sig selv bevis for en lagret årsagskobling eller korrekt
+havcelle. Ukendt maskestatus forbliver ukendt. Ingen nyt vejr, cachegemning,
+produktionswrite eller deploy. En mulig alle-zonekontrol er foreslået, ikke udført.
+Se DEC-0289; ældre lokale541-kandidatstatus nedenfor er historisk.
+
 ## 89.154 4.0.541 – Copernicus skal være lukket før oprydning (lokal kandidat)
 
 Offentlig version er 4.0.540. Den seneste almindelige vejrhentning er faktisk

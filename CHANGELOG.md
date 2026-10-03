@@ -1,3 +1,13 @@
+## Ikke-release – 2026-10-03: fast skrivefri Lyngbydiagnose (lokal)
+
+Ejerens særskilte ja godkender en læsefunktion til den præcise eksisterende
+krypterede pakke. Den genbruger original autentificering og model-/filgates,
+validerer gemt 48-timers strømstate og udsender kun sikre aggregater for
+Lyngby og to naboer. Ingen provider, cache-/produktionswrite, modelændring,
+geometriændring eller deploy. Lokal test er ikke faktisk privatlæsebevis.
+Exact-head CI, merge og diagnose afventer; offentlig version er 4.0.541.
+Se DEC-0289. Ældre lokale541-statusser nedenfor er historiske.
+
 ## 4.0.541 – Godkendt Copernicus-lukning og korrekt native genbinding (lokal kandidat)
 
 - Ny konkret direkte CP-kalderfejl: egen planoprydning maskerer outputfejl.

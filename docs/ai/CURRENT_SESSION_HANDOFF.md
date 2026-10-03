@@ -1,3 +1,14 @@
+# NYESTE – 2026-10-03 – isoleret sealed Lyngbylæser, offentlig541 urørt
+
+Ejerens seneste særskilte ja godkender diagnosekode/workflow efter helepakke-
+læsetilladelsen. DEC-0289. Branch codex/lyngby-sealed-current-audit/basebbc.
+To nye toolingfiler og eksisterende audit-testparents, ingen ny produktversion.
+Faste pakke-/originalbindinggates, kanonisk gemt-state replay og eksisterende
+DMI-verifier; safe counts og eksplicit IKKE kausaljoin/maskbevis. Ingen private
+værdier/logs/provider/centralwrite/deploy. Normalwriter37151127122 senest aktiv;
+CI/merge og actual GCM-læsning afventer. Hold alle andre afvisninger og BIG519/OFF.
+Fortsæt med exact-head kildekontrol, writer/resultatkontrol og den faste læsning.
+
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
 Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10

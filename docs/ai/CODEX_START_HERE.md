@@ -1,3 +1,14 @@
+# NYESTE – 2026-10-03 – særskilt godkendt Lyngbylæsefunktion
+
+Offentlig541 er leveret; ældre »lokal/ikke-leveret541« nedenfor er historisk.
+Læs DEC-0289 og øverste private checkpoint før næste diagnosearbejde. Ejer har
+godkendt hele EXACTpakke11281483201 og senere særskilt ja til diagnosekode/
+workflow; spørg ikke igen. Lokal codex/lyngby-sealed-current-audit har fast
+originalsource/binding/GCM og safe tre-PART aggregater, ingen ny release.
+Tests består; exact-head CI/merge/faktisk privatlæse-/årsagsbevis afventer.
+Ingen main/auditdispatch under aktiv ordinarywriter. Alle andre afvisninger
+består. Alle-zonekontrol er foreslået, ikke udført eller automatisk rettelse.
+
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
 Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10

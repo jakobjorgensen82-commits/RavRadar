@@ -1,3 +1,13 @@
+# NYESTE – 2026-10-03 – Lyngby sealed læser efter særskilt ejer-ja
+
+Se DEC-0289 og allerøverste private checkpoint. Offentlig541 er leveret;
+codex/lyngby-sealed-current-audit er lokal tooling, ikke542. Exactartifact
+11281483201/original37136425685-1/bbc er læse- og kodeautoriseret; gentag ikke
+spørgsmålet. Ingen nye providers/rawlogs/keys/pointer-/score-/produktionswrite.
+Målrettede tests består; CI/merge/actual GCM og historisk årsag afventer.
+Normalwriter37151127122 var senest aktiv, så ingen mainmerge/auditdispatch.
+Alle-zonekontrol er foreslået, ikke udført; ingen automatisk geometri-/modelrettelse.
+
 # NYESTE CHECKPOINT – 2026-09-27 – lokal 4.0.503 DMI-PART-kontinuitet
 
 Helikoptertillæg før merge: fuldt `36293202251` gemte ingen

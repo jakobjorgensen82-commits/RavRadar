@@ -1,3 +1,12 @@
+# NYESTE – 2026-10-03 – diagnose før mulig tværgående cellekontrol
+
+DEC-0289: lokal skrivefri sealed Lyngbylæser er særskilt godkendt og målrettet
+testet. Næste er exact-head CI, sikker main efter ordinarycompletion og actual
+originalpakke-læsning; derefter afgrænset årsagskonklusion. Mulig kontrol af
+alle210/673 for samme geografiske fejl er foreslået, ikke udført. Ingen
+automatisk input-, geometri- eller scoreændring. Offentlig541 er leveret;
+stor vejrhentningsrevision/historik/kildemask og faktisk fuld årsag er OPEN.
+
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
 Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10

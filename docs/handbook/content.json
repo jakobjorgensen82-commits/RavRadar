@@ -5,6 +5,13 @@
   "updatedAt": "2026-10-03",
   "sections": [
     {
+      "id": "sealed-lyngby-current-source-diagnosis",
+      "chapter": "89.155",
+      "title": "Skrivefri undersøgelse af Lyngby og nabozonerne",
+      "summary": "Én præcis ejerudpeget pakke undersøges uden nye vejrhentninger eller modelændring. Faktisk privatlæsning afventer.",
+      "body": "<p>Offentlig 4.0.541 er leveret. Ejeren har godkendt hele den udpegede krypterede pakke og senere særskilt diagnosekode og læseworkflow. Værktøjet er lokalt og ændrer ikke produktversion, model, punkter eller data. Kildekontrol, sikker merge og faktisk læsning afventer.</p><p>Samme valgte DMI-punkt leverer strømværdi og pil. Et Limfjordspunkt ses på land ved Lodbjerg. Historiske kilder og havcelle skal stadig kontrolleres; en senere svag udgående strøm kan stå sammen med høj transportscore gennem den eksisterende 48-timers hukommelse.</p><p>Originalpakke, digest, kilde, autentificering, model og filer er fastlåst. Kun sikre optællinger og kontrol af gemt beregning forlader funktionen. Ingen rå strømvektorer, koordinater, private stier eller fejlpayload. En matchende gemt tid og styrke er ikke i sig selv en lagret årsagskobling eller havcellebevis. Ukendt maskestatus forbliver ukendt. Ingen nyt vejr, cachegemning, produktionswrite eller deploy. Alle-zonekontrol er foreslået, ikke udført. Se DEC-0289; ældre lokale541-status nedenfor er historisk.</p>"
+    },
+    {
       "id": "copernicus-child-close-native-binding-local",
       "chapter": "89.154",
       "title": "4.0.541 – Copernicus skal være lukket før oprydning (lokal kandidat)",
