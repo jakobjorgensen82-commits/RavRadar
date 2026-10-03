@@ -17,6 +17,10 @@ import { packDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
 import { DMI_FORECAST_HOURS, buildDmiForecastHourly } from './lib/dmi-forecast-store.mjs';
 import { dmiExpectedIdentityForPart } from './lib/ravscore-production-adapters.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import { buildCurrentSupplyMemory } from '../js/core/ravscore-current-supply-memory.js';
+import { spawnSync } from 'node:child_process';
+import { summarizeSealedCurrentPart, validateSealedCurrentSourceTarget,
+  SEALED_CURRENT_SOURCE_TARGET as sealedTarget } from './audit-sealed-current-source.mjs';
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const credentials = { supabaseUrl: 'https://storage.example.test', serviceRoleKey: 'sb_secret_synthetic-never-real',
@@ -576,4 +580,94 @@ test('audit source has no production entrypoint or publication calls', async () 
   assert.doesNotMatch(source, /import\s*\(?\s*['"][^'"]*update-weather/);
   assert.doesNotMatch(source, /mode:\s*['"](?:save|restore)['"]/);
   assert.doesNotMatch(source, /buildRavScoreProductionPartSeries|mergeVerifiedProtectedProgressComponents|\.uploadImmutable\(/);
+});
+
+test('sealed diagnosis pins the exact artifact, original attempt, repository, digest and expiry', () => {
+  const artifact = { id: sealedTarget.artifactId, name: sealedTarget.artifactName,
+    digest: sealedTarget.artifactDigest, size_in_bytes: sealedTarget.artifactBytes,
+    expired: false, expires_at: '2026-10-04T18:34:41Z', workflow_run: {
+      id: sealedTarget.runId, head_sha: sealedTarget.sourceHead, head_branch: 'main',
+      repository_id: sealedTarget.repositoryId, head_repository_id: sealedTarget.repositoryId } };
+  const run = { id: sealedTarget.runId, run_attempt: 1, head_sha: sealedTarget.sourceHead,
+    status: 'completed', conclusion: 'success', head_branch: 'main', event: 'workflow_dispatch',
+    path: '.github/workflows/run-current-weather-once.yml',
+    repository: { full_name: sealedTarget.repository }, head_repository: { full_name: sealedTarget.repository } };
+  const now = '2026-10-03T20:00:00.000Z';
+  assert.equal(validateSealedCurrentSourceTarget(artifact, run, now), true);
+  for (const delta of [{ id: artifact.id + 1 }, { digest: 'sha256:' + '0'.repeat(64) },
+    { expired: true }, { size_in_bytes: artifact.size_in_bytes + 1 },
+    { workflow_run: { ...artifact.workflow_run, head_repository_id: 1 } }]) {
+    assert.throws(() => validateSealedCurrentSourceTarget({ ...artifact, ...delta }, run, now), /TARGET_REJECTED/);
+  }
+  for (const delta of [{ run_attempt: 2 }, { head_sha: 'a'.repeat(40) }, { status: 'in_progress' },
+    { head_repository: { full_name: 'untrusted/fork' } }]) {
+    assert.throws(() => validateSealedCurrentSourceTarget(artifact, { ...run, ...delta }, now), /TARGET_REJECTED/);
+  }
+  assert.throws(() => validateSealedCurrentSourceTarget(artifact, run, '2026-10-04T18:34:41.000Z'), /TARGET_REJECTED/);
+});
+
+test('sealed current diagnosis reuses actual verifier/replay and publishes only bounded aggregates', () => {
+  const reference = '2026-10-03T16:00:00.000Z', epoch = Date.parse(reference);
+  const part = { partId: 'dk-b01-02-national-part-01', zoneId: 'DK-B01-02',
+    waterPoint: [8.2713201, 56.827], onshoreDirectionDeg: 90 };
+  const fixture = nativeFixture(part, reference); // Same existing native-source fixture.
+  const evidence = Array.from({ length: 49 }, (_, i) => ({
+    time: new Date(epoch + (i - 48) * 3_600_000).toISOString(), strength: 1 }));
+  const replay = buildCurrentSupplyMemory(evidence, { referenceTime: reference });
+  part.ravScoreModel = { currentState: { time: reference, currentReferenceAt: reference,
+    currentEvidence: evidence, currentNativeHoldAuthorization: null, currentNativeHoldIntervalEnds: [],
+    currentMemoryWindowHours: 48, currentMemoryReady: replay.memoryReady,
+    currentMemoryStatus: replay.status, currentMemoryCoverageHours: replay.coverageHours,
+    supplyPotential: replay.supplyPotential } };
+  const native = evidence.map((item, i) => {
+    const time = item.time.replace('.000Z', 'Z');
+    return { time, 'current-u': 0.15, 'current-v': 0, sources: { current: {
+      ...fixture.native[0].sources.current, collection: 'dkss_lf',
+      gridPoint: [8.2713201, 56.827], distanceKm: 0,
+      modelRun: new Date(epoch - 60 * 3_600_000).toISOString().replace('.000Z', 'Z'),
+      itemUpdatedAt: new Date(epoch - 59 * 3_600_000).toISOString().replace('.000Z', 'Z'),
+      nativeValidTime: time, leadTimeHours: i + 12,
+    } } };
+  });
+  const bulk = fixture.donor(native);
+  const before = JSON.stringify({ part, bulk });
+  const measured = summarizeSealedCurrentPart(part, bulk);
+  assert.equal(measured.replayedSupply, 100);
+  assert.equal(measured.sourceCounts.LF_LAND_POINT, 49);
+  assert.equal(measured.effectiveDeltaByMatchingSource.LF_LAND_POINT, 100);
+  assert.equal(measured.directionCounts.inbound, 49);
+  assert.match(measured.attribution, /NOT_CAUSAL_JOIN$/);
+  assert.equal(measured.originalGribCellMask, 'NOT_IN_BASE_INVENTORY_NOT_MEASURED');
+  assert.equal(JSON.stringify({ part, bulk }), before, 'inspection is byte-neutral in memory');
+  safeReport(measured, 'secret-error-canary');
+  assert.equal(JSON.stringify(measured).includes('8.2713201'), false);
+  const mismatched = structuredClone(bulk);
+  Object.values(mismatched.zones)[0].hourly[native[0].time]['current-u'] = 0;
+  const mixed = summarizeSealedCurrentPart(part, mismatched);
+  assert.equal(mixed.sourceCounts.LF_LAND_POINT, 48);
+  assert.equal(mixed.sourceCounts.UNMATCHED, 1);
+  const noOriginalContext = summarizeSealedCurrentPart(part, { zones: bulk.zones });
+  assert.equal(noOriginalContext.sourceCounts.UNMATCHED, 49);
+  const bad = structuredClone(part);
+  bad.ravScoreModel.currentState.supplyPotential--;
+  assert.throws(() => summarizeSealedCurrentPart(bad, bulk), /STATE_REPLAY_MISMATCH/);
+  const duplicate = structuredClone(bulk);
+  Object.values(duplicate.zones)[0].hourly[reference] = native.at(-1);
+  assert.throws(() => summarizeSealedCurrentPart(part, duplicate), /DUPLICATE_INPUT_TIME/);
+});
+
+test('sealed CLI failure never logs private path or exception payload', async t => {
+  const directory = await temp(t);
+  const reportPath = path.join(directory, 'safe.json');
+  const outcome = spawnSync(process.execPath, ['scripts/audit-sealed-current-source.mjs', 'open',
+    '--repository-root', repositoryRoot, '--input', path.join(directory, 'secret-error-canary-missing.bin'),
+    '--report', reportPath], { cwd: repositoryRoot, encoding: 'utf8',
+    env: { ...process.env, STAGED_PRIVATE_BUILD_MASTER_SECRET: 'sb_secret_synthetic-never-real' } });
+  assert.equal(outcome.status, 1);
+  assert.equal(outcome.stdout, '');
+  assert.equal(outcome.stderr.trim(), 'SEALED_CURRENT_SOURCE_AUDIT_FAILED_CLOSED');
+  const failure = JSON.parse(await fs.readFile(reportPath, 'utf8'));
+  assert.deepEqual(failure, { kind: 'SEALED_CURRENT_SOURCE_AUDIT', status: 'FAILED_CLOSED',
+    failedMode: 'open', privatePayloadIncluded: false, rawVectorsIncluded: false, productionPointerUnchanged: true });
+  safeReport(failure, directory);
 });

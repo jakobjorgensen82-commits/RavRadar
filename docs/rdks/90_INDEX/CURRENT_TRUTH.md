@@ -1,3 +1,13 @@
+# NYESTE – 2026-10-03 – offentlig541; isoleret Lyngbylæser, ikke ny release
+
+Offentlig/main4.0.541 er faktisk leveret; ældre lokale541-status nedenfor er
+historik. Ejer har nu både godkendt hele den udpegede pakke og særskilt
+diagnosekode/workflow. DEC-0289 fastlåser artifact11281483201/original37136425685
+attempt1/bbc og uændret originalbindingskontrol. Lokal kode udsender kun tre
+PART-aggregater. CI/merge og faktisk authenticated læsning afventer; ingen
+færdig årsagskonklusion. Main/diagnosedispatch venter under aktiv vejrhentning.
+Score, model, punkter, cache, tidsplan og produktion er urørt. Ingen ny version.
+
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
 Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10

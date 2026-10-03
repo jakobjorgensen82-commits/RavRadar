@@ -1,3 +1,13 @@
+# NYESTE – 2026-10-03 – Lyngby/Lodbjerg land-/farvandsinput undersøges
+
+Offentligt DKSS-LF-punkt ved Lodbjerg ligger på land og bruges både til værdi
+og pil. Transportscoren er høj i forhold til Agger og Stenbjerg. Ingen normal-
+180gradfejl eller statisk lokal bonus er bevist. Gemt48h/historisk kildesammenhæng
+og original havcelle/mask er OPEN; høj score alene beviser ikke den fulde årsag.
+DEC-0289s læser er lokalt implementeret efter særskilt ejer-ja; CI/merge/faktisk
+GCM-inspektion afventer. Ingen model-/punktrettelse. Alle-zonekontrol er relevant
+som næste mulig skrivefri analyse, ikke udført. Offentlig541 er leveret.
+
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
 Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10

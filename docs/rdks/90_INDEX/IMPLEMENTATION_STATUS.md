@@ -1,3 +1,17 @@
+# NYESTE – 2026-10-03 – skrivefri sealed Lyngbydiagnose
+
+- [x] Særskilt ejer-ja til kode/workflow efter helepakke-læsegodkendelse.
+- [x] Lokal fast artifact-/source-/expirykontrol, eksisterende GCM/restore,
+  eksisterende state-replay og DMI-kildeverifier; safe aggregate-only output.
+- [x] Målrettede syntetiske tests, herunder forkert pakke, ændret styrke,
+  manglende originalcontext, dubleret tid og privat-canary-fejl.
+- [ ] Exact-head kildekontrol, merge efter normal writer og faktisk læsning.
+- [ ] Actual historisk geografisk kildesammenhæng/originalmask og rodårsag.
+- [ ] Mulig alle-zonekontrol; kun foreslået, ikke udført eller automatisk rettelse.
+
+Offentlig541 er leveret; denne tooling ændrer ikke version, model eller data.
+DEC-0289. Hele vejrhentningsrevisionen er stadig OPEN.
+
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
 Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10

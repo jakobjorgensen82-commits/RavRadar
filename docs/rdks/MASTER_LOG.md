@@ -1,3 +1,13 @@
+# NYESTE – 2026-10-03 – særskilt godkendt sealed Lyngbydiagnose, lokal tooling
+
+Ejerens helepakke-læsetilladelse og efterfølgende særskilte kode-/workflow-ja
+er registreret i DEC-0289. Præcis originalpakke, kilde, digest og bindinger;
+kun faste aggregater for tre PARTs. Ingen nye vejrdata eller produktionswrite.
+Offentlig/main4.0.541 er leveret; ældre »ikke-leveret541« nedenfor er historisk.
+Diagnosekode er lokal på codex/lyngby-sealed-current-audit; CI/merge og faktisk
+GCM-læsning/48h-kildekobling afventer. Tilbundsgående årsag og samlet revision
+er OPEN. Alle-zonekontrol er foreslået, ikke udført. Ingen 4.0.542-version.
+
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
 Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10

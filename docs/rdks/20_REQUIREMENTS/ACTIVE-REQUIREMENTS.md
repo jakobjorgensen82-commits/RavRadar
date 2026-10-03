@@ -1,3 +1,12 @@
+# NYESTE – 2026-10-03 – ejerafgrænset skrivefri Lyngbydiagnose
+
+DEC-0289 kræver præcis original sealed pakke og binding, separat intern
+nøglebrug og offline aggregate-only kontrol. Ingen rå logs/payload eller
+provider-/score-/geometri-/produktionswrite. Manglende kausal join eller mask
+skal forblive uafklaret; forkert eller manglende kilde må ikke mærkes bevist.
+Main/dispatch må ikke konkurrere med en aktiv almindelig vejrhentning.
+Offentlig541 er leveret; den nye lokale tooling er ikke en ny release.
+
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
 Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10
