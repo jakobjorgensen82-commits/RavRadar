@@ -1,3 +1,30 @@
+# AKTUELT TILLÆG – 2026-10-03 10:52 DK – 541s historiske fixture korrigeret; ny exact-head CI kræves
+
+PR509s førstehead8dea110e3ddcfe30716bf73a653ac0780db71fef fik source-CI
+37110262078/attempt1/job111166613925 step8FAIL10:44:55DK; tree/proof9/10
+SKIPPED, ikkePASS, intet ROOTproof. Ingen rå joblog er hentet. Afgrænset
+lokal5-filsmatrix4PASS/1FAIL2164.1192ms pegede på eksisterende protectedprivate-
+runtimeprøve: dens historiske hourly-v1→v2-positive fixture lånte forkert
+dagens NYE continuationd983 i stedet for sin præcise gamle4668. Historisk
+Top5projection var allerede explicit. Testfixture bruger nu sit immutable
+PRIVATE_HOURLY_V1_PREDECESSOR-continuationendpoint; særskilt negativ kontrol
+afviser currentd983 selv med gammelprojection. Selve produktionspredicate/
+admission/restore/parser/cipher er BYTEuændret. Ingen gammel undtagelse fornyes.
+Kun denne eksisterende fil efter fix:1PASS/0FAIL/0SKIP3546.4227ms. Tre direkte
+SQL/readiness/workflowmål3PASS523.3844ms; ikke en fuld kilde-/runtimesuite.
+Dette forklarer den lokale RED, men alle CI-fund er endnu IKKE samlet bevist.
+
+Samme ikke-offentlige541-kandidat har funktionel fixture-/dokumentationsrettelse;
+ny exact-head source-CI skal bestå på korrigeret head, ingen rerun af8dea blot
+for status. Native29ea/28a6/d983, physicalcontracts, scopedruntimebytes,
+applied008/00945, sourceplan47 og public540/main8df forbliver uændrede.
+NATURLIG37109313340 er stadig aktiv; ingen merge/main/SQLinstallation/
+code-only/providerdispatch mens aktiv. Ejerens scopedautoritet og øvrige
+afvisninger består. Allerøverste checkpoint opdateres med faktisk nyt head/CI.
+Samlet revision stadig OPEN, ingen actualprivateoriginalB-/deploypåstand.
+
+# HISTORISK – 10:30 kandidatkontroller nedenfor er fortsat evidens, ikke source-CI-success
+
 # AKTUELT TILLÆG – 2026-10-03 10:30 DK – lokal4.0.541, godkendt CP-lukning og native bindingskæde
 
 Lokale541kontroller nu6/6filunitsPASS1108.5206ms/0skip; code-only-testen

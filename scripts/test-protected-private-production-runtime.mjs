@@ -473,12 +473,22 @@ try {
   const hourlyV2Expected = {
     modelBinding: ravScoreModelBinding(), contractHashes: {
       ...baselineContracts,
+      // This historical one-time v1 -> v2 fixture predates both Top20 and
+      // the CP child-close continuation successor. Neither current contract
+      // may renew the old exact-predecessor exception.
+      continuationStateContractSha256: PRIVATE_HOURLY_V1_PREDECESSOR.continuationStateContractSha256,
       publicProjectionContractSha256: PRIVATE_HOURLY_V1_PREDECESSOR.publicProjectionContractSha256,
     },
   };
   assert.equal(isApprovedExactWeatherPredecessor(hourlyV1Predecessor, {
     ...hourlyV2Expected, contractHashes: baselineContracts,
   }), false, 'current Top20 must not inherit the historical hourly-v1 exception');
+  assert.equal(isApprovedExactWeatherPredecessor(hourlyV1Predecessor, {
+    ...hourlyV2Expected, contractHashes: {
+      ...hourlyV2Expected.contractHashes,
+      continuationStateContractSha256: baselineContracts.continuationStateContractSha256,
+    },
+  }), false, 'current CP continuation must not inherit the historical hourly-v1 exception');
   assert.equal(isApprovedExactWeatherPredecessor(hourlyV1Predecessor, hourlyV2Expected), true);
   for (const change of [
     { sourceHead: SOURCE_HEADS[0] },

@@ -1,5 +1,9 @@
 ## 4.0.541 – Godkendt Copernicus-lukning og korrekt native genbinding (lokal kandidat)
 
+- Første exact-head source-CI afviste kandidaten. En målrettet lokal prøve
+  fandt stale continuation i den historiske hourly-v1→v2-fixture. Kun fixture
+  korrigeres til sit præcise gamle endpoint; current continuation får en ekstra
+  negativ kontrol. Produktionsadgang er uændret, og ny exact-head CI kræves.
 - Lokal branch codex/copernicus-child-close-binding på actual main8df23a9c;
   offentlig4.0.540 er leveret. 4.0.541 er kun en lokal releasekandidat.
 - Kun den godkendte låste CP-kalder: første fejl bevares, faktisk child-close

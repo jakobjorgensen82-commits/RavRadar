@@ -87,6 +87,19 @@ præcise nye append-onlyled. Ingen SQL er installeret, ingen provider dispatched
 
 ## Prøver og åbne produktionskrav
 
+Tillæg10:52DK: PR509/firsthead8dea110e…/source-CI37110262078/attempt1
+afvist ved step8 kl.10:44:55DK; tree/proof9/10 SKIPPED, intet ROOTproof.
+Ingen rawjoblog. Lokal5-filsmatrix4PASS/1FAIL2164.1192ms reproducerede stale
+historisk hourly-v1→v2-fixture i protectedprivate-runtimeprøven: positive
+historicalexpected havde dagens d983 i stedet for sit immutable4668-endpoint.
+Fixture bruger nu PRIVATE_HOURLY_V1_PREDECESSORs præcise continuation; ekstra
+negativ case med currentd983+oldprojection skal fortsat afvises. Produktions-
+predicate/admission/parser/cipher/restore ændres ikke. Hele denne eksisterende
+fil1/1PASS3546.4227ms/0skip efterfix; direkte SQL/readiness/workflowmål3/3PASS
+523.3844ms. Ingen ny unik fullruntimecase, genåbnet historiskadmission eller
+fuld lokal sourcegentagelse. Ny funktionelt korrigeret head og dens exact-CI
+kræves; den lokale årsag forklarer ikke i sig selv alle GitHub-fund.
+
 Første lokale integrationsmatrix: 6PASS/1FAIL730.723ms. Candidate G's stale
 metadata blev korrekt afvist; native65/Candidate/12continuation-genbinding
 blev rettet, ikke testlempet. Metadata-test PASS1053.0656ms på mellemtrinnet.

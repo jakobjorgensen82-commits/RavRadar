@@ -28,6 +28,12 @@ historik, tid, roller og reservetilstande bevares; ukendt eller blandet input
 afvises. Den etablerede gemmetidsgrænse på 55 sekunder kontrolleres fortsat.
 Gamle installerede migrationer ændres ikke, og intet SQL er installeret.
 
+Den første samlede kildekontrol stoppede. En målrettet lokal prøve fandt,
+at en gammel test fejlagtigt brugte dagens nye historikbinding. Kun dens
+testdata er rettet til det præcise gamle forløb. En ekstra negativ kontrol
+beviser, at den nye historikbinding ikke arver den gamle undtagelse.
+Produktionsadgangen er uændret. Den korrigerede kildekontrol skal stadig bestå.
+
 Målrettede procesprøver og lokale bindings-/sikkerhedskontroller består.
 Det er ikke en ny offentlig version eller bevis for alle underprocessers
 stop, eksklusiv skrivning, afbrudt runner, national kapacitet eller hele
