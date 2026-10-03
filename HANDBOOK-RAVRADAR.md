@@ -12,14 +12,19 @@ Ved procesfejl eller timeout bevares den første fejl. Oprydning og
 reservehentning venter på underprocessens faktiske lukningssignal. Et
 stopforsøg er ikke bevis for lukning; uden signal fortsætter kaldet med at
 vente. Fejler kun oprydningen, stopper kaldet stadig hårdt. De eksisterende
-kalderled venter allerede på dette kald og ændres ikke.
+kalderled venter allerede på dette kald. En efterfølgende målrettet prøve
+viste dog, at den direkte vejrhentningskalders egen planoprydning stadig
+kunne skjule den første outputfejl. Det samme lille forløb blev først rødt
+og er nu rettet smalt: egen oprydning forsøges stadig, uden at skjule kaldets
+primære fejl. Oprydning som eneste fejl er fortsat et hårdt stop.
 
 Den samme kildefil indgår både i den integrerede model og i reservemodellen
 Candidate G. Den korrekte normale kildeberegning skal derfor føre begge
 tekniske bindinger og den afledte historikbinding frem. En første lokal
 kontrol afviste den gamle Candidate G-binding; den blev ikke gjort grøn
 med en hashgenvej. Den endelige lokale beregning omfatter 67 og 65 filer.
-Kun den rettede kalder og afledt hashmetadata ændres; fysiske scoreformler,
+Den låste kalder, nødvendig direkte planoprydning og afledt hashmetadata
+ændres; fysiske scoreformler,
 målinger, geometri, kildeprioritet, argumenter, budgetter og tidsplan bevares.
 
 Den nye lokale databaseovergang kræver den præcise gamle binding og alle
@@ -32,7 +37,14 @@ Den første samlede kildekontrol stoppede. En målrettet lokal prøve fandt,
 at en gammel test fejlagtigt brugte dagens nye historikbinding. Kun dens
 testdata er rettet til det præcise gamle forløb. En ekstra negativ kontrol
 beviser, at den nye historikbinding ikke arver den gamle undtagelse.
-Produktionsadgangen er uændret. Den korrigerede kildekontrol skal stadig bestå.
+Produktionsadgangen er uændret. Den korrigerede kildekontrol bestod på sit
+præcise kodepunkt. Den nye konkrete kalderrettelse kræver sin egen kontrol;
+den gamle grønne kontrol gælder ikke automatisk for ændret kode.
+
+To genbrugte prøveforløb med tolv underprøver består efter isoleringen.
+Den faktiske lille Python-proces lukkes før oprydningen, og den gamle bank
+bevares byte for byte. Den direkte planoprydning ligger ikke i scoremodellens
+kildefilsliste og ændrer ikke dens tekniske binding eller lagringskontrakt.
 
 Målrettede procesprøver og lokale bindings-/sikkerhedskontroller består.
 Det er ikke en ny offentlig version eller bevis for alle underprocessers

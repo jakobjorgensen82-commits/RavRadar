@@ -406,15 +406,24 @@ test('actual offline CP authority retains its child output failure through owned
     const options = { planPath: path.join(root, 'plan.json'), bankPath: path.join(root, 'bank.json'),
       cacheDirectory: path.join(root, 'cache'), pythonExecutable: python };
     const originalBank = await fs.readFile(options.bankPath);
+    const runtimeInput = JSON.parse(await fs.readFile(path.join(root, 'input.json'), 'utf8'));
     for (const stage of ['valid-output-control', 'output-failure-only', 'output-and-cleanup-failure',
-      'cleanup-failure-only', 'post-spawn-error-and-cleanup-failure']) {
+      'cleanup-failure-only', 'post-spawn-error-and-cleanup-failure',
+      'cp-runtime-valid-output-control', 'cp-runtime-output-failure-only',
+      'cp-runtime-output-and-plan-cleanup-failure', 'cp-runtime-plan-cleanup-failure-only']) {
       await t.test(stage, async st => {
-        let temporary, output, closeResult, closePromise, launches = 0, cleanups = 0;
-        const collision = stage.startsWith('output-');
+        let temporary, planTemporary, output, closeResult, closePromise, launches = 0, cleanups = 0, planCleanups = 0;
+        const runtimeCaller = stage.startsWith('cp-runtime-');
+        const collision = stage.startsWith('output-') || stage.startsWith('cp-runtime-output-');
         const postSpawnError = stage === 'post-spawn-error-and-cleanup-failure';
         const cleanupFailure = new Error('SYNTHETIC_CP_OWN_AUTHORITY_CLEANUP_FAILED');
+        const planCleanupFailure = new Error('SYNTHETIC_CP_OWN_PLAN_CLEANUP_FAILED');
         st.mock.method(fs, 'mkdtemp', async prefix => {
           const created = await makeTemporary(prefix);
+          if (path.basename(String(prefix)) === 'rr-cp-component-plan-') {
+            assert.equal(path.dirname(created), os.tmpdir());
+            planTemporary = created;
+          }
           if (path.basename(String(prefix)) !== 'rr-cp-component-authority-') return created;
           assert.equal(path.dirname(created), os.tmpdir());
           temporary = created;
@@ -426,7 +435,8 @@ test('actual offline CP authority retains its child output failure through owned
         });
         st.mock.method(childProcess, 'spawn', (executable, args, spawnOptions) => {
           assert.equal(executable, python);
-          assert.deepEqual(args, [runner, '--plan', options.planPath, '--bank', options.bankPath,
+          assert.deepEqual(args, [runner, runtimeCaller ? '--plan-input' : '--plan',
+            runtimeCaller ? path.join(planTemporary, 'input.json') : options.planPath, '--bank', options.bankPath,
             '--cache-directory', options.cacheDirectory, '--output', output, '--verify-only']);
           assert.equal(spawnOptions.windowsHide, true);
           assert.equal(spawnOptions.stdio, 'ignore');
@@ -455,22 +465,37 @@ test('actual offline CP authority retains its child output failure through owned
               'the real Python child must close before owned authority cleanup');
             if (stage === 'output-and-cleanup-failure' || stage === 'cleanup-failure-only' || postSpawnError) throw cleanupFailure;
           }
+          if (file === planTemporary) {
+            planCleanups++;
+            assert.deepEqual(closeResult, { code: collision ? 1 : 0, signal: null },
+              'the real Python child must close before the actual caller plan cleanup');
+            if (stage === 'cp-runtime-output-and-plan-cleanup-failure'
+              || stage === 'cp-runtime-plan-cleanup-failure-only') throw planCleanupFailure;
+          }
           return remove(file, ...args);
         });
         syncBuiltinESMExports();
         try {
           let result, failure;
-          try { result = await loadCopernicusComponentAuthority(options); }
+          try {
+            result = runtimeCaller ? await runCopernicusComponentRuntime({ ...runtimeInput,
+              ...options, privateCacheRoot: root,
+              parts: runtimeInput.parts.map(part => ({ ...part, zoneId: part.parentZoneId })),
+              needs: [], budgetMs: 0 }) : await loadCopernicusComponentAuthority(options);
+          }
           catch (error) { failure = error; }
           assert.equal(launches, 1);
           assert.equal(cleanups, 1);
+          assert.equal(planCleanups, runtimeCaller ? 1 : 0);
           assert.deepEqual(await fs.readFile(options.bankPath), originalBank);
-          if (stage === 'cleanup-failure-only') {
+          if (stage === 'cleanup-failure-only' || stage === 'cp-runtime-plan-cleanup-failure-only') {
             assert.equal(result, undefined);
-            assert.equal(failure, cleanupFailure, 'cleanup-only failure must remain a hard rejection');
+            assert.equal(failure, runtimeCaller ? planCleanupFailure : cleanupFailure,
+              'cleanup-only failure must remain a hard rejection');
           } else if (!collision && !postSpawnError) {
             assert.equal(failure, undefined);
-            assert.equal(result.candidates.length, 2);
+            if (runtimeCaller) assert.equal(result.summary.admittedCandidates + result.summary.privateSupportCandidates, 2);
+            else assert.equal(result.candidates.length, 2);
           } else {
             assert.equal(result, undefined);
             assert.equal(failure?.message, postSpawnError
@@ -478,6 +503,7 @@ test('actual offline CP authority retains its child output failure through owned
               'owned cleanup must not mask the safe real-child output failure');
             assert.equal(failure.cause, undefined);
             assert.notEqual(failure, cleanupFailure);
+            assert.notEqual(failure, planCleanupFailure);
           }
         } finally {
           if (closePromise) await closePromise;
@@ -487,6 +513,11 @@ test('actual offline CP authority retains its child output failure through owned
             assert.equal(path.dirname(temporary), os.tmpdir());
             assert.ok(path.basename(temporary).startsWith('rr-cp-component-authority-'));
             await remove(temporary, { recursive: true, force: true });
+          }
+          if (planTemporary) {
+            assert.equal(path.dirname(planTemporary), os.tmpdir());
+            assert.ok(path.basename(planTemporary).startsWith('rr-cp-component-plan-'));
+            await remove(planTemporary, { recursive: true, force: true });
           }
         }
       });

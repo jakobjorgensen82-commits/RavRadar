@@ -32,6 +32,7 @@ export async function runCopernicusComponentRuntime({ privateCacheRoot, bankPath
   // Water level is DMI-only even for direct callers with an old need list.
   needs = needs.filter(row => row.component !== 'waterLevel');
   const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-cp-component-plan-'));
+  let failed = false;
   try {
     const planInputPath = path.join(temporary, 'input.json');
     await fs.writeFile(planInputPath, JSON.stringify({ parts: parts.map(part => ({ partId: part.partId,
@@ -61,7 +62,9 @@ export async function runCopernicusComponentRuntime({ privateCacheRoot, bankPath
       // Offline re-verification recovers the bank, not the interrupted
       // invocation's attempt log. Zero recovered attempts is not zero work.
       attemptCountsComplete: transportFailure === null } };
-  } finally {
-    await fs.rm(temporary, { recursive: true, force: true });
+  } catch (error) { failed = true; throw error; }
+  finally {
+    try { await fs.rm(temporary, { recursive: true, force: true }); }
+    catch (error) { if (!failed) throw error; }
   }
 }

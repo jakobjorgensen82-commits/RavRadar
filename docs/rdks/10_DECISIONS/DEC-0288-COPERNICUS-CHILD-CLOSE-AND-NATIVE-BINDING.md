@@ -17,9 +17,10 @@ bevares. Ejerens GPT-6.1 Sol/Ekstra høj, tidsplan og cadence ændres ikke.
 ## Faktisk isolation og procesgrænse
 
 På releasebranch `codex/copernicus-child-close-binding`, base/main
-`8df23a9c6572f13715ed0a20269aa8a10f6da768`, ændres kun den eksisterende
-`loadCopernicusComponentAuthority` i det låste index. De direkte callers
-og CLI er allerede awaited og er byteuændrede. Første timeout/error bevares;
+`8df23a9c6572f13715ed0a20269aa8a10f6da768`, ændres den eksisterende
+`loadCopernicusComponentAuthority` i det låste index samt nødvendig egen
+planoprydning i den direkte `runCopernicusComponentRuntime`. Prepare og CLI
+er allerede awaited og er byteuændrede. Første timeout/error bevares;
 fejlet stop eller gentaget error er ikke et closebevis. Promise afsluttes
 først ved actual child-close; uden close forbliver den pending, også gennem
 ydre oprydning/fallback/OM. Egen oprydning forsøges efter close, og cleanup-only
@@ -28,7 +29,8 @@ er fortsat HARD. Ingen completedkill-/descendant-/runnergaranti er givet.
 IndexLF ændres 6119a6e5…→cfdfdab9…; to genbrugte parents med fem og tre
 underprøver matcher BIGs prøvede bytes. Isoleret 10 rapporterede parent/
 subtestunits PASS, 0FAIL/0SKIP, 8374.027ms; 8 underprøver plus 2 parents,
-ikke 10 nye unikke tests. 12 gamle parents og callers/CLI er bevaret.
+ikke 10 nye unikke tests. Dette er den historiske indexisolation før det
+konkrete direktecallerfund nedenfor; øvrige gamle parents og prepare/CLI bevares.
 RED og gamle fuldsuites gentages ikke for status. BIG519 forbliver separat/OFF.
 
 ## Native bindingskæde – ingen stale Candidate G eller alias
@@ -86,6 +88,44 @@ bevares. Readiness/releaseinventory og code-only migrationplan kræver det
 præcise nye append-onlyled. Ingen SQL er installeret, ingen provider dispatched.
 
 ## Prøver og åbne produktionskrav
+
+Tillæg11:15DK: korrigeret head3d1ed7ce/exactCI37111171421/attempt1 er
+SUCCESS; source8/tree9/proof10 sluttede11:00:56–58DK. ONLY416byteROOT
+artifact11269678605 matcher PR509/repository/head3d1/treeDF96aac0…/contractv2/
+privatePayloadIncluded=false/unexpired2/11. Dette er historisk før næste
+funktionelle rettelse, ikke proof for nye bytes.
+
+Actual CP-runtime-kalder havde stadig ubetinget egen plan-rm. Den SAMME
+offline-parent er udvidet med FIRE actualcallerunderprøver på samme lille
+originalbank/realNetCDF, rigtig Python/PID/argv/verify-only og close før
+authority-/planrm. Ingen provider/privatinput/fakefactory/admissiongenvej.
+BIGRED8PASS/2FAIL/0SKIP12895.2662ms omfatter ÉN unik kombineret primær-/planrm-
+fejl plus failedparent: CP_COMPONENT_BYTE_VERIFICATION_FAILED blev maskeret.
+Minimal failed/catch/rethrow/try-ownrm i runCopernicusComponentRuntime giver
+sammeparent10PASS12919.6141ms; bankBYTEidentisk, cleanup-only stadig HARD.
+Ingen ændring af transportens eksisterende offlinefallbackpolitik.
+
+Smalt isoleret RELEASE541: begge eksisterende parents14PASS/0FAIL/0SKIP
+13730.1992ms,12underprøver+2parents, ikke14nyeunikke tests. RuntimeLF02ac2143…
+og testLFa773d28e… matcher BIG; inversediff beviser alene dette funktionsdelta,
+alle andre testparents BYTEidentiske. Indexcfdf…/prepare/CLI urørte.
+Nativeintegratedcheck29ea/67PASS; model/releaseContract/privateABI3filunits
+PASS2326.3658ms/0skip. CP-runtime er i producerinventory men ikke i native67/
+Candidate65/continuation12. Den ALLEREDE etablerede storageABI-grænse står
+fast; native29ea/28a6/d983/SQLoutside96b16… ændres ikke. Ingen nyt alias,
+kompatibilitetsundtagelse eller hiddenbinding. Ny exactheadCI kræves på dette
+konkrete funktionelle fund, ikke statuscommit/gentagelse af den grønne3d1.
+Ingen merge/SQLinstallation/deploy mens ordinary37109313340 er aktiv.
+Dette er stadig ikke completedOSkill/descendants/writer/failure4min/runnerloss/
+nationalkapacitet/fullfactory/fullCP-SførT eller hele revisionen.
+
+Efterdokumentationskontrol: RELEASE håndbog419kapitler/protectedRDKS2/2PASS
+149.4741ms/0skip; RDKS541/14chat og relevantdiff PASS. Begge håndbøger89.154,
+changelog og aktuelle hukommelsesindgange beskriver det nødvendige direkte
+callerled. Mekanisk ONLYhandbookpayloadsync har before/afteroutsideLF96b16…
+identisk; SQL-runtime/appliedmigrations er ikke ændret. BIGs separate dokumenter
+har421kapitler/89.155/2PASS156.6863ms/RDKS519/14chat og ownoutside99114…uændret.
+Ingen fuld lokal source- eller næsten identisk fuld runtimegentagelse.
 
 Tillæg10:52DK: PR509/firsthead8dea110e…/source-CI37110262078/attempt1
 afvist ved step8 kl.10:44:55DK; tree/proof9/10 SKIPPED, intet ROOTproof.

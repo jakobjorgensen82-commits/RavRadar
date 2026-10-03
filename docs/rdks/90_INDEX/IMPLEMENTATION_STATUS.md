@@ -1,4 +1,36 @@
-# AKTUELT TILLÆG – 2026-10-03 10:52 DK – 541s historiske fixture korrigeret; ny exact-head CI kræves
+# AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
+
+Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10
+sluttede11:00:56–58DK. Lille416byteROOTproof11269678605 er hentet ALENE og
+matcher repository/PR509/head3d1/treeDF96aac0…/contractv2/privacyfalse/udløb2/11.
+Det er HISTORISK proof for3d1, ikke for den nu funktionelt ændrede kandidat.
+
+Actual runCopernicusComponentRuntime mistede sin primære outputfejl ved
+sekundær egen plan-rm. BIGs samme realPython/offline-parent:8PASS/2FAIL12895ms,
+ÉN unik fejl; minimal failed/catch/rethrow/try-ownrm gav10PASS12920ms/0skip.
+Kun dette direktecallerled og samme parents FIRE ekstra underprøver er
+isoleret i RELEASE541. Ingen whole519copy, provider, privatinput eller fakefactory.
+Releaseisolering: begge eksisterende parents14PASS/0FAIL/0SKIP13730.1992ms,
+12underprøver+2parents, ikke14nyeunikke tests. Faktisk child-close kommer før
+authority-/planoprydning; cleanup-only HARD; bankBYTEidentisk. Syntetisk stop
+er fortsat ikke completedOSkill/descendant/writer/runnerloss/kapacitetsbevis.
+
+Inverse runtime-diff og alle ANDRE testparents BYTEidentiske; runtimeLF
+02ac2143…/testLF a773d28e… matcher BIG. Indexcfdf…/CLI/prepare/args/budget/
+fallbackpolitik/admission/score/geometri uændrede. Native67/29ea-checkPASS;
+3eksisterende model/releaseContract/privateABI-målPASS2326.3658ms/0skip.
+CP-runtime er producerinventory, IKKE native67/Candidate65/continuation12;
+allerede etableret storageABI uændret. Native29ea/28a6/d983 og SQLoutside96b16…
+står fast; ingen ny genbinding, alias eller kompatibilitetsundtagelse.
+
+Public540/main8df/04Z og ordinary37109313340 er urørte. Metadata11:12DK:
+DMI78 stadig aktiv/no failedsteps, recovery-onlySKIPPED. Cron8348098 aktiv,
+rootdispatch/cancel/pause0. Ingen merge/main/code-only/SQLinstallation/ekstrarun
+mens aktiv. Ny funktionel commit/exactCI kræves for det KONKRETE callerfund,
+ikke statusrerun af grøn3d1. Samlet revision/fullCP-SførT/writer/kill/failure4min/
+runnerloss/nationalcapacity/BIGOFF er OPEN. Andre afvisninger består. DEC-0288.
+
+# HISTORISK TILLÆG – 2026-10-03 10:52 DK – 541s historiske fixture korrigeret; ny exact-head CI kræves
 
 PR509s førstehead8dea110e3ddcfe30716bf73a653ac0780db71fef fik source-CI
 37110262078/attempt1/job111166613925 step8FAIL10:44:55DK; tree/proof9/10

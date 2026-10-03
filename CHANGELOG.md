@@ -1,5 +1,11 @@
 ## 4.0.541 – Godkendt Copernicus-lukning og korrekt native genbinding (lokal kandidat)
 
+- Ny konkret direkte CP-kalderfejl: egen planoprydning maskerer outputfejl.
+  Samme realPython/offline-parent RED→minimal failed/catch/rethrow/try-ownrm;
+  cleanup-only HARD. Isoleret to parents/12underprøver14PASS13730ms/0skip,
+  alle øvrige parents uændrede. Native29ea/28a6/d983/storageABI/SQL urørte.
+  Grøn3d1/exactCI37111171421/ROOTproof er historisk; ny funktionel head kræver
+  egen exact-CI. Ingen statusrerun, offentlig540 eller mainændring mens weatheraktiv.
 - Første exact-head source-CI afviste kandidaten. En målrettet lokal prøve
   fandt stale continuation i den historiske hourly-v1→v2-fixture. Kun fixture
   korrigeres til sit præcise gamle endpoint; current continuation får en ekstra
