@@ -4,10 +4,17 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import childProcess from 'node:child_process';
+import { EventEmitter } from 'node:events';
+import { syncBuiltinESMExports } from 'node:module';
+import { fileURLToPath } from 'node:url';
+import { copernicusOfflineEnvironment } from './lib/copernicus-offline-environment.mjs';
 import { prepareWeatherComponentRuntime, persistWeatherComponentSelections } from './lib/weather-component-runtime.mjs';
 import { safeWeatherComponentSummary } from './lib/weather-component-safe-summary.mjs';
 import { recordSelectedWeatherComponents, snapshotWeatherComponentSelectionHistory }
   from './lib/weather-component-selection-history.mjs';
+import { loadCopernicusComponentAuthority } from './lib/copernicus-component-index.mjs';
+import { runCopernicusComponentRuntime } from './lib/copernicus-component-runtime.mjs';
 
 const reference = '2026-09-19T00:00:00.000Z';
 const at = offset => new Date(Date.parse(reference) + offset * 3_600_000).toISOString();
@@ -384,4 +391,206 @@ test('selection persistence keeps close-only and cleanup-only failures hard', as
       await assert.rejects(fs.stat(temporary), { code: 'ENOENT' });
     });
   }
+});
+
+test('actual offline CP authority retains its child output failure through owned cleanup', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-cp-output-failure-test-'));
+  const remove = fs.rm.bind(fs), makeTemporary = fs.mkdtemp.bind(fs);
+  const actualSpawn = childProcess.spawn.bind(childProcess);
+  const python = process.env.PYTHON ?? 'python';
+  const runner = fileURLToPath(new URL('./run-copernicus-weather-components.py', import.meta.url));
+  try {
+    childProcess.execFileSync(python, [fileURLToPath(new URL(
+      './test-copernicus-component-production.py', import.meta.url)), '--prepare-fixture', root],
+    { windowsHide: true, stdio: 'ignore', env: copernicusOfflineEnvironment() });
+    const options = { planPath: path.join(root, 'plan.json'), bankPath: path.join(root, 'bank.json'),
+      cacheDirectory: path.join(root, 'cache'), pythonExecutable: python };
+    const originalBank = await fs.readFile(options.bankPath);
+    for (const stage of ['valid-output-control', 'output-failure-only', 'output-and-cleanup-failure',
+      'cleanup-failure-only', 'post-spawn-error-and-cleanup-failure']) {
+      await t.test(stage, async st => {
+        let temporary, output, closeResult, closePromise, launches = 0, cleanups = 0;
+        const collision = stage.startsWith('output-');
+        const postSpawnError = stage === 'post-spawn-error-and-cleanup-failure';
+        const cleanupFailure = new Error('SYNTHETIC_CP_OWN_AUTHORITY_CLEANUP_FAILED');
+        st.mock.method(fs, 'mkdtemp', async prefix => {
+          const created = await makeTemporary(prefix);
+          if (path.basename(String(prefix)) !== 'rr-cp-component-authority-') return created;
+          assert.equal(path.dirname(created), os.tmpdir());
+          temporary = created;
+          output = path.join(created, 'authority.json');
+          // A directory at the actual owned output file prevents its real
+          // atomic commit. No argv, executable, verifier or factory is replaced.
+          if (collision) await fs.mkdir(output);
+          return created;
+        });
+        st.mock.method(childProcess, 'spawn', (executable, args, spawnOptions) => {
+          assert.equal(executable, python);
+          assert.deepEqual(args, [runner, '--plan', options.planPath, '--bank', options.bankPath,
+            '--cache-directory', options.cacheDirectory, '--output', output, '--verify-only']);
+          assert.equal(spawnOptions.windowsHide, true);
+          assert.equal(spawnOptions.stdio, 'ignore');
+          assert.equal(spawnOptions.detached, process.platform !== 'win32');
+          const child = actualSpawn(executable, args, spawnOptions);
+          launches++;
+          assert.ok(Number.isInteger(child.pid) && child.pid > 0);
+          closePromise = new Promise(resolve => child.once('close', (code, signal) => {
+            closeResult = { code, signal };
+            resolve();
+          }));
+          if (postSpawnError) child.once('spawn', () => {
+            assert.equal(closeResult, undefined);
+            assert.equal(cleanups, 0);
+            // Observe a genuine running OS child through the same event seam.
+            // The actual CLI, argv, bytes, PID and eventual close are untouched.
+            child.emit('error', new Error('SYNTHETIC_CP_POST_SPAWN_ERROR'));
+            child.emit('error', new Error('SYNTHETIC_CP_SECOND_POST_SPAWN_ERROR'));
+          });
+          return child;
+        });
+        st.mock.method(fs, 'rm', async (file, ...args) => {
+          if (file === temporary) {
+            cleanups++;
+            assert.deepEqual(closeResult, { code: collision ? 1 : 0, signal: null },
+              'the real Python child must close before owned authority cleanup');
+            if (stage === 'output-and-cleanup-failure' || stage === 'cleanup-failure-only' || postSpawnError) throw cleanupFailure;
+          }
+          return remove(file, ...args);
+        });
+        syncBuiltinESMExports();
+        try {
+          let result, failure;
+          try { result = await loadCopernicusComponentAuthority(options); }
+          catch (error) { failure = error; }
+          assert.equal(launches, 1);
+          assert.equal(cleanups, 1);
+          assert.deepEqual(await fs.readFile(options.bankPath), originalBank);
+          if (stage === 'cleanup-failure-only') {
+            assert.equal(result, undefined);
+            assert.equal(failure, cleanupFailure, 'cleanup-only failure must remain a hard rejection');
+          } else if (!collision && !postSpawnError) {
+            assert.equal(failure, undefined);
+            assert.equal(result.candidates.length, 2);
+          } else {
+            assert.equal(result, undefined);
+            assert.equal(failure?.message, postSpawnError
+              ? 'CP_COMPONENT_BYTE_VERIFIER_UNAVAILABLE' : 'CP_COMPONENT_BYTE_VERIFICATION_FAILED',
+              'owned cleanup must not mask the safe real-child output failure');
+            assert.equal(failure.cause, undefined);
+            assert.notEqual(failure, cleanupFailure);
+          }
+        } finally {
+          if (closePromise) await closePromise;
+          st.mock.restoreAll();
+          syncBuiltinESMExports();
+          if (temporary) {
+            assert.equal(path.dirname(temporary), os.tmpdir());
+            assert.ok(path.basename(temporary).startsWith('rr-cp-component-authority-'));
+            await remove(temporary, { recursive: true, force: true });
+          }
+        }
+      });
+    }
+  } finally {
+    await remove(root, { recursive: true, force: true });
+  }
+});
+
+test('actual CP callers retain the owned child before fallback or outer cleanup after post-spawn error', async t => {
+  for (const caller of ['authority', 'cp-runtime', 'normal-prepare']) await t.test(caller, async st => {
+    const options = await fixture(st, { copernicusBudgetMs: 0, openMeteoBudgetMs: 0 });
+    const input = path.join(options.privateCacheRoot, 'synthetic-plan-input.json');
+    await fs.writeFile(input, '{}', 'utf8');
+    const children = [], remove = fs.rm.bind(fs), timer = globalThis.setTimeout;
+    let settled = false, cleanupCalls = 0, omAfterCp = 0, operation, stop, terminalError;
+    let stopAttempts = 0;
+    let asynchronousStopFailure = false;
+    const stopFailure = new Error('SYNTHETIC_CP_STOP_EXECUTION_FAILED');
+    st.mock.method(globalThis, 'setTimeout', (callback, delay, ...args) => {
+      if (delay >= 120_000) stop = callback;
+      return timer(callback, delay, ...args);
+    });
+    st.mock.method(process, 'kill', () => { stopAttempts++; throw stopFailure; });
+    st.mock.method(childProcess, 'spawn', (executable, args) => {
+      // No fake PID is ever sent to an OS stop command.
+      if (executable === 'taskkill.exe') {
+        stopAttempts++;
+        if (!asynchronousStopFailure) throw stopFailure;
+        const killer = new EventEmitter();
+        queueMicrotask(() => killer.emit('error', stopFailure));
+        return killer;
+      }
+      assert.ok(args.includes('--plan-input'));
+      assert.ok(children.every(child => child.testClosed), 'a fallback may only launch after earlier owned children close');
+      // Existing subprocess seam, never an authority/factory replacement.
+      // No OS process/provider is launched and these placeholder plan bytes
+      // are never admitted. A known-owned child has not yet emitted close.
+      const child = new EventEmitter();
+      child.pid = 12345; // Retained synthetic object only; never an OS target.
+      child.kill = () => { stopAttempts++; throw stopFailure; };
+      children.push(child);
+      queueMicrotask(() => {
+        child.emit('spawn');
+        child.emit('error', new Error('SYNTHETIC_CP_POST_SPAWN_ERROR'));
+      });
+      return child;
+    });
+    st.mock.method(fs, 'rm', async (file, ...args) => {
+      if (path.basename(String(file)).startsWith('rr-cp-component-')) {
+        assert.ok(children.every(child => child.testClosed), 'outer cleanup must await every launched child close');
+        cleanupCalls++;
+      }
+      return remove(file, ...args);
+    });
+    syncBuiltinESMExports();
+    try {
+      const cpOptions = { privateCacheRoot: options.privateCacheRoot, parts,
+        productionReferenceAt: reference, retentionStartAt: at(-48), retentionEndAt: at(120),
+        planInputPath: input, bankPath: path.join(options.privateCacheRoot, 'synthetic-bank.json'),
+        cacheDirectory: path.join(options.privateCacheRoot, 'synthetic-cache') };
+      operation = caller === 'authority' ? loadCopernicusComponentAuthority(cpOptions)
+        : caller === 'cp-runtime' ? runCopernicusComponentRuntime({ ...cpOptions,
+          needs: [{ component: 'wave' }], budgetMs: 1000, requestTimeoutMs: 500,
+          maximumRequests: 1, maximumDownloadBytes: 1 })
+          : prepareWeatherComponentRuntime({ ...options, runCopernicus: undefined,
+            runOpenMeteo: async () => { omAfterCp++; return om('b'); } });
+      operation.then(() => { settled = true; }, error => { terminalError = error; settled = true; });
+      for (let i = 0; i < 500 && !children.length && !settled; i++) {
+        await new Promise(resolve => timer(resolve, 2));
+      }
+      assert.ok(children.length, 'the actual CP launcher must be reached');
+      await new Promise(resolve => timer(resolve, 50));
+      assert.deepEqual({ settled, cleanupCalls, launched: children.length, omAfterCp },
+        { settled: false, cleanupCalls: 0, launched: 1, omAfterCp: 0 },
+        'unclosed owned CP child must retain authority/plan files and block fallback/OM');
+      assert.equal(typeof stop, 'function', 'post-spawn error must retain the existing stop timer');
+      assert.doesNotThrow(stop, 'failed owned stop must keep awaiting close, not crash or release callers');
+      assert.ok(stopAttempts > 0);
+      asynchronousStopFailure = true;
+      assert.doesNotThrow(stop, 'the existing fallback kill may also fail without proving closure');
+      children[0].emit('error', new Error('SYNTHETIC_CP_SECOND_POST_SPAWN_ERROR'));
+      await new Promise(resolve => timer(resolve, 20));
+      assert.deepEqual({ settled, cleanupCalls, launched: children.length, omAfterCp },
+        { settled: false, cleanupCalls: 0, launched: 1, omAfterCp: 0 },
+        'failed stop and repeated error are still not closure evidence');
+    } finally {
+      // Test teardown closes every retained artificial child before any
+      // fixture cleanup. No actual process or production data exists here.
+      for (let i = 0; i < 500; i++) {
+        for (const child of children) if (!child.testClosed) {
+          child.testClosed = true;
+          child.emit('close', 1, null);
+        }
+        if (settled) break;
+        await new Promise(resolve => timer(resolve, 2));
+      }
+      if (operation) await operation.catch(() => {});
+      st.mock.restoreAll();
+      syncBuiltinESMExports();
+    }
+    if (caller === 'authority') {
+      assert.equal(terminalError?.message, 'CP_COMPONENT_BYTE_VERIFIER_UNAVAILABLE');
+      assert.equal(terminalError.cause, undefined);
+    }
+  });
 });

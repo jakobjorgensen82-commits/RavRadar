@@ -205,6 +205,7 @@ jobs:
           test -f "$migrations_directory/20260925150000_weather_selection_model_binding.sql"
           test -f "$migrations_directory/20261002080000_top20_display_binding.sql"
           test -f "$migrations_directory/20261002094500_restore_checkpoint_cas_timeout.sql"
+          test -f "$migrations_directory/20261003080000_copernicus_child_close_binding.sql"
           node scripts/integrated-cutover-readiness.mjs plan \
             --migration-list "$RUNNER_TEMP/ravscore-cutover-migrations-plan.txt" \
             --dry-run "$RUNNER_TEMP/ravscore-cutover-dry-run.txt" \

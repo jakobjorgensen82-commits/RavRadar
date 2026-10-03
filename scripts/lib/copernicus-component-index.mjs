@@ -45,6 +45,7 @@ export async function loadCopernicusComponentAuthority({ planPath, bankPath, cac
     throw new Error('CP_COMPONENT_AUTHORITY_ARGUMENTS_INVALID');
   }
   const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-cp-component-authority-'));
+  let failed = false;
   try {
     const output = path.join(temporary, 'authority.json');
     const args = [RUNNER, planInputPath ? '--plan-input' : '--plan', path.resolve(planInputPath ?? planPath), '--bank', path.resolve(bankPath),
@@ -63,22 +64,27 @@ export async function loadCopernicusComponentAuthority({ planPath, bankPath, cac
     await new Promise((resolve, reject) => {
       const child = spawn(pythonExecutable, args, { cwd: ROOT, windowsHide: true, detached: process.platform !== 'win32',
         stdio: 'ignore', env: { ...process.env, PYTHONUTF8: '1' } });
-      let timedOut = false;
+      let primaryFailure = null;
       const timer = setTimeout(() => {
-        timedOut = true;
+        primaryFailure ??= new Error('CP_COMPONENT_BYTE_VERIFICATION_TIMEOUT');
         // Kill the owned worker subtree as well, never leave a subset request
         // running after the normal-weather budget has ended.
-        if (process.platform === 'win32' && child.pid) {
-          const killer = spawn('taskkill.exe', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' });
-          killer.once('error', () => child.kill());
-        } else if (child.pid) {
-          try { process.kill(-child.pid, 'SIGKILL'); } catch { child.kill('SIGKILL'); }
-        }
+        try {
+          if (process.platform === 'win32' && child.pid) {
+            const killer = spawn('taskkill.exe', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' });
+            killer.once('error', () => { try { child.kill(); } catch { /* Still await owned child close. */ } });
+          } else if (child.pid) {
+            try { process.kill(-child.pid, 'SIGKILL'); } catch { child.kill('SIGKILL'); }
+          }
+        } catch { /* A failed stop is not close evidence; keep every caller awaited. */ }
       }, timeoutMs);
-      child.once('error', () => { clearTimeout(timer); reject(new Error('CP_COMPONENT_BYTE_VERIFIER_UNAVAILABLE')); });
+      // An error (including a failed kill) is not evidence of child closure.
+      // Retain the first safe failure and the existing stop timer until close;
+      // every outer caller remains awaited, so no cleanup/fallback can race it.
+      child.on('error', () => { primaryFailure ??= new Error('CP_COMPONENT_BYTE_VERIFIER_UNAVAILABLE'); });
       child.once('close', code => {
         clearTimeout(timer);
-        if (timedOut) reject(new Error('CP_COMPONENT_BYTE_VERIFICATION_TIMEOUT'));
+        if (primaryFailure) reject(primaryFailure);
         else if (code === 0) resolve();
         else reject(new Error('CP_COMPONENT_BYTE_VERIFICATION_FAILED'));
       });
@@ -99,9 +105,11 @@ export async function loadCopernicusComponentAuthority({ planPath, bankPath, cac
       recordFailures: structuredClone(document.recordFailures), attempts: structuredClone(document.attempts ?? []),
       bankSha256: document.persistedBankSha256 ?? null,
       invalidOriginalRecordsReleasedForRetry: document.invalidOriginalRecordsReleasedForRetry ?? 0 });
-  } finally {
+  } catch (error) { failed = true; throw error; }
+  finally {
     // Only this newly created, explicit temporary directory is removed.
-    await fs.rm(temporary, { recursive: true, force: true });
+    try { await fs.rm(temporary, { recursive: true, force: true }); }
+    catch (error) { if (!failed) throw error; }
   }
 }
 

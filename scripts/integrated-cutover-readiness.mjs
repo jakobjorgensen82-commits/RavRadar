@@ -249,12 +249,17 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20261002094500_restore_checkpoint_cas_timeout',
     filename: '20261002094500_restore_checkpoint_cas_timeout.sql',
   }),
+  Object.freeze({
+    version: '20261003080000',
+    id: '20261003080000_copernicus_child_close_binding',
+    filename: '20261003080000_copernicus_child_close_binding.sql',
+  }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260920220000');
 export const TRIP_BINDING_POLICY_SOURCE_MIGRATION =
-  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20261002080000');
+  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20261003080000');
 export const CHECKPOINT_NATIVE_HOLD_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260923140000');
 export const CHECKPOINT_COMPANION_ID_MIGRATION =
@@ -335,6 +340,8 @@ export async function expectedCheckpointCasContract({
     ['public.version_admin_document', 'checkpoint history-exclusion trigger'],
     ['public.ravradar_ravscore_checkpoint_top20_predecessor_projection',
       'exact Top5 binding predecessor projection'],
+    ['public.ravradar_ravscore_checkpoint_cp_close_predecessor_projection',
+      'exact CP child-close binding predecessor projection'],
   ].map(([functionName, label]) => sqlFunctionBody(
     migration,
     functionName,
@@ -348,7 +355,8 @@ export async function expectedCheckpointCasContract({
     + `\n-- predecessor-payload-validator --\n${definitions[5]}`
     + `\n-- cas-function --\n${definitions[6]}`
     + `\n-- checkpoint-history-exclusion --\n${definitions[7]}`
-    + `\n-- top20-predecessor-projection --\n${definitions[8]}`;
+    + `\n-- top20-predecessor-projection --\n${definitions[8]}`
+    + `\n-- cp-close-predecessor-projection --\n${definitions[9]}`;
   return Object.freeze({
     id: CHECKPOINT_CAS_CONTRACT_ID,
     sha256: sha256(definition),

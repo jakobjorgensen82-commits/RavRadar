@@ -618,9 +618,9 @@ const casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.end
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
 assert.equal(casTimeoutSettings.at(-1).migration,
-  '20261002094500_restore_checkpoint_cas_timeout.sql');
+  '20261003080000_copernicus_child_close_binding.sql');
 const restoredTimeoutMigration = fs.readFileSync(
-  new URL(casTimeoutSettings.at(-1).migration, migrationsUrl), 'utf8',
+  new URL('20261002094500_restore_checkpoint_cas_timeout.sql', migrationsUrl), 'utf8',
 );
 const top20BindingMigration = fs.readFileSync(
   new URL('20261002080000_top20_display_binding.sql', migrationsUrl), 'utf8',

@@ -1,4 +1,23 @@
-## 4.0.540 – Bevar Copernicus-kædens første gemmefejl (lokal kandidat)
+## 4.0.541 – Godkendt Copernicus-lukning og korrekt native genbinding (lokal kandidat)
+
+- Lokal branch codex/copernicus-child-close-binding på actual main8df23a9c;
+  offentlig4.0.540 er leveret. 4.0.541 er kun en lokal releasekandidat.
+- Kun den godkendte låste CP-kalder: første fejl bevares, faktisk child-close
+  kræves før oprydning/reservehentning. Stopforsøg er ikke lukningsbevis.
+- Normal nativeberegning omfatter også samme index i Candidate G: integrated
+  29ea9a19…/67, Candidate G28a69936…/65 og afledt continuationd983bb08…/12.
+  Begge fysiske kontrakter er uændrede; intermediate0dfa som endelig binding
+  er forkastet. Ingen hashgenvej, modelkopi, score-/budget-/prioritetsændring.
+- Ny lokal append-only20261003080000-successor bevarer673 states, præcise
+  predecessorgrænser, hele same-T-indholdet og faktisk55s/readback. Otte lokale
+  forbrugere følger nativebindingen; applied008/00945 er byteuændrede.
+- Genbrugte procesprøver, lokale bindings-/installationskontrakter og419
+  håndbogskapitler består. Det er ikke SQL-eksekvering, privat produktionsrestore,
+  fullCP-SførT, OSdescendant/kill/writer/runnerloss/nationalkapacitet eller deploy.
+  Resterende versionspligt, exact-head-kildekontrol og sikre produktionsgates består.
+  Se DEC-0288 og checkpointets allerøverste aktuelle status.
+
+## 4.0.540 – Bevar Copernicus-kædens første gemmefejl (leveret; kandidatnoter nedenfor er historiske)
 
 - Kun atomic_json, BoundedComponentTransport.download og save_component_bank:
   første receipt/request/bankfejl bevares; egen oprydning forsøges og cleanup-only HARD.

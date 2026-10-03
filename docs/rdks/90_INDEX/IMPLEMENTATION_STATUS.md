@@ -1,4 +1,147 @@
-# 2026-10-02 – faktisk offentlig539 og isoleret CP-kandidat540
+# AKTUELT TILLÆG – 2026-10-03 10:30 DK – lokal4.0.541, godkendt CP-lukning og native bindingskæde
+
+Lokale541kontroller nu6/6filunitsPASS1108.5206ms/0skip; code-only-testen
+importerer eksisterende routing, ikke en ny uafhængig prøve. Sourcecritical102/
+sourceplan47/RDKS541-14chatPASS. Nativeberegning sker i model/releaseContractprøverne.
+SærskiltstrippeddiffONLYtopversion i beggegeodata/65browserfiles og2versionerede
+workflows; runtimeindex/testLF/direktecallers/applied00800945 urørte. Mekanisk
+handbooksyncoutside96b16… består. Ingen actualprivateBrestore/SQLexecution/deploy.
+
+Allerøverste checkpoint og ejerens konkrete godkendelse har forrang.
+RELEASE codex/copernicus-child-close-binding/base8df23a9c har nu lokal4.0.541.
+Offentlig/main er FORTSAT4.0.540/8df med3a14/a249/4668; der er ikke merged,
+installeret SQL eller deployet noget nyt. BIG519/c557/OFF bevares separat.
+
+Kun godkendt loadCopernicusComponentAuthority: første fejl bevares og actual
+child-close kræves før settlement/egen-ydrecleanup/fallback/OM. Stopforsøg
+er ikke closebevis. Cleanup-only HARD; args/budgetter/priority/admission/
+score/centralgeometry uændrede. To genbrugte parents/8subcases/10reportedunits
+PASS8374.027ms; direkte callers/CLI og12gamleparents byteurørte. Ikke completed
+OSdescendant/kill/writer/failure4min/runnerloss/nationalcapacity/fullCP-SførT.
+
+Rigtig normal nativeclosure er integrated29ea9a19…/67 +CandidateG28a69936…/65
++afledtcontinuationd983bb08…/12. Fysiskea226/c73 og øvrige65/64/11filhashes
+uændrede. Intermediate0dfa/staleCandidate er FORKASTET, ikke alias. Metadata-
+ONLYhistoriskproof beviser immutable008c557→3a14; normalnativegate er separat.
+Ingenmodelcopy/eval/nativeplanningprobe eller SOURCEallassets-autoritet.
+
+NyLOCALappend-only20261003080000 kræverexact3a14/a249/4668 og673homogene
+oldstates, genvaliderer FULLcurrentpayload, bevarer måling/historik/time/roller/
+cipher/same-Tindhold og actual55s/pg_procreadback. Otte consumers følger29ea.
+Applied008/00945 LF103de25a…/31632e33… erimmutable. SQLparitetsecuritymål3PASS
+143.3309ms; ikke SQLexecution/livebackend/productionoriginalB-restore.
+
+Mekanisk set-version541 ændrer cache-/releaseidentiteter, ikke model-/provider-
+policy. Samtaledelta/status/issues/changelog/beggehåndbøger89.154/master/roadmaps
+er opdateret. Geodata kræver særskilt ONLYtopversiondiff førcommit. Nativeclosure/
+versions/docs/privacy/sourceplan kontrolleres målrettet; tidligere runtimeprøver
+genbruges. Egen exact-head sourceCI og normale private/gemning/artifact/deploy-
+gates mangler stadig. Ingen statuscommit/gentagen fuldsuite/gateomgåelse.
+
+NYTNATURLIGT ordinary37109313340/attempt1/exactmain8df start10:19:29DK eraktivt;
+metadata10:24DK build111164070050/DMI78start10:24:23DK/ingenfailedsteps.
+Recovery-onlySKIPPED,ikkePASS. Reentry/terminal/exactmainjobsSUCCESS.
+Dette er IKKE restore/fileCount/priorMatchedkey/nyt107saved/108upload/deploybevis.
+Ingen merge/main/productionbindingsinstallation/code-only/audit/oneoff/ekstrarun
+mens aktiv. Cron8348098 holdesaktiv/uændret; ingen rootdispatch/cancel/pause.
+
+Næste: færdiggør scope-/versionsintegritet og PR med én exact-head sourceCI;
+holdheadurørt. Efter denne ordinarys faktiskecompletion/resultcontrol fornys
+writers/main/base/head/unexpiredROOTproof og eksisterende DEC0148false/
+privateoriginalB-AAD-S/fullRuntimeContract/673state/CAS/backend/Pages/reseal/
+terminal/requireddeploy-gates. Ingen standaloneSQL/privatjoblog/admissionwiring.
+AlleANDREafvisninger består; samlet store revision og BIGOFF er fortsat OPEN.
+
+# HISTORISK – AKTUELT TILLÆG – 2026-10-03 10:05 DK – erstattet af lokal4.0.541-status ovenfor
+
+Efterkontrol 2026-10-03 10:19 DK: docs419kapitler/protecteddocs og
+RDKS540/14chat består; endelig native29ea/67 og historiskissued008checkPASS.
+Aktiv offentlig binding er stadig3a14/a249/4668; den nye29ea/28a6/d983 er lokal.
+SQLONLYhandbookpayloadsync har egenNEWoutsideLF96b16eb8… uændret før/efter;
+ikke BIGs99114… eller tidligere154c…baseline. ChangelogUNRELEASED/DEC0288 opdateret.
+NYTNATURLIGT37109313340/attempt1/main8df start10:19:29DK er nu in_progress.
+Cronaktiv/uændret, rootdispatch0; ingen merge/main/productionbinding/code-only/
+replacement mens aktiv. Intet nyt save/restore/deploybevis for dette run.
+Det private checkpoints allerøverste10:19DK-tillæg har detaljerne og næsteintegration.
+
+Allerøverste private checkpoint og ejerens konkrete afgrænsede godkendelse har
+forrang. RELEASE er codex/copernicus-child-close-binding på main8df23a9c;
+BIG519 forbliver separat/OFF. Ingen ny version/commit/push/CI/merge/deploy.
+
+Den godkendte låste kalder bevarer første fejl og kræver actualchild-close før
+cleanup/fallback. RuntimeindexLFcfdfdab9… og to prøvede parents er uændrede
+siden isoleret10unitsPASS8374.027ms. Ingen OSdescendant/kill/writer/runner-
+garanti eller completedfullCP-SførT. Direkte callers/CLI er byteuændrede.
+
+Konkret integrationsfejl afslørede, at sharedindex også identificerer Candidate G.
+0dfa som ENDELIG integratedbinding og "Candidate G/continuation uændret" er
+FORKASTET, ikke et produktionsresultat. Normal nativegen giver nu integrated
+29ea9a19647bf7d5edad0eee159267086d546f0d90a9f2778a77077351aad948/67files;
+Candidate G28a69936b3d9a9c655e967c5e0c352d8401e5894ef3011bbfc55c85ad37f7ce7/65;
+continuationd983bb085f75252d00f0e2585cd0e274ea86020000f99037e9054a3989a4aef6/12.
+Kun direkteindex + afledt Candidate G-hashmetadata ændres; physicala226/c73
+og øvrige65/64/11filehashes bevares. Ingen modelbody-copy/eval/alias/eksklusion.
+
+Append-only20261003080000 er LOKALT genereret; applied008/00945 LF103de25a…/
+31632e33… immutable. Exact3a14/4668/a249→29ea/d983/28a6-projektion kræver
+673homogene states og fullcurrentvalidator. Historiskc557→3a14 kædes gennem
+samme CP-bridge. Same-T bevarer alle felter bortset fra3afledte digests;
+begge helpers readback/ACL/searchpath-bundne og actual55s påkrævet. Ingen
+cipherrelabelling/SQLinstallation. Otte consumers LOKALT synkroniseret fra
+prevalideret read-onlyanchor; readiness/release/code-onlyplan peger på nyt led.
+HistoriskTop20builder bruger exacthashbundne metadata, ikke dagens closure
+som3a14; normalnativegate består separat. Alle ANDRE afvisninger består.
+
+Finalsuccessor/8consumer/install-security-paritet3PASS143.3309ms/0skip.
+Mellemtrin: metadataPASS1053.0656ms; readiness+2eksisterende private
+migration/routing-fixtures3PASS1068.108ms. Ikke endelig liveSQL/privatrestore/
+originalB-AAD-S/fullfactory/updater eller nationalkapacitetsbevis. Målrettet
+endelig sourceintegritet, resterende docs/versionspligt, exactheadCI og
+originalB/runtime/CAS/backend/postdata/publiceffekt kræves før levering.
+Ingen gentaget CP-runtime/RED/fuldsuite/status-CI. Se DEC-0288.
+
+Offentlig/main540/8df/seneste04Zrr-20261003060050-210/210/673/complete:true
+forbliver urørt. Ordinary37096157187 actualsave/cache/upload/deploy/required
+SUCCESS09:22:27DK; ingen ny weatherdispatch eller pause. Ingen frisk FIELD/
+Top20/Nibe/private-gap-aldermåling. Cron8348098 aktiv/uændret; ingen main/
+merge/bindingsinstallation/code-only under ny aktiv weatherwriter. GPT-6.1 Sol/
+Ekstra høj/model/plan/kadence uændrede; samlet revision/OFF fortsat åben.
+
+# HISTORISK – AKTUELT TILLÆG – 2026-10-03 09:34 – offentlig540 og godkendt CP-fix under korrekt genbinding
+
+Allerøverste private checkpoint har forrang. Offentlig/main540 er8df23a9c;
+naturlig ordinary37096157187/attempt1 blev faktisk gemt/uploadet/cachet og
+deployet med required-deploySUCCESS09:22:27DK. Safe54+3/29 kontroller består;
+HTTPS09:24:19 matcher exactPagesseal81d8f5f8…/rr-20261003060050-210/
+04Z3Oct/210zoner/673dele/complete:true. Ikke restore/fileCount/priorMatchedkey,
+ny FIELD-/Top20-/Nibe-måling, privatgapklokke eller færdig historik/revision.
+
+Ejeren godkendte konkret den smalle rettelse af den låste CP-kalder:
+første fejl bevares, startet child-close kræves før egen/ydre cleanup og
+reservehentning. Ingen score/priority/geometry/budget/admission-ændring.
+Alle ANDRE afvisninger består; dette er ikke bred source-/privatlogtilladelse.
+
+EFTER ordinarycompletion/resultkontrol og writers0 er releasecheckout NU
+codex/copernicus-child-close-binding/HEAD8df. Kun én authorityfunktion og
+to genbrugte testparents/syv imports er isoleret fra BIG519, ikke hele519.
+Indexcfdfdab9…/test6052bb37… matcher de prøvede BIG-bytes;12gamleparents
+bevares. Isoleret TOparents/fem+treunderprøver10reportedunitsPASS/0FAIL/0SKIP
+8374.027ms, ikke10unikke nye tests eller en gentagen fuldsuite.
+
+Eksisterende nativebundle-builder har beregnet0dfa6c2bb7943a1e7f79d3aff10a3c90a64bd40423058b6909166e5c693b0c05
+over67files; kun indexhash og samletbundlehash ændres i manifestet, fysisk
+kontrakta226 og de øvrige66hashes er uændrede. Ingen modelbody-copy/eval/alias.
+Det er KUN lokal metadata-generation: otte consumers er fortsat STALE3a14.
+Append-only successor/exact3a14-predecessorbridge/read-onlyanchor/55s-live-
+readback/private-runtime-migration/historiskTop20gate mangler. Applied008/
+00945 er immutable; ingen standaloneSQL, installation, CI, commit, push,
+ny releaseversion eller deploy. Kandidaten er IKKE releaseklar/produktion.
+BIG519/c557/OFF bevares separat. FullCP-SførT/writer/OSdescendants/kill/
+failure4min/runnerloss/nationalcapacity og samlet revision er fortsat OPEN.
+Valgt GPT-6.1 Sol/Ekstra høj bevares og er fortsat nødvendig for integrationen.
+Næste konkrete trin og al evidens: checkpointets09.34/07.08; DEC-0266.
+
+# HISTORISK – 2026-10-02 – faktisk offentlig539 og isoleret CP-kandidat540
 
 - [x] ONEordinary37036350223 actualsave/upload/nytcache/Pages/terminal21:02:23.
 - [x]538/PR506 og539/PR507 merged/publiceret21:21:47/21:42:04; ikke ventende.

@@ -3,9 +3,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
-import { computeRavScoreModelBundle } from './build-ravscore-model-bundle.mjs';
-import { computeCandidateGRollbackBundle } from './build-candidate-g-rollback-bundle.mjs';
-import { ravScoreContinuationImplementationSha256 } from './lib/ravscore-continuation-implementation-contract.mjs';
+import { canonicalBundleJson } from './build-ravscore-model-bundle.mjs';
 
 const oldHash = 'c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb';
 const newHash = '3a14f458122f5bc0ea8a60c07abbcbd68d022c0322a87e77242891f21631c852';
@@ -17,23 +15,33 @@ const digest = text => crypto.createHash('sha256').update(text).digest('hex');
 const mode = process.argv[2] ?? '--check';
 assert.ok(['--check', '--write'].includes(mode));
 
-const file = 'scripts/public-conditions-lib.mjs';
-const source = await fs.readFile(file, 'utf8');
-const needle = '}).sort(compareNationalRankingRows).slice(0, 20);';
-assert.equal(count(source, needle), 1);
-const previous = await computeRavScoreModelBundle({ sourceOverrides: new Map([
-  [file, source.replace(needle, '}).sort(compareNationalRankingRows).slice(0, 5);')],
-]) });
-const current = await computeRavScoreModelBundle();
-assert.equal(previous.modelBundleSha256, oldHash);
-assert.equal(current.modelBundleSha256, newHash);
-assert.equal(current.contractSha256, previous.contractSha256);
-assert.equal(current.manifest.files.length, 67);
-assert.deepEqual(current.manifest.files.filter((entry, index) =>
-  entry.sha256 !== previous.manifest.files[index].sha256).map(entry => entry.path), [file]);
-assert.equal((await computeCandidateGRollbackBundle()).modelBundleSha256,
+// This issued migration is historical, not a validator for a future native
+// bundle. Its recorded manifests contain ONLY path/hash metadata, never model
+// bodies. Hash both complete historical manifests; do not alias today's bundle
+// to 3a14. The independent native builder still checks every current source.
+const proof = JSON.parse(await fs.readFile(
+  'scripts/fixtures/top20-display-binding-source-proof.json', 'utf8'));
+assert.equal(proof.metadataOnly, true);
+assert.equal(proof.predecessorBundleSha256, oldHash);
+assert.equal(proof.successorBundleSha256, newHash);
+assert.equal(proof.changedPath, 'scripts/public-conditions-lib.mjs');
+assert.equal(proof.predecessorFileSha256,
+  '162374f1e2e47bae3a47348124e72af17f51ee63a73f9ac65577d63d127c71ac');
+const currentManifest = proof.successorManifest;
+const previousManifest = structuredClone(currentManifest);
+const previousEntry = previousManifest.files.filter(entry => entry.path === proof.changedPath);
+assert.equal(previousEntry.length, 1);
+previousEntry[0].sha256 = proof.predecessorFileSha256;
+assert.equal(digest(canonicalBundleJson(previousManifest)), oldHash);
+assert.equal(digest(canonicalBundleJson(currentManifest)), newHash);
+assert.equal(currentManifest.contractSha256,
+  'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b');
+assert.equal(currentManifest.files.length, 67);
+assert.equal(digest(JSON.stringify(proof.candidateGRollbackManifest)),
   'a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021');
-assert.equal(await ravScoreContinuationImplementationSha256(), continuation);
+assert.equal(digest(JSON.stringify(proof.continuationPredecessorFileHashes)), continuation);
+assert.deepEqual(currentManifest.files.filter((entry, index) =>
+  entry.sha256 !== previousManifest.files[index].sha256).map(entry => entry.path), [proof.changedPath]);
 
 async function immutable(filePath, expected) {
   const text = normalize(await fs.readFile(filePath, 'utf8'));
