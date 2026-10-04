@@ -90,7 +90,7 @@ jobs:
           mkdir "$RUNNER_TEMP/sealed-current-private"
       - name: Authenticate original AAD and contracts with the existing internal key
         env:
-          STAGED_PRIVATE_BUILD_MASTER_SECRET: ${{ secrets.STAGED_PRIVATE_BUILD_MASTER_SECRET }}
+          STAGED_PRIVATE_BUILD_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: >-
           node scripts/audit-sealed-current-source.mjs open
           --repository-root "$GITHUB_WORKSPACE"

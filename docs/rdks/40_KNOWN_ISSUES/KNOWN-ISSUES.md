@@ -1,4 +1,15 @@
-# NYESTE – 2026-10-03 – Lyngby/Lodbjerg land-/farvandsinput undersøges
+# NYESTE – 2026-10-04 – faktisk diagnosefejl og afvist vandstandstab
+
+Fastread37163385963 fejlede før autentificering: forkert secretopslag gav tomt
+input. Lokal one-line binding matcher nu producentens eksisterende nøgle;
+genbrugt regression RED1/PASS3→PASS4/0skip. Egen CI/merge/læsning åben. DEC-0289.
+PR510 er merged; faktisk historisk Lyngbyårsag og godkendt alle-zonekontrol OPEN.
+Ordinary37151127122 tabte12vandstandstimer ved Fur/Stenerodde8Oct02–13Z;
+øvrige familiers tab0/identitetsændringer0. Ny krypteret cache saved/uploaded,
+ingen deploy. SOURCE-routing/retention er kun en hypotese, ikke bevist årsag.
+Ejeren tillader relevante private joblogs stående; ingen ACL-/nøgleændring.
+
+# Historisk – 2026-10-03 – Lyngby/Lodbjerg land-/farvandsinput undersøges
 
 Offentligt DKSS-LF-punkt ved Lodbjerg ligger på land og bruges både til værdi
 og pil. Transportscoren er høj i forhold til Agger og Stenbjerg. Ingen normal-

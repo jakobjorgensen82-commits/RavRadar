@@ -1,4 +1,13 @@
-# AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
+# NYESTE – 2026-10-04 – minimal eksisterende nøglebinding før fastlæsning
+
+PR510 merged; read37163385963 stoppede før GCM på tomt nøgleinput. DEC-0289s
+one-line binding følger producentens eksisterende key; genbrugt regression
+RED1/PASS3→PASS4/0skip. Egen exact-CI/merge/read er næste, kun uden aktivwriter.
+Godkendt alle-zoneplan følger Lyngbyårsag. Fur/Stenerodde12vandstandstab i
+ordinary37151127122 stadig OPEN; actualnycache målt, ingen deploy. Stående
+privatloglæsetilladelse ændrer ikke privatpayloadbeskyttelse/øvrige afvisninger.
+
+# Historisk – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
 Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10
 sluttede11:00:56–58DK. Lille416byteROOTproof11269678605 er hentet ALENE og

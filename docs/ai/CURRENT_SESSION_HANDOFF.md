@@ -1,4 +1,17 @@
-# NYESTE – 2026-10-03 – isoleret sealed Lyngbylæser, offentlig541 urørt
+# NYESTE – 2026-10-04 – minimal nøglebinding på faktisk main
+
+PR510 merged/maina459b846; exactread37163385963 fejlede før GCM/inspektion.
+Actual log: forkert secretnavn gav tomt input. Lokal branch
+codex/lyngby-sealed-existing-key-binding/basea459 har one-line producentidentisk
+binding og genbrugt regression RED1/PASS3→PASS4/0skip; egen exact-CI/merge/read
+åben. DEC-0289. Original target/reader/model/AAD/gates uændrede, ingen nye keys.
+Ejer tillader relevante private joblogs stående; tidligere logafvisninger er
+historiske, andre særskilte afvisninger og privatpayloadbeskyttelse består.
+Fur/Stenerodde12vandstandstab i37151127122 faktisk målt; cache saved/uploaded,
+ingen deploy. Rodårsag stadig OPEN. Godkendt alle-zoneplan efter Lyngbyårsag.
+Ingen main/auditdispatch under aktivwriter, ingen cb79/whole519/OFFaktivering.
+
+# Historisk – 2026-10-03 – isoleret sealed Lyngbylæser, offentlig541 urørt
 
 Ejerens seneste særskilte ja godkender diagnosekode/workflow efter helepakke-
 læsetilladelsen. DEC-0289. Branch codex/lyngby-sealed-current-audit/basebbc.
