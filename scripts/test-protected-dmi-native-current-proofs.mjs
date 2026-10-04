@@ -343,8 +343,15 @@ test('private current source transition archive survives cold recovery and rejec
     // identities exercise the inventory boundary, not a national model run.
     const parts = Object.fromEntries(Array.from({ length: 672 }, (_, index) => [
       'OPAQUE-' + index, { partId: 'OPAQUE-' + index, zoneId: 'DK-B05-17' } ]));
+    const islandIds = ['DK-B11-SAM-01', 'DK-B11-SAM-02', 'DK-B11-SAM-03',
+      'DK-B11-LAE-01', 'DK-B11-LAE-02', 'DK-B11-LAE-03'];
+    islandIds.forEach((zoneId, index) => { parts['OPAQUE-' + index].zoneId = zoneId; });
+    const zoneIds = [f.part.zoneId, 'DK-B05-17', ...islandIds,
+      ...Array.from({ length: 202 }, (_, index) => 'FIXTURE-ZONE-' + index)];
+    const zones = Object.fromEntries(zoneIds.map(zoneId => [zoneId, {}]));
     parts[f.part.partId] = { ...copy(f.part), ravScoreModel: { currentState: predecessorState } };
-    const source = { productionReferenceAt: at(0), coastalParts: { modelBinding: previousBinding, parts },
+    const source = { productionReferenceAt: at(0), zones: copy(zones),
+      coastalParts: { modelBinding: previousBinding, parts, zones: copy(zones) },
       ravScoreCandidateGWarmup: { runtime: { parts: {
         [f.part.partId]: { ravScoreModel: { currentState: copy(candidate) } } } } } };
     const before = JSON.stringify(source);
@@ -370,6 +377,16 @@ test('private current source transition archive survives cold recovery and rejec
     const wrongTime = copy(source);
     wrongTime.ravScoreCandidateGWarmup.runtime.parts[f.part.partId].ravScoreModel.currentState.time = at(1);
     assert.throws(() => preserveOwnerCurrentOriginalPairs(wrongTime, {}), /original pair|original time/);
+    const unknownParent = copy(source);
+    unknownParent.coastalParts.parts['OPAQUE-0'].zoneId = 'DK-B05-99';
+    assert.throws(() => preserveOwnerCurrentOriginalPairs(unknownParent, {}), /parent-zone and part identities/);
+    const wrongPart = copy(source);
+    wrongPart.coastalParts.parts['OPAQUE-0'].partId = 'OTHER';
+    assert.throws(() => preserveOwnerCurrentOriginalPairs(wrongPart, {}), /parent-zone and part identities/);
+    const mismatchedZones = copy(source);
+    delete mismatchedZones.zones['DK-B11-SAM-01'];
+    mismatchedZones.zones.UNKNOWN = {};
+    assert.throws(() => preserveOwnerCurrentOriginalPairs(mismatchedZones, {}), /parent-zone and part identities/);
     assert.equal(JSON.stringify(source), before);
   });
   await t.test('normal metadata migration preserves validated private originals under their original binding', async () => {

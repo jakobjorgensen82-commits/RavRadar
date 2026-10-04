@@ -4,7 +4,7 @@
 
 ## 89.158 Fur-huller skal kunne forklares uden at vise private data
 
-4.0.542 er sendt som PR516, ikke online: Den normale beregning gemmer nu ved Fur
+PR516 er merged med bestået kildekontrol; 4.0.542 er endnu ikke online. Den normale beregning gemmer ved Fur
 et privat spor af det faktisk valgte kildegrundlag. Sporet har kun hashes,
 ja/nej og optællinger for direkte vandstand, verificerede/tilladte kildeinput,
 routet output og de tidligere valgte kilders fortsatte tilstedeværelse.
@@ -17,10 +17,13 @@ byte-identiske uden det. De målrettede prøver og den normale caller består.
 Første kørsel uden et tidligere spor kaldes ærligt ukendt; et syntetisk
 reproduceret kildevalg er ikke bevis for årsagen i de gamle fejlede kørsler.
 
-Syvzonerettelsen er også sendt, ikke online. Originaler, øvrig bevist historik og fysiske
-scoreformler bevares, og gamle databaseovergange er urørte. Vejrhentningen
-afsluttede kl.20:31 DK, og den eksakte originalbinding er frisk kontrolleret
-mod den nye 16Z-generation. Egen GitHub-kontrol og faktisk deploy mangler stadig.
+Syvzonerettelsen er merged, ikke online. Originaler, øvrig bevist historik og
+fysiske scoreformler bevares. Den nye databaseovergang er installeret, men deploy
+stoppede kl.21:38 før offentliggørelse: kontrollen af zone-id'er afviste gyldige
+Samsø-/Læsø-zoner. Den bruger nu de autentificerede originale zoneinventarer
+i stedet for en navneskabelon. Ukendte zoner og forkerte delidentiteter afvises
+stadig. Samme målprøve og normale migrations-/genbrugskontroller består lokalt;
+bindinger og gamle migrationer er uændrede. Ny GitHub-kontrol og deploy kræves.
 Det er endnu ikke lavet sådan, at tab automatisk repareres og deploy fortsætter.
 Gyldige timer skal bevares før uændret slutkontrol; datatabskontrollen slås ikke fra.
 Nyeste nationale forecast-dækning er 96.44% af fem vejrfelter over 210 zoner,
@@ -29,7 +32,8 @@ observationer eller komplet privat historik. Dette erstatter ældre 12Z-dækning
 Ingen ny alarm eller privat diagnose vises på hjemmesiden. DEC-0291 og DEC-0292.
 Første GitHub-kontrol fandt gamle testudtræk og en manglende plain-helper i
 den ældre genbrugsvej. De er rettet lokalt med bevaret strengt kildebevis;
-de berørte regressionsprøver består. Ny exact-head kontrol og deploy mangler.
+de berørte regressionsprøver bestod senere exact-head CI før merge. Den nye
+arkivreparation kræver egen exact-head kontrol og faktisk deploy.
 Ældre afsnit om en endnu ikke lavet NORMAL-diagnose er erstattet af denne status.
 
 ## 89.157 Havmodellen skal passe til målzonen – lokal rettelse
