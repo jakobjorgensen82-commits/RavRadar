@@ -1,5 +1,8 @@
 import { buildDmiForecastHourly, canonicalForecastHour, DMI_FORECAST_HOURS, verifiedDmiForecastSource } from './dmi-forecast-store.mjs';
 import { recommendWaterStationBracket } from '../../js/core/water-station-routing.js';
+import { dmiMarineCollectionAllowedForZone } from './dmi-marine-zone-exclusions.mjs';
+import { FUR_WATER_ROUTING_PART_ID, captureFurWaterRoutingDiagnostic }
+  from './fur-water-routing-diagnostic.mjs';
 
 const finite=v=>{if(v===null||v===undefined||v==='')return null;const n=Number(v);return Number.isFinite(n)?n:null;};
 const round=(v,d=2)=>Number.isFinite(v)?Number(v.toFixed(d)):null;
@@ -82,6 +85,11 @@ function verifiedDmiSourceRows(rec) {
   return result;
 }
 
+function sourceRowsAllowedForZone(rows, zoneId) {
+  return rows.every(row => row
+    && dmiMarineCollectionAllowedForZone(row.sources?.waterLevel?.collection, zoneId));
+}
+
 function selectWaterSources({ zoneId, zoneName, point, coastLine, onshoreDirectionDeg,
   sources, index, routing, haversineKm }) {
   const route = routing?.zones?.[zoneId];
@@ -153,6 +161,8 @@ function routedWaterLevelSource(sourceRows,rows,method){
  */
 export function applyVerifiedWaterSourceRoutingToPartHourly({
   part, parentFeature, hourly, sources, index, routing, haversineKm,
+  previousRoutingDiagnostic = null,
+  diagnosticReferenceAt = null,
 } = {}) {
   if (!Array.isArray(hourly)) throw new TypeError('PART water-source routing requires hourly rows');
   const zoneId = part?.sourceZoneId ?? part?.parentZoneId ?? part?.zoneId;
@@ -165,13 +175,24 @@ export function applyVerifiedWaterSourceRoutingToPartHourly({
     coastLine: parentFeature.properties?.coastLine,
     onshoreDirectionDeg: parentFeature.properties?.onshoreDirectionDeg,
     sources, index, routing, haversineKm });
-  if (!rows.length) return { hourly, appliedHours: 0 };
   const sourceMaps = rows.map(source => verifiedDmiSourceRows(index.get(sourceKey(source))));
+  const diagnostic = routedHourly => part.partId === FUR_WATER_ROUTING_PART_ID
+    ? captureFurWaterRoutingDiagnostic({
+      part, parentFeature, directHourly: hourly, routedHourly, sources, rows,
+      method, routing, sourceMaps,
+      verifiedRecordsByKey: new Map([...index].map(([key, record]) =>
+        [key, { point: record.point, rows: verifiedDmiSourceRows(record) }])),
+      collectionAllowed: dmiMarineCollectionAllowedForZone,
+      previousDiagnostic: previousRoutingDiagnostic,
+      productionReferenceAt: diagnosticReferenceAt,
+    }) : null;
+  if (!rows.length) return { hourly, appliedHours: 0, diagnostic: diagnostic(hourly) };
   let appliedHours = 0;
   const routedHourly = hourly.map(hour => {
     const timeMs = Date.parse(hour?.time ?? '');
     if (!Number.isFinite(timeMs)) return hour;
     const sourceRows = sourceMaps.map(map => map.get(hour?.time));
+    if (!sourceRowsAllowedForZone(sourceRows, zoneId)) return hour;
     const values = sourceRows.map(sourceRow => finite(sourceRow?.waterLevelCm));
     if (values.some(value => value === null)) return hour;
     const value = round(values.reduce((sum, item, i) => sum + item * rows[i].weight, 0), 0);
@@ -180,7 +201,8 @@ export function applyVerifiedWaterSourceRoutingToPartHourly({
     const trendKnown = sourceRows.every((sourceRow, i) =>
       finite(sourceRow?.waterLevelTrendCm3h) !== null
       && finite(futureRows[i]?.waterLevelCm) !== null
-      && sameVerifiedDmiSourceSeries(sourceRow, futureRows[i]));
+      && sameVerifiedDmiSourceSeries(sourceRow, futureRows[i]))
+      && sourceRowsAllowedForZone(futureRows, zoneId);
     const futureValue = trendKnown ? round(futureRows.reduce((sum, sourceRow, i) =>
       sum + sourceRow.waterLevelCm * rows[i].weight, 0), 0) : null;
     const provenance = {
@@ -200,7 +222,7 @@ export function applyVerifiedWaterSourceRoutingToPartHourly({
       sources: { ...(hour.sources ?? {}), waterLevel: provenance },
     };
   });
-  return { hourly: routedHourly, appliedHours };
+  return { hourly: routedHourly, appliedHours, diagnostic: diagnostic(routedHourly) };
 }
 
 export function applyWaterSourceRouting({features,output,forecastStore,sources,index,routing,haversineKm,generatedAt}){
@@ -218,16 +240,18 @@ export function applyWaterSourceRouting({features,output,forecastStore,sources,i
     const routeWaterLevels=target=>{
       const routed=target.map(row=>{
         const sourceRows=rows.map((s,i)=>timeMaps[i].get(row.time));
+        if(!sourceRowsAllowedForZone(sourceRows,zoneId))return row;
         const values=sourceRows.map(sourceRow=>finite(sourceRow?.waterLevelCm));
         if(values.some(v=>v===null))return row;
         const value=values.reduce((sum,v,i)=>sum+v*rows[i].weight,0);
         const futureTime=new Date(Date.parse(row.time)+3*3600000).toISOString();
-        const futureValues=timeMaps.map(map=>finite(map.get(futureTime)?.waterLevelCm));
+        const futureRows=timeMaps.map(map=>map.get(futureTime));
+        const futureValues=futureRows.map(row=>finite(row?.waterLevelCm));
         // The source builder already requires comparable DMI series for T+3.
         // Use its proof plus the exact private support hour, not row position
         // or a neighbouring public row from a different retained source.
         const trendKnown=sourceRows.every(sourceRow=>finite(sourceRow?.waterLevelTrendCm3h)!==null)
-          &&futureValues.every(v=>v!==null);
+          &&futureValues.every(v=>v!==null)&&sourceRowsAllowedForZone(futureRows,zoneId);
         const futureValue=trendKnown?futureValues.reduce((sum,v,i)=>sum+v*rows[i].weight,0):null;
         return {...row,waterLevelCm:round(value,0),waterLevelModelCm:round(value,0),
           waterLevelTrendCm3h:futureValue===null?null:round(futureValue,0)-round(value,0),

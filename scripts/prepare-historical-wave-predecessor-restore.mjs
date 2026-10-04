@@ -12,6 +12,8 @@ import {
 import {
   BOUNDED_CONDITIONS_PREDECESSOR_POLICY,
   buildBoundedConditionsPredecessorRestoreExpectation,
+  buildOwnerCurrentOriginalRestoreExpectation,
+  OWNER_CURRENT_DOMAIN_PREDECESSOR,
 } from './lib/bounded-conditions-predecessor-transition.mjs';
 import {
   privateRuntimeContractHashes,
@@ -77,15 +79,27 @@ export async function prepareHistoricalWavePredecessorRestore(options) {
       currentContractHashes: await privateRuntimeContractHashes(),
       now: options.now ?? new Date().toISOString(),
     });
-  const expectation = historicalExpectation ?? boundedConditionsExpectation;
+  const ownerCurrentExpectation = historicalExpectation || boundedConditionsExpectation ? null
+    : buildOwnerCurrentOriginalRestoreExpectation({ sourceDescription,
+      targetReferenceAt: options.targetReferenceAt,
+      currentBinding: ravScoreModelBinding(),
+      currentContractHashes: await privateRuntimeContractHashes(),
+      now: options.now ?? new Date().toISOString() });
+  const expectation = historicalExpectation ?? boundedConditionsExpectation ?? ownerCurrentExpectation;
+  if (!ownerCurrentExpectation
+    && ravScoreModelBinding().modelBundleSha256 !== OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding.modelBundleSha256
+    && sourceDescription.modelBinding?.modelBundleSha256 === OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding.modelBundleSha256) {
+    throw new Error('Owner original generation no longer matches the exact approved binding bridge');
+  }
   const transitionKind = historicalExpectation
     ? 'historical-wave-input'
-    : boundedConditionsExpectation ? 'bounded-conditions-writer' : '';
+    : boundedConditionsExpectation ? 'bounded-conditions-writer'
+      : ownerCurrentExpectation ? 'owner-current-domain-original' : '';
   const sourceHead = historicalExpectation
     ? HISTORICAL_WAVE_INPUT_TRANSITION_POLICY.sourceHead
     : boundedConditionsExpectation
       ? BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceHead
-      : '';
+      : ownerCurrentExpectation ? OWNER_CURRENT_DOMAIN_PREDECESSOR.sourceHead : '';
   if (expectation) await atomicWriteJson(options.outputPath, expectation);
   await fs.appendFile(options.githubOutputPath, [
     `required=${expectation ? 'true' : 'false'}`,

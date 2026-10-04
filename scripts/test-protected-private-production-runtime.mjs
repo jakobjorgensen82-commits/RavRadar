@@ -48,6 +48,8 @@ import {
   validateSameReferencePrivateRuntimeSuccessor,
   validateProtectedPrivateRuntimePointer,
 } from './protected-private-production-runtime.mjs';
+import { OWNER_CURRENT_DOMAIN_PREDECESSOR }
+  from './lib/bounded-conditions-predecessor-transition.mjs';
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const sourceRepository = path.resolve('.');
@@ -315,6 +317,20 @@ try {
     request: bridgeDocuments.request,
     storage: bridgeStorage.client,
   });
+  const beforeOriginalCheckDownloads = bridgeStorage.downloads();
+  const originalTarget = path.join(restoreRoot, 'owner-original-not-current');
+  await assert.rejects(() => restoreProtectedPrivateProductionRuntime({ privateRoot: restoreRoot,
+    bundlePath: originalTarget, repositoryRoot: repository,
+    expected: { ...clone(OWNER_CURRENT_DOMAIN_PREDECESSOR),
+      ownerCurrentDomainTransition: 'EXACT_ORIGINAL_RESTORE_V1',
+      targetReferenceAt: '2026-10-04T16:00:00.000Z',
+      minimumReferenceAt: OWNER_CURRENT_DOMAIN_PREDECESSOR.productionReferenceAt,
+      minimumGeneratedAt: OWNER_CURRENT_DOMAIN_PREDECESSOR.generatedAt },
+    now: '2026-10-04T18:00:00.000Z', request: bridgeDocuments.request, storage: bridgeStorage.client }),
+  /no longer the exact protected current/);
+  assert.equal(bridgeStorage.downloads(), beforeOriginalCheckDownloads,
+    'A stale original must be rejected before archive download or fallback');
+  await assert.rejects(fs.lstat(originalTarget), { code: 'ENOENT' });
   assert.equal(bridgeRestored.restored, true);
   assert.equal(bridgeRestored.exactDmiPredecessor, true);
   const seamPredecessor = {
@@ -1401,6 +1417,15 @@ try {
     successorManifest,
     migrationReport: { ...migrationReport, measurementsChanged: true },
   }), /successor evidence is invalid/);
+  assert.throws(() => validateSameReferencePrivateRuntimeSuccessor({
+    existingDescriptor: predecessorDescriptor,
+    successorDescriptor,
+    predecessorManifest,
+    successorManifest,
+    migrationReport: { ...migrationReport,
+      transitionKind: 'OWNER_CURRENT_ORIGINAL_ARCHIVE_BRIDGE' },
+  }), /owner original archive bridge is not the exact original-to-successor binding/,
+  'A generic binding report cannot become an owner-original bridge by relabelling its kind');
   const contractOnlyPredecessorManifest = clone(successorManifest);
   contractOnlyPredecessorManifest.contractHashes = Object.fromEntries(
     Object.keys(successorManifest.contractHashes).map((key, index) => [

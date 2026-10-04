@@ -97,6 +97,20 @@ test('public hour delivery is compacted, authenticated and restored byte-for-byt
       },
     };
     const compact = compactPrivateConditionsForPersistence(full, built.marker);
+    const originalPair={originalIntegratedState:{time:publicManifest.productionReferenceAt,
+      currentEvidence:[{time:publicManifest.productionReferenceAt,strength:null}]},
+    originalCandidateGState:{time:publicManifest.productionReferenceAt,
+      transportEvidence:[{time:publicManifest.productionReferenceAt,strength:null}]}};
+    full.ravScoreCurrentSourceDomainTransitions={schemaVersion:1,
+      kind:'PRIVATE_OWNER_CURRENT_SOURCE_TRANSITION_ARCHIVE',privacyClass:'PRIVATE_PRODUCTION_RUNTIME',
+      parts:{p1:originalPair}};
+    assert.deepEqual(compactPrivateConditionsForPersistence(full,built.marker)
+      .ravScoreCurrentSourceDomainTransitions,full.ravScoreCurrentSourceDomainTransitions,
+    'Private compaction must retain the original owner-transition pair, not reconstruct or drop it.');
+    full.furWaterRoutingDiagnostic={schemaVersion:1,kind:'PRIVATE_FUR_WATER_ROUTING_DIAGNOSTIC',
+      trace:{privateMarker:'private-presence-only-routing-trace'}};
+    assert.deepEqual(compactPrivateConditionsForPersistence(full,built.marker).furWaterRoutingDiagnostic,
+      full.furWaterRoutingDiagnostic,'Private compaction must preserve the actual Fur trace exactly.');
     assert.equal(compact.coastalParts.parts.p1.hourly, undefined);
     assert.deepEqual(compact.coastalParts.parts.p1.current, full.coastalParts.parts.p1.current);
     assert.equal(full.coastalParts.parts.p1.hourly.length, 1,

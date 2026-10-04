@@ -3361,8 +3361,16 @@ const productionPartPipelineSource = await fs.readFile(
   'utf8',
 );
 assert.ok(productionSource.includes(
-  'const replayStartAt = ravScoreRecoverySourceStartAt(',
+  'const replayStartAt = ravScoreOwnerCurrentHistoryStartAt(',
+), 'production must include the owner-scoped pre-state current window');
+assert.ok(productionSource.includes(
+  'ravScoreRecoverySourceStartAt(initialSelection.state, generatedAt)',
 ), 'production must derive the cache window from the recovery source-window contract');
+assert.ok(productionSource.includes('previous?.ravScoreCurrentSourceDomainTransitions ?? null')
+  && productionSource.includes('readOwnerCurrentTransitionArchive(')
+  && productionSource.includes('retainOwnerCurrentTransitionOriginal(')
+  && productionSource.includes('output.ravScoreCurrentSourceDomainTransitions = {'),
+  'production must carry the original private pair through actual restart and persistence');
 assert.ok(productionSource.includes(
   '{ startAt: replayStartAt, expectedIdentity: partDmiIdentity }',
 ), 'production must request the exact identity-bound private history window');

@@ -31,6 +31,8 @@ import {
   PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
   assertPrivateRuntimeInventory,
 } from './lib/private-weather-component-inventory.mjs';
+import { assertOwnerCurrentOriginalExpectation, OWNER_CURRENT_DOMAIN_PREDECESSOR, OWNER_CURRENT_DOMAIN_SUCCESSOR }
+  from './lib/bounded-conditions-predecessor-transition.mjs';
 
 const gzipAsync = promisify(gzip);
 const gunzipAsync = promisify(gunzip);
@@ -1163,7 +1165,27 @@ export function validateSameReferencePrivateRuntimeSuccessor({
   const changedBindingFields = predecessorBindingKeys.filter(
     key => predecessorManifest.modelBinding[key] !== successorManifest.modelBinding[key],
   );
-  const bindingOnly = migrationReport.transitionKind === 'MODEL_BINDING_METADATA_ONLY';
+  const ownerArchiveBridge = migrationReport.transitionKind === 'OWNER_CURRENT_ORIGINAL_ARCHIVE_BRIDGE';
+  if (ownerArchiveBridge) {
+    const original = OWNER_CURRENT_DOMAIN_PREDECESSOR;
+    if (['sourceHead','datasetId','productionReferenceAt','generatedAt','bundleContentSha256']
+      .some(key => existingDescriptor?.[key] !== original[key])
+      || !same(predecessorBinding, original.modelBinding)
+      || !same(predecessorManifest.contractHashes, original.contractHashes)
+      || successorBinding.modelBundleSha256 !== OWNER_CURRENT_DOMAIN_SUCCESSOR.integratedBundleSha256
+      || !same({ ...successorBinding, modelBundleSha256: original.modelBinding.modelBundleSha256 }, original.modelBinding)
+      || migrationReport.previousCandidateBundleSha256 !== '28a69936b3d9a9c655e967c5e0c352d8401e5894ef3011bbfc55c85ad37f7ce7'
+      || migrationReport.currentCandidateBundleSha256 !== OWNER_CURRENT_DOMAIN_SUCCESSOR.candidateBundleSha256
+      || successorManifest.contractHashes.continuationStateContractSha256 !== OWNER_CURRENT_DOMAIN_SUCCESSOR.continuationStateContractSha256
+      || successorManifest.contractHashes.fullRuntimeContractSha256 !== original.contractHashes.fullRuntimeContractSha256
+      || successorManifest.contractHashes.publicProjectionContractSha256 !== original.contractHashes.publicProjectionContractSha256) {
+      throw new Error('Same-reference owner original archive bridge is not the exact original-to-successor binding');
+    }
+  }
+  // This kind preserves true originals only; the source-gated migrator has
+  // compared every state/weather byte. It cannot attest permitted current or
+  // reconstruct current at SAME-T. Normal NEW-T replay performs that operation.
+  const bindingOnly = ownerArchiveBridge || migrationReport.transitionKind === 'MODEL_BINDING_METADATA_ONLY';
   const bindingMigration = bindingOnly
     || migrationReport.transitionKind === 'MODEL_BINDING_MIGRATION';
   const contractOnlyRebind = migrationReport.transitionKind === 'CONTRACT_ONLY_REBIND';
@@ -1781,6 +1803,20 @@ export async function restoreProtectedPrivateProductionRuntime({
       targetUnchanged: true,
       privatePayloadLogged: false,
     };
+  }
+  if (Object.hasOwn(expected ?? {}, 'ownerCurrentDomainTransition')) {
+    const original = assertOwnerCurrentOriginalExpectation(expected);
+    const selected = row.payload.current;
+    if (['sourceHead', 'datasetId', 'productionReferenceAt', 'generatedAt',
+      'bundleContentSha256'].some(key => selected[key] !== original[key])
+      || !same(selected.modelBinding, original.modelBinding)
+      || !same(selected.contractHashes, original.contractHashes)) {
+      const error = new Error('Owner current original is no longer the exact protected current generation');
+      error.code = 'PROTECTED_PRIVATE_RUNTIME_INELIGIBLE';
+      throw error;
+    }
+    // Never use an older previous generation to satisfy this one-time bridge.
+    // A fresh publication requires a fresh reviewed exact original identity.
   }
   if (isLatestUnpairedWeatherGeneration(row.payload.current)) {
     throw new Error('The exact 15Z weather generation requires paired 11Z/15Z restore; single-generation fallback is unsafe');

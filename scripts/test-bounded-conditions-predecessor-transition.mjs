@@ -7,10 +7,57 @@ import path from 'node:path';
 import {
   BOUNDED_CONDITIONS_PREDECESSOR_POLICY,
   buildBoundedConditionsPredecessorRestoreExpectation,
+  buildOwnerCurrentOriginalRestoreExpectation,
+  assertOwnerCurrentOriginalExpectation,
+  OWNER_CURRENT_DOMAIN_PREDECESSOR,
+  OWNER_CURRENT_DOMAIN_SUCCESSOR,
 } from './lib/bounded-conditions-predecessor-transition.mjs';
 import {
   prepareHistoricalWavePredecessorRestore,
 } from './prepare-historical-wave-predecessor-restore.mjs';
+import { secondRestoreExpectation } from './private-runtime-second-restore-expectation.mjs';
+
+const ownerOriginal = OWNER_CURRENT_DOMAIN_PREDECESSOR;
+const ownerFixture = () => ({
+  sourceDescription: { ...structuredClone(ownerOriginal), schemaVersion: '1.0.0',
+    kind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_CURRENT_SOURCE',
+    expectedZoneCount: 210, expectedPartCount: 673, privatePayloadIncluded: false },
+  targetReferenceAt: '2026-10-04T16:00:00Z',
+  currentBinding: { ...ownerOriginal.modelBinding, modelBundleSha256: OWNER_CURRENT_DOMAIN_SUCCESSOR.integratedBundleSha256 },
+  currentContractHashes: { ...ownerOriginal.contractHashes,
+    continuationStateContractSha256: OWNER_CURRENT_DOMAIN_SUCCESSOR.continuationStateContractSha256 },
+  now: '2026-10-04T18:00:00.000Z',
+});
+const ownerExpected = buildOwnerCurrentOriginalRestoreExpectation(ownerFixture());
+assert.deepEqual(ownerExpected.modelBinding, ownerOriginal.modelBinding);
+assert.equal(ownerExpected.bundleContentSha256, ownerOriginal.bundleContentSha256);
+assert.equal(ownerExpected.targetReferenceAt, '2026-10-04T16:00:00.000Z');
+assert.equal(assertOwnerCurrentOriginalExpectation(ownerExpected), ownerOriginal);
+const ownerSource = ownerFixture().sourceDescription;
+assert.equal(secondRestoreExpectation({ expected: ownerExpected,
+  source: ownerSource, manifest: ownerOriginal }), ownerExpected);
+for (const mutate of [
+  value => { value.sourceDescription.sourceHead = 'c'.repeat(40); },
+  value => { value.sourceDescription.bundleContentSha256 = 'd'.repeat(64); },
+  value => { value.sourceDescription.datasetId += '-other'; },
+  value => { value.sourceDescription.expectedPartCount = 672; },
+  value => { value.sourceDescription.privatePayloadIncluded = true; },
+  value => { value.sourceDescription.modelBinding.modelBundleSha256 = 'e'.repeat(64); },
+  value => { value.currentBinding.profileId = 'other-profile'; },
+  value => { value.currentContractHashes.fullRuntimeContractSha256 = 'f'.repeat(64); },
+  value => { value.currentContractHashes.publicProjectionContractSha256 = 'f'.repeat(64); },
+]) {
+  const changed = ownerFixture(); mutate(changed);
+  assert.equal(buildOwnerCurrentOriginalRestoreExpectation(changed), null);
+}
+for (const field of ['ownerCurrentDomainTransition', 'sourceHead', 'datasetId',
+  'generatedAt', 'productionReferenceAt', 'bundleContentSha256']) {
+  assert.throws(() => assertOwnerCurrentOriginalExpectation({ ...ownerExpected, [field]: 'wrong' }));
+}
+assert.throws(() => buildOwnerCurrentOriginalRestoreExpectation({ ...ownerFixture(),
+  targetReferenceAt: '2026-10-04T11:00:00.000Z' }));
+assert.throws(() => secondRestoreExpectation({ expected: ownerExpected,
+  source: { ...ownerSource, sourceHead: 'f'.repeat(40) }, manifest: ownerOriginal }));
 
 function fixture() {
   return {
@@ -137,6 +184,19 @@ assert.ok(privateWorkflowSource.includes(
 const restoreAt = workflowSource.indexOf(
   'Verify and restore the private production runtime bundle',
 );
+const ownerPrepareAt = workflowSource.indexOf('Prepare exact old-reader restore for the measured wave transition');
+const checkpointAt = workflowSource.indexOf('Restore the latest atomic schema-6 and Candidate G rollback checkpoint');
+const ownerBridgeAt = workflowSource.indexOf('Preserve original pairs and rebind metadata before new-hour source reconstruction');
+assert.ok(ownerPrepareAt >= 0 && checkpointAt > ownerPrepareAt && ownerBridgeAt > restoreAt,
+  'Owner original must be fully authenticated before the current metadata/archive bridge');
+const ownerBridgeBlock = workflowSource.slice(ownerBridgeAt,
+  workflowSource.indexOf('\n      - name:', ownerBridgeAt + 1));
+for (const marker of ['--owner-current-original', '--bundle-manifest',
+  '--predecessor-descriptor', '--expected-source-head']) {
+  assert.ok(ownerBridgeBlock.includes(marker), 'Actual owner bridge lacks ' + marker);
+}
+assert.ok(!ownerBridgeBlock.includes('--predecessor-root'),
+  'Owner transition cannot import or evaluate an archived model body');
 const rebindAt = workflowSource.indexOf(
   'Rebind the exact bounded-conditions predecessor before installation',
 );
@@ -181,6 +241,44 @@ assert.ok(historicalClassifierBlock.includes(
 ));
 
 const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-bounded-predecessor-'));
+const codeOnlyWorkflow = await fs.readFile('.github/workflows/deploy-code-only-repair.yml', 'utf8');
+function codeOnlyStep(name) {
+  const start = codeOnlyWorkflow.indexOf('- name: ' + name);
+  assert.ok(start >= 0, 'Missing actual controlled-release step: ' + name);
+  const end = codeOnlyWorkflow.indexOf('\n      - name:', start + 1);
+  return codeOnlyWorkflow.slice(start, end < 0 ? undefined : end);
+}
+const ownerReleasePrepare = codeOnlyStep('Prepare exact original binding for owner current-domain release');
+assert.ok(ownerReleasePrepare.includes('--source-description "$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json"'));
+assert.ok(ownerReleasePrepare.includes('--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"'));
+assert.ok(codeOnlyWorkflow.indexOf(ownerReleasePrepare)
+  < codeOnlyWorkflow.indexOf(codeOnlyStep('Try newest current-compatible private runtime')));
+const ownerReleaseRestore = codeOnlyStep('Try newest current-compatible private runtime');
+assert.ok(ownerReleaseRestore.includes('owner-current-domain-original'));
+assert.ok(ownerReleaseRestore.includes('restore_expected="$RAVRADAR_PREDECESSOR_PRIVATE_ROOT/expected.json"'));
+assert.ok(ownerReleaseRestore.includes('node scripts/protected-private-production-runtime.mjs --restore'));
+const ownerReleaseVerify = codeOnlyStep('Try verifying current-compatible private runtime');
+assert.ok(ownerReleaseVerify.includes('restore_output="$RAVRADAR_PREDECESSOR_PRIVATE_RESTORE"'));
+assert.ok(ownerReleaseVerify.includes('node scripts/private-production-runtime-bundle.mjs restore'));
+const ownerReleaseRequired = codeOnlyStep('Require authenticated exact original before owner binding migration');
+assert.ok(ownerReleaseRequired.includes('steps.current-private-protected-restore.outcome'));
+assert.ok(ownerReleaseRequired.includes('steps.current-private-bundle-restore.outcome'));
+assert.ok(!ownerReleaseRequired.includes('continue-on-error'));
+for (const name of [
+  'Prepare exact predecessor source for bounded binding migration',
+  'Build exact predecessor private-runtime expectation',
+  'Install and import-check the exact predecessor restore compatibility closure',
+  'Prove the saved predecessor runtime is no longer client-readable',
+  'Restore exact predecessor private runtime',
+  'Verify and unpack exact predecessor private runtime',
+]) assert.ok(codeOnlyStep(name).includes("steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original'"),
+  'Owner release must not materialize or evaluate the predecessor body: ' + name);
+const ownerReleaseMigration = codeOnlyStep('Rebind saved private runtime to current source without changing measurements');
+assert.ok(ownerReleaseMigration.includes('migration_args=(--owner-current-original)'));
+assert.ok(ownerReleaseMigration.includes('--bundle-manifest "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE/manifest.json"'));
+assert.ok(ownerReleaseMigration.includes('--source "$RAVRADAR_PREDECESSOR_PRIVATE_RESTORE"'));
+assert.ok(codeOnlyWorkflow.indexOf(ownerReleaseRequired) < codeOnlyWorkflow.indexOf(ownerReleaseMigration));
+assert.ok(codeOnlyWorkflow.includes('MODEL_BINDING_METADATA_ONLY|OWNER_CURRENT_ORIGINAL_ARCHIVE_BRIDGE'));
 try {
   const sourceDescriptionPath = path.join(temporary, 'source.json');
   const outputPath = path.join(temporary, 'expected.json');

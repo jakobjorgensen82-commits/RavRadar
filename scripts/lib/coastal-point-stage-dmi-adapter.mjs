@@ -1,6 +1,6 @@
 import {
   dmiExpectedIdentityForPart,
-  verifiedDmiNativeComponentSource,
+  eligibleDmiNativeComponentSource as verifiedDmiNativeComponentSource,
 } from './ravscore-production-adapters.mjs';
 
 const COMPONENTS = Object.freeze([

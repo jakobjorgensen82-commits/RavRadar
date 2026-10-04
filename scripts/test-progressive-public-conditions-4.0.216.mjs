@@ -23,6 +23,17 @@ const full={datasetId:'progressive-test',generatedAt,productionReferenceAt:gener
 
 const startup=buildPublicConditions(full);
 const details=buildPublicConditionDetails(full);
+const withoutPrivateArchive=[JSON.stringify(startup),JSON.stringify(details)];
+full.ravScoreCurrentSourceDomainTransitions={schemaVersion:1,
+  kind:'PRIVATE_OWNER_CURRENT_SOURCE_TRANSITION_ARCHIVE',privacyClass:'PRIVATE_PRODUCTION_RUNTIME',
+  parts:{p1:{originalIntegratedState:{privateTestMarker:'original-current-state-must-stay-private'},
+    originalCandidateGState:{privateTestMarker:'original-rollback-state-must-stay-private'}}}};
+assert.deepEqual([JSON.stringify(buildPublicConditions(full)),JSON.stringify(buildPublicConditionDetails(full))],
+  withoutPrivateArchive,'The owner current-transition archive must not change either public payload.');
+full.furWaterRoutingDiagnostic={kind:'PRIVATE_FUR_WATER_ROUTING_DIAGNOSTIC',
+  privacyClass:'PRIVATE_PRODUCTION_RUNTIME',trace:{privateMarker:'actual-routing-must-stay-private'}};
+assert.deepEqual([JSON.stringify(buildPublicConditions(full)),JSON.stringify(buildPublicConditionDetails(full))],
+  withoutPrivateArchive,'Future Fur diagnosis must not change or leak into either public payload.');
 if(startup.zones.z1.forecast.hourly.length!==0)throw new Error('Startpakken indeholder stadig hele femdøgnsprognosen.');
 if(startup.zones.z1.current.windSpeedMps!==4
   || startup.zones.z1.history.maxWave24hM!==1.3

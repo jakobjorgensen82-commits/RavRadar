@@ -518,7 +518,6 @@ jobs:
           node scripts/private-production-runtime-workflow.mjs expected --repository-root "$GITHUB_WORKSPACE" --target-reference "$PUBLIC_REFERENCE" --output .cache/private-production-runtime-expected.json
 
       - name: Describe newest protected runtime for saved-weather continuation
-        if: inputs.publish_newest_saved_weather == true
         run: >-
           node scripts/protected-private-production-runtime.mjs --describe-current
           --output "$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json"
@@ -572,6 +571,15 @@ jobs:
           echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$target_reference" >> "$GITHUB_ENV"
           node scripts/private-production-runtime-workflow.mjs expected --repository-root "$GITHUB_WORKSPACE" --target-reference "$target_reference" --output .cache/private-production-runtime-expected.json
 
+      - name: Prepare exact original binding for owner current-domain release
+        id: owner-current-original
+        run: >-
+          node scripts/prepare-historical-wave-predecessor-restore.mjs
+          --source-description "$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json"
+          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --output "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT/expected.json"
+          --github-output "$GITHUB_OUTPUT"
+
       - name: Try newest current-compatible private runtime
         id: current-private-protected-restore
         continue-on-error: true
@@ -579,14 +587,22 @@ jobs:
         run: |
           set -uo pipefail
           mkdir -p "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
+          restore_root="$RAVRADAR_PRIVATE_RUNTIME_ROOT"
+          restore_bundle="$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
+          restore_expected=.cache/private-production-runtime-expected.json
+          if test "${{ steps.owner-current-original.outputs.transition_kind }}" = "owner-current-domain-original"; then
+            restore_root="$RAVRADAR_PREDECESSOR_PRIVATE_ROOT"
+            restore_bundle="$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE"
+            restore_expected="$RAVRADAR_PREDECESSOR_PRIVATE_ROOT/expected.json"
+          fi
           status=1
           for attempt in 1 2 3; do
-            rm -rf "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
+            rm -rf "$restore_bundle"
             if node scripts/protected-private-production-runtime.mjs --restore \
-                --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
-                --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" \
+                --private-root "$restore_root" \
+                --bundle "$restore_bundle" \
                 --repository-root "$GITHUB_WORKSPACE" \
-                --expected .cache/private-production-runtime-expected.json; then
+                --expected "$restore_expected"; then
               exit 0
             else
               status=$?
@@ -606,16 +622,26 @@ jobs:
         id: current-private-bundle-restore
         if: steps.current-private-protected-restore.outcome == 'success'
         continue-on-error: true
-        run: >-
-          node scripts/private-production-runtime-bundle.mjs restore
-          --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
-          --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
-          --expected .cache/private-production-runtime-expected.json
-          --output "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
+        shell: bash
+        run: |
+          set -euo pipefail
+          restore_root="$RAVRADAR_PRIVATE_RUNTIME_ROOT"
+          restore_bundle="$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
+          restore_expected=.cache/private-production-runtime-expected.json
+          restore_output="$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
+          if test "${{ steps.owner-current-original.outputs.transition_kind }}" = "owner-current-domain-original"; then
+            restore_root="$RAVRADAR_PREDECESSOR_PRIVATE_ROOT"
+            restore_bundle="$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE"
+            restore_expected="$RAVRADAR_PREDECESSOR_PRIVATE_ROOT/expected.json"
+            restore_output="$RAVRADAR_PREDECESSOR_PRIVATE_RESTORE"
+          fi
+          node scripts/private-production-runtime-bundle.mjs restore \
+            --private-root "$restore_root" --bundle "$restore_bundle" \
+            --expected "$restore_expected" --output "$restore_output"
 
       - name: Try installing current-compatible private runtime
         id: current-private-install
-        if: steps.current-private-bundle-restore.outcome == 'success'
+        if: steps.current-private-bundle-restore.outcome == 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original'
         continue-on-error: true
         run: >-
           node scripts/private-production-runtime-workflow.mjs install
@@ -633,6 +659,14 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: Require authenticated exact original before owner binding migration
+        if: steps.owner-current-original.outputs.transition_kind == 'owner-current-domain-original'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.current-private-protected-restore.outcome }}" = "success"
+          test "${{ steps.current-private-bundle-restore.outcome }}" = "success"
+
       - name: Describe exact target private runtime source for bounded migration
         if: steps.current-private-install.outcome != 'success'
         run: >-
@@ -644,7 +678,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Prepare exact predecessor source for bounded binding migration
-        if: steps.current-private-install.outcome != 'success'
+        if: steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original'
         shell: bash
         run: |
           set -euo pipefail
@@ -663,7 +697,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Build exact predecessor private-runtime expectation
-        if: steps.current-private-install.outcome != 'success'
+        if: steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original'
         run: >-
           node "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/private-production-runtime-workflow.mjs" expected
           --repository-root "$RAVRADAR_PREDECESSOR_SOURCE_ROOT"
@@ -671,7 +705,7 @@ jobs:
           --output "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT/expected.json"
 
       - name: Install and import-check the exact predecessor restore compatibility closure
-        if: steps.current-private-install.outcome != 'success'
+        if: steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original'
         shell: bash
         run: |
           set -euo pipefail
@@ -697,7 +731,7 @@ jobs:
           NODE
 
       - name: Prove the saved predecessor runtime is no longer client-readable
-        if: steps.current-private-install.outcome != 'success'
+        if: steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original'
         run: >-
           node "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs"
           --audit-anon
@@ -709,7 +743,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Restore exact predecessor private runtime
-        if: steps.current-private-install.outcome != 'success'
+        if: steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original'
         shell: bash
         run: |
           set -uo pipefail
@@ -737,7 +771,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Verify and unpack exact predecessor private runtime
-        if: steps.current-private-install.outcome != 'success'
+        if: steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original'
         run: >-
           node "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/private-production-runtime-bundle.mjs" restore
           --private-root "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT"
@@ -747,16 +781,22 @@ jobs:
 
       - name: Rebind saved private runtime to current source without changing measurements
         if: steps.current-private-install.outcome != 'success'
-        run: >-
-          node scripts/migrate-post-cutover-private-runtime.mjs
-          --source "$RAVRADAR_PREDECESSOR_PRIVATE_RESTORE"
-          --output "$RAVRADAR_MIGRATED_PRIVATE_RUNTIME_RESTORE"
-          --bundle-manifest "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE/manifest.json"
-          --predecessor-descriptor "$RAVRADAR_OPERATIONAL_WORK/target-private-runtime-source.json"
-          --predecessor-root "$RAVRADAR_PREDECESSOR_SOURCE_ROOT"
-          --repository-root "$GITHUB_WORKSPACE"
-          --expected-source-head "$(jq -er '.sourceHead' "$RAVRADAR_OPERATIONAL_WORK/target-private-runtime-source.json")"
-          --report .geometry-v2-work/post-cutover-private-runtime-migration.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          migration_args=(--predecessor-root "$RAVRADAR_PREDECESSOR_SOURCE_ROOT")
+          if test "${{ steps.owner-current-original.outputs.transition_kind }}" = "owner-current-domain-original"; then
+            migration_args=(--owner-current-original)
+          fi
+          node scripts/migrate-post-cutover-private-runtime.mjs \
+            "${migration_args[@]}" \
+            --source "$RAVRADAR_PREDECESSOR_PRIVATE_RESTORE" \
+            --output "$RAVRADAR_MIGRATED_PRIVATE_RUNTIME_RESTORE" \
+            --bundle-manifest "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE/manifest.json" \
+            --predecessor-descriptor "$RAVRADAR_OPERATIONAL_WORK/target-private-runtime-source.json" \
+            --repository-root "$GITHUB_WORKSPACE" \
+            --expected-source-head "$(jq -er '.sourceHead' "$RAVRADAR_OPERATIONAL_WORK/target-private-runtime-source.json")" \
+            --report .geometry-v2-work/post-cutover-private-runtime-migration.json
 
       - name: Install migrated saved private runtime atomically
         id: migrated-private-install
@@ -786,7 +826,7 @@ jobs:
             mode=saved-weather-continuation
           elif test "${{ steps.migrated-private-install.outcome }}" = "success"; then
             case "$(jq -er '.transitionKind' .geometry-v2-work/post-cutover-private-runtime-migration.json)" in
-              MODEL_BINDING_METADATA_ONLY) mode=code-only-reuse ;;
+              MODEL_BINDING_METADATA_ONLY|OWNER_CURRENT_ORIGINAL_ARCHIVE_BRIDGE) mode=code-only-reuse ;;
               MODEL_BINDING_MIGRATION) mode=post-cutover-last-mile-repair ;;
               CONTRACT_ONLY_REBIND) mode=post-cutover-contract-rebind ;;
               *) echo "Unknown private runtime migration kind." >&2; exit 1 ;;
@@ -813,7 +853,7 @@ jobs:
           elif test "${{ steps.migrated-private-install.outcome }}" = "success"; then
             transition_kind="$(jq -er '.transitionKind' .geometry-v2-work/post-cutover-private-runtime-migration.json)"
             case "$transition_kind" in
-              MODEL_BINDING_METADATA_ONLY)
+              MODEL_BINDING_METADATA_ONLY|OWNER_CURRENT_ORIGINAL_ARCHIVE_BRIDGE)
                 jq -e '.mode == "code-only-reuse" and .scoresChanged == false' .geometry-v2-work/code-only-public-runtime-reuse.json
                 ;;
               MODEL_BINDING_MIGRATION)

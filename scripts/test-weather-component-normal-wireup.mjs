@@ -6,6 +6,7 @@ import test from 'node:test';
 import { OPEN_METEO_NATIVE_NEAREST_POLICIES } from './lib/open-meteo-part-bank.mjs';
 import { applyVerifiedWaterSourceRoutingToPartHourly } from './lib/water-source-forecast-routing.mjs';
 import { safeWeatherComponentSummary } from './lib/weather-component-safe-summary.mjs';
+import { PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES } from './private-production-runtime-workflow.mjs';
 
 // Execute the actual normal producer's integration block without calling its
 // network/storage entry point. Provider byte admission has separate real-file
@@ -96,4 +97,12 @@ test('durable selected-input marker precedes provenance, public shards and compa
   assert.match(source, /recordSelectedWeatherComponents\(componentInputs\.componentSelectionHistory, \{ \.\.\.part, zoneId \}, hourly\)/);
   assert.match(source, /COMPONENT_COPERNICUS_BUDGET_MS = WEATHER_CACHE_ONLY \? 0/);
   assert.match(source, /COMPONENT_OPEN_METEO_BUDGET_MS = WEATHER_CACHE_ONLY \? 0/);
+  const routing = source.indexOf('const routedWater = waterSourceRoutingContext');
+  const trace = source.indexOf('furWaterRoutingTrace = routedWater.diagnostic', routing);
+  const wrap = source.indexOf('const furWaterRoutingDiagnostic = buildFurWaterRoutingDiagnostic(');
+  const persist = source.indexOf('output.furWaterRoutingDiagnostic = furWaterRoutingDiagnostic', wrap);
+  assert.ok(routing > 0 && trace > routing && wrap > score && persist > wrap && persist < publicRuntime);
+  assert.match(source,/previousRoutingDiagnostic: previous\?\.furWaterRoutingDiagnostic \?\? null/);
+  assert.match(source,/diagnosticReferenceAt: generatedAt/);
+  assert.ok(PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.includes('scripts/lib/fur-water-routing-diagnostic.mjs'));
 });

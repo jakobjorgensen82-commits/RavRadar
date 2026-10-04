@@ -23,6 +23,30 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable, NamedTuple
 from urllib.parse import urljoin, urlparse
 
+_marine_zone_exclusion_policy = json.loads(
+    (pathlib.Path(__file__).resolve().parent / "lib/dmi-marine-zone-exclusions.json").read_text("utf-8")
+)
+if (
+    _marine_zone_exclusion_policy.get("schemaVersion") != 1
+    or _marine_zone_exclusion_policy.get("contractId") != "owner-approved-dmi-marine-zone-exclusions-v1"
+    or _marine_zone_exclusion_policy.get("excludedCollectionsByParentZoneId") != {
+        "DK-B01-01": ["dkss_lf"], "DK-B01-02": ["dkss_lf"],
+        "DK-B02-08": ["dkss_lf"], "DK-B02-09": ["dkss_lf"], "DK-B02-11": ["dkss_lf"],
+        "DK-B03-01": ["dkss_lf"], "DK-B03-02": ["dkss_lf"],
+    }
+):
+    raise RuntimeError("DMI_MARINE_ZONE_EXCLUSION_POLICY_INVALID")
+
+
+def dmi_marine_collection_allowed_for_zone(collection: Any, parent_zone_id: Any) -> bool:
+    """Consumer eligibility only; original provenance/authentication stays intact."""
+    if not isinstance(collection, str) or not isinstance(parent_zone_id, str):
+        return False
+    return collection not in _marine_zone_exclusion_policy[
+        "excludedCollectionsByParentZoneId"
+    ].get(parent_zone_id, [])
+
+
 from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, water_temperature_surface_layer, vector_vertical_layer, vector_choice, prefer_vector_choice
 from lib.dmi_wind_reference import WIND_VECTOR_VERSION, read_wind_reference, earth_relative_wind_pair
 from lib.current_field_shadow import (
@@ -2253,6 +2277,12 @@ def _exact_validated_dmi_component_present(
     ):
         return False
     sources = hour.get("sources") or {}
+    source = sources.get(component)
+    if not isinstance(source, dict) or not dmi_marine_collection_allowed_for_zone(
+        source.get("collection"),
+        zone.get("parentZoneId") or zone_id,
+    ):
+        return False
     if component == "wave":
         wave_source = sources.get("wave")
         if not isinstance(wave_source, dict):
@@ -4584,7 +4614,10 @@ def relevant_zones(collection: str, zones: list[dict[str, Any]]) -> list[dict[st
     # Marine collections må overlappe. coastType bestemmer prioritet og afstandsgrænse,
     # men må ikke længere blokere en alternativ DMI-model med et bedre gyldigt havpunkt.
     if collection in MARINE_COLLECTIONS:
-        return zones
+        # Preserve general model overlap except the two explicit owner exclusions.
+        return [zone for zone in zones if dmi_marine_collection_allowed_for_zone(
+            collection, zone.get("parentZoneId") or zone.get("id"),
+        )]
     if collection in WAVE_BOOTSTRAP_COLLECTIONS:
         return [
             zone for zone in zones
@@ -8242,6 +8275,7 @@ def backfill_compatible_cache_data(
     def row_has_trusted_current(
         row: dict[str, Any],
         zone_id: str,
+        zone: dict[str, Any],
         valid_time: str,
         trusted_keys: set[tuple[str, str, str]],
     ) -> bool:
@@ -8250,6 +8284,9 @@ def backfill_compatible_cache_data(
         canonical_valid_time = canonical_time(valid_time)
         if (
             source is None
+            or not dmi_marine_collection_allowed_for_zone(
+                source.get("collection"), zone.get("parentZoneId") or zone_id,
+            )
             or canonical_valid_time is None
             or canonical_time(row.get("time")) != canonical_valid_time
             or source["validTime"] != canonical_valid_time
@@ -8336,12 +8373,13 @@ def backfill_compatible_cache_data(
             if not row_has_trusted_current(
                 donor_row,
                 str(zone_id),
+                donor_zone,
                 valid_time,
                 trusted_donor_current_pair_sources,
             ):
                 continue
             if row_has_trusted_current(
-                primary_row, str(zone_id), valid_time,
+                primary_row, str(zone_id), primary_zone, valid_time,
                 trusted_primary_current_pair_sources,
             ) and not prefer_qualified_cached_component_source(
                 primary_row["sources"]["current"], donor_row["sources"]["current"], "current",
@@ -10636,7 +10674,10 @@ def sanitize_component_provenance(zone_id: str, zone: dict[str, Any]) -> list[st
         for component, fields in component_fields.items():
             if not any(field in hour for field in fields):
                 continue
-            if complete_native_source_for_hour(sources.get(component), component, zone_id, zone, valid_time):
+            source = sources.get(component)
+            if (isinstance(source, dict) and dmi_marine_collection_allowed_for_zone(
+                source.get("collection"), zone.get("parentZoneId") or zone_id,
+            ) and complete_native_source_for_hour(source, component, zone_id, zone, valid_time)):
                 continue
             for field in fields:
                 hour.pop(field, None)

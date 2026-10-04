@@ -1,12 +1,12 @@
 import { isDeepStrictEqual } from 'node:util';
 import {
   mergeLiveCurrentPilotIntoRecord,
-  verifiedStateOnlyCurrentHold,
+  eligibleStateOnlyCurrentHold as verifiedStateOnlyCurrentHold,
 } from './live-current-pilot.mjs';
 import {
   verifiedControlledLiveCurrentSource,
   verifiedIntegratedPartHourly,
-  verifiedBulkCurrent,
+  eligibleBulkCurrent as verifiedBulkCurrent,
   dmiExpectedIdentityForPart,
 } from './ravscore-production-adapters.mjs';
 import { originalContextForProtectedDmiCurrent } from './protected-dmi-current-context.mjs';

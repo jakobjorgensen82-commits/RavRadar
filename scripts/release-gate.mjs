@@ -222,7 +222,7 @@ const operationalActivation=await read('scripts/ravscore-operational-activation.
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const publicRuntimeContractSource=await read('js/core/ravscore-public-runtime-contract.js');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
-const checkpointMetadataCasMigration=await read('supabase/migrations/20261003080000_copernicus_child_close_binding.sql');
+const checkpointMetadataCasMigration=await read('supabase/migrations/20261004190000_owner_current_source_domain_binding.sql');
 const exactCheckpointPredecessorMigration=await read('supabase/migrations/20260926170000_exact_checkpoint_predecessor.sql');
 const privateRuntimeStorageMigration=await read('supabase/migrations/20260915020000_private_runtime_storage_deny.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
@@ -1240,6 +1240,7 @@ for(const marker of [
   '20261002080000_top20_display_binding.sql',
   '20261002094500_restore_checkpoint_cas_timeout.sql',
   '20261003080000_copernicus_child_close_binding.sql',
+  '20261004190000_owner_current_source_domain_binding.sql',
   'Prepare ten EU-restricted D1 shards, schema and durable phase',
   'Require safe D1 storage headroom',
   'Record fail-closed intent for the already-live legacy D1 installation',

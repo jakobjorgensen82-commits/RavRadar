@@ -6,6 +6,7 @@ import path from 'node:path';
 import { comparePublicWeatherHours, checkPublicWeatherContinuity } from './check-public-weather-continuity.mjs';
 import { buildPrivatePublicHourDeliveryPack } from './lib/public-hour-delivery-pack.mjs';
 import { POST_CUTOVER_PREDECESSOR } from './migrate-post-cutover-private-runtime.mjs';
+import { FUR_WATER_ROUTING_PART_ID } from './lib/fur-water-routing-diagnostic.mjs';
 
 const time = '2026-09-25T10:00:00.000Z';
 const weather = Object.freeze({
@@ -67,7 +68,11 @@ try {
   const start = Date.parse('2026-09-24T10:00:00.000Z');
   const oldHours = {}, newHours = {};
   const writeHour = async (folder, datasetId, instant, values) => {
-    const bytes = `${JSON.stringify({ ...hour(datasetId, { A: part([10, 56], values) }),
+    // Fur is deliberately the ninth loss: diagnosis must not depend on the
+    // existing eight-example limit in the public continuity report.
+    const parts=Object.fromEntries(Array.from({length:8},(_,i)=>[`A${i}`,part([10+i,56],values)]));
+    parts[FUR_WATER_ROUTING_PART_ID]=part([10,56],values);
+    const bytes = `${JSON.stringify({ ...hour(datasetId, parts),
       delivery: { schemaVersion: 1, kind: 'hour', key: instant,
         sourceDetailsSha256, modelBinding: binding } })}\n`;
     const sha256 = digest(bytes);
@@ -95,17 +100,24 @@ try {
     productionReferenceAt: reference, publicHourDelivery: built.marker }));
   await fs.writeFile(path.join(newLive, 'manifest.json'), JSON.stringify({
     datasetId: 'new-public', productionReferenceAt: new Date(start + 3_600_000).toISOString(),
-    coastalPartCount: 1, detailDelivery: { hours: newHours },
+    coastalPartCount: 9, detailDelivery: { hours: newHours },
+  }));
+  await fs.writeFile(path.join(newLive, 'conditions.json'), JSON.stringify({
+    datasetId:'new-public',productionReferenceAt:new Date(start+3_600_000).toISOString(),
   }));
   const result = await checkPublicWeatherContinuity({ previousConditionsPath: oldConditionsPath,
     previousPackPath: packPath, newLiveDirectory: newLive, temporaryDirectory: root });
   assert.equal(result.comparedHours, 117);
-  assert.equal(result.losses.waterLevel, 1);
+  assert.equal(result.losses.waterLevel, 9);
   assert.deepEqual(result.lossHours, [{
     time: new Date(start + 5 * 3_600_000).toISOString(),
-    losses: { wind: 0, wave: 0, current: 0, waterLevel: 1, waterTemperature: 0 },
-    examplePartIds: { wind: [], wave: [], current: [], waterLevel: ['A'], waterTemperature: [] },
+    losses: { wind: 0, wave: 0, current: 0, waterLevel: 9, waterTemperature: 0 },
+    examplePartIds: { wind: [], wave: [], current: [], waterLevel: Array.from({length:8},(_,i)=>`A${i}`), waterTemperature: [] },
   }]);
+  assert.equal(result.furWaterLevelDiagnosis.lostHours,1);
+  assert.equal(result.furWaterLevelDiagnosis.codes.TRACE_NOT_RECORDED,1);
+  assert.equal(Object.values(result.furWaterLevelDiagnosis.codes).reduce((a,b)=>a+b,0),1);
+  assert.equal(result.furWaterLevelDiagnosis.privatePayloadIncluded,false);
   assert.equal(result.passed, false);
 } finally { await fs.rm(root, { recursive: true, force: true }); }
 console.log('Public weather continuity: all five valid-old-over-empty fields and changed-point boundary pass.');
