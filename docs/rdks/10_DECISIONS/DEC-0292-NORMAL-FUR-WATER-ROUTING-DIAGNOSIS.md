@@ -1,6 +1,6 @@
 # DEC-0292 – Privat diagnose af Fur-vandstand i normale vejrhentninger
 
-**Status:** IMPLEMENTERET LOKALT i 4.0.542-kandidat; exact-head og produktion åbne.
+**Status:** PUSHET som PR516 i 4.0.542; ny exact-head og produktion åbne.
 **Dato:** 2026-10-04
 
 Ejeren kræver fremtidig diagnose af Fur-hullerne og levering sammen med den
@@ -34,7 +34,21 @@ ikke stopper deploy. Den skal ske før uændret slutkontrol med ægte provenance
 og alle relevante model-/publickontrakter. Ingen blanket-bypass, falsk nulværdi,
 rå public-payload-reparation eller skjult tab er godkendt eller implementeret.
 
-**Release:** Lokal 542-kandidat, ikke commit/push/merge/deploy. Naturlig
+**Konkret CI-reparation kl.21:16 DK:** Første exact-head kontrol fejlede på
+to kommandoer. PART-testens udtræksgrænse og code-only-klassifikationsasserts
+følger nu de reelle callers. Den eksisterende legacy restore-lukning manglede
+wrapperens nye plain-helper; den kopieres efter originalforventning sammen
+med wrapperen, men model og bundle-verifier erstattes ikke. Begge berørte
+legacy/protected tests og code-only-regression består. Ingen runtimebinding,
+no-loss, originalpin, scoreformel eller gammel migration ændres. Ny head og
+én frisk kildekontrol/proof kræves; den fejlede head må ikke merges.
+Den ekstra målrettede workflowkontrol afslørede også testens gamle inventar
+og checkpointmarker. Kun tre allerede eksisterende main-workflows er registreret;
+alle no-deploy-assertions består. Checkpointassertion kræver nu også den faktiske
+strenge owner-original-udelukkelse. Hele denne workflowkontrol består; ingen
+produktionscondition er ændret, og native builders/otte bindinger er uændrede.
+
+**Release:** 542 er sendt som PR516, ikke merge/deploy. Naturlig
 vejrhentning og deploy afsluttede kl.20:31 DK med faktisk cachegemning og
 ingen tab. Eksakt originalpin er frisk bundet til den nye 16Z-generation.
 Exact-head CI/proof, fornyet main/writer og faktisk produktionskontrol mangler.

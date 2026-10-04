@@ -4,7 +4,7 @@
 
 ## 89.158 Fur-huller skal kunne forklares uden at vise private data
 
-Lokal 4.0.542-kandidat, ikke leveret: Den normale beregning gemmer nu ved Fur
+4.0.542 er sendt som PR516, ikke online: Den normale beregning gemmer nu ved Fur
 et privat spor af det faktisk valgte kildegrundlag. Sporet har kun hashes,
 ja/nej og optællinger for direkte vandstand, verificerede/tilladte kildeinput,
 routet output og de tidligere valgte kilders fortsatte tilstedeværelse.
@@ -17,7 +17,7 @@ byte-identiske uden det. De målrettede prøver og den normale caller består.
 Første kørsel uden et tidligere spor kaldes ærligt ukendt; et syntetisk
 reproduceret kildevalg er ikke bevis for årsagen i de gamle fejlede kørsler.
 
-Syvzonerettelsen er også lokal. Originaler, øvrig bevist historik og fysiske
+Syvzonerettelsen er også sendt, ikke online. Originaler, øvrig bevist historik og fysiske
 scoreformler bevares, og gamle databaseovergange er urørte. Vejrhentningen
 afsluttede kl.20:31 DK, og den eksakte originalbinding er frisk kontrolleret
 mod den nye 16Z-generation. Egen GitHub-kontrol og faktisk deploy mangler stadig.
@@ -27,6 +27,9 @@ Nyeste nationale forecast-dækning er 96.44% af fem vejrfelter over 210 zoner,
 673 kystdele og 118 timer; alle fem samtidig 92.84%. Det er ikke bevis for
 observationer eller komplet privat historik. Dette erstatter ældre 12Z-dækning.
 Ingen ny alarm eller privat diagnose vises på hjemmesiden. DEC-0291 og DEC-0292.
+Første GitHub-kontrol fandt gamle testudtræk og en manglende plain-helper i
+den ældre genbrugsvej. De er rettet lokalt med bevaret strengt kildebevis;
+de berørte regressionsprøver består. Ny exact-head kontrol og deploy mangler.
 Ældre afsnit om en endnu ikke lavet NORMAL-diagnose er erstattet af denne status.
 
 ## 89.157 Havmodellen skal passe til målzonen – lokal rettelse

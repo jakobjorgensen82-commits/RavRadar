@@ -1,3 +1,22 @@
+# NYESTE – 2026-10-04 21:16 DK – PR516 sendt; konkret CI-regression repareret lokalt
+
+Syvzonerettelsen og NORMAL Fur-diagnosen er pushet i PR516, ikke online.
+Første exact-head kildekontrol stoppede på to kommandoer: det gamle PART-
+testudtræk og code-only-routingtesten. Udtræksgrænsen følger nu den faktiske
+routingcaller; begge legacy/protected regressioner består. Klassifikations-
+testen kræver både den særskilte ejerbro og den uændrede strenge fallback.
+Kontrollen fandt desuden en manglende plain-helper i den eksisterende legacy
+restore-lukning. Den kopieres nu sammen med wrapperen efter originalforventning;
+forgængerens model og bundle-verifier bevares. Berørt code-only-regression består.
+
+Ingen scoreformel, datatabsgate, originalpin, native binding eller gammel
+migration er ændret af denne reparation. Ny exact-head CI/proof kræves før merge.
+Ejerens ønskede rækkefølge er sikker deploy, én almindelig manuel vejrhentning
+og cron aktiv igen. Cronpause kunne ikke verificeres i browseren; ejeren siger
+efterfølgende, at der er tid nok. Cron er ikke ændret; faktisk writer skal fortsat
+kontrolleres før levering og manuel kørsel. Ingen ekstra eller overlappende kørsel.
+Automatisk Fur-timeretention og gammel rodårsag er stadig åbne.
+
 # NYESTE – 2026-10-04 20:46 DK – 4.0.542 klargjort efter afsluttet vejrhentning
 
 Den naturlige vejrhentning og deploy er faktisk afsluttet kl.20:31 DK.

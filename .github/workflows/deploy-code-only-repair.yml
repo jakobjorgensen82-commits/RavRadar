@@ -722,6 +722,8 @@ jobs:
             "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/lib/supabase-admin-rest.mjs"
           install -m 0644 scripts/lib/private-weather-component-inventory.mjs \
             "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/lib/private-weather-component-inventory.mjs"
+          install -m 0644 scripts/lib/bounded-conditions-predecessor-transition.mjs \
+            "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/lib/bounded-conditions-predecessor-transition.mjs"
           node --input-type=module - \
             "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs" <<'NODE'
           import { pathToFileURL } from 'node:url';

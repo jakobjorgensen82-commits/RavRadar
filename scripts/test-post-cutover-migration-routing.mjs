@@ -172,11 +172,13 @@ assert.throws(() => validateSameReferencePrivateRuntimeSuccessor({ ...publicHour
 /non-conditions private file/);
 
 const migration = await fs.readFile('scripts/migrate-post-cutover-private-runtime.mjs', 'utf8');
-assert.match(migration, /transitionKind: classifyVerifiedRuntimeMigration\(/);
+assert.match(migration, /transitionKind: ownerCurrentOriginalOnly \? classifyOwnerCurrentArchiveBridge\(\{[\s\S]*?\}\) : classifyVerifiedRuntimeMigration\(\{/,
+  'the explicit owner-original branch must retain the normal strict migration classifier as its fallback');
 assert.match(migration, /if \(result\.transitionKind !== 'CONTRACT_ONLY_REBIND'\)/,
   'metadata-only migration must actually write its changed bindings');
 const workflow = await fs.readFile('.github/workflows/deploy-code-only-repair.yml', 'utf8');
-assert.match(workflow, /MODEL_BINDING_METADATA_ONLY\) mode=code-only-reuse/);
+assert.match(workflow, /MODEL_BINDING_METADATA_ONLY\|OWNER_CURRENT_ORIGINAL_ARCHIVE_BRIDGE\) mode=code-only-reuse/,
+  'both explicit same-reference technical transitions must use strict score-preserving code-only reuse');
 assert.match(workflow, /MODEL_BINDING_MIGRATION\) mode=post-cutover-last-mile-repair/);
 assert.match(workflow, /CONTRACT_ONLY_REBIND\) mode=post-cutover-contract-rebind/);
 console.log('Post-cutover routing: exact binding-only reuse, narrow last-mile repair and rejected input change passed.');
