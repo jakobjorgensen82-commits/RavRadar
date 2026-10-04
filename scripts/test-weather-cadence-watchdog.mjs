@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import test from 'node:test';
 import { assessWeatherCadenceWatchdog } from './check-weather-cadence-watchdog.mjs';
+import { notifyWeatherFailure, weatherFailureIssue, WEATHER_FAILURE_REPOSITORY,
+  WEATHER_FAILURE_OWNER } from './notify-weather-failure.mjs';
 
 const at = value => Date.parse(value);
 const run = (created, updated = created, status = 'completed', branch = 'main', conclusion = 'success') => ({
@@ -119,3 +122,145 @@ assert.match(workflow, /run-current-weather-once\.yml\/runs/);
 assert.equal((workflow.match(/node scripts\/check-weather-cadence-watchdog\.mjs/g) || []).length, 2);
 assert.doesNotMatch(workflow, /retry-failed-production|external_watchdog=true/);
 console.log('External four-hour weather cadence: one run per slot and fail-closed guards passed.');
+
+// Exercise the actual owner-alert caller with a bounded, network-free API seam.
+// Fixtures are synthetic metadata, never production logs or weather payloads.
+const alertHead = 'a'.repeat(40);
+const alertBase = `/repos/${WEATHER_FAILURE_REPOSITORY}`;
+const alertRun = {
+  id: 123, run_attempt: 1, head_branch: 'main', head_sha: 'b'.repeat(40),
+  path: '.github/workflows/run-current-weather-once.yml', event: 'workflow_dispatch',
+  status: 'completed', conclusion: 'failure',
+  repository: { id: 1306858343, full_name: WEATHER_FAILURE_REPOSITORY },
+  head_repository: { id: 1306858343, full_name: WEATHER_FAILURE_REPOSITORY },
+  html_url: `https://github.com/${WEATHER_FAILURE_REPOSITORY}/actions/runs/123`,
+};
+function alertApi({ candidate = alertRun, renewed = candidate, rows = [],
+  mainHeads = [alertHead, alertHead], createError = false, createdFields = {},
+  verifiedFields = {} } = {}) {
+  const calls = [];
+  let reads = 0, heads = 0;
+  const issue = weatherFailureIssue(alertRun);
+  const saved = { ...issue, number: 7, user: { login: 'github-actions[bot]' },
+    assignees: [{ login: WEATHER_FAILURE_OWNER }] };
+  const get = async route => {
+    calls.push({ method: 'GET', route });
+    if (route === alertBase) return { id: 1306858343, full_name: WEATHER_FAILURE_REPOSITORY,
+      default_branch: 'main', has_issues: true };
+    if (route === `${alertBase}/git/ref/heads/main`) return { object: { sha: mainHeads[heads++] } };
+    if (route === `${alertBase}/actions/runs/123`) return structuredClone(reads++ ? renewed : candidate);
+    if (route.startsWith(`${alertBase}/issues?`)) return structuredClone(rows);
+    if (route === `${alertBase}/assignees/${WEATHER_FAILURE_OWNER}`) return null;
+    if (route === `${alertBase}/issues/7`) return { ...saved, ...verifiedFields };
+    assert.fail(`Unexpected metadata route: ${route}`);
+  };
+  const post = async (route, body) => {
+    calls.push({ method: 'POST', route, body: structuredClone(body) });
+    assert.equal(route, `${alertBase}/issues`);
+    assert.deepEqual(body, issue);
+    if (createError) throw new Error('SYNTHETIC_PRIVATE_ERROR_MUST_NOT_ESCAPE');
+    return { ...saved, ...createdFields };
+  };
+  return { calls, get, post, invoke: () => notifyWeatherFailure({ runId: 123,
+    eventAttempt: 1, sourceHead: alertHead, get, post }) };
+}
+const alertCode = code => error => error?.alertCode === code && error.message === code;
+const writes = api => api.calls.filter(call => call.method === 'POST');
+
+test('Owner alert emits only the approved fixed link/status and assignment', () => {
+  const canary = 'SYNTHETIC_PRIVATE_PAYLOAD_MUST_NOT_ESCAPE';
+  const candidate = { ...alertRun, display_title: canary, name: canary,
+    actor: { login: canary }, triggering_actor: { login: canary }, error: canary };
+  for (const conclusion of ['failure', 'timed_out', 'startup_failure']) {
+    const issue = weatherFailureIssue({ ...candidate, conclusion });
+    assert.deepEqual(Object.keys(issue), ['title', 'body', 'assignees']);
+    assert.deepEqual(issue.assignees, [WEATHER_FAILURE_OWNER]);
+    assert.equal(issue.body, `Vejrhentning: ${alertRun.html_url}\n\nStatus: ${conclusion}\n\n<!-- ravradar-weather-failure:123 -->`);
+    assert.equal(JSON.stringify(issue).includes(canary), false);
+  }
+  for (const fields of [{ status: 'in_progress', conclusion: null },
+    { conclusion: 'success' }, { conclusion: 'cancelled' }, { conclusion: 'skipped' }]) {
+    assert.equal(weatherFailureIssue({ ...alertRun, ...fields }), null);
+  }
+});
+
+test('Owner alert rejects other repositories, forks, workflows and untrusted identities', () => {
+  for (const fields of [{ id: 0 }, { id: '123' }, { run_attempt: 1.5 },
+    { repository: { ...alertRun.repository, id: 1 } },
+    { head_repository: { ...alertRun.head_repository, full_name: 'other/RavRadar' } },
+    { head_branch: 'feature' }, { event: 'pull_request' }, { head_sha: 'bad' },
+    { path: '.github/workflows/update-weather.yml' }]) {
+    assert.throws(() => weatherFailureIssue({ ...alertRun, ...fields }), alertCode('RUN_SCOPE_REJECTED'));
+  }
+  assert.throws(() => weatherFailureIssue({ ...alertRun, html_url: 'https://example.invalid/private' }),
+    alertCode('RUN_URL_REJECTED'));
+});
+
+test('Owner alert makes one metadata-only write and verifies persisted assignment', async () => {
+  const api = alertApi();
+  assert.deepEqual(await api.invoke(), { status: 'CREATED', issueNumber: 7, runId: 123,
+    privatePayloadIncluded: false, websiteChanged: false, emailReceiptVerified: false });
+  assert.equal(writes(api).length, 1);
+  assert.equal(api.calls.at(-1).route, `${alertBase}/issues/7`);
+  assert.equal(api.calls.some(call => /logs|artifacts|caches|dispatches|contents/.test(call.route)), false);
+});
+
+test('Closed assigned owner alert is deduplicated; old attempt and success never write', async () => {
+  const issue = weatherFailureIssue(alertRun);
+  const api = alertApi({ rows: [{ ...issue, number: 9, state: 'closed',
+    user: { login: 'github-actions[bot]' }, assignees: [{ login: WEATHER_FAILURE_OWNER }] }] });
+  assert.deepEqual(await api.invoke(), { status: 'EXISTING', issueNumber: 9, runId: 123,
+    privatePayloadIncluded: false });
+  assert.equal(writes(api).length, 0);
+  for (const [candidate, reason] of [[{ ...alertRun, run_attempt: 2 }, 'ATTEMPT_SUPERSEDED'],
+    [{ ...alertRun, conclusion: 'success' }, 'NOT_COMPLETED_FAILURE']]) {
+    const skipped = alertApi({ candidate });
+    assert.deepEqual(await skipped.invoke(), { status: 'SKIPPED', reason });
+    assert.equal(writes(skipped).length, 0);
+  }
+});
+
+test('Changed live run/main and bounded incomplete issue inventory fail before create', async () => {
+  for (const [settings, code] of [
+    [{ renewed: { ...alertRun, run_attempt: 2 } }, 'RUN_CHANGED_BEFORE_CREATE'],
+    [{ renewed: { ...alertRun, conclusion: 'success' } }, 'RUN_CHANGED_BEFORE_CREATE'],
+    [{ mainHeads: [alertHead, 'c'.repeat(40)] }, 'SOURCE_HEAD_CHANGED'],
+    [{ rows: Array.from({ length: 100 }, (_, index) => ({ number: index + 1, title: 'other' })) },
+      'ISSUE_LIST_BOUND_NO_CREATE'],
+  ]) {
+    const api = alertApi(settings);
+    await assert.rejects(api.invoke(), alertCode(code));
+    assert.equal(writes(api).length, 0);
+    if (code === 'ISSUE_LIST_BOUND_NO_CREATE') {
+      assert.equal(api.calls.filter(call => call.route.startsWith(`${alertBase}/issues?`)).length, 100);
+    }
+  }
+});
+
+test('Unknown create outcome or failed readback never retries or echoes the primary error', async () => {
+  for (const [settings, code] of [
+    [{ createError: true }, 'ISSUE_CREATE_OUTCOME_UNKNOWN_DO_NOT_RETRY'],
+    [{ createdFields: { assignees: [] } }, 'ISSUE_CREATE_OUTCOME_UNKNOWN_DO_NOT_RETRY'],
+    [{ verifiedFields: { assignees: [] } }, 'ISSUE_VERIFY_FAILED_DO_NOT_RETRY'],
+    [{ verifiedFields: { pull_request: {} } }, 'ISSUE_VERIFY_FAILED_DO_NOT_RETRY'],
+  ]) {
+    const api = alertApi(settings);
+    await assert.rejects(api.invoke(), alertCode(code));
+    assert.equal(writes(api).length, 1);
+  }
+  const api = alertApi({ rows: [{ ...weatherFailureIssue(alertRun), number: 9,
+    user: { login: 'github-actions[bot]' }, assignees: [] }] });
+  await assert.rejects(api.invoke(), alertCode('EXISTING_ISSUE_NOT_ASSIGNED'));
+  assert.equal(writes(api).length, 0);
+});
+
+test('Owner alarm workflow uses default-branch code without production writes or website messages', async () => {
+  const alarm = await fs.readFile('.github/workflows/notify-weather-failure.yml', 'utf8');
+  assert.match(alarm, /workflows: \[Run current RavRadar weather once\]/);
+  assert.match(alarm, /types: \[completed\]/);
+  assert.match(alarm, /contents: read\s+actions: read\s+issues: write/);
+  assert.match(alarm, /group: ravradar-weather-failure-owner-alert\s+queue: max\s+cancel-in-progress: false/);
+  assert.match(alarm, /ref: \$\{\{ github\.sha \}\}/);
+  assert.doesNotMatch(alarm, /workflow_run\.head_sha|secrets\.|upload-artifact|download-artifact|weather-production|update-dmi|supabase|deploy-pages|send-mail|smtp/i);
+  assert.equal((alarm.match(/run: node scripts\/notify-weather-failure\.mjs/g) || []).length, 1);
+});

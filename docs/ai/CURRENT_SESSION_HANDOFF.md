@@ -1,4 +1,23 @@
-# NYESTE – 2026-10-04 – national readonly-kandidat på faktisk bde-main
+# NYESTE – 2026-10-04 – Lyngbyafgrænsning og lokal ejeralarm på b8f9
+
+RELEASE codex/weather-failure-owner-alert bygger på actual mainb8f9;
+PR512 og begge originale authenticated reads er afsluttet. Original673
+replay matcher/648 ready/25 ikke-ready; ingen global mask/årsagsclaim.
+Ny hashbunden offentlig210/673-kontrol dækker TO timer3Oct16Z/19Z; cached
+tre enkeltdele118h BEGGE modes viser Lyngby84/Agger-Porskær30/Stenbjerg0LF.
+Ejer bestiller Lyngby uden LF og andrezonekontrol, ikke automatisk blanketfix
+eller historikreset. Ny selection og tidligere input/state er samlet arbejde.
+
+Ejer holder repository offentligt og accepterer GitHubissue med kun fast
+runlink/status tildelt eksisterende konto, ikke hjemmesidealarm/mail til brugere.
+Lokal alarmworkflow/caller og syv network-free testparents PASS121.7663ms,
+0skip; gamle kadenceassertions urørte. Exact-head CI, merge, liveissue og
+mailreceipt afventer. DEC-0290. Ingen ny produktversion/deploy/SQLinstallation.
+Fur-tab fortsat uafklaret. Privat checkpoint binder særskilt godkendt exact
+fejlcache og originale forventninger; movingconfig er ikke erstatning.
+Mainmerge/auditdispatch venter på faktisk normalwritercompletion/resultkontrol.
+
+# Historisk – 2026-10-04 – national readonly-kandidat på faktisk bde-main
 
 PR511 merged04:48:33 DK/bde77345 og correctedfixedread37172221379
 SUCCESS04:50:12 DK er afsluttet. Gentag ikke PR eller den gamle nabokontrol.

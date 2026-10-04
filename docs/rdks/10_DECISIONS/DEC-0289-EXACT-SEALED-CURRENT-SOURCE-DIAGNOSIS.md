@@ -1,9 +1,46 @@
 # DEC-0289 – Skrivefri diagnose af én ejerudpeget original strømpakke
 
-**Status:** PR510/511 er merged; korrigeret nabokontrol er faktisk authenticated og replay-matched. Godkendt national udvidelse er lokalt måltestet; egen CI/merge og faktisk national læsning afventer.
+**Status:** PR510/511/512 er merged; nabokontrol og national original-state-kontrol er faktisk authenticated og replay-matched. Ny ejerbestilt farvands-/modelkontrol og Lyngbyrettelse er åbne; reproducerbar state er ikke fysisk korrekthedsbevis.
 **Dato:** 2026-10-03
 
-## Faktisk læsning og godkendt national udvidelse 2026-10-04
+## Aktuel ejerafgrænsning og offentlig efterkontrol 2026-10-04
+
+Ejeren har tilsluttet sig, at Lyngby uden for Limfjorden skal afgrænses fra
+Limfjordsinput, og har udtrykkeligt bestilt kontrol af, om andre zoner kan
+rammes af samme issue. Det er ikke en ordre om generelt at fjerne modellen
+fra Fur eller egentlige Limfjordsdele, ændre scoreformlen, flytte punkter eller
+nulstille historik. Ældre modeloverlap må ikke alene begrunde dette kildevalg
+ved Lyngby. En rettelse skal omfatte nyt valg, genbrug af tidligere input og
+konsekvensen for eksisterende48h-state; kun at ændre pilen er utilstrækkeligt.
+
+Actual national original-state-read37174752402 på mainb8f9 afsluttede SUCCESS
+05:41:35 DK efter PR512-merge05:40:03 DK. Alle673 tilstedeværende state replay
+matcher;648 ready/25 ikke-ready. Dette er den allerede afsluttede
+ORIGINAL-memory/source-match-kontrakt, ikke national havmask eller årsag.
+Den må ikke gentages blindt for dette nye spørgsmål.
+
+Ny skrivefri offentlig kontrol07:56 DK verificerede alle210 zoner/673 dele
+ved3Oct16Z og19Z i SAMErr-20261003175138-210. Registry og begge timefiler
+var byte-/hashbundne; start-/slutmanifest og delidentiteter var uændrede.
+Ved16Z havde55 dele Limfjordsstrøm:54 centralt klassificerede Limfjordsdele
+og Lyngbys ene vestkystdel. Ved19Z havde48 Limfjordsdele den kilde og ingen
+vest-/østkystdel.25.026.958 offentlige bytes blev læst, ikke1,3GB-coverage igen.
+Offline kontrol af de allerede gemte naboprognoser i BEGGE søgemåder viser
+Limfjordskilde i84/118 timer ved Lyngby,30/118 ved Porskær/Agger-Krik Vig og
+0/118 ved Hviderimmer/Stenbjerg. Hver af disse zoner har præcis én scoret del.
+Dermed kræver også Agger/Porskærs kildevalg geografisk efterkontrol.
+
+Central coastType er klassifikation, ikke uafhængig vandmask. Et LF-valg
+uden for denne klassifikation er en reviewindikator, ikke automatisk bevis
+for ugyldig native celle eller samme landpunktsfejl. Den nye nationale
+stikprøve er TO timer, ikke alle118 timer eller privat historik; ingen
+scoreårsag/global GRIB-mask er bevist. Actual relevant_zones tillader alle
+marinekollektioner for alle zoner, og current-valget håndhæver ikke bassin.
+Dette er en generel eksponering, ikke bevis for faktisk fejl i alle zoner.
+Der er endnu ingen runtime-/geometri-/modelrettelse, productionwrite eller
+deploy for denne afgrænsning. Den aktive ordinarywriter respekteres.
+
+## Historisk opfølgning: naboread og dengang lokal national udvidelse 2026-10-04
 
 PR511/head288c566c bestod exactCI37164129369 og ROOTproof11288622599,
 og blev merged04:48:33 DK til mainbde77345. Correctedfixedread37172221379
@@ -122,7 +159,8 @@ Native67/model29ea/continuationd983/storageABI og otte produktionsbindings-
 forbrugere er uændrede. Offentlig/main-version forbliver 4.0.541; dette er
 diagnoseværktøj, ikke en 4.0.542-produktlevering.
 
-Ejeren har godkendt kontrol af alle zoner for samme fejltype. Udvidelsen er
-nu implementeret lokalt som ovenfor, men endnu ikke udført på originalpakken.
-Lyngbyårsagen er afgrænset til reproduceret memory uden tilstrækkelig kausal
-kildejoin. Mistanke må ikke blive automatisk model-/pil-/geometrirettelse.
+Den godkendte original-state-udvidelse er faktisk udført som dokumenteret
+øverst:673 replay matcher,648 ready/25 ikke-ready. Ny ejerbestilt Lyngby-
+LF-afgrænsning og andrezonekontrol er særskilt åbent arbejde, ikke automatisk
+model-/pil-/geometrirettelse eller tilladelse til blind historikreset.
+Lyngby-memory er reproduceret uden tilstrækkelig lagret kausal kildejoin.

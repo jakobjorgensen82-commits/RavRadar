@@ -1,4 +1,23 @@
-# NYESTE – 2026-10-04 – faktisk naboread, lokal national tooling
+# NYESTE – 2026-10-04 – faktisk nationalread; ny farvandskontrol og ejerbestilt Lyngbyafgrænsning
+
+Ejeralarm efter afsluttet fejl er lokal og måltestet i særskilt GitHubworkflow,
+ikke merged/kørt. Kun fast runlink/status og ejertildeling; ingen hjemmeside-
+alarm, mail til brugerne eller private payloads. Repository forbliver offentligt,
+issuen er offentlig. Mailreceipt er ikke bevist. DEC-0290; ingen ny produktversion.
+
+PR512 er faktisk merged05:40 DK til b8f9; nationalread37174752402 SUCCESS
+05:41 DK:673 state replay matcher,648 ready/25 ikke-ready. Dette er ikke
+global vandmask eller fysisk årsag. Ejeren bestiller nu Lyngby uden LF-input
+og kontrol af samme issue i andre zoner. Actual offentlig210/673-kontrol ved
+to timer3Oct16Z/19Z er hashbundet og manifest-/identitetsstabil: én/nul
+LF-dele uden central limfjord-kysttype. Cached nabo118h BEGGE modes viser
+Lyngby84LFtimer, Agger/Porskær30 og Stenbjerg/Hviderimmer0. Agger skal også
+geografisk efterkontrolleres; ingen fuld national118h-/historik-/maskclaim.
+Ingen kilde-/score-/geometri-/historikrettelse eller nyt deploy; offentlig541.
+Nyt kildevalg og tidligere input/state må ikke behandles som to uafhængige
+rettelser. Fur-tab og præcis årsag forbliver åbne. Se DEC-0289.
+
+# Historisk – 2026-10-04 – faktisk naboread, lokal national tooling
 
 Currentmainbde77345 efter PR511 merge04:48:33 DK; egen exactCI37164129369
 og ROOTproof bestod. Correctedfixedread37172221379 SUCCESS04:50:12 DK:

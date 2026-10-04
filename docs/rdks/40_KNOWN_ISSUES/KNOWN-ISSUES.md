@@ -1,4 +1,26 @@
-# NYESTE – 2026-10-04 – årsager åbne efter faktisk nabokontrol
+# NYESTE – 2026-10-04 – Limfjordsvalg uden for central Limfjordsklassifikation
+
+- **ISSUE-WEATHER-OWNER-FAILURE-NOTIFICATION – ÅBEN:** Ejer modtog ikke mail
+  om den botstartede04:34-fejl. Lokal særskilt link/status-only issuealarm
+  og syv syntetiske caller-/workflowtests består; exact-CI, merge, faktisk
+  issueassignment og mailreceipt afventer. Ingen public-site-driftsalarm.
+  Repository forbliver offentligt; issuen er ikke lovet privat. DEC-0290.
+- **ISSUE-LYNGBY-LF-DOMAIN-ELIGIBILITY – ÅBEN:** Marinekildeudvælgelsen
+  tillader alle modelområder for alle zoner og har ikke en hard bassinregel.
+  Ejeren har bestilt afgrænsning af Lyngby fra LF samt kontrol af andre zoner.
+  Public SAMEreference3Oct16Z viser LF i84/118 prognosetimer ved Lyngby og
+  30/118 ved Porskær/Agger-Krik Vig i begge søgemåder. LF-cellen ved Lyngby
+  er visuelt på land i den tidligere kontrol; samme geografiske fejl ved
+  Agger er ikke bevist. Nyt valg og tidligere input/state skal håndteres
+  samlet, ikke en pil-/scorepatch eller blind historikreset.
+- **ISSUE-NATIONAL-LF-DOMAIN-AUDIT – DELVIST KONTROLLERET:** Alle210/673
+  er offentligt hashkontrolleret ved3Oct16Z/19Z: henholdsvis én og nul
+  ikke-Limfjordsklassificerede dele med LF. Det er en to-timesstikprøve,
+  ikke fuld118h-/privathistorie-/global-vandmaskkontrol. Den eksisterende
+  authenticated national-memory-kontrol ER afsluttet05:41 DK og må ikke
+  fremstilles som pending eller fuld geografisk årsagskontrol. DEC-0289.
+
+# Historisk – 2026-10-04 – årsager åbne efter faktisk nabokontrol
 
 Nøglebindingfejlen er rettet/merged PR511; correctedfixedread37172221379
 authentication/inspect/cleanup faktisk PASS04:50 DK. Lyngby-memory95.821344

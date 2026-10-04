@@ -1,4 +1,20 @@
-# NYESTE – 2026-10-04 – national readonly-udvidelse, ikke faktisk nationalmåling
+# NYESTE – 2026-10-04 – nationale eftermålinger; runtimeafgrænsning stadig åben
+
+- [x] Lokal link/status-only GitHub-ejeralarm med syv network-free måltestparents
+  PASS/0skip; gamle kadencetests beholdt, ingen ny sourcekommando. DEC-0290.
+- [ ] Alarmens exact-head CI/ROOT, sikker merge, faktisk issueassignment og
+  ejerens mailreceipt; ingen hjemmesidealarm eller mail til brugerne.
+- [x] PR512 merged/mainb8f9 og authenticated nationalread37174752402 SUCCESS.
+- [x] Original673 state replay matched/648 ready/25 ikke-ready; ikke maskbevis.
+- [x] Ny offentlig210/673-modelvalgkontrol ved3Oct16Z/19Z, faste hashes og
+  uændret manifest/delidentitet: Lyngby eneste LF-valg uden limfjord-kysttype
+  ved16Z, ingen ved19Z. Kun to timer, ikke national118h eller privat historik.
+- [x] Cached nabo118h BEGGE modes: Lyngby84/Agger-Porskær30/Stenbjerg0LFtimer.
+- [ ] Fuld relevante-kilde-/farvands-/historikafgrænsning for Lyngby og review
+  af øvrige fund; ingen blind state-/cacheprune eller score-/geometripatch.
+- [ ] Fur waterLevel-tab; samlet BIG/OFF-livscyklus, global vandmask og årsag.
+
+# Historisk – 2026-10-04 – national readonly-udvidelse, ikke faktisk nationalmåling
 
 - [x] PR511 exactCI37164129369/ROOT og merge04:48:33 DK til bde77345.
 - [x] Correctedfixedread37172221379 authentication/inspect/cleanup PASS04:50 DK.

@@ -1,4 +1,24 @@
-# NYESTE – 2026-10-04 – authenticated naboer; lokal national læser
+# NYESTE – 2026-10-04 – completed nationalread; Lyngbyordre og lokal ejeralarm
+
+PR512 merged/mainb8f9; den ene nationale originalread37174752402 SUCCESS
+05:41 DK med673 matched/648 ready/25 ikke-ready. Gentag ikke de afsluttede
+PR510/511/512 eller neighbor-/nationalreads. Det er ikke global mask/årsag.
+Ny offentlig210/673-stikprøve ved3Oct16Z/19Z er hashbundet; LF uden central
+limfjord-kysttype findes kun ved Lyngby i første time. Cached118h hos naboer
+viser Lyngby84LFtimer/Agger-Porskær30/Stenbjerg0 i begge modes. To nationale
+timer er ikke alle118. Ejer bestiller Lyngby uden LF samt sammeissuekontrol
+andre steder. Nyt valg, tidligere input og48h-state skal behandles samlet;
+ingen scoreformel/pil/geometripatch eller blind historikreset. DEC-0289.
+
+Ejer vælger offentligt repository og accepterer fast runlink/status-only
+GitHubissue tildelt eksisterende ejer; ingen hjemmesidealarm/mail til brugerne.
+Lokal separat alarm og syv caller-/workflowtestparents PASS/0skip. Exact-CI,
+merge, faktisk issue og mailreceipt afventer. DEC-0290. Ingen produkt542,
+SQL-installation, ny weatherdispatch eller main/auditdispatch under writer.
+Fur præcis tabsårsag og samlet BIG519/OFF stadig åbne; privat checkpoint
+og nyere ejerordre har forrang. Arbejd aldrig i cb79.
+
+# Historisk – 2026-10-04 – authenticated naboer; lokal national læser
 
 Offentlig4.0.541 bevares. PR511 er merged04:48:33 DK til bde77345;
 exactfixedread37172221379 SUCCESS04:50:12 DK, actual authentication/inspect/
