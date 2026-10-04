@@ -1,4 +1,19 @@
-# NYESTE – 2026-10-03 – særskilt godkendt Lyngbylæsefunktion
+# NYESTE – 2026-10-04 – faktisk logdiagnose og minimal Lyngby-nøglebinding
+
+Ejeren har stående tilladt relevante private joblogs; ældre logafvisninger
+nedenfor er historiske. Ingen secrets/private payloads i svar eller commits,
+ingen teknisk ACL-/rolleændring; alle øvrige særskilte afvisninger består.
+Ordinary37151127122 fejlede i no-loss112:12vandstandstimer ved Fur/Stenerodde,
+ingen tab i de fire andre familier. Actual107 saved:true og108nytcachekey er
+målt; optionalrestore BASELINE_MISMATCH var korrekt miss, ikke bevist årsag.
+PR510 merged til a459b846. Exactread37163385963 fejlede før autentificering:
+forkert secretnavn gav tomt input. Lokal one-line binding til producentens
+eksisterende nøgle, genbrugt regression RED1/PASS3→PASS4/0skip. Se DEC-0289.
+Egen exact-CI/merge og actual authenticated læsning afventer; ingen blindrerun
+eller main/auditdispatch under aktiv weatherwriter. Alle-zoneplan er godkendt,
+ikke udført. Offentlig541 og BIG519/OFF bevares; arbejde aldrig i cb79.
+
+# Historisk – 2026-10-03 – særskilt godkendt Lyngbylæsefunktion
 
 Offentlig541 er leveret; ældre »lokal/ikke-leveret541« nedenfor er historisk.
 Læs DEC-0289 og øverste private checkpoint før næste diagnosearbejde. Ejer har

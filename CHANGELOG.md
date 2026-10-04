@@ -1,4 +1,15 @@
-## Ikke-release – 2026-10-03: fast skrivefri Lyngbydiagnose (lokal)
+## Ikke-release – 2026-10-04: læseren bruger den eksisterende producernøgle
+
+PR510 er merged. Den første faste læsning stoppede sikkert før autentificering,
+fordi workflowet slog et forkert secretnavn op og modtog tomt input. Kun denne
+binding rettes til samme eksisterende nøgle som producenten. Den genbrugte
+workflowtest gik fra én RED/tre PASS til fire PASS uden skip. Ingen nye nøgler,
+rettigheder, private payloads, provider, model-, data- eller deployændringer.
+Egen exact-head CI/merge og faktisk læsning afventer; version forbliver4.0.541.
+Stående privatloglæsetilladelse og godkendt alle-zoneplan er registreret i
+DEC-0289. Begge undersøgelser og Fur-vandstandstabet er stadig uafsluttede.
+
+## Historisk – 2026-10-03: fast skrivefri Lyngbydiagnose (lokal)
 
 Ejerens særskilte ja godkender en læsefunktion til den præcise eksisterende
 krypterede pakke. Den genbruger original autentificering og model-/filgates,

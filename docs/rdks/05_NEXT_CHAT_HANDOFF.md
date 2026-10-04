@@ -1,4 +1,16 @@
-# NYESTE – 2026-10-03 – Lyngby sealed læser efter særskilt ejer-ja
+# NYESTE – 2026-10-04 – ret eksisterende binding før ny fastlæsning
+
+PR510 merged/maina459b846; read37163385963 fejlede før GCM på tomt nøgleinput.
+Ny lokal codex/lyngby-sealed-existing-key-binding/basea459 ændrer KUN workflow-
+bindingen til den eksisterende producernøgle samt genbrugt regression/docs.
+RED1/PASS3→PASS4/0skip; egen exact-CI/merge og actual læsning afventer. DEC-0289.
+Originalartifact11281483201 og alle gates uændrede; ingen blindrerun eller
+main/auditdispatch under aktiv weather.12Fur-vandstandstab i37151127122 er
+faktisk målt; ny cache gemt/uploaded, ingen deploy, upstreamårsag OPEN.
+Ejer tillader relevante private joblogs stående; gentag ikke gammel afvisning.
+Godkendt alle-zoneplan følger Lyngbyårsag; BIG519/OFF/øvrige afvisninger består.
+
+# Historisk – 2026-10-03 – Lyngby sealed læser efter særskilt ejer-ja
 
 Se DEC-0289 og allerøverste private checkpoint. Offentlig541 er leveret;
 codex/lyngby-sealed-current-audit er lokal tooling, ikke542. Exactartifact

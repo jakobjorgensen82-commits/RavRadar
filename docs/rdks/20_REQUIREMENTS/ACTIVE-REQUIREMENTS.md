@@ -1,4 +1,13 @@
-# NYESTE – 2026-10-03 – ejerafgrænset skrivefri Lyngbydiagnose
+# NYESTE – 2026-10-04 – producentidentisk nøglebinding og ny logautoritet
+
+DEC-0289: læserens masterinput skal komme fra samme eksisterende secret som
+den faktiske seal-producent; ingen nye nøgler eller tekniske rettigheder.
+Original target/AAD/HKDF/GCM/gates og secret-separat inspektion består.
+Ejeren har stående tilladt relevante private joblogs; den gamle logafvisning
+er erstattet, ikke privatpayload-/secretbeskyttelsen eller andre afvisninger.
+Alle-zoneplanen er godkendt, ikke udført. Ingen main/dispatch under aktivwriter.
+
+# Historisk – 2026-10-03 – ejerafgrænset skrivefri Lyngbydiagnose
 
 DEC-0289 kræver præcis original sealed pakke og binding, separat intern
 nøglebrug og offline aggregate-only kontrol. Ingen rå logs/payload eller

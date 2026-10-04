@@ -6,9 +6,13 @@
 
 Offentlig 4.0.541 er leveret. Ejeren har særskilt godkendt en læsefunktion til
 én præcis gemt krypteret pakke, efter først at have godkendt hele pakkens læsning.
-Det lokale diagnoseværktøj ændrer ikke produktversion, model, punkter eller data.
-Kildekontrol, sikker merge og faktisk læsning afventer; en lokal test er ikke
-bevis for, at den private produktionspakke allerede er åbnet.
+Diagnoseværktøjet ændrer ikke produktversion, model, punkter eller data.
+Den første kildekontrol og merge bestod. Den faktiske læsning stoppede før
+autentificering, fordi workflowet brugte et forkert nøglenavn og fik tomt input.
+Kun bindingen rettes til producentens eksisterende nøgle; ingen nye nøgler eller
+rettigheder. Den genbrugte workflowtest viste først fejlen og består nu med
+fire prøver uden skip. Rettelsens egen kildekontrol, merge og faktisk læsning
+afventer; pakken er endnu ikke autentificeret eller undersøgt.
 
 Undersøgelsen følger Lyngby/Lodbjerg, Agger og Stenbjerg. Samme valgte DMI-punkt
 leverer værdi og pil. Et Limfjordspunkt ses på land ved Lodbjerg, men de faktiske
@@ -20,7 +24,9 @@ Kun sikre optællinger og kontrol af gemt beregning forlader læsefunktionen;
 ingen rå strømvektorer, koordinater, private stier eller fejlpayload. En matchende
 gemt tid/styrke er ikke i sig selv bevis for en lagret årsagskobling eller korrekt
 havcelle. Ukendt maskestatus forbliver ukendt. Ingen nyt vejr, cachegemning,
-produktionswrite eller deploy. En mulig alle-zonekontrol er foreslået, ikke udført.
+produktionswrite eller deploy. Ejeren har godkendt alle-zoneplanen; den er ikke udført.
+Ejeren har stående tilladt relevante private joblogs. Secrets og private payloads
+forbliver fortrolige; tekniske kontorettigheder skal ikke ændres for loglæsning.
 Se DEC-0289; ældre lokale541-kandidatstatus nedenfor er historisk.
 
 ## 89.154 4.0.541 – Copernicus skal være lukket før oprydning (lokal kandidat)

@@ -1,4 +1,15 @@
-# NYESTE – 2026-10-03 – offentlig541; isoleret Lyngbylæser, ikke ny release
+# NYESTE – 2026-10-04 – læseworkflow stoppet før autentificering
+
+PR510 er merged til maina459b846 efter exactCI37154054174. Fastread37163385963
+stoppede før autentificering på tomt nøgleinput; inspektion SKIPPED, ikke PASS.
+Lokal one-line binding følger nu den faktiske producents eksisterende nøgle;
+regression RED1/PASS3→PASS4/0skip. Egen exactCI/merge/læsning afventer. DEC-0289.
+Ingen ny version, nøgle, rettighed eller produktion. Ejeren har stående tilladt
+relevante private joblogs og godkendt alle-zoneplan; ingen private payloads ud.
+Ordinary37151127122 blev ikke deployet:12waterLeveltab ved Fur/Stenerodde,
+øvrige fire tab0; ny komponentcache faktisk saved/uploaded. Rodårsag åben.
+
+# Historisk – 2026-10-03 – offentlig541; isoleret Lyngbylæser, ikke ny release
 
 Offentlig/main4.0.541 er faktisk leveret; ældre lokale541-status nedenfor er
 historik. Ejer har nu både godkendt hele den udpegede pakke og særskilt

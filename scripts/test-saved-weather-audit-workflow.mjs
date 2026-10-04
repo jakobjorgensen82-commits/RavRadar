@@ -7,6 +7,12 @@ const gh = value => '${{ ' + value + ' }}';
 
 test('sealed-source diagnosis is fixed-artifact, source-gated, read-only and secret-separated', () => {
   const sealed = fs.readFileSync('.github/workflows/audit-sealed-current-source.yml', 'utf8').replace(/\r\n/g, '\n');
+  const producer = fs.readFileSync('.github/workflows/reusable-weather-build.yml', 'utf8').replace(/\r\n/g, '\n');
+  const masterBinding = /^\s+STAGED_PRIVATE_BUILD_MASTER_SECRET: (\$\{\{ secrets\.[A-Z_]+ \}\})$/m;
+  const producerBinding = producer.match(masterBinding)?.[1];
+  assert.equal(producerBinding, gh('secrets.SUPABASE_SERVICE_ROLE_KEY'));
+  assert.equal(sealed.match(masterBinding)?.[1], producerBinding, 'reader must use the same existing master key as the actual seal producer');
+  assert.doesNotMatch(sealed, /secrets\.STAGED_PRIVATE_BUILD_MASTER_SECRET/);
   assert.match(sealed, /group: ravradar-weather-production-v2/);
   assert.match(sealed, /cancel-in-progress: false/);
   assert.match(sealed, /test "\$GITHUB_SHA" = "\$EXPECTED_MAIN_HEAD"/);
@@ -14,8 +20,8 @@ test('sealed-source diagnosis is fixed-artifact, source-gated, read-only and sec
   assert.match(sealed, /git diff --quiet bbc3c79fe555dffbff4a88af8cdf54573953efdb/);
   assert.match(sealed, /actions\/artifacts\/11281483201\/zip/);
   assert.match(sealed, /sha256sum --check --status/);
-  assert.ok(sealed.indexOf('sha256sum --check --status') < sealed.indexOf('secrets.STAGED_PRIVATE_BUILD_MASTER_SECRET'));
-  assert.ok(sealed.indexOf('test "$SOURCE_REQUIRED" = false') < sealed.indexOf('secrets.STAGED_PRIVATE_BUILD_MASTER_SECRET'));
+  assert.ok(sealed.indexOf('sha256sum --check --status') < sealed.indexOf(producerBinding));
+  assert.ok(sealed.indexOf('test "$SOURCE_REQUIRED" = false') < sealed.indexOf(producerBinding));
   assert.equal((sealed.match(/secrets\./g) ?? []).length, 1);
   assert.doesNotMatch(sealed, /(?:contents|actions|pull-requests|pages|id-token): write|secrets: inherit|actions\/cache|restore-keys:/);
   assert.doesNotMatch(sealed, /node scripts\/(?:update-weather|protected-private-production-runtime|private-production-runtime-workflow)\.mjs|npm run|gh workflow run|\/logs|--publish|--migrate/);

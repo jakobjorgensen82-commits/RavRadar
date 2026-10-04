@@ -1,4 +1,18 @@
-# NYESTE – 2026-10-03 – skrivefri sealed Lyngbydiagnose
+# NYESTE – 2026-10-04 – minimal diagnosebinding
+
+- [x] PR510 exact-CI37154054174 og mergea459b846; fastread37163385963 forsøgt.
+- [x] Faktisk logdiagnose: tomt input fra forkert secretnavn; ingen GCM/inspektion.
+- [x] Lokal one-line binding til samme eksisterende producernøgle; genbrugt test
+  RED1/PASS3→PASS4/0skip. Ingen nøgle-/rolleændring. DEC-0289.
+- [ ] Rettelsens egen exact-head CI, sikker merge og faktisk authenticated læsning.
+- [ ] Lyngbys historiske kildesammenhæng/mask/årsag; godkendt alle-zoneplan.
+- [ ] Fur/Steneroddes12vandstandstab i ordinary37151127122; actual nycache målt,
+  men protectedinstall og korrekt optionalrestoremiss beviser ikke rodårsagen.
+
+Ejeren tillader nu stående relevante private joblogs; ingen secrets/payloads ud.
+Offentlig541, cron, øvrige afvisninger og storrevisionens åbne dele er uændrede.
+
+# Historisk – 2026-10-03 – skrivefri sealed Lyngbydiagnose
 
 - [x] Særskilt ejer-ja til kode/workflow efter helepakke-læsegodkendelse.
 - [x] Lokal fast artifact-/source-/expirykontrol, eksisterende GCM/restore,

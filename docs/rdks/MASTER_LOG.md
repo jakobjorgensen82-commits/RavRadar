@@ -1,4 +1,14 @@
-# NYESTE – 2026-10-03 – særskilt godkendt sealed Lyngbydiagnose, lokal tooling
+# NYESTE – 2026-10-04 – konkret fejllæsning og én bindingrettelse
+
+PR510 merged01:56:24DK/maina459b846. Fastread37163385963 stoppede01:57:40DK
+før autentificering: forkert secretnavn gav tomt input. Lokal one-line binding
+til samme eksisterende producernøgle; genbrugt regression RED1/PASS3→PASS4,
+0skip. Egen exact-CI/merge/læsning åben. Ingen version/ACL/nøgle/modeldataændring.
+DEC-0289 registrerer stående relevante privatjoblogs og godkendt alle-zoneplan.
+Ordinary37151127122 fejlede no-loss112 på12vandstandstab ved Fur/Stenerodde;
+actual107saved:true og108nytcachekey målt. Ingen deploy; rodårsag OPEN.
+
+# Historisk – 2026-10-03 – særskilt godkendt sealed Lyngbydiagnose, lokal tooling
 
 Ejerens helepakke-læsetilladelse og efterfølgende særskilte kode-/workflow-ja
 er registreret i DEC-0289. Præcis originalpakke, kilde, digest og bindinger;

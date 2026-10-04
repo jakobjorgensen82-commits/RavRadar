@@ -1,4 +1,13 @@
-# NYESTE – 2026-10-03 – diagnose før mulig tværgående cellekontrol
+# NYESTE – 2026-10-04 – faktisk nøglebindingfejl før Lyngbydiagnose
+
+Næste: egen exact-CI og sikker merge af minimal eksisterende nøglebinding;
+derefter fastread11281483201 med uændrede kontrakter. Første read37163385963
+stoppede før GCM/inspektion, så ingen årsagskonklusion. DEC-0289. Godkendt
+alle-zoneplan følger Lyngbyårsagen. Ejer tillader privatjoblogs stående, ingen
+payloads ud. Fur-vandstandstab i37151127122 skal forklares uden gatelempelse.
+Cron aktiv/uændret; ingen main/auditdispatch under aktiv normalwriter.
+
+# Historisk – 2026-10-03 – diagnose før mulig tværgående cellekontrol
 
 DEC-0289: lokal skrivefri sealed Lyngbylæser er særskilt godkendt og målrettet
 testet. Næste er exact-head CI, sikker main efter ordinarycompletion og actual

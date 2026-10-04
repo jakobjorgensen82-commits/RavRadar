@@ -1,7 +1,27 @@
 # DEC-0289 – Skrivefri diagnose af én ejerudpeget original strømpakke
 
-**Status:** Implementeret lokalt; exact-head CI, merge og faktisk læsning afventer.
+**Status:** PR510 er merged; første læsning stoppede før autentificering. Minimal nøglebindingrettelse er lokalt testet; egen exact-head CI/merge og faktisk læsning afventer.
 **Dato:** 2026-10-03
+
+## Verificeret opfølgning 2026-10-04
+
+PR510/head36fe6ce7 bestod exact-head CI37154054174 og blev merged
+01:56:24 DK til maina459b846. Den ene godkendte læsning37163385963 stoppede
+01:57:40 DK i autentificeringstrinnet; inspektion var SKIPPED, ikke PASS.
+Workflowet slog fejlagtigt et nyt secretnavn op. Den faktisk injicerede værdi
+var tom, mens den uændrede producent bruger den eksisterende
+`secrets.SUPABASE_SERVICE_ROLE_KEY` som masterinput. Kun læserens binding
+rettes til samme eksisterende nøgle; ingen nøgle eller rettighed ændres.
+Den eksisterende workflowtest sammenligner nu producent og læser: én RED
+og tre PASS før rettelsen, fire PASS efter, ingen skip. Den gamle test havde
+spejlet det forkerte navn. AAD/HKDF/GCM, target, gates og cleanup er uændrede.
+Dette er ikke autentificering, privat historielæsning eller Lyngbyårsagsbevis.
+
+Ejeren har nu stående godkendt læsning af relevante private joblogs. Det
+erstatter tidligere loglæseafvisning, ikke krav om at holde secrets og private
+payloads ude af svar, commits og offentlige rapporter. Ingen ACL-/rolleændring.
+Ejeren har også godkendt planen om skrivefri kontrol af alle zoner for samme
+fejltype; implementering og udførelse afventer Lyngbyårsagens afgrænsning.
 
 ## Ejerbeslutning og evidens
 
@@ -54,12 +74,12 @@ produktionsbackup eller en pointerændring.
 
 Ingen provider, normal vejrbygning, ny scoregeneration, moving-pointer-read,
 central-/R2-write, cachegemning, recovery, migration, standalone SQL eller
-deploy. Ingen nye nøgler, planer, rolle-/credentialændringer, raw-private-log,
+deploy. Ingen nye nøgler, planer, rolle-/credentialændringer,
 donor, admissionbypass, frozen-model-copy/eval eller lempelse af gates.
 Native67/model29ea/continuationd983/storageABI og otte produktionsbindings-
 forbrugere er uændrede. Offentlig/main-version forbliver 4.0.541; dette er
 diagnoseværktøj, ikke en 4.0.542-produktlevering.
 
-Ejeren har foreslået kontrol af alle zoner for samme fejltype. Det er fagligt
-relevant, men en sådan udvidelse er endnu ikke implementeret eller udført.
+Ejeren har godkendt kontrol af alle zoner for samme fejltype. Udvidelsen er
+endnu ikke implementeret eller udført.
 Lyngbyårsagen skal først afgrænses, og mistanke må ikke blive automatisk rettelse.
