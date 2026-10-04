@@ -1,5 +1,10 @@
 ## Ikke udgivet – Jordrav forskningsprototype 0.1 (2026-10-04)
 
+- Ny Stenstrup-markanalyse med faktiske Marker 2026/JB2024, arkiverede
+  regionale råsvar uden ejerfelter og separat trepanelsfigur. 12,853 km²
+  registreret markareal; 39,60 ha yngre dæklagspar i dyrkningsudvalget.
+  JB-grænseoverlap bevares særskilt; ren topjord og faktisk pløjning er
+  uafklarede. Original-SHP/WFS-kontrol og JH-015–017; ingen runtimeændring.
 - Separat farvevalg for jagtbarhed: gråblå/uafklaret på materialeflader;
   lilla dybdepunkter med registrerede intervaller og tydelig tekst om
   manglende umiddelbar jagtbarhed. To tidligere undersøgte Jupiterprofiler

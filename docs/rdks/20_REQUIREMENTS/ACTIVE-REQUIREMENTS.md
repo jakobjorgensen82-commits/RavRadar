@@ -19,6 +19,13 @@ polygon. Potentiale, sikkerhed og overfladerelevans vurderes særskilt.
 Is/smeltevand, istryk, tidligere hav og kronologisk omlejring indgår;
 overlappende isrande giver ikke automatisk bonus eller fundprocenter.
 
+Fortsat arbejde under dette mandat: Stenstrups geologi er suppleret med
+faktiske Marker 2026 og publiceret JB2024 som forskningskontekst. Afgrødeår
+bliver ikke til dagens pløjning; jordbundsmodel bliver ikke et uafhængigt
+ravbevis eller sikker dybde. JH-015–017 konkretiserer videre efterprøvning.
+Mark-/JB-lag er endnu ikke integreret i den interaktive prototype.
+Se `docs/research/JORDRAV_MARKKONTEKST_STENSTRUP_2026-10-04.md`.
+
 Det ældre 1:200.000-jordartskort bruges som supplement efter ejerens
 udtrykkelige instruktion trods de konstaterede særlige vilkår. Nyere kort
 har forrang; kilde, målestok og usikkerhed bevares. Udeladelsesforslaget er

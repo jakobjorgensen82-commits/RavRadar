@@ -53,6 +53,17 @@
   Stenstrups fem differentierede organiske symbolpar afklarer ikke
   dæklagstykkelse. Interne TS/TL-nabogrænser er laterale kortrelationer;
   de dokumenterer ikke lodret stratigrafi eller adgang ved pløjning.
+  Regional Marker 2026-skæring er nu udført: 311 positive poster, 12,853 km²
+  union og 39,60 ha af fem yngre dæklagspar i dyrkningsudvalget. Det afklarer
+  markkontekst, ikke nutidig pløjning eller adgang til den dybere enhed.
+- **JORDRAV-008, JB-/topjordsfortolkning åben:** Det publicerede JB2024-lag
+  kan ikke entydigt adskille oprindelige og administrativt omklassificerede
+  kategorier. Rene dybdeprofiler/proveniens mangler til denne slutning.
+  Modelleret JB bruger også geologi og må ikke tælles som uafhængigt ravbevis.
+  815,123 m² små regionale klassegrænseoverlap er eksplicit bevaret;
+  21,36 ha registreret markareal mangler JB-værdi og er ikke udfyldt.
+  JH-015–017 og primærkilder i markkontekstanalysen; ingen automatisk JB-bonus
+  eller ændring af jagtbarhed. Den interaktive prototype har ikke mark/JB-lag.
 
 Evidens: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
 Punkterne gælder den lokale Jordrav-prototype, ikke den aktuelle vejrproduktion.

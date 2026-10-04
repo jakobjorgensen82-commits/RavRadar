@@ -1,6 +1,18 @@
 # AKTUELT JORDRAVCHECKPOINT – 2026-10-04
 
-**Nyeste lokal ændring – jagtbarhed:** Ejeren har erstattet ønsket om at
+**Nyeste analyse – markkontekst:** Stenstrups samme native issøflade er nu
+sammenholdt med arkiverede, offentlige Marker 2026 og Jordbundskort 2024.
+311 markposter overlapper fladen; deres union er 12,853 km² / 66,65 %.
+Udvalgte dyrkningsafgrøder dækker 9,822 km². De fem FT/TS, FP/TL og FT/TL-
+kildeposter har samlet 39,60 ha i dyrkningsudvalget, uden dokumenteret
+pløjeadgang. Publicerede JB-klasser bliver ikke gjort til sikre topjordsprøver;
+815,123 m² kildegrænseoverlap bevares særskilt. Audit og original-SHP/WFS-
+kontrol PASS; figur visuelt læst. Ingen runtime-/klasse-/versionændring.
+Rapport: `docs/research/JORDRAV_MARKKONTEKST_STENSTRUP_2026-10-04.md`.
+JH-015–017 og JORDRAV-008 skærper de fortsat åbne spørgsmål. Ingen ejerfelter
+er hentet. Årsafgrøde er ikke dagens blotlægning; jagtbarhed er uafklaret.
+
+**Seneste UI-ændring – jagtbarhed:** Ejeren har erstattet ønsket om at
 udelade dybe lag med tydelig særvisning. Kortet har farvevalg mellem
 geologisk potentiale og jagtbarhed. Alle nuværende materialeflader har
 uafklaret jagtbarhed; ens GEUS-symboler omkring én meter beviser ikke

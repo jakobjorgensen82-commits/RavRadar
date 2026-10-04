@@ -19,6 +19,72 @@ Arbejdet holdes i denne selvstændige jordravgren. Ingen ny funddatabase, bruger
 
 ## Leveret analyse
 
+### Markkontekst efter seneste fortsættelsesinstruktion
+
+Ejeren beder igen om mere arbejde uden sit kortreview. Der er derfor
+undersøgt faktiske offentlige mark-/jordbundsdata til forbindelsen mellem
+geologi og praktisk markrav. Indsats Sol/Ekstra høj er anbefalet; ingen
+delegation, ændring af produktionsdata eller ny publicering er nødvendig.
+Rapport: `docs/research/JORDRAV_MARKKONTEKST_STENSTRUP_2026-10-04.md`.
+
+Komplette WFS2-svar, Marker 2026/641 poster og JB2024/8.284 poster, er
+hentet efter hits-/schemaafklaring. Kun geometri og afgrøde/JB-kode/navn
+er anmodet; ingen ejer/CVR/journal/marknummerfelter. ISO-8859-1 blev først
+fejllæst som UTF-8; det fejlede forsøg var ikke en gyldig kilde. Deklareret
+charset bruges nu, rå bytes og ren UTF-8-transkodning bindes hver for sig.
+Minimale regionale råsvar er arkiveret som gzip i research/sources, så
+senere WFS-ændringer ikke erstatter dette undersøgelsesgrundlag.
+
+Samme native GEUS-issøflade/149 nyere jordartsposter anvendes. 311 markposter
+har positivt overlap; union 12,853 km² / 66,65 %. Udvalgte 20 afgrødekoder
+dækker 9,822 km², herunder TS/TL 460,00/402,13 ha. TS–TL-nabogrænsen er
+30,98 km på alle registrerede markarealer, 22,80 km i dyrkningsudvalget.
+De fem FT/TS, FP/TL og FT/TL-poster har 53,18 ha på registrerede marker,
+heraf 39,60 ha i dyrkningsudvalget. Dette er markkontekst, ikke ravareal,
+kontaktbonus eller dokumenteret pløjeadgang. Øvrige afgrøder kan også
+indebære bearbejdning; udvalget beskriver ikke alle pløjelige arealer.
+
+AU's marts- og majrapporter er læst med visuel PDF-kontrol. Publiceret
+JB2024 kan ikke uden ekstra proveniens blive ren topjords-/dybdeviden.
+Geologi som modelinput hindrer at tælle kortene som uafhængige ravbeviser. Historiske
+satellitkompositter er ikke dagens bare jord. Ren teksturprofil og
+forbindelsen til det bearbejdede lag er stadig åbne i JORDRAV-008.
+JB-manglende registreret markareal 21,36 ha udfyldes ikke med gæt.
+
+Første numeriske audit stoppede på 815,129 m² dobbelttælling mellem JB-
+klasser. Parvise positive overlap har største fragment 0,720 m²; unionen
+er 815,123 m². Alle overlap føres særskilt, uden vindende klasse, buffer,
+snapping eller udvidet tolerance. Første differens fejlede på blandede
+dimensioner; eksplicit udvælgelse af arealdelene løste dette. Korrigeret
+partition har 0,0073 m² restoverlap; trevejssummen afviger 0,0173 m².
+Kontroltolerance 1 m² er numerisk, ikke stednøjagtighed. Første fejl er
+registreret og ikke brugt som grøn evidens.
+
+Producentaudit PASS; uafhængig original-SHP/DBF + arkiveret WFS-kontrol
+PASS uden producentens WKB-/kategorihjælpere. Originalt markareal afviger
+10,194 m², dyrkningsudvalg 8,753 m², JB-dækning 11,767 m²; TS/TL-kontakt på
+marker 0,056 m. Én allerede kendt ugyldig original jordartspost behandles
+kun i hukommelsen. Statisk trepanelsfigur er fremstillet med temp-Matplotlib
+og visuelt læst; huller, identiske akser og forbehold fremgår.
+
+JH-015–017 konkretiserer sand-/lermarker, dyrkede dæklag/modtagere og
+nutidig topjord. Ingen afgrøde/JB-rangliste, klasseændring eller nutidig
+pløjeobservation indføres. Interaktivt kort og alle runtimefiler består;
+figuren er separat forskning. Alle nuværende materialeflader har fortsat
+uafklaret jagtbarhed, og dybe punkter beholder særvisning. RDKS-krav,
+current truth/status, issues, håndbog, changelog og forberedt webtillæg
+følger analysen; aktiv webhåndbog/SQL, app-/modelversion, geodata,
+producenter og produktionspipeline er urørte. Ingen ny preview, push,
+PR, merge, deploy, vejrkørsel eller automation er foretaget.
+
+Slutkontrol: endelige script-/audit-/geometri-/figurbindinger, Python-
+syntaks, arkiverede WFS-identiteter, rapportlinks og webtillæg PASS.
+RDKS/14 chatkilder/håndbog 4.0.541, håndbogens 419 kapitler og eksisterende
+sikkerhedshærdningskontrakter PASS. Fire frosne model-/producenthashes
+matcher tidligere leverance; protected-path-diff er tom. Et supplerende
+hashcheck ramte først en forkert manifeststi; genkontrol bruger den
+faktiske prototype-0.1.0-sti og består. Ingen ny UI-/CI-/produktionspåstand.
+
 ### Native Stenstrup-kontakter før kortreview
 
 Ejerens fortsættelsesinstruktion er omsat til konkret regional polygonanalyse.

@@ -9,3 +9,9 @@ docs/research/jordrav/audit_stenstrup_contacts.py -text
 docs/research/jordrav/verify_stenstrup_originals.py -text
 docs/research/jordrav/stenstrup-contact-audit-2026-10-04.json -text
 docs/research/jordrav/stenstrup-original-verification-2026-10-04.json -text
+docs/research/jordrav/audit_stenstrup_field_context.py -text
+docs/research/jordrav/verify_stenstrup_field_context.py -text
+docs/research/jordrav/plot_stenstrup_field_context.py -text
+docs/research/jordrav/stenstrup-field-*.json -text
+docs/research/jordrav/stenstrup-field-context-2026-10-04.geojson -text
+docs/research/jordrav/sources/*-binding.json -text

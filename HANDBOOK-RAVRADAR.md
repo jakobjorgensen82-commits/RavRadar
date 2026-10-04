@@ -62,6 +62,16 @@ Fokus er ikke en fuldstændig markprioritering.
 Original-SHP/DBF-kontrol og analysefigur er beskrevet i
 `docs/research/JORDRAV_STENSTRUP_KONTAKTER_2026-10-04.md`.
 
+En ny forskningsfigur forbinder denne flade med offentlige Marker 2026:
+311 positive poster giver 12,853 km² registreret markareal. Udvalgte
+dyrkningsafgrøder dækker 9,822 km², herunder 39,60 ha på de fem allerede
+undersøgte yngre dæklagspar. Afgrødeår viser ikke dagens pløjning eller
+bar jord. Publicerede JB-klasser er supplerende kontekst med uafklaret
+topjordsfortolkning; små kildegrænseoverlap bevares særskilt.
+Ingen jagtbarheds-/potentialeklasse ændres. Mark/JB-lag er endnu ikke
+integreret i det interaktive kort. Audit, originalfilskontrol, figur og
+JH-015–017: `docs/research/JORDRAV_MARKKONTEKST_STENSTRUP_2026-10-04.md`.
+
 **Evidens:** GEUS-kortlagte materialer og landskabsprocesser kombineres med
 eksplicitte RavRadar-hypoteser om transport, omlejring og modtagelse. Tidligere
 fund er ikke et krav. Forhøjet procespotentiale betyder kompatibelt sand/grus

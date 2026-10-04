@@ -14,6 +14,13 @@ blotlægning. Se [jagtbarhed og dybde](JORDRAV_JAGTBARHED_DYBDE_2026-10-04.md).
 
 ## Afgrænsning og faktisk beregning
 
+**Senere markkontekst:** Denne geologiske analyse er efterfølgende suppleret
+med faktiske markregistreringer fra 2026 og publicerede JB2024-klasser.
+De nye skæringer og kildeforbehold står i
+[markkontekstanalysen](JORDRAV_MARKKONTEKST_STENSTRUP_2026-10-04.md).
+Oplysningen nedenfor om manglende dyrkningsdata gælder dette oprindelige
+analyseafsnit. Nutidig pløjning og jagtbarhed er stadig ikke verificeret.
+
 Analysen bruger hele **kildepolygon 10265, Issøflade**, fra GEUS' geomorfologiske kort v3/2022. Den ligger i den eksisterende Stenstrup-guides navigationsvindue. Vinduet er kun brugt til at finde polygonen; der er ikke skåret et vilkårligt rektangel ud til arealberegningen. En anden, mindre Issøflade i samme vindue er ikke medtaget. Kildepolygonen afgrænser en kortlagt landskabsenhed, ikke hele den historiske sø gennem alle stadier og ikke en ravforekomst.
 
 Den normaliserede kildeflade er **19,284 km²**. Den skæres med nyere jordartskort v7.1/2026, som dækker den med **149 kildeposter**. Ældre 1:200.000-jordarter er ikke nødvendige til denne afgrænsede beregning. Ingen eksisterende nationale supplementregler ændres.

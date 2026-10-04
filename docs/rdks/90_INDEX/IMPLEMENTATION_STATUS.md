@@ -1,6 +1,17 @@
 # AKTUEL JORDRAVSTATUS – 2026-10-04
 
-**Nyeste lokal ændring – jagtbarhed:** Ejeren har erstattet ønsket om at
+**Nyeste analyse – markkontekst:** Komplette regionale WFS-svar er arkiveret
+med minimal feltselektion, charset og SHA-binding. Stenstrups native flade
+har 12,853 km² registreret markareal og 9,822 km² i udvalgt dyrkningsgruppe.
+Geologi-/mark-/JB-skæringer, dæklagspar og lateral kontakt på marker er
+beregnet; kildegrænseoverlap bevares som eksplicit kategori. Producentaudit
+og uafhængig original-SHP/WFS-kontrol PASS; trepanelsfigur visuelt læst.
+JH-015–017/JORDRAV-008: faktisk blotlægning, lagforbindelse og ren topjord
+er åbne. Figur og rapport er forskningsartefakter; mark/JB-lagene er endnu
+ikke del af den interaktive prototype. Ingen app-/model-/dataændring.
+Se `docs/research/JORDRAV_MARKKONTEKST_STENSTRUP_2026-10-04.md`.
+
+**Seneste UI-ændring – jagtbarhed:** Ejeren har erstattet ønsket om at
 udelade dybe lag med tydelig særvisning. Kortet har farvevalg mellem
 geologisk potentiale og jagtbarhed. Alle nuværende materialeflader har
 uafklaret jagtbarhed; ens GEUS-symboler omkring én meter beviser ikke
