@@ -1,7 +1,7 @@
 data/diagnostics export-ignore
 data/admin export-ignore
 # Jordrav identities hash exact bytes; preserve them across Windows/Linux.
-data/jordrav/** -text
+data/jordrav/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 scripts/build-jordrav-prototype.py -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 scripts/lib/jordrav_model.py -text
 # Regional research audits bind exact script/report bytes across platforms.
@@ -20,3 +20,8 @@ docs/research/jordrav/asaa-voersaa-*.json -text
 docs/research/jordrav/asaa-voersaa-context-2026-10-04.geojson -text
 docs/research/jordrav/*marine_comparisons.py -text
 docs/research/jordrav/marine-comparison-*.json -text
+scripts/build-jordrav-national-model.py -text
+docs/research/jordrav/audit_national_model_sources.py -text
+docs/research/jordrav/verify_national_model.py -text
+docs/research/jordrav/audit_national_rule_sensitivity.py -text
+docs/research/jordrav/national-model-0.2-*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

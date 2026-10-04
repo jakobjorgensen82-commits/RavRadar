@@ -1,5 +1,12 @@
 # Stenstrup: sedimentkontakter, yngre modtagere og forbindelsen til markrav
 
+> Historisk kortstatus: denne rapport blev udført med model 0.1.
+> Nationale farver og klasseregler er siden revideret i
+> [model 0.2](JORDRAV_NATIONAL_MODEL_0_2.md). Rapportens kildeobservationer
+> bevares; udsagn om frosne regler, guide-only levering og åbne nationale
+> farveændringer er supersederet. Gamle regelbundne audits reproduceres
+> fra commit eee7b08e.
+
 **Dato:** 2026-10-04. **Status:** regional forskningsdiagnose i den lokale Jordrav-gren. Appversion 4.0.541 og model/datasæt 0.1.0-prototype består. Analysen ændrer ingen kortklasser eller runtimefunktioner.
 
 Den nye analyse gør Stenstrup-casen geografisk mere konkret: Den undersøgte issøflade indeholder store sand- og lerarealer, mange kortlagte nabogrænser og mindre yngre aflejringer. Det begrunder undersøgelse af flere forskellige modtagermiljøer. **Fokus på “forhøjet procespotentiale” skjuler næsten hele denne flade og kan derfor ikke bruges som en fuldstændig prioritering af marker i Stenstrup-egnen.**

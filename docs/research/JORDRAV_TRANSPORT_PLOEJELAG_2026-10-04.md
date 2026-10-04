@@ -1,5 +1,12 @@
 # Jordrav fra sedimenttransport til synlige fund på pløjede marker
 
+> Historisk kortstatus: denne rapport blev udført med model 0.1.
+> Nationale farver og klasseregler er siden revideret i
+> [model 0.2](JORDRAV_NATIONAL_MODEL_0_2.md). Rapportens kildeobservationer
+> bevares; udsagn om frosne regler, guide-only levering og åbne nationale
+> farveændringer er supersederet. Gamle regelbundne audits reproduceres
+> fra commit eee7b08e.
+
 **Dato:** 4. oktober 2026. **Status:** videre faglig analyse og lokal forbedring af forklaringerne. Kortets model og datasæt er fortsat 0.1.0-prototype. Ingen ny funddatabase, ravprocenter eller apprelease.
 
 Den vigtigste nye konklusion er, at en geologisk interessant aflejring og en god mark at afsøge kræver to forskellige vurderinger. Den første følger tilførsel, sortering og bevaring gennem sedimenthistorien. Den anden undersøger forbindelsen til pløjelaget og ravets synlighed efter jordbearbejdning og regn. En stærk forklaring skal forbinde begge forløb. Sand ved én meters dybde er ikke tilstrækkeligt til at forudsige synligt markrav.

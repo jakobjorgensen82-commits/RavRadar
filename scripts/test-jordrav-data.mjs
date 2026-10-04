@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
 import { test } from 'node:test';
-import { MANIFEST_SHA256, MODEL_VERSION } from '../js/jordrav/dataset-binding.js';
+import { DATA_BASE, MANIFEST_SHA256, MODEL_VERSION } from '../js/jordrav/dataset-binding.js';
 import { validateManifest, intersects } from '../js/jordrav/data-service.js';
 import '../js/jordrav/messages.js';
 import { messageKeys } from '../js/jordrav/messages.js';
@@ -12,15 +12,16 @@ import { ACCESS_COLOURS, SURFACE_HUNTABILITY, DEEP_LAYER_EXAMPLES } from '../js/
 const appVersion=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')).version;
 const { hasTranslation }=await import(`../js/i18n.js?v=${appVersion}`);
 
-const base = new URL('../data/jordrav/prototype-0.1.0/', import.meta.url);
+const base = DATA_BASE;
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 test('all static geometry, explanations and rules bind to one verified manifest', async () => {
   const bytes = await fs.readFile(new URL('manifest.json', base));
   assert.equal(sha(bytes), MANIFEST_SHA256);
   const manifest = validateManifest(JSON.parse(bytes));
-  const buildAudit = JSON.parse(await fs.readFile(new URL('../docs/research/jordrav/prototype-build-audit.json', import.meta.url)));
+  const buildAudit = JSON.parse(await fs.readFile(new URL('../docs/research/jordrav/national-model-0.2-build-audit.json', import.meta.url)));
   for (const [file, expected] of [
-    ['scripts/build-jordrav-prototype.py', buildAudit.scriptSha256],
+    ['scripts/build-jordrav-national-model.py', buildAudit.scriptSha256],
+    ['scripts/build-jordrav-prototype.py', buildAudit.geometryHelperSha256],
     ['scripts/lib/jordrav_model.py', buildAudit.modelCodeSha256],
     ['data/jordrav/model-rules.json', buildAudit.rulesSha256]
   ]) assert.equal(sha(await fs.readFile(new URL(`../${file}`, import.meta.url))), expected, `${file} producer identity`);
@@ -49,7 +50,10 @@ test('all static geometry, explanations and rules bind to one verified manifest'
       }
     }
   }
-  assert.deepEqual([...classes].sort(), ['enhanced','limited','possible','unresolved']);
+  assert.deepEqual([...classes].sort(), ['basin','coastal','covered','enhanced','limited','possible','reworked','unresolved']);
+  assert.equal(buildAudit.tiles,192);
+  assert.equal(buildAudit.features,505834);
+  assert.equal(buildAudit.detailFeaturesUnchanged,true);
   const injected = structuredClone(manifest);
   injected.tiles[0].file='../secret.json';
   assert.throws(() => validateManifest(injected));

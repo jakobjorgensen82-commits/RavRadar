@@ -1,5 +1,12 @@
 # Stenstrup: fra geologisk mulighed til konkret markkontekst
 
+> Historisk kortstatus: denne rapport blev udført med model 0.1.
+> Nationale farver og klasseregler er siden revideret i
+> [model 0.2](JORDRAV_NATIONAL_MODEL_0_2.md). Rapportens kildeobservationer
+> bevares; udsagn om frosne regler, guide-only levering og åbne nationale
+> farveændringer er supersederet. Gamle regelbundne audits reproduceres
+> fra commit eee7b08e.
+
 **Dato:** 2026-10-04. **Status:** lokal forskningsanalyse. App 4.0.541 og det frosne geologiske datasæt 0.1.0-prototype er uændrede. Dette er en supplerende analysefigur og kildedokumentation; mark- og JB-lagene er endnu ikke integreret i den interaktive prototype.
 
 Den nye undersøgelse forbinder den allerede analyserede issøflade med faktiske markregistreringer fra 2026. **12,853 km², svarende til 66,65 % af fladen, har markregistrering.** Dermed bliver det muligt at undersøge forskellige geologiske modtagere i en konkret dyrkningskontekst. Et registreret markareal dokumenterer hverken pløjning, bar jord, lokal adgang eller rav. Tidligere ravfund er fortsat ikke en forudsætning for en undersøgelseshypotese.

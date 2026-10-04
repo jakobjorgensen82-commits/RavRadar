@@ -1,3 +1,12 @@
+# Lokal Jordravgren: aktuelt mandat og model 0.2 – 2026-10-05
+
+Ejeren kræver farvet, færdig national kortanalyse, ikke kun områdeguides.
+På denne gren supersederer model 0.2 den tidligere frosne 0.1-leverance.
+Læs den aktive RDKS-top og docs/research/JORDRAV_NATIONAL_MODEL_0_2.md.
+App 4.0.541 og kyst-/vejrproduktion er urørt. Arbejdet er lokal forskning;
+ingen main-/CI-/produktionsstabilitet påstås. Gamle 0.1-audits er historik
+på eee7b08e og bruger deres daværende regelhash.
+
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
 Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10

@@ -7,7 +7,9 @@ import { ACCESS_COLOURS, SURFACE_HUNTABILITY, DEEP_LAYER_EXAMPLES } from './acce
 initialiseI18n();
 const $ = id => document.getElementById(id);
 const tr = key => t(`jordrav.${key}`);
-const colours = { enhanced:'#d18a1d', possible:'#8c959b', limited:'#85746a', unresolved:'#85939e' };
+const colours = { enhanced:'#d18a1d', coastal:'#247bc1', basin:'#bd547f', reworked:'#c0a535', covered:'#60a9a3', possible:'#8c959b', limited:'#85746a', unresolved:'#85939e' };
+const designated = new Set(['enhanced','coastal','basin','reworked','covered']);
+const categoryKey = category => category === 'covered' ? 'coveredCategory' : category;
 const materialKeys = {
   'glacial-coarse':'GlacialCoarse', 'glacial-fine':'GlacialFine', 'glacial-basin-coarse':'GlacialBasinCoarse', till:'Till',
   'marine-coarse':'MarineCoarse', 'marine-fine':'MarineFine', 'marine-mixed':'Mixed',
@@ -17,7 +19,7 @@ const materialKeys = {
 };
 const processKeys = {meltwater:'Meltwater', erosion:'Erosion', pushed:'Pushed', 'older-till':'OlderTill', marine:'Marine', shore:'Shore', basin:'Basin', cover:'Cover', till:'Till', rock:'Rock', unresolved:'Unresolved', missing:'Missing'};
 const accessKeys = {'near-surface':'nearSurface', layered:'layered', covered:'covered', unknown:'unknownDepth'};
-const reasonKeys = {enhanced:'reasonEnhanced', possible:'reasonPossible', limited:'reasonLimited', unresolved:'reasonUnresolved'};
+const reasonKeys = {enhanced:'reasonEnhanced', coastal:'reasonCoastal', basin:'reasonBasin', reworked:'reasonReworked', covered:'reasonCovered', possible:'reasonPossible', limited:'reasonLimited', unresolved:'reasonUnresolved'};
 const node = (tag, text, className) => {
   const element = document.createElement(tag);
   if (text !== undefined) element.textContent = text;
@@ -32,7 +34,7 @@ let visible = true;
 let onlyEnhanced = false;
 let colourMode = 'potential', showDeep = true;
 const potentialOf = feature => feature.properties.potential || data.catalog[feature.properties.i].potential;
-const acceptsFeature = feature => !onlyEnhanced || potentialOf(feature) === 'enhanced';
+const acceptsFeature = feature => !onlyEnhanced || designated.has(potentialOf(feature));
 
 function featureStyle(feature) {
   const potential = potentialOf(feature);
@@ -40,8 +42,10 @@ function featureStyle(feature) {
   // General sediment context stays queryable, without colouring almost all
   // land as a recommendation. Accessibility is a separate, explicit view.
   const uncoloured = colourMode === 'potential' && potential === 'possible';
-  return {fillColor: colour, fillOpacity: uncoloured ? 0 : opacity,
-    weight: uncoloured || feature.properties.potential ? 0 : .4,
+  const cover = colourMode === 'potential' && potential === 'covered';
+  return {fillColor: colour, fillOpacity: uncoloured ? 0 : cover ? opacity * .65 : opacity,
+    weight: uncoloured ? 0 : cover ? 1 : feature.properties.potential ? 0 : .4,
+    dashArray: cover ? '4 4' : null,
     color: colour, opacity: uncoloured ? 0 : .55};
 }
 function syncVisibility() {
@@ -61,12 +65,13 @@ function syncVisibility() {
 function renderLegend() {
   const legend = $('jordravLegend');
   legend.replaceChildren();
-  const categories = colourMode === 'access' ? [[SURFACE_HUNTABILITY,'huntUnknown']] : Object.keys(colours).map(key=>[key,key]);
+  const categories = colourMode === 'access' ? [[SURFACE_HUNTABILITY,'huntUnknown']] : Object.keys(colours).map(key=>[key,categoryKey(key)]);
   for (const [category, key] of [...categories,['deep','deepLegend']]) {
     const item=node('span');const swatch=node('i');
     const uncoloured=colourMode==='potential' && category==='possible';
     swatch.style.background=uncoloured ? 'transparent' : category==='deep' ? ACCESS_COLOURS.deep : colourMode==='access' ? ACCESS_COLOURS[category] : colours[category];
     if(uncoloured)swatch.classList.add('jordrav-uncoloured-swatch');
+    if(category==='covered' && colourMode==='potential')swatch.style.border='2px dashed #276963';
     if(category==='deep')swatch.classList.add('jordrav-deep-swatch');
     item.append(swatch,node('span',tr(key)));legend.append(item);
   }
@@ -179,7 +184,7 @@ function showDetail(feature) {
   const entry = data.catalog[feature.properties.i];
   const panel = $('jordravDetails');
   panel.replaceChildren(node('h2', tr('selected')));
-  const badge = node('div', tr(entry.potential), 'jordrav-badge');
+  const badge = node('div', tr(categoryKey(entry.potential)), 'jordrav-badge');
   badge.style.borderColor = colours[entry.potential];
   panel.append(badge, node('p', tr('hypothesis'), 'jordrav-original'));
   const accessBadge=node('div',tr('huntUnknown'),'jordrav-badge jordrav-access-badge');
@@ -200,7 +205,7 @@ function showDetail(feature) {
   panel.append(note, node('h3', tr('uncertainty')), node('p', tr('uncertaintyBody')),
     node('p', `${tr('original')}: jsym1=${entry.surface || '—'}; jsym2=${entry.depth || '—'}; TSYM=${entry.symbol}; ${entry.landscape} (${entry.landscapeCode ?? '—'}). ID ${feature.properties.o}`, 'jordrav-original'), node('h3', tr('sources')));
   const list = node('ul');
-  const relevant = [entry.source, 'landscape', ...(entry.material.startsWith('marine') ? ['baltic'] : ['rubjerg', 'hartz'])];
+  const relevant = [entry.source, 'landscape', ...(entry.potential==='coastal' || ['marine','shore'].includes(entry.process) || entry.material.startsWith('marine') ? ['baltic'] : ['rubjerg', 'hartz'])];
   for (const id of relevant) {
     const source = data.rules.sources.find(item => item.id === id);
     const li = node('li'); li.append(sourceLink(source)); list.append(li);
@@ -303,7 +308,7 @@ async function start() {
   const sources=node('ul');
   for (const source of data.rules.sources) {const li=node('li');li.append(sourceLink(source));if(source.license)li.append(document.createTextNode(` · ${source.license.split(';')[0]}`));sources.append(li);}
   method.append(sources);
-  map.attributionControl.addAttribution('<a href="https://dataverse.geus.dk/">GEUS</a> · geological model 0.1');
+  map.attributionControl.addAttribution(`<a href="https://dataverse.geus.dk/">GEUS</a> · geological model ${data.manifest.modelVersion}`);
   map.on('moveend', () => {
     clearTimeout(timer);
     if (visible && map.getZoom() >= data.manifest.detailZoom) status('loadingDetail');

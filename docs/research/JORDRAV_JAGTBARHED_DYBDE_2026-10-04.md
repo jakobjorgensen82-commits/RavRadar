@@ -1,5 +1,12 @@
 # Jordrav: jagtbarhed, registreret dybde og blotlægning
 
+> Historisk kortstatus: denne rapport blev udført med model 0.1.
+> Nationale farver og klasseregler er siden revideret i
+> [model 0.2](JORDRAV_NATIONAL_MODEL_0_2.md). Rapportens kildeobservationer
+> bevares; udsagn om frosne regler, guide-only levering og åbne nationale
+> farveændringer er supersederet. Gamle regelbundne audits reproduceres
+> fra commit eee7b08e.
+
 **Dato:** 2026-10-04. **Status:** implementeret i lokal forskningsprototype. App 4.0.541 og det frosne polygon-/regelgrundlag 0.1.0-prototype består. Ingen offentlig release eller produktionsverifikation.
 
 Ejeren har præciseret målet: Rav skal kunne findes ved overfladen, enten allerede blotlagt eller bragt frem ved eksempelvis pløjning. Det første ønske om at udelade dybe lag blev derefter udtrykkeligt erstattet: De må vises, hvis dybden og manglende umiddelbar jagtbarhed fremgår meget tydeligt. Den seneste beslutning gælder.

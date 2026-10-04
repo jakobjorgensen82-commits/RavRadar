@@ -1,3 +1,54 @@
+# AKTUELLE JORDRAVPUNKTER – national model 0.2 – 2026-10-05
+
+- **JORDRAV-001, national model lokalt implementeret / empiri åben:** Alle
+  kortlagte materiale-/landskabskombinationer behandles efter samme regler.
+  Farvede muligheder kræver ikke kendte fund. Marine, fine bassin-,
+  omlejrings- og dæklagsspor er med. Lokal ravtilførsel, mængde og bevaring
+  er uverificerede; det er en empirisk begrænsning, ikke manglende national
+  modelbehandling. Ingen numerisk ravrangliste påstås.
+- **JORDRAV-002, geometri bevaret / kortgrænser usikre:** Alle 0.1-detail-
+  strukturer og kilde-ID bevares i 0.2. Nyt overblik har særskilt målt
+  displaynormalisering/generalisation og per-celle eksportkontrol.
+  Eksakt national WGS84-coverage påstås ikke. Geologiske kildegrænsers
+  usikkerhed og lokale historiske kystforløb består.
+- **JORDRAV-003, faktisk kodebehandling komplet / originalafklaring åben:**
+  Originalt nationalt inventar af 179 øvre/170 dybere nyere kombinationer,
+  81 nyere TSYM, 37 ældre symboler og 33 navngivne landskabstyper består.
+  Alle har behandling. Seks originale anomalier bevares uafklarede.
+  Offentlig GEUS/VD-legende afstemmer alle 81 TSYM plus ZI (ikke
+  selvstændigt forekommende issøsilt) og HAV. Uden HAV er der 82 typer.
+  Versionsbundet originalfil har fortsat forrang; ingen ekstra flade opfindes.
+- **JORDRAV-004, lokale baggrunde implementeret:** OSM og World Imagery,
+  CSP, attribution og bevaret valg ved skift bevares. Officiel GeoDanmark-
+  adgang er ikke oprettet. Regionsguides giver kun kameraflytning.
+- **JORDRAV-005, lokal datakontrakt implementeret / fysisk mobil åben:**
+  Ny 0.2-SHA-binding, lazy-load og cache-/visningsgrænser kontrolleres.
+  Nationale detaildata hentes ikke af kystvisningen. Fysisk mobilhardware
+  er ikke verificeret; browseremulering er afgrænset lokal evidens.
+- **JORDRAV-006, fælles publicering åben:** Aktiv webhåndbog/SQL og vejr-
+  produktion er urørt. Forberedt webtillæg og Markdown følger model 0.2.
+  Nyere main, exact-head CI og koordineret release kræves før publicering.
+- **JORDRAV-007, særvisning løst / faktisk adgang åben:** Turkise dæklag
+  viser ukendt lagadgang; de kaldes ikke dokumenteret dybe. Ens symboler
+  bliver ikke til pløjeadgang. Jagtbarhed er uafklaret på materialeflader.
+  Lilla Jupiterpunkter bevarer registrerede dybder og ikke umiddelbart
+  jagtbart. Aktuel blotlægning og lokale dybdeprofiler er uverificerede.
+- **JORDRAV-008, JB-/topjord åben:** Regionale mark/JB-figurer er kontekst,
+  ikke prøver af dagens pløjelag. Årsafgrøde fastlægger ikke bar jord eller
+  lagadgang. Disse lag indgår ikke som automatisk ravbonus.
+- **JORDRAV-009, national farve-/modelmangel løst lokalt i 0.2:** Guide-only
+  leverance og frosne 0.1-regler er supersederet af ejerens nationale ordre.
+  Alle 192 udsnit/505.834 features genklassificeres; fem mulighedsklasser
+  er synlige og med i fokus. Ingen særregel for Asaa eller de øvrige cases.
+  Moræneler i tørlagt marint forland bliver ikke blå af navnet alene;
+  dæklag ophøjes ikke til den underliggende sands orange klasse.
+
+Aktuel evidens og slutkontrol: `docs/research/JORDRAV_NATIONAL_MODEL_0_2.md`.
+Dette er lokal forskningsleverance, ikke CI-/produktionsverifikation.
+
+**Nedenstående tidligere issues/checkpoints er historik. Deres daværende
+frosne model og åbne nationale farvebehandling er supersederet ovenfor.**
+
 # ÅBNE JORDRAVPUNKTER – 2026-10-04
 
 - **JORDRAV-001, delvist løst:** Første gennemgåelige procesregler og faktiske

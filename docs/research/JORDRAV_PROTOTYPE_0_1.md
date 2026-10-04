@@ -1,5 +1,12 @@
 # Jordrav – model og kortprototype 0.1
 
+> Historisk kortstatus: denne rapport blev udført med model 0.1.
+> Nationale farver og klasseregler er siden revideret i
+> [model 0.2](JORDRAV_NATIONAL_MODEL_0_2.md). Rapportens kildeobservationer
+> bevares; udsagn om frosne regler, guide-only levering og åbne nationale
+> farveændringer er supersederet. Gamle regelbundne audits reproduceres
+> fra commit eee7b08e.
+
 **Status:** lokal forskningsprototype, endnu ikke en offentlig RavRadar-release.
 **Dato:** 2026-10-04. **Evidensklasse for ravslutningerne:** eksplicitte geologiske hypoteser.
 

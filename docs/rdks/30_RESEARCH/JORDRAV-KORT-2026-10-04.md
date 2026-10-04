@@ -1,3 +1,36 @@
+# Aktuel national Jordravmodel 0.2 – 2026-10-05
+
+## Bindende seneste mandat: hele Danmark og synlige udpegninger
+
+Ejeren har udtrykkeligt afvist en rettelse begrænset til enkelte
+sammenligningsområder og vejledninger uden farve. Den nationale kvalitative
+analyse skal gennemføres for alle faktisk kortlagte materialer og
+landskaber og omsættes til farvede polygoner. Dette erstatter den tidligere
+frysning af model 0.1 som leverance. Ny model 0.2 adskiller transport,
+marine modtagere, bassiner, omlejring og dæklag. Geologisk mulighed er
+ikke verificeret ravmængde eller pløjeadgang. Alle faktiske kodeværdier
+behandles, også eksplicit uafklarede originalanomalier; ingen lokal bonus.
+Rapport: `docs/research/JORDRAV_NATIONAL_MODEL_0_2.md`.
+
+Den landsdækkende model bruger alle 192 detailudsnit med samme geometri
+og oprindelse som 0.1. Alle 4.652 forklaringer genberegnes. Nye klasser er
+marine aflejringer (blå), sø-/bassinmodtagere (rosa), omlejringsmiljøer
+(okker) og dæklag i muligt modtagermiljø (turkis/stiplet). Orange
+transport/sortering bevares. Fokus viser alle fem mulighedsklasser.
+Underliggende sand ophøjer ikke en dækket overflade til orange. Generel
+geologi er vurderet efter samme nationale kriterier, men uden særlig
+procesudpegning og uden negativ ravviden. Tilgængelighed er separat.
+Originalinventaret matcher 238.829 cacheattributter. Seks originale
+ukendte værdier bevares. Ældre data, kildeprioritet, konflikt- og
+land-/vandgrænser bevares; appversion og kyst-/vejrproduktion er urørt.
+
+Evidens: national-model-0.2-source-inventory.json,
+national-model-0.2-build-audit.json og
+national-model-0.2-independent-verification.json i docs/research/jordrav.
+0.1-audits reproduceres fra commit eee7b08e; deres modelhash omskrives ikke.
+
+**Tidligere 0.1-analyser nedenfor er dateret revisionsspor.**
+
 # Jordravkort – forskningscheckpoint 2026-10-04
 
 ## Aktuelt mandat og samtaledelta

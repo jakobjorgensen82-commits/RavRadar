@@ -1,4 +1,18 @@
-# AKTUELT JORDRAVKRAV – 2026-10-04
+# AKTUELT JORDRAVKRAV – 2026-10-05
+
+## Bindende seneste mandat: hele Danmark og synlige udpegninger
+
+Ejeren har udtrykkeligt afvist en rettelse begrænset til enkelte
+sammenligningsområder og vejledninger uden farve. Den nationale kvalitative
+analyse skal gennemføres for alle faktisk kortlagte materialer og
+landskaber og omsættes til farvede polygoner. Dette erstatter den tidligere
+frysning af model 0.1 som leverance. Ny model 0.2 adskiller transport,
+marine modtagere, bassiner, omlejring og dæklag. Geologisk mulighed er
+ikke verificeret ravmængde eller pløjeadgang. Alle faktiske kodeværdier
+behandles, også eksplicit uafklarede originalanomalier; ingen lokal bonus.
+Rapport: `docs/research/JORDRAV_NATIONAL_MODEL_0_2.md`.
+
+**Historiske præciseringer nedenfor:** deres daværende åbne nationale model er supersederet af mandatet ovenfor.
 
 **Seneste ejerpræcisering – eksemplet skal generaliseres:** Asaa–Voerså
 er oplyst som kystnært markrav mellem forbindelsesvej og strand. Det skal

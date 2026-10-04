@@ -1,5 +1,12 @@
 # Jordrav: tidligere kystmarker og sammenlignelige områder i Danmark
 
+> Historisk kortstatus: denne rapport blev udført med model 0.1.
+> Nationale farver og klasseregler er siden revideret i
+> [model 0.2](JORDRAV_NATIONAL_MODEL_0_2.md). Rapportens kildeobservationer
+> bevares; udsagn om frosne regler, guide-only levering og åbne nationale
+> farveændringer er supersederet. Gamle regelbundne audits reproduceres
+> fra commit eee7b08e.
+
 **Status:** afsluttet, afgrænset forskningsanalyse på den lokale 0.1.0-prototype.
 **Dato:** 2026-10-04. Appversion 4.0.541. Ingen ny modelbygning eller offentlig release.
 

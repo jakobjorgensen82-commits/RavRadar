@@ -1,3 +1,22 @@
+## Ikke udgivet – Jordrav national geologisk model 0.2 (2026-10-05)
+
+- Landsdækkende genberegning erstatter guide-only leverance: alle nationale
+  materiale-/landskabskombinationer får samme begrundede procesbehandling.
+  Blå marine aflejringer, rosa bassiner, okker omlejring og turkise/stiplede
+  dæklag supplerer orange transport/sortering. Generel geologi er ufarvet.
+- Alle 192 udsnit og 505.834 detailfeatures bevarer original geometri,
+  feltværdier og kilde-ID; nyt katalog og overblik ligger i prototype-0.2.0.
+  Historisk 0.1 og dets audits bevares. Ingen sted-/fund-/arealbonus.
+- Fokus viser alle fem mulighedsklasser. DA/DE/EN forklarer de nye farver
+  og landsdækkende behandling. Almindeligt kort/luftfoto og dybe lilla
+  punkter bevares. Ens symbolsæt dokumenterer ikke adgang ved pløjning.
+- Originalinventar, fuld artifact-readback og målrettet model/UI-kontrol;
+  RDKS, Markdown-håndbog og forberedt webtillæg følger den nye model.
+  Appversion 4.0.541, aktiv webhåndbog og kyst-/vejrproduktion er uændrede.
+  Rapport: docs/research/JORDRAV_NATIONAL_MODEL_0_2.md.
+
+**Tidligere 0.1-noter nedenfor er historik.**
+
 ## Ikke udgivet – Jordrav forskningsprototype 0.1 (2026-10-04)
 
 - Overflødig generel grøn flade fjernet: generel geologi er ufarvet og

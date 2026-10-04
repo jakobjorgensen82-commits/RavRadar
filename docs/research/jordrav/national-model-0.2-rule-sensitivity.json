@@ -1,0 +1,86 @@
+{
+  "status": "PASS",
+  "modelVersion": "0.2.0-prototype",
+  "scriptSha256": "3fa9893584f5ed222a06e53cd397e5c99930ed80578910edf926ad2c9ff7286b",
+  "modelCodeSha256": "c5fe62e217a8fff2832d2511027ef223de416e146b9818f76829eaffb3df0a93",
+  "rulesSha256": "1761231cb72870f922e6fabbc88a3167ef198f8862c73be816e17b407aa5ad7e",
+  "historicalCatalogueSha256": "7994e79c76d342d2806d9eb224666f16ff4a665c12b8e78f6782c622302500e2",
+  "catalogueEntries": 4652,
+  "scope": "Input-dependency of all catalogue combinations; counts are explanations, not polygons, area or amber probability",
+  "classes": {
+    "unresolved": 757,
+    "coastal": 722,
+    "possible": 1510,
+    "reworked": 335,
+    "basin": 442,
+    "covered": 513,
+    "enhanced": 287,
+    "limited": 86
+  },
+  "invariantCounts": {
+    "unknownUpperNotSubstituted": 499,
+    "marineUpperMaterialRequired": 722,
+    "coverNotConvertedToAccessibleReceivingMaterial": 1179,
+    "marineLandformDoesNotConvertTill": 39
+  },
+  "withoutLandscapeChanges": [
+    {
+      "from": "basin",
+      "to": "possible",
+      "entries": 50
+    },
+    {
+      "from": "covered",
+      "to": "possible",
+      "entries": 513
+    },
+    {
+      "from": "enhanced",
+      "to": "basin",
+      "entries": 56
+    },
+    {
+      "from": "enhanced",
+      "to": "coastal",
+      "entries": 33
+    },
+    {
+      "from": "enhanced",
+      "to": "possible",
+      "entries": 198
+    },
+    {
+      "from": "reworked",
+      "to": "possible",
+      "entries": 335
+    },
+    {
+      "from": "unresolved",
+      "to": "basin",
+      "entries": 20
+    },
+    {
+      "from": "unresolved",
+      "to": "coastal",
+      "entries": 76
+    },
+    {
+      "from": "unresolved",
+      "to": "limited",
+      "entries": 7
+    },
+    {
+      "from": "unresolved",
+      "to": "possible",
+      "entries": 155
+    }
+  ],
+  "withoutLowerSymbolChanges": [
+    {
+      "from": "covered",
+      "to": "possible",
+      "entries": 298
+    }
+  ],
+  "interpretation": "Removing landscape can remove process support or a known exclusion context (water/artificial/tidal). These are counterfactual dependency checks, not replacement mapping. Missing lower symbol affects only conditional cover pathways. No field-access threshold is inferred."
+}

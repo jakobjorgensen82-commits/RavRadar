@@ -1,5 +1,12 @@
 # Jordrav: fire regionale kæder og en mere målrettet kortvisning
 
+> Historisk kortstatus: denne rapport blev udført med model 0.1.
+> Nationale farver og klasseregler er siden revideret i
+> [model 0.2](JORDRAV_NATIONAL_MODEL_0_2.md). Rapportens kildeobservationer
+> bevares; udsagn om frosne regler, guide-only levering og åbne nationale
+> farveændringer er supersederet. Gamle regelbundne audits reproduceres
+> fra commit eee7b08e.
+
 **Dato:** 2026-10-04. **Status:** lokal udvidelse af forskningsprototypen; ingen offentlig release. Kode: `js/jordrav/regional-hypotheses.js` og `js/jordrav/map.js`. Model og datasæt er fortsat 0.1.0-prototype.
 
 **Senere udvidelse samme dag:** [Transport, pløjelag og synlighed](JORDRAV_TRANSPORT_PLOEJELAG_2026-10-04.md) tilføjer Vendsyssels tidligere kyster som femte guidecase JH-009. De fire kæder nedenfor består. Betegnelsen overflademateriale skal læses som øvre kortlagte geologiske aflejring; en forbindelse til pløjelaget er ikke dokumenteret af kortet alene.

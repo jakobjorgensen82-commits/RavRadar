@@ -1,3 +1,16 @@
+# AKTUEL JORDRAVRETNING – national model 0.2 – 2026-10-05
+
+Hele det tilgængelige nationale jordarts-/landskabsgrundlag behandles og
+farves efter samme kvalitative procesregler. Begrænsningen til enkelte
+guidecases er erstattet. Empirisk ravtilførsel, mængde, lokale lagkontakter
+og nutidig markadgang er særskilte åbne målinger, ikke uafsluttet national
+kode-/modelbehandling. Ingen fundprocenter eller stedbonus.
+Fælles webpublicering kræver nyere main, exact-head CI og koordineret
+håndbogsintegration. Dette arbejde er lokal forskningsleverance.
+Rapport: `docs/research/JORDRAV_NATIONAL_MODEL_0_2.md`.
+
+**Tidligere roadmapstatus nedenfor er historik.**
+
 # AKTUEL JORDRAVRETNING – 2026-10-04
 
 Lokal kortprototype med begge baggrunde og fem regionale cases foreligger.

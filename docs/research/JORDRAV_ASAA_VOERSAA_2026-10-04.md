@@ -1,5 +1,12 @@
 # Asaa–Voerså: jordrav på kystmarker og en konkret mangel i prioriteringen
 
+> Historisk kortstatus: denne rapport blev udført med model 0.1.
+> Nationale farver og klasseregler er siden revideret i
+> [model 0.2](JORDRAV_NATIONAL_MODEL_0_2.md). Rapportens kildeobservationer
+> bevares; udsagn om frosne regler, guide-only levering og åbne nationale
+> farveændringer er supersederet. Gamle regelbundne audits reproduceres
+> fra commit eee7b08e.
+
 **Dato:** 4. oktober 2026. **Status:** kildebaseret regional analyse og lokal UI-rettelse. Model/data er fortsat den frosne 0.1.0-prototype; appversion 4.0.541. Ingen offentlig release.
 
 **Konklusion:** Ejerens præcisering peger på et relevant kystmarkmiljø, som den eksisterende model ikke udpeger særskilt. I et eksplicit udsnit mellem forbindelsesvej og kyst er 86,91 % kortlagt som HS/HS, og 95,32 % som Marin flade. Der findes registrerede dyrkningsmarker på den flade. Hele den fælles native GEUS-dækning får alligevel den generelle klasse `possible`. Dette er en konkret begrænsning i reglernes regionale prioritering. Det er ingen negativ ravvurdering af markerne.

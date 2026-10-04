@@ -1,5 +1,12 @@
 # Jordrav: konkrete boringer og forbindelsen til marken
 
+> Historisk kortstatus: denne rapport blev udført med model 0.1.
+> Nationale farver og klasseregler er siden revideret i
+> [model 0.2](JORDRAV_NATIONAL_MODEL_0_2.md). Rapportens kildeobservationer
+> bevares; udsagn om frosne regler, guide-only levering og åbne nationale
+> farveændringer er supersederet. Gamle regelbundne audits reproduceres
+> fra commit eee7b08e.
+
 **Dato:** 4. oktober 2026. **Status:** lokal faglig efterprøvning før ejerens kortgennemgang. App 4.0.541 og model/datasæt 0.1.0-prototype er uændrede.
 
 Den nye gennemgang undersøger, hvordan boreoplysninger kan gøre ravmuligheder mere præcise. Den sammenholder to offentlige profiler med prototypens faktiske kortflader. Resultatet er en bedre skelnen mellem mulige lag, deres dybde og forbindelsen til pløjelaget. Et geologisk ræsonnement kan udvikles uden kendte fund; nutidig marktilgængelighed kræver sin egen forklaring.

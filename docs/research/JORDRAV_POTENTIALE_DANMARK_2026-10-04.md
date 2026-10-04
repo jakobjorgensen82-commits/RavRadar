@@ -1,5 +1,12 @@
 # Jordrav i Danmark: geologisk potentiale og grundlag for et landsdækkende kort
 
+> Historisk kortstatus: denne rapport blev udført med model 0.1.
+> Nationale farver og klasseregler er siden revideret i
+> [model 0.2](JORDRAV_NATIONAL_MODEL_0_2.md). Rapportens kildeobservationer
+> bevares; udsagn om frosne regler, guide-only levering og åbne nationale
+> farveændringer er supersederet. Gamle regelbundne audits reproduceres
+> fra commit eee7b08e.
+
 **Dato:** 4. oktober 2026. **Status:** Faglig analyse med efterfølgende lokal [kortprototype 0.1](JORDRAV_PROTOTYPE_0_1.md); ikke publiceret. Analysebaseline er RavRadar 4.0.541, commit `bbc3c79fe555dffbff4a88af8cdf54573953efdb`. Prototypens faktiske regler og kontroller beskrives særskilt; denne rapports oprindelige anbefalinger er ikke alle implementeret.
 
 **Fortsat regional analyse:** [Fire regionale sedimentkæder](JORDRAV_REGIONALE_KAEDER_2026-10-04.md) uddyber Rubjerg–Lønstrup, Gribskov–Allerød, Stenstrup–Kirkebysand og Varde bakkeø. Kortet har nu en regional guide og fokus på forhøjet procespotentiale; regional tekst giver ikke en automatisk klassebonus.

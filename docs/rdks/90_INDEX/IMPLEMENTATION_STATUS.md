@@ -1,3 +1,38 @@
+# AKTUELT JORDRAVCHECKPOINT – national model 0.2 – 2026-10-05
+
+**Afsluttet lokal kontrol 2026-10-05:** Alle 192 udsnit/505.834 features
+og 4.652 forklaringer er beregnet og uafhængigt læst tilbage. Geometri,
+kilde-ID og originale attributter er bevaret. Fire nye klasser farver
+147.722 tidligere generelle flader; fokus viser alle fem muligheder.
+17 modelcases, fem datakontroller, 20 faktiske Chrome-kontroller og
+sourcegate/109 browserfiler PASS. Visuel QA: nationalt kort, Asaa-blå,
+mobil og indlæst luftfoto. RDKS/sikkerhed, 59 Pages-moduler,
+versionsimports og 419 håndbogskapitler PASS. Overblik 11.529.471 byte
+gzip; detaljer 111.648.304 byte. Manifest 5d0a925a04f7… er bundet i UI.
+Kvalitativ national kortanalyse og lokal rettelse er gennemført;
+empirisk ravmængde og markadgang er uverificerede. Ingen CI/publicering.
+
+Ejeren kræver færdig landsdækkende analyse og synlige farveflader; de 11
+navngivne guides alene opfylder ikke mandatet. Dette supersederer den
+foregående frysning af 0.1-reglerne som aktuel leverance. Model 0.2 bruger
+alle nationale materiale-/landskabskombinationer med særskilte marine,
+bassin-, omlejrings- og dæklagsklasser. Generel geologi forbliver ufarvet
+og klikbar. Ingen fund-, sted-, areal- eller afstandsbonus. Nyere kilder
+har samme forrang; det ældre supplement bevares.
+
+238.829 bevarede kildeposter er afstemt mod alle originale SHP/DBF-identiteter
+og attributter. Seks uforklarede øvre værdier bevares uafklarede. Model/data
+0.2 leveres separat fra det bytebevarede 0.1-revisionsspor. Detailgeometri,
+kilde-ID og grænser bevares. Ens øvre/dybere symboler bliver ikke til
+pløjeadgang; jagtbarhed er uafklaret, dæklag særvises, dokumenterede dybe
+punkter bevarer lilla og ikke umiddelbart jagtbart.
+
+App 4.0.541 er uændret. Lokal forskningsleverance; ingen CI, push, fælles
+release, SQL, vejrbygning eller produktionsverifikation i dette arbejde.
+Aktiv webhåndbog er urørt; Markdown og forberedt webtillæg følger 0.2.
+Metode og slutkontrol: `docs/research/JORDRAV_NATIONAL_MODEL_0_2.md`.
+Nedenstående tidligere checkpoints er historik og ikke aktuel modelstatus.
+
 # AKTUEL JORDRAVSTATUS – 2026-10-04
 
 **Nyeste implementering og analyse:** Generel grøn er fjernet fra
