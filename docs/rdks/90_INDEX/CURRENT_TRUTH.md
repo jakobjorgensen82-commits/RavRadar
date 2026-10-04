@@ -1,4 +1,19 @@
-# NYESTE – 2026-10-04 – læseworkflow stoppet før autentificering
+# NYESTE – 2026-10-04 – faktisk naboread, lokal national tooling
+
+Currentmainbde77345 efter PR511 merge04:48:33 DK; egen exactCI37164129369
+og ROOTproof bestod. Correctedfixedread37172221379 SUCCESS04:50:12 DK:
+authentication/inspect/safeupload/owncleanup faktisk PASS, sikkert rapport
+alene hentet. Originaldatasetrr-20261003175138-210/ref3Oct16Z.
+Tre naboers gemte state replay matcher. Lyngby48h-memory95.821344 er
+reproduceret, men netto land0/UNMATCHED95.821344; ikke kausal join eller mask.
+National210/673-udvidelse er lokal/måltestet i SAME reader, ikke kørt.
+To eksisterende måltestforløb PASS/0skip; exactCI/merge/actualread afventer.
+Ordinary37164593278 terminalFAILURE04:34:33 DK med syv Fur-vandstandstab,
+priorprogressRESTORED32 og actualnycache; ingen nyt deploy/offentlig541 bevaret.
+Aktuel protectedSOURCE-backfill/directPART-caller er verificeret kode,
+ikke målte tabsrækker/årsag. Alle originale gates/privatgrænser består.
+
+# Historisk – 2026-10-04 – læseworkflow stoppet før autentificering
 
 PR510 er merged til maina459b846 efter exactCI37154054174. Fastread37163385963
 stoppede før autentificering på tomt nøgleinput; inspektion SKIPPED, ikke PASS.

@@ -2,31 +2,40 @@
 
 **Håndbogsversion:** 4.0.541
 
-## 89.155 Skrivefri undersøgelse af Lyngby og nabozonerne
+## 89.155 Skrivefri undersøgelse af samme originalpakke
 
-Offentlig 4.0.541 er leveret. Ejeren har særskilt godkendt en læsefunktion til
-én præcis gemt krypteret pakke, efter først at have godkendt hele pakkens læsning.
-Diagnoseværktøjet ændrer ikke produktversion, model, punkter eller data.
-Den første kildekontrol og merge bestod. Den faktiske læsning stoppede før
-autentificering, fordi workflowet brugte et forkert nøglenavn og fik tomt input.
-Kun bindingen rettes til producentens eksisterende nøgle; ingen nye nøgler eller
-rettigheder. Den genbrugte workflowtest viste først fejlen og består nu med
-fire prøver uden skip. Rettelsens egen kildekontrol, merge og faktisk læsning
-afventer; pakken er endnu ikke autentificeret eller undersøgt.
+Offentlig version er fortsat 4.0.541. Den første læsning stoppede på et
+forkert nøglenavn før autentificering. Bindingen til producentens eksisterende
+nøgle blev rettet og leveret som PR511. Den ene korrigerede læsning afsluttede
+kl.04:50 dansk tid den4. oktober med faktisk autentificering, kontrol og
+oprydning. Ingen nye nøgler, rettigheder eller produktionsdata blev ændret.
 
-Undersøgelsen følger Lyngby/Lodbjerg, Agger og Stenbjerg. Samme valgte DMI-punkt
-leverer værdi og pil. Et Limfjordspunkt ses på land ved Lodbjerg, men de faktiske
-historiske kilder skal stadig kontrolleres. En senere svag udgående strøm kan
-godt stå sammen med høj transportscore på grund af den eksisterende48h-hukommelse.
+Lyngby/Lodbjerg og naboernes gemte strømtilstand kunne reproduceres med den
+uændrede beregning. Lyngbys høje hukommelsesværdi på95.821344 er således
+faktisk gemt og reproduceret over48timer:49tidspunkter inklusive endepunkterne,
+ikke49timer.17tidspunkter matcher det kendte Limfjordspunkt på land, men
+disse bidrager samlet med0 til opbygningen. Nettobidraget findes i30tidspunkter
+uden verificeret match i pakkens gemte DMI-rækker. Manglende match betyder
+ikke automatisk ugyldig historik. Landpunktet er derfor ikke bevist som årsag.
+Original havcellemask og en lagret årsagskobling er ikke målt.
 
-Originalpakke, digest, kilde, autentificering, model og filindhold er fastlåst.
-Kun sikre optællinger og kontrol af gemt beregning forlader læsefunktionen;
-ingen rå strømvektorer, koordinater, private stier eller fejlpayload. En matchende
-gemt tid/styrke er ikke i sig selv bevis for en lagret årsagskobling eller korrekt
-havcelle. Ukendt maskestatus forbliver ukendt. Ingen nyt vejr, cachegemning,
-produktionswrite eller deploy. Ejeren har godkendt alle-zoneplanen; den er ikke udført.
-Ejeren har stående tilladt relevante private joblogs. Secrets og private payloads
-forbliver fortrolige; tekniske kontorettigheder skal ikke ændres for loglæsning.
+Ejeren har særskilt godkendt samme skrivefri kontrol af alle210zoner og673
+kystdele. Den lokale udvidelse bruger et eksplicit valg og en fast bekræftelse,
+kontrollerer identiteterne og genbruger den samme oprindelige pakke,
+autentificering, filkontrol og beregning. Hver tilstedeværende strømtilstand
+skal kunne reproduceres; en forkert tilstand stopper kontrollen. Fraværende
+tilstande tælles særskilt og kaldes aldrig en bestået reproduktion.
+Rapporten indeholder kun faste optællinger pr.zone under den uændrede
+grænse på32KiB. Ét kendt landpunkt er ikke en global land-/vandmask.
+To eksisterende måltestforløb består uden skip; egen kildekontrol, merge
+og faktisk national læsning afventer. Det er ikke en ny produktrelease.
+
+Ingen rå strømvektorer, koordinater, private stier eller fejlpayload forlader
+funktionen. En matchende tid/styrke er ikke i sig selv bevis for årsag eller
+korrekt havcelle. Ingen nyt vejr, cachegemning, scoregeneration, databasewrite
+eller deploy. Ejeren har stående tilladt relevante private joblogs; secrets
+og private payloads forbliver fortrolige uden tekniske kontorettighedsændringer.
+Fur-vandstandstabet og den samlede vejrhentningsrevision er fortsat åbne.
 Se DEC-0289; ældre lokale541-kandidatstatus nedenfor er historisk.
 
 ## 89.154 4.0.541 – Copernicus skal være lukket før oprydning (lokal kandidat)

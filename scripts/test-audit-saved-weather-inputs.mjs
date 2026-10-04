@@ -19,7 +19,7 @@ import { dmiExpectedIdentityForPart } from './lib/ravscore-production-adapters.m
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { buildCurrentSupplyMemory } from '../js/core/ravscore-current-supply-memory.js';
 import { spawnSync } from 'node:child_process';
-import { summarizeSealedCurrentPart, validateSealedCurrentSourceTarget,
+import { summarizeSealedCurrentPart, summarizeSealedCurrentNationalParts, validateSealedCurrentSourceTarget,
   SEALED_CURRENT_SOURCE_TARGET as sealedTarget } from './audit-sealed-current-source.mjs';
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
@@ -641,6 +641,40 @@ test('sealed current diagnosis reuses actual verifier/replay and publishes only 
   assert.equal(JSON.stringify({ part, bulk }), before, 'inspection is byte-neutral in memory');
   safeReport(measured, 'secret-error-canary');
   assert.equal(JSON.stringify(measured).includes('8.2713201'), false);
+  const zoneIds = [part.zoneId, ...Array.from({ length: 209 }, (_, i) => `SYNTHETIC-Z${i}`)];
+  const nationalParts = Object.fromEntries(Array.from({ length: 673 }, (_, i) => [
+    i === 0 ? part.partId : `synthetic-part-${i}`,
+    { ...structuredClone(part), zoneId: zoneIds[i % 210] },
+  ]));
+  const nationalBefore = JSON.stringify(nationalParts);
+  const national = summarizeSealedCurrentNationalParts(nationalParts, bulk, zoneIds);
+  assert.equal(national.partCount, 673);
+  assert.equal(national.zoneCount, 210);
+  assert.equal(national.replayedPartCount, 673);
+  assert.equal(national.readyPartCount, 673);
+  assert.equal(national.allStatesReplayed, true);
+  assert.equal(national.sourceCounts.LF_LAND_POINT, 49);
+  assert.equal(national.sourceCounts.UNMATCHED, 672 * 49, 'missing matching bulk is not fabricated source attribution');
+  assert.equal(national.byZone.length, 210);
+  assert.equal(national.byZone.reduce((sum, zone) => sum + zone.parts, 0), 673);
+  assert.match(national.pointClassification, /NOT_GLOBAL_LAND_MASK$/);
+  assert.ok(Buffer.byteLength(JSON.stringify({ parts: [measured, measured, measured], national })) < 32 * 1024);
+  safeReport(national, 'secret-error-canary');
+  assert.equal(JSON.stringify(national).includes('8.2713201'), false);
+  assert.equal(JSON.stringify(nationalParts), nationalBefore, 'all-part inspection leaves input unchanged');
+  const absentState = structuredClone(nationalParts);
+  delete absentState['synthetic-part-672'].ravScoreModel.currentState;
+  const absent = summarizeSealedCurrentNationalParts(absentState, bulk, zoneIds);
+  assert.equal(absent.stateAbsentPartCount, 1);
+  assert.equal(absent.replayedPartCount, 672);
+  assert.equal(absent.allStatesReplayed, false, 'absent state must not be reported as verified replay');
+  assert.throws(() => summarizeSealedCurrentNationalParts(nationalParts, bulk, zoneIds.slice(1)), /NATIONAL_IDENTITY/);
+  const wrongIdentity = structuredClone(nationalParts);
+  wrongIdentity['synthetic-part-1'].zoneId = 'OUTSIDE-FIXED-ZONES';
+  assert.throws(() => summarizeSealedCurrentNationalParts(wrongIdentity, bulk, zoneIds), /PART_IDENTITY/);
+  const wrongState = structuredClone(nationalParts);
+  wrongState['synthetic-part-1'].ravScoreModel.currentState.supplyPotential--;
+  assert.throws(() => summarizeSealedCurrentNationalParts(wrongState, bulk, zoneIds), /STATE_REPLAY_MISMATCH/);
   const mismatched = structuredClone(bulk);
   Object.values(mismatched.zones)[0].hourly[native[0].time]['current-u'] = 0;
   const mixed = summarizeSealedCurrentPart(part, mismatched);

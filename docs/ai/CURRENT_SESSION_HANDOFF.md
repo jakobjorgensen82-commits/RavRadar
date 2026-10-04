@@ -1,4 +1,20 @@
-# NYESTE – 2026-10-04 – minimal nøglebinding på faktisk main
+# NYESTE – 2026-10-04 – national readonly-kandidat på faktisk bde-main
+
+PR511 merged04:48:33 DK/bde77345 og correctedfixedread37172221379
+SUCCESS04:50:12 DK er afsluttet. Gentag ikke PR eller den gamle nabokontrol.
+Lyngby-memory faktisk reproduceret; netto95.821344 er UNMATCHED, landpunkt0.
+Ikke kausal join eller målt GRIB-mask. DEC-0289.
+Lokal codex/sealed-current-national-readonly udvider SAMME reader med
+NATIONAL_210_673 og separate fravær/replay-/zoneoptællinger under32KiB.
+To eksisterende måltestforløb PASS/0skip; CI/merge/actualnational afventer.
+Samme original11281483201 udløber4Oct20:34:41 DK; intet nyt input/relabel.
+Ordinary37164593278 terminalFAILURE04:34:33 DK: syv Fur-tab med faktisk
+restored32files/savedtrue/newcache; ingen deploy. Source-/callerreview
+viser eksisterende protectedSOURCE-backfill og directPART-før-SOURCE,
+ikke bevist rækkeårsag. Fortsæt sikkert, ingen spekulativ patch/gatelempelse.
+Ingen merge/dispatch under writer, ingen SQL-install/model/geometri/OFF.
+
+# Historisk – 2026-10-04 – minimal nøglebinding på faktisk main
 
 PR510 merged/maina459b846; exactread37163385963 fejlede før GCM/inspektion.
 Actual log: forkert secretnavn gav tomt input. Lokal branch

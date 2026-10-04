@@ -1,4 +1,28 @@
-# NYESTE – 2026-10-04 – faktisk logdiagnose og minimal Lyngby-nøglebinding
+# NYESTE – 2026-10-04 – authenticated naboer; lokal national læser
+
+Offentlig4.0.541 bevares. PR511 er merged04:48:33 DK til bde77345;
+exactfixedread37172221379 SUCCESS04:50:12 DK, actual authentication/inspect/
+safeupload/owncleanup PASS. Kun sikkert rapportartifact blev hentet.
+Lyngbys48h-memory95.821344 er reproduceret, men kendt landpunkt har netto0;
+netto-opbygning UNMATCHED er ikke bevis for ugyldigt input eller fysisk årsag.
+Original GRIB-mask og lagret kausal join er fortsat ikke målt.
+
+NATIONAL_210_673 er nu lokal tooling i samme godkendte reader: samme faste
+artifact11281483201/originalbbc/AAD/HKDF/GCM/forventning/verifier/reducer,
+faste zoneaggregater under uændret32KiB, ingen rå payload/vektorer/koordinater.
+Fraværende state tælles særskilt, aldrig replay-PASS; tilstedeværende forkert
+state stopper hårdt. To eksisterende måltestforløb består uden skip. Egen
+exact-head CI/merge og actual national læsning afventer; ingen produkt542.
+
+Ordinary37164593278 er terminal FAILURE04:34:33 DK: syv Fur-vandstandstab
+trods faktisk genindlæst priorprogress/fileCount32; øvrige familietab0.
+Ny cache faktisk saved/uploaded, ingen nyt deploy. Aktuel caller genbruger
+beskyttet public SOURCE-backfill og directPART før SOURCE-routing; konkrete
+tabsrækker er endnu ikke kausalt forklaret. Ingen spekulativ retentionpatch,
+gatelempelse eller budgetløft. DEC-0289, privatlogtilladelse/øvrige afvisninger
+og BIG519/OFF-grænser består. Ingen cb79 eller main/dispatch under aktivwriter.
+
+# Historisk – 2026-10-04 – faktisk logdiagnose og minimal Lyngby-nøglebinding
 
 Ejeren har stående tilladt relevante private joblogs; ældre logafvisninger
 nedenfor er historiske. Ingen secrets/private payloads i svar eller commits,

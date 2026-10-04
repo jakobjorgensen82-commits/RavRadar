@@ -4,9 +4,17 @@ on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: "Skriv READ-SEALED-LYNGBY-11281483201"
+        description: "Skriv READ-SEALED-LYNGBY-11281483201 eller READ-SEALED-NATIONAL-11281483201 for valgt kontrol"
         required: true
         type: string
+      inspection_scope:
+        description: "Skrivefri kontrol i SAMME godkendte originalpakke; ingen nye inputs"
+        required: true
+        default: LYNGBY_NEIGHBORS
+        type: choice
+        options:
+          - LYNGBY_NEIGHBORS
+          - NATIONAL_210_673
       expected_main_head:
         description: "Eksakt main med allerede grøn kildekontrol"
         required: true
@@ -40,13 +48,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           CONFIRMATION: ${{ inputs.confirmation }}
+          INSPECTION_SCOPE: ${{ inputs.inspection_scope }}
           EXPECTED_MAIN_HEAD: ${{ inputs.expected_main_head }}
         run: |
           set -euo pipefail
           test "$GITHUB_REPOSITORY" = jakobjorgensen82-commits/RavRadar
           test "$GITHUB_EVENT_NAME" = workflow_dispatch
           test "$GITHUB_REF" = refs/heads/main
-          test "$CONFIRMATION" = READ-SEALED-LYNGBY-11281483201
+          case "$INSPECTION_SCOPE" in
+            LYNGBY_NEIGHBORS) test "$CONFIRMATION" = READ-SEALED-LYNGBY-11281483201 ;;
+            NATIONAL_210_673) test "$CONFIRMATION" = READ-SEALED-NATIONAL-11281483201 ;;
+            *) exit 1 ;;
+          esac
           [[ "$EXPECTED_MAIN_HEAD" =~ ^[a-f0-9]{40}$ ]]
           test "$GITHUB_SHA" = "$EXPECTED_MAIN_HEAD"
           test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
@@ -99,12 +112,15 @@ jobs:
           --bundle "$RUNNER_TEMP/sealed-current-private/bundle"
           --report "$RUNNER_TEMP/sealed-current-source-report.json"
       - name: Inspect original saved currents offline; emit only fixed aggregates
+        env:
+          INSPECTION_SCOPE: ${{ inputs.inspection_scope }}
         run: >-
           node scripts/audit-sealed-current-source.mjs inspect
           --repository-root "$GITHUB_WORKSPACE"
           --private-root "$RUNNER_TEMP/sealed-current-private"
           --bundle "$RUNNER_TEMP/sealed-current-private/bundle"
           --report "$RUNNER_TEMP/sealed-current-source-report.json"
+          --scope "$INSPECTION_SCOPE"
       - name: Upload only the safe fixed report
         if: always()
         uses: actions/upload-artifact@v7

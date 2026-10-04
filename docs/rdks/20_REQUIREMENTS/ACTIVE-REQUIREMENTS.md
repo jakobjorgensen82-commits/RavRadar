@@ -1,4 +1,18 @@
-# NYESTE – 2026-10-04 – producentidentisk nøglebinding og ny logautoritet
+# NYESTE – 2026-10-04 – samme originalpakke, eksplicit national kontrol
+
+DEC-0289s godkendte nationalplan genbruger SAMME11281483201 og original
+forventning/AAD/HKDF/GCM/fullbundleverifier/kanonisk reducer. NATIONAL_210_673
+kræver egen fast bekræftelse; det gamle nabovalg forbliver standard.
+210 unikke zoner/673 dele og ikke-tomme zoner kontrolleres. Absentstate er
+særskilt IKKE replaybevis; tilstedeværende forkert state afvises hårdt.
+Faste aggregater under uændret32KiB uden rå vektorer/koordinater/payloads.
+Ét kendt Lyngby-punkt er ikke global landmask; UNMATCHED er ikke automatisk
+ugyldighed eller årsag. Ingen providers/scoregeneration/cache/write/deploy,
+nye ciphermål/nøgler/roller/SQL-/model-/geometriændringer eller gatelempelse.
+Privatlogtilladelse står; andre særskilte afvisninger består. Ingen merge
+eller auditdispatch under aktivwriter. National faktisk kontrol afventer.
+
+# Historisk – 2026-10-04 – producentidentisk nøglebinding og ny logautoritet
 
 DEC-0289: læserens masterinput skal komme fra samme eksisterende secret som
 den faktiske seal-producent; ingen nye nøgler eller tekniske rettigheder.

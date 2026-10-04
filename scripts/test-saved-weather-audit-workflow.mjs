@@ -26,6 +26,11 @@ test('sealed-source diagnosis is fixed-artifact, source-gated, read-only and sec
   assert.doesNotMatch(sealed, /(?:contents|actions|pull-requests|pages|id-token): write|secrets: inherit|actions\/cache|restore-keys:/);
   assert.doesNotMatch(sealed, /node scripts\/(?:update-weather|protected-private-production-runtime|private-production-runtime-workflow)\.mjs|npm run|gh workflow run|\/logs|--publish|--migrate/);
   assert.match(sealed, /path: \$\{\{ runner.temp \}\}\/sealed-current-source-report.json/);
+  assert.match(sealed, /default: LYNGBY_NEIGHBORS/);
+  assert.match(sealed, /LYNGBY_NEIGHBORS\) test "\$CONFIRMATION" = READ-SEALED-LYNGBY-11281483201/);
+  assert.match(sealed, /NATIONAL_210_673\) test "\$CONFIRMATION" = READ-SEALED-NATIONAL-11281483201/);
+  assert.match(sealed, /\*\) exit 1/);
+  assert.match(sealed, /--scope "\$INSPECTION_SCOPE"/);
   assert.match(sealed, /target.parent != root or target.is_symlink\(\)/);
 });
 

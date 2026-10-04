@@ -1,9 +1,51 @@
 # DEC-0289 – Skrivefri diagnose af én ejerudpeget original strømpakke
 
-**Status:** PR510 er merged; første læsning stoppede før autentificering. Minimal nøglebindingrettelse er lokalt testet; egen exact-head CI/merge og faktisk læsning afventer.
+**Status:** PR510/511 er merged; korrigeret nabokontrol er faktisk authenticated og replay-matched. Godkendt national udvidelse er lokalt måltestet; egen CI/merge og faktisk national læsning afventer.
 **Dato:** 2026-10-03
 
-## Verificeret opfølgning 2026-10-04
+## Faktisk læsning og godkendt national udvidelse 2026-10-04
+
+PR511/head288c566c bestod exactCI37164129369 og ROOTproof11288622599,
+og blev merged04:48:33 DK til mainbde77345. Correctedfixedread37172221379
+afsluttede SUCCESS04:50:12 DK. Originalkontrakter/ZIPdigest, authentication,
+inspect, safeupload og owncleanup faktisk PASS. Kun safeartifact11291319355
+blev hentet, ingen lokal cipher eller rå privatpayload. Offentlig541 uændret.
+Tre naboers state replay matcher: Lyngby-supply95.821344 reproduceret over
+48h/49slots inklusive endepunkter. Kildematch LF_LAND_POINT17/NSBS2/UNMATCHED30;
+netto land0/NSBS0/UNMATCHED95.821344. Landpunktet er ikke bevist årsag.
+UNMATCHED er ikke automatisk ugyldig historik; kausal join er ikke lagret,
+original GRIB-mask findes ikke i baselineinventory og er ikke målt.
+
+Den særskilt godkendte alle-zoneplan tilføjer kun NATIONAL_210_673-valg og
+READ-SEALED-NATIONAL-11281483201-bekræftelse i SAME reader/workflow. Gammelt
+LYNGBY_NEIGHBORS-valg er standard; completednaboread gentages ikke blindt.
+Samme originalinput/forventning/auth/fullbundleverifier/reducer og gates.
+210 unikke zoner/673 dele, tilhørsforhold og ikke-tomme zoner kontrolleres.
+Hver presentstate gennemgår uændret hard context/replaykontrol uden catch.
+Absentstate tælles særskilt, aldrig fabrikeret eller kaldt verified replay.
+Rapporten har faste total-/zoneoptællinger for replay/ready/fravær og
+sourcegrupper under uændret32KiB; kompakt national JSON, ingen rawfields.
+Ét kendt Lyngby-landpunkt er eksplicit IKKE global land-/vandmask. Source-
+match er fortsat tid/styrke, ikke persistedcausaljoin eller nativevalidity.
+
+To eksisterende testparents genbruges: verifier/replay/privacy-parent
+PASS1426.1394ms og workflow-parent PASS4.0211ms, 0FAIL/0SKIP. Syntetisk
+673/210-testdata er en lille testmatrix, ikke673 nye unikke prøver eller
+faktisk nationalproduktion. Identitet/fravær/presentmismatch/UNMATCHED,
+inputimmutabilitet/32KiB/privacy samt fixedscope/fixedconfirmation prøves.
+Original auth/ZIP/gates/secretseparation/cleanup/defaultread er uændrede.
+Egen exact-head kildekontrol, sikker merge og faktisk nationalread afventer.
+Pakkens udløb4Oct20:34:41 DK giver ikke autoritet til nyt input eller relabel.
+
+Ordinary37164593278 fejlede04:34:33 DK på syv Fur-waterLevel-tab8Oct07–13Z,
+øvrige familiers tab0/identitet0. Priorprogress faktisk RESTORED32files og
+ny komponentcache faktisk saved/uploaded; ingen deploy. Aktuel NORMALcaller
+har protectedpublicSOURCE-backfill og directPART-før-SOURCE-routing.
+Dette sourceplanbevis er ikke målte tabsrækker eller kausal retentionforklaring;
+DMI-budgetfejl kan heller ikke alene bevise tabenes årsag. Ingen spekulativ
+patch, capraise, gatelempelse eller andre nye privateciphermål.
+
+## Historisk nøglebinding-opfølgning 2026-10-04
 
 PR510/head36fe6ce7 bestod exact-head CI37154054174 og blev merged
 01:56:24 DK til maina459b846. Den ene godkendte læsning37163385963 stoppede
@@ -59,7 +101,7 @@ den uændrede 48-timers hukommelse. Prognosetimer er ikke målt fortidshistorik.
 
 ## Sikkert resultat og åbne grænser
 
-Kun de tre allerede offentlige PART-identiteter undersøges: Porskær Bakker,
+Standardvalget undersøger de tre allerede offentlige PART-identiteter: Porskær Bakker,
 Gjævhul Bakke og Hviderimmer. Den gemte kompakte state valideres med den
 kanoniske uændrede strøm-replay. Originale bulk-rækker kontrolleres med den
 eksisterende DMI-verifier, før tid/styrke sammenlignes. En sådan sammenligning
@@ -81,5 +123,6 @@ forbrugere er uændrede. Offentlig/main-version forbliver 4.0.541; dette er
 diagnoseværktøj, ikke en 4.0.542-produktlevering.
 
 Ejeren har godkendt kontrol af alle zoner for samme fejltype. Udvidelsen er
-endnu ikke implementeret eller udført.
-Lyngbyårsagen skal først afgrænses, og mistanke må ikke blive automatisk rettelse.
+nu implementeret lokalt som ovenfor, men endnu ikke udført på originalpakken.
+Lyngbyårsagen er afgrænset til reproduceret memory uden tilstrækkelig kausal
+kildejoin. Mistanke må ikke blive automatisk model-/pil-/geometrirettelse.

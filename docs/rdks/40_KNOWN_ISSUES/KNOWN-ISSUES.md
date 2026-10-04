@@ -1,4 +1,19 @@
-# NYESTE – 2026-10-04 – faktisk diagnosefejl og afvist vandstandstab
+# NYESTE – 2026-10-04 – årsager åbne efter faktisk nabokontrol
+
+Nøglebindingfejlen er rettet/merged PR511; correctedfixedread37172221379
+authentication/inspect/cleanup faktisk PASS04:50 DK. Lyngby-memory95.821344
+reproduceret, netto land0/UNMATCHED95.821344. Kausal kildejoin er ikke gemt,
+original GRIB-mask ikke målt; årsag stadig åben. National readonly tooling
+lokalt implementeret/måltestet; egen CI/merge/actual210/673 afventer.
+Ordinary37164593278 FAILURE04:34 DK: syv waterLevel-tab ved SAME
+Fur/Stenerodde8Oct07–13Z, øvrige tab0/identity0. Priorprogress faktisk
+RESTORED32files og ny cache saved/uploaded; ikke forklaring med missingrestore.
+DMI-budgetfejl er observeret, ikke kausal tabskobling. Existing actual caller
+har protectedSOURCE-backfill og directPART-før-SOURCE; disse tabsrækker er
+ikke målt i eksisterende sourcejoin. Ingen spekulativ rettelse/gatelempelse.
+DEC-0289; hele BIG/OFF-livscyklussen og øvrige afvisninger forbliver åbne.
+
+# Historisk – 2026-10-04 – faktisk diagnosefejl og afvist vandstandstab
 
 Fastread37163385963 fejlede før autentificering: forkert secretopslag gav tomt
 input. Lokal one-line binding matcher nu producentens eksisterende nøgle;
