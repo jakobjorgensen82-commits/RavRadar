@@ -1,5 +1,9 @@
 ## Ikke udgivet – Jordrav forskningsprototype 0.1 (2026-10-04)
 
+- Regional Stenstrup-analyse fra native kildepolygoner og uafhængig original-
+  SHP/DBF-kontrol: sedimentkontakter, yngre dække og modtagere/JH-012–014.
+  Analysefigur og audit viser, at fokus på forhøjet skjuler næsten hele den
+  undersøgte issøflade. Ingen omklassificering eller ny kortfunktion.
 - Ny selvstændig Jordrav-fane med almindeligt kort/luftfoto, farvestyrke og
   klikforklaringer for materiale, proces, sikkerhed, dybde og kilde.
 - Fokus på forhøjet procespotentiale og fem regionale ravhistorier med

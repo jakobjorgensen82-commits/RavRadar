@@ -39,6 +39,14 @@ de giver ingen klassebonus eller cirkler på kortet. JH-010–011 og den
 gentagelige audit står i
 `docs/research/JORDRAV_BORINGER_LAGFORBINDELSE_2026-10-04.md`.
 
+Stenstrup er efterprøvet i native kildepolygoner: 149 jordartsposter dækker
+en kortlagt issøflade på 19,284 km². TS/TL-overgange og yngre dække er
+undersøgelsesspor JH-012–014; kortlagt nabogrænse er ikke en lodret lagkontakt.
+Kun 0,43 % får den eksisterende forhøjede klasse. Brug alle klasser ved
+undersøgelse af denne egn; fokus er ikke en fuldstændig markprioritering.
+Original-SHP/DBF-kontrol og analysefigur er beskrevet i
+`docs/research/JORDRAV_STENSTRUP_KONTAKTER_2026-10-04.md`.
+
 **Evidens:** GEUS-kortlagte materialer og landskabsprocesser kombineres med
 eksplicitte RavRadar-hypoteser om transport, omlejring og modtagelse. Tidligere
 fund er ikke et krav. Forhøjet procespotentiale betyder kompatibelt sand/grus

@@ -7,6 +7,11 @@ Den dybe [faglige analyse](JORDRAV_POTENTIALE_DANMARK_2026-10-04.md) omsættes h
 
 ## Hvad kortet gør
 
+En senere [native Stenstrup-diagnose](JORDRAV_STENSTRUP_KONTAKTER_2026-10-04.md)
+viser, at fokus på forhøjet kun viser 0,43 % af den undersøgte issøflade.
+Brug alle klasser ved undersøgelse af egnen. TS/TL-kontakter, yngre dække og
+modtagere/JH-012–014 er forskningsspor; denne diagnose ændrer ingen klasser.
+
 En ny **Jordrav**-fane åbner `jordrav.html` med sin egen Leaflet-instans. Navigationen går mellem to selvstændige kortsider. Jordravsidens modulgraf importerer ikke kystapp, vejrservice, Supabase eller produktionskonfiguration. Den almindelige kystside registrerer kun fanens tre oversatte tekster; den henter ikke jordravdata.
 
 **Almindeligt kort** og **Luftfoto** er synlige baggrundsvalg. Skift ændrer kun baggrunden, mens farveflader, valgt flade, forklaring, kortcentrum og zoom bevares. Luftfoto bruger den eksisterende World Imagery-tjenestetype. En særskilt GeoDanmark-adgang er ikke oprettet. Begge leverandørers attribution og Esris vilkårslink vises.

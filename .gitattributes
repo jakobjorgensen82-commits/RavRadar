@@ -4,3 +4,8 @@ data/admin export-ignore
 data/jordrav/** -text
 scripts/build-jordrav-prototype.py -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 scripts/lib/jordrav_model.py -text
+# Regional research audits bind exact script/report bytes across platforms.
+docs/research/jordrav/audit_stenstrup_contacts.py -text
+docs/research/jordrav/verify_stenstrup_originals.py -text
+docs/research/jordrav/stenstrup-contact-audit-2026-10-04.json -text
+docs/research/jordrav/stenstrup-original-verification-2026-10-04.json -text

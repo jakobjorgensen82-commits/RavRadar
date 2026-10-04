@@ -6,7 +6,7 @@ med almindeligt kort/luftfoto, klikforklaringer, DA/DE/EN og lazy-load.
 Den statiske nationale bygning bruger faktiske kildepolygoner, nyere
 materiale først og ældre supplement ved X/huller. Modellen er 0.1.0-prototype;
 alle ravslutninger er hypoteser med svag sikkerhed.
-Fire regionale forklaringscases, deres kilder og fokusvalg er implementeret.
+Fem regionale forklaringscases, deres kilder og fokusvalg er implementeret.
 Navigation under zoom bevarer seneste ønske; regional tekst klassificerer
 ingen polygoner. App-/model-/dataidentiteter er uændrede.
 **Lokalt PASS:** 192 native geometriudsnit, 11 modelcases, fire data-/modul-
@@ -25,6 +25,13 @@ Read-only punktopslagsaudit og JH-010–011 beskriver lagidentitet, prøvedybde
 og pløjerelevans. Det er kilde-/metodearbejde uden ny runtimeintegration,
 UI-ændring eller omklassificering. Se
 `docs/research/JORDRAV_BORINGER_LAGFORBINDELSE_2026-10-04.md`.
+
+**Seneste regionale diagnose:** Native Stenstrup-flade/149 nyere jordartsposter,
+interne sedimentkontakter, øvre/dybere symbolpar og JH-012–014 er analyseret.
+Kilde-/partitionaudit og uafhængig original-SHP/DBF-kontrol PASS; analysefigur
+er visuelt læst. Fokus viser kun 0,43 % af fladen, hvilket skærper behovet
+for alle klasser ved regional undersøgelse. Frosne regler/data og UI består.
+Se `docs/research/JORDRAV_STENSTRUP_KONTAKTER_2026-10-04.md`.
 
 Yderligere fordybelse og ejerens markpræcisering: pløjningens blotlægning
 og regnens afvaskning/synlighed vurderes særskilt fra ravtilførsel. GEUS'

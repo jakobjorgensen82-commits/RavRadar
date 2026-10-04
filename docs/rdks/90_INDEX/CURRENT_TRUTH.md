@@ -19,7 +19,7 @@ og den produktkritiske sourcegate er lokalt PASS. Reglerne står i
 eller publicering påstås. Dette checkpoint gælder jordravarbejdet;
 vejrstatus kræver sin egen friske evidens.
 
-Fortsat arbejde før ejerens hjemkomst: fire regionale sedimentkæder og
+Fortsat arbejde før ejerens hjemkomst: fem regionale sedimentkæder og
 en kildebaseret guide er implementeret på DA/DE/EN, sammen med fokus
 på forhøjet procespotentiale. Regionsvalg flytter kun visningen; model,
 datasæt og klasser er uændrede. Zoom-/navigationsfund er rettet og måltestet.
@@ -33,6 +33,14 @@ read-only audit er tilføjet. Lagidentitet, prøvedybde og pløjerelevans er
 adskilt; ingen dataintegration, klassebonus, UI-ændring eller ny release.
 Rapport: `docs/research/JORDRAV_BORINGER_LAGFORBINDELSE_2026-10-04.md`.
 Main-/writeroplysningen 10:46 ovenfor er dateret historik, ikke ny aflæsning.
+
+Seneste fordybelse: Stenstrups native issøpolygon er skåret med 149 nyere
+jordartsposter og efterprøvet mod originale SHP/DBF-filer. TS/TL-nabogrænser,
+yngre dække og sandmodtagere er konkretiseret som JH-012–014. Kun 0,43 % af
+den valgte flade har den eksisterende forhøjede klasse; alle klasser bør
+vises ved undersøgelse af egnen. Analysefigur/audits er lokale; ingen nye
+fundsandsynligheder, klasse-/dataændringer eller ny release.
+Rapport: `docs/research/JORDRAV_STENSTRUP_KONTAKTER_2026-10-04.md`.
 
 Yderligere fordybelse og ejerens markpræcisering: pløjningens blotlægning
 og regnens afvaskning/synlighed vurderes særskilt fra ravtilførsel. GEUS'

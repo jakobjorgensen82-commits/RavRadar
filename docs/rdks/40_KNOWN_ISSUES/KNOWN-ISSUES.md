@@ -7,6 +7,10 @@
   nu analyseret og vist som guide, uden automatisk regional klassebonus.
   To offentlige profiler er efterprøvet mod kortfladerne; JH-010–011
   skærper lagkontaktspørgsmål uden at verificere regional ravtilførsel.
+  Native Stenstrup-diagnose/JH-012–014 konkretiserer kontaktmiljøer og yngre
+  modtagere. Kun 0,43 % af den valgte flade vises som forhøjet; fokus kan
+  ikke bruges som en fuldstændig regional markprioritering. Klasseændringer
+  kræver stadig faglig tilførsels-/bevaringskobling, ikke arealbonus.
 - **JORDRAV-002, lokalt kontrolleret / historiske kyster åbne:** Sporbar
   normalisering af 438/47 ringfund og 194 mikroflader er auditeret. Alle
   192 native partitioner består; ældre overlap er eksplicitte konflikter.
@@ -39,6 +43,9 @@
   Første borecaseanalyse og punktopslagsaudit er nu udført. Prøver omkring
   én meter og generelle sandintervaller løser ikke topjord eller dæklagstykkelse.
   Aktuelle markprofiler og lokal lagkontinuitet er fortsat åbne.
+  Stenstrups fem differentierede organiske symbolpar afklarer ikke
+  dæklagstykkelse. Interne TS/TL-nabogrænser er laterale kortrelationer;
+  de dokumenterer ikke lodret stratigrafi eller adgang ved pløjning.
 
 Evidens: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
 Punkterne gælder den lokale Jordrav-prototype, ikke den aktuelle vejrproduktion.

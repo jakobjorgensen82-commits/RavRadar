@@ -32,6 +32,12 @@ En relevant prioritet er at undersøge sammenhængende kontakter frem for at sam
 
 ## Stenstrup–Kirkebysand: asymmetrisk tilførsel til et bassin
 
+**Senere konkretisering:** [Native kontakter og yngre modtagere](JORDRAV_STENSTRUP_KONTAKTER_2026-10-04.md)
+efterprøver en hel GEUS-issøpolygon mod 149 jordartsposter og originale
+SHP/DBF-filer. JH-012–014 skelner laterale nabogrænser, øvre/dybere symbolpar
+og yngre sand. Alle klasser bør være synlige ved regional undersøgelse;
+diagnosen giver ingen automatisk klassebonus.
+
 **Geologisk støtte:** Smed beskriver issøens hovedtilløb fra øst og sydøst over Kirkebysand og forskelle ved den vestlige dødisbegrænsning. Hartz beskriver rav i yngre ler ved Stenstrup. De historiske observationer afstemmes som processtøtte, ikke som en nutidig fladeafgrænsning. [Smed 1962, s. 50–51](https://2dgf.dk/xpdf/bull-1962-15-1-1-74.pdf), [Hartz 1909, s. 107](https://archive.org/details/bidragtildanmark00hart).
 
 **Vores ravhypotese:** Materiale fra ældre aflejringer kan være frigjort langs tilløb og afsat i sandede indløbsområder, lagkontakter eller finere bassinaflejringer. Tilførsel og aflejring behøver ikke være ens på alle sider af søen. Dette gør en samlet bassinbonus for grov, men giver flere konkrete miljøer at undersøge uden at afvise ler på forhånd.

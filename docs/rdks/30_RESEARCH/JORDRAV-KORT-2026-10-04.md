@@ -19,6 +19,56 @@ Arbejdet holdes i denne selvstændige jordravgren. Ingen ny funddatabase, bruger
 
 ## Leveret analyse
 
+### Native Stenstrup-kontakter før kortreview
+
+Ejerens fortsættelsesinstruktion er omsat til konkret regional polygonanalyse.
+Rapport: `docs/research/JORDRAV_STENSTRUP_KONTAKTER_2026-10-04.md`.
+Geomorfologisk Issøflade/kilde-ID 10265 er undersøgt i sin fulde native
+udstrækning, 19,284 km². 149 nyere jordartsposter dækker fladen med 0,000000 m²
+rapporteret hul, overskud og overlap ved 1 m² numerisk kontroltolerance.
+Kildecache-/regelidentiteter er bundet; generaliserede visningsflader anvendes
+ikke til kontakt- eller arealberegningerne. Gitteret er ikke stednøjagtighed.
+
+TS/TL fylder 46,22/41,93 %. Interne fælles grænser er ca. 44,47 km; længde
+er ingen prioriteringsvægt. Fem differentierede organiske symbolpar fylder
+0,569 km². JH-012–014 undersøger laterale kontakter, yngre dække og sand-
+modtagere; ravtilførsel, faktisk dæklagstykkelse og pløjerelevans er åbne.
+Geopark Øhavets direkte geologiske beskrivelse og Smeds historiske original
+afstemmes med filernes aktuelle symboler; der fastlægges ingen ny isfasealder.
+
+Frosne regler giver kun 0,43 % forhøjet i fladen. Fokus skjuler derfor de
+fleste af de undersøgte miljøer; alle klasser bør vises ved Stenstrup-review.
+Dette er en konkret begrænsning, ikke en automatisk omklassificering eller
+en ny national fundrangliste. Kort- og luftfoto-funktionerne består.
+
+`audit_stenstrup_contacts.py` og `stenstrup-contact-audit-2026-10-04.json`
+er PASS for kildesporing og native partition. `verify_stenstrup_originals.py`
+og `stenstrup-original-verification-2026-10-04.json` læser originale SHP/DBF
+uafhængigt af cacheloaderen: 149 symbolpar verificeret, søarealafvigelse
+10,673 m² og TS/TL-længdeafvigelse ca. 0,05 m. Én ugyldig original regional
+jordartspost behandles i hukommelsen; originaler/cache er urørte. Figuren er
+visuelt kontrolleret og tegnet med Matplotlib isoleret i temp, uden ny app-
+afhængighed. Samme beregningsgrundlag er ikke uafhængige geologiske ravbeviser.
+
+En særskilt sumkontrol fandt ca. 0,943 m² forskel ved gentagen cm-snapping
+af afledte skæringer; en igen snappet differens kunne skjule forskellen.
+Den regionale diagnoses overlay bruger nu fuld flydende præcision på de
+frosne normaliserede input. Fuldpræcisions-differens, overlap og materialernes
+arealsum er nu 0,000000 m² rapporteret afvigelse. National producent/data
+er urørte; den første sumkontrol var ikke PASS og er ikke genbrugt som bevis.
+
+RDKS/åbne issues, changelog, Markdown-håndbog og det forberedte webhåndbogs-
+tillæg følger analysen. Ingen UI-/model-/data-/producent-/releaseændringer,
+vejrhentning, boringsintegration, previewstart, publicering eller automation.
+Tidligere UI-evidens genbruges kun som dateret kontrol af uændrede filer.
+
+Slutkontrol: korrigeret native audit/originalfilskontrol, script-/model-/
+rapportidentiteter, uafhængige summer, Python-syntaks, lokale links og
+forberedt håndbogstillæg PASS. RDKS/14 chatkilder/håndbog/4.0.541 og
+sikkerhedshærdningskontrakter PASS. Nye bytebundne scripts/JSON bevarer
+identiteter ved checkout på Windows/Linux; den ældre kildecacherapports
+teksthash har eksplicit LF-normalisering. Ingen ny UI-/produktionstestpåstand.
+
 ### Efterprøvning med offentlige boringer før kortreview
 
 Ejerens aktuelle spørgsmål om yderligere arbejde uden at have set kortet

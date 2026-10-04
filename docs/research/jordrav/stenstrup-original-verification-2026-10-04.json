@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "scope": "Original identity/labels and numerical cross-reader agreement only; no amber verification",
+  "auditSha256": "15daf046865cac2696e51d2dd385d6b69cd22f16e9a64949e383c461f2ac3b0a",
+  "scriptSha256": "3aa8ea019fc93d00be09a02dec41cd113adb75e04d1f6097d5d947bfecfe65c2",
+  "checkedOriginalSoilRecords": 149,
+  "originalLake_km2": 19.28439510798124,
+  "originalLakeVersusNormalizedDelta_m2": 10.673018760979176,
+  "invalidOriginalRegionalShapes": [
+    {
+      "sourceId": 24506,
+      "reason": "Ring Self-intersection[609912.5921 6127117.5699]"
+    }
+  ],
+  "maxAbsoluteClippedAreaDelta_m2": 8.595459488220513,
+  "sumAbsoluteClippedAreaDelta_m2": 60.68180225311926,
+  "originalSoilCoverageGap_m2": 5.021395079740643e-07,
+  "originalTS_TLInternalContact_m": 44466.235494175904,
+  "nativeMinusOriginalTS_TLContact_m": 0.049505824099469464,
+  "originalTS_km2": 8.913011110753818,
+  "originalTL_km2": 8.086423795501211,
+  "numericalBounds": {
+    "lakeOrSingleClippedAreaDelta_m2": 25,
+    "contactDelta_m": 1,
+    "coverageGap_m2": 1
+  }
+}
