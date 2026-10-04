@@ -1,6 +1,6 @@
 # DEC-0292 – Privat diagnose af Fur-vandstand i normale vejrhentninger
 
-**Status:** PUSHET som PR516 i 4.0.542; ny exact-head og produktion åbne.
+**Status:** PR516 merged med exact CI/proof; kontrolleret release fejlede før Pages. Afgrænset original-zonekontrol repareret lokalt; produktion stadig åben.
 **Dato:** 2026-10-04
 
 Ejeren kræver fremtidig diagnose af Fur-hullerne og levering sammen med den
@@ -48,8 +48,15 @@ alle no-deploy-assertions består. Checkpointassertion kræver nu også den fakt
 strenge owner-original-udelukkelse. Hele denne workflowkontrol består; ingen
 produktionscondition er ændret, og native builders/otte bindinger er uændrede.
 
-**Release:** 542 er sendt som PR516, ikke merge/deploy. Naturlig
-vejrhentning og deploy afsluttede kl.20:31 DK med faktisk cachegemning og
-ingen tab. Eksakt originalpin er frisk bundet til den nye 16Z-generation.
-Exact-head CI/proof, fornyet main/writer og faktisk produktionskontrol mangler.
+**Release kl.21:56 DK:** PR516 merged kl.21:35 efter exact CI/proof.
+Kontrolleret release stoppede kl.21:38 i arkivets parent-ID-kontrol; den nye
+migration er installeret, men privat publish og Pages er SKIPPED. Hjemmesiden
+bevarer kode 541 og 16Z-data. ID-regex afviste gyldige Samsø-/Læsø-zoner.
+Rettelsen kræver begge autentificerede originale 210-zoneinventarer med ens
+nøgler, alle 673 delidentiteter og eksakt parentmedlemskab. Ukendt parent,
+forkert del-id og forskellige inventarer afvises stadig. Samme eksisterende
+arkivparent gik fra 4PASS/2FAIL til 6PASS/0FAIL; det er parent/subtest-enheder,
+ikke national produktionskontrol. Normale migration/code-only-tests og native
+bundle/otte consumers består uændret. Ingen ny binding eller migration kræves
+af denne rettelse. Ny exact-head CI/proof og faktisk produktion mangler stadig.
 Se DEC-0291 og privat checkpoint for eksakte hashes og test-/kørselsevidens.

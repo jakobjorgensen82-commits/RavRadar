@@ -754,9 +754,16 @@ export function preserveOwnerCurrentOriginalPairs(source, migrated) {
   const partMap = source.coastalParts?.parts;
   const activeParts = Object.entries(partMap ?? {}).map(([partId, part]) => ({ ...part, partId }));
   if (activeParts.length !== 673) throw new Error('Original-pair archive requires all 673 active identities');
-  if (Object.entries(partMap).some(([partId, part]) => !isPlainObject(part)
+  // Parent identities come from the authenticated original runtime, not a
+  // spelling convention: legitimate island zones have additional ID segments.
+  const weatherZones = source.zones;
+  const scoreZones = source.coastalParts?.zones;
+  if (!isPlainObject(weatherZones) || !isPlainObject(scoreZones)
+    || Object.keys(weatherZones).length !== 210 || Object.keys(scoreZones).length !== 210
+    || Object.keys(weatherZones).some(zoneId => !Object.hasOwn(scoreZones, zoneId))
+    || Object.entries(partMap).some(([partId, part]) => !isPlainObject(part)
     || (part.partId !== undefined && part.partId !== partId)
-    || typeof part.zoneId !== 'string' || !/^DK-B\d{2}-\d{2}$/.test(part.zoneId))) {
+    || typeof part.zoneId !== 'string' || !Object.hasOwn(weatherZones, part.zoneId))) {
     throw new Error('Original-pair archive requires exact parent-zone and part identities');
   }
   const roots = ['ravScoreCandidateGRollback', 'ravScoreCandidateGWarmup']

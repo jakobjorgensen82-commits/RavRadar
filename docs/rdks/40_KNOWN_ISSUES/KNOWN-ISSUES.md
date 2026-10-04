@@ -1,3 +1,23 @@
+# NYESTE – 2026-10-04 21:56 DK – PR516 merged; konkret original-zonekontrol repareret
+
+PR516 er merged kl.21:35 DK med bestået exact-head CI og content-proof.
+Kontrolleret release stoppede kl.21:38 før privat offentliggørelse og Pages.
+Den godkendte nye migration er faktisk installeret; offentlig kode er stadig 541.
+En lokal prøve reproducerede samme arkivfejl: en ID-regex afviste gyldige
+Samsø-/Læsø-zoner. Parentkontrollen bruger nu begge autentificerede originale
+210-zoneinventarer med identiske nøgler samt de uændrede 673 delidentiteter.
+Ukendte parents, forskellige zoneinventarer og forkert del-id afvises fortsat.
+Originalpar og øvrig historik bevares; ingen scoreformel, geometri, no-loss,
+originalpin, native binding eller gammel migration ændres. Samme arkivparent
+består 6 parent/subtest-enheder; normale migration/code-only- og 8 bindinger
+består. Det er lokal reparation, ikke gennemført deploy eller kilderen effekt.
+
+Næste: én exact-head kontrol/proof for reparationen, fornyet writer/main og
+kontrolleret release med forventet tom migrationsplan. Derefter én almindelig
+manuel vejrhentning uden overlap. Cron er ikke ændret efter ejerens »pyt«.
+Fur-diagnosen er ikke automatisk timeretention; gammel årsag og sikker bevarelse
+af gyldige Fur-timer før uændret no-loss er stadig åbne. Ældre status er historik.
+
 # NYESTE – 2026-10-04 21:16 DK – PR516 sendt; konkret CI-regression repareret lokalt
 
 Syvzonerettelsen og NORMAL Fur-diagnosen er pushet i PR516, ikke online.
