@@ -21,6 +21,9 @@ import { buildCurrentSupplyMemory } from '../js/core/ravscore-current-supply-mem
 import { spawnSync } from 'node:child_process';
 import { summarizeSealedCurrentPart, summarizeSealedCurrentNationalParts, validateSealedCurrentSourceTarget,
   SEALED_CURRENT_SOURCE_TARGET as sealedTarget } from './audit-sealed-current-source.mjs';
+import { FUR_NATIVE_TARGET, validateFurNativeTarget, summarizeFurNativeEntity,
+  summarizeFurNativeBank, originalFurSourceInventory, parseFurAuditArguments,
+  furPresenceFailureSummary } from './audit-fur-native-presence.mjs';
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const credentials = { supabaseUrl: 'https://storage.example.test', serviceRoleKey: 'sb_secret_synthetic-never-real',
@@ -30,6 +33,86 @@ const encryptionKey = Buffer.alloc(32, 52).toString('base64');
 const repository = 'owner/synthetic';
 const progressSource = '123456-1';
 const progressCacheKey = `weather-private-progress-encrypted-v2-Linux-main-${progressSource}`;
+
+test('Fur exact native presence rejects every changed cache and original failed run target', () => {
+  const t = FUR_NATIVE_TARGET;
+  const cache = { id: t.cacheId, key: t.cacheKey, version: t.cacheVersion,
+    ref: 'refs/heads/main', size_in_bytes: t.cacheBytes };
+  const run = { id: t.runId, run_attempt: t.runAttempt, head_sha: t.sourceHead,
+    status: 'completed', conclusion: 'failure', head_branch: 'main',
+    path: '.github/workflows/run-current-weather-once.yml', event: 'workflow_dispatch',
+    repository: { full_name: sealedTarget.repository }, head_repository: { full_name: sealedTarget.repository } };
+  assert.equal(validateFurNativeTarget(cache, run), true);
+  for (const key of Object.keys(cache)) {
+    assert.throws(() => validateFurNativeTarget({ ...cache, [key]: null }, run), /TARGET_REJECTED/);
+  }
+  for (const key of Object.keys(run)) {
+    assert.throws(() => validateFurNativeTarget(cache, { ...run, [key]: null }), /TARGET_REJECTED/);
+  }
+});
+
+test('Fur command and failure output reject extra authority and private error details', () => {
+  const valid = ['target', '--cache', 'synthetic-cache', '--run', 'synthetic-run'];
+  assert.equal(parseFurAuditArguments(valid).mode, 'target');
+  for (const args of [[], ['restore', ...valid.slice(1)], [...valid, '--scope', 'all'],
+    ['target', '--cache', 'one', '--cache', 'two'], ['target', '--cache', '--run', 'two', 'extra']]) {
+    assert.throws(() => parseFurAuditArguments(args), /ARGUMENT/);
+  }
+  const baseline = furPresenceFailureSummary({ progressCode: 'BASELINE_MISMATCH', message: 'secret-error-canary' });
+  assert.equal(baseline.code, 'BASELINE_MISMATCH');
+  assert.equal(furPresenceFailureSummary({ progressCode: 'secret-error-canary' }).code, 'FAILED_CLOSED');
+  safeReport(baseline, 'synthetic-private-root');
+});
+
+test('Fur seven-hour native presence uses original SOURCE identity and never asserts routing causality', () => {
+  const part = { partId: FUR_NATIVE_TARGET.partId, zoneId: FUR_NATIVE_TARGET.zoneId,
+    waterPoint: [8, 56], onshoreDirectionDeg: 90 };
+  const identity = dmiExpectedIdentityForPart(part);
+  const sourceIdentity = { entityId: 'SOURCE::synthetic-private-station', parentZoneId: 'SOURCE::synthetic-private-station',
+    entityType: 'water-level-source', samplingContext: 'water-level-source-point', samplingPoint: [9, 56] };
+  const nativeZone = id => ({ ...id, hourly: Object.fromEntries([0, 3, 6].map(offset => {
+    const time = new Date(Date.parse(FUR_NATIVE_TARGET.firstHour) + offset * 3_600_000).toISOString().replace('.000Z', 'Z');
+    return [time, { time, 'sea-mean-deviation': 0.37,
+      sources: { waterLevel: { provider: 'dmi', fallback: false, collection: 'dkss_lf', collectionFamily: 'marine',
+        component: 'waterLevel', componentKind: 'marine-water-level-scalar', fieldSet: ['sea-mean-deviation'], optionalFieldSet: [],
+        ...id, gridPoint: [...id.samplingPoint], gridDefinitionSha256: 'a'.repeat(64), distanceKm: 0,
+        spatialSemanticsVersion: 1, spatialSelection: 'nearest-valid-grid-cell-no-spatial-interpolation',
+        modelRun: '2026-10-04T00:00:00Z', nativeValidTime: time,
+        leadTimeHours: (Date.parse(time) - Date.parse('2026-10-04T00:00:00Z')) / 3_600_000,
+        itemId: `synthetic-private-item-${offset}`, assetIdentitySha256: 'b'.repeat(64), acquiredAt: '2026-10-04T01:00:00Z' } } }];
+  })) });
+  const bulk = { generatedAt: '2026-10-04T02:00:00Z', timeStrideHours: 3,
+    zones: { [identity.entityId]: nativeZone(identity), [sourceIdentity.entityId]: nativeZone(sourceIdentity) } };
+  const original = JSON.stringify(bulk), inventory = originalFurSourceInventory(bulk);
+  const direct = summarizeFurNativeEntity(bulk, identity.entityId, identity);
+  assert.deepEqual(direct, { code: 'NATIVE_PRESENCE_MEASURED', numericExactHours: 3,
+    verifiedExactHours: 3, verifiedSupportedHours: 7 });
+  const summary = summarizeFurNativeBank(bulk, part, inventory);
+  assert.equal(summary.directPartSupportedHours, 7);
+  assert.equal(summary.sourceEntitiesWithAllSevenHours, 1);
+  assert.equal(summary.code, 'ORIGINAL_SOURCE_INVENTORY_PRESENCE_NOT_ROUTING_JOIN');
+  const absent = structuredClone(bulk);
+  delete absent.zones[identity.entityId];
+  assert.equal(summarizeFurNativeBank(absent, part, inventory).directPartSupportedHours, 0);
+  assert.equal(summarizeFurNativeBank(absent, part, inventory).sourceSupportedHours, 7);
+  const changed = structuredClone(bulk);
+  changed.zones[sourceIdentity.entityId] = nativeZone({ ...sourceIdentity, samplingPoint: [10, 56] });
+  assert.equal(summarizeFurNativeBank(changed, part, inventory).sourceSupportedHours, 0,
+    'progress cannot attest itself under a moved SOURCE point');
+  const unproved = structuredClone(bulk);
+  for (const row of Object.values(unproved.zones[identity.entityId].hourly)) row.sources.waterLevel.assetIdentitySha256 = null;
+  const unprovedCount = summarizeFurNativeEntity(unproved, identity.entityId, identity);
+  assert.equal(unprovedCount.numericExactHours, 3);
+  assert.equal(unprovedCount.verifiedSupportedHours, 0, 'numeric presence is not native proof');
+  const duplicate = structuredClone(bulk);
+  duplicate.zones[identity.entityId].hourly.extra = Object.values(duplicate.zones[identity.entityId].hourly)[0];
+  assert.throws(() => summarizeFurNativeBank(duplicate, part, inventory), /NATIVE_TIME/);
+  assert.throws(() => summarizeFurNativeBank(bulk, part, [...inventory, ...inventory]), /SCOPE/);
+  assert.equal(JSON.stringify(bulk), original, 'original native records stay byte-neutral');
+  safeReport(summary, 'synthetic-private-root');
+  assert.equal(JSON.stringify(summary).includes(sourceIdentity.entityId), false);
+  assert.equal(JSON.stringify(summary).includes('0.37'), false);
+});
 async function temp(t) {
   const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-saved-input-test-'));
   t.after(() => fs.rm(folder, { recursive: true, force: true }));

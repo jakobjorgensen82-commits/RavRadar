@@ -1,0 +1,176 @@
+name: Read exact owner-approved Fur native presence
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Skriv READ-FUR-8470342142-ORIGINAL-11281483201"
+        required: true
+        type: string
+      expected_main_head:
+        description: "Eksakt main med allerede grøn kildekontrol"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: ravradar-weather-production-v2
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Require exact main, original contracts and both immutable targets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+          EXPECTED_MAIN_HEAD: ${{ inputs.expected_main_head }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = jakobjorgensen82-commits/RavRadar
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$CONFIRMATION" = READ-FUR-8470342142-ORIGINAL-11281483201
+          [[ "$EXPECTED_MAIN_HEAD" =~ ^[a-f0-9]{40}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_MAIN_HEAD"
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          git merge-base --is-ancestor bbc3c79fe555dffbff4a88af8cdf54573953efdb "$GITHUB_SHA"
+          git merge-base --is-ancestor a459b846d9d19351127d46bdab544e6bc50dc24b "$GITHUB_SHA"
+          git diff --quiet bbc3c79fe555dffbff4a88af8cdf54573953efdb "$GITHUB_SHA" -- \
+            js/core scripts/lib scripts/private-production-runtime-bundle.mjs \
+            scripts/private-production-runtime-workflow.mjs scripts/protected-private-production-runtime.mjs \
+            scripts/staged-private-production-runtime.mjs
+          git diff --quiet a459b846d9d19351127d46bdab544e6bc50dc24b "$GITHUB_SHA" -- scripts/weather-component-progress-cache.mjs
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/11281483201" > "$RUNNER_TEMP/fur-original-artifact.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/37136425685/attempts/1" > "$RUNNER_TEMP/fur-original-run.json"
+          gh api --method GET "repos/$GITHUB_REPOSITORY/actions/caches" \
+            -f key=weather-private-progress-encrypted-v2-Linux-main-37164593278-1 -f ref=refs/heads/main -f per_page=100 \
+            --jq '.actions_caches | map(select(.id == 8470342142)) | if length == 1 then .[0] else error("FUR_NATIVE_CACHE_TARGET_REJECTED") end' \
+            > "$RUNNER_TEMP/fur-cache.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/37164593278/attempts/1" > "$RUNNER_TEMP/fur-failed-run.json"
+          node scripts/audit-sealed-current-source.mjs target --artifact "$RUNNER_TEMP/fur-original-artifact.json" --run "$RUNNER_TEMP/fur-original-run.json"
+          node scripts/audit-fur-native-presence.mjs target --cache "$RUNNER_TEMP/fur-cache.json" --run "$RUNNER_TEMP/fur-failed-run.json"
+      - name: Verify live exact-content source validation
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Stop unless current source already has live green proof
+        env:
+          SOURCE_REQUIRED: ${{ steps.source-proof.outputs.required }}
+        run: test "$SOURCE_REQUIRED" = false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install only existing offline reader dependencies
+        run: >-
+          python -m pip install --disable-pip-version-check
+          -r requirements-dmi.txt -r requirements-geometry.txt -r requirements-copernicus.txt
+      - name: Restore only the exact approved ciphertext without fallback or save
+        id: progress
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/weather-private-progress.encrypted
+          key: weather-private-progress-encrypted-v2-Linux-main-37164593278-1
+          fail-on-cache-miss: true
+      - name: Require exact cache and original baseline before authentication
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MATCHED_KEY: ${{ steps.progress.outputs.cache-matched-key }}
+          CACHE_HIT: ${{ steps.progress.outputs.cache-hit }}
+        run: |
+          set -euo pipefail
+          test "$CACHE_HIT" = true
+          test "$MATCHED_KEY" = weather-private-progress-encrypted-v2-Linux-main-37164593278-1
+          test ! -L .cache/weather-private-progress.encrypted
+          test "$(stat -c %s .cache/weather-private-progress.encrypted)" = 112674885
+          gh api --method GET "repos/$GITHUB_REPOSITORY/actions/caches" \
+            -f key=weather-private-progress-encrypted-v2-Linux-main-37164593278-1 -f ref=refs/heads/main -f per_page=100 \
+            --jq '.actions_caches | map(select(.id == 8470342142)) | if length == 1 then .[0] else error("FUR_NATIVE_CACHE_TARGET_REJECTED") end' \
+            > "$RUNNER_TEMP/fur-cache.json"
+          node scripts/audit-fur-native-presence.mjs target --cache "$RUNNER_TEMP/fur-cache.json" --run "$RUNNER_TEMP/fur-failed-run.json"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/11281483201" > "$RUNNER_TEMP/fur-original-artifact.json"
+          node scripts/audit-sealed-current-source.mjs target --artifact "$RUNNER_TEMP/fur-original-artifact.json" --run "$RUNNER_TEMP/fur-original-run.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/11281483201/zip" > "$RUNNER_TEMP/fur-original.zip"
+          test "$(stat -c %s "$RUNNER_TEMP/fur-original.zip")" = 197244788
+          echo 'b9089a8adb6c864e9c040f31c5cf236b6a0cb87cdcdc71f34ff1693c40f96140'"  $RUNNER_TEMP/fur-original.zip" | sha256sum --check --status
+          python3 - <<'PY'
+          import os, pathlib, zipfile
+          root = pathlib.Path(os.environ['RUNNER_TEMP'])
+          with zipfile.ZipFile(root / 'fur-original.zip') as archive:
+              entries = archive.infolist()
+              if len(entries) != 1 or entries[0].filename != 'sealed.bin' or entries[0].file_size != 197244654:
+                  raise SystemExit('FUR_NATIVE_PRESENCE_ZIP_REJECTED')
+              archive.extract(entries[0], root / 'fur-original-cipher')
+          PY
+          mkdir "$RUNNER_TEMP/fur-original-private"
+      - name: Authenticate original baseline with unchanged AAD and existing key
+        env:
+          STAGED_PRIVATE_BUILD_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: >-
+          node scripts/audit-sealed-current-source.mjs open
+          --repository-root "$GITHUB_WORKSPACE"
+          --input "$RUNNER_TEMP/fur-original-cipher/sealed.bin"
+          --private-root "$RUNNER_TEMP/fur-original-private"
+          --bundle "$RUNNER_TEMP/fur-original-private/bundle"
+          --report "$RUNNER_TEMP/fur-baseline-auth-safe.json"
+      - name: Authenticate exact progress and inspect only fixed seven-hour presence
+        env:
+          WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: >-
+          node scripts/audit-fur-native-presence.mjs inspect
+          --repository-root "$GITHUB_WORKSPACE"
+          --private-root "$RUNNER_TEMP/fur-original-private"
+          --bundle "$RUNNER_TEMP/fur-original-private/bundle"
+          --cipher "$GITHUB_WORKSPACE/.cache/weather-private-progress.encrypted"
+          --report "$RUNNER_TEMP/fur-native-presence-safe.json"
+      - name: Upload only the bounded payload-free presence report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fur-native-presence-safe-report
+          path: ${{ runner.temp }}/fur-native-presence-safe.json
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Remove only this job's private scratch data and restored ciphertext
+        if: always()
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, shutil
+          root = pathlib.Path(os.environ['RUNNER_TEMP']).resolve()
+          for name in ('fur-original-cipher', 'fur-original-private', 'fur-original.zip'):
+              target = root / name
+              if target.parent != root or target.is_symlink():
+                  raise SystemExit('FUR_NATIVE_PRESENCE_CLEANUP_REJECTED')
+              if target.is_dir():
+                  shutil.rmtree(target)
+              elif target.exists():
+                  target.unlink()
+          workspace = pathlib.Path(os.environ['GITHUB_WORKSPACE']).resolve()
+          cache = workspace / '.cache'
+          target = cache / 'weather-private-progress.encrypted'
+          if cache.is_symlink() or target.is_symlink() or target.parent.resolve() != cache:
+              raise SystemExit('FUR_NATIVE_PRESENCE_CLEANUP_REJECTED')
+          if target.exists():
+              target.unlink()
+          PY

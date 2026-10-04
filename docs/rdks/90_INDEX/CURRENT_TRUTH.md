@@ -1,4 +1,15 @@
-# NYESTE – 2026-10-04 – faktisk nationalread; ny farvandskontrol og ejerbestilt Lyngbyafgrænsning
+# NYESTE – 2026-10-04 – fixed Fur-kontroller klargjort; faktisk årsag åben
+
+Scoped JA er modtaget til exactcache8470342142+ORIGINAL11281483201/Fur7timer.
+Read-only læser/workflow er lokal med original identity/auth og counts-only;
+tests består, cipheren er IKKE læst eller kørsel dispatched. DEC-0289.
+Aktiv natural37201706227/MAINd778 fra14:19DK må ikke forstyrres. Forny gates
+og originalB-udløb før senere fixedread. Public4.0.541/rr-20261004095803-210
+med95.134359% numeriske felter er seneste fulde kontrol; ikke årsagsbevis.
+Færdig ejeralarmPR513/issue514 actualassigned, ikke websitealarm/mailreceipt.
+LF-frakobling syv præcise åbne kystzoner er særskilt lokal feature, ikke live.
+
+# Historisk – 2026-10-04 – faktisk nationalread; ny farvandskontrol og ejerbestilt Lyngbyafgrænsning
 
 Ejeralarm efter afsluttet fejl er lokal og måltestet i særskilt GitHubworkflow,
 ikke merged/kørt. Kun fast runlink/status og ejertildeling; ingen hjemmeside-

@@ -1,4 +1,18 @@
-# NYESTE – 2026-10-04 – nationale eftermålinger; runtimeafgrænsning stadig åben
+# NYESTE – 2026-10-04 – Fur-presence-only med scoped JA, lokalt klargjort
+
+- [x] Særskilt offentlig destinationsafklaring: menneskets “Push er godkendt”
+  omfatter fixedworkflow og kun faste fejlkoder/optællinger; ingen rawpayload.
+- [x] Fixed originalB/cache/run/attempt/version/ref/bytes-guards; ingen movingconfig.
+- [x] Pure authenticated progress-reader/allowlist/bounded single-PART/native
+  original SOURCE-identiteter; rapport kun fixedcodes/counts under4KiB.
+- [x] Berørte synthetic target/native/workflow og failure-canary-tests PASS.
+- [ ] Exact-head sourceCI/ROOT/merge efter writer/fixedread/unexpiredB.
+- [ ] Faktisk authenticated nativepresence og gammelFur7/12tabsårsag/fix.
+- [ ] Separat syv-zone-LF-feature: teknisk overgang og offentlig faktisk effekt.
+- [x] Natural37188571721 requireddeploy13:17DK/no-loss0 og public08Zkontrol.
+  Ny natural37201706227 aktiv; ingen ny produktionsændring under writer.
+
+# Historisk – 2026-10-04 – nationale eftermålinger; runtimeafgrænsning stadig åben
 
 - [x] Lokal link/status-only GitHub-ejeralarm med syv network-free måltestparents
   PASS/0skip; gamle kadencetests beholdt, ingen ny sourcekommando. DEC-0290.

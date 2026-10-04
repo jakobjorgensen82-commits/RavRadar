@@ -1,4 +1,22 @@
-## Ikke-release – 2026-10-04: ejeralarm og nyere Lyngbyordre (lokalt)
+## Ikke-release – 2026-10-04: præcis offentlig Fur-destinationsgodkendelse
+
+Ejeren har særskilt godkendt push af det faste skrivefri Fur-workflow til det
+offentlige repository og offentliggørelse af kun faste fejlkoder/optællinger.
+Ingen rå vejrdata, private filer, koordinater, nøgler, ny vejrhentning eller
+deploy. Den tidligere app-afvisning blev ikke omgået. Main og actual read
+afventer writercompletion, exact-head-kildekontrol og originalpakkens gates.
+
+## Ikke-release – 2026-10-04: exact Fur native-presence-kontrol (lokalt)
+
+Ejer-godkendt læser og særskilt main/source-gated workflow for kun
+cache8470342142/failedrun37164593278attempt1 og ORIGINALbaseline11281483201.
+Kun syv Fur-timers native/PART/SOURCE optællinger med originale identiteter;
+ingen dagens routingconfig, cachegemning, provider, score, SQL/deploy eller
+private rå output. Synthetic måltests og bounded failure-canary PASS; faktisk
+authenticated læsning, causejoin og gammel7/12tabsrettelse er OPEN.
+Ingen produktversion ændret; øvrige godkendelser/afvisninger bevares.
+
+## Historisk ikke-release – 2026-10-04: ejeralarm og nyere Lyngbyordre (lokalt)
 
 Separat GitHub-fejlalarm med kun fast runlink/status og assignment til den
 eksisterende ejerkonto. Repository forbliver offentligt; ingen driftsalarm

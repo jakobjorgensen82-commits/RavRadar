@@ -5,6 +5,44 @@ import test from 'node:test';
 const text = fs.readFileSync('.github/workflows/audit-saved-weather-inputs.yml', 'utf8').replace(/\r\n/g, '\n');
 const gh = value => '${{ ' + value + ' }}';
 
+test('Fur presence workflow fixes both original targets and cannot become a weather writer', () => {
+  const fur = fs.readFileSync('.github/workflows/audit-fur-native-presence.yml', 'utf8').replace(/\r\n/g, '\n');
+  assert.match(fur, /on:\n  workflow_dispatch:/);
+  assert.doesNotMatch(fur, /^  (schedule|push|pull_request|workflow_run|workflow_call):/m);
+  assert.match(fur, /test "\$GITHUB_REF" = refs\/heads\/main/);
+  assert.match(fur, /test "\$GITHUB_SHA" = "\$EXPECTED_MAIN_HEAD"/);
+  assert.match(fur, /test "\$CONFIRMATION" = READ-FUR-8470342142-ORIGINAL-11281483201/);
+  assert.match(fur, /group: ravradar-weather-production-v2/);
+  assert.match(fur, /cancel-in-progress: false/);
+  assert.match(fur, /git diff --quiet bbc3c79fe555dffbff4a88af8cdf54573953efdb/);
+  assert.match(fur, /git diff --quiet a459b846d9d19351127d46bdab544e6bc50dc24b/);
+  assert.match(fur, /actions\/artifacts\/11281483201\/zip/);
+  assert.match(fur, /sha256sum --check --status/);
+  assert.match(fur, /map\(select\(\.id == 8470342142\)\)/);
+  assert.doesNotMatch(fur, /actions\/caches\/8470342142/);
+  assert.match(fur, /actions\/cache\/restore@v6/);
+  assert.match(fur, /fail-on-cache-miss: true/);
+  assert.match(fur, /test "\$CACHE_HIT" = true/);
+  assert.match(fur, /test "\$MATCHED_KEY" = weather-private-progress-encrypted-v2-Linux-main-37164593278-1/);
+  assert.match(fur, /test ! -L \.cache\/weather-private-progress\.encrypted/);
+  assert.match(fur, /stat -c %s \.cache\/weather-private-progress\.encrypted\)" = 112674885/);
+  assert.doesNotMatch(fur, /restore-keys:|actions\/cache\/save|uses: actions\/cache@|lookup-only:/);
+  assert.doesNotMatch(fur, /(?:contents|actions|pull-requests|pages|id-token): write|secrets: inherit/);
+  assert.doesNotMatch(fur, /npm run|gh workflow run|\/logs|--publish|--migrate|update-weather\.mjs|water-stations/);
+  assert.doesNotMatch(fur, /git archive|git checkout|git worktree|set -x|cat .*encrypted/);
+  assert.equal((fur.match(/secrets\./g) ?? []).length, 2);
+  const key = gh('secrets.SUPABASE_SERVICE_ROLE_KEY');
+  assert.equal((fur.split(key).length - 1), 2);
+  assert.ok(fur.indexOf('sha256sum --check --status') < fur.indexOf(key));
+  assert.ok(fur.indexOf('test "$SOURCE_REQUIRED" = false') < fur.indexOf('actions/cache/restore@v6'));
+  const uploads = [...fur.matchAll(/uses: actions\/upload-artifact@[^\n]+([\s\S]*?)(?=\n      - |$)/g)];
+  assert.equal(uploads.length, 1);
+  assert.match(uploads[0][1], /path: \$\{\{ runner.temp \}\}\/fur-native-presence-safe.json/);
+  assert.doesNotMatch(uploads[0][1], /\*|encrypted|bundle|payload|baseline-auth/);
+  assert.match(fur, /target.parent != root or target.is_symlink\(\)/);
+  assert.match(fur, /cache.is_symlink\(\) or target.is_symlink\(\)/);
+});
+
 test('sealed-source diagnosis is fixed-artifact, source-gated, read-only and secret-separated', () => {
   const sealed = fs.readFileSync('.github/workflows/audit-sealed-current-source.yml', 'utf8').replace(/\r\n/g, '\n');
   const producer = fs.readFileSync('.github/workflows/reusable-weather-build.yml', 'utf8').replace(/\r\n/g, '\n');

@@ -5,6 +5,13 @@
   "updatedAt": "2026-10-04",
   "sections": [
     {
+      "id": "fur-native-presence-readonly",
+      "chapter": "89.158",
+      "title": "Fur: én præcis, skrivefri kildekontrol",
+      "summary": "Den præcise gamle cache og dens originale grundlag må sammenlignes for syv timer. Værktøjet er prøvet lokalt; faktisk læsning og årsag mangler.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Ejeren har godkendt en kontrol af den præcise fejlede vejrhentnings gemte cache sammen med dens originale grundlag. Kun syv timer ved Fur undersøges.</div><p>Kontrollen skelner mellem et tilstedeværende tal og verificeret kildestøtte. En station skal passe til sit originale punkt. Dagens routing bruges ikke som forklaring på den gamle kørsel.</p><p>Kun faste fejlkoder og optællinger må komme ud. Gamle kildeinput og direkte kystdata sammenlignes, men bevarede stationstimer beviser ikke alene, hvilken station den gamle beregning faktisk valgte. Den fulde gamle routing er ikke bevaret. Derfor kan kontrollen afgrænse fejlen uden at være årsagsbevis.</p><p>Værktøjet er måltestet lokalt, ikke faktisk kørt. Det ændrer ikke produktion, henter ikke nyt vejr og gemmer ikke cache. Score og deploy ændres ikke. Originalpakken skal stadig være gyldig og ikke udløbet. En aktiv vejrhentning forstyrres ikke.</p><p>Fur-fejlen er fortsat åben. Der kommer ingen ny fejlalarm på hjemmesiden. DEC-0289.</p>"
+    },
+    {
       "id": "weather-failure-owner-alert",
       "chapter": "89.156",
       "title": "Fejlalarm til ejeren, ikke på hjemmesiden",
