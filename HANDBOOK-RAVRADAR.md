@@ -11,6 +11,10 @@ klikforklaringer. Kystbrugere henter ikke jordravdata. Modelversion er
 
 Kortfarver kan vælges som **Geologisk potentiale** eller **Jagtbarhed**.
 Potentialevisningens klasser beskriver mulige geologiske kæder.
+Den generelle grønne flade er fjernet. **Generel geologi · ingen særskilt
+udpegning** er nu ufarvet og klikbar. Det betyder hverken, at området ikke
+er analyseret, eller at der ikke kan findes rav. Orange viser fortsat en
+snæver proceshypotese; den dækker ikke alle interessante markravmiljøer.
 Jagtbarhedsvisningen bruger gråblå for **jagtbarhed uafklaret** på alle
 nuværende materialeflader. En prøve omkring én meter dokumenterer ikke
 adgang ved pløjning. Klikpanelet angiver usikkerheden i begge visninger.
@@ -21,12 +25,22 @@ Metode: `docs/research/JORDRAV_JAGTBARHED_DYBDE_2026-10-04.md`.
 
 Fokusvalget viser kun forhøjet procespotentiale og kan gendanne alle klasser.
 En regional guide beskriver Rubjerg–Lønstrup, Gribskov–Allerød,
-Stenstrup–Kirkebysand, Varde bakkeø og Vendsyssels tidligere kyster med
+Stenstrup–Kirkebysand, Varde bakkeø, Vendsyssels tidligere kyster,
+Asaa–Voerså, Hals–Hou, Jerup–Ålbæk, Lammefjord, Rødbyfjord og Hjardemål med
 geologisk støtte, mulig ravkæde,
 undersøgelsesretning, modargument og kilder. Regionsvalget flytter kun
 kortudsnittet; det afgrænser ikke ravforekomst og ændrer ikke klassifikation.
 Ekspertpunkter JH-005–008 står i den regionale analyse; JH-009 står i
 `docs/research/JORDRAV_TRANSPORT_PLOEJELAG_2026-10-04.md`.
+
+Asaa–Voerså er ejerens eksempel til en bredere analyse af lignende områder,
+ikke en lokal særregel. En national diagnose og fem sammenligninger viser
+dyrkning på flere marine flader, som den eksisterende model ikke udpeger
+særskilt. Hals–Hou og Jerup–Ålbæk giver nærliggende kystsandshypoteser;
+fjordbund, tørv og flyvesandsdække kræver andre laghistorier. Der er 11
+områdevejledninger, men ingen ny klassebonus eller national ravrangliste.
+Årsafgrøde er ikke dagens pløjning eller blotlægning. JH-018–025 og analyse:
+`docs/research/JORDRAV_TIDLIGERE_KYSTMARKER_DANMARK_2026-10-04.md`.
 
 Pløjning kan bringe rav fra det bearbejdede jordlag frem; efterfølgende
 regn kan vaske jord af og forbedre synligheden. Det er ejerens praktiske

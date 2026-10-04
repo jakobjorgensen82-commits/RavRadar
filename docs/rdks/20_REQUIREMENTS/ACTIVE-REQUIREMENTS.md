@@ -1,5 +1,21 @@
 # AKTUELT JORDRAVKRAV – 2026-10-04
 
+**Seneste ejerpræcisering – eksemplet skal generaliseres:** Asaa–Voerså
+er oplyst som kystnært markrav mellem forbindelsesvej og strand. Det skal
+bruges til at genoverveje mulige ravkæder i lignende områder i Danmark,
+ikke kun som lokal rettelse. Ingen automatisk sted-/mark-/marin bonus.
+Marine flader, gamle kystkontakter, finere modtagere og senere dække skal
+vurderes gennem deres egne tilførsels-, bevarings- og lagadgangsforløb.
+Tidligere fund er fortsat støtte og ikke adgangskrav til nye muligheder.
+Ejeren forkaster den grønne generelle flade, der fylder næsten hele
+landkortet. Generel klasse er nu ufarvet, klikbar og forklaret som ingen
+særskilt udpegning; den må ikke betyde ikke analyseret eller ingen rav.
+National native diagnose og fem mark-/kystcases er udført; 11 guides
+forklarer muligheder uden at ændre klasser. Den stærkere nationale
+prioriteringsmodel er fortsat åben. Rapporter:
+`docs/research/JORDRAV_ASAA_VOERSAA_2026-10-04.md` og
+`docs/research/JORDRAV_TIDLIGERE_KYSTMARKER_DANMARK_2026-10-04.md`.
+
 **Seneste ejerbeslutning – jagtbarhed og dybe lag:** Det primære mål er rav,
 som ligger blotlagt eller kan bringes frem ved jordbearbejdning. Ejerens
 første ønske om at udelade dybe lag er udtrykkeligt erstattet: de må gerne

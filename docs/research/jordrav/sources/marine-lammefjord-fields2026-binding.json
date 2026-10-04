@@ -1,0 +1,23 @@
+{
+  "source": "Marker:Marker_2026",
+  "url": "https://geodata.fvm.dk/geoserver/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=Marker%3AMarker_2026&bbox=643911%2C6181762%2C660632%2C6194575%2CEPSG%3A25832&srsName=EPSG%3A25832&outputFormat=application%2Fjson&propertyName=the_geom%2CAfgkode%2CAfgroede&count=6000&sortBy=Afgkode+A",
+  "observedDate": "2026-10-04",
+  "numberMatched": 2207,
+  "numberReturned": 2207,
+  "propertiesRequested": [
+    "the_geom",
+    "Afgkode",
+    "Afgroede"
+  ],
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:EPSG::25832"
+    }
+  },
+  "sourceContentType": "application/json;charset=ISO-8859-1",
+  "sourceEncoding": "ISO-8859-1",
+  "sourceBytes": 3169310,
+  "sourceSha256": "5ebd7c301c37f22c1fb5913c7c704d14a8abac4fc5482e525bef1f41e95a38c3",
+  "decodedUtf8Sha256": "0de1fa56bef32fda86b483a80103db7c9816ecb7f2e6820c5026ef835cf23f2b"
+}

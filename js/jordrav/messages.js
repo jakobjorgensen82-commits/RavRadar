@@ -145,3 +145,28 @@ const accessibilityMessages = {
 };
 registerI18nMessages(Object.fromEntries(Object.entries(accessibilityMessages).map(([lang,entries])=>[lang,Object.fromEntries(Object.entries(entries).map(([key,value])=>[`jordrav.${key}`,value]))])));
 messageKeys.push(...Object.keys(accessibilityMessages.da));
+
+// The broad model category is geological context, not a map recommendation.
+// Keep the model/data identity intact while stating what an uncoloured area
+// does and does not mean. It does not encode the depth of regional research.
+const designationMessages = {
+  da:{
+    possible:'Generel geologi · ingen særskilt udpegning',
+    selectHelp:'Zoom ind og klik på kortet, også i ufarvede områder. Her kan du se jordart, mulig transportkæde, dybde og kilder.',
+    reasonPossible:'Området har geologiske grunddata, men den brede modelkategori giver ingen særskilt udpegning. Den angiver ikke, hvor grundigt den lokale ravkæde er undersøgt, og er ikke en negativ vurdering af ravmulighederne.',
+    potentialColourNote:'Ufarvede områder har ingen særskilt udpegning; det betyder ikke, at ravmuligheder er udelukket. Zoom ind og klik for geologi. Farver dokumenterer ikke jagtbarhed; lilla punkter viser dybe lag.'
+  },
+  de:{
+    possible:'Allgemeine Geologie · keine gesonderte Ausweisung',
+    selectHelp:'Hineinzoomen und auf die Karte klicken, auch auf ungefärbte Gebiete. Hier erscheinen Material, mögliche Transportkette, Tiefe und Quellen.',
+    reasonPossible:'Für das Gebiet liegen geologische Grunddaten vor, doch die breite Modellkategorie ergibt keine gesonderte Ausweisung. Sie beschreibt nicht, wie gründlich die örtliche Bernsteinkette untersucht wurde, und ist keine negative Bewertung der Bernsteinmöglichkeiten.',
+    potentialColourNote:'Ungefärbte Gebiete haben keine gesonderte Ausweisung; Bernsteinmöglichkeiten sind damit nicht ausgeschlossen. Hineinzoomen und für Geologie klicken. Farben belegen keine Zugänglichkeit; violette Punkte zeigen tiefe Schichten.'
+  },
+  en:{
+    possible:'General geology · no specific designation',
+    selectHelp:'Zoom in and click the map, including uncoloured areas. See the material, possible transport history, depth and sources.',
+    reasonPossible:'Geological source data exist here, but the broad model category provides no specific designation. It does not state how thoroughly the local amber history has been studied and is not a negative assessment of amber possibilities.',
+    potentialColourNote:'Uncoloured areas have no specific designation; amber possibilities are not ruled out. Zoom in and click for geology. Colours do not establish hunting accessibility; purple points show deep layers.'
+  }
+};
+registerI18nMessages(Object.fromEntries(Object.entries(designationMessages).map(([lang,entries])=>[lang,Object.fromEntries(Object.entries(entries).map(([key,value])=>[`jordrav.${key}`,value]))])));

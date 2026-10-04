@@ -74,9 +74,9 @@ test('all geological user messages exist in Danish, German and English', () => {
   for (const lang of ['da','de','en']) for (const key of messageKeys) assert.ok(hasTranslation(`jordrav.${key}`,lang), `${lang}/${key}`);
 });
 test('regional readings have sources and translations but cannot classify polygons', () => {
-  assert.equal(new Set(REGIONAL_HYPOTHESES.map(item=>item.id)).size,5);
+  assert.equal(new Set(REGIONAL_HYPOTHESES.map(item=>item.id)).size,11);
   for (const region of REGIONAL_HYPOTHESES) {
-    assert.match(region.expertId,/^JH-00[5-9]$/);
+    assert.match(region.expertId,/^JH-(?:00[5-9]|018|02[1-5])$/);
     assert.ok(!('potential' in region) && !('score' in region));
     const [[south,west],[north,east]]=region.bounds;
     assert.ok(south>=54 && north<=58 && west>=7 && east<=16 && south<north && west<east);

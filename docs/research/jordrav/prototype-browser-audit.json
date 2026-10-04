@@ -2,8 +2,11 @@
   "scope": "Local generated public geology; desktop and mobile; no production verification",
   "checks": [
     "National overview loads without local tiles, weather or Supabase",
+    "General sediment context is uncoloured nationally; orange process hypotheses remain visible and uncoloured is not a negative amber assessment",
     "National focus hides other classes and restores them without loading detail data",
-    "Five regional explanations render sources and navigate without changing source overview",
+    "Six regional explanations render sources and navigate without changing source overview; Asaa–Voersaa names the coastal fields and the existing model gap",
+    "Five further comparative marine-field guides navigate and explain distinct sediment/cover histories without class bonuses",
+    "Uncoloured local geology accepts an actual mouse click and stays uncoloured through opacity/accessibility changes while preserving the selected geometry",
     "Local focus filters real polygons and restores all classes while preserving the selected explanation",
     "Actual polygon click renders explanation; aerial switch preserves geometry, selection, view and explanation",
     "Opacity and overlay visibility controls work independently of base map",
@@ -19,23 +22,48 @@
   ],
   "errors": [],
   "network": {
-    "street200": 87,
-    "aerial200": 44,
+    "street200": 129,
+    "aerial200": 15,
     "aerialStatuses": {
-      "200": 44
+      "200": 15
     },
-    "failedAerial": [],
+    "failedAerial": [
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED"
+    ],
     "geologyBytes": 13260436
   },
   "timings": [
     {
       "stage": "coldNationalOverviewMs",
-      "value": 1021,
+      "value": 1025,
       "geologyEncodedBytes": 6050674
     },
     {
       "stage": "localDetailAfterRegionalNavigationMs",
-      "value": 791,
+      "value": 728,
       "geologyEncodedBytes": 5099092
     }
   ],

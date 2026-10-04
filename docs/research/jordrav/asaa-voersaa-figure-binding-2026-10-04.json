@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "scope": "Figure input/output identity only; visual inspection separate",
+  "auditSha256": "db844d49209fe994c98d27978eeaf1a54fae22ace5f9200d3473b3d2c28ffba7",
+  "geometrySha256": "70050e770910e15d2f5df80256597c7f471b370ef00d9244a34d84a32a567d47",
+  "scriptSha256": "29c556682fbbcd3c56e8b585b46182b41f3a351230c4054400d048c5fc4341ac",
+  "sharedDrawScriptSha256": "7a1f832a4c96c68cdac9e82f17f5360fc9c5074020a2aa52eda913448c4d3261",
+  "figureSha256": "4683ad34f3dcf42a237f4bc4f8eacadfcda2aeedc4d523723864aa768ce67a73",
+  "figure": "asaa-voersaa-context.png",
+  "matplotlibVersion": "3.10.8",
+  "notAnAmberMap": true
+}

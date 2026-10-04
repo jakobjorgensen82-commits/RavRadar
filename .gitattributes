@@ -15,3 +15,8 @@ docs/research/jordrav/plot_stenstrup_field_context.py -text
 docs/research/jordrav/stenstrup-field-*.json -text
 docs/research/jordrav/stenstrup-field-context-2026-10-04.geojson -text
 docs/research/jordrav/sources/*-binding.json -text
+docs/research/jordrav/*asaa_voersaa.py -text
+docs/research/jordrav/asaa-voersaa-*.json -text
+docs/research/jordrav/asaa-voersaa-context-2026-10-04.geojson -text
+docs/research/jordrav/*marine_comparisons.py -text
+docs/research/jordrav/marine-comparison-*.json -text

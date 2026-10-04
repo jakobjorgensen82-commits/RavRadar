@@ -2,6 +2,13 @@
 
 ## Aktuelt mandat og samtaledelta
 
+**Nyeste præcisering:** Grøn standardflade er forkastet som overflødig.
+Generel klasse må ikke betyde ikke analyseret eller ingen rav. Ejeren
+oplyser markrav på kystmarker mellem Asaa og Voerså, mellem strand og
+forbindelsesvej, men præciserer efterfølgende at dette er et eksempel til
+bredere analyse af lignende områder. En lokal særrettelse alene opfylder
+ikke mandatet. Geologiske muligheder må fortsat udledes uden kendte fund.
+
 Ejeren ønsker en meget dyb faglig analyse af mulighederne for jordrav/markrav og et selvstændigt interaktivt Danmarkskort som ny fane på ravradar.dk. Kortet skal kunne skifte mellem **Almindeligt kort** og **Luftfoto**. Potentialepolygoner, valgt område og forklaring skal bevares ved skift.
 
 Den yderligere fordybelse samme dag omfatter fysisk transport, bevaring,
@@ -18,6 +25,100 @@ Ejeren har desuden udtrykkeligt instrueret, at det ældre 1:200.000-jordartskort
 Arbejdet holdes i denne selvstændige jordravgren. Ingen ny funddatabase, brugerindberetningsfunktion, læringspipeline, SQL, vejrscheduler eller løbende serverberegning er del af løsningen. Eksisterende offentlig litteratur indgår som fagligt grundlag.
 
 ## Leveret analyse
+
+### Genovervejelse af tidligere kystmarker — nyeste afsluttede arbejdsafsnit
+
+Indsats Sol/Ekstra høj anbefalet til kritisk regional geologi og
+modeldiagnose. Ingen delegation. Gren `codex/jordrav-geologisk-analyse`,
+seneste forudgående lokale commit `1bf5c78e`. App 4.0.541 og frossen
+Jordrav 0.1.0-prototype bevares. Hverken seneste main eller produktionen
+er verificeret i dette afsnit; tidligere main-/CI-oplysninger er historik.
+
+Rapporter:
+
+- `docs/research/JORDRAV_ASAA_VOERSAA_2026-10-04.md`:
+  eksplicit vej-/strandudsnit 4,054 km², 86,91 % HS/HS og 95,32 % Marin
+  flade. 77 positive markposter, markunion 3,099 km² og dyrkningsudvalg
+  1,537 km². Hele fælles native dækning på 3,993 km² er generel klasse;
+  et originalkontrolleret diagnostisk punkt bekræfter den faktiske
+  visningsklasse. Punktet er ikke et ravfund. JH-018–020.
+- `docs/research/JORDRAV_TIDLIGERE_KYSTMARKER_DANMARK_2026-10-04.md`:
+  national screening af alle 199.653 nyere jordartsposter mod 2.341
+  polygoner i fem marine/shore-typer. 26.526 positive par, fælles nyere
+  dækning 3.957,025 km². Marin flade har bl.a. 1.347,883 km² marint sand/
+  grus i generel klasse. Arealer er kilde-/regeldiagnose, ikke ravareal,
+  markareal eller national jagtbarhedsopgørelse; ældre supplement indgår
+  ikke i denne særskilte native screening.
+
+Fem nye regionale rammer med originale jordarter/landskaber og minimale
+Marker 2026-råsvar er analyseret. Marine former i dyrkningsudvalget:
+Hals–Hou 36,172 km², Jerup–Ålbæk 2,940, Lammefjord 22,629, Rødbyfjord
+15,608 og Hjardemål 8,296. Arealstørrelser er ikke ravrangliste.
+Hals/Jerup giver kystsandsspor; fjordbund og dæklag giver andre kæder.
+Rødbyforland som ensartet havsand er afvist af ML/ML-dominans i det
+største par. Hjardemål som samlet senglacial flade er forkastet til
+fordel for den faktiske kalk-/yngre-marine-/flyvesandskontekst.
+Ingen kendt-fund-krav, stedbonus, ny pløjedybde eller årsafgrødebonus.
+
+Alle seks nye markhentninger er komplette, arkiverede og SHA-/charset-
+bundne; kun geometri og afgrødekode/navn samt teknisk ID indgår. Ingen
+ejerfelter eller nye private kilder. OSM-vej-/kystkilden er en afledt
+minimal projektion, udtrykkeligt ikke et uændret API-råsvar. Relevante
+Brønderslev-, strandeng-, N14-, Vendsyssel-, Lammefjord- og Thy-PDF-sider
+er visuelt læst; identiteter og kildebegrænsninger er arkiveret i research.
+Naturstyrelsens Kragskovhedebeskrivelse er læst som primær HTML; dens
+forskellige projektarealtal anvendes ikke i beregningerne.
+
+Native audits PASS. Uafhængige originale koordinater efterprøver Asaa
+(8 jordarts-/5 landskabsposter, højst 1,327 m² postafvigelse) samt de
+15 største marine dyrkningspar i de fem nye rammer (1.881 jordarts-/233
+landskabsposter, højst 7,835 m² parafvigelse ved 50 m² numerisk grænse).
+Fem markunioner genberegnes før klipning, højst 0,000351 m² afvigelse ved
+1 m² grænse. Ti oprindelige ugyldige jordartsringe i sammenligningen
+håndteres kun i hukommelsen. Det er beregnings-/identitetskontrol,
+ikke geografisk nøjagtighed, national uafhængig genoptælling eller ravbevis.
+Asaa-figur med jordart, landskab og markkontekst er visuelt gennemgået.
+
+**UI:** Generel grøn bliver ufarvet/klikbar i potentialevisningen;
+legendens neutrale swatch og DA/DE/EN-klikforklaring beskriver ingen
+særskilt udpegning. Kategorien er stadig `possible` i frosne data.
+Orange, begrænset/uafklaret, jagtbarhedsvisning og lilla dybdepunkter
+bevares. Asaa og fem nye sammenligninger har guide: 11 i alt.
+Guidevalg flytter kameraet, uden ravgrænser eller polygonklassifikation.
+
+**Seneste målrettede kontrol:** 18 faktiske browserchecks, fem data-/
+modulkontroller med alle 192 bytebindinger, 11 modelcases og sourcegate
+med 109 browserfiler PASS. Begge baggrunde, faktiske ufarvede klik,
+opacitets-/jagtbarhedsskift, 11 guides, dybe punkter, mobil og DA/DE/EN
+kontrolleres. Skærmbilleder venter på synlige fliser; desktop, ufarvet
+klik, guide, luftfoto og mobil er visuelt læst. Seneste OSM/Esri 129/15
+HTTP200; 24 afbrudte Esri-requests ved navigation registreres særskilt,
+og alle synlige luftfotofliser er loaded før capture. Kold national
+geometri 1.025 ms / 6.050.674 encoded bytes; senere detailtrin 728 ms /
+5.099.092 yderligere encoded bytes. Det er lokal måling, ikke SLA.
+Første Node-datastart stoppede på sandbox spawn EPERM; genkørt tilladt
+PASS. Første sourcegate stoppede på Windows-Python-genvej; korrekt
+eksisterende runtime/PATH gav PASS. Ingen model-/produktfejl er skjult.
+
+RDKS, issues, Markdown-håndbog, changelog og forberedt webhåndbogstillæg
+er synkroniseret; aktiv `docs/handbook/content.json` er urørt. RDKS og
+security-hardening PASS; 419 kapitlers plain-language-kontrakt og
+modulversion 4.0.541 PASS. Pages-artifactets 59 browsermoduler PASS efter
+sandbox rsync-EPERM og tilladt genkørsel. Alle nye producent-/verifier-/
+hjælper-/figur-/regel-/manifestbindinger, seks minimale råmarkarkiver og
+begge rapporters lokale links er kontrolleret PASS. Beskyttede ændrede
+paths er tomme. Preview-processen er beholdt og jordrav.html giver HTTP200.
+Staged-byte-kontrol PASS: 55 afgrænsede paths og 33 bytebundne forsknings-
+filer er identiske mellem arbejdsfiler og Git-index. Staged diff-check
+PASS; nul beskyttede paths. Ingen ny app-/modelversion,
+ZIP, vejrindsamling, produktionsdatabase, push, merge eller deploy.
+
+**Fortsat åbent:** En mere komplet national regionalprioritering,
+lokal ravtilførsel, bevaring og faktisk lagadgang. JORDRAV-001/-007/-009.
+At fjerne grøn løser kortlæsning; det gør ikke modellen fagligt færdig.
+Næste model skal generalisere modtager-/laghistorien og afprøve både
+kystcases, finere/overlejrede modtagere og Stenstrups bassinmiljø.
+Ingen automatisk opgradering af alle marine flader.
 
 ### Markkontekst efter seneste fortsættelsesinstruktion
 

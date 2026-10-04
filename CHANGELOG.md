@@ -1,5 +1,14 @@
 ## Ikke udgivet – Jordrav forskningsprototype 0.1 (2026-10-04)
 
+- Overflødig generel grøn flade fjernet: generel geologi er ufarvet og
+  klikbar, uden at betyde ravfravær eller forskningsstatus. Kortets
+  jagtbarhedsvisning og lilla dybe punkter bevares særskilt.
+- Asaa–Voerså-eksemplet generaliseret med national native diagnose af
+  199.653 jordartsposter og fem marine landskabstyper samt mark-/laganalyse
+  af Hals–Hou, Jerup–Ålbæk, Lammefjord, Rødbyfjord og Hjardemål. Arkiverede
+  minimale markkilder, originalkontrol og JH-018–025; 11 områdevejledninger.
+  Systematisk manglende særudpegning af marine flader er dokumenteret,
+  men regler/datasæt er uændrede og national prioritering fortsat åben.
 - Ny Stenstrup-markanalyse med faktiske Marker 2026/JB2024, arkiverede
   regionale råsvar uden ejerfelter og separat trepanelsfigur. 12,853 km²
   registreret markareal; 39,60 ha yngre dæklagspar i dyrkningsudvalget.
@@ -16,7 +25,7 @@
   undersøgte issøflade. Ingen omklassificering eller ny kortfunktion.
 - Ny selvstændig Jordrav-fane med almindeligt kort/luftfoto, farvestyrke og
   klikforklaringer for materiale, proces, sikkerhed, dybde og kilde.
-- Fokus på forhøjet procespotentiale og fem regionale ravhistorier med
+- Fokus på forhøjet procespotentiale og 11 regionale ravhistorier med
   kilder og undersøgelsesretning. Regionsvalg under zoom bevarer seneste
   ønskede egn; lokale detaljer viser indlæsning efter kortbevægelse.
 - Ny dyb analyse af fysisk ravtransport, bevaring og forbindelsen til
@@ -35,7 +44,7 @@
 - Statisk national oversigt og lokale udsnit med SHA-/modelbinding, bounded
   visning/cache og lazy-load. Ingen vejr-/database-/læringspipeline tilføjes.
 - Sporbar kilde- og grænsebehandling samt målrettede model-, data- og UI-tests.
-  192 native udsnit, 11 modelcases, fem datakontroller og 15 browserkontroller
+  192 native udsnit, 11 modelcases, fem datakontroller og 18 browserkontroller
   består lokalt. Luftfoto og almindeligt kort er visuelt gennemgået.
   Detaljer: `docs/research/JORDRAV_PROTOTYPE_0_1.md` og forskningscheckpointet.
 - Ingen ny apprelease, ændring af kystgeodata, merge eller deploy.

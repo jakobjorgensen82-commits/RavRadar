@@ -1,6 +1,26 @@
 # AKTUELT JORDRAVCHECKPOINT – 2026-10-04
 
-**Nyeste analyse – markkontekst:** Stenstrups samme native issøflade er nu
+**Nyeste samtaledelta – bredere tidligere kystmarker:** Ejeren forkaster
+den grønne generelle flade og præciserer, at Asaa–Voerså er et eksempel til
+genovervejelse af lignende områder, ikke en lokal særregel. Generel klasse
+er nu ufarvet/klikbar og hedder **Generel geologi · ingen særskilt udpegning**.
+Den betyder hverken ikke analyseret eller ingen rav. Marine flader får
+fortsat generel klasse i de frosne regler; det er en systematisk mangel i
+den særskilte regionale udpegning, ikke en løst prioriteringsmodel.
+Ny native analyse af 199.653 jordartsposter og fem marine landskabstyper
+giver 3.957,025 km² fælles nyere dækning, uden at kalde det rav-/markareal.
+Fem sammenligninger med arkiveret Marker 2026: Hals–Hou, Jerup–Ålbæk,
+Lammefjord, Rødbyfjord og Hjardemål. Asaa er særskilt kontrolcase mellem
+vej og strand; 86,91 % HS/HS og 95,32 % Marin flade i valgt udsnit.
+Originalkontroller PASS; 15 største regionale markpar afviger højst
+7,835 m². Der er 11 DA/DE/EN-guides, uden stedbonus eller klasseændring.
+18 browserchecks, fem data-/modulkontroller, 11 modelcases og sourcegate
+med 109 browserfiler PASS. Rapport: `docs/research/JORDRAV_TIDLIGERE_KYSTMARKER_DANMARK_2026-10-04.md`.
+App 4.0.541/model 0.1.0-prototype og alle producerede data er uændrede.
+Aktiv webhåndbog er urørt; særskilt webtillæg opdateres. Intet push/deploy.
+Nedenstående tidligere checkpoints bevares som dateret historik.
+
+**Forrige analyse – markkontekst:** Stenstrups samme native issøflade er nu
 sammenholdt med arkiverede, offentlige Marker 2026 og Jordbundskort 2024.
 311 markposter overlapper fladen; deres union er 12,853 km² / 66,65 %.
 Udvalgte dyrkningsafgrøder dækker 9,822 km². De fem FT/TS, FP/TL og FT/TL-
@@ -12,7 +32,7 @@ Rapport: `docs/research/JORDRAV_MARKKONTEKST_STENSTRUP_2026-10-04.md`.
 JH-015–017 og JORDRAV-008 skærper de fortsat åbne spørgsmål. Ingen ejerfelter
 er hentet. Årsafgrøde er ikke dagens blotlægning; jagtbarhed er uafklaret.
 
-**Seneste UI-ændring – jagtbarhed:** Ejeren har erstattet ønsket om at
+**Forrige UI-ændring – jagtbarhed:** Ejeren har erstattet ønsket om at
 udelade dybe lag med tydelig særvisning. Kortet har farvevalg mellem
 geologisk potentiale og jagtbarhed. Alle nuværende materialeflader har
 uafklaret jagtbarhed; ens GEUS-symboler omkring én meter beviser ikke

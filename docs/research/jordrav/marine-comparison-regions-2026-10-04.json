@@ -1,0 +1,62 @@
+{
+  "scope": "Analyst-selected comparison windows, not amber boundaries or exhaustive regional coverage",
+  "crs": "EPSG:4326",
+  "knownFindsRequired": false,
+  "regions": [
+    {
+      "id": "hals-hou",
+      "name": "Hals–Hou og kystfladen",
+      "bbox": [
+        10.21,
+        56.99,
+        10.39,
+        57.12
+      ],
+      "comparison": "Tidligere kystflade og dyrket land; nordøstlig hav-/landhistorie"
+    },
+    {
+      "id": "jerup-aalbaek",
+      "name": "Jerup–Ålbæk",
+      "bbox": [
+        10.35,
+        57.52,
+        10.49,
+        57.62
+      ],
+      "comparison": "Marine flader, strandvolde og senere flyvesands-/organisk dække"
+    },
+    {
+      "id": "lammefjord",
+      "name": "Lammefjord",
+      "bbox": [
+        11.3,
+        55.76,
+        11.56,
+        55.87
+      ],
+      "comparison": "Tørlagt fjordbund; finere marine modtagere sammenlignes med kystsand"
+    },
+    {
+      "id": "roedbyfjord",
+      "name": "Rødbyfjord og sydlige marine forland",
+      "bbox": [
+        11.23,
+        54.66,
+        11.42,
+        54.78
+      ],
+      "comparison": "Inddæmmet sydligt område; andet havniveau-/sedimentforløb end Vendsyssel"
+    },
+    {
+      "id": "hjardemaal",
+      "name": "Hjardemål og nordlige Thy",
+      "bbox": [
+        8.66,
+        57.03,
+        8.84,
+        57.11
+      ],
+      "comparison": "Kalkknuder, yngre marine flader og flyvesandsdække; kontrollerer kronologisk overførbarhed"
+    }
+  ]
+}

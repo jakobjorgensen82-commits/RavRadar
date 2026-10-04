@@ -5,6 +5,29 @@
 
 Den dybe [faglige analyse](JORDRAV_POTENTIALE_DANMARK_2026-10-04.md) omsættes her til gennemgåelige regler og faktiske kildepolygoner. Modellen udpeger muligheder uden at kræve tidligere ravfund. Den beregner hverken fundprocenter, ravmængde eller RavScore.
 
+## Seneste genovervejelse: tidligere kystmarker
+
+Ejerens Asaa–Voerså-eksempel er generaliseret gennem en national native
+diagnose og fem nye mark-/kystcases. [Analysen](JORDRAV_TIDLIGERE_KYSTMARKER_DANMARK_2026-10-04.md)
+viser relevante marine flader uden særskilt udpegning og forskelle mellem
+Hals–Hou, Jerup–Ålbæk, Lammefjord, Rødbyfjord og Hjardemål. Alle seks nye
+cases har DA/DE/EN-guide, så der nu er 11 guides. De flytter kortet og
+forklarer muligheder; de giver ingen regionale klassebonusser.
+
+**Generel geologi · ingen særskilt udpegning** erstatter den grønne
+standardflade som ufarvet/klikbar visning. Den angiver hverken hvor dybt
+området er undersøgt eller fravær af rav. Frosne regler klassificerer
+stadig kategorien som `possible`. Dette er en ændring af visning og
+forklaring, ikke en efterfølgende modelbygning. En mere komplet national
+prioritering er fortsat åben, og orange kan ikke bruges som komplet
+markravudvalg. Jagtbarhed, finere modtagere og senere dække vurderes særskilt.
+
+Seneste lokal kontrol: 18 faktiske browserchecks med 11 guides og begge
+baggrunde, fem data-/modulkontroller, 11 modelcases og source-critical
+109 browserfiler PASS. Desktop, ufarvede klik, luftfoto og 390 px mobil er
+visuelt læst; skærmbilleder venter på synlige fliser. Tidligere tal i
+daterede afsnit nedenfor beskriver tidligere kontrolforløb, ikke dette head.
+
 ## Jagtbarhed og dybe lag – seneste ejerbeslutning
 
 Ejeren ønsker også dybe geologiske muligheder på kortet, når de tydeligt

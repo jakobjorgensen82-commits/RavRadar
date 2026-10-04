@@ -1,5 +1,17 @@
 # FORSKNINGSTILLÆG – 2026-10-04 – Jordravkort på 4.0.541
 
+Seneste ejerpræcisering: Asaa–Voerså er et eksempel til bredere analyse,
+ikke lokal særrettelse. Generel grøn er fjernet som overflødig; ufarvet
+klikbar geologi er ingen særskilt udpegning og siger intet om forskning
+eller ravfravær. National native marine diagnose og fem regioner med
+faktisk markkontekst er udført; 11 DA/DE/EN-guider. Originalkontroller og
+18 browserchecks, fem datakontroller, 11 modelcases og sourcegate PASS.
+Frosne regler og producerede data er uændrede; stærkere regional
+prioritering og faktisk lagadgang er åbne. JH-018–025/JORDRAV-009.
+Rapport: `docs/research/JORDRAV_TIDLIGERE_KYSTMARKER_DANMARK_2026-10-04.md`.
+Ingen ny app-/modelversion, push, vejrindsamling eller deploy. De tidligere
+kontroltal nedenfor er historik fra de tidligere lokale arbejdsafsnit.
+
 Geografiske muligheder, geologisk potentialemodel, faktiske GEUS-filaudits
 og kortdesign med **Almindeligt kort / Luftfoto** er dokumenteret. Direkte
 fund er støtte, ikke obligatorisk krav til en potentiel zone. Ældre jordarter

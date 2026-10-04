@@ -7,7 +7,7 @@ import { ACCESS_COLOURS, SURFACE_HUNTABILITY, DEEP_LAYER_EXAMPLES } from './acce
 initialiseI18n();
 const $ = id => document.getElementById(id);
 const tr = key => t(`jordrav.${key}`);
-const colours = { enhanced:'#d18a1d', possible:'#419e91', limited:'#85746a', unresolved:'#85939e' };
+const colours = { enhanced:'#d18a1d', possible:'#8c959b', limited:'#85746a', unresolved:'#85939e' };
 const materialKeys = {
   'glacial-coarse':'GlacialCoarse', 'glacial-fine':'GlacialFine', 'glacial-basin-coarse':'GlacialBasinCoarse', till:'Till',
   'marine-coarse':'MarineCoarse', 'marine-fine':'MarineFine', 'marine-mixed':'Mixed',
@@ -37,7 +37,12 @@ const acceptsFeature = feature => !onlyEnhanced || potentialOf(feature) === 'enh
 function featureStyle(feature) {
   const potential = potentialOf(feature);
   const colour = colourMode === 'access' ? ACCESS_COLOURS[SURFACE_HUNTABILITY] : colours[potential];
-  return {fillColor: colour, fillOpacity: opacity, weight: feature.properties.potential ? 0 : .4, color: colour, opacity: .55};
+  // General sediment context stays queryable, without colouring almost all
+  // land as a recommendation. Accessibility is a separate, explicit view.
+  const uncoloured = colourMode === 'potential' && potential === 'possible';
+  return {fillColor: colour, fillOpacity: uncoloured ? 0 : opacity,
+    weight: uncoloured || feature.properties.potential ? 0 : .4,
+    color: colour, opacity: uncoloured ? 0 : .55};
 }
 function syncVisibility() {
   if (!map) return;
@@ -59,7 +64,9 @@ function renderLegend() {
   const categories = colourMode === 'access' ? [[SURFACE_HUNTABILITY,'huntUnknown']] : Object.keys(colours).map(key=>[key,key]);
   for (const [category, key] of [...categories,['deep','deepLegend']]) {
     const item=node('span');const swatch=node('i');
-    swatch.style.background=category==='deep' ? ACCESS_COLOURS.deep : colourMode==='access' ? ACCESS_COLOURS[category] : colours[category];
+    const uncoloured=colourMode==='potential' && category==='possible';
+    swatch.style.background=uncoloured ? 'transparent' : category==='deep' ? ACCESS_COLOURS.deep : colourMode==='access' ? ACCESS_COLOURS[category] : colours[category];
+    if(uncoloured)swatch.classList.add('jordrav-uncoloured-swatch');
     if(category==='deep')swatch.classList.add('jordrav-deep-swatch');
     item.append(swatch,node('span',tr(key)));legend.append(item);
   }

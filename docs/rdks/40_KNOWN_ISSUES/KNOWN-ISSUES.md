@@ -3,7 +3,8 @@
 - **JORDRAV-001, delvist løst:** Første gennemgåelige procesregler og faktiske
   polygonkoblinger er implementeret uden kendt fund som adgangskrav.
   Regional tilførsels-/bevaringskobling og stærkere prioritering er åbne.
-  Fem navngivne kæder med modargumenter og ekspertpunkter JH-005–009 er
+  11 navngivne guides med modargumenter og ekspertpunkter JH-005–009,
+  JH-018 og JH-021–025 er
   nu analyseret og vist som guide, uden automatisk regional klassebonus.
   To offentlige profiler er efterprøvet mod kortfladerne; JH-010–011
   skærper lagkontaktspørgsmål uden at verificere regional ravtilførsel.
@@ -11,6 +12,10 @@
   modtagere. Kun 0,43 % af den valgte flade vises som forhøjet; fokus kan
   ikke bruges som en fuldstændig regional markprioritering. Klasseændringer
   kræver stadig faglig tilførsels-/bevaringskobling, ikke arealbonus.
+  Ny Asaa-kontrol og fem andre kyst-/markcases viser en systematisk
+  udpegningsmangel for marine flader/forland. National nyere dækning af
+  fem marine landskabstyper er 3.957,025 km²; det er ikke ravareal eller
+  grundlag for at gøre alle disse flader orange. Se JORDRAV-009.
 - **JORDRAV-002, lokalt kontrolleret / historiske kyster åbne:** Sporbar
   normalisering af 438/47 ringfund og 194 mikroflader er auditeret. Alle
   192 native partitioner består; ældre overlap er eksplicitte konflikter.
@@ -22,7 +27,7 @@
   må ikke bruges som entydig kategori eller komplet fleristidskronologi.
 - **JORDRAV-004, lokalt løst:** OSM/World Imagery, særskilt CSP,
   attribution og bevaret valg ved baggrundsskift er implementeret.
-  15 browserkontroller består med faktiske fliser og visuelt gennemgået
+  18 browserkontroller består med faktiske fliser og visuelt gennemgået
   fuldt luftfoto. Officiel GeoDanmark-adgang er ikke oprettet.
   Ældre jordartskort bruges efter ejerinstruktion.
   Nyt regionsvalg under zoom kunne tabes; seneste ønske køres efter reelt
@@ -56,6 +61,9 @@
   Regional Marker 2026-skæring er nu udført: 311 positive poster, 12,853 km²
   union og 39,60 ha af fem yngre dæklagspar i dyrkningsudvalget. Det afklarer
   markkontekst, ikke nutidig pløjning eller adgang til den dybere enhed.
+  Ejerens Asaa-erfaring støtter lokal praktisk markrav, uden præcis
+  fundgrænse eller aktuel verificering af hele bæltet. Fem andre regioners
+  årsafgrøder og marine skæringer fastlægger heller ikke pløjeadgang.
 - **JORDRAV-008, JB-/topjordsfortolkning åben:** Det publicerede JB2024-lag
   kan ikke entydigt adskille oprindelige og administrativt omklassificerede
   kategorier. Rene dybdeprofiler/proveniens mangler til denne slutning.
@@ -64,6 +72,17 @@
   21,36 ha registreret markareal mangler JB-værdi og er ikke udfyldt.
   JH-015–017 og primærkilder i markkontekstanalysen; ingen automatisk JB-bonus
   eller ændring af jagtbarhed. Den interaktive prototype har ikke mark/JB-lag.
+- **JORDRAV-009, visning løst / regional generalisering åben:** Grøn generel
+  flade er fjernet; ufarvet/klikbar betyder ingen særskilt udpegning,
+  hverken ravfravær eller forskningstilstand. Ejeren ønsker Asaa-eksemplet
+  brugt bredt. Native national diagnose og Hals–Hou, Jerup–Ålbæk,
+  Lammefjord, Rødbyfjord og Hjardemål er nu analyseret med markkontekst
+  og originalkontrol. Der er 11 guider, men regler/datasæt er fortsat
+  frosne. Marine flader og finere modtagere mangler stærkere regional
+  tilførsels-/bevaringskobling. Hjardemål som samlet senglacial flade er
+  forkastet; Rødbyforland som ensartet havsand er afvist af kildedata.
+  Fravær af orange må ikke sælge modellen som en færdig markravrangliste.
+  Rapport: `docs/research/JORDRAV_TIDLIGERE_KYSTMARKER_DANMARK_2026-10-04.md`.
 
 Evidens: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
 Punkterne gælder den lokale Jordrav-prototype, ikke den aktuelle vejrproduktion.

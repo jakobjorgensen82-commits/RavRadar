@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-04",
+  "scope": "Read-only primary literature identities and visually inspected PDF pages; no copyrighted PDF archived in repository",
+  "pdfPageNumbering": "Printed page numbers; rendered indexes differ in long reports",
+  "sources": [
+    {
+      "title": "Brønderslev Kommune: Landskabsanalyse, Østkysten",
+      "url": "https://bronderslev.viewer.dkplan.niras.dk/media/2339791/Landskabsanalyse-for-Broenderslev-Kommune_lav-oploesning.pdf",
+      "sourceBytes": 24085849,
+      "sourceSha256": "5915f50bd63bbd3c4c7ae8c502f88772e14715adcb9cd0ef393e2af2044e8462",
+      "visuallyReadPrintedPages": [
+        30,
+        31
+      ],
+      "claimScope": "Kommunens Asaa/Geraa-kystflade, jordarter og landbrug; ikke hele Voerså-egnen eller et ravfund",
+      "notAmberEvidence": true
+    },
+    {
+      "title": "Vestergaard 2000: Strandenge – en beskyttet naturtype",
+      "url": "https://mst.dk/media/f0wdavzp/strandenge-en-beskyttet-naturtype.pdf",
+      "sourceBytes": 6113120,
+      "sourceSha256": "052afdeaf8db6cb35a8d16bcde5cee1720a3da64e244290edd52d6b9315fc775",
+      "visuallyReadPrintedPages": [
+        30,
+        31,
+        32
+      ],
+      "claimScope": "Marine forlandstyper og regional landdannelse; ikke lokal lagdybde eller amber",
+      "notAmberEvidence": true
+    },
+    {
+      "title": "MST N14 basisanalyse 2022–27",
+      "url": "https://mst.dk/media/nufpbamn/n14-revideret-basisanalyse-2022-27-aalborg-bugt_randers-fjord_mariager-fjord.pdf",
+      "sourceBytes": 5897220,
+      "sourceSha256": "3f231461c6ad928810f1acda9feac0bdd6f98ba5298ac52ba6e971defdebcb59",
+      "visuallyReadPrintedPages": [
+        83
+      ],
+      "claimScope": "Geografisk landbrugskontekst fra 2004–2017; ikke årsafgrøde 2026 eller pløjning",
+      "notAmberEvidence": true
+    }
+  ]
+}

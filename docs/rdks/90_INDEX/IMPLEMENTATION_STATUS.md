@@ -1,6 +1,23 @@
 # AKTUEL JORDRAVSTATUS – 2026-10-04
 
-**Nyeste analyse – markkontekst:** Komplette regionale WFS-svar er arkiveret
+**Nyeste implementering og analyse:** Generel grøn er fjernet fra
+potentialevisningen; geometrien er fortsat klikbar. Generel geologi er
+ingen særskilt udpegning og ingen indikator for forskning eller ravfravær.
+11 regionale guides på DA/DE/EN beskriver nu også Asaa–Voerså, Hals–Hou,
+Jerup–Ålbæk, Lammefjord, Rødbyfjord og Hjardemål. Ejerens eksempel er
+generaliseret gennem kyst-/laghistorier frem for lokal klassebonus.
+National native diagnose: 199.653 jordartsposter, 2.341 marine/shore-
+landskabsposter og 26.526 positive par. Fem nye WFS-markkilder er arkiveret
+minimalt med charset/SHA; original-SHP-kontrol af 15 ledende regionale
+markpar PASS. Ny Asaa-figur og alle relevante primærkildesider er læst
+visuelt. 18 browserchecks, fem datakontroller, 11 modelcases og sourcegate
+109 browserfiler PASS. Ny native diagnose ændrer ikke frosne regler/data.
+Åbent: regional prioriteringsmodel, ravtilførsel og praktisk lagadgang.
+Rapport: `docs/research/JORDRAV_TIDLIGERE_KYSTMARKER_DANMARK_2026-10-04.md`.
+App-/modelversion er uændret. Ingen CI-/produktionsverifikation/publicering.
+De tidligere kontroltal og checkpointtekster nedenfor er historik.
+
+**Forrige analyse – markkontekst:** Komplette regionale WFS-svar er arkiveret
 med minimal feltselektion, charset og SHA-binding. Stenstrups native flade
 har 12,853 km² registreret markareal og 9,822 km² i udvalgt dyrkningsgruppe.
 Geologi-/mark-/JB-skæringer, dæklagspar og lateral kontakt på marker er
@@ -11,7 +28,7 @@ er åbne. Figur og rapport er forskningsartefakter; mark/JB-lagene er endnu
 ikke del af den interaktive prototype. Ingen app-/model-/dataændring.
 Se `docs/research/JORDRAV_MARKKONTEKST_STENSTRUP_2026-10-04.md`.
 
-**Seneste UI-ændring – jagtbarhed:** Ejeren har erstattet ønsket om at
+**Forrige UI-ændring – jagtbarhed:** Ejeren har erstattet ønsket om at
 udelade dybe lag med tydelig særvisning. Kortet har farvevalg mellem
 geologisk potentiale og jagtbarhed. Alle nuværende materialeflader har
 uafklaret jagtbarhed; ens GEUS-symboler omkring én meter beviser ikke
