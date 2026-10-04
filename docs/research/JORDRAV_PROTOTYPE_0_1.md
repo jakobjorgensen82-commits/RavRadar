@@ -11,13 +11,15 @@ En ny **Jordrav**-fane åbner `jordrav.html` med sin egen Leaflet-instans. Navig
 
 **Almindeligt kort** og **Luftfoto** er synlige baggrundsvalg. Skift ændrer kun baggrunden, mens farveflader, valgt flade, forklaring, kortcentrum og zoom bevares. Luftfoto bruger den eksisterende World Imagery-tjenestetype. En særskilt GeoDanmark-adgang er ikke oprettet. Begge leverandørers attribution og Esris vilkårslink vises.
 
-Overblikket viser landsdækkende, generaliserede potentialeflader. Fra zoom 11 hentes statiske lokale udsnit. Et klik viser materiale ved overfladen, materiale omkring én meter, landskabsproces, mulig ravhistorie, separat sikkerhed, overfladerelevans og kilder. Farvestyrken kan ændres, og laget kan skjules.
+Overblikket viser landsdækkende, generaliserede potentialeflader. Fra zoom 11 hentes statiske lokale udsnit. Et klik viser øvre kortlagte aflejring, materiale omkring én meter, landskabsproces, mulig ravhistorie, separat sikkerhed, overfladerelevans og kilder. Farvestyrken kan ændres, og laget kan skjules.
 
-Fokusvalget viser kun **forhøjet procespotentiale** og kan gendanne alle klasser. De øvrige klassifikationer ændres ikke. En særskilt [regional guide](JORDRAV_REGIONALE_KAEDER_2026-10-04.md) uddyber fire forskellige ravkæder med kilder, undersøgelsesretning og modargumenter. Regionsvalget flytter kun kortudsnittet; det tegner ingen ravgrænse og giver ingen klassebonus. Kode: `js/jordrav/regional-hypotheses.js` og `initialiseRegionalGuide()` i `js/jordrav/map.js`.
+Fokusvalget viser kun **forhøjet procespotentiale** og kan gendanne alle klasser. Det skjuler også mulige bassin- og marine miljøer; deres klassifikation ændres ikke. En særskilt [regional guide](JORDRAV_REGIONALE_KAEDER_2026-10-04.md) uddyber de første fire ravkæder. [Den dybere transport- og markanalyse](JORDRAV_TRANSPORT_PLOEJELAG_2026-10-04.md) tilføjer Vendsyssels tidligere kyster som femte case. Alle fem har kilder, undersøgelsesretning og modargumenter. Regionsvalget flytter kun kortudsnittet; det tegner ingen ravgrænse og giver ingen klassebonus. Kode: `js/jordrav/regional-hypotheses.js` og `initialiseRegionalGuide()` i `js/jordrav/map.js`.
+
+Markguiden adskiller rav i det bearbejdede jordlag, pløjningens blotlægning og regnens afvaskning/synlighed. GEUS kortlægger oprindelige aflejringer under pløjelaget, omkring én meters dybde. `jsym1` beskriver en øvre geologisk aflejring, ikke det aktuelle pløjelags ravindhold. Ens symboler dokumenterer ikke pløjerelevans; forskellige symboler angiver ikke præcis dæklagstykkelse. Tidligere UI-label **Ved overfladen** er erstattet med **Øvre kortlagte aflejring** på DA/DE/EN. Intern modelkategori `near-surface` og det frosne datasæt er uændrede.
 
 ## Regler og deres faglige betydning
 
-Reglerne står i `data/jordrav/model-rules.json`; de eksekveres af `scripts/lib/jordrav_model.py` og bruges af `scripts/build-jordrav-prototype.py`. Jordartens overfladefelt, ikke blot visningsfarven eller den dybere jordart, er det primære materialegrundlag. Blandede GEUS-symboler behandles som blandinger. `DS-DG` er kompatibelt sand/grus; `DS-DL` bliver ikke stiltiende gjort til rent sand.
+Reglerne står i `data/jordrav/model-rules.json`; de eksekveres af `scripts/lib/jordrav_model.py` og bruges af `scripts/build-jordrav-prototype.py`. Jordartens øvre symbolfelt, ikke blot visningsfarven eller den dybere jordart, er det primære materialegrundlag. Regelsættets ord overflade beskriver den øvre geologiske aflejring; det må ikke læses som en særskilt prøve af nutidens jordoverflade. Blandede GEUS-symboler behandles som blandinger. `DS-DG` er kompatibelt sand/grus; `DS-DL` bliver ikke stiltiende gjort til rent sand.
 
 | Klasse | Konkret regel i prototypen | Hvad slutningen betyder |
 |---|---|---|
@@ -87,7 +89,7 @@ En uafhængig kontrol genlæste 238.829 cacheposters attributter mod originale D
 
 Detaljeret evidens ligger i `docs/research/jordrav/prototype-build-audit.json`, `prototype-source-cache-audit.json` og `prototype-browser-audit.json`. Skærmbillederne er visuelt gennemgået. Det aktive webhåndbogsafsnit med SQL-installationskopi ændres ikke her; et konkret, gyldigt tillæg ligger i `handbook-supplement.json` til senere koordineret integration.
 
-Den udvidede browserprøve dækker også fokus på nationale/lokale flader, gendannelse af alle klasser og de fire regionale guides. Et faktisk tabt regionsvalg under igangværende zoom er rettet med offentlige zoom-/bevægelseshændelser og indgår som regression. De tidligere fejlslagne forsøg er særskilt beskrevet i den regionale analyse; det er den korrigerede samlede prøve, som er PASS.
+Den aktuelle browserprøve har 12 kontroller og dækker også fokus på nationale/lokale flader, gendannelse af alle klasser, fem regionale guides og markguidens pløjelagsforklaring på mobil og DA/DE/EN. Et faktisk tabt regionsvalg under igangværende zoom er rettet med offentlige zoom-/bevægelseshændelser og indgår fortsat som regression. De tidligere fejlslagne forsøg er særskilt beskrevet i den regionale analyse; det er den korrigerede samlede prøve, som er PASS.
 
 En lokal prototype er ikke CI- eller produktionsbevis. Før fælles levering skal nyere main og aktive produktionsskrivere kontrolleres; RDKS-tillæggene integreres med nyere dokumentation. Ingen merge eller deploy foretages, mens den eksisterende produktionsskriver er aktiv. Ingen vejrkørsel dispatches fra denne gren.
 

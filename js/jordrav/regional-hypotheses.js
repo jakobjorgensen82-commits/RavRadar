@@ -36,5 +36,14 @@ export const REGIONAL_HYPOTHESES = [
       de:{name:'Varde-Hügelinsel und Erosionsränder',basis:'Miozäne und quartäre Schichten wurden aufgeschoben, teilweise erodiert und später freigelegt.',chain:'Ältere Sedimente können mögliche Quellen jüngerer lokaler Aufnahmeablagerungen sein.',focus:'Freigelegte Schichtkontakte und sandige Empfänger an Erosionsrändern untersuchen.',challenge:'Bernsteinzufuhr ist ungeklärt; Braunkohle und Eisdruck allein erhöhen die Klasse nicht.'},
       en:{name:'Varde hill-island and erosion margins',basis:'Miocene and Quaternary layers were thrust, partly eroded and later exposed.',chain:'Older sediments may be possible sources for younger local receiving deposits.',focus:'Examine exposed layer contacts and sandy receivers along erosion margins.',challenge:'Amber supply is unresolved; lignite and ice pressure alone do not raise the class.'}
     }
+  },
+  {
+    id:'vendsyssel-marine', expertId:'JH-009', bounds:[[57.36,10.15],[57.71,10.58]],
+    sources:[{name:'GEUS 2025/32 · s. 20',url:'https://data.geus.dk/pure-pdf/GEUS-R_2025_32_web.pdf'},{name:'Christensen & Nielsen 2008 · abstract',url:'https://pub.geus.dk/en/publications/dating-littorina-sea-shore-levels-in-denmark-on-the-basis-of-data/'}],
+    copy:{
+      da:{name:'Vendsyssel: hævede havflader og tidligere kyster',basis:'Senglaciale havlag er hævet over nutidens hav. Ved Yderhede beskrives flere senere marine faser.',chain:'Hav og kyster kan have genoptaget materiale fra ældre lag og afsat det i nye modtagere.',focus:'Undersøg gamle kystkontakter, strandvolde og lag nær pløjelaget; adskil senglaciale og holocæne forløb.',challenge:'Marint sand kan være afsat på dybere vand. Gammel kysthøjde, ravtilførsel og dagens blotlægning skal vurderes lokalt.'},
+      de:{name:'Vendsyssel: gehobene Meeresflächen und frühere Küsten',basis:'Spätglaziale Meeresschichten liegen heute über dem Meer. Für Yderhede sind mehrere spätere marine Phasen beschrieben.',chain:'Meer und Küsten können Material aus älteren Schichten aufgenommen und in neuen Ablagerungsräumen abgesetzt haben.',focus:'Alte Küstenkontakte, Strandwälle und Schichten nahe dem Pflughorizont untersuchen; spätglaziale und holozäne Abläufe trennen.',challenge:'Meeressand kann in tieferem Wasser abgelagert sein. Alte Küstenhöhe, Bernsteinzufuhr und heutige Freilegung sind lokal zu prüfen.'},
+      en:{name:'Vendsyssel: raised marine plains and former coasts',basis:'Late-glacial marine layers now lie above the sea. Several later marine phases are described at Yderhede.',chain:'Seas and coasts may have reworked material from older layers into new receiving deposits.',focus:'Examine old coastal contacts, beach ridges and layers near the plough zone; distinguish late-glacial and Holocene histories.',challenge:'Marine sand may have formed in deeper water. Former shore height, amber supply and current exposure need local assessment.'}
+    }
   }
 ];

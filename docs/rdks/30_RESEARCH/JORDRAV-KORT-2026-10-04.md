@@ -4,6 +4,13 @@
 
 Ejeren ønsker en meget dyb faglig analyse af mulighederne for jordrav/markrav og et selvstændigt interaktivt Danmarkskort som ny fane på ravradar.dk. Kortet skal kunne skifte mellem **Almindeligt kort** og **Luftfoto**. Potentialepolygoner, valgt område og forklaring skal bevares ved skift.
 
+Den yderligere fordybelse samme dag omfatter fysisk transport, bevaring,
+tidligere kyster og en national diagnose af processernes fokus. Ejerens
+aktuelle præcisering om pløjning og regn indgår som praktisk fundmekanisme:
+pløjning kan blotlægge rav i det bearbejdede lag, og regn kan vaske jord af.
+Geologisk lager og nutidig synlighed er adskilt. Ingen fast regntærskel eller
+vejrhentning tilføjes. Se den nye [transport- og markanalyse](../../research/JORDRAV_TRANSPORT_PLOEJELAG_2026-10-04.md).
+
 Ejeren har præciseret, at analysen skal udlede **muligheder uden allerede dokumenterede ravfund**. Direkte fund er støtte til sikkerhed, ikke et obligatorisk krav til en potentiel zone. Modellen skal vurdere istransport, glaciotektonik, smeltevand, tidligere hav/kyster, gentagen kronologisk omlejring og overfladerelevans. Geografisk overlap mellem forskellige isrande udløser ikke automatisk bonus.
 
 Ejeren har desuden udtrykkeligt instrueret, at det ældre 1:200.000-jordartskort skal bruges trods de konstaterede særlige anvendelsesvilkår. Det tidligere forslag om at udelade downloadede polygoner som supplerende grundlag er erstattet. Det nyere kort har forrang, hvor materialet er klassificeret; det ældre kort beholder egen kilde, målestok, usikkerhed og vilkårsangivelse. Nyere geometri alene er ikke tilstrækkelig: filen har 1.154 `X`-polygoner med ukendt jordart, som skal indgå i supplementreglen.
@@ -53,6 +60,49 @@ Næste trin er at fastlægge gennemgåelige potentialeregler, sammenholde de fø
 Før en senere fælles levering skal main og eventuelle aktive produktionsskrivere læses på ny. Merge/deploy følger den eksisterende arbejdsgrænse. Ingen vejrkørsel dispatches eller genstartes fra jordravarbejdet.
 
 Modelanbefaling: ejerens GPT-6.1 Sol og **Ekstra høj** til faglig syntese, modelregler og slutkontrol. Ingen model-/indsatsændring er udført automatisk.
+
+## Yderligere transport-, dybde- og markanalyse samme dag
+
+Rapport: `docs/research/JORDRAV_TRANSPORT_PLOEJELAG_2026-10-04.md`.
+Fysisk ravtransport er efterprøvet i Lofty 2023s originaltekst og tabeller;
+kontrollerede 5 mm-kugler er ikke en kalibrering af naturlige ravstykker.
+Bevaringens mekanistiske grundlag og synlighedsanalogi er anvendt med
+eksplicit abstractgrænse. GEUS 2025/32 s. 4 er visuelt kontrolleret;
+kortlægning under pløjelaget og dobbeltsymboler er læst i metodeafsnittene.
+Christensen & Nielsen 2008s abstract understøtter flere marine faser ved
+Yderhede, ikke ravtilførsel eller en national fælles kysthøjde.
+
+Tidligere label “Ved overfladen” er erstattet med “Øvre kortlagte aflejring”
+på DA/DE/EN. Ens symboler beviser ikke rav i pløjelaget. Markguiden forklarer
+ejerens pløjning/regn-mekanisme, og fokusnotens snævre udvalg er tydeligere.
+Femte guidecase JH-009/Vendsyssel flytter alene kortvisningen. Klassevalg,
+model, datasæt, producentkode og originalkilder er urørte.
+
+Read-only `diagnose_process_focus.py` gennemgik alle 192 SHA-bundne udsnit,
+505.834 visningsfragmenter og pakket regelsæt: PASS. Ca. 2.128 km² marint
+sand/grus på marine flader og 84,7 km² finere bassinmateriale ligger uden for
+forhøjet fokus. De er undersøgelsesspørgsmål, ikke nye ravflader eller
+opgraderinger. 677,8 km² dække over en grov dybdekode afgør ikke pløjedybde.
+35,7 km² forhøjet har forskellige øvre/nedre symboler. Det er generaliseret
+visningsareal; native kildeareal er separat. Diagnosens scriptidentitet,
+gruppesummer og lokale forskningslinks består en uafhængig kontrol.
+
+Den faktiske browserprøve PASS/12 kontroller/errors[]: fem regioner, bevaret
+kortvalg/geometri/fokus, begge baggrunde, explicit fejltilstand, markguide
+og mobil390/DA/DE/EN. 212 OSM-/20 luftfotofliser returnerede 200. Overblik
+920 ms, lokal detalje efter regionsnavigation 883 ms; lokal Chrome uden
+netværksbegrænsning, ikke fysisk mobil eller produktion. Mobil, markguide,
+regional guide og fuldt luftfoto er visuelt gennemgået.
+
+Source-critical PASS/108 browserfiler, 11 Pythonmodelcases/0,056 s og fire
+Nodekontroller/5,77 s. Pages-modullukning PASS/58 moduler; sikkerhed og
+håndbogens eksisterende 419 kapitler PASS. Endelig RDKS/14 chatkilder/4.0.541
+og staged diffkontrol PASS. Særskilt diff for geologiske modeldata og
+producentkode, kystgeodata, appversion, app/worker, workflows, Supabase og
+aktiv webhåndbog er tom. Ingen fuld
+source-CI, main-/writeropdatering, nye datahentninger til modellen eller deploy.
+Aktiv webhåndbog/SQL er fortsat urørt; det prepared-unreleased tillæg er
+opdateret med denne analyse. Main-status10:46 ovenfor er dateret historik.
 
 ## Historisk validering før implementering
 

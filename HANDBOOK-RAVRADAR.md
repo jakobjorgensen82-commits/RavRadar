@@ -11,11 +11,25 @@ klikforklaringer. Kystbrugere henter ikke jordravdata. Modelversion er
 
 Fokusvalget viser kun forhøjet procespotentiale og kan gendanne alle klasser.
 En regional guide beskriver Rubjerg–Lønstrup, Gribskov–Allerød,
-Stenstrup–Kirkebysand og Varde bakkeø med geologisk støtte, mulig ravkæde,
+Stenstrup–Kirkebysand, Varde bakkeø og Vendsyssels tidligere kyster med
+geologisk støtte, mulig ravkæde,
 undersøgelsesretning, modargument og kilder. Regionsvalget flytter kun
 kortudsnittet; det afgrænser ikke ravforekomst og ændrer ikke klassifikation.
-Ekspertpunkter JH-005–008 og code-/evidensspor står i
-`docs/research/JORDRAV_REGIONALE_KAEDER_2026-10-04.md`.
+Ekspertpunkter JH-005–008 står i den regionale analyse; JH-009 står i
+`docs/research/JORDRAV_TRANSPORT_PLOEJELAG_2026-10-04.md`.
+
+Pløjning kan bringe rav fra det bearbejdede jordlag frem; efterfølgende
+regn kan vaske jord af og forbedre synligheden. Det er ejerens praktiske
+erfaringsgrundlag, ikke en kalibreret vejrbonus. Kortets markguide beskriver
+forløbet på DA/DE/EN. GEUS' jordartssymboler beskriver oprindelige aflejringer
+under pløjelaget omkring én meter. Øvre kortlagte aflejring er derfor ikke
+en prøve af pløjelagets ravindhold. Dæklagstykkelse og dagens eksponering
+er fortsat uafklarede; teksterne om overfladerelevans er præciseret.
+
+En read-only diagnose af alle 192 udsnit viser, at fokus også skjuler mulige
+marine og finere bassinmiljøer. Tal i process-focus-diagnostic-2026-10-04.json
+er generaliserede visningsarealer, ikke ravarealer eller native kildearealer.
+Der sker ingen klasseændring ud fra totalsummerne.
 
 **Evidens:** GEUS-kortlagte materialer og landskabsprocesser kombineres med
 eksplicitte RavRadar-hypoteser om transport, omlejring og modtagelse. Tidligere
@@ -38,7 +52,7 @@ native fælles grænser, visningsprojektion og de afledte filidentiteter auditer
 Originalarkiver og eksisterende kystgeometri ændres ikke.
 
 Lokal kontrol består for 192 native geometriudsnit, 11 modelcases, fire
-data-/modulkontroller og 11 browserkontroller med faktiske baggrundsfliser.
+data-/modulkontroller og 12 browserkontroller med faktiske baggrundsfliser.
 Landskortet samler klasser inden for adskilte celler; ekstra numerisk
 eksportafvigelse auditeres separat fra generalisering. Eksakt national
 eksportdækning påstås ikke. Overblik er ca. 5,94 MB gzip; detaljer indlæses

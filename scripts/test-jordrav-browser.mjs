@@ -60,7 +60,7 @@ try {
   assert.equal(await page.evaluate(()=>window.__jordravHarness.overview.getLayers().length),overviewCount);
   report.checks.push('National focus hides other classes and restores them without loading detail data');
   await page.locator('.jordrav-regions summary').click();
-  for (const region of ['rubjerg','northeast-zealand','stenstrup','varde']) {
+  for (const region of ['rubjerg','northeast-zealand','stenstrup','varde','vendsyssel-marine']) {
     await page.locator('#jordravRegion').selectOption(region);
     assert.ok((await page.locator('#jordravRegionalExplanation h2').textContent()).trim());
     assert.equal(await page.locator('.jordrav-region-grid h3').count(),4);
@@ -70,12 +70,12 @@ try {
     await page.locator('#jordravRegionGo').click();
     await page.waitForFunction(id=>{
       const center=window.__jordravHarness.map.getCenter();
-      const bounds={rubjerg:[57.40,9.68,57.52,10.02],'northeast-zealand':[55.86,12.12,56.12,12.48],stenstrup:[55.04,10.44,55.20,10.70],varde:[55.49,8.30,55.77,8.73]}[id];
+      const bounds={rubjerg:[57.40,9.68,57.52,10.02],'northeast-zealand':[55.86,12.12,56.12,12.48],stenstrup:[55.04,10.44,55.20,10.70],varde:[55.49,8.30,55.77,8.73],'vendsyssel-marine':[57.36,10.15,57.71,10.58]}[id];
       return center.lat>=bounds[0] && center.lng>=bounds[1] && center.lat<=bounds[2] && center.lng<=bounds[3];
     },region);
   }
   assert.equal(await page.evaluate(()=>window.__jordravHarness.data.overview.features.length),overviewCount);
-  report.checks.push('Four regional explanations render sources and navigate without changing source overview');
+  report.checks.push('Five regional explanations render sources and navigate without changing source overview');
   await page.locator('.jordrav-regions summary').click();
   const bytesBeforeLocal=await page.evaluate(()=>performance.getEntriesByType('resource').filter(entry=>entry.name.includes('/data/jordrav/')).reduce((sum,entry)=>sum+entry.encodedBodySize,0));
   start=performance.now();
@@ -168,7 +168,13 @@ try {
   await page.locator('.jordrav-regions summary').click();
   await page.locator('#jordravRegion').selectOption('stenstrup');
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+  await page.locator('.jordrav-field summary').click();
+  assert.equal(await page.locator('.jordrav-field p').count(),4);
+  assert.match(await page.locator('.jordrav-field').textContent(),/under pløjelaget/);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+  await page.locator('.jordrav-field').screenshot({path:path.join(output,'prototype-field-guide.png')});
   await page.screenshot({path:path.join(output,'prototype-mobile.png'),fullPage:true});
+  report.checks.push('Field guide separates ploughing, rain visibility and below-plough geological mapping on mobile');
   report.checks.push('Mobile 390px has no horizontal overflow');
   for(const [lang,label] of [['de','Luftbild'],['en','Aerial imagery']]) {
     await page.locator(`[data-language="${lang}"]`).click();
@@ -179,6 +185,9 @@ try {
     await page.locator('.jordrav-regions summary').click();
     await page.locator('#jordravRegion').selectOption('stenstrup');
     assert.ok((await page.locator('#jordravRegionalExplanation h2').textContent()).includes('Stenstrup'));
+    await page.locator('.jordrav-field summary').click();
+    assert.equal(await page.locator('.jordrav-field summary').textContent(),lang==='de'?'Feldbernstein nach Pflügen und Regen':'Field amber after ploughing and rain');
+    assert.match(await page.locator('.jordrav-field').textContent(),lang==='de'?/unter dem Pflughorizont/:/below the plough zone/);
   }
   report.checks.push('German and English rendering have no unresolved translation keys');
   // A fresh context avoids the in-memory tile cache and checks safe fallback.

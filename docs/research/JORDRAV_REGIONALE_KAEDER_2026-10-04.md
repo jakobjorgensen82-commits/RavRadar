@@ -2,6 +2,8 @@
 
 **Dato:** 2026-10-04. **Status:** lokal udvidelse af forskningsprototypen; ingen offentlig release. Kode: `js/jordrav/regional-hypotheses.js` og `js/jordrav/map.js`. Model og datasæt er fortsat 0.1.0-prototype.
 
+**Senere udvidelse samme dag:** [Transport, pløjelag og synlighed](JORDRAV_TRANSPORT_PLOEJELAG_2026-10-04.md) tilføjer Vendsyssels tidligere kyster som femte guidecase JH-009. De fire kæder nedenfor består. Betegnelsen overflademateriale skal læses som øvre kortlagte geologiske aflejring; en forbindelse til pløjelaget er ikke dokumenteret af kortet alene.
+
 ## Hvorfor en regional forklaring er nødvendig
 
 Den første kortklasse kombinerer overflademateriale med geomorfologisk proces. Det er nyttigt til at finde mulige transport- og modtagermiljøer, men det afgør ikke, hvilket ældre lager de modtog materiale fra. To ensfarvede sandflader kan derfor have forskellige ravhistorier. Et modtagerbassin kan være interessant, selv om en del af dets aflejring er ler; et stort sandareal kan have svagt belyst tilførsel.

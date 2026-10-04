@@ -3,11 +3,12 @@
   "checks": [
     "National overview loads without local tiles, weather or Supabase",
     "National focus hides other classes and restores them without loading detail data",
-    "Four regional explanations render sources and navigate without changing source overview",
+    "Five regional explanations render sources and navigate without changing source overview",
     "Local focus filters real polygons and restores all classes while preserving the selected explanation",
     "Actual polygon click renders explanation; aerial switch preserves geometry, selection, view and explanation",
     "Opacity and overlay visibility controls work independently of base map",
     "All visible aerial tiles finish loading before visual capture",
+    "Field guide separates ploughing, rain visibility and below-plough geological mapping on mobile",
     "Mobile 390px has no horizontal overflow",
     "German and English rendering have no unresolved translation keys",
     "Missing local data retain an explicit overview fallback",
@@ -15,7 +16,7 @@
   ],
   "errors": [],
   "network": {
-    "street200": 180,
+    "street200": 212,
     "aerial200": 20,
     "aerialStatuses": {
       "200": 20
@@ -26,12 +27,12 @@
   "timings": [
     {
       "stage": "coldNationalOverviewMs",
-      "value": 804,
+      "value": 920,
       "geologyEncodedBytes": 6050674
     },
     {
       "stage": "localDetailAfterRegionalNavigationMs",
-      "value": 735,
+      "value": 883,
       "geologyEncodedBytes": 5099092
     }
   ],

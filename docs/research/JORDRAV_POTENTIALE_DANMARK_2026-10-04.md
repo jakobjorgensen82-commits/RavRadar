@@ -4,6 +4,8 @@
 
 **Fortsat regional analyse:** [Fire regionale sedimentkæder](JORDRAV_REGIONALE_KAEDER_2026-10-04.md) uddyber Rubjerg–Lønstrup, Gribskov–Allerød, Stenstrup–Kirkebysand og Varde bakkeø. Kortet har nu en regional guide og fokus på forhøjet procespotentiale; regional tekst giver ikke en automatisk klassebonus.
 
+**Ny dybde- og fundbarhedsanalyse:** [Fra sedimenttransport til markfund](JORDRAV_TRANSPORT_PLOEJELAG_2026-10-04.md) forbinder ravets fysiske transport og bevaring med pløjning og regn. GEUS' øvre jordartssymbol er en geologisk aflejring, ikke en analyse af pløjelaget. Den nye diagnose af alle udsnit viser, hvilke mulige miljøer det snævre fokus skjuler. Vendsyssels tidligere havmiljøer er tilføjet som femte regional case; kortklasser og data er uændrede.
+
 ## Konklusion og konkret anbefaling
 
 Danmark har et brugbart grundlag for et **kort over geologisk jordravpotentiale**, som kan pege på muligheder uden for allerede kendte fundsteder. Den mest lovende tilgang er at følge ravets mulige vej gennem ældre sedimenter, istransport, smeltevand, gentagen omlejring og senere blotlægning. Kortet skal vurdere denne sammenhæng i virkelige geologiske områder frem for at farvelægge landet alene efter jordtype.

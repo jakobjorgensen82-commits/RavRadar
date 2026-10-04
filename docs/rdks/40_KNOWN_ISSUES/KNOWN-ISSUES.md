@@ -16,7 +16,7 @@
   må ikke bruges som entydig kategori eller komplet fleristidskronologi.
 - **JORDRAV-004, lokalt løst:** OSM/World Imagery, særskilt CSP,
   attribution og bevaret valg ved baggrundsskift er implementeret.
-  11 browserkontroller består med faktiske fliser og visuelt gennemgået
+  12 browserkontroller består med faktiske fliser og visuelt gennemgået
   fuldt luftfoto. Officiel GeoDanmark-adgang er ikke oprettet.
   Ældre jordartskort bruges efter ejerinstruktion.
   Nyt regionsvalg under zoom kunne tabes; seneste ønske køres efter reelt
@@ -28,9 +28,26 @@
 - **JORDRAV-006:** Webhåndbogstillæg er forberedt særskilt; aktiv webhåndbog
   og installationskopi i SQL ændres ikke i denne gren. Integration med nyere
   main, exact-head CI og fælles release er fortsat nødvendige før publicering.
+- **JORDRAV-007, UI præciseret / faglig kobling åben:** GEUS-symboler er
+  geologiske aflejringer under pløjelaget, ikke prøver af markravindhold.
+  Øvre aflejring og dybde vises med denne forklaring; markguiden adskiller
+  pløjning og regnens synlighed. Faktisk dæklagstykkelse, lagkorrelation og
+  forbindelsen til det bearbejdede lag mangler regionalt. Diagnosearealer
+  uden for fokus må ikke give automatisk opgradering eller fundprocenter.
 
 Evidens: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
 Punkterne gælder den lokale Jordrav-prototype, ikke den aktuelle vejrproduktion.
+
+Yderligere fordybelse og ejerens markpræcisering: pløjningens blotlægning
+og regnens afvaskning/synlighed vurderes særskilt fra ravtilførsel. GEUS'
+øvre jordartssymbol er en geologisk aflejring under pløjelaget, ikke en prøve
+af markens ravindhold. UI og markguide på DA/DE/EN er præciseret. Vendsyssels
+tidligere kyster er femte guidecase JH-009. En read-only diagnose af 192
+udsnit/505.834 visningsfragmenter belyser miljøer uden for fokus; den ændrer
+ingen klasser. Generaliseret visningsareal er adskilt fra native kildeareal.
+Analyse: `docs/research/JORDRAV_TRANSPORT_PLOEJELAG_2026-10-04.md`.
+12 lokale browserkontroller PASS; ingen ny appversion, model-/datasætændring
+eller deploy.
 
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 

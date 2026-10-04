@@ -10,7 +10,7 @@ Fire regionale forklaringscases, deres kilder og fokusvalg er implementeret.
 Navigation under zoom bevarer seneste ønske; regional tekst klassificerer
 ingen polygoner. App-/model-/dataidentiteter er uændrede.
 **Lokalt PASS:** 192 native geometriudsnit, 11 modelcases, fire data-/modul-
-kontroller, 11 faktiske browserkontroller og den produktkritiske sourcegate.
+kontroller, 12 faktiske browserkontroller og den produktkritiske sourcegate.
 Landskortet har 598 generaliserede features; lokale udsnit 505.834 features.
 Eksakt national eksportdækning påstås ikke; numeriske sømme auditeres.
 **Åbent:** Regional ravtilførsel og bevaring, nyere main-/RDKS-integration,
@@ -18,6 +18,17 @@ exact-head CI og fysisk mobilmåling.
 Ingen deploy, nye fund-/læringstabeller eller ny appversion. Den aktive
 webhåndbog/SQL er urørt; et særskilt webhåndbogstillæg er forberedt.
 Evidens: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
+
+Yderligere fordybelse og ejerens markpræcisering: pløjningens blotlægning
+og regnens afvaskning/synlighed vurderes særskilt fra ravtilførsel. GEUS'
+øvre jordartssymbol er en geologisk aflejring under pløjelaget, ikke en prøve
+af markens ravindhold. UI og markguide på DA/DE/EN er præciseret. Vendsyssels
+tidligere kyster er femte guidecase JH-009. En read-only diagnose af 192
+udsnit/505.834 visningsfragmenter belyser miljøer uden for fokus; den ændrer
+ingen klasser. Generaliseret visningsareal er adskilt fra native kildeareal.
+Analyse: `docs/research/JORDRAV_TRANSPORT_PLOEJELAG_2026-10-04.md`.
+12 lokale browserkontroller PASS; ingen ny appversion, model-/datasætændring
+eller deploy.
 
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 

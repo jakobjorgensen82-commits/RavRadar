@@ -2,15 +2,22 @@
 
 - Ny selvstændig Jordrav-fane med almindeligt kort/luftfoto, farvestyrke og
   klikforklaringer for materiale, proces, sikkerhed, dybde og kilde.
-- Fokus på forhøjet procespotentiale og fire regionale ravhistorier med
+- Fokus på forhøjet procespotentiale og fem regionale ravhistorier med
   kilder og undersøgelsesretning. Regionsvalg under zoom bevarer seneste
   ønskede egn; lokale detaljer viser indlæsning efter kortbevægelse.
+- Ny dyb analyse af fysisk ravtransport, bevaring og forbindelsen til
+  pløjelaget. Markguide adskiller pløjningens blotlægning og regnens
+  afvaskning/synlighed. GEUS' øvre symbol vises som kortlagt aflejring,
+  ikke som dokumentation af rav i pløjelaget. Ingen klasse-/dataændring.
+- Read-only diagnose af alle 192 udsnit viser mulige marine og finere
+  bassinmiljøer uden for fokus. Generaliserede visningsarealer holdes
+  adskilt fra native kildearealer; ingen ny national ravrangliste.
 - Gennemgåelige potentialehypoteser fra faktiske GEUS-polygoner; tidligere
   ravfund er ikke et krav. Uafklaret er adskilt fra begrænset potentiale.
 - Statisk national oversigt og lokale udsnit med SHA-/modelbinding, bounded
   visning/cache og lazy-load. Ingen vejr-/database-/læringspipeline tilføjes.
 - Sporbar kilde- og grænsebehandling samt målrettede model-, data- og UI-tests.
-  192 native udsnit, 11 modelcases, fire datakontroller og 11 browserkontroller
+  192 native udsnit, 11 modelcases, fire datakontroller og 12 browserkontroller
   består lokalt. Luftfoto og almindeligt kort er visuelt gennemgået.
   Detaljer: `docs/research/JORDRAV_PROTOTYPE_0_1.md` og forskningscheckpointet.
 - Ingen ny apprelease, ændring af kystgeodata, merge eller deploy.

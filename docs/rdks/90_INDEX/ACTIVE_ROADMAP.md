@@ -1,3 +1,14 @@
+# AKTUEL JORDRAVRETNING – 2026-10-04
+
+Lokal kortprototype med begge baggrunde og fem regionale cases foreligger.
+Pløjning/regn og GEUS' kortlægning under pløjelaget er adskilt i forklaringerne.
+Read-only national diagnose viser mulige miljøer uden for forhøjet fokus.
+Næste faglige trin er regional korrelation af tilførsel, modtagerlag og dybde
+samt forbindelsen til pløjelaget; tidligere fund er ikke en forudsætning.
+Ingen faste regnbonusser, nationale ravprocenter eller automatisk opgradering.
+Nyere main/RDKS, exact-head CI og fysisk mobil er åbne før fælles levering.
+Detaljer: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
+
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
 Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10

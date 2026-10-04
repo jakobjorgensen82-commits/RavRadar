@@ -12,7 +12,7 @@ slutkontrol 10:46 DK var `d778ff28c84606a93364ce112fecce4152182649`;
 én main-kørsel var aktiv og tre stod i kø. Nyere RDKS skal integreres før
 en senere fælles levering; ingen merge/deploy foretages her.
 Den lokale Jordrav-prototype er nu implementeret med begge baggrunde;
-192 native geometripartitioner, model-/filbinding, 11 browserkontroller
+192 native geometripartitioner, model-/filbinding, 12 browserkontroller
 og den produktkritiske sourcegate er lokalt PASS. Reglerne står i
 `data/jordrav/model-rules.json`, kode-/metodebeskrivelse i
 `docs/research/JORDRAV_PROTOTYPE_0_1.md`. Ingen CI-/produktionsverifikation
@@ -25,6 +25,17 @@ på forhøjet procespotentiale. Regionsvalg flytter kun visningen; model,
 datasæt og klasser er uændrede. Zoom-/navigationsfund er rettet og måltestet.
 Tilgængelighed: localhost er ikke en delt telefonadresse; lokal preview
 skal genstartes ved næste visning. Ingen publicering eller automation.
+
+Yderligere fordybelse og ejerens markpræcisering: pløjningens blotlægning
+og regnens afvaskning/synlighed vurderes særskilt fra ravtilførsel. GEUS'
+øvre jordartssymbol er en geologisk aflejring under pløjelaget, ikke en prøve
+af markens ravindhold. UI og markguide på DA/DE/EN er præciseret. Vendsyssels
+tidligere kyster er femte guidecase JH-009. En read-only diagnose af 192
+udsnit/505.834 visningsfragmenter belyser miljøer uden for fokus; den ændrer
+ingen klasser. Generaliseret visningsareal er adskilt fra native kildeareal.
+Analyse: `docs/research/JORDRAV_TRANSPORT_PLOEJELAG_2026-10-04.md`.
+12 lokale browserkontroller PASS; ingen ny appversion, model-/datasætændring
+eller deploy.
 
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 

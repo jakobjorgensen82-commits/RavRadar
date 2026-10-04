@@ -10,13 +10,24 @@ Gren `codex/jordrav-geologisk-analyse`; forskning og projektets hukommelse
 er udvidet med en selvstændig lokal Jordrav-prototype, materialiserede
 regler, sporbar polygonbygning og målrettede model-/datatests. 192 native
 geometriudsnit, 238.829 kilde-/cacheattributter, 11 modelcases, fire data-
-kontroller, 11 browserkontroller og source-critical-gaten er lokalt PASS.
+kontroller, 12 browserkontroller og source-critical-gaten er lokalt PASS.
 National union og for tæt segmenteret eksport er forkastet til fordel for
 klassegrupper inden for adskilte celler. Ingen ny appversion eller deploy.
 Fortsættelsen før ejerens hjemkomst har tilføjet fire regionale kæder og
 en DA/DE/EN-guide med fokusvisning. En faktisk zoom-/regionsnavigationsfejl
 er rettet og browserkontrolleret; model og kildepolygoner er uændrede.
 Localhost-linkets telefonbegrænsning er forklaret og dokumenteret.
+
+Yderligere fordybelse og ejerens markpræcisering: pløjningens blotlægning
+og regnens afvaskning/synlighed vurderes særskilt fra ravtilførsel. GEUS'
+øvre jordartssymbol er en geologisk aflejring under pløjelaget, ikke en prøve
+af markens ravindhold. UI og markguide på DA/DE/EN er præciseret. Vendsyssels
+tidligere kyster er femte guidecase JH-009. En read-only diagnose af 192
+udsnit/505.834 visningsfragmenter belyser miljøer uden for fokus; den ændrer
+ingen klasser. Generaliseret visningsareal er adskilt fra native kildeareal.
+Analyse: `docs/research/JORDRAV_TRANSPORT_PLOEJELAG_2026-10-04.md`.
+12 lokale browserkontroller PASS; ingen ny appversion, model-/datasætændring
+eller deploy.
 
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
