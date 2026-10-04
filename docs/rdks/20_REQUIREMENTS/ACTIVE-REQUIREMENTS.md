@@ -18,6 +18,10 @@ begrænset overfladestøtte og uafklaret hver for sig. Den stærkere regionale
 prioritering er fortsat et efterprøvningspunkt, ikke opnået kalibrering.
 Begge baggrunde, bevaret valg og faktiske geometrier er implementeret og
 lokalt browserkontrolleret. CI-/main-integration og publicering er åbne.
+Ejeren ønsker yderligere arbejde før hjemkomst. Fire regionale ravkæder
+og et fokusvalg er derfor lokalt tilføjet som forklarings-/visningsfunktioner.
+Ingen bonus, nye potentialegrænser eller model-/datasætændring. Telefonens
+fjernadgang giver ikke i sig selv adgang til en localhost-preview.
 
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 

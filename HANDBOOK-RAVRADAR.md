@@ -9,6 +9,14 @@ Jordrav-fane har almindeligt kort og luftfoto, egne kildepolygoner og egne
 klikforklaringer. Kystbrugere henter ikke jordravdata. Modelversion er
 0.1.0-prototype; appens releaseversion er ikke hævet.
 
+Fokusvalget viser kun forhøjet procespotentiale og kan gendanne alle klasser.
+En regional guide beskriver Rubjerg–Lønstrup, Gribskov–Allerød,
+Stenstrup–Kirkebysand og Varde bakkeø med geologisk støtte, mulig ravkæde,
+undersøgelsesretning, modargument og kilder. Regionsvalget flytter kun
+kortudsnittet; det afgrænser ikke ravforekomst og ændrer ikke klassifikation.
+Ekspertpunkter JH-005–008 og code-/evidensspor står i
+`docs/research/JORDRAV_REGIONALE_KAEDER_2026-10-04.md`.
+
 **Evidens:** GEUS-kortlagte materialer og landskabsprocesser kombineres med
 eksplicitte RavRadar-hypoteser om transport, omlejring og modtagelse. Tidligere
 fund er ikke et krav. Forhøjet procespotentiale betyder kompatibelt sand/grus
@@ -29,8 +37,8 @@ overskrives ikke. Kildekonflikter bliver uafklarede. Kontrolleret normalisering,
 native fælles grænser, visningsprojektion og de afledte filidentiteter auditeres.
 Originalarkiver og eksisterende kystgeometri ændres ikke.
 
-Lokal kontrol består for 192 native geometriudsnit, 11 modelcases, tre
-data-/modulkontroller og otte browserkontroller med faktiske baggrundsfliser.
+Lokal kontrol består for 192 native geometriudsnit, 11 modelcases, fire
+data-/modulkontroller og 11 browserkontroller med faktiske baggrundsfliser.
 Landskortet samler klasser inden for adskilte celler; ekstra numerisk
 eksportafvigelse auditeres separat fra generalisering. Eksakt national
 eksportdækning påstås ikke. Overblik er ca. 5,94 MB gzip; detaljer indlæses

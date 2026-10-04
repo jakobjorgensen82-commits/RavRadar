@@ -9,10 +9,14 @@ Checkpoint: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
 Gren `codex/jordrav-geologisk-analyse`; forskning og projektets hukommelse
 er udvidet med en selvstændig lokal Jordrav-prototype, materialiserede
 regler, sporbar polygonbygning og målrettede model-/datatests. 192 native
-geometriudsnit, 238.829 kilde-/cacheattributter, 11 modelcases, tre data-
-kontroller, otte browserkontroller og source-critical-gaten er lokalt PASS.
+geometriudsnit, 238.829 kilde-/cacheattributter, 11 modelcases, fire data-
+kontroller, 11 browserkontroller og source-critical-gaten er lokalt PASS.
 National union og for tæt segmenteret eksport er forkastet til fordel for
 klassegrupper inden for adskilte celler. Ingen ny appversion eller deploy.
+Fortsættelsen før ejerens hjemkomst har tilføjet fire regionale kæder og
+en DA/DE/EN-guide med fokusvisning. En faktisk zoom-/regionsnavigationsfejl
+er rettet og browserkontrolleret; model og kildepolygoner er uændrede.
+Localhost-linkets telefonbegrænsning er forklaret og dokumenteret.
 
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 

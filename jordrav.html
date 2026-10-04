@@ -28,7 +28,8 @@
           <button id="jordravDenmark" type="button" data-i18n="jordrav.denmark">Hele Danmark</button>
         </div>
         <div id="jordravMap" data-i18n-aria-label="jordrav.mapTitle" aria-label="Jordravkort over Danmark"></div>
-        <div class="jordrav-layer-tools"><label><input id="jordravVisible" type="checkbox" checked><span data-i18n="jordrav.overlay">Vis potentiale</span></label><label for="jordravOpacity"><span data-i18n="jordrav.opacity">Farvestyrke</span><input id="jordravOpacity" type="range" min="15" max="75" value="45"></label></div>
+        <div class="jordrav-layer-tools"><label><input id="jordravVisible" type="checkbox" checked><span data-i18n="jordrav.overlay">Vis potentiale</span></label><label><input id="jordravFocus" type="checkbox"><span data-i18n="jordrav.focus">Vis kun forhøjet procespotentiale</span></label><label for="jordravOpacity"><span data-i18n="jordrav.opacity">Farvestyrke</span><input id="jordravOpacity" type="range" min="15" max="75" value="45"></label></div>
+        <p id="jordravFocusNote" class="jordrav-status" data-i18n="jordrav.focusNote" hidden>Fokus skjuler de øvrige klasser. Det ændrer ikke deres potentiale.</p>
         <div id="jordravLegend" class="jordrav-legend" data-i18n-aria-label="map.legend" aria-label="Kortforklaring"></div>
         <p id="jordravStatus" class="jordrav-status" role="status" aria-live="polite" data-i18n="jordrav.loading">Indlæser geologisk overblik…</p>
         <p id="jordravBaseStatus" class="jordrav-status" role="status" hidden></p>
@@ -36,6 +37,12 @@
       </section>
       <aside id="jordravDetails" class="jordrav-details" aria-live="polite"><h2 data-i18n="jordrav.selectTitle">Følg en geologisk mulighed</h2><p data-i18n="jordrav.selectHelp">Zoom ind og klik på en farvet flade. Her kan du se jordarten, den mulige transportkæde, dybde og kilder.</p><div class="jordrav-method-note"><strong data-i18n="jordrav.confidenceTitle">Ravspecifik sikkerhed: svag</strong><p data-i18n="jordrav.methodNote">Kortene viser materialer og processer. Vi udleder ravmuligheder uden at kræve tidligere fund. Tilførsel af rav til det enkelte område er endnu ikke verificeret.</p></div></aside>
     </div>
+    <details class="jordrav-method jordrav-regions"><summary data-i18n="jordrav.regionalTitle">Undersøg regionale ravhistorier</summary>
+      <p data-i18n="jordrav.regionalIntro">Fire forskellige geologiske kæder giver konkrete muligheder at undersøge. Vælg et område for at følge forklaringen.</p>
+      <div class="jordrav-region-tools"><label for="jordravRegion" data-i18n="jordrav.regionalChoose">Område</label><select id="jordravRegion"><option value="" data-i18n="jordrav.regionalPlaceholder">Vælg en regional mulighed</option></select><button id="jordravRegionGo" type="button" disabled data-i18n="jordrav.regionalGo">Vis på kortet</button></div>
+      <div id="jordravRegionalExplanation" hidden></div>
+      <p class="jordrav-original" data-i18n="jordrav.regionalNote">Regionsvalget flytter kun kortvisningen. Det tegner ingen ravgrænse og ændrer ikke farveklassernes vurderinger.</p>
+    </details>
     <details class="jordrav-method"><summary data-i18n="jordrav.method">Sådan udledes mulighederne</summary><div id="jordravMethodContent"></div></details>
     <noscript><p class="jordrav-error">Kortet kræver JavaScript.</p></noscript>
   </main>

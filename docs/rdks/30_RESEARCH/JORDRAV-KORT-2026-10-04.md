@@ -148,3 +148,45 @@ og tre queued runs. Der foretages ingen fælles merge eller deploy.
 Nyere main-/RDKS-integration, exact-head CI og friske writerchecks kræves
 før publicering. Git-runtime mangler HTTPS-remotehelper; lokal historik og
 preview bevares, og ingen alternativ remotelevering er udført.
+
+## Regional fortsættelse før ejerens hjemkomst
+
+Ejeren kunne ikke åbne localhost-kortet fra telefonens fjernadgang og har
+valgt at se det hjemme senere; lokal HTTP-preview svarede heller ikke
+længere. Localhost er ikke en delt internetadresse. Ejeren ønsker mere
+arbejde indtil da; det autoriserer videre lokal analyse og forbedring,
+ikke en ny automation, produktionsdispatch eller omgået release.
+
+Fire regionale sedimentkæder er uddybet med positiv mulighed, modargument
+og ekspertpunkt JH-005–008 i
+`docs/research/JORDRAV_REGIONALE_KAEDER_2026-10-04.md`. Guiden i
+`js/jordrav/regional-hypotheses.js` har DA/DE/EN og direkte primærkilder.
+Navigationsvinduer er omtrentlige kortudsnit, ikke potentialepolygoner,
+formationsgrænser eller oplande. Et fokusvalg viser kun forhøjet
+procespotentiale og gendanner øvrige klasser uden ny klassifikation.
+Model, manifest, datasæt, kystgeodata og appversion er uændrede.
+
+Browseren afslørede et tabt regionsvalg under zoom. Første stopforsøg
+var utilstrækkeligt; et tidligt moveend afsluttede ikke zoomanimationen.
+Rettelsen venter på afsluttet zoom/bevægelse og anvender seneste ønskede
+region. Efter en kortbevægelse markeres lokale detaljer som under
+indlæsning. En bevidst overlappende zoom-/regionsprøve indgår nu.
+De tidligere fejl er ikke PASS. Korrigeret samlet prøve: **11 checks PASS**,
+inklusive nationalt/lokalt fokus, gendannelse, fire regioner, klik,
+baggrundsskift, mobil, sprog og fejlfallback. Guide/mobil er visuelt læst.
+11 modelcases og fire data-/modul-/sprogkontroller PASS. Den produktkritiske
+sourcegate har nu 108 browserfiler, fortsat i samme 47-gruppers kontrakt.
+
+Nyeste lokale Chrome-måling: nationalt kort 804 ms/6.050.674 geologi-bytes;
+lokalt udsnit efter regional navigation 735 ms/5.099.092 yderligere bytes.
+Hele prøveforløbet inkl. regionale visninger: 13.260.436 bytes. Ingen fysisk
+mobil-, CI- eller produktionspåstand. Markdown-håndbog, forberedt
+webhåndbogstillæg, changelog og aktive RDKS-toppe følger samtaledeltaet.
+Seneste grønne lokale grundcommit før dette tillæg: `6ccd506c`.
+
+Afsluttende kontrol efter navigationsrettelsen: source-critical PASS med
+108 browserfiler/11 modelcases/fire Node-kontroller; Pages-modulclosure
+PASS med 58 moduler; RDKS, sikkerhedshærdning, håndbog og diff-check PASS.
+Særskilt diff viser ingen ændringer i model-/datasetfiler, kystgeodata,
+appversion, app.js, service-worker, workflows, Supabase eller aktiv
+webhåndbog. Ingen ny apprelease, PR, merge, deploy eller automation.

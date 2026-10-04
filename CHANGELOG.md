@@ -2,12 +2,15 @@
 
 - Ny selvstændig Jordrav-fane med almindeligt kort/luftfoto, farvestyrke og
   klikforklaringer for materiale, proces, sikkerhed, dybde og kilde.
+- Fokus på forhøjet procespotentiale og fire regionale ravhistorier med
+  kilder og undersøgelsesretning. Regionsvalg under zoom bevarer seneste
+  ønskede egn; lokale detaljer viser indlæsning efter kortbevægelse.
 - Gennemgåelige potentialehypoteser fra faktiske GEUS-polygoner; tidligere
   ravfund er ikke et krav. Uafklaret er adskilt fra begrænset potentiale.
 - Statisk national oversigt og lokale udsnit med SHA-/modelbinding, bounded
   visning/cache og lazy-load. Ingen vejr-/database-/læringspipeline tilføjes.
 - Sporbar kilde- og grænsebehandling samt målrettede model-, data- og UI-tests.
-  192 native udsnit, 11 modelcases, tre datakontroller og otte browserkontroller
+  192 native udsnit, 11 modelcases, fire datakontroller og 11 browserkontroller
   består lokalt. Luftfoto og almindeligt kort er visuelt gennemgået.
   Detaljer: `docs/research/JORDRAV_PROTOTYPE_0_1.md` og forskningscheckpointet.
 - Ingen ny apprelease, ændring af kystgeodata, merge eller deploy.

@@ -20,7 +20,7 @@ const server = http.createServer(async (request, response) => {
   }
   try {
     let bytes = await fs.readFile(path.join(root,relative));
-    if (relative === 'js/jordrav/map.js') bytes = Buffer.concat([bytes, Buffer.from('\nwindow.__jordravHarness={get map(){return map},get data(){return data},get details(){return details},get selected(){return selected}};')]);
+    if (relative === 'js/jordrav/map.js') bytes = Buffer.concat([bytes, Buffer.from('\nwindow.__jordravHarness={get map(){return map},get data(){return data},get overview(){return overview},get details(){return details},get selected(){return selected}};')]);
     response.writeHead(200, {'Content-Type':mime[path.extname(relative)] || 'application/octet-stream', 'Cache-Control':'no-store'}); response.end(bytes);
   } catch {response.writeHead(404);response.end();}
 });
@@ -50,12 +50,42 @@ try {
   assert.ok(!requests.some(url=>/supabase|dmi\.dk|data\/live|weather/i.test(url)));
   report.checks.push('National overview loads without local tiles, weather or Supabase');
   await page.screenshot({path:path.join(output,'prototype-desktop.png'),fullPage:true});
+  const overviewCount=await page.evaluate(()=>window.__jordravHarness.overview.getLayers().length);
+  await page.locator('#jordravFocus').check();
+  assert.ok(await page.evaluate(()=>window.__jordravHarness.overview.getLayers().length>0 &&
+    window.__jordravHarness.overview.getLayers().every(layer=>layer.feature.properties.potential==='enhanced')));
+  assert.ok(await page.evaluate(()=>window.__jordravHarness.overview.getLayers().length)<overviewCount);
+  assert.equal(requests.filter(url=>/tile-\d+-\d+\.geojson/.test(url)).length,0);
+  await page.locator('#jordravFocus').uncheck();
+  assert.equal(await page.evaluate(()=>window.__jordravHarness.overview.getLayers().length),overviewCount);
+  report.checks.push('National focus hides other classes and restores them without loading detail data');
+  await page.locator('.jordrav-regions summary').click();
+  for (const region of ['rubjerg','northeast-zealand','stenstrup','varde']) {
+    await page.locator('#jordravRegion').selectOption(region);
+    assert.ok((await page.locator('#jordravRegionalExplanation h2').textContent()).trim());
+    assert.equal(await page.locator('.jordrav-region-grid h3').count(),4);
+    assert.ok(await page.locator('#jordravRegionalExplanation a').count()>0);
+    if(region==='rubjerg')await page.locator('.jordrav-regions').screenshot({path:path.join(output,'prototype-regional-guide.png')});
+    if(region==='northeast-zealand')await page.evaluate(()=>{const map=window.__jordravHarness.map;map.setView(map.getCenter(),map.getZoom()+1,{animate:true});});
+    await page.locator('#jordravRegionGo').click();
+    await page.waitForFunction(id=>{
+      const center=window.__jordravHarness.map.getCenter();
+      const bounds={rubjerg:[57.40,9.68,57.52,10.02],'northeast-zealand':[55.86,12.12,56.12,12.48],stenstrup:[55.04,10.44,55.20,10.70],varde:[55.49,8.30,55.77,8.73]}[id];
+      return center.lat>=bounds[0] && center.lng>=bounds[1] && center.lat<=bounds[2] && center.lng<=bounds[3];
+    },region);
+  }
+  assert.equal(await page.evaluate(()=>window.__jordravHarness.data.overview.features.length),overviewCount);
+  report.checks.push('Four regional explanations render sources and navigate without changing source overview');
+  await page.locator('.jordrav-regions summary').click();
+  const bytesBeforeLocal=await page.evaluate(()=>performance.getEntriesByType('resource').filter(entry=>entry.name.includes('/data/jordrav/')).reduce((sum,entry)=>sum+entry.encodedBodySize,0));
   start=performance.now();
   await page.evaluate(()=>{window.__jordravHarness.map.setView([56.14,8.76],11);});
   await page.waitForFunction(()=>document.getElementById('jordravStatus').textContent.startsWith('Lokale detaljer'),null,{timeout:90000});
-  report.timings.push({stage:'coldLocalDetailMs',value:Math.round(performance.now()-start)});
+  await page.waitForFunction(()=>window.__jordravHarness.details?.getLayers().some(layer=>
+    window.__jordravHarness.map.getBounds().contains(layer.getBounds().getCenter())),null,{timeout:90000});
+  report.timings.push({stage:'localDetailAfterRegionalNavigationMs',value:Math.round(performance.now()-start)});
   report.network.geologyBytes=await page.evaluate(()=>performance.getEntriesByType('resource').filter(entry=>entry.name.includes('/data/jordrav/')).reduce((sum,entry)=>sum+entry.encodedBodySize,0));
-  report.timings.at(-1).geologyEncodedBytes=report.network.geologyBytes-nationalBytes;
+  report.timings.at(-1).geologyEncodedBytes=report.network.geologyBytes-bytesBeforeLocal;
   await page.locator('#jordravMap').scrollIntoViewIfNeeded();
   const location = await page.evaluate(()=> {
     const {map,details,data}=window.__jordravHarness;
@@ -89,6 +119,17 @@ try {
   await page.mouse.click(box.x+location.x,box.y+location.y);
   await page.waitForFunction(()=>Boolean(window.__jordravHarness.selected));
   const before = await page.evaluate(()=>({center:window.__jordravHarness.map.getCenter(),zoom:window.__jordravHarness.map.getZoom(),selected:JSON.stringify(window.__jordravHarness.selected.toGeoJSON()), text:document.getElementById('jordravDetails').textContent}));
+  const localCount=await page.evaluate(()=>window.__jordravHarness.details.getLayers().length);
+  await page.locator('#jordravFocus').check();
+  await page.waitForFunction(()=>window.__jordravHarness.details &&
+    window.__jordravHarness.details.getLayers().length>0 &&
+    window.__jordravHarness.details.getLayers().every(layer=>window.__jordravHarness.data.catalog[layer.feature.properties.i].potential==='enhanced'));
+  assert.ok(await page.evaluate(()=>window.__jordravHarness.details.getLayers().length)<localCount);
+  assert.equal(await page.evaluate(()=>document.getElementById('jordravDetails').textContent),before.text);
+  await page.locator('#jordravFocus').uncheck();
+  await page.waitForFunction(count=>window.__jordravHarness.details?.getLayers().length===count,localCount);
+  assert.equal(await page.evaluate(()=>JSON.stringify(window.__jordravHarness.selected.toGeoJSON())),before.selected);
+  report.checks.push('Local focus filters real polygons and restores all classes while preserving the selected explanation');
   const aerialLoaded=page.waitForResponse(response=>response.url().includes('World_Imagery/MapServer/tile/')&&response.status()===200,{timeout:45000});
   await page.locator('[data-base="aerial"]').click();
   await aerialLoaded;
@@ -124,6 +165,9 @@ try {
   await page.evaluate(()=>{window.__jordravHarness.map.invalidateSize();});
   await page.locator('#jordravDenmark').click();
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+  await page.locator('.jordrav-regions summary').click();
+  await page.locator('#jordravRegion').selectOption('stenstrup');
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   await page.screenshot({path:path.join(output,'prototype-mobile.png'),fullPage:true});
   report.checks.push('Mobile 390px has no horizontal overflow');
   for(const [lang,label] of [['de','Luftbild'],['en','Aerial imagery']]) {
@@ -132,6 +176,9 @@ try {
     assert.equal(await page.locator('[data-base="aerial"]').textContent(),label);
     assert.ok(!await page.locator('body').textContent().then(text=>text.includes('jordrav.')));
     assert.equal(await page.locator('html').getAttribute('lang'),lang);
+    await page.locator('.jordrav-regions summary').click();
+    await page.locator('#jordravRegion').selectOption('stenstrup');
+    assert.ok((await page.locator('#jordravRegionalExplanation h2').textContent()).includes('Stenstrup'));
   }
   report.checks.push('German and English rendering have no unresolved translation keys');
   // A fresh context avoids the in-memory tile cache and checks safe fallback.
@@ -152,9 +199,12 @@ try {
   report.status='PASS';
   await context.close();
 } catch(error) {
-  report.status='FAIL';report.errors.push(error.stack);throw error;
+  report.status='FAIL';report.errors.push(error.stack);
+  const pages=browser.contexts().flatMap(context=>context.pages());
+  if(pages[0])report.lastMapView=await pages[0].evaluate(()=>({region:document.getElementById('jordravRegion')?.value,center:window.__jordravHarness?.map?.getCenter(),zoom:window.__jordravHarness?.map?.getZoom(),status:document.getElementById('jordravStatus')?.textContent})).catch(()=>null);
+  throw error;
 } finally {
   await fs.writeFile(path.join(output,'prototype-browser-audit.json'),JSON.stringify(report,null,2)+'\n');
   await browser.close();await new Promise(resolve=>server.close(resolve));
-  console.log(JSON.stringify({status:report.status,checks:report.checks,network:report.network,timings:report.timings}));
+  console.log(JSON.stringify({status:report.status,checks:report.checks,network:report.network,timings:report.timings,lastMapView:report.lastMapView}));
 }

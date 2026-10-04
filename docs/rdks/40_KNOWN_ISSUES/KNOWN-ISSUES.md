@@ -3,6 +3,8 @@
 - **JORDRAV-001, delvist løst:** Første gennemgåelige procesregler og faktiske
   polygonkoblinger er implementeret uden kendt fund som adgangskrav.
   Regional tilførsels-/bevaringskobling og stærkere prioritering er åbne.
+  Fire navngivne kæder med modargumenter og ekspertpunkter JH-005–008 er
+  nu analyseret og vist som guide, uden automatisk regional klassebonus.
 - **JORDRAV-002, lokalt kontrolleret / historiske kyster åbne:** Sporbar
   normalisering af 438/47 ringfund og 194 mikroflader er auditeret. Alle
   192 native partitioner består; ældre overlap er eksplicitte konflikter.
@@ -14,9 +16,11 @@
   må ikke bruges som entydig kategori eller komplet fleristidskronologi.
 - **JORDRAV-004, lokalt løst:** OSM/World Imagery, særskilt CSP,
   attribution og bevaret valg ved baggrundsskift er implementeret.
-  Otte browserkontroller består med faktiske fliser og visuelt gennemgået
+  11 browserkontroller består med faktiske fliser og visuelt gennemgået
   fuldt luftfoto. Officiel GeoDanmark-adgang er ikke oprettet.
   Ældre jordartskort bruges efter ejerinstruktion.
+  Nyt regionsvalg under zoom kunne tabes; seneste ønske køres efter reelt
+  afsluttet zoom. Den korrigerede, bevidst overlappende browserprøve PASS.
 - **JORDRAV-005, lokalt løst / fysisk mobil åben:** Statisk lazy-load,
   hashbinding og cache-/visningsgrænser er testet. Nationalt overblik er
   5,94 MB gzip; alle detailudsnit 111,65 MB, største 1,42 MB. Browseren

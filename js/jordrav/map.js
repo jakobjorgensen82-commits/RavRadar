@@ -1,6 +1,7 @@
 import './messages.js';
-import { initialiseI18n, t } from '../i18n.js?v=4.0.541';
+import { initialiseI18n, getLanguage, t } from '../i18n.js?v=4.0.541';
 import { openDataset, intersects } from './data-service.js';
+import { REGIONAL_HYPOTHESES } from './regional-hypotheses.js';
 
 initialiseI18n();
 const $ = id => document.getElementById(id);
@@ -23,13 +24,16 @@ const node = (tag, text, className) => {
   return element;
 };
 const status = key => { $('jordravStatus').textContent = tr(key); };
-let map, data, overview, details, selected;
+let map, data, overview, details, selected, selectedFeature;
 let opacity = .45;
 let generation = 0, requestController, timer;
 let visible = true;
+let onlyEnhanced = false;
+const potentialOf = feature => feature.properties.potential || data.catalog[feature.properties.i].potential;
+const acceptsFeature = feature => !onlyEnhanced || potentialOf(feature) === 'enhanced';
 
 function featureStyle(feature) {
-  const potential = feature.properties.potential || data.catalog[feature.properties.i].potential;
+  const potential = potentialOf(feature);
   return {fillColor: colours[potential], fillOpacity: opacity, weight: feature.properties.potential ? 0 : .4, color: colours[potential], opacity: .55};
 }
 function syncVisibility() {
@@ -39,7 +43,55 @@ function syncVisibility() {
     if (!layer) continue;
     if (visible && layer === active) layer.addTo(map); else layer.remove();
   }
-  if (selected) { if (visible) selected.addTo(map); else selected.remove(); }
+  if (selected) { if (visible && acceptsFeature(selectedFeature)) selected.addTo(map); else selected.remove(); }
+}
+
+function createOverview() {
+  return L.geoJSON(data.overview, {filter:acceptsFeature, style:featureStyle,
+    onEachFeature:(_feature, layer) => layer.on('click', event => map.setView(event.latlng, data.manifest.detailZoom))});
+}
+
+function initialiseRegionalGuide() {
+  const select = $('jordravRegion');
+  const go = $('jordravRegionGo');
+  const panel = $('jordravRegionalExplanation');
+  const language = getLanguage();
+  let moving = false, zooming = false, pendingRegion;
+  const navigate = region => map.fitBounds(region.bounds, {padding:[24,24],maxZoom:11,animate:false});
+  map.on('movestart', () => {moving=true;});
+  map.on('zoomstart', () => {zooming=true;});
+  map.on('zoomend', () => {zooming=false;});
+  map.on('moveend', () => {
+    moving=false;
+    if (pendingRegion && !zooming) {const region=pendingRegion;pendingRegion=null;navigate(region);}
+  });
+  for (const region of REGIONAL_HYPOTHESES) {
+    const option = node('option', region.copy[language].name);
+    option.value = region.id; select.append(option);
+  }
+  select.addEventListener('change', () => {
+    const region = REGIONAL_HYPOTHESES.find(item => item.id === select.value);
+    go.disabled = !region; panel.hidden = !region; panel.replaceChildren();
+    if (!region) return;
+    const copy = region.copy[language];
+    panel.append(node('h2', copy.name));
+    const grid = node('div', undefined, 'jordrav-region-grid');
+    for (const [title, key] of [['regionalBasis','basis'],['regionalChain','chain'],['regionalFocus','focus'],['regionalChallenge','challenge']]) {
+      const section = node('div'); section.append(node('h3',tr(title)),node('p',copy[key])); grid.append(section);
+    }
+    panel.append(grid);
+    const list = node('ul');
+    for (const source of region.sources) {const li=node('li');li.append(sourceLink(source));list.append(li);}
+    panel.append(list);
+  });
+  go.addEventListener('click', () => {
+    const region = REGIONAL_HYPOTHESES.find(item => item.id === select.value);
+    if (!region) return;
+    // A second fitBounds during an ongoing Leaflet zoom can be ignored.
+    // Keep the latest requested region until the existing movement ends.
+    if (moving || zooming) {pendingRegion=region;if(!zooming)map.stop();} else navigate(region);
+    $('jordravMap').scrollIntoView({block:'center'});
+  });
 }
 
 function sourceLink(source) {
@@ -85,6 +137,7 @@ function showDetail(feature) {
   }
   panel.append(list);
   selected?.remove();
+  selectedFeature = feature;
   selected = L.geoJSON(feature, {style:{color:'#102f3a', weight:2.5, fill:false}, interactive:false});
   syncVisibility();
 }
@@ -114,7 +167,7 @@ async function loadViewport() {
       loaded.push(...await Promise.all(tiles.slice(i,i+3).map(tile => data.tile(tile, signal))));
       if (current !== generation) return;
     }
-    const features=loaded.flatMap(tile => tile.features).filter(feature=>intersects(feature.bbox,bbox));
+    const features=loaded.flatMap(tile => tile.features).filter(feature=>intersects(feature.bbox,bbox) && acceptsFeature(feature));
     if(features.length>12000) {
       details?.remove();details=null;syncVisibility();status('zoomMore');return;
     }
@@ -152,8 +205,16 @@ async function start() {
   }
   document.querySelectorAll('[data-base]').forEach(button => button.addEventListener('click', () => setBase(button.dataset.base)));
   setBase(currentBase);
+  initialiseRegionalGuide();
   $('jordravDenmark').addEventListener('click', () => map.fitBounds([[54.5,7.7],[57.8,15.25]]));
   $('jordravVisible').addEventListener('change', event => { visible=event.target.checked; syncVisibility(); void loadViewport(); });
+  $('jordravFocus').addEventListener('change', event => {
+    onlyEnhanced = event.target.checked;
+    $('jordravFocusNote').hidden = !onlyEnhanced;
+    if (!data) return;
+    details?.remove(); details = null;
+    overview?.remove(); overview = createOverview(); syncVisibility(); void loadViewport();
+  });
   $('jordravOpacity').addEventListener('input', event => {
     opacity=Number(event.target.value)/100;
     overview?.setStyle(featureStyle); details?.setStyle(featureStyle);
@@ -162,7 +223,7 @@ async function start() {
     const item=node('span'); const swatch=node('i'); swatch.style.background=colours[category]; item.append(swatch,node('span',tr(category))); $('jordravLegend').append(item);
   }
   data = await openDataset();
-  overview = L.geoJSON(data.overview, {style:featureStyle, onEachFeature:(_feature, layer) => layer.on('click', event => map.setView(event.latlng, data.manifest.detailZoom))});
+  overview = createOverview();
   syncVisibility();
   const method=$('jordravMethodContent');
   for (const key of ['methodBody','methodCover','methodChronology','methodScale','methodOld','methodFinds']) method.append(node('p',tr(key)));
@@ -170,7 +231,11 @@ async function start() {
   for (const source of data.rules.sources) {const li=node('li');li.append(sourceLink(source));if(source.license)li.append(document.createTextNode(` · ${source.license.split(';')[0]}`));sources.append(li);}
   method.append(sources);
   map.attributionControl.addAttribution('<a href="https://dataverse.geus.dk/">GEUS</a> · geological model 0.1');
-  map.on('moveend', () => {clearTimeout(timer);timer=setTimeout(loadViewport,180);});
+  map.on('moveend', () => {
+    clearTimeout(timer);
+    if (visible && map.getZoom() >= data.manifest.detailZoom) status('loadingDetail');
+    timer=setTimeout(loadViewport,180);
+  });
   await loadViewport();
 }
 start().catch(() => {status('failed');$('jordravStatus').classList.add('jordrav-error');});

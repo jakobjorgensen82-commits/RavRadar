@@ -7,6 +7,7 @@ import { MANIFEST_SHA256, MODEL_VERSION } from '../js/jordrav/dataset-binding.js
 import { validateManifest, intersects } from '../js/jordrav/data-service.js';
 import '../js/jordrav/messages.js';
 import { messageKeys } from '../js/jordrav/messages.js';
+import { REGIONAL_HYPOTHESES } from '../js/jordrav/regional-hypotheses.js';
 const appVersion=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')).version;
 const { hasTranslation }=await import(`../js/i18n.js?v=${appVersion}`);
 
@@ -70,4 +71,17 @@ test('national detail data cannot be imported or precached by the coastal view',
 });
 test('all geological user messages exist in Danish, German and English', () => {
   for (const lang of ['da','de','en']) for (const key of messageKeys) assert.ok(hasTranslation(`jordrav.${key}`,lang), `${lang}/${key}`);
+});
+test('regional readings have sources and translations but cannot classify polygons', () => {
+  assert.equal(new Set(REGIONAL_HYPOTHESES.map(item=>item.id)).size,4);
+  for (const region of REGIONAL_HYPOTHESES) {
+    assert.match(region.expertId,/^JH-00[5-8]$/);
+    assert.ok(!('potential' in region) && !('score' in region));
+    const [[south,west],[north,east]]=region.bounds;
+    assert.ok(south>=54 && north<=58 && west>=7 && east<=16 && south<north && west<east);
+    assert.ok(region.sources.length>0);
+    for(const source of region.sources) assert.match(source.url,/^https:\/\//);
+    for(const lang of ['da','de','en']) for(const key of ['name','basis','chain','focus','challenge'])
+      assert.ok(region.copy[lang][key]?.trim(),`${region.id}/${lang}/${key}`);
+  }
 });

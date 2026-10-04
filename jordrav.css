@@ -39,6 +39,14 @@
 .jordrav-method { padding: 20px 22px; margin: 16px 18px; border: 1px solid var(--line); background: white; border-radius: 12px; line-height: 1.7; font-size: .87rem; }
 .jordrav-method summary { cursor: pointer; font-weight: 700; }
 .jordrav-method ul { padding-left: 24px; }
+.jordrav-region-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+.jordrav-region-tools select { min-width: 0; max-width: 100%; flex: 1 1 250px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: white; }
+.jordrav-region-tools button { border: 1px solid var(--line); border-radius: 8px; background: var(--brand); color: white; cursor: pointer; min-height: 42px; padding: 8px 14px; }
+.jordrav-region-tools button:disabled { opacity: .5; cursor: default; }
+.jordrav-region-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 0 24px; }
+.jordrav-region-grid h3 { font-size: .95rem; margin: 12px 0 4px; }
+.jordrav-region-grid p { margin: 0 0 12px; }
+.jordrav-region-tools :focus-visible { outline: 3px solid #d79427; outline-offset: 3px; }
 .jordrav-error { color: #842f23; }
 .jordrav-toolbar button:focus-visible, .jordrav-tabs a:focus-visible { outline: 3px solid #d79427; outline-offset: 3px; }
 @media (max-width: 950px) {
@@ -47,6 +55,7 @@
   .jordrav-intro { flex-direction: column; gap: 12px; }
 }
 @media (max-width: 540px) {
+  .jordrav-region-grid { grid-template-columns: 1fr; }
   .jordrav-page .app-header { padding: 12px; gap: 10px; }
   .jordrav-page .language-switcher { gap: 2px; }
   .jordrav-page .language-switcher button { padding: 6px; font-size: .72rem; }

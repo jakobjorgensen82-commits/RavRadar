@@ -6,8 +6,11 @@ med almindeligt kort/luftfoto, klikforklaringer, DA/DE/EN og lazy-load.
 Den statiske nationale bygning bruger faktiske kildepolygoner, nyere
 materiale først og ældre supplement ved X/huller. Modellen er 0.1.0-prototype;
 alle ravslutninger er hypoteser med svag sikkerhed.
-**Lokalt PASS:** 192 native geometriudsnit, 11 modelcases, tre data-/modul-
-kontroller, otte faktiske browserkontroller og den produktkritiske sourcegate.
+Fire regionale forklaringscases, deres kilder og fokusvalg er implementeret.
+Navigation under zoom bevarer seneste ønske; regional tekst klassificerer
+ingen polygoner. App-/model-/dataidentiteter er uændrede.
+**Lokalt PASS:** 192 native geometriudsnit, 11 modelcases, fire data-/modul-
+kontroller, 11 faktiske browserkontroller og den produktkritiske sourcegate.
 Landskortet har 598 generaliserede features; lokale udsnit 505.834 features.
 Eksakt national eksportdækning påstås ikke; numeriske sømme auditeres.
 **Åbent:** Regional ravtilførsel og bevaring, nyere main-/RDKS-integration,

@@ -2,6 +2,8 @@
 
 **Dato:** 4. oktober 2026. **Status:** Faglig analyse med efterfølgende lokal [kortprototype 0.1](JORDRAV_PROTOTYPE_0_1.md); ikke publiceret. Analysebaseline er RavRadar 4.0.541, commit `bbc3c79fe555dffbff4a88af8cdf54573953efdb`. Prototypens faktiske regler og kontroller beskrives særskilt; denne rapports oprindelige anbefalinger er ikke alle implementeret.
 
+**Fortsat regional analyse:** [Fire regionale sedimentkæder](JORDRAV_REGIONALE_KAEDER_2026-10-04.md) uddyber Rubjerg–Lønstrup, Gribskov–Allerød, Stenstrup–Kirkebysand og Varde bakkeø. Kortet har nu en regional guide og fokus på forhøjet procespotentiale; regional tekst giver ikke en automatisk klassebonus.
+
 ## Konklusion og konkret anbefaling
 
 Danmark har et brugbart grundlag for et **kort over geologisk jordravpotentiale**, som kan pege på muligheder uden for allerede kendte fundsteder. Den mest lovende tilgang er at følge ravets mulige vej gennem ældre sedimenter, istransport, smeltevand, gentagen omlejring og senere blotlægning. Kortet skal vurdere denne sammenhæng i virkelige geologiske områder frem for at farvelægge landet alene efter jordtype.
