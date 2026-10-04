@@ -1,3 +1,4 @@
+import { dmiMarineCollectionAllowedForZone } from './dmi-marine-zone-exclusions.mjs';
 import {
   RAVSCORE_WEIGHTS,
   ravScoreModelBinding,
@@ -12,8 +13,8 @@ import {
 import {
   stateOnlyCurrentRowForbiddenFields,
   stripStateOnlyCurrentRowProjection,
-  verifiedLivePilotSource,
-  verifiedStateOnlyCurrentHold,
+  eligibleLivePilotSource as verifiedLivePilotSource,
+  eligibleStateOnlyCurrentHold as verifiedStateOnlyCurrentHold,
 } from './live-current-pilot.mjs';
 import { selectQualifiedWeatherComponent } from './weather-component-selection.mjs';
 import { qualifiedWeatherReserveCandidates, selectedWeatherReserveSource } from './weather-reserve-admission.mjs';
@@ -208,6 +209,23 @@ export function verifiedDmiNativeComponentSource(
   return verified;
 }
 
+// Proof authenticity is also used to read immutable original packs. Consumer
+// eligibility is separate, so owner source exclusions never rewrite that proof.
+export function eligibleDmiForecastComponentSource(source, rowTime, component, expectedIdentity) {
+  return dmiMarineCollectionAllowedForZone(source?.collection, expectedIdentity?.parentZoneId)
+    ? verifiedDmiForecastComponentSource(source, rowTime, component, expectedIdentity) : null;
+}
+
+export function eligibleDmiNativeComponentSource(source, rowTime, component, expectedIdentity) {
+  return dmiMarineCollectionAllowedForZone(source?.collection, expectedIdentity?.parentZoneId)
+    ? verifiedDmiNativeComponentSource(source, rowTime, component, expectedIdentity) : null;
+}
+
+export function eligibleBulkCurrent(bulkCache, bulkZone, point, source, rowTime, expectedIdentity) {
+  return dmiMarineCollectionAllowedForZone(source?.collection, expectedIdentity?.parentZoneId)
+    ? verifiedBulkCurrent(bulkCache, bulkZone, point, source, rowTime, expectedIdentity) : null;
+}
+
 function samePoint(first, second, tolerance = 1e-7) {
   return Array.isArray(first) && Array.isArray(second)
     && first.length === 2 && second.length === 2
@@ -315,7 +333,7 @@ function sanitizeWind(hour, expectedIdentity) {
     ? declaredComponent
     : null;
   const source = component
-    ? verifiedDmiForecastComponentSource(
+    ? eligibleDmiForecastComponentSource(
       hour.sources.wind,
       hour?.time,
       component,
@@ -338,7 +356,7 @@ function sanitizeWind(hour, expectedIdentity) {
 }
 
 function sanitizeWave(hour, expectedIdentity) {
-  const directSource = verifiedDmiForecastComponentSource(
+  const directSource = eligibleDmiForecastComponentSource(
     hour?.sources?.wave,
     hour?.time,
     'wave',
@@ -404,7 +422,7 @@ function sanitizeWave(hour, expectedIdentity) {
 }
 
 function sanitizeWaterLevel(hour, expectedIdentity) {
-  const source = verifiedDmiForecastComponentSource(
+  const source = eligibleDmiForecastComponentSource(
     hour?.sources?.waterLevel,
     hour?.time,
     'waterLevel',
@@ -423,7 +441,7 @@ function sanitizeWaterLevel(hour, expectedIdentity) {
 }
 
 function sanitizeWaterTemperature(hour, expectedIdentity) {
-  const source = verifiedDmiForecastComponentSource(
+  const source = eligibleDmiForecastComponentSource(
     hour?.sources?.waterTemperature, hour?.time, 'waterTemperature', expectedIdentity,
   );
   const temperature = finite(hour?.waterTemperatureC);
@@ -553,7 +571,7 @@ export function verifiedIntegratedPartHourly(record, bulkCache, bulkId, part, co
       ? hour.currentProvenance
       : hour?.sources?.current;
     const proof = finite(hour?.currentUMps) !== null && finite(hour?.currentVMps) !== null
-      ? verifiedBulkCurrent(
+      ? eligibleBulkCurrent(
         bulkCache,
         bulkCache?.zones?.[bulkId],
         part?.waterPoint,

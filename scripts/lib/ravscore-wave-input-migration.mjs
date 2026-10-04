@@ -7,7 +7,7 @@ import { buildRavScoreRecoveryReplay, RAVSCORE_MEASURED_COLD_ROLLBACK_DISPOSITIO
 import { assertIntegratedCoastalPointContinuation } from './coastal-point-staging-contract.mjs';
 import { assertCandidateGRollbackContinuation } from './ravscore-candidate-g-rollback-runtime.mjs';
 import { ravScoreSamplingContextKey } from './ravscore-sampling-context.mjs';
-import { dmiExpectedIdentityForPart, verifiedDmiForecastComponentSource,
+import { dmiExpectedIdentityForPart, eligibleDmiForecastComponentSource as verifiedDmiForecastComponentSource,
   verifiedIntegratedPartHourly } from './ravscore-production-adapters.mjs';
 
 const HOUR = 3_600_000;

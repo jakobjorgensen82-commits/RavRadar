@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { dmiMarineCollectionAllowedForZone } from './dmi-marine-zone-exclusions.mjs';
 import {
   RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID,
 } from '../../js/core/ravscore-integrated-state-pipeline.js';
@@ -1664,6 +1665,11 @@ export function verifiedLivePilotSource(source, part, { requireStatus = false } 
   return { gridPoint, distanceKm, maximumDistanceKm, arrowSource };
 }
 
+export function eligibleLivePilotSource(source, part, options = {}) {
+  return dmiMarineCollectionAllowedForZone(source?.collection, expectedParentZoneId(part))
+    ? verifiedLivePilotSource(source, part, options) : null;
+}
+
 function verifiedEntry(entry, part, document, proofs = null) {
   const closureProof = proofs?.closureProof ?? operationalClosureDocumentProof(document);
   const advisoryProof = proofs?.advisoryProof ?? advisoryDocumentProof(document);
@@ -1681,7 +1687,8 @@ function verifiedEntry(entry, part, document, proofs = null) {
   const validTime = canonicalTime(entry?.validTime);
   if (!validTime || entry?.partId !== part?.partId
     || entry?.parentZoneId !== expectedParentZoneId(part)
-    || entry?.targetIdentityFingerprint !== targetIdentityFingerprint(part)) return null;
+    || entry?.targetIdentityFingerprint !== targetIdentityFingerprint(part)
+    || !dmiMarineCollectionAllowedForZone(entry?.collection, expectedParentZoneId(part))) return null;
   if (entry?.classification === REGIONAL_HOLD_CLASSIFICATION) {
     const modelRun = canonicalTime(entry?.modelRun);
     const sourceValidTime = canonicalTime(entry?.sourceValidTime);
@@ -1744,7 +1751,7 @@ function verifiedEntry(entry, part, document, proofs = null) {
     nativeValidTimes: [entry.sourceValidTime ?? validTime],
     fallback: provider === 'open-meteo',
   };
-  const proof = verifiedLivePilotSource(source, part, { requireStatus: true });
+  const proof = eligibleLivePilotSource(source, part, { requireStatus: true });
   return proof ? { entry, source, validTime, uMps, vMps, proof } : null;
 }
 
@@ -1773,7 +1780,7 @@ function verifiedRegionalReferenceEntry(entry, part, document, proofs = null) {
     nativeValidTimes: [validTime],
     fallback: false,
   };
-  const spatialProof = verifiedLivePilotSource(source, part, { requireStatus: true });
+  const spatialProof = eligibleLivePilotSource(source, part, { requireStatus: true });
   return spatialProof
     ? { entry, source, validTime, uMps, vMps, proof: spatialProof }
     : null;
@@ -1785,6 +1792,11 @@ function verifiedRegionalReferenceEntry(entry, part, document, proofs = null) {
  * one earlier verified regional source commitment and deliberately contains
  * no coordinate, vector, speed, direction or arrow field.
  */
+export function eligibleStateOnlyCurrentHold(source, rowTime, part) {
+  return dmiMarineCollectionAllowedForZone(source?.collection, expectedParentZoneId(part))
+    ? verifiedStateOnlyCurrentHold(source, rowTime, part) : null;
+}
+
 export function verifiedStateOnlyCurrentHold(source, rowTime, part) {
   const rowCanonical = canonicalTime(rowTime);
   const validTime = exactUtcHour(source?.validTime);
@@ -2024,7 +2036,7 @@ export function mergeLiveCurrentPilotIntoRecord(
       && finite(row?.currentVMps) !== null
       && primaryCurrentVerified(row)) return row;
     if (candidate.stateOnly === true) {
-      const currentStateOnlyHold = verifiedStateOnlyCurrentHold(
+      const currentStateOnlyHold = eligibleStateOnlyCurrentHold(
         candidate.source,
         row?.time,
         part,

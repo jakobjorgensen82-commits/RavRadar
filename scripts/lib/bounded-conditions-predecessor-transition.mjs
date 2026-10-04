@@ -186,3 +186,86 @@ export function buildBoundedConditionsPredecessorRestoreExpectation({
     now: canonicalTime(now, 'Bounded conditions predecessor restore time'),
   });
 }
+
+// One original generation, not a general model-hash override. The manifest
+// remains ORIGINAL while the successor reads it; migration and reconstruction
+// are separate operations and cannot be attested by this restore expectation.
+export const OWNER_CURRENT_DOMAIN_PREDECESSOR = Object.freeze({
+  sourceHead: 'd778ff28c84606a93364ce112fecce4152182649',
+  datasetId: 'rr-20261004172305-210',
+  productionReferenceAt: '2026-10-04T16:00:00.000Z',
+  generatedAt: '2026-10-04T17:23:05.647Z',
+  bundleContentSha256: '1d912d8fdfbfb9e5aebc8f78d945e6cd9d08296108fd350b7b02a1be5cf7b117',
+  modelBinding: Object.freeze({
+    ...BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceModelBinding,
+    modelBundleSha256: '29ea9a19647bf7d5edad0eee159267086d546f0d90a9f2778a77077351aad948',
+  }),
+  contractHashes: Object.freeze({
+    continuationStateContractSha256: 'd983bb085f75252d00f0e2585cd0e274ea86020000f99037e9054a3989a4aef6',
+    fullRuntimeContractSha256: 'ede0b53b8ed0f3fa5d0e505ea7c07d98969dc7a38fe94ae034a85f9c5d5af7ff',
+    publicProjectionContractSha256: 'c495b80c7ca8906d81ae0a58f340fe693f79acce51ca6efc7933681d9505da09',
+  }),
+});
+
+export const OWNER_CURRENT_DOMAIN_SUCCESSOR = Object.freeze({
+  integratedBundleSha256: '4ebe158f68954f32b47cb71d5222ab0cf676faaf4b323d743f9d43bf34a63a51',
+  candidateBundleSha256: '3e5aae87b19934091a7882fbd8f5b5570b7c83ba786ea6f3bac52a8fd71fcd1e',
+  continuationStateContractSha256: '3dd9b7f054dd19400e8110ec504c2689bd62c52741cf6cf7805070e89e51d1bd',
+});
+
+export function assertOwnerCurrentOriginalExpectation(expected) {
+  const original = OWNER_CURRENT_DOMAIN_PREDECESSOR;
+  if (!isObject(expected)
+    || expected.ownerCurrentDomainTransition !== 'EXACT_ORIGINAL_RESTORE_V1'
+    || !same(expected.modelBinding, original.modelBinding)
+    || !same(expected.contractHashes, original.contractHashes)
+    || ['sourceHead', 'datasetId', 'productionReferenceAt', 'generatedAt',
+      'bundleContentSha256'].some(key => expected[key] !== original[key])
+    || canonicalHour(expected.minimumReferenceAt, 'Original minimum reference')
+      !== original.productionReferenceAt
+    || canonicalTime(expected.minimumGeneratedAt, 'Original minimum generation')
+      !== original.generatedAt
+    || Date.parse(canonicalHour(expected.targetReferenceAt, 'Successor target'))
+      < Date.parse(original.productionReferenceAt)) {
+    throw new Error('Owner current transition requires its exact original expectation');
+  }
+  return original;
+}
+
+export function buildOwnerCurrentOriginalRestoreExpectation({
+  sourceDescription, targetReferenceAt, currentBinding, currentContractHashes,
+  now = new Date().toISOString(),
+} = {}) {
+  const original = OWNER_CURRENT_DOMAIN_PREDECESSOR;
+  if (!isObject(sourceDescription)
+    || sourceDescription.schemaVersion !== '1.0.0'
+    || sourceDescription.kind !== 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_CURRENT_SOURCE'
+    || sourceDescription.expectedZoneCount !== 210
+    || sourceDescription.expectedPartCount !== 673
+    || sourceDescription.privatePayloadIncluded !== false
+    || ['sourceHead', 'datasetId', 'productionReferenceAt', 'generatedAt',
+      'bundleContentSha256'].some(key => sourceDescription[key] !== original[key])
+    || !same(sourceDescription.modelBinding, original.modelBinding)
+    || !same(sourceDescription.contractHashes, original.contractHashes)
+    || !isObject(currentBinding)
+    || currentBinding.modelBundleSha256 !== OWNER_CURRENT_DOMAIN_SUCCESSOR.integratedBundleSha256
+    || !same({ ...currentBinding, modelBundleSha256: original.modelBinding.modelBundleSha256 },
+      original.modelBinding)
+    || !contractHashesAreExact(currentContractHashes)
+    || currentContractHashes.fullRuntimeContractSha256
+      !== original.contractHashes.fullRuntimeContractSha256
+    || currentContractHashes.publicProjectionContractSha256
+      !== original.contractHashes.publicProjectionContractSha256
+    || currentContractHashes.continuationStateContractSha256
+      !== OWNER_CURRENT_DOMAIN_SUCCESSOR.continuationStateContractSha256) return null;
+  const expectation = {
+    ...structuredClone(original),
+    ownerCurrentDomainTransition: 'EXACT_ORIGINAL_RESTORE_V1',
+    targetReferenceAt: canonicalHour(targetReferenceAt, 'Successor target'),
+    minimumReferenceAt: original.productionReferenceAt,
+    minimumGeneratedAt: original.generatedAt,
+    now: canonicalTime(now, 'Original restore time'),
+  };
+  assertOwnerCurrentOriginalExpectation(expectation);
+  return Object.freeze(expectation);
+}

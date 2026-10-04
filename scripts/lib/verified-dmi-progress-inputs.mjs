@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { PRIVATE_WEATHER_PROGRESS_ONLY_FILES as FILES } from './private-weather-progress-files.mjs';
 import { DMI_FORECAST_HOURS, normalizeForecastHourly } from './dmi-forecast-store.mjs';
-import { verifiedDmiForecastComponentSource } from './ravscore-production-adapters.mjs';
+import { eligibleDmiForecastComponentSource as verifiedDmiForecastComponentSource } from './ravscore-production-adapters.mjs';
 import { preferQualifiedDmiComponentSource } from './weather-component-selection.mjs';
 import { hasValue } from './weather-component-needs.mjs';
 import { inspectDmiForecastFile, readDmiForecastRecord, writeDmiForecastRecords } from './dmi-forecast-file.mjs';

@@ -1,4 +1,57 @@
-# NYESTE – 2026-10-04 – Lyngbyafgrænsning og lokal ejeralarm på b8f9
+# NYESTE – 2026-10-04 19:55 DK – lokal 4.0.542-kandidat: syv zoner og NORMAL Fur-diagnose
+
+Ejeren kræver begge klargjort til GitHub efter den faktisk aktive vejrhentning.
+FEATURE er afstemt til MAINd778; den gamle alarm er bevaret, backupstash bevares.
+Den afgrænsede dkss_lf-regel, ægte originalarkiv og eksakt teknisk OLD→NEW-overgang
+for syv zoner er implementeret lokalt. Den nye append-only migration og otte
+bindinger er kontrolleret; fysiske scorekontrakter og gamle migrationer er urørte.
+4.0.542 er en LOKAL kandidat, ikke offentliggjort; offentlig kode er fortsat 541.
+Geodata-diff er bevist som KUN topversionsfelt, ingen punkter eller geometri.
+
+Fur-diagnosen er nu koblet til faktisk NORMAL-routing og den eksisterende
+private conditions/cache-transaktion. Den gemmer kun kildevalg-/konteksthashes,
+boolean presence og optællinger, ikke vandstandsværdier, koordinater eller rå
+konfiguration. Kun faste koder/optællinger føres til den eksisterende no-loss-
+kontrol. Begge offentlige projektioner er byte-neutrale. 118h-vinduet, eksakt
+dataset/reference/generation og privat kildevalg kontrolleres; den korte
+8-dels-fejlsample kan ikke skjule et Fur-tab. Faktisk router med syv syntetiske
+tab genkender ændret bracket og bevaret tidligere SOURCE, men det er IKKE
+årsagsbevis for de gamle 7/12 timer. Første generation uden tidligere trace
+meldes ærligt TRACE_NOT_RECORDED. Ingen alternativ cipher eller movingconfig.
+
+Målrettede eksisterende router-/no-loss-/offentligprojektionstests PASS;
+privat hourpack-parent PASS/0skip og NORMAL-caller 2 PASS/0skip. Friske native
+builders, otte bindinger og NEW migration-check består efter Fur-tilføjelsen.
+Same-T-release bevarer originaler og scorehistorik; kilderen current-rekonstruktion
+sker først ved ægte NEW-T. Frisk CURRENT ORIGINALpin efter vejrhentningen,
+slutdokumentation, exact-head CI/proof, merge og faktisk release er stadig åbne.
+Ingen commit/push/CI/merge/SQLinstallation/deploy af kandidaten er endnu udført.
+
+Fortsat deploy ved Fur-lignende tab kræver en endnu åben gyldig timeretention
+før uændret slutkontrol. Diagnosen er ikke retentionrettelsen; no-loss er ikke
+lempet, og nye manglende timer må ikke skjules eller publiceres som gyldige.
+PR515/old exactcache er fortsat HOLD uden dispatch; gammel Fur-årsag OPEN.
+Sidst målte nationale FIELD-dækning er 98.451406553% for 12Z/210/673/118h,
+alle fem samtidig 96.030926537%, ikke score-/observations-/privathistoriebevis.
+Nedenstående tidsbestemte status er historik, hvor den strider mod ovenstående.
+
+# NYESTE – 2026-10-04 19:30 DK – syv-zone-kandidat på MAINd778; ingen levering endnu
+
+FEATURE er lokalt afstemt til actualMAINd778; backupstash7471dad7545a6d1de1058e55e675e51692c8c182 bevares.
+Den allerede leverede alarm PR513/issue514 er bevaret uændret, faktisk tildelt
+ejeren; mailreceipt ukendt. Alle tidligere afventende alarmudsagn er historik.
+Syv-zone-currentguards/originalreader/trueoriginalarchive/normal og code-only
+metadataovergang samt NY append-only migration er lokalt implementeret og
+måltestet. Bindinger3e5/4ebe/3dd er faktisk genereret lokalt, fysiske kontrakter
+uændrede. Ingen SQLinstall/commit/push/merge/version542/deploy. Frisk CURRENT
+ORIGINALpin, exact-headCI og produktion/newT-effekt er stadig åbne.
+Naturlig37216344452 var ved seneste19:28-read aktiv i beregning siden19:22:39
+uden fejlede trin. Ingen main-/produktionsændring under writer. Kystlevering
+først; bagefter actual NORMALFur-diagnose og gyldig baseline-bevaring før
+uændret no-loss. Missingoldcache8470342142/PR515 hold, ingen alternativcipher.
+Se privat checkpoint og DEC0291 for faktisk evidens og gates.
+
+# Historisk – 2026-10-04 – Lyngbyafgrænsning og lokal ejeralarm på b8f9
 
 RELEASE codex/weather-failure-owner-alert bygger på actual mainb8f9;
 PR512 og begge originale authenticated reads er afsluttet. Original673

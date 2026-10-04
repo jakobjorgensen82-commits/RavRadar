@@ -5,6 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { materializePrivatePublicHourDeliveryPack } from './lib/public-hour-delivery-pack.mjs';
 import { hasValue } from './lib/weather-component-needs.mjs';
+import { FUR_WATER_ROUTING_PART_ID, FUR_DIAGNOSIS_CODES, classifyFurWaterLevelLoss }
+  from './lib/fur-water-routing-diagnostic.mjs';
 
 const FIELDS = Object.freeze(['wind', 'wave', 'current', 'waterLevel', 'waterTemperature']);
 const exactHour = value => typeof value === 'string'
@@ -69,10 +71,13 @@ export async function checkPublicWeatherContinuity({
   temporaryDirectory = os.tmpdir(),
 } = {}) {
   const previousConditions = JSON.parse(await fs.readFile(previousConditionsPath, 'utf8'));
+  const currentConditions = JSON.parse(await fs.readFile(path.join(newLiveDirectory, 'conditions.json'), 'utf8'));
   const newManifest = JSON.parse(await fs.readFile(path.join(newLiveDirectory, 'manifest.json'), 'utf8'));
   const previousReference = previousConditions.productionReferenceAt;
   const currentReference = newManifest.productionReferenceAt;
   if (!exactHour(previousReference) || !exactHour(currentReference)
+    || currentConditions.datasetId !== newManifest.datasetId
+    || currentConditions.productionReferenceAt !== currentReference
     || currentReference < previousReference || !Number.isSafeInteger(newManifest.coastalPartCount)
     || newManifest.coastalPartCount < 1 || !newManifest.detailDelivery?.hours) {
     throw new Error('PUBLIC_WEATHER_CONTINUITY_MANIFEST_INVALID');
@@ -94,6 +99,14 @@ export async function checkPublicWeatherContinuity({
     let changedIdentities = 0;
     let comparedHours = 0;
     const lossHours = [];
+    const furDiagnosis = {
+      kind: 'FUR_WATER_LEVEL_LOSS_FIXED_CODE_COUNTS',
+      lostHours: 0,
+      codes: Object.fromEntries(FUR_DIAGNOSIS_CODES.map(code => [code, 0])),
+      privatePayloadIncluded: false,
+      rawValuesIncluded: false,
+      routingCauseProvedByLegacySuccess: false,
+    };
     for (const time of oldTimes) {
       const previousDescriptor = oldDelivery.hours[time];
       const currentDescriptor = newHours[time];
@@ -108,6 +121,17 @@ export async function checkPublicWeatherContinuity({
         currentDatasetId: newManifest.datasetId,
         partCount: newManifest.coastalPartCount,
       });
+      // The public example list is capped at eight; diagnosis must not depend
+      // on whether Fur happened to fall inside that sample.
+      const oldFur = previous.coastalParts.parts[FUR_WATER_ROUTING_PART_ID];
+      const newFur = current.coastalParts.parts[FUR_WATER_ROUTING_PART_ID];
+      if (oldFur && newFur && same(partIdentity(oldFur), partIdentity(newFur))
+        && hasValue(oldFur.current?.weather, 'waterLevel')
+        && !hasValue(newFur.current?.weather, 'waterLevel')) {
+        furDiagnosis.lostHours += 1;
+        const code = classifyFurWaterLevelLoss({ previousConditions, currentConditions, time });
+        furDiagnosis.codes[code] += 1;
+      }
       for (const component of FIELDS) {
         losses[component] += compared.losses[component];
         gains[component] += compared.gains[component];
@@ -129,6 +153,7 @@ export async function checkPublicWeatherContinuity({
       losses,
       gains,
       lossHours,
+      furWaterLevelDiagnosis: furDiagnosis,
       // A normal run cannot silently redefine the 673 approved coastal
       // identities to evade comparison. Geometry changes require their own
       // explicitly audited migration, not an automatic weather refresh.

@@ -445,7 +445,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.541 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.542 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -598,6 +598,16 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: Prepare exact old-reader restore for the measured wave transition
+        id: historical-wave-predecessor
+        if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
+        run: >-
+          node scripts/prepare-historical-wave-predecessor-restore.mjs
+          --source-description "$RUNNER_TEMP/private-runtime-current-source.json"
+          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --output "$RUNNER_TEMP/historical-wave-predecessor-expected.json"
+          --github-output "$GITHUB_OUTPUT"
+
       - name: Classify the exact 11Z weather recovery
         id: exact-weather-recovery
         if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
@@ -616,7 +626,7 @@ jobs:
       # private conditions carry the exact continuation states and are rebound
       # below; restoring the old checkpoint here would reject a valid donor.
       - name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint
-        if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
+        if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
         id: ravscore-checkpoint-cache
         uses: actions/cache/restore@v6
         with:
@@ -626,7 +636,7 @@ jobs:
             ravscore-continuation-schema6-v2-
 
       - name: Restore protected atomic RavScore checkpoint when cache is absent
-        if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''
+        if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --restore
@@ -650,18 +660,8 @@ jobs:
           test "$(git -C "$reader_root" rev-parse HEAD)" = "$reader_head"
           test "$(git -C "$donor_root" rev-parse HEAD)" = "$donor_head"
 
-      - name: Prepare exact old-reader restore for the measured wave transition
-        id: historical-wave-predecessor
-        if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
-        run: >-
-          node scripts/prepare-historical-wave-predecessor-restore.mjs
-          --source-description "$RUNNER_TEMP/private-runtime-current-source.json"
-          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
-          --output "$RUNNER_TEMP/historical-wave-predecessor-expected.json"
-          --github-output "$GITHUB_OUTPUT"
-
       - name: Materialize the exact audited predecessor reader before old-reader secret use
-        if: steps.historical-wave-predecessor.outputs.required == 'true'
+        if: steps.historical-wave-predecessor.outputs.required == 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original'
         shell: bash
         env:
           EXPECTED_SOURCE_HEAD: ${{ steps.historical-wave-predecessor.outputs.source_head }}
@@ -701,7 +701,9 @@ jobs:
           restore_script="$GITHUB_WORKSPACE/scripts/protected-private-production-runtime.mjs"
           restore_repository="$GITHUB_WORKSPACE"
           restore_expected="$GITHUB_WORKSPACE/.cache/private-production-runtime-expected.json"
-          if test "$HISTORICAL_WAVE_PREDECESSOR_REQUIRED" = "true"; then
+          if test "$OWNER_CURRENT_ORIGINAL_REQUIRED" = "true"; then
+            restore_expected="$HISTORICAL_WAVE_PREDECESSOR_EXPECTED"
+          elif test "$HISTORICAL_WAVE_PREDECESSOR_REQUIRED" = "true"; then
             restore_script="$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs"
             restore_repository="$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT"
             restore_expected="$HISTORICAL_WAVE_PREDECESSOR_EXPECTED"
@@ -786,6 +788,7 @@ jobs:
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
           EXACT_WEATHER_RECOVERY_REQUIRED: ${{ steps.exact-weather-recovery.outputs.required || 'false' }}
           HISTORICAL_WAVE_PREDECESSOR_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.required || 'false' }}
+          OWNER_CURRENT_ORIGINAL_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.transition_kind == 'owner-current-domain-original' }}
           HISTORICAL_WAVE_PREDECESSOR_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -834,6 +837,7 @@ jobs:
         shell: bash
         env:
           HISTORICAL_WAVE_PREDECESSOR_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.required || 'false' }}
+          OWNER_CURRENT_ORIGINAL_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.transition_kind == 'owner-current-domain-original' }}
           HISTORICAL_WAVE_PREDECESSOR_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
           EXACT_WEATHER_RECOVERY_REQUIRED: ${{ steps.exact-weather-recovery.outputs.required || 'false' }}
         run: |
@@ -841,7 +845,15 @@ jobs:
           restore_script="$GITHUB_WORKSPACE/scripts/private-production-runtime-bundle.mjs"
           restore_repository="$GITHUB_WORKSPACE"
           restore_expected="$GITHUB_WORKSPACE/.cache/private-production-runtime-expected.json"
-          if test "$HISTORICAL_WAVE_PREDECESSOR_REQUIRED" = "true"; then
+          if test "$OWNER_CURRENT_ORIGINAL_REQUIRED" = "true"; then
+            restore_expected="$HISTORICAL_WAVE_PREDECESSOR_EXPECTED"
+            node scripts/private-runtime-second-restore-expectation.mjs \
+              --expected "$restore_expected" \
+              --source-description "$RUNNER_TEMP/private-runtime-restored-source.json" \
+              --bundle-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json" \
+              --output "$RUNNER_TEMP/private-runtime-second-restore-expected.json"
+            restore_expected="$RUNNER_TEMP/private-runtime-second-restore-expected.json"
+          elif test "$HISTORICAL_WAVE_PREDECESSOR_REQUIRED" = "true"; then
             restore_script="$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT/scripts/private-production-runtime-bundle.mjs"
             restore_repository="$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT"
             restore_expected="$HISTORICAL_WAVE_PREDECESSOR_EXPECTED"
@@ -869,6 +881,27 @@ jobs:
             --repository-root "$restore_repository" \
             --expected "$restore_expected" \
             --output "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
+
+      - name: Preserve original pairs and rebind metadata before new-hour source reconstruction
+        id: owner-current-original-migration
+        if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'owner-current-domain-original'
+        shell: bash
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+          EXPECTED_SOURCE_HEAD: ${{ steps.historical-wave-predecessor.outputs.source_head }}
+        run: |
+          set -euo pipefail
+          migrated_root="$RAVRADAR_PRIVATE_RUNTIME_ROOT/owner-current-original-successor"
+          node scripts/migrate-post-cutover-private-runtime.mjs \
+            --owner-current-original \
+            --source "$RAVRADAR_PRIVATE_RUNTIME_RESTORE" \
+            --output "$migrated_root" \
+            --bundle-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json" \
+            --predecessor-descriptor "$RUNNER_TEMP/private-runtime-restored-source.json" \
+            --repository-root "$GITHUB_WORKSPACE" \
+            --expected-source-head "$EXPECTED_SOURCE_HEAD" \
+            --report "$RUNNER_TEMP/owner-current-original-migration.json"
+          echo "restored_path=$migrated_root" >> "$GITHUB_OUTPUT"
 
       - name: Rebind the exact bounded-conditions predecessor before installation
         id: bounded-conditions-predecessor-migration
@@ -921,10 +954,14 @@ jobs:
           PREDECESSOR_TRANSITION_KIND: ${{ steps.historical-wave-predecessor.outputs.transition_kind }}
           MIGRATED_RUNTIME_ROOT: ${{ steps.bounded-conditions-predecessor-migration.outputs.restored_path }}
           EXACT_WEATHER_MIGRATED_ROOT: ${{ steps.exact-weather-pair-migration.outputs.restored_path }}
+          OWNER_CURRENT_MIGRATED_ROOT: ${{ steps.owner-current-original-migration.outputs.restored_path }}
         run: |
           set -euo pipefail
           restored_root="$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
-          if test "$PREDECESSOR_TRANSITION_KIND" = "bounded-conditions-writer"; then
+          if test "$PREDECESSOR_TRANSITION_KIND" = "owner-current-domain-original"; then
+            test -n "$OWNER_CURRENT_MIGRATED_ROOT"
+            restored_root="$OWNER_CURRENT_MIGRATED_ROOT"
+          elif test "$PREDECESSOR_TRANSITION_KIND" = "bounded-conditions-writer"; then
             test -n "$MIGRATED_RUNTIME_ROOT"
             restored_root="$MIGRATED_RUNTIME_ROOT"
           elif test -n "$EXACT_WEATHER_MIGRATED_ROOT"; then
@@ -1196,7 +1233,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.541 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.542 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -1221,7 +1258,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.541 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.542 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -1508,7 +1545,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.541 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.542 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1869,7 +1906,7 @@ jobs:
           RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: ${{ inputs.quick_confirmation && '60000' || '90000' }}
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.541 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.542 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Report counts for each weather component after central cache

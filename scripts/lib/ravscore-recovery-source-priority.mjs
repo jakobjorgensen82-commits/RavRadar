@@ -7,7 +7,7 @@ import { classifyWavePhysicalTuple } from '../../js/core/ravscore-mobilisation-m
 import {
   dmiExpectedIdentityForPart,
   verifiedControlledLiveCurrentSource,
-  verifiedDmiForecastComponentSource,
+  eligibleDmiForecastComponentSource as verifiedDmiForecastComponentSource,
 } from './ravscore-production-adapters.mjs';
 import { verifyCompactFeggesundWaveProxy } from './feggesund-wave-proxy.mjs';
 import { buildRavScoreRecoveryReplay } from './ravscore-recovery-replay.mjs';

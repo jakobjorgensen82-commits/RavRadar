@@ -131,6 +131,9 @@ const PRIVATE_RUNTIME_SOURCE_FILES = Object.freeze({
     'scripts/classify-historical-wave-input-transition.mjs',
     'scripts/prepare-historical-wave-predecessor-restore.mjs',
     'scripts/lib/live-current-pilot.mjs',
+    'scripts/lib/dmi-marine-zone-exclusions.mjs',
+    'scripts/lib/fur-water-routing-diagnostic.mjs',
+    'scripts/lib/dmi-marine-zone-exclusions.json',
     'scripts/lib/production-reference-time.mjs',
     'scripts/lib/regional_current_operational.py',
     'scripts/lib/regional_source_proofs.py',
@@ -209,7 +212,7 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
 
 export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
   decisionId: 'DEC-0122-OWNER-APPROVAL-2026-09-09',
-  releaseVersion: '4.0.541',
+  releaseVersion: '4.0.542',
   // The first cutover is over. A release-version bump cannot renew this authority.
   retired: true,
   invocationMarker: 'APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
@@ -225,7 +228,7 @@ export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
 export const PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY = Object.freeze({
   schemaVersion: '1.0.0',
   kind: 'RAVRADAR_PRIVATE_RUNTIME_CAPACITY_RESUME_EVIDENCE',
-  releaseVersion: '4.0.541',
+  releaseVersion: '4.0.542',
   priorRunId: '34738698219',
   priorRunAttempt: 1,
   priorSourceHead: '099b70a8314864ba85f0fb7ea3858b3f3816d9ed',

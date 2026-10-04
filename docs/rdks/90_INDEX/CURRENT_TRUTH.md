@@ -1,3 +1,264 @@
+# NYESTE – 2026-10-04 21:16 DK – PR516 sendt; konkret CI-regression repareret lokalt
+
+Syvzonerettelsen og NORMAL Fur-diagnosen er pushet i PR516, ikke online.
+Første exact-head kildekontrol stoppede på to kommandoer: det gamle PART-
+testudtræk og code-only-routingtesten. Udtræksgrænsen følger nu den faktiske
+routingcaller; begge legacy/protected regressioner består. Klassifikations-
+testen kræver både den særskilte ejerbro og den uændrede strenge fallback.
+Kontrollen fandt desuden en manglende plain-helper i den eksisterende legacy
+restore-lukning. Den kopieres nu sammen med wrapperen efter originalforventning;
+forgængerens model og bundle-verifier bevares. Berørt code-only-regression består.
+
+Ingen scoreformel, datatabsgate, originalpin, native binding eller gammel
+migration er ændret af denne reparation. Ny exact-head CI/proof kræves før merge.
+Ejerens ønskede rækkefølge er sikker deploy, én almindelig manuel vejrhentning
+og cron aktiv igen. Cronpause kunne ikke verificeres i browseren; ejeren siger
+efterfølgende, at der er tid nok. Cron er ikke ændret; faktisk writer skal fortsat
+kontrolleres før levering og manuel kørsel. Ingen ekstra eller overlappende kørsel.
+Automatisk Fur-timeretention og gammel rodårsag er stadig åbne.
+
+# NYESTE – 2026-10-04 20:46 DK – 4.0.542 klargjort efter afsluttet vejrhentning
+
+Den naturlige vejrhentning og deploy er faktisk afsluttet kl.20:31 DK.
+Actual cachegemning og uændret tabs-kontrol er målt: ingen tab i de fem
+vejrfamilier. Komponentrestore afviste legitimt en forkert baseline; grønt
+trin er ikke restorebevis. Det er ikke en forklaring eller rettelse af gammel Fur-fejl.
+
+Syvzonerettelsen og privat NORMAL Fur-diagnose er klar til GitHub-kildekontrol.
+Den eksakte ORIGINALpin er nu bundet til den faktisk nye 16Z-generation;
+berørt forventningstest og native/bindings-/append-migration-kontrol består.
+Ingen scoreformel, geometri, gammel migration, budget eller tabsbarriere ændres.
+Same-T-overgangen bevarer scorehistorik; kilderen strøm kræver næste ægte NEW-T.
+Originaler og bevist øvrig historik bevares. Automatisk Fur-timeretention er OPEN.
+
+Nyt rr-20261004172305-210/ref16Z er nationalt hashkontrolleret én gang over
+210 zoner/673 dele/118 timer: 382936/397070 numeriske felter = 96.440426121%.
+Alle fem samtidig: 73730/79414 = 92.842571839%. Kun Agger19 og Lyngby25 timer
+har offentlig dkss_lf-current uden central Limfjordstype; andre fem ejerzoner0.
+Dette er målt forecast-kildevalg, ikke fremtidig garanti, score-/observations-
+eller privat historiedækning. Top20 består begge modes; Nibe108/118 brugbare
+scoretimer, 47 ufuldstændig historie/61 projekteret fuld/10 utilgængelige.
+
+Kandidaten er endnu ikke offentligt deployet. Commit/push/én exact-head CI/proof,
+fornyede mergegates og kontrolleret release kræves; lokale tests er ikke effekt.
+Nedenstående statusser er historik, hvor de strider mod denne opdatering.
+
+# NYESTE – 2026-10-04 19:55 DK – lokal 4.0.542-kandidat: syv zoner og NORMAL Fur-diagnose
+
+Ejeren kræver begge klargjort til GitHub efter den faktisk aktive vejrhentning.
+FEATURE er afstemt til MAINd778; den gamle alarm er bevaret, backupstash bevares.
+Den afgrænsede dkss_lf-regel, ægte originalarkiv og eksakt teknisk OLD→NEW-overgang
+for syv zoner er implementeret lokalt. Den nye append-only migration og otte
+bindinger er kontrolleret; fysiske scorekontrakter og gamle migrationer er urørte.
+4.0.542 er en LOKAL kandidat, ikke offentliggjort; offentlig kode er fortsat 541.
+Geodata-diff er bevist som KUN topversionsfelt, ingen punkter eller geometri.
+
+Fur-diagnosen er nu koblet til faktisk NORMAL-routing og den eksisterende
+private conditions/cache-transaktion. Den gemmer kun kildevalg-/konteksthashes,
+boolean presence og optællinger, ikke vandstandsværdier, koordinater eller rå
+konfiguration. Kun faste koder/optællinger føres til den eksisterende no-loss-
+kontrol. Begge offentlige projektioner er byte-neutrale. 118h-vinduet, eksakt
+dataset/reference/generation og privat kildevalg kontrolleres; den korte
+8-dels-fejlsample kan ikke skjule et Fur-tab. Faktisk router med syv syntetiske
+tab genkender ændret bracket og bevaret tidligere SOURCE, men det er IKKE
+årsagsbevis for de gamle 7/12 timer. Første generation uden tidligere trace
+meldes ærligt TRACE_NOT_RECORDED. Ingen alternativ cipher eller movingconfig.
+
+Målrettede eksisterende router-/no-loss-/offentligprojektionstests PASS;
+privat hourpack-parent PASS/0skip og NORMAL-caller 2 PASS/0skip. Friske native
+builders, otte bindinger og NEW migration-check består efter Fur-tilføjelsen.
+Same-T-release bevarer originaler og scorehistorik; kilderen current-rekonstruktion
+sker først ved ægte NEW-T. Frisk CURRENT ORIGINALpin efter vejrhentningen,
+slutdokumentation, exact-head CI/proof, merge og faktisk release er stadig åbne.
+Ingen commit/push/CI/merge/SQLinstallation/deploy af kandidaten er endnu udført.
+
+Fortsat deploy ved Fur-lignende tab kræver en endnu åben gyldig timeretention
+før uændret slutkontrol. Diagnosen er ikke retentionrettelsen; no-loss er ikke
+lempet, og nye manglende timer må ikke skjules eller publiceres som gyldige.
+PR515/old exactcache er fortsat HOLD uden dispatch; gammel Fur-årsag OPEN.
+Sidst målte nationale FIELD-dækning er 98.451406553% for 12Z/210/673/118h,
+alle fem samtidig 96.030926537%, ikke score-/observations-/privathistoriebevis.
+Nedenstående tidsbestemte status er historik, hvor den strider mod ovenstående.
+
+# NYESTE – 2026-10-04 19:12 DK – kontrolleret syv-zone-overgang implementeret lokalt, ikke leveret
+
+Den godkendte afgrænsning ved begge Limfjordsudløb er stadig LOCAL. De normale
+input-/genbrugs-/SOURCE-/live- og to-model-statecallers følger syv-zone-reglen.
+Den eksisterende private læser kontrollerer nu præcis ORIGINALmanifest,
+kilde/digest/binding/kontrakter/tid før teknisk overgang; ingen arkiveret
+model-body kopieres eller evalueres. Same-T-overgangen ændrer kun tekniske
+metadata og bevarer det første ægte originalpar i privat arkiv. Kilderen
+48h-strøm genopbygges først i den næste ægte NEW-T-vejrhentning; ukendt kilde
+kaldes aldrig LF, og bevist bølge-/øvrig historik eller scoreformel ændres ikke.
+
+Normale native builders har nu faktisk skrevet og kontrolleret lokale
+bindinger: Candidate3e5aae87…/integrated4ebe158f…/continuation3dd9b7f0…;
+fysiske kontrakter er uændrede. Otte mutable forbrugere er synkroniseret.
+NY append-only 20261004190000_owner_current_source_domain_binding.sql er
+bygget og måltestet lokalt med eksakt inverse diff mod den uændrede tidligere
+CP-migration. De gamle broveje, fulde validatorer, rettigheder og 55s-grænser
+bevares. Ingen gammel applied migration er redigeret, og ingen SQL er installeret.
+Normal og kontrolleret kode-only-release bruger autentificeret original og
+aktuel læser/migrator; en generisk rapport kan ikke ommærkes til ejerbroen.
+Måltests for begge modeller, syv zoner, arkiv, binding og releasekæde består.
+
+Releasegates, eksakt hovedgren/aktuelle writers, frisk ORIGINALpin, én exact-head
+CI/proof og faktisk restore/CAS/Pages/NEW-T-effekt er endnu åbne. Ingen commit,
+push, merge, ny produktversion eller deploy af rettelsen er sket. Den naturlige
+18:19-vejrhentning var ved seneste aflæsning 19:08 stadig aktiv ved Copernicus
+uden fejlede trin; ingen produktionsændring må ske under den.
+
+Ejer ønsker nu Fur-diagnose i fremtidige normale vejrhentninger og fortsat deploy
+ved samme type tab. Næste arbejde efter kystleveringen er faktisk kilde-/routing-
+diagnose og bevarelse af gyldige originale timer før uændret slutkontrol, IKKE
+no-loss-bypass eller offentliggørelse med skjult tab. Det er ikke implementeret.
+Den gamle præcise Fur-cache mangler; PR515 holdes uden merge/dispatch og erstattes
+ikke med en anden cipher eller baseline alene. Gammel Fur-årsag er stadig OPEN.
+Sidst målte offentlige FIELD-dækning er 98.451406553% for 12Z/210/673/118h;
+alle fem felter samtidig 96.030926537%, ikke privat historik eller scorebevis.
+
+Nedenstående tidsbestemte status er historik, hvor den strider mod ovenstående.
+
+# NYESTE – 2026-10-04 17:30 DK – faktisk nyt vejr og dækningskontrol
+
+Ordinary/build/Pages/reseal/terminal/required-deploy faktisk SUCCESS17:18 DK.
+Actual protected install og ny gemning/cache er målt; matched prior-key var
+ikke authenticated restore: BASELINE_MISMATCH/miss. No-loss114 fælles timer,
+76722 kystdelstimer/identitet0/fem familietab0. Ingen gammel Fur-fixpåstand.
+
+NY rr-20261004140217-210/ref12Z/210zoner673dele/118h:390921/397070 numeriske
+vejrfelter=98.451406553%; alle fem samtidig76262/79414=96.030926537%.
+Vind98.272345%, bølge100%, strøm98.584632%, vandstand98.123757%,
+vandtemperatur97.276299%. Ingen kystdel har alle fem i alle118 timer.
+LFcurrent5462 kystdelstimer; uden central limfjord-kysttype kun Agger19
+og Lyngby27 timer. De øvrige fem ejerafgrænsede zoner har observeretLF0;
+ikke fremtidig eligibility-/privathistorik-/andre familiers kildegaranti.
+Frisk Top20/BOTHmodes20unique/fem dates PASS; Nibe48INCOMPLETE+
+64projectedFULL+6UNAVAILABLE=112usable/BOTHmodes. FutureFULL er ikke ETA.
+
+Fur exactcache-målet er nu fraværende i GitHubs inventories; ingen deletion
+er udført af root og ingen årsag er bevist. PR515 og grøn exactCI/ROOT står,
+men targetgate blokerer merge/dispatch. Cipher ikke åbnet eller erstattet.
+Syv-zone-rettelsen er fortsat LOCAL og ikke releaseready/live.
+
+# Historisk – 2026-10-04 – normal metadataovergang bevarer originalarkiv
+
+Den virkelige metadata-migrator havde en reproduceret konflikt med den gamle
+binding i det nye private originalarkiv. En lokal rettelse validerer hele
+ROOT-arkivet mod aktive partidentiteter først og bevarer derefter originaler
+byte-neutralt. Kun det validerede historiske ROOT-felt undtages; aktuelle eller
+nested gamle bindinger er fortsat fejl. Én ny subcase i eksisterende parent:
+RED3PASS/2FAIL -> GREEN5unitsPASS/0skip236.4993ms; normal metadataregression PASS.
+Det er ikke full-private-migration, initialization, CAS eller produktion.
+Efterfølgende actual-caller-tidskontrol: fremtidig arkivreference var accepteret.
+NORMAL og metadata-migrator bruger nu den samme låste generationstid i
+arkivlæseren. To udvidede eksisterende subcases/5unitsPASS267.3436ms; normal
+metadataregression PASS. Nye RAM-only hashes3e5/4ebe/3dd9 erstatter f356/ab96/072f;
+physicals og actualLOCAL19c50def uændrede. Stored generatedmetadata er stadig
+stale. Ingen generatedwrite/bodycopy/eval/SQLinstall eller produktionseffekt.
+
+# Historisk – 2026-10-04 – originalbinding-kontrol lokalt; Fur-læser pushet
+
+Efter særskilt menneskeligt publicerings-JA er Fur-presence-læseren PUSHED
+som PR515/exact9c63a5d3…, ikke merged eller kørt. Faste koder/optællinger er
+en afgrænset diagnosekontrakt, ikke bevis for de gamle syv tabs årsag.
+Syv-zone-feature er fortsat separat lokal og ikke live/release-ready.
+
+Originalt integrated arkiv kontrolleres nu med hele den eksisterende canonical
+validering under FIXED29ea-originalbinding og uændret fysisk kontrakt. Arkivet
+bevares byte-neutralt; det bliver aldrig initializer/kildebevis/hashalias.
+Normal initialization er fortsat strict-current. Én ny archive-subcase samt
+de eksisterende to giver4parent/subtestunitsPASS/0skip208.0663ms; normal
+integrated regression PASS. Ikke actual nybinding/restore/CAS/produktion.
+Friske RAM-only closurehashes i DEC-0291 erstatter tidligere provisoriske.
+LOCALcontinuation med OLD generatedmetadata er nu19c50def… mod RELEASEd983…;
+fullRuntime/publicProjection uændrede. Ingen generated/bindings-/SQLwrite.
+
+# Historisk – 2026-10-04 – syv kystzoner lokalt afgrænset; ingen ny release
+
+DEC-0291 er menneskeligt udvidet til DK-B01-01/02, DK-B02-08/09/11 og
+DK-B03-01/02. Centrale Limfjordszoner/Fur bevarer gyldigt dkss_lf. Fælles
+input-/retained-/history-/live-/SOURCEguards og actual statecallers er lokalt
+måltestet på alle syv; ældre to-zone-afgrænsning er erstattet, ingen blanket.
+Menneskets scoped JA til NEWmigration-binding og Fur-presence-only er nu
+gældende. Ingen actual cipherread, bindinginstall, commit/CI/deploy endnu.
+Begge problemer OPEN; næste natural37201706227 aktiv fra14:19DK. Nyeste
+fulde offentlige måling er stadig08Z-datasættets95.134359% numeriske felter,
+ikke scoreavailability/privat historik. Ingen genhentning af samme1.3GB.
+
+# Historisk – 2026-10-04 – Agger og Lyngby afgrænses; nyt vejr faktisk leveret
+
+NY13.53DK: næste naturlige ordinary37188571721/MAINd778 og requireddeploy
+er faktiskSUCCESS13:17DK. NYrr-20261004095803-210/ref08Z har114fælles timer
+med fem familietab0, ny gemt cache og ærligt optionalBASELINE_MISMATCH/miss.
+National210/673/118h hash-/bytebundet feltpresence377750/397070=95.134359%.
+LFcurrent uden limfjord-coastType kun Agger34timer og Lyngby42timer.
+Hals/Nordmandshage og HalsBarre/EgenseLF0; observeret current, ikke en garanti
+for fremtidigt kildevalg. Marine overlap er tilladt; CURRENT er særskilt fra
+scalar coastpenalty. Kun currentprovenance er offentlig, ikke vandstand/temp.
+Fur SOURCE/PART-kandidat nu lokalt reproduceret i eksisterende routingtest og
+actualno-loss: intakt gammelSOURCEbank+ændretbracket+nullPART giver7vandstandstab,
+sammebracket/gyldigPART-kontroller0. Ikke faktisk oldrun-attribution eller fix.
+Begge problemer fortsat OPEN; feature lokalt, pending scoped authority består.
+
+Ejerens nyere ordre omfatter BÅDE DK-B01-01 Agger/Porskær OG DK-B01-02
+Lyngby/Lodbjerg: dkss_lf skal frakobles. DEC-0291 erstatter Agger-review-only.
+Lokal to-zone-guard dækker nyt og beholdt input samt target SOURCE-routing;
+gamle autentiske pakker kan stadig verificeres uændret. Rettelsen er IKKE
+live: samlet integrated/Candidate G48h-stateovergang er fortsat åben.
+Ingen blind reset/prune, geometri-, punkt-, scoreformel- eller blanketændring.
+
+En efterfølgende måltest reproducerede en verified LF-bypass i den fælles
+normale two-model-caller. Den er nu lokalt lukket for de to zoner, også ved
+opløste native-hold-referencer; seks cases/7units og eksisterende bounded
+recovery-regression består. Dette retter ikke allerede forbrugt48h-state.
+
+Nyt offentligtrr-20261004060425-210/reference4Oct04Z/210zoner/673dele blev
+leveret af naturalordinary37176673170, terminalSUCCESS09:26DK. Actualrestore,
+save/newcache/no-loss/private/CAS/R2/Pages/reseal/requireddeploy består.
+Femtabsfamilier0 på106fælles timer er ikke bevis for gammel Fur-tabsårsag.
+PR513 merged09:34DK/main d778ff28c84606a93364ce112fecce4152182649; exact04:34
+failurealarm oprettede og tildelte issue514 én gang09:35DK. Mailreceipt er
+ikke bevist; ingen hjemmesidealarm eller mail til hjemmesidens brugere.
+
+Ny PUBLIC kontrol dækker ALLE210/673 over118timer med hashbundne timefiler,
+central zoneklassifikation og uændrede delidentiteter. Kun Agger15timer og
+Lyngby18timer brugte dkss_lf uden limfjord-kysttype. Dette er prognosestrøm,
+ikke global vådcellemask/andre vejrfamiliers kilde/privat statehistorik.
+Samme hasValue-feltmål376300/397070=94.7692%; det rullende118h-vindue er nyt.
+På106fælles timer var optalte gains strøm568/vandstand552/temperatur932;
+disse aggregater erstatter ikke den faktiske per-del no-loss-kontrol.
+Furoriginalconfig/kausaljoin og samlet BIG/OFF-livscyklus er stadig åbne.
+Den fejlede Fur-kørsel hentede central routing, men fuld anvendt payload
+er ikke i loggen. Logget global vandstandsdækning før/efter reservehentning
+var ens; den tæller118timer, mens no-loss sammenlignede110fælles timer.
+Det er ikke bevis for de syv konkrete tabs kilde eller årsag.
+
+Senere lokal NORMAL-integration genbygger KUN begge modelstaters strøm fra
+kvalificerede tilladte input i48h før state; bølge/last-mile/bounds/lineage
+bevares, originalpar gemmes privat og læses igen ved genstart. Fuld NSBS,
+delvis og manglende kildebevis ved begge zoner består seks cases/7units;
+ukendt bliver ikke sikker nulscore eller LF. Eksisterende private compaction
+og public projektion består; arkivet ændrer ikke hjemmesidens data. Det
+erstatter helt uimplementeret overgang ovenfor, IKKE åbne slutgates/live-
+effekt. No-loss er uændret; faktisk ny datakæde skal stadig bestå uden tab.
+
+Arkivkontrol fandt cold-generation-tab af originalpar og er rettet smalt.
+Hele private envelope/aktive mål/tid/canonical par valideres og originaler
+overlever også uden ny transition. Actual selectors for integrated state,
+checkpoint og point-activation ved begge zoner er måltestet; legacy-only
+migration afvises uden relabel. Tre berørte parents/fjorten subcases17units
+PASS/0skip. En null-bølgefixture blev repareret, ingen runtimebølgeændring.
+Samlet faktisk produktion/release og gammel Fur-årsag er fortsat åbne.
+
+Ny read-only native beregning viser STALE generated binding for begge
+modeller og afledt continuation; fysiske kontrakter er uændrede. Ingen
+hashfil/SQLbinding er skrevet. Eksakt teknisk overgang gennem kontrolleret
+release er spurgt afgrænset og afventer; gammel state må ikke ommærkes eller
+673dele resettes. Producentinventarets policyhul RED og lokaltrettet1PASS;
+aktuelle tre private storage-/continuation-/projectionhashes matcher RELEASE.
+Dette er ikke ny nativeclosure-/CAS-/produktionsvalidering. Se DEC-0291.
+
 # NYESTE – 2026-10-04 – faktisk nationalread; ny farvandskontrol og ejerbestilt Lyngbyafgrænsning
 
 Ejeralarm efter afsluttet fejl er lokal og måltestet i særskilt GitHubworkflow,
@@ -16,6 +277,7 @@ geografisk efterkontrolleres; ingen fuld national118h-/historik-/maskclaim.
 Ingen kilde-/score-/geometri-/historikrettelse eller nyt deploy; offentlig541.
 Nyt kildevalg og tidligere input/state må ikke behandles som to uafhængige
 rettelser. Fur-tab og præcis årsag forbliver åbne. Se DEC-0289.
+
 
 # Historisk – 2026-10-04 – faktisk naboread, lokal national tooling
 

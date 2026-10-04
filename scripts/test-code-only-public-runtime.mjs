@@ -489,6 +489,7 @@ for (const marker of [
   'scripts/lib/r2-private-runtime-storage.mjs',
   'scripts/lib/supabase-admin-rest.mjs',
   'scripts/lib/private-weather-component-inventory.mjs',
+  'scripts/lib/bounded-conditions-predecessor-transition.mjs',
   'await import(`${pathToFileURL(target).href}?compatibility-closure=1`)',
 ]) assert.ok(predecessorCompatibility.includes(marker),
   `Predecessor-restorelukningen mangler ${marker}`);
@@ -511,6 +512,7 @@ function relativeModuleSpecifiers(source) {
 const protectedRuntimeRelativeImports = relativeModuleSpecifiers(protectedRuntimeSource);
 assert.deepEqual(protectedRuntimeRelativeImports, [
   '../js/core/ravscore-model-contract.js',
+  './lib/bounded-conditions-predecessor-transition.mjs',
   './lib/private-weather-component-inventory.mjs',
   './lib/r2-private-runtime-storage.mjs',
   './lib/supabase-admin-rest.mjs',
@@ -522,6 +524,10 @@ for (const helperPath of [
   'scripts/lib/supabase-admin-rest.mjs',
 ]) assert.deepEqual(relativeModuleSpecifiers(fs.readFileSync(helperPath, 'utf8')), [],
   `Den kopierede kompatibilitetshjælper har fået en uklassificeret relativ import: ${helperPath}`);
+assert.deepEqual(relativeModuleSpecifiers(fs.readFileSync(
+  'scripts/lib/bounded-conditions-predecessor-transition.mjs', 'utf8')),
+['../private-production-runtime-bundle.mjs'],
+'the bounded helper may use only the preserved predecessor bundle canonicalizer, never replace its verifier or model');
 const predecessorPreparationStart = workflow.indexOf(
   '- name: Prepare exact predecessor source for bounded binding migration',
 );

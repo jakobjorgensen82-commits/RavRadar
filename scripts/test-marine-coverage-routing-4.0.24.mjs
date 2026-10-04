@@ -10,7 +10,7 @@ assert.match(bulk, /GRID_CANDIDATE_TARGET/);
 assert.match(bulk, /LIMFJORD_GRID_CANDIDATE_TARGET/);
 assert.match(bulk, /radii = \(0\.025, 0\.05, 0\.09, 0\.14, 0\.20, 0\.26\) if zone\.get\("coastType"\) == "limfjord" else \(0\.025, 0\.05, 0\.09, 0\.14\)/);
 assert.match(bulk, /MAX_GRID_DISTANCE_KM = \{"limfjord": 24\.0/);
-assert.match(bulk, /if collection in MARINE_COLLECTIONS:\s*return zones/);
+assert.match(bulk, /if collection in MARINE_COLLECTIONS:[\s\S]*?return \[zone for zone in zones if dmi_marine_collection_allowed_for_zone/);
 assert.match(bulk, /marine_model_score/);
 assert.match(bulk, /VALID_POINT_TOO_FAR/);
 assert.match(bulk, /freshMarineZones/);
@@ -18,7 +18,7 @@ assert.match(bulk, /preservedMarineZones/);
 assert.match(bulk, /missingZones/);
 assert.match(
   buildWorkflow,
-  /DMI_BULK_COLLECTIONS_PER_RUN: \$\{\{ \(inputs\.extended_provider_bootstrap == true \|\| \(steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true'\)\) && '6' \|\| '3' \}\}/,
+  /DMI_BULK_COLLECTIONS_PER_RUN: \$\{\{ \(inputs\.extended_provider_bootstrap == true \|\| steps\.historical-wave-transition\.outputs\.required == 'true' \|\| steps\.dmi-recovery-budget\.outputs\.extended == 'true' \|\| \(steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true'\)\) && '6' \|\| '3' \}\}/,
   'Eksplicit bootstrap eller første cutover skal kunne nå seks DMI-collections, mens normal rotation betjener tre pr. kørsel.'
 );
 assert.match(buildWorkflow, /DMI_BULK_MAX_RUNTIME_SECONDS:.*3600.*3000.*1500/);
