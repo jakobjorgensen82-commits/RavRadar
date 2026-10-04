@@ -5,6 +5,29 @@
 
 Den dybe [faglige analyse](JORDRAV_POTENTIALE_DANMARK_2026-10-04.md) omsættes her til gennemgåelige regler og faktiske kildepolygoner. Modellen udpeger muligheder uden at kræve tidligere ravfund. Den beregner hverken fundprocenter, ravmængde eller RavScore.
 
+## Jagtbarhed og dybe lag – seneste ejerbeslutning
+
+Ejeren ønsker også dybe geologiske muligheder på kortet, når de tydeligt
+adskilles fra jagtbart materiale. Det erstatter det foregående ønske om at
+udelade dem. **Kortfarver** skifter mellem geologisk potentiale og
+jagtbarhed uden at omklassificere eller flytte geometri. I jagtbarhedsvisningen
+er alle eksisterende materialeflader gråblå/uafklarede; ingen er verificeret
+som aktuelt blotlagt eller tilgængelig ved pløjning. Klikpanelet gør denne
+usikkerhed synlig også i den almindelige potentialevisning.
+
+Lilla punkter viser to tidligere kontrollerede Jupiterprofiler: Åsted Vest
+82–89 m og Ålbæk Lyngshede 80–90,5 m; 107–112 m under boringens historiske
+terræn. De vises som **ikke umiddelbart jagtbare**, uden ravfund eller antaget
+udbredelse. Separat checkbox styrer dybe punkter; hovedvalget styrer alle
+geologiske lag. Fokus på forhøjet procespotentiale filtrerer materialeflader,
+mens dybe punkter styres særskilt. Kode: `js/jordrav/accessibility.js` og
+`js/jordrav/map.js`. Ingen ny live boringsservice eller ændring af frosne
+producentfiler, regelsæt, manifest eller fladedata.
+
+[Metoden](JORDRAV_JAGTBARHED_DYBDE_2026-10-04.md) forklarer registreret dybde,
+ukendt dække og nødvendig lokal lagforbindelse. Mulighed for ravtilførsel
+kræver fortsat ikke et tidligere ravfund.
+
 ## Hvad kortet gør
 
 En senere [native Stenstrup-diagnose](JORDRAV_STENSTRUP_KONTAKTER_2026-10-04.md)
@@ -26,7 +49,8 @@ Markguiden adskiller rav i det bearbejdede jordlag, pløjningens blotlægning og
 
 Den supplerende [boringsanalyse](JORDRAV_BORINGER_LAGFORBINDELSE_2026-10-04.md)
 efterprøver to offentlige profiler mod de eksisterende visningsflader. Den
-ændrer ingen kortregler og etablerer ingen punktcirkler. JH-010–011 præciserer
+ændrer ingen kortregler eller geografiske punktcirkler. De udvalgte dybe
+intervaller vises nu som statiske punkter efter seneste ejerbeslutning. JH-010–011 præciserer
 spørgsmål om lagkontakter; de indgår ikke som nye regionsknapper.
 
 Reglerne står i `data/jordrav/model-rules.json`; de eksekveres af `scripts/lib/jordrav_model.py` og bruges af `scripts/build-jordrav-prototype.py`. Jordartens øvre symbolfelt, ikke blot visningsfarven eller den dybere jordart, er det primære materialegrundlag. Regelsættets ord overflade beskriver den øvre geologiske aflejring; det må ikke læses som en særskilt prøve af nutidens jordoverflade. Blandede GEUS-symboler behandles som blandinger. `DS-DG` er kompatibelt sand/grus; `DS-DL` bliver ikke stiltiende gjort til rent sand.
@@ -91,15 +115,33 @@ Ingen nationale detaljer precaches til kystbrugere. Eksterne baggrundsfliser hen
 
 ## Validering og resterende arbejde
 
-**Bestået lokalt:** 11 modelcases og fire data-/modul-/sprogkontroller, som kontrollerer alle afledte filer og model-/manifestbindinger. Casene dækker muligheder uden fundkrav, sand uden proces, dæklag over sand, blandede GEUS-felter, ukendt/kunstigt materiale, brede ældre hovedgrupper, entydige landskabsbetegnelser, fast bjergart og fravær af brunkulsbonus. Source-critical-gaten består med 108 browserfiler; den eksisterende source-kontrakt bevarer sine 47 grupper. RDKS, sikkerhedshærdning, håndbog, offentlig startorden og version-/modulclosure består også.
+**Seneste UI-prøve: 15 browserchecks PASS.** Ny jagtbarhed, lilla punktmarkører,
+præcise adskilte dybdeintervaller, kildepanel, særskilt/samlet skjul/vis,
+baggrundsskift og mobilbredde er kontrolleret. Screenshot af dybe lag venter
+på færdige materialeflader og alle synlige OSM-fliser. Desktop/mobil er
+visuelt læst. National opstart 1.021 ms/6.050.674 geologi-bytes; det lokale
+kontroludsnit yderligere 791 ms/5.099.092 bytes. De faktiske tal er lokale
+målinger uden netværksbegrænsning, ikke produktions- eller telefonbevis.
+Pages-modulclosure består med 59 browsermoduler. Kilder og deres intervaller
+stemmer med de tidligere gemte observationer; ingen adgang eller geografisk
+udbredelse opfindes ud fra materialeflader eller boringspunkter.
+
+To nye testharness-forsøg fejlede først: en sammenligning brugte et centrum
+fra før mellemliggende kontrolhandlinger, og en evaluate-callback returnerede
+et cirkulært Leaflet-objekt. Sammenligningen tager nu snapshot umiddelbart
+før farveskift, og callbacken returnerer intet kortobjekt. Disse forsøg er
+ikke PASS. En første grøn optagelse viste stadig igangværende indlæsning;
+derfor kræver den endelige grønne prøve også færdigindlæst dybdevisning.
+
+**Bestået lokalt:** 11 modelcases og fem data-/modul-/sprogkontroller, som kontrollerer alle afledte filer og model-/manifestbindinger. Casene dækker muligheder uden fundkrav, sand uden proces, dæklag over sand, blandede GEUS-felter, ukendt/kunstigt materiale, brede ældre hovedgrupper, entydige landskabsbetegnelser, fast bjergart og fravær af brunkulsbonus. Source-critical-gaten består med 109 browserfiler; den eksisterende source-kontrakt bevarer sine 47 grupper. RDKS, sikkerhedshærdning, håndbog, offentlig startorden og version-/modulclosure består også.
 
 En uafhængig kontrol genlæste 238.829 cacheposters attributter mod originale DBF-poster og bandt både kilde-SHP/DBF og cachemetadata/geometri med SHA. De 194 kollapsede ældre mikroflader er særskilt auditeret. Bygningen genbrugte 192 allerede kontrollerede detailudsnit; auditens 279 sekunder er kun sidste invocation, ikke en måling af en fuld kold genbygning. Tre tidligere producent-scriptidentiteter er bevaret i checkpointprovenancen. Dette er ikke påstået identisk med en senere komplet kanonisk genbygning fra friske kildearkiver.
 
-**Browser: 11 kontroller PASS.** Faktiske polygonklik giver en positiv ravhypotese; kortskift bevarer valgt geometri, forklaring, centrum og zoom. Farvestyrke, skjul/vis, mobilbredde 390 px, DA/DE/EN og eksplicit fallback ved manglende lokale filer er kontrolleret. Begge offentlige tileleverandører svarede; 20 luftfotofliser svarede, og alle synlige fliser blev indlæst før den visuelt gennemgåede optagelse. Browseren hentede ingen vejr-/Supabase-data. National opstart måltes til 804 ms og 6.050.674 geologi-bytes; det undersøgte lokale udsnit efter regional navigation til yderligere 735 ms og 5.099.092 bytes. Målingerne er fra lokal Chrome, varm filsystemcache og uden netværksbegrænsning; de er ikke produktions- eller fysisk mobilmålinger.
+**Tidligere browserprøve: 11 kontroller PASS.** Faktiske polygonklik giver en positiv ravhypotese; kortskift bevarer valgt geometri, forklaring, centrum og zoom. Farvestyrke, skjul/vis, mobilbredde 390 px, DA/DE/EN og eksplicit fallback ved manglende lokale filer er kontrolleret. Begge offentlige tileleverandører svarede; 20 luftfotofliser svarede, og alle synlige fliser blev indlæst før den visuelt gennemgåede optagelse. Browseren hentede ingen vejr-/Supabase-data. National opstart måltes til 804 ms og 6.050.674 geologi-bytes; det undersøgte lokale udsnit efter regional navigation til yderligere 735 ms og 5.099.092 bytes. Målingerne er fra lokal Chrome, varm filsystemcache og uden netværksbegrænsning; de er ikke produktions- eller fysisk mobilmålinger.
 
 Detaljeret evidens ligger i `docs/research/jordrav/prototype-build-audit.json`, `prototype-source-cache-audit.json` og `prototype-browser-audit.json`. Skærmbillederne er visuelt gennemgået. Det aktive webhåndbogsafsnit med SQL-installationskopi ændres ikke her; et konkret, gyldigt tillæg ligger i `handbook-supplement.json` til senere koordineret integration.
 
-Den aktuelle browserprøve har 12 kontroller og dækker også fokus på nationale/lokale flader, gendannelse af alle klasser, fem regionale guides og markguidens pløjelagsforklaring på mobil og DA/DE/EN. Et faktisk tabt regionsvalg under igangværende zoom er rettet med offentlige zoom-/bevægelseshændelser og indgår fortsat som regression. De tidligere fejlslagne forsøg er særskilt beskrevet i den regionale analyse; det er den korrigerede samlede prøve, som er PASS.
+Før jagtbarhedsændringen havde browserprøven 12 kontroller og dækker også fokus på nationale/lokale flader, gendannelse af alle klasser, fem regionale guides og markguidens pløjelagsforklaring på mobil og DA/DE/EN. Et faktisk tabt regionsvalg under igangværende zoom er rettet med offentlige zoom-/bevægelseshændelser og indgår fortsat som regression. De tidligere fejlslagne forsøg er særskilt beskrevet i den regionale analyse; det er den korrigerede samlede prøve, som er PASS.
 
 En lokal prototype er ikke CI- eller produktionsbevis. Før fælles levering skal nyere main og aktive produktionsskrivere kontrolleres; RDKS-tillæggene integreres med nyere dokumentation. Ingen merge eller deploy foretages, mens den eksisterende produktionsskriver er aktiv. Ingen vejrkørsel dispatches fra denne gren.
 

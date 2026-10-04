@@ -1,5 +1,10 @@
 ## Ikke udgivet – Jordrav forskningsprototype 0.1 (2026-10-04)
 
+- Separat farvevalg for jagtbarhed: gråblå/uafklaret på materialeflader;
+  lilla dybdepunkter med registrerede intervaller og tydelig tekst om
+  manglende umiddelbar jagtbarhed. To tidligere undersøgte Jupiterprofiler
+  vises som statiske punkteksempler, uden ravfund, buffers eller klassebonus.
+  Ejerens første ønske om at udelade dybe lag er erstattet med særvisning.
 - Regional Stenstrup-analyse fra native kildepolygoner og uafhængig original-
   SHP/DBF-kontrol: sedimentkontakter, yngre dække og modtagere/JH-012–014.
   Analysefigur og audit viser, at fokus på forhøjet skjuler næsten hele den
@@ -18,13 +23,14 @@
   adskilt fra native kildearealer; ingen ny national ravrangliste.
 - To aktuelle offentlige Jupiterprofiler sammenholdt med kortets faktiske
   visningsflader. Ny analyse skelner prøvedybde, lagidentitet og pløjerelevans;
-  gentagelig punktopslagsaudit. Ingen ny boringsintegration eller klassebonus.
+  gentagelig punktopslagsaudit. Senere tilføjet to statiske dybdepunkter;
+  ingen landsdækkende/live boringsintegration eller klassebonus.
 - Gennemgåelige potentialehypoteser fra faktiske GEUS-polygoner; tidligere
   ravfund er ikke et krav. Uafklaret er adskilt fra begrænset potentiale.
 - Statisk national oversigt og lokale udsnit med SHA-/modelbinding, bounded
   visning/cache og lazy-load. Ingen vejr-/database-/læringspipeline tilføjes.
 - Sporbar kilde- og grænsebehandling samt målrettede model-, data- og UI-tests.
-  192 native udsnit, 11 modelcases, fire datakontroller og 12 browserkontroller
+  192 native udsnit, 11 modelcases, fem datakontroller og 15 browserkontroller
   består lokalt. Luftfoto og almindeligt kort er visuelt gennemgået.
   Detaljer: `docs/research/JORDRAV_PROTOTYPE_0_1.md` og forskningscheckpointet.
 - Ingen ny apprelease, ændring af kystgeodata, merge eller deploy.

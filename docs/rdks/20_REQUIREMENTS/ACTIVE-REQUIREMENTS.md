@@ -1,5 +1,17 @@
 # AKTUELT JORDRAVKRAV – 2026-10-04
 
+**Seneste ejerbeslutning – jagtbarhed og dybe lag:** Det primære mål er rav,
+som ligger blotlagt eller kan bringes frem ved jordbearbejdning. Ejerens
+første ønske om at udelade dybe lag er udtrykkeligt erstattet: de må gerne
+vises, men skal meget tydeligt mærkes som dybe og ikke umiddelbart
+jagtbare, medmindre lokal blotlægning eller omlejring er belyst.
+Geologisk potentiale og praktisk jagtbarhed holdes adskilt. Ukendt dybde
+må hverken blive til dokumenteret pløjeadgang eller kategorien dybt.
+Lokal UI viser nu separat jagtbarhedsvisning, gråblå uafklarede flader og
+lilla dybdepunkter med registrerede intervaller. Ingen fast pløjedybde,
+fundprocent, boringsbuffer eller dybdebonus. Kendte ravfund er stadig ikke
+et adgangskrav. Metode: `docs/research/JORDRAV_JAGTBARHED_DYBDE_2026-10-04.md`.
+
 Selvstændig jordravfane med **Almindeligt kort / Luftfoto**; potentialelag,
 zoom, valgt område og forklaring bevares ved baggrundsskift. Modellen skal
 udlede geologiske muligheder også uden tidligere ravfund i den enkelte

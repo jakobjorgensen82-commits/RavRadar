@@ -1,5 +1,20 @@
 # AKTUEL JORDRAVSTATUS – 2026-10-04
 
+**Nyeste lokal ændring – jagtbarhed:** Ejeren har erstattet ønsket om at
+udelade dybe lag med tydelig særvisning. Kortet har farvevalg mellem
+geologisk potentiale og jagtbarhed. Alle nuværende materialeflader har
+uafklaret jagtbarhed; ens GEUS-symboler omkring én meter beviser ikke
+adgang ved pløjning. To allerede kildekontrollerede Jupiterprofiler vises
+som lilla punkteksempler med registrerede dybder og teksten **ikke
+umiddelbart jagtbart**. De angiver ingen ravforekomst eller arealudbredelse.
+Dybe punkter kan skjules separat. Det er lokal præsentationskode; frosne
+regler, producerede flader og app-/modelversion er uændrede.
+Metode og afgrænsning: `docs/research/JORDRAV_JAGTBARHED_DYBDE_2026-10-04.md`.
+Seneste lokal kontrol: 15 browserchecks, fem datakontroller, 11 modelcases
+og source-critical med 109 browserfiler PASS; Pages-modulclosure 59 PASS.
+De nye dybdevisninger er visuelt gennemgået på desktop og 390 px mobil.
+Tidligere 12-check/ingen-UI-ændring-oplysninger nedenfor er dateret historik.
+
 **Udført lokalt:** Faglig rapport med regional efterprøvning og
 følsomhedsscenarier; gennemgåelige klasseregler; selvstændig Jordrav-fane
 med almindeligt kort/luftfoto, klikforklaringer, DA/DE/EN og lazy-load.
@@ -9,8 +24,8 @@ alle ravslutninger er hypoteser med svag sikkerhed.
 Fem regionale forklaringscases, deres kilder og fokusvalg er implementeret.
 Navigation under zoom bevarer seneste ønske; regional tekst klassificerer
 ingen polygoner. App-/model-/dataidentiteter er uændrede.
-**Lokalt PASS:** 192 native geometriudsnit, 11 modelcases, fire data-/modul-
-kontroller, 12 faktiske browserkontroller og den produktkritiske sourcegate.
+**Lokalt PASS:** 192 native geometriudsnit, 11 modelcases, fem data-/modul-
+kontroller, 15 faktiske browserkontroller og den produktkritiske sourcegate.
 Landskortet har 598 generaliserede features; lokale udsnit 505.834 features.
 Eksakt national eksportdækning påstås ikke; numeriske sømme auditeres.
 **Åbent:** Regional ravtilførsel og bevaring, nyere main-/RDKS-integration,
@@ -22,8 +37,9 @@ Evidens: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
 **Supplerende fagligt arbejde:** To aktuelle offentlige Jupiterprofiler og
 deres lagintervaller er sammenholdt med prototypens visningsflader.
 Read-only punktopslagsaudit og JH-010–011 beskriver lagidentitet, prøvedybde
-og pløjerelevans. Det er kilde-/metodearbejde uden ny runtimeintegration,
-UI-ændring eller omklassificering. Se
+og pløjerelevans. Analysen gav først ingen UI-ændring. Efterfølgende
+ejerbeslutning giver to statiske dybdepunkter, uden landsdækkende/live
+boringsintegration eller omklassificering. Se
 `docs/research/JORDRAV_BORINGER_LAGFORBINDELSE_2026-10-04.md`.
 
 **Seneste regionale diagnose:** Native Stenstrup-flade/149 nyere jordartsposter,

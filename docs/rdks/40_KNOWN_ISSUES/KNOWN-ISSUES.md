@@ -22,7 +22,7 @@
   må ikke bruges som entydig kategori eller komplet fleristidskronologi.
 - **JORDRAV-004, lokalt løst:** OSM/World Imagery, særskilt CSP,
   attribution og bevaret valg ved baggrundsskift er implementeret.
-  12 browserkontroller består med faktiske fliser og visuelt gennemgået
+  15 browserkontroller består med faktiske fliser og visuelt gennemgået
   fuldt luftfoto. Officiel GeoDanmark-adgang er ikke oprettet.
   Ældre jordartskort bruges efter ejerinstruktion.
   Nyt regionsvalg under zoom kunne tabes; seneste ønske køres efter reelt
@@ -34,7 +34,7 @@
 - **JORDRAV-006:** Webhåndbogstillæg er forberedt særskilt; aktiv webhåndbog
   og installationskopi i SQL ændres ikke i denne gren. Integration med nyere
   main, exact-head CI og fælles release er fortsat nødvendige før publicering.
-- **JORDRAV-007, UI præciseret / faglig kobling åben:** GEUS-symboler er
+- **JORDRAV-007, jagtbarhed synlig / faktisk markadgang åben:** GEUS-symboler er
   geologiske aflejringer under pløjelaget, ikke prøver af markravindhold.
   Øvre aflejring og dybde vises med denne forklaring; markguiden adskiller
   pløjning og regnens synlighed. Faktisk dæklagstykkelse, lagkorrelation og
@@ -43,6 +43,13 @@
   Første borecaseanalyse og punktopslagsaudit er nu udført. Prøver omkring
   én meter og generelle sandintervaller løser ikke topjord eller dæklagstykkelse.
   Aktuelle markprofiler og lokal lagkontinuitet er fortsat åbne.
+  Seneste ejerbeslutning beholder dybe lag med tydelig særvisning: to
+  statiske lilla Jupiterpunkter viser registrerede dybder og manglende
+  umiddelbar jagtbarhed. Farvevalget Jagtbarhed gør alle nuværende
+  materialeflader gråblå/uafklarede. Ukendt dække kaldes ikke dybt;
+  ingen eksisterende flader er verificeret som pløjetilgængelige eller
+  aktuelt blotlagte. Punktregistreringer må ikke udvides til hele flader.
+  Tydelig visning løser ikke regional lagkobling eller faktisk jagtbarhed.
   Stenstrups fem differentierede organiske symbolpar afklarer ikke
   dæklagstykkelse. Interne TS/TL-nabogrænser er laterale kortrelationer;
   de dokumenterer ikke lodret stratigrafi eller adgang ved pløjning.

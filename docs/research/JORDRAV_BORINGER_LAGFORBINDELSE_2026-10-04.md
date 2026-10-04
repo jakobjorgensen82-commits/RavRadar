@@ -4,6 +4,13 @@
 
 Den nye gennemgang undersøger, hvordan boreoplysninger kan gøre ravmuligheder mere præcise. Den sammenholder to offentlige profiler med prototypens faktiske kortflader. Resultatet er en bedre skelnen mellem mulige lag, deres dybde og forbindelsen til pløjelaget. Et geologisk ræsonnement kan udvikles uden kendte fund; nutidig marktilgængelighed kræver sin egen forklaring.
 
+**Efterfølgende ejerbeslutning:** Den oprindelige levering nedenfor var rent
+analysearbejde. Ejeren har senere ønsket dybe lag med særskilt farve og
+klart manglende umiddelbar jagtbarhed. Udvalgte dybe sandintervaller fra
+begge profiler vises derfor nu som to statiske lilla punkter. Ingen
+ravforekomst, buffer, arealinterpolation eller landsdækkende/live
+boringsintegration. Se [jagtbarhed og dybde](JORDRAV_JAGTBARHED_DYBDE_2026-10-04.md).
+
 ## Faktisk kilde og efterprøvning
 
 Begge boringer er fundet i GEUS' offentlige Jupitergrænseflade. Deres aktuelle geologiske tabeller er læst 4. oktober 2026. [Observationerne](jordrav/profile-observations-2026-10-04.json) indeholder udvalgte dybder og koder, ikke en ny landsdækkende boringsdatabase. “Aktuelle” betyder læst nu, ikke nyboret eller nyligt undersøgt markjord.
@@ -63,7 +70,7 @@ Resultatet for en kandidat skal kunne udtrykkes i tre sætninger: hvorfor ravtil
 
 [audit_profile_points.py](jordrav/audit_profile_points.py) læser observationer og frosne visningsdata. [Resultatet](jordrav/profile-point-audit-2026-10-04.json) er PASS for intervalkontinuitet, katalog-/model-/filidentiteter og punktopslag. Det er ikke en ravvalidering. Åsteds udvalgte 89 m summerer til 42 m DS, 2 m DI, 18 m DL, 1 m DG, 19 m QL og 7 m QS; summen bruges kun som konsistenskontrol.
 
-Ingen polygoner, regler, klasser, UI, appversion eller geologiske producentfiler er ændret. Rapporten skærper JORDRAV-001 og JORDRAV-007; forbindelsen til aktuelle marker er stadig åben. RDKS, Markdown-håndbogen, det forberedte webhåndbogstillæg og changelog følger arbejdet. Den aktive webhåndbog med SQL-installationskopi forbliver uden for denne gren. Tidligere UI-testresultater er dateret evidens; denne dokumentationsudvidelse kræver ikke en ny browserkørsel eller vejrhentning.
+Ved denne oprindelige analyselevering blev ingen polygoner, regler, klasser, UI, appversion eller geologiske producentfiler ændret. Den senere UI-udvidelse er beskrevet øverst. Rapporten skærper JORDRAV-001 og JORDRAV-007; forbindelsen til aktuelle marker er stadig åben. RDKS, Markdown-håndbogen, det forberedte webhåndbogstillæg og changelog følger arbejdet. Den aktive webhåndbog med SQL-installationskopi forbliver uden for denne gren. Tidligere UI-testresultater er dateret evidens; denne dokumentationsudvidelse kræver ikke en ny browserkørsel eller vejrhentning.
 
 Slutkontrol: uafhængig efterregning af intervalsummer, script-/observationsidentiteter,
 Python-syntaks, lokale rapportlinks og håndbogstillæg PASS. RDKS med 14 chatkilder,

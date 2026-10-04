@@ -48,6 +48,11 @@
 .jordrav-region-grid p { margin: 0 0 12px; }
 .jordrav-region-tools :focus-visible { outline: 3px solid #d79427; outline-offset: 3px; }
 .jordrav-error { color: #842f23; }
+.jordrav-layer-tools select { max-width: 100%; min-height: 38px; border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; color: var(--ink); background: white; }
+.jordrav-access-badge { margin-top: 12px; }
+.jordrav-deep-marker { box-sizing: border-box; border: 2px solid white; border-radius: 5px; background: #6c3b91; color: white; box-shadow: 0 0 0 1px #432455; text-align: center; font: bold 19px/20px sans-serif; }
+.jordrav-deep-swatch { border-radius: 2px !important; box-shadow: 0 0 0 1px #432455; }
+#jordravColourNote { font-weight: 600; }
 .jordrav-toolbar button:focus-visible, .jordrav-tabs a:focus-visible { outline: 3px solid #d79427; outline-offset: 3px; }
 @media (max-width: 950px) {
   .jordrav-workspace { grid-template-columns: 1fr; }

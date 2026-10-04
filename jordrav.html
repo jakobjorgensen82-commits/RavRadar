@@ -17,7 +17,7 @@
   <main>
     <nav class="jordrav-tabs" data-i18n-aria-label="jordrav.navigation" aria-label="Kortvisning"><a href="./" data-i18n="jordrav.coastTab">Kystprognose</a><a href="./jordrav.html" aria-current="page" data-i18n="jordrav.landTab">Jordrav</a></nav>
     <section class="jordrav-intro" aria-labelledby="jordravTitle">
-      <div><p class="eyebrow dark" data-i18n="jordrav.eyebrow">Danmarks geologiske muligheder</p><h1 id="jordravTitle" data-i18n="jordrav.heading">Hvor kan landskabet gemme på rav?</h1><p data-i18n="jordrav.intro">Udforsk mulige transportveje, omlejring og overfladenære aflejringer. Farverne viser relative geologiske muligheder; sikkerhed og dybde forklares hver for sig.</p></div>
+      <div><p class="eyebrow dark" data-i18n="jordrav.eyebrow">Danmarks geologiske muligheder</p><h1 id="jordravTitle" data-i18n="jordrav.heading">Hvor kan landskabet gemme på rav?</h1><p data-i18n="jordrav.intro">Udforsk mulige transportveje, omlejring og aflejringer. Vælg farver efter geologisk potentiale eller jagtbarhed. Sikkerhed og dybde forklares hver for sig.</p></div>
       <span class="jordrav-prototype" data-i18n="jordrav.prototype">Forskningsprototype · 0.1</span>
     </section>
     <div class="jordrav-workspace">
@@ -28,9 +28,12 @@
           <button id="jordravDenmark" type="button" data-i18n="jordrav.denmark">Hele Danmark</button>
         </div>
         <div id="jordravMap" data-i18n-aria-label="jordrav.mapTitle" aria-label="Jordravkort over Danmark"></div>
-        <div class="jordrav-layer-tools"><label><input id="jordravVisible" type="checkbox" checked><span data-i18n="jordrav.overlay">Vis potentiale</span></label><label><input id="jordravFocus" type="checkbox"><span data-i18n="jordrav.focus">Vis kun forhøjet procespotentiale</span></label><label for="jordravOpacity"><span data-i18n="jordrav.opacity">Farvestyrke</span><input id="jordravOpacity" type="range" min="15" max="75" value="45"></label></div>
-        <p id="jordravFocusNote" class="jordrav-status" data-i18n="jordrav.focusNote" hidden>Fokus skjuler også mulige bassin- og marine miljøer. Deres potentiale er uændret.</p>
+        <div class="jordrav-layer-tools"><label><input id="jordravVisible" type="checkbox" checked><span data-i18n="jordrav.overlay">Vis geologiske lag</span></label><label><input id="jordravFocus" type="checkbox"><span data-i18n="jordrav.focus">Vis kun forhøjet procespotentiale</span></label><label for="jordravOpacity"><span data-i18n="jordrav.opacity">Farvestyrke</span><input id="jordravOpacity" type="range" min="15" max="75" value="45"></label></div>
+        <div class="jordrav-layer-tools"><label for="jordravColourMode"><span data-i18n="jordrav.colourMode">Kortfarver</span><select id="jordravColourMode"><option value="potential" data-i18n="jordrav.colourPotential">Geologisk potentiale</option><option value="access" data-i18n="jordrav.colourAccess">Jagtbarhed</option></select></label><label><input id="jordravDeepVisible" type="checkbox" checked><span data-i18n="jordrav.deepToggle">Vis dybe lag</span></label></div>
+        <p id="jordravFocusNote" class="jordrav-status" data-i18n="jordrav.focusNote" hidden>Fokus skjuler også mulige bassin- og marine miljøer. Deres potentiale er uændret. Dybe punkter styres særskilt.</p>
         <div id="jordravLegend" class="jordrav-legend" data-i18n-aria-label="map.legend" aria-label="Kortforklaring"></div>
+        <p id="jordravColourNote" class="jordrav-status">Potentialefarver dokumenterer ikke jagtbarhed. Lilla punkter viser dybe lag, som ikke er umiddelbart tilgængelige.</p>
+        <p class="jordrav-status" data-i18n="jordrav.huntabilityMapNote">Et muligt ravførende lag skal være blotlagt eller nås af jordbearbejdningen for at være jagtbart. Tilgængeligheden i pløjelaget er endnu uafklaret for de farvede flader.</p>
         <p id="jordravStatus" class="jordrav-status" role="status" aria-live="polite" data-i18n="jordrav.loading">Indlæser geologisk overblik…</p>
         <p id="jordravBaseStatus" class="jordrav-status" role="status" hidden></p>
         <p id="jordravAerialSource" class="jordrav-status" data-i18n="jordrav.aerialSource" hidden>World Imagery: luft- og satellitbilleder fra forskellige år.</p>

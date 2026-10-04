@@ -20,7 +20,7 @@ const server = http.createServer(async (request, response) => {
   }
   try {
     let bytes = await fs.readFile(path.join(root,relative));
-    if (relative === 'js/jordrav/map.js') bytes = Buffer.concat([bytes, Buffer.from('\nwindow.__jordravHarness={get map(){return map},get data(){return data},get overview(){return overview},get details(){return details},get selected(){return selected}};')]);
+    if (relative === 'js/jordrav/map.js') bytes = Buffer.concat([bytes, Buffer.from('\nwindow.__jordravHarness={get map(){return map},get data(){return data},get overview(){return overview},get details(){return details},get selected(){return selected},get deepLayers(){return deepLayers}};')]);
     response.writeHead(200, {'Content-Type':mime[path.extname(relative)] || 'application/octet-stream', 'Cache-Control':'no-store'}); response.end(bytes);
   } catch {response.writeHead(404);response.end();}
 });
@@ -158,6 +158,68 @@ try {
   }, null, {timeout:45000});
   report.checks.push('All visible aerial tiles finish loading before visual capture');
   await page.screenshot({path:path.join(output,'prototype-aerial-detail.png'),fullPage:true});
+  assert.match(before.text,/Jagtbarhed uafklaret/);
+  const colourBefore=await page.evaluate(()=>({center:window.__jordravHarness.map.getCenter(),zoom:window.__jordravHarness.map.getZoom(),selected:JSON.stringify(window.__jordravHarness.selected.toGeoJSON()),text:document.getElementById('jordravDetails').textContent}));
+  await page.locator('#jordravColourMode').selectOption('access');
+  assert.ok(await page.evaluate(()=>window.__jordravHarness.details.getLayers().every(layer=>layer.options.fillColor==='#778c99')));
+  assert.deepEqual(await page.evaluate(()=>({center:window.__jordravHarness.map.getCenter(),zoom:window.__jordravHarness.map.getZoom(),selected:JSON.stringify(window.__jordravHarness.selected.toGeoJSON()),text:document.getElementById('jordravDetails').textContent})),colourBefore);
+  assert.match(await page.locator('#jordravColourNote').textContent(),/Ingen af de nuværende flader er verificeret/);
+  assert.match(await page.locator('#jordravLegend').textContent(),/Dybt lag · ikke umiddelbart jagtbart/);
+  await page.screenshot({path:path.join(output,'prototype-accessibility.png'),fullPage:true});
+  await page.locator('#jordravColourMode').selectOption('potential');
+  assert.ok(await page.evaluate(()=>window.__jordravHarness.details.getLayers().some(layer=>layer.options.fillColor!=='#778c99')));
+  report.checks.push('Hunting accessibility remains unknown for surface polygons; colour changes preserve geometry, view and explanation');
+
+  await page.evaluate(()=>{window.__jordravHarness.map.setView([57.432965,10.374907],11,{animate:false});});
+  const deepMarker=page.locator('.jordrav-deep-marker[title^="Åsted Vest"]');
+  await deepMarker.click();
+  await page.waitForFunction(()=>document.getElementById('jordravDetails').textContent.includes('82–89 m'));
+  assert.equal(await deepMarker.evaluate(element=>getComputedStyle(element).backgroundColor),'rgb(108, 59, 145)');
+  assert.match(await page.locator('#jordravDetails').textContent(),/Dyb lagregistrering · ikke umiddelbart jagtbart/);
+  assert.match(await page.locator('#jordravDetails').textContent(),/Intet ravfund eller kortlagt ravlag/);
+  assert.equal(await page.locator('#jordravDetails a').getAttribute('href'),'https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=10.934');
+  assert.equal(await page.evaluate(()=>window.__jordravHarness.selected.toGeoJSON().geometry.type),'Point');
+  const deepBefore=await page.evaluate(()=>({center:window.__jordravHarness.map.getCenter(),zoom:window.__jordravHarness.map.getZoom(),selected:JSON.stringify(window.__jordravHarness.selected.toGeoJSON()),text:document.getElementById('jordravDetails').textContent}));
+  await page.locator('[data-base="street"]').click();
+  await page.locator('#jordravColourMode').selectOption('access');
+  assert.deepEqual(await page.evaluate(()=>({center:window.__jordravHarness.map.getCenter(),zoom:window.__jordravHarness.map.getZoom(),selected:JSON.stringify(window.__jordravHarness.selected.toGeoJSON()),text:document.getElementById('jordravDetails').textContent})),deepBefore);
+  await page.locator('#jordravDeepVisible').uncheck();
+  assert.ok(await page.evaluate(()=>!window.__jordravHarness.map.hasLayer(window.__jordravHarness.deepLayers)&&!window.__jordravHarness.map.hasLayer(window.__jordravHarness.selected)));
+  await page.locator('#jordravDeepVisible').check();
+  assert.ok(await page.evaluate(()=>window.__jordravHarness.map.hasLayer(window.__jordravHarness.deepLayers)&&window.__jordravHarness.map.hasLayer(window.__jordravHarness.selected)));
+  await page.locator('#jordravVisible').uncheck();
+  assert.ok(await page.evaluate(()=>!window.__jordravHarness.map.hasLayer(window.__jordravHarness.deepLayers)&&!window.__jordravHarness.map.hasLayer(window.__jordravHarness.selected)));
+  await page.locator('#jordravVisible').check();
+  assert.ok(await page.evaluate(()=>window.__jordravHarness.map.hasLayer(window.__jordravHarness.deepLayers)&&window.__jordravHarness.map.hasLayer(window.__jordravHarness.selected)));
+  await page.locator('#jordravFocus').check();
+  assert.equal(await page.evaluate(()=>window.__jordravHarness.deepLayers.getLayers().length),2);
+  assert.ok(await page.evaluate(()=>window.__jordravHarness.map.hasLayer(window.__jordravHarness.selected)));
+  await page.locator('#jordravFocus').uncheck();
+  assert.equal(await page.locator('#jordravDetails').textContent(),deepBefore.text);
+  report.checks.push('Purple deep points display recorded depths and source without implying amber or extent; base, colour and visibility controls preserve the explanation');
+
+  await page.evaluate(()=>{window.__jordravHarness.map.setView([57.566727,10.357506],11,{animate:false});});
+  await page.locator('.jordrav-deep-marker[title^="Ålbæk Lyngshede"]').click();
+  await page.waitForFunction(()=>document.getElementById('jordravDetails').textContent.includes('80–90,5 m; 107–112 m'));
+  const waitForDeepView=async()=>{
+    await page.waitForFunction(()=>document.getElementById('jordravStatus').textContent.startsWith('Lokale detaljer'),null,{timeout:90000});
+    await page.waitForFunction(()=>{
+      const bounds=document.getElementById('jordravMap').getBoundingClientRect();
+      const visible=[...document.querySelectorAll('.leaflet-tile-pane img')].filter(tile=>{
+        const rect=tile.getBoundingClientRect();
+        return tile.src.includes('tile.openstreetmap.org/')&&rect.right>bounds.left&&rect.left<bounds.right&&rect.bottom>bounds.top&&rect.top<bounds.bottom;
+      });
+      return visible.length>0&&visible.every(tile=>tile.complete&&tile.naturalWidth>0&&Number(getComputedStyle(tile).opacity)>=0.95);
+    },null,{timeout:45000});
+  };
+  await waitForDeepView();
+  await page.screenshot({path:path.join(output,'prototype-deep-layer.png'),fullPage:true});
+  await page.setViewportSize({width:390,height:844});
+  await page.evaluate(()=>{window.__jordravHarness.map.invalidateSize();});
+  await waitForDeepView();
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+  await page.screenshot({path:path.join(output,'prototype-deep-mobile.png'),fullPage:true});
+  report.checks.push('Separate deep sand intervals remain separate; mobile depth panel and colour controls have no horizontal overflow');
   await page.locator('[data-base="street"]').click();
   await page.locator('#jordravDenmark').click();
   await page.waitForFunction(()=>document.getElementById('jordravStatus').textContent.startsWith('Generaliseret'));
@@ -180,6 +242,9 @@ try {
     await page.locator(`[data-language="${lang}"]`).click();
     await page.waitForFunction(()=>Boolean(window.__jordravHarness?.data),null,{timeout:90000});
     assert.equal(await page.locator('[data-base="aerial"]').textContent(),label);
+    assert.equal(await page.locator('#jordravColourMode option[value="access"]').textContent(),lang==='de'?'Zugänglichkeit':'Hunting accessibility');
+    assert.equal(await page.locator('[data-i18n="jordrav.overlay"]').textContent(),lang==='de'?'Geologische Schichten anzeigen':'Show geological layers');
+    assert.equal(await page.locator('#jordravDeepVisible').isChecked(),true);
     assert.ok(!await page.locator('body').textContent().then(text=>text.includes('jordrav.')));
     assert.equal(await page.locator('html').getAttribute('lang'),lang);
     await page.locator('.jordrav-regions summary').click();

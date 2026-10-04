@@ -9,6 +9,16 @@ Jordrav-fane har almindeligt kort og luftfoto, egne kildepolygoner og egne
 klikforklaringer. Kystbrugere henter ikke jordravdata. Modelversion er
 0.1.0-prototype; appens releaseversion er ikke hævet.
 
+Kortfarver kan vælges som **Geologisk potentiale** eller **Jagtbarhed**.
+Potentialevisningens klasser beskriver mulige geologiske kæder.
+Jagtbarhedsvisningen bruger gråblå for **jagtbarhed uafklaret** på alle
+nuværende materialeflader. En prøve omkring én meter dokumenterer ikke
+adgang ved pløjning. Klikpanelet angiver usikkerheden i begge visninger.
+Lilla punkter viser særskilt dybe lag med **ikke umiddelbart jagtbart**.
+De kan skjules med **Vis dybe lag**; hovedvalget skjuler alle geologiske lag.
+Materiale, ravtilførsel og nutidig blotlægning er tre forskellige spørgsmål.
+Metode: `docs/research/JORDRAV_JAGTBARHED_DYBDE_2026-10-04.md`.
+
 Fokusvalget viser kun forhøjet procespotentiale og kan gendanne alle klasser.
 En regional guide beskriver Rubjerg–Lønstrup, Gribskov–Allerød,
 Stenstrup–Kirkebysand, Varde bakkeø og Vendsyssels tidligere kyster med
@@ -35,7 +45,11 @@ To offentlige Jupiterprofiler er desuden sammenholdt med kortets faktiske
 visningsflader. Prøvedybde, lagidentitet og forbindelsen til pløjelaget
 holdes adskilt. Et generelt sandinterval fastlægger ikke et bestemt
 havstadium eller dæklagets tykkelse. Boringerne er undersøgelseseksempler;
-de giver ingen klassebonus eller cirkler på kortet. JH-010–011 og den
+de giver ingen klassebonus eller geografiske cirkler. Efter ejerens seneste
+beslutning vises deres udvalgte dybe sandintervaller som lilla punktmarkører:
+Åsted Vest 82–89 m; Ålbæk Lyngshede 80–90,5 m og 107–112 m under boringens
+historiske terræn. De er ikke ravfund eller kortlagte ravlag. Lagforbindelse
+til nutidig blotlægning er ikke dokumenteret. JH-010–011 og den
 gentagelige audit står i
 `docs/research/JORDRAV_BORINGER_LAGFORBINDELSE_2026-10-04.md`.
 
@@ -43,7 +57,8 @@ Stenstrup er efterprøvet i native kildepolygoner: 149 jordartsposter dækker
 en kortlagt issøflade på 19,284 km². TS/TL-overgange og yngre dække er
 undersøgelsesspor JH-012–014; kortlagt nabogrænse er ikke en lodret lagkontakt.
 Kun 0,43 % får den eksisterende forhøjede klasse. Brug alle klasser ved
-undersøgelse af denne egn; fokus er ikke en fuldstændig markprioritering.
+undersøgelse af denne egns geologi; det verificerer ikke jagtbare marker.
+Fokus er ikke en fuldstændig markprioritering.
 Original-SHP/DBF-kontrol og analysefigur er beskrevet i
 `docs/research/JORDRAV_STENSTRUP_KONTAKTER_2026-10-04.md`.
 
@@ -67,8 +82,8 @@ overskrives ikke. Kildekonflikter bliver uafklarede. Kontrolleret normalisering,
 native fælles grænser, visningsprojektion og de afledte filidentiteter auditeres.
 Originalarkiver og eksisterende kystgeometri ændres ikke.
 
-Lokal kontrol består for 192 native geometriudsnit, 11 modelcases, fire
-data-/modulkontroller og 12 browserkontroller med faktiske baggrundsfliser.
+Lokal kontrol består for 192 native geometriudsnit, 11 modelcases, fem
+data-/modulkontroller og 15 browserkontroller med faktiske baggrundsfliser.
 Landskortet samler klasser inden for adskilte celler; ekstra numerisk
 eksportafvigelse auditeres separat fra generalisering. Eksakt national
 eksportdækning påstås ikke. Overblik er ca. 5,94 MB gzip; detaljer indlæses

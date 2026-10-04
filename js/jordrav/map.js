@@ -2,6 +2,7 @@ import './messages.js';
 import { initialiseI18n, getLanguage, t } from '../i18n.js?v=4.0.541';
 import { openDataset, intersects } from './data-service.js';
 import { REGIONAL_HYPOTHESES } from './regional-hypotheses.js';
+import { ACCESS_COLOURS, SURFACE_HUNTABILITY, DEEP_LAYER_EXAMPLES } from './accessibility.js';
 
 initialiseI18n();
 const $ = id => document.getElementById(id);
@@ -24,17 +25,19 @@ const node = (tag, text, className) => {
   return element;
 };
 const status = key => { $('jordravStatus').textContent = tr(key); };
-let map, data, overview, details, selected, selectedFeature;
+let map, data, overview, details, selected, selectedFeature, deepLayers, selectedDeepLayer;
 let opacity = .45;
 let generation = 0, requestController, timer;
 let visible = true;
 let onlyEnhanced = false;
+let colourMode = 'potential', showDeep = true;
 const potentialOf = feature => feature.properties.potential || data.catalog[feature.properties.i].potential;
 const acceptsFeature = feature => !onlyEnhanced || potentialOf(feature) === 'enhanced';
 
 function featureStyle(feature) {
   const potential = potentialOf(feature);
-  return {fillColor: colours[potential], fillOpacity: opacity, weight: feature.properties.potential ? 0 : .4, color: colours[potential], opacity: .55};
+  const colour = colourMode === 'access' ? ACCESS_COLOURS[SURFACE_HUNTABILITY] : colours[potential];
+  return {fillColor: colour, fillOpacity: opacity, weight: feature.properties.potential ? 0 : .4, color: colour, opacity: .55};
 }
 function syncVisibility() {
   if (!map) return;
@@ -43,7 +46,64 @@ function syncVisibility() {
     if (!layer) continue;
     if (visible && layer === active) layer.addTo(map); else layer.remove();
   }
-  if (selected) { if (visible && acceptsFeature(selectedFeature)) selected.addTo(map); else selected.remove(); }
+  if (deepLayers) {if (visible && showDeep) deepLayers.addTo(map);else deepLayers.remove();}
+  if (selected) {
+    const accepted = selectedDeepLayer ? showDeep : acceptsFeature(selectedFeature);
+    if (visible && accepted) selected.addTo(map);else selected.remove();
+  }
+}
+
+function renderLegend() {
+  const legend = $('jordravLegend');
+  legend.replaceChildren();
+  const categories = colourMode === 'access' ? [[SURFACE_HUNTABILITY,'huntUnknown']] : Object.keys(colours).map(key=>[key,key]);
+  for (const [category, key] of [...categories,['deep','deepLegend']]) {
+    const item=node('span');const swatch=node('i');
+    swatch.style.background=category==='deep' ? ACCESS_COLOURS.deep : colourMode==='access' ? ACCESS_COLOURS[category] : colours[category];
+    if(category==='deep')swatch.classList.add('jordrav-deep-swatch');
+    item.append(swatch,node('span',tr(key)));legend.append(item);
+  }
+  $('jordravColourNote').textContent=tr(colourMode==='access'?'accessColourNote':'potentialColourNote');
+}
+
+const depthText = example => example.intervals.map(interval=>`${interval.top_m.toLocaleString(getLanguage())}–${interval.bottom_m.toLocaleString(getLanguage())} m`).join('; ');
+
+function showDeepDetail(example) {
+  const panel=$('jordravDetails');
+  panel.replaceChildren(node('h2',example.name));
+  const badge=node('div',tr('deepNotHuntable'),'jordrav-badge jordrav-access-badge');
+  badge.style.borderColor=ACCESS_COLOURS.deep;
+  panel.append(badge,node('p',tr('deepPointOnly'),'jordrav-original'));
+  const facts=node('dl');
+  const fact=(key,value)=>facts.append(node('dt',tr(key)),node('dd',value));
+  fact('recordedDepth',depthText(example));
+  fact('deepMaterial',tr('deepSand'));
+  fact('borehole',`DGU ${example.dgu} · ${example.drilledOn}`);
+  fact('huntability',tr('deepNotHuntable'));
+  panel.append(facts,node('h3',tr('exposureTitle')),node('p',tr('deepExposure')),
+    node('h3',tr('inference')),node('p',tr('deepInference')),
+    node('p',tr('deepCodeNote'),'jordrav-original'));
+  const note=node('div',undefined,'jordrav-method-note');
+  note.append(node('strong',tr('confidenceTitle')),node('p',tr('deepConfidence')));
+  const source=node('p');source.append(sourceLink({name:`GEUS Jupiter · DGU ${example.dgu}`,url:example.source}));
+  panel.append(note,node('h3',tr('sources')),source);
+  selected?.remove();selectedFeature=null;selectedDeepLayer=example;
+  selected=L.circleMarker([example.latitude,example.longitude],{radius:15,color:'#102f3a',weight:2.5,fill:false,interactive:false});
+  syncVisibility();
+}
+
+function initialiseDeepLayers() {
+  deepLayers=L.layerGroup();
+  for(const example of DEEP_LAYER_EXAMPLES) {
+    const title=`${example.name} · ${tr('deepNotHuntable')} · ${depthText(example)}`;
+    const marker=L.marker([example.latitude,example.longitude],{
+      title,alt:title,keyboard:true,
+      icon:L.divIcon({className:'jordrav-deep-marker',html:'<span aria-hidden="true">↓</span>',iconSize:[24,24],iconAnchor:[12,12]})
+    });
+    marker.bindTooltip(title,{direction:'top'}).on('click',()=>showDeepDetail(example));
+    deepLayers.addLayer(marker);
+  }
+  $('jordravDeepVisible').addEventListener('change',event=>{showDeep=event.target.checked;syncVisibility();});
 }
 
 function createOverview() {
@@ -115,6 +175,9 @@ function showDetail(feature) {
   const badge = node('div', tr(entry.potential), 'jordrav-badge');
   badge.style.borderColor = colours[entry.potential];
   panel.append(badge, node('p', tr('hypothesis'), 'jordrav-original'));
+  const accessBadge=node('div',tr('huntUnknown'),'jordrav-badge jordrav-access-badge');
+  accessBadge.style.borderColor=ACCESS_COLOURS.unknown;
+  panel.append(accessBadge,node('p',tr('surfaceHuntabilityNote')));
   const facts = node('dl');
   const fact = (key, value) => facts.append(node('dt', tr(key)), node('dd', value));
   fact('basis', feature.properties.o.startsWith('gap:') ? tr('sourceGap') : tr(entry.source === 'soil-old' ? 'oldBasis' : 'newBasis'));
@@ -137,7 +200,7 @@ function showDetail(feature) {
   }
   panel.append(list);
   selected?.remove();
-  selectedFeature = feature;
+  selectedFeature = feature;selectedDeepLayer=null;
   selected = L.geoJSON(feature, {style:{color:'#102f3a', weight:2.5, fill:false}, interactive:false});
   syncVisibility();
 }
@@ -206,6 +269,7 @@ async function start() {
   document.querySelectorAll('[data-base]').forEach(button => button.addEventListener('click', () => setBase(button.dataset.base)));
   setBase(currentBase);
   initialiseRegionalGuide();
+  initialiseDeepLayers();
   $('jordravDenmark').addEventListener('click', () => map.fitBounds([[54.5,7.7],[57.8,15.25]]));
   $('jordravVisible').addEventListener('change', event => { visible=event.target.checked; syncVisibility(); void loadViewport(); });
   $('jordravFocus').addEventListener('change', event => {
@@ -219,9 +283,11 @@ async function start() {
     opacity=Number(event.target.value)/100;
     overview?.setStyle(featureStyle); details?.setStyle(featureStyle);
   });
-  for (const category of Object.keys(colours)) {
-    const item=node('span'); const swatch=node('i'); swatch.style.background=colours[category]; item.append(swatch,node('span',tr(category))); $('jordravLegend').append(item);
-  }
+  $('jordravColourMode').addEventListener('change',event=>{
+    colourMode=event.target.value==='access'?'access':'potential';
+    overview?.setStyle(featureStyle);details?.setStyle(featureStyle);renderLegend();
+  });
+  renderLegend();
   data = await openDataset();
   overview = createOverview();
   syncVisibility();

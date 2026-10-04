@@ -6,6 +6,12 @@ Den nye analyse gør Stenstrup-casen geografisk mere konkret: Den undersøgte is
 
 Det geologiske spørgsmål er, hvor relevant materiale kan være modtaget, bevaret og senere bragt nær det bearbejdede jordlag. Kortgrænserne angiver undersøgelsesmiljøer; de dokumenterer hverken rav eller en skarp søgelinje på marken. Kendte ravfund er fortsat ikke en forudsætning.
 
+**Senere præcisering om jagtbarhed:** Anbefalingen om alle klasser gælder
+geologisk undersøgelse. Den udpeger ikke verificeret jagtbare marker.
+Kortets nye jagtbarhedsvisning markerer også Stenstrup-flader som uafklarede;
+TS/TL og yngre dække dokumenterer ikke i sig selv pløjeadgang eller nutidig
+blotlægning. Se [jagtbarhed og dybde](JORDRAV_JAGTBARHED_DYBDE_2026-10-04.md).
+
 ## Afgrænsning og faktisk beregning
 
 Analysen bruger hele **kildepolygon 10265, Issøflade**, fra GEUS' geomorfologiske kort v3/2022. Den ligger i den eksisterende Stenstrup-guides navigationsvindue. Vinduet er kun brugt til at finde polygonen; der er ikke skåret et vilkårligt rektangel ud til arealberegningen. En anden, mindre Issøflade i samme vindue er ikke medtaget. Kildepolygonen afgrænser en kortlagt landskabsenhed, ikke hele den historiske sø gennem alle stadier og ikke en ravforekomst.

@@ -320,3 +320,68 @@ PASS med 58 moduler; RDKS, sikkerhedshærdning, håndbog og diff-check PASS.
 Særskilt diff viser ingen ændringer i model-/datasetfiler, kystgeodata,
 appversion, app.js, service-worker, workflows, Supabase eller aktiv
 webhåndbog. Ingen ny apprelease, PR, merge, deploy eller automation.
+
+## Seneste samtaledelta: jagtbarhed og dybe lag
+
+Ejeren ønskede først kun materiale ved overfladen eller tilgængeligt ved
+pløjning, med udeladelse af eksempelvis lag ti meter nede. Dernæst ændrede
+ejeren dette udtrykkeligt: dybe lag må gerne være på kortet, men dybde og
+manglende umiddelbar adgang skal fremgå meget tydeligt, eventuelt med egen
+farve. Denne seneste instruktion erstatter udeladelsen. Det autoriserer den
+konkrete lokale UI-forbedring; gamle chats er fortsat kun historik.
+
+Gennemgangen viser, at det frosne datasæts overfladerelevans ikke er bevis
+for jagtbarhed. GEUS 2025/32 er genlæst: originale aflejringer omkring én
+meter under pløjelaget, uden præcis tykkelse i de to symbolfelter. Kendte
+ravfund kræves stadig ikke. Tilførsel, lagposition og praktisk blotlægning
+skal kunne vurderes hver for sig; ukendt dække må ikke kaldes dybt.
+
+Implementeret på DA/DE/EN: farvevalg Geologisk potentiale/Jagtbarhed,
+gråblå uafklarede materialeflader, tydeligt adgangsforbehold i klikpanelet
+og lilla firkantede dybdepunkter med pil. De to tidligere læste Jupitercases
+viser registrerede marine sandintervaller: Åsted 82–89 m; Ålbæk 80–90,5 m
+og 107–112 m under historisk boreterræn. Begge mærkes ikke umiddelbart
+jagtbart. De er punktregistreringer, uden ravfund, antaget udbredelse,
+fundcirkler eller klassebonus. Der tilføjes to statiske punkteksempler,
+ingen landsdækkende/live boringsdatabase. Eksponering af netop disse
+intervaller er uafklaret og beskrives betinget i panelet.
+
+Koden er js/jordrav/accessibility.js og map.js. Den nye dybdecheckbox
+styrer punkter særskilt; hovedvalget styrer alle geologiske lag. Fokus
+filtrerer fortsat kun procespotentialeflader. Både standardkort og luftfoto
+bevarer forklaring og valgt geometri. Frozen model, producent, manifest,
+polygondata, kystgeodata, appversion og produktionsflader ændres ikke.
+
+15 faktiske browserchecks PASS; fem datakontroller og 11 modelcases PASS;
+source-critical PASS med 109 browserfiler; Pages-modulclosure PASS med 59
+moduler; sikkerhedshærdning PASS. To nye harnessforsøg fejlede først på et
+forældet snapshot og et returneret cirkulært Leaflet-objekt. De er rettet
+og kaldes ikke PASS. Første grønne skærmoptagelse var taget under indlæsning;
+den endelige grønne prøve venter også på komplette dybdeflader og synlige
+OSM-fliser. Dybdevisningerne er visuelt læst på desktop og 390 px mobil.
+Den endelige prøve har ingen fejlede luftforespørgsler eller sidefejl;
+44 luftfotofliser og 87 OSM-fliser svarede 200. Begge kortbaggrunde er
+verificeret, og alle synlige fliser blev indlæst før relevant optagelse.
+
+Seneste lokale opstart: 1.021 ms/6.050.674 geologi-bytes; det lokale
+kontroludsnit 791 ms/5.099.092 yderligere bytes. Forskellen fra tidligere
+timing er lokal testvariation, ikke grundlag for telefon- eller
+produktionspåstand. Testserveren og browseren er lukket; der startes ingen
+vedvarende localhost-preview før ejerens næste kortvisning.
+
+Metode: docs/research/JORDRAV_JAGTBARHED_DYBDE_2026-10-04.md. RDKS-krav,
+status, current truth, JORDRAV-007, Markdown-håndbog, changelog og det
+forberedte webhåndbogstillæg følger deltaet. Tidligere formuleringer om
+ingen UI-/boringsintegration er præciseret som den oprindelige
+analyselevering. Stenstrups anbefaling om alle klasser gælder geologisk
+undersøgelse, ikke verificeret jagtbar mark. Den aktive webhåndbog/SQL er
+urørt; ingen ny apprelease, push, PR, merge, deploy eller vejrhentning.
+
+Afsluttende kontrol: RDKS/14 chatkilder/håndbog 4.0.541, håndbogens
+419 kapitler, modulversionsclosure, offentlig startorden og diff-check
+PASS. Særskilt protected-path-diff er tom for jordravdata/producent,
+kystdata/zones, appversion/package, app.js, service-worker, workflows,
+Supabase og aktiv webhåndbog. SHA for regelsæt, manifest og de to
+producentkilder matcher uændret den tidligere leverede frosne prototype.
+Sluttekster beskriver begge farvevisninger på DA/DE/EN, herunder fælles
+skjul/vis også på tysk. Ingen CI- eller produktionsverifikation påstås.

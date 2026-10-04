@@ -1,5 +1,20 @@
 # AKTUELT JORDRAVCHECKPOINT – 2026-10-04
 
+**Nyeste lokal ændring – jagtbarhed:** Ejeren har erstattet ønsket om at
+udelade dybe lag med tydelig særvisning. Kortet har farvevalg mellem
+geologisk potentiale og jagtbarhed. Alle nuværende materialeflader har
+uafklaret jagtbarhed; ens GEUS-symboler omkring én meter beviser ikke
+adgang ved pløjning. To allerede kildekontrollerede Jupiterprofiler vises
+som lilla punkteksempler med registrerede dybder og teksten **ikke
+umiddelbart jagtbart**. De angiver ingen ravforekomst eller arealudbredelse.
+Dybe punkter kan skjules separat. Det er lokal præsentationskode; frosne
+regler, producerede flader og app-/modelversion er uændrede.
+Metode og afgrænsning: `docs/research/JORDRAV_JAGTBARHED_DYBDE_2026-10-04.md`.
+Seneste lokal kontrol: 15 browserchecks, fem datakontroller, 11 modelcases
+og source-critical med 109 browserfiler PASS; Pages-modulclosure 59 PASS.
+De nye dybdevisninger er visuelt gennemgået på desktop og 390 px mobil.
+Tidligere 12-check/ingen-UI-ændring-oplysninger nedenfor er dateret historik.
+
 Offentlig primærlitteratur og faktiske GEUS-filer er undersøgt; rapporten
 opstiller geografiske muligheder og en kvalitativ potentialemodel. Ejeren
 har fastlagt **Almindeligt kort / Luftfoto**, geologisk udledning uden
@@ -12,7 +27,7 @@ slutkontrol 10:46 DK var `d778ff28c84606a93364ce112fecce4152182649`;
 én main-kørsel var aktiv og tre stod i kø. Nyere RDKS skal integreres før
 en senere fælles levering; ingen merge/deploy foretages her.
 Den lokale Jordrav-prototype er nu implementeret med begge baggrunde;
-192 native geometripartitioner, model-/filbinding, 12 browserkontroller
+192 native geometripartitioner, model-/filbinding, 15 browserkontroller
 og den produktkritiske sourcegate er lokalt PASS. Reglerne står i
 `data/jordrav/model-rules.json`, kode-/metodebeskrivelse i
 `docs/research/JORDRAV_PROTOTYPE_0_1.md`. Ingen CI-/produktionsverifikation
@@ -30,7 +45,9 @@ Fortsat faglig efterprøvning uden ejerens kortreview: to offentlige
 Jupiterprofiler er læst i den aktuelle webgrænseflade og sammenholdt med
 SHA-bundne visningsflader. Borings- og laganalyse/JH-010–011 samt gentagelig
 read-only audit er tilføjet. Lagidentitet, prøvedybde og pløjerelevans er
-adskilt; ingen dataintegration, klassebonus, UI-ændring eller ny release.
+adskilt. Dette var først rent analysearbejde; seneste ejerbeslutning
+har efterfølgende autoriseret to statiske dybdepunkter i UI. Ingen
+landsdækkende/live boringsintegration, klassebonus eller ny release.
 Rapport: `docs/research/JORDRAV_BORINGER_LAGFORBINDELSE_2026-10-04.md`.
 Main-/writeroplysningen 10:46 ovenfor er dateret historik, ikke ny aflæsning.
 

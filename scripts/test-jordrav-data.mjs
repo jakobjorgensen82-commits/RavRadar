@@ -8,6 +8,7 @@ import { validateManifest, intersects } from '../js/jordrav/data-service.js';
 import '../js/jordrav/messages.js';
 import { messageKeys } from '../js/jordrav/messages.js';
 import { REGIONAL_HYPOTHESES } from '../js/jordrav/regional-hypotheses.js';
+import { ACCESS_COLOURS, SURFACE_HUNTABILITY, DEEP_LAYER_EXAMPLES } from '../js/jordrav/accessibility.js';
 const appVersion=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')).version;
 const { hasTranslation }=await import(`../js/i18n.js?v=${appVersion}`);
 
@@ -83,5 +84,25 @@ test('regional readings have sources and translations but cannot classify polygo
     for(const source of region.sources) assert.match(source.url,/^https:\/\//);
     for(const lang of ['da','de','en']) for(const key of ['name','basis','chain','focus','challenge'])
       assert.ok(region.copy[lang][key]?.trim(),`${region.id}/${lang}/${key}`);
+  }
+});
+test('deep point examples match public borehole intervals without inventing layer extents or surface access', async () => {
+  const observations=JSON.parse(await fs.readFile(new URL('../docs/research/jordrav/profile-observations-2026-10-04.json',import.meta.url)));
+  assert.equal(DEEP_LAYER_EXAMPLES.length,2);
+  assert.notEqual(ACCESS_COLOURS.deep,ACCESS_COLOURS.unknown);
+  assert.equal(SURFACE_HUNTABILITY,'unknown','Below-plough material mapping cannot verify plough access');
+  for(const example of DEEP_LAYER_EXAMPLES) {
+    const profile=observations.profiles.find(item=>item.dgu===example.dgu);
+    assert.ok(profile);
+    assert.equal(example.source,profile.source);
+    assert.equal(example.observedAt,observations.observedAt);
+    assert.equal(example.drilledOn,profile.drilledOn);
+    assert.equal(example.longitude,profile.location.longitude);
+    assert.equal(example.latitude,profile.location.latitude);
+    assert.ok(!('geometry' in example) && !('radius' in example) && !('potential' in example));
+    for(const interval of example.intervals) {
+      assert.ok(profile.intervals.some(row=>row.top_m===interval.top_m && row.bottom_m===interval.bottom_m && row.code===interval.code));
+      assert.ok(interval.top_m>=80 && interval.bottom_m<=profile.totalDepth_m,'These selected deep examples must retain their actual depths');
+    }
   }
 });
