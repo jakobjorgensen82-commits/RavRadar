@@ -1,3 +1,18 @@
+## Ikke udgivet – Jordrav materialer og nationale markgrænser (2026-10-05)
+
+- Hele kataloget og alle 192 detailudsnit undersøgt igen for fysisk
+  materialetype, vandrette blandinger og øvre/dybere lagrelation.
+  Klikvejledning adskiller bl.a. marine tørv/gytje fra ler/silt og
+  forklarer den konkrete søgeopgave uden at udlede pløjeadgang.
+- Valgbare offentlige Marker 2026-omrids for hele Danmark på begge
+  baggrunde. Kun lokale rasterfliser fra zoom 12; ingen ejer-/afgrøde-
+  opslag, fyldfarve, ravbonus eller omfortolkning af manglende data.
+- Fire kontrakttests og otte nye Chrome-kontroller med live marklag,
+  faktiske polygonklik, DA/DE/EN, mobil og eksplicit fejlvisning.
+  RDKS, Markdown og forberedt webtillæg ajourføres. Geologisk model 0.2,
+  alle datasetbytes og appversion 4.0.541 bevares. Ingen publicering.
+- Rapport: docs/research/JORDRAV_SOEGEBARHED_MATERIALE_MARKER_2026-10-05.md.
+
 ## Ikke udgivet – Jordrav national geologisk model 0.2 (2026-10-05)
 
 - Landsdækkende genberegning erstatter guide-only leverance: alle nationale

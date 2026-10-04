@@ -3,6 +3,8 @@ import { initialiseI18n, getLanguage, t } from '../i18n.js?v=4.0.541';
 import { openDataset, intersects } from './data-service.js';
 import { REGIONAL_HYPOTHESES } from './regional-hypotheses.js';
 import { ACCESS_COLOURS, SURFACE_HUNTABILITY, DEEP_LAYER_EXAMPLES } from './accessibility.js';
+import { searchContext } from './search-context.js';
+import { initialiseFieldContext, FIELD_SERVICE } from './field-context.js';
 
 initialiseI18n();
 const $ = id => document.getElementById(id);
@@ -100,7 +102,7 @@ function showDeepDetail(example) {
   const source=node('p');source.append(sourceLink({name:`GEUS Jupiter · DGU ${example.dgu}`,url:example.source}));
   panel.append(note,node('h3',tr('sources')),source);
   selected?.remove();selectedFeature=null;selectedDeepLayer=example;
-  selected=L.circleMarker([example.latitude,example.longitude],{radius:15,color:'#102f3a',weight:2.5,fill:false,interactive:false});
+  selected=L.circleMarker([example.latitude,example.longitude],{pane:'jordrav-selection',radius:15,color:'#102f3a',weight:2.5,fill:false,interactive:false});
   syncVisibility();
 }
 
@@ -180,6 +182,20 @@ function materialAtDepth(code) {
   return tr(`material${materialKeys[name]}`);
 }
 
+function appendSearchContext(panel, entry) {
+  const context = searchContext(entry);
+  const section = node('section', undefined, 'jordrav-search-context');
+  section.append(node('h3', tr('searchTitle')));
+  const facts = node('dl');
+  facts.append(node('dt', tr('searchMaterial')), node('dd', context.upper.types.map(type=>tr(`physical_${type}`)).join(' · ')));
+  facts.append(node('dt', tr('searchLayers')), node('dd', tr(`relationship_${context.relationship}`)));
+  section.append(facts);
+  if(context.upper.lateralMixture || context.lower?.lateralMixture) section.append(node('p',tr('searchMixture')));
+  for(const type of context.tasks) section.append(node('p',tr(`task_${type}`)));
+  section.append(node('h4', tr('searchMissingLink')),node('p',tr(`missing_${context.missingLink}`)));
+  panel.append(section);
+}
+
 function showDetail(feature) {
   const entry = data.catalog[feature.properties.i];
   const panel = $('jordravDetails');
@@ -197,8 +213,10 @@ function showDetail(feature) {
   fact('depth', entry.source === 'soil-old' ? tr('depthMissing') : entry.depth ? `${materialAtDepth(entry.depth)} (${entry.depth})` : '—');
   fact('landscape', tr(`process${processKeys[entry.process]}`));
   fact('access', tr(accessKeys[entry.accessibility]));
+  panel.append(facts);
+  appendSearchContext(panel, entry);
   const story=entry.potential==='unresolved'?'Unresolved':materialKeys[entry.material];
-  panel.append(facts, node('h3', tr('inference')), node('p', tr(`story${story}`)), node('p', tr(reasonKeys[entry.potential])));
+  panel.append(node('h3', tr('inference')), node('p', tr(`story${story}`)), node('p', tr(reasonKeys[entry.potential])));
   if (entry.conflictSymbols) panel.append(node('p', `GEUS: ${entry.conflictSymbols}`, 'jordrav-original'));
   const note = node('div', undefined, 'jordrav-method-note');
   note.append(node('strong', tr(entry.potential==='unresolved'?'confidenceUnresolved':'confidenceTitle')), node('p', tr(entry.potential==='unresolved'?'cardUnresolved':'cardConfidence')));
@@ -213,7 +231,7 @@ function showDetail(feature) {
   panel.append(list);
   selected?.remove();
   selectedFeature = feature;selectedDeepLayer=null;
-  selected = L.geoJSON(feature, {style:{color:'#102f3a', weight:2.5, fill:false}, interactive:false});
+  selected = L.geoJSON(feature, {pane:'jordrav-selection',style:{color:'#102f3a', weight:2.5, fill:false}, interactive:false});
   syncVisibility();
 }
 
@@ -259,6 +277,8 @@ async function loadViewport() {
 async function start() {
   if (!globalThis.L) throw new Error('Leaflet unavailable');
   map = L.map('jordravMap', {preferCanvas:true, minZoom:6, maxZoom:17});
+  const selectionPane=map.createPane('jordrav-selection');
+  selectionPane.style.zIndex='460';selectionPane.style.pointerEvents='none';
   map.fitBounds([[54.5,7.7],[57.8,15.25]]);
   const bases = {
     street:L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}),
@@ -282,6 +302,8 @@ async function start() {
   setBase(currentBase);
   initialiseRegionalGuide();
   initialiseDeepLayers();
+  initialiseFieldContext(map, $('jordravFields'), $('jordravFieldsStatus'), tr, L);
+  $('jordravFieldSource').href = FIELD_SERVICE.source;
   $('jordravDenmark').addEventListener('click', () => map.fitBounds([[54.5,7.7],[57.8,15.25]]));
   $('jordravVisible').addEventListener('change', event => { visible=event.target.checked; syncVisibility(); void loadViewport(); });
   $('jordravFocus').addEventListener('change', event => {

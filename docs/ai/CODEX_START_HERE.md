@@ -1,5 +1,19 @@
 # Lokal Jordravgren: aktuelt mandat og model 0.2 – 2026-10-05
 
+**Samlet slutkontrol for denne fortsættelse:** 17 modelcases, fem data-/artifactkontroller, fire søgekontrakter og 20+8 faktiske Chrome-checks PASS. Sourcegate/111 browserfiler, RDKS/sikkerhed, 61 Pages-moduler, versionsimports og 419 håndbogskapitler PASS. Nye screenshots (mark/luftfoto, materialeforklaring, mobil) er visuelt læst. Aktuel 0.2-manifestbinding bevares. Ingen CI eller produktionsbevis.
+
+**Seneste fortsættelse – materialer/markkontekst:** Ejerens ordre *analyser
+videre og forbedre det* er omsat til national fysisk materialediagnose og
+klikvejledning 0.1.0 samt valgbare offentlige Marker 2026-rasteromrids for
+hele Danmark. 4.652 forklaringer/192 udsnit/505.834 features kontrolleret;
+geologisk model 0.2 og alle datasetbytes bevares. Marine tørv/gytje,
+vandrette blandinger og ukendt lagadgang adskilles. HV-underkoder har
+eksplicit uafklaret variation. Ingen mark-/fundbonus, attributopslag eller
+pløjeadgang påstås. Fire kontrakttests/otte nye Chrome-checks PASS.
+Læs docs/research/JORDRAV_SOEGEBARHED_MATERIALE_MARKER_2026-10-05.md.
+Tidligere marklag-ikke-i-runtime-status er erstattet for WMS-omrids alene.
+JB og afgrøder er fortsat forskningskontekst. Ingen push/CI/publicering.
+
 Ejeren kræver farvet, færdig national kortanalyse, ikke kun områdeguides.
 På denne gren supersederer model 0.2 den tidligere frosne 0.1-leverance.
 Læs den aktive RDKS-top og docs/research/JORDRAV_NATIONAL_MODEL_0_2.md.

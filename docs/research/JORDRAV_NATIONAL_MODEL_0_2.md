@@ -2,6 +2,13 @@
 
 Analyse og lokal rettelse udført 2026-10-04–05.
 
+**Seneste videreanalyse 2026-10-05:** National fysisk materialediagnose,
+konkrete søgeopgaver ved klik og valgbare offentlige Marker 2026-omrids
+for hele Danmark er tilføjet. Model 0.2 og datasetbytes bevares. Marine
+organiske materialer, blandinger og lagadgang præciseres; markregistrering
+bliver ikke til jagtbarhed. Se
+[materiale- og markanalysen](JORDRAV_SOEGEBARHED_MATERIALE_MARKER_2026-10-05.md).
+
 ## Mandat og afgrænsning
 
 Ejeren har afvist en levering, som kun beskrev nye områder i en guide og

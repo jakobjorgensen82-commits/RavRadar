@@ -1,7 +1,8 @@
 import { spawnSync } from 'node:child_process';
 const commands = [
   [process.env.RAVRADAR_PYTHON || 'python', ['scripts/test-jordrav-model.py']],
-  [process.execPath, ['--test','scripts/test-jordrav-data.mjs']]
+  [process.execPath, ['--test','scripts/test-jordrav-data.mjs']],
+  [process.execPath, ['--test','scripts/test-jordrav-search-context.mjs']]
 ];
 for (const [program,args] of commands) {
   const result=spawnSync(program,args,{stdio:'inherit',shell:false});

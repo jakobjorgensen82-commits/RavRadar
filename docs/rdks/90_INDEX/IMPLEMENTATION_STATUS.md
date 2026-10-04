@@ -1,5 +1,20 @@
 # AKTUELT JORDRAVCHECKPOINT – national model 0.2 – 2026-10-05
 
+**Samlet slutkontrol for denne fortsættelse:** 17 modelcases, fem data-/artifactkontroller, fire søgekontrakter og 20+8 faktiske Chrome-checks PASS. Sourcegate/111 browserfiler, RDKS/sikkerhed, 61 Pages-moduler, versionsimports og 419 håndbogskapitler PASS. Nye screenshots (mark/luftfoto, materialeforklaring, mobil) er visuelt læst. Aktuel 0.2-manifestbinding bevares. Ingen CI eller produktionsbevis.
+
+**Seneste lokale implementering – materiale/marklag:** Ny fysisk
+klikvejledning 0.1.0 behandler alle 4.652 forklaringer, med korrekt øvre
+materiale, vandrette blandinger og særskilt lodret relation. Marine
+tørv/gytje adskilles fra mineralfint sediment; HV-underkoder uafklares.
+Valgbare offentlige Marker 2026-omrids hentes som lokale WMS-rasterfliser
+fra zoom 12. Begge baggrunde/valg bevares; ingen fyld, attribut-/ejeropslag
+eller ravbonus. Markservicefejl er eksplicit; manglende linjer betyder
+ikke manglende marker. Hele landets datasæt er SHA-kontrolleret igen;
+505.834 features og model 0.2 bevares. Fire kontrakttests/otte faktiske
+Chrome-checks PASS inkl. mobil/DA-DE-EN/live servicefejl. RDKS/Markdown
+og forberedt webtillæg ajourføres. Ingen apprelease/CI/publicering.
+Rapport: docs/research/JORDRAV_SOEGEBARHED_MATERIALE_MARKER_2026-10-05.md.
+
 **Afsluttet lokal kontrol 2026-10-05:** Alle 192 udsnit/505.834 features
 og 4.652 forklaringer er beregnet og uafhængigt læst tilbage. Geometri,
 kilde-ID og originale attributter er bevaret. Fire nye klasser farver

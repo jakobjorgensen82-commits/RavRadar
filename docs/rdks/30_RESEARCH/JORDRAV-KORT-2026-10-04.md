@@ -1,5 +1,20 @@
 # Aktuel national Jordravmodel 0.2 – 2026-10-05
 
+**Seneste videreanalyse:** Ejerens nye ordre *analyser videre og forbedre
+det* er omsat til helnational materiale-/lagdiagnose og konkret
+klikvejledning 0.1.0. Alle 4.652 forklaringer og 192 detailudsnit/505.834
+features SHA-kontrolleres. Marine tørv/gytje og fine mineraler adskilles;
+9.919 sammensatte øvre features bliver ikke til lodret dække.
+HV-L/HV-S er eksplicit uafklarede underkoder. Samme symboler giver ingen
+pløjeadgang. Officiel SGAV-service er verificeret og metadata arkiveret;
+valgbare Marker 2026-omrids vises nu i hele Danmark på begge baggrunde
+fra lokal zoom 12. Ingen attribut-/ejer-/GPS-opslag eller ravbonus.
+Fire kontrakttests/otte nye Chrome-checks PASS. Model 0.2/datasetbytes og
+app 4.0.541 bevares; ingen publicering. Tidligere marklag-ikke-i-runtime-
+status erstattes for WMS-omrids alene, mens JB/afgrøder er forskning.
+Analyse: docs/research/JORDRAV_SOEGEBARHED_MATERIALE_MARKER_2026-10-05.md.
+Audit: docs/research/jordrav/national-search-context-2026-10-05.json.
+
 ## Bindende seneste mandat: hele Danmark og synlige udpegninger
 
 Ejeren har udtrykkeligt afvist en rettelse begrænset til enkelte

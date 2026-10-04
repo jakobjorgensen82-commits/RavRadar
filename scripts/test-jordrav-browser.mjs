@@ -10,6 +10,9 @@ const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 const root = process.cwd();
 const output = path.join(root, 'docs/research/jordrav');
+const outputPrefix=process.env.RAVRADAR_JORDRAV_BROWSER_PREFIX || 'national-0.2';
+assert.match(outputPrefix,/^[\w.-]+$/);
+const artifact=file=>path.join(output,file.replace(/^national-0\.2/,outputPrefix));
 const mime = {'.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.json':'application/json', '.gz':'application/gzip'};
 const server = http.createServer(async (request, response) => {
   const url = new URL(request.url,'http://localhost');
@@ -78,7 +81,7 @@ try {
   assert.match(await page.locator('#jordravColourNote').textContent(),/betyder ikke, at ravmuligheder er udelukket/);
   report.checks.push('General sediment context is uncoloured nationally; orange process hypotheses remain visible and uncoloured is not a negative amber assessment');
   await waitForVisibleStreetTiles();
-  await page.screenshot({path:path.join(output,'national-0.2-desktop.png'),fullPage:true});
+  await page.screenshot({path:artifact('national-0.2-desktop.png'),fullPage:true});
   const overviewCount=await page.evaluate(()=>window.__jordravHarness.overview.getLayers().length);
   await page.locator('#jordravFocus').check();
   assert.ok(await page.evaluate(()=>window.__jordravHarness.overview.getLayers().length>0 &&
@@ -94,7 +97,7 @@ try {
     assert.ok((await page.locator('#jordravRegionalExplanation h2').textContent()).trim());
     assert.equal(await page.locator('.jordrav-region-grid h3').count(),4);
     assert.ok(await page.locator('#jordravRegionalExplanation a').count()>0);
-    if(region==='rubjerg')await page.locator('.jordrav-regions').screenshot({path:path.join(output,'national-0.2-regional-guide.png')});
+    if(region==='rubjerg')await page.locator('.jordrav-regions').screenshot({path:artifact('national-0.2-regional-guide.png')});
     if(region==='northeast-zealand')await page.evaluate(()=>{const map=window.__jordravHarness.map;map.setView(map.getCenter(),map.getZoom()+1,{animate:true});});
     await page.locator('#jordravRegionGo').click();
     await page.waitForFunction(id=>{
@@ -106,7 +109,7 @@ try {
   assert.equal(await page.evaluate(()=>window.__jordravHarness.data.overview.features.length),overviewCount);
   assert.match(await page.locator('#jordravRegionalExplanation').textContent(),/Sæbyvej\/Østkystvejen/);
   assert.match(await page.locator('#jordravRegionalExplanation').textContent(),/viser de marine aflejringer blåt/);
-  await page.locator('.jordrav-regions').screenshot({path:path.join(output,'national-0.2-asaa-voersaa-guide.png')});
+  await page.locator('.jordrav-regions').screenshot({path:artifact('national-0.2-asaa-voersaa-guide.png')});
   report.checks.push('Six regional explanations render sources and navigate without changing source overview; Asaa–Voersaa names the coastal fields and their marine designation');
   for(const [region,bounds] of [
     ['hals-hou',[56.99,10.21,57.12,10.39]],['jerup-aalbaek',[57.52,10.35,57.62,10.49]],
@@ -190,7 +193,7 @@ try {
     return visible.length>0 && visible.every(tile=>tile.complete && tile.naturalWidth===256);
   },null,{timeout:45000});
   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-  await page.screenshot({path:path.join(output,'national-0.2-uncoloured-detail.png'),fullPage:true});
+  await page.screenshot({path:artifact('national-0.2-uncoloured-detail.png'),fullPage:true});
   const location=await interiorClickTarget('enhanced');
   const box = await page.locator('#jordravMap').boundingBox();
   await page.mouse.click(box.x+location.x,box.y+location.y);
@@ -234,7 +237,7 @@ try {
       tile.naturalWidth > 0 && Number(getComputedStyle(tile).opacity) >= 0.95);
   }, null, {timeout:45000});
   report.checks.push('All visible aerial tiles finish loading before visual capture');
-  await page.screenshot({path:path.join(output,'national-0.2-aerial-detail.png'),fullPage:true});
+  await page.screenshot({path:artifact('national-0.2-aerial-detail.png'),fullPage:true});
   assert.match(before.text,/Jagtbarhed uafklaret/);
   const colourBefore=await page.evaluate(()=>({center:window.__jordravHarness.map.getCenter(),zoom:window.__jordravHarness.map.getZoom(),selected:JSON.stringify(window.__jordravHarness.selected.toGeoJSON()),text:document.getElementById('jordravDetails').textContent}));
   await page.locator('#jordravColourMode').selectOption('access');
@@ -242,7 +245,7 @@ try {
   assert.deepEqual(await page.evaluate(()=>({center:window.__jordravHarness.map.getCenter(),zoom:window.__jordravHarness.map.getZoom(),selected:JSON.stringify(window.__jordravHarness.selected.toGeoJSON()),text:document.getElementById('jordravDetails').textContent})),colourBefore);
   assert.match(await page.locator('#jordravColourNote').textContent(),/Ingen af de nuværende flader er verificeret/);
   assert.match(await page.locator('#jordravLegend').textContent(),/Dybt lag · ikke umiddelbart jagtbart/);
-  await page.screenshot({path:path.join(output,'national-0.2-accessibility.png'),fullPage:true});
+  await page.screenshot({path:artifact('national-0.2-accessibility.png'),fullPage:true});
   await page.locator('#jordravColourMode').selectOption('potential');
   assert.ok(await page.evaluate(()=>window.__jordravHarness.details.getLayers().some(layer=>layer.options.fillColor!=='#778c99')));
   report.checks.push('Hunting accessibility remains unknown for surface polygons; colour changes preserve geometry, view and explanation');
@@ -290,13 +293,13 @@ try {
     },null,{timeout:45000});
   };
   await waitForDeepView();
-  await page.screenshot({path:path.join(output,'national-0.2-deep-layer.png'),fullPage:true});
+  await page.screenshot({path:artifact('national-0.2-deep-layer.png'),fullPage:true});
   await page.setViewportSize({width:390,height:844});
   await page.evaluate(()=>{window.__jordravHarness.map.invalidateSize();});
   await waitForDeepView();
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   await waitForVisibleStreetTiles();
-  await page.screenshot({path:path.join(output,'national-0.2-deep-mobile.png'),fullPage:true});
+  await page.screenshot({path:artifact('national-0.2-deep-mobile.png'),fullPage:true});
   report.checks.push('Separate deep sand intervals remain separate; mobile depth panel and colour controls have no horizontal overflow');
   await page.locator('#jordravColourMode').selectOption('potential');
   await page.locator('#jordravOpacity').focus();
@@ -313,12 +316,13 @@ try {
   await page.locator('#jordravRegion').selectOption('stenstrup');
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   await page.locator('.jordrav-field summary').click();
-  assert.equal(await page.locator('.jordrav-field p').count(),4);
+  assert.match(await page.locator('.jordrav-field').textContent(),/Markgrænser 2026/);
+  assert.match(await page.locator('.jordrav-field').textContent(),/Registreringen fastlægger ikke dagens afgrøde/);
   assert.match(await page.locator('.jordrav-field').textContent(),/under pløjelaget/);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
-  await page.locator('.jordrav-field').screenshot({path:path.join(output,'national-0.2-field-guide.png')});
+  await page.locator('.jordrav-field').screenshot({path:artifact('national-0.2-field-guide.png')});
   await waitForVisibleStreetTiles();
-  await page.screenshot({path:path.join(output,'national-0.2-mobile.png'),fullPage:true});
+  await page.screenshot({path:artifact('national-0.2-mobile.png'),fullPage:true});
   report.checks.push('Field guide separates ploughing, rain visibility and below-plough geological mapping on mobile');
   report.checks.push('Mobile 390px has no horizontal overflow');
   await page.setViewportSize({width:1440,height:1000});
@@ -344,7 +348,7 @@ try {
     if(fixture.class==='covered')assert.equal(style.dashArray,'4 4');
     if(!fixture.origin){
       await waitForVisibleStreetTiles();
-      await page.screenshot({path:path.join(output,'national-0.2-asaa-blue.png'),fullPage:true});
+      await page.screenshot({path:artifact('national-0.2-asaa-blue.png'),fullPage:true});
     }
   }
   report.checks.push('Actual mouse clicks verify blue marine, pink basin, ochre reworking and dashed turquoise cover polygons, plus Asaa coastal fields; all retain unknown hunting access');
@@ -400,7 +404,7 @@ try {
   if(pages[0])report.lastMapView=await pages[0].evaluate(()=>({region:document.getElementById('jordravRegion')?.value,center:window.__jordravHarness?.map?.getCenter(),zoom:window.__jordravHarness?.map?.getZoom(),status:document.getElementById('jordravStatus')?.textContent})).catch(()=>null);
   throw error;
 } finally {
-  await fs.writeFile(path.join(output,'national-0.2-browser-audit.json'),JSON.stringify(report,null,2)+'\n');
+  await fs.writeFile(artifact('national-0.2-browser-audit.json'),JSON.stringify(report,null,2)+'\n');
   await browser.close();await new Promise(resolve=>server.close(resolve));
   console.log(JSON.stringify({status:report.status,checks:report.checks,network:report.network,timings:report.timings,lastMapView:report.lastMapView}));
 }

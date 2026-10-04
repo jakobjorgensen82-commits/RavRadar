@@ -1,5 +1,14 @@
 # AKTUEL JORDRAVRETNING – national model 0.2 – 2026-10-05
 
+**Seneste fortsættelse:** National fysisk materialediagnose, konkret
+klikvejledning og valgbare landsdækkende Marker 2026-omrids er implementeret
+lokalt. Den tidligere manglende interaktive markkontekst er løst for
+WMS-omrids. JB/afgrøder, HV-underkoders lokale variation og empirisk
+blotlægning/lagadgang er åbne. Ingen nye ravklasser eller fundprocenter;
+alle model-/datasetbytes bevares. Fire kontrakttests/otte nye Chrome-
+checks PASS. Nyere main/exact-head CI og publicering er fortsat særskilt.
+Se docs/research/JORDRAV_SOEGEBARHED_MATERIALE_MARKER_2026-10-05.md.
+
 Hele det tilgængelige nationale jordarts-/landskabsgrundlag behandles og
 farves efter samme kvalitative procesregler. Begrænsningen til enkelte
 guidecases er erstattet. Empirisk ravtilførsel, mængde, lokale lagkontakter

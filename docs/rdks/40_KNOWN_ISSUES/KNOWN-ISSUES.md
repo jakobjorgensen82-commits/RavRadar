@@ -1,5 +1,20 @@
 # AKTUELLE JORDRAVPUNKTER – national model 0.2 – 2026-10-05
 
+**Nyeste status 2026-10-05:** JORDRAV-007/008 præciseres: national fysisk
+klikvejledning er implementeret, og valgbare Marker 2026-WMS-omrids findes
+nu i interaktivt kort. Markregistrering er ikke bar jord/pløjeadgang.
+JB, årsafgrøder, lokal ravtilførsel og dagens blotlægning forbliver åbne.
+JORDRAV-003: HV-L/HV-S er håndterede marine underkoder, men deres specifikke
+variation er ikke forklaret i den kontrollerede legende/QGIS-stil. 63
+forklaringer/1.012 features har eksplicit uafklaret fysisk underkode;
+ingen kornstørrelse, blandingsforhold eller lagtykkelse opfindes.
+JORDRAV-010, lokalt løst: fysisk søgevejledning adskiller marine organiske
+materialer, fine sedimenter, vekslende lag og vandrette blandinger i alle
+4.652 forklaringer. Omrids viser hele Danmark, er opt-in og lokalt
+zoombegrænsede. Servicefejl skjules ikke. Fire kontrakttests/otte nye
+Chrome-checks PASS; model/geometri uændret. Analyse:
+docs/research/JORDRAV_SOEGEBARHED_MATERIALE_MARKER_2026-10-05.md.
+
 - **JORDRAV-001, national model lokalt implementeret / empiri åben:** Alle
   kortlagte materiale-/landskabskombinationer behandles efter samme regler.
   Farvede muligheder kræver ikke kendte fund. Marine, fine bassin-,

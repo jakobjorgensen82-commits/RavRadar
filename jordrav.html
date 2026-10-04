@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#073b4c">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https://unpkg.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://server.arcgisonline.com; connect-src 'self'; font-src 'self' data:; worker-src 'self' blob:; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https://unpkg.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://server.arcgisonline.com https://geodata.fvm.dk; connect-src 'self'; font-src 'self' data:; worker-src 'self' blob:; upgrade-insecure-requests">
   <title data-i18n="jordrav.title">Jordrav – geologiske muligheder | RavRadar</title>
   <meta name="description" data-i18n-content="jordrav.description" content="Udforsk geologiske muligheder for jordrav i Danmark med jordarter, landskabsdannelse og luftfoto.">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -30,6 +30,8 @@
         <div id="jordravMap" data-i18n-aria-label="jordrav.mapTitle" aria-label="Jordravkort over Danmark"></div>
         <div class="jordrav-layer-tools"><label><input id="jordravVisible" type="checkbox" checked><span data-i18n="jordrav.overlay">Vis geologiske lag</span></label><label><input id="jordravFocus" type="checkbox"><span data-i18n="jordrav.focus">Vis kun mulighedsudpegninger</span></label><label for="jordravOpacity"><span data-i18n="jordrav.opacity">Farvestyrke</span><input id="jordravOpacity" type="range" min="15" max="75" value="45"></label></div>
         <div class="jordrav-layer-tools"><label for="jordravColourMode"><span data-i18n="jordrav.colourMode">Kortfarver</span><select id="jordravColourMode"><option value="potential" data-i18n="jordrav.colourPotential">Geologisk potentiale</option><option value="access" data-i18n="jordrav.colourAccess">Jagtbarhed</option></select></label><label><input id="jordravDeepVisible" type="checkbox" checked><span data-i18n="jordrav.deepToggle">Vis dybe lag</span></label></div>
+        <div class="jordrav-layer-tools"><label><input id="jordravFields" type="checkbox"><span data-i18n="jordrav.fieldsToggle">Markgrænser 2026 · hele Danmark</span></label><a id="jordravFieldSource" href="https://lbst.dk/bedrift/arealer-og-ejendomme/kortdata/adgang-til-kortdata" target="_blank" rel="noopener noreferrer" data-i18n="jordrav.fieldsSource">Offentlig markkilde</a></div>
+        <p id="jordravFieldsStatus" class="jordrav-status" role="status" aria-live="polite" hidden></p>
         <p id="jordravFocusNote" class="jordrav-status" data-i18n="jordrav.focusNote" hidden>Viser orange, blå, rosa, okker og turkise muligheder. Generel geologi og uafklarede flader skjules; dybe punkter styres særskilt.</p>
         <div id="jordravLegend" class="jordrav-legend" data-i18n-aria-label="map.legend" aria-label="Kortforklaring"></div>
         <p id="jordravColourNote" class="jordrav-status">Ufarvede områder har ingen særskilt udpegning; det betyder ikke, at ravmuligheder er udelukket. Zoom ind og klik for geologi. Farver dokumenterer ikke jagtbarhed; lilla punkter viser dybe lag.</p>
@@ -51,6 +53,7 @@
       <p data-i18n="jordrav.fieldRain">Regn kan vaske jord af blotlagt rav, så det bliver lettere at se. Det ændrer synligheden; det tilfører ikke i sig selv rav til marken.</p>
       <p data-i18n="jordrav.fieldDepth">GEUS beskriver geologiske aflejringer omkring én meters dybde, under pløjelaget. Jordartskortet angiver ikke ravindholdet i pløjelaget eller dæklagets præcise tykkelse.</p>
       <p data-i18n="jordrav.fieldUse">Vurder først den mulige sedimentkæde. Se derefter efter en mark med blotlagt jord og forbindelse til det relevante lag. Luftfoto giver landskabskontekst; dagens pløjning, regn og vegetation er ikke kontrolleret.</p>
+      <p data-i18n="jordrav.fieldsNote">Markgrænser 2026 viser offentligt registrerede markflader. Registreringen fastlægger ikke dagens afgrøde, pløjning, bar jord eller adgang til ravlaget. Markgrænser bliver ikke til ravgrænser.</p>
     </details>
     <details class="jordrav-method"><summary data-i18n="jordrav.method">Sådan udledes mulighederne</summary><div id="jordravMethodContent"></div></details>
     <noscript><p class="jordrav-error">Kortet kræver JavaScript.</p></noscript>

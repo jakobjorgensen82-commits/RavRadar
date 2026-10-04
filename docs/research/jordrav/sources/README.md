@@ -1,5 +1,16 @@
 # Afgrænsede offentlige mark-/jordbunds- og vej-/kystkilder
 
+## Landsdækkende valgbare WMS-markomrids – 2026-10-05
+
+`fields-wms-2026-capabilities.xml.gz` er det tabsfrit arkiverede offentlige
+GetCapabilities-råsvar fra SGAV. `fields-wms-2026-metadata.json` binder
+URL, rå/gzip-SHA256, byteantal, `Marker:Marker_2026`, formats og CRS.
+Dette er servicemetadata, ingen national feature- eller ejerdatabase.
+Kortet bruger valgbare GetMap-rasteromrids fra lokal zoom 12, uden fyld,
+tekst eller GetFeatureInfo. Omrids dokumenterer ikke dagens pløjning,
+bar jord, vegetation, ravtilførsel eller lagadgang. Serviceindhold kan
+ændres; den lokale konfiguration skifter ikke år automatisk.
+
 ## Asaa–Voerså og fem marine sammenligninger
 
 `asaa-fields2026.source.gz` og de fem `marine-*-fields2026.source.gz`

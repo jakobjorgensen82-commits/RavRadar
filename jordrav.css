@@ -51,6 +51,9 @@
 .jordrav-error { color: #842f23; }
 .jordrav-layer-tools select { max-width: 100%; min-height: 38px; border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; color: var(--ink); background: white; }
 .jordrav-access-badge { margin-top: 12px; }
+.jordrav-search-context { border-left: 3px solid #507c85; padding: 1px 14px 12px; margin-top: 18px; background: #f2f7f7; }
+.jordrav-search-context h4 { font-size: .87rem; margin: 16px 0 6px; }
+.jordrav-layer-tools a { color: var(--brand-2); font-size: .8rem; }
 .jordrav-deep-marker { box-sizing: border-box; border: 2px solid white; border-radius: 5px; background: #6c3b91; color: white; box-shadow: 0 0 0 1px #432455; text-align: center; font: bold 19px/20px sans-serif; }
 .jordrav-deep-swatch { border-radius: 2px !important; box-shadow: 0 0 0 1px #432455; }
 #jordravColourNote { font-weight: 600; }

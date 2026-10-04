@@ -1,5 +1,16 @@
 # AKTUELT JORDRAVKRAV – 2026-10-05
 
+**Seneste ejerordre: analyser videre og forbedre det.** Den nationale
+materiale-/lagdiagnose og klikvejledning gælder hele kortgrundlaget, også
+ufarvet geologi. Marine tørv/gytje og bindestregsblandinger må ikke blive
+til ensartet sand eller lodret dække. Valgbare officielle Marker 2026-
+omrids giver markkontekst i hele Danmark; registrering giver ingen
+automatisk pløjeadgang, ravbonus eller tilførsel. Kun lokal rastervisning,
+ingen nye attribut-/ejer-/GPS-opslag. Tidligere marklag-ikke-i-runtime-
+status er erstattet for WMS-omrids; JB/afgrøder forbliver forskning.
+Model 0.2 og produceret geometri bevares. Lokal implementering og analyse:
+docs/research/JORDRAV_SOEGEBARHED_MATERIALE_MARKER_2026-10-05.md.
+
 ## Bindende seneste mandat: hele Danmark og synlige udpegninger
 
 Ejeren har udtrykkeligt afvist en rettelse begrænset til enkelte

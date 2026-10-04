@@ -11,6 +11,22 @@ Appversionen er 4.0.541; den geologiske model er 0.2.0-prototype.
 Almindeligt kort og luftfoto bevarer farveflader, valgt sted og forklaring.
 Kystvisningen henter ikke jordravdata.
 
+**Videre forbedring 2026-10-05:** Klikpanelet har nu *Hvad bør du undersøge
+her?* med fysisk materiale, lagrelation, søgeopgave og åbent led. Marine
+tørv/gytje adskilles fra ler/silt; vekslende lag og materialer side om side
+beskrives særskilt. De særlige HV-underkoder har uafklaret lokal variation.
+Alle 4.652 forklaringer/505.834 detailfeatures er gennemgået. Modelklasser
+og datasæt er uændrede; søgevejledningen er selvstændig version 0.1.0.
+
+*Markgrænser 2026 · hele Danmark* viser valgbare offentlige SGAV-omrids
+ved zoom 12 eller nærmere på begge baggrunde. Marklaget er slået fra ved
+start og henter kun lokale rasterbilleder uden attribut-/ejeropslag.
+Sort/hvide omrids ændrer ingen geologisk farve, ravvurdering eller valgt
+polygon. Registrering fastlægger ikke dagens pløjning, bar jord, vegetation
+eller lagadgang. Ved servicefejl vises eksplicit besked. Ingen markbonus.
+JB-kort og afgrøder er fortsat forskningskontekst. Analyse og kontrol:
+`docs/research/JORDRAV_SOEGEBARHED_MATERIALE_MARKER_2026-10-05.md`.
+
 Farverne viser forskellige begrundede geologiske spor, ikke fundprocenter:
 
 - Orange: sand/grus i konkrete transport- og sorteringsmiljøer.

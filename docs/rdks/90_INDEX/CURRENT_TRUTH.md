@@ -1,5 +1,21 @@
 # AKTUELT JORDRAVCHECKPOINT – national model 0.2 – 2026-10-05
 
+**Samlet slutkontrol for denne fortsættelse:** 17 modelcases, fem data-/artifactkontroller, fire søgekontrakter og 20+8 faktiske Chrome-checks PASS. Sourcegate/111 browserfiler, RDKS/sikkerhed, 61 Pages-moduler, versionsimports og 419 håndbogskapitler PASS. Nye screenshots (mark/luftfoto, materialeforklaring, mobil) er visuelt læst. Aktuel 0.2-manifestbinding bevares. Ingen CI eller produktionsbevis.
+
+**Seneste fortsættelse – materiale/marklag 2026-10-05:** National read-only
+diagnose af alle 4.652 forklaringer og 192 udsnit/505.834 features.
+3.489 blå features indeholder marine organiske materialer; 9.919 har
+almindelige sammensatte øvre symboler. Tal er visningsfragmenter, ikke
+marker/fund/areal. Klikpanelet skelner fysisk materiale og lagrelation
+og giver søgeopgaver. HV-L/HV-S har uafklaret underkodevariation.
+Valgbare Marker 2026-rasteromrids gælder hele Danmark på begge baggrunde,
+kun lokale fliser fra zoom 12. Registrering er ikke bar jord/pløjeadgang.
+Ingen attribut-/ejer-/GPS-opslag, ravbonus eller model-/datasetændring.
+Fire kontrakttests og otte nye Chrome-checks PASS; nyt søgevejledningslag
+0.1.0. Forrige mark-ikke-i-runtime-status er erstattet for omrids alene;
+JB/afgrøder og empirisk lagadgang er fortsat åbne. Lokal leverance;
+ingen CI/publicering. Analyse: docs/research/JORDRAV_SOEGEBARHED_MATERIALE_MARKER_2026-10-05.md.
+
 **Afsluttet lokal kontrol 2026-10-05:** Alle 192 udsnit/505.834 features
 og 4.652 forklaringer er beregnet og uafhængigt læst tilbage. Geometri,
 kilde-ID og originale attributter er bevaret. Fire nye klasser farver
