@@ -1,4 +1,20 @@
-# NYESTE – 2026-10-04 – minimal diagnosebinding
+# NYESTE – 2026-10-04 – national readonly-udvidelse, ikke faktisk nationalmåling
+
+- [x] PR511 exactCI37164129369/ROOT og merge04:48:33 DK til bde77345.
+- [x] Correctedfixedread37172221379 authentication/inspect/cleanup PASS04:50 DK.
+- [x] Tre naboers48h-state replay faktisk matched; Lyngby-memory95.821344,
+  men netto land0/UNMATCHED95.821344. Ikke kausal join/GRIB-maskbevis.
+- [x] Lokal NATIONAL_210_673-plan i samme reader med identitet, absentstate,
+  uændret reducer og32KiB-grænse; to eksisterende måltests PASS/0skip.
+- [ ] Egen exact-head CI, sikker merge og én faktisk national læsning.
+- [ ] Fur12 og senere7waterLevel-tab; actualrestore32/newsave/upload uden
+  deploy er målt, sourcecallerreview er ikke bevist retention-/routingårsag.
+- [ ] National cellemask/årsag og hele BIG/OFF-livscyklus er fortsat åbne.
+
+Ingen produkt542, model/geometri/ordinaryworkflow/SQL-install/gatelempelse.
+DEC-0289 og øvrige afvisninger består; gammel pendingPR511-status er historisk.
+
+# Historisk – 2026-10-04 – minimal diagnosebinding
 
 - [x] PR510 exact-CI37154054174 og mergea459b846; fastread37163385963 forsøgt.
 - [x] Faktisk logdiagnose: tomt input fra forkert secretnavn; ingen GCM/inspektion.

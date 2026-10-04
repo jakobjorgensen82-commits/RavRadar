@@ -1,4 +1,21 @@
-# NYESTE – 2026-10-04 – konkret fejllæsning og én bindingrettelse
+# NYESTE – 2026-10-04 – godkendt national kontrol i uændret541-pakke
+
+PR511 merged04:48:33 DK/bde77345 efter exactCI37164129369 og ROOTproof.
+Correctedfixedread37172221379 SUCCESS04:50:12 DK med actual auth/inspect/
+safeupload/owncleanup. Kun safeartifact hentet. Lyngby48h-memory95.821344
+reproduceret; netto land0/UNMATCHED95.821344, ikke kausal kildejoin/GRIB-mask.
+NATIONAL_210_673-plan er lokalt implementeret i samme godkendte reader,
+fixedartifact/originalcontracts/verifier/reducer/32KiB-grænse uændrede.
+673/210-identity, separate absent/replayed/ready og bounded zoneaggregater;
+to genbrugte testparents PASS/0FAIL/0SKIP, ikke673 nye unikke tests.
+Egen CI/merge og actualnational afventer. Begge håndbøger opdateres; SQL-copy
+er kun håndbogspayload, ingen installation/ændret runtime eller produktversion.
+Ordinary37164593278 FAILURE04:34:33 DK: syv Fur-waterLevel-tab trods actual
+priorprogressRESTORED32/newcache; øvrige tab0. Ingen deploy; sourcecallerreview
+viser existingprotectedSOURCE-backfill/directPART, ikke bevist tabsårsag.
+DEC-0289/privatlogtilladelse/øvrige afvisninger består. Ældre status historisk.
+
+# Historisk – 2026-10-04 – konkret fejllæsning og én bindingrettelse
 
 PR510 merged01:56:24DK/maina459b846. Fastread37163385963 stoppede01:57:40DK
 før autentificering: forkert secretnavn gav tomt input. Lokal one-line binding

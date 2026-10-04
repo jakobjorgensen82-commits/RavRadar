@@ -1,4 +1,16 @@
-# NYESTE – 2026-10-04 – minimal eksisterende nøglebinding før fastlæsning
+# NYESTE – 2026-10-04 – local national readonly efter verified naboread
+
+PR511 og correctedfixedread37172221379 er faktisk afsluttet, ikke næste
+leverance. Næste: exact-head CI/merge af lokal NATIONAL_210_673-plan og én
+fast national kontrol af11281483201 før udløb, uden aktivwriter.
+To eksisterende måltestforløb PASS/0skip. Samme verifier/reducer/contracts,
+bounded aggregater, absentstate ikke replay-PASS. Ikke ny release/SQL/model.
+Lyngby-memory reproduceret men landpunktets netto0; årsag/mask fortsat OPEN.
+Fur12 og senere7waterLevel-tab er åbne; actualrestored32/newcache uden deploy.
+Sourcecallerreview er ikke kausal rækkejoin. Ingen spekulativ patch/gateændring.
+DEC-0289 og særskilte afvisninger består.
+
+# Historisk – 2026-10-04 – minimal eksisterende nøglebinding før fastlæsning
 
 PR510 merged; read37163385963 stoppede før GCM på tomt nøgleinput. DEC-0289s
 one-line binding følger producentens eksisterende key; genbrugt regression

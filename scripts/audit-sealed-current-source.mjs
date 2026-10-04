@@ -143,7 +143,40 @@ export function summarizeSealedCurrentPart(part, bulk) {
     originalGribCellMask: 'NOT_IN_BASE_INVENTORY_NOT_MEASURED' };
 }
 
-export async function auditSealedCurrentSource({ repositoryRoot, privateRoot, bundlePath, now } = {}) {
+export function summarizeSealedCurrentNationalParts(parts, bulk, zoneIds) {
+  if (!object(parts) || !Array.isArray(zoneIds) || zoneIds.length !== 210
+    || new Set(zoneIds).size !== 210 || Object.keys(parts).length !== 673) fail('NATIONAL_IDENTITY');
+  const zones = new Map(zoneIds.map(zoneId => [zoneId,
+    { zoneId, parts: 0, replayed: 0, ready: 0, landPointMatches: 0, unmatched: 0 }]));
+  const sourceCounts = buckets();
+  let replayedPartCount = 0, stateAbsentPartCount = 0, readyPartCount = 0;
+  for (const [partId, original] of Object.entries(parts)) {
+    const zone = zones.get(original?.zoneId);
+    if (!zone || !object(original) || !Array.isArray(original.waterPoint)
+      || original.waterPoint.length !== 2 || !original.waterPoint.every(finite)) fail('PART_IDENTITY');
+    zone.parts++;
+    // Absence is reported, never branded as a successful replay or fabricated state.
+    if (original.ravScoreModel?.currentState == null) { stateAbsentPartCount++; continue; }
+    // Present states retain every existing hard replay/context check; no catch/bypass.
+    const measured = summarizeSealedCurrentPart({ ...original, partId }, bulk);
+    replayedPartCount++; zone.replayed++;
+    if (measured.ready) { readyPartCount++; zone.ready++; }
+    zone.landPointMatches += measured.sourceCounts.LF_LAND_POINT;
+    zone.unmatched += measured.sourceCounts.UNMATCHED;
+    for (const group of GROUPS) sourceCounts[group] += measured.sourceCounts[group];
+  }
+  if ([...zones.values()].some(zone => zone.parts === 0)) fail('NATIONAL_IDENTITY');
+  return { zoneCount: 210, partCount: 673, replayedPartCount, stateAbsentPartCount, readyPartCount,
+    allStatesReplayed: replayedPartCount === 673, allPresentStatesReplayMatched: true,
+    sourceCounts, byZone: [...zones.values()].sort((left, right) => left.zoneId.localeCompare(right.zoneId)),
+    attribution: 'VERIFIED_SAVED_INPUT_TIME_AND_STRENGTH_MATCH_NOT_CAUSAL_JOIN',
+    pointClassification: 'ONE_KNOWN_LYNGBY_POINT_ONLY_NOT_GLOBAL_LAND_MASK',
+    originalGribCellMask: 'NOT_IN_BASE_INVENTORY_NOT_MEASURED' };
+}
+
+export async function auditSealedCurrentSource({ repositoryRoot, privateRoot, bundlePath, now,
+  scope = 'LYNGBY_NEIGHBORS' } = {}) {
+  if (!['LYNGBY_NEIGHBORS', 'NATIONAL_210_673'].includes(scope)) fail('SCOPE');
   if (process.env.STAGED_PRIVATE_BUILD_MASTER_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY
     || process.env.GH_TOKEN || process.env.GITHUB_TOKEN) fail('SECRET_PRESENT_DURING_INSPECTION');
   const expected = await sealedCurrentSourceExpectation(repositoryRoot, now);
@@ -169,6 +202,8 @@ export async function auditSealedCurrentSource({ repositoryRoot, privateRoot, bu
     sourceHead: SEALED_CURRENT_SOURCE_TARGET.sourceHead, datasetId: expected.datasetId,
     productionReferenceAt: expected.productionReferenceAt, generatedAt: expected.generatedAt,
     authenticatedBundle: true, fileCount: verified.fileCount, parts,
+    ...(scope === 'NATIONAL_210_673' ? { national: summarizeSealedCurrentNationalParts(
+      conditions.coastalParts.parts, bulk, Object.keys(conditions.zones)) } : {}),
     privatePayloadIncluded: false, rawVectorsIncluded: false, coordinatesIncluded: false,
     providersCalled: false, scoreGenerated: false, productionPointerUnchanged: true };
   if (Buffer.byteLength(JSON.stringify(report)) > 32 * 1024) fail('REPORT_BOUND');
@@ -194,8 +229,11 @@ async function main() {
     if (!result.restored || !result.productionPointerUnchanged) fail('RESTORE_REJECTED');
   } else if (mode === 'inspect') {
     const result = await auditSealedCurrentSource({ repositoryRoot: path.resolve(arg('--repository-root')),
-      privateRoot: arg('--private-root'), bundlePath: arg('--bundle') });
-    await fs.writeFile(arg('--report'), `${JSON.stringify(result, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
+      privateRoot: arg('--private-root'), bundlePath: arg('--bundle'),
+      scope: args.includes('--scope') ? arg('--scope') : 'LYNGBY_NEIGHBORS' });
+    // National zone aggregates remain inside the unchanged 32 KiB report bound.
+    await fs.writeFile(arg('--report'), `${JSON.stringify(result, null, result.national ? undefined : 2)}\n`,
+      { flag: 'wx', mode: 0o600 });
   } else fail('MODE');
   console.log(JSON.stringify({ kind: 'SEALED_CURRENT_SOURCE_AUDIT_STEP', status: 'SUCCESS', privatePayloadIncluded: false }));
 }

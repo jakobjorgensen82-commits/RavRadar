@@ -1,4 +1,18 @@
-# NYESTE – 2026-10-04 – faktisk nøglebindingfejl før Lyngbydiagnose
+# NYESTE – 2026-10-04 – godkendt national skrivefri kontrol, lokal kandidat
+
+PR511 er faktisk merged til bde77345, og fixedread37172221379 afsluttede
+SUCCESS04:50 DK. Den reproducerede Lyngby-memory95.821344 kommer netto fra
+UNMATCHED-slots; kendte landpunktmatches giver netto0. Ikke kausal join,
+ugyldig historik eller målt GRIB-mask. Gentag ikke den afsluttede nabokontrol.
+Næste: egen exact-head CI og sikker merge af NATIONAL_210_673-udvidelsen;
+derefter én godkendt national kontrol af SAMME11281483201 før udløb.
+To eksisterende måltestforløb PASS/0skip. Faktisk national læsning afventer.
+Fur-vandstandstab12 og senere7 er åbne. Aktuel kode har beskyttet public
+SOURCE-backfill og directPART-før-SOURCE-routing; det er ikke målte tabsrækker.
+Ingen spekulativ patch, nyt ciphermål eller gatelempelse. DEC-0289/øvrige
+afvisninger består; ingen merge/dispatch under aktiv normalwriter.
+
+# Historisk – 2026-10-04 – faktisk nøglebindingfejl før Lyngbydiagnose
 
 Næste: egen exact-CI og sikker merge af minimal eksisterende nøglebinding;
 derefter fastread11281483201 med uændrede kontrakter. Første read37163385963

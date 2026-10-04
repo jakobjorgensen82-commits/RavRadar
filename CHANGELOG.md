@@ -1,4 +1,23 @@
-## Ikke-release – 2026-10-04: læseren bruger den eksisterende producernøgle
+## Ikke-release – 2026-10-04: national skrivefri kontrol i samme originalpakke
+
+PR511 blev merged kl.04:48 DK efter egen exact-head kildekontrol.
+Den ene korrigerede faste læsning37172221379 autentificerede og undersøgte
+originalpakken kl.04:50 DK. Lyngbys gemte48h-hukommelse blev reproduceret,
+men netto-opbygningen kunne ikke tilskrives det kendte landpunkt. Original
+GRIB-mask og lagret kausal kildekobling er ikke målt; UNMATCHED er ikke
+automatisk ugyldig historik.
+
+Den særskilt godkendte alle-zoneplan er nu implementeret lokalt i samme
+læser: eksplicit NATIONAL_210_673-valg, fast bekræftelse, 210/673-identitet,
+kanonisk replay af hver tilstedeværende state og eksplicit optælling af fravær.
+Samme originalartifact, autentificering, gates, oprydning og32KiB-rapportgrænse.
+To eksisterende måltestforløb består uden fejl eller skip; egen CI, merge
+og faktisk national læsning afventer. Ingen produktversion, model, geometri,
+provider, cachegemning, SQL-installation eller deploy ændres.
+Ordinary37164593278 blev afvist på syv Fur-vandstandstab trods faktisk
+genindlæst fremdriftscache; rodårsag stadig åben. Se DEC-0289.
+
+## Historisk – 2026-10-04: læseren bruger den eksisterende producernøgle
 
 PR510 er merged. Den første faste læsning stoppede sikkert før autentificering,
 fordi workflowet slog et forkert secretnavn op og modtog tomt input. Kun denne

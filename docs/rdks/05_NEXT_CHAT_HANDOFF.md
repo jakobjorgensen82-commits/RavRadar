@@ -1,4 +1,18 @@
-# NYESTE – 2026-10-04 – ret eksisterende binding før ny fastlæsning
+# NYESTE – 2026-10-04 – fuldført naboread; national kontrol afventer
+
+PR511 merged til bde77345 og correctedfixedread37172221379 SUCCESS04:50 DK.
+Lyngbys høje48h-memory er faktisk reproduceret, ikke tilskrevet landpunktet:
+netto land0/UNMATCHED95.821344. UNMATCHED er ikke ugyldighedsbevis; mask ikke målt.
+Lokal national tooling er implementeret i SAME reader/11281483201 med
+210/673-identitetskontrol, uændret kanonisk replay, særskilt absentstate og
+faste bounded zoneaggregater. To gamle måltestforløb PASS/0skip, ikke673 nye
+tests. Næste egen exact-CI/merge og én national read, kun uden aktivwriter.
+Ordinary37164593278 fejlede på syv Fur-waterLevel-tab trods optionalrestore32;
+actualnycache saved/uploaded, ingen deploy. Callerreview udelukker ikke
+andre retention-/routingårsager; konkrete tab stadig OPEN. DEC-0289.
+Ingen gentagelse af completedread, nyt ciphermål, SQL/model/geometri/OFF.
+
+# Historisk – 2026-10-04 – ret eksisterende binding før ny fastlæsning
 
 PR510 merged/maina459b846; read37163385963 fejlede før GCM på tomt nøgleinput.
 Ny lokal codex/lyngby-sealed-existing-key-binding/basea459 ændrer KUN workflow-
