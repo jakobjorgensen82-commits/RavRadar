@@ -1,6 +1,6 @@
 # Jordrav i Danmark: geologisk potentiale og grundlag for et landsdækkende kort
 
-**Dato:** 4. oktober 2026. **Status:** Faglig analyse og forslag til første kortmodel; kortet er endnu ikke implementeret eller publiceret. Koden er undersøgt på RavRadar 4.0.541, commit `bbc3c79fe555dffbff4a88af8cdf54573953efdb`.
+**Dato:** 4. oktober 2026. **Status:** Faglig analyse med efterfølgende lokal [kortprototype 0.1](JORDRAV_PROTOTYPE_0_1.md); ikke publiceret. Analysebaseline er RavRadar 4.0.541, commit `bbc3c79fe555dffbff4a88af8cdf54573953efdb`. Prototypens faktiske regler og kontroller beskrives særskilt; denne rapports oprindelige anbefalinger er ikke alle implementeret.
 
 ## Konklusion og konkret anbefaling
 
@@ -128,6 +128,29 @@ Kildekritikken har betydning for den geografiske vurdering. Nogle oplysninger er
 Historiske dateringer og betegnelsen “Diluvialsand” omsættes ikke direkte til en bestemt moderne formation eller istid. En nutidig afgrænsning kræver stratigrafisk sammenhold. Det er stadig muligt at bruge den historisk beskrevne proces som støtte til en ny potentialehypotese.
 
 ## Forslag til en kvalitativ potentialemodel
+
+### Regional efterprøvning: Nordøstsjælland
+
+Houmark-Nielsens nyere regionale gennemgang beskriver flere generationer af åse og smeltevandslandskaber. På trykt s. 81 omtales forskellige afløbssystemer mod nordvest og en åben forbindelse mellem Hillerødåsene og én eller flere isstrømme. Ved Multebjerg viser profilet på s. 67–68 en rækkefølge fra ældre sand/grus og moræner til yngre erosion, flodaflejring og søsedimenter. Det giver en konkret regional proceshistorie; artiklen påviser ikke rav i disse aflejringer. [Houmark-Nielsen 2024, s. 67–68 og 81](https://2dgf.dk/xpdf/gt2024-32-106..pdf).
+
+**Vores videre slutning** er, at nye muligheder bør undersøges langs sammenhængende erosions- og modtagerforløb. Det gør Gribskovs sand-/grusmiljøer, åssystemer og beslægtede bassinrande til fagligt relevante kandidater uden et allerede registreret ravfund. Profilhistorien giver dog ikke én fælles alder eller tilførsel til samtlige sandpolygoner. Kulholdige blokke, et morænelag og et yngre bassin er hver for sig utilstrækkelige til at forbinde kæden.
+
+En stærkere efterfølgende model kan skelne mellem tre situationer: et ældre muligt lager, en yngre erosions-/transportenhed og et modtagerlag. Først når den regionale relation er undersøgt, kan den generelle sand-plus-procesklasse prioriteres yderligere. For prototypen er dette en efterprøvningsramme, ikke et nyt nationalt bonuslag.
+
+### Følsomhed og konkurrerende forklaringer
+
+Et robust resultat bør bevare muligheder, som stadig er plausible under flere kildehistorier. Nedenstående scenarier er vores analyse af modellens følsomhed, ikke nye fundoplysninger eller målte sandsynligheder.
+
+| Kandidattype | Hvis rav kommer med ældre glaciale sandpakker | Hvis lokal tilførsel hovedsagelig er marin | Hvis yngre dæklag er vigtigst for markrelevansen |
+|---|---|---|---|
+| Smeltevandssand i erosionsdal | Interessant, hvis erosion kan forbindes med et ældre lager | Afhænger af forbindelsen til marine fødesedimenter | Den overfladekortlagte sandenhed er mere direkte relevant end et dybt sandlag |
+| Sandet strandvold | Kan modtage rav frigjort fra glaciale aflejringer | Gentagen bølgeomlejring er en relevant mulig koncentrationsproces | Flyvesand, tørv og nyere fyld kan flytte eller dække det relevante lag |
+| Yngre ferskvandsbassin | Kan modtage omlejret materiale fra oplandet; ler er ikke en automatisk udelukkelse | Kræver en ældre marin forbindelse eller senere erosion af marine lag | Et ravrelevant dybt bassinlag kan være bevaret, men svagt relevant ved markoverfladen |
+| Moræne-/bakkeømiljø | Flyttede flager og erosionskontakter er mulige, men till alene prioriterer svagt | En marine-glacial kæde kræver stratigrafisk støtte | Lagdeling og senere erosion bliver afgørende; kortets overfladefelt alene beskriver ikke hele pakken |
+
+Denne sammenligning giver en konkret arbejdende prioritet: begynd med vurderbare, overfladenære modtagermiljøer og undersøg derfra deres mulige fødesedimenter. Et område med svag ravsikkerhed kan stadig være interessant, når flere plausible kæder mødes. Uenighed mellem kæderne skal beskrives i forklaringen frem for skjules i en gennemsnitlig score.
+
+Følsomheden ved materialekoder er også vigtig. En grov ældre samlekategori kan blande sand og ler; en yngre overflade-/dybdeforskel kan ændre markrelevansen; en landskabskode kan dække flere betegnelser. Den første prototype holder sådanne forskelle synlige. Den har endnu ikke valideret regional sedimentforbindelse eller rangorden mod uafhængige feltdata.
 
 Den første model bør give **relative, geologisk begrundede potentialeklasser**. Den bør ikke foregive kalibrerede fundprocenter eller en præcis forventet ravmængde.
 
@@ -276,7 +299,7 @@ Baggrundsfliser hentes fra leverandøren for brugerens aktuelle kortudsnit. Open
 
 Den eksisterende service worker behandler samme-origin-filer og lader eksterne korttjenester gå uden om den. Jordravdata bør ikke føjes til den generelle precache, så almindelige kystkortbrugere automatisk downloader et Danmarkslag. Geologidataenes fejltilstand og cacheversion skal håndteres særskilt fra levende vejrdata.
 
-## Faglig kontrol før første kort
+## Faglig kontrol og efterfølgende prototype
 
 Analysen giver et grundlag for at bygge en prototype. De næste kontroller skal gøre reglerne og afgrænsningerne gennemgåelige, ikke kræve en ny funddatabase:
 
@@ -308,4 +331,4 @@ Den fulde lokale Codex-opsætning kunne ikke installere den eksisterende vejrrel
 - [Polens geologiske institut: Amber](https://www.pgi.gov.pl/en/1263-surowce/resources/rock/14078-amber.html). Eksempel på ravførende ældre sediment i glaciale flager. Anvendes som procesanalogi, ikke dansk afgrænsning.
 - RavRadars eksisterende `RAV_AMBER_TRANSPORT_SYSTEMATIC_REVIEW.md` adskiller lager, transport, aflejring og fundbarhed ved kysten. Den årsagstænkning er relevant, mens dens vejr- og strandmodel ikke overføres til jordravkortet.
 
-Det vigtigste næste faglige arbejde er at omsætte de geologiske kandidater til **gennemgåelige regler og virkelige kildepolygoner**. Målet er et kort, der både viser lovende muligheder og fortæller brugeren, hvorfor netop disse muligheder er udpeget.
+De generelle materiale-/procesregler er efterfølgende omsat til virkelige kildepolygoner i [prototypen](JORDRAV_PROTOTYPE_0_1.md). Den næste stærkere faglige prioritering er at koble disse flader til regionale fødesedimenter, kronologi og bevaring. Første kort kræver ikke nye ravfund for at vise interessante muligheder.

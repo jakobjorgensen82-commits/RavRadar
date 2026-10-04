@@ -1,2 +1,6 @@
 data/diagnostics export-ignore
 data/admin export-ignore
+# Jordrav identities hash exact bytes; preserve them across Windows/Linux.
+data/jordrav/** -text
+scripts/build-jordrav-prototype.py -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+scripts/lib/jordrav_model.py -text

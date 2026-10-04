@@ -32,7 +32,7 @@ if(rsync.error?.code==='ENOENT'){
  }
 }else if(rsync.status!==0) throw new Error(`Kunne ikke bygge testartifact: ${rsync.stderr||rsync.stdout||rsync.error?.message}`);
 
-const entryHtml=['index.html','admin.html'];
+const entryHtml=['index.html','admin.html','jordrav.html'];
 const queue=[];
 for(const rel of entryHtml){
  const text=await fs.readFile(path.join(site,rel),'utf8');

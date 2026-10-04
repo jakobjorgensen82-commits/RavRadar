@@ -12,7 +12,12 @@ udtrykkelige instruktion trods de konstaterede særlige vilkår. Nyere kort
 har forrang; kilde, målestok og usikkerhed bevares. Udeladelsesforslaget er
 erstattet. Statisk lazy-load, ingen ny funddatabase/læring/SQL/vejrscheduler.
 Mandat og evidens: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
-Forskning på 4.0.541; kortimplementering og release er endnu ikke udført.
+Forskning og lokal kortprototype på 4.0.541; ingen ny apprelease.
+Første model viser forhøjet **procespotentiale**, muligt potentiale,
+begrænset overfladestøtte og uafklaret hver for sig. Den stærkere regionale
+prioritering er fortsat et efterprøvningspunkt, ikke opnået kalibrering.
+Begge baggrunde, bevaret valg og faktiske geometrier er implementeret og
+lokalt browserkontrolleret. CI-/main-integration og publicering er åbne.
 
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 

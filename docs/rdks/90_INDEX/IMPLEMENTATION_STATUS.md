@@ -1,13 +1,19 @@
 # AKTUEL JORDRAVSTATUS – 2026-10-04
 
-**Udført lokalt:** Faglig rapport, geografiske kandidater, separate
-potentiale-/sikkerhedsvurderinger, design med almindeligt kort og luftfoto,
-read-only audit af fire GEUS-lag og nationalt payloadforsøg. Ejerens valg
-af det ældre jordartskort som supplement er indarbejdet.
-**Næste trin:** Klasseregler, regional stratigrafisk kobling, kontrolleret
-kildegeometrinormalisering, fælles-grænse-forenkling og statisk prototype.
-Luftfotoadgang, mobilperformance og browserkontrakter mangler livekontrol.
-Ingen jordravfane, deploy, nye fund-/læringstabeller eller appversion.
+**Udført lokalt:** Faglig rapport med regional efterprøvning og
+følsomhedsscenarier; gennemgåelige klasseregler; selvstændig Jordrav-fane
+med almindeligt kort/luftfoto, klikforklaringer, DA/DE/EN og lazy-load.
+Den statiske nationale bygning bruger faktiske kildepolygoner, nyere
+materiale først og ældre supplement ved X/huller. Modellen er 0.1.0-prototype;
+alle ravslutninger er hypoteser med svag sikkerhed.
+**Lokalt PASS:** 192 native geometriudsnit, 11 modelcases, tre data-/modul-
+kontroller, otte faktiske browserkontroller og den produktkritiske sourcegate.
+Landskortet har 598 generaliserede features; lokale udsnit 505.834 features.
+Eksakt national eksportdækning påstås ikke; numeriske sømme auditeres.
+**Åbent:** Regional ravtilførsel og bevaring, nyere main-/RDKS-integration,
+exact-head CI og fysisk mobilmåling.
+Ingen deploy, nye fund-/læringstabeller eller ny appversion. Den aktive
+webhåndbog/SQL er urørt; et særskilt webhåndbogstillæg er forberedt.
 Evidens: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
 
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541

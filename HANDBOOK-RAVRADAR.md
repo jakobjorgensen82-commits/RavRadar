@@ -2,6 +2,53 @@
 
 **Håndbogsversion:** 4.0.541
 
+## 90.1 Jordrav 0.1 – lokal procesprototype, ingen offentlig release
+
+Jordravmodellen er selvstændig og ændrer ikke RavScore. Den nye lokale
+Jordrav-fane har almindeligt kort og luftfoto, egne kildepolygoner og egne
+klikforklaringer. Kystbrugere henter ikke jordravdata. Modelversion er
+0.1.0-prototype; appens releaseversion er ikke hævet.
+
+**Evidens:** GEUS-kortlagte materialer og landskabsprocesser kombineres med
+eksplicitte RavRadar-hypoteser om transport, omlejring og modtagelse. Tidligere
+fund er ikke et krav. Forhøjet procespotentiale betyder kompatibelt sand/grus
+i et relevant transport-/sorteringsmiljø; det er ikke en lokal verificering
+af tilførsel, ravmængde eller fundchancer. Alle ravslutninger har svag sikkerhed.
+
+Regelrækkefølgen er: uafklaret ved ikke vurderbart grundlag; begrænset ved
+kortlagt fast bjergart; forhøjet ved de eksplicitte materiale-/procespar;
+ellers muligt for vurderbare naturlige sedimenter. Dæklag og materiale ved
+cirka én meter vises separat. Israndsoverlap, brunkul, historiske fundcirkler
+og dybe beskrivelser giver ingen automatisk bonus. To kort er ikke to
+uafhængige ravbeviser. Ældre blandingskoder bliver ikke gjort til detaljerede
+nyere materialebestemmelser.
+
+Kildeprioritet: nyere materiale først; det ældre kort som groft supplement
+i X-områder/geografiske huller efter ejerens instruktion. By/fyld/råstofgrave
+overskrives ikke. Kildekonflikter bliver uafklarede. Kontrolleret normalisering,
+native fælles grænser, visningsprojektion og de afledte filidentiteter auditeres.
+Originalarkiver og eksisterende kystgeometri ændres ikke.
+
+Lokal kontrol består for 192 native geometriudsnit, 11 modelcases, tre
+data-/modulkontroller og otte browserkontroller med faktiske baggrundsfliser.
+Landskortet samler klasser inden for adskilte celler; ekstra numerisk
+eksportafvigelse auditeres separat fra generalisering. Eksakt national
+eksportdækning påstås ikke. Overblik er ca. 5,94 MB gzip; detaljer indlæses
+først ved lokal zoom. Et webhåndbogstillæg er forberedt separat
+til koordineret integration med installationskopien.
+
+Kode: `data/jordrav/model-rules.json`, `scripts/build-jordrav-prototype.py`,
+`js/jordrav/data-service.js`, `js/jordrav/map.js`, `jordrav.html`.
+Detaljeret regel-, kilde- og geometriforklaring samt ekspertpunkter JH-001–004:
+`docs/research/JORDRAV_PROTOTYPE_0_1.md`. Primære mekanismekilder er Pedersen
+2005 s. 46–48, Hartz 1909 s. 91–107 og Bennike & Jensen 1998 s. 31.
+Overførsel fra disse beskrivelser til andre flader er en hypotese.
+
+Åbent: regional tilførsels-/bevaringskobling, følsomhed, historiske kystforskelle,
+fysisk mobilhardware og en eventuel særskilt GeoDanmark-adgang. Målrettet lokal
+validering er ikke exact-head CI eller produktionsbevis. Nyere main/RDKS og
+aktive produktionsskrivere skal kontrolleres før fælles levering.
+
 ## 89.154 4.0.541 – Copernicus skal være lukket før oprydning (lokal kandidat)
 
 Offentlig version er 4.0.540. Den seneste almindelige vejrhentning er faktisk

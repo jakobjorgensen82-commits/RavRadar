@@ -1,3 +1,17 @@
+## Ikke udgivet – Jordrav forskningsprototype 0.1 (2026-10-04)
+
+- Ny selvstændig Jordrav-fane med almindeligt kort/luftfoto, farvestyrke og
+  klikforklaringer for materiale, proces, sikkerhed, dybde og kilde.
+- Gennemgåelige potentialehypoteser fra faktiske GEUS-polygoner; tidligere
+  ravfund er ikke et krav. Uafklaret er adskilt fra begrænset potentiale.
+- Statisk national oversigt og lokale udsnit med SHA-/modelbinding, bounded
+  visning/cache og lazy-load. Ingen vejr-/database-/læringspipeline tilføjes.
+- Sporbar kilde- og grænsebehandling samt målrettede model-, data- og UI-tests.
+  192 native udsnit, 11 modelcases, tre datakontroller og otte browserkontroller
+  består lokalt. Luftfoto og almindeligt kort er visuelt gennemgået.
+  Detaljer: `docs/research/JORDRAV_PROTOTYPE_0_1.md` og forskningscheckpointet.
+- Ingen ny apprelease, ændring af kystgeodata, merge eller deploy.
+
 ## 4.0.541 – Godkendt Copernicus-lukning og korrekt native genbinding (lokal kandidat)
 
 - Ny konkret direkte CP-kalderfejl: egen planoprydning maskerer outputfejl.

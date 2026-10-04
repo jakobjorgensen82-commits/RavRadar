@@ -1,21 +1,32 @@
 # ÅBNE JORDRAVPUNKTER – 2026-10-04
 
-- **JORDRAV-001:** Klasseregler og kobling til konkrete moderne polygoner
-  skal implementeres. Indirekte geologi må udpege muligheder uden kendt fund.
-- **JORDRAV-002:** 438/47 ring-selvskæringer kan diagnostisk normaliseres;
-  sporbar reparationslog, fælles grænser og slutgeometri mangler. Én tom
-  israndsgeometri håndteres eksplicit.
+- **JORDRAV-001, delvist løst:** Første gennemgåelige procesregler og faktiske
+  polygonkoblinger er implementeret uden kendt fund som adgangskrav.
+  Regional tilførsels-/bevaringskobling og stærkere prioritering er åbne.
+- **JORDRAV-002, lokalt kontrolleret / historiske kyster åbne:** Sporbar
+  normalisering af 438/47 ringfund og 194 mikroflader er auditeret. Alle
+  192 native partitioner består; ældre overlap er eksplicitte konflikter.
+  Landskortet samler klasser inden for adskilte celler. Numeriske sømme
+  auditeres med 5 mm detail-/0,5 m overbliksgrænse; eksakt national eksport
+  påstås ikke. Kortaldrenes forskellige kystforløb kræver efterprøvning.
 - **JORDRAV-003:** 82 beskrevne nyere jordarter mod 81 forekommende
   filkombinationer afstemmes. Geomorfologikoder og israndens TYPE/legende
   må ikke bruges som entydig kategori eller komplet fleristidskronologi.
-- **JORDRAV-004:** Begge basekort er faste krav. WMTS/browseradgang,
-  leverandørvalg, CSP og attribution mangler livekontrol. Ældre jordartskort
-  bruges efter ejerinstruktion; tidligere udeladelsesforslag er erstattet.
-- **JORDRAV-005:** Payloadstørrelser er målt; fælles-grænse-bevarende
-  levering, lazy-load, mobil, fanens livscyklus og DA/DE/EN testes ved bygning.
+- **JORDRAV-004, lokalt løst:** OSM/World Imagery, særskilt CSP,
+  attribution og bevaret valg ved baggrundsskift er implementeret.
+  Otte browserkontroller består med faktiske fliser og visuelt gennemgået
+  fuldt luftfoto. Officiel GeoDanmark-adgang er ikke oprettet.
+  Ældre jordartskort bruges efter ejerinstruktion.
+- **JORDRAV-005, lokalt løst / fysisk mobil åben:** Statisk lazy-load,
+  hashbinding og cache-/visningsgrænser er testet. Nationalt overblik er
+  5,94 MB gzip; alle detailudsnit 111,65 MB, største 1,42 MB. Browseren
+  henter kun relevante udsnit. Lokal tidsmåling er ikke produktionsbevis.
+- **JORDRAV-006:** Webhåndbogstillæg er forberedt særskilt; aktiv webhåndbog
+  og installationskopi i SQL ændres ikke i denne gren. Integration med nyere
+  main, exact-head CI og fælles release er fortsat nødvendige før publicering.
 
 Evidens: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
-Punkterne gælder det planlagte jordravkort, ikke den aktuelle vejrproduktion.
+Punkterne gælder den lokale Jordrav-prototype, ikke den aktuelle vejrproduktion.
 
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 

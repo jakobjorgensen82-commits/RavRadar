@@ -7,7 +7,12 @@ indgår efter ejerinstruktion; udeladelsesforslaget er erstattet.
 Rapport: `docs/research/JORDRAV_POTENTIALE_DANMARK_2026-10-04.md`.
 Checkpoint: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
 Gren `codex/jordrav-geologisk-analyse`; forskning og projektets hukommelse
-er synkroniseret. Ingen ny appversion, jordravimplementering eller deploy.
+er udvidet med en selvstændig lokal Jordrav-prototype, materialiserede
+regler, sporbar polygonbygning og målrettede model-/datatests. 192 native
+geometriudsnit, 238.829 kilde-/cacheattributter, 11 modelcases, tre data-
+kontroller, otte browserkontroller og source-critical-gaten er lokalt PASS.
+National union og for tæt segmenteret eksport er forkastet til fordel for
+klassegrupper inden for adskilte celler. Ingen ny appversion eller deploy.
 
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 

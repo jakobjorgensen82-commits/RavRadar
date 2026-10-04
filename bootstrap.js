@@ -4,6 +4,7 @@ import { initialiseI18n } from "./js/i18n.js?v=4.0.541";
 import "./js/ui/ranking-copy.js?v=4.0.541";
 import "./js/ui/score-prognosis-copy.js?v=4.0.541";
 import "./js/ui/site-search-copy.js?v=4.0.541";
+import "./js/ui/map-tab-copy.js?v=4.0.541";
 
 let appImported = false;
 addEventListener('pageshow', event => {

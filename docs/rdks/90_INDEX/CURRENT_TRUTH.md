@@ -8,10 +8,16 @@ Rapport: `docs/research/JORDRAV_POTENTIALE_DANMARK_2026-10-04.md`.
 Mandat, audit og næste trin: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
 Gren `codex/jordrav-geologisk-analyse`, analysebaseline
 `bbc3c79fe555dffbff4a88af8cdf54573953efdb`, version 4.0.541. Frisk main ved
-slutkontrol 02:09 DK var `a459b846d9d19351127d46bdab544e6bc50dc24b` efter
-PR510; nyere RDKS skal integreres før en senere fælles levering.
-Jordravkortet er ikke implementeret, CI-valideret eller publiceret. Dette
-checkpoint gælder jordravarbejdet; vejrstatus kræver sin egen friske evidens.
+slutkontrol 10:46 DK var `d778ff28c84606a93364ce112fecce4152182649`;
+én main-kørsel var aktiv og tre stod i kø. Nyere RDKS skal integreres før
+en senere fælles levering; ingen merge/deploy foretages her.
+Den lokale Jordrav-prototype er nu implementeret med begge baggrunde;
+192 native geometripartitioner, model-/filbinding, otte browserkontroller
+og den produktkritiske sourcegate er lokalt PASS. Reglerne står i
+`data/jordrav/model-rules.json`, kode-/metodebeskrivelse i
+`docs/research/JORDRAV_PROTOTYPE_0_1.md`. Ingen CI-/produktionsverifikation
+eller publicering påstås. Dette checkpoint gælder jordravarbejdet;
+vejrstatus kræver sin egen friske evidens.
 
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
