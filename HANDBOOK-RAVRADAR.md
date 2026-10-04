@@ -2,6 +2,23 @@
 
 **Håndbogsversion:** 4.0.541
 
+## 89.156 Fejlalarm til ejeren, ikke på hjemmesiden
+
+Ejeren har godkendt en særskilt GitHub-alarm for afsluttede fejlede almindelige
+vejrhentninger. Den opretter højst én issue pr. kørsel med kun det faste link
+og status og tildeler den til ejerens eksisterende konto. Repositoryet skal
+forblive offentligt; issuen er derfor offentlig på GitHub, ikke privat.
+Der vises ingen driftsalarm på ravradar.dk, og hjemmesidens brugere får ingen
+mail fra denne funktion. Den ændrer ikke vejret, score eller deploy.
+
+Alarmen bruger betroet kode fra main og læser kun GitHub-metadata, aldrig
+joblogs, artifacts eller vejrpayloads. Den kontrollerer præcis indgang,
+repository, attempt og status og genlæser run og main før oprettelse.
+Allerede oprettede og lukkede alarmer tæller med. Ukendt resultat giver ingen
+blind gentagelse. Syv lokale syntetiske testforløb består uden skip; egen
+kildekontrol, merge og faktisk issue afventer. En tildelt issue er ikke bevis
+for modtaget mail. Det er ikke en ny produktrelease. Se DEC-0290.
+
 ## 89.155 Skrivefri undersøgelse af samme originalpakke
 
 Offentlig version er fortsat 4.0.541. Den første læsning stoppede på et
@@ -27,8 +44,23 @@ skal kunne reproduceres; en forkert tilstand stopper kontrollen. Fraværende
 tilstande tælles særskilt og kaldes aldrig en bestået reproduktion.
 Rapporten indeholder kun faste optællinger pr.zone under den uændrede
 grænse på32KiB. Ét kendt landpunkt er ikke en global land-/vandmask.
-To eksisterende måltestforløb består uden skip; egen kildekontrol, merge
-og faktisk national læsning afventer. Det er ikke en ny produktrelease.
+Efter egen kildekontrol og PR512-merge afsluttede den ene nationale læsning
+kl.05:41 dansk tid den4. oktober. Alle673 gemte tilstande kunne reproduceres;
+648 var klar og25 var ikke klar. Dette er ikke en kontrol af alle havceller,
+målt komplet privat historik eller fysisk årsag. Kontrollen må ikke gentages
+blindt. Det er ikke en ny produktrelease.
+
+Ejeren har nu bestilt, at Lyngby uden for Limfjorden ikke får Limfjordsinput,
+og at andre zoner kontrolleres for samme issue. Ny offentlig hashkontrol af
+alle210zoner/673dele ved to faste tidspunkter fandt kun Lyngby med den model
+uden for den centrale Limfjordsklassifikation i første time, ingen i anden.
+De gemte naboprognoser over118timer viser Limfjordskilde i84timer ved Lyngby,
+30 ved Porskær/Agger-Krik Vig og0 ved Stenbjerg, i begge jagtformer.
+Agger skal også geografisk efterkontrolleres. Kysttype er ikke en uafhængig
+havcellemask, og to nationale tidspunkter er ikke alle118prognosetimer.
+Nyt valg og tidligere genbrugte input og48h-hukommelse skal håndteres samlet.
+Ingen sådan rettelse er endnu implementeret; ingen pilflytning, ændret
+scoreformel eller blind nulstilling af historikken.
 
 Ingen rå strømvektorer, koordinater, private stier eller fejlpayload forlader
 funktionen. En matchende tid/styrke er ikke i sig selv bevis for årsag eller

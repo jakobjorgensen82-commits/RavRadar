@@ -1,4 +1,24 @@
-# NYESTE – 2026-10-04 – samme originalpakke, eksplicit national kontrol
+# NYESTE – 2026-10-04 – Lyngby-farvandsafgrænsning og samme issue i andre zoner
+
+- **REQ-WEATHER-FAILURE-OWNER-ALERT-001 – DELVIST IMPLEMENTERET:**
+  Separat GitHub-alarm efter en afsluttet fejlet almindelig vejrhentning;
+  kun fast runlink/status, én issue pr. run tildelt eksisterende ejerkonto.
+  Repository forbliver offentligt, issuen er offentlig men ingen hjemmeside-
+  alarm eller mail til brugerne. Lokal caller-/workflowtest består; CI,
+  merge, faktisk assignment og modtaget mail er ikke bevist. DEC-0290.
+- **REQ-LYNGBY-LF-ELIGIBILITY-001 – EJERBESTILT / IKKE IMPLEMENTERET:**
+  Lyngbys havinput skal afgrænses fra Limfjordsmodellen; kontrollen skal
+  omfatte nyt kildevalg, tidligere genbrugte input og eksisterende48h-state.
+  Ingen kosmetisk pilflytning, scoreformelændring eller blind historikreset.
+- **REQ-NATIONAL-LF-ELIGIBILITY-AUDIT-001 – EJERBESTILT / DELVIST KONTROLLERET:**
+  Kontroller samme model-/farvandsissue i alle210 zoner/673 dele. To faktiske
+  hashbundne offentlige timer er kontrolleret; tre enkeltdele har separat
+  cached118h-kontrol i begge søgemåder. Agger/Porskær har også LF-valg.
+  Kysttypeafvigelse er ikke alene landmask-/native-ugyldighedsbevis; alle118
+  nationale timer, tidligere input og fysisk årsag er ikke dækket af denne
+  stikprøve. Fur/egentlige Limfjordsdele og øvrige datagrænser bevares.
+
+# Historisk – 2026-10-04 – samme originalpakke, eksplicit national kontrol
 
 DEC-0289s godkendte nationalplan genbruger SAMME11281483201 og original
 forventning/AAD/HKDF/GCM/fullbundleverifier/kanonisk reducer. NATIONAL_210_673

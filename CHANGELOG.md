@@ -1,4 +1,22 @@
-## Ikke-release – 2026-10-04: national skrivefri kontrol i samme originalpakke
+## Ikke-release – 2026-10-04: ejeralarm og nyere Lyngbyordre (lokalt)
+
+Separat GitHub-fejlalarm med kun fast runlink/status og assignment til den
+eksisterende ejerkonto. Repository forbliver offentligt; ingen driftsalarm
+på hjemmesiden eller mail til brugerne. Syv network-free caller-/workflow-
+testparents består uden skip, gamle kadencetests urørte. Exact-head CI,
+merge, faktisk issue og modtaget mail afventer. Ingen vejrkørsel, deploy,
+score, geometri, cache eller produktversion ændres. Se DEC-0290.
+
+PR512 og national original-state-read er faktisk afsluttet05:41 DK:
+673 matched/648 ready/25 ikke-ready. Ny offentlig210/673-kontrol ved TO
+faste timer finder kun Lyngby med LF uden central limfjord-kysttype ved
+første time. Cached nabo118h i begge modes har Lyngby84LFtimer og
+Agger/Porskær30; Stenbjerg0. Ejeren bestiller Lyngby uden LF samt kontrol
+af andre zoner. Nyt kildevalg og tidligere input/state er endnu ikke rettet;
+det er ikke global vandmask, national118h-kontrol eller scoreårsagsbevis.
+Fur-tabsårsag stadig åben. Ældre national-pending-status nedenfor er historisk.
+
+## Historisk – 2026-10-04: national skrivefri kontrol i samme originalpakke
 
 PR511 blev merged kl.04:48 DK efter egen exact-head kildekontrol.
 Den ene korrigerede faste læsning37172221379 autentificerede og undersøgte

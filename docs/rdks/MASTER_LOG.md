@@ -1,4 +1,18 @@
-# NYESTE – 2026-10-04 – godkendt national kontrol i uændret541-pakke
+# NYESTE – 2026-10-04 – completed nationalread, Lyngbyordre og GitHub-ejeralarm
+
+PR512/mainb8f9 og den ene nationalread37174752402 er afsluttet05:41 DK:
+673matched/648ready/25ikke-ready, ikke global mask/årsag. Ny offentlig
+210/673-kontrol ved3Oct16Z/19Z er hashbundet, og cached nabo118h BEGGE modes
+viser Lyngby84/Agger-Porskær30/Stenbjerg0LFtimer. Ejer bestiller Lyngby uden
+LF samt sammeissuekontrol andrezoner; ingen blanketmodelban/historikreset.
+DEC-0289. Fur årsag og hele BIG519/OFF fortsat åbne.
+Ejer beholder offentligt repository og accepterer offentligt fast runlink/
+status-only issue med assignment til eksisterende ejer, ikke websitealarm
+eller mail til brugerne. Lokal separat alarm og syv network-free testparents
+PASS/0skip; faktisk CI/merge/issue/mailreceipt afventer. DEC-0290 og begge
+håndbøger beskriver disse grænser. Ingen produktversion eller SQL-installation.
+
+# Historisk – 2026-10-04 – godkendt national kontrol i uændret541-pakke
 
 PR511 merged04:48:33 DK/bde77345 efter exactCI37164129369 og ROOTproof.
 Correctedfixedread37172221379 SUCCESS04:50:12 DK med actual auth/inspect/
