@@ -1,3 +1,18 @@
+# AKTUELT JORDRAVCHECKPOINT – 2026-10-04
+
+Offentlig primærlitteratur og faktiske GEUS-filer er undersøgt; rapporten
+opstiller geografiske muligheder og en kvalitativ potentialemodel. Ejeren
+har fastlagt **Almindeligt kort / Luftfoto**, geologisk udledning uden
+tidligere fund som adgangskrav og ældre jordartskort som supplement.
+Rapport: `docs/research/JORDRAV_POTENTIALE_DANMARK_2026-10-04.md`.
+Mandat, audit og næste trin: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
+Gren `codex/jordrav-geologisk-analyse`, analysebaseline
+`bbc3c79fe555dffbff4a88af8cdf54573953efdb`, version 4.0.541. Frisk main ved
+slutkontrol 02:09 DK var `a459b846d9d19351127d46bdab544e6bc50dc24b` efter
+PR510; nyere RDKS skal integreres før en senere fælles levering.
+Jordravkortet er ikke implementeret, CI-valideret eller publiceret. Dette
+checkpoint gælder jordravarbejdet; vejrstatus kræver sin egen friske evidens.
+
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
 Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10

@@ -1,3 +1,22 @@
+# ÅBNE JORDRAVPUNKTER – 2026-10-04
+
+- **JORDRAV-001:** Klasseregler og kobling til konkrete moderne polygoner
+  skal implementeres. Indirekte geologi må udpege muligheder uden kendt fund.
+- **JORDRAV-002:** 438/47 ring-selvskæringer kan diagnostisk normaliseres;
+  sporbar reparationslog, fælles grænser og slutgeometri mangler. Én tom
+  israndsgeometri håndteres eksplicit.
+- **JORDRAV-003:** 82 beskrevne nyere jordarter mod 81 forekommende
+  filkombinationer afstemmes. Geomorfologikoder og israndens TYPE/legende
+  må ikke bruges som entydig kategori eller komplet fleristidskronologi.
+- **JORDRAV-004:** Begge basekort er faste krav. WMTS/browseradgang,
+  leverandørvalg, CSP og attribution mangler livekontrol. Ældre jordartskort
+  bruges efter ejerinstruktion; tidligere udeladelsesforslag er erstattet.
+- **JORDRAV-005:** Payloadstørrelser er målt; fælles-grænse-bevarende
+  levering, lazy-load, mobil, fanens livscyklus og DA/DE/EN testes ved bygning.
+
+Evidens: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
+Punkterne gælder det planlagte jordravkort, ikke den aktuelle vejrproduktion.
+
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
 Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10

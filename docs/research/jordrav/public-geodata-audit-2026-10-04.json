@@ -1,0 +1,1448 @@
+{
+  "research_date": "2026-10-04",
+  "archives": [
+    {
+      "file": "Shape_format.zip",
+      "bytes": 23735591,
+      "geus_md5": "b186c1b92e716d07a67aa2e9a95cf260",
+      "sha256": "61cbe191f378d2feac29a348457f6f1c62a4683ab35894e234a88a78041d313a"
+    },
+    {
+      "file": "QGIS.7z",
+      "bytes": 112786637,
+      "geus_md5": "f8e5f1480e3610dbe58de25f07f30c85",
+      "sha256": "bda8330de7dc7dcfb14ac4a93214e25351d5d52d6da286fed1a29cb6ee84e326"
+    },
+    {
+      "file": "Isrande.zip",
+      "bytes": 4127350,
+      "geus_md5": "040e186e5fd9e43d15ba835b801ace90",
+      "sha256": "602e25a41d194bd6827f866f227593a93f7a763146ece5c8c30ad3a1dad112f5"
+    },
+    {
+      "file": "Jordart_200000_Shape.zip",
+      "bytes": 19560646,
+      "geus_md5": "c81fd5b078bd6ed8cd352fbe31d68eda",
+      "sha256": "113955ae26397ebc55075b051c7ac6a04170ee63893e4c0efbc82f28cf5fe4b1"
+    }
+  ],
+  "layers": {
+    "geomorphology": {
+      "file": "Geomorfologi.shp",
+      "shp_sha256": "371aaa477ab9d76662732293df86880c1fa9e02953774ff1eb509bb1dc25b619",
+      "dbf_sha256": "0d31afad447e9139c55523bc5ccc8a12671cb222c05d3fd527f561c3bd46e2ff",
+      "crs_authority": [
+        "EPSG",
+        "25832"
+      ],
+      "records": 15178,
+      "fields": [
+        "tsym",
+        "version",
+        "landscape",
+        "landskab",
+        "shape_leng",
+        "ruleid",
+        "overfoerse",
+        "st_area_sh",
+        "st_perimet"
+      ],
+      "dbf_encoding_used": "utf-8",
+      "bbox_native": [
+        441389.3498999998,
+        6049801.423,
+        893019.4457999999,
+        6402214.77
+      ],
+      "vertices": 1593117,
+      "invalid_geometries": 0,
+      "empty_source_geometries": 0,
+      "sum_polygon_area_km2": 43639.802907,
+      "classification_fields": [
+        "tsym",
+        "landskab",
+        "landscape"
+      ],
+      "classifications": [
+        {
+          "values": [
+            0,
+            "Sø",
+            "Lake"
+          ],
+          "records": 1851
+        },
+        {
+          "values": [
+            1,
+            "Bundmoræneflade",
+            "Till plain"
+          ],
+          "records": 1828
+        },
+        {
+          "values": [
+            10,
+            "Issøbakke",
+            "Kame"
+          ],
+          "records": 406
+        },
+        {
+          "values": [
+            13,
+            "Randmorænebakke",
+            "Marginal moraine"
+          ],
+          "records": 874
+        },
+        {
+          "values": [
+            15,
+            "Isoverskredet randmoræne",
+            "Transgressed marginal moraine"
+          ],
+          "records": 33
+        },
+        {
+          "values": [
+            16,
+            "Ældre moræneflade",
+            "Older Till plain"
+          ],
+          "records": 249
+        },
+        {
+          "values": [
+            19,
+            "Hedeslette",
+            "Outwash plain"
+          ],
+          "records": 725
+        },
+        {
+          "values": [
+            2,
+            "Drumlin",
+            "Drumlin"
+          ],
+          "records": 297
+        },
+        {
+          "values": [
+            20,
+            "Hævet senglacial flade",
+            "Raised late glacial plain"
+          ],
+          "records": 21
+        },
+        {
+          "values": [
+            21,
+            "Hedeslette dødislandskab",
+            "Hummocky outwash plain"
+          ],
+          "records": 63
+        },
+        {
+          "values": [
+            22,
+            "Erosionsdal",
+            "Valley system"
+          ],
+          "records": 2692
+        },
+        {
+          "values": [
+            23,
+            "Issøflade",
+            "Glacial lake deposit"
+          ],
+          "records": 138
+        },
+        {
+          "values": [
+            24,
+            "Hævet senglacial strandvold",
+            "Raised late glacial beach ridge"
+          ],
+          "records": 7
+        },
+        {
+          "values": [
+            25,
+            "Marin flade",
+            "Marine plain"
+          ],
+          "records": 1200
+        },
+        {
+          "values": [
+            26,
+            "Marsk",
+            "Marsh"
+          ],
+          "records": 41
+        },
+        {
+          "values": [
+            27,
+            "Strandvold",
+            "Beach ridge"
+          ],
+          "records": 767
+        },
+        {
+          "values": [
+            28,
+            "Delta",
+            "Delta"
+          ],
+          "records": 16
+        },
+        {
+          "values": [
+            29,
+            "Søbund",
+            "Lake plain"
+          ],
+          "records": 28
+        },
+        {
+          "values": [
+            30,
+            "Mose",
+            "Bog"
+          ],
+          "records": 762
+        },
+        {
+          "values": [
+            32,
+            "Klit",
+            "Dune"
+          ],
+          "records": 841
+        },
+        {
+          "values": [
+            33,
+            "Flyvesandsflade",
+            "Aeolian plain"
+          ],
+          "records": 550
+        },
+        {
+          "values": [
+            34,
+            "Spaltedal",
+            "Tectonic valley"
+          ],
+          "records": 220
+        },
+        {
+          "values": [
+            35,
+            "Tørlagt ferskvandssø",
+            "Reclaimed lake"
+          ],
+          "records": 10
+        },
+        {
+          "values": [
+            36,
+            "Tørlagt marint forland",
+            "Reclaimed marine plain"
+          ],
+          "records": 67
+        },
+        {
+          "values": [
+            37,
+            "Antropogent landskab",
+            "Antropogenic landscape"
+          ],
+          "records": 105
+        },
+        {
+          "values": [
+            4,
+            "Tunneldal",
+            "Tunnel valley"
+          ],
+          "records": 195
+        },
+        {
+          "values": [
+            42,
+            "Tidevandsflade",
+            "Tidal flat"
+          ],
+          "records": 20
+        },
+        {
+          "values": [
+            44,
+            "Tidevandsdyb",
+            "Tidal inlet"
+          ],
+          "records": 4
+        },
+        {
+          "values": [
+            46,
+            "Grundfjeld",
+            "Bedrock"
+          ],
+          "records": 63
+        },
+        {
+          "values": [
+            47,
+            "Kalkmassiv",
+            "Chalk, Bedrock"
+          ],
+          "records": 34
+        },
+        {
+          "values": [
+            5,
+            "Ås",
+            "Esker"
+          ],
+          "records": 158
+        },
+        {
+          "values": [
+            50,
+            "Hævet senglacial flade",
+            "Raised late glacial plain"
+          ],
+          "records": 234
+        },
+        {
+          "values": [
+            50,
+            "Hævet senglacial strandvold",
+            "Raised late glacial beach ridge"
+          ],
+          "records": 29
+        },
+        {
+          "values": [
+            54,
+            "Hævet senglacial strandvold",
+            "Raised late glacial beach ridge"
+          ],
+          "records": 16
+        },
+        {
+          "values": [
+            8,
+            "Dødislandskab",
+            "Hummocky topograhy"
+          ],
+          "records": 589
+        },
+        {
+          "values": [
+            9,
+            "Dødishul",
+            "Kettle hole"
+          ],
+          "records": 45
+        }
+      ]
+    },
+    "soil": {
+      "file": "Jordart_25000_v7_1.shp",
+      "shp_sha256": "10620612ea6c8de4539cbe2ccc4790bbbd0d3e798cb19e0a29bc7f466cafc3cc",
+      "dbf_sha256": "94e3ac871fb47b3f6ab39957bb72c34bc8ab3c020f04addc63d45a152e93edb5",
+      "crs_authority": [
+        "EPSG",
+        "25832"
+      ],
+      "records": 199653,
+      "fields": [
+        "jsym1",
+        "jsym2",
+        "tsym",
+        "Jordart",
+        "Tidsalder",
+        "Sediment_t",
+        "Age",
+        "Version",
+        "Shape_Leng",
+        "Shape_Area"
+      ],
+      "dbf_encoding_used": "utf-8",
+      "bbox_native": [
+        441432.9932000004,
+        6049752.780200001,
+        892765.2950999998,
+        6402142.694599999
+      ],
+      "vertices": 11266996,
+      "invalid_geometries": 438,
+      "empty_source_geometries": 0,
+      "sum_polygon_area_km2": 42997.267136,
+      "classification_fields": [
+        "tsym",
+        "Jordart",
+        "Tidsalder"
+      ],
+      "classifications": [
+        {
+          "values": [
+            "BK",
+            "BK - Danien bryozokalk, koralkalk",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 5
+        },
+        {
+          "values": [
+            "BY",
+            "BY - Byområde",
+            "Øvrigt"
+          ],
+          "records": 780
+        },
+        {
+          "values": [
+            "DG",
+            "DG - Smeltevandsgrus",
+            "Glaciale lag"
+          ],
+          "records": 9480
+        },
+        {
+          "values": [
+            "DI",
+            "DI - Smeltevandssilt",
+            "Glaciale lag"
+          ],
+          "records": 143
+        },
+        {
+          "values": [
+            "DL",
+            "DL - Smeltevandsler",
+            "Glaciale lag"
+          ],
+          "records": 6791
+        },
+        {
+          "values": [
+            "DS",
+            "DS - Smeltevandssand",
+            "Glaciale lag"
+          ],
+          "records": 24871
+        },
+        {
+          "values": [
+            "DV",
+            "DV - Vekslende tynde smeltevandslag",
+            "Glaciale lag"
+          ],
+          "records": 200
+        },
+        {
+          "values": [
+            "ED",
+            "ED - Eocæn moler",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 54
+        },
+        {
+          "values": [
+            "EE",
+            "EE - Eocæn vulkansk aske",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 3
+        },
+        {
+          "values": [
+            "EK",
+            "EK - Klitsand",
+            "Postglaciale lag"
+          ],
+          "records": 798
+        },
+        {
+          "values": [
+            "ES",
+            "ES - Flyvesand",
+            "Postglaciale lag"
+          ],
+          "records": 6877
+        },
+        {
+          "values": [
+            "FG",
+            "FG - Ferskvandsgrus",
+            "Postglaciale sediment"
+          ],
+          "records": 494
+        },
+        {
+          "values": [
+            "FHG",
+            "FHG - Deltagrus",
+            "Postglaciale lag"
+          ],
+          "records": 3
+        },
+        {
+          "values": [
+            "FHL",
+            "FHL - Deltaler",
+            "Postglaciale lag"
+          ],
+          "records": 3
+        },
+        {
+          "values": [
+            "FHS",
+            "FHS - Deltasand",
+            "Postglaciale lag"
+          ],
+          "records": 27
+        },
+        {
+          "values": [
+            "FI",
+            "FI - Ferskvandssilt",
+            "Postglaciale lag"
+          ],
+          "records": 15
+        },
+        {
+          "values": [
+            "FJ",
+            "FJ - Okker og myremalm",
+            "Postglaciale lag"
+          ],
+          "records": 37
+        },
+        {
+          "values": [
+            "FK",
+            "FK - Kilde-, mose- og søkalk",
+            "Postglaciale lag"
+          ],
+          "records": 17
+        },
+        {
+          "values": [
+            "FL",
+            "FL - Ferskvandsler",
+            "Postglaciale lag"
+          ],
+          "records": 4355
+        },
+        {
+          "values": [
+            "FP",
+            "FP - Ferskvandsgytje",
+            "Postglaciale lag"
+          ],
+          "records": 23140
+        },
+        {
+          "values": [
+            "FS",
+            "FS - Ferskvandssand",
+            "Postglaciale aflejring"
+          ],
+          "records": 10878
+        },
+        {
+          "values": [
+            "FT",
+            "FT - Ferskvandstørv",
+            "Postglaciale lag"
+          ],
+          "records": 42175
+        },
+        {
+          "values": [
+            "FV",
+            "FV - Vekslende tynde ferskvandslag",
+            "Postglaciale lag"
+          ],
+          "records": 17
+        },
+        {
+          "values": [
+            "G",
+            "G - Grus / SAND og grus",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 2
+        },
+        {
+          "values": [
+            "GC",
+            "GC - Oligocæn/Miocæn/Pliocæn brunkul",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 8
+        },
+        {
+          "values": [
+            "GL",
+            "GL - Oligocæn/Miocæn/Pliocæn glimmerler",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 91
+        },
+        {
+          "values": [
+            "GS",
+            "GS - Oligocæn/Miocæn/Pliocæn glimmersand",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 85
+        },
+        {
+          "values": [
+            "GV",
+            "GV - Oligocæn/Miocæn/Pliocæn vekslende lag",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 23
+        },
+        {
+          "values": [
+            "HG",
+            "HG - Saltvandsgrus",
+            "Postglaciale lag"
+          ],
+          "records": 3195
+        },
+        {
+          "values": [
+            "HI",
+            "HI - Saltvandssilt",
+            "Postglaciale lag"
+          ],
+          "records": 292
+        },
+        {
+          "values": [
+            "HL",
+            "HL - Saltvandsler",
+            "Postglaciale lag"
+          ],
+          "records": 1045
+        },
+        {
+          "values": [
+            "HP",
+            "HP - Saltvandsgytje",
+            "Postglaciale lag"
+          ],
+          "records": 871
+        },
+        {
+          "values": [
+            "HS",
+            "HS - Saltvandssand",
+            "Postglaciale lag"
+          ],
+          "records": 4726
+        },
+        {
+          "values": [
+            "HSG",
+            "HSG - Saltvands skalgrus",
+            "Postglaciale lag"
+          ],
+          "records": 6
+        },
+        {
+          "values": [
+            "HT",
+            "HT - Saltvandstørv",
+            "Postglaciale lag"
+          ],
+          "records": 203
+        },
+        {
+          "values": [
+            "HV",
+            "HV - Vekslende tynde saltvandslag, marsk",
+            "Postglaciale lag"
+          ],
+          "records": 294
+        },
+        {
+          "values": [
+            "IA",
+            "IA - Ingen adgangsret",
+            "Øvrigt"
+          ],
+          "records": 15
+        },
+        {
+          "values": [
+            "IT",
+            "IT - Ferskvandstørv",
+            "Interglaciale lag"
+          ],
+          "records": 2
+        },
+        {
+          "values": [
+            "K",
+            "K - Kalk, kridt og kalksten",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 379
+        },
+        {
+          "values": [
+            "KMG",
+            "KMG - Kalkmorænegrus",
+            "Glaciale lag"
+          ],
+          "records": 33
+        },
+        {
+          "values": [
+            "KML",
+            "KML - Kalkmoræneler",
+            "Glaciale lag"
+          ],
+          "records": 252
+        },
+        {
+          "values": [
+            "KMS",
+            "KMS - Kalkmorænesand",
+            "Glaciale lag"
+          ],
+          "records": 59
+        },
+        {
+          "values": [
+            "KS",
+            "KS - Miocæn kvartssand",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 29
+        },
+        {
+          "values": [
+            "LL",
+            "LL - Eocæn ler, plastisk ler",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 148
+        },
+        {
+          "values": [
+            "LRÅ",
+            "LRÅ - Lukket råstofgrav",
+            "Øvrigt"
+          ],
+          "records": 360
+        },
+        {
+          "values": [
+            "LSL",
+            "LSL - Jordskred",
+            "Øvrigt"
+          ],
+          "records": 7
+        },
+        {
+          "values": [
+            "MG",
+            "MG - Morænegrus",
+            "Glaciale lag"
+          ],
+          "records": 3090
+        },
+        {
+          "values": [
+            "MI",
+            "MI - Morænesilt",
+            "Glaciale lag"
+          ],
+          "records": 8
+        },
+        {
+          "values": [
+            "ML",
+            "ML - Moræneler",
+            "Glaciale lag"
+          ],
+          "records": 18879
+        },
+        {
+          "values": [
+            "MS",
+            "MS - Morænsand",
+            "Glaciale lag"
+          ],
+          "records": 10743
+        },
+        {
+          "values": [
+            "MV",
+            "MV - Vekslende tynde morænelag",
+            "Glaciale lag"
+          ],
+          "records": 2
+        },
+        {
+          "values": [
+            "O",
+            "O - Fyld",
+            "Øvrigt"
+          ],
+          "records": 90
+        },
+        {
+          "values": [
+            "OL",
+            "OL - Oligocæn ler",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 67
+        },
+        {
+          "values": [
+            "PKV",
+            "PKV - Prækvartært lag",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 2776
+        },
+        {
+          "values": [
+            "PL",
+            "PL - Selandien ler, palæocæn ler",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 115
+        },
+        {
+          "values": [
+            "PS",
+            "PS - Selandien sand, palæocæn grønsand",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 1
+        },
+        {
+          "values": [
+            "QG",
+            "QG - Saltvandsgrus",
+            "Interglaciale lag"
+          ],
+          "records": 1
+        },
+        {
+          "values": [
+            "QL",
+            "QL - Saltvandsler",
+            "Interglaciale lag"
+          ],
+          "records": 193
+        },
+        {
+          "values": [
+            "QS",
+            "QS - Saltvandssand",
+            "Interglaciale lag"
+          ],
+          "records": 1
+        },
+        {
+          "values": [
+            "RL",
+            "RL - Eocæn Røsnæs ler",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 1
+        },
+        {
+          "values": [
+            "RÅ",
+            "RÅ - Råstofgrav",
+            "Øvrigt"
+          ],
+          "records": 108
+        },
+        {
+          "values": [
+            "S",
+            "S - Sand",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 257
+        },
+        {
+          "values": [
+            "SK",
+            "SK - Campanien-Maastrichtien skrivekridt",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 336
+        },
+        {
+          "values": [
+            "SL",
+            "SL - Eocæn Søvind mergel",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 67
+        },
+        {
+          "values": [
+            "SØ",
+            "SØ - Ferskvand",
+            "Øvrigt"
+          ],
+          "records": 2226
+        },
+        {
+          "values": [
+            "TA",
+            "TA - Teknisk anlæg",
+            "Øvrigt"
+          ],
+          "records": 173
+        },
+        {
+          "values": [
+            "TG",
+            "TG - Smeltevandsgrus",
+            "Proglaciale lag"
+          ],
+          "records": 1679
+        },
+        {
+          "values": [
+            "TI",
+            "TI - Smeltevandssilt",
+            "Proglaciale lag"
+          ],
+          "records": 27
+        },
+        {
+          "values": [
+            "TL",
+            "TL - Smeltevandsler",
+            "Proglaciale lag"
+          ],
+          "records": 1495
+        },
+        {
+          "values": [
+            "TS",
+            "TS - Smeltevandssand",
+            "Proglaciale lag"
+          ],
+          "records": 10507
+        },
+        {
+          "values": [
+            "TV",
+            "TV - Vekslende tynde smeltevandslag",
+            "Proglaciale lag"
+          ],
+          "records": 1
+        },
+        {
+          "values": [
+            "X",
+            "X - Ukendt lag, oplysninger mangler",
+            "Øvrigt"
+          ],
+          "records": 1154
+        },
+        {
+          "values": [
+            "YG",
+            "YG - Saltvandsgrus",
+            "Senglaciale lag"
+          ],
+          "records": 103
+        },
+        {
+          "values": [
+            "YL",
+            "YL - Saltvandsler",
+            "Senglaciale lag"
+          ],
+          "records": 1337
+        },
+        {
+          "values": [
+            "YP",
+            "YP - Saltvandsgytje",
+            "Senglaciale lag"
+          ],
+          "records": 1
+        },
+        {
+          "values": [
+            "YS",
+            "YS - Saltvandssand",
+            "Senglaciale lag"
+          ],
+          "records": 569
+        },
+        {
+          "values": [
+            "ZG",
+            "ZG - Issøgrus",
+            "Marginal glaciale lag"
+          ],
+          "records": 17
+        },
+        {
+          "values": [
+            "ZK",
+            "ZK - Danien kalk / kalk og flint",
+            "Andre lag (alfabetisk)"
+          ],
+          "records": 160
+        },
+        {
+          "values": [
+            "ZL",
+            "ZL - Issøler",
+            "Marginal glaciale lag"
+          ],
+          "records": 126
+        },
+        {
+          "values": [
+            "ZS",
+            "ZS - Issøsand",
+            "Marginal glaciale lag"
+          ],
+          "records": 54
+        },
+        {
+          "values": [
+            "ZV",
+            "ZV - Vekslende lag af issøsedimenter",
+            "Marginal glaciale lag"
+          ],
+          "records": 1
+        }
+      ],
+      "jsym1_jsym2_different_records": 20539
+    },
+    "ice_margins": {
+      "file": "Israndslinier.shp",
+      "shp_sha256": "535f823feb3837eeb34af5767ef07582be2b55e5bdff826386d7461a475bbcf8",
+      "dbf_sha256": "2f038e411a8f5d35ebbbd1db0ec3deb964c3bc1a6d91fcc6899f99aadb212ef2",
+      "crs_authority": [
+        "EPSG",
+        "25832"
+      ],
+      "records": 429,
+      "fields": [
+        "LENGTH",
+        "ISR33USP_",
+        "ISR33USP_I",
+        "TYPE",
+        "Version"
+      ],
+      "dbf_encoding_used": "utf-8",
+      "bbox_native": [
+        157479.99126514478,
+        5763781.790087937,
+        2026141.4001068359,
+        8115269.41655864
+      ],
+      "vertices": 9007,
+      "invalid_geometries": 0,
+      "empty_source_geometries": 1,
+      "sum_polygon_area_km2": 0.0,
+      "classification_fields": [
+        "TYPE",
+        "Version"
+      ],
+      "classifications": [
+        {
+          "values": [
+            1,
+            "1995"
+          ],
+          "records": 246
+        },
+        {
+          "values": [
+            2,
+            "1995"
+          ],
+          "records": 183
+        }
+      ]
+    },
+    "older_soil": {
+      "file": "jordart_200000.shp",
+      "shp_sha256": "132ebeb3ec202667acefd28bc14e88697220451302f39b2d56ca4811fb8b2287",
+      "dbf_sha256": "4ab0c307fa0d0047f7ba21250244f3863ca46204b120c88ae3e1696e5ca6e124",
+      "crs_authority": [
+        "EPSG",
+        "25832"
+      ],
+      "records": 24192,
+      "fields": [
+        "TSYM",
+        "AREA",
+        "Version",
+        "Area_km2"
+      ],
+      "dbf_encoding_used": "cp1252",
+      "bbox_native": [
+        441388.1250266113,
+        6049742.742073893,
+        892998.1243266115,
+        6402131.9999738885
+      ],
+      "vertices": 1524398,
+      "invalid_geometries": 47,
+      "empty_source_geometries": 0,
+      "sum_polygon_area_km2": 43107.190262,
+      "classification_fields": [
+        "TSYM",
+        "Version"
+      ],
+      "classifications": [
+        {
+          "values": [
+            "AF",
+            "v2"
+          ],
+          "records": 1
+        },
+        {
+          "values": [
+            "BS",
+            "v2"
+          ],
+          "records": 1
+        },
+        {
+          "values": [
+            "CV",
+            "v2"
+          ],
+          "records": 1
+        },
+        {
+          "values": [
+            "DL",
+            "v2"
+          ],
+          "records": 1225
+        },
+        {
+          "values": [
+            "DSG",
+            "v2"
+          ],
+          "records": 5370
+        },
+        {
+          "values": [
+            "ED",
+            "v2"
+          ],
+          "records": 41
+        },
+        {
+          "values": [
+            "EQ",
+            "v2"
+          ],
+          "records": 2
+        },
+        {
+          "values": [
+            "ES",
+            "v2"
+          ],
+          "records": 1540
+        },
+        {
+          "values": [
+            "F",
+            "v2"
+          ],
+          "records": 5676
+        },
+        {
+          "values": [
+            "FYLD",
+            "v2"
+          ],
+          "records": 90
+        },
+        {
+          "values": [
+            "GC",
+            "v2"
+          ],
+          "records": 13
+        },
+        {
+          "values": [
+            "GL",
+            "v2"
+          ],
+          "records": 30
+        },
+        {
+          "values": [
+            "GNG",
+            "v2"
+          ],
+          "records": 53
+        },
+        {
+          "values": [
+            "GS",
+            "v2"
+          ],
+          "records": 7
+        },
+        {
+          "values": [
+            "HAG",
+            "v2"
+          ],
+          "records": 11
+        },
+        {
+          "values": [
+            "HG",
+            "v2"
+          ],
+          "records": 686
+        },
+        {
+          "values": [
+            "HSL",
+            "v2"
+          ],
+          "records": 1280
+        },
+        {
+          "values": [
+            "HV",
+            "v2"
+          ],
+          "records": 128
+        },
+        {
+          "values": [
+            "JV",
+            "v2"
+          ],
+          "records": 9
+        },
+        {
+          "values": [
+            "KA",
+            "v2"
+          ],
+          "records": 1
+        },
+        {
+          "values": [
+            "KQ",
+            "v2"
+          ],
+          "records": 3
+        },
+        {
+          "values": [
+            "KS",
+            "v2"
+          ],
+          "records": 5
+        },
+        {
+          "values": [
+            "LL",
+            "v2"
+          ],
+          "records": 29
+        },
+        {
+          "values": [
+            "ML",
+            "v2"
+          ],
+          "records": 2963
+        },
+        {
+          "values": [
+            "MSG",
+            "v2"
+          ],
+          "records": 1471
+        },
+        {
+          "values": [
+            "OL",
+            "v2"
+          ],
+          "records": 10
+        },
+        {
+          "values": [
+            "PAM",
+            "v2"
+          ],
+          "records": 4
+        },
+        {
+          "values": [
+            "PL",
+            "v2"
+          ],
+          "records": 28
+        },
+        {
+          "values": [
+            "RG",
+            "v2"
+          ],
+          "records": 2
+        },
+        {
+          "values": [
+            "ROG",
+            "v2"
+          ],
+          "records": 6
+        },
+        {
+          "values": [
+            "SK",
+            "v2"
+          ],
+          "records": 120
+        },
+        {
+          "values": [
+            "SVG",
+            "v2"
+          ],
+          "records": 3
+        },
+        {
+          "values": [
+            "SØ",
+            "v2"
+          ],
+          "records": 1195
+        },
+        {
+          "values": [
+            "T",
+            "v2"
+          ],
+          "records": 1774
+        },
+        {
+          "values": [
+            "VAG",
+            "v2"
+          ],
+          "records": 8
+        },
+        {
+          "values": [
+            "Y",
+            "v2"
+          ],
+          "records": 343
+        },
+        {
+          "values": [
+            "ZK",
+            "v2"
+          ],
+          "records": 63
+        }
+      ]
+    }
+  },
+  "geomorphology_payload_experiment": {
+    "scope": "All source geomorphology polygons; properties limited to record, code and English class",
+    "coordinate_rounding_wgs84_decimals": 5,
+    "limitations": [
+      "Per-polygon topology preservation does not preserve shared borders between polygons",
+      "Area change is not symmetric-difference area or a bound on positional error",
+      "Validity is checked before coordinate rounding and reprojection, not after",
+      "These are payload sizes, not browser/mobile loading or rendering measurements",
+      "Source lake polygons are included; no land mask or amber interpretation is applied"
+    ],
+    "results": [
+      {
+        "tolerance_m": 0,
+        "vertices_native": 1593117,
+        "invalid_native_geometries": 0,
+        "sum_absolute_area_change_km2": 0.0,
+        "geojson_bytes": 32625248,
+        "gzip_bytes": 8694748,
+        "elapsed_seconds_local": 14.095
+      },
+      {
+        "tolerance_m": 25,
+        "vertices_native": 561658,
+        "invalid_native_geometries": 0,
+        "sum_absolute_area_change_km2": 126.47653,
+        "geojson_bytes": 12890326,
+        "gzip_bytes": 3435645,
+        "elapsed_seconds_local": 8.482
+      },
+      {
+        "tolerance_m": 50,
+        "vertices_native": 387567,
+        "invalid_native_geometries": 0,
+        "sum_absolute_area_change_km2": 328.925423,
+        "geojson_bytes": 9547148,
+        "gzip_bytes": 2449100,
+        "elapsed_seconds_local": 7.095
+      },
+      {
+        "tolerance_m": 100,
+        "vertices_native": 262777,
+        "invalid_native_geometries": 0,
+        "sum_absolute_area_change_km2": 781.747284,
+        "geojson_bytes": 7153814,
+        "gzip_bytes": 1718178,
+        "elapsed_seconds_local": 6.057
+      }
+    ]
+  },
+  "runtime": {
+    "python": "3.12.14",
+    "pyshp": "2.3.1",
+    "shapely": "2.1.2",
+    "geos": "3.13.1",
+    "pyproj": "3.8.0"
+  },
+  "limitations": [
+    "Polygon area sum is not an audited country coverage percentage",
+    "Source validity checks do not prove a complete nonoverlapping polygon coverage",
+    "The data have no amber concentrations or field-find probabilities"
+  ]
+}

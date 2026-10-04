@@ -1,3 +1,15 @@
+# AKTUEL JORDRAVSTATUS – 2026-10-04
+
+**Udført lokalt:** Faglig rapport, geografiske kandidater, separate
+potentiale-/sikkerhedsvurderinger, design med almindeligt kort og luftfoto,
+read-only audit af fire GEUS-lag og nationalt payloadforsøg. Ejerens valg
+af det ældre jordartskort som supplement er indarbejdet.
+**Næste trin:** Klasseregler, regional stratigrafisk kobling, kontrolleret
+kildegeometrinormalisering, fælles-grænse-forenkling og statisk prototype.
+Luftfotoadgang, mobilperformance og browserkontrakter mangler livekontrol.
+Ingen jordravfane, deploy, nye fund-/læringstabeller eller appversion.
+Evidens: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
+
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
 Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10

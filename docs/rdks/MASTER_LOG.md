@@ -1,3 +1,14 @@
+# FORSKNINGSTILLÆG – 2026-10-04 – Jordravkort på 4.0.541
+
+Geografiske muligheder, geologisk potentialemodel, faktiske GEUS-filaudits
+og kortdesign med **Almindeligt kort / Luftfoto** er dokumenteret. Direkte
+fund er støtte, ikke obligatorisk krav til en potentiel zone. Ældre jordarter
+indgår efter ejerinstruktion; udeladelsesforslaget er erstattet.
+Rapport: `docs/research/JORDRAV_POTENTIALE_DANMARK_2026-10-04.md`.
+Checkpoint: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
+Gren `codex/jordrav-geologisk-analyse`; forskning og projektets hukommelse
+er synkroniseret. Ingen ny appversion, jordravimplementering eller deploy.
+
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
 Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10

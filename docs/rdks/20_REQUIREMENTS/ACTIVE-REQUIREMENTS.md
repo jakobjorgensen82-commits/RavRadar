@@ -1,3 +1,19 @@
+# AKTUELT JORDRAVKRAV – 2026-10-04
+
+Selvstændig jordravfane med **Almindeligt kort / Luftfoto**; potentialelag,
+zoom, valgt område og forklaring bevares ved baggrundsskift. Modellen skal
+udlede geologiske muligheder også uden tidligere ravfund i den enkelte
+polygon. Potentiale, sikkerhed og overfladerelevans vurderes særskilt.
+Is/smeltevand, istryk, tidligere hav og kronologisk omlejring indgår;
+overlappende isrande giver ikke automatisk bonus eller fundprocenter.
+
+Det ældre 1:200.000-jordartskort bruges som supplement efter ejerens
+udtrykkelige instruktion trods de konstaterede særlige vilkår. Nyere kort
+har forrang; kilde, målestok og usikkerhed bevares. Udeladelsesforslaget er
+erstattet. Statisk lazy-load, ingen ny funddatabase/læring/SQL/vejrscheduler.
+Mandat og evidens: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
+Forskning på 4.0.541; kortimplementering og release er endnu ikke udført.
+
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
 Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10
