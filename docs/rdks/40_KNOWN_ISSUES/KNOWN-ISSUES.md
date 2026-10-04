@@ -1,4 +1,15 @@
-# NYESTE – 2026-10-04 – Limfjordsvalg uden for central Limfjordsklassifikation
+# NYESTE – 2026-10-04 – Fur presence/årsag og LF-fix stadig åbne
+
+Menneskets JA tillader exact Furpresence-only8470342142/ORIGINAL11281483201.
+Læser/workflow klargjort/måltestet, ikke faktisk læst eller leveret. Presence
+er ikke fuld appliedrouting/causejoin. OriginalB udløb må ikke omgås.
+LF-frakoblingens syv åbne kystzoner og NEWmigration-binding er separatlokal
+feature; ingen blanketregel/673reset/scoreformel/geometri/bodyevalændring.
+Public08Z95.134359% og completedno-loss0 er ikke gammelFurfixproof.
+EjeralarmPR513/issue514 actualassigned er færdig; mailreceipt ikke verificeret.
+Natural37201706227 aktiv fra14:19DK, ingen mainmerge/diagnosedispatch nu.
+
+# Historisk – 2026-10-04 – Limfjordsvalg uden for central Limfjordsklassifikation
 
 - **ISSUE-WEATHER-OWNER-FAILURE-NOTIFICATION – ÅBEN:** Ejer modtog ikke mail
   om den botstartede04:34-fejl. Lokal særskilt link/status-only issuealarm

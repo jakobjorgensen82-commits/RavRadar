@@ -3,6 +3,56 @@
 **Status:** PR510/511/512 er merged; nabokontrol og national original-state-kontrol er faktisk authenticated og replay-matched. Ny ejerbestilt farvands-/modelkontrol og Lyngbyrettelse er åbne; reproducerbar state er ikke fysisk korrekthedsbevis.
 **Dato:** 2026-10-03
 
+## NY4/10 – særskilt godkendt Fur-presence-only, lokalt klargjort
+
+Senere eksplicit menneskeligt svar: “Push er godkendt”. Det besvarer den
+allerede stillede præcise destinationsafklaring: dette faste læseworkflow må
+ligge i det OFFENTLIGE repository, og kun faste fejlkoder og optællinger må
+offentliggøres. Den tidligere app-afvisning skete før stage/commit/push og
+blev ikke omgået. Ingen rå vejrdata, koordinater, private filer, nøgler, ny
+vejrhentning eller deploy omfattes. Mainmerge/diagnosedispatch afventer
+writercompletion og alle originale gates; andre særskilte afvisninger består.
+
+Menneskets JA har nu erstattet det tidligere ubesvarede narrowspørgsmål.
+Kun exactcache8470342142/run37164593278/attempt1/head
+a459b846d9d19351127d46bdab544e6bc50dc24b og ORIGINALbaseline11281483201
+må sammenlignes for Fur dk-b05-17-national-part-04 i8Oct07–13Z/syv timer.
+Cachekey/version/ref/Actionsbytes og faktisk cipherbytes er fastlåst.
+Originalbaselineens tidligere AAD/HKDF/GCM/filhash/inventorykontrakter og
+faktiske ZIPdigest består. Udløb stopper læsningen; intet nyt target/relabel.
+
+Nyt lokalt audit-fur-native-presence.mjs og særskilt manual-main-only
+audit-fur-native-presence.yml bruger den eksisterende pure authenticated-
+progress-callback, aldrig normal restore/install/save. Hele meddelelsen
+autentificeres før unpack; original conditions/bundle er basen. Raw768MiB/
+cipher384MiB-grænser er uændrede. SOURCE-identiteter/punkter hentes KUN fra
+originalpakken; en ændret progress-SOURCE kan ikke attestere sit eget punkt.
+PART-continuity dekodes bounded for den ene originale del. Native banker
+læses én ad gangen; dagens centrale station-/routingregister bruges ikke.
+
+Kun faste koder og optællinger under4KiB går ud: numerisk exact presence er
+skilt fra verificeret native exact/support. Bevarede SOURCE-timer er IKKE
+bevis for den faktisk anvendte SOURCEwinner eller routing. Persisted direct
+PART er ikke tidligere routed offentlig vinder. Actual appliedroutingconfig
+er ikke bevaret; årsag kan ikke erklæres ud fra presence alene. Fejlrapport
+har kun allowlistede koder/FAILED_CLOSED, aldrig exceptiontekst/payload.
+
+Tre nye eksisterende målparents for fixedtarget, original native identity og
+workflowgrænser PASS/0FAIL/0SKIP205.4105ms; efterfølgende snæver argument-/
+failure-canary-parent1PASS259.4208ms. YAML13steps parsebestået. Ingen fuld
+historisk suite gentaget, og synthetic PASS er IKKE actual crypto/causeproof.
+Værktøjet er endnu ikke merged eller faktisk kørt; cipheren er IKKE læst.
+Under naturalordinary37201706227 fra14:19DK er der ingen mainmerge eller
+auditedispatch. Forny actualwriters/main/exactCI/ROOT/unexpiredB før release
+og højst én fixedread efter relevant gatebevis; ikke blind retry.
+
+Ingen provider, normalbuild/score, private rå output, movingpointer, SQL-/
+R2-/productionwrite eller deploy. Cache er restore-only exactkey uden fallback
+eller cachegemning. Secrets ligger kun i nødvendige authsteps og er fjernet
+fra unpack-childmiljøet. Kun eget runner-scratch og restoredcipher opryddes.
+Alle øvrige donor/admission/bodycopy-eval/cipher/geodata/budget-denials består.
+Dette er diagnoseværktøj under4.0.541, ikke en produkt4.0.542-release.
+
 ## Aktuel ejerafgrænsning og offentlig efterkontrol 2026-10-04
 
 Ejeren har tilsluttet sig, at Lyngby uden for Limfjorden skal afgrænses fra

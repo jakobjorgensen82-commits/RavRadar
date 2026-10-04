@@ -1,4 +1,24 @@
-# NYESTE – 2026-10-04 – completed nationalread; Lyngbyordre og lokal ejeralarm
+# NYESTE – 2026-10-04 – godkendt exact Fur-presence-only lokalt
+
+Nyere menneskeligt “Push er godkendt” besvarer særskilt offentlig destination:
+fixedworkflow og KUN sikre fixedcodes/counts, ikke rå data/keys/deploy. Ingen
+omgåelse af tidligere pre-execution-afvisning; mainmerge/read venter på writer.
+
+RELEASE codex/fur-native-presence-readonly/baseMAINd778. Menneskets scoped JA
+gælder exactcache8470342142/37164593278attempt1+ORIGINAL11281483201/Fur7timer,
+ikke faktisk routingrekonstruktion med dagens config. Se DEC-0289s NYtillæg.
+Nyt auditværktøj og særskilt read-only workflow klargjort med fixedtargets,
+unchanged auth/whole-message-before-unpack og bounded counts-only4KiB.
+Måltests/argument-failurecanary/YAML PASS; cipherread/faktisk årsag er OPEN.
+Natural37201706227 fra14:19DK aktiv; ingen mainmerge/auditdispatch/code-only
+eller bindinginstall under writer. OriginalB udløber4Oct20:34:41DK.
+Seneste completednatural37188571721 deploy13:17DK/no-loss femfamilier0,
+optionalrestoreBASELINE_MISMATCH. Public08Z numericfieldpresence95.134359%,
+ikke gammelFurrettelse. FejlalarmPR513/issue514 faktiskassigned er afsluttet.
+Syv-zone-LF-fix+godkendt NEWmigration-binding er separat FEATURE, stadiglokal;
+ingen wholeBIG519copy eller bodycopy/eval/andre grantantagelser.
+
+# Historisk – 2026-10-04 – completed nationalread; Lyngbyordre og lokal ejeralarm
 
 PR512 merged/mainb8f9; den ene nationale originalread37174752402 SUCCESS
 05:41 DK med673 matched/648 ready/25 ikke-ready. Gentag ikke de afsluttede

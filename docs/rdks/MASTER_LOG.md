@@ -1,4 +1,16 @@
-# NYESTE – 2026-10-04 – completed nationalread, Lyngbyordre og GitHub-ejeralarm
+# NYESTE – 2026-10-04 – scoped JA og exact Fur-læser/workflow lokalt
+
+Ny menneskelig autoritet: exact Furcache8470342142+ORIGINAL11281483201/syv
+timer presence-only samt særskilt teknisk NEWmigration-binding i feature.
+RELEASE skiftet til separatbranchcodex/fur-native-presence-readonly på MAINd778;
+gammel alarmbranch bevaret. Ny læser/workflow og fire berørte målparents
+PASS, YAMLparsePASS. Ingen cipherread/dispatch/merge/produktversion/deploy.
+LF-feature er lokalt udvidet til syv åbne nabokyster på begge sider af fjorden.
+Natural37201706227 aktiv fra14:19DK; ingen productionwrite/mainchange nu.
+GammelFurcause/fix og faktisk LF-frakobling er OPEN. OriginalBexpires20:34DK;
+bevar originalbinding/limits/andre denials og håndter udløb ærligt.
+
+# Historisk – 2026-10-04 – completed nationalread, Lyngbyordre og GitHub-ejeralarm
 
 PR512/mainb8f9 og den ene nationalread37174752402 er afsluttet05:41 DK:
 673matched/648ready/25ikke-ready, ikke global mask/årsag. Ny offentlig

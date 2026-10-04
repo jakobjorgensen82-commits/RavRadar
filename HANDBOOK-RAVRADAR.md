@@ -2,6 +2,25 @@
 
 **Håndbogsversion:** 4.0.541
 
+## 89.158 Fur: én præcis, skrivefri kildekontrol
+
+Ejeren har godkendt en kontrol af den præcise fejlede vejrhentnings gemte
+cache sammen med dens originale grundlag. Kun syv timer ved Fur undersøges.
+Den lokale kontrol skelner mellem et tilstedeværende tal og verificeret
+kildestøtte. En station skal passe til sit originale punkt; dagens routing
+bruges ikke som forklaring på den gamle kørsel.
+
+Kun faste fejlkoder og optællinger må komme ud. Gamle kildeinput og direkte
+kystdata sammenlignes, men bevarede stationstimer beviser ikke alene, hvilken
+station den gamle beregning faktisk valgte. Den fulde gamle routing er ikke
+bevaret. Derfor kan kontrollen afgrænse fejlen uden at være årsagsbevis.
+
+Værktøjet er måltestet lokalt, ikke faktisk kørt. Det må ikke ændre produktion,
+hente nyt vejr, gemme cache, ændre score eller lave deploy. Originalpakken
+skal være gyldig og ikke udløbet. En aktiv vejrhentning forstyrres ikke.
+Fur-fejlen er fortsat åben. Der kommer ingen ny fejlalarm på hjemmesiden.
+DEC-0289.
+
 ## 89.156 Fejlalarm til ejeren, ikke på hjemmesiden
 
 Ejeren har godkendt en særskilt GitHub-alarm for afsluttede fejlede almindelige
