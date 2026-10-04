@@ -31,6 +31,14 @@ marine og finere bassinmiljøer. Tal i process-focus-diagnostic-2026-10-04.json
 er generaliserede visningsarealer, ikke ravarealer eller native kildearealer.
 Der sker ingen klasseændring ud fra totalsummerne.
 
+To offentlige Jupiterprofiler er desuden sammenholdt med kortets faktiske
+visningsflader. Prøvedybde, lagidentitet og forbindelsen til pløjelaget
+holdes adskilt. Et generelt sandinterval fastlægger ikke et bestemt
+havstadium eller dæklagets tykkelse. Boringerne er undersøgelseseksempler;
+de giver ingen klassebonus eller cirkler på kortet. JH-010–011 og den
+gentagelige audit står i
+`docs/research/JORDRAV_BORINGER_LAGFORBINDELSE_2026-10-04.md`.
+
 **Evidens:** GEUS-kortlagte materialer og landskabsprocesser kombineres med
 eksplicitte RavRadar-hypoteser om transport, omlejring og modtagelse. Tidligere
 fund er ikke et krav. Forhøjet procespotentiale betyder kompatibelt sand/grus

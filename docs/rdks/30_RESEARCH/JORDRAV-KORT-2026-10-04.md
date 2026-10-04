@@ -19,6 +19,36 @@ Arbejdet holdes i denne selvstændige jordravgren. Ingen ny funddatabase, bruger
 
 ## Leveret analyse
 
+### Efterprøvning med offentlige boringer før kortreview
+
+Ejerens aktuelle spørgsmål om yderligere arbejde uden at have set kortet
+er omsat til konkret stratigrafisk efterprøvning. Rapport:
+`docs/research/JORDRAV_BORINGER_LAGFORBINDELSE_2026-10-04.md`.
+To offentlige Jupiterprofiler er læst i den aktuelle webgrænseflade;
+udvalgte geologiske intervaller er gemt med adgangsdato og kilde.
+GEUS 2011/50s forside og trykte sider 13, 16, 29 og 36 er visuelt kontrolleret.
+Knudsen m.fl. 2009 anvendes med eksplicit abstractgrænse. Pedersen 2005s
+formationsafgrænsning er efterlæst. Gentagen anvendelse af samme boreevidens
+betragtes ikke som uafhængige ravbeviser.
+
+Read-only `audit_profile_points.py` kontrollerer udvalgte intervalgrænser,
+manifest-/katalog-/model-/filbinding og punktopslag i to generaliserede
+visningsudsnit. De to aktuelle punkter rammer hver én flade. JH-010–011
+skærper lagkontakt og dækkespørgsmål; hverken ravtilførsel, pløjelag eller
+markadgang verificeres. Ingen fast boringsradius, dybdebonus eller ny
+national boringsintegration. Den eksisterende brugerflade og alle frosne
+model-/data-/producentidentiteter er uændrede.
+
+RDKS, åbne issues, changelog, Markdown-håndbogen og det forberedte
+webhåndbogstillæg er opdateret. Punktopslagsaudit og uafhængig kontrol af
+intervalsummer, fil-/scriptidentiteter, Python-syntaks, lokale rapportlinks
+og håndbogstillæg PASS. RDKS/14 chatkilder/håndbog/4.0.541 og eksisterende
+sikkerhedshærdningskontrakter PASS; tidligere 12 browserkontroller genbruges
+som dateret evidens for den uændrede UI. Ingen ny browser-, CI- eller
+produktionspåstand. Lokal preview forbliver stoppet til næste kortvisning.
+
+### Tidligere grundanalyse
+
 - Rapport: `docs/research/JORDRAV_POTENTIALE_DANMARK_2026-10-04.md`.
 - Gentagelig, read-only audit: `docs/research/jordrav/audit_public_geodata.py`.
 - Faktiske filidentiteter, felter, gyldighed og payloadmålinger: `docs/research/jordrav/public-geodata-audit-2026-10-04.json`.

@@ -26,6 +26,14 @@ datasæt og klasser er uændrede. Zoom-/navigationsfund er rettet og måltestet.
 Tilgængelighed: localhost er ikke en delt telefonadresse; lokal preview
 skal genstartes ved næste visning. Ingen publicering eller automation.
 
+Fortsat faglig efterprøvning uden ejerens kortreview: to offentlige
+Jupiterprofiler er læst i den aktuelle webgrænseflade og sammenholdt med
+SHA-bundne visningsflader. Borings- og laganalyse/JH-010–011 samt gentagelig
+read-only audit er tilføjet. Lagidentitet, prøvedybde og pløjerelevans er
+adskilt; ingen dataintegration, klassebonus, UI-ændring eller ny release.
+Rapport: `docs/research/JORDRAV_BORINGER_LAGFORBINDELSE_2026-10-04.md`.
+Main-/writeroplysningen 10:46 ovenfor er dateret historik, ikke ny aflæsning.
+
 Yderligere fordybelse og ejerens markpræcisering: pløjningens blotlægning
 og regnens afvaskning/synlighed vurderes særskilt fra ravtilførsel. GEUS'
 øvre jordartssymbol er en geologisk aflejring under pløjelaget, ikke en prøve

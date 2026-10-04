@@ -12,6 +12,9 @@
 - Read-only diagnose af alle 192 udsnit viser mulige marine og finere
   bassinmiljøer uden for fokus. Generaliserede visningsarealer holdes
   adskilt fra native kildearealer; ingen ny national ravrangliste.
+- To aktuelle offentlige Jupiterprofiler sammenholdt med kortets faktiske
+  visningsflader. Ny analyse skelner prøvedybde, lagidentitet og pløjerelevans;
+  gentagelig punktopslagsaudit. Ingen ny boringsintegration eller klassebonus.
 - Gennemgåelige potentialehypoteser fra faktiske GEUS-polygoner; tidligere
   ravfund er ikke et krav. Uafklaret er adskilt fra begrænset potentiale.
 - Statisk national oversigt og lokale udsnit med SHA-/modelbinding, bounded

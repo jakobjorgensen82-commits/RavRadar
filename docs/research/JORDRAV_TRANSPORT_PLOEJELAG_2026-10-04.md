@@ -97,6 +97,11 @@ Denne femte case er tilføjet den regionale guide på DA/DE/EN. Navigationsvindu
 
 ## Den næste præcisering skal følge lag og pløjelag
 
+Dette trin er nu konkret efterprøvet med to aktuelle offentlige Jupiterprofiler
+og punktopslag i prototypens visningsflader. Se [boringer og lagforbindelse](JORDRAV_BORINGER_LAGFORBINDELSE_2026-10-04.md).
+Den nedenstående metode er dermed delvist udført; regional dækning og aktuelle
+markprofiler er fortsat åbne. Ingen ny national boringsfil eller klasseændring.
+
 En bedre regional prioritering kan bygges i tre adskilte trin: **mulig tilførsel og modtagelse**, **lagets bevaring og dybde** og **aktuel eksponering og synlighed**. Trinene skal have egne forklaringer og usikkerheder. Der er ikke fagligt grundlag for at lægge dem sammen med faste vægte.
 
 GEUS' nationale boringsdatabase Jupiter stiller geologiske boreoplysninger til rådighed. Sådanne oplysninger kan bruges til at undersøge lagrækkefølge og dæklag uden at kræve et ravfund. Den officielle adgangsbeskrivelse er kontrolleret; der er ikke hentet eller integreret en ny landsdækkende boringsfil. [GEUS, adgang til Jupiterdata](https://www.geus.dk/produkter-ydelser-og-faciliteter/data-og-kort/national-boringsdatabase-jupiter/adgang-til-data/).

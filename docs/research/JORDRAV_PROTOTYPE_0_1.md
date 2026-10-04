@@ -19,6 +19,11 @@ Markguiden adskiller rav i det bearbejdede jordlag, pløjningens blotlægning og
 
 ## Regler og deres faglige betydning
 
+Den supplerende [boringsanalyse](JORDRAV_BORINGER_LAGFORBINDELSE_2026-10-04.md)
+efterprøver to offentlige profiler mod de eksisterende visningsflader. Den
+ændrer ingen kortregler og etablerer ingen punktcirkler. JH-010–011 præciserer
+spørgsmål om lagkontakter; de indgår ikke som nye regionsknapper.
+
 Reglerne står i `data/jordrav/model-rules.json`; de eksekveres af `scripts/lib/jordrav_model.py` og bruges af `scripts/build-jordrav-prototype.py`. Jordartens øvre symbolfelt, ikke blot visningsfarven eller den dybere jordart, er det primære materialegrundlag. Regelsættets ord overflade beskriver den øvre geologiske aflejring; det må ikke læses som en særskilt prøve af nutidens jordoverflade. Blandede GEUS-symboler behandles som blandinger. `DS-DG` er kompatibelt sand/grus; `DS-DL` bliver ikke stiltiende gjort til rent sand.
 
 | Klasse | Konkret regel i prototypen | Hvad slutningen betyder |

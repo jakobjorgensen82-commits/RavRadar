@@ -3,8 +3,10 @@
 - **JORDRAV-001, delvist løst:** Første gennemgåelige procesregler og faktiske
   polygonkoblinger er implementeret uden kendt fund som adgangskrav.
   Regional tilførsels-/bevaringskobling og stærkere prioritering er åbne.
-  Fire navngivne kæder med modargumenter og ekspertpunkter JH-005–008 er
+  Fem navngivne kæder med modargumenter og ekspertpunkter JH-005–009 er
   nu analyseret og vist som guide, uden automatisk regional klassebonus.
+  To offentlige profiler er efterprøvet mod kortfladerne; JH-010–011
+  skærper lagkontaktspørgsmål uden at verificere regional ravtilførsel.
 - **JORDRAV-002, lokalt kontrolleret / historiske kyster åbne:** Sporbar
   normalisering af 438/47 ringfund og 194 mikroflader er auditeret. Alle
   192 native partitioner består; ældre overlap er eksplicitte konflikter.
@@ -34,6 +36,9 @@
   pløjning og regnens synlighed. Faktisk dæklagstykkelse, lagkorrelation og
   forbindelsen til det bearbejdede lag mangler regionalt. Diagnosearealer
   uden for fokus må ikke give automatisk opgradering eller fundprocenter.
+  Første borecaseanalyse og punktopslagsaudit er nu udført. Prøver omkring
+  én meter og generelle sandintervaller løser ikke topjord eller dæklagstykkelse.
+  Aktuelle markprofiler og lokal lagkontinuitet er fortsat åbne.
 
 Evidens: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
 Punkterne gælder den lokale Jordrav-prototype, ikke den aktuelle vejrproduktion.

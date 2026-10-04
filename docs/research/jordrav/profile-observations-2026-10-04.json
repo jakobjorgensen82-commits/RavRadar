@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "status": "selected-public-geology-observations",
+  "observedAt": "2026-10-04T16:51:37Z",
+  "access": "GEUS public Jupiter search and rendered geological tables; read-only",
+  "scope": "Two published scientific examples. Not a national borehole inventory or a current field survey.",
+  "depthUnit": "metres below recorded terrain",
+  "selection": "Contiguous intervals through 89 m at 10.934; finite geological intervals at 6.30. Consecutive equal codes are grouped, without inferring homogeneous beds.",
+  "interpretationLimits": [
+    "Lithological codes are not formation identities, amber observations or measured plough-layer contents.",
+    "Registered interval boundaries and sample depths do not determine centimetre-scale contacts.",
+    "Public rounded point locations and generalised polygons do not establish parcel boundaries or location accuracy.",
+    "The archived 2011 illustrations and current Jupiter entries reuse borehole evidence; they are not independent amber confirmations."
+  ],
+  "profiles": [
+    {
+      "dgu": "10.934",
+      "label": "Åsted Vest",
+      "source": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=10.934",
+      "drilledOn": "2005-07-01",
+      "totalDepth_m": 235,
+      "method": "suction drilling",
+      "location": {"longitude": 10.374907, "latitude": 57.432965, "crs": "EPSG:4326", "precision": "not assessed"},
+      "geologicalRowsObserved": 235,
+      "selectedDepth_m": [0, 89],
+      "firstSampleDepth_m": 1,
+      "intervals": [
+        {"top_m": 0, "bottom_m": 3, "code": "ds", "groupedRows": 3},
+        {"top_m": 3, "bottom_m": 4, "code": "di", "groupedRows": 1},
+        {"top_m": 4, "bottom_m": 5, "code": "ds", "groupedRows": 1},
+        {"top_m": 5, "bottom_m": 6, "code": "di", "groupedRows": 1},
+        {"top_m": 6, "bottom_m": 14, "code": "ds", "groupedRows": 8},
+        {"top_m": 14, "bottom_m": 20, "code": "dl", "groupedRows": 6},
+        {"top_m": 20, "bottom_m": 23, "code": "ds", "groupedRows": 3},
+        {"top_m": 23, "bottom_m": 29, "code": "dl", "groupedRows": 6},
+        {"top_m": 29, "bottom_m": 31, "code": "ds", "groupedRows": 2},
+        {"top_m": 31, "bottom_m": 32, "code": "dg", "groupedRows": 1},
+        {"top_m": 32, "bottom_m": 50, "code": "ds", "groupedRows": 18},
+        {"top_m": 50, "bottom_m": 51, "code": "dl", "groupedRows": 1},
+        {"top_m": 51, "bottom_m": 54, "code": "ds", "groupedRows": 3},
+        {"top_m": 54, "bottom_m": 56, "code": "dl", "groupedRows": 2},
+        {"top_m": 56, "bottom_m": 58, "code": "ds", "groupedRows": 2},
+        {"top_m": 58, "bottom_m": 59, "code": "dl", "groupedRows": 1},
+        {"top_m": 59, "bottom_m": 60, "code": "ds", "groupedRows": 1},
+        {"top_m": 60, "bottom_m": 62, "code": "dl", "groupedRows": 2},
+        {"top_m": 62, "bottom_m": 63, "code": "ds", "groupedRows": 1},
+        {"top_m": 63, "bottom_m": 82, "code": "ql", "groupedRows": 19},
+        {"top_m": 82, "bottom_m": 89, "code": "qs", "groupedRows": 7}
+      ],
+      "amberSampling": "not established"
+    },
+    {
+      "dgu": "6.30",
+      "label": "Ålbæk Lyngshede",
+      "source": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=6.30",
+      "drilledOn": "1945-06-16",
+      "totalDepth_m": 199.8,
+      "method": "not established from viewed entry",
+      "location": {"longitude": 10.357506, "latitude": 57.566727, "crs": "EPSG:4326", "precision": "not assessed"},
+      "geologicalRowsObserved": 12,
+      "selectedDepth_m": [0, 199.8],
+      "firstSampleDepth_m": null,
+      "intervals": [
+        {"top_m": 0, "bottom_m": 55, "code": "s"},
+        {"top_m": 55, "bottom_m": 66, "code": "l"},
+        {"top_m": 66, "bottom_m": 70.5, "code": "v"},
+        {"top_m": 70.5, "bottom_m": 80, "code": "s"},
+        {"top_m": 80, "bottom_m": 90.5, "code": "qs"},
+        {"top_m": 90.5, "bottom_m": 107, "code": "ql"},
+        {"top_m": 107, "bottom_m": 112, "code": "qs"},
+        {"top_m": 112, "bottom_m": 124.5, "code": "ql"},
+        {"top_m": 124.5, "bottom_m": 131, "code": "ql"},
+        {"top_m": 131, "bottom_m": 195, "code": "ql"},
+        {"top_m": 195, "bottom_m": 199.8, "code": "l"}
+      ],
+      "excludedTerminalRow": {"top_m": 199.8, "bottom_m": null, "code": "l", "reason": "No finite lower boundary; not extrapolated below recorded drilling depth."},
+      "amberSampling": "not established"
+    }
+  ]
+}

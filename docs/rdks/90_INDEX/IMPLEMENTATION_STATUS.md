@@ -19,6 +19,13 @@ Ingen deploy, nye fund-/læringstabeller eller ny appversion. Den aktive
 webhåndbog/SQL er urørt; et særskilt webhåndbogstillæg er forberedt.
 Evidens: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
 
+**Supplerende fagligt arbejde:** To aktuelle offentlige Jupiterprofiler og
+deres lagintervaller er sammenholdt med prototypens visningsflader.
+Read-only punktopslagsaudit og JH-010–011 beskriver lagidentitet, prøvedybde
+og pløjerelevans. Det er kilde-/metodearbejde uden ny runtimeintegration,
+UI-ændring eller omklassificering. Se
+`docs/research/JORDRAV_BORINGER_LAGFORBINDELSE_2026-10-04.md`.
+
 Yderligere fordybelse og ejerens markpræcisering: pløjningens blotlægning
 og regnens afvaskning/synlighed vurderes særskilt fra ravtilførsel. GEUS'
 øvre jordartssymbol er en geologisk aflejring under pløjelaget, ikke en prøve
