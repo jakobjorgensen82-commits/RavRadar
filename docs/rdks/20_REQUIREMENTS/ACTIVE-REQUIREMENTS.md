@@ -1,5 +1,16 @@
 # AKTUELT JORDRAVKRAV – 2026-10-05
 
+**Seneste ejerordre: fortsæt med den nationale analyse og forbedring.**
+Præcis kortlagt landskabsform og det øvre materiales dannelsesgruppe skal
+adskilles i klikvejledningen. Alle originale navn/kode-par behandles;
+ukendt par får uafklaret vejledning, kode alene må ikke overskrive et
+originalt navn. Hævet eller gammel landskabsform må ikke give målt dato,
+ravkoncentration eller nutidig adgang. En yngre øvre gruppe på en ældre
+form giver en eksplicit hypotese om senere aflejring/omlejring, med
+kortgrænser og registrering som alternativer. Gamle brede kortsymboler
+dateres ikke automatisk via den nyere oversigt. Lokal leverance:
+docs/research/JORDRAV_LANDSKABSFORM_LAGHISTORIE_2026-10-05.md.
+
 **Nyeste ejerordre: fortsæt.** Den nationale videreanalyse omsættes nu
 til en konkret undersøgelsesplan for begge fysiske lag, også begravet
 organisk materiale og vandrette delområder i dybere symboler. Konflikter,

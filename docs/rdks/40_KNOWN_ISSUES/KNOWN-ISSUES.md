@@ -1,5 +1,16 @@
 # AKTUELLE JORDRAVPUNKTER – national model 0.2 – 2026-10-05
 
+**JORDRAV-013, lokal form-/sedimentadskillelse løst:** Landskabsfeltet viser
+præcist navn; 27 forløb dækker alle 33 navngivne former plus ikke-kortlagt.
+37 originale navn/kode-par bevares, også begge kode-50-navne. Alle 196
+filer/4.652 forklaringer/505.834 fragmenter er SHA-læst. 5.604 fragmenter
+har senglacial hævet form sammen med en postglacial øvre gruppe, men der
+udledes ingen lokal dato, ravbonus, kontakt-/pløjedybde eller blotlægning.
+JORDRAV-007/008 og marine underkoders fysiske variation består empirisk.
+Den tidligere brede proces som eneste fremtrædende landskabsfakta er
+erstattet; alder/hævning som adgangsgenvej er forkastet. Analyse:
+docs/research/JORDRAV_LANDSKABSFORM_LAGHISTORIE_2026-10-05.md.
+
 **JORDRAV-012, national lagvejledning lokalt løst:** Alle 4.652 forklaringer
 har konkret øvre/dybere undersøgelsesforløb; 196 datafiler er SHA-kontrolleret.
 Gentagne symboler, lodrette kontakter, sammensatte delområder, ældre kilde,

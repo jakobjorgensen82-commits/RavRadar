@@ -1,5 +1,26 @@
 # Lokal Jordravgren: aktuelt mandat og model 0.2 – 2026-10-05
 
+**Slutkontrol for landskabsform og laghistorie:** 17 modelcases, fem
+artifacttests, 4+4+4+4 kontrakter og 34 nye + 56 eksisterende faktiske
+Chrome-checks PASS. Sourcegate/114 browserfiler, RDKS/sikkerhed, 64 Pages-
+moduler, versionsimports og 419 kapitler PASS. Tre aktuelle screenshots
+er visuelt læst. Beskyttet path-diff er tom; ingen CI eller produktion.
+Kvittering: docs/research/jordrav/landscape-validation-2026-10-05.json.
+
+**Nyeste fortsættelse – landskabsform og laghistorie:** Ejerens *fortsæt*
+er omsat til præcise landskabsnavne og 27 formtilpassede undersøgelsesforløb
+for alle 33 navngivne former plus ikke-kortlagt. Alle 196 filer, 4.652
+forklaringer og 505.834 fragmenter er SHA-læst. 51 forklaringer/5.604
+fragmenter har hævet senglacial form sammen med postglacial øvre gruppe;
+det udløser en lokal undersøgelseshypotese, ingen dato, ravbonus eller
+jagtbarhed. Navn/kode bindes samlet: kode 50 har to originale navne.
+Selvstændig vejledning 0.1.0 supplerer lagadgang; model 0.2/app 4.0.541,
+dataset og geologiske farver bevares. Lokal ravtilførsel, lagkontakt og
+dagens blotlægning er fortsat åbne. DA/DE/EN, mobil, filtre, gemte links
+og lilla dybe punkter følger samme kontrakt. Analyse:
+docs/research/JORDRAV_LANDSKABSFORM_LAGHISTORIE_2026-10-05.md.
+Tidligere slutkontroller nedenfor gælder deres respektive iterationer.
+
 **Slutkontrol for lagadgang:** 17 modelcases, fem artifacttests og
 4+4+4 materiale-/visnings-/lagkontrakter samt 20+8+15+13 faktiske Chrome-
 checks PASS. Sourcegate/113 browserfiler, RDKS/sikkerhed, 63 Pages-moduler,

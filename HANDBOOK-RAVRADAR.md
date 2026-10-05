@@ -27,6 +27,25 @@ bevares; dybe punkter beholder registrerede intervaller. Lokal lagadgangs-
 vejledning 0.1.0 ændrer ingen geologiske data eller RavScore. Metode og
 kontrol: `docs/research/JORDRAV_LAGADGANG_2026-10-05.md`.
 
+**Landskabsform og laghistorie 2026-10-05:** Feltet *Kortlagt landskabsform*
+viser nu det præcise navn sammen med processen. Under lagadgang kan
+*Landskabets spor mod overfladen* åbnes med mus eller tastatur. Her
+forklares den lokale undersøgelsesvej og det øvre materiales dannelse.
+Alle 33 navngivne former plus ikke-kortlagt behandles i 27 forløb.
+En gammel tunneldals fyld, en strandvold og en tørlagt fjordbund vurderes
+særskilt. På 5.604 visningsfragmenter står hævet senglacial form sammen
+med postglacial øvre gruppe: senere aflejring/omlejring er en hypotese,
+mens kortgrænser og registrering også kan spille ind. Formens alder
+daterer ikke dagens øverste jord eller ravet. Alle 37 originale
+navn/kode-par bevares, også de to forskellige navne med kode 50.
+
+Navne og forklaringer findes på dansk, tysk og engelsk. Luftfoto, filtre
+og gemte links bevarer vurderingen; dybe punkter erstatter den med
+registreret dybde. Farver og jagtbarhed bevares. Lokal vejledning 0.1.0;
+dataset, model og RavScore er uændrede. Lokal ravtilførsel, lagkontakt,
+bearbejdningsdybde og nutidig blotlægning forbliver åbne. Analyse:
+`docs/research/JORDRAV_LANDSKABSFORM_LAGHISTORIE_2026-10-05.md`.
+
 **Kortplanlægning 2026-10-05:** *Undersøg et spor* viser én af de fem
 geologiske mulighedsklasser ad gangen, eller alle som før. Det gælder hele
 Danmark og de lokale detaljer. *Vis kun mulighedsudpegninger* skjuler

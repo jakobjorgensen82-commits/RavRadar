@@ -31,3 +31,5 @@ docs/research/jordrav/national-search-context-*.json -text
 # Layer-access receipts bind exact report bytes across Windows/Linux.
 docs/research/jordrav/national-layer-access-*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 docs/research/jordrav/layer-*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+docs/research/jordrav/national-landscape-context-*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+docs/research/jordrav/landscape-*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

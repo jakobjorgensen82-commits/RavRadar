@@ -58,6 +58,9 @@
 .jordrav-layer-access { margin-top: 18px; padding: 1px 14px 12px; border-left: 3px solid #826e52; background: #f7f4ef; }
 .jordrav-layer-access ol { padding-left: 22px; }
 .jordrav-layer-access li { margin: 10px 0; }
+.jordrav-landscape-context { margin: 14px 0; border-top: 1px solid #d9d0c2; padding-top: 12px; }
+.jordrav-landscape-context summary { cursor: pointer; font-size: .87rem; font-weight: 700; line-height: 1.6; }
+.jordrav-landscape-context summary:focus-visible { outline: 3px solid #d79427; outline-offset: 3px; }
 .jordrav-layer-tools a { color: var(--brand-2); font-size: .8rem; }
 .jordrav-view-link input { display: block; width: calc(100% - 28px); margin: 8px 14px; min-height: 40px; border: 1px solid var(--line); border-radius: 7px; padding: 8px; font: inherit; font-size: .8rem; }
 .jordrav-view-link input[hidden] { display:none; }

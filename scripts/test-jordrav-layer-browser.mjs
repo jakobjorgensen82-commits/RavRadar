@@ -8,7 +8,9 @@ import { parseView } from '../js/jordrav/view-state.js';
 const require=createRequire(import.meta.url),{chromium}=require('playwright');
 const output=path.resolve('docs/research/jordrav');
 const diagnostic=JSON.parse(await fs.readFile(path.join(output,'national-layer-access-2026-10-05.json')));
-const artifact=name=>path.join(output,`layer-access-2026-10-05-${name}`);
+const prefix=process.env.RAVRADAR_JORDRAV_LAYER_PREFIX||'layer-access-2026-10-05';
+assert.match(prefix,/^[\w-]+$/);
+const artifact=name=>path.join(output,`${prefix}-${name}`);
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.gz':'application/gzip'};
 const server=http.createServer(async(request,response)=>{
   const relative=decodeURIComponent(new URL(request.url,'http://localhost').pathname).replace(/^\//,'')||'jordrav.html';
@@ -59,7 +61,7 @@ try{
     const text=await section.textContent();assert.ok(!text.includes('undefined')&&!text.includes('jordrav.'));
     assert.match(text,new RegExp(e.entry.surface.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
     assert.match(await page.locator('.jordrav-access-badge').textContent(),/Jagtbarhed uafklaret/);
-    assert.match(await section.locator('a').getAttribute('href'),/GEUS-R_2025_32_web\.pdf#page=4$/);
+    assert.match(await section.locator('a').last().getAttribute('href'),/GEUS-R_2025_32_web\.pdf#page=4$/);
     if(kind==='variant'){
       const main=page.locator('#jordravDetails>dl>dd');
       assert.match(await main.nth(1).textContent(),/underkode uafklaret/);

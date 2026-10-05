@@ -1,5 +1,19 @@
 ## Ikke udgivet – Jordrav sporfiltre og gemte kortvisninger (2026-10-05)
 
+## Lokal Jordravfortsættelse 2026-10-05 – landskabsform og laghistorie
+
+- Klikpanelet viser præcis landskabsform og 27 formtilpassede forløb for
+  alle 33 navngivne former; form, øvre sediment og adgang adskilles.
+- Yngre sedimentgruppe på gammel hævet form forklares som lokal hypotese.
+  Alle 37 originale navn/kode-par bevares; kode 50 har to navne.
+- Alle 196 filer/4.652 forklaringer/505.834 fragmenter SHA-kontrolleres.
+  Fire nye kontrakttests og 34 nye + 56 eksisterende Chrome-checks PASS;
+  alle forløb er klikket på rigtige nationale flader.
+- Selvstændig landskabsvejledning 0.1.0, DA/DE/EN og tastatur/mobil.
+  Model 0.2/app 4.0.541, geodata, farver og RavScore bevares. RDKS,
+  Markdown og forberedt webtillæg følger den lokale leverance.
+  Rapport: docs/research/JORDRAV_LANDSKABSFORM_LAGHISTORIE_2026-10-05.md.
+
 ## Lokal Jordravfortsættelse 2026-10-05 – lagadgang
 
 - Ny landsdækkende lagvejledning viser øvre/dybere fysisk materiale og
