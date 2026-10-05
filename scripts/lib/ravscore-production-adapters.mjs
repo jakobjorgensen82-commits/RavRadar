@@ -212,12 +212,12 @@ export function verifiedDmiNativeComponentSource(
 // Proof authenticity is also used to read immutable original packs. Consumer
 // eligibility is separate, so owner source exclusions never rewrite that proof.
 export function eligibleDmiForecastComponentSource(source, rowTime, component, expectedIdentity) {
-  return dmiMarineCollectionAllowedForZone(source?.collection, expectedIdentity?.parentZoneId)
+  return dmiMarineCollectionAllowedForZone(source?.collection, expectedIdentity?.parentZoneId, component)
     ? verifiedDmiForecastComponentSource(source, rowTime, component, expectedIdentity) : null;
 }
 
 export function eligibleDmiNativeComponentSource(source, rowTime, component, expectedIdentity) {
-  return dmiMarineCollectionAllowedForZone(source?.collection, expectedIdentity?.parentZoneId)
+  return dmiMarineCollectionAllowedForZone(source?.collection, expectedIdentity?.parentZoneId, component)
     ? verifiedDmiNativeComponentSource(source, rowTime, component, expectedIdentity) : null;
 }
 

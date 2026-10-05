@@ -96,6 +96,68 @@ test('owner-excluded LF stays authentic but cannot enter new or retained score i
   }
 });
 
+test('owner water-only exception admits authentic PART scalars but never LF current or temperature', () => {
+  for (const zoneId of ['DK-B01-01','DK-B01-02','DK-B02-08','DK-B02-09','DK-B02-11','DK-B03-01','DK-B03-02']) {
+    const f = fixture({ zoneId, collection: 'dkss_lf', target: 0 });
+    const identity = dmiExpectedIdentityForPart(f.part);
+    const native = Object.values(f.bulk.zones[identity.entityId].hourly)[0];
+    for (const [component, field, value, kind] of [
+      ['waterLevel','sea-mean-deviation',0.25,'marine-water-level-scalar'],
+      ['waterTemperature','water-temperature',12,'marine-water-temperature-scalar'],
+    ]) {
+      const source = { ...copy(native.sources.current), component, componentKind: kind,
+        fieldSet: [field], optionalFieldSet: [],
+        spatialSelection:'nearest-valid-grid-cell-no-spatial-interpolation' };
+      for (const key of ['vectorSelection','vectorSemanticsVersion','verticalLayer','verticalLayerRankM']) delete source[key];
+      native[field] = value;
+      native.sources[component] = source;
+      assert.equal(Boolean(eligibleDmiNativeComponentSource(source,native.time,component,identity)),component==='waterLevel');
+    }
+    const original = JSON.stringify(f.bulk);
+    const row = buildDmiForecastHourly({ ocean: [{step:native.time,
+      'current-u':native['current-u'],'current-v':native['current-v'],
+      'sea-mean-deviation':native['sea-mean-deviation'],'water-temperature':native['water-temperature'],
+      provenance:native.sources}], generatedAt:at(0),startAt:at(0),hours:1 }).hourly[0];
+    assert.ok(eligibleDmiForecastComponentSource(row.sources.waterLevel,row.time,'waterLevel',identity));
+    const admitted = verifiedIntegratedPartHourly({hourly:[row]},f.bulk,identity.entityId,f.part)[0];
+    assert.equal(admitted.waterLevelCm,25);
+    assert.equal(admitted.currentUMps,null);
+    assert.equal(admitted.waterTemperatureC,null);
+    const forged = copy(native.sources.waterLevel);
+    forged.entityId = 'SOURCE::NOT-THE-PART';
+    assert.equal(eligibleDmiNativeComponentSource(forged,native.time,'waterLevel',identity),null);
+    assert.equal(JSON.stringify(f.bulk),original,'No mutation of authenticated originals.');
+  }
+});
+
+test('water-only technical original requires full canonical542 state and preserves541 control archive', async () => {
+  const f=fixture({zoneId:'DK-B01-02',collection:'dkss_nsbs',nativeHours:[0],target:0});
+  f.part.onshoreDirectionDeg=90;
+  const hourly=[{...f.row,currentProvenance:{...f.row.sources.current,status:'verified'},
+    currentCoastNormalSpeedMps:f.row.currentUMps}];
+  const state=buildIntegratedPartScoreSeries({part:f.part,
+    zone:{id:f.part.zoneId,onshoreDirectionDeg:90},hourly}).ravScoreState.continuationState;
+  const {assertWaterLevelOnlyIntegratedOriginal,assertArchivedOwnerCurrentIntegratedOriginal}=
+    await import('./lib/coastal-point-staging-contract.mjs');
+  const previous={...copy(state),modelBundleSha256:'4ebe158f68954f32b47cb71d5222ab0cf676faaf4b323d743f9d43bf34a63a51'};
+  const options={samplingContextKey:state.samplingContextKey};
+  const before=JSON.stringify(previous);
+  assert.equal(assertWaterLevelOnlyIntegratedOriginal(previous,options),previous);
+  assert.equal(JSON.stringify(previous),before);
+  for(const mutate of [value=>{value.modelBundleSha256='a'.repeat(64);},
+    value=>{value.currentEvidence[0].strength=99;},value=>{value.extra='raw';},
+    value=>{value.time='bad';},value=>{value.schemaVersion='5.0.0';}]) {
+    const wrong=copy(previous);mutate(wrong);
+    assert.throws(()=>assertWaterLevelOnlyIntegratedOriginal(wrong,options));
+  }
+  assert.throws(()=>assertWaterLevelOnlyIntegratedOriginal(previous,{samplingContextKey:'WRONG'}));
+  const archiveOriginal={...copy(state),modelBundleSha256:'29ea9a19647bf7d5edad0eee159267086d546f0d90a9f2778a77077351aad948'};
+  assert.equal(assertArchivedOwnerCurrentIntegratedOriginal(archiveOriginal,options),archiveOriginal);
+  assert.throws(()=>assertWaterLevelOnlyIntegratedOriginal(archiveOriginal,options));
+  assert.throws(()=>assertArchivedOwnerCurrentIntegratedOriginal(previous,options),
+    'The542 technical original must not masquerade as the old541 control archive.');
+});
+
 test('normal two-model caller enforces the owner source domain on selected public input', async t => {
   for (const [zoneId, collection, allowed] of [
     ['DK-B01-01', 'dkss_lf', false], ['DK-B01-02', 'dkss_lf', false],

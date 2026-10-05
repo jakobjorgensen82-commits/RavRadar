@@ -14,6 +14,7 @@ import {
   buildBoundedConditionsPredecessorRestoreExpectation,
   buildOwnerCurrentOriginalRestoreExpectation,
   OWNER_CURRENT_DOMAIN_PREDECESSOR,
+  OWNER_WATER_LEVEL_ONLY_PREDECESSOR,
 } from './lib/bounded-conditions-predecessor-transition.mjs';
 import {
   privateRuntimeContractHashes,
@@ -88,7 +89,10 @@ export async function prepareHistoricalWavePredecessorRestore(options) {
   const expectation = historicalExpectation ?? boundedConditionsExpectation ?? ownerCurrentExpectation;
   if (!ownerCurrentExpectation
     && ravScoreModelBinding().modelBundleSha256 !== OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding.modelBundleSha256
-    && sourceDescription.modelBinding?.modelBundleSha256 === OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding.modelBundleSha256) {
+    && [OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding.modelBundleSha256,
+      OWNER_WATER_LEVEL_ONLY_PREDECESSOR.modelBinding.modelBundleSha256]
+      .includes(sourceDescription.modelBinding?.modelBundleSha256)
+    && sourceDescription.modelBinding?.modelBundleSha256 !== ravScoreModelBinding().modelBundleSha256) {
     throw new Error('Owner original generation no longer matches the exact approved binding bridge');
   }
   const transitionKind = historicalExpectation
@@ -99,7 +103,7 @@ export async function prepareHistoricalWavePredecessorRestore(options) {
     ? HISTORICAL_WAVE_INPUT_TRANSITION_POLICY.sourceHead
     : boundedConditionsExpectation
       ? BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceHead
-      : ownerCurrentExpectation ? OWNER_CURRENT_DOMAIN_PREDECESSOR.sourceHead : '';
+      : ownerCurrentExpectation ? ownerCurrentExpectation.sourceHead : '';
   if (expectation) await atomicWriteJson(options.outputPath, expectation);
   await fs.appendFile(options.githubOutputPath, [
     `required=${expectation ? 'true' : 'false'}`,

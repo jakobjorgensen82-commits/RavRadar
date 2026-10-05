@@ -11,6 +11,8 @@ import {
   assertOwnerCurrentOriginalExpectation,
   OWNER_CURRENT_DOMAIN_PREDECESSOR,
   OWNER_CURRENT_DOMAIN_SUCCESSOR,
+  OWNER_WATER_LEVEL_ONLY_PREDECESSOR,
+  OWNER_WATER_LEVEL_ONLY_SUCCESSOR,
 } from './lib/bounded-conditions-predecessor-transition.mjs';
 import {
   prepareHistoricalWavePredecessorRestore,
@@ -36,6 +38,36 @@ assert.equal(assertOwnerCurrentOriginalExpectation(ownerExpected), ownerOriginal
 const ownerSource = ownerFixture().sourceDescription;
 assert.equal(secondRestoreExpectation({ expected: ownerExpected,
   source: ownerSource, manifest: ownerOriginal }), ownerExpected);
+// Separate released542 original: never reuse the 541 archive's identity.
+const waterOriginal=OWNER_WATER_LEVEL_ONLY_PREDECESSOR;
+const waterFixture=()=>({ ...ownerFixture(),
+  sourceDescription:{ ...structuredClone(waterOriginal),schemaVersion:'1.0.0',
+    kind:'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_CURRENT_SOURCE',
+    expectedZoneCount:210,expectedPartCount:673,privatePayloadIncluded:false },
+  currentBinding:{ ...waterOriginal.modelBinding,
+    modelBundleSha256:OWNER_WATER_LEVEL_ONLY_SUCCESSOR.integratedBundleSha256 },
+  currentContractHashes:{ ...waterOriginal.contractHashes,
+    continuationStateContractSha256:OWNER_WATER_LEVEL_ONLY_SUCCESSOR.continuationStateContractSha256 },
+});
+const waterExpected=buildOwnerCurrentOriginalRestoreExpectation(waterFixture());
+assert.equal(waterExpected.ownerCurrentDomainTransition,'EXACT_WATER_LEVEL_ONLY_RESTORE_V1');
+assert.equal(assertOwnerCurrentOriginalExpectation(waterExpected),waterOriginal);
+assert.deepEqual(waterExpected.modelBinding,waterOriginal.modelBinding);
+assert.equal(secondRestoreExpectation({expected:waterExpected,
+  source:waterFixture().sourceDescription,manifest:waterOriginal}),waterExpected);
+for(const field of ['sourceHead','datasetId','productionReferenceAt','generatedAt','bundleContentSha256']) {
+  const wrong=waterFixture();wrong.sourceDescription[field]='wrong';
+  assert.equal(buildOwnerCurrentOriginalRestoreExpectation(wrong),null);
+  assert.throws(()=>assertOwnerCurrentOriginalExpectation({...waterExpected,[field]:'wrong'}));
+}
+assert.throws(()=>assertOwnerCurrentOriginalExpectation({...waterExpected,
+  ownerCurrentDomainTransition:'EXACT_ORIGINAL_RESTORE_V1'}),'A542 original must not become a541 original by relabelling.');
+for(const mutate of [value=>{value.currentBinding.modelBundleSha256='e'.repeat(64);},
+  value=>{value.currentContractHashes.continuationStateContractSha256='f'.repeat(64);},
+  value=>{value.currentBinding.modelContractSha256='a'.repeat(64);}]) {
+  const wrong=waterFixture();mutate(wrong);
+  assert.equal(buildOwnerCurrentOriginalRestoreExpectation(wrong),null);
+}
 for (const mutate of [
   value => { value.sourceDescription.sourceHead = 'c'.repeat(40); },
   value => { value.sourceDescription.bundleContentSha256 = 'd'.repeat(64); },
@@ -332,4 +364,4 @@ try {
   await fs.rm(temporary, { recursive: true, force: true });
 }
 
-console.log('Bounded conditions predecessor transition: 38 focused cases and source-identity retirement passed.');
+console.log('Bounded conditions predecessor transition: exact historical and water-only originals, rejection controls and source-identity retirement passed.');

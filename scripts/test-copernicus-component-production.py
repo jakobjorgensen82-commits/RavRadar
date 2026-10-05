@@ -365,12 +365,17 @@ class ComponentProductionTests(unittest.TestCase):
         bank_path = self.case["folder"] / "bank.json"
         before_bytes = bank_path.read_bytes()
         before_ids = {row["recordId"] for row in bank["records"]}
-        for index, fault in enumerate(("fsync-primary", "cleanup-only"), 1):
+        for index, fault in enumerate(("fsync-primary", "cleanup-only", "fsync-close-primary", "close-only"), 1):
             with self.subTest(fault=fault):
+                if fault in ("fsync-close-primary", "close-only"):
+                    bank_path.write_bytes(before_bytes)
                 owned, checkpoints, cleanup_calls = {}, [], []
+                close_calls = []
                 primary = OSError("SYNTHETIC_CP_BANK_PRIMARY")
                 secondary = OSError("SYNTHETIC_CP_BANK_CLEANUP")
+                close_failure = OSError("SYNTHETIC_CP_BANK_CLOSE")
                 original_mkstemp = transport_module.tempfile.mkstemp
+                original_fdopen = transport_module.os.fdopen
                 original_fsync = transport_module.os.fsync
                 original_replace = transport_module.os.replace
                 original_unlink = transport_module.os.unlink
@@ -383,9 +388,31 @@ class ComponentProductionTests(unittest.TestCase):
                     return result
 
                 def fsync(fd):
-                    if fault == "fsync-primary" and fd == owned.get("fd"):
+                    if fault in ("fsync-primary", "fsync-close-primary") and fd == owned.get("fd"):
                         raise primary
                     return original_fsync(fd)
+
+                def fdopen(fd, *args, **kwargs):
+                    handle = original_fdopen(fd, *args, **kwargs)
+                    if fd != owned.get("fd") or fault not in ("fsync-close-primary", "close-only"):
+                        return handle
+
+                    class OwnedCloseFault:
+                        def __getattr__(self, name):
+                            return getattr(handle, name)
+
+                        def __enter__(self):
+                            return self
+
+                        def __exit__(self, *_args):
+                            self.close()
+
+                        def close(self):
+                            close_calls.append(1)
+                            handle.close()
+                            raise close_failure
+
+                    return OwnedCloseFault()
 
                 def replace(source, target):
                     result = original_replace(source, target)
@@ -416,6 +443,7 @@ class ComponentProductionTests(unittest.TestCase):
                     clock=lambda: 100, sleep=lambda _: None)
                 admit = RUNNER["original_component_admitter"](plan, cache)[0]
                 with patch.object(transport_module.tempfile, "mkstemp", side_effect=mkstemp), \
+                     patch.object(transport_module.os, "fdopen", side_effect=fdopen), \
                      patch.object(transport_module.os, "fsync", side_effect=fsync), \
                      patch.object(transport_module.os, "replace", side_effect=replace), \
                      patch.object(transport_module.os, "unlink", side_effect=unlink):
@@ -424,13 +452,16 @@ class ComponentProductionTests(unittest.TestCase):
                             acquisition_at=lambda: transport.last_receipt["acquisitionAt"],
                             checkpoint=checkpoint, admit_spatial=admit,
                             should_continue=transport.can_continue)
-                self.assertIs(caught.exception, primary if fault == "fsync-primary" else secondary)
+                expected_error = (primary if fault in ("fsync-primary", "fsync-close-primary")
+                                  else close_failure if fault == "close-only" else secondary)
+                self.assertIs(caught.exception, expected_error)
+                self.assertEqual(close_calls, [1] if fault in ("fsync-close-primary", "close-only") else [])
                 self.assertEqual(cleanup_calls, [1])
                 self.assertFalse(owned["temporary"].exists())
                 self.assertEqual(transport.request_count, 1)
                 self.assertEqual(len(checkpoints), 1)
                 self.assertEqual(checkpoints[0][-1]["status"], "PARSED")
-                if fault == "fsync-primary":
+                if fault != "cleanup-only":
                     self.assertEqual(bank_path.read_bytes(), before_bytes)
                 else:
                     saved = json.loads(bank_path.read_text(encoding="utf-8"))
@@ -470,7 +501,7 @@ class ComponentProductionTests(unittest.TestCase):
                     acquisition_at=lambda: resumed_transport.last_receipt["acquisitionAt"],
                     checkpoint=resume_checkpoint, admit_spatial=resumed_admit,
                     should_continue=resumed_transport.can_continue)
-                expected_requests = 1 if fault == "fsync-primary" else 0
+                expected_requests = 0 if fault == "cleanup-only" else 1
                 self.assertEqual(resumed_transport.request_count, expected_requests)
                 self.assertEqual(len(resume_checkpoints), expected_requests)
                 self.assertEqual(resumed["stage"]["status"], "CANDIDATES_READY")

@@ -1,10 +1,39 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.542
+**Håndbogsversion:** 4.0.543
+
+## 89.160 Syv kystzoner må bruge Limfjordsmodellens vandstand – lokal kandidat
+
+Ejeren har godkendt vandstand, og kun vandstand, fra dkss_lf til
+Agger/Krik Vig, Lyngby/Lodbjerg, Hou/Bisnap, Hals/Nordmandshage,
+Dokkedal/Mulbjerge, Harboøre/Vrist og Vejlby Klit/Ferring. Den lokale
+4.0.543-kandidat åbner verificerede vandstandstimer i nyt kildevalg,
+genbrugte data og central interpolation. Strøm og vandtemperatur forbliver
+udelukket; strømreglen og dens 48 timers hukommelse ændres ikke.
+
+Administratorens valgte kilder og vægte bevares. Mangler en valgt kilde,
+fordeles dens vægt ikke til andre. Gyldig direkte vandstand bevares,
+og slutkontrollen af datatab består. Undtagelsen kan hjælpe når de valgte
+Limfjordstimer findes, men skaber ikke manglende timer eller bevis for
+årsagen til de gamle Fur-huller.
+
+En ny teknisk databaseovergang er klargjort uden ændring af gamle migrationer.
+Den udgivne 542-pakke valideres under sin oprindelige binding før kun metadata
+løftes. Vejr, scores, begge modeltilstande og det private 541-originalarkiv
+bevares. Ingen nulstilling, beskæring, nye punkter eller nye scoreformler.
+Målprøver består lokalt; egen GitHub-kontrol, kontrolleret release og
+faktisk ny vejreffekt mangler. 4.0.542 er fortsat online.
+
+CP-bankens lokale første-fejl-rettelse følger med, men er ikke samlet bevis
+for processtop, eksklusiv skrivning eller national heljobskapacitet.
+Spørg RavRadar forbedres separat på dansk, tysk og engelsk. Begge opgaver
+og den samlede revision står i den eksisterende planlagte opgave.
+DEC-0291 og DEC-0292; ældre modstridende status er historik.
 
 ## 89.158 Fur-huller skal kunne forklares uden at vise private data
 
-PR516 er merged med bestået kildekontrol; 4.0.542 er endnu ikke online. Den normale beregning gemmer ved Fur
+4.0.542 er faktisk online siden 4. oktober kl.22.20 DK efter PR516/517,
+bestået kildekontrol, privat overgang, eksakt datagenbrug og Pages. Den normale beregning gemmer ved Fur
 et privat spor af det faktisk valgte kildegrundlag. Sporet har kun hashes,
 ja/nej og optællinger for direkte vandstand, verificerede/tilladte kildeinput,
 routet output og de tidligere valgte kilders fortsatte tilstedeværelse.
@@ -17,13 +46,16 @@ byte-identiske uden det. De målrettede prøver og den normale caller består.
 Første kørsel uden et tidligere spor kaldes ærligt ukendt; et syntetisk
 reproduceret kildevalg er ikke bevis for årsagen i de gamle fejlede kørsler.
 
-Syvzonerettelsen er merged, ikke online. Originaler, øvrig bevist historik og
-fysiske scoreformler bevares. Den nye databaseovergang er installeret, men deploy
-stoppede kl.21:38 før offentliggørelse: kontrollen af zone-id'er afviste gyldige
-Samsø-/Læsø-zoner. Den bruger nu de autentificerede originale zoneinventarer
-i stedet for en navneskabelon. Ukendte zoner og forkerte delidentiteter afvises
-stadig. Samme målprøve og normale migrations-/genbrugskontroller består lokalt;
-bindinger og gamle migrationer er uændrede. Ny GitHub-kontrol og deploy kræves.
+Syvzonerettelsens kode er leveret. Kode-only genbrugte gyldige 16Z-data uden
+ny vejr- eller scoreberegning. Kilderen strøm og 48 timers strømhukommelse behandles
+ved næste ægte nye vejrgeneration; offentlig effekt er endnu ikke målt.
+Originaler, bevist øvrig historik, formler og kystpunkter bevares. Den første
+release afviste gyldige Samsø-/Læsø-zone-id'er. Den reparerede kontrol bruger
+begge autentificerede originale 210-zoneinventarer og alle 673 delidentiteter;
+ukendte zoner og forkerte del-id'er afvises stadig. Egen kildekontrol og faktisk
+deploy består; reparationens migrationsplan var tom. Gamle migrationer er urørte.
+Den naturlige vejrhentning var kl. 22.41 aktiv uden fejlede trin. Cron er ikke
+ændret, og den manuelle kørsel er udsat til faktisk ledig writer.
 Det er endnu ikke lavet sådan, at tab automatisk repareres og deploy fortsætter.
 Gyldige timer skal bevares før uændret slutkontrol; datatabskontrollen slås ikke fra.
 Nyeste nationale forecast-dækning er 96.44% af fem vejrfelter over 210 zoner,
@@ -32,11 +64,25 @@ observationer eller komplet privat historik. Dette erstatter ældre 12Z-dækning
 Ingen ny alarm eller privat diagnose vises på hjemmesiden. DEC-0291 og DEC-0292.
 Første GitHub-kontrol fandt gamle testudtræk og en manglende plain-helper i
 den ældre genbrugsvej. De er rettet lokalt med bevaret strengt kildebevis;
-de berørte regressionsprøver bestod senere exact-head CI før merge. Den nye
-arkivreparation kræver egen exact-head kontrol og faktisk deploy.
+de berørte regressionsprøver bestod senere exact-head CI før merge. Arkivreparationen
+bestod også egen exact-head kontrol og faktisk deploy den 4. oktober kl.22.20 DK.
 Ældre afsnit om en endnu ikke lavet NORMAL-diagnose er erstattet af denne status.
 
-## 89.157 Havmodellen skal passe til målzonen – lokal rettelse
+## 89.157 Havmodellen skal passe til målzonen – leveret kode
+
+Reglen for de syv ejerafgrænsede zoner og den kontrollerede tekniske overgang
+er leveret i 4.0.542 den 4. oktober kl.22.20 DK. De nuværende tekniske bindinger
+er integrated4ebe158f… og Candidate G3e5aae87… med uændrede fysiske kontrakter.
+Kode-only genbrugte gyldige 16Z-data; den kilderene strøm og 48h-hukommelse
+kræver næste ægte nye vejrgeneration. Faktisk NEW-T-effekt er fortsat åben.
+Originaler og bevist øvrig historik bevares. NORMAL Fur-diagnosen er også
+leveret, men gammel årsag og automatisk timeretention er ikke løst.
+
+### Historiske lokale statusser før leveringen
+
+Alle lokale bindings-, installations- og leveringsstatusser nedenfor er
+udviklingshistorik, ikke den aktuelle offentlige status. Afsnit89.158 og
+ovenstående leveringsstatus har forrang, hvor de er modstridende.
 
 Den lokale kandidat til 4.0.542 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=4ebe158f68954f32b47cb71d5222ab0cf676faaf4b323d743f9d43bf34a63a51` over 68 kanonisk normaliserede transitive implementeringsfiler.
@@ -265,6 +311,31 @@ Det er ikke en ny offentlig version eller bevis for alle underprocessers
 stop, eksklusiv skrivning, afbrudt runner, national kapacitet eller hele
 forløbet med private originalfiler. Resterende kilde-, data- og deploykontrol
 skal bestå før levering. Andre tidligere afvisninger består. Se DEC-0288.
+
+## 89.159 Revision – bankens egen lukning bevarer første fejl, kun lokal kandidat
+
+Den 5. oktober er en allerede kendt rettelse isoleret i den normale
+Copernicus-bankgemmer på den leverede 4.0.542-basis. Hvis synkronisering
+til disk fejler, må en senere fejl ved lukning af eget filhåndtag ikke
+skjule den første fejl. Egen lukning og oprydning forsøges stadig.
+Lukning som eneste fejl er fortsat et hårdt stop, aldrig en succesmarkør.
+
+Tidligere bank og kvitteringer bevares byte for byte før vellykket
+atomisk udskiftning. Er en komplet ny bank allerede udskiftet, bevares den
+ved senere oprydningsfejl uden rollback eller påstået succes. Den friske
+normale producent genoptager fra faktisk overlevende diskdata og
+kontrollerer originaler og kvitteringer igen.
+
+Én eksisterende funktion og ét eksisterende testforløb er ændret. Fire
+underprøver reproducerede først maskeringen og består efter rettelsen.
+Alle øvrige runtime- og testbytes er kontrolleret uændrede. Normale
+modelbyggere, fysisk scoremodel og private lagrings-/publickontrakter
+matcher de leverede bindinger; ingen nye metadata eller SQL-runtime.
+
+Rettelsen er kun lokal og har ikke egen kildekontrol eller deploy endnu.
+Det er ikke bevis for sikkert processtop, eksklusiv skrivning, tab af
+runner, national kapacitet eller rettelse af Fur-hullerne. Den samlede
+revision og syvzonernes faktiske nye vejreffekt er åbne. Se DEC-0266.
 
 ## 89.148 Revision – Copernicus bevarer den første gemmefejl (historisk kandidatstatus; nu leveret)
 

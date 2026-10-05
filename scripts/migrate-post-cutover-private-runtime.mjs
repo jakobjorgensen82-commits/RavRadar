@@ -30,6 +30,7 @@ import {
   assertCandidateGCoastalPointRollbackContinuation,
   coastalPointStageIdentity,
   assertArchivedOwnerCurrentIntegratedOriginal,
+  assertWaterLevelOnlyIntegratedOriginal,
 } from './lib/coastal-point-staging-contract.mjs';
 import {
   assertRavScoreModelBinding,
@@ -723,15 +724,18 @@ async function importPredecessorModules(predecessorRoot, sourceHead) {
 // canonical validators, restricted to the approved original physical contracts.
 // In particular, the original integrated state is validated BEFORE its hash
 // metadata is migrated. Neither an archive nor a hash stamp is a validator.
-function ownerCurrentOriginalValidators() {
-  const integrated = OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding;
+function ownerCurrentOriginalValidators(integrated = OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding) {
+  const waterOnly=integrated.modelBundleSha256
+    === '4ebe158f68954f32b47cb71d5222ab0cf676faaf4b323d743f9d43bf34a63a51';
   const currentCandidate = candidateModelBinding();
   if (currentCandidate.modelContractSha256
     !== 'c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8') {
     throw new Error('Owner current transition has another Candidate G physical contract');
   }
   const candidate = { ...currentCandidate,
-    modelBundleSha256: '28a69936b3d9a9c655e967c5e0c352d8401e5894ef3011bbfc55c85ad37f7ce7' };
+    modelBundleSha256: waterOnly
+      ? '3e5aae87b19934091a7882fbd8f5b5570b7c83ba786ea6f3bac52a8fd71fcd1e'
+      : '28a69936b3d9a9c655e967c5e0c352d8401e5894ef3011bbfc55c85ad37f7ce7' };
   const bindingValidator = binding => ({
     ravScoreModelBinding: () => structuredClone(binding),
     assertRavScoreModelBinding: (value, label) => assertSame(value, binding, label),
@@ -744,7 +748,8 @@ function ownerCurrentOriginalValidators() {
         if (state?.modelBundleSha256 !== integrated.modelBundleSha256) {
           throw new Error('Owner current original has another integrated implementation');
         }
-        return assertArchivedOwnerCurrentIntegratedOriginal(state, options);
+        return waterOnly ? assertWaterLevelOnlyIntegratedOriginal(state,options)
+          : assertArchivedOwnerCurrentIntegratedOriginal(state, options);
       },
     },
   };
@@ -1166,7 +1171,10 @@ async function validateAndMigrateConditions({
       `Private runtime migration rejected ${errors.length} independent error(s): ${summarizeIndependentErrors(errors)}`,
     );
   }
-  if (ownerCurrentOriginalOnly) {
+  const ownerArchiveRequired=ownerCurrentOriginalOnly
+    && source.coastalParts.modelBinding?.modelBundleSha256
+      === OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding.modelBundleSha256;
+  if (ownerArchiveRequired) {
     preserveOwnerCurrentOriginalPairs(source, migrated);
     for (const changed of collectChangedPaths(source.ravScoreCurrentSourceDomainTransitions,
       migrated.ravScoreCurrentSourceDomainTransitions, 'ravScoreCurrentSourceDomainTransitions')) {
@@ -1300,7 +1308,7 @@ async function validateAndMigrateConditions({
     recomputedModeCount,
     recomputedZoneCount,
     publicHourDeliveryRebound,
-    transitionKind: ownerCurrentOriginalOnly ? classifyOwnerCurrentArchiveBridge({
+    transitionKind: ownerArchiveRequired ? classifyOwnerCurrentArchiveBridge({
       source, migrated, bindingMetadataPaths, verifiedChangedPaths: exactAllowedPaths,
     }) : classifyVerifiedRuntimeMigration({
       source,
@@ -1349,7 +1357,7 @@ export async function migratePostCutoverPrivateRuntime({
       currentContractHashes: await privateRuntimeContractHashes({ repositoryRoot: repository }) });
     if (!expectation) throw new Error('Owner current migration is not its exact original transition');
   }
-  const modules = ownerCurrentOriginalOnly ? ownerCurrentOriginalValidators()
+  const modules = ownerCurrentOriginalOnly ? ownerCurrentOriginalValidators(predecessorIdentity.modelBinding)
     : await importPredecessorModules(predecessor, expectedSourceHead);
   const oldIntegrated = modules.integrated.ravScoreModelBinding();
   const oldCandidate = modules.candidate.ravScoreModelBinding();

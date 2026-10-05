@@ -49,10 +49,10 @@ const EXACT_PREDECESSOR_CONTINUATION_HASH =
   '46683362ec6b69835695db375f7de976a8dd0a75b7367a27e2854b653d73e0ab';
 
 await inspectMigrationSources();
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 43,
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 44,
   'The active backend must preserve every predecessor, storage security and the exact checkpoint bridge');
 assert.equal(LATEST_RAVSCORE_BINDING_MIGRATION.version, '20260920220000');
-assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261004190000');
+assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261005000000');
 
 const integratedMigration = await fs.readFile(
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
@@ -95,7 +95,7 @@ assert.doesNotMatch(rpcSql, /\bselect\s+\*\b/i,
   'integrated cutover RPC must not expose broad table data');
 
 const checkpointMigration = await fs.readFile(
-  'supabase/migrations/20261004190000_owner_current_source_domain_binding.sql',
+  'supabase/migrations/20261005000000_owner_water_level_only_binding.sql',
   'utf8',
 );
 const exactPredecessorMigration = await fs.readFile(
@@ -147,7 +147,7 @@ for (const marker of [
   "#- '{candidateGRollbackCompanion,generationSha256}'",
   'create or replace function public.ravradar_ravscore_checkpoint_contract()',
   "'schemaVersion', 'ravscore-checkpoint-db-v1'",
-  "'20261004190000'",
+  "'20261005000000'",
   "'checkpointContractDefinitionPresent'",
   "'checkpointCanonicalTimeHelperStableSecurityInvoker'",
   "'checkpointHistoryExclusionInstalled'",
@@ -355,6 +355,7 @@ const unicodeList = `
  20261002094500    │                  │ 2026-10-02 09:45:00
  20261003080000    │                  │ 2026-10-03 08:00:00
  20261004190000    │                  │ 2026-10-04 19:00:00
+ 20261005000000    │                  │ 2026-10-05 00:00:00
 `;
 assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260826', remote: '20260826' },
@@ -401,6 +402,7 @@ assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20261002094500', remote: null },
   { local: '20261003080000', remote: null },
   { local: '20261004190000', remote: null },
+  { local: '20261005000000', remote: null },
 ]);
 
 // Captured verbatim from backend readiness run 34333553305 with Supabase CLI 2.117.0.
@@ -456,6 +458,7 @@ const currentFirstInstallList = `${capturedFirstEightInstallList}
    \`20261002094500\` | \` \`    | \`2026-10-02 09:45:00\`
    \`20261003080000\` | \` \`    | \`2026-10-03 08:00:00\`
    \`20261004190000\` | \` \`    | \`2026-10-04 19:00:00\`
+   \`20261005000000\` | \` \`    | \`2026-10-05 00:00:00\`
 `;
 assert.deepEqual(parseSupabaseMigrationList(currentFirstInstallList),
   REQUIRED_CUTOVER_MIGRATIONS.map(item => ({ local: item.version, remote: null })));
@@ -587,6 +590,7 @@ await assert.rejects(
        20261002094500 | | pending
        20261003080000 | | pending
        20261004190000 | | pending
+       20261005000000 | | pending
     `,
     dryRunText: currentFirstInstallDryRun,
   }),
@@ -639,6 +643,7 @@ const appliedList = `
  20261002094500 | 20261002094500 | now
  20261003080000 | 20261003080000 | now
  20261004190000 | 20261004190000 | now
+ 20261005000000 | 20261005000000 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
@@ -704,7 +709,7 @@ try {
     helperRun.stderr || helperRun.stdout || helperRun.error?.message);
   assert.match(
     helperRun.stdout,
-    /exactly 20261004190000_owner_current_source_domain_binding.sql/,
+    /exactly 20261005000000_owner_water_level_only_binding.sql/,
     'the live code-only helper must admit exactly the current checkpoint bridge',
   );
 } finally {
@@ -792,6 +797,7 @@ try {
  20261002094500 │ │ pending
  20261003080000 │ │ pending
  20261004190000 │ │ pending
+ 20261005000000 │ │ pending
  `;
   const hydrated = await hydrateTemporaryRemoteMigrationHistory({
     workdir: isolatedWorkdir,
@@ -848,6 +854,7 @@ try {
  20261002094500 │ │ pending
  20261003080000 │ │ pending
  20261004190000 │ │ pending
+ 20261005000000 │ │ pending
     `,
   }), /unknown post-cutover migration 20260830/);
 } finally {

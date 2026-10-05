@@ -1,7 +1,52 @@
 # DEC-0291 – Ejerafgrænset dkss_lf-frakobling ved Lyngby og Agger
 
-**Status:** DELVIST IMPLEMENTERET lokalt; strøm-only to-state-overgang måltestet, slutgates og produktion er åbne.
+**Status:** 542-reglen leveret; ny godkendt vandstand-only-undtagelse er lokal 4.0.543. Release og faktisk NEW-T-effekt er åbne.
 **Dato:** 2026-10-04
+
+# NYESTE – 5. oktober – vandstands-undtagelse og eksakt teknisk overgang
+
+Ejeren har udtrykkeligt bestilt kun vandstand fra dkss_lf på de præcise syv
+kystzoner i 89.160. Current og waterTemperature forbliver udelukket. Policy v2
+har kun waterLevel som undtagelse; udeladt komponent er stadig lukket.
+Python-kildevalg/native sanitation og JS-native/PART/SOURCE/T+3 bruger samme
+regel. Øvrige zoner og global autentisk SOURCE-bank er uændrede.
+
+542→543-overgangen bruger den faktisk udgivne originalbinding og NY migration
+20261005000000. Fuld kanonisk original-statevalidering sker før metadata
+skifter; tidligere 541-original kan ikke ommærkes som 542. Eksisterende
+originalarkiv og alle evidens-/historikværdier bevares. Arkivet bruges aldrig
+som initializer eller nyt kildebevis. Fysiske kontrakter er uændrede, gammel
+migration bytekontrolleret urørt. Bindings-/CAS-/RPC-readback måltestes;
+ingen modelbody-copy/eval eller særskilt SQLinstallation.
+
+Kandidaten er lokal; exact-head CI, sikker release og faktisk effekt mangler.
+De 21 seneste vandstandstab ved Agger/Lyngby/Harboøre er ikke bevist repareret.
+Undtagelsen hjælper kun når gyldige valgte kildeinput findes. Central routing,
+vægte, direct-PART retention og no-loss består. Fur-årsag og sikker timeretention
+er stadig åbne. Ældre modstridende status nedenfor er historik.
+
+# NYESTE – 2026-10-04 22:45 DK – 4.0.542 faktisk leveret; ny vejreffekt afventer
+
+PR516 og PR517 er merged efter hver sin exact-head kildekontrol og proof.
+Den reparerede kontrollerede release afsluttede kl.22.20 DK med faktisk
+original-restore, privat overgang/publicering, eksakt datagenbrug og Pages.
+Hjemmesiden viser 4.0.542. Første releasefejl før Pages er historisk.
+Den allerede installerede nye databaseovergang blev ikke gentaget; faktisk
+migrationsplan var tom. Gamle migrationer, scoreformler og kystpunkter er urørte.
+
+Kode-only genbrugte gyldige 16Z-data uden providerkald eller ny scoreberegning.
+Syvzoners kilderene strøm og 48h-state behandles først ved ægte NEW-T;
+faktisk offentlig effekt er stadig åben. Originaler og bevist øvrig historik bevares.
+Cron er ikke ændret efter ejerens »pyt«. Den naturlige vejrhentning var kl.22.41
+aktiv ved DMI uden fejlede trin; restorecounts/save/cache/deploy er ikke målt endnu.
+Den godkendte manuelle kørsel venter på faktisk ledig writer. Ingen overlap/replacement.
+
+NORMAL Fur-diagnosen er leveret, ikke automatisk timeretention. Gamle 7/12 timers
+årsag og sikker genvinding er åbne. Hash/presence kan ikke genskabe gamle vægte
+eller tilsidesætte central routing. No-loss består; første legacy-spor kan være ukendt.
+Ingen hjemmesidealarm/usermail. FIELD-dækning er stadig 96.440426121%, alle fem
+samtidig 92.842571839% over 210/673/118h i samme 16Z-data, ikke ny coverage/privathistorik.
+Detaljeret privat evidens ligger i checkpoint. Modstridende ældre statusser er historik.
 
 ## Aktuel ejerordre
 
