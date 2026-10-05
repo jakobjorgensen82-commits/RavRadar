@@ -5,6 +5,13 @@
   "updatedAt": "2026-10-05",
   "sections": [
     {
+      "id": "coverage-tail-open-meteo-rolling-pool-2026-10-05",
+      "chapter": "89.163",
+      "title": "Prognosehalens dækning og bedre brug af reservekøen",
+      "summary": "Rullende feltdækning adskilles fra tab på samme timer. Den normale Open-Meteo-producer bruger lokalt de samme to forbindelser som løbende kø, så en langsom marinehentning ikke spærrer den anden. Budgetter, kildebeviser, rotation og privat format bevares. Levering og målt effekt mangler; vandstand og Fur undersøges særskilt.",
+      "body": "<p>Feltdækning tæller gyldige numeriske vejrkomponenter over 673 kystdele, 118 timer og fem familier. Det er ikke RavScore-tilgængelighed eller fuld privat historik. Et procentfald mellem rullende prognoser er ikke nødvendigvis datatab: samme timer sammenlignes særskilt fra udløbne og nye timer. Den kontrollerede 12Z-generation har fuld vind, bølge og vandstand i de første 96 timer, men væsentlige huller i halen. Nævneren og prognosehorisonten forkortes ikke.</p><p>Den normale Open-Meteo-producer er lokalt rettet fra parvis ventning til en løbende kø med højst de samme to forbindelser. En langsom marinehentning spærrer ikke næste vindhentning i den anden ledige forbindelse. Vellykkede søskende kan gemmes uafhængigt; gemning har én skriver. Ved gemmefejl starter ingen nye kald, startede kald afventes, og den oprindelige fejl bevares.</p><p>Budgetter, timeout, retry, rotation, kvalifikation, kildebeviser, private formater og modelbindinger er uændrede. Scoreformler, central routing og kystpunkter ændres ikke. Vandstand er DMI-only; reservekøen kan ikke opfinde manglende DMI-timer og løser ikke alene vandstandshullerne. Målprøver består; eksakt GitHub-kontrol, sikker levering og målt ny-generations-effekt mangler. Fur og samlet revision er åbne. DEC-0210.</p><p>Footerrettelsen er leveret og kontrolleret offentligt. Syvzoners vandstandsundtagelse er leveret; offentlig dkss_lf-strøm er nul på alle syv zoner i den kontrollerede 12Z-generation. Dette er ikke bevis for privat historik eller andre familiers provenance. Ældre pendingstatus for afsluttede leverancer er historik.</p>"
+    },
+    {
       "id": "forecast-footer-owner-copy-2026-10-05",
       "chapter": "89.161",
       "title": "Footerens prognosetidspunkt",

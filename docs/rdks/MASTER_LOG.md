@@ -1,4 +1,24 @@
-# NYESTE – 2026-10-05 – ejerbestilt, selvstændig footerrettelse
+# NYESTE – 2026-10-05 – ejerbestilt analyse og rettelse af dækningsgrad
+
+Ejeren kræver årsagen til dårligere dækningsgrad rettet. National kontrol
+genbruger de gemte offentlige rapporter, uændret nævner og præcis samme
+106 timer. Faldet skyldes indtrædende ufuldstændige haletimer; de fælles
+timer forbedres samlet. H0–H95 har fuld vind, bølge og vandstand.
+En reproduceret ineffektivitet i den normale Open-Meteo-producer rettes
+lokalt med en løbende kø over de eksisterende to forbindelser. Originale
+databeviser, budgetter, retry, rotation og privat lagringskontrakt bevares.
+Måltests består, inklusive afventning af startede kald efter gemmefejl.
+CI, sikker levering og faktisk national effekt mangler. Vandstand er
+fortsat DMI-only og undersøges særskilt; ingen forkortet horisont eller
+opfundne værdier. DEC-0210 og håndbog 89.163.
+
+Footerleverancen er faktisk kontrolleret offentligt; syvzoneundtagelsen
+er leveret og offentlig dkss_lf-strøm er nul på alle syv zoner. Dette
+lukker ikke privat historik, Fur, assistentudvidelsen eller samlet revision.
+Detaljeret diagnostik/kørselsevidens ligger i privat checkpoint, ikke i
+den offentlige kilde-PR. Ældre leverancestatus nedenfor er historik.
+
+# HISTORIK – 2026-10-05 – ejerbestilt, selvstændig footerrettelse
 
 Ejeren har fravalgt den offentlige forklaring om ukendt beregningsalder.
 Tre DA/DE/EN-tekster afkortes til prognosetidspunktet; ingen ændring af

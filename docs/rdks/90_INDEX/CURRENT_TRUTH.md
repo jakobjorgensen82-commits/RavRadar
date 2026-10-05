@@ -1,4 +1,28 @@
-# NYESTE – 2026-10-05 – ejerbestilt footertekst
+# NYESTE – 2026-10-05 – feltdækning og lokal reservekørettelse
+
+Den senest kontrollerede offentlige 12Z-generation har 371165 gyldige felter
+af 397070 = 93,475961 %. Nævneren er fortsat 673 dele × 118 timer × fem
+familier. Vind, bølge og vandstand er komplette i de første 96 timer.
+Faldet fra 00Z til 12Z er et vinduesskift: samme 106 timer får samlet flere
+gyldige felter, mens de nye haletimer er mindre komplette end de udløbne.
+Dette må hverken kaldes tab på samme timer eller komplet scorehistorik.
+
+En konkret ineffektivitet i den normale Open-Meteo-kø er reproduceret og
+rettet lokalt: en langsom komponent spærrer ikke længere næste del, når
+én af de eksisterende to forbindelser er ledig. Uændrede tidsbudgetter,
+retry, rotation, kildeidentitet, bankvalidering og cacheformat. Ved gemmefejl
+starter ingen nye kald; startede kald afsluttes før yderlaget får fejlen.
+Relevante tests og model-/private kontrakter består. Ikke leveret og ikke
+bevis for national effekt. Vandstand er fortsat DMI-only; utilgængelige
+native haletimer og øvrige vandstandshuller er åbne analysepunkter.
+
+Footerrettelsen er leveret og kontrolleret offentligt. Syvzoners strøm har
+dkss_lf = 0 i alle offentlige 118 timer; vandstandsundtagelsen er leveret.
+Dette er ikke privat-historik-/vandstandsproveniensbevis. Fur, Spørg RavRadar
+og samlet revision er fortsat åbne. Se DEC-0210, håndbog 89.163 og nyeste
+private checkpoint. Historiske uafsluttede footerstatusser nedenfor er erstattet.
+
+# HISTORIK – 2026-10-05 – ejerbestilt footertekst
 
 Kun footerens DA/DE/EN-formulering om ukendt beregningsalder fjernes. Den
 viser fortsat prognosetidspunktet. Metadata, aldersberegning, datavalidering,

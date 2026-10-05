@@ -1,4 +1,25 @@
-# NYESTE – 2026-10-05 – smal footerrettelse, ingen ny model
+# NYESTE – 2026-10-05 – reservekøens kapacitet, lokal rettelse
+
+Den normale Open-Meteo-producer bruger nu lokalt en løbende kø med højst
+to samtidige forbindelser i stedet for at vente på begge komponenter for
+samme del. Dette retter reproduceret blokering bag en langsom marinehentning.
+Vellykkede søskende kan gemmes, mens den langsomme hentning afventes.
+Gemmefejl er stadig hårde: ingen nye kald eller yderligere gemning efter
+fejlen, og allerede startede kald afventes før den oprindelige fejl returneres.
+Bank/runtime- og normale reservekaldere består; modelbindinger og private
+lagringskontrakter er uændrede. Ingen ny version, migration, budgetløft,
+kildepolitik eller geodataændring. Eksakt GitHub-kontrol, sikker levering
+og målt ny-generations-effekt mangler.
+
+Offentlig feltdækning er 93,475961 % i 12Z-generationen. Vind, bølge og
+vandstand er fulde i H0–H95; samme 106 timer forbedres samlet. Faldet skyldes
+tilkomst af ufuldstændige haletimer, ikke samlet tab på de fælles timer.
+Vandstandsårsager undersøges separat; reservekøen løser ikke DMI-only-huller.
+Footer er leveret/offentligt kontrolleret, syvzoneundtagelse er leveret og
+offentlig dkss_lf-strøm er nul på alle syv zoner. Privat historik, Fur,
+Spørg RavRadar og samlet revision er fortsat åbne. DEC-0210/håndbog 89.163.
+
+# HISTORIK – 2026-10-05 – smal footerrettelse, ingen ny model
 
 Ejerens tekstfjernelse er lokalt implementeret i de tre DA/DE/EN ageUnknown-
 tekster. Kun prognosetidspunktet står tilbage. Nødvisning, manglende-data-

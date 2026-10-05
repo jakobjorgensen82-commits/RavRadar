@@ -2,6 +2,37 @@
 
 **Håndbogsversion:** 4.0.543
 
+## 89.163 Prognosehalens dækning og bedre brug af reservekøen
+
+Feltdækning tæller gyldige numeriske vejrkomponenter over 673 kystdele,
+118 timer og fem familier. Det er ikke RavScore-tilgængelighed eller bevis
+for fuld privat historik. Et procentfald mellem rullende prognoser er heller
+ikke nødvendigvis datatab: samme timer skal sammenlignes særskilt fra
+udløbne og nytilkomne timer. Den kontrollerede 12Z-generation har fuld vind,
+bølge og vandstand i de første 96 timer, men væsentlige huller i halen.
+Nævneren og prognosehorisonten forkortes ikke for at forbedre tallet.
+
+Den normale Open-Meteo-producer er lokalt rettet fra parvis ventning til
+en løbende kø med højst de samme to samtidige forbindelser. En langsom
+marinehentning holder dermed ikke næste vindhentning tilbage i den anden
+ledige forbindelse. Vellykkede søskende kan gemmes uafhængigt; gemning
+har stadig én skriver. Ved gemmefejl starter ingen nye kald, allerede
+startede kald afventes, og den oprindelige fejl bevares.
+
+Budgetter, timeout, retry, rotation, kvalifikation, originale kildebeviser
+og private lagringskontrakter er uændrede. Modelbindinger, scoreformler,
+administratorens routing og kystpunkter ændres ikke. Vandstand er DMI-only;
+denne reservekø kan ikke opfinde manglende DMI-timer og løser ikke alene
+vandstandshullerne. Lokale målprøver består; eksakt GitHub-kontrol, sikker
+levering og målt effekt i nye generationer mangler. Fur-årsag og samlet
+revision er stadig åbne. DEC-0210.
+
+Footerrettelsen er leveret og kontrolleret i den offentlige kilde. Syvzoners
+vandstandsundtagelse er leveret; strøm fra dkss_lf findes ikke på de syv
+zoner i den kontrollerede 12Z-generation. Det beviser ikke privat historik
+eller vandstands-/temperaturproveniens. Tidligere kapitlers pendingstatus
+for afsluttede leverancer er historik.
+
 ## 89.161 Footerens prognosetidspunkt
 
 Efter ejerens ønske viser footerens DA/DE/EN-gren med ukendt sammenlignelig
