@@ -6,6 +6,10 @@ beskeder, metadata og datakontroller er bevaret. Ingen modelbinding, version,
 SQLmigration, geodata, vejr eller scoreændring. Målprøve, eksakt CI/proof,
 kontrolleret kode-only release og faktisk offentlig kontrol kræves.
 
+Copy-cachemarkører på bootstrap/app er måltestet gennem den eksisterende
+worker med gamle 543-assets i cache. Samme version og cachepolitik;
+ingen cache-reset eller nye data. Nye exact-head-gates kræves efter deltaet.
+
 543-vandstandsundtagelsen er faktisk leveret kl.06.04 dansk tid. Ny almindelig
 543-vejrhentning afsluttede kl.08.45; detaljerede resultater og kildeeffekt
 mangler. Spørg RavRadar udvikles separat lokalt. Fur-årsag/timeretention og

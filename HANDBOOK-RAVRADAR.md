@@ -12,6 +12,12 @@ manglende data er uændrede. Dette er en separat tekstrettelse på 4.0.543;
 ingen ny version, modelbinding, migration eller vejrhentning. Lokal kontrol
 og CI er ikke offentlig effekt; kode-only levering og offentlig kontrol kræves.
 
+Bootstrap og app har samme afgrænsede copy-cachemarkør. Den sikrer, at
+tidligere besøgende ikke får gamle 543-assets ved næste sideindlæsning.
+Den normale serviceworker, dens cachepolitik og øvrige assets er uændrede;
+ingen caches slettes eller nulstilles. Den normale cold-start-målprøve dækker
+genbrug af tidligere 543-assets og ny indlæsning af de to rettede URL'er.
+
 Vandstandsundtagelsen er faktisk leveret i 543 kl.06.04 dansk tid. Den nye
 almindelige 543-generation afsluttede med deploy kl.08.45; detaljeret cache,
 no-loss og syvzoneeffekt mangler kontrol. Spørg RavRadar udvikles separat

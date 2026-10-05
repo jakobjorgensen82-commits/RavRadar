@@ -10,6 +10,11 @@ datavalidering, horizon, reelle nød-/fejlbeskeder samt kalibreringsregler
 eller en ny model-/databaseovergang. Kontrolleret kode-only levering og
 offentlig afprøvning skal stadig dokumenteres.
 
+Bootstrap og app får samme afgrænsede copy-cachemarkør, så tidligere
+besøgendes uændrede 543-serviceworker ikke genbruger de gamle assetbytes.
+Den eksisterende cache- og versionpolitik ændres ikke; kun disse to URL'er
+får en ny identitet. Ingen cache slette-/nulstillingsoperation.
+
 **Opdateret verifikation og autoritet 2026-09-10:** Ejer har godkendt lokale måltests, Sol Ultra og autonom fortsættelse gennem cachevedligeholdelse, scorelaunch og efterkontrol. Den samlede lokale målmatrix er nu grøn; se docs/ai/WEATHER_LIFECYCLE_TEST_EVIDENCE_2026-09-10.md fra repositoryroden. Ældre udsagn herunder om ikke kørte tests/testpause er historik. Ny exact-head-CI, merge og faktiske drifts-/launchbeviser mangler; den gamle annullerede kørsel genstartes ikke. Udskudte opgaver revurderes mod det faktisk løste.
 
 ## Bindende tillæg 2026-09-09 – datalevetid er ikke restlistens levetid

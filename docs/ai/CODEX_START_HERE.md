@@ -8,6 +8,11 @@ Ingen ny produktversion, modelbinding, SQLmigration, vejr-, score- eller
 geodataændring. Exact-head CI, kontrolleret kode-only levering og offentlig
 kontrol kræves. Lokal kode må ikke kaldes offentlig effekt.
 
+En afgrænset copy-cachemarkør på bootstrap og app sikrer rettelsen ved
+næste sideindlæsning hos tidligere besøgende. Normal serviceworker/cache-
+politik er uændret, ingen cache-reset. Eksisterende cold-start-målprøve
+dækker faktisk worker-routing for tidligere cachede 543-assets.
+
 Vandstandsundtagelsen er faktisk leveret i 543 kl.06.04 dansk tid. Den
 almindelige 543-vejrhentning afsluttede med deploy kl.08.45. Dens detaljerede
 cache-/no-loss-/kildeeffekt er endnu ikke færdigkontrolleret. Fur-årsag,

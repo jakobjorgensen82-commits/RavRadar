@@ -7,6 +7,10 @@ produktversion, modelbinding, databaseovergang, score- eller geodataændring.
 Separat lille kode-only rettelse; lokal og CI-kontrol er ikke offentlig effekt.
 Spørg RavRadar-udvidelsen og samlet revision fortsætter separat.
 
+Bootstrap/app bruger en afgrænset copy-cachemarkør, så eksisterende besøgende
+får rettelsen ved næste sideindlæsning. Den normale serviceworker er uændret;
+ingen caches slettes. Eksisterende cold-start-test dækker tidligere 543-assets.
+
 Vandstandsundtagelsen er faktisk leveret i 543 kl.06.04 dansk tid. Ny almindelig
 543-generation afsluttede kl.08.45; detaljerede resultater/kildeeffekt mangler.
 Ældre modstridende leverancestatus nedenfor er historik.

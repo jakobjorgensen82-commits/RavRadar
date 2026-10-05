@@ -9,6 +9,11 @@ databaseovergang, vejr-, score- eller geodataændring. Kræver målprøve,
 exact-head CI/proof, fornyede writer/main-gates, kontrolleret kode-only
 release og offentlig effekt. Privat checkpoint bevarer faktisk kørselsevidens.
 
+Bootstrap/app får samme afgrænsede copy-cachemarkør, så tidligere besøgende
+ikke genbruger gammel tekst. Normal worker, cachepolitik og øvrige assets
+er uændrede. Eksisterende cold-start/versionsclosure/startup/i18n-målprøver
+består. Ny exact-head CI kræves efter dette funktionelle cache-delta.
+
 543-vandstandsundtagelsen er faktisk offentlig siden kl.06.04 dansk tid;
 almindelig 543-generation afsluttede med deploy kl.08.45. Detaljerede
 cache-/no-loss-/kildeeffektkontroller og Spørg RavRadar-levering mangler.
