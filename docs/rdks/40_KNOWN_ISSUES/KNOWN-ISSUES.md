@@ -1,5 +1,16 @@
 # AKTUELLE JORDRAVPUNKTER – national model 0.2 – 2026-10-05
 
+**JORDRAV-012, national lagvejledning lokalt løst:** Alle 4.652 forklaringer
+har konkret øvre/dybere undersøgelsesforløb; 196 datafiler er SHA-kontrolleret.
+Gentagne symboler, lodrette kontakter, sammensatte delområder, ældre kilde,
+underkode og konflikt behandles særskilt. Ældre brede materialefakta er
+rettet til fysisk kodebeskrivelse. Ingen kontakt-/pløjedybde opfindes.
+JORDRAV-007/008 består empirisk: nutidig blotlægning, lagprofil, ravtilførsel
+og gyldige rå dybderastere er ikke verificeret. AU's kulstofdomæne/-version
+og dybere JB uden samme SOC-input skal kontrolleres før enhver integration.
+Ugyldige søpixels eller fravær fra et topjordsbaseret tørveprodukt må ikke
+blive rav-negative eller rav-positive regler. docs/research/JORDRAV_LAGADGANG_2026-10-05.md.
+
 **JORDRAV-011, lokal kortplanlægning løst:** Hele landets fem spor kan
 filtreres særskilt. Valgt forklaring bevares med besked ved skjult
 fremhævning. Visningslinks gendanner sted, lagvalg og præcist fragment

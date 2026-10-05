@@ -1,5 +1,18 @@
 ## Ikke udgivet – Jordrav sporfiltre og gemte kortvisninger (2026-10-05)
 
+## Lokal Jordravfortsættelse 2026-10-05 – lagadgang
+
+- Ny landsdækkende lagvejledning viser øvre/dybere fysisk materiale og
+  konkrete undersøgelsestrin for syv lagforløb, med samme ukendte jagtbarhed.
+- Ældre brede materialefakta erstattes med faktiske kodebeskrivelser;
+  marine underkoder og begravet tørv beskrives konsekvent i hele panelet.
+- Alle 196 filer/4.652 forklaringer/505.834 fragmenter er SHA-kontrolleret.
+  Originale GEUS-/AU-metoder er læst og hashmålt; tekstur-/SOC-intervaller
+  bruges ikke som målte lagkontakter eller ravbonus.
+- Selvstændig lagadgangsvejledning 0.1.0; model 0.2/app 4.0.541 bevares.
+  RDKS, Markdown og forberedt webtillæg følger leverancen. Ingen publicering.
+  Rapport: docs/research/JORDRAV_LAGADGANG_2026-10-05.md.
+
 - Alle fem geologiske spor kan undersøges enkeltvis i nationale og lokale
   flader. Forklaringen bevares med eksplicit besked, hvis valget skjules.
 - Kopiér link til sted, baggrund, lagvalg og præcist detailfragment eller

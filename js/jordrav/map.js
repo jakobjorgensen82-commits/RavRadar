@@ -4,6 +4,7 @@ import { openDataset, intersects } from './data-service.js';
 import { REGIONAL_HYPOTHESES } from './regional-hypotheses.js';
 import { ACCESS_COLOURS, SURFACE_HUNTABILITY, DEEP_LAYER_EXAMPLES } from './accessibility.js';
 import { searchContext } from './search-context.js';
+import { layerAccessPlan } from './layer-access.js';
 import { initialiseFieldContext, FIELD_SERVICE } from './field-context.js';
 import { TRACE_CLASSES, acceptsPotential, parseView, encodeView, featureReference } from './view-state.js';
 import { MANIFEST_SHA256 } from './dataset-binding.js';
@@ -210,15 +211,6 @@ function sourceLink(source) {
   link.href = source.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
   return link;
 }
-function materialAtDepth(code) {
-  if(['HV-L','HV-S'].includes(code))return tr('materialMarineFine');
-  const groups=data.rules.newerGroups;
-  const parts=code.split('-');
-  const names=new Set(parts.map(part=>Object.keys(groups).find(key=>groups[key].includes(part)) || 'unresolved'));
-  const name=names.size===1?[...names][0]:'mixed';
-  return tr(`material${materialKeys[name]}`);
-}
-
 function appendSearchContext(panel, entry) {
   const context = searchContext(entry);
   const section = node('section', undefined, 'jordrav-search-context');
@@ -230,6 +222,24 @@ function appendSearchContext(panel, entry) {
   if(context.upper.lateralMixture || context.lower?.lateralMixture) section.append(node('p',tr('searchMixture')));
   for(const type of context.tasks) section.append(node('p',tr(`task_${type}`)));
   section.append(node('h4', tr('searchMissingLink')),node('p',tr(`missing_${context.missingLink}`)));
+  panel.append(section);
+}
+
+function appendLayerAccess(panel, entry) {
+  const plan = layerAccessPlan(entry);
+  const section = node('section', undefined, 'jordrav-layer-access');
+  section.dataset.kind = plan.kind;
+  section.append(node('h3', tr('layerAccessTitle')));
+  const facts = node('dl');
+  facts.append(node('dt', tr('layerAccessUpper')), node('dd', `${entry.surface || '—'} · ${plan.upper.types.map(type=>tr(`physical_${type}`)).join(' · ')}`));
+  facts.append(node('dt', tr('layerAccessLower')), node('dd', plan.lower ? `${entry.depth || '—'} · ${plan.lower.types.map(type=>tr(`physical_${type}`)).join(' · ')}` : tr('depthMissing')));
+  section.append(facts, node('p', tr(`layerCase_${plan.kind}`)));
+  const steps = node('ol');
+  for (const step of plan.steps) steps.append(node('li', tr(`layerStep_${step}`)));
+  section.append(steps);
+  const source = node('p', undefined, 'jordrav-original');
+  source.append(sourceLink({name:tr('layerAccessMethod'),url:'https://data.geus.dk/pure-pdf/GEUS-R_2025_32_web.pdf#page=4'}));
+  section.append(source);
   panel.append(section);
 }
 
@@ -246,13 +256,16 @@ function showDetail(feature) {
   panel.append(accessBadge,node('p',tr('surfaceHuntabilityNote')));
   const facts = node('dl');
   const fact = (key, value) => facts.append(node('dt', tr(key)), node('dd', value));
+  const physical = searchContext(entry);
+  const material = layer => layer.types.map(type=>tr(`physical_${type}`)).join(' · ');
   fact('basis', feature.properties.o.startsWith('gap:') ? tr('sourceGap') : tr(entry.source === 'soil-old' ? 'oldBasis' : 'newBasis'));
-  fact('surface', `${tr(`material${materialKeys[entry.material]}`)} (${entry.surface || '—'})`);
-  fact('depth', entry.source === 'soil-old' ? tr('depthMissing') : entry.depth ? `${materialAtDepth(entry.depth)} (${entry.depth})` : '—');
+  fact('surface', `${material(physical.upper)} (${entry.surface || '—'})`);
+  fact('depth', physical.lower ? `${material(physical.lower)} (${entry.depth || '—'})` : tr('depthMissing'));
   fact('landscape', tr(`process${processKeys[entry.process]}`));
   fact('access', tr(accessKeys[entry.accessibility]));
   panel.append(facts);
   appendSearchContext(panel, entry);
+  appendLayerAccess(panel, entry);
   const story=entry.potential==='unresolved'?'Unresolved':materialKeys[entry.material];
   panel.append(node('h3', tr('inference')), node('p', tr(`story${story}`)), node('p', tr(reasonKeys[entry.potential])));
   if (entry.conflictSymbols) panel.append(node('p', `GEUS: ${entry.conflictSymbols}`, 'jordrav-original'));

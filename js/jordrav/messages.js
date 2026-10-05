@@ -361,3 +361,68 @@ const viewMessages={
 };
 registerI18nMessages(Object.fromEntries(Object.entries(viewMessages).map(([lang,entries])=>[lang,Object.fromEntries(Object.entries(entries).map(([key,value])=>[`jordrav.${key}`,value]))])));
 messageKeys.push(...Object.keys(viewMessages.da));
+
+const layerAccessMessages = {
+  da:{
+    layerAccessTitle:'Hvordan kan laget nå overfladen?',
+    layerAccessUpper:'Øvre kortlagte materiale', layerAccessLower:'Materiale omkring én meter',
+    layerAccessMethod:'GEUS: kortlægning under pløjelaget · metode',
+    'layerCase_unresolved':'Lagforløbet er uafklaret. Begynd med at identificere materialet og dets lokale dybde.',
+    'layerCase_legacy':'Det ældre supplement har ingen lodret lagbeskrivelse. Det kræver en lokal profil at forbinde aflejringen med søgbar jord.',
+    'layerCase_variant':'En marin underkode er ikke særskilt forklaret. Afklar materialet, før en bestemt lagopbygning lægges til grund.',
+    'layerCase_repeated':'Samme jordartssymbol gentages. GEUS kortlægger materiale omkring én meter, valgt for at komme under pløjelaget. Den bearbejdede jord skal stadig sammenholdes med aflejringen.',
+    'layerCase_cover-contact':'Der er forskellige aflejringer med organisk materiale eller flyvesand øverst. Undersøg både det øvre materiales egen ravmulighed og adgangen til laget under det.',
+    'layerCase_mixed-cover-contact':'Det øvre symbol samler flere materialer, herunder organisk materiale eller flyvesand. De kan ligge side om side; et sammenhængende dæklag over hele fladen er ikke fastlagt.',
+    'layerCase_sediment-contact':'Kortet beskriver en lodret forskel inden for den øverste meter. Selv når begge lag kaldes sand, kan de have forskellig aflejringshistorie og ravtilførsel.',
+    'layerStep_resolve-record':'Afklar de originale symboler eller den modstridende registrering. Et kendt dybere symbol løser ikke et ukendt øvre materiale.',
+    'layerStep_local-profile':'Find en lokal beskrivelse med materiale, dybder, sted og dato. Dybderne skal kunne knyttes til det aktuelle terræn og den jord, der kan ses eller bearbejdes.',
+    'layerStep_resolve-variant':'Afklar den marine underkode og beskriv, hvilke materialer der faktisk forekommer. Underkoden angiver ikke i sig selv lagtykkelse.',
+    'layerStep_compare-worked':'Sammenhold den blotlagte eller bearbejdede jord med det relevante lag og den faktiske bearbejdningsdybde. Regn kan rense rav, som allerede er kommet frem.',
+    'layerStep_check-identity':'Skeln mellem ens kornstørrelse og samme aflejring. Ravtilførsel og omlejring skal forbindes med netop det materiale, der ligger fremme.',
+    'layerStep_upper-receiver':'Afklar, om ravhypotesen gælder det øvre materiale, laget under det eller begge. Hvert lag skal have sin egen mulige tilførsels- eller omlejringskæde.',
+    'layerStep_locate-contact':'Fastlæg, hvor lagkontakten ligger i forhold til dagens overflade. Sammenhold den med blotlægning eller bearbejdning; kortet giver ingen præcis dybde til kontakten.',
+    'layerStep_separate-patches':'Skeln først mellem materialernes lokale delområder i de sammensatte symboler. Brug derefter en lokal profil til at afklare den lodrette lagkontakt.'
+  },
+  de:{
+    layerAccessTitle:'Wie kann die Schicht an die Oberfläche gelangen?',
+    layerAccessUpper:'Oberes kartiertes Material', layerAccessLower:'Material in etwa einem Meter Tiefe',
+    layerAccessMethod:'GEUS: Kartierung unter dem Pflughorizont · Methode',
+    'layerCase_unresolved':'Der Schichtverlauf ist ungeklärt. Zuerst Material und lokale Tiefe bestimmen.',
+    'layerCase_legacy':'Die ältere Ergänzung enthält keine vertikale Schichtbeschreibung. Eine lokale Beschreibung ist nötig, um die Ablagerung mit durchsuchbarem Boden zu verbinden.',
+    'layerCase_variant':'Ein mariner Untercode ist nicht gesondert erklärt. Das Material klären, bevor ein bestimmter Schichtaufbau angenommen wird.',
+    'layerCase_repeated':'Derselbe Bodencode wird wiederholt. GEUS kartiert Material in etwa einem Meter Tiefe, um unter den Pflughorizont zu gelangen. Der bearbeitete Boden muss weiterhin mit der Ablagerung verglichen werden.',
+    'layerCase_cover-contact':'Verschiedene Ablagerungen, oben organisches Material oder Flugsand. Sowohl die eigene Bernsteinmöglichkeit des oberen Materials als auch den Zugang zur darunterliegenden Schicht untersuchen.',
+    'layerCase_mixed-cover-contact':'Der obere Code umfasst mehrere Materialien, darunter organisches Material oder Flugsand. Sie können nebeneinander liegen; eine durchgehende Deckschicht ist nicht belegt.',
+    'layerCase_sediment-contact':'Die Karte beschreibt einen vertikalen Unterschied innerhalb des obersten Meters. Auch zwei Sandschichten können unterschiedliche Ablagerungsgeschichten und Bernsteinzufuhr haben.',
+    'layerStep_resolve-record':'Originalcodes oder widersprüchliche Angaben klären. Ein bekannter tieferer Code erklärt kein unbekanntes oberes Material.',
+    'layerStep_local-profile':'Eine lokale Beschreibung mit Material, Tiefen, Ort und Datum suchen. Die Tiefen müssen auf das heutige Gelände und den sichtbaren oder bearbeitbaren Boden bezogen werden können.',
+    'layerStep_resolve-variant':'Den marinen Untercode klären und tatsächlich vorkommende Materialien beschreiben. Der Untercode bestimmt allein keine Schichtmächtigkeit.',
+    'layerStep_compare-worked':'Freigelegten oder bearbeiteten Boden mit der relevanten Schicht und der tatsächlichen Bearbeitungstiefe vergleichen. Regen kann bereits freigelegten Bernstein reinigen.',
+    'layerStep_check-identity':'Gleiche Korngröße von derselben Ablagerung unterscheiden. Bernsteinzufuhr und Umlagerung mit genau dem freiliegenden Material verbinden.',
+    'layerStep_upper-receiver':'Klären, ob die Bernsteinhypothese das obere Material, die darunterliegende Schicht oder beide betrifft. Jede Schicht braucht eine eigene mögliche Zufuhr- oder Umlagerungskette.',
+    'layerStep_locate-contact':'Die Lage des Schichtkontakts zur heutigen Oberfläche bestimmen und mit Freilegung oder Bearbeitung vergleichen. Die Karte gibt keine genaue Kontakttiefe an.',
+    'layerStep_separate-patches':'Zuerst die lokalen Teilflächen der Materialien in zusammengesetzten Codes unterscheiden. Danach mit einer lokalen Beschreibung den vertikalen Schichtkontakt klären.'
+  },
+  en:{
+    layerAccessTitle:'How can the layer reach the surface?',
+    layerAccessUpper:'Upper mapped material', layerAccessLower:'Material at about one metre',
+    layerAccessMethod:'GEUS: mapping below the plough zone · method',
+    'layerCase_unresolved':'The layer sequence is unresolved. Start by identifying the material and its local depth.',
+    'layerCase_legacy':'The older supplement has no vertical layer description. A local profile is needed to connect the deposit to searchable soil.',
+    'layerCase_variant':'A marine subcode is not separately explained. Establish the material before assuming a particular layer sequence.',
+    'layerCase_repeated':'The same soil code is repeated. GEUS maps material at about one metre, chosen to reach below the plough zone. Cultivated soil still needs to be compared with the deposit.',
+    'layerCase_cover-contact':'Different deposits have organic material or wind-blown sand above. Investigate both the upper material’s own amber possibility and access to the layer beneath.',
+    'layerCase_mixed-cover-contact':'The upper code combines materials, including organic material or wind-blown sand. They may occur side by side; continuous cover across the entire area is not established.',
+    'layerCase_sediment-contact':'The map describes a vertical difference within the top metre. Even two sand layers may have different depositional histories and amber supply.',
+    'layerStep_resolve-record':'Resolve the original codes or conflicting record. A known deeper code does not resolve an unknown upper material.',
+    'layerStep_local-profile':'Find a local description with materials, depths, location and date. Depths must relate to the present terrain and the soil that is visible or can be cultivated.',
+    'layerStep_resolve-variant':'Resolve the marine subcode and describe the materials actually present. The subcode alone does not give bed thickness.',
+    'layerStep_compare-worked':'Compare exposed or cultivated soil with the relevant layer and actual cultivation depth. Rain can clean amber that has already been brought out.',
+    'layerStep_check-identity':'Distinguish the same grain size from the same deposit. Connect amber supply and reworking to the specific material exposed.',
+    'layerStep_upper-receiver':'Establish whether the amber hypothesis concerns the upper material, the lower layer or both. Each layer needs its own possible supply or reworking chain.',
+    'layerStep_locate-contact':'Locate the layer contact relative to today’s surface and compare it with exposure or cultivation. The map gives no exact depth to the contact.',
+    'layerStep_separate-patches':'First distinguish the local patches of materials in combined codes. Then use a local profile to establish the vertical layer contact.'
+  }
+};
+registerI18nMessages(Object.fromEntries(Object.entries(layerAccessMessages).map(([lang,entries])=>[lang,Object.fromEntries(Object.entries(entries).map(([key,value])=>[`jordrav.${key}`,value]))])));
+messageKeys.push(...Object.keys(layerAccessMessages.da));

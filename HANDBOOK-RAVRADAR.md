@@ -11,6 +11,22 @@ Appversionen er 4.0.541; den geologiske model er 0.2.0-prototype.
 Almindeligt kort og luftfoto bevarer farveflader, valgt sted og forklaring.
 Kystvisningen henter ikke jordravdata.
 
+**Lagadgang 2026-10-05:** Klikpanelets *Hvordan kan laget nå overfladen?*
+viser øvre og dybere fysisk materiale samt to til fire undersøgelsestrin.
+Samme kornstørrelse er ikke nødvendigvis samme aflejring. Organisk
+materiale/flyvesand kan have egen ravmulighed og samtidig ligge over et
+andet relevant lag; begge kæder vurderes særskilt. Materialer samlet
+med bindestreg afklares lokalt før lodret kontakt. Faktiske kodebeskrivelser
+bruges også i panelets øvre/dybere faktafelter, herunder uafklarede underkoder.
+
+Alle 4.652 forklaringer og 505.834 fragmenter er behandlet. GEUS' cirka
+én meter, AU's faste dybdeintervaller og kulstofmodeller er ikke lokale
+målinger af lagkontakt eller pløjedybde. Det relevante materiale skal
+forbindes med dagens blotlagte eller bearbejdede jord. Jagtbarhed og farver
+bevares; dybe punkter beholder registrerede intervaller. Lokal lagadgangs-
+vejledning 0.1.0 ændrer ingen geologiske data eller RavScore. Metode og
+kontrol: `docs/research/JORDRAV_LAGADGANG_2026-10-05.md`.
+
 **Kortplanlægning 2026-10-05:** *Undersøg et spor* viser én af de fem
 geologiske mulighedsklasser ad gangen, eller alle som før. Det gælder hele
 Danmark og de lokale detaljer. *Vis kun mulighedsudpegninger* skjuler

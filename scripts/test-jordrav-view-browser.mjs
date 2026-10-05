@@ -8,7 +8,9 @@ import { MANIFEST_SHA256 } from '../js/jordrav/dataset-binding.js';
 const require=createRequire(import.meta.url),{chromium}=require('playwright');
 const output=path.resolve('docs/research/jordrav');
 const diagnostic=JSON.parse(await fs.readFile(path.join(output,'national-search-context-2026-10-05.json')));
-const artifact=name=>path.join(output,`planning-2026-10-05-${name}`);
+const outputPrefix=process.env.RAVRADAR_JORDRAV_VIEW_PREFIX||'planning-2026-10-05';
+if(!/^[\w.-]+$/.test(outputPrefix))throw Error('Invalid planning browser output prefix');
+const artifact=name=>path.join(output,`${outputPrefix}-${name}`);
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.gz':'application/gzip'};
 const server=http.createServer(async(request,response)=>{
   const relative=decodeURIComponent(new URL(request.url,'http://localhost').pathname).replace(/^\//,'')||'jordrav.html';

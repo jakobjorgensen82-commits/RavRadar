@@ -1,0 +1,3862 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-05",
+  "modelVersion": "0.2.0-prototype",
+  "layerAccessVersion": "0.1.0",
+  "manifestSha256": "5d0a925a04f71e11eaf82feb3d27294be6b1f00bb4de08dfa3ee4ff4e6a2b2a0",
+  "codeBindingLF": {
+    "layer-access.js": "cbd39cfdcf3241ce1d3589ec99ef48df47b9f97dbef926c868f471b38509a5d1",
+    "search-context.js": "06672b010b88bdd96ee5d828079b26990b2b1b1edef962d04eb070607efdb212",
+    "producer": "37e9bcd7d441a6f574ae411912f5420fd2d8e02927dae95456a6114e4b411c0b"
+  },
+  "scope": "All catalogue records and SHA-verified national data. Counts are display fragments, not fields, finds or areas.",
+  "checkedFiles": 196,
+  "catalogueEntries": 4652,
+  "tiles": 192,
+  "detailFeatures": 505834,
+  "huntability": "unknown for every material polygon; no measured access or numerical amber probability inferred",
+  "kinds": {
+    "unresolved": {
+      "catalogueEntries": 759,
+      "detailFeatures": 43868
+    },
+    "legacy": {
+      "catalogueEntries": 273,
+      "detailFeatures": 31804
+    },
+    "variant": {
+      "catalogueEntries": 65,
+      "detailFeatures": 922
+    },
+    "repeated": {
+      "catalogueEntries": 1344,
+      "detailFeatures": 386608
+    },
+    "cover-contact": {
+      "catalogueEntries": 897,
+      "detailFeatures": 19660
+    },
+    "mixed-cover-contact": {
+      "catalogueEntries": 37,
+      "detailFeatures": 70
+    },
+    "sediment-contact": {
+      "catalogueEntries": 1277,
+      "detailFeatures": 22902
+    }
+  },
+  "lateralLowerDetailFeatures": 10098,
+  "organicBelowMineralDetailFeatures": 873,
+  "pairs": {
+    "soil-new:X/X": {
+      "catalogueEntries": 227,
+      "detailFeatures": 15534,
+      "kind": "unresolved"
+    },
+    "soil-new:HS/HS": {
+      "catalogueEntries": 34,
+      "detailFeatures": 18488,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HV-L/HV-L": {
+      "catalogueEntries": 11,
+      "detailFeatures": 608,
+      "kind": "varies-with-record"
+    },
+    "soil-new:S/DS": {
+      "catalogueEntries": 26,
+      "detailFeatures": 4620,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FS/FS": {
+      "catalogueEntries": 31,
+      "detailFeatures": 20426,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FP/FP": {
+      "catalogueEntries": 35,
+      "detailFeatures": 35654,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HG/HG": {
+      "catalogueEntries": 32,
+      "detailFeatures": 10810,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ES/ES": {
+      "catalogueEntries": 35,
+      "detailFeatures": 22661,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ES/DS": {
+      "catalogueEntries": 25,
+      "detailFeatures": 1690,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ES/ML": {
+      "catalogueEntries": 17,
+      "detailFeatures": 656,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FT/DS": {
+      "catalogueEntries": 18,
+      "detailFeatures": 487,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FT/FT": {
+      "catalogueEntries": 36,
+      "detailFeatures": 73414,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HV-L/HS": {
+      "catalogueEntries": 6,
+      "detailFeatures": 32,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HV-S/HS": {
+      "catalogueEntries": 5,
+      "detailFeatures": 41,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ML/ML": {
+      "catalogueEntries": 33,
+      "detailFeatures": 50573,
+      "kind": "varies-with-record"
+    },
+    "soil-new:MS/MS": {
+      "catalogueEntries": 31,
+      "detailFeatures": 19625,
+      "kind": "varies-with-record"
+    },
+    "soil-new:S/DL": {
+      "catalogueEntries": 15,
+      "detailFeatures": 849,
+      "kind": "varies-with-record"
+    },
+    "soil-new:S/ML": {
+      "catalogueEntries": 23,
+      "detailFeatures": 4165,
+      "kind": "varies-with-record"
+    },
+    "soil-new:DG/DG": {
+      "catalogueEntries": 30,
+      "detailFeatures": 15209,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FL/FL": {
+      "catalogueEntries": 30,
+      "detailFeatures": 6162,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HV-L/DS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 4,
+      "kind": "variant"
+    },
+    "soil-new:S/MS": {
+      "catalogueEntries": 13,
+      "detailFeatures": 277,
+      "kind": "varies-with-record"
+    },
+    "soil-new:TS/TS": {
+      "catalogueEntries": 31,
+      "detailFeatures": 21928,
+      "kind": "varies-with-record"
+    },
+    "soil-new:SØ/SØ": {
+      "catalogueEntries": 31,
+      "detailFeatures": 8386,
+      "kind": "unresolved"
+    },
+    "soil-new:ES/HG": {
+      "catalogueEntries": 11,
+      "detailFeatures": 386,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ES/HS": {
+      "catalogueEntries": 18,
+      "detailFeatures": 670,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HS/HV-L": {
+      "catalogueEntries": 2,
+      "detailFeatures": 4,
+      "kind": "variant"
+    },
+    "soil-new:HV-L/FT": {
+      "catalogueEntries": 5,
+      "detailFeatures": 60,
+      "kind": "varies-with-record"
+    },
+    "soil-old:HV/—": {
+      "catalogueEntries": 12,
+      "detailFeatures": 1138,
+      "kind": "varies-with-record"
+    },
+    "soil-old:HSL/—": {
+      "catalogueEntries": 27,
+      "detailFeatures": 10433,
+      "kind": "varies-with-record"
+    },
+    "soil-old:DSG/—": {
+      "catalogueEntries": 27,
+      "detailFeatures": 3923,
+      "kind": "varies-with-record"
+    },
+    "soil-old:ES/—": {
+      "catalogueEntries": 21,
+      "detailFeatures": 750,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ES/FS": {
+      "catalogueEntries": 13,
+      "detailFeatures": 102,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ES/FT": {
+      "catalogueEntries": 18,
+      "detailFeatures": 293,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FS/FT": {
+      "catalogueEntries": 12,
+      "detailFeatures": 44,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FT/FS": {
+      "catalogueEntries": 21,
+      "detailFeatures": 1259,
+      "kind": "varies-with-record"
+    },
+    "soil-new:DS/DS": {
+      "catalogueEntries": 32,
+      "detailFeatures": 47905,
+      "kind": "varies-with-record"
+    },
+    "soil-new:DS/ML": {
+      "catalogueEntries": 29,
+      "detailFeatures": 1088,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FG/FG": {
+      "catalogueEntries": 23,
+      "detailFeatures": 1002,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ES/FG": {
+      "catalogueEntries": 2,
+      "detailFeatures": 5,
+      "kind": "cover-contact"
+    },
+    "soil-new:ES/TS": {
+      "catalogueEntries": 19,
+      "detailFeatures": 3230,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FG/ML": {
+      "catalogueEntries": 3,
+      "detailFeatures": 17,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FP/FS": {
+      "catalogueEntries": 23,
+      "detailFeatures": 596,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FP/S": {
+      "catalogueEntries": 12,
+      "detailFeatures": 63,
+      "kind": "cover-contact"
+    },
+    "soil-new:FP/TS": {
+      "catalogueEntries": 23,
+      "detailFeatures": 1924,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FS/DS": {
+      "catalogueEntries": 14,
+      "detailFeatures": 127,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FS/FG": {
+      "catalogueEntries": 8,
+      "detailFeatures": 13,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FS/ML": {
+      "catalogueEntries": 18,
+      "detailFeatures": 157,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FS-FG/FS-FG": {
+      "catalogueEntries": 5,
+      "detailFeatures": 15,
+      "kind": "repeated"
+    },
+    "soil-new:FT/ML": {
+      "catalogueEntries": 22,
+      "detailFeatures": 282,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HV-L/TS": {
+      "catalogueEntries": 7,
+      "detailFeatures": 92,
+      "kind": "variant"
+    },
+    "soil-new:MS/DS": {
+      "catalogueEntries": 29,
+      "detailFeatures": 5399,
+      "kind": "varies-with-record"
+    },
+    "soil-new:MS/ML": {
+      "catalogueEntries": 21,
+      "detailFeatures": 233,
+      "kind": "varies-with-record"
+    },
+    "soil-new:DL/DL": {
+      "catalogueEntries": 28,
+      "detailFeatures": 9291,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FP/ML": {
+      "catalogueEntries": 21,
+      "detailFeatures": 384,
+      "kind": "varies-with-record"
+    },
+    "soil-new:S/TS": {
+      "catalogueEntries": 9,
+      "detailFeatures": 20,
+      "kind": "varies-with-record"
+    },
+    "soil-new:DS/MS": {
+      "catalogueEntries": 14,
+      "detailFeatures": 86,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS/DL": {
+      "catalogueEntries": 18,
+      "detailFeatures": 200,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ES/S": {
+      "catalogueEntries": 8,
+      "detailFeatures": 49,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FG/DS": {
+      "catalogueEntries": 4,
+      "detailFeatures": 5,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FG/FT": {
+      "catalogueEntries": 4,
+      "detailFeatures": 5,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FG/MS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HV-L/S": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "variant"
+    },
+    "soil-new:MG/MG": {
+      "catalogueEntries": 28,
+      "detailFeatures": 4441,
+      "kind": "varies-with-record"
+    },
+    "soil-new:S/DG": {
+      "catalogueEntries": 8,
+      "detailFeatures": 78,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ES/MS": {
+      "catalogueEntries": 16,
+      "detailFeatures": 712,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FT/HV-L": {
+      "catalogueEntries": 3,
+      "detailFeatures": 5,
+      "kind": "variant"
+    },
+    "soil-new:DS/DG": {
+      "catalogueEntries": 14,
+      "detailFeatures": 81,
+      "kind": "sediment-contact"
+    },
+    "soil-old:SØ/—": {
+      "catalogueEntries": 19,
+      "detailFeatures": 709,
+      "kind": "unresolved"
+    },
+    "soil-new:TA/TA": {
+      "catalogueEntries": 21,
+      "detailFeatures": 436,
+      "kind": "unresolved"
+    },
+    "soil-new:DG/DS": {
+      "catalogueEntries": 16,
+      "detailFeatures": 96,
+      "kind": "sediment-contact"
+    },
+    "soil-new:EK/EK": {
+      "catalogueEntries": 20,
+      "detailFeatures": 3288,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HV/HS": {
+      "catalogueEntries": 12,
+      "detailFeatures": 670,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FT/HS": {
+      "catalogueEntries": 22,
+      "detailFeatures": 1001,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FT/HV": {
+      "catalogueEntries": 6,
+      "detailFeatures": 26,
+      "kind": "cover-contact"
+    },
+    "soil-new:HV/HV": {
+      "catalogueEntries": 16,
+      "detailFeatures": 748,
+      "kind": "varies-with-record"
+    },
+    "soil-new:O/O": {
+      "catalogueEntries": 17,
+      "detailFeatures": 254,
+      "kind": "unresolved"
+    },
+    "soil-new:BY/BY": {
+      "catalogueEntries": 31,
+      "detailFeatures": 2929,
+      "kind": "unresolved"
+    },
+    "soil-new:ES/HV": {
+      "catalogueEntries": 5,
+      "detailFeatures": 34,
+      "kind": "cover-contact"
+    },
+    "soil-new:FP/HV": {
+      "catalogueEntries": 3,
+      "detailFeatures": 4,
+      "kind": "cover-contact"
+    },
+    "soil-new:FT/ES": {
+      "catalogueEntries": 14,
+      "detailFeatures": 415,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HV/HG": {
+      "catalogueEntries": 6,
+      "detailFeatures": 71,
+      "kind": "varies-with-record"
+    },
+    "soil-new:LRÅ/LRÅ": {
+      "catalogueEntries": 22,
+      "detailFeatures": 611,
+      "kind": "unresolved"
+    },
+    "soil-new:HT/HT": {
+      "catalogueEntries": 18,
+      "detailFeatures": 598,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HV/ES": {
+      "catalogueEntries": 2,
+      "detailFeatures": 6,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HV/MS": {
+      "catalogueEntries": 3,
+      "detailFeatures": 16,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HG/MS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/MS": {
+      "catalogueEntries": 13,
+      "detailFeatures": 150,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HL/HL": {
+      "catalogueEntries": 26,
+      "detailFeatures": 1801,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FS/FL": {
+      "catalogueEntries": 13,
+      "detailFeatures": 48,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HV/FT": {
+      "catalogueEntries": 8,
+      "detailFeatures": 40,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FS/MS": {
+      "catalogueEntries": 8,
+      "detailFeatures": 30,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HG/HV": {
+      "catalogueEntries": 2,
+      "detailFeatures": 5,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HS/MS": {
+      "catalogueEntries": 5,
+      "detailFeatures": 7,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HT/FT": {
+      "catalogueEntries": 3,
+      "detailFeatures": 10,
+      "kind": "cover-contact"
+    },
+    "soil-old:X/X": {
+      "catalogueEntries": 12,
+      "detailFeatures": 111,
+      "kind": "unresolved"
+    },
+    "soil-new:HG/HS": {
+      "catalogueEntries": 9,
+      "detailFeatures": 135,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HS/HG": {
+      "catalogueEntries": 10,
+      "detailFeatures": 212,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HS/HV": {
+      "catalogueEntries": 8,
+      "detailFeatures": 48,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HT/HS": {
+      "catalogueEntries": 12,
+      "detailFeatures": 144,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HT/HV": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "cover-contact"
+    },
+    "soil-new:FP/HS": {
+      "catalogueEntries": 19,
+      "detailFeatures": 314,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FT/HG": {
+      "catalogueEntries": 11,
+      "detailFeatures": 90,
+      "kind": "varies-with-record"
+    },
+    "soil-new:RÅ/RÅ": {
+      "catalogueEntries": 22,
+      "detailFeatures": 213,
+      "kind": "unresolved"
+    },
+    "soil-new:TG/TG": {
+      "catalogueEntries": 28,
+      "detailFeatures": 2884,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ML/DL": {
+      "catalogueEntries": 14,
+      "detailFeatures": 83,
+      "kind": "sediment-contact"
+    },
+    "soil-old:MSG/—": {
+      "catalogueEntries": 19,
+      "detailFeatures": 751,
+      "kind": "varies-with-record"
+    },
+    "soil-old:FYLD/—": {
+      "catalogueEntries": 18,
+      "detailFeatures": 782,
+      "kind": "unresolved"
+    },
+    "soil-new:FL/DS": {
+      "catalogueEntries": 5,
+      "detailFeatures": 8,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/FP": {
+      "catalogueEntries": 18,
+      "detailFeatures": 241,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FL/FS": {
+      "catalogueEntries": 10,
+      "detailFeatures": 53,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/FL": {
+      "catalogueEntries": 17,
+      "detailFeatures": 189,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HG/ML": {
+      "catalogueEntries": 11,
+      "detailFeatures": 46,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HS/ML": {
+      "catalogueEntries": 13,
+      "detailFeatures": 300,
+      "kind": "varies-with-record"
+    },
+    "soil-new:TL/TL": {
+      "catalogueEntries": 28,
+      "detailFeatures": 1822,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FS/TS": {
+      "catalogueEntries": 12,
+      "detailFeatures": 140,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FP/FT": {
+      "catalogueEntries": 13,
+      "detailFeatures": 88,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FS/FP": {
+      "catalogueEntries": 10,
+      "detailFeatures": 41,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ES/DL": {
+      "catalogueEntries": 8,
+      "detailFeatures": 67,
+      "kind": "cover-contact"
+    },
+    "soil-new:FP/DS": {
+      "catalogueEntries": 20,
+      "detailFeatures": 444,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HV/FS": {
+      "catalogueEntries": 3,
+      "detailFeatures": 3,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HV/HP": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:MG/DS": {
+      "catalogueEntries": 14,
+      "detailFeatures": 111,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HS/FT": {
+      "catalogueEntries": 9,
+      "detailFeatures": 64,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HV/FP": {
+      "catalogueEntries": 2,
+      "detailFeatures": 5,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TS/DL": {
+      "catalogueEntries": 10,
+      "detailFeatures": 132,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HP/HP": {
+      "catalogueEntries": 22,
+      "detailFeatures": 1826,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HS/FP": {
+      "catalogueEntries": 5,
+      "detailFeatures": 9,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HP/HS": {
+      "catalogueEntries": 14,
+      "detailFeatures": 421,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HP/ML": {
+      "catalogueEntries": 6,
+      "detailFeatures": 27,
+      "kind": "cover-contact"
+    },
+    "soil-new:DL-DS/DL-DS": {
+      "catalogueEntries": 8,
+      "detailFeatures": 32,
+      "kind": "repeated"
+    },
+    "soil-new:FT/TS": {
+      "catalogueEntries": 25,
+      "detailFeatures": 1229,
+      "kind": "varies-with-record"
+    },
+    "soil-new:TS-TG/TS-TG": {
+      "catalogueEntries": 17,
+      "detailFeatures": 2343,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HP/HG": {
+      "catalogueEntries": 6,
+      "detailFeatures": 12,
+      "kind": "varies-with-record"
+    },
+    "soil-new:DL-DS/DL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS/DI": {
+      "catalogueEntries": 3,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ES/TS-TG": {
+      "catalogueEntries": 7,
+      "detailFeatures": 106,
+      "kind": "cover-contact"
+    },
+    "soil-new:FJ/FJ": {
+      "catalogueEntries": 10,
+      "detailFeatures": 53,
+      "kind": "repeated"
+    },
+    "soil-new:FP/TG": {
+      "catalogueEntries": 8,
+      "detailFeatures": 33,
+      "kind": "varies-with-record"
+    },
+    "soil-new:DL/TS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS-DG/DS-DG": {
+      "catalogueEntries": 26,
+      "detailFeatures": 3269,
+      "kind": "varies-with-record"
+    },
+    "soil-new:DS-DG/DL": {
+      "catalogueEntries": 5,
+      "detailFeatures": 7,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HS/DL": {
+      "catalogueEntries": 4,
+      "detailFeatures": 18,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HV/TS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TL/FP": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-old:F/—": {
+      "catalogueEntries": 26,
+      "detailFeatures": 3336,
+      "kind": "varies-with-record"
+    },
+    "soil-old:HG/—": {
+      "catalogueEntries": 21,
+      "detailFeatures": 2413,
+      "kind": "varies-with-record"
+    },
+    "soil-old:T/—": {
+      "catalogueEntries": 20,
+      "detailFeatures": 886,
+      "kind": "varies-with-record"
+    },
+    "soil-new:TL/TS-TG": {
+      "catalogueEntries": 2,
+      "detailFeatures": 16,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HL/HS": {
+      "catalogueEntries": 10,
+      "detailFeatures": 139,
+      "kind": "varies-with-record"
+    },
+    "soil-new:DG/ML": {
+      "catalogueEntries": 12,
+      "detailFeatures": 96,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DI/DI": {
+      "catalogueEntries": 15,
+      "detailFeatures": 242,
+      "kind": "varies-with-record"
+    },
+    "soil-new:DS-DG/ML": {
+      "catalogueEntries": 10,
+      "detailFeatures": 49,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FL/DG": {
+      "catalogueEntries": 4,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HL/HG": {
+      "catalogueEntries": 6,
+      "detailFeatures": 35,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HS/HL": {
+      "catalogueEntries": 11,
+      "detailFeatures": 179,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FT/DG": {
+      "catalogueEntries": 9,
+      "detailFeatures": 31,
+      "kind": "cover-contact"
+    },
+    "soil-new:HG/ES": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DG/DL": {
+      "catalogueEntries": 7,
+      "detailFeatures": 39,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS/DL-DS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FP/HL": {
+      "catalogueEntries": 11,
+      "detailFeatures": 65,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ML/DG": {
+      "catalogueEntries": 9,
+      "detailFeatures": 37,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HG-HS/HG-HS": {
+      "catalogueEntries": 13,
+      "detailFeatures": 381,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ML/DS": {
+      "catalogueEntries": 20,
+      "detailFeatures": 276,
+      "kind": "varies-with-record"
+    },
+    "soil-new:S/FT": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TL/TG": {
+      "catalogueEntries": 4,
+      "detailFeatures": 8,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TS-TG/DL": {
+      "catalogueEntries": 3,
+      "detailFeatures": 7,
+      "kind": "sediment-contact"
+    },
+    "soil-old:DL/—": {
+      "catalogueEntries": 13,
+      "detailFeatures": 294,
+      "kind": "varies-with-record"
+    },
+    "soil-old:ML/—": {
+      "catalogueEntries": 27,
+      "detailFeatures": 8289,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FP/HG": {
+      "catalogueEntries": 6,
+      "detailFeatures": 22,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HV-S/HV-S": {
+      "catalogueEntries": 7,
+      "detailFeatures": 84,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HV-L/FP": {
+      "catalogueEntries": 2,
+      "detailFeatures": 11,
+      "kind": "variant"
+    },
+    "soil-new:HV-S/ES": {
+      "catalogueEntries": 1,
+      "detailFeatures": 5,
+      "kind": "variant"
+    },
+    "soil-new:HV-S/HV-L": {
+      "catalogueEntries": 3,
+      "detailFeatures": 10,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HV-S/TS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 45,
+      "kind": "variant"
+    },
+    "soil-new:FL/TS": {
+      "catalogueEntries": 7,
+      "detailFeatures": 13,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ES/HV-L": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "variant"
+    },
+    "soil-new:FS/S": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/S": {
+      "catalogueEntries": 12,
+      "detailFeatures": 68,
+      "kind": "cover-contact"
+    },
+    "soil-new:HL/DS": {
+      "catalogueEntries": 3,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HS/DS": {
+      "catalogueEntries": 8,
+      "detailFeatures": 20,
+      "kind": "sediment-contact"
+    },
+    "soil-new:MS/DL": {
+      "catalogueEntries": 4,
+      "detailFeatures": 13,
+      "kind": "sediment-contact"
+    },
+    "soil-new:QL/QL": {
+      "catalogueEntries": 15,
+      "detailFeatures": 387,
+      "kind": "varies-with-record"
+    },
+    "soil-new:TS/ML": {
+      "catalogueEntries": 19,
+      "detailFeatures": 368,
+      "kind": "varies-with-record"
+    },
+    "soil-new:TS-FT/TS-FT": {
+      "catalogueEntries": 2,
+      "detailFeatures": 5,
+      "kind": "repeated"
+    },
+    "soil-new:DS/QL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HV-S/S": {
+      "catalogueEntries": 2,
+      "detailFeatures": 7,
+      "kind": "variant"
+    },
+    "soil-new:HS/HV-S": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "varies-with-record"
+    },
+    "soil-new:S/S": {
+      "catalogueEntries": 15,
+      "detailFeatures": 164,
+      "kind": "varies-with-record"
+    },
+    "soil-new:S/QL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:YL/YL": {
+      "catalogueEntries": 18,
+      "detailFeatures": 2419,
+      "kind": "varies-with-record"
+    },
+    "soil-old:Y/—": {
+      "catalogueEntries": 11,
+      "detailFeatures": 124,
+      "kind": "legacy"
+    },
+    "soil-new:FL/S": {
+      "catalogueEntries": 3,
+      "detailFeatures": 5,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TG/DG": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TS/DS": {
+      "catalogueEntries": 12,
+      "detailFeatures": 107,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TS/S": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS-S/DS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FP/DL": {
+      "catalogueEntries": 10,
+      "detailFeatures": 29,
+      "kind": "varies-with-record"
+    },
+    "soil-new:TG/DS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/DL": {
+      "catalogueEntries": 12,
+      "detailFeatures": 49,
+      "kind": "cover-contact"
+    },
+    "soil-new:DV/DV": {
+      "catalogueEntries": 12,
+      "detailFeatures": 335,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ES/FP": {
+      "catalogueEntries": 10,
+      "detailFeatures": 108,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FHS/FHS": {
+      "catalogueEntries": 7,
+      "detailFeatures": 153,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FHG/FHG": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "repeated"
+    },
+    "soil-new:FT/FHS": {
+      "catalogueEntries": 4,
+      "detailFeatures": 8,
+      "kind": "varies-with-record"
+    },
+    "soil-new:GL/GL": {
+      "catalogueEntries": 8,
+      "detailFeatures": 146,
+      "kind": "varies-with-record"
+    },
+    "soil-new:GS/GS": {
+      "catalogueEntries": 8,
+      "detailFeatures": 163,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FHL/FHL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 4,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HV/FHS": {
+      "catalogueEntries": 5,
+      "detailFeatures": 11,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FP-FL/FP-FL": {
+      "catalogueEntries": 13,
+      "detailFeatures": 839,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FL/MS": {
+      "catalogueEntries": 3,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FP/MS": {
+      "catalogueEntries": 8,
+      "detailFeatures": 40,
+      "kind": "cover-contact"
+    },
+    "soil-new:FS/GV": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:GL/DL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FHL/FHG": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FS/DG": {
+      "catalogueEntries": 3,
+      "detailFeatures": 5,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FV/DV": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FV/FV": {
+      "catalogueEntries": 7,
+      "detailFeatures": 20,
+      "kind": "repeated"
+    },
+    "soil-new:GV/GV": {
+      "catalogueEntries": 5,
+      "detailFeatures": 55,
+      "kind": "repeated"
+    },
+    "soil-new:MS/DV": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS/GL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/DV": {
+      "catalogueEntries": 3,
+      "detailFeatures": 4,
+      "kind": "cover-contact"
+    },
+    "soil-new:ES/FL": {
+      "catalogueEntries": 4,
+      "detailFeatures": 6,
+      "kind": "cover-contact"
+    },
+    "soil-new:FL/FT": {
+      "catalogueEntries": 7,
+      "detailFeatures": 15,
+      "kind": "sediment-contact"
+    },
+    "soil-new:MG/DG": {
+      "catalogueEntries": 5,
+      "detailFeatures": 14,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/GS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 5,
+      "kind": "cover-contact"
+    },
+    "soil-new:FT/FG": {
+      "catalogueEntries": 10,
+      "detailFeatures": 37,
+      "kind": "cover-contact"
+    },
+    "soil-new:FS/DL": {
+      "catalogueEntries": 4,
+      "detailFeatures": 15,
+      "kind": "sediment-contact"
+    },
+    "soil-new:KS/KS": {
+      "catalogueEntries": 7,
+      "detailFeatures": 59,
+      "kind": "varies-with-record"
+    },
+    "soil-new:MS/DG": {
+      "catalogueEntries": 9,
+      "detailFeatures": 26,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DG/MS": {
+      "catalogueEntries": 5,
+      "detailFeatures": 11,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FS/DV": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ES/DG": {
+      "catalogueEntries": 10,
+      "detailFeatures": 138,
+      "kind": "cover-contact"
+    },
+    "soil-new:ES/MG": {
+      "catalogueEntries": 3,
+      "detailFeatures": 6,
+      "kind": "cover-contact"
+    },
+    "soil-new:FP/FG": {
+      "catalogueEntries": 7,
+      "detailFeatures": 40,
+      "kind": "varies-with-record"
+    },
+    "soil-old:GC/—": {
+      "catalogueEntries": 6,
+      "detailFeatures": 36,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ES/DS-DG": {
+      "catalogueEntries": 7,
+      "detailFeatures": 25,
+      "kind": "cover-contact"
+    },
+    "soil-new:TG/DL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 7,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TG/TL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TS/TG": {
+      "catalogueEntries": 6,
+      "detailFeatures": 29,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ZL/ZL": {
+      "catalogueEntries": 15,
+      "detailFeatures": 277,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ES/TG": {
+      "catalogueEntries": 7,
+      "detailFeatures": 47,
+      "kind": "cover-contact"
+    },
+    "soil-new:FP/DS-DG": {
+      "catalogueEntries": 5,
+      "detailFeatures": 5,
+      "kind": "cover-contact"
+    },
+    "soil-new:FT/TG": {
+      "catalogueEntries": 9,
+      "detailFeatures": 57,
+      "kind": "cover-contact"
+    },
+    "soil-new:DG-DS/DG-DS": {
+      "catalogueEntries": 11,
+      "detailFeatures": 46,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FT/TL": {
+      "catalogueEntries": 12,
+      "detailFeatures": 120,
+      "kind": "cover-contact"
+    },
+    "soil-new:TS/TL": {
+      "catalogueEntries": 9,
+      "detailFeatures": 39,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ML/ZL": {
+      "catalogueEntries": 3,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TG/ML": {
+      "catalogueEntries": 5,
+      "detailFeatures": 8,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TS-TG/TS": {
+      "catalogueEntries": 4,
+      "detailFeatures": 9,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ZS/ZS": {
+      "catalogueEntries": 13,
+      "detailFeatures": 117,
+      "kind": "repeated"
+    },
+    "soil-new:ZL/DS": {
+      "catalogueEntries": 3,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TS/TS-TG": {
+      "catalogueEntries": 2,
+      "detailFeatures": 5,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS/ZL": {
+      "catalogueEntries": 3,
+      "detailFeatures": 6,
+      "kind": "sediment-contact"
+    },
+    "soil-new:S/ZL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:MS/DS-DG": {
+      "catalogueEntries": 4,
+      "detailFeatures": 6,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HI/HI": {
+      "catalogueEntries": 14,
+      "detailFeatures": 458,
+      "kind": "varies-with-record"
+    },
+    "soil-new:K/K": {
+      "catalogueEntries": 14,
+      "detailFeatures": 641,
+      "kind": "varies-with-record"
+    },
+    "soil-new:KMS/KMS": {
+      "catalogueEntries": 9,
+      "detailFeatures": 91,
+      "kind": "repeated"
+    },
+    "soil-new:LSL/LSL": {
+      "catalogueEntries": 8,
+      "detailFeatures": 23,
+      "kind": "unresolved"
+    },
+    "soil-new:HS/HP": {
+      "catalogueEntries": 8,
+      "detailFeatures": 81,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HV/DS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DL/FT": {
+      "catalogueEntries": 2,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TG/HG": {
+      "catalogueEntries": 2,
+      "detailFeatures": 15,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HS/FL": {
+      "catalogueEntries": 6,
+      "detailFeatures": 8,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HG/DL": {
+      "catalogueEntries": 4,
+      "detailFeatures": 6,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/HL": {
+      "catalogueEntries": 13,
+      "detailFeatures": 80,
+      "kind": "varies-with-record"
+    },
+    "soil-new:KML/KML": {
+      "catalogueEntries": 14,
+      "detailFeatures": 431,
+      "kind": "repeated"
+    },
+    "soil-new:FT/FJ": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "cover-contact"
+    },
+    "soil-new:FL/ML": {
+      "catalogueEntries": 8,
+      "detailFeatures": 29,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS/FL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ED/ED": {
+      "catalogueEntries": 10,
+      "detailFeatures": 91,
+      "kind": "repeated"
+    },
+    "soil-new:OL/OL": {
+      "catalogueEntries": 9,
+      "detailFeatures": 137,
+      "kind": "repeated"
+    },
+    "soil-new:FI/FI": {
+      "catalogueEntries": 8,
+      "detailFeatures": 26,
+      "kind": "varies-with-record"
+    },
+    "soil-new:TI/TI": {
+      "catalogueEntries": 7,
+      "detailFeatures": 40,
+      "kind": "repeated"
+    },
+    "soil-new:TL/TS": {
+      "catalogueEntries": 10,
+      "detailFeatures": 63,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ML/ED": {
+      "catalogueEntries": 6,
+      "detailFeatures": 18,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ZK/ZK": {
+      "catalogueEntries": 13,
+      "detailFeatures": 190,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ML/SK": {
+      "catalogueEntries": 10,
+      "detailFeatures": 173,
+      "kind": "varies-with-record"
+    },
+    "soil-new:SK/SK": {
+      "catalogueEntries": 19,
+      "detailFeatures": 360,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ML/ZK": {
+      "catalogueEntries": 5,
+      "detailFeatures": 66,
+      "kind": "sediment-contact"
+    },
+    "soil-new:MS/ZK": {
+      "catalogueEntries": 3,
+      "detailFeatures": 12,
+      "kind": "sediment-contact"
+    },
+    "soil-new:IA/IA": {
+      "catalogueEntries": 8,
+      "detailFeatures": 54,
+      "kind": "unresolved"
+    },
+    "soil-new:MI/SK": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/SK": {
+      "catalogueEntries": 5,
+      "detailFeatures": 24,
+      "kind": "cover-contact"
+    },
+    "soil-new:DL/ML": {
+      "catalogueEntries": 6,
+      "detailFeatures": 18,
+      "kind": "sediment-contact"
+    },
+    "soil-new:MS/SK": {
+      "catalogueEntries": 3,
+      "detailFeatures": 5,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ES/SK": {
+      "catalogueEntries": 4,
+      "detailFeatures": 17,
+      "kind": "cover-contact"
+    },
+    "soil-new:FP-FS/ML": {
+      "catalogueEntries": 3,
+      "detailFeatures": 3,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FP/ES": {
+      "catalogueEntries": 8,
+      "detailFeatures": 78,
+      "kind": "cover-contact"
+    },
+    "soil-new:ES/KML": {
+      "catalogueEntries": 4,
+      "detailFeatures": 14,
+      "kind": "cover-contact"
+    },
+    "soil-new:—/—": {
+      "catalogueEntries": 3,
+      "detailFeatures": 3,
+      "kind": "unresolved"
+    },
+    "soil-new:ZG/ZG": {
+      "catalogueEntries": 3,
+      "detailFeatures": 26,
+      "kind": "repeated"
+    },
+    "soil-old:ZK/—": {
+      "catalogueEntries": 11,
+      "detailFeatures": 98,
+      "kind": "varies-with-record"
+    },
+    "soil-old:ED/—": {
+      "catalogueEntries": 6,
+      "detailFeatures": 37,
+      "kind": "legacy"
+    },
+    "soil-new:FP-FS/FP-FS": {
+      "catalogueEntries": 11,
+      "detailFeatures": 35,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FT-FP/HS": {
+      "catalogueEntries": 4,
+      "detailFeatures": 17,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ES-HG/ES-HG": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "repeated"
+    },
+    "soil-new:ES/ZK": {
+      "catalogueEntries": 3,
+      "detailFeatures": 19,
+      "kind": "cover-contact"
+    },
+    "soil-new:HG-ES/HG-ES": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "repeated"
+    },
+    "soil-new:TL-TS/TL-TS": {
+      "catalogueEntries": 17,
+      "detailFeatures": 230,
+      "kind": "varies-with-record"
+    },
+    "soil-new:MG/ML": {
+      "catalogueEntries": 15,
+      "detailFeatures": 56,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ES-FT/ES-FT": {
+      "catalogueEntries": 4,
+      "detailFeatures": 18,
+      "kind": "repeated"
+    },
+    "soil-new:FP/DG": {
+      "catalogueEntries": 8,
+      "detailFeatures": 24,
+      "kind": "cover-contact"
+    },
+    "soil-new:HV-L/ES": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "variant"
+    },
+    "soil-new:HV-L/HV-S": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "variant"
+    },
+    "soil-new:TS-FP/TS-FP": {
+      "catalogueEntries": 5,
+      "detailFeatures": 49,
+      "kind": "repeated"
+    },
+    "soil-new:DS-S/DS-S": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "repeated"
+    },
+    "soil-new:FP/HV-L": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "variant"
+    },
+    "soil-new:FS/ES": {
+      "catalogueEntries": 3,
+      "detailFeatures": 5,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FS/HV-L": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "variant"
+    },
+    "soil-new:TS/MS": {
+      "catalogueEntries": 6,
+      "detailFeatures": 19,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ES-TS/ES-TS": {
+      "catalogueEntries": 7,
+      "detailFeatures": 44,
+      "kind": "repeated"
+    },
+    "soil-new:FT/TS-TG": {
+      "catalogueEntries": 4,
+      "detailFeatures": 30,
+      "kind": "cover-contact"
+    },
+    "soil-new:FT-FP/FT-FP": {
+      "catalogueEntries": 12,
+      "detailFeatures": 144,
+      "kind": "repeated"
+    },
+    "soil-new:HV-L/FL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 4,
+      "kind": "variant"
+    },
+    "soil-new:FT-TS/FT-TS": {
+      "catalogueEntries": 4,
+      "detailFeatures": 5,
+      "kind": "repeated"
+    },
+    "soil-new:HV-S/FS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "variant"
+    },
+    "soil-new:S/DL-DS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DL/DL-DS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS/ES": {
+      "catalogueEntries": 4,
+      "detailFeatures": 7,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS/FT": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS/ML-MS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ES-DS/ES-DS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 5,
+      "kind": "repeated"
+    },
+    "soil-new:FP-ES/FP-ES": {
+      "catalogueEntries": 4,
+      "detailFeatures": 8,
+      "kind": "repeated"
+    },
+    "soil-new:HV-L/FS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "variant"
+    },
+    "soil-new:MS-ML/MS-ML": {
+      "catalogueEntries": 6,
+      "detailFeatures": 32,
+      "kind": "repeated"
+    },
+    "soil-new:TS/FP": {
+      "catalogueEntries": 3,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ES/ES-MS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "cover-contact"
+    },
+    "soil-new:ES-S/ES-S": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "repeated"
+    },
+    "soil-new:FL-FT/FS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "mixed-cover-contact"
+    },
+    "soil-new:TS-FS/TS-FS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "repeated"
+    },
+    "soil-new:ML/MS": {
+      "catalogueEntries": 5,
+      "detailFeatures": 16,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TS/TS-TL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FP/FL": {
+      "catalogueEntries": 10,
+      "detailFeatures": 94,
+      "kind": "cover-contact"
+    },
+    "soil-new:S/GL": {
+      "catalogueEntries": 3,
+      "detailFeatures": 8,
+      "kind": "sediment-contact"
+    },
+    "soil-new:IT/IT": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "repeated"
+    },
+    "soil-new:S/DS-DG": {
+      "catalogueEntries": 5,
+      "detailFeatures": 11,
+      "kind": "sediment-contact"
+    },
+    "soil-new:GS/GL": {
+      "catalogueEntries": 3,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TS/DG": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TS-ES/TS-ES": {
+      "catalogueEntries": 1,
+      "detailFeatures": 4,
+      "kind": "repeated"
+    },
+    "soil-new:TG/MS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/FV": {
+      "catalogueEntries": 2,
+      "detailFeatures": 4,
+      "kind": "cover-contact"
+    },
+    "soil-new:ML-MS/ML-MS": {
+      "catalogueEntries": 12,
+      "detailFeatures": 146,
+      "kind": "repeated"
+    },
+    "soil-new:TS/FL": {
+      "catalogueEntries": 4,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TS/FS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 4,
+      "kind": "varies-with-record"
+    },
+    "soil-new:TG-TS/TG-TS": {
+      "catalogueEntries": 9,
+      "detailFeatures": 79,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FP/TL-TS": {
+      "catalogueEntries": 6,
+      "detailFeatures": 21,
+      "kind": "cover-contact"
+    },
+    "soil-new:DL-DS/ML": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS/MI": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS-DL/DS-DL": {
+      "catalogueEntries": 5,
+      "detailFeatures": 10,
+      "kind": "repeated"
+    },
+    "soil-new:FI/FS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ZV/ZV": {
+      "catalogueEntries": 3,
+      "detailFeatures": 12,
+      "kind": "repeated"
+    },
+    "soil-new:FL/HS": {
+      "catalogueEntries": 4,
+      "detailFeatures": 6,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HG/HP": {
+      "catalogueEntries": 2,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HSG/HP": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HSG/HSG": {
+      "catalogueEntries": 1,
+      "detailFeatures": 6,
+      "kind": "repeated"
+    },
+    "soil-new:LRÅ/ZK": {
+      "catalogueEntries": 2,
+      "detailFeatures": 8,
+      "kind": "unresolved"
+    },
+    "soil-new:FS/HS": {
+      "catalogueEntries": 6,
+      "detailFeatures": 14,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TL/DL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT-FP/HP": {
+      "catalogueEntries": 2,
+      "detailFeatures": 7,
+      "kind": "mixed-cover-contact"
+    },
+    "soil-new:LRÅ/ED": {
+      "catalogueEntries": 3,
+      "detailFeatures": 10,
+      "kind": "unresolved"
+    },
+    "soil-new:LRÅ/SK": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "unresolved"
+    },
+    "soil-new:HP/MS": {
+      "catalogueEntries": 3,
+      "detailFeatures": 6,
+      "kind": "cover-contact"
+    },
+    "soil-new:RÅ/ED": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "unresolved"
+    },
+    "soil-new:HG/ED": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:LRÅ/DL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 5,
+      "kind": "unresolved"
+    },
+    "soil-new:HS-HG/HS-HG": {
+      "catalogueEntries": 19,
+      "detailFeatures": 356,
+      "kind": "varies-with-record"
+    },
+    "soil-new:PL/PL": {
+      "catalogueEntries": 11,
+      "detailFeatures": 160,
+      "kind": "repeated"
+    },
+    "soil-new:PS/PS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "repeated"
+    },
+    "soil-new:TV/TV": {
+      "catalogueEntries": 4,
+      "detailFeatures": 4,
+      "kind": "repeated"
+    },
+    "soil-new:HS-HL/HS-HL": {
+      "catalogueEntries": 7,
+      "detailFeatures": 21,
+      "kind": "repeated"
+    },
+    "soil-new:FT/HS-HL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "cover-contact"
+    },
+    "soil-new:ML-ED/ML-ED": {
+      "catalogueEntries": 6,
+      "detailFeatures": 47,
+      "kind": "repeated"
+    },
+    "soil-new:MI/ZK": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:MI/MI": {
+      "catalogueEntries": 4,
+      "detailFeatures": 7,
+      "kind": "repeated"
+    },
+    "soil-new:TS/SK": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FL/SK": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HL/ZK": {
+      "catalogueEntries": 3,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/HL-SK": {
+      "catalogueEntries": 3,
+      "detailFeatures": 3,
+      "kind": "cover-contact"
+    },
+    "soil-old:SK/—": {
+      "catalogueEntries": 14,
+      "detailFeatures": 91,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ES/KMS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "cover-contact"
+    },
+    "soil-new:ES/HS-HG": {
+      "catalogueEntries": 3,
+      "detailFeatures": 5,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HS/SK": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ES-TG/ES-TG": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "repeated"
+    },
+    "soil-new:FP-TS/FP-TS": {
+      "catalogueEntries": 7,
+      "detailFeatures": 43,
+      "kind": "repeated"
+    },
+    "soil-new:DG/TS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ES/TL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "cover-contact"
+    },
+    "soil-new:ES-FP/ES-FP": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "repeated"
+    },
+    "soil-new:FP/TL": {
+      "catalogueEntries": 19,
+      "detailFeatures": 242,
+      "kind": "varies-with-record"
+    },
+    "soil-new:TG/TS": {
+      "catalogueEntries": 7,
+      "detailFeatures": 15,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FP/TS-TG": {
+      "catalogueEntries": 4,
+      "detailFeatures": 23,
+      "kind": "cover-contact"
+    },
+    "soil-new:FP-FT/FP-FT": {
+      "catalogueEntries": 9,
+      "detailFeatures": 29,
+      "kind": "repeated"
+    },
+    "soil-new:MG-TG/MG-TG": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "repeated"
+    },
+    "soil-new:DS/FP": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ES/DG-DS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "cover-contact"
+    },
+    "soil-new:FP/TG-TS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "cover-contact"
+    },
+    "soil-new:FT/DS-DG": {
+      "catalogueEntries": 3,
+      "detailFeatures": 15,
+      "kind": "cover-contact"
+    },
+    "soil-new:S/MG": {
+      "catalogueEntries": 6,
+      "detailFeatures": 20,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TL-TS/TS": {
+      "catalogueEntries": 3,
+      "detailFeatures": 10,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ES/TG-TS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "cover-contact"
+    },
+    "soil-new:TS-TG/ML": {
+      "catalogueEntries": 4,
+      "detailFeatures": 9,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FS/TG-TS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FS-FT/FS-FT": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "repeated"
+    },
+    "soil-new:TS/FT": {
+      "catalogueEntries": 5,
+      "detailFeatures": 17,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS/TS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 7,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT-ES/FT-ES": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "repeated"
+    },
+    "soil-new:GC/GC": {
+      "catalogueEntries": 3,
+      "detailFeatures": 7,
+      "kind": "repeated"
+    },
+    "soil-new:TS/GC": {
+      "catalogueEntries": 3,
+      "detailFeatures": 4,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FT-FS/FT-FS": {
+      "catalogueEntries": 4,
+      "detailFeatures": 17,
+      "kind": "repeated"
+    },
+    "soil-new:EK/TG": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "cover-contact"
+    },
+    "soil-new:FS/TG": {
+      "catalogueEntries": 5,
+      "detailFeatures": 34,
+      "kind": "sediment-contact"
+    },
+    "soil-new:RL/RL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "repeated"
+    },
+    "soil-new:DI/DL": {
+      "catalogueEntries": 4,
+      "detailFeatures": 5,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DL/DI": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FP/HP": {
+      "catalogueEntries": 11,
+      "detailFeatures": 93,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FL/QL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HP-HS/HP-HS": {
+      "catalogueEntries": 8,
+      "detailFeatures": 27,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HP-HS/DL": {
+      "catalogueEntries": 3,
+      "detailFeatures": 6,
+      "kind": "mixed-cover-contact"
+    },
+    "soil-new:LSL/OL": {
+      "catalogueEntries": 3,
+      "detailFeatures": 13,
+      "kind": "unresolved"
+    },
+    "soil-new:HP/DL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "cover-contact"
+    },
+    "soil-old:OL/—": {
+      "catalogueEntries": 3,
+      "detailFeatures": 9,
+      "kind": "legacy"
+    },
+    "soil-new:MS/ED": {
+      "catalogueEntries": 6,
+      "detailFeatures": 8,
+      "kind": "sediment-contact"
+    },
+    "soil-new:MS/HS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TL/FS": {
+      "catalogueEntries": 3,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FL/HL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 4,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FT-FP/FS": {
+      "catalogueEntries": 3,
+      "detailFeatures": 12,
+      "kind": "mixed-cover-contact"
+    },
+    "soil-new:HG/HT": {
+      "catalogueEntries": 3,
+      "detailFeatures": 5,
+      "kind": "sediment-contact"
+    },
+    "soil-new:MS-DS/DL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HT/HG": {
+      "catalogueEntries": 4,
+      "detailFeatures": 12,
+      "kind": "cover-contact"
+    },
+    "soil-new:FT/HP": {
+      "catalogueEntries": 18,
+      "detailFeatures": 149,
+      "kind": "varies-with-record"
+    },
+    "soil-new:MS-DS/MS-ML": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FP-HP/FP": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "mixed-cover-contact"
+    },
+    "soil-new:FT-DS/ML": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "mixed-cover-contact"
+    },
+    "soil-new:FT-FL/FS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "mixed-cover-contact"
+    },
+    "soil-new:HG/TS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HS/OL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:LSL/ML": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "unresolved"
+    },
+    "soil-new:ML-DS/SK": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TI/TG": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ML-K/ML-K": {
+      "catalogueEntries": 7,
+      "detailFeatures": 31,
+      "kind": "repeated"
+    },
+    "soil-new:HP/SK": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "cover-contact"
+    },
+    "soil-new:HG/ZK": {
+      "catalogueEntries": 3,
+      "detailFeatures": 5,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HL-K/HL-K": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "repeated"
+    },
+    "soil-old:PL/—": {
+      "catalogueEntries": 8,
+      "detailFeatures": 50,
+      "kind": "legacy"
+    },
+    "soil-new:HS/BK": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ES-FT/HS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "mixed-cover-contact"
+    },
+    "soil-new:BK/BK": {
+      "catalogueEntries": 3,
+      "detailFeatures": 11,
+      "kind": "repeated"
+    },
+    "soil-new:ES/ZS": {
+      "catalogueEntries": 4,
+      "detailFeatures": 6,
+      "kind": "cover-contact"
+    },
+    "soil-new:ML-DS/ML-DS": {
+      "catalogueEntries": 5,
+      "detailFeatures": 19,
+      "kind": "repeated"
+    },
+    "soil-new:MS/MG": {
+      "catalogueEntries": 4,
+      "detailFeatures": 14,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DL/DS": {
+      "catalogueEntries": 8,
+      "detailFeatures": 30,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ML-MG/ML-MG": {
+      "catalogueEntries": 7,
+      "detailFeatures": 190,
+      "kind": "repeated"
+    },
+    "soil-new:MS-S/ML": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TL/ML": {
+      "catalogueEntries": 4,
+      "detailFeatures": 18,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ML-DG/ML-DG": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "repeated"
+    },
+    "soil-new:MS-S/ML-MS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS-ML/DS-ML": {
+      "catalogueEntries": 3,
+      "detailFeatures": 3,
+      "kind": "repeated"
+    },
+    "soil-new:FT-DS/FT-DS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "repeated"
+    },
+    "soil-new:ML-TS/ML-TS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "repeated"
+    },
+    "soil-new:S/MS-ML": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DG/MG": {
+      "catalogueEntries": 2,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ES-ML/ES-ML": {
+      "catalogueEntries": 4,
+      "detailFeatures": 7,
+      "kind": "repeated"
+    },
+    "soil-new:TL-TS/ML": {
+      "catalogueEntries": 2,
+      "detailFeatures": 8,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TS-TL/TS-TL": {
+      "catalogueEntries": 10,
+      "detailFeatures": 432,
+      "kind": "repeated"
+    },
+    "soil-new:FL/FP": {
+      "catalogueEntries": 3,
+      "detailFeatures": 6,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TS/TS-ML": {
+      "catalogueEntries": 4,
+      "detailFeatures": 23,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FT/TL-TS": {
+      "catalogueEntries": 3,
+      "detailFeatures": 5,
+      "kind": "cover-contact"
+    },
+    "soil-new:FP/TS-TL": {
+      "catalogueEntries": 3,
+      "detailFeatures": 9,
+      "kind": "cover-contact"
+    },
+    "soil-new:HT-HS/HT-HS": {
+      "catalogueEntries": 3,
+      "detailFeatures": 9,
+      "kind": "repeated"
+    },
+    "soil-new:TS/TL-TS": {
+      "catalogueEntries": 3,
+      "detailFeatures": 6,
+      "kind": "varies-with-record"
+    },
+    "soil-new:DG/GS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/TL-TG": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "cover-contact"
+    },
+    "soil-new:HG/GL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ML/GL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:GL-GS/GL-GS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "repeated"
+    },
+    "soil-old:GL/—": {
+      "catalogueEntries": 5,
+      "detailFeatures": 15,
+      "kind": "varies-with-record"
+    },
+    "soil-new:DL-DS/DS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FV/FT": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FL/TS-TG": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS/MG": {
+      "catalogueEntries": 3,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FL/TL-TS": {
+      "catalogueEntries": 4,
+      "detailFeatures": 5,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FL/TL": {
+      "catalogueEntries": 4,
+      "detailFeatures": 8,
+      "kind": "sediment-contact"
+    },
+    "soil-new:MS-MG/MS-MG": {
+      "catalogueEntries": 9,
+      "detailFeatures": 39,
+      "kind": "repeated"
+    },
+    "soil-new:ML/DS-DG": {
+      "catalogueEntries": 6,
+      "detailFeatures": 13,
+      "kind": "varies-with-record"
+    },
+    "soil-new:S-ML/S-ML": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "repeated"
+    },
+    "soil-new:ES/DL-DS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "cover-contact"
+    },
+    "soil-new:FL/ES": {
+      "catalogueEntries": 3,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:LR/TL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "unresolved"
+    },
+    "soil-new:O/FT": {
+      "catalogueEntries": 3,
+      "detailFeatures": 4,
+      "kind": "unresolved"
+    },
+    "soil-new:MD/MS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "unresolved"
+    },
+    "soil-new:ES/EK": {
+      "catalogueEntries": 6,
+      "detailFeatures": 82,
+      "kind": "cover-contact"
+    },
+    "soil-new:O/FS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "unresolved"
+    },
+    "soil-new:WA/MS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "unresolved"
+    },
+    "soil-new:FJ/FL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FJ/FT": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:YS/YS": {
+      "catalogueEntries": 24,
+      "detailFeatures": 6285,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HP-HL/HP-HL": {
+      "catalogueEntries": 11,
+      "detailFeatures": 329,
+      "kind": "varies-with-record"
+    },
+    "soil-new:YG/YG": {
+      "catalogueEntries": 15,
+      "detailFeatures": 186,
+      "kind": "varies-with-record"
+    },
+    "soil-new:DG-ES/DG-ES": {
+      "catalogueEntries": 3,
+      "detailFeatures": 3,
+      "kind": "repeated"
+    },
+    "soil-new:HP/HL": {
+      "catalogueEntries": 4,
+      "detailFeatures": 13,
+      "kind": "cover-contact"
+    },
+    "soil-new:TS-DL/TS-DL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "repeated"
+    },
+    "soil-old:LL/—": {
+      "catalogueEntries": 6,
+      "detailFeatures": 24,
+      "kind": "legacy"
+    },
+    "soil-old:GS/—": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "legacy"
+    },
+    "soil-new:TS-ML/TS-ML": {
+      "catalogueEntries": 3,
+      "detailFeatures": 3,
+      "kind": "repeated"
+    },
+    "soil-new:MG/GS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:MS/GS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ML/GS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ZL/ML": {
+      "catalogueEntries": 3,
+      "detailFeatures": 15,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ZL/DL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 6,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ZI/ML": {
+      "catalogueEntries": 4,
+      "detailFeatures": 16,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/TS-TL": {
+      "catalogueEntries": 3,
+      "detailFeatures": 6,
+      "kind": "cover-contact"
+    },
+    "soil-new:MS-DG/MS-DG": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "repeated"
+    },
+    "soil-new:ZI/DS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:SL/SL": {
+      "catalogueEntries": 5,
+      "detailFeatures": 106,
+      "kind": "repeated"
+    },
+    "soil-new:FL-FP/FL-FP": {
+      "catalogueEntries": 3,
+      "detailFeatures": 5,
+      "kind": "repeated"
+    },
+    "soil-new:FL/TS-TL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 6,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FL/DL": {
+      "catalogueEntries": 3,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FL-FS/FL-FS": {
+      "catalogueEntries": 4,
+      "detailFeatures": 13,
+      "kind": "repeated"
+    },
+    "soil-new:PL-GL/PL-GL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "repeated"
+    },
+    "soil-new:O/DS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "unresolved"
+    },
+    "soil-new:ZI/DI": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:MG/DL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FG/FS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 7,
+      "kind": "varies-with-record"
+    },
+    "soil-new:MG-ML/MG-ML": {
+      "catalogueEntries": 4,
+      "detailFeatures": 9,
+      "kind": "repeated"
+    },
+    "soil-new:FT/MG": {
+      "catalogueEntries": 5,
+      "detailFeatures": 5,
+      "kind": "cover-contact"
+    },
+    "soil-new:LL/LL": {
+      "catalogueEntries": 11,
+      "detailFeatures": 308,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FL/TG": {
+      "catalogueEntries": 4,
+      "detailFeatures": 5,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DL/FP": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:MG-MS/MG-MS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 4,
+      "kind": "repeated"
+    },
+    "soil-new:FL/OL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/GL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "cover-contact"
+    },
+    "soil-new:FL/HP": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FG/FL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HL/HP": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/LL": {
+      "catalogueEntries": 3,
+      "detailFeatures": 6,
+      "kind": "cover-contact"
+    },
+    "soil-new:ML/LL": {
+      "catalogueEntries": 8,
+      "detailFeatures": 36,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FT/FL-FP": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "cover-contact"
+    },
+    "soil-new:FS/TL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ML-MS/DS-DG": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ML/TS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FS/K": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/K": {
+      "catalogueEntries": 5,
+      "detailFeatures": 13,
+      "kind": "varies-with-record"
+    },
+    "soil-new:O/FP": {
+      "catalogueEntries": 2,
+      "detailFeatures": 5,
+      "kind": "unresolved"
+    },
+    "soil-new:HG/PL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:O/TS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "unresolved"
+    },
+    "soil-new:LRP/LRÅ": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "unresolved"
+    },
+    "soil-new:S/FS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:MI/ML": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TG/X": {
+      "catalogueEntries": 2,
+      "detailFeatures": 4,
+      "kind": "unresolved"
+    },
+    "soil-new:HS/K": {
+      "catalogueEntries": 3,
+      "detailFeatures": 6,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FS/OL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ML/OL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 5,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FP/K": {
+      "catalogueEntries": 3,
+      "detailFeatures": 9,
+      "kind": "cover-contact"
+    },
+    "soil-new:G/G": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "repeated"
+    },
+    "soil-new:MS/K": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:LRÅ/K": {
+      "catalogueEntries": 4,
+      "detailFeatures": 6,
+      "kind": "unresolved"
+    },
+    "soil-new:TG-TS/TG": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:RÅ/K": {
+      "catalogueEntries": 4,
+      "detailFeatures": 8,
+      "kind": "unresolved"
+    },
+    "soil-new:DG/K": {
+      "catalogueEntries": 5,
+      "detailFeatures": 11,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS/K": {
+      "catalogueEntries": 9,
+      "detailFeatures": 83,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FS/HL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:G/DS": {
+      "catalogueEntries": 5,
+      "detailFeatures": 11,
+      "kind": "sediment-contact"
+    },
+    "soil-new:MG/MS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DV/MS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DV/ML": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ML/K": {
+      "catalogueEntries": 5,
+      "detailFeatures": 36,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT-HS/FT": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "varies-with-record"
+    },
+    "soil-new:S/K": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS/SK": {
+      "catalogueEntries": 3,
+      "detailFeatures": 9,
+      "kind": "varies-with-record"
+    },
+    "soil-new:YP/YP": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "repeated"
+    },
+    "soil-new:HL-HP/HL-HP": {
+      "catalogueEntries": 8,
+      "detailFeatures": 45,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HS/ES": {
+      "catalogueEntries": 2,
+      "detailFeatures": 5,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ES/YS": {
+      "catalogueEntries": 7,
+      "detailFeatures": 93,
+      "kind": "cover-contact"
+    },
+    "soil-new:YS/MS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ML/MG": {
+      "catalogueEntries": 3,
+      "detailFeatures": 5,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HL-HS/HL-HS": {
+      "catalogueEntries": 7,
+      "detailFeatures": 28,
+      "kind": "varies-with-record"
+    },
+    "soil-new:MS/PL": {
+      "catalogueEntries": 4,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ML/PL": {
+      "catalogueEntries": 4,
+      "detailFeatures": 19,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FS-FL/FS-FL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "repeated"
+    },
+    "soil-new:FP/FS-FG": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "cover-contact"
+    },
+    "soil-new:FT/HL-HS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "cover-contact"
+    },
+    "soil-new:TL-TS/FT": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ZL-ZS/ZL-ZS": {
+      "catalogueEntries": 4,
+      "detailFeatures": 5,
+      "kind": "repeated"
+    },
+    "soil-new:DV/DS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ML/SL": {
+      "catalogueEntries": 4,
+      "detailFeatures": 8,
+      "kind": "varies-with-record"
+    },
+    "soil-new:ZL-ZG/ZL-ZG": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "repeated"
+    },
+    "soil-new:DV/DL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HP/FS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "cover-contact"
+    },
+    "soil-new:HP/FT": {
+      "catalogueEntries": 5,
+      "detailFeatures": 30,
+      "kind": "cover-contact"
+    },
+    "soil-new:HS/FP-FS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ML/FT": {
+      "catalogueEntries": 2,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ZS/ZL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DV/SL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ML/FS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TS/FL-FP": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HL/FL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HP/FP": {
+      "catalogueEntries": 2,
+      "detailFeatures": 4,
+      "kind": "cover-contact"
+    },
+    "soil-new:ML/HS": {
+      "catalogueEntries": 3,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FL/FG": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FL/FK": {
+      "catalogueEntries": 3,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FG/FP": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ML-MG/MG": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TS-TG/TL-TS": {
+      "catalogueEntries": 4,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FP/LL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FV/HL": {
+      "catalogueEntries": 4,
+      "detailFeatures": 6,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FV/HP": {
+      "catalogueEntries": 4,
+      "detailFeatures": 11,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HL/FT": {
+      "catalogueEntries": 4,
+      "detailFeatures": 6,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS/LL": {
+      "catalogueEntries": 3,
+      "detailFeatures": 5,
+      "kind": "varies-with-record"
+    },
+    "soil-new:TS/LL": {
+      "catalogueEntries": 3,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DS/SL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "varies-with-record"
+    },
+    "soil-new:DS-ML/K": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FP/FV": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "cover-contact"
+    },
+    "soil-new:FP/SL": {
+      "catalogueEntries": 3,
+      "detailFeatures": 5,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HS/HI": {
+      "catalogueEntries": 4,
+      "detailFeatures": 36,
+      "kind": "sediment-contact"
+    },
+    "soil-new:MV/MV": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "repeated"
+    },
+    "soil-new:FS/HP": {
+      "catalogueEntries": 1,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TL-ML/TL-ML": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "repeated"
+    },
+    "soil-new:HG/HL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HI/HL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HL/HI": {
+      "catalogueEntries": 1,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FK/FK": {
+      "catalogueEntries": 8,
+      "detailFeatures": 22,
+      "kind": "varies-with-record"
+    },
+    "soil-new:HS/TS": {
+      "catalogueEntries": 3,
+      "detailFeatures": 12,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HL/DL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/HI": {
+      "catalogueEntries": 3,
+      "detailFeatures": 4,
+      "kind": "cover-contact"
+    },
+    "soil-new:HP/HI": {
+      "catalogueEntries": 2,
+      "detailFeatures": 4,
+      "kind": "cover-contact"
+    },
+    "soil-new:HS/HT": {
+      "catalogueEntries": 5,
+      "detailFeatures": 20,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DL/K": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:K/DS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:K/ML": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:LRÅ/FT": {
+      "catalogueEntries": 4,
+      "detailFeatures": 13,
+      "kind": "unresolved"
+    },
+    "soil-new:RÅ/FT": {
+      "catalogueEntries": 5,
+      "detailFeatures": 21,
+      "kind": "unresolved"
+    },
+    "soil-new:HS-HI/HI": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HI/HG": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:KMG/K": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "varies-with-record"
+    },
+    "soil-new:DS-K/DS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:K/DL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:KMG/KMG": {
+      "catalogueEntries": 8,
+      "detailFeatures": 64,
+      "kind": "repeated"
+    },
+    "soil-new:HL/K": {
+      "catalogueEntries": 2,
+      "detailFeatures": 4,
+      "kind": "sediment-contact"
+    },
+    "soil-new:S/SK": {
+      "catalogueEntries": 3,
+      "detailFeatures": 5,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HP-HL/HP": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "mixed-cover-contact"
+    },
+    "soil-new:HG/K": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TS-TL/ML": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HT/ML": {
+      "catalogueEntries": 7,
+      "detailFeatures": 46,
+      "kind": "varies-with-record"
+    },
+    "soil-new:MS/MV": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:MS/TS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:S/DI": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:EE/EE": {
+      "catalogueEntries": 1,
+      "detailFeatures": 3,
+      "kind": "repeated"
+    },
+    "soil-new:FJ/FK": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/FI": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "cover-contact"
+    },
+    "soil-new:FT/PL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "cover-contact"
+    },
+    "soil-new:YS-YG/YS-YG": {
+      "catalogueEntries": 6,
+      "detailFeatures": 128,
+      "kind": "repeated"
+    },
+    "soil-new:QS-QL/QS-QL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "repeated"
+    },
+    "soil-new:QG/QG": {
+      "catalogueEntries": 2,
+      "detailFeatures": 4,
+      "kind": "repeated"
+    },
+    "soil-new:YS-YL/YS-YL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "repeated"
+    },
+    "soil-new:FT-HS/FT-HS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 6,
+      "kind": "repeated"
+    },
+    "soil-new:HP/TL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "cover-contact"
+    },
+    "soil-new:HT/HL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "cover-contact"
+    },
+    "soil-new:TS-TL/TS": {
+      "catalogueEntries": 3,
+      "detailFeatures": 9,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HL-HT/HL-HT": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "repeated"
+    },
+    "soil-new:HT/HP": {
+      "catalogueEntries": 5,
+      "detailFeatures": 15,
+      "kind": "cover-contact"
+    },
+    "soil-new:TS/HL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HP-HG/HP-HG": {
+      "catalogueEntries": 6,
+      "detailFeatures": 20,
+      "kind": "varies-with-record"
+    },
+    "soil-new:FT-FL/FT-FL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 4,
+      "kind": "repeated"
+    },
+    "soil-new:FL-FT/FL-FT": {
+      "catalogueEntries": 4,
+      "detailFeatures": 16,
+      "kind": "repeated"
+    },
+    "soil-new:MS/DI": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ML/DI": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HI/HP": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-new:DI/ML": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/KML": {
+      "catalogueEntries": 3,
+      "detailFeatures": 5,
+      "kind": "cover-contact"
+    },
+    "soil-new:DS/KML": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/KMG": {
+      "catalogueEntries": 3,
+      "detailFeatures": 7,
+      "kind": "cover-contact"
+    },
+    "soil-new:KML/DS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:ES/HP": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "cover-contact"
+    },
+    "soil-new:ML/KMG": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HL/ML": {
+      "catalogueEntries": 3,
+      "detailFeatures": 10,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HS/TL": {
+      "catalogueEntries": 8,
+      "detailFeatures": 41,
+      "kind": "varies-with-record"
+    },
+    "soil-new:MS/HP": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TL/DG": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HS-HT/HS-HT": {
+      "catalogueEntries": 2,
+      "detailFeatures": 6,
+      "kind": "repeated"
+    },
+    "soil-new:HS-HT/ML": {
+      "catalogueEntries": 2,
+      "detailFeatures": 5,
+      "kind": "mixed-cover-contact"
+    },
+    "soil-new:HP/TS": {
+      "catalogueEntries": 3,
+      "detailFeatures": 26,
+      "kind": "cover-contact"
+    },
+    "soil-new:HL/TL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:TL/FL": {
+      "catalogueEntries": 4,
+      "detailFeatures": 8,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FP-FT/FL": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "mixed-cover-contact"
+    },
+    "soil-new:HL/HT": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HS-HT/HS": {
+      "catalogueEntries": 3,
+      "detailFeatures": 3,
+      "kind": "mixed-cover-contact"
+    },
+    "soil-new:TL-FT/TS": {
+      "catalogueEntries": 3,
+      "detailFeatures": 4,
+      "kind": "mixed-cover-contact"
+    },
+    "soil-new:TS/DS-DG": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:FT/HT": {
+      "catalogueEntries": 3,
+      "detailFeatures": 6,
+      "kind": "cover-contact"
+    },
+    "soil-new:HS-HP/HS-HP": {
+      "catalogueEntries": 3,
+      "detailFeatures": 11,
+      "kind": "repeated"
+    },
+    "soil-new:ES/DI": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "cover-contact"
+    },
+    "soil-new:FP-ML/FP-ML": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "repeated"
+    },
+    "soil-new:FP-FT/FS": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "mixed-cover-contact"
+    },
+    "soil-new:FT-FP/ML": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "mixed-cover-contact"
+    },
+    "soil-new:FT-FP/TL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "mixed-cover-contact"
+    },
+    "soil-new:HL/TS": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HT-HS/HT": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "mixed-cover-contact"
+    },
+    "soil-new:DS/TL": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:S-G/ML": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2,
+      "kind": "sediment-contact"
+    },
+    "soil-new:S/FP": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "sediment-contact"
+    },
+    "soil-new:HG-HL/HG-HL": {
+      "catalogueEntries": 3,
+      "detailFeatures": 7,
+      "kind": "repeated"
+    },
+    "soil-new:FT-FG/FT-FG": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "repeated"
+    },
+    "soil-new:FS-FV/FS-FV": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "repeated"
+    },
+    "soil-new:FP/TI": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "cover-contact"
+    },
+    "soil-new:PKV/PKV": {
+      "catalogueEntries": 17,
+      "detailFeatures": 3805,
+      "kind": "unresolved"
+    },
+    "soil-old:HAG/—": {
+      "catalogueEntries": 3,
+      "detailFeatures": 32,
+      "kind": "legacy"
+    },
+    "soil-old:GNG/—": {
+      "catalogueEntries": 3,
+      "detailFeatures": 101,
+      "kind": "legacy"
+    },
+    "soil-old:VAG/—": {
+      "catalogueEntries": 2,
+      "detailFeatures": 6,
+      "kind": "legacy"
+    },
+    "soil-old:JV/—": {
+      "catalogueEntries": 2,
+      "detailFeatures": 2,
+      "kind": "legacy"
+    },
+    "soil-new:FP-FK/FP-FK": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "repeated"
+    },
+    "soil-new:YS/ML": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3,
+      "kind": "sediment-contact"
+    },
+    "soil-old:EQ/—": {
+      "catalogueEntries": 4,
+      "detailFeatures": 4,
+      "kind": "legacy"
+    },
+    "soil-old:KQ/—": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1,
+      "kind": "legacy"
+    },
+    "soil-old:SVG/—": {
+      "catalogueEntries": 3,
+      "detailFeatures": 41,
+      "kind": "legacy"
+    }
+  },
+  "examples": {
+    "unresolved": {
+      "tile": "tile-23-306.geojson.gz",
+      "origin": "gap:g7806",
+      "bbox": [
+        8.44584893,
+        55.22532522,
+        8.67773233,
+        55.40569181
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "X",
+        "depth": "X",
+        "symbol": "X",
+        "soilLabel": "X - Ukendt lag, oplysninger mangler",
+        "landscape": "Tidevandsflade",
+        "landscapeCode": 42,
+        "landscapeEnglish": "Tidal flat",
+        "conflictSymbols": "",
+        "potential": "unresolved",
+        "material": "unresolved",
+        "process": "unresolved",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "kind": "unresolved",
+      "displayMetric": 0.04182401813560549,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "repeated": {
+      "tile": "tile-28-306.geojson.gz",
+      "origin": "n95854:g7045",
+      "bbox": [
+        9.94414609,
+        55.22145227,
+        10.26324031,
+        55.40128185
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "ML",
+        "depth": "ML",
+        "symbol": "ML",
+        "soilLabel": "ML - MorÃ¦neler",
+        "landscape": "Dødislandskab",
+        "landscapeCode": 8,
+        "landscapeEnglish": "Hummocky topograhy",
+        "conflictSymbols": "",
+        "potential": "possible",
+        "material": "till",
+        "process": "till",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "kind": "repeated",
+      "displayMetric": 0.05738257956302645,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "cover-contact": {
+      "tile": "tile-26-316.geojson.gz",
+      "origin": "n181747:g7400",
+      "bbox": [
+        9.54944329,
+        57.15248414,
+        9.66090147,
+        57.19834683
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "ES",
+        "depth": "FT",
+        "symbol": "FT",
+        "soilLabel": "FT - FerskvandstÃ¸rv",
+        "landscape": "Marin flade",
+        "landscapeCode": 25,
+        "landscapeEnglish": "Marine plain",
+        "conflictSymbols": "",
+        "potential": "covered",
+        "material": "aeolian-cover",
+        "process": "marine",
+        "accessibility": "covered",
+        "confidence": "weak"
+      },
+      "kind": "cover-contact",
+      "displayMetric": 0.00511177195730425,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "sediment-contact": {
+      "tile": "tile-23-308.geojson.gz",
+      "origin": "n95903:g6621",
+      "bbox": [
+        8.36399577,
+        55.61561956,
+        8.57968934,
+        55.76479665
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "S",
+        "depth": "DS",
+        "symbol": "DS",
+        "soilLabel": "DS - Smeltevandssand",
+        "landscape": "Ældre moræneflade",
+        "landscapeCode": 16,
+        "landscapeEnglish": "Older Till plain",
+        "conflictSymbols": "",
+        "potential": "possible",
+        "material": "coarse-unspecified",
+        "process": "older-till",
+        "accessibility": "layered",
+        "confidence": "weak"
+      },
+      "kind": "sediment-contact",
+      "displayMetric": 0.0321765391043116,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "legacy": {
+      "tile": "tile-25-311.geojson.gz",
+      "origin": "s7535:g6636",
+      "bbox": [
+        9,
+        56.16035532,
+        9.22291752,
+        56.27800223
+      ],
+      "entry": {
+        "source": "soil-old",
+        "surface": "T",
+        "depth": "",
+        "symbol": "T",
+        "soilLabel": "T",
+        "landscape": "Hedeslette",
+        "landscapeCode": 19,
+        "landscapeEnglish": "Outwash plain",
+        "conflictSymbols": "",
+        "potential": "enhanced",
+        "material": "glacial-coarse",
+        "process": "meltwater",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "kind": "legacy",
+      "displayMetric": 0.026225557412862612,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "variant": {
+      "tile": "tile-24-304.geojson.gz",
+      "origin": "n5867:g7403",
+      "bbox": [
+        8.7038884,
+        54.90621841,
+        8.91206877,
+        54.98140081
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "HV-L",
+        "depth": "HV-L",
+        "symbol": "HV",
+        "soilLabel": "HV - Vekslende tynde saltvandslag, marsk",
+        "landscape": "Marsk",
+        "landscapeCode": 26,
+        "landscapeEnglish": "Marsh",
+        "conflictSymbols": "",
+        "potential": "coastal",
+        "material": "marine-fine",
+        "process": "cover",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "kind": "variant",
+      "displayMetric": 0.01565149984948703,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "organic-below-mineral": {
+      "tile": "tile-26-316.geojson.gz",
+      "origin": "n181747:g7400",
+      "bbox": [
+        9.54944329,
+        57.15248414,
+        9.66090147,
+        57.19834683
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "ES",
+        "depth": "FT",
+        "symbol": "FT",
+        "soilLabel": "FT - FerskvandstÃ¸rv",
+        "landscape": "Marin flade",
+        "landscapeCode": 25,
+        "landscapeEnglish": "Marine plain",
+        "conflictSymbols": "",
+        "potential": "covered",
+        "material": "aeolian-cover",
+        "process": "marine",
+        "accessibility": "covered",
+        "confidence": "weak"
+      },
+      "kind": "cover-contact",
+      "displayMetric": 0.00511177195730425,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "mixed-cover-contact": {
+      "tile": "tile-25-316.geojson.gz",
+      "origin": "n180081:g7400",
+      "bbox": [
+        9.17726403,
+        57.0920887,
+        9.21182147,
+        57.10840245
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "ES-FT",
+        "depth": "HS",
+        "symbol": "HS",
+        "soilLabel": "HS - Saltvandssand",
+        "landscape": "Marin flade",
+        "landscapeCode": 25,
+        "landscapeEnglish": "Marine plain",
+        "conflictSymbols": "",
+        "potential": "covered",
+        "material": "mixed",
+        "process": "marine",
+        "accessibility": "covered",
+        "confidence": "weak"
+      },
+      "kind": "mixed-cover-contact",
+      "displayMetric": 0.000563761436800072,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    }
+  },
+  "unchanged": "No dataset, potential category, geometry, source identity or geological rule modified"
+}

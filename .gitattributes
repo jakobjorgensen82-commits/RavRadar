@@ -28,3 +28,6 @@ docs/research/jordrav/national-model-0.2-*.json -text whitespace=blank-at-eol,bl
 js/jordrav/search-context.js -text
 scripts/audit-jordrav-search-context.mjs -text
 docs/research/jordrav/national-search-context-*.json -text
+# Layer-access receipts bind exact report bytes across Windows/Linux.
+docs/research/jordrav/national-layer-access-*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+docs/research/jordrav/layer-*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

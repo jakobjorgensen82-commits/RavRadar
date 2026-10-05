@@ -3,6 +3,7 @@ const commands = [
   [process.env.RAVRADAR_PYTHON || 'python', ['scripts/test-jordrav-model.py']],
   [process.execPath, ['--test','scripts/test-jordrav-data.mjs']],
   [process.execPath, ['--test','scripts/test-jordrav-search-context.mjs']],
+  [process.execPath, ['--test','scripts/test-jordrav-layer-access.mjs']],
   [process.execPath, ['--test','scripts/test-jordrav-view-state.mjs']]
 ];
 for (const [program,args] of commands) {

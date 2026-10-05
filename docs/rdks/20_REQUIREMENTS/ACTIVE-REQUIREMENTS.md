@@ -1,5 +1,15 @@
 # AKTUELT JORDRAVKRAV – 2026-10-05
 
+**Nyeste ejerordre: fortsæt.** Den nationale videreanalyse omsættes nu
+til en konkret undersøgelsesplan for begge fysiske lag, også begravet
+organisk materiale og vandrette delområder i dybere symboler. Konflikter,
+ældre supplement og marine underkoders uafklarede variation må ikke
+opgraderes til målt pløjeadgang. Ingen fast antaget pløjedybde, JB- eller
+kulstofsandsynlighed må blive ravbonus eller erstatte en lokal lagkontakt.
+Metoder og alle nationale lagpar behandles med særskilt kode-/datasetbinding.
+Lokal implementering og kontrol: docs/research/JORDRAV_LAGADGANG_2026-10-05.md.
+Dette supplerer tidligere kortplanlægning; geologiske farveklasser bevares.
+
 **Nyeste ejerønske: kan det gøres endnu bedre?** Sporfiltre og genfindelige
 visningslinks er den konkrete næste forbedring. Samme geologiske
 farveklasse filtreres i hele Danmark og lokale detaljer. Valg gendannes

@@ -55,6 +55,9 @@
 .jordrav-access-badge { margin-top: 12px; }
 .jordrav-search-context { border-left: 3px solid #507c85; padding: 1px 14px 12px; margin-top: 18px; background: #f2f7f7; }
 .jordrav-search-context h4 { font-size: .87rem; margin: 16px 0 6px; }
+.jordrav-layer-access { margin-top: 18px; padding: 1px 14px 12px; border-left: 3px solid #826e52; background: #f7f4ef; }
+.jordrav-layer-access ol { padding-left: 22px; }
+.jordrav-layer-access li { margin: 10px 0; }
 .jordrav-layer-tools a { color: var(--brand-2); font-size: .8rem; }
 .jordrav-view-link input { display: block; width: calc(100% - 28px); margin: 8px 14px; min-height: 40px; border: 1px solid var(--line); border-radius: 7px; padding: 8px; font: inherit; font-size: .8rem; }
 .jordrav-view-link input[hidden] { display:none; }
