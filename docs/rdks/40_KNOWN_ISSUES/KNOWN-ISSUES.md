@@ -1,4 +1,15 @@
-# NYESTE – 2026-10-05 – ny originalkontrol, uafsluttede leverancegates
+# NYESTE – 2026-10-05 – footertekst fjernes efter ejerens ønske
+
+Den uønskede formulering om ukendt beregningsalder er lokalt fjernet på
+DA/DE/EN, mens prognosetidspunkt og reelle fejl-/nødvisningsbeskeder bevares.
+Smal kode-only levering og offentlig kontrol mangler; ingen nye data,
+modelbindinger eller migrationer. Vandstandsundtagelsen er faktisk leveret
+i 543 kl.06.04 dansk tid; ny almindelig generation afsluttede kl.08.45.
+Detaljerede resultater/kildeeffekt, lokal Spørg RavRadar-udvidelse, Fur-årsag,
+sikker timeretention og samlet revision er stadig åbne. Historik nedenfor
+med »543 er lokal« er ikke aktuel leverancestatus.
+
+# HISTORIK – 2026-10-05 – ny originalkontrol, uafsluttede leverancegates
 
 Vandstandsundtagelsen er endnu ikke live. En ny almindelig 542-generation
 blev deployet kl. 05.16 dansk tid uden tab i de fem vejrfamilier. Kandidatens

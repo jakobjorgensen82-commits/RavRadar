@@ -1,4 +1,17 @@
-# NYESTE – 2026-10-05 – originalforventning til ny offentlig generation
+# NYESTE – 2026-10-05 – smal footerrettelse, ingen ny model
+
+Ejerens tekstfjernelse er lokalt implementeret i de tre DA/DE/EN ageUnknown-
+tekster. Kun prognosetidspunktet står tilbage. Nødvisning, manglende-data-
+beskeder, metadata og datakontroller er bevaret. Ingen modelbinding, version,
+SQLmigration, geodata, vejr eller scoreændring. Målprøve, eksakt CI/proof,
+kontrolleret kode-only release og faktisk offentlig kontrol kræves.
+
+543-vandstandsundtagelsen er faktisk leveret kl.06.04 dansk tid. Ny almindelig
+543-vejrhentning afsluttede kl.08.45; detaljerede resultater og kildeeffekt
+mangler. Spørg RavRadar udvikles separat lokalt. Fur-årsag/timeretention og
+samlet revision er åbne. Ældre modstridende leverancestatus er historik.
+
+# HISTORIK – 2026-10-05 – originalforventning til ny offentlig generation
 
 Almindelig 542-vejrhentning/deploy afsluttede kl. 05.16 dansk tid uden tab
 i de fem vejrfamilier. Lokal 543-overgang er retargetet til den præcise nye

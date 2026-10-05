@@ -1,4 +1,17 @@
-# 4.0.543-kandidat – 2026-10-05 – præcis ny original før vandstandsrelease
+# Tekstrettelse på 4.0.543 – 2026-10-05
+
+Ejerbestilt fjernelse af forklaringen om ukendt alder på vejrberegninger.
+Footerens tilsvarende DA/DE/EN-gren viser kun prognosetidspunktet. Faktiske
+metadata, datakontroller, nødvisning og fejlbeskeder er uændrede. Ingen ny
+produktversion, modelbinding, databaseovergang, score- eller geodataændring.
+Separat lille kode-only rettelse; lokal og CI-kontrol er ikke offentlig effekt.
+Spørg RavRadar-udvidelsen og samlet revision fortsætter separat.
+
+Vandstandsundtagelsen er faktisk leveret i 543 kl.06.04 dansk tid. Ny almindelig
+543-generation afsluttede kl.08.45; detaljerede resultater/kildeeffekt mangler.
+Ældre modstridende leverancestatus nedenfor er historik.
+
+# Historisk 4.0.543-kandidat – 2026-10-05 – præcis ny original før vandstandsrelease
 
 Vandstandsovergangen følger nu den faktisk nye almindeligt publicerede
 542-generation rr-20261005020412-210/reference 5. oktober 00Z. Den ældre

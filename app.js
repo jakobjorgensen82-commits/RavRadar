@@ -19,21 +19,21 @@ import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, flowArrows:null, currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
 const RUNTIME_SNAPSHOT_TEXT = Object.freeze({
   da:Object.freeze({
-    ageUnknown:'Prognose for {time}. Vi kan ikke se præcist, hvor gamle alle vejrberegninger er. Det betyder ikke i sig selv, at de viste værdier er ugyldige.',
+    ageUnknown:'Prognose for {time}.',
     ranking:'Viser senest verificerede scorer fra {time}. Det er ikke den aktuelle time.',
     forecast:'Viser kun fremtidige prognoser fra den senest verificerede pakke.',
     data:'Midlertidig begrænset visning: Vi viser senest kontrollerede score og vejr fra {time}. Detaljer for de enkelte kyststrækninger vises igen efter næste vejr-opdatering.',
     trip:'En ravtur kan ikke startes fra den ældre nødvisning. Vent på næste vejr-opdatering.',
   }),
   de:Object.freeze({
-    ageUnknown:'Prognose für {time}. Wie alt alle Wetterberechnungen genau sind, ist nicht bekannt. Das allein bedeutet nicht, dass die angezeigten Werte ungültig sind.',
+    ageUnknown:'Prognose für {time}.',
     ranking:'Zuletzt verifizierte RavScores von {time}. Dies ist nicht die aktuelle Stunde.',
     forecast:'Es werden nur zukünftige Prognosen aus dem zuletzt verifizierten Paket angezeigt.',
     data:'Vorübergehend eingeschränkte Ansicht: Wir zeigen den zuletzt geprüften Score und das Wetter von {time}. Details zu einzelnen Küstenabschnitten erscheinen nach der nächsten Wetteraktualisierung wieder.',
     trip:'Eine Bernsteintour kann nicht aus der älteren Notansicht gestartet werden. Warte auf die nächste Wetteraktualisierung.',
   }),
   en:Object.freeze({
-    ageUnknown:'Forecast for {time}. We cannot tell exactly how old every weather calculation is. That alone does not mean the values shown are invalid.',
+    ageUnknown:'Forecast for {time}.',
     ranking:'Showing the latest verified RavScores from {time}. This is not the current hour.',
     forecast:'Only future forecasts from the latest verified package are shown.',
     data:'Temporarily limited view: We are showing the latest checked score and weather from {time}. Details for individual stretches of coast will return after the next weather update.',
