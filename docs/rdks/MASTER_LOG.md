@@ -1,4 +1,14 @@
-# NYESTE – 2026-10-05 – eksakt overgang til den faktisk nye 542-original
+# NYESTE – 2026-10-05 – ejerbestilt, selvstændig footerrettelse
+
+Ejeren har fravalgt den offentlige forklaring om ukendt beregningsalder.
+Tre DA/DE/EN-tekster afkortes til prognosetidspunktet; ingen ændring af
+metadata, branchvalg, datavalidering, nødvisning eller fejlbeskeder. Ingen
+ny version eller native/databasebinding. Rettelsen isoleres fra den øvrige
+lokale assistentudvidelse og skal gennem eksakt CI/proof, kontrolleret
+kode-only levering og offentlig kontrol. 543-vandstandsundtagelsen er
+faktisk leveret; kildeeffekt, Fur og samlet revision er fortsat åbne.
+
+# HISTORIK – 2026-10-05 – eksakt overgang til den faktisk nye 542-original
 
 Ny almindelig vejrhentning/deploy afsluttede kl. 05.16 dansk tid uden tab
 i de fem vejrfamilier. Lokal vandstandskandidat følger nu præcist den nye

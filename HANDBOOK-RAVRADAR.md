@@ -2,6 +2,28 @@
 
 **Håndbogsversion:** 4.0.543
 
+## 89.161 Footerens prognosetidspunkt
+
+Efter ejerens ønske viser footerens DA/DE/EN-gren med ukendt sammenlignelig
+beregningsalder kun prognosetidspunktet. Den generelle forklaring om ukendt
+alder er fjernet, ikke erstattet med et løfte om friskhed eller gyldighed.
+Metadata, aldersberegning, faktisk datavalidering, nødvisning og beskeder ved
+manglende data er uændrede. Dette er en separat tekstrettelse på 4.0.543;
+ingen ny version, modelbinding, migration eller vejrhentning. Lokal kontrol
+og CI er ikke offentlig effekt; kode-only levering og offentlig kontrol kræves.
+
+Bootstrap og app har samme afgrænsede copy-cachemarkør. Den sikrer, at
+tidligere besøgende ikke får gamle 543-assets ved næste sideindlæsning.
+Den normale serviceworker, dens cachepolitik og øvrige assets er uændrede;
+ingen caches slettes eller nulstilles. Den normale cold-start-målprøve dækker
+genbrug af tidligere 543-assets og ny indlæsning af de to rettede URL'er.
+
+Vandstandsundtagelsen er faktisk leveret i 543 kl.06.04 dansk tid. Den nye
+almindelige 543-generation afsluttede med deploy kl.08.45; detaljeret cache,
+no-loss og syvzoneeffekt mangler kontrol. Spørg RavRadar udvikles separat
+lokalt, og Fur-årsag, timeretention og samlet revision er åbne. Tidligere
+kapitlers modstridende forberedelsesstatus er historik.
+
 ## 89.160 Syv kystzoner må bruge Limfjordsmodellens vandstand – lokal kandidat
 
 Den almindelige vejrhentning afsluttede med deploy kl. 05.16 den 5. oktober

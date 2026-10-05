@@ -1,4 +1,26 @@
-# NYESTE – 2026-10-05 – vandstandsovergangen følger den faktisk nye original
+# NYESTE – 2026-10-05 – afgrænset footerrettelse på leveret 4.0.543
+
+Ejeren ønsker teksten om ukendt alder på vejrberegninger fjernet. Kun de
+tre DA/DE/EN-tekster i footerens ageUnknown-gren ændres til prognosetidspunktet
+alene. Metadata, faktisk datavalidering, nødvisning og fejlbeskeder bevares.
+Dette er en separat tekstrettelse, ikke den lokale Spørg RavRadar-udvidelse.
+Ingen ny produktversion, modelbinding, SQLmigration, vejr-, score- eller
+geodataændring. Exact-head CI, kontrolleret kode-only levering og offentlig
+kontrol kræves. Lokal kode må ikke kaldes offentlig effekt.
+
+En afgrænset copy-cachemarkør på bootstrap og app sikrer rettelsen ved
+næste sideindlæsning hos tidligere besøgende. Normal serviceworker/cache-
+politik er uændret, ingen cache-reset. Eksisterende cold-start-målprøve
+dækker faktisk worker-routing for tidligere cachede 543-assets.
+
+Vandstandsundtagelsen er faktisk leveret i 543 kl.06.04 dansk tid. Den
+almindelige 543-vejrhentning afsluttede med deploy kl.08.45. Dens detaljerede
+cache-/no-loss-/kildeeffekt er endnu ikke færdigkontrolleret. Fur-årsag,
+timeretention, Spørg RavRadar og samlet revision er fortsat åbne. Det private
+checkpoint og det isolerede assistentcheckout bevarer den øvrige lokale
+udvikling. Ældre modstridende leverancestatus nedenfor er historik.
+
+# HISTORIK – 2026-10-05 – vandstandsovergangen følger den faktisk nye original
 
 Den almindelige vejrhentning afsluttede med deploy kl. 05.16 dansk tid uden
 tab i de fem vejrfamilier. Den offentlige kode er stadig 4.0.542. Den lokale

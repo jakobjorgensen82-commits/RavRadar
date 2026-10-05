@@ -1,4 +1,23 @@
-# NYESTE – 2026-10-05 – faktisk ny original, endnu ikke vandstandsrelease
+# NYESTE – 2026-10-05 – ejerbestilt footertekst
+
+Kun footerens DA/DE/EN-formulering om ukendt beregningsalder fjernes. Den
+viser fortsat prognosetidspunktet. Metadata, aldersberegning, datavalidering,
+nødvisning og advarsler ved manglende data er urørte. Ingen ny version,
+modelbinding, SQLmigration, data- eller scoreændring. Tekstrettelsen skal
+leveres separat gennem den kontrollerede kode-only vej med eksakt datagenbrug.
+CI og offentlig effekt af rettelsen er endnu ikke dokumenteret.
+
+Bootstrap og app får samme copy-cachemarkør, så tidligere besøgendes
+543-cache ikke skjuler tekstændringen efter næste sideindlæsning. Normal
+serviceworker/cachepolitik er uændret; ingen sletning eller nulstilling.
+
+Vandstandsundtagelsen er faktisk offentlig i 543 siden kl.06.04 dansk tid;
+almindelig 543-vejrhentning/deploy afsluttede kl.08.45. Ny kildeeffekt og
+detaljerede cache-/no-loss-kontroller mangler. Spørg RavRadar-udvidelsen er
+fortsat lokal i sit eget checkout. Fur og samlet revision er stadig åbne.
+Ældre modstridende status nedenfor er historik.
+
+# HISTORIK – 2026-10-05 – faktisk ny original, endnu ikke vandstandsrelease
 
 Almindelig vejrhentning og deploy afsluttede kl. 05.16 dansk tid uden tab
 i de fem vejrfamilier. Offentlig kode er fortsat 4.0.542. Den lokale 543-

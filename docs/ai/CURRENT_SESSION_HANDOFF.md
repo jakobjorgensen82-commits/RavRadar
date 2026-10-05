@@ -1,4 +1,26 @@
-# NYESTE – 2026-10-05 – ny faktisk generation kræver ny eksakt overgang
+# NYESTE – 2026-10-05 – isoleret ejerbestilt footertekst
+
+Branch codex/forecast-footer-copy udspringer af faktisk main 5d8c på det
+eksisterende isolerede kildecheckout. Kun tre DA/DE/EN ageUnknown-tekster
+ændres til prognosetidspunktet alene; en eksisterende i18n-målprøve beskytter
+kopien og de normale nød-/fejlbeskeder. Spørg RavRadar-koden kopieres ikke
+fra det separate dirty assistentcheckout. Ingen ny version, modelbinding,
+databaseovergang, vejr-, score- eller geodataændring. Kræver målprøve,
+exact-head CI/proof, fornyede writer/main-gates, kontrolleret kode-only
+release og offentlig effekt. Privat checkpoint bevarer faktisk kørselsevidens.
+
+Bootstrap/app får samme afgrænsede copy-cachemarkør, så tidligere besøgende
+ikke genbruger gammel tekst. Normal worker, cachepolitik og øvrige assets
+er uændrede. Eksisterende cold-start/versionsclosure/startup/i18n-målprøver
+består. Ny exact-head CI kræves efter dette funktionelle cache-delta.
+
+543-vandstandsundtagelsen er faktisk offentlig siden kl.06.04 dansk tid;
+almindelig 543-generation afsluttede med deploy kl.08.45. Detaljerede
+cache-/no-loss-/kildeeffektkontroller og Spørg RavRadar-levering mangler.
+Fur-årsag, timeretention og samlet revision er fortsat åbne. Historik nedenfor
+er ikke ny leverancestatus. Før fremtidig merge/deploy fornyes actualwriters.
+
+# HISTORIK – 2026-10-05 – ny faktisk generation kræver ny eksakt overgang
 
 Almindelig vejrhentning og deploy afsluttede kl. 05.16 dansk tid på 4.0.542.
 543-kandidatens originale forventning følger nu præcist rr-20261005020412-210
