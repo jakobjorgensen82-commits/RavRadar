@@ -1,7 +1,43 @@
 # DEC-0292 – Privat diagnose af Fur-vandstand i normale vejrhentninger
 
-**Status:** PR516 merged med exact CI/proof; kontrolleret release fejlede før Pages. Afgrænset original-zonekontrol repareret lokalt; produktion stadig åben.
+**Status:** IMPLEMENTERET og deployet i 4.0.542; faktisk normal diagnoseeffekt, gammel årsag og timeretention er åbne.
 **Dato:** 2026-10-04
+
+# NYESTE – 5. oktober – seneste tab er tre kystzoner, ikke Fur
+
+Den afsluttede naturlige vejrhentning havde 21 vandstandstab, ligeligt fordelt
+på Agger, Lyngby og Harboøre. Fur-diagnosen havde 0 tab. Pages blev sprunget
+over, og sidste gyldige offentlige datasæt blev bevaret. Det er ikke bevis
+for rettelse eller årsag til de gamle Fur-huller.
+
+Den lokale 543-kandidat tillader kun verificeret dkss_lf-vandstand på syv
+ejerzoner, ikke strøm eller temperatur. Den fjerner en kildeafvisning når
+valgte input findes, men genskaber ikke manglende kilder, gamle vægte eller
+gammel årsag. Diagnose, central interpolation og no-loss består; automatisk
+sikker timeretention er stadig åben. Se DEC-0291 og begge håndbøgers 89.160.
+
+# NYESTE – 2026-10-04 22:45 DK – 4.0.542 faktisk leveret; ny vejreffekt afventer
+
+PR516 og PR517 er merged efter hver sin exact-head kildekontrol og proof.
+Den reparerede kontrollerede release afsluttede kl.22.20 DK med faktisk
+original-restore, privat overgang/publicering, eksakt datagenbrug og Pages.
+Hjemmesiden viser 4.0.542. Første releasefejl før Pages er historisk.
+Den allerede installerede nye databaseovergang blev ikke gentaget; faktisk
+migrationsplan var tom. Gamle migrationer, scoreformler og kystpunkter er urørte.
+
+Kode-only genbrugte gyldige 16Z-data uden providerkald eller ny scoreberegning.
+Syvzoners kilderene strøm og 48h-state behandles først ved ægte NEW-T;
+faktisk offentlig effekt er stadig åben. Originaler og bevist øvrig historik bevares.
+Cron er ikke ændret efter ejerens »pyt«. Den naturlige vejrhentning var kl.22.41
+aktiv ved DMI uden fejlede trin; restorecounts/save/cache/deploy er ikke målt endnu.
+Den godkendte manuelle kørsel venter på faktisk ledig writer. Ingen overlap/replacement.
+
+NORMAL Fur-diagnosen er leveret, ikke automatisk timeretention. Gamle 7/12 timers
+årsag og sikker genvinding er åbne. Hash/presence kan ikke genskabe gamle vægte
+eller tilsidesætte central routing. No-loss består; første legacy-spor kan være ukendt.
+Ingen hjemmesidealarm/usermail. FIELD-dækning er stadig 96.440426121%, alle fem
+samtidig 92.842571839% over 210/673/118h i samme 16Z-data, ikke ny coverage/privathistorik.
+Detaljeret privat evidens ligger i checkpoint. Modstridende ældre statusser er historik.
 
 Ejeren kræver fremtidig diagnose af Fur-hullerne og levering sammen med den
 klargjorte syvzonerettelse efter aktiv vejrhentning. Dette erstatter det gamle

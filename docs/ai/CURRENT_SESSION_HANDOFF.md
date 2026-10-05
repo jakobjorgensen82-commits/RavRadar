@@ -1,4 +1,71 @@
-# NYESTE – 2026-10-04 19:55 DK – lokal 4.0.542-kandidat: syv zoner og NORMAL Fur-diagnose
+# NYESTE – 2026-10-05 – ny faktisk generation kræver ny eksakt overgang
+
+Almindelig vejrhentning og deploy afsluttede kl. 05.16 dansk tid på 4.0.542.
+543-kandidatens originale forventning følger nu præcist rr-20261005020412-210
+med reference 5. oktober 00Z. Den eksisterende overgangstest var først rød
+på den gamle generation og er nu grøn; samme-binding-originalen fra 4. oktober
+16Z og en tidligere målreference afvises. Ingen genmærkning af originaler.
+541-arkivet, øvrig historik og bindinger bevares. Den funktionelle ændring
+kræver en ny exact-head CI/proof før release. Vandstandsundtagelse, gammel
+Fur-årsag, Spørg RavRadar og samlet revision er ikke erklæret leveret.
+
+# HISTORIK – KILDEKONTROL – 2026-10-05 – konkret testreparation, ikke release
+
+PR518 er pushet. Første exact-head CI fejlede på workflowtestens gamle
+forventning til sidste migration; lokal samme-test reproducerede fejlen.
+Kun navnet peger nu på den nye vandstandsmigration, hvis to 55s-indstillinger
+er kontrolleret. Runtime, gamle migrationer, bindinger og no-loss er urørte.
+Ny exact-head CI/proof kræves; ingen merge/release under aktiv vejrhentning.
+Vandstandseffekt, Spørg RavRadar-levering og samlet revision er stadig åbne.
+
+# NYESTE – 2026-10-05 – lokal 4.0.543: kun vandstand fra dkss_lf på syv kystzoner
+
+Ejeren har godkendt, at de præcise syv zoner må hente verificeret vandstand
+fra dkss_lf. Strøm, temperatur og strømhukommelsens input er fortsat udelukket.
+Nye, genbrugte, private og beskyttede PART-input samt valgte SOURCE-input og
+trendens sluttid kontrolleres komponentvis. Central interpolation, vægte,
+punkter og scoreformler er uændrede; manglende kilder omvægtes ikke.
+
+En ny append-only teknisk databaseovergang er klargjort til 4.0.543.
+Den faktiske 542-original valideres under sin egen binding før metadata
+løftes; bevist historik, begge states og det oprindelige 541-arkiv bevares.
+Gamle migrationer ændres ikke, og ingen særskilt SQLinstallation udføres.
+Målprøver og lokale bindinger består; exact-head CI, kontrolleret release
+og faktisk ny vejreffekt mangler. 4.0.542 er fortsat offentlig kode.
+
+Seneste fejlede vejrhentning mistede 21 vandstandstimer ved Agger, Lyngby
+og Harboøre, ikke Fur. Undtagelsen fjerner en kildeafvisning når gyldige
+valgte LF-timer findes, men er ikke garanti for dækning eller gammel
+Fur-årsagsbevis. No-loss består. CP-bankens lokale første-fejl-rettelse
+følger med; samlet revision og sikker timeretention er stadig åbne.
+Spørg RavRadar forbedres separat; begge opgaver er indarbejdet i den
+eksisterende planlagte opgave. Ældre modstridende lokale statusser er historik.
+Se DEC-0291, DEC-0292 og begge håndbøgers afsnit 89.160.
+
+# NYESTE – 2026-10-04 22:45 DK – 4.0.542 faktisk leveret; ny vejreffekt afventer
+
+PR516 og PR517 er merged efter hver sin exact-head kildekontrol og proof.
+Den reparerede kontrollerede release afsluttede kl.22.20 DK med faktisk
+original-restore, privat overgang/publicering, eksakt datagenbrug og Pages.
+Hjemmesiden viser 4.0.542. Første releasefejl før Pages er historisk.
+Den allerede installerede nye databaseovergang blev ikke gentaget; faktisk
+migrationsplan var tom. Gamle migrationer, scoreformler og kystpunkter er urørte.
+
+Kode-only genbrugte gyldige 16Z-data uden providerkald eller ny scoreberegning.
+Syvzoners kilderene strøm og 48h-state behandles først ved ægte NEW-T;
+faktisk offentlig effekt er stadig åben. Originaler og bevist øvrig historik bevares.
+Cron er ikke ændret efter ejerens »pyt«. Den naturlige vejrhentning var kl.22.41
+aktiv ved DMI uden fejlede trin; restorecounts/save/cache/deploy er ikke målt endnu.
+Den godkendte manuelle kørsel venter på faktisk ledig writer. Ingen overlap/replacement.
+
+NORMAL Fur-diagnosen er leveret, ikke automatisk timeretention. Gamle 7/12 timers
+årsag og sikker genvinding er åbne. Hash/presence kan ikke genskabe gamle vægte
+eller tilsidesætte central routing. No-loss består; første legacy-spor kan være ukendt.
+Ingen hjemmesidealarm/usermail. FIELD-dækning er stadig 96.440426121%, alle fem
+samtidig 92.842571839% over 210/673/118h i samme 16Z-data, ikke ny coverage/privathistorik.
+Detaljeret privat evidens ligger i checkpoint. Modstridende ældre statusser er historik.
+
+# HISTORISK – 2026-10-04 19:55 DK – lokal 4.0.542-kandidat: syv zoner og NORMAL Fur-diagnose
 
 Ejeren kræver begge klargjort til GitHub efter den faktisk aktive vejrhentning.
 FEATURE er afstemt til MAINd778; den gamle alarm er bevaret, backupstash bevares.

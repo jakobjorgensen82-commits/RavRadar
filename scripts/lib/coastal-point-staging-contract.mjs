@@ -7,6 +7,7 @@ import {
   CANDIDATE_G_STATE_VARIANT_ID,
 } from '../../js/core/ravscore-candidate-g-state-pipeline.js';
 import { buildIntegratedRavScoreStateSeries, assertOwnerCurrentArchivedPredecessorState,
+  assertWaterLevelOnlyPredecessorState,
   RAVSCORE_OWNER_CURRENT_ARCHIVE_PREDECESSOR_BUNDLE_SHA256 }
   from '../../js/core/ravscore-integrated-state-pipeline.js';
 import {
@@ -286,6 +287,13 @@ export function assertArchivedOwnerCurrentIntegratedOriginal(state, {
     return assertOwnerCurrentArchivedPredecessorState(state, samplingContextKey);
   }
   return assertIntegratedCoastalPointContinuation(state, { samplingContextKey, label });
+}
+
+export function assertWaterLevelOnlyIntegratedOriginal(state, {
+  samplingContextKey, label='Water-level-only technical original',
+} = {}) {
+  assertIntegratedContinuationShape(state,samplingContextKey,label);
+  return assertWaterLevelOnlyPredecessorState(state,samplingContextKey);
 }
 
 export function assertIntegratedCoastalPointContinuation(

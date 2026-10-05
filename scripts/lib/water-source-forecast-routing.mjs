@@ -87,7 +87,7 @@ function verifiedDmiSourceRows(rec) {
 
 function sourceRowsAllowedForZone(rows, zoneId) {
   return rows.every(row => row
-    && dmiMarineCollectionAllowedForZone(row.sources?.waterLevel?.collection, zoneId));
+    && dmiMarineCollectionAllowedForZone(row.sources?.waterLevel?.collection, zoneId, 'waterLevel'));
 }
 
 function selectWaterSources({ zoneId, zoneName, point, coastLine, onshoreDirectionDeg,
@@ -182,7 +182,8 @@ export function applyVerifiedWaterSourceRoutingToPartHourly({
       method, routing, sourceMaps,
       verifiedRecordsByKey: new Map([...index].map(([key, record]) =>
         [key, { point: record.point, rows: verifiedDmiSourceRows(record) }])),
-      collectionAllowed: dmiMarineCollectionAllowedForZone,
+      collectionAllowed: (collection, parentZoneId) =>
+        dmiMarineCollectionAllowedForZone(collection, parentZoneId, 'waterLevel'),
       previousDiagnostic: previousRoutingDiagnostic,
       productionReferenceAt: diagnosticReferenceAt,
     }) : null;

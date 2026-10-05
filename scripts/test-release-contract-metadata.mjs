@@ -71,6 +71,8 @@ const CP_CHILD_CLOSE_BINDING_SUCCESSOR_CHECK =
   'node scripts/build-copernicus-child-close-binding-successor.mjs --check';
 const OWNER_CURRENT_BINDING_SUCCESSOR_CHECK =
   'node scripts/build-owner-current-domain-binding-successor.mjs --check';
+const OWNER_WATER_LEVEL_BINDING_SUCCESSOR_CHECK =
+  'node scripts/build-owner-water-level-only-binding-successor.mjs --check';
 const RELEASE_METADATA_TEST_COMMAND = [
   'node scripts/test-release-contract-metadata.mjs',
   'node scripts/test-harmonie-binding-migration.mjs',
@@ -99,9 +101,10 @@ const RELEASE_METADATA_TEST_COMMAND = [
   TOP20_DISPLAY_BINDING_SUCCESSOR_CHECK,
   CP_CHILD_CLOSE_BINDING_SUCCESSOR_CHECK,
   OWNER_CURRENT_BINDING_SUCCESSOR_CHECK,
+  OWNER_WATER_LEVEL_BINDING_SUCCESSOR_CHECK,
 ].join(' && ');
 const CHECKPOINT_MIGRATION_PATH =
-  'supabase/migrations/20261004190000_owner_current_source_domain_binding.sql';
+  'supabase/migrations/20261005000000_owner_water_level_only_binding.sql';
 const HISTORICAL_TRIP_MIGRATION_PATH =
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql';
 const CHECKPOINT_OUTER_BEGIN = '-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';

@@ -225,13 +225,14 @@ const lfBulk=structuredClone(bulk);
 lfBulk.zones['SOURCE::oceanobs:A'].hourly=rows(0,'dkss_lf','oceanobs:A',[10,56]);
 const lfIndex=buildWaterSourceForecastIndex(sources,lfBulk,generatedAt);
 assert.equal(lfIndex.size,2,'Authentic LF sources remain available for allowed target zones.');
-for(const [zoneId,allowed] of [['DK-B01-01',false],['DK-B01-02',false],['DK-B02-08',false],['DK-B02-09',false],['DK-B02-11',false],['DK-B03-01',false],['DK-B03-02',false],['DK-B05-17',true],['DK-B02-10',true],['DK-B05-25',true],['DK-B01-03',true]]){
+for(const [zoneId,allowed] of [['DK-B01-01',true],['DK-B01-02',true],['DK-B02-08',true],['DK-B02-09',true],['DK-B02-11',true],['DK-B03-01',true],['DK-B03-02',true],['DK-B05-17',true],['DK-B02-10',true],['DK-B05-25',true],['DK-B01-03',true]]){
   const targetPart={...part,zoneId},targetFeature={properties:{...features[0].properties,id:zoneId}};
   const targetRouting={zones:{[zoneId]:{enabled:true,requireAll:true,stations:[{sourceKey:'oceanobs:A'}]}}};
   const before=JSON.stringify(directPartHourly);
   const routed=applyVerifiedWaterSourceRoutingToPartHourly({part:targetPart,parentFeature:targetFeature,
     hourly:directPartHourly,sources:aware,index:lfIndex,routing:targetRouting,haversineKm:hav});
   assert.equal(routed.appliedHours,allowed?2:0,zoneId);
+  assert.equal(routed.hourly[0].waterLevelTrendCm3h,1,'Verified LF T+3 support is permitted for waterLevel only.');
   if(!allowed)assert.deepEqual(routed.hourly,directPartHourly,'Excluded SOURCE retains valid direct PART input.');
   assert.equal(JSON.stringify(directPartHourly),before);
   const targetOutput={zones:{[zoneId]:{current:{},forecast:{hourly:structuredClone(directPartHourly)},waterLevel:{}}}};
@@ -241,6 +242,18 @@ for(const [zoneId,allowed] of [['DK-B01-01',false],['DK-B01-02',false],['DK-B02-
   const nsbsRouting={zones:{[zoneId]:{enabled:true,requireAll:true,stations:[{sourceKey:'tidewater:B'}]}}};
   assert.equal(applyVerifiedWaterSourceRoutingToPartHourly({part:targetPart,parentFeature:targetFeature,
     hourly:directPartHourly,sources:aware,index:lfIndex,routing:nsbsRouting,haversineKm:hav}).appliedHours,2);
+  const mixedRouting={zones:{[zoneId]:routing.zones.Z}};
+  const mixed=applyVerifiedWaterSourceRoutingToPartHourly({part:targetPart,parentFeature:targetFeature,
+    hourly:directPartHourly,sources:aware,index:lfIndex,routing:mixedRouting,haversineKm:hav});
+  assert.equal(mixed.appliedHours,2,'An authentic mixed LF/NSBS central bracket remains usable.');
+  assert.equal(mixed.hourly[0].sources.waterLevel.collection,'dkss_lf+dkss_nsbs');
+  const missingIndex=new Map(lfIndex),missing=structuredClone(lfIndex.get('tidewater:B'));
+  missing.hourly.find(row=>row.time===times[1]).waterLevelCm=null;
+  missingIndex.set('tidewater:B',missing);
+  const incomplete=applyVerifiedWaterSourceRoutingToPartHourly({part:targetPart,parentFeature:targetFeature,
+    hourly:directPartHourly,sources:aware,index:missingIndex,routing:mixedRouting,haversineKm:hav});
+  assert.equal(incomplete.hourly[1].waterLevelCm,42,'Missing support still retains direct PART, never renormalizes.');
+  assert.equal(incomplete.hourly[0].waterLevelTrendCm3h,null,'Missing T+3 remains unknown.');
 }
 const directTieHourly=[directPartHourly[0],{...directPartHourly[1],waterLevelCm:5}];
 const routedTieHourly=applyVerifiedWaterSourceRoutingToPartHourly({

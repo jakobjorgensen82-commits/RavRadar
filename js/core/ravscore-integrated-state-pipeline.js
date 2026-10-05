@@ -1550,6 +1550,26 @@ export function assertOwnerCurrentArchivedPredecessorState(state, samplingContex
   return state;
 }
 
+// Technical waterLevel-only successor: validate the released 542 state under
+// its ORIGINAL binding before metadata migration. Not an initializer or an
+// expansion of the 541 current-source archive's distinct original authority.
+export function assertWaterLevelOnlyPredecessorState(state, samplingContextKey) {
+  const predecessor='4ebe158f68954f32b47cb71d5222ab0cf676faaf4b323d743f9d43bf34a63a51';
+  if (!state || typeof state !== 'object' || Array.isArray(state)
+    || state.schemaVersion !== RAVSCORE_STATE_SCHEMA_VERSION
+    || state.modelBundleSha256 !== predecessor
+    || RAVSCORE_MODEL_CONTRACT_SHA256
+      !== 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b'
+    || typeof samplingContextKey !== 'string' || !samplingContextKey) {
+    throw new Error('Water-level-only original has an incompatible predecessor binding');
+  }
+  const validated=validateIntegratedState(state,samplingContextKey,null,predecessor);
+  if (!validated || validated.stateV5MigrationApplied) {
+    throw new Error('Water-level-only original is not a canonical predecessor state');
+  }
+  return state;
+}
+
 function integratedContext(initialState) {
   return initialState?.schemaVersion === RAVSCORE_STATE_SCHEMA_VERSION
     || initialState?.modelId === RAVSCORE_MODEL_ID;

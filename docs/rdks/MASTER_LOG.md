@@ -1,4 +1,72 @@
-# NYESTE – 2026-10-04 21:56 DK – PR516 merged; konkret original-zonekontrol repareret
+# NYESTE – 2026-10-05 – eksakt overgang til den faktisk nye 542-original
+
+Ny almindelig vejrhentning/deploy afsluttede kl. 05.16 dansk tid uden tab
+i de fem vejrfamilier. Lokal vandstandskandidat følger nu præcist den nye
+rr-20261005020412-210/reference 5. oktober 00Z. Eksisterende test reproducerede
+først gammel forventning og består efter retargetering, inklusive afvisning
+af ældre original/målreference. Ingen ændring af 541-originalarkiv, historik,
+modelbindinger eller migrationer. Ny eksakt CI/proof og kontrolleret release
+kræves. Kode 542 er offentlig; ny vandstandseffekt og samlet revision er åbne.
+
+# HISTORIK – 2026-10-05 – lokal 4.0.543: kun vandstand fra dkss_lf på syv kystzoner
+
+Ejeren har godkendt, at de præcise syv zoner må hente verificeret vandstand
+fra dkss_lf. Strøm, temperatur og strømhukommelsens input er fortsat udelukket.
+Nye, genbrugte, private og beskyttede PART-input samt valgte SOURCE-input og
+trendens sluttid kontrolleres komponentvis. Central interpolation, vægte,
+punkter og scoreformler er uændrede; manglende kilder omvægtes ikke.
+
+En ny append-only teknisk databaseovergang er klargjort til 4.0.543.
+Den faktiske 542-original valideres under sin egen binding før metadata
+løftes; bevist historik, begge states og det oprindelige 541-arkiv bevares.
+Gamle migrationer ændres ikke, og ingen særskilt SQLinstallation udføres.
+Målprøver og lokale bindinger består; exact-head CI, kontrolleret release
+og faktisk ny vejreffekt mangler. 4.0.542 er fortsat offentlig kode.
+
+Seneste fejlede vejrhentning mistede 21 vandstandstimer ved Agger, Lyngby
+og Harboøre, ikke Fur. Undtagelsen fjerner en kildeafvisning når gyldige
+valgte LF-timer findes, men er ikke garanti for dækning eller gammel
+Fur-årsagsbevis. No-loss består. CP-bankens lokale første-fejl-rettelse
+følger med; samlet revision og sikker timeretention er stadig åbne.
+Spørg RavRadar forbedres separat; begge opgaver er indarbejdet i den
+eksisterende planlagte opgave. Ældre modstridende lokale statusser er historik.
+Se DEC-0291, DEC-0292 og begge håndbøgers afsnit 89.160.
+
+# LOKAL REVISION – 2026-10-05 – CP-bankens indre close isoleret
+
+Eksisterende NORMAL producent/checkpoint/save_component_bank reproducerede
+skjult fsync-fejl ved samtidig egen close-fejl. Kun den allerede prøvede
+indre lukningsrettelse og ét eksisterende testforløb er isoleret fra BIG.
+Fire underprøver består efter RED; close/cleanup forsøges stadig og fejl
+alene stopper hårdt. Oldbank-bytebevarelse/frisk diskgenoptagelse består.
+Inversdiff/normale modelbyggere/private kontrakter uændrede; kun lokalt,
+ingen ny version/CI/commit/deploy/SQL-runtime eller fuld livscyklusgaranti.
+Se DEC-0266/89.159; den samlede restplan og Fur/syvzoneeffekt er åbne.
+
+# NYESTE LEVERANCE – 2026-10-04 22:45 DK – 4.0.542 faktisk leveret; ny vejreffekt afventer
+
+PR516 og PR517 er merged efter hver sin exact-head kildekontrol og proof.
+Den reparerede kontrollerede release afsluttede kl.22.20 DK med faktisk
+original-restore, privat overgang/publicering, eksakt datagenbrug og Pages.
+Hjemmesiden viser 4.0.542. Første releasefejl før Pages er historisk.
+Den allerede installerede nye databaseovergang blev ikke gentaget; faktisk
+migrationsplan var tom. Gamle migrationer, scoreformler og kystpunkter er urørte.
+
+Kode-only genbrugte gyldige 16Z-data uden providerkald eller ny scoreberegning.
+Syvzoners kilderene strøm og 48h-state behandles først ved ægte NEW-T;
+faktisk offentlig effekt er stadig åben. Originaler og bevist øvrig historik bevares.
+Cron er ikke ændret efter ejerens »pyt«. Den naturlige vejrhentning var kl.22.41
+aktiv ved DMI uden fejlede trin; restorecounts/save/cache/deploy er ikke målt endnu.
+Den godkendte manuelle kørsel venter på faktisk ledig writer. Ingen overlap/replacement.
+
+NORMAL Fur-diagnosen er leveret, ikke automatisk timeretention. Gamle 7/12 timers
+årsag og sikker genvinding er åbne. Hash/presence kan ikke genskabe gamle vægte
+eller tilsidesætte central routing. No-loss består; første legacy-spor kan være ukendt.
+Ingen hjemmesidealarm/usermail. FIELD-dækning er stadig 96.440426121%, alle fem
+samtidig 92.842571839% over 210/673/118h i samme 16Z-data, ikke ny coverage/privathistorik.
+Detaljeret privat evidens ligger i checkpoint. Modstridende ældre statusser er historik.
+
+# HISTORISK – 2026-10-04 21:56 DK – PR516 merged; konkret original-zonekontrol repareret
 
 PR516 er merged kl.21:35 DK med bestået exact-head CI og content-proof.
 Kontrolleret release stoppede kl.21:38 før privat offentliggørelse og Pages.

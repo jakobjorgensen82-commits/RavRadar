@@ -213,10 +213,35 @@ export const OWNER_CURRENT_DOMAIN_SUCCESSOR = Object.freeze({
   continuationStateContractSha256: '3dd9b7f054dd19400e8110ec504c2689bd62c52741cf6cf7805070e89e51d1bd',
 });
 
+// Exact successful 542 protected successor, not a moving pointer, forecast
+// projection, failed progress cache or relabelled 541 original.
+export const OWNER_WATER_LEVEL_ONLY_PREDECESSOR = Object.freeze({
+  ...OWNER_CURRENT_DOMAIN_PREDECESSOR,
+  sourceHead:'892b56b66e5953e50f2425e6d66bf90f93081aed',
+  datasetId:'rr-20261005020412-210',
+  productionReferenceAt:'2026-10-05T00:00:00.000Z',
+  generatedAt:'2026-10-05T02:04:12.334Z',
+  bundleContentSha256:'9e17b4bc1c785ba0910e2b8b1b66bd55529c49d580b59303cae5f6a0260659da',
+  modelBinding:Object.freeze({ ...OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding,
+    modelBundleSha256:OWNER_CURRENT_DOMAIN_SUCCESSOR.integratedBundleSha256 }),
+  contractHashes:Object.freeze({ ...OWNER_CURRENT_DOMAIN_PREDECESSOR.contractHashes,
+    continuationStateContractSha256:OWNER_CURRENT_DOMAIN_SUCCESSOR.continuationStateContractSha256 }),
+});
+export const OWNER_WATER_LEVEL_ONLY_SUCCESSOR = Object.freeze({
+  integratedBundleSha256:'ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb',
+  candidateBundleSha256:'8d9142b5f7d9b5a3e5a0f3593e73df0c7ffaf3d80c036317967cb713f09197e3',
+  continuationStateContractSha256:'4115f37178ff3d8eab540f3d9355a1275a13a9dd3a896e07f06673564e76ee51',
+});
+
+function ownerOriginalPolicy(transition) {
+  if (transition === 'EXACT_ORIGINAL_RESTORE_V1') return OWNER_CURRENT_DOMAIN_PREDECESSOR;
+  if (transition === 'EXACT_WATER_LEVEL_ONLY_RESTORE_V1') return OWNER_WATER_LEVEL_ONLY_PREDECESSOR;
+  throw new Error('Unknown exact owner technical transition');
+}
+
 export function assertOwnerCurrentOriginalExpectation(expected) {
-  const original = OWNER_CURRENT_DOMAIN_PREDECESSOR;
+  const original = ownerOriginalPolicy(expected?.ownerCurrentDomainTransition);
   if (!isObject(expected)
-    || expected.ownerCurrentDomainTransition !== 'EXACT_ORIGINAL_RESTORE_V1'
     || !same(expected.modelBinding, original.modelBinding)
     || !same(expected.contractHashes, original.contractHashes)
     || ['sourceHead', 'datasetId', 'productionReferenceAt', 'generatedAt',
@@ -236,7 +261,10 @@ export function buildOwnerCurrentOriginalRestoreExpectation({
   sourceDescription, targetReferenceAt, currentBinding, currentContractHashes,
   now = new Date().toISOString(),
 } = {}) {
-  const original = OWNER_CURRENT_DOMAIN_PREDECESSOR;
+  const waterOnly=sourceDescription?.modelBinding?.modelBundleSha256
+    === OWNER_WATER_LEVEL_ONLY_PREDECESSOR.modelBinding.modelBundleSha256;
+  const original = waterOnly ? OWNER_WATER_LEVEL_ONLY_PREDECESSOR : OWNER_CURRENT_DOMAIN_PREDECESSOR;
+  const successor=waterOnly ? OWNER_WATER_LEVEL_ONLY_SUCCESSOR : OWNER_CURRENT_DOMAIN_SUCCESSOR;
   if (!isObject(sourceDescription)
     || sourceDescription.schemaVersion !== '1.0.0'
     || sourceDescription.kind !== 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_CURRENT_SOURCE'
@@ -248,7 +276,7 @@ export function buildOwnerCurrentOriginalRestoreExpectation({
     || !same(sourceDescription.modelBinding, original.modelBinding)
     || !same(sourceDescription.contractHashes, original.contractHashes)
     || !isObject(currentBinding)
-    || currentBinding.modelBundleSha256 !== OWNER_CURRENT_DOMAIN_SUCCESSOR.integratedBundleSha256
+    || currentBinding.modelBundleSha256 !== successor.integratedBundleSha256
     || !same({ ...currentBinding, modelBundleSha256: original.modelBinding.modelBundleSha256 },
       original.modelBinding)
     || !contractHashesAreExact(currentContractHashes)
@@ -257,10 +285,10 @@ export function buildOwnerCurrentOriginalRestoreExpectation({
     || currentContractHashes.publicProjectionContractSha256
       !== original.contractHashes.publicProjectionContractSha256
     || currentContractHashes.continuationStateContractSha256
-      !== OWNER_CURRENT_DOMAIN_SUCCESSOR.continuationStateContractSha256) return null;
+      !== successor.continuationStateContractSha256) return null;
   const expectation = {
     ...structuredClone(original),
-    ownerCurrentDomainTransition: 'EXACT_ORIGINAL_RESTORE_V1',
+    ownerCurrentDomainTransition: waterOnly ? 'EXACT_WATER_LEVEL_ONLY_RESTORE_V1' : 'EXACT_ORIGINAL_RESTORE_V1',
     targetReferenceAt: canonicalHour(targetReferenceAt, 'Successor target'),
     minimumReferenceAt: original.productionReferenceAt,
     minimumGeneratedAt: original.generatedAt,
