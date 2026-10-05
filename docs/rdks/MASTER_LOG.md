@@ -1,4 +1,14 @@
-# NYESTE – 2026-10-05 – lokal 4.0.543: kun vandstand fra dkss_lf på syv kystzoner
+# NYESTE – 2026-10-05 – eksakt overgang til den faktisk nye 542-original
+
+Ny almindelig vejrhentning/deploy afsluttede kl. 05.16 dansk tid uden tab
+i de fem vejrfamilier. Lokal vandstandskandidat følger nu præcist den nye
+rr-20261005020412-210/reference 5. oktober 00Z. Eksisterende test reproducerede
+først gammel forventning og består efter retargetering, inklusive afvisning
+af ældre original/målreference. Ingen ændring af 541-originalarkiv, historik,
+modelbindinger eller migrationer. Ny eksakt CI/proof og kontrolleret release
+kræves. Kode 542 er offentlig; ny vandstandseffekt og samlet revision er åbne.
+
+# HISTORIK – 2026-10-05 – lokal 4.0.543: kun vandstand fra dkss_lf på syv kystzoner
 
 Ejeren har godkendt, at de præcise syv zoner må hente verificeret vandstand
 fra dkss_lf. Strøm, temperatur og strømhukommelsens input er fortsat udelukket.

@@ -218,7 +218,10 @@ export const OWNER_CURRENT_DOMAIN_SUCCESSOR = Object.freeze({
 export const OWNER_WATER_LEVEL_ONLY_PREDECESSOR = Object.freeze({
   ...OWNER_CURRENT_DOMAIN_PREDECESSOR,
   sourceHead:'892b56b66e5953e50f2425e6d66bf90f93081aed',
-  bundleContentSha256:'2ad59b53ef09fdb8204565b8d7afa2e0a7800200d12f638269d6a93dbf948d0b',
+  datasetId:'rr-20261005020412-210',
+  productionReferenceAt:'2026-10-05T00:00:00.000Z',
+  generatedAt:'2026-10-05T02:04:12.334Z',
+  bundleContentSha256:'9e17b4bc1c785ba0910e2b8b1b66bd55529c49d580b59303cae5f6a0260659da',
   modelBinding:Object.freeze({ ...OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding,
     modelBundleSha256:OWNER_CURRENT_DOMAIN_SUCCESSOR.integratedBundleSha256 }),
   contractHashes:Object.freeze({ ...OWNER_CURRENT_DOMAIN_PREDECESSOR.contractHashes,

@@ -1,4 +1,15 @@
-# KILDEKONTROL – 2026-10-05 – konkret testreparation, ikke release
+# NYESTE – 2026-10-05 – ny faktisk generation kræver ny eksakt overgang
+
+Almindelig vejrhentning og deploy afsluttede kl. 05.16 dansk tid på 4.0.542.
+543-kandidatens originale forventning følger nu præcist rr-20261005020412-210
+med reference 5. oktober 00Z. Den eksisterende overgangstest var først rød
+på den gamle generation og er nu grøn; samme-binding-originalen fra 4. oktober
+16Z og en tidligere målreference afvises. Ingen genmærkning af originaler.
+541-arkivet, øvrig historik og bindinger bevares. Den funktionelle ændring
+kræver en ny exact-head CI/proof før release. Vandstandsundtagelse, gammel
+Fur-årsag, Spørg RavRadar og samlet revision er ikke erklæret leveret.
+
+# HISTORIK – KILDEKONTROL – 2026-10-05 – konkret testreparation, ikke release
 
 PR518 er pushet. Første exact-head CI fejlede på workflowtestens gamle
 forventning til sidste migration; lokal samme-test reproducerede fejlen.

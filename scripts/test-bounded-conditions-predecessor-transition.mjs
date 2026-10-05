@@ -40,7 +40,16 @@ assert.equal(secondRestoreExpectation({ expected: ownerExpected,
   source: ownerSource, manifest: ownerOriginal }), ownerExpected);
 // Separate released542 original: never reuse the 541 archive's identity.
 const waterOriginal=OWNER_WATER_LEVEL_ONLY_PREDECESSOR;
+// The real normal 542 generation completed before this technical release.
+// Its exact original replaces the older same-binding code-only generation;
+// the separate 541 original and its archived states must stay unchanged.
+assert.equal(waterOriginal.datasetId,'rr-20261005020412-210');
+assert.equal(waterOriginal.productionReferenceAt,'2026-10-05T00:00:00.000Z');
+assert.equal(waterOriginal.generatedAt,'2026-10-05T02:04:12.334Z');
+assert.equal(waterOriginal.bundleContentSha256,'9e17b4bc1c785ba0910e2b8b1b66bd55529c49d580b59303cae5f6a0260659da');
 const waterFixture=()=>({ ...ownerFixture(),
+  targetReferenceAt:waterOriginal.productionReferenceAt,
+  now:'2026-10-05T03:23:00.000Z',
   sourceDescription:{ ...structuredClone(waterOriginal),schemaVersion:'1.0.0',
     kind:'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_CURRENT_SOURCE',
     expectedZoneCount:210,expectedPartCount:673,privatePayloadIncluded:false },
@@ -55,6 +64,17 @@ assert.equal(assertOwnerCurrentOriginalExpectation(waterExpected),waterOriginal)
 assert.deepEqual(waterExpected.modelBinding,waterOriginal.modelBinding);
 assert.equal(secondRestoreExpectation({expected:waterExpected,
   source:waterFixture().sourceDescription,manifest:waterOriginal}),waterExpected);
+const olderWaterFixture=waterFixture();
+Object.assign(olderWaterFixture.sourceDescription,{
+  datasetId:'rr-20261004172305-210',
+  productionReferenceAt:'2026-10-04T16:00:00.000Z',
+  generatedAt:'2026-10-04T17:23:05.647Z',
+  bundleContentSha256:'2ad59b53ef09fdb8204565b8d7afa2e0a7800200d12f638269d6a93dbf948d0b',
+});
+assert.equal(buildOwnerCurrentOriginalRestoreExpectation(olderWaterFixture),null,
+  'An older authentic 542 generation cannot be relabelled as the current original.');
+assert.throws(()=>buildOwnerCurrentOriginalRestoreExpectation({...waterFixture(),
+  targetReferenceAt:'2026-10-04T16:00:00.000Z'}),/exact original expectation/);
 for(const field of ['sourceHead','datasetId','productionReferenceAt','generatedAt','bundleContentSha256']) {
   const wrong=waterFixture();wrong.sourceDescription[field]='wrong';
   assert.equal(buildOwnerCurrentOriginalRestoreExpectation(wrong),null);

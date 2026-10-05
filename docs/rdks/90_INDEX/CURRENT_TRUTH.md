@@ -1,4 +1,15 @@
-# NYESTE – 2026-10-05 – lokal 4.0.543: kun vandstand fra dkss_lf på syv kystzoner
+# NYESTE – 2026-10-05 – faktisk ny original, endnu ikke vandstandsrelease
+
+Almindelig vejrhentning og deploy afsluttede kl. 05.16 dansk tid uden tab
+i de fem vejrfamilier. Offentlig kode er fortsat 4.0.542. Den lokale 543-
+overgang forventer nu præcist rr-20261005020412-210, reference 5. oktober 00Z.
+Den eksisterende test reproducerede den gamle forventning og består efter
+rettelsen; ældre original og tidligere målreference afvises. Original 541-
+arkiv, historik, modelbindinger og migrationer er uændrede. Ny eksakt CI/proof
+og sikker release mangler; undtagelsens faktiske vejreffekt er ikke målt.
+Dette lukker ikke gammel Fur-årsag, Spørg RavRadar eller samlet revision.
+
+# HISTORIK – 2026-10-05 – lokal 4.0.543: kun vandstand fra dkss_lf på syv kystzoner
 
 Ejeren har godkendt, at de præcise syv zoner må hente verificeret vandstand
 fra dkss_lf. Strøm, temperatur og strømhukommelsens input er fortsat udelukket.

@@ -5,6 +5,17 @@
 
 # NYESTE – 5. oktober – vandstands-undtagelse og eksakt teknisk overgang
 
+Den almindelige 542-vejrhentning afsluttede med deploy kl. 05.16 dansk tid
+uden tab i de fem vejrfamilier. Den lokale 543-overgang forventer derfor nu
+præcist rr-20261005020412-210 med reference 5. oktober 00Z og den faktisk
+skabte originals identitet. Den tidligere 4. oktober 16Z-forventning er
+erstattet, ikke tilføjet som alternativ. Originalbindingen valideres stadig
+før metadata løftes. Eksisterende test reproducerede gammel forventning og
+består nu med afvisning af ældre original og tidligere målreference. Det
+oprindelige 541-arkiv og øvrig historik er urørte. Ny exact-head CI/proof og
+kontrolleret release kræves; vandstandsundtagelsen er ikke live eller målt.
+Kildekontrolreparationen nedenfor er historik på tidligere heads.
+
 Første GitHub-kildekontrol fandt én forældet forventning i den eksisterende
 workflowtest: den krævede, at den tidligere migration var den sidste.
 Den faktisk nye append-only migration bevarer begge 55s-indstillinger.

@@ -4,6 +4,23 @@
 
 ## 89.160 Syv kystzoner må bruge Limfjordsmodellens vandstand – lokal kandidat
 
+Den almindelige vejrhentning afsluttede med deploy kl. 05.16 den 5. oktober
+uden tab i de fem vejrfamilier. Det var fortsat kode 4.0.542. Den lokale
+vandstandsovergang forventer nu præcist denne nye original, reference
+5. oktober 00Z. Ældre originaler afvises; oprindelig 541-historik og arkiv
+bevares. Måltesten består, men en ny eksakt GitHub-kontrol og kontrolleret
+release kræves. Undtagelsen er endnu ikke live eller målt i ny vejrhentning.
+Det forklarer ikke de gamle Fur-huller og afslutter ikke den samlede revision.
+
+Den lokale kandidat 4.0.543 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
+Inaktiv Candidate G-kompatibilitet bruger `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
+og `modelBundleSha256=8d9142b5f7d9b5a3e5a0f3593e73df0c7ffaf3d80c036317967cb713f09197e3` over 66 transitive filer.
+Continuation er `4115f37178ff3d8eab540f3d9355a1275a13a9dd3a896e07f06673564e76ee51`.
+Disse er kandidatens tekniske bindinger, ikke bevis for offentlig 543 eller bedre fundpræcision.
+
+Tidligere kildekontrolhistorik:
+
 Første GitHub-kontrol fandt en gammel testforventning til sidste migration.
 Kun forventningen er rettet til den nye append-only vandstandsovergang;
 begge 55s-indstillinger, gamle migrationer og produktionsgates er uændrede.

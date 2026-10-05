@@ -1,4 +1,14 @@
-# KILDEKONTROL – 2026-10-05 – præcis migrationsforventning repareret
+# 4.0.543-kandidat – 2026-10-05 – præcis ny original før vandstandsrelease
+
+Vandstandsovergangen følger nu den faktisk nye almindeligt publicerede
+542-generation rr-20261005020412-210/reference 5. oktober 00Z. Den ældre
+original er ikke en alternativ initializer. Eksisterende måltest gengav
+først den forældede forventning og består med afvisning af gammel original
+og tidligere målreference. 541-originalarkiv, historik, modelbindinger og
+migrationer er uændrede. Ny eksakt kildekontrol og kontrolleret release
+kræves; offentlig kode er 542 og vandstandsundtagelsens effekt er ikke målt.
+
+# HISTORIK – KILDEKONTROL – 2026-10-05 – præcis migrationsforventning repareret
 
 Første 543-kildekontrol fandt én gammel forventning til sidste migration.
 Samme workflowtest reproducerer fejlen lokalt; kun det eksakte navn ændres
