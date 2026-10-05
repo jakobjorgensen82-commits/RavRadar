@@ -1,4 +1,17 @@
-# Tekstrettelse på 4.0.543 – 2026-10-05
+# Reservekørettelse på 4.0.543 – 2026-10-05 – endnu ikke leveret
+
+- Normal Open-Meteo-indhentning bruger de eksisterende to forbindelser som
+  en løbende kø. En langsom marinekomponent spærrer ikke næste vindhentning
+  i den anden ledige forbindelse.
+- Vellykkede originale søskendekomponenter gemmes uafhængigt. Ved gemmefejl
+  stoppes nye kald, startede kald afventes, og den første fejl bevares.
+- Tidsbudgetter, retry, rotation, kvalifikation, kildeidentiteter, private
+  formater, DMI-only-vandstand, no-loss og alle modelbindinger bevares.
+- Dækningsanalysen adskiller samme timer fra nye haletimer. Prognosevinduet
+  og nævneren er uændrede. Lokale tests er ikke målt national effekt;
+  vandstandshuller, Fur og samlet revision er fortsat åbne.
+
+# Tekstrettelse på 4.0.543 – 2026-10-05 – leveret og offentligt kontrolleret
 
 Ejerbestilt fjernelse af forklaringen om ukendt alder på vejrberegninger.
 Footerens tilsvarende DA/DE/EN-gren viser kun prognosetidspunktet. Faktiske

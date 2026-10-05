@@ -1,4 +1,33 @@
-# NYESTE – 2026-10-05 – afgrænset footerrettelse på leveret 4.0.543
+# NYESTE – 2026-10-05 – dækningsanalyse og afgrænset reservekørettelse
+
+Ejeren kræver årsagsanalyse og rettelse af faldende dækningsgrad. Den
+offentlige 12Z-generation har 93,475961 % numerisk feltdækning over uændret
+673 dele × 118 timer × fem familier. De første 96 timer har fuld vind,
+bølge og vandstand; manglerne koncentreres i prognosens hale. Sammenligning
+af præcis samme 106 timer viser flere gyldige felter, ikke samlet tab.
+Procentfaldet skyldes, at næsten komplette udløbne timer erstattes af
+mere ufuldstændige nye haletimer. Dette er ikke scoretilgængelighed.
+
+Den normale Open-Meteo-producer ventede på begge komponenter for én del,
+så en langsom marinehentning blokerede brugen af den anden ledige forbindelse.
+Lokal rettelse bruger de samme højst to forbindelser som en løbende kø.
+Budget, retry, rotation, kildebevis, private format og hård no-loss bevares.
+Gemmefejl stopper nye kald og afventer startede kald før fejlen returneres.
+Målprøver og normale model-/private kontraktkontroller består. Rettelsen
+er endnu ikke leveret; faktisk effekt kræver en ny almindelig generation.
+Vandstand er fortsat DMI-only; udbudte native timer og øvrige vandstandshuller
+undersøges særskilt. Ingen budgetløft, udfyldning med gættede værdier eller
+forkortelse af nævneren. Se DEC-0210 og håndbog 89.163.
+
+Footerrettelsen er leveret og offentligt kontrolleret. Syvzoners vandstands-
+undtagelse er leveret; alle syv zoners strøm er kontrolleret uden dkss_lf i
+12Z-generationen. Privat strømhistorik og vandstands-/temperaturproveniens
+er ikke bevist af den offentlige kontrol. Fur, Spørg RavRadar og den samlede
+revision er fortsat åbne. Ingen merge eller deploy under aktiv vejrhentning.
+Det nyeste private checkpoint har kørsels- og testdetaljer; ældre status
+nedenfor er historik og må ikke genudløse afsluttede leverancer.
+
+# HISTORIK – 2026-10-05 – afgrænset footerrettelse på leveret 4.0.543
 
 Ejeren ønsker teksten om ukendt alder på vejrberegninger fjernet. Kun de
 tre DA/DE/EN-tekster i footerens ageUnknown-gren ændres til prognosetidspunktet

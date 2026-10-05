@@ -33,7 +33,7 @@ export async function produceOpenMeteoPartComponents({
   const componentWarnings = {};
   let requests = 0;
   let deferred = 0;
-  let pendingCheckpointParts = 0;
+  const pendingCheckpointParts = new Set();
   let lastAttemptedPartId = null;
   let componentsNotAdmitted = 0;
   const allowed = new Set();
@@ -53,9 +53,9 @@ export async function produceOpenMeteoPartComponents({
       allowed.add(key);
     }
   }
-  await checkpoint(bank);
   const priorPosition = parts.findIndex(part => part.partId === startAfterPartId);
   const orderedParts = priorPosition < 0 ? parts : [...parts.slice(priorPosition + 1), ...parts.slice(0, priorPosition + 1)];
+  const work = [];
   for (const part of orderedParts) {
     const missing = new Set();
     for (let hour = 0; hour <= 120; hour += 1) {
@@ -70,30 +70,43 @@ export async function produceOpenMeteoPartComponents({
       componentsNotAdmitted += 1;
       return false;
     });
-    if (!components.length) continue;
-    // At most two concurrent requests. One transport/setup/parse failure never
-    // discards an independently useful sibling or the previous private bank.
-    const admissions = [];
-    for (let offset = 0; offset < components.length; offset += 2) {
-      const batch = components.slice(offset, offset + 2);
-      if (!shouldContinue()) { deferred += components.length - offset; break; }
-      lastAttemptedPartId = part.partId;
-      const results = await Promise.allSettled(batch.map(component => Promise.resolve().then(async () => {
-        const request = buildOpenMeteoPartRequest(part, { component, productionReferenceAt,
-          cellSelection: spatialPolicies[component].cellSelection, spatialPolicy: spatialPolicies[component] });
-        requests += 1;
-        const response = await fetchResponse(request);
-        return readOpenMeteoPartResponse({ ...response, request }, { part, spatialPolicies,
-          onInvalid: code => { componentWarnings[code] = (componentWarnings[code] ?? 0) + 1; },
-        });
-      })));
-      for (const [position, result] of results.entries()) {
-        if (result.status === 'fulfilled') admissions.push(result.value);
-        else failures.push({ component: batch[position], channel: batch[position] === 'wind' ? 'weather' : 'marine',
-          code: 'OPEN_METEO_PART_COMPONENT_UNAVAILABLE' });
+    work.push(...components.map(component => ({ part, component })));
+  }
+  await checkpoint(bank);
+  // Keep the existing two transport slots occupied independently. Waiting for
+  // both siblings of one PART wasted the free slot behind a slow marine reply.
+  // Request order, deadline and source proof stay unchanged; checkpoints have
+  // one writer and can save completed siblings before the slow reply settles.
+  const active = new Map();
+  let position = 0;
+  try {
+    while (position < work.length || active.size) {
+      while (active.size < 2 && position < work.length && shouldContinue()) {
+        const id = position++;
+        const { part, component } = work[id];
+        lastAttemptedPartId = part.partId;
+        // Start synchronously before checking permission for the next slot;
+        // the caller can stop immediately after an attempt, not just on time.
+        const operation = (async () => {
+          const request = buildOpenMeteoPartRequest(part, { component, productionReferenceAt,
+            cellSelection: spatialPolicies[component].cellSelection, spatialPolicy: spatialPolicies[component] });
+          requests += 1;
+          const response = await fetchResponse(request);
+          return readOpenMeteoPartResponse({ ...response, request }, { part, spatialPolicies,
+            onInvalid: code => { componentWarnings[code] = (componentWarnings[code] ?? 0) + 1; },
+          });
+        })().then(value => ({ id, part, component, value }), () => ({ id, part, component, failed: true }));
+        active.set(id, operation);
       }
-    }
-    for (const admission of admissions) {
+      if (!active.size) break;
+      const result = await Promise.race(active.values());
+      active.delete(result.id);
+      if (result.failed) {
+        failures.push({ component: result.component, channel: result.component === 'wind' ? 'weather' : 'marine',
+          code: 'OPEN_METEO_PART_COMPONENT_UNAVAILABLE' });
+        continue;
+      }
+      const admission = result.value;
       builder.add(admission);
       if (admission.records.some(record => !hasValue(record.values, record.component))) {
         // The unchanged parser binds original bytes; operational usability is
@@ -105,16 +118,22 @@ export async function produceOpenMeteoPartComponents({
           (componentWarnings.OPEN_METEO_PART_CANONICAL_COMPONENT_INVALID ?? 0)
           + admission.records.filter(record => !hasValue(record.values, record.component)).length;
       }
+      if (admission.records.length > 0) pendingCheckpointParts.add(result.part.partId);
+      if (pendingCheckpointParts.size >= checkpointEveryParts) {
+        bank = builder.snapshot();
+        // A failed checkpoint is a real persistence error, not a provider miss.
+        await checkpoint(bank);
+        pendingCheckpointParts.clear();
+      }
     }
-    if (admissions.some(admission => admission.records.length > 0)) pendingCheckpointParts += 1;
-    if (pendingCheckpointParts >= checkpointEveryParts) {
-      bank = builder.snapshot();
-      // A failed checkpoint is a real persistence error, not a provider miss.
-      await checkpoint(bank);
-      pendingCheckpointParts = 0;
-    }
+  } catch (error) {
+    // No new request or write after persistence failure. Already-started
+    // bounded transports must settle before outer recovery/cleanup proceeds.
+    await Promise.allSettled(active.values());
+    throw error;
   }
-  if (pendingCheckpointParts > 0) {
+  deferred = work.length - position;
+  if (pendingCheckpointParts.size > 0) {
     bank = builder.snapshot();
     await checkpoint(bank);
   }

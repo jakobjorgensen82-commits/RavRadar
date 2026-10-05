@@ -1,4 +1,24 @@
-# NYESTE – 2026-10-05 – footertekst fjernes efter ejerens ønske
+# NYESTE – 2026-10-05 – prognosehalens huller og lokal kørettelse
+
+ÅBEN: National feltdækning 93,475961 % i 12Z-generationen. De første 96
+timer har fuld vind, bølge og vandstand, mens halen mangler især vandstand,
+temperatur og vind. Samme 106 timer får flere gyldige felter; procentfaldet
+skyldes de nye haletimer. Ingen ændring af nævner eller nuludfyldning.
+
+LOKALT RETTET, IKKE LEVERET: Den normale Open-Meteo-producers delvise
+blokering bag en langsom komponent. Løbende kø inden for samme to
+forbindelser og budget; originale kildebeviser, private kontrakter, retry,
+rotation og gemmefejlgrænser består. Eksakt CI og faktisk ny-generationseffekt
+mangler. Kørettelsen forklarer ikke alle vandstandshuller: vandstand er
+DMI-only, og manglende native timer eller central kildeindgang må måles
+særskilt. Ingen falsk garanti om fuld horisont.
+
+Footer er leveret og kontrolleret offentligt; ældre pendingstatus nedenfor
+er historik. Syvzoners offentliggjorte strøm er uden dkss_lf, men privat
+historik og andre familiers provenance er ikke dermed bevist. Fur, Spørg
+RavRadar og samlet revision står fortsat åbne. DEC-0210/håndbog 89.163.
+
+# HISTORIK – 2026-10-05 – footertekst fjernes efter ejerens ønske
 
 Den uønskede formulering om ukendt beregningsalder er lokalt fjernet på
 DA/DE/EN, mens prognosetidspunkt og reelle fejl-/nødvisningsbeskeder bevares.
