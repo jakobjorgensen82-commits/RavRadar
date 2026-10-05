@@ -4,6 +4,11 @@
 
 ## 89.160 Syv kystzoner må bruge Limfjordsmodellens vandstand – lokal kandidat
 
+Første GitHub-kontrol fandt en gammel testforventning til sidste migration.
+Kun forventningen er rettet til den nye append-only vandstandsovergang;
+begge 55s-indstillinger, gamle migrationer og produktionsgates er uændrede.
+Den fejlede head må ikke merges; ny eksakt GitHub-kontrol og proof kræves.
+
 Ejeren har godkendt vandstand, og kun vandstand, fra dkss_lf til
 Agger/Krik Vig, Lyngby/Lodbjerg, Hou/Bisnap, Hals/Nordmandshage,
 Dokkedal/Mulbjerge, Harboøre/Vrist og Vejlby Klit/Ferring. Den lokale

@@ -1,3 +1,12 @@
+# KILDEKONTROL – 2026-10-05 – konkret testreparation, ikke release
+
+PR518 er pushet. Første exact-head CI fejlede på workflowtestens gamle
+forventning til sidste migration; lokal samme-test reproducerede fejlen.
+Kun navnet peger nu på den nye vandstandsmigration, hvis to 55s-indstillinger
+er kontrolleret. Runtime, gamle migrationer, bindinger og no-loss er urørte.
+Ny exact-head CI/proof kræves; ingen merge/release under aktiv vejrhentning.
+Vandstandseffekt, Spørg RavRadar-levering og samlet revision er stadig åbne.
+
 # NYESTE – 2026-10-05 – lokal 4.0.543: kun vandstand fra dkss_lf på syv kystzoner
 
 Ejeren har godkendt, at de præcise syv zoner må hente verificeret vandstand

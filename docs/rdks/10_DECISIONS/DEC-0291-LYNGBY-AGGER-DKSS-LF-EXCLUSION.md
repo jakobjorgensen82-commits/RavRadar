@@ -5,6 +5,14 @@
 
 # NYESTE – 5. oktober – vandstands-undtagelse og eksakt teknisk overgang
 
+Første GitHub-kildekontrol fandt én forældet forventning i den eksisterende
+workflowtest: den krævede, at den tidligere migration var den sidste.
+Den faktisk nye append-only migration bevarer begge 55s-indstillinger.
+Kun testens eksakte migrationsnavn er rettet efter lokal reproduktion;
+timeout, workflow, SQL-runtime, bindinger og gamle migrationer er uændrede.
+Den berørte workflowtest skal bestå, og ny exact-head kontrol/proof kræves
+før merge. Den fejlede head må ikke merges. Produktionen er stadig 542.
+
 Ejeren har udtrykkeligt bestilt kun vandstand fra dkss_lf på de præcise syv
 kystzoner i 89.160. Current og waterTemperature forbliver udelukket. Policy v2
 har kun waterLevel som undtagelse; udeladt komponent er stadig lukket.

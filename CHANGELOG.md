@@ -1,3 +1,12 @@
+# KILDEKONTROL – 2026-10-05 – præcis migrationsforventning repareret
+
+Første 543-kildekontrol fandt én gammel forventning til sidste migration.
+Samme workflowtest reproducerer fejlen lokalt; kun det eksakte navn ændres
+til den nye append-only vandstandsovergang. Begge 55s-indstillinger og
+alle gamle migrations-/runtime-/binding-/deploybytes bevares. Den fejlede
+head må ikke merges; ny exact-head CI/proof og faktisk release mangler.
+542 er fortsat offentlig. Ingen ny produktversion eller SQLinstallation.
+
 # NYESTE – 2026-10-05 – lokal 4.0.543: kun vandstand fra dkss_lf på syv kystzoner
 
 Ejeren har godkendt, at de præcise syv zoner må hente verificeret vandstand
