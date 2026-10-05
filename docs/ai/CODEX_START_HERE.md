@@ -1,5 +1,18 @@
 # Lokal Jordravgren: aktuelt mandat og model 0.2 – 2026-10-05
 
+**Slutkontrol for kortplanlægning:** 17 modelcases, fem artifacttests, fire materiale- og fire visningskontrakter samt 20+8+15 faktiske Chrome-checks PASS. Sourcegate/112 browserfiler, RDKS/sikkerhed, 62 Pages-moduler, versionsimports og 419 kapitler PASS. Alle 505.834 faktiske fragmentreferencer er entydige. Beskyttede data bevares; ingen CI eller produktion. Efterfølgende tidligere slutkontroller er evidens for deres respektive trin.
+
+**Nyeste fortsættelse – kortplanlægning:** Ejerens *kan det gøres endnu
+bedre?* er omsat til landsdækkende sporfiltre og lokale visningslinks,
+uden nye ravslutninger. Links binder kamera, alle lagvalg og præcis
+fragmentidentitet til dataset-SHA. Ændret/manglende valg vises eksplicit,
+og et gammelt panel ryddes. Fire nye kontrakttests og 15 nye faktiske
+Chrome-checks samt de eksisterende 20+8 checks PASS. Alle 505.834
+detailoprindelser kan gemmes, også originale `?`/`+`-ID'er. Ingen
+dataset-/model-/kyst-/vejrændring, publicering eller fysisk mobilbevis.
+Rapport: docs/research/JORDRAV_KORTPLANLAEGNING_2026-10-05.md.
+Forrige materiale-/markkontrol nedenfor er fortsat evidens for det trin.
+
 **Samlet slutkontrol for denne fortsættelse:** 17 modelcases, fem data-/artifactkontroller, fire søgekontrakter og 20+8 faktiske Chrome-checks PASS. Sourcegate/111 browserfiler, RDKS/sikkerhed, 61 Pages-moduler, versionsimports og 419 håndbogskapitler PASS. Nye screenshots (mark/luftfoto, materialeforklaring, mobil) er visuelt læst. Aktuel 0.2-manifestbinding bevares. Ingen CI eller produktionsbevis.
 
 **Seneste fortsættelse – materialer/markkontekst:** Ejerens ordre *analyser

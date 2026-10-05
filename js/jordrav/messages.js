@@ -308,3 +308,56 @@ const searchMessages = {
 };
 registerI18nMessages(Object.fromEntries(Object.entries(searchMessages).map(([lang,entries])=>[lang,Object.fromEntries(Object.entries(entries).map(([key,value])=>[`jordrav.${key}`,value]))])));
 messageKeys.push(...Object.keys(searchMessages.da));
+
+const viewMessages={
+  da:{
+    traceLabel:'Undersøg et spor', traceAll:'Alle geologiske spor', copyView:'Kopiér link til visningen',
+    selectionHidden:'Valget er bevaret i panelet, men fremhævningen er skjult med de aktuelle lagvalg.',
+    viewLinkLabel:'Link til den gemte kortvisning',
+    viewRestored:'Kortsted og lagvalg er gendannet fra linket.',
+    viewDatasetChanged:'Kortsted og lagvalg er gendannet. Geologidata har ændret sig; det tidligere polygon- eller dybdevalg er ikke gendannet.',
+    viewInvalid:'Linkets kortvisning kunne ikke læses. Vælg sted og lag i kortet.',
+    viewSelectionMissing:'Kortsted og lagvalg er gendannet, men det gemte valg findes ikke her. Klik på kortet for en ny vurdering.',
+    viewSelectionWaiting:'Det gemte polygonvalg afventer synlige geologiske detaljer. Slå geologilaget til og zoom ind.',
+    viewSelectionFailed:'Det gemte polygonvalg kunne ikke indlæses. Kortets overblik er stadig tilgængeligt; prøv igen ved at flytte kortet.',
+    viewCopied:'Link kopieret. Det husker sted, lagvalg og et eventuelt valgt område.',
+    viewCopiedWithoutSelection:'Link kopieret med sted og lagvalg. Det tidligere polygonvalg lå uden for detailvisningen og er ikke med.',
+    viewManualCopy:'Linket er klar i tekstfeltet. Markér og kopiér det manuelt.',
+    viewManualCopyWithoutSelection:'Linket er klar i tekstfeltet. Det tidligere polygonvalg lå uden for detailvisningen og er ikke med. Markér og kopiér linket manuelt.',
+    viewCannotSave:'Denne kortvisning kunne ikke gemmes. Flyt kortet tilbage til Danmark og prøv igen.'
+  },
+  de:{
+    traceLabel:'Einen Ansatz untersuchen', traceAll:'Alle geologischen Ansätze', copyView:'Link zur Ansicht kopieren',
+    selectionHidden:'Die Auswahl bleibt im Infobereich erhalten; ihre Hervorhebung ist durch die aktuellen Ebeneneinstellungen verborgen.',
+    viewLinkLabel:'Link zur gespeicherten Kartenansicht',
+    viewRestored:'Kartenposition und Ebeneneinstellungen aus dem Link wiederhergestellt.',
+    viewDatasetChanged:'Kartenposition und Ebenen wiederhergestellt. Die Geologiedaten haben sich geändert; die frühere Polygon- oder Tiefenauswahl wurde nicht wiederhergestellt.',
+    viewInvalid:'Die Kartenansicht im Link konnte nicht gelesen werden. Ort und Ebenen in der Karte auswählen.',
+    viewSelectionMissing:'Kartenposition und Ebenen wiederhergestellt, aber die gespeicherte Auswahl wurde hier nicht gefunden. Für eine neue Beurteilung auf die Karte klicken.',
+    viewSelectionWaiting:'Die gespeicherte Polygonauswahl wartet auf sichtbare Geologiedetails. Geologie einschalten und näher zoomen.',
+    viewSelectionFailed:'Die gespeicherte Polygonauswahl konnte nicht geladen werden. Die Übersicht bleibt verfügbar; zum erneuten Versuch die Karte bewegen.',
+    viewCopied:'Link kopiert. Er speichert Ort, Ebenen und einen eventuell ausgewählten Bereich.',
+    viewCopiedWithoutSelection:'Link mit Ort und Ebenen kopiert. Die frühere Polygonauswahl lag außerhalb der Detailansicht und ist nicht enthalten.',
+    viewManualCopy:'Der Link steht im Textfeld bereit. Markieren und manuell kopieren.',
+    viewManualCopyWithoutSelection:'Der Link steht im Textfeld bereit. Die frühere Polygonauswahl lag außerhalb der Detailansicht und ist nicht enthalten. Den Link markieren und manuell kopieren.',
+    viewCannotSave:'Diese Kartenansicht konnte nicht gespeichert werden. Die Karte nach Dänemark verschieben und erneut versuchen.'
+  },
+  en:{
+    traceLabel:'Investigate a lead', traceAll:'All geological leads', copyView:'Copy link to this view',
+    selectionHidden:'The selection remains in the information panel, but its highlight is hidden by the current layer settings.',
+    viewLinkLabel:'Link to the saved map view',
+    viewRestored:'Map location and layer settings restored from the link.',
+    viewDatasetChanged:'Map location and layers restored. The geology dataset has changed; the earlier polygon or deep-layer selection was not restored.',
+    viewInvalid:'The map view in this link could not be read. Choose a location and layers on the map.',
+    viewSelectionMissing:'Map location and layers restored, but the saved selection was not found here. Click the map for a new assessment.',
+    viewSelectionWaiting:'The saved polygon selection is waiting for visible geology details. Enable geology and zoom in.',
+    viewSelectionFailed:'The saved polygon selection could not be loaded. The overview remains available; move the map to try again.',
+    viewCopied:'Link copied. It remembers the location, layers and any selected area.',
+    viewCopiedWithoutSelection:'Link copied with location and layers. The earlier polygon selection was outside the detail view and is not included.',
+    viewManualCopy:'The link is ready in the text field. Select and copy it manually.',
+    viewManualCopyWithoutSelection:'The link is ready in the text field. The earlier polygon selection was outside the detail view and is not included. Select and copy the link manually.',
+    viewCannotSave:'This map view could not be saved. Move the map back to Denmark and try again.'
+  }
+};
+registerI18nMessages(Object.fromEntries(Object.entries(viewMessages).map(([lang,entries])=>[lang,Object.fromEntries(Object.entries(entries).map(([key,value])=>[`jordrav.${key}`,value]))])));
+messageKeys.push(...Object.keys(viewMessages.da));

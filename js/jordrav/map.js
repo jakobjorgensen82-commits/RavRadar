@@ -5,12 +5,13 @@ import { REGIONAL_HYPOTHESES } from './regional-hypotheses.js';
 import { ACCESS_COLOURS, SURFACE_HUNTABILITY, DEEP_LAYER_EXAMPLES } from './accessibility.js';
 import { searchContext } from './search-context.js';
 import { initialiseFieldContext, FIELD_SERVICE } from './field-context.js';
+import { TRACE_CLASSES, acceptsPotential, parseView, encodeView, featureReference } from './view-state.js';
+import { MANIFEST_SHA256 } from './dataset-binding.js';
 
 initialiseI18n();
 const $ = id => document.getElementById(id);
 const tr = key => t(`jordrav.${key}`);
 const colours = { enhanced:'#d18a1d', coastal:'#247bc1', basin:'#bd547f', reworked:'#c0a535', covered:'#60a9a3', possible:'#8c959b', limited:'#85746a', unresolved:'#85939e' };
-const designated = new Set(['enhanced','coastal','basin','reworked','covered']);
 const categoryKey = category => category === 'covered' ? 'coveredCategory' : category;
 const materialKeys = {
   'glacial-coarse':'GlacialCoarse', 'glacial-fine':'GlacialFine', 'glacial-basin-coarse':'GlacialBasinCoarse', till:'Till',
@@ -34,9 +35,10 @@ let opacity = .45;
 let generation = 0, requestController, timer;
 let visible = true;
 let onlyEnhanced = false;
-let colourMode = 'potential', showDeep = true;
+let colourMode = 'potential', showDeep = true, trace='all', currentBase='street', pendingSelection;
+let cancelRegionNavigation=()=>{};
 const potentialOf = feature => feature.properties.potential || data.catalog[feature.properties.i].potential;
-const acceptsFeature = feature => !onlyEnhanced || designated.has(potentialOf(feature));
+const acceptsFeature = feature => acceptsPotential(potentialOf(feature),trace,onlyEnhanced);
 
 function featureStyle(feature) {
   const potential = potentialOf(feature);
@@ -61,13 +63,17 @@ function syncVisibility() {
   if (selected) {
     const accepted = selectedDeepLayer ? showDeep : acceptsFeature(selectedFeature);
     if (visible && accepted) selected.addTo(map);else selected.remove();
+    $('jordravSelectionNote').hidden=visible&&accepted;
+  } else {
+    $('jordravSelectionNote').hidden=true;
   }
 }
 
 function renderLegend() {
   const legend = $('jordravLegend');
   legend.replaceChildren();
-  const categories = colourMode === 'access' ? [[SURFACE_HUNTABILITY,'huntUnknown']] : Object.keys(colours).map(key=>[key,categoryKey(key)]);
+  const categories = colourMode === 'access' ? [[SURFACE_HUNTABILITY,'huntUnknown']] :
+    (trace==='all'?Object.keys(colours):[trace]).map(key=>[key,categoryKey(key)]);
   for (const [category, key] of [...categories,['deep','deepLegend']]) {
     const item=node('span');const swatch=node('i');
     const uncoloured=colourMode==='potential' && category==='possible';
@@ -78,11 +84,41 @@ function renderLegend() {
     item.append(swatch,node('span',tr(key)));legend.append(item);
   }
   $('jordravColourNote').textContent=tr(colourMode==='access'?'accessColourNote':'potentialColourNote');
+  $('jordravFocusNote').hidden=!onlyEnhanced||trace!=='all';
+}
+
+function rebuildSurfaceLayers() {
+  if(!data)return;
+  details?.remove();details=null;overview?.remove();overview=createOverview();
+  syncVisibility();renderLegend();void loadViewport();
+}
+
+function restoreSelection(features) {
+  if(!pendingSelection)return;
+  const feature=features.find(item=>featureReference(item)===pendingSelection);
+  pendingSelection=null;
+  if(feature){showDetail(feature);$('jordravLinkStatus').textContent=tr('viewRestored');}
+  else $('jordravLinkStatus').textContent=tr('viewSelectionMissing');
+}
+
+function resetDetail() {
+  selected?.remove();selected=null;selectedFeature=null;selectedDeepLayer=null;
+  const note=node('div',undefined,'jordrav-method-note');
+  note.append(node('strong',tr('confidenceTitle')),node('p',tr('methodNote')));
+  $('jordravDetails').replaceChildren(node('h2',tr('selectTitle')),node('p',tr('selectHelp')),note);
+  syncVisibility();
+}
+
+function restorePoint(state) {
+  if(!state?.point||state.dataset!==MANIFEST_SHA256)return;
+  const example=DEEP_LAYER_EXAMPLES.find(item=>item.id===state.point);
+  if(example)showDeepDetail(example);else $('jordravLinkStatus').textContent=tr('viewSelectionMissing');
 }
 
 const depthText = example => example.intervals.map(interval=>`${interval.top_m.toLocaleString(getLanguage())}–${interval.bottom_m.toLocaleString(getLanguage())} m`).join('; ');
 
 function showDeepDetail(example) {
+  pendingSelection=null;
   const panel=$('jordravDetails');
   panel.replaceChildren(node('h2',example.name));
   const badge=node('div',tr('deepNotHuntable'),'jordrav-badge jordrav-access-badge');
@@ -131,6 +167,7 @@ function initialiseRegionalGuide() {
   const panel = $('jordravRegionalExplanation');
   const language = getLanguage();
   let moving = false, zooming = false, pendingRegion;
+  cancelRegionNavigation=()=>{pendingRegion=null;};
   const navigate = region => map.fitBounds(region.bounds, {padding:[24,24],maxZoom:11,animate:false});
   map.on('movestart', () => {moving=true;});
   map.on('zoomstart', () => {zooming=true;});
@@ -197,6 +234,7 @@ function appendSearchContext(panel, entry) {
 }
 
 function showDetail(feature) {
+  pendingSelection=null;
   const entry = data.catalog[feature.properties.i];
   const panel = $('jordravDetails');
   panel.replaceChildren(node('h2', tr('selected')));
@@ -239,15 +277,17 @@ async function loadViewport() {
   if (!data || !map) return;
   const current = ++generation;
   requestController?.abort();
-  if(!visible){status('hiddenOverlay');return;}
+  if(!visible){status('hiddenOverlay');if(pendingSelection)$('jordravLinkStatus').textContent=tr('viewSelectionWaiting');return;}
   if (map.getZoom() < data.manifest.detailZoom) {
-    details?.remove(); details = null; syncVisibility(); status('overview'); return;
+    details?.remove(); details = null; syncVisibility(); status('overview');
+    if(pendingSelection)$('jordravLinkStatus').textContent=tr('viewSelectionWaiting');return;
   }
   const bounds = map.getBounds();
   const bbox = [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()];
   const tiles = data.manifest.tiles.filter(tile => intersects(tile.bbox, bbox));
   if (!tiles.length || tiles.length > data.manifest.maxVisibleTiles) {
-    details?.remove(); details = null; syncVisibility(); status(tiles.length ? 'zoomMore' : 'overview'); return;
+    details?.remove(); details = null; syncVisibility(); status(tiles.length ? 'zoomMore' : 'overview');
+    if(pendingSelection)$('jordravLinkStatus').textContent=tr('viewSelectionWaiting');return;
   }
   requestController = new AbortController();
   const signal = requestController.signal;
@@ -260,17 +300,21 @@ async function loadViewport() {
       loaded.push(...await Promise.all(tiles.slice(i,i+3).map(tile => data.tile(tile, signal))));
       if (current !== generation) return;
     }
-    const features=loaded.flatMap(tile => tile.features).filter(feature=>intersects(feature.bbox,bbox) && acceptsFeature(feature));
+    const viewportFeatures=loaded.flatMap(tile => tile.features).filter(feature=>intersects(feature.bbox,bbox));
+    const features=viewportFeatures.filter(acceptsFeature);
     if(features.length>12000) {
-      details?.remove();details=null;syncVisibility();status('zoomMore');return;
+      details?.remove();details=null;syncVisibility();status('zoomMore');
+      if(pendingSelection)$('jordravLinkStatus').textContent=tr('viewSelectionWaiting');return;
     }
     const layer = L.geoJSON(features, {
       style:featureStyle, onEachFeature:(feature, item) => item.on('click', () => showDetail(feature))
     });
     details?.remove(); details = layer; syncVisibility(); status('detail');
+    restoreSelection(viewportFeatures);
   } catch (error) {
     if (current !== generation || error.name === 'AbortError') return;
     details?.remove(); details = null; syncVisibility(); status('detailFailed');
+    if(pendingSelection)$('jordravLinkStatus').textContent=tr('viewSelectionFailed');
   }
 }
 
@@ -280,12 +324,27 @@ async function start() {
   const selectionPane=map.createPane('jordrav-selection');
   selectionPane.style.zIndex='460';selectionPane.style.pointerEvents='none';
   map.fitBounds([[54.5,7.7],[57.8,15.25]]);
+  const saved=parseView(location.hash);
+  function setViewControls(state) {
+    trace=state.trace;onlyEnhanced=state.focus;colourMode=state.mode;opacity=state.opacity/100;
+    visible=state.show;showDeep=state.deep;
+    $('jordravTrace').value=trace;$('jordravFocus').checked=onlyEnhanced;
+    $('jordravFocusNote').hidden=!onlyEnhanced;$('jordravColourMode').value=colourMode;
+    $('jordravOpacity').value=String(state.opacity);$('jordravVisible').checked=visible;
+    $('jordravFields').checked=state.fields;$('jordravDeepVisible').checked=showDeep;
+    cancelRegionNavigation();map.stop();
+    map.setView([state.latitude,state.longitude],state.zoom,{animate:false,reset:true});
+    pendingSelection=state.dataset===MANIFEST_SHA256?state.feature:null;
+    $('jordravLinkStatus').textContent=tr(state.dataset===MANIFEST_SHA256?'viewRestored':'viewDatasetChanged');
+  }
+  if(saved.state)setViewControls(saved.state);
+  else if(saved.error)$('jordravLinkStatus').textContent=tr('viewInvalid');
   const bases = {
     street:L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}),
     aerial:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'Imagery © Esri, Vantor, Earthstar Geographics, GIS Community · <a href="https://goto.arcgis.com/termsofuse/viewsummary">Terms</a>'})
   };
-  let currentBase = 'street';
   try { if (localStorage.getItem('ravradar-jordrav-basemap') === 'aerial') currentBase='aerial'; } catch {}
+  if(saved.state)currentBase=saved.state.base;
   const baseStatus = $('jordravBaseStatus');
   for (const [key, layer] of Object.entries(bases)) layer.on('tileerror', () => {
     if (currentBase !== key) return;
@@ -309,10 +368,9 @@ async function start() {
   $('jordravFocus').addEventListener('change', event => {
     onlyEnhanced = event.target.checked;
     $('jordravFocusNote').hidden = !onlyEnhanced;
-    if (!data) return;
-    details?.remove(); details = null;
-    overview?.remove(); overview = createOverview(); syncVisibility(); void loadViewport();
+    rebuildSurfaceLayers();
   });
+  $('jordravTrace').addEventListener('change',event=>{trace=TRACE_CLASSES.includes(event.target.value)?event.target.value:'all';rebuildSurfaceLayers();});
   $('jordravOpacity').addEventListener('input', event => {
     opacity=Number(event.target.value)/100;
     overview?.setStyle(featureStyle); details?.setStyle(featureStyle);
@@ -325,6 +383,37 @@ async function start() {
   data = await openDataset();
   overview = createOverview();
   syncVisibility();
+  restorePoint(saved.state);
+  $('jordravCopyView').disabled=false;
+  $('jordravCopyView').addEventListener('click',async()=>{
+    const center=map.getCenter().wrap(),bounds=map.getBounds();
+    const bbox=[bounds.getWest(),bounds.getSouth(),bounds.getEast(),bounds.getNorth()];
+    const reference=selectedFeature?featureReference(selectedFeature):pendingSelection;
+    const referenceBounds=selectedFeature?.bbox||(reference?reference.split('~')[1].split(',').map(Number):null);
+    const canSaveFeature=Boolean(reference&&visible&&map.getZoom()>=data.manifest.detailZoom&&intersects(referenceBounds,bbox));
+    const omittedSelection=Boolean(reference&&!canSaveFeature);
+    const state={latitude:center.lat,longitude:center.lng,zoom:map.getZoom(),base:currentBase,trace,mode:colourMode,opacity:Math.round(opacity*100),
+      focus:onlyEnhanced,show:visible,fields:$('jordravFields').checked,deep:showDeep,dataset:MANIFEST_SHA256,
+      feature:canSaveFeature?reference:null,point:selectedDeepLayer?.id||null};
+    const url=new URL(location.href);
+    try {url.hash=encodeView(state);}catch{$('jordravLinkStatus').textContent=tr('viewCannotSave');return;}
+    const input=$('jordravViewLink');input.value=url.href;input.hidden=false;
+    history.replaceState(null,'',url);
+    try {
+      await navigator.clipboard.writeText(url.href);
+      $('jordravLinkStatus').textContent=tr(omittedSelection?'viewCopiedWithoutSelection':'viewCopied');
+    } catch {
+      input.focus();input.select();$('jordravLinkStatus').textContent=tr(omittedSelection?'viewManualCopyWithoutSelection':'viewManualCopy');
+    }
+  });
+  window.addEventListener('hashchange',()=>{
+    const next=parseView(location.hash);
+    if(!next.state){if(next.error)$('jordravLinkStatus').textContent=tr('viewInvalid');return;}
+    resetDetail();
+    setViewControls(next.state);setBase(next.state.base);rebuildSurfaceLayers();
+    $('jordravFields').dispatchEvent(new Event('change'));
+    restorePoint(next.state);
+  });
   const method=$('jordravMethodContent');
   for (const key of ['methodBody','methodCover','methodChronology','methodScale','methodOld','methodFinds']) method.append(node('p',tr(key)));
   const sources=node('ul');

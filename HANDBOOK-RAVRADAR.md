@@ -11,6 +11,24 @@ Appversionen er 4.0.541; den geologiske model er 0.2.0-prototype.
 Almindeligt kort og luftfoto bevarer farveflader, valgt sted og forklaring.
 Kystvisningen henter ikke jordravdata.
 
+**Kortplanlægning 2026-10-05:** *Undersøg et spor* viser én af de fem
+geologiske mulighedsklasser ad gangen, eller alle som før. Det gælder hele
+Danmark og de lokale detaljer. *Vis kun mulighedsudpegninger* skjuler
+fortsat generel og uafklaret geologi, når alle spor vises. Dybe punkter
+styres særskilt. Et valgt områdes forklaring bevares ved filtrering;
+besked fortæller, hvis fremhævningen er skjult af de aktuelle lagvalg.
+
+*Kopiér link til visningen* husker sted, zoom, baggrund, spor, farvestyrke,
+kortfarver, lagvalg og det valgte detailfragment eller dybdepunkt. Ved
+genåbning gendannes valget kun i samme geologiske datasæt. Hvis data har
+ændret sig, gendannes kamera og indstillinger, men ikke en mulig forkert
+polygon. Manglende valg forklares eksplicit. Et gammelt polygonvalg uden
+for detailvisningen udelades ved kopiering; dybdepunkter har egne faste
+identiteter. Linket kan kopieres manuelt, hvis clipboard ikke virker.
+Den lokale adresse virker på preview-computeren; det er ikke publicering.
+Ingen ny ravrangliste eller ændring af lagadgang følger af filtrene.
+Rapport: `docs/research/JORDRAV_KORTPLANLAEGNING_2026-10-05.md`.
+
 **Videre forbedring 2026-10-05:** Klikpanelet har nu *Hvad bør du undersøge
 her?* med fysisk materiale, lagrelation, søgeopgave og åbent led. Marine
 tørv/gytje adskilles fra ler/silt; vekslende lag og materialer side om side

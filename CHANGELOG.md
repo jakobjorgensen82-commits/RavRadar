@@ -1,3 +1,16 @@
+## Ikke udgivet – Jordrav sporfiltre og gemte kortvisninger (2026-10-05)
+
+- Alle fem geologiske spor kan undersøges enkeltvis i nationale og lokale
+  flader. Forklaringen bevares med eksplicit besked, hvis valget skjules.
+- Kopiér link til sted, baggrund, lagvalg og præcist detailfragment eller
+  dybdepunkt. Datasetbinding hindrer genvalg af en forkert flade efter
+  dataændringer; manglende valg og clipboardfejl forklares eksplicit.
+- Fire nye kontrakttests og 15 nye faktiske Chrome-kontroller samt
+  eksisterende 20+8 kontroller PASS. Alle 505.834 detailoprindelser kan
+  gemmes. RDKS, Markdown og forberedt webtillæg følger ændringen.
+- Model 0.2, søgevejledning 0.1.0, datasetbytes og app 4.0.541 bevares.
+  Rapport: docs/research/JORDRAV_KORTPLANLAEGNING_2026-10-05.md.
+
 ## Ikke udgivet – Jordrav materialer og nationale markgrænser (2026-10-05)
 
 - Hele kataloget og alle 192 detailudsnit undersøgt igen for fysisk

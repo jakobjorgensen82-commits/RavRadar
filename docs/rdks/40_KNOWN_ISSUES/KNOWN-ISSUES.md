@@ -1,5 +1,15 @@
 # AKTUELLE JORDRAVPUNKTER – national model 0.2 – 2026-10-05
 
+**JORDRAV-011, lokal kortplanlægning løst:** Hele landets fem spor kan
+filtreres særskilt. Valgt forklaring bevares med besked ved skjult
+fremhævning. Visningslinks gendanner sted, lagvalg og præcist fragment
+kun i samme datasæt; ændret/manglende valg vises eksplicit uden en
+erstatningspolygon eller gammelt panel. Clipboardfejl giver manuel
+kopiering. Fire kontrakttests/15 nye Chrome-checks og eksisterende 20+8
+PASS. Lokal adresse er ikke delt internetadresse. Fysisk mobil,
+publicering og empirisk mark-/lagadgang forbliver åbne som nedenfor.
+Rapport: docs/research/JORDRAV_KORTPLANLAEGNING_2026-10-05.md.
+
 **Nyeste status 2026-10-05:** JORDRAV-007/008 præciseres: national fysisk
 klikvejledning er implementeret, og valgbare Marker 2026-WMS-omrids findes
 nu i interaktivt kort. Markregistrering er ikke bar jord/pløjeadgang.

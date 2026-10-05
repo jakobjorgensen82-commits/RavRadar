@@ -17,6 +17,8 @@
 #jordravMap { height: min(67vh, 780px); min-height: 410px; background: #dce8eb; }
 .jordrav-layer-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px 6px; font-size: .82rem; }
 .jordrav-layer-tools label { display: flex; align-items: center; gap: 8px; min-height: 32px; }
+.jordrav-layer-tools label[for="jordravTrace"] { flex-wrap: wrap; max-width: 100%; }
+#jordravTrace { max-width: 100%; min-height: 36px; }
 .jordrav-layer-tools input { accent-color: var(--brand-2); }
 .jordrav-layer-tools input[type="range"] { width: 100px; }
 .jordrav-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 8px 14px; font-size: .8rem; }
@@ -54,6 +56,8 @@
 .jordrav-search-context { border-left: 3px solid #507c85; padding: 1px 14px 12px; margin-top: 18px; background: #f2f7f7; }
 .jordrav-search-context h4 { font-size: .87rem; margin: 16px 0 6px; }
 .jordrav-layer-tools a { color: var(--brand-2); font-size: .8rem; }
+.jordrav-view-link input { display: block; width: calc(100% - 28px); margin: 8px 14px; min-height: 40px; border: 1px solid var(--line); border-radius: 7px; padding: 8px; font: inherit; font-size: .8rem; }
+.jordrav-view-link input[hidden] { display:none; }
 .jordrav-deep-marker { box-sizing: border-box; border: 2px solid white; border-radius: 5px; background: #6c3b91; color: white; box-shadow: 0 0 0 1px #432455; text-align: center; font: bold 19px/20px sans-serif; }
 .jordrav-deep-swatch { border-radius: 2px !important; box-shadow: 0 0 0 1px #432455; }
 #jordravColourNote { font-weight: 600; }

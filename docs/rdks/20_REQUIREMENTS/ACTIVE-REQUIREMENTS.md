@@ -1,5 +1,13 @@
 # AKTUELT JORDRAVKRAV – 2026-10-05
 
+**Nyeste ejerønske: kan det gøres endnu bedre?** Sporfiltre og genfindelige
+visningslinks er den konkrete næste forbedring. Samme geologiske
+farveklasse filtreres i hele Danmark og lokale detaljer. Valg gendannes
+kun mod samme datasetbinding og præcise fragment; ændret eller manglende
+valg må ikke blive til en anden flade eller gammel forklaring. Ingen
+ny ravrangliste eller ændring af lagadgang. Lokal implementering:
+docs/research/JORDRAV_KORTPLANLAEGNING_2026-10-05.md.
+
 **Seneste ejerordre: analyser videre og forbedre det.** Den nationale
 materiale-/lagdiagnose og klikvejledning gælder hele kortgrundlaget, også
 ufarvet geologi. Marine tørv/gytje og bindestregsblandinger må ikke blive

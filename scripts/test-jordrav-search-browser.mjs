@@ -5,6 +5,9 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 const require=createRequire(import.meta.url),{chromium}=require('playwright');
 const output=path.resolve('docs/research/jordrav');
+const outputPrefix=process.env.RAVRADAR_JORDRAV_SEARCH_PREFIX||'search-context';
+if(!/^[\w.-]+$/.test(outputPrefix))throw Error('Invalid search browser output prefix');
+const artifact=file=>path.join(output,file.replace(/^search-context/,outputPrefix));
 const diagnostic=JSON.parse(await fs.readFile(path.join(output,'national-search-context-2026-10-05.json')));
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.gz':'application/gzip'};
 const server=http.createServer(async(request,response)=>{
@@ -48,7 +51,7 @@ try{
     assert.equal(params.get('srs'),'EPSG:3857');assert.ok(params.get('sld_body').includes('<Stroke>'));
     assert.ok(!params.get('sld_body').includes('<Fill>'));
   }
-  await page.locator('#jordravMap').screenshot({path:path.join(output,'search-context-fields-2026.png')});
+  await page.locator('#jordravMap').screenshot({path:artifact('search-context-fields-2026.png')});
   report.checks.push('Live Asaa field tiles are transparent fixed-year outlines in EPSG:3857');
   const before=await page.evaluate(()=>({center:window.__searchHarness.map.getCenter(),zoom:window.__searchHarness.map.getZoom()}));
   await page.locator('[data-base="aerial"]').click();
@@ -61,7 +64,7 @@ try{
   },null,{timeout:90000});
   assert.deepEqual(await page.evaluate(()=>({center:window.__searchHarness.map.getCenter(),zoom:window.__searchHarness.map.getZoom()})),before);
   assert.ok(await page.locator('.leaflet-jordrav-fields-pane img').count()>0);
-  await page.locator('#jordravMap').screenshot({path:path.join(output,'search-context-fields-aerial.png')});
+  await page.locator('#jordravMap').screenshot({path:artifact('search-context-fields-aerial.png')});
   report.checks.push('Field boundaries remain on aerial background without moving the map');
   await page.locator('#jordravFields').uncheck();
   assert.equal(await page.locator('.leaflet-jordrav-fields-pane img').count(),0);
@@ -96,7 +99,7 @@ try{
   assert.match(text,/Tørv og gytje/);assert.match(text,/Silt og ler/);
   assert.match(text,/side om side/);assert.match(text,/Ingen laggrænse/);
   assert.match(await page.locator('.jordrav-badge').first().textContent(),/Marine aflejringer/);
-  await page.locator('.jordrav-search-context').screenshot({path:path.join(output,'search-context-marine-organic.png')});
+  await page.locator('.jordrav-search-context').screenshot({path:artifact('search-context-marine-organic.png')});
   report.checks.push('Real mixed marine organic/clay click distinguishes peat from sand and lateral mixture from vertical cover');
   await clickExample(diagnostic.materialExamples.lateralMixture);
   text=await page.locator('.jordrav-search-context').textContent();
@@ -109,7 +112,7 @@ try{
   await page.setViewportSize({width:390,height:844});
   await page.evaluate(()=>{window.__searchHarness.map.invalidateSize();});
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
-  await page.locator('.jordrav-search-context').screenshot({path:path.join(output,'search-context-mobile.png')});
+  await page.locator('.jordrav-search-context').screenshot({path:artifact('search-context-mobile.png')});
   report.checks.push('390px mobile layout includes search guidance and field controls without horizontal overflow');
   for(const lang of ['de','en']){
     await Promise.all([page.waitForEvent('load'),page.locator(`[data-language="${lang}"]`).click()]);
@@ -135,11 +138,11 @@ try{
 }catch(error){
   report.status='FAIL';report.errors.push(error.stack);
   const page=browser.contexts()[0]?.pages()[0];
-  if(page){report.lastState=await page.evaluate(()=>({lang:document.documentElement.lang,zoom:window.__searchHarness?.map.getZoom(),selected:window.__searchHarness?.selectedFeature?.properties.o,detailText:document.getElementById('jordravDetails')?.textContent.slice(0,400)})).catch(()=>null);await page.screenshot({path:path.join(output,'search-context-failure.png')});}
+  if(page){report.lastState=await page.evaluate(()=>({lang:document.documentElement.lang,zoom:window.__searchHarness?.map.getZoom(),selected:window.__searchHarness?.selectedFeature?.properties.o,detailText:document.getElementById('jordravDetails')?.textContent.slice(0,400)})).catch(()=>null);await page.screenshot({path:artifact('search-context-failure.png')});}
   throw error;
 }
 finally{
-  await fs.writeFile(path.join(output,'search-context-browser-2026-10-05.json'),JSON.stringify(report,null,2)+'\n');
+  await fs.writeFile(artifact('search-context-browser-2026-10-05.json'),JSON.stringify(report,null,2)+'\n');
   await browser.close();await new Promise(resolve=>server.close(resolve));
   console.log(JSON.stringify({status:report.status,checks:report.checks,fieldResponses:report.fieldResponses.length,errors:report.errors}));
 }

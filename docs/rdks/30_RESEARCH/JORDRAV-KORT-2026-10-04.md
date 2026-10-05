@@ -1,5 +1,19 @@
 # Aktuel national Jordravmodel 0.2 – 2026-10-05
 
+**Nyeste fortsættelse – kortplanlægning:** Ejerens nye forbedringsønske
+omsættes til ét geologisk spor ad gangen og genfindelige lokale
+visningslinks. Det bruger samme nationale farveklasser uden ny rangliste.
+Links gemmer kamera, alle lagvalg og kilde-ID plus fragmentbbox, bundet
+til manifest-SHA. Ændret datasæt/manglende fragment eller punkt giver
+eksplicit besked; tidligere forklaring ryddes, ingen substitutflade.
+Fire nye kontrakttests og 15 nye Chrome-checks samt eksisterende 20+8
+checks PASS. Alle 505.834 oprindelser er kontrolleret; `?`/`+` bevares.
+Kamera/lagvalg genoprettes på DA/DE/EN og 390 px, med manuel clipboard-
+fallback. Kvalitativ geologi, kildeusikkerhed og lokal lagadgang bevares.
+Analyse: docs/research/JORDRAV_KORTPLANLAEGNING_2026-10-05.md.
+Dette supplerer forrige fysisk-materiale-/marktrin og erstatter ikke
+den nationale analyse eller dens geologiske datagrundlag.
+
 **Seneste videreanalyse:** Ejerens nye ordre *analyser videre og forbedre
 det* er omsat til helnational materiale-/lagdiagnose og konkret
 klikvejledning 0.1.0. Alle 4.652 forklaringer og 192 detailudsnit/505.834

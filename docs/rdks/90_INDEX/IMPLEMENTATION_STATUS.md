@@ -1,5 +1,17 @@
 # AKTUELT JORDRAVCHECKPOINT – national model 0.2 – 2026-10-05
 
+**Slutkontrol for kortplanlægning:** 17 modelcases, fem artifacttests, fire materiale- og fire visningskontrakter samt 20+8+15 faktiske Chrome-checks PASS. Sourcegate/112 browserfiler, RDKS/sikkerhed, 62 Pages-moduler, versionsimports og 419 kapitler PASS. Alle 505.834 faktiske fragmentreferencer er entydige. Beskyttede data bevares; ingen CI eller produktion. Efterfølgende tidligere slutkontroller er evidens for deres respektive trin.
+
+**Nyeste fortsættelse – kortplanlægning:** Nationale og lokale sporfiltre,
+forklaring ved skjult valg og datasetbundne visningslinks er implementeret
+på DA/DE/EN. Clipboard har manuel fallback. Links gendanner alle lagvalg
+og præcist detailfragment; dataændring/manglende valg erstatter aldrig
+valget med en anden flade. Fire nye kontrakttests/15 nye Chrome-checks og
+de eksisterende 20+8 checks PASS. Alle 505.834 oprindelser kan gemmes.
+Ingen model-/dataset-/appversion eller produktionsændring. Forrige
+materiale-/markslutkontrol nedenfor er evidens for det tidligere trin.
+Rapport: docs/research/JORDRAV_KORTPLANLAEGNING_2026-10-05.md.
+
 **Samlet slutkontrol for denne fortsættelse:** 17 modelcases, fem data-/artifactkontroller, fire søgekontrakter og 20+8 faktiske Chrome-checks PASS. Sourcegate/111 browserfiler, RDKS/sikkerhed, 61 Pages-moduler, versionsimports og 419 håndbogskapitler PASS. Nye screenshots (mark/luftfoto, materialeforklaring, mobil) er visuelt læst. Aktuel 0.2-manifestbinding bevares. Ingen CI eller produktionsbevis.
 
 **Seneste lokale implementering – materiale/marklag:** Ny fysisk
