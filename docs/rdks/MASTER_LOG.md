@@ -1,4 +1,17 @@
-# NYESTE – 2026-10-06 – afgrænset SEO og faktisk domæneverificering, fortsat 4.0.543
+# NYESTE – 2026-10-06 – ejerbestilt lokal telefon-/loginlinkrettelse
+
+Ejeren godkendte læsbare konto-knapper og e-mailbaseret loginlink uafhængigt
+af kodefeltet. Sekundær tekst/fokus er afgrænset til authForm.
+Magic har sin egen native valideringsundtagelse, men handleren kræver
+gyldig e-mail og rydder gammel status før kontrollen. Login/oprettelse
+bevarer mindst seks tegn. Auth-tjeneste, callback, sprog og data er urørte.
+19 normale handlerforløb, fire cache-kald og lokal 390 × 844 mobilvisning
+består uden rigtig Auth, mail eller konto. Fire UI-markører bevarer cache,
+version og modelbindinger. Ingen ny release; kandidat på 4.0.543.
+Integration, CI, offentlig levering og fysisk telefon-/mailbevis er åbne.
+Private detaljer bevares i checkpoint. Ingen produktionswrite under writer.
+
+# Historisk tidligere status – SEO og domæneverificering på 4.0.543
 
 Efter eksplicit ejerordre er Google Search Console-domænet verificeret gennem
 én ny TXT hos Simply, uden ændring af tidligere seks DNS-poster/DNSSEC.

@@ -1,4 +1,20 @@
-# NYESTE – 2026-10-06 – søgeeffekt kan endnu ikke måles
+# NYESTE – 2026-10-06 – telefonens konto-knapper og magic-validering
+
+Telefonbilledet viser hvid tekst på lyse sekundære knapper. Offentlig
+anonym kontrol fandt dem ikke disabled eller dækket af et andet element.
+Separat kan en kort kode blokere adgangskodefrit login via formularens
+native minlength, selv om Auth-kalderen kun anvender e-mailen.
+
+Begge forhold er lokalt rettet efter ejerens ja. 19 normale submit-forløb,
+fire normale cache-kald og mobilvisning består; sekundær kontrast 12,28:1.
+En afgrænset cacheadresse gennem hele UI-kæden forhindrer gammel
+præcis-key cache i at skjule rettelsen uden nulstilling. Adgangskodekrav
+til login/oprettelse og e-mailvalidering er bevaret.
+ÅBENT: integration/CI, sikker offentlig levering og kontrol på ejerens
+telefon. Ægte mail-/kontolevering er ikke testet eller bevist. Der er
+hverken lavet en ny konto, sendt mail eller ændret Auth-indstillinger.
+
+# Historisk tidligere status – søgeeffekt kan endnu ikke måles
 
 Search Console-ejerskab er faktisk verificeret, og sitemap er behandlet med
 seks registrerede sider. Rapporterne behandler stadig data: der er endnu

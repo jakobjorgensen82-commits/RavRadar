@@ -5,7 +5,7 @@ import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.543";
 import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.543";
 import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.543";
 import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.543";
-import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.543";
+import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.543&ui=account-20261006";
 import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.543";
 import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails } from "./js/services/rav-assistant.js?v=4.0.543";
 import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.543";

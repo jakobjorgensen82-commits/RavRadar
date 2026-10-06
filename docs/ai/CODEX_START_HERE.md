@@ -1,4 +1,23 @@
-# NYESTE – 2026-10-06 – SEO-ejergrænse og faktisk Search Console-verificering
+# NYESTE – 2026-10-06 – ejerbestilt kontorettelse, lokalt kontrolleret
+
+Ejeren har godkendt begge konkrete telefonrettelser: tydeligt læsbare
+sekundære konto-knapper og loginlink, der kun kræver en gyldig e-mail.
+Login og oprettelse beholder adgangskodekravet på mindst seks tegn.
+Kun magic-knappen springer kodefeltets native validering over; handleren
+kontrollerer stadig den påkrævede e-mail. Auth-tjeneste, callback,
+rettigheder, mailsystem, sprog og private brugerdata ændres ikke.
+
+19 normale submit-forløb, fire normale cache-kald og lokal mobilvisning
+ved 390 × 844 består uden ekstern Auth, mail eller kontooprettelse.
+Tekstkontrast er 12,28:1; primærknappen bevarer hvid tekst på mørk flade.
+Fire afgrænsede UI-markører giver nye cacheadresser gennem importkæden
+uden nulstilling eller ny produktversion. Kandidaten bygger på 4.0.543;
+offentligt observeret 4.0.544 er ikke denne rettelses leveringsbevis.
+Exact-head CI, sikker integration og offentlig effekt er fortsat åbne.
+Ingen merge, deploy eller anden produktionsændring under aktiv vejrhentning.
+Den separate vandstandskode og Spørg RavRadar må ikke medsendes automatisk.
+
+# Historisk tidligere status – SEO-ejergrænse og Search Console-verificering
 
 Ejeren tillader små relevante SEO-forbedringer, ikke omskrivning af grundbogen
 for Google. Ingen nye links til Ravfund-ejede sider, herunder Ravudsigten og

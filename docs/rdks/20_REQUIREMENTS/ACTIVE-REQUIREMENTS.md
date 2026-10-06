@@ -1,4 +1,21 @@
-# NYESTE – 2026-10-06 – små SEO-forbedringer og verificeret Search Console
+# NYESTE – 2026-10-06 – eksplicit godkendt konto- og loginlinkrettelse
+
+Efter telefonens kontooplevelse har ejeren udtrykkeligt svaret ja til begge
+afgrænsede ændringer: læsbare sekundære konto-knapper og loginlink, som kun
+kræver gyldig e-mail. En kort eller tom adgangskode må ikke blokere magic.
+Email skal stadig være udfyldt og gyldig; login og oprettelse kræver fortsat
+mindst seks tegn. En gammel succesbesked må ikke stå som nyt sendebevis
+efter en ugyldig e-mail. Primærknap, brugerfunktioner og DA/DE/EN bevares.
+
+Rettelsen må ikke ændre Auth-konfiguration, callback, rettigheder,
+nøgler, planer, mailtjeneste eller private brugerdata. Lokal prøve udføres
+uden rigtige mails/konti. Den tidligere afviste offentlige magic-handling
+genforsøges eller omgås ikke. Afgrænsede cachemarkører skal nå tidligere
+besøgende uden reset. Lokal kontrol er ikke offentlig levering eller
+bekræftet ekstern mail. Den godkendte rettelse følger eksisterende
+kontrolleret workflow; ingen produktionsændring under aktiv vejrhentning.
+
+# Historisk tidligere status – små SEO-forbedringer og Search Console
 
 Ejeren godkender små forbedringer, som passer til RavRadars grundidé, ikke
 en omskrivning af den offentlige grundbog for søgemaskinernes skyld.

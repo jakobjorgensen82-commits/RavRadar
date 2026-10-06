@@ -1,4 +1,18 @@
-# NYESTE – 2026-10-06 – små SEO-forbedringer, afgrænset kildepakke på 4.0.543
+# NYESTE – 2026-10-06 – konto-knapper og loginlink, lokal rettelse
+
+- Ejerbestilt mørk tekst og fokusmarkering på kontoens sekundære knapper;
+  primærknappen bevares. Målt tekstkontrast 12,28:1.
+- Loginlink ignorerer tom/kort kode, men kræver fortsat gyldig e-mail.
+  Login/oprettelse beholder native validering og minimum seks tegn.
+- Gammel successtatus ryddes før ny e-mailkontrol. Eksisterende Auth-kald,
+  callback, sprog, rettigheder og brugerdata er uændrede.
+- Fire præcise UI-cachemarkører i eksisterende importkæde; ingen cache-reset,
+  versionløft, score-/vejrændring eller nye tjenester/nøgler.
+- 19 normale submit-forløb, fire normale cache-kald og lokal mobilkontrol
+  består uden ægte Auth, mail eller konto. Ingen offentlig levering endnu;
+  integration, eksakt CI og offentlig effekt afventer sikker workflow.
+
+# Historisk tidligere status – SEO-kildepakke på 4.0.543
 
 - Interne links fra DA/DE/EN-indgange til eksisterende kapitler om rav,
   felttegn og jagt; grundbogens body er ikke omskrevet.

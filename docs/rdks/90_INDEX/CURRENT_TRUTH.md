@@ -1,4 +1,20 @@
-# NYESTE – 2026-10-06 – Search Console faktisk verificeret; små SEO-rettelser lokale
+# NYESTE – 2026-10-06 – konto-knapper og adgangskodefrit login, lokal kandidat
+
+Ejerens telefonbillede viser lav læsbarhed på Opret konto og Send loginlink.
+Offentlig anonym kontrol fandt knapperne aktiverede; kontoens frontend
+viste også oprettelse. Det beviser ikke bekræftelsesmail eller fuldt login.
+En kort indtastet kode kan desuden blokere magic-submit i den fælles formular.
+
+Efter ejerens ja er sekundær tekst lokalt mørk med synligt fokus.
+Kun magic-knappen har formnovalidate; email.reportValidity bevares.
+Login/oprettelse beholder native kodevalidering og mindst seks tegn.
+19 faktiske normale handlerforløb og fire normale cache-kald består offline.
+Lokal mobilvisning 390 × 844 består; ikke en fysisk iPhone-/mailleveringsprøve.
+Fire præcise cachemarkører bevarer tidligere cache og den aktuelle version.
+Auth-indstillinger, nøgler, tjenester, brugerdata, score og vejr er urørte.
+Rettelsen er ikke offentlig endnu; integration, CI og offentlig kontrol åbne.
+
+# Historisk tidligere status – Search Console og små SEO-rettelser
 
 Google har faktisk verificeret ravradar.dk via én ny Simply-TXT-post;
 alle seks tidligere DNS-poster og DNSSEC er bevaret. Det indsendte eksisterende

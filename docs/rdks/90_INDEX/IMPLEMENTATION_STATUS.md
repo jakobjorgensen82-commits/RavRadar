@@ -1,4 +1,20 @@
-# NYESTE – 2026-10-06 – Search Console og små, lokale SEO-rettelser
+# NYESTE – 2026-10-06 – afgrænset kontorettelse efter ejerens ja
+
+- LOKALT: sekundære konto-knapper mørke/læsbare med fokusmarkering;
+  primærknap og eksisterende mobilmål bevares.
+- LOKALT: magic-submit validerer gyldig påkrævet e-mail, ikke kodefeltet.
+  Login/oprettelse beholder minimum seks tegn og native validering.
+- PASS: 19 normale submit-forløb, fire normale cache-kald, 12,28:1 kontrast
+  og mobilbrowser 390 × 844 uden ægte mail, kontooprettelse eller Auth-kald.
+- LOKALT: fire UI-cachemarkører gennem CSS/bootstrap/app/konto-import,
+  uden cache-reset, versionløft eller ændrede modelbindinger.
+- ÅBENT: eksakt GitHub-head, integration mod ny main, sikker levering,
+  offentlig kontrol og faktisk telefon-/mailoplevelse. Offentlig 4.0.544
+  indeholder ikke automatisk den lokale rettelse på 4.0.543.
+- Ingen ændring af Auth-konfiguration, private data, sprog, score eller vejr.
+  Ingen produktion under aktiv writer; ufærdig vandstand/assistent holdes ude.
+
+# Historisk tidligere status – Search Console og små SEO-rettelser
 
 - FAKTISK: Google-domæneejerskab via én ny Simply-TXT; tidligere seks
   DNS-poster og DNSSEC bevaret. Eksisterende sitemap behandlet, seks sider.

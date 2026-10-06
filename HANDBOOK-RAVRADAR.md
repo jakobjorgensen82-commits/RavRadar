@@ -2,6 +2,31 @@
 
 **Håndbogsversion:** 4.0.543
 
+## 89.166 Læsbare konto-knapper og loginlink uden kode
+
+Kort fortalt: Kontoens lyse knapper skal være tydelige. Et loginlink kræver
+en gyldig e-mail, ikke en adgangskode.
+
+Ejeren har godkendt en afgrænset rettelse efter sin telefonoplevelse.
+Opret konto og Send loginlink har lokalt mørk tekst, tydelig kant og synligt
+tastaturfokus. Log ind bevarer hvid tekst på mørk baggrund. Knappernes
+eksisterende størrelse og de danske, tyske og engelske tekster bevares.
+
+Send loginlink bruger kun den påkrævede gyldige e-mail. En tom eller kort
+adgangskode i det andet felt må ikke blokere handlingen. Log ind og Opret
+konto beholder adgangskodekravet på mindst seks tegn. En gammel succesbesked
+ryddes før en ny kontrol, så den ikke ligner bevis for en ny sendt mail.
+Auth-tjeneste, callback, rettigheder, kontoindstillinger og brugerdata er
+uændrede. Kontooprettelse kan fortsat kræve den eksisterende bekræftelsesmail.
+
+19 normale formularforløb og fire normale cache-kald består uden rigtige
+mails eller konti. Lokal mobilvisning ved 390 × 844 er kontrolleret;
+tekstkontrast er 12,28:1. Fire præcise UI-cachemarkører gennem importkæden
+bevarer tidligere cache uden reset eller ny produktversion.
+Det er en lokal kandidat, ikke offentlig levering eller en fysisk
+iPhone-/mailleveringsprøve. Integration, GitHub-kontrol og offentlig effekt
+skal stadig verificeres gennem den kontrollerede workflow.
+
 ## 89.165 Foretrukket webstedsnavn i søgemaskiner
 
 Kort fortalt: RavRadar.dk er det foretrukne søgenavn; Google vælger stadig selv navn og uddrag.

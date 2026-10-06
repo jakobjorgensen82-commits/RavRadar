@@ -5,6 +5,13 @@
   "updatedAt": "2026-10-06",
   "sections": [
     {
+      "id": "account-mobile-buttons-email-only-magic-2026-10-06",
+      "chapter": "89.166",
+      "title": "Læsbare konto-knapper og loginlink uden kode",
+      "summary": "Ejerbestilt lokal rettelse: sekundære konto-knapper får mørk tekst og fokusmarkering. Loginlink kræver kun gyldig e-mail; login og oprettelse beholder mindst seks tegn. 19 formularforløb, fire cache-kald og lokal mobilvisning består uden rigtig Auth, mail eller konto. Offentlig levering og faktisk telefon-/mailbevis er åbne.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Kontoens lyse knapper skal være tydelige. Et loginlink kræver gyldig e-mail, ikke en adgangskode.</div><p>Ejeren har godkendt en afgrænset rettelse efter sin telefonoplevelse. Opret konto og Send loginlink har lokalt mørk tekst, tydelig kant og synligt tastaturfokus. Log ind bevarer hvid tekst på mørk baggrund. Eksisterende knapstørrelse og DA/DE/EN bevares.</p><p>Send loginlink bruger kun den påkrævede gyldige e-mail. Tom eller kort adgangskode i det andet felt må ikke blokere handlingen. Log ind og Opret konto beholder kravet på mindst seks tegn. En gammel succesbesked ryddes før ny kontrol, så den ikke ligner bevis for en ny sendt mail. Auth-tjeneste, callback, rettigheder, kontoindstillinger og brugerdata er uændrede. Kontooprettelse kan fortsat kræve den eksisterende bekræftelsesmail.</p><p>19 normale formularforløb og fire normale cache-kald består uden rigtige mails eller konti. Lokal mobilvisning ved 390 × 844 er kontrolleret; tekstkontrast er 12,28:1. Fire præcise UI-cachemarkører gennem importkæden bevarer tidligere cache uden reset eller ny produktversion. Det er en lokal kandidat, ikke offentlig levering eller en fysisk iPhone-/mailleveringsprøve. Integration, GitHub-kontrol og offentlig effekt skal stadig verificeres gennem den kontrollerede workflow.</p>"
+    },
+    {
       "id": "preferred-search-site-name-2026-10-06",
       "chapter": "89.165",
       "title": "Foretrukket webstedsnavn i søgemaskiner",
