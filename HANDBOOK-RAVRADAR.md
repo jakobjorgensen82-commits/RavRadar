@@ -2,6 +2,11 @@
 
 **Håndbogsversion:** 4.0.546
 
+Offentlig 4.0.546 er kontrolleret med 21 lokale og otte offentlige Chrome-
+forløb. PR #527, exact-head CI 37467552872, merge d9c57798 og kode-only
+37485854000 består; sourceproof og hard gates er uafhængigt kontrolleret.
+Kvittering: `docs/research/jordrav/publication-evidence-4.0.546.json`.
+
 4.0.546 tydeliggør deling af kortvisningen og lodsejerens tilladelse i
 Jordrav. *Gem eller del kortvisning* kopierer et link; der oprettes ingen
 konto eller central gemning. Geologi, linkformat og modelbinding bevares.
@@ -9,7 +14,7 @@ konto eller central gemning. Geologi, linkformat og modelbinding bevares.
 4.0.546 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Den viderefører den eksisterende kystmodel; de nye Jordravlag ændrer ikke RavScore.
-PR #525 og fuld exact-head CI 37456024761 er kontrolleret med uafhængigt SHA-256-kildebevis. Kode-only run 37456783798 og faktisk offentlig kortbrowser består; modelbindingen og målingerne er uændrede.
+Historisk 4.0.545: PR #525 og fuld exact-head CI 37456024761 er kontrolleret med uafhængigt SHA-256-kildebevis. Kode-only run 37456783798 og faktisk offentlig kortbrowser består; modelbindingen og målingerne er uændrede.
 Kvittering: `docs/research/jordrav/publication-evidence-4.0.545.json`. 390 px DA/DE/EN er browseremulation; fysisk telefon er ikke afprøvet.
 
 ## 89.163 Prognosehalens dækning og bedre brug af reservekøen

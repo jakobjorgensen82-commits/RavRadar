@@ -1,4 +1,31 @@
-# Jordrav 4.0.546 – kortvisning og lodsejerens tilladelse, 2026-10-06
+# Offentlig Jordravrettelse – 4.0.546, 2026-10-06
+
+Knappen hedder nu **Gem eller del kortvisning**, med forklaring af det
+kopierede link. Et fast fremhævet felt før kortet opfordrer til altid at
+få lodsejerens tilladelse, før man går på deres jord og leder efter rav.
+Kortfarver og markgrænser giver ikke adgangstilladelse. DA/DE/EN følger
+samme betjening; linkfunktion, data, model 0.2 og RavScore bevares.
+
+21 lokale Chrome-forløb og fuld exact-head CI 37467552872 på 6369732e
+består. Downloadet sourceproof er uafhængigt SHA-256-afstemt. Merge d9c57798
+har samme tree. Normal 37462444444 blev terminal success før main ændredes.
+Kode-only 37485854000 attempt 1 består de ti faktiske hårde trin samt
+backend, artifact/privacy, runtimegenbrug og terminal Pages-levering.
+Ingen ekstra vejrprovider blev kontaktet for denne tekstrettelse.
+
+Otte faktiske offentlige Chrome-checks består: 18 release-/kortfiler
+matcher kilden; tilladelse, deling, clipboard, genåbnet luftfoto/marklag
+og DA/DE/EN fungerer ved 390/1440 px uden sidefejl. Screenshots er
+visuelt læst. Fysisk telefonhardware er ikke afprøvet.
+Kystdata/zones fik kun topversion 545→546; SQL uden for den statiske
+håndbogskopi er identisk. Den autoriserede anden chat holder egne merges,
+indtil denne samme-versions leveringsdokumentation er lukket.
+
+Kvittering: docs/research/jordrav/publication-evidence-4.0.546.json.
+Kort: https://ravradar.dk/jordrav.html
+Tidligere daterede kilde- og leveringsfaser nedenfor er historisk evidens.
+
+# Historisk kildefase 4.0.546 – kortvisning og lodsejerens tilladelse, 2026-10-06
 
 Nyeste ejerønske er implementeret i kilden: knappen hedder **Gem eller del
 kortvisning** og forklarer, at den kopierer et link med område, zoom,

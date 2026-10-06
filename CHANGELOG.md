@@ -1,5 +1,9 @@
 ## 4.0.546 – tydelig kortdeling og hensyn til lodsejeren, 6. oktober 2026
 
+- 21 lokale Chrome-forløb, fuld exact-head CI og providerfri kode-only
+  levering består. Otte offentlige checks afstemmer 18 kortassets og
+  DA/DE/EN, tilladelse, faktisk clipboard og genåbning ved 390/1440 px.
+
 - Knappen hedder nu **Gem eller del kortvisning** og forklarer, at den
   kopierer et link til det valgte område, zoom, baggrund og lag.
 - Et tydeligt felt før kortet opfordrer til altid at spørge lodsejeren

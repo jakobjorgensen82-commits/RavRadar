@@ -1,6 +1,6 @@
 # Nyeste ejerkrav – Jordravtekst og tilladelse, 2026-10-06
 
-**Implementeret i 4.0.546:** Ejeren godkender teksten *Gem eller del
+**Implementeret og offentligt kontrolleret i 4.0.546:** Ejeren godkender teksten *Gem eller del
 kortvisning* i stedet for *Kopiér link* og bestiller en tydelig opfordring
 til altid at spørge lodsejeren om lov til at gå på deres jord. Opfordringen
 skal være synlig før kortet på desktop og mobil, også på DE/EN. Linkets
