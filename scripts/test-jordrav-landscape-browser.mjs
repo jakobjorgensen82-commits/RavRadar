@@ -1,3 +1,4 @@
+import { jordravControl, openJordravDetails, closeJordravOptions } from './test-helpers/jordrav-ui.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import http from 'node:http';
@@ -40,7 +41,7 @@ async function clickExample(page,example){
       }
     }throw Error('No safe interior point');
   },example.origin);
-  await page.locator('#jordravMap').scrollIntoViewIfNeeded();
+  await closeJordravOptions(page);await page.locator('#jordravMap').scrollIntoViewIfNeeded();
   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   const box=await page.locator('#jordravMap').boundingBox();await page.mouse.click(box.x+pixel.x,box.y+pixel.y);
   await page.waitForFunction(o=>window.__landscapeHarness.selectedFeature?.properties.o===o,example.origin);
@@ -53,8 +54,8 @@ try{
     const e=diagnostic.examples[`route:${route}`];await clickExample(page,e);
     const section=page.locator('.jordrav-landscape-context');
     assert.equal(await section.getAttribute('data-route'),route);
-    assert.ok((await page.locator('#jordravDetails>dl>dd').nth(3).textContent()).includes(e.entry.landscape));
-    assert.equal(await section.getAttribute('open'),null);await section.locator('summary').click();
+    assert.ok((await page.locator('.jordrav-geological-basis>dl>dd').nth(3).textContent()).includes(e.entry.landscape));
+    assert.equal(await section.getAttribute('open'),null);await (await jordravControl(page,'.jordrav-landscape-context>summary')).click();
     assert.notEqual(await section.getAttribute('open'),null);
     const text=await section.textContent();assert.ok(!text.includes('undefined')&&!text.includes('jordrav.'));
     assert.match(await page.locator('.jordrav-access-badge').textContent(),/Jagtbarhed uafklaret/);
@@ -63,12 +64,12 @@ try{
   for(const key of ['raisedPlain','raisedRidge']){
     const e=diagnostic.examples[`code50:${key}`];await clickExample(page,e);
     assert.equal(e.entry.landscapeCode,50);
-    assert.ok((await page.locator('#jordravDetails>dl>dd').nth(3).textContent()).includes(e.entry.landscape));
+    assert.ok((await page.locator('.jordrav-geological-basis>dl>dd').nth(3).textContent()).includes(e.entry.landscape));
     assert.equal(await page.locator('.jordrav-landscape-context').getAttribute('data-route'),e.context.route);
   }
   report.checks.push('Both original code-50 names remain distinct in actual clicks');
   const young=diagnostic.examples['chronology:younger-on-raised'];await clickExample(page,young);
-  let section=page.locator('.jordrav-landscape-context');await section.locator('summary').focus();await page.keyboard.press('Enter');
+  let section=page.locator('.jordrav-landscape-context');await (await jordravControl(page,'.jordrav-landscape-context>summary')).focus();await page.keyboard.press('Enter');
   assert.notEqual(await section.getAttribute('open'),null);
   let text=await section.textContent();assert.match(text,/Landformen er senglacial/);assert.match(text,/postglacial gruppe/);
   await section.screenshot({path:artifact('younger-cover.png')});
@@ -81,7 +82,7 @@ try{
   report.checks.push('Saved fragment link restores the exact landscape and chronology explanation');
   await page.locator('[data-base="aerial"]').click();
   assert.equal(await section.textContent(),text);
-  const exclude=young.entry.potential==='coastal'?'basin':'coastal';await page.locator('#jordravTrace').selectOption(exclude);
+  const exclude=young.entry.potential==='coastal'?'basin':'coastal';await (await jordravControl(page,'#jordravTrace')).selectOption(exclude);
   assert.equal(await page.locator('#jordravSelectionNote').isVisible(),true);assert.equal(await section.textContent(),text);
   report.checks.push('Aerial and excluding geological filter preserve the selected landscape explanation with an explicit hidden-selection message');
   await page.setViewportSize({width:390,height:844});await page.evaluate(()=>{window.__landscapeHarness.map.invalidateSize();});
@@ -90,15 +91,15 @@ try{
   report.checks.push('Expanded source landform/chronology explanation fits 390px without horizontal overflow');
   for(const lang of ['de','en']){
     await Promise.all([page.waitForEvent('load'),page.locator(`[data-language="${lang}"]`).click()]);await ready(page);
-    await page.locator('#jordravTrace').selectOption('all');await clickExample(page,young);
-    section=page.locator('.jordrav-landscape-context');await section.locator('summary').click();text=await section.textContent();
+    await (await jordravControl(page,'#jordravTrace')).selectOption('all');await clickExample(page,young);
+    section=page.locator('.jordrav-landscape-context');await (await jordravControl(page,'.jordrav-landscape-context>summary')).click();text=await section.textContent();
     assert.match(text,lang==='de'?/postglazialen Gruppe/:/postglacial group/);
-    assert.match(await page.locator('#jordravDetails>dl>dd').nth(3).textContent(),lang==='de'?/spätglazial/:/Late Glacial/);
+    assert.match(await page.locator('.jordrav-geological-basis>dl>dd').nth(3).textContent(),lang==='de'?/spätglazial/:/Late Glacial/);
     assert.ok(!text.includes('jordrav.')&&!text.includes('undefined'));
   }
   report.checks.push('German and English translate the exact landform and the younger-deposit explanation in actual mobile views');
   await page.evaluate(()=>{window.__landscapeHarness.map.setView([56.2,10.5],6,{animate:false});});
-  await page.locator('.jordrav-deep-marker').first().click();await page.waitForFunction(()=>window.__landscapeHarness.selectedDeepLayer);
+  await closeJordravOptions(page);await page.locator('.jordrav-deep-marker').first().click();await page.waitForFunction(()=>window.__landscapeHarness.selectedDeepLayer);
   assert.equal(await page.locator('.jordrav-landscape-context').count(),0);assert.match(await page.locator('.jordrav-access-badge').textContent(),/not readily huntable/);
   report.checks.push('Deep record replaces all surface-landform guidance and preserves inaccessible depth');
   assert.deepEqual(report.errors,[]);report.status='PASS';await context.close();

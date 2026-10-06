@@ -1,3 +1,12 @@
+# Nyeste Jordravissue – layout og betjening, 2026-10-06
+
+- **JORDRAV-018 – LOKALT IMPLEMENTERET / offentlig kontrol mangler:** Den offentlige 4.0.544-side opleves
+  som utilstrækkeligt indbydende og intuitiv. Vigtige valg ligger under
+  kortet, og indgangen til forklaringer er svag. Nyt layout udvikles på
+  `codex/jordrav-design`; funktioner, geologi, usikkerhed og datagrænser
+  bevares. Lukning kræver faktisk desktop-/mobil-/DA/DE/EN-kontrol,
+  visuel gennemgang og sikker offentlig levering.
+
 # Aktuelle Jordravbegrænsninger efter offentlig levering – 2026-10-06
 
 - **JORDRAV-006/-016, LEVERET OG PRODUKTIONSKONTROLLERET:** PR #521/#523,

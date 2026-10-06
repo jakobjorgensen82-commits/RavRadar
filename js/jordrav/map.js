@@ -1,6 +1,6 @@
 import './messages.js';
 import './context-messages.js';
-import { initialiseI18n, getLanguage, t } from '../i18n.js?v=4.0.544';
+import { initialiseI18n, getLanguage, t } from '../i18n.js?v=4.0.545';
 import { openDataset, intersects } from './data-service.js';
 import { REGIONAL_HYPOTHESES } from './regional-hypotheses.js';
 import { ACCESS_COLOURS, SURFACE_HUNTABILITY, DEEP_LAYER_EXAMPLES } from './accessibility.js';
@@ -36,6 +36,28 @@ const node = (tag, text, className) => {
   return element;
 };
 const status = key => { $('jordravStatus').textContent = tr(key); };
+
+function initialiseInterface() {
+  const options=$('jordravMapOptions'),summary=options.querySelector('summary');
+  const selectedLayers=['Visible','DeepVisible','Fields','Soil','Terrain','Bores','Profiles'];
+  const refreshCount=()=>{$('jordravLayerCount').textContent=String(selectedLayers.filter(name=>$(`jordrav${name}`).checked).length);};
+  options.addEventListener('change',refreshCount,true);refreshCount();
+  options.addEventListener('focusout',event=>{if(!options.contains(event.relatedTarget))options.open=false;});
+  document.addEventListener('pointerdown',event=>{if(options.open&&!options.contains(event.target))options.open=false;},true);
+  document.addEventListener('keydown',event=>{
+    if(event.key==='Escape'&&options.open){options.open=false;summary.focus();event.preventDefault();}
+  });
+  $('jordravDetailJump').addEventListener('click',()=>{
+    const panel=$('jordravDetails');panel.scrollIntoView({block:'start'});panel.focus({preventScroll:true});
+  });
+  document.querySelector('.jordrav-regions').open=matchMedia('(min-width:761px)').matches;
+}
+
+function revealDetail() {
+  $('jordravDetailJump').hidden=false;
+  // A new selection starts at its heading, including within the desktop panel.
+  $('jordravDetails').scrollTop=0;
+}
 let map, data, overview, details, selected, selectedFeature, deepLayers, selectedDeepLayer;
 let opacity = .45;
 let generation = 0, requestController, timer;
@@ -113,7 +135,11 @@ function resetDetail() {
   selected?.remove();selected=null;selectedFeature=null;selectedDeepLayer=null;
   const note=node('div',undefined,'jordrav-method-note');
   note.append(node('strong',tr('confidenceTitle')),node('p',tr('methodNote')));
-  $('jordravDetails').replaceChildren(node('h2',tr('selectTitle')),node('p',tr('selectHelp')),note);
+  const icon=node('div',undefined,'jordrav-empty-icon');icon.setAttribute('aria-hidden','true');
+  const steps=node('ol',undefined,'jordrav-guide-steps');
+  for(const key of ['uiStepExplore','uiStepClick','uiStepRead'])steps.append(node('li',tr(key)));
+  $('jordravDetails').replaceChildren(icon,node('h2',tr('selectTitle')),node('p',tr('selectHelp')),steps,note);
+  $('jordravDetailJump').hidden=true;
   syncVisibility();
 }
 
@@ -148,6 +174,7 @@ function showDeepDetail(example) {
   panel.append(note,node('h3',tr('sources')),source);
   selected?.remove();selectedFeature=null;selectedDeepLayer=example;
   selected=L.circleMarker([example.latitude,example.longitude],{pane:'jordrav-selection',radius:15,color:'#102f3a',weight:2.5,fill:false,interactive:false});
+  revealDetail();
   syncVisibility();
 }
 
@@ -177,7 +204,12 @@ function initialiseRegionalGuide() {
   const language = getLanguage();
   let moving = false, zooming = false, pendingRegion;
   cancelRegionNavigation=()=>{pendingRegion=null;};
-  const navigate = region => map.fitBounds(region.bounds, {padding:[24,24],maxZoom:11,animate:false});
+  const navigate = region => {
+    map.fitBounds(region.bounds, {padding:[24,24],maxZoom:11,animate:false});
+    if(matchMedia('(max-width:760px)').matches){
+      $('jordravMap').scrollIntoView({block:'start'});$('jordravMap').focus({preventScroll:true});
+    }
+  };
   map.on('movestart', () => {moving=true;});
   map.on('zoomstart', () => {zooming=true;});
   map.on('zoomend', () => {zooming=false;});
@@ -192,6 +224,8 @@ function initialiseRegionalGuide() {
   select.addEventListener('change', () => {
     const region = REGIONAL_HYPOTHESES.find(item => item.id === select.value);
     go.disabled = !region; panel.hidden = !region; panel.replaceChildren();
+    $('jordravRegionStory').hidden=!region;
+    $('jordravRegionStory').open=false;
     if (!region) return;
     const copy = region.copy[language];
     panel.append(node('h2', copy.name));
@@ -210,7 +244,7 @@ function initialiseRegionalGuide() {
     // A second fitBounds during an ongoing Leaflet zoom can be ignored.
     // Keep the latest requested region until the existing movement ends.
     if (moving || zooming) {pendingRegion=region;if(!zooming)map.stop();} else navigate(region);
-    $('jordravMap').scrollIntoView({block:'center'});
+    if(matchMedia('(min-width:761px)').matches)$('jordravMap').scrollIntoView({block:'center'});
   });
 }
 
@@ -221,8 +255,8 @@ function sourceLink(source) {
 }
 function appendSearchContext(panel, entry) {
   const context = searchContext(entry);
-  const section = node('section', undefined, 'jordrav-search-context');
-  section.append(node('h3', tr('searchTitle')));
+  const section = node('details', undefined, 'jordrav-search-context');
+  section.append(node('summary', tr('searchTitle')));
   const facts = node('dl');
   facts.append(node('dt', tr('searchMaterial')), node('dd', context.upper.types.map(type=>tr(`physical_${type}`)).join(' · ')));
   facts.append(node('dt', tr('searchLayers')), node('dd', tr(`relationship_${context.relationship}`)));
@@ -235,9 +269,9 @@ function appendSearchContext(panel, entry) {
 
 function appendLayerAccess(panel, entry) {
   const plan = layerAccessPlan(entry);
-  const section = node('section', undefined, 'jordrav-layer-access');
+  const section = node('details', undefined, 'jordrav-layer-access');
   section.dataset.kind = plan.kind;
-  section.append(node('h3', tr('layerAccessTitle')));
+  section.append(node('summary', tr('layerAccessTitle')));
   const facts = node('dl');
   facts.append(node('dt', tr('layerAccessUpper')), node('dd', `${entry.surface || '—'} · ${plan.upper.types.map(type=>tr(`physical_${type}`)).join(' · ')}`));
   facts.append(node('dt', tr('layerAccessLower')), node('dd', plan.lower ? `${entry.depth || '—'} · ${plan.lower.types.map(type=>tr(`physical_${type}`)).join(' · ')}` : tr('depthMissing')));
@@ -304,6 +338,7 @@ function showBoreContext(row) {
     node('dt',tr('boreDate')),node('dd',row.date||tr('contextMissing')));
   const source=node('p');source.append(sourceLink({name:tr('boreOpen'),url:boreProfileURL(row.dgu)}));
   panel.append(facts,node('p',tr('boreCaution')),source);
+  revealDetail();
   syncVisibility();
 }
 function showProfileDetail(profile) {
@@ -342,13 +377,14 @@ function showDetail(feature,point=null) {
   const landscape = landscapeContext(entry);
   fact('landscape', `${landscape.key ? tr(`landscapeName_${landscape.key}`) : entry.landscape || tr('landscapeMissing')} · ${tr(`process${processKeys[entry.process]}`)}`);
   fact('access', tr(accessKeys[entry.accessibility]));
-  panel.append(facts);
+  const story=entry.potential==='unresolved'?'Unresolved':materialKeys[entry.material];
+  panel.append(node('h3', tr('inference')), node('p', tr(`story${story}`)), node('p', tr(reasonKeys[entry.potential])));
   appendEvidenceChain(panel,entry);
   appendSoilPoint(panel,point);
   appendSearchContext(panel, entry);
   appendLayerAccess(panel, entry);
-  const story=entry.potential==='unresolved'?'Unresolved':materialKeys[entry.material];
-  panel.append(node('h3', tr('inference')), node('p', tr(`story${story}`)), node('p', tr(reasonKeys[entry.potential])));
+  const basis=node('details',undefined,'jordrav-geological-basis');
+  basis.append(node('summary',tr('uiBasis')),facts);panel.append(basis);
   if (entry.conflictSymbols) panel.append(node('p', `GEUS: ${entry.conflictSymbols}`, 'jordrav-original'));
   const note = node('div', undefined, 'jordrav-method-note');
   note.append(node('strong', tr(entry.potential==='unresolved'?'confidenceUnresolved':'confidenceTitle')), node('p', tr(entry.potential==='unresolved'?'cardUnresolved':'cardConfidence')));
@@ -364,6 +400,7 @@ function showDetail(feature,point=null) {
   selected?.remove();
   selectedFeature = feature;selectedDeepLayer=null;
   selected = L.geoJSON(feature, {pane:'jordrav-selection',style:{color:'#102f3a', weight:2.5, fill:false}, interactive:false});
+  revealDetail();
   syncVisibility();
 }
 
@@ -434,6 +471,7 @@ async function start() {
   }
   if(saved.state)setViewControls(saved.state);
   else if(saved.error)$('jordravLinkStatus').textContent=tr('viewInvalid');
+  initialiseInterface();
   const bases = {
     street:L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}),
     aerial:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'Imagery © Esri, Vantor, Earthstar Geographics, GIS Community · <a href="https://goto.arcgis.com/termsofuse/viewsummary">Terms</a>'})

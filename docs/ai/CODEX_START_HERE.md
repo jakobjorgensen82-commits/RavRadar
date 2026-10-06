@@ -1,3 +1,33 @@
+# Aktuel Jordravdesignkandidat – 4.0.545, 2026-10-06
+
+Ejeren har bestilt en fuld gennemgang af Jordravsidens layout og betjening:
+»den helt store omgang, hele vejen rundt«. Hele Jordravfladen er ombygget
+med kortværktøjer øverst, et særskilt lagpanel, tydelig regionsindgang,
+læselige områdeforklaringer og foldbar uddybning. Mobil får regionen før
+kortet og en knap fra det valgte kortsted til forklaringen. Tastatur,
+dansk/tysk/engelsk, almindeligt kort og luftfoto samt alle eksisterende
+geologiske funktioner bevares.
+
+105 lokale Chrome-checks består: de 99 funktionsregressioner samt seks
+samlede UX-forløb, herunder DA/DE/EN ved 360/390/768/1024 px. Den lille
+produktkritiske kildegate består med 118 browserfiler og Jordravs målprøver.
+Dette er lokal evidens, ikke endnu CI eller offentlig 4.0.545. Exact-head
+CI, sikker merge, providerfri kode-only deploy og offentlig browserkontrol
+skal afsluttes. Offentlig forgænger 4.0.544 er fortsat gyldig leverance.
+PR #524 bevarer dens kvittering og venter på den eksisterende produktion;
+main ændres ikke under en aktiv produktionsskriver.
+
+Data/model 0.2, geologiske farver, svag ravsikkerhed og ukendt jagtbarhed
+ændres ikke. Dybe lilla registreringer bevarer deres kildeintervaller.
+Punkt 4 om automatisk dagens nypløjede/bare/regnvaskede marker er udgået;
+ingen fysisk telefonprøve eller målt rav-/pløjedybde påstås. Kystmodel,
+RavScore, central adminsandhed og vejrlogik er urørt. Geodata må kun få
+et rent topversionsløft. Tidligere 4.0.544-status nedenfor er historikken
+for forgængeren; den bestilte designforbedring er nu det aktive arbejde.
+
+Design/evidens: `docs/research/JORDRAV_DESIGN_2026-10-06.md`.
+Ekstra høj indsats/Sol anbefales til integration og slutkontrol.
+
 # Aktuel Jordravleverance – 4.0.544, 2026-10-06
 
 Den bestilte nationale kortleverance er nu offentlig og browserverificeret.

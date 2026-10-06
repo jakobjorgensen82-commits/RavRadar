@@ -1,4 +1,4 @@
-import { registerI18nMessages } from '../i18n.js?v=4.0.544';
+import { registerI18nMessages } from '../i18n.js?v=4.0.545';
 import { LANDSCAPES } from './landscape-context.js';
 
 const da = {

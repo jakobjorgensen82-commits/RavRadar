@@ -1,3 +1,16 @@
+## 4.0.545 – Jordravsidens design og betjening (lokal kandidat)
+
+- Hele Jordravsiden får nyt visuelt hierarki, varme flader, tydelig navigation
+  og kortværktøjer over kortet. Lag og farver får eget panel med tastaturadgang.
+- Regioner, kortfarver, mulig ravhistorie og uddybende kilder bliver lettere
+  at finde. Alle eksisterende undersøgelser og kildelinks bevares.
+- Mobil får en tidlig regionsindgang, kortnavigation og en direkte vej fra
+  valgt sted til områdeforklaringen. DA/DE/EN og 360–1024 px er kontrolleret.
+- 99 eksisterende Chrome-regressioner og seks nye UX-forløb består lokalt;
+  kildegate består. CI og sikker offentlig levering følger særskilt.
+- Geologiske farver, datasæt, jagtbarhed, dybe lag og RavScore er uændrede.
+  Begge håndbøger og projektets aktive hukommelse følger den nye betjening.
+
 ## 4.0.544 – nationalt Jordravkort, 6. oktober 2026
 
 - PR #521/#523 og fuld exact-head CI består med uafhængigt afstemte

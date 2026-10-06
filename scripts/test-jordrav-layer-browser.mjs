@@ -1,3 +1,4 @@
+import { jordravControl, openJordravDetails, closeJordravOptions } from './test-helpers/jordrav-ui.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import http from 'node:http';
@@ -43,7 +44,7 @@ async function clickExample(page,example){
       }
     }throw Error('No safe interior point');
   },example.origin);
-  await page.locator('#jordravMap').scrollIntoViewIfNeeded();
+  await closeJordravOptions(page);await page.locator('#jordravMap').scrollIntoViewIfNeeded();
   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   const box=await page.locator('#jordravMap').boundingBox();
   await page.mouse.click(box.x+pixel.x,box.y+pixel.y);
@@ -55,7 +56,7 @@ try{
   await page.goto(address);await ready(page);
   for(const kind of Object.keys(diagnostic.kinds)){
     const e=diagnostic.examples[kind];await clickExample(page,e);
-    const section=page.locator('.jordrav-layer-access'),plan=layerAccessPlan(e.entry);
+    const section=await openJordravDetails(page,'.jordrav-layer-access'),plan=layerAccessPlan(e.entry);
     assert.equal(await section.getAttribute('data-kind'),kind);
     assert.equal(await section.locator('ol>li').count(),plan.steps.length);
     const text=await section.textContent();assert.ok(!text.includes('undefined')&&!text.includes('jordrav.'));
@@ -63,17 +64,18 @@ try{
     assert.match(await page.locator('.jordrav-access-badge').textContent(),/Jagtbarhed uafklaret/);
     assert.match(await section.locator('a').last().getAttribute('href'),/GEUS-R_2025_32_web\.pdf#page=4$/);
     if(kind==='variant'){
-      const main=page.locator('#jordravDetails>dl>dd');
+      const main=page.locator('.jordrav-geological-basis>dl>dd');
       assert.match(await main.nth(1).textContent(),/underkode uafklaret/);
       assert.match(await main.nth(2).textContent(),/underkode uafklaret/);
     }
     report.checks.push(`Real ${kind} polygon click preserves unknown huntability and renders its layer-specific investigation steps`);
   }
   const peat=diagnostic.examples['organic-below-mineral'];await clickExample(page,peat);
+  await openJordravDetails(page,'.jordrav-layer-access');
   let text=await page.locator('.jordrav-layer-access').textContent();
   assert.match(text,/FT · Tørv og gytje/);assert.match(text,/øvre materiales egen ravmulighed/);
   assert.match(text,/Regn kan rense rav/);
-  assert.match(await page.locator('#jordravDetails>dl>dd').nth(2).textContent(),/Tørv og gytje \(FT\)/);
+  assert.match(await page.locator('.jordrav-geological-basis>dl>dd').nth(2).textContent(),/Tørv og gytje \(FT\)/);
   await page.locator('.jordrav-layer-access').screenshot({path:artifact('buried-organic.png')});
   report.checks.push('Real ES/FT record shows peat beneath wind-blown sand, while each layer retains its own supply hypothesis');
   await page.locator('#jordravCopyView').click();
@@ -86,7 +88,7 @@ try{
   report.checks.push('Saved fragment link restores the exact layer investigation plan in a new tab');await restored.close();
   await page.locator('[data-base="aerial"]').click();
   assert.equal(await page.locator('.jordrav-layer-access').textContent(),text);
-  await page.locator('#jordravTrace').selectOption('coastal');
+  await (await jordravControl(page,'#jordravTrace')).selectOption('coastal');
   assert.equal(await page.locator('.jordrav-layer-access').textContent(),text);
   assert.equal(await page.locator('#jordravSelectionNote').isVisible(),true);
   report.checks.push('Layer plan survives aerial switch and a filter that explicitly hides the selected cover polygon');
@@ -97,7 +99,7 @@ try{
   report.checks.push('Layer materials and ordered steps fit a 390px viewport without horizontal overflow');
   for(const lang of ['de','en']){
     await Promise.all([page.waitForEvent('load'),page.locator(`[data-language="${lang}"]`).click()]);await ready(page);
-    await page.locator('#jordravTrace').selectOption('all');
+    await (await jordravControl(page,'#jordravTrace')).selectOption('all');
     await clickExample(page,peat);
     text=await page.locator('.jordrav-layer-access').textContent();
     assert.match(text,lang==='de'?/Torf und Gyttja/:/Peat and gyttja/);
@@ -105,9 +107,9 @@ try{
     assert.ok(!text.includes('jordrav.')&&!text.includes('undefined'));
   }
   report.checks.push('German and English mobile views translate the actual layer materials and investigation plan');
-  await page.locator('#jordravTrace').selectOption('all');
+  await (await jordravControl(page,'#jordravTrace')).selectOption('all');
   await page.evaluate(()=>{window.__layerHarness.map.setView([56.2,10.5],6,{animate:false});});
-  await page.locator('.jordrav-deep-marker').first().click();
+  await closeJordravOptions(page);await page.locator('.jordrav-deep-marker').first().click();
   await page.waitForFunction(()=>window.__layerHarness.selectedDeepLayer);
   assert.equal(await page.locator('.jordrav-layer-access').count(),0);
   assert.match(await page.locator('.jordrav-access-badge').textContent(),/not readily huntable/);
