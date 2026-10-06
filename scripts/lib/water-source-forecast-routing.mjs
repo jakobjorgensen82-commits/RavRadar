@@ -6,6 +6,7 @@ import { FUR_WATER_ROUTING_PART_ID, captureFurWaterRoutingDiagnostic }
 import crypto from 'node:crypto';
 import { promisify } from 'node:util';
 import { gzip, gunzip } from 'node:zlib';
+import { WATER_SOURCE_CONTINUITY_MAX_SOURCES } from './water-source-continuity-contract.mjs';
 
 const gzipAsync = promisify(gzip), gunzipAsync = promisify(gunzip);
 // This optional water-only bank uses independently bounded SOURCE records in
@@ -15,7 +16,7 @@ const SOURCE_CONTINUITY_RAW_LIMIT = 128 * 1024 * 1024;
 const SOURCE_CONTINUITY_COMPRESSED_LIMIT = 16 * 1024 * 1024;
 const SOURCE_RECORD_RAW_LIMIT = 2 * 1024 * 1024;
 const SOURCE_RECORD_COMPRESSED_LIMIT = 512 * 1024;
-const SOURCE_CONTINUITY_COUNT_LIMIT = 256;
+const SOURCE_CONTINUITY_COUNT_LIMIT = WATER_SOURCE_CONTINUITY_MAX_SOURCES;
 const SOURCE_CONTINUITY_KIND = 'PRIVATE_DMI_WATER_SOURCE_CONTINUITY';
 const sourceDigest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const exactKeys = (value, keys) => value && typeof value === 'object'

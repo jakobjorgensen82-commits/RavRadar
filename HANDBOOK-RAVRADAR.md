@@ -1,8 +1,8 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.547
+**Håndbogsversion:** 4.0.548
 
-4.0.547 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+4.0.548 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette er den lokale integrerede kandidat, ikke et nyt offentligt leveringsbevis.
 
@@ -66,6 +66,27 @@ Historisk 4.0.545: PR #525 og fuld exact-head CI 37456024761 er kontrolleret med
 Kvittering: `docs/research/jordrav/publication-evidence-4.0.545.json`. 390 px DA/DE/EN er browseremulation; fysisk telefon er ikke afprøvet.
 
 ## 89.168 Selvstændige SOURCE-vandstandstimer gennem kold genbrug – lokal kandidat
+
+Tillæg 6. oktober kl. 19.42: Den kombinerede store-cacheprøve er nu udført
+lokalt på den normale 547-kode. En syntetisk forecastfil på 568.634.628 bytes,
+over V8s strenggrænse, og 256 SOURCE-kilder med 30.976 kvalificerede timer
+passerer normale egne save- og restore-processer. Gemning tager 6,943
+sekunder; krypteret fil er 2.063.903 bytes; genbrug tager 17,292 sekunder.
+Originale SOURCE-timer og beskyttede originaler bevares. De 180 bevidst
+tomme fyldrecords afvises og er ikke national vejrdækning. Én ny prøve
+består, nul fejl eller skips; samlet 47,684 sekunder. Gemningen er inden
+for den eksisterende fireminuttersgrænse, men lokal filkopi er ikke upload
+eller overlevelse på en ny runner. Forælderens målte peak RSS er 427.132
+KiB og omfatter ikke CLI-børnenes hukommelse; hele jobkapaciteten er åben.
+
+547-rettelsen er allerede på main efter PR522 og eksakt kildekontrol;
+dens nye normale vejrhentning er aktiv, og faktisk offentlig effekt er
+endnu ikke målt. Den nye kapacitetsprøve og dette tillæg er kun lokale,
+ikke en ny version eller del af den igangværende levering. De daterede
+543-/migrations-/CI-statusser nedenfor er historiske. Ingen scoreformel,
+runtime, binding, kildepolitik eller budget er ændret. Samlet revision,
+Fur-årsag, privat syvzone-historik, processtop/eksklusiv skrivning, holdbar
+upload/runner-tab og national heljobskapacitet er fortsat åbne.
 
 Den eksisterende private forecastfil bevarer nu kvalificerede SOURCE-timer separat fra zone/PART-data. Kolde og tidsforskudte prøver består uden vandstandstab; originaler, T+3-seriekontrol, vægte og scoreformel bevares. National heljobskapacitet, sikker levering og offentlig effekt er stadig åbne.
 
@@ -8213,6 +8234,29 @@ fejlrapporten læsbar. Den ændrer ikke, hvilke vejrdata eller scorer
 brugeren får. Vi kalder først vejrkæden
 stabil, når checkpoint, offentlig side og almindelige efterfølgende
 vejropdateringer er bevist i drift.
+## 89.171 – Flere vandstandskilder uden ændrede datagrænser – 4.0.548
+
+<div class="reader-guide"><p>Flere gyldige vandstandskilder kan nu gemmes sammen. Kun antalsgrænsen hæves; kildebeviser, datagrænser og beskyttelsen mod tab bevares.</p></div>
+
+En afsluttet vejrhentning fandt 373 vandstandskildepunkter, men den nye private
+gemning og dens fillæser tillod højst 256. Kørslen stoppede derfor før deploy.
+Efter ejerens konkrete godkendelse bruger begge steder samme loft på 512.
+Ingen kilder skæres væk for at få pakken til at passe. De oprindelige
+bytegrænser, tidsbudgetter, kildebeviser og hårde no-loss-kontroller består.
+
+373 syntetiske kilder med 45.133 kvalificerede timer bevares gennem normal
+gemning, kold læsning og frisk krypteret genbrug. En testfil på 569.708.270 bytes
+består: gemning 5,686 sekunder og genbrug 17,678 sekunder. Det er lokal
+kapacitetsevidens, ikke nye målinger eller bevis for hele landets vejrjob.
+512 korte kildebanker består; 513 afvises. Det er ikke et løfte om 121 timer
+for alle 512 kilder under samme bytegrænse. Kildernes faktiske datamangler
+og vandstandens præcise T+3-krav bevares. Syvzonernes dkss_lf-undtagelse
+gælder fortsat kun vandstand, aldrig strøm, strømhukommelse eller temperatur.
+
+RavScore, administrative vægte, punkter/geometri og modelbindinger ændres
+ikke. Offentlig effekt kræver kontrolleret levering og en ny gyldig naturlig
+generation; denne lokale prøve afslutter ikke den samlede revision.
+
 # Når en offentlig opdatering vises før den registreres centralt – 4.0.466
 
 **Kort fortalt:** En vejrpakke kan være synlig på hjemmesiden, selv om den

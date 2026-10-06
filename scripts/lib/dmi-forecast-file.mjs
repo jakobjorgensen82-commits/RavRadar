@@ -5,6 +5,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { TextDecoder } from 'node:util';
 import { PROTECTED_PRIVATE_RUNTIME_POLICY } from '../protected-private-production-runtime.mjs';
+import { WATER_SOURCE_CONTINUITY_MAX_SOURCES } from './water-source-continuity-contract.mjs';
 
 export const DMI_FORECAST_FILE_MAX_BYTES = PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes;
 export const DMI_FORECAST_RECORD_MAX_BYTES = 64 * 1024 * 1024;
@@ -15,7 +16,7 @@ const MAX_ZONES = 210;
 const MAX_PARTS = 673;
 const MAX_METADATA_BYTES = 1024 * 1024;
 const MAX_CONTINUITY_ENTRY_BYTES = 4 * 1024 * 1024;
-const MAX_WATER_SOURCE_ENTRIES = 256;
+const MAX_WATER_SOURCE_ENTRIES = WATER_SOURCE_CONTINUITY_MAX_SOURCES;
 const MAX_WATER_SOURCE_ENTRY_BYTES = 1024 * 1024;
 const plain = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
