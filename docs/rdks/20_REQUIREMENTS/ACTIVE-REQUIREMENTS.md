@@ -1,3 +1,137 @@
+# Lokal 4.0.547-kandidat – samlet integration, 2026-10-06
+
+Den lokale 4.0.547-kandidat samler de godkendte vandstandsrettelser,
+SEO-navnesignaler/kapitellinks, ejerens roadmap-fravalg og konto-knapper/
+e-mailbaseret loginlink med main adeee3f1. Jordravs leverede 4.0.546-kode,
+90.1-grundbog og dokumenterede kilde-/deploybeviser er bevaret. Gamle
+lokale eller ventende statusser nedenfor gælder deres daterede faser.
+
+Vandstandens SOURCE-bank bevarer selvstændigt kvalificerede originaler
+gennem kolde genindlæsninger og skift af reference. Native/protected/
+historical har fortsat prioritet; kun kvalificerede huller genvindes.
+T+3 bruger samme sammenlignelighed i normale zone- og kystdelskaldere.
+Den komplette krypterede progressfil synkroniseres og lukkes før erstatning.
+Dette ændrer ikke kildevægte, central routing, punkter eller scoreformel.
+
+Ejerens præcise godkendelse af genberegning/opdatering er udført. Efter
+integration og normalt versionsløft er integrated-/Candidate-bindinger,
+fortsættelsesbinding, otte normale forbrugere og den gamle vandstands-
+migrations reproduktion fortsat uændrede og kontrolleret. Ingen ny
+vandstandsmigration eller administratorændring er nødvendig. Assistentens
+separate nye binding og endnu ikke installerede migration er ikke medsendt.
+Geodata-diff viser kun topversion 546 til 547; geometri og målepunkter består.
+
+Kontoens sekundære knapper er læsbare, og loginlink kræver gyldig e-mail
+uden at kodefeltet blokerer. Login/oprettelse beholder mindst seks tegn.
+Ingen rigtig mail, kontooprettelse eller ændret Auth-konfiguration bestilles.
+SEO bruger RavRadar.dk som foretrukket navn og relevante interne kapitler;
+grundbogen omskrives ikke for Google, og ingen nye Ravfund-links tilføjes.
+Roadmap 1/2/3/5 er fortsat udgået og 4 allerede dækket, ikke en ny restplan.
+
+Dette er lokal integration, ikke offentlig levering eller ny vejreffekt.
+Egen exact-head CI, kontrolleret deploy og relevant offentlig kontrol mangler.
+Ingen overgang under aktiv eller ventende vejrhentning, ekstra vejrhentning
+eller replacement. Over 95 procent er ejerens tilfredsstillende dækningsmål,
+men identisk-time no-loss, gyldige originaler og hårde sikkerhedsgates består.
+Fur-årsag, privat syvzone-historik/strømhukommelse, runner-tab/holdbar upload,
+fireminutters fejlworker, samlet processtop/eksklusiv skrivning og national
+heljobskapacitet skal stadig lukkes med faktisk evidens. Den separate
+519-revision forbliver isoleret og inaktiv. Spørg RavRadar har separat
+437 lokale emner og 1311 skrevne DA/DE/EN-svar; det er ikke en offentlig
+leverance eller bevis for ekstern AI. GDPR-arbejdet er fortsat særskilt åbent.
+
+---
+
+## Historisk checkpoint – 2026-10-06 – eksplicit godkendt konto- og loginlinkrettelse
+
+Efter telefonens kontooplevelse har ejeren udtrykkeligt svaret ja til begge
+afgrænsede ændringer: læsbare sekundære konto-knapper og loginlink, som kun
+kræver gyldig e-mail. En kort eller tom adgangskode må ikke blokere magic.
+Email skal stadig være udfyldt og gyldig; login og oprettelse kræver fortsat
+mindst seks tegn. En gammel succesbesked må ikke stå som nyt sendebevis
+efter en ugyldig e-mail. Primærknap, brugerfunktioner og DA/DE/EN bevares.
+
+Rettelsen må ikke ændre Auth-konfiguration, callback, rettigheder,
+nøgler, planer, mailtjeneste eller private brugerdata. Lokal prøve udføres
+uden rigtige mails/konti. Den tidligere afviste offentlige magic-handling
+genforsøges eller omgås ikke. Afgrænsede cachemarkører skal nå tidligere
+besøgende uden reset. Lokal kontrol er ikke offentlig levering eller
+bekræftet ekstern mail. Den godkendte rettelse følger eksisterende
+kontrolleret workflow; ingen produktionsændring under aktiv vejrhentning.
+
+# Historisk tidligere status – små SEO-forbedringer og Search Console
+
+Ejeren godkender små forbedringer, som passer til RavRadars grundidé, ikke
+en omskrivning af den offentlige grundbog for søgemaskinernes skyld.
+Kontekstuelle links er tilladt under de eksisterende kilde- og sikkerhedsregler;
+der må ikke tilføjes links til Ravfund-ejede sider, herunder Ravudsigten og
+Ravkortet. Den lokale pakke tilføjer kun interne kapitellinks, entydig
+canonical for Om/grundbog og det eksisterende ikon på seks offentlige sider.
+Grundbogens body, score, CSP, bindinger, geodata og vejrhentning er urørte.
+
+Ejeren bestiller konkret færdiggørelse af sin Google-ejerskabsverificering
+hos Simply. Den er faktisk afsluttet 6. oktober kl.09.29 dansk tid gennem
+én ny TXT-post. Seks eksisterende DNS-poster og DNSSEC bevares. Google har
+behandlet det eksisterende sitemap og registreret seks sider. Klik, søgeord
+og placeringer er endnu ikke tilgængelige; Google behandler rapportdata.
+Verificering og sitemapbehandling er ikke indeks-, navne- eller rangbevis.
+Ingen nye nøgler, betalt tjeneste eller ændret webhosting.
+
+Ejeren har efter gennemgang af de konkrete kapitellinks godkendt at sende
+de afgrænsede SEO-rettelser til GitHub. Den eksisterende PR opdateres; ingen
+ufærdig vandstandskode eller private data medsendes. Ny exact-head kontrol og
+kontrolleret integration mod den ændrede main skal bestå før offentlig levering.
+
+# Historisk afgrænsning før den nyere ejerordre – foretrukket webstedsnavn
+
+Ejeren bestiller ændring af søgemaskinernes navnesignal til **RavRadar.dk**.
+Forsiden angiver dette gennem ét statisk WebSite med navn, alternativet
+RavRadar og den eksisterende canonical-URL samt og:site_name. Ingen nye
+scripts, lempet CSP, ændret titel/beskrivelse, synlig UI eller scoremodel.
+Ejerens søgeresultat gælder **ravkort**, ikke **rav**. Søgemaskinerne vælger
+selv navnet og skal hente den leverede ændring; ingen indeks-/ranggaranti.
+Et spørgsmål om flere SEO-muligheder bestiller ikke yderligere ændringer.
+
+# NYESTE – 2026-10-06 – fravalg af fremtidige scoreændringer; vandstandsarbejdet fortsætter
+
+Ejeren fravælger senere empirisk efterkalibrering/procentchance, nye scoreinput
+fra vindfelter/strømstrukturer og gemte områder/varslinger. Ældre planer om
+disse punkter er ikke længere aktive og må ikke genaktiveres automatisk.
+Den eksisterende scoremodel og tur-/brugerfunktioner bevares. Den gamle
+first-fail-DAG-rest er allerede dækket af den aktive kildekontrols fejlsamling;
+47-positioners eksisterende måltest består uden at køre kildegaten.
+
+Ravudsigten-sammenligningen er nu også stoppet og fravalgt af ejeren.
+Der foretages ingen videre indsamling eller sammenligning. Den eksisterende
+interne journal bevares kun som historik med uændrede sikkerhedsgrænser;
+den er ikke et aktivt roadmap-krav eller autoritet til en senere genstart.
+
+Ejeren genbekræfter de planlagte vandstandsrettelser. Fælles T+3-regel er nu
+lokalt rettet/testet gennem normale zone/store/PART-kaldere. Kvalificeret
+SOURCE-retention og frisk samlet donor-kvalifikation er også lokalt koblet
+til den normale bankbygger og måltestet, ikke offentligt leveret. Ingen ændring
+af routing, vægte, scoreformel, native-originaler eller no-loss. Sikker
+binding/release og faktisk ny-generations-effekt kræves; lokal grønt er ikke live.
+
+# NYESTE – 2026-10-06 – ejerens dækningsniveau og afgrænsede lokale godkendelse
+
+Feltdækning over 95 % er efter ejerens aktuelle beslutning tilfredsstillende;
+næsten 100 % kræves ikke i hver rullende generation eller som revisionsslutmål.
+Nævneren forkortes ikke, manglende data opfindes ikke, og gyldige eksisterende
+fælles timer må fortsat ikke gå tabt. Tallet er ikke scoretilgængelighed eller
+bevis for alle lokale timer/privat historik. Ingen produktionsgate er lempet.
+
+Ejeren godkender konkret lokale kode-/dokumentationsændringer i eksisterende
+rav-assistant-knowledge og lyngby-agger-source-domain samt privat checkpoint-
+gemning i feggesund-preflight-recovery. SOURCE-retention, ny samlet kvalifikation
+og ens T+3-regel skal måltestes i normale kaldere før sikker levering. Ingen
+routing/vægt/punkt/geometri/scoreændring eller blanketundtagelse. Tidligere
+særskilte afvisninger og forbud mod cb79/aktiv-writer-mutation består.
+Se den nyeste afslutningsplan og private checkpoint; ældre næsten-komplette
+coverageformuleringer er ikke et nyt bindende 100 %-mål.
+
+---
+
 # Nyeste ejerkrav – Jordravtekst og tilladelse, 2026-10-06
 
 **Implementeret og offentligt kontrolleret i 4.0.546:** Ejeren godkender teksten *Gem eller del

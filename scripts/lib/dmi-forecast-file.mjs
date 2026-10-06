@@ -15,6 +15,8 @@ const MAX_ZONES = 210;
 const MAX_PARTS = 673;
 const MAX_METADATA_BYTES = 1024 * 1024;
 const MAX_CONTINUITY_ENTRY_BYTES = 4 * 1024 * 1024;
+const MAX_WATER_SOURCE_ENTRIES = 256;
+const MAX_WATER_SOURCE_ENTRY_BYTES = 1024 * 1024;
 const plain = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 const invalid = code => { throw new Error(`DMI_FORECAST_FILE_${code}`); };
@@ -202,7 +204,8 @@ export async function inspectDmiForecastFile(file, {
   const handle = await fs.open(file, 'r');
   const cursor = new Cursor(handle, maximumRecordBytes);
   const result = { file: path.resolve(file), bytes: stat.size, stat, metadata: {}, zones: new Map(),
-    zoneGeometry: {}, hasPartContinuity: false, continuity: null, largestRecordBytes: 0 };
+    zoneGeometry: {}, hasPartContinuity: false, continuity: null,
+    waterSourceContinuity: null, largestRecordBytes: 0 };
   const descriptor = row => {
     result.largestRecordBytes = Math.max(result.largestRecordBytes, row.bytes);
     return { offset: row.offset, bytes: row.bytes, sha256: row.sha256 };
@@ -226,7 +229,8 @@ export async function inspectDmiForecastFile(file, {
               && row.value.point.every(value => typeof value === 'number' && Number.isFinite(value))
               ? row.value.point : null };
         });
-      } else if (key === 'partContinuity') {
+      } else if (key === 'partContinuity' || key === 'waterSourceContinuity') {
+        const isWaterSource = key === 'waterSourceContinuity';
         await cursor.space();
         if (await cursor.peek() !== 123) {
           const row = await cursor.raw(MAX_METADATA_BYTES);
@@ -234,8 +238,9 @@ export async function inspectDmiForecastFile(file, {
           result.metadata[key] = null;
           return;
         }
-        result.hasPartContinuity = true;
-        result.continuity = { metadata: {}, entries: [] };
+        if (!isWaterSource) result.hasPartContinuity = true;
+        const continuity = { metadata: {}, entries: [] };
+        result[isWaterSource ? 'waterSourceContinuity' : 'continuity'] = continuity;
         let sawEntries = false;
         await cursor.object(async name => {
           if (!safeId(name)) invalid('INVALID_KEY');
@@ -243,17 +248,19 @@ export async function inspectDmiForecastFile(file, {
             sawEntries = true;
             const ids = new Set();
             await cursor.array(async index => {
-              if (index >= MAX_PARTS) invalid('STRUCTURE_LIMIT');
-              const row = await cursor.raw(Math.min(MAX_CONTINUITY_ENTRY_BYTES, maximumRecordBytes));
-              if (!plain(row.value) || !safeId(row.value.partId) || ids.has(row.value.partId)) invalid('SHAPE_INVALID');
-              ids.add(row.value.partId);
-              result.continuity.entries.push(descriptor(row));
+              if (index >= (isWaterSource ? MAX_WATER_SOURCE_ENTRIES : MAX_PARTS)) invalid('STRUCTURE_LIMIT');
+              const row = await cursor.raw(Math.min(isWaterSource ? MAX_WATER_SOURCE_ENTRY_BYTES
+                : MAX_CONTINUITY_ENTRY_BYTES, maximumRecordBytes));
+              const id = row.value?.[isWaterSource ? 'sourceKey' : 'partId'];
+              if (!plain(row.value) || !safeId(id) || ids.has(id)) invalid('SHAPE_INVALID');
+              ids.add(id);
+              continuity.entries.push(descriptor(row));
             });
           } else {
             const row = await cursor.raw(MAX_METADATA_BYTES);
             metadataBytes += row.bytes;
             if (metadataBytes > 8 * MAX_METADATA_BYTES) invalid('STRUCTURE_LIMIT');
-            result.continuity.metadata[name] = row.value;
+            continuity.metadata[name] = row.value;
           }
         });
         if (!sawEntries) invalid('SHAPE_INVALID');
@@ -315,7 +322,15 @@ export async function readDmiForecastFile(file, options) {
     for (const descriptor of index.continuity.entries) entries.push(await readDmiForecastRecord(index, descriptor));
     document.partContinuity = { ...index.continuity.metadata, entries };
   }
+  if (index.waterSourceContinuity) document.waterSourceContinuity = await readDmiWaterSourceContinuity(index);
   return document;
+}
+
+export async function readDmiWaterSourceContinuity(index) {
+  if (!index.waterSourceContinuity) return index.metadata.waterSourceContinuity ?? null;
+  const entries = [];
+  for (const descriptor of index.waterSourceContinuity.entries) entries.push(await readDmiForecastRecord(index, descriptor));
+  return { ...index.waterSourceContinuity.metadata, entries };
 }
 
 // The same JSON ordering/equality semantics as the old national stringify,
@@ -344,7 +359,7 @@ function* documentJsonChunks(document) {
         firstZone = false;
       }
       yield '}';
-    } else if (key === 'partContinuity' && plain(value)) {
+    } else if ((key === 'partContinuity' || key === 'waterSourceContinuity') && plain(value)) {
       yield '{';
       let firstField = true;
       for (const [name, entry] of Object.entries(value)) {
@@ -355,7 +370,8 @@ function* documentJsonChunks(document) {
           yield '[';
           for (let index = 0; index < entry.length; index += 1) {
             if (index) yield ',';
-            yield valueText(entry[index], MAX_CONTINUITY_ENTRY_BYTES);
+            yield valueText(entry[index], key === 'waterSourceContinuity'
+              ? MAX_WATER_SOURCE_ENTRY_BYTES : MAX_CONTINUITY_ENTRY_BYTES);
           }
           yield ']';
         } else yield valueText(entry, MAX_METADATA_BYTES);
@@ -441,7 +457,51 @@ export async function writeDmiForecastRecords(file, index, zoneRecords, metadata
     let first = true;
     for (const [key, value] of Object.entries(metadata)) {
       if (!first) await append(',');
-      await append(`${JSON.stringify(key)}:${JSON.stringify(value)}`);
+      if (key === 'waterSourceContinuity') {
+        // A qualified merged bank follows the same bounded recordwise path as
+        // an unchanged indexed bank, never a whole-bank metadata stringify.
+        if (!plain(value) || !Array.isArray(value.entries)) invalid('SHAPE_INVALID');
+        await append('"waterSourceContinuity":{');
+        let firstField = true;
+        for (const [name, field] of Object.entries(value)) {
+          if (!firstField) await append(',');
+          await append(`${JSON.stringify(name)}:`);
+          if (name === 'entries') {
+            await append('[');
+            for (let i = 0; i < field.length; i++) {
+              if (i) await append(',');
+              const text = JSON.stringify(field[i]);
+              if (Buffer.byteLength(text) > MAX_WATER_SOURCE_ENTRY_BYTES) invalid('RECORD_SIZE_LIMIT');
+              await append(text);
+            }
+            await append(']');
+          } else {
+            const text = JSON.stringify(field);
+            if (Buffer.byteLength(text) > MAX_METADATA_BYTES) invalid('RECORD_SIZE_LIMIT');
+            await append(text);
+          }
+          firstField = false;
+        }
+        await append('}');
+      } else await append(`${JSON.stringify(key)}:${JSON.stringify(value)}`);
+      first = false;
+    }
+    // Preserve independently bounded SOURCE entries when no qualified merged
+    // replacement was supplied. Do not turn their bank into national metadata.
+    if (index.waterSourceContinuity && !Object.hasOwn(metadata, 'waterSourceContinuity')) {
+      if (!first) await append(',');
+      await append('"waterSourceContinuity":{');
+      for (const [key, value] of Object.entries(index.waterSourceContinuity.metadata)) {
+        await append(`${JSON.stringify(key)}:${JSON.stringify(value)},`);
+      }
+      await append('"entries":[');
+      let firstEntry = true;
+      for (const entry of index.waterSourceContinuity.entries) {
+        if (!firstEntry) await append(',');
+        await append(JSON.stringify(await readDmiForecastRecord(index, entry)));
+        firstEntry = false;
+      }
+      await append(']}');
       first = false;
     }
     if (!first) await append(',');

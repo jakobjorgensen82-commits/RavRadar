@@ -337,6 +337,16 @@ export async function weatherComponentProgressCache({
       await fs.appendFile(cipherTemporary, cipher.getAuthTag());
       const encryptedBytes = (await fs.stat(cipherTemporary)).size;
       if (encryptedBytes > maximumEncryptedBytes) fail('SIZE_LIMIT');
+      // Flush the complete owned ciphertext (including the authentication tag)
+      // before replacing the previous snapshot. This does not prove directory
+      // crash durability, Actions upload, or survival of a lost runner.
+      const cipherHandle = await fs.open(cipherTemporary, 'r+');
+      let flushFailure = null;
+      try { await cipherHandle.sync(); }
+      catch { flushFailure = 'CIPHER_SYNC_FAILED'; }
+      try { await cipherHandle.close(); }
+      catch { flushFailure ??= 'CIPHER_CLOSE_FAILED'; }
+      if (flushFailure !== null) fail(flushFailure);
       await fs.rename(cipherTemporary, cipherPath);
       cipherTemporary = null;
       return status('SAVED', 'ENCRYPTED_PROGRESS_SAVED', { saved: true, encryptedBytes });

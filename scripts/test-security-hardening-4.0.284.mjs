@@ -66,6 +66,23 @@ for(const file of htmlFiles){
   assert.doesNotMatch(html,/\son[a-z]+\s*=/i,`${file}: inline event-handler må ikke bruges`);
 }
 
+{
+  const home=await read('index.html');
+  assert.match(home,/<html\b[^>]*\bitemscope\b[^>]*\bitemtype="https:\/\/schema\.org\/WebSite"[^>]*>/,
+    'Forsiden skal angive ét WebSite med statisk Microdata uden at åbne CSP for inline-script.');
+  assert.equal([...home.matchAll(/\bitemtype="https:\/\/schema\.org\/WebSite"/g)].length,1);
+  for(const [property,value] of [['name','RavRadar.dk'],['alternateName','RavRadar']]){
+    const tags=[...home.matchAll(new RegExp(`<meta\\b[^>]*\\bitemprop="${property}"[^>]*>`, 'g'))];
+    assert.equal(tags.length,1,`WebSite.${property} skal forekomme præcis én gang.`);
+    assert.ok(tags[0][0].includes(`content="${value}"`),`WebSite.${property} skal bevare det ejerønskede navn.`);
+  }
+  assert.match(home,/<meta\s+property="og:site_name"\s+content="RavRadar\.dk"\s*>/);
+  assert.match(home,/<link\s+rel="canonical"\s+itemprop="url"\s+href="https:\/\/ravradar\.dk\/"\s*>/);
+  assert.match(home,/<title>RavRadar – dansk ravprognose<\/title>/,'Sidetitlen er ikke en del af navnerettelsen.');
+  assert.match(home,/<meta\s+name="description"\s+content="Ravkort og ravprognose for danske kyster\. Brug RavRadar til at planlægge ravjagt, og læs om rav, ravkese og ravlygte\. Ingen garanti for fund\."\s*>/,
+    'Den eksisterende beskrivelse og dens ærlige begrænsning skal bevares.');
+}
+
 const publicContext=publicAssistantContext({
   mode:'beach',
   zone:{id:'zone-1',name:'Zone 1',coastType:'strand',secret:'må ikke med'},

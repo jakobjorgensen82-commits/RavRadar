@@ -3,6 +3,85 @@
 **Status:** IMPLEMENTERET og deployet i 4.0.542; faktisk normal diagnoseeffekt, gammel årsag og timeretention er åbne.
 **Dato:** 2026-10-04
 
+# NYESTE – 2026-10-06 17.10 DK – kold SOURCE-bevarelse og fremrykkede referencer består lokalt
+
+Den normale lokale kandidat gemmer nu selvstændigt kvalificerede SOURCE-
+vandstandstimer som en separat valgfri bank i den eksisterende autentificerede
+private forecastfil. Det er ikke et SOURCE-as-zone/PART-aggregat, en ny privat
+destination eller en kopi af hele 519-revisionen. Native/protected/historical
+input har fortsat prioritet; kun manglende kvalificerede timer genvindes.
+Gamle snapshots uden banken kan læses. Originale timestamps og kildebeviser
+bevares; ændret centralt målepunkt, beskadiget indhold, fremtidig markør og
+udløb afvises. 121 private timer inkluderer allerede offentlig118h plus T+3.
+
+Tre faktiske kolde filgenindlæsninger ved samme reference består med192
+no-loss-timekontroller. Tre fremrykkede referencer består med yderligere192
+kontroller på syv zoner plus Fur og både dkss_nsbs/dkss_lf. Det eksisterende
+95-minutters native-edge-hold er uændret; ingen ny native måling opfindes.
+De oprindelige SOURCE-records ændres ikke, mens den nye routede projektion
+beregner konservativ prognosealder ved den aktuelle generationstid.
+
+Den første samlede kompressionspakke fejlede den målte kildekapacitet og er
+erstattet lokalt af særskilt begrænsede SOURCE-records. Faktisk filgenbrug
+af256 kilder/30976 kvalificerede timer består; det er ikke national heljob-
+kapacitet. Eksisterende samlede fil-, arkiv- og krypteringsbudgetter bevares.
+Normal krypteret gemning/genbrug genvinder fire kvalificerede SOURCE-huller.
+En indre ugyldig kildeforsegling afvises af forecast-recovery og den faktiske
+workflow-gate uden at erstatte beskyttede forecastbytes. Den komplette
+krypterede fil synkroniseres fortsat før erstatning, jf.89.167.
+
+De direkte berørte cache-/filprøver består:10 rapporterede enheder,
+0FAIL/SKIP/CANCEL. Den berørte filtestfamilie har12PASS og én eksplicit
+fravalgt stor opt-in-kapacitetsprøve, ikke et fuldt nationalt kapacitetsbevis.
+Dette lukker lokale kolde SOURCE-huller, ikke faktisk upload, tab af runner,
+gamle Fur-årsag eller offentlig ny-generationseffekt. Bindingsopdatering og ny
+migration er udtrykkeligt godkendt6oktober; de er endnu ikke gennemført her.
+Gamle migrationer, scoreformel, central routing, kildevægte, strøm/hukommelse,
+vandtemperatur, Limfjord-data og hård no-loss bevares. Ingen installation,
+merge eller anden produktionsændring under aktiv writer. Lokalversion543;
+PR522/Jordrav527-koordinering, egen exact-head-kontrol og sikker levering
+mangler. Den samlede revision, Spørg RavRadar og GDPR er ikke færdigmeldt.
+Ældre beskrivelser af manglende lokal SOURCE-bank er historiske; de tidligere
+negative legacy-prøver bevares og dokumenterer hvorfor banken er nødvendig.
+
+---
+
+# HISTORISK – 2026-10-06 – T+3 og SOURCE-retention rettet lokalt; faktisk effekt åben
+
+En ny lokal kold-genbrugsprøve afgrænser holdbarheden: den normale caller
+pakker direkte PART-data før SOURCE-routing. Den afledte SOURCE-union gemmes
+ikke dér. Hvis den næste beskyttede native kopi selv indeholder run-sømme,
+kommer de fire afledte huller igen uden en selvstændig originalbank. Prøven
+bruger den eksisterende pack/unpack og faktiske no-loss-sammenligner: 64
+syntetiske tab registreres, ikke skjules. En ægte originaldonor genvinder
+timerne efter kold JSON-genbrug. Aggregatets routede PART-proveniens er ikke
+et originalt SOURCE-bevis. Dette er en lokal restgrænse, ikke et nyt målt
+produktionstab eller bevis for den gamle Fur-årsag. Holdbar SOURCE-bevarelse
+gennem flere generationer skal derfor færdiggøres før denne del kan lukkes;
+ingen ny cachekontrakt, privat destination eller afvist binding er indført.
+
+Ejeren har udtrykkeligt fastholdt vandstandsrettelserne fra den planlagte
+opgave. Fravalget af nye scoremodelopgaver ændrer ikke denne autoritet.
+En normal caller-prøve reproducerede, at zone-/store-routing accepterede
+en gyldig T+3-time fra en anden serie, mens PART allerede krævede samme
+serie. Begge veje bruger nu lokalt samme verificerede seriekontrol.
+Ukendt trend fjerner ikke gyldig aktuel vandstand, og central routing,
+vægtning, scoreformel og offentlig 118h-horisont ændres ikke.
+
+40 blandede serieforløb og gyldige kontrolforløb samt de fire berørte
+måltests består. Dette er lokal evidens, ikke nye produktionsdata eller
+gammel Fur-årsagsbevis. Selvstændig derived-SOURCE-retention og frisk
+samlet donor-kvalifikation er siden også implementeret lokalt i den normale
+bankbygger med de eksisterende beskyttede/historiske native banker.
+117/121-sømmen blev reproduceret før rettelsen; bagefter består 64 præcise
+retention/no-loss-timekontroller over syv zoner plus Fur og begge collections.
+Gyldig aktiv kilde beholder prioritet; kun manglende kvalificerede timer
+fyldes, uden ændring af originale native banker. Færdig union kvalificeres
+under en ny record-identitet, aldrig gennem et gammelt memo efter tilføjelser.
+Relevante bindinger, tilladte destinationer, egen CI, kontrolleret levering
+og faktisk ny-generationseffekt er åbne; gamle bindinger er ikke ændret.
+Hård no-loss og de øvrige restriktioner består.
+
 # NYESTE – 5. oktober – seneste tab er tre kystzoner, ikke Fur
 
 Den afsluttede naturlige vejrhentning havde 21 vandstandstab, ligeligt fordelt

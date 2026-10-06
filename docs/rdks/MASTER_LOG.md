@@ -1,3 +1,242 @@
+# Lokal 4.0.547-kandidat – samlet integration, 2026-10-06
+
+Den lokale 4.0.547-kandidat samler de godkendte vandstandsrettelser,
+SEO-navnesignaler/kapitellinks, ejerens roadmap-fravalg og konto-knapper/
+e-mailbaseret loginlink med main adeee3f1. Jordravs leverede 4.0.546-kode,
+90.1-grundbog og dokumenterede kilde-/deploybeviser er bevaret. Gamle
+lokale eller ventende statusser nedenfor gælder deres daterede faser.
+
+Vandstandens SOURCE-bank bevarer selvstændigt kvalificerede originaler
+gennem kolde genindlæsninger og skift af reference. Native/protected/
+historical har fortsat prioritet; kun kvalificerede huller genvindes.
+T+3 bruger samme sammenlignelighed i normale zone- og kystdelskaldere.
+Den komplette krypterede progressfil synkroniseres og lukkes før erstatning.
+Dette ændrer ikke kildevægte, central routing, punkter eller scoreformel.
+
+Ejerens præcise godkendelse af genberegning/opdatering er udført. Efter
+integration og normalt versionsløft er integrated-/Candidate-bindinger,
+fortsættelsesbinding, otte normale forbrugere og den gamle vandstands-
+migrations reproduktion fortsat uændrede og kontrolleret. Ingen ny
+vandstandsmigration eller administratorændring er nødvendig. Assistentens
+separate nye binding og endnu ikke installerede migration er ikke medsendt.
+Geodata-diff viser kun topversion 546 til 547; geometri og målepunkter består.
+
+Kontoens sekundære knapper er læsbare, og loginlink kræver gyldig e-mail
+uden at kodefeltet blokerer. Login/oprettelse beholder mindst seks tegn.
+Ingen rigtig mail, kontooprettelse eller ændret Auth-konfiguration bestilles.
+SEO bruger RavRadar.dk som foretrukket navn og relevante interne kapitler;
+grundbogen omskrives ikke for Google, og ingen nye Ravfund-links tilføjes.
+Roadmap 1/2/3/5 er fortsat udgået og 4 allerede dækket, ikke en ny restplan.
+
+Dette er lokal integration, ikke offentlig levering eller ny vejreffekt.
+Egen exact-head CI, kontrolleret deploy og relevant offentlig kontrol mangler.
+Ingen overgang under aktiv eller ventende vejrhentning, ekstra vejrhentning
+eller replacement. Over 95 procent er ejerens tilfredsstillende dækningsmål,
+men identisk-time no-loss, gyldige originaler og hårde sikkerhedsgates består.
+Fur-årsag, privat syvzone-historik/strømhukommelse, runner-tab/holdbar upload,
+fireminutters fejlworker, samlet processtop/eksklusiv skrivning og national
+heljobskapacitet skal stadig lukkes med faktisk evidens. Den separate
+519-revision forbliver isoleret og inaktiv. Spørg RavRadar har separat
+437 lokale emner og 1311 skrevne DA/DE/EN-svar; det er ikke en offentlig
+leverance eller bevis for ekstern AI. GDPR-arbejdet er fortsat særskilt åbent.
+
+---
+
+## Historisk checkpoint – 2026-10-06 17.55 DK – vandstandsbindinger genberegnet og uændrede, klar til kontrolleret main-integration
+
+Ejerens præcise godkendelse af genberegning og nødvendige bindinger er
+udført på denne lokale vandstandskandidat. De normalt beregnede integrerede,
+Candidate G- og continuationbindinger er alle uændrede. Otte eksisterende
+forbrugere og den uændrede vandstandsmigrations generator består. Derfor
+kræver netop denne SOURCE-/cacheændring ikke en ny migration eller
+administratorændring. Assistentens separate nye binding må ikke kopieres hertil.
+
+Den naturlige vejrhentning afsluttede faktisk med fulde artifact- og
+releasekontroller, gemning, privat publicering og deploy kl.17.12.53 dansk
+tid. Det er den eksisterende produktionskode, ikke offentlig effekt af
+denne lokale SOURCE-bevarelse eller den nye komplette cipher-synkronisering.
+Jordravs separate 546-produktdeploy og efterfølgende dokumentationsmerge
+er afsluttet. Main adeee3f1 er hentet; integration skal bevare Jordravs
+grundbog og kildebeviser samt vores allerede godkendte SEO-, roadmap- og
+kontoknaprettelser. Aktiv eller ventende vejrhentning blokerer fortsat
+produktionsovergang; ingen ekstra vejrhentning eller replacement må startes.
+
+SOURCE-bevarelsens kolde, fremrykkede og normale krypterede målprøver fra
+17.10 genbruges som lokal evidens, ikke som faktiske nye produktionstimer.
+Den nye generation skal stadig måles for syvzonernes vandstand, udelukket
+strøm/temperatur, historisk strømhukommelse, central SOURCE-routing og T+3.
+Fur-årsag, samlet processtop/eksklusiv skrivning, holdbar upload/genbrug ved
+runner-tab, fireminutters fejlworker og national heljobskapacitet er åbne.
+Over95% er ejerens tilfredsstillende dækningsmål; identisk-time no-loss,
+gyldige originaler og øvrige gates er ikke ophævet. Den samlede 519-revision
+forbliver isoleret og inaktiv; kun målrettede kontrollerede delrettelser leveres.
+
+# HISTORISK – 2026-10-06 17.10 DK – kold SOURCE-bevarelse og fremrykkede referencer består lokalt
+
+Den normale lokale kandidat gemmer nu selvstændigt kvalificerede SOURCE-
+vandstandstimer som en separat valgfri bank i den eksisterende autentificerede
+private forecastfil. Det er ikke et SOURCE-as-zone/PART-aggregat, en ny privat
+destination eller en kopi af hele 519-revisionen. Native/protected/historical
+input har fortsat prioritet; kun manglende kvalificerede timer genvindes.
+Gamle snapshots uden banken kan læses. Originale timestamps og kildebeviser
+bevares; ændret centralt målepunkt, beskadiget indhold, fremtidig markør og
+udløb afvises. 121 private timer inkluderer allerede offentlig118h plus T+3.
+
+Tre faktiske kolde filgenindlæsninger ved samme reference består med192
+no-loss-timekontroller. Tre fremrykkede referencer består med yderligere192
+kontroller på syv zoner plus Fur og både dkss_nsbs/dkss_lf. Det eksisterende
+95-minutters native-edge-hold er uændret; ingen ny native måling opfindes.
+De oprindelige SOURCE-records ændres ikke, mens den nye routede projektion
+beregner konservativ prognosealder ved den aktuelle generationstid.
+
+Den første samlede kompressionspakke fejlede den målte kildekapacitet og er
+erstattet lokalt af særskilt begrænsede SOURCE-records. Faktisk filgenbrug
+af256 kilder/30976 kvalificerede timer består; det er ikke national heljob-
+kapacitet. Eksisterende samlede fil-, arkiv- og krypteringsbudgetter bevares.
+Normal krypteret gemning/genbrug genvinder fire kvalificerede SOURCE-huller.
+En indre ugyldig kildeforsegling afvises af forecast-recovery og den faktiske
+workflow-gate uden at erstatte beskyttede forecastbytes. Den komplette
+krypterede fil synkroniseres fortsat før erstatning, jf.89.167.
+
+De direkte berørte cache-/filprøver består:10 rapporterede enheder,
+0FAIL/SKIP/CANCEL. Den berørte filtestfamilie har12PASS og én eksplicit
+fravalgt stor opt-in-kapacitetsprøve, ikke et fuldt nationalt kapacitetsbevis.
+Dette lukker lokale kolde SOURCE-huller, ikke faktisk upload, tab af runner,
+gamle Fur-årsag eller offentlig ny-generationseffekt. Bindingsopdatering og ny
+migration er udtrykkeligt godkendt6oktober; de er endnu ikke gennemført her.
+Gamle migrationer, scoreformel, central routing, kildevægte, strøm/hukommelse,
+vandtemperatur, Limfjord-data og hård no-loss bevares. Ingen installation,
+merge eller anden produktionsændring under aktiv writer. Lokalversion543;
+PR522/Jordrav527-koordinering, egen exact-head-kontrol og sikker levering
+mangler. Den samlede revision, Spørg RavRadar og GDPR er ikke færdigmeldt.
+Ældre beskrivelser af manglende lokal SOURCE-bank er historiske; de tidligere
+negative legacy-prøver bevares og dokumenterer hvorfor banken er nødvendig.
+
+---
+
+# HISTORISK – 2026-10-06 16.31 DK – komplet krypteret cachefil synkroniseres før erstatning
+
+En snæver driftsrettelse er isoleret i den normale cachegemmer: det komplette
+krypterede indhold inklusive autentificeringsmærket synkroniseres til disk,
+og eget filhåndtag lukkes, før tidligere snapshot atomisk erstattes.
+Synkroniseringsfejl og lukningsfejl giver faste fejlkoder; første fejl bevares.
+Tidligere gyldige bytes bevares ved fejl før erstatning, og egne tempfiler ryddes.
+Kun ti runtime-linjer og én eksisterende testfamilie er tilføjet; ingen hel
+kopi af den separate 519-revision, nyt format, originalbinding eller scoreændring.
+
+Målprøven var først rød og består nu i fire fejlforløb samt faktiske normale
+save-/restore-CLI-kald i særskilte processer. Seks rapporterede test-enheder
+består, ikke seks nye uafhængige tests. To eksisterende roundtrip-/budgetprøver
+og den eksisterende normale workflow-kontrakt består også. Originalbaseline,
+beskyttede conditions og originale bankrecords er uændrede. Dette er lokal
+krypteret gemning og genbrug på samme disk, ikke faktisk Actions-upload,
+strømsvigt, tab af runner, national kapacitet eller offentlig levering.
+
+Statisk sporing af de normale modelimporter finder ikke cachegemmeren i
+integrated-/Candidate-closure eller fortsættelsesinventaret; ingen nye model-
+kontrolsummer blev beregnet i denne kontrol. Gemmeren er i det eksisterende
+producentinventar, mens det persistente ABI-format er uændret. Normal upload
+kræver fortsat faktisk saved=true. Exact-head-kontrol, sikker integration,
+deploy og dokumenteret produktionseffekt er åbne. Lokal version forbliver543.
+
+Ejeren ønsker revisionen afsluttet i dag og alle aktive opgaver videreført.
+Det er ikke en garanti eller lempelse af hård no-loss og autentiske originaler.
+Kl.16.31 gav ejeren konkret ja til genberegning/opdatering af de tre tidligere
+blokerede efterfølgerbindinger samt nødvendige bindingsfiler og ny migration.
+Tilladelsen omfatter ikke scoreformelændring, gamle migrationsændringer eller
+installation under aktiv vejrhentning. Den endelige kode skal først være fast.
+Syvzonernes vandstandsundtagelse, kold SOURCE-bevarelse, Fur, samlet processtop,
+holdbar upload/runner-tab, B/S-før-T, nationalkapacitet og privat/offentlig
+slutkontrol er fortsat åbne. >95% dækning er accepteret; gyldige timer må
+stadig ikke gå tabt. Produktroadmap og planlagt revision er forskellige;
+de ejerfravalgte roadmap-punkter genindføres ikke. Spørg RavRadar og GDPR-
+arbejdet forbliver særskilt aktive og er ikke leveret af denne rettelse.
+
+---
+
+# HISTORISK LOKALT CHECKPOINT – 2026-10-06 – ejerbestilt lokal telefon-/loginlinkrettelse
+
+Ejeren godkendte læsbare konto-knapper og e-mailbaseret loginlink uafhængigt
+af kodefeltet. Sekundær tekst/fokus er afgrænset til authForm.
+Magic har sin egen native valideringsundtagelse, men handleren kræver
+gyldig e-mail og rydder gammel status før kontrollen. Login/oprettelse
+bevarer mindst seks tegn. Auth-tjeneste, callback, sprog og data er urørte.
+19 normale handlerforløb, fire cache-kald og lokal 390 × 844 mobilvisning
+består uden rigtig Auth, mail eller konto. Fire UI-markører bevarer cache,
+version og modelbindinger. Ingen ny release; kandidat på 4.0.543.
+Integration, CI, offentlig levering og fysisk telefon-/mailbevis er åbne.
+Private detaljer bevares i checkpoint. Ingen produktionswrite under writer.
+
+# Historisk tidligere status – SEO og domæneverificering på 4.0.543
+
+Efter eksplicit ejerordre er Google Search Console-domænet verificeret gennem
+én ny TXT hos Simply, uden ændring af tidligere seks DNS-poster/DNSSEC.
+Google har faktisk behandlet sitemap med seks sider; øvrige rapportdata
+behandles endnu. Små kontekstuelle SEO-forbedringer er nu godkendte, mens
+grundbogsomskrivning og nye Ravfund-links er udelukket. Interne kapitellinks,
+eksisterende ikon og Om/grundbog-canonical er lokale; fire SEO-tests/sikkerhed
+PASS. Ingen ny version eller offentligt SEO-deploy. Tidligere PR522-CI grøn,
+konflikt mod ny main åben. Vandstandskode og private data holdes udenfor.
+
+# Historisk tidligere leveringstilstand – ejerens roadmap-fravalg
+
+Ejeren har også stoppet Ravudsigten-sammenligningen. Projektroadmapets
+punkt 1, 2, 3 og 5 er fravalgt; punkt 4 er allerede dækket og ikke en
+restopgave. Ingen nye scoreinput, efterkalibrering, fundprocent, gemte
+områder/varslinger eller videre sammenligning bestilles. Historiske
+journaler og leverede funktioner bevares; fravalg genaktiveres ikke fra
+ældre bokse. Vandstandsrettelser og Spørg RavRadar fortsætter separat.
+
+Ejeren har bedt om at sende det klarstående til GitHub inklusive roadmap.
+Roadmap, dokumentation og godkendte SEO-navnesignaler kan sendes særskilt. Den lokale
+SOURCE-kodekandidat er endnu ikke releaseklar: holdbar bevarelse gennem
+flere kolde generationer, relevante binding-/releasegates og faktisk
+produktionseffekt er åbne. Vandstandskode, private checkpointdata og ufærdig
+assistent blandes ikke ind i den afgrænsede leverance. Ingen ny version,
+ekstra vejrhentning eller gentagelse af afviste writes.
+
+Forsiden angiver lokalt RavRadar.dk som foretrukket webstedsnavn via ét
+statisk WebSite-Microdata og og:site_name, med RavRadar som alternativ.
+Titel, beskrivelse, canonical-URL, synlig UI, CSP og scoremodel bevares.
+Ejerens observation gælder ravkort, ikke rav. Levering og søgemaskinernes
+behandling skal skelnes; ingen garanti for navn, uddrag eller placering.
+Den eksisterende sikkerhedsmåltest dækker navnesignalerne uden nye scripts.
+
+# NYESTE – 2026-10-06 – SOURCE-genbrug og ens vandstandstrend, kun lokal kandidat
+
+Den ejer-godkendte T+3-delrettelse er lokalt implementeret på 4.0.543-basis.
+En syntetisk, uafhængigt kvalificeret SOURCE-støttetime fra en anden DMI-kørsel
+gav før rettelsen en zone-trend, mens kystdelen korrekt svarede ukendt.
+Begge normale kaldere bruger nu samme krav om præcis T+3, endepunktsbevis og
+samme SOURCE/collection/modelRun/gridDefinition/gridPoint for hver valgt kilde.
+Gyldig aktuel vandstand, administratorens routing/vægte og øvrige vejr bevares;
+kun den ikke-sammenlignelige trend bliver null. Ensartede gyldige nye serier
+og vandstand-only-undtagelsen for dkss_lf på de syv ejerzoner består.
+
+Eksisterende routingstest reproducerede først fejlen og består efter rettelsen
+med 40 blandede-serieprøver samt sammenlignelige kontroller, inklusive private
+H118–H120-støttetimer. Normal produktionskæde, vandstandsregression og DMI
+Forecast Store består også offline. Ingen ny version, CI, merge eller deploy.
+Modelbindingsmetadata er ikke ændret; nødvendige binding-/releasegates er ikke
+bestået for denne kandidat. Ingen genberegning af tidligere afviste bindingsmål.
+
+Den normale SOURCE-bankbygger genbruger nu lokalt de eksisterende beskyttede
+og historiske native banker. Hver donor bygges/kvalificeres selvstændigt ved
+den aktuelle centrale SOURCE-identitet; kun manglende gyldige timer fyldes.
+Alle gyldige aktive timer og originalbeviser bevares. Den færdige union får
+et nyt record og kvalificeres igen før de normale zone/PART-forbrugere.
+Den eksisterende måltest reproducerede 117 i stedet for 121 timer ved to
+native run-sømme; efter rettelsen består 64 retention-/no-loss-timekontroller
+på de syv præcise zoner plus Fur med både dkss_nsbs og dkss_lf. Ugyldige
+donoridentiteter afvises, og usammenlignelig T+3 er ukendt i begge kaldere.
+Alle fire berørte offline måltests består. Lokal integration er ikke faktisk
+produktionseffekt; gamle Fur-årsager og samlet revision er ikke lukket.
+Ejeren har genbekræftet vandstandsarbejdet, men fravalgt senere scoreændringer,
+empirisk fit, nye vind-/struktursignaler og gemte områder/varslinger. Projekt-
+roadmap og planlagt restplan er adskilt. DEC-0291/0292 og håndbog 89.164.
+
+---
+
 # Offentlig Jordravrettelse – 4.0.546, 2026-10-06
 
 Knappen hedder nu **Gem eller del kortvisning**, med forklaring af det

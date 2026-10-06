@@ -3,6 +3,184 @@ import { recommendWaterStationBracket } from '../../js/core/water-station-routin
 import { dmiMarineCollectionAllowedForZone } from './dmi-marine-zone-exclusions.mjs';
 import { FUR_WATER_ROUTING_PART_ID, captureFurWaterRoutingDiagnostic }
   from './fur-water-routing-diagnostic.mjs';
+import crypto from 'node:crypto';
+import { promisify } from 'node:util';
+import { gzip, gunzip } from 'node:zlib';
+
+const gzipAsync = promisify(gzip), gunzipAsync = promisify(gunzip);
+// This optional water-only bank uses independently bounded SOURCE records in
+// the existing authenticated private file, not a new path,
+// SOURCE-as-zone/PART alias or replacement for a native DMI original.
+const SOURCE_CONTINUITY_RAW_LIMIT = 128 * 1024 * 1024;
+const SOURCE_CONTINUITY_COMPRESSED_LIMIT = 16 * 1024 * 1024;
+const SOURCE_RECORD_RAW_LIMIT = 2 * 1024 * 1024;
+const SOURCE_RECORD_COMPRESSED_LIMIT = 512 * 1024;
+const SOURCE_CONTINUITY_COUNT_LIMIT = 256;
+const SOURCE_CONTINUITY_KIND = 'PRIVATE_DMI_WATER_SOURCE_CONTINUITY';
+const sourceDigest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+const exactKeys = (value, keys) => value && typeof value === 'object'
+  && !Array.isArray(value)
+  && Object.keys(value).sort().join(',') === [...keys].sort().join(',');
+const exactHour = value => typeof value === 'string'
+  && /^\d{4}-\d\d-\d\dT\d\d:00:00\.000Z$/.test(value)
+  && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
+const validPoint = value => Array.isArray(value) && value.length === 2
+  && value.every(n => typeof n === 'number' && Number.isFinite(n))
+  && Math.abs(value[0]) <= 180 && Math.abs(value[1]) <= 90;
+const safeSourceKey = value => typeof value === 'string' && value.length > 0
+  && value.length < 256 && !['__proto__', 'prototype', 'constructor'].includes(value);
+
+function qualifiedContinuityRecord(record, referenceAt) {
+  if (!safeSourceKey(record?.sourceKey) || !validPoint(record?.point)
+    || !Array.isArray(record?.hourly) || record.hourly.length < 1
+    || record.hourly.length > DMI_FORECAST_HOURS) {
+    throw new Error('DMI_WATER_SOURCE_CONTINUITY_RECORD_INVALID');
+  }
+  // DMI_FORECAST_HOURS already includes the private H118..H120 support for
+  // the public 118-hour horizon; do not accidentally extend it again.
+  const start = Date.parse(referenceAt), end = start + (DMI_FORECAST_HOURS - 1) * 3600000;
+  const rows = [];
+  let previous = -Infinity;
+  // Admission must not trust an earlier WeakMap entry after a caller mutated
+  // a record. A fresh identity rechecks the actual complete native proofs.
+  const verified = verifiedDmiSourceRows({ ...record });
+  for (const row of record.hourly) {
+    const at = Date.parse(row?.time);
+    if (!exactHour(row?.time) || at <= previous || !verified.has(row.time)) {
+      throw new Error('DMI_WATER_SOURCE_CONTINUITY_ROW_INVALID');
+    }
+    previous = at;
+    if (at >= start && at <= end) rows.push(row);
+  }
+  return { ...record, hourly: rows };
+}
+
+export async function packWaterSourceForecastContinuity(index, productionReferenceAt) {
+  if (!(index instanceof Map) || index.size > SOURCE_CONTINUITY_COUNT_LIMIT
+    || !exactHour(productionReferenceAt)) {
+    throw new Error('DMI_WATER_SOURCE_CONTINUITY_INPUT_INVALID');
+  }
+  const entries = [];
+  let rawBytes = 0, compressedBytes = 0;
+  if ([...index.keys()].some(key => !safeSourceKey(key))) {
+    throw new Error('DMI_WATER_SOURCE_CONTINUITY_IDENTITY_INVALID');
+  }
+  for (const [key, record] of [...index].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) {
+    if (key !== record?.sourceKey) throw new Error('DMI_WATER_SOURCE_CONTINUITY_IDENTITY_INVALID');
+    const qualified = qualifiedContinuityRecord(record, productionReferenceAt);
+    if (!qualified.hourly.length) continue;
+    const raw = Buffer.from(JSON.stringify({ schemaVersion: 1, record: qualified }));
+    if (raw.length > SOURCE_RECORD_RAW_LIMIT) throw new Error('DMI_WATER_SOURCE_CONTINUITY_RAW_LIMIT');
+    const compressed = await gzipAsync(raw, { level: 6 });
+    if (compressed.length > SOURCE_RECORD_COMPRESSED_LIMIT) {
+      throw new Error('DMI_WATER_SOURCE_CONTINUITY_COMPRESSED_LIMIT');
+    }
+    rawBytes += raw.length; compressedBytes += compressed.length;
+    if (rawBytes > SOURCE_CONTINUITY_RAW_LIMIT || compressedBytes > SOURCE_CONTINUITY_COMPRESSED_LIMIT) {
+      throw new Error('DMI_WATER_SOURCE_CONTINUITY_TOTAL_LIMIT');
+    }
+    entries.push({ sourceKey: key, point: [...record.point], rawBytes: raw.length,
+      rawSha256: sourceDigest(raw), compressedBytes: compressed.length,
+      compressedSha256: sourceDigest(compressed), gzipBase64: compressed.toString('base64') });
+  }
+  return { schemaVersion: 1, kind: SOURCE_CONTINUITY_KIND, productionReferenceAt,
+    sourceCount: entries.length, rawBytes, compressedBytes, entries };
+}
+
+export async function unpackWaterSourceForecastContinuity(pack, targetReferenceAt) {
+  if (pack == null) return new Map(); // Older genuine snapshots remain readable.
+  if (!exactHour(targetReferenceAt)
+    || !exactKeys(pack, ['schemaVersion', 'kind', 'productionReferenceAt', 'sourceCount',
+      'rawBytes', 'compressedBytes', 'entries'])
+    || pack.schemaVersion !== 1 || pack.kind !== SOURCE_CONTINUITY_KIND
+    || !exactHour(pack.productionReferenceAt)
+    || Date.parse(pack.productionReferenceAt) > Date.parse(targetReferenceAt)
+    || !Number.isSafeInteger(pack.sourceCount) || pack.sourceCount < 0
+    || pack.sourceCount > SOURCE_CONTINUITY_COUNT_LIMIT
+    || !Number.isSafeInteger(pack.rawBytes) || pack.rawBytes < 0
+    || pack.rawBytes > SOURCE_CONTINUITY_RAW_LIMIT
+    || !Number.isSafeInteger(pack.compressedBytes) || pack.compressedBytes < 0
+    || pack.compressedBytes > SOURCE_CONTINUITY_COMPRESSED_LIMIT
+    || !Array.isArray(pack.entries) || pack.entries.length !== pack.sourceCount) {
+    throw new Error('DMI_WATER_SOURCE_CONTINUITY_MARKER_INVALID');
+  }
+  const result = new Map();
+  let previous = null;
+  let rawTotal = 0, compressedTotal = 0;
+  for (const entry of pack.entries) {
+    if (!exactKeys(entry, ['sourceKey', 'point', 'rawBytes', 'rawSha256',
+      'compressedBytes', 'compressedSha256', 'gzipBase64'])
+      || !safeSourceKey(entry.sourceKey) || (previous !== null && entry.sourceKey <= previous)
+      || !validPoint(entry.point)
+      || !Number.isSafeInteger(entry.rawBytes) || entry.rawBytes < 2 || entry.rawBytes > SOURCE_RECORD_RAW_LIMIT
+      || !Number.isSafeInteger(entry.compressedBytes) || entry.compressedBytes < 2
+      || entry.compressedBytes > SOURCE_RECORD_COMPRESSED_LIMIT
+      || !/^[a-f0-9]{64}$/.test(entry.rawSha256 ?? '')
+      || !/^[a-f0-9]{64}$/.test(entry.compressedSha256 ?? '')
+      || typeof entry.gzipBase64 !== 'string'
+      || entry.gzipBase64.length > Math.ceil(SOURCE_RECORD_COMPRESSED_LIMIT / 3) * 4) {
+      throw new Error('DMI_WATER_SOURCE_CONTINUITY_ENTRY_INVALID');
+    }
+    rawTotal += entry.rawBytes; compressedTotal += entry.compressedBytes;
+    if (rawTotal > pack.rawBytes || compressedTotal > pack.compressedBytes) {
+      throw new Error('DMI_WATER_SOURCE_CONTINUITY_TOTAL_INVALID');
+    }
+    const compressed = Buffer.from(entry.gzipBase64, 'base64');
+    if (compressed.toString('base64') !== entry.gzipBase64
+      || compressed.length !== entry.compressedBytes || sourceDigest(compressed) !== entry.compressedSha256) {
+      throw new Error('DMI_WATER_SOURCE_CONTINUITY_COMPRESSED_INVALID');
+    }
+    const raw = await gunzipAsync(compressed, { maxOutputLength: SOURCE_RECORD_RAW_LIMIT });
+    if (raw.length !== entry.rawBytes || sourceDigest(raw) !== entry.rawSha256) {
+      throw new Error('DMI_WATER_SOURCE_CONTINUITY_RAW_INVALID');
+    }
+    let document;
+    try { document = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(raw)); }
+    catch { throw new Error('DMI_WATER_SOURCE_CONTINUITY_JSON_INVALID'); }
+    const record = document?.record;
+    if (!exactKeys(document, ['schemaVersion', 'record']) || document.schemaVersion !== 1
+      || record?.sourceKey !== entry.sourceKey || JSON.stringify(record?.point) !== JSON.stringify(entry.point)) {
+      throw new Error('DMI_WATER_SOURCE_CONTINUITY_DOCUMENT_INVALID');
+    }
+    // First validate all original rows at the stored reference, then select the
+    // still usable target hours. Do not freshen timestamps or native provenance.
+    const original = qualifiedContinuityRecord(record, pack.productionReferenceAt);
+    if (original.hourly.length !== record.hourly.length) {
+      throw new Error('DMI_WATER_SOURCE_CONTINUITY_HORIZON_INVALID');
+    }
+    const qualified = qualifiedContinuityRecord(record, targetReferenceAt);
+    previous = record.sourceKey;
+    if (qualified.hourly.length) result.set(record.sourceKey, qualified);
+  }
+  if (rawTotal !== pack.rawBytes || compressedTotal !== pack.compressedBytes) {
+    throw new Error('DMI_WATER_SOURCE_CONTINUITY_TOTAL_INVALID');
+  }
+  return result;
+}
+
+// Failed-run progress may add qualified water-only SOURCE holes. It cannot
+// rewrite protected SOURCE hours or use a new point to authorise an old one.
+// Normal fresh native banks retain their priority later in the actual router.
+export async function mergeWaterSourceForecastContinuity(baseline, progress, targetReferenceAt) {
+  const [base, candidate] = await Promise.all([
+    unpackWaterSourceForecastContinuity(baseline, targetReferenceAt),
+    unpackWaterSourceForecastContinuity(progress, targetReferenceAt),
+  ]);
+  let recoveredHours = 0;
+  for (const [key, record] of candidate) {
+    const previous = base.get(key);
+    if (previous && JSON.stringify(previous.point) !== JSON.stringify(record.point)) continue;
+    const hourly = new Map((previous?.hourly ?? []).map(row => [row.time, row]));
+    for (const row of record.hourly) if (!hourly.has(row.time)) {
+      hourly.set(row.time, row); recoveredHours++;
+    }
+    if (!previous || hourly.size > previous.hourly.length) base.set(key, {
+      ...(previous ?? record), hourly: [...hourly.values()].sort((a, b) => Date.parse(a.time) - Date.parse(b.time)),
+    });
+  }
+  return { pack: recoveredHours ? await packWaterSourceForecastContinuity(base, targetReferenceAt) : baseline,
+    recoveredHours };
+}
 
 const finite=v=>{if(v===null||v===undefined||v==='')return null;const n=Number(v);return Number.isFinite(n)?n:null;};
 const round=(v,d=2)=>Number.isFinite(v)?Number(v.toFixed(d)):null;
@@ -32,9 +210,39 @@ function sourceRecordFromBulk(source, bulk, generatedAt){
   return record;
 }
 
-export function buildWaterSourceForecastIndex(sources,bulk,generatedAt){
+export function buildWaterSourceForecastIndex(sources,bulk,generatedAt,{
+  protectedBulkCache=null,historicalBulkCache=null,retainedSourceIndex=new Map(),
+}={}){
   const index=new Map();
-  for(const source of sources??[]){const rec=sourceRecordFromBulk(source,bulk,generatedAt);if(rec)index.set(sourceKey(source),rec);}
+  for(const source of sources??[]){
+    // Derive and qualify each native bank independently: retaining native
+    // timestamps alone can lose valid interpolated hours at a run seam.
+    // The active bank keeps priority; donors only fill absent qualified hours.
+    const records=[bulk,protectedBulkCache,historicalBulkCache]
+      .filter(Boolean).map(bank=>sourceRecordFromBulk(source,bank,generatedAt)).filter(Boolean);
+    const retained=retainedSourceIndex.get(sourceKey(source));
+    if(retained && validPoint(source?.point)
+      && JSON.stringify(retained.point)===JSON.stringify(source.point)){
+      // A SOURCE record remains a SOURCE. Requalify at the actual current
+      // central point and bounded horizon; it can only fill missing hours.
+      const rec=qualifiedContinuityRecord({...retained,point:source.point},canonicalForecastHour(generatedAt));
+      if(rec.hourly.length)records.push(rec);
+    }
+    if(!records.length)continue;
+    const hourlyByTime=new Map();
+    for(const record of records)for(const [time,row] of verifiedDmiSourceRows(record))
+      if(!hourlyByTime.has(time))hourlyByTime.set(time,row);
+    // Verification is memoised by record identity. Never append donor rows to
+    // a record that has already been qualified; verify the complete fresh union.
+    const rec={...records[0],hourly:[...hourlyByTime.values()].sort((a,b)=>Date.parse(a.time)-Date.parse(b.time))};
+    const verified=verifiedDmiSourceRows(rec);
+    rec.hourly=rec.hourly.filter(row=>verified.has(row.time));
+    if(!rec.hourly.length)continue;
+    rec.validUntil=rec.hourly.at(-1).time;
+    rec.horizonHours=Math.max(0,Math.round((Date.parse(rec.validUntil)-Date.parse(generatedAt))/3600000));
+    rec.verifiedForecastHours=rec.hourly.length;
+    index.set(sourceKey(source),rec);
+  }
   return index;
 }
 
@@ -124,7 +332,19 @@ function sameVerifiedDmiSourceSeries(before, after) {
     && JSON.stringify(left.gridPoint) === JSON.stringify(right.gridPoint));
 }
 
-function routedWaterLevelSource(sourceRows,rows,method){
+function verifiedWaterSourceTrendKnown(sourceRows, futureRows, zoneId) {
+  // Retained hours are qualified independently. The exact T+3 support must
+  // ALSO belong to the same SOURCE/collection/run/grid series for every
+  // selected source; a valid scalar from a different series is not a trend.
+  return sourceRows.length > 0 && sourceRows.length === futureRows.length
+    && sourceRows.every((sourceRow, i) =>
+      finite(sourceRow?.waterLevelTrendCm3h) !== null
+      && finite(futureRows[i]?.waterLevelCm) !== null
+      && sameVerifiedDmiSourceSeries(sourceRow, futureRows[i]))
+    && sourceRowsAllowedForZone(futureRows, zoneId);
+}
+
+function routedWaterLevelSource(sourceRows,rows,method,referenceAt=null){
   const sources=sourceRows.map(row=>row?.sources?.waterLevel).filter(source=>source?.provider==='dmi'&&source.collection&&source.modelRun);
   if(sources.length!==sourceRows.length)return {provider:'dmi',fallback:false,routing:'dmi-water-source-interpolation',provenanceStatus:'incomplete'};
   const collections=[...new Set(sources.map(source=>source.collection))].sort();
@@ -132,7 +352,15 @@ function routedWaterLevelSource(sourceRows,rows,method){
   const resolutions=[...new Set(sources.map(source=>source.temporalResolution).filter(Boolean))].sort();
   const nativeValidTimes=[...new Set(sources.flatMap(source=>source.nativeValidTimes??[]).filter(Boolean))].sort();
   const leadTimes=[...new Set(sources.map(source=>finite(source.leadTimeHours)).filter(value=>value!==null))];
-  const forecastAges=[...new Set(sources.map(source=>finite(source.forecastAgeHours)).filter(value=>value!==null))];
+  // Retained SOURCE evidence keeps its original timestamps and metadata. Only
+  // the new routed projection ages it against the actual locked generation.
+  const referenceMs=Date.parse(referenceAt??'');
+  const forecastAges=sources.flatMap(source=>{
+    const stored=finite(source.forecastAgeHours),runMs=Date.parse(source.modelRun);
+    const current=Number.isFinite(referenceMs)&&Number.isFinite(runMs)
+      ?round(Math.max(0,(referenceMs-runMs)/3600000)):null;
+    return [stored,current].filter(value=>value!==null);
+  });
   return {
     provider:'dmi',
     collection:collections.join('+'),
@@ -199,15 +427,11 @@ export function applyVerifiedWaterSourceRoutingToPartHourly({
     const value = round(values.reduce((sum, item, i) => sum + item * rows[i].weight, 0), 0);
     const futureTime = new Date(timeMs + 3 * 3_600_000).toISOString();
     const futureRows = sourceMaps.map(map => map.get(futureTime));
-    const trendKnown = sourceRows.every((sourceRow, i) =>
-      finite(sourceRow?.waterLevelTrendCm3h) !== null
-      && finite(futureRows[i]?.waterLevelCm) !== null
-      && sameVerifiedDmiSourceSeries(sourceRow, futureRows[i]))
-      && sourceRowsAllowedForZone(futureRows, zoneId);
+    const trendKnown = verifiedWaterSourceTrendKnown(sourceRows, futureRows, zoneId);
     const futureValue = trendKnown ? round(futureRows.reduce((sum, sourceRow, i) =>
       sum + sourceRow.waterLevelCm * rows[i].weight, 0), 0) : null;
     const provenance = {
-      ...routedWaterLevelSource(sourceRows, rows, method),
+      ...routedWaterLevelSource(sourceRows, rows, method, diagnosticReferenceAt),
       status: 'verified',
       sourceClass: 'verified-dmi-water-source-routing',
       targetPartId: part.partId,
@@ -248,15 +472,11 @@ export function applyWaterSourceRouting({features,output,forecastStore,sources,i
         const futureTime=new Date(Date.parse(row.time)+3*3600000).toISOString();
         const futureRows=timeMaps.map(map=>map.get(futureTime));
         const futureValues=futureRows.map(row=>finite(row?.waterLevelCm));
-        // The source builder already requires comparable DMI series for T+3.
-        // Use its proof plus the exact private support hour, not row position
-        // or a neighbouring public row from a different retained source.
-        const trendKnown=sourceRows.every(sourceRow=>finite(sourceRow?.waterLevelTrendCm3h)!==null)
-          &&futureValues.every(v=>v!==null)&&sourceRowsAllowedForZone(futureRows,zoneId);
+        const trendKnown=verifiedWaterSourceTrendKnown(sourceRows,futureRows,zoneId);
         const futureValue=trendKnown?futureValues.reduce((sum,v,i)=>sum+v*rows[i].weight,0):null;
         return {...row,waterLevelCm:round(value,0),waterLevelModelCm:round(value,0),
           waterLevelTrendCm3h:futureValue===null?null:round(futureValue,0)-round(value,0),
-          waterLevelSource:'dmi-water-source-interpolation',sources:{...(row.sources??{}),waterLevel:routedWaterLevelSource(sourceRows,rows,method)}};
+          waterLevelSource:'dmi-water-source-interpolation',sources:{...(row.sources??{}),waterLevel:routedWaterLevelSource(sourceRows,rows,method,generatedAt)}};
       });
       return routed;
     };
