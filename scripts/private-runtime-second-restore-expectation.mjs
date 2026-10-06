@@ -3,6 +3,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { canonicalPrivateRuntimeJson } from './private-production-runtime-bundle.mjs';
+import { assertOwnerCurrentOriginalExpectation }
+  from './lib/bounded-conditions-predecessor-transition.mjs';
 import {
   COMPLETE_WEATHER_PREDECESSOR,
   LATEST_WEATHER_PREDECESSOR,
@@ -28,6 +30,19 @@ export function secondRestoreExpectation({ expected, source, manifest,
     || !same(source.modelBinding, manifest.modelBinding)
     || !same(source.contractHashes, manifest.contractHashes)) {
     throw new Error('Second restore source contradicts the authenticated bundle');
+  }
+  if (Object.hasOwn(expected, 'ownerCurrentDomainTransition')) {
+    const original = assertOwnerCurrentOriginalExpectation(expected);
+    if (source.sourceHead !== original.sourceHead
+      || source.bundleContentSha256 !== original.bundleContentSha256
+      || source.datasetId !== original.datasetId
+      || source.productionReferenceAt !== original.productionReferenceAt
+      || source.generatedAt !== original.generatedAt
+      || !same(source.modelBinding, original.modelBinding)
+      || !same(source.contractHashes, original.contractHashes)) {
+      throw new Error('Second restore is not the exact owner-current original');
+    }
+    return expected;
   }
   if (historicalWeatherPair) {
     const approved = pairedLatestAnchor

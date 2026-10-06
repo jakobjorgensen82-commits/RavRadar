@@ -69,6 +69,10 @@ const TOP20_DISPLAY_BINDING_SUCCESSOR_CHECK =
   'node scripts/build-top20-display-binding-successor.mjs --check';
 const CP_CHILD_CLOSE_BINDING_SUCCESSOR_CHECK =
   'node scripts/build-copernicus-child-close-binding-successor.mjs --check';
+const OWNER_CURRENT_BINDING_SUCCESSOR_CHECK =
+  'node scripts/build-owner-current-domain-binding-successor.mjs --check';
+const OWNER_WATER_LEVEL_BINDING_SUCCESSOR_CHECK =
+  'node scripts/build-owner-water-level-only-binding-successor.mjs --check';
 const RELEASE_METADATA_TEST_COMMAND = [
   'node scripts/test-release-contract-metadata.mjs',
   'node scripts/test-harmonie-binding-migration.mjs',
@@ -96,9 +100,11 @@ const RELEASE_METADATA_TEST_COMMAND = [
   WEATHER_SELECTION_BINDING_SUCCESSOR_CHECK,
   TOP20_DISPLAY_BINDING_SUCCESSOR_CHECK,
   CP_CHILD_CLOSE_BINDING_SUCCESSOR_CHECK,
+  OWNER_CURRENT_BINDING_SUCCESSOR_CHECK,
+  OWNER_WATER_LEVEL_BINDING_SUCCESSOR_CHECK,
 ].join(' && ');
 const CHECKPOINT_MIGRATION_PATH =
-  'supabase/migrations/20261003080000_copernicus_child_close_binding.sql';
+  'supabase/migrations/20261005000000_owner_water_level_only_binding.sql';
 const HISTORICAL_TRIP_MIGRATION_PATH =
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql';
 const CHECKPOINT_OUTER_BEGIN = '-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';
@@ -118,6 +124,7 @@ const SYNC_MIGRATION_PATHS = Object.freeze([
   HISTORICAL_TRIP_MIGRATION_PATH,
   'supabase/migrations/20261002080000_top20_display_binding.sql',
   'supabase/migrations/20261002094500_restore_checkpoint_cas_timeout.sql',
+  'supabase/migrations/20261003080000_copernicus_child_close_binding.sql',
   'supabase/migrations/20260903010000_ravscore_checkpoint_metadata_cas.sql',
   'supabase/migrations/20260904140000_harmonie_wind_reference_binding.sql',
   'supabase/migrations/20260905090000_open_meteo_current_fallback_binding.sql',

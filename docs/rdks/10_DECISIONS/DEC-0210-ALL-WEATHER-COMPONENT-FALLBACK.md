@@ -4,6 +4,24 @@
 **Dato:** 2026-09-19
 **Grundlag:** Ejerens aktuelle korrektion under helhedsanalysen af 4.0.429
 
+## Tillæg 5/10 – afgrænset kørettelse og ærlig dækning
+
+Ejerens ordre om at analysere og rette dårligere dækningsgrad udvider ikke
+kilde-, tidsbudget- eller autentificeringsautoriteten. Lokalt gennemføres
+en løbende kø i den normale Open-Meteo-producer med samme højst to
+forbindelser. En langsom komponent må ikke holde en ledig forbindelse
+inaktiv. Planrækkefølge, rotation, eksisterende retry/deadline, native
+kildeføring og private kontrakter bevares. Gemning har fortsat én skriver;
+en gemmefejl stopper nye kald og afventer startede kald før den oprindelige
+fejl returneres. Relevante tests består; levering og faktisk effekt mangler.
+
+National dækning måles stadig over 673 dele × 118 timer × fem familier.
+Et rullende procentfald adskilles fra tab for præcis samme sted/time/familie:
+ufuldstændige nye haletimer kan sænke procenten, selv om de fælles timer
+forbedres. Nævneren må ikke forkortes, og ikke-udbudte native timer må ikke
+opfindes eller ekstrapoleres. Vandstand er fortsat DMI-only. Kørettelsen
+er ikke en vandstandsrettelse eller bevis for årsagen til gamle Fur-huller.
+
 ## Seneste kildeafgrænsning 19/9 – vandstand er kun DMI
 
 Ejeren har under implementeringen præciseret: »men ift vandstand, der skal

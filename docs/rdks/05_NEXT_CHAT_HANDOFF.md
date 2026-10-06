@@ -1,3 +1,39 @@
+# NYESTE – 2026-10-04 – fuldført naboread; national kontrol afventer
+
+PR511 merged til bde77345 og correctedfixedread37172221379 SUCCESS04:50 DK.
+Lyngbys høje48h-memory er faktisk reproduceret, ikke tilskrevet landpunktet:
+netto land0/UNMATCHED95.821344. UNMATCHED er ikke ugyldighedsbevis; mask ikke målt.
+Lokal national tooling er implementeret i SAME reader/11281483201 med
+210/673-identitetskontrol, uændret kanonisk replay, særskilt absentstate og
+faste bounded zoneaggregater. To gamle måltestforløb PASS/0skip, ikke673 nye
+tests. Næste egen exact-CI/merge og én national read, kun uden aktivwriter.
+Ordinary37164593278 fejlede på syv Fur-waterLevel-tab trods optionalrestore32;
+actualnycache saved/uploaded, ingen deploy. Callerreview udelukker ikke
+andre retention-/routingårsager; konkrete tab stadig OPEN. DEC-0289.
+Ingen gentagelse af completedread, nyt ciphermål, SQL/model/geometri/OFF.
+
+# Historisk – 2026-10-04 – ret eksisterende binding før ny fastlæsning
+
+PR510 merged/maina459b846; read37163385963 fejlede før GCM på tomt nøgleinput.
+Ny lokal codex/lyngby-sealed-existing-key-binding/basea459 ændrer KUN workflow-
+bindingen til den eksisterende producernøgle samt genbrugt regression/docs.
+RED1/PASS3→PASS4/0skip; egen exact-CI/merge og actual læsning afventer. DEC-0289.
+Originalartifact11281483201 og alle gates uændrede; ingen blindrerun eller
+main/auditdispatch under aktiv weather.12Fur-vandstandstab i37151127122 er
+faktisk målt; ny cache gemt/uploaded, ingen deploy, upstreamårsag OPEN.
+Ejer tillader relevante private joblogs stående; gentag ikke gammel afvisning.
+Godkendt alle-zoneplan følger Lyngbyårsag; BIG519/OFF/øvrige afvisninger består.
+
+# Historisk – 2026-10-03 – Lyngby sealed læser efter særskilt ejer-ja
+
+Se DEC-0289 og allerøverste private checkpoint. Offentlig541 er leveret;
+codex/lyngby-sealed-current-audit er lokal tooling, ikke542. Exactartifact
+11281483201/original37136425685-1/bbc er læse- og kodeautoriseret; gentag ikke
+spørgsmålet. Ingen nye providers/rawlogs/keys/pointer-/score-/produktionswrite.
+Målrettede tests består; CI/merge/actual GCM og historisk årsag afventer.
+Normalwriter37151127122 var senest aktiv, så ingen mainmerge/auditdispatch.
+Alle-zonekontrol er foreslået, ikke udført; ingen automatisk geometri-/modelrettelse.
+
 # NYESTE CHECKPOINT – 2026-09-27 – lokal 4.0.503 DMI-PART-kontinuitet
 
 Helikoptertillæg før merge: fuldt `36293202251` gemte ingen

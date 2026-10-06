@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 2,
+  "contractId": "owner-approved-dmi-marine-zone-exclusions-v2",
+  "allowedComponentsByExcludedCollection": {"dkss_lf": ["waterLevel"]},
+  "excludedCollectionsByParentZoneId": {
+    "DK-B01-01": ["dkss_lf"],
+    "DK-B01-02": ["dkss_lf"],
+    "DK-B02-08": ["dkss_lf"],
+    "DK-B02-09": ["dkss_lf"],
+    "DK-B02-11": ["dkss_lf"],
+    "DK-B03-01": ["dkss_lf"],
+    "DK-B03-02": ["dkss_lf"]
+  }
+}

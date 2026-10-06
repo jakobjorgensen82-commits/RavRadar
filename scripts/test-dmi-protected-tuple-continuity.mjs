@@ -280,7 +280,7 @@ const extract = (first, next) => {
 };
 const scorerStart = producer.indexOf('function scoreCoastalPartsRuntime(');
 const publicStart = producer.indexOf('      const dmiRecord = buildPartDmiForecastWithProtectedRetention(', scorerStart);
-const publicEnd = producer.indexOf('      const hourly = waterSourceRoutingContext', publicStart);
+const publicEnd = producer.indexOf('      const routedWater = waterSourceRoutingContext', publicStart);
 assert.ok(publicStart > scorerStart && publicEnd > publicStart);
 const replayStart = producer.indexOf('      let deployedRecoverySource = null;', scorerStart);
 const replayEnd = producer.indexOf('      let productionSeries;', replayStart);

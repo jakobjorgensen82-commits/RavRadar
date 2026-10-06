@@ -1,7 +1,7 @@
 import { normalizeForecastHourly } from './dmi-forecast-store.mjs';
 import {
   dmiExpectedIdentityForPart,
-  verifiedBulkCurrent,
+  eligibleBulkCurrent as verifiedBulkCurrent,
   verifiedIntegratedPartHourly,
 } from './ravscore-production-adapters.mjs';
 

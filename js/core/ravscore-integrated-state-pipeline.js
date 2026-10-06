@@ -1282,7 +1282,8 @@ function waveApproachContinuationFromIntegratedState(state) {
   return state.waveApproachState;
 }
 
-function validateIntegratedState(initialState, samplingContextKey, firstSampleTime) {
+function validateIntegratedState(initialState, samplingContextKey, firstSampleTime,
+  expectedBundleSha256 = RAVSCORE_MODEL_BUNDLE_SHA256) {
   const claimedSchema5 = initialState?.schemaVersion === RAVSCORE_PREVIOUS_STATE_SCHEMA_VERSION;
   const migratedSchema5 = migrateIntegratedStateV5(initialState);
   if (claimedSchema5 && migratedSchema5 === null) {
@@ -1299,7 +1300,7 @@ function validateIntegratedState(initialState, samplingContextKey, firstSampleTi
     || initialState.bestTimePolicyId !== RAVSCORE_BEST_TIME_POLICY_ID
     || initialState.presentationPolicyId !== RAVSCORE_PRESENTATION_POLICY_ID
     || initialState.modelContractSha256 !== RAVSCORE_MODEL_CONTRACT_SHA256
-    || initialState.modelBundleSha256 !== RAVSCORE_MODEL_BUNDLE_SHA256) {
+    || initialState.modelBundleSha256 !== expectedBundleSha256) {
     return null;
   }
   if (!hasExactKeys(initialState, INTEGRATED_CONTINUATION_KEYS)) {
@@ -1523,6 +1524,50 @@ function validateIntegratedState(initialState, samplingContextKey, firstSampleTi
       ? { ...initialState, historyBounds }
       : initialState,
   };
+}
+
+// Control archive only: the exact pre-domain-change original is validated
+// under ITS binding. Never rewrite it, return a usable successor state, or
+// admit it through the normal continuation builder. Both versions retain the
+// same physical contract; an unrelated physical successor fails closed here.
+export const RAVSCORE_OWNER_CURRENT_ARCHIVE_PREDECESSOR_BUNDLE_SHA256 =
+  '29ea9a19647bf7d5edad0eee159267086d546f0d90a9f2778a77077351aad948';
+
+export function assertOwnerCurrentArchivedPredecessorState(state, samplingContextKey) {
+  if (!state || typeof state !== 'object' || Array.isArray(state)
+    || state.schemaVersion !== RAVSCORE_STATE_SCHEMA_VERSION
+    || state.modelBundleSha256 !== RAVSCORE_OWNER_CURRENT_ARCHIVE_PREDECESSOR_BUNDLE_SHA256
+    || RAVSCORE_MODEL_CONTRACT_SHA256
+      !== 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b'
+    || typeof samplingContextKey !== 'string' || !samplingContextKey) {
+    throw new Error('Archived current-source original has an incompatible predecessor binding');
+  }
+  const validated = validateIntegratedState(state, samplingContextKey, null,
+    RAVSCORE_OWNER_CURRENT_ARCHIVE_PREDECESSOR_BUNDLE_SHA256);
+  if (!validated || validated.stateV5MigrationApplied) {
+    throw new Error('Archived current-source original is not a canonical predecessor state');
+  }
+  return state;
+}
+
+// Technical waterLevel-only successor: validate the released 542 state under
+// its ORIGINAL binding before metadata migration. Not an initializer or an
+// expansion of the 541 current-source archive's distinct original authority.
+export function assertWaterLevelOnlyPredecessorState(state, samplingContextKey) {
+  const predecessor='4ebe158f68954f32b47cb71d5222ab0cf676faaf4b323d743f9d43bf34a63a51';
+  if (!state || typeof state !== 'object' || Array.isArray(state)
+    || state.schemaVersion !== RAVSCORE_STATE_SCHEMA_VERSION
+    || state.modelBundleSha256 !== predecessor
+    || RAVSCORE_MODEL_CONTRACT_SHA256
+      !== 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b'
+    || typeof samplingContextKey !== 'string' || !samplingContextKey) {
+    throw new Error('Water-level-only original has an incompatible predecessor binding');
+  }
+  const validated=validateIntegratedState(state,samplingContextKey,null,predecessor);
+  if (!validated || validated.stateV5MigrationApplied) {
+    throw new Error('Water-level-only original is not a canonical predecessor state');
+  }
+  return state;
 }
 
 function integratedContext(initialState) {

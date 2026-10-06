@@ -15,6 +15,7 @@ import {
   verifyPrivateProductionRuntimeBundle,
 } from './private-production-runtime-bundle.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import { OWNER_CURRENT_DOMAIN_PREDECESSOR } from './lib/bounded-conditions-predecessor-transition.mjs';
 
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REFERENCE = '2026-08-29T10:00:00.000Z';
@@ -133,6 +134,26 @@ async function main() {
     assert.equal(verified.partCount, 673);
     assert.deepEqual(verified.modelBinding, ravScoreModelBinding());
     assert.deepEqual(verified.contractHashes, CONTRACT_HASHES);
+    // The new original-reader mode is not an arbitrary expected-binding
+    // override. This real synthetic bundle is not the pinned original bytes.
+    const originalExpectation = { ...structuredClone(OWNER_CURRENT_DOMAIN_PREDECESSOR),
+      ownerCurrentDomainTransition: 'EXACT_ORIGINAL_RESTORE_V1',
+      targetReferenceAt: '2026-10-04T16:00:00.000Z',
+      minimumReferenceAt: OWNER_CURRENT_DOMAIN_PREDECESSOR.productionReferenceAt,
+      minimumGeneratedAt: OWNER_CURRENT_DOMAIN_PREDECESSOR.generatedAt };
+    await rejectsMessage(() => verifyPrivateProductionRuntimeBundle({ privateRoot, bundlePath,
+      repositoryRoot: REPOSITORY_ROOT, expected: originalExpectation, now: '2026-10-04T18:00:00.000Z' }),
+    /exact original content|exact original model/);
+    for (const field of ['modelBinding', 'contractHashes', 'bundleContentSha256']) {
+      await rejectsMessage(() => verifyPrivateProductionRuntimeBundle({ privateRoot, bundlePath,
+        repositoryRoot: REPOSITORY_ROOT,
+        expected: { ...originalExpectation, [field]: field === 'modelBinding'
+          ? { ...originalExpectation.modelBinding, profileId: 'other-profile' }
+          : field === 'contractHashes'
+            ? { ...originalExpectation.contractHashes, fullRuntimeContractSha256: 'f'.repeat(64) }
+            : 'f'.repeat(64) }, now: NOW }),
+      /exact original expectation/);
+    }
     assert.equal(verified.files.find(file => file.id === 'full-runtime').bytes, runtimeBytes.length);
     assert.equal(
       verified.files.find(file => file.id === 'full-runtime').sha256,

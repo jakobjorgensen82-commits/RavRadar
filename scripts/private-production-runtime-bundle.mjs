@@ -11,6 +11,9 @@ import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
 } from '../js/core/ravscore-model-contract.js';
+import {
+  assertOwnerCurrentOriginalExpectation,
+} from './lib/bounded-conditions-predecessor-transition.mjs';
 
 export const PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY = Object.freeze({
   schemaVersion: '1.0.0',
@@ -215,14 +218,21 @@ function canonicalContractHashes(value, label = 'Private runtime contract hashes
   return Object.fromEntries(keys.map(key => [key, value[key]]));
 }
 
-function canonicalModelBinding(value, label = 'Private runtime model binding') {
+function canonicalModelBinding(value, label = 'Private runtime model binding', original = null) {
+  if (original) {
+    exactKeys(value, Object.keys(original.modelBinding), label);
+    if (!sameCanonical(value, original.modelBinding)) {
+      throw new Error(label + ' does not match the exact original model');
+    }
+    return { ...original.modelBinding };
+  }
   const expected = ravScoreModelBinding();
   exactKeys(value, Object.keys(expected), label);
   assertRavScoreModelBinding(value, label);
   return { ...expected };
 }
 
-function validateMetadata(metadata, { exact = true } = {}) {
+function validateMetadata(metadata, { exact = true, original = null } = {}) {
   if (!isPlainObject(metadata)) throw new Error('Private runtime metadata must be an object');
   if (exact) exactKeys(metadata, METADATA_KEYS, 'Private runtime metadata');
   if (!DATASET_ID_PATTERN.test(String(metadata.datasetId ?? ''))) {
@@ -248,7 +258,7 @@ function validateMetadata(metadata, { exact = true } = {}) {
     generationId: metadata.generationId,
     zoneCount: metadata.zoneCount,
     partCount: metadata.partCount,
-    modelBinding: canonicalModelBinding(metadata.modelBinding),
+    modelBinding: canonicalModelBinding(metadata.modelBinding, 'Private runtime model binding', original),
     contractHashes: canonicalContractHashes(metadata.contractHashes),
     privacyClass: metadata.privacyClass,
   };
@@ -392,14 +402,14 @@ function expectedPayloadDirectories(files) {
   return [...directories].sort(compareText);
 }
 
-function validateManifestShape(manifest) {
+function validateManifestShape(manifest, original = null) {
   exactKeys(manifest, MANIFEST_KEYS, 'Private runtime bundle manifest');
   if (manifest.schemaVersion !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.schemaVersion
     || manifest.kind !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.kind
     || manifest.privacyClass !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.privacyClass) {
     throw new Error('Private runtime bundle identity is incompatible');
   }
-  const metadata = validateMetadata(manifest, { exact: false });
+  const metadata = validateMetadata(manifest, { exact: false, original });
   if (!Array.isArray(manifest.files)
     || manifest.files.length < 1
     || manifest.files.length > 32
@@ -446,8 +456,11 @@ function sameCanonical(left, right) {
   return canonicalPrivateRuntimeJson(left) === canonicalPrivateRuntimeJson(right);
 }
 
-function validateExpectations(validated, expected = {}) {
+function validateExpectations(validated, expected = {}, original = null) {
   if (!isPlainObject(expected)) throw new Error('Private runtime expectation must be an object');
+  if (original && validated.bundleContentSha256 !== original.bundleContentSha256) {
+    throw new Error('Private runtime bundle is not the exact original content');
+  }
   if (expected.datasetId !== undefined && validated.datasetId !== expected.datasetId) {
     throw new Error('Private runtime bundle belongs to another dataset');
   }
@@ -476,13 +489,13 @@ function validateExpectations(validated, expected = {}) {
   }
   const expectedBinding = expected.modelBinding === undefined
     ? ravScoreModelBinding()
-    : canonicalModelBinding(expected.modelBinding, 'Expected private runtime model binding');
+    : canonicalModelBinding(expected.modelBinding, 'Expected private runtime model binding', original);
   if (!sameCanonical(validated.modelBinding, expectedBinding)) {
     throw new Error('Private runtime bundle belongs to another RavScore model');
   }
 }
 
-async function readAndValidateManifest(bundlePath) {
+async function readAndValidateManifest(bundlePath, original = null) {
   const rootEntries = await fs.readdir(bundlePath, { withFileTypes: true }).catch(error => {
     if (error?.code === 'ENOENT') throw new Error('Private runtime bundle is missing');
     throw error;
@@ -510,7 +523,7 @@ async function readAndValidateManifest(bundlePath) {
   } catch {
     throw new Error('Private runtime bundle manifest cannot be parsed');
   }
-  return { manifest, validated: validateManifestShape(manifest) };
+  return { manifest, validated: validateManifestShape(manifest, original) };
 }
 
 export async function createPrivateProductionRuntimeBundle({
@@ -618,8 +631,10 @@ export async function verifyPrivateProductionRuntimeBundle({
   if (!isWithin(context.realPrivateRoot, realBundle)) {
     throw new Error('Private runtime bundle escapes through a symlink');
   }
-  const { manifest, validated } = await readAndValidateManifest(realBundle);
-  validateExpectations(validated, expected);
+  const original = Object.hasOwn(expected, 'ownerCurrentDomainTransition')
+    ? assertOwnerCurrentOriginalExpectation(expected) : null;
+  const { manifest, validated } = await readAndValidateManifest(realBundle, original);
+  validateExpectations(validated, expected, original);
   const nowMs = Date.parse(canonicalTime(now, 'Private runtime verification time'));
   if (Date.parse(validated.generatedAt)
     > nowMs + PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.maximumFutureSkewMs) {

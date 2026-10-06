@@ -768,10 +768,22 @@ def save_component_bank(path: Path, bank: dict, *, targets: list[dict]) -> None:
     descriptor, temporary = tempfile.mkstemp(prefix="." + path.name + ".", suffix=".tmp", dir=path.parent)
     failed = False
     try:
-        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
+        handle = os.fdopen(descriptor, "w", encoding="utf-8", newline="\n")
+        write_failed = False
+        try:
             handle.write(canonical_json(bank))
             handle.flush()
             os.fsync(handle.fileno())
+        except BaseException:
+            write_failed = True
+            raise
+        finally:
+            try:
+                handle.close()
+            except BaseException:
+                # Own close is still attempted; close-only remains hard.
+                if not write_failed:
+                    raise
         os.replace(temporary, path)
     except BaseException:
         failed = True

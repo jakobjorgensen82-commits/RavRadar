@@ -33,6 +33,109 @@ Detaljer: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
 
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
+# NYESTE – 2026-10-05 – lokal 4.0.543: kun vandstand fra dkss_lf på syv kystzoner
+
+Ejeren har godkendt, at de præcise syv zoner må hente verificeret vandstand
+fra dkss_lf. Strøm, temperatur og strømhukommelsens input er fortsat udelukket.
+Nye, genbrugte, private og beskyttede PART-input samt valgte SOURCE-input og
+trendens sluttid kontrolleres komponentvis. Central interpolation, vægte,
+punkter og scoreformler er uændrede; manglende kilder omvægtes ikke.
+
+En ny append-only teknisk databaseovergang er klargjort til 4.0.543.
+Den faktiske 542-original valideres under sin egen binding før metadata
+løftes; bevist historik, begge states og det oprindelige 541-arkiv bevares.
+Gamle migrationer ændres ikke, og ingen særskilt SQLinstallation udføres.
+Målprøver og lokale bindinger består; exact-head CI, kontrolleret release
+og faktisk ny vejreffekt mangler. 4.0.542 er fortsat offentlig kode.
+
+Seneste fejlede vejrhentning mistede 21 vandstandstimer ved Agger, Lyngby
+og Harboøre, ikke Fur. Undtagelsen fjerner en kildeafvisning når gyldige
+valgte LF-timer findes, men er ikke garanti for dækning eller gammel
+Fur-årsagsbevis. No-loss består. CP-bankens lokale første-fejl-rettelse
+følger med; samlet revision og sikker timeretention er stadig åbne.
+Spørg RavRadar forbedres separat; begge opgaver er indarbejdet i den
+eksisterende planlagte opgave. Ældre modstridende lokale statusser er historik.
+Se DEC-0291, DEC-0292 og begge håndbøgers afsnit 89.160.
+
+# NYESTE – 2026-10-05 – restplan efter faktisk levering af 4.0.542
+
+Denne restplan følger ejerens spørgsmål om den store vejrhentningsrevision.
+Allerøverste private checkpoint og nyere menneskelige instruktioner har forrang.
+Ældre lokale, CI- og leveringsstatusser nedenfor er historik ved konflikt.
+
+## Afsluttede leverancer, ikke næste opgave
+
+PR516/517 og den reparerede kontrollerede release er faktisk gennemført.
+4.0.542 var online 4. oktober kl.22.20 DK med den afgrænsede syvzoneregel,
+originalarkiv og NORMAL Fur-diagnose. Kode-only genbrugte gyldige 16Z-data;
+det beviser ikke ny kilderen strøm, 48h-state eller scoreeffekt.
+Den faste nationale original-memory/source-match-kontrol er også afsluttet.
+Den skal ikke genkøres som en ventende leverance eller kaldes global maskekontrol.
+
+## Fortsat åbent
+
+1. Kontrollér syvzonereglens faktiske effekt i første ægte nye vejrgeneration:
+   nye/genbrugte/private/protected/historical/live/SOURCE-input og begge
+   strømstates samlet; bevarede originaler og bevist øvrig historik.
+2. Forklar Fur-tabet med reelle korrekt matchede nye spor og færdiggør sikker
+   bevarelse af gyldige tidligere timer før uændret no-loss. Diagnosen er
+   leveret, men gammel årsag og automatisk timeretention er ikke løst.
+3. Færdiggør samlet stop-/writer-evidens: alle ejede processer og relevante
+   underprocesser skal være stoppet før oprydning/reservehentning; ukendt
+   stop må ikke slippe igennem ydre callers. Stopforsøg er ikke stopbevis.
+4. Bevis gemning/upload/genbrug af fremdrift også ved timeout, afbrydelse,
+   failureworkerens fireminuttersgrænse og tab af runner. Normal succes er
+   ikke i sig selv bevis for disse fejlveje.
+5. Færdiggør den separate revisions faktiske original-B/S-før-T-kæde gennem
+   autentificeret restore, Copernicus, faktisk factory/updater og ny cache.
+   Små isolerede prøver er ikke samlet 673-dels integration.
+6. Mål national heljobskapacitet og slutkontrol: rå/cipher/størrelser,
+   peak-hukommelse, tidsforbrug, genstart samt faktisk privat/public/deploy.
+   Actions-komprimerede bytes er ikke rå- eller heljobskapacitetsbevis.
+
+## Næste sikre rækkefølge
+
+Den allerede kendte indre CP-bank-close er nu isoleret lokalt i én
+eksisterende normalfunktion og ét testforløb. Fire underprøver RED→GREEN,
+inversdiff og normale model-/privatkontrakter består. Efter aktiv writers
+faktiske afslutning og resultatkontrol kan denne smalle kandidat klargøres
+til egen exact-head CI/levering. Den løser ikke hele livscyklussen eller
+Fur-retention og kræver ingen whole519copy/modelgenbinding. Se DEC-0266/89.159.
+
+Følg den faktisk aktive naturlige vejrhentning uden overlap. Efter faktisk
+completion kontrolleres restore, saved:true, nyt cache-upload, no-loss og
+Fur-koder, privat publicering, Pages og required deploy hver for sig.
+Kun et faktisk nyt offentligt datasæt udløser ny kilde-/dæknings-/Top20-/Nibe-
+kontrol; uændrede store data skal ikke genhentes. Fortsæt derefter konkrete
+normale callerseams og smalle leverancer, ikke whole519copy eller status-CI.
+
+BIG519 forbliver separat/OFF. Ingen ny autoritet til cipher/donor/admission,
+frozen-model-copy/eval, geometri, scoreformel, budget, keys eller standaloneSQL.
+Det gamle faste Fur-mål er utilgængeligt/udløbet og må ikke erstattes/relabeles.
+
+# HISTORISK – 2026-10-04 – local national readonly efter verified naboread
+
+PR511 og correctedfixedread37172221379 er faktisk afsluttet, ikke næste
+leverance. Næste: exact-head CI/merge af lokal NATIONAL_210_673-plan og én
+fast national kontrol af11281483201 før udløb, uden aktivwriter.
+To eksisterende måltestforløb PASS/0skip. Samme verifier/reducer/contracts,
+bounded aggregater, absentstate ikke replay-PASS. Ikke ny release/SQL/model.
+Lyngby-memory reproduceret men landpunktets netto0; årsag/mask fortsat OPEN.
+Fur12 og senere7waterLevel-tab er åbne; actualrestored32/newcache uden deploy.
+Sourcecallerreview er ikke kausal rækkejoin. Ingen spekulativ patch/gateændring.
+DEC-0289 og særskilte afvisninger består.
+
+# Historisk – 2026-10-04 – minimal eksisterende nøglebinding før fastlæsning
+
+PR510 merged; read37163385963 stoppede før GCM på tomt nøgleinput. DEC-0289s
+one-line binding følger producentens eksisterende key; genbrugt regression
+RED1/PASS3→PASS4/0skip. Egen exact-CI/merge/read er næste, kun uden aktivwriter.
+Godkendt alle-zoneplan følger Lyngbyårsag. Fur/Stenerodde12vandstandstab i
+ordinary37151127122 stadig OPEN; actualnycache målt, ingen deploy. Stående
+privatloglæsetilladelse ændrer ikke privatpayloadbeskyttelse/øvrige afvisninger.
+
+# Historisk – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
+
 Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10
 sluttede11:00:56–58DK. Lille416byteROOTproof11269678605 er hentet ALENE og
 matcher repository/PR509/head3d1/treeDF96aac0…/contractv2/privacyfalse/udløb2/11.

@@ -65,7 +65,7 @@ def document(component, proof, values):
 
 
 def retained(proof):
-    targets = [{"partId": "TEST", "parentZoneId": "ZONE", "waterPoint": [2.0, 1.0]}]
+    targets = [{"partId": "TEST", "parentZoneId": proof["parentZoneId"], "waterPoint": [2.0, 1.0]}]
     fingerprint = producer.target_fingerprint(targets)
     signature = producer.current_marine_processing_signature("synthetic-registry")
     outcome = producer.build_current_part_outcome_proof([], ["TEST"], fingerprint, signature, proof)
@@ -86,6 +86,68 @@ def catalog_item(collection, offset):
 
 
 class ComponentContinuityTests(unittest.TestCase):
+    def test_owner_domain_guard_rejects_malformed_source_without_masking_native_rejection(self):
+        for malformed in ("not-a-native-source", ["dkss_lf"], 7):
+            with self.subTest(source_type=type(malformed).__name__):
+                candidate = document("waterLevel", malformed, (0.25,))
+                native = candidate["zones"][ZONE["id"]]
+                self.assertFalse(producer._exact_validated_dmi_component_present(
+                    ZONE["id"], native, VALID, "waterLevel", ("sea-mean-deviation",)))
+                removed = producer.sanitize_component_provenance(ZONE["id"], native)
+                self.assertEqual(removed, [f"{VALID}:waterLevel"])
+                self.assertNotIn("sea-mean-deviation", native["hourly"][VALID])
+                self.assertEqual(native["hourly"][VALID]["unrelated"], "keep")
+
+    def test_owner_lf_domain_filter_preserves_all_other_overlap_and_targets(self):
+        zones = [
+            {"id": "DK-B01-01"}, {"id": "DK-B01-02"},
+            {"id": "DK-B02-08"}, {"id": "DK-B02-09"}, {"id": "DK-B02-11"},
+            {"id": "DK-B03-01"}, {"id": "DK-B03-02"},
+            {"id": "PART::TEST", "parentZoneId": "DK-B01-01"},
+            {"id": "STAGED::TEST", "parentZoneId": "DK-B01-02"},
+            {"id": "DK-B05-17"}, {"id": "DK-B01-03"},
+            {"id": "SOURCE::TEST", "parentZoneId": "SOURCE::TEST"},
+        ]
+        before = copy.deepcopy(zones)
+        self.assertEqual(producer.relevant_zones("dkss_lf", zones), zones[9:])
+        self.assertEqual(producer.parameter_zones("dkss_lf", "sea-mean-deviation", zones), zones)
+        for parameter in ("current-u", "current-v", "water-temperature"):
+            self.assertEqual(producer.parameter_zones("dkss_lf", parameter, zones), zones[9:])
+        for collection in ("dkss_nsbs", "dkss_idw", "harmonie_dini_sf"):
+            self.assertEqual(producer.relevant_zones(collection, zones), zones)
+        self.assertEqual(zones, before)
+
+    def test_owner_lf_domain_rejects_native_backfill_and_retained_tuple_not_authenticity(self):
+        for zone_id, collection, allowed in (
+            ("DK-B01-01", "dkss_lf", False), ("DK-B01-02", "dkss_lf", False),
+            ("DK-B02-08", "dkss_lf", False), ("DK-B02-09", "dkss_lf", False),
+            ("DK-B02-11", "dkss_lf", False), ("DK-B03-01", "dkss_lf", False),
+            ("DK-B03-02", "dkss_lf", False),
+            ("DK-B01-02", "dkss_nsbs", True), ("DK-B05-17", "dkss_lf", True),
+            ("DK-B02-10", "dkss_lf", True), ("DK-B05-25", "dkss_lf", True),
+            ("DK-B01-03", "dkss_lf", True),
+        ):
+            for component, values in (("current", (0.2, -0.1)), ("waterLevel", (0.25,)), ("waterTemperature", (12.0,))):
+                with self.subTest(zone=zone_id, collection=collection, component=component), \
+                        patch.dict(ZONE, {"parentZoneId": zone_id}):
+                    component_allowed = allowed or component == "waterLevel"
+                    proof = source(component)
+                    proof["collection"] = collection
+                    donor = document(component, proof, values)
+                    native = donor["zones"][ZONE["id"]]
+                    self.assertTrue(producer.complete_native_source_for_hour(proof, component, ZONE["id"], native, VALID))
+                    self.assertEqual(producer._exact_validated_dmi_component_present(
+                        ZONE["id"], native, VALID, component, producer.COMPONENT_FIELD_SET[component]), component_allowed)
+                    before = copy.deepcopy(donor)
+                    primary = {"zones": {ZONE["id"]: {**producer.sampling_identity(ZONE), "hourly": {}, "gridPoints": {}, "collections": {}}}}
+                    producer.backfill_compatible_cache_data(primary, donor, [retained(proof)] if component == "current" else [])
+                    row = primary["zones"][ZONE["id"]]["hourly"][VALID]
+                    self.assertEqual(all(field in row for field in producer.COMPONENT_FIELD_SET[component]), component_allowed)
+                    self.assertEqual(donor, before)
+                    removed = producer.sanitize_component_provenance(ZONE["id"], native)
+                    self.assertEqual(bool(removed), not component_allowed)
+                    self.assertEqual(native["hourly"][VALID]["unrelated"], "keep")
+
     def test_published_partial_donor_restores_only_proved_component_not_old_progress(self):
         candidate = document("wind", source("wind"), (2.0, 3.0))
         candidate.update({

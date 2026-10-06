@@ -26,9 +26,10 @@ import {
   coastNormalSpeedMpsFromUv,
   dmiExpectedIdentityForPart,
   verifiedControlledLiveCurrentSource,
-  verifiedDmiForecastComponentSource,
+  eligibleDmiForecastComponentSource as verifiedDmiForecastComponentSource,
 } from './ravscore-production-adapters.mjs';
 import { verifyCompactFeggesundWaveProxy } from './feggesund-wave-proxy.mjs';
+import { dmiMarineCollectionAllowedForZone } from './dmi-marine-zone-exclusions.mjs';
 
 export const RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS = 72;
 export const RAVSCORE_COLD_START_REPLAY_HOURS =
@@ -407,6 +408,61 @@ function addComponent(target, componentName, candidate) {
     );
   }
   if (!existing) target[componentName] = candidate;
+}
+
+/**
+ * Current-only input for the owner-scoped consumer transition. Reuse the
+ * actual replay admission/signature checks; do NOT relabel old signed state
+ * evidence as LF or infer a source from a value match. Callers must supply
+ * their already qualified private records, including the pre-state window.
+ * Missing/excluded input stays unknown; no wave/last-mile replay is done here.
+ */
+export function buildRavScorePermittedCurrentHistory({ part, referenceAt, sourceRecords = [] } = {}) {
+  const end = canonicalHour(referenceAt);
+  const endMs = Date.parse(end);
+  const startMs = endMs - RAVSCORE_COLD_START_REPLAY_HOURS * HOUR_MS;
+  const parentZoneId = part?.zoneId ?? part?.parentZoneId ?? part?.sourceZoneId;
+  if (dmiMarineCollectionAllowedForZone('dkss_lf', parentZoneId)
+    || !Array.isArray(sourceRecords)) {
+    throw new Error('Current source transition requires an owner-scoped target and qualified records');
+  }
+  const union = new Map();
+  for (const source of sourceRecords) {
+    const record = source?.record;
+    if (!record || !Array.isArray(record.hourly)) continue;
+    if (!samePoint(record.point, part.waterPoint)) {
+      failClosed('RAVSCORE_RECOVERY_REPLAY_SAMPLING_MISMATCH',
+        'Current source transition has a different sampling point');
+    }
+    const seen = new Set();
+    for (const row of record.hourly) {
+      const ms = Date.parse(row?.time);
+      if (!Number.isFinite(ms) || ms < startMs || ms > endMs) continue;
+      const time = canonicalHour(row.time);
+      if (seen.has(time)) {
+        failClosed('RAVSCORE_RECOVERY_REPLAY_CONFLICT',
+          'Current source transition has duplicate source hours');
+      }
+      seen.add(time);
+      const provenance = row.currentProvenance?.status === 'verified'
+        ? row.currentProvenance : row.sources?.current;
+      if (!dmiMarineCollectionAllowedForZone(provenance?.collection, parentZoneId)) continue;
+      const current = currentComponent(row, part);
+      if (!current && [row.currentSpeedMps, row.currentDirectionDeg,
+        row.currentUMps, row.currentVMps].some(finite)) {
+        failClosed('RAVSCORE_RECOVERY_REPLAY_CURRENT_UNVERIFIED',
+          'Current source transition lacks exact verified provenance');
+      }
+      const components = union.get(time) ?? {};
+      addComponent(components, 'current', current);
+      union.set(time, components);
+    }
+  }
+  return Array.from({ length: RAVSCORE_COLD_START_REPLAY_HOURS + 1 }, (_, offset) => {
+    const time = new Date(startMs + offset * HOUR_MS).toISOString();
+    const selected = union.get(time)?.current;
+    return selected ? { time, ...selected.row } : { time, currentProvenance: null };
+  });
 }
 
 function nextExactHourAfter(value) {

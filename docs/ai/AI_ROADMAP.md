@@ -1,3 +1,35 @@
+# NYESTE – 2026-10-04 – godkendt national skrivefri kontrol, lokal kandidat
+
+PR511 er faktisk merged til bde77345, og fixedread37172221379 afsluttede
+SUCCESS04:50 DK. Den reproducerede Lyngby-memory95.821344 kommer netto fra
+UNMATCHED-slots; kendte landpunktmatches giver netto0. Ikke kausal join,
+ugyldig historik eller målt GRIB-mask. Gentag ikke den afsluttede nabokontrol.
+Næste: egen exact-head CI og sikker merge af NATIONAL_210_673-udvidelsen;
+derefter én godkendt national kontrol af SAMME11281483201 før udløb.
+To eksisterende måltestforløb PASS/0skip. Faktisk national læsning afventer.
+Fur-vandstandstab12 og senere7 er åbne. Aktuel kode har beskyttet public
+SOURCE-backfill og directPART-før-SOURCE-routing; det er ikke målte tabsrækker.
+Ingen spekulativ patch, nyt ciphermål eller gatelempelse. DEC-0289/øvrige
+afvisninger består; ingen merge/dispatch under aktiv normalwriter.
+
+# Historisk – 2026-10-04 – faktisk nøglebindingfejl før Lyngbydiagnose
+
+Næste: egen exact-CI og sikker merge af minimal eksisterende nøglebinding;
+derefter fastread11281483201 med uændrede kontrakter. Første read37163385963
+stoppede før GCM/inspektion, så ingen årsagskonklusion. DEC-0289. Godkendt
+alle-zoneplan følger Lyngbyårsagen. Ejer tillader privatjoblogs stående, ingen
+payloads ud. Fur-vandstandstab i37151127122 skal forklares uden gatelempelse.
+Cron aktiv/uændret; ingen main/auditdispatch under aktiv normalwriter.
+
+# Historisk – 2026-10-03 – diagnose før mulig tværgående cellekontrol
+
+DEC-0289: lokal skrivefri sealed Lyngbylæser er særskilt godkendt og målrettet
+testet. Næste er exact-head CI, sikker main efter ordinarycompletion og actual
+originalpakke-læsning; derefter afgrænset årsagskonklusion. Mulig kontrol af
+alle210/673 for samme geografiske fejl er foreslået, ikke udført. Ingen
+automatisk input-, geometri- eller scoreændring. Offentlig541 er leveret;
+stor vejrhentningsrevision/historik/kildemask og faktisk fuld årsag er OPEN.
+
 # AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
 
 Grøn PR509/head3d1ed7ce/exactCI37111171421/attempt1/source8/tree9/proof10

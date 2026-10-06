@@ -29,6 +29,8 @@ import {
   assertIntegratedCoastalPointContinuation,
   assertCandidateGCoastalPointRollbackContinuation,
   coastalPointStageIdentity,
+  assertArchivedOwnerCurrentIntegratedOriginal,
+  assertWaterLevelOnlyIntegratedOriginal,
 } from './lib/coastal-point-staging-contract.mjs';
 import {
   assertRavScoreModelBinding,
@@ -58,6 +60,11 @@ import {
 } from './rollback-assets/ravscore-model-contract.js';
 import { assertRuntimeBindingRegistry } from './runtime-binding-registry.mjs';
 import { writeBoundedJsonAtomic } from './lib/bounded-json-writer.mjs';
+import { readOwnerCurrentTransitionArchive, retainOwnerCurrentTransitionOriginal }
+  from './lib/ravscore-production-part-pipeline.mjs';
+import { dmiMarineCollectionAllowedForZone } from './lib/dmi-marine-zone-exclusions.mjs';
+import { OWNER_CURRENT_DOMAIN_PREDECESSOR, buildOwnerCurrentOriginalRestoreExpectation }
+  from './lib/bounded-conditions-predecessor-transition.mjs';
 
 assertRuntimeBindingRegistry();
 
@@ -496,6 +503,30 @@ function exactMetadataCarrier(value, previousBinding) {
     || exactCompactResultCarrier(value, previousBinding);
 }
 
+function validatedHistoricalCurrentSourceArchive(root) {
+  if (!Object.hasOwn(root, 'ravScoreCurrentSourceDomainTransitions')) return false;
+  const archive = root.ravScoreCurrentSourceDomainTransitions;
+  const parts = root.coastalParts?.parts;
+  if (!isPlainObject(archive) || !isPlainObject(parts)) {
+    throw new Error('Private current source transition archive requires its complete part identities');
+  }
+  if (typeof root.productionReferenceAt !== 'string') {
+    throw new Error('Private current source transition archive requires its locked production reference');
+  }
+  const activeParts = Object.entries(parts).map(([partId, part]) => {
+    if (!isPlainObject(part) || (part.partId !== undefined && part.partId !== partId)) {
+      throw new Error('Private current source transition archive has an incompatible active part');
+    }
+    return { ...part, partId };
+  });
+  // Validate the entire exact private envelope and original state pair FIRST.
+  // This is historical control material, not current metadata or initializer.
+  readOwnerCurrentTransitionArchive(archive, activeParts, {
+    targetReferenceAt: root.productionReferenceAt,
+  });
+  return true;
+}
+
 export function migrateExactModelBindingMetadata(
   root,
   previousBinding,
@@ -503,6 +534,7 @@ export function migrateExactModelBindingMetadata(
   { label = 'Saved runtime model metadata' } = {},
 ) {
   assertBindingUpgrade(previousBinding, currentBinding, label, { requireChange: false });
+  const preserveHistoricalArchive = validatedHistoricalCurrentSourceArchive(root);
   const bindingChanged = previousBinding.modelBundleSha256
     !== currentBinding.modelBundleSha256;
   const changedPaths = [];
@@ -524,6 +556,8 @@ export function migrateExactModelBindingMetadata(
     }
     for (const [key, child] of Object.entries(value)) {
       if (PRIVATE_STATE_KEYS.has(key)) continue;
+      if (prefix === '' && preserveHistoricalArchive
+        && key === 'ravScoreCurrentSourceDomainTransitions') continue;
       visit(child, joinedPath(prefix, key));
     }
   }
@@ -531,7 +565,8 @@ export function migrateExactModelBindingMetadata(
   return changedPaths;
 }
 
-function collectBundleHashPaths(root, hashes) {
+export function collectBundleHashPaths(root, hashes) {
+  const preserveHistoricalArchive = validatedHistoricalCurrentSourceArchive(root);
   const paths = [];
   function visit(value, prefix = '') {
     if (Array.isArray(value)) {
@@ -540,6 +575,10 @@ function collectBundleHashPaths(root, hashes) {
     }
     if (!isPlainObject(value)) return;
     for (const [key, child] of Object.entries(value)) {
+      // Only the already validated ROOT archive is historical. Any nested or
+      // unrelated old hash remains a hard stale-current-metadata finding.
+      if (prefix === '' && preserveHistoricalArchive
+        && key === 'ravScoreCurrentSourceDomainTransitions') continue;
       const childPath = joinedPath(prefix, key);
       if (key === 'modelBundleSha256' && hashes.has(child)) paths.push(childPath);
       visit(child, childPath);
@@ -590,6 +629,35 @@ export function classifyVerifiedRuntimeMigration({
     throw new Error('Runtime semantic changes lack the verified narrow last-mile repair');
   }
   return 'MODEL_BINDING_MIGRATION';
+}
+
+export function classifyOwnerCurrentArchiveBridge({ source, migrated,
+  bindingMetadataPaths, verifiedChangedPaths } = {}) {
+  const expectedArchiveHolder = {};
+  preserveOwnerCurrentOriginalPairs(source, expectedArchiveHolder);
+  assertSame(migrated.ravScoreCurrentSourceDomainTransitions,
+    expectedArchiveHolder.ravScoreCurrentSourceDomainTransitions, 'True original-pair archive');
+  const before = { ...source };
+  const after = { ...migrated };
+  delete before.ravScoreCurrentSourceDomainTransitions;
+  delete after.ravScoreCurrentSourceDomainTransitions;
+  const archivePaths = collectChangedPaths(source.ravScoreCurrentSourceDomainTransitions,
+    migrated.ravScoreCurrentSourceDomainTransitions, 'ravScoreCurrentSourceDomainTransitions');
+  const allChanges = collectChangedPaths(source, migrated);
+  const allowed = new Set(verifiedChangedPaths);
+  if (allChanges.some(value => !allowed.has(value))
+    || [...allowed].some(value => !allChanges.includes(value))) {
+    throw new Error('Owner current archive bridge has unverified changes');
+  }
+  const technicalKind = classifyVerifiedRuntimeMigration({ source: before, migrated: after,
+    bindingMetadataPaths, verifiedChangedPaths: [...allowed].filter(value => !archivePaths.includes(value)) });
+  if (technicalKind !== 'MODEL_BINDING_METADATA_ONLY') {
+    throw new Error('Owner current archive bridge must change only binding metadata and true originals');
+  }
+  // Deliberately distinct from the existing same-T metadata-only CAS authority.
+  // This private bridge is consumed by normal NEW-T reconstruction, not a
+  // declaration that the old current contributions have become permitted.
+  return 'OWNER_CURRENT_ORIGINAL_ARCHIVE_BRIDGE';
 }
 
 async function assertDirectoryOutside(repositoryRoot, requested, label) {
@@ -650,6 +718,84 @@ async function importPredecessorModules(predecessorRoot, sourceHead) {
     import(`${candidateUrl.href}${query}`),
   ]);
   return { staging, integrated, candidate };
+}
+
+// No archived model import/copy/evaluation. These are the existing full
+// canonical validators, restricted to the approved original physical contracts.
+// In particular, the original integrated state is validated BEFORE its hash
+// metadata is migrated. Neither an archive nor a hash stamp is a validator.
+function ownerCurrentOriginalValidators(integrated = OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding) {
+  const waterOnly=integrated.modelBundleSha256
+    === '4ebe158f68954f32b47cb71d5222ab0cf676faaf4b323d743f9d43bf34a63a51';
+  const currentCandidate = candidateModelBinding();
+  if (currentCandidate.modelContractSha256
+    !== 'c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8') {
+    throw new Error('Owner current transition has another Candidate G physical contract');
+  }
+  const candidate = { ...currentCandidate,
+    modelBundleSha256: waterOnly
+      ? '3e5aae87b19934091a7882fbd8f5b5570b7c83ba786ea6f3bac52a8fd71fcd1e'
+      : '28a69936b3d9a9c655e967c5e0c352d8401e5894ef3011bbfc55c85ad37f7ce7' };
+  const bindingValidator = binding => ({
+    ravScoreModelBinding: () => structuredClone(binding),
+    assertRavScoreModelBinding: (value, label) => assertSame(value, binding, label),
+  });
+  return {
+    integrated: bindingValidator(integrated), candidate: bindingValidator(candidate),
+    staging: { coastalPointStageIdentity,
+      assertCandidateGCoastalPointRollbackContinuation,
+      assertIntegratedCoastalPointContinuation: (state, options) => {
+        if (state?.modelBundleSha256 !== integrated.modelBundleSha256) {
+          throw new Error('Owner current original has another integrated implementation');
+        }
+        return waterOnly ? assertWaterLevelOnlyIntegratedOriginal(state,options)
+          : assertArchivedOwnerCurrentIntegratedOriginal(state, options);
+      },
+    },
+  };
+}
+
+export function preserveOwnerCurrentOriginalPairs(source, migrated) {
+  const partMap = source.coastalParts?.parts;
+  const activeParts = Object.entries(partMap ?? {}).map(([partId, part]) => ({ ...part, partId }));
+  if (activeParts.length !== 673) throw new Error('Original-pair archive requires all 673 active identities');
+  // Parent identities come from the authenticated original runtime, not a
+  // spelling convention: legitimate island zones have additional ID segments.
+  const weatherZones = source.zones;
+  const scoreZones = source.coastalParts?.zones;
+  if (!isPlainObject(weatherZones) || !isPlainObject(scoreZones)
+    || Object.keys(weatherZones).length !== 210 || Object.keys(scoreZones).length !== 210
+    || Object.keys(weatherZones).some(zoneId => !Object.hasOwn(scoreZones, zoneId))
+    || Object.entries(partMap).some(([partId, part]) => !isPlainObject(part)
+    || (part.partId !== undefined && part.partId !== partId)
+    || typeof part.zoneId !== 'string' || !Object.hasOwn(weatherZones, part.zoneId))) {
+    throw new Error('Original-pair archive requires exact parent-zone and part identities');
+  }
+  const roots = ['ravScoreCandidateGRollback', 'ravScoreCandidateGWarmup']
+    .filter(key => Object.hasOwn(source, key));
+  if (roots.length !== 1) throw new Error('Original-pair archive requires one Candidate G runtime');
+  const originalParts = readOwnerCurrentTransitionArchive(source.ravScoreCurrentSourceDomainTransitions,
+    activeParts, { targetReferenceAt: source.productionReferenceAt });
+  for (const part of activeParts) {
+    if (dmiMarineCollectionAllowedForZone('dkss_lf', part.zoneId)) continue;
+    const originalIntegratedState = part.ravScoreModel?.currentState;
+    const originalCandidateGState = source[roots[0]].runtime?.parts?.[part.partId]?.ravScoreModel?.currentState;
+    const record = { schemaVersion: 1, kind: 'PRIVATE_OWNER_CURRENT_SOURCE_TRANSITION',
+      parentZoneId: part.zoneId, partId: part.partId, excludedCollection: 'dkss_lf',
+      referenceAt: originalIntegratedState?.time,
+      // This bridge does not evaluate input. Every slot remains unproved;
+      // actual permitted-source reconstruction takes place only at NEW T.
+      provedCurrentHours: 0, unknownCurrentHours: 49,
+      originalIntegratedState: structuredClone(originalIntegratedState),
+      originalCandidateGState: structuredClone(originalCandidateGState) };
+    originalParts[part.partId] = retainOwnerCurrentTransitionOriginal(record,
+      originalParts[part.partId] ?? null, part);
+  }
+  const archive = { schemaVersion: 1, kind: 'PRIVATE_OWNER_CURRENT_SOURCE_TRANSITION_ARCHIVE',
+    privacyClass: 'PRIVATE_PRODUCTION_RUNTIME', parts: originalParts };
+  readOwnerCurrentTransitionArchive(archive, activeParts, { targetReferenceAt: source.productionReferenceAt });
+  migrated.ravScoreCurrentSourceDomainTransitions = archive;
+  return archive;
 }
 
 export async function assertExactRuntimeInventory(sourceRoot) {
@@ -764,6 +910,7 @@ async function validateAndMigrateConditions({
   currentCandidateBinding,
   publicHourPackSourcePath,
   publicHourPackTargetPath,
+  ownerCurrentOriginalOnly = false,
 }) {
   if (!isPlainObject(source)
       || source.datasetId !== predecessor.datasetId
@@ -874,6 +1021,9 @@ async function validateAndMigrateConditions({
           return replay.continuationState;
         },
       });
+      if (ownerCurrentOriginalOnly && reconciliation.repairPaths.length) {
+        throw new Error('Owner current metadata bridge must not repair or recompute state');
+      }
       migratedWrapper.currentState = reconciliation.canonicalState;
       for (const repairPath of reconciliation.repairPaths) {
         exactAllowedPaths.add(
@@ -1021,6 +1171,16 @@ async function validateAndMigrateConditions({
       `Private runtime migration rejected ${errors.length} independent error(s): ${summarizeIndependentErrors(errors)}`,
     );
   }
+  const ownerArchiveRequired=ownerCurrentOriginalOnly
+    && source.coastalParts.modelBinding?.modelBundleSha256
+      === OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding.modelBundleSha256;
+  if (ownerArchiveRequired) {
+    preserveOwnerCurrentOriginalPairs(source, migrated);
+    for (const changed of collectChangedPaths(source.ravScoreCurrentSourceDomainTransitions,
+      migrated.ravScoreCurrentSourceDomainTransitions, 'ravScoreCurrentSourceDomainTransitions')) {
+      exactAllowedPaths.add(changed);
+    }
+  }
   let publicHourDeliveryRebound = false;
   const sourcePublicHourMarker = privatePublicHourDeliveryMarker(source);
   if (sourcePublicHourMarker
@@ -1148,7 +1308,9 @@ async function validateAndMigrateConditions({
     recomputedModeCount,
     recomputedZoneCount,
     publicHourDeliveryRebound,
-    transitionKind: classifyVerifiedRuntimeMigration({
+    transitionKind: ownerArchiveRequired ? classifyOwnerCurrentArchiveBridge({
+      source, migrated, bindingMetadataPaths, verifiedChangedPaths: exactAllowedPaths,
+    }) : classifyVerifiedRuntimeMigration({
       source,
       migrated,
       bindingMetadataPaths,
@@ -1166,6 +1328,7 @@ export async function migratePostCutoverPrivateRuntime({
   repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'),
   expectedSourceHead,
   reportPath,
+  ownerCurrentOriginalOnly = false,
 } = {}) {
   if (!SOURCE_HEAD.test(String(expectedSourceHead ?? ''))) {
     throw new Error('Post-cutover migration requires an exact predecessor source head');
@@ -1176,7 +1339,8 @@ export async function migratePostCutoverPrivateRuntime({
   );
   const repository = await fs.realpath(path.resolve(repositoryRoot));
   const source = await assertDirectoryOutside(repository, sourceRoot, 'Predecessor restored runtime');
-  const predecessor = await assertDirectoryOutside(repository, predecessorRoot, 'Archived predecessor source');
+  const predecessor = ownerCurrentOriginalOnly ? null
+    : await assertDirectoryOutside(repository, predecessorRoot, 'Archived predecessor source');
   const output = path.resolve(outputRoot);
   const outputRelative = path.relative(repository, output);
   if (!outputRelative || (!outputRelative.startsWith(`..${path.sep}`) && outputRelative !== '..')) {
@@ -1184,7 +1348,17 @@ export async function migratePostCutoverPrivateRuntime({
   }
   if (await fs.lstat(output).catch(() => null)) throw new Error('Migrated runtime output already exists');
   const runtimeFiles = await assertExactRuntimeInventory(source);
-  const modules = await importPredecessorModules(predecessor, expectedSourceHead);
+  if (ownerCurrentOriginalOnly) {
+    const expectation = buildOwnerCurrentOriginalRestoreExpectation({
+      sourceDescription: { ...predecessorIdentity,
+        kind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_CURRENT_SOURCE' },
+      targetReferenceAt: predecessorIdentity.productionReferenceAt,
+      currentBinding: ravScoreModelBinding(),
+      currentContractHashes: await privateRuntimeContractHashes({ repositoryRoot: repository }) });
+    if (!expectation) throw new Error('Owner current migration is not its exact original transition');
+  }
+  const modules = ownerCurrentOriginalOnly ? ownerCurrentOriginalValidators(predecessorIdentity.modelBinding)
+    : await importPredecessorModules(predecessor, expectedSourceHead);
   const oldIntegrated = modules.integrated.ravScoreModelBinding();
   const oldCandidate = modules.candidate.ravScoreModelBinding();
   assertSame(oldIntegrated, predecessorIdentity.modelBinding, 'Archived predecessor integrated binding');
@@ -1225,6 +1399,7 @@ export async function migratePostCutoverPrivateRuntime({
       currentCandidateBinding: currentCandidate,
       publicHourPackSourcePath: path.join(source, PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath),
       publicHourPackTargetPath: path.join(temporary, PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath),
+      ownerCurrentOriginalOnly,
     });
     await copyPrivateRuntimeInventory(source, temporary, runtimeFiles, {
       skipRelativePaths: result.publicHourDeliveryRebound
@@ -1299,7 +1474,8 @@ async function main() {
     outputRoot: argument(argv, '--output'),
     bundleManifestPath: argument(argv, '--bundle-manifest'),
     predecessorDescriptorPath: argument(argv, '--predecessor-descriptor'),
-    predecessorRoot: argument(argv, '--predecessor-root'),
+    predecessorRoot: argv.includes('--owner-current-original') ? null : argument(argv, '--predecessor-root'),
+    ownerCurrentOriginalOnly: argv.includes('--owner-current-original'),
     repositoryRoot: argument(argv, '--repository-root'),
     expectedSourceHead: argument(argv, '--expected-source-head'),
     reportPath: argument(argv, '--report'),

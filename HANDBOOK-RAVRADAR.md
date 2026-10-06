@@ -1,6 +1,341 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.541
+**Håndbogsversion:** 4.0.543
+
+## 89.163 Prognosehalens dækning og bedre brug af reservekøen
+
+Feltdækning tæller gyldige numeriske vejrkomponenter over 673 kystdele,
+118 timer og fem familier. Det er ikke RavScore-tilgængelighed eller bevis
+for fuld privat historik. Et procentfald mellem rullende prognoser er heller
+ikke nødvendigvis datatab: samme timer skal sammenlignes særskilt fra
+udløbne og nytilkomne timer. Den kontrollerede 12Z-generation har fuld vind,
+bølge og vandstand i de første 96 timer, men væsentlige huller i halen.
+Nævneren og prognosehorisonten forkortes ikke for at forbedre tallet.
+
+Den normale Open-Meteo-producer er lokalt rettet fra parvis ventning til
+en løbende kø med højst de samme to samtidige forbindelser. En langsom
+marinehentning holder dermed ikke næste vindhentning tilbage i den anden
+ledige forbindelse. Vellykkede søskende kan gemmes uafhængigt; gemning
+har stadig én skriver. Ved gemmefejl starter ingen nye kald, allerede
+startede kald afventes, og den oprindelige fejl bevares.
+
+Budgetter, timeout, retry, rotation, kvalifikation, originale kildebeviser
+og private lagringskontrakter er uændrede. Modelbindinger, scoreformler,
+administratorens routing og kystpunkter ændres ikke. Vandstand er DMI-only;
+denne reservekø kan ikke opfinde manglende DMI-timer og løser ikke alene
+vandstandshullerne. Lokale målprøver består; eksakt GitHub-kontrol, sikker
+levering og målt effekt i nye generationer mangler. Fur-årsag og samlet
+revision er stadig åbne. DEC-0210.
+
+Footerrettelsen er leveret og kontrolleret i den offentlige kilde. Syvzoners
+vandstandsundtagelse er leveret; strøm fra dkss_lf findes ikke på de syv
+zoner i den kontrollerede 12Z-generation. Det beviser ikke privat historik
+eller vandstands-/temperaturproveniens. Tidligere kapitlers pendingstatus
+for afsluttede leverancer er historik.
+
+## 89.161 Footerens prognosetidspunkt
+
+Efter ejerens ønske viser footerens DA/DE/EN-gren med ukendt sammenlignelig
+beregningsalder kun prognosetidspunktet. Den generelle forklaring om ukendt
+alder er fjernet, ikke erstattet med et løfte om friskhed eller gyldighed.
+Metadata, aldersberegning, faktisk datavalidering, nødvisning og beskeder ved
+manglende data er uændrede. Dette er en separat tekstrettelse på 4.0.543;
+ingen ny version, modelbinding, migration eller vejrhentning. Lokal kontrol
+og CI er ikke offentlig effekt; kode-only levering og offentlig kontrol kræves.
+
+Bootstrap og app har samme afgrænsede copy-cachemarkør. Den sikrer, at
+tidligere besøgende ikke får gamle 543-assets ved næste sideindlæsning.
+Den normale serviceworker, dens cachepolitik og øvrige assets er uændrede;
+ingen caches slettes eller nulstilles. Den normale cold-start-målprøve dækker
+genbrug af tidligere 543-assets og ny indlæsning af de to rettede URL'er.
+
+Vandstandsundtagelsen er faktisk leveret i 543 kl.06.04 dansk tid. Den nye
+almindelige 543-generation afsluttede med deploy kl.08.45; detaljeret cache,
+no-loss og syvzoneeffekt mangler kontrol. Spørg RavRadar udvikles separat
+lokalt, og Fur-årsag, timeretention og samlet revision er åbne. Tidligere
+kapitlers modstridende forberedelsesstatus er historik.
+
+## 89.160 Syv kystzoner må bruge Limfjordsmodellens vandstand – lokal kandidat
+
+Den almindelige vejrhentning afsluttede med deploy kl. 05.16 den 5. oktober
+uden tab i de fem vejrfamilier. Det var fortsat kode 4.0.542. Den lokale
+vandstandsovergang forventer nu præcist denne nye original, reference
+5. oktober 00Z. Ældre originaler afvises; oprindelig 541-historik og arkiv
+bevares. Måltesten består, men en ny eksakt GitHub-kontrol og kontrolleret
+release kræves. Undtagelsen er endnu ikke live eller målt i ny vejrhentning.
+Det forklarer ikke de gamle Fur-huller og afslutter ikke den samlede revision.
+
+Den lokale kandidat 4.0.543 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
+Inaktiv Candidate G-kompatibilitet bruger `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
+og `modelBundleSha256=8d9142b5f7d9b5a3e5a0f3593e73df0c7ffaf3d80c036317967cb713f09197e3` over 66 transitive filer.
+Continuation er `4115f37178ff3d8eab540f3d9355a1275a13a9dd3a896e07f06673564e76ee51`.
+Disse er kandidatens tekniske bindinger, ikke bevis for offentlig 543 eller bedre fundpræcision.
+
+Tidligere kildekontrolhistorik:
+
+Første GitHub-kontrol fandt en gammel testforventning til sidste migration.
+Kun forventningen er rettet til den nye append-only vandstandsovergang;
+begge 55s-indstillinger, gamle migrationer og produktionsgates er uændrede.
+Den fejlede head må ikke merges; ny eksakt GitHub-kontrol og proof kræves.
+
+Ejeren har godkendt vandstand, og kun vandstand, fra dkss_lf til
+Agger/Krik Vig, Lyngby/Lodbjerg, Hou/Bisnap, Hals/Nordmandshage,
+Dokkedal/Mulbjerge, Harboøre/Vrist og Vejlby Klit/Ferring. Den lokale
+4.0.543-kandidat åbner verificerede vandstandstimer i nyt kildevalg,
+genbrugte data og central interpolation. Strøm og vandtemperatur forbliver
+udelukket; strømreglen og dens 48 timers hukommelse ændres ikke.
+
+Administratorens valgte kilder og vægte bevares. Mangler en valgt kilde,
+fordeles dens vægt ikke til andre. Gyldig direkte vandstand bevares,
+og slutkontrollen af datatab består. Undtagelsen kan hjælpe når de valgte
+Limfjordstimer findes, men skaber ikke manglende timer eller bevis for
+årsagen til de gamle Fur-huller.
+
+En ny teknisk databaseovergang er klargjort uden ændring af gamle migrationer.
+Den udgivne 542-pakke valideres under sin oprindelige binding før kun metadata
+løftes. Vejr, scores, begge modeltilstande og det private 541-originalarkiv
+bevares. Ingen nulstilling, beskæring, nye punkter eller nye scoreformler.
+Målprøver består lokalt; egen GitHub-kontrol, kontrolleret release og
+faktisk ny vejreffekt mangler. 4.0.542 er fortsat online.
+
+CP-bankens lokale første-fejl-rettelse følger med, men er ikke samlet bevis
+for processtop, eksklusiv skrivning eller national heljobskapacitet.
+Spørg RavRadar forbedres separat på dansk, tysk og engelsk. Begge opgaver
+og den samlede revision står i den eksisterende planlagte opgave.
+DEC-0291 og DEC-0292; ældre modstridende status er historik.
+
+## 89.158 Fur-huller skal kunne forklares uden at vise private data
+
+4.0.542 er faktisk online siden 4. oktober kl.22.20 DK efter PR516/517,
+bestået kildekontrol, privat overgang, eksakt datagenbrug og Pages. Den normale beregning gemmer ved Fur
+et privat spor af det faktisk valgte kildegrundlag. Sporet har kun hashes,
+ja/nej og optællinger for direkte vandstand, verificerede/tilladte kildeinput,
+routet output og de tidligere valgte kilders fortsatte tilstedeværelse.
+Rå vandstand, koordinater og konfiguration lægges ikke i diagnoseoutput.
+
+Den eksisterende tabs-kontrol giver faste årsagskoder og optællinger for
+hver tabt Fur-time. Den afhænger ikke af den korte liste med otte eksempler.
+Privat cache-komprimering bevarer sporet, mens begge offentlige pakker er
+byte-identiske uden det. De målrettede prøver og den normale caller består.
+Første kørsel uden et tidligere spor kaldes ærligt ukendt; et syntetisk
+reproduceret kildevalg er ikke bevis for årsagen i de gamle fejlede kørsler.
+
+Syvzonerettelsens kode er leveret. Kode-only genbrugte gyldige 16Z-data uden
+ny vejr- eller scoreberegning. Kilderen strøm og 48 timers strømhukommelse behandles
+ved næste ægte nye vejrgeneration; offentlig effekt er endnu ikke målt.
+Originaler, bevist øvrig historik, formler og kystpunkter bevares. Den første
+release afviste gyldige Samsø-/Læsø-zone-id'er. Den reparerede kontrol bruger
+begge autentificerede originale 210-zoneinventarer og alle 673 delidentiteter;
+ukendte zoner og forkerte del-id'er afvises stadig. Egen kildekontrol og faktisk
+deploy består; reparationens migrationsplan var tom. Gamle migrationer er urørte.
+Den naturlige vejrhentning var kl. 22.41 aktiv uden fejlede trin. Cron er ikke
+ændret, og den manuelle kørsel er udsat til faktisk ledig writer.
+Det er endnu ikke lavet sådan, at tab automatisk repareres og deploy fortsætter.
+Gyldige timer skal bevares før uændret slutkontrol; datatabskontrollen slås ikke fra.
+Nyeste nationale forecast-dækning er 96.44% af fem vejrfelter over 210 zoner,
+673 kystdele og 118 timer; alle fem samtidig 92.84%. Det er ikke bevis for
+observationer eller komplet privat historik. Dette erstatter ældre 12Z-dækning.
+Ingen ny alarm eller privat diagnose vises på hjemmesiden. DEC-0291 og DEC-0292.
+Første GitHub-kontrol fandt gamle testudtræk og en manglende plain-helper i
+den ældre genbrugsvej. De er rettet lokalt med bevaret strengt kildebevis;
+de berørte regressionsprøver bestod senere exact-head CI før merge. Arkivreparationen
+bestod også egen exact-head kontrol og faktisk deploy den 4. oktober kl.22.20 DK.
+Ældre afsnit om en endnu ikke lavet NORMAL-diagnose er erstattet af denne status.
+
+## 89.157 Havmodellen skal passe til målzonen – leveret kode
+
+Reglen for de syv ejerafgrænsede zoner og den kontrollerede tekniske overgang
+er leveret i 4.0.542 den 4. oktober kl.22.20 DK. De nuværende tekniske bindinger
+er integrated4ebe158f… og Candidate G3e5aae87… med uændrede fysiske kontrakter.
+Kode-only genbrugte gyldige 16Z-data; den kilderene strøm og 48h-hukommelse
+kræver næste ægte nye vejrgeneration. Faktisk NEW-T-effekt er fortsat åben.
+Originaler og bevist øvrig historik bevares. NORMAL Fur-diagnosen er også
+leveret, men gammel årsag og automatisk timeretention er ikke løst.
+
+### Historiske lokale statusser før leveringen
+
+Alle lokale bindings-, installations- og leveringsstatusser nedenfor er
+udviklingshistorik, ikke den aktuelle offentlige status. Afsnit89.158 og
+ovenstående leveringsstatus har forrang, hvor de er modstridende.
+
+Den lokale kandidat til 4.0.542 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og `modelBundleSha256=4ebe158f68954f32b47cb71d5222ab0cf676faaf4b323d743f9d43bf34a63a51` over 68 kanonisk normaliserede transitive implementeringsfiler.
+Candidate G-kompatibiliteten er `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
+og `modelBundleSha256=3e5aae87b19934091a7882fbd8f5b5570b7c83ba786ea6f3bac52a8fd71fcd1e` over 66 transitive filer.
+Continuation er `3dd9b7f054dd19400e8110ec504c2689bd62c52741cf6cf7805070e89e51d1bd`.
+Den offentliggjorte 4.0.541-binding er stadig `29ea9a19647bf7d5edad0eee159267086d546f0d90a9f2778a77077351aad948`.
+Disse lokale bindingsoplysninger er ikke en ny offentlig release eller ændrede fysiske kontrakter.
+
+Nyeste lokale status 4. oktober kl.19.12: Den tekniske overgang er nu
+koblet til de normale læse- og releaseveje. Den gemte pakke kontrolleres under
+sin præcise originalbinding; originalerne bevares privat uden ommærkning.
+De nye tekniske bindinger og en ny databaseovergang er lokalt måltestet,
+men ikke installeret eller sendt. Overgangen på samme vejrtid ændrer ikke
+strømhistorik eller offentlig score. Kilderen strøm genopbygges først ved
+næste ægte nye vejrtid, med ærlig ufuldstændig historik hvor bevis mangler.
+Fysiske formler, punkter og bevist øvrig historik bevares.
+
+Fur-fejlens gamle cache er ikke længere tilgængelig, så det gamle faste
+læseværktøj kan ikke bruges. Ejeren ønsker efter kystleveringen en diagnose
+i normale kommende vejrhentninger og genbrug af gyldige gamle timer, så
+samme type tab kan håndteres uden skjult datatab. Det er endnu ikke lavet;
+årsagen til de tidligere tab er fortsat ukendt. Slutkontrollen lempes ikke.
+
+De tidligere lokale statusafsnit nedenfor beskriver udviklingshistorikken.
+
+Arkivet skal også høre til den låste generationstid. En efterfølgende lokal
+prøve viste, at en senere arkivreference kunne slippe igennem. Den normale
+beregning og tekniske metadataovergang kontrollerer nu samme tidsgrænse før
+genbrug. De berørte prøver består, og originalerne ændres ikke. Det er endnu
+ikke en gennemført offentlig overgang.
+
+En ny målrettet prøve fandt, at den normale tekniske overgang ville afvise
+originalernes gamle binding. Det er rettet lokalt: hele det private arkiv og
+de aktive kystdele kontrolleres først, og originalerne bevares derefter uden
+ommærkning. Gamle bindinger i aktuelle data afvises stadig. Denne prøve og
+den normale metadataregression består, men de beviser ikke en gennemført
+samlet overgang eller offentlig effekt. Rettelsen er fortsat ikke online.
+
+De bevarede originaler kontrolleres nu lokalt under deres præcise gamle
+tekniske binding uden at ommærke dem. De bruges fortsat aldrig som nye
+kildebeviser eller starttilstande. Den normale beregning kræver stadig sin
+aktuelle binding. Måltesten og den normale tilstandsregression består; den
+samlede overgang med nye bindinger og offentlig effekt er ikke leveret.
+Den lokale continuation med gamle genererede metadata er `19c50def…`, ikke
+en ny offentlig binding. Fur-læseworkflowet er efter særskilt godkendelse
+pushet som PR515; det er ikke selve diagnosen eller en bevist Fur-rettelse.
+
+Nyere ejerbeslutning: Reglen omfatter nu syv åbne kystzoner tæt ved de to
+Limfjordsudløb: Agger/Krik Vig, Lyngby/Lodbjerg, Hou/Bisnap,
+Hals/Nordmandshage, Dokkedal/Mulbjerge, Harboøre/Vrist og Vejlby Klit/Ferring.
+Limfjordens egne zoner og Fur beholder modellen. Det er ikke en automatisk
+frakobling af alle vest- eller østkystzoner og ændrer ingen kystpunkter.
+
+Beskyttelsen følger nyt kildevalg, genbrugte data og den eksisterende
+strømhukommelse. Måltests er udvidet til alle syv zoner. Rettelsen er ikke
+online endnu: den præcise tekniske overgang og produktionskontrol mangler.
+Ejeren har godkendt én ny, kontrolleret databaseovergang; gamle migrationer
+ændres ikke. Originalhistorik og bevist bølge-/øvrig historik bevares.
+Ukendt kilde kaldes ikke Limfjordsdata, og scoreformlen ændres ikke.
+Fur undersøges særskilt i den præcise gamle cache og dens originale grundlag;
+kun syv timers kildeoptællinger må komme ud. En optælling beviser ikke alene
+årsagen, og der er ingen ny fejlalarm på hjemmesiden.
+
+Kort fortalt: Ejeren har besluttet, at Lyngby/Lodbjerg og Agger/Porskær ikke
+må få input fra dkss_lf. Den lokale rettelse er endnu ikke lagt online.
+
+Reglen følger både nye data og genbrugte input. Den gælder også, når en
+havstation leverer til zonen, eller en kortvarig strømtilstand fastholdes.
+Fur og andre tilladte Limfjordszoner beholder deres gyldige regionale model.
+Gamle pakker kan stadig undersøges med deres oprindelige kildebevis; at en
+pakke er ægte betyder ikke, at dens kilde er tilladt til enhver målzone.
+
+Alle210zoner og673kystdele er i det nye offentlige datasæt kontrolleret over
+118prognosetimer. Uden central Limfjordsklassifikation blev dkss_lf-strøm
+kun fundet ved Agger15timer og Lyngby18timer. Det er ikke en global havcelle-
+kontrol eller bevis for, hvor gamle bidrag til den gemte score kom fra.
+
+Den gemte48timers strømhukommelse mangler en kildeangivelse for hver gammel
+prøve. Derfor skal overgangen for både den integrerede model og dens interne
+reserve afklares før levering. Historikken nulstilles ikke blindt, og
+scoreformel, kystpunkter, geometri og tabsbarrierer ændres ikke. DEC-0291.
+
+En målrettet prøve fandt også en vej, hvor allerede udvalgte strømdata fra
+dkss_lf kunne slippe gennem den fælles beregning ved begge zoner. Den vej
+er nu lukket lokalt før begge modeller, også ved kortvarige fastholdelser.
+Det er ikke en rettelse af gamle bidrag i den gemte48timers hukommelse.
+Originalerne og øvrig bevist historik bevares; ukendt kilde omdøbes ikke til
+Limfjordsdata. Rettelsen er fortsat ikke online.
+
+Den lokale overgang for begge modeller er nu afprøvet. Kun strømmen bygges
+igen fra input med bevis for en tilladt kilde; bølge- og øvrig hukommelse
+bevares. Fuld tilladt historik bliver ikke kasseret. Manglende bevis giver
+ukendt datagrundlag, ikke en sikker nulscore. Originalerne gemmes privat til
+kontrol og overlever genstart; de er ikke nye kildebeviser. Dette private
+arkiv ændrer ikke hjemmesidens data og giver ingen ny fejlalarm.
+Slutkontrol og den faktiske effekt på nye offentlige data mangler stadig.
+
+En senere prøve fandt, at originalerne kunne blive glemt ved kold
+genindlæsning. Det er rettet lokalt. Arkivets målzone, format og oprindelige
+tilstande kontrolleres før genbrug; det bruges aldrig som nyt kildebevis.
+Begge zoners genindlæsning fra privat historik, checkpoint og punktaktivering
+er måltestet. Gammel reservehistorik uden det nødvendige modelpar afvises,
+og ukendt strøm får ikke status som fuld historik. Rettelsen er ikke online.
+
+Kontrollen af kodens tekniske binding er stadig åben. Den nye kode og gemte
+historik skal passe præcist sammen før levering; historikken må ikke bare
+ommærkes eller nulstilles. Den fælles kildepolicy er nu med i producentens
+kildeinventar. Det ændrer ikke formatet for gemte vejrdata. Ingen ny binding
+eller databaseovergang er installeret.
+
+Fur undersøges særskilt. Den fejlede vejrhentning havde faktisk hentet den
+centrale vandstandsrouting. De loggede samlede vandstandstal var uændrede
+før og efter reservehentningen, men de afslører ikke kilden til de syv tab.
+Kørslen med deploy kl.09.26 beviser derfor ikke, at den gamle fejl er løst.
+
+## 89.156 Fejlalarm til ejeren, ikke på hjemmesiden
+
+Nyeste faktiske status: Alarmen blev leveret den4.oktober kl.09.34 via PR513.
+Den ene godkendte kontrol afsluttede kl.09.35, og issue514 er faktisk gemt
+og tildelt ejeren. Modtaget mail er ikke verificeret. Afventende lokale
+beskrivelser nedenfor er historik, ikke den aktuelle alarmstatus.
+
+Ejeren har godkendt en særskilt GitHub-alarm for afsluttede fejlede almindelige
+vejrhentninger. Den opretter højst én issue pr. kørsel med kun det faste link
+og status og tildeler den til ejerens eksisterende konto. Repositoryet skal
+forblive offentligt; issuen er derfor offentlig på GitHub, ikke privat.
+Der vises ingen driftsalarm på ravradar.dk, og hjemmesidens brugere får ingen
+mail fra denne funktion. Den ændrer ikke vejret, score eller deploy.
+
+Alarmen bruger betroet kode fra main og læser kun GitHub-metadata, aldrig
+joblogs, artifacts eller vejrpayloads. Den kontrollerer præcis indgang,
+repository, attempt og status og genlæser run og main før oprettelse.
+Allerede oprettede og lukkede alarmer tæller med. Ukendt resultat giver ingen
+blind gentagelse. Syv lokale syntetiske testforløb består uden skip; egen
+kildekontrol, merge og faktisk issue afventer. En tildelt issue er ikke bevis
+for modtaget mail. Det er ikke en ny produktrelease. Se DEC-0290.
+
+
+## 89.155 Skrivefri undersøgelse af samme originalpakke
+
+Offentlig version er fortsat 4.0.541. Den første læsning stoppede på et
+forkert nøglenavn før autentificering. Bindingen til producentens eksisterende
+nøgle blev rettet og leveret som PR511. Den ene korrigerede læsning afsluttede
+kl.04:50 dansk tid den4. oktober med faktisk autentificering, kontrol og
+oprydning. Ingen nye nøgler, rettigheder eller produktionsdata blev ændret.
+
+Lyngby/Lodbjerg og naboernes gemte strømtilstand kunne reproduceres med den
+uændrede beregning. Lyngbys høje hukommelsesværdi på95.821344 er således
+faktisk gemt og reproduceret over48timer:49tidspunkter inklusive endepunkterne,
+ikke49timer.17tidspunkter matcher det kendte Limfjordspunkt på land, men
+disse bidrager samlet med0 til opbygningen. Nettobidraget findes i30tidspunkter
+uden verificeret match i pakkens gemte DMI-rækker. Manglende match betyder
+ikke automatisk ugyldig historik. Landpunktet er derfor ikke bevist som årsag.
+Original havcellemask og en lagret årsagskobling er ikke målt.
+
+Ejeren har særskilt godkendt samme skrivefri kontrol af alle210zoner og673
+kystdele. Den lokale udvidelse bruger et eksplicit valg og en fast bekræftelse,
+kontrollerer identiteterne og genbruger den samme oprindelige pakke,
+autentificering, filkontrol og beregning. Hver tilstedeværende strømtilstand
+skal kunne reproduceres; en forkert tilstand stopper kontrollen. Fraværende
+tilstande tælles særskilt og kaldes aldrig en bestået reproduktion.
+Rapporten indeholder kun faste optællinger pr.zone under den uændrede
+grænse på32KiB. Ét kendt landpunkt er ikke en global land-/vandmask.
+Efter egen kildekontrol og PR512-merge afsluttede den ene nationale læsning
+kl.05:41 dansk tid den4.oktober. Alle673 gemte tilstande kunne reproduceres;
+648 var klar og25 var ikke klar. Dette er ikke global havcellemask, komplet
+privat historik eller fysisk årsag. Kontrollen må ikke gentages blindt.
+Den nyere to-zone-ordre og lokale rettelse er beskrevet i kapitel89.157.
+Det er ikke en ny produktrelease.
+
+Ingen rå strømvektorer, koordinater, private stier eller fejlpayload forlader
+funktionen. En matchende tid/styrke er ikke i sig selv bevis for årsag eller
+korrekt havcelle. Ingen nyt vejr, cachegemning, scoregeneration, databasewrite
+eller deploy. Ejeren har stående tilladt relevante private joblogs; secrets
+og private payloads forbliver fortrolige uden tekniske kontorettighedsændringer.
+Fur-vandstandstabet og den samlede vejrhentningsrevision er fortsat åbne.
+Se DEC-0289; ældre lokale541-kandidatstatus nedenfor er historisk.
 
 ## 90.1 Jordrav 0.2 – landsdækkende geologiske muligheder, lokal leverance
 
@@ -221,6 +556,31 @@ Det er ikke en ny offentlig version eller bevis for alle underprocessers
 stop, eksklusiv skrivning, afbrudt runner, national kapacitet eller hele
 forløbet med private originalfiler. Resterende kilde-, data- og deploykontrol
 skal bestå før levering. Andre tidligere afvisninger består. Se DEC-0288.
+
+## 89.159 Revision – bankens egen lukning bevarer første fejl, kun lokal kandidat
+
+Den 5. oktober er en allerede kendt rettelse isoleret i den normale
+Copernicus-bankgemmer på den leverede 4.0.542-basis. Hvis synkronisering
+til disk fejler, må en senere fejl ved lukning af eget filhåndtag ikke
+skjule den første fejl. Egen lukning og oprydning forsøges stadig.
+Lukning som eneste fejl er fortsat et hårdt stop, aldrig en succesmarkør.
+
+Tidligere bank og kvitteringer bevares byte for byte før vellykket
+atomisk udskiftning. Er en komplet ny bank allerede udskiftet, bevares den
+ved senere oprydningsfejl uden rollback eller påstået succes. Den friske
+normale producent genoptager fra faktisk overlevende diskdata og
+kontrollerer originaler og kvitteringer igen.
+
+Én eksisterende funktion og ét eksisterende testforløb er ændret. Fire
+underprøver reproducerede først maskeringen og består efter rettelsen.
+Alle øvrige runtime- og testbytes er kontrolleret uændrede. Normale
+modelbyggere, fysisk scoremodel og private lagrings-/publickontrakter
+matcher de leverede bindinger; ingen nye metadata eller SQL-runtime.
+
+Rettelsen er kun lokal og har ikke egen kildekontrol eller deploy endnu.
+Det er ikke bevis for sikkert processtop, eksklusiv skrivning, tab af
+runner, national kapacitet eller rettelse af Fur-hullerne. Den samlede
+revision og syvzonernes faktiske nye vejreffekt er åbne. Se DEC-0266.
 
 ## 89.148 Revision – Copernicus bevarer den første gemmefejl (historisk kandidatstatus; nu leveret)
 

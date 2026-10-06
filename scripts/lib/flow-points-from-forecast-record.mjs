@@ -1,4 +1,4 @@
-import { verifiedLivePilotSource } from './live-current-pilot.mjs';
+import { eligibleLivePilotSource as verifiedLivePilotSource } from './live-current-pilot.mjs';
 import { verifiedDmiForecastSource } from './dmi-forecast-store.mjs';
 import { verifiedSelectedWeatherReserve } from './weather-reserve-admission.mjs';
 

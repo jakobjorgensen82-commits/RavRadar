@@ -1,0 +1,55 @@
+name: Notify owner of a failed ordinary weather run
+
+on:
+  workflow_run:
+    workflows: [Run current RavRadar weather once]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      failed_run_id:
+        description: "Eksakt afsluttet fejlet almindelig vejrhentning; ingen genkørsel af vejret"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+# Separate from the production writer; never cancels work or launches providers.
+# Serialize all alerts so repeated events/attempts cannot race the issue lookup.
+concurrency:
+  group: ravradar-weather-failure-owner-alert
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    if: >-
+      github.repository == 'jakobjorgensen82-commits/RavRadar' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'failure' ||
+      github.event.workflow_run.conclusion == 'timed_out' ||
+      github.event.workflow_run.conclusion == 'startup_failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Never checkout the completed run's untrusted head or download artifacts.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Require the trusted default-branch source
+        env:
+          EXPECTED_HEAD: ${{ github.sha }}
+        run: test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD"
+      - name: Create or verify one link/status-only issue assigned to owner
+        run: node scripts/notify-weather-failure.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          FAILED_RUN_ID: ${{ inputs.failed_run_id }}

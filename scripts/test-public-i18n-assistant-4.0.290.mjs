@@ -268,4 +268,15 @@ for (const language of ['de', 'en']) {
   for (const target of i18n.t('learn.nav', {}, language).matchAll(/href="#([^"]+)"/g)) assert.ok(learnSectionIds.has(target[1]), `${language} har et grundbogslink uden mål: ${target[1]}`);
 }
 
+const footerApp = await fs.readFile(path.join(ROOT, 'app.js'), 'utf8');
+for (const copy of ['Prognose for {time}.', 'Prognose für {time}.', 'Forecast for {time}.']) {
+  assert.ok(footerApp.includes(`ageUnknown:'${copy}'`),
+    'The owner-approved footer wording must show the forecast time alone.');
+}
+assert.doesNotMatch(footerApp, /Vi kan ikke se præcist, hvor gamle alle vejrberegninger er|Wie alt alle Wetterberechnungen genau sind|We cannot tell exactly how old every weather calculation is/);
+assert.match(footerApp, /else if\(conditions\?\.available&&availability\?\.mode==='EMERGENCY_LAST_COMPLETE'\)/,
+  'Removing footer wording must preserve the emergency-data warning.');
+assert.match(footerApp, /dataStatus\.textContent=t\('data\.failed'\)/,
+  'Removing footer wording must preserve the failed-data warning.');
+
 console.log('OK: DA/DE/EN-kontrakten, alle offentlige sider, dansk fallback, dataminimering og rav-afgrænset assistentrouting er verificeret.');

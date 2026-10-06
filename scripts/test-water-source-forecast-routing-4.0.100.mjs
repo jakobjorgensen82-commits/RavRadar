@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly } from './lib/water-source-forecast-routing.mjs';
 import { compareRavScoreBestTimeCandidates } from '../js/core/best-time-policy.js';
+import { comparePublicWeatherHours } from './check-public-weather-continuity.mjs';
+import { FUR_WATER_ROUTING_PART_ID, buildFurWaterRoutingDiagnostic,
+  validFurWaterRoutingDiagnostic, classifyFurWaterLevelLoss }
+  from './lib/fur-water-routing-diagnostic.mjs';
 const generatedAt='2026-08-05T06:02:00Z';
 const currentHour='2026-08-05T06:00:00.000Z';
 const times=Array.from({length:41},(_,i)=>new Date(Date.parse(currentHour)+i*3*3600000).toISOString());
@@ -106,6 +110,105 @@ assert.equal(incompletePart.hourly[0].waterLevelTrendCm3h,null,
 assert.equal(incompletePart.hourly[1].waterLevelCm,42,
   'An incomplete routed hour must retain the valid direct DMI PART value.');
 const forgedSourceIndex=new Map(index);
+// Synthetic Fur candidate-path boundary, NOT attribution of the old run:
+// published SOURCE A survives byte-for-byte, but a new A+B bracket is
+// incomplete in seven hours and the direct PART never had those values.
+// The actual production no-loss comparator must still detect that loss.
+const boundaryTimes=index.get('oceanobs:A').hourly.slice(111,118).map(row=>row.time);
+assert.equal(boundaryTimes.length,7);
+const boundaryDirect=boundaryTimes.map(time=>({time,waterLevelCm:null,
+  windSpeedMps:4,windDirectionDeg:0,waveHeightM:0.2,waveDirectionDeg:90,wavePeriodS:4,
+  currentSpeedMps:0.1,currentDirectionDeg:0,waterTemperatureC:12}));
+const sourceBefore=JSON.stringify(index.get('oceanobs:A'));
+const changedBracketIndex=new Map(index);
+const incompleteBracket=structuredClone(index.get('tidewater:B'));
+for(const row of incompleteBracket.hourly)if(boundaryTimes.includes(row.time))row.waterLevelCm=null;
+changedBracketIndex.set('tidewater:B',incompleteBracket);
+const singleRoute={zones:{Z:{enabled:true,requireAll:true,stations:[{sourceKey:'oceanobs:A'}]}}};
+const routeBoundary=(direct,selectedRouting)=>applyVerifiedWaterSourceRoutingToPartHourly({
+  part,parentFeature:features[0],hourly:direct,sources:aware,index:changedBracketIndex,
+  routing:selectedRouting,haversineKm:hav}).hourly;
+const priorRouted=routeBoundary(boundaryDirect,singleRoute);
+const changedRouted=routeBoundary(boundaryDirect,routing);
+const sameRouted=routeBoundary(boundaryDirect,singleRoute);
+const directControl=routeBoundary(boundaryDirect.map(row=>({...row,waterLevelCm:42})),routing);
+const boundaryLosses={changed:0,same:0,directPresent:0};
+for(let i=0;i<boundaryTimes.length;i++){
+  const time=boundaryTimes[i];
+  const doc=(datasetId,row)=>({datasetId,delivery:{kind:'hour',key:time},coastalParts:{parts:{
+    [part.partId]:{zoneId:part.zoneId,waterPoint:part.waterPoint,landPoint:[10.26,56],current:{weather:row}}
+  }}});
+  for(const [key,row] of [['changed',changedRouted[i]],['same',sameRouted[i]],['directPresent',directControl[i]]]){
+    const compared=comparePublicWeatherHours(doc('prior',priorRouted[i]),doc('next',row),{
+      time,previousDatasetId:'prior',currentDatasetId:'next',partCount:1});
+    assert.equal(compared.changedIdentities,0);
+    assert.deepEqual({...compared.losses,waterLevel:0},{wind:0,wave:0,current:0,waterLevel:0,waterTemperature:0});
+    boundaryLosses[key]+=compared.losses.waterLevel;
+  }
+}
+assert.deepEqual(boundaryLosses,{changed:7,same:0,directPresent:0});
+assert.equal(JSON.stringify(index.get('oceanobs:A')),sourceBefore,'Old native SOURCE bank is still intact.');
+assert.ok(boundaryDirect.every(row=>row.waterLevelCm===null),'Routing must not mutate direct PART inputs.');
+// Exercise the same real router's future private trace, not the unavailable
+// historical cipher. The first rollout honestly has no old diagnostic.
+const furPart={...part,partId:FUR_WATER_ROUTING_PART_ID,zoneId:'DK-B05-17'};
+const furFeature={properties:{...features[0].properties,id:furPart.zoneId}};
+const furRoute=original=>({zones:{[furPart.zoneId]:original.zones.Z}});
+const furMeta=datasetId=>({datasetId,productionReferenceAt:currentHour,
+  generatedAt:new Date(generatedAt).toISOString()});
+const captureRoute=(selectedRouting,previousRoutingDiagnostic=null,sourceIndex=changedBracketIndex,
+  direct=boundaryDirect)=>applyVerifiedWaterSourceRoutingToPartHourly({
+    part:furPart,parentFeature:furFeature,hourly:direct,sources:aware,index:sourceIndex,
+    routing:furRoute(selectedRouting),haversineKm:hav,
+    diagnosticReferenceAt:currentHour,previousRoutingDiagnostic});
+const beforeTrace=captureRoute(singleRoute);
+const previousConditions={...furMeta('rr-prior'),
+  furWaterRoutingDiagnostic:buildFurWaterRoutingDiagnostic(beforeTrace.diagnostic,furMeta('rr-prior'))};
+const currentTrace=captureRoute(routing,previousConditions.furWaterRoutingDiagnostic);
+const currentConditions={...furMeta('rr-next'),
+  furWaterRoutingDiagnostic:buildFurWaterRoutingDiagnostic(currentTrace.diagnostic,furMeta('rr-next'))};
+assert.ok(validFurWaterRoutingDiagnostic(previousConditions.furWaterRoutingDiagnostic));
+assert.ok(validFurWaterRoutingDiagnostic(currentConditions.furWaterRoutingDiagnostic));
+assert.deepEqual(currentTrace.hourly,changedRouted,'Diagnosis cannot alter routed values or other fields.');
+for(const time of boundaryTimes)assert.equal(classifyFurWaterLevelLoss({
+  previousConditions,currentConditions,time}),'ROUTE_CHANGED_PREVIOUS_SOURCES_STILL_PRESENT');
+assert.equal(classifyFurWaterLevelLoss({previousConditions:{...furMeta('rr-legacy')},
+  currentConditions,time:boundaryTimes[0]}),'TRACE_NOT_RECORDED');
+const noOldSource=new Map(changedBracketIndex);
+noOldSource.delete('oceanobs:A');
+const onlyB={zones:{Z:{enabled:true,requireAll:true,stations:[{sourceKey:'tidewater:B'}]}}};
+const missingOldTrace=captureRoute(onlyB,previousConditions.furWaterRoutingDiagnostic,noOldSource);
+assert.equal(classifyFurWaterLevelLoss({previousConditions,currentConditions:{...furMeta('rr-missing'),
+  furWaterRoutingDiagnostic:buildFurWaterRoutingDiagnostic(missingOldTrace.diagnostic,furMeta('rr-missing'))},
+  time:boundaryTimes[0]}),'ROUTE_CHANGED_PREVIOUS_SOURCES_NOT_PRESENT');
+const movedSourceIndex=new Map(changedBracketIndex);
+const movedSource=structuredClone(changedBracketIndex.get('oceanobs:A'));
+movedSource.point=[10.01,56];
+movedSourceIndex.set('oceanobs:A',movedSource);
+const movedSourceTrace=captureRoute(routing,previousConditions.furWaterRoutingDiagnostic,movedSourceIndex);
+assert.equal(movedSourceTrace.diagnostic.hours[boundaryTimes[0]].previousSourceSetAvailable,false,
+  'The same source key at another sampling point is not the original source identity.');
+const nonNumeric=structuredClone(currentConditions.furWaterRoutingDiagnostic);
+nonNumeric.trace.hours[boundaryTimes[0]].verifiedSelectedSourceCount='1';
+assert.equal(validFurWaterRoutingDiagnostic(nonNumeric),false);
+const extra=structuredClone(currentConditions.furWaterRoutingDiagnostic);
+extra.trace.privateRawValues=[42];
+assert.equal(validFurWaterRoutingDiagnostic(extra),false);
+const outside=structuredClone(currentConditions.furWaterRoutingDiagnostic);
+outside.trace.hours['2026-08-05T05:00:00.000Z']=outside.trace.hours[boundaryTimes[0]];
+assert.equal(validFurWaterRoutingDiagnostic(outside),false);
+const wrongDataset={...currentConditions,datasetId:'rr-unrelated'};
+assert.equal(classifyFurWaterLevelLoss({previousConditions,currentConditions:wrongDataset,
+  time:boundaryTimes[0]}),'TRACE_IDENTITY_OR_FORMAT_INVALID');
+const movedContext=structuredClone(currentConditions);
+movedContext.furWaterRoutingDiagnostic.trace.contextSha256='f'.repeat(64);
+assert.equal(classifyFurWaterLevelLoss({previousConditions,currentConditions:movedContext,
+  time:boundaryTimes[0]}),'CONTEXT_CHANGED');
+const traceText=JSON.stringify(currentConditions.furWaterRoutingDiagnostic);
+for(const forbidden of ['waterLevelCm','samplingPoint','oceanobs:A','tidewater:B',
+  'coastLine','weight','modelRun','dkss_idw'])assert.equal(traceText.includes(forbidden),false,forbidden);
+assert.ok(Buffer.byteLength(traceText)<32*1024,'Private presence-only trace remains small and bounded.');
+assert.equal(partRouting.diagnostic,null,'Non-Fur routing does not acquire a diagnostic.');
 const forgedB=structuredClone(index.get('tidewater:B'));
 forgedB.hourly[0].sources.waterLevel.entityId='PART::Z-P1';
 forgedSourceIndex.set('tidewater:B',forgedB);
@@ -116,6 +219,42 @@ const forgedPart=applyVerifiedWaterSourceRoutingToPartHourly({
 assert.equal(forgedPart.appliedHours,0);
 assert.equal(forgedPart.hourly[0].waterLevelCm,42,
   'A SOURCE record relabelled as a PART must not override direct DMI data.');
+// SOURCE identity is global; eligibility must be checked against the TARGET
+// zone, including an administrator's explicit station bracket.
+const lfBulk=structuredClone(bulk);
+lfBulk.zones['SOURCE::oceanobs:A'].hourly=rows(0,'dkss_lf','oceanobs:A',[10,56]);
+const lfIndex=buildWaterSourceForecastIndex(sources,lfBulk,generatedAt);
+assert.equal(lfIndex.size,2,'Authentic LF sources remain available for allowed target zones.');
+for(const [zoneId,allowed] of [['DK-B01-01',true],['DK-B01-02',true],['DK-B02-08',true],['DK-B02-09',true],['DK-B02-11',true],['DK-B03-01',true],['DK-B03-02',true],['DK-B05-17',true],['DK-B02-10',true],['DK-B05-25',true],['DK-B01-03',true]]){
+  const targetPart={...part,zoneId},targetFeature={properties:{...features[0].properties,id:zoneId}};
+  const targetRouting={zones:{[zoneId]:{enabled:true,requireAll:true,stations:[{sourceKey:'oceanobs:A'}]}}};
+  const before=JSON.stringify(directPartHourly);
+  const routed=applyVerifiedWaterSourceRoutingToPartHourly({part:targetPart,parentFeature:targetFeature,
+    hourly:directPartHourly,sources:aware,index:lfIndex,routing:targetRouting,haversineKm:hav});
+  assert.equal(routed.appliedHours,allowed?2:0,zoneId);
+  assert.equal(routed.hourly[0].waterLevelTrendCm3h,1,'Verified LF T+3 support is permitted for waterLevel only.');
+  if(!allowed)assert.deepEqual(routed.hourly,directPartHourly,'Excluded SOURCE retains valid direct PART input.');
+  assert.equal(JSON.stringify(directPartHourly),before);
+  const targetOutput={zones:{[zoneId]:{current:{},forecast:{hourly:structuredClone(directPartHourly)},waterLevel:{}}}};
+  const parentResult=applyWaterSourceRouting({features:[targetFeature],output:targetOutput,
+    forecastStore:{zones:{}},sources:aware,index:lfIndex,routing:targetRouting,haversineKm:hav,generatedAt});
+  assert.equal(parentResult.audit.applied,allowed?1:0,zoneId);
+  const nsbsRouting={zones:{[zoneId]:{enabled:true,requireAll:true,stations:[{sourceKey:'tidewater:B'}]}}};
+  assert.equal(applyVerifiedWaterSourceRoutingToPartHourly({part:targetPart,parentFeature:targetFeature,
+    hourly:directPartHourly,sources:aware,index:lfIndex,routing:nsbsRouting,haversineKm:hav}).appliedHours,2);
+  const mixedRouting={zones:{[zoneId]:routing.zones.Z}};
+  const mixed=applyVerifiedWaterSourceRoutingToPartHourly({part:targetPart,parentFeature:targetFeature,
+    hourly:directPartHourly,sources:aware,index:lfIndex,routing:mixedRouting,haversineKm:hav});
+  assert.equal(mixed.appliedHours,2,'An authentic mixed LF/NSBS central bracket remains usable.');
+  assert.equal(mixed.hourly[0].sources.waterLevel.collection,'dkss_lf+dkss_nsbs');
+  const missingIndex=new Map(lfIndex),missing=structuredClone(lfIndex.get('tidewater:B'));
+  missing.hourly.find(row=>row.time===times[1]).waterLevelCm=null;
+  missingIndex.set('tidewater:B',missing);
+  const incomplete=applyVerifiedWaterSourceRoutingToPartHourly({part:targetPart,parentFeature:targetFeature,
+    hourly:directPartHourly,sources:aware,index:missingIndex,routing:mixedRouting,haversineKm:hav});
+  assert.equal(incomplete.hourly[1].waterLevelCm,42,'Missing support still retains direct PART, never renormalizes.');
+  assert.equal(incomplete.hourly[0].waterLevelTrendCm3h,null,'Missing T+3 remains unknown.');
+}
 const directTieHourly=[directPartHourly[0],{...directPartHourly[1],waterLevelCm:5}];
 const routedTieHourly=applyVerifiedWaterSourceRoutingToPartHourly({
   part,parentFeature:features[0],hourly:directTieHourly,

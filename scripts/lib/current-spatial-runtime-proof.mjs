@@ -1,7 +1,7 @@
 import { directionFromComponents } from '../../js/core/current-direction-audit.js';
 import {
   operationalLiveCurrentClosureEnabled,
-  verifiedLivePilotSource,
+  eligibleLivePilotSource as verifiedLivePilotSource,
   verifiedNativeCadenceReferenceForPart,
 } from './live-current-pilot.mjs';
 

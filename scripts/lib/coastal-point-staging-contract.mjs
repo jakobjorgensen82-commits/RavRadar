@@ -6,7 +6,10 @@ import {
   CANDIDATE_G_STATE_SCHEMA_VERSION,
   CANDIDATE_G_STATE_VARIANT_ID,
 } from '../../js/core/ravscore-candidate-g-state-pipeline.js';
-import { buildIntegratedRavScoreStateSeries } from '../../js/core/ravscore-integrated-state-pipeline.js';
+import { buildIntegratedRavScoreStateSeries, assertOwnerCurrentArchivedPredecessorState,
+  assertWaterLevelOnlyPredecessorState,
+  RAVSCORE_OWNER_CURRENT_ARCHIVE_PREDECESSOR_BUNDLE_SHA256 }
+  from '../../js/core/ravscore-integrated-state-pipeline.js';
 import {
   RAVSCORE_CURRENT_SUPPLY_POLICY,
   RAVSCORE_LAST_MILE_POLICY,
@@ -217,14 +220,7 @@ export function assertCoastalPointStageModelBinding(binding, label = 'Coastal-po
   return binding;
 }
 
-export function assertIntegratedCoastalPointContinuation(
-  state,
-  {
-    samplingContextKey,
-    requireReady = false,
-    label = 'Coastal-point RavScore continuation',
-  } = {},
-) {
+function assertIntegratedContinuationShape(state, samplingContextKey, label) {
   if (typeof samplingContextKey !== 'string' || !samplingContextKey) {
     throw new Error(`${label} mangler canonical sampling context`);
   }
@@ -280,6 +276,35 @@ export function assertIntegratedCoastalPointContinuation(
     `${label}.historyBounds.lastMile.maximumFactorTrack`,
   );
   assertNoPrivateStateFields(state, label);
+}
+
+export function assertArchivedOwnerCurrentIntegratedOriginal(state, {
+  samplingContextKey,
+  label = 'Archived current-source original',
+} = {}) {
+  assertIntegratedContinuationShape(state, samplingContextKey, label);
+  if (state.modelBundleSha256 === RAVSCORE_OWNER_CURRENT_ARCHIVE_PREDECESSOR_BUNDLE_SHA256) {
+    return assertOwnerCurrentArchivedPredecessorState(state, samplingContextKey);
+  }
+  return assertIntegratedCoastalPointContinuation(state, { samplingContextKey, label });
+}
+
+export function assertWaterLevelOnlyIntegratedOriginal(state, {
+  samplingContextKey, label='Water-level-only technical original',
+} = {}) {
+  assertIntegratedContinuationShape(state,samplingContextKey,label);
+  return assertWaterLevelOnlyPredecessorState(state,samplingContextKey);
+}
+
+export function assertIntegratedCoastalPointContinuation(
+  state,
+  {
+    samplingContextKey,
+    requireReady = false,
+    label = 'Coastal-point RavScore continuation',
+  } = {},
+) {
+  assertIntegratedContinuationShape(state, samplingContextKey, label);
   const validated = buildIntegratedRavScoreStateSeries([], {
     samplingContextKey,
     initialState: state,

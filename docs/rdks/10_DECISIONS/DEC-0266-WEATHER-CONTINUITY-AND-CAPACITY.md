@@ -3,6 +3,33 @@
 **Status:** Aktiv målbeslutning; genstartsleverancen er afgrænset i DEC-0268. Den samlede 4.0.519-kandidat er ikke produktionsbevist.
 **Dato:** 2026-09-30
 
+### Tillæg 5. oktober – indre CP-banklukning isoleret i NORMAL, kun lokalt
+
+På faktisk leveret 4.0.542/main892b er kun den eksisterende
+save_component_bank og ét eksisterende normalproducent-testforløb udtaget.
+Ingen whole519copy. Actual produce_component_bank/checkpoint reproducerede
+første fsync-fejl maskeret af eget fil-close. Minimal indre failed/try/finally
+bevarer primærfejlen, forsøger eget close og egen unlink; close-only HARD.
+Før atomic replace er tidligere bank byteidentisk. Cleanup-only efter
+komplet replace beholder den nye komplette bank, men returnerer ikke succes.
+Frisk faktisk normalproducent genkontrollerer den overlevende diskbank,
+oprindelige kvitteringer og kandidater gennem uændret adgangskontrol.
+
+Ét genbrugt parentforløb/four subcases: konkret RED1failure2.139s →
+GREEN1parent/4subcases2.433s, ikke fem nye unikke tests. Første setup-forsøg
+stoppede før subcases på midlertidig h5py-backendimport; direkte import og
+samme kommando virkede derefter uden installation/ændret testmiljø.
+Den transient årsag er ikke bevist. Streng inversdiff viser resten af
+runtime/test uændret; den nye funktion/parent matcher allerede prøvede BIG-bytes.
+
+Normale byggere matcher integrated4ebe68/Candidate3e5a66/physicala226c73;
+continuation3dd9/private ABIede0/publicc495 uændrede. Python-bankgemmeren
+er eksisterende producerinventory, ikke modelclosure/persisted ABIændring.
+Ingen metadata-generation, alias, modelbodycopy/eval, version, commit,
+push, CI, SQL-runtime eller produktion. Egen exact-head kildekontrol og
+sikker levering mangler. Fuld CP-S-før-T/writer/descendants/kill/failure4min/
+runner/nationalkapacitet og Fur-timeretention er fortsat åbne/OFF.
+
 ### Tillæg 3. oktober kl.09.34 — godkendt child-close isoleret, genbinding uafsluttet
 
 Ejeren valgte konkret "Godkend den afgrænsede rettelse" til den låste CP-kalder.

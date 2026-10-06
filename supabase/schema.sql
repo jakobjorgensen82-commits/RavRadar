@@ -730,7 +730,9 @@ as $$
         '61ec54746fdf1ac58f3d7859d4d55a901fcc6376d0412acf2d6f4f418ae5c0a1',
         'c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb',
         '3a14f458122f5bc0ea8a60c07abbcbd68d022c0322a87e77242891f21631c852',
-        '29ea9a19647bf7d5edad0eee159267086d546f0d90a9f2778a77077351aad948'
+        '29ea9a19647bf7d5edad0eee159267086d546f0d90a9f2778a77077351aad948',
+        '4ebe158f68954f32b47cb71d5222ab0cf676faaf4b323d743f9d43bf34a63a51',
+        'ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb'
       )
     -- RAVSCORE_INTEGRATED_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
@@ -751,7 +753,9 @@ as $$
       and p_calibration_features ->> 'modelContractSha256' = 'c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8'
       and p_calibration_features ->> 'modelBundleSha256' in (
         'a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021',
-        '28a69936b3d9a9c655e967c5e0c352d8401e5894ef3011bbfc55c85ad37f7ce7'
+        '28a69936b3d9a9c655e967c5e0c352d8401e5894ef3011bbfc55c85ad37f7ce7',
+        '3e5aae87b19934091a7882fbd8f5b5570b7c83ba786ea6f3bac52a8fd71fcd1e',
+        '8d9142b5f7d9b5a3e5a0f3593e73df0c7ffaf3d80c036317967cb713f09197e3'
       )
     -- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
@@ -1779,7 +1783,7 @@ begin
     or p_state ->> 'modelContractSha256'
       is distinct from 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b'
     or p_state ->> 'modelBundleSha256'
-      is distinct from '29ea9a19647bf7d5edad0eee159267086d546f0d90a9f2778a77077351aad948'
+      is distinct from 'ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb'
     -- RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED_END
     or coalesce(p_state ->> 'samplingContextKey', '') !~ '^sha256:[0-9a-f]{64}$'
     or not public.ravradar_ravscore_checkpoint_canonical_time(p_reference_text)
@@ -2757,7 +2761,7 @@ begin
       '^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED_BEGIN
     or p_payload ->> 'continuationStateContractSha256' is distinct from
-      'd983bb085f75252d00f0e2585cd0e274ea86020000f99037e9054a3989a4aef6'
+      '4115f37178ff3d8eab540f3d9355a1275a13a9dd3a896e07f06673564e76ee51'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED_END
     or coalesce(p_payload ->> 'generationSha256', '') !~ '^[0-9a-f]{64}$'
     or coalesce(p_payload ->> 'stateSha256', '') !~ '^[0-9a-f]{64}$'
@@ -2806,7 +2810,7 @@ begin
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "29ea9a19647bf7d5edad0eee159267086d546f0d90a9f2778a77077351aad948"
+    "modelBundleSha256": "ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb"
   }'::jsonb then
     return false;
   end if;
@@ -2887,7 +2891,7 @@ begin
     "bestTimePolicyId": "score-water-tie-earliest-v2",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8",
-    "modelBundleSha256": "28a69936b3d9a9c655e967c5e0c352d8401e5894ef3011bbfc55c85ad37f7ce7"
+    "modelBundleSha256": "8d9142b5f7d9b5a3e5a0f3593e73df0c7ffaf3d80c036317967cb713f09197e3"
   }'::jsonb then
     return false;
   end if;
@@ -2904,6 +2908,95 @@ $$;
 -- head 7198b685f4bc9d86bd6432b049380f4279ab797c while this migration is
 -- deployed. Validate it by projecting only its continuation hash through the
 -- current full payload validator. This is a migration bridge, not a fallback.
+create or replace function public.ravradar_ravscore_checkpoint_water_level_predecessor_projection(
+  p_payload jsonb,
+  p_target_reference timestamptz
+)
+returns jsonb
+language plpgsql
+stable
+set search_path = pg_catalog, public
+as $$
+declare
+  v_projected jsonb;
+  v_states jsonb;
+begin
+  if p_payload is null
+    or p_target_reference is null
+    or pg_catalog.octet_length(p_payload::text) > 16777216
+    or p_payload #>> '{modelBinding,modelBundleSha256}' is distinct from '4ebe158f68954f32b47cb71d5222ab0cf676faaf4b323d743f9d43bf34a63a51'
+    or p_payload ->> 'continuationStateContractSha256' is distinct from '3dd9b7f054dd19400e8110ec504c2689bd62c52741cf6cf7805070e89e51d1bd'
+    or p_payload #>> '{candidateGRollbackCompanion,modelBinding,modelBundleSha256}'
+      is distinct from '3e5aae87b19934091a7882fbd8f5b5570b7c83ba786ea6f3bac52a8fd71fcd1e'
+    or pg_catalog.jsonb_typeof(p_payload -> 'states') is distinct from 'object'
+  then return null; end if;
+  if (select pg_catalog.count(*) from pg_catalog.jsonb_each(p_payload -> 'states')) <> 673
+    or exists (select 1 from pg_catalog.jsonb_each(p_payload -> 'states') as state(part_id,value)
+      where state.value ->> 'modelBundleSha256' is distinct from '4ebe158f68954f32b47cb71d5222ab0cf676faaf4b323d743f9d43bf34a63a51')
+  then return null; end if;
+  select pg_catalog.jsonb_object_agg(state.part_id, pg_catalog.jsonb_set(
+    state.value, '{modelBundleSha256}', pg_catalog.to_jsonb('ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb'::text), false))
+    into v_states from pg_catalog.jsonb_each(p_payload -> 'states') as state(part_id,value);
+  v_projected := pg_catalog.jsonb_set(pg_catalog.jsonb_set(p_payload,
+    '{modelBinding,modelBundleSha256}', pg_catalog.to_jsonb('ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb'::text), false),
+    '{states}', v_states, false);
+  v_projected := pg_catalog.jsonb_set(pg_catalog.jsonb_set(v_projected,
+    '{continuationStateContractSha256}', pg_catalog.to_jsonb('4115f37178ff3d8eab540f3d9355a1275a13a9dd3a896e07f06673564e76ee51'::text), false),
+    '{candidateGRollbackCompanion,modelBinding,modelBundleSha256}',
+    pg_catalog.to_jsonb('8d9142b5f7d9b5a3e5a0f3593e73df0c7ffaf3d80c036317967cb713f09197e3'::text), false);
+  if public.ravradar_ravscore_checkpoint_payload_valid(v_projected, p_target_reference)
+  then return v_projected; end if;
+  return null;
+exception when others then return null;
+end;
+$$;
+revoke all on function public.ravradar_ravscore_checkpoint_water_level_predecessor_projection(jsonb,timestamptz) from public, anon, authenticated;
+
+create or replace function public.ravradar_ravscore_checkpoint_owner_current_predecessor_projection(
+  p_payload jsonb,
+  p_target_reference timestamptz
+)
+returns jsonb
+language plpgsql
+stable
+set search_path = pg_catalog, public
+as $$
+declare
+  v_projected jsonb;
+  v_states jsonb;
+begin
+  if p_payload is null
+    or p_target_reference is null
+    or pg_catalog.octet_length(p_payload::text) > 16777216
+    or p_payload #>> '{modelBinding,modelBundleSha256}' is distinct from '29ea9a19647bf7d5edad0eee159267086d546f0d90a9f2778a77077351aad948'
+    or p_payload ->> 'continuationStateContractSha256' is distinct from 'd983bb085f75252d00f0e2585cd0e274ea86020000f99037e9054a3989a4aef6'
+    or p_payload #>> '{candidateGRollbackCompanion,modelBinding,modelBundleSha256}'
+      is distinct from '28a69936b3d9a9c655e967c5e0c352d8401e5894ef3011bbfc55c85ad37f7ce7'
+    or pg_catalog.jsonb_typeof(p_payload -> 'states') is distinct from 'object'
+  then return null; end if;
+  if (select pg_catalog.count(*) from pg_catalog.jsonb_each(p_payload -> 'states')) <> 673
+    or exists (select 1 from pg_catalog.jsonb_each(p_payload -> 'states') as state(part_id,value)
+      where state.value ->> 'modelBundleSha256' is distinct from '29ea9a19647bf7d5edad0eee159267086d546f0d90a9f2778a77077351aad948')
+  then return null; end if;
+  select pg_catalog.jsonb_object_agg(state.part_id, pg_catalog.jsonb_set(
+    state.value, '{modelBundleSha256}', pg_catalog.to_jsonb('4ebe158f68954f32b47cb71d5222ab0cf676faaf4b323d743f9d43bf34a63a51'::text), false))
+    into v_states from pg_catalog.jsonb_each(p_payload -> 'states') as state(part_id,value);
+  v_projected := pg_catalog.jsonb_set(pg_catalog.jsonb_set(p_payload,
+    '{modelBinding,modelBundleSha256}', pg_catalog.to_jsonb('4ebe158f68954f32b47cb71d5222ab0cf676faaf4b323d743f9d43bf34a63a51'::text), false),
+    '{states}', v_states, false);
+  v_projected := pg_catalog.jsonb_set(pg_catalog.jsonb_set(v_projected,
+    '{continuationStateContractSha256}', pg_catalog.to_jsonb('3dd9b7f054dd19400e8110ec504c2689bd62c52741cf6cf7805070e89e51d1bd'::text), false),
+    '{candidateGRollbackCompanion,modelBinding,modelBundleSha256}',
+    pg_catalog.to_jsonb('3e5aae87b19934091a7882fbd8f5b5570b7c83ba786ea6f3bac52a8fd71fcd1e'::text), false);
+  -- Preserve the original owner-current projection, then exact water-only binding.
+  v_projected := public.ravradar_ravscore_checkpoint_water_level_predecessor_projection(v_projected, p_target_reference);
+  if v_projected is not null then return v_projected; end if;
+  return null;
+exception when others then return null;
+end;
+$$;
+revoke all on function public.ravradar_ravscore_checkpoint_owner_current_predecessor_projection(jsonb,timestamptz) from public, anon, authenticated;
+
 create or replace function public.ravradar_ravscore_checkpoint_cp_close_predecessor_projection(
   p_payload jsonb,
   p_target_reference timestamptz
@@ -2940,8 +3033,9 @@ begin
     '{continuationStateContractSha256}', pg_catalog.to_jsonb('d983bb085f75252d00f0e2585cd0e274ea86020000f99037e9054a3989a4aef6'::text), false),
     '{candidateGRollbackCompanion,modelBinding,modelBundleSha256}',
     pg_catalog.to_jsonb('28a69936b3d9a9c655e967c5e0c352d8401e5894ef3011bbfc55c85ad37f7ce7'::text), false);
-  if public.ravradar_ravscore_checkpoint_payload_valid(v_projected, p_target_reference)
-  then return v_projected; end if;
+  -- Preserve the historical CP projection, then the exact owner binding.
+  v_projected := public.ravradar_ravscore_checkpoint_owner_current_predecessor_projection(v_projected, p_target_reference);
+  if v_projected is not null then return v_projected; end if;
   return null;
 exception when others then return null;
 end;
@@ -3001,17 +3095,23 @@ stable
 set search_path = pg_catalog, public
 as $$
 begin
-  if p_current_implementation_sha256 = 'd983bb085f75252d00f0e2585cd0e274ea86020000f99037e9054a3989a4aef6'
+  if p_current_implementation_sha256 = '4115f37178ff3d8eab540f3d9355a1275a13a9dd3a896e07f06673564e76ee51'
+    and public.ravradar_ravscore_checkpoint_water_level_predecessor_projection(p_payload, p_target_reference) is not null
+  then return true; end if;
+  if p_current_implementation_sha256 = '4115f37178ff3d8eab540f3d9355a1275a13a9dd3a896e07f06673564e76ee51'
+    and public.ravradar_ravscore_checkpoint_owner_current_predecessor_projection(p_payload, p_target_reference) is not null
+  then return true; end if;
+  if p_current_implementation_sha256 = '4115f37178ff3d8eab540f3d9355a1275a13a9dd3a896e07f06673564e76ee51'
     and public.ravradar_ravscore_checkpoint_cp_close_predecessor_projection(p_payload, p_target_reference) is not null
   then return true; end if;
-  if p_current_implementation_sha256 = 'd983bb085f75252d00f0e2585cd0e274ea86020000f99037e9054a3989a4aef6'
+  if p_current_implementation_sha256 = '4115f37178ff3d8eab540f3d9355a1275a13a9dd3a896e07f06673564e76ee51'
     and public.ravradar_ravscore_checkpoint_top20_predecessor_projection(
       p_payload, p_target_reference) is not null
   then return true; end if;
   if p_payload is not null
     and p_target_reference = '2026-09-24T15:00:00.000Z'::timestamptz
     and p_current_implementation_sha256 =
-      'd983bb085f75252d00f0e2585cd0e274ea86020000f99037e9054a3989a4aef6'
+      '4115f37178ff3d8eab540f3d9355a1275a13a9dd3a896e07f06673564e76ee51'
     and p_payload -> 'schemaVersion' = '5'::jsonb
     and p_payload ->> 'status' =
       'ravscore-schema6-with-measured-candidate-g-continuation'
@@ -3091,6 +3191,8 @@ declare
   v_exact_predecessor_same_target_transition boolean := false;
   v_top20_predecessor_payload jsonb;
   v_cp_close_predecessor_payload jsonb;
+  v_owner_current_predecessor_payload jsonb;
+  v_water_level_predecessor_payload jsonb;
   v_disposition text;
   v_result jsonb;
 begin
@@ -3160,7 +3262,21 @@ begin
         v_payload, v_central_reference);
     v_cp_close_predecessor_payload := public.ravradar_ravscore_checkpoint_cp_close_predecessor_projection(
       v_payload, v_central_reference);
-    if v_central_is_compatible_predecessor and v_cp_close_predecessor_payload is not null then
+    v_owner_current_predecessor_payload := public.ravradar_ravscore_checkpoint_owner_current_predecessor_projection(v_payload, v_central_reference);
+    v_water_level_predecessor_payload := public.ravradar_ravscore_checkpoint_water_level_predecessor_projection(v_payload, v_central_reference);
+    if v_central_is_compatible_predecessor and v_water_level_predecessor_payload is not null then
+      v_exact_predecessor_same_target_transition := v_central_reference = p_target_reference
+        and (v_water_level_predecessor_payload #- '{generationSha256}' #- '{stateSha256}'
+          #- '{candidateGRollbackCompanion,generationSha256}')
+        = (p_payload #- '{generationSha256}' #- '{stateSha256}'
+          #- '{candidateGRollbackCompanion,generationSha256}');
+    elsif v_central_is_compatible_predecessor and v_owner_current_predecessor_payload is not null then
+      v_exact_predecessor_same_target_transition := v_central_reference = p_target_reference
+        and (v_owner_current_predecessor_payload #- '{generationSha256}' #- '{stateSha256}'
+          #- '{candidateGRollbackCompanion,generationSha256}')
+        = (p_payload #- '{generationSha256}' #- '{stateSha256}'
+          #- '{candidateGRollbackCompanion,generationSha256}');
+    elsif v_central_is_compatible_predecessor and v_cp_close_predecessor_payload is not null then
       v_exact_predecessor_same_target_transition := v_central_reference = p_target_reference
         and (v_cp_close_predecessor_payload #- '{generationSha256}' #- '{stateSha256}'
           #- '{candidateGRollbackCompanion,generationSha256}')
@@ -3274,6 +3390,8 @@ declare
   v_checkpoint_definition text;
   v_top20_projection_definition text;
   v_cp_close_projection_definition text;
+  v_owner_current_projection_definition text;
+  v_water_level_projection_definition text;
   v_canonical_time_oid oid := pg_catalog.to_regprocedure(
     'public.ravradar_ravscore_checkpoint_canonical_time(text)'
   );
@@ -3304,7 +3422,9 @@ declare
     ),
     pg_catalog.to_regprocedure(
       'public.ravradar_ravscore_checkpoint_cp_close_predecessor_projection(jsonb,timestamptz)'
-    )
+    ),
+    pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_owner_current_predecessor_projection(jsonb,timestamptz)'),
+    pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_water_level_predecessor_projection(jsonb,timestamptz)')
   ];
 begin
   if auth.role() is distinct from 'service_role' then
@@ -3343,6 +3463,12 @@ begin
   select pg_catalog.btrim(p.prosrc, E' \n\r\t') into v_cp_close_projection_definition
   from pg_catalog.pg_proc p where p.oid = v_validator_oids[7];
 
+  select pg_catalog.btrim(p.prosrc, E' \n\r\t') into v_owner_current_projection_definition
+  from pg_catalog.pg_proc p where p.oid = v_validator_oids[8];
+
+  select pg_catalog.btrim(p.prosrc, E' \n\r\t') into v_water_level_projection_definition
+  from pg_catalog.pg_proc p where p.oid = v_validator_oids[9];
+
   v_checkpoint_definition := v_canonical_time_definition
     || E'\n-- forbidden-key-validator --\n' || v_forbidden_definition
     || E'\n-- integrated-state-validator --\n' || v_integrated_state_definition
@@ -3352,14 +3478,16 @@ begin
     || E'\n-- cas-function --\n' || v_cas_definition
     || E'\n-- checkpoint-history-exclusion --\n' || v_history_definition
     || E'\n-- top20-predecessor-projection --\n' || v_top20_projection_definition
-    || E'\n-- cp-close-predecessor-projection --\n' || v_cp_close_projection_definition;
+    || E'\n-- cp-close-predecessor-projection --\n' || v_cp_close_projection_definition
+    || E'\n-- owner-current-predecessor-projection --\n' || v_owner_current_projection_definition
+    || E'\n-- water-level-predecessor-projection --\n' || v_water_level_projection_definition;
 
   return pg_catalog.jsonb_build_object(
     'schemaVersion', 'ravscore-checkpoint-db-v1',
     'appliedMigrationVersion', case when exists (
       select 1
       from supabase_migrations.schema_migrations m
-      where m.version::text = '20261003080000'
+      where m.version::text = '20261005000000'
     ) then '20260920220000' else null end,
     'checkpointContract', pg_catalog.jsonb_build_object(
       'id', 'ravscore-checkpoint-metadata-cas-v1',
