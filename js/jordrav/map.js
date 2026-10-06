@@ -1,6 +1,6 @@
 import './messages.js';
 import './context-messages.js';
-import { initialiseI18n, getLanguage, t } from '../i18n.js?v=4.0.541';
+import { initialiseI18n, getLanguage, t } from '../i18n.js?v=4.0.544';
 import { openDataset, intersects } from './data-service.js';
 import { REGIONAL_HYPOTHESES } from './regional-hypotheses.js';
 import { ACCESS_COLOURS, SURFACE_HUNTABILITY, DEEP_LAYER_EXAMPLES } from './accessibility.js';

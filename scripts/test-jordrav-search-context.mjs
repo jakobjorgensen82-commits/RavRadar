@@ -7,7 +7,8 @@ import { physicalContext, searchContext } from '../js/jordrav/search-context.js'
 import { FIELD_SERVICE, FIELD_STYLE } from '../js/jordrav/field-context.js';
 import '../js/jordrav/messages.js';
 import { messageKeys } from '../js/jordrav/messages.js';
-import { hasTranslation } from '../js/i18n.js?v=4.0.541';
+const appVersion=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url))).version;
+const {hasTranslation}=await import(`../js/i18n.js?v=${appVersion}`);
 
 test('marine organic deposits, alternate beds and lateral mixtures retain different physical meanings',()=>{
   for(const code of ['HT','HP','YP'])assert.deepEqual(physicalContext(code),{types:['organic'],lateralMixture:false});

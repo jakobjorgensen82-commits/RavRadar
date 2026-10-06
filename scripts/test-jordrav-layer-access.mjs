@@ -6,7 +6,8 @@ import { createHash } from 'node:crypto';
 import { layerAccessPlan, LAYER_ACCESS_KINDS } from '../js/jordrav/layer-access.js';
 import { DATA_BASE, MANIFEST_SHA256 } from '../js/jordrav/dataset-binding.js';
 import '../js/jordrav/messages.js';
-import { hasTranslation } from '../js/i18n.js?v=4.0.541';
+const appVersion=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url))).version;
+const {hasTranslation}=await import(`../js/i18n.js?v=${appVersion}`);
 const entry=(surface,depth,potential='possible',source='soil-new')=>({surface,depth,potential,source});
 test('unknown or conflicting upper material cannot inherit access from a known buried layer',()=>{
   for(const e of [entry('WA','HS'),entry('HS','HS','unresolved'),entry('HS',''),entry('','HS')]){

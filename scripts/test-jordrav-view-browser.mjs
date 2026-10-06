@@ -68,7 +68,11 @@ try{
   report.checks.push('All five lead filters redraw nationwide overview, update legend and request no detail tiles');
   await page.locator('#jordravTrace').selectOption('all');
   await clickExample(page,diagnostic.materialExamples.marineOrganic);
-  const reference=await selection(page),detailText=await page.locator('#jordravDetails').textContent();
+  const geologicalDetailText=target=>target.locator('#jordravDetails').evaluate(panel=>{
+    const copy=panel.cloneNode(true);copy.querySelector('.jordrav-soil-point')?.remove();return copy.textContent;
+  });
+  const reference=await selection(page),detailText=await geologicalDetailText(page);
+  assert.ok(await page.locator('.jordrav-soil-point button').count());
   await page.locator('#jordravTrace').selectOption('basin');
   await page.waitForFunction(()=>window.__viewHarness.details&&window.__viewHarness.details.getLayers().every(l=>window.__viewHarness.data.catalog[l.feature.properties.i].potential==='basin'));
   assert.equal(await selection(page),reference);assert.equal(await page.locator('#jordravSelectionNote').isVisible(),true);
@@ -102,7 +106,9 @@ try{
   releaseTiles();
   report.checks.push('Copying while detail data are still loading preserves the pending exact fragment reference');
   await restored.waitForFunction(ref=>window.__viewHarness.featureReference(window.__viewHarness.selectedFeature)===ref,reference,{timeout:90000});
-  assert.equal(await restored.locator('#jordravDetails').textContent(),detailText);
+  assert.equal(await geologicalDetailText(restored),detailText);
+  assert.match(await restored.locator('.jordrav-soil-point').textContent(),/En gemt flade har ikke et automatisk prøvepunkt/);
+  assert.equal(await restored.locator('.jordrav-soil-point button').count(),0);
   for(const [id,value] of [['jordravTrace','coastal'],['jordravOpacity','35'],['jordravColourMode','potential']])assert.equal(await restored.locator(`#${id}`).inputValue(),value);
   for(const [id,value] of [['jordravFocus',true],['jordravVisible',true],['jordravFields',true],['jordravDeepVisible',false]])assert.equal(await restored.locator(`#${id}`).isChecked(),value);
   assert.equal(await restored.locator('[data-base="aerial"]').getAttribute('aria-pressed'),'true');

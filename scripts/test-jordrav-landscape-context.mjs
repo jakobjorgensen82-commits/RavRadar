@@ -6,7 +6,8 @@ import { createHash } from 'node:crypto';
 import { landscapeContext, upperSedimentHistory, LANDSCAPES } from '../js/jordrav/landscape-context.js';
 import { DATA_BASE, MANIFEST_SHA256 } from '../js/jordrav/dataset-binding.js';
 import '../js/jordrav/messages.js';
-import { hasTranslation } from '../js/i18n.js?v=4.0.541';
+const appVersion=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url))).version;
+const {hasTranslation}=await import(`../js/i18n.js?v=${appVersion}`);
 const e=(landscape,landscapeCode,surface='HS',source='soil-new',potential='coastal')=>({landscape,landscapeCode,surface,source,potential});
 test('source name plus code prevents conflating two code-50 landforms or importing an old legend',()=>{
   assert.equal(landscapeContext(e('Hævet senglacial flade',50)).route,'raised-plain');

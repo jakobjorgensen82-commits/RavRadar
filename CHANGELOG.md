@@ -1,3 +1,15 @@
+## 4.0.544 – Jordrav releasekandidat, 6. oktober 2026
+
+- Landsdækkende geologisk model 0.2 og alle fem farvede mulighedsspor,
+  med fysisk materialevejledning, laghistorie og undersøgelsesprioritet.
+- Almindeligt kort/luftfoto, markgrænser 2026, JB2024 ved kliksted,
+  terrænskygge 2005–2007/10 m og offentlige Jupiter-profiler.
+- 16 kildebundne profilregistreringer/126 lagrækker; dybder, manglende
+  oplysninger og jagtbarhed adskilles. Ingen ravbonus eller fundkrav.
+- Dansk/tysk/engelsk, mobile browserflader, sporfiltre og gemte lagvalg.
+- Punkt 4 om automatisk aktuelle søgeforhold er udgået efter ejerordre.
+- Nyere main bevares. CI og providerfri deploy afventer i denne kandidat.
+
 ## Ikke udgivet – Jordrav sporfiltre og gemte kortvisninger (2026-10-05)
 
 ## Lokal Jordravfortsættelse 2026-10-06 – national jordbund og dybdekontekst

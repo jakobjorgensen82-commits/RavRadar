@@ -173,6 +173,12 @@ ved nyt udsnit. Fladernes faktiske jagtbarhed bliver ikke automatisk positiv.
 
 ## Erstattet, forkastet og fortsat ukendt
 
+Releasekandidat 4.0.544 viderefører nyere main og er kontrolleret med
+99 faktiske Chrome-checks, 50 målrettede tests og relevante lokale gates.
+[Releasekvitteringen](jordrav/release-preflight-2026-10-06.json) binder
+kortets aktuelle kode til de seks browserrapporter. CI og offentlig levering
+følger som særskilte beviser; disse lokale resultater beviser ingen deployment.
+
 - Ren lokal-only levering er erstattet som mandat af sikker publicering.
 - To udvalgte dybe eksempler alene er suppleret af landsdækkende
   boringsadgang og 16 kontrollerede profilregistreringer.

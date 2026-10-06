@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-06",
+  "status": "PASS",
+  "baselineMain": "e98dcdd7caac9de6e228a0bb167324912c3be608",
+  "releaseVersion": "4.0.544",
+  "geodata": [
+    {
+      "path": "data/kystdata.json",
+      "onlyChanged": "top-level version",
+      "beforeLFsha256": "9c3c5999da438d84d6dfddfa4db5f31315e62a48d9b7ecec46633dae16e4e3ab",
+      "afterLFsha256": "7a68a4455aab94fb88c0a8bef04b42ebccf86f33fb4a1cacaeb125cbfd92121b"
+    },
+    {
+      "path": "data/zones.geojson",
+      "onlyChanged": "top-level version",
+      "beforeLFsha256": "03515ec162abe9ceebf9f39db5fcb01f6d916cad563017d345639f9fb261b80d",
+      "afterLFsha256": "a0cf514076ba1fdc048f74bc58a97a27b6603185a3ed768961b81f5c8e02285e"
+    }
+  ],
+  "protectedMainFilesChecked": 198,
+  "onlyReleaseCacheOrUserAgentChanges": [
+    ".github/workflows/reusable-weather-build.yml",
+    ".github/workflows/validate-copernicus-current-pilot.yml",
+    "js/core/best-time-policy.js",
+    "js/core/best-time-selector.js",
+    "js/core/current-direction-audit.js",
+    "js/core/local-zone-score.js",
+    "js/core/phase-d-wave-process-candidate.js",
+    "js/core/prediction-engine.js",
+    "js/core/ravscore-candidate-g.js",
+    "js/core/ravscore-integrated-explanation-presenter.js",
+    "js/core/score-engine.js",
+    "js/core/score-presentation.js"
+  ],
+  "scope": "Existing main Git text content (LF canonicalized): core, provider/scheduler helpers, tracked public weather and workflows; new Jordrav assets checked independently",
+  "modelDataset": "0.2.0-prototype SHA-bound bytes unchanged; national-evidence-chain-2026-10-06.json",
+  "limitations": "Source isolation is not a replacement for CI, artifact/privacy/deploy gates or runtime observations"
+}

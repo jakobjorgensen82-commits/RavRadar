@@ -1,5 +1,13 @@
 # AKTUELLE JORDRAVPUNKTER – national model 0.2 – 2026-10-05
 
+**Aktuel releasekandidat 4.0.544, 2026-10-06:** JORDRAV-006's mainintegration
+og versionsbygning er udført; exact-head CI, artifact/deploy og offentlig
+kontrol udestår. 99 faktiske Chrome-checks består på kandidaten.
+JORDRAV-005 har 390 px browseremulation, ingen fysisk telefonprøve.
+JORDRAV-007/-008's empiriske lag-/rav-/pløjeukendte er faglige begrænsninger,
+ikke en tilladelse til at opfinde data. Punkt 4 er udgået. Følgende lokale
+daterede checkpoints er historik; arbejdsplanen angiver næste leverancetrin.
+
 **2026-10-06, JORDRAV-014/-015 lokalt løst:** National undersøgelsesprioritet
 og kædeled samt JB2024, DHM2007/10 m, landsdækkende Jupiter/profillinks og
 16 kontrollerede profiler er implementeret. Manglende geologi og

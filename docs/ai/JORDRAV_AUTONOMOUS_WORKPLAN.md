@@ -23,7 +23,7 @@ pløjning, blotlægning eller fysisk telefonkontrol opfindes.
 | 3. Terræn/jord | Integrér offentligt tilgængelig topjord, underjord og terrænkontekst med tydelig kildeversion/skala | JB 2024 og terrænskygge 2005–2007/10 m integreret og live browserkontrolleret |
 | 4. Søgeforhold nu | Nypløjet, bar og regnvasket jord | Udgået efter ejerordre |
 | 5. Dybdekontekst | Udbyg de to udvalgte profiler med landsdækkende boringsadgang og observerede intervaller, ikke ravfund eller extentbuffer | Offentlig WFS/profillinks og 16 kildebundne punkter/126 rækker integreret; seks mangler geologi, to rækker mangler grænse |
-| 6. Publicering/mobil | Integrér datasikkert på aktuel main, følg exact-head CI/release/deploy; verificér internetvisning og tilgængelig mobilflade | Lokale DA/DE/EN- og 390 px-kontroller PASS; nyere main, versionsbygning, CI og deploy udestår |
+| 6. Publicering/mobil | Integrér datasikkert på aktuel main, følg exact-head CI/release/deploy; verificér internetvisning og tilgængelig mobilflade | Main e98dcdd7 integreret; releasekandidat 4.0.544; 99 faktiske Chrome-checks og lokale gates PASS; CI, deploy og internetkontrol udestår |
 
 Udgangspunkt: `0ddbac65`, geologisk model 0.2.0-prototype, app 4.0.541.
 Aktuel læst remote main: `e98dcdd7`, app 4.0.543, læst 2026-10-06.
@@ -42,7 +42,7 @@ RDKS/Markdown/webhåndbog/changelog og faktisk publiceringsbevis.
 Datamangler angives eksplicit som usikkerhed eller uafklaret input;
 en empirisk observation erstattes ikke af softwaretests.
 
-## Permanent checkpoint – lokal implementering før main-integration
+## Historisk checkpoint – lokal implementering før main-integration
 
 Nye kilder: SGAV JB2024/WMS, moderne Jupiter WFS med minimale felter og
 GEUS/SDFI DHM2007 hillshade via korrekt omprojekteret export. Offentlige
@@ -64,3 +64,28 @@ Næste: saml docs/checkpoint, commit lokal kandidat, integrér nyere main,
 byg reel releaseversion, kør kildegate/relevante regressionskontroller,
 PR/exact-head CI, sikker merge, DEC-0148-deploy og internetkontrol.
 Ekstra høj indsats/Sol anbefales fortsat til integrations- og slutfasen.
+
+## Aktuelt checkpoint – releasekandidat 4.0.544
+
+Nyere main e98dcdd7 er integreret via cc96b7d3. En særskilt diff og
+release-isolationsaudit viser, at de to kystgeodata kun får nyt topversionsfelt,
+og at 198 eksisterende main-filer er bevaret bortset fra release-/cachemarkører.
+Ingen ekstern vejrhentning eller central adminhydrering er udført lokalt.
+
+Alle 99 faktiske Chrome-checks består på kandidaten: 20 nationale,
+8 søge-/marklag, 15 gemte visninger, 13 lagadgang, 34 landskabsforløb og
+9 nye kontekstkontroller. Den ældre forventning om identisk kliksteds-JB
+efter linkgendannelse er rettet til den autoriserede kontrakt: et gemt område
+genskaber geologien, men opfinder ikke et jordbundsprøvepunkt. Intet
+produktproblem skjules ved at tillade et erstatningspunkt.
+
+50 målrettede tests, kildegate/118 browserfiler, RDKS/sikkerhed,
+428 håndbogskapitler, beskyttet håndbogsfletning, 68 Pages-moduler og
+versionslukning består. Webhåndbogens 90.1 er indarbejdet; tre manglende
+læsehjælpsafsnit, heraf to på den integrerede main, er færdiggjort.
+Kvittering: docs/research/jordrav/release-preflight-2026-10-06.json.
+
+Næste er commit/PR, fuld validate:source én gang på PR'ens eksakte head,
+sikker merge uden aktiv produktionshentning, DEC-0148 kode-only levering
+og offentlig browserkontrol. Alle empiriske ukendte og punkt 4's udeladelse
+bevares. Lokale PASS er stadig ikke produktionsevidens.

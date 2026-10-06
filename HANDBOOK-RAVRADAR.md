@@ -1,6 +1,11 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.543
+**Håndbogsversion:** 4.0.544
+
+Den aktuelle Jordrav-kandidat 4.0.544 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
+Den viderefører den eksisterende kystmodel; de nye Jordravlag ændrer ikke RavScore.
+Bindingen er et kildekodebevis. GitHub-kontrol og offentlig levering dokumenteres særskilt.
 
 ## 89.163 Prognosehalens dækning og bedre brug af reservekøen
 
@@ -337,7 +342,7 @@ og private payloads forbliver fortrolige uden tekniske kontorettighedsændringer
 Fur-vandstandstabet og den samlede vejrhentningsrevision er fortsat åbne.
 Se DEC-0289; ældre lokale541-kandidatstatus nedenfor er historisk.
 
-## 90.1 Jordrav 0.2 – landsdækkende geologiske muligheder, lokal leverance
+## 90.1 Jordrav 0.2 – landsdækkende geologiske muligheder
 
 **Supplerende kort og undersøgelsesprioritet 2026-10-06:** Under kortet
 kan JB-jordbundskort 2024, terrænskygge fra 2005–2007/10 m, offentlige
@@ -368,7 +373,7 @@ er ikke målt. Rapport:
 Jordravkortet har gennemgået hele det tilgængelige danske jordarts- og
 landskabsgrundlag. Alle 192 udsnit og 4.652 materiale-/landskabsforklaringer
 følger samme kvalitative regler. Det er selvstændigt fra RavScore.
-Appversionen er 4.0.541; den geologiske model er 0.2.0-prototype.
+Appversionen er 4.0.544; den geologiske model er 0.2.0-prototype.
 Almindeligt kort og luftfoto bevarer farveflader, valgt sted og forklaring.
 Kystvisningen henter ikke jordravdata.
 

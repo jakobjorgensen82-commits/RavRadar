@@ -8,7 +8,8 @@ import {evidenceChain} from '../js/jordrav/evidence-chain.js';
 import {parseView,encodeView} from '../js/jordrav/view-state.js';
 import {DATA_BASE,MANIFEST_SHA256} from '../js/jordrav/dataset-binding.js';
 import {contextMessageKeys} from '../js/jordrav/context-messages.js';
-import {hasTranslation} from '../js/i18n.js?v=4.0.541';
+const appVersion=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url))).version;
+const {hasTranslation}=await import(`../js/i18n.js?v=${appVersion}`);
 import {PROFILE_BINDING} from '../js/jordrav/profile-examples.js';
 const collection=rows=>({type:'FeatureCollection',features:rows});
 test('point query preserves click/axis order and minimal fields; conflicting classes stay ambiguous',()=>{

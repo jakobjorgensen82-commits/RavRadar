@@ -87,7 +87,62 @@
     {
       "status": 200,
       "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
       "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
     },
     {
       "status": 200,
@@ -117,66 +172,6 @@
     {
       "status": 200,
       "type": "image/png",
-      "host": "data.geus.dk"
-    },
-    {
-      "status": 200,
-      "type": "image/png",
-      "host": "geodata.fvm.dk"
-    },
-    {
-      "status": 200,
-      "type": "image/png",
-      "host": "geodata.fvm.dk"
-    },
-    {
-      "status": 200,
-      "type": "image/png",
-      "host": "geodata.fvm.dk"
-    },
-    {
-      "status": 200,
-      "type": "image/png",
-      "host": "geodata.fvm.dk"
-    },
-    {
-      "status": 200,
-      "type": "image/png",
-      "host": "data.geus.dk"
-    },
-    {
-      "status": 200,
-      "type": "image/png",
-      "host": "geodata.fvm.dk"
-    },
-    {
-      "status": 200,
-      "type": "image/png",
-      "host": "data.geus.dk"
-    },
-    {
-      "status": 200,
-      "type": "image/png",
-      "host": "geodata.fvm.dk"
-    },
-    {
-      "status": 200,
-      "type": "image/png",
-      "host": "data.geus.dk"
-    },
-    {
-      "status": 200,
-      "type": "image/png",
-      "host": "geodata.fvm.dk"
-    },
-    {
-      "status": 200,
-      "type": "image/png",
-      "host": "data.geus.dk"
-    },
-    {
-      "status": 200,
-      "type": "image/png",
       "host": "geodata.fvm.dk"
     },
     {
@@ -203,6 +198,76 @@
       "status": 200,
       "type": "image/png",
       "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "application/json",
+      "host": "jupiter.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "application/json",
+      "host": "jupiter.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "application/json",
+      "host": "jupiter.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "application/json",
+      "host": "jupiter.geus.dk"
     },
     {
       "status": 200,
@@ -261,11 +326,6 @@
     },
     {
       "status": 200,
-      "type": "application/json",
-      "host": "jupiter.geus.dk"
-    },
-    {
-      "status": 200,
       "type": "image/png",
       "host": "geodata.fvm.dk"
     },
@@ -277,22 +337,32 @@
     {
       "status": 200,
       "type": "image/png",
-      "host": "geodata.fvm.dk"
+      "host": "data.geus.dk"
     },
     {
       "status": 200,
       "type": "image/png",
-      "host": "geodata.fvm.dk"
+      "host": "data.geus.dk"
     },
     {
       "status": 200,
       "type": "image/png",
-      "host": "geodata.fvm.dk"
+      "host": "data.geus.dk"
     },
     {
       "status": 200,
       "type": "image/png",
-      "host": "geodata.fvm.dk"
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
     }
   ],
   "status": "PASS"
