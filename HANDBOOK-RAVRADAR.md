@@ -1,11 +1,11 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.544
+**Håndbogsversion:** 4.0.545
 
-Den offentligt leverede Jordravrelease 4.0.544 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+Designkandidat 4.0.545 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Den viderefører den eksisterende kystmodel; de nye Jordravlag ændrer ikke RavScore.
-Bindingen er et kildekodebevis. PR #521/#523 er CI-valideret; kode-only run 37431340473 attempt 3 og den faktiske offentlige kortbrowser består.
+Bindingen er et kildekodebevis; kandidatens CI og publicering mangler endnu. Den offentlige forgænger 4.0.544 er CI-valideret i PR #521/#523; kode-only run 37431340473 attempt 3 og den faktiske offentlige kortbrowser består.
 Den separate kvittering er `docs/research/jordrav/publication-evidence-4.0.544.json`; mobilbeviset er browseremulation.
 
 ## 89.163 Prognosehalens dækning og bedre brug af reservekøen
@@ -345,7 +345,32 @@ Se DEC-0289; ældre lokale541-kandidatstatus nedenfor er historisk.
 
 ## 90.1 Jordrav 0.2 – landsdækkende geologiske muligheder
 
-**Supplerende kort og undersøgelsesprioritet 2026-10-06:** Under kortet
+**Design og betjening i 4.0.545:** Vælg almindeligt kort eller luftfoto
+øverst ved kortet. Her findes også *Hele Danmark*, *Kopiér link* og
+*Lag og farver*. Lagpanelet indeholder geologiske valg, spor/farvestyrke,
+markgrænser og supplerende jordbund, terræn og boringer. Det kan åbnes
+med tastatur og lukkes med Escape, ved klik udenfor eller ved at flytte
+tastaturfokus ud. Panelet kan rulles på små skærme.
+
+*Start med en region* viser de eksisterende regionale guider. Vælg en
+region, og brug *Vis på kortet*. Den geologiske historie kan åbnes
+særskilt; regionen tegner stadig ingen fundgrænse. På mobil ligger denne
+indgang før kortet, og regionsnavigationen flytter fokus til kortet.
+
+Et lokalt klik viser først mulighedsklasse, uafklaret jagtbarhed og
+mulig ravhistorie. Undersøgelsesprioritet, materialevejledning, lagadgang
+og *Geologisk grundlag* kan foldes ud; intet fagligt indhold er fjernet.
+Det geologiske grundlag bevarer alle fem faktafelter og kildesymboler.
+På mobil viser et valgt sted *Se områdeforklaring*, som flytter fokus
+til panelet. Kortfarverne ligger under kortet med særskilt læsehjælp.
+Markguide og metode findes i kortere foldbare kort nedenunder.
+
+Lokal Chrome kontrollerer den samlede betjening og alle eksisterende
+kortfunktioner. CI og offentlig 4.0.545 er endnu ikke påstået.
+Den tidligere placering af værktøjer under kortet er erstattet af dette
+layout; datasæt, farveklasser og geologiske begrænsninger er uændrede.
+
+**Supplerende kort og undersøgelsesprioritet 2026-10-06:** I *Lag og farver*
 kan JB-jordbundskort 2024, terrænskygge fra 2005–2007/10 m, offentlige
 boringer og 16 kontrollerede profilpunkter vælges. Et geologiklik giver
 en særskilt knap til JB ved selve klikstedet. Flere klasser eller intet
@@ -374,7 +399,7 @@ er ikke målt. Rapport:
 Jordravkortet har gennemgået hele det tilgængelige danske jordarts- og
 landskabsgrundlag. Alle 192 udsnit og 4.652 materiale-/landskabsforklaringer
 følger samme kvalitative regler. Det er selvstændigt fra RavScore.
-Appversionen er 4.0.544; den geologiske model er 0.2.0-prototype.
+Designkandidaten er 4.0.545; den geologiske model er 0.2.0-prototype.
 Almindeligt kort og luftfoto bevarer farveflader, valgt sted og forklaring.
 Kystvisningen henter ikke jordravdata.
 
@@ -420,7 +445,7 @@ fortsat generel og uafklaret geologi, når alle spor vises. Dybe punkter
 styres særskilt. Et valgt områdes forklaring bevares ved filtrering;
 besked fortæller, hvis fremhævningen er skjult af de aktuelle lagvalg.
 
-*Kopiér link til visningen* husker sted, zoom, baggrund, spor, farvestyrke,
+*Kopiér link* husker sted, zoom, baggrund, spor, farvestyrke,
 kortfarver, lagvalg og det valgte detailfragment eller dybdepunkt. Ved
 genåbning gendannes valget kun i samme geologiske datasæt. Hvis data har
 ændret sig, gendannes kamera og indstillinger, men ikke en mulig forkert

@@ -1,3 +1,18 @@
+# Nyeste Jordravissue – layout og betjening, 2026-10-06
+
+- **JORDRAV-018 – LOKALT IMPLEMENTERET / offentlig kontrol mangler:** Den offentlige 4.0.544-side opleves
+  som utilstrækkeligt indbydende og intuitiv. Vigtige valg ligger under
+  kortet, og indgangen til forklaringer er svag. Nyt layout udvikles på
+  `codex/jordrav-design`; funktioner, geologi, usikkerhed og datagrænser
+  bevares. Lukning kræver faktisk desktop-/mobil-/DA/DE/EN-kontrol,
+  visuel gennemgang og sikker offentlig levering.
+
+- **JORDRAV-019 – LOKALT RETTET / slut-CI og offentlig kontrol mangler:**
+  Gammel 4.0.544-cache og ny HTML gav 61 uoversatte nøgler i faktisk Chrome.
+  Alle lokale Jordravimports er releasebundne; 15 moduler samt gamle/nye
+  tekster kontrolleres i en opvarmet browser og ved DE/EN-skift. Første
+  design-heads grønne CI må ikke bruges til at skjule fundet.
+
 # Aktuelle Jordravbegrænsninger efter offentlig levering – 2026-10-06
 
 - **JORDRAV-006/-016, LEVERET OG PRODUKTIONSKONTROLLERET:** PR #521/#523,

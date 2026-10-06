@@ -1,3 +1,4 @@
+import { jordravControl, openJordravDetails, closeJordravOptions } from './test-helpers/jordrav-ui.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import http from 'node:http';
@@ -33,7 +34,7 @@ try{
   await page.goto(address);
   await page.waitForFunction(()=>window.__searchHarness?.data,null,{timeout:90000});
   assert.ok(!requests.some(url=>url.startsWith('https://geodata.fvm.dk/')));
-  await page.locator('#jordravFields').check();
+  await (await jordravControl(page,'#jordravFields')).check();
   assert.match(await page.locator('#jordravFieldsStatus').textContent(),/Zoom til niveau 12/);
   assert.ok(!requests.some(url=>url.startsWith('https://geodata.fvm.dk/')));
   report.checks.push('Field overlay is opt-in and requests no nationwide raster at overview zoom');
@@ -66,7 +67,7 @@ try{
   assert.ok(await page.locator('.leaflet-jordrav-fields-pane img').count()>0);
   await page.locator('#jordravMap').screenshot({path:artifact('search-context-fields-aerial.png')});
   report.checks.push('Field boundaries remain on aerial background without moving the map');
-  await page.locator('#jordravFields').uncheck();
+  await (await jordravControl(page,'#jordravFields')).uncheck();
   assert.equal(await page.locator('.leaflet-jordrav-fields-pane img').count(),0);
 
   async function clickExample(example){
@@ -87,7 +88,7 @@ try{
         }
       }throw Error('No safe interior point');
     },example.origin);
-    await page.locator('#jordravMap').scrollIntoViewIfNeeded();
+    await closeJordravOptions(page);await page.locator('#jordravMap').scrollIntoViewIfNeeded();
     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     const rectangle=await page.locator('#jordravMap').boundingBox();
     report.lastClick={expectedOrigin:example.origin,pixel,rectangle,element:await page.evaluate(p=>document.elementFromPoint(p.x,p.y)?.outerHTML.slice(0,250),{x:rectangle.x+pixel.x,y:rectangle.y+pixel.y})};
@@ -95,6 +96,7 @@ try{
     await page.waitForFunction(origin=>window.__searchHarness.selectedFeature?.properties.o===origin,example.origin);
   }
   await clickExample(diagnostic.materialExamples.marineOrganic);
+  await openJordravDetails(page,'.jordrav-search-context');
   let text=await page.locator('.jordrav-search-context').textContent();
   assert.match(text,/Tørv og gytje/);assert.match(text,/Silt og ler/);
   assert.match(text,/side om side/);assert.match(text,/Ingen laggrænse/);
@@ -102,10 +104,11 @@ try{
   await page.locator('.jordrav-search-context').screenshot({path:artifact('search-context-marine-organic.png')});
   report.checks.push('Real mixed marine organic/clay click distinguishes peat from sand and lateral mixture from vertical cover');
   await clickExample(diagnostic.materialExamples.lateralMixture);
+  await openJordravDetails(page,'.jordrav-search-context');
   text=await page.locator('.jordrav-search-context').textContent();
   assert.match(text,/Sand og grus/);assert.match(text,/side om side/);
   const selected=await page.evaluate(()=>window.__searchHarness.selectedFeature.properties.o);
-  await page.locator('#jordravFields').check();
+  await (await jordravControl(page,'#jordravFields')).check();
   assert.equal(await page.evaluate(()=>window.__searchHarness.selectedFeature.properties.o),selected);
   assert.ok(await page.evaluate(()=>Number(window.__searchHarness.map.getPane('jordrav-selection').style.zIndex)>Number(window.__searchHarness.map.getPane('jordrav-fields').style.zIndex)));
   report.checks.push('Same-family sand/gravel mixture retains mixture explanation; field toggle preserves selection');
@@ -118,7 +121,8 @@ try{
     await Promise.all([page.waitForEvent('load'),page.locator(`[data-language="${lang}"]`).click()]);
     await page.waitForFunction(()=>window.__searchHarness?.data,null,{timeout:90000});
     await clickExample(diagnostic.materialExamples.marineOrganic);
-    text=await page.locator('.jordrav-search-context').textContent();
+    await openJordravDetails(page,'.jordrav-search-context');
+  text=await page.locator('.jordrav-search-context').textContent();
     assert.match(text,lang==='de'?/Torf und Gyttja/:/Peat and gyttja/);
     assert.ok(!text.includes('jordrav.')&&!text.includes('undefined'));
   }
@@ -126,7 +130,7 @@ try{
   const failure=await browser.newContext(),failurePage=await failure.newPage();
   await failurePage.route('https://geodata.fvm.dk/**',route=>route.abort());
   await failurePage.goto(address);await failurePage.waitForFunction(()=>window.__searchHarness?.data,null,{timeout:90000});
-  await failurePage.locator('#jordravFields').check();
+  await (await jordravControl(failurePage,'#jordravFields')).check();
   await failurePage.evaluate(()=>{window.__searchHarness.map.setView([57.167,10.433],13,{animate:false});});
   await failurePage.waitForFunction(()=>document.getElementById('jordravFieldsStatus').classList.contains('jordrav-error'),null,{timeout:45000});
   assert.match(await failurePage.locator('#jordravFieldsStatus').textContent(),/Manglende linjer/);

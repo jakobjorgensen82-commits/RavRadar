@@ -1,3 +1,4 @@
+import { jordravControl, openJordravDetails, closeJordravOptions } from './test-helpers/jordrav-ui.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import http from 'node:http';
@@ -46,7 +47,7 @@ async function clickExample(page,example){
       }
     }throw Error('No safe interior point');
   },example.origin);
-  await page.locator('#jordravMap').scrollIntoViewIfNeeded();
+  await closeJordravOptions(page);await page.locator('#jordravMap').scrollIntoViewIfNeeded();
   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   const box=await page.locator('#jordravMap').boundingBox();
   await page.mouse.click(box.x+pixel.x,box.y+pixel.y);
@@ -59,30 +60,30 @@ try{
   page.on('request',r=>requests.push(r.url()));page.on('pageerror',e=>report.errors.push(e.message));
   await page.goto(address);await ready(page);
   for(const trace of TRACE_CLASSES){
-    await page.locator('#jordravTrace').selectOption(trace);
+    await (await jordravControl(page,'#jordravTrace')).selectOption(trace);
     const categories=await page.evaluate(()=>window.__viewHarness.overview.getLayers().map(l=>l.feature.properties.potential));
     assert.ok(categories.length>0,trace);assert.ok(categories.every(p=>p===trace),trace);
     assert.equal(await page.locator('#jordravLegend>span').count(),2);
   }
   assert.ok(!requests.some(u=>/tile-.*\.geojson\.gz/.test(u)));
   report.checks.push('All five lead filters redraw nationwide overview, update legend and request no detail tiles');
-  await page.locator('#jordravTrace').selectOption('all');
+  await (await jordravControl(page,'#jordravTrace')).selectOption('all');
   await clickExample(page,diagnostic.materialExamples.marineOrganic);
   const geologicalDetailText=target=>target.locator('#jordravDetails').evaluate(panel=>{
     const copy=panel.cloneNode(true);copy.querySelector('.jordrav-soil-point')?.remove();return copy.textContent;
   });
   const reference=await selection(page),detailText=await geologicalDetailText(page);
   assert.ok(await page.locator('.jordrav-soil-point button').count());
-  await page.locator('#jordravTrace').selectOption('basin');
+  await (await jordravControl(page,'#jordravTrace')).selectOption('basin');
   await page.waitForFunction(()=>window.__viewHarness.details&&window.__viewHarness.details.getLayers().every(l=>window.__viewHarness.data.catalog[l.feature.properties.i].potential==='basin'));
   assert.equal(await selection(page),reference);assert.equal(await page.locator('#jordravSelectionNote').isVisible(),true);
   assert.equal(await page.evaluate(()=>window.__viewHarness.map.hasLayer(window.__viewHarness.selected)),false);
-  await page.locator('#jordravTrace').selectOption('coastal');
+  await (await jordravControl(page,'#jordravTrace')).selectOption('coastal');
   assert.equal(await page.locator('#jordravSelectionNote').isVisible(),false);
   report.checks.push('Local lead filter preserves explanation and explicitly marks a hidden selection; matching filter restores highlight');
-  await page.locator('[data-base="aerial"]').click();await page.locator('#jordravFields').check();
-  await page.locator('#jordravFocus').check();await page.locator('#jordravDeepVisible').uncheck();
-  await page.locator('#jordravOpacity').fill('35');
+  await page.locator('[data-base="aerial"]').click();await (await jordravControl(page,'#jordravFields')).check();
+  await (await jordravControl(page,'#jordravFocus')).check();await (await jordravControl(page,'#jordravDeepVisible')).uncheck();
+  await (await jordravControl(page,'#jordravOpacity')).fill('35');
   await page.locator('#jordravCopyView').click();
   await page.waitForFunction(()=>document.getElementById('jordravLinkStatus').textContent.startsWith('Link kopieret'));
   const savedURL=await page.locator('#jordravViewLink').inputValue(),saved=parseView(new URL(savedURL).hash).state;
@@ -122,7 +123,7 @@ try{
   report.checks.push('A saved polygon excluded by the lead filter is identified honestly without colouring a different area');
   await restored.evaluate(hash=>{location.hash=hash;},encodeView({...saved,dataset:'a'.repeat(64)}));
   await restored.waitForFunction(()=>document.getElementById('jordravLinkStatus').textContent.includes('Geologidata har ændret sig'));
-  assert.equal(await selection(restored),null);assert.match(await restored.locator('#jordravDetails').textContent(),/Følg en geologisk mulighed/);
+  assert.equal(await selection(restored),null);assert.match(await restored.locator('#jordravDetails').textContent(),/Vælg et sted på kortet/);
   report.checks.push('Changed dataset restores camera and controls but clears earlier polygon and explanation with explicit warning');
   await restored.evaluate(hash=>{location.hash=hash;},encodeView({...saved,feature:'n-missing~10.40000000,57.16000000,10.41000000,57.17000000'}));
   await restored.waitForFunction(()=>document.getElementById('jordravLinkStatus').textContent.includes('findes ikke her'),null,{timeout:90000});
@@ -149,14 +150,15 @@ try{
   await restored.setViewportSize({width:390,height:844});await restored.evaluate(()=>{window.__viewHarness.map.invalidateSize();});
   assert.ok(await restored.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   await restored.locator('#jordravCopyView').scrollIntoViewIfNeeded();await restored.screenshot({path:artifact('mobile.png')});
-  await restored.locator('#jordravTrace').selectOption('covered');
+  await (await jordravControl(restored,'#jordravTrace')).selectOption('covered');
   assert.ok(await restored.evaluate(()=>{const s=document.getElementById('jordravTrace').getBoundingClientRect(),c=document.querySelector('.jordrav-map-column').getBoundingClientRect();return s.left>=c.left&&s.right<=c.right;}));
   await restored.locator('#jordravTrace').scrollIntoViewIfNeeded();await restored.screenshot({path:artifact('mobile-controls.png')});
   for(const lang of ['de','en']){
     await Promise.all([restored.waitForEvent('load'),restored.locator(`[data-language="${lang}"]`).click()]);await ready(restored);
     await restored.waitForFunction(ref=>window.__viewHarness.featureReference(window.__viewHarness.selectedFeature)===ref,reference,{timeout:90000});
-    assert.match(await restored.locator('#jordravCopyView').textContent(),lang==='de'?/Link zur Ansicht kopieren/:/Copy link to this view/);
+    assert.match(await restored.locator('#jordravCopyView').textContent(),lang==='de'?/Link kopieren/:/Copy link/);
     assert.ok(!(await restored.locator('body').textContent()).includes('jordrav.'));
+    await jordravControl(restored,'#jordravTrace');
     assert.ok(await restored.evaluate(()=>{const s=document.getElementById('jordravTrace').getBoundingClientRect(),c=document.querySelector('.jordrav-map-column').getBoundingClientRect();return s.left>=c.left&&s.right<=c.right;}));
   }
   report.checks.push('390px mobile emulation and German/English navigation preserve saved selection and translate new controls');

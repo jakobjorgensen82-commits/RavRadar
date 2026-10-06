@@ -1,3 +1,56 @@
+# Aktuel Jordravdesignkandidat – 4.0.545, 2026-10-06
+
+Ejeren har bestilt en fuld gennemgang af Jordravsidens layout og betjening:
+»den helt store omgang, hele vejen rundt«. Hele Jordravfladen er ombygget
+med kortværktøjer øverst, et særskilt lagpanel, tydelig regionsindgang,
+læselige områdeforklaringer og foldbar uddybning. Mobil får regionen før
+kortet og en knap fra det valgte kortsted til forklaringen. Tastatur,
+dansk/tysk/engelsk, almindeligt kort og luftfoto samt alle eksisterende
+geologiske funktioner bevares.
+
+108 lokale Chrome-checks består: de 99 funktionsregressioner samt seks
+samlede UX-forløb og tre cacheforløb, herunder DA/DE/EN ved
+360/390/768/1024 px. Den lille
+produktkritiske kildegate består med 118 browserfiler og Jordravs målprøver.
+Dette er lokal evidens, ikke endnu CI eller offentlig 4.0.545. Exact-head
+CI, sikker merge, providerfri kode-only deploy og offentlig browserkontrol
+skal afsluttes. Offentlig forgænger 4.0.544 er fortsat gyldig leverance.
+PR #524 bevarer dens kvittering og venter på den eksisterende produktion;
+main ændres ikke under en aktiv produktionsskriver.
+
+Data/model 0.2, geologiske farver, svag ravsikkerhed og ukendt jagtbarhed
+ændres ikke. Dybe lilla registreringer bevarer deres kildeintervaller.
+Punkt 4 om automatisk dagens nypløjede/bare/regnvaskede marker er udgået;
+ingen fysisk telefonprøve eller målt rav-/pløjedybde påstås. Kystmodel,
+RavScore, central adminsandhed og vejrlogik er urørt. Geodata må kun få
+et rent topversionsløft. Tidligere 4.0.544-status nedenfor er historikken
+for forgængeren; den bestilte designforbedring er nu det aktive arbejde.
+
+**Genbesøgende browser:** En konkret Chrome-prøve af gammel 4.0.544-cache
+viste 61 uoversatte nøgler med blandede moduleidentiteter. Hele Jordravs
+lokale imports følger nu 4.0.545. Det første grønne design-head 41666348
+må ikke merges på dette ældre bevis; sluthead skal have ny exact-head CI.
+Tre cacheforløb kontrollerer den rettede genbesøgende browser og sprogskift.
+Dette ændrer ingen geologiske bytes eller kystens runtime.
+
+Design/evidens: `docs/research/JORDRAV_DESIGN_2026-10-06.md`.
+Ekstra høj indsats/Sol anbefales til integration og slutkontrol.
+
+# Nyeste ejerønske – Jordravs design og betjening, 2026-10-06
+
+Ejeren finder den offentlige Jordravside utilstrækkeligt indbydende,
+intuitiv og visuelt gennemarbejdet og bestiller en rettelse. Arbejdet
+fortsætter på `codex/jordrav-design` fra det validerede dokumentationshead
+`daef1fd9`; PR #524 er fortsat separat og må først merges efter den aktive
+produktion 37435351739. App 4.0.544 er den offentliggjorte forgænger.
+
+Layoutet skal prioritere kortet, gøre baggrund/lag/farver lettere at finde,
+give en tydelig indgang til områdeforklaringen og fungere på mobil samt
+DA/DE/EN. Eksisterende funktioner, geologiske farver og usikkerheder,
+datasetbindinger, dybe lag, gemte visninger og opt-in-kilder bevares.
+Ny UX kræver faktisk browser- og visuel kontrol før leveringspåstand;
+release, RDKS/håndbøger/changelog, exact-head CI og kode-only deploy følger.
+
 # Aktuel Jordravleverance – 4.0.544, 2026-10-06
 
 Den bestilte nationale kortleverance er nu offentlig og browserverificeret.

@@ -1,3 +1,4 @@
+import { jordravControl, openJordravDetails, closeJordravOptions } from './test-helpers/jordrav-ui.mjs';
 // Local UI verification with real Leaflet and real generated public geology.
 // A test-only module tail exposes existing instances for assertions; no test
 // hooks, weather stubs or production services are added to the product.
@@ -83,23 +84,24 @@ try {
   await waitForVisibleStreetTiles();
   await page.screenshot({path:artifact('national-0.2-desktop.png'),fullPage:true});
   const overviewCount=await page.evaluate(()=>window.__jordravHarness.overview.getLayers().length);
-  await page.locator('#jordravFocus').check();
+  await (await jordravControl(page,'#jordravFocus')).check();
   assert.ok(await page.evaluate(()=>window.__jordravHarness.overview.getLayers().length>0 &&
     window.__jordravHarness.overview.getLayers().every(layer=>['enhanced','coastal','basin','reworked','covered'].includes(layer.feature.properties.potential))));
   assert.ok(await page.evaluate(()=>window.__jordravHarness.overview.getLayers().length)<overviewCount);
   assert.equal(requests.filter(url=>/tile-\d+-\d+\.geojson/.test(url)).length,0);
-  await page.locator('#jordravFocus').uncheck();
+  await (await jordravControl(page,'#jordravFocus')).uncheck();
   assert.equal(await page.evaluate(()=>window.__jordravHarness.overview.getLayers().length),overviewCount);
   report.checks.push('National focus hides other classes and restores them without loading detail data');
-  await page.locator('.jordrav-regions summary').click();
+  await openJordravDetails(page,'.jordrav-regions');
   for (const region of ['rubjerg','northeast-zealand','stenstrup','varde','vendsyssel-marine','asaa-voersaa']) {
-    await page.locator('#jordravRegion').selectOption(region);
+    await (await jordravControl(page,'#jordravRegion')).selectOption(region);
     assert.ok((await page.locator('#jordravRegionalExplanation h2').textContent()).trim());
     assert.equal(await page.locator('.jordrav-region-grid h3').count(),4);
     assert.ok(await page.locator('#jordravRegionalExplanation a').count()>0);
+    if(region==='rubjerg')await openJordravDetails(page,'#jordravRegionStory');
     if(region==='rubjerg')await page.locator('.jordrav-regions').screenshot({path:artifact('national-0.2-regional-guide.png')});
     if(region==='northeast-zealand')await page.evaluate(()=>{const map=window.__jordravHarness.map;map.setView(map.getCenter(),map.getZoom()+1,{animate:true});});
-    await page.locator('#jordravRegionGo').click();
+    await (await jordravControl(page,'#jordravRegionGo')).click();
     await page.waitForFunction(id=>{
       const center=window.__jordravHarness.map.getCenter();
       const bounds={rubjerg:[57.40,9.68,57.52,10.02],'northeast-zealand':[55.86,12.12,56.12,12.48],stenstrup:[55.04,10.44,55.20,10.70],varde:[55.49,8.30,55.77,8.73],'vendsyssel-marine':[57.36,10.15,57.71,10.58],'asaa-voersaa':[57.148,10.405,57.210,10.510]}[id];
@@ -109,16 +111,17 @@ try {
   assert.equal(await page.evaluate(()=>window.__jordravHarness.data.overview.features.length),overviewCount);
   assert.match(await page.locator('#jordravRegionalExplanation').textContent(),/Sæbyvej\/Østkystvejen/);
   assert.match(await page.locator('#jordravRegionalExplanation').textContent(),/viser de marine aflejringer blåt/);
+  await openJordravDetails(page,'#jordravRegionStory');
   await page.locator('.jordrav-regions').screenshot({path:artifact('national-0.2-asaa-voersaa-guide.png')});
   report.checks.push('Six regional explanations render sources and navigate without changing source overview; Asaa–Voersaa names the coastal fields and their marine designation');
   for(const [region,bounds] of [
     ['hals-hou',[56.99,10.21,57.12,10.39]],['jerup-aalbaek',[57.52,10.35,57.62,10.49]],
     ['lammefjord',[55.76,11.30,55.87,11.56]],['roedbyfjord',[54.66,11.23,54.78,11.42]],
     ['hjardemaal',[57.03,8.66,57.11,8.84]]]) {
-    await page.locator('#jordravRegion').selectOption(region);
+    await (await jordravControl(page,'#jordravRegion')).selectOption(region);
     assert.equal(await page.locator('.jordrav-region-grid h3').count(),4);
     assert.ok(await page.locator('#jordravRegionalExplanation a').count()>=2);
-    await page.locator('#jordravRegionGo').click();
+    await (await jordravControl(page,'#jordravRegionGo')).click();
     await page.waitForFunction(bounds=>{
       const center=window.__jordravHarness.map.getCenter();
       return center.lat>=bounds[0]&&center.lng>=bounds[1]&&center.lat<=bounds[2]&&center.lng<=bounds[3];
@@ -126,7 +129,7 @@ try {
     assert.equal(await page.evaluate(()=>window.__jordravHarness.data.overview.features.length),overviewCount);
   }
   report.checks.push('Five further comparative marine-field guides navigate and explain distinct sediment/cover histories without class bonuses');
-  await page.locator('.jordrav-regions summary').click();
+  await openJordravDetails(page,'.jordrav-regions');
   const bytesBeforeLocal=await page.evaluate(()=>performance.getEntriesByType('resource').filter(entry=>entry.name.includes('/data/jordrav/')).reduce((sum,entry)=>sum+entry.encodedBodySize,0));
   start=performance.now();
   await page.evaluate(()=>{window.__jordravHarness.map.setView([56.14,8.76],11);});
@@ -136,7 +139,7 @@ try {
   report.timings.push({stage:'localDetailAfterRegionalNavigationMs',value:Math.round(performance.now()-start)});
   report.network.geologyBytes=await page.evaluate(()=>performance.getEntriesByType('resource').filter(entry=>entry.name.includes('/data/jordrav/')).reduce((sum,entry)=>sum+entry.encodedBodySize,0));
   report.timings.at(-1).geologyEncodedBytes=report.network.geologyBytes-bytesBeforeLocal;
-  await page.locator('#jordravMap').scrollIntoViewIfNeeded();
+  await closeJordravOptions(page);await page.locator('#jordravMap').scrollIntoViewIfNeeded();
   const interiorClickTarget = potential => page.evaluate(potential=> {
     const {map,details,data}=window.__jordravHarness;
     function insideRing(p,ring) {
@@ -172,16 +175,16 @@ try {
   await page.waitForFunction(()=>document.getElementById('jordravDetails').textContent.includes('Generel geologi · ingen særskilt udpegning'));
   assert.match(await page.locator('#jordravDetails').textContent(),/ikke en negativ vurdering af ravmulighederne/);
   const generalSelection=await page.evaluate(()=>JSON.stringify(window.__jordravHarness.selected.toGeoJSON()));
-  await page.locator('#jordravOpacity').focus();
-  await page.locator('#jordravOpacity').press('End');
+  await (await jordravControl(page,'#jordravOpacity')).focus();
+  await (await jordravControl(page,'#jordravOpacity')).press('End');
   assert.ok(await page.evaluate(()=>window.__jordravHarness.details.getLayers().filter(layer=>window.__jordravHarness.data.catalog[layer.feature.properties.i].potential==='possible').every(layer=>layer.options.fillOpacity===0 && layer.options.opacity===0 && layer.options.weight===0)));
-  await page.locator('#jordravColourMode').selectOption('access');
+  await (await jordravControl(page,'#jordravColourMode')).selectOption('access');
   assert.ok(await page.evaluate(()=>window.__jordravHarness.details.getLayers().every(layer=>layer.options.fillColor==='#778c99' && layer.options.fillOpacity>0)));
-  await page.locator('#jordravColourMode').selectOption('potential');
+  await (await jordravControl(page,'#jordravColourMode')).selectOption('potential');
   assert.equal(await page.evaluate(()=>JSON.stringify(window.__jordravHarness.selected.toGeoJSON())),generalSelection);
   assert.ok(await page.evaluate(()=>window.__jordravHarness.details.getLayers().filter(layer=>window.__jordravHarness.data.catalog[layer.feature.properties.i].potential==='possible').every(layer=>layer.options.fillOpacity===0 && layer.options.opacity===0 && layer.options.weight===0)));
-  await page.locator('#jordravOpacity').focus();
-  for(let step=0;step<30;step++)await page.locator('#jordravOpacity').press('ArrowLeft');
+  await (await jordravControl(page,'#jordravOpacity')).focus();
+  for(let step=0;step<30;step++)await (await jordravControl(page,'#jordravOpacity')).press('ArrowLeft');
   report.checks.push('Uncoloured local geology accepts an actual mouse click and stays uncoloured through opacity/accessibility changes while preserving the selected geometry');
   await page.waitForFunction(()=>{
     const bounds=document.getElementById('jordravMap').getBoundingClientRect();
@@ -200,13 +203,13 @@ try {
   await page.waitForFunction(()=>document.querySelector('#jordravDetails > .jordrav-badge')?.textContent==='Transport og sortering');
   const before = await page.evaluate(()=>({center:window.__jordravHarness.map.getCenter(),zoom:window.__jordravHarness.map.getZoom(),selected:JSON.stringify(window.__jordravHarness.selected.toGeoJSON()), text:document.getElementById('jordravDetails').textContent}));
   const localCount=await page.evaluate(()=>window.__jordravHarness.details.getLayers().length);
-  await page.locator('#jordravFocus').check();
+  await (await jordravControl(page,'#jordravFocus')).check();
   await page.waitForFunction(()=>window.__jordravHarness.details &&
     window.__jordravHarness.details.getLayers().length>0 &&
     window.__jordravHarness.details.getLayers().every(layer=>['enhanced','coastal','basin','reworked','covered'].includes(window.__jordravHarness.data.catalog[layer.feature.properties.i].potential)));
   assert.ok(await page.evaluate(()=>window.__jordravHarness.details.getLayers().length)<localCount);
   assert.equal(await page.evaluate(()=>document.getElementById('jordravDetails').textContent),before.text);
-  await page.locator('#jordravFocus').uncheck();
+  await (await jordravControl(page,'#jordravFocus')).uncheck();
   await page.waitForFunction(count=>window.__jordravHarness.details?.getLayers().length===count,localCount);
   assert.equal(await page.evaluate(()=>JSON.stringify(window.__jordravHarness.selected.toGeoJSON())),before.selected);
   report.checks.push('Local focus filters real polygons and restores all classes while preserving the selected explanation');
@@ -217,13 +220,13 @@ try {
   const after = await page.evaluate(()=>({center:window.__jordravHarness.map.getCenter(),zoom:window.__jordravHarness.map.getZoom(),selected:JSON.stringify(window.__jordravHarness.selected.toGeoJSON()), text:document.getElementById('jordravDetails').textContent}));
   assert.deepEqual(after,before);
   report.checks.push('Actual polygon click renders explanation; aerial switch preserves geometry, selection, view and explanation');
-  await page.locator('#jordravOpacity').focus();
-  await page.locator('#jordravOpacity').press('End');
-  await page.locator('#jordravVisible').uncheck();
+  await (await jordravControl(page,'#jordravOpacity')).focus();
+  await (await jordravControl(page,'#jordravOpacity')).press('End');
+  await (await jordravControl(page,'#jordravVisible')).uncheck();
   assert.equal(await page.evaluate(()=>window.__jordravHarness.map.hasLayer(window.__jordravHarness.details)),false);
-  await page.locator('#jordravVisible').check();
+  await (await jordravControl(page,'#jordravVisible')).check();
   assert.equal(await page.evaluate(()=>window.__jordravHarness.map.hasLayer(window.__jordravHarness.details)),true);
-  await page.locator('#jordravOpacity').press('Home');
+  await (await jordravControl(page,'#jordravOpacity')).press('Home');
   report.checks.push('Opacity and overlay visibility controls work independently of base map');
   await page.waitForFunction(() => {
     const bounds = document.getElementById('jordravMap').getBoundingClientRect();
@@ -240,13 +243,13 @@ try {
   await page.screenshot({path:artifact('national-0.2-aerial-detail.png'),fullPage:true});
   assert.match(before.text,/Jagtbarhed uafklaret/);
   const colourBefore=await page.evaluate(()=>({center:window.__jordravHarness.map.getCenter(),zoom:window.__jordravHarness.map.getZoom(),selected:JSON.stringify(window.__jordravHarness.selected.toGeoJSON()),text:document.getElementById('jordravDetails').textContent}));
-  await page.locator('#jordravColourMode').selectOption('access');
+  await (await jordravControl(page,'#jordravColourMode')).selectOption('access');
   assert.ok(await page.evaluate(()=>window.__jordravHarness.details.getLayers().every(layer=>layer.options.fillColor==='#778c99')));
   assert.deepEqual(await page.evaluate(()=>({center:window.__jordravHarness.map.getCenter(),zoom:window.__jordravHarness.map.getZoom(),selected:JSON.stringify(window.__jordravHarness.selected.toGeoJSON()),text:document.getElementById('jordravDetails').textContent})),colourBefore);
   assert.match(await page.locator('#jordravColourNote').textContent(),/Ingen af de nuværende flader er verificeret/);
   assert.match(await page.locator('#jordravLegend').textContent(),/Dybt lag · ikke umiddelbart jagtbart/);
   await page.screenshot({path:artifact('national-0.2-accessibility.png'),fullPage:true});
-  await page.locator('#jordravColourMode').selectOption('potential');
+  await (await jordravControl(page,'#jordravColourMode')).selectOption('potential');
   assert.ok(await page.evaluate(()=>window.__jordravHarness.details.getLayers().some(layer=>layer.options.fillColor!=='#778c99')));
   report.checks.push('Hunting accessibility remains unknown for surface polygons; colour changes preserve geometry, view and explanation');
 
@@ -261,20 +264,20 @@ try {
   assert.equal(await page.evaluate(()=>window.__jordravHarness.selected.toGeoJSON().geometry.type),'Point');
   const deepBefore=await page.evaluate(()=>({center:window.__jordravHarness.map.getCenter(),zoom:window.__jordravHarness.map.getZoom(),selected:JSON.stringify(window.__jordravHarness.selected.toGeoJSON()),text:document.getElementById('jordravDetails').textContent}));
   await page.locator('[data-base="street"]').click();
-  await page.locator('#jordravColourMode').selectOption('access');
+  await (await jordravControl(page,'#jordravColourMode')).selectOption('access');
   assert.deepEqual(await page.evaluate(()=>({center:window.__jordravHarness.map.getCenter(),zoom:window.__jordravHarness.map.getZoom(),selected:JSON.stringify(window.__jordravHarness.selected.toGeoJSON()),text:document.getElementById('jordravDetails').textContent})),deepBefore);
-  await page.locator('#jordravDeepVisible').uncheck();
+  await (await jordravControl(page,'#jordravDeepVisible')).uncheck();
   assert.ok(await page.evaluate(()=>!window.__jordravHarness.map.hasLayer(window.__jordravHarness.deepLayers)&&!window.__jordravHarness.map.hasLayer(window.__jordravHarness.selected)));
-  await page.locator('#jordravDeepVisible').check();
+  await (await jordravControl(page,'#jordravDeepVisible')).check();
   assert.ok(await page.evaluate(()=>window.__jordravHarness.map.hasLayer(window.__jordravHarness.deepLayers)&&window.__jordravHarness.map.hasLayer(window.__jordravHarness.selected)));
-  await page.locator('#jordravVisible').uncheck();
+  await (await jordravControl(page,'#jordravVisible')).uncheck();
   assert.ok(await page.evaluate(()=>!window.__jordravHarness.map.hasLayer(window.__jordravHarness.deepLayers)&&!window.__jordravHarness.map.hasLayer(window.__jordravHarness.selected)));
-  await page.locator('#jordravVisible').check();
+  await (await jordravControl(page,'#jordravVisible')).check();
   assert.ok(await page.evaluate(()=>window.__jordravHarness.map.hasLayer(window.__jordravHarness.deepLayers)&&window.__jordravHarness.map.hasLayer(window.__jordravHarness.selected)));
-  await page.locator('#jordravFocus').check();
+  await (await jordravControl(page,'#jordravFocus')).check();
   assert.equal(await page.evaluate(()=>window.__jordravHarness.deepLayers.getLayers().length),2);
   assert.ok(await page.evaluate(()=>window.__jordravHarness.map.hasLayer(window.__jordravHarness.selected)));
-  await page.locator('#jordravFocus').uncheck();
+  await (await jordravControl(page,'#jordravFocus')).uncheck();
   assert.equal(await page.locator('#jordravDetails').textContent(),deepBefore.text);
   report.checks.push('Purple deep points display recorded depths and source without implying amber or extent; base, colour and visibility controls preserve the explanation');
 
@@ -301,10 +304,10 @@ try {
   await waitForVisibleStreetTiles();
   await page.screenshot({path:artifact('national-0.2-deep-mobile.png'),fullPage:true});
   report.checks.push('Separate deep sand intervals remain separate; mobile depth panel and colour controls have no horizontal overflow');
-  await page.locator('#jordravColourMode').selectOption('potential');
-  await page.locator('#jordravOpacity').focus();
-  await page.locator('#jordravOpacity').press('Home');
-  for(let step=0;step<30;step++)await page.locator('#jordravOpacity').press('ArrowRight');
+  await (await jordravControl(page,'#jordravColourMode')).selectOption('potential');
+  await (await jordravControl(page,'#jordravOpacity')).focus();
+  await (await jordravControl(page,'#jordravOpacity')).press('Home');
+  for(let step=0;step<30;step++)await (await jordravControl(page,'#jordravOpacity')).press('ArrowRight');
   await page.locator('[data-base="street"]').click();
   await page.locator('#jordravDenmark').click();
   await page.waitForFunction(()=>document.getElementById('jordravStatus').textContent.startsWith('Generaliseret'));
@@ -312,8 +315,8 @@ try {
   await page.evaluate(()=>{window.__jordravHarness.map.invalidateSize();});
   await page.locator('#jordravDenmark').click();
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
-  await page.locator('.jordrav-regions summary').click();
-  await page.locator('#jordravRegion').selectOption('stenstrup');
+  await openJordravDetails(page,'.jordrav-regions');
+  await (await jordravControl(page,'#jordravRegion')).selectOption('stenstrup');
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   await page.locator('.jordrav-field summary').click();
   assert.match(await page.locator('.jordrav-field').textContent(),/Markgrænser 2026/);
@@ -326,13 +329,13 @@ try {
   report.checks.push('Field guide separates ploughing, rain visibility and below-plough geological mapping on mobile');
   report.checks.push('Mobile 390px has no horizontal overflow');
   await page.setViewportSize({width:1440,height:1000});
-  await page.locator('#jordravColourMode').selectOption('potential');
+  await (await jordravControl(page,'#jordravColourMode')).selectOption('potential');
   const verification=JSON.parse(await fs.readFile(path.join(output,'national-model-0.2-independent-verification.json'),'utf8'));
   for(const fixture of [...verification.browserFixtures,{class:'coastal',latitude:57.1670255194,longitude:10.4332533245,surface:'HS',landscape:'Marin flade'}]) {
     await page.locator('[data-base="street"]').click();
     await page.evaluate(f=>{window.__jordravHarness.map.setView([f.latitude,f.longitude],13,{animate:false});},fixture);
     await page.waitForFunction(()=>document.getElementById('jordravStatus').textContent.startsWith('Lokale detaljer'),null,{timeout:90000});
-    await page.locator('#jordravMap').scrollIntoViewIfNeeded();
+    await closeJordravOptions(page);await page.locator('#jordravMap').scrollIntoViewIfNeeded();
     const point=await page.evaluate(f=>window.__jordravHarness.map.latLngToContainerPoint([f.latitude,f.longitude]),fixture);
     const box=await page.locator('#jordravMap').boundingBox();
     await page.mouse.click(box.x+point.x,box.y+point.y);
@@ -362,22 +365,22 @@ try {
     assert.equal(await page.locator('#jordravDeepVisible').isChecked(),true);
     assert.ok(!await page.locator('body').textContent().then(text=>text.includes('jordrav.')));
     assert.equal(await page.locator('html').getAttribute('lang'),lang);
-    await page.locator('.jordrav-regions summary').click();
-    await page.locator('#jordravRegion').selectOption('stenstrup');
+    await openJordravDetails(page,'.jordrav-regions');
+    await (await jordravControl(page,'#jordravRegion')).selectOption('stenstrup');
     assert.ok((await page.locator('#jordravRegionalExplanation h2').textContent()).includes('Stenstrup'));
-    await page.locator('#jordravRegion').selectOption('asaa-voersaa');
+    await (await jordravControl(page,'#jordravRegion')).selectOption('asaa-voersaa');
     assert.match(await page.locator('#jordravRegionalExplanation h2').textContent(),/Asaa–Voerså/);
     assert.match(await page.locator('#jordravRegionalExplanation').textContent(),/Sæbyvej\/Østkystvejen/);
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
     assert.match(await page.locator('#jordravLegend').textContent(),lang==='de'?/keine gesonderte Ausweisung/:/no specific designation/);
     for(const region of ['hals-hou','jerup-aalbaek','lammefjord','roedbyfjord','hjardemaal']) {
-      await page.locator('#jordravRegion').selectOption(region);
+      await (await jordravControl(page,'#jordravRegion')).selectOption(region);
       assert.equal(await page.locator('.jordrav-region-grid h3').count(),4);
       assert.ok(!await page.locator('#jordravRegionalExplanation').textContent().then(text=>text.includes('undefined')));
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
     }
     await page.locator('.jordrav-field summary').click();
-    assert.equal(await page.locator('.jordrav-field summary').textContent(),lang==='de'?'Feldbernstein nach Pflügen und Regen':'Field amber after ploughing and rain');
+    assert.ok((await page.locator('.jordrav-field summary').textContent()).includes(lang==='de'?'Feldbernstein nach Pflügen und Regen':'Field amber after ploughing and rain'));
     assert.match(await page.locator('.jordrav-field').textContent(),lang==='de'?/unter dem Pflughorizont/:/below the plough zone/);
   }
   report.checks.push('German and English rendering have no unresolved translation keys');

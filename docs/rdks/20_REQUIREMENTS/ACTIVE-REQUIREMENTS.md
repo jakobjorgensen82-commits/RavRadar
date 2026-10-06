@@ -1,3 +1,14 @@
+# Nyeste ejerkrav – Jordravs layout og design, 2026-10-06
+
+Ejeren bestiller en fuld ombygning af Jordravsidens design og betjening:
+»den helt store omgang, hele vejen rundt«. Kravet er lokalt implementeret
+i designkandidat 4.0.545; exact-head CI og offentlig effekt mangler endnu. Kort og luftfoto, alle geologiske vurderinger/forbehold,
+lagvalg, kildelinks, regionale guider, profilvisning og gemte links skal
+fortsat fungere. Primære handlinger skal være synlige ved kortet, og
+områdeforklaringen skal være let at finde, også på mobil. DA/DE/EN og
+tastaturadgang bevares. Kosmetik må ikke ændre data eller opgradere
+ravmulighed til valideret fundsted eller målt jagtbarhed.
+
 # Jordrav – opfyldt offentlig softwareleverance 2026-10-06
 
 De nedenstående aktive Jordravkrav er implementeret og offentligt kontrolleret
