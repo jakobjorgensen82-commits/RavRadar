@@ -2,11 +2,11 @@
 
 **Håndbogsversion:** 4.0.545
 
-Designkandidat 4.0.545 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+Offentlig 4.0.545 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Den viderefører den eksisterende kystmodel; de nye Jordravlag ændrer ikke RavScore.
-Bindingen er et kildekodebevis; kandidatens CI og publicering mangler endnu. Den offentlige forgænger 4.0.544 er CI-valideret i PR #521/#523; kode-only run 37431340473 attempt 3 og den faktiske offentlige kortbrowser består.
-Den separate kvittering er `docs/research/jordrav/publication-evidence-4.0.544.json`; mobilbeviset er browseremulation.
+PR #525 og fuld exact-head CI 37456024761 er kontrolleret med uafhængigt SHA-256-kildebevis. Kode-only run 37456783798 og faktisk offentlig kortbrowser består; modelbindingen og målingerne er uændrede.
+Kvittering: `docs/research/jordrav/publication-evidence-4.0.545.json`. 390 px DA/DE/EN er browseremulation; fysisk telefon er ikke afprøvet.
 
 ## 89.163 Prognosehalens dækning og bedre brug af reservekøen
 

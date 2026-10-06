@@ -1,17 +1,10 @@
-# Nyeste Jordravissue – layout og betjening, 2026-10-06
+# Jordravs design og cache – lukket med offentlig evidens, 2026-10-06
 
-- **JORDRAV-018 – LOKALT IMPLEMENTERET / offentlig kontrol mangler:** Den offentlige 4.0.544-side opleves
-  som utilstrækkeligt indbydende og intuitiv. Vigtige valg ligger under
-  kortet, og indgangen til forklaringer er svag. Nyt layout udvikles på
-  `codex/jordrav-design`; funktioner, geologi, usikkerhed og datagrænser
-  bevares. Lukning kræver faktisk desktop-/mobil-/DA/DE/EN-kontrol,
-  visuel gennemgang og sikker offentlig levering.
+- **JORDRAV-018 – LEVERET / OFFENTLIGT KONTROLLERET:** Hele Jordravfladen er ombygget i 4.0.545. Kortværktøjer, native lagpanel, regioner, læselige områdeforklaringer og mobilens genvej bevarer alle eksisterende funktioner. 108 lokale Chrome-checks, fuld exact-head CI, providerfri kode-only levering og faktisk offentlig DA/DE/EN-/mobil-/luftfotokontrol består. Screenshots er visuelt læst.
+- **JORDRAV-019 – RETTET / OFFENTLIGT KONTROLLERET:** 61 uoversatte nøgler blev reproduceret med gammel 4.0.544-cache. Alle 15 Jordravmoduler er releasebundne. Tre lokale faktiske cacheforløb og de faktiske offentlige modulekald/sproggenindlæsninger består. Første designs grønne CI er supersederet og blev ikke brugt til merge.
 
-- **JORDRAV-019 – LOKALT RETTET / slut-CI og offentlig kontrol mangler:**
-  Gammel 4.0.544-cache og ny HTML gav 61 uoversatte nøgler i faktisk Chrome.
-  Alle lokale Jordravimports er releasebundne; 15 moduler samt gamle/nye
-  tekster kontrolleres i en opvarmet browser og ved DE/EN-skift. Første
-  design-heads grønne CI må ikke bruges til at skjule fundet.
+Evidens: docs/research/jordrav/publication-evidence-4.0.545.json.
+Tidligere geologiske leverancer nedenfor bevares; empiriske begrænsninger er fortsat gyldige.
 
 # Aktuelle Jordravbegrænsninger efter offentlig levering – 2026-10-06
 
