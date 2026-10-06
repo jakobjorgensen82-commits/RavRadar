@@ -526,7 +526,10 @@ try{
     /DMI_WATER_SOURCE_CONTINUITY_ROW_INVALID/,'A stale verification memo cannot seal mutated evidence.');
   // Capacity is an actual disk/codec boundary, not a declared constant. Use
   // distinct per-source asset hashes as a conservative synthetic workload.
-  const capacitySources=Array.from({length:256},(_,i)=>({sourceKey:`tidewater:CAP${i}`,
+  // The completed 4.0.547 acquisition reports 373 SOURCE targets. The old
+  // 256-record guard rejects that national bank before testing its byte size.
+  // This is synthetic proof of the measured cardinality, not live row proof.
+  const capacitySources=Array.from({length:373},(_,i)=>({sourceKey:`tidewater:CAP${i}`,
     stationId:`CAP${i}`,sourceType:'forecast-point',point:[10+i/10000,56]}));
   const capacityBulk={generatedAt:currentHour,timeStrideHours:3,zones:{}};
   for(const source of capacitySources)capacityBulk.zones[`SOURCE::${source.sourceKey}`]={
@@ -535,9 +538,16 @@ try{
       row.sources.waterLevel.assetIdentitySha256=crypto.createHash('sha256').update(source.sourceKey+time).digest('hex');
       return [time,row];
     }))};
-  const capacityIndex=buildWaterSourceForecastIndex(capacitySources,capacityBulk,currentHour);
+  const measuredCardinalityIndex=buildWaterSourceForecastIndex(capacitySources,capacityBulk,currentHour);
+  assert.equal(measuredCardinalityIndex.size,373,'The normal builder qualifies every synthetic SOURCE independently.');
+  const measuredCardinalityOriginals=JSON.stringify([...measuredCardinalityIndex]);
+  const capacityIndex=measuredCardinalityIndex;
   const capacityPack=await packWaterSourceForecastContinuity(capacityIndex,currentHour);
-  assert.equal(capacityPack.sourceCount,256);
+  assert.equal(JSON.stringify([...measuredCardinalityIndex]),measuredCardinalityOriginals,
+    'The accepted bank must not prune or mutate its valid original SOURCE records.');
+  assert.equal(capacityPack.sourceCount,373);
+  assert.ok(capacityPack.rawBytes<=128*1024*1024,'The original total raw-byte budget is unchanged.');
+  assert.ok(capacityPack.compressedBytes<=16*1024*1024,'The original compressed-byte budget is unchanged.');
   assert.ok(Buffer.byteLength(JSON.stringify(capacityPack))>1024*1024,
     'This actually crosses the old single-metadata ceiling; the recordwise path is necessary.');
   const capacityFile=path.join(sourceContinuityFolder,'capacity.json');
@@ -545,16 +555,33 @@ try{
     waterSourceContinuity:capacityPack});
   const capacityCold=await readDmiForecastFile(capacityFile);
   const capacityRecovered=await unpackWaterSourceForecastContinuity(capacityCold.waterSourceContinuity,currentHour);
-  assert.equal(capacityRecovered.size,256);
+  assert.equal(capacityRecovered.size,373);
   let recoveredSourceHours=0;
   for(const [key,record] of capacityRecovered){
     assert.deepEqual(record.hourly,capacityIndex.get(key).hourly);
     recoveredSourceHours+=record.hourly.length;
   }
-  assert.equal(recoveredSourceHours,256*121);
-  const overCount={...capacityPack,sourceCount:257};
+  assert.equal(recoveredSourceHours,373*121);
+  const overCount={...capacityPack,sourceCount:513};
   await assert.rejects(unpackWaterSourceForecastContinuity(overCount,currentHour),/DMI_WATER_SOURCE_CONTINUITY_MARKER_INVALID/);
-  console.log(JSON.stringify({kind:'SOURCE_CONTINUITY_RECORDWISE_CAPACITY',sourceCount:256,
+  const duplicateEntries={...capacityPack,entries:[...capacityPack.entries.slice(0,-1),capacityPack.entries[0]]};
+  await assert.rejects(unpackWaterSourceForecastContinuity(duplicateEntries,currentHour),/DMI_WATER_SOURCE_CONTINUITY_ENTRY_INVALID/);
+  const oversizedBank={...capacityPack,rawBytes:128*1024*1024+1};
+  await assert.rejects(unpackWaterSourceForecastContinuity(oversizedBank,currentHour),/DMI_WATER_SOURCE_CONTINUITY_MARKER_INVALID/);
+  const cardinalitySources=Array.from({length:512},(_,i)=>({sourceKey:`tidewater:BOUND${i}`,
+    stationId:`BOUND${i}`,sourceType:'forecast-point',point:[10+i/10000,56]}));
+  const cardinalityBulk={generatedAt:currentHour,timeStrideHours:3,zones:{}};
+  for(const source of cardinalitySources)cardinalityBulk.zones[`SOURCE::${source.sourceKey}`]={
+    hourly:{[currentHour]:dmiWaterSourceFixture(source,currentHour,0,currentHour)}};
+  const cardinalityIndex=buildWaterSourceForecastIndex(cardinalitySources,cardinalityBulk,currentHour);
+  assert.equal(cardinalityIndex.size,512);
+  const cardinalityPack=await packWaterSourceForecastContinuity(cardinalityIndex,currentHour);
+  assert.equal((await unpackWaterSourceForecastContinuity(cardinalityPack,currentHour)).size,512,
+    '512 is an exact cardinality boundary, not a promise of 121 hours per source within the byte budget.');
+  const tooMany=new Map(cardinalityIndex);
+  tooMany.set('tidewater:OVER',cardinalityIndex.values().next().value);
+  await assert.rejects(packWaterSourceForecastContinuity(tooMany,currentHour),/DMI_WATER_SOURCE_CONTINUITY_INPUT_INVALID/);
+  console.log(JSON.stringify({kind:'SOURCE_CONTINUITY_RECORDWISE_CAPACITY',sourceCount:373,
     qualifiedSourceHours:recoveredSourceHours,rawBytes:capacityPack.rawBytes,
     compressedBytes:capacityPack.compressedBytes,storedBytes:(await fs.stat(capacityFile)).size,
     synthetic:true,fullNationalJobProven:false}));

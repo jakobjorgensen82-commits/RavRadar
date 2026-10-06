@@ -3,6 +3,90 @@
 **Status:** Aktiv målbeslutning; genstartsleverancen er afgrænset i DEC-0268. Den samlede 4.0.519-kandidat er ikke produktionsbevist.
 **Dato:** 2026-09-30
 
+# NYESTE – lokal 4.0.548, 2026-10-06 20.30 DK – godkendt SOURCE-antalsgrænse
+
+Ejeren har efter den konkrete sikkerhedsafvisning udtrykkeligt godkendt at
+hæve SOURCE-antalsloftet256→512. Den afsluttede547-acquisition havde373
+SOURCE-targets; det nøjagtige kvalificerede live indexantal blev ikke logget.
+Codec og forecastfilens streaminglæser bruger nu én fælles antalskontrakt.
+Ingen gyldige kilder afskæres, og overflow afviser stadig hele pakken.
+128MiB rå/16MiB komprimeret, per-record-, fil-, arkiv- og tidsgrænser,
+originale beviser, central routing og kildeprioritet er uændrede. LF er
+fortsat kun tilladt for vandstand i syvzonerne, aldrig strøm/hukommelse/temp.
+
+Første373-kilde positive prøve reproducerede INPUT_INVALID. Efter den første
+codecændring fandt begge normale målprøver et særskilt STRUCTURE_LIMIT i
+fillæserens gamle256-loft. Den samlede rettelse består373-kilde pack/atomic
+fil/read/unpack med45133 syntetiske timer og uændrede originaler; præcis512
+små kvalificerede banker accepteres og513 afvises. Dubletter og for stor
+byte-markør afvises stadig. Normale kolde/roterende SOURCE- og T+3-prøver
+samt produktionskalderkontrakten består. Filparent13PASS/0FAIL/én opt-in-skip.
+
+Den faktisk kørte store opt-in-prøve består1PASS/0FAIL/SKIP/CANCEL:
+569708270B forecast,373SOURCE/45133timer, krypteret2735683B, gemning5,686s,
+frisk normal CLI-genbrug17,678s. Alle originaler, baseline og geometri er
+uændrede; tomme fyldrecords tæller ikke som vejr. ParentRSS er ikke alle
+childprocessers hukommelse. Lokal cipherkopi er ikke remoteupload/runnerloss.
+De eksisterende tekniske modelbindinger består uændret; ingen migration
+eller centrale admin-/score-/punkt-/geometridata ændres.
+
+Dette er lokal reparations- og kapacitetsevidens, ikke offentlig548 eller
+samlet revisionsafslutning.547 fejlede før deploy; krypteret fremdrift blev
+faktisk gemt/uploadet, restore havde baseline-mismatch. Ingen ekstra
+vejrhentning/replacement startes. Egen eksakt GitHub-kildekontrol,
+kontrolleret levering og faktisk effekt i ny naturlig generation mangler.
+Jordrav er afsluttet og koordineret; hele519-revisionen forbliver isoleret/OFF.
+Spørg RavRadar og GDPR er særskilte, ikke færdigmeldte. Den daterede tidligere
+afvisning er historik efter ejerens konkrete godkendelse, ikke omgået.
+
+## Historisk vejrhentningsfejl og afvisning – 2026-10-06 20.17 DK
+
+Main547-kørslen fejlede før deploy i den nye SOURCE-gemning med
+`DMI_WATER_SOURCE_CONTINUITY_INPUT_INVALID`. Den afsluttede acquisition
+rapporterer 373 SOURCE-targets, mens pack/unpack højst accepterer256.
+Det nøjagtige kvalificerede indexantal er ikke logget. Normale builder- og
+pack-kald reproducerer lokalt samme afvisning med373 syntetiske kilder og
+45133 kvalificerede timer; afvisningen ændrer ingen originaler.
+
+En foreslået ændring af antalsloftet til512 blev afvist af sikkerhedskontrollen
+som udvidelse af produktionsaccept uden konkret autoritet. Den er ikke
+udført eller omgået. Ingen pruning, reduceret kildebank eller catch-and-skip
+må skjule fejlen. Bytegrænser128MiB rå/16MiB komprimeret, tidsbudgetter,
+central routing, kildeprioritet, syvzonernes komponentpolitik og no-loss er
+uændrede. Konkret godkendelse og målt fuld-bank-kapacitet kræves før rettelse.
+
+Den eksisterende måltest består med den nye negative373-kildegrænse,
+uændret positiv256-kilde filgenbrug, uændrede originals og afvisning af
+dubletter/for stor byte-markør. Test-PASS betyder ikke produktionsfix.
+Kørslens krypterede fremdrift blev faktisk gemt og uploadet; restore havde
+baseline-mismatch, og artifact-/deploy-trin blev ikke gennemført. Senest
+offentlige datasæt bevares. Revision, SOURCE-effekt og ny offentlig547 er
+ikke færdige. Privat checkpoint har eksakte kørsels-/cache-id'er og næste trin.
+
+## Lokal kapacitetskontrol – 2026-10-06 19.42 DK
+
+En ny målprøve kombinerer en syntetisk forecastfil på 568.634.628 bytes
+(over V8s strenggrænse) med den maksimale bank på 256 SOURCE-kilder og
+30.976 kvalificerede timer. Normale egne save- og restore-CLI-processer
+består: gemning 6,943 sekunder, krypteret fil 2.063.903 bytes, genbrug
+17,292 sekunder. Alle SOURCE-originaler, originalbaseline, beskyttede
+conditions og egen geometri bevares. De 180 bevidst tomme fyldrecords
+afvises som ukvalificerede; de tæller ikke som gyldig national vejrdækning.
+Kun den nye prøve: 1 PASS, 0 FAIL/SKIP/CANCEL, samlet 47,684 sekunder.
+Første røde forventning om nul afviste fyldrecords var en testfejl og er rettet.
+
+Dette er lokal kombineret byte-/kalderkapacitet, ikke national heljobstid,
+hele processernes hukommelsesforbrug, remote upload eller tab af runner.
+Gemningen er målt inden for den eksisterende fireminuttersgrænse; upload
+er en særskilt grænse og er ikke bevist af en lokal filkopi. Runtime,
+scoreformel, kildepolitik, bindinger og budgetter er urørte.
+
+Den tidligere 547-kandidat er allerede sikkert merget som PR522/main b999
+efter sin eksakte kildekontrol. Den tilhørende normale vejrhentning er aktiv;
+nyt offentligt datasæt og effekt er endnu ikke verificeret. Denne nye
+test-/dokumentationsdelta er kun lokal og er ikke med i den kørende release.
+Den samlede revision og dens øvrige restområder forbliver åbne.
+
 # NYESTE – 2026-10-06 17.10 DK – kold SOURCE-bevarelse og fremrykkede referencer består lokalt
 
 Den normale lokale kandidat gemmer nu selvstændigt kvalificerede SOURCE-

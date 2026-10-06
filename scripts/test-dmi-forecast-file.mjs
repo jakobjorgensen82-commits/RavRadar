@@ -57,7 +57,7 @@ test('recordwise forecast copy preserves SOURCE bank independently of zones and 
   assert.deepEqual((await unpackWaterSourceForecastContinuity(copied.waterSourceContinuity, referenceAt))
     .get(source.sourceKey).hourly, bank.get(source.sourceKey).hourly);
   const overCount = { ...original, waterSourceContinuity: { ...original.waterSourceContinuity,
-    entries: Array.from({ length: 257 }, (_, i) => ({ ...original.waterSourceContinuity.entries[0], sourceKey: `tidewater:${i}` })) } };
+    entries: Array.from({ length: 513 }, (_, i) => ({ ...original.waterSourceContinuity.entries[0], sourceKey: `tidewater:${i}` })) } };
   await assert.rejects(writeDmiForecastFileAtomic(file, overCount), /DMI_FORECAST_FILE_STRUCTURE_LIMIT/);
   assert.deepEqual(await fs.readFile(file), bytesBefore, 'Over-bound writes never replace a valid original.');
 });

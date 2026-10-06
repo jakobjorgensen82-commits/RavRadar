@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -20,7 +21,9 @@ import { openMeteoO1280NearestGridPoint } from './lib/open-meteo-o1280-grid.mjs'
 import { dmiWaterSourceFixture } from './test-helpers/dmi-water-source-fixture.mjs';
 import { buildWaterSourceForecastIndex, packWaterSourceForecastContinuity,
   unpackWaterSourceForecastContinuity } from './lib/water-source-forecast-routing.mjs';
-import { readDmiForecastFile } from './lib/dmi-forecast-file.mjs';
+import { readDmiForecastFile, inspectDmiForecastFile, writeDmiForecastFileAtomic,
+  DMI_FORECAST_FILE_MAX_BYTES } from './lib/dmi-forecast-file.mjs';
+import { constants as bufferConstants } from 'node:buffer';
 import { assertUsableDmiProgressRecovery } from './lib/verified-dmi-progress-inputs.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -28,6 +31,121 @@ const repository = 'owner/fixture';
 const encryptionKey = Buffer.alloc(32, 73).toString('base64');
 const protectedBundleSha256 = 'a'.repeat(64);
 const reference = '2026-09-19T00:00:00.000Z';
+
+// Reuse the real progress fixture and ordinary save/restore CLIs. Artificial
+// large zone records test byte volume, not national native forecast coverage.
+// The measured national SOURCE cardinality contains qualified synthetic originals.
+test('large forecast and national SOURCE bank cross the normal encrypted CLI boundary together', {
+  skip: process.env.RAVRADAR_TEST_LARGE_FORECAST !== '1', timeout: 600_000,
+}, async t => {
+  const f = await fixture(t);
+  const referenceAt = new Date(Math.floor(Date.now() / 3_600_000) * 3_600_000).toISOString();
+  const sources = Array.from({ length: 373 }, (_, i) => ({ sourceKey: `tidewater:LARGE${i}`,
+    stationId: `LARGE${i}`, sourceType: 'forecast-point', point: [10 + i / 10000, 56] }));
+  const native = { generatedAt: referenceAt, timeStrideHours: 3, zones: {} };
+  for (const source of sources) native.zones[`SOURCE::${source.sourceKey}`] = {
+    hourly: Object.fromEntries(Array.from({ length: 41 }, (_, i) => {
+      const time = new Date(Date.parse(referenceAt) + i * 3 * 3_600_000).toISOString();
+      const row = dmiWaterSourceFixture(source, time, i, referenceAt);
+      row.sources.waterLevel.assetIdentitySha256 = crypto.createHash('sha256')
+        .update(source.sourceKey + time).digest('hex');
+      return [time, row];
+    })),
+  };
+  const originals = buildWaterSourceForecastIndex(sources, native, referenceAt);
+  const sourcePack = await packWaterSourceForecastContinuity(originals, referenceAt);
+  assert.equal(sourcePack.sourceCount, 373);
+  assert.ok(Buffer.byteLength(JSON.stringify(sourcePack)) > 1024 * 1024);
+  const protectedForecast = { schemaVersion: 2, generatedAt: referenceAt,
+    runtime: { nextZoneCursor: 0 }, zones: {} };
+  const paddedForecast = { ...protectedForecast, zones: {}, waterSourceContinuity: sourcePack };
+  const padding = 'x'.repeat(3 * 1024 * 1024);
+  for (let i = 0; i < 180; i++) {
+    const id = `ZONE${i}`;
+    protectedForecast.zones[id] = { zoneId: id, point: [10, 56], hourly: [] };
+    paddedForecast.zones[id] = { ...protectedForecast.zones[id], padding };
+  }
+  const geometry = { type: 'FeatureCollection', features: Object.keys(protectedForecast.zones).map(id =>
+    ({ type: 'Feature', properties: { id, dataPoint: [10, 56] } })) };
+  for (const root of [f.source, f.target]) {
+    await write(root, 'data/zones.geojson', geometry);
+    await writeDmiForecastFileAtomic(path.join(root, 'data/live/dmi-forecast-cache.json'), protectedForecast);
+  }
+  const sourceFile = path.join(f.source, 'data/live/dmi-forecast-cache.json');
+  await writeDmiForecastFileAtomic(sourceFile, paddedForecast);
+  const sourceIndex = await inspectDmiForecastFile(sourceFile);
+  assert.ok(sourceIndex.bytes > bufferConstants.MAX_STRING_LENGTH);
+  assert.ok(sourceIndex.bytes > 256 * 1024 * 1024 && sourceIndex.bytes <= DMI_FORECAST_FILE_MAX_BYTES);
+  assert.equal(sourceIndex.zones.size, 180);
+  const digest = async file => {
+    const hash = crypto.createHash('sha256');
+    for await (const chunk of createReadStream(file)) hash.update(chunk);
+    return hash.digest('hex');
+  };
+  const sourceHash = await digest(sourceFile);
+  const protectedBase = await fs.readFile(f.targetBase);
+  const sourceBase = await fs.readFile(f.sourceBase);
+  const geometryBefore = await fs.readFile(path.join(f.target, 'data/zones.geojson'));
+  const environment = Object.fromEntries(Object.entries(process.env).filter(([name]) =>
+    ['PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'COMSPEC', 'PATHEXT'].includes(name.toUpperCase())));
+  Object.assign(environment, { GITHUB_REPOSITORY: repository, WEATHER_PROGRESS_ENCRYPTION_KEY: encryptionKey,
+    RAVRADAR_PRODUCTION_TARGET_HOUR: referenceAt });
+  const cli = path.resolve('scripts/weather-component-progress-cache.mjs');
+  const saveReport = path.join(f.folder, 'large-cli-save-report.json');
+  const saveStarted = performance.now();
+  const savedProcess = await execFileAsync(process.execPath,
+    [cli, 'save', '--root', f.source, '--base', f.sourceBase, '--report', saveReport],
+    { cwd: process.cwd(), env: environment, windowsHide: true, timeout: 240_000, killSignal: 'SIGKILL' });
+  const saveElapsedMs = performance.now() - saveStarted;
+  assert.equal(savedProcess.stderr, '');
+  const saved = JSON.parse(await fs.readFile(saveReport, 'utf8'));
+  assert.equal(saved.saved, true, JSON.stringify(saved));
+  assert.equal(saved.status, 'SAVED');
+  assert.equal(saved.code, 'ENCRYPTED_PROGRESS_SAVED');
+  assert.equal(saved.privatePayloadIncluded, false);
+  const cipherFile = path.join(f.source, WEATHER_PROGRESS_CIPHER_PATH);
+  assert.equal(saved.encryptedBytes, (await fs.stat(cipherFile)).size);
+  assert.ok(saved.encryptedBytes <= WEATHER_PROGRESS_MAX_CIPHER_BYTES);
+  assert.ok(saveElapsedMs < 240_000, 'This measured local seal finishes inside the existing four-minute step.');
+  await fs.mkdir(path.dirname(path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH)), { recursive: true });
+  const transferStarted = performance.now();
+  await fs.copyFile(cipherFile, path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH));
+  const localTransferElapsedMs = performance.now() - transferStarted;
+  const restoreReport = path.join(f.folder, 'large-cli-restore-report.json');
+  const restoreStarted = performance.now();
+  const restoredProcess = await execFileAsync(process.execPath,
+    [cli, 'restore', '--root', f.target, '--base', f.targetBase, '--report', restoreReport],
+    { cwd: process.cwd(), env: environment, windowsHide: true, timeout: 240_000, killSignal: 'SIGKILL' });
+  const restoreElapsedMs = performance.now() - restoreStarted;
+  assert.equal(restoredProcess.stderr, '');
+  const restored = JSON.parse(await fs.readFile(restoreReport, 'utf8'));
+  assert.equal(restored.restored, true, JSON.stringify(restored));
+  assert.equal(restored.saved, false);
+  assert.equal(restored.productionAuthority, false);
+  assert.equal(restored.privatePayloadIncluded, false);
+  assert.equal(restored.dmiProgress.forecast.status, 'MERGED');
+  assert.equal(restored.dmiProgress.forecast.recoveredComponents, 373 * 121);
+  assert.equal(restored.dmiProgress.forecast.rejectedRecords, 180,
+    'The 180 deliberately empty padding records are not provider originals; none acquires forecast authority.');
+  assert.equal(assertUsableDmiProgressRecovery(restored.dmiProgress), true);
+  const recovered = await readDmiForecastFile(path.join(f.target, 'data/live/dmi-forecast-cache.json'));
+  assert.deepEqual(recovered.zones, protectedForecast.zones, 'Unqualified padding cannot replace protected originals.');
+  const qualified = await unpackWaterSourceForecastContinuity(recovered.waterSourceContinuity, referenceAt);
+  assert.equal(qualified.size, 373);
+  for (const [key, original] of originals) assert.deepEqual(qualified.get(key).hourly, original.hourly);
+  assert.equal(await digest(sourceFile), sourceHash, 'Read-only packaging never changes the original forecast.');
+  assert.deepEqual(await fs.readFile(f.sourceBase), sourceBase);
+  assert.deepEqual(await fs.readFile(f.targetBase), protectedBase);
+  assert.deepEqual(await fs.readFile(path.join(f.target, 'data/zones.geojson')), geometryBefore);
+  assert.equal(await fs.readFile(path.join(f.target, 'data/live/conditions.json'), 'utf8'), baseline);
+  t.diagnostic(JSON.stringify({ kind: 'LARGE_FORECAST_SOURCE_PROGRESS_CLI_CAPACITY',
+    forecastBytes: sourceIndex.bytes, encryptedBytes: saved.encryptedBytes,
+    sourceCount: qualified.size, qualifiedSourceHours: 373 * 121,
+    sourceRawBytes: sourcePack.rawBytes, sourceCompressedBytes: sourcePack.compressedBytes,
+    saveElapsedMs, localTransferElapsedMs, restoreElapsedMs,
+    parentMaxRssKiB: process.resourceUsage().maxRSS,
+    note: 'Own synthetic bytes and real CLI exits; parent RSS excludes CLI children. No remote upload, runner-loss or national full-job proof.' }));
+});
 
 test('encrypted forecast progress recovers SOURCE-only holes through normal restore', async t => {
   for (const invalid of [false, true]) await t.test(invalid ? 'invalid inner source seal' : 'qualified four-hour progress', async child => {

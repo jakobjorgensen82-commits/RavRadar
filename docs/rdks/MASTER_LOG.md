@@ -1,4 +1,32 @@
-# Lokal 4.0.547-kandidat – samlet integration, 2026-10-06
+# Lokal 4.0.548 – godkendt SOURCE-antalsgrænse, 2026-10-06
+
+Ejeren har udtrykkeligt godkendt at hæve SOURCE-antalsloftet fra 256 til 512.
+Dette erstatter den tidligere afvisning alene for denne antalsgrænse. Den
+afsluttede 4.0.547-vejrhentning rapporterede 373 kildepunkter og fejlede før
+deploy; det nøjagtige kvalificerede live indexantal blev ikke logget.
+Codec og forecastfilens streaminglæser bruger nu samme antalskontrakt.
+Byte- og tidsgrænser, autentificering, originalbeviser, kildeprioritet og
+hård no-loss er uændrede. Overflow afviser hele pakken uden beskæring.
+
+373 syntetiske kilder med 45.133 kvalificerede timer består normal gemning,
+kold filgenbrug og frisk krypteret CLI-genbrug med identiske originaler.
+Den store opt-in-prøve består med en forecastfil på 569.708.270 bytes,
+gemning på 5,686 sekunder og genbrug på 17,678 sekunder. Præcis 512 korte
+kildebanker accepteres; 513 afvises. Dubletter og byteoverskridelser afvises.
+Fillæserens 13 målprøver og den normale produktionskalderkontrakt består.
+Disse lokale prøver er ikke bevis for remoteupload, tab af runner eller
+national heljobskapacitet. Ingen ekstra vejrhentning eller replacement startes.
+
+RavScore, central routing, administratorværdier, modelbindinger og geometri
+ændres ikke. Topversioner følger 4.0.548; geodatadiff skal kun vise version.
+Syvzonernes dkss_lf-undtagelse gælder fortsat alene vandstand, aldrig strøm,
+strømhukommelse eller temperatur. Kontrolleret GitHub-levering og faktisk
+effekt i næste gyldige naturlige generation mangler fortsat. Den samlede
+revision og den separate inaktive 519-kandidat er ikke afsluttet.
+
+---
+
+# Historisk lokal 4.0.547-kandidat – samlet integration, 2026-10-06
 
 Den lokale 4.0.547-kandidat samler de godkendte vandstandsrettelser,
 SEO-navnesignaler/kapitellinks, ejerens roadmap-fravalg og konto-knapper/
