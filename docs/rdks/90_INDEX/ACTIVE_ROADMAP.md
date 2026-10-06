@@ -21,6 +21,10 @@ bevaring og markens faktiske lagadgang vises fortsat som ukendte.
 Webhåndbog 90.1 er integreret i kilden; normal drift synkroniserer den
 gennem eksisterende beskyttet håndbogsfletning. DEC-0148's normale
 vejropfølgning er særskilt og kan ikke ugyldiggøre kortleverancen.
+Den normale opfølgning blev faktisk startet som run 37435351739,
+6. oktober kl.08.19 UTC på cf65a5fd, efter kodeleveringen. Dateret
+driftsobservation og direkte run-link står i publiceringskvitteringen;
+den er ikke et nyt dispatch eller en påstand om frisk vejrproduktion.
 
 Tidligere profilprivacyfejl og to FGA-authafvisninger bevares nedenfor.
 Ejeren oplyste, at adgangen ikke var ændret; samme opsætning virkede ved

@@ -181,8 +181,16 @@
     "productFilesUnchanged": true
   },
   "normalWeatherFollowup": {
-    "status": "SEPARATE_FOLLOWUP_PENDING_DISPATCH_AFTER_DOCUMENTATION_MERGE",
-    "basis": "DEC-0148 point 5: independent bounded normal weather after successful code-only release",
-    "mapPublicationIndependent": true
+    "runId": 37435351739,
+    "runAttempt": 1,
+    "url": "https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/37435351739",
+    "headSha": "cf65a5fd74edf236643f6cbd555e7e542f3467df",
+    "startedAt": "2026-10-06T08:19:33Z",
+    "observedAt": "2026-10-06T08:31:06.153278+00:00",
+    "statusAtObservation": "in_progress",
+    "basis": "DEC-0148 point 5; existing independent normal weather started after successful code-only release",
+    "mapPublicationIndependent": true,
+    "additionalDispatchPerformed": false,
+    "note": "Dated observation; follow the run URL for later operational outcome. Documentation merge waits for the production lock to be released."
   }
 }
