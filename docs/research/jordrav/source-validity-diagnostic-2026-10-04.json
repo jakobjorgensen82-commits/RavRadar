@@ -1,0 +1,35 @@
+{
+  "research_date": "2026-10-04",
+  "purpose": "Read-only diagnostic of invalid public source polygons; no repair output is saved",
+  "layers": {
+    "Jordart_25000_v7_1.shp": {
+      "invalid_source_count": 438,
+      "reasons": {
+        "Ring Self-intersection": 438
+      },
+      "diagnostic_make_valid_result_types": {
+        "Polygon": 436,
+        "MultiPolygon": 2
+      },
+      "remaining_invalid_after_make_valid": 0,
+      "sum_absolute_area_change_m2": 5.843566759722307e-05,
+      "max_absolute_area_change_m2": 7.212162017822266e-06,
+      "records_area_change_above_1m2": 0,
+      "nonpolygon_parts_in_collections": 0
+    },
+    "jordart_200000.shp": {
+      "invalid_source_count": 47,
+      "reasons": {
+        "Ring Self-intersection": 47
+      },
+      "diagnostic_make_valid_result_types": {
+        "Polygon": 47
+      },
+      "remaining_invalid_after_make_valid": 0,
+      "sum_absolute_area_change_m2": 9.886323823593557e-06,
+      "max_absolute_area_change_m2": 1.7881393432617188e-06,
+      "records_area_change_above_1m2": 0,
+      "nonpolygon_parts_in_collections": 0
+    }
+  }
+}

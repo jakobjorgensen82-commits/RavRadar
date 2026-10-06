@@ -48,7 +48,7 @@ import { mergeProtectedLiveCurrentPilotIntoRecord,
   mergeActiveNativeLiveCurrentPilotIntoRecord } from './lib/protected-live-current-assembly.mjs';
 import { packDmiPartContinuity, unpackDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
-import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly } from './lib/water-source-forecast-routing.mjs';
+import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly, packWaterSourceForecastContinuity, unpackWaterSourceForecastContinuity } from './lib/water-source-forecast-routing.mjs';
 import { buildFurWaterRoutingDiagnostic } from './lib/fur-water-routing-diagnostic.mjs';
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
 import { retainWeatherHistory, RESEARCH_HISTORY_HOURS } from './lib/weather-history-retention.mjs';
@@ -4584,7 +4584,19 @@ nextDmiForecastStore.coverage = summarizeAvailableCoverage(nextDmiForecastStore.
 nextDmiForecastStore.dataQuality = summarizeDmiComponentCoverage(nextDmiForecastStore.zones, generatedAt);
 output.weatherEngine.dmiForecastCache = { ...nextDmiForecastStore.coverage, ...nextDmiForecastStore.dataQuality };
 const rawStationRegistry = await dmiWaterStations().catch(() => readCachedWaterStations());
-const waterSourceForecastIndex = buildWaterSourceForecastIndex(rawStationRegistry, dmiBulkCache, generatedAt);
+const retainedWaterSourceIndex = await unpackWaterSourceForecastContinuity(
+  dmiForecastStore.waterSourceContinuity, canonicalForecastHour(generatedAt),
+);
+const waterSourceForecastIndex = buildWaterSourceForecastIndex(rawStationRegistry, dmiBulkCache, generatedAt, {
+  protectedBulkCache: deployedDmiBulkCache,
+  historicalBulkCache: historicalDmiBulkCache,
+  retainedSourceIndex: retainedWaterSourceIndex,
+});
+// Persist independently qualified SOURCE rows before routing them into zones
+// or PARTs. Existing originals and the direct PART continuity stay unchanged.
+nextDmiForecastStore.waterSourceContinuity = await packWaterSourceForecastContinuity(
+  waterSourceForecastIndex, canonicalForecastHour(generatedAt),
+);
 const forecastAwareRegistry = applyWaterSourceForecastStatus(rawStationRegistry, waterSourceForecastIndex, generatedAt, { minimumHours: 96 });
 const qualityLevels = dmiObservationSkipReason ? await cachedStationLevels(generatedAt) : await dmiLatestSeaLevels().catch(() => new Map());
 const observationResultUsable = !dmiObservationSkipReason && dmiSeaLevelObservationRun.succeeded && dmiSeaLevelObservationRun.validLevelCount > 0;

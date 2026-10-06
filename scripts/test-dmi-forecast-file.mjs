@@ -10,6 +10,9 @@ import { inspectDmiForecastFile, readDmiForecastFile, readDmiForecastRecord,
 } from './lib/dmi-forecast-file.mjs';
 import { PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
 import { assertUsableDmiProgressRecovery } from './lib/verified-dmi-progress-inputs.mjs';
+import { buildWaterSourceForecastIndex, packWaterSourceForecastContinuity,
+  unpackWaterSourceForecastContinuity } from './lib/water-source-forecast-routing.mjs';
+import { dmiWaterSourceFixture } from './test-helpers/dmi-water-source-fixture.mjs';
 
 async function fixture(t) {
   const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-dmi-forecast-file-'));
@@ -24,6 +27,40 @@ const document = () => ({ schemaVersion: 2, runtime: { nextZoneCursor: 0 },
   zones: { ZONE: { zoneId: 'ZONE', point: [10, 56], hourly: [{ time: '2026-09-30T00:00:00.000Z',
     sources: { wave: { title: 'Quotes " and slash \\; æøå 😀' } } }] } },
   partContinuity: { schemaVersion: 1, entries: [{ partId: 'PART', gzipBase64: 'synthetic' }] } });
+
+test('recordwise forecast copy preserves SOURCE bank independently of zones and PART continuity', async t => {
+  const folder = await fixture(t), file = path.join(folder, 'source.json'), output = path.join(folder, 'copy.json');
+  const referenceAt = '2026-09-30T00:00:00.000Z';
+  const source = { sourceKey: 'tidewater:COPY', stationId: 'COPY', point: [11, 56], sourceType: 'forecast-point' };
+  const native = { generatedAt: referenceAt, timeStrideHours: 3, zones: { 'SOURCE::tidewater:COPY': {
+    hourly: Object.fromEntries(Array.from({ length: 41 }, (_, i) => {
+      const time = new Date(Date.parse(referenceAt) + i * 3 * 3600000).toISOString();
+      return [time, dmiWaterSourceFixture(source, time, i, referenceAt)];
+    })),
+  } } };
+  const bank = buildWaterSourceForecastIndex([source], native, referenceAt);
+  const original = { ...document(), waterSourceContinuity: await packWaterSourceForecastContinuity(bank, referenceAt) };
+  await writeDmiForecastFileAtomic(file, original);
+  const bytesBefore = await fs.readFile(file), index = await inspectDmiForecastFile(file);
+  assert.equal(index.zones.size, 1);
+  assert.equal(index.continuity.entries.length, 1);
+  assert.equal(index.waterSourceContinuity.entries.length, 1);
+  assert.equal(Object.hasOwn(index.metadata, 'waterSourceContinuity'), false,
+    'SOURCE entries are not read as one unbounded metadata value.');
+  async function* zones() {
+    for (const [id, entry] of index.zones) yield [id, await readDmiForecastRecord(index, entry)];
+  }
+  await writeDmiForecastRecords(output, index, zones());
+  const copied = await readDmiForecastFile(output);
+  assert.deepEqual(copied, original);
+  assert.deepEqual(await fs.readFile(file), bytesBefore);
+  assert.deepEqual((await unpackWaterSourceForecastContinuity(copied.waterSourceContinuity, referenceAt))
+    .get(source.sourceKey).hourly, bank.get(source.sourceKey).hourly);
+  const overCount = { ...original, waterSourceContinuity: { ...original.waterSourceContinuity,
+    entries: Array.from({ length: 513 }, (_, i) => ({ ...original.waterSourceContinuity.entries[0], sourceKey: `tidewater:${i}` })) } };
+  await assert.rejects(writeDmiForecastFileAtomic(file, overCount), /DMI_FORECAST_FILE_STRUCTURE_LIMIT/);
+  assert.deepEqual(await fs.readFile(file), bytesBefore, 'Over-bound writes never replace a valid original.');
+});
 
 test('actual forecast readers preserve primary failure when owned close also fails', async t => {
   for (const operation of ['inspect', 'record']) await t.test(operation, async child => {

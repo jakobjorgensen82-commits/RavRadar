@@ -1,0 +1,31 @@
+{
+  "version": "4.0.545",
+  "baseline": "daef1fd9df7da9250ccecbfe543d52880d0b01f3",
+  "scope": "Real Chrome HTTP cache across 4.0.544 to design release; public max-age=600 fixture, no DOM/test-harness injection",
+  "checks": [
+    "Old 4.0.544 actually loads and warms its unversioned module URLs in Chrome",
+    "All 15 current Jordrav modules load under one release identity, with complete new and existing translations",
+    "Returning visitor keeps complete translations through actual German/English language reloads"
+  ],
+  "errors": [],
+  "newModuleRequests": [
+    "/js/jordrav/map.js?v=4.0.545",
+    "/js/jordrav/messages.js?v=4.0.545",
+    "/js/jordrav/context-messages.js?v=4.0.545",
+    "/js/i18n.js?v=4.0.545",
+    "/js/jordrav/data-service.js?v=4.0.545",
+    "/js/jordrav/regional-hypotheses.js?v=4.0.545",
+    "/js/jordrav/accessibility.js?v=4.0.545",
+    "/js/jordrav/search-context.js?v=4.0.545",
+    "/js/jordrav/layer-access.js?v=4.0.545",
+    "/js/jordrav/landscape-context.js?v=4.0.545",
+    "/js/jordrav/field-context.js?v=4.0.545",
+    "/js/jordrav/view-state.js?v=4.0.545",
+    "/js/jordrav/dataset-binding.js?v=4.0.545",
+    "/js/jordrav/evidence-chain.js?v=4.0.545",
+    "/js/jordrav/public-context.js?v=4.0.545",
+    "/js/jordrav/profile-examples.js?v=4.0.545"
+  ],
+  "unresolved": [],
+  "status": "PASS"
+}

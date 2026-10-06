@@ -1,0 +1,25 @@
+{
+  "researchDate": "2026-10-04",
+  "scope": "Public primary literature identities and inspected pages; current WFS administrative lineage is not resolved",
+  "sources": [
+    {
+      "title": "Møller, Greve & Beucher 2024: Opdateret jordbundstypekort",
+      "url": "https://pure.au.dk/ws/files/372695357/Opdateret_jordbundstypekort_1903_2024.pdf",
+      "sourceBytes": 2280675,
+      "sourceSha256": "61262711c30724e760c6b618173ac56eedaea64d6a5c5da3b5d56fbab2248a2c",
+      "visuallyInspectedPrintedPages": [
+        18,
+        39
+      ]
+    },
+    {
+      "title": "Greve 2024: Revidering af jordbundstypekort 2024",
+      "url": "https://pure.au.dk/ws/files/378595646/Revidering_jordbundstypekort_1705_2024.pdf",
+      "sourceBytes": 115394,
+      "sourceSha256": "1c1ee884d898b8b4bb94a2d2bd02a6d42aacdd0b4044be1902879653a8c91db5",
+      "visuallyInspectedPrintedPages": [
+        3
+      ]
+    }
+  ]
+}

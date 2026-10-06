@@ -1,0 +1,115 @@
+{
+  "scope": "Local UI with live national SGAV raster service; no production or physical-mobile claim",
+  "checks": [
+    "Field overlay is opt-in and requests no nationwide raster at overview zoom",
+    "Live Asaa field tiles are transparent fixed-year outlines in EPSG:3857",
+    "Field boundaries remain on aerial background without moving the map",
+    "Real mixed marine organic/clay click distinguishes peat from sand and lateral mixture from vertical cover",
+    "Same-family sand/gravel mixture retains mixture explanation; field toggle preserves selection",
+    "390px mobile layout includes search guidance and field controls without horizontal overflow",
+    "German and English physical search guidance uses translated material and layer descriptions",
+    "A failed field service leaves geology usable and explicitly distinguishes missing data from missing fields"
+  ],
+  "errors": [],
+  "fieldResponses": [
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    },
+    {
+      "status": 200,
+      "contentType": "image/png"
+    }
+  ],
+  "lastClick": {
+    "expectedOrigin": "n193029:g7400",
+    "pixel": {
+      "x": 209,
+      "y": 445
+    },
+    "rectangle": {
+      "x": 9,
+      "y": 354.609375,
+      "width": 372,
+      "height": 489.515625
+    },
+    "element": "<canvas class=\"leaflet-zoom-animated\" width=\"446\" height=\"588\" style=\"transform: translate3d(-36.7622px, -49.0881px, 0px) scale(1); width: 446px; height: 588px;\"></canvas>"
+  },
+  "status": "PASS"
+}

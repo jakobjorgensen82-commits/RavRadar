@@ -402,6 +402,55 @@ test('new incomplete acquisition retains valid old siblings and cannot claim a n
   assert.equal(choice.candidate, dmi);
 });
 
+test('producer keeps both bounded transport slots useful when one sibling stalls', async () => {
+  const parts = ['A', 'B', 'C', 'D'].map((partId, i) => ({ ...part, partId,
+    waterPoint: [part.waterPoint[0] + i / 12, part.waterPoint[1]] }));
+  const requiredPairs = parts.map(row => ({ partId: row.partId, component: 'wind', validTime: at(117) }));
+  requiredPairs.push({ partId: 'A', component: 'waterTemperature', validTime: at(117) });
+  let active = 0, maximumActive = 0, fastCompletions = 0, continueWork = true;
+  let fastCompletionsBeforeSlow = null;
+  const checkpoints = [];
+  const result = await produceOpenMeteoPartComponents({ ...options, parts, requiredPairs,
+    productionReferenceAt: reference, shouldContinue: () => continueWork,
+    checkpointEveryParts: 1,
+    checkpoint: async bank => {
+      // Every checkpoint is a fully proved original bank, never mixed PART identity.
+      validateOpenMeteoPartBank(bank, { parts, spatialPolicies });
+      checkpoints.push(structuredClone(bank));
+    },
+    fetchResponse: async request => {
+      active += 1; maximumActive = Math.max(maximumActive, active);
+      try {
+        if (request.component === 'waterTemperature') {
+          await new Promise(resolve => setTimeout(resolve, 40));
+          fastCompletionsBeforeSlow = fastCompletions;
+          continueWork = false;
+          throw new Error('synthetic slow independent temperature failure');
+        }
+        fastCompletions += 1;
+        if (fastCompletions === 3) continueWork = false;
+        const text = response('wind', [at(117)]);
+        text.longitude = Number(request.query.longitude); text.latitude = Number(request.query.latitude);
+        return { responseText: `${JSON.stringify(text)}\n`, acquiredAt: reference };
+      } finally { active -= 1; }
+    },
+  });
+  assert.equal(fastCompletionsBeforeSlow, 3, 'one blocked SST request must not idle the other slot');
+  assert.ok(maximumActive <= 2); assert.equal(active, 0);
+  assert.equal(result.summary.requests, 4);
+  assert.equal(result.summary.deferred, 1);
+  assert.equal(result.summary.failures.length, 1);
+  const index = validateOpenMeteoPartBank(result.bank, { parts, spatialPolicies });
+  for (const row of parts.slice(0, 3)) {
+    const record = selectedOpenMeteoPartRecord(index, { part: row, component: 'wind', validTime: at(117) });
+    assert.equal(record.source.entityId, `PART::${row.partId}`);
+    assert.deepEqual(record.source.samplingPoint, row.waterPoint);
+    assert.equal(record.values.windSpeedMps, 4);
+  }
+  assert.equal(selectedOpenMeteoPartRecord(index, { part: parts[3], component: 'wind', validTime: at(117) }), null);
+  assert.deepEqual(checkpoints.at(-1), result.bank, 'all successful siblings are durably checkpointed');
+});
+
 test('producer preserves successful sibling, checkpoints it and requests actual PART water point', async () => {
   let checkpoints = 0;
   const result = await produceOpenMeteoPartComponents({ ...options, productionReferenceAt: reference,
@@ -418,6 +467,43 @@ test('producer preserves successful sibling, checkpoints it and requests actual 
   assert.equal(checkpoints, 2);
   assert.ok(selected(result.bank, 'wind'));
   assert.equal(selected(result.bank, 'wave'), null);
+});
+
+test('producer checkpoint failure drains started transports before returning the original error', async () => {
+  const second = { ...part, partId: 'SECOND' };
+  const parts = [part, second];
+  const previous = mergeOpenMeteoPartBank(null, [admit('wind')], { ...options, parts });
+  const protectedBytes = JSON.stringify(previous);
+  let durable = protectedBytes, checkpoints = 0, started = 0, active = 0, slowClosed = false;
+  const primary = new Error('synthetic primary persistence failure');
+  const pending = produceOpenMeteoPartComponents({ ...options, parts, previousBank: previous,
+    productionReferenceAt: reference, checkpointEveryParts: 1,
+    requiredPairs: [
+      { partId: part.partId, component: 'wind', validTime: at(117) },
+      { partId: part.partId, component: 'wave', validTime: at(117) },
+      { partId: second.partId, component: 'wind', validTime: at(117) },
+    ],
+    checkpoint: bank => {
+      if (++checkpoints > 1) throw primary;
+      durable = JSON.stringify(bank);
+    },
+    fetchResponse: async request => {
+      started += 1; active += 1;
+      try {
+        if (request.component === 'wave') {
+          await new Promise(resolve => setTimeout(resolve, 40));
+          slowClosed = true;
+          throw new Error('synthetic later sibling failure');
+        }
+        return { responseText: JSON.stringify(response('wind', [at(117)])), acquiredAt: reference };
+      } finally { active -= 1; }
+    },
+  });
+  await assert.rejects(pending, error => error === primary);
+  assert.equal(slowClosed, true); assert.equal(active, 0);
+  assert.equal(started, 2, 'no new request after the failed persistence boundary');
+  assert.equal(checkpoints, 2, 'no recovery write after a failed checkpoint');
+  assert.equal(durable, protectedBytes, 'the earlier complete original bank is byte-preserved');
 });
 
 test('producer skips complete channels and defers safely on budget stop without erasing old data', async () => {

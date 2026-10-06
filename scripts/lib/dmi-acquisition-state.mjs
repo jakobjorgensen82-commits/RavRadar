@@ -17,7 +17,11 @@ export function createPersistentDmiStore(existingStore, activeZoneIds, horizonHo
       ...(existingStore?.runtime ?? {})
     },
     zones,
-    ...(existingStore?.partContinuity ? { partContinuity: existingStore.partContinuity } : {})
+    ...(existingStore?.partContinuity ? { partContinuity: existingStore.partContinuity } : {}),
+    // Optional SOURCE-only continuity is qualified by its own consumer. It is
+    // metadata in this existing private file, never an admitted coastal zone.
+    ...(existingStore?.waterSourceContinuity
+      ? { waterSourceContinuity: existingStore.waterSourceContinuity } : {})
   };
 }
 

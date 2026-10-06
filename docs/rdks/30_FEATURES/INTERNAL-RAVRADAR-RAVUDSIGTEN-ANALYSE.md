@@ -1,12 +1,122 @@
 # Intern analyse: RavRadar sammenholdt med Ravudsigten
 
-Status: **AKTIV, INTERN OG SCORE-NEUTRAL**
+Status: **STOPPET EFTER EJERBESLUTNING 6. OKTOBER 2026, INTERN OG SCORE-NEUTRAL**
 
 Første datasnit: **27. august 2026**
 
 RavScore-påvirkning: **ingen**
 
 Offentlig runtime: **ingen**
+
+## Nyeste ejerbeslutning – sammenligningen stoppet og taget ud af roadmap
+
+Ejeren har efter dagens afprøvning bedt om at stoppe sammenligningen og
+fjerne punkt 3 sammen med de øvrige fravalgte punkter. Der indsamles ikke
+flere data til denne opgave. Ingen betaling, videre analyse eller ny
+planlagt sammenligning følger. De følgende daterede resultater bevares
+kun som historisk evidens, ikke som aktuelle opgaver eller genstartsautoritet.
+Scoremodellen ændres ikke. `scoreImpact=false` og `publicRuntime=false`.
+
+## Historisk kontroldatasnit 6. oktober 2026, ca. 08.40–08.50 dansk tid
+
+Roadmap-punkt 3 er ikke opgivet. Browserskill og den eksisterende Chrome-
+forbindelse er brugt til faktisk at aflæse FREE-vind og FREE-strøm for
+Agger, Hasmark Strand og Amager Strand. Kun byvalg og vind-/strømfaner
+blev brugt; ingen LIVE-detaljer, login, betaling, adgangsomgåelse eller
+indtastning i Ravine. Resultaterne er interne og ændrer ikke RavScore.
+
+RavRadar blev genindlæst efter det naturlige deploy kl. 08.38. Det lille
+offentlige manifest viste `rr-20261006055015-210`, genereret
+`2026-10-06T05:50:15.337Z`. UI viste version 4.0.543 og prognosereference
+6. oktober kl. 08.00 dansk tid. Der blev ikke genhentet store timepakker.
+Den første detaljevisning viste kun den aktuelle time, mens den asynkrone
+prognose hentede ind; en senere aflæsning viste alle fem dage. Den første
+ufærdige visning er ikke evidens for manglende produktionsdata.
+
+### Aflæste aktuelle forhold og sammenligningsgrænser
+
+Ravudsigten vises fortsat som forsinket FREE uden synligt generations-id,
+beregningstid, entydig tidszone, præcist prøvepunkt eller definition af,
+hvordan en sekstimersperiodes tal er valgt. Derfor er følgende en
+beskrivende side-om-side-aflæsning, ikke et beregnet prognosefejlmål.
+Vindretning er **fra**, strømretning **mod**. Farver omregnes ikke til
+RavScore eller en sandsynlighed for fund.
+
+| Sted | Ravudsigten FREE 6/10, perioden 06–12 | RavRadar kl. 08.00, waders | Geografisk kontrol |
+|---|---|---|---|
+| Agger | Vind fra VNV 7,8 m/s; strøm mod ØSØ 0,12 m/s; violet kl. 08, gul kl. 11 | Agger Tange: vind fra V 284°, 7,6 m/s; strøm mod N 2°, 0,13 m/s; RavScore 68 | Navn og kyst er relevante, men FREE-prøvepunktet er ikke kendt |
+| Hasmark Strand | Vind fra V 3,2 m/s; strøm mod S 0,13 m/s; rød kl. 08 | Hasmark Strand: vind fra V 290°, 5,2 m/s; strøm mod S 171°, 0,12 m/s; RavScore 72 | Den viste RavRadar-kystdel har samme navn; eksakt FREE-prøvepunkt ukendt |
+| Amager Strand | Vind fra VNV 4,7 m/s; strøm mod SV 0,57 m/s; rød kl. 08 | Amager Strandpark: RavScore 69 i kystdelslisten; zonevinder Mormorstranden har 74 | Zonevinderens vind/strøm må ikke fejlagtigt mærkes som Amager Strandpark; ingen kvantitativ vejrparring for dette sted |
+
+Agger har omtrent samme viste vind-/strømhastighed i dette snit, men
+forskellig strømretning. Hasmark har en lignende grov strømretning og
+hastighed, men forskellige viste vindhastigheder. Det er observationer,
+ikke bevis for samme input, forkert routing eller den ene models overlegenhed.
+Tidsaggregation, datalder og prøvepunkter er stadig ukontrollerede.
+
+RavRadars aflæste daglige bedste **lokale** waders-score 6.–10. oktober
+var Agger 88/65/71/84/75, Hasmark 72/59/43/58/84 og Amager-zonevinderen
+74/74/70/74/76. Den 6. oktober viste UI bedste tidspunkt henholdsvis
+10.00, 15.00 og 12.00. Amager Strandpark stod særskilt med 71 ved zonens
+valgte time kl. 12.00. Disse tal er ikke den nationale områdescore, ikke
+daglige maksimumværdier for hvert Amager-punkt og ikke fundprocenter.
+FREE-perioderne viste også farveskift uden at deres præcise modelbetydning
+blev nyverificeret; på Hasmark rød kl. 20 og grøn kl. 23, på Agger grøn
+kl. 20. Det skal ikke læses som samme mål som RavRadars bedste time.
+
+**Delkonklusion:** Betalingssiden gør ikke punkt 3 umuligt. En begrænset
+gratis, intern og score-neutral sammenligning er faktisk startet på tre
+kysttyper. Den kan beskrive synlig enighed/uenighed og undgå forkerte
+geografiske koblinger; den kan endnu ikke rangere præcision eller leadlag.
+Næste sikre trin er at fastholde disse tids-/stedafgrænsninger i kommende
+nye naturlige generationer. En præcisionskonklusion kræver uafhængige
+observationer og sammenlignelige tider/steder, ikke blot enighed med
+Ravudsigten. Punktet er derfor aktivt, ikke afsluttet eller en ny modelopgave.
+
+Kilder: [Ravudsigten FREE](https://ravudsigten.ravfund.dk/ravkort),
+[RavRadar](https://ravradar.dk/) og
+[det lille offentlige manifest](https://ravradar.dk/data/live/manifest.json).
+
+## Ejerafgrænsning og første offentlig afprøvning – 6. oktober 2026
+
+Ejeren fastholder den nuværende scoremodel. Fremtidig efterkalibrering,
+nye modelinput og eventuel fundprocent er ikke aktive roadmap-opgaver.
+Denne sammenligning fortsætter kun internt og score-neutralt, som ejeren
+igen har bedt om at prøve. Augustafsnittenes Candidate G og prognoser
+er historik, ikke den aktuelle RavRadar-model eller nye modelændringstilladelser.
+
+Browserskill er brugt med den eksisterende browserforbindelse, uden login,
+betaling, ny tjeneste, ændrede browser-/sikkerhedsindstillinger eller
+omgåelse af adgang. `https://ravudsigten.com/` gav faktisk en
+forbindelsestimeout; dette beviser ikke, at den viste en betalingsside.
+Den allerede dokumenterede offentlige adresse
+[Ravudsigten-kortet](https://ravudsigten.ravfund.dk/ravkort) virker.
+
+Den offentlige UI viste »Du er ikke logget ind«. FREE giver en bred
+regionsoversigt og beskrives som forsinkede vind-/strømprognoser.
+Præcise steder, friske data, femdøgnsprognose og ravposition beskrives
+som LIVE. Et særskilt LIVE-demo-panel er ikke måling af betalt liveadgang.
+
+Den offentlige syvdøgns-vindoversigt blev faktisk åbnet, og Agger valgt
+gennem UI. Efter indlæsning viste FREE-dialogen 6.–12. oktober 2026,
+fire sekstimersperioder pr. dag, vindretning/-hastighed og farvesignaler
+med tidspunkter. Det er 28 offentligt synlige oversigtsceller, ikke 28
+kontrollerede strandprognoser. Den 6. oktober skiftede oversigten blandt
+andet fra gul/violet til grøn; kommende dage viste også røde/violette
+perioder. Farvernes præcise interne betydning er ikke verificeret her.
+Der blev ikke klikket på LIVE-detaljer, købt adgang eller sendt navn,
+lokation, spørgsmål eller andre oplysninger til tjenesten. Strømoversigtens
+konkrete tabelværdier blev ikke aflæst i denne afprøvning.
+
+**Konklusion:** En begrænset gratis sammenligning af brede regioner og
+byoversigtens vind-/farvesignaler er mulig. Der er ikke aflæst et entydigt
+beregnings-/generations-id, og FREE-data er beskrevet som forsinkede.
+Derfor kan dette datasnit ikke bevise samtidig prognoseenighed, hvem der
+varsler først, præcise lokale forskelle eller hvilken tjeneste der er bedst.
+Næste sammenlignelige datasnit kræver en faktisk ny RavRadar-generation,
+synlig Ravudsigten-tid og et forsvarligt geografisk match. Betalt adgang
+kræver særskilt ejervalg; manglende data omgås ikke. Ingen fundgaranti,
+scoreændring eller offentlig funktion følger af denne afprøvning.
 
 ## Formål og fast grænse
 

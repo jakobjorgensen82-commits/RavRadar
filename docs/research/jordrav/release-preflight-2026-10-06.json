@@ -1,0 +1,128 @@
+{
+  "date": "2026-10-06",
+  "releaseVersion": "4.0.544",
+  "status": "PASS",
+  "scope": "Local release candidate; CI, merge and production are separate requirements",
+  "browserChecks": 99,
+  "browserReports": [
+    {
+      "path": "docs/research/jordrav/release-4.0.544-national-browser-audit.json",
+      "status": "PASS",
+      "checks": 20,
+      "sha256": "e810324fa3cecdec403b161e432964f86541470bd3e39429e90d4967e17b2ce6"
+    },
+    {
+      "path": "docs/research/jordrav/release-4.0.544-search-browser-2026-10-05.json",
+      "status": "PASS",
+      "checks": 8,
+      "sha256": "1d5bb29cee4d2f4020d917596d532cf92163f04bd3a4b2f23340497296fd4f6a"
+    },
+    {
+      "path": "docs/research/jordrav/release-4.0.544-planning-browser-audit.json",
+      "status": "PASS",
+      "checks": 15,
+      "sha256": "3443ac4f2ed2f1ae985d662a11536e70e714eafe2be280d815001d2e4fc64f25"
+    },
+    {
+      "path": "docs/research/jordrav/release-4-0-544-layer-browser-audit.json",
+      "status": "PASS",
+      "checks": 13,
+      "sha256": "c8073a60606f568ef4e3ec2dbd4f29fdfa4ad59484274ce524f71f0e493f09b0"
+    },
+    {
+      "path": "docs/research/jordrav/release-4.0.544-landscape-browser-audit.json",
+      "status": "PASS",
+      "checks": 34,
+      "sha256": "4fc6091874d2a6a95291f13f15544a07deed423bf2a6d43fe6f21549097f68d8"
+    },
+    {
+      "path": "docs/research/jordrav/context-browser-2026-10-06.json",
+      "status": "PASS",
+      "checks": 9,
+      "sha256": "ec44da0e6870c9f96238007727dc8329f565c97b807818510d9e957a9d609f74"
+    }
+  ],
+  "canonicalProductSources": [
+    {
+      "path": "jordrav.html",
+      "lfSha256": "0436b695c45699730516f929ea07ac5ff479f8028473dc438773259af49f9ee4"
+    },
+    {
+      "path": "jordrav.css",
+      "lfSha256": "79ea1fb73dc7de832fadb7efa6ee777c2b7333c561211c915869771b6cb30cc1"
+    },
+    {
+      "path": "js/jordrav/accessibility.js",
+      "lfSha256": "af2e405f37735c53f8770f8466d4ca2f9a8d6be060523ec4539f53a6f32a8b7e"
+    },
+    {
+      "path": "js/jordrav/context-messages.js",
+      "lfSha256": "a24a566a2e8b88135104c57d021877665aa358b1cd5b8146ab479120a2d48113"
+    },
+    {
+      "path": "js/jordrav/data-service.js",
+      "lfSha256": "8eb1dd707b2350b9bc1e65386d034b6fd3ddfd101384af62b6a8395d2244244b"
+    },
+    {
+      "path": "js/jordrav/dataset-binding.js",
+      "lfSha256": "8b1a5c73fbd94ce9d075ed6dd64712a12d696ee86e62ff6b476c8b2b9fb611a4"
+    },
+    {
+      "path": "js/jordrav/evidence-chain.js",
+      "lfSha256": "d63816c683974d7552389b8b8a0a3989303e7864f2970b6bcfc29f3d8159f908"
+    },
+    {
+      "path": "js/jordrav/field-context.js",
+      "lfSha256": "5b06eb84d0bf0f6c1c69c1388e2ddf01186b4c0d8d8a0ab57f6504d11c9f4ba9"
+    },
+    {
+      "path": "js/jordrav/landscape-context.js",
+      "lfSha256": "c400aabbfdc909da087e96037b481113debb94dc96a47ef7655c77929210114b"
+    },
+    {
+      "path": "js/jordrav/layer-access.js",
+      "lfSha256": "cbd39cfdcf3241ce1d3589ec99ef48df47b9f97dbef926c868f471b38509a5d1"
+    },
+    {
+      "path": "js/jordrav/map.js",
+      "lfSha256": "66cf91f3d6bff2a4358f2758de8d2aa4cd147f932f46ced3d50bd0498f2d124e"
+    },
+    {
+      "path": "js/jordrav/messages.js",
+      "lfSha256": "ba551cc1f5d49728b1cdc86aa0f3a6b5c478d76d5b188671020171c73f02a6bd"
+    },
+    {
+      "path": "js/jordrav/profile-examples.js",
+      "lfSha256": "ce910aebf4182b1186c3d212541672ca9c5fb394838734164c3739dbdada1db5"
+    },
+    {
+      "path": "js/jordrav/public-context.js",
+      "lfSha256": "efacbc9315bdb02df3ec2c33bda9f389550628186b7a438f5cf5259a6a28b155"
+    },
+    {
+      "path": "js/jordrav/regional-hypotheses.js",
+      "lfSha256": "ec9da8c58ac068ea8cc9b632a98348ae889eb000063f26abb871dd8658d2628d"
+    },
+    {
+      "path": "js/jordrav/search-context.js",
+      "lfSha256": "06672b010b88bdd96ee5d828079b26990b2b1b1edef962d04eb070607efdb212"
+    },
+    {
+      "path": "js/jordrav/view-state.js",
+      "lfSha256": "271a8f71eb42ebb89d19a25aee90cdd73e72985d1526710548f56aeaa0f2ffc3"
+    }
+  ],
+  "otherChecks": [
+    "50 targeted Jordrav tests via source-critical gate",
+    "Source-critical gate: 118 browser files",
+    "RDKS: 14 historical chat sources plus handbook",
+    "Security hardening contracts",
+    "Handbook: 428 sections and release model binding",
+    "Protected handbook merge tests",
+    "Version/module closure and 68 Pages browser modules",
+    "Release isolation: 198 existing main files, only top version in both coastal geodata files"
+  ],
+  "excludedByOwner": "Point 4: automatic detection of current bare/newly ploughed/rain-washed ground",
+  "remaining": "Exact-head GitHub CI, safe main merge, code-only artifact/runtime/privacy/deploy gates, live public browser verification",
+  "limitations": "Emulated mobile browser, no physical phone test; no empirical amber amount or adjacent-field layer/plough depth inferred"
+}

@@ -1,0 +1,64 @@
+{
+  "status": "PASS",
+  "scope": "Original identity/labels, cross-reader metrics and one bound display diagnosis; no amber validation",
+  "auditSha256": "db844d49209fe994c98d27978eeaf1a54fae22ace5f9200d3473b3d2c28ffba7",
+  "geometrySha256": "70050e770910e15d2f5df80256597c7f471b370ef00d9244a34d84a32a567d47",
+  "scriptSha256": "d85aa4f0a40dfddc4021cf82244727976c06541bb5dcba6945b3a66893209ee9",
+  "originalLayers": {
+    "soil": {
+      "checkedOriginalRecords": 8,
+      "originalCoverage_km2": 3.994734053002245,
+      "nativeMinusOriginalCoverage_m2": -1.171002245042473,
+      "maxSingleClippedAreaDelta_m2": 1.3269512983970344
+    },
+    "geomorphology": {
+      "checkedOriginalRecords": 5,
+      "originalCoverage_km2": 4.018709806307963,
+      "nativeMinusOriginalCoverage_m2": -0.011307962704449892,
+      "maxSingleClippedAreaDelta_m2": 0.7926347441971302
+    }
+  },
+  "invalidOriginalShapesRepairedInMemoryOnly": [
+    {
+      "layer": "soil",
+      "sourceId": 192998,
+      "reason": "Ring Self-intersection[580390.6037 6317188.71]"
+    }
+  ],
+  "fieldUnionDelta_m2": 0.00022006221115589142,
+  "diagnosticPoint": {
+    "longitude": 10.433253324543243,
+    "latitude": 57.16702551945519,
+    "notAnAmberFind": true,
+    "distanceInsideChosenNativeCropPiece_m": 201.87591210484155,
+    "displayHits": [
+      {
+        "tile": "29-316",
+        "origin": "n192998:g7400",
+        "catalogIndex": 39,
+        "classification": {
+          "source": "soil-new",
+          "surface": "HS",
+          "depth": "HS",
+          "symbol": "HS",
+          "soilLabel": "HS - Saltvandssand",
+          "landscape": "Marin flade",
+          "landscapeCode": 25,
+          "landscapeEnglish": "Marine plain",
+          "conflictSymbols": "",
+          "potential": "possible",
+          "material": "marine-coarse",
+          "process": "marine",
+          "accessibility": "near-surface",
+          "confidence": "weak"
+        }
+      }
+    ],
+    "displayGeometryGeneralisation_m": 20
+  },
+  "numericalBounds": {
+    "originalNativeArea_m2": 25,
+    "fieldUnion_m2": 1,
+    "boundsArePositionalAccuracy": false
+  }
+}

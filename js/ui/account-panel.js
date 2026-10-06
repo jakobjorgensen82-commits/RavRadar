@@ -1,10 +1,10 @@
-import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.543";
-import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.543";
-import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.543";
-import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.543";
-import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.543";
-import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.543";
-import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.543";
+import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.548";
+import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.548";
+import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.548";
+import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.548";
+import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.548";
+import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.548";
+import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.548";
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>'"]/g, character => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[character]);
@@ -150,7 +150,7 @@ function renderAccount(dialog, context, message = '') {
       <label>${t('account.password')}<input name="password" type="password" autocomplete="current-password" minlength="6"></label>
       <div class="button-row"><button class="primary-button" name="action" value="login" type="submit">${t('account.login')}</button><button name="action" value="signup" type="submit">${t('account.signup')}</button></div>
       <div class="magic-link-explanation"><strong>${t('account.magicTitle')}</strong><p>${t('account.magicBody')}</p></div>
-      <button name="action" value="magic" type="submit">${t('account.magicSend')}</button><p id="authStatus" class="form-status" role="status"></p>
+      <button name="action" value="magic" type="submit" formnovalidate>${t('account.magicSend')}</button><p id="authStatus" class="form-status" role="status"></p>
     </form>` : `<div class="notice">${t('account.disabled')}</div>`}`;
 
   content.querySelector('#accountTripReportLink')?.addEventListener('click', event => { event.preventDefault(); showAccountTripReport(dialog, context); });
@@ -158,7 +158,11 @@ function renderAccount(dialog, context, message = '') {
   content.querySelector('#signOutButton')?.addEventListener('click', async () => { await signOut(); renderAccount(dialog, context); });
   content.querySelector('#authForm')?.addEventListener('submit', async event => {
     event.preventDefault();
-    const status = content.querySelector('#authStatus'), data = new FormData(event.currentTarget), action = event.submitter?.value;
+    const status = content.querySelector('#authStatus');
+    status.textContent = '';
+    // The magic button skips password constraints, not the required valid email.
+    if (!event.currentTarget.elements.namedItem('email').reportValidity()) return;
+    const data = new FormData(event.currentTarget), action = event.submitter?.value;
     const email = String(data.get('email') || '').trim(), password = String(data.get('password') || '');
     status.textContent = t('common.working');
     try {

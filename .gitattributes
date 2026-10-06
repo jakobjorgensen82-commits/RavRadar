@@ -1,2 +1,37 @@
 data/diagnostics export-ignore
 data/admin export-ignore
+# Jordrav identities hash exact bytes; preserve them across Windows/Linux.
+data/jordrav/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+docs/research/jordrav/public-context-sources-*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+docs/research/jordrav/national-evidence-chain-*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+scripts/build-jordrav-prototype.py -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+scripts/lib/jordrav_model.py -text
+# Regional research audits bind exact script/report bytes across platforms.
+docs/research/jordrav/audit_stenstrup_contacts.py -text
+docs/research/jordrav/verify_stenstrup_originals.py -text
+docs/research/jordrav/stenstrup-contact-audit-2026-10-04.json -text
+docs/research/jordrav/stenstrup-original-verification-2026-10-04.json -text
+docs/research/jordrav/audit_stenstrup_field_context.py -text
+docs/research/jordrav/verify_stenstrup_field_context.py -text
+docs/research/jordrav/plot_stenstrup_field_context.py -text
+docs/research/jordrav/stenstrup-field-*.json -text
+docs/research/jordrav/stenstrup-field-context-2026-10-04.geojson -text
+docs/research/jordrav/sources/*-binding.json -text
+docs/research/jordrav/*asaa_voersaa.py -text
+docs/research/jordrav/asaa-voersaa-*.json -text
+docs/research/jordrav/asaa-voersaa-context-2026-10-04.geojson -text
+docs/research/jordrav/*marine_comparisons.py -text
+docs/research/jordrav/marine-comparison-*.json -text
+scripts/build-jordrav-national-model.py -text
+docs/research/jordrav/audit_national_model_sources.py -text
+docs/research/jordrav/verify_national_model.py -text
+docs/research/jordrav/audit_national_rule_sensitivity.py -text
+docs/research/jordrav/national-model-0.2-*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+js/jordrav/search-context.js -text
+scripts/audit-jordrav-search-context.mjs -text
+docs/research/jordrav/national-search-context-*.json -text
+# Layer-access receipts bind exact report bytes across Windows/Linux.
+docs/research/jordrav/national-layer-access-*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+docs/research/jordrav/layer-*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+docs/research/jordrav/national-landscape-context-*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+docs/research/jordrav/landscape-*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

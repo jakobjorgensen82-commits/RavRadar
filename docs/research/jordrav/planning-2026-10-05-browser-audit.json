@@ -1,0 +1,23 @@
+{
+  "scope": "Local Chrome UI, saved-link restoration and 390px emulation; no physical mobile or production claim",
+  "dataset": "5d0a925a04f71e11eaf82feb3d27294be6b1f00bb4de08dfa3ee4ff4e6a2b2a0",
+  "checks": [
+    "All five lead filters redraw nationwide overview, update legend and request no detail tiles",
+    "Local lead filter preserves explanation and explicitly marks a hidden selection; matching filter restores highlight",
+    "Copy button creates a bounded dataset-bound link and writes exactly that URL to clipboard",
+    "Copying after leaving the detail view omits the old polygon and explains the omission",
+    "Copying while detail data are still loading preserves the pending exact fragment reference",
+    "Fresh browser context restores exact clipped polygon, physical explanation, camera and every saved control with bounded local loading",
+    "A saved polygon excluded by the lead filter is identified honestly without colouring a different area",
+    "Changed dataset restores camera and controls but clears earlier polygon and explanation with explicit warning",
+    "Missing fragment gives explicit message and never substitutes another polygon",
+    "Deep-point link restores registered intervals and inaccessible status, independently of surface trace",
+    "Unknown deep point and malformed version are rejected visibly without stale detail content",
+    "Rapid link navigation during map movement honours the latest view and selection",
+    "390px mobile emulation and German/English navigation preserve saved selection and translate new controls",
+    "Clipboard denial leaves a selected readonly URL for manual copying without a page error",
+    "No weather, account, GPS or field-attribute service is introduced; no browser page errors"
+  ],
+  "errors": [],
+  "status": "PASS"
+}

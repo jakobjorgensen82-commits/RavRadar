@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -17,12 +18,195 @@ import { pairedSourceDiagnostic,
 import { mergeOpenMeteoPartBank, buildOpenMeteoPartRequest, readOpenMeteoPartResponse,
   openMeteoMfNearestGridPoint, OPEN_METEO_NATIVE_NEAREST_POLICIES } from './lib/open-meteo-part-bank.mjs';
 import { openMeteoO1280NearestGridPoint } from './lib/open-meteo-o1280-grid.mjs';
+import { dmiWaterSourceFixture } from './test-helpers/dmi-water-source-fixture.mjs';
+import { buildWaterSourceForecastIndex, packWaterSourceForecastContinuity,
+  unpackWaterSourceForecastContinuity } from './lib/water-source-forecast-routing.mjs';
+import { readDmiForecastFile, inspectDmiForecastFile, writeDmiForecastFileAtomic,
+  DMI_FORECAST_FILE_MAX_BYTES } from './lib/dmi-forecast-file.mjs';
+import { constants as bufferConstants } from 'node:buffer';
+import { assertUsableDmiProgressRecovery } from './lib/verified-dmi-progress-inputs.mjs';
 
 const execFileAsync = promisify(execFile);
 const repository = 'owner/fixture';
 const encryptionKey = Buffer.alloc(32, 73).toString('base64');
 const protectedBundleSha256 = 'a'.repeat(64);
 const reference = '2026-09-19T00:00:00.000Z';
+
+// Reuse the real progress fixture and ordinary save/restore CLIs. Artificial
+// large zone records test byte volume, not national native forecast coverage.
+// The measured national SOURCE cardinality contains qualified synthetic originals.
+test('large forecast and national SOURCE bank cross the normal encrypted CLI boundary together', {
+  skip: process.env.RAVRADAR_TEST_LARGE_FORECAST !== '1', timeout: 600_000,
+}, async t => {
+  const f = await fixture(t);
+  const referenceAt = new Date(Math.floor(Date.now() / 3_600_000) * 3_600_000).toISOString();
+  const sources = Array.from({ length: 373 }, (_, i) => ({ sourceKey: `tidewater:LARGE${i}`,
+    stationId: `LARGE${i}`, sourceType: 'forecast-point', point: [10 + i / 10000, 56] }));
+  const native = { generatedAt: referenceAt, timeStrideHours: 3, zones: {} };
+  for (const source of sources) native.zones[`SOURCE::${source.sourceKey}`] = {
+    hourly: Object.fromEntries(Array.from({ length: 41 }, (_, i) => {
+      const time = new Date(Date.parse(referenceAt) + i * 3 * 3_600_000).toISOString();
+      const row = dmiWaterSourceFixture(source, time, i, referenceAt);
+      row.sources.waterLevel.assetIdentitySha256 = crypto.createHash('sha256')
+        .update(source.sourceKey + time).digest('hex');
+      return [time, row];
+    })),
+  };
+  const originals = buildWaterSourceForecastIndex(sources, native, referenceAt);
+  const sourcePack = await packWaterSourceForecastContinuity(originals, referenceAt);
+  assert.equal(sourcePack.sourceCount, 373);
+  assert.ok(Buffer.byteLength(JSON.stringify(sourcePack)) > 1024 * 1024);
+  const protectedForecast = { schemaVersion: 2, generatedAt: referenceAt,
+    runtime: { nextZoneCursor: 0 }, zones: {} };
+  const paddedForecast = { ...protectedForecast, zones: {}, waterSourceContinuity: sourcePack };
+  const padding = 'x'.repeat(3 * 1024 * 1024);
+  for (let i = 0; i < 180; i++) {
+    const id = `ZONE${i}`;
+    protectedForecast.zones[id] = { zoneId: id, point: [10, 56], hourly: [] };
+    paddedForecast.zones[id] = { ...protectedForecast.zones[id], padding };
+  }
+  const geometry = { type: 'FeatureCollection', features: Object.keys(protectedForecast.zones).map(id =>
+    ({ type: 'Feature', properties: { id, dataPoint: [10, 56] } })) };
+  for (const root of [f.source, f.target]) {
+    await write(root, 'data/zones.geojson', geometry);
+    await writeDmiForecastFileAtomic(path.join(root, 'data/live/dmi-forecast-cache.json'), protectedForecast);
+  }
+  const sourceFile = path.join(f.source, 'data/live/dmi-forecast-cache.json');
+  await writeDmiForecastFileAtomic(sourceFile, paddedForecast);
+  const sourceIndex = await inspectDmiForecastFile(sourceFile);
+  assert.ok(sourceIndex.bytes > bufferConstants.MAX_STRING_LENGTH);
+  assert.ok(sourceIndex.bytes > 256 * 1024 * 1024 && sourceIndex.bytes <= DMI_FORECAST_FILE_MAX_BYTES);
+  assert.equal(sourceIndex.zones.size, 180);
+  const digest = async file => {
+    const hash = crypto.createHash('sha256');
+    for await (const chunk of createReadStream(file)) hash.update(chunk);
+    return hash.digest('hex');
+  };
+  const sourceHash = await digest(sourceFile);
+  const protectedBase = await fs.readFile(f.targetBase);
+  const sourceBase = await fs.readFile(f.sourceBase);
+  const geometryBefore = await fs.readFile(path.join(f.target, 'data/zones.geojson'));
+  const environment = Object.fromEntries(Object.entries(process.env).filter(([name]) =>
+    ['PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'COMSPEC', 'PATHEXT'].includes(name.toUpperCase())));
+  Object.assign(environment, { GITHUB_REPOSITORY: repository, WEATHER_PROGRESS_ENCRYPTION_KEY: encryptionKey,
+    RAVRADAR_PRODUCTION_TARGET_HOUR: referenceAt });
+  const cli = path.resolve('scripts/weather-component-progress-cache.mjs');
+  const saveReport = path.join(f.folder, 'large-cli-save-report.json');
+  const saveStarted = performance.now();
+  const savedProcess = await execFileAsync(process.execPath,
+    [cli, 'save', '--root', f.source, '--base', f.sourceBase, '--report', saveReport],
+    { cwd: process.cwd(), env: environment, windowsHide: true, timeout: 240_000, killSignal: 'SIGKILL' });
+  const saveElapsedMs = performance.now() - saveStarted;
+  assert.equal(savedProcess.stderr, '');
+  const saved = JSON.parse(await fs.readFile(saveReport, 'utf8'));
+  assert.equal(saved.saved, true, JSON.stringify(saved));
+  assert.equal(saved.status, 'SAVED');
+  assert.equal(saved.code, 'ENCRYPTED_PROGRESS_SAVED');
+  assert.equal(saved.privatePayloadIncluded, false);
+  const cipherFile = path.join(f.source, WEATHER_PROGRESS_CIPHER_PATH);
+  assert.equal(saved.encryptedBytes, (await fs.stat(cipherFile)).size);
+  assert.ok(saved.encryptedBytes <= WEATHER_PROGRESS_MAX_CIPHER_BYTES);
+  assert.ok(saveElapsedMs < 240_000, 'This measured local seal finishes inside the existing four-minute step.');
+  await fs.mkdir(path.dirname(path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH)), { recursive: true });
+  const transferStarted = performance.now();
+  await fs.copyFile(cipherFile, path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH));
+  const localTransferElapsedMs = performance.now() - transferStarted;
+  const restoreReport = path.join(f.folder, 'large-cli-restore-report.json');
+  const restoreStarted = performance.now();
+  const restoredProcess = await execFileAsync(process.execPath,
+    [cli, 'restore', '--root', f.target, '--base', f.targetBase, '--report', restoreReport],
+    { cwd: process.cwd(), env: environment, windowsHide: true, timeout: 240_000, killSignal: 'SIGKILL' });
+  const restoreElapsedMs = performance.now() - restoreStarted;
+  assert.equal(restoredProcess.stderr, '');
+  const restored = JSON.parse(await fs.readFile(restoreReport, 'utf8'));
+  assert.equal(restored.restored, true, JSON.stringify(restored));
+  assert.equal(restored.saved, false);
+  assert.equal(restored.productionAuthority, false);
+  assert.equal(restored.privatePayloadIncluded, false);
+  assert.equal(restored.dmiProgress.forecast.status, 'MERGED');
+  assert.equal(restored.dmiProgress.forecast.recoveredComponents, 373 * 121);
+  assert.equal(restored.dmiProgress.forecast.rejectedRecords, 180,
+    'The 180 deliberately empty padding records are not provider originals; none acquires forecast authority.');
+  assert.equal(assertUsableDmiProgressRecovery(restored.dmiProgress), true);
+  const recovered = await readDmiForecastFile(path.join(f.target, 'data/live/dmi-forecast-cache.json'));
+  assert.deepEqual(recovered.zones, protectedForecast.zones, 'Unqualified padding cannot replace protected originals.');
+  const qualified = await unpackWaterSourceForecastContinuity(recovered.waterSourceContinuity, referenceAt);
+  assert.equal(qualified.size, 373);
+  for (const [key, original] of originals) assert.deepEqual(qualified.get(key).hourly, original.hourly);
+  assert.equal(await digest(sourceFile), sourceHash, 'Read-only packaging never changes the original forecast.');
+  assert.deepEqual(await fs.readFile(f.sourceBase), sourceBase);
+  assert.deepEqual(await fs.readFile(f.targetBase), protectedBase);
+  assert.deepEqual(await fs.readFile(path.join(f.target, 'data/zones.geojson')), geometryBefore);
+  assert.equal(await fs.readFile(path.join(f.target, 'data/live/conditions.json'), 'utf8'), baseline);
+  t.diagnostic(JSON.stringify({ kind: 'LARGE_FORECAST_SOURCE_PROGRESS_CLI_CAPACITY',
+    forecastBytes: sourceIndex.bytes, encryptedBytes: saved.encryptedBytes,
+    sourceCount: qualified.size, qualifiedSourceHours: 373 * 121,
+    sourceRawBytes: sourcePack.rawBytes, sourceCompressedBytes: sourcePack.compressedBytes,
+    saveElapsedMs, localTransferElapsedMs, restoreElapsedMs,
+    parentMaxRssKiB: process.resourceUsage().maxRSS,
+    note: 'Own synthetic bytes and real CLI exits; parent RSS excludes CLI children. No remote upload, runner-loss or national full-job proof.' }));
+});
+
+test('encrypted forecast progress recovers SOURCE-only holes through normal restore', async t => {
+  for (const invalid of [false, true]) await t.test(invalid ? 'invalid inner source seal' : 'qualified four-hour progress', async child => {
+    const f = await fixture(child);
+    const source = { sourceKey: 'tidewater:PROGRESS', stationId: 'PROGRESS',
+      sourceType: 'forecast-point', name: 'Synthetic original source', point: [11, 56] };
+    const native = { generatedAt: reference, timeStrideHours: 3, zones: {
+      [`SOURCE::${source.sourceKey}`]: { hourly: Object.fromEntries(Array.from({ length: 41 }, (_, i) => {
+        const time = new Date(Date.parse(reference) + i * 3 * 3600000).toISOString();
+        return [time, dmiWaterSourceFixture(source, time, i, reference)];
+      })) },
+    } };
+    const original = buildWaterSourceForecastIndex([source], native, reference);
+    assert.equal(original.get(source.sourceKey).hourly.length, 121);
+    const sparse = structuredClone(original);
+    const absentTimes = [94, 95, 109, 110].map(i => original.get(source.sourceKey).hourly[i].time);
+    sparse.get(source.sourceKey).hourly = sparse.get(source.sourceKey).hourly.filter(row => !absentTimes.includes(row.time));
+    const protectedForecast = { schemaVersion: 2, generatedAt: reference,
+      runtime: { nextZoneCursor: 0 }, zones: { Z: { zoneId: 'Z', point: [10, 56], hourly: [] } },
+      waterSourceContinuity: await packWaterSourceForecastContinuity(sparse, reference) };
+    const incoming = { ...structuredClone(protectedForecast),
+      waterSourceContinuity: await packWaterSourceForecastContinuity(original, reference) };
+    if (invalid) incoming.waterSourceContinuity.entries[0].rawSha256 = '0'.repeat(64);
+    for (const root of [f.source, f.target]) {
+      await write(root, 'data/zones.geojson', { type: 'FeatureCollection', features: [
+        { type: 'Feature', properties: { id: 'Z', dataPoint: [10, 56] } },
+      ] });
+      await write(root, 'data/live/dmi-forecast-cache.json', protectedForecast);
+    }
+    const forecastBefore = await fs.readFile(path.join(f.target, 'data/live/dmi-forecast-cache.json'));
+    const baseBefore = await fs.readFile(f.targetBase);
+    await write(f.source, 'data/live/dmi-forecast-cache.json', incoming);
+    const saved = await f.call('save');
+    assert.equal(saved.saved, true, JSON.stringify(saved));
+    const ciphertext = await fs.readFile(path.join(f.source, WEATHER_PROGRESS_CIPHER_PATH));
+    assert.equal(ciphertext.includes(Buffer.from(source.sourceKey)), false);
+    await fs.mkdir(path.dirname(path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH)), { recursive: true });
+    await fs.copyFile(path.join(f.source, WEATHER_PROGRESS_CIPHER_PATH), path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH));
+    const restored = await f.call('restore', f.target, { productionReferenceAt: reference });
+    assert.equal(restored.restored, true, JSON.stringify(restored));
+    assert.deepEqual(await fs.readFile(f.targetBase), baseBefore, 'Original protection baseline is never rewritten.');
+    assert.equal(await fs.readFile(path.join(f.target, 'data/live/conditions.json'), 'utf8'), baseline);
+    if (invalid) {
+      assert.equal(restored.dmiProgress.forecast.status, 'REJECTED');
+      assert.throws(() => assertUsableDmiProgressRecovery(restored.dmiProgress), /DMI_FORECAST_PROGRESS_RECOVERY_REQUIRED/,
+        'Actual normal workflow admission rejects a cache report with invalid SOURCE recovery.');
+      assert.deepEqual(await fs.readFile(path.join(f.target, 'data/live/dmi-forecast-cache.json')), forecastBefore);
+    } else {
+      assert.equal(restored.dmiProgress.forecast.status, 'MERGED');
+      assert.equal(restored.dmiProgress.forecast.recoveredComponents, 4);
+      assert.equal(assertUsableDmiProgressRecovery(restored.dmiProgress), true);
+      const actual = await readDmiForecastFile(path.join(f.target, 'data/live/dmi-forecast-cache.json'));
+      assert.deepEqual(actual.zones, protectedForecast.zones);
+      const qualified = await unpackWaterSourceForecastContinuity(actual.waterSourceContinuity, reference);
+      assert.deepEqual(qualified.get(source.sourceKey).hourly, original.get(source.sourceKey).hourly);
+      for (const row of sparse.get(source.sourceKey).hourly) assert.deepEqual(
+        qualified.get(source.sourceKey).hourly.find(r => r.time === row.time), row,
+        'Already qualified protected SOURCE hours retain their exact original proof.');
+    }
+  });
+});
 test('paired source diagnostics expose only fixed phases and classified codes', () => {
   assert.equal(pairedSourceDiagnostic(new Error('private response at C:\\secret')),
     'PAIRED_SOURCE_UNCLASSIFIED');
@@ -867,4 +1051,100 @@ test('compressed progress budget preserves the previous snapshot and never stops
   assert.deepEqual(await fs.readFile(path.join(f.source, WEATHER_PROGRESS_CIPHER_PATH)), originalCipher);
   assert.equal((await fs.readdir(path.join(f.source, '.cache'))).some(name => name.includes('.encrypted.new-')), false);
   assert.equal((await f.call('restore', f.target)).restored, true);
+});
+
+test('cipher commit flushes and closes complete authenticated bytes before replacing the previous snapshot', async t => {
+  for (const fault of ['none', 'sync', 'close', 'sync-and-close']) await t.test(fault, async sub => {
+    const f = await fixture(sub);
+    await f.saveAndTransfer();
+    const cipherPath = path.resolve(await fs.realpath(f.source), WEATHER_PROGRESS_CIPHER_PATH);
+    const previousCipher = await fs.readFile(cipherPath);
+    const previousBase = await fs.readFile(f.sourceBase);
+    await write(f.source, files.fallbackCursor, { afterPreviousSeal: true });
+    const open = fs.open.bind(fs), rename = fs.rename.bind(fs);
+    let opened = 0, syncAttempts = 0, closeAttempts = 0, closed = false, replacements = 0;
+    sub.mock.method(fs, 'open', async (file, ...args) => {
+      const handle = await open(file, ...args);
+      if (path.resolve(String(file)).startsWith(`${cipherPath}.new-`)) {
+        opened++;
+        const sync = handle.sync.bind(handle), close = handle.close.bind(handle);
+        sub.mock.method(handle, 'sync', async () => {
+          syncAttempts++;
+          if (fault === 'sync' || fault === 'sync-and-close') throw new Error('synthetic private sync failure');
+          await sync();
+        });
+        sub.mock.method(handle, 'close', async () => {
+          closeAttempts++;
+          await close();
+          closed = true;
+          if (fault === 'close' || fault === 'sync-and-close') throw new Error('synthetic private close failure');
+        });
+      }
+      return handle;
+    });
+    sub.mock.method(fs, 'rename', async (from, to) => {
+      if (path.resolve(String(to)) === cipherPath) {
+        replacements++;
+        assert.equal(syncAttempts, 1, 'the complete ciphertext and GCM tag must be flushed before commit');
+        assert.equal(closed, true, 'the owned flush handle must close before commit');
+      }
+      return rename(from, to);
+    });
+    const result = await f.call('save');
+    sub.mock.restoreAll();
+    assert.equal(opened, 1);
+    assert.equal(syncAttempts, 1);
+    assert.equal(closeAttempts, 1, 'close must be attempted even after failed sync');
+    assert.equal(result.saved, fault === 'none');
+    assert.equal(replacements, fault === 'none' ? 1 : 0);
+    assert.equal(JSON.stringify(result).includes('synthetic private'), false);
+    assert.deepEqual(await fs.readFile(f.sourceBase), previousBase);
+    if (fault !== 'none') {
+      assert.equal(result.code, fault === 'close' ? 'CIPHER_CLOSE_FAILED' : 'CIPHER_SYNC_FAILED');
+      assert.deepEqual(await fs.readFile(cipherPath), previousCipher);
+    } else assert.equal(result.status, 'SAVED');
+    await withAuthenticatedWeatherProgress({ repositoryRoot: f.source,
+      basePath: f.sourceBase, repository, encryptionKey }, async ({ verifiedRoot }) => {
+      assert.deepEqual(JSON.parse(await fs.readFile(path.join(verifiedRoot, files.fallbackCursor), 'utf8')),
+        fault === 'none' ? { afterPreviousSeal: true } : { progressed: true });
+    });
+    assert.equal((await fs.readdir(path.dirname(cipherPath))).some(name =>
+      name.startsWith(`${path.basename(cipherPath)}.new-`)), false);
+    if (fault === 'none') await sub.test('actual normal save and fresh restore CLIs preserve the original baseline', async () => {
+      await write(f.source, files.fallbackCursor, { actualCliSeal: true });
+      const environment = Object.fromEntries(Object.entries(process.env).filter(([name]) =>
+        ['PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'COMSPEC', 'PATHEXT'].includes(name.toUpperCase())));
+      Object.assign(environment, { GITHUB_REPOSITORY: repository, WEATHER_PROGRESS_ENCRYPTION_KEY: encryptionKey });
+      const saveReport = path.join(f.folder, 'cli-flushed-save-report.json');
+      await execFileAsync(process.execPath, [path.resolve('scripts/weather-component-progress-cache.mjs'),
+        'save', '--root', f.source, '--base', f.sourceBase, '--report', saveReport],
+      { cwd: process.cwd(), env: environment, windowsHide: true });
+      const saved = JSON.parse(await fs.readFile(saveReport, 'utf8'));
+      assert.equal(saved.saved, true);
+      assert.equal(saved.status, 'SAVED');
+      assert.equal(saved.code, 'ENCRYPTED_PROGRESS_SAVED');
+      assert.equal(saved.encryptedBytes, (await fs.stat(cipherPath)).size);
+      assert.equal(saved.privatePayloadIncluded, false);
+      assert.deepEqual(await fs.readFile(f.sourceBase), previousBase);
+      await fs.copyFile(cipherPath, path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH));
+      const targetBase = await fs.readFile(f.targetBase);
+      const restoreReport = path.join(f.folder, 'cli-flushed-restore-report.json');
+      await execFileAsync(process.execPath, [path.resolve('scripts/weather-component-progress-cache.mjs'),
+        'restore', '--root', f.target, '--base', f.targetBase, '--report', restoreReport],
+      { cwd: process.cwd(), env: environment, windowsHide: true });
+      const restored = JSON.parse(await fs.readFile(restoreReport, 'utf8'));
+      assert.equal(restored.restored, true);
+      assert.equal(restored.saved, false);
+      assert.equal(restored.privatePayloadIncluded, false);
+      assert.deepEqual(JSON.parse(await fs.readFile(path.join(f.target, files.fallbackCursor), 'utf8')),
+        { actualCliSeal: true });
+      assert.deepEqual(await fs.readFile(f.targetBase), targetBase);
+      assert.equal(await fs.readFile(path.join(f.target, 'data/live/conditions.json'), 'utf8'), baseline);
+      assert.deepEqual(JSON.parse(await fs.readFile(path.join(f.target, files.openMeteoBank), 'utf8')), progressedBank);
+      // Real CLI exits and local file transfer, not a remote Actions upload or
+      // evidence that a deleted/failed hosted runner can be recovered.
+    });
+    // Same-disk authenticated commit boundary only, not upload/runner-loss,
+    // directory crash durability or national four-minute capacity.
+  });
 });

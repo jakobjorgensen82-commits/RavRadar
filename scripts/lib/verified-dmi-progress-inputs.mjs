@@ -7,8 +7,9 @@ import { DMI_FORECAST_HOURS, normalizeForecastHourly } from './dmi-forecast-stor
 import { eligibleDmiForecastComponentSource as verifiedDmiForecastComponentSource } from './ravscore-production-adapters.mjs';
 import { preferQualifiedDmiComponentSource } from './weather-component-selection.mjs';
 import { hasValue } from './weather-component-needs.mjs';
-import { inspectDmiForecastFile, readDmiForecastRecord, writeDmiForecastRecords } from './dmi-forecast-file.mjs';
+import { inspectDmiForecastFile, readDmiForecastRecord, writeDmiForecastRecords, readDmiWaterSourceContinuity } from './dmi-forecast-file.mjs';
 import { dmiWaveDirectionMatchesSource } from './dmi-wave-tuple-proof.mjs';
+import { mergeWaterSourceForecastContinuity } from './water-source-forecast-routing.mjs';
 
 const HOUR = 3_600_000;
 const CLOCK_SKEW = 5 * 60_000;
@@ -312,6 +313,14 @@ async function reconcileForecastFile({ root, file, temporaryDirectory, productio
   const candidateRuntime = { zones: progress.zoneGeometry, runtime: progress.metadata.runtime };
   if (recoverRuntimeCursor) recoverRuntime(originalRuntime, candidateRuntime, zones, restored, stats);
   const metadata = { ...complete.metadata };
+  const sourceContinuity = await mergeWaterSourceForecastContinuity(
+    await readDmiWaterSourceContinuity(complete), await readDmiWaterSourceContinuity(progress),
+    productionReferenceAt,
+  );
+  if (sourceContinuity.recoveredHours) {
+    metadata.waterSourceContinuity = sourceContinuity.pack;
+    stats.recoveredComponents += sourceContinuity.recoveredHours;
+  }
   if (stats.runtimeRecovered) metadata.runtime = originalRuntime.runtime;
   const sourcePath = path.join(temporaryDirectory, 'merged-dmi-progress-forecast.json');
   async function* records() {

@@ -1,8 +1,338 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.543
+**Håndbogsversion:** 4.0.548
+
+4.0.548 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
+Dette er den lokale integrerede kandidat, ikke et nyt offentligt leveringsbevis.
+
+## 89.170 Samlet lokal 4.0.547-kandidat uden ændret scoremodel
+
+<div class="reader-guide"><p>Dette afsnit skelner den samlede lokale rettelse fra den eksisterende offentlige side. Scoremodel, gyldige originaler og Jordravs leverede funktioner bevares.</p></div>
+
+Den lokale 4.0.547-kandidat samler de godkendte vandstandsrettelser,
+SEO-navnesignaler/kapitellinks, ejerens roadmap-fravalg og konto-knapper/
+e-mailbaseret loginlink med main adeee3f1. Jordravs leverede 4.0.546-kode,
+90.1-grundbog og dokumenterede kilde-/deploybeviser er bevaret. Gamle
+lokale eller ventende statusser nedenfor gælder deres daterede faser.
+
+Vandstandens SOURCE-bank bevarer selvstændigt kvalificerede originaler
+gennem kolde genindlæsninger og skift af reference. Native/protected/
+historical har fortsat prioritet; kun kvalificerede huller genvindes.
+T+3 bruger samme sammenlignelighed i normale zone- og kystdelskaldere.
+Den komplette krypterede progressfil synkroniseres og lukkes før erstatning.
+Dette ændrer ikke kildevægte, central routing, punkter eller scoreformel.
+
+Ejerens præcise godkendelse af genberegning/opdatering er udført. Efter
+integration og normalt versionsløft er integrated-/Candidate-bindinger,
+fortsættelsesbinding, otte normale forbrugere og den gamle vandstands-
+migrations reproduktion fortsat uændrede og kontrolleret. Ingen ny
+vandstandsmigration eller administratorændring er nødvendig. Assistentens
+separate nye binding og endnu ikke installerede migration er ikke medsendt.
+Geodata-diff viser kun topversion 546 til 547; geometri og målepunkter består.
+
+Kontoens sekundære knapper er læsbare, og loginlink kræver gyldig e-mail
+uden at kodefeltet blokerer. Login/oprettelse beholder mindst seks tegn.
+Ingen rigtig mail, kontooprettelse eller ændret Auth-konfiguration bestilles.
+SEO bruger RavRadar.dk som foretrukket navn og relevante interne kapitler;
+grundbogen omskrives ikke for Google, og ingen nye Ravfund-links tilføjes.
+Roadmap 1/2/3/5 er fortsat udgået og 4 allerede dækket, ikke en ny restplan.
+
+Dette er lokal integration, ikke offentlig levering eller ny vejreffekt.
+Egen exact-head CI, kontrolleret deploy og relevant offentlig kontrol mangler.
+Ingen overgang under aktiv eller ventende vejrhentning, ekstra vejrhentning
+eller replacement. Over 95 procent er ejerens tilfredsstillende dækningsmål,
+men identisk-time no-loss, gyldige originaler og hårde sikkerhedsgates består.
+Fur-årsag, privat syvzone-historik/strømhukommelse, runner-tab/holdbar upload,
+fireminutters fejlworker, samlet processtop/eksklusiv skrivning og national
+heljobskapacitet skal stadig lukkes med faktisk evidens. Den separate
+519-revision forbliver isoleret og inaktiv. Spørg RavRadar har separat
+437 lokale emner og 1311 skrevne DA/DE/EN-svar; det er ikke en offentlig
+leverance eller bevis for ekstern AI. GDPR-arbejdet er fortsat særskilt åbent.
+
+Offentlig 4.0.546 er kontrolleret med 21 lokale og otte offentlige Chrome-
+forløb. PR #527, exact-head CI 37467552872, merge d9c57798 og kode-only
+37485854000 består; sourceproof og hard gates er uafhængigt kontrolleret.
+Kvittering: `docs/research/jordrav/publication-evidence-4.0.546.json`.
+
+4.0.546 tydeliggør deling af kortvisningen og lodsejerens tilladelse i
+Jordrav. *Gem eller del kortvisning* kopierer et link; der oprettes ingen
+konto eller central gemning. Geologi, linkformat og modelbinding bevares.
+
+4.0.546 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
+Den viderefører den eksisterende kystmodel; de nye Jordravlag ændrer ikke RavScore.
+Historisk 4.0.545: PR #525 og fuld exact-head CI 37456024761 er kontrolleret med uafhængigt SHA-256-kildebevis. Kode-only run 37456783798 og faktisk offentlig kortbrowser består; modelbindingen og målingerne er uændrede.
+Kvittering: `docs/research/jordrav/publication-evidence-4.0.545.json`. 390 px DA/DE/EN er browseremulation; fysisk telefon er ikke afprøvet.
+
+## 89.168 Selvstændige SOURCE-vandstandstimer gennem kold genbrug – lokal kandidat
+
+Tillæg 6. oktober kl. 19.42: Den kombinerede store-cacheprøve er nu udført
+lokalt på den normale 547-kode. En syntetisk forecastfil på 568.634.628 bytes,
+over V8s strenggrænse, og 256 SOURCE-kilder med 30.976 kvalificerede timer
+passerer normale egne save- og restore-processer. Gemning tager 6,943
+sekunder; krypteret fil er 2.063.903 bytes; genbrug tager 17,292 sekunder.
+Originale SOURCE-timer og beskyttede originaler bevares. De 180 bevidst
+tomme fyldrecords afvises og er ikke national vejrdækning. Én ny prøve
+består, nul fejl eller skips; samlet 47,684 sekunder. Gemningen er inden
+for den eksisterende fireminuttersgrænse, men lokal filkopi er ikke upload
+eller overlevelse på en ny runner. Forælderens målte peak RSS er 427.132
+KiB og omfatter ikke CLI-børnenes hukommelse; hele jobkapaciteten er åben.
+
+547-rettelsen er allerede på main efter PR522 og eksakt kildekontrol;
+dens nye normale vejrhentning er aktiv, og faktisk offentlig effekt er
+endnu ikke målt. Den nye kapacitetsprøve og dette tillæg er kun lokale,
+ikke en ny version eller del af den igangværende levering. De daterede
+543-/migrations-/CI-statusser nedenfor er historiske. Ingen scoreformel,
+runtime, binding, kildepolitik eller budget er ændret. Samlet revision,
+Fur-årsag, privat syvzone-historik, processtop/eksklusiv skrivning, holdbar
+upload/runner-tab og national heljobskapacitet er fortsat åbne.
+
+Den eksisterende private forecastfil bevarer nu kvalificerede SOURCE-timer separat fra zone/PART-data. Kolde og tidsforskudte prøver består uden vandstandstab; originaler, T+3-seriekontrol, vægte og scoreformel bevares. National heljobskapacitet, sikker levering og offentlig effekt er stadig åbne.
+
+Den normale lokale kandidat gemmer nu selvstændigt kvalificerede SOURCE-
+vandstandstimer som en separat valgfri bank i den eksisterende autentificerede
+private forecastfil. Det er ikke et SOURCE-as-zone/PART-aggregat, en ny privat
+destination eller en kopi af hele 519-revisionen. Native/protected/historical
+input har fortsat prioritet; kun manglende kvalificerede timer genvindes.
+Gamle snapshots uden banken kan læses. Originale timestamps og kildebeviser
+bevares; ændret centralt målepunkt, beskadiget indhold, fremtidig markør og
+udløb afvises. 121 private timer inkluderer allerede offentlig118h plus T+3.
+
+Tre faktiske kolde filgenindlæsninger ved samme reference består med192
+no-loss-timekontroller. Tre fremrykkede referencer består med yderligere192
+kontroller på syv zoner plus Fur og både dkss_nsbs/dkss_lf. Det eksisterende
+95-minutters native-edge-hold er uændret; ingen ny native måling opfindes.
+De oprindelige SOURCE-records ændres ikke, mens den nye routede projektion
+beregner konservativ prognosealder ved den aktuelle generationstid.
+
+Den første samlede kompressionspakke fejlede den målte kildekapacitet og er
+erstattet lokalt af særskilt begrænsede SOURCE-records. Faktisk filgenbrug
+af256 kilder/30976 kvalificerede timer består; det er ikke national heljob-
+kapacitet. Eksisterende samlede fil-, arkiv- og krypteringsbudgetter bevares.
+Normal krypteret gemning/genbrug genvinder fire kvalificerede SOURCE-huller.
+En indre ugyldig kildeforsegling afvises af forecast-recovery og den faktiske
+workflow-gate uden at erstatte beskyttede forecastbytes. Den komplette
+krypterede fil synkroniseres fortsat før erstatning, jf.89.167.
+
+De direkte berørte cache-/filprøver består:10 rapporterede enheder,
+0FAIL/SKIP/CANCEL. Den berørte filtestfamilie har12PASS og én eksplicit
+fravalgt stor opt-in-kapacitetsprøve, ikke et fuldt nationalt kapacitetsbevis.
+Dette lukker lokale kolde SOURCE-huller, ikke faktisk upload, tab af runner,
+gamle Fur-årsag eller offentlig ny-generationseffekt. Bindingsopdatering og ny
+migration er udtrykkeligt godkendt6oktober; de er endnu ikke gennemført her.
+Gamle migrationer, scoreformel, central routing, kildevægte, strøm/hukommelse,
+vandtemperatur, Limfjord-data og hård no-loss bevares. Ingen installation,
+merge eller anden produktionsændring under aktiv writer. Lokalversion543;
+PR522/Jordrav527-koordinering, egen exact-head-kontrol og sikker levering
+mangler. Den samlede revision, Spørg RavRadar og GDPR er ikke færdigmeldt.
+Ældre beskrivelser af manglende lokal SOURCE-bank er historiske; de tidligere
+negative legacy-prøver bevares og dokumenterer hvorfor banken er nødvendig.
+
+
+## 89.169 Vandstandens lokale bindinger er kontrolleret og uændrede
+
+<div class="reader-guide"><strong>Kort fortalt:</strong> Vandstandens tekniske kontrolsummer er uændrede. Den lokale bevarelse af gyldige timer skal stadig leveres og bevises i en ny normal generation.</div>
+
+Ejerens præcise godkendelse af genberegning og nødvendige bindinger er
+udført på denne lokale vandstandskandidat. De normalt beregnede integrerede,
+Candidate G- og continuationbindinger er alle uændrede. Otte eksisterende
+forbrugere og den uændrede vandstandsmigrations generator består. Derfor
+kræver netop denne SOURCE-/cacheændring ikke en ny migration eller
+administratorændring. Assistentens separate nye binding må ikke kopieres hertil.
+
+Den naturlige vejrhentning afsluttede faktisk med fulde artifact- og
+releasekontroller, gemning, privat publicering og deploy kl.17.12.53 dansk
+tid. Det er den eksisterende produktionskode, ikke offentlig effekt af
+denne lokale SOURCE-bevarelse eller den nye komplette cipher-synkronisering.
+Jordravs separate 546-produktdeploy og efterfølgende dokumentationsmerge
+er afsluttet. Main adeee3f1 er hentet; integration skal bevare Jordravs
+grundbog og kildebeviser samt vores allerede godkendte SEO-, roadmap- og
+kontoknaprettelser. Aktiv eller ventende vejrhentning blokerer fortsat
+produktionsovergang; ingen ekstra vejrhentning eller replacement må startes.
+
+SOURCE-bevarelsens kolde, fremrykkede og normale krypterede målprøver fra
+17.10 genbruges som lokal evidens, ikke som faktiske nye produktionstimer.
+Den nye generation skal stadig måles for syvzonernes vandstand, udelukket
+strøm/temperatur, historisk strømhukommelse, central SOURCE-routing og T+3.
+Fur-årsag, samlet processtop/eksklusiv skrivning, holdbar upload/genbrug ved
+runner-tab, fireminutters fejlworker og national heljobskapacitet er åbne.
+Over95% er ejerens tilfredsstillende dækningsmål; identisk-time no-loss,
+gyldige originaler og øvrige gates er ikke ophævet. Den samlede 519-revision
+forbliver isoleret og inaktiv; kun målrettede kontrollerede delrettelser leveres.
+
+## 89.167 Komplet krypteret cachefil gemmes før erstatning – lokal kandidat
+
+Kort fortalt: Den komplette krypterede cachefil skal være synkroniseret og
+lukket, før den gamle erstattes. Rettelsen er endnu ikke offentliggjort.
+
+Kun ti linjer i den eksisterende normale gemmer er ændret. Det komplette
+krypterede indhold inklusive autentificeringsmærket synkroniseres til disk,
+og eget filhåndtag lukkes før atomisk erstatning. Første synkroniseringsfejl
+skjules ikke af en senere lukningsfejl. Ved fejl før erstatning bevares
+tidligere gyldige bytes; egne midlertidige filer ryddes. Format, nøgler,
+originalbindinger, score og budgetter er uændrede. Den store revision kopieres ikke.
+
+Den eksisterende målprøve var først rød og består nu i fire fejlforløb.
+Faktiske normale save- og restore-kald i særskilte processer bevarer
+originalbaseline, beskyttede data og autentiske bankrecords. Seks rapporterede
+test-enheder er ikke seks nye uafhængige tests. To eksisterende roundtrip-/
+budgetprøver og den normale workflow-kontrakt består også. Upload kræver
+fortsat faktisk saved=true, ikke et grønt eller sprunget trin alene.
+
+Lokal overførsel på samme disk er ikke Actions-upload, strømsvigtsbevis,
+tab af runner eller national kapacitet. Statisk modelsporing uden beregning
+af hashes finder ikke gemmeren i scoremodellernes closure eller i
+fortsættelsesinventaret. Den er i eksisterende producentinventar; det
+persistente ABI-format er uændret. Exact-head-kontrol, sikker integration,
+deploy og faktisk produktionseffekt mangler.
+
+Ejeren gav 6. oktober konkret tilladelse til genberegning og opdatering af de
+tidligere blokerede efterfølgerbindinger, nødvendige bindingsfiler og en ny
+migration. Scoreformlen, gyldige originaler og gamle migrationer bevares;
+intet installeres under aktiv vejrhentning. Samlet revision, kold SOURCE-
+bevarelse og faktisk ny syvzone-/Fur-effekt er stadig åbne. Accepteret dækning
+over 95% ophæver ikke hård no-loss. Se DEC-0266.
+
+
+## 89.166 Læsbare konto-knapper og loginlink uden kode
+
+Kort fortalt: Kontoens lyse knapper skal være tydelige. Et loginlink kræver
+en gyldig e-mail, ikke en adgangskode.
+
+Ejeren har godkendt en afgrænset rettelse efter sin telefonoplevelse.
+Opret konto og Send loginlink har lokalt mørk tekst, tydelig kant og synligt
+tastaturfokus. Log ind bevarer hvid tekst på mørk baggrund. Knappernes
+eksisterende størrelse og de danske, tyske og engelske tekster bevares.
+
+Send loginlink bruger kun den påkrævede gyldige e-mail. En tom eller kort
+adgangskode i det andet felt må ikke blokere handlingen. Log ind og Opret
+konto beholder adgangskodekravet på mindst seks tegn. En gammel succesbesked
+ryddes før en ny kontrol, så den ikke ligner bevis for en ny sendt mail.
+Auth-tjeneste, callback, rettigheder, kontoindstillinger og brugerdata er
+uændrede. Kontooprettelse kan fortsat kræve den eksisterende bekræftelsesmail.
+
+19 normale formularforløb og fire normale cache-kald består uden rigtige
+mails eller konti. Lokal mobilvisning ved 390 × 844 er kontrolleret;
+tekstkontrast er 12,28:1. Fire præcise UI-cachemarkører gennem importkæden
+bevarer tidligere cache uden reset eller ny produktversion.
+Det er en lokal kandidat, ikke offentlig levering eller en fysisk
+iPhone-/mailleveringsprøve. Integration, GitHub-kontrol og offentlig effekt
+skal stadig verificeres gennem den kontrollerede workflow.
+
+## 89.165 Foretrukket webstedsnavn i søgemaskiner
+
+Kort fortalt: RavRadar.dk er det foretrukne søgenavn; Google vælger stadig selv navn og uddrag.
+
+Forsiden angiver lokalt **RavRadar.dk** som foretrukket webstedsnavn,
+med **RavRadar** som alternativ, gennem statisk WebSite-Microdata og
+Open Graph. Det kræver ingen nye scripts eller lempelse af sikkerhedspolitikken.
+Sidetitel, beskrivelsestekst, URL og den synlige brugerflade bevares.
+
+Ejerens observation gælder søgningen **ravkort**, ikke **rav**. Navnesignalet
+er ikke en placering på et bestemt søgeord. Søgemaskinerne vælger selv navn
+og uddrag; ændringen skal først leveres og derefter hentes og behandles af
+dem. Lokal kontrol eller et deploy beviser derfor ikke ændret søgeresultat.
+Google beskriver dette i [vejledningen om webstedsnavne](https://developers.google.com/search/docs/appearance/site-names).
+
+Ejeren tillader små, kontekstuelle SEO-forbedringer, men ikke en omskrivning
+af den offentlige grundbog for Google. De lokale sprogindgange har links til
+eksisterende kapitler om rav, felttegn og jagt. Om-siden og grundbogen har
+entydige canonical-adresser, og seks sider henviser til det eksisterende
+192px-ikon. Grundbogens body, score og sikkerhed bevares. Ingen eksterne
+links tilføjes; Ravfund-ejede destinationer er udelukket fra nye links.
+
+Google Search Console-ejerskab er faktisk verificeret via én ny Simply-TXT;
+eksisterende DNS og DNSSEC er bevaret. Det eksisterende sitemap er behandlet
+med seks registrerede sider, ikke seks bevisligt indekserede sider. Rapportdata
+behandles endnu. Uændret sideindhold garanterer ikke samme beskrivelsesuddrag
+ved næste søgning: Google vælger uddrag efter forespørgslen. Ingen omskrivning,
+søgeordsfyld eller garanti for højere placering er nødvendig eller bestilt.
+
+Ejeren har godkendt forsendelse af de små rettelser til den eksisterende
+GitHub-PR. Det er ikke offentlig levering; en ny kildekontrol og sikker
+integration mod den ændrede main skal bestå. Ufærdig vandstandskode holdes udenfor.
+
+## 89.164 SOURCE-genbrug og samme vandstandsserie ved T+3 – kun lokal rettelse
+
+Kort fortalt: Genbrugte vandstandstimer skal have ægte kildebevis. Holdbar bevarelse gennem flere vejrgenerationer er endnu ikke færdig.
+
+En vandstandstrend kræver både en gyldig valgt kilde ved den aktuelle time
+og en sammenlignelig time præcis tre timer senere. Når tidligere og nye
+gyldige timer genbruges sammen, er to selvstændigt ægte målinger ikke nok:
+de skal høre til samme kilde, collection, modelkørsel, grid og målepunkt.
+Ellers er trenden ukendt; den gyldige aktuelle vandstand bevares.
+
+Den normale zone-/store-routing og routing til kystdele bruger nu lokalt
+samme kontrol. Administratorens kildevalg, vægte og interpolation bevares.
+Ingen manglende kilde omvægtes, og scoreformlen ændres ikke. Syvzonernes
+vandstandsundtagelse gælder fortsat kun vandstand fra dkss_lf, ikke strøm,
+strømhukommelse eller vandtemperatur. Limfjordens egne zoner beholder
+deres relevante data.
+
+Den hidtidige zonevej accepterede en usammenlignelig T+3-time i en
+målprøve, mens kystdelens kontrol allerede afviste den. Rettelsen er
+afprøvet med 40 blandede serieforløb og gyldige kontrolforløb gennem de
+normale kaldere; fire berørte måltests består. Det er ikke en ny offentlig
+generation eller bevis for Fur-fejlens gamle årsag. Den normale bankbygger
+genbruger nu lokalt også gyldige SOURCE-timer fra eksisterende beskyttede og
+historiske native banker. Donorer bygges og kvalificeres hver for sig ved
+den aktuelle centrale kildeidentitet. Gyldige aktive timer har prioritet;
+kun manglende kvalificerede timer fyldes. Originalbankerne ændres ikke.
+Den færdige union får et nyt record og kvalificeres igen før forbrugerne,
+så et gammelt verifikationsmemo ikke skjuler de tilføjede gyldige timer.
+64 retention-/no-loss-timekontroller på de syv zoner plus Fur med både
+dkss_nsbs og dkss_lf består. Ugyldige donoridentiteter afvises; gyldige
+skalarer med usammenlignelig T+3 får fortsat ukendt trend i begge kaldere.
+Relevante bindinger, sikker levering og faktisk ny vejreffekt mangler stadig.
+Gamle leverede bindinger er ikke omberegnet eller kaldt gyldige for denne
+nye kandidat. DEC-0291 og DEC-0292.
+
+En særskilt lokal kold-genbrugsprøve viser også en restgrænse: den normale
+PART-cache gemmer direkte input før SOURCE-routing, ikke den afledte
+SOURCE-union. En senere native kopi med samme run-sømme kan derfor mangle
+de genvundne timer igen. De forbliver ukendte og stoppes af no-loss; et
+routet aggregat genmærkes ikke som original kilde. En ægte selvstændig
+originalbank kan genvinde timerne efter kold genbrug. Holdbar bevarelse
+gennem flere generationer er således stadig åben. Det er lokal syntetisk
+evidens, ikke et nyt produktionstab eller den gamle Fur-årsagsbevis.
+
+## 89.163 Prognosehalens dækning og bedre brug af reservekøen
+
+Kort fortalt: Dækning og datatab er forskellige mål. Den lokale reservekø bruger de samme to forbindelser bedre; ny vejreffekt mangler.
+
+Feltdækning tæller gyldige numeriske vejrkomponenter over 673 kystdele,
+118 timer og fem familier. Det er ikke RavScore-tilgængelighed eller bevis
+for fuld privat historik. Et procentfald mellem rullende prognoser er heller
+ikke nødvendigvis datatab: samme timer skal sammenlignes særskilt fra
+udløbne og nytilkomne timer. Den kontrollerede 12Z-generation har fuld vind,
+bølge og vandstand i de første 96 timer, men væsentlige huller i halen.
+Nævneren og prognosehorisonten forkortes ikke for at forbedre tallet.
+
+Den normale Open-Meteo-producer er lokalt rettet fra parvis ventning til
+en løbende kø med højst de samme to samtidige forbindelser. En langsom
+marinehentning holder dermed ikke næste vindhentning tilbage i den anden
+ledige forbindelse. Vellykkede søskende kan gemmes uafhængigt; gemning
+har stadig én skriver. Ved gemmefejl starter ingen nye kald, allerede
+startede kald afventes, og den oprindelige fejl bevares.
+
+Budgetter, timeout, retry, rotation, kvalifikation, originale kildebeviser
+og private lagringskontrakter er uændrede. Modelbindinger, scoreformler,
+administratorens routing og kystpunkter ændres ikke. Vandstand er DMI-only;
+denne reservekø kan ikke opfinde manglende DMI-timer og løser ikke alene
+vandstandshullerne. Lokale målprøver består; eksakt GitHub-kontrol, sikker
+levering og målt effekt i nye generationer mangler. Fur-årsag og samlet
+revision er stadig åbne. DEC-0210.
+
+Footerrettelsen er leveret og kontrolleret i den offentlige kilde. Syvzoners
+vandstandsundtagelse er leveret; strøm fra dkss_lf findes ikke på de syv
+zoner i den kontrollerede 12Z-generation. Det beviser ikke privat historik
+eller vandstands-/temperaturproveniens. Tidligere kapitlers pendingstatus
+for afsluttede leverancer er historik.
 
 ## 89.161 Footerens prognosetidspunkt
+
+Kort fortalt: Footerens prognosetidspunkt bevares uden den ejerfravalgte aldersforklaring. Datakontroller og fejlbeskeder bevares.
 
 Efter ejerens ønske viser footerens DA/DE/EN-gren med ukendt sammenlignelig
 beregningsalder kun prognosetidspunktet. Den generelle forklaring om ukendt
@@ -305,6 +635,205 @@ eller deploy. Ejeren har stående tilladt relevante private joblogs; secrets
 og private payloads forbliver fortrolige uden tekniske kontorettighedsændringer.
 Fur-vandstandstabet og den samlede vejrhentningsrevision er fortsat åbne.
 Se DEC-0289; ældre lokale541-kandidatstatus nedenfor er historisk.
+
+## 90.1 Jordrav 0.2 – landsdækkende geologiske muligheder
+
+**Spørg altid lodsejeren om lov.** Få lodsejerens tilladelse, før du går
+på deres jord og leder efter rav. Opfordringen står synligt før kortet.
+Kortets farver og markgrænser giver ikke adgang til arealet.
+
+**Design og betjening i 4.0.546:** Vælg almindeligt kort eller luftfoto
+øverst ved kortet. Her findes også *Hele Danmark*, *Gem eller del kortvisning* og
+*Lag og farver*. Lagpanelet indeholder geologiske valg, spor/farvestyrke,
+markgrænser og supplerende jordbund, terræn og boringer. Det kan åbnes
+med tastatur og lukkes med Escape, ved klik udenfor eller ved at flytte
+tastaturfokus ud. Panelet kan rulles på små skærme.
+
+*Start med en region* viser de eksisterende regionale guider. Vælg en
+region, og brug *Vis på kortet*. Den geologiske historie kan åbnes
+særskilt; regionen tegner stadig ingen fundgrænse. På mobil ligger denne
+indgang før kortet, og regionsnavigationen flytter fokus til kortet.
+
+Et lokalt klik viser først mulighedsklasse, uafklaret jagtbarhed og
+mulig ravhistorie. Undersøgelsesprioritet, materialevejledning, lagadgang
+og *Geologisk grundlag* kan foldes ud; intet fagligt indhold er fjernet.
+Det geologiske grundlag bevarer alle fem faktafelter og kildesymboler.
+På mobil viser et valgt sted *Se områdeforklaring*, som flytter fokus
+til panelet. Kortfarverne ligger under kortet med særskilt læsehjælp.
+Markguide og metode findes i kortere foldbare kort nedenunder.
+
+Lokal Chrome kontrollerer den samlede betjening og alle eksisterende
+kortfunktioner. CI og offentlig 4.0.545 er endnu ikke påstået.
+Den tidligere placering af værktøjer under kortet er erstattet af dette
+layout; datasæt, farveklasser og geologiske begrænsninger er uændrede.
+
+**Supplerende kort og undersøgelsesprioritet 2026-10-06:** I *Lag og farver*
+kan JB-jordbundskort 2024, terrænskygge fra 2005–2007/10 m, offentlige
+boringer og 16 kontrollerede profilpunkter vælges. Et geologiklik giver
+en særskilt knap til JB ved selve klikstedet. Flere klasser eller intet
+svar vises uden at vælge en sikker klasse. JB6 kan afspejle administrativ
+behandling af JB4 med leret underjord; koden er ikke en entydig topjordsprøve.
+
+Alle nationale flader får næste relevante undersøgelse med ravtilførsel,
+transport, modtagelse, mulig bevaring og adgang. Det prioriterer afklaring,
+ikke fundchance. Terrænskygge viser ældre former, ikke dagens blotlægning.
+Hule lilla cirkler er boringsregistreringer med originalt profillink;
+fyldte lilla nedpile er fortsat de to udvalgte dybe sedimenteksempler.
+Profilpunkter med tre streger viser kildebundne registreringer læst
+6. oktober: 126 lagrækker, seks uden geologi og to manglende grænser.
+Totaldybde er ikke ravlagets dybde. Registrerede meter gælder boringens
+terræn ved registreringen, ikke nabomarken eller dagens pløjelag.
+
+Nye gemte links bevarer de supplerende lagvalg, men gemmer ikke en
+uforseglet live boringspost eller et opdigtet prøvepunkt. Klik igen for
+jordbund på en genåbnet flade. Automatisk registrering af dagens
+nypløjet/bar/regnvasket jord er udgået efter ejerordre. Lokal Chrome,
+luftfoto og 390 px/DA/DE/EN er kontrolleret; integration/publicering
+følger særskilt. Fysisk telefon og empirisk rav-/pløjeadgang på hver mark
+er ikke målt. Rapport:
+`docs/research/JORDRAV_NATIONAL_JORDBUND_PROFILER_2026-10-06.md`.
+
+Jordravkortet har gennemgået hele det tilgængelige danske jordarts- og
+landskabsgrundlag. Alle 192 udsnit og 4.652 materiale-/landskabsforklaringer
+følger samme kvalitative regler. Det er selvstændigt fra RavScore.
+Designkandidaten er 4.0.545; den geologiske model er 0.2.0-prototype.
+Almindeligt kort og luftfoto bevarer farveflader, valgt sted og forklaring.
+Kystvisningen henter ikke jordravdata.
+
+**Lagadgang 2026-10-05:** Klikpanelets *Hvordan kan laget nå overfladen?*
+viser øvre og dybere fysisk materiale samt to til fire undersøgelsestrin.
+Samme kornstørrelse er ikke nødvendigvis samme aflejring. Organisk
+materiale/flyvesand kan have egen ravmulighed og samtidig ligge over et
+andet relevant lag; begge kæder vurderes særskilt. Materialer samlet
+med bindestreg afklares lokalt før lodret kontakt. Faktiske kodebeskrivelser
+bruges også i panelets øvre/dybere faktafelter, herunder uafklarede underkoder.
+
+Alle 4.652 forklaringer og 505.834 fragmenter er behandlet. GEUS' cirka
+én meter, AU's faste dybdeintervaller og kulstofmodeller er ikke lokale
+målinger af lagkontakt eller pløjedybde. Det relevante materiale skal
+forbindes med dagens blotlagte eller bearbejdede jord. Jagtbarhed og farver
+bevares; dybe punkter beholder registrerede intervaller. Lokal lagadgangs-
+vejledning 0.1.0 ændrer ingen geologiske data eller RavScore. Metode og
+kontrol: `docs/research/JORDRAV_LAGADGANG_2026-10-05.md`.
+
+**Landskabsform og laghistorie 2026-10-05:** Feltet *Kortlagt landskabsform*
+viser nu det præcise navn sammen med processen. Under lagadgang kan
+*Landskabets spor mod overfladen* åbnes med mus eller tastatur. Her
+forklares den lokale undersøgelsesvej og det øvre materiales dannelse.
+Alle 33 navngivne former plus ikke-kortlagt behandles i 27 forløb.
+En gammel tunneldals fyld, en strandvold og en tørlagt fjordbund vurderes
+særskilt. På 5.604 visningsfragmenter står hævet senglacial form sammen
+med postglacial øvre gruppe: senere aflejring/omlejring er en hypotese,
+mens kortgrænser og registrering også kan spille ind. Formens alder
+daterer ikke dagens øverste jord eller ravet. Alle 37 originale
+navn/kode-par bevares, også de to forskellige navne med kode 50.
+
+Navne og forklaringer findes på dansk, tysk og engelsk. Luftfoto, filtre
+og gemte links bevarer vurderingen; dybe punkter erstatter den med
+registreret dybde. Farver og jagtbarhed bevares. Lokal vejledning 0.1.0;
+dataset, model og RavScore er uændrede. Lokal ravtilførsel, lagkontakt,
+bearbejdningsdybde og nutidig blotlægning forbliver åbne. Analyse:
+`docs/research/JORDRAV_LANDSKABSFORM_LAGHISTORIE_2026-10-05.md`.
+
+**Kortplanlægning 2026-10-05:** *Undersøg et spor* viser én af de fem
+geologiske mulighedsklasser ad gangen, eller alle som før. Det gælder hele
+Danmark og de lokale detaljer. *Vis kun mulighedsudpegninger* skjuler
+fortsat generel og uafklaret geologi, når alle spor vises. Dybe punkter
+styres særskilt. Et valgt områdes forklaring bevares ved filtrering;
+besked fortæller, hvis fremhævningen er skjult af de aktuelle lagvalg.
+
+*Gem eller del kortvisning* husker sted, zoom, baggrund, spor, farvestyrke,
+kortfarver, lagvalg og det valgte detailfragment eller dybdepunkt. Ved
+genåbning gendannes valget kun i samme geologiske datasæt. Hvis data har
+ændret sig, gendannes kamera og indstillinger, men ikke en mulig forkert
+polygon. Manglende valg forklares eksplicit. Et gammelt polygonvalg uden
+for detailvisningen udelades ved kopiering; dybdepunkter har egne faste
+identiteter. Linket kan kopieres manuelt, hvis clipboard ikke virker.
+Den lokale adresse virker på preview-computeren; det er ikke publicering.
+Ingen ny ravrangliste eller ændring af lagadgang følger af filtrene.
+Rapport: `docs/research/JORDRAV_KORTPLANLAEGNING_2026-10-05.md`.
+
+**Videre forbedring 2026-10-05:** Klikpanelet har nu *Hvad bør du undersøge
+her?* med fysisk materiale, lagrelation, søgeopgave og åbent led. Marine
+tørv/gytje adskilles fra ler/silt; vekslende lag og materialer side om side
+beskrives særskilt. De særlige HV-underkoder har uafklaret lokal variation.
+Alle 4.652 forklaringer/505.834 detailfeatures er gennemgået. Modelklasser
+og datasæt er uændrede; søgevejledningen er selvstændig version 0.1.0.
+
+*Markgrænser 2026 · hele Danmark* viser valgbare offentlige SGAV-omrids
+ved zoom 12 eller nærmere på begge baggrunde. Marklaget er slået fra ved
+start og henter kun lokale rasterbilleder uden attribut-/ejeropslag.
+Sort/hvide omrids ændrer ingen geologisk farve, ravvurdering eller valgt
+polygon. Registrering fastlægger ikke dagens pløjning, bar jord, vegetation
+eller lagadgang. Ved servicefejl vises eksplicit besked. Ingen markbonus.
+JB-kort og afgrøder er fortsat forskningskontekst. Analyse og kontrol:
+`docs/research/JORDRAV_SOEGEBARHED_MATERIALE_MARKER_2026-10-05.md`.
+
+Farverne viser forskellige begrundede geologiske spor, ikke fundprocenter:
+
+- Orange: sand/grus i konkrete transport- og sorteringsmiljøer.
+- Blå: marine øvre aflejringer, også fine og marine blandinger.
+- Rosa: ferske og issøaflejringer eller kompatibelt materiale i et bassin.
+- Okker: materiale i et konkret erosions-, smeltevands- eller istryksmiljø.
+- Turkis med stiplet kant: dæklag i muligt modtagermiljø; tykkelse og adgang
+  er ukendt. Underliggende sand ophøjer ikke overfladen til orange.
+- Ufarvet og klikbart: generel geologi er vurderet, men kombinationen giver
+  ingen særskilt procesudpegning. Det er ikke negativ ravviden.
+- Brun: fast bjergart med begrænset overfladestøtte; små yngre lommer kan mangle.
+- Grå: uafklaret materiale, konflikt eller ikke vurderbart markravmiljø.
+
+Fokus viser alle fem mulighedsklasser. De 11 navngivne områdeforklaringer
+flytter kun kortvisningen; de giver hverken fundgrænser eller stedbonus.
+Ejerens Asaa–Voerså-eksempel er brugt til national genovervejelse. Den
+foregående guide-only leverance og frysning af model 0.1 er erstattet.
+Blå følger faktisk marint materiale; moræneler i tørlagt marint forland
+bliver ikke marine aflejringer af landskabsnavnet alene. Fine bassiner
+udelades ikke alene på grund af kornstørrelse. Kul, alder og israndsoverlap
+giver ingen automatisk bonus. Tidligere fund er støtte, ikke adgangskrav.
+
+Geologisk mulighed og jagtbarhed er adskilt. GEUS beskriver oprindelige
+sedimenter omkring én meters dybde, under pløjelaget. Ens symboler dokumenterer
+ikke adgang ved pløjning. Forskellige symboler fastlægger ikke dæklagets
+tykkelse. Jagtbarhedsvisningen er derfor gråblå/uafklaret på alle
+materialeflader. Lilla punkter viser udvalgte registrerede dybe sandlag:
+Åsted Vest 82–89 m og Ålbæk Lyngshede 80–90,5 m samt 107–112 m under
+boringens historiske terræn. De mærkes ikke umiddelbart jagtbart og kan
+skjules særskilt. Punkterne er ikke dokumenterede ravlag eller arealudpegninger.
+
+Pløjning kan bringe rav fra det bearbejdede lag frem. Regn kan vaske
+blotlagt rav rent og gøre det synligt; regn åbner ikke et begravet lag.
+Luftfoto giver landskabskontekst, ikke bevis for dagens pløjning.
+Årsafgrøder, JB-kort og historiske profiler er supplerende kontekst.
+Nutidig blotlægning, ravmængde og lokal lagadgang er fortsat uverificerede.
+Denne empiriske usikkerhed er adskilt fra den afsluttede nationale
+behandling af alle tilgængelige kortkombinationer.
+
+Nyere jordarter har forrang. Ældre materiale supplerer de samme X-områder
+og geografiske huller som før, med grovere kildeangivelse efter ejerens
+instruktion. Alle 505.834 detailfeatures bevarer geometri, kilde-ID,
+feltværdier og grænser fra 0.1. Originalinventaret kontrollerer alle
+199.653 nyere, 24.192 ældre og 15.178 geomorfologiposter; 238.829 bevarede
+cacheattributter matcher originalerne. Seks uforklarede øvre værdier
+bevares uafklarede, uden at blive erstattet af et dybere eller visningssymbol.
+
+Det nye Danmarksoverblik generaliseres særskilt ved 100 m. Numerisk
+normalisering og projektion måles separat; eksakt national eksportdækning
+påstås ikke. Detailfladerne har den tidligere 20 m generalisering og
+kildefejl typisk 50–100 m (nyt materiale), omkring 200 m eller mere (ældre).
+Visningsarealer er ikke ravarealer. Kilder og ravslutning har særskilt
+sikkerhed; alle ravslutninger fra kortene er svage.
+
+Metode, nationalt slutresultat og kontroller:
+`docs/research/JORDRAV_NATIONAL_MODEL_0_2.md`.
+Kode: `scripts/build-jordrav-national-model.py`,
+`data/jordrav/model-rules.json`, `scripts/lib/jordrav_model.py`,
+`js/jordrav/map.js` og `js/jordrav/data-service.js`.
+Tidligere 0.1-analyser/audits er historik på commit eee7b08e.
+
+Et webhåndbogstillæg er forberedt separat. Aktiv webhåndbog, SQL og
+kyst-/vejrproduktion er urørt. Lokal model-, artifact- og browserkontrol
+er ikke CI eller produktionsbevis; fælles publicering kræver koordineret
+integration med nyere main. Fysisk mobilhardware er endnu ikke verificeret.
 
 ## 89.154 4.0.541 – Copernicus skal være lukket før oprydning (lokal kandidat)
 
@@ -7705,6 +8234,29 @@ fejlrapporten læsbar. Den ændrer ikke, hvilke vejrdata eller scorer
 brugeren får. Vi kalder først vejrkæden
 stabil, når checkpoint, offentlig side og almindelige efterfølgende
 vejropdateringer er bevist i drift.
+## 89.171 – Flere vandstandskilder uden ændrede datagrænser – 4.0.548
+
+<div class="reader-guide"><p>Flere gyldige vandstandskilder kan nu gemmes sammen. Kun antalsgrænsen hæves; kildebeviser, datagrænser og beskyttelsen mod tab bevares.</p></div>
+
+En afsluttet vejrhentning fandt 373 vandstandskildepunkter, men den nye private
+gemning og dens fillæser tillod højst 256. Kørslen stoppede derfor før deploy.
+Efter ejerens konkrete godkendelse bruger begge steder samme loft på 512.
+Ingen kilder skæres væk for at få pakken til at passe. De oprindelige
+bytegrænser, tidsbudgetter, kildebeviser og hårde no-loss-kontroller består.
+
+373 syntetiske kilder med 45.133 kvalificerede timer bevares gennem normal
+gemning, kold læsning og frisk krypteret genbrug. En testfil på 569.708.270 bytes
+består: gemning 5,686 sekunder og genbrug 17,678 sekunder. Det er lokal
+kapacitetsevidens, ikke nye målinger eller bevis for hele landets vejrjob.
+512 korte kildebanker består; 513 afvises. Det er ikke et løfte om 121 timer
+for alle 512 kilder under samme bytegrænse. Kildernes faktiske datamangler
+og vandstandens præcise T+3-krav bevares. Syvzonernes dkss_lf-undtagelse
+gælder fortsat kun vandstand, aldrig strøm, strømhukommelse eller temperatur.
+
+RavScore, administrative vægte, punkter/geometri og modelbindinger ændres
+ikke. Offentlig effekt kræver kontrolleret levering og en ny gyldig naturlig
+generation; denne lokale prøve afslutter ikke den samlede revision.
+
 # Når en offentlig opdatering vises før den registreres centralt – 4.0.466
 
 **Kort fortalt:** En vejrpakke kan være synlig på hjemmesiden, selv om den

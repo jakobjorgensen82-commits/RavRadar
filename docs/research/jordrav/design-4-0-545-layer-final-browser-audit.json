@@ -1,0 +1,21 @@
+{
+  "scope": "Actual local Chrome clicks on SHA-bound national fragments and 390px emulation; no field observation or production claim",
+  "dataset": "5d0a925a04f71e11eaf82feb3d27294be6b1f00bb4de08dfa3ee4ff4e6a2b2a0",
+  "checks": [
+    "Real unresolved polygon click preserves unknown huntability and renders its layer-specific investigation steps",
+    "Real legacy polygon click preserves unknown huntability and renders its layer-specific investigation steps",
+    "Real variant polygon click preserves unknown huntability and renders its layer-specific investigation steps",
+    "Real repeated polygon click preserves unknown huntability and renders its layer-specific investigation steps",
+    "Real cover-contact polygon click preserves unknown huntability and renders its layer-specific investigation steps",
+    "Real mixed-cover-contact polygon click preserves unknown huntability and renders its layer-specific investigation steps",
+    "Real sediment-contact polygon click preserves unknown huntability and renders its layer-specific investigation steps",
+    "Real ES/FT record shows peat beneath wind-blown sand, while each layer retains its own supply hypothesis",
+    "Saved fragment link restores the exact layer investigation plan in a new tab",
+    "Layer plan survives aerial switch and a filter that explicitly hides the selected cover polygon",
+    "Layer materials and ordered steps fit a 390px viewport without horizontal overflow",
+    "German and English mobile views translate the actual layer materials and investigation plan",
+    "Deep borehole selection replaces the surface plan and retains its inaccessible depth record"
+  ],
+  "errors": [],
+  "status": "PASS"
+}

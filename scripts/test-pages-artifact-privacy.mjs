@@ -236,6 +236,35 @@ try {
   await fs.rm(cleanRoot, { recursive: true, force: true });
 }
 
+const publicProfileBytes = await fs.readFile(new URL('../data/jordrav/context-20261006/profiles.json', import.meta.url));
+async function writePublicProfile(root, bytes = publicProfileBytes, directory = 'context-20261006') {
+  const target = path.join(root, 'data', 'jordrav', directory);
+  await fs.mkdir(target, { recursive: true });
+  await fs.writeFile(path.join(target, 'profiles.json'), bytes);
+}
+const publicProfileRoot = await freshFixture();
+try {
+  await writePublicProfile(publicProfileRoot);
+  const result = await auditPagesArtifactPrivacy(publicProfileRoot);
+  assert.equal(result.datasetId, datasetId);
+} finally {
+  assert.equal(path.dirname(publicProfileRoot), path.resolve(os.tmpdir()));
+  await fs.rm(publicProfileRoot, { recursive: true, force: true });
+}
+await expectRejected('modified public profile coordinates', async root => {
+  const document = JSON.parse(publicProfileBytes);
+  document.profiles[0].longitude += 0.01;
+  await writePublicProfile(root, jsonText(document));
+}, /invalid public Jordrav profile binding.*unapproved coordinate field/);
+await expectRejected('same public coordinates in an unapproved file', async root => {
+  await writePublicProfile(root, publicProfileBytes, 'unapproved-copy');
+}, /unapproved coordinate field/);
+await expectRejected('private data added to the approved profile path', async root => {
+  const document = JSON.parse(publicProfileBytes);
+  document.profiles[0].rawPayload = { synthetic: 'never publish' };
+  await writePublicProfile(root, jsonText(document));
+}, /invalid public Jordrav profile binding.*private state field/);
+
 const candidateRollbackRoot = await freshFixture(candidateGRollbackModelBinding());
 try {
   const result = await auditPagesArtifactPrivacy(candidateRollbackRoot);

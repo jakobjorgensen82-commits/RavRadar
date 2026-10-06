@@ -1,0 +1,57 @@
+{
+  "date": "2026-10-04",
+  "scope": "Read-only primary literature identities and visually inspected PDF pages; no copyrighted PDF archived in repository",
+  "pdfPageNumbering": "Printed page numbers; rendered indexes differ in long reports",
+  "sources": [
+    {
+      "title": "Jørgensen 1971: The Quaternary of Vendsyssel",
+      "url": "https://2dgf.dk/xpdf/bull21-02-03-117-129.pdf",
+      "sourceBytes": 593864,
+      "sourceSha256": "26fca710356f8084ce5ec1e90b86716e9b396d31a5bb4b15860bf060a54b55b2",
+      "visuallyReadPrintedPages": [
+        119
+      ],
+      "claimScope": "Adskiller ældre hævede marine flader og yngre Littorinaflader; historiske dateringer bruges ikke som nutidig kalibrering",
+      "notAmberEvidence": true
+    },
+    {
+      "title": "Bennike, Jakobsen & Hansen 2020: Late Quaternary history of Lammefjorden",
+      "url": "https://geusbulletin.org/index.php/geusb/article/view/4630",
+      "sourceBytes": 2313151,
+      "sourceSha256": "7f3b508a66511ead84066454a08dea5e74bac8f8d9695bc8a73c80efecf1ce14",
+      "visuallyReadPrintedPages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "claimScope": "Flere marine og underliggende sø-/moselag samt lokale forskelle; intet regionalt pløjelags- eller ravbevis",
+      "notAmberEvidence": true,
+      "pdfDownloadUrl": "https://geoparkodsherred.dk/wp-content/uploads/2020/07/Artikel-om-Lammefjordens-geologi.pdf",
+      "doi": "10.34194/geusb.v44.4630"
+    },
+    {
+      "title": "Granat, Andersen, Binderup & Bennike 2024: Feltrapport for jordartskortlægning i Thy, på Thyholm og Jegindø (GEUS 2024/28)",
+      "url": "https://data.geus.dk/pure-pdf/GEUS-R_2024-28_web.pdf",
+      "sourceBytes": 35349934,
+      "sourceSha256": "3b7feafd0498f93739435e821f2ff26c976ff46a69d1c6279fc04304820610fe",
+      "visuallyReadPrintedPages": [
+        52,
+        55,
+        56
+      ],
+      "claimScope": "Tørlagte/hævede marine flader, Hjardemåls tidligere kyst og varierende flyvesandsdække; ingen samlet senglacial- eller ravslutning",
+      "notAmberEvidence": true
+    },
+    {
+      "title": "Naturstyrelsen: Kragskovhede Lavbundsprojekt – Realisering",
+      "url": "https://naturstyrelsen.dk/ny-natur/lavbundsprojekter/kragskovhede-lavbundsprojekt-realisering",
+      "accessedDate": "2026-10-04",
+      "readMethod": "Primary official HTML via web open; no bound snapshot",
+      "claimScope": "Rimme-doppe-dannelse, tørv og planlagt ændring af dyrkning/dræning; siden angiver både 80,97 og 77,5 ha, og intet arealtal herfra indgår i audit",
+      "notAmberEvidence": true
+    }
+  ]
+}

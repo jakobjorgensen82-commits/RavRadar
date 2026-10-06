@@ -1,0 +1,71 @@
+{
+  "scope": "Local generated public geology; desktop and mobile; no production verification",
+  "checks": [
+    "National overview loads without local tiles, weather or Supabase",
+    "All four new mechanisms have visible nationwide polygon colours on model 0.2",
+    "General sediment context is uncoloured nationally; orange process hypotheses remain visible and uncoloured is not a negative amber assessment",
+    "National focus hides other classes and restores them without loading detail data",
+    "Six regional explanations render sources and navigate without changing source overview; Asaa–Voersaa names the coastal fields and their marine designation",
+    "Five further comparative marine-field guides navigate and explain distinct sediment/cover histories without class bonuses",
+    "Uncoloured local geology accepts an actual mouse click and stays uncoloured through opacity/accessibility changes while preserving the selected geometry",
+    "Local focus filters real polygons and restores all classes while preserving the selected explanation",
+    "Actual polygon click renders explanation; aerial switch preserves geometry, selection, view and explanation",
+    "Opacity and overlay visibility controls work independently of base map",
+    "All visible aerial tiles finish loading before visual capture",
+    "Hunting accessibility remains unknown for surface polygons; colour changes preserve geometry, view and explanation",
+    "Purple deep points display recorded depths and source without implying amber or extent; base, colour and visibility controls preserve the explanation",
+    "Separate deep sand intervals remain separate; mobile depth panel and colour controls have no horizontal overflow",
+    "Field guide separates ploughing, rain visibility and below-plough geological mapping on mobile",
+    "Mobile 390px has no horizontal overflow",
+    "Actual mouse clicks verify blue marine, pink basin, ochre reworking and dashed turquoise cover polygons, plus Asaa coastal fields; all retain unknown hunting access",
+    "German and English rendering have no unresolved translation keys",
+    "Missing local data retain an explicit overview fallback",
+    "Live viewport tiles succeeded for both OSM and Esri"
+  ],
+  "errors": [],
+  "network": {
+    "street200": 284,
+    "aerial200": 19,
+    "aerialStatuses": {
+      "200": 19
+    },
+    "failedAerial": [
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED",
+      "net::ERR_ABORTED"
+    ],
+    "geologyBytes": 18229167
+  },
+  "timings": [
+    {
+      "stage": "coldNationalOverviewMs",
+      "value": 1523,
+      "geologyEncodedBytes": 11640244
+    },
+    {
+      "stage": "localDetailAfterRegionalNavigationMs",
+      "value": 764,
+      "geologyEncodedBytes": 0
+    }
+  ],
+  "status": "PASS"
+}
