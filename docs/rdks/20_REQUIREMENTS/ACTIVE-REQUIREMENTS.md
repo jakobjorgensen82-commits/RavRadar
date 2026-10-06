@@ -1,5 +1,13 @@
 # AKTUELT JORDRAVKRAV – 2026-10-05
 
+**Offentlige profilpunkter skal passere den hårde privacygate uden en bred
+koordinatundtagelse.** Det bestilte kort må bruge de oprindelige offentlige
+Jupiter-punkter. Kun den verificerede profilsnapshots præcise filsti,
+SHA/byteantal og direkte longitude/latitude-blade er godkendt. Private
+produktionskoordinater, vektorer, payloads og ændrede/omdøbte filer afvises
+fortsat. Første leveringsfejl og rettelse dokumenteres; grøn lokal test
+erstatter ikke ny CI, faktisk artifactgate og offentlig kontrol.
+
 **Nyeste ejerordre 2026-10-06: hele arbejdet kontinuerligt og autonomt.**
 Resterende lagadgang, stærkere national prioritering, terræn/topjord,
 udbygget dybdekontekst og sikker publicering/mobilkontrol er bestilt.

@@ -1,3 +1,21 @@
+# Aktuelt Jordravcheckpoint – profilprivacy, 2026-10-06
+
+PR #521 er merget som 3a96de76 efter fuld exact-head CI på 5706da00 og
+uafhængig SHA-256-afstemning. Første kode-only run 37428389866 stoppede
+ved pages-privacy: den eksisterende koordinatkontrol kendte ikke de
+16 offentlige Jupiter-punkters longitude/latitude. Publicering blev
+sprunget over. Dette må ikke skjules af den grønne kildekontrol.
+
+En snæver rettelse tillader alene de to direkte koordinatblade i den
+præcise, allerede SHA-/bytebundne offentlige profilfil. Rekursiv privat-
+og fingerprintkontrol fortsætter. Ændrede bytes, anden placering og
+private tilføjelser afvises i målprøver. Kode-only og tracked-privacy
+består; ingen produktbytes, kystgeodata eller modelbindinger ændres.
+Ny exact-head CI, merge, kode-only retry og offentlig browserkontrol
+mangler. Punkt 4 er fortsat udgået. Ekstra høj indsats anbefales.
+Analyse: docs/research/JORDRAV_PUBLIC_PROFILE_PRIVACY_2026-10-06.md.
+De nedenstående releasecheckpoints er deres tidligere fasers evidens.
+
 # Releasekandidat 4.0.544 – Jordrav, 2026-10-06
 
 Den nationale Jordravleverance er integreret med nyere main e98dcdd7 via

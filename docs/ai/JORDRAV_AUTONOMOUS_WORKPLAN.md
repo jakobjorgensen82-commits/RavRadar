@@ -23,7 +23,7 @@ pløjning, blotlægning eller fysisk telefonkontrol opfindes.
 | 3. Terræn/jord | Integrér offentligt tilgængelig topjord, underjord og terrænkontekst med tydelig kildeversion/skala | JB 2024 og terrænskygge 2005–2007/10 m integreret og live browserkontrolleret |
 | 4. Søgeforhold nu | Nypløjet, bar og regnvasket jord | Udgået efter ejerordre |
 | 5. Dybdekontekst | Udbyg de to udvalgte profiler med landsdækkende boringsadgang og observerede intervaller, ikke ravfund eller extentbuffer | Offentlig WFS/profillinks og 16 kildebundne punkter/126 rækker integreret; seks mangler geologi, to rækker mangler grænse |
-| 6. Publicering/mobil | Integrér datasikkert på aktuel main, følg exact-head CI/release/deploy; verificér internetvisning og tilgængelig mobilflade | Main e98dcdd7 integreret; releasekandidat 4.0.544; 99 faktiske Chrome-checks og lokale gates PASS; CI, deploy og internetkontrol udestår |
+| 6. Publicering/mobil | Integrér datasikkert på aktuel main, følg exact-head CI/release/deploy; verificér internetvisning og tilgængelig mobilflade | PR #521/eksakt CI PASS og mainmerge 3a96de76; første deploy stoppet af profilkoordinaters privacygate; snæver lokal rettelse PASS; ny CI/deploy/internetkontrol udestår |
 
 Udgangspunkt: `0ddbac65`, geologisk model 0.2.0-prototype, app 4.0.541.
 Aktuel læst remote main: `e98dcdd7`, app 4.0.543, læst 2026-10-06.
@@ -89,3 +89,24 @@ Næste er commit/PR, fuld validate:source én gang på PR'ens eksakte head,
 sikker merge uden aktiv produktionshentning, DEC-0148 kode-only levering
 og offentlig browserkontrol. Alle empiriske ukendte og punkt 4's udeladelse
 bevares. Lokale PASS er stadig ikke produktionsevidens.
+
+## Aktuelt checkpoint – første leveringsfejl og afgrænset rettelse
+
+Fuld exact-head CI 37427232399 bestod på 5706da00. Kildebevisets SHA-256
+blev uafhængigt afstemt; merge 3a96de76 har præcis samme træindhold.
+Kode-only kørsel 37428389866 bestod kildegenbrug, gemt runtime og prebuild,
+men stoppede i privacykontrollen før offentlig levering. Den afviste
+longitude/latitude i de 16 kontrollerede offentlige Jupiter-profiler.
+
+Den efterfølgende rettelse er kun i artifactauditor og tests. Profilfilens
+præcise placering, 19.372 bytes og eksisterende SHA-256 kræves, før netop
+de to direkte koordinatblade godkendes. Hele den rekursive privacyaudit
+fortsætter. Målprøver accepterer den uændrede kildefil og afviser ændrede
+koordinater, kopi ved anden sti og privat tilføjelse. Øvrige privacy-
+angrebsprøver, code-only runtime og tracked-privacy består. Ingen
+produktbytes, geodata, RavScore eller providerforløb ændres.
+
+Næste: ny PR/exact-head CI, sikker merge, kode-only retry og faktisk
+internetkontrol. Ingen gate må omgås. Analyse og publiceringskvittering:
+docs/research/JORDRAV_PUBLIC_PROFILE_PRIVACY_2026-10-06.md og
+docs/research/jordrav/publication-evidence-4.0.544.json.
