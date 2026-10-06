@@ -65,6 +65,15 @@ assert.match(registry,/\/tidewaterstation\/items/,'DMI bruger den singulære tid
 assert.doesNotMatch(registry,/\/tidewaterstations\/items/,'Det fejlagtige plurale endpoint må ikke bruges.');
 assert.match(registry,/discovery/,'Kilderegisteret skal dokumentere discovery-resultatet.');
 const updater=await fs.readFile('scripts/update-weather.mjs','utf8');
+assert.match(updater,/buildWaterSourceForecastIndex\(rawStationRegistry, dmiBulkCache, generatedAt, \{\s*protectedBulkCache: deployedDmiBulkCache,\s*historicalBulkCache: historicalDmiBulkCache,\s*retainedSourceIndex: retainedWaterSourceIndex,\s*\}\)/,
+  'The one normal SOURCE index must consume the existing protected and historical native banks before parent/PART planning and scoring.');
+assert.match(updater,/unpackWaterSourceForecastContinuity\(\s*dmiForecastStore.waterSourceContinuity, canonicalForecastHour\(generatedAt\),/,
+  'The normal cold caller must qualify SOURCE continuity at its locked reference.');
+assert.match(updater,/nextDmiForecastStore.waterSourceContinuity = await packWaterSourceForecastContinuity\(\s*waterSourceForecastIndex, canonicalForecastHour\(generatedAt\),/,
+  'Independent SOURCE proof must be saved before it is routed into parent/PART values.');
+assert.ok(updater.indexOf('nextDmiForecastStore.waterSourceContinuity = await')
+  < updater.indexOf('const waterSourceApplication = applyWaterSourceRouting'),
+  'Derived routed aggregates must never be captured as original SOURCE records.');
 assert.match(updater,/referenceMs \+ \(OPEN_METEO_FUTURE_HOURS - 1\) \* 3_600_000/,'Fallback must request the exact locked horizon including private H120 support.');
 assert.match(updater,/start_hour: startHour, end_hour: endHour/,'Independent requests must keep the same locked start and end even across UTC hour boundaries.');
 assert.doesNotMatch(updater,/forecast_days:\s*'5'/,'Five calendar days truncate the future fallback horizon later in the day.');

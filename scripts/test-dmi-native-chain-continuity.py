@@ -9,6 +9,7 @@ import copy
 import importlib.util
 import io
 import sys
+import tempfile
 import types
 import unittest
 from datetime import datetime, timedelta, timezone
@@ -25,6 +26,8 @@ sys.modules["eccodes"] = eccodes
 spec = importlib.util.spec_from_file_location("native_chain_continuity", ROOT / "scripts/update-dmi-bulk.py")
 producer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(producer)
+
+from lib.dmi_bulk_storage import read_dmi_bulk_document, write_dmi_bulk_document
 
 RUN = "2026-09-19T00:00:00Z"
 OLD_RUN = "2026-09-18T18:00:00Z"
@@ -86,6 +89,81 @@ def catalog_item(collection, offset):
 
 
 class ComponentContinuityTests(unittest.TestCase):
+    def test_source_original_bank_and_run_seam_survive_actual_native_cache_codec(self):
+        # Synthetic SOURCE, not evidence about a historical Fur generation.
+        # Exercise the normal producer merge/admission and actual cold codec.
+        # One native value per time preserves timestamps, not both run-series.
+        config = {"id": "SOURCE::tidewater:TEST", "waterSource": True,
+                  "coastType": "east", "lon": 2.0, "lat": 1.0}
+        identity = producer.sampling_identity(config)
+        zone_id = config["id"]
+        for collection in ("dkss_nsbs", "dkss_lf"):
+            with self.subTest(collection=collection):
+                previous = {"schemaVersion": 2, "timeStrideHours": 3,
+                            "zones": {zone_id: {**identity, "hourly": {},
+                                                "gridPoints": {}, "collections": {}}}}
+                donor = copy.deepcopy(previous)
+                for index in range(41):
+                    valid_time = utc_hour(index * 3)
+                    model_run = RUN if index < 32 else utc_hour(3 if index <= 36 else 6)
+                    for target, run in ((previous, RUN), (donor, model_run)):
+                        if target is donor and index < 32:
+                            continue
+                        proof = producer.native_component_source(
+                            collection, run, valid_time, component="waterLevel",
+                            zone=config, grid_candidate=POINT,
+                            capture={**CAPTURE, "itemId": f"synthetic-source-{run}-{index}"},
+                            spatial_selection=producer.COMPONENT_SPATIAL_SELECTION["waterLevel"],
+                        )
+                        self.assertIsNotNone(proof)
+                        target["zones"][zone_id]["hourly"][valid_time] = {
+                            "time": valid_time, "sea-mean-deviation": index / 100,
+                            "sources": {"waterLevel": proof},
+                        }
+                original = copy.deepcopy(previous)
+                newer = copy.deepcopy(donor)
+                active = {"schemaVersion": 2, "timeStrideHours": 3,
+                          "zones": {zone_id: {**identity, "hourly": {},
+                                              "gridPoints": {}, "collections": {}}}}
+                producer.merge_previous(active, previous, {zone_id})
+                producer.backfill_compatible_cache_data(
+                    active, donor, include_progress_metadata=False,
+                )
+                self.assertEqual(previous, original)
+                self.assertEqual(donor, newer)
+                self.assertEqual(len(active["zones"][zone_id]["hourly"]), 41)
+                self.assertEqual(producer.sanitize_component_provenance(
+                    zone_id, active["zones"][zone_id]), [])
+                with tempfile.TemporaryDirectory() as directory:
+                    active_path = Path(directory) / "active.json"
+                    original_path = Path(directory) / "original.json"
+                    write_dmi_bulk_document(active_path, active)
+                    write_dmi_bulk_document(original_path, previous)
+                    original_bytes = original_path.read_bytes()
+                    cold_active = read_dmi_bulk_document(active_path)
+                    cold_original = read_dmi_bulk_document(original_path)
+                    self.assertEqual(cold_active, active)
+                    self.assertEqual(cold_original, original)
+                    # Merging the retained older original into the single bank
+                    # cannot recover its alternative endpoints: newer native
+                    # tuples retain their normal priority after cold restore.
+                    producer.backfill_compatible_cache_data(
+                        cold_active, cold_original, include_progress_metadata=False,
+                    )
+                    self.assertEqual(cold_active, active)
+                    self.assertEqual(original_path.read_bytes(), original_bytes)
+                hours = cold_active["zones"][zone_id]["hourly"]
+                for valid_time in hours:
+                    self.assertTrue(producer._exact_validated_dmi_component_present(
+                        zone_id, cold_active["zones"][zone_id], valid_time,
+                        "waterLevel", ("sea-mean-deviation",),
+                    ))
+                for first, second in ((93, 96), (108, 111)):
+                    self.assertNotEqual(hours[utc_hour(first)]["sources"]["waterLevel"]["modelRun"],
+                                        hours[utc_hour(second)]["sources"]["waterLevel"]["modelRun"])
+                    self.assertEqual(cold_original["zones"][zone_id]["hourly"][utc_hour(second)]
+                                     ["sources"]["waterLevel"]["modelRun"], RUN)
+
     def test_owner_domain_guard_rejects_malformed_source_without_masking_native_rejection(self):
         for malformed in ("not-a-native-source", ["dkss_lf"], 7):
             with self.subTest(source_type=type(malformed).__name__):
