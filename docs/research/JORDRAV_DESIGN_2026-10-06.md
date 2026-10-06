@@ -1,7 +1,8 @@
 # Jordrav – samlet design og betjening, 6. oktober 2026
 
-Status: lokal designkandidat 4.0.545. Offentlig forgænger: 4.0.544.
-Exact-head CI, merge, kode-only publicering og internetkontrol følger.
+Status: offentlig og browserverificeret 4.0.545. PR #525 / finalhead
+270cb619, exact-head CI 37456024761, merge 402dcb6e og kode-only
+run 37456783798 består. Kvittering: jordrav/publication-evidence-4.0.545.json.
 
 Ejeren oplever siden som utilstrækkeligt indbydende og intuitiv og bestiller
 »den helt store omgang, hele vejen rundt«. Det omfatter hele Jordravsidens
@@ -106,3 +107,44 @@ loader skal have den aktuelle versionsbinding. Kystisolation bevares.
 
 Sluthead kræver ny fuld exact-head CI, uafhængigt kildebevis og offentlig
 kontrol. Den første designkandidats CI bevares som historisk evidens.
+
+## Endelig offentlig kontrol
+
+Det endelige CI-bevis er downloadet og uafhængigt SHA-256-afstemt;
+mergens tree er identisk med valideret head. Dokumentationskonflikten
+med den allerede indarbejdede #524-kvittering ændrede ingen kildebytes.
+Kode-only bestod eksakt runtimegenbrug, Supabase, backend, artifact,
+privacy og Pages, uden providerkald.
+
+Den offentlige Chrome-browser afstemmer 18 filer og kontrollerer 10
+forløb, herunder live kontekst, luftfoto, keyboard, DA/DE/EN og smal
+mobilvisning. Alle 15 faktiske modulekald har versionsidentitet 4.0.545.
+Offentlige screenshots er visuelt læst. Den fulde kystregression på
+faktiske aktuelle app-bytes med skrivefri auditexports omfatter 210 zoner,
+673 dele, 420 nutids- og 2.100 dagsvisninger uden fund eller browserfejl.
+Den første historiske kystprøve ventede 90 sekunder på et globalt
+detailsAvailable-flag. Aktuel kode bruger zonepartitioner og beholder
+flaget false; dette var en forældet testforudsætning, ikke et fund i
+produktet. Slutprøven afventer coreViewReady og bruger den eksisterende
+ensureConditionDetails for hver zone, med højst fire gemte zonepakker.
+Produktkoden eller dataindlæsningen blev ikke ændret for at gøre prøven grøn.
+Den første komplette prøve gav 148 vejrtalsafvigelser uden browserfejl.
+Seks konkrete offentlige bølgevisninger afstemte forskellen til den gamle
+toFixed-forventning mod hjemmesidens Intl-decimalafrunding. Slutprøven
+bevarer alle felt-/manglende-data-kontroller og bruger det dokumenterede
+Intl-format på de samme offentlige input; hele 210/673-forløbet genkøres.
+Ingen tal, score, tolerance eller produktkode ændres for denne afstemning.
+Historiske retired-modelantagelser er erstattet med det verificerede
+aktuelle UI; eksplicit ufuldstændig evidens er fortsat tilladt.
+
+Dette er software- og browserbevis, ikke fysisk telefon- eller rav-/
+pløjelagsmåling. Begge kildehåndbøger og statisk installationskopi er
+opdateret; centralt beskyttet webhåndbog følger normal drifts fletning.
+Tidligere kandidatstatus i kontrolafsnittene beskriver deres lokale fase.
+
+De faktisk anvendte offentlige verifierere og den kompakte kystkvittering
+er bevaret som frosne 4.0.545-kopier i `jordrav/public-*-verifier-4.0.545.mjs`
+og `jordrav/public-coastal-browser-4.0.545.json`. De køres fra repositoryets
+rod og bruger lokal Chrome; source-CI udfører ikke disse live netprøver.
+Kilde-/rapport-SHA står i publiceringskvitteringen. Den gamle og nye
+komplette kystprøve havde præcis samme offentlige app-SHA og dataset-id.

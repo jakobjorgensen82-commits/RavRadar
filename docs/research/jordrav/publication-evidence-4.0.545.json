@@ -1,0 +1,205 @@
+{
+  "releaseVersion": "4.0.545",
+  "status": "PUBLICATION_AND_PUBLIC_BROWSER_VERIFIED",
+  "ownerMandate": "Complete Jordrav design and interaction overhaul; all earlier functions and scientific limits retained",
+  "ownerExclusion": "Point 4: no automatic current bare/newly ploughed/rain-washed field detection",
+  "source": {
+    "pullRequest": "https://github.com/jakobjorgensen82-commits/RavRadar/pull/525",
+    "headSha": "270cb619517d51cfa9e1a25aa43d91f1bd6dfad6",
+    "validatedSourceTreeSha256": "sha256:6eb84ba1c289a9c4a68954f59e315c343a4fe876f8b81e939e1ceb8961c40281",
+    "ciRunId": 37456024761,
+    "ciRunAttempt": 1,
+    "ciConclusion": "success",
+    "artifactId": 11409259043,
+    "artifactDigest": "sha256:ffc73be70fddb27e671e5c0a9c81afcc46a056015f1b8ab5247fc2c28670249f",
+    "proofIndependentlyMatched": true,
+    "requiredEvidenceSteps": [
+      "Require exact pull-request source head",
+      "Validate source contracts and release governance",
+      "Require validated source tree to remain unchanged",
+      "Upload tree-content source validation proof"
+    ]
+  },
+  "merge": {
+    "headSha": "402dcb6ea89b705f15930a9190c689f359211d41",
+    "mergedAt": "2026-10-06T11:29:44Z",
+    "treeMatchesValidatedSource": true,
+    "documentationConflictResolvedWithIdenticalReviewedTree": true
+  },
+  "deployment": {
+    "runId": 37456783798,
+    "runAttempt": 1,
+    "url": "https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/37456783798",
+    "headSha": "402dcb6ea89b705f15930a9190c689f359211d41",
+    "mode": "code-only exact-runtime reuse",
+    "providerAcquisitionRequested": false,
+    "conclusion": "success",
+    "hardGatesVerified": true,
+    "requiredSteps": [
+      {
+        "name": "Reuse exact successful pull-request source proof",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T11:31:02Z"
+      },
+      {
+        "name": "Read linked migration history without changing Supabase",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T11:31:17Z"
+      },
+      {
+        "name": "Read back migration and database binding",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T11:31:25Z"
+      },
+      {
+        "name": "Require exact code-only reuse invariants",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T11:33:09Z"
+      },
+      {
+        "name": "Audit regenerated integrated public runtime",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T11:34:19Z"
+      },
+      {
+        "name": "Preflight complete Pages artifact for private runtime material",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T11:36:32Z"
+      },
+      {
+        "name": "Decide all independent prewrite checks together",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T11:36:32Z"
+      },
+      {
+        "name": "Prove private runtime is not anonymously readable",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T11:37:14Z"
+      },
+      {
+        "name": "Publish exact integrated backend and Edge readiness for this source",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T11:37:27Z"
+      },
+      {
+        "name": "Upload GitHub Pages artifact",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T11:37:52Z"
+      }
+    ],
+    "jobs": [
+      {
+        "name": "Validate manual authority before any recovery writes",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T11:29:59Z"
+      },
+      {
+        "name": "Finish an interrupted generation before new work / Reconcile any durable RavScore transition before production",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T11:30:14Z"
+      },
+      {
+        "name": "Finish an interrupted generation before new work / Require terminal operational recovery before production",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T11:30:19Z"
+      },
+      {
+        "name": "Finish an interrupted generation before new work / Redeploy only a helper-proven exact sealed Pages target",
+        "conclusion": "skipped",
+        "completedAt": "2026-10-06T11:30:15Z"
+      },
+      {
+        "name": "Finish an interrupted generation before new work / Finalize exact recovered target without Pages privileges",
+        "conclusion": "skipped",
+        "completedAt": "2026-10-06T11:30:15Z"
+      },
+      {
+        "name": "Reuse exact runtime and build code-only artifact",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T11:37:56Z"
+      },
+      {
+        "name": "Deploy verified code-only artifact / Deploy prepared Pages artifact",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T11:40:33Z"
+      }
+    ]
+  },
+  "localBrowser": {
+    "checks": 108,
+    "regressions": 99,
+    "ux": 6,
+    "returningCache": 3,
+    "languages": [
+      "da",
+      "de",
+      "en"
+    ],
+    "widths": [
+      360,
+      390,
+      768,
+      1024
+    ],
+    "sourceBoundUxReport": "docs/research/jordrav/design-4.0.545-ux-browser-audit.json",
+    "cacheReport": "docs/research/jordrav/design-4.0.545-cache-browser-audit.json"
+  },
+  "publicBrowser": {
+    "status": "PASS",
+    "base": "https://ravradar.dk/",
+    "report": "docs/research/jordrav/public-browser-4.0.545.json",
+    "reportLfSha256": "b88ad566f61941071c50dda3d06a9633d0847316f6ab790a5a05d861118edbed",
+    "checks": 10,
+    "sourceFilesMatched": 18,
+    "completedAt": "2026-10-06T11:41:33.825Z",
+    "physicalPhoneTested": false,
+    "screenshotsVisuallyRead": true,
+    "canonicalMapUrl": "https://ravradar.dk/jordrav.html",
+    "verifier": "docs/research/jordrav/public-map-verifier-4.0.545.mjs",
+    "verifierLfSha256": "6f2b7731289ab73f85235860ba9f3189727b1a9204cc2802bc6b7951d84d0220"
+  },
+  "coastalBrowser": {
+    "status": "PASS",
+    "scope": "Actual current public app bytes verified before adding read-only audit exports; current integrated diagnostic contract, explicit partial evidence retained",
+    "zones": 210,
+    "parts": 673,
+    "currentViews": 420,
+    "forecastViews": 2100,
+    "failureCount": 0,
+    "pageErrors": 0,
+    "actualAppLfSha256": "ca2b0b354d4679283e938f5b63892dbb5cb6454dc615ace5198e72d4ec21d154",
+    "privatePayloadIncluded": false,
+    "report": "docs/research/jordrav/public-coastal-browser-4.0.545.json",
+    "reportLfSha256": "bdeb0a8f0b1ce4449006407b3ebd1fcc5f757569d62713d79abc1b7829a48271",
+    "verifier": "docs/research/jordrav/public-coastal-verifier-4.0.545.mjs",
+    "verifierLfSha256": "224d24f11377f2b6886cdd6227332fbd86ea9881b5c4ab04edddda61f9145d3f",
+    "supersededAssertions": {
+      "globalDetailsReadyTimeoutSeconds": 90,
+      "toFixedMetricDifferences": 148,
+      "sameActualPublicAppAndDatasetOnFinalCheck": true,
+      "productionCodeChangedForTest": false
+    }
+  },
+  "preservation": {
+    "geologicalModel": "0.2.0-prototype",
+    "geologicalDatasetBytesChanged": false,
+    "geodataChange": "Only top-level release version",
+    "RavScoreChanged": false,
+    "weatherProviderAcquisitionPerformed": false,
+    "empiricalAmberOrPloughDepthInvented": false
+  },
+  "supersededEvidence": {
+    "firstDesignHead": "41666348853b449e5843af1eaffa748a08e88aa6",
+    "ciRunId": 37452610624,
+    "reason": "Actual returning Chrome cache showed 61 untranslated keys; fixed with one release identity and verified before final CI"
+  },
+  "webHandbook": "Section 90.1 integrated into both source handbooks and static installation copy; code-only preserves centrally protected assets; central publication follows existing protected merge in normal drift",
+  "privatePayloadIncluded": false,
+  "normalWeatherFollowupBeforeDesign": {
+    "runId": 37435351739,
+    "conclusion": "success",
+    "additionalDispatchPerformed": false,
+    "url": "https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/37435351739",
+    "scope": "Terminal metadata and step outcomes observed; no claim of a new weather acquisition by the design delivery"
+  }
+}

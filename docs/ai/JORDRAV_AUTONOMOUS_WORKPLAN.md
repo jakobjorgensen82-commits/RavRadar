@@ -1,40 +1,51 @@
-# Aktuel Jordravdesignkandidat – 4.0.545, 2026-10-06
+# Aktuel offentlig Jordravleverance – 4.0.545, 2026-10-06
 
-Ejeren har bestilt en fuld gennemgang af Jordravsidens layout og betjening:
-»den helt store omgang, hele vejen rundt«. Hele Jordravfladen er ombygget
-med kortværktøjer øverst, et særskilt lagpanel, tydelig regionsindgang,
-læselige områdeforklaringer og foldbar uddybning. Mobil får regionen før
-kortet og en knap fra det valgte kortsted til forklaringen. Tastatur,
-dansk/tysk/engelsk, almindeligt kort og luftfoto samt alle eksisterende
-geologiske funktioner bevares.
+Ejerens fulde designombygning er implementeret og offentligt kontrolleret.
+Kortværktøjer ligger over kortet; lag og farver har et samlet panel;
+regioner, områdeforklaringer og foldbar uddybning giver en tydelig indgang.
+Mobil har region før kortet og direkte adgang til forklaringen ved et valg.
+Alle tidligere funktioner, DA/DE/EN, almindeligt kort/luftfoto, gemte links,
+kildelinks, dybe lilla registreringer og geologiske forbehold bevares.
 
-108 lokale Chrome-checks består: de 99 funktionsregressioner samt seks
-samlede UX-forløb og tre cacheforløb, herunder DA/DE/EN ved
-360/390/768/1024 px. Den lille
-produktkritiske kildegate består med 118 browserfiler og Jordravs målprøver.
-Dette er lokal evidens, ikke endnu CI eller offentlig 4.0.545. Exact-head
-CI, sikker merge, providerfri kode-only deploy og offentlig browserkontrol
-skal afsluttes. Offentlig forgænger 4.0.544 er fortsat gyldig leverance.
-PR #524 bevarer dens kvittering og venter på den eksisterende produktion;
-main ændres ikke under en aktiv produktionsskriver.
+108 lokale Chrome-checks består: 99 funktionsregressioner, seks UX-forløb
+og tre faktiske genbesøgende cacheforløb. 360/390/768/1024 px er kontrolleret.
+PR #525s endelige head 270cb619 bestod fuld validate:source i run
+37456024761; kildebeviset er uafhængigt SHA-256-afstemt. Dokumentations-
+konflikten med #524 blev løst med identisk valideret kildeindhold.
+Merge 402dcb6e har præcis samme tree. Kode-only run 37456783798 består
+Supabase-læsning, eksakt runtimegenbrug, artifact/privacy, backend og Pages.
+Ingen vejrprovider blev kontaktet af denne kodelevering.
 
-Data/model 0.2, geologiske farver, svag ravsikkerhed og ukendt jagtbarhed
-ændres ikke. Dybe lilla registreringer bevarer deres kildeintervaller.
-Punkt 4 om automatisk dagens nypløjede/bare/regnvaskede marker er udgået;
-ingen fysisk telefonprøve eller målt rav-/pløjedybde påstås. Kystmodel,
-RavScore, central adminsandhed og vejrlogik er urørt. Geodata må kun få
-et rent topversionsløft. Tidligere 4.0.544-status nedenfor er historikken
-for forgængeren; den bestilte designforbedring er nu det aktive arbejde.
+Den faktiske offentlige Chrome-browser afstemmer versionsfil, HTML, CSS og
+alle 15 Jordravmoduler. Alle modulekald har releaseidentitet 4.0.545.
+10 offentlige checks består med lokalt klik/JB4, Jupiter/16 profiler,
+terræn/jordbund, luftfoto, markomrids, tastatur og 390 px DA/DE/EN.
+Screenshots er visuelt læst. Kystregressionen kontrollerer 210 zoner,
+673 dele, 420 nutidsvisninger og 2.100 dagsvisninger på faktisk offentlig
+app-kode med skrivefri auditexports; ingen browserfejl eller kontraktfund.
+Dette er browseremulation, ikke fysisk telefonhardware.
 
-**Genbesøgende browser:** En konkret Chrome-prøve af gammel 4.0.544-cache
-viste 61 uoversatte nøgler med blandede moduleidentiteter. Hele Jordravs
-lokale imports følger nu 4.0.545. Det første grønne design-head 41666348
-må ikke merges på dette ældre bevis; sluthead skal have ny exact-head CI.
-Tre cacheforløb kontrollerer den rettede genbesøgende browser og sprogskift.
-Dette ændrer ingen geologiske bytes eller kystens runtime.
+Datasæt/model 0.2, geologiske farver, svag ravsikkerhed og uafklaret
+jagtbarhed er uændrede. Ingen målte ravmængder eller pløje-/lagdybder
+opfindes. Punkt 4 om automatisk dagens nypløjede/bare/regnvaskede marker
+er udgået efter ejerordre. JORDRAV-018/-019 er lukket med offentlig evidens.
+Første design-heads cachefejl og CI bevares som supersederet historik.
+RavScore, kystmodel, central adminsandhed og providerlogik bevares;
+kystdata/zones fik kun det godkendte topversionsløft.
 
-Design/evidens: `docs/research/JORDRAV_DESIGN_2026-10-06.md`.
-Ekstra høj indsats/Sol anbefales til integration og slutkontrol.
+Begge kildehåndbøger og den statiske installationskopi følger betjeningen.
+Kode-only bevarer centralt beskyttede assets; webhåndbogens centrale
+synkronisering følger den eksisterende beskyttede fletning i normal drift.
+Den tidligere normale opfølgning 37435351739 er terminal success; der er
+ikke bestilt en ekstra normal vejrhentning alene for designet.
+
+Kvittering: docs/research/jordrav/publication-evidence-4.0.545.json.
+Designanalyse: docs/research/JORDRAV_DESIGN_2026-10-06.md.
+Kort: https://ravradar.dk/jordrav.html
+Den bestilte Jordrav-softwareleverance og designombygning er afsluttet.
+Daterede ældre Jordravcheckpoints nedenfor er historik; deres pendingstatus
+er erstattet af denne offentlige evidens. Andre aktive projektkrav består.
+Ekstra høj indsats/Sol anbefales ved senere kritisk slutkontrol.
 
 # Nyeste ejerønske – Jordravs design og betjening, 2026-10-06
 
@@ -51,7 +62,7 @@ datasetbindinger, dybe lag, gemte visninger og opt-in-kilder bevares.
 Ny UX kræver faktisk browser- og visuel kontrol før leveringspåstand;
 release, RDKS/håndbøger/changelog, exact-head CI og kode-only deploy følger.
 
-# Aktuel Jordravleverance – 4.0.544, 2026-10-06
+# Historisk Jordravleverance – 4.0.544, 2026-10-06
 
 Den bestilte nationale kortleverance er nu offentlig og browserverificeret.
 PR #521 og #523 bestod hver fuld validate:source på deres eksakte head;

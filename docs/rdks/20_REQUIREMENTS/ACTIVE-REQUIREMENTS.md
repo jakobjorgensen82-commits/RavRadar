@@ -1,8 +1,8 @@
 # Nyeste ejerkrav – Jordravs layout og design, 2026-10-06
 
 Ejeren bestiller en fuld ombygning af Jordravsidens design og betjening:
-»den helt store omgang, hele vejen rundt«. Kravet er lokalt implementeret
-i designkandidat 4.0.545; exact-head CI og offentlig effekt mangler endnu. Kort og luftfoto, alle geologiske vurderinger/forbehold,
+»den helt store omgang, hele vejen rundt«. Kravet er implementeret og offentligt kontrolleret
+i 4.0.545; PR #525, exact-head CI 37456024761 og kode-only levering består. Kort og luftfoto, alle geologiske vurderinger/forbehold,
 lagvalg, kildelinks, regionale guider, profilvisning og gemte links skal
 fortsat fungere. Primære handlinger skal være synlige ved kortet, og
 områdeforklaringen skal være let at finde, også på mobil. DA/DE/EN og
@@ -12,9 +12,9 @@ ravmulighed til valideret fundsted eller målt jagtbarhed.
 # Jordrav – opfyldt offentlig softwareleverance 2026-10-06
 
 De nedenstående aktive Jordravkrav er implementeret og offentligt kontrolleret
-i 4.0.544; punkt 4 er udgået. Empiriske lag-/rav-/pløjeukendte er fortsat
+i 4.0.545; punkt 4 er udgået. Empiriske lag-/rav-/pløjeukendte er fortsat
 begrænsninger og må ikke omdøbes til målte data. CI/deploy-/browserbevis:
-`docs/research/jordrav/publication-evidence-4.0.544.json`.
+`docs/research/jordrav/publication-evidence-4.0.545.json`.
 
 # AKTUELT JORDRAVKRAV – 2026-10-05
 
