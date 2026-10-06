@@ -2,8 +2,22 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.543",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-10-05",
+  "updatedAt": "2026-10-06",
   "sections": [
+    {
+      "id": "preferred-search-site-name-2026-10-06",
+      "chapter": "89.165",
+      "title": "Foretrukket webstedsnavn i søgemaskiner",
+      "summary": "Forsiden angiver lokalt RavRadar.dk som foretrukket webstedsnavn og RavRadar som alternativ uden nye scripts eller lempet sikkerhed. Titel og beskrivelse bevares. Søgemaskinerne vælger selv visningen; leveret metadata er ikke bevis for et ændret søgeresultat eller placering på rav.",
+      "body": "<p>Forsiden angiver lokalt RavRadar.dk som foretrukket webstedsnavn, med RavRadar som alternativ, gennem statisk WebSite-Microdata og Open Graph. Det kræver ingen nye scripts eller lempelse af sikkerhedspolitikken. Sidetitel, beskrivelsestekst, URL og den synlige brugerflade bevares.</p><p>Ejerens observation gælder søgningen ravkort, ikke rav. Navnesignalet er ikke en placering på et bestemt søgeord. Søgemaskinerne vælger selv navn og uddrag; ændringen skal først leveres og derefter hentes og behandles af dem. Lokal kontrol eller et deploy beviser derfor ikke ændret søgeresultat. Se <a href=\"https://developers.google.com/search/docs/appearance/site-names\">Googles vejledning om webstedsnavne</a>.</p>"
+    },
+    {
+      "id": "water-source-same-series-t-plus-three-2026-10-06",
+      "chapter": "89.164",
+      "title": "SOURCE-genbrug og samme vandstandsserie ved T+3 – kun lokal rettelse",
+      "summary": "Den lokale bankbygger genbruger kvalificerede SOURCE-timer, og begge routere kræver samme serie ved T+3. Kold genbrug viser, at holdbar SOURCE-bevarelse gennem flere generationer stadig er åben; en routet værdi er ikke et originalt kildebevis. Score, vægte og syvzonernes afgrænsning bevares. Levering og faktisk ny vejreffekt er åbne.",
+      "body": "<p>En vandstandstrend kræver en gyldig valgt kilde nu og en sammenlignelig time præcis tre timer senere. Ved genbrug af tidligere og nye gyldige timer er to selvstændigt ægte målinger ikke nok: kilde, collection, modelkørsel, grid og målepunkt skal være ens. Ellers er trenden ukendt, mens gyldig aktuel vandstand bevares.</p><p>Den normale zone-/store-routing og routing til kystdele bruger lokalt samme kontrol. Administratorens kildevalg, vægte og interpolation bevares; ingen manglende kilde omvægtes, og scoreformlen ændres ikke. De syv zoners dkss_lf-undtagelse gælder fortsat kun vandstand, ikke strøm, strømhukommelse eller vandtemperatur. Limfjordens egne zoner beholder relevante data.</p><p>En målprøve reproducerede zonevejens accept af usammenlignelig T+3, som kystdelens kontrol allerede afviste. Efter rettelsen består 40 blandede serieforløb, gyldige kontrolforløb og fire berørte måltests gennem normale kaldere. Det er ikke en ny offentlig generation eller bevis for den gamle Fur-årsag. Den normale bankbygger genbruger nu lokalt gyldige SOURCE-timer fra de eksisterende beskyttede og historiske native banker. Donorer bygges og kvalificeres hver for sig ved den aktuelle centrale kildeidentitet. Gyldige aktive timer har prioritet; kun manglende kvalificerede timer fyldes. Originalbankerne ændres ikke. Den færdige union får et nyt record og kvalificeres igen før forbrugerne, så et gammelt memo ikke skjuler tilføjede timer. 64 retention-/no-loss-timekontroller på de syv zoner plus Fur med både dkss_nsbs og dkss_lf består. Ugyldige donoridentiteter afvises; usammenlignelig T+3 giver fortsat ukendt trend i begge kaldere. Relevante bindinger, sikker levering og faktisk ny vejreffekt er åbne. Gamle leverede bindinger er ikke omberegnet eller kaldt gyldige for denne kandidat. DEC-0291 og DEC-0292.</p><p>En særskilt lokal kold-genbrugsprøve viser også en restgrænse: den normale PART-cache gemmer direkte input før SOURCE-routing, ikke den afledte SOURCE-union. En senere native kopi med samme run-sømme kan derfor mangle de genvundne timer igen. De forbliver ukendte og stoppes af no-loss; et routet aggregat genmærkes ikke som original kilde. En ægte selvstændig originalbank kan genvinde timerne efter kold genbrug. Holdbar bevarelse gennem flere generationer er således stadig åben. Det er lokal syntetisk evidens, ikke et nyt produktionstab eller den gamle Fur-årsagsbevis.</p>"
+    },
     {
       "id": "coverage-tail-open-meteo-rolling-pool-2026-10-05",
       "chapter": "89.163",

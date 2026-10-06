@@ -3,6 +3,42 @@
 **Status:** IMPLEMENTERET og deployet i 4.0.542; faktisk normal diagnoseeffekt, gammel årsag og timeretention er åbne.
 **Dato:** 2026-10-04
 
+# NYESTE – 2026-10-06 – T+3 og SOURCE-retention rettet lokalt; faktisk effekt åben
+
+En ny lokal kold-genbrugsprøve afgrænser holdbarheden: den normale caller
+pakker direkte PART-data før SOURCE-routing. Den afledte SOURCE-union gemmes
+ikke dér. Hvis den næste beskyttede native kopi selv indeholder run-sømme,
+kommer de fire afledte huller igen uden en selvstændig originalbank. Prøven
+bruger den eksisterende pack/unpack og faktiske no-loss-sammenligner: 64
+syntetiske tab registreres, ikke skjules. En ægte originaldonor genvinder
+timerne efter kold JSON-genbrug. Aggregatets routede PART-proveniens er ikke
+et originalt SOURCE-bevis. Dette er en lokal restgrænse, ikke et nyt målt
+produktionstab eller bevis for den gamle Fur-årsag. Holdbar SOURCE-bevarelse
+gennem flere generationer skal derfor færdiggøres før denne del kan lukkes;
+ingen ny cachekontrakt, privat destination eller afvist binding er indført.
+
+Ejeren har udtrykkeligt fastholdt vandstandsrettelserne fra den planlagte
+opgave. Fravalget af nye scoremodelopgaver ændrer ikke denne autoritet.
+En normal caller-prøve reproducerede, at zone-/store-routing accepterede
+en gyldig T+3-time fra en anden serie, mens PART allerede krævede samme
+serie. Begge veje bruger nu lokalt samme verificerede seriekontrol.
+Ukendt trend fjerner ikke gyldig aktuel vandstand, og central routing,
+vægtning, scoreformel og offentlig 118h-horisont ændres ikke.
+
+40 blandede serieforløb og gyldige kontrolforløb samt de fire berørte
+måltests består. Dette er lokal evidens, ikke nye produktionsdata eller
+gammel Fur-årsagsbevis. Selvstændig derived-SOURCE-retention og frisk
+samlet donor-kvalifikation er siden også implementeret lokalt i den normale
+bankbygger med de eksisterende beskyttede/historiske native banker.
+117/121-sømmen blev reproduceret før rettelsen; bagefter består 64 præcise
+retention/no-loss-timekontroller over syv zoner plus Fur og begge collections.
+Gyldig aktiv kilde beholder prioritet; kun manglende kvalificerede timer
+fyldes, uden ændring af originale native banker. Færdig union kvalificeres
+under en ny record-identitet, aldrig gennem et gammelt memo efter tilføjelser.
+Relevante bindinger, tilladte destinationer, egen CI, kontrolleret levering
+og faktisk ny-generationseffekt er åbne; gamle bindinger er ikke ændret.
+Hård no-loss og de øvrige restriktioner består.
+
 # NYESTE – 5. oktober – seneste tab er tre kystzoner, ikke Fur
 
 Den afsluttede naturlige vejrhentning havde 21 vandstandstab, ligeligt fordelt

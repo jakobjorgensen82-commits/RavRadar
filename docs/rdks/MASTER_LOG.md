@@ -1,3 +1,60 @@
+# NYESTE – 2026-10-06 – ejerens roadmap-fravalg og afgrænset GitHub-levering
+
+Ejeren har også stoppet Ravudsigten-sammenligningen. Projektroadmapets
+punkt 1, 2, 3 og 5 er fravalgt; punkt 4 er allerede dækket og ikke en
+restopgave. Ingen nye scoreinput, efterkalibrering, fundprocent, gemte
+områder/varslinger eller videre sammenligning bestilles. Historiske
+journaler og leverede funktioner bevares; fravalg genaktiveres ikke fra
+ældre bokse. Vandstandsrettelser og Spørg RavRadar fortsætter separat.
+
+Ejeren har bedt om at sende det klarstående til GitHub inklusive roadmap.
+Roadmap, dokumentation og godkendte SEO-navnesignaler kan sendes særskilt. Den lokale
+SOURCE-kodekandidat er endnu ikke releaseklar: holdbar bevarelse gennem
+flere kolde generationer, relevante binding-/releasegates og faktisk
+produktionseffekt er åbne. Vandstandskode, private checkpointdata og ufærdig
+assistent blandes ikke ind i den afgrænsede leverance. Ingen ny version,
+ekstra vejrhentning eller gentagelse af afviste writes.
+
+Forsiden angiver lokalt RavRadar.dk som foretrukket webstedsnavn via ét
+statisk WebSite-Microdata og og:site_name, med RavRadar som alternativ.
+Titel, beskrivelse, canonical-URL, synlig UI, CSP og scoremodel bevares.
+Ejerens observation gælder ravkort, ikke rav. Levering og søgemaskinernes
+behandling skal skelnes; ingen garanti for navn, uddrag eller placering.
+Den eksisterende sikkerhedsmåltest dækker navnesignalerne uden nye scripts.
+
+# NYESTE – 2026-10-06 – SOURCE-genbrug og ens vandstandstrend, kun lokal kandidat
+
+Den ejer-godkendte T+3-delrettelse er lokalt implementeret på 4.0.543-basis.
+En syntetisk, uafhængigt kvalificeret SOURCE-støttetime fra en anden DMI-kørsel
+gav før rettelsen en zone-trend, mens kystdelen korrekt svarede ukendt.
+Begge normale kaldere bruger nu samme krav om præcis T+3, endepunktsbevis og
+samme SOURCE/collection/modelRun/gridDefinition/gridPoint for hver valgt kilde.
+Gyldig aktuel vandstand, administratorens routing/vægte og øvrige vejr bevares;
+kun den ikke-sammenlignelige trend bliver null. Ensartede gyldige nye serier
+og vandstand-only-undtagelsen for dkss_lf på de syv ejerzoner består.
+
+Eksisterende routingstest reproducerede først fejlen og består efter rettelsen
+med 40 blandede-serieprøver samt sammenlignelige kontroller, inklusive private
+H118–H120-støttetimer. Normal produktionskæde, vandstandsregression og DMI
+Forecast Store består også offline. Ingen ny version, CI, merge eller deploy.
+Modelbindingsmetadata er ikke ændret; nødvendige binding-/releasegates er ikke
+bestået for denne kandidat. Ingen genberegning af tidligere afviste bindingsmål.
+
+Den normale SOURCE-bankbygger genbruger nu lokalt de eksisterende beskyttede
+og historiske native banker. Hver donor bygges/kvalificeres selvstændigt ved
+den aktuelle centrale SOURCE-identitet; kun manglende gyldige timer fyldes.
+Alle gyldige aktive timer og originalbeviser bevares. Den færdige union får
+et nyt record og kvalificeres igen før de normale zone/PART-forbrugere.
+Den eksisterende måltest reproducerede 117 i stedet for 121 timer ved to
+native run-sømme; efter rettelsen består 64 retention-/no-loss-timekontroller
+på de syv præcise zoner plus Fur med både dkss_nsbs og dkss_lf. Ugyldige
+donoridentiteter afvises, og usammenlignelig T+3 er ukendt i begge kaldere.
+Alle fire berørte offline måltests består. Lokal integration er ikke faktisk
+produktionseffekt; gamle Fur-årsager og samlet revision er ikke lukket.
+Ejeren har genbekræftet vandstandsarbejdet, men fravalgt senere scoreændringer,
+empirisk fit, nye vind-/struktursignaler og gemte områder/varslinger. Projekt-
+roadmap og planlagt restplan er adskilt. DEC-0291/0292 og håndbog 89.164.
+
 # NYESTE – 2026-10-05 – ejerbestilt analyse og rettelse af dækningsgrad
 
 Ejeren kræver årsagen til dårligere dækningsgrad rettet. National kontrol

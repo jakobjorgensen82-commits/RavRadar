@@ -1,3 +1,76 @@
+# NYESTE – 2026-10-06 – ejerafklaret projektroadmap, adskilt fra opgavernes restplan
+
+Ejeren har taget punkt 1, 2, 3 og 5 ud: empirisk efterkalibrering/procentchance,
+nye scoreinput fra vindfelter/strømstrukturer, Ravudsigten-sammenligning og
+gemte områder/varslinger. Punkt 4 er allerede dækket og udgår som restopgave.
+Fravalgte punkter må ikke genaktiveres automatisk fra historiske
+bokse. Den eksisterende scoremodel fastholdes; turregistrering og ærlig
+kvalitets-/dækningsinformation bevares. Historisk forskning og leverede
+funktioner slettes ikke. Dette er ikke en bestilling af nye scoreændringer.
+
+Den gamle P2 om kildegatens første-fejl-stop er OVERFLØDIG/ALLEREDE DÆKKET:
+aktuel validate-source-once.mjs forsøger alle kritiske kontroller og rapporterer
+samlet. Eksisterende måltest beviser dette med fejl injiceret i hver af 47
+kommando-positioner; filen er identisk med aktuel main e98dcdd7. Ingen ny DAG
+eller ombygning bestilles. Hårde kilde-, data-, privacy- og deploygates består.
+
+Ejeren har nu også stoppet Ravudsigten-sammenligningen. Der indsamles ikke
+flere sammenligningsdata, og den er ikke længere et aktivt roadmap-punkt.
+Den eksisterende interne journal bevares alene som historisk evidens;
+den giver ingen autoritet til genstart, scoreændring eller offentlig visning.
+Ingen af de fem omtalte fremtidspunkter er således en resterende opgave.
+
+Ejeren har særskilt genbekræftet, at vandstandsrettelserne i den planlagte
+opgave fortsætter som planlagt. T+3-paritet, kvalificeret SOURCE-retention og
+frisk samlet donor-kvalifikation er nu lokalt implementeret i den normale
+bankbygger/kaldere og måltestet, inklusive dkss_lf på alle syv zoner plus Fur.
+Sikker levering og faktisk ny-generations-effekt mangler. Revisionen og
+Spørg RavRadar fortsætter som opgaver; kvotekontrol/overvågning er drift.
+
+# RESTPLAN – 2026-10-06 – ejerafklaret afslutningsplan, ikke 100 % dækningsmål
+
+Ejeren accepterer feltdækning over 95 % som tilfredsstillende. Næsten 100 %
+er ikke et afslutningskrav. Uændret nævner, autentiske kilder og ingen tab af
+allerede gyldige fælles timer består. Seneste fuldt målte 00Z-generation har
+98,101342 % feltdækning; 110 fælles timer har nul tab og 1787 nye gyldige felter.
+Det er ikke bevis for alle lokale timer, komplet privat historik eller RavScore.
+
+Aktuelt næste arbejde er de ejer-godkendte lokale SOURCE-vandstandsrettelser:
+bevar præcist kvalificerede manglende kildetimer, saml data før kildevalidering
+og brug samme sammenlignelighedsregel ved T+3 i zone- og kystdelskalderne.
+De tre rettelser er nu koblet lokalt til den normale bankbygger og består
+målprøver; bindings-/releasekontrol, sikker levering og faktisk effekt mangler.
+Det er ikke bevist som årsagen til de gamle Fur-huller. Central
+routing, vægte, punkter, scoreformler og no-loss ændres ikke.
+
+Den store revisions slutplan omfatter fortsat syvzonernes private 48h-historik
+og originaler, Fur/gyldige timer, alle underprocessers stop/en enkelt skriver,
+holdbar gemning/upload/genbrug ved timeout/afbrydelse/fireminutters-fejlworker/
+runner-tab, original-B/S-før-T gennem normal autentificeret 673-dels kæde samt
+national kapacitet og private/offentlige/deploy-kontroller. Slutbeviset er sidste
+trin efter nødvendige rettelser og integration, ikke kun én grøn normal kørsel.
+Den separate store kandidat er fortsat isoleret/inaktiv; ingen helkopiering.
+
+Spørg RavRadar er separat: 353 lokale emner/1059 skrevne DA/DE/EN-svar er ikke
+publiceret. Der mangler fortsat bredere spørgsmål- og opfølgningsforståelse,
+hele delspørgsmål, respekt for afgrænsninger, fagligt kontrolleret stor udvidelse,
+praktisk eksisterende browser-/AI-kontrol, kontrolleret levering og offentlig
+effekt. 12708 formuleringer er ikke 12708 selvstændigt skrevne svar. Browserens
+kendte adgangsfejl omgås ikke; syntetiske AI-svar er ikke ekstern AI-kvalitet.
+
+Footerrettelsen, syvzoners vandstand-only-undtagelse og reservekørettelsen er
+allerede leveret. National original-memory-kontrol er afsluttet. Ældre lokale
+eller ventende statusser nedenfor er historik ved konflikt og må ikke genstarte
+færdige leverancer. Ny offentlig dækning er ikke målt igen blot for status.
+
+Ejeren har konkret godkendt lokale kode-/dokumentationsændringer i de to
+eksisterende checkouts og privat checkpointgemning; dette giver ikke adgang til
+cb79-arbejde eller tidligere særskilt afviste produktions-/modeldestinationer.
+Privat checkpoint er genlæst efter faktisk gemning 6. oktober kl.07.34 dansk tid.
+Der er ingen ny version/CI/merge/deploy eller ekstra vejrhentning. Ingen
+produktionsændring under den aktive naturlige writer. Model/indsats/kadence
+og notifikationsvalg er uændrede.
+
 # NYESTE – 2026-10-05 – lokal 4.0.543: kun vandstand fra dkss_lf på syv kystzoner
 
 Ejeren har godkendt, at de præcise syv zoner må hente verificeret vandstand
@@ -3102,15 +3175,12 @@ P1-oversættelse og Spørg RavRadar kan genoptages efter konkret ejerscope. Se D
 
 Se DEC-0082. Candidate G, score, vejr, geometri og land-/vandpunkter ændres ikke.
 
-## P1 aktiv – intern, score-neutral Ravudsigten-sammenligning
+## Udgået efter ejerbeslutning 6. oktober – intern Ravudsigten-sammenligning
 
 - [x] Opret intern analysejournal og registrér første tidsstemplede snapshot med aktuelle top-fem, alle synlige ikke-røde femdøgnssignaler, RavRadar-match og komponentforklaringer.
 - [x] Bestå efter stoppet `33029447510` PR #172 exact-head `33030112665`, merge `7a234653`, fuld produktion `33030166104`/Pages `98382359708` og offentlig kontrol; kun den eksakte interne analysefil er undtaget, og dens sikkerhedsmarkører er obligatoriske.
-- [ ] Fortsæt skånsom indsamling af offentligt synlige resultater fra Ravudsigten og RavRadar over flere sammenlignelige vejrsituationer.
-- [ ] Sammenlign sted, timing, varighed og styrke og behandl udledte regler som observerbare hypoteser, ikke som kendt intern logik.
-- [ ] Brug uafhængige tur-/fundobservationer som mulig fasit, når kvalitet og samtykke tillader det; modellernes indbyrdes enighed er ikke i sig selv validering.
-- [ ] Omgå ingen adgang, hent ingen privat kode, og bevar `scoreImpact=false`/`publicRuntime=false`.
-- [ ] Hold opgaven udelukkende i RDKS, roadmap og changelog; ingen app-, offentlig håndbogs-, ekspert-, admin- eller public-runtime-visning.
+- Fravalgt: videre indsamling, sammenligning og validering. Ingen genstart uden en ny udtrykkelig ejerbestilling.
+- Historisk journal beholder `scoreImpact=false`/`publicRuntime=false`; ingen app-, offentlig håndbogs-, ekspert-, admin- eller public-runtime-visning.
 
 Første snapshot og metodejournal: `docs/rdks/30_FEATURES/INTERNAL-RAVRADAR-RAVUDSIGTEN-ANALYSE.md`.
 
@@ -3351,9 +3421,9 @@ Produktion `32759180937` viste, at punktdelen igen var til stede i 673-bestanden
 - [ ] Prøv et helt nyt magic link samt konto, almindelig tur, efterregistrering og turlog på domænet.
 - [ ] Følg egress, DMI-ratebegrænsning, planlagte kørsler og den første offentlige drift.
 
-## Laveste prioritet – gemte områder og varslinger
+## Udgået efter ejerbeslutning 6. oktober – gemte områder og varslinger
 
-- [ ] Afvent ejerens beslutning om funktionen overhovedet skal bygges.
+- Fravalgt af ejeren; ikke en ventende eller udskudt udviklingsopgave.
 
 ## Produktionsverificeret 4.0.269 – aktuelle scoreforklaringer
 
@@ -3371,7 +3441,7 @@ Produktion `32759180937` viste, at punktdelen igen var til stede i 673-bestanden
 ## P1 – fortsat læringsgrundlag fra brugerens ture
 
 - [ ] Bevar Fundprognosen skjult, mens indberettede ture samles og kvalitetssorteres.
-- [ ] Definér ved et senere ejerbeslutningspunkt, hvad et repræsentativt grundlag af ture med fund og intet fund er, før en procentchance eventuelt genindføres.
+- Fravalgt 6. oktober: senere efterkalibrering og genindførelse af procentchance. Turregistrering bevares uden automatisk scorejustering.
 - [ ] Brug ikke identitet, efterregistreringer uden sikkert historisk vejr eller andre ikke-kalibrerbare ture direkte til scorejustering.
 
 ## Produktionsverificeret 4.0.268 – offentlig grundbog og almindeligt brugersprog
@@ -3727,7 +3797,7 @@ Aktiv kandidat: 25/40/35 efter DEC-0041. Konsekvensauditterne er grønne. Næste
 - [ ] P1: sammenlign gammel og ny model automatisk på samme data. Ejer og Codex retter kun de vigtigste afvigelser gennem almindelig samtale; ingen offentlig AI/API.
 - [ ] P1: implementér godkendt hændelsesmodel, ravvinduer og enkel lagdelt forklaring med fuld regression og produktionsevidens.
 - [x] P2: byg et omfattende læringsmodul for begyndere og øvede på den kvalitetssikrede viden. **Grundbog i ravjagt** er produktionsverificeret i 4.0.268 via PR #118, produktion `32672578127` og grøn 210/673-browseraudit.
-- [ ] P3 senere: gemte områder og varsler genovervejes efter cirka et halvt år eller i en samlet brugerdata-sektion.
+- Fravalgt 6. oktober: gemte områder og varsler; den tidligere udskydelse er erstattet, ikke en genstartsfrist.
 - [x] Eksisterende score-/pil-/forklaringskontrol genbruges. Fuld 210/673 køres ugentligt eller ved relevante score-, UI- og datakontraktændringer.
 - Fravalgt: separat offentlig scoresikkerhed og historisk “hvorfor ændrede scoren sig?”-funktion.
 - Bindende beslutning: DEC-0044.

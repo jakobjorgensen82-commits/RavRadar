@@ -1,3 +1,27 @@
+# NYESTE – 2026-10-06 – ejerens roadmap-fravalg og afgrænset GitHub-levering
+
+Ejeren har også stoppet Ravudsigten-sammenligningen. Projektroadmapets
+punkt 1, 2, 3 og 5 er fravalgt; punkt 4 er allerede dækket og ikke en
+restopgave. Ingen nye scoreinput, efterkalibrering, fundprocent, gemte
+områder/varslinger eller videre sammenligning bestilles. Historiske
+journaler og leverede funktioner bevares; fravalg genaktiveres ikke fra
+ældre bokse. Vandstandsrettelser og Spørg RavRadar fortsætter separat.
+
+Ejeren har bedt om at sende det klarstående til GitHub inklusive roadmap.
+Roadmap, dokumentation og godkendte SEO-navnesignaler kan sendes særskilt. Den lokale
+SOURCE-kodekandidat er endnu ikke releaseklar: holdbar bevarelse gennem
+flere kolde generationer, relevante binding-/releasegates og faktisk
+produktionseffekt er åbne. Vandstandskode, private checkpointdata og ufærdig
+assistent blandes ikke ind i den afgrænsede leverance. Ingen ny version,
+ekstra vejrhentning eller gentagelse af afviste writes.
+
+Forsiden angiver lokalt RavRadar.dk som foretrukket webstedsnavn via ét
+statisk WebSite-Microdata og og:site_name, med RavRadar som alternativ.
+Titel, beskrivelse, canonical-URL, synlig UI, CSP og scoremodel bevares.
+Ejerens observation gælder ravkort, ikke rav. Levering og søgemaskinernes
+behandling skal skelnes; ingen garanti for navn, uddrag eller placering.
+Den eksisterende sikkerhedsmåltest dækker navnesignalerne uden nye scripts.
+
 # NYESTE – 2026-10-05 – dækningsanalyse og afgrænset reservekørettelse
 
 Ejeren kræver årsagsanalyse og rettelse af faldende dækningsgrad. Den

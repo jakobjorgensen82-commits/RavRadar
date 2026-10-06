@@ -2,6 +2,61 @@
 
 **Håndbogsversion:** 4.0.543
 
+## 89.165 Foretrukket webstedsnavn i søgemaskiner
+
+Forsiden angiver lokalt **RavRadar.dk** som foretrukket webstedsnavn,
+med **RavRadar** som alternativ, gennem statisk WebSite-Microdata og
+Open Graph. Det kræver ingen nye scripts eller lempelse af sikkerhedspolitikken.
+Sidetitel, beskrivelsestekst, URL og den synlige brugerflade bevares.
+
+Ejerens observation gælder søgningen **ravkort**, ikke **rav**. Navnesignalet
+er ikke en placering på et bestemt søgeord. Søgemaskinerne vælger selv navn
+og uddrag; ændringen skal først leveres og derefter hentes og behandles af
+dem. Lokal kontrol eller et deploy beviser derfor ikke ændret søgeresultat.
+Google beskriver dette i [vejledningen om webstedsnavne](https://developers.google.com/search/docs/appearance/site-names).
+
+## 89.164 SOURCE-genbrug og samme vandstandsserie ved T+3 – kun lokal rettelse
+
+En vandstandstrend kræver både en gyldig valgt kilde ved den aktuelle time
+og en sammenlignelig time præcis tre timer senere. Når tidligere og nye
+gyldige timer genbruges sammen, er to selvstændigt ægte målinger ikke nok:
+de skal høre til samme kilde, collection, modelkørsel, grid og målepunkt.
+Ellers er trenden ukendt; den gyldige aktuelle vandstand bevares.
+
+Den normale zone-/store-routing og routing til kystdele bruger nu lokalt
+samme kontrol. Administratorens kildevalg, vægte og interpolation bevares.
+Ingen manglende kilde omvægtes, og scoreformlen ændres ikke. Syvzonernes
+vandstandsundtagelse gælder fortsat kun vandstand fra dkss_lf, ikke strøm,
+strømhukommelse eller vandtemperatur. Limfjordens egne zoner beholder
+deres relevante data.
+
+Den hidtidige zonevej accepterede en usammenlignelig T+3-time i en
+målprøve, mens kystdelens kontrol allerede afviste den. Rettelsen er
+afprøvet med 40 blandede serieforløb og gyldige kontrolforløb gennem de
+normale kaldere; fire berørte måltests består. Det er ikke en ny offentlig
+generation eller bevis for Fur-fejlens gamle årsag. Den normale bankbygger
+genbruger nu lokalt også gyldige SOURCE-timer fra eksisterende beskyttede og
+historiske native banker. Donorer bygges og kvalificeres hver for sig ved
+den aktuelle centrale kildeidentitet. Gyldige aktive timer har prioritet;
+kun manglende kvalificerede timer fyldes. Originalbankerne ændres ikke.
+Den færdige union får et nyt record og kvalificeres igen før forbrugerne,
+så et gammelt verifikationsmemo ikke skjuler de tilføjede gyldige timer.
+64 retention-/no-loss-timekontroller på de syv zoner plus Fur med både
+dkss_nsbs og dkss_lf består. Ugyldige donoridentiteter afvises; gyldige
+skalarer med usammenlignelig T+3 får fortsat ukendt trend i begge kaldere.
+Relevante bindinger, sikker levering og faktisk ny vejreffekt mangler stadig.
+Gamle leverede bindinger er ikke omberegnet eller kaldt gyldige for denne
+nye kandidat. DEC-0291 og DEC-0292.
+
+En særskilt lokal kold-genbrugsprøve viser også en restgrænse: den normale
+PART-cache gemmer direkte input før SOURCE-routing, ikke den afledte
+SOURCE-union. En senere native kopi med samme run-sømme kan derfor mangle
+de genvundne timer igen. De forbliver ukendte og stoppes af no-loss; et
+routet aggregat genmærkes ikke som original kilde. En ægte selvstændig
+originalbank kan genvinde timerne efter kold genbrug. Holdbar bevarelse
+gennem flere generationer er således stadig åben. Det er lokal syntetisk
+evidens, ikke et nyt produktionstab eller den gamle Fur-årsagsbevis.
+
 ## 89.163 Prognosehalens dækning og bedre brug af reservekøen
 
 Feltdækning tæller gyldige numeriske vejrkomponenter over 673 kystdele,

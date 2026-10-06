@@ -24,7 +24,7 @@ if(hits.length)throw new Error(`Eksterne kildenavne fundet i projektet:\n${hits.
 for(const full of internalSourceExceptions){
  const text=fs.readFileSync(full,'utf8').toLowerCase();
  for(const marker of [
-  'status: **aktiv, intern og score-neutral**',
+  'status: **stoppet efter ejerbeslutning 6. oktober 2026, intern og score-neutral**',
   'offentlig runtime: **ingen**',
   'dokumentet er internt rdks-materiale',
   'det må ikke kopieres til appen',

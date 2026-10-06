@@ -1,3 +1,51 @@
+# NYESTE – 2026-10-06 – foretrukket webstedsnavn, ikke ranggaranti
+
+Ejeren bestiller ændring af søgemaskinernes navnesignal til **RavRadar.dk**.
+Forsiden angiver dette gennem ét statisk WebSite med navn, alternativet
+RavRadar og den eksisterende canonical-URL samt og:site_name. Ingen nye
+scripts, lempet CSP, ændret titel/beskrivelse, synlig UI eller scoremodel.
+Ejerens søgeresultat gælder **ravkort**, ikke **rav**. Søgemaskinerne vælger
+selv navnet og skal hente den leverede ændring; ingen indeks-/ranggaranti.
+Et spørgsmål om flere SEO-muligheder bestiller ikke yderligere ændringer.
+
+# NYESTE – 2026-10-06 – fravalg af fremtidige scoreændringer; vandstandsarbejdet fortsætter
+
+Ejeren fravælger senere empirisk efterkalibrering/procentchance, nye scoreinput
+fra vindfelter/strømstrukturer og gemte områder/varslinger. Ældre planer om
+disse punkter er ikke længere aktive og må ikke genaktiveres automatisk.
+Den eksisterende scoremodel og tur-/brugerfunktioner bevares. Den gamle
+first-fail-DAG-rest er allerede dækket af den aktive kildekontrols fejlsamling;
+47-positioners eksisterende måltest består uden at køre kildegaten.
+
+Ravudsigten-sammenligningen er nu også stoppet og fravalgt af ejeren.
+Der foretages ingen videre indsamling eller sammenligning. Den eksisterende
+interne journal bevares kun som historik med uændrede sikkerhedsgrænser;
+den er ikke et aktivt roadmap-krav eller autoritet til en senere genstart.
+
+Ejeren genbekræfter de planlagte vandstandsrettelser. Fælles T+3-regel er nu
+lokalt rettet/testet gennem normale zone/store/PART-kaldere. Kvalificeret
+SOURCE-retention og frisk samlet donor-kvalifikation er også lokalt koblet
+til den normale bankbygger og måltestet, ikke offentligt leveret. Ingen ændring
+af routing, vægte, scoreformel, native-originaler eller no-loss. Sikker
+binding/release og faktisk ny-generations-effekt kræves; lokal grønt er ikke live.
+
+# NYESTE – 2026-10-06 – ejerens dækningsniveau og afgrænsede lokale godkendelse
+
+Feltdækning over 95 % er efter ejerens aktuelle beslutning tilfredsstillende;
+næsten 100 % kræves ikke i hver rullende generation eller som revisionsslutmål.
+Nævneren forkortes ikke, manglende data opfindes ikke, og gyldige eksisterende
+fælles timer må fortsat ikke gå tabt. Tallet er ikke scoretilgængelighed eller
+bevis for alle lokale timer/privat historik. Ingen produktionsgate er lempet.
+
+Ejeren godkender konkret lokale kode-/dokumentationsændringer i eksisterende
+rav-assistant-knowledge og lyngby-agger-source-domain samt privat checkpoint-
+gemning i feggesund-preflight-recovery. SOURCE-retention, ny samlet kvalifikation
+og ens T+3-regel skal måltestes i normale kaldere før sikker levering. Ingen
+routing/vægt/punkt/geometri/scoreændring eller blanketundtagelse. Tidligere
+særskilte afvisninger og forbud mod cb79/aktiv-writer-mutation består.
+Se den nyeste afslutningsplan og private checkpoint; ældre næsten-komplette
+coverageformuleringer er ikke et nyt bindende 100 %-mål.
+
 # NYESTE – 2026-10-05 – lokal 4.0.543: kun vandstand fra dkss_lf på syv kystzoner
 
 Ejeren har godkendt, at de præcise syv zoner må hente verificeret vandstand

@@ -24,7 +24,7 @@ test('discreet public footer is visible before credits and retains all requested
   for (const [language, file] of Object.entries(pages)) {
     assert.ok(footer.includes(`href="./${file}" lang="${language}" hreflang="${language}"`));
   }
-  assert.match(html, /<link rel="canonical" href="https:\/\/ravradar\.dk\/">/);
+  assert.match(html, /<link rel="canonical" itemprop="url" href="https:\/\/ravradar\.dk\/">/);
   assert.ok(html.includes('id="nationalForecast"'), 'Existing forecast section stays present');
 });
 
