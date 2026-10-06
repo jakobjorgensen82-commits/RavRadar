@@ -1,0 +1,31 @@
+{
+  "liveUrl": "https://ravradar.dk/",
+  "expectedVersion": "4.0.545",
+  "runner": "playwright-system-chrome",
+  "state": {
+    "ready": true,
+    "partitioned": true,
+    "loadedDetailZones": 0,
+    "version": "4.0.545",
+    "conditionsZones": 210,
+    "parts": 673,
+    "partZones": 210,
+    "detailsAvailable": false,
+    "datasetId": "rr-20261006095400-210",
+    "activeZoneCount": 210
+  },
+  "zoneCount": 210,
+  "totals": {
+    "currentViews": 420,
+    "forecastViews": 2100,
+    "partReferences": 673
+  },
+  "failureCount": 0,
+  "failureKinds": {},
+  "checkedContract": "Current integrated process debug and bounded production zone shards; partial evidence may be explicit; no retired Candidate G/global details-ready assumption",
+  "sourceSha256": "ca2b0b354d4679283e938f5b63892dbb5cb6454dc615ace5198e72d4ec21d154",
+  "productRouteUnmodifiedExceptReadOnlyAuditExports": true,
+  "consoleErrors": [],
+  "pageErrors": [],
+  "httpErrors": []
+}

@@ -1,0 +1,44 @@
+{
+  "source": "https://geodata.fvm.dk/geoserver/ows?service=WMS&version=1.3.0&request=GetCapabilities",
+  "retrievedOn": "2026-10-05",
+  "sourceBytes": 821121,
+  "sourceSha256": "359a9751afc3b112d001009520f52f9bb1c2bed58197c8200a3ffcfa7a7f1cc7",
+  "scope": "Public service metadata only. Raster field outlines are optional context, not amber or cultivation evidence.",
+  "layer": "Marker:Marker_2026",
+  "title": "Marker_2026",
+  "geographicBounds": {
+    "westBoundLongitude": 7.991003375310246,
+    "eastBoundLongitude": 15.700905821668053,
+    "southBoundLatitude": 54.35036779957448,
+    "northBoundLatitude": 57.78672066177853
+  },
+  "inheritedEPSG3857": true,
+  "formats": [
+    "image/png",
+    "application/atom+xml",
+    "application/json;type=utfgrid",
+    "application/pdf",
+    "application/rss+xml",
+    "application/vnd.google-earth.kml+xml",
+    "application/vnd.google-earth.kml+xml;mode=networklink",
+    "application/vnd.google-earth.kmz",
+    "image/geotiff",
+    "image/geotiff8",
+    "image/gif",
+    "image/jpeg",
+    "image/png; mode=8bit",
+    "image/svg+xml",
+    "image/tiff",
+    "image/tiff8",
+    "image/vnd.jpeg-png",
+    "image/vnd.jpeg-png8",
+    "text/html; subtype=openlayers",
+    "text/html; subtype=openlayers2",
+    "text/html; subtype=openlayers3"
+  ],
+  "archivedSource": {
+    "file": "fields-wms-2026-capabilities.xml.gz",
+    "gzipBytes": 31073,
+    "gzipSha256": "0917c128e587a4e243572e70f6ea26ddf2be3ad0fff64b3f73fc8bbf6eaa9617"
+  }
+}

@@ -1,0 +1,930 @@
+{
+  "status": "PASS",
+  "scope": "Bound public source geometry, field context and existing rule diagnosis; no amber or plough-access verification",
+  "modelVersion": "0.1.0-prototype",
+  "rulesSha256": "655b5c50a212d43fa65c536731553399b8608ed93653665fd6f9e852e4ee9bed",
+  "modelSha256": "1d7290f7adff65af5fc8b726f7f60548467ef921128c8ce74626b9f4ec1546b9",
+  "manifestSha256": "53db672df2541756d380a17bda724bbaec8e870d0e80ce9d39a6a89802447198",
+  "scriptSha256": "490e7f7fff9b9023d29295c14753b3248e988b88e37ebe25e50dfbcc60b1c85e",
+  "geometrySha256": "70050e770910e15d2f5df80256597c7f471b370ef00d9244a34d84a32a567d47",
+  "sharedScriptSha256": {
+    "audit_stenstrup_contacts.py": "a4d3eba5209c746e81e182abf429c3053e76524de5181d6bd129ed72e7bffa69",
+    "audit_stenstrup_field_context.py": "5e274f519d5d3cbd5fd95d8f5d5903fab42b2359d4d74cb8c120818e3b110ed9",
+    "audit_profile_points.py": "66e4b8d2bd110cdaa4dc0d91aca260c021ce351a74a670346a5060bc10975ff3"
+  },
+  "software": {
+    "shapely": "2.1.2",
+    "pyproj": "3.8.0"
+  },
+  "sourceBindings": [
+    {
+      "source": "soil",
+      "dbfSha256": "94e3ac871fb47b3f6ab39957bb72c34bc8ab3c020f04addc63d45a152e93edb5",
+      "shpSha256": "10620612ea6c8de4539cbe2ccc4790bbbd0d3e798cb19e0a29bc7f466cafc3cc",
+      "cacheMetadataSha256": "807b265135e4c468190c23413583c34ada6eeeb03448d814fc0a429a36d43539",
+      "cacheGeometrySha256": "d09ee9442b3e5c29bcba5acffa5acdf52e13d27e61ac08d6c37a0aee72674b57",
+      "attributesVerifiedAgainstOriginal": 199653,
+      "auditedCollapsedRecords": 0
+    },
+    {
+      "source": "geomorphology",
+      "dbfSha256": "0d31afad447e9139c55523bc5ccc8a12671cb222c05d3fd527f561c3bd46e2ff",
+      "shpSha256": "371aaa477ab9d76662732293df86880c1fa9e02953774ff1eb509bb1dc25b619",
+      "cacheMetadataSha256": "94cd6d4a599d86f20a8572274ded42339180eb0373e00744f56e45fc1eef7272",
+      "cacheGeometrySha256": "c56445a123763831d32fc3c474e1a0156fa87cb5e03e0f35693746bf380bf512",
+      "attributesVerifiedAgainstOriginal": 15178,
+      "auditedCollapsedRecords": 0
+    }
+  ],
+  "fieldBinding": {
+    "source": "Marker:Marker_2026",
+    "url": "https://geodata.fvm.dk/geoserver/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=Marker%3AMarker_2026&bbox=584701.1%2C6334952.84%2C593006.95%2C6342370.05%2CEPSG%3A25832&srsName=EPSG%3A25832&outputFormat=application%2Fjson&propertyName=the_geom%2CAfgkode%2CAfgroede&count=6000&sortBy=Afgkode+A",
+    "observedDate": "2026-10-04",
+    "numberMatched": 399,
+    "numberReturned": 399,
+    "propertiesRequested": [
+      "the_geom",
+      "Afgkode",
+      "Afgroede"
+    ],
+    "crs": {
+      "type": "name",
+      "properties": {
+        "name": "urn:ogc:def:crs:EPSG::25832"
+      }
+    },
+    "sourceContentType": "application/json;charset=ISO-8859-1",
+    "sourceEncoding": "ISO-8859-1",
+    "sourceBytes": 615515,
+    "sourceSha256": "5fbafa006a7c3f799921c7cc5e3f1a30445a40b3dc116dd3cf3511b164980aa7",
+    "decodedUtf8Sha256": "7ef755b8d9821d446dd49fb91fc6e90ec23b4165b931ab355c238ea530d32346",
+    "responseTimeStamp": "2026-10-04T19:59:22.014Z"
+  },
+  "roadCoastBinding": {
+    "minimalProjectionSha256": "be48a870fb048b1e0009816562e017c9bb7ee7d3d09210647acf7403987e7078",
+    "request": "https://api.openstreetmap.org/api/0.6/map?bbox=10.38,57.13,10.53,57.23",
+    "retrievedAt": "2026-10-04",
+    "license": "OpenStreetMap contributors, ODbL 1.0",
+    "selectedWayIds": [
+      4128530,
+      44966336,
+      72887435,
+      72887441,
+      72887442,
+      99346946,
+      102684250,
+      211253115,
+      212250999,
+      218368836,
+      221161822,
+      252744814,
+      470655331,
+      470655333,
+      470655334,
+      470655335,
+      470655337,
+      470660147,
+      470660158,
+      479286807,
+      808382594,
+      808389754,
+      808389755,
+      808389756,
+      1069300060,
+      1069300062,
+      1191504890,
+      1191506947,
+      1421559851,
+      1421559853,
+      1489604784
+    ],
+    "notAnUnmodifiedApiResponse": true
+  },
+  "selection": {
+    "latitudeCuts": [
+      57.1538585,
+      57.2038844
+    ],
+    "area_km2": 4.053538528,
+    "definition": "East of route 541 (Saebyvej/Oestkystvejen), west of archived OSM coastline, within explicit latitude cuts",
+    "findBoundary": false,
+    "wholeReportedCorridorVerified": false,
+    "coordinateGridIsPositionalAccuracy": false
+  },
+  "nativeCoverage": {
+    "soil_km2": 3.994732882,
+    "landscape_km2": 4.018709795,
+    "common_km2": 3.993245622,
+    "soilGapAgainstOsmCorridor_m2": 58805.646365,
+    "landscapeGapAgainstOsmCorridor_m2": 34828.732845,
+    "soilOverlap_m2": 0.0,
+    "landscapeOverlap_m2": 0.0,
+    "classPartitionDelta_m2": -0.0,
+    "pairPartitionDelta_m2": -0.0,
+    "numericalPartitionTolerance_m2": 1,
+    "gapsAreNotFilled": true
+  },
+  "soilSourceRecords": [
+    {
+      "sourceId": 182667,
+      "upper": "DL",
+      "depth": "DL",
+      "area_km2": 0.006275
+    },
+    {
+      "sourceId": 182936,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.018861088
+    },
+    {
+      "sourceId": 184759,
+      "upper": "DL",
+      "depth": "DL",
+      "area_km2": 0.179158045
+    },
+    {
+      "sourceId": 187644,
+      "upper": "DL",
+      "depth": "DL",
+      "area_km2": 0.025285305
+    },
+    {
+      "sourceId": 187952,
+      "upper": "ES",
+      "depth": "HS",
+      "area_km2": 0.000989794
+    },
+    {
+      "sourceId": 188191,
+      "upper": "ES",
+      "depth": "ES",
+      "area_km2": 0.059768856
+    },
+    {
+      "sourceId": 191791,
+      "upper": "ES",
+      "depth": "ES",
+      "area_km2": 0.181464244
+    },
+    {
+      "sourceId": 192998,
+      "upper": "HS",
+      "depth": "HS",
+      "area_km2": 3.52293055
+    }
+  ],
+  "landscapeSourceRecords": [
+    {
+      "sourceId": 6946,
+      "label": "Klit",
+      "area_km2": 0.047678008
+    },
+    {
+      "sourceId": 7400,
+      "label": "Marin flade",
+      "area_km2": 1.39925958
+    },
+    {
+      "sourceId": 10448,
+      "label": "Antropogent landskab",
+      "area_km2": 0.009947877
+    },
+    {
+      "sourceId": 14039,
+      "label": "Erosionsdal",
+      "area_km2": 0.097157789
+    },
+    {
+      "sourceId": 14222,
+      "label": "Marin flade",
+      "area_km2": 2.464666542
+    }
+  ],
+  "soilPairs": [
+    {
+      "key": [
+        "HS",
+        "HS"
+      ],
+      "area_km2": 3.52293055,
+      "percentOfCorridor": 86.910005
+    },
+    {
+      "key": [
+        "ES",
+        "ES"
+      ],
+      "area_km2": 0.2412331,
+      "percentOfCorridor": 5.951173
+    },
+    {
+      "key": [
+        "DL",
+        "DL"
+      ],
+      "area_km2": 0.21071835,
+      "percentOfCorridor": 5.19838
+    },
+    {
+      "key": [
+        "FT",
+        "FT"
+      ],
+      "area_km2": 0.018861088,
+      "percentOfCorridor": 0.465299
+    },
+    {
+      "key": [
+        "ES",
+        "HS"
+      ],
+      "area_km2": 0.000989794,
+      "percentOfCorridor": 0.024418
+    }
+  ],
+  "landscapes": [
+    {
+      "key": "Marin flade",
+      "area_km2": 3.863926122,
+      "percentOfCorridor": 95.322299
+    },
+    {
+      "key": "Erosionsdal",
+      "area_km2": 0.097157789,
+      "percentOfCorridor": 2.396864
+    },
+    {
+      "key": "Klit",
+      "area_km2": 0.047678008,
+      "percentOfCorridor": 1.176207
+    },
+    {
+      "key": "Antropogent landskab",
+      "area_km2": 0.009947877,
+      "percentOfCorridor": 0.245412
+    }
+  ],
+  "existingClasses": [
+    {
+      "key": "possible",
+      "area_km2": 3.993245622,
+      "percentOfCorridor": 98.512586
+    }
+  ],
+  "existingMaterialProcessPairs": [
+    {
+      "key": [
+        "HS",
+        "HS",
+        "Marin flade",
+        "possible"
+      ],
+      "area_km2": 3.437796301,
+      "percentOfCorridor": 84.80976
+    },
+    {
+      "key": [
+        "DL",
+        "DL",
+        "Marin flade",
+        "possible"
+      ],
+      "area_km2": 0.21071835,
+      "percentOfCorridor": 5.19838
+    },
+    {
+      "key": [
+        "ES",
+        "ES",
+        "Marin flade",
+        "possible"
+      ],
+      "area_km2": 0.180550581,
+      "percentOfCorridor": 4.454147
+    },
+    {
+      "key": [
+        "HS",
+        "HS",
+        "Erosionsdal",
+        "possible"
+      ],
+      "area_km2": 0.08364699,
+      "percentOfCorridor": 2.063555
+    },
+    {
+      "key": [
+        "ES",
+        "ES",
+        "Klit",
+        "possible"
+      ],
+      "area_km2": 0.047678008,
+      "percentOfCorridor": 1.176207
+    },
+    {
+      "key": [
+        "FT",
+        "FT",
+        "Marin flade",
+        "possible"
+      ],
+      "area_km2": 0.018861088,
+      "percentOfCorridor": 0.465299
+    },
+    {
+      "key": [
+        "ES",
+        "ES",
+        "Erosionsdal",
+        "possible"
+      ],
+      "area_km2": 0.013004511,
+      "percentOfCorridor": 0.320819
+    },
+    {
+      "key": [
+        "ES",
+        "HS",
+        "Marin flade",
+        "possible"
+      ],
+      "area_km2": 0.000989794,
+      "percentOfCorridor": 0.024418
+    }
+  ],
+  "fieldContext": {
+    "positiveRecords": 77,
+    "fieldUnion_km2": 3.099031542,
+    "sumMinusUnion_m2": 0.01522,
+    "selectedCropUnion_km2": 1.536613992,
+    "cropGroups": [
+      {
+        "key": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 1.536613992,
+        "percentOfCorridor": 37.907966
+      },
+      {
+        "key": "Permanent græs",
+        "area_km2": 0.480700165,
+        "percentOfCorridor": 11.858779
+      },
+      {
+        "key": "Brak",
+        "area_km2": 0.400708714,
+        "percentOfCorridor": 9.885405
+      },
+      {
+        "key": "Andre registrerede anvendelser",
+        "area_km2": 0.392121011,
+        "percentOfCorridor": 9.673548
+      },
+      {
+        "key": "Græs i omdrift",
+        "area_km2": 0.280185809,
+        "percentOfCorridor": 6.912129
+      },
+      {
+        "key": "Træer og skov",
+        "area_km2": 0.008701867,
+        "percentOfCorridor": 0.214673
+      }
+    ],
+    "records": [
+      {
+        "cropCode": 1,
+        "cropLabel": "Vårbyg",
+        "context": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 0.003969171
+      },
+      {
+        "cropCode": 1,
+        "cropLabel": "Vårbyg",
+        "context": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 0.049977482
+      },
+      {
+        "cropCode": 1,
+        "cropLabel": "Vårbyg",
+        "context": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 0.14931618
+      },
+      {
+        "cropCode": 1,
+        "cropLabel": "Vårbyg",
+        "context": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 0.065937703
+      },
+      {
+        "cropCode": 1,
+        "cropLabel": "Vårbyg",
+        "context": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 0.277423496
+      },
+      {
+        "cropCode": 1,
+        "cropLabel": "Vårbyg",
+        "context": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 0.005829835
+      },
+      {
+        "cropCode": 1,
+        "cropLabel": "Vårbyg",
+        "context": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 0.027681808
+      },
+      {
+        "cropCode": 1,
+        "cropLabel": "Vårbyg",
+        "context": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 0.041097339
+      },
+      {
+        "cropCode": 1,
+        "cropLabel": "Vårbyg",
+        "context": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 0.014877478
+      },
+      {
+        "cropCode": 3,
+        "cropLabel": "Vårhavre",
+        "context": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 0.015573052
+      },
+      {
+        "cropCode": 11,
+        "cropLabel": "Vinterhvede",
+        "context": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 0.189455565
+      },
+      {
+        "cropCode": 22,
+        "cropLabel": "Vinterraps",
+        "context": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 0.044955488
+      },
+      {
+        "cropCode": 22,
+        "cropLabel": "Vinterraps",
+        "context": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 0.161394251
+      },
+      {
+        "cropCode": 22,
+        "cropLabel": "Vinterraps",
+        "context": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 0.028779973
+      },
+      {
+        "cropCode": 22,
+        "cropLabel": "Vinterraps",
+        "context": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 0.018706372
+      },
+      {
+        "cropCode": 22,
+        "cropLabel": "Vinterraps",
+        "context": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 0.130554768
+      },
+      {
+        "cropCode": 31,
+        "cropLabel": "Hestebønner",
+        "context": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 0.303722971
+      },
+      {
+        "cropCode": 31,
+        "cropLabel": "Hestebønner",
+        "context": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+        "area_km2": 0.007361059
+      },
+      {
+        "cropCode": 101,
+        "cropLabel": "Rajgræsfrø, alm.",
+        "context": "Andre registrerede anvendelser",
+        "area_km2": 0.36953056
+      },
+      {
+        "cropCode": 247,
+        "cropLabel": "Miljøtilsagn, græs (0 N), omdrift",
+        "context": "Græs i omdrift",
+        "area_km2": 0.07167712
+      },
+      {
+        "cropCode": 247,
+        "cropLabel": "Miljøtilsagn, græs (0 N), omdrift",
+        "context": "Græs i omdrift",
+        "area_km2": 0.002255487
+      },
+      {
+        "cropCode": 247,
+        "cropLabel": "Miljøtilsagn, græs (0 N), omdrift",
+        "context": "Græs i omdrift",
+        "area_km2": 0.006378975
+      },
+      {
+        "cropCode": 250,
+        "cropLabel": "Permanent græs, meget lavt udbytte",
+        "context": "Permanent græs",
+        "area_km2": 0.00546563
+      },
+      {
+        "cropCode": 250,
+        "cropLabel": "Permanent græs, meget lavt udbytte",
+        "context": "Permanent græs",
+        "area_km2": 0.002482794
+      },
+      {
+        "cropCode": 250,
+        "cropLabel": "Permanent græs, meget lavt udbytte",
+        "context": "Permanent græs",
+        "area_km2": 0.031281124
+      },
+      {
+        "cropCode": 250,
+        "cropLabel": "Permanent græs, meget lavt udbytte",
+        "context": "Permanent græs",
+        "area_km2": 0.012885751
+      },
+      {
+        "cropCode": 251,
+        "cropLabel": "Permanent græs, lavt udbytte",
+        "context": "Permanent græs",
+        "area_km2": 0.086494549
+      },
+      {
+        "cropCode": 251,
+        "cropLabel": "Permanent græs, lavt udbytte",
+        "context": "Permanent græs",
+        "area_km2": 0.021873132
+      },
+      {
+        "cropCode": 251,
+        "cropLabel": "Permanent græs, lavt udbytte",
+        "context": "Permanent græs",
+        "area_km2": 0.005551961
+      },
+      {
+        "cropCode": 251,
+        "cropLabel": "Permanent græs, lavt udbytte",
+        "context": "Permanent græs",
+        "area_km2": 0.009108741
+      },
+      {
+        "cropCode": 252,
+        "cropLabel": "Permanent græs, normalt udbytte",
+        "context": "Permanent græs",
+        "area_km2": 0.017374707
+      },
+      {
+        "cropCode": 252,
+        "cropLabel": "Permanent græs, normalt udbytte",
+        "context": "Permanent græs",
+        "area_km2": 0.00583647
+      },
+      {
+        "cropCode": 252,
+        "cropLabel": "Permanent græs, normalt udbytte",
+        "context": "Permanent græs",
+        "area_km2": 0.048404956
+      },
+      {
+        "cropCode": 252,
+        "cropLabel": "Permanent græs, normalt udbytte",
+        "context": "Permanent græs",
+        "area_km2": 0.005454392
+      },
+      {
+        "cropCode": 254,
+        "cropLabel": "Miljøtilsagn, græs (0 N), permanent",
+        "context": "Permanent græs",
+        "area_km2": 0.042097261
+      },
+      {
+        "cropCode": 254,
+        "cropLabel": "Miljøtilsagn, græs (0 N), permanent",
+        "context": "Permanent græs",
+        "area_km2": 0.004083332
+      },
+      {
+        "cropCode": 254,
+        "cropLabel": "Miljøtilsagn, græs (0 N), permanent",
+        "context": "Permanent græs",
+        "area_km2": 0.003698605
+      },
+      {
+        "cropCode": 254,
+        "cropLabel": "Miljøtilsagn, græs (0 N), permanent",
+        "context": "Permanent græs",
+        "area_km2": 0.005969866
+      },
+      {
+        "cropCode": 254,
+        "cropLabel": "Miljøtilsagn, græs (0 N), permanent",
+        "context": "Permanent græs",
+        "area_km2": 0.005888921
+      },
+      {
+        "cropCode": 254,
+        "cropLabel": "Miljøtilsagn, græs (0 N), permanent",
+        "context": "Permanent græs",
+        "area_km2": 0.013679764
+      },
+      {
+        "cropCode": 254,
+        "cropLabel": "Miljøtilsagn, græs (0 N), permanent",
+        "context": "Permanent græs",
+        "area_km2": 0.014831032
+      },
+      {
+        "cropCode": 255,
+        "cropLabel": "Permanent græs, under 50% kløver/lucerne",
+        "context": "Permanent græs",
+        "area_km2": 0.021253946
+      },
+      {
+        "cropCode": 260,
+        "cropLabel": "Græs med kløver/lucerne, under 50 % bælgpl. (omdrift)",
+        "context": "Græs i omdrift",
+        "area_km2": 0.029649663
+      },
+      {
+        "cropCode": 260,
+        "cropLabel": "Græs med kløver/lucerne, under 50 % bælgpl. (omdrift)",
+        "context": "Græs i omdrift",
+        "area_km2": 0.031625821
+      },
+      {
+        "cropCode": 260,
+        "cropLabel": "Græs med kløver/lucerne, under 50 % bælgpl. (omdrift)",
+        "context": "Græs i omdrift",
+        "area_km2": 0.011665549
+      },
+      {
+        "cropCode": 260,
+        "cropLabel": "Græs med kløver/lucerne, under 50 % bælgpl. (omdrift)",
+        "context": "Græs i omdrift",
+        "area_km2": 0.025471746
+      },
+      {
+        "cropCode": 263,
+        "cropLabel": "Græs uden kløvergræs (omdrift)",
+        "context": "Græs i omdrift",
+        "area_km2": 0.038236939
+      },
+      {
+        "cropCode": 263,
+        "cropLabel": "Græs uden kløvergræs (omdrift)",
+        "context": "Græs i omdrift",
+        "area_km2": 0.007548578
+      },
+      {
+        "cropCode": 264,
+        "cropLabel": "Græs og kløvergræs uden norm, under 50 % kløver (omdrift)",
+        "context": "Græs i omdrift",
+        "area_km2": 0.006892821
+      },
+      {
+        "cropCode": 267,
+        "cropLabel": "Græs  under 50% kløver/lucerne, meget lavt udbytte (omdrift)",
+        "context": "Græs i omdrift",
+        "area_km2": 0.016145364
+      },
+      {
+        "cropCode": 267,
+        "cropLabel": "Græs  under 50% kløver/lucerne, meget lavt udbytte (omdrift)",
+        "context": "Græs i omdrift",
+        "area_km2": 0.032637745
+      },
+      {
+        "cropCode": 271,
+        "cropLabel": "Rekreative formål",
+        "context": "Andre registrerede anvendelser",
+        "area_km2": 0.000891423
+      },
+      {
+        "cropCode": 276,
+        "cropLabel": "Permanent græs og kløvergræs uden norm, under 50 % kløver",
+        "context": "Permanent græs",
+        "area_km2": 0.00038526
+      },
+      {
+        "cropCode": 276,
+        "cropLabel": "Permanent græs og kløvergræs uden norm, under 50 % kløver",
+        "context": "Permanent græs",
+        "area_km2": 0.042452006
+      },
+      {
+        "cropCode": 276,
+        "cropLabel": "Permanent græs og kløvergræs uden norm, under 50 % kløver",
+        "context": "Permanent græs",
+        "area_km2": 0.002845846
+      },
+      {
+        "cropCode": 276,
+        "cropLabel": "Permanent græs og kløvergræs uden norm, under 50 % kløver",
+        "context": "Permanent græs",
+        "area_km2": 0.001411624
+      },
+      {
+        "cropCode": 276,
+        "cropLabel": "Permanent græs og kløvergræs uden norm, under 50 % kløver",
+        "context": "Permanent græs",
+        "area_km2": 0.004424606
+      },
+      {
+        "cropCode": 276,
+        "cropLabel": "Permanent græs og kløvergræs uden norm, under 50 % kløver",
+        "context": "Permanent græs",
+        "area_km2": 0.065463889
+      },
+      {
+        "cropCode": 310,
+        "cropLabel": "Brak, slåning",
+        "context": "Brak",
+        "area_km2": 0.003787863
+      },
+      {
+        "cropCode": 310,
+        "cropLabel": "Brak, slåning",
+        "context": "Brak",
+        "area_km2": 0.003832381
+      },
+      {
+        "cropCode": 310,
+        "cropLabel": "Brak, slåning",
+        "context": "Brak",
+        "area_km2": 0.010856209
+      },
+      {
+        "cropCode": 310,
+        "cropLabel": "Brak, slåning",
+        "context": "Brak",
+        "area_km2": 0.010397632
+      },
+      {
+        "cropCode": 310,
+        "cropLabel": "Brak, slåning",
+        "context": "Brak",
+        "area_km2": 0.01555781
+      },
+      {
+        "cropCode": 310,
+        "cropLabel": "Brak, slåning",
+        "context": "Brak",
+        "area_km2": 0.086559369
+      },
+      {
+        "cropCode": 310,
+        "cropLabel": "Brak, slåning",
+        "context": "Brak",
+        "area_km2": 0.049099848
+      },
+      {
+        "cropCode": 310,
+        "cropLabel": "Brak, slåning",
+        "context": "Brak",
+        "area_km2": 0.003186206
+      },
+      {
+        "cropCode": 310,
+        "cropLabel": "Brak, slåning",
+        "context": "Brak",
+        "area_km2": 0.006526142
+      },
+      {
+        "cropCode": 310,
+        "cropLabel": "Brak, slåning",
+        "context": "Brak",
+        "area_km2": 0.055614589
+      },
+      {
+        "cropCode": 310,
+        "cropLabel": "Brak, slåning",
+        "context": "Brak",
+        "area_km2": 0.002541725
+      },
+      {
+        "cropCode": 310,
+        "cropLabel": "Brak, slåning",
+        "context": "Brak",
+        "area_km2": 0.000796902
+      },
+      {
+        "cropCode": 310,
+        "cropLabel": "Brak, slåning",
+        "context": "Brak",
+        "area_km2": 0.016160842
+      },
+      {
+        "cropCode": 310,
+        "cropLabel": "Brak, slåning",
+        "context": "Brak",
+        "area_km2": 0.04504273
+      },
+      {
+        "cropCode": 318,
+        "cropLabel": "Miljøtilsagn, ej udtagning, ej landbrugsareal",
+        "context": "Andre registrerede anvendelser",
+        "area_km2": 0.021699028
+      },
+      {
+        "cropCode": 324,
+        "cropLabel": "Blomsterbrak",
+        "context": "Brak",
+        "area_km2": 0.016422985
+      },
+      {
+        "cropCode": 324,
+        "cropLabel": "Blomsterbrak",
+        "context": "Brak",
+        "area_km2": 0.01694112
+      },
+      {
+        "cropCode": 324,
+        "cropLabel": "Blomsterbrak",
+        "context": "Brak",
+        "area_km2": 0.057384362
+      },
+      {
+        "cropCode": 580,
+        "cropLabel": "Anden skovdrift",
+        "context": "Træer og skov",
+        "area_km2": 0.008701867
+      }
+    ],
+    "geologicalPairsOnSelectedCrops": [
+      {
+        "key": [
+          "HS",
+          "HS",
+          "Marin flade",
+          "possible"
+        ],
+        "area_km2": 1.38677111,
+        "percentOfCorridor": 34.211371
+      },
+      {
+        "key": [
+          "DL",
+          "DL",
+          "Marin flade",
+          "possible"
+        ],
+        "area_km2": 0.095449416,
+        "percentOfCorridor": 2.354718
+      },
+      {
+        "key": [
+          "ES",
+          "ES",
+          "Marin flade",
+          "possible"
+        ],
+        "area_km2": 0.020160368,
+        "percentOfCorridor": 0.497352
+      },
+      {
+        "key": [
+          "HS",
+          "HS",
+          "Erosionsdal",
+          "possible"
+        ],
+        "area_km2": 0.01628847,
+        "percentOfCorridor": 0.401833
+      },
+      {
+        "key": [
+          "FT",
+          "FT",
+          "Marin flade",
+          "possible"
+        ],
+        "area_km2": 0.013363347,
+        "percentOfCorridor": 0.329671
+      },
+      {
+        "key": [
+          "ES",
+          "ES",
+          "Klit",
+          "possible"
+        ],
+        "area_km2": 0.004581282,
+        "percentOfCorridor": 0.113019
+      }
+    ],
+    "actualExposureVerified": false,
+    "cropYearProvesPloughing": false
+  },
+  "observation": {
+    "source": "Owner's current conversation, 2026-10-04",
+    "description": "Reported much field amber between Asaa and Voersaa, on fields between connecting road and beach",
+    "exactFindPoints": null,
+    "countsIndependentlyVerified": false,
+    "localSupportingExperience": true
+  }
+}

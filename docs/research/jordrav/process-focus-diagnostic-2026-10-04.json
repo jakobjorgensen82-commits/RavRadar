@@ -1,0 +1,2125 @@
+{
+  "status": "PASS",
+  "modelVersion": "0.1.0-prototype",
+  "manifestSha256": "53db672df2541756d380a17bda724bbaec8e870d0e80ce9d39a6a89802447198",
+  "rulesSha256": "655b5c50a212d43fa65c536731553399b8608ed93653665fd6f9e852e4ee9bed",
+  "diagnosisScriptSha256": "ca0e6c2aaed336a43a1ed93ef80b13d50ed2033ec80b4b8073953162a7b5617d",
+  "scope": "Read-only questions about process focus and mapping depth; no classification change",
+  "areaBasis": "Sum of 20 m generalised detail display polygons, inverse projected to EPSG:25832",
+  "countBasis": "Exported polygon fragments; not independent sites, finds, source records or field areas",
+  "questionsOverlap": true,
+  "totalDisplayAreaKm2": 43785.74169904929,
+  "checkedTiles": 192,
+  "displayFragments": 505834,
+  "software": {
+    "shapely": "2.1.2",
+    "GEOS": "3.13.1",
+    "pyproj": "3.8.0"
+  },
+  "potential": [
+    {
+      "key": "enhanced",
+      "displayFragments": 48185,
+      "displayAreaKm2": 5355.683779709133,
+      "shareOfDisplayAreaPercent": 12.231570305512077
+    },
+    {
+      "key": "limited",
+      "displayFragments": 1535,
+      "displayAreaKm2": 88.96198977877269,
+      "shareOfDisplayAreaPercent": 0.2031757058958403
+    },
+    {
+      "key": "possible",
+      "displayFragments": 412250,
+      "displayAreaKm2": 36477.52061310063,
+      "shareOfDisplayAreaPercent": 83.30913031876916
+    },
+    {
+      "key": "unresolved",
+      "displayFragments": 43864,
+      "displayAreaKm2": 1863.5753164607618,
+      "shareOfDisplayAreaPercent": 4.256123669822921
+    }
+  ],
+  "source": [
+    {
+      "key": "soil-new",
+      "displayFragments": 471345,
+      "displayAreaKm2": 40638.73557035904,
+      "shareOfDisplayAreaPercent": 92.81271480949108
+    },
+    {
+      "key": "soil-old",
+      "displayFragments": 34489,
+      "displayAreaKm2": 3147.0061286907617,
+      "shareOfDisplayAreaPercent": 7.187285190510068
+    }
+  ],
+  "accessibility": [
+    {
+      "key": "covered",
+      "displayFragments": 154609,
+      "displayAreaKm2": 6302.979986191668,
+      "shareOfDisplayAreaPercent": 14.395051314909033
+    },
+    {
+      "key": "layered",
+      "displayFragments": 24339,
+      "displayAreaKm2": 2938.2291756327263,
+      "shareOfDisplayAreaPercent": 6.710470261821609
+    },
+    {
+      "key": "near-surface",
+      "displayFragments": 260044,
+      "displayAreaKm2": 29813.128016097664,
+      "shareOfDisplayAreaPercent": 68.08866735891101
+    },
+    {
+      "key": "unknown",
+      "displayFragments": 66842,
+      "displayAreaKm2": 4731.404521127878,
+      "shareOfDisplayAreaPercent": 10.805811064359816
+    }
+  ],
+  "materialProcess": [
+    {
+      "key": [
+        "aeolian-cover",
+        "basin",
+        "possible"
+      ],
+      "displayFragments": 205,
+      "displayAreaKm2": 3.42148271708498,
+      "shareOfDisplayAreaPercent": 0.007814148132060236
+    },
+    {
+      "key": [
+        "aeolian-cover",
+        "cover",
+        "possible"
+      ],
+      "displayFragments": 8505,
+      "displayAreaKm2": 1563.459934419967,
+      "shareOfDisplayAreaPercent": 3.570705608154433
+    },
+    {
+      "key": [
+        "aeolian-cover",
+        "erosion",
+        "possible"
+      ],
+      "displayFragments": 1886,
+      "displayAreaKm2": 26.82413003202637,
+      "shareOfDisplayAreaPercent": 0.061262248830670815
+    },
+    {
+      "key": [
+        "aeolian-cover",
+        "marine",
+        "possible"
+      ],
+      "displayFragments": 4827,
+      "displayAreaKm2": 137.253889468204,
+      "shareOfDisplayAreaPercent": 0.313467088011402
+    },
+    {
+      "key": [
+        "aeolian-cover",
+        "meltwater",
+        "possible"
+      ],
+      "displayFragments": 6748,
+      "displayAreaKm2": 310.6666105587639,
+      "shareOfDisplayAreaPercent": 0.7095154689717391
+    },
+    {
+      "key": [
+        "aeolian-cover",
+        "missing",
+        "possible"
+      ],
+      "displayFragments": 548,
+      "displayAreaKm2": 6.321896766274659,
+      "shareOfDisplayAreaPercent": 0.014438254374510056
+    },
+    {
+      "key": [
+        "aeolian-cover",
+        "older-till",
+        "possible"
+      ],
+      "displayFragments": 6338,
+      "displayAreaKm2": 189.48925958241003,
+      "shareOfDisplayAreaPercent": 0.4327647590962798
+    },
+    {
+      "key": [
+        "aeolian-cover",
+        "pushed",
+        "possible"
+      ],
+      "displayFragments": 399,
+      "displayAreaKm2": 14.852906728433364,
+      "shareOfDisplayAreaPercent": 0.033921788582505295
+    },
+    {
+      "key": [
+        "aeolian-cover",
+        "rock",
+        "possible"
+      ],
+      "displayFragments": 252,
+      "displayAreaKm2": 33.037287008059856,
+      "shareOfDisplayAreaPercent": 0.07545215799959187
+    },
+    {
+      "key": [
+        "aeolian-cover",
+        "shore",
+        "possible"
+      ],
+      "displayFragments": 1250,
+      "displayAreaKm2": 53.15643448589873,
+      "shareOfDisplayAreaPercent": 0.12140124255803779
+    },
+    {
+      "key": [
+        "aeolian-cover",
+        "till",
+        "possible"
+      ],
+      "displayFragments": 3852,
+      "displayAreaKm2": 155.11461569775418,
+      "shareOfDisplayAreaPercent": 0.3542582806154044
+    },
+    {
+      "key": [
+        "aeolian-cover",
+        "unresolved",
+        "unresolved"
+      ],
+      "displayFragments": 473,
+      "displayAreaKm2": 14.898186443087505,
+      "shareOfDisplayAreaPercent": 0.034025200590380736
+    },
+    {
+      "key": [
+        "coarse-unspecified",
+        "basin",
+        "possible"
+      ],
+      "displayFragments": 46,
+      "displayAreaKm2": 0.8020631537172573,
+      "shareOfDisplayAreaPercent": 0.001831790721349531
+    },
+    {
+      "key": [
+        "coarse-unspecified",
+        "cover",
+        "possible"
+      ],
+      "displayFragments": 1260,
+      "displayAreaKm2": 20.493737963713162,
+      "shareOfDisplayAreaPercent": 0.046804592473440126
+    },
+    {
+      "key": [
+        "coarse-unspecified",
+        "erosion",
+        "possible"
+      ],
+      "displayFragments": 1951,
+      "displayAreaKm2": 44.45384314806236,
+      "shareOfDisplayAreaPercent": 0.1015258424845355
+    },
+    {
+      "key": [
+        "coarse-unspecified",
+        "marine",
+        "possible"
+      ],
+      "displayFragments": 145,
+      "displayAreaKm2": 1.9706932017400038,
+      "shareOfDisplayAreaPercent": 0.004500764690216022
+    },
+    {
+      "key": [
+        "coarse-unspecified",
+        "meltwater",
+        "possible"
+      ],
+      "displayFragments": 1131,
+      "displayAreaKm2": 25.157679011518173,
+      "shareOfDisplayAreaPercent": 0.05745632718621828
+    },
+    {
+      "key": [
+        "coarse-unspecified",
+        "missing",
+        "possible"
+      ],
+      "displayFragments": 64,
+      "displayAreaKm2": 0.09669709848056417,
+      "shareOfDisplayAreaPercent": 0.00022084152221330016
+    },
+    {
+      "key": [
+        "coarse-unspecified",
+        "older-till",
+        "possible"
+      ],
+      "displayFragments": 2265,
+      "displayAreaKm2": 1232.2825498223533,
+      "shareOfDisplayAreaPercent": 2.8143466388948015
+    },
+    {
+      "key": [
+        "coarse-unspecified",
+        "pushed",
+        "possible"
+      ],
+      "displayFragments": 237,
+      "displayAreaKm2": 29.199963674244845,
+      "shareOfDisplayAreaPercent": 0.0666882929035295
+    },
+    {
+      "key": [
+        "coarse-unspecified",
+        "rock",
+        "possible"
+      ],
+      "displayFragments": 20,
+      "displayAreaKm2": 2.7708321894206898,
+      "shareOfDisplayAreaPercent": 0.0063281609078711856
+    },
+    {
+      "key": [
+        "coarse-unspecified",
+        "shore",
+        "possible"
+      ],
+      "displayFragments": 26,
+      "displayAreaKm2": 0.14401412025209478,
+      "shareOfDisplayAreaPercent": 0.00032890643086953055
+    },
+    {
+      "key": [
+        "coarse-unspecified",
+        "till",
+        "possible"
+      ],
+      "displayFragments": 2986,
+      "displayAreaKm2": 308.7442202827891,
+      "shareOfDisplayAreaPercent": 0.7051250208455251
+    },
+    {
+      "key": [
+        "coarse-unspecified",
+        "unresolved",
+        "unresolved"
+      ],
+      "displayFragments": 118,
+      "displayAreaKm2": 4.790977415379968,
+      "shareOfDisplayAreaPercent": 0.010941866528856795
+    },
+    {
+      "key": [
+        "fresh-coarse",
+        "basin",
+        "enhanced"
+      ],
+      "displayFragments": 367,
+      "displayAreaKm2": 54.39312319778436,
+      "shareOfDisplayAreaPercent": 0.12422565220350118
+    },
+    {
+      "key": [
+        "fresh-coarse",
+        "cover",
+        "possible"
+      ],
+      "displayFragments": 2110,
+      "displayAreaKm2": 50.4122916155647,
+      "shareOfDisplayAreaPercent": 0.11513403601122346
+    },
+    {
+      "key": [
+        "fresh-coarse",
+        "erosion",
+        "enhanced"
+      ],
+      "displayFragments": 3824,
+      "displayAreaKm2": 147.16347035105053,
+      "shareOfDisplayAreaPercent": 0.33609906933298755
+    },
+    {
+      "key": [
+        "fresh-coarse",
+        "marine",
+        "possible"
+      ],
+      "displayFragments": 570,
+      "displayAreaKm2": 14.508104901300726,
+      "shareOfDisplayAreaPercent": 0.03313431345075453
+    },
+    {
+      "key": [
+        "fresh-coarse",
+        "meltwater",
+        "possible"
+      ],
+      "displayFragments": 2616,
+      "displayAreaKm2": 51.01448744233507,
+      "shareOfDisplayAreaPercent": 0.11650936004001214
+    },
+    {
+      "key": [
+        "fresh-coarse",
+        "missing",
+        "possible"
+      ],
+      "displayFragments": 83,
+      "displayAreaKm2": 0.42816286858762836,
+      "shareOfDisplayAreaPercent": 0.0009778591202828132
+    },
+    {
+      "key": [
+        "fresh-coarse",
+        "older-till",
+        "possible"
+      ],
+      "displayFragments": 2625,
+      "displayAreaKm2": 65.97557341234729,
+      "shareOfDisplayAreaPercent": 0.15067821361989123
+    },
+    {
+      "key": [
+        "fresh-coarse",
+        "pushed",
+        "possible"
+      ],
+      "displayFragments": 583,
+      "displayAreaKm2": 3.7487890279909157,
+      "shareOfDisplayAreaPercent": 0.00856166615552001
+    },
+    {
+      "key": [
+        "fresh-coarse",
+        "rock",
+        "possible"
+      ],
+      "displayFragments": 119,
+      "displayAreaKm2": 1.6682772061885143,
+      "shareOfDisplayAreaPercent": 0.0038100923758583654
+    },
+    {
+      "key": [
+        "fresh-coarse",
+        "shore",
+        "possible"
+      ],
+      "displayFragments": 111,
+      "displayAreaKm2": 1.660448414615879,
+      "shareOfDisplayAreaPercent": 0.003792212602057925
+    },
+    {
+      "key": [
+        "fresh-coarse",
+        "till",
+        "possible"
+      ],
+      "displayFragments": 8441,
+      "displayAreaKm2": 131.7714303427978,
+      "shareOfDisplayAreaPercent": 0.30094598202423256
+    },
+    {
+      "key": [
+        "fresh-coarse",
+        "unresolved",
+        "unresolved"
+      ],
+      "displayFragments": 881,
+      "displayAreaKm2": 2.891443829614178,
+      "shareOfDisplayAreaPercent": 0.006603619620030233
+    },
+    {
+      "key": [
+        "fresh-fine",
+        "basin",
+        "possible"
+      ],
+      "displayFragments": 89,
+      "displayAreaKm2": 9.998422183588362,
+      "shareOfDisplayAreaPercent": 0.022834881392006786
+    },
+    {
+      "key": [
+        "fresh-fine",
+        "cover",
+        "possible"
+      ],
+      "displayFragments": 216,
+      "displayAreaKm2": 12.036587343424598,
+      "shareOfDisplayAreaPercent": 0.0274897418117413
+    },
+    {
+      "key": [
+        "fresh-fine",
+        "erosion",
+        "possible"
+      ],
+      "displayFragments": 1007,
+      "displayAreaKm2": 26.799054887808115,
+      "shareOfDisplayAreaPercent": 0.061204981000447446
+    },
+    {
+      "key": [
+        "fresh-fine",
+        "marine",
+        "possible"
+      ],
+      "displayFragments": 166,
+      "displayAreaKm2": 12.46317930494022,
+      "shareOfDisplayAreaPercent": 0.028464013218282035
+    },
+    {
+      "key": [
+        "fresh-fine",
+        "meltwater",
+        "possible"
+      ],
+      "displayFragments": 257,
+      "displayAreaKm2": 5.259033550428144,
+      "shareOfDisplayAreaPercent": 0.012010835825449387
+    },
+    {
+      "key": [
+        "fresh-fine",
+        "missing",
+        "possible"
+      ],
+      "displayFragments": 18,
+      "displayAreaKm2": 0.004012829919391488,
+      "shareOfDisplayAreaPercent": 9.164695546264133e-06
+    },
+    {
+      "key": [
+        "fresh-fine",
+        "older-till",
+        "possible"
+      ],
+      "displayFragments": 134,
+      "displayAreaKm2": 2.4511608781309904,
+      "shareOfDisplayAreaPercent": 0.005598080066745133
+    },
+    {
+      "key": [
+        "fresh-fine",
+        "pushed",
+        "possible"
+      ],
+      "displayFragments": 232,
+      "displayAreaKm2": 2.205408222612484,
+      "shareOfDisplayAreaPercent": 0.005036818235878757
+    },
+    {
+      "key": [
+        "fresh-fine",
+        "rock",
+        "possible"
+      ],
+      "displayFragments": 69,
+      "displayAreaKm2": 1.09539128134743,
+      "shareOfDisplayAreaPercent": 0.002501707722290825
+    },
+    {
+      "key": [
+        "fresh-fine",
+        "shore",
+        "possible"
+      ],
+      "displayFragments": 21,
+      "displayAreaKm2": 0.17378756677221832,
+      "shareOfDisplayAreaPercent": 0.0003969044717038372
+    },
+    {
+      "key": [
+        "fresh-fine",
+        "till",
+        "possible"
+      ],
+      "displayFragments": 4203,
+      "displayAreaKm2": 73.89291028686735,
+      "shareOfDisplayAreaPercent": 0.16876021147421094
+    },
+    {
+      "key": [
+        "fresh-fine",
+        "unresolved",
+        "unresolved"
+      ],
+      "displayFragments": 90,
+      "displayAreaKm2": 2.0425339071087047,
+      "shareOfDisplayAreaPercent": 0.004664837976589657
+    },
+    {
+      "key": [
+        "fresh-mixed",
+        "basin",
+        "possible"
+      ],
+      "displayFragments": 8,
+      "displayAreaKm2": 1.3966418637211617,
+      "shareOfDisplayAreaPercent": 0.003189718409523908
+    },
+    {
+      "key": [
+        "fresh-mixed",
+        "cover",
+        "possible"
+      ],
+      "displayFragments": 174,
+      "displayAreaKm2": 45.08405491944758,
+      "shareOfDisplayAreaPercent": 0.10296515068608847
+    },
+    {
+      "key": [
+        "fresh-mixed",
+        "erosion",
+        "possible"
+      ],
+      "displayFragments": 584,
+      "displayAreaKm2": 128.3241932910239,
+      "shareOfDisplayAreaPercent": 0.29307301489381915
+    },
+    {
+      "key": [
+        "fresh-mixed",
+        "marine",
+        "possible"
+      ],
+      "displayFragments": 121,
+      "displayAreaKm2": 8.183071691353463,
+      "shareOfDisplayAreaPercent": 0.018688895914103335
+    },
+    {
+      "key": [
+        "fresh-mixed",
+        "meltwater",
+        "possible"
+      ],
+      "displayFragments": 328,
+      "displayAreaKm2": 92.48707826213531,
+      "shareOfDisplayAreaPercent": 0.21122647390062016
+    },
+    {
+      "key": [
+        "fresh-mixed",
+        "missing",
+        "possible"
+      ],
+      "displayFragments": 367,
+      "displayAreaKm2": 1.0959157735226404,
+      "shareOfDisplayAreaPercent": 0.0025029055829524425
+    },
+    {
+      "key": [
+        "fresh-mixed",
+        "older-till",
+        "possible"
+      ],
+      "displayFragments": 255,
+      "displayAreaKm2": 32.155998003166864,
+      "shareOfDisplayAreaPercent": 0.0734394274377795
+    },
+    {
+      "key": [
+        "fresh-mixed",
+        "pushed",
+        "possible"
+      ],
+      "displayFragments": 61,
+      "displayAreaKm2": 2.51654360278337,
+      "shareOfDisplayAreaPercent": 0.005747404303620625
+    },
+    {
+      "key": [
+        "fresh-mixed",
+        "rock",
+        "possible"
+      ],
+      "displayFragments": 15,
+      "displayAreaKm2": 0.4264535959416654,
+      "shareOfDisplayAreaPercent": 0.000973955400533788
+    },
+    {
+      "key": [
+        "fresh-mixed",
+        "shore",
+        "possible"
+      ],
+      "displayFragments": 55,
+      "displayAreaKm2": 0.3274184615231728,
+      "shareOfDisplayAreaPercent": 0.0007477741584774432
+    },
+    {
+      "key": [
+        "fresh-mixed",
+        "till",
+        "possible"
+      ],
+      "displayFragments": 1260,
+      "displayAreaKm2": 82.09298880846539,
+      "shareOfDisplayAreaPercent": 0.18748794841186361
+    },
+    {
+      "key": [
+        "fresh-mixed",
+        "unresolved",
+        "unresolved"
+      ],
+      "displayFragments": 108,
+      "displayAreaKm2": 1.8908788469203075,
+      "shareOfDisplayAreaPercent": 0.0043184807965953986
+    },
+    {
+      "key": [
+        "glacial-basin-coarse",
+        "basin",
+        "possible"
+      ],
+      "displayFragments": 2,
+      "displayAreaKm2": 0.02534722047814622,
+      "shareOfDisplayAreaPercent": 5.788921117829683e-05
+    },
+    {
+      "key": [
+        "glacial-basin-coarse",
+        "cover",
+        "possible"
+      ],
+      "displayFragments": 25,
+      "displayAreaKm2": 0.05988912232928598,
+      "shareOfDisplayAreaPercent": 0.00013677768151312676
+    },
+    {
+      "key": [
+        "glacial-basin-coarse",
+        "erosion",
+        "possible"
+      ],
+      "displayFragments": 13,
+      "displayAreaKm2": 0.3441552144015347,
+      "shareOfDisplayAreaPercent": 0.0007859983662421487
+    },
+    {
+      "key": [
+        "glacial-basin-coarse",
+        "marine",
+        "possible"
+      ],
+      "displayFragments": 6,
+      "displayAreaKm2": 0.028998970329465086,
+      "shareOfDisplayAreaPercent": 6.622925455684295e-05
+    },
+    {
+      "key": [
+        "glacial-basin-coarse",
+        "meltwater",
+        "possible"
+      ],
+      "displayFragments": 14,
+      "displayAreaKm2": 1.067731299835035,
+      "shareOfDisplayAreaPercent": 0.0024385365153200508
+    },
+    {
+      "key": [
+        "glacial-basin-coarse",
+        "pushed",
+        "possible"
+      ],
+      "displayFragments": 4,
+      "displayAreaKm2": 0.11377320793259979,
+      "shareOfDisplayAreaPercent": 0.00025984076897587446
+    },
+    {
+      "key": [
+        "glacial-basin-coarse",
+        "till",
+        "possible"
+      ],
+      "displayFragments": 81,
+      "displayAreaKm2": 16.561835992508144,
+      "shareOfDisplayAreaPercent": 0.0378247240993242
+    },
+    {
+      "key": [
+        "glacial-coarse",
+        "basin",
+        "possible"
+      ],
+      "displayFragments": 929,
+      "displayAreaKm2": 47.77478644139089,
+      "shareOfDisplayAreaPercent": 0.10911037380560852
+    },
+    {
+      "key": [
+        "glacial-coarse",
+        "cover",
+        "possible"
+      ],
+      "displayFragments": 8872,
+      "displayAreaKm2": 119.30151593372717,
+      "shareOfDisplayAreaPercent": 0.272466586848562
+    },
+    {
+      "key": [
+        "glacial-coarse",
+        "erosion",
+        "enhanced"
+      ],
+      "displayFragments": 22407,
+      "displayAreaKm2": 661.1958235995828,
+      "shareOfDisplayAreaPercent": 1.510071082372322
+    },
+    {
+      "key": [
+        "glacial-coarse",
+        "marine",
+        "possible"
+      ],
+      "displayFragments": 3048,
+      "displayAreaKm2": 35.91751379684137,
+      "shareOfDisplayAreaPercent": 0.08203015959787027
+    },
+    {
+      "key": [
+        "glacial-coarse",
+        "meltwater",
+        "enhanced"
+      ],
+      "displayFragments": 12181,
+      "displayAreaKm2": 3791.472369318234,
+      "shareOfDisplayAreaPercent": 8.659148440097242
+    },
+    {
+      "key": [
+        "glacial-coarse",
+        "missing",
+        "possible"
+      ],
+      "displayFragments": 1169,
+      "displayAreaKm2": 3.5502976427444093,
+      "shareOfDisplayAreaPercent": 0.008108341905331927
+    },
+    {
+      "key": [
+        "glacial-coarse",
+        "older-till",
+        "possible"
+      ],
+      "displayFragments": 6027,
+      "displayAreaKm2": 1522.919836186401,
+      "shareOfDisplayAreaPercent": 3.4781181660774925
+    },
+    {
+      "key": [
+        "glacial-coarse",
+        "pushed",
+        "enhanced"
+      ],
+      "displayFragments": 4701,
+      "displayAreaKm2": 473.9379544637614,
+      "shareOfDisplayAreaPercent": 1.0824024809748785
+    },
+    {
+      "key": [
+        "glacial-coarse",
+        "rock",
+        "possible"
+      ],
+      "displayFragments": 1038,
+      "displayAreaKm2": 79.04930147805115,
+      "shareOfDisplayAreaPercent": 0.18053662770263756
+    },
+    {
+      "key": [
+        "glacial-coarse",
+        "shore",
+        "possible"
+      ],
+      "displayFragments": 590,
+      "displayAreaKm2": 4.759550520815586,
+      "shareOfDisplayAreaPercent": 0.010870092263205693
+    },
+    {
+      "key": [
+        "glacial-coarse",
+        "till",
+        "possible"
+      ],
+      "displayFragments": 38361,
+      "displayAreaKm2": 3789.3800881944467,
+      "shareOfDisplayAreaPercent": 8.65436998701503
+    },
+    {
+      "key": [
+        "glacial-coarse",
+        "unresolved",
+        "unresolved"
+      ],
+      "displayFragments": 1929,
+      "displayAreaKm2": 30.426211604296125,
+      "shareOfDisplayAreaPercent": 0.06948885738518107
+    },
+    {
+      "key": [
+        "glacial-fine",
+        "basin",
+        "possible"
+      ],
+      "displayFragments": 336,
+      "displayAreaKm2": 59.82308303378453,
+      "shareOfDisplayAreaPercent": 0.13662685776790998
+    },
+    {
+      "key": [
+        "glacial-fine",
+        "cover",
+        "possible"
+      ],
+      "displayFragments": 370,
+      "displayAreaKm2": 3.427005571109098,
+      "shareOfDisplayAreaPercent": 0.007826761493875773
+    },
+    {
+      "key": [
+        "glacial-fine",
+        "erosion",
+        "possible"
+      ],
+      "displayFragments": 2316,
+      "displayAreaKm2": 32.304881112009085,
+      "shareOfDisplayAreaPercent": 0.07377945390088142
+    },
+    {
+      "key": [
+        "glacial-fine",
+        "marine",
+        "possible"
+      ],
+      "displayFragments": 548,
+      "displayAreaKm2": 7.9369886227488955,
+      "shareOfDisplayAreaPercent": 0.018126879469809756
+    },
+    {
+      "key": [
+        "glacial-fine",
+        "meltwater",
+        "possible"
+      ],
+      "displayFragments": 698,
+      "displayAreaKm2": 46.85195614052898,
+      "shareOfDisplayAreaPercent": 0.10700276921778458
+    },
+    {
+      "key": [
+        "glacial-fine",
+        "missing",
+        "possible"
+      ],
+      "displayFragments": 217,
+      "displayAreaKm2": 0.608970836946943,
+      "shareOfDisplayAreaPercent": 0.001390797125540448
+    },
+    {
+      "key": [
+        "glacial-fine",
+        "older-till",
+        "possible"
+      ],
+      "displayFragments": 746,
+      "displayAreaKm2": 54.11968488138643,
+      "shareOfDisplayAreaPercent": 0.12360116051788046
+    },
+    {
+      "key": [
+        "glacial-fine",
+        "pushed",
+        "possible"
+      ],
+      "displayFragments": 1308,
+      "displayAreaKm2": 38.65385521037284,
+      "shareOfDisplayAreaPercent": 0.08827954879935748
+    },
+    {
+      "key": [
+        "glacial-fine",
+        "rock",
+        "possible"
+      ],
+      "displayFragments": 134,
+      "displayAreaKm2": 2.3951051609007252,
+      "shareOfDisplayAreaPercent": 0.005470057301673457
+    },
+    {
+      "key": [
+        "glacial-fine",
+        "shore",
+        "possible"
+      ],
+      "displayFragments": 71,
+      "displayAreaKm2": 0.3735296798475541,
+      "shareOfDisplayAreaPercent": 0.0008530851947533972
+    },
+    {
+      "key": [
+        "glacial-fine",
+        "till",
+        "possible"
+      ],
+      "displayFragments": 5721,
+      "displayAreaKm2": 197.8132148339574,
+      "shareOfDisplayAreaPercent": 0.45177541171639546
+    },
+    {
+      "key": [
+        "glacial-fine",
+        "unresolved",
+        "unresolved"
+      ],
+      "displayFragments": 91,
+      "displayAreaKm2": 0.7220880049163169,
+      "shareOfDisplayAreaPercent": 0.0016491395986378721
+    },
+    {
+      "key": [
+        "marine-coarse",
+        "basin",
+        "possible"
+      ],
+      "displayFragments": 107,
+      "displayAreaKm2": 7.680313178911247,
+      "shareOfDisplayAreaPercent": 0.01754067164534981
+    },
+    {
+      "key": [
+        "marine-coarse",
+        "cover",
+        "possible"
+      ],
+      "displayFragments": 4494,
+      "displayAreaKm2": 79.40381701579314,
+      "shareOfDisplayAreaPercent": 0.18134628747768183
+    },
+    {
+      "key": [
+        "marine-coarse",
+        "erosion",
+        "possible"
+      ],
+      "displayFragments": 4049,
+      "displayAreaKm2": 54.57362397866948,
+      "shareOfDisplayAreaPercent": 0.12463788863911017
+    },
+    {
+      "key": [
+        "marine-coarse",
+        "marine",
+        "possible"
+      ],
+      "displayFragments": 9530,
+      "displayAreaKm2": 2127.957243845027,
+      "shareOfDisplayAreaPercent": 4.859931935082947
+    },
+    {
+      "key": [
+        "marine-coarse",
+        "meltwater",
+        "possible"
+      ],
+      "displayFragments": 258,
+      "displayAreaKm2": 3.2317965696815105,
+      "shareOfDisplayAreaPercent": 0.007380933711011412
+    },
+    {
+      "key": [
+        "marine-coarse",
+        "missing",
+        "possible"
+      ],
+      "displayFragments": 7692,
+      "displayAreaKm2": 32.38385334590469,
+      "shareOfDisplayAreaPercent": 0.07395981451790237
+    },
+    {
+      "key": [
+        "marine-coarse",
+        "older-till",
+        "possible"
+      ],
+      "displayFragments": 122,
+      "displayAreaKm2": 0.9300072189669177,
+      "shareOfDisplayAreaPercent": 0.0021239955813906215
+    },
+    {
+      "key": [
+        "marine-coarse",
+        "pushed",
+        "possible"
+      ],
+      "displayFragments": 687,
+      "displayAreaKm2": 7.4681046882931055,
+      "shareOfDisplayAreaPercent": 0.017056019604791254
+    },
+    {
+      "key": [
+        "marine-coarse",
+        "rock",
+        "possible"
+      ],
+      "displayFragments": 267,
+      "displayAreaKm2": 2.691091469360313,
+      "shareOfDisplayAreaPercent": 0.006146045184884339
+    },
+    {
+      "key": [
+        "marine-coarse",
+        "shore",
+        "enhanced"
+      ],
+      "displayFragments": 4705,
+      "displayAreaKm2": 227.52103877878724,
+      "shareOfDisplayAreaPercent": 0.519623580531302
+    },
+    {
+      "key": [
+        "marine-coarse",
+        "till",
+        "possible"
+      ],
+      "displayFragments": 7344,
+      "displayAreaKm2": 98.40315703288644,
+      "shareOfDisplayAreaPercent": 0.224737901459422
+    },
+    {
+      "key": [
+        "marine-coarse",
+        "unresolved",
+        "unresolved"
+      ],
+      "displayFragments": 1109,
+      "displayAreaKm2": 26.817185164967206,
+      "shareOfDisplayAreaPercent": 0.06124638780653447
+    },
+    {
+      "key": [
+        "marine-fine",
+        "basin",
+        "possible"
+      ],
+      "displayFragments": 58,
+      "displayAreaKm2": 14.855008963848181,
+      "shareOfDisplayAreaPercent": 0.033926589769680035
+    },
+    {
+      "key": [
+        "marine-fine",
+        "cover",
+        "possible"
+      ],
+      "displayFragments": 1065,
+      "displayAreaKm2": 204.2831870670739,
+      "shareOfDisplayAreaPercent": 0.4665518480220456
+    },
+    {
+      "key": [
+        "marine-fine",
+        "erosion",
+        "possible"
+      ],
+      "displayFragments": 1164,
+      "displayAreaKm2": 17.645509630463664,
+      "shareOfDisplayAreaPercent": 0.04029967049946489
+    },
+    {
+      "key": [
+        "marine-fine",
+        "marine",
+        "possible"
+      ],
+      "displayFragments": 4040,
+      "displayAreaKm2": 505.3878572933243,
+      "shareOfDisplayAreaPercent": 1.1542292940176406
+    },
+    {
+      "key": [
+        "marine-fine",
+        "meltwater",
+        "possible"
+      ],
+      "displayFragments": 475,
+      "displayAreaKm2": 16.991943717487683,
+      "shareOfDisplayAreaPercent": 0.03880702497693815
+    },
+    {
+      "key": [
+        "marine-fine",
+        "missing",
+        "possible"
+      ],
+      "displayFragments": 1457,
+      "displayAreaKm2": 5.0261737648775515,
+      "shareOfDisplayAreaPercent": 0.011479019356172477
+    },
+    {
+      "key": [
+        "marine-fine",
+        "older-till",
+        "possible"
+      ],
+      "displayFragments": 312,
+      "displayAreaKm2": 4.241842893059712,
+      "shareOfDisplayAreaPercent": 0.00968772648003771
+    },
+    {
+      "key": [
+        "marine-fine",
+        "pushed",
+        "possible"
+      ],
+      "displayFragments": 188,
+      "displayAreaKm2": 12.00150954236658,
+      "shareOfDisplayAreaPercent": 0.027409629428812816
+    },
+    {
+      "key": [
+        "marine-fine",
+        "rock",
+        "possible"
+      ],
+      "displayFragments": 83,
+      "displayAreaKm2": 1.363719930037726,
+      "shareOfDisplayAreaPercent": 0.00311452970104041
+    },
+    {
+      "key": [
+        "marine-fine",
+        "shore",
+        "possible"
+      ],
+      "displayFragments": 457,
+      "displayAreaKm2": 6.669912520694203,
+      "shareOfDisplayAreaPercent": 0.015233069629237376
+    },
+    {
+      "key": [
+        "marine-fine",
+        "till",
+        "possible"
+      ],
+      "displayFragments": 1626,
+      "displayAreaKm2": 20.271690172483417,
+      "shareOfDisplayAreaPercent": 0.04629746896105125
+    },
+    {
+      "key": [
+        "marine-fine",
+        "unresolved",
+        "unresolved"
+      ],
+      "displayFragments": 538,
+      "displayAreaKm2": 13.356538260857029,
+      "shareOfDisplayAreaPercent": 0.03050430971949719
+    },
+    {
+      "key": [
+        "marine-mixed",
+        "basin",
+        "possible"
+      ],
+      "displayFragments": 34,
+      "displayAreaKm2": 0.23226576571033053,
+      "shareOfDisplayAreaPercent": 0.000530459817962553
+    },
+    {
+      "key": [
+        "marine-mixed",
+        "cover",
+        "possible"
+      ],
+      "displayFragments": 421,
+      "displayAreaKm2": 24.248241131086225,
+      "shareOfDisplayAreaPercent": 0.0553793088575515
+    },
+    {
+      "key": [
+        "marine-mixed",
+        "erosion",
+        "possible"
+      ],
+      "displayFragments": 173,
+      "displayAreaKm2": 6.027723614708599,
+      "shareOfDisplayAreaPercent": 0.013766407466929987
+    },
+    {
+      "key": [
+        "marine-mixed",
+        "marine",
+        "possible"
+      ],
+      "displayFragments": 3678,
+      "displayAreaKm2": 195.6075823967497,
+      "shareOfDisplayAreaPercent": 0.44673808140835236
+    },
+    {
+      "key": [
+        "marine-mixed",
+        "meltwater",
+        "possible"
+      ],
+      "displayFragments": 25,
+      "displayAreaKm2": 0.8667791394169349,
+      "shareOfDisplayAreaPercent": 0.0019795922274756282
+    },
+    {
+      "key": [
+        "marine-mixed",
+        "missing",
+        "possible"
+      ],
+      "displayFragments": 4476,
+      "displayAreaKm2": 29.04452633181023,
+      "shareOfDisplayAreaPercent": 0.06633329756394389
+    },
+    {
+      "key": [
+        "marine-mixed",
+        "older-till",
+        "possible"
+      ],
+      "displayFragments": 15,
+      "displayAreaKm2": 0.37077327233759433,
+      "shareOfDisplayAreaPercent": 0.0008467899776279108
+    },
+    {
+      "key": [
+        "marine-mixed",
+        "pushed",
+        "possible"
+      ],
+      "displayFragments": 101,
+      "displayAreaKm2": 0.41849038232851005,
+      "shareOfDisplayAreaPercent": 0.000955768627159276
+    },
+    {
+      "key": [
+        "marine-mixed",
+        "rock",
+        "possible"
+      ],
+      "displayFragments": 62,
+      "displayAreaKm2": 0.24569864882631898,
+      "shareOfDisplayAreaPercent": 0.0005611384877640517
+    },
+    {
+      "key": [
+        "marine-mixed",
+        "shore",
+        "possible"
+      ],
+      "displayFragments": 1060,
+      "displayAreaKm2": 14.478462275021,
+      "shareOfDisplayAreaPercent": 0.033066614183528534
+    },
+    {
+      "key": [
+        "marine-mixed",
+        "till",
+        "possible"
+      ],
+      "displayFragments": 1039,
+      "displayAreaKm2": 12.24354698604235,
+      "shareOfDisplayAreaPercent": 0.027962406278727467
+    },
+    {
+      "key": [
+        "marine-mixed",
+        "unresolved",
+        "unresolved"
+      ],
+      "displayFragments": 611,
+      "displayAreaKm2": 17.89677969051698,
+      "shareOfDisplayAreaPercent": 0.040873533246338876
+    },
+    {
+      "key": [
+        "mixed",
+        "basin",
+        "possible"
+      ],
+      "displayFragments": 18,
+      "displayAreaKm2": 1.9123076000334054,
+      "shareOfDisplayAreaPercent": 0.0043674208220045455
+    },
+    {
+      "key": [
+        "mixed",
+        "cover",
+        "possible"
+      ],
+      "displayFragments": 116,
+      "displayAreaKm2": 2.1221052708574932,
+      "shareOfDisplayAreaPercent": 0.004846566915420254
+    },
+    {
+      "key": [
+        "mixed",
+        "erosion",
+        "possible"
+      ],
+      "displayFragments": 159,
+      "displayAreaKm2": 5.292174635898539,
+      "shareOfDisplayAreaPercent": 0.012086525043410299
+    },
+    {
+      "key": [
+        "mixed",
+        "marine",
+        "possible"
+      ],
+      "displayFragments": 98,
+      "displayAreaKm2": 12.485934241516144,
+      "shareOfDisplayAreaPercent": 0.028515982045788316
+    },
+    {
+      "key": [
+        "mixed",
+        "meltwater",
+        "possible"
+      ],
+      "displayFragments": 272,
+      "displayAreaKm2": 24.3117687572736,
+      "shareOfDisplayAreaPercent": 0.055524396330601564
+    },
+    {
+      "key": [
+        "mixed",
+        "missing",
+        "possible"
+      ],
+      "displayFragments": 33,
+      "displayAreaKm2": 0.13639683757885282,
+      "shareOfDisplayAreaPercent": 0.00031150971134928694
+    },
+    {
+      "key": [
+        "mixed",
+        "older-till",
+        "possible"
+      ],
+      "displayFragments": 29,
+      "displayAreaKm2": 1.791249443573233,
+      "shareOfDisplayAreaPercent": 0.004090942334344712
+    },
+    {
+      "key": [
+        "mixed",
+        "pushed",
+        "possible"
+      ],
+      "displayFragments": 118,
+      "displayAreaKm2": 1.7320842309374584,
+      "shareOfDisplayAreaPercent": 0.003955817952890967
+    },
+    {
+      "key": [
+        "mixed",
+        "rock",
+        "possible"
+      ],
+      "displayFragments": 7,
+      "displayAreaKm2": 0.29031748527512186,
+      "shareOfDisplayAreaPercent": 0.0006630411499491065
+    },
+    {
+      "key": [
+        "mixed",
+        "shore",
+        "possible"
+      ],
+      "displayFragments": 22,
+      "displayAreaKm2": 0.17976301483999746,
+      "shareOfDisplayAreaPercent": 0.00041055148974192344
+    },
+    {
+      "key": [
+        "mixed",
+        "till",
+        "possible"
+      ],
+      "displayFragments": 1301,
+      "displayAreaKm2": 30.73526153092961,
+      "shareOfDisplayAreaPercent": 0.07019468059301358
+    },
+    {
+      "key": [
+        "mixed",
+        "unresolved",
+        "unresolved"
+      ],
+      "displayFragments": 21,
+      "displayAreaKm2": 0.5893710249297084,
+      "shareOfDisplayAreaPercent": 0.0013460341244887607
+    },
+    {
+      "key": [
+        "older-sediment",
+        "basin",
+        "possible"
+      ],
+      "displayFragments": 1,
+      "displayAreaKm2": 3.751142085031529e-05,
+      "shareOfDisplayAreaPercent": 8.567040181285719e-08
+    },
+    {
+      "key": [
+        "older-sediment",
+        "cover",
+        "possible"
+      ],
+      "displayFragments": 8,
+      "displayAreaKm2": 0.1562862583532857,
+      "shareOfDisplayAreaPercent": 0.0003569341349233764
+    },
+    {
+      "key": [
+        "older-sediment",
+        "erosion",
+        "possible"
+      ],
+      "displayFragments": 322,
+      "displayAreaKm2": 6.246976610241575,
+      "shareOfDisplayAreaPercent": 0.014267148089390965
+    },
+    {
+      "key": [
+        "older-sediment",
+        "marine",
+        "possible"
+      ],
+      "displayFragments": 26,
+      "displayAreaKm2": 0.17254869112826612,
+      "shareOfDisplayAreaPercent": 0.0003940750674368789
+    },
+    {
+      "key": [
+        "older-sediment",
+        "meltwater",
+        "possible"
+      ],
+      "displayFragments": 94,
+      "displayAreaKm2": 4.220928457969496,
+      "shareOfDisplayAreaPercent": 0.009639961079067763
+    },
+    {
+      "key": [
+        "older-sediment",
+        "missing",
+        "possible"
+      ],
+      "displayFragments": 80,
+      "displayAreaKm2": 0.8351720102590057,
+      "shareOfDisplayAreaPercent": 0.001907406333320464
+    },
+    {
+      "key": [
+        "older-sediment",
+        "older-till",
+        "possible"
+      ],
+      "displayFragments": 134,
+      "displayAreaKm2": 12.684839323122516,
+      "shareOfDisplayAreaPercent": 0.028970251115782598
+    },
+    {
+      "key": [
+        "older-sediment",
+        "pushed",
+        "possible"
+      ],
+      "displayFragments": 234,
+      "displayAreaKm2": 15.871607718293161,
+      "shareOfDisplayAreaPercent": 0.036248347298494604
+    },
+    {
+      "key": [
+        "older-sediment",
+        "rock",
+        "possible"
+      ],
+      "displayFragments": 1,
+      "displayAreaKm2": 0.009768772108604102,
+      "shareOfDisplayAreaPercent": 2.2310395415355513e-05
+    },
+    {
+      "key": [
+        "older-sediment",
+        "shore",
+        "possible"
+      ],
+      "displayFragments": 16,
+      "displayAreaKm2": 0.05064647852531432,
+      "shareOfDisplayAreaPercent": 0.00011566888343109646
+    },
+    {
+      "key": [
+        "older-sediment",
+        "till",
+        "possible"
+      ],
+      "displayFragments": 474,
+      "displayAreaKm2": 13.280731058784443,
+      "shareOfDisplayAreaPercent": 0.030331177555621498
+    },
+    {
+      "key": [
+        "older-sediment",
+        "unresolved",
+        "unresolved"
+      ],
+      "displayFragments": 32,
+      "displayAreaKm2": 2.2512544625664055,
+      "shareOfDisplayAreaPercent": 0.005141524101703834
+    },
+    {
+      "key": [
+        "organic-cover",
+        "basin",
+        "possible"
+      ],
+      "displayFragments": 702,
+      "displayAreaKm2": 87.27230599078469,
+      "shareOfDisplayAreaPercent": 0.19931672413049384
+    },
+    {
+      "key": [
+        "organic-cover",
+        "cover",
+        "possible"
+      ],
+      "displayFragments": 6670,
+      "displayAreaKm2": 839.3311765282943,
+      "shareOfDisplayAreaPercent": 1.9169052389182628
+    },
+    {
+      "key": [
+        "organic-cover",
+        "erosion",
+        "possible"
+      ],
+      "displayFragments": 10076,
+      "displayAreaKm2": 739.0684677909823,
+      "shareOfDisplayAreaPercent": 1.687920403109283
+    },
+    {
+      "key": [
+        "organic-cover",
+        "marine",
+        "possible"
+      ],
+      "displayFragments": 7116,
+      "displayAreaKm2": 402.03080497568385,
+      "shareOfDisplayAreaPercent": 0.9181774462996319
+    },
+    {
+      "key": [
+        "organic-cover",
+        "meltwater",
+        "possible"
+      ],
+      "displayFragments": 12911,
+      "displayAreaKm2": 416.06870120762557,
+      "shareOfDisplayAreaPercent": 0.9502378743915615
+    },
+    {
+      "key": [
+        "organic-cover",
+        "missing",
+        "possible"
+      ],
+      "displayFragments": 552,
+      "displayAreaKm2": 1.4088484225359945,
+      "shareOfDisplayAreaPercent": 0.003217596340423724
+    },
+    {
+      "key": [
+        "organic-cover",
+        "older-till",
+        "possible"
+      ],
+      "displayFragments": 6562,
+      "displayAreaKm2": 188.3862099136868,
+      "shareOfDisplayAreaPercent": 0.430245560777556
+    },
+    {
+      "key": [
+        "organic-cover",
+        "pushed",
+        "possible"
+      ],
+      "displayFragments": 5632,
+      "displayAreaKm2": 43.98048927416755,
+      "shareOfDisplayAreaPercent": 0.10044477395508523
+    },
+    {
+      "key": [
+        "organic-cover",
+        "rock",
+        "possible"
+      ],
+      "displayFragments": 2234,
+      "displayAreaKm2": 30.92488136341966,
+      "shareOfDisplayAreaPercent": 0.07062774356084763
+    },
+    {
+      "key": [
+        "organic-cover",
+        "shore",
+        "possible"
+      ],
+      "displayFragments": 1299,
+      "displayAreaKm2": 43.54532464129661,
+      "shareOfDisplayAreaPercent": 0.09945092386602668
+    },
+    {
+      "key": [
+        "organic-cover",
+        "till",
+        "possible"
+      ],
+      "displayFragments": 63766,
+      "displayAreaKm2": 977.9671641304047,
+      "shareOfDisplayAreaPercent": 2.2335288296638334
+    },
+    {
+      "key": [
+        "organic-cover",
+        "unresolved",
+        "unresolved"
+      ],
+      "displayFragments": 2556,
+      "displayAreaKm2": 53.38712788438073,
+      "shareOfDisplayAreaPercent": 0.12192811132748246
+    },
+    {
+      "key": [
+        "rock",
+        "basin",
+        "limited"
+      ],
+      "displayFragments": 6,
+      "displayAreaKm2": 0.42264936189556185,
+      "shareOfDisplayAreaPercent": 0.0009652671063574532
+    },
+    {
+      "key": [
+        "rock",
+        "cover",
+        "limited"
+      ],
+      "displayFragments": 82,
+      "displayAreaKm2": 0.7092746186533687,
+      "shareOfDisplayAreaPercent": 0.0016198757657878591
+    },
+    {
+      "key": [
+        "rock",
+        "erosion",
+        "limited"
+      ],
+      "displayFragments": 257,
+      "displayAreaKm2": 5.571705029268703,
+      "shareOfDisplayAreaPercent": 0.012724930109816273
+    },
+    {
+      "key": [
+        "rock",
+        "marine",
+        "limited"
+      ],
+      "displayFragments": 219,
+      "displayAreaKm2": 10.88163994034669,
+      "shareOfDisplayAreaPercent": 0.024852016930851626
+    },
+    {
+      "key": [
+        "rock",
+        "meltwater",
+        "limited"
+      ],
+      "displayFragments": 16,
+      "displayAreaKm2": 0.23273565006609925,
+      "shareOfDisplayAreaPercent": 0.0005315329626382749
+    },
+    {
+      "key": [
+        "rock",
+        "missing",
+        "limited"
+      ],
+      "displayFragments": 111,
+      "displayAreaKm2": 4.571686736931006,
+      "shareOfDisplayAreaPercent": 0.010441039844325099
+    },
+    {
+      "key": [
+        "rock",
+        "pushed",
+        "limited"
+      ],
+      "displayFragments": 51,
+      "displayAreaKm2": 2.9843941783554686,
+      "shareOfDisplayAreaPercent": 0.006815904133514468
+    },
+    {
+      "key": [
+        "rock",
+        "rock",
+        "limited"
+      ],
+      "displayFragments": 429,
+      "displayAreaKm2": 48.389540672728145,
+      "shareOfDisplayAreaPercent": 0.11051437932768605
+    },
+    {
+      "key": [
+        "rock",
+        "shore",
+        "limited"
+      ],
+      "displayFragments": 20,
+      "displayAreaKm2": 0.2951959920922128,
+      "shareOfDisplayAreaPercent": 0.0006741829203697657
+    },
+    {
+      "key": [
+        "rock",
+        "till",
+        "limited"
+      ],
+      "displayFragments": 344,
+      "displayAreaKm2": 14.903167598435374,
+      "shareOfDisplayAreaPercent": 0.03403657679449327
+    },
+    {
+      "key": [
+        "rock",
+        "unresolved",
+        "unresolved"
+      ],
+      "displayFragments": 45,
+      "displayAreaKm2": 1.7966260710577717,
+      "shareOfDisplayAreaPercent": 0.004103221736898844
+    },
+    {
+      "key": [
+        "till",
+        "basin",
+        "possible"
+      ],
+      "displayFragments": 1043,
+      "displayAreaKm2": 22.194971319275936,
+      "shareOfDisplayAreaPercent": 0.05068995170123577
+    },
+    {
+      "key": [
+        "till",
+        "cover",
+        "possible"
+      ],
+      "displayFragments": 6664,
+      "displayAreaKm2": 76.10651846797907,
+      "shareOfDisplayAreaPercent": 0.17381575717291448
+    },
+    {
+      "key": [
+        "till",
+        "erosion",
+        "possible"
+      ],
+      "displayFragments": 19780,
+      "displayAreaKm2": 584.3786163269741,
+      "shareOfDisplayAreaPercent": 1.3346322196471152
+    },
+    {
+      "key": [
+        "till",
+        "marine",
+        "possible"
+      ],
+      "displayFragments": 5753,
+      "displayAreaKm2": 101.00285703257414,
+      "shareOfDisplayAreaPercent": 0.23067522237442695
+    },
+    {
+      "key": [
+        "till",
+        "meltwater",
+        "possible"
+      ],
+      "displayFragments": 5062,
+      "displayAreaKm2": 171.36609156168805,
+      "shareOfDisplayAreaPercent": 0.3913741892041739
+    },
+    {
+      "key": [
+        "till",
+        "missing",
+        "possible"
+      ],
+      "displayFragments": 4982,
+      "displayAreaKm2": 16.370412189354365,
+      "shareOfDisplayAreaPercent": 0.03738754113581639
+    },
+    {
+      "key": [
+        "till",
+        "older-till",
+        "possible"
+      ],
+      "displayFragments": 3302,
+      "displayAreaKm2": 878.3033654248844,
+      "shareOfDisplayAreaPercent": 2.0059118136257466
+    },
+    {
+      "key": [
+        "till",
+        "pushed",
+        "possible"
+      ],
+      "displayFragments": 4320,
+      "displayAreaKm2": 1009.9942332718628,
+      "shareOfDisplayAreaPercent": 2.306673803115667
+    },
+    {
+      "key": [
+        "till",
+        "rock",
+        "possible"
+      ],
+      "displayFragments": 2477,
+      "displayAreaKm2": 415.11379941339726,
+      "shareOfDisplayAreaPercent": 0.9480570233720867
+    },
+    {
+      "key": [
+        "till",
+        "shore",
+        "possible"
+      ],
+      "displayFragments": 1051,
+      "displayAreaKm2": 7.755419529919683,
+      "shareOfDisplayAreaPercent": 0.017712203171581935
+    },
+    {
+      "key": [
+        "till",
+        "till",
+        "possible"
+      ],
+      "displayFragments": 35691,
+      "displayAreaKm2": 14696.651085324604,
+      "shareOfDisplayAreaPercent": 33.56492436816186
+    },
+    {
+      "key": [
+        "till",
+        "unresolved",
+        "unresolved"
+      ],
+      "displayFragments": 1307,
+      "displayAreaKm2": 55.75383591214455,
+      "shareOfDisplayAreaPercent": 0.12733331387956165
+    },
+    {
+      "key": [
+        "unresolved",
+        "basin",
+        "unresolved"
+      ],
+      "displayFragments": 328,
+      "displayAreaKm2": 7.117218253681375,
+      "shareOfDisplayAreaPercent": 0.01625464815144586
+    },
+    {
+      "key": [
+        "unresolved",
+        "cover",
+        "unresolved"
+      ],
+      "displayFragments": 1513,
+      "displayAreaKm2": 26.674749257716794,
+      "shareOfDisplayAreaPercent": 0.06092108577504347
+    },
+    {
+      "key": [
+        "unresolved",
+        "erosion",
+        "unresolved"
+      ],
+      "displayFragments": 2803,
+      "displayAreaKm2": 47.52207668873772,
+      "shareOfDisplayAreaPercent": 0.10853322301896635
+    },
+    {
+      "key": [
+        "unresolved",
+        "marine",
+        "unresolved"
+      ],
+      "displayFragments": 6313,
+      "displayAreaKm2": 96.9880871467155,
+      "shareOfDisplayAreaPercent": 0.22150609623867892
+    },
+    {
+      "key": [
+        "unresolved",
+        "meltwater",
+        "unresolved"
+      ],
+      "displayFragments": 1191,
+      "displayAreaKm2": 52.779880918550184,
+      "shareOfDisplayAreaPercent": 0.12054125126238566
+    },
+    {
+      "key": [
+        "unresolved",
+        "missing",
+        "unresolved"
+      ],
+      "displayFragments": 4519,
+      "displayAreaKm2": 44.015831041876694,
+      "shareOfDisplayAreaPercent": 0.1005254891978509
+    },
+    {
+      "key": [
+        "unresolved",
+        "older-till",
+        "unresolved"
+      ],
+      "displayFragments": 416,
+      "displayAreaKm2": 49.34100738435672,
+      "shareOfDisplayAreaPercent": 0.11268738513895736
+    },
+    {
+      "key": [
+        "unresolved",
+        "pushed",
+        "unresolved"
+      ],
+      "displayFragments": 617,
+      "displayAreaKm2": 11.113053460530148,
+      "shareOfDisplayAreaPercent": 0.025380530349155744
+    },
+    {
+      "key": [
+        "unresolved",
+        "rock",
+        "unresolved"
+      ],
+      "displayFragments": 3579,
+      "displayAreaKm2": 37.047029101249834,
+      "shareOfDisplayAreaPercent": 0.08460980141865274
+    },
+    {
+      "key": [
+        "unresolved",
+        "shore",
+        "unresolved"
+      ],
+      "displayFragments": 2016,
+      "displayAreaKm2": 12.467097477698715,
+      "shareOfDisplayAreaPercent": 0.028472961731214455
+    },
+    {
+      "key": [
+        "unresolved",
+        "till",
+        "unresolved"
+      ],
+      "displayFragments": 8221,
+      "displayAreaKm2": 249.16861940317096,
+      "shareOfDisplayAreaPercent": 0.5690633748213544
+    },
+    {
+      "key": [
+        "unresolved",
+        "unresolved",
+        "unresolved"
+      ],
+      "displayFragments": 2439,
+      "displayAreaKm2": 999.8296278037213,
+      "shareOfDisplayAreaPercent": 2.2834593842804094
+    }
+  ],
+  "questions": [
+    {
+      "key": "cover_above_any_coarse_depth_code",
+      "displayFragments": 13892,
+      "displayAreaKm2": 677.776689047683,
+      "shareOfDisplayAreaPercent": 1.5479392668650385
+    },
+    {
+      "key": "enhanced_with_different_upper_and_depth_codes",
+      "displayFragments": 1251,
+      "displayAreaKm2": 35.73862191198508,
+      "shareOfDisplayAreaPercent": 0.08162159763702498
+    },
+    {
+      "key": "fine_basin_receivers_outside_focus",
+      "displayFragments": 483,
+      "displayAreaKm2": 84.67651418122104,
+      "shareOfDisplayAreaPercent": 0.19338832892959673
+    },
+    {
+      "key": "glacial_basin_coarse_outside_focus",
+      "displayFragments": 29,
+      "displayAreaKm2": 1.4372337347147162,
+      "shareOfDisplayAreaPercent": 0.0032824240927404966
+    },
+    {
+      "key": "marine_coarse_on_marine_plain_outside_focus",
+      "displayFragments": 9530,
+      "displayAreaKm2": 2127.957243845027,
+      "shareOfDisplayAreaPercent": 4.859931935082947
+    }
+  ],
+  "nativeVsDisplayAreaByPotential": [
+    {
+      "key": "enhanced",
+      "nativeSourceAreaKm2": 5348.873633923066,
+      "displayAreaKm2": 5355.683779709133,
+      "displayMinusNativeKm2": 6.8101457860666414
+    },
+    {
+      "key": "limited",
+      "nativeSourceAreaKm2": 89.12811003560022,
+      "displayAreaKm2": 88.96198977877269,
+      "displayMinusNativeKm2": -0.16612025682752574
+    },
+    {
+      "key": "possible",
+      "nativeSourceAreaKm2": 36480.50194442385,
+      "displayAreaKm2": 36477.52061310063,
+      "displayMinusNativeKm2": -2.9813313232225482
+    },
+    {
+      "key": "unresolved",
+      "nativeSourceAreaKm2": 1867.2380038585204,
+      "displayAreaKm2": 1863.5753164607618,
+      "displayMinusNativeKm2": -3.6626873977586456
+    }
+  ]
+}

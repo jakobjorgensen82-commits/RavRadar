@@ -1,0 +1,115 @@
+{
+  "scope": "Local unreleased Jordrav planning UI; no CI or production claim",
+  "date": "2026-10-05",
+  "baseline": "44192cf4",
+  "appVersion": "4.0.541",
+  "modelVersion": "0.2.0-prototype",
+  "manifestSha256": "5d0a925a04f71e11eaf82feb3d27294be6b1f00bb4de08dfa3ee4ff4e6a2b2a0",
+  "implementationLF": {
+    "jordrav.html": {
+      "lfBytes": 10815,
+      "lfSha256": "cf9c38232db3510d8c438b359feb340fb3210caedfcbb254659cebe18aef90d8"
+    },
+    "jordrav.css": {
+      "lfBytes": 7112,
+      "lfSha256": "29a47bf2cc6948031d036e92a807b392cf85f2236f944b56367c05c22398b17c"
+    },
+    "js/jordrav/map.js": {
+      "lfBytes": 24605,
+      "lfSha256": "390c5369e89c4d94e0311341195a9e91d2e08ac114d9676cee688bf9c0d9e04a"
+    },
+    "js/jordrav/messages.js": {
+      "lfBytes": 77639,
+      "lfSha256": "c045d62fd37ac8e40dbb2795e45d83bb49efe1e5bf5d2517b4219e7635d74bd0"
+    },
+    "js/jordrav/view-state.js": {
+      "lfBytes": 3248,
+      "lfSha256": "7bef9b563980d2266c056e07523a771a7f17b704b6aae05502c815873ba0de08"
+    },
+    "js/jordrav/search-context.js": {
+      "lfBytes": 2385,
+      "lfSha256": "06672b010b88bdd96ee5d828079b26990b2b1b1edef962d04eb070607efdb212"
+    },
+    "js/jordrav/field-context.js": {
+      "lfBytes": 2317,
+      "lfSha256": "5b06eb84d0bf0f6c1c69c1388e2ddf01186b4c0d8d8a0ab57f6504d11c9f4ba9"
+    },
+    "js/jordrav/dataset-binding.js": {
+      "lfBytes": 322,
+      "lfSha256": "8b1a5c73fbd94ce9d075ed6dd64712a12d696ee86e62ff6b476c8b2b9fb611a4"
+    },
+    "scripts/test-jordrav-view-state.mjs": {
+      "lfBytes": 3871,
+      "lfSha256": "45304dca85b27c2c5d57c55b5f32b5a3e7bc449839768503d779af60df92f16e"
+    },
+    "scripts/test-jordrav-view-browser.mjs": {
+      "lfBytes": 17034,
+      "lfSha256": "2d310e8c2b3410b1f6d94f4955742ead6f2969c9f3d79904944fed4cae1a1723"
+    },
+    "scripts/test-jordrav-search-browser.mjs": {
+      "lfBytes": 12236,
+      "lfSha256": "187f6fc035e2e8997f9579687b3cf293577aba7011ee56d1ee008f546f2855c5"
+    },
+    "scripts/test-jordrav-browser.mjs": {
+      "lfBytes": 35071,
+      "lfSha256": "104ecd9313f0c8dc9ad80afda77b35bf714c3d60734bac6e9bf5842a0133bad1"
+    },
+    "scripts/test-jordrav.mjs": {
+      "lfBytes": 600,
+      "lfSha256": "43c8a14131447c13a44c89f195b939d64e56475890edfbce6c61b6bfd4f763be"
+    }
+  },
+  "browserReports": {
+    "planning-2026-10-05-browser-audit.json": {
+      "status": "PASS",
+      "checks": 15,
+      "sha256": "3443ac4f2ed2f1ae985d662a11536e70e714eafe2be280d815001d2e4fc64f25"
+    },
+    "planning-context-browser-2026-10-05.json": {
+      "status": "PASS",
+      "checks": 8,
+      "sha256": "1d5bb29cee4d2f4020d917596d532cf92163f04bd3a4b2f23340497296fd4f6a"
+    },
+    "planning-regression-2026-10-05-browser-audit.json": {
+      "status": "PASS",
+      "checks": 20,
+      "sha256": "661205fa8d7978c16310507491e808f754090c416aad7aaff1d04ce4589c5994"
+    }
+  },
+  "targetedUnitCounts": {
+    "model": 17,
+    "artifact": 5,
+    "searchContext": 4,
+    "viewState": 4
+  },
+  "nationalFragmentReferences": {
+    "count": 505834,
+    "unique": true,
+    "actualGeometryBounds": true
+  },
+  "completedLocalChecks": [
+    "source-critical-gate: 112 browser files",
+    "RDKS",
+    "security hardening",
+    "Pages module closure: 62 modules",
+    "release-version imports",
+    "handbook: 419 chapters",
+    "visual screenshots"
+  ],
+  "protectedPaths": [
+    "data/jordrav",
+    "data/kystdata.json",
+    "data/zones.geojson",
+    "data/live",
+    ".github/workflows",
+    "app.js",
+    "bootstrap.js",
+    "service-worker.js",
+    "docs/handbook/content.json",
+    "js/jordrav/search-context.js",
+    "js/jordrav/field-context.js",
+    "scripts/lib/jordrav_model.py",
+    "scripts/build-jordrav-national-model.py"
+  ],
+  "protectedDiffEmpty": true
+}

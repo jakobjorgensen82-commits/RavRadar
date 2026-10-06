@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { PROFILE_BINDING } from '../js/jordrav/profile-examples.js';
 import { publicDeliveryEntries, assertPublicDeliveryDocument } from '../js/core/public-delivery-contract.js';
 import { assertPublicDeliveryNestedBinding } from './lib/public-delivery-nested-binding.mjs';
 import {
@@ -36,6 +37,7 @@ const EXPECTED_PUBLIC_PATHS = Object.freeze({
 });
 const ZONE_REGISTRY_FILE = 'data/zones.geojson';
 const PUBLIC_VERSION_FILE = 'version.json';
+const PUBLIC_JORDRAV_PROFILE_FILE = 'data/jordrav/context-20261006/profiles.json';
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+$/;
@@ -102,10 +104,18 @@ function isPathLikeString(value) {
   return typeof value === 'string' && (/[/\\]/.test(value) || /\.json(?:[?#]|$)/i.test(value));
 }
 
-function isApprovedCoordinatePath(file, tokens) {
+function isApprovedCoordinatePath(file, tokens, boundPublicProfile = false) {
   const normalizedFile = normalizedPath(file);
   const last = String(tokens.at(-1) ?? '');
   const previous = String(tokens.at(-2) ?? '');
+
+  // These are the original public Jupiter point coordinates. Approval is
+  // restricted to the exact client SHA/byte-bound snapshot and its two leaves;
+  // the rest of the recursive private-field/fingerprint audit still runs.
+  if (boundPublicProfile && normalizedFile === PUBLIC_JORDRAV_PROFILE_FILE
+    && tokens.length === 3 && tokens[0] === 'profiles'
+    && Number.isSafeInteger(tokens[1]) && tokens[1] >= 0 && tokens[1] < 16
+    && (last === 'latitude' || last === 'longitude')) return true;
 
   if (normalizedFile.endsWith('.geojson') && tokens.includes('coordinates')) return true;
 
@@ -145,14 +155,14 @@ function hasCoordinateShape(value) {
   return value.some(item => Array.isArray(item) && hasCoordinateShape(item));
 }
 
-function scanJsonPrivacy(value, { file, tokens = [], issues }) {
+function scanJsonPrivacy(value, { file, tokens = [], issues, boundPublicProfile = false }) {
   if (Array.isArray(value)) {
     if (normalizedPath(file).startsWith('data/live/')
       && isCoordinatePair(value)
-      && !isApprovedCoordinatePath(file, tokens)) {
+      && !isApprovedCoordinatePath(file, tokens, boundPublicProfile)) {
       issues.push(`unapproved coordinate-like pair at ${displayJsonPath(file, tokens)}`);
     }
-    value.forEach((item, index) => scanJsonPrivacy(item, { file, tokens: [...tokens, index], issues }));
+    value.forEach((item, index) => scanJsonPrivacy(item, { file, tokens: [...tokens, index], issues, boundPublicProfile }));
     return;
   }
 
@@ -179,10 +189,10 @@ function scanJsonPrivacy(value, { file, tokens = [], issues }) {
     if (PRIVATE_SAMPLING_FIELD.test(key)) issues.push(`private sampling/grid field at ${fieldPath}`);
     if (COORDINATE_FIELD.test(key)
       && hasCoordinateShape(nested)
-      && !isApprovedCoordinatePath(file, nestedTokens)) {
+      && !isApprovedCoordinatePath(file, nestedTokens, boundPublicProfile)) {
       issues.push(`unapproved coordinate field at ${fieldPath}`);
     }
-    scanJsonPrivacy(nested, { file, tokens: nestedTokens, issues });
+    scanJsonPrivacy(nested, { file, tokens: nestedTokens, issues, boundPublicProfile });
   }
 }
 
@@ -626,7 +636,13 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
       issues.push(`invalid JSON at ${safePath(file.relative)}`);
       continue;
     }
-    scanJsonPrivacy(document, { file: file.relative, issues });
+    const boundPublicProfile = file.relative === PUBLIC_JORDRAV_PROFILE_FILE
+      && Buffer.byteLength(text) === PROFILE_BINDING.bytes
+      && sha256(text) === PROFILE_BINDING.sha256;
+    if (file.relative === PUBLIC_JORDRAV_PROFILE_FILE && !boundPublicProfile) {
+      issues.push(`invalid public Jordrav profile binding at ${safePath(file.relative)}`);
+    }
+    scanJsonPrivacy(document, { file: file.relative, issues, boundPublicProfile });
     const delivery = deliveryFiles.get(file.relative);
     if (delivery) {
       try {

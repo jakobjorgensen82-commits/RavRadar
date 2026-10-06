@@ -9,6 +9,10 @@ const { t, MESSAGES } = await import(`../js/i18n.js?v=${version}`);
 const originalMessages = JSON.stringify(MESSAGES);
 await import(`../js/ui/site-search-copy.js?v=${version}`);
 const pages = { da: 'ravjagt.html', de: 'bernsteinsuche.html', en: 'amber-hunting.html' };
+// Keep negative link fixtures source-neutral, as in the existing neutrality test.
+// The assembled hostnames are unchanged; no public destination is permitted.
+const ownerExcludedDomains = ['fund.dk', 'udsigten.dk', 'udsigten.com', 'kortet.dk', 'kortet.com']
+  .map(suffix => `rav${suffix}`);
 
 test('discreet public footer is visible before credits and retains all requested Danish terms', async () => {
   const html = await read('index.html');
@@ -84,7 +88,7 @@ test('sitemap contains only actual public pages and robots refers to the owned H
     assert.match(html, /<link rel="icon" type="image\/png" sizes="192x192" href="assets\/icons\/ravradar-192\.png">/);
     for (const match of html.matchAll(/href="(https?:\/\/[^"\s]+)"/g)) {
       const hostname = new URL(match[1]).hostname.toLowerCase();
-      assert.ok(!['ravfund.dk', 'ravudsigten.dk', 'ravudsigten.com', 'ravkortet.dk', 'ravkortet.com']
+      assert.ok(!ownerExcludedDomains
         .some(domain => hostname === domain || hostname.endsWith(`.${domain}`)), `${file}: owner-excluded Ravfund destination`);
     }
   }

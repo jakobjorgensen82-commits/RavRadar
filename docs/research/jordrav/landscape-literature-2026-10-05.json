@@ -1,0 +1,41 @@
+{
+  "researchDate": "2026-10-05",
+  "scope": "Landform mechanisms and mapped sediment categories; no local age, amber or exposure measurement",
+  "sources": [
+    {
+      "id": "klint",
+      "title": "Klint, GEUS 2011: Vejledning i geologisk karakterisering af Istidssedimenter",
+      "url": "https://geuskort.geus.dk/siteeval/tilltyper/den_lille_kvartaergeolog.pdf",
+      "resolvedURL": "https://geuskort.geus.dk/siteeval/tilltyper/den_lille_kvartaergeolog.pdf",
+      "sourceBytes": 2539120,
+      "sourceSha256": "61dec93bff99ff111e6d925a3ff01bf42b30f419c9375dbcda392110c3ae05e6",
+      "pages": 37,
+      "renderedPages1Based": [
+        6,
+        7,
+        11,
+        16
+      ],
+      "visualReview": "reviewed: all listed full rendered pages",
+      "archive": "Original PDF and page renders in system temp; not app data"
+    },
+    {
+      "id": "soil",
+      "title": "GEUS 2025/32: sediment genesis and broad chronology",
+      "url": "https://data.geus.dk/pure-pdf/GEUS-R_2025_32_web.pdf",
+      "resolvedURL": "https://data.geus.dk/pure-pdf/GEUS-R_2025_32_web.pdf",
+      "sourceBytes": 5975169,
+      "sourceSha256": "46ef078194161ef9c0f9cb89f437d3d2a22ae88f66da96b55fea19a409be07b1",
+      "pages": 30,
+      "renderedPages1Based": [
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "visualReview": "reviewed: all listed full rendered pages",
+      "archive": "Original PDF and page renders in system temp; not app data"
+    }
+  ]
+}

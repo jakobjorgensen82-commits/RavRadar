@@ -1,0 +1,2479 @@
+{
+  "status": "PASS",
+  "researchDate": "2026-10-04",
+  "scope": "Published field-use/JB context and native geological overlaps; no pure-topsoil, current ploughing, amber or huntability verification",
+  "scriptSha256": "5e274f519d5d3cbd5fd95d8f5d5903fab42b2359d4d74cb8c120818e3b110ed9",
+  "previousNativeAuditSha256": "15daf046865cac2696e51d2dd385d6b69cd22f16e9a64949e383c461f2ac3b0a",
+  "sourceBindings": [
+    {
+      "source": "geomorphology",
+      "dbfSha256": "0d31afad447e9139c55523bc5ccc8a12671cb222c05d3fd527f561c3bd46e2ff",
+      "shpSha256": "371aaa477ab9d76662732293df86880c1fa9e02953774ff1eb509bb1dc25b619",
+      "cacheMetadataSha256": "94cd6d4a599d86f20a8572274ded42339180eb0373e00744f56e45fc1eef7272",
+      "cacheGeometrySha256": "c56445a123763831d32fc3c474e1a0156fa87cb5e03e0f35693746bf380bf512",
+      "attributesVerifiedAgainstOriginal": 15178,
+      "auditedCollapsedRecords": 0
+    },
+    {
+      "source": "soil",
+      "dbfSha256": "94e3ac871fb47b3f6ab39957bb72c34bc8ab3c020f04addc63d45a152e93edb5",
+      "shpSha256": "10620612ea6c8de4539cbe2ccc4790bbbd0d3e798cb19e0a29bc7f466cafc3cc",
+      "cacheMetadataSha256": "807b265135e4c468190c23413583c34ada6eeeb03448d814fc0a429a36d43539",
+      "cacheGeometrySha256": "d09ee9442b3e5c29bcba5acffa5acdf52e13d27e61ac08d6c37a0aee72674b57",
+      "attributesVerifiedAgainstOriginal": 199653,
+      "auditedCollapsedRecords": 0
+    },
+    {
+      "source": "Marker:Marker_2026",
+      "url": "https://geodata.fvm.dk/geoserver/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=Marker%3AMarker_2026&bbox=592394.37%2C6107368.56%2C599709.58%2C6112597.8%2CEPSG%3A25832&srsName=EPSG%3A25832&outputFormat=application%2Fjson&propertyName=the_geom%2CAfgkode%2CAfgroede&count=6000&sortBy=Afgkode+A",
+      "observedDate": "2026-10-04",
+      "numberMatched": 641,
+      "numberReturned": 641,
+      "propertiesRequested": [
+        "the_geom",
+        "Afgkode",
+        "Afgroede"
+      ],
+      "crs": {
+        "type": "name",
+        "properties": {
+          "name": "urn:ogc:def:crs:EPSG::25832"
+        }
+      },
+      "sourceContentType": "application/json;charset=ISO-8859-1",
+      "sourceEncoding": "iso-8859-1",
+      "sourceBytes": 1172436,
+      "sourceSha256": "f5f63268286b4b758c8106c11abd57b5d68a05a4ae689ce7f33b7319ae736ae2",
+      "decodedUtf8Sha256": "c4458bc576b2a17f9ffa5d3a9ebb23f91b4bda93ffc582e73ef0c53196ad0435",
+      "responseTimeStamp": "2026-10-04T18:42:48.611Z"
+    },
+    {
+      "source": "Jordbunds_og_terraenforhold:Jordbundskort_2024",
+      "url": "https://geodata.fvm.dk/geoserver/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=Jordbunds_og_terraenforhold%3AJordbundskort_2024&bbox=592394.37%2C6107368.56%2C599709.58%2C6112597.8%2CEPSG%3A25832&srsName=EPSG%3A25832&outputFormat=application%2Fjson&propertyName=the_geom%2CJB_kode%2CJordtype&count=9000&sortBy=JB_kode+A",
+      "observedDate": "2026-10-04",
+      "numberMatched": 8284,
+      "numberReturned": 8284,
+      "propertiesRequested": [
+        "the_geom",
+        "JB_kode",
+        "Jordtype"
+      ],
+      "crs": {
+        "type": "name",
+        "properties": {
+          "name": "urn:ogc:def:crs:EPSG::25832"
+        }
+      },
+      "sourceContentType": "application/json;charset=ISO-8859-1",
+      "sourceEncoding": "iso-8859-1",
+      "sourceBytes": 4547779,
+      "sourceSha256": "c5903beae6208f3b704ec977f2b83832bab0798eee953858019825b681b4970b",
+      "decodedUtf8Sha256": "c5903beae6208f3b704ec977f2b83832bab0798eee953858019825b681b4970b",
+      "responseTimeStamp": "2026-10-04T18:44:56.136Z"
+    }
+  ],
+  "software": {
+    "shapely": "2.1.2",
+    "geos": "3.13.1"
+  },
+  "lake": {
+    "sourceId": 10265,
+    "label": "Issøflade",
+    "sourceVersion": "Version 3, 2022",
+    "area_km2": 19.284405781,
+    "bounds_EPSG25832": [
+      592394.37,
+      6107368.56,
+      599709.58,
+      6112597.8
+    ],
+    "representativePoint_lon_lat": [
+      10.522732627150814,
+      55.126990553689666
+    ],
+    "extentIsAmberBoundary": false
+  },
+  "counts": {
+    "receivedFieldFeatures": 641,
+    "positiveFieldFeatures": 311,
+    "receivedJBFeatures": 8284,
+    "positiveJBFeatures": 5186
+  },
+  "coverage": {
+    "registeredFields_km2": 12.853252924152608,
+    "percentOfLakeRegisteredFields": 66.65101880841847,
+    "noFieldRegistration_km2": 6.431152856797181,
+    "publishedJB_km2": 15.173172823700856,
+    "publishedJBMissing_km2": 4.111232949630688,
+    "publishedJBAmbiguous_m2": 815.1225711897353,
+    "fieldsWithAmbiguousJB_m2": 745.5170345764616,
+    "fieldsAndPublishedJB_km2": 12.639651638826445,
+    "fieldsWithoutPublishedJB_km2": 0.2136012854772741
+  },
+  "checks": {
+    "numericalTolerance_m2": 1.0,
+    "fieldOverlap_m2": 0.05187918059527874,
+    "crossCropOverlap_m2": 0.04796241596341133,
+    "JBClassOverlap_m2": 815.1292151492089,
+    "JBPartitionOverlap_m2": 0.00722573883831501,
+    "threeWaySumMinusUnion_m2": 0.017270991578698158,
+    "geologyCropSumMinusFields_m2": 0.018414786085486412,
+    "ownerFieldsRequestedOrStored": false,
+    "pureTopsoilInterpretation": false,
+    "currentPloughingVerified": false,
+    "huntabilityClassChanged": false
+  },
+  "cropCodesInSelectedContext": [
+    1,
+    3,
+    4,
+    5,
+    7,
+    10,
+    11,
+    13,
+    14,
+    15,
+    22,
+    30,
+    31,
+    152,
+    161,
+    210,
+    214,
+    216,
+    434,
+    450
+  ],
+  "cropContexts": [
+    {
+      "key": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "area_km2": 9.821835969,
+      "percentOfLake": 50.931494
+    },
+    {
+      "key": "Andre registrerede anvendelser",
+      "area_km2": 0.762719538,
+      "percentOfLake": 3.95511
+    },
+    {
+      "key": "Brak",
+      "area_km2": 0.72587039,
+      "percentOfLake": 3.764028
+    },
+    {
+      "key": "Græs i omdrift",
+      "area_km2": 0.661388941,
+      "percentOfLake": 3.429657
+    },
+    {
+      "key": "Træer og skov",
+      "area_km2": 0.521434158,
+      "percentOfLake": 2.703916
+    },
+    {
+      "key": "Permanent græs",
+      "area_km2": 0.360003947,
+      "percentOfLake": 1.866814
+    }
+  ],
+  "cropClasses": [
+    {
+      "key": [
+        1,
+        "Vårbyg"
+      ],
+      "area_km2": 3.480775759,
+      "percentOfLake": 18.049692
+    },
+    {
+      "key": [
+        11,
+        "Vinterhvede"
+      ],
+      "area_km2": 3.448716132,
+      "percentOfLake": 17.883445
+    },
+    {
+      "key": [
+        22,
+        "Vinterraps"
+      ],
+      "area_km2": 1.642426552,
+      "percentOfLake": 8.516864
+    },
+    {
+      "key": [
+        310,
+        "Brak, slåning"
+      ],
+      "area_km2": 0.548915024,
+      "percentOfLake": 2.846419
+    },
+    {
+      "key": [
+        101,
+        "Rajgræsfrø, alm."
+      ],
+      "area_km2": 0.538794796,
+      "percentOfLake": 2.79394
+    },
+    {
+      "key": [
+        3,
+        "Vårhavre"
+      ],
+      "area_km2": 0.521643193,
+      "percentOfLake": 2.705
+    },
+    {
+      "key": [
+        583,
+        "Juletræer og pyntegrønt"
+      ],
+      "area_km2": 0.486245263,
+      "percentOfLake": 2.521443
+    },
+    {
+      "key": [
+        216,
+        "Majshelsæd"
+      ],
+      "area_km2": 0.400835303,
+      "percentOfLake": 2.078546
+    },
+    {
+      "key": [
+        260,
+        "Græs med kløver/lucerne, under 50 % bælgpl. (omdrift)"
+      ],
+      "area_km2": 0.330572766,
+      "percentOfLake": 1.714197
+    },
+    {
+      "key": [
+        15,
+        "Vinterhybridrug"
+      ],
+      "area_km2": 0.266108854,
+      "percentOfLake": 1.379917
+    },
+    {
+      "key": [
+        267,
+        "Græs  under 50% kløver/lucerne, meget lavt udbytte (omdrift)"
+      ],
+      "area_km2": 0.233351704,
+      "percentOfLake": 1.210054
+    },
+    {
+      "key": [
+        120,
+        "Kløverfrø"
+      ],
+      "area_km2": 0.184311415,
+      "percentOfLake": 0.955754
+    },
+    {
+      "key": [
+        276,
+        "Permanent græs og kløvergræs uden norm, under 50 % kløver"
+      ],
+      "area_km2": 0.128641188,
+      "percentOfLake": 0.667074
+    },
+    {
+      "key": [
+        324,
+        "Blomsterbrak"
+      ],
+      "area_km2": 0.123264563,
+      "percentOfLake": 0.639193
+    },
+    {
+      "key": [
+        252,
+        "Permanent græs, normalt udbytte"
+      ],
+      "area_km2": 0.112379106,
+      "percentOfLake": 0.582746
+    },
+    {
+      "key": [
+        263,
+        "Græs uden kløvergræs (omdrift)"
+      ],
+      "area_km2": 0.083320172,
+      "percentOfLake": 0.43206
+    },
+    {
+      "key": [
+        251,
+        "Permanent græs, lavt udbytte"
+      ],
+      "area_km2": 0.064485609,
+      "percentOfLake": 0.334393
+    },
+    {
+      "key": [
+        342,
+        "Bestøverbrak"
+      ],
+      "area_km2": 0.053690803,
+      "percentOfLake": 0.278416
+    },
+    {
+      "key": [
+        10,
+        "Vinterbyg"
+      ],
+      "area_km2": 0.051371541,
+      "percentOfLake": 0.266389
+    },
+    {
+      "key": [
+        577,
+        "Skov med biodiversitetsformål"
+      ],
+      "area_km2": 0.035188895,
+      "percentOfLake": 0.182473
+    },
+    {
+      "key": [
+        124,
+        "Spinatfrø"
+      ],
+      "area_km2": 0.032144715,
+      "percentOfLake": 0.166688
+    },
+    {
+      "key": [
+        250,
+        "Permanent græs, meget lavt udbytte"
+      ],
+      "area_km2": 0.031480407,
+      "percentOfLake": 0.163243
+    },
+    {
+      "key": [
+        254,
+        "Miljøtilsagn, græs (0 N), permanent"
+      ],
+      "area_km2": 0.023017636,
+      "percentOfLake": 0.119359
+    },
+    {
+      "key": [
+        268,
+        "Græs under 50% kløver/lucerne, lavt udbytte (omdrift)"
+      ],
+      "area_km2": 0.011460867,
+      "percentOfLake": 0.059431
+    },
+    {
+      "key": [
+        271,
+        "Rekreative formål"
+      ],
+      "area_km2": 0.007468611,
+      "percentOfLake": 0.038729
+    },
+    {
+      "key": [
+        152,
+        "Kartofler, spise- (pakkeri, vejsalg)"
+      ],
+      "area_km2": 0.006147429,
+      "percentOfLake": 0.031878
+    },
+    {
+      "key": [
+        450,
+        "Grøntsager, blandinger"
+      ],
+      "area_km2": 0.003551657,
+      "percentOfLake": 0.018417
+    },
+    {
+      "key": [
+        264,
+        "Græs og kløvergræs uden norm, under 50 % kløver (omdrift)"
+      ],
+      "area_km2": 0.002683432,
+      "percentOfLake": 0.013915
+    },
+    {
+      "key": [
+        161,
+        "Cikorierødder"
+      ],
+      "area_km2": 0.000259579,
+      "percentOfLake": 0.001346
+    }
+  ],
+  "publishedJBClasses": [
+    {
+      "key": [
+        6,
+        "Fin sandblandet lerjord"
+      ],
+      "area_km2": 6.901775598,
+      "percentOfLake": 35.789413
+    },
+    {
+      "key": [
+        3,
+        "Grov lerblandet sandjord"
+      ],
+      "area_km2": 3.559642685,
+      "percentOfLake": 18.458659
+    },
+    {
+      "key": [
+        5,
+        "Grov sandblandet lerjord"
+      ],
+      "area_km2": 2.986031835,
+      "percentOfLake": 15.484179
+    },
+    {
+      "key": [
+        4,
+        "Fin lerblandet sandjord"
+      ],
+      "area_km2": 0.809623539,
+      "percentOfLake": 4.198333
+    },
+    {
+      "key": [
+        7,
+        "Lerjord"
+      ],
+      "area_km2": 0.73376766,
+      "percentOfLake": 3.804979
+    },
+    {
+      "key": [
+        11,
+        "Humusjord"
+      ],
+      "area_km2": 0.183146636,
+      "percentOfLake": 0.949714
+    }
+  ],
+  "publishedJBPartition": [
+    {
+      "key": [
+        6,
+        "Fin sandblandet lerjord"
+      ],
+      "area_km2": 6.90119334,
+      "percentOfLake": 35.786394
+    },
+    {
+      "key": [
+        3,
+        "Grov lerblandet sandjord"
+      ],
+      "area_km2": 3.559408289,
+      "percentOfLake": 18.457443
+    },
+    {
+      "key": [
+        5,
+        "Grov sandblandet lerjord"
+      ],
+      "area_km2": 2.985503671,
+      "percentOfLake": 15.48144
+    },
+    {
+      "key": [
+        4,
+        "Fin lerblandet sandjord"
+      ],
+      "area_km2": 0.809483324,
+      "percentOfLake": 4.197606
+    },
+    {
+      "key": [
+        7,
+        "Lerjord"
+      ],
+      "area_km2": 0.733678642,
+      "percentOfLake": 3.804518
+    },
+    {
+      "key": [
+        11,
+        "Humusjord"
+      ],
+      "area_km2": 0.183090447,
+      "percentOfLake": 0.949422
+    },
+    {
+      "key": [
+        "ambiguous",
+        "Overlappende kildegrænser"
+      ],
+      "area_km2": 0.000815123,
+      "percentOfLake": 0.004227
+    }
+  ],
+  "publishedJBOverlapPairs": [
+    {
+      "codes": [
+        3,
+        4
+      ],
+      "area_m2": 89.6641990903941,
+      "positiveParts": 1276,
+      "largestPart_m2": 0.47999999951571226
+    },
+    {
+      "codes": [
+        3,
+        5
+      ],
+      "area_m2": 58.19561639517773,
+      "positiveParts": 869,
+      "largestPart_m2": 0.3991581902529333
+    },
+    {
+      "codes": [
+        3,
+        6
+      ],
+      "area_m2": 79.50085310830777,
+      "positiveParts": 1259,
+      "largestPart_m2": 0.39997500367462635
+    },
+    {
+      "codes": [
+        3,
+        11
+      ],
+      "area_m2": 7.037638736294561,
+      "positiveParts": 96,
+      "largestPart_m2": 0.4199280036502313
+    },
+    {
+      "codes": [
+        4,
+        6
+      ],
+      "area_m2": 50.25196652371317,
+      "positiveParts": 742,
+      "largestPart_m2": 0.5999999993946403
+    },
+    {
+      "codes": [
+        4,
+        11
+      ],
+      "area_m2": 0.29985600086036696,
+      "positiveParts": 3,
+      "largestPart_m2": 0.11999999987892807
+    },
+    {
+      "codes": [
+        5,
+        6
+      ],
+      "area_m2": 392.99222935531293,
+      "positiveParts": 5877,
+      "largestPart_m2": 0.7199280062579345
+    },
+    {
+      "codes": [
+        5,
+        7
+      ],
+      "area_m2": 43.994663492888684,
+      "positiveParts": 649,
+      "largestPart_m2": 0.3246790193705645
+    },
+    {
+      "codes": [
+        5,
+        11
+      ],
+      "area_m2": 32.981420170301114,
+      "positiveParts": 454,
+      "largestPart_m2": 0.47974698668134386
+    },
+    {
+      "codes": [
+        6,
+        7
+      ],
+      "area_m2": 44.333303993340195,
+      "positiveParts": 627,
+      "largestPart_m2": 0.41992799957569504
+    },
+    {
+      "codes": [
+        6,
+        11
+      ],
+      "area_m2": 15.180038407822494,
+      "positiveParts": 215,
+      "largestPart_m2": 0.23992799975730292
+    },
+    {
+      "codes": [
+        7,
+        11
+      ],
+      "area_m2": 0.6907859152374654,
+      "positiveParts": 12,
+      "largestPart_m2": 0.07567222137751221
+    }
+  ],
+  "geologyOnRegisteredFields": [
+    {
+      "upper": "DS",
+      "geologicalArea_km2": 0.15511171617624103,
+      "registeredFields_km2": 0.05314720714636511,
+      "percentOfSedimentOnFields": 34.26382510395165
+    },
+    {
+      "upper": "FL",
+      "geologicalArea_km2": 0.02255859654999675,
+      "registeredFields_km2": 0.005118392616033359,
+      "percentOfSedimentOnFields": 22.689322027145778
+    },
+    {
+      "upper": "FP",
+      "geologicalArea_km2": 0.742845239884825,
+      "registeredFields_km2": 0.5996176299477243,
+      "percentOfSedimentOnFields": 80.71905125766068
+    },
+    {
+      "upper": "FS",
+      "geologicalArea_km2": 0.0836332763498881,
+      "registeredFields_km2": 0.05635859115064386,
+      "percentOfSedimentOnFields": 67.38775952631833
+    },
+    {
+      "upper": "FT",
+      "geologicalArea_km2": 0.8438325093275709,
+      "registeredFields_km2": 0.6690715018502558,
+      "percentOfSedimentOnFields": 79.28960954389184
+    },
+    {
+      "upper": "MG",
+      "geologicalArea_km2": 0.06294436425883607,
+      "registeredFields_km2": 0.04014748516976359,
+      "percentOfSedimentOnFields": 63.7824937029652
+    },
+    {
+      "upper": "ML",
+      "geologicalArea_km2": 0.25185646013123597,
+      "registeredFields_km2": 0.18444830239521198,
+      "percentOfSedimentOnFields": 73.23548591888438
+    },
+    {
+      "upper": "S",
+      "geologicalArea_km2": 0.12217951003281383,
+      "registeredFields_km2": 0.09463701231923537,
+      "percentOfSedimentOnFields": 77.45735131350473
+    },
+    {
+      "upper": "TL",
+      "geologicalArea_km2": 8.086420801814631,
+      "registeredFields_km2": 5.3598626103804605,
+      "percentOfSedimentOnFields": 66.28226185282965
+    },
+    {
+      "upper": "TS",
+      "geologicalArea_km2": 8.913023306424044,
+      "registeredFields_km2": 5.7908441911771344,
+      "percentOfSedimentOnFields": 64.97059406322201
+    }
+  ],
+  "geologyCropContexts": [
+    {
+      "upper": "DS",
+      "cropContext": "Andre registrerede anvendelser",
+      "area_km2": 0.0006675238348205861
+    },
+    {
+      "upper": "DS",
+      "cropContext": "Brak",
+      "area_km2": 0.0027546602070429153
+    },
+    {
+      "upper": "DS",
+      "cropContext": "Græs i omdrift",
+      "area_km2": 0.012263810855103235
+    },
+    {
+      "upper": "DS",
+      "cropContext": "Permanent græs",
+      "area_km2": 0.008159184463953317
+    },
+    {
+      "upper": "DS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "area_km2": 0.029302027785445037
+    },
+    {
+      "upper": "FL",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "area_km2": 0.005118392616033359
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Andre registrerede anvendelser",
+      "area_km2": 0.07039184397483307
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Brak",
+      "area_km2": 0.07226111523175952
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Græs i omdrift",
+      "area_km2": 0.0006498950198775982
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Permanent græs",
+      "area_km2": 0.03465835567992317
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "area_km2": 0.4216564200595054
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Brak",
+      "area_km2": 0.006042680011969412
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Græs i omdrift",
+      "area_km2": 0.01432477003836011
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Træer og skov",
+      "area_km2": 0.0014609271869164243
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "area_km2": 0.03453021391339267
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Andre registrerede anvendelser",
+      "area_km2": 0.00023898510485295977
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Brak",
+      "area_km2": 0.05388648127015717
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Græs i omdrift",
+      "area_km2": 0.0934254071960998
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Permanent græs",
+      "area_km2": 0.041091969521825644
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Træer og skov",
+      "area_km2": 0.0031316820787864767
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "area_km2": 0.47729697765298235
+    },
+    {
+      "upper": "MG",
+      "cropContext": "Brak",
+      "area_km2": 0.0019273594490920312
+    },
+    {
+      "upper": "MG",
+      "cropContext": "Træer og skov",
+      "area_km2": 0.007382755515034864
+    },
+    {
+      "upper": "MG",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "area_km2": 0.030837370205636688
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Andre registrerede anvendelser",
+      "area_km2": 0.02878596642311736
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Brak",
+      "area_km2": 0.0031281274766868424
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Græs i omdrift",
+      "area_km2": 0.008025369068176677
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Permanent græs",
+      "area_km2": 8.708763129794032e-06
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Træer og skov",
+      "area_km2": 0.006201854825202594
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "area_km2": 0.13829827583888446
+    },
+    {
+      "upper": "S",
+      "cropContext": "Andre registrerede anvendelser",
+      "area_km2": 0.0011393936178173897
+    },
+    {
+      "upper": "S",
+      "cropContext": "Træer og skov",
+      "area_km2": 0.02996570248074898
+    },
+    {
+      "upper": "S",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "area_km2": 0.06353191622065464
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Andre registrerede anvendelser",
+      "area_km2": 0.38966770233288595
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Brak",
+      "area_km2": 0.3344253879058587
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Græs i omdrift",
+      "area_km2": 0.39198174582094725
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Permanent græs",
+      "area_km2": 0.10023678216188898
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Træer og skov",
+      "area_km2": 0.12228524546036094
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "area_km2": 4.021265757642312
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Andre registrerede anvendelser",
+      "area_km2": 0.27182812292473146
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Brak",
+      "area_km2": 0.25144457801785136
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Græs i omdrift",
+      "area_km2": 0.14071794309930763
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Permanent græs",
+      "area_km2": 0.1758489460033469
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Træer og skov",
+      "area_km2": 0.3510059905530077
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "area_km2": 4.599998617057073
+    }
+  ],
+  "upperDepthPairsOnFields": [
+    {
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.15511171617624103,
+      "registeredFields_km2": 0.05314720714636511,
+      "selectedCropContext_km2": 0.029302027785445037
+    },
+    {
+      "upper": "FL",
+      "depth": "FL",
+      "area_km2": 0.02255859654999675,
+      "registeredFields_km2": 0.005118392616033359,
+      "selectedCropContext_km2": 0.005118392616033359
+    },
+    {
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.48107112098483,
+      "registeredFields_km2": 0.3639475502372335,
+      "selectedCropContext_km2": 0.22643940867498127
+    },
+    {
+      "upper": "FP",
+      "depth": "TL",
+      "area_km2": 0.261774118899995,
+      "registeredFields_km2": 0.23567007971049486,
+      "selectedCropContext_km2": 0.19521701138452846
+    },
+    {
+      "upper": "FS",
+      "depth": "FS",
+      "area_km2": 0.0836332763498881,
+      "registeredFields_km2": 0.05635859115064386,
+      "selectedCropContext_km2": 0.03453021391339267
+    },
+    {
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.5363009473075998,
+      "registeredFields_km2": 0.3729757369924502,
+      "selectedCropContext_km2": 0.2764905820155043
+    },
+    {
+      "upper": "FT",
+      "depth": "TL",
+      "area_km2": 0.19010565143601127,
+      "registeredFields_km2": 0.18583314045781643,
+      "selectedCropContext_km2": 0.12770124095224775
+    },
+    {
+      "upper": "FT",
+      "depth": "TS",
+      "area_km2": 0.11742591058395993,
+      "registeredFields_km2": 0.11026262440001906,
+      "selectedCropContext_km2": 0.0731051546852466
+    },
+    {
+      "upper": "MG",
+      "depth": "MG",
+      "area_km2": 0.06294436425883607,
+      "registeredFields_km2": 0.04014748516976359,
+      "selectedCropContext_km2": 0.030837370205636688
+    },
+    {
+      "upper": "ML",
+      "depth": "ML",
+      "area_km2": 0.25185646013123597,
+      "registeredFields_km2": 0.18444830239521198,
+      "selectedCropContext_km2": 0.13829827583888446
+    },
+    {
+      "upper": "S",
+      "depth": "DS",
+      "area_km2": 0.12217951003281383,
+      "registeredFields_km2": 0.09463701231923537,
+      "selectedCropContext_km2": 0.06353191622065464
+    },
+    {
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 8.086420801814631,
+      "registeredFields_km2": 5.3598626103804605,
+      "selectedCropContext_km2": 4.021265757642312
+    },
+    {
+      "upper": "TS",
+      "depth": "TS",
+      "area_km2": 8.913023306424044,
+      "registeredFields_km2": 5.7908441911771344,
+      "selectedCropContext_km2": 4.599998617057073
+    }
+  ],
+  "threeWayContexts": [
+    {
+      "upper": "DS",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.0006400523668743971
+    },
+    {
+      "upper": "DS",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 2.7405105439560728e-05
+    },
+    {
+      "upper": "DS",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 6.626588453455943e-08
+    },
+    {
+      "upper": "DS",
+      "cropContext": "Brak",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.0027546602070429153
+    },
+    {
+      "upper": "DS",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.011906462222555961
+    },
+    {
+      "upper": "DS",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 11,
+      "publishedJBLabel": "Humusjord",
+      "area_km2": 0.0002
+    },
+    {
+      "upper": "DS",
+      "cropContext": "Permanent græs",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.0006986677501318165
+    },
+    {
+      "upper": "DS",
+      "cropContext": "Permanent græs",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.007394260179973538
+    },
+    {
+      "upper": "DS",
+      "cropContext": "Permanent græs",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 1.0857210027738518e-06
+    },
+    {
+      "upper": "DS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.007936440024951068
+    },
+    {
+      "upper": "DS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.00250358455494462
+    },
+    {
+      "upper": "DS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.0001057339923595403
+    },
+    {
+      "upper": "DS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.01746175694726871
+    },
+    {
+      "upper": "DS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 7,
+      "publishedJBLabel": "Lerjord",
+      "area_km2": 0.0007611554139181648
+    },
+    {
+      "upper": "DS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 2.044550932921799e-06
+    },
+    {
+      "upper": "FL",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 1.0288987139751686e-10
+    },
+    {
+      "upper": "FL",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 1.615637223438233e-05
+    },
+    {
+      "upper": "FL",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.00042127720474356977
+    },
+    {
+      "upper": "FL",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.004582975512384376
+    },
+    {
+      "upper": "FL",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 4.417736922903606e-07
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.0013768606874129616
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.005079457471087281
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.01747697650097798
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.04240947997203404
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 7,
+      "publishedJBLabel": "Lerjord",
+      "area_km2": 0.002438399414679669
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 11,
+      "publishedJBLabel": "Humusjord",
+      "area_km2": 4.703450089949009e-05
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 1.0324116320905797e-05
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Brak",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.00021614158448347764
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Brak",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.0439167411132777
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Brak",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.01861935766999725
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Brak",
+      "publishedJB": 7,
+      "publishedJBLabel": "Lerjord",
+      "area_km2": 0.00010001958483689261
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Brak",
+      "publishedJB": 11,
+      "publishedJBLabel": "Humusjord",
+      "area_km2": 0.006720951469641048
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Brak",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 3.4894824641598014e-06
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.0004841698849614798
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 5.1916738056192147e-05
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Permanent græs",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.00020055488427831304
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Permanent græs",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.0035620908460979417
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Permanent græs",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.02090908428074522
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Permanent græs",
+      "publishedJB": 11,
+      "publishedJBLabel": "Humusjord",
+      "area_km2": 0.009924839058318674
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Permanent græs",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 1.51436272227251e-06
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.01042844795206343
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.00876046365710518
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.12247119912421911
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.22032444032657503
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 7,
+      "publishedJBLabel": "Lerjord",
+      "area_km2": 0.03173020665405967
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 11,
+      "publishedJBLabel": "Humusjord",
+      "area_km2": 0.01582896823115019
+    },
+    {
+      "upper": "FP",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 4.1469634290889694e-05
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Brak",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 8.283912257358081e-06
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Brak",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.004653598420903369
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Brak",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.00029915210726443926
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Brak",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.0008380353341609068
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Brak",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 3.342737745381859e-08
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.0028299533724327535
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.0009604127854337023
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.010415549885843806
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Træer og skov",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.0013969993798739636
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Træer og skov",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 6.392780707081411e-05
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.006556837253653602
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.00029188127591724957
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.0018339189456029383
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.02214109856523459
+    },
+    {
+      "upper": "FS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 9.277116195193744e-07
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.0002174984103120747
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 11,
+      "publishedJBLabel": "Humusjord",
+      "area_km2": 2.1422025508630014e-05
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 1.0453081159903013e-08
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Brak",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.008969041387627745
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Brak",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.011344019088375725
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Brak",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.007724442198721461
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Brak",
+      "publishedJB": 11,
+      "publishedJBLabel": "Humusjord",
+      "area_km2": 0.02233810485554507
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Brak",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 3.835548819925998e-06
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.0027252954762082404
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.05792186456991744
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.005039587067355284
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 11,
+      "publishedJBLabel": "Humusjord",
+      "area_km2": 0.026746370632630374
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 9.543667386128876e-06
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Permanent græs",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.00839050851680724
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Permanent græs",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 6.243196056157149e-05
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Permanent græs",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.0002626546193932942
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Permanent græs",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.0010213313323170054
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Permanent græs",
+      "publishedJB": 11,
+      "publishedJBLabel": "Humusjord",
+      "area_km2": 0.030581411865433002
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Permanent græs",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 2.2335429515965394e-06
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Træer og skov",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.003131682078786477
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.09227582373098758
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.028313019812757776
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.14739757514714688
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.13313739179924708
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 7,
+      "publishedJBLabel": "Lerjord",
+      "area_km2": 0.02464615897513902
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 11,
+      "publishedJBLabel": "Humusjord",
+      "area_km2": 0.044700245075743286
+    },
+    {
+      "upper": "FT",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 3.4768574883073704e-05
+    },
+    {
+      "upper": "MG",
+      "cropContext": "Brak",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.00147333036663471
+    },
+    {
+      "upper": "MG",
+      "cropContext": "Brak",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.00025949409295050204
+    },
+    {
+      "upper": "MG",
+      "cropContext": "Brak",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 3.444944822476267e-07
+    },
+    {
+      "upper": "MG",
+      "cropContext": "Træer og skov",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.00448958084820545
+    },
+    {
+      "upper": "MG",
+      "cropContext": "Træer og skov",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.00023032776307805211
+    },
+    {
+      "upper": "MG",
+      "cropContext": "Træer og skov",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.0026609024054471803
+    },
+    {
+      "upper": "MG",
+      "cropContext": "Træer og skov",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 1.302321069615592e-06
+    },
+    {
+      "upper": "MG",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.003975840753227095
+    },
+    {
+      "upper": "MG",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.0005982759011399985
+    },
+    {
+      "upper": "MG",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.005850977055125406
+    },
+    {
+      "upper": "MG",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.020104434754914517
+    },
+    {
+      "upper": "MG",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 2.7193597888268075e-06
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.00025960652064913194
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 1.2407015839688834e-05
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.028288843146665688
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 7,
+      "publishedJBLabel": "Lerjord",
+      "area_km2": 9.976028799908021e-05
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 4.968683627680653e-07
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Brak",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 8.312368617131432e-05
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Brak",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.0030096040883020618
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Brak",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 8.291198616018563e-08
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 4.172264130138447e-05
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.00021535796814653904
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.007623129864109356
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 7,
+      "publishedJBLabel": "Lerjord",
+      "area_km2": 4.4121616851356026e-05
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 2.7612118619548406e-07
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Permanent græs",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 2.602178156344877e-08
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Permanent græs",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 8.682741347939035e-06
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Træer og skov",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.0002971550281725747
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Træer og skov",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.005410474976483067
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Træer og skov",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 1.5750340596566316e-07
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.00036855410509803113
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 4.63106243407019e-06
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.008471610899631747
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.1248119479586848
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 7,
+      "publishedJBLabel": "Lerjord",
+      "area_km2": 0.0017866122450631852
+    },
+    {
+      "upper": "ML",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 4.24823578346139e-06
+    },
+    {
+      "upper": "S",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.0010325358634475986
+    },
+    {
+      "upper": "S",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.0001068577543697904
+    },
+    {
+      "upper": "S",
+      "cropContext": "Træer og skov",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.010631890401088206
+    },
+    {
+      "upper": "S",
+      "cropContext": "Træer og skov",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.017679683814268713
+    },
+    {
+      "upper": "S",
+      "cropContext": "Træer og skov",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.0004997444841315045
+    },
+    {
+      "upper": "S",
+      "cropContext": "Træer og skov",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.00099952022835144
+    },
+    {
+      "upper": "S",
+      "cropContext": "Træer og skov",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 1.761702186593798e-06
+    },
+    {
+      "upper": "S",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.010564411804472514
+    },
+    {
+      "upper": "S",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.03811396929629815
+    },
+    {
+      "upper": "S",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.00011867261142411691
+    },
+    {
+      "upper": "S",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.014328423717993297
+    },
+    {
+      "upper": "S",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 4.549493572204567e-06
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.011286281895458916
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.007274568264761863
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.04257450681217388
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.28555576024676477
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 7,
+      "publishedJBLabel": "Lerjord",
+      "area_km2": 0.034527458234588686
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 2.486198544880885e-05
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Brak",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.0026656704993813056
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Brak",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.0020320479186142462
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Brak",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.12636250918816397
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Brak",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.16037373975093558
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Brak",
+      "publishedJB": 7,
+      "publishedJBLabel": "Lerjord",
+      "area_km2": 0.028112637136005002
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Brak",
+      "publishedJB": 11,
+      "publishedJBLabel": "Humusjord",
+      "area_km2": 3.236313574760448e-05
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Brak",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 9.454244552913821e-06
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.024760284972897156
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.02119066404477684
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.008538362063398015
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.3297625121170725
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 7,
+      "publishedJBLabel": "Lerjord",
+      "area_km2": 0.0003996201040054783
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 7.533079675159504e-06
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Permanent græs",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.005256013388062758
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Permanent græs",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.03791136141631347
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Permanent græs",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.047900781912281885
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Permanent græs",
+      "publishedJB": 7,
+      "publishedJBLabel": "Lerjord",
+      "area_km2": 0.0063847322338544486
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Permanent græs",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 4.638620826934424e-06
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Træer og skov",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.0047270202059644445
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Træer og skov",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.04229961722190531
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Træer og skov",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.03467366663637386
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Træer og skov",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.03819702468010602
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Træer og skov",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 5.314880293667537e-06
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.2680883582136406
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.034062188835661346
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.8455365237869263
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 2.2531176093023793
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 7,
+      "publishedJBLabel": "Lerjord",
+      "area_km2": 0.5601959891252883
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 11,
+      "publishedJBLabel": "Humusjord",
+      "area_km2": 0.003669852467860986
+    },
+    {
+      "upper": "TL",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 0.0002545493990501871
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.10404683406272738
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.04514041451183033
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.009236021955696908
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.10829458336867799
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Andre registrerede anvendelser",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 1.2887254555716118e-05
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Brak",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.08187103216686842
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Brak",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.007957718612895417
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Brak",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.042239448987584416
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Brak",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.11013011743141998
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Brak",
+      "publishedJB": 11,
+      "publishedJBLabel": "Humusjord",
+      "area_km2": 0.0002305200055734961
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Brak",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 1.1338237692391667e-05
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.048905386810476625
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.017775029914503394
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.011362148372695927
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.05846891676727914
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": 11,
+      "publishedJBLabel": "Humusjord",
+      "area_km2": 0.001622738807363139
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Græs i omdrift",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 4.880342480939648e-06
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Permanent græs",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.10895902017076005
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Permanent græs",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 1.9918645270788494e-05
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Permanent græs",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.024934548349874366
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Permanent græs",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.038443472779549535
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Permanent græs",
+      "publishedJB": 11,
+      "publishedJBLabel": "Humusjord",
+      "area_km2": 0.00031749930490902403
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Permanent græs",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 3.611508768596697e-06
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Træer og skov",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 0.12765629923314
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Træer og skov",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.07409471579203944
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Træer og skov",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.019119622577223327
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Træer og skov",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 0.12585070036945947
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Træer og skov",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 1.9337277698039248e-05
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 3,
+      "publishedJBLabel": "Grov lerblandet sandjord",
+      "area_km2": 1.9988303783640908
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 4,
+      "publishedJBLabel": "Fin lerblandet sandjord",
+      "area_km2": 0.29868864378247584
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 5,
+      "publishedJBLabel": "Grov sandblandet lerjord",
+      "area_km2": 0.4747275269227699
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 6,
+      "publishedJBLabel": "Fin sandblandet lerjord",
+      "area_km2": 1.7660773942187937
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 7,
+      "publishedJBLabel": "Lerjord",
+      "area_km2": 0.00146654092291502
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": 11,
+      "publishedJBLabel": "Humusjord",
+      "area_km2": 0.0006670528399548118
+    },
+    {
+      "upper": "TS",
+      "cropContext": "Udvalgte korn-, majs-, raps- og andre dyrkningsafgrøder",
+      "publishedJB": "ambiguous",
+      "publishedJBLabel": "Overlappende kildegrænser",
+      "area_km2": 0.0002593845328122279
+    }
+  ],
+  "lateralContact": {
+    "TS_TLInsideLake_m": 44466.285160680534,
+    "TS_TLOnRegisteredFields_m": 30979.76178051924,
+    "TS_TLOnSelectedCropContext_m": 22796.658308285452,
+    "isVerticalContactOrSearchLine": false
+  },
+  "geometrySha256": "9e913a80ec86f8266c2420b3f3248ec959b4b720e4a086dfa27288c4def64b1c"
+}

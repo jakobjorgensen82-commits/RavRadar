@@ -1,0 +1,1672 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-05",
+  "modelVersion": "0.2.0-prototype",
+  "landscapeContextVersion": "0.1.0",
+  "manifestSha256": "5d0a925a04f71e11eaf82feb3d27294be6b1f00bb4de08dfa3ee4ff4e6a2b2a0",
+  "codeBindingLF": {
+    "landscape-context.js": "c400aabbfdc909da087e96037b481113debb94dc96a47ef7655c77929210114b",
+    "producer": "dee993fa7a95b7dfbe4665abf55954fed26ed62caa7e722ff39aa103e0bf5920"
+  },
+  "originalSourceInventorySha256": "8b12166d309b8aff992a9cf1f824cdf13984cb0def4e302c71cebbaf674bf613",
+  "scope": "All source-bound catalogue pairs and all SHA-verified national data; counts are display fragments, not fields, finds, areas or probabilities.",
+  "checkedFiles": 196,
+  "tiles": 192,
+  "catalogueEntries": 4652,
+  "detailFeatures": 505834,
+  "landformNamesExcludingNotMapped": 33,
+  "sourceNameCodePairs": 37,
+  "semanticBinding": "Exact original name plus code, scoped to the bound v3 landscape dataset. Code 50 retains both original names.",
+  "huntability": "unknown for every material polygon; mapped formation group is not a local date, present exposure or amber supply measurement",
+  "landforms": {
+    "tidalInlet": {
+      "catalogueEntries": 5,
+      "detailFeatures": 67
+    },
+    "olderTill": {
+      "catalogueEntries": 223,
+      "detailFeatures": 29282
+    },
+    "tidalFlat": {
+      "catalogueEntries": 23,
+      "detailFeatures": 542
+    },
+    "missing": {
+      "catalogueEntries": 402,
+      "detailFeatures": 26368
+    },
+    "marsh": {
+      "catalogueEntries": 93,
+      "detailFeatures": 1941
+    },
+    "lake": {
+      "catalogueEntries": 159,
+      "detailFeatures": 9392
+    },
+    "erosionValley": {
+      "catalogueEntries": 313,
+      "detailFeatures": 60106
+    },
+    "dune": {
+      "catalogueEntries": 158,
+      "detailFeatures": 12496
+    },
+    "marine": {
+      "catalogueEntries": 298,
+      "detailFeatures": 35397
+    },
+    "ridge": {
+      "catalogueEntries": 168,
+      "detailFeatures": 12044
+    },
+    "windPlain": {
+      "catalogueEntries": 152,
+      "detailFeatures": 12219
+    },
+    "bog": {
+      "catalogueEntries": 197,
+      "detailFeatures": 15909
+    },
+    "outwash": {
+      "catalogueEntries": 272,
+      "detailFeatures": 36017
+    },
+    "lakePlain": {
+      "catalogueEntries": 56,
+      "detailFeatures": 1131
+    },
+    "reclaimedLake": {
+      "catalogueEntries": 39,
+      "detailFeatures": 272
+    },
+    "human": {
+      "catalogueEntries": 102,
+      "detailFeatures": 2347
+    },
+    "moraine": {
+      "catalogueEntries": 188,
+      "detailFeatures": 17461
+    },
+    "deadIce": {
+      "catalogueEntries": 287,
+      "detailFeatures": 72433
+    },
+    "hummockyOutwash": {
+      "catalogueEntries": 108,
+      "detailFeatures": 4994
+    },
+    "tillPlain": {
+      "catalogueEntries": 449,
+      "detailFeatures": 111146
+    },
+    "tunnelValley": {
+      "catalogueEntries": 198,
+      "detailFeatures": 12665
+    },
+    "delta": {
+      "catalogueEntries": 32,
+      "detailFeatures": 297
+    },
+    "overridden": {
+      "catalogueEntries": 81,
+      "detailFeatures": 2012
+    },
+    "iceLake": {
+      "catalogueEntries": 74,
+      "detailFeatures": 2161
+    },
+    "drumlin": {
+      "catalogueEntries": 64,
+      "detailFeatures": 1132
+    },
+    "lakeHill": {
+      "catalogueEntries": 50,
+      "detailFeatures": 2011
+    },
+    "chalk": {
+      "catalogueEntries": 110,
+      "detailFeatures": 2201
+    },
+    "tectonic": {
+      "catalogueEntries": 64,
+      "detailFeatures": 3449
+    },
+    "reclaimedMarine": {
+      "catalogueEntries": 88,
+      "detailFeatures": 2490
+    },
+    "esker": {
+      "catalogueEntries": 45,
+      "detailFeatures": 1255
+    },
+    "kettle": {
+      "catalogueEntries": 17,
+      "detailFeatures": 418
+    },
+    "raisedPlain": {
+      "catalogueEntries": 72,
+      "detailFeatures": 8317
+    },
+    "raisedRidge": {
+      "catalogueEntries": 37,
+      "detailFeatures": 726
+    },
+    "bedrock": {
+      "catalogueEntries": 28,
+      "detailFeatures": 5136
+    }
+  },
+  "pairs": {
+    "44:Tidevandsdyb": {
+      "catalogueEntries": 5,
+      "detailFeatures": 67
+    },
+    "16:Ældre moræneflade": {
+      "catalogueEntries": 223,
+      "detailFeatures": 29282
+    },
+    "42:Tidevandsflade": {
+      "catalogueEntries": 23,
+      "detailFeatures": 542
+    },
+    "—:Ikke kortlagt": {
+      "catalogueEntries": 402,
+      "detailFeatures": 26368
+    },
+    "26:Marsk": {
+      "catalogueEntries": 93,
+      "detailFeatures": 1941
+    },
+    "0:Sø": {
+      "catalogueEntries": 159,
+      "detailFeatures": 9392
+    },
+    "22:Erosionsdal": {
+      "catalogueEntries": 313,
+      "detailFeatures": 60106
+    },
+    "32:Klit": {
+      "catalogueEntries": 158,
+      "detailFeatures": 12496
+    },
+    "25:Marin flade": {
+      "catalogueEntries": 298,
+      "detailFeatures": 35397
+    },
+    "27:Strandvold": {
+      "catalogueEntries": 168,
+      "detailFeatures": 12044
+    },
+    "33:Flyvesandsflade": {
+      "catalogueEntries": 152,
+      "detailFeatures": 12219
+    },
+    "30:Mose": {
+      "catalogueEntries": 197,
+      "detailFeatures": 15909
+    },
+    "19:Hedeslette": {
+      "catalogueEntries": 272,
+      "detailFeatures": 36017
+    },
+    "29:Søbund": {
+      "catalogueEntries": 56,
+      "detailFeatures": 1131
+    },
+    "35:Tørlagt ferskvandssø": {
+      "catalogueEntries": 39,
+      "detailFeatures": 272
+    },
+    "37:Antropogent landskab": {
+      "catalogueEntries": 102,
+      "detailFeatures": 2347
+    },
+    "13:Randmorænebakke": {
+      "catalogueEntries": 188,
+      "detailFeatures": 17461
+    },
+    "8:Dødislandskab": {
+      "catalogueEntries": 287,
+      "detailFeatures": 72433
+    },
+    "21:Hedeslette dødislandskab": {
+      "catalogueEntries": 108,
+      "detailFeatures": 4994
+    },
+    "1:Bundmoræneflade": {
+      "catalogueEntries": 449,
+      "detailFeatures": 111146
+    },
+    "4:Tunneldal": {
+      "catalogueEntries": 198,
+      "detailFeatures": 12665
+    },
+    "28:Delta": {
+      "catalogueEntries": 32,
+      "detailFeatures": 297
+    },
+    "15:Isoverskredet randmoræne": {
+      "catalogueEntries": 81,
+      "detailFeatures": 2012
+    },
+    "23:Issøflade": {
+      "catalogueEntries": 74,
+      "detailFeatures": 2161
+    },
+    "2:Drumlin": {
+      "catalogueEntries": 64,
+      "detailFeatures": 1132
+    },
+    "10:Issøbakke": {
+      "catalogueEntries": 50,
+      "detailFeatures": 2011
+    },
+    "47:Kalkmassiv": {
+      "catalogueEntries": 110,
+      "detailFeatures": 2201
+    },
+    "34:Spaltedal": {
+      "catalogueEntries": 64,
+      "detailFeatures": 3449
+    },
+    "36:Tørlagt marint forland": {
+      "catalogueEntries": 88,
+      "detailFeatures": 2490
+    },
+    "5:Ås": {
+      "catalogueEntries": 45,
+      "detailFeatures": 1255
+    },
+    "9:Dødishul": {
+      "catalogueEntries": 17,
+      "detailFeatures": 418
+    },
+    "50:Hævet senglacial flade": {
+      "catalogueEntries": 58,
+      "detailFeatures": 7999
+    },
+    "54:Hævet senglacial strandvold": {
+      "catalogueEntries": 21,
+      "detailFeatures": 256
+    },
+    "50:Hævet senglacial strandvold": {
+      "catalogueEntries": 8,
+      "detailFeatures": 373
+    },
+    "46:Grundfjeld": {
+      "catalogueEntries": 28,
+      "detailFeatures": 5136
+    },
+    "20:Hævet senglacial flade": {
+      "catalogueEntries": 14,
+      "detailFeatures": 318
+    },
+    "24:Hævet senglacial strandvold": {
+      "catalogueEntries": 8,
+      "detailFeatures": 97
+    }
+  },
+  "routes": {
+    "tidal": {
+      "catalogueEntries": 28,
+      "detailFeatures": 609
+    },
+    "till": {
+      "catalogueEntries": 736,
+      "detailFeatures": 141560
+    },
+    "unknown": {
+      "catalogueEntries": 402,
+      "detailFeatures": 26368
+    },
+    "marsh": {
+      "catalogueEntries": 93,
+      "detailFeatures": 1941
+    },
+    "water": {
+      "catalogueEntries": 159,
+      "detailFeatures": 9392
+    },
+    "erosion-valley": {
+      "catalogueEntries": 313,
+      "detailFeatures": 60106
+    },
+    "dune": {
+      "catalogueEntries": 158,
+      "detailFeatures": 12496
+    },
+    "marine": {
+      "catalogueEntries": 298,
+      "detailFeatures": 35397
+    },
+    "beach-ridge": {
+      "catalogueEntries": 168,
+      "detailFeatures": 12044
+    },
+    "wind-plain": {
+      "catalogueEntries": 152,
+      "detailFeatures": 12219
+    },
+    "bog": {
+      "catalogueEntries": 197,
+      "detailFeatures": 15909
+    },
+    "outwash": {
+      "catalogueEntries": 380,
+      "detailFeatures": 41011
+    },
+    "lake-plain": {
+      "catalogueEntries": 56,
+      "detailFeatures": 1131
+    },
+    "reclaimed-lake": {
+      "catalogueEntries": 39,
+      "detailFeatures": 272
+    },
+    "human": {
+      "catalogueEntries": 102,
+      "detailFeatures": 2347
+    },
+    "ice-margin": {
+      "catalogueEntries": 269,
+      "detailFeatures": 19473
+    },
+    "dead-ice": {
+      "catalogueEntries": 287,
+      "detailFeatures": 72433
+    },
+    "tunnel-valley": {
+      "catalogueEntries": 198,
+      "detailFeatures": 12665
+    },
+    "delta": {
+      "catalogueEntries": 32,
+      "detailFeatures": 297
+    },
+    "ice-lake": {
+      "catalogueEntries": 74,
+      "detailFeatures": 2161
+    },
+    "lake-hill": {
+      "catalogueEntries": 50,
+      "detailFeatures": 2011
+    },
+    "bedrock": {
+      "catalogueEntries": 202,
+      "detailFeatures": 10786
+    },
+    "reclaimed-marine": {
+      "catalogueEntries": 88,
+      "detailFeatures": 2490
+    },
+    "esker": {
+      "catalogueEntries": 45,
+      "detailFeatures": 1255
+    },
+    "kettle": {
+      "catalogueEntries": 17,
+      "detailFeatures": 418
+    },
+    "raised-plain": {
+      "catalogueEntries": 72,
+      "detailFeatures": 8317
+    },
+    "raised-ridge": {
+      "catalogueEntries": 37,
+      "detailFeatures": 726
+    }
+  },
+  "chronology": {
+    "unresolved": {
+      "catalogueEntries": 678,
+      "detailFeatures": 41179
+    },
+    "separate": {
+      "catalogueEntries": 3555,
+      "detailFeatures": 422508
+    },
+    "legacy": {
+      "catalogueEntries": 352,
+      "detailFeatures": 34489
+    },
+    "late-on-raised": {
+      "catalogueEntries": 16,
+      "detailFeatures": 2054
+    },
+    "younger-on-raised": {
+      "catalogueEntries": 51,
+      "detailFeatures": 5604
+    }
+  },
+  "histories": {
+    "unresolved": {
+      "catalogueEntries": 678,
+      "detailFeatures": 41179
+    },
+    "marine": {
+      "catalogueEntries": 612,
+      "detailFeatures": 38590
+    },
+    "other": {
+      "catalogueEntries": 1486,
+      "detailFeatures": 201944
+    },
+    "freshwater": {
+      "catalogueEntries": 1092,
+      "detailFeatures": 146180
+    },
+    "aeolian": {
+      "catalogueEntries": 288,
+      "detailFeatures": 34098
+    },
+    "legacy": {
+      "catalogueEntries": 352,
+      "detailFeatures": 34489
+    },
+    "mixed": {
+      "catalogueEntries": 71,
+      "detailFeatures": 230
+    },
+    "late-marine": {
+      "catalogueEntries": 64,
+      "detailFeatures": 8992
+    },
+    "delta": {
+      "catalogueEntries": 9,
+      "detailFeatures": 132
+    }
+  },
+  "examples": {
+    "route:tidal": {
+      "tile": "tile-23-306.geojson.gz",
+      "origin": "gap:g7806",
+      "bbox": [
+        8.44584893,
+        55.22532522,
+        8.67773233,
+        55.40569181
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "X",
+        "depth": "X",
+        "symbol": "X",
+        "soilLabel": "X - Ukendt lag, oplysninger mangler",
+        "landscape": "Tidevandsflade",
+        "landscapeCode": 42,
+        "landscapeEnglish": "Tidal flat",
+        "conflictSymbols": "",
+        "potential": "unresolved",
+        "material": "unresolved",
+        "process": "unresolved",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "tidalFlat",
+        "route": "tidal",
+        "history": "unresolved",
+        "chronology": "unresolved",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.04182401813560549,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "chronology:unresolved": {
+      "tile": "tile-23-306.geojson.gz",
+      "origin": "gap:g7806",
+      "bbox": [
+        8.44584893,
+        55.22532522,
+        8.67773233,
+        55.40569181
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "X",
+        "depth": "X",
+        "symbol": "X",
+        "soilLabel": "X - Ukendt lag, oplysninger mangler",
+        "landscape": "Tidevandsflade",
+        "landscapeCode": 42,
+        "landscapeEnglish": "Tidal flat",
+        "conflictSymbols": "",
+        "potential": "unresolved",
+        "material": "unresolved",
+        "process": "unresolved",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "tidalFlat",
+        "route": "tidal",
+        "history": "unresolved",
+        "chronology": "unresolved",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.04182401813560549,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:till": {
+      "tile": "tile-32-303.geojson.gz",
+      "origin": "n198734:g12155",
+      "bbox": [
+        11.17384246,
+        54.70218052,
+        11.49117379,
+        54.8462455
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "ML",
+        "depth": "ML",
+        "symbol": "ML",
+        "soilLabel": "ML - MorÃ¦neler",
+        "landscape": "Bundmoræneflade",
+        "landscapeCode": 1,
+        "landscapeEnglish": "Till plain",
+        "conflictSymbols": "",
+        "potential": "possible",
+        "material": "till",
+        "process": "till",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "tillPlain",
+        "route": "till",
+        "history": "other",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.04571633170982439,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "chronology:separate": {
+      "tile": "tile-28-306.geojson.gz",
+      "origin": "n95854:g7045",
+      "bbox": [
+        9.94414609,
+        55.22145227,
+        10.26324031,
+        55.40128185
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "ML",
+        "depth": "ML",
+        "symbol": "ML",
+        "soilLabel": "ML - MorÃ¦neler",
+        "landscape": "Dødislandskab",
+        "landscapeCode": 8,
+        "landscapeEnglish": "Hummocky topograhy",
+        "conflictSymbols": "",
+        "potential": "possible",
+        "material": "till",
+        "process": "till",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "deadIce",
+        "route": "dead-ice",
+        "history": "other",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.05738257956302645,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "chronology:legacy": {
+      "tile": "tile-25-311.geojson.gz",
+      "origin": "s7535:g6636",
+      "bbox": [
+        9,
+        56.16035532,
+        9.22291752,
+        56.27800223
+      ],
+      "entry": {
+        "source": "soil-old",
+        "surface": "T",
+        "depth": "",
+        "symbol": "T",
+        "soilLabel": "T",
+        "landscape": "Hedeslette",
+        "landscapeCode": 19,
+        "landscapeEnglish": "Outwash plain",
+        "conflictSymbols": "",
+        "potential": "enhanced",
+        "material": "glacial-coarse",
+        "process": "meltwater",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "outwash",
+        "route": "outwash",
+        "history": "legacy",
+        "chronology": "legacy",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.026225557412862612,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:unknown": {
+      "tile": "tile-25-313.geojson.gz",
+      "origin": "n146112:g?",
+      "bbox": [
+        9.24605755,
+        56.52032219,
+        9.32535393,
+        56.6059169
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "SØ",
+        "depth": "SØ",
+        "symbol": "SØ",
+        "soilLabel": "SØ",
+        "landscape": "Ikke kortlagt",
+        "landscapeCode": null,
+        "landscapeEnglish": "",
+        "conflictSymbols": "",
+        "potential": "unresolved",
+        "material": "unresolved",
+        "process": "missing",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "missing",
+        "route": "unknown",
+        "history": "unresolved",
+        "chronology": "unresolved",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.006787350650149471,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:water": {
+      "tile": "tile-34-310.geojson.gz",
+      "origin": "n115007:g13076",
+      "bbox": [
+        12.03816553,
+        55.93578467,
+        12.1839667,
+        56.01824249
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "SØ",
+        "depth": "SØ",
+        "symbol": "SØ",
+        "soilLabel": "SØ",
+        "landscape": "Sø",
+        "landscapeCode": 0,
+        "landscapeEnglish": "Lake",
+        "conflictSymbols": "",
+        "potential": "unresolved",
+        "material": "unresolved",
+        "process": "unresolved",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "lake",
+        "route": "water",
+        "history": "unresolved",
+        "chronology": "unresolved",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.012022446631649562,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:marsh": {
+      "tile": "tile-24-304.geojson.gz",
+      "origin": "n5867:g7403",
+      "bbox": [
+        8.7038884,
+        54.90621841,
+        8.91206877,
+        54.98140081
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "HV-L",
+        "depth": "HV-L",
+        "symbol": "HV",
+        "soilLabel": "HV - Vekslende tynde saltvandslag, marsk",
+        "landscape": "Marsk",
+        "landscapeCode": 26,
+        "landscapeEnglish": "Marsh",
+        "conflictSymbols": "",
+        "potential": "coastal",
+        "material": "marine-fine",
+        "process": "cover",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "marsh",
+        "route": "marsh",
+        "history": "marine",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.01565149984948703,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:erosion-valley": {
+      "tile": "tile-28-318.geojson.gz",
+      "origin": "n190347:g8053",
+      "bbox": [
+        10.00639205,
+        57.39560266,
+        10.28961414,
+        57.48585738
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "FT",
+        "depth": "FT",
+        "symbol": "FT",
+        "soilLabel": "FT - FerskvandstÃ¸rv",
+        "landscape": "Erosionsdal",
+        "landscapeCode": 22,
+        "landscapeEnglish": "Valley system",
+        "conflictSymbols": "",
+        "potential": "possible",
+        "material": "organic-cover",
+        "process": "erosion",
+        "accessibility": "covered",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "erosionValley",
+        "route": "erosion-valley",
+        "history": "freshwater",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.025562130430763916,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:dune": {
+      "tile": "tile-29-319.geojson.gz",
+      "origin": "n189759:g7647",
+      "bbox": [
+        10.33889658,
+        57.58667646,
+        10.57590977,
+        57.73286994
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "ES",
+        "depth": "ES",
+        "symbol": "ES",
+        "soilLabel": "ES - Flyvesand",
+        "landscape": "Klit",
+        "landscapeCode": 32,
+        "landscapeEnglish": "Dune",
+        "conflictSymbols": "",
+        "potential": "possible",
+        "material": "aeolian-cover",
+        "process": "cover",
+        "accessibility": "covered",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "dune",
+        "route": "dune",
+        "history": "aeolian",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.03464978305200152,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:outwash": {
+      "tile": "tile-24-312.geojson.gz",
+      "origin": "n154171:g6636",
+      "bbox": [
+        8.71701317,
+        56.30473119,
+        9,
+        56.46083851
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "TS",
+        "depth": "TS",
+        "symbol": "TS",
+        "soilLabel": "TS - Smeltevandssand",
+        "landscape": "Hedeslette",
+        "landscapeCode": 19,
+        "landscapeEnglish": "Outwash plain",
+        "conflictSymbols": "",
+        "potential": "enhanced",
+        "material": "glacial-coarse",
+        "process": "meltwater",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "outwash",
+        "route": "outwash",
+        "history": "other",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.044176315626596754,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:marine": {
+      "tile": "tile-27-316.geojson.gz",
+      "origin": "n192998:g7400",
+      "bbox": [
+        9.66023823,
+        57.05513368,
+        9.99064163,
+        57.18902435
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "HS",
+        "depth": "HS",
+        "symbol": "HS",
+        "soilLabel": "HS - Saltvandssand",
+        "landscape": "Marin flade",
+        "landscapeCode": 25,
+        "landscapeEnglish": "Marine plain",
+        "conflictSymbols": "",
+        "potential": "coastal",
+        "material": "marine-coarse",
+        "process": "marine",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "marine",
+        "route": "marine",
+        "history": "marine",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.04423793259627806,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:beach-ridge": {
+      "tile": "tile-25-316.geojson.gz",
+      "origin": "n192904:g11020",
+      "bbox": [
+        9.07317698,
+        57.02334739,
+        9.18464058,
+        57.09024506
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "HG-HS",
+        "depth": "HG-HS",
+        "symbol": "HG",
+        "soilLabel": "HG - Saltvandsgrus",
+        "landscape": "Strandvold",
+        "landscapeCode": 27,
+        "landscapeEnglish": "Beach ridge",
+        "conflictSymbols": "",
+        "potential": "enhanced",
+        "material": "marine-coarse",
+        "process": "shore",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "ridge",
+        "route": "beach-ridge",
+        "history": "marine",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.007456655129812366,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:wind-plain": {
+      "tile": "tile-24-316.geojson.gz",
+      "origin": "n192849:g7967",
+      "bbox": [
+        8.74488988,
+        57.03070478,
+        9,
+        57.14116117
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "ES",
+        "depth": "ES",
+        "symbol": "ES",
+        "soilLabel": "ES - Flyvesand",
+        "landscape": "Flyvesandsflade",
+        "landscapeCode": 33,
+        "landscapeEnglish": "Aeolian plain",
+        "conflictSymbols": "",
+        "potential": "possible",
+        "material": "aeolian-cover",
+        "process": "cover",
+        "accessibility": "covered",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "windPlain",
+        "route": "wind-plain",
+        "history": "aeolian",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.028178542907665707,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:bog": {
+      "tile": "tile-28-316.geojson.gz",
+      "origin": "n187277:g7605",
+      "bbox": [
+        10.09097017,
+        57.08306241,
+        10.26637984,
+        57.15179714
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "FT",
+        "depth": "FT",
+        "symbol": "FT",
+        "soilLabel": "FT - FerskvandstÃ¸rv",
+        "landscape": "Mose",
+        "landscapeCode": 30,
+        "landscapeEnglish": "Bog",
+        "conflictSymbols": "",
+        "potential": "possible",
+        "material": "organic-cover",
+        "process": "cover",
+        "accessibility": "covered",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "bog",
+        "route": "bog",
+        "history": "freshwater",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.012056736306839616,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:lake-plain": {
+      "tile": "tile-33-308.geojson.gz",
+      "origin": "n198991:g7427",
+      "bbox": [
+        11.53773234,
+        55.5563904,
+        11.69230307,
+        55.60618857
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "FT",
+        "depth": "FT",
+        "symbol": "FT",
+        "soilLabel": "FT - FerskvandstÃ¸rv",
+        "landscape": "Søbund",
+        "landscapeCode": 29,
+        "landscapeEnglish": "Lake plain",
+        "conflictSymbols": "",
+        "potential": "covered",
+        "material": "organic-cover",
+        "process": "basin",
+        "accessibility": "covered",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "lakePlain",
+        "route": "lake-plain",
+        "history": "freshwater",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.007697339489564474,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:reclaimed-lake": {
+      "tile": "tile-30-312.geojson.gz",
+      "origin": "n179933:g14565",
+      "bbox": [
+        10.6570264,
+        56.37455539,
+        10.82158668,
+        56.41517932
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "FP",
+        "depth": "FP",
+        "symbol": "FP",
+        "soilLabel": "FP - Ferskvandsgytje",
+        "landscape": "Tørlagt ferskvandssø",
+        "landscapeCode": 35,
+        "landscapeEnglish": "Reclaimed lake",
+        "conflictSymbols": "",
+        "potential": "covered",
+        "material": "organic-cover",
+        "process": "basin",
+        "accessibility": "covered",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "reclaimedLake",
+        "route": "reclaimed-lake",
+        "history": "freshwater",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.0066850852955007934,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:human": {
+      "tile": "tile-35-308.geojson.gz",
+      "origin": "s11465:g7803",
+      "bbox": [
+        12.35270166,
+        55.59157354,
+        12.49425158,
+        55.62230062
+      ],
+      "entry": {
+        "source": "soil-old",
+        "surface": "HSL",
+        "depth": "",
+        "symbol": "HSL",
+        "soilLabel": "HSL",
+        "landscape": "Antropogent landskab",
+        "landscapeCode": 37,
+        "landscapeEnglish": "Antropogenic landscape",
+        "conflictSymbols": "",
+        "potential": "unresolved",
+        "material": "marine-mixed",
+        "process": "unresolved",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "human",
+        "route": "human",
+        "history": "legacy",
+        "chronology": "legacy",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.0043494157158333975,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:ice-margin": {
+      "tile": "tile-34-305.geojson.gz",
+      "origin": "n109485:g9630",
+      "bbox": [
+        11.88174974,
+        55.02836967,
+        12.03564029,
+        55.14211122
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "ML",
+        "depth": "ML",
+        "symbol": "ML",
+        "soilLabel": "ML - MorÃ¦neler",
+        "landscape": "Isoverskredet randmoræne",
+        "landscapeCode": 15,
+        "landscapeEnglish": "Transgressed marginal moraine",
+        "conflictSymbols": "",
+        "potential": "reworked",
+        "material": "till",
+        "process": "pushed",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "overridden",
+        "route": "ice-margin",
+        "history": "other",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.017503749687352528,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:dead-ice": {
+      "tile": "tile-28-306.geojson.gz",
+      "origin": "n95854:g7045",
+      "bbox": [
+        9.94414609,
+        55.22145227,
+        10.26324031,
+        55.40128185
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "ML",
+        "depth": "ML",
+        "symbol": "ML",
+        "soilLabel": "ML - MorÃ¦neler",
+        "landscape": "Dødislandskab",
+        "landscapeCode": 8,
+        "landscapeEnglish": "Hummocky topograhy",
+        "conflictSymbols": "",
+        "potential": "possible",
+        "material": "till",
+        "process": "till",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "deadIce",
+        "route": "dead-ice",
+        "history": "other",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.05738257956302645,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:tunnel-valley": {
+      "tile": "tile-35-309.geojson.gz",
+      "origin": "n127047:g2931",
+      "bbox": [
+        12.19101002,
+        55.75006836,
+        12.35614586,
+        55.818794
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "FT",
+        "depth": "FT",
+        "symbol": "FT",
+        "soilLabel": "FT - FerskvandstÃ¸rv",
+        "landscape": "Tunneldal",
+        "landscapeCode": 4,
+        "landscapeEnglish": "Tunnel valley",
+        "conflictSymbols": "",
+        "potential": "possible",
+        "material": "organic-cover",
+        "process": "erosion",
+        "accessibility": "covered",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "tunnelValley",
+        "route": "tunnel-valley",
+        "history": "freshwater",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.011349066290937028,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:delta": {
+      "tile": "tile-23-309.geojson.gz",
+      "origin": "n54938:g7426",
+      "bbox": [
+        8.36341969,
+        55.91333427,
+        8.41597534,
+        55.94384003
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "FHS",
+        "depth": "FHS",
+        "symbol": "FHS",
+        "soilLabel": "FHS - Deltasand",
+        "landscape": "Delta",
+        "landscapeCode": 28,
+        "landscapeEnglish": "Delta",
+        "conflictSymbols": "",
+        "potential": "enhanced",
+        "material": "fresh-coarse",
+        "process": "basin",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "delta",
+        "route": "delta",
+        "history": "delta",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.001603250045543797,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:ice-lake": {
+      "tile": "tile-29-305.geojson.gz",
+      "origin": "n25093:g10265",
+      "bbox": [
+        10.44883033,
+        55.11018467,
+        10.55118964,
+        55.14918795
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "TL",
+        "depth": "TL",
+        "symbol": "TL",
+        "soilLabel": "TL - Smeltevandsler",
+        "landscape": "Issøflade",
+        "landscapeCode": 23,
+        "landscapeEnglish": "Glacial lake deposit",
+        "conflictSymbols": "",
+        "potential": "basin",
+        "material": "glacial-fine",
+        "process": "basin",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "iceLake",
+        "route": "ice-lake",
+        "history": "other",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.00399234882853639,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:lake-hill": {
+      "tile": "tile-31-305.geojson.gz",
+      "origin": "n19954:g13515",
+      "bbox": [
+        10.91680169,
+        55.12180904,
+        10.94087708,
+        55.15722245
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "ML",
+        "depth": "ML",
+        "symbol": "ML",
+        "soilLabel": "ML - MorÃ¦neler",
+        "landscape": "Issøbakke",
+        "landscapeCode": 10,
+        "landscapeEnglish": "Kame",
+        "conflictSymbols": "",
+        "potential": "reworked",
+        "material": "till",
+        "process": "meltwater",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "lakeHill",
+        "route": "lake-hill",
+        "history": "other",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.000852591656979827,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:bedrock": {
+      "tile": "tile-44-306.geojson.gz",
+      "origin": "n132741:g7809",
+      "bbox": [
+        14.96484628,
+        55.10308271,
+        15.11487995,
+        55.1758002
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "ML",
+        "depth": "ML",
+        "symbol": "ML",
+        "soilLabel": "ML - MorÃ¦neler",
+        "landscape": "Grundfjeld",
+        "landscapeCode": 46,
+        "landscapeEnglish": "Bedrock",
+        "conflictSymbols": "",
+        "potential": "possible",
+        "material": "till",
+        "process": "rock",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "bedrock",
+        "route": "bedrock",
+        "history": "other",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.01091007189788764,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:reclaimed-marine": {
+      "tile": "tile-32-309.geojson.gz",
+      "origin": "n199046:g3126",
+      "bbox": [
+        11.4431421,
+        55.74031276,
+        11.55175127,
+        55.79935401
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "HS",
+        "depth": "HS",
+        "symbol": "HS",
+        "soilLabel": "HS - Saltvandssand",
+        "landscape": "Tørlagt marint forland",
+        "landscapeCode": 36,
+        "landscapeEnglish": "Reclaimed marine plain",
+        "conflictSymbols": "",
+        "potential": "coastal",
+        "material": "marine-coarse",
+        "process": "marine",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "reclaimedMarine",
+        "route": "reclaimed-marine",
+        "history": "marine",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.00641242115826256,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:esker": {
+      "tile": "tile-34-305.geojson.gz",
+      "origin": "n133016:g2873",
+      "bbox": [
+        11.83044721,
+        55.0352851,
+        11.87868336,
+        55.05813652
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "DS",
+        "depth": "DS",
+        "symbol": "DS",
+        "soilLabel": "DS - Smeltevandssand",
+        "landscape": "Ås",
+        "landscapeCode": 5,
+        "landscapeEnglish": "Esker",
+        "conflictSymbols": "",
+        "potential": "enhanced",
+        "material": "glacial-coarse",
+        "process": "meltwater",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "esker",
+        "route": "esker",
+        "history": "other",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.00110226452283274,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:kettle": {
+      "tile": "tile-33-308.geojson.gz",
+      "origin": "n96889:g12168",
+      "bbox": [
+        11.70188581,
+        55.5798116,
+        11.73983423,
+        55.59751782
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "DS",
+        "depth": "DS",
+        "symbol": "DS",
+        "soilLabel": "DS - Smeltevandssand",
+        "landscape": "Dødishul",
+        "landscapeCode": 9,
+        "landscapeEnglish": "Kettle hole",
+        "conflictSymbols": "",
+        "potential": "basin",
+        "material": "glacial-coarse",
+        "process": "basin",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "kettle",
+        "route": "kettle",
+        "history": "other",
+        "chronology": "separate",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.0006719230731724214,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:raised-plain": {
+      "tile": "tile-28-316.geojson.gz",
+      "origin": "n192736:g7817",
+      "bbox": [
+        9.99201075,
+        57.09582694,
+        10.24768677,
+        57.19914546
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "YS",
+        "depth": "YS",
+        "symbol": "YS",
+        "soilLabel": "YS - Saltvandssand",
+        "landscape": "Hævet senglacial flade",
+        "landscapeCode": 50,
+        "landscapeEnglish": "Raised late glacial plain",
+        "conflictSymbols": "",
+        "potential": "coastal",
+        "material": "marine-coarse",
+        "process": "marine",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "raisedPlain",
+        "route": "raised-plain",
+        "history": "late-marine",
+        "chronology": "late-on-raised",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.026416067985889007,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "code50:raisedPlain": {
+      "tile": "tile-28-316.geojson.gz",
+      "origin": "n192736:g7817",
+      "bbox": [
+        9.99201075,
+        57.09582694,
+        10.24768677,
+        57.19914546
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "YS",
+        "depth": "YS",
+        "symbol": "YS",
+        "soilLabel": "YS - Saltvandssand",
+        "landscape": "Hævet senglacial flade",
+        "landscapeCode": 50,
+        "landscapeEnglish": "Raised late glacial plain",
+        "conflictSymbols": "",
+        "potential": "coastal",
+        "material": "marine-coarse",
+        "process": "marine",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "raisedPlain",
+        "route": "raised-plain",
+        "history": "late-marine",
+        "chronology": "late-on-raised",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.026416067985889007,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "chronology:late-on-raised": {
+      "tile": "tile-28-316.geojson.gz",
+      "origin": "n192736:g7817",
+      "bbox": [
+        9.99201075,
+        57.09582694,
+        10.24768677,
+        57.19914546
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "YS",
+        "depth": "YS",
+        "symbol": "YS",
+        "soilLabel": "YS - Saltvandssand",
+        "landscape": "Hævet senglacial flade",
+        "landscapeCode": 50,
+        "landscapeEnglish": "Raised late glacial plain",
+        "conflictSymbols": "",
+        "potential": "coastal",
+        "material": "marine-coarse",
+        "process": "marine",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "raisedPlain",
+        "route": "raised-plain",
+        "history": "late-marine",
+        "chronology": "late-on-raised",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.026416067985889007,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "chronology:younger-on-raised": {
+      "tile": "tile-28-319.geojson.gz",
+      "origin": "n192695:g14694",
+      "bbox": [
+        10.00893053,
+        57.56033877,
+        10.10297028,
+        57.57839125
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "ES",
+        "depth": "YS",
+        "symbol": "YS",
+        "soilLabel": "YS - Saltvandssand",
+        "landscape": "Hævet senglacial flade",
+        "landscapeCode": 50,
+        "landscapeEnglish": "Raised late glacial plain",
+        "conflictSymbols": "",
+        "potential": "covered",
+        "material": "aeolian-cover",
+        "process": "marine",
+        "accessibility": "covered",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "raisedPlain",
+        "route": "raised-plain",
+        "history": "aeolian",
+        "chronology": "younger-on-raised",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.0016976507060801128,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "route:raised-ridge": {
+      "tile": "tile-28-315.geojson.gz",
+      "origin": "n176843:g5560",
+      "bbox": [
+        10.19448735,
+        56.93722453,
+        10.24401115,
+        56.96953564
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "HG",
+        "depth": "HG",
+        "symbol": "HG",
+        "soilLabel": "HG - Saltvandsgrus",
+        "landscape": "Hævet senglacial strandvold",
+        "landscapeCode": 54,
+        "landscapeEnglish": "Raised late glacial beach ridge",
+        "conflictSymbols": "",
+        "potential": "enhanced",
+        "material": "marine-coarse",
+        "process": "shore",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "raisedRidge",
+        "route": "raised-ridge",
+        "history": "marine",
+        "chronology": "younger-on-raised",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.001600168949417782,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    },
+    "code50:raisedRidge": {
+      "tile": "tile-27-318.geojson.gz",
+      "origin": "n192699:g4274",
+      "bbox": [
+        9.91142307,
+        57.51195712,
+        9.97883153,
+        57.5315863
+      ],
+      "entry": {
+        "source": "soil-new",
+        "surface": "YS",
+        "depth": "YS",
+        "symbol": "YS",
+        "soilLabel": "YS - Saltvandssand",
+        "landscape": "Hævet senglacial strandvold",
+        "landscapeCode": 50,
+        "landscapeEnglish": "Raised late glacial beach ridge",
+        "conflictSymbols": "",
+        "potential": "enhanced",
+        "material": "marine-coarse",
+        "process": "shore",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      },
+      "context": {
+        "key": "raisedRidge",
+        "route": "raised-ridge",
+        "history": "late-marine",
+        "chronology": "late-on-raised",
+        "huntability": "unknown"
+      },
+      "displayMetric": 0.0013231727948629956,
+      "selectionMeaning": "Largest bounding rectangle for a visible browser example only; not amber, area or field ranking"
+    }
+  },
+  "unchanged": "No dataset, geological potential category, geometry, source identity or geological rule modified"
+}

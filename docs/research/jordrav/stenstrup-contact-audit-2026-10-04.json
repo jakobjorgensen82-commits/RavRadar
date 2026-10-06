@@ -1,0 +1,1426 @@
+{
+  "status": "PASS",
+  "scope": "Source identity, native mapped sediment areas and lateral shared boundaries only; no amber, vertical contact, field-use or plough-layer verification.",
+  "researchDate": "2026-10-04",
+  "scriptSha256": "a4d3eba5209c746e81e182abf429c3053e76524de5181d6bd129ed72e7bffa69",
+  "sourceAuditLfTextSha256": "b6bb2a4551ce8a3a978d2fe24f5e73b390cf39194f275d0df14d0fb9359ade5d",
+  "rulesSha256": "655b5c50a212d43fa65c536731553399b8608ed93653665fd6f9e852e4ee9bed",
+  "modelImplementationSha256": "1d7290f7adff65af5fc8b726f7f60548467ef921128c8ce74626b9f4ec1546b9",
+  "modelVersion": "0.1.0-prototype",
+  "software": {
+    "shapely": "2.1.2",
+    "geos": "3.13.1",
+    "pyproj": "3.8.0"
+  },
+  "geometry": {
+    "crs": "EPSG:25832",
+    "precisionGrid_m": 0.01,
+    "source": "Verified native normalized source cache; no display generalization, buffer or cropping window",
+    "overlayPrecision": "Full floating precision (grid_size=0); no repeated centimetre snapping of derived intersections",
+    "positionalAccuracyClaim": false,
+    "contactLengthIsRanking": false
+  },
+  "sourceBindings": [
+    {
+      "source": "geomorphology",
+      "dbfSha256": "0d31afad447e9139c55523bc5ccc8a12671cb222c05d3fd527f561c3bd46e2ff",
+      "shpSha256": "371aaa477ab9d76662732293df86880c1fa9e02953774ff1eb509bb1dc25b619",
+      "cacheMetadataSha256": "94cd6d4a599d86f20a8572274ded42339180eb0373e00744f56e45fc1eef7272",
+      "cacheGeometrySha256": "c56445a123763831d32fc3c474e1a0156fa87cb5e03e0f35693746bf380bf512",
+      "attributesVerifiedAgainstOriginal": 15178,
+      "auditedCollapsedRecords": 0
+    },
+    {
+      "source": "soil",
+      "dbfSha256": "94e3ac871fb47b3f6ab39957bb72c34bc8ab3c020f04addc63d45a152e93edb5",
+      "shpSha256": "10620612ea6c8de4539cbe2ccc4790bbbd0d3e798cb19e0a29bc7f466cafc3cc",
+      "cacheMetadataSha256": "807b265135e4c468190c23413583c34ada6eeeb03448d814fc0a429a36d43539",
+      "cacheGeometrySha256": "d09ee9442b3e5c29bcba5acffa5acdf52e13d27e61ac08d6c37a0aee72674b57",
+      "attributesVerifiedAgainstOriginal": 199653,
+      "auditedCollapsedRecords": 0
+    }
+  ],
+  "lake": {
+    "sourceId": 10265,
+    "label": "Issøflade",
+    "sourceVersion": "Version 3, 2022",
+    "area_km2": 19.284405781,
+    "bounds_EPSG25832": [
+      592394.37,
+      6107368.56,
+      599709.58,
+      6112597.8
+    ],
+    "representativePoint_lon_lat": [
+      10.522732627150814,
+      55.126990553689666
+    ],
+    "extentIsAmberBoundary": false
+  },
+  "partition": {
+    "soilRecordsIntersecting": 149,
+    "gap_m2": 0.0,
+    "excess_m2": 0.0,
+    "overlap_m2": 0.0,
+    "dissolvedUpperAreaMinusLake_m2": 0.0,
+    "numericalTolerance_m2": 1
+  },
+  "upperSedimentAreas": [
+    {
+      "codes": [
+        "TS"
+      ],
+      "area_km2": 8.913023306,
+      "percentOfLake": 46.218812
+    },
+    {
+      "codes": [
+        "TL"
+      ],
+      "area_km2": 8.086420802,
+      "percentOfLake": 41.932434
+    },
+    {
+      "codes": [
+        "FT"
+      ],
+      "area_km2": 0.843832509,
+      "percentOfLake": 4.375725
+    },
+    {
+      "codes": [
+        "FP"
+      ],
+      "area_km2": 0.74284524,
+      "percentOfLake": 3.852051
+    },
+    {
+      "codes": [
+        "ML"
+      ],
+      "area_km2": 0.25185646,
+      "percentOfLake": 1.306011
+    },
+    {
+      "codes": [
+        "DS"
+      ],
+      "area_km2": 0.155111716,
+      "percentOfLake": 0.804338
+    },
+    {
+      "codes": [
+        "S"
+      ],
+      "area_km2": 0.12217951,
+      "percentOfLake": 0.633566
+    },
+    {
+      "codes": [
+        "FS"
+      ],
+      "area_km2": 0.083633276,
+      "percentOfLake": 0.433683
+    },
+    {
+      "codes": [
+        "MG"
+      ],
+      "area_km2": 0.062944364,
+      "percentOfLake": 0.3264
+    },
+    {
+      "codes": [
+        "FL"
+      ],
+      "area_km2": 0.022558597,
+      "percentOfLake": 0.116978
+    }
+  ],
+  "upperDepthPairs": [
+    {
+      "codes": [
+        "TS",
+        "TS"
+      ],
+      "area_km2": 8.913023306,
+      "percentOfLake": 46.218812
+    },
+    {
+      "codes": [
+        "TL",
+        "TL"
+      ],
+      "area_km2": 8.086420802,
+      "percentOfLake": 41.932434
+    },
+    {
+      "codes": [
+        "FT",
+        "FT"
+      ],
+      "area_km2": 0.536300947,
+      "percentOfLake": 2.781008
+    },
+    {
+      "codes": [
+        "FP",
+        "FP"
+      ],
+      "area_km2": 0.481071121,
+      "percentOfLake": 2.494612
+    },
+    {
+      "codes": [
+        "FP",
+        "TL"
+      ],
+      "area_km2": 0.261774119,
+      "percentOfLake": 1.357439
+    },
+    {
+      "codes": [
+        "ML",
+        "ML"
+      ],
+      "area_km2": 0.25185646,
+      "percentOfLake": 1.306011
+    },
+    {
+      "codes": [
+        "FT",
+        "TL"
+      ],
+      "area_km2": 0.190105651,
+      "percentOfLake": 0.9858
+    },
+    {
+      "codes": [
+        "DS",
+        "DS"
+      ],
+      "area_km2": 0.155111716,
+      "percentOfLake": 0.804338
+    },
+    {
+      "codes": [
+        "S",
+        "DS"
+      ],
+      "area_km2": 0.12217951,
+      "percentOfLake": 0.633566
+    },
+    {
+      "codes": [
+        "FT",
+        "TS"
+      ],
+      "area_km2": 0.117425911,
+      "percentOfLake": 0.608916
+    },
+    {
+      "codes": [
+        "FS",
+        "FS"
+      ],
+      "area_km2": 0.083633276,
+      "percentOfLake": 0.433683
+    },
+    {
+      "codes": [
+        "MG",
+        "MG"
+      ],
+      "area_km2": 0.062944364,
+      "percentOfLake": 0.3264
+    },
+    {
+      "codes": [
+        "FL",
+        "FL"
+      ],
+      "area_km2": 0.022558597,
+      "percentOfLake": 0.116978
+    }
+  ],
+  "differentUpperDepthArea_km2": 0.691485191,
+  "currentQualitativeClasses": [
+    {
+      "codes": [
+        "possible"
+      ],
+      "area_km2": 19.200772505,
+      "percentOfLake": 99.566317
+    },
+    {
+      "codes": [
+        "enhanced"
+      ],
+      "area_km2": 0.083633276,
+      "percentOfLake": 0.433683
+    }
+  ],
+  "lateralMappedContacts": [
+    {
+      "upperCodes": [
+        "TL",
+        "TS"
+      ],
+      "sharedLength_m": 44466.285
+    },
+    {
+      "upperCodes": [
+        "FT",
+        "TS"
+      ],
+      "sharedLength_m": 17148.509
+    },
+    {
+      "upperCodes": [
+        "FP",
+        "TS"
+      ],
+      "sharedLength_m": 7734.178
+    },
+    {
+      "upperCodes": [
+        "FP",
+        "TL"
+      ],
+      "sharedLength_m": 6943.23
+    },
+    {
+      "upperCodes": [
+        "DS",
+        "TL"
+      ],
+      "sharedLength_m": 6152.655
+    },
+    {
+      "upperCodes": [
+        "S",
+        "TS"
+      ],
+      "sharedLength_m": 3827.043
+    },
+    {
+      "upperCodes": [
+        "ML",
+        "TS"
+      ],
+      "sharedLength_m": 3723.942
+    },
+    {
+      "upperCodes": [
+        "ML",
+        "TL"
+      ],
+      "sharedLength_m": 3330.532
+    },
+    {
+      "upperCodes": [
+        "FS",
+        "TS"
+      ],
+      "sharedLength_m": 2655.94
+    },
+    {
+      "upperCodes": [
+        "FT",
+        "TL"
+      ],
+      "sharedLength_m": 2475.337
+    },
+    {
+      "upperCodes": [
+        "FS",
+        "TL"
+      ],
+      "sharedLength_m": 1470.763
+    },
+    {
+      "upperCodes": [
+        "MG",
+        "TS"
+      ],
+      "sharedLength_m": 1169.99
+    },
+    {
+      "upperCodes": [
+        "DS",
+        "TS"
+      ],
+      "sharedLength_m": 768.592
+    },
+    {
+      "upperCodes": [
+        "FP",
+        "FT"
+      ],
+      "sharedLength_m": 719.952
+    },
+    {
+      "upperCodes": [
+        "FL",
+        "TL"
+      ],
+      "sharedLength_m": 609.527
+    },
+    {
+      "upperCodes": [
+        "MG",
+        "TL"
+      ],
+      "sharedLength_m": 349.052
+    },
+    {
+      "upperCodes": [
+        "MG",
+        "ML"
+      ],
+      "sharedLength_m": 247.235
+    },
+    {
+      "upperCodes": [
+        "FT",
+        "ML"
+      ],
+      "sharedLength_m": 239.849
+    },
+    {
+      "upperCodes": [
+        "FP",
+        "FS"
+      ],
+      "sharedLength_m": 238.849
+    },
+    {
+      "upperCodes": [
+        "FP",
+        "MG"
+      ],
+      "sharedLength_m": 162.836
+    },
+    {
+      "upperCodes": [
+        "FS",
+        "FT"
+      ],
+      "sharedLength_m": 134.498
+    },
+    {
+      "upperCodes": [
+        "FL",
+        "TS"
+      ],
+      "sharedLength_m": 131.11
+    },
+    {
+      "upperCodes": [
+        "S",
+        "TL"
+      ],
+      "sharedLength_m": 113.449
+    },
+    {
+      "upperCodes": [
+        "FP",
+        "ML"
+      ],
+      "sharedLength_m": 111.578
+    },
+    {
+      "upperCodes": [
+        "DS",
+        "ML"
+      ],
+      "sharedLength_m": 107.689
+    },
+    {
+      "upperCodes": [
+        "DS",
+        "S"
+      ],
+      "sharedLength_m": 69.944
+    },
+    {
+      "upperCodes": [
+        "FL",
+        "ML"
+      ],
+      "sharedLength_m": 49.694
+    },
+    {
+      "upperCodes": [
+        "DS",
+        "FT"
+      ],
+      "sharedLength_m": 48.078
+    },
+    {
+      "upperCodes": [
+        "ML",
+        "S"
+      ],
+      "sharedLength_m": 30.193
+    }
+  ],
+  "areaWeightedCentroids_EPSG25832": {
+    "TL": [
+      595890.508,
+      6109579.667
+    ],
+    "TS": [
+      597225.793,
+      6109525.019
+    ]
+  },
+  "neighbouringLandscapeContacts": [
+    {
+      "sourceId": 7033,
+      "label": "Dødislandskab",
+      "sharedLakeBoundary_m": 19746.222
+    },
+    {
+      "sourceId": 13445,
+      "label": "Dødislandskab",
+      "sharedLakeBoundary_m": 2306.952
+    },
+    {
+      "sourceId": 2371,
+      "label": "Bundmoræneflade",
+      "sharedLakeBoundary_m": 2096.117
+    },
+    {
+      "sourceId": 2368,
+      "label": "Bundmoræneflade",
+      "sharedLakeBoundary_m": 1606.355
+    },
+    {
+      "sourceId": 5216,
+      "label": "Bundmoræneflade",
+      "sharedLakeBoundary_m": 990.658
+    },
+    {
+      "sourceId": 13567,
+      "label": "Randmorænebakke",
+      "sharedLakeBoundary_m": 920.257
+    },
+    {
+      "sourceId": 12845,
+      "label": "Sø",
+      "sharedLakeBoundary_m": 913.861
+    },
+    {
+      "sourceId": 3892,
+      "label": "Sø",
+      "sharedLakeBoundary_m": 571.665
+    },
+    {
+      "sourceId": 1812,
+      "label": "Sø",
+      "sharedLakeBoundary_m": 510.041
+    },
+    {
+      "sourceId": 8716,
+      "label": "Erosionsdal",
+      "sharedLakeBoundary_m": 138.664
+    }
+  ],
+  "soilSourceRecords": [
+    {
+      "sourceId": 18531,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.075015622
+    },
+    {
+      "sourceId": 18945,
+      "upper": "TS",
+      "depth": "TS",
+      "area_km2": 0.007774999
+    },
+    {
+      "sourceId": 19949,
+      "upper": "MG",
+      "depth": "MG",
+      "area_km2": 0.017358377
+    },
+    {
+      "sourceId": 19956,
+      "upper": "TS",
+      "depth": "TS",
+      "area_km2": 0.000390063
+    },
+    {
+      "sourceId": 20371,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.008425429
+    },
+    {
+      "sourceId": 20935,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.002607889
+    },
+    {
+      "sourceId": 20945,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.001362385
+    },
+    {
+      "sourceId": 20949,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.014079054
+    },
+    {
+      "sourceId": 20951,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.001903394
+    },
+    {
+      "sourceId": 20952,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.005191646
+    },
+    {
+      "sourceId": 20957,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.000941723
+    },
+    {
+      "sourceId": 20970,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.003836576
+    },
+    {
+      "sourceId": 20972,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.000283757
+    },
+    {
+      "sourceId": 20974,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.004679345
+    },
+    {
+      "sourceId": 21226,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.006723268
+    },
+    {
+      "sourceId": 21270,
+      "upper": "FL",
+      "depth": "FL",
+      "area_km2": 0.022558597
+    },
+    {
+      "sourceId": 21644,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.004394458
+    },
+    {
+      "sourceId": 21659,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.011616959
+    },
+    {
+      "sourceId": 21682,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.006546963
+    },
+    {
+      "sourceId": 21683,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.001837193
+    },
+    {
+      "sourceId": 21686,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.00279134
+    },
+    {
+      "sourceId": 21694,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.006894667
+    },
+    {
+      "sourceId": 21718,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.007633489
+    },
+    {
+      "sourceId": 22841,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.005361513
+    },
+    {
+      "sourceId": 22842,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.004501734
+    },
+    {
+      "sourceId": 22850,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.00302842
+    },
+    {
+      "sourceId": 22858,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.007911788
+    },
+    {
+      "sourceId": 22860,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.011765697
+    },
+    {
+      "sourceId": 22862,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.00750738
+    },
+    {
+      "sourceId": 22863,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.007512159
+    },
+    {
+      "sourceId": 22876,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.001343104
+    },
+    {
+      "sourceId": 22905,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.020066285
+    },
+    {
+      "sourceId": 22908,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.021742761
+    },
+    {
+      "sourceId": 22920,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.003347747
+    },
+    {
+      "sourceId": 22985,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.002035353
+    },
+    {
+      "sourceId": 22988,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.001236118
+    },
+    {
+      "sourceId": 22991,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.000927874
+    },
+    {
+      "sourceId": 22994,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.002318234
+    },
+    {
+      "sourceId": 22996,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.001940231
+    },
+    {
+      "sourceId": 23041,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.003043328
+    },
+    {
+      "sourceId": 23072,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.00239209
+    },
+    {
+      "sourceId": 23076,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.006393428
+    },
+    {
+      "sourceId": 23103,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.019315803
+    },
+    {
+      "sourceId": 23560,
+      "upper": "FT",
+      "depth": "TS",
+      "area_km2": 0.081317765
+    },
+    {
+      "sourceId": 24135,
+      "upper": "MG",
+      "depth": "MG",
+      "area_km2": 0.002148597
+    },
+    {
+      "sourceId": 24165,
+      "upper": "MG",
+      "depth": "MG",
+      "area_km2": 0.001226232
+    },
+    {
+      "sourceId": 24171,
+      "upper": "MG",
+      "depth": "MG",
+      "area_km2": 0.008361147
+    },
+    {
+      "sourceId": 24374,
+      "upper": "ML",
+      "depth": "ML",
+      "area_km2": 0.009216033
+    },
+    {
+      "sourceId": 24390,
+      "upper": "ML",
+      "depth": "ML",
+      "area_km2": 0.006201855
+    },
+    {
+      "sourceId": 24401,
+      "upper": "ML",
+      "depth": "ML",
+      "area_km2": 0.003947275
+    },
+    {
+      "sourceId": 24506,
+      "upper": "ML",
+      "depth": "ML",
+      "area_km2": 0.232491297
+    },
+    {
+      "sourceId": 24710,
+      "upper": "S",
+      "depth": "DS",
+      "area_km2": 0.005725644
+    },
+    {
+      "sourceId": 25075,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.003111357
+    },
+    {
+      "sourceId": 25077,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.005281765
+    },
+    {
+      "sourceId": 25078,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.028069526
+    },
+    {
+      "sourceId": 25079,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.017025759
+    },
+    {
+      "sourceId": 25087,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.006115676
+    },
+    {
+      "sourceId": 25088,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.008338378
+    },
+    {
+      "sourceId": 25089,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.008159076
+    },
+    {
+      "sourceId": 25090,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.005789999
+    },
+    {
+      "sourceId": 25091,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.006366224
+    },
+    {
+      "sourceId": 25093,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 7.331848782
+    },
+    {
+      "sourceId": 25192,
+      "upper": "TS",
+      "depth": "TS",
+      "area_km2": 0.002297669
+    },
+    {
+      "sourceId": 25197,
+      "upper": "TS",
+      "depth": "TS",
+      "area_km2": 0.006870431
+    },
+    {
+      "sourceId": 25201,
+      "upper": "TS",
+      "depth": "TS",
+      "area_km2": 0.132771613
+    },
+    {
+      "sourceId": 25202,
+      "upper": "TS",
+      "depth": "TS",
+      "area_km2": 0.00303952
+    },
+    {
+      "sourceId": 25207,
+      "upper": "TS",
+      "depth": "TS",
+      "area_km2": 0.009101787
+    },
+    {
+      "sourceId": 25209,
+      "upper": "TS",
+      "depth": "TS",
+      "area_km2": 0.136780055
+    },
+    {
+      "sourceId": 25216,
+      "upper": "TS",
+      "depth": "TS",
+      "area_km2": 7.884969809
+    },
+    {
+      "sourceId": 28219,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.027108982
+    },
+    {
+      "sourceId": 28409,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.002783945
+    },
+    {
+      "sourceId": 28414,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.026892056
+    },
+    {
+      "sourceId": 28418,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.165205257
+    },
+    {
+      "sourceId": 28426,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.011000466
+    },
+    {
+      "sourceId": 28626,
+      "upper": "FP",
+      "depth": "TL",
+      "area_km2": 0.016142905
+    },
+    {
+      "sourceId": 28627,
+      "upper": "FP",
+      "depth": "TL",
+      "area_km2": 0.245631214
+    },
+    {
+      "sourceId": 28640,
+      "upper": "FS",
+      "depth": "FS",
+      "area_km2": 0.013626147
+    },
+    {
+      "sourceId": 28641,
+      "upper": "FS",
+      "depth": "FS",
+      "area_km2": 0.000796307
+    },
+    {
+      "sourceId": 28643,
+      "upper": "FS",
+      "depth": "FS",
+      "area_km2": 0.005513261
+    },
+    {
+      "sourceId": 28645,
+      "upper": "FS",
+      "depth": "FS",
+      "area_km2": 0.018484263
+    },
+    {
+      "sourceId": 28929,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.001270383
+    },
+    {
+      "sourceId": 28938,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.047015425
+    },
+    {
+      "sourceId": 28939,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.100696945
+    },
+    {
+      "sourceId": 28970,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.002493969
+    },
+    {
+      "sourceId": 28974,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.002150047
+    },
+    {
+      "sourceId": 29246,
+      "upper": "MG",
+      "depth": "MG",
+      "area_km2": 0.020053741
+    },
+    {
+      "sourceId": 29486,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.031723403
+    },
+    {
+      "sourceId": 29488,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.123818785
+    },
+    {
+      "sourceId": 29489,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.032940176
+    },
+    {
+      "sourceId": 29490,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.127816259
+    },
+    {
+      "sourceId": 29492,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.065290085
+    },
+    {
+      "sourceId": 29526,
+      "upper": "TS",
+      "depth": "TS",
+      "area_km2": 0.008148992
+    },
+    {
+      "sourceId": 31497,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.086297031
+    },
+    {
+      "sourceId": 31713,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.003434947
+    },
+    {
+      "sourceId": 31717,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.010294715
+    },
+    {
+      "sourceId": 31720,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.029622859
+    },
+    {
+      "sourceId": 31722,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.013112341
+    },
+    {
+      "sourceId": 31920,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.011398372
+    },
+    {
+      "sourceId": 31934,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.006723678
+    },
+    {
+      "sourceId": 32220,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.013186604
+    },
+    {
+      "sourceId": 32238,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.005036276
+    },
+    {
+      "sourceId": 32239,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.017375155
+    },
+    {
+      "sourceId": 32240,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.003661167
+    },
+    {
+      "sourceId": 32244,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.008475804
+    },
+    {
+      "sourceId": 32257,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.008866299
+    },
+    {
+      "sourceId": 32259,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.007522327
+    },
+    {
+      "sourceId": 32264,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.01329703
+    },
+    {
+      "sourceId": 32267,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.001900785
+    },
+    {
+      "sourceId": 32749,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.047269151
+    },
+    {
+      "sourceId": 32757,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.001975178
+    },
+    {
+      "sourceId": 32760,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.015894822
+    },
+    {
+      "sourceId": 32768,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.008051672
+    },
+    {
+      "sourceId": 32770,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.012315356
+    },
+    {
+      "sourceId": 32794,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.009172371
+    },
+    {
+      "sourceId": 32818,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.006446677
+    },
+    {
+      "sourceId": 32861,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.001568671
+    },
+    {
+      "sourceId": 33073,
+      "upper": "FT",
+      "depth": "TL",
+      "area_km2": 0.190105651
+    },
+    {
+      "sourceId": 33074,
+      "upper": "FT",
+      "depth": "TS",
+      "area_km2": 0.036108146
+    },
+    {
+      "sourceId": 33329,
+      "upper": "MG",
+      "depth": "MG",
+      "area_km2": 0.012624329
+    },
+    {
+      "sourceId": 33581,
+      "upper": "S",
+      "depth": "DS",
+      "area_km2": 0.029283989
+    },
+    {
+      "sourceId": 33587,
+      "upper": "S",
+      "depth": "DS",
+      "area_km2": 0.043071576
+    },
+    {
+      "sourceId": 33595,
+      "upper": "S",
+      "depth": "DS",
+      "area_km2": 0.0045421
+    },
+    {
+      "sourceId": 33596,
+      "upper": "S",
+      "depth": "DS",
+      "area_km2": 0.001032536
+    },
+    {
+      "sourceId": 33769,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.040238337
+    },
+    {
+      "sourceId": 33779,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.024006041
+    },
+    {
+      "sourceId": 33780,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.011216085
+    },
+    {
+      "sourceId": 33782,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.105020293
+    },
+    {
+      "sourceId": 33783,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.005168299
+    },
+    {
+      "sourceId": 33784,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.015689617
+    },
+    {
+      "sourceId": 33785,
+      "upper": "TL",
+      "depth": "TL",
+      "area_km2": 0.008371257
+    },
+    {
+      "sourceId": 33839,
+      "upper": "TS",
+      "depth": "TS",
+      "area_km2": 0.001575971
+    },
+    {
+      "sourceId": 33840,
+      "upper": "TS",
+      "depth": "TS",
+      "area_km2": 0.002764745
+    },
+    {
+      "sourceId": 33841,
+      "upper": "TS",
+      "depth": "TS",
+      "area_km2": 0.003211536
+    },
+    {
+      "sourceId": 33843,
+      "upper": "TS",
+      "depth": "TS",
+      "area_km2": 0.040434069
+    },
+    {
+      "sourceId": 33848,
+      "upper": "TS",
+      "depth": "TS",
+      "area_km2": 0.154656475
+    },
+    {
+      "sourceId": 33849,
+      "upper": "TS",
+      "depth": "TS",
+      "area_km2": 0.19198228
+    },
+    {
+      "sourceId": 33852,
+      "upper": "TS",
+      "depth": "TS",
+      "area_km2": 0.326253293
+    },
+    {
+      "sourceId": 35169,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.008798895
+    },
+    {
+      "sourceId": 35239,
+      "upper": "DS",
+      "depth": "DS",
+      "area_km2": 0.001305729
+    },
+    {
+      "sourceId": 35345,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.026735534
+    },
+    {
+      "sourceId": 35355,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.011645748
+    },
+    {
+      "sourceId": 35356,
+      "upper": "FP",
+      "depth": "FP",
+      "area_km2": 0.109048328
+    },
+    {
+      "sourceId": 35490,
+      "upper": "FS",
+      "depth": "FS",
+      "area_km2": 0.045213299
+    },
+    {
+      "sourceId": 35661,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.020964981
+    },
+    {
+      "sourceId": 35687,
+      "upper": "FT",
+      "depth": "FT",
+      "area_km2": 0.039027221
+    },
+    {
+      "sourceId": 35878,
+      "upper": "MG",
+      "depth": "MG",
+      "area_km2": 0.001171943
+    },
+    {
+      "sourceId": 35970,
+      "upper": "S",
+      "depth": "DS",
+      "area_km2": 0.011105693
+    },
+    {
+      "sourceId": 35973,
+      "upper": "S",
+      "depth": "DS",
+      "area_km2": 0.026898226
+    },
+    {
+      "sourceId": 35974,
+      "upper": "S",
+      "depth": "DS",
+      "area_km2": 0.000519747
+    }
+  ]
+}

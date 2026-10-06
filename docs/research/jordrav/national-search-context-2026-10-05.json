@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "analysedOn": "2026-10-05",
+  "modelVersion": "0.2.0-prototype",
+  "searchContextVersion": "0.1.0",
+  "manifestSha256": "5d0a925a04f71e11eaf82feb3d27294be6b1f00bb4de08dfa3ee4ff4e6a2b2a0",
+  "contextCodeSha256": "06672b010b88bdd96ee5d828079b26990b2b1b1edef962d04eb070607efdb212",
+  "scope": "All catalogue combinations and all detail features; counts are display fragments, not fields, areas, finds or huntability.",
+  "catalogueEntries": 4652,
+  "tiles": 192,
+  "detailFeatures": 505834,
+  "knownUpperMaterialsWithoutGuidance": 0,
+  "lateralMixtures": {
+    "catalogueEntries": 521,
+    "detailFeatures": 9919
+  },
+  "organicMarine": {
+    "catalogueEntries": 166,
+    "detailFeatures": 3489
+  },
+  "relationships": {
+    "unknown": {
+      "catalogueEntries": 452,
+      "detailFeatures": 32357
+    },
+    "same": {
+      "catalogueEntries": 1457,
+      "detailFeatures": 395237
+    },
+    "different": {
+      "catalogueEntries": 2391,
+      "detailFeatures": 43751
+    },
+    "old": {
+      "catalogueEntries": 352,
+      "detailFeatures": 34489
+    }
+  },
+  "physicalProfiles": {
+    "unknown": {
+      "catalogueEntries": 499,
+      "detailFeatures": 33955
+    },
+    "coarse": {
+      "catalogueEntries": 1261,
+      "detailFeatures": 173459
+    },
+    "variant": {
+      "catalogueEntries": 63,
+      "detailFeatures": 1012
+    },
+    "organic": {
+      "catalogueEntries": 864,
+      "detailFeatures": 123285
+    },
+    "aeolian": {
+      "catalogueEntries": 329,
+      "detailFeatures": 35283
+    },
+    "till": {
+      "catalogueEntries": 474,
+      "detailFeatures": 91432
+    },
+    "fine": {
+      "catalogueEntries": 424,
+      "detailFeatures": 23868
+    },
+    "alternating": {
+      "catalogueEntries": 117,
+      "detailFeatures": 3114
+    },
+    "broad": {
+      "catalogueEntries": 84,
+      "detailFeatures": 14779
+    },
+    "coarse+fine": {
+      "catalogueEntries": 86,
+      "detailFeatures": 819
+    },
+    "chemical": {
+      "catalogueEntries": 21,
+      "detailFeatures": 78
+    },
+    "coarse+organic": {
+      "catalogueEntries": 76,
+      "detailFeatures": 259
+    },
+    "older": {
+      "catalogueEntries": 125,
+      "detailFeatures": 1422
+    },
+    "fine+organic": {
+      "catalogueEntries": 49,
+      "detailFeatures": 1249
+    },
+    "rock": {
+      "catalogueEntries": 93,
+      "detailFeatures": 1580
+    },
+    "aeolian+coarse": {
+      "catalogueEntries": 21,
+      "detailFeatures": 66
+    },
+    "aeolian+organic": {
+      "catalogueEntries": 14,
+      "detailFeatures": 34
+    },
+    "older+till": {
+      "catalogueEntries": 6,
+      "detailFeatures": 47
+    },
+    "coarse+till": {
+      "catalogueEntries": 27,
+      "detailFeatures": 44
+    },
+    "rock+till": {
+      "catalogueEntries": 7,
+      "detailFeatures": 31
+    },
+    "fine+rock": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3
+    },
+    "aeolian+till": {
+      "catalogueEntries": 4,
+      "detailFeatures": 7
+    },
+    "fine+till": {
+      "catalogueEntries": 1,
+      "detailFeatures": 2
+    },
+    "coarse+rock": {
+      "catalogueEntries": 2,
+      "detailFeatures": 3
+    },
+    "organic+till": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1
+    },
+    "alternating+coarse": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1
+    },
+    "chemical+organic": {
+      "catalogueEntries": 1,
+      "detailFeatures": 1
+    }
+  },
+  "materialExamples": {
+    "lateralMixture": {
+      "tile": "tile-25-310.geojson.gz",
+      "origin": "n64296:g6648",
+      "bbox": [
+        9.08341966,
+        55.94495895,
+        9.32025907,
+        56.00176991
+      ],
+      "selectionMetric": 0.013455074247933591,
+      "selectionMeaning": "Largest bounding rectangle solely for a visible browser example; not amber or area ranking",
+      "catalogueIndex": 605,
+      "entry": {
+        "source": "soil-new",
+        "surface": "TS-TG",
+        "depth": "TS-TG",
+        "symbol": "TS",
+        "soilLabel": "TS - Smeltevandssand",
+        "landscape": "Hedeslette",
+        "landscapeCode": 19,
+        "landscapeEnglish": "Outwash plain",
+        "conflictSymbols": "",
+        "potential": "enhanced",
+        "material": "glacial-coarse",
+        "process": "meltwater",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      }
+    },
+    "marineOrganic": {
+      "tile": "tile-27-317.geojson.gz",
+      "origin": "n193029:g7400",
+      "bbox": [
+        9.73769254,
+        57.27843194,
+        9.81552557,
+        57.36384286
+      ],
+      "selectionMetric": 0.006647790698687746,
+      "selectionMeaning": "Largest bounding rectangle solely for a visible browser example; not amber or area ranking",
+      "catalogueIndex": 3010,
+      "entry": {
+        "source": "soil-new",
+        "surface": "HP-HL",
+        "depth": "HP-HL",
+        "symbol": "HP",
+        "soilLabel": "HP - Saltvandsgytje",
+        "landscape": "Marin flade",
+        "landscapeCode": 25,
+        "landscapeEnglish": "Marine plain",
+        "conflictSymbols": "",
+        "potential": "coastal",
+        "material": "marine-fine",
+        "process": "marine",
+        "accessibility": "unknown",
+        "confidence": "weak"
+      }
+    }
+  },
+  "unchanged": "No geology rules, catalogue, geometries, dataset bytes or potential categories modified."
+}

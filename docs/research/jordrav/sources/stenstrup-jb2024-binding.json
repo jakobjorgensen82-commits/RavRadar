@@ -1,0 +1,23 @@
+{
+  "source": "Jordbunds_og_terraenforhold:Jordbundskort_2024",
+  "url": "https://geodata.fvm.dk/geoserver/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=Jordbunds_og_terraenforhold%3AJordbundskort_2024&bbox=592394.37%2C6107368.56%2C599709.58%2C6112597.8%2CEPSG%3A25832&srsName=EPSG%3A25832&outputFormat=application%2Fjson&propertyName=the_geom%2CJB_kode%2CJordtype&count=9000&sortBy=JB_kode+A",
+  "observedDate": "2026-10-04",
+  "numberMatched": 8284,
+  "numberReturned": 8284,
+  "propertiesRequested": [
+    "the_geom",
+    "JB_kode",
+    "Jordtype"
+  ],
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:EPSG::25832"
+    }
+  },
+  "sourceContentType": "application/json;charset=ISO-8859-1",
+  "sourceEncoding": "iso-8859-1",
+  "sourceBytes": 4547779,
+  "sourceSha256": "c5903beae6208f3b704ec977f2b83832bab0798eee953858019825b681b4970b",
+  "decodedUtf8Sha256": "c5903beae6208f3b704ec977f2b83832bab0798eee953858019825b681b4970b"
+}

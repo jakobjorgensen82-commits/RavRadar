@@ -1,0 +1,152 @@
+{
+  "scope": "Local unreleased national Jordrav layer-access guidance; no CI or production claim",
+  "date": "2026-10-05",
+  "baseline": "ffb4c9d3",
+  "appVersion": "4.0.541",
+  "modelVersion": "0.2.0-prototype",
+  "layerAccessVersion": "0.1.0",
+  "manifestSha256": "5d0a925a04f71e11eaf82feb3d27294be6b1f00bb4de08dfa3ee4ff4e6a2b2a0",
+  "implementationLF": {
+    "jordrav.html": {
+      "lfBytes": 10815,
+      "lfSha256": "cf9c38232db3510d8c438b359feb340fb3210caedfcbb254659cebe18aef90d8"
+    },
+    "jordrav.css": {
+      "lfBytes": 7327,
+      "lfSha256": "45466a31a7b6345deb1889cc22bdb31688643373ad436cca405b800c629fd176"
+    },
+    "js/jordrav/map.js": {
+      "lfBytes": 25455,
+      "lfSha256": "c3bd35d97b02e8c46fc37dde7f920ea024c0f86e8d41fab3060fb9cead11f5af"
+    },
+    "js/jordrav/messages.js": {
+      "lfBytes": 86780,
+      "lfSha256": "df1a1b912d2bff23dbfda5d53bf0babfc0cf6a62fe01c3cfd3293ac15b2d2131"
+    },
+    "js/jordrav/layer-access.js": {
+      "lfBytes": 1802,
+      "lfSha256": "cbd39cfdcf3241ce1d3589ec99ef48df47b9f97dbef926c868f471b38509a5d1"
+    },
+    "js/jordrav/search-context.js": {
+      "lfBytes": 2385,
+      "lfSha256": "06672b010b88bdd96ee5d828079b26990b2b1b1edef962d04eb070607efdb212"
+    },
+    "js/jordrav/view-state.js": {
+      "lfBytes": 3248,
+      "lfSha256": "7bef9b563980d2266c056e07523a771a7f17b704b6aae05502c815873ba0de08"
+    },
+    "js/jordrav/field-context.js": {
+      "lfBytes": 2317,
+      "lfSha256": "5b06eb84d0bf0f6c1c69c1388e2ddf01186b4c0d8d8a0ab57f6504d11c9f4ba9"
+    },
+    "js/jordrav/dataset-binding.js": {
+      "lfBytes": 322,
+      "lfSha256": "8b1a5c73fbd94ce9d075ed6dd64712a12d696ee86e62ff6b476c8b2b9fb611a4"
+    },
+    "scripts/audit-jordrav-layer-access.mjs": {
+      "lfBytes": 4726,
+      "lfSha256": "37e9bcd7d441a6f574ae411912f5420fd2d8e02927dae95456a6114e4b411c0b"
+    },
+    "scripts/audit-jordrav-layer-literature.py": {
+      "lfBytes": 3085,
+      "lfSha256": "30e7696c00268d57b05ff379d776fa29005031d2e64014e923423367033c17c0"
+    },
+    "scripts/test-jordrav-layer-access.mjs": {
+      "lfBytes": 3484,
+      "lfSha256": "375dd08e5be8f55a7ecd3e78dd3b06d00edb4e8b7826d1729123d6c0652318cd"
+    },
+    "scripts/test-jordrav-layer-browser.mjs": {
+      "lfBytes": 9834,
+      "lfSha256": "234257382910d3ba530bb54ce3c3bff555bfdbde33af1fc739fa10bdc9192780"
+    },
+    "scripts/test-jordrav-view-browser.mjs": {
+      "lfBytes": 17204,
+      "lfSha256": "84661a832cc888d98e1e6adf881c0452c65085892b328597adfe416f647b18be"
+    },
+    "scripts/test-jordrav-search-browser.mjs": {
+      "lfBytes": 12236,
+      "lfSha256": "187f6fc035e2e8997f9579687b3cf293577aba7011ee56d1ee008f546f2855c5"
+    },
+    "scripts/test-jordrav-browser.mjs": {
+      "lfBytes": 35071,
+      "lfSha256": "104ecd9313f0c8dc9ad80afda77b35bf714c3d60734bac6e9bf5842a0133bad1"
+    },
+    "scripts/test-jordrav.mjs": {
+      "lfBytes": 674,
+      "lfSha256": "1a0ee0a2905d2ee2885c9db75b757ce2473d064daa6966c039ccf4b6bf0dfceb"
+    },
+    ".gitattributes": {
+      "lfBytes": 2089,
+      "lfSha256": "939cfa840c08df6f6b05b1db3eccadf811a0c8d4a9a4b59f1f4e11ef241a6dc9"
+    }
+  },
+  "browserReports": {
+    "layer-access-2026-10-05-browser-audit.json": {
+      "status": "PASS",
+      "checks": 13,
+      "sha256": "c8073a60606f568ef4e3ec2dbd4f29fdfa4ad59484274ce524f71f0e493f09b0"
+    },
+    "layer-planning-2026-10-05-browser-audit.json": {
+      "status": "PASS",
+      "checks": 15,
+      "sha256": "3443ac4f2ed2f1ae985d662a11536e70e714eafe2be280d815001d2e4fc64f25"
+    },
+    "layer-search-browser-2026-10-05.json": {
+      "status": "PASS",
+      "checks": 8,
+      "sha256": "1d5bb29cee4d2f4020d917596d532cf92163f04bd3a4b2f23340497296fd4f6a"
+    },
+    "layer-regression-2026-10-05-browser-audit.json": {
+      "status": "PASS",
+      "checks": 20,
+      "sha256": "e2795e37e147ffe06653f0c483d54a527e6dcbca176e490c2ed11bb934310168"
+    }
+  },
+  "targetedUnitCounts": {
+    "model": 17,
+    "artifact": 5,
+    "searchContext": 4,
+    "viewState": 4,
+    "layerAccess": 4
+  },
+  "nationalAudit": {
+    "sha256": "764de6d8fffcff7fdbeb97233a063b187934f28a1fe94af4ba3c153575395cf1",
+    "checkedFiles": 196,
+    "catalogueEntries": 4652,
+    "tiles": 192,
+    "detailFeatures": 505834,
+    "allMaterialHuntability": "unknown"
+  },
+  "literatureReceiptSha256": "f7cbbca05c0b48afa75b73c8b0ad67a123cc295f8adb3601da17de7b413174c9",
+  "completedLocalChecks": [
+    "source-critical-gate: 113 browser files",
+    "RDKS",
+    "security hardening",
+    "Pages module closure: 63 modules",
+    "release-version imports",
+    "handbook: 419 chapters"
+  ],
+  "visuallyReviewedScreenshots": {
+    "layer-access-2026-10-05-buried-organic.png": "b582d785be7d323670013a661bf7f625fd8e8c116b0fff3a5c07783f6d0f443b",
+    "layer-access-2026-10-05-mobile.png": "dcbe7e7908074407d6e64dcd3dcabeeb764a9cf1478c11cb69129754e8445116",
+    "layer-regression-2026-10-05-aerial-detail.png": "bca39d6fb8cf9f6ad950b536bab344496a27780acf6127bb6691f063962a95d3",
+    "layer-search-fields-aerial.png": "2055d830982e10e18af85fe361fd389cac642055b53c2f0c30dea04e49be54fc"
+  },
+  "protectedPaths": [
+    "data/jordrav",
+    "data/kystdata.json",
+    "data/zones.geojson",
+    "data/live",
+    ".github/workflows",
+    "app.js",
+    "bootstrap.js",
+    "service-worker.js",
+    "docs/handbook/content.json",
+    "js/jordrav/search-context.js",
+    "js/jordrav/field-context.js",
+    "scripts/lib/jordrav_model.py",
+    "scripts/build-jordrav-national-model.py"
+  ],
+  "protectedDiffEmpty": true,
+  "testRepairs": "Harness-only Leaflet return serialization and Danish word-order assertion fixed; final 13-check layer run passed. Pages child process rerun with permission after sandbox EPERM."
+}

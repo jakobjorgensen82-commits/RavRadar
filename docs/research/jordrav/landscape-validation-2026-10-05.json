@@ -1,0 +1,158 @@
+{
+  "scope": "Local unreleased national landscape/upper-sediment guidance; no CI or production claim",
+  "date": "2026-10-05",
+  "baseline": "e79064ba",
+  "appVersion": "4.0.541",
+  "modelVersion": "0.2.0-prototype",
+  "landscapeContextVersion": "0.1.0",
+  "manifestSha256": "5d0a925a04f71e11eaf82feb3d27294be6b1f00bb4de08dfa3ee4ff4e6a2b2a0",
+  "implementationLF": {
+    "jordrav.html": {
+      "lfBytes": 10815,
+      "lfSha256": "cf9c38232db3510d8c438b359feb340fb3210caedfcbb254659cebe18aef90d8"
+    },
+    "jordrav.css": {
+      "lfBytes": 7637,
+      "lfSha256": "2d8cef6f7ab3e1f24600a363fef698baa31e06d8e9ab0307789904eb2f9a7efb"
+    },
+    "js/jordrav/map.js": {
+      "lfBytes": 26720,
+      "lfSha256": "24de883580416e265f53f887d39c9cf1c57b60f57b00634770735a1e6a05e381"
+    },
+    "js/jordrav/messages.js": {
+      "lfBytes": 110113,
+      "lfSha256": "b450ef061ce4fc78cacb72fe75f4eabd943c0724beafbf172b54dffef07ffccb"
+    },
+    "js/jordrav/landscape-context.js": {
+      "lfBytes": 3551,
+      "lfSha256": "c400aabbfdc909da087e96037b481113debb94dc96a47ef7655c77929210114b"
+    },
+    "js/jordrav/search-context.js": {
+      "lfBytes": 2385,
+      "lfSha256": "06672b010b88bdd96ee5d828079b26990b2b1b1edef962d04eb070607efdb212"
+    },
+    "js/jordrav/field-context.js": {
+      "lfBytes": 2317,
+      "lfSha256": "5b06eb84d0bf0f6c1c69c1388e2ddf01186b4c0d8d8a0ab57f6504d11c9f4ba9"
+    },
+    "js/jordrav/layer-access.js": {
+      "lfBytes": 1802,
+      "lfSha256": "cbd39cfdcf3241ce1d3589ec99ef48df47b9f97dbef926c868f471b38509a5d1"
+    },
+    "js/jordrav/view-state.js": {
+      "lfBytes": 3248,
+      "lfSha256": "7bef9b563980d2266c056e07523a771a7f17b704b6aae05502c815873ba0de08"
+    },
+    "js/jordrav/dataset-binding.js": {
+      "lfBytes": 322,
+      "lfSha256": "8b1a5c73fbd94ce9d075ed6dd64712a12d696ee86e62ff6b476c8b2b9fb611a4"
+    },
+    "scripts/audit-jordrav-landscape-context.mjs": {
+      "lfBytes": 5182,
+      "lfSha256": "dee993fa7a95b7dfbe4665abf55954fed26ed62caa7e722ff39aa103e0bf5920"
+    },
+    "scripts/audit-jordrav-landscape-literature.py": {
+      "lfBytes": 2747,
+      "lfSha256": "de44baaae156889164d450c1031792361460e9925c526b4da2fdb2de88c437c4"
+    },
+    "scripts/test-jordrav-landscape-context.mjs": {
+      "lfBytes": 3660,
+      "lfSha256": "8c9979136938b03aa0480747fa06ff881683370e5a023182b34bf2a8fa462813"
+    },
+    "scripts/test-jordrav-landscape-browser.mjs": {
+      "lfBytes": 9733,
+      "lfSha256": "6652a5143b17a37934b5b850f888b3550b50c0f42d41ca50f4f0d30190546fb9"
+    },
+    "scripts/test-jordrav-layer-browser.mjs": {
+      "lfBytes": 9943,
+      "lfSha256": "bd0be679267d92b53b9752fce7120d1cb05f8123db0454ac18fc4366c7b0c7cd"
+    },
+    "scripts/test-jordrav.mjs": {
+      "lfBytes": 753,
+      "lfSha256": "e967320e3ec094004fd6bd9bef911bb89d35ab65fac4830fc277b24c1a9ee9d6"
+    },
+    ".gitattributes": {
+      "lfBytes": 2324,
+      "lfSha256": "84916b235484943a6d58e57809701de499c3de14553460e142d1149039284b80"
+    }
+  },
+  "browserReports": {
+    "landscape-2026-10-05-browser-audit.json": {
+      "status": "PASS",
+      "checks": 34,
+      "sha256": "4fc6091874d2a6a95291f13f15544a07deed423bf2a6d43fe6f21549097f68d8"
+    },
+    "landscape-regression-2026-10-05-browser-audit.json": {
+      "status": "PASS",
+      "checks": 20,
+      "sha256": "be76438f0d013b07c03bc906200d09ec62acd768747ec31b06e396ec9ca3aa2e"
+    },
+    "landscape-search-regression-2026-10-05-browser-2026-10-05.json": {
+      "status": "PASS",
+      "checks": 8,
+      "sha256": "1d5bb29cee4d2f4020d917596d532cf92163f04bd3a4b2f23340497296fd4f6a"
+    },
+    "landscape-view-regression-2026-10-05-browser-audit.json": {
+      "status": "PASS",
+      "checks": 15,
+      "sha256": "3443ac4f2ed2f1ae985d662a11536e70e714eafe2be280d815001d2e4fc64f25"
+    },
+    "landscape-layer-regression-2026-10-05-browser-audit.json": {
+      "status": "PASS",
+      "checks": 13,
+      "sha256": "c8073a60606f568ef4e3ec2dbd4f29fdfa4ad59484274ce524f71f0e493f09b0"
+    }
+  },
+  "targetedUnitCounts": {
+    "model": 17,
+    "artifact": 5,
+    "searchContext": 4,
+    "viewState": 4,
+    "layerAccess": 4,
+    "landscapeContext": 4
+  },
+  "nationalAudit": {
+    "sha256": "baf3136318dc20bce6872bf57465a6bffd03d2c7412f0ce49e6845fe4603267a",
+    "checkedFiles": 196,
+    "catalogueEntries": 4652,
+    "tiles": 192,
+    "detailFeatures": 505834,
+    "namedLandforms": 33,
+    "sourceNameCodePairs": 37,
+    "routes": 27,
+    "allMaterialHuntability": "unknown"
+  },
+  "literatureReceiptSha256": "62db8cf21e827bc2b8d6d6329a8191f0ada149100afcd2bc27ac757c370ea76a",
+  "completedLocalChecks": [
+    "source-critical-gate: 114 browser files",
+    "security hardening",
+    "Pages module closure: 64 modules",
+    "release-version imports",
+    "handbook: 419 chapters",
+    "RDKS"
+  ],
+  "visuallyReviewedScreenshots": {
+    "landscape-2026-10-05-younger-cover.png": "3df0384d49ef60b77aeef22697184f8074ced4160f18b6d69ae882d1c43184fc",
+    "landscape-2026-10-05-mobile.png": "77e7798a9e8e75ac7c83bceaa719430c6f661d8ec968d517b46492498907278c",
+    "landscape-regression-2026-10-05-aerial-detail.png": "792a37eaab1b6764985cc23d6cd2a26181b9f6d29afa99df65665b24a8406f14"
+  },
+  "protectedPaths": [
+    "data/jordrav",
+    "data/kystdata.json",
+    "data/zones.geojson",
+    "data/live",
+    ".github/workflows",
+    "app.js",
+    "bootstrap.js",
+    "service-worker.js",
+    "docs/handbook/content.json",
+    "js/jordrav/search-context.js",
+    "js/jordrav/field-context.js",
+    "js/jordrav/layer-access.js",
+    "scripts/lib/jordrav_model.py",
+    "scripts/build-jordrav-national-model.py"
+  ],
+  "protectedDiffEmpty": true,
+  "validationSequence": "Existing 56 browser checks passed. Final landscape-focused 34 checks and sourcegate ran after the copy/source-link refinement; no further product edit.",
+  "testRepairs": "Node test runner sandbox EPERM rerun with permission; no functional failure or bypass."
+}

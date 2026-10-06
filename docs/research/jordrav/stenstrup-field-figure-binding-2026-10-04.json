@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "scope": "Figure input/output identities; visual review is separate",
+  "scriptSha256": "7a1f832a4c96c68cdac9e82f17f5360fc9c5074020a2aa52eda913448c4d3261",
+  "auditSha256": "f593e8610960c0013e4a95d7ee01541cf59f6a44570f17fe2b5c481fc3ff0210",
+  "geometrySha256": "9e913a80ec86f8266c2420b3f3248ec959b4b720e4a086dfa27288c4def64b1c",
+  "figureSha256": "1ea7df3d0dcd54e7da8fcbb775276d482dc8cdeb813ea21f0836ff0c946b6bed",
+  "matplotlibVersion": "3.10.8"
+}

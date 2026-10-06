@@ -1,0 +1,73 @@
+{
+  "researchDate": "2026-10-05",
+  "scope": "Primary methods only; no amber, cultivation or local-depth observations",
+  "sources": [
+    {
+      "id": "geus",
+      "title": "GEUS 2025/32: Digital Surface Geology Map",
+      "url": "https://data.geus.dk/pure-pdf/GEUS-R_2025_32_web.pdf",
+      "resolvedURL": "https://data.geus.dk/pure-pdf/GEUS-R_2025_32_web.pdf",
+      "sourceBytes": 5975169,
+      "sourceSha256": "46ef078194161ef9c0f9cb89f437d3d2a22ae88f66da96b55fea19a409be07b1",
+      "pages": 30,
+      "renderedPages1Based": [
+        4,
+        5,
+        7,
+        8,
+        10,
+        13
+      ],
+      "visualReview": "Full rendered pages inspected by assistant on 2026-10-05",
+      "archive": "Original PDF and page renders in system temp; not app data"
+    },
+    {
+      "id": "texture",
+      "title": "AU 2024: Opdateret jordbundstypekort",
+      "url": "https://pure.au.dk/ws/files/372695357/Opdateret_jordbundstypekort_1903_2024.pdf",
+      "resolvedURL": "https://pure.au.dk/ws/files/372695357/Opdateret_jordbundstypekort_1903_2024.pdf",
+      "sourceBytes": 2280675,
+      "sourceSha256": "61262711c30724e760c6b618173ac56eedaea64d6a5c5da3b5d56fbab2248a2c",
+      "pages": 41,
+      "renderedPages1Based": [
+        6,
+        18,
+        41
+      ],
+      "visualReview": "Full rendered pages inspected by assistant on 2026-10-05",
+      "archive": "Original PDF and page renders in system temp; not app data"
+    },
+    {
+      "id": "revision",
+      "title": "AU 2024: Revidering af jordbundstypekort",
+      "url": "https://pure.au.dk/ws/files/378595646/Revidering_jordbundstypekort_1705_2024.pdf",
+      "resolvedURL": "https://pure.au.dk/ws/files/378595646/Revidering_jordbundstypekort_1705_2024.pdf",
+      "sourceBytes": 115394,
+      "sourceSha256": "1c1ee884d898b8b4bb94a2d2bd02a6d42aacdd0b4044be1902879653a8c91db5",
+      "pages": 4,
+      "renderedPages1Based": [
+        3
+      ],
+      "visualReview": "Full rendered pages inspected by assistant on 2026-10-05",
+      "archive": "Original PDF and page renders in system temp; not app data"
+    },
+    {
+      "id": "carbon",
+      "title": "AU 2024: Usikkerheder i Kulstof2022-kortet",
+      "url": "https://pure.au.dk/ws/portalfiles/portal/417714104/Usikkerheder_i_Kulstof2022-kortet_2911_2024.pdf",
+      "resolvedURL": "https://pure.au.dk/ws/portalfiles/portal/417714104/Usikkerheder_i_Kulstof2022-kortet_2911_2024.pdf",
+      "sourceBytes": 522466,
+      "sourceSha256": "4f656a0f84668d83a1038c9b4a2261e3a23d5444697459a95f5ff51ec48c7dec",
+      "pages": 19,
+      "renderedPages1Based": [
+        4,
+        5,
+        17,
+        18
+      ],
+      "visualReview": "Full rendered pages inspected by assistant on 2026-10-05",
+      "archive": "Original PDF and page renders in system temp; not app data"
+    }
+  ],
+  "reviewNote": "Visual review is a manual receipt for the recorded originals; rerunning the producer resets it to pending."
+}

@@ -1,0 +1,1757 @@
+{
+  "date": "2026-10-06",
+  "status": "PASS",
+  "scope": "16 geographically spread public service checks, not representative samples, amber finds or national absence evidence",
+  "selection": "Nearest returned borehole in each capped small window, independent of amber or sediment; no inferred lateral layer extent",
+  "depthReference": "Metres below the borehole terrain at recording; present exposure and plough connection unknown",
+  "retained": "Public WFS coordinates/identifier/depth/date and original geology table intervals only; source HTML stays in temp",
+  "results": [
+    {
+      "region": "Asaa",
+      "click": [
+        57.156,
+        10.395
+      ],
+      "soilClasses": [
+        {
+          "JB_kode": 4,
+          "Jordtype": "Fin lerblandet sandjord"
+        }
+      ],
+      "soilBinding": {
+        "url": "https://geodata.fvm.dk/geoserver/ows?service=WMS&version=1.1.1&request=GetFeatureInfo&layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&query_layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&styles=&srs=EPSG%3A4326&bbox=10.39499%2C57.155989999999996%2C10.39501%2C57.15601&width=101&height=101&x=50&y=50&info_format=application%2Fjson&feature_count=8&propertyName=JB_kode%2CJordtype",
+        "status": 200,
+        "contentType": "application/json;charset=ISO-8859-1",
+        "cors": "*",
+        "bytes": 268,
+        "sha256": "ebb0e4d892982d6f4db04aea312ea304c7e2e6474d350e5eccfda1a3ad68e3b7",
+        "observedAt": "2026-10-06T06:18:45.578224+00:00"
+      },
+      "boringsReturned": 35,
+      "boringsCapped": false,
+      "boreBinding": {
+        "url": "https://jupiter.geus.dk/geusmap/ows/4326.jsp?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&LAYERS=jupiter_boringer_ws&TYPENAME=jupiter_boringer_ws&BBOX=10.379999999999999%2C57.146%2C10.41%2C57.166&MAXFEATURES=51&OUTPUTFORMAT=geojson&PROPERTYNAME=msGeometry%2Cdgunr%2Cdybde_num%2Cdato",
+        "status": 200,
+        "contentType": "application/json",
+        "cors": "*",
+        "bytes": 7200,
+        "sha256": "cefa4f194563e43f30181919be427fcff4a5b81e2326aabe78d83675b35cb29f",
+        "observedAt": "2026-10-06T06:18:45.758363+00:00"
+      },
+      "profile": {
+        "id": "asaa",
+        "region": "Asaa",
+        "dgu": "28.33",
+        "longitude": 10.3992550028552,
+        "latitude": 57.1504500229251,
+        "totalDepth_m": 7.0,
+        "drilledOn": "1985/01/01 00:00:00",
+        "intervals": [],
+        "source": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=28.33",
+        "sourceHtmlSha256": "a1ea2c5c46b80c4066b5b9ea2da9700415f284b69590a2b7c61d8eb8c24eeff2",
+        "observedAt": "2026-10-06T06:18:46.514952+00:00"
+      },
+      "profileBinding": {
+        "url": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=28.33",
+        "status": 200,
+        "contentType": "text/html;charset=UTF-8",
+        "cors": null,
+        "bytes": 31534,
+        "sha256": "a1ea2c5c46b80c4066b5b9ea2da9700415f284b69590a2b7c61d8eb8c24eeff2",
+        "observedAt": "2026-10-06T06:18:46.514952+00:00"
+      }
+    },
+    {
+      "region": "Jerup",
+      "click": [
+        57.526,
+        10.405
+      ],
+      "soilClasses": [
+        {
+          "JB_kode": 1,
+          "Jordtype": "Grovsandet jord"
+        }
+      ],
+      "soilBinding": {
+        "url": "https://geodata.fvm.dk/geoserver/ows?service=WMS&version=1.1.1&request=GetFeatureInfo&layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&query_layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&styles=&srs=EPSG%3A4326&bbox=10.40499%2C57.52599%2C10.405009999999999%2C57.52601000000001&width=101&height=101&x=50&y=50&info_format=application%2Fjson&feature_count=8&propertyName=JB_kode%2CJordtype",
+        "status": 200,
+        "contentType": "application/json;charset=ISO-8859-1",
+        "cors": "*",
+        "bytes": 261,
+        "sha256": "f29ee891f3451ae03c14e7652d060499d652c08b664bb62bdde2ce709f0738b9",
+        "observedAt": "2026-10-06T06:18:45.673890+00:00"
+      },
+      "boringsReturned": 32,
+      "boringsCapped": false,
+      "boreBinding": {
+        "url": "https://jupiter.geus.dk/geusmap/ows/4326.jsp?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&LAYERS=jupiter_boringer_ws&TYPENAME=jupiter_boringer_ws&BBOX=10.389999999999999%2C57.516000000000005%2C10.42%2C57.536&MAXFEATURES=51&OUTPUTFORMAT=geojson&PROPERTYNAME=msGeometry%2Cdgunr%2Cdybde_num%2Cdato",
+        "status": 200,
+        "contentType": "application/json",
+        "cors": "*",
+        "bytes": 6470,
+        "sha256": "1a2dfd9c01981834e54e9a9dc4994cdfe091976caa178d7d3deda4e7153ad6ca",
+        "observedAt": "2026-10-06T06:18:45.835536+00:00"
+      },
+      "profile": {
+        "id": "jerup",
+        "region": "Jerup",
+        "dgu": "7.1332",
+        "longitude": 10.4061561129113,
+        "latitude": 57.5268370551946,
+        "totalDepth_m": 0.0,
+        "drilledOn": null,
+        "intervals": [
+          {
+            "top_m": 0.0,
+            "bottom_m": null,
+            "description": "ukendt lag, oplysninger mangler",
+            "code": "x",
+            "missingBounds": true
+          }
+        ],
+        "source": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=7.1332",
+        "sourceHtmlSha256": "0a7dddcfba1b9b16422bd30add48d0185198dde4e0f7bdb19aed81e715bb5170",
+        "observedAt": "2026-10-06T06:18:46.577032+00:00"
+      },
+      "profileBinding": {
+        "url": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=7.1332",
+        "status": 200,
+        "contentType": "text/html;charset=UTF-8",
+        "cors": null,
+        "bytes": 30587,
+        "sha256": "0a7dddcfba1b9b16422bd30add48d0185198dde4e0f7bdb19aed81e715bb5170",
+        "observedAt": "2026-10-06T06:18:46.577032+00:00"
+      }
+    },
+    {
+      "region": "Thy",
+      "click": [
+        56.969,
+        8.73
+      ],
+      "soilClasses": [
+        {
+          "JB_kode": 6,
+          "Jordtype": "Fin sandblandet lerjord"
+        }
+      ],
+      "soilBinding": {
+        "url": "https://geodata.fvm.dk/geoserver/ows?service=WMS&version=1.1.1&request=GetFeatureInfo&layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&query_layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&styles=&srs=EPSG%3A4326&bbox=8.72999%2C56.96899%2C8.73001%2C56.969010000000004&width=101&height=101&x=50&y=50&info_format=application%2Fjson&feature_count=8&propertyName=JB_kode%2CJordtype",
+        "status": 200,
+        "contentType": "application/json;charset=ISO-8859-1",
+        "cors": "*",
+        "bytes": 268,
+        "sha256": "0cf9ba7396c68445517e7c6f1434c1f543d6c58ba10d7ecb01a948ca3dda4f2a",
+        "observedAt": "2026-10-06T06:18:45.567607+00:00"
+      },
+      "boringsReturned": 51,
+      "boringsCapped": true,
+      "boreBinding": {
+        "url": "https://jupiter.geus.dk/geusmap/ows/4326.jsp?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&LAYERS=jupiter_boringer_ws&TYPENAME=jupiter_boringer_ws&BBOX=8.715%2C56.959%2C8.745000000000001%2C56.979&MAXFEATURES=51&OUTPUTFORMAT=geojson&PROPERTYNAME=msGeometry%2Cdgunr%2Cdybde_num%2Cdato",
+        "status": 200,
+        "contentType": "application/json",
+        "cors": "*",
+        "bytes": 10459,
+        "sha256": "9913a85beca30b331d2563a0b1d11550a39f4675bc30f0b7b95391dff77063a7",
+        "observedAt": "2026-10-06T06:18:45.761359+00:00"
+      },
+      "profile": {
+        "id": "thy",
+        "region": "Thy",
+        "dgu": "30.1054",
+        "longitude": 8.72817301019572,
+        "latitude": 56.9705743323498,
+        "totalDepth_m": 4.0,
+        "drilledOn": "1989/04/06 00:00:00",
+        "intervals": [],
+        "source": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=30.1054",
+        "sourceHtmlSha256": "025d8be8fa8cf29fc172606a5db8c36b41948f6280f056e44057b98306a12de8",
+        "observedAt": "2026-10-06T06:18:46.509950+00:00"
+      },
+      "profileBinding": {
+        "url": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=30.1054",
+        "status": 200,
+        "contentType": "text/html;charset=UTF-8",
+        "cors": null,
+        "bytes": 29680,
+        "sha256": "025d8be8fa8cf29fc172606a5db8c36b41948f6280f056e44057b98306a12de8",
+        "observedAt": "2026-10-06T06:18:46.509950+00:00"
+      }
+    },
+    {
+      "region": "Skive",
+      "click": [
+        56.564,
+        9.031
+      ],
+      "soilClasses": [],
+      "soilBinding": {
+        "url": "https://geodata.fvm.dk/geoserver/ows?service=WMS&version=1.1.1&request=GetFeatureInfo&layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&query_layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&styles=&srs=EPSG%3A4326&bbox=9.030990000000001%2C56.56399%2C9.03101%2C56.56401&width=101&height=101&x=50&y=50&info_format=application%2Fjson&feature_count=8&propertyName=JB_kode%2CJordtype",
+        "status": 200,
+        "contentType": "application/json;charset=ISO-8859-1",
+        "cors": "*",
+        "bytes": 137,
+        "sha256": "9173ba488ec9ca4542956a5e4328397f88eae45dcbb3e124b8dc0e7116bb4368",
+        "observedAt": "2026-10-06T06:18:46.830218+00:00"
+      },
+      "boringsReturned": 51,
+      "boringsCapped": true,
+      "boreBinding": {
+        "url": "https://jupiter.geus.dk/geusmap/ows/4326.jsp?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&LAYERS=jupiter_boringer_ws&TYPENAME=jupiter_boringer_ws&BBOX=9.016%2C56.554%2C9.046000000000001%2C56.574&MAXFEATURES=51&OUTPUTFORMAT=geojson&PROPERTYNAME=msGeometry%2Cdgunr%2Cdybde_num%2Cdato",
+        "status": 200,
+        "contentType": "application/json",
+        "cors": "*",
+        "bytes": 10488,
+        "sha256": "56526ddb96e83ae2ddd050fa7314d3065ccb466352dae17ea55fd4981b679fb7",
+        "observedAt": "2026-10-06T06:18:46.973623+00:00"
+      },
+      "profile": {
+        "id": "skive",
+        "region": "Skive",
+        "dgu": "55.2028",
+        "longitude": 9.03238440144473,
+        "latitude": 56.564037451144,
+        "totalDepth_m": 2.0,
+        "drilledOn": "1990/08/15 00:00:00",
+        "intervals": [
+          {
+            "top_m": 0.0,
+            "bottom_m": 0.5,
+            "description": "fyld",
+            "code": "o",
+            "missingBounds": false
+          },
+          {
+            "top_m": 0.5,
+            "bottom_m": 1.1,
+            "description": "fyld",
+            "code": "o",
+            "missingBounds": false
+          },
+          {
+            "top_m": 1.1,
+            "bottom_m": 1.6,
+            "description": "sand",
+            "code": "s",
+            "missingBounds": false
+          },
+          {
+            "top_m": 1.6,
+            "bottom_m": 2.0,
+            "description": "ler",
+            "code": "l",
+            "missingBounds": false
+          }
+        ],
+        "source": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=55.2028",
+        "sourceHtmlSha256": "fc98e3ea1bc3866bcd7d2ed3a17e213edf291cf2a7c14f8b618fa012339648d3",
+        "observedAt": "2026-10-06T06:18:47.739773+00:00"
+      },
+      "profileBinding": {
+        "url": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=55.2028",
+        "status": 200,
+        "contentType": "text/html;charset=UTF-8",
+        "cors": null,
+        "bytes": 38364,
+        "sha256": "fc98e3ea1bc3866bcd7d2ed3a17e213edf291cf2a7c14f8b618fa012339648d3",
+        "observedAt": "2026-10-06T06:18:47.739773+00:00"
+      }
+    },
+    {
+      "region": "Varde",
+      "click": [
+        55.612,
+        8.446
+      ],
+      "soilClasses": [
+        {
+          "JB_kode": 3,
+          "Jordtype": "Grov lerblandet sandjord"
+        }
+      ],
+      "soilBinding": {
+        "url": "https://geodata.fvm.dk/geoserver/ows?service=WMS&version=1.1.1&request=GetFeatureInfo&layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&query_layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&styles=&srs=EPSG%3A4326&bbox=8.44599%2C55.61199%2C8.44601%2C55.612010000000005&width=101&height=101&x=50&y=50&info_format=application%2Fjson&feature_count=8&propertyName=JB_kode%2CJordtype",
+        "status": 200,
+        "contentType": "application/json;charset=ISO-8859-1",
+        "cors": "*",
+        "bytes": 270,
+        "sha256": "3467c2ac8cca5de4f39c5b20d8a6d9717ecf54e84e8b58086e547c9896c1a93b",
+        "observedAt": "2026-10-06T06:18:46.729135+00:00"
+      },
+      "boringsReturned": 24,
+      "boringsCapped": false,
+      "boreBinding": {
+        "url": "https://jupiter.geus.dk/geusmap/ows/4326.jsp?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&LAYERS=jupiter_boringer_ws&TYPENAME=jupiter_boringer_ws&BBOX=8.431%2C55.602000000000004%2C8.461%2C55.622&MAXFEATURES=51&OUTPUTFORMAT=geojson&PROPERTYNAME=msGeometry%2Cdgunr%2Cdybde_num%2Cdato",
+        "status": 200,
+        "contentType": "application/json",
+        "cors": "*",
+        "bytes": 4960,
+        "sha256": "f8175ac9420db94e807d54e4e9d428430343dd126390e6e14cb1a5d879d87296",
+        "observedAt": "2026-10-06T06:18:46.873011+00:00"
+      },
+      "profile": {
+        "id": "varde",
+        "region": "Varde",
+        "dgu": "121.1219",
+        "longitude": 8.445048507737539,
+        "latitude": 55.611505555142,
+        "totalDepth_m": 4.0,
+        "drilledOn": "2000/10/09 00:00:00",
+        "intervals": [
+          {
+            "top_m": 0.0,
+            "bottom_m": 0.2,
+            "description": "muld",
+            "code": "m",
+            "missingBounds": false
+          },
+          {
+            "top_m": 0.2,
+            "bottom_m": 0.8,
+            "description": "sand",
+            "code": "s",
+            "missingBounds": false
+          },
+          {
+            "top_m": 0.8,
+            "bottom_m": 1.7,
+            "description": "glacial smeltevandssand",
+            "code": "ds",
+            "missingBounds": false
+          },
+          {
+            "top_m": 1.7,
+            "bottom_m": 2.4,
+            "description": "glacial smeltevandssand",
+            "code": "ds",
+            "missingBounds": false
+          },
+          {
+            "top_m": 2.4,
+            "bottom_m": 3.0,
+            "description": "glacial smeltevandssand",
+            "code": "ds",
+            "missingBounds": false
+          },
+          {
+            "top_m": 3.0,
+            "bottom_m": 4.0,
+            "description": "glacial smeltevandssand",
+            "code": "ds",
+            "missingBounds": false
+          }
+        ],
+        "source": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=121.1219",
+        "sourceHtmlSha256": "f945bf0c0c8e2b9abbc41d351af662fc11917e5e891178c0dfc7e5a6dec60eb1",
+        "observedAt": "2026-10-06T06:18:47.473314+00:00"
+      },
+      "profileBinding": {
+        "url": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=121.1219",
+        "status": 200,
+        "contentType": "text/html;charset=UTF-8",
+        "cors": null,
+        "bytes": 31393,
+        "sha256": "f945bf0c0c8e2b9abbc41d351af662fc11917e5e891178c0dfc7e5a6dec60eb1",
+        "observedAt": "2026-10-06T06:18:47.473314+00:00"
+      }
+    },
+    {
+      "region": "Aabenraa",
+      "click": [
+        55.042,
+        9.401
+      ],
+      "soilClasses": [],
+      "soilBinding": {
+        "url": "https://geodata.fvm.dk/geoserver/ows?service=WMS&version=1.1.1&request=GetFeatureInfo&layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&query_layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&styles=&srs=EPSG%3A4326&bbox=9.40099%2C55.04199%2C9.40101%2C55.042010000000005&width=101&height=101&x=50&y=50&info_format=application%2Fjson&feature_count=8&propertyName=JB_kode%2CJordtype",
+        "status": 200,
+        "contentType": "application/json;charset=ISO-8859-1",
+        "cors": "*",
+        "bytes": 137,
+        "sha256": "4086851e39dceb4e91441d6ed1cf8b6cdde887691c48c5cc1fd4c7496ba67b15",
+        "observedAt": "2026-10-06T06:18:46.972522+00:00"
+      },
+      "boringsReturned": 51,
+      "boringsCapped": true,
+      "boreBinding": {
+        "url": "https://jupiter.geus.dk/geusmap/ows/4326.jsp?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&LAYERS=jupiter_boringer_ws&TYPENAME=jupiter_boringer_ws&BBOX=9.386%2C55.032000000000004%2C9.416%2C55.052&MAXFEATURES=51&OUTPUTFORMAT=geojson&PROPERTYNAME=msGeometry%2Cdgunr%2Cdybde_num%2Cdato",
+        "status": 200,
+        "contentType": "application/json",
+        "cors": "*",
+        "bytes": 9790,
+        "sha256": "6e6db1d700891e4db2984a40e8f6566d3a8032e3089256fbb7efb81837124e7a",
+        "observedAt": "2026-10-06T06:18:47.106169+00:00"
+      },
+      "profile": {
+        "id": "aabenraa",
+        "region": "Aabenraa",
+        "dgu": "160.1937",
+        "longitude": 9.402376920434781,
+        "latitude": 55.042725452377795,
+        "totalDepth_m": 0.0,
+        "drilledOn": null,
+        "intervals": [],
+        "source": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=160.1937",
+        "sourceHtmlSha256": "a9f412636384590b53e3e073b808a133027039e57af1c0555a4258ce012978e2",
+        "observedAt": "2026-10-06T06:18:47.790638+00:00"
+      },
+      "profileBinding": {
+        "url": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=160.1937",
+        "status": 200,
+        "contentType": "text/html;charset=UTF-8",
+        "cors": null,
+        "bytes": 30354,
+        "sha256": "a9f412636384590b53e3e073b808a133027039e57af1c0555a4258ce012978e2",
+        "observedAt": "2026-10-06T06:18:47.790638+00:00"
+      }
+    },
+    {
+      "region": "Stenstrup",
+      "click": [
+        55.119,
+        10.49
+      ],
+      "soilClasses": [],
+      "soilBinding": {
+        "url": "https://geodata.fvm.dk/geoserver/ows?service=WMS&version=1.1.1&request=GetFeatureInfo&layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&query_layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&styles=&srs=EPSG%3A4326&bbox=10.48999%2C55.11899%2C10.49001%2C55.11901&width=101&height=101&x=50&y=50&info_format=application%2Fjson&feature_count=8&propertyName=JB_kode%2CJordtype",
+        "status": 200,
+        "contentType": "application/json;charset=ISO-8859-1",
+        "cors": "*",
+        "bytes": 137,
+        "sha256": "c6bd38a8c20a4f11ed3e8b32a376a41b1e3f038ced676582af22dfa3cfa0833b",
+        "observedAt": "2026-10-06T06:18:47.706276+00:00"
+      },
+      "boringsReturned": 19,
+      "boringsCapped": false,
+      "boreBinding": {
+        "url": "https://jupiter.geus.dk/geusmap/ows/4326.jsp?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&LAYERS=jupiter_boringer_ws&TYPENAME=jupiter_boringer_ws&BBOX=10.475%2C55.109%2C10.505%2C55.129&MAXFEATURES=51&OUTPUTFORMAT=geojson&PROPERTYNAME=msGeometry%2Cdgunr%2Cdybde_num%2Cdato",
+        "status": 200,
+        "contentType": "application/json",
+        "cors": "*",
+        "bytes": 3782,
+        "sha256": "f43eb841d34a9999e97a9b477de0e502ca2d22f707309f0eb3bbd9604ba0d18c",
+        "observedAt": "2026-10-06T06:18:47.857678+00:00"
+      },
+      "profile": {
+        "id": "stenstrup",
+        "region": "Stenstrup",
+        "dgu": "164.347",
+        "longitude": 10.484909069613,
+        "latitude": 55.12108708829619,
+        "totalDepth_m": 39.8,
+        "drilledOn": "1967/09/01 00:00:00",
+        "intervals": [
+          {
+            "top_m": 0.0,
+            "bottom_m": 4.7,
+            "description": "brønd",
+            "code": "b",
+            "missingBounds": false
+          },
+          {
+            "top_m": 4.7,
+            "bottom_m": 7.0,
+            "description": "ler",
+            "code": "l",
+            "missingBounds": false
+          },
+          {
+            "top_m": 7.0,
+            "bottom_m": 15.0,
+            "description": "ler",
+            "code": "l",
+            "missingBounds": false
+          },
+          {
+            "top_m": 15.0,
+            "bottom_m": 29.9,
+            "description": "ler",
+            "code": "l",
+            "missingBounds": false
+          },
+          {
+            "top_m": 29.9,
+            "bottom_m": 34.0,
+            "description": "ler",
+            "code": "l",
+            "missingBounds": false
+          },
+          {
+            "top_m": 34.0,
+            "bottom_m": 37.0,
+            "description": "ler",
+            "code": "l",
+            "missingBounds": false
+          },
+          {
+            "top_m": 37.0,
+            "bottom_m": 39.8,
+            "description": "glacial smeltevandssand",
+            "code": "ds",
+            "missingBounds": false
+          }
+        ],
+        "source": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=164.347",
+        "sourceHtmlSha256": "5e59e797e1970de06ffe56f9cb660709c187e4bc983c59eb55574a970ca52a5b",
+        "observedAt": "2026-10-06T06:18:48.627041+00:00"
+      },
+      "profileBinding": {
+        "url": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=164.347",
+        "status": 200,
+        "contentType": "text/html;charset=UTF-8",
+        "cors": null,
+        "bytes": 36028,
+        "sha256": "5e59e797e1970de06ffe56f9cb660709c187e4bc983c59eb55574a970ca52a5b",
+        "observedAt": "2026-10-06T06:18:48.627041+00:00"
+      }
+    },
+    {
+      "region": "Nordfyn",
+      "click": [
+        55.494,
+        10.245
+      ],
+      "soilClasses": [
+        {
+          "JB_kode": 6,
+          "Jordtype": "Fin sandblandet lerjord"
+        }
+      ],
+      "soilBinding": {
+        "url": "https://geodata.fvm.dk/geoserver/ows?service=WMS&version=1.1.1&request=GetFeatureInfo&layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&query_layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&styles=&srs=EPSG%3A4326&bbox=10.24499%2C55.49399%2C10.245009999999999%2C55.49401&width=101&height=101&x=50&y=50&info_format=application%2Fjson&feature_count=8&propertyName=JB_kode%2CJordtype",
+        "status": 200,
+        "contentType": "application/json;charset=ISO-8859-1",
+        "cors": "*",
+        "bytes": 269,
+        "sha256": "985b48ccfa8eaee7b82d099d3cca7893f6412ace41ed06d20a6b22be020d1a00",
+        "observedAt": "2026-10-06T06:18:47.989158+00:00"
+      },
+      "boringsReturned": 51,
+      "boringsCapped": true,
+      "boreBinding": {
+        "url": "https://jupiter.geus.dk/geusmap/ows/4326.jsp?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&LAYERS=jupiter_boringer_ws&TYPENAME=jupiter_boringer_ws&BBOX=10.229999999999999%2C55.484%2C10.26%2C55.504&MAXFEATURES=51&OUTPUTFORMAT=geojson&PROPERTYNAME=msGeometry%2Cdgunr%2Cdybde_num%2Cdato",
+        "status": 200,
+        "contentType": "application/json",
+        "cors": "*",
+        "bytes": 9701,
+        "sha256": "d5218e768fdad192ff2e034168551a8396414847f2e792f1e6122a451aa32656",
+        "observedAt": "2026-10-06T06:18:48.124373+00:00"
+      },
+      "profile": {
+        "id": "nordfyn",
+        "region": "Nordfyn",
+        "dgu": "136.1014",
+        "longitude": 10.2406887501449,
+        "latitude": 55.4959061144056,
+        "totalDepth_m": 43.0,
+        "drilledOn": "2000/12/07 00:00:00",
+        "intervals": [
+          {
+            "top_m": 0.0,
+            "bottom_m": 0.2,
+            "description": "muld",
+            "code": "m",
+            "missingBounds": false
+          },
+          {
+            "top_m": 0.2,
+            "bottom_m": 1.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 1.0,
+            "bottom_m": 2.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 2.0,
+            "bottom_m": 3.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 3.0,
+            "bottom_m": 4.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 4.0,
+            "bottom_m": 5.6,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 5.6,
+            "bottom_m": 6.3,
+            "description": "glacial smeltevandssand",
+            "code": "ds",
+            "missingBounds": false
+          },
+          {
+            "top_m": 6.3,
+            "bottom_m": 7.3,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 7.3,
+            "bottom_m": 8.0,
+            "description": "glacial smeltevandssand",
+            "code": "ds",
+            "missingBounds": false
+          },
+          {
+            "top_m": 8.0,
+            "bottom_m": 9.2,
+            "description": "glacial smeltevandssand",
+            "code": "ds",
+            "missingBounds": false
+          },
+          {
+            "top_m": 9.2,
+            "bottom_m": 10.5,
+            "description": "glacial morænesand (sandet till)",
+            "code": "ms",
+            "missingBounds": false
+          },
+          {
+            "top_m": 10.5,
+            "bottom_m": 11.5,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 11.5,
+            "bottom_m": 12.0,
+            "description": "glacial smeltevandssand",
+            "code": "ds",
+            "missingBounds": false
+          },
+          {
+            "top_m": 12.0,
+            "bottom_m": 13.0,
+            "description": "glacial smeltevandssand",
+            "code": "ds",
+            "missingBounds": false
+          },
+          {
+            "top_m": 13.0,
+            "bottom_m": 14.5,
+            "description": "glacial smeltevandssand",
+            "code": "ds",
+            "missingBounds": false
+          },
+          {
+            "top_m": 14.5,
+            "bottom_m": 15.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 15.0,
+            "bottom_m": 16.2,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 16.2,
+            "bottom_m": 17.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 17.0,
+            "bottom_m": 18.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 18.0,
+            "bottom_m": 19.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 19.0,
+            "bottom_m": 20.2,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 20.2,
+            "bottom_m": 21.0,
+            "description": "glacial smeltevandsgrus",
+            "code": "dg",
+            "missingBounds": false
+          },
+          {
+            "top_m": 21.0,
+            "bottom_m": 22.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 22.0,
+            "bottom_m": 23.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 23.0,
+            "bottom_m": 24.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 24.0,
+            "bottom_m": 25.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 25.0,
+            "bottom_m": 26.2,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 26.2,
+            "bottom_m": 27.0,
+            "description": "glacial smeltevandssilt",
+            "code": "di",
+            "missingBounds": false
+          },
+          {
+            "top_m": 27.0,
+            "bottom_m": 28.0,
+            "description": "glacial smeltevandssilt",
+            "code": "di",
+            "missingBounds": false
+          },
+          {
+            "top_m": 28.0,
+            "bottom_m": 29.0,
+            "description": "glacial smeltevandssilt",
+            "code": "di",
+            "missingBounds": false
+          },
+          {
+            "top_m": 29.0,
+            "bottom_m": 30.0,
+            "description": "glacial smeltevandssilt",
+            "code": "di",
+            "missingBounds": false
+          },
+          {
+            "top_m": 30.0,
+            "bottom_m": 31.0,
+            "description": "glacial smeltevandssilt",
+            "code": "di",
+            "missingBounds": false
+          },
+          {
+            "top_m": 31.0,
+            "bottom_m": 32.0,
+            "description": "glacial smeltevandssilt",
+            "code": "di",
+            "missingBounds": false
+          },
+          {
+            "top_m": 32.0,
+            "bottom_m": 33.0,
+            "description": "glacial smeltevandsler",
+            "code": "dl",
+            "missingBounds": false
+          },
+          {
+            "top_m": 33.0,
+            "bottom_m": 34.0,
+            "description": "glacial smeltevandsler",
+            "code": "dl",
+            "missingBounds": false
+          },
+          {
+            "top_m": 34.0,
+            "bottom_m": 35.0,
+            "description": "glacial smeltevandsler",
+            "code": "dl",
+            "missingBounds": false
+          },
+          {
+            "top_m": 35.0,
+            "bottom_m": 36.2,
+            "description": "glacial smeltevandsler",
+            "code": "dl",
+            "missingBounds": false
+          },
+          {
+            "top_m": 36.2,
+            "bottom_m": 37.0,
+            "description": "glacial smeltevandssand",
+            "code": "ds",
+            "missingBounds": false
+          },
+          {
+            "top_m": 37.0,
+            "bottom_m": 38.4,
+            "description": "glacial smeltevandssand",
+            "code": "ds",
+            "missingBounds": false
+          },
+          {
+            "top_m": 38.4,
+            "bottom_m": 39.5,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 39.5,
+            "bottom_m": 40.6,
+            "description": "glacial smeltevandsler",
+            "code": "dl",
+            "missingBounds": false
+          },
+          {
+            "top_m": 40.6,
+            "bottom_m": 41.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 41.0,
+            "bottom_m": 42.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 42.0,
+            "bottom_m": 43.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          }
+        ],
+        "source": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=136.1014",
+        "sourceHtmlSha256": "11270fe4817422e1289a0a5ae9c7cc4915d5d677ebbf8f926e33bd3f4875f144",
+        "observedAt": "2026-10-06T06:18:48.964329+00:00"
+      },
+      "profileBinding": {
+        "url": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=136.1014",
+        "status": 200,
+        "contentType": "text/html;charset=UTF-8",
+        "cors": null,
+        "bytes": 61017,
+        "sha256": "11270fe4817422e1289a0a5ae9c7cc4915d5d677ebbf8f926e33bd3f4875f144",
+        "observedAt": "2026-10-06T06:18:48.964329+00:00"
+      }
+    },
+    {
+      "region": "Langeland",
+      "click": [
+        54.93,
+        10.745
+      ],
+      "soilClasses": [
+        {
+          "JB_kode": 6,
+          "Jordtype": "Fin sandblandet lerjord"
+        }
+      ],
+      "soilBinding": {
+        "url": "https://geodata.fvm.dk/geoserver/ows?service=WMS&version=1.1.1&request=GetFeatureInfo&layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&query_layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&styles=&srs=EPSG%3A4326&bbox=10.74499%2C54.92999%2C10.745009999999999%2C54.93001&width=101&height=101&x=50&y=50&info_format=application%2Fjson&feature_count=8&propertyName=JB_kode%2CJordtype",
+        "status": 200,
+        "contentType": "application/json;charset=ISO-8859-1",
+        "cors": "*",
+        "bytes": 268,
+        "sha256": "0eb012e3d781c0b73ea34650eeed2d51397302e9a424ed3babccae5176f571ab",
+        "observedAt": "2026-10-06T06:18:48.029162+00:00"
+      },
+      "boringsReturned": 42,
+      "boringsCapped": false,
+      "boreBinding": {
+        "url": "https://jupiter.geus.dk/geusmap/ows/4326.jsp?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&LAYERS=jupiter_boringer_ws&TYPENAME=jupiter_boringer_ws&BBOX=10.729999999999999%2C54.92%2C10.76%2C54.94&MAXFEATURES=51&OUTPUTFORMAT=geojson&PROPERTYNAME=msGeometry%2Cdgunr%2Cdybde_num%2Cdato",
+        "status": 200,
+        "contentType": "application/json",
+        "cors": "*",
+        "bytes": 8270,
+        "sha256": "b8bf7835e2b4e97285b605acee30618436d30b28d9d8c963a02a2d55cf162572",
+        "observedAt": "2026-10-06T06:18:48.157458+00:00"
+      },
+      "profile": {
+        "id": "langeland",
+        "region": "Langeland",
+        "dgu": "173.42",
+        "longitude": 10.7448951116064,
+        "latitude": 54.93204570428959,
+        "totalDepth_m": 26.0,
+        "drilledOn": "1933/11/04 00:00:00",
+        "intervals": [
+          {
+            "top_m": 0.0,
+            "bottom_m": 2.0,
+            "description": "ler",
+            "code": "l",
+            "missingBounds": false
+          },
+          {
+            "top_m": 2.0,
+            "bottom_m": 19.0,
+            "description": "ler",
+            "code": "l",
+            "missingBounds": false
+          },
+          {
+            "top_m": 19.0,
+            "bottom_m": 21.0,
+            "description": "sand",
+            "code": "s",
+            "missingBounds": false
+          },
+          {
+            "top_m": 21.0,
+            "bottom_m": 26.0,
+            "description": "ler",
+            "code": "l",
+            "missingBounds": false
+          },
+          {
+            "top_m": 26.0,
+            "bottom_m": null,
+            "description": "ler",
+            "code": "l",
+            "missingBounds": true
+          }
+        ],
+        "source": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=173.42",
+        "sourceHtmlSha256": "4d3e4cffa4a07e9a10846031c6fd647a180e8588d409e095ea4dfe690ff78c23",
+        "observedAt": "2026-10-06T06:18:48.857370+00:00"
+      },
+      "profileBinding": {
+        "url": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=173.42",
+        "status": 200,
+        "contentType": "text/html;charset=UTF-8",
+        "cors": null,
+        "bytes": 32158,
+        "sha256": "4d3e4cffa4a07e9a10846031c6fd647a180e8588d409e095ea4dfe690ff78c23",
+        "observedAt": "2026-10-06T06:18:48.857370+00:00"
+      }
+    },
+    {
+      "region": "Lammefjord",
+      "click": [
+        55.801,
+        11.502
+      ],
+      "soilClasses": [
+        {
+          "JB_kode": 6,
+          "Jordtype": "Fin sandblandet lerjord"
+        }
+      ],
+      "soilBinding": {
+        "url": "https://geodata.fvm.dk/geoserver/ows?service=WMS&version=1.1.1&request=GetFeatureInfo&layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&query_layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&styles=&srs=EPSG%3A4326&bbox=11.501990000000001%2C55.80099%2C11.50201%2C55.801010000000005&width=101&height=101&x=50&y=50&info_format=application%2Fjson&feature_count=8&propertyName=JB_kode%2CJordtype",
+        "status": 200,
+        "contentType": "application/json;charset=ISO-8859-1",
+        "cors": "*",
+        "bytes": 269,
+        "sha256": "8d7b3c7396aa9ef56e044554f4ac35b1275f84f6da1216eaabbdb93153d57868",
+        "observedAt": "2026-10-06T06:18:49.021640+00:00"
+      },
+      "boringsReturned": 51,
+      "boringsCapped": true,
+      "boreBinding": {
+        "url": "https://jupiter.geus.dk/geusmap/ows/4326.jsp?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&LAYERS=jupiter_boringer_ws&TYPENAME=jupiter_boringer_ws&BBOX=11.487%2C55.791000000000004%2C11.517000000000001%2C55.811&MAXFEATURES=51&OUTPUTFORMAT=geojson&PROPERTYNAME=msGeometry%2Cdgunr%2Cdybde_num%2Cdato",
+        "status": 200,
+        "contentType": "application/json",
+        "cors": "*",
+        "bytes": 10333,
+        "sha256": "cb828d15423a79328376bf01a7aa46e059e1a2a5d94e7021805e1db67ee351c7",
+        "observedAt": "2026-10-06T06:18:49.139086+00:00"
+      },
+      "profile": {
+        "id": "lammefjord",
+        "region": "Lammefjord",
+        "dgu": "197.840",
+        "longitude": 11.5074760440158,
+        "latitude": 55.80604640739401,
+        "totalDepth_m": 0.0,
+        "drilledOn": "2025/10/05 00:00:00",
+        "intervals": [],
+        "source": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=197.840",
+        "sourceHtmlSha256": "422588e289796a8a2641e10e723fd75536d4ea1139c991d60b11160882c5e4ec",
+        "observedAt": "2026-10-06T06:18:49.789033+00:00"
+      },
+      "profileBinding": {
+        "url": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=197.840",
+        "status": 200,
+        "contentType": "text/html;charset=UTF-8",
+        "cors": null,
+        "bytes": 28457,
+        "sha256": "422588e289796a8a2641e10e723fd75536d4ea1139c991d60b11160882c5e4ec",
+        "observedAt": "2026-10-06T06:18:49.789033+00:00"
+      }
+    },
+    {
+      "region": "Allerød",
+      "click": [
+        55.871,
+        12.35
+      ],
+      "soilClasses": [],
+      "soilBinding": {
+        "url": "https://geodata.fvm.dk/geoserver/ows?service=WMS&version=1.1.1&request=GetFeatureInfo&layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&query_layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&styles=&srs=EPSG%3A4326&bbox=12.34999%2C55.87099%2C12.35001%2C55.871010000000005&width=101&height=101&x=50&y=50&info_format=application%2Fjson&feature_count=8&propertyName=JB_kode%2CJordtype",
+        "status": 200,
+        "contentType": "application/json;charset=ISO-8859-1",
+        "cors": "*",
+        "bytes": 137,
+        "sha256": "a726454d8319c04c3956d81ba28cb4a4b4d18e9e3d6b304775b080948bde86ea",
+        "observedAt": "2026-10-06T06:18:49.095469+00:00"
+      },
+      "boringsReturned": 51,
+      "boringsCapped": true,
+      "boreBinding": {
+        "url": "https://jupiter.geus.dk/geusmap/ows/4326.jsp?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&LAYERS=jupiter_boringer_ws&TYPENAME=jupiter_boringer_ws&BBOX=12.334999999999999%2C55.861000000000004%2C12.365%2C55.881&MAXFEATURES=51&OUTPUTFORMAT=geojson&PROPERTYNAME=msGeometry%2Cdgunr%2Cdybde_num%2Cdato",
+        "status": 200,
+        "contentType": "application/json",
+        "cors": "*",
+        "bytes": 10399,
+        "sha256": "756bc5f55f60c1b6eaf3326f6edc3059052ec0b76ba708b3db8a7386304e3d35",
+        "observedAt": "2026-10-06T06:18:49.239216+00:00"
+      },
+      "profile": {
+        "id": "allerod",
+        "region": "Allerød",
+        "dgu": "193.2222",
+        "longitude": 12.3510700583168,
+        "latitude": 55.8697521420342,
+        "totalDepth_m": 12.0,
+        "drilledOn": "2004/02/17 00:00:00",
+        "intervals": [],
+        "source": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=193.2222",
+        "sourceHtmlSha256": "ce93b4160c74595a0e5fc7c55443f2faa0e9ab980a67e4661bf46df169c334ec",
+        "observedAt": "2026-10-06T06:18:49.922307+00:00"
+      },
+      "profileBinding": {
+        "url": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=193.2222",
+        "status": 200,
+        "contentType": "text/html;charset=UTF-8",
+        "cors": null,
+        "bytes": 34654,
+        "sha256": "ce93b4160c74595a0e5fc7c55443f2faa0e9ab980a67e4661bf46df169c334ec",
+        "observedAt": "2026-10-06T06:18:49.922307+00:00"
+      }
+    },
+    {
+      "region": "Sorø",
+      "click": [
+        55.432,
+        11.543
+      ],
+      "soilClasses": [],
+      "soilBinding": {
+        "url": "https://geodata.fvm.dk/geoserver/ows?service=WMS&version=1.1.1&request=GetFeatureInfo&layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&query_layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&styles=&srs=EPSG%3A4326&bbox=11.54299%2C55.43199%2C11.543009999999999%2C55.432010000000005&width=101&height=101&x=50&y=50&info_format=application%2Fjson&feature_count=8&propertyName=JB_kode%2CJordtype",
+        "status": 200,
+        "contentType": "application/json;charset=ISO-8859-1",
+        "cors": "*",
+        "bytes": 137,
+        "sha256": "599fd3d916fd5d91be4450c0dd1871a64b10a7dd6a19910d4e0409695402db3f",
+        "observedAt": "2026-10-06T06:18:49.222350+00:00"
+      },
+      "boringsReturned": 51,
+      "boringsCapped": true,
+      "boreBinding": {
+        "url": "https://jupiter.geus.dk/geusmap/ows/4326.jsp?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&LAYERS=jupiter_boringer_ws&TYPENAME=jupiter_boringer_ws&BBOX=11.527999999999999%2C55.422000000000004%2C11.558%2C55.442&MAXFEATURES=51&OUTPUTFORMAT=geojson&PROPERTYNAME=msGeometry%2Cdgunr%2Cdybde_num%2Cdato",
+        "status": 200,
+        "contentType": "application/json",
+        "cors": "*",
+        "bytes": 10224,
+        "sha256": "2e1c7bc052ee0be38678e64c70e3695c44e54f43d50ca481642b4fb3fad76bf9",
+        "observedAt": "2026-10-06T06:18:49.339165+00:00"
+      },
+      "profile": {
+        "id": "soro",
+        "region": "Sorø",
+        "dgu": "210.184",
+        "longitude": 11.5379155202678,
+        "latitude": 55.4335987106564,
+        "totalDepth_m": 12.2,
+        "drilledOn": "1952/11/11 00:00:00",
+        "intervals": [
+          {
+            "top_m": 0.0,
+            "bottom_m": 3.1,
+            "description": "grus, sand og grus",
+            "code": "g",
+            "missingBounds": false
+          },
+          {
+            "top_m": 3.1,
+            "bottom_m": 12.2,
+            "description": "grus, sand og grus",
+            "code": "g",
+            "missingBounds": false
+          }
+        ],
+        "source": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=210.184",
+        "sourceHtmlSha256": "030947457377ed34e9818b0896140aff6eb0a1c98d02e3d49588d051842f9a93",
+        "observedAt": "2026-10-06T06:18:50.072444+00:00"
+      },
+      "profileBinding": {
+        "url": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=210.184",
+        "status": 200,
+        "contentType": "text/html;charset=UTF-8",
+        "cors": null,
+        "bytes": 29897,
+        "sha256": "030947457377ed34e9818b0896140aff6eb0a1c98d02e3d49588d051842f9a93",
+        "observedAt": "2026-10-06T06:18:50.072444+00:00"
+      }
+    },
+    {
+      "region": "Rødby",
+      "click": [
+        54.698,
+        11.382
+      ],
+      "soilClasses": [
+        {
+          "JB_kode": 7,
+          "Jordtype": "Lerjord"
+        }
+      ],
+      "soilBinding": {
+        "url": "https://geodata.fvm.dk/geoserver/ows?service=WMS&version=1.1.1&request=GetFeatureInfo&layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&query_layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&styles=&srs=EPSG%3A4326&bbox=11.38199%2C54.69799%2C11.38201%2C54.698010000000004&width=101&height=101&x=50&y=50&info_format=application%2Fjson&feature_count=8&propertyName=JB_kode%2CJordtype",
+        "status": 200,
+        "contentType": "application/json;charset=ISO-8859-1",
+        "cors": "*",
+        "bytes": 253,
+        "sha256": "bebb56d38a6f1dfc64ab1d62c360629475e1148aabba5517ea128374109ac6e3",
+        "observedAt": "2026-10-06T06:18:50.105756+00:00"
+      },
+      "boringsReturned": 50,
+      "boringsCapped": false,
+      "boreBinding": {
+        "url": "https://jupiter.geus.dk/geusmap/ows/4326.jsp?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&LAYERS=jupiter_boringer_ws&TYPENAME=jupiter_boringer_ws&BBOX=11.366999999999999%2C54.688%2C11.397%2C54.708&MAXFEATURES=51&OUTPUTFORMAT=geojson&PROPERTYNAME=msGeometry%2Cdgunr%2Cdybde_num%2Cdato",
+        "status": 200,
+        "contentType": "application/json",
+        "cors": "*",
+        "bytes": 10205,
+        "sha256": "fc832ecbcd42779db947b625c23810b60729e9c73cec1ce806a30aa601413285",
+        "observedAt": "2026-10-06T06:18:50.231194+00:00"
+      },
+      "profile": {
+        "id": "rodby",
+        "region": "Rødby",
+        "dgu": "240.629",
+        "longitude": 11.3849685771334,
+        "latitude": 54.6985196334905,
+        "totalDepth_m": 5.0,
+        "drilledOn": "2005/01/05 00:00:00",
+        "intervals": [
+          {
+            "top_m": 0.0,
+            "bottom_m": 1.8,
+            "description": "fyld",
+            "code": "o",
+            "missingBounds": false
+          },
+          {
+            "top_m": 1.8,
+            "bottom_m": 2.4,
+            "description": "gytje, dynd, slam",
+            "code": "p",
+            "missingBounds": false
+          },
+          {
+            "top_m": 2.4,
+            "bottom_m": 3.1,
+            "description": "tørv",
+            "code": "t",
+            "missingBounds": false
+          },
+          {
+            "top_m": 3.1,
+            "bottom_m": 3.7,
+            "description": "ler",
+            "code": "l",
+            "missingBounds": false
+          },
+          {
+            "top_m": 3.7,
+            "bottom_m": 4.1,
+            "description": "ler",
+            "code": "l",
+            "missingBounds": false
+          },
+          {
+            "top_m": 4.1,
+            "bottom_m": 5.0,
+            "description": "ler",
+            "code": "l",
+            "missingBounds": false
+          }
+        ],
+        "source": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=240.629",
+        "sourceHtmlSha256": "177e5eba1af3773cf719165862d73bf7d0c54b9ad7631123b20b078a3e691d45",
+        "observedAt": "2026-10-06T06:18:50.856215+00:00"
+      },
+      "profileBinding": {
+        "url": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=240.629",
+        "status": 200,
+        "contentType": "text/html;charset=UTF-8",
+        "cors": null,
+        "bytes": 32197,
+        "sha256": "177e5eba1af3773cf719165862d73bf7d0c54b9ad7631123b20b078a3e691d45",
+        "observedAt": "2026-10-06T06:18:50.856215+00:00"
+      }
+    },
+    {
+      "region": "Falster",
+      "click": [
+        54.85,
+        11.878
+      ],
+      "soilClasses": [
+        {
+          "JB_kode": 6,
+          "Jordtype": "Fin sandblandet lerjord"
+        }
+      ],
+      "soilBinding": {
+        "url": "https://geodata.fvm.dk/geoserver/ows?service=WMS&version=1.1.1&request=GetFeatureInfo&layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&query_layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&styles=&srs=EPSG%3A4326&bbox=11.87799%2C54.84999%2C11.87801%2C54.850010000000005&width=101&height=101&x=50&y=50&info_format=application%2Fjson&feature_count=8&propertyName=JB_kode%2CJordtype",
+        "status": 200,
+        "contentType": "application/json;charset=ISO-8859-1",
+        "cors": "*",
+        "bytes": 269,
+        "sha256": "48e5a841002e2c993f5fb58bfcce154e4f91255d24ceeee2865a071a60094002",
+        "observedAt": "2026-10-06T06:18:50.333619+00:00"
+      },
+      "boringsReturned": 33,
+      "boringsCapped": false,
+      "boreBinding": {
+        "url": "https://jupiter.geus.dk/geusmap/ows/4326.jsp?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&LAYERS=jupiter_boringer_ws&TYPENAME=jupiter_boringer_ws&BBOX=11.863%2C54.84%2C11.893%2C54.86&MAXFEATURES=51&OUTPUTFORMAT=geojson&PROPERTYNAME=msGeometry%2Cdgunr%2Cdybde_num%2Cdato",
+        "status": 200,
+        "contentType": "application/json",
+        "cors": "*",
+        "bytes": 6817,
+        "sha256": "0a36c8050e994d2e7ede10d603c6477fd9a8f2d52333b7f602342f4cba4b3dc4",
+        "observedAt": "2026-10-06T06:18:50.472573+00:00"
+      },
+      "profile": {
+        "id": "falster",
+        "region": "Falster",
+        "dgu": "238.606",
+        "longitude": 11.8857706561089,
+        "latitude": 54.852869786075395,
+        "totalDepth_m": 40.0,
+        "drilledOn": "1974/01/01 00:00:00",
+        "intervals": [
+          {
+            "top_m": 0.0,
+            "bottom_m": 4.0,
+            "description": "ler",
+            "code": "l",
+            "missingBounds": false
+          },
+          {
+            "top_m": 4.0,
+            "bottom_m": 10.0,
+            "description": "ler",
+            "code": "l",
+            "missingBounds": false
+          },
+          {
+            "top_m": 10.0,
+            "bottom_m": 22.0,
+            "description": "ler, sand og grus",
+            "code": "u",
+            "missingBounds": false
+          },
+          {
+            "top_m": 22.0,
+            "bottom_m": 26.0,
+            "description": "kalk, kridt kalksten",
+            "code": "k",
+            "missingBounds": false
+          },
+          {
+            "top_m": 26.0,
+            "bottom_m": 27.0,
+            "description": "ler",
+            "code": "l",
+            "missingBounds": false
+          },
+          {
+            "top_m": 27.0,
+            "bottom_m": 30.0,
+            "description": "ler",
+            "code": "l",
+            "missingBounds": false
+          },
+          {
+            "top_m": 30.0,
+            "bottom_m": 33.0,
+            "description": "ler",
+            "code": "l",
+            "missingBounds": false
+          },
+          {
+            "top_m": 33.0,
+            "bottom_m": 40.0,
+            "description": "kalk, kridt kalksten",
+            "code": "k",
+            "missingBounds": false
+          }
+        ],
+        "source": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=238.606",
+        "sourceHtmlSha256": "32904d162f440e12f62a7de9fafa6036b37bcabc733575d144b5371cdc6cc53c",
+        "observedAt": "2026-10-06T06:18:51.171603+00:00"
+      },
+      "profileBinding": {
+        "url": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=238.606",
+        "status": 200,
+        "contentType": "text/html;charset=UTF-8",
+        "cors": null,
+        "bytes": 38563,
+        "sha256": "32904d162f440e12f62a7de9fafa6036b37bcabc733575d144b5371cdc6cc53c",
+        "observedAt": "2026-10-06T06:18:51.171603+00:00"
+      }
+    },
+    {
+      "region": "Møn",
+      "click": [
+        54.989,
+        12.342
+      ],
+      "soilClasses": [
+        {
+          "JB_kode": 7,
+          "Jordtype": "Lerjord"
+        }
+      ],
+      "soilBinding": {
+        "url": "https://geodata.fvm.dk/geoserver/ows?service=WMS&version=1.1.1&request=GetFeatureInfo&layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&query_layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&styles=&srs=EPSG%3A4326&bbox=12.341990000000001%2C54.988989999999994%2C12.34201%2C54.98901&width=101&height=101&x=50&y=50&info_format=application%2Fjson&feature_count=8&propertyName=JB_kode%2CJordtype",
+        "status": 200,
+        "contentType": "application/json;charset=ISO-8859-1",
+        "cors": "*",
+        "bytes": 253,
+        "sha256": "827f33a4dfc100ad383e744803af96e96b9e210bdf0d7a0c9911c71cb2b5ac6a",
+        "observedAt": "2026-10-06T06:18:50.355800+00:00"
+      },
+      "boringsReturned": 14,
+      "boringsCapped": false,
+      "boreBinding": {
+        "url": "https://jupiter.geus.dk/geusmap/ows/4326.jsp?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&LAYERS=jupiter_boringer_ws&TYPENAME=jupiter_boringer_ws&BBOX=12.327%2C54.979%2C12.357000000000001%2C54.998999999999995&MAXFEATURES=51&OUTPUTFORMAT=geojson&PROPERTYNAME=msGeometry%2Cdgunr%2Cdybde_num%2Cdato",
+        "status": 200,
+        "contentType": "application/json",
+        "cors": "*",
+        "bytes": 2949,
+        "sha256": "26b9e9115f8066e2e0b78f1f21fdfa5c7ca68180c2ccadde95a512283b4db947",
+        "observedAt": "2026-10-06T06:18:50.505923+00:00"
+      },
+      "profile": {
+        "id": "mon",
+        "region": "Møn",
+        "dgu": "227.466",
+        "longitude": 12.342807945574398,
+        "latitude": 54.9917401820662,
+        "totalDepth_m": 0.0,
+        "drilledOn": null,
+        "intervals": [],
+        "source": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=227.466",
+        "sourceHtmlSha256": "c6a6420bfec898691f527b3c5568f503af51b793fabdd8d36f48e8bff120f055",
+        "observedAt": "2026-10-06T06:18:51.158149+00:00"
+      },
+      "profileBinding": {
+        "url": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=227.466",
+        "status": 200,
+        "contentType": "text/html;charset=UTF-8",
+        "cors": null,
+        "bytes": 29498,
+        "sha256": "c6a6420bfec898691f527b3c5568f503af51b793fabdd8d36f48e8bff120f055",
+        "observedAt": "2026-10-06T06:18:51.158149+00:00"
+      }
+    },
+    {
+      "region": "Bornholm",
+      "click": [
+        55.113,
+        14.903
+      ],
+      "soilClasses": [
+        {
+          "JB_kode": 5,
+          "Jordtype": "Grov sandblandet lerjord"
+        }
+      ],
+      "soilBinding": {
+        "url": "https://geodata.fvm.dk/geoserver/ows?service=WMS&version=1.1.1&request=GetFeatureInfo&layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&query_layers=Jordbunds_og_terraenforhold%3AJordbundskort_2024&styles=&srs=EPSG%3A4326&bbox=14.90299%2C55.112989999999996%2C14.90301%2C55.11301&width=101&height=101&x=50&y=50&info_format=application%2Fjson&feature_count=8&propertyName=JB_kode%2CJordtype",
+        "status": 200,
+        "contentType": "application/json;charset=ISO-8859-1",
+        "cors": "*",
+        "bytes": 270,
+        "sha256": "c2b62a3429cb9ab0fab990afdc7cbce34d2572ce9fa7cd8848e78105e5de7556",
+        "observedAt": "2026-10-06T06:18:51.171603+00:00"
+      },
+      "boringsReturned": 7,
+      "boringsCapped": false,
+      "boreBinding": {
+        "url": "https://jupiter.geus.dk/geusmap/ows/4326.jsp?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&LAYERS=jupiter_boringer_ws&TYPENAME=jupiter_boringer_ws&BBOX=14.888%2C55.103%2C14.918000000000001%2C55.123&MAXFEATURES=51&OUTPUTFORMAT=geojson&PROPERTYNAME=msGeometry%2Cdgunr%2Cdybde_num%2Cdato",
+        "status": 200,
+        "contentType": "application/json",
+        "cors": "*",
+        "bytes": 1597,
+        "sha256": "ad1fe677b737106b00b0f976ba8a5d2ae68be3d4031162f05903e3c3dd33aa2a",
+        "observedAt": "2026-10-06T06:18:51.365604+00:00"
+      },
+      "profile": {
+        "id": "bornholm",
+        "region": "Bornholm",
+        "dgu": "246.826",
+        "longitude": 14.909344463113898,
+        "latitude": 55.111851374619,
+        "totalDepth_m": 200.0,
+        "drilledOn": "2011/09/21 00:00:00",
+        "intervals": [
+          {
+            "top_m": 0.0,
+            "bottom_m": 3.0,
+            "description": "glacial smeltevandsler",
+            "code": "dl",
+            "missingBounds": false
+          },
+          {
+            "top_m": 3.0,
+            "bottom_m": 6.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 6.0,
+            "bottom_m": 8.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 8.0,
+            "bottom_m": 12.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 12.0,
+            "bottom_m": 17.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 17.0,
+            "bottom_m": 22.0,
+            "description": "glacial moræneler (leret till)",
+            "code": "ml",
+            "missingBounds": false
+          },
+          {
+            "top_m": 22.0,
+            "bottom_m": 25.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 25.0,
+            "bottom_m": 27.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 27.0,
+            "bottom_m": 30.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 30.0,
+            "bottom_m": 35.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 35.0,
+            "bottom_m": 40.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 40.0,
+            "bottom_m": 45.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 45.0,
+            "bottom_m": 50.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 50.0,
+            "bottom_m": 55.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 55.0,
+            "bottom_m": 60.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 60.0,
+            "bottom_m": 65.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 65.0,
+            "bottom_m": 70.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 70.0,
+            "bottom_m": 75.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 75.0,
+            "bottom_m": 80.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 80.0,
+            "bottom_m": 85.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 85.0,
+            "bottom_m": 90.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 90.0,
+            "bottom_m": 95.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 95.0,
+            "bottom_m": 100.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 100.0,
+            "bottom_m": 105.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 105.0,
+            "bottom_m": 110.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 110.0,
+            "bottom_m": 115.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 115.0,
+            "bottom_m": 120.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 120.0,
+            "bottom_m": 125.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 125.0,
+            "bottom_m": 130.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 130.0,
+            "bottom_m": 135.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 135.0,
+            "bottom_m": 140.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 140.0,
+            "bottom_m": 145.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 145.0,
+            "bottom_m": 150.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 150.0,
+            "bottom_m": 155.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 155.0,
+            "bottom_m": 160.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 160.0,
+            "bottom_m": 165.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 165.0,
+            "bottom_m": 170.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 170.0,
+            "bottom_m": 175.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 175.0,
+            "bottom_m": 180.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 180.0,
+            "bottom_m": 185.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 185.0,
+            "bottom_m": 190.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 190.0,
+            "bottom_m": 195.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          },
+          {
+            "top_m": 195.0,
+            "bottom_m": 200.0,
+            "description": "prækambrium gnejs granit, pegmatit",
+            "code": "pa",
+            "missingBounds": false
+          }
+        ],
+        "source": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=246.826",
+        "sourceHtmlSha256": "0eaaa4e61e63f86f0a8d78d828e88d3dc3b57c851d93c40b390adf84d1d05109",
+        "observedAt": "2026-10-06T06:18:52.062486+00:00"
+      },
+      "profileBinding": {
+        "url": "https://data.geus.dk/JupiterWWW/borerapport.jsp?dgunr=246.826",
+        "status": 200,
+        "contentType": "text/html;charset=UTF-8",
+        "cors": null,
+        "bytes": 50267,
+        "sha256": "0eaaa4e61e63f86f0a8d78d828e88d3dc3b57c851d93c40b390adf84d1d05109",
+        "observedAt": "2026-10-06T06:18:52.062486+00:00"
+      }
+    }
+  ]
+}

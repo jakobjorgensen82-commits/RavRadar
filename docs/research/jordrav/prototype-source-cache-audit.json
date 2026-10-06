@@ -1,0 +1,33 @@
+{
+  "scope": "Public GEUS source and normalized cache; read-only verification",
+  "layers": [
+    {
+      "source": "soil",
+      "dbfSha256": "94e3ac871fb47b3f6ab39957bb72c34bc8ab3c020f04addc63d45a152e93edb5",
+      "shpSha256": "10620612ea6c8de4539cbe2ccc4790bbbd0d3e798cb19e0a29bc7f466cafc3cc",
+      "cacheMetadataSha256": "807b265135e4c468190c23413583c34ada6eeeb03448d814fc0a429a36d43539",
+      "cacheGeometrySha256": "d09ee9442b3e5c29bcba5acffa5acdf52e13d27e61ac08d6c37a0aee72674b57",
+      "attributesVerifiedAgainstOriginal": 199653,
+      "auditedCollapsedRecords": 0
+    },
+    {
+      "source": "older_soil",
+      "dbfSha256": "4ab0c307fa0d0047f7ba21250244f3863ca46204b120c88ae3e1696e5ca6e124",
+      "shpSha256": "132ebeb3ec202667acefd28bc14e88697220451302f39b2d56ca4811fb8b2287",
+      "cacheMetadataSha256": "799cdb10e1e844d1d82e74343851c167db305d27624689085012220e86081cfa",
+      "cacheGeometrySha256": "8b89f97ed7b7c7231d9191a9c6191a1b5551981268d0355e489ec89e60d6df8c",
+      "attributesVerifiedAgainstOriginal": 23998,
+      "auditedCollapsedRecords": 194
+    },
+    {
+      "source": "geomorphology",
+      "dbfSha256": "0d31afad447e9139c55523bc5ccc8a12671cb222c05d3fd527f561c3bd46e2ff",
+      "shpSha256": "371aaa477ab9d76662732293df86880c1fa9e02953774ff1eb509bb1dc25b619",
+      "cacheMetadataSha256": "94cd6d4a599d86f20a8572274ded42339180eb0373e00744f56e45fc1eef7272",
+      "cacheGeometrySha256": "c56445a123763831d32fc3c474e1a0156fa87cb5e03e0f35693746bf380bf512",
+      "attributesVerifiedAgainstOriginal": 15178,
+      "auditedCollapsedRecords": 0
+    }
+  ],
+  "status": "PASS"
+}
