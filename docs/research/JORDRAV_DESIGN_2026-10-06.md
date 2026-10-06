@@ -86,3 +86,23 @@ Udviklingsfejl i browserhelperens håndtering af en nested summary og et
 testklik dækket af et åbent lagpanel er rettet i testforløbet. Den reelle
 dobbelte mobilscroll er rettet i produktet og genkontrolleret. De er ikke
 geologiske/datafejl eller begrundelse for at omgå tests.
+
+## Genbesøgende browser og konsistent cache
+
+En faktisk Chrome-prøve varmer 4.0.544 med `max-age=600` og åbner derefter
+ny HTML i samme browser. Den første designkandidat havde 61 uoversatte
+nøgler: gamle unversionerede message-moduler registrerede tekst i en ældre
+i18n-instans. Dette er konkret modstridende evidens; grøn CI på 41666348
+var ikke tilstrækkeligt mergebevis.
+
+Alle lokale Jordravimports har nu releaseidentitet 4.0.545, ligesom entry,
+CSS og i18n. Fremtidig set-version opdaterer samme kæde. Browserprøven
+verificerer alle 15 nye moduler, komplette gamle/nye tekster og faktiske
+DE/EN-sprogskift fra den gamle cache. Tre cachechecks bringer den lokale
+browserkontrol til 108. Kystens service worker/data loader genbruges ikke.
+Den tidligere testheuristik afviste enhver versioneret `data-service.js`;
+den er indsnævret til den faktiske kystloadersti, mens Jordravs egen lette
+loader skal have den aktuelle versionsbinding. Kystisolation bevares.
+
+Sluthead kræver ny fuld exact-head CI, uafhængigt kildebevis og offentlig
+kontrol. Den første designkandidats CI bevares som historisk evidens.

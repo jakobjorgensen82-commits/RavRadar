@@ -68,7 +68,10 @@ test('national detail data cannot be imported or precached by the coastal view',
   const html = await fs.readFile(new URL('../jordrav.html', import.meta.url),'utf8');
   assert.doesNotMatch(bootstrap, /jordrav\/(?:map|data-service|dataset-binding)/);
   assert.doesNotMatch(worker, /data\/jordrav/);
-  assert.doesNotMatch(inland, /Supabase|supabase|dmi|data\/live|data-service\.js\?v=/);
+  assert.doesNotMatch(inland, /Supabase|supabase|dmi|data\/live|(?:\.\.\/)?services\/data-service\.js/);
+  // Jordrav's own lightweight data-service may be release-bound. Reject the
+  // coastal runtime path, rather than conflating the two modules' filenames.
+  assert.match(inland, new RegExp(`from './data-service\\.js\\?v=${appVersion.replaceAll('.','\\.')}'`));
   assert.match(html, /connect-src 'self' https:\/\/geodata\.fvm\.dk https:\/\/jupiter\.geus\.dk;/);
   assert.doesNotMatch(html, /\son[a-z]+\s*=/i);
   assert.ok(intersects([9,55,10,56],[10,56,11,57]));

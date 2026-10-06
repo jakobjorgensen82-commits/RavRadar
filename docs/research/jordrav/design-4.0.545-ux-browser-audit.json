@@ -16,14 +16,14 @@
     "jordrav.css": "44618206bb0de0b79c7945415cc632abbeb7c7e9c5328cb78123962348a9f5e6",
     "js/jordrav/accessibility.js": "af2e405f37735c53f8770f8466d4ca2f9a8d6be060523ec4539f53a6f32a8b7e",
     "js/jordrav/context-messages.js": "c08f6b7529b18a1249145894be985119facefd9dc2924b8d6abba7a81cf24c8a",
-    "js/jordrav/data-service.js": "8eb1dd707b2350b9bc1e65386d034b6fd3ddfd101384af62b6a8395d2244244b",
+    "js/jordrav/data-service.js": "ae26ee3521553de233b78770f613f821d1e1c6c3abccc77ce43481a020bfab3a",
     "js/jordrav/dataset-binding.js": "8b1a5c73fbd94ce9d075ed6dd64712a12d696ee86e62ff6b476c8b2b9fb611a4",
-    "js/jordrav/evidence-chain.js": "d63816c683974d7552389b8b8a0a3989303e7864f2970b6bcfc29f3d8159f908",
+    "js/jordrav/evidence-chain.js": "54b47d775c6b6b2f6017dcb406b9f03bec06fdee34d24143b72c9bc313df84a3",
     "js/jordrav/field-context.js": "5b06eb84d0bf0f6c1c69c1388e2ddf01186b4c0d8d8a0ab57f6504d11c9f4ba9",
     "js/jordrav/landscape-context.js": "c400aabbfdc909da087e96037b481113debb94dc96a47ef7655c77929210114b",
-    "js/jordrav/layer-access.js": "cbd39cfdcf3241ce1d3589ec99ef48df47b9f97dbef926c868f471b38509a5d1",
-    "js/jordrav/map.js": "157c5c99a360817ece8074b58db17573ca4e3455a75f8cacedeb81f41ed3f402",
-    "js/jordrav/messages.js": "d09f95f16a704b0766856ac0d01b98a73c50a0ad4b86042c0fb5d2827861ce44",
+    "js/jordrav/layer-access.js": "33f2aa442d0d809fe280283bd7a024bd2b65d447c5e46675b6dd3fed90490e9b",
+    "js/jordrav/map.js": "55f515e188142a42a01aad2c0aea51c4f37da326020e4cd145bd66524ae569ce",
+    "js/jordrav/messages.js": "97c6d4d0888fa653f042bd4ba4b57f7638d31b8854f293325ae4f99866480a41",
     "js/jordrav/profile-examples.js": "ce910aebf4182b1186c3d212541672ca9c5fb394838734164c3739dbdada1db5",
     "js/jordrav/public-context.js": "efacbc9315bdb02df3ec2c33bda9f389550628186b7a438f5cf5259a6a28b155",
     "js/jordrav/regional-hypotheses.js": "ec9da8c58ac068ea8cc9b632a98348ae889eb000063f26abb871dd8658d2628d",
@@ -31,5 +31,5 @@
     "js/jordrav/view-state.js": "271a8f71eb42ebb89d19a25aee90cdd73e72985d1526710548f56aeaa0f2ffc3"
   },
   "status": "PASS",
-  "checkedAt": "2026-10-06T10:49:12.990Z"
+  "checkedAt": "2026-10-06T11:06:44.976Z"
 }

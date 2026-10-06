@@ -8,6 +8,8 @@
   valgt sted til områdeforklaringen. DA/DE/EN og 360–1024 px er kontrolleret.
 - 99 eksisterende Chrome-regressioner og seks nye UX-forløb består lokalt;
   kildegate består. CI og sikker offentlig levering følger særskilt.
+- Hele Jordravmodulkæden er releasebundet. Tre faktiske Chrome-cacheforløb
+  bevarer både nye og eksisterende tekster hos genbesøgende besøgende.
 - Geologiske farver, datasæt, jagtbarhed, dybe lag og RavScore er uændrede.
   Begge håndbøger og projektets aktive hukommelse følger den nye betjening.
 

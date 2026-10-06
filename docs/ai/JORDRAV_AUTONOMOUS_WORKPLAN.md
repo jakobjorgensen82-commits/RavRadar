@@ -8,8 +8,9 @@ kortet og en knap fra det valgte kortsted til forklaringen. Tastatur,
 dansk/tysk/engelsk, almindeligt kort og luftfoto samt alle eksisterende
 geologiske funktioner bevares.
 
-105 lokale Chrome-checks består: de 99 funktionsregressioner samt seks
-samlede UX-forløb, herunder DA/DE/EN ved 360/390/768/1024 px. Den lille
+108 lokale Chrome-checks består: de 99 funktionsregressioner samt seks
+samlede UX-forløb og tre cacheforløb, herunder DA/DE/EN ved
+360/390/768/1024 px. Den lille
 produktkritiske kildegate består med 118 browserfiler og Jordravs målprøver.
 Dette er lokal evidens, ikke endnu CI eller offentlig 4.0.545. Exact-head
 CI, sikker merge, providerfri kode-only deploy og offentlig browserkontrol
@@ -24,6 +25,13 @@ ingen fysisk telefonprøve eller målt rav-/pløjedybde påstås. Kystmodel,
 RavScore, central adminsandhed og vejrlogik er urørt. Geodata må kun få
 et rent topversionsløft. Tidligere 4.0.544-status nedenfor er historikken
 for forgængeren; den bestilte designforbedring er nu det aktive arbejde.
+
+**Genbesøgende browser:** En konkret Chrome-prøve af gammel 4.0.544-cache
+viste 61 uoversatte nøgler med blandede moduleidentiteter. Hele Jordravs
+lokale imports følger nu 4.0.545. Det første grønne design-head 41666348
+må ikke merges på dette ældre bevis; sluthead skal have ny exact-head CI.
+Tre cacheforløb kontrollerer den rettede genbesøgende browser og sprogskift.
+Dette ændrer ingen geologiske bytes eller kystens runtime.
 
 Design/evidens: `docs/research/JORDRAV_DESIGN_2026-10-06.md`.
 Ekstra høj indsats/Sol anbefales til integration og slutkontrol.
