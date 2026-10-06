@@ -7,7 +7,7 @@
   <meta name="description" content="Ravkort og ravprognose for danske kyster. Brug RavRadar til at planlægge ravjagt, og læs om rav, ravkese og ravlygte. Ingen garanti for fund.">
   <title>RavRadar – dansk ravprognose</title>
   <link rel="canonical" href="https://ravradar.dk/">
-  <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png"><link rel="preconnect" href="https://unpkg.com"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""><link rel="stylesheet" href="style.css?v=4.0.543">
+  <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png"><link rel="preconnect" href="https://unpkg.com"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""><link rel="stylesheet" href="style.css?v=4.0.544">
 </head>
 <body>
   <header class="app-header">
@@ -21,6 +21,7 @@
     <button id="updateAppButton" type="button" data-i18n="update.now">Opdater nu</button>
   </div>
   <main>
+    <nav class="public-map-tabs" data-i18n-aria-label="jordrav.navigation" aria-label="Kortvisning"><a href="./" aria-current="page" data-i18n="jordrav.coastTab">Kystprognose</a><a href="./jordrav.html" data-i18n="jordrav.landTab">Jordrav</a></nav>
     <section class="mode-panel" aria-labelledby="modeTitle"><div><h2 id="modeTitle" data-i18n="mode.title">Hvordan vil du lede?</h2><p data-i18n="mode.help">Vælg vand eller strand. RavRadar tilpasser scoren til den måde, du vil lede på.</p></div><div class="segmented-control" role="group" data-i18n-aria-label="mode.group" aria-label="Søgemåde"><button class="mode-button active" type="button" data-mode="waders" aria-pressed="true" data-i18n="mode.waders">🌊 I vandet (waders)</button><button class="mode-button" type="button" data-mode="beach" aria-pressed="false" data-i18n="mode.beach">🥾 På stranden</button></div></section>
     <section class="dashboard"><div class="map-column"><div class="map-shell" data-i18n-aria-label="map.label" aria-label="Kort over ravzoner"><div id="map"></div></div><div class="legend" data-i18n-aria-label="map.legend" aria-label="Kortforklaring"><span><i class="legend-dot good"></i><span data-i18n="map.good">God</span></span><span><i class="legend-dot fair"></i><span data-i18n="map.fair">Middel</span></span><span><i class="legend-dot weak"></i><span data-i18n="map.weak">Svag</span></span><span><i class="legend-dot poor"></i><span data-i18n="map.poor">Dårlig</span></span><span><i class="legend-dot unavailable"></i><span data-i18n="map.noData">Ingen data</span></span><span><i class="legend-arrow current" aria-hidden="true">↑</i><span data-i18n="map.currentArrow">Blå pil: strømretning</span></span><span><i class="legend-arrow wind" aria-hidden="true">↑</i><span data-i18n="map.windArrow">Hvid pil: vindretning</span></span></div><p class="legend-note" data-i18n="map.star">En stjerne viser usædvanligt gode forhold.</p></div>
       <aside class="ranking-panel" aria-labelledby="rankingTitle"><div class="section-heading"><p class="eyebrow dark" data-i18n="ranking.eyebrow">Aktuelt</p><h2 id="rankingTitle" data-i18n="ranking.title">Bedste områder</h2><p class="ranking-note" data-i18n="ranking.note">Et område kan have ét rigtig godt sted, selvom resten er mindre godt. Kortet viser det bedste sted. Denne liste vurderer hele området. Derfor kan tallene være forskellige.</p></div><div id="ranking" class="ranking"><p class="ranking-empty" data-i18n="ranking.loading">Indlæser rangliste…</p></div></aside></section>
@@ -31,7 +32,7 @@
   <footer>
     <p data-i18n="footer.disclaimer">RavRadar viser en beregnet vurdering. Forholdene på stedet kan være anderledes.</p>
     <p id="dataStatus" data-i18n="common.loading">Indlæser…</p>
-    <p class="app-version"><span data-i18n="footer.version">Version</span> <span id="appVersion">4.0.543</span></p>
+    <p class="app-version"><span data-i18n="footer.version">Version</span> <span id="appVersion">4.0.544</span></p>
     <section class="footer-search" aria-labelledby="footerSearchTitle">
       <h2 id="footerSearchTitle" data-i18n="footer.searchTitle">Ravjagt med RavRadar</h2>
       <p data-i18n="footer.searchDescription">RavRadar er et ravkort og en ravprognose for danske kyster. Brug ravudsigten til at planlægge din ravjagt, hvad enten du er ny eller erfaren ravjæger. Læs også om rav, om en kese eller ravkese til lavt vand og om brug af ravlygte. Prognosen er en hjælp til at vælge tid og sted, ikke en garanti for fund.</p>
@@ -54,5 +55,5 @@
   <dialog id="accountDialog" class="app-dialog"><button class="dialog-close" type="button" data-i18n-aria-label="common.close" aria-label="Luk">×</button><div class="dialog-content"></div></dialog>
   <dialog id="developerDialog" class="app-dialog wide-dialog"><button class="dialog-close" type="button" aria-label="Luk">×</button><div class="dialog-content"></div></dialog>
   <dialog id="pinDialog" class="app-dialog"><button class="dialog-close" type="button" aria-label="Luk">×</button><div class="dialog-content"><h2>Udviklertilstand</h2><form id="pinForm" class="stack-form"><label>PIN<input name="pin" type="password" inputmode="numeric" maxlength="4" required></label><button class="primary-button">Åbn</button><p id="pinStatus" class="form-status"></p></form></div></dialog>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script type="module" src="bootstrap.js?v=4.0.543&copy=footer-20261005"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script type="module" src="bootstrap.js?v=4.0.544&copy=footer-20261005"></script>
 </body></html>

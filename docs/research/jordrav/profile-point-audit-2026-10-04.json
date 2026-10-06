@@ -1,0 +1,102 @@
+{
+  "status": "PASS",
+  "scope": "Traceability, selected interval continuity and point lookup only; not scientific validation of amber hypotheses.",
+  "modelVersion": "0.1.0-prototype",
+  "manifestSha256": "53db672df2541756d380a17bda724bbaec8e870d0e80ce9d39a6a89802447198",
+  "observationsSha256": "4072c63f0fba9dc06542caf4f43836c7d0bc143dd2bc4db64d68aaa097e35aea",
+  "scriptSha256": "66e4b8d2bd110cdaa4dc0d91aca260c021ce351a74a670346a5060bc10975ff3",
+  "observedAt": "2026-10-04T16:51:37Z",
+  "checkedDetailTiles": 2,
+  "geometry": "20 m generalised exported display polygons; no native source geometry or positional accuracy claim",
+  "software": {
+    "shapely": "2.1.2",
+    "pyproj": "3.8.0"
+  },
+  "profiles": [
+    {
+      "dgu": "10.934",
+      "selectedDepth_m": [
+        0,
+        89
+      ],
+      "registeredThicknessByCode_m": {
+        "dg": 1.0,
+        "di": 2.0,
+        "dl": 18.0,
+        "ds": 42.0,
+        "ql": 19.0,
+        "qs": 7.0
+      },
+      "candidateTiles": [
+        "29-318"
+      ],
+      "displayHits": [
+        {
+          "tile": "29-318",
+          "catalogIndex": 2393,
+          "origin": "n192733:g13658",
+          "displayBoundaryDistance_m": 44.711,
+          "classification": {
+            "source": "soil-new",
+            "surface": "MS",
+            "depth": "DS",
+            "symbol": "DS",
+            "soilLabel": "DS - Smeltevandssand",
+            "landscape": "Randmorænebakke",
+            "landscapeCode": 13,
+            "landscapeEnglish": "Marginal moraine",
+            "conflictSymbols": "",
+            "potential": "possible",
+            "material": "till",
+            "process": "pushed",
+            "accessibility": "layered",
+            "confidence": "weak"
+          }
+        }
+      ],
+      "amberOrPloughLayerVerified": false
+    },
+    {
+      "dgu": "6.30",
+      "selectedDepth_m": [
+        0,
+        199.8
+      ],
+      "registeredThicknessByCode_m": {
+        "l": 15.800000000000011,
+        "ql": 99.5,
+        "qs": 15.5,
+        "s": 64.5,
+        "v": 4.5
+      },
+      "candidateTiles": [
+        "29-319"
+      ],
+      "displayHits": [
+        {
+          "tile": "29-319",
+          "catalogIndex": 74,
+          "origin": "n189740:g10369",
+          "displayBoundaryDistance_m": 43.237,
+          "classification": {
+            "source": "soil-new",
+            "surface": "ES",
+            "depth": "ES",
+            "symbol": "ES",
+            "soilLabel": "ES - Flyvesand",
+            "landscape": "Flyvesandsflade",
+            "landscapeCode": 33,
+            "landscapeEnglish": "Aeolian plain",
+            "conflictSymbols": "",
+            "potential": "possible",
+            "material": "aeolian-cover",
+            "process": "cover",
+            "accessibility": "covered",
+            "confidence": "weak"
+          }
+        }
+      ],
+      "amberOrPloughLayerVerified": false
+    }
+  ]
+}

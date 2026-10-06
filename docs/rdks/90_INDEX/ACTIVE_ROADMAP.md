@@ -1,3 +1,64 @@
+# Releasekandidat 4.0.544 – Jordrav, 2026-10-06
+
+Den nationale Jordravleverance er integreret med nyere main e98dcdd7 via
+cc96b7d3. Main-kode for RavScore, vejr/private data og kystgeometri er
+bevaret. Kun almindelig releaseversionering må følge. Model 0.2 bevares,
+og JB2024, DHM2007/10 m, landsdækkende Jupiter, 16 kildebundne profiler og
+syv undersøgelsesprioriteter er implementeret. Alle 196 filer, 4.652
+kombinationer og 505.834 fragmenter er kontrolleret; 126 geologiske rækker
+bevarer to ukendte grænser og seks profiler uden geologi. Jordbund og
+boringsdybde giver ingen automatisk ravbonus eller pløjeadgang.
+
+Ejerens punkt 4 om automatisk dagens nypløjet/bar/regnvasket jord er
+udgået. Dette er en scopebeslutning, ikke et uafsluttet udviklingspunkt.
+Lokal Chrome/luftfoto/DA/DE/EN/390 px og 50 målrettede tests består.
+Webhåndbog 90.1 er nu indarbejdet i den eksisterende håndbog uden at
+erstatte tidligere afsnit. 99 faktiske Chrome-checks på 4.0.544 består,
+inkl. regressioner og live kontekst. Kildegate, RDKS/sikkerhed, 428 kapitler,
+68 Pages-moduler og versions-/isolationskontrol består. Exact-head CI,
+providerfri DEC-0148-deploy og internetkontrol mangler endnu. Ingen fysisk telefon
+eller lokale rav-/pløjelagsmålinger opfindes. Arbejdet fortsætter autonomt.
+
+Plan/evidens: docs/ai/JORDRAV_AUTONOMOUS_WORKPLAN.md og
+docs/research/JORDRAV_NATIONAL_JORDBUND_PROFILER_2026-10-06.md.
+De følgende daterede lokale faser og main-checkpoints er historisk evidens;
+deres tidligere leveringsstatus gælder ikke automatisk denne kandidat.
+
+# AKTUEL JORDRAVRETNING – national model 0.2 – 2026-10-05
+
+**Seneste fortsættelse:** National fysisk materialediagnose, konkret
+klikvejledning og valgbare landsdækkende Marker 2026-omrids er implementeret
+lokalt. Den tidligere manglende interaktive markkontekst er løst for
+WMS-omrids. JB/afgrøder, HV-underkoders lokale variation og empirisk
+blotlægning/lagadgang er åbne. Ingen nye ravklasser eller fundprocenter;
+alle model-/datasetbytes bevares. Fire kontrakttests/otte nye Chrome-
+checks PASS. Nyere main/exact-head CI og publicering er fortsat særskilt.
+Se docs/research/JORDRAV_SOEGEBARHED_MATERIALE_MARKER_2026-10-05.md.
+
+Hele det tilgængelige nationale jordarts-/landskabsgrundlag behandles og
+farves efter samme kvalitative procesregler. Begrænsningen til enkelte
+guidecases er erstattet. Empirisk ravtilførsel, mængde, lokale lagkontakter
+og nutidig markadgang er særskilte åbne målinger, ikke uafsluttet national
+kode-/modelbehandling. Ingen fundprocenter eller stedbonus.
+Fælles webpublicering kræver nyere main, exact-head CI og koordineret
+håndbogsintegration. Dette arbejde er lokal forskningsleverance.
+Rapport: `docs/research/JORDRAV_NATIONAL_MODEL_0_2.md`.
+
+**Tidligere roadmapstatus nedenfor er historik.**
+
+# AKTUEL JORDRAVRETNING – 2026-10-04
+
+Lokal kortprototype med begge baggrunde og fem regionale cases foreligger.
+Pløjning/regn og GEUS' kortlægning under pløjelaget er adskilt i forklaringerne.
+Read-only national diagnose viser mulige miljøer uden for forhøjet fokus.
+Næste faglige trin er regional korrelation af tilførsel, modtagerlag og dybde
+samt forbindelsen til pløjelaget; tidligere fund er ikke en forudsætning.
+Ingen faste regnbonusser, nationale ravprocenter eller automatisk opgradering.
+Nyere main/RDKS, exact-head CI og fysisk mobil er åbne før fælles levering.
+Detaljer: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
+
+# AKTUELT TILLÆG – 2026-10-03 11:15 DK – konkret CP-ydrekalderfejl isoleret i ikke-leveret541
+
 # NYESTE – 2026-10-05 – lokal 4.0.543: kun vandstand fra dkss_lf på syv kystzoner
 
 Ejeren har godkendt, at de præcise syv zoner må hente verificeret vandstand

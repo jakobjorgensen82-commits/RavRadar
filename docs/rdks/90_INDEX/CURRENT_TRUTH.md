@@ -1,3 +1,258 @@
+# Releasekandidat 4.0.544 – Jordrav, 2026-10-06
+
+Den nationale Jordravleverance er integreret med nyere main e98dcdd7 via
+cc96b7d3. Main-kode for RavScore, vejr/private data og kystgeometri er
+bevaret. Kun almindelig releaseversionering må følge. Model 0.2 bevares,
+og JB2024, DHM2007/10 m, landsdækkende Jupiter, 16 kildebundne profiler og
+syv undersøgelsesprioriteter er implementeret. Alle 196 filer, 4.652
+kombinationer og 505.834 fragmenter er kontrolleret; 126 geologiske rækker
+bevarer to ukendte grænser og seks profiler uden geologi. Jordbund og
+boringsdybde giver ingen automatisk ravbonus eller pløjeadgang.
+
+Ejerens punkt 4 om automatisk dagens nypløjet/bar/regnvasket jord er
+udgået. Dette er en scopebeslutning, ikke et uafsluttet udviklingspunkt.
+Lokal Chrome/luftfoto/DA/DE/EN/390 px og 50 målrettede tests består.
+Webhåndbog 90.1 er nu indarbejdet i den eksisterende håndbog uden at
+erstatte tidligere afsnit. 99 faktiske Chrome-checks på 4.0.544 består,
+inkl. regressioner og live kontekst. Kildegate, RDKS/sikkerhed, 428 kapitler,
+68 Pages-moduler og versions-/isolationskontrol består. Exact-head CI,
+providerfri DEC-0148-deploy og internetkontrol mangler endnu. Ingen fysisk telefon
+eller lokale rav-/pløjelagsmålinger opfindes. Arbejdet fortsætter autonomt.
+
+Plan/evidens: docs/ai/JORDRAV_AUTONOMOUS_WORKPLAN.md og
+docs/research/JORDRAV_NATIONAL_JORDBUND_PROFILER_2026-10-06.md.
+De følgende daterede lokale faser og main-checkpoints er historisk evidens;
+deres tidligere leveringsstatus gælder ikke automatisk denne kandidat.
+
+# AKTUELT JORDRAVCHECKPOINT – national model 0.2 – 2026-10-05
+
+**2026-10-06: supplerende kontekst og national undersøgelsesprioritet lokalt
+implementeret.** Alle 196 filer/4.652 kombinationer/505.834 fragmenter har
+fem kædeled og syv undersøgelsesprioriteter. JB2024 ved faktisk kliksted,
+terrænskygge 2005–2007/10 m, landsdækkende Jupiter og 16 profiler/126 rækker
+er integreret. Seks profiler mangler geologi; to rækker mangler grænse.
+Live Chrome/luftfoto/DA/DE/EN/390 px PASS; fysisk telefon, CI og produktion
+uafklaret. Model-0.2-data, farver, RavScore og vejr bevares. Automatisk
+aktuel pløjning/bar/regnvasket jord er udgået. Næste er nyere main/release.
+Analyse: docs/research/JORDRAV_NATIONAL_JORDBUND_PROFILER_2026-10-06.md.
+
+**Aktivt autonomt mandat 2026-10-06:** Ejeren bestiller hele det resterende
+arbejde frem til færdiggørelse, inkl. sikker publicering. Punkt 4 om
+nypløjet/bar/regnvasket jord nu er efterfølgende udgået. Dette erstatter
+tidligere lokal-only mandat; hidtidig evidens bliver ikke produktionsbevis.
+Følg docs/ai/JORDRAV_AUTONOMOUS_WORKPLAN.md. Ingen ny dataintegration eller
+publicering er endnu verificeret; den faglige videreanalyse er aktiv.
+
+**Slutkontrol for landskabsform og laghistorie:** 17 modelcases, fem
+artifacttests, 4+4+4+4 kontrakter og 34 nye + 56 eksisterende faktiske
+Chrome-checks PASS. Sourcegate/114 browserfiler, RDKS/sikkerhed, 64 Pages-
+moduler, versionsimports og 419 kapitler PASS. Tre aktuelle screenshots
+er visuelt læst. Beskyttet path-diff er tom; ingen CI eller produktion.
+Kvittering: docs/research/jordrav/landscape-validation-2026-10-05.json.
+
+**Nyeste fortsættelse – landskabsform og laghistorie:** Ejerens *fortsæt*
+er omsat til præcise landskabsnavne og 27 formtilpassede undersøgelsesforløb
+for alle 33 navngivne former plus ikke-kortlagt. Alle 196 filer, 4.652
+forklaringer og 505.834 fragmenter er SHA-læst. 51 forklaringer/5.604
+fragmenter har hævet senglacial form sammen med postglacial øvre gruppe;
+det udløser en lokal undersøgelseshypotese, ingen dato, ravbonus eller
+jagtbarhed. Navn/kode bindes samlet: kode 50 har to originale navne.
+Selvstændig vejledning 0.1.0 supplerer lagadgang; model 0.2/app 4.0.541,
+dataset og geologiske farver bevares. Lokal ravtilførsel, lagkontakt og
+dagens blotlægning er fortsat åbne. DA/DE/EN, mobil, filtre, gemte links
+og lilla dybe punkter følger samme kontrakt. Analyse:
+docs/research/JORDRAV_LANDSKABSFORM_LAGHISTORIE_2026-10-05.md.
+Tidligere slutkontroller nedenfor gælder deres respektive iterationer.
+
+**Slutkontrol for lagadgang:** 17 modelcases, fem artifacttests og
+4+4+4 materiale-/visnings-/lagkontrakter samt 20+8+15+13 faktiske Chrome-
+checks PASS. Sourcegate/113 browserfiler, RDKS/sikkerhed, 63 Pages-moduler,
+versionsimports og 419 kapitler PASS. Alle 196 datasetfiler og 505.834
+fragmenter er kontrolleret. Udvalgte nye screenshots er visuelt læst;
+beskyttet path-status er tom. Ingen CI eller produktion. Kvittering:
+docs/research/jordrav/layer-access-validation-2026-10-05.json.
+
+**Seneste fortsættelse – national lagadgang 2026-10-05:** Alle 196
+filer/192 udsnit, 4.652 forklaringer og 505.834 fragmenter er SHA-læst.
+Ny selvstændig lagadgangsvejledning 0.1.0 viser øvre/dybere fysisk materiale
+og konkrete lokale undersøgelsestrin i syv forløb. Panelets ældre brede
+materialefelter er erstattet med fysisk kodebeskrivelse, også for HV-underkoder.
+873 afklarede forskellige lagfragmenter har organisk dybere materiale uden
+organisk øvre materiale; fragmentantal er ikke marker/fund/areal. GEUS-/AU-
+originalmetoder er hentet/hashmålt og visuelt læst: faste teksturintervaller,
+kulstof i 0–30 cm og gentagne symboler giver ingen målt lagkontakt/pløjeadgang.
+Alle materialeflader bevarer uafklaret jagtbarhed; dybe punkter bevarer lilla.
+Model 0.2/app 4.0.541 og beskyttede data er uændrede. Empirisk lagadgang,
+rå dybderasterintegration og faktisk blotlægning forbliver åbne. Lokal
+leverance; ingen CI eller produktion. Analyse: docs/research/JORDRAV_LAGADGANG_2026-10-05.md.
+Ældre kontrolafsnit nedenfor er evidens for deres respektive trin.
+
+**Slutkontrol for kortplanlægning:** 17 modelcases, fem artifacttests, fire materiale- og fire visningskontrakter samt 20+8+15 faktiske Chrome-checks PASS. Sourcegate/112 browserfiler, RDKS/sikkerhed, 62 Pages-moduler, versionsimports og 419 kapitler PASS. Alle 505.834 faktiske fragmentreferencer er entydige. Beskyttede data bevares; ingen CI eller produktion. Efterfølgende tidligere slutkontroller er evidens for deres respektive trin.
+
+**Nyeste fortsættelse – kortplanlægning:** Ejerens *kan det gøres endnu
+bedre?* er omsat til landsdækkende sporfiltre og lokale visningslinks,
+uden nye ravslutninger. Links binder kamera, alle lagvalg og præcis
+fragmentidentitet til dataset-SHA. Ændret/manglende valg vises eksplicit,
+og et gammelt panel ryddes. Fire nye kontrakttests og 15 nye faktiske
+Chrome-checks samt de eksisterende 20+8 checks PASS. Alle 505.834
+detailoprindelser kan gemmes, også originale `?`/`+`-ID'er. Ingen
+dataset-/model-/kyst-/vejrændring, publicering eller fysisk mobilbevis.
+Rapport: docs/research/JORDRAV_KORTPLANLAEGNING_2026-10-05.md.
+Forrige materiale-/markkontrol nedenfor er fortsat evidens for det trin.
+
+**Samlet slutkontrol for denne fortsættelse:** 17 modelcases, fem data-/artifactkontroller, fire søgekontrakter og 20+8 faktiske Chrome-checks PASS. Sourcegate/111 browserfiler, RDKS/sikkerhed, 61 Pages-moduler, versionsimports og 419 håndbogskapitler PASS. Nye screenshots (mark/luftfoto, materialeforklaring, mobil) er visuelt læst. Aktuel 0.2-manifestbinding bevares. Ingen CI eller produktionsbevis.
+
+**Seneste fortsættelse – materiale/marklag 2026-10-05:** National read-only
+diagnose af alle 4.652 forklaringer og 192 udsnit/505.834 features.
+3.489 blå features indeholder marine organiske materialer; 9.919 har
+almindelige sammensatte øvre symboler. Tal er visningsfragmenter, ikke
+marker/fund/areal. Klikpanelet skelner fysisk materiale og lagrelation
+og giver søgeopgaver. HV-L/HV-S har uafklaret underkodevariation.
+Valgbare Marker 2026-rasteromrids gælder hele Danmark på begge baggrunde,
+kun lokale fliser fra zoom 12. Registrering er ikke bar jord/pløjeadgang.
+Ingen attribut-/ejer-/GPS-opslag, ravbonus eller model-/datasetændring.
+Fire kontrakttests og otte nye Chrome-checks PASS; nyt søgevejledningslag
+0.1.0. Forrige mark-ikke-i-runtime-status er erstattet for omrids alene;
+JB/afgrøder og empirisk lagadgang er fortsat åbne. Lokal leverance;
+ingen CI/publicering. Analyse: docs/research/JORDRAV_SOEGEBARHED_MATERIALE_MARKER_2026-10-05.md.
+
+**Afsluttet lokal kontrol 2026-10-05:** Alle 192 udsnit/505.834 features
+og 4.652 forklaringer er beregnet og uafhængigt læst tilbage. Geometri,
+kilde-ID og originale attributter er bevaret. Fire nye klasser farver
+147.722 tidligere generelle flader; fokus viser alle fem muligheder.
+17 modelcases, fem datakontroller, 20 faktiske Chrome-kontroller og
+sourcegate/109 browserfiler PASS. Visuel QA: nationalt kort, Asaa-blå,
+mobil og indlæst luftfoto. RDKS/sikkerhed, 59 Pages-moduler,
+versionsimports og 419 håndbogskapitler PASS. Overblik 11.529.471 byte
+gzip; detaljer 111.648.304 byte. Manifest 5d0a925a04f7… er bundet i UI.
+Kvalitativ national kortanalyse og lokal rettelse er gennemført;
+empirisk ravmængde og markadgang er uverificerede. Ingen CI/publicering.
+
+Ejeren kræver færdig landsdækkende analyse og synlige farveflader; de 11
+navngivne guides alene opfylder ikke mandatet. Dette supersederer den
+foregående frysning af 0.1-reglerne som aktuel leverance. Model 0.2 bruger
+alle nationale materiale-/landskabskombinationer med særskilte marine,
+bassin-, omlejrings- og dæklagsklasser. Generel geologi forbliver ufarvet
+og klikbar. Ingen fund-, sted-, areal- eller afstandsbonus. Nyere kilder
+har samme forrang; det ældre supplement bevares.
+
+238.829 bevarede kildeposter er afstemt mod alle originale SHP/DBF-identiteter
+og attributter. Seks uforklarede øvre værdier bevares uafklarede. Model/data
+0.2 leveres separat fra det bytebevarede 0.1-revisionsspor. Detailgeometri,
+kilde-ID og grænser bevares. Ens øvre/dybere symboler bliver ikke til
+pløjeadgang; jagtbarhed er uafklaret, dæklag særvises, dokumenterede dybe
+punkter bevarer lilla og ikke umiddelbart jagtbart.
+
+App 4.0.541 er uændret. Lokal forskningsleverance; ingen CI, push, fælles
+release, SQL, vejrbygning eller produktionsverifikation i dette arbejde.
+Aktiv webhåndbog er urørt; Markdown og forberedt webtillæg følger 0.2.
+Metode og slutkontrol: `docs/research/JORDRAV_NATIONAL_MODEL_0_2.md`.
+Nedenstående tidligere checkpoints er historik og ikke aktuel modelstatus.
+
+# AKTUELT JORDRAVCHECKPOINT – 2026-10-04
+
+**Nyeste samtaledelta – bredere tidligere kystmarker:** Ejeren forkaster
+den grønne generelle flade og præciserer, at Asaa–Voerså er et eksempel til
+genovervejelse af lignende områder, ikke en lokal særregel. Generel klasse
+er nu ufarvet/klikbar og hedder **Generel geologi · ingen særskilt udpegning**.
+Den betyder hverken ikke analyseret eller ingen rav. Marine flader får
+fortsat generel klasse i de frosne regler; det er en systematisk mangel i
+den særskilte regionale udpegning, ikke en løst prioriteringsmodel.
+Ny native analyse af 199.653 jordartsposter og fem marine landskabstyper
+giver 3.957,025 km² fælles nyere dækning, uden at kalde det rav-/markareal.
+Fem sammenligninger med arkiveret Marker 2026: Hals–Hou, Jerup–Ålbæk,
+Lammefjord, Rødbyfjord og Hjardemål. Asaa er særskilt kontrolcase mellem
+vej og strand; 86,91 % HS/HS og 95,32 % Marin flade i valgt udsnit.
+Originalkontroller PASS; 15 største regionale markpar afviger højst
+7,835 m². Der er 11 DA/DE/EN-guides, uden stedbonus eller klasseændring.
+18 browserchecks, fem data-/modulkontroller, 11 modelcases og sourcegate
+med 109 browserfiler PASS. Rapport: `docs/research/JORDRAV_TIDLIGERE_KYSTMARKER_DANMARK_2026-10-04.md`.
+App 4.0.541/model 0.1.0-prototype og alle producerede data er uændrede.
+Aktiv webhåndbog er urørt; særskilt webtillæg opdateres. Intet push/deploy.
+Nedenstående tidligere checkpoints bevares som dateret historik.
+
+**Forrige analyse – markkontekst:** Stenstrups samme native issøflade er nu
+sammenholdt med arkiverede, offentlige Marker 2026 og Jordbundskort 2024.
+311 markposter overlapper fladen; deres union er 12,853 km² / 66,65 %.
+Udvalgte dyrkningsafgrøder dækker 9,822 km². De fem FT/TS, FP/TL og FT/TL-
+kildeposter har samlet 39,60 ha i dyrkningsudvalget, uden dokumenteret
+pløjeadgang. Publicerede JB-klasser bliver ikke gjort til sikre topjordsprøver;
+815,123 m² kildegrænseoverlap bevares særskilt. Audit og original-SHP/WFS-
+kontrol PASS; figur visuelt læst. Ingen runtime-/klasse-/versionændring.
+Rapport: `docs/research/JORDRAV_MARKKONTEKST_STENSTRUP_2026-10-04.md`.
+JH-015–017 og JORDRAV-008 skærper de fortsat åbne spørgsmål. Ingen ejerfelter
+er hentet. Årsafgrøde er ikke dagens blotlægning; jagtbarhed er uafklaret.
+
+**Forrige UI-ændring – jagtbarhed:** Ejeren har erstattet ønsket om at
+udelade dybe lag med tydelig særvisning. Kortet har farvevalg mellem
+geologisk potentiale og jagtbarhed. Alle nuværende materialeflader har
+uafklaret jagtbarhed; ens GEUS-symboler omkring én meter beviser ikke
+adgang ved pløjning. To allerede kildekontrollerede Jupiterprofiler vises
+som lilla punkteksempler med registrerede dybder og teksten **ikke
+umiddelbart jagtbart**. De angiver ingen ravforekomst eller arealudbredelse.
+Dybe punkter kan skjules separat. Det er lokal præsentationskode; frosne
+regler, producerede flader og app-/modelversion er uændrede.
+Metode og afgrænsning: `docs/research/JORDRAV_JAGTBARHED_DYBDE_2026-10-04.md`.
+Seneste lokal kontrol: 15 browserchecks, fem datakontroller, 11 modelcases
+og source-critical med 109 browserfiler PASS; Pages-modulclosure 59 PASS.
+De nye dybdevisninger er visuelt gennemgået på desktop og 390 px mobil.
+Tidligere 12-check/ingen-UI-ændring-oplysninger nedenfor er dateret historik.
+
+Offentlig primærlitteratur og faktiske GEUS-filer er undersøgt; rapporten
+opstiller geografiske muligheder og en kvalitativ potentialemodel. Ejeren
+har fastlagt **Almindeligt kort / Luftfoto**, geologisk udledning uden
+tidligere fund som adgangskrav og ældre jordartskort som supplement.
+Rapport: `docs/research/JORDRAV_POTENTIALE_DANMARK_2026-10-04.md`.
+Mandat, audit og næste trin: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
+Gren `codex/jordrav-geologisk-analyse`, analysebaseline
+`bbc3c79fe555dffbff4a88af8cdf54573953efdb`, version 4.0.541. Frisk main ved
+slutkontrol 10:46 DK var `d778ff28c84606a93364ce112fecce4152182649`;
+én main-kørsel var aktiv og tre stod i kø. Nyere RDKS skal integreres før
+en senere fælles levering; ingen merge/deploy foretages her.
+Den lokale Jordrav-prototype er nu implementeret med begge baggrunde;
+192 native geometripartitioner, model-/filbinding, 15 browserkontroller
+og den produktkritiske sourcegate er lokalt PASS. Reglerne står i
+`data/jordrav/model-rules.json`, kode-/metodebeskrivelse i
+`docs/research/JORDRAV_PROTOTYPE_0_1.md`. Ingen CI-/produktionsverifikation
+eller publicering påstås. Dette checkpoint gælder jordravarbejdet;
+vejrstatus kræver sin egen friske evidens.
+
+Fortsat arbejde før ejerens hjemkomst: fem regionale sedimentkæder og
+en kildebaseret guide er implementeret på DA/DE/EN, sammen med fokus
+på forhøjet procespotentiale. Regionsvalg flytter kun visningen; model,
+datasæt og klasser er uændrede. Zoom-/navigationsfund er rettet og måltestet.
+Tilgængelighed: localhost er ikke en delt telefonadresse; lokal preview
+skal genstartes ved næste visning. Ingen publicering eller automation.
+
+Fortsat faglig efterprøvning uden ejerens kortreview: to offentlige
+Jupiterprofiler er læst i den aktuelle webgrænseflade og sammenholdt med
+SHA-bundne visningsflader. Borings- og laganalyse/JH-010–011 samt gentagelig
+read-only audit er tilføjet. Lagidentitet, prøvedybde og pløjerelevans er
+adskilt. Dette var først rent analysearbejde; seneste ejerbeslutning
+har efterfølgende autoriseret to statiske dybdepunkter i UI. Ingen
+landsdækkende/live boringsintegration, klassebonus eller ny release.
+Rapport: `docs/research/JORDRAV_BORINGER_LAGFORBINDELSE_2026-10-04.md`.
+Main-/writeroplysningen 10:46 ovenfor er dateret historik, ikke ny aflæsning.
+
+Seneste fordybelse: Stenstrups native issøpolygon er skåret med 149 nyere
+jordartsposter og efterprøvet mod originale SHP/DBF-filer. TS/TL-nabogrænser,
+yngre dække og sandmodtagere er konkretiseret som JH-012–014. Kun 0,43 % af
+den valgte flade har den eksisterende forhøjede klasse; alle klasser bør
+vises ved undersøgelse af egnen. Analysefigur/audits er lokale; ingen nye
+fundsandsynligheder, klasse-/dataændringer eller ny release.
+Rapport: `docs/research/JORDRAV_STENSTRUP_KONTAKTER_2026-10-04.md`.
+
+Yderligere fordybelse og ejerens markpræcisering: pløjningens blotlægning
+og regnens afvaskning/synlighed vurderes særskilt fra ravtilførsel. GEUS'
+øvre jordartssymbol er en geologisk aflejring under pløjelaget, ikke en prøve
+af markens ravindhold. UI og markguide på DA/DE/EN er præciseret. Vendsyssels
+tidligere kyster er femte guidecase JH-009. En read-only diagnose af 192
+udsnit/505.834 visningsfragmenter belyser miljøer uden for fokus; den ændrer
+ingen klasser. Generaliseret visningsareal er adskilt fra native kildeareal.
+Analyse: `docs/research/JORDRAV_TRANSPORT_PLOEJELAG_2026-10-04.md`.
+12 lokale browserkontroller PASS; ingen ny appversion, model-/datasætændring
+eller deploy.
+
 # NYESTE – 2026-10-05 – feltdækning og lokal reservekørettelse
 
 Den senest kontrollerede offentlige 12Z-generation har 371165 gyldige felter

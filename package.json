@@ -1,9 +1,11 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.543",
+  "version": "4.0.544",
   "type": "module",
   "scripts": {
+    "test:jordrav": "node scripts/test-jordrav.mjs",
+    "test:jordrav:browser": "node scripts/test-jordrav-browser.mjs",
     "update:weather": "node scripts/update-weather.mjs",
     "update:dmi": "node scripts/update-weather.mjs",
     "hydrate:legacy-candidate-g-bootstrap": "python scripts/hydrate-deployed-weather.py --legacy-candidate-g-bootstrap --base-url https://jakobjorgensen82-commits.github.io/RavRadar",

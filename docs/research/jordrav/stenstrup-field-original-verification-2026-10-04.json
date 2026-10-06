@@ -1,0 +1,71 @@
+{
+  "status": "PASS",
+  "scope": "Original coordinates, alternate overlay order, source privacy/identity and numerical agreement; no amber or huntability verification",
+  "scriptSha256": "9eb6511c4157603a8657467466dc1221972335cc3b5b295c5edc6065250c881b",
+  "auditSha256": "f593e8610960c0013e4a95d7ee01541cf59f6a44570f17fe2b5c481fc3ff0210",
+  "geometrySha256": "9e913a80ec86f8266c2420b3f3248ec959b4b720e4a086dfa27288c4def64b1c",
+  "sourceFeatures": {
+    "fields": 641,
+    "publishedJB": 8284
+  },
+  "originalLake_km2": 19.28439510798124,
+  "originalRegisteredFields_km2": 12.853242730501158,
+  "originalSelectedCropContext_km2": 9.821827215852437,
+  "originalMinusNative": {
+    "registeredFields_m2": -10.193651450797915,
+    "selectedCropContext_m2": -8.75314756296575,
+    "publishedJBCoverage_m2": -11.767324218526483
+  },
+  "geologyFieldAreaDeltas": [
+    {
+      "upper": "DS",
+      "originalMinusNative_m2": -0.5792378999904031
+    },
+    {
+      "upper": "FL",
+      "originalMinusNative_m2": -0.3134528355722068
+    },
+    {
+      "upper": "FP",
+      "originalMinusNative_m2": -1.9744851920986548
+    },
+    {
+      "upper": "FS",
+      "originalMinusNative_m2": 0.1128748384071514
+    },
+    {
+      "upper": "FT",
+      "originalMinusNative_m2": 0.8026277950266376
+    },
+    {
+      "upper": "MG",
+      "originalMinusNative_m2": 0.792840040725423
+    },
+    {
+      "upper": "ML",
+      "originalMinusNative_m2": -0.8742395550652873
+    },
+    {
+      "upper": "S",
+      "originalMinusNative_m2": -1.7125817191554233
+    },
+    {
+      "upper": "TL",
+      "originalMinusNative_m2": 1.361794930882752
+    },
+    {
+      "upper": "TS",
+      "originalMinusNative_m2": -7.8097921358421445
+    }
+  ],
+  "originalMinusNativeContactOnFields_m": -0.05575373382816906,
+  "invalidOriginalSoilShapesRepairedInMemory": [
+    24506
+  ],
+  "numericalBounds": {
+    "areaDelta_m2": 25,
+    "contactDelta_m": 1
+  },
+  "ownerFieldsRequestedOrStored": false,
+  "sourceFilesModified": false
+}

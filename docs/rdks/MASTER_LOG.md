@@ -1,3 +1,72 @@
+# Releasekandidat 4.0.544 – Jordrav, 2026-10-06
+
+Den nationale Jordravleverance er integreret med nyere main e98dcdd7 via
+cc96b7d3. Main-kode for RavScore, vejr/private data og kystgeometri er
+bevaret. Kun almindelig releaseversionering må følge. Model 0.2 bevares,
+og JB2024, DHM2007/10 m, landsdækkende Jupiter, 16 kildebundne profiler og
+syv undersøgelsesprioriteter er implementeret. Alle 196 filer, 4.652
+kombinationer og 505.834 fragmenter er kontrolleret; 126 geologiske rækker
+bevarer to ukendte grænser og seks profiler uden geologi. Jordbund og
+boringsdybde giver ingen automatisk ravbonus eller pløjeadgang.
+
+Ejerens punkt 4 om automatisk dagens nypløjet/bar/regnvasket jord er
+udgået. Dette er en scopebeslutning, ikke et uafsluttet udviklingspunkt.
+Lokal Chrome/luftfoto/DA/DE/EN/390 px og 50 målrettede tests består.
+Webhåndbog 90.1 er nu indarbejdet i den eksisterende håndbog uden at
+erstatte tidligere afsnit. 99 faktiske Chrome-checks på 4.0.544 består,
+inkl. regressioner og live kontekst. Kildegate, RDKS/sikkerhed, 428 kapitler,
+68 Pages-moduler og versions-/isolationskontrol består. Exact-head CI,
+providerfri DEC-0148-deploy og internetkontrol mangler endnu. Ingen fysisk telefon
+eller lokale rav-/pløjelagsmålinger opfindes. Arbejdet fortsætter autonomt.
+
+Plan/evidens: docs/ai/JORDRAV_AUTONOMOUS_WORKPLAN.md og
+docs/research/JORDRAV_NATIONAL_JORDBUND_PROFILER_2026-10-06.md.
+De følgende daterede lokale faser og main-checkpoints er historisk evidens;
+deres tidligere leveringsstatus gælder ikke automatisk denne kandidat.
+
+# FORSKNINGSTILLÆG – 2026-10-04 – Jordravkort på 4.0.541
+
+Seneste ejerpræcisering: Asaa–Voerså er et eksempel til bredere analyse,
+ikke lokal særrettelse. Generel grøn er fjernet som overflødig; ufarvet
+klikbar geologi er ingen særskilt udpegning og siger intet om forskning
+eller ravfravær. National native marine diagnose og fem regioner med
+faktisk markkontekst er udført; 11 DA/DE/EN-guider. Originalkontroller og
+18 browserchecks, fem datakontroller, 11 modelcases og sourcegate PASS.
+Frosne regler og producerede data er uændrede; stærkere regional
+prioritering og faktisk lagadgang er åbne. JH-018–025/JORDRAV-009.
+Rapport: `docs/research/JORDRAV_TIDLIGERE_KYSTMARKER_DANMARK_2026-10-04.md`.
+Ingen ny app-/modelversion, push, vejrindsamling eller deploy. De tidligere
+kontroltal nedenfor er historik fra de tidligere lokale arbejdsafsnit.
+
+Geografiske muligheder, geologisk potentialemodel, faktiske GEUS-filaudits
+og kortdesign med **Almindeligt kort / Luftfoto** er dokumenteret. Direkte
+fund er støtte, ikke obligatorisk krav til en potentiel zone. Ældre jordarter
+indgår efter ejerinstruktion; udeladelsesforslaget er erstattet.
+Rapport: `docs/research/JORDRAV_POTENTIALE_DANMARK_2026-10-04.md`.
+Checkpoint: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
+Gren `codex/jordrav-geologisk-analyse`; forskning og projektets hukommelse
+er udvidet med en selvstændig lokal Jordrav-prototype, materialiserede
+regler, sporbar polygonbygning og målrettede model-/datatests. 192 native
+geometriudsnit, 238.829 kilde-/cacheattributter, 11 modelcases, fire data-
+kontroller, 12 browserkontroller og source-critical-gaten er lokalt PASS.
+National union og for tæt segmenteret eksport er forkastet til fordel for
+klassegrupper inden for adskilte celler. Ingen ny appversion eller deploy.
+Fortsættelsen før ejerens hjemkomst har tilføjet fire regionale kæder og
+en DA/DE/EN-guide med fokusvisning. En faktisk zoom-/regionsnavigationsfejl
+er rettet og browserkontrolleret; model og kildepolygoner er uændrede.
+Localhost-linkets telefonbegrænsning er forklaret og dokumenteret.
+
+Yderligere fordybelse og ejerens markpræcisering: pløjningens blotlægning
+og regnens afvaskning/synlighed vurderes særskilt fra ravtilførsel. GEUS'
+øvre jordartssymbol er en geologisk aflejring under pløjelaget, ikke en prøve
+af markens ravindhold. UI og markguide på DA/DE/EN er præciseret. Vendsyssels
+tidligere kyster er femte guidecase JH-009. En read-only diagnose af 192
+udsnit/505.834 visningsfragmenter belyser miljøer uden for fokus; den ændrer
+ingen klasser. Generaliseret visningsareal er adskilt fra native kildeareal.
+Analyse: `docs/research/JORDRAV_TRANSPORT_PLOEJELAG_2026-10-04.md`.
+12 lokale browserkontroller PASS; ingen ny appversion, model-/datasætændring
+eller deploy.
+
 # NYESTE – 2026-10-05 – ejerbestilt analyse og rettelse af dækningsgrad
 
 Ejeren kræver årsagen til dårligere dækningsgrad rettet. National kontrol

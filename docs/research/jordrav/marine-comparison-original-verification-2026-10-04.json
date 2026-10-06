@@ -1,0 +1,265 @@
+{
+  "status": "PASS",
+  "scope": "Independent original-reader check of 15 leading regional pairs and crop unions; not an independent national census or amber validation",
+  "auditSha256": "89cbdf63298099bddd874e2eeb692242108a64fccc0a734998558f87c9a3fe5a",
+  "regionDefinitionSha256": "722439a7756548f21d75ffe2e338b142453d7b49126de4f33f04493b5b3327fb",
+  "scriptSha256": "2f33e12aaf7a7b5b3b2b5fd06d82832f7694ef838d7d48d5679e122bd096d56b",
+  "checkedOriginalRecords": {
+    "soil": 1881,
+    "geomorphology": 233
+  },
+  "invalidOriginalShapesRepairedInMemoryOnly": [
+    {
+      "layer": "soil",
+      "sourceId": 27153,
+      "reason": "Ring Self-intersection[649401.6885 6064325.2853]"
+    },
+    {
+      "layer": "soil",
+      "sourceId": 80413,
+      "reason": "Ring Self-intersection[649574.2449 6187004.8244]"
+    },
+    {
+      "layer": "soil",
+      "sourceId": 189759,
+      "reason": "Ring Self-intersection[578583.3122 6377124.7121]"
+    },
+    {
+      "layer": "soil",
+      "sourceId": 190471,
+      "reason": "Ring Self-intersection[582486.741 6377208.2314]"
+    },
+    {
+      "layer": "soil",
+      "sourceId": 192575,
+      "reason": "Ring Self-intersection[580253.0248 6334699.7604]"
+    },
+    {
+      "layer": "soil",
+      "sourceId": 192736,
+      "reason": "Ring Self-intersection[559896.1654 6338537.5085]"
+    },
+    {
+      "layer": "soil",
+      "sourceId": 192849,
+      "reason": "Ring Self-intersection[475018.645 6329732.5059]"
+    },
+    {
+      "layer": "soil",
+      "sourceId": 192998,
+      "reason": "Ring Self-intersection[580390.6037 6317188.71]"
+    },
+    {
+      "layer": "soil",
+      "sourceId": 198734,
+      "reason": "Ring Self-intersection[672111.4835 6072644.7476]"
+    },
+    {
+      "layer": "soil",
+      "sourceId": 199052,
+      "reason": "Ring Self-intersection[653980.7305 6191372.3774]"
+    }
+  ],
+  "numericalBounds": {
+    "regionalPairAreaDelta_m2": 50,
+    "cropUnionDelta_m2": 1,
+    "notPositionalAccuracy": true
+  },
+  "regions": [
+    {
+      "id": "hals-hou",
+      "cropUnionDelta_m2": -1.4901161193847656e-08,
+      "leadingPairs": [
+        {
+          "key": [
+            "HS",
+            "HS",
+            "Marin flade",
+            "possible",
+            "marine-coarse"
+          ],
+          "originalArea_km2": 18.80627728627326,
+          "nativeMinusOriginal_m2": 7.834726739674807
+        },
+        {
+          "key": [
+            "YS",
+            "YS",
+            "Hævet senglacial flade",
+            "possible",
+            "marine-coarse"
+          ],
+          "originalArea_km2": 7.343698603481744,
+          "nativeMinusOriginal_m2": -1.1054817447438836
+        },
+        {
+          "key": [
+            "HP",
+            "HP",
+            "Marin flade",
+            "possible",
+            "marine-fine"
+          ],
+          "originalArea_km2": 4.483672867233401,
+          "nativeMinusOriginal_m2": -3.4502334017306566
+        }
+      ]
+    },
+    {
+      "id": "jerup-aalbaek",
+      "cropUnionDelta_m2": -8.381903171539307e-09,
+      "leadingPairs": [
+        {
+          "key": [
+            "HS",
+            "HS",
+            "Marin flade",
+            "possible",
+            "marine-coarse"
+          ],
+          "originalArea_km2": 1.7348889441317341,
+          "nativeMinusOriginal_m2": -0.33713173400610685
+        },
+        {
+          "key": [
+            "FT",
+            "FT",
+            "Strandvold",
+            "possible",
+            "organic-cover"
+          ],
+          "originalArea_km2": 0.6099167088473976,
+          "nativeMinusOriginal_m2": 1.98715260240715
+        },
+        {
+          "key": [
+            "HS",
+            "HS",
+            "Strandvold",
+            "enhanced",
+            "marine-coarse"
+          ],
+          "originalArea_km2": 0.36666950941357973,
+          "nativeMinusOriginal_m2": 2.660586420330219
+        }
+      ]
+    },
+    {
+      "id": "lammefjord",
+      "cropUnionDelta_m2": -1.4901161193847656e-08,
+      "leadingPairs": [
+        {
+          "key": [
+            "HS",
+            "HS",
+            "Tørlagt marint forland",
+            "possible",
+            "marine-coarse"
+          ],
+          "originalArea_km2": 9.819086791331387,
+          "nativeMinusOriginal_m2": 2.195668613538146
+        },
+        {
+          "key": [
+            "HL",
+            "HL",
+            "Tørlagt marint forland",
+            "possible",
+            "marine-fine"
+          ],
+          "originalArea_km2": 8.56948909091635,
+          "nativeMinusOriginal_m2": 1.6720836479216814
+        },
+        {
+          "key": [
+            "HI",
+            "HI",
+            "Tørlagt marint forland",
+            "possible",
+            "marine-fine"
+          ],
+          "originalArea_km2": 1.8478342376579153,
+          "nativeMinusOriginal_m2": -1.8516579151619226
+        }
+      ]
+    },
+    {
+      "id": "roedbyfjord",
+      "cropUnionDelta_m2": -0.0003509819507598877,
+      "leadingPairs": [
+        {
+          "key": [
+            "ML",
+            "ML",
+            "Tørlagt marint forland",
+            "possible",
+            "till"
+          ],
+          "originalArea_km2": 9.444466844773737,
+          "nativeMinusOriginal_m2": 5.890226261690259
+        },
+        {
+          "key": [
+            "HS",
+            "HS",
+            "Tørlagt marint forland",
+            "possible",
+            "marine-coarse"
+          ],
+          "originalArea_km2": 2.4429441800754392,
+          "nativeMinusOriginal_m2": -1.842075439170003
+        },
+        {
+          "key": [
+            "HL",
+            "HL",
+            "Tørlagt marint forland",
+            "possible",
+            "marine-fine"
+          ],
+          "originalArea_km2": 1.5306123144059804,
+          "nativeMinusOriginal_m2": 4.4725940194912255
+        }
+      ]
+    },
+    {
+      "id": "hjardemaal",
+      "cropUnionDelta_m2": -7.450580596923828e-09,
+      "leadingPairs": [
+        {
+          "key": [
+            "HS",
+            "HS",
+            "Marin flade",
+            "possible",
+            "marine-coarse"
+          ],
+          "originalArea_km2": 3.8678711865483515,
+          "nativeMinusOriginal_m2": -3.2505483510904014
+        },
+        {
+          "key": [
+            "ES",
+            "ES",
+            "Marin flade",
+            "possible",
+            "aeolian-cover"
+          ],
+          "originalArea_km2": 0.6185424390002835,
+          "nativeMinusOriginal_m2": -0.6020002835430205
+        },
+        {
+          "key": [
+            "FT",
+            "HS",
+            "Marin flade",
+            "possible",
+            "organic-cover"
+          ],
+          "originalArea_km2": 0.5723236541178653,
+          "nativeMinusOriginal_m2": -1.3401178653584793
+        }
+      ]
+    }
+  ]
+}

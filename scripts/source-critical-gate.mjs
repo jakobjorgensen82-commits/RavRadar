@@ -18,7 +18,7 @@ for (const [file, field] of [
   assert.equal(JSON.parse(read(file))[field], version, `${file} følger ikke releaseversion ${version}.`);
 }
 
-for (const file of ['index.html', 'about.html', 'admin.html', 'bootstrap.js', 'service-worker.js']) {
+for (const file of ['index.html', 'about.html', 'admin.html', 'jordrav.html', 'bootstrap.js', 'service-worker.js']) {
   assert.ok(read(file).includes(version), `${file} mangler cache-/releaseversion ${version}.`);
 }
 const appSource = read('app.js');
@@ -45,7 +45,7 @@ for (const file of browserSources) {
 }
 assert.deepEqual(syntaxFailures, [], `Browserkoden indeholder syntaksfejl:\n${syntaxFailures.join('\n')}`);
 
-for (const page of ['index.html', 'about.html', 'admin.html']) {
+for (const page of ['index.html', 'about.html', 'admin.html', 'jordrav.html']) {
   for (const match of read(page).matchAll(/(?:src|href)=["']([^"']+)["']/g)) {
     const reference = match[1];
     if (/^(?:https?:|mailto:|tel:|data:|#)/i.test(reference)) continue;
@@ -195,4 +195,5 @@ for (const file of [...browserSources, 'package.json', '.github/workflows/update
   assert.doesNotMatch(read(file), /^(?:<<<<<<<|=======|>>>>>>>)(?: |$)/m, `${file} indeholder uløste merge-markører.`);
 }
 
-console.log(`OK: ${browserSources.length} browserfiler, lokale sideaktiver, versionsbinding og post-data deploygates er intakte.`);
+await import('./test-jordrav.mjs');
+console.log(`OK: ${browserSources.length} browserfiler, lokale sideaktiver, versionsbinding, jordravkontrakt og post-data deploygates er intakte.`);

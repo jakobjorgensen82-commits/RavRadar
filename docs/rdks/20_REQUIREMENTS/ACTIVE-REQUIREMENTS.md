@@ -1,3 +1,137 @@
+# AKTUELT JORDRAVKRAV – 2026-10-05
+
+**Nyeste ejerordre 2026-10-06: hele arbejdet kontinuerligt og autonomt.**
+Resterende lagadgang, stærkere national prioritering, terræn/topjord,
+udbygget dybdekontekst og sikker publicering/mobilkontrol er bestilt.
+Punkt 4 om aktuelle nypløjede/bare/regnvaskede søgeforhold er udtrykkeligt
+udgået. Ingen sådanne automatisk målte tilstande skal udvikles. Offentlige
+kilder og lokale observationspunkter må integreres til de øvrige punkter,
+med skala/dato/usikkerhed og uden falsk rav-, pløje- eller dybdebevis.
+Mandat og plan: docs/ai/JORDRAV_AUTONOMOUS_WORKPLAN.md.
+
+**Seneste ejerordre: fortsæt med den nationale analyse og forbedring.**
+Præcis kortlagt landskabsform og det øvre materiales dannelsesgruppe skal
+adskilles i klikvejledningen. Alle originale navn/kode-par behandles;
+ukendt par får uafklaret vejledning, kode alene må ikke overskrive et
+originalt navn. Hævet eller gammel landskabsform må ikke give målt dato,
+ravkoncentration eller nutidig adgang. En yngre øvre gruppe på en ældre
+form giver en eksplicit hypotese om senere aflejring/omlejring, med
+kortgrænser og registrering som alternativer. Gamle brede kortsymboler
+dateres ikke automatisk via den nyere oversigt. Lokal leverance:
+docs/research/JORDRAV_LANDSKABSFORM_LAGHISTORIE_2026-10-05.md.
+
+**Nyeste ejerordre: fortsæt.** Den nationale videreanalyse omsættes nu
+til en konkret undersøgelsesplan for begge fysiske lag, også begravet
+organisk materiale og vandrette delområder i dybere symboler. Konflikter,
+ældre supplement og marine underkoders uafklarede variation må ikke
+opgraderes til målt pløjeadgang. Ingen fast antaget pløjedybde, JB- eller
+kulstofsandsynlighed må blive ravbonus eller erstatte en lokal lagkontakt.
+Metoder og alle nationale lagpar behandles med særskilt kode-/datasetbinding.
+Lokal implementering og kontrol: docs/research/JORDRAV_LAGADGANG_2026-10-05.md.
+Dette supplerer tidligere kortplanlægning; geologiske farveklasser bevares.
+
+**Nyeste ejerønske: kan det gøres endnu bedre?** Sporfiltre og genfindelige
+visningslinks er den konkrete næste forbedring. Samme geologiske
+farveklasse filtreres i hele Danmark og lokale detaljer. Valg gendannes
+kun mod samme datasetbinding og præcise fragment; ændret eller manglende
+valg må ikke blive til en anden flade eller gammel forklaring. Ingen
+ny ravrangliste eller ændring af lagadgang. Lokal implementering:
+docs/research/JORDRAV_KORTPLANLAEGNING_2026-10-05.md.
+
+**Seneste ejerordre: analyser videre og forbedre det.** Den nationale
+materiale-/lagdiagnose og klikvejledning gælder hele kortgrundlaget, også
+ufarvet geologi. Marine tørv/gytje og bindestregsblandinger må ikke blive
+til ensartet sand eller lodret dække. Valgbare officielle Marker 2026-
+omrids giver markkontekst i hele Danmark; registrering giver ingen
+automatisk pløjeadgang, ravbonus eller tilførsel. Kun lokal rastervisning,
+ingen nye attribut-/ejer-/GPS-opslag. Tidligere marklag-ikke-i-runtime-
+status er erstattet for WMS-omrids; JB/afgrøder forbliver forskning.
+Model 0.2 og produceret geometri bevares. Lokal implementering og analyse:
+docs/research/JORDRAV_SOEGEBARHED_MATERIALE_MARKER_2026-10-05.md.
+
+## Bindende seneste mandat: hele Danmark og synlige udpegninger
+
+Ejeren har udtrykkeligt afvist en rettelse begrænset til enkelte
+sammenligningsområder og vejledninger uden farve. Den nationale kvalitative
+analyse skal gennemføres for alle faktisk kortlagte materialer og
+landskaber og omsættes til farvede polygoner. Dette erstatter den tidligere
+frysning af model 0.1 som leverance. Ny model 0.2 adskiller transport,
+marine modtagere, bassiner, omlejring og dæklag. Geologisk mulighed er
+ikke verificeret ravmængde eller pløjeadgang. Alle faktiske kodeværdier
+behandles, også eksplicit uafklarede originalanomalier; ingen lokal bonus.
+Rapport: `docs/research/JORDRAV_NATIONAL_MODEL_0_2.md`.
+
+**Historiske præciseringer nedenfor:** deres daværende åbne nationale model er supersederet af mandatet ovenfor.
+
+**Seneste ejerpræcisering – eksemplet skal generaliseres:** Asaa–Voerså
+er oplyst som kystnært markrav mellem forbindelsesvej og strand. Det skal
+bruges til at genoverveje mulige ravkæder i lignende områder i Danmark,
+ikke kun som lokal rettelse. Ingen automatisk sted-/mark-/marin bonus.
+Marine flader, gamle kystkontakter, finere modtagere og senere dække skal
+vurderes gennem deres egne tilførsels-, bevarings- og lagadgangsforløb.
+Tidligere fund er fortsat støtte og ikke adgangskrav til nye muligheder.
+Ejeren forkaster den grønne generelle flade, der fylder næsten hele
+landkortet. Generel klasse er nu ufarvet, klikbar og forklaret som ingen
+særskilt udpegning; den må ikke betyde ikke analyseret eller ingen rav.
+National native diagnose og fem mark-/kystcases er udført; 11 guides
+forklarer muligheder uden at ændre klasser. Den stærkere nationale
+prioriteringsmodel er fortsat åben. Rapporter:
+`docs/research/JORDRAV_ASAA_VOERSAA_2026-10-04.md` og
+`docs/research/JORDRAV_TIDLIGERE_KYSTMARKER_DANMARK_2026-10-04.md`.
+
+**Seneste ejerbeslutning – jagtbarhed og dybe lag:** Det primære mål er rav,
+som ligger blotlagt eller kan bringes frem ved jordbearbejdning. Ejerens
+første ønske om at udelade dybe lag er udtrykkeligt erstattet: de må gerne
+vises, men skal meget tydeligt mærkes som dybe og ikke umiddelbart
+jagtbare, medmindre lokal blotlægning eller omlejring er belyst.
+Geologisk potentiale og praktisk jagtbarhed holdes adskilt. Ukendt dybde
+må hverken blive til dokumenteret pløjeadgang eller kategorien dybt.
+Lokal UI viser nu separat jagtbarhedsvisning, gråblå uafklarede flader og
+lilla dybdepunkter med registrerede intervaller. Ingen fast pløjedybde,
+fundprocent, boringsbuffer eller dybdebonus. Kendte ravfund er stadig ikke
+et adgangskrav. Metode: `docs/research/JORDRAV_JAGTBARHED_DYBDE_2026-10-04.md`.
+
+Selvstændig jordravfane med **Almindeligt kort / Luftfoto**; potentialelag,
+zoom, valgt område og forklaring bevares ved baggrundsskift. Modellen skal
+udlede geologiske muligheder også uden tidligere ravfund i den enkelte
+polygon. Potentiale, sikkerhed og overfladerelevans vurderes særskilt.
+Is/smeltevand, istryk, tidligere hav og kronologisk omlejring indgår;
+overlappende isrande giver ikke automatisk bonus eller fundprocenter.
+
+Fortsat arbejde under dette mandat: Stenstrups geologi er suppleret med
+faktiske Marker 2026 og publiceret JB2024 som forskningskontekst. Afgrødeår
+bliver ikke til dagens pløjning; jordbundsmodel bliver ikke et uafhængigt
+ravbevis eller sikker dybde. JH-015–017 konkretiserer videre efterprøvning.
+Mark-/JB-lag er endnu ikke integreret i den interaktive prototype.
+Se `docs/research/JORDRAV_MARKKONTEKST_STENSTRUP_2026-10-04.md`.
+
+Det ældre 1:200.000-jordartskort bruges som supplement efter ejerens
+udtrykkelige instruktion trods de konstaterede særlige vilkår. Nyere kort
+har forrang; kilde, målestok og usikkerhed bevares. Udeladelsesforslaget er
+erstattet. Statisk lazy-load, ingen ny funddatabase/læring/SQL/vejrscheduler.
+Mandat og evidens: `docs/rdks/30_RESEARCH/JORDRAV-KORT-2026-10-04.md`.
+Forskning og lokal kortprototype på 4.0.541; ingen ny apprelease.
+Første model viser forhøjet **procespotentiale**, muligt potentiale,
+begrænset overfladestøtte og uafklaret hver for sig. Den stærkere regionale
+prioritering er fortsat et efterprøvningspunkt, ikke opnået kalibrering.
+Begge baggrunde, bevaret valg og faktiske geometrier er implementeret og
+lokalt browserkontrolleret. CI-/main-integration og publicering er åbne.
+Ejeren ønsker yderligere arbejde før hjemkomst. Fire regionale ravkæder
+og et fokusvalg er derfor lokalt tilføjet som forklarings-/visningsfunktioner.
+Ingen bonus, nye potentialegrænser eller model-/datasætændring. Telefonens
+fjernadgang giver ikke i sig selv adgang til en localhost-preview.
+
+Yderligere fordybelse og ejerens markpræcisering: pløjningens blotlægning
+og regnens afvaskning/synlighed vurderes særskilt fra ravtilførsel. GEUS'
+øvre jordartssymbol er en geologisk aflejring under pløjelaget, ikke en prøve
+af markens ravindhold. UI og markguide på DA/DE/EN er præciseret. Vendsyssels
+tidligere kyster er femte guidecase JH-009. En read-only diagnose af 192
+udsnit/505.834 visningsfragmenter belyser miljøer uden for fokus; den ændrer
+ingen klasser. Generaliseret visningsareal er adskilt fra native kildeareal.
+Analyse: `docs/research/JORDRAV_TRANSPORT_PLOEJELAG_2026-10-04.md`.
+12 lokale browserkontroller PASS; ingen ny appversion, model-/datasætændring
+eller deploy.
+
 # NYESTE – 2026-10-05 – lokal 4.0.543: kun vandstand fra dkss_lf på syv kystzoner
 
 Ejeren har godkendt, at de præcise syv zoner må hente verificeret vandstand

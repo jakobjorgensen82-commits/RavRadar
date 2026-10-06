@@ -1,0 +1,504 @@
+{
+  "source": "https://kort.vd.dk/server/rest/services/Grunddata/Jordartskort_GEUS/MapServer/layers?f=pjson",
+  "sourceSha256": "914b9edf961d748b663ba8383a0f02ff2971036b3eddd835ba9e000e8d350c82",
+  "retrievedOn": "2026-10-04",
+  "scope": "Public renderer labels only; no amber, age or depth verification",
+  "layers": [
+    {
+      "id": 1,
+      "name": "Jordartskort 1:25.000",
+      "entries": [
+        {
+          "code": "FG",
+          "label": "FG - Ferskvandsgrus"
+        },
+        {
+          "code": "FS",
+          "label": "FS - Ferskvandssand"
+        },
+        {
+          "code": "FI",
+          "label": "FI - Ferskvandssilt"
+        },
+        {
+          "code": "FL",
+          "label": "FL - Ferskvandsler"
+        },
+        {
+          "code": "FP",
+          "label": "FP - Ferskvandsgytje"
+        },
+        {
+          "code": "FT",
+          "label": "FT - Ferskvandstørv"
+        },
+        {
+          "code": "FV",
+          "label": "FV - Vekslende tynde ferskvandslag"
+        },
+        {
+          "code": "FK",
+          "label": "FK - Kilde-, mose- og søkalk"
+        },
+        {
+          "code": "FJ",
+          "label": "FJ - Okker og myremalm"
+        },
+        {
+          "code": "FHG",
+          "label": "FHG - Deltagrus"
+        },
+        {
+          "code": "FHS",
+          "label": "FHS - Deltasand"
+        },
+        {
+          "code": "FHL",
+          "label": "FHL - Deltaler"
+        },
+        {
+          "code": "HG",
+          "label": "HG - Saltvandsgrus"
+        },
+        {
+          "code": "HS",
+          "label": "HS - Saltvandssand"
+        },
+        {
+          "code": "HI",
+          "label": "HI - Saltvandssilt"
+        },
+        {
+          "code": "HL",
+          "label": "HL - Saltvandsler"
+        },
+        {
+          "code": "HP",
+          "label": "HP - Saltvandsgytje"
+        },
+        {
+          "code": "HT",
+          "label": "HT - Saltvandstørv"
+        },
+        {
+          "code": "HV",
+          "label": "HV - Vekslende tynde saltvandslag, marsk"
+        },
+        {
+          "code": "HSG",
+          "label": "HSG - Saltvands skalgrus"
+        },
+        {
+          "code": "EK",
+          "label": "EK - Klitsand"
+        },
+        {
+          "code": "ES",
+          "label": "ES - Flyvesand"
+        },
+        {
+          "code": "YG",
+          "label": "YG - Saltvandsgrus"
+        },
+        {
+          "code": "YS",
+          "label": "YS - Saltvandssand"
+        },
+        {
+          "code": "YL",
+          "label": "YL - Saltvandsler"
+        },
+        {
+          "code": "YP",
+          "label": "YP - Saltvandsgytje"
+        },
+        {
+          "code": "TG",
+          "label": "TG - Smeltevandsgrus"
+        },
+        {
+          "code": "TS",
+          "label": "TS - Smeltevandssand"
+        },
+        {
+          "code": "TI",
+          "label": "TI - Smeltevandssilt"
+        },
+        {
+          "code": "TL",
+          "label": "TL - Smeltevandsler"
+        },
+        {
+          "code": "TV",
+          "label": "TV - Vekslende tynde smeltevandslag"
+        },
+        {
+          "code": "ZG",
+          "label": "ZG - Issøgrus"
+        },
+        {
+          "code": "ZS",
+          "label": "ZS - Issøsand"
+        },
+        {
+          "code": "ZI",
+          "label": "ZI - Issøsilt"
+        },
+        {
+          "code": "ZL",
+          "label": "ZL - Issøler"
+        },
+        {
+          "code": "ZV",
+          "label": "ZV - Vekslende lag af issøsedimenter"
+        },
+        {
+          "code": "DG",
+          "label": "DG -  Smeltevandsgrus"
+        },
+        {
+          "code": "DS",
+          "label": "DS - Smeltevandssand"
+        },
+        {
+          "code": "DI",
+          "label": "DI - Smeltevandssilt"
+        },
+        {
+          "code": "DL",
+          "label": "DL - Smeltevandsler"
+        },
+        {
+          "code": "DV",
+          "label": "DV - Vekslende tynde smeltevandslag"
+        },
+        {
+          "code": "MG",
+          "label": "MG - Morænegrus"
+        },
+        {
+          "code": "MS",
+          "label": "MS - Morænsand"
+        },
+        {
+          "code": "MI",
+          "label": "MI - Morænesilt"
+        },
+        {
+          "code": "ML",
+          "label": "ML - Moræneler"
+        },
+        {
+          "code": "MV",
+          "label": "MV - Vekslende tynde morænelag"
+        },
+        {
+          "code": "KMG",
+          "label": "KMG - Kalkmorænegrus"
+        },
+        {
+          "code": "KMS",
+          "label": "KMS - Kalkmorænesand"
+        },
+        {
+          "code": "KML",
+          "label": "KML - Kalkmoræneler"
+        },
+        {
+          "code": "IT",
+          "label": "IT - Ferskvandstørv"
+        },
+        {
+          "code": "QG",
+          "label": "QG - Saltvandsgrus"
+        },
+        {
+          "code": "QS",
+          "label": "QS - Saltvandssand"
+        },
+        {
+          "code": "QL",
+          "label": "QL - Saltvandsler"
+        },
+        {
+          "code": "BY",
+          "label": "BY - Byområde"
+        },
+        {
+          "code": "SØ",
+          "label": "SØ - Ferskvand"
+        },
+        {
+          "code": "HAV",
+          "label": "HAV - Hav"
+        },
+        {
+          "code": "TA",
+          "label": "TA - Teknisk anlæg"
+        },
+        {
+          "code": "RÅ",
+          "label": "RÅ - Råstofgrav"
+        },
+        {
+          "code": "LRÅ",
+          "label": "LRÅ - Lukket råstofgrav"
+        },
+        {
+          "code": "LSL",
+          "label": "LSL - Jordskred"
+        },
+        {
+          "code": "O",
+          "label": "O - Fyld"
+        },
+        {
+          "code": "X",
+          "label": "X - Ukendt lag, oplysninger mangler"
+        },
+        {
+          "code": "IA",
+          "label": "IA - Ingen adgangsret"
+        },
+        {
+          "code": "BK",
+          "label": "BK - Danien bryozokalk, koralkalk"
+        },
+        {
+          "code": "ED",
+          "label": "ED - Eocæn moler"
+        },
+        {
+          "code": "EE",
+          "label": "EE - Eocæn vulkansk aske"
+        },
+        {
+          "code": "G",
+          "label": "G - Grus / sand og grus"
+        },
+        {
+          "code": "GC",
+          "label": "GC - Oligocæn/Miocæn/Pliocæn brunkul"
+        },
+        {
+          "code": "GL",
+          "label": "GL - Oligocæn/Miocæn/Pliocæn glimmerler"
+        },
+        {
+          "code": "GS",
+          "label": "GS - Oligocæn/Miocæn/Pliocæn glimmersand"
+        },
+        {
+          "code": "GV",
+          "label": "GV- Oligocæn/Miocæn/Pliocæn vekslende lag"
+        },
+        {
+          "code": "K",
+          "label": "K - Kalk, kridt og kalksten"
+        },
+        {
+          "code": "KS",
+          "label": "KS - Miocæn kvartssand"
+        },
+        {
+          "code": "LL",
+          "label": "LL - Eocæn ler, plastisk ler"
+        },
+        {
+          "code": "OL",
+          "label": "OL - Oligocæn ler"
+        },
+        {
+          "code": "PKV",
+          "label": "PKV - Prækvartært lag"
+        },
+        {
+          "code": "PL",
+          "label": "PL - Selandien ler, palæocæn ler"
+        },
+        {
+          "code": "PS",
+          "label": "PS - Selandien sand, palæocæn grønsand"
+        },
+        {
+          "code": "RL",
+          "label": "RL - Eocæn Røsnæs ler"
+        },
+        {
+          "code": "S",
+          "label": "S - Sand"
+        },
+        {
+          "code": "SK",
+          "label": "SK - Campanien-Maastrichtien skrivekridt"
+        },
+        {
+          "code": "SL",
+          "label": "SL - Eocæn Søvind mergel"
+        },
+        {
+          "code": "ZK",
+          "label": "ZK - Danien kalk / kalk og flint"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Jordartskort 1:200.000",
+      "entries": [
+        {
+          "code": "ES",
+          "label": "Flyvesand"
+        },
+        {
+          "code": "F",
+          "label": "Ferskvandsdannelser"
+        },
+        {
+          "code": "HV",
+          "label": "Marsk"
+        },
+        {
+          "code": "HSL",
+          "label": "Marint sand og ler"
+        },
+        {
+          "code": "HG",
+          "label": "Strandvolde"
+        },
+        {
+          "code": "MSG",
+          "label": "Morænesand og grus"
+        },
+        {
+          "code": "ML",
+          "label": "Moræneler"
+        },
+        {
+          "code": "DSG",
+          "label": "Smeltevandssand og -grus"
+        },
+        {
+          "code": "DL",
+          "label": "Smeltevandsler"
+        },
+        {
+          "code": "T",
+          "label": "Extramarginale aflejringer"
+        },
+        {
+          "code": "Y",
+          "label": "Ældre havaflejringer"
+        },
+        {
+          "code": "AF",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "BS",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "CV",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "ED",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "EQ",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "GC",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "GL",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "GNG",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "GS",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "HAG",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "JV",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "KA",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "KG",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "KQ",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "KS",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "LL",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "OL",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "PAM",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "PL",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "RG",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "ROG",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "SK",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "SVG",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "VAG",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "ZK",
+          "label": "Prækvartær"
+        },
+        {
+          "code": "SØ",
+          "label": "Søer"
+        },
+        {
+          "code": "FYLD",
+          "label": "Fyld, havne, diger m.m."
+        }
+      ]
+    }
+  ]
+}

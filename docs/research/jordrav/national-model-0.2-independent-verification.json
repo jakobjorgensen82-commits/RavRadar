@@ -1,0 +1,3685 @@
+{
+  "status": "PASS",
+  "scope": "Every national artifact tile and feature; full structure equality to 0.1; overview validity. No amber/access verification",
+  "scriptSha256": "0598c40f9ab76d402be9a28e467cdcfa9564d59b08a46a52cf85b4784f792ab1",
+  "buildAuditSha256": "addfbf173eb4b1df1e6dd89345d165bf079e35ea51aa48bc74141890c0288a0d",
+  "manifestSha256": "5d0a925a04f71e11eaf82feb3d27294be6b1f00bb4de08dfa3ee4ff4e6a2b2a0",
+  "tiles": 192,
+  "features": 505834,
+  "catalogEntries": 4652,
+  "detailStructuresUnchanged": true,
+  "overviewTiles": 192,
+  "classes": {
+    "unresolved": 43864,
+    "coastal": 56696,
+    "possible": 264528,
+    "basin": 28712,
+    "reworked": 37551,
+    "enhanced": 48185,
+    "covered": 24763,
+    "limited": 1535
+  },
+  "sourceFeatureCounts": {
+    "soil-new": 471345,
+    "soil-old": 34489
+  },
+  "landscapeFeatureCounts": {
+    "Antropogent landskab": 2347,
+    "Bundmoræneflade": 111146,
+    "Delta": 297,
+    "Drumlin": 1132,
+    "Dødishul": 418,
+    "Dødislandskab": 72433,
+    "Erosionsdal": 60106,
+    "Flyvesandsflade": 12219,
+    "Grundfjeld": 5136,
+    "Hedeslette": 36017,
+    "Hedeslette dødislandskab": 4994,
+    "Hævet senglacial flade": 8317,
+    "Hævet senglacial strandvold": 726,
+    "Ikke kortlagt": 26368,
+    "Isoverskredet randmoræne": 2012,
+    "Issøbakke": 2011,
+    "Issøflade": 2161,
+    "Kalkmassiv": 2201,
+    "Klit": 12496,
+    "Marin flade": 35397,
+    "Marsk": 1941,
+    "Mose": 15909,
+    "Randmorænebakke": 17461,
+    "Spaltedal": 3449,
+    "Strandvold": 12044,
+    "Sø": 9392,
+    "Søbund": 1131,
+    "Tidevandsdyb": 67,
+    "Tidevandsflade": 542,
+    "Tunneldal": 12665,
+    "Tørlagt ferskvandssø": 272,
+    "Tørlagt marint forland": 2490,
+    "Ås": 1255,
+    "Ældre moræneflade": 29282
+  },
+  "browserFixtures": [
+    {
+      "class": "coastal",
+      "longitude": 9.754295925674178,
+      "latitude": 57.122077665,
+      "origin": "n192998:g7400",
+      "surface": "HS",
+      "landscape": "Marin flade",
+      "displayAreaDegrees2": 0.01388000316763624
+    },
+    {
+      "class": "basin",
+      "longitude": 9.853883388597716,
+      "latitude": 56.535158620000004,
+      "origin": "s19640:g10932",
+      "surface": "F",
+      "landscape": "Hedeslette",
+      "displayAreaDegrees2": 0.0038847885885993764
+    },
+    {
+      "class": "reworked",
+      "longitude": 11.955312251068598,
+      "latitude": 55.08523984,
+      "origin": "n109485:g9630",
+      "surface": "ML",
+      "landscape": "Isoverskredet randmoræne",
+      "displayAreaDegrees2": 0.005250046403280221
+    },
+    {
+      "class": "covered",
+      "longitude": 9.926753621188512,
+      "latitude": 57.22896804,
+      "origin": "n193035:g7400",
+      "surface": "FT",
+      "landscape": "Marin flade",
+      "displayAreaDegrees2": 0.005516496398317958
+    }
+  ],
+  "tileChecks": [
+    {
+      "tile": "22-305",
+      "unchangedFeatures": 2,
+      "classes": {
+        "unresolved": 2
+      },
+      "bbox": [
+        8.056788308551162,
+        55.04318512509313,
+        8.373984388323771,
+        55.22491045338727
+      ]
+    },
+    {
+      "tile": "22-307",
+      "unchangedFeatures": 873,
+      "classes": {
+        "coastal": 266,
+        "possible": 225,
+        "unresolved": 242,
+        "basin": 50,
+        "reworked": 3,
+        "enhanced": 17,
+        "covered": 70
+      },
+      "bbox": [
+        8.04819019351121,
+        55.402580012653225,
+        8.368315425679139,
+        55.584321457715475
+      ]
+    },
+    {
+      "tile": "22-308",
+      "unchangedFeatures": 2058,
+      "classes": {
+        "basin": 308,
+        "enhanced": 203,
+        "possible": 807,
+        "covered": 262,
+        "reworked": 66,
+        "unresolved": 265,
+        "coastal": 147
+      },
+      "bbox": [
+        8.043817924855711,
+        55.582269146481956,
+        8.365432868269101,
+        55.76401885065758
+      ]
+    },
+    {
+      "tile": "22-309",
+      "unchangedFeatures": 5616,
+      "classes": {
+        "coastal": 2000,
+        "possible": 1124,
+        "unresolved": 528,
+        "covered": 1802,
+        "basin": 150,
+        "reworked": 8,
+        "enhanced": 4
+      },
+      "bbox": [
+        8.039395833934714,
+        55.76195275288983,
+        8.362517597268681,
+        55.94371085284142
+      ]
+    },
+    {
+      "tile": "22-310",
+      "unchangedFeatures": 3095,
+      "classes": {
+        "enhanced": 85,
+        "covered": 514,
+        "basin": 173,
+        "possible": 1212,
+        "coastal": 779,
+        "unresolved": 321,
+        "reworked": 11
+      },
+      "bbox": [
+        8.034923139391147,
+        55.941630841453076,
+        8.359569102383146,
+        56.12339747602508
+      ]
+    },
+    {
+      "tile": "22-311",
+      "unchangedFeatures": 3820,
+      "classes": {
+        "coastal": 525,
+        "possible": 2164,
+        "covered": 238,
+        "unresolved": 276,
+        "enhanced": 201,
+        "reworked": 40,
+        "basin": 376
+      },
+      "bbox": [
+        8.03039904317137,
+        56.12130342187787,
+        8.356586862467445,
+        56.303078732137436
+      ]
+    },
+    {
+      "tile": "22-312",
+      "unchangedFeatures": 2966,
+      "classes": {
+        "coastal": 616,
+        "possible": 1092,
+        "covered": 176,
+        "enhanced": 524,
+        "reworked": 69,
+        "unresolved": 460,
+        "basin": 29
+      },
+      "bbox": [
+        8.025822730079065,
+        56.30097050399776,
+        8.353570345237758,
+        56.48275463327668
+      ]
+    },
+    {
+      "tile": "22-313",
+      "unchangedFeatures": 2071,
+      "classes": {
+        "coastal": 402,
+        "covered": 166,
+        "enhanced": 324,
+        "possible": 660,
+        "reworked": 175,
+        "unresolved": 320,
+        "basin": 24
+      },
+      "bbox": [
+        8.021193367314751,
+        56.48063209777099,
+        8.35051900697381,
+        56.66242519170876
+      ]
+    },
+    {
+      "tile": "22-314",
+      "unchangedFeatures": 2022,
+      "classes": {
+        "unresolved": 1025,
+        "coastal": 425,
+        "covered": 100,
+        "possible": 359,
+        "enhanced": 19,
+        "basin": 50,
+        "reworked": 44
+      },
+      "bbox": [
+        8.016510104000334,
+        56.66028821327777,
+        8.347432292211574,
+        56.84209041986586
+      ]
+    },
+    {
+      "tile": "22-315",
+      "unchangedFeatures": 164,
+      "classes": {
+        "possible": 109,
+        "unresolved": 18,
+        "coastal": 28,
+        "covered": 9
+      },
+      "bbox": [
+        8.011772070688185,
+        56.839938860717446,
+        8.344309633425992,
+        57.021750330344716
+      ]
+    },
+    {
+      "tile": "23-304",
+      "unchangedFeatures": 193,
+      "classes": {
+        "possible": 92,
+        "coastal": 27,
+        "reworked": 2,
+        "unresolved": 61,
+        "basin": 1,
+        "enhanced": 6,
+        "covered": 4
+      },
+      "bbox": [
+        8.373984388323771,
+        54.865477749263654,
+        8.6883781865267,
+        55.04640392341469
+      ]
+    },
+    {
+      "tile": "23-305",
+      "unchangedFeatures": 1364,
+      "classes": {
+        "enhanced": 7,
+        "possible": 518,
+        "coastal": 393,
+        "covered": 176,
+        "reworked": 1,
+        "unresolved": 269
+      },
+      "bbox": [
+        8.3711657692227,
+        55.04519681935217,
+        8.686984382082494,
+        55.226125608987104
+      ]
+    },
+    {
+      "tile": "23-306",
+      "unchangedFeatures": 871,
+      "classes": {
+        "possible": 148,
+        "enhanced": 24,
+        "basin": 57,
+        "coastal": 238,
+        "covered": 36,
+        "unresolved": 368
+      },
+      "bbox": [
+        8.368315425679139,
+        55.22491045338727,
+        8.685574952664062,
+        55.40584194229923
+      ]
+    },
+    {
+      "tile": "23-307",
+      "unchangedFeatures": 2413,
+      "classes": {
+        "possible": 1187,
+        "enhanced": 104,
+        "basin": 207,
+        "reworked": 288,
+        "unresolved": 329,
+        "coastal": 270,
+        "covered": 28
+      },
+      "bbox": [
+        8.365432868269101,
+        55.4046186624294,
+        8.684149658514393,
+        55.585552935745504
+      ]
+    },
+    {
+      "tile": "23-308",
+      "unchangedFeatures": 3079,
+      "classes": {
+        "covered": 37,
+        "enhanced": 296,
+        "possible": 1888,
+        "basin": 224,
+        "reworked": 545,
+        "coastal": 49,
+        "unresolved": 40
+      },
+      "bbox": [
+        8.362517597268681,
+        55.584321457715475,
+        8.682708254855813,
+        55.765258601919626
+      ]
+    },
+    {
+      "tile": "23-309",
+      "unchangedFeatures": 6457,
+      "classes": {
+        "possible": 4292,
+        "basin": 671,
+        "reworked": 242,
+        "enhanced": 507,
+        "unresolved": 363,
+        "covered": 252,
+        "coastal": 130
+      },
+      "bbox": [
+        8.359569102383146,
+        55.76401885065758,
+        8.68125049175862,
+        55.944958953613714
+      ]
+    },
+    {
+      "tile": "23-310",
+      "unchangedFeatures": 4987,
+      "classes": {
+        "unresolved": 143,
+        "possible": 2878,
+        "reworked": 277,
+        "enhanced": 832,
+        "basin": 652,
+        "covered": 152,
+        "coastal": 53
+      },
+      "bbox": [
+        8.356586862467445,
+        55.94371085284142,
+        8.679776114005545,
+        56.124654003817646
+      ]
+    },
+    {
+      "tile": "23-311",
+      "unchangedFeatures": 6048,
+      "classes": {
+        "enhanced": 853,
+        "possible": 3923,
+        "covered": 102,
+        "basin": 670,
+        "reworked": 392,
+        "unresolved": 108
+      },
+      "bbox": [
+        8.353570345237758,
+        56.12339747602508,
+        8.678284860951921,
+        56.30434376571822
+      ]
+    },
+    {
+      "tile": "23-312",
+      "unchangedFeatures": 2822,
+      "classes": {
+        "possible": 1401,
+        "enhanced": 854,
+        "basin": 133,
+        "covered": 191,
+        "reworked": 176,
+        "unresolved": 46,
+        "coastal": 21
+      },
+      "bbox": [
+        8.35051900697381,
+        56.303078732137436,
+        8.67677646638139,
+        56.48402825269834
+      ]
+    },
+    {
+      "tile": "23-313",
+      "unchangedFeatures": 3109,
+      "classes": {
+        "enhanced": 440,
+        "reworked": 231,
+        "possible": 1223,
+        "covered": 42,
+        "unresolved": 352,
+        "coastal": 624,
+        "basin": 196,
+        "limited": 1
+      },
+      "bbox": [
+        8.347432292211574,
+        56.48275463327668,
+        8.675250658356958,
+        56.66370747833615
+      ]
+    },
+    {
+      "tile": "23-314",
+      "unchangedFeatures": 6620,
+      "classes": {
+        "coastal": 1745,
+        "possible": 2555,
+        "covered": 131,
+        "enhanced": 593,
+        "unresolved": 698,
+        "basin": 334,
+        "reworked": 564
+      },
+      "bbox": [
+        8.344309633425992,
+        56.66242519170876,
+        8.673707159067263,
+        56.843381456404344
+      ]
+    },
+    {
+      "tile": "23-315",
+      "unchangedFeatures": 4334,
+      "classes": {
+        "reworked": 347,
+        "basin": 331,
+        "possible": 2749,
+        "enhanced": 214,
+        "covered": 70,
+        "coastal": 140,
+        "unresolved": 438,
+        "limited": 45
+      },
+      "bbox": [
+        8.341150450703356,
+        56.84209041986586,
+        8.672145684667838,
+        57.02305020086911
+      ]
+    },
+    {
+      "tile": "23-316",
+      "unchangedFeatures": 883,
+      "classes": {
+        "covered": 62,
+        "coastal": 57,
+        "possible": 357,
+        "limited": 64,
+        "unresolved": 305,
+        "basin": 28,
+        "enhanced": 4,
+        "reworked": 6
+      },
+      "bbox": [
+        8.337954151402945,
+        57.021750330344716,
+        8.6705659451172,
+        57.202713725889474
+      ]
+    },
+    {
+      "tile": "24-304",
+      "unchangedFeatures": 2754,
+      "classes": {
+        "possible": 1806,
+        "basin": 109,
+        "reworked": 116,
+        "covered": 335,
+        "coastal": 160,
+        "enhanced": 193,
+        "unresolved": 35
+      },
+      "bbox": [
+        8.686984382082494,
+        54.86667687338755,
+        9.0,
+        55.046806306021715
+      ]
+    },
+    {
+      "tile": "24-305",
+      "unchangedFeatures": 4377,
+      "classes": {
+        "enhanced": 516,
+        "possible": 2660,
+        "reworked": 131,
+        "coastal": 218,
+        "covered": 654,
+        "basin": 161,
+        "unresolved": 37
+      },
+      "bbox": [
+        8.685574952664062,
+        55.04640392341469,
+        9.0,
+        55.22653067564599
+      ]
+    },
+    {
+      "tile": "24-306",
+      "unchangedFeatures": 3964,
+      "classes": {
+        "enhanced": 455,
+        "reworked": 193,
+        "possible": 2498,
+        "basin": 332,
+        "covered": 265,
+        "unresolved": 74,
+        "coastal": 147
+      },
+      "bbox": [
+        8.684149658514393,
+        55.226125608987104,
+        9.0,
+        55.40624971725828
+      ]
+    },
+    {
+      "tile": "24-307",
+      "unchangedFeatures": 3426,
+      "classes": {
+        "possible": 2203,
+        "enhanced": 329,
+        "reworked": 532,
+        "basin": 252,
+        "unresolved": 18,
+        "covered": 92
+      },
+      "bbox": [
+        8.682708254855813,
+        55.40584194229923,
+        9.0,
+        55.58596344363897
+      ]
+    },
+    {
+      "tile": "24-308",
+      "unchangedFeatures": 3715,
+      "classes": {
+        "possible": 2434,
+        "enhanced": 509,
+        "reworked": 377,
+        "basin": 165,
+        "covered": 199,
+        "coastal": 2,
+        "unresolved": 29
+      },
+      "bbox": [
+        8.68125049175862,
+        55.585552935745504,
+        9.0,
+        55.76567186777571
+      ]
+    },
+    {
+      "tile": "24-309",
+      "unchangedFeatures": 2812,
+      "classes": {
+        "possible": 1759,
+        "reworked": 62,
+        "enhanced": 548,
+        "covered": 91,
+        "basin": 294,
+        "unresolved": 58
+      },
+      "bbox": [
+        8.679776114005545,
+        55.765258601919626,
+        9.0,
+        55.9453750028629
+      ]
+    },
+    {
+      "tile": "24-310",
+      "unchangedFeatures": 1836,
+      "classes": {
+        "enhanced": 456,
+        "possible": 946,
+        "basin": 268,
+        "unresolved": 74,
+        "reworked": 37,
+        "covered": 55
+      },
+      "bbox": [
+        8.678284860951921,
+        55.944958953613714,
+        9.0,
+        56.12507286230114
+      ]
+    },
+    {
+      "tile": "24-311",
+      "unchangedFeatures": 1768,
+      "classes": {
+        "reworked": 103,
+        "possible": 934,
+        "enhanced": 334,
+        "basin": 310,
+        "unresolved": 56,
+        "covered": 31
+      },
+      "bbox": [
+        8.67677646638139,
+        56.124654003817646,
+        9.0,
+        56.304765459696625
+      ]
+    },
+    {
+      "tile": "24-312",
+      "unchangedFeatures": 2887,
+      "classes": {
+        "covered": 186,
+        "enhanced": 861,
+        "basin": 97,
+        "possible": 1381,
+        "reworked": 149,
+        "coastal": 33,
+        "unresolved": 180
+      },
+      "bbox": [
+        8.675250658356958,
+        56.30434376571822,
+        9.0,
+        56.484452808860624
+      ]
+    },
+    {
+      "tile": "24-313",
+      "unchangedFeatures": 3572,
+      "classes": {
+        "covered": 56,
+        "possible": 1628,
+        "enhanced": 397,
+        "reworked": 419,
+        "coastal": 280,
+        "basin": 250,
+        "unresolved": 542
+      },
+      "bbox": [
+        8.673707159067263,
+        56.48402825269834,
+        9.0,
+        56.66413492380883
+      ]
+    },
+    {
+      "tile": "24-314",
+      "unchangedFeatures": 6009,
+      "classes": {
+        "coastal": 1038,
+        "enhanced": 659,
+        "possible": 2584,
+        "covered": 95,
+        "unresolved": 604,
+        "basin": 439,
+        "reworked": 587,
+        "limited": 3
+      },
+      "bbox": [
+        8.672145684667838,
+        56.66370747833615,
+        9.0,
+        56.84381181876087
+      ]
+    },
+    {
+      "tile": "24-315",
+      "unchangedFeatures": 2679,
+      "classes": {
+        "covered": 70,
+        "possible": 1065,
+        "coastal": 727,
+        "unresolved": 294,
+        "reworked": 187,
+        "enhanced": 198,
+        "basin": 46,
+        "limited": 92
+      },
+      "bbox": [
+        8.6705659451172,
+        56.843381456404344,
+        9.0,
+        57.023483508139584
+      ]
+    },
+    {
+      "tile": "24-316",
+      "unchangedFeatures": 2862,
+      "classes": {
+        "possible": 1807,
+        "unresolved": 200,
+        "covered": 248,
+        "coastal": 404,
+        "enhanced": 100,
+        "limited": 83,
+        "basin": 10,
+        "reworked": 10
+      },
+      "bbox": [
+        8.668967644007571,
+        57.02305020086911,
+        9.0,
+        57.20315000657058
+      ]
+    },
+    {
+      "tile": "25-303",
+      "unchangedFeatures": 453,
+      "classes": {
+        "enhanced": 54,
+        "possible": 142,
+        "covered": 249,
+        "reworked": 3,
+        "basin": 3,
+        "unresolved": 2
+      },
+      "bbox": [
+        9.0,
+        54.68694444691198,
+        9.3116218134733,
+        54.867076595812904
+      ]
+    },
+    {
+      "tile": "25-304",
+      "unchangedFeatures": 4110,
+      "classes": {
+        "unresolved": 43,
+        "possible": 1224,
+        "enhanced": 991,
+        "covered": 1780,
+        "basin": 43,
+        "reworked": 29
+      },
+      "bbox": [
+        9.0,
+        54.86667687338755,
+        9.313015617917506,
+        55.046806306021715
+      ]
+    },
+    {
+      "tile": "25-305",
+      "unchangedFeatures": 3399,
+      "classes": {
+        "possible": 2006,
+        "enhanced": 679,
+        "reworked": 149,
+        "covered": 440,
+        "unresolved": 61,
+        "basin": 64
+      },
+      "bbox": [
+        9.0,
+        55.04640392341469,
+        9.314425047335938,
+        55.22653067564599
+      ]
+    },
+    {
+      "tile": "25-306",
+      "unchangedFeatures": 3003,
+      "classes": {
+        "enhanced": 573,
+        "basin": 110,
+        "possible": 1928,
+        "reworked": 208,
+        "covered": 113,
+        "unresolved": 71
+      },
+      "bbox": [
+        9.0,
+        55.226125608987104,
+        9.315850341485607,
+        55.40624971725828
+      ]
+    },
+    {
+      "tile": "25-307",
+      "unchangedFeatures": 3932,
+      "classes": {
+        "possible": 2767,
+        "covered": 30,
+        "basin": 335,
+        "enhanced": 401,
+        "reworked": 311,
+        "unresolved": 85,
+        "coastal": 3
+      },
+      "bbox": [
+        9.0,
+        55.40584194229923,
+        9.317291745144187,
+        55.58596344363897
+      ]
+    },
+    {
+      "tile": "25-308",
+      "unchangedFeatures": 4922,
+      "classes": {
+        "possible": 3797,
+        "basin": 287,
+        "enhanced": 460,
+        "covered": 56,
+        "unresolved": 67,
+        "reworked": 255
+      },
+      "bbox": [
+        9.0,
+        55.585552935745504,
+        9.31874950824138,
+        55.76567186777571
+      ]
+    },
+    {
+      "tile": "25-309",
+      "unchangedFeatures": 6146,
+      "classes": {
+        "possible": 4341,
+        "reworked": 259,
+        "enhanced": 961,
+        "basin": 444,
+        "unresolved": 76,
+        "covered": 65
+      },
+      "bbox": [
+        9.0,
+        55.765258601919626,
+        9.320223885994455,
+        55.9453750028629
+      ]
+    },
+    {
+      "tile": "25-310",
+      "unchangedFeatures": 3426,
+      "classes": {
+        "reworked": 72,
+        "enhanced": 811,
+        "possible": 1881,
+        "covered": 209,
+        "basin": 200,
+        "unresolved": 253
+      },
+      "bbox": [
+        9.0,
+        55.944958953613714,
+        9.321715139048079,
+        56.12507286230114
+      ]
+    },
+    {
+      "tile": "25-311",
+      "unchangedFeatures": 1654,
+      "classes": {
+        "reworked": 54,
+        "possible": 835,
+        "enhanced": 444,
+        "basin": 82,
+        "unresolved": 88,
+        "covered": 151
+      },
+      "bbox": [
+        9.0,
+        56.124654003817646,
+        9.32322353361861,
+        56.304765459696625
+      ]
+    },
+    {
+      "tile": "25-312",
+      "unchangedFeatures": 3001,
+      "classes": {
+        "covered": 165,
+        "enhanced": 719,
+        "possible": 1576,
+        "basin": 137,
+        "unresolved": 70,
+        "reworked": 328,
+        "limited": 6
+      },
+      "bbox": [
+        9.0,
+        56.30434376571822,
+        9.324749341643042,
+        56.484452808860624
+      ]
+    },
+    {
+      "tile": "25-313",
+      "unchangedFeatures": 3910,
+      "classes": {
+        "covered": 96,
+        "unresolved": 263,
+        "possible": 1683,
+        "coastal": 647,
+        "enhanced": 607,
+        "reworked": 486,
+        "basin": 128
+      },
+      "bbox": [
+        9.0,
+        56.48402825269834,
+        9.326292840932737,
+        56.66413492380883
+      ]
+    },
+    {
+      "tile": "25-314",
+      "unchangedFeatures": 4636,
+      "classes": {
+        "possible": 1993,
+        "covered": 170,
+        "basin": 423,
+        "enhanced": 463,
+        "reworked": 382,
+        "coastal": 865,
+        "unresolved": 338,
+        "limited": 2
+      },
+      "bbox": [
+        9.0,
+        56.66370747833615,
+        9.327854315332162,
+        56.84381181876087
+      ]
+    },
+    {
+      "tile": "25-315",
+      "unchangedFeatures": 1726,
+      "classes": {
+        "coastal": 607,
+        "enhanced": 163,
+        "possible": 613,
+        "covered": 67,
+        "unresolved": 192,
+        "reworked": 54,
+        "basin": 16,
+        "limited": 14
+      },
+      "bbox": [
+        9.0,
+        56.843381456404344,
+        9.3294340548828,
+        57.023483508139584
+      ]
+    },
+    {
+      "tile": "25-316",
+      "unchangedFeatures": 2880,
+      "classes": {
+        "covered": 346,
+        "coastal": 860,
+        "enhanced": 348,
+        "possible": 1132,
+        "limited": 16,
+        "basin": 54,
+        "unresolved": 104,
+        "reworked": 20
+      },
+      "bbox": [
+        9.0,
+        57.02305020086911,
+        9.331032355992429,
+        57.20315000657058
+      ]
+    },
+    {
+      "tile": "26-303",
+      "unchangedFeatures": 836,
+      "classes": {
+        "coastal": 36,
+        "possible": 538,
+        "unresolved": 56,
+        "enhanced": 90,
+        "covered": 78,
+        "reworked": 23,
+        "basin": 15
+      },
+      "bbox": [
+        9.310243399139587,
+        54.68575323223909,
+        9.623228237630965,
+        54.86667687338755
+      ]
+    },
+    {
+      "tile": "26-304",
+      "unchangedFeatures": 4470,
+      "classes": {
+        "possible": 2377,
+        "enhanced": 708,
+        "reworked": 392,
+        "covered": 347,
+        "basin": 240,
+        "unresolved": 357,
+        "coastal": 49
+      },
+      "bbox": [
+        9.3116218134733,
+        54.865477749263654,
+        9.626015611676229,
+        55.04640392341469
+      ]
+    },
+    {
+      "tile": "26-305",
+      "unchangedFeatures": 3959,
+      "classes": {
+        "enhanced": 376,
+        "reworked": 219,
+        "possible": 2548,
+        "unresolved": 347,
+        "basin": 235,
+        "coastal": 151,
+        "covered": 83
+      },
+      "bbox": [
+        9.313015617917506,
+        55.04519681935217,
+        9.628834230777299,
+        55.226125608987104
+      ]
+    },
+    {
+      "tile": "26-306",
+      "unchangedFeatures": 3262,
+      "classes": {
+        "possible": 2017,
+        "enhanced": 274,
+        "reworked": 351,
+        "basin": 219,
+        "unresolved": 249,
+        "covered": 10,
+        "coastal": 142
+      },
+      "bbox": [
+        9.314425047335938,
+        55.22491045338727,
+        9.631684574320861,
+        55.40584194229923
+      ]
+    },
+    {
+      "tile": "26-307",
+      "unchangedFeatures": 4339,
+      "classes": {
+        "possible": 2545,
+        "basin": 223,
+        "enhanced": 592,
+        "reworked": 639,
+        "unresolved": 239,
+        "coastal": 64,
+        "covered": 37
+      },
+      "bbox": [
+        9.315850341485607,
+        55.4046186624294,
+        9.634567131730899,
+        55.585552935745504
+      ]
+    },
+    {
+      "tile": "26-308",
+      "unchangedFeatures": 4937,
+      "classes": {
+        "possible": 3384,
+        "reworked": 558,
+        "enhanced": 607,
+        "unresolved": 102,
+        "basin": 223,
+        "covered": 55,
+        "coastal": 8
+      },
+      "bbox": [
+        9.317291745144187,
+        55.584321457715475,
+        9.637482402731319,
+        55.765258601919626
+      ]
+    },
+    {
+      "tile": "26-309",
+      "unchangedFeatures": 5992,
+      "classes": {
+        "possible": 3983,
+        "basin": 296,
+        "reworked": 699,
+        "enhanced": 809,
+        "unresolved": 115,
+        "covered": 90
+      },
+      "bbox": [
+        9.31874950824138,
+        55.76401885065758,
+        9.640430897616854,
+        55.944958953613714
+      ]
+    },
+    {
+      "tile": "26-310",
+      "unchangedFeatures": 6354,
+      "classes": {
+        "possible": 3622,
+        "reworked": 494,
+        "basin": 228,
+        "unresolved": 433,
+        "enhanced": 1300,
+        "covered": 277
+      },
+      "bbox": [
+        9.320223885994455,
+        55.94371085284142,
+        9.643413137532555,
+        56.124654003817646
+      ]
+    },
+    {
+      "tile": "26-311",
+      "unchangedFeatures": 6636,
+      "classes": {
+        "reworked": 618,
+        "possible": 3301,
+        "enhanced": 1077,
+        "unresolved": 1038,
+        "covered": 62,
+        "basin": 540
+      },
+      "bbox": [
+        9.321715139048079,
+        56.12339747602508,
+        9.646429654762242,
+        56.30434376571822
+      ]
+    },
+    {
+      "tile": "26-312",
+      "unchangedFeatures": 4957,
+      "classes": {
+        "possible": 2315,
+        "enhanced": 1013,
+        "reworked": 473,
+        "basin": 447,
+        "unresolved": 674,
+        "covered": 35
+      },
+      "bbox": [
+        9.32322353361861,
+        56.303078732137436,
+        9.64948099302619,
+        56.48402825269834
+      ]
+    },
+    {
+      "tile": "26-313",
+      "unchangedFeatures": 2407,
+      "classes": {
+        "possible": 1054,
+        "covered": 49,
+        "coastal": 171,
+        "enhanced": 382,
+        "reworked": 432,
+        "unresolved": 107,
+        "basin": 212
+      },
+      "bbox": [
+        9.324749341643042,
+        56.48275463327668,
+        9.652567707788426,
+        56.66370747833615
+      ]
+    },
+    {
+      "tile": "26-314",
+      "unchangedFeatures": 1362,
+      "classes": {
+        "possible": 576,
+        "enhanced": 199,
+        "basin": 367,
+        "reworked": 154,
+        "covered": 9,
+        "unresolved": 6,
+        "coastal": 51
+      },
+      "bbox": [
+        9.326292840932737,
+        56.66242519170876,
+        9.655690366574008,
+        56.843381456404344
+      ]
+    },
+    {
+      "tile": "26-315",
+      "unchangedFeatures": 1447,
+      "classes": {
+        "possible": 545,
+        "basin": 242,
+        "reworked": 101,
+        "enhanced": 120,
+        "unresolved": 253,
+        "limited": 43,
+        "coastal": 143
+      },
+      "bbox": [
+        9.327854315332162,
+        56.84209041986586,
+        9.658849549296644,
+        57.02305020086911
+      ]
+    },
+    {
+      "tile": "26-316",
+      "unchangedFeatures": 3775,
+      "classes": {
+        "possible": 1809,
+        "reworked": 277,
+        "enhanced": 197,
+        "covered": 391,
+        "coastal": 837,
+        "limited": 78,
+        "basin": 55,
+        "unresolved": 131
+      },
+      "bbox": [
+        9.3294340548828,
+        57.021750330344716,
+        9.662045848597055,
+        57.202713725889474
+      ]
+    },
+    {
+      "tile": "26-317",
+      "unchangedFeatures": 445,
+      "classes": {
+        "possible": 262,
+        "covered": 57,
+        "coastal": 100,
+        "reworked": 3,
+        "limited": 2,
+        "unresolved": 21
+      },
+      "bbox": [
+        9.331032355992429,
+        57.201404935904975,
+        9.665279870192514,
+        57.38237204581624
+      ]
+    },
+    {
+      "tile": "27-303",
+      "unchangedFeatures": 210,
+      "classes": {
+        "possible": 119,
+        "coastal": 17,
+        "reworked": 3,
+        "unresolved": 60,
+        "basin": 6,
+        "enhanced": 3,
+        "covered": 2
+      },
+      "bbox": [
+        9.620471639037536,
+        54.683768016293186,
+        9.934803887925892,
+        54.865477749263654
+      ]
+    },
+    {
+      "tile": "27-304",
+      "unchangedFeatures": 3384,
+      "classes": {
+        "possible": 2069,
+        "reworked": 180,
+        "coastal": 241,
+        "unresolved": 615,
+        "basin": 169,
+        "covered": 36,
+        "enhanced": 74
+      },
+      "bbox": [
+        9.623228237630965,
+        54.86347935288153,
+        9.938984362009379,
+        55.04519681935217
+      ]
+    },
+    {
+      "tile": "27-305",
+      "unchangedFeatures": 649,
+      "classes": {
+        "possible": 351,
+        "enhanced": 14,
+        "reworked": 41,
+        "coastal": 75,
+        "basin": 34,
+        "unresolved": 131,
+        "covered": 3
+      },
+      "bbox": [
+        9.626015611676229,
+        55.04318512509313,
+        9.943211691448838,
+        55.22491045338727
+      ]
+    },
+    {
+      "tile": "27-306",
+      "unchangedFeatures": 2662,
+      "classes": {
+        "possible": 1247,
+        "coastal": 434,
+        "basin": 165,
+        "unresolved": 494,
+        "reworked": 79,
+        "enhanced": 202,
+        "covered": 41
+      },
+      "bbox": [
+        9.628834230777299,
+        55.22288534195988,
+        9.947486595006058,
+        55.4046186624294
+      ]
+    },
+    {
+      "tile": "27-307",
+      "unchangedFeatures": 2729,
+      "classes": {
+        "possible": 1437,
+        "enhanced": 142,
+        "reworked": 306,
+        "coastal": 395,
+        "unresolved": 332,
+        "covered": 24,
+        "basin": 93
+      },
+      "bbox": [
+        9.631684574320861,
+        55.402580012653225,
+        9.95180980648879,
+        55.584321457715475
+      ]
+    },
+    {
+      "tile": "27-308",
+      "unchangedFeatures": 2958,
+      "classes": {
+        "possible": 1461,
+        "enhanced": 418,
+        "reworked": 581,
+        "coastal": 125,
+        "covered": 34,
+        "basin": 206,
+        "unresolved": 133
+      },
+      "bbox": [
+        9.634567131730899,
+        55.582269146481956,
+        9.956182075144289,
+        55.76401885065758
+      ]
+    },
+    {
+      "tile": "27-309",
+      "unchangedFeatures": 4448,
+      "classes": {
+        "possible": 2460,
+        "basin": 419,
+        "enhanced": 518,
+        "reworked": 562,
+        "unresolved": 398,
+        "covered": 38,
+        "coastal": 53
+      },
+      "bbox": [
+        9.637482402731319,
+        55.76195275288983,
+        9.960604166065286,
+        55.94371085284142
+      ]
+    },
+    {
+      "tile": "27-310",
+      "unchangedFeatures": 5955,
+      "classes": {
+        "unresolved": 819,
+        "possible": 2996,
+        "enhanced": 1086,
+        "reworked": 642,
+        "basin": 350,
+        "covered": 62
+      },
+      "bbox": [
+        9.640430897616854,
+        55.941630841453076,
+        9.965076860608853,
+        56.12339747602508
+      ]
+    },
+    {
+      "tile": "27-311",
+      "unchangedFeatures": 5798,
+      "classes": {
+        "possible": 2655,
+        "enhanced": 1054,
+        "reworked": 851,
+        "unresolved": 294,
+        "basin": 891,
+        "covered": 51,
+        "coastal": 2
+      },
+      "bbox": [
+        9.643413137532555,
+        56.12130342187787,
+        9.96960095682863,
+        56.303078732137436
+      ]
+    },
+    {
+      "tile": "27-312",
+      "unchangedFeatures": 5590,
+      "classes": {
+        "enhanced": 1154,
+        "unresolved": 222,
+        "basin": 808,
+        "covered": 109,
+        "possible": 2411,
+        "reworked": 881,
+        "coastal": 3,
+        "limited": 2
+      },
+      "bbox": [
+        9.646429654762242,
+        56.30097050399776,
+        9.974177269920935,
+        56.48275463327668
+      ]
+    },
+    {
+      "tile": "27-313",
+      "unchangedFeatures": 3822,
+      "classes": {
+        "enhanced": 772,
+        "possible": 1697,
+        "reworked": 472,
+        "basin": 343,
+        "covered": 26,
+        "unresolved": 343,
+        "coastal": 128,
+        "limited": 41
+      },
+      "bbox": [
+        9.64948099302619,
+        56.48063209777099,
+        9.978806632685249,
+        56.66242519170876
+      ]
+    },
+    {
+      "tile": "27-314",
+      "unchangedFeatures": 4344,
+      "classes": {
+        "possible": 2414,
+        "covered": 84,
+        "basin": 479,
+        "reworked": 316,
+        "enhanced": 634,
+        "unresolved": 307,
+        "limited": 58,
+        "coastal": 52
+      },
+      "bbox": [
+        9.652567707788426,
+        56.66028821327777,
+        9.983489895999666,
+        56.84209041986586
+      ]
+    },
+    {
+      "tile": "27-315",
+      "unchangedFeatures": 3722,
+      "classes": {
+        "basin": 483,
+        "possible": 1667,
+        "reworked": 346,
+        "enhanced": 622,
+        "unresolved": 139,
+        "covered": 102,
+        "coastal": 134,
+        "limited": 229
+      },
+      "bbox": [
+        9.655690366574008,
+        56.839938860717446,
+        9.988227929311815,
+        57.021750330344716
+      ]
+    },
+    {
+      "tile": "27-316",
+      "unchangedFeatures": 2163,
+      "classes": {
+        "covered": 295,
+        "coastal": 1138,
+        "possible": 324,
+        "unresolved": 297,
+        "limited": 54,
+        "enhanced": 17,
+        "reworked": 32,
+        "basin": 6
+      },
+      "bbox": [
+        9.658849549296644,
+        57.01958405040558,
+        9.993021621145907,
+        57.201404935904975
+      ]
+    },
+    {
+      "tile": "27-317",
+      "unchangedFeatures": 2957,
+      "classes": {
+        "coastal": 974,
+        "possible": 1008,
+        "reworked": 346,
+        "covered": 540,
+        "enhanced": 26,
+        "unresolved": 25,
+        "basin": 38
+      },
+      "bbox": [
+        9.662045848597055,
+        57.19922379277103,
+        9.99787187962649,
+        57.38105424946748
+      ]
+    },
+    {
+      "tile": "27-318",
+      "unchangedFeatures": 3736,
+      "classes": {
+        "possible": 521,
+        "coastal": 1990,
+        "unresolved": 37,
+        "enhanced": 38,
+        "covered": 964,
+        "reworked": 154,
+        "basin": 32
+      },
+      "bbox": [
+        9.665279870192514,
+        57.37885809835282,
+        10.002779633019555,
+        57.56069828411258
+      ]
+    },
+    {
+      "tile": "27-319",
+      "unchangedFeatures": 402,
+      "classes": {
+        "coastal": 163,
+        "covered": 83,
+        "possible": 51,
+        "unresolved": 83,
+        "reworked": 12,
+        "basin": 8,
+        "enhanced": 2
+      },
+      "bbox": [
+        9.668552233237962,
+        57.558486977796996,
+        10.007745830291716,
+        57.74033705307826
+      ]
+    },
+    {
+      "tile": "28-303",
+      "unchangedFeatures": 73,
+      "classes": {
+        "coastal": 10,
+        "possible": 38,
+        "unresolved": 25
+      },
+      "bbox": [
+        9.930669565101,
+        54.68098901178206,
+        10.246333389344317,
+        54.86347935288153
+      ]
+    },
+    {
+      "tile": "28-304",
+      "unchangedFeatures": 1120,
+      "classes": {
+        "unresolved": 145,
+        "possible": 753,
+        "coastal": 168,
+        "reworked": 19,
+        "covered": 10,
+        "enhanced": 23,
+        "basin": 2
+      },
+      "bbox": [
+        9.934803887925892,
+        54.86068189992073,
+        10.251906259430303,
+        55.04318512509313
+      ]
+    },
+    {
+      "tile": "28-305",
+      "unchangedFeatures": 3596,
+      "classes": {
+        "unresolved": 545,
+        "possible": 2136,
+        "coastal": 453,
+        "reworked": 152,
+        "enhanced": 234,
+        "basin": 60,
+        "covered": 16
+      },
+      "bbox": [
+        9.938984362009379,
+        55.040369059347015,
+        10.257541580509944,
+        55.22288534195988
+      ]
+    },
+    {
+      "tile": "28-306",
+      "unchangedFeatures": 3918,
+      "classes": {
+        "unresolved": 121,
+        "possible": 2949,
+        "enhanced": 352,
+        "reworked": 358,
+        "basin": 128,
+        "covered": 10
+      },
+      "bbox": [
+        9.943211691448838,
+        55.22005049650368,
+        10.26324031033865,
+        55.402580012653225
+      ]
+    },
+    {
+      "tile": "28-307",
+      "unchangedFeatures": 4065,
+      "classes": {
+        "basin": 126,
+        "possible": 3021,
+        "enhanced": 177,
+        "reworked": 420,
+        "unresolved": 165,
+        "covered": 10,
+        "coastal": 146
+      },
+      "bbox": [
+        9.947486595006058,
+        55.399726217919785,
+        10.26900342671447,
+        55.582269146481956
+      ]
+    },
+    {
+      "tile": "28-308",
+      "unchangedFeatures": 1015,
+      "classes": {
+        "possible": 471,
+        "coastal": 243,
+        "unresolved": 125,
+        "reworked": 75,
+        "enhanced": 62,
+        "covered": 12,
+        "basin": 27
+      },
+      "bbox": [
+        9.95180980648879,
+        55.57939623020698,
+        10.274831928002108,
+        55.76195275288983
+      ]
+    },
+    {
+      "tile": "28-309",
+      "unchangedFeatures": 2604,
+      "classes": {
+        "possible": 1137,
+        "coastal": 495,
+        "reworked": 231,
+        "enhanced": 170,
+        "covered": 52,
+        "unresolved": 338,
+        "basin": 181
+      },
+      "bbox": [
+        9.956182075144289,
+        55.75906054005568,
+        10.280726833673524,
+        55.941630841453076
+      ]
+    },
+    {
+      "tile": "28-310",
+      "unchangedFeatures": 3629,
+      "classes": {
+        "possible": 2093,
+        "basin": 332,
+        "covered": 81,
+        "enhanced": 321,
+        "reworked": 448,
+        "unresolved": 209,
+        "coastal": 145
+      },
+      "bbox": [
+        9.960604166065286,
+        55.93871915423105,
+        10.286689184865653,
+        56.12130342187787
+      ]
+    },
+    {
+      "tile": "28-311",
+      "unchangedFeatures": 2473,
+      "classes": {
+        "unresolved": 276,
+        "possible": 1308,
+        "reworked": 309,
+        "enhanced": 300,
+        "covered": 68,
+        "basin": 172,
+        "coastal": 40
+      },
+      "bbox": [
+        9.965076860608853,
+        56.1183720795691,
+        10.292720044955939,
+        56.30097050399776
+      ]
+    },
+    {
+      "tile": "28-312",
+      "unchangedFeatures": 4488,
+      "classes": {
+        "unresolved": 307,
+        "enhanced": 637,
+        "reworked": 638,
+        "covered": 165,
+        "possible": 2142,
+        "basin": 279,
+        "coastal": 273,
+        "limited": 47
+      },
+      "bbox": [
+        9.96960095682863,
+        56.298019322972415,
+        10.298820500156335,
+        56.48063209777099
+      ]
+    },
+    {
+      "tile": "28-313",
+      "unchangedFeatures": 5143,
+      "classes": {
+        "unresolved": 289,
+        "possible": 2090,
+        "coastal": 653,
+        "basin": 583,
+        "enhanced": 918,
+        "covered": 25,
+        "reworked": 568,
+        "limited": 17
+      },
+      "bbox": [
+        9.974177269920935,
+        56.47766089140592,
+        10.304991660126447,
+        56.66028821327777
+      ]
+    },
+    {
+      "tile": "28-314",
+      "unchangedFeatures": 5840,
+      "classes": {
+        "unresolved": 405,
+        "possible": 2509,
+        "enhanced": 723,
+        "basin": 709,
+        "reworked": 201,
+        "covered": 172,
+        "coastal": 1030,
+        "limited": 91
+      },
+      "bbox": [
+        9.978806632685249,
+        56.65729679189238,
+        10.311234658606555,
+        56.839938860717446
+      ]
+    },
+    {
+      "tile": "28-315",
+      "unchangedFeatures": 3485,
+      "classes": {
+        "unresolved": 327,
+        "possible": 1150,
+        "limited": 217,
+        "basin": 220,
+        "coastal": 746,
+        "covered": 323,
+        "enhanced": 342,
+        "reworked": 160
+      },
+      "bbox": [
+        9.983489895999666,
+        56.83692703150796,
+        10.317550654071281,
+        57.01958405040558
+      ]
+    },
+    {
+      "tile": "28-316",
+      "unchangedFeatures": 3431,
+      "classes": {
+        "unresolved": 148,
+        "coastal": 1207,
+        "limited": 27,
+        "possible": 923,
+        "enhanced": 108,
+        "reworked": 279,
+        "covered": 734,
+        "basin": 5
+      },
+      "bbox": [
+        9.988227929311815,
+        57.01655161737746,
+        10.32394083040468,
+        57.19922379277103
+      ]
+    },
+    {
+      "tile": "28-317",
+      "unchangedFeatures": 5885,
+      "classes": {
+        "enhanced": 86,
+        "possible": 3385,
+        "coastal": 779,
+        "covered": 563,
+        "reworked": 960,
+        "unresolved": 18,
+        "basin": 94
+      },
+      "bbox": [
+        9.993021621145907,
+        57.1961705566695,
+        10.33040639759756,
+        57.37885809835282
+      ]
+    },
+    {
+      "tile": "28-318",
+      "unchangedFeatures": 6697,
+      "classes": {
+        "coastal": 1740,
+        "reworked": 1571,
+        "possible": 2045,
+        "covered": 988,
+        "basin": 222,
+        "enhanced": 122,
+        "unresolved": 9
+      },
+      "bbox": [
+        9.99787187962649,
+        57.37578385659155,
+        10.336948592467936,
+        57.558486977796996
+      ]
+    },
+    {
+      "tile": "28-319",
+      "unchangedFeatures": 629,
+      "classes": {
+        "coastal": 222,
+        "possible": 94,
+        "covered": 241,
+        "unresolved": 18,
+        "reworked": 5,
+        "enhanced": 20,
+        "basin": 29
+      },
+      "bbox": [
+        10.002779633019555,
+        57.555391524384845,
+        10.343568679405463,
+        57.7381104418534
+      ]
+    },
+    {
+      "tile": "29-303",
+      "unchangedFeatures": 339,
+      "classes": {
+        "possible": 175,
+        "coastal": 77,
+        "covered": 7,
+        "unresolved": 65,
+        "basin": 2,
+        "enhanced": 13
+      },
+      "bbox": [
+        10.240822032031124,
+        54.677416516385335,
+        10.55780138116318,
+        54.86068189992073
+      ]
+    },
+    {
+      "tile": "29-304",
+      "unchangedFeatures": 2492,
+      "classes": {
+        "possible": 1075,
+        "coastal": 836,
+        "unresolved": 550,
+        "covered": 12,
+        "basin": 6,
+        "reworked": 3,
+        "enhanced": 10
+      },
+      "bbox": [
+        10.246333389344317,
+        54.8570856922188,
+        10.564765709112907,
+        55.040369059347015
+      ]
+    },
+    {
+      "tile": "29-305",
+      "unchangedFeatures": 4231,
+      "classes": {
+        "unresolved": 401,
+        "possible": 3033,
+        "reworked": 347,
+        "basin": 139,
+        "coastal": 107,
+        "covered": 76,
+        "enhanced": 128
+      },
+      "bbox": [
+        10.251906259430303,
+        55.036748928190335,
+        10.571808064161976,
+        55.22005049650368
+      ]
+    },
+    {
+      "tile": "29-306",
+      "unchangedFeatures": 3352,
+      "classes": {
+        "possible": 2336,
+        "reworked": 499,
+        "enhanced": 286,
+        "basin": 71,
+        "unresolved": 154,
+        "covered": 6
+      },
+      "bbox": [
+        10.257541580509944,
+        55.216406227417444,
+        10.57892964255145,
+        55.399726217919785
+      ]
+    },
+    {
+      "tile": "29-307",
+      "unchangedFeatures": 3227,
+      "classes": {
+        "basin": 145,
+        "coastal": 644,
+        "possible": 1521,
+        "reworked": 333,
+        "unresolved": 450,
+        "covered": 32,
+        "enhanced": 102
+      },
+      "bbox": [
+        10.26324031033865,
+        55.39605759303549,
+        10.586131665545725,
+        55.57939623020698
+      ]
+    },
+    {
+      "tile": "29-308",
+      "unchangedFeatures": 672,
+      "classes": {
+        "possible": 305,
+        "covered": 19,
+        "basin": 24,
+        "coastal": 229,
+        "unresolved": 80,
+        "enhanced": 11,
+        "reworked": 4
+      },
+      "bbox": [
+        10.26900342671447,
+        55.5757030281921,
+        10.59341538008649,
+        55.75906054005568
+      ]
+    },
+    {
+      "tile": "29-309",
+      "unchangedFeatures": 1832,
+      "classes": {
+        "possible": 1072,
+        "enhanced": 286,
+        "unresolved": 63,
+        "coastal": 239,
+        "basin": 27,
+        "covered": 34,
+        "reworked": 111
+      },
+      "bbox": [
+        10.274831928002108,
+        55.755342536041574,
+        10.600782059467294,
+        55.93871915423105
+      ]
+    },
+    {
+      "tile": "29-310",
+      "unchangedFeatures": 555,
+      "classes": {
+        "covered": 7,
+        "possible": 218,
+        "enhanced": 56,
+        "coastal": 166,
+        "unresolved": 85,
+        "reworked": 14,
+        "basin": 9
+      },
+      "bbox": [
+        10.280726833673524,
+        55.93497611973894,
+        10.608233004029513,
+        56.1183720795691
+      ]
+    },
+    {
+      "tile": "29-311",
+      "unchangedFeatures": 3510,
+      "classes": {
+        "possible": 1705,
+        "enhanced": 309,
+        "reworked": 290,
+        "unresolved": 332,
+        "coastal": 737,
+        "basin": 103,
+        "covered": 34
+      },
+      "bbox": [
+        10.286689184865653,
+        56.11460378243412,
+        10.615769541880526,
+        56.298019322972415
+      ]
+    },
+    {
+      "tile": "29-312",
+      "unchangedFeatures": 5628,
+      "classes": {
+        "possible": 3339,
+        "enhanced": 608,
+        "reworked": 607,
+        "unresolved": 388,
+        "basin": 309,
+        "covered": 209,
+        "coastal": 168
+      },
+      "bbox": [
+        10.292720044955939,
+        56.29422552726559,
+        10.623393029634896,
+        56.47766089140592
+      ]
+    },
+    {
+      "tile": "29-313",
+      "unchangedFeatures": 2233,
+      "classes": {
+        "unresolved": 123,
+        "possible": 932,
+        "coastal": 550,
+        "basin": 186,
+        "enhanced": 164,
+        "covered": 117,
+        "reworked": 161
+      },
+      "bbox": [
+        10.298820500156335,
+        56.47384135735408,
+        10.63110485317944,
+        56.65729679189238
+      ]
+    },
+    {
+      "tile": "29-314",
+      "unchangedFeatures": 288,
+      "classes": {
+        "unresolved": 39,
+        "coastal": 168,
+        "covered": 40,
+        "possible": 41
+      },
+      "bbox": [
+        10.304991660126447,
+        56.65345127579601,
+        10.638906428463109,
+        56.83692703150796
+      ]
+    },
+    {
+      "tile": "29-315",
+      "unchangedFeatures": 59,
+      "classes": {
+        "coastal": 28,
+        "possible": 4,
+        "covered": 17,
+        "unresolved": 10
+      },
+      "bbox": [
+        10.311234658606555,
+        56.833055285656684,
+        10.646799202312563,
+        57.01655161737746
+      ]
+    },
+    {
+      "tile": "29-316",
+      "unchangedFeatures": 1495,
+      "classes": {
+        "possible": 220,
+        "coastal": 520,
+        "covered": 535,
+        "enhanced": 45,
+        "reworked": 20,
+        "unresolved": 152,
+        "basin": 3
+      },
+      "bbox": [
+        10.317550654071281,
+        57.012653389963326,
+        10.654784653274504,
+        57.1961705566695
+      ]
+    },
+    {
+      "tile": "29-317",
+      "unchangedFeatures": 4269,
+      "classes": {
+        "enhanced": 139,
+        "possible": 677,
+        "coastal": 1906,
+        "reworked": 420,
+        "covered": 956,
+        "unresolved": 87,
+        "basin": 84
+      },
+      "bbox": [
+        10.32394083040468,
+        57.192245591697855,
+        10.66286429248572,
+        57.37578385659155
+      ]
+    },
+    {
+      "tile": "29-318",
+      "unchangedFeatures": 2935,
+      "classes": {
+        "covered": 567,
+        "enhanced": 212,
+        "coastal": 666,
+        "possible": 659,
+        "reworked": 545,
+        "basin": 37,
+        "unresolved": 249
+      },
+      "bbox": [
+        10.33040639759756,
+        57.37183189378956,
+        10.671039664571946,
+        57.555391524384845
+      ]
+    },
+    {
+      "tile": "29-319",
+      "unchangedFeatures": 807,
+      "classes": {
+        "coastal": 213,
+        "possible": 243,
+        "unresolved": 177,
+        "covered": 159,
+        "enhanced": 15
+      },
+      "bbox": [
+        10.336948592467936,
+        57.55141229910735,
+        10.679312348576673,
+        57.73499356731901
+      ]
+    },
+    {
+      "tile": "29-320",
+      "unchangedFeatures": 163,
+      "classes": {
+        "possible": 39,
+        "coastal": 53,
+        "unresolved": 33,
+        "enhanced": 9,
+        "covered": 29
+      },
+      "bbox": [
+        10.343568679405463,
+        57.73098681045181,
+        10.687683958921026,
+        57.91458999268668
+      ]
+    },
+    {
+      "tile": "30-303",
+      "unchangedFeatures": 2596,
+      "classes": {
+        "possible": 1561,
+        "coastal": 325,
+        "unresolved": 212,
+        "reworked": 311,
+        "enhanced": 122,
+        "covered": 48,
+        "basin": 17
+      },
+      "bbox": [
+        10.550913908461052,
+        54.6730509126435,
+        10.869192521696345,
+        54.8570856922188
+      ]
+    },
+    {
+      "tile": "30-304",
+      "unchangedFeatures": 6174,
+      "classes": {
+        "unresolved": 415,
+        "possible": 4220,
+        "enhanced": 269,
+        "reworked": 523,
+        "coastal": 681,
+        "basin": 41,
+        "covered": 25
+      },
+      "bbox": [
+        10.55780138116318,
+        54.852691117657486,
+        10.877547135760514,
+        55.036748928190335
+      ]
+    },
+    {
+      "tile": "30-305",
+      "unchangedFeatures": 2335,
+      "classes": {
+        "unresolved": 281,
+        "possible": 1624,
+        "reworked": 182,
+        "coastal": 177,
+        "basin": 38,
+        "enhanced": 26,
+        "covered": 7
+      },
+      "bbox": [
+        10.564765709112907,
+        55.03232512495028,
+        10.885995328643615,
+        55.216406227417444
+      ]
+    },
+    {
+      "tile": "30-306",
+      "unchangedFeatures": 3304,
+      "classes": {
+        "reworked": 552,
+        "possible": 2020,
+        "enhanced": 81,
+        "unresolved": 389,
+        "basin": 63,
+        "coastal": 187,
+        "covered": 12
+      },
+      "bbox": [
+        10.571808064161976,
+        55.21195293358069,
+        10.89453853443842,
+        55.39605759303549
+      ]
+    },
+    {
+      "tile": "30-307",
+      "unchangedFeatures": 1744,
+      "classes": {
+        "basin": 126,
+        "possible": 835,
+        "coastal": 372,
+        "covered": 18,
+        "reworked": 131,
+        "unresolved": 199,
+        "enhanced": 63
+      },
+      "bbox": [
+        10.57892964255145,
+        55.39157454254173,
+        10.903178217221875,
+        55.5757030281921
+      ]
+    },
+    {
+      "tile": "30-308",
+      "unchangedFeatures": 681,
+      "classes": {
+        "basin": 19,
+        "possible": 200,
+        "unresolved": 132,
+        "coastal": 237,
+        "covered": 3,
+        "enhanced": 46,
+        "reworked": 44
+      },
+      "bbox": [
+        10.586131665545725,
+        55.57118995075304,
+        10.91191587183819,
+        55.755342536041574
+      ]
+    },
+    {
+      "tile": "30-309",
+      "unchangedFeatures": 2057,
+      "classes": {
+        "possible": 994,
+        "reworked": 81,
+        "enhanced": 186,
+        "coastal": 475,
+        "covered": 57,
+        "unresolved": 233,
+        "basin": 31
+      },
+      "bbox": [
+        10.59341538008649,
+        55.7507991570529,
+        10.92075302470667,
+        55.93497611973894
+      ]
+    },
+    {
+      "tile": "30-310",
+      "unchangedFeatures": 66,
+      "classes": {
+        "coastal": 22,
+        "reworked": 2,
+        "possible": 27,
+        "unresolved": 11,
+        "enhanced": 2,
+        "basin": 2
+      },
+      "bbox": [
+        10.600782059467294,
+        55.930402160190155,
+        10.929691234655111,
+        56.11460378243412
+      ]
+    },
+    {
+      "tile": "30-311",
+      "unchangedFeatures": 2070,
+      "classes": {
+        "covered": 115,
+        "coastal": 270,
+        "enhanced": 142,
+        "unresolved": 214,
+        "possible": 948,
+        "basin": 265,
+        "reworked": 116
+      },
+      "bbox": [
+        10.608233004029513,
+        56.10999895881576,
+        10.93873209377978,
+        56.29422552726559
+      ]
+    },
+    {
+      "tile": "30-312",
+      "unchangedFeatures": 4945,
+      "classes": {
+        "limited": 9,
+        "possible": 2753,
+        "coastal": 530,
+        "unresolved": 278,
+        "basin": 253,
+        "reworked": 435,
+        "covered": 252,
+        "enhanced": 435
+      },
+      "bbox": [
+        10.615769541880526,
+        56.28958955147416,
+        10.947877228332919,
+        56.47384135735408
+      ]
+    },
+    {
+      "tile": "30-313",
+      "unchangedFeatures": 2025,
+      "classes": {
+        "possible": 1341,
+        "basin": 109,
+        "unresolved": 105,
+        "coastal": 188,
+        "covered": 168,
+        "enhanced": 64,
+        "reworked": 44,
+        "limited": 6
+      },
+      "bbox": [
+        10.623393029634896,
+        56.46917393659443,
+        10.957128299638862,
+        56.65345127579601
+      ]
+    },
+    {
+      "tile": "30-316",
+      "unchangedFeatures": 6,
+      "classes": {
+        "coastal": 3,
+        "unresolved": 3
+      },
+      "bbox": [
+        10.646799202312563,
+        57.00788982909049,
+        10.985534293475718,
+        57.192245591697855
+      ]
+    },
+    {
+      "tile": "30-317",
+      "unchangedFeatures": 872,
+      "classes": {
+        "covered": 59,
+        "enhanced": 114,
+        "coastal": 418,
+        "unresolved": 263,
+        "possible": 18
+      },
+      "bbox": [
+        10.654784653274504,
+        57.187449365712496,
+        10.995226460234294,
+        57.37183189378956
+      ]
+    },
+    {
+      "tile": "31-303",
+      "unchangedFeatures": 956,
+      "classes": {
+        "basin": 51,
+        "unresolved": 202,
+        "possible": 285,
+        "coastal": 326,
+        "covered": 35,
+        "reworked": 13,
+        "enhanced": 44
+      },
+      "bbox": [
+        10.860930081583193,
+        54.667892667815124,
+        11.180491493025963,
+        54.852691117657486
+      ]
+    },
+    {
+      "tile": "31-304",
+      "unchangedFeatures": 722,
+      "classes": {
+        "basin": 133,
+        "possible": 321,
+        "unresolved": 74,
+        "coastal": 160,
+        "reworked": 26,
+        "covered": 2,
+        "enhanced": 6
+      },
+      "bbox": [
+        10.869192521696345,
+        54.84749865001662,
+        11.190234988459364,
+        55.03232512495028
+      ]
+    },
+    {
+      "tile": "31-305",
+      "unchangedFeatures": 844,
+      "classes": {
+        "possible": 449,
+        "reworked": 55,
+        "enhanced": 28,
+        "unresolved": 110,
+        "basin": 14,
+        "coastal": 175,
+        "covered": 13
+      },
+      "bbox": [
+        10.877547135760514,
+        55.027098130055116,
+        11.200087585210245,
+        55.21195293358069
+      ]
+    },
+    {
+      "tile": "31-306",
+      "unchangedFeatures": 1455,
+      "classes": {
+        "coastal": 433,
+        "possible": 545,
+        "unresolved": 226,
+        "enhanced": 103,
+        "covered": 34,
+        "reworked": 99,
+        "basin": 15
+      },
+      "bbox": [
+        10.885995328643615,
+        55.2066911022004,
+        11.21005095446394,
+        55.39157454254173
+      ]
+    },
+    {
+      "tile": "31-307",
+      "unchangedFeatures": 758,
+      "classes": {
+        "enhanced": 53,
+        "coastal": 236,
+        "unresolved": 84,
+        "possible": 288,
+        "reworked": 39,
+        "covered": 48,
+        "basin": 10
+      },
+      "bbox": [
+        10.89453853443842,
+        55.38627756055798,
+        11.220126802326963,
+        55.57118995075304
+      ]
+    },
+    {
+      "tile": "31-308",
+      "unchangedFeatures": 1945,
+      "classes": {
+        "possible": 1076,
+        "coastal": 374,
+        "basin": 27,
+        "reworked": 88,
+        "unresolved": 236,
+        "enhanced": 117,
+        "covered": 27
+      },
+      "bbox": [
+        10.903178217221875,
+        55.56585749905891,
+        11.230316870738404,
+        55.7507991570529
+      ]
+    },
+    {
+      "tile": "31-309",
+      "unchangedFeatures": 563,
+      "classes": {
+        "coastal": 243,
+        "covered": 9,
+        "reworked": 30,
+        "possible": 99,
+        "unresolved": 123,
+        "enhanced": 59
+      },
+      "bbox": [
+        10.91191587183819,
+        55.7454309114492,
+        11.240622938410064,
+        55.930402160190155
+      ]
+    },
+    {
+      "tile": "31-312",
+      "unchangedFeatures": 65,
+      "classes": {
+        "limited": 5,
+        "enhanced": 15,
+        "possible": 24,
+        "coastal": 14,
+        "unresolved": 5,
+        "covered": 1,
+        "basin": 1
+      },
+      "bbox": [
+        10.93873209377978,
+        56.28411192641031,
+        11.27225549628026,
+        56.46917393659443
+      ]
+    },
+    {
+      "tile": "31-317",
+      "unchangedFeatures": 1061,
+      "classes": {
+        "covered": 250,
+        "enhanced": 91,
+        "unresolved": 198,
+        "coastal": 440,
+        "possible": 82
+      },
+      "bbox": [
+        10.985534293475718,
+        57.18178245012722,
+        11.327473831193998,
+        57.36700268487838
+      ]
+    },
+    {
+      "tile": "32-302",
+      "unchangedFeatures": 266,
+      "classes": {
+        "unresolved": 49,
+        "coastal": 99,
+        "possible": 74,
+        "basin": 8,
+        "covered": 31,
+        "enhanced": 5
+      },
+      "bbox": [
+        11.161325290700509,
+        54.482368976553296,
+        11.480674987129804,
+        54.667892667815124
+      ]
+    },
+    {
+      "tile": "32-303",
+      "unchangedFeatures": 1452,
+      "classes": {
+        "unresolved": 133,
+        "possible": 755,
+        "coastal": 158,
+        "reworked": 68,
+        "basin": 241,
+        "covered": 82,
+        "enhanced": 15
+      },
+      "bbox": [
+        11.170855461762155,
+        54.66194233370285,
+        11.491683005715354,
+        54.84749865001662
+      ]
+    },
+    {
+      "tile": "32-304",
+      "unchangedFeatures": 1643,
+      "classes": {
+        "basin": 169,
+        "possible": 851,
+        "reworked": 45,
+        "coastal": 347,
+        "unresolved": 191,
+        "enhanced": 16,
+        "covered": 23,
+        "limited": 1
+      },
+      "bbox": [
+        11.180491493025963,
+        54.841508848795876,
+        11.502813745512906,
+        55.027098130055116
+      ]
+    },
+    {
+      "tile": "32-305",
+      "unchangedFeatures": 741,
+      "classes": {
+        "possible": 228,
+        "coastal": 318,
+        "covered": 8,
+        "unresolved": 145,
+        "enhanced": 42
+      },
+      "bbox": [
+        11.190234988459364,
+        55.021068510851514,
+        11.514069075093483,
+        55.2066911022004
+      ]
+    },
+    {
+      "tile": "32-306",
+      "unchangedFeatures": 3691,
+      "classes": {
+        "unresolved": 137,
+        "possible": 2448,
+        "basin": 150,
+        "reworked": 251,
+        "coastal": 294,
+        "enhanced": 348,
+        "covered": 63
+      },
+      "bbox": [
+        11.200087585210245,
+        55.20062130862405,
+        11.525450901851432,
+        55.38627756055798
+      ]
+    },
+    {
+      "tile": "32-307",
+      "unchangedFeatures": 3624,
+      "classes": {
+        "possible": 2613,
+        "unresolved": 138,
+        "coastal": 32,
+        "enhanced": 312,
+        "covered": 79,
+        "reworked": 246,
+        "basin": 204
+      },
+      "bbox": [
+        11.21005095446394,
+        55.38016723059023,
+        11.536961173011592,
+        55.56585749905891
+      ]
+    },
+    {
+      "tile": "32-308",
+      "unchangedFeatures": 2368,
+      "classes": {
+        "enhanced": 184,
+        "possible": 1493,
+        "reworked": 125,
+        "basin": 203,
+        "coastal": 136,
+        "covered": 38,
+        "unresolved": 189
+      },
+      "bbox": [
+        11.220126802326963,
+        55.559706264935976,
+        11.548601876667977,
+        55.7454309114492
+      ]
+    },
+    {
+      "tile": "32-309",
+      "unchangedFeatures": 1726,
+      "classes": {
+        "possible": 730,
+        "coastal": 397,
+        "reworked": 154,
+        "enhanced": 262,
+        "basin": 25,
+        "covered": 56,
+        "unresolved": 102
+      },
+      "bbox": [
+        11.230316870738404,
+        55.73923839954291,
+        11.560375042855169,
+        55.924997791278926
+      ]
+    },
+    {
+      "tile": "32-310",
+      "unchangedFeatures": 890,
+      "classes": {
+        "coastal": 293,
+        "possible": 308,
+        "enhanced": 147,
+        "covered": 71,
+        "unresolved": 55,
+        "basin": 4,
+        "reworked": 12
+      },
+      "bbox": [
+        11.240622938410064,
+        55.918763621974314,
+        11.572282744653608,
+        56.104558131891174
+      ]
+    },
+    {
+      "tile": "32-314",
+      "unchangedFeatures": 1969,
+      "classes": {
+        "covered": 468,
+        "basin": 33,
+        "possible": 269,
+        "limited": 2,
+        "coastal": 990,
+        "enhanced": 169,
+        "unresolved": 38
+      },
+      "bbox": [
+        11.283044118168151,
+        56.63679512924807,
+        11.621301941070262,
+        56.82273396112095
+      ]
+    },
+    {
+      "tile": "33-302",
+      "unchangedFeatures": 496,
+      "classes": {
+        "unresolved": 86,
+        "possible": 179,
+        "coastal": 167,
+        "covered": 12,
+        "enhanced": 16,
+        "basin": 36
+      },
+      "bbox": [
+        11.469787859031827,
+        54.47567150081311,
+        11.790373628158964,
+        54.66194233370285
+      ]
+    },
+    {
+      "tile": "33-303",
+      "unchangedFeatures": 3351,
+      "classes": {
+        "unresolved": 694,
+        "possible": 1779,
+        "basin": 499,
+        "reworked": 95,
+        "enhanced": 21,
+        "coastal": 260,
+        "covered": 3
+      },
+      "bbox": [
+        11.480674987129804,
+        54.65520054644786,
+        11.802751803499689,
+        54.841508848795876
+      ]
+    },
+    {
+      "tile": "33-304",
+      "unchangedFeatures": 1613,
+      "classes": {
+        "unresolved": 150,
+        "basin": 110,
+        "coastal": 625,
+        "possible": 642,
+        "enhanced": 40,
+        "covered": 37,
+        "reworked": 9
+      },
+      "bbox": [
+        11.491683005715354,
+        54.83472235900441,
+        11.81526791925313,
+        55.021068510851514
+      ]
+    },
+    {
+      "tile": "33-305",
+      "unchangedFeatures": 2308,
+      "classes": {
+        "possible": 982,
+        "coastal": 788,
+        "enhanced": 53,
+        "covered": 67,
+        "basin": 26,
+        "reworked": 75,
+        "unresolved": 317
+      },
+      "bbox": [
+        11.502813745512906,
+        55.01423692138921,
+        11.827924074436885,
+        55.20062130862405
+      ]
+    },
+    {
+      "tile": "33-306",
+      "unchangedFeatures": 2835,
+      "classes": {
+        "possible": 1734,
+        "coastal": 37,
+        "unresolved": 241,
+        "reworked": 322,
+        "basin": 205,
+        "covered": 37,
+        "enhanced": 259
+      },
+      "bbox": [
+        11.514069075093483,
+        55.193744216119015,
+        11.840722411647338,
+        55.38016723059023
+      ]
+    },
+    {
+      "tile": "33-307",
+      "unchangedFeatures": 3547,
+      "classes": {
+        "possible": 2500,
+        "basin": 243,
+        "reworked": 251,
+        "unresolved": 210,
+        "enhanced": 284,
+        "covered": 40,
+        "limited": 19
+      },
+      "bbox": [
+        11.525450901851432,
+        55.37324422530497,
+        11.85366511818915,
+        55.559706264935976
+      ]
+    },
+    {
+      "tile": "33-308",
+      "unchangedFeatures": 4171,
+      "classes": {
+        "enhanced": 110,
+        "possible": 3312,
+        "reworked": 104,
+        "basin": 130,
+        "coastal": 277,
+        "unresolved": 186,
+        "covered": 52
+      },
+      "bbox": [
+        11.536961173011592,
+        55.55273693063611,
+        11.866754427240075,
+        55.73923839954291
+      ]
+    },
+    {
+      "tile": "33-309",
+      "unchangedFeatures": 2835,
+      "classes": {
+        "possible": 1658,
+        "covered": 46,
+        "coastal": 770,
+        "unresolved": 212,
+        "basin": 37,
+        "reworked": 44,
+        "enhanced": 68
+      },
+      "bbox": [
+        11.548601876667977,
+        55.732222313362364,
+        11.879992619052398,
+        55.918763621974314
+      ]
+    },
+    {
+      "tile": "33-310",
+      "unchangedFeatures": 1527,
+      "classes": {
+        "enhanced": 263,
+        "unresolved": 107,
+        "coastal": 400,
+        "covered": 171,
+        "possible": 563,
+        "reworked": 9,
+        "basin": 14
+      },
+      "bbox": [
+        11.560375042855169,
+        55.911700354277,
+        11.89338202219236,
+        56.0982819194607
+      ]
+    },
+    {
+      "tile": "33-311",
+      "unchangedFeatures": 75,
+      "classes": {
+        "possible": 26,
+        "coastal": 32,
+        "covered": 3,
+        "unresolved": 14
+      },
+      "bbox": [
+        11.572282744653608,
+        56.091171033698586,
+        11.906925014818947,
+        56.277793278884985
+      ]
+    },
+    {
+      "tile": "33-314",
+      "unchangedFeatures": 218,
+      "classes": {
+        "coastal": 140,
+        "possible": 38,
+        "covered": 31,
+        "unresolved": 9
+      },
+      "bbox": [
+        11.6088344644145,
+        56.62953869867491,
+        11.948500083109995,
+        56.81628559207404
+      ]
+    },
+    {
+      "tile": "34-302",
+      "unchangedFeatures": 489,
+      "classes": {
+        "coastal": 170,
+        "reworked": 20,
+        "possible": 164,
+        "basin": 32,
+        "enhanced": 4,
+        "unresolved": 68,
+        "covered": 31
+      },
+      "bbox": [
+        11.778131336696722,
+        54.468188472206364,
+        12.09993639221223,
+        54.65520054644786
+      ]
+    },
+    {
+      "tile": "34-303",
+      "unchangedFeatures": 2922,
+      "classes": {
+        "possible": 1572,
+        "basin": 401,
+        "coastal": 410,
+        "unresolved": 328,
+        "reworked": 147,
+        "covered": 22,
+        "enhanced": 37,
+        "limited": 5
+      },
+      "bbox": [
+        11.790373628158964,
+        54.64766802629345,
+        12.113682667950963,
+        54.83472235900441
+      ]
+    },
+    {
+      "tile": "34-304",
+      "unchangedFeatures": 4683,
+      "classes": {
+        "possible": 3010,
+        "coastal": 559,
+        "basin": 470,
+        "unresolved": 362,
+        "reworked": 165,
+        "covered": 54,
+        "enhanced": 63
+      },
+      "bbox": [
+        11.802751803499689,
+        54.827139910918746,
+        12.12758206082522,
+        55.01423692138921
+      ]
+    },
+    {
+      "tile": "34-305",
+      "unchangedFeatures": 4822,
+      "classes": {
+        "possible": 2862,
+        "reworked": 362,
+        "basin": 112,
+        "covered": 164,
+        "enhanced": 590,
+        "unresolved": 284,
+        "coastal": 448
+      },
+      "bbox": [
+        11.81526791925313,
+        55.00660410217304,
+        12.141636899203982,
+        55.193744216119015
+      ]
+    },
+    {
+      "tile": "34-306",
+      "unchangedFeatures": 3325,
+      "classes": {
+        "possible": 2277,
+        "basin": 331,
+        "enhanced": 127,
+        "reworked": 351,
+        "unresolved": 176,
+        "covered": 42,
+        "limited": 14,
+        "coastal": 7
+      },
+      "bbox": [
+        11.827924074436885,
+        55.1860605756185,
+        12.155849559756383,
+        55.37324422530497
+      ]
+    },
+    {
+      "tile": "34-307",
+      "unchangedFeatures": 3843,
+      "classes": {
+        "possible": 2806,
+        "enhanced": 245,
+        "reworked": 350,
+        "unresolved": 105,
+        "basin": 318,
+        "covered": 19
+      },
+      "bbox": [
+        11.840722411647338,
+        55.36550930626905,
+        12.1702224687023,
+        55.55273693063611
+      ]
+    },
+    {
+      "tile": "34-308",
+      "unchangedFeatures": 4750,
+      "classes": {
+        "possible": 2965,
+        "reworked": 317,
+        "unresolved": 418,
+        "basin": 179,
+        "coastal": 658,
+        "enhanced": 179,
+        "covered": 34
+      },
+      "bbox": [
+        11.85366511818915,
+        55.54495026857027,
+        12.184758103102006,
+        55.732222313362364
+      ]
+    },
+    {
+      "tile": "34-309",
+      "unchangedFeatures": 5239,
+      "classes": {
+        "possible": 3251,
+        "basin": 217,
+        "coastal": 1016,
+        "reworked": 122,
+        "enhanced": 194,
+        "covered": 86,
+        "unresolved": 353
+      },
+      "bbox": [
+        11.866754427240075,
+        55.724383436378496,
+        12.19945899218631,
+        55.911700354277
+      ]
+    },
+    {
+      "tile": "34-310",
+      "unchangedFeatures": 2722,
+      "classes": {
+        "enhanced": 78,
+        "possible": 1810,
+        "reworked": 30,
+        "covered": 104,
+        "basin": 122,
+        "coastal": 269,
+        "unresolved": 309
+      },
+      "bbox": [
+        11.879992619052398,
+        55.90380878293947,
+        12.214327718728713,
+        56.091171033698586
+      ]
+    },
+    {
+      "tile": "34-311",
+      "unchangedFeatures": 138,
+      "classes": {
+        "possible": 106,
+        "unresolved": 6,
+        "coastal": 24,
+        "basin": 2
+      },
+      "bbox": [
+        11.89338202219236,
+        56.08322628086615,
+        12.229366920461059,
+        56.27063433145237
+      ]
+    },
+    {
+      "tile": "35-303",
+      "unchangedFeatures": 78,
+      "classes": {
+        "coastal": 7,
+        "possible": 54,
+        "unresolved": 5,
+        "reworked": 3,
+        "basin": 7,
+        "covered": 2
+      },
+      "bbox": [
+        12.09993639221223,
+        54.6393455773175,
+        12.424460423113578,
+        54.827139910918746
+      ]
+    },
+    {
+      "tile": "35-304",
+      "unchangedFeatures": 1816,
+      "classes": {
+        "enhanced": 60,
+        "reworked": 31,
+        "possible": 1112,
+        "basin": 45,
+        "coastal": 366,
+        "unresolved": 190,
+        "covered": 12
+      },
+      "bbox": [
+        12.113682667950963,
+        54.8187623198088,
+        12.439740764941792,
+        55.00660410217304
+      ]
+    },
+    {
+      "tile": "35-305",
+      "unchangedFeatures": 948,
+      "classes": {
+        "unresolved": 123,
+        "coastal": 351,
+        "basin": 44,
+        "enhanced": 104,
+        "covered": 13,
+        "possible": 310,
+        "reworked": 3
+      },
+      "bbox": [
+        12.12758206082522,
+        54.99817087988245,
+        12.455191910054817,
+        55.1860605756185
+      ]
+    },
+    {
+      "tile": "35-306",
+      "unchangedFeatures": 579,
+      "classes": {
+        "possible": 388,
+        "reworked": 72,
+        "basin": 14,
+        "enhanced": 11,
+        "unresolved": 36,
+        "coastal": 52,
+        "limited": 2,
+        "covered": 4
+      },
+      "bbox": [
+        12.141636899203982,
+        55.17757122543441,
+        12.470816467944186,
+        55.36550930626905
+      ]
+    },
+    {
+      "tile": "35-307",
+      "unchangedFeatures": 940,
+      "classes": {
+        "possible": 454,
+        "reworked": 59,
+        "unresolved": 167,
+        "basin": 46,
+        "enhanced": 32,
+        "covered": 38,
+        "coastal": 144
+      },
+      "bbox": [
+        12.155849559756383,
+        55.35696332365549,
+        12.486617102455584,
+        55.54495026857027
+      ]
+    },
+    {
+      "tile": "35-308",
+      "unchangedFeatures": 1878,
+      "classes": {
+        "possible": 1183,
+        "unresolved": 177,
+        "reworked": 177,
+        "basin": 206,
+        "coastal": 52,
+        "limited": 2,
+        "enhanced": 67,
+        "covered": 14
+      },
+      "bbox": [
+        12.1702224687023,
+        55.53634714100708,
+        12.502596533201904,
+        55.724383436378496
+      ]
+    },
+    {
+      "tile": "35-309",
+      "unchangedFeatures": 5578,
+      "classes": {
+        "possible": 4083,
+        "basin": 102,
+        "reworked": 387,
+        "enhanced": 383,
+        "covered": 2,
+        "unresolved": 617,
+        "coastal": 4
+      },
+      "bbox": [
+        12.184758103102006,
+        55.715722643196166,
+        12.518757537020601,
+        55.90380878293947
+      ]
+    },
+    {
+      "tile": "35-310",
+      "unchangedFeatures": 4958,
+      "classes": {
+        "possible": 4138,
+        "basin": 201,
+        "reworked": 47,
+        "unresolved": 390,
+        "enhanced": 156,
+        "coastal": 14,
+        "covered": 12
+      },
+      "bbox": [
+        12.19945899218631,
+        55.8950897951496,
+        12.535102949477016,
+        56.08322628086615
+      ]
+    },
+    {
+      "tile": "35-311",
+      "unchangedFeatures": 704,
+      "classes": {
+        "possible": 440,
+        "basin": 101,
+        "unresolved": 77,
+        "coastal": 54,
+        "covered": 27,
+        "enhanced": 5
+      },
+      "bbox": [
+        12.214327718728713,
+        56.07444856098754,
+        12.55163566641531,
+        56.262635902115925
+      ]
+    },
+    {
+      "tile": "36-304",
+      "unchangedFeatures": 525,
+      "classes": {
+        "enhanced": 69,
+        "possible": 238,
+        "basin": 25,
+        "reworked": 65,
+        "covered": 14,
+        "limited": 50,
+        "coastal": 13,
+        "unresolved": 51
+      },
+      "bbox": [
+        12.424460423113578,
+        54.80959048563275,
+        12.751728674603045,
+        54.99817087988245
+      ]
+    },
+    {
+      "tile": "36-305",
+      "unchangedFeatures": 125,
+      "classes": {
+        "reworked": 5,
+        "limited": 3,
+        "enhanced": 14,
+        "unresolved": 15,
+        "possible": 68,
+        "covered": 6,
+        "coastal": 11,
+        "basin": 3
+      },
+      "bbox": [
+        12.439740764941792,
+        54.98893816705893,
+        12.768573517187141,
+        55.17757122543441
+      ]
+    },
+    {
+      "tile": "36-308",
+      "unchangedFeatures": 1389,
+      "classes": {
+        "unresolved": 989,
+        "coastal": 296,
+        "possible": 85,
+        "reworked": 8,
+        "basin": 10,
+        "enhanced": 1
+      },
+      "bbox": [
+        12.486617102455584,
+        55.526928499737004,
+        12.820253400016082,
+        55.715722643196166
+      ]
+    },
+    {
+      "tile": "36-309",
+      "unchangedFeatures": 895,
+      "classes": {
+        "possible": 455,
+        "unresolved": 232,
+        "coastal": 57,
+        "reworked": 66,
+        "covered": 5,
+        "basin": 21,
+        "enhanced": 59
+      },
+      "bbox": [
+        12.502596533201904,
+        55.70624089920996,
+        12.837871683262273,
+        55.8950897951496
+      ]
+    },
+    {
+      "tile": "36-310",
+      "unchangedFeatures": 693,
+      "classes": {
+        "possible": 458,
+        "enhanced": 15,
+        "coastal": 38,
+        "reworked": 11,
+        "basin": 15,
+        "unresolved": 154,
+        "covered": 2
+      },
+      "bbox": [
+        12.518757537020601,
+        55.88554437017799,
+        12.855690886055212,
+        56.07444856098754
+      ]
+    },
+    {
+      "tile": "36-311",
+      "unchangedFeatures": 7,
+      "classes": {
+        "coastal": 2,
+        "possible": 4,
+        "unresolved": 1
+      },
+      "bbox": [
+        12.535102949477016,
+        56.06483886748827,
+        12.873714160751332,
+        56.253798903995985
+      ]
+    },
+    {
+      "tile": "37-308",
+      "unchangedFeatures": 6,
+      "classes": {
+        "coastal": 4,
+        "unresolved": 2
+      },
+      "bbox": [
+        12.802832949510103,
+        55.51669538570219,
+        13.13771244473285,
+        55.70624089920996
+      ]
+    },
+    {
+      "tile": "43-305",
+      "unchangedFeatures": 456,
+      "classes": {
+        "possible": 324,
+        "unresolved": 103,
+        "reworked": 25,
+        "enhanced": 4
+      },
+      "bbox": [
+        14.619216712176422,
+        54.90201795328818,
+        14.956092520217558,
+        55.09567450786842
+      ]
+    },
+    {
+      "tile": "43-306",
+      "unchangedFeatures": 6559,
+      "classes": {
+        "unresolved": 2822,
+        "possible": 3331,
+        "reworked": 117,
+        "enhanced": 72,
+        "coastal": 110,
+        "covered": 18,
+        "basin": 27,
+        "limited": 62
+      },
+      "bbox": [
+        14.644356095467609,
+        55.080780024325996,
+        14.982896734949133,
+        55.27452152020779
+      ]
+    },
+    {
+      "tile": "43-307",
+      "unchangedFeatures": 448,
+      "classes": {
+        "unresolved": 278,
+        "possible": 125,
+        "limited": 27,
+        "coastal": 18
+      },
+      "bbox": [
+        14.669776240915025,
+        55.259528144462195,
+        15.010001241209071,
+        55.45335534394819
+      ]
+    },
+    {
+      "tile": "44-305",
+      "unchangedFeatures": 896,
+      "classes": {
+        "possible": 403,
+        "unresolved": 105,
+        "reworked": 39,
+        "coastal": 173,
+        "enhanced": 78,
+        "covered": 93,
+        "limited": 5
+      },
+      "bbox": [
+        14.929584093026914,
+        54.886432343051496,
+        15.267533172582601,
+        55.080780024325996
+      ]
+    },
+    {
+      "tile": "44-306",
+      "unchangedFeatures": 2167,
+      "classes": {
+        "unresolved": 841,
+        "coastal": 264,
+        "limited": 64,
+        "covered": 10,
+        "possible": 972,
+        "reworked": 6,
+        "enhanced": 10
+      },
+      "bbox": [
+        14.956092520217558,
+        55.06509124451733,
+        15.295716952999781,
+        55.259528144462195
+      ]
+    },
+    {
+      "tile": "44-307",
+      "unchangedFeatures": 55,
+      "classes": {
+        "limited": 27,
+        "unresolved": 28
+      },
+      "bbox": [
+        14.982896734949133,
+        55.243735279008995,
+        15.324216180076473,
+        55.43826219051369
+      ]
+    }
+  ]
+}

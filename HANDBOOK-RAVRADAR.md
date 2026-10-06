@@ -1,6 +1,11 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.543
+**Håndbogsversion:** 4.0.544
+
+Den aktuelle Jordrav-kandidat 4.0.544 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
+Den viderefører den eksisterende kystmodel; de nye Jordravlag ændrer ikke RavScore.
+Bindingen er et kildekodebevis. GitHub-kontrol og offentlig levering dokumenteres særskilt.
 
 ## 89.163 Prognosehalens dækning og bedre brug af reservekøen
 
@@ -336,6 +341,176 @@ eller deploy. Ejeren har stående tilladt relevante private joblogs; secrets
 og private payloads forbliver fortrolige uden tekniske kontorettighedsændringer.
 Fur-vandstandstabet og den samlede vejrhentningsrevision er fortsat åbne.
 Se DEC-0289; ældre lokale541-kandidatstatus nedenfor er historisk.
+
+## 90.1 Jordrav 0.2 – landsdækkende geologiske muligheder
+
+**Supplerende kort og undersøgelsesprioritet 2026-10-06:** Under kortet
+kan JB-jordbundskort 2024, terrænskygge fra 2005–2007/10 m, offentlige
+boringer og 16 kontrollerede profilpunkter vælges. Et geologiklik giver
+en særskilt knap til JB ved selve klikstedet. Flere klasser eller intet
+svar vises uden at vælge en sikker klasse. JB6 kan afspejle administrativ
+behandling af JB4 med leret underjord; koden er ikke en entydig topjordsprøve.
+
+Alle nationale flader får næste relevante undersøgelse med ravtilførsel,
+transport, modtagelse, mulig bevaring og adgang. Det prioriterer afklaring,
+ikke fundchance. Terrænskygge viser ældre former, ikke dagens blotlægning.
+Hule lilla cirkler er boringsregistreringer med originalt profillink;
+fyldte lilla nedpile er fortsat de to udvalgte dybe sedimenteksempler.
+Profilpunkter med tre streger viser kildebundne registreringer læst
+6. oktober: 126 lagrækker, seks uden geologi og to manglende grænser.
+Totaldybde er ikke ravlagets dybde. Registrerede meter gælder boringens
+terræn ved registreringen, ikke nabomarken eller dagens pløjelag.
+
+Nye gemte links bevarer de supplerende lagvalg, men gemmer ikke en
+uforseglet live boringspost eller et opdigtet prøvepunkt. Klik igen for
+jordbund på en genåbnet flade. Automatisk registrering af dagens
+nypløjet/bar/regnvasket jord er udgået efter ejerordre. Lokal Chrome,
+luftfoto og 390 px/DA/DE/EN er kontrolleret; integration/publicering
+følger særskilt. Fysisk telefon og empirisk rav-/pløjeadgang på hver mark
+er ikke målt. Rapport:
+`docs/research/JORDRAV_NATIONAL_JORDBUND_PROFILER_2026-10-06.md`.
+
+Jordravkortet har gennemgået hele det tilgængelige danske jordarts- og
+landskabsgrundlag. Alle 192 udsnit og 4.652 materiale-/landskabsforklaringer
+følger samme kvalitative regler. Det er selvstændigt fra RavScore.
+Appversionen er 4.0.544; den geologiske model er 0.2.0-prototype.
+Almindeligt kort og luftfoto bevarer farveflader, valgt sted og forklaring.
+Kystvisningen henter ikke jordravdata.
+
+**Lagadgang 2026-10-05:** Klikpanelets *Hvordan kan laget nå overfladen?*
+viser øvre og dybere fysisk materiale samt to til fire undersøgelsestrin.
+Samme kornstørrelse er ikke nødvendigvis samme aflejring. Organisk
+materiale/flyvesand kan have egen ravmulighed og samtidig ligge over et
+andet relevant lag; begge kæder vurderes særskilt. Materialer samlet
+med bindestreg afklares lokalt før lodret kontakt. Faktiske kodebeskrivelser
+bruges også i panelets øvre/dybere faktafelter, herunder uafklarede underkoder.
+
+Alle 4.652 forklaringer og 505.834 fragmenter er behandlet. GEUS' cirka
+én meter, AU's faste dybdeintervaller og kulstofmodeller er ikke lokale
+målinger af lagkontakt eller pløjedybde. Det relevante materiale skal
+forbindes med dagens blotlagte eller bearbejdede jord. Jagtbarhed og farver
+bevares; dybe punkter beholder registrerede intervaller. Lokal lagadgangs-
+vejledning 0.1.0 ændrer ingen geologiske data eller RavScore. Metode og
+kontrol: `docs/research/JORDRAV_LAGADGANG_2026-10-05.md`.
+
+**Landskabsform og laghistorie 2026-10-05:** Feltet *Kortlagt landskabsform*
+viser nu det præcise navn sammen med processen. Under lagadgang kan
+*Landskabets spor mod overfladen* åbnes med mus eller tastatur. Her
+forklares den lokale undersøgelsesvej og det øvre materiales dannelse.
+Alle 33 navngivne former plus ikke-kortlagt behandles i 27 forløb.
+En gammel tunneldals fyld, en strandvold og en tørlagt fjordbund vurderes
+særskilt. På 5.604 visningsfragmenter står hævet senglacial form sammen
+med postglacial øvre gruppe: senere aflejring/omlejring er en hypotese,
+mens kortgrænser og registrering også kan spille ind. Formens alder
+daterer ikke dagens øverste jord eller ravet. Alle 37 originale
+navn/kode-par bevares, også de to forskellige navne med kode 50.
+
+Navne og forklaringer findes på dansk, tysk og engelsk. Luftfoto, filtre
+og gemte links bevarer vurderingen; dybe punkter erstatter den med
+registreret dybde. Farver og jagtbarhed bevares. Lokal vejledning 0.1.0;
+dataset, model og RavScore er uændrede. Lokal ravtilførsel, lagkontakt,
+bearbejdningsdybde og nutidig blotlægning forbliver åbne. Analyse:
+`docs/research/JORDRAV_LANDSKABSFORM_LAGHISTORIE_2026-10-05.md`.
+
+**Kortplanlægning 2026-10-05:** *Undersøg et spor* viser én af de fem
+geologiske mulighedsklasser ad gangen, eller alle som før. Det gælder hele
+Danmark og de lokale detaljer. *Vis kun mulighedsudpegninger* skjuler
+fortsat generel og uafklaret geologi, når alle spor vises. Dybe punkter
+styres særskilt. Et valgt områdes forklaring bevares ved filtrering;
+besked fortæller, hvis fremhævningen er skjult af de aktuelle lagvalg.
+
+*Kopiér link til visningen* husker sted, zoom, baggrund, spor, farvestyrke,
+kortfarver, lagvalg og det valgte detailfragment eller dybdepunkt. Ved
+genåbning gendannes valget kun i samme geologiske datasæt. Hvis data har
+ændret sig, gendannes kamera og indstillinger, men ikke en mulig forkert
+polygon. Manglende valg forklares eksplicit. Et gammelt polygonvalg uden
+for detailvisningen udelades ved kopiering; dybdepunkter har egne faste
+identiteter. Linket kan kopieres manuelt, hvis clipboard ikke virker.
+Den lokale adresse virker på preview-computeren; det er ikke publicering.
+Ingen ny ravrangliste eller ændring af lagadgang følger af filtrene.
+Rapport: `docs/research/JORDRAV_KORTPLANLAEGNING_2026-10-05.md`.
+
+**Videre forbedring 2026-10-05:** Klikpanelet har nu *Hvad bør du undersøge
+her?* med fysisk materiale, lagrelation, søgeopgave og åbent led. Marine
+tørv/gytje adskilles fra ler/silt; vekslende lag og materialer side om side
+beskrives særskilt. De særlige HV-underkoder har uafklaret lokal variation.
+Alle 4.652 forklaringer/505.834 detailfeatures er gennemgået. Modelklasser
+og datasæt er uændrede; søgevejledningen er selvstændig version 0.1.0.
+
+*Markgrænser 2026 · hele Danmark* viser valgbare offentlige SGAV-omrids
+ved zoom 12 eller nærmere på begge baggrunde. Marklaget er slået fra ved
+start og henter kun lokale rasterbilleder uden attribut-/ejeropslag.
+Sort/hvide omrids ændrer ingen geologisk farve, ravvurdering eller valgt
+polygon. Registrering fastlægger ikke dagens pløjning, bar jord, vegetation
+eller lagadgang. Ved servicefejl vises eksplicit besked. Ingen markbonus.
+JB-kort og afgrøder er fortsat forskningskontekst. Analyse og kontrol:
+`docs/research/JORDRAV_SOEGEBARHED_MATERIALE_MARKER_2026-10-05.md`.
+
+Farverne viser forskellige begrundede geologiske spor, ikke fundprocenter:
+
+- Orange: sand/grus i konkrete transport- og sorteringsmiljøer.
+- Blå: marine øvre aflejringer, også fine og marine blandinger.
+- Rosa: ferske og issøaflejringer eller kompatibelt materiale i et bassin.
+- Okker: materiale i et konkret erosions-, smeltevands- eller istryksmiljø.
+- Turkis med stiplet kant: dæklag i muligt modtagermiljø; tykkelse og adgang
+  er ukendt. Underliggende sand ophøjer ikke overfladen til orange.
+- Ufarvet og klikbart: generel geologi er vurderet, men kombinationen giver
+  ingen særskilt procesudpegning. Det er ikke negativ ravviden.
+- Brun: fast bjergart med begrænset overfladestøtte; små yngre lommer kan mangle.
+- Grå: uafklaret materiale, konflikt eller ikke vurderbart markravmiljø.
+
+Fokus viser alle fem mulighedsklasser. De 11 navngivne områdeforklaringer
+flytter kun kortvisningen; de giver hverken fundgrænser eller stedbonus.
+Ejerens Asaa–Voerså-eksempel er brugt til national genovervejelse. Den
+foregående guide-only leverance og frysning af model 0.1 er erstattet.
+Blå følger faktisk marint materiale; moræneler i tørlagt marint forland
+bliver ikke marine aflejringer af landskabsnavnet alene. Fine bassiner
+udelades ikke alene på grund af kornstørrelse. Kul, alder og israndsoverlap
+giver ingen automatisk bonus. Tidligere fund er støtte, ikke adgangskrav.
+
+Geologisk mulighed og jagtbarhed er adskilt. GEUS beskriver oprindelige
+sedimenter omkring én meters dybde, under pløjelaget. Ens symboler dokumenterer
+ikke adgang ved pløjning. Forskellige symboler fastlægger ikke dæklagets
+tykkelse. Jagtbarhedsvisningen er derfor gråblå/uafklaret på alle
+materialeflader. Lilla punkter viser udvalgte registrerede dybe sandlag:
+Åsted Vest 82–89 m og Ålbæk Lyngshede 80–90,5 m samt 107–112 m under
+boringens historiske terræn. De mærkes ikke umiddelbart jagtbart og kan
+skjules særskilt. Punkterne er ikke dokumenterede ravlag eller arealudpegninger.
+
+Pløjning kan bringe rav fra det bearbejdede lag frem. Regn kan vaske
+blotlagt rav rent og gøre det synligt; regn åbner ikke et begravet lag.
+Luftfoto giver landskabskontekst, ikke bevis for dagens pløjning.
+Årsafgrøder, JB-kort og historiske profiler er supplerende kontekst.
+Nutidig blotlægning, ravmængde og lokal lagadgang er fortsat uverificerede.
+Denne empiriske usikkerhed er adskilt fra den afsluttede nationale
+behandling af alle tilgængelige kortkombinationer.
+
+Nyere jordarter har forrang. Ældre materiale supplerer de samme X-områder
+og geografiske huller som før, med grovere kildeangivelse efter ejerens
+instruktion. Alle 505.834 detailfeatures bevarer geometri, kilde-ID,
+feltværdier og grænser fra 0.1. Originalinventaret kontrollerer alle
+199.653 nyere, 24.192 ældre og 15.178 geomorfologiposter; 238.829 bevarede
+cacheattributter matcher originalerne. Seks uforklarede øvre værdier
+bevares uafklarede, uden at blive erstattet af et dybere eller visningssymbol.
+
+Det nye Danmarksoverblik generaliseres særskilt ved 100 m. Numerisk
+normalisering og projektion måles separat; eksakt national eksportdækning
+påstås ikke. Detailfladerne har den tidligere 20 m generalisering og
+kildefejl typisk 50–100 m (nyt materiale), omkring 200 m eller mere (ældre).
+Visningsarealer er ikke ravarealer. Kilder og ravslutning har særskilt
+sikkerhed; alle ravslutninger fra kortene er svage.
+
+Metode, nationalt slutresultat og kontroller:
+`docs/research/JORDRAV_NATIONAL_MODEL_0_2.md`.
+Kode: `scripts/build-jordrav-national-model.py`,
+`data/jordrav/model-rules.json`, `scripts/lib/jordrav_model.py`,
+`js/jordrav/map.js` og `js/jordrav/data-service.js`.
+Tidligere 0.1-analyser/audits er historik på commit eee7b08e.
+
+Et webhåndbogstillæg er forberedt separat. Aktiv webhåndbog, SQL og
+kyst-/vejrproduktion er urørt. Lokal model-, artifact- og browserkontrol
+er ikke CI eller produktionsbevis; fælles publicering kræver koordineret
+integration med nyere main. Fysisk mobilhardware er endnu ikke verificeret.
 
 ## 89.154 4.0.541 – Copernicus skal være lukket før oprydning (lokal kandidat)
 

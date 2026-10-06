@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#073b4c">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https://unpkg.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://server.arcgisonline.com https://geodata.fvm.dk https://data.geus.dk; connect-src 'self' https://geodata.fvm.dk https://jupiter.geus.dk; font-src 'self' data:; worker-src 'self' blob:; upgrade-insecure-requests">
+  <title data-i18n="jordrav.title">Jordrav – geologiske muligheder | RavRadar</title>
+  <meta name="description" data-i18n-content="jordrav.description" content="Udforsk geologiske muligheder for jordrav i Danmark med jordarter, landskabsdannelse og luftfoto.">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="style.css?v=4.0.544"><link rel="stylesheet" href="jordrav.css">
+</head>
+<body class="jordrav-page">
+  <header class="app-header">
+    <a class="jordrav-brand" href="./"><span class="eyebrow" data-i18n="jordrav.brandLine">Rav i landskabet</span><span class="brand-title">RavRadar</span></a>
+    <nav class="language-switcher" data-i18n-aria-label="language.selector" aria-label="Vælg sprog"><button type="button" data-language="da" lang="da" aria-pressed="true">Dansk</button><button type="button" data-language="de" lang="de" aria-pressed="false">Deutsch</button><button type="button" data-language="en" lang="en" aria-pressed="false">English</button></nav>
+  </header>
+  <main>
+    <nav class="jordrav-tabs" data-i18n-aria-label="jordrav.navigation" aria-label="Kortvisning"><a href="./" data-i18n="jordrav.coastTab">Kystprognose</a><a href="./jordrav.html" aria-current="page" data-i18n="jordrav.landTab">Jordrav</a></nav>
+    <section class="jordrav-intro" aria-labelledby="jordravTitle">
+      <div><p class="eyebrow dark" data-i18n="jordrav.eyebrow">Danmarks geologiske muligheder</p><h1 id="jordravTitle" data-i18n="jordrav.heading">Hvor kan landskabet gemme på rav?</h1><p data-i18n="jordrav.intro">Udforsk mulige transportveje, omlejring og aflejringer. Vælg farver efter geologisk potentiale eller jagtbarhed. Sikkerhed og dybde forklares hver for sig.</p></div>
+      <span class="jordrav-prototype" data-i18n="jordrav.prototype">Landsdækkende geologisk model · 0.2</span>
+    </section>
+    <div class="jordrav-workspace">
+      <section class="jordrav-map-column" aria-labelledby="jordravMapTitle">
+        <h2 id="jordravMapTitle" class="visually-hidden" data-i18n="jordrav.mapTitle">Jordravkort over Danmark</h2>
+        <div class="jordrav-toolbar">
+          <div class="jordrav-base-switch" role="group" data-i18n-aria-label="jordrav.baseMap" aria-label="Baggrundskort"><button type="button" data-base="street" aria-pressed="true" data-i18n="jordrav.street">Almindeligt kort</button><button type="button" data-base="aerial" aria-pressed="false" data-i18n="jordrav.aerial">Luftfoto</button></div>
+          <button id="jordravDenmark" type="button" data-i18n="jordrav.denmark">Hele Danmark</button>
+          <button id="jordravCopyView" type="button" disabled data-i18n="jordrav.copyView">Kopiér link til visningen</button>
+        </div>
+        <div id="jordravMap" data-i18n-aria-label="jordrav.mapTitle" aria-label="Jordravkort over Danmark"></div>
+        <div class="jordrav-layer-tools"><label><input id="jordravVisible" type="checkbox" checked><span data-i18n="jordrav.overlay">Vis geologiske lag</span></label><label><input id="jordravFocus" type="checkbox"><span data-i18n="jordrav.focus">Vis kun mulighedsudpegninger</span></label><label for="jordravOpacity"><span data-i18n="jordrav.opacity">Farvestyrke</span><input id="jordravOpacity" type="range" min="15" max="75" value="45"></label></div>
+        <div class="jordrav-layer-tools"><label for="jordravColourMode"><span data-i18n="jordrav.colourMode">Kortfarver</span><select id="jordravColourMode"><option value="potential" data-i18n="jordrav.colourPotential">Geologisk potentiale</option><option value="access" data-i18n="jordrav.colourAccess">Jagtbarhed</option></select></label><label><input id="jordravDeepVisible" type="checkbox" checked><span data-i18n="jordrav.deepToggle">Vis dybe lag</span></label></div>
+        <div class="jordrav-layer-tools"><label for="jordravTrace"><span data-i18n="jordrav.traceLabel">Undersøg et spor</span><select id="jordravTrace"><option value="all" data-i18n="jordrav.traceAll">Alle geologiske spor</option><option value="enhanced" data-i18n="jordrav.enhanced">Transport og sortering</option><option value="coastal" data-i18n="jordrav.coastal">Marine aflejringer</option><option value="basin" data-i18n="jordrav.basin">Ferskvands- og bassinmodtagere</option><option value="reworked" data-i18n="jordrav.reworked">Omlejringsmiljøer</option><option value="covered" data-i18n="jordrav.coveredCategory">Dæklag i muligt modtagermiljø</option></select></label></div>
+        <p id="jordravSelectionNote" class="jordrav-status" data-i18n="jordrav.selectionHidden" hidden>Valget er bevaret i panelet, men fremhævningen er skjult med de aktuelle lagvalg.</p>
+        <div class="jordrav-layer-tools"><label><input id="jordravFields" type="checkbox"><span data-i18n="jordrav.fieldsToggle">Markgrænser 2026 · hele Danmark</span></label><a id="jordravFieldSource" href="https://lbst.dk/bedrift/arealer-og-ejendomme/kortdata/adgang-til-kortdata" target="_blank" rel="noopener noreferrer" data-i18n="jordrav.fieldsSource">Offentlig markkilde</a></div>
+        <p id="jordravFieldsStatus" class="jordrav-status" role="status" aria-live="polite" hidden></p>
+        <details class="jordrav-context-controls"><summary data-i18n="jordrav.contextTitle">Supplerende jordbund, terræn og boringer</summary>
+          <label><input id="jordravSoil" type="checkbox"><span data-i18n="jordrav.soilToggle">JB-jordbundskort 2024</span></label>
+          <p id="jordravSoilStatus" class="jordrav-status" role="status" aria-live="polite" hidden></p>
+          <label><input id="jordravTerrain" type="checkbox"><span data-i18n="jordrav.terrainToggle">Terrænskygge · 2005–2007</span></label>
+          <p id="jordravTerrainStatus" class="jordrav-status" role="status" aria-live="polite" hidden></p>
+          <label><input id="jordravBores" type="checkbox"><span data-i18n="jordrav.boresToggle">Offentlige boringer · profiler hos GEUS</span></label>
+          <p id="jordravBoresStatus" class="jordrav-status" role="status" aria-live="polite" hidden></p>
+          <label><input id="jordravProfiles" type="checkbox"><span data-i18n="jordrav.profilesToggle">16 kontrollerede profilpunkter · 6. oktober 2026</span></label>
+          <p id="jordravProfilesStatus" class="jordrav-status" role="status" aria-live="polite" hidden></p>
+          <p class="jordrav-status" data-i18n="jordrav.contextNote">Disse lag giver lokal kontekst. JB-farver beskriver publicerede jordklasser; boringspunkter viser registreringer. De ændrer ikke ravvurderingen.</p>
+        </details>
+        <p id="jordravFocusNote" class="jordrav-status" data-i18n="jordrav.focusNote" hidden>Viser orange, blå, rosa, okker og turkise muligheder. Generel geologi og uafklarede flader skjules; dybe punkter styres særskilt.</p>
+        <div id="jordravLegend" class="jordrav-legend" data-i18n-aria-label="map.legend" aria-label="Kortforklaring"></div>
+        <p id="jordravColourNote" class="jordrav-status">Ufarvede områder har ingen særskilt udpegning; det betyder ikke, at ravmuligheder er udelukket. Zoom ind og klik for geologi. Farver dokumenterer ikke jagtbarhed; lilla punkter viser dybe lag.</p>
+        <p class="jordrav-status" data-i18n="jordrav.huntabilityMapNote">Et muligt ravførende lag skal være blotlagt eller nås af jordbearbejdningen for at være jagtbart. Tilgængeligheden i pløjelaget er endnu uafklaret for de farvede flader.</p>
+        <p id="jordravStatus" class="jordrav-status" role="status" aria-live="polite" data-i18n="jordrav.loading">Indlæser geologisk overblik…</p>
+        <p id="jordravBaseStatus" class="jordrav-status" role="status" hidden></p>
+        <p id="jordravAerialSource" class="jordrav-status" data-i18n="jordrav.aerialSource" hidden>World Imagery: luft- og satellitbilleder fra forskellige år.</p>
+        <label class="jordrav-view-link" for="jordravViewLink"><span class="visually-hidden" data-i18n="jordrav.viewLinkLabel">Link til den gemte kortvisning</span><input id="jordravViewLink" type="text" readonly hidden></label>
+        <p id="jordravLinkStatus" class="jordrav-status" role="status" aria-live="polite"></p>
+      </section>
+      <aside id="jordravDetails" class="jordrav-details" aria-live="polite"><h2 data-i18n="jordrav.selectTitle">Følg en geologisk mulighed</h2><p data-i18n="jordrav.selectHelp">Zoom ind og klik på kortet, også i ufarvede områder. Her kan du se jordart, mulig transportkæde, dybde og kilder.</p><div class="jordrav-method-note"><strong data-i18n="jordrav.confidenceTitle">Ravspecifik sikkerhed: svag</strong><p data-i18n="jordrav.methodNote">Kortene viser materialer og processer. Vi udleder ravmuligheder uden at kræve tidligere fund. Tilførsel af rav til det enkelte område er endnu ikke verificeret.</p></div></aside>
+    </div>
+    <details class="jordrav-method jordrav-regions"><summary data-i18n="jordrav.regionalTitle">Undersøg regionale ravhistorier</summary>
+      <p data-i18n="jordrav.regionalIntro">Forskellige geologiske kæder giver konkrete muligheder at undersøge. Vælg et område for at følge forklaringen.</p>
+      <div class="jordrav-region-tools"><label for="jordravRegion" data-i18n="jordrav.regionalChoose">Område</label><select id="jordravRegion"><option value="" data-i18n="jordrav.regionalPlaceholder">Vælg en regional mulighed</option></select><button id="jordravRegionGo" type="button" disabled data-i18n="jordrav.regionalGo">Vis på kortet</button></div>
+      <div id="jordravRegionalExplanation" hidden></div>
+      <p class="jordrav-original" data-i18n="jordrav.regionalNote">Regionsvalget flytter kun kortvisningen. Det tegner ingen ravgrænse og ændrer ikke farveklassernes vurderinger.</p>
+    </details>
+    <details class="jordrav-method jordrav-field"><summary data-i18n="jordrav.fieldTitle">Markrav efter pløjning og regn</summary>
+      <p data-i18n="jordrav.fieldPlough">Pløjning kan bringe rav, som allerede ligger i det bearbejdede jordlag, frem i overfladen.</p>
+      <p data-i18n="jordrav.fieldRain">Regn kan vaske jord af blotlagt rav, så det bliver lettere at se. Det ændrer synligheden; det tilfører ikke i sig selv rav til marken.</p>
+      <p data-i18n="jordrav.fieldDepth">GEUS beskriver geologiske aflejringer omkring én meters dybde, under pløjelaget. Jordartskortet angiver ikke ravindholdet i pløjelaget eller dæklagets præcise tykkelse.</p>
+      <p data-i18n="jordrav.fieldUse">Vurder først den mulige sedimentkæde. Se derefter efter en mark med blotlagt jord og forbindelse til det relevante lag. Luftfoto giver landskabskontekst; dagens pløjning, regn og vegetation er ikke kontrolleret.</p>
+      <p data-i18n="jordrav.fieldsNote">Markgrænser 2026 viser offentligt registrerede markflader. Registreringen fastlægger ikke dagens afgrøde, pløjning, bar jord eller adgang til ravlaget. Markgrænser bliver ikke til ravgrænser.</p>
+    </details>
+    <details class="jordrav-method"><summary data-i18n="jordrav.method">Sådan udledes mulighederne</summary><div id="jordravMethodContent"></div></details>
+    <noscript><p class="jordrav-error">Kortet kræver JavaScript.</p></noscript>
+  </main>
+  <footer><p data-i18n="jordrav.footer">Geologisk model 0.2.0 · Hele Danmark er gennemgået. Ravmængde og adgang ved pløjning er ikke verificeret.</p><p>GEUS · OpenStreetMap · Esri World Imagery · Leaflet</p></footer>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script type="module" src="js/jordrav/map.js"></script>
+</body>
+</html>
