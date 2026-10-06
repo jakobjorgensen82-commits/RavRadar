@@ -1,5 +1,17 @@
 # AKTUELLE JORDRAVPUNKTER – national model 0.2 – 2026-10-05
 
+**2026-10-06, JORDRAV-014/-015 lokalt løst:** National undersøgelsesprioritet
+og kædeled samt JB2024, DHM2007/10 m, landsdækkende Jupiter/profillinks og
+16 kontrollerede profiler er implementeret. Manglende geologi og
+intervalgrænser vises eksplicit. JORDRAV-008's integrationsdel er nu løst;
+publiceret JB6/administrativ omklassificering og lokal pløjelagsforbindelse
+forbliver empiriske begrænsninger. JORDRAV-007 får flere observerede dybder
+og ingen ekstrapolation til marker. JORDRAV-006 afventer nyere main,
+release/CI/deploy. JORDRAV-005 har yderligere 390 px browserbevis, ingen
+fysisk telefonprøve. Automatisk nutidig bar/nypløjet/regnvasket jord er
+udtrykkeligt udgået, ikke et udviklings- eller afleveringskrav.
+Rapport: docs/research/JORDRAV_NATIONAL_JORDBUND_PROFILER_2026-10-06.md.
+
 **JORDRAV-013, lokal form-/sedimentadskillelse løst:** Landskabsfeltet viser
 præcist navn; 27 forløb dækker alle 33 navngivne former plus ikke-kortlagt.
 37 originale navn/kode-par bevares, også begge kode-50-navne. Alle 196

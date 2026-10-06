@@ -1,5 +1,14 @@
 # AKTUELT JORDRAVKRAV – 2026-10-05
 
+**Nyeste ejerordre 2026-10-06: hele arbejdet kontinuerligt og autonomt.**
+Resterende lagadgang, stærkere national prioritering, terræn/topjord,
+udbygget dybdekontekst og sikker publicering/mobilkontrol er bestilt.
+Punkt 4 om aktuelle nypløjede/bare/regnvaskede søgeforhold er udtrykkeligt
+udgået. Ingen sådanne automatisk målte tilstande skal udvikles. Offentlige
+kilder og lokale observationspunkter må integreres til de øvrige punkter,
+med skala/dato/usikkerhed og uden falsk rav-, pløje- eller dybdebevis.
+Mandat og plan: docs/ai/JORDRAV_AUTONOMOUS_WORKPLAN.md.
+
 **Seneste ejerordre: fortsæt med den nationale analyse og forbedring.**
 Præcis kortlagt landskabsform og det øvre materiales dannelsesgruppe skal
 adskilles i klikvejledningen. Alle originale navn/kode-par behandles;

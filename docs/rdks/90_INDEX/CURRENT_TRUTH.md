@@ -1,5 +1,22 @@
 # AKTUELT JORDRAVCHECKPOINT – national model 0.2 – 2026-10-05
 
+**2026-10-06: supplerende kontekst og national undersøgelsesprioritet lokalt
+implementeret.** Alle 196 filer/4.652 kombinationer/505.834 fragmenter har
+fem kædeled og syv undersøgelsesprioriteter. JB2024 ved faktisk kliksted,
+terrænskygge 2005–2007/10 m, landsdækkende Jupiter og 16 profiler/126 rækker
+er integreret. Seks profiler mangler geologi; to rækker mangler grænse.
+Live Chrome/luftfoto/DA/DE/EN/390 px PASS; fysisk telefon, CI og produktion
+uafklaret. Model-0.2-data, farver, RavScore og vejr bevares. Automatisk
+aktuel pløjning/bar/regnvasket jord er udgået. Næste er nyere main/release.
+Analyse: docs/research/JORDRAV_NATIONAL_JORDBUND_PROFILER_2026-10-06.md.
+
+**Aktivt autonomt mandat 2026-10-06:** Ejeren bestiller hele det resterende
+arbejde frem til færdiggørelse, inkl. sikker publicering. Punkt 4 om
+nypløjet/bar/regnvasket jord nu er efterfølgende udgået. Dette erstatter
+tidligere lokal-only mandat; hidtidig evidens bliver ikke produktionsbevis.
+Følg docs/ai/JORDRAV_AUTONOMOUS_WORKPLAN.md. Ingen ny dataintegration eller
+publicering er endnu verificeret; den faglige videreanalyse er aktiv.
+
 **Slutkontrol for landskabsform og laghistorie:** 17 modelcases, fem
 artifacttests, 4+4+4+4 kontrakter og 34 nye + 56 eksisterende faktiske
 Chrome-checks PASS. Sourcegate/114 browserfiler, RDKS/sikkerhed, 64 Pages-

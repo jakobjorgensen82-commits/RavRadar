@@ -69,7 +69,7 @@ test('national detail data cannot be imported or precached by the coastal view',
   assert.doesNotMatch(bootstrap, /jordrav\/(?:map|data-service|dataset-binding)/);
   assert.doesNotMatch(worker, /data\/jordrav/);
   assert.doesNotMatch(inland, /Supabase|supabase|dmi|data\/live|data-service\.js\?v=/);
-  assert.match(html, /connect-src 'self';/);
+  assert.match(html, /connect-src 'self' https:\/\/geodata\.fvm\.dk https:\/\/jupiter\.geus\.dk;/);
   assert.doesNotMatch(html, /\son[a-z]+\s*=/i);
   assert.ok(intersects([9,55,10,56],[10,56,11,57]));
   assert.ok(!intersects([9,55,10,56],[11,55,12,56]));

@@ -1,0 +1,299 @@
+{
+  "date": "2026-10-06",
+  "scope": "Actual Chrome with live public soil/borehole/terrain services plus controlled failure cases; emulated mobile, not physical phone",
+  "checks": [
+    "All supplemental data remain opt-in; no public service or selected profile request at startup",
+    "Real polygon click queries the actual click coordinate only after an explicit soil request; live JB4 returned",
+    "Live nationwide borehole service renders hollow markers and distinguishes total depth from an amber layer; original profiles linked",
+    "Live JB raster and reprojected 2007 terrain images load under both map backgrounds with visible source limitations",
+    "Actual aerial image tiles load and remain visible when supplemental layers are hidden",
+    "All 16 actual checked-profile markers open their bound rows; absent geology and missing interval boundaries remain explicit",
+    "Saved views restore all four supplemental controls while omitting an unbound live borehole selection",
+    "390 px mobile views and German/English profile interfaces fit without horizontal overflow; original Danish lithology stays labelled",
+    "Failed borehole service leaves no markers or implied negative evidence; disabling cancels and clears the layer"
+  ],
+  "errors": [],
+  "responses": [
+    {
+      "status": 200,
+      "type": "application/json;charset=ISO-8859-1",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "application/json",
+      "host": "jupiter.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "data.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "application/json",
+      "host": "jupiter.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "application/json",
+      "host": "jupiter.geus.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    },
+    {
+      "status": 200,
+      "type": "image/png",
+      "host": "geodata.fvm.dk"
+    }
+  ],
+  "status": "PASS"
+}

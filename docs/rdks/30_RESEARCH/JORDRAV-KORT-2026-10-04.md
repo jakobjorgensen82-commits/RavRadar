@@ -1,5 +1,18 @@
 # Aktuel national Jordravmodel 0.2 – 2026-10-05
 
+**Seneste 2026-10-06:** National undersøgelsesprioritet og fem kædeled er
+implementeret for hele det eksisterende grundlag. Opt-in JB2024 med
+faktisk kliksted, korrekt omprojekteret DHM2007/10 m og landsdækkende
+Jupiter med minimale offentlige felter giver lokal kontekst. 16 direkte
+kontrollerede profiler indeholder 126 rækker; seks mangler geologi og to
+rækker mangler intervalgrænse. Alle 196 model-0.2-filer er SHA-læst;
+farver/geometri/modelbytes er bevaret. Live Chrome, luftfoto og emuleret
+390 px/DA/DE/EN består. Punkt 4 om automatisk aktuelle søgeforhold er
+udgået efter ejerordre; tidligere lokal-only mandat er erstattet af
+autonom færdiggørelse/publicering. Empirisk lagadgang opfindes ikke.
+Nyere main, reel release og internetbevis udestår. Analyse:
+docs/research/JORDRAV_NATIONAL_JORDBUND_PROFILER_2026-10-06.md.
+
 **Slutkontrol for landskabsform og laghistorie:** 17 modelcases, fem
 artifacttests, 4+4+4+4 kontrakter og 34 nye + 56 eksisterende faktiske
 Chrome-checks PASS. Sourcegate/114 browserfiler, RDKS/sikkerhed, 64 Pages-

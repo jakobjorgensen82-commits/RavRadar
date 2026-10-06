@@ -1,0 +1,111 @@
+{
+  "date": "2026-10-06",
+  "status": "PASS",
+  "modelVersion": "0.2.0-prototype",
+  "evidenceChainVersion": "0.1.0",
+  "manifestSha256": "5d0a925a04f71e11eaf82feb3d27294be6b1f00bb4de08dfa3ee4ff4e6a2b2a0",
+  "checkedFiles": 196,
+  "catalogueEntries": 4652,
+  "detailFragments": 505834,
+  "scope": "All bound national material/landform entries and display fragments, not fields, amber finds, areas or calibrated probabilities",
+  "interpretation": "Priorities order the next investigation; geological potential colours and unknown surface huntability remain unchanged",
+  "excluded": "Automatic current bare/ploughed/rain-washed ground detection excluded by owner; no such input, classifier or completion dependency",
+  "priorities": {
+    "resolve-input": {
+      "catalogueEntries": 757,
+      "detailFragments": 43864
+    },
+    "surface-link": {
+      "catalogueEntries": 976,
+      "detailFragments": 128716
+    },
+    "receiver-profile": {
+      "catalogueEntries": 510,
+      "detailFragments": 18902
+    },
+    "trace-supply": {
+      "catalogueEntries": 836,
+      "detailFragments": 125129
+    },
+    "cover-depth": {
+      "catalogueEntries": 1253,
+      "detailFragments": 156250
+    },
+    "resolve-scale": {
+      "catalogueEntries": 273,
+      "detailFragments": 31804
+    },
+    "loose-cover": {
+      "catalogueEntries": 47,
+      "detailFragments": 1169
+    }
+  },
+  "states": {
+    "source:unverified": {
+      "catalogueEntries": 4652,
+      "detailFragments": 505834
+    },
+    "transport:unknown": {
+      "catalogueEntries": 757,
+      "detailFragments": 43864
+    },
+    "receiver:unknown": {
+      "catalogueEntries": 757,
+      "detailFragments": 43864
+    },
+    "preservation:unknown": {
+      "catalogueEntries": 757,
+      "detailFragments": 43864
+    },
+    "access:unknown": {
+      "catalogueEntries": 4652,
+      "detailFragments": 505834
+    },
+    "transport:mapped-process": {
+      "catalogueEntries": 2323,
+      "detailFragments": 347546
+    },
+    "receiver:mapped-environment": {
+      "catalogueEntries": 1642,
+      "detailFragments": 118506
+    },
+    "preservation:unverified": {
+      "catalogueEntries": 1975,
+      "detailFragments": 276901
+    },
+    "transport:unverified": {
+      "catalogueEntries": 1521,
+      "detailFragments": 108820
+    },
+    "preservation:possible-fine": {
+      "catalogueEntries": 649,
+      "detailFragments": 28107
+    },
+    "receiver:unverified": {
+      "catalogueEntries": 2253,
+      "detailFragments": 343464
+    },
+    "preservation:possible-cover": {
+      "catalogueEntries": 1271,
+      "detailFragments": 156962
+    },
+    "transport:separate-episodes": {
+      "catalogueEntries": 51,
+      "detailFragments": 5604
+    }
+  },
+  "publicChecks": 16,
+  "profileDataSha256": "bdfee755c5be9f0e80e0b4ecb2614ead6fd91980a5882250d01efdf563afe4a6",
+  "profilesWithGeology": 10,
+  "profilesWithoutGeology": 6,
+  "intervals": 126,
+  "incompleteIntervals": 2,
+  "publicSourcesReceiptSha256": "fb11585c400c4de3fb74be48052d1cd0f16a9a1d537ed4d8202fa4832f7e5fad",
+  "codeBindingLF": {
+    "evidence-chain.js": "d63816c683974d7552389b8b8a0a3989303e7864f2970b6bcfc29f3d8159f908",
+    "public-context.js": "efacbc9315bdb02df3ec2c33bda9f389550628186b7a438f5cf5259a6a28b155",
+    "profile-examples.js": "ce910aebf4182b1186c3d212541672ca9c5fb394838734164c3739dbdada1db5",
+    "producer": "716db685fabf58fd6d3ab016343a45210066a788302754d9c0f2a203659eeb0e"
+  },
+  "unchanged": "No model-0.2 dataset bytes, source priority, geometry, geological classification, RavScore or weather data modified"
+}

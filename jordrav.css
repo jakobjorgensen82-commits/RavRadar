@@ -65,6 +65,21 @@
 .jordrav-view-link input { display: block; width: calc(100% - 28px); margin: 8px 14px; min-height: 40px; border: 1px solid var(--line); border-radius: 7px; padding: 8px; font: inherit; font-size: .8rem; }
 .jordrav-view-link input[hidden] { display:none; }
 .jordrav-deep-marker { box-sizing: border-box; border: 2px solid white; border-radius: 5px; background: #6c3b91; color: white; box-shadow: 0 0 0 1px #432455; text-align: center; font: bold 19px/20px sans-serif; }
+.jordrav-bore-marker { box-sizing:border-box; border:2px solid #6c3b91; border-radius:50%; background:#fff; color:#6c3b91; text-align:center; font:bold 18px/19px sans-serif; }
+.jordrav-profile-marker { box-sizing:border-box; border:2px solid #6c3b91; border-radius:4px; background:#f5eff8; color:#6c3b91; text-align:center; font:bold 18px/19px sans-serif; }
+.jordrav-profile-table { width:100%; table-layout:fixed; border-collapse:collapse; font-size:.8rem; }
+.jordrav-profile-table th,.jordrav-profile-table td { text-align:left; vertical-align:top; padding:8px 4px; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
+.jordrav-profile-table th:last-child { width:48%; }
+.jordrav-buried-cell { background:#eee4f4; color:#542d75; font-weight:600; }
+.jordrav-context-controls { margin:8px 14px; padding:10px; border:1px solid var(--line); border-radius:8px; }
+.jordrav-context-controls summary,.jordrav-evidence-chain summary { cursor:pointer; min-height:32px; font-weight:600; }
+.jordrav-context-controls label { display:flex; align-items:center; gap:8px; min-height:44px; }
+.jordrav-context-controls .jordrav-status { margin:4px 0 10px; }
+.jordrav-evidence-chain { margin:14px 0; padding:12px; border:1px solid var(--line); border-radius:8px; }
+.jordrav-evidence-chain li { margin-bottom:10px; }
+.jordrav-soil-point { margin:14px 0; padding:12px; border-left:3px solid #7f938e; background:#f4f7f6; }
+.jordrav-soil-point button { min-height:44px; padding:8px 12px; border:1px solid #78918c; border-radius:6px; font:inherit; cursor:pointer; }
+.jordrav-soil-point button:focus-visible,.jordrav-context-controls summary:focus-visible,.jordrav-evidence-chain summary:focus-visible { outline:3px solid #d79427; outline-offset:3px; }
 .jordrav-deep-swatch { border-radius: 2px !important; box-shadow: 0 0 0 1px #432455; }
 #jordravColourNote { font-weight: 600; }
 .jordrav-toolbar button:focus-visible, .jordrav-tabs a:focus-visible { outline: 3px solid #d79427; outline-offset: 3px; }

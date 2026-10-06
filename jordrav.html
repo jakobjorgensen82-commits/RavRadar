@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#073b4c">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https://unpkg.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://server.arcgisonline.com https://geodata.fvm.dk; connect-src 'self'; font-src 'self' data:; worker-src 'self' blob:; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https://unpkg.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://server.arcgisonline.com https://geodata.fvm.dk https://data.geus.dk; connect-src 'self' https://geodata.fvm.dk https://jupiter.geus.dk; font-src 'self' data:; worker-src 'self' blob:; upgrade-insecure-requests">
   <title data-i18n="jordrav.title">Jordrav – geologiske muligheder | RavRadar</title>
   <meta name="description" data-i18n-content="jordrav.description" content="Udforsk geologiske muligheder for jordrav i Danmark med jordarter, landskabsdannelse og luftfoto.">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -35,6 +35,17 @@
         <p id="jordravSelectionNote" class="jordrav-status" data-i18n="jordrav.selectionHidden" hidden>Valget er bevaret i panelet, men fremhævningen er skjult med de aktuelle lagvalg.</p>
         <div class="jordrav-layer-tools"><label><input id="jordravFields" type="checkbox"><span data-i18n="jordrav.fieldsToggle">Markgrænser 2026 · hele Danmark</span></label><a id="jordravFieldSource" href="https://lbst.dk/bedrift/arealer-og-ejendomme/kortdata/adgang-til-kortdata" target="_blank" rel="noopener noreferrer" data-i18n="jordrav.fieldsSource">Offentlig markkilde</a></div>
         <p id="jordravFieldsStatus" class="jordrav-status" role="status" aria-live="polite" hidden></p>
+        <details class="jordrav-context-controls"><summary data-i18n="jordrav.contextTitle">Supplerende jordbund, terræn og boringer</summary>
+          <label><input id="jordravSoil" type="checkbox"><span data-i18n="jordrav.soilToggle">JB-jordbundskort 2024</span></label>
+          <p id="jordravSoilStatus" class="jordrav-status" role="status" aria-live="polite" hidden></p>
+          <label><input id="jordravTerrain" type="checkbox"><span data-i18n="jordrav.terrainToggle">Terrænskygge · 2005–2007</span></label>
+          <p id="jordravTerrainStatus" class="jordrav-status" role="status" aria-live="polite" hidden></p>
+          <label><input id="jordravBores" type="checkbox"><span data-i18n="jordrav.boresToggle">Offentlige boringer · profiler hos GEUS</span></label>
+          <p id="jordravBoresStatus" class="jordrav-status" role="status" aria-live="polite" hidden></p>
+          <label><input id="jordravProfiles" type="checkbox"><span data-i18n="jordrav.profilesToggle">16 kontrollerede profilpunkter · 6. oktober 2026</span></label>
+          <p id="jordravProfilesStatus" class="jordrav-status" role="status" aria-live="polite" hidden></p>
+          <p class="jordrav-status" data-i18n="jordrav.contextNote">Disse lag giver lokal kontekst. JB-farver beskriver publicerede jordklasser; boringspunkter viser registreringer. De ændrer ikke ravvurderingen.</p>
+        </details>
         <p id="jordravFocusNote" class="jordrav-status" data-i18n="jordrav.focusNote" hidden>Viser orange, blå, rosa, okker og turkise muligheder. Generel geologi og uafklarede flader skjules; dybe punkter styres særskilt.</p>
         <div id="jordravLegend" class="jordrav-legend" data-i18n-aria-label="map.legend" aria-label="Kortforklaring"></div>
         <p id="jordravColourNote" class="jordrav-status">Ufarvede områder har ingen særskilt udpegning; det betyder ikke, at ravmuligheder er udelukket. Zoom ind og klik for geologi. Farver dokumenterer ikke jagtbarhed; lilla punkter viser dybe lag.</p>

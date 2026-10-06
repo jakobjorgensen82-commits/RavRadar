@@ -1,5 +1,18 @@
 ## Ikke udgivet – Jordrav sporfiltre og gemte kortvisninger (2026-10-05)
 
+## Lokal Jordravfortsættelse 2026-10-06 – national jordbund og dybdekontekst
+
+- Syv undersøgelsesprioriteter og fem evidenskædeled for alle nationale
+  materiale-/landskabskombinationer, uden find-score eller fundkrav.
+- Opt-in JB2024 og faktisk klikpunkt; DHM2007/10 m med korrekt projektion;
+  landsdækkende Jupiter/profillinks samt 16 kontrollerede profilpunkter.
+- 126 registrerede lagrækker; manglende geologi/grænser bevares. Totaldybde
+  sidestilles ikke med ravlagsdybde, og profilpunkter giver ingen extent.
+- Gamle gemte links bevares; nye lagvalg gemmes. Faktisk Chrome, luftfoto,
+  alle profilmarkerklik, DA/DE/EN og 390 px består lokalt.
+- Automatisk aktuelle søgeforhold er udgået efter ejerordre. Main/CI/deploy
+  følger næste fase; model-0.2-data/farver, RavScore og vejr er uændrede.
+
 ## Lokal Jordravfortsættelse 2026-10-05 – landskabsform og laghistorie
 
 - Klikpanelet viser præcis landskabsform og 27 formtilpassede forløb for

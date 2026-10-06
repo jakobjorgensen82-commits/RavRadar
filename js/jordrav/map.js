@@ -1,4 +1,5 @@
 import './messages.js';
+import './context-messages.js';
 import { initialiseI18n, getLanguage, t } from '../i18n.js?v=4.0.541';
 import { openDataset, intersects } from './data-service.js';
 import { REGIONAL_HYPOTHESES } from './regional-hypotheses.js';
@@ -9,6 +10,9 @@ import { landscapeContext } from './landscape-context.js';
 import { initialiseFieldContext, FIELD_SERVICE } from './field-context.js';
 import { TRACE_CLASSES, acceptsPotential, parseView, encodeView, featureReference } from './view-state.js';
 import { MANIFEST_SHA256 } from './dataset-binding.js';
+import { evidenceChain } from './evidence-chain.js';
+import { initialiseContextRaster, initialiseBoreContext, soilPointURL, parseSoilPoint, fetchPublicJSON, boreProfileURL, publicBoreDate, SOIL_CONTEXT, BORE_CONTEXT, TERRAIN_CONTEXT } from './public-context.js';
+import { initialiseProfileExamples } from './profile-examples.js';
 
 initialiseI18n();
 const $ = id => document.getElementById(id);
@@ -39,6 +43,7 @@ let visible = true;
 let onlyEnhanced = false;
 let colourMode = 'potential', showDeep = true, trace='all', currentBase='street', pendingSelection;
 let cancelRegionNavigation=()=>{};
+let contextRequest, selectedBorehole;
 const potentialOf = feature => feature.properties.potential || data.catalog[feature.properties.i].potential;
 const acceptsFeature = feature => acceptsPotential(potentialOf(feature),trace,onlyEnhanced);
 
@@ -104,6 +109,7 @@ function restoreSelection(features) {
 }
 
 function resetDetail() {
+  contextRequest?.abort();selectedBorehole=null;
   selected?.remove();selected=null;selectedFeature=null;selectedDeepLayer=null;
   const note=node('div',undefined,'jordrav-method-note');
   note.append(node('strong',tr('confidenceTitle')),node('p',tr('methodNote')));
@@ -120,6 +126,7 @@ function restorePoint(state) {
 const depthText = example => example.intervals.map(interval=>`${interval.top_m.toLocaleString(getLanguage())}–${interval.bottom_m.toLocaleString(getLanguage())} m`).join('; ');
 
 function showDeepDetail(example) {
+  contextRequest?.abort();selectedBorehole=null;
   pendingSelection=null;
   const panel=$('jordravDetails');
   panel.replaceChildren(node('h2',example.name));
@@ -258,7 +265,63 @@ function appendLayerAccess(panel, entry) {
   panel.append(section);
 }
 
-function showDetail(feature) {
+function appendEvidenceChain(panel,entry) {
+  const chain=evidenceChain(entry),section=node('details',undefined,'jordrav-evidence-chain');
+  section.dataset.priority=chain.priority;section.append(node('summary',tr('chainTitle')),node('p',tr('chainNote')));
+  const camel=value=>value.replace(/-([a-z])/g,(_m,c)=>c.toUpperCase());
+  const steps=node('ol');for(const step of chain.steps)steps.append(node('li',tr(`step_${camel(step)}`)));
+  const facts=node('dl');for(const [key,value] of Object.entries({Source:chain.source,Transport:chain.transport,Receiver:chain.receiver,Preservation:chain.preservation,Access:chain.access})){
+    facts.append(node('dt',tr(`chain${key}`)),node('dd',tr(`chainState_${camel(value)}`)));
+  }
+  section.append(steps,facts);panel.append(section);
+}
+function appendSoilPoint(panel,point) {
+  const section=node('section',undefined,'jordrav-soil-point');section.append(node('h3',tr('soilAtClick')));
+  if(!point){section.append(node('p',tr('soilNoClick')));panel.append(section);return;}
+  section.append(node('p',`${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`,'jordrav-original'),node('p',tr('soilPointNote')));
+  const button=node('button',tr('soilRequest')),result=node('div');button.type='button';result.setAttribute('role','status');
+  button.addEventListener('click',async()=>{
+    contextRequest?.abort();const active=new AbortController();contextRequest=active;button.disabled=true;result.replaceChildren(node('p',tr('soilPointLoading')));
+    const timeout=setTimeout(()=>active.abort(),12000);
+    try{
+      const answer=parseSoilPoint(await fetchPublicJSON(soilPointURL(point.lat,point.lng),active.signal));
+      if(contextRequest!==active||!section.isConnected)return;
+      result.replaceChildren();
+      if(!answer.rows.length)result.append(node('p',tr('soilPointEmpty')));
+      else{for(const row of answer.rows)result.append(node('p',`JB ${row.code} · ${row.name}`));result.append(node('p',tr('soilInterpretation')));}
+      if(answer.ambiguous)result.append(node('p',tr('soilAmbiguous')));
+      if(answer.truncated)result.append(node('p',tr('soilTruncated')));
+    }catch{if(contextRequest===active&&section.isConnected)result.replaceChildren(node('p',tr('soilPointFailed')));}
+    finally{clearTimeout(timeout);button.disabled=false;}
+  });
+  const source=node('p');source.append(sourceLink({name:tr('soilSource'),url:SOIL_CONTEXT.source}));
+  section.append(button,result,source);panel.append(section);
+}
+function showBoreContext(row) {
+  contextRequest?.abort();pendingSelection=null;selected?.remove();selected=null;selectedFeature=null;selectedDeepLayer=null;selectedBorehole=row;
+  const panel=$('jordravDetails');panel.replaceChildren(node('h2',`${tr('boreTitle')} · DGU ${row.dgu}`));
+  const facts=node('dl');facts.append(node('dt',tr('boreTotal')),node('dd',row.depth===null?tr('contextMissing'):`${row.depth.toLocaleString(getLanguage())} m`),
+    node('dt',tr('boreDate')),node('dd',row.date||tr('contextMissing')));
+  const source=node('p');source.append(sourceLink({name:tr('boreOpen'),url:boreProfileURL(row.dgu)}));
+  panel.append(facts,node('p',tr('boreCaution')),source);
+  syncVisibility();
+}
+function showProfileDetail(profile) {
+  showBoreContext({dgu:profile.dgu,depth:profile.totalDepth_m??null,date:publicBoreDate(profile.drilledOn)});
+  const panel=$('jordravDetails');panel.querySelector('h2').textContent=`${profile.region} · DGU ${profile.dgu}`;
+  panel.append(node('p',`${tr('profileObserved')}: ${profile.observedAt.slice(0,10)}`,'jordrav-original'),node('h3',tr('profileIntervals')),
+    node('p',tr('profileDepthNote')),node('p',tr('profileOriginalNote'),'jordrav-original'));
+  if(!profile.intervals.length){panel.append(node('p',tr('profileNoGeology')));return;}
+  const table=node('table',undefined,'jordrav-profile-table'),head=node('thead'),titles=node('tr');
+  for(const key of ['profileTop','profileBottom','profileMaterial']){const th=node('th',tr(key));th.scope='col';titles.append(th);}head.append(titles);table.append(head);
+  const body=node('tbody'),depth=value=>value===null?tr('profileUnknownBoundary'):value.toLocaleString(getLanguage());
+  for(const interval of profile.intervals){const row=node('tr');
+    row.append(node('td',depth(interval.top_m),interval.top_m>0?'jordrav-buried-cell':undefined),node('td',depth(interval.bottom_m)),
+      node('td',`${interval.description}${interval.code?' · '+interval.code:''}`));body.append(row);}
+  table.append(body);panel.append(table);
+}
+function showDetail(feature,point=null) {
+  contextRequest?.abort();selectedBorehole=null;
   pendingSelection=null;
   const entry = data.catalog[feature.properties.i];
   const panel = $('jordravDetails');
@@ -280,6 +343,8 @@ function showDetail(feature) {
   fact('landscape', `${landscape.key ? tr(`landscapeName_${landscape.key}`) : entry.landscape || tr('landscapeMissing')} · ${tr(`process${processKeys[entry.process]}`)}`);
   fact('access', tr(accessKeys[entry.accessibility]));
   panel.append(facts);
+  appendEvidenceChain(panel,entry);
+  appendSoilPoint(panel,point);
   appendSearchContext(panel, entry);
   appendLayerAccess(panel, entry);
   const story=entry.potential==='unresolved'?'Unresolved':materialKeys[entry.material];
@@ -336,7 +401,7 @@ async function loadViewport() {
       if(pendingSelection)$('jordravLinkStatus').textContent=tr('viewSelectionWaiting');return;
     }
     const layer = L.geoJSON(features, {
-      style:featureStyle, onEachFeature:(feature, item) => item.on('click', () => showDetail(feature))
+      style:featureStyle, onEachFeature:(feature, item) => item.on('click', event => showDetail(feature,event.latlng))
     });
     details?.remove(); details = layer; syncVisibility(); status('detail');
     restoreSelection(viewportFeatures);
@@ -361,6 +426,7 @@ async function start() {
     $('jordravFocusNote').hidden=!onlyEnhanced;$('jordravColourMode').value=colourMode;
     $('jordravOpacity').value=String(state.opacity);$('jordravVisible').checked=visible;
     $('jordravFields').checked=state.fields;$('jordravDeepVisible').checked=showDeep;
+    for(const name of ['Soil','Terrain','Bores','Profiles'])$(`jordrav${name}`).checked=Boolean(state[name.toLowerCase()]);
     cancelRegionNavigation();map.stop();
     map.setView([state.latitude,state.longitude],state.zoom,{animate:false,reset:true});
     pendingSelection=state.dataset===MANIFEST_SHA256?state.feature:null;
@@ -391,6 +457,10 @@ async function start() {
   initialiseRegionalGuide();
   initialiseDeepLayers();
   initialiseFieldContext(map, $('jordravFields'), $('jordravFieldsStatus'), tr, L);
+  initialiseContextRaster(map,$('jordravSoil'),$('jordravSoilStatus'),tr,L,'soil');
+  initialiseContextRaster(map,$('jordravTerrain'),$('jordravTerrainStatus'),tr,L,'terrain');
+  initialiseBoreContext(map,$('jordravBores'),$('jordravBoresStatus'),tr,L,showBoreContext);
+  initialiseProfileExamples(map,$('jordravProfiles'),$('jordravProfilesStatus'),tr,L,showProfileDetail);
   $('jordravFieldSource').href = FIELD_SERVICE.source;
   $('jordravDenmark').addEventListener('click', () => map.fitBounds([[54.5,7.7],[57.8,15.25]]));
   $('jordravVisible').addEventListener('change', event => { visible=event.target.checked; syncVisibility(); void loadViewport(); });
@@ -420,9 +490,11 @@ async function start() {
     const reference=selectedFeature?featureReference(selectedFeature):pendingSelection;
     const referenceBounds=selectedFeature?.bbox||(reference?reference.split('~')[1].split(',').map(Number):null);
     const canSaveFeature=Boolean(reference&&visible&&map.getZoom()>=data.manifest.detailZoom&&intersects(referenceBounds,bbox));
-    const omittedSelection=Boolean(reference&&!canSaveFeature);
+    const omittedSelection=Boolean((reference&&!canSaveFeature)||selectedBorehole);
     const state={latitude:center.lat,longitude:center.lng,zoom:map.getZoom(),base:currentBase,trace,mode:colourMode,opacity:Math.round(opacity*100),
       focus:onlyEnhanced,show:visible,fields:$('jordravFields').checked,deep:showDeep,dataset:MANIFEST_SHA256,
+      soil:$('jordravSoil').checked,terrain:$('jordravTerrain').checked,bores:$('jordravBores').checked,
+      profiles:$('jordravProfiles').checked,
       feature:canSaveFeature?reference:null,point:selectedDeepLayer?.id||null};
     const url=new URL(location.href);
     try {url.hash=encodeView(state);}catch{$('jordravLinkStatus').textContent=tr('viewCannotSave');return;}
@@ -441,6 +513,7 @@ async function start() {
     resetDetail();
     setViewControls(next.state);setBase(next.state.base);rebuildSurfaceLayers();
     $('jordravFields').dispatchEvent(new Event('change'));
+    for(const name of ['Soil','Terrain','Bores','Profiles'])$(`jordrav${name}`).dispatchEvent(new Event('change'));
     restorePoint(next.state);
   });
   const method=$('jordravMethodContent');
@@ -448,6 +521,9 @@ async function start() {
   const sources=node('ul');
   for (const source of data.rules.sources) {const li=node('li');li.append(sourceLink(source));if(source.license)li.append(document.createTextNode(` · ${source.license.split(';')[0]}`));sources.append(li);}
   method.append(sources);
+  for(const source of [{name:'JB 2024 · AU / SGAV',url:SOIL_CONTEXT.source},{name:'Jupiter · GEUS',url:BORE_CONTEXT.source},{name:'DHM 2007 · SDFI / GEUS · 10 m',url:TERRAIN_CONTEXT.source}]){
+    const li=node('li');li.append(sourceLink(source));sources.append(li);
+  }
   map.attributionControl.addAttribution(`<a href="https://dataverse.geus.dk/">GEUS</a> · geological model ${data.manifest.modelVersion}`);
   map.on('moveend', () => {
     clearTimeout(timer);

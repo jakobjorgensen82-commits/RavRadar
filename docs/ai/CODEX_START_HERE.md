@@ -1,5 +1,22 @@
 # Lokal Jordravgren: aktuelt mandat og model 0.2 – 2026-10-05
 
+**Aktuel implementering 2026-10-06, før integration/release:** Syv nationale
+undersøgelsesprioriteter, JB2024 ved faktisk kliksted, DHM2007/10 m,
+moderne landsdækkende Jupiter-opslag og 16 kontrollerede profiler/126
+lagrækker er integreret. Alle 196 filer/4.652 kombinationer/505.834
+fragmenter kontrolleret. Seks profiler mangler geologi; to rækker mangler
+grænse. Faktisk Chrome, luftfoto og 390 px/DA/DE/EN PASS; fysisk telefon,
+CI og produktion uverificeret. App 4.0.541/model 0.2 bevares i denne lokale
+fase. Næste er integration på nyere main. Rapport:
+docs/research/JORDRAV_NATIONAL_JORDBUND_PROFILER_2026-10-06.md.
+
+**Aktivt autonomt mandat 2026-10-06:** Ejeren bestiller hele det resterende
+arbejde frem til færdiggørelse, inkl. sikker publicering. Punkt 4 om
+nypløjet/bar/regnvasket jord nu er efterfølgende udgået. Dette erstatter
+tidligere lokal-only mandat; hidtidig evidens bliver ikke produktionsbevis.
+Følg docs/ai/JORDRAV_AUTONOMOUS_WORKPLAN.md og aktiv RDKS. Aktuel main er
+nyere end denne lokale app; publicering skal bevare dens produktionskode.
+
 **Slutkontrol for landskabsform og laghistorie:** 17 modelcases, fem
 artifacttests, 4+4+4+4 kontrakter og 34 nye + 56 eksisterende faktiske
 Chrome-checks PASS. Sourcegate/114 browserfiler, RDKS/sikkerhed, 64 Pages-

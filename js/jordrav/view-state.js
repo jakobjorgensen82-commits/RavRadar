@@ -1,6 +1,6 @@
 // Local URL state only. No account, server storage, GPS or external query.
 export const TRACE_CLASSES = Object.freeze(['enhanced','coastal','basin','reworked','covered']);
-const keys=new Set(['v','map','base','trace','mode','opacity','focus','show','fields','deep','dataset','feature','point']);
+const keys=new Set(['v','map','base','trace','mode','opacity','focus','show','fields','deep','soil','terrain','bores','profiles','dataset','feature','point']);
 const number=value=> /^-?\d+(?:\.\d+)?$/.test(value||'') ? Number(value) : NaN;
 const validBounds=b=>b.length===4&&b.every(Number.isFinite)&&b[0]>=-180&&b[2]<=180&&b[1]>=-90&&b[3]<=90&&b[0]<=b[2]&&b[1]<=b[3];
 const flag=value=>value==='1'?true:value==='0'?false:undefined;
@@ -21,6 +21,7 @@ export function parseView(hash) {
   if(!['street','aerial'].includes(base)||!['all',...TRACE_CLASSES].includes(trace)||!['potential','access'].includes(mode)||opacity<15||opacity>75||!Number.isFinite(opacity))return fail();
   const state={latitude:position[0],longitude:position[1],zoom:position[2],base,trace,mode,opacity};
   for(const key of ['focus','show','fields','deep']){state[key]=flag(params.get(key));if(state[key]===undefined)return fail();}
+  for(const key of ['soil','terrain','bores','profiles'])if(params.has(key)){state[key]=flag(params.get(key));if(state[key]===undefined)return fail();}
   state.dataset=params.get('dataset');if(!/^[a-f0-9]{64}$/.test(state.dataset||''))return fail();
   state.feature=params.get('feature');state.point=params.get('point');
   if(state.feature){
@@ -35,6 +36,7 @@ export function encodeView(state) {
   const params=new URLSearchParams({v:'1',map:`${state.latitude.toFixed(7)},${state.longitude.toFixed(7)},${state.zoom}`,
     base:state.base,trace:state.trace,mode:state.mode,opacity:String(state.opacity),dataset:state.dataset});
   for(const key of ['focus','show','fields','deep'])params.set(key,state[key]?'1':'0');
+  for(const key of ['soil','terrain','bores','profiles'])if(state[key]!==undefined)params.set(key,state[key]?'1':'0');
   if(state.feature)params.set('feature',state.feature);
   if(state.point)params.set('point',state.point);
   const hash=`#${params}`;

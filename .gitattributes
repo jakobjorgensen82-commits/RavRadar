@@ -2,6 +2,8 @@ data/diagnostics export-ignore
 data/admin export-ignore
 # Jordrav identities hash exact bytes; preserve them across Windows/Linux.
 data/jordrav/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+docs/research/jordrav/public-context-sources-*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+docs/research/jordrav/national-evidence-chain-*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 scripts/build-jordrav-prototype.py -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 scripts/lib/jordrav_model.py -text
 # Regional research audits bind exact script/report bytes across platforms.

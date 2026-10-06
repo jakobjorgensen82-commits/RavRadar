@@ -4,6 +4,32 @@
 
 ## 90.1 Jordrav 0.2 – landsdækkende geologiske muligheder, lokal leverance
 
+**Supplerende kort og undersøgelsesprioritet 2026-10-06:** Under kortet
+kan JB-jordbundskort 2024, terrænskygge fra 2005–2007/10 m, offentlige
+boringer og 16 kontrollerede profilpunkter vælges. Et geologiklik giver
+en særskilt knap til JB ved selve klikstedet. Flere klasser eller intet
+svar vises uden at vælge en sikker klasse. JB6 kan afspejle administrativ
+behandling af JB4 med leret underjord; koden er ikke en entydig topjordsprøve.
+
+Alle nationale flader får næste relevante undersøgelse med ravtilførsel,
+transport, modtagelse, mulig bevaring og adgang. Det prioriterer afklaring,
+ikke fundchance. Terrænskygge viser ældre former, ikke dagens blotlægning.
+Hule lilla cirkler er boringsregistreringer med originalt profillink;
+fyldte lilla nedpile er fortsat de to udvalgte dybe sedimenteksempler.
+Profilpunkter med tre streger viser kildebundne registreringer læst
+6. oktober: 126 lagrækker, seks uden geologi og to manglende grænser.
+Totaldybde er ikke ravlagets dybde. Registrerede meter gælder boringens
+terræn ved registreringen, ikke nabomarken eller dagens pløjelag.
+
+Nye gemte links bevarer de supplerende lagvalg, men gemmer ikke en
+uforseglet live boringspost eller et opdigtet prøvepunkt. Klik igen for
+jordbund på en genåbnet flade. Automatisk registrering af dagens
+nypløjet/bar/regnvasket jord er udgået efter ejerordre. Lokal Chrome,
+luftfoto og 390 px/DA/DE/EN er kontrolleret; integration/publicering
+følger særskilt. Fysisk telefon og empirisk rav-/pløjeadgang på hver mark
+er ikke målt. Rapport:
+`docs/research/JORDRAV_NATIONAL_JORDBUND_PROFILER_2026-10-06.md`.
+
 Jordravkortet har gennemgået hele det tilgængelige danske jordarts- og
 landskabsgrundlag. Alle 192 udsnit og 4.652 materiale-/landskabsforklaringer
 følger samme kvalitative regler. Det er selvstændigt fra RavScore.
