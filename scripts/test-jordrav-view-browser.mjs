@@ -156,7 +156,7 @@ try{
   for(const lang of ['de','en']){
     await Promise.all([restored.waitForEvent('load'),restored.locator(`[data-language="${lang}"]`).click()]);await ready(restored);
     await restored.waitForFunction(ref=>window.__viewHarness.featureReference(window.__viewHarness.selectedFeature)===ref,reference,{timeout:90000});
-    assert.match(await restored.locator('#jordravCopyView').textContent(),lang==='de'?/Link kopieren/:/Copy link/);
+    assert.match(await restored.locator('#jordravCopyView').textContent(),lang==='de'?/Kartenansicht speichern oder teilen/:/Save or share map view/);
     assert.ok(!(await restored.locator('body').textContent()).includes('jordrav.'));
     await jordravControl(restored,'#jordravTrace');
     assert.ok(await restored.evaluate(()=>{const s=document.getElementById('jordravTrace').getBoundingClientRect(),c=document.querySelector('.jordrav-map-column').getBoundingClientRect();return s.left>=c.left&&s.right<=c.right;}));

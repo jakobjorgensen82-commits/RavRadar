@@ -1,8 +1,12 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.545
+**Håndbogsversion:** 4.0.546
 
-Offentlig 4.0.545 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+4.0.546 tydeliggør deling af kortvisningen og lodsejerens tilladelse i
+Jordrav. *Gem eller del kortvisning* kopierer et link; der oprettes ingen
+konto eller central gemning. Geologi, linkformat og modelbinding bevares.
+
+4.0.546 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Den viderefører den eksisterende kystmodel; de nye Jordravlag ændrer ikke RavScore.
 PR #525 og fuld exact-head CI 37456024761 er kontrolleret med uafhængigt SHA-256-kildebevis. Kode-only run 37456783798 og faktisk offentlig kortbrowser består; modelbindingen og målingerne er uændrede.
@@ -345,8 +349,12 @@ Se DEC-0289; ældre lokale541-kandidatstatus nedenfor er historisk.
 
 ## 90.1 Jordrav 0.2 – landsdækkende geologiske muligheder
 
-**Design og betjening i 4.0.545:** Vælg almindeligt kort eller luftfoto
-øverst ved kortet. Her findes også *Hele Danmark*, *Kopiér link* og
+**Spørg altid lodsejeren om lov.** Få lodsejerens tilladelse, før du går
+på deres jord og leder efter rav. Opfordringen står synligt før kortet.
+Kortets farver og markgrænser giver ikke adgang til arealet.
+
+**Design og betjening i 4.0.546:** Vælg almindeligt kort eller luftfoto
+øverst ved kortet. Her findes også *Hele Danmark*, *Gem eller del kortvisning* og
 *Lag og farver*. Lagpanelet indeholder geologiske valg, spor/farvestyrke,
 markgrænser og supplerende jordbund, terræn og boringer. Det kan åbnes
 med tastatur og lukkes med Escape, ved klik udenfor eller ved at flytte
@@ -445,7 +453,7 @@ fortsat generel og uafklaret geologi, når alle spor vises. Dybe punkter
 styres særskilt. Et valgt områdes forklaring bevares ved filtrering;
 besked fortæller, hvis fremhævningen er skjult af de aktuelle lagvalg.
 
-*Kopiér link* husker sted, zoom, baggrund, spor, farvestyrke,
+*Gem eller del kortvisning* husker sted, zoom, baggrund, spor, farvestyrke,
 kortfarver, lagvalg og det valgte detailfragment eller dybdepunkt. Ved
 genåbning gendannes valget kun i samme geologiske datasæt. Hvis data har
 ændret sig, gendannes kamera og indstillinger, men ikke en mulig forkert

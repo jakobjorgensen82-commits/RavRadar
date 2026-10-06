@@ -1,3 +1,13 @@
+## 4.0.546 – tydelig kortdeling og hensyn til lodsejeren, 6. oktober 2026
+
+- Knappen hedder nu **Gem eller del kortvisning** og forklarer, at den
+  kopierer et link til det valgte område, zoom, baggrund og lag.
+- Et tydeligt felt før kortet opfordrer til altid at spørge lodsejeren
+  om lov, før man går på deres jord og leder efter rav. Kortets farver
+  og markgrænser giver ingen adgangstilladelse.
+- Dansk, tysk og engelsk samt begge kildehåndbøger er opdateret.
+  Linkfunktionen, kortdata, model, RavScore og geometri bevares.
+
 ## 4.0.545 – Jordravsidens design og betjening, 6. oktober 2026
 
 - Hele Jordravsiden får nyt visuelt hierarki, varme flader, tydelig navigation

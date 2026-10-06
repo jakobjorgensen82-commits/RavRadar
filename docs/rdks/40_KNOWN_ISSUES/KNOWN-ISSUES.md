@@ -1,3 +1,12 @@
+# Jordravs linktekst og tilladelse – 4.0.546, 2026-10-06
+
+- **JORDRAV-020 – RETTET I KILDEN:** Ejeren fandt formålet med *Kopiér
+  link* uklart. Teksten er erstattet af *Gem eller del kortvisning*, med
+  forklaring af kopieringen. Et fast fremhævet felt før kortet opfordrer
+  til altid at få lodsejerens tilladelse. DA/DE/EN følger samme betjening.
+  Linkfunktionen, geologiske data og empiriske begrænsninger bevares.
+  Faktisk offentlig verifikation kræves før betegnelsen offentligt leveret.
+
 # Jordravs design og cache – lukket med offentlig evidens, 2026-10-06
 
 - **JORDRAV-018 – LEVERET / OFFENTLIGT KONTROLLERET:** Hele Jordravfladen er ombygget i 4.0.545. Kortværktøjer, native lagpanel, regioner, læselige områdeforklaringer og mobilens genvej bevarer alle eksisterende funktioner. 108 lokale Chrome-checks, fuld exact-head CI, providerfri kode-only levering og faktisk offentlig DA/DE/EN-/mobil-/luftfotokontrol består. Screenshots er visuelt læst.

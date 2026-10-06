@@ -1,4 +1,4 @@
-import { PUBLIC_CONFIG, saveLocalPublicConfig } from '../../config.js?v=4.0.545';
+import { PUBLIC_CONFIG, saveLocalPublicConfig } from '../../config.js?v=4.0.546';
 
 const form = document.querySelector('#setupForm');
 const status = document.querySelector('#setupStatus');

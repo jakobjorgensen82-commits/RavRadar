@@ -1,3 +1,17 @@
+# Jordrav 4.0.546 – kortvisning og lodsejerens tilladelse, 2026-10-06
+
+Nyeste ejerønske er implementeret i kilden: knappen hedder **Gem eller del
+kortvisning** og forklarer, at den kopierer et link med område, zoom,
+baggrund og lagvalg. Funktionen og eksisterende visningslinks bevares.
+Et fast fremhævet felt før kortet opfordrer til altid at spørge lodsejeren
+om lov, før man går på deres jord og leder efter rav. Kortfarver og
+markgrænser giver ingen adgangstilladelse. DA/DE/EN er opdateret.
+Dette er en afgrænset tekst-/UI-ændring: model 0.2, Jordravdata,
+RavScore, kystgeometri og vejrproviderlogik ændres ikke. Kode-only følger
+DEC-0148 med eksakt genbrug af gyldig runtime. CI- og deployevidens skal
+verificeres på den faktiske commit; historiske 545-beviser gælder alene 545.
+Den tidligere fulde designleverance nedenfor bevares som dateret evidens.
+
 # Aktuel offentlig Jordravleverance – 4.0.545, 2026-10-06
 
 Ejerens fulde designombygning er implementeret og offentligt kontrolleret.
