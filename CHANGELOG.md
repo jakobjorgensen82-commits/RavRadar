@@ -1,5 +1,11 @@
 ## 4.0.544 – Jordrav releasekandidat, 6. oktober 2026
 
+- PR #521 og fuld exact-head CI består; første kode-only deploy stoppede
+  ved koordinatkontrollen for de 16 offentlige Jupiter-profiler.
+- Afgrænset rettelse binder godkendelsen til præcis profilfil/SHA/bytes
+  og to koordinatblade. Private felter og øvrige koordinater kontrolleres
+  fortsat; ny CI, leveringsretry og internetkontrol afventer.
+
 - Landsdækkende geologisk model 0.2 og alle fem farvede mulighedsspor,
   med fysisk materialevejledning, laghistorie og undersøgelsesprioritet.
 - Almindeligt kort/luftfoto, markgrænser 2026, JB2024 ved kliksted,

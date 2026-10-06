@@ -1,5 +1,14 @@
 # AKTUELLE JORDRAVPUNKTER – national model 0.2 – 2026-10-05
 
+**JORDRAV-016: første levering stoppet af profilprivacy.** Run 37428389866
+afviser latitude/longitude i de offentlige Jupiter-profiler; deploy blev
+sprunget over. Lokalt rettet med præcis filsti, SHA-/bytebinding og to
+afgrænsede koordinatblade, med fuld rekursiv kontrol bevaret. Originalfil
+accepteres; ændringer, anden sti og private tilføjelser afvises. Øvrig
+privacy/code-only/tracked-kontrol PASS. CI/retry/offentlig kontrol kræves
+før lukning. JORDRAV-006's kilde-PR er nu CI-valideret og merget; offentlig
+levering er stadig åben. Se JORDRAV_PUBLIC_PROFILE_PRIVACY_2026-10-06.md.
+
 **Aktuel releasekandidat 4.0.544, 2026-10-06:** JORDRAV-006's mainintegration
 og versionsbygning er udført; exact-head CI, artifact/deploy og offentlig
 kontrol udestår. 99 faktiske Chrome-checks består på kandidaten.

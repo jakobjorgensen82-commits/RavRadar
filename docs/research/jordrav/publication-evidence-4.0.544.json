@@ -1,0 +1,37 @@
+{
+  "releaseVersion": "4.0.544",
+  "status": "FIRST_DEPLOYMENT_STOPPED_BY_PRIVACY_GATE",
+  "ownerExclusion": "Point 4: no automatic current bare/newly ploughed/rain-washed field detection",
+  "source": {
+    "pullRequest": "https://github.com/jakobjorgensen82-commits/RavRadar/pull/521",
+    "headSha": "5706da00f048b66a7bfb85926d3e37e225f5906a",
+    "validatedSourceTreeSha256": "sha256:9da8e8b33b1af415fa9b77bcf87365075c3d29a7413f9d062d8ac959b4a26b50",
+    "ciRunId": 37427232399,
+    "ciRunAttempt": 1,
+    "ciConclusion": "success",
+    "artifactId": 11396300491,
+    "artifactDigest": "sha256:bcd3e0bfb0fd20856fdb64cdd843c9072b68b7dfc20ce79c2694c917752ee719",
+    "proofIndependentlyMatched": true,
+    "requiredEvidenceSteps": "Exact PR head, full validate:source, unchanged tracked source, uploaded proof: all success"
+  },
+  "merge": {
+    "headSha": "3a96de7642d86e23f2981cabab6cefec20ae4fe9",
+    "mergedAt": "2026-10-06T07:13:24Z",
+    "treeMatchesValidatedSource": true
+  },
+  "deployment": {
+    "runId": 37428389866,
+    "url": "https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/37428389866",
+    "mode": "code-only exact-runtime reuse",
+    "providerAcquisitionRequested": false,
+    "conclusion": "failure",
+    "failure": "pages-privacy rejected longitude/latitude leaves of the bound public Jupiter profile snapshot; public deployment skipped",
+    "hardGatesVerified": false
+  },
+  "publicBrowser": {
+    "status": "NOT_RUN",
+    "base": "https://jakobjorgensen82-commits.github.io/RavRadar/",
+    "physicalPhoneTested": false
+  },
+  "privatePayloadIncluded": false
+}
