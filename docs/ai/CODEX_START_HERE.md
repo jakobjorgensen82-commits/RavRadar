@@ -1,4 +1,18 @@
-# NYESTE – 2026-10-06 – ejerens roadmap-fravalg og afgrænset GitHub-levering
+# NYESTE – 2026-10-06 – SEO-ejergrænse og faktisk Search Console-verificering
+
+Ejeren tillader små relevante SEO-forbedringer, ikke omskrivning af grundbogen
+for Google. Ingen nye links til Ravfund-ejede sider, herunder Ravudsigten og
+Ravkortet. Kun interne kapitellinks, canonical og eksisterende ikon er rettet
+lokalt; grundbogens body og scoremodel er uændrede. Fire SEO-tests/sikkerhed PASS.
+Den tidligere advice-only-afgrænsning er erstattet af denne menneskelige ordre.
+
+Google-ejerskab er faktisk verificeret via én Simply-TXT med eksisterende seks
+poster/DNSSEC bevaret. Sitemap behandlet, seks registrerede sider; rapportdata
+er endnu under behandling. Ingen opfundne klik/rangtal eller indeksgaranti.
+PR522 tidligere exact-head CI grøn, men ny main giver konflikt; små nye
+SEO-rettelser er endnu lokale. Vandstandskoden forbliver isoleret/tilbageholdt.
+
+# Historisk tidligere leveringstilstand – ejerens roadmap-fravalg
 
 Ejeren har også stoppet Ravudsigten-sammenligningen. Projektroadmapets
 punkt 1, 2, 3 og 5 er fravalgt; punkt 4 er allerede dækket og ikke en

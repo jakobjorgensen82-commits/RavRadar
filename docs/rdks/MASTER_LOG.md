@@ -1,4 +1,15 @@
-# NYESTE – 2026-10-06 – ejerens roadmap-fravalg og afgrænset GitHub-levering
+# NYESTE – 2026-10-06 – afgrænset SEO og faktisk domæneverificering, fortsat 4.0.543
+
+Efter eksplicit ejerordre er Google Search Console-domænet verificeret gennem
+én ny TXT hos Simply, uden ændring af tidligere seks DNS-poster/DNSSEC.
+Google har faktisk behandlet sitemap med seks sider; øvrige rapportdata
+behandles endnu. Små kontekstuelle SEO-forbedringer er nu godkendte, mens
+grundbogsomskrivning og nye Ravfund-links er udelukket. Interne kapitellinks,
+eksisterende ikon og Om/grundbog-canonical er lokale; fire SEO-tests/sikkerhed
+PASS. Ingen ny version eller offentligt SEO-deploy. Tidligere PR522-CI grøn,
+konflikt mod ny main åben. Vandstandskode og private data holdes udenfor.
+
+# Historisk tidligere leveringstilstand – ejerens roadmap-fravalg
 
 Ejeren har også stoppet Ravudsigten-sammenligningen. Projektroadmapets
 punkt 1, 2, 3 og 5 er fravalgt; punkt 4 er allerede dækket og ikke en

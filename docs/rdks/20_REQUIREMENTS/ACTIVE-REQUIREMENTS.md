@@ -1,4 +1,27 @@
-# NYESTE – 2026-10-06 – foretrukket webstedsnavn, ikke ranggaranti
+# NYESTE – 2026-10-06 – små SEO-forbedringer og verificeret Search Console
+
+Ejeren godkender små forbedringer, som passer til RavRadars grundidé, ikke
+en omskrivning af den offentlige grundbog for søgemaskinernes skyld.
+Kontekstuelle links er tilladt under de eksisterende kilde- og sikkerhedsregler;
+der må ikke tilføjes links til Ravfund-ejede sider, herunder Ravudsigten og
+Ravkortet. Den lokale pakke tilføjer kun interne kapitellinks, entydig
+canonical for Om/grundbog og det eksisterende ikon på seks offentlige sider.
+Grundbogens body, score, CSP, bindinger, geodata og vejrhentning er urørte.
+
+Ejeren bestiller konkret færdiggørelse af sin Google-ejerskabsverificering
+hos Simply. Den er faktisk afsluttet 6. oktober kl.09.29 dansk tid gennem
+én ny TXT-post. Seks eksisterende DNS-poster og DNSSEC bevares. Google har
+behandlet det eksisterende sitemap og registreret seks sider. Klik, søgeord
+og placeringer er endnu ikke tilgængelige; Google behandler rapportdata.
+Verificering og sitemapbehandling er ikke indeks-, navne- eller rangbevis.
+Ingen nye nøgler, betalt tjeneste eller ændret webhosting.
+
+Ejeren har efter gennemgang af de konkrete kapitellinks godkendt at sende
+de afgrænsede SEO-rettelser til GitHub. Den eksisterende PR opdateres; ingen
+ufærdig vandstandskode eller private data medsendes. Ny exact-head kontrol og
+kontrolleret integration mod den ændrede main skal bestå før offentlig levering.
+
+# Historisk afgrænsning før den nyere ejerordre – foretrukket webstedsnavn
 
 Ejeren bestiller ændring af søgemaskinernes navnesignal til **RavRadar.dk**.
 Forsiden angiver dette gennem ét statisk WebSite med navn, alternativet

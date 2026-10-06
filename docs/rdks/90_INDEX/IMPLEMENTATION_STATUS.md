@@ -1,4 +1,20 @@
-# NYESTE – 2026-10-06 – ejerens roadmap-fravalg og afgrænset GitHub-levering
+# NYESTE – 2026-10-06 – Search Console og små, lokale SEO-rettelser
+
+- FAKTISK: Google-domæneejerskab via én ny Simply-TXT; tidligere seks
+  DNS-poster og DNSSEC bevaret. Eksisterende sitemap behandlet, seks sider.
+- ÅBENT: Search Console-rapportdata behandles; intet målt klik-/søgeords- eller
+  rangbevis endnu. DNS-verificering er ikke en garanti for indeksering.
+- LOKALT: interne kapitellinks på DA/DE/EN-indgange, eksisterende 192px-ikon
+  på seks sider og canonical på Om/grundbog. Grundbogens body, score, bindinger,
+  geodata og CSP uændrede; fire eksisterende SEO-tests og sikkerhed PASS.
+- Ejergrænse: ingen grundbogsomskrivning for Google og ingen nye links til
+  Ravfund-ejede sider. Ny ordre erstatter den tidligere advice-only-afgrænsning.
+- GitHub: PR522 tidligere exact-head CI grøn; konflikt mod ny main er åben.
+  Ejeren godkender nu forsendelse af de små SEO-rettelser til samme PR med
+  ny exact-head kontrol. Forsendelse er ikke merge eller deploy. Vandstandskoden
+  holdes fortsat særskilt. Ingen ny vejrkørsel eller ændret scheduler.
+
+# Historisk tidligere leveringstilstand – ejerens roadmap-fravalg
 
 Ejeren har også stoppet Ravudsigten-sammenligningen. Projektroadmapets
 punkt 1, 2, 3 og 5 er fravalgt; punkt 4 er allerede dækket og ikke en

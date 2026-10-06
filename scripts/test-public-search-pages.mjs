@@ -54,10 +54,16 @@ test('static language pages are crawlable without JavaScript and have reciprocal
     assert.match(html, /<main class="search-guide">[\s\S]+<\/main>/);
     assert.doesNotMatch(html, /<script\b|http-equiv="refresh"|name="keywords"/i);
     assert.match(html, /script-src 'none'/);
+    for (const fragment of ['ravet', 'felttegn', 'selve-jagten']) {
+      assert.ok(html.includes(`href="./learn.html#${fragment}"`), `${file}: relevant chapter link is missing`);
+    }
     for (const match of html.matchAll(/(?:href|src)="([^"#]+)"/g)) {
       const reference = match[1];
       if (/^https:\/\//.test(reference)) continue;
-      await fs.access(path.resolve(reference.split('?')[0]));
+      const target = path.resolve(reference.split(/[?#]/)[0]);
+      await fs.access(target);
+      const fragment = reference.split('#')[1];
+      if (fragment) assert.ok((await read(target)).includes(`id="${fragment}"`), `${file}: broken chapter target ${reference}`);
     }
   }
 });
@@ -70,8 +76,22 @@ test('sitemap contains only actual public pages and robots refers to the owned H
   for (const url of locations) {
     const parsed = new URL(url);
     assert.equal(parsed.origin, 'https://ravradar.dk');
-    await fs.access(parsed.pathname === '/' ? 'index.html' : parsed.pathname.slice(1));
+    const file = parsed.pathname === '/' ? 'index.html' : parsed.pathname.slice(1);
+    const html = await read(file);
+    const canonicals = [...html.matchAll(/<link\b[^>]*\brel="canonical"[^>]*>/g)];
+    assert.equal(canonicals.length, 1, `${file}: one unambiguous canonical is required`);
+    assert.ok(canonicals[0][0].includes(`href="${url}"`), `${file}: canonical must match its real public address`);
+    assert.match(html, /<link rel="icon" type="image\/png" sizes="192x192" href="assets\/icons\/ravradar-192\.png">/);
+    for (const match of html.matchAll(/href="(https?:\/\/[^"\s]+)"/g)) {
+      const hostname = new URL(match[1]).hostname.toLowerCase();
+      assert.ok(!['ravfund.dk', 'ravudsigten.dk', 'ravudsigten.com', 'ravkortet.dk', 'ravkortet.com']
+        .some(domain => hostname === domain || hostname.endsWith(`.${domain}`)), `${file}: owner-excluded Ravfund destination`);
+    }
   }
+  const icon = await fs.readFile('assets/icons/ravradar-192.png');
+  assert.equal(icon.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+  assert.equal(icon.readUInt32BE(16), 192);
+  assert.equal(icon.readUInt32BE(20), 192);
   assert.doesNotMatch(sitemap, /admin\.html|data\/|lastmod/);
   assert.match(await read('robots.txt'), /^Sitemap: https:\/\/ravradar\.dk\/sitemap\.xml$/m);
   const bootstrap = await read('bootstrap.js');

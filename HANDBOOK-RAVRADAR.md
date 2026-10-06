@@ -4,6 +4,8 @@
 
 ## 89.165 Foretrukket webstedsnavn i søgemaskiner
 
+Kort fortalt: RavRadar.dk er det foretrukne søgenavn; Google vælger stadig selv navn og uddrag.
+
 Forsiden angiver lokalt **RavRadar.dk** som foretrukket webstedsnavn,
 med **RavRadar** som alternativ, gennem statisk WebSite-Microdata og
 Open Graph. Det kræver ingen nye scripts eller lempelse af sikkerhedspolitikken.
@@ -15,7 +17,27 @@ og uddrag; ændringen skal først leveres og derefter hentes og behandles af
 dem. Lokal kontrol eller et deploy beviser derfor ikke ændret søgeresultat.
 Google beskriver dette i [vejledningen om webstedsnavne](https://developers.google.com/search/docs/appearance/site-names).
 
+Ejeren tillader små, kontekstuelle SEO-forbedringer, men ikke en omskrivning
+af den offentlige grundbog for Google. De lokale sprogindgange har links til
+eksisterende kapitler om rav, felttegn og jagt. Om-siden og grundbogen har
+entydige canonical-adresser, og seks sider henviser til det eksisterende
+192px-ikon. Grundbogens body, score og sikkerhed bevares. Ingen eksterne
+links tilføjes; Ravfund-ejede destinationer er udelukket fra nye links.
+
+Google Search Console-ejerskab er faktisk verificeret via én ny Simply-TXT;
+eksisterende DNS og DNSSEC er bevaret. Det eksisterende sitemap er behandlet
+med seks registrerede sider, ikke seks bevisligt indekserede sider. Rapportdata
+behandles endnu. Uændret sideindhold garanterer ikke samme beskrivelsesuddrag
+ved næste søgning: Google vælger uddrag efter forespørgslen. Ingen omskrivning,
+søgeordsfyld eller garanti for højere placering er nødvendig eller bestilt.
+
+Ejeren har godkendt forsendelse af de små rettelser til den eksisterende
+GitHub-PR. Det er ikke offentlig levering; en ny kildekontrol og sikker
+integration mod den ændrede main skal bestå. Ufærdig vandstandskode holdes udenfor.
+
 ## 89.164 SOURCE-genbrug og samme vandstandsserie ved T+3 – kun lokal rettelse
+
+Kort fortalt: Genbrugte vandstandstimer skal have ægte kildebevis. Holdbar bevarelse gennem flere vejrgenerationer er endnu ikke færdig.
 
 En vandstandstrend kræver både en gyldig valgt kilde ved den aktuelle time
 og en sammenlignelig time præcis tre timer senere. Når tidligere og nye
@@ -59,6 +81,8 @@ evidens, ikke et nyt produktionstab eller den gamle Fur-årsagsbevis.
 
 ## 89.163 Prognosehalens dækning og bedre brug af reservekøen
 
+Kort fortalt: Dækning og datatab er forskellige mål. Den lokale reservekø bruger de samme to forbindelser bedre; ny vejreffekt mangler.
+
 Feltdækning tæller gyldige numeriske vejrkomponenter over 673 kystdele,
 118 timer og fem familier. Det er ikke RavScore-tilgængelighed eller bevis
 for fuld privat historik. Et procentfald mellem rullende prognoser er heller
@@ -89,6 +113,8 @@ eller vandstands-/temperaturproveniens. Tidligere kapitlers pendingstatus
 for afsluttede leverancer er historik.
 
 ## 89.161 Footerens prognosetidspunkt
+
+Kort fortalt: Footerens prognosetidspunkt bevares uden den ejerfravalgte aldersforklaring. Datakontroller og fejlbeskeder bevares.
 
 Efter ejerens ønske viser footerens DA/DE/EN-gren med ukendt sammenlignelig
 beregningsalder kun prognosetidspunktet. Den generelle forklaring om ukendt

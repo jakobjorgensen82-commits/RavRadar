@@ -1,4 +1,20 @@
-# NYESTE – 2026-10-06 – ejerens roadmap-fravalg og afgrænset GitHub-levering
+# NYESTE – 2026-10-06 – Search Console faktisk verificeret; små SEO-rettelser lokale
+
+Google har faktisk verificeret ravradar.dk via én ny Simply-TXT-post;
+alle seks tidligere DNS-poster og DNSSEC er bevaret. Det indsendte eksisterende
+sitemap er behandlet med seks registrerede sider. Rapportdata behandles endnu,
+så klik, søgeord, placering og indekserede sider må ikke opfindes.
+
+Ejeren godkender små SEO-forbedringer og kontekstuelle links, men ikke en
+SEO-omskrivning af grundbogen eller links til Ravfund-ejede sider. Lokalt er
+tre sprogindgange suppleret med relevante interne kapitellinks; seks sider
+peger på det eksisterende ikon, og Om/grundbog har entydig canonical.
+Grundbogens body og scoremodel er uændrede. Fire udvidede eksisterende SEO-tests
+og sikkerhedstesten består. Ingen ny version, merge eller offentligt deploy.
+PR522s tidligere exact-head kildegate er grøn, men ny main giver mergekonflikt.
+Den lokale vandstandskandidat forbliver særskilt og tilbageholdt.
+
+# Historisk tidligere leveringstilstand – ejerens roadmap-fravalg
 
 Ejeren har også stoppet Ravudsigten-sammenligningen. Projektroadmapets
 punkt 1, 2, 3 og 5 er fravalgt; punkt 4 er allerede dækket og ikke en

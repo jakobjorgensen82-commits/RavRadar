@@ -1,4 +1,19 @@
-# NYESTE – 2026-10-06 – ejerens roadmap-fravalg og afgrænset GitHub-levering
+# NYESTE – 2026-10-06 – søgeeffekt kan endnu ikke måles
+
+Search Console-ejerskab er faktisk verificeret, og sitemap er behandlet med
+seks registrerede sider. Rapporterne behandler stadig data: der er endnu
+ingen målt rang/klikrate/søgeord eller garanti for det foretrukne navn.
+Den korte første sitemapstatus »Kunne ikke hentes« blev erstattet af faktisk
+behandling; en offentlig kontrol gav HTTP200/application/xml med seks URL'er.
+Det er ikke en hjemmeside-fejlalarm. Ingen gentagen indsendelse er nødvendig.
+
+Små godkendte SEO-rettelser er lokale og måltestede; grundbogens faglige body
+er urørt, og ingen eksterne links tilføjes. PR522s kildegate er grøn på den
+gamle eksakte head, men konflikten mod ny main skal løses og den nye head
+kontrolleres før levering. Vandstandens holdbare SOURCE-bevarelse og øvrige
+store revisionsrester lukkes ikke af denne SEO- eller DNS-leverance.
+
+# Historisk tidligere leveringstilstand – ejerens roadmap-fravalg
 
 Ejeren har også stoppet Ravudsigten-sammenligningen. Projektroadmapets
 punkt 1, 2, 3 og 5 er fravalgt; punkt 4 er allerede dækket og ikke en

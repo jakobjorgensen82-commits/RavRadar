@@ -1,4 +1,18 @@
-# NYESTE – 2026-10-06 – ejerens roadmap-fravalg og afgrænset GitHub-levering
+# NYESTE – 2026-10-06 – små SEO-forbedringer, afgrænset kildepakke på 4.0.543
+
+- Interne links fra DA/DE/EN-indgange til eksisterende kapitler om rav,
+  felttegn og jagt; grundbogens body er ikke omskrevet.
+- Om/grundbog har entydig canonical; seks offentlige sider henviser til
+  det eksisterende 192px-ikon. Ingen nye eksterne links eller CSP-lempelse.
+- Eksisterende fire SEO-tests udvidet for faktiske fragmentmål, canonical,
+  ikon og ejerudelukkede linkdestinationer; måltest/sikkerhed består.
+- Search Console-ejerskab faktisk verificeret og eksisterende sitemap
+  behandlet med seks sider. Rapporttal er endnu ikke tilgængelige.
+- Ejeren godkender forsendelse til den eksisterende PR522. Ny exact-head
+  kildekontrol kræves; main-konflikten skal løses før merge. Ingen ny release
+  eller offentligt SEO-deploy og ingen ufærdig vandstandskode i forsendelsen.
+
+# Historisk tidligere leveringstilstand – ejerens roadmap-fravalg
 
 Ejeren har også stoppet Ravudsigten-sammenligningen. Projektroadmapets
 punkt 1, 2, 3 og 5 er fravalgt; punkt 4 er allerede dækket og ikke en
