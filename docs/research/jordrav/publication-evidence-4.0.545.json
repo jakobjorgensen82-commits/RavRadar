@@ -156,7 +156,9 @@
     "screenshotsVisuallyRead": true,
     "canonicalMapUrl": "https://ravradar.dk/jordrav.html",
     "verifier": "docs/research/jordrav/public-map-verifier-4.0.545.mjs",
-    "verifierLfSha256": "6f2b7731289ab73f85235860ba9f3189727b1a9204cc2802bc6b7951d84d0220"
+    "verifierLfSha256": "3c0676703a620a8fa51291ec19987335293a76c5980dc6d016c10458bcd4b2f4",
+    "executedVerifierLfSha256": "6f2b7731289ab73f85235860ba9f3189727b1a9204cc2802bc6b7951d84d0220",
+    "archiveFormatting": "Only trailing empty line removed; executable statements identical to executed verifier"
   },
   "coastalBrowser": {
     "status": "PASS",
@@ -172,13 +174,15 @@
     "report": "docs/research/jordrav/public-coastal-browser-4.0.545.json",
     "reportLfSha256": "bdeb0a8f0b1ce4449006407b3ebd1fcc5f757569d62713d79abc1b7829a48271",
     "verifier": "docs/research/jordrav/public-coastal-verifier-4.0.545.mjs",
-    "verifierLfSha256": "224d24f11377f2b6886cdd6227332fbd86ea9881b5c4ab04edddda61f9145d3f",
+    "verifierLfSha256": "da83cf1eaccfc6002ed450f4f49edbbf202d3f8d39e49140b0386daea38efd88",
     "supersededAssertions": {
       "globalDetailsReadyTimeoutSeconds": 90,
       "toFixedMetricDifferences": 148,
       "sameActualPublicAppAndDatasetOnFinalCheck": true,
       "productionCodeChangedForTest": false
-    }
+    },
+    "executedVerifierLfSha256": "224d24f11377f2b6886cdd6227332fbd86ea9881b5c4ab04edddda61f9145d3f",
+    "archiveFormatting": "Only trailing empty line removed; executable statements identical to executed verifier"
   },
   "preservation": {
     "geologicalModel": "0.2.0-prototype",
