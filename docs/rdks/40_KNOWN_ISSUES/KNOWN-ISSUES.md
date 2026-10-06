@@ -1,11 +1,12 @@
 # Jordravs linktekst og tilladelse – 4.0.546, 2026-10-06
 
-- **JORDRAV-020 – RETTET I KILDEN:** Ejeren fandt formålet med *Kopiér
+- **JORDRAV-020 – LEVERET / OFFENTLIGT KONTROLLERET:** Ejeren fandt formålet med *Kopiér
   link* uklart. Teksten er erstattet af *Gem eller del kortvisning*, med
   forklaring af kopieringen. Et fast fremhævet felt før kortet opfordrer
   til altid at få lodsejerens tilladelse. DA/DE/EN følger samme betjening.
   Linkfunktionen, geologiske data og empiriske begrænsninger bevares.
-  Faktisk offentlig verifikation kræves før betegnelsen offentligt leveret.
+  21 lokale og otte offentlige Chrome-checks, exact-head CI og kode-only
+  levering består. Kvittering: publication-evidence-4.0.546.json.
 
 # Jordravs design og cache – lukket med offentlig evidens, 2026-10-06
 

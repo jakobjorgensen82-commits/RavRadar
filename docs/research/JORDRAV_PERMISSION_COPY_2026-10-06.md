@@ -40,3 +40,26 @@ følger DEC-0148 med eksakt runtimegenbrug, privacy/artifact/backend-gates og
 kontrol af faktisk offentlig commit og tekst. En aktiv normal produktions-
 skriver skal være terminal før main ændres. Den igangværende normale
 37462444444 er eksisterende drift, ikke startet for denne tekstrettelse.
+
+## Faktisk offentlig levering
+
+PR #527s head 6369732e består CI 37467552872, attempt 1. De fire faktiske
+obligatoriske trin og downloadet sourceproof er uafhængigt afstemt. Efter
+normal 37462444444 blev terminal success, blev PR'en merget som d9c57798
+med identisk tree. Kode-only 37485854000 attempt 1 er terminal success; de
+ti hårde trin og alle forventede jobudfald er live kontrolleret.
+
+Otte offentlige Chrome-checks består. 18 release-/kortfiler matcher kilden;
+390/1440 px på DA/DE/EN viser den faste tilladelse, det forklarede delelink,
+faktisk clipboard og genåbnet luftfoto/marklag uden sidefejl. Screenshots er
+visuelt læst. Den første verifikatoradresse havde dobbelt #, som korrekt
+blev afvist som visningsstate; det var en testadressefejl. En efterfølgende
+kildehentning svarede non-OK uden gemt status; en direkte læsning gav 200,
+og hele den strenge kilde-/browserkontrol blev gentaget med PASS. Ingen
+produktændring eller svækket assertion blev brugt til at skjule dette.
+Metadataaudittens første antagelse om success i forventet skipped recovery
+blev rettet til faktisk forventet udfald. Alle hårde checks består.
+
+Kvittering: docs/research/jordrav/publication-evidence-4.0.546.json.
+Den udførte offentlige verifikator arkiveres med oprindelig og normaliseret
+SHA-256; kun BOM, linjeskift og tomme slutlinjer normaliseres.

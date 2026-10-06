@@ -1,0 +1,176 @@
+{
+  "releaseVersion": "4.0.546",
+  "status": "PUBLICATION_AND_PUBLIC_BROWSER_VERIFIED",
+  "ownerMandate": "Rename the sharing button to Gem eller del kortvisning and always ask the landowner before entering their land",
+  "source": {
+    "pullRequest": "https://github.com/jakobjorgensen82-commits/RavRadar/pull/527",
+    "headSha": "6369732ea110755b7f326423189edd375d7a26fb",
+    "ciRunId": 37467552872,
+    "ciRunAttempt": 1,
+    "ciConclusion": "success",
+    "sourceTreeSha256": "sha256:8676a2dee81ddd1e3484c09f110134a2a35b42849588dace49ce920bc2a1cbd5",
+    "artifactId": 11415554085,
+    "artifactDigest": "sha256:130c9c9180d9d426edde6074f719402b5d3e7536e521dde93680eae5f62c1fc7",
+    "proofIndependentlyMatched": true
+  },
+  "merge": {
+    "headSha": "d9c57798bdadfa517ce38bee4728dad96df1ed5e",
+    "mergedAt": "2026-10-06T15:14:30Z",
+    "treeMatchesValidatedSource": true
+  },
+  "deployment": {
+    "runId": 37485854000,
+    "runAttempt": 1,
+    "headSha": "d9c57798bdadfa517ce38bee4728dad96df1ed5e",
+    "conclusion": "success",
+    "updatedAt": "2026-10-06T15:25:35Z",
+    "requiredSteps": [
+      {
+        "name": "Reuse exact successful pull-request source proof",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T15:16:30Z"
+      },
+      {
+        "name": "Read linked migration history without changing Supabase",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T15:16:58Z"
+      },
+      {
+        "name": "Read back migration and database binding",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T15:17:08Z"
+      },
+      {
+        "name": "Require exact code-only reuse invariants",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T15:18:47Z"
+      },
+      {
+        "name": "Audit regenerated integrated public runtime",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T15:19:54Z"
+      },
+      {
+        "name": "Preflight complete Pages artifact for private runtime material",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T15:22:15Z"
+      },
+      {
+        "name": "Decide all independent prewrite checks together",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T15:22:15Z"
+      },
+      {
+        "name": "Prove private runtime is not anonymously readable",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T15:23:04Z"
+      },
+      {
+        "name": "Publish exact integrated backend and Edge readiness for this source",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T15:23:18Z"
+      },
+      {
+        "name": "Upload GitHub Pages artifact",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T15:23:43Z"
+      }
+    ],
+    "jobs": [
+      {
+        "name": "Validate manual authority before any recovery writes",
+        "conclusion": "success"
+      },
+      {
+        "name": "Finish an interrupted generation before new work / Reconcile any durable RavScore transition before production",
+        "conclusion": "success"
+      },
+      {
+        "name": "Finish an interrupted generation before new work / Redeploy only a helper-proven exact sealed Pages target",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Finish an interrupted generation before new work / Require terminal operational recovery before production",
+        "conclusion": "success"
+      },
+      {
+        "name": "Finish an interrupted generation before new work / Finalize exact recovered target without Pages privileges",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Reuse exact runtime and build code-only artifact",
+        "conclusion": "success"
+      },
+      {
+        "name": "Deploy verified code-only artifact / Deploy prepared Pages artifact",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "existingNormalRun": {
+    "runId": 37462444444,
+    "headSha": "ec76a7373f0af2d7f942b1045948cef359a6232e",
+    "conclusion": "success",
+    "notDispatchedForThisTextChange": true,
+    "heldMainUntilTerminal": true
+  },
+  "localBrowser": {
+    "checks": 21,
+    "design": 6,
+    "savedViews": 15,
+    "languages": [
+      "da",
+      "de",
+      "en"
+    ],
+    "widths": [
+      360,
+      390,
+      768,
+      1024
+    ],
+    "physicalPhoneVerified": false
+  },
+  "publicBrowser": {
+    "checks": 8,
+    "sourceFilesMatched": 18,
+    "languages": [
+      "da",
+      "de",
+      "en"
+    ],
+    "widths": [
+      390,
+      1440
+    ],
+    "actualClipboardAndFreshViewRestoration": true,
+    "noPageErrors": true,
+    "checkedAt": "2026-10-06T15:32:37.742Z",
+    "report": "docs/research/jordrav/public-copy-4.0.546.json"
+  },
+  "verifier": {
+    "archive": "docs/research/jordrav/public-copy-verifier-4.0.546.mjs",
+    "executedSha256": "ae21f0dd374aee3c12b5fb4927a703ad3b2d5579e3c25d6b39ae4c18c1d03c6b",
+    "normalizedArchiveSha256": "0eee58ed561da0cd56cac0afed1cb68c909a9f5ed7858095283ccc13e249429d",
+    "normalization": "UTF-8 BOM, CRLF and trailing blank lines only; executable statements identical"
+  },
+  "preserved": {
+    "jordravDataUnchanged": true,
+    "modelVersion": "0.2.0-prototype",
+    "geodataOnlyTopVersion": true,
+    "sqlOutsideStaticHandbookPayloadUnchanged": true,
+    "modelBundleSha256": "ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb"
+  },
+  "supersededVerificationIssues": [
+    "Initial saved-view test expected old German label; expectation changed after owner wording change; all 15 passed",
+    "Initial local source run lacked Python in PATH; explicit bundled runtime passed",
+    "Initial public verifier doubled the URL hash; corrected test URL passed; product code unchanged",
+    "One later public source fetch returned non-OK without retained status; direct read then returned HTTP 200; complete strict source comparison and browser rerun passed",
+    "Deployment metadata verifier initially required success for expected skipped recovery jobs; corrected to exact expected outcome; all ten hard steps and required jobs passed"
+  ],
+  "coordination": {
+    "humanAuthorizationVerified": true,
+    "otherThreadId": "01a0921c-8963-7280-9acf-5b5cc32b61c5",
+    "order": "527, same-version publication documentation, then other chat integrates 522"
+  }
+}

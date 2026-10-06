@@ -1,0 +1,37 @@
+{
+  "version": "4.0.546",
+  "scope": "Actual public Chrome, unmodified product files and native controls; no physical phone claim",
+  "checks": [
+    "All 18 public release identity, HTML, CSS and module files exactly match LF-normalized source",
+    "da/390: visible permission and sharing explanation; clipboard and fresh view restore aerial, area and fields",
+    "de/390: visible permission and sharing explanation; clipboard and fresh view restore aerial, area and fields",
+    "en/390: visible permission and sharing explanation; clipboard and fresh view restore aerial, area and fields",
+    "da/1440: visible permission and sharing explanation; clipboard and fresh view restore aerial, area and fields",
+    "de/1440: visible permission and sharing explanation; clipboard and fresh view restore aerial, area and fields",
+    "en/1440: visible permission and sharing explanation; clipboard and fresh view restore aerial, area and fields",
+    "Every actual requested Jordrav module is release-bound; no page errors"
+  ],
+  "errors": [],
+  "files": {
+    "version.json": "12cb7a882cb331436963b557df9b06400b15c79533ee87e26be9402a4d7613ef",
+    "jordrav.html": "12d7e3e299bd1057726530c85c7a6bc4ffb5e6ac5043b9f368ea6e740bbfc0c7",
+    "jordrav.css": "1365282ca944fbe29d898be4db79a768ea2b5dcc2c98ff960ffa7415defa26bb",
+    "js/jordrav/accessibility.js": "af2e405f37735c53f8770f8466d4ca2f9a8d6be060523ec4539f53a6f32a8b7e",
+    "js/jordrav/context-messages.js": "85caa32ba0b8d0c27795e4c60fbd99b1218d930b9fdfd5467f27868e73f0a650",
+    "js/jordrav/data-service.js": "fe527dc550d4d6947165423ee8d4e9b676ebad9839d9f7ac3b2a067152da8238",
+    "js/jordrav/dataset-binding.js": "8b1a5c73fbd94ce9d075ed6dd64712a12d696ee86e62ff6b476c8b2b9fb611a4",
+    "js/jordrav/evidence-chain.js": "ea2681d7ce6af1418e81d0868c294f9e03660b5e116f95721ea0205097423cd6",
+    "js/jordrav/field-context.js": "5b06eb84d0bf0f6c1c69c1388e2ddf01186b4c0d8d8a0ab57f6504d11c9f4ba9",
+    "js/jordrav/landscape-context.js": "c400aabbfdc909da087e96037b481113debb94dc96a47ef7655c77929210114b",
+    "js/jordrav/layer-access.js": "128c256c60507b761619d8a388c719fed6d0664b5b15a91aa89c138d1e88ad3e",
+    "js/jordrav/map.js": "0aeae293d063d75b673118ffba7d3ad96cf488a98ff2b5b5f201c7a9074a7659",
+    "js/jordrav/messages.js": "136e936bf03692d1c9632c4b5bba1b22dacd3fa4e4b16983986679771c8dcde4",
+    "js/jordrav/profile-examples.js": "ce910aebf4182b1186c3d212541672ca9c5fb394838734164c3739dbdada1db5",
+    "js/jordrav/public-context.js": "efacbc9315bdb02df3ec2c33bda9f389550628186b7a438f5cf5259a6a28b155",
+    "js/jordrav/regional-hypotheses.js": "ec9da8c58ac068ea8cc9b632a98348ae889eb000063f26abb871dd8658d2628d",
+    "js/jordrav/search-context.js": "06672b010b88bdd96ee5d828079b26990b2b1b1edef962d04eb070607efdb212",
+    "js/jordrav/view-state.js": "271a8f71eb42ebb89d19a25aee90cdd73e72985d1526710548f56aeaa0f2ffc3"
+  },
+  "status": "PASS",
+  "checkedAt": "2026-10-06T15:32:37.742Z"
+}
