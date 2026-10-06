@@ -1,3 +1,13 @@
+# Nyeste ejerkrav – Jordravtekst og tilladelse, 2026-10-06
+
+**Implementeret i 4.0.546:** Ejeren godkender teksten *Gem eller del
+kortvisning* i stedet for *Kopiér link* og bestiller en tydelig opfordring
+til altid at spørge lodsejeren om lov til at gå på deres jord. Opfordringen
+skal være synlig før kortet på desktop og mobil, også på DE/EN. Linkets
+funktion og alle eksisterende kortvalg bevares. Kortfarver og markomrids
+skal aldrig fremstå som adgangstilladelse. Ingen juridisk regel om andre
+adgangsformer udledes af denne praktiske opfordring.
+
 # Nyeste ejerkrav – Jordravs layout og design, 2026-10-06
 
 Ejeren bestiller en fuld ombygning af Jordravsidens design og betjening:

@@ -1,4 +1,4 @@
-import { registerI18nMessages } from '../i18n.js?v=4.0.545';
+import { registerI18nMessages } from '../i18n.js?v=4.0.546';
 const messages={
   da:{
     contextTitle:'Supplerende jordbund, terræn og boringer',soilToggle:'JB-jordbundskort 2024',terrainToggle:'Terrænskygge · 2005–2007',boresToggle:'Offentlige boringer · profiler hos GEUS',
@@ -42,21 +42,24 @@ contextMessageKeys.push(...Object.keys(profileMessages.da));
 
 const interfaceMessages={
   da:{
-    eyebrow:'Følg ravets mulige veje',heading:'Jordrav og markrav i Danmark',intro:'Gå på opdagelse i jordarter, gamle kystmiljøer og landskabets geologiske spor.',prototype:'Geologisk model · 0.2',copyView:'Kopiér link',
+    eyebrow:'Følg ravets mulige veje',heading:'Jordrav og markrav i Danmark',intro:'Gå på opdagelse i jordarter, gamle kystmiljøer og landskabets geologiske spor.',prototype:'Geologisk model · 0.2',copyView:'Gem eller del kortvisning',
+    uiShareHelp:'Kopiér et link til dette område med dit zoom, baggrundskort og valgte lag.',uiPermissionTitle:'Spørg altid lodsejeren om lov',uiPermissionNote:'Få lodsejerens tilladelse, før du går på deres jord og leder efter rav. Kortets farver og markgrænser giver ikke adgang til arealet.',
     selectTitle:'Vælg et sted på kortet',selectHelp:'Zoom ind og klik, også i ufarvede områder. Her får du forklaringen på materialer, mulige ravveje og adgang til lagene.',
     uiSkipMap:'Gå til kortet',uiModelNote:'Egen geologisk analyse · ikke validerede fundsteder',uiLayers:'Lag og farver',uiOptionsIntro:'Vælg, hvad du vil undersøge. Kortets baggrund og de enkelte lag kan bruges hver for sig.',uiGeologyGroup:'Geologiske muligheder',uiFieldGroup:'Marker og landskab',
     uiBasis:'Geologisk grundlag',uiLegendTitle:'Kortets farver',uiLegendCaption:'Geologiske spor og dybe lag',uiLegendHelp:'Sådan læses farverne',uiDetailJump:'Se områdeforklaring',uiRegionKicker:'En vej ind i kortet',uiRegionTitle:'Start med en region',uiRegionRead:'Læs områdets geologiske historie',
     uiStepExplore:'Zoom ind på et område, du vil undersøge.',uiStepClick:'Klik på en flade eller et profilpunkt.',uiStepRead:'Følg lagene, mulighederne og det, der er ukendt.',uiReadingKicker:'Fra kort til landskab',uiReadingTitle:'Bliv klogere, før du går ud',uiReadingIntro:'Brug kortet som et spor. Forbindelsen til rav og til den blotlagte jord skal stadig undersøges på stedet.',uiFieldKicker:'Ved overfladen',uiMethodKicker:'Analyse og kilder'
   },
   en:{
-    eyebrow:'Follow the possible paths of amber',heading:'Land and field amber in Denmark',intro:'Explore soils, former coasts and the geological clues in the landscape.',prototype:'Geological model · 0.2',copyView:'Copy link',
+    eyebrow:'Follow the possible paths of amber',heading:'Land and field amber in Denmark',intro:'Explore soils, former coasts and the geological clues in the landscape.',prototype:'Geological model · 0.2',copyView:'Save or share map view',
+    uiShareHelp:'Copy a link to this area with your zoom, background map and selected layers.',uiPermissionTitle:'Always ask the landowner for permission',uiPermissionNote:'Get the landowner’s permission before entering their land to look for amber. Map colours and field boundaries do not grant access to the land.',
     selectTitle:'Choose a place on the map',selectHelp:'Zoom in and click, including uncoloured areas. Find explanations of materials, possible amber paths and access to the layers.',
     uiSkipMap:'Go to the map',uiModelNote:'Our geological analysis · not validated find sites',uiLayers:'Layers & colours',uiOptionsIntro:'Choose what to explore. The background and individual layers can be used independently.',uiGeologyGroup:'Geological possibilities',uiFieldGroup:'Fields and landscape',
     uiBasis:'Geological basis',uiLegendTitle:'Map colours',uiLegendCaption:'Geological clues and deep layers',uiLegendHelp:'How to read the colours',uiDetailJump:'See place explanation',uiRegionKicker:'A way into the map',uiRegionTitle:'Start with a region',uiRegionRead:'Read the region’s geological history',
     uiStepExplore:'Zoom in on an area you want to explore.',uiStepClick:'Click a polygon or a profile point.',uiStepRead:'Follow the layers, possibilities and remaining unknowns.',uiReadingKicker:'From map to landscape',uiReadingTitle:'Learn more before heading out',uiReadingIntro:'Use the map as a clue. Connections to amber and exposed ground still need to be investigated locally.',uiFieldKicker:'At the surface',uiMethodKicker:'Analysis and sources'
   },
   de:{
-    eyebrow:'Möglichen Bernsteinwegen folgen',heading:'Land- und Feldbernstein in Dänemark',intro:'Bodenarten, frühere Küsten und geologische Spuren in der Landschaft erkunden.',prototype:'Geologisches Modell · 0.2',copyView:'Link kopieren',
+    eyebrow:'Möglichen Bernsteinwegen folgen',heading:'Land- und Feldbernstein in Dänemark',intro:'Bodenarten, frühere Küsten und geologische Spuren in der Landschaft erkunden.',prototype:'Geologisches Modell · 0.2',copyView:'Kartenansicht speichern oder teilen',
+    uiShareHelp:'Einen Link zu diesem Gebiet mit Zoom, Hintergrundkarte und ausgewählten Ebenen kopieren.',uiPermissionTitle:'Immer den Grundeigentümer um Erlaubnis bitten',uiPermissionNote:'Holen Sie die Erlaubnis des Grundeigentümers ein, bevor Sie sein Land betreten und nach Bernstein suchen. Kartenfarben und Feldgrenzen erlauben keinen Zutritt.',
     selectTitle:'Einen Ort auf der Karte wählen',selectHelp:'Vergrößern und anklicken, auch ungefärbte Flächen. Hier werden Material, mögliche Bernsteinwege und Schichtzugang erklärt.',
     uiSkipMap:'Zur Karte',uiModelNote:'Eigene geologische Analyse · keine validierten Fundorte',uiLayers:'Ebenen & Farben',uiOptionsIntro:'Wählen Sie, was Sie untersuchen möchten. Hintergrund und einzelne Ebenen sind unabhängig nutzbar.',uiGeologyGroup:'Geologische Möglichkeiten',uiFieldGroup:'Felder und Landschaft',
     uiBasis:'Geologische Grundlage',uiLegendTitle:'Kartenfarben',uiLegendCaption:'Geologische Spuren und tiefe Schichten',uiLegendHelp:'Die Farben richtig lesen',uiDetailJump:'Erklärung zum Ort',uiRegionKicker:'Ein Einstieg in die Karte',uiRegionTitle:'Mit einer Region beginnen',uiRegionRead:'Geologische Geschichte der Region lesen',

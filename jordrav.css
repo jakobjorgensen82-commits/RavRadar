@@ -20,6 +20,9 @@
 .jordrav-model-note { flex:0 1 290px; display:grid; grid-template-columns:8px 1fr; gap:10px; align-items:start; font-size:.78rem; line-height:1.65; color:var(--muted); }
 .jordrav-model-dot { width:7px; height:7px; margin-top:7px; border-radius:50%; background:#b18236; }
 .jordrav-prototype { grid-column:2; font-size:.69rem; letter-spacing:.02em; color:#7d8c85; }
+.jordrav-permission-note { padding:16px 20px; margin-bottom:22px; border:1px solid #e4d8c0; border-left:4px solid #b18236; border-radius:12px; background:#fcf7eb; color:#5e4825; font-size:.86rem; line-height:1.6; }
+.jordrav-permission-note strong { display:block; font-size:.92rem; }
+.jordrav-permission-note p { margin:4px 0 0; }
 .jordrav-workspace { display:grid; grid-template-columns:minmax(0,1fr) 365px; align-items:start; gap:22px; }
 .jordrav-map-column,.jordrav-details,.jordrav-method { border:1px solid var(--line); border-radius:20px; background:white; box-shadow:0 5px 22px #173b3806; }
 .jordrav-map-column { min-width:0; }
