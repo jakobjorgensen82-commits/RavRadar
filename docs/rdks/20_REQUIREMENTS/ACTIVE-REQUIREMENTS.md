@@ -1,3 +1,10 @@
+# Jordrav – opfyldt offentlig softwareleverance 2026-10-06
+
+De nedenstående aktive Jordravkrav er implementeret og offentligt kontrolleret
+i 4.0.544; punkt 4 er udgået. Empiriske lag-/rav-/pløjeukendte er fortsat
+begrænsninger og må ikke omdøbes til målte data. CI/deploy-/browserbevis:
+`docs/research/jordrav/publication-evidence-4.0.544.json`.
+
 # AKTUELT JORDRAVKRAV – 2026-10-05
 
 **Offentlige profilpunkter skal passere den hårde privacygate uden en bred

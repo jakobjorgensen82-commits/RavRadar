@@ -1,3 +1,44 @@
+# Aktuel Jordravleverance – 4.0.544, 2026-10-06
+
+Den bestilte nationale kortleverance er nu offentlig og browserverificeret.
+PR #521 og #523 bestod hver fuld validate:source på deres eksakte head;
+kildebeviser er uafhængigt SHA-256-afstemt. Seneste merge cf65a5fd og
+kode-only run 37431340473, attempt 3, bestod den faktiske Supabase-læsning,
+eksakt runtimegenbrug, artifact-/privacykontrol, backend og offentlig deploy.
+Ingen vejrprovider blev kontaktet af kodeleveringen.
+
+Det offentlige versionsfelt, HTML, CSS og alle 15 Jordravmoduler er afstemt
+mod releasekilden. Faktisk offentlig Chrome kontrollerer overblik, lokale
+klik, levende JB4/Jupiter/terræn, alle 16 profilmarkører, luftfoto,
+markomrids og 390 px på DA/DE/EN. Screenshots er visuelt læst. De 99
+lokale browserchecks og 50 målprøver bevares som særskilt lokal evidens.
+Ingen fysisk telefonprøve, lokale ravmængder eller pløjelagsdybder påstås.
+
+Punkt 4 om automatisk nypløjet/bar/regnvasket jord er udgået efter ejerordre.
+De øvrige bestilte softwarepunkter er implementeret og leveret. Hele det
+tilgængelige nationale grundlag behandles ens; empirisk ravtilførsel,
+bevaring og markens faktiske lagadgang vises fortsat som ukendte.
+Webhåndbog 90.1 er integreret i kilden; normal drift synkroniserer den
+gennem eksisterende beskyttet håndbogsfletning. DEC-0148's normale
+vejropfølgning er særskilt og kan ikke ugyldiggøre kortleverancen.
+Den normale opfølgning blev faktisk startet som run 37435351739,
+6. oktober kl.08.19 UTC på cf65a5fd, efter kodeleveringen. Dateret
+driftsobservation og direkte run-link står i publiceringskvitteringen;
+den er ikke et nyt dispatch eller en påstand om frisk vejrproduktion.
+
+Tidligere profilprivacyfejl og to FGA-authafvisninger bevares nedenfor.
+Ejeren oplyste, at adgangen ikke var ændret; samme opsætning virkede ved
+attempt 3. Årsagen er uafklaret, og credentials/gates blev ikke ændret.
+Kvittering: docs/research/jordrav/publication-evidence-4.0.544.json.
+Kort: https://ravradar.dk/jordrav.html
+Ekstra høj indsats/Sol anbefales ved senere kritisk drift/slutkontrol.
+Nedenstående checkpoints er historiske; deres pendingstatus er erstattet.
+
+
+---
+
+Følgende analyse beskriver de respektive tidligere arbejdsfaser.
+
 # Aktuel national Jordravmodel 0.2 – 2026-10-05
 
 **Seneste 2026-10-06:** National undersøgelsesprioritet og fem kædeled er

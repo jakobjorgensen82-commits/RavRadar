@@ -1,10 +1,12 @@
-## 4.0.544 – Jordrav releasekandidat, 6. oktober 2026
+## 4.0.544 – nationalt Jordravkort, 6. oktober 2026
 
-- PR #521 og fuld exact-head CI består; første kode-only deploy stoppede
-  ved koordinatkontrollen for de 16 offentlige Jupiter-profiler.
-- Afgrænset rettelse binder godkendelsen til præcis profilfil/SHA/bytes
-  og to koordinatblade. Private felter og øvrige koordinater kontrolleres
-  fortsat; ny CI, leveringsretry og internetkontrol afventer.
+- PR #521/#523 og fuld exact-head CI består med uafhængigt afstemte
+  kildebeviser. Kode-only 37431340473 attempt 3 er faktisk leveret.
+- Første profilprivacyfejl er rettet med præcis filsti/SHA/bytes og to
+  koordinatblade; rekursiv privatkontrol bevares. To Supabase-authafvisninger
+  efterfulgtes af bestået adgang med samme opsætning, uden omgået gate.
+- Offentlig Chrome afstemmer alle kortassets og kontrollerer levende lag,
+  luftfoto og 390 px DA/DE/EN; fysisk telefon er ikke afprøvet.
 
 - Landsdækkende geologisk model 0.2 og alle fem farvede mulighedsspor,
   med fysisk materialevejledning, laghistorie og undersøgelsesprioritet.
@@ -14,7 +16,8 @@
   oplysninger og jagtbarhed adskilles. Ingen ravbonus eller fundkrav.
 - Dansk/tysk/engelsk, mobile browserflader, sporfiltre og gemte lagvalg.
 - Punkt 4 om automatisk aktuelle søgeforhold er udgået efter ejerordre.
-- Nyere main bevares. CI og providerfri deploy afventer i denne kandidat.
+- Nyere main er bevaret; providerfri deploy og offentlig kortkontrol består.
+  Normal vejropfølgning følger separat efter DEC-0148.
 
 ## Ikke udgivet – Jordrav sporfiltre og gemte kortvisninger (2026-10-05)
 

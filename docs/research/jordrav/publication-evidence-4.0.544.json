@@ -1,6 +1,6 @@
 {
   "releaseVersion": "4.0.544",
-  "status": "FIRST_DEPLOYMENT_STOPPED_BY_PRIVACY_GATE",
+  "status": "PUBLICATION_AND_PUBLIC_BROWSER_VERIFIED",
   "ownerExclusion": "Point 4: no automatic current bare/newly ploughed/rain-washed field detection",
   "source": {
     "pullRequest": "https://github.com/jakobjorgensen82-commits/RavRadar/pull/521",
@@ -20,18 +20,177 @@
     "treeMatchesValidatedSource": true
   },
   "deployment": {
-    "runId": 37428389866,
-    "url": "https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/37428389866",
+    "runId": 37431340473,
+    "runAttempt": 3,
+    "url": "https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/37431340473",
+    "headSha": "cf65a5fd74edf236643f6cbd555e7e542f3467df",
     "mode": "code-only exact-runtime reuse",
     "providerAcquisitionRequested": false,
-    "conclusion": "failure",
-    "failure": "pages-privacy rejected longitude/latitude leaves of the bound public Jupiter profile snapshot; public deployment skipped",
-    "hardGatesVerified": false
+    "conclusion": "success",
+    "hardGatesVerified": true,
+    "requiredSteps": [
+      {
+        "name": "Reuse exact successful pull-request source proof",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T07:57:37Z"
+      },
+      {
+        "name": "Read linked migration history without changing Supabase",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T07:57:52Z"
+      },
+      {
+        "name": "Read back migration and database binding",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T07:58:00Z"
+      },
+      {
+        "name": "Require exact code-only reuse invariants",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T07:59:21Z"
+      },
+      {
+        "name": "Audit regenerated integrated public runtime",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T08:00:10Z"
+      },
+      {
+        "name": "Preflight complete Pages artifact for private runtime material",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T08:01:57Z"
+      },
+      {
+        "name": "Decide all independent prewrite checks together",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T08:01:57Z"
+      },
+      {
+        "name": "Prove private runtime is not anonymously readable",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T08:02:34Z"
+      },
+      {
+        "name": "Publish exact integrated backend and Edge readiness for this source",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T08:02:49Z"
+      },
+      {
+        "name": "Upload GitHub Pages artifact",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T08:03:08Z"
+      }
+    ],
+    "jobs": [
+      {
+        "name": "Validate manual authority before any recovery writes",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T07:56:44Z"
+      },
+      {
+        "name": "Finish an interrupted generation before new work / Reconcile any durable RavScore transition before production",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T07:56:58Z"
+      },
+      {
+        "name": "Finish an interrupted generation before new work / Require terminal operational recovery before production",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T07:57:03Z"
+      },
+      {
+        "name": "Finish an interrupted generation before new work / Redeploy only a helper-proven exact sealed Pages target",
+        "conclusion": "skipped",
+        "completedAt": "2026-10-06T07:56:59Z"
+      },
+      {
+        "name": "Finish an interrupted generation before new work / Finalize exact recovered target without Pages privileges",
+        "conclusion": "skipped",
+        "completedAt": "2026-10-06T07:56:59Z"
+      },
+      {
+        "name": "Reuse exact runtime and build code-only artifact",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T08:03:14Z"
+      },
+      {
+        "name": "Deploy verified code-only artifact / Deploy prepared Pages artifact",
+        "conclusion": "success",
+        "completedAt": "2026-10-06T08:04:55Z"
+      }
+    ],
+    "ownerConfirmedNoAccessChange": true,
+    "authRecovery": "Same existing setup passed the actual management and migration read in attempt 3; root cause of earlier FGA denials is not established"
   },
   "publicBrowser": {
-    "status": "NOT_RUN",
+    "status": "PASS",
     "base": "https://jakobjorgensen82-commits.github.io/RavRadar/",
-    "physicalPhoneTested": false
+    "report": "docs/research/jordrav/public-browser-4.0.544.json",
+    "sourceFilesMatched": 18,
+    "checks": 8,
+    "completedAt": "2026-10-06T08:12:59.475Z",
+    "physicalPhoneTested": false,
+    "screenshotsVisuallyRead": true,
+    "canonicalMapUrl": "https://ravradar.dk/jordrav.html",
+    "reportLfSha256": "f19ee08afca229609a1808af39522c8d0e56b14554a89d588017615d4daa6302",
+    "verificationNotes": [
+      "The extra screenshot wait originally expected unsaved field/aerial toggles to survive a language reload. Language reload restores the saved URL. This check now explicitly uses Copy view before reload and verifies that the field choice remains checked; no product code was changed."
+    ]
   },
-  "privatePayloadIncluded": false
+  "privatePayloadIncluded": false,
+  "failedAttempts": [
+    {
+      "runId": 37428389866,
+      "url": "https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/37428389866",
+      "mode": "code-only exact-runtime reuse",
+      "providerAcquisitionRequested": false,
+      "conclusion": "failure",
+      "failure": "pages-privacy rejected longitude/latitude leaves of the bound public Jupiter profile snapshot; public deployment skipped",
+      "hardGatesVerified": false
+    },
+    {
+      "runId": 37431340473,
+      "url": "https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/37431340473",
+      "headSha": "cf65a5fd74edf236643f6cbd555e7e542f3467df",
+      "mode": "code-only exact-runtime reuse",
+      "providerAcquisitionRequested": false,
+      "conclusion": "failure",
+      "hardGatesVerified": false,
+      "runAttempt": [
+        1,
+        2
+      ],
+      "failure": "Supabase CLI 2.117.0 link: remote project status returned FGA Authentication Error. Unauthorized in attempts 1 and 2; migration read failed and public deployment skipped",
+      "supabaseSecretMetadataChanged": false,
+      "supabaseSecretLastUpdatedAt": "2026-08-26T23:43:42Z",
+      "previousSuccessfulManagementRead": "First run 37428389866: Finished supabase link and Connecting to remote database at 2026-10-06T07:15:30Z",
+      "ownerConfirmedNoAccessChange": true
+    }
+  ],
+  "sourceCorrection": {
+    "pullRequest": "https://github.com/jakobjorgensen82-commits/RavRadar/pull/523",
+    "headSha": "af554a6594ee6ccbd15802fb1080a0d6357edc3c",
+    "validatedSourceTreeSha256": "sha256:2e840abbd5d9e1bea47a3afa79d2043a59fd73f77e02d34618d6c6cd282d7bc3",
+    "ciRunId": 37430138818,
+    "ciRunAttempt": 1,
+    "ciConclusion": "success",
+    "artifactId": 11397037286,
+    "artifactDigest": "sha256:a28eb40ac8a57155e9614bc3d30f0e2412b53337c435e5a822d76a2ae061a4f1",
+    "proofIndependentlyMatched": true,
+    "mergeHeadSha": "cf65a5fd74edf236643f6cbd555e7e542f3467df",
+    "mergedAt": "2026-10-06T07:42:20Z",
+    "treeMatchesValidatedSource": true,
+    "productFilesUnchanged": true
+  },
+  "normalWeatherFollowup": {
+    "runId": 37435351739,
+    "runAttempt": 1,
+    "url": "https://github.com/jakobjorgensen82-commits/RavRadar/actions/runs/37435351739",
+    "headSha": "cf65a5fd74edf236643f6cbd555e7e542f3467df",
+    "startedAt": "2026-10-06T08:19:33Z",
+    "observedAt": "2026-10-06T08:31:06.153278+00:00",
+    "statusAtObservation": "in_progress",
+    "basis": "DEC-0148 point 5; existing independent normal weather started after successful code-only release",
+    "mapPublicationIndependent": true,
+    "additionalDispatchPerformed": false,
+    "note": "Dated observation; follow the run URL for later operational outcome. Documentation merge waits for the production lock to be released."
+  }
 }
