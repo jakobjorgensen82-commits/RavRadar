@@ -1,4 +1,29 @@
-# AKTUELLE JORDRAVPUNKTER – national model 0.2 – 2026-10-05
+# Aktuelle Jordravbegrænsninger efter offentlig levering – 2026-10-06
+
+- **JORDRAV-006/-016, LEVERET OG PRODUKTIONSKONTROLLERET:** PR #521/#523,
+  to uafhængigt afstemte exact-head CI-beviser og kode-only run
+  37431340473 attempt 3 består. Public Pages-/privacy-/backendgates og
+  faktisk offentlig Chrome er kontrolleret. Koordinatundtagelsen er fortsat
+  bundet til den ene profilsnapshots SHA/bytes/sti og to direkte blade.
+- **JORDRAV-005, offentlig mobilbrowser kontrolleret / fysisk hardware
+  uverificeret:** 390 px DA/DE/EN passer uden vandret overløb; dette er
+  browseremulation og ikke en fysisk telefonprøve.
+- **JORDRAV-014/-015 og øvrige bestilte softwarepunkter, LEVERET:**
+  National prioritering, terræn, JB og landsdækkende profiler fungerer i
+  den offentlige browser. Det er ikke bevis for rav i en bestemt mark.
+- **JORDRAV-007/-008, empiriske begrænsninger består:** Lokal ravtilførsel,
+  bevaring, nutidig blotlægning, lagtykkelse og forbindelse til pløjelaget
+  er ukendt uden observation. Ukendt vises eksplicit og ekstrapoleres ikke.
+- **Punkt 4, UDGÅET:** Automatisk nutidig nypløjet/bar/regnvasket jord er
+  fjernet fra scope efter ejerordre og er ikke udestående leveringsarbejde.
+- **FGA-auth, ikke aktuelt blokerende / rodårsag ukendt:** Forsøg 1/2
+  blev afvist; ejeren havde ikke ændret adgangen. Samme opsætning bestod
+  forsøg 3 uden credentialændring eller omgået gate. Fejlhistorikken bevares.
+
+Evidens: docs/research/jordrav/publication-evidence-4.0.544.json.
+Nedenstående daterede lokal-/releasecheckpoints er historiske faser.
+
+# HISTORISKE JORDRAVPUNKTER – national model 0.2 – 2026-10-05
 
 **JORDRAV-016: første levering stoppet af profilprivacy.** Run 37428389866
 afviser latitude/longitude i de offentlige Jupiter-profiler; deploy blev
