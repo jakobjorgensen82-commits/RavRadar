@@ -1,5 +1,8 @@
 # NYESTE – lokal 4.0.548, 2026-10-06 20.30 DK – godkendt SOURCE-antalsgrænse
 
+SOURCE-codec og den fælles grænsefil er med i den normale producentoversigt.
+Workflowprøven består uden at ændre den gemte storage-ABI eller modelbindinger.
+
 Ejeren har efter den konkrete sikkerhedsafvisning udtrykkeligt godkendt at
 hæve SOURCE-antalsloftet256→512. Den afsluttede547-acquisition havde373
 SOURCE-targets; det nøjagtige kvalificerede live indexantal blev ikke logget.

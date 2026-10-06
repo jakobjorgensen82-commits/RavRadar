@@ -5,6 +5,9 @@ Dette erstatter den tidligere afvisning alene for denne antalsgrænse. Den
 afsluttede 4.0.547-vejrhentning rapporterede 373 kildepunkter og fejlede før
 deploy; det nøjagtige kvalificerede live indexantal blev ikke logget.
 Codec og forecastfilens streaminglæser bruger nu samme antalskontrakt.
+Den fælles grænsefil og SOURCE-codec er også med i den normale producent-
+oversigt. Den målrettede workflowprøve beviser, at oversigten ikke erstatter
+den uændrede gemte storage-ABI; modelbundle og otte bindinger består.
 Byte- og tidsgrænser, autentificering, originalbeviser, kildeprioritet og
 hård no-loss er uændrede. Overflow afviser hele pakken uden beskæring.
 

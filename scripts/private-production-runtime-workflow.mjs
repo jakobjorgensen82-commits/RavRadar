@@ -68,6 +68,8 @@ const PRIVATE_RUNTIME_SOURCE_FILES = Object.freeze({
     'scripts/lib/verified-protected-progress-components.mjs',
     'scripts/lib/verified-dmi-progress-inputs.mjs',
     'scripts/lib/dmi-forecast-file.mjs',
+    'scripts/lib/water-source-continuity-contract.mjs',
+    'scripts/lib/water-source-forecast-routing.mjs',
     'scripts/lib/dmi-wave-tuple-proof.mjs',
     'scripts/lib/protected-dmi-current-context.mjs',
     'scripts/lib/private-weather-progress-files.mjs',
