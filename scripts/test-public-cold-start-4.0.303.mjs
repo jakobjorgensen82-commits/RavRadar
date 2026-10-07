@@ -51,17 +51,21 @@ assert.equal(worker.includes('`./data/zones.geojson?v=${APP_VERSION}`'), false, 
 const index = await fs.readFile(new URL('../index.html', import.meta.url), 'utf8');
 const bootstrap = await fs.readFile(new URL('../bootstrap.js', import.meta.url), 'utf8');
 const releaseVersion = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).version;
-const suffix = `?v=${releaseVersion}&copy=footer-20261005`;
+const previousCopySuffix = `?v=${releaseVersion}&copy=footer-20261005`;
+const suffix = `${previousCopySuffix}&ui=account-20261006`;
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 
-// Exercise the existing worker with an earlier same-version asset in cache.
-// A copy-only release must reach the new asset, not merely change disk bytes.
+// Exercise the existing worker with earlier same-version assets in cache.
+// The account UI update must bypass both the version-only and footer-only
+// copies without deleting either or refetching its own newly cached asset.
 const handlers = new Map();
 const origin = 'https://ravradar.test';
 const cached = new Map([
   [`${origin}/bootstrap.js?v=${releaseVersion}`, new Response('old-bootstrap')],
   [`${origin}/app.js?v=${releaseVersion}`, new Response('old-app')],
+  [`${origin}/bootstrap.js${previousCopySuffix}`, new Response('footer-bootstrap')],
+  [`${origin}/app.js${previousCopySuffix}`, new Response('footer-app')],
 ]);
 const fetched = [];
 vm.runInNewContext(worker, {
@@ -79,6 +83,13 @@ for (const file of ['bootstrap.js', 'app.js']) {
   handlers.get('fetch')({request,respondWith:value => {response=value;}});
   assert.equal(await (await response).text(),`new:${request.url}`);
   assert.ok(cached.has(`${origin}/${file}?v=${releaseVersion}`), 'Do not delete unrelated existing caches.');
+  assert.equal(await cached.get(`${origin}/${file}?v=${releaseVersion}`).clone().text(),
+    file === 'bootstrap.js' ? 'old-bootstrap' : 'old-app');
+  assert.equal(await cached.get(`${origin}/${file}${previousCopySuffix}`).clone().text(),
+    file === 'bootstrap.js' ? 'footer-bootstrap' : 'footer-app');
+  handlers.get('fetch')({request,respondWith:value => {response=value;}});
+  assert.equal(await (await response).text(), `new:${request.url}`,
+    'The exact new UI asset must be reusable from its own cache key.');
 }
 assert.deepEqual(fetched,[`${origin}/bootstrap.js${suffix}`,`${origin}/app.js${suffix}`]);
 

@@ -1,3 +1,12 @@
+## Udgivelsesuafhængig testrettelse – opstartens konto-UI-cachemarkør
+
+Den eksisterende cold-start-test kræver nu den allerede leverede UI-markør
+ud over versions- og footer-markøren. Den normale service-worker afprøves
+mod begge ældre same-version kopier, bevarer dem og genbruger de nye assets
+uden ekstra hentning. Måltesten består lokalt; præcis kilde-CI, sikker merge
+og næste naturlige driftskontrol mangler. Kun test og dokumentation; ingen
+produktionskode, ny version, assistentbinding eller ændret vejrhentning.
+
 ## 4.0.551 – cachegenbrug med schedulerens gyldige UTC-format
 
 4.0.551 er en separat minimal cache-rettelse fra main 4.0.549. Den normale gendannelseskalder accepterer allerede en gyldig hel UTC-time uden millisekunder, men SOURCE-kontinuitet kræver kanonisk tidsformat. Kun den validerede kaldertime kanoniseres før sammenfletning; lagrede referencer, autentificering, originale kildebeviser, central routing og hård no-loss er uændrede. Seks eksisterende CLI-varianter dækker gyldige og beskadigede beviser ved kanonisk time, schedulerformat og næste time; et manglende nyt sluttidspunkt opfindes ikke. Ejerens konkrete ja omfatter denne separate GitHub-rettelse med kontrolleret levering og derefter én vejrhentning uden overlappende writer. Den tidligere ordre om ingen ekstra hentning er erstattet alene for dette ene efterfølgende forløb. Særskilte afvisninger, den isolerede store revision og assistentkandidaten ændres ikke. Kilde-CI, sikker merge, deploy og faktisk ny cache-/vejrgeneration er endnu åbne; generisk produktionsfejlkode er ikke bevis for den skjulte indre exception. Tidligere Fur/no-loss-tab er en særskilt åben årsag. Brugerdata, Spørg RavRadar og Codex-uafhængig drift før abonnementets udløb er ikke færdige.
