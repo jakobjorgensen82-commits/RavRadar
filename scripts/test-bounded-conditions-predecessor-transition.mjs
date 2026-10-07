@@ -13,11 +13,20 @@ import {
   OWNER_CURRENT_DOMAIN_SUCCESSOR,
   OWNER_WATER_LEVEL_ONLY_PREDECESSOR,
   OWNER_WATER_LEVEL_ONLY_SUCCESSOR,
+  OWNER_ASSISTANT_KNOWLEDGE_SUCCESSOR,
 } from './lib/bounded-conditions-predecessor-transition.mjs';
 import {
   prepareHistoricalWavePredecessorRestore,
 } from './prepare-historical-wave-predecessor-restore.mjs';
 import { secondRestoreExpectation } from './private-runtime-second-restore-expectation.mjs';
+import {
+  ASSISTANT_BINDING_PREDECESSOR_PATH,
+  ASSISTANT_BINDING_MIGRATION_PATH,
+  buildAssistantKnowledgeBindingSuccessor,
+  assertAssistantKnowledgeBindingTargets,
+  buildAssistantKnowledgeRefreshBindingSuccessor,
+  assertAssistantKnowledgeRefreshBindingTargets,
+} from './build-assistant-knowledge-binding-successor.mjs';
 
 const ownerOriginal = OWNER_CURRENT_DOMAIN_PREDECESSOR;
 const ownerFixture = () => ({
@@ -88,6 +97,152 @@ for(const mutate of [value=>{value.currentBinding.modelBundleSha256='e'.repeat(6
   const wrong=waterFixture();mutate(wrong);
   assert.equal(buildOwnerCurrentOriginalRestoreExpectation(wrong),null);
 }
+// Actual normal 543 producer, not the footer code-only consumer of the same B.
+// Source contracts were measured from exact 5d8c, not this dirty working tree.
+const assistantSource = {
+  ...structuredClone(waterOriginal),
+  sourceHead: '5d8c597e0e110df6b51e93fc7a8a629ad45afedc',
+  datasetId: 'rr-20261005135618-210',
+  productionReferenceAt: '2026-10-05T12:00:00.000Z',
+  generatedAt: '2026-10-05T13:56:18.487Z',
+  bundleContentSha256: '86f6b6e08d7d75db8e23436dee9f59408467e4c5698ffc44af1efb77094ad480',
+  modelBinding: { ...waterOriginal.modelBinding,
+    modelBundleSha256: OWNER_WATER_LEVEL_ONLY_SUCCESSOR.integratedBundleSha256 },
+  contractHashes: { ...waterOriginal.contractHashes,
+    continuationStateContractSha256: OWNER_WATER_LEVEL_ONLY_SUCCESSOR.continuationStateContractSha256 },
+  schemaVersion: '1.0.0', kind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_CURRENT_SOURCE',
+  expectedZoneCount: 210, expectedPartCount: 673, privatePayloadIncluded: false,
+};
+const assistantFixture = () => ({
+  sourceDescription: structuredClone(assistantSource),
+  targetReferenceAt: assistantSource.productionReferenceAt,
+  currentBinding: { ...assistantSource.modelBinding,
+    modelBundleSha256: OWNER_ASSISTANT_KNOWLEDGE_SUCCESSOR.integratedBundleSha256 },
+  currentContractHashes: { ...assistantSource.contractHashes,
+    continuationStateContractSha256: OWNER_ASSISTANT_KNOWLEDGE_SUCCESSOR.continuationStateContractSha256 },
+  now: '2026-10-05T16:00:00.000Z',
+});
+const assistantExpected = buildOwnerCurrentOriginalRestoreExpectation(assistantFixture());
+assert.ok(assistantExpected, 'The exact authenticated 543 original needs its own normal restore path.');
+const assistantRefreshHashes = Object.freeze({
+  integratedBundleSha256: '6f9cd52c141c21d0684aa2acc1c11948c93e32d092e14f784ad5b402cd93932d',
+  candidateBundleSha256: '68aa6115c793808fab0f12d6da18d92697dbb7606120fa05ac91a7f40fe66db7',
+  continuationStateContractSha256: '46e63e73afbb26588d2a90bf6e384b5fcc676fdade69f53f28ffcaa4bf08c272',
+});
+const assistantRefreshFixture = () => ({
+  ...assistantFixture(),
+  currentBinding: { ...assistantSource.modelBinding,
+    modelBundleSha256: assistantRefreshHashes.integratedBundleSha256 },
+  currentContractHashes: { ...assistantSource.contractHashes,
+    continuationStateContractSha256: assistantRefreshHashes.continuationStateContractSha256 },
+});
+const assistantRefreshExpected = buildOwnerCurrentOriginalRestoreExpectation(assistantRefreshFixture());
+assert.ok(assistantRefreshExpected,
+  'The reviewed 456 metadata must preserve the exact original 543 restore without replacing the 455 route.');
+// Read-only protected-pointer metadata measured in Supabase on 7 October.
+// This identifies the current ORIGINAL; it is not archive/GCM authentication.
+// The ordinary protected restore must still authenticate its real B/S bytes.
+const assistantCurrentSource = {
+  ...structuredClone(assistantSource),
+  sourceHead: '0361e446136fdb066fdfd62c45366449c55fee56',
+  datasetId: 'rr-20261006220504-210',
+  productionReferenceAt: '2026-10-06T20:00:00.000Z',
+  generatedAt: '2026-10-06T22:05:04.878Z',
+  bundleContentSha256: '9f0081dcac83ee5372999b669aef6e2fb46c03938413e93f1260cc540c0eb92e',
+};
+const assistantCurrentFixture = () => ({
+  ...assistantRefreshFixture(),
+  sourceDescription: structuredClone(assistantCurrentSource),
+  targetReferenceAt: assistantCurrentSource.productionReferenceAt,
+  now: '2026-10-07T11:05:00.000Z',
+});
+const assistantCurrentExpected = buildOwnerCurrentOriginalRestoreExpectation(assistantCurrentFixture());
+assert.ok(assistantCurrentExpected,
+  'The exact measured current 548 original needs a separate closed route, not relabelling as 543.');
+assert.equal(assistantCurrentExpected.ownerCurrentDomainTransition,
+  'EXACT_ASSISTANT_CURRENT_ORIGINAL_RESTORE_V1');
+for (const key of ['sourceHead', 'datasetId', 'productionReferenceAt', 'generatedAt',
+  'bundleContentSha256', 'modelBinding', 'contractHashes']) {
+  assert.deepEqual(assistantCurrentExpected[key], assistantCurrentSource[key]);
+}
+assert.equal(secondRestoreExpectation({ expected: assistantCurrentExpected,
+  source: assistantCurrentSource, manifest: assistantCurrentSource }), assistantCurrentExpected);
+assert.throws(() => secondRestoreExpectation({ expected: assistantCurrentExpected,
+  source: assistantSource, manifest: assistantSource }), /exact owner-current original/);
+assert.throws(() => assertOwnerCurrentOriginalExpectation({ ...assistantCurrentExpected,
+  ownerCurrentDomainTransition: 'EXACT_ASSISTANT_KNOWLEDGE_RESTORE_V1' }));
+assert.throws(() => buildOwnerCurrentOriginalRestoreExpectation({ ...assistantCurrentFixture(),
+  targetReferenceAt: assistantSource.productionReferenceAt }));
+for (const mutate of [
+  f => { f.sourceDescription.sourceHead = assistantSource.sourceHead; },
+  f => { f.sourceDescription.datasetId = assistantSource.datasetId; },
+  f => { f.sourceDescription.generatedAt = assistantSource.generatedAt; },
+  f => { f.sourceDescription.bundleContentSha256 = assistantSource.bundleContentSha256; },
+  f => { f.sourceDescription.productionReferenceAt = '2026-10-07T00:00:00.000Z'; },
+  f => { f.sourceDescription.expectedPartCount = 672; },
+  f => { f.sourceDescription.privatePayloadIncluded = true; },
+  f => { f.currentBinding.modelBundleSha256 = OWNER_ASSISTANT_KNOWLEDGE_SUCCESSOR.integratedBundleSha256; },
+  f => { f.currentContractHashes.continuationStateContractSha256 =
+    OWNER_ASSISTANT_KNOWLEDGE_SUCCESSOR.continuationStateContractSha256; },
+]) {
+  const wrong = assistantCurrentFixture(); mutate(wrong);
+  assert.equal(buildOwnerCurrentOriginalRestoreExpectation(wrong), null,
+    'Measured current identity cannot create a moving-pointer or mixed-generation exception.');
+}
+assert.deepEqual(assistantRefreshExpected, assistantExpected,
+  'A newer local implementation never relabels the authenticated original generation.');
+assert.equal(secondRestoreExpectation({ expected: assistantRefreshExpected,
+  source: assistantSource, manifest: assistantSource }), assistantRefreshExpected);
+for (const mutate of [
+  f => { f.currentBinding.modelBundleSha256 = '0'.repeat(64); },
+  f => { f.currentContractHashes.continuationStateContractSha256 =
+    OWNER_ASSISTANT_KNOWLEDGE_SUCCESSOR.continuationStateContractSha256; },
+  f => { f.currentContractHashes.fullRuntimeContractSha256 = '0'.repeat(64); },
+  f => { f.sourceDescription.sourceHead = 'wrong'; },
+]) {
+  const wrong = assistantRefreshFixture(); mutate(wrong);
+  assert.equal(buildOwnerCurrentOriginalRestoreExpectation(wrong), null,
+    'The additive local route must not admit mixed generations or a loose hash.');
+}
+assert.equal(assistantExpected.ownerCurrentDomainTransition, 'EXACT_ASSISTANT_KNOWLEDGE_RESTORE_V1');
+assert.deepEqual(assistantExpected.modelBinding, assistantSource.modelBinding);
+assert.deepEqual(assistantExpected.contractHashes, assistantSource.contractHashes);
+assert.equal(assistantExpected.sourceHead, assistantSource.sourceHead);
+assert.equal(assistantExpected.bundleContentSha256, assistantSource.bundleContentSha256);
+assert.equal(secondRestoreExpectation({ expected: assistantExpected,
+  source: assistantSource, manifest: assistantSource }), assistantExpected);
+assert.equal(assertOwnerCurrentOriginalExpectation(assistantExpected).datasetId, assistantSource.datasetId);
+for (const field of ['sourceHead', 'datasetId', 'productionReferenceAt', 'generatedAt', 'bundleContentSha256']) {
+  const wrong = assistantFixture(); wrong.sourceDescription[field] = 'wrong';
+  assert.equal(buildOwnerCurrentOriginalRestoreExpectation(wrong), null);
+  assert.throws(() => assertOwnerCurrentOriginalExpectation({ ...assistantExpected, [field]: 'wrong' }));
+}
+const deduplicatingFooter = assistantFixture();
+deduplicatingFooter.sourceDescription.sourceHead = 'd9d6b6683f7950478b5bee3f8c9a9858356f0310';
+assert.equal(buildOwnerCurrentOriginalRestoreExpectation(deduplicatingFooter), null,
+  'A same-content code-only consumer must not relabel the original weather producer.');
+const localOldGenerated = assistantFixture();
+localOldGenerated.sourceDescription.contractHashes.continuationStateContractSha256 =
+  '029cf4f9d4422908f8a862d443db8d06d0b2bc6b8763f1098424f569ab59e94f';
+assert.equal(buildOwnerCurrentOriginalRestoreExpectation(localOldGenerated), null,
+  'Dirty local code with old generated metadata is not the original production contract.');
+for (const mutate of [
+  value => { value.sourceDescription.expectedPartCount = 672; },
+  value => { value.sourceDescription.privatePayloadIncluded = true; },
+  value => { value.currentBinding.modelBundleSha256 = 'e'.repeat(64); },
+  value => { value.currentBinding.modelContractSha256 = 'a'.repeat(64); },
+  value => { value.currentContractHashes.continuationStateContractSha256 = 'f'.repeat(64); },
+  value => { value.currentContractHashes.fullRuntimeContractSha256 = 'f'.repeat(64); },
+]) {
+  const wrong = assistantFixture(); mutate(wrong);
+  assert.equal(buildOwnerCurrentOriginalRestoreExpectation(wrong), null);
+}
+for (const transition of ['EXACT_ORIGINAL_RESTORE_V1', 'EXACT_WATER_LEVEL_ONLY_RESTORE_V1', 'wrong']) {
+  assert.throws(() => assertOwnerCurrentOriginalExpectation({ ...assistantExpected,
+    ownerCurrentDomainTransition: transition }));
+}
+assert.throws(() => buildOwnerCurrentOriginalRestoreExpectation({ ...assistantFixture(),
+  targetReferenceAt: '2026-10-05T08:00:00.000Z' }));
 for (const mutate of [
   value => { value.sourceDescription.sourceHead = 'c'.repeat(40); },
   value => { value.sourceDescription.bundleContentSha256 = 'd'.repeat(64); },
@@ -316,6 +471,11 @@ const ownerReleaseRequired = codeOnlyStep('Require authenticated exact original 
 assert.ok(ownerReleaseRequired.includes('steps.current-private-protected-restore.outcome'));
 assert.ok(ownerReleaseRequired.includes('steps.current-private-bundle-restore.outcome'));
 assert.ok(!ownerReleaseRequired.includes('continue-on-error'));
+const ownerRestorePreparation = await fs.readFile('scripts/prepare-historical-wave-predecessor-restore.mjs', 'utf8');
+assert.ok(ownerRestorePreparation.includes('OWNER_WATER_LEVEL_ONLY_SUCCESSOR.integratedBundleSha256]'),
+  'Unknown 543 original must fail closed before falling into an archived-reader path');
+assert.ok(ownerRestorePreparation.includes('sourceDescription.modelBinding?.modelBundleSha256 !== ravScoreModelBinding().modelBundleSha256'),
+  'Same current binding is not a technical original transition');
 for (const name of [
   'Prepare exact predecessor source for bounded binding migration',
   'Build exact predecessor private-runtime expectation',
@@ -380,8 +540,166 @@ try {
   assert.match(retiredOutput, /required=false/);
   assert.match(retiredOutput, /source_head=\n/);
   assert.match(retiredOutput, /transition_kind=\n/);
+
+  // Exercise the actual normal workflow preparation, not only a policy object.
+  // Its output still demands ORIGINAL protected/bundle authentication later.
+  await fs.writeFile(sourceDescriptionPath, `${JSON.stringify(assistantCurrentSource)}\n`);
+  await fs.writeFile(githubOutputPath, '');
+  const currentPrepared = await prepareHistoricalWavePredecessorRestore({
+    sourceDescriptionPath,
+    targetReferenceAt: assistantCurrentSource.productionReferenceAt,
+    outputPath,
+    githubOutputPath,
+    now: assistantCurrentFixture().now,
+  });
+  assert.equal(currentPrepared.required, true);
+  assert.equal(currentPrepared.transitionKind, 'owner-current-domain-original');
+  assert.deepEqual(JSON.parse(await fs.readFile(outputPath, 'utf8')), assistantCurrentExpected);
+  const currentOutputs = await fs.readFile(githubOutputPath, 'utf8');
+  assert.match(currentOutputs, /required=true\n/);
+  assert.ok(currentOutputs.includes(`source_head=${assistantCurrentSource.sourceHead}\n`));
+  assert.match(currentOutputs, /transition_kind=owner-current-domain-original\n/);
+  const expectedBytes = await fs.readFile(outputPath);
+  const unknownCurrent = structuredClone(assistantCurrentSource);
+  unknownCurrent.sourceHead = 'e'.repeat(40);
+  await fs.writeFile(sourceDescriptionPath, `${JSON.stringify(unknownCurrent)}\n`);
+  await fs.writeFile(githubOutputPath, '');
+  await assert.rejects(prepareHistoricalWavePredecessorRestore({
+    sourceDescriptionPath,
+    targetReferenceAt: unknownCurrent.productionReferenceAt,
+    outputPath,
+    githubOutputPath,
+    now: assistantCurrentFixture().now,
+  }), /exact approved binding bridge/);
+  assert.deepEqual(await fs.readFile(outputPath), expectedBytes,
+    'Unknown current identity must not overwrite the already prepared original expectation.');
+  assert.equal(await fs.readFile(githubOutputPath, 'utf8'), '',
+    'Refusal must not emit a success or archived-reader fallback.');
 } finally {
   await fs.rm(temporary, { recursive: true, force: true });
 }
 
-console.log('Bounded conditions predecessor transition: exact historical and water-only originals, rejection controls and source-identity retirement passed.');
+// The new append's renderer is exercised here, beside the ACTUAL restore and
+// migration callers above. Synthetic hashes are NOT an authenticated source
+// generation and cannot authorize a restore or release.
+const assistantBase = await fs.readFile(ASSISTANT_BINDING_PREDECESSOR_PATH, 'utf8');
+assertAssistantKnowledgeBindingTargets(structuredClone(OWNER_ASSISTANT_KNOWLEDGE_SUCCESSOR));
+for (const key of Object.keys(OWNER_ASSISTANT_KNOWLEDGE_SUCCESSOR)) {
+  assert.throws(() => assertAssistantKnowledgeBindingTargets({
+    ...OWNER_ASSISTANT_KNOWLEDGE_SUCCESSOR, [key]: '0'.repeat(64),
+  }), /metadata and the exact original restore policy must agree/,
+  'Changing excluded generated metadata must still fail its independent normal gate.');
+}
+const syntheticAssistantHashes = {
+  integratedBundleSha256: 'a'.repeat(64),
+  candidateBundleSha256: 'b'.repeat(64),
+  continuationStateContractSha256: 'c'.repeat(64),
+};
+const assistantAppend = buildAssistantKnowledgeBindingSuccessor({
+  baseSql: assistantBase, targetHashes: syntheticAssistantHashes,
+});
+const assistantHelper = 'ravradar_ravscore_checkpoint_assistant_predecessor_projection';
+const assistantDefinitionStart = assistantAppend.indexOf('create or replace function public.' + assistantHelper + '(');
+const assistantDefinitionEnd = assistantAppend.indexOf('\n$$;', assistantDefinitionStart);
+assert.ok(assistantDefinitionStart >= 0 && assistantDefinitionEnd > assistantDefinitionStart);
+const assistantProjection = assistantAppend.slice(assistantDefinitionStart, assistantDefinitionEnd);
+assert.ok(assistantProjection.includes(OWNER_WATER_LEVEL_ONLY_SUCCESSOR.integratedBundleSha256));
+assert.ok(assistantProjection.includes(OWNER_WATER_LEVEL_ONLY_SUCCESSOR.candidateBundleSha256));
+assert.ok(assistantProjection.includes(OWNER_WATER_LEVEL_ONLY_SUCCESSOR.continuationStateContractSha256));
+for (const marker of [
+  'pg_catalog.jsonb_object_agg', 'pg_catalog.jsonb_set', "'{modelBundleSha256}'",
+  "'{modelBinding,modelBundleSha256}'", "'{continuationStateContractSha256}'",
+  "'{candidateGRollbackCompanion,modelBinding,modelBundleSha256}'",
+  'public.ravradar_ravscore_checkpoint_payload_valid(v_projected, p_target_reference)',
+]) assert.ok(assistantProjection.includes(marker), 'Full exact metadata projection lacks ' + marker);
+assert.ok(assistantAppend.includes('revoke all on function public.' + assistantHelper
+  + '(jsonb,timestamptz) from public, anon, authenticated;'));
+assert.ok(assistantAppend.includes("pg_catalog.to_regprocedure('public." + assistantHelper + "(jsonb,timestamptz)')"));
+assert.ok(assistantAppend.includes('p.oid = v_validator_oids[10]'));
+assert.ok(assistantAppend.includes("-- assistant-predecessor-projection --\\n' || v_assistant_projection_definition"));
+assert.ok(assistantAppend.includes("and (v_assistant_predecessor_payload #- '{generationSha256}' #- '{stateSha256}'\n"
+  + "          #- '{candidateGRollbackCompanion,generationSha256}')\n"
+  + "        = (p_payload #- '{generationSha256}' #- '{stateSha256}'\n"
+  + "          #- '{candidateGRollbackCompanion,generationSha256}');"));
+for (const field of ['transportEvidence', 'wavePotential', 'lastMileState', 'historyBounds', 'samplingContextKey', 'lineage']) {
+  assert.ok(!new RegExp("jsonb_set\\([\\s\\S]{0,100}'\\{[^}]*" + field).test(assistantProjection),
+    'Assistant technical projection must never mutate ' + field);
+}
+for (const targetHashes of [null, [], { ...syntheticAssistantHashes, extra: 'd'.repeat(64) },
+  { ...syntheticAssistantHashes, candidateBundleSha256: 'A'.repeat(64) },
+  { ...syntheticAssistantHashes, integratedBundleSha256: OWNER_WATER_LEVEL_ONLY_SUCCESSOR.integratedBundleSha256 },
+  { ...syntheticAssistantHashes, candidateBundleSha256: syntheticAssistantHashes.integratedBundleSha256 },
+  structuredClone(OWNER_WATER_LEVEL_ONLY_SUCCESSOR)]) {
+  assert.throws(() => buildAssistantKnowledgeBindingSuccessor({ baseSql: assistantBase, targetHashes }));
+}
+assert.throws(() => buildAssistantKnowledgeBindingSuccessor({
+  baseSql: assistantBase + '\n-- unreviewed alteration', targetHashes: syntheticAssistantHashes,
+}), /remain immutable/);
+assert.equal(await fs.readFile(ASSISTANT_BINDING_PREDECESSOR_PATH, 'utf8'), assistantBase,
+  'Pure rendering must not modify the applied anchor');
+
+const assistantPriorSql = await fs.readFile(ASSISTANT_BINDING_MIGRATION_PATH, 'utf8');
+assert.equal(assistantPriorSql.replace(/\r\n?/g, '\n'), buildAssistantKnowledgeBindingSuccessor({
+  baseSql: assistantBase, targetHashes: structuredClone(OWNER_ASSISTANT_KNOWLEDGE_SUCCESSOR),
+}), 'The already-written 455 migration still reproduces from its immutable predecessor');
+assertAssistantKnowledgeRefreshBindingTargets(assistantRefreshHashes);
+for (const key of Object.keys(assistantRefreshHashes)) {
+  assert.throws(() => assertAssistantKnowledgeRefreshBindingTargets({
+    ...assistantRefreshHashes, [key]: '0'.repeat(64),
+  }));
+}
+const assistantRefreshAppend = buildAssistantKnowledgeRefreshBindingSuccessor({
+  baseSql: assistantPriorSql, targetHashes: assistantRefreshHashes,
+});
+const refreshHelper = 'ravradar_ravscore_checkpoint_assistant_refresh_predecessor_projection';
+const sqlDefinition = (text, name) => {
+  const start = text.indexOf('create or replace function public.' + name + '(');
+  const end = text.indexOf('\n$$;', start);
+  assert.ok(start >= 0 && end > start);
+  return text.slice(start, end + 4);
+};
+const refreshProjection = sqlDefinition(assistantRefreshAppend, refreshHelper);
+for (const key of Object.keys(assistantRefreshHashes)) {
+  assert.ok(refreshProjection.includes(OWNER_ASSISTANT_KNOWLEDGE_SUCCESSOR[key]));
+  assert.ok(refreshProjection.includes(assistantRefreshHashes[key]));
+}
+for (const marker of ['pg_catalog.octet_length(p_payload::text) > 16777216',
+  "pg_catalog.jsonb_typeof(p_payload -> 'states') is distinct from 'object'",
+  "pg_catalog.count(*) from pg_catalog.jsonb_each(p_payload -> 'states')) <> 673",
+  'public.ravradar_ravscore_checkpoint_payload_valid(v_projected, p_target_reference)',
+  'exception when others then return null;']) assert.ok(refreshProjection.includes(marker));
+for (const field of ['datasetId', 'productionReferenceAt', 'generatedAt', 'current',
+  'geometry', 'source', 'score', 'memory', 'lastHistoryAt']) {
+  assert.ok(!new RegExp("jsonb_set\\([\\s\\S]{0,100}'\\{[^}]*" + field).test(refreshProjection));
+}
+assert.ok(assistantRefreshAppend.includes('revoke all on function public.' + refreshHelper
+  + '(jsonb,timestamptz) from public, anon, authenticated;'));
+const refreshContract = sqlDefinition(assistantRefreshAppend, 'ravradar_ravscore_checkpoint_contract');
+assert.ok(refreshContract.includes("pg_catalog.to_regprocedure('public." + refreshHelper + "(jsonb,timestamptz)')"));
+assert.ok(refreshContract.includes('p.oid = v_validator_oids[11]'));
+assert.ok(refreshContract.includes("-- assistant-refresh-predecessor-projection --\\n' || v_assistant_refresh_projection_definition"));
+assert.ok(refreshContract.includes("m.version::text = '20261007123000'"));
+assert.ok(assistantRefreshAppend.includes("and (v_assistant_refresh_predecessor_payload #- '{generationSha256}' #- '{stateSha256}'\n"
+  + "          #- '{candidateGRollbackCompanion,generationSha256}')\n"
+  + "        = (p_payload #- '{generationSha256}' #- '{stateSha256}'\n"
+  + "          #- '{candidateGRollbackCompanion,generationSha256}');"));
+for (const name of ['ravradar_ravscore_checkpoint_candidate_state_valid',
+  'ravradar_ravscore_checkpoint_water_level_predecessor_projection',
+  'ravradar_ravscore_checkpoint_owner_current_predecessor_projection',
+  'ravradar_ravscore_checkpoint_cp_close_predecessor_projection',
+  'ravradar_ravscore_checkpoint_top20_predecessor_projection']) {
+  assert.equal(sqlDefinition(assistantRefreshAppend, name), sqlDefinition(assistantPriorSql, name));
+}
+for (const targetHashes of [null, [], { ...assistantRefreshHashes, extra: 'd'.repeat(64) },
+  { ...assistantRefreshHashes, candidateBundleSha256: 'A'.repeat(64) },
+  { ...assistantRefreshHashes, integratedBundleSha256: OWNER_ASSISTANT_KNOWLEDGE_SUCCESSOR.integratedBundleSha256 },
+  { ...assistantRefreshHashes, candidateBundleSha256: assistantRefreshHashes.integratedBundleSha256 }]) {
+  assert.throws(() => buildAssistantKnowledgeRefreshBindingSuccessor({ baseSql: assistantPriorSql, targetHashes }));
+}
+assert.throws(() => buildAssistantKnowledgeRefreshBindingSuccessor({
+  baseSql: assistantPriorSql + '\n-- unreviewed alteration', targetHashes: assistantRefreshHashes,
+}));
+assert.equal(await fs.readFile(ASSISTANT_BINDING_MIGRATION_PATH, 'utf8'), assistantPriorSql);
+assert.equal(await fs.readFile(ASSISTANT_BINDING_PREDECESSOR_PATH, 'utf8'), assistantBase);
+
+console.log('Bounded predecessor transition: exact originals, normal caller/retirement guards and synthetic assistant append inverse/restriction/CAS controls passed.');

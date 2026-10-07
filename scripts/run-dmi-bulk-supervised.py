@@ -86,68 +86,104 @@ def run_supervised(
     popen: Callable = subprocess.Popen, clock: Callable[[], float] = time.monotonic,
     log: Callable[[str], None] = lambda line: print(line, end="", flush=True),
 ) -> SupervisedResult:
+    reader: threading.Thread | None = None
+    asset_started_at: float | None = None
+    active_asset: dict[str, str] | None = None
+    timed_out = False
+    stop_attempted = False
     process = popen(
         command, cwd=ROOT, env=environment, stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace",
         bufsize=1,
     )
-    events: queue.Queue[tuple[str, str | None]] = queue.Queue()
+    try:
+        # Guard setup after retaining Popen too: even an output-reader start
+        # failure must not abandon the already live writer.
+        events: queue.Queue[tuple[str, str | None]] = queue.Queue()
 
-    def pump_output() -> None:
-        try:
-            assert process.stdout is not None
-            for line in process.stdout:
-                events.put(("line", line))
-        finally:
-            events.put(("eof", None))
+        def pump_output() -> None:
+            try:
+                assert process.stdout is not None
+                for line in process.stdout:
+                    events.put(("line", line))
+            finally:
+                events.put(("eof", None))
 
-    reader = threading.Thread(target=pump_output, daemon=True)
-    reader.start()
-    asset_started_at: float | None = None
-    active_asset: dict[str, str] | None = None
-    timed_out = False
-    while True:
-        # En fastlåst parser kan fortsætte med at skrive statuslinjer. Timeouten
-        # må derfor ikke afhænge af, at outputkøen bliver tom.
-        if (asset_started_at is not None
-                and clock() - asset_started_at >= watchdog_seconds):
-            timed_out = True
-            stop_process(process)
-            break
-        try:
-            event, line = events.get(timeout=0.25)
-        except queue.Empty:
-            if process.poll() is not None and not reader.is_alive():
+        reader = threading.Thread(target=pump_output, daemon=True)
+        reader.start()
+        while True:
+            # En fastlåst parser kan fortsætte med at skrive statuslinjer. Timeouten
+            # må derfor ikke afhænge af, at outputkøen bliver tom.
+            if (asset_started_at is not None
+                    and clock() - asset_started_at >= watchdog_seconds):
+                timed_out = True
+                stop_attempted = True
+                stop_process(process)
                 break
-            continue
-        if event == "eof":
-            break
-        assert line is not None
-        log(line)
-        started_asset = parse_asset_marker(line, ASSET_START_MARKER)
-        ended_asset = parse_asset_marker(line, ASSET_END_MARKER)
-        if started_asset is not None:
-            active_asset = started_asset
-            asset_started_at = clock()
-        elif ended_asset is not None:
-            if active_asset == ended_asset:
+            try:
+                event, line = events.get(timeout=0.25)
+            except queue.Empty:
+                if process.poll() is not None and not reader.is_alive():
+                    break
+                continue
+            if event == "eof":
+                # Closed output cannot retire an active asset's existing
+                # watchdog while its retained producer is still alive.
+                if asset_started_at is not None and process.poll() is None:
+                    continue
+                break
+            assert line is not None
+            log(line)
+            started_asset = parse_asset_marker(line, ASSET_START_MARKER)
+            ended_asset = parse_asset_marker(line, ASSET_END_MARKER)
+            if started_asset is not None:
+                active_asset = started_asset
+                asset_started_at = clock()
+            elif ended_asset is not None:
+                if active_asset == ended_asset:
+                    active_asset = None
+                    asset_started_at = None
+            elif LEGACY_ASSET_START.search(line):
+                active_asset = None
+                asset_started_at = clock()
+            elif LEGACY_ASSET_END.search(line):
                 active_asset = None
                 asset_started_at = None
-        elif LEGACY_ASSET_START.search(line):
-            active_asset = None
-            asset_started_at = clock()
-        elif LEGACY_ASSET_END.search(line):
-            active_asset = None
-            asset_started_at = None
-        elif "DMI_ASSET_PROCESSING_START=" in line:
-            # A truncated marker must still start a generic watchdog. It may
-            # terminate/finalize safely, but it may never authorize a broad skip.
-            active_asset = None
-            asset_started_at = clock()
-    reader.join(timeout=2.0)
-    if process.stdout is not None:
-        process.stdout.close()
-    return SupervisedResult(int(process.wait()), timed_out, active_asset)
+            elif "DMI_ASSET_PROCESSING_START=" in line:
+                # A truncated marker must still start a generic watchdog. It may
+                # terminate/finalize safely, but it may never authorize a broad skip.
+                active_asset = None
+                asset_started_at = clock()
+        # EOF proves only that output ended, not that the retained writer did.
+        # Keep completion waits inside the same interruption/stop guard, and
+        # close its pipe only after actual exit and a finished reader.
+        reader.join(timeout=2.0)
+        returncode = int(process.wait())
+        if not reader.is_alive() and process.stdout is not None:
+            process.stdout.close()
+        return SupervisedResult(returncode, timed_out, active_asset)
+    except BaseException:
+        # A failed output pipe or interruption is terminal, not permission to
+        # abandon the retained writer and start a replacement/finalizer. Reuse
+        # the existing bounded stop, then close only a proved stopped reader.
+        # Cleanup must never replace the original exception. Unknown cessation
+        # leaves the pipe owned and propagates the terminal failure, no result.
+        try:
+            if not stop_attempted:
+                stop_attempted = True
+                stop_process(process)
+        except BaseException:
+            pass
+        try:
+            if process.poll() is not None:
+                if reader is not None and reader.ident is not None:
+                    reader.join(timeout=2.0)
+                if ((reader is None or not reader.is_alive())
+                        and process.stdout is not None):
+                    process.stdout.close()
+        except BaseException:
+            pass
+        raise
 
 
 def write_failure_outputs(environment: dict[str, str], code: str) -> None:

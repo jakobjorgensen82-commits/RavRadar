@@ -82,6 +82,28 @@ Relevante bindinger, tilladte destinationer, egen CI, kontrolleret levering
 og faktisk ny-generationseffekt er åbne; gamle bindinger er ikke ændret.
 Hård no-loss og de øvrige restriktioner består.
 
+# NYESTE – 5. oktober kl.18.12 dansk tid – faktisk normal diagnose kontrolleret
+
+Den naturlige14.19-kørsel har faktisk nul nye Fur-tab og nul årsagskoder.
+Den samlede no-loss-kontrol dækker114 fælles timer med nul tab i samtlige
+fem familier. Privat publicering, Pages og required deploy er gennemført.
+Dette lukker ikke årsagen til de historiske7/12 timer eller sikker retention.
+Diagnosen er leveret og måler nye hændelser; den gamle faktisk anvendte
+routingkonfiguration og eksakte private beviskæde må ikke erstattes af
+dagens konfiguration eller en ny cipherdestination. Hård no-loss består.
+
+# HISTORISK – 5. oktober – normal diagnose leveret; gammel årsag og retention åbne
+
+Den almindelige 542-generation afsluttede kl.05.16 dansk tid uden tab i
+de fem vejrfamilier; Fur-sporet meldte 0 tab. Vandstand-only543 er efterfølgende
+faktisk udgivet kl.06.04 uden ny vejrhentning. Den nye naturlige vejrhentning
+er aktiv; dens slutdiagnose og vandstandseffekt er endnu ikke aflæst. Ingen
+grøn kørsel er bevis for gamle 7/12-timers årsag eller repareret timeretention.
+Normal SOURCE/PART-diagnose, central routing, privat spor og hård no-loss
+bevares også i den lokale assistentkandidats tekniske metadataovergang.
+Afsluttede kontrolbeviser genbruges; ingen afvist cipher eller movingconfig
+læses som erstatning. Modstridende ældre 543-lokalstatus nedenfor er historik.
+
 # NYESTE – 5. oktober – seneste tab er tre kystzoner, ikke Fur
 
 Den afsluttede naturlige vejrhentning havde 21 vandstandstab, ligeligt fordelt

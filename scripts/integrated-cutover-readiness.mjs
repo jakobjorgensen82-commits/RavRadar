@@ -264,12 +264,22 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id:'20261005000000_owner_water_level_only_binding',
     filename:'20261005000000_owner_water_level_only_binding.sql',
   }),
+  Object.freeze({
+    version:'20261005060000',
+    id:'20261005060000_assistant_knowledge_binding',
+    filename:'20261005060000_assistant_knowledge_binding.sql',
+  }),
+  Object.freeze({
+    version: '20261007123000',
+    id: '20261007123000_assistant_knowledge_refresh_binding',
+    filename: '20261007123000_assistant_knowledge_refresh_binding.sql',
+  }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260920220000');
 export const TRIP_BINDING_POLICY_SOURCE_MIGRATION =
-  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20261005000000');
+  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20261007123000');
 export const CHECKPOINT_NATIVE_HOLD_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260923140000');
 export const CHECKPOINT_COMPANION_ID_MIGRATION =
@@ -356,6 +366,10 @@ export async function expectedCheckpointCasContract({
       'exact owner current binding predecessor projection'],
     ['public.ravradar_ravscore_checkpoint_water_level_predecessor_projection',
       'exact water-level-only binding predecessor projection'],
+    ['public.ravradar_ravscore_checkpoint_assistant_predecessor_projection',
+      'exact assistant metadata-only binding predecessor projection'],
+    ['public.ravradar_ravscore_checkpoint_assistant_refresh_predecessor_projection',
+      'exact assistant-refresh metadata-only binding predecessor projection'],
   ].map(([functionName, label]) => sqlFunctionBody(
     migration,
     functionName,
@@ -372,7 +386,9 @@ export async function expectedCheckpointCasContract({
     + `\n-- top20-predecessor-projection --\n${definitions[8]}`
     + `\n-- cp-close-predecessor-projection --\n${definitions[9]}`
     + `\n-- owner-current-predecessor-projection --\n${definitions[10]}`
-    + `\n-- water-level-predecessor-projection --\n${definitions[11]}`;
+    + `\n-- water-level-predecessor-projection --\n${definitions[11]}`
+    + `\n-- assistant-predecessor-projection --\n${definitions[12]}`
+    + `\n-- assistant-refresh-predecessor-projection --\n${definitions[13]}`;
   return Object.freeze({
     id: CHECKPOINT_CAS_CONTRACT_ID,
     sha256: sha256(definition),

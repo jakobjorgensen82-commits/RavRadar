@@ -36,6 +36,8 @@ import {
   assertIntegratedCoastalPointContinuation,
 } from './lib/coastal-point-staging-contract.mjs';
 import { ravScoreSamplingContextKey } from './lib/ravscore-sampling-context.mjs';
+import { ownerCurrentOriginalValidators } from './migrate-post-cutover-private-runtime.mjs';
+import { OWNER_WATER_LEVEL_ONLY_SUCCESSOR } from './lib/bounded-conditions-predecessor-transition.mjs';
 
 const HOUR_MS = 3_600_000;
 const close = (actual, expected, tolerance = 1e-9) => {
@@ -226,6 +228,56 @@ assert.equal(assertIntegratedCoastalPointContinuation(coldReplay.continuationSta
   requireReady: true,
 }), coldReplay.continuationState,
 'a verified cold-replay continuation must pass the production checkpoint boundary');
+const assistantOriginalBinding={ ...ravScoreModelBinding(),
+  modelBundleSha256:OWNER_WATER_LEVEL_ONLY_SUCCESSOR.integratedBundleSha256 };
+const assistantOriginal=structuredClone(coldReplay.continuationState);
+assistantOriginal.modelBundleSha256=assistantOriginalBinding.modelBundleSha256;
+const assistantOriginalBytes=JSON.stringify(assistantOriginal);
+const assistantOriginalValidators=ownerCurrentOriginalValidators(assistantOriginalBinding);
+assert.equal(assistantOriginalValidators.staging.assertIntegratedCoastalPointContinuation(
+  assistantOriginal,{samplingContextKey}),assistantOriginal,
+  'The normal migration caller must fully validate a 543 original under its original binding.');
+assert.equal(JSON.stringify(assistantOriginal),assistantOriginalBytes,
+  'Original validation must preserve every current/wave/history/last-mile/context/lineage field.');
+assert.equal(assistantOriginalValidators.candidate.ravScoreModelBinding().modelBundleSha256,
+  OWNER_WATER_LEVEL_ONLY_SUCCESSOR.candidateBundleSha256,
+  'The normal migration pair must retain the released 543 Candidate G implementation.');
+const assistantCandidateKey=`sha256:${'a'.repeat(64)}`;
+const assistantCandidateOriginal=buildCandidateGDerivedStateSeries(coldReplaySamples,{
+  stateKey:assistantCandidateKey,
+}).continuationState;
+const assistantCandidateBytes=JSON.stringify(assistantCandidateOriginal);
+assert.equal(assistantOriginalValidators.staging.assertCandidateGCoastalPointRollbackContinuation(
+  assistantCandidateOriginal,assistantCandidateKey),assistantCandidateOriginal);
+assert.equal(JSON.stringify(assistantCandidateOriginal),assistantCandidateBytes,
+  'Original Candidate G evidence and wave potential must not be rebuilt or rebound.');
+assert.throws(()=>assistantOriginalValidators.staging.assertCandidateGCoastalPointRollbackContinuation({
+  ...assistantCandidateOriginal,transportPotential:NaN,
+},assistantCandidateKey));
+assert.throws(()=>assistantOriginalValidators.staging.assertCandidateGCoastalPointRollbackContinuation({
+  ...assistantCandidateOriginal,currentUMps:0.1,
+},assistantCandidateKey));
+for (const mutation of [
+  state=>{ state.supplyPotential+=1; },
+  state=>{ state.currentEvidence.at(-1).strength=NaN; },
+  state=>{ state.historyBounds.current.unexpectedRawCurrent=0.1; },
+  state=>{ state.currentUMps=0.1; },
+  state=>{ state.modelBundleSha256='f'.repeat(64); },
+  state=>{ state.schemaVersion='5.0.0'; },
+]) {
+  const malformed=structuredClone(assistantOriginal);
+  mutation(malformed);
+  assert.throws(()=>assistantOriginalValidators.staging.assertIntegratedCoastalPointContinuation(
+    malformed,{samplingContextKey}),
+  'A stamped 543 hash must not make malformed or private state canonical.');
+}
+assert.throws(()=>assistantOriginalValidators.staging.assertIntegratedCoastalPointContinuation(
+  assistantOriginal,{samplingContextKey:'sha256:another-context'}),/context/iu);
+assert.throws(()=>ownerCurrentOriginalValidators({ ...assistantOriginalBinding,
+  modelBundleSha256:'f'.repeat(64) }),/Exact original/);
+assert.throws(()=>ownerCurrentOriginalValidators({ ...assistantOriginalBinding,
+  modelContractSha256:'f'.repeat(64) }),/Exact original/);
+assert.throws(()=>ownerCurrentOriginalValidators(null),/Exact original/);
 assert.deepEqual(Object.keys(coldReplay.continuationState.historyBounds).sort(), [
   'current', 'lastMile', 'schemaVersion', 'waveMobilisation',
 ], 'schema-6 continuation must expose only the canonical data-minimised history-bound groups');

@@ -31,6 +31,7 @@ import {
   coastalPointStageIdentity,
   assertArchivedOwnerCurrentIntegratedOriginal,
   assertWaterLevelOnlyIntegratedOriginal,
+  assertAssistantKnowledgeIntegratedOriginal,
 } from './lib/coastal-point-staging-contract.mjs';
 import {
   assertRavScoreModelBinding,
@@ -63,7 +64,8 @@ import { writeBoundedJsonAtomic } from './lib/bounded-json-writer.mjs';
 import { readOwnerCurrentTransitionArchive, retainOwnerCurrentTransitionOriginal }
   from './lib/ravscore-production-part-pipeline.mjs';
 import { dmiMarineCollectionAllowedForZone } from './lib/dmi-marine-zone-exclusions.mjs';
-import { OWNER_CURRENT_DOMAIN_PREDECESSOR, buildOwnerCurrentOriginalRestoreExpectation }
+import { OWNER_CURRENT_DOMAIN_PREDECESSOR, OWNER_WATER_LEVEL_ONLY_PREDECESSOR,
+  OWNER_WATER_LEVEL_ONLY_SUCCESSOR, buildOwnerCurrentOriginalRestoreExpectation }
   from './lib/bounded-conditions-predecessor-transition.mjs';
 
 assertRuntimeBindingRegistry();
@@ -724,16 +726,24 @@ async function importPredecessorModules(predecessorRoot, sourceHead) {
 // canonical validators, restricted to the approved original physical contracts.
 // In particular, the original integrated state is validated BEFORE its hash
 // metadata is migrated. Neither an archive nor a hash stamp is a validator.
-function ownerCurrentOriginalValidators(integrated = OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding) {
-  const waterOnly=integrated.modelBundleSha256
-    === '4ebe158f68954f32b47cb71d5222ab0cf676faaf4b323d743f9d43bf34a63a51';
+export function ownerCurrentOriginalValidators(integrated = OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding) {
+  const assistantOnly=integrated?.modelBundleSha256
+    === OWNER_WATER_LEVEL_ONLY_SUCCESSOR.integratedBundleSha256;
+  const waterOnly=integrated?.modelBundleSha256
+    === OWNER_WATER_LEVEL_ONLY_PREDECESSOR.modelBinding.modelBundleSha256;
+  const originalBundle=assistantOnly ? OWNER_WATER_LEVEL_ONLY_SUCCESSOR.integratedBundleSha256
+    : waterOnly ? OWNER_WATER_LEVEL_ONLY_PREDECESSOR.modelBinding.modelBundleSha256
+      : OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding.modelBundleSha256;
+  assertSame(integrated,{ ...OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding,
+    modelBundleSha256:originalBundle },'Exact original technical model binding');
   const currentCandidate = candidateModelBinding();
   if (currentCandidate.modelContractSha256
     !== 'c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8') {
     throw new Error('Owner current transition has another Candidate G physical contract');
   }
   const candidate = { ...currentCandidate,
-    modelBundleSha256: waterOnly
+    modelBundleSha256: assistantOnly ? OWNER_WATER_LEVEL_ONLY_SUCCESSOR.candidateBundleSha256
+      : waterOnly
       ? '3e5aae87b19934091a7882fbd8f5b5570b7c83ba786ea6f3bac52a8fd71fcd1e'
       : '28a69936b3d9a9c655e967c5e0c352d8401e5894ef3011bbfc55c85ad37f7ce7' };
   const bindingValidator = binding => ({
@@ -748,7 +758,8 @@ function ownerCurrentOriginalValidators(integrated = OWNER_CURRENT_DOMAIN_PREDEC
         if (state?.modelBundleSha256 !== integrated.modelBundleSha256) {
           throw new Error('Owner current original has another integrated implementation');
         }
-        return waterOnly ? assertWaterLevelOnlyIntegratedOriginal(state,options)
+        return assistantOnly ? assertAssistantKnowledgeIntegratedOriginal(state,options)
+          : waterOnly ? assertWaterLevelOnlyIntegratedOriginal(state,options)
           : assertArchivedOwnerCurrentIntegratedOriginal(state, options);
       },
     },

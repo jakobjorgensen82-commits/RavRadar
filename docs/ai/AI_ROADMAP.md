@@ -1,3 +1,202 @@
+# NYESTE – 2026-10-07 13.50 DK – normal assistentinstallation rettet lokalt
+
+Den lokale 456-emneviden har nu en særskilt gennemgået efterfølger.
+Den nye migrationsfil er oprettet og kontrolleret gennem den normale bygger;
+de to tidligere migrationsfiler er uændrede. Den præcise originalrute til
+den nye implementering bevarer den gamle originalidentitet og 455-ruten.
+
+Direkte read-only kontrol af den beskyttede kilde peger nu på den normale
+548-original fra 6. oktober kl.22 dansk tid, ikke den ældre 543-generation.
+En særskilt låst originalrute bevarer den aktuelle identitet og de gamle
+543-/455-ruter. Den normale workflow-forberedelse og negative identitets-
+kontroller består. Dette er metadata og lokal kontrol, ikke autentificeret
+B/S-restore, installation eller ny offentlig levering.
+
+Alle otte normale lokale bindingsforbrugere er synkroniseret og kontrolleret.
+Kun lokal implementeringsmetadata er ændret; øvrige administratordata,
+fysiske kontrakter, score, geometri, privat lagring og offentlig projektion
+er uændrede. Originalrute-/appendtesten, normal bindingskontrol,
+releasekontraktens fejl-/historikværn og hele vidensmålprøven består.
+De eksisterende normale gates bruger nu den præcise nye efterfølger.
+
+Den normale installationskontrol er nu også rettet: den kræver alle 46
+migrationer, bruger den præcise nye efterfølger og attesterer refresh-hjælperen.
+Den normale migrationsplan afviser både det gamle 45-fil-inventar og forsøg
+på at installere to migrationer gennem kode-only. Metadata-genlæsningen
+afviser manglende hjælper og ændret binding, selv med grønne kontrolflag.
+Normal installations-/readiness-test, historikværn og begge bindingskontroller
+består lokalt. Ingen SQL er kørt eller installeret.
+
+Fem afgrænsede kilde-/testfiler er lokalt identiske med aktuel main 549;
+git-ancestry og samlet kilde-CI er stadig åbne. Den tidlige kritiske kildegate
+består med eksisterende runtime. Fuld lokal kildekontrol er fortsat begrænset
+af den allerede dokumenterede manglende ecCodes-pakke på Windows;
+præcis GitHub-kildekontrol kræves før merge. Ingen gate svækkes eller springes.
+
+
+Dette er ikke SQL-installation, aktuel produktionsautentificering, main-
+integration, kilde-CI, offentlig levering eller fungerende ny ekstern AI.
+Aktuelle originale B/S før T, sikker levering og faktisk offentlig effekt
+er stadig nødvendige. Ingen tidligere afvisning eller gate er omgået.
+Målet omfatter fortsat revision, brugerdata og Spørg RavRadar med selvstændig
+drift uden Codex omkring 18. oktober; ingen abonnementssikkerhed loves.
+Se 89.176 og privat checkpoint; tidligere daterede statusser er historik.
+
+# NYESTE – 2026-10-07 09.16 DK – normale lokale assistentbindinger genberegnet
+
+De to eksisterende lokale bundlebyggere er nu kørt i korrekt rækkefølge
+under den allerede modtagne præcise tilladelse. Begge normale kontroller
+består mod den aktuelle 456-emnekilde. Kildeinventarernes eneste ændringer
+er de to vidensfiler og den afledte Candidate G-metafil; fysiske kontrakter,
+privat lagringskontrakt og offentlig projektion er uændrede.
+
+Det er kun lokal metadata-generation, ikke færdig integration eller levering.
+Den allerede skrevne 455-emnemigration og dens uforanderlige forgænger er
+bevarede. Den normale successor-kontrol afviser korrekt det nye målpar,
+som endnu ikke er gennemført med en gennemgået append-only overgang.
+Original B/S-før-T, aktuelle main-bindinger, eksakt kildekontrol, sikker
+offentlig levering og faktisk ny effekt er fortsat åbne. Ingen tidligere
+afvisning, brugerdatabeskyttelse, scoreformel, geometri, kvote eller scheduler
+er omgået eller ændret. Revisionen og brugerdataopgaven er ikke færdige.
+
+# NYESTE – 2026-10-07 08.36 DK – faktisk AI-prøve og præcis lokal transportforklaring
+
+Den eksisterende offentlige AI-svarvej er nu afprøvet gennem den normale
+browserforbindelse uden nye nøgler, tjenester eller planer. Første forsøg
+kl.08.18 gav en fejl i kvotekontrollen og et ærligt reservesvar. Samme
+spørgsmål kl.08.30 gav et faktisk fjernsvar, men det beskrev advektion
+misvisende som langvarig transport typisk mod stranden. Det er ikke bevis
+for en fortsat driftsafbrydelse eller for kvaliteten af den nye kandidat.
+Kvotekontrollens intermitterende årsag er fortsat åben; den omgås ikke.
+
+En kildeklassificeret lokal forklaring skelner nu genophvirvling fra
+transport med vandet, som også kan gå langs kysten eller udad. Ingen nye
+ravtærskler, scoreformler eller lokale målinger indføres. Den afgrænsede
+normale måltest blev først rød og består nu, inklusive DA/DE/EN,
+formuleringsvariationer, opfølgninger og afvisning af ekstra ukendte/private
+kvalifikationer. Kandidaten har 456 emner, 1368 skrevne sprogsvar, 16416
+kanoniske testformuleringer, 473 lokale emnekontrakter og 111 kildeposter.
+Formuleringerne er variationer, ikke 16416 selvstændige svar.
+
+Den lokale 456-emnekandidat er ikke offentligt leveret. Ejerens tidligere
+assistent-bundleafklaring er allerede modtaget; de gemte 455-emnebindinger
+kan ikke kaldes friske efter denne udvidelse. Normal legitim genberegning,
+originalrestore, egen eksakt kildekontrol, kontrolleret levering og faktisk
+ny offentlig effekt mangler. Ingen historisk binding, brugerdata, konto,
+geometri, scoreformel, nøgle eller plan er ændret. Den større vejrhentnings-
+revision og den samlede brugerdata-/rettighedsopgave er stadig uafsluttet.
+Tidligere daterede statusser nedenfor beskriver deres historiske faser.
+
+# NYESTE – 2026-10-07 01.04 DK – præcis hjælp til zonevejr, vandstandstabel og nødvisning
+
+Spørg RavRadars lokale kandidat har nu 449 selvstændige emner, 1347 skrevne
+DA/DE/EN-svar, 16164 testformuleringer og 466 emnekontrakter. Tre nye
+produktvidensemner forklarer vejret ved zonens valgte prognosetidspunkt,
+vandstandstabellens eget dagvalg og spærringen af turstart i ældre nødvisning.
+Før rettelsen besvarede den normale lokale kalder de ni sprogeksempler med
+et irrelevant vejr-/zonevalgssvar eller en afvisning. Svarene er kontrolleret
+mod den aktuelle zonevisning, sprogfiler og normale turstart-værn.
+
+Den eksisterende vidensmålprøve består på 5,96 sekunder uden netværk eller
+AI-kvote: 162 UI-hjælpsscenarier, 270 naturlige UI-formuleringer og 24
+sammensatte UI-forløb samt alle eksisterende katalog-/kontohjælpskontroller.
+Private kvalifikationer, opfølgninger og hele beskedens sikkerhed bevares.
+Manglende vandstandstimer er ikke nul; tabellens yderpunkter beviser ikke
+heldagsdækning eller sikker vadedybde. Assistenten læser ikke den aktuelle
+private side, ændrer ikke dagvalg, låser ikke knapper op og lover ingen ny
+gyldig vejrpakke eller ravfund.
+
+Kun lokal udvidelse, ikke offentlig levering eller fungerende ekstern AI.
+De særskilt afviste bundle-writes genforsøges ikke; 440-emnebindingerne er
+stadig forældede, og afklaringen fra kl.23.25 gentages ikke. Den statiske
+installationskopi er uændret efter afvisningen under aktiv writer.
+Original-/destinationsgates, eksakt GitHub-kontrol og offentlig effekt er
+åbne. Ingen ny version, commit, push, SQL-installation, vejrhentning eller
+deploy; score, rettigheder, GDPR og den isolerede store revision er uændrede.
+
+# NYESTE – 2026-10-07 00.18 DK – bedre hjælp til ventende ture og lokal lagring
+
+Spørg RavRadars lokale kandidat har nu 446 selvstændige emner, 1338 skrevne
+DA/DE/EN-svar, 16056 afprøvningsformuleringer og 463 emnekontrakter.
+Tre nye emner forklarer den oprindelige kontotilknytning i leveringskøen,
+risikoen ved at rydde browserdata før levering og lokale turrækker under en
+fejl i hentning af kontologgen. Den normale kalder afviste før udvidelsen
+to af de tre almindelige spørgsmål og kunne ikke underbygge det tredje.
+Svarene er kontrolleret mod de eksisterende normale UI-/lagringsfunktioner;
+ingen konto, privat tur, brugerrettighed eller scoreformel er ændret.
+
+867 kontohjælpsscenarier og den eksisterende vidensmålprøve består uden
+netværk eller AI-kvote, inklusive DA/DE/EN, opfølgninger, spørgsmål i begge
+rækkefølger, private statuskrav og hele beskedens sikkerhed. Login beviser
+ikke backup af en ventende tur; synlige lokale rækker beviser ikke komplet
+kontolog eller central levering. Der anbefales ingen sletning eller nulstilling.
+
+Kandidaten er fortsat kun lokal. De tidligere 440-emnebindinger er stadig
+forældede; den særskilt afviste bundle-genberegning omgås ikke, og spørgsmålet
+fra kl.23.25 gentages ikke. Håndbogens statiske installationskopi opdateres
+ikke under aktiv writer efter afvisningen. Original-/destinationsgates,
+egen GitHub-kontrol og faktisk offentlig browser-/AI-effekt mangler.
+Ingen ny version, commit, push, SQL-installation, vejrhentning eller deploy.
+Den isolerede store revision, GDPR og ejerens roadmap-udtagninger er uændrede.
+
+# HISTORISK – 2026-10-06 23.20 DK – bedre kontohjælp; lokal genberegning er stoppet
+
+Spørg RavRadars lokale kandidat har nu 443 selvstændige emner, 1329 skrevne
+DA/DE/EN-svar, 15948 afprøvningsformuleringer og 460 emnekontrakter.
+Tre nye kontoforklaringer dækker knappers udseende, udløbet loginlink og
+assistentens grænser. Eksisterende svar genbruges til glemt kode, login uden
+kode, manglende mail, ture på en ny telefon og begynderens første ravtur.
+Farve alene beviser ikke en fejl; assistenten sender ikke mail eller læser
+privat kontostatus. Den normale vidensprøve og assistent-/sikkerhedsprøver
+består uden netværk, AI-kvote, private konti eller ændret scoreformel.
+
+En konkret normalcaller-fejl var, at ordet adgangskode også afviste et
+almindeligt spørgsmål om login uden kode. Kun hele, skrevne spørgsmål om
+loginlink kan nu få den offentlige forklaring. Tilføjede oplysninger,
+hemmeligheder og forbudte delspørgsmål må ikke skjules, heller ikke efter
+den eksisterende grænse på 600 tegn. 711 kontohjælpsscenarier, 18 særlige
+sikkerhedsgrænser og tre private-status-kombinationer er kontrolleret.
+
+Sikkerhedskontrollen stoppede genberegningen af de to lokale genererede
+implementerings-bundles. Ingen af de afviste writes blev udført. Et særskilt
+læsebevis viser i begge bundles kun ændringer i assistentservice og
+produktviden; fysisk kontrakt, filinventar, fuld runtime og offentlig
+projektion er uændrede. Afvisningen består alligevel og omgås ikke.
+De tidligere 440-emnebindinger nedenfor er derfor ikke aktuelle beviser for
+443-emnekandidaten. Den konkrete lokale genberegning kræver ny afklaring,
+før bindinger, uinstalleret migration og forbrugere må føres videre.
+
+Den normale synkronisering af håndbogens statiske SQL-installationskopi
+blev også afvist under aktiv writer. Markdown og webhåndbog er opdateret;
+installationskopien er uændret. Den aktive håndbogsprøve er derfor RØD på
+payloadforskel, ikke et produktionsproblem. RDKS og diffkontrol består.
+Håndbogsgaten må ikke lempes; kopi-synkronisering afventer et sikkert vindue.
+
+Ingen ny version, commit, push, PR, installation, vejrhentning eller deploy.
+Original-/destinationsgates og eksakt GitHub-/offentlig browser-/AI-kontrol
+mangler fortsat; teknisk genberegning er ikke destinationsautoritet.
+Den naturlige 548-vejrhentning er stadig aktiv. Roadmap-udtagninger,
+den isolerede store revisions seks restområder og GDPR-arbejdet ændres ikke.
+Daterede statusser nedenfor gælder deres historiske faser.
+
+# NYESTE – 2026-10-06 22.05 DK – assistentviden integreret lokalt med main 4.0.548
+
+Main 0361e446 og den leverede Jordrav-, SEO-, konto- og SOURCE-kode er nu
+indarbejdet i det isolerede assistent-checkout. Den aktuelle lokale viden har
+440 selvstændige emner, 1320 skrevne DA/DE/EN-svar, 15840 testformuleringer
+og 457 kontrakter. Emner, svar og afprøvningsformuleringer er forskellige mål.
+Den normale vidensmålprøve består igen efter integrationen, uden netværk,
+AI-kvote, private brugerdata eller ændringer af scoremodel og vejrhentning.
+
+Det er fortsat en lokal, ikke offentlig assistentkandidat. De tre tekniske
+assistentbindinger er nu normalt genberegnet på den integrerede kode;
+otte forbrugere og den nye, uinstallerede migration består normal kontrol.
+Syv berørte målparents består; gamle migrationer og originale kildebeviser
+bevares. Eksakt originalrestore, egen eksakt GitHub-kontrol, sikker levering
+og ny offentlig browser-/AI-effekt mangler. Main 4.0.548 er kildeleveret,
+ikke bevis for et nyt offentligt vejrdatasæt. Daterede statusser nedenfor
+gælder deres egne historiske faser og giver ingen ny destinationsautoritet.
+
 # NYESTE – 2026-10-06 – ejerafklaret projektroadmap, adskilt fra opgavernes restplan
 
 Ejeren har taget punkt 1, 2, 3 og 5 ud: empirisk efterkalibrering/procentchance,
@@ -27,6 +226,26 @@ bankbygger/kaldere og måltestet, inklusive dkss_lf på alle syv zoner plus Fur.
 Sikker levering og faktisk ny-generations-effekt mangler. Revisionen og
 Spørg RavRadar fortsætter som opgaver; kvotekontrol/overvågning er drift.
 
+# NYESTE – 2026-10-06 – ejerens projektroadmap-fravalg
+
+Lokal assistentstatus 15.34 DK: 437 selvstændige emner og 1311 skrevne
+DA/DE/EN-svar, 15732 testformuleringer og 454 kontrakter. Seks nye UI-emner
+og 108 scenarier består uden privat adgang eller vejrhentning. Offentlig
+545 afviser stadig normal kortvisningshjælp. Bindingsafklaring, metadata-CAS,
+egen eksakt kildekontrol, sikker levering og ny offentlig effekt er åbne.
+Ingen tidligere fravalg, scoreændring eller ny modelautoritet genåbnes.
+
+Punkt 1, 2, 3 og 5 er taget ud efter ejerens menneskelige instruktioner:
+efterkalibrering/fundprocent, nye vind-/strømstruktur-scoreinput,
+Ravudsigten-sammenligning og gemte områder/varslinger. Punkt 4 er allerede
+dækket og udgår som restopgave. Sammenligningen er stoppet, ikke udsat;
+ingen videre indsamling eller genstart fra historiske bokse. Den nuværende
+scoremodel og leverede brugerfunktioner bevares. Vandstandsrettelser,
+den store revisions afslutningsplan og Spørg RavRadar fortsætter særskilt.
+Canonical roadmap er docs/rdks/90_INDEX/ACTIVE_ROADMAP.md i det eksisterende
+lyngby-agger-source-domain-checkout. Dette mirror ændrer kun opgavestatus;
+ufærdig assistentkode, private bindingsmål og produktionsdata sendes ikke.
+
 # RESTPLAN – 2026-10-06 – ejerafklaret afslutningsplan, ikke 100 % dækningsmål
 
 Ejeren accepterer feltdækning over 95 % som tilfredsstillende. Næsten 100 %
@@ -51,11 +270,11 @@ national kapacitet og private/offentlige/deploy-kontroller. Slutbeviset er sidst
 trin efter nødvendige rettelser og integration, ikke kun én grøn normal kørsel.
 Den separate store kandidat er fortsat isoleret/inaktiv; ingen helkopiering.
 
-Spørg RavRadar er separat: 353 lokale emner/1059 skrevne DA/DE/EN-svar er ikke
+Spørg RavRadar er separat: 440 lokale emner/1320 skrevne DA/DE/EN-svar er ikke
 publiceret. Der mangler fortsat bredere spørgsmål- og opfølgningsforståelse,
 hele delspørgsmål, respekt for afgrænsninger, fagligt kontrolleret stor udvidelse,
 praktisk eksisterende browser-/AI-kontrol, kontrolleret levering og offentlig
-effekt. 12708 formuleringer er ikke 12708 selvstændigt skrevne svar. Browserens
+effekt. 15840 formuleringer er ikke 15840 selvstændigt skrevne svar. Browserens
 kendte adgangsfejl omgås ikke; syntetiske AI-svar er ikke ekstern AI-kvalitet.
 
 Footerrettelsen, syvzoners vandstand-only-undtagelse og reservekørettelsen er

@@ -86,7 +86,7 @@ Deno.serve(async (request) => {
     const payload = await response.json();
     if (payload?.success === false) throw new GatewayError(502, "ASSISTANT_UPSTREAM_FAILED");
     const parsed = extractCloudflareAssistantResult(payload);
-    const validated = validateAssistantResult(parsed, locale);
+    const validated = validateAssistantResult(parsed, locale, question);
     if (!validated) throw new GatewayError(502, "ASSISTANT_RESPONSE_REJECTED");
     return assistantJsonResponse(request, { answer: validated.answer });
   } catch (error) {

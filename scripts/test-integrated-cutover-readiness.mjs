@@ -10,6 +10,7 @@ import {
   LATEST_RAVSCORE_BINDING_MIGRATION,
   LATEST_REQUIRED_CUTOVER_MIGRATION,
   REQUIRED_CUTOVER_MIGRATIONS,
+  TRIP_BINDING_POLICY_SOURCE_MIGRATION,
   assertSealedIntegratedCutoverReadiness,
   assertSupabaseMigrationPlan,
   assertSupabaseMigrationsApplied,
@@ -49,10 +50,12 @@ const EXACT_PREDECESSOR_CONTINUATION_HASH =
   '46683362ec6b69835695db375f7de976a8dd0a75b7367a27e2854b653d73e0ab';
 
 await inspectMigrationSources();
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 44,
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 46,
   'The active backend must preserve every predecessor, storage security and the exact checkpoint bridge');
 assert.equal(LATEST_RAVSCORE_BINDING_MIGRATION.version, '20260920220000');
-assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261005000000');
+assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261007123000');
+assert.equal(TRIP_BINDING_POLICY_SOURCE_MIGRATION, LATEST_REQUIRED_CUTOVER_MIGRATION,
+  'normal database attestation must use the exact latest assistant-refresh migration');
 
 const integratedMigration = await fs.readFile(
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
@@ -95,7 +98,7 @@ assert.doesNotMatch(rpcSql, /\bselect\s+\*\b/i,
   'integrated cutover RPC must not expose broad table data');
 
 const checkpointMigration = await fs.readFile(
-  'supabase/migrations/20261005000000_owner_water_level_only_binding.sql',
+  'supabase/migrations/20261007123000_assistant_knowledge_refresh_binding.sql',
   'utf8',
 );
 const exactPredecessorMigration = await fs.readFile(
@@ -147,7 +150,7 @@ for (const marker of [
   "#- '{candidateGRollbackCompanion,generationSha256}'",
   'create or replace function public.ravradar_ravscore_checkpoint_contract()',
   "'schemaVersion', 'ravscore-checkpoint-db-v1'",
-  "'20261005000000'",
+  "'20261007123000'",
   "'checkpointContractDefinitionPresent'",
   "'checkpointCanonicalTimeHelperStableSecurityInvoker'",
   "'checkpointHistoryExclusionInstalled'",
@@ -356,6 +359,8 @@ const unicodeList = `
  20261003080000    │                  │ 2026-10-03 08:00:00
  20261004190000    │                  │ 2026-10-04 19:00:00
  20261005000000    │                  │ 2026-10-05 00:00:00
+ 20261005060000    │                  │ 2026-10-05 06:00:00
+ 20261007123000    │                  │ 2026-10-07 12:30:00
 `;
 assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260826', remote: '20260826' },
@@ -403,6 +408,8 @@ assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20261003080000', remote: null },
   { local: '20261004190000', remote: null },
   { local: '20261005000000', remote: null },
+  { local: '20261005060000', remote: null },
+  { local: '20261007123000', remote: null },
 ]);
 
 // Captured verbatim from backend readiness run 34333553305 with Supabase CLI 2.117.0.
@@ -459,6 +466,8 @@ const currentFirstInstallList = `${capturedFirstEightInstallList}
    \`20261003080000\` | \` \`    | \`2026-10-03 08:00:00\`
    \`20261004190000\` | \` \`    | \`2026-10-04 19:00:00\`
    \`20261005000000\` | \` \`    | \`2026-10-05 00:00:00\`
+   \`20261005060000\` | \` \`    | \`2026-10-05 06:00:00\`
+   \`20261007123000\` | \` \`    | \`2026-10-07 12:30:00\`
 `;
 assert.deepEqual(parseSupabaseMigrationList(currentFirstInstallList),
   REQUIRED_CUTOVER_MIGRATIONS.map(item => ({ local: item.version, remote: null })));
@@ -591,6 +600,8 @@ await assert.rejects(
        20261003080000 | | pending
        20261004190000 | | pending
        20261005000000 | | pending
+       20261005060000 | | pending
+       20261007123000 | | pending
     `,
     dryRunText: currentFirstInstallDryRun,
   }),
@@ -644,6 +655,8 @@ const appliedList = `
  20261003080000 | 20261003080000 | now
  20261004190000 | 20261004190000 | now
  20261005000000 | 20261005000000 | now
+ 20261005060000 | 20261005060000 | now
+ 20261007123000 | 20261007123000 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
@@ -699,19 +712,51 @@ try {
     dryRunPath,
     `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • ${LATEST_REQUIRED_CUTOVER_MIGRATION.filename}\nFinished supabase db push.`,
   );
-  const helperRun = spawnSync(process.execPath, [
+  const helperArguments = [
     path.resolve('scripts/verify-code-only-migration-plan.mjs'),
     '--migration-list', migrationListPath,
     '--dry-run', dryRunPath,
     '--migrations-directory', path.resolve('supabase/migrations'),
-  ], { encoding: 'utf8' });
+  ];
+  const helperRun = spawnSync(process.execPath, helperArguments, { encoding: 'utf8' });
   assert.equal(helperRun.status, 0,
     helperRun.stderr || helperRun.stdout || helperRun.error?.message);
   assert.match(
     helperRun.stdout,
-    /exactly 20261005000000_owner_water_level_only_binding.sql/,
+    /exactly 20261007123000_assistant_knowledge_refresh_binding.sql/,
     'the live code-only helper must admit exactly the current checkpoint bridge',
   );
+  await fs.writeFile(migrationListPath,
+    `Local | Remote | Time (UTC)\n${REQUIRED_CUTOVER_MIGRATIONS.map(item =>
+      `${item.version} | ${item.version} | state`).join('\n')}`);
+  await fs.writeFile(dryRunPath,
+    'DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.');
+  const alreadyAppliedRun = spawnSync(process.execPath, helperArguments, { encoding: 'utf8' });
+  assert.equal(alreadyAppliedRun.status, 0,
+    alreadyAppliedRun.stderr || alreadyAppliedRun.stdout);
+  assert.match(alreadyAppliedRun.stdout, /already applied; retry is safe/);
+
+  const lastTwo = REQUIRED_CUTOVER_MIGRATIONS.slice(-2);
+  await fs.writeFile(migrationListPath,
+    `Local | Remote | Time (UTC)\n${REQUIRED_CUTOVER_MIGRATIONS.map((item, index) =>
+      `${item.version} | ${index < REQUIRED_CUTOVER_MIGRATIONS.length - 2 ? item.version : ''} | state`).join('\n')}`);
+  await fs.writeFile(dryRunPath,
+    `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n${lastTwo.map(item => ` • ${item.filename}`).join('\n')}\nFinished supabase db push.`);
+  const extraMigrationRun = spawnSync(process.execPath, helperArguments, { encoding: 'utf8' });
+  assert.notEqual(extraMigrationRun.status, 0,
+    'code-only must reject installing the old assistant migration together with the refresh');
+  assert.match(extraMigrationRun.stderr, /only the exact latest required integrated migration/);
+
+  await fs.writeFile(migrationListPath,
+    `Local | Remote | Time (UTC)\n${REQUIRED_CUTOVER_MIGRATIONS.slice(0, -1).map((item, index) =>
+      `${item.version} | ${index < REQUIRED_CUTOVER_MIGRATIONS.length - 2 ? item.version : ''} | state`).join('\n')}`);
+  await fs.writeFile(dryRunPath,
+    `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • ${lastTwo[0].filename}\nFinished supabase db push.`);
+  const staleInventoryRun = spawnSync(process.execPath, helperArguments, { encoding: 'utf8' });
+  assert.notEqual(staleInventoryRun.status, 0,
+    'the former 45-migration plan cannot hide the required refresh');
+  assert.match(staleInventoryRun.stderr,
+    /did not see required local migration 20261007123000_assistant_knowledge_refresh_binding\.sql/);
 } finally {
   await fs.rm(codeOnlyHelperDirectory, { recursive: true, force: true });
 }
@@ -798,6 +843,8 @@ try {
  20261003080000 │ │ pending
  20261004190000 │ │ pending
  20261005000000 │ │ pending
+ 20261005060000 │ │ pending
+ 20261007123000 │ │ pending
  `;
   const hydrated = await hydrateTemporaryRemoteMigrationHistory({
     workdir: isolatedWorkdir,
@@ -855,6 +902,8 @@ try {
  20261003080000 │ │ pending
  20261004190000 │ │ pending
  20261005000000 │ │ pending
+ 20261005060000 │ │ pending
+ 20261007123000 │ │ pending
     `,
   }), /unknown post-cutover migration 20260830/);
 } finally {
@@ -916,6 +965,15 @@ await assert.rejects(buildIntegratedCutoverReadiness('short', {
 const expectedPolicy = await expectedTripBindingPolicy();
 const expectedActiveAdmissionPolicy = await expectedTripActiveAdmissionPolicy();
 const expectedCheckpointContract = await expectedCheckpointCasContract();
+assert.equal(expectedCheckpointContract.definition.split(
+  '\n-- assistant-refresh-predecessor-projection --\n',
+).length, 2, 'normal database attestation must include exactly one refresh helper');
+assert.ok(expectedCheckpointContract.definition.includes(
+  '276723e6254fd19490601c515dc8a4f031913664791c8b4b6b3b988a510f6bcb',
+), 'normal attestation must preserve the exact issued assistant predecessor');
+assert.ok(expectedCheckpointContract.definition.includes(
+  '6f9cd52c141c21d0684aa2acc1c11948c93e32d092e14f784ad5b402cd93932d',
+), 'normal attestation must bind the actual new integrated bundle');
 assert.equal(expectedPolicy.definition, expectedPolicy.definition.trim());
 assert.equal(expectedActiveAdmissionPolicy.definition,
   expectedActiveAdmissionPolicy.definition.trim());
@@ -998,6 +1056,28 @@ await verifyIntegratedDatabaseReadback({
   },
 });
 assert.equal(checkpointRpcCalls, 1);
+for (const invalidDefinition of [
+  expectedCheckpointContract.definition.split(
+    '\n-- assistant-refresh-predecessor-projection --\n',
+  )[0],
+  expectedCheckpointContract.definition.replace(
+    "'6f9cd52c141c21d0684aa2acc1c11948c93e32d092e14f784ad5b402cd93932d'",
+    `'${'0'.repeat(64)}'`,
+  ),
+]) {
+  assert.notEqual(invalidDefinition, expectedCheckpointContract.definition);
+  const invalidReadback = structuredClone(checkpointDatabaseReadback);
+  invalidReadback.checkpointContract.definition = invalidDefinition;
+  await assert.rejects(verifyIntegratedDatabaseReadback({
+    url: URL,
+    serviceRoleKey: SERVICE_KEY,
+    fetchImpl: async requestUrl => new Response(JSON.stringify(
+      requestUrl.endsWith('/ravradar_integrated_cutover_contract')
+        ? databaseReadback : invalidReadback,
+    ), { status: 200 }),
+  }), /database checkpoint CAS contract definition hash drifted/,
+  'normal readback must reject a missing refresh helper or a changed binding, even with green checks');
+}
 for (const invalidTimeoutCheck of [false, null, undefined]) {
   const invalidReadback = structuredClone(checkpointDatabaseReadback);
   if (invalidTimeoutCheck === undefined) {

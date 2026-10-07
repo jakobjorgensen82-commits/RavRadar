@@ -24,6 +24,9 @@ assert.equal(declared.filter(command => command === 'python scripts/test-coperni
 assert.ok(fs.readFileSync('scripts/test-copernicus-current-pilot.py', 'utf8').includes(
   'runpy.run_path(str(ROOT / "scripts/test-copernicus-dataset-updating.py"), run_name="__main__")'),
   'The existing Copernicus source group must execute the actual subset/checkpoint regression suite.');
+const pythonContractGroup = fs.readFileSync('scripts/test-current-operational-python-contracts.mjs', 'utf8');
+assert.equal((pythonContractGroup.match(/'test-dmi-bulk-supervised\.py'/g) || []).length, 1,
+  'The existing Python source group must execute the DMI supervisor regression exactly once.');
 const invokedFiles = declared.flatMap(command => command.split(' ').filter(argument =>
   /^scripts\/test-[A-Za-z0-9_.-]+\.mjs$/.test(argument)));
 for (const file of [

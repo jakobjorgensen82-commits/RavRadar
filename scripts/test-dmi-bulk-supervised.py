@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import ast
+from contextlib import nullcontext
+import errno
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -43,6 +46,347 @@ def marker(name: str, asset: dict[str, str]) -> str:
 
 
 class SupervisorTests(unittest.TestCase):
+    def test_broken_log_pipe_stops_owned_producer_before_propagating(self):
+        self.assert_log_pipe_stop()
+
+    def test_broken_log_pipe_with_unproved_stop_keeps_original_failure(self):
+        self.assert_log_pipe_stop(stop_rejected=True)
+
+    def test_watchdog_stop_failure_is_terminal_and_not_retried(self):
+        for active_eof in (False, True):
+            with self.subTest(active_eof=active_eof):
+                self.assert_log_pipe_stop(stop_rejected=True, watchdog=True,
+                                          active_eof=active_eof)
+
+    def test_main_interruption_preserves_failure_and_never_finalizes_live_writer(self):
+        for stop_rejected in (False, True):
+            with self.subTest(stop_rejected=stop_rejected):
+                self.assert_log_pipe_stop(stop_rejected=stop_rejected, interruption=True)
+
+    def test_reader_start_failure_stops_real_owned_writer_before_propagating(self):
+        for stop_rejected in (False, True):
+            with self.subTest(stop_rejected=stop_rejected):
+                self.assert_log_pipe_stop(reader_failure_at="start", stop_rejected=stop_rejected)
+
+    def test_reader_construction_and_queue_failures_stop_retained_writer(self):
+        for stage in ("constructor", "queue"):
+            for stop_rejected in (False, True):
+                with self.subTest(stage=stage, stop_rejected=stop_rejected):
+                    self.assert_log_pipe_stop(reader_failure_at=stage, stop_rejected=stop_rejected)
+
+    def test_main_wait_interruption_after_real_eof_stops_retained_writer(self):
+        for stop_rejected in (False, True):
+            with self.subTest(stop_rejected=stop_rejected):
+                self.assert_log_pipe_stop(completion_wait_failure=True,
+                                          stop_rejected=stop_rejected)
+
+    def test_main_eof_waits_for_owned_writer_to_finish_without_stopping_it(self):
+        with tempfile.TemporaryDirectory(prefix="rr-supervisor-eof-finish-") as directory:
+            heartbeat = Path(directory) / "heartbeat"
+            original = Path(directory) / "original-BS"
+            original.write_bytes(b"synthetic immutable original B/S\n")
+            command = [sys.executable, "-u", "-c", (
+                "import os, pathlib, time\n"
+                f"heartbeat = pathlib.Path({str(heartbeat)!r})\n"
+                "heartbeat.write_text('started', encoding='utf-8')\n"
+                "os.close(1)\nos.close(2)\n"
+                "deadline = time.monotonic() + 0.15\n"
+                "while time.monotonic() < deadline:\n"
+                "    with heartbeat.open('a', encoding='utf-8') as handle:\n"
+                "        handle.write('.')\n"
+                "    time.sleep(0.01)\n"
+                "with heartbeat.open('a', encoding='utf-8') as handle:\n"
+                "    handle.write('finished')\n"
+                "raise SystemExit(7)\n"
+            )]
+            owned = []
+            completion_waits = []
+
+            def retain_popen(*args, **kwargs):
+                self.assertEqual(args[0],
+                                 [supervisor.sys.executable, "-u", str(supervisor.PRODUCER)])
+                child = subprocess.Popen(command, **kwargs)
+                owned.append(child)
+                normal_wait = child.wait
+
+                def observe_wait(*wait_args, **wait_kwargs):
+                    if not wait_args and "timeout" not in wait_kwargs:
+                        self.assertIsNone(child.poll(), "EOF precedes actual writer exit")
+                        completion_waits.append(child.pid)
+                    return normal_wait(*wait_args, **wait_kwargs)
+
+                child.wait = observe_wait
+                return child
+
+            normal_run = supervisor.run_supervised
+
+            def run_owned(command, environment, *, watchdog_seconds):
+                return normal_run(command, environment, watchdog_seconds=0.1,
+                                  popen=retain_popen, log=lambda _line: None)
+
+            try:
+                with (
+                    patch.dict(supervisor.os.environ, {}, clear=True),
+                    patch.object(supervisor, "run_supervised", side_effect=run_owned) as run,
+                    patch.object(supervisor, "stop_process") as stop,
+                    patch.object(supervisor, "finalize_checkpoint") as finalize,
+                ):
+                    self.assertEqual(supervisor.main(), 7)
+                self.assertEqual(run.call_count, 1)
+                self.assertEqual(completion_waits, [owned[0].pid])
+                stop.assert_not_called()
+                finalize.assert_not_called()
+                self.assertEqual(owned[0].poll(), 7)
+                self.assertTrue(owned[0].stdout.closed)
+                self.assertTrue(heartbeat.read_text(encoding="utf-8").endswith("finished"))
+                self.assertEqual(original.read_bytes(), b"synthetic immutable original B/S\n")
+            finally:
+                for child in owned:
+                    if child.poll() is None:
+                        child.kill()
+                    child.wait(timeout=5)
+                    if child.stdout is not None:
+                        child.stdout.close()
+
+    def test_main_eof_keeps_asset_watchdog_and_closes_writer_before_restart(self):
+        with tempfile.TemporaryDirectory(prefix="rr-supervisor-eof-watchdog-") as directory:
+            heartbeat = Path(directory) / "heartbeat"
+            original = Path(directory) / "original-BS"
+            original.write_bytes(b"synthetic immutable original B/S\n")
+            stalled_command = [sys.executable, "-u", "-c", (
+                "import os, pathlib, time\n"
+                f"heartbeat = pathlib.Path({str(heartbeat)!r})\n"
+                "heartbeat.write_text('started', encoding='utf-8')\n"
+                f"print({marker('DMI_ASSET_PROCESSING_START', ASSET_A)!r}, flush=True)\n"
+                "os.close(1)\nos.close(2)\n"
+                "deadline = time.monotonic() + 5\n"
+                "while time.monotonic() < deadline:\n"
+                "    with heartbeat.open('a', encoding='utf-8') as handle:\n"
+                "        handle.write('.')\n"
+                "    time.sleep(0.01)\n"
+            )]
+            finished_command = [sys.executable, "-u", "-c", (
+                f"print({marker('DMI_ASSET_PROCESSING_START', ASSET_B)!r}, flush=True); "
+                f"print({marker('DMI_ASSET_PROCESSING_END', ASSET_B)!r}, flush=True)"
+            )]
+            owned = []
+            results = []
+
+            def retain_popen(*args, **kwargs):
+                self.assertEqual(args[0],
+                                 [supervisor.sys.executable, "-u", str(supervisor.PRODUCER)])
+                skips = json.loads(kwargs["env"]["DMI_BULK_SUPERVISOR_SKIPPED_ASSETS"])
+                self.assertEqual(skips, [ASSET_A] if owned else [])
+                if owned:
+                    self.assertIsNotNone(owned[0].poll(), "no overlapping retained writers")
+                    self.assertTrue(owned[0].stdout.closed)
+                    before = heartbeat.read_bytes()
+                    supervisor.time.sleep(0.04)
+                    self.assertEqual(heartbeat.read_bytes(), before)
+                child = subprocess.Popen(finished_command if owned else stalled_command, **kwargs)
+                owned.append(child)
+                return child
+
+            normal_run = supervisor.run_supervised
+
+            def run_owned(command, environment, *, watchdog_seconds):
+                result = normal_run(command, environment, watchdog_seconds=0.1,
+                                    popen=retain_popen, log=lambda _line: None)
+                results.append(result)
+                return result
+
+            try:
+                with (
+                    patch.dict(supervisor.os.environ, {}, clear=True),
+                    patch.object(supervisor, "run_supervised", side_effect=run_owned) as run,
+                    patch.object(supervisor, "finalize_checkpoint") as finalize,
+                ):
+                    self.assertEqual(supervisor.main(), 0)
+                self.assertEqual(run.call_count, 2, "EOF must not retire an active asset watchdog")
+                finalize.assert_not_called()
+                self.assertTrue(results[0].watchdog_timed_out)
+                self.assertEqual(results[0].timed_out_asset, ASSET_A)
+                self.assertNotEqual(results[0].returncode, 0)
+                self.assertFalse(results[1].watchdog_timed_out)
+                self.assertIsNone(results[1].timed_out_asset)
+                for child in owned:
+                    self.assertIsNotNone(child.poll())
+                    self.assertTrue(child.stdout.closed)
+                self.assertEqual(original.read_bytes(), b"synthetic immutable original B/S\n")
+            finally:
+                for child in owned:
+                    if child.poll() is None:
+                        child.kill()
+                    child.wait(timeout=5)
+                    if child.stdout is not None:
+                        child.stdout.close()
+
+    def assert_log_pipe_stop(self, *, stop_rejected=False, watchdog=False,
+                             interruption=False, reader_failure_at=None,
+                             completion_wait_failure=False, active_eof=False):
+        # Real writer with a real broken pipe or an injected KeyboardInterrupt
+        # through main -> run_supervised. This is not an OS signal/runner-loss test.
+        # Only existing Popen/clock/log seams use an owned artificial producer
+        # and short test deadline; no provider or new runtime seam.
+        with tempfile.TemporaryDirectory(prefix="rr-supervisor-log-stop-") as directory:
+            heartbeat = Path(directory) / "heartbeat"
+            original = Path(directory) / "original-BS"
+            original.write_bytes(b"synthetic immutable original B/S\n")
+            close_output = (
+                f"print({marker('DMI_ASSET_PROCESSING_END', ASSET_A)!r}, flush=True)\n"
+                if completion_wait_failure else ""
+            ) + (
+                "os.close(1)\nos.close(2)\n"
+                if completion_wait_failure or active_eof else ""
+            )
+            keep_writing = (
+                "deadline = time.monotonic() + 5\n"
+                "while time.monotonic() < deadline:\n"
+                if completion_wait_failure or active_eof else "while True:\n"
+            )
+            command = [sys.executable, "-u", "-c", (
+                "import os, pathlib, time\n"
+                f"heartbeat = pathlib.Path({str(heartbeat)!r})\n"
+                "heartbeat.write_text('started', encoding='utf-8')\n"
+                f"print({marker('DMI_ASSET_PROCESSING_START', ASSET_A)!r}, flush=True)\n"
+                f"{close_output}"
+                f"{keep_writing}"
+                "    with heartbeat.open('a', encoding='utf-8') as handle:\n"
+                "        handle.write('.')\n"
+                "    time.sleep(0.01)\n"
+            )]
+            owned = []
+            stop_calls = []
+            log_errors = []
+            rejected_stop = RuntimeError("synthetic own stop rejection")
+            original_interruption = KeyboardInterrupt("synthetic main interruption")
+            reader_failure = RuntimeError("synthetic own reader start failure")
+            wait_calls = []
+
+            def retain_popen(*args, **kwargs):
+                self.assertEqual(args[0],
+                                 [supervisor.sys.executable, "-u", str(supervisor.PRODUCER)])
+                child = subprocess.Popen(command, **kwargs)
+                owned.append(child)
+                if completion_wait_failure:
+                    normal_wait = child.wait
+
+                    def interrupt_completion_wait(*wait_args, **wait_kwargs):
+                        if not wait_args and "timeout" not in wait_kwargs:
+                            # Actual pipe EOF is not process-exit evidence. The
+                            # owned producer keeps writing after closing output.
+                            self.assertIsNone(child.poll())
+                            before = heartbeat.read_bytes()
+                            supervisor.time.sleep(0.04)
+                            self.assertNotEqual(heartbeat.read_bytes(), before)
+                            wait_calls.append(child.pid)
+                            raise original_interruption
+                        return normal_wait(*wait_args, **wait_kwargs)
+
+                    child.wait = interrupt_completion_wait
+                if reader_failure_at:
+                    # Establish the actual live writer before injecting the
+                    # reader's start failure; no fake Popen or private source.
+                    deadline = supervisor.time.monotonic() + 5
+                    while not heartbeat.exists() and supervisor.time.monotonic() < deadline:
+                        supervisor.time.sleep(0.005)
+                    self.assertTrue(heartbeat.exists(), "owned producer started")
+                if stop_rejected:
+                    def reject_stop():
+                        stop_calls.append(child.pid)
+                        raise rejected_stop
+                    child.terminate = reject_stop
+                return child
+
+            read_fd, write_fd = os.pipe()
+            os.close(read_fd)
+            with os.fdopen(write_fd, "wb", buffering=0) as closed_log:
+                def log_line(line):
+                    if watchdog or completion_wait_failure:
+                        return
+                    if interruption:
+                        log_errors.append(original_interruption)
+                        raise original_interruption
+                    try:
+                        closed_log.write(line.encode("utf-8"))
+                    except OSError as error:
+                        log_errors.append(error)
+                        raise
+
+                normal_run = supervisor.run_supervised
+
+                def run_owned(command, environment, *, watchdog_seconds):
+                    return normal_run(command, environment, watchdog_seconds=0.1,
+                                      popen=retain_popen, log=log_line)
+
+                try:
+                    reader_fail_patch = (
+                        patch.object(supervisor.threading.Thread, "start", side_effect=reader_failure)
+                        if reader_failure_at == "start" else
+                        patch.object(supervisor.threading, "Thread", side_effect=reader_failure)
+                        if reader_failure_at == "constructor" else
+                        patch.object(supervisor.queue, "Queue", side_effect=reader_failure)
+                        if reader_failure_at == "queue" else nullcontext()
+                    )
+                    with (
+                        patch.dict(supervisor.os.environ, {}, clear=True),
+                        patch.object(supervisor, "run_supervised", side_effect=run_owned) as run,
+                        patch.object(supervisor, "finalize_checkpoint") as finalize,
+                        reader_fail_patch,
+                    ):
+                        expected_error = (KeyboardInterrupt if interruption or completion_wait_failure else
+                                          RuntimeError if watchdog or reader_failure_at
+                                          else OSError)
+                        with self.assertRaises(expected_error) as raised:
+                            supervisor.main()
+                    self.assertEqual(run.call_count, 1, "no replacement producer after hard failure")
+                    finalize.assert_not_called()
+                    if reader_failure_at:
+                        self.assertEqual(log_errors, [])
+                        self.assertIs(raised.exception, reader_failure)
+                    elif completion_wait_failure:
+                        self.assertEqual(log_errors, [])
+                        self.assertEqual(wait_calls, [owned[0].pid])
+                        self.assertIs(raised.exception, original_interruption)
+                    elif interruption:
+                        self.assertEqual(log_errors, [original_interruption])
+                        self.assertIs(raised.exception, original_interruption,
+                                      "cleanup preserves the exact BaseException")
+                    elif watchdog:
+                        self.assertIs(raised.exception, rejected_stop)
+                        self.assertEqual(log_errors, [])
+                    else:
+                        self.assertEqual(len(log_errors), 1)
+                        self.assertIs(raised.exception, log_errors[0],
+                                      "cleanup preserves the original pipe failure")
+                        self.assertEqual(raised.exception.errno,
+                                         errno.EINVAL if os.name == "nt" else errno.EPIPE)
+                    self.assertEqual(len(owned), 1)
+                    before = heartbeat.read_bytes()
+                    supervisor.time.sleep(0.08)
+                    if stop_rejected:
+                        self.assertEqual(stop_calls, [owned[0].pid], "no second stop attempt")
+                        self.assertIsNone(owned[0].poll())
+                        self.assertNotEqual(heartbeat.read_bytes(), before,
+                                            "unproved stop really retains a live writer")
+                        self.assertFalse(owned[0].stdout.closed)
+                    else:
+                        self.assertIsNotNone(owned[0].poll(),
+                                             "control failure must not leave a live writer")
+                        self.assertEqual(heartbeat.read_bytes(), before)
+                        self.assertTrue(owned[0].stdout.closed)
+                    self.assertEqual(original.read_bytes(),
+                                     b"synthetic immutable original B/S\n")
+                finally:
+                    # RED runs still stop only their retained test child before
+                    # removing this own temporary directory.
+                    for child in owned:
+                        if child.poll() is None:
+                            child.kill()
+                        child.wait(timeout=5)
+                        if child.stdout is not None:
+                            child.stdout.close()
+
     def test_invalid_short_budget_fails_before_finalize_or_producer(self):
         with tempfile.TemporaryDirectory() as directory:
             output_path = Path(directory) / "github-output.txt"
@@ -180,22 +524,25 @@ class SupervisorTests(unittest.TestCase):
         self.assertEqual(result.timed_out_asset, ASSET_A)
 
     def test_malformed_structured_start_still_arms_generic_watchdog(self):
-        command = [
-            sys.executable, "-u", "-c",
-            (
-                "import time; "
-                "print('DMI_ASSET_PROCESSING_START={truncated', flush=True); "
-                "time.sleep(5)"
-            ),
-        ]
-        result = supervisor.run_supervised(
-            command,
-            dict(supervisor.os.environ),
-            watchdog_seconds=0.1,
-            log=lambda _line: None,
-        )
-        self.assertTrue(result.watchdog_timed_out)
-        self.assertIsNone(result.timed_out_asset)
+        for closed_output in (False, True):
+            with self.subTest(closed_output=closed_output):
+                close = "os.close(1); os.close(2); " if closed_output else ""
+                command = [
+                    sys.executable, "-u", "-c",
+                    (
+                        "import os, time; "
+                        "print('DMI_ASSET_PROCESSING_START={truncated', flush=True); "
+                        f"{close}time.sleep(5)"
+                    ),
+                ]
+                result = supervisor.run_supervised(
+                    command,
+                    dict(supervisor.os.environ),
+                    watchdog_seconds=0.1,
+                    log=lambda _line: None,
+                )
+                self.assertTrue(result.watchdog_timed_out)
+                self.assertIsNone(result.timed_out_asset)
 
     def test_main_restarts_once_with_only_timed_out_asset_then_succeeds(self):
         first = supervisor.SupervisedResult(143, True, ASSET_A)
@@ -315,6 +662,90 @@ class SupervisorTests(unittest.TestCase):
             self.assertEqual(supervisor.finalize_checkpoint({
                 supervisor.ONEOFF_CONTINUATION_PROTOCOL_ENV: "1",
             }), 2)
+
+    def test_main_real_finalizer_timeout_reaps_owned_writer_before_failure(self):
+        # The old timeout test injects an exception. Exercise the actual
+        # subprocess.run kill/wait boundary through the normal main caller,
+        # retaining only this test's process and immutable synthetic B/S.
+        with tempfile.TemporaryDirectory(prefix="rr-finalizer-real-timeout-") as directory:
+            output_path = Path(directory) / "github-output.txt"
+            heartbeat = Path(directory) / "heartbeat"
+            original = Path(directory) / "original-BS"
+            original_bytes = b"synthetic immutable finalizer original B/S\n"
+            original.write_bytes(original_bytes)
+            command = [sys.executable, "-u", "-c", (
+                "import pathlib, time\n"
+                f"heartbeat = pathlib.Path({str(heartbeat)!r})\n"
+                "heartbeat.write_text('started', encoding='utf-8')\n"
+                "while True:\n"
+                "    with heartbeat.open('a', encoding='utf-8') as handle:\n"
+                "        handle.write('.')\n"
+                "    time.sleep(0.01)\n"
+            )]
+            owned = []
+            actual_timeouts = []
+            actual_run = subprocess.run
+            actual_popen = subprocess.Popen
+
+            def retain_popen(*args, **kwargs):
+                self.assertEqual(args[0], command)
+                child = actual_popen(*args, **kwargs)
+                owned.append(child)
+                return child
+
+            def run_test_finalizer(args, **kwargs):
+                self.assertEqual(args,
+                                 [supervisor.sys.executable, "-u", str(supervisor.PRODUCER)])
+                self.assertEqual(kwargs["timeout"], 420)
+                self.assertFalse(kwargs["check"])
+                self.assertEqual(kwargs["cwd"], supervisor.ROOT)
+                environment = kwargs["env"]
+                self.assertEqual(environment["DMI_BULK_FINALIZE_ONLY"], "true")
+                self.assertEqual(environment["DMI_BULK_FINALIZE_REASON"],
+                                 supervisor.WATCHDOG_LIMIT_CODE)
+                self.assertEqual(environment["DMI_BULK_MAX_RUNTIME_SECONDS"], "600")
+                self.assertEqual(environment["DMI_BULK_FINALIZE_RESERVE_SECONDS"], "180")
+                self.assertEqual(json.loads(environment["DMI_BULK_SUPERVISOR_SKIPPED_ASSETS"]), [])
+                # Only the fixture's transport timeout is shortened. The
+                # production command, environment and 420-second budget above
+                # are unmodified and verified at the existing caller seam.
+                with patch.object(supervisor.subprocess, "Popen", side_effect=retain_popen):
+                    try:
+                        return actual_run(command, **{**kwargs, "timeout": 0.3})
+                    except subprocess.TimeoutExpired as error:
+                        self.assertEqual(len(owned), 1)
+                        self.assertIsNotNone(owned[0].poll(),
+                                             "run must reap its own writer before raising timeout")
+                        self.assertTrue(heartbeat.read_bytes().startswith(b"started"))
+                        self.assertEqual(original.read_bytes(), original_bytes)
+                        actual_timeouts.append(error)
+                        raise
+
+            try:
+                with (
+                    patch.dict(supervisor.os.environ, {"GITHUB_OUTPUT": str(output_path)}, clear=True),
+                    patch.object(supervisor, "run_supervised",
+                                 return_value=supervisor.SupervisedResult(-9, True, None)) as producer,
+                    patch.object(supervisor.subprocess, "run", side_effect=run_test_finalizer) as finalizer,
+                ):
+                    self.assertEqual(supervisor.main(), 2)
+                self.assertEqual(producer.call_count, 1)
+                self.assertEqual(finalizer.call_count, 1)
+                self.assertEqual(len(actual_timeouts), 1)
+                self.assertEqual(len(owned), 1)
+                self.assertIsNotNone(owned[0].poll())
+                written = output_path.read_text(encoding="utf-8")
+                self.assertEqual(written.count("terminal_code="), 1)
+                self.assertIn("terminal_code=DMI_SUPERVISED_FINALIZE_TIMEOUT\n", written)
+                self.assertIn("status=failed\n", written)
+                self.assertIn("strict_current_anchor_ready=false\n", written)
+                self.assertNotIn("status=success", written)
+                self.assertEqual(original.read_bytes(), original_bytes)
+            finally:
+                for child in owned:
+                    if child.poll() is None:
+                        child.kill()
+                    child.wait(timeout=5)
 
     def test_failed_finalizer_writes_bounded_nonempty_outputs(self):
         with tempfile.TemporaryDirectory() as directory:

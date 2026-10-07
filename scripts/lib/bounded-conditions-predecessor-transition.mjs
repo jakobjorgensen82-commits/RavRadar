@@ -233,9 +233,54 @@ export const OWNER_WATER_LEVEL_ONLY_SUCCESSOR = Object.freeze({
   continuationStateContractSha256:'4115f37178ff3d8eab540f3d9355a1275a13a9dd3a896e07f06673564e76ee51',
 });
 
+// Actual 543 natural generation published by 5d8c. The footer-only d9d6 run
+// reused identical immutable content without publishing a new pointer, so it
+// is not a substitute producer. Preserve the 541/542 originals independently.
+export const OWNER_ASSISTANT_KNOWLEDGE_PREDECESSOR = Object.freeze({
+  ...OWNER_CURRENT_DOMAIN_PREDECESSOR,
+  sourceHead: '5d8c597e0e110df6b51e93fc7a8a629ad45afedc',
+  datasetId: 'rr-20261005135618-210',
+  productionReferenceAt: '2026-10-05T12:00:00.000Z',
+  generatedAt: '2026-10-05T13:56:18.487Z',
+  bundleContentSha256: '86f6b6e08d7d75db8e23436dee9f59408467e4c5698ffc44af1efb77094ad480',
+  modelBinding: Object.freeze({ ...OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding,
+    modelBundleSha256: OWNER_WATER_LEVEL_ONLY_SUCCESSOR.integratedBundleSha256 }),
+  contractHashes: Object.freeze({ ...OWNER_CURRENT_DOMAIN_PREDECESSOR.contractHashes,
+    continuationStateContractSha256: OWNER_WATER_LEVEL_ONLY_SUCCESSOR.continuationStateContractSha256 }),
+});
+
+export const OWNER_ASSISTANT_KNOWLEDGE_SUCCESSOR = Object.freeze({
+  integratedBundleSha256: '276723e6254fd19490601c515dc8a4f031913664791c8b4b6b3b988a510f6bcb',
+  candidateBundleSha256: '89c345543b002d8392374c60dd9d8c821f433818adcd1888bae748faadaa0057',
+  continuationStateContractSha256: '260ade222a726cb73506c4e0b35c7f8d6454e351025e7a1905a0e550a9547a6c',
+});
+
+// Separate reviewed 456 closure. Never rewrite the already rendered 455 route
+// or the original authenticated 543 identity merely to refresh local metadata.
+export const OWNER_ASSISTANT_KNOWLEDGE_REFRESH_SUCCESSOR = Object.freeze({
+  integratedBundleSha256: '6f9cd52c141c21d0684aa2acc1c11948c93e32d092e14f784ad5b402cd93932d',
+  candidateBundleSha256: '68aa6115c793808fab0f12d6da18d92697dbb7606120fa05ac91a7f40fe66db7',
+  continuationStateContractSha256: '46e63e73afbb26588d2a90bf6e384b5fcc676fdade69f53f28ffcaa4bf08c272',
+});
+
+// Exact CURRENT protected-pointer metadata read on 7 October, row version 90.
+// The 548 natural producer is not the older 543 original or failed 549 S.
+// This identifies the allowed archive; normal protected B/S authentication,
+// byte/hash validation and current-pointer equality are still mandatory.
+export const OWNER_ASSISTANT_CURRENT_PREDECESSOR = Object.freeze({
+  ...OWNER_ASSISTANT_KNOWLEDGE_PREDECESSOR,
+  sourceHead: '0361e446136fdb066fdfd62c45366449c55fee56',
+  datasetId: 'rr-20261006220504-210',
+  productionReferenceAt: '2026-10-06T20:00:00.000Z',
+  generatedAt: '2026-10-06T22:05:04.878Z',
+  bundleContentSha256: '9f0081dcac83ee5372999b669aef6e2fb46c03938413e93f1260cc540c0eb92e',
+});
+
 function ownerOriginalPolicy(transition) {
   if (transition === 'EXACT_ORIGINAL_RESTORE_V1') return OWNER_CURRENT_DOMAIN_PREDECESSOR;
   if (transition === 'EXACT_WATER_LEVEL_ONLY_RESTORE_V1') return OWNER_WATER_LEVEL_ONLY_PREDECESSOR;
+  if (transition === 'EXACT_ASSISTANT_KNOWLEDGE_RESTORE_V1') return OWNER_ASSISTANT_KNOWLEDGE_PREDECESSOR;
+  if (transition === 'EXACT_ASSISTANT_CURRENT_ORIGINAL_RESTORE_V1') return OWNER_ASSISTANT_CURRENT_PREDECESSOR;
   throw new Error('Unknown exact owner technical transition');
 }
 
@@ -261,10 +306,20 @@ export function buildOwnerCurrentOriginalRestoreExpectation({
   sourceDescription, targetReferenceAt, currentBinding, currentContractHashes,
   now = new Date().toISOString(),
 } = {}) {
+  const assistantOnly = sourceDescription?.modelBinding?.modelBundleSha256
+    === OWNER_ASSISTANT_KNOWLEDGE_PREDECESSOR.modelBinding.modelBundleSha256;
+  const assistantCurrent = assistantOnly && sourceDescription?.sourceHead
+    === OWNER_ASSISTANT_CURRENT_PREDECESSOR.sourceHead;
   const waterOnly=sourceDescription?.modelBinding?.modelBundleSha256
     === OWNER_WATER_LEVEL_ONLY_PREDECESSOR.modelBinding.modelBundleSha256;
-  const original = waterOnly ? OWNER_WATER_LEVEL_ONLY_PREDECESSOR : OWNER_CURRENT_DOMAIN_PREDECESSOR;
-  const successor=waterOnly ? OWNER_WATER_LEVEL_ONLY_SUCCESSOR : OWNER_CURRENT_DOMAIN_SUCCESSOR;
+  const original = assistantCurrent ? OWNER_ASSISTANT_CURRENT_PREDECESSOR
+    : assistantOnly ? OWNER_ASSISTANT_KNOWLEDGE_PREDECESSOR
+    : waterOnly ? OWNER_WATER_LEVEL_ONLY_PREDECESSOR : OWNER_CURRENT_DOMAIN_PREDECESSOR;
+  const successor = assistantCurrent ? OWNER_ASSISTANT_KNOWLEDGE_REFRESH_SUCCESSOR
+    : assistantOnly ? (currentBinding?.modelBundleSha256
+    === OWNER_ASSISTANT_KNOWLEDGE_REFRESH_SUCCESSOR.integratedBundleSha256
+    ? OWNER_ASSISTANT_KNOWLEDGE_REFRESH_SUCCESSOR : OWNER_ASSISTANT_KNOWLEDGE_SUCCESSOR)
+    : waterOnly ? OWNER_WATER_LEVEL_ONLY_SUCCESSOR : OWNER_CURRENT_DOMAIN_SUCCESSOR;
   if (!isObject(sourceDescription)
     || sourceDescription.schemaVersion !== '1.0.0'
     || sourceDescription.kind !== 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_CURRENT_SOURCE'
@@ -288,7 +343,9 @@ export function buildOwnerCurrentOriginalRestoreExpectation({
       !== successor.continuationStateContractSha256) return null;
   const expectation = {
     ...structuredClone(original),
-    ownerCurrentDomainTransition: waterOnly ? 'EXACT_WATER_LEVEL_ONLY_RESTORE_V1' : 'EXACT_ORIGINAL_RESTORE_V1',
+    ownerCurrentDomainTransition: assistantCurrent ? 'EXACT_ASSISTANT_CURRENT_ORIGINAL_RESTORE_V1'
+      : assistantOnly ? 'EXACT_ASSISTANT_KNOWLEDGE_RESTORE_V1'
+      : waterOnly ? 'EXACT_WATER_LEVEL_ONLY_RESTORE_V1' : 'EXACT_ORIGINAL_RESTORE_V1',
     targetReferenceAt: canonicalHour(targetReferenceAt, 'Successor target'),
     minimumReferenceAt: original.productionReferenceAt,
     minimumGeneratedAt: original.generatedAt,
