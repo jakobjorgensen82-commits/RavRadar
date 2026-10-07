@@ -1,10 +1,14 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.549
+**Håndbogsversion:** 4.0.551
 
 4.0.549 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette er den lokale integrerede kandidat, ikke et nyt offentligt leveringsbevis.
+
+## 89.173 Cachegenbrug med schedulerens gyldige UTC-format
+
+4.0.551 er en separat minimal cache-rettelse fra main 4.0.549. Den normale gendannelseskalder accepterer allerede en gyldig hel UTC-time uden millisekunder, men SOURCE-kontinuitet kræver kanonisk tidsformat. Kun den validerede kaldertime kanoniseres før sammenfletning; lagrede referencer, autentificering, originale kildebeviser, central routing og hård no-loss er uændrede. Seks eksisterende CLI-varianter dækker gyldige og beskadigede beviser ved kanonisk time, schedulerformat og næste time; et manglende nyt sluttidspunkt opfindes ikke. Ejerens konkrete ja omfatter denne separate GitHub-rettelse med kontrolleret levering og derefter én vejrhentning uden overlappende writer. Den tidligere ordre om ingen ekstra hentning er erstattet alene for dette ene efterfølgende forløb. Særskilte afvisninger, den isolerede store revision og assistentkandidaten ændres ikke. Kilde-CI, sikker merge, deploy og faktisk ny cache-/vejrgeneration er endnu åbne; generisk produktionsfejlkode er ikke bevis for den skjulte indre exception. Tidligere Fur/no-loss-tab er en særskilt åben årsag. Brugerdata, Spørg RavRadar og Codex-uafhængig drift før abonnementets udløb er ikke færdige.
 
 ## 89.172 Lokal kandidat – normal DMI-supervisor stopper ved logfejl
 
