@@ -1570,6 +1570,26 @@ export function assertWaterLevelOnlyPredecessorState(state, samplingContextKey) 
   return state;
 }
 
+// Assistant-only technical successor: the released 543 original is validated
+// under its exact OLD implementation binding and the unchanged physical model.
+// This never returns a rebound initializer or repairs historical evidence.
+export function assertAssistantKnowledgePredecessorState(state, samplingContextKey) {
+  const predecessor='ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb';
+  if (!state || typeof state !== 'object' || Array.isArray(state)
+    || state.schemaVersion !== RAVSCORE_STATE_SCHEMA_VERSION
+    || state.modelBundleSha256 !== predecessor
+    || RAVSCORE_MODEL_CONTRACT_SHA256
+      !== 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b'
+    || typeof samplingContextKey !== 'string' || !samplingContextKey) {
+    throw new Error('Assistant-knowledge original has an incompatible predecessor binding');
+  }
+  const validated=validateIntegratedState(state,samplingContextKey,null,predecessor);
+  if (!validated || validated.stateV5MigrationApplied || validated.historyBoundsRepairApplied) {
+    throw new Error('Assistant-knowledge original is not an unchanged canonical predecessor state');
+  }
+  return state;
+}
+
 function integratedContext(initialState) {
   return initialState?.schemaVersion === RAVSCORE_STATE_SCHEMA_VERSION
     || initialState?.modelId === RAVSCORE_MODEL_ID;

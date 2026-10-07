@@ -1,6 +1,150 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.549
+**Håndbogsversion:** 4.0.550
+
+**Nyeste lokale releaseklargøring 7. oktober:** Assistentkandidaten 4.0.550
+indeholder 456 emner og 1368 skrevne DA/DE/EN-svar. Aktuel main 4.0.549 er
+indarbejdet, og normale assistent-/installationsmåltests består efter merge.
+Egen præcis kilde-CI, autentificerede originaler, backend og sikker offentlig
+levering mangler. Dette er ikke offentlig levering. Se 89.176.
+
+**Historisk lokal kontrol 7. oktober kl.09.16 dansk tid:** De to normale
+implementerings-bundles er genberegnet og kontrolleret for 456-emnekilden.
+Den allerede skrevne migration er uændret; ny append-only overgang og
+offentlig levering er fortsat åbne. Se 89.175.
+
+**Historisk lokal kontrol 7. oktober kl.08.36 dansk tid:** 456 emner og 1368
+skrevne sprogsvar. Faktisk offentlig AI-prøve og faglig lokal rettelse er
+adskilte beviser; offentlig levering af den nye kandidat mangler. Se 89.175.
+
+**Historisk lokal status 7. oktober kl.01.04 dansk tid:** 449 emner og 1347
+skrevne DA/DE/EN-svar; 16164 testformuleringer og 466 kontrakter.
+Præcis hjælp til zonevejr, vandstandstabellens eget dagvalg og blokering af
+turstart i ældre nødvisning består lokalt. Ingen ny offentlig levering;
+de afviste bundle-writes og installationskopi-synkronisering genforsøges ikke.
+
+**Lokal status 7. oktober kl.00.18 dansk tid:** 446 emner og 1338
+skrevne DA/DE/EN-svar; den særskilt afviste genberegning er ikke genforsøgt.
+440-emnebindingerne nedenfor er stadig historiske. Ingen offentlig levering.
+
+**Lokal status 6. oktober kl.23.20 dansk tid:** Assistentviden er udvidet til
+443 emner, men genberegning af de to tekniske implementerings-bundles er
+stoppet af sikkerhedskontrollen. Ingen write blev udført. Bindingerne
+nedenfor er de senest genberegnede 440-emnemetadata, ikke et aktuelt
+genberegnings- eller leveringsbevis for den nye lokale kandidat. Den fysiske
+scorekontrakt er uændret; den konkrete tekniske genberegning afventer afklaring.
+
+4.0.550 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og den lokale 456-emnekandidats `modelBundleSha256=6f9cd52c141c21d0684aa2acc1c11948c93e32d092e14f784ad5b402cd93932d` over 72 kanonisk normaliserede transitive implementeringsfiler.
+Dette er den lokale integrerede kandidat, ikke et nyt offentligt leveringsbevis.
+
+Den inaktive Candidate G-kompatibilitet har
+`modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
+og `modelBundleSha256=68aa6115c793808fab0f12d6da18d92697dbb7606120fa05ac91a7f40fe66db7`
+over 70 transitive filer. De normale bundlekontroller består; faktisk
+continuation er `46e63e73…`. Den tidligere 455-emnemigration er bevaret og
+dens normale målparskontrol afviser den nye kodeidentitet. Append-only overgang
+og otte forbrugere består lokalt. Aktuelt autentificeret originalrestore,
+egen kilde-CI og sikker offentlig levering er ikke verificeret.
+Gamle bindinger nedenfor er dateret historik.
+
+## 89.176 Append-only assistentbinding lokalt gennemført
+
+<div class="reader-guide"><strong>Kort fortalt:</strong> En binding er RavRadars tekniske fingeraftryk af den kode og viden, der skal høre sammen. Den nye assistent er klargjort og måltestet lokalt, men den er først leveret, når originale gemte data, backend, deploy og svar på den offentlige side er kontrolleret. Gamle originaler og migrationer må ikke omskrives for at få kontrollen til at bestå.</div><p><strong>Lokal metadata-CAS-binding for 4.0.550, ikke installeret:</strong> Den normalt beregnede continuation er <code>46e63e73…</code> for 456-emnekilden efter integration af main 4.0.549. Den nye append-only refresh og alle otte normale forbrugere matcher de præcise tre tekniske bindinger. Gamle migrationer, den fulde validator, originale B/S-identiteter, 673-kravet, 16 MiB og den eksisterende 55-sekundersgrænse bevares. Autentificeret originalrestore, egen kilde-CI og faktisk backend-/deployeffekt er åbne. Det er ikke en generel fallback.</p><p><strong>Lokal 4.0.550-kandidat, ikke offentlig genbinding:</strong> Den integrerede model er offentlig under sin eksisterende binding. Den lokale assistentkandidat har <code>modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b</code> og <code>modelBundleSha256=6f9cd52c141c21d0684aa2acc1c11948c93e32d092e14f784ad5b402cd93932d</code> over 72 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Inaktiv Candidate G-kompatibilitet har <code>modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8</code> og <code>modelBundleSha256=68aa6115c793808fab0f12d6da18d92697dbb7606120fa05ac91a7f40fe66db7</code> over 70 transitive filer. Autoriteten er <code>version.json.releaseContract.modelBindings</code>. De normale bindingskontroller består; tidligere migrationer og autentiske originaler bevares. Installeret backend, egen præcis kilde-CI, autentificeret originalrestore, kontrolleret deploy og offentlig effekt er åbne. De daterede bindinger nedenfor er historisk evidens.</p><p><strong>Lokal releaseklargøring 7. oktober:</strong> Den selvstændige assistentkandidat er versionssat til 4.0.550 gennem den normale releasevej efter lokal integration af main 4.0.549. Den afviste separate Fur-pakke er ikke indarbejdet. Egen præcis kilde-CI, autentificerede originale B/S, installeret backend, kontrolleret deploy og offentlig svarprøve mangler stadig. 4.0.550 er ikke en produktionsverificeret release, og den almindelige kode-only migrationsplan må fortsat ikke installere to nye led.</p><p>Den lokale 456-emneviden har nu en særskilt gennemgået metadata-efterfølger. Den normale bygger har oprettet og kontrolleret 20261007123000-kandidaten uden at overskrive de to tidligere migrationsfiler. Den præcise originalrute bevarer den gamle originale 543-identitet og 455-ruten; blandede bindinger og ukendte identiteter afvises. Originalforventning er ikke i sig selv autentificering af aktuelle produktionsdata.</p><p>Alle otte normale lokale bindingsforbrugere er synkroniseret og kontrolleret. Kun lokal implementeringsmetadata ændres; øvrige administratordata og fysiske kontrakter, scoreformel, geometri, privat lagring og offentlig projektion er uændrede. Ny helper er adgangsbegrænset og indgår i den normale kanoniske kontrakt. Historiske vandstands-/strøm-/CP-/Top20-definitioner, 16 MiB, 673 og de to 55-sekundersgrænser bevares. Normal originalrute-/appendtest, præcis bindingskontrol, releasekontraktens fejl-/historikværn og hele vidensmålprøven består. Eksisterende normale gates kontrollerer den nye efterfølger uden en løs hash-undtagelse.</p><p>Dette er en lokal uinstalleret kandidat, ikke SQL-installation, aktuel produktionsautentificering, kilde-CI, offentlig levering eller fungerende ny ekstern AI. Aktuelle autentificerede B/S før T, sikker levering og faktisk offentlig DA/DE/EN-, opfølgnings-, ukendt- og sikkerhedseffekt mangler. Eksisterende intermitterende kvotekontrol og konkret abonnementsuafhængighed er ikke dokumenteret afsluttet. Målet omfatter hele revisionen, brugerdata og Spørg RavRadar med dokumenteret selvstændig drift uden Codex omkring 18. oktober. Der loves ingen kontrolleret udløbsdato eller abonnementssikkerhed. Ingen nye nøgler, tjenester, planer, vejrhentning, central administratorændring, offentlig installation eller omgået afvisning. Tidligere daterede statusser bevares som historisk evidens.</p><p>Kontrol 7. oktober kl.13.11 dansk tid: En direkte read-only Supabase-aflæsning identificerer den beskyttede normale 548-original fra 6. oktober kl.22 dansk tid. En særskilt låst rute bevarer dens aktuelle originalidentitet og de ældre 543-/455-ruter. Den normale workflow-forberedelse og negative kontroller for ændret identitet, blandede bindinger og ukendt ny original består. Kildemetadata og lokal forberedelse er ikke autentificeret original-B/S-restore, installation eller offentlig levering; disse gates består uændret.</p><p>Rettelse 7. oktober kl.13.50 dansk tid: Den normale installationskontrol kræver nu hele det 46-fil-migrationsinventar og den nye refresh-hjælpers præcise definition. Den eksisterende migrationsplan afviser det gamle 45-fil-inventar og flere samtidige migrationer gennem kode-only. Den normale metadata-genlæsning afviser manglende hjælper eller ændret modelbinding, selv med grønne kontrolflag. Installations-/readiness-måltests og de normale bindingskontroller består lokalt. De historiske migrationsbytes, adgangsgrænser, 673-kravet, 16 MiB og 55-sekundersgrænsen bevares. Der er ikke udført SQLinstallation, produktionsmerge, egen kilde-CI eller offentlig levering.</p><p>Aktuel main 549 er nu indarbejdet i den isolerede assistentkandidat uden at erstatte den nye viden eller dens originale bindingsruter. Begge dokumentationsforløb og alle håndbogssectioners faktiske ændringer er bevaret; geodata følger alene main-versionen. De fire berørte normale assistent-, sprog-, installations- og metadata-genlæsningsmåltests består efter sammenlægningen. Dette er lokal integration, ikke egen kilde-CI, SQLinstallation, produktionsmerge eller offentlig levering. Autentiske aktuelle originaler, fulde gates og ny offentlig effekt kræves stadig.</p>
+
+## 89.175 Faktisk AI-prøve og præcis lokal transportforklaring
+
+<div class="reader-guide"><strong>Kort fortalt:</strong> Genophvirvling løfter materiale fra bunden; advektion flytter det med vandmassen og behøver ikke føre det mod stranden. Ét fungerende AI-svar er ikke bevis for et korrekt svar eller en ny leverance. Her er det observerede offentlige svar og den lokale faglige rettelse derfor beskrevet hver for sig.</div><p><strong>Lokal metadata-kontrol 7. oktober kl.09.16 dansk tid:</strong> De to normale bundlebyggere er kørt i korrekt rækkefølge under den allerede modtagne præcise tilladelse. Begge normale kontroller består for 456-emnekilden. Kildeinventarerne ændrer kun de to vidensfiler og afledt Candidate G-metafil; fysiske kontrakter, privat lagring og offentlig projektion er uændrede. Den allerede skrevne 455-emnemigration og dens uforanderlige forgænger bevares. Den normale successor-kontrol afviser korrekt det nye målpar. En gennemgået append-only overgang, original B/S-før-T, aktuelle main-bindinger, eksakt kildekontrol, sikker levering og ny offentlig effekt er fortsat åbne. Ingen produktionsinstallation eller omgåelse af en tidligere særskilt afvisning.</p><p><strong>Kontrol 7. oktober kl.08.36 dansk tid:</strong> To normale offentlige browserforsøg med samme transportspørgsmål gav først en fejl i kvotekontrollen kl.08.18 og derefter et faktisk fjernsvar kl.08.30. Det senere svar beskrev advektion misvisende som langvarig transport typisk mod stranden. Det første forsøg beviser ikke en fortsat afbrydelse; det andet beviser ikke den nye kandidats kvalitet eller offentlige levering. Den intermitterende kvotefejls årsag er stadig åben, og kontrollen omgås ikke.</p><p>Den lokale kandidat skelner nu genophvirvling fra transport med vandmassen, som også kan gå langs kysten eller udad. Forklaringen er kystanalogi, ikke en målt ravrute, ny transporttærskel eller ændret RavScore. <a href="https://oceanservice.noaa.gov/education/tutorial_currents/03coastal2.html">NOAA’s kyststrømsvejledning</a> er læst; <a href="https://pubs.usgs.gov/of/2005/1250/html/chapt6.html">USGS’s procesforklaring</a> er kontrolleret i det indekserede primærudsnit, da direkte aflæsning blev afvist. Ingen fuld rapportgennemgang eller overførsel af udenlandske sedimenttal påstås.</p><p>456 afgrænsede emner, 1368 skrevne DA/DE/EN-svar, 16416 kanoniske afprøvningsformuleringer, 473 lokale emnekontrakter og 111 kildeposter. Den normale måltest blev først rød på det manglende emne og består nu med variationer, opfølgninger, hele beskedens sikkerhed og bevarede ukendte/private kvalifikationer. Testformuleringer er variationer, ikke selvstændige svar. Den nye forklaring er kun lokal; offentlig AI bruger fortsat sin eksisterende binding. Ejerens tidligere assistent-bundleafklaring er modtaget, men de gemte 455-emnebindinger er ikke friske efter udvidelsen. Legitim genberegning, originalrestore, eksakt kildekontrol, kontrolleret levering og ny offentlig effekt er åbne. Ingen produktionsinstallation, konto-, brugerdata-, geometri- eller scoreformelændring.</p>
+
+## 89.171 Større Spørg RavRadar integreres med den aktuelle kode
+
+**Ny lokal udvidelse 7. oktober kl.01.04:** 449 selvstændige emner, 1347
+skrevne DA/DE/EN-svar, 16164 testformuleringer og 466 kontrakter. Tre nye
+produktvidensemner forklarer vejret ved zonens valgte prognosetidspunkt,
+vandstandstabellens eget dagvalg og blokering af turstart i ældre nødvisning.
+Før rettelsen gav den normale kalder et irrelevant svar eller en afvisning
+på alle ni sprogeksempler. Den eksisterende vidensmålprøve består uden
+netværk eller AI-kvote, inklusive 162 UI-hjælpsscenarier, 270 naturlige
+formuleringer og 24 sammensatte UI-forløb; opfølgninger og sikkerhed bevares.
+
+Zoneprognosens valgte dag er ikke vandstandstabellens eget dagvalg.
+Manglende timer er ikke nul, og de viste yderpunkter beviser ikke komplet
+heldagsdækning eller sikker vadedybde. Den ældre nødvisning er ikke aktuelt
+vejrgrundlag for en ny tur. Svarene nulstiller ikke browserdata, låser ikke
+knapper op og lover ingen tid for en ny gyldig pakke. Den konkrete private
+side undersøges ikke. Kun lokal kandidat: afviste bundle-writes, forældede
+440-emnebindinger, uafsluttet installationskopi og leveringsgates består.
+Ingen scoreformel, rettighed eller konto ændres; ikke en offentlig AI-prøve.
+
+**Ny lokal udvidelse 7. oktober kl.00.18:** 446 selvstændige emner, 1338
+skrevne DA/DE/EN-svar, 16056 testformuleringer og 463 kontrakter. Tre nye
+forklaringer handler om oprindelig kontotilknytning for ventende ture,
+browserens lokale lager og synlige lokale ture under en indlæsningsfejl.
+De er kontrolleret mod de normale konto- og observationsfunktioner.
+867 kontohjælpsscenarier består, inklusive opfølgninger, begge rækkefølger
+og bevaret sikkerhed, uden netværk, AI-kvote eller private brugerdata.
+
+Login er ikke i sig selv backup af køen. Et kontoskift overtager ikke en
+ventende tur; synlige lokale rækker beviser ikke fuld central indlæsning
+eller levering. Svarene anbefaler at bevare data, ikke at slette eller
+nulstille. Assistenten undersøger ikke brugerens konkrete private status.
+Ingen brugerfunktion, rettighed, konto eller scoreformel ændres.
+Bundleafvisningen, den allerede stillede afklaring og den uafsluttede
+statiske håndbogskopi består. Ikke en ny offentlig rettelse eller AI-prøve.
+
+<div class="reader-guide"><p>Spørg RavRadar skal give brugbar hjælp uden at opfinde aktuelle målinger, lokale fund eller adgang til dine private oplysninger. Den større viden er endnu en lokal kandidat, ikke en ny offentlig funktion.</p></div>
+
+**Ny lokal status kl.23.20:** 443 emner og 1329 skrevne DA/DE/EN-svar,
+15948 testformuleringer og 460 kontrakter. Tre nye forklaringer handler om
+kontoknappers udseende, udløbet loginlink og hvad assistenten ikke kan gøre.
+Eksisterende svar får almindelige spørgsmål om glemt kode, login uden kode,
+manglende mail, ture på ny telefon og begynderens første tur. Farve alene
+beviser ikke, at en knap er deaktiveret. Et loginlink kræver ikke en kode;
+oprettelse og login med kode kræver mindst seks tegn. Assistenten sender
+ikke mail, åbner ikke en konto og læser ikke din private log.
+
+Den normale vidensprøve består uden netværk eller AI-kvote, inklusive
+711 kontohjælpsscenarier. Hele spørgsmål om login uden kode må forklares,
+men ekstra private eller forbudte delspørgsmål må ikke bortfiltreres.
+18 særlige sikkerhedsgrænser og tre private-status-kombinationer er prøvet.
+Et forbudt tillæg efter 600 tegn må heller ikke skjules.
+
+Genberegning af de to lokale tekniske bundles blev stoppet, og ingen af
+de afviste writes blev udført. Læsebeviset viser kun de to assistentfiler som
+ændrede i begge kildeinventarer; fysiske kontrakter er uændrede. Afvisningen
+omgås ikke. De tidligere genberegnede 440-emnebindinger nedenfor er derfor
+historiske, ikke en klar 443-emnekandidat. Konkret afklaring, originalrestore,
+egen GitHub-kontrol og sikker offentlig levering mangler fortsat.
+
+Den normale synkronisering af håndbogens statiske installationskopi blev
+også stoppet under den aktive vejrhentning. Den er ikke udført. Markdown og
+webhåndbog er opdateret, men håndbogsprøven er rød på den forskellige kopi.
+RDKS og diffkontrol består. Kopien må synkroniseres i et sikkert vindue;
+kontrollen må ikke lempes, og der er ikke installeret SQL i produktion.
+
+Den 6. oktober kl.22.05 dansk tid er main 4.0.548 indarbejdet i det
+isolerede assistent-checkout. Jordrav, SEO, konto-knapper og det godkendte
+SOURCE-antalsloft bevares. Lokal viden har 440 selvstændige emner og 1320
+skrevne svar på dansk, tysk og engelsk. De 15840 afprøvningsformuleringer
+er variationer, ikke lige så mange selvstændige svar. 457 kontrakter dækker
+også afgrænsninger, sikkerhed og opfølgninger.
+
+Spørgsmål om dagens model kontra stranden, kystdele og et eksempel som
+RavScore 80 får konkrete forklaringer uden en opdigtet lokal diagnose.
+Et faktisk spørgsmål om en bestemt lav score kræver stadig stedets data.
+Den normale vidensmålprøve består efter integrationen uden netværk eller
+AI-kvote. Det er ikke bevis for fungerende ekstern AI eller offentlig levering.
+
+De tre tekniske assistentbindinger og den nye, endnu ikke installerede migration
+følger nu den faktisk integrerede kode. Otte forbrugere og syv målparents består.
+Det er fortsat kun lokal klargøring. Eksakt originalrestore, egen GitHub-kontrol,
+sikker levering og offentlig browser-/AI-kontrol er stadig åbne. Gamle
+migrationer, scoreformler, private originaler og brugerrettigheder bevares.
+Daterede statusser i de ældre kapitler gælder deres historiske faser.
+
+---
+
+*Historisk main-bidrag; nyere lokal status ovenfor gælder.*
 
 4.0.549 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
@@ -362,9 +506,687 @@ zoner i den kontrollerede 12Z-generation. Det beviser ikke privat historik
 eller vandstands-/temperaturproveniens. Tidligere kapitlers pendingstatus
 for afsluttede leverancer er historik.
 
+## 89.165 Spørg RavRadar får en kontrolleret teknisk binding – lokal klargøring
+
+<div class="reader-guide"><strong>Kort fortalt:</strong> Den større lokale viden får en kontrolleret teknisk identitet. Det ændrer ikke RavScore og er endnu ikke en offentlig levering.</div>
+
+6. oktober kl.17.41 DK: Ejeren har udtrykkeligt godkendt genberegning af
+de tre tekniske successorbindinger, nødvendige tilhørende bindingsfiler og
+en ny migration gennem det eksisterende kontrollerede workflow. Tilladelsen
+ændrer ikke scoreformel, originaler, gamle migrationer eller andre særskilt
+afviste handlinger; ingen installation under en aktiv vejrhentning.
+
+Den normale Candidate G-generering skal ske før den integrerede generering,
+fordi den integrerede kildepakke bruger Candidate G's genererede metadata.
+Forkert rækkefølge blev afvist af den eksisterende kildeoverensstemmelseskontrol.
+Ingen ny hashundtagelse, normalisering eller udeladelse af implementeringsfiler
+er indført. Den nye append-only assistentmigration bevarer historiske broer,
+den fulde validator, begrænset adgang og den etablerede 55 sekunders grænse.
+
+Begge fysiske modelkontrakter og offentlig runtimekontrakt er uændrede.
+Den lokale adminfil ændrer alene den tekniske modelpakkeidentitet. Alle
+55 migrationsfiler, inklusive den nyoprettede, er uændrede gennem den
+normale synkronisering af de otte forbrugere. Syv målrettede eksisterende
+testparents består uden fejlede, springede eller afbrudte prøver.
+
+Den nye assistentbinding og migration er kun lokale på kandidaten 4.0.543:
+ikke installeret, pushet, merget, deployet eller bevis for offentlig AI.
+437 emner, 1311 DA/DE/EN-svar, 15732 formuleringer, 454 lokale kontrakter,
+109 kilder og 95 eksterne AI-fakta er uændrede af denne tekniske klargøring.
+RDKS består for 543, og den hidtil røde håndbogsgate består nu med 430
+kapitler efter præcis opdatering af bindingstal og læsehjælp. Ny tekst har
+samme indhold i Markdown og webhåndbog; testkravene er ikke svækket.
+Eksakt GitHub-kildekontrol, autentificeret faktisk originalrestore, sikker
+levering og offentlig svarprøve mangler. Jordravs dokumentation er merged
+17.44.40 DK på adeee3f1; deres 546-produktdeploy er afsluttet. Aktiv eller
+ventende vejrhentning skal fortsat kontrolleres før egen produktionsændring.
+Den store revision, ny vandstandseffekt og GDPR-leverancer er fortsat særskilte.
+Tidligere udsagn om manglende tilladelse/genberegning er historik.
+
+<p><strong>Lokal teknisk identitet, ikke offentlig genbinding:</strong> Den integrerede pakke er <code>2ca35aa9d558e9b372661c69ee3a29262e13addc6c0af9e51cdb965e5eb5379b</code> over 72 filer; Candidate G er <code>8eb22962e8d97020524759f4b0f549e08ba3edbbf8551a30fb0aaf11b7c9b02a</code> over 70 filer. Den afledte fortsættelsesidentitet er <code>ae28410438bf218b7db18616b1f7a1970a42aab88e13f44732c16c6b57b3083e</code>. Den nye <code>20261005060000_assistant_knowledge_binding.sql</code> er klargjort, ikke installeret. Fysiske modelkontrakter er uændrede. Kapitlernes tidligere aktuelle lokale bindingstal er erstattet af disse; historiske leveringsbeviser gælder kun deres egne daterede pakker.</p>
+
+Den lokale assistentkandidat 4.0.543 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og `modelBundleSha256=2ca35aa9d558e9b372661c69ee3a29262e13addc6c0af9e51cdb965e5eb5379b` over 72 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
+Inaktiv Candidate G-kompatibilitet bruger `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
+og `modelBundleSha256=8eb22962e8d97020524759f4b0f549e08ba3edbbf8551a30fb0aaf11b7c9b02a` over 70 transitive filer.
+Continuation er `ae28410438bf218b7db18616b1f7a1970a42aab88e13f44732c16c6b57b3083e`.
+Disse er lokale bindinger, ikke offentlig genbinding eller ny vejreffekt.
+
+## 89.164 Spørg RavRadar hjælper med kort og brugerfunktioner – lokal kandidat
+
+**Tillæg 6. oktober kl.19.21:** Ét nyt afgrænset emne forklarer, at RavRadars satellitbaggrund ikke er en ravdetektor, ikke måler rav under stranden og ikke garanterer billeder af dagens forhold. Det er kontrolleret mod det normale tileLayer-/kortvalg og produktets modeladfærd, ikke en ny fysisk måleteori. En tidligere offentlig 546-afvisning er genbrugt; ingen uændret offentlig datahentning er gentaget. Normal lokal klassifikation af det konkrete spørgsmål var først rød. Efter rettelsen består 54 nye DA/DE/EN-scenarier for hele spørgsmål, variant, opfølgning, valgt zone, ingen privat adgang, ukendte dato-/stedkvalifikationer og sikkerhedsfilter. Normal prognose- og sprogkontrol består særskilt uden netkald. Nu 438 selvstændige emner, 1314 skrevne sprogsvar, 15768 kanoniske formuleringer og 455 lokale kontrakter; 109 kilder og 95 eksterne AI-fakta er uændrede. Tre nye satellitvarianter plus de tidligere tolv UI-varianter er formuleringer, ikke ekstra emner. Kun lokal 543-kandidat. Ny normal bindingsgenerering efter tilsigtet integration, eksakt kildekontrol, sikker levering og offentlig effekt er stadig nødvendige; ingen SQL/bindinger installeres under den aktive vejrhentning. Ingen revision eller ekstern AI kaldes færdig.
+
+<div class="reader-guide"><strong>Kort fortalt:</strong> Seks almindelige brugerfunktioner forklares i den lokale kandidat. Hjælpen ændrer ikke indstillinger, læser ikke private data og er endnu ikke offentlig levering.</div>
+
+6. oktober kl.15.34: Den offentlige 545-browser afviste det almindelige
+spørgsmål »Hvordan skifter jeg til satellitkort?«. Den normale lokale
+vidensparent reproducerede den manglende hjælp før rettelsen.
+
+Seks nye selvstændige DA/DE/EN-emner forklarer kortbaggrund, søgemåde,
+prognosedag, sprog, grundbog og kontaktindgang fra de verificerede normale
+UI-kaldere. Dagsvalget i Top 20 må ikke omskrives til et løfte om samme dato
+i den åbnede zone; dato og tidspunkt kontrolleres særskilt. Satellitkort er
+ikke en måling af dagens rav. Waders-valget er ikke en sikkerhedsgodkendelse.
+Svarene ændrer ikke indstillinger eller sender en kontaktmail.
+
+Kataloget har nu 437 selvstændige emner, 1311 skrevne sprogsvar,
+15732 formuleringer og 454 lokale kontrakter. De 109 kilder og 95 eksterne
+AI-fakta er uændrede i antal. Formuleringer er testvarianter, ikke nye fakta.
+108 nye UI-hjælpsscenarier består i den eksisterende normale vidensparent:
+sprog, opfølgning, valgt zone, private afgrænsninger, ingen vejrhentning og
+hele beskedens sikkerhed. De 552 kontohjælpsscenarier og den normale
+prognoseparent består fortsat. Vejr, RavScore, konti og private data er urørt.
+
+Kun lokal kandidat på 543; ikke offentlig rettelse af 545 eller bevis
+for fungerende ekstern AI. Bindingsafklaring, kendt metadata-CAS-håndbogsgate,
+egen eksakt kildekontrol, sikker levering og offentlig svarprøve er åbne.
+Ingen nye bindinger, versioner, migrationer, destinationswrites eller deploy.
+GDPR-forslag er en særskilt undersøgelse, ikke allerede leverede funktioner.
+Ejerens roadmap-fravalg består; vandstand og den store revision er særskilte.
+
+## 89.163 Spørg RavRadar forklarer de almindelige kontofunktioner – lokal kandidat
+
+<div class="reader-guide"><strong>Kort fortalt:</strong> Tilmelding, bekræftelsesmail og Log ud er nu forklaret i den lokale kandidat. Det er ikke offentlig levering, mailtest eller adgang til din private konto.</div>
+
+6. oktober kl.14.49: Tre almindelige spørgsmål blev afvist i den offentlige
+545-browser: tilmelding, hvor man ser sine ture og ravkort uden login.
+Den normale lokale kalder reproducerede manglende tilmeldingshjælp.
+Tre nye selvstændige DA/DE/EN-emner forklarer konto-oprettelse,
+bekræftelsesmail og Log ud. To eksisterende emner forstår flere naturlige
+spørgsmål uden at fjerne private statuskrav eller andre afgrænsninger.
+
+Der er nu 431 selvstændige emner, 1293 skrevne sprogsvar,
+15516 formuleringer og 448 lokale kontrakter. 109 kilder og 95 eksterne
+AI-fakta er uændrede. Formuleringer er testvarianter, ikke ekstra fakta.
+552 kontohjælpsscenarier består, inklusive opfølgninger, valgt zone,
+private afgrænsninger og hele beskedens sikkerhed. Den normale prognose-
+og sikkerhedsparent består også. Vejr, RavScore og private data er urørt.
+
+Kun lokal kandidat på 543; ikke offentlig rettelse af 545 eller
+providerbevis. Ingen mail, konto eller privat turlog er åbnet gennem testen.
+Bindingsafklaring, kendt metadata-CAS-håndbogsgate, eksakt kildekontrol,
+sikker levering og offentlig svarprøve er stadig åbne. Ingen afviste
+destinationswrites, nye bindinger, versioner, migrationer eller deploy.
+Den store revision og vandstandsrettelserne fortsætter særskilt.
+
+## 89.162 Mere præcis Spørg RavRadar – lokal udvidelse
+
+<div class="reader-guide"><strong>Kort fortalt:</strong> Spørg RavRadar udvides lokalt med fagligt kontrolleret viden og mere præcise spørgsmål. Det er ikke en ændring af RavScore eller bevis for offentlig levering; nyeste bindingsstatus står i kapitel 89.165.</div>
+
+6. oktober kl.14.13: Offentlig browserkontrol på 545 afviste både
+»Skal jeg have en konto for at bruge RavRadar?« og »Hvor finder jeg
+Mine ture og fund?«. En regression i den normale lokale vidensparent
+reproducerede den manglende kontohjælp før rettelsen.
+
+Fjorten nye selvstændige emner forklarer kontoens valgfrie rolle,
+kontofordelen, anonyme ture, tidligere gæsteindsendelser, den private
+turlog, dens 100-tursvisning, ventende indsendelser, en tom oversigt,
+loginlink, manglende mail, positionsprivatliv, efterregistrering,
+nul-fund og tidligere modelbinding. DA/DE/EN-svarene er kontrolleret
+mod de eksisterende normale UI-, login- og turkontrakter samt håndbogen.
+
+Kataloget er nu 428 selvstændige emner, 1284 skrevne sprogsvar,
+15408 formuleringer og 445 lokale kontrakter. 109 eksisterende
+kildeposter og de 95 eksternt bundne AI-fakta er uændrede i antal.
+Formuleringer er testvarianter, ikke nye fakta. Den normale vidensparent
+består med 279 nye kontohjælpsscenarier; tidligere metode-, ravstart-
+og prognosescenarier samt sprog- og sikkerhedsparents består.
+
+Svarene læser ikke en session, indbakke, leveringskø eller privat tur.
+De lover ikke, at en mail er leveret, at ventende data er gemt centralt,
+eller at anonyme ture kan overtages. Hele beskedens sikkerhedsfilter
+er uændret; følsomme login- og backendspørgsmål afvises fortsat.
+En tidligere model og efterregistreret tur får ikke ny binding eller
+dagens vejr, og oplysningerne ændrer ikke automatisk RavScore.
+
+Kun lokal kandidat på 543, ikke offentlig rettelse af 545 eller
+uafhængigt bevis for fungerende ekstern AI. Egen eksakt kildekontrol,
+bindingsafklaring, den kendte metadata-CAS-håndbogsgate, sikker levering
+og ny offentlig svarprøve er fortsat åbne. De afviste destinationer er
+urørte. Ingen ny version, migration, konto, mail, modelbinding,
+produktion, ekstra vejrhentning eller ændring af den aktive plan.
+
+6. oktober kl.13.50: En faktisk offentlig browserprøve på 544 viste,
+at »Er bølgeopløb det samme som vandstand?« fik generel bølgemodeltekst
+i stedet for at forklare forskellen. Den lokale regression reproducerede
+fejlen før rettelsen. Tolv nye kildebundne emner forklarer nu bølgeopløb,
+bølgesetup, stormovervask, vedvarende kystoversvømmelse, klitkollision,
+barriereøer, landværts barrierevandring og sandfodring samt fire konkrete
+sammenligninger. Begge rækkefølger og »er det samme som« dækkes på DA/DE/EN.
+
+Kataloget er nu 414 selvstændige emner, 1242 skrevne sprogsvar,
+14904 formuleringer, 431 lokale kontrakter og 109 kildeposter.
+De 95 eksterne AI-fakta er uændrede. Fem nye primære USGS-henvisninger
+er kontrolleret; forskningsartiklerne er læst som abstracts, og
+sedimentrapporten som myndighedens sammendrag, ikke som fulde rapporter.
+Fremmede risikogrænser, modelkoefficienter og lokale vejrtal overføres ikke.
+
+Den normale vidensparent består med 3936 metode- og kystscenarier,
+900 flere end før denne ændring, plus seks bogstavelige sammenligninger.
+Sted, dato, private målekrav og hele beskedens sikkerhed bevares.
+Prognose-, sprog- og sikkerhedsparents består også. Svarene ændrer ikke
+vandstand, geometri eller RavScore og giver ikke sikre vadegrænser.
+
+Kun lokal kandidat på 543, ikke offentlig rettelse af 544 eller bevis
+for ekstern AI. Bindingsafklaring, den kendte metadata-CAS-håndbogsgate,
+egen kildekontrol, sikker levering og ny offentlig svarprøve er åbne.
+Tidligere lokale leveringsafvisninger omgås ikke. Ingen ny version,
+migration, modelbinding, produktion eller ekstra vejrhentning.
+
+6. oktober kl.13.10: Et almindeligt »Hvor finder jeg rav?« gav lokalt
+kun et ukendt-svar. Det nye startemne giver nu konkret, afgrænset
+feltvejledning på DA/DE/EN fra RavRadars aktuelle grundbog. Et stednavn
+eller et krav om garanteret fund må ikke fjernes for at passe til svaret.
+
+Et udtrykkeligt dateret spørgsmål som »Hvor finder jeg rav i morgen?«
+bruger derimod den eksisterende validerede nationale prognose. Tolv
+naturlige DA/DE/EN-varianter er dækket af 72 nye scenarier med og uden
+valgt zone, ukendt afstand, utilgængelige data og forkert binding.
+Den almindelige vejledning er ikke en geografisk fundrangering.
+
+60 nye scenarier beskytter det generelle startemne, korte opfølgninger,
+sammensatte spørgsmål og hele beskedens sikkerhed. De normale videns-
+og prognoseparents består. Kataloget er nu 402 forskellige emner,
+1206 skrevne DA/DE/EN-svar, 14472 formuleringer og 419 lokale kontrakter.
+104 kilder og 95 eksterne AI-fakta er uændrede. Formuleringer tæller
+ikke som nye fakta; det større vidensmål er stadig åbent.
+
+Kun lokal kandidat på 543, ikke ny version eller offentlig levering.
+Score, kildeprioritet, administratorpunkter, prognosedata, modelbinding,
+kvote og privat autentificering er urørt. Den kendte metadata-CAS-
+håndbogskontrol og bindings-/leveringskontroller er fortsat åbne;
+deres gates er ikke omgået. Ingen produktion under aktiv vejrhentning.
+
+6. oktober kl.12.50: Spørg RavRadar har lokalt fået 48 nye, selvstændige
+emner om prognoser, målinger, statistik og kystprocesser. Der er nu 401
+emner og 1203 skrevne svar på dansk, tysk og engelsk. De 14436
+spørgeformuleringer er testvarianter, ikke nye fakta. 418 lokale
+kontrakter og 104 kildeposter; de 95 eksterne AI-fakta er uændrede.
+
+De nye forklaringer handler blandt andet om ensembleprognoser,
+prognoseusikkerhed, målenøjagtighed, middelværdi og median, opvelling,
+strømmålinger og sediment. 26 primære kildeposter er kontrolleret.
+Svarene skelner mellem generel faglig viden og det, RavRadar faktisk
+viser. De udleder ikke lokale tal, nye scoreinput, fundchancer eller
+sikker vadedybde. Kildekontrollen af sedimentbudgettet er afgrænset til
+myndighedens tilgængelige indekserede beskrivelse, ikke en fuld rapport.
+
+3036 nye scenarier i den eksisterende vidensparent består lokalt med
+opfølgninger, sammenligninger, ukendte afgrænsninger og helbeskedens
+sikkerhed. Den normale prognoseparent og sprogparent består også.
+46 nye prognosescenarier omfatter naturlige spørgsmål om næste ravtur
+og bevarer dato-, afstands-, tilgængeligheds- og bindingskontroller.
+
+En faktisk offentlig 544-browserprøve reproducerer stadig afvisningen
+på både »hvor er det bedste sted i morgen?« og den tilsvarende hurtigknap,
+selv om morgendagens Top20 vises. Den lokale rettelse er derfor ikke
+offentlig effekt. Der er ikke lavet ny version, modelbinding, migration,
+offentlig levering eller ekstra vejrhentning. Praktisk ekstern AI,
+bindingsafklaring, sikker levering og samlet revision er fortsat åbne.
+
+6. oktober kl.12.13: Offentlig544-browserkontrol fandt, at ravets
+glasovergangstemperatur blev besvaret som en imitation af almindeligt glas.
+En lokal regression reproducerede fejlen. Den samme fagterm kunne desuden
+ramme svaret om koldt vand. Begge eksisterende emnematchere er afgrænset
+på DA/DE/EN; et ukendt materialespørgsmål forbliver ukendt, ikke et nyt
+opfundet faktasvar. Glasimitation, koldt vand, korte opfølgninger, begge
+delspørgsmål og helbeskedens sikkerhed bevares.
+
+39 nye scenarier består i den eksisterende vidensparent; den normale
+prognoseparent består også. Katalog353/1059,12708 formuleringer og95
+AI-fakta er uændrede. Ingen nye modelbindinger, migrationer eller version.
+Den levende offentlige Edge svarede med204/200 og dens aktuelle binding
+på én relevant forskningsforespørgsel, men svaret var en domæneafvisning.
+Det er netværks-/klientbevis, ikke uafhængig providerkvittering eller
+fagligt AI-kvalitetsbevis. Den lokale95-faktakandidat er ikke udgivet.
+
+Kun lokal rettelse; bindingsafklaring, sikker levering og samlet revision
+er fortsat åbne. Afviste destinationswrites gentages ikke. Den naturlige
+vejrhentning er stadig aktiv; ingen merge, ekstra kørsel eller deploy.
+Detaljeret browser-/kørselsevidens ligger kun i privat checkpoint.
+
+6. oktober kl.10.09: Sammenligningen af bølgehøjde og vandstand
+forstår nu begge rækkefølger på DA/DE/EN gennem den eksisterende
+sammenligningsfactory. Svaret starter med forskellen, ikke et nej til
+en påstand brugeren ikke fremsatte. Hele spørgsmålet skal passe;
+sted, dato, tal eller et tredje emne fjernes ikke. Reference-, dybde-
+og sikkerhedsforbehold bevares også ved opfølgning og flere spørgsmål.
+
+En faktisk offentlig baseline gav bølgemodeltekst i stedet for denne
+forklaring; omvendt rækkefølge var desuden konkret RED i den lokale caller.
+48 nye scenarier og tre berørte normale assistentparents består lokalt.
+Katalog353/1059 og95 AI-fakta er uændrede. Ingen ekstern AI-verifikation,
+ny version eller offentlig levering; bindings-/leveringsgates står åbne.
+
+6. oktober kl.04.43: Tolv nye emner forklarer regnsandsynlighed,
+nedbørsmængde/-intensitet, lokale regnbyger, skydække, vejrfronter og
+klimanormaler samt forskellen på regnprocent/mængde og vejr/klima.
+Ti offentlige myndighedskilder er kontrolleret direkte. Kataloget er nu
+353 selvstændige emner, 1059 skrevne sprogsvar, 12708 formuleringer,
+370 kontrakter og 78 kilder; 103 guideemner og uændrede95 AI-fakta.
+36 nye sprogsvar er ikke tusindvis af nye selvstændige svar.
+
+En konkret normalcaller-prøve gav forkert vandstandsviden i anden del af
+et regnspørgsmål. Betyder/Giver, Bedeutet/Bringt og Does bevares nu som
+selvstændige spørgsmål, også efter punktum. 318 nye optalte scenarier og
+de tidligere314 prognose-/afgrænsningsscenarier består. Usikkerhed,
+ukendte lokale tal, privacy og hele beskedens sikkerhedsafvisning består.
+Ingen ny regnprognose, skymåling, lokal frontankomst eller scoreændring.
+Kun lokal dirty543; ingen CI, offentlig levering eller praktisk AI-bevis.
+Den samlede opgave og nødvendige særskilte afklaringer er stadig åbne.
+
+6. oktober kl.04.24: En direkte forespørgsel om bedste sted højst 10 km
+væk gav konkret en fri landsrangering uden at bruge afstanden. Den normale
+områdesvarvej kontrollerer nu hele det tilbageværende spørgsmål efter
+kendte dato-, søgemåde- og kystkvalifikatorer. Afstand, køretid, navngivet
+sted, butik og fundgaranti må ikke forsvinde. Den nye DA/DE/EN-forklaring
+beskriver den uunderstøttede afgrænsning, ikke en mangel i vejrdata.
+
+Et dateret spørgsmål om rav på vestkysten til waders blev desuden til en
+generel kystforklaring. Eksplicit dateret best-place bruger nu den normale
+prognosevej før generel feltviden. Udaterede feltspørgsmål bevarer deres
+kildebundne svar. Tysk “wo sollte” bevares også efter et udstyrsspørgsmål.
+144 nye optalte scenarier og de tre berørte normale assistentparents består.
+Tidligere 80+90 og nye 144 er 314 scenarier, ikke 314 skrevne svar.
+341 emner, 1023 sprogsvar, 12276 formuleringer, 68 kilder og 95 AI-fakta
+består; model, datagates og provider er uændrede. Kun lokal dirty 543,
+ingen CI, offentlig levering eller praktisk AI-bevis. Afviste writes,
+nødvendige afklaringer, Fur, privat syvzonehistorik og storrevisionen er åbne.
+
+6. oktober kl.04.04: Spørgsmål med »den/am/on« foran en dato når nu
+den eksisterende prognoseparser i stedet for at blive unknown. Komplet
+ISO-dato og dag/måned/år bevares; ugedagsnavne deles med parseren.
+90 nye optalte scenarier består sammen med de tidligere80 og den
+berørte lokalvidensparent. Kalenderberegning og national rangering er
+uændrede; klassifikation er ikke bekræftelse af en gyldig dato.
+
+Ugyldige datoer, tocifrede år og dato-/ugekonflikter giver ingen opfundet
+liste. Korte punktumdatoer kræver en kendt datokvalifikator, så en decimal
+ikke bliver en dato. Søgemåde, kyst, afstand, tid, modelbinding og hele
+beskedens sikkerhedsafvisning bevares. Udstyr først fungerer også.
+
+170 afgrænsede normalcaller-scenarier er ikke170 skrevne svar. Stadig341
+emner,1023 sprogsvar,12276 formuleringer,68 kilder og95 AI-fakta.
+Kun lokal dirty543; ingen CI, offentlig levering eller praktisk AI-bevis.
+Afviste bindingswrites, nødvendige afklaringer og storrevisionen er åbne.
+
+6. oktober kl.03.54: Daterede turspørgsmål behøver ikke ordet »bedst«.
+»Hvilke strande ser lovende ud i morgen?« og tilsvarende tyske/engelske
+spørgsmål bruger nu den samme validerede nationale prognose. En konkret
+unknown-fejl og en separat fejl med udstyr først er reproduceret og
+rettet i den normale caller. Selvstændige spørgsmål virker i begge
+rækkefølger; sikkerhedsafvisninger gælder fortsat hele beskeden.
+
+Kun kendte datoer, søgemåder, kysttyper og deres indbyrdes bindeord fjernes
+ved klassifikation. Modstridende ønsker afvises af den normale parser.
+Afstande, butikker og fundgarantier må ikke blive en fri landsrangering.
+Forkert binding, manglende rækker og unavailable giver ingen opfundet liste.
+80 optalte scenarier samt begge berørte normale assistentparents består.
+
+Dette er bedre spørgsmålsforståelse, ikke80 nye skrevne svar.341 emner,
+1023 sprogsvar,12276 formuleringer,358 kontrakter,68 kilder og95 AI-fakta
+består. Kun lokal dirty543, ingen CI eller offentlig levering. Praktisk
+AI-/browserkontrol, nødvendig bindingsafklaring og storrevisionen er åbne.
+Ingen ny vejrhentning, installation, model-, geometri- eller scoreændring.
+
+6. oktober kl.03.35: AI-kalderen får nu32 allerede kontrollerede guide-
+forklaringer om havets lag, vejr, bølger og konkrete begrebsforskelle.
+Alle63 tidligere fakta bevares fuldt; nu95 unikke offentlige faktareferencer
+med samme tekster og forbehold som den lokale guide. Det er ikke32 nye
+emner eller svar;341 emner,1023 sprogsvar og12276 formuleringer består.
+96 hele DA/DE/EN-svar,192 ugyldige referenceprøver og alle32 prompttekster
+er dækket. Fire berørte normale assistentparents består samlet lokalt;
+gamle, manglende og ukendte faktabindinger afvises fortsat.
+
+Model, kvoter, syv sekunders timeout og kontekstprivacy er uændrede.
+Eksempelprompten vokser fra22008 til35596 UTF-8-byte, ikke målte tokens.
+Faktisk AI-kvalitet, svartid og neuronforbrug skal måles før sikker levering;
+et officielt kontekstvindue er ikke bevis. Kun lokal dirty543, ingen
+installation eller offentlig levering. Afviste private bindingswrites,
+nødvendige afklaringer og den store revision er fortsat åbne.
+De tidligere63-statusser nedenfor beskriver deres daværende tidspunkt.
+
+Seks nye sammenligninger forklarer forskellen mellem middelvind og vindstød,
+vindstød og vindbyge, sø- og landbrise, temperatur- og saltspringlag,
+relativ luftfugtighed og dugpunkt samt havbølgers længde og højde.
+Tre almindelige spørgsmål blev konkret afvist før rettelsen. Hele parret
+genkendes nu i begge rækkefølger, også i venlige ønsker og på DA/DE/EN.
+Sted, dato og præcise målekrav fjernes ikke for at få et generelt svar.
+
+»? og Hvad ...« kunne miste det andet svar. Forbindelsesordet fjernes nu
+kun foran en senere selvstændig spørgende del, ikke foran et koordineret
+begreb med sted eller dato.219 nye scenarier og alle tre berørte normale
+assistentparents består uden netværk.18 skrevne sprogsvar er ikke216
+nye svar fra formuleringer. Nu341 emner,1023 sprogsvar,12276 formuleringer,
+358 emnekontrakter,91 guideemner og68 kilder;63 AI-fakta er uændrede.
+Det er lokal præcision, ikke offentlig levering eller fungerende ekstern
+AI. Prognoser, score og sikkerhedsforbehold bevares; afviste bindingswrites,
+nødvendige konkrete afklaringer og den store revision er fortsat åbne.
+
+Tolv nye vejrforklaringer dækker middelvind, vindstød, vindbyge, Beaufort,
+sø- og landbrise, trykgradient, isobar, barometer, relativ luftfugtighed,
+dugpunkt og tåge. Ni officielle primærkilder er kontrolleret. Observations-
+midling er ikke automatisk modelmidling; tåge er ikke vandets klarhed, og
+fugtighedsprocent er ikke regnsandsynlighed. Ingen nye lokale vejrtal eller
+sikker vadegrænse beregnes.234 scenarier om korte, venlige, opfølgende,
+sammensatte og ukendte spørgsmål består i den normale caller uden netværk.
+Tre berørte assistentparents er grønne lokalt. Nu335 emner,1005 skrevne
+sprogsvar,12060 formuleringer,352 emnekontrakter,85 guideemner og68 kilder.
+36 nye DA/DE/EN-svar er ikke432 nye svar fra formuleringer, og1005 sprogsvar
+er ikke1005 selvstændige emner.63 AI-fakta og deres binding er uændrede.
+Lokal udvidelse er ikke offentlig levering eller bevis for fungerende AI.
+Tusindvis af ægte svar og sikker levering er fortsat åbne; afviste bindings-
+writes, kendte røde integritetsprøver og nødvendige afklaringer omgås ikke.
+
+Otte nye marine forklaringer skelner batymetri fra vandstand, estuarier
+fra automatisk fuld blanding, brakvand fra ferskvand og temperatur-, salt-
+og tæthedsspringlag fra hinanden. Lagdeling og blandingslag forklares uden
+opfundne lokale profiler, dybder, strømretninger eller ravruter. Fem
+NOAA/PMEL-kilder er kontrolleret; dybvandsgrænser overføres ikke til stranden.
+En temperatur er ikke en lodret profil, og en strømpil er stadig et lagmiddel.
+96 direkte,24 opfølgende,33 negative,6 sammensatte og3 sikkerhedsprøver
+består i den normale caller uden netværk. Tre berørte assistentparents er
+grønne lokalt. Nu323 emner,969 skrevne sprogsvar,11628 formuleringer,
+340 emnekontrakter,73 guideemner og59 kilder. Det er24 nye DA/DE/EN-svar,
+ikke288 nye svar fra formuleringer.63 AI-fakta og deres binding er uændrede.
+Ingen nye vejrtal, score, kildevalg, offentlig levering eller ekstern AI-
+verifikation. Tusindvis af ægte svar og sikker levering er stadig åbne;
+afviste bindingswrites og den kendte røde integritetsprøve omgås ikke.
+
+Vandstandsundtagelsen er offentlig i 4.0.543 siden 5. oktober kl.06.04 dansk
+tid. Kun vandstand fra dkss_lf er åbnet på de syv kystzoner. Strøm, temperatur
+og strømreglens hukommelse er stadig udelukket. Den nye16Z-generation er
+kontrolleret over alle210 zoner,673 dele og118 timer. De syv zoner har nul
+offentlig dkss_lf-strøm og alle fem numeriske vejrfelter i alle deres timer.
+National feltpresence er99,109729%; vandstand99,637344%. De resterende288
+vandstandshuller ligger i12 haletimer; to hashbundne endepunkter mangler de
+samme24 Limfjordsdele, også ved Fur. Identiteterne i de ti mellemtimer og
+native kilde-/routingårsag er ikke målt. De114 fælles timer har ingen tab i
+de fem familier. Vandstands-/temperaturproveniens og privat48h-hukommelse er
+ikke bevist af denne offentlige kontrol. Tidligere forberedelse er historik.
+
+Den særskilte reservekørettelse PR520 er merged efter eksakt kildekontrol og
+fornyede writer-/indholdsgates. Første kode-only forsøg fik ingen GitHub-runner
+og udførte ingen trin. Samme run blev genkørt én gang efter fornyede gates;
+også dette forsøg fik ingen runner til terminalkontrol. Bygning og deploy
+blev sprunget over, og ingen tredje genkørsel er startet. Den naturlige
+scheduler-watchdog sluttede kl.22.34 DK uden runner og uden inspect-trin.
+En ny almindelig vejrhentning blev ikke startet; senest gyldige data bevares.
+Den nye dækningsstigning kom før merge
+og må ikke tilskrives kørettelsen. Fur og den samlede revision er stadig åbne.
+
+Naturlige definitionsspørgsmål om signifikant bølgehøjde, peakperiode og
+minusvandstand var ikke dækket af de tidligere formuleringer. Tre eksisterende
+emner er nu rettet på DA/DE/EN: forklaringen kræver ikke særlige ord som
+største eller gennemsnit og starter ikke med et uvedkommende nej. Tolv nye
+spørgsmål og ni negative live-/andetfelt-prøver består gennem den normale
+matcher og caller. Ingen nye fakta eller AI-kald; det er lokal præcision,
+ikke offentlig levering. De allerede afviste hashwrites gentages ikke.
+
+Spørg RavRadar forbedres fortsat lokalt: 341 kildebundne emner, 1023 svar på
+dansk, tysk og engelsk samt 12276 testformuleringer. Formuleringer er ikke nye
+fakta. Den lokale AI-kandidat har 63 fakta; udvidelsen er endnu ikke udgivet.
+48 nye feltbeslutninger og 91 forskellige produkt-, hav- og vejrforklaringer er tilføjet.
+Målet om tusindvis af selvstændige svar er stadig åbent.
+
+Guidens »til waders«, »zum Waten« og »for waders« kunne vælge
+strandlisten, hvis strand var valgt i UI. Den konkrete fejl er reproduceret:
+90 fra strand blev vist i stedet for waders81/69. Normal parser og venlig
+klassifikation deler nu et afgrænset søgemådeordforråd; eksplicit måde
+vinder over UI-valget, mens »en strand« alene stadig blot er en destination.
+Dato, kystfilter og dansk tidsrum bevares.39 positive,18 negative,3
+sammensatte og3 sikkerhedsprøver er scenarier i én eksisterende parent.
+Tre berørte assistentprøver består lokalt; ingen AI-kald eller nye fakta.
+315/945/11340,54 kilder og63 AI-fakta er uændrede. Det er ikke offentlig
+levering, browser-/providerkvalitet eller ny bindingsautoritet.
+
+Seks nye bølgeforklaringer skelner top og dal, havbølgelængde,
+stejlhed, amplitude, bølgegrupper og dybvandsdispersion. Tre officielle
+primærkilder er kontrolleret. De18 nye DA/DE/EN-svar giver ikke præcis
+lokal ankomst, næste bølges højde, en syvendebølge-regel eller sikkerhed.
+En idealiseret amplitude er ikke en målt næste bølge. Et spørgsmål om
+havbølger ved Hals i morgen blev konkret forvekslet med ravlygte og395 nm;
+den normale matcher/caller er rettet, mens faktiske lygtespørgsmål bevares.
+72 direkte spørgsmål,18 opfølgninger,27 negative,6 sammensatte og3
+sikkerhedsprøver samt3 UV-negative og9 lygtebevaringsprøver består lokalt.
+315 emner,945 sprogsvar og11340 formuleringer er ikke11340 forskellige
+svar;54 kilder og65 prognoseforklaringer. AI-rækken forbliver63 fakta.
+Ingen ændring af prognoser, score, historik eller kildevalg. Offentlig
+levering og faktisk ekstern AI-kvalitet er fortsat åbne; de afviste
+bindingsændringer og kendte røde integritetsprøver omgås ikke.
+
+Korte og venlige spørgsmål om tidevand forstås nu også uden en bestemt
+spørgeform: fx »tidevandsforskel?«, »Kan du forklare en seiche?« og
+tilsvarende tysk og engelsk. Svaret bruger den samme kildebundne viden,
+med alle forbehold. Sted, dato og præcise målekrav må ikke fjernes for at
+passe spørgsmålet til en generel forklaring. Begreber med og/und/and
+holdes samlet, mens to selvstændige spørgsmål begge besvares.
+156 positive,48 negative,6 sammensatte og3 sikkerhedsprøver er lokale
+scenarier i én eksisterende prøve, ikke nye emner eller fakta. De tre
+berørte assistentprøver består lokalt; offentlig levering og AI-kvalitet
+er fortsat åbne. Ingen ændring af prognoser, historik eller kildevalg.
+
+Den lokale AI-kandidat får nu de samme tolv fulde tidevandsforklaringer
+som den kontrollerede vidensbank. De oprindelige51 fakta er bevaret:
+63 unikke offentlige fakta følger samme checksum i JSON, Edge og klient.
+Et svar fra en gammel eller ukendt vidensversion accepteres ikke.
+36 fulde DA/DE/EN-svar og72 negative referenceprøver består lokal
+svarvalidering; fire berørte assistentprøver består. Det er ikke en
+faktisk ekstern AI-prøve eller ny offentlig levering. Den normale prompt
+har28192 indholdsbytes i samme syntetiske forespørgsel; tokens, neuroner,
+forbrug og Free-fremskrivning er ikke målt. Model, kvoter, private bindinger,
+aktivering og kontekst er uændrede. Tusindvis af ægte svar og AI-kvalitet
+er fortsat åbne. Original-/successor- og leveringskontroller skal bestå;
+ingen afvist bindingsændring eller kendt rød prøve omgås.
+
+Tolv nye tidevands- og vandstandsforklaringer dækker højdeforskel,
+spring-/nipflod, perigeisk tidevand, tidevandsdøgn, ulige højvander,
+bugtform, flod-/ebbstrøm, lufttryk, fralandsvind, stormbidrag kontra
+samlet niveau og seiche. Ni NOAA-primærkilder er kontrolleret; eksisterende
+DMI-vejledning bruges kun til kvalitative vejr-/havforhold. Det er36 nye
+skrevne DA/DE/EN-svar, ikke432 nye svar fra formuleringerne. Nu51 kildeposter.
+Begreberne giver ikke lokale højder, tidevandstider, ukendte målekonstanter,
+Fur-årsag eller sikker vadning. Selvberegnet tryk- eller stormbidrag lægges
+ikke oven i en samlet prognose.72 direkte spørgsmål og36 opfølgninger,
+12 negative,3 sikkerheds- og6 sammensatte prøver består i normal caller
+uden netværk. Tre berørte runtimeparents er afprøvet lokalt. Der er stadig
+Før AI-overførslen var der51 fakta; offentlig AI-kvalitet, ægte svar og levering
+er åbne. Afvist bindingswrite gentages ikke, og ældre RAM-hashes er forældede.
+
+Seks nye gemmologiske svar skelner brydningsindeks fra massefylde og alder,
+den forenklede C10H16O-formel fra en præcis universel molekylformel,
+root amber fra en fossil rod og en cabochon fra facetslibning. Karat her
+er masse:1 ct er0,2 gram, ikke guldrenhed. Et navn, slibning eller tal
+beviser ikke ægthed. GIA's afgrænsede materiale-, slibe- og metrologikilder
+er kontrolleret sammen med den eksisterende ravspektroskopi. Tre nye
+kildeposter giver42 i alt;18 skrevne DA/DE/EN-svar og18 opfølgninger er
+måltestet i normal caller.17 negative prøver holder ukendte målinger,
+priser, slibevinkler, andre materialer og livevejr ude af disse svar;
+helbeskedens sikkerhed og begge delspørgsmål består uden netværk.
+51 AI-fakta er uændrede. Ingen ny binding, migration eller offentlig effekt.
+
+Otte nye materialesvar skelner ultralyd og damp fra skånsom rengøring,
+ridsehårdhed fra brudsejhed, naturlig mørkning fra ægthedsbevis, solskiver
+fra fossile blomster og trykklaring fra naturlig klarhed. Et tydeligt insekt
+beviser hverken bevaret blødt væv eller brugbart dinosaur-DNA. GIA's
+materialevejledning og Natural History Museums forskerforklaring er læst;
+fire nye kildeposter giver39 i alt.24 skrevne DA/DE/EN-svar, emneopfølgninger,
+sammensatte spørgsmål og negative andre-materiale/live-/sikkerhedsprøver
+består normal caller uden netværk. Ukendte DNA-sekvenser eller træartsanalyser
+får ikke et påstået Jurassic Park-svar. Der er ingen behandlingsopskrift,
+ny AI-faktabank, binding, migration, udgivelse eller faktisk offentlig effekt.
+
+Venlige ønsker som »Kan du anbefale en strand i morgen?« læser lokalt
+den samme validerede nationale prognose på DA/DE/EN. Kystfilter og eksplicit
+søgemåde følger normal parser; »en strand« ændrer ikke den valgte måde.
+Afstand til en by, fundgaranti og modstridende ønsker må ikke blive til
+ufiltreret dagsrangering. Et nationalt tidsinterval kræver stadig anden
+evidens end daglig Top20. Prognose og udstyr besvares særskilt i begge
+rækkefølger. En tysk forklaringsregression er fundet og rettet; hele den
+eksisterende vidensbank består igen.93 nye scenarier i én eksisterende
+parent er ikke93 nye tests eller fakta. Tre berørte runtimeparents er
+afprøvet;297/891/10692 og42 kilder/51 AI-fakta er uændrede. Lokal præcision,
+ikke offentlig levering eller ny tilladelse til allerede afviste hashwrites.
+
+Et naturligt rejseforslag som »Hvor ville du tage hen i morgen?« læser nu
+den validerede nationale prognose på DA/DE/EN. Dato plus et helt afgrænset
+rejseønske kræves; butikker, opskylsforklaring og uunderstøttet nærhed til
+en by må ikke blive til ufiltreret landsrangering. Overmorgen og ISO-datoer
+bevarer den normale kalender. Prognose og udstyr besvares særskilt i begge
+rækkefølger, også med og/und/and.15 direkte,36 yderligere sammensatte,
+9 negative og3 modstridende dato-prøver bevarer originaldata og remoteCalls0.
+Tre berørte parents består over to faktiske testkørsler. Emne-/svartal og
+AI-fakta er uændrede. Det er lokal spørgeforståelse, ikke offentlig levering,
+fuld geografisk forståelse eller ny tilladelse til tekniske bindingswrites.
+
+Tolv nye planlægningsforklaringer viser hvordan man spørger om steder,
+valgt zones bedste time, dato, søgemåde, kystfilter og et tidsrum. Weekend,
+dagsrangering kontra formiddag, Top20-fravær, alternative tider, sprog og
+programversion kontra prognosetid har hver sin afgrænsning.36 særskilte
+DA/DE/EN-spørgsmål og opfølgninger samt12 live-negative prøver er måltestet
+gennem normal caller uden AI. Vejledning må ikke erstatte et konkret
+prognosesvar. Ingen nye kilder eller AI-fakta og ingen offentlig levering.
+
+Et spørgsmål om bedste sted og et selvstændigt spørgsmål om hvilket udstyr
+man skal bruge besvares nu begge på DA/DE/EN. Komma er ikke nødvendigt;
+selvstændige sætninger bevares også i omvendt rækkefølge. Normal caller
+læser den validerede nationale prognose og det eksisterende ravkese-svar.
+Indlejrede stedled og koordinerede beskrivelser må ikke opdeles som nye
+spørgsmål. Sikkerhedsafvisning af hele beskeden kommer stadig først.
+Spørgsmålsopdeling er ikke fuld pronomenforståelse. Kun lokal præcision,
+ikke nye fakta, offentlig levering eller ny bindingsautoritet.
+
+En snæver opfølgning som »Hvad er rav? Hvor kommer det fra?« kan nu bruge
+det eksisterende oprindelsessvar på DA/DE/EN. Henvisningen gælder kun
+umiddelbart efter en entydig ravdefinition i samme besked og gemmes ikke.
+Emneskift rydder henvisningen; datoer og uafklarede spørgsmål bliver ikke
+gæt om aktuelle prognoser. Det opretter ikke et nyt emne-ID eller nye fakta.
+Et separat ukendt ravfagligt spørgsmål bevares og kan bruge det eksisterende
+afgrænsede AI-kald uden den kendte definition, henvisning eller historik.
+Netværksmocks beviser rute og dataminimering, ikke fungerende offentlig AI.
+Lokal præcision og teknisk levering er fortsat forskellige beviser.
+
+Seks nye prognoseforklaringer skelner signifikant højde fra største bølge,
+peakperiode fra middel og stormvarighed, dønning fra vindsø, negativ vandstand
+fra dybde, m/s fra km/t samt bølgehøjde fra vandstand. DMI og NOAA/NDBC/NWS
+underbygger felternes betydning; liveprognosespørgsmål bliver ikke generelle
+definitioner. Normale svar og opfølgninger består måltesten uden AI-kald.
+Denne tidligere udvidelse nåede42 kildeposter; de51 AI-fakta er uændrede. Nye kodedeltaer gør gamle
+RAM-bindingsprojektioner forældede. Den afviste successorwrite gentages ikke.
+Afklaring og kontrolleret levering mangler stadig.
+
+Offentlig afprøvning fandt, at morgendagens rangering blev afvist trods
+gyldig Top20. Normal lokal caller læser nu den validerede nationale prognose,
+ikke kun en valgt zones detaljefil. Dato, søgemåde og områderangering følger
+samme data som UI. Områdescore og bedste lokale score vises særskilt;
+historikforbehold består. Strand, overmorgen, ugedage og datoer er måltestet.
+Grundudstyret er waders og ravkese. En lokal browserprøve på faktisk offentlig
+prognose viser konkrete steder, men er ikke et offentligt assistentdeploy.
+En tidligere forskningsprøve endte i fallback. En ny sjælden prøve gav
+synligt et AI-svar, men svaret opfandt krystallag og en transportforklaring.
+Det er ikke faglig AI-verifikation. To kildebundne emner forklarer nu
+anisotropiens grænser og optiske/molekylære sammenhænge uden opfundne tal.
+Rav er amorft, og en optisk måling beviser ikke en strandtransportretning.
+Den lokale AI-instruktion er tilsvarende afgrænset. De51 AI-fakta er uændrede.
+Den offentlige morgenfejl består; naturlige DA/DE/EN-planlægningsspørgsmål
+og »molekylære« fejltolket som mole er rettet lokalt. Fire relevante normale
+parents består. Sikkerhedskontrollen afviste opdatering af tre lokale
+successorhashes, så teknisk bindingsafklaring og sikker levering mangler.
+Ingen afvisning er omgået, og ingen nye bindinger eller migrationer er skrevet.
+
+Korte kalenderdatoer som2/9 og tysk am2.9. bruger lokalt dansk kalenderdag,
+og december til januar håndteres som årsskifte. Forkert årslængde, ugyldig
+eller modstridende dato må ikke tavst blive til i dag. Konkrete fejl blev
+reproduceret før rettelsen; målprøver dækker årsskifte, dansk/UTC-dag og
+begge sommertidsgrænser. To berørte parents består. Regionale ønsker er
+stadig under udvikling; disse prøver er ikke offentlig levering.
+
+Et spørgsmål om bedste tidspunkt kl.11–13 blev fejlagtigt besvaret med
+kl.14. Normal lokal caller respekterer nu eksplicitte intervaller på dansk,
+tysk og engelsk, i dansk lokal tid. Minutter og inklusiv sluttid understøttes.
+Valget følger de eksisterende gyldige scoretimer og normale tidsprioriteter.
+Ugyldige eller modstridende tider, natinterval over to dage og andre tidszoner
+skal afklares, ikke tavst blive til hele dagen. Tomt interval betyder ikke
+manglende prognoser resten af dagen. Begge sommertidsgrænser er måltestet:
+den springede time opfindes ikke, og de gentagne timer forbliver gyldige.
+Spørgsmålene ændrer ikke originaldata eller bruger AI-kvote.
+En daglig national Top20 kan ikke bruges som komplet intervalrangering.
+Ved et sådant ønske forklarer svaret forskellen og foreslår en konkret zone,
+hvor det lokale interval kan undersøges. De to berørte normale parents er
+grønne; faktisk offentlig svar- og AI-effekt mangler fortsat.
+
+Et geografisk spørgsmål om vestkysten blev konkret besvaret med østkystens
+højeste række. Fejlen er reproduceret og rettet i den normale caller.
+Vestkyst, østkyst og Limfjord på DA/DE/EN bruger zonernes centralt gemte
+kysttype efter validering af hele den nationale liste. En ugyldig række
+på en anden kyst må ikke skjules af filteret. Dato og strand-/wadersvalg
+bevares, og valgt kortzone må ikke ændre den nationale liste.
+En filtreret Top20 er ikke en komplet regional oversigt. Mangler kysten
+i Top20, skal svaret forklare det og foreslå en konkret zone, ikke påstå
+at hele kysten mangler prognoser. To berørte målparents består lokalt.
+Navngivne regioner, afstandssøgning og national intervalrangering er åbne.
+
+Ejeren har fravalgt footerens forklaring om ukendt beregningsalder. Den
+offentlige DA/DE/EN-gren viser derfor kun prognosetidspunktet. Metadata, faktisk
+datavalidering, nødvisning og beskeder ved manglende data bevares. Rettelsen
+er udskilt til PR519 på 543, ikke koblet til den øvrige lokale assistentkode.
+PR519 er merged, og kontrolleret kode-only deploy sluttede kl.17.32 dansk
+tid5. oktober. Offentlige filer og de faktiske sprog-URL'er er kontrolleret;
+samme vejrdatasæt er genbrugt uden ændring. En senere offentlig browserprøve
+viser den nye footer uden den fravalgte tekst. Den særskilte footerbeslutning
+står i kapitel89.161.
+
+Afprøvning på hjemmesiden fandt forkert emnematching og svarpræcision.
+Et spørgsmål om permittivitet må ikke besvares med statisk elektricitet.
+Rav er amorft, ikke et ordnet krystalgitter; polymerisering og krydsbinding
+kan danne et molekylært netværk. Et spørgsmål om høj score og farlig strøm
+skal have svar på begge dele. RavScore er fortsat ikke en sikkerhedsvurdering.
+
+GIA's undervisning om amorfe materialer og den kildebundne ravlitteratur
+underbygger disse afgrænsninger. Et beslægtet faktum er ikke direkte bevis
+for en ukendt materialekonstant, alder eller forskningspåstand. Ved
+manglende grundlag skal svaret sige det, ikke opfinde kilder eller vejrtal.
+Korte opfølgninger bevarer fagligt skrevne forbehold. Credentials, private
+data og uvedkommende forespørgsler afvises stadig før lokal matching og AI.
+
+En kort opfølgning kan stå sammen med et nyt spørgsmål. Begge dele skal
+besvares, især når den nye del handler om sikkerhed. Delene behandles i
+rækkefølge: efter et nyt lokalt emne handler »forklar det kort« om det nye
+emne. Kun et offentligt emne-id bruges lokalt, ikke en privat samtale eller
+en samtale sendt til AI. Ukendt ravviden bruger højst ét begrænset AI-kald;
+localOnly og sikkerhedsafvisningen gælder hele beskeden. Denne callerrettelse
+er måltestet lokalt og endnu ikke offentligt leveret.
+
+Lokale målprøver består. Den normale tekniske overgang validerer en original
+543-modeltilstand under dens egen binding og bevarer begge modeltilstandes
+historik og øvrige felter. Det er ikke nulstilling, genberegning eller en ny
+scoreformel. Ny append-only databaseovergang, eksakt kildekontrol, kontrolleret
+udgivelse og ny offentlig afprøvning af AI og svar mangler. Den gamle
+541-originalhistorik og anvendte migrationer må ikke ændres. Fur-årsag,
+bevarelse af gyldige timer og den store vejrhentningsrevision er stadig åbne.
+Se DEC-0088, DEC-0291 og DEC-0292.
+
+Den nye tekniske overgang forberedes med en særskilt lokal generator, som
+bevarer tidligere migrationer, historiske broer, rettigheder og 55 sekunders
+gemmegrænse. En syntetisk målprøve er grøn, men forældede bindingsfiler afvises
+fortsat, og ingen ny migration er skrevet eller installeret. Den faktiske
+543-original fra den normale vejrhentning har nu en særskilt eksakt politik
+i normal restore og second-restore. Manglende overgang er reproduceret og
+målrettet rettet; en deduplicerende footerconsumer eller dirty lokal kode
+kan ikke omdøbes til original. CLI kræver samme gennemgåede successorhashes.
+Originalen og alle slutkontroller skal fornyes før release; testen er ikke
+SQL-runtime eller offentlig effekt. Den aktive metadata-CAS-gate er åben.
+
 ## 89.161 Footerens prognosetidspunkt
 
 Kort fortalt: Footerens prognosetidspunkt bevares uden den ejerfravalgte aldersforklaring. Datakontroller og fejlbeskeder bevares.
+
+Faktisk levering5. oktober: PR519 er merged og kode-only deploy sluttede
+kl.17.32 dansk tid. Offentlige DA/DE/EN-assets og de faktiske sprog-URL'er
+er kontrolleret efter deploy. Den uønskede tekst er væk. Vejrdatasættet er
+byteidentisk genbrugt; privat publicering var dedup, ikke en ny upload.
+Den følgende beskrivelse bevarer beslutning og kontrolkrav. En senere
+offentlig browserprøve viser den nye footer uden den fravalgte tekst.
 
 Efter ejerens ønske viser footerens DA/DE/EN-gren med ukendt sammenlignelig
 beregningsalder kun prognosetidspunktet. Den generelle forklaring om ukendt
@@ -386,7 +1208,7 @@ no-loss og syvzoneeffekt mangler kontrol. Spørg RavRadar udvikles separat
 lokalt, og Fur-årsag, timeretention og samlet revision er åbne. Tidligere
 kapitlers modstridende forberedelsesstatus er historik.
 
-## 89.160 Syv kystzoner må bruge Limfjordsmodellens vandstand – lokal kandidat
+## 89.160 Syv kystzoner må bruge Limfjordsmodellens vandstand – historisk forberedelse
 
 Den almindelige vejrhentning afsluttede med deploy kl. 05.16 den 5. oktober
 uden tab i de fem vejrfamilier. Det var fortsat kode 4.0.542. Den lokale

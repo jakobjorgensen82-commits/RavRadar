@@ -1,6 +1,10 @@
 // Public, deterministic and read-only knowledge derived from RavRadars groundbook.
 // Put narrow topics before broad assistant intents so common follow-up questions stay local.
 import { RAV_ASSISTANT_RESEARCH_EXAMPLES, RAV_ASSISTANT_RESEARCH_KNOWLEDGE } from './rav-assistant-research-v1.js';
+import { RAV_ASSISTANT_PRODUCT_EXAMPLES, RAV_ASSISTANT_PRODUCT_KNOWLEDGE } from './rav-assistant-product-v1.js';
+import { RAV_ASSISTANT_FIELD_EXAMPLES, RAV_ASSISTANT_FIELD_GUIDE } from './rav-assistant-field-guide-v1.js';
+import { RAV_ASSISTANT_FORECAST_EXAMPLES, RAV_ASSISTANT_FORECAST_GUIDE } from './rav-assistant-forecast-guide-v1.js';
+import { RAV_ASSISTANT_METHOD_EXAMPLES, RAV_ASSISTANT_METHOD_GUIDE } from './rav-assistant-method-guide-v1.js';
 
 const CORE_LOCAL_RAV_KNOWLEDGE = Object.freeze([
   entry('amber-resin', /rav.*(?:harpiks|materiale)|hvad består rav|bernstein.*(?:harz|material)|woraus besteht bernstein|amber.*(?:resin|material)|what is amber made/iu,
@@ -27,7 +31,9 @@ const CORE_LOCAL_RAV_KNOWLEDGE = Object.freeze([
     'Mere salt gør normalt vandet tættere og øger opdriften. Det kan gøre rav lettere under vand, men almindeligt dansk havvand får ikke det meste baltiske rav til at flyde.',
     'Mehr Salz macht Wasser normalerweise dichter und erhöht den Auftrieb. Bernstein wird unter Wasser leichter, doch gewöhnliches dänisches Meerwasser lässt den meisten baltischen Bernstein nicht schwimmen.',
     'More salt normally makes water denser and increases buoyancy. It makes amber lighter under water, but ordinary Danish seawater does not float most Baltic amber.'),
-  entry('cold-water', /koldt vand.*(?:rav|betyd)|temperatur.*(?:rav|opdrift)|kaltes wasser.*(?:bernstein|bedeut)|temperatur.*(?:bernstein|auftrieb)|cold water.*(?:amber|matter)|temperature.*(?:amber|buoyancy)/iu,
+  // The material's glass-transition temperature is not water temperature.
+  // Keep that unsupported research question out of the buoyancy explanation.
+  entry('cold-water', /^(?!.*(?:glasovergang|glasübergang|glass[ -]transition)).*(?:koldt vand.*(?:rav|betyd)|temperatur.*(?:rav|opdrift)|kaltes wasser.*(?:bernstein|bedeut)|temperatur.*(?:bernstein|auftrieb)|cold water.*(?:amber|matter)|temperature.*(?:amber|buoyancy))/iu,
     'Koldere vand er normalt tættere og giver rav større opdrift. Det meste rav synker stadig, men den mindre tæthedsforskel kan gøre det lettere for bølger og turbulens at løfte og mobilisere det; temperatur virker sammen med salt, strøm, bølger og tilgængelige lagre.',
     'Kälteres Wasser ist normalerweise dichter und gibt Bernstein mehr Auftrieb. Der meiste sinkt weiterhin, kann aber von Wellen und Turbulenz leichter mobilisiert werden; Temperatur wirkt mit Salz, Strömung, Wellen und verfügbaren Lagern zusammen.',
     'Colder water is normally denser and gives amber more buoyancy. Most still sinks, but waves and turbulence may mobilise it more easily; temperature works together with salinity, current, waves and available stores.'),
@@ -35,7 +41,7 @@ const CORE_LOCAL_RAV_KNOWLEDGE = Object.freeze([
     'En flyde- eller saltvandstest kan kun være et indicium. Saltblanding, indesluttet luft og let plast kan give misvisende resultater, så kombiner altid flere ikke-destruktive tegn og få tvivlsomme fund vurderet.',
     'Ein Schwimm- oder Salzwassertest ist nur ein Indiz. Salzgemisch, eingeschlossene Luft und leichter Kunststoff können täuschen; kombiniere mehrere zerstörungsfreie Merkmale.',
     'A float or salt-water test is only a clue. Salt mixture, trapped air and light plastic can mislead, so combine several non-destructive signs and seek expert assessment when uncertain.'),
-  entry('uv-wavelength', /hvilken.*(?:nm|bølgelængde|ravlygte)|395\s*nm|welche.*(?:nm|wellenlänge|bernsteinlampe)|which.*(?:nm|wavelength|amber (?:torch|light))/iu,
+  entry('uv-wavelength', /hvilken.*(?:nm|ravlygte)|395\s*nm|welche.*(?:nm|bernsteinlampe)|which.*(?:nm|amber (?:torch|light))|^(?![\s\S]*(?:havbølger|meereswellen|ocean\s+waves?|sea\s+waves?))[\s\S]*(?:hvilken.*bølgelængde|welche.*wellenlänge|which.*wavelength)/iu,
     'RavRadars praktiske vejledning bruger en ravlygte omkring 395 nm. Arbejd mørkt, før lyset langsomt og tæt på underlaget, og kontrollér fundet fysisk bagefter.',
     'RavRadars praktische Anleitung verwendet eine Bernsteinlampe um 395 nm. Arbeite im Dunkeln, führe das Licht langsam und nah am Untergrund und prüfe den Fund anschließend physisch.',
     'RavRadar’s practical guidance uses an amber light around 395 nm. Work in darkness, sweep the beam slowly and close to the surface, then check the find physically.'),
@@ -79,7 +85,7 @@ const CORE_LOCAL_RAV_KNOWLEDGE = Object.freeze([
     'En rende eller et revlehul kan føre vand ud, men kan også skabe meget lokale lommer og hvirvler. Undersøg selve passagen, kystsiden lige bag den og revlens ender; det er mulige fælder, ikke sikre fundsteder.',
     'Eine Rinne oder Sandbanklücke kann Wasser hinausführen, aber auch lokale Taschen und Wirbel erzeugen. Prüfe die Passage, die Landseite dahinter und die Bankenden; das sind mögliche Fallen, keine Garantie.',
     'A channel or bar gap may carry water out but also create local pockets and eddies. Inspect the passage, the landward side behind it and bar ends; these are possible traps, not guaranteed finds.'),
-  entry('structures', /høfde|mole.*(?:rav|side)|buhne|mole.*bernstein|groyne|pier.*amber/iu,
+  entry('structures', /høfde|(?<!\p{L})mole(?:n|r|rne)?(?!\p{L}).*(?:rav|side|bernstein)|buhne|groyne|pier.*amber/iu,
     'Høfder og moler kan stoppe eller dreje langsgående transport. Søg langs overgange og på begge sider, og sammenlign hvor det lette materiale bliver tykkere eller stopper.',
     'Buhnen und Molen können Längstransport stoppen oder umlenken. Suche an Übergängen und auf beiden Seiten und vergleiche, wo Leichtmaterial dichter wird oder endet.',
     'Groynes and piers can stop or turn alongshore transport. Search transitions and both sides, comparing where the light fraction thickens or ends.'),
@@ -189,10 +195,82 @@ const CORE_LOCAL_RAV_KNOWLEDGE = Object.freeze([
     'Amber may be on the seabed, in the water column, outside or at bars, between bars and beach, at the waterline or on the beach. The groundbook diagram shows possibilities, not one fixed route.')
 ]);
 
+// Summaries are written from each topic's existing source-bound answer. They
+// retain its limitations; automatic sentence clipping can remove those limits.
+const AUTHORED_LOCAL_SHORT_ANSWERS = Object.freeze({
+  'app-time':{
+    da:'Første datatime, valgt prognosetime og klokkeslættet nu er forskellige ting. Brug de viste tider; senere indlæsning gør ikke ældre vejr til en ny måling.',
+    de:'Erste Datenstunde, gewählte Prognosestunde und aktuelle Uhrzeit sind verschieden. Nutze die angezeigten Zeiten; späteres Laden macht altes Wetter nicht zu einer neuen Messung.',
+    en:'First data hour, selected forecast hour and now are different. Use displayed times; loading later does not turn older weather into a new observation.'
+  },
+  'app-part-zone':{
+    da:'En zone har en eller flere kystdele, som kan have forskellig orientering og data. Bedste sted gælder ikke hele kysten; sammenlign del, tid og søgemåde.',
+    de:'Eine Zone hat einen oder mehrere Abschnitte, deren Ausrichtung und Datenbasis verschieden sein können. Der beste Platz gilt nicht für die ganze Küste; vergleiche Abschnitt, Zeit und Suchmodus.',
+    en:'A zone has one or more sections that can differ in orientation and data. Its best spot does not describe the whole coast; compare section, time and mode.'
+  },
+  'app-top20':{
+    da:'Top20 sammenligner områder for dag og søgemåde. Åbn området for sted og tid; utilgængelige timer rangeres ikke som komplette. Det er modelhjælp, ikke fundbevis eller sikkerhed.',
+    de:'Top20 vergleichen Gebiete für Tag und Suchmodus. Öffne Platz und Zeit; nicht verfügbare Stunden werden nicht wie vollständige gerankt. Das ist Modellhilfe, keine Fund- oder Sicherheitsbestätigung.',
+    en:'Top20 compare areas for day and mode. Open the spot and time; unavailable hours are not ranked as complete. This is model help, not verified finds or safety.'
+  },
+  'app-best-time-meaning':{
+    da:'Bedste tidspunkt sammenligner tilgængelige timer for zone, dag og søgemåde ud fra score, historik og vandstand; lige muligheder afgøres fast. Det lover ikke fund på minuttet. Tjek søgeforhold og varsler.',
+    de:'Die beste Zeit vergleicht verfügbare Stunden für Zone, Tag und Modus nach Score, Historie und Wasserstand; Gleichstände werden fest entschieden. Kein Fundversprechen zur Minute. Prüfe Bedingungen und Warnungen.',
+    en:'Best time compares available hours for zone, day and mode using score, history and water level, with fixed tie-breaking. It promises no find at a particular minute. Check huntability and warnings.'
+  },
+  'app-water-interpolation':{
+    da:'Vandstand kan bruge centralt valgte kilder og vægte med gyldig identitet og input fra samme time, ikke strøm eller lånt score. Et stationsnavn eller korttal beviser ikke modelkilde, dækning eller private kildevalg.',
+    de:'Wasserstand kann zentral gewählte Quellen und Gewichte mit gültiger Identität und Eingaben derselben Stunde nutzen, keine Strömung oder geliehenen Score. Stationsname oder Kartenwert belegt weder Modellquelle, Abdeckung noch private Quellenwahl.',
+    en:'Water level can use central sources and weights with valid identities and same-hour inputs, not current or a borrowed score. A station name or map value does not prove model source, coverage or private routing.'
+  },
+  'app-current-water-separate':{
+    da:'Vandstand er et niveau; strøm kræver gyldig retning og hastighed for kystdelen. Tilladt vandstand må ikke åbne for udelukket strøm og er ingen garanti for gyldige data i alle timer. Høj vandstand viser ikke alene strømretningen.',
+    de:'Wasserstand ist ein Pegel; Strömung braucht gültige Richtung und Geschwindigkeit für den Abschnitt. Erlaubter Wasserstand darf ausgeschlossene Strömung nicht freigeben und ist keine Garantie für gültige Daten zu jeder Stunde. Hoher Pegel allein zeigt keine Strömungsrichtung.',
+    en:'Water level is a level; current needs valid direction and speed for the section. Water-level permission must not admit excluded current and is no guarantee of valid data at every hour. High water alone does not reveal current direction.'
+  },
+  'app-48-hours':{
+    da:'Dokumenteret strøm vægtes fuldt i 24 timer og aftager til nul ved 48. Det er en modelprior, ikke målt rav-liggetid. Kort udstrøm nulstiller ikke alt; stærk eller vedvarende udstrøm kan mindske transportpotentialet.',
+    de:'Belegte Strömung zählt 24 Stunden voll und nimmt bis 48 Stunden auf null ab. Das ist ein Modellprior, keine gemessene Bernstein-Liegedauer. Kurzer Ausstrom setzt nicht alles zurück; starker oder anhaltender Ausstrom kann Transportpotenzial abbauen.',
+    en:'Documented current has full weight for 24 hours, fading to zero at 48. This is a model prior, not measured amber residence time. Brief outflow does not reset everything; strong or persistent outflow can reduce transport potential.'
+  },
+  'app-high-score-no-find':{
+    da:'Høj score er lovende modelforhold, ikke et målt ravlager. Rav kan være skjult, samlet eller flyttet, og strand og modelgrid kan afvige. Sammenlign felttegn og indsats; indberet også nul fund. Ét resultat beviser ikke præcisionen.',
+    de:'Hoher Score bedeutet günstige Modellbedingungen, keinen gemessenen Vorrat. Bernstein kann verborgen, gesammelt oder verlagert sein; Strand und Gitter können abweichen. Vergleiche Spuren und Aufwand, melde auch Nullfunde. Ein Ergebnis beweist keine Präzision.',
+    en:'High score means promising model conditions, not measured stock. Amber may be hidden, collected or moved; beach and grid can differ. Compare signs and effort, and report no finds too. One outcome does not establish accuracy.'
+  },
+  'amber-chemistry-variation':{
+    da:'Ravets kemi afhænger af planteharpiks, modning og varmehistorik, ikke geologisk periode alene. Strandfund kan ikke dateres præcist med farve eller hjemmetest; datering kræver faglig analyse og geologisk kontekst.',
+    de:'Bernsteinchemie hängt von Pflanzenharz, Reifung und Wärmegeschichte ab, nicht allein von der geologischen Periode. Strandfunde lassen sich nicht mit Farbe oder Heimtest genau datieren; dafür braucht es Fachanalyse und geologischen Kontext.',
+    en:'Amber chemistry depends on plant resin, maturation and thermal history, not geological period alone. Beach finds cannot be dated precisely by colour or a home test; dating needs specialist analysis and geological context.'
+  },
+  'tide-weather-waterlevel':{
+    da:'Tidevand, vind og lufttryk påvirker vandstanden; den er ikke bare en tidevandstabel og fortæller ikke alene strømmens retning eller styrke. RavRadar viser en prognose, ikke en måling ved dine fødder.',
+    de:'Gezeiten, Wind und Luftdruck beeinflussen den Pegel; er ist keine reine Gezeitentabelle und verrät allein keine Strömungsrichtung oder Stärke. RavRadar zeigt eine Prognose, keine Messung an deinen Füßen.',
+    en:'Tides, wind and air pressure affect water level; it is not just a tide table and alone does not reveal current direction or speed. RavRadar shows a forecast, not a measurement at your feet.'
+  },
+  'current-layers':{
+    da:'Overflade, bund, bølgedrift og returvand kan gå forskelligt. Pilen viser verificeret modelgridstrøm i valgt lag ved havpunktet: et lagmiddel, ikke lokal bund- eller brændingsmåling.',
+    de:'Oberfläche, Boden, Wellendrift und Rücklauf können verschieden gerichtet sein. Der Pfeil zeigt verifizierte Gitterströmung in der gewählten Schicht am Meerespunkt: ein Schichtmittel, keine lokale Boden- oder Brandungsmessung.',
+    en:'Surface, bottom, wave drift and return flow can differ. The arrow shows verified grid current in the selected layer at the sea point: a layer mean, not a local bottom or surf measurement.'
+  },
+  'app-history-input':{
+    da:'Manglende historik giver en gyldig time en forsigtig score med modelinterval. Mangler nødvendigt direkte input, er timen utilgængelig og rangeres ikke. Prognosen kan virke under opbygningen; én vellykket vejrhentning beviser ikke, at gamle huller er væk.',
+    de:'Fehlende Historie ergibt für gültige Stunden einen vorsichtigen Score mit Modellintervall. Fehlt nötige direkte Eingabe, ist die Stunde nicht verfügbar und wird nicht gerankt. Eine funktionierende Prognose oder ein erfolgreicher Lauf beweist nicht, dass alte Lücken weg sind.',
+    en:'Missing history gives valid hours a cautious score with a model interval. Missing required direct input makes the hour unavailable and unranked. Forecasts can work while history builds; one successful update does not prove old gaps are gone.'
+  }
+});
+
 export const LOCAL_RAV_KNOWLEDGE = Object.freeze([
+  ...RAV_ASSISTANT_METHOD_GUIDE,
+  ...RAV_ASSISTANT_FORECAST_GUIDE,
+  // Concrete field constraints precede the generic product trip-plan answer.
+  ...RAV_ASSISTANT_FIELD_GUIDE,
+  ...RAV_ASSISTANT_PRODUCT_KNOWLEDGE,
   ...RAV_ASSISTANT_RESEARCH_KNOWLEDGE,
   ...CORE_LOCAL_RAV_KNOWLEDGE
-]);
+].map(item => AUTHORED_LOCAL_SHORT_ANSWERS[item.id]
+  ? Object.freeze({...item,shortAnswers:Object.freeze(AUTHORED_LOCAL_SHORT_ANSWERS[item.id])})
+  : item));
 
 function entry(id, pattern, da, de, en) {
   return Object.freeze({
@@ -254,18 +332,71 @@ const CORE_LOCAL_RAV_KNOWLEDGE_EXAMPLES = Object.freeze({
 });
 
 export const LOCAL_RAV_KNOWLEDGE_EXAMPLES = Object.freeze({
+  ...RAV_ASSISTANT_METHOD_EXAMPLES,
+  ...RAV_ASSISTANT_FORECAST_EXAMPLES,
+  ...RAV_ASSISTANT_PRODUCT_EXAMPLES,
+  ...RAV_ASSISTANT_FIELD_EXAMPLES,
   ...RAV_ASSISTANT_RESEARCH_EXAMPLES,
   ...CORE_LOCAL_RAV_KNOWLEDGE_EXAMPLES
 });
 
+// Twelve formulations per question, not twelve new facts. Exact indexing
+// prevents fuzzy similarity from admitting unrelated requests.
+const QUESTION_FORMS = Object.freeze({
+  da:['{q}','Kan du forklare: {q}','Forklar enkelt: {q}','Jeg er ny i ravjagt. {q}',
+    'Jeg vil forstå: {q}','Hjælp mig med at forstå: {q}','Kort fortalt: {q}',
+    'Fortæl mere: {q}','Mit spørgsmål er: {q}','Forklar for en begynder: {q}',
+    'Jeg spørger om RavRadar: {q}','Kan du svare på dette: {q}'],
+  de:['{q}','Kannst du erklären: {q}','Einfach erklärt: {q}','Ich bin neu bei der Bernsteinsuche. {q}',
+    'Ich möchte verstehen: {q}','Hilf mir zu verstehen: {q}','Kurz gesagt: {q}',
+    'Erzähl mehr: {q}','Meine Frage ist: {q}','Erkläre für Anfänger: {q}',
+    'Ich frage über RavRadar: {q}','Kannst du das beantworten: {q}'],
+  en:['{q}','Can you explain: {q}','Explain simply: {q}','I am new to amber hunting. {q}',
+    'I want to understand: {q}','Help me understand: {q}','In short: {q}',
+    'Tell me more: {q}','My question is: {q}','Explain for a beginner: {q}',
+    'I am asking about RavRadar: {q}','Can you answer this: {q}']
+});
+
+export const LOCAL_RAV_QUESTION_BANK = Object.freeze(Object.fromEntries(
+  LOCAL_RAV_KNOWLEDGE.map(item => [item.id, Object.freeze(Object.fromEntries(
+    ['da','de','en'].map((locale,index) => [locale,Object.freeze(QUESTION_FORMS[locale]
+      .map(form=>form.replace('{q}',LOCAL_RAV_KNOWLEDGE_EXAMPLES[item.id][index])))])
+  ))])
+));
+const QUESTION_INDEX = new Map();
+for (const item of LOCAL_RAV_KNOWLEDGE) for (const questions of Object.values(LOCAL_RAV_QUESTION_BANK[item.id])) {
+  for (const question of questions) {
+    const key=normalizeKnowledgeQuestion(question);
+    if (QUESTION_INDEX.has(key) && QUESTION_INDEX.get(key).id !== item.id) {
+      throw new Error(`Conflicting source-bound assistant question: ${QUESTION_INDEX.get(key).id} / ${item.id}`);
+    }
+    QUESTION_INDEX.set(key,item);
+  }
+}
+
 export function matchLocalRavKnowledge(question) {
   const text = String(question || '').trim();
   const normalized = normalizeKnowledgeQuestion(text);
-  const exact = LOCAL_RAV_KNOWLEDGE.find(item =>
-    (LOCAL_RAV_KNOWLEDGE_EXAMPLES[item.id] || []).some(example => normalizeKnowledgeQuestion(example) === normalized)
-  );
+  const exact = QUESTION_INDEX.get(normalized);
   if (exact) return exact;
   return LOCAL_RAV_KNOWLEDGE.find(item => item.pattern.test(text)) || null;
+}
+
+// A public topic ID, not a transcript. It stays local and is never sent to AI.
+export function localRavFollowupAnswer(question, topicId, language='da') {
+  const text=normalizeKnowledgeQuestion(question);
+  const simple=['forklar det enklere','forklar det kort','kortere tak','helt kort',
+    'erkläre es einfacher','kürzer bitte','kurzer bitte','ganz kurz','explain it simply','shorter please','in brief'];
+  const more=['uddyb det','fortæl mere om det','forklar mere','erkläre mehr','erzähl mehr darüber',
+    'tell me more about that','explain more'];
+  if (![...simple,...more].includes(text)) return null;
+  const item=LOCAL_RAV_KNOWLEDGE.find(candidate=>candidate.id===topicId);
+  if (!item) return null;
+  const answer=item.answers[language] || item.answers.da;
+  // Only source-bound, authored summaries may shorten an answer. Otherwise
+  // keep the full explanation rather than discarding a later qualification.
+  if (simple.includes(text) && item.shortAnswers) return item.shortAnswers[language] || item.shortAnswers.da;
+  return answer;
 }
 
 export function localRavKnowledgeAnswer(question, language = 'da') {

@@ -1,9 +1,51 @@
 # DEC-0291 – Ejerafgrænset dkss_lf-frakobling ved Lyngby og Agger
 
-**Status:** 542-reglen leveret; ny godkendt vandstand-only-undtagelse er lokal 4.0.543. Release og faktisk NEW-T-effekt er åbne.
+**Status:** Syvzone-regel og vandstand-only-undtagelse faktisk leveret i 4.0.543; ny16Z-generation har alle fem numeriske felter i samtlige syvzonetimer og nul offentlig dkss_lf-strøm. National vandstandshale, privat hukommelsesbevis, Fur-årsag og samlet revision er åbne.
 **Dato:** 2026-10-04
 
-# NYESTE – 5. oktober – vandstands-undtagelse og eksakt teknisk overgang
+# NYESTE – 5. oktober kl.21.35 dansk tid – syvzonernes vandstand komplet i ny generation
+
+Ny16Z-generation er hash-/byte-/identitetskontrolleret over alle210 zoner,
+673 dele og118 timer. Alle syv targetzoner har100% numerisk feltpresence
+i hver af de fem familier og nul offentlig dkss_lf-strøm. Limfjordens egne
+zoner beholder relevante strømdata. No-loss i den normale kørsel består
+over114 fælles timer uden tab i fem familier. Offentlig vandstands- og
+temperaturproveniens er ikke eksponeret; privat48h-hukommelse er ikke målt.
+
+Nationalt mangler288 vandstands-deltimer i12 haletimer. To særskilt
+hashbundne endepunkter mangler de samme24 Limfjordsdele, også ved Fur.
+Identiteterne i de ti mellemtimer og native/routingårsag er ikke bevist.
+Den særskilte PR520-reservekørettelse er merged og kode-only deploy startet;
+dækningsstigningen kom før merge og er ikke effektbevis for kørettelsen.
+Gamle Fur7/12-årsager og den store revision forbliver åbne.
+
+# HISTORISK – 5. oktober kl.18.12 dansk tid – offentlig syvzonekontrol gennemført
+
+Ny12Z-generation er kontrolleret over alle673 dele og118 timer. Samtlige
+syv targetzoner har nul offentlig dkss_lf-strøm og numerisk strøm i100% af
+deres timer. Limfjordens egne zoner beholder relevante strømdata. Det er
+offentlig kilde-/feltkontrol, ikke privat48h-hukommelses- eller wetmaskbevis.
+Agger/Lyngby/Harboøre/Vejlby har hver vandstand110/118; Hou598/708,
+Hals201/236,Dokkedal495/590 deltimer. Vandstandsundtagelsen giver ikke
+automatisk gyldige værdier i alle manglende timer. Offentlig vandstands- og
+temperaturproveniens er ikke eksponeret, så deres LF-andel er ikke målt.
+No-loss i den normale kørsel består over114 fælles timer uden tab i fem
+familier. Gamle årsager, privat originalkæde og samlet revision forbliver åbne.
+
+# HISTORISK – 5. oktober – vandstand543 faktisk udgivet; ny vejreffekt afventer
+
+PR518 og den kontrollerede kode-only-release afsluttede med offentlig
+4.0.543 kl.06.04 dansk tid. Kun gyldig dkss_lf-vandstand er åbnet for de syv
+kystzoner; strøm og temperatur er fortsat udelukket. Original restore,
+metadata-only overgang, privat publicering og Pages er faktisk kontrolleret.
+Vejr, scores og punkter blev ikke genberegnet eller ændret. Første efterfølgende
+naturlige vejrhentning er endnu aktiv; ny vandstands-/kildeeffekt er ikke bevist.
+Fur-diagnosen er leveret, gammel 7/12-årsag og sikker timeretention er åbne.
+Assistentens lokale efterfølgende tekniske overgang må ikke ændre disse regler,
+541-originalarkivet eller gamle applied migrationer. Ældre status nedenfor er
+historik, hvor den beskriver 543 som lokal eller endnu ikke udgivet.
+
+# HISTORISK – 5. oktober – vandstands-undtagelse og eksakt teknisk overgang
 
 Den almindelige 542-vejrhentning afsluttede med deploy kl. 05.16 dansk tid
 uden tab i de fem vejrfamilier. Den lokale 543-overgang forventer derfor nu

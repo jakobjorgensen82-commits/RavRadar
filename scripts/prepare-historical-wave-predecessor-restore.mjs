@@ -15,6 +15,7 @@ import {
   buildOwnerCurrentOriginalRestoreExpectation,
   OWNER_CURRENT_DOMAIN_PREDECESSOR,
   OWNER_WATER_LEVEL_ONLY_PREDECESSOR,
+  OWNER_WATER_LEVEL_ONLY_SUCCESSOR,
 } from './lib/bounded-conditions-predecessor-transition.mjs';
 import {
   privateRuntimeContractHashes,
@@ -90,7 +91,8 @@ export async function prepareHistoricalWavePredecessorRestore(options) {
   if (!ownerCurrentExpectation
     && ravScoreModelBinding().modelBundleSha256 !== OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding.modelBundleSha256
     && [OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding.modelBundleSha256,
-      OWNER_WATER_LEVEL_ONLY_PREDECESSOR.modelBinding.modelBundleSha256]
+      OWNER_WATER_LEVEL_ONLY_PREDECESSOR.modelBinding.modelBundleSha256,
+      OWNER_WATER_LEVEL_ONLY_SUCCESSOR.integratedBundleSha256]
       .includes(sourceDescription.modelBinding?.modelBundleSha256)
     && sourceDescription.modelBinding?.modelBundleSha256 !== ravScoreModelBinding().modelBundleSha256) {
     throw new Error('Owner original generation no longer matches the exact approved binding bridge');

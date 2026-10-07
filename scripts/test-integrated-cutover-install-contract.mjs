@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 
 const sources = Object.freeze({
@@ -26,7 +27,7 @@ const entries = await Promise.all(Object.entries(sources).map(async ([label, fil
 ]));
 const documents = Object.fromEntries(entries);
 const checkpointMigration = await fs.readFile(
-  'supabase/migrations/20261005000000_owner_water_level_only_binding.sql',
+  'supabase/migrations/20261007123000_assistant_knowledge_refresh_binding.sql',
   'utf8',
 );
 const stableTripMigration = await fs.readFile(
@@ -34,9 +35,16 @@ const stableTripMigration = await fs.readFile(
   'utf8',
 );
 const currentTripMigration = await fs.readFile(
-  'supabase/migrations/20261005000000_owner_water_level_only_binding.sql',
+  'supabase/migrations/20261007123000_assistant_knowledge_refresh_binding.sql',
   'utf8',
 );
+const issuedAssistantMigration = await fs.readFile(
+  'supabase/migrations/20261005060000_assistant_knowledge_binding.sql', 'utf8',
+);
+assert.equal(crypto.createHash('sha256').update(
+  issuedAssistantMigration.replace(/\r\n?/g, '\n'),
+).digest('hex'), 'a141f7dead9e9bf680fc799c416a1f4f99a5c2b2a553bc061735d30744b1c6fa',
+'the issued assistant predecessor migration must remain immutable');
 const definitions = Object.fromEntries(Object.entries(documents).map(([label, source]) => [
   label,
   normalize(functionDefinition(source, label)),
@@ -56,6 +64,9 @@ const CHECKPOINT_FUNCTION_NAMES = Object.freeze([
   'public.ravradar_ravscore_checkpoint_top20_predecessor_projection',
   'public.ravradar_ravscore_checkpoint_cp_close_predecessor_projection',
   'public.ravradar_ravscore_checkpoint_owner_current_predecessor_projection',
+  'public.ravradar_ravscore_checkpoint_water_level_predecessor_projection',
+  'public.ravradar_ravscore_checkpoint_assistant_predecessor_projection',
+  'public.ravradar_ravscore_checkpoint_assistant_refresh_predecessor_projection',
   'public.ravradar_ravscore_checkpoint_cas',
   'public.ravradar_ravscore_checkpoint_contract',
 ]);
@@ -172,8 +183,42 @@ for (const [label, source] of Object.entries({
   const waterProjection=functionDefinition(source,label,
     'public.ravradar_ravscore_checkpoint_water_level_predecessor_projection');
   assert.match(waterProjection,
+    /v_projected := public\.ravradar_ravscore_checkpoint_assistant_predecessor_projection\(v_projected, p_target_reference\);\s+if v_projected is not null then return v_projected; end if;\s+return null;/,
+    `${label} water-only projection must chain through the separately attested assistant binding`);
+  const assistantProjection = functionDefinition(source, label,
+    'public.ravradar_ravscore_checkpoint_assistant_predecessor_projection');
+  assert.match(assistantProjection,
+    /v_projected := public\.ravradar_ravscore_checkpoint_assistant_refresh_predecessor_projection\(v_projected, p_target_reference\);\s+if v_projected is not null then return v_projected; end if;\s+return null;/,
+    `${label} issued assistant projection must chain through the separately attested refresh binding`);
+  assert.match(assistantProjection, /count\(\*\)[\s\S]*<> 673[\s\S]*state\.value ->> 'modelBundleSha256' is distinct from 'ffc67b30/);
+  assert.match(assistantProjection, /candidateGRollbackCompanion,modelBinding,modelBundleSha256}'\s+is distinct from '8d9142b5/);
+  assert.doesNotMatch(assistantProjection, /\bsecurity definer\b|\b(?:insert|update|delete)\s+|\bexecute\s+|\{currentEvidence\}|\{currentSupplyIndex\}|\{transportEvidence\}/i);
+  assert.match(source, /revoke all on function public\.ravradar_ravscore_checkpoint_assistant_predecessor_projection\(jsonb,timestamptz\)\s+from public, anon, authenticated;/);
+  const assistantRefreshProjection = functionDefinition(source, label,
+    'public.ravradar_ravscore_checkpoint_assistant_refresh_predecessor_projection');
+  assert.match(normalize(assistantRefreshProjection), /language plpgsql stable set search_path/);
+  assert.match(assistantRefreshProjection,
     /if public\.ravradar_ravscore_checkpoint_payload_valid\(v_projected, p_target_reference\)\s+then return v_projected; end if;\s+return null;/,
-    `${label} the final water-only projection must retain the entire current validator`);
+    `${label} final refresh projection must retain the entire current validator`);
+  assert.match(assistantRefreshProjection,
+    /count\(\*\)[\s\S]*<> 673[\s\S]*state\.value ->> 'modelBundleSha256' is distinct from '276723e6/);
+  assert.match(assistantRefreshProjection,
+    /candidateGRollbackCompanion,modelBinding,modelBundleSha256}'\s+is distinct from '89c34554/);
+  assert.match(assistantRefreshProjection,
+    /continuationStateContractSha256' is distinct from '260ade22/);
+  assert.equal(assistantRefreshProjection.split(
+    '6f9cd52c141c21d0684aa2acc1c11948c93e32d092e14f784ad5b402cd93932d',
+  ).length - 1, 2, `${label} refresh must advance only root/state integrated metadata`);
+  assert.deepEqual([...assistantRefreshProjection.matchAll(/,\s*'(\{[^']+\})',/g)]
+    .map(match => match[1]), [
+    '{modelBundleSha256}', '{modelBinding,modelBundleSha256}', '{states}',
+    '{continuationStateContractSha256}',
+    '{candidateGRollbackCompanion,modelBinding,modelBundleSha256}',
+  ], `${label} refresh may project only the five reviewed metadata paths`);
+  assert.doesNotMatch(assistantRefreshProjection,
+    /\bsecurity definer\b|\b(?:insert|update|delete)\s+|\bexecute\s+|\{currentEvidence\}|\{currentSupplyIndex\}|\{transportEvidence\}/i);
+  assert.match(source,
+    /revoke all on function public\.ravradar_ravscore_checkpoint_assistant_refresh_predecessor_projection\(jsonb,timestamptz\)\s+from public, anon, authenticated;/);
   assert.match(waterProjection,/count\(\*\)[\s\S]*<> 673[\s\S]*state\.value ->> 'modelBundleSha256' is distinct from '4ebe158f/);
   assert.match(waterProjection,/candidateGRollbackCompanion,modelBinding,modelBundleSha256}'\s+is distinct from '3e5aae87/);
   assert.doesNotMatch(waterProjection,/\bsecurity definer\b|\b(?:insert|update|delete)\s+|\bexecute\s+|\{currentEvidence\}|\{currentSupplyIndex\}|\{transportEvidence\}/i);
@@ -194,10 +239,18 @@ for (const [label, source] of Object.entries({
   assert.match(metadata, /v_validator_oids\[8\]/);
   assert.match(metadata,/water-level-predecessor-projection/);
   assert.match(metadata,/v_validator_oids\[9\]/);
+  assert.match(metadata, /assistant-predecessor-projection/);
+  assert.match(metadata, /v_validator_oids\[10\]/);
+  assert.match(metadata, /assistant-refresh-predecessor-projection/);
+  assert.match(metadata,
+    /into v_assistant_refresh_projection_definition\s+from pg_catalog\.pg_proc p where p\.oid = v_validator_oids\[11\]/);
+  assert.match(metadata,
+    /where m\.version::text = '20261007123000'/,
+    `${label} metadata RPC must require the actual new migration, not claim installation from the predecessor`);
   assert.match(metadata, /'checkpointCasStatementTimeout55Seconds'[\s\S]*'statement_timeout=55s' = any \(p\.proconfig\)/);
   assert.match(checkpointGeneratedBlock(source, label), /set statement_timeout = '55s';/,
     `${label} installer must enforce, not merely claim, the actual existing 55s timeout`);
-  for (const variable of ['v_water_level_predecessor_payload','v_owner_current_predecessor_payload', 'v_cp_close_predecessor_payload', 'v_top20_predecessor_payload']) {
+  for (const variable of ['v_assistant_refresh_predecessor_payload', 'v_assistant_predecessor_payload', 'v_water_level_predecessor_payload','v_owner_current_predecessor_payload', 'v_cp_close_predecessor_payload', 'v_top20_predecessor_payload']) {
     const projectedComparison = casDefinition.slice(casDefinition.indexOf(
       `v_central_is_compatible_predecessor and ${variable} is not null then`));
     const branchEnd = projectedComparison.search(/\n    (?:else|elsif)\b/);

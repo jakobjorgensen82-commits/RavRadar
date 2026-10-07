@@ -8,6 +8,7 @@ import {
 } from '../../js/core/ravscore-candidate-g-state-pipeline.js';
 import { buildIntegratedRavScoreStateSeries, assertOwnerCurrentArchivedPredecessorState,
   assertWaterLevelOnlyPredecessorState,
+  assertAssistantKnowledgePredecessorState,
   RAVSCORE_OWNER_CURRENT_ARCHIVE_PREDECESSOR_BUNDLE_SHA256 }
   from '../../js/core/ravscore-integrated-state-pipeline.js';
 import {
@@ -294,6 +295,13 @@ export function assertWaterLevelOnlyIntegratedOriginal(state, {
 } = {}) {
   assertIntegratedContinuationShape(state,samplingContextKey,label);
   return assertWaterLevelOnlyPredecessorState(state,samplingContextKey);
+}
+
+export function assertAssistantKnowledgeIntegratedOriginal(state, {
+  samplingContextKey, label='Assistant-knowledge technical original',
+} = {}) {
+  assertIntegratedContinuationShape(state,samplingContextKey,label);
+  return assertAssistantKnowledgePredecessorState(state,samplingContextKey);
 }
 
 export function assertIntegratedCoastalPointContinuation(

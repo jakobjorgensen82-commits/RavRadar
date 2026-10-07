@@ -73,6 +73,8 @@ const OWNER_CURRENT_BINDING_SUCCESSOR_CHECK =
   'node scripts/build-owner-current-domain-binding-successor.mjs --check';
 const OWNER_WATER_LEVEL_BINDING_SUCCESSOR_CHECK =
   'node scripts/build-owner-water-level-only-binding-successor.mjs --check';
+const ASSISTANT_KNOWLEDGE_BINDING_SUCCESSOR_CHECK =
+  'node scripts/build-assistant-knowledge-binding-successor.mjs --refresh-check';
 const RELEASE_METADATA_TEST_COMMAND = [
   'node scripts/test-release-contract-metadata.mjs',
   'node scripts/test-harmonie-binding-migration.mjs',
@@ -102,9 +104,10 @@ const RELEASE_METADATA_TEST_COMMAND = [
   CP_CHILD_CLOSE_BINDING_SUCCESSOR_CHECK,
   OWNER_CURRENT_BINDING_SUCCESSOR_CHECK,
   OWNER_WATER_LEVEL_BINDING_SUCCESSOR_CHECK,
+  ASSISTANT_KNOWLEDGE_BINDING_SUCCESSOR_CHECK,
 ].join(' && ');
 const CHECKPOINT_MIGRATION_PATH =
-  'supabase/migrations/20261005000000_owner_water_level_only_binding.sql';
+  'supabase/migrations/20261007123000_assistant_knowledge_refresh_binding.sql';
 const HISTORICAL_TRIP_MIGRATION_PATH =
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql';
 const CHECKPOINT_OUTER_BEGIN = '-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';
@@ -143,6 +146,8 @@ const SYNC_MIGRATION_PATHS = Object.freeze([
   'supabase/migrations/20260919010000_current_input_foundation_binding.sql',
   'supabase/migrations/20260919020000_measured_warmup_checkpoint.sql',
   CHECKPOINT_MIGRATION_PATH,
+  'supabase/migrations/20261005060000_assistant_knowledge_binding.sql',
+  'supabase/migrations/20261005000000_owner_water_level_only_binding.sql',
   'supabase/migrations/20260925150000_weather_selection_model_binding.sql',
   'supabase/migrations/20260926170000_exact_checkpoint_predecessor.sql',
   'supabase/migrations/20260923100000_integrated_checkpoint_part_identity_binding.sql',

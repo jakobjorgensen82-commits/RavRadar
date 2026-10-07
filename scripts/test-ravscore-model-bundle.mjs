@@ -110,6 +110,7 @@ for (const file of [
   'scripts/audit-candidate-g-rollback-public-runtime.mjs',
   'scripts/verify-ravscore-operational-pages-deployment.mjs',
   'scripts/ravscore-operational-activation.mjs',
+  'scripts/lib/bounded-conditions-predecessor-transition.mjs',
 ]) {
   assert.equal(baseline.manifest.files.some(item => item.path === file), false,
     `${file} is public-release/transition tooling and must not identify the integrated model`);

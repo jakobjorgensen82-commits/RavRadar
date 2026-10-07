@@ -19,6 +19,63 @@ Den offentlige GPT-OSS-gateway var sikker og domæneafgrænset, men dens godkend
 
 ## Sikkerhedsgrænser
 
+### Tillæg 2026-10-07 13.11 DK – aktuel originalrute og lokal assistentbinding
+
+Den lokale 456-emneviden har nu en særskilt gennemgået efterfølger.
+Den nye migrationsfil er oprettet og kontrolleret gennem den normale bygger;
+de to tidligere migrationsfiler er uændrede. Den præcise originalrute til
+den nye implementering bevarer den gamle originalidentitet og 455-ruten.
+
+Direkte read-only kontrol af den beskyttede kilde peger nu på den normale
+548-original fra 6. oktober kl.22 dansk tid, ikke den ældre 543-generation.
+En særskilt låst originalrute bevarer den aktuelle identitet og de gamle
+543-/455-ruter. Den normale workflow-forberedelse og negative identitets-
+kontroller består. Dette er metadata og lokal kontrol, ikke autentificeret
+B/S-restore, installation eller ny offentlig levering.
+
+Alle otte normale lokale bindingsforbrugere er synkroniseret og kontrolleret.
+Kun lokal implementeringsmetadata er ændret; øvrige administratordata,
+fysiske kontrakter, score, geometri, privat lagring og offentlig projektion
+er uændrede. Originalrute-/appendtesten, normal bindingskontrol,
+releasekontraktens fejl-/historikværn og hele vidensmålprøven består.
+De eksisterende normale gates bruger nu den præcise nye efterfølger.
+
+Dette er ikke SQL-installation, aktuel produktionsautentificering, main-
+integration, kilde-CI, offentlig levering eller fungerende ny ekstern AI.
+Aktuelle originale B/S før T, sikker levering og faktisk offentlig effekt
+er stadig nødvendige. Ingen tidligere afvisning eller gate er omgået.
+Målet omfatter fortsat revision, brugerdata og Spørg RavRadar med selvstændig
+drift uden Codex omkring 18. oktober; ingen abonnementssikkerhed loves.
+Se 89.176 og privat checkpoint; tidligere daterede statusser er historik.
+
+### Tillæg 2026-10-07 09.16 DK – kun normal lokal metadata-generation
+
+Den allerede modtagne præcise tilladelse bruges til de to eksisterende
+bundlebyggere i korrekt rækkefølge. Begge normale kontroller består for
+456-emnekilden; kun de to vidensfiler og afledt Candidate G-metafil ændrer
+kildeinventarerne. Fysik og privat/offentlig lagringskontrakt er uændrede.
+Den allerede skrevne 455-emnemigration og dens forgænger bevares. Den
+normale successor-kontrol afviser korrekt de nye bindinger. En gennemgået
+append-only overgang, original B/S-før-T og alle relevante kilde- og
+leveringsgates mangler stadig. Genberegning er ikke migration, offentlig
+levering eller autoritet til tidligere særskilt afviste handlinger.
+
+### Tillæg 2026-10-07 08.36 DK – faktisk AI-prøve, ikke færdig levering
+
+Den eksisterende normale offentlige browservej gav først en kvotekontrolfejl
+og senere et faktisk fjernsvar på samme spørgsmål. Den intermitterende
+tekniske årsag er åben; sikkerhed og kvote må ikke lempes. Fjernsvaret havde
+en misvisende faglig generalisering om advektion. En ny, afgrænset DA/DE/EN-
+forklaring er derfor kildeklassificeret som kystanalogi og testes gennem
+den normale lokale kalder. Nye lokale tal er 456 emner, 1368 sprogsvar,
+16416 formuleringer, 473 emnekontrakter og 111 kilder. Ældre daterede tal er
+historik, ikke den nye kandidat. Lokale svar og én offentlig AI-afprøvning
+beviser hverken ny offentlig leverance, fuld provider-/modelidentitet,
+målt ravrute eller fundgaranti. Tidligere bundleafklaring er modtaget;
+de gamle gemte bindinger må ikke præsenteres som friske efter udvidelsen.
+Read-only, originalbindinger, dataminimering, sprog, brugerfunktioner,
+sikkerhed og alle kontrollerede leveringsgates består. Se håndbog 89.175.
+
 - Begge assistentveje er read-only. De kan ikke skrive eller ændre kort, prognoser, RavScore, vejr, sortering, konto-/turdata, privatliv, geometri eller land-/vandpunkter.
 - Browseren modtager fortsat ingen Cloudflare-credential. Fjernkonteksten er fortsat begrænset til den valgte zones offentlige, allowlistede felter uden koordinater, rå U/V, persondata eller interne diagnoser.
 - RavScore er ikke en procentchance eller sikkerhedsvurdering og kan ikke garantere fund.

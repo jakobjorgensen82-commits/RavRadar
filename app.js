@@ -1,20 +1,20 @@
-import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.549";
-import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, refreshPublicRuntimeGeneration } from "./js/services/data-service.js?v=4.0.549";
-import { submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.549";
-import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.549";
-import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.549";
-import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.549";
-import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.549";
-import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.549&ui=account-20261006";
-import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.549";
-import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails } from "./js/services/rav-assistant.js?v=4.0.549";
-import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.549";
-import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.549";
-import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.549";
-import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.549';
-import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.549';
-import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.549';
-import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.549';
+import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.550";
+import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, refreshPublicRuntimeGeneration } from "./js/services/data-service.js?v=4.0.550";
+import { submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.550";
+import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.550";
+import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.550";
+import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.550";
+import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.550";
+import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.550&ui=account-20261006";
+import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.550";
+import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails, ravQuestionKnowledgeTopic } from "./js/services/rav-assistant.js?v=4.0.550";
+import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.550";
+import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.550";
+import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.550";
+import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.550';
+import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.550';
+import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.550';
+import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.550';
 
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, flowArrows:null, currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
 const RUNTIME_SNAPSHOT_TEXT = Object.freeze({
@@ -429,7 +429,8 @@ function enableDialogClose(dialog){dialog.querySelector(".dialog-close")?.addEve
 
 function assistantContext(){const zone=state.selectedZone,condition=zoneCondition(zone),display=zone?currentDisplayFor(zone):null;return {locale:getLanguage(),modelBinding:state.conditions?.ravScoreRuntime?.modelBinding??null,zone,weather:display?.weather||{},history:condition.history||{},result:display?.result||null,mode:state.mode,zones:state.zones,conditions:state.conditions};}
 function addAssistantMessage(text,who="assistant",loading=false){const box=document.querySelector("#assistantMessages");const div=document.createElement("div");div.className=`assistant-message ${who}${loading?" loading":""}`;const p=document.createElement("p");p.textContent=text;div.appendChild(p);box.appendChild(div);box.scrollTop=box.scrollHeight;return div;}
-async function submitAssistantQuestion(question){const clean=String(question||"").trim();if(!clean)return;addAssistantMessage(clean,"user");const pending=addAssistantMessage(t('assistant.working'),"assistant",true);try{if(ravQuestionNeedsConditionDetails(clean))await ensureConditionDetails();pending.querySelector("p").textContent=await askRavRadar(clean,assistantContext());pending.classList.remove("loading");}catch(error){pending.querySelector("p").textContent=error.message;pending.classList.remove("loading");}}
+let assistantLastTopicId=null,assistantQuestionNumber=0;
+async function submitAssistantQuestion(question){const clean=String(question||"").trim();if(!clean)return;const number=++assistantQuestionNumber,previousTopicId=assistantLastTopicId;addAssistantMessage(clean,"user");const pending=addAssistantMessage(t('assistant.working'),"assistant",true);try{if(ravQuestionNeedsConditionDetails(clean,assistantContext()))await ensureConditionDetails();pending.querySelector("p").textContent=await askRavRadar(clean,assistantContext(),{followupTopicId:previousTopicId});if(number===assistantQuestionNumber)assistantLastTopicId=ravQuestionKnowledgeTopic(clean,previousTopicId);pending.classList.remove("loading");}catch(error){if(number===assistantQuestionNumber)assistantLastTopicId=null;pending.querySelector("p").textContent=error.message;pending.classList.remove("loading");}}
 const quickBox=document.querySelector("#assistantQuickQuestions");quickBox.innerHTML=quickQuestions().map(q=>`<button type="button">${q}</button>`).join("");quickBox.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>submitAssistantQuestion(button.textContent)));document.querySelector("#assistantButton").addEventListener("click",()=>assistantDialog.showModal());document.querySelector("#assistantForm").addEventListener("submit",async event=>{event.preventDefault();const field=event.currentTarget.elements.question;const q=field.value;field.value="";await submitAssistantQuestion(q);});
 
 document.querySelectorAll(".mode-button").forEach(button=>button.addEventListener("click",()=>setMode(button.dataset.mode)));
