@@ -617,8 +617,17 @@ const casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.end
   )].map(match => ({ migration: name, timeout: match[1] })));
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
+assert.deepEqual(casTimeoutSettings.filter(({ migration }) => [
+  '20261005060000_assistant_knowledge_binding.sql',
+  '20261007123000_assistant_knowledge_refresh_binding.sql',
+].includes(migration)), [
+  { migration: '20261005060000_assistant_knowledge_binding.sql', timeout: '55s' },
+  { migration: '20261005060000_assistant_knowledge_binding.sql', timeout: '55s' },
+  { migration: '20261007123000_assistant_knowledge_refresh_binding.sql', timeout: '55s' },
+  { migration: '20261007123000_assistant_knowledge_refresh_binding.sql', timeout: '55s' },
+], 'both assistant bindings must retain 55s in the generated CAS block and final re-assertion');
 assert.equal(casTimeoutSettings.at(-1).migration,
-  '20261005060000_assistant_knowledge_binding.sql');
+  '20261007123000_assistant_knowledge_refresh_binding.sql');
 const restoredTimeoutMigration = fs.readFileSync(
   new URL('20261002094500_restore_checkpoint_cas_timeout.sql', migrationsUrl), 'utf8',
 ).replace(/\r\n?/g, '\n');

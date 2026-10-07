@@ -1,5 +1,14 @@
 # NYESTE – 2026-10-07 – Spørg RavRadar 4.0.550 klargjort lokalt
 
+Præcis kildekontrol på PR #532 fandt en forældet testforventning: den sidste
+timeoutmigration var stadig sat til 455-emnebindingen. Testen bruger nu den
+append-only 456-efterfølger og kræver fortsat 55 sekunder i begge migrationers
+genererede CAS-led og afsluttende gentagelse. Den berørte normale måltest
+består; samlet kontrol på den nye commit er endnu ikke bevist. SQL, runtime,
+historiske migrationer og produktionsgates er uændrede. Ingen merge eller
+deploy er udført; original B/S, installeret backend og offentlig effekt er
+fortsat åbne.
+
 Den selvstændige assistentkandidat er versionssat til 4.0.550 gennem den normale
 releasevej efter lokal integration af main 4.0.549. Ren versionssynkronisering
 af begge geodatafiler skal bevises særskilt før commit. Den afviste separate
