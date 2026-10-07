@@ -1,4 +1,12 @@
-# NYESTE – 2026-10-07 – normal assistentinstallation og lokal main-integration
+# NYESTE – 2026-10-07 – Spørg RavRadar 4.0.550 klargjort lokalt
+
+Den selvstændige assistentkandidat er versionssat til 4.0.550 gennem den normale
+releasevej efter lokal integration af main 4.0.549. Ren versionssynkronisering
+af begge geodatafiler skal bevises særskilt før commit. Den afviste separate
+Fur-pakke er ikke indarbejdet. Egen præcis kilde-CI, autentificerede originale
+B/S, installeret backend, kontrolleret deploy og offentlig svarprøve er stadig
+åbne; 4.0.550 er ikke en produktionsverificeret release. Den almindelige
+kode-only migrationsplan må fortsat ikke installere to nye led.
 
 Den lokale 456-emneviden har nu en særskilt gennemgået efterfølger.
 Den nye migrationsfil er oprettet og kontrolleret gennem den normale bygger;
