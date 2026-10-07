@@ -2,11 +2,13 @@
 
 **Håndbogsversion:** 4.0.551
 
-4.0.549 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+4.0.551 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
-Dette er den lokale integrerede kandidat, ikke et nyt offentligt leveringsbevis.
+Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
 
 ## 89.173 Cachegenbrug med schedulerens gyldige UTC-format
+
+<div class="reader-guide"><strong>Kort fortalt:</strong> Cachegenbrug må kun normalisere den validerede kaldertime til kanonisk UTC-format. Originale kildebeviser, autenticitet, central routing og hård no-loss bevares; manglende timer opfindes ikke.</div>
 
 4.0.551 er en separat minimal cache-rettelse fra main 4.0.549. Den normale gendannelseskalder accepterer allerede en gyldig hel UTC-time uden millisekunder, men SOURCE-kontinuitet kræver kanonisk tidsformat. Kun den validerede kaldertime kanoniseres før sammenfletning; lagrede referencer, autentificering, originale kildebeviser, central routing og hård no-loss er uændrede. Seks eksisterende CLI-varianter dækker gyldige og beskadigede beviser ved kanonisk time, schedulerformat og næste time; et manglende nyt sluttidspunkt opfindes ikke. Ejerens konkrete ja omfatter denne separate GitHub-rettelse med kontrolleret levering og derefter én vejrhentning uden overlappende writer. Den tidligere ordre om ingen ekstra hentning er erstattet alene for dette ene efterfølgende forløb. Særskilte afvisninger, den isolerede store revision og assistentkandidaten ændres ikke. Kilde-CI, sikker merge, deploy og faktisk ny cache-/vejrgeneration er endnu åbne; generisk produktionsfejlkode er ikke bevis for den skjulte indre exception. Tidligere Fur/no-loss-tab er en særskilt åben årsag. Brugerdata, Spørg RavRadar og Codex-uafhængig drift før abonnementets udløb er ikke færdige.
 
@@ -610,6 +612,8 @@ før og efter reservehentningen, men de afslører ikke kilden til de syv tab.
 Kørslen med deploy kl.09.26 beviser derfor ikke, at den gamle fejl er løst.
 
 ## 89.156 Fejlalarm til ejeren, ikke på hjemmesiden
+
+<p>Ny lokal kontrol8.oktober kl.00.47: Fire fejlede almindelige vejrhentninger fra7.oktober har ingen tilsvarende alarmkørsel eller ejer-issue, selv om alarmen er aktiv. De var startet af GitHubs bot; den menneskestartede fejl6.oktober fik en faktisk tildelt issue. GitHubs hændelsesbegrænsning er en sandsynlig forklaring, ikke et særskilt leverandørbevis. Den lokale rettelse bruger ét eksplicit alarmkald fra botens normale fejlede terminalkontrol. Alarmen læser højst12 gange og venter højst11 gange fem sekunder på det præcise forsøg; ingen issue må oprettes før faktisk afsluttet fejl. Den eksisterende completion-alarm bevares for både mennesker og bot. Alarmkøen serialiserer event og eksplicit kald; den eksisterende markerede ejer-issue deduplikerer dem, så en fungerende alarmvej ikke fjernes. Ukendt skrivning gentages ikke. Denne rettelse er kun lokal og måltestet, ikke leveret eller bevist i drift. Den dækker ikke andre produktionsindgange, et aldrig startet alarmjob eller samlet runner-tab. Vejr, cache, brugerdata, model, planer og nøgler er uændrede. Ingen hjemmesidealarm eller mail til hjemmesidens brugere. Assistentadskillelsen og engangsovergangen er fortsat i bero. De tidligere leveringsbeskrivelser nedenfor gælder den oprindelige alarm, ikke den nye botrettelse.</p>
 
 Nyeste faktiske status: Alarmen blev leveret den4.oktober kl.09.34 via PR513.
 Den ene godkendte kontrol afsluttede kl.09.35, og issue514 er faktisk gemt

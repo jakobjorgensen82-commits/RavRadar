@@ -178,3 +178,41 @@ jobs:
             echo "- Pages: $DEPLOY_RESULT / $DEPLOYMENT_OUTCOME / $PUBLIC_VERIFICATION_OUTCOME / verified=$DEPLOYED_VERIFIED"
           } >> "$GITHUB_STEP_SUMMARY"
           node scripts/lib/verified-weather-deployment-terminal.mjs
+
+  notify-owner-failure:
+    name: Hand off one bot-started ordinary failure to the existing owner alert
+    needs: terminal-outcome
+    if: >-
+      always() && !cancelled() &&
+      github.repository == 'jakobjorgensen82-commits/RavRadar' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'github-actions[bot]' &&
+      needs.terminal-outcome.result == 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      # GITHUB_TOKEN completion events are not a reliable bot-origin trigger.
+      # This one explicit workflow_dispatch is supported. The separate alert
+      # observes actual run completion and revalidates main before any issue.
+      - name: Dispatch the existing alert once, without retry or provider work
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = jakobjorgensen82-commits/RavRadar
+          test "$GITHUB_REF" = refs/heads/main
+          [[ "$GITHUB_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$GITHUB_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]]
+          if ! timeout 20s gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/notify-weather-failure.yml/dispatches" \
+            -f ref=main -f "inputs[failed_run_id]=$GITHUB_RUN_ID" \
+            -f "inputs[source_run_attempt]=$GITHUB_RUN_ATTEMPT" \
+            -F "inputs[wait_for_completion]=true" > /dev/null 2>&1; then
+            echo 'WEATHER_FAILURE_ALERT_DISPATCH_OUTCOME_UNKNOWN_DO_NOT_RETRY' >&2
+            exit 1
+          fi

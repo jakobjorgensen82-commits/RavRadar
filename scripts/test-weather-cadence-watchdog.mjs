@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { assessWeatherCadenceWatchdog } from './check-weather-cadence-watchdog.mjs';
 import { notifyWeatherFailure, weatherFailureIssue, WEATHER_FAILURE_REPOSITORY,
@@ -263,4 +267,180 @@ test('Owner alarm workflow uses default-branch code without production writes or
   assert.match(alarm, /ref: \$\{\{ github\.sha \}\}/);
   assert.doesNotMatch(alarm, /workflow_run\.head_sha|secrets\.|upload-artifact|download-artifact|weather-production|update-dmi|supabase|deploy-pages|send-mail|smtp/i);
   assert.equal((alarm.match(/run: node scripts\/notify-weather-failure\.mjs/g) || []).length, 1);
+});
+
+test('Bot-started ordinary failure explicitly dispatches the existing alert, without a weather retry', async () => {
+  const caller = await fs.readFile('.github/workflows/run-current-weather-once.yml', 'utf8');
+  const alarm = await fs.readFile('.github/workflows/notify-weather-failure.yml', 'utf8');
+  const tail = caller.slice(caller.indexOf('\n  notify-owner-failure:'));
+  assert.ok(caller.includes('\n  notify-owner-failure:'), 'A workflow_run event alone is not a bot-started failure handoff.');
+  assert.match(tail, /needs: terminal-outcome/);
+  assert.match(tail, /always\(\).*?!cancelled\(\)/s);
+  assert.match(tail, /github\.actor == 'github-actions\[bot\]'/);
+  assert.match(tail, /needs\.terminal-outcome\.result == 'failure'/);
+  assert.match(tail, /github\.repository == 'jakobjorgensen82-commits\/RavRadar'/);
+  assert.match(tail, /github\.ref == 'refs\/heads\/main'/);
+  assert.match(tail, /timeout-minutes: 2/);
+  assert.match(tail, /actions: write/);
+  assert.doesNotMatch(tail, /issues: write|secrets\.|update-dmi|supabase|deploy-pages|providers|force=true/);
+  assert.equal((tail.match(/gh api --method POST/g) || []).length, 1);
+  assert.match(tail, /notify-weather-failure\.yml\/dispatches/);
+  assert.match(tail, /inputs\[source_run_attempt\]/);
+  assert.match(tail, /inputs\[wait_for_completion\]=true/);
+  assert.match(tail, /DISPATCH_OUTCOME_UNKNOWN_DO_NOT_RETRY/);
+  assert.doesNotMatch(tail, /for |while |workflow run|run-current-weather-once\.yml\/dispatches/);
+  assert.doesNotMatch(alarm, /workflow_run\.actor\.login/, 'Keep the existing bot completion event as a safety path.');
+  assert.match(alarm, /WAIT_FOR_COMPLETION: \$\{\{ inputs\.wait_for_completion \}\}/);
+  assert.match(alarm, /SOURCE_RUN_ATTEMPT: \$\{\{ inputs\.source_run_attempt \}\}/);
+});
+
+test('Explicit alert waits for the exact attempt to complete before the normal one-write boundary', async () => {
+  const api = alertApi();
+  let observations = 0, waits = 0;
+  const get = async route => {
+    if (route === `${alertBase}/actions/runs/123` && observations++ < 2) {
+      return { ...alertRun, status: 'in_progress', conclusion: null };
+    }
+    return api.get(route);
+  };
+  const result = await notifyWeatherFailure({ runId: 123, eventAttempt: 1,
+    sourceHead: alertHead, get, post: api.post, waitForCompletion: true,
+    wait: async milliseconds => {
+      assert.equal(milliseconds, 5000);
+      assert.equal(writes(api).length, 0, 'Never create an issue while the run is active.');
+      waits++;
+    } });
+  assert.equal(result.status, 'CREATED');
+  assert.equal(waits, 2);
+  assert.equal(writes(api).length, 1);
+  assert.equal(api.calls.at(-1).route, `${alertBase}/issues/7`);
+});
+
+test('Completion wait is bounded and never turns unknown status, scope or changed attempt into a write', async () => {
+  for (const [changed, code, reason] of [
+    [{ status: 'in_progress', conclusion: null }, 'RUN_COMPLETION_NOT_OBSERVED', null],
+    [{ status: 'unknown', conclusion: null }, 'RUN_WAIT_STATUS_REJECTED', null],
+    [{ id: 124 }, 'RUN_ID_REJECTED', null],
+    [{ path: '.github/workflows/update-and-deploy.yml' }, 'RUN_SCOPE_REJECTED', null],
+    [{ html_url: 'https://example.invalid/private' }, 'RUN_URL_REJECTED', null],
+    [{ run_attempt: 2 }, null, 'ATTEMPT_SUPERSEDED'],
+    [{ conclusion: 'success' }, null, 'NOT_COMPLETED_FAILURE'],
+  ]) {
+    const api = alertApi();
+    let reads = 0, waits = 0;
+    const promise = notifyWeatherFailure({ runId: 123, eventAttempt: 1,
+      sourceHead: alertHead, post: api.post, waitForCompletion: true,
+      wait: async milliseconds => { assert.equal(milliseconds, 5000); waits++; },
+      get: async route => {
+        if (route === `${alertBase}/actions/runs/123`) { reads++; return { ...alertRun, ...changed }; }
+        return api.get(route);
+      } });
+    if (code) await assert.rejects(promise, alertCode(code));
+    else assert.deepEqual(await promise, { status: 'SKIPPED', reason });
+    assert.equal(writes(api).length, 0);
+    assert.ok(reads <= 12);
+    assert.ok(waits <= 11);
+  }
+  const api = alertApi();
+  await assert.rejects(notifyWeatherFailure({ runId: 123, eventAttempt: null,
+    sourceHead: alertHead, get: api.get, post: api.post, waitForCompletion: true,
+    wait: async () => assert.fail('Missing attempt may never wait.') }), alertCode('ARGUMENT_REJECTED'));
+  assert.equal(writes(api).length, 0);
+});
+
+test('Normal owner-alert CLI enforces the handoff inputs and completion gates without network access', async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-owner-alert-cli-'));
+  const eventFile = path.join(directory, 'event.json');
+  const hookFile = path.join(directory, 'offline-hook.mjs');
+  // This is a private synthetic transport fixture, never a provider or GitHub
+  // request. Fail immediately on any route outside the normal metadata seam.
+  await fs.writeFile(hookFile, `
+import assert from 'node:assert/strict';
+const base = ${JSON.stringify(alertBase)}, head = ${JSON.stringify(alertHead)};
+const original = ${JSON.stringify(alertRun)};
+const issue = ${JSON.stringify(weatherFailureIssue(alertRun))};
+const stored = {...issue, number:7, user:{login:'github-actions[bot]'},
+  assignees:[{login:${JSON.stringify(WEATHER_FAILURE_OWNER)}}]};
+let reads=0,writes=0,waits=0,calls=0;
+const timer=globalThis.setTimeout;
+globalThis.setTimeout=(callback,milliseconds,...args)=> {
+  if(milliseconds!==5000)return timer(callback,milliseconds,...args);
+  waits++;queueMicrotask(()=>callback(...args));return 0;
+};
+globalThis.fetch=async (url,options={})=> {
+  calls++;
+  assert.equal(new URL(url).origin,'https://api.github.com');
+  const route=new URL(url).pathname+new URL(url).search;
+  let body;
+  if(options.method==='POST') {
+    assert.equal(route,base+'/issues');
+    assert.ok(reads>=(process.env.RR_ALERT_FIXTURE.startsWith('bot-event')?2:3),
+      'No issue before actual completion observation and immediate recheck.');
+    assert.deepEqual(JSON.parse(options.body),issue);
+    assert.equal(writes++,0,'No repeated create.');
+    if(process.env.RR_ALERT_FIXTURE==='unknown-write')throw new Error('PRIVATE_FIXTURE_CANARY');
+    body=stored;
+  } else if(route===base)body={id:1306858343,full_name:${JSON.stringify(WEATHER_FAILURE_REPOSITORY)},
+    default_branch:'main',has_issues:true};
+  else if(route===base+'/git/ref/heads/main')body={object:{sha:head}};
+  else if(route===base+'/actions/runs/123') {
+    reads++;body=reads<3&&!process.env.RR_ALERT_FIXTURE.startsWith('bot-event')
+      ?{...original,status:'in_progress',conclusion:null}
+      :{...original,conclusion:process.env.RR_ALERT_FIXTURE==='success'?'success':'failure'};
+  } else if(route.startsWith(base+'/issues?'))body=process.env.RR_ALERT_FIXTURE==='bot-event-existing'?[stored]:[];
+  else if(route===base+'/assignees/'+${JSON.stringify(WEATHER_FAILURE_OWNER)})return new Response(null,{status:204});
+  else if(route===base+'/issues/7')body=stored;
+  else throw new Error('PRIVATE_FIXTURE_CANARY');
+  return new Response(JSON.stringify(body),{status:200});
+};
+process.on('exit',()=>console.log(JSON.stringify({offlineFixture:true,calls,reads,writes,waits})));
+`);
+  try {
+    for (const [scenario, fields, expectedStatus, expectedCode, expectedWrites] of [
+      ['failure', {}, 0, 'CREATED', 1],
+      ['success', {}, 0, 'NOT_COMPLETED_FAILURE', 0],
+      ['unknown-write', {}, 1, 'ISSUE_CREATE_OUTCOME_UNKNOWN_DO_NOT_RETRY', 1],
+      ['failure', { WAIT_FOR_COMPLETION: 'not-a-boolean' }, 1, 'ARGUMENT_REJECTED', 0],
+      ['failure', { SOURCE_RUN_ATTEMPT: '' }, 1, 'ARGUMENT_REJECTED', 0],
+      ['failure', { SOURCE_RUN_ATTEMPT: '1.5' }, 1, 'ARGUMENT_REJECTED', 0],
+      ['bot-event', { GITHUB_EVENT_NAME: 'workflow_run', WAIT_FOR_COMPLETION: '',
+        SOURCE_RUN_ATTEMPT: '' }, 0, 'CREATED', 1],
+      ['bot-event-existing', { GITHUB_EVENT_NAME: 'workflow_run', WAIT_FOR_COMPLETION: '',
+        SOURCE_RUN_ATTEMPT: '' }, 0, 'EXISTING', 0],
+    ]) {
+      await fs.writeFile(eventFile, JSON.stringify(scenario.startsWith('bot-event')
+        ? {action:'completed',workflow_run:{...alertRun,actor:{login:'github-actions[bot]'}}}:{}));
+      const result = spawnSync(process.execPath, ['--import', pathToFileURL(hookFile).href,
+        'scripts/notify-weather-failure.mjs'], { encoding:'utf8', timeout:3000,
+        env:{...process.env,GITHUB_REPOSITORY:WEATHER_FAILURE_REPOSITORY,GITHUB_REF:'refs/heads/main',
+          GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_EVENT_PATH:eventFile,GITHUB_SHA:alertHead,
+          GITHUB_TOKEN:'OFFLINE_SYNTHETIC_TOKEN',FAILED_RUN_ID:'123',SOURCE_RUN_ATTEMPT:'1',
+          WAIT_FOR_COMPLETION:'true',RR_ALERT_FIXTURE:scenario,...fields} });
+      assert.equal(result.error, undefined);
+      assert.equal(result.signal, null);
+      assert.equal(result.status, expectedStatus, scenario);
+      assert.ok((result.stdout+result.stderr).includes(expectedCode), scenario);
+      assert.equal((result.stdout+result.stderr).includes('PRIVATE_FIXTURE_CANARY'), false);
+      const fixture = result.stdout.trim().split(/\r?\n/).map(line=>JSON.parse(line))
+        .find(row=>row.offlineFixture);
+      assert.equal(fixture.writes, expectedWrites, scenario);
+      assert.ok(fixture.reads<=4);
+      if (scenario === 'failure' && expectedStatus === 0) assert.equal(fixture.waits, 2);
+      if (scenario.startsWith('bot-event')) {
+        assert.equal(fixture.waits, 0, 'A delivered completion event must not need the explicit-handoff wait.');
+        assert.ok(fixture.calls > 0, 'Do not discard the existing bot completion path.');
+      }
+      if (fields.WAIT_FOR_COMPLETION === 'not-a-boolean'
+        || !scenario.startsWith('bot-event') && Object.hasOwn(fields,'SOURCE_RUN_ATTEMPT')
+          && fields.SOURCE_RUN_ATTEMPT!=='1') {
+        assert.equal(fixture.calls, 0, 'Rejected input/event must not even request metadata.');
+      }
+    }
+  } finally {
+    // Only these two owned files, after each real child has exited. No recursive
+    // deletion, adoption, provider process or production artifact is involved.
+    await fs.unlink(eventFile);
+    await fs.unlink(hookFile);
+    await fs.rmdir(directory);
+  }
 });
