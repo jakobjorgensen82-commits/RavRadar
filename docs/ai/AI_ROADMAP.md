@@ -1,3 +1,7 @@
+# Lokal releasekandidat – 4.0.549, 2026-10-07 02.01 DK
+
+Lokal 4.0.549 er klargjort fra aktuel main 4.0.548 med den afgrænsede DMI-supervisorrettelse og dens eksisterende måltests samt cachetests for afbrudt gemning/gendannelse. Den samme stopguard omfatter logfejl, læseropsætning, afslutningsventning og aktiv asset efter EOF; første fejl bevares, og ukendt ophør starter ingen ny producer eller finalizer. Signaler, frister, kilder, geometri, scoreformel, autentificering og no-loss er uændrede. Begge modelbundles er byteidentiske; geodata ændres kun i godkendt topversionsfelt. Den lokale håndbogskopi er en statisk tekstkopi, ikke SQL-installation. Egen exact-head kildekontrol, sikker merge og faktisk offentlig effekt mangler fortsat. BIG519 er isoleret/inaktiv; revisionens seks samlede restområder, Spørg RavRadar og GDPR er ikke afsluttet, og særskilte afvisninger består. Supervisorens eksisterende Python-prøver er nu koblet til den normale afgrænsede sourcegruppe og kræves præcis én gang; sourceplanen bevarer sine 47 kommandoer og alle tidligere kontroller.
+
 # NYESTE – 2026-10-06 – ejerafklaret projektroadmap, adskilt fra opgavernes restplan
 
 Ejeren har taget punkt 1, 2, 3 og 5 ud: empirisk efterkalibrering/procentchance,
@@ -26,6 +30,22 @@ frisk samlet donor-kvalifikation er nu lokalt implementeret i den normale
 bankbygger/kaldere og måltestet, inklusive dkss_lf på alle syv zoner plus Fur.
 Sikker levering og faktisk ny-generations-effekt mangler. Revisionen og
 Spørg RavRadar fortsætter som opgaver; kvotekontrol/overvågning er drift.
+
+# Lokal cacheprøve – tvangsafslutning ved normal commit, 2026-10-07 00.30 DK
+
+Kl.01.15 dansk tid den 7. oktober består en ny normal main/finalize_checkpoint-prøve med én rigtig egen syntetisk finalizer-skriveproces. Den virkelige subprocess-timeout stopper og afventer processen, før den normale kalder skriver terminal failure. Prøven bevarer original test-B/S byteidentisk, starter ingen replacement og kalder finalizer præcis én gang. Den eksisterende420-sekunders kaldkontrakt kontrolleres; kun testtransporten bruger0,3sekund. Én ny måltest PASS på0,333sekund, nul fejl/skips; tidligere14 supervisormål genkøres ikke. Dette er ikke fejlworkerens samlede fireminuttersfrist, alle efterkommere, runner-tab, fjernupload eller autentificeret673-dels original-B/S-før-T. Runtime, stopstrategi, workflow, budgetter og modelbindinger er uændrede. Den statiske installerkopi og sikker levering er fortsat åbne efter den særskilte afvisning.
+
+Kl.00.43 dansk tid den 7. oktober består en særskilt målprøve for tvangsafslutning under den normale gendannelseskommando: før og efter den første faktiske komponentombytning. Den krypterede, autentificerede slutfil og original baseline er byteidentiske; før ombytning er alle tre arbejdsfiler gamle, og efter er kun den første ny. Der findes ingen succesrapport eller succesoutput. Originalens sikkerhedskopi bevares, og efterladte staging-/backupfiler indgår aldrig i det autentificerede inventar. En frisk egen normal kommando efter bevist procesophør gendanner alle tre kvalificerede filer; de gamle transaktionsrester hverken adopteres eller ryddes af runtime. Prøven består på1,153sekunder, én parent/to delscenarier/tre testnoder, nul fejl/skips. Kun testens egne midlertidige filer ryddes efter faktisk ophør. Dette lukker et lokalt afbrydelsesbevis, ikke automatisk produktionsgenstart i delvist ændret workspace, fjernupload, tab af hosted runner, hele jobtræet eller nationalt673-dels original-B/S-før-T-bevis. Runtime, workflow, budgetter og bindinger er uændrede. Den eksisterende normale workflowkalder bruger fortsat set -euo pipefail og kræver en faktisk gyldig gendannelsesrapport; en afbrudt kommando er ikke et ufarligt cachemiss.
+
+Kl.00.29 dansk tid den 7. oktober blev en afgrænset afbrydelsesprøve føjet til den eksisterende cachetest. Den normale gemningskommando med egne autentificerede syntetiske input holdes kun i prøven ved sin eksisterende filombytning, umiddelbart før eller efter den faktiske commit; prøvens egen Node-proces tvangsafsluttes og afventes. Før commit er den tidligere krypterede fil byteidentisk, og en efterladt .new-fil bruges ikke som gemt data. Efter commit kan den nye komplette fil autentificeres. I begge tilfælde er gemningsrapport og succesoutput fraværende; der er intet uploadbevis. En frisk normal gendannelseskommando genbruger kun den faktisk ombyttede fil og bevarer original baseline, bank og korrekt cursor. Én måltest med to delscenarier består på1,120sekunder; tre testnoder, nul fejl/skips. Prøven rydder kun sine egne midlertidige filer efter faktisk procesophør. Det er virkelig afslutning af egen lokal proces ved en testholdt filgrænse, ikke samlet jobstop, tab af hosted runner, strømsvigt, fjernupload eller national fireminutterskapacitet. Runtime, workflow, modelbindinger og produktionsdata er ikke ændret af prøven.
+
+Den naturlige main548-vejrhentning var ved seneste passende aflæsning
+kl.00.27 fortsat i beregningstrin104; gemning/upload/efterdatakontrol/deploy
+var ikke gennemført. Ingen ekstra hentning eller produktionsændring under
+writer. Den allerede afviste statiske håndbogskopi og assistentens særskilt
+afviste genbinding omgås eller gentages ikke. Ingen ny version, commit,
+push, egen CI eller offentlig effekt. Revisionens seks restområder består;
+Spørg RavRadar/GDPR er særskilte uafsluttede opgaver.
 
 # RESTPLAN – 2026-10-06 – ejerafklaret afslutningsplan, ikke 100 % dækningsmål
 
