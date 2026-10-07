@@ -315,7 +315,9 @@ async function reconcileForecastFile({ root, file, temporaryDirectory, productio
   const metadata = { ...complete.metadata };
   const sourceContinuity = await mergeWaterSourceForecastContinuity(
     await readDmiWaterSourceContinuity(complete), await readDmiWaterSourceContinuity(progress),
-    productionReferenceAt,
+    // The validated scheduler target may omit milliseconds. Canonicalise only
+    // this caller instant; stored source references and original proofs remain strict.
+    new Date(instant(productionReferenceAt)).toISOString(),
   );
   if (sourceContinuity.recoveredHours) {
     metadata.waterSourceContinuity = sourceContinuity.pack;

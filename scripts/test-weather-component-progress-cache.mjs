@@ -148,7 +148,14 @@ test('large forecast and national SOURCE bank cross the normal encrypted CLI bou
 });
 
 test('encrypted forecast progress recovers SOURCE-only holes through normal restore', async t => {
-  for (const invalid of [false, true]) await t.test(invalid ? 'invalid inner source seal' : 'qualified four-hour progress', async child => {
+  const nextReference = new Date(Date.parse(reference) + 3600000).toISOString();
+  const cases = [
+    { productionReferenceAt: reference, targetSpelling: 'canonical target' },
+    { productionReferenceAt: reference.replace('.000Z', 'Z'), targetSpelling: 'scheduled seconds-only UTC target' },
+    { productionReferenceAt: nextReference.replace('.000Z', 'Z'), targetSpelling: 'next scheduled seconds-only UTC target' },
+  ].flatMap(target => [false, true].map(invalid => ({ ...target, invalid })));
+  for (const { productionReferenceAt, targetSpelling, invalid } of cases) await t.test(
+    `${invalid ? 'invalid inner source seal' : 'qualified four-hour progress'} / ${targetSpelling}`, async child => {
     const f = await fixture(child);
     const source = { sourceKey: 'tidewater:PROGRESS', stationId: 'PROGRESS',
       sourceType: 'forecast-point', name: 'Synthetic original source', point: [11, 56] };
@@ -184,12 +191,27 @@ test('encrypted forecast progress recovers SOURCE-only holes through normal rest
     assert.equal(ciphertext.includes(Buffer.from(source.sourceKey)), false);
     await fs.mkdir(path.dirname(path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH)), { recursive: true });
     await fs.copyFile(path.join(f.source, WEATHER_PROGRESS_CIPHER_PATH), path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH));
-    const restored = await f.call('restore', f.target, { productionReferenceAt: reference });
+    let restored;
+    if (productionReferenceAt === reference) {
+      restored = await f.call('restore', f.target, { productionReferenceAt });
+    } else {
+      // Exercise the actual scheduled environment/CLI boundary with an
+      // authenticated SOURCE bank, not just a bank-free restore fixture.
+      const cliReport = path.join(f.folder, 'source-restore-report.json');
+      const cli = await execFileAsync(process.execPath, ['scripts/weather-component-progress-cache.mjs', 'restore',
+        '--root', f.target, '--base', f.targetBase, '--report', cliReport], { windowsHide: true,
+        env: { ...process.env, GITHUB_REPOSITORY: repository, WEATHER_PROGRESS_ENCRYPTION_KEY: encryptionKey,
+          RAVRADAR_PRODUCTION_TARGET_HOUR: productionReferenceAt } });
+      restored = JSON.parse(cli.stdout);
+      assert.deepEqual(JSON.parse(await fs.readFile(cliReport, 'utf8')), restored);
+    }
     assert.equal(restored.restored, true, JSON.stringify(restored));
     assert.deepEqual(await fs.readFile(f.targetBase), baseBefore, 'Original protection baseline is never rewritten.');
     assert.equal(await fs.readFile(path.join(f.target, 'data/live/conditions.json'), 'utf8'), baseline);
     if (invalid) {
       assert.equal(restored.dmiProgress.forecast.status, 'REJECTED');
+      assert.ok(restored.dmiProgress.codes.includes('DMI_FORECAST_MERGE_UNAVAILABLE'),
+        'Invalid inner seals retain the existing bounded diagnostic, without private exception details.');
       assert.throws(() => assertUsableDmiProgressRecovery(restored.dmiProgress), /DMI_FORECAST_PROGRESS_RECOVERY_REQUIRED/,
         'Actual normal workflow admission rejects a cache report with invalid SOURCE recovery.');
       assert.deepEqual(await fs.readFile(path.join(f.target, 'data/live/dmi-forecast-cache.json')), forecastBefore);
@@ -199,9 +221,13 @@ test('encrypted forecast progress recovers SOURCE-only holes through normal rest
       assert.equal(assertUsableDmiProgressRecovery(restored.dmiProgress), true);
       const actual = await readDmiForecastFile(path.join(f.target, 'data/live/dmi-forecast-cache.json'));
       assert.deepEqual(actual.zones, protectedForecast.zones);
-      const qualified = await unpackWaterSourceForecastContinuity(actual.waterSourceContinuity, reference);
-      assert.deepEqual(qualified.get(source.sourceKey).hourly, original.get(source.sourceKey).hourly);
-      for (const row of sparse.get(source.sourceKey).hourly) assert.deepEqual(
+      const canonicalTarget = new Date(Date.parse(productionReferenceAt)).toISOString();
+      const qualified = await unpackWaterSourceForecastContinuity(actual.waterSourceContinuity, canonicalTarget);
+      const expected = original.get(source.sourceKey).hourly.filter(row => Date.parse(row.time) >= Date.parse(canonicalTarget));
+      assert.deepEqual(qualified.get(source.sourceKey).hourly, expected);
+      assert.equal(qualified.get(source.sourceKey).hourly.length, canonicalTarget === reference ? 121 : 120,
+        'A rolling target never invents the missing new tail hour.');
+      for (const row of sparse.get(source.sourceKey).hourly.filter(row => Date.parse(row.time) >= Date.parse(canonicalTarget))) assert.deepEqual(
         qualified.get(source.sourceKey).hourly.find(r => r.time === row.time), row,
         'Already qualified protected SOURCE hours retain their exact original proof.');
     }
