@@ -1,16 +1,16 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.548";
-import { localRavKnowledgeAnswer, localRavFollowupAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.548";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.548";
-import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.548";
-import { forecastDateKeyForDayOffset, forecastDateKeyInTimeZone } from "../core/forecast-calendar.js?v=4.0.548";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.549";
+import { localRavKnowledgeAnswer, localRavFollowupAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.549";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.549";
+import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.549";
+import { forecastDateKeyForDayOffset, forecastDateKeyInTimeZone } from "../core/forecast-calendar.js?v=4.0.549";
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   ravScoreModelBinding,
-} from "../core/ravscore-model-contract.js?v=4.0.548";
-import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.548";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.548";
-import { bestTimeSelectionReasonI18nKey, ravScoreBestTimeSelectionReason } from "../core/best-time-policy.js?v=4.0.548";
-import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.548";
+} from "../core/ravscore-model-contract.js?v=4.0.549";
+import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.549";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.549";
+import { bestTimeSelectionReasonI18nKey, ravScoreBestTimeSelectionReason } from "../core/best-time-policy.js?v=4.0.549";
+import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.549";
 
 // Compatibility name for existing source-contract tests. The implementation
 // now selects the only adapter matching the artifact's exact active binding.

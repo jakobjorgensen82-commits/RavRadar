@@ -1,4 +1,4 @@
-import { registerI18nMessages } from '../i18n.js?v=4.0.548';
+import { registerI18nMessages } from '../i18n.js?v=4.0.549';
 const messages={
   da:{
     contextTitle:'Supplerende jordbund, terræn og boringer',soilToggle:'JB-jordbundskort 2024',terrainToggle:'Terrænskygge · 2005–2007',boresToggle:'Offentlige boringer · profiler hos GEUS',

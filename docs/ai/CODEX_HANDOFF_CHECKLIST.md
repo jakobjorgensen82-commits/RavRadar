@@ -1,4 +1,4 @@
-# NYESTE – 2026-10-07 13.50 DK – normal assistentinstallation rettet lokalt
+# NYESTE – 2026-10-07 – normal assistentinstallation og lokal main-integration
 
 Den lokale 456-emneviden har nu en særskilt gennemgået efterfølger.
 Den nye migrationsfil er oprettet og kontrolleret gennem den normale bygger;
@@ -27,15 +27,17 @@ afviser manglende hjælper og ændret binding, selv med grønne kontrolflag.
 Normal installations-/readiness-test, historikværn og begge bindingskontroller
 består lokalt. Ingen SQL er kørt eller installeret.
 
-Fem afgrænsede kilde-/testfiler er lokalt identiske med aktuel main 549;
-git-ancestry og samlet kilde-CI er stadig åbne. Den tidlige kritiske kildegate
+Aktuel main 549 er nu indarbejdet i den isolerede kandidat. De gennemgåede
+assistentændringer og begge dokumentationsforløb er bevaret; geodata følger
+kun main-versionen. Fire normale assistent-/installationsmåltests består
+efter sammenlægningen. Samlet egen kilde-CI er stadig åben. Den kritiske kildegate
 består med eksisterende runtime. Fuld lokal kildekontrol er fortsat begrænset
 af den allerede dokumenterede manglende ecCodes-pakke på Windows;
 præcis GitHub-kildekontrol kræves før merge. Ingen gate svækkes eller springes.
 
 
-Dette er ikke SQL-installation, aktuel produktionsautentificering, main-
-integration, kilde-CI, offentlig levering eller fungerende ny ekstern AI.
+Dette er ikke SQL-installation, aktuel produktionsautentificering,
+produktionsmerge, egen kilde-CI, offentlig levering eller fungerende ny ekstern AI.
 Aktuelle originale B/S før T, sikker levering og faktisk offentlig effekt
 er stadig nødvendige. Ingen tidligere afvisning eller gate er omgået.
 Målet omfatter fortsat revision, brugerdata og Spørg RavRadar med selvstændig
