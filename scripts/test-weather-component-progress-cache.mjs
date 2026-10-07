@@ -1053,6 +1053,313 @@ test('compressed progress budget preserves the previous snapshot and never stops
   assert.equal((await f.call('restore', f.target)).restored, true);
 });
 
+test('normal progress CLIs retain authenticated data but never report success after late report creation fails', async t => {
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const cipherPath = path.join(f.source, WEATHER_PROGRESS_CIPHER_PATH);
+  const previousCipher = await fs.readFile(cipherPath);
+  const sourceBase = await fs.readFile(f.sourceBase);
+  const targetBase = await fs.readFile(f.targetBase);
+  const previousReport = '{"syntheticPreviousReport":true}\n';
+  const saveReport = path.join(f.folder, 'cli-existing-save-report.json');
+  await fs.writeFile(saveReport, previousReport, { flag: 'wx' });
+  await write(f.source, files.fallbackCursor, { committedBeforeReportFailure: true });
+  const environment = Object.fromEntries(Object.entries(process.env).filter(([name]) =>
+    ['PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'COMSPEC', 'PATHEXT'].includes(name.toUpperCase())));
+  Object.assign(environment, { GITHUB_REPOSITORY: repository, WEATHER_PROGRESS_ENCRYPTION_KEY: encryptionKey });
+  const cli = path.resolve('scripts/weather-component-progress-cache.mjs');
+  const assertReportFailure = error => {
+    assert.equal(error.code, 1);
+    assert.equal(error.stdout, '', 'no successful output may precede a failed report');
+    assert.equal(error.stderr.trim(), 'WEATHER_PROGRESS_CACHE_REPORT_UNAVAILABLE');
+    return true;
+  };
+  await assert.rejects(execFileAsync(process.execPath, [cli, 'save', '--root', f.source,
+    '--base', f.sourceBase, '--report', saveReport],
+  { cwd: process.cwd(), env: environment, windowsHide: true }), assertReportFailure);
+  assert.equal(await fs.readFile(saveReport, 'utf8'), previousReport);
+  const committedCipher = await fs.readFile(cipherPath);
+  assert.notDeepEqual(committedCipher, previousCipher);
+  assert.deepEqual(await fs.readFile(f.sourceBase), sourceBase);
+  assert.equal(await fs.readFile(path.join(f.source, 'data/live/conditions.json'), 'utf8'), baseline);
+  assert.equal((await fs.readdir(path.dirname(cipherPath))).some(name =>
+    name.startsWith(`${path.basename(cipherPath)}.new-`)), false);
+  await withAuthenticatedWeatherProgress({ repositoryRoot: f.source,
+    basePath: f.sourceBase, repository, encryptionKey }, async ({ verifiedRoot }) => {
+    assert.deepEqual(JSON.parse(await fs.readFile(path.join(verifiedRoot, files.fallbackCursor), 'utf8')),
+      { committedBeforeReportFailure: true });
+    assert.deepEqual(JSON.parse(await fs.readFile(path.join(verifiedRoot, files.openMeteoBank), 'utf8')), progressedBank);
+  });
+  await f.assertTargetOriginal();
+  // Only a locally copied ciphertext is supplied to a fresh normal CLI. The
+  // failed seal/report step is not a saved-output or remote-upload receipt.
+  await fs.copyFile(cipherPath, path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH));
+  const blockedRestoreReport = path.join(f.folder, 'cli-existing-restore-report.json');
+  await fs.writeFile(blockedRestoreReport, previousReport, { flag: 'wx' });
+  await assert.rejects(execFileAsync(process.execPath, [cli, 'restore', '--root', f.target,
+    '--base', f.targetBase, '--report', blockedRestoreReport],
+  { cwd: process.cwd(), env: environment, windowsHide: true }), assertReportFailure);
+  assert.equal(await fs.readFile(blockedRestoreReport, 'utf8'), previousReport);
+  // A late failed report is not an untouched cache miss: the normal restore
+  // already installed verified progress. It exits nonzero and must stop the
+  // normal caller; these bytes alone do not prove successful outer recovery.
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(f.target, files.fallbackCursor), 'utf8')),
+    { committedBeforeReportFailure: true });
+  assert.deepEqual(await fs.readFile(f.targetBase), targetBase);
+  assert.equal(await fs.readFile(path.join(f.target, 'data/live/conditions.json'), 'utf8'), baseline);
+  assert.deepEqual(await fs.readFile(path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH)), committedCipher);
+  const restoreReport = path.join(f.folder, 'cli-after-report-failure-restore.json');
+  const { stdout, stderr } = await execFileAsync(process.execPath, [cli, 'restore',
+    '--root', f.target, '--base', f.targetBase, '--report', restoreReport],
+  { cwd: process.cwd(), env: environment, windowsHide: true });
+  const restored = JSON.parse(await fs.readFile(restoreReport, 'utf8'));
+  assert.equal(stderr, '');
+  assert.deepEqual(JSON.parse(stdout), restored);
+  assert.equal(restored.restored, true);
+  assert.equal(restored.saved, false);
+  assert.equal(restored.privatePayloadIncluded, false);
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(f.target, files.fallbackCursor), 'utf8')),
+    { committedBeforeReportFailure: true });
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(f.target, files.openMeteoBank), 'utf8')), progressedBank);
+  assert.deepEqual(await fs.readFile(f.targetBase), targetBase);
+  assert.equal(await fs.readFile(path.join(f.target, 'data/live/conditions.json'), 'utf8'), baseline);
+});
+
+test('hard stop at the normal encrypted CLI commit boundary retains only the last committed snapshot', async t => {
+  for (const phase of ['before', 'after']) await t.test(phase, async sub => {
+    const f = await fixture(sub);
+    await f.saveAndTransfer();
+    const cipherPath = path.resolve(await fs.realpath(f.source), WEATHER_PROGRESS_CIPHER_PATH);
+    const previousCipher = await fs.readFile(cipherPath);
+    const sourceBase = await fs.readFile(f.sourceBase);
+    const targetBase = await fs.readFile(f.targetBase);
+    await write(f.source, files.fallbackCursor, { hardStoppedSeal: true });
+    const environment = Object.fromEntries(Object.entries(process.env).filter(([name]) =>
+      ['PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'COMSPEC', 'PATHEXT'].includes(name.toUpperCase())));
+    Object.assign(environment, { GITHUB_REPOSITORY: repository, WEATHER_PROGRESS_ENCRYPTION_KEY: encryptionKey });
+    const cli = path.resolve('scripts/weather-component-progress-cache.mjs');
+    const saveReport = path.join(f.folder, `hard-stop-${phase}-save-report.json`);
+    // Test-only preload holds the existing fs.rename seam immediately before
+    // or after the actual atomic commit. The normal executable, pack, GCM,
+    // flush and restore paths are unchanged; no production hook is added.
+    const preload = `
+      import fs from 'node:fs/promises';
+      import path from 'node:path';
+      const mkdir = fs.mkdtemp.bind(fs), rename = fs.rename.bind(fs);
+      fs.mkdtemp = async (...args) => {
+        const folder = await mkdir(...args);
+        if (path.basename(String(args[0])).startsWith('rr-encrypted-progress-'))
+          process.stderr.write('COMMIT_TEST_TEMP:' + JSON.stringify(folder) + '\\n');
+        return folder;
+      };
+      fs.rename = async (from, to) => {
+        if (path.resolve(String(to)) !== ${JSON.stringify(cipherPath)}) return rename(from, to);
+        if (${JSON.stringify(phase)} === 'after') await rename(from, to);
+        process.stderr.write('COMMIT_TEST_READY\\n');
+        await new Promise(() => { setInterval(() => {}, 1000); });
+      };
+    `;
+    let child, temporaryDirectory, boundaryReached = false, killRequested = false;
+    let stderr = '';
+    const completion = new Promise(resolve => {
+      child = execFile(process.execPath, ['--import', `data:text/javascript,${encodeURIComponent(preload)}`,
+        cli, 'save', '--root', f.source, '--base', f.sourceBase, '--report', saveReport],
+      { cwd: process.cwd(), env: environment, windowsHide: true, timeout: 10_000, killSignal: 'SIGKILL' },
+      (error, stdout, output) => resolve({ error, stdout, stderr: output }));
+      child.stderr.on('data', chunk => {
+        stderr += chunk.toString();
+        const temporary = stderr.match(/^COMMIT_TEST_TEMP:(.+)$/m);
+        if (temporary) temporaryDirectory = JSON.parse(temporary[1]);
+        if (!boundaryReached && stderr.includes('COMMIT_TEST_READY\n')) {
+          boundaryReached = true;
+          killRequested = child.kill('SIGKILL');
+        }
+      });
+    });
+    try {
+      const interrupted = await completion;
+      assert.equal(boundaryReached, true, 'the real normal CLI must reach the exact commit boundary');
+      assert.equal(killRequested, true);
+      assert.ok(interrupted.error, 'a forcibly stopped seal cannot report success');
+      assert.ok(child.exitCode !== null || child.signalCode !== null, 'wait for actual own child exit');
+      assert.notEqual(child.exitCode, 0);
+      assert.equal(interrupted.stdout, '');
+      assert.equal(interrupted.stderr, stderr);
+      await assert.rejects(fs.access(saveReport), { code: 'ENOENT' });
+      const committedCipher = await fs.readFile(cipherPath);
+      if (phase === 'before') assert.deepEqual(committedCipher, previousCipher);
+      else assert.notDeepEqual(committedCipher, previousCipher);
+      const staging = (await fs.readdir(path.dirname(cipherPath))).filter(name =>
+        name.startsWith(`${path.basename(cipherPath)}.new-`));
+      assert.equal(staging.length, phase === 'before' ? 1 : 0);
+      assert.deepEqual(await fs.readFile(f.sourceBase), sourceBase);
+      assert.equal(await fs.readFile(path.join(f.source, 'data/live/conditions.json'), 'utf8'), baseline);
+      await withAuthenticatedWeatherProgress({ repositoryRoot: f.source,
+        basePath: f.sourceBase, repository, encryptionKey }, async ({ verifiedRoot }) => {
+        assert.deepEqual(JSON.parse(await fs.readFile(path.join(verifiedRoot, files.fallbackCursor), 'utf8')),
+          phase === 'before' ? { progressed: true } : { hardStoppedSeal: true });
+      });
+      await f.assertTargetOriginal();
+      // Transfer only the normal committed path, never the orphan .new file.
+      // Local recovery is not an Actions upload or survival of a lost runner.
+      await fs.copyFile(cipherPath, path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH));
+      const restoreReport = path.join(f.folder, `hard-stop-${phase}-restore-report.json`);
+      const restoredProcess = await execFileAsync(process.execPath, [cli, 'restore', '--root', f.target,
+        '--base', f.targetBase, '--report', restoreReport],
+      { cwd: process.cwd(), env: environment, windowsHide: true });
+      const restored = JSON.parse(await fs.readFile(restoreReport, 'utf8'));
+      assert.equal(restoredProcess.stderr, '');
+      assert.deepEqual(JSON.parse(restoredProcess.stdout), restored);
+      assert.equal(restored.restored, true);
+      assert.equal(restored.saved, false);
+      assert.equal(restored.privatePayloadIncluded, false);
+      assert.deepEqual(JSON.parse(await fs.readFile(path.join(f.target, files.fallbackCursor), 'utf8')),
+        phase === 'before' ? { progressed: true } : { hardStoppedSeal: true });
+      assert.deepEqual(JSON.parse(await fs.readFile(path.join(f.target, files.openMeteoBank), 'utf8')), progressedBank);
+      assert.deepEqual(await fs.readFile(f.targetBase), targetBase);
+      assert.equal(await fs.readFile(path.join(f.target, 'data/live/conditions.json'), 'utf8'), baseline);
+    } finally {
+      if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+      await completion;
+      if (temporaryDirectory) {
+        const parent = await fs.realpath(os.tmpdir());
+        assert.equal(path.dirname(path.resolve(temporaryDirectory)), parent);
+        assert.ok(path.basename(temporaryDirectory).startsWith('rr-encrypted-progress-'));
+        await fs.rm(temporaryDirectory, { recursive: true, force: true });
+      }
+    }
+    // Actual own-process termination at an injected deterministic file seam,
+    // not OS-wide/job-tree cancellation, power loss or four-minute capacity.
+  });
+});
+
+test('hard stop during normal restore retains the cipher and originals without claiming a complete installation', async t => {
+  for (const phase of ['before', 'after']) await t.test(phase, async sub => {
+    const f = await fixture(sub);
+    await f.saveAndTransfer();
+    const targetRoot = await fs.realpath(f.target);
+    const bankPath = path.resolve(targetRoot, files.openMeteoBank);
+    const cipherPath = path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH);
+    const cipher = await fs.readFile(cipherPath);
+    const sourceBase = await fs.readFile(f.sourceBase);
+    const targetBase = await fs.readFile(f.targetBase);
+    const originalBytes = await fs.readFile(bankPath);
+    const environment = Object.fromEntries(Object.entries(process.env).filter(([name]) =>
+      ['PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'COMSPEC', 'PATHEXT'].includes(name.toUpperCase())));
+    Object.assign(environment, { GITHUB_REPOSITORY: repository, WEATHER_PROGRESS_ENCRYPTION_KEY: encryptionKey });
+    const cli = path.resolve('scripts/weather-component-progress-cache.mjs');
+    const failedReport = path.join(f.folder, `hard-restore-${phase}-report.json`);
+    // Hold only the existing first component replacement, after normal GCM
+    // authentication, unpacking and staging. A real own-process hard stop
+    // cannot execute JavaScript rollback/finally; do not call it a cache miss.
+    const preload = `
+      import fs from 'node:fs/promises';
+      import path from 'node:path';
+      const mkdir = fs.mkdtemp.bind(fs), rename = fs.rename.bind(fs);
+      fs.mkdtemp = async (...args) => {
+        const folder = await mkdir(...args);
+        if (path.basename(String(args[0])).startsWith('rr-encrypted-progress-'))
+          process.stderr.write('RESTORE_TEST_TEMP:' + JSON.stringify(folder) + '\\n');
+        return folder;
+      };
+      fs.rename = async (from, to) => {
+        if (path.resolve(String(to)) !== ${JSON.stringify(bankPath)}) return rename(from, to);
+        if (${JSON.stringify(phase)} === 'after') await rename(from, to);
+        process.stderr.write('RESTORE_TEST_READY\\n');
+        await new Promise(() => { setInterval(() => {}, 1000); });
+      };
+    `;
+    let child, temporaryDirectory, boundaryReached = false, killRequested = false;
+    let stderr = '';
+    const completion = new Promise(resolve => {
+      child = execFile(process.execPath, ['--import', `data:text/javascript,${encodeURIComponent(preload)}`,
+        cli, 'restore', '--root', f.target, '--base', f.targetBase, '--report', failedReport],
+      { cwd: process.cwd(), env: environment, windowsHide: true, timeout: 10_000, killSignal: 'SIGKILL' },
+      (error, stdout, output) => resolve({ error, stdout, stderr: output }));
+      child.stderr.on('data', chunk => {
+        stderr += chunk.toString();
+        const temporary = stderr.match(/^RESTORE_TEST_TEMP:(.+)$/m);
+        if (temporary) temporaryDirectory = JSON.parse(temporary[1]);
+        if (!boundaryReached && stderr.includes('RESTORE_TEST_READY\n')) {
+          boundaryReached = true;
+          killRequested = child.kill('SIGKILL');
+        }
+      });
+    });
+    try {
+      const interrupted = await completion;
+      assert.equal(boundaryReached, true);
+      assert.equal(killRequested, true);
+      assert.ok(interrupted.error, 'a stopped partial restore cannot be admitted as success');
+      assert.ok(child.exitCode !== null || child.signalCode !== null);
+      assert.notEqual(child.exitCode, 0);
+      assert.equal(interrupted.stdout, '');
+      assert.equal(interrupted.stderr, stderr);
+      await assert.rejects(fs.access(failedReport), { code: 'ENOENT' });
+      assert.deepEqual(await fs.readFile(cipherPath), cipher);
+      assert.deepEqual(await fs.readFile(f.sourceBase), sourceBase);
+      assert.deepEqual(await fs.readFile(f.targetBase), targetBase);
+      assert.equal(await fs.readFile(path.join(f.target, 'data/live/conditions.json'), 'utf8'), baseline);
+      assert.deepEqual(JSON.parse(await fs.readFile(bankPath, 'utf8')),
+        phase === 'before' ? originalBank : progressedBank);
+      assert.deepEqual(JSON.parse(await fs.readFile(path.join(f.target, files.fallbackCursor), 'utf8')),
+        { previous: true });
+      assert.deepEqual(JSON.parse(await fs.readFile(path.join(f.target, files.selectedComponents), 'utf8')),
+        { previousSelected: true });
+      const stagedNames = (await fs.readdir(path.dirname(bankPath))).filter(name =>
+        name.includes('.progress-new-') || name.includes('.progress-previous-'));
+      assert.equal(stagedNames.filter(name => name.includes('.progress-previous-')).length, 3);
+      assert.equal(stagedNames.filter(name => name.includes('.progress-new-')).length, phase === 'before' ? 3 : 2);
+      const originalBackup = stagedNames.find(name => name.startsWith(`${path.basename(bankPath)}.progress-previous-`));
+      assert.ok(originalBackup);
+      assert.deepEqual(await fs.readFile(path.join(path.dirname(bankPath), originalBackup)), originalBytes,
+        'the previous original is retained even when abrupt termination bypasses rollback');
+      await withAuthenticatedWeatherProgress({ repositoryRoot: f.target,
+        basePath: f.targetBase, repository, encryptionKey }, async ({ verifiedRoot, files: verifiedFiles }) => {
+        assert.equal(verifiedFiles.length, 3, 'orphan backups/staging do not enter the authenticated inventory');
+        assert.deepEqual(JSON.parse(await fs.readFile(path.join(verifiedRoot, files.openMeteoBank), 'utf8')), progressedBank);
+      });
+      // Explicit fresh own CLI in the now-stopped synthetic workspace only:
+      // this is not permission for production retry in a partially used root.
+      const retryReport = path.join(f.folder, `hard-restore-${phase}-fresh-report.json`);
+      const retry = await execFileAsync(process.execPath, [cli, 'restore', '--root', f.target,
+        '--base', f.targetBase, '--report', retryReport],
+      { cwd: process.cwd(), env: environment, windowsHide: true });
+      const restored = JSON.parse(await fs.readFile(retryReport, 'utf8'));
+      assert.equal(retry.stderr, '');
+      assert.deepEqual(JSON.parse(retry.stdout), restored);
+      assert.equal(restored.restored, true);
+      assert.equal(restored.saved, false);
+      assert.equal(restored.productionAuthority, false);
+      assert.equal(restored.privatePayloadIncluded, false);
+      assert.equal(restored.fileCount, 3);
+      assert.deepEqual(JSON.parse(await fs.readFile(bankPath, 'utf8')), progressedBank);
+      assert.deepEqual(JSON.parse(await fs.readFile(path.join(f.target, files.fallbackCursor), 'utf8')),
+        { progressed: true });
+      assert.deepEqual(JSON.parse(await fs.readFile(path.join(f.target, files.selectedComponents), 'utf8')),
+        { progressedSelected: true });
+      assert.deepEqual(await fs.readFile(cipherPath), cipher);
+      assert.deepEqual(await fs.readFile(f.targetBase), targetBase);
+      assert.equal(await fs.readFile(path.join(f.target, 'data/live/conditions.json'), 'utf8'), baseline);
+      assert.deepEqual((await fs.readdir(path.dirname(bankPath))).filter(name =>
+        name.includes('.progress-new-') || name.includes('.progress-previous-')).sort(), stagedNames.sort(),
+      'normal restore never adopts or prunes earlier orphan transactions');
+      assert.deepEqual(await fs.readFile(path.join(path.dirname(bankPath), originalBackup)), originalBytes);
+    } finally {
+      if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+      await completion;
+      if (temporaryDirectory) {
+        const parent = await fs.realpath(os.tmpdir());
+        assert.equal(path.dirname(path.resolve(temporaryDirectory)), parent);
+        assert.ok(path.basename(temporaryDirectory).startsWith('rr-encrypted-progress-'));
+        await fs.rm(temporaryDirectory, { recursive: true, force: true });
+      }
+    }
+    // Existing fixture cleanup runs only after actual child exit; no real
+    // private payload, provider, remote upload, runner-loss or B/S certificate.
+  });
+});
+
 test('cipher commit flushes and closes complete authenticated bytes before replacing the previous snapshot', async t => {
   for (const fault of ['none', 'sync', 'close', 'sync-and-close']) await t.test(fault, async sub => {
     const f = await fixture(sub);

@@ -1,7 +1,75 @@
+# Lokal releasekandidat – 4.0.549, 2026-10-07 02.01 DK
+
+Lokal 4.0.549 er klargjort fra aktuel main 4.0.548 med den afgrænsede DMI-supervisorrettelse og dens eksisterende måltests samt cachetests for afbrudt gemning/gendannelse. Den samme stopguard omfatter logfejl, læseropsætning, afslutningsventning og aktiv asset efter EOF; første fejl bevares, og ukendt ophør starter ingen ny producer eller finalizer. Signaler, frister, kilder, geometri, scoreformel, autentificering og no-loss er uændrede. Begge modelbundles er byteidentiske; geodata ændres kun i godkendt topversionsfelt. Den lokale håndbogskopi er en statisk tekstkopi, ikke SQL-installation. Egen exact-head kildekontrol, sikker merge og faktisk offentlig effekt mangler fortsat. BIG519 er isoleret/inaktiv; revisionens seks samlede restområder, Spørg RavRadar og GDPR er ikke afsluttet, og særskilte afvisninger består. Supervisorens eksisterende Python-prøver er nu koblet til den normale afgrænsede sourcegruppe og kræves præcis én gang; sourceplanen bevarer sine 47 kommandoer og alle tidligere kontroller.
+
 # DEC-0266 – Sammenhængende DMI-kontinuitet og filkapacitet
 
 **Status:** Aktiv målbeslutning; genstartsleverancen er afgrænset i DEC-0268. Den samlede 4.0.519-kandidat er ikke produktionsbevist.
 **Dato:** 2026-09-30
+
+## Tillæg 6. oktober kl.22.38 — afgrænset lokal normal-supervisorrettelse
+
+Tillæg 7. oktober kl.01.51: Kl.01.51 dansk tid den 7. oktober er håndbogens statiske lokale installerkopi synkroniseret efter en frisk kontrol uden aktiv writer. Kun håndbogens JSON-payload er ændret; SQL uden for payload og begge særskilt afviste modelbundle-artifacts er byteidentiske. Ingen SQL er udført eller installeret, og ingen produktionsændring er sket. Den tidligere lokale kopigates fejl er lukket: alle437 webkapitler består den normale håndbogskontrol. Egen kilde-CI og sikker levering af supervisor-/cachekandidaten mangler stadig; dette afslutter ikke revisionen eller Spørg RavRadar.
+
+Kl.01.15 dansk tid den 7. oktober består en ny normal main/finalize_checkpoint-prøve med én rigtig egen syntetisk finalizer-skriveproces. Den virkelige subprocess-timeout stopper og afventer processen, før den normale kalder skriver terminal failure. Prøven bevarer original test-B/S byteidentisk, starter ingen replacement og kalder finalizer præcis én gang. Den eksisterende420-sekunders kaldkontrakt kontrolleres; kun testtransporten bruger0,3sekund. Én ny måltest PASS på0,333sekund, nul fejl/skips; tidligere14 supervisormål genkøres ikke. Dette er ikke fejlworkerens samlede fireminuttersfrist, alle efterkommere, runner-tab, fjernupload eller autentificeret673-dels original-B/S-før-T. Runtime, stopstrategi, workflow, budgetter og modelbindinger er uændrede. Den statiske installerkopi og sikker levering er fortsat åbne efter den særskilte afvisning.
+
+Kl.00.43 dansk tid den 7. oktober består en særskilt målprøve for tvangsafslutning under den normale gendannelseskommando: før og efter den første faktiske komponentombytning. Den krypterede, autentificerede slutfil og original baseline er byteidentiske; før ombytning er alle tre arbejdsfiler gamle, og efter er kun den første ny. Der findes ingen succesrapport eller succesoutput. Originalens sikkerhedskopi bevares, og efterladte staging-/backupfiler indgår aldrig i det autentificerede inventar. En frisk egen normal kommando efter bevist procesophør gendanner alle tre kvalificerede filer; de gamle transaktionsrester hverken adopteres eller ryddes af runtime. Prøven består på1,153sekunder, én parent/to delscenarier/tre testnoder, nul fejl/skips. Kun testens egne midlertidige filer ryddes efter faktisk ophør. Dette lukker et lokalt afbrydelsesbevis, ikke automatisk produktionsgenstart i delvist ændret workspace, fjernupload, tab af hosted runner, hele jobtræet eller nationalt673-dels original-B/S-før-T-bevis. Runtime, workflow, budgetter og bindinger er uændrede. Den eksisterende normale workflowkalder bruger fortsat set -euo pipefail og kræver en faktisk gyldig gendannelsesrapport; en afbrudt kommando er ikke et ufarligt cachemiss.
+
+Kl.00.29 dansk tid den 7. oktober blev en afgrænset afbrydelsesprøve føjet til den eksisterende cachetest. Den normale gemningskommando med egne autentificerede syntetiske input holdes kun i prøven ved sin eksisterende filombytning, umiddelbart før eller efter den faktiske commit; prøvens egen Node-proces tvangsafsluttes og afventes. Før commit er den tidligere krypterede fil byteidentisk, og en efterladt .new-fil bruges ikke som gemt data. Efter commit kan den nye komplette fil autentificeres. I begge tilfælde er gemningsrapport og succesoutput fraværende; der er intet uploadbevis. En frisk normal gendannelseskommando genbruger kun den faktisk ombyttede fil og bevarer original baseline, bank og korrekt cursor. Én måltest med to delscenarier består på1,120sekunder; tre testnoder, nul fejl/skips. Prøven rydder kun sine egne midlertidige filer efter faktisk procesophør. Det er virkelig afslutning af egen lokal proces ved en testholdt filgrænse, ikke samlet jobstop, tab af hosted runner, strømsvigt, fjernupload eller national fireminutterskapacitet. Runtime, workflow, modelbindinger og produktionsdata er ikke ændret af prøven.
+
+En yderligere prøve kl.23.45 viste et selvstændigt EOF-vindue: en stadig levende producer med aktiv asset kunne lukke output, så den eksisterende asset-watchdog blev forladt. Den normale main-prøve var først rød på5,054sekunder. Nu fortsætter præcis samme watchdog, mens asset er aktiv og processen lever; ingen frist eller stopstrategi ændres. Den samme prøve består på0,390sekunder med faktisk stop og lukket pipe før en ny egen syntetisk producer. Kun den nøjagtige asset sættes til side. Fremkaldt stopafvisning ved EOF giver fortsat første fejl uden gentaget stop/genstart/finalizer; en afbrudt markør beholder generisk watchdog uden at opfinde en assetidentitet. Normal EOF uden aktiv asset afventer fortsat legitim afslutning uden stop.14 måltestmetoder består på3,702sekunder, nul fejl/skips; ikke fuld suite, OS-signal, alle efterkommere, eksklusiv skrivning eller runner-tab.
+
+En senere prøve kl.23.32 fandt en særskilt sen fejlvej: efter virkelig EOF
+fortsatte egen skriveproces, og en afbrydelse af completion-wait sprang
+stopguard over. Begge delscenarier var røde. Den samme eksisterende guard
+omfatter nu join/wait/close; pipe lukkes først efter faktisk procesophør og
+lukket læser. Normal EOF afventer legitim afslutning uden at stoppe producer.
+Første afbrydelse bevares, også ved fremkaldt stopafvisning, uden genstart
+eller finalizer.8 direkte mål PASS2,325s og4 normale PASS0,050s:12 forskellige
+metoder, ikke fuld suite/OS-signal/jobtræ/runner-tab. Andre funktioner,
+stopgrænser, signaler og modelbindinger er uændrede. Lokal håndbogskopi til
+installeren er udskudt under aktiv writer efter den særskilte afvisning;
+kopisynkronisering og egen exact-head CI/levering er stadig åbne gates.
+
+Den allerede reproducerede logpipe-/stopfejl er afgrænset til den normale
+DMI-supervisor. Main548s supervisor og testbaseline er byteidentiske med det
+prøvede grundlag. Kun disse to præcise ændringer er ført til en separat lokal
+gren; BIG519 er fortsat isoleret/inaktiv og er ikke helkopieret.
+
+Kontrolfejl og afbrydelse forsøger det eksisterende afgrænsede stop før den
+første fejl kastes videre. Et allerede forsøgt watchdogstop gentages ikke.
+Pipe-oprydning kræver bevist procesophør og lukket læser. Ukendt ophør giver
+ingen normal returværdi, producer-genstart eller finalizer. Ingen signal-,
+budget-, scheduler-, kilde-, model-, geometri-, auth- eller no-loss-ændring.
+
+Aktuel main-integration: syv målrettede tests PASS, nul fejl/skips,
+1,115sekunder. Tre nye virkelige syntetiske fejlforløb går gennem normal main
+og run_supervised; øvrige kontroller bevarer præcis asset-supervision,
+budgetafvisning, markerafslutning og oneoff-protokol. Fremkaldt terminate-
+afvisning er ikke faktisk OS-kill-svigt eller samlet jobtræs-/runnerbevis.
+
+En yderligere normal main/run_supervised-målprøve består: én test med to
+fremkaldte KeyboardInterrupt-forløb, gennemført/afvist stop, 0,272sekunder.
+Præcis første BaseException bevares; ingen ny producer eller finalizer.
+Virkelig egen skriveproces og lukning før oprydning kontrolleres. Det er
+testindsprøjtet afbrydelse, ikke faktisk OS-signal eller runner-tab. Den
+allerede prøvede runtime blev ikke ændret af den afbrydelsesprøve.
+
+Derefter viste en ny rød prøve, at fejl ved opstart af outputlæseren også
+kunne efterlade den allerede startede egen skriveproces. Den samme eksisterende
+stopbeskyttelse omfatter nu hele læseropsætningen efter beholdt Popen: kø,
+læseroprettelse og start. Oprydning tåler en ikke-oprettet/ikke-startet læser,
+men lukker stadig kun egen pipe efter bevist procesophør og ingen levende læser.
+Seks fejlmål består på1,757sekunder, inklusive de tre opsætningsstadier med
+både gennemført og fremkaldt afvist stop. Fire normale regressioner består også;
+10 forskellige måltestmetoder er prøvet, ikke hele suite/jobtræ/runner-tab.
+Ingen nye signaler, stopgrænser, kilder, modelbindinger eller produktion er ændret.
+
+Kandidaten har endnu ingen ny version, commit, push eller egen CI. Den
+naturlige main548-vejrhentning er aktiv, så ingen merge eller produktion
+ændres. Egen eksakt kildekontrol, sikker kodelevering og ny faktisk effekt
+kræves fortsat. Revisionens seks samlede restområder er ikke lukket af dette
+delbevis; øvrige originale kilde-/bindings-/destinationafvisninger består.
 
 # NYESTE – lokal 4.0.548, 2026-10-06 20.30 DK – godkendt SOURCE-antalsgrænse
 
