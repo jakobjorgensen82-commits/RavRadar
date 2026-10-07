@@ -9,6 +9,7 @@ export const WEATHER_FAILURE_OWNER = 'jakobjorgensen82-commits';
 const repositoryId = 1306858343;
 const entry = '.github/workflows/run-current-weather-once.yml';
 const failures = new Set(['failure', 'timed_out', 'startup_failure']);
+const pendingStates = new Set(['queued', 'requested', 'pending', 'waiting', 'in_progress']);
 const integer = value => Number.isSafeInteger(value) && value > 0;
 const fail = code => { throw Object.assign(new Error(code), { alertCode: code }); };
 
@@ -18,10 +19,10 @@ export function weatherFailureIssue(run) {
     || run.head_repository?.full_name !== WEATHER_FAILURE_REPOSITORY || run.head_repository.id !== repositoryId
     || run.head_branch !== 'main' || run.path !== entry || run.event !== 'workflow_dispatch'
     || !/^[a-f0-9]{40}$/.test(run.head_sha ?? '')) fail('RUN_SCOPE_REJECTED');
-  if (run.status !== 'completed' || !failures.has(run.conclusion)) return null;
   // Never interpolate an API title, actor, branch, URL, exception or payload.
   const url = `https://github.com/${WEATHER_FAILURE_REPOSITORY}/actions/runs/${run.id}`;
   if (run.html_url !== url) fail('RUN_URL_REJECTED');
+  if (run.status !== 'completed' || !failures.has(run.conclusion)) return null;
   return {
     title: `RavRadar vejrhentning ${run.id}: fejl`,
     body: `Vejrhentning: ${url}\n\nStatus: ${run.conclusion}\n\n<!-- ravradar-weather-failure:${run.id} -->`,
@@ -29,19 +30,33 @@ export function weatherFailureIssue(run) {
   };
 }
 
-export async function notifyWeatherFailure({ runId, eventAttempt = null, sourceHead, get, post } = {}) {
+export async function notifyWeatherFailure({ runId, eventAttempt = null, sourceHead, get, post,
+  waitForCompletion = false, wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)) } = {}) {
   if (!integer(runId) || (eventAttempt !== null && !integer(eventAttempt))
-    || !/^[a-f0-9]{40}$/.test(sourceHead ?? '') || typeof get !== 'function' || typeof post !== 'function') fail('ARGUMENT_REJECTED');
+    || !/^[a-f0-9]{40}$/.test(sourceHead ?? '') || typeof get !== 'function' || typeof post !== 'function'
+    || typeof waitForCompletion !== 'boolean'
+    || (waitForCompletion && (!integer(eventAttempt) || typeof wait !== 'function'))) fail('ARGUMENT_REJECTED');
   const base = `/repos/${WEATHER_FAILURE_REPOSITORY}`;
   const repo = await get(base);
   if (repo?.id !== repositoryId || repo.full_name !== WEATHER_FAILURE_REPOSITORY
     || repo.default_branch !== 'main' || repo.has_issues !== true) fail('REPOSITORY_REJECTED');
   if ((await get(`${base}/git/ref/heads/main`))?.object?.sha !== sourceHead) fail('SOURCE_HEAD_CHANGED');
-  const run = await get(`${base}/actions/runs/${runId}`);
-  if (run?.id !== runId) fail('RUN_ID_REJECTED');
-  // A delayed notification from an older attempt must not report a newer success.
-  if (eventAttempt !== null && run.run_attempt !== eventAttempt) return { status: 'SKIPPED', reason: 'ATTEMPT_SUPERSEDED' };
-  const issue = weatherFailureIssue(run);
+  let run, issue;
+  // A bot caller dispatches this separate workflow, then finishes. Do not infer
+  // completion from its failed job or create an issue inside the active run.
+  // Only metadata reads repeat: at most 12 observations and 11 five-second
+  // delays, inside the unchanged ten-minute alert job. A write never retries.
+  for (let observation = 0; observation < 12; observation++) {
+    run = await get(`${base}/actions/runs/${runId}`);
+    if (run?.id !== runId) fail('RUN_ID_REJECTED');
+    // A delayed notification from an older attempt must not report a newer one.
+    if (eventAttempt !== null && run.run_attempt !== eventAttempt) return { status: 'SKIPPED', reason: 'ATTEMPT_SUPERSEDED' };
+    issue = weatherFailureIssue(run);
+    if (!waitForCompletion || run.status === 'completed') break;
+    if (!pendingStates.has(run.status)) fail('RUN_WAIT_STATUS_REJECTED');
+    if (observation === 11) fail('RUN_COMPLETION_NOT_OBSERVED');
+    await wait(5000);
+  }
   if (!issue) return { status: 'SKIPPED', reason: 'NOT_COMPLETED_FAILURE' };
   const marker = `<!-- ravradar-weather-failure:${runId} -->`;
   // List all states, not eventually-consistent search. No edit/close/comment.
@@ -85,6 +100,15 @@ async function main() {
   const automated = process.env.GITHUB_EVENT_NAME === 'workflow_run';
   if (!automated && process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch') fail('EVENT_REJECTED');
   if (automated && event.action !== 'completed') fail('EVENT_REJECTED');
+  // Keep any delivered completion event, including bot-origin runs whose last
+  // job never executed. The existing workflow queue and assigned-issue lookup
+  // serialize/deduplicate it against the explicit normal-caller handoff.
+  const waitRaw = process.env.WAIT_FOR_COMPLETION ?? '';
+  const attemptRaw = process.env.SOURCE_RUN_ATTEMPT ?? '';
+  if (!['', 'true', 'false'].includes(waitRaw)
+    || (attemptRaw !== '' && !/^[1-9]\d*$/.test(attemptRaw))) fail('ARGUMENT_REJECTED');
+  const waitForCompletion = waitRaw === 'true';
+  if (automated && waitForCompletion) fail('EVENT_REJECTED');
   const rawId = automated ? event.workflow_run?.id : process.env.FAILED_RUN_ID;
   if (!/^\d+$/.test(String(rawId ?? ''))) fail('ARGUMENT_REJECTED');
   const api = async (route, body) => {
@@ -98,7 +122,8 @@ async function main() {
     return response.status === 204 ? null : response.json();
   };
   const result = await notifyWeatherFailure({ runId: Number(rawId),
-    eventAttempt: automated ? event.workflow_run?.run_attempt : null, sourceHead: process.env.GITHUB_SHA,
+    eventAttempt: automated ? event.workflow_run?.run_attempt : (attemptRaw === '' ? null : Number(attemptRaw)),
+    waitForCompletion, sourceHead: process.env.GITHUB_SHA,
     get: route => api(route), post: (route, body) => api(route, body) });
   console.log(JSON.stringify(result));
 }

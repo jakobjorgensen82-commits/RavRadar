@@ -1,7 +1,46 @@
 # DEC-0290 – Ejeralarm for en afsluttet fejlet vejrhentning
 
-**Status:** DELVIST IMPLEMENTERET – lokal kode og måltests; exact-head CI, merge og faktisk alarm afventer.
+**Status:** DELVIST IMPLEMENTERET – oprindelig alarm leveret; botens afslutningshandoff er kun lokal og ikke leveret.
 **Dato:** 2026-10-04
+
+## Tillæg8.oktober kl.00.47 — botens normale fejlkørsel mangler faktisk alarm
+
+En fuldt pagineret, skrivefri kontrol viser fire afsluttede fejlede almindelige
+kørsler den7.oktober uden tilsvarende alarmrun eller ejer-issue. Alle fire er
+bot-startede og består den normale, uændrede scope-/statusklassifikation.
+Den menneskestartede fejl6.oktober gav faktisk issue med ejertildeling.
+Alarmworkflowet er aktivt. GitHubs dokumenterede begrænsning af events skabt
+med GITHUB_TOKEN er en sandsynlig forklaring på forskellen; metadata er ikke
+en uafhængig leverandørtrace for en undertrykt completion-event.
+
+Kun lokal rettelse: Den normale run-current-kalder sender højst ét eksplicit
+workflow_dispatch til den eksisterende alarm efter botens fejlede
+terminal-outcome. Kaldet har kun actions-write, fast main/repository og
+præcis run/attempt; det ændrer ikke vejr, data, gates eller deploy.
+Uklart dispatch-resultat gentages ikke. Alarmens uændrede timinuttersjob
+observerer højst12 metadatareads med11 femsekunderspauser, validerer scope
+og attempt ved hver observation og kræver faktisk completed failure før
+normal deduplikering, main/run-genlæsning og højst én issue-write.
+Completion-eventet bevares for både mennesker og bot. Den eksisterende
+alarmkø serialiserer event og eksplicit kald, og den eksisterende søgning
+efter en markeret ejer-issue deduplikerer dem. En allerede fungerende
+alarmvej må ikke fjernes. Ingen nye credentials,
+planer, services eller cadence. Ingen mail til hjemmesidens brugere.
+
+Tre nye mål var først røde, før rettelsen. De og den øvrige eksisterende
+berørte måltest består efter rettelsen; den faktiske normale CLI består
+otte egne syntetiske offlineforløb. De omfatter bevaret bot-event og
+deduplikering mod en allerede gemt ejer-issue. Workflow-YAML er parset, og normale
+workflow-/sikkerhedskontroller består. Det er ikke live dispatch, gemt issue,
+modtaget mail eller fuld selvdriftsverifikation. Startup/runner-tab, hvor
+kalderens sidste job ikke kører, andre indgange og virkelig driftskontrol
+er fortsat åbne. Egen exact-head-CI og sikker levering afventer; ingen
+merge eller produktionsændring under aktiv writer. Assistentovergangen
+forbliver i bero. Den separate PR534-testrettelse er ikke denne kandidat.
+
+Primær kilde til hændelsesreglen og den eksplicitte dispatch-undtagelse:
+[GitHub: triggering a workflow](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow).
+Detaljerede metadata, testreceipts og aktuelle writers gemmes kun privat.
 
 ## Ejerbeslutning
 

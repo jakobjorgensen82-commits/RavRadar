@@ -1,3 +1,48 @@
+# Lokal alarmrettelse – 2026-10-08 00.47 DK – ikke leveret
+
+En fuldt pagineret læsekontrol viser fire afsluttede fejlede almindelige
+vejrhentninger den7.oktober uden en tilsvarende alarmkørsel eller ejer-issue.
+Alarmworkflowet er aktivt; en menneskestartet fejl den6.oktober fik alarm.
+Bot-skabte hændelsers begrænsninger er en sandsynlig forklaring, ikke en
+uafhængig leverandørkvittering for de manglende events.
+
+Den lokale normale kalder sender nu kun ved bot og fejlet terminalkontrol
+ét eksplicit kald til den eksisterende alarm. Alarmen afventer alene det
+præcise forsøg: højst12 metadataaflæsninger og11 femsekunderspauser. Først
+faktisk afsluttet failure kan nå den uændrede link/status-issuekontrol.
+Ukendt status, manglende forsøg, scopefejl eller ukendt skrivning giver ingen
+blind gentagelse. Den eksisterende afslutningsalarm bevares for både
+mennesker og bot. Den fælles alarmkø og den eksisterende issuekontrol
+serialiserer og deduplikerer event og eksplicit kald; en fungerende
+alarmvej må ikke fjernes.
+
+Tre nye mål var først røde og består efter lokal rettelse. Den faktiske
+normale alarmkommando består også otte egne offlineforløb. Eksisterende
+sikkerheds- og workflowkontrakter består; dette er ikke live dispatch,
+gemt issue, modtaget mail eller selvstændig driftsverifikation. Egen præcis
+kilde-CI, sikker levering uden aktiv skriver og offentlig effekt mangler.
+Ingen vejrdata, cache, modelbinding, brugerdata, version, cadence, nøgle,
+tjeneste eller plan er ændret. Assistentadskillelse og engangsovergang er
+fortsat i bero. Den store revision og selvdrift omkring18.oktober er åbne.
+PR534's uafhængige testrettelse og dens grønne head er ikke denne kandidat.
+Se DEC-0290 og89.156; detaljeret kørselsevidens opbevares kun privat.
+
+Senere lokal kontrol8.oktober kl.01.10: Den nye bevaringsprøve var først
+rød, fordi kandidaten fjernede botens eksisterende completion-event. Den
+vej er nu bevaret. Otte normale offline-CLI-forløb og alle11 alarmmål samt
+de berørte workflow- og sikkerhedskontroller består. Et leveret event
+deduplikeres mod en allerede gemt ejer-issue; samlet runner-tab er stadig
+ikke bevist dækket.
+
+Den bredere håndbogskontrol består nu for438 kapitler efter ren tekstlig
+læsehjælp,551-versionslinje og lokal statisk håndbogskopi. Kopien blev først
+synkroniseret efter faktisk afsluttet vejrhentning og fuldt pagineret idle.
+Git-kanoniske SQL-bytes uden for håndbogens payload er identiske; begge
+modelbundles og version er uændrede. Ingen SQL er udført eller installeret.
+PR534's uafhængige testrettelse er merged efter sin præcise grønne kilde-CI;
+denne alarmkandidat ligger på en separat branch fra den nye main. Kandidatens
+egen kilde-CI, sikker levering og faktisk alarm i drift er fortsat åbne.
+
 ## Udgivelsesuafhængig testrettelse – opstartens konto-UI-cachemarkør
 
 Den eksisterende cold-start-test kræver nu den allerede leverede UI-markør

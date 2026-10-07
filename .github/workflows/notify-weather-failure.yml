@@ -11,6 +11,16 @@ on:
         description: "Eksakt afsluttet fejlet almindelig vejrhentning; ingen genkørsel af vejret"
         required: true
         type: string
+      source_run_attempt:
+        description: "Eksakt forsøg ved automatisk afslutningshandoff; tom ved afsluttet manuel backfill"
+        required: false
+        default: ''
+        type: string
+      wait_for_completion:
+        description: "Afvent kun dette forsøg efter normal kalder; start eller genkør aldrig vejret"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -30,9 +40,9 @@ jobs:
       github.repository == 'jakobjorgensen82-commits/RavRadar' &&
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'failure' ||
+      (github.event.workflow_run.conclusion == 'failure' ||
       github.event.workflow_run.conclusion == 'timed_out' ||
-      github.event.workflow_run.conclusion == 'startup_failure')
+      github.event.workflow_run.conclusion == 'startup_failure'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -53,3 +63,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           FAILED_RUN_ID: ${{ inputs.failed_run_id }}
+          SOURCE_RUN_ATTEMPT: ${{ inputs.source_run_attempt }}
+          WAIT_FOR_COMPLETION: ${{ inputs.wait_for_completion }}
