@@ -36,6 +36,11 @@ drift, og vejrhentningen genberegner ikke masken. Alle kystpunkter og ringe
 bevares i et kompakt format; grænsens afrundingsusikkerhed regnes som ukendt.
 Kilden er dateret 8. oktober 2026 og under ODbL, © OpenStreetMap-bidragsydere.
 Ved senere ændret kyst kræves en dokumenteret og kontrolleret maskeopdatering.
+Den normale Copernicus-læser har i GitHub bestået en prøve med originale
+syntetiske NetCDF-filer: deklarerede manglende værdier udelades, mens gyldige
+nulværdier bevares. Det er ikke bevis for de konkrete produktionscellers
+fysiske gyldighed. Korttestens adapter indlæser den rigtige maskemodul;
+dens gamle zoom-, størrelses- og oprydningskontroller er ikke fjernet.
 Indlæsning og punktkontrol kræver også arbejde i browseren; de er ikke gratis
 eller en garanti mod korte pauser på langsomme telefoner. Et område med strøm,
 men uden vind, beholder sit ene pilelag under ventetiden; ventetid er ikke fejl.

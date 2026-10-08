@@ -22,9 +22,19 @@ Ejerens efterfølgende scorekontrol er særskilt åben. Kortpile er ikke scorein
 men begge kan bruge samme strømdata; visningsrettelsen fjerner ikke data fra
 de to strømtilstande. Original celle/maskestatus og faktisk brug skal spores.
 Lokal Windows-klargøring fejler på eksisterende pinned eccodeslib; lokal fuld
-kildegate er ikke grøn. En ny faktisk-kalder NetCDF-måltest er skrevet, men
-ikke kørt. Kandidatens præcise normale GitHub-kildegate er stadig påkrævet.
+kildegate er ikke grøn. Den nye faktisk-kalder NetCDF-måltest består i normal
+GitHub-kontrol med rigtige afhængigheder; det beviser ikke produktionscellernes
+fysiske gyldighed. Første samlede kildekontrol stoppede på korttestens import
+fra en data-URL. Den afgrænsede adapter bruger nu den rigtige maskemoduls
+fil-URL; den eksisterende testgruppe og pilemål består lokalt. Ny samlet
+kildekontrol på kandidatens præcise rettede head er stadig påkrævet.
 Ingen afhængighed, produktionslæser, score- eller modelbinding ændres.
+
+Ejeren har nu godkendt én skrivefri GitHub-diagnose af den særskilt udpegede,
+allerede gemte private pakke. Den tidligere udløbne pakkes kontrakt må ikke
+genbruges med et andet mål. Kun afgrænsede, privatlivssikre resultater må
+afleveres; ingen ny vejrhentning, produktionsændring eller deploy er godkendt
+som del af læsningen. Det præcise mål og kørselsevidens opbevares privat.
 
 # Lokal alarmrettelse – 2026-10-08 00.47 DK – ikke leveret
 

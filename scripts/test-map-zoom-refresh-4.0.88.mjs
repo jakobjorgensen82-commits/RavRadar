@@ -12,8 +12,16 @@ console.log('OK: Zonestreger opdateres og redrawes automatisk efter zoomanimatio
 
 // Exercise the actual map factory, not a copied resize helper. Only i18n and
 // the browser/Leaflet boundary are replaced; no production data are needed.
-const factorySource=source.replace(/^import \{ t \} from "[^"\n]+";\r?\n/, 'const t=key=>key;\n');
-assert.notEqual(factorySource,source,'Den afgrænsede i18n-testadapter skal matche.');
+const translatedSource=source.replace(/^import \{ t \} from "[^"\n]+";\r?\n/, 'const t=key=>key;\n');
+assert.notEqual(translatedSource,source,'Den afgrænsede i18n-testadapter skal matche.');
+// A data: module has no directory for relative imports. Resolve this exact
+// production dependency to its real file; do not mock the mask or map factory.
+const maskModuleUrl=new URL('../js/map/current-arrow-land-mask.js',import.meta.url).href;
+const factorySource=translatedSource.replace(
+  /^import \{ loadCurrentArrowLandMask \} from "\.\/current-arrow-land-mask\.js\?v=[^"\n]+";\r?\n/m,
+  `import { loadCurrentArrowLandMask } from ${JSON.stringify(maskModuleUrl)};\n`
+);
+assert.notEqual(factorySource,translatedSource,'Den faktiske maskemoduls import skal opløses, ikke erstattes.');
 const savedGlobals=new Map(['L','localStorage','ResizeObserver','requestAnimationFrame','cancelAnimationFrame']
   .map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]));
 try{

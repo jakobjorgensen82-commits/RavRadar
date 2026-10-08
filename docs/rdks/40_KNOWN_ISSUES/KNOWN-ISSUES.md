@@ -40,11 +40,14 @@ og cron fortsætter uden ny manuel kørsel. Alle særskilte afvisninger består.
 Se DEC-0293 og håndbog 89.174/56; detaljeret diagnostik gemmes kun privat.
 
 Lokal Windows-klargøring stopper på den eksisterende låste eccodeslib-version;
-den lokale fulde kildegate er derfor ikke grøn. En ny måltest bruger den
-faktiske normale Copernicus-læser på originale syntetiske NetCDF-filer med
-deklarerede manglende værdier og gyldige nulværdier. Den er endnu ikke kørt;
-projektets normale GitHub-kildegate på kandidatens eksakte head skal bevise
-den før merge. Ingen afhængighed, produktionslæser eller sikkerhedsgate ændres.
+den lokale fulde kildegate er derfor ikke grøn. GitHubs normale kildekontrol
+har faktisk bestået den nye NetCDF-prøve gennem den normale Copernicus-læser:
+deklarerede manglende værdier afvises, og gyldige nulværdier bevares. Det er
+ikke korrekthedsbevis for produktionsceller. Første samlede kildekontrol
+stoppede på korttestens relative import fra dens data-URL. Testadapteren
+indlæser nu den rigtige maskemodul via fil-URL; alle eksisterende kortmål og
+berørte pilemål består lokalt. Ny samlet kontrol på præcis rettet head kræves
+før merge. Ingen afhængighed, produktionslæser eller sikkerhedsgate ændres.
 
 # Lokal alarmrettelse – 2026-10-08 00.47 DK – ikke leveret
 

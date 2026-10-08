@@ -64,5 +64,12 @@ pile har en reel netværks- og beregningsomkostning; genbrug er cachebundet.
 At hovedvisningen ikke afventer filen er ikke en garanti for nul kortvarig
 browserbelastning på langsomme enheder.
 
+Den normale GitHub-kildekontrol har faktisk bestået en original NetCDF-prøve
+gennem Copernicus-læseren: deklarerede manglende værdier udelades, og gyldige
+nulværdier bevares. Det beviser ikke konkrete produktionscellers fysiske
+gyldighed. En ældre korttests data-URL-adapter kræver en fil-URL til den nye
+maskemodul; den rigtige modul indlæses, og de gamle kortmål bevares. Kandidatens
+samlede præcise kildekontrol og offentlig effekt er fortsat særskilte gates.
+
 Kilde: https://osmdata.openstreetmap.de/data/land-polygons.html
 Licens: https://osmdata.openstreetmap.de/info/license.html
