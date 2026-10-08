@@ -8,16 +8,21 @@ Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leve
 
 ## 89.174 Landsdækkende landkontrol før en blå strømpil vises
 
-Opfølgning 8. oktober: Visningskoden er sikkert merget efter grøn kildekontrol,
-og ejerens ene almindelige manuelle efterfølger er startet. Det er endnu ikke
-bevis for offentligt deploy eller kortvirkning. Der kommer ikke flere eller
-større pile. En særskilt lokal skrivefri diagnose låser én godkendt gemt pakke
-til dens oprindelige kode og krypteringsbinding. Første kontrol af DMI til score
-og 48-timers hukommelse er et kilde-/time-/værdimatch, ikke et kausalt bevis eller
-en afgørelse af native celleværdier. Andre leverandører og beholdt transport-
-kontekst er endnu ikke målt. Lokale syntetiske tests er ikke faktisk pakke-
-inspektion. De daterede kandidatbeskrivelser nedenfor er historik; offentlig
-virkning og den samlede datadiagnose er fortsat særskilt åbne.
+Opfølgning 8. oktober om aftenen: 4.0.552 er leveret gennem den normale
+fuldt kontrollerede vejrhentning, gemning og deploy. Offentlig 210/673-kontrol
+og målrettet browserkontrol ved Tofte/Øster Hurup er bestået. Blå landpile
+udelades, mens havstrøm og vind bevares. Det beviser ikke korrekte strømværdier
+eller scorer. Der kommer ikke flere eller større pile; eksisterende cron
+fortsætter uden ny manuel vejrhentning.
+
+Den særskilte skrivefri originaldiagnose er lokalt udvidet fra DMI til den
+normale Copernicus/Open-Meteo-kildevalgsvej og begge gemte strømhukommelser.
+Den bruger den præcise originale producentkode, normale kildebeviser og
+tilstandsvalidering. Manglende gemte timer forbliver uafklarede. Match af tid,
+kilde og værdi er ikke en lagret kausal sammenkædning eller native vådmaskekontrol.
+13 måltests består med både aktuelle og originale læsere; de erstatter ikke
+ny præcis kilde-CI eller faktisk pakkeinspektion. Ingen vejrdata, score eller
+historik ændres. De daterede kandidatbeskrivelser nedenfor er historik.
 
 Den lokale 4.0.552-kandidat kontrollerer alle hovedzoners og lokale kystdeles
 strømpile mod det samme landsdækkende OpenStreetMap-kystudtræk. Den bruger

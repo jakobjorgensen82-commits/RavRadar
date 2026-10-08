@@ -5,6 +5,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createCurrentArrowLandMask, CURRENT_ARROW_LAND_MASK_SHA256 } from '../js/map/current-arrow-land-mask.js';
+import { measureSavedCurrentSelection, selectSavedCandidateRoot,
+  validateSavedCandidateState } from './lib/sealed-arrow-score-selection.mjs';
 
 export const SEALED_ARROW_SCORE_TARGET = Object.freeze({
   repository: 'jakobjorgensen82-commits/RavRadar', repositoryId: 1306858343,
@@ -60,7 +62,8 @@ export async function originalArrowScoreReaders(producerRoot) {
   const stat = await fs.lstat(root);
   if (!stat.isDirectory() || stat.isSymbolicLink()) fail('PRODUCER_ROOT');
   const load = relative => import(pathToFileURL(path.join(root, relative)).href);
-  const [workflow, bundle, staged, bulk, hourly, bounds, adapters, memory, forecast, continuity] = await Promise.all([
+  const [workflow, bundle, staged, bulk, hourly, bounds, adapters, memory, forecast, continuity,
+    assembly, spatial, regime, candidate, candidateBinding] = await Promise.all([
     load('scripts/private-production-runtime-workflow.mjs'),
     load('scripts/private-production-runtime-bundle.mjs'),
     load('scripts/staged-private-production-runtime.mjs'),
@@ -68,9 +71,13 @@ export async function originalArrowScoreReaders(producerRoot) {
     load('scripts/lib/bounded-json-writer.mjs'), load('scripts/lib/ravscore-production-adapters.mjs'),
     load('js/core/ravscore-current-supply-memory.js'), load('scripts/lib/dmi-forecast-file.mjs'),
     load('scripts/lib/dmi-part-continuity.mjs'),
+    load('scripts/lib/protected-live-current-assembly.mjs'),
+    load('scripts/lib/current-spatial-runtime-proof.mjs'), load('js/core/ravscore-regime-memory.js'),
+    load('scripts/lib/ravscore-candidate-g-rollback-runtime.mjs'), load('scripts/rollback-assets/ravscore-model-contract.js'),
   ]);
   return { root, ...workflow, ...bundle, ...staged, ...bulk, ...hourly,
-    ...bounds, ...adapters, ...memory, ...forecast, ...continuity };
+    ...bounds, ...adapters, ...memory, ...forecast, ...continuity, ...assembly, ...spatial, ...regime, ...candidate,
+    candidateModelBinding: candidateBinding.ravScoreModelBinding };
 }
 export async function originalArrowScoreExpectation(readers, now = new Date().toISOString()) {
   const t = SEALED_ARROW_SCORE_TARGET;
@@ -197,6 +204,25 @@ export async function inspectSealedArrowScores({ producerRoot, privateRoot, bund
     if (crypto.createHash('sha256').update(maskBytes).digest('hex') !== CURRENT_ARROW_LAND_MASK_SHA256) fail('MASK_DIGEST');
     const mask = createCurrentArrowLandMask(JSON.parse(maskBytes.toString('utf8')));
     const bulk = await readers.readDmiBulkDocument(path.join(payload, 'data/live/dmi-bulk-cache.json'));
+    const pilotFile = path.join(payload, 'data/live/current-pilot-history.json');
+    const pilotStat = await fs.lstat(pilotFile);
+    if (!pilotStat.isFile() || pilotStat.isSymbolicLink() || pilotStat.size > 256 * 1024 * 1024) fail('PILOT_BOUND');
+    const pilotDocument = JSON.parse(await fs.readFile(pilotFile, 'utf8'));
+    const pilot = Number(pilotDocument?.schemaVersion) === 1 && pilotDocument?.controlledLivePilot === true
+      ? pilotDocument : null; // Same admission entry as the original normal caller.
+    const candidateRoot = selectSavedCandidateRoot(conditions, readers);
+    const selectedInputs = { projection: { rows: 0, matched: 0, mismatched: 0, unavailable: 0,
+      providers: { dmi: 0, copernicus: 0, 'open-meteo': 0 }, mapLocation: locations() },
+    memories: Object.fromEntries(['integrated', 'candidateG'].map(kind => [kind,
+      { finite: 0, missing: 0, matched: 0, mismatched: 0, unavailable: 0,
+        providers: { dmi: 0, copernicus: 0, 'open-meteo': 0 }, mapLocation: locations() }])) };
+    let candidateStatesReplayed = 0;
+    const addCounts = (target, input) => {
+      for (const [key, value] of Object.entries(input)) {
+        if (typeof value === 'number') target[key] += value;
+        else addCounts(target[key], value);
+      }
+    };
     const index = await readers.inspectDmiForecastFile(path.join(payload, 'data/live/dmi-forecast-cache.json'));
     const entries = new Map(), meta = index.continuity?.metadata;
     if (meta && (meta.partCount !== 673 || index.continuity.entries.length !== 673)) fail('CONTINUITY_COUNT');
@@ -227,6 +253,14 @@ export async function inspectSealedArrowScores({ producerRoot, privateRoot, bund
         record = decoded.get(partId);
       }
       const { projection: p, memory: m } = measureArrowScorePart({ part, record, bulk, mask, readers });
+      const candidateState = candidateRoot?.runtime.parts[partId]?.ravScoreModel?.currentState;
+      const candidateEvidence = candidateRoot ? validateSavedCandidateState(candidateState, part, readers) : [];
+      candidateStatesReplayed += Number(candidateRoot !== null);
+      const selected = measureSavedCurrentSelection({ part, record, bulk, pilot,
+        referenceAt: expected.productionReferenceAt, storedRows: part.hourly ?? [],
+        integratedEvidence: part.ravScoreModel?.currentState?.currentEvidence ?? [],
+        candidateEvidence, readers, mask });
+      addCounts(selectedInputs, selected);
       totals.parts++; totals.storedScoreRows += p.rows; totals.storedDmiScoreRows += p.dmiRows;
       totals.storedOtherProviderScoreRows += p.otherProviderRows;
       totals.dmiScoreSelectionMismatches += p.normalSelectionMismatch;
@@ -249,10 +283,12 @@ export async function inspectSealedArrowScores({ producerRoot, privateRoot, bund
       exactProducerReaders: true, fileCount: verified.fileCount,
       nationalPartsMeasured: 673, coastlineSha256: CURRENT_ARROW_LAND_MASK_SHA256,
       continuity: meta ? 'ORIGINAL_DMI_ONLY' : 'NOT_PRESENT', totals,
+      selectedInputs, controlledPilotPresent: pilot !== null,
+      candidateRoot: candidateRoot?.kind ?? 'NOT_PRESENT', candidateStatesReplayed,
       attribution: 'SAVED_INPUT_TIME_SOURCE_AND_PROJECTION_MATCH_NOT_PERSISTED_CAUSAL_JOIN',
       nativeWetMask: 'NOT_MEASURED_COASTLINE_IS_NOT_PROVIDER_CELL_VALIDITY',
-      otherProviderScoreGrounding: 'NOT_MEASURED_BY_DMI_ONLY_CONTINUITY',
-      retainedCandidateGTransportGrounding: 'NOT_MEASURED',
+      otherProviderScoreGrounding: 'ORIGINAL_NORMAL_CP_OM_ASSEMBLY_COMPARED_WHERE_SAVED_ROWS_EXIST',
+      retainedCandidateGTransportGrounding: 'SAVED_EVIDENCE_STRENGTH_MATCH_NOT_PERSISTED_CAUSAL_JOIN',
       numericCorrectionMade: false, scoreCorrectnessProved: false, rawVectorsIncluded: false,
       coordinatesIncluded: false, privatePayloadIncluded: false, providersCalled: false,
       scoreGenerated: false, productionPointerUnchanged: true };

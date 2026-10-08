@@ -1,34 +1,33 @@
-# Skrivefri original-/scorekontrol – afgrænset kildekandidat, 8. oktober 2026
+# Strømpile leveret; skrivefri score-/hukommelsesdiagnose udvidet – 8. oktober 2026
 
-Visningsrettelsen 4.0.552 er sikkert merget efter den faktisk grønne, præcise
-kildekontrol. Ejerens annullerede vejrhentning er helt stoppet; den nyeste
-engangstilladelse er brugt til præcis én almindelig manuel efterfølger på den
-mergede kode. Ingen ekstra manuel efterfølger, ændret cron eller produktionsovergang
-under aktiv writer. Offentligt deploy og faktisk kortvirkning er endnu ikke bevist.
-Ejeren har trukket spørgsmålet om flere/større pile tilbage; antal og stil ændres ikke.
+Visningsrettelsen 4.0.552 er nu produktionsleveret efter den almindelige
+vejrhentnings fulde kontroller, beskyttet gemning, deploy og offentlig
+210/673-kontrol. Browserkontrol ved Tofte/Øster Hurup viser den forventede
+adskillelse: ingen blå landpil, bevaret havstrøm og hvide vindpile. Dette er
+ikke et bevis for strømværdiernes fysiske gyldighed eller korrekt scoregrundlag.
+Ejerens manuelle engangsordre er forbrugt; eksisterende cron fortsætter.
+Antal og størrelse af pile ændres ikke.
 
-Den særskilte lokale diagnosekandidat læser kun én ny, udtrykkeligt godkendt,
-allerede gemt krypteret originalpakke. Den gamle faste pakkes læser og tilladelse
-bevares uændret i en separat, gensidigt udelukket gren af samme skrivefri workflow.
-Den nye gren låser pakke, repository, run, forsøg, digest, størrelse og udløb;
-kræver aktuel main og levende grøn kildekontrol før eksisterende intern nøgle;
-og arkiverer netop pakkens oprindelige producentkode til autentificering og læsning.
-Ingen kontraktmigration, pointer-, data-, model-, SQL- eller deployændring udføres.
+Den særskilte faste diagnose af én udtrykkeligt godkendt, gemt krypteret
+originalpakke bruger fortsat pakkens præcise producentkode, GCM/AAD og
+originale kontrakter. DMI-kontrollen er nu udvidet lokalt med den normale
+kildevalgsvej for Copernicus/Open-Meteo samt gemt evidens i både integreret
+strømhukommelse og beholdt Candidate G. Manglende gemte timer bliver uafklarede,
+ikke opdigtede input. Candidate G kræver entydig privat rod, originale bindinger
+og normal validering/genafspilning af den gemte tilstand.
 
-Den første målte del er gemte DMI-valg til allerede beregnede scoreprojektioner
-og den aktive 48-timers strømhukommelse for alle 673 kystdele. Output er alene
-bounded sikre aggregater. Match af time, kilde og værdiprojektion er ikke en
-lagret kausal sammenkædning; kortland er ikke bevis for ugyldig native modelcelle.
-Andre strømleverandørers grounding og den beholdte CandidateG-transportkontekst
-rapporteres endnu som ikke målt. Den samlede score-/native-maskediagnose er åben.
-Ingen scorer beregnes om, og ingen historik nulstilles, beskæres eller renormaliseres.
+13 måltests består efter udvidelsen, herunder ægte originale læsere fra
+pakkeversionen, normale kildebeviser, ændrede data, forkert punkt, manglende
+historik, entydig tilstand og oprindelig GCM/AAD med syntetisk tom vejrpakke.
+Dette er lokal validering, ikke faktisk inspektion af produktionspakken.
+Ny præcis kilde-CI, sikker integration uden writer og den godkendte læsning
+mangler. Tidligere grøn CI må ikke krediteres denne udvidede kode.
 
-39 måltests for nye og eksisterende normale diagnosekaldere består lokalt,
-herunder virkelig oprindelig producentkode, GCM/AAD og kontraktafvisning med
-syntetiske tomme vejrdata. Dette er ikke autentificering af den rigtige pakke,
-national vejrdækning, heljobskapacitet eller fungerende offentlig levering.
-Egen præcis kilde-CI, sikker integration uden writer og faktisk godkendt
-pakkeinspektion mangler. Den store revision, brugerdata og Spørg RavRadar er ikke færdige.
+Rapporten indeholder kun afgrænsede aggregater. Time-/kilde-/værdimatch er
+ikke en lagret kausal sammenkædning, og kortland er ikke en native vådmaske.
+Ingen score, vejrdata, historik, adminpunkt, binding eller produktionspointer
+ændres. Den gamle faste læsegren og alle særskilte afvisninger består.
+Den store revision, brugerdata og Spørg RavRadar er fortsat åbne.
 
 # Historik: landsdækkende lokal 4.0.552-kandidat før merge, 8. oktober 2026
 

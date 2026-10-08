@@ -1,6 +1,6 @@
 # DEC-0293 – Landsdækkende landkontrol for strømpile
 
-- **Status:** Godkendt krav; visningskode sikkert merget, offentlig effekt og numerisk diagnose åbne
+- **Status:** Visningsrettelse produktionsleveret og målrettet browserverificeret; numerisk diagnose åben
 - **Ejerordre:** 8. oktober 2026: Rettelsen skal gælde hele landet og også hidtil usete tilfælde.
 - **Omfang:** Kortets præsentation, ikke kilders fysiske gyldighed eller RavScore.
 
@@ -50,14 +50,20 @@ Ny konkret engangsordre er forbrugt ved én almindelig manuel vejrhentning;
 derefter bruges eksisterende cron. Antal/størrelse af pile ændres ikke.
 Deploy og faktisk offentlig effekt kan ikke udledes af merge eller start.
 
-Ny udtrykkeligt godkendt gemt originalpakke undersøges via en separat fast
-læsning med original producentkode, AAD og kontrakter, ikke via ændret gammel
-autoritet. Første afgrænsede måling kan sammenholde gemte DMI-valg med score-
-projektioner og aktiv 48-timers hukommelse i 673 dele. Match er ikke et kausalt
-join; andre leverandører, beholdt transportkontekst og native vådmaske er
-fortsat ikke målt. 39 lokale mål består med syntetiske input og autentisk
-oprindelig kode/kryptering. Faktisk pakkeinspektion og egen kilde-CI mangler;
-ingen numerisk rettelse, ny score, historieændring eller production write.
+Visningsleverancen er senere samme aften bekræftet gennem faktisk normal
+gemning/deploy, offentlig 210/673-kontrol og målrettet browserkontrol. Det
+lukker ikke den særskilte numeriske diagnose.
+
+Den nye udtrykkeligt godkendte gemte originalpakke undersøges fortsat via
+separat fast læsning og original producentkode, AAD og kontrakter. Den lokale
+diagnose er udvidet til den normale Copernicus/Open-Meteo-kildevalgsvej og
+begge gemte strømhukommelser. Manglende gemte timer skabes ikke ud fra scorer.
+Den private Candidate G-rod skal være entydig, korrekt bundet og genafspillelig
+med den oprindelige tilstandslæser. 13 måltests består efter udvidelsen,
+inklusive originalversionens normale læsere og GCM/AAD med syntetiske input.
+Ny præcis kilde-CI, sikker integration og faktisk pakkeinspektion mangler.
+Match er ikke et kausalt join eller native vådmaskebevis. Ingen numerisk
+rettelse, ny score, historikændring eller produktionsskrivning er udført.
 
 Måltests omfatter hoved-/lokalpile, DMI og cache, Copernicus og regionale
 kilder, ukendte punkter, manglende/beskadiget maske, øer, polygonhuller,

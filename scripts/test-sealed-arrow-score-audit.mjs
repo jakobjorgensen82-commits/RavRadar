@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import crypto from 'node:crypto';
+import { pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { SEALED_ARROW_SCORE_TARGET as target, validateSealedArrowScoreTarget,
@@ -13,6 +15,132 @@ import * as adapters from './lib/ravscore-production-adapters.mjs';
 import { buildCurrentSupplyMemory, currentSupplyStrength } from '../js/core/ravscore-current-supply-memory.js';
 import { buildDmiForecastHourly, DMI_FORECAST_HOURS } from './lib/dmi-forecast-store.mjs';
 import { createCurrentArrowLandMask } from '../js/map/current-arrow-land-mask.js';
+import { measureSavedCurrentSelection, selectSavedCandidateRoot,
+  validateSavedCandidateState } from './lib/sealed-arrow-score-selection.mjs';
+
+async function checkNormalSupplementalSelection(root, original) {
+  const pilot = await import(pathToFileURL(path.join(root, 'scripts/lib/live-current-pilot.mjs')).href);
+  const env = { assert, crypto, ...pilot };
+  const extractFixture = async (file, first, last, returned) => {
+    const source = await fs.readFile(path.join(root, file), 'utf8');
+    const start = source.indexOf(first), end = source.indexOf(last, start);
+    assert.ok(start >= 0 && end > start);
+    // Reuse committed normal-contract fixtures, never provider data or a mock verifier.
+    return Function(...Object.keys(env), source.slice(start, end) + ';return ' + returned)(...Object.values(env));
+  };
+  const fixture = await extractFixture('scripts/test-live-current-pilot-4.0.232.mjs',
+    'const part =', 'const OLD_BUT_VALID_ACQUISITION_AT', '{part,live,REFERENCE_AT,FUTURE_AT}');
+  const part = { ...fixture.part, onshoreDirectionDeg: 90 };
+  const record = { point: part.waterPoint, hourly: [{ time: fixture.REFERENCE_AT }, { time: fixture.FUTURE_AT }] };
+  const assembled = original.mergeActiveNativeLiveCurrentPilotIntoRecord(record, part, fixture.live, {
+    activeBulk: null, bulkId: 'PART::P1', productionReferenceAt: fixture.REFERENCE_AT });
+  const rows = original.verifiedIntegratedPartHourly(assembled, null, 'PART::P1', part);
+  assert.equal(rows[0].currentProvenance.provider, 'copernicus');
+  const toStored = row => ({ time: row.time, weather: { currentSpeedMps: row.currentSpeedMps,
+    currentDirectionDeg: row.currentDirectionDeg,
+    currentProvenance: original.displayedCurrentProvenance(row.currentProvenance) } });
+  const storedRows = rows.map(toStored);
+  const options = { part, record, bulk: null, pilot: fixture.live, referenceAt: fixture.REFERENCE_AT,
+    storedRows, readers: original, mask: { classifyPoint: () => 'land' } };
+  const before = JSON.stringify({ part, record, pilot: fixture.live, storedRows });
+  const checked = measureSavedCurrentSelection(options);
+  assert.equal(checked.projection.matched, 2); assert.equal(checked.projection.providers.copernicus, 2);
+  assert.equal(checked.projection.mapLocation.land, 2, 'synthetic label, not a real geographic assertion');
+  const missing = measureSavedCurrentSelection({ ...options, pilot: null });
+  assert.equal(missing.projection.unavailable, 2); assert.equal(missing.projection.matched, 0);
+  const badPilot = structuredClone(fixture.live); badPilot.entries[0].uMps += .123;
+  assert.equal(measureSavedCurrentSelection({ ...options, pilot: badPilot,
+    storedRows: [storedRows[0]] }).projection.matched, 0);
+  assert.equal(measureSavedCurrentSelection({ ...options, pilot: badPilot }).projection.matched, 1,
+    'preserve the independently genuine second row');
+  const changed = structuredClone(storedRows); changed[0].weather.currentSpeedMps += .01;
+  assert.equal(measureSavedCurrentSelection({ ...options, storedRows: changed }).projection.mismatched, 1);
+  assert.equal(measureSavedCurrentSelection({ ...options, part: { ...part, waterPoint: [10.2,55] } }).projection.matched, 0);
+  const integratedEvidence = rows.map(row => original.deriveCurrentSupplyEvidence(row, {
+    getNormalSpeed: value => value.currentCoastNormalSpeedMps,
+    isVerified: value => value.currentProvenance?.status === 'verified' }));
+  const candidateEvidence = rows.map(row => original.deriveCurrentTransportEvidence(row, {
+    ...original.CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
+    getSpeed: value => value.currentSpeedMps,
+    getAlignment: value => Math.cos((value.currentDirectionDeg - part.onshoreDirectionDeg) * Math.PI / 180),
+    isVerified: value => value.currentProvenance?.status === 'verified' }));
+  const memories = measureSavedCurrentSelection({ ...options, integratedEvidence, candidateEvidence });
+  assert.equal(memories.memories.integrated.matched, 2); assert.equal(memories.memories.candidateG.matched, 2);
+  assert.equal(measureSavedCurrentSelection({ ...options,
+    integratedEvidence: [{ ...integratedEvidence[0], strength: .123456789 }] }).memories.integrated.mismatched, 1);
+  const noPilot = measureSavedCurrentSelection({ ...options, pilot: null, integratedEvidence, candidateEvidence });
+  assert.equal(noPilot.memories.integrated.unavailable, 2); assert.equal(noPilot.memories.candidateG.unavailable, 2);
+  const noRecord = measureSavedCurrentSelection({ ...options, record: null, integratedEvidence, candidateEvidence });
+  assert.equal(noRecord.projection.matched, 0, 'do not fabricate missing continuity from stored scores');
+  assert.equal(noRecord.memories.candidateG.matched, 0);
+  assert.throws(() => measureSavedCurrentSelection({ ...options, storedRows: [storedRows[0], storedRows[0]] }), /DUPLICATE_SCORE/);
+  const om = await extractFixture('scripts/test-open-meteo-live-runtime.mjs',
+    'const canonicalJson =', 'const oldButFutureValidAcquiredAt', '{document,part,referenceAt}');
+  const omRecord = { point: om.part.waterPoint, hourly: [{ time: om.referenceAt }] };
+  const omAssembly = original.mergeActiveNativeLiveCurrentPilotIntoRecord(omRecord, om.part, om.document, {
+    activeBulk: null, bulkId: 'PART::P1', productionReferenceAt: om.referenceAt });
+  const omRows = original.verifiedIntegratedPartHourly(omAssembly, null, 'PART::P1', om.part);
+  assert.equal(measureSavedCurrentSelection({ ...options, part: om.part, record: omRecord, pilot: om.document,
+    referenceAt: om.referenceAt, storedRows: omRows.map(toStored) }).projection.providers['open-meteo'], 1);
+  assert.equal(JSON.stringify({ part, record, pilot: fixture.live, storedRows }), before);
+  assert.doesNotMatch(JSON.stringify(memories), /gridPoint|waterPoint|current-u|current-v|uMps|recordId|P1/);
+}
+
+async function checkCandidateStateAndRoot(root, original) {
+  const constants = await import(pathToFileURL(path.join(root, 'js/core/ravscore-candidate-g-state-pipeline.js')).href);
+  const { candidateGStateKey } = await import(pathToFileURL(path.join(root, 'scripts/lib/coastal-point-staging-contract.mjs')).href);
+  const part = { partId: 'synthetic-candidate-part', zoneId: 'synthetic-zone', waterPoint: [8,55], onshoreDirectionDeg: 90 };
+  const evidence = Array.from({ length: 49 }, (_, i) => ({ time: new Date(epoch + (i - 48) * 3600000).toISOString(), strength: .5 }));
+  const replay = original.buildBoundedCurrentTransportMemory(evidence, {
+    ...original.CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
+    referenceTime: reference, restartAfterVerifiedTimeGap: true });
+  assert.equal(replay.memoryReady, true);
+  const state = { schemaVersion: constants.CANDIDATE_G_STATE_SCHEMA_VERSION,
+    modelId: constants.CANDIDATE_G_STATE_MODEL_ID, variantId: constants.CANDIDATE_G_STATE_VARIANT_ID,
+    profileId: constants.CANDIDATE_G_STATE_PROFILE_ID, stateKey: candidateGStateKey(part),
+    time: reference, transportReferenceAt: reference, transportPotential: replay.result.transportPotential,
+    outboundEpisodeEffectiveHours: replay.result.outboundEpisodeEffectiveHours,
+    transportMemoryReady: replay.memoryReady, transportMemoryStatus: replay.status,
+    transportMemoryWindowHours: replay.windowHours, transportMemoryCoverageHours: replay.coverageHours,
+    transportEvidence: replay.evidence, mobilisationPotential: 64 };
+  assert.deepEqual(validateSavedCandidateState(state, part, original), replay.evidence);
+  assert.throws(() => validateSavedCandidateState({ ...state, transportPotential: state.transportPotential - 1 }, part, original));
+  assert.throws(() => validateSavedCandidateState(state, { ...part, waterPoint: [9,55] }, original));
+  const binding = original.candidateModelBinding(), wrapper = { ravScoreModel: { currentState: state } };
+  const parts = Object.fromEntries(Array.from({ length: 673 }, (_, i) => ['p' + i, wrapper]));
+  const conditions = { productionReferenceAt: reference,
+    coastalParts: { enabled: true, expectedPartCount: 673, parts, modelBinding: { synthetic: 'integrated' } } };
+  assert.throws(() => selectSavedCandidateRoot(conditions, original), /ROOT_MISSING/);
+  const descriptor = { schemaVersion: '1.0.0', kind: 'PRIVATE_CANDIDATE_G_OPERATIONAL_ROLLBACK_RUNTIME',
+    privacyClass: 'PRIVATE_PRODUCTION_RUNTIME', sourceModelBinding: conditions.coastalParts.modelBinding,
+    rollbackModelBinding: binding, rollbackId: original.CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
+    automaticActivationAllowed: false, publicDuringNormalOperation: false,
+    runtime: { schemaVersion: 1, enabled: true, generatedAt: reference, expectedPartCount: 673,
+      scoredPartCount: 673, modelBinding: binding, parts,
+      scoreProfile: { modelCoverageReady: true, modelMemoryReady: true, modelMigrationReady: true } } };
+  conditions.ravScoreCandidateGRollback = descriptor;
+  assert.equal(selectSavedCandidateRoot(conditions, original).kind, 'READY_ROLLBACK');
+  assert.throws(() => selectSavedCandidateRoot({ ...conditions, ravScoreCandidateGWarmup: descriptor }, original), /AMBIGUOUS/);
+  assert.throws(() => selectSavedCandidateRoot({ ...conditions, ravScoreCandidateGRollback: { ...descriptor, unknown: true } }, original), /ROOT_INVALID/);
+  state.transportMemoryReady = false;
+  assert.throws(() => selectSavedCandidateRoot(conditions, original), /READY_STATE_INVALID/);
+  const warmup = { schemaVersion: '1.0.0', kind: 'PRIVATE_CANDIDATE_G_MEASURED_WARMUP_RUNTIME',
+    privacyClass: 'PRIVATE_PRODUCTION_RUNTIME', status: 'BUILDING_MEASURED_ONLY', evidencePolicy: 'MEASURED_ONLY',
+    syntheticHistoryAllowed: false, sourceModelBinding: conditions.coastalParts.modelBinding,
+    candidateModelBinding: binding, automaticActivationAllowed: false, publicDuringNormalOperation: false,
+    runtime: { schemaVersion: 1, enabled: true, generatedAt: reference, status: 'BUILDING_MEASURED_ONLY',
+      expectedPartCount: 673, measuredPartCount: 673, modelBinding: binding, parts } };
+  delete conditions.ravScoreCandidateGRollback; conditions.ravScoreCandidateGWarmup = warmup;
+  assert.equal(selectSavedCandidateRoot(conditions, original).kind, 'MEASURED_WARMUP');
+  state.transportMemoryReady = true;
+  assert.throws(() => selectSavedCandidateRoot(conditions, original), /ALL_READY_WARMUP/);
+}
+
+test('normal supplemental source selection, both memories and Candidate G guards use real current readers', async () => {
+  const root = process.cwd(), original = await originalArrowScoreReaders(root);
+  await checkNormalSupplementalSelection(root, original);
+  await checkCandidateStateAndRoot(root, original);
+});
 
 const readers = { ...adapters, buildCurrentSupplyMemory, currentSupplyStrength };
 const reference = target.productionReferenceAt, epoch = Date.parse(reference);
@@ -159,6 +287,8 @@ test('genuine original producer archive and normal GCM/AAD open plus offline ins
   assert.equal(extracted.status, 0, extracted.stderr);
   const readers = await originalArrowScoreReaders(producer), expected = await originalArrowScoreExpectation(readers);
   assert.equal(JSON.parse(await fs.readFile(path.join(producer, 'package.json'), 'utf8')).version, '4.0.551');
+  await checkNormalSupplementalSelection(producer, readers);
+  await checkCandidateStateAndRoot(producer, readers);
   const conditions = { datasetId: target.datasetId, productionReferenceAt: target.productionReferenceAt,
     generatedAt: target.generatedAt, zones: Object.fromEntries(Array.from({ length: 210 }, (_, i) => [`zone-${i}`, {}])),
     coastalParts: { modelBinding: expected.modelBinding, parts: Object.fromEntries(Array.from({ length: 673 }, (_, i) =>
@@ -204,6 +334,8 @@ test('genuine original producer archive and normal GCM/AAD open plus offline ins
   assert.equal(report.exactProducerReaders, true);
   assert.equal(report.totals.parts, 673); assert.equal(report.continuity, 'NOT_PRESENT');
   assert.equal(report.totals.storedScoreRows, 0); assert.equal(report.totals.presentStates, 0);
+  assert.equal(report.selectedInputs.projection.rows, 0); assert.equal(report.candidateRoot, 'NOT_PRESENT');
+  assert.equal(report.selectedInputs.memories.candidateG.finite, 0);
   assert.equal(report.scoreCorrectnessProved, false); assert.equal(report.numericCorrectionMade, false);
   assert.equal(report.providersCalled, false); assert.match(report.attribution, /NOT_PERSISTED_CAUSAL_JOIN$/);
   assert.equal(Buffer.byteLength(JSON.stringify(report)) < 32 * 1024, true);

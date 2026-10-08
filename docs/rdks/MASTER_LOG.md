@@ -1,4 +1,18 @@
-# 2026-10-08 – Display sikkert merget; ny fast original-/scorediagnose er lokal kildekandidat
+# 2026-10-08 aften – Display leveret; normal originaldiagnose udvidet lokalt
+
+Den almindelige efterfølger har afsluttet gemning, fulde kontroller, deploy
+og offentlig 210/673-verifikation. Browserkontrol bekræfter visningsrettelsen
+ved Tofte/Øster Hurup. Den tidligere åbne leveringsstatus nedenfor er historisk.
+
+Ejerens fortsættelsesordre har ført til afgrænset kode og måltests for normal
+Copernicus/Open-Meteo-kildeudvælgelse og begge strømhukommelser i den faste
+skrivefri diagnose. Originalversionens læsere består samme prøver. Manglende
+historik forbliver uafklaret, Candidate G valideres ved entydig privat rod
+og originalt bounded replay. 13 måltests består; ny præcis CI, integration
+og faktisk godkendt pakkeinspektion mangler. Ingen score-/dataændring eller
+ny autoritet; den store revision og øvrige opgaver er ikke færdige.
+
+# Historik: 2026-10-08 – Display sikkert merget; ny fast original-/scorediagnose er lokal kildekandidat
 
 Efter den faktiske grønne præcise kilde-CI er visningsrettelsen sikkert merget.
 Den af ejeren annullerede writer er helt terminal; ny engangstilladelse er
