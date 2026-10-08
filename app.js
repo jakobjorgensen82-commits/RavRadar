@@ -1,20 +1,20 @@
-import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.551";
-import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, refreshPublicRuntimeGeneration } from "./js/services/data-service.js?v=4.0.551";
-import { submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.551";
-import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.551";
-import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.551";
-import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.551";
-import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.551";
-import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.551&ui=account-20261006";
-import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.551";
-import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails } from "./js/services/rav-assistant.js?v=4.0.551";
-import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.551";
-import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.551";
-import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.551";
-import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.551';
-import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.551';
-import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.551';
-import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.551';
+import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.552";
+import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, refreshPublicRuntimeGeneration } from "./js/services/data-service.js?v=4.0.552";
+import { submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.552";
+import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.552";
+import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.552";
+import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.552";
+import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.552";
+import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.552&ui=account-20261006";
+import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.552";
+import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails } from "./js/services/rav-assistant.js?v=4.0.552";
+import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.552";
+import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.552";
+import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.552";
+import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.552';
+import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.552';
+import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.552';
+import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.552';
 
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, flowArrows:null, currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
 const RUNTIME_SNAPSHOT_TEXT = Object.freeze({
@@ -503,10 +503,22 @@ try {
     try{
       const arrows=installFlowArrows(map,state.zones,id=>state.conditions.zones?.[id]||{},()=>state.conditions.coastalParts||null);
       const counts=arrows.counts?.()||{wind:0,current:0};
-      if((counts.wind||0)+(counts.current||0)===0)throw new Error('Pilelaget blev oprettet uden synlige vind- eller strømpile.');
+      // Current-only data legitimately render nothing while coast evidence is
+      // loading. Keep that layer; a duplicate installer is not a fetch retry.
+      if((counts.wind||0)+(counts.current||0)===0&&arrows.layer?.ravCurrentMaskStatus!=='loading')throw new Error('Pilelaget blev oprettet uden synlige vind- eller strømpile.');
       state.flowArrows=arrows;
-      performance.mark?.('ravradar:flow-arrows-ready');
-      window.dispatchEvent(new CustomEvent('ravradar:flow-arrows-ready',{detail:counts}));
+      // Installation and immediate wind are not proof that current admission
+      // completed. Do not block the rest of startup while the static mask loads.
+      arrows.ready.then(verified=>{
+        if(state.flowArrows!==arrows)return;
+        if(!verified){
+          performance.mark?.('ravradar:flow-arrows-failed');
+          window.dispatchEvent(new CustomEvent('ravradar:flow-arrows-failed',{detail:{message:'Strømpilenes kystgrundlag kunne ikke verificeres.'}}));
+          return;
+        }
+        performance.mark?.('ravradar:flow-arrows-ready');
+        window.dispatchEvent(new CustomEvent('ravradar:flow-arrows-ready',{detail:arrows.counts()}));
+      });
     }catch(error){
       performance.mark?.('ravradar:flow-arrows-failed');
       console.error('Vind- og strømpile kunne ikke vises',error);

@@ -1,3 +1,51 @@
+# Landsdækkende strømpilsrettelse – lokal 4.0.552-kandidat, 8. oktober 2026
+
+Ejerens nyeste menneskelige ordre kræver en fælles rettelse i hele landet,
+også for hidtil usete landpile. Den separate kandidat fra faktisk main
+4.0.551 kontrollerer alle blå hoved-/lokalpile mod samme statiske,
+checksummede OpenStreetMap-landmaske. Ingen stednavneliste, flytning,
+zone-/administratorændring eller scoreændring anvendes. DMI-cache skal
+have samme originale punktbevis som DMI; en navngiven gitterkilde med
+manglende eller ugyldigt punkt må ikke låne zoneankeret eller en anden time.
+
+Land, kystgrænse, ukendt koordinat eller manglende/beskadiget maske giver
+ingen blå pil. Gyldige vandpunkter bevarer original koordinat, retning og
+kilde. Vind, vejrdata, prognoser, central routing, strømhukommelse, cache,
+provenance og hård no-loss er uændrede. Dette er en visningskontrol, ikke
+bevis for ugyldige marinemodelværdier eller afsluttet native-maskediagnose.
+
+Ejerens scoreopfølgning er særskilt åben: Pil og score kan anvende samme
+strømdata, og visningsmasken fjerner ikke data fra score eller strømhukommelse.
+Uændrede scorer er ikke bevis for deres korrekte geografiske grundlag.
+Den udvidede læsekontrol finder flere landklassificerede kildepunkter;
+original celle/maskestatus og faktisk score-/hukommelsesbrug er endnu ikke
+bevist. Ingen blanketafvisning, historikreset eller pointændring er foretaget.
+
+Den faktiske landsmaske, nationale land-/vandprøver, øer, huller, overlap,
+kystgrænser, alle eksisterende strømkildeklasser og valgte timer består
+målrettet lokal kontrol. Browserens normale installFlowArrows-kald udelader
+landstrøm ved Thy og Hals og bevarer havstrøm ved Dokkedal samt vindpile.
+Dette er lokal rendering, ikke offentlig levering eller 210/673-livebevis.
+Masken indlæses efter den øvrige visning fra samme hjemmeside; blå pile
+venter på gyldig kystviden. Filen er 4,48 MB før HTTP-komprimering, genbruges
+via cache og er ikke en ekstra vejrhentning eller ny GIS-tjeneste i drift.
+
+Egen præcis kilde-CI, sikker merge uden aktiv writer, normalt fuldt kontrolleret
+deploy og faktisk offentlig effekt mangler. Den allerede mergede alarmrettelse
+PR535 er del af main, ikke leverancebevis for denne kandidat. Daterede lokale
+statusser nedenfor er historiske. Den store revision, Fur/native årsager,
+brugerdata, Spørg RavRadar og Codex-uafhængig drift er stadig særskilt åbne;
+assistentadskillelse er i bero. Tidligere engangs-vejrhentninger er forbrugt,
+og cron fortsætter uden ny manuel kørsel. Alle særskilte afvisninger består.
+Se DEC-0293 og håndbog 89.174/56; detaljeret diagnostik gemmes kun privat.
+
+Lokal Windows-klargøring stopper på den eksisterende låste eccodeslib-version;
+den lokale fulde kildegate er derfor ikke grøn. En ny måltest bruger den
+faktiske normale Copernicus-læser på originale syntetiske NetCDF-filer med
+deklarerede manglende værdier og gyldige nulværdier. Den er endnu ikke kørt;
+projektets normale GitHub-kildegate på kandidatens eksakte head skal bevise
+den før merge. Ingen afhængighed, produktionslæser eller sikkerhedsgate ændres.
+
 # Lokal alarmrettelse – 2026-10-08 00.47 DK – ikke leveret
 
 En fuldt pagineret læsekontrol viser fire afsluttede fejlede almindelige

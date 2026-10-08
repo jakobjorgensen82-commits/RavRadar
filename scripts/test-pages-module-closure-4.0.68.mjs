@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { exactRelativeModuleSpecifiers } from './lib/static-module-closure.mjs';
 
 const root=process.cwd();
 const site=path.join(root,'_site-module-test');
@@ -50,7 +51,9 @@ while(queue.length){
  try{await fs.access(abs);}catch{throw new Error(`Pages-artifact mangler browsermodul: ${rel}`)}
  const text=await fs.readFile(abs,'utf8');
  const base=path.posix.dirname(rel);
- const imports=[...text.matchAll(/(?:import|export)\s+(?:[^'";]*?\s+from\s+)?["']([^"']+)["']/g)].map(m=>m[1]);
+ // Bootstrap loads app.js with a literal dynamic import. Reuse the normal
+ // strict scanner so the public map, not only admin's static imports, is tested.
+ const imports=exactRelativeModuleSpecifiers(text,rel);
  for(const spec of imports){
   if(!spec.startsWith('.')) continue;
   const child=path.posix.normalize(path.posix.join(base,spec.split('?')[0]));
@@ -58,6 +61,8 @@ while(queue.length){
  }
 }
 if(!visited.has('js/services/handbook-review-store.js')) throw new Error('Admin-importgrafen nåede ikke handbook-review-store.js');
+if(!visited.has('js/map/current-arrow-land-mask.js')) throw new Error('Kortets normale importgraf mangler landsmaskens kalder');
+await fs.access(path.join(site,'data/map/current-arrow-land-mask.json'));
 for(const retired of ['js/services/trip-service.js','js/services/trip-evidence-legacy-bridge.js']){
  if(visited.has(retired))throw new Error(`Den pensionerede GPS-runtime findes stadig i Pages-importgrafen: ${retired}`);
  try{await fs.access(path.join(site,retired));throw new Error(`Den pensionerede GPS-runtime findes stadig i Pages-artifactet: ${retired}`);}catch(error){if(error?.code!=='ENOENT')throw error;}

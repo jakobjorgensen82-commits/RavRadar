@@ -1,3 +1,31 @@
+# 2026-10-08 – Ejer kræver landsdækkende strømpilsrettelse
+
+Den nye menneskelige ordre gælder både kendte og hidtil usete landpile.
+DEC-0293 og den separate lokale 4.0.552-kandidat bruger én fælles,
+checksummet OpenStreetMap-landmaske for alle hoved-/lokalpile og kilder;
+ingen punktflytning, stednavneliste, geometri-, vejr- eller scoreændring.
+DMI-cache kan ikke omgå originalt punktbevis. Ukendt/manglende kortgrundlag
+giver ingen blå pil, mens vind og øvrig visning fortsætter. Klarstatus
+afventer virkelig afsluttet kontrol; masken cachegenbruges uden
+baggrundsgenhentning eller opstartsprefetch. RDKS, Markdown-/webhåndbog,
+issues og changelog er opdateret. Lokale mål og browserkalder er kontrolleret;
+egen kilde-CI, versionspakning, sikker levering og offentlig effekt mangler.
+eller statuscommit; separate revisioner, brugerdata og assistent er åbne.
+
+Den ekstra landsdækkende kontrol fandt og rettede også en normal app-kalder,
+der fejlagtigt behandlede strøm uden vind som installationsfejl, mens masken
+blev læst. Den faktiske kalder gav først rød målprøve og består efter en
+afgrænset ventetidsundtagelse. Indlæsning og beregning har en reel omkostning;
+første hovedvisning går forud, men nul browserbelastning loves ikke.
+
+Ejerens efterfølgende scorekontrol er særskilt åben. Kortpile er ikke scoreinput,
+men begge kan bruge samme strømdata; visningsrettelsen fjerner ikke data fra
+de to strømtilstande. Original celle/maskestatus og faktisk brug skal spores.
+Lokal Windows-klargøring fejler på eksisterende pinned eccodeslib; lokal fuld
+kildegate er ikke grøn. En ny faktisk-kalder NetCDF-måltest er skrevet, men
+ikke kørt. Kandidatens præcise normale GitHub-kildegate er stadig påkrævet.
+Ingen afhængighed, produktionslæser, score- eller modelbinding ændres.
+
 # Lokal alarmrettelse – 2026-10-08 00.47 DK – ikke leveret
 
 En fuldt pagineret læsekontrol viser fire afsluttede fejlede almindelige

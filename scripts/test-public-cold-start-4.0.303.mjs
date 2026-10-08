@@ -93,4 +93,16 @@ for (const file of ['bootstrap.js', 'app.js']) {
 }
 assert.deepEqual(fetched,[`${origin}/bootstrap.js${suffix}`,`${origin}/app.js${suffix}`]);
 
+const maskSha='a'.repeat(64);
+const maskRequest={method:'GET',mode:'cors',url:`${origin}/data/map/current-arrow-land-mask.json?sha256=${maskSha}`};
+for(let pass=0;pass<2;pass++) {
+  let response;
+  handlers.get('fetch')({request:maskRequest,respondWith:value=>{response=value;}});
+  assert.equal(await (await response).text(),`new:${maskRequest.url}`);
+}
+assert.equal(fetched.filter(url=>url===maskRequest.url).length,1,
+  'The immutable pinned coast mask must be reused without background refetch on every page.');
+assert.ok(!worker.slice(worker.indexOf('const STATIC'),worker.indexOf("self.addEventListener('install'")).includes('current-arrow-land-mask.json'),
+  'The large mask must not be added to service-worker installation prefetch.');
+
 console.log('Public cold start 4.0.303: sekventiel start, én første visning og let service-worker-installation består.');

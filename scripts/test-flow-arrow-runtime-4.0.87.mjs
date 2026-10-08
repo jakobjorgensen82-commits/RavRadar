@@ -6,6 +6,7 @@ const failures=[];
 const need=(ok,msg)=>{if(!ok)failures.push(msg)};
 need(app.includes("setTimeout(installArrows,0)"),'Pileinstallationen er ikke deterministisk planlagt.');
 need(app.includes("ravradar:flow-arrows-ready")&&app.includes("ravradar:flow-arrows-failed"),'Pilelaget mangler entydig runtime-status.');
+need(app.includes('arrows.ready.then(verified=>')&&app.includes('if(!verified)'), 'Klarstatus skal afvente virkelig afsluttet kystkontrol, uden at blokere opstarten.');
 need(app.includes('flowArrowAttempts<2'),'Pilelaget mangler sikker engangs-retry ved reel installationsfejl.');
 need(!app.includes('requestIdleCallback(installArrows'),'Pilelaget afhænger stadig af requestIdleCallback.');
 need(mapView.includes('pane.style.zIndex = "440"'),'Pilepanelet ligger ikke sikkert over zone- og grænselag.');
@@ -14,5 +15,6 @@ need(mapView.includes('function latLngFromPoint') && !mapView.includes('L.latLng
 need(mapView.includes('Pile for zone kunne ikke vises'), 'En ugyldig zone kan stadig afbryde hele pilelaget.');
 need(siteTest.includes("'Vind- og strømpile renderes'"),'Sitetesten kontrollerer ikke pilelaget.');
 need(siteTest.includes("querySelectorAll('.flow-arrow.wind')")&&siteTest.includes("querySelectorAll('.flow-arrow.current')"),'Sitetesten tæller ikke faktiske vind- og strømpile.');
+need(siteTest.includes("ms:35000,label:'Pilelagets slutstatus'"),'Sitetestens begrænsede slutstatusventetid skal omfatte den højst 30 sekunders maskelæsning.');
 if(failures.length){console.error('Pile-runtime-test fejlede:\n- '+failures.join('\n- '));process.exit(1)}
 console.log('OK: Pilelaget planlægges deterministisk, ligger synligt, rapporterer status og kontrolleres af sitetesten.');

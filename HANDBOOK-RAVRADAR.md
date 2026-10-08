@@ -1,10 +1,52 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.551
+**Håndbogsversion:** 4.0.552
 
-4.0.551 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+4.0.552 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.174 Landsdækkende landkontrol før en blå strømpil vises
+
+Den lokale 4.0.552-kandidat kontrollerer alle hovedzoners og lokale kystdeles
+strømpile mod det samme landsdækkende OpenStreetMap-kystudtræk. Den bruger
+ikke en liste over kendte fejlsteder. Originale modelpunkter flyttes aldrig.
+En pil på land, selve kystgrænsen eller et ukendt punkt vises ikke. Manglende
+eller beskadiget maske åbner ikke kontrollen; vindpile og resten af siden
+fortsætter. DMI-cache kræver samme originale punktbevis som DMI, og manglende
+valgte-time-punkter må ikke låne zoneankeret eller opstartstimens punkt.
+
+Vejrdata, kildebeviser, gemte originaler, central routing, strømhukommelse og
+RavScore ændres ikke. Forskelle mellem et groft marinemodelgitter og den
+kortlagte kyst er ikke i sig selv bevis for ugyldige modelværdier. Dette er
+en præsentationskontrol, ikke afsluttet fysisk kilde-/maskediagnose.
+
+Scoren beregnes ikke fra den tegnede pil, men pil og score kan bruge samme
+strømdata. At skjule en landpil fjerner derfor ikke strømmen fra score eller
+de to strømhukommelser. Ejerens særskilte kontrol af original celle, native
+maskestatus og faktisk score-/hukommelsesbrug er åben. Uændrede scorer er
+ikke bevis for korrekt scoregrundlag. Ingen kortbaseret blanketafvisning,
+historikreset, renormalisering eller tab af gyldige originaler er tilladt.
+
+Kort, rangliste og prognose vises før landsmasken hentes. Blå pile vises først,
+når dens låste checksum og geometri er godkendt. Den statiske fil fra samme
+hjemmeside er 4,48 MB før HTTP-komprimering og cachegenbrug; første indlæsning
+af blå pile kan derfor tage ekstra tid. Ingen ny GIS-tjeneste kontaktes i
+drift, og vejrhentningen genberegner ikke masken. Alle kystpunkter og ringe
+bevares i et kompakt format; grænsens afrundingsusikkerhed regnes som ukendt.
+Kilden er dateret 8. oktober 2026 og under ODbL, © OpenStreetMap-bidragsydere.
+Ved senere ændret kyst kræves en dokumenteret og kontrolleret maskeopdatering.
+Indlæsning og punktkontrol kræver også arbejde i browseren; de er ikke gratis
+eller en garanti mod korte pauser på langsomme telefoner. Et område med strøm,
+men uden vind, beholder sit ene pilelag under ventetiden; ventetid er ikke fejl.
+
+Den faktiske maske består nationale land-/vandprøver og måltests for øer,
+huller, overlap, cache, kildeklasser og valgt time. Browserens normale lokale
+kalder udelader landstrøm ved Thy og Hals, bevarer havstrøm ved Dokkedal og
+bevarer vind. Det er ikke offentlig levering. Egen kilde-CI, sikker merge,
+normalt deploy og faktisk offentlig effekt er fortsat særskilte gates.
+Den store vejrhentningsrevision, brugerdata og Spørg RavRadar er ikke færdige.
+Se DEC-0293 og data/map/README.md for kilde, dækning og kontrolsum.
 
 ## 89.173 Cachegenbrug med schedulerens gyldige UTC-format
 
@@ -7613,6 +7655,12 @@ Efter et afbrudt skift sammenlignes både den offentlige manifesthash og impleme
 En strømpil er ikke blot pynt. Den skal vise en bestemt beregnet vandbevægelse ved et bestemt sted. RavRadar viser derfor ikke længere flere kopier af den samme pil spredt tilfældigt omkring en zone. Den tidligere visning kunne placere pile på land og kunne få kortet til at ligne et tæt målenet, selv om alle pilene byggede på den samme zoneværdi.
 
 Hver strømpil placeres ved det modelgitterpunkt, hvor den valgte kilde leverede de to strømkomponenter. Det gælder både lokal DMI, Copernicus og de otte godkendte regionale Limfjordsproxyer. Den ene komponent beskriver bevægelsen mod øst eller vest, og den anden beskriver bevægelsen mod nord eller syd. Hvis RavRadar ikke kan dokumentere fælles tidspunkt, celle, lag, afstand og kilde, vises der ingen verificeret strømpil.
+
+Den fælles visningskontrol kræver desuden, at den originale strømkoordinat
+ligger i vand ifølge den checksummede landsmaske. Land, kystgrænse og ukendt
+kortgrundlag giver ingen blå pil, men ændrer ikke den gemte modelværdi eller
+score. DMI-cache kan ikke omgå punktbeviset. Blå pile venter på landsmasken;
+kort, vind, rangliste og prognose fortsætter. Se 89.174 om levering og grænser.
 
 ### 56.1 Sådan beregnes retningen
 
