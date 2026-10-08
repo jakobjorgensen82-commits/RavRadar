@@ -8,6 +8,22 @@ Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leve
 
 ## 89.174 Landsdækkende landkontrol før en blå strømpil vises
 
+Opfølgning 8. oktober om aftenen: 4.0.552 er leveret gennem den normale
+fuldt kontrollerede vejrhentning, gemning og deploy. Offentlig 210/673-kontrol
+og målrettet browserkontrol ved Tofte/Øster Hurup er bestået. Blå landpile
+udelades, mens havstrøm og vind bevares. Det beviser ikke korrekte strømværdier
+eller scorer. Der kommer ikke flere eller større pile; eksisterende cron
+fortsætter uden ny manuel vejrhentning.
+
+Den særskilte skrivefri originaldiagnose er lokalt udvidet fra DMI til den
+normale Copernicus/Open-Meteo-kildevalgsvej og begge gemte strømhukommelser.
+Den bruger den præcise originale producentkode, normale kildebeviser og
+tilstandsvalidering. Manglende gemte timer forbliver uafklarede. Match af tid,
+kilde og værdi er ikke en lagret kausal sammenkædning eller native vådmaskekontrol.
+13 måltests består med både aktuelle og originale læsere; de erstatter ikke
+ny præcis kilde-CI eller faktisk pakkeinspektion. Ingen vejrdata, score eller
+historik ændres. De daterede kandidatbeskrivelser nedenfor er historik.
+
 Den lokale 4.0.552-kandidat kontrollerer alle hovedzoners og lokale kystdeles
 strømpile mod det samme landsdækkende OpenStreetMap-kystudtræk. Den bruger
 ikke en liste over kendte fejlsteder. Originale modelpunkter flyttes aldrig.

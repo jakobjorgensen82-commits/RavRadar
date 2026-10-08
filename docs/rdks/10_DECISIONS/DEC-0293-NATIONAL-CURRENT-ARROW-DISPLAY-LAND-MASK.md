@@ -1,6 +1,6 @@
 # DEC-0293 – Landsdækkende landkontrol for strømpile
 
-- **Status:** Godkendt krav; lokal implementering, levering afventer
+- **Status:** Visningsrettelse produktionsleveret og målrettet browserverificeret; numerisk diagnose åben
 - **Ejerordre:** 8. oktober 2026: Rettelsen skal gælde hele landet og også hidtil usete tilfælde.
 - **Omfang:** Kortets præsentation, ikke kilders fysiske gyldighed eller RavScore.
 
@@ -43,6 +43,27 @@ hele afrundingsusikkerheden omkring grænsen forbliver ukendt. Administratorens
 geometri og land-/vandpunkter ændres ikke.
 
 ## Kontrol og grænser
+
+Visningskandidatens præcise rettede kilde-CI har faktisk bestået, og koden er
+sikkert merget efter den af ejeren annullerede writers terminale ophør.
+Ny konkret engangsordre er forbrugt ved én almindelig manuel vejrhentning;
+derefter bruges eksisterende cron. Antal/størrelse af pile ændres ikke.
+Deploy og faktisk offentlig effekt kan ikke udledes af merge eller start.
+
+Visningsleverancen er senere samme aften bekræftet gennem faktisk normal
+gemning/deploy, offentlig 210/673-kontrol og målrettet browserkontrol. Det
+lukker ikke den særskilte numeriske diagnose.
+
+Den nye udtrykkeligt godkendte gemte originalpakke undersøges fortsat via
+separat fast læsning og original producentkode, AAD og kontrakter. Den lokale
+diagnose er udvidet til den normale Copernicus/Open-Meteo-kildevalgsvej og
+begge gemte strømhukommelser. Manglende gemte timer skabes ikke ud fra scorer.
+Den private Candidate G-rod skal være entydig, korrekt bundet og genafspillelig
+med den oprindelige tilstandslæser. 13 måltests består efter udvidelsen,
+inklusive originalversionens normale læsere og GCM/AAD med syntetiske input.
+Ny præcis kilde-CI, sikker integration og faktisk pakkeinspektion mangler.
+Match er ikke et kausalt join eller native vådmaskebevis. Ingen numerisk
+rettelse, ny score, historikændring eller produktionsskrivning er udført.
 
 Måltests omfatter hoved-/lokalpile, DMI og cache, Copernicus og regionale
 kilder, ukendte punkter, manglende/beskadiget maske, øer, polygonhuller,

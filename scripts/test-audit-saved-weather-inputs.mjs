@@ -21,6 +21,8 @@ import { buildCurrentSupplyMemory } from '../js/core/ravscore-current-supply-mem
 import { spawnSync } from 'node:child_process';
 import { summarizeSealedCurrentPart, summarizeSealedCurrentNationalParts, validateSealedCurrentSourceTarget,
   SEALED_CURRENT_SOURCE_TARGET as sealedTarget } from './audit-sealed-current-source.mjs';
+// The new fixed package has its own immutable target; keep old audit tests intact.
+await import('./test-sealed-arrow-score-audit.mjs');
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const credentials = { supabaseUrl: 'https://storage.example.test', serviceRoleKey: 'sb_secret_synthetic-never-real',
