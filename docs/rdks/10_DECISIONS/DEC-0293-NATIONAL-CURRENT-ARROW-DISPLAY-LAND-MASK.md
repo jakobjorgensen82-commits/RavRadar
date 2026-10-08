@@ -44,6 +44,20 @@ geometri og land-/vandpunkter ændres ikke.
 
 ## Kontrol og grænser
 
+Opfølgning 8. oktober sent om aftenen: Den første godkendte originaldiagnose
+er nu udført efter sin præcise kilde-CI og sikre integration. Den giver
+afgrænsede match i strømhukommelsen, men frikender ikke scoregrundlaget.
+Rapportens nul scoretimer skyldtes, at diagnosen overså den normale separate
+timepakke. Hovedfilens aktuelle score og pakkens prognosetimer læses nu
+lokalt med originale læsere og uændret autentificering. Privat proveniens
+og offentlig projektion sammenlignes hver for sig. En samlet normal
+gemnings-/krypteringsprøve med 673 syntetiske dele består. Manglende timer
+opfindes ikke; der beregnes ingen nye scorer. Ny præcis CI, integration og
+en særskilt godkendt gentagen pakkediagnose mangler. Første engangsordre er
+forbrugt. Native vådmaske og numerisk korrekthed er fortsat åbne.
+
+Følgende daterede statusser er historiske, hvor de er erstattet ovenfor.
+
 Visningskandidatens præcise rettede kilde-CI har faktisk bestået, og koden er
 sikkert merget efter den af ejeren annullerede writers terminale ophør.
 Ny konkret engangsordre er forbrugt ved én almindelig manuel vejrhentning;

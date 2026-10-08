@@ -5,6 +5,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import test from 'node:test';
+await import('./test-sealed-arrow-score-persistence.mjs');
 import { spawnSync } from 'node:child_process';
 import { SEALED_ARROW_SCORE_TARGET as target, validateSealedArrowScoreTarget,
   measureArrowScorePart, originalArrowScoreReaders, originalArrowScoreExpectation,
@@ -17,6 +18,104 @@ import { buildDmiForecastHourly, DMI_FORECAST_HOURS } from './lib/dmi-forecast-s
 import { createCurrentArrowLandMask } from '../js/map/current-arrow-land-mask.js';
 import { measureSavedCurrentSelection, selectSavedCandidateRoot,
   validateSavedCandidateState } from './lib/sealed-arrow-score-selection.mjs';
+import { savedPrivateScoreRows, readSavedPublicScoreRows } from './lib/sealed-arrow-score-hours.mjs';
+
+async function checkSavedHourStorage(readers) {
+  const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-saved-score-hours-test-'));
+  try {
+    const payload = path.join(folder, 'payload'), live = path.join(folder, 'live');
+    await fs.mkdir(path.join(live, 'forecast'), { recursive: true });
+    const { modelBinding } = await originalArrowScoreExpectation(readers);
+    const datasetId = 'synthetic-saved-score-pack', productionReferenceAt = target.productionReferenceAt;
+    const { RAVSCORE_PUBLIC_FORECAST_HOURS: count } = await import(pathToFileURL(path.join(readers.root, 'js/core/ravscore-model-contract.js')).href);
+    const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+    const sourceDetailsSha256 = 'a'.repeat(64), hours = {};
+    const current = { time: productionReferenceAt, weather: { currentSpeedMps: .15, currentDirectionDeg: 90,
+      currentProvenance: { status: 'verified', provider: 'dmi' } } };
+    for (let i = 0; i < count; i++) {
+      const time = new Date(Date.parse(productionReferenceAt) + i * 3600000).toISOString();
+      const text = JSON.stringify({ datasetId, productionReferenceAt,
+        delivery: { schemaVersion: 1, kind: 'hour', key: time, sourceDetailsSha256, modelBinding },
+        coastalParts: { parts: {
+          p1: { id: 'p1', zoneId: 'z1', current: { ...current, time }, flowPoints: { current: [8,55] } },
+          p2: { id: 'p2', zoneId: 'z1', ...(i === 0 ? {} : { current: { ...current, time } }) },
+        } } });
+      const hash = digest(text), file = hash + '.json';
+      await fs.writeFile(path.join(live, 'forecast', file), text);
+      hours[time] = { path: './forecast/' + file, sha256: hash, bytes: Buffer.byteLength(text) };
+    }
+    const packPath = path.join(payload, '.cache/public-hour-delivery.pack');
+    const packed = await readers.buildPrivatePublicHourDeliveryPack({ liveDirectory: live, outputPath: packPath,
+      publicManifest: { datasetId, productionReferenceAt, publicConditionDetailsSha256: sourceDetailsSha256,
+        ravScoreModelBinding: modelBinding, detailDelivery: { schemaVersion: 1, sourceDetailsSha256, hours } },
+      startupNationalForecast: { schemaVersion: 2, modelBinding, dates: [], modes: { waders: [], beach: [] } } });
+    const full = { datasetId, productionReferenceAt, coastalParts: { enabled: true, expectedPartCount: 2,
+      modelBinding, parts: { p1: { zoneId: 'z1', current, flowPoints: { current: [8,55] }, hourly: [current] },
+        p2: { zoneId: 'z1', current, hourly: [current] } } } };
+    const compact = readers.compactPrivateConditionsForPersistence(full, packed.marker);
+    assert.equal(compact.coastalParts.parts.p1.hourly, undefined, 'exercise the actual persistence defect');
+    assert.equal(savedPrivateScoreRows(compact.coastalParts.parts.p1).length, 1);
+    assert.deepEqual(savedPrivateScoreRows(compact.coastalParts.parts.p1)[0].flowPoints, { current: [8,55] });
+    assert.equal(savedPrivateScoreRows(full.coastalParts.parts.p1).length, 1, 'do not duplicate current with inline row');
+    const original = await fs.readFile(packPath), before = JSON.stringify(compact);
+    const result = await readSavedPublicScoreRows({ conditions: compact, payload, privateRoot: folder, readers });
+    assert.equal(result.summary.hours, count); assert.equal(result.summary.rows, 2 * count - 1);
+    assert.equal(result.summary.absentPartHours, 1, 'never copy H0 into a missing part/hour');
+    assert.equal(result.rows.get('p1').length, count); assert.equal(result.rows.get('p2').length, count - 1);
+    assert.equal(result.rows.get('p1')[0].weather.currentSpeedMps, .15);
+    assert.equal(result.summary.storage, 'ORIGINAL_AUTHENTICATED_PUBLIC_HOUR_PACK');
+    assert.equal(JSON.stringify(compact), before); assert.deepEqual(await fs.readFile(packPath), original);
+    assert.equal((await fs.readdir(folder)).some(name => name.startsWith('arrow-score-hours-')), false);
+    const bad = structuredClone(compact); bad.publicHourDelivery.packSha256 = '0'.repeat(64);
+    await assert.rejects(readSavedPublicScoreRows({ conditions: bad, payload, privateRoot: folder, readers }), /digest/i);
+    const changedIdentity = structuredClone(compact); changedIdentity.coastalParts.parts.p1.zoneId = 'other';
+    await assert.rejects(readSavedPublicScoreRows({ conditions: changedIdentity, payload, privateRoot: folder, readers }), /SAVED_HOUR_PART/);
+    const missing = structuredClone(compact); delete missing.publicHourDelivery;
+    await assert.rejects(readSavedPublicScoreRows({ conditions: missing, payload, privateRoot: folder, readers }), /SAVED_HOUR_PACK_MISSING/);
+    const corrupt = Buffer.from(original); corrupt[corrupt.length - 1] ^= 1; await fs.writeFile(packPath, corrupt);
+    await assert.rejects(readSavedPublicScoreRows({ conditions: compact, payload, privateRoot: folder, readers }), /digest/i);
+    assert.equal((await fs.readdir(folder)).some(name => name.startsWith('arrow-score-hours-')), false);
+  } finally { await fs.rm(folder, { recursive: true, force: true }); }
+}
+
+async function checkNormalPublicProjection(root, readers) {
+  const load = name => import(pathToFileURL(path.join(root, name)).href);
+  const env = { assert, ...await load('js/core/ravscore-model-contract.js'),
+    ...await load('js/core/ravscore-public-model.js'), ...await load('js/core/ravscore-public-runtime-contract.js'),
+    ...await load('js/core/ravscore-evidence-trust-contract.js'), ...await load('js/core/ravscore-public-weather-source-age.js') };
+  const source = await fs.readFile(path.join(root, 'scripts/test-ravscore-public-runtime-contract.mjs'), 'utf8');
+  const start = source.indexOf('const generatedAt ='), end = source.indexOf('assert.throws(() => buildPublicConditions(', start);
+  assert.ok(start >= 0 && end > start);
+  const full = Function(...Object.keys(env), source.slice(start, end) + ';return full;')(...Object.values(env));
+  const data = fixture(), selected = readers.verifiedIntegratedPartHourly(data.record, data.bulk,
+    'PART::' + data.part.partId, data.part)[0];
+  const weather = { currentSpeedMps: selected.currentSpeedMps, currentDirectionDeg: selected.currentDirectionDeg,
+    currentProvenance: readers.displayedCurrentProvenance(selected.currentProvenance) };
+  full.coastalParts.parts['part-1'].current.weather = weather;
+  const publicLib = await load('scripts/public-conditions-lib.mjs');
+  const publicPart = publicLib.buildPublicConditionDetails(full).coastalParts.parts['part-1'];
+  assert.equal(Object.hasOwn(publicPart.current.weather.currentProvenance, 'modelRun'), false);
+  const stored = { time: data.part.hourly[0].time, weather: publicPart.current.weather,
+    flowPoints: data.part.hourly[0].flowPoints, modeWeather: [publicPart.current.weather, publicPart.current.weather] };
+  const options = { ...data, readers, storedRows: [stored], referenceAt: target.productionReferenceAt, projectionKind: 'public' };
+  const result = measureSavedCurrentSelection(options).projection;
+  assert.equal(result.matched, 1); assert.equal(result.mapLocation.land, 1);
+  assert.equal(result.modeWeatherCompared, 2); assert.equal(result.modeWeatherMismatches, 0);
+  assert.equal(result.arrowPointMatched, 1);
+  const wrong = structuredClone(stored); wrong.weather.currentProvenance.collection = 'wrong';
+  assert.equal(measureSavedCurrentSelection({ ...options, storedRows: [wrong] }).projection.mismatched, 1);
+  const leaking = structuredClone(stored); leaking.weather.currentProvenance.gridPoint = [8,55];
+  assert.equal(measureSavedCurrentSelection({ ...options, storedRows: [leaking] }).projection.mismatched, 1);
+  const mode = structuredClone(stored); mode.modeWeather[0] = { ...mode.weather, currentSpeedMps: 9 };
+  assert.equal(measureSavedCurrentSelection({ ...options, storedRows: [mode] }).projection.modeWeatherMismatches, 1);
+  const arrow = structuredClone(stored); arrow.flowPoints.current = [9,55];
+  assert.equal(measureSavedCurrentSelection({ ...options, storedRows: [arrow] }).projection.arrowPointMismatched, 1);
+}
+test('normal saved score compaction and full hour pack never silently become zero score rows', async () => {
+  const readers = await originalArrowScoreReaders(process.cwd());
+  await checkSavedHourStorage(readers);
+  await checkNormalPublicProjection(readers.root, readers);
+});
 
 async function checkNormalSupplementalSelection(root, original) {
   const pilot = await import(pathToFileURL(path.join(root, 'scripts/lib/live-current-pilot.mjs')).href);
@@ -289,6 +388,8 @@ test('genuine original producer archive and normal GCM/AAD open plus offline ins
   assert.equal(JSON.parse(await fs.readFile(path.join(producer, 'package.json'), 'utf8')).version, '4.0.551');
   await checkNormalSupplementalSelection(producer, readers);
   await checkCandidateStateAndRoot(producer, readers);
+  await checkSavedHourStorage(readers);
+  await checkNormalPublicProjection(producer, readers);
   const conditions = { datasetId: target.datasetId, productionReferenceAt: target.productionReferenceAt,
     generatedAt: target.generatedAt, zones: Object.fromEntries(Array.from({ length: 210 }, (_, i) => [`zone-${i}`, {}])),
     coastalParts: { modelBinding: expected.modelBinding, parts: Object.fromEntries(Array.from({ length: 673 }, (_, i) =>

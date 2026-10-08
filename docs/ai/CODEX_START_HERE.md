@@ -1,4 +1,36 @@
-# Strømpile leveret; skrivefri score-/hukommelsesdiagnose udvidet – 8. oktober 2026
+# Originaldiagnose udført; læsning af gemte scoretimer rettet lokalt – 8. oktober 2026
+
+4.0.552's landsdækkende pilevisning er fortsat produktionsleveret. Den første
+særskilt godkendte skrivefri originaldiagnose er nu faktisk gennemført efter
+sin præcise kilde-CI og sikre integration. Den bekræfter match mellem gemt
+strømhukommelse og input med punkter på kortland. Det frikender ikke det
+numeriske scoregrundlag, men beviser heller ikke ugyldige marineceller.
+De afgrænsede konkrete resultater og kørselskvitteringer opbevares privat.
+
+Diagnosen overså den normale lagringskontrakt: hovedfilen beholder aktuel
+score, men kystdelenes prognosetimer gemmes i en separat autentificeret
+timepakke. Nul læste scoretimer var en diagnosefejl, ikke datatab eller
+bevis for fravær af strøm i scorer. Den lokale rettelse læser både bevaret
+aktuel score og timepakken med den præcise originale pakkelæser. Den
+skelner mellem privat proveniens og den bevidst mindre offentlige projektion.
+Gyldige originale bindinger, kryptering, hashes, tidspunkt og delidentitet
+bevares; ingen score beregnes på ny, og manglende timer opfindes ikke.
+
+Den nye regression bruger normal komprimering, original kryptering og
+gendannelse med 673 syntetiske dele og en separat prognosepakke. Den finder
+de gemte aktuelle og senere scorer, som den første diagnose overså.
+Yderligere mål dækker manglende time, ændret hash, forkert delidentitet,
+proveniens, tilstand og uoverensstemmende mode-/pileprojektion. Dette er
+lokalt bevis, ikke en ny faktisk originalpakkeinspektion eller fysisk
+korrekthedsbevis. Egen ny kilde-CI og sikker integration mangler endnu.
+
+Den første engangsdiagnose er forbrugt. En præcis ny tilladelse til endnu
+én læsning af samme pakke er efterspurgt; ingen automatisk gentagelse.
+Ingen vejrhentning, deploy, score-, historik-, punkt- eller bindingsændring.
+Den store revision, native celleårsag, Spørg RavRadar og brugerdata er
+fortsat åbne; assistentadskillelse er i bero og særskilte afvisninger består.
+
+# Historik: Strømpile leveret; skrivefri score-/hukommelsesdiagnose udvidet – 8. oktober 2026
 
 Visningsrettelsen 4.0.552 er nu produktionsleveret efter den almindelige
 vejrhentnings fulde kontroller, beskyttet gemning, deploy og offentlig

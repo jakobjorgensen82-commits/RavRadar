@@ -8,6 +8,18 @@ Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leve
 
 ## 89.174 Landsdækkende landkontrol før en blå strømpil vises
 
+Opfølgning 8. oktober sent om aftenen: Den første godkendte originaldiagnose
+er nu udført efter sin præcise kilde-CI og sikre integration. Den giver
+afgrænsede match i strømhukommelsen, men frikender ikke scoregrundlaget.
+Rapportens nul scoretimer skyldtes, at diagnosen overså den normale separate
+timepakke. Hovedfilens aktuelle score og pakkens prognosetimer læses nu
+lokalt med originale læsere og uændret autentificering. Privat proveniens
+og offentlig projektion sammenlignes hver for sig. En samlet normal
+gemnings-/krypteringsprøve med 673 syntetiske dele består. Manglende timer
+opfindes ikke; der beregnes ingen nye scorer. Ny præcis CI, integration og
+en særskilt godkendt gentagen pakkediagnose mangler. Første engangsordre er
+forbrugt. Native vådmaske og numerisk korrekthed er fortsat åbne.
+
 Opfølgning 8. oktober om aftenen: 4.0.552 er leveret gennem den normale
 fuldt kontrollerede vejrhentning, gemning og deploy. Offentlig 210/673-kontrol
 og målrettet browserkontrol ved Tofte/Øster Hurup er bestået. Blå landpile
