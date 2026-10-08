@@ -27,6 +27,10 @@ assert.ok(fs.readFileSync('scripts/test-copernicus-current-pilot.py', 'utf8').in
 const pythonContractGroup = fs.readFileSync('scripts/test-current-operational-python-contracts.mjs', 'utf8');
 assert.equal((pythonContractGroup.match(/'test-dmi-bulk-supervised\.py'/g) || []).length, 1,
   'The existing Python source group must execute the DMI supervisor regression exactly once.');
+assert.equal((scripts['test:flow-arrow-runtime'].match(/node scripts\/test-current-arrow-land-mask\.mjs/g) || []).length, 1,
+  'The existing flow-arrow group must verify the actual nationwide land mask exactly once.');
+assert.equal((fs.readFileSync('scripts/source-critical-gate.mjs', 'utf8').match(/'test:flow-arrow-runtime'/g) || []).length, 1,
+  'The normal source gate must retain the flow-arrow group exactly once.');
 const invokedFiles = declared.flatMap(command => command.split(' ').filter(argument =>
   /^scripts\/test-[A-Za-z0-9_.-]+\.mjs$/.test(argument)));
 for (const file of [

@@ -1,4 +1,5 @@
-import { t } from "../i18n.js?v=4.0.551";
+import { t } from "../i18n.js?v=4.0.552";
+import { loadCurrentArrowLandMask } from "./current-arrow-land-mask.js?v=4.0.552";
 
 const palette = { good: "#168653", fair: "#e6a700", weak: "#d9822b", poor: "#d34a3a", unavailable: "#30383c" };
 
@@ -327,15 +328,15 @@ function flowArrowIcon(type, directionDeg, label = "") {
 }
 
 function latLngFromPoint(value, fallback = null) {
-  if (Array.isArray(value) && value.length >= 2 && Number.isFinite(Number(value[0])) && Number.isFinite(Number(value[1]))) {
-    return L.latLng(Number(value[1]), Number(value[0]));
-  }
-  return fallback;
+  const point = pointCoordinates(value);
+  return point ? L.latLng(point[1], point[0]) : fallback;
 }
 
 function pointCoordinates(value, fallback = null) {
-  if (Array.isArray(value) && value.length >= 2 && Number.isFinite(Number(value[0])) && Number.isFinite(Number(value[1]))) {
-    return [Number(value[0]), Number(value[1])];
+  if (Array.isArray(value) && value.length >= 2
+      && typeof value[0] === 'number' && Number.isFinite(value[0]) && Math.abs(value[0]) <= 180
+      && typeof value[1] === 'number' && Number.isFinite(value[1]) && Math.abs(value[1]) <= 90) {
+    return [value[0], value[1]];
   }
   return fallback;
 }
@@ -344,7 +345,7 @@ function validDirection(value) {
   return value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
 }
 
-export function buildFlowArrowCandidates(featureCollection, conditionForZone, coastalParts = null, zoom = 7) {
+export function buildFlowArrowCandidates(featureCollection, conditionForZone, coastalParts = null, zoom = 7, landMask = null) {
   const verifiedCurrentGridSources = new Set(['dmi-marine-grid', 'copernicus-current-grid', 'dmi-regional-proxy-grid']);
   const candidates = [];
   const activeZoneIds = new Set();
@@ -360,10 +361,15 @@ export function buildFlowArrowCandidates(featureCollection, conditionForZone, co
     const currentSourceMetadata = flowPoints?.sourceMetadata?.current || {};
     const currentProvider = zoneCondition.currentSource || zoneCondition.sources?.current?.provider || null;
     const verifiedCurrent = verifiedCurrentGridSources.has(flowPoints?.sources?.current);
-    if (validDirection(condition.currentDirectionDeg) && (currentProvider !== 'dmi' || verifiedCurrent)) {
+    // A cache is not a different provider, and a grid label is not a location.
+    // Never turn missing selected-hour grid coordinates into a zone-point arrow.
+    const dmiCurrent = currentProvider === 'dmi' || currentProvider === 'dmi-cache';
+    const currentPoint = pointCoordinates(flowPoints.current,
+      verifiedCurrent || dmiCurrent ? null : fallbackPoint);
+    if (validDirection(condition.currentDirectionDeg) && currentPoint && (!dmiCurrent || verifiedCurrent)) {
       candidates.push({
         type:'current', zoneId:zone.id, partId:null,
-        point:pointCoordinates(flowPoints.current, fallbackPoint),
+        point:currentPoint,
         directionDeg:Number(condition.currentDirectionDeg),
         source:flowPoints?.sources?.current || 'provider-request-point',
         sourceClass:typeof currentSourceMetadata.sourceClass === 'string'
@@ -386,7 +392,9 @@ export function buildFlowArrowCandidates(featureCollection, conditionForZone, co
   // Landsoversigten bevarer ét repræsentativt punkt pr. hovedzone. Først ved
   // nærmere zoom tilføjes lokale kystdeles egne, dokumenterede DMI-punkter.
   // Dermed vokser tætheden med kortets detaljeniveau uden kunstige kopier.
-  if (zoom < 9 || coastalParts?.enabled !== true) return candidates;
+  const displayable = () => candidates.filter(candidate => candidate.type !== 'current'
+    || landMask?.classifyPoint(candidate.point) === 'water');
+  if (zoom < 9 || coastalParts?.enabled !== true) return displayable();
   for (const [partId, part] of Object.entries(coastalParts.parts || {})) {
     if (!activeZoneIds.has(part?.zoneId)) continue;
     const weather = part?.current?.weather || {};
@@ -411,7 +419,7 @@ export function buildFlowArrowCandidates(featureCollection, conditionForZone, co
       if (point) candidates.push({ type:'wind', zoneId:part.zoneId, partId, point, directionDeg:Number(weather.windDirectionDeg), source:windSource });
     }
   }
-  return candidates;
+  return displayable();
 }
 
 function minArrowSeparationPx(zoom) {
@@ -428,7 +436,7 @@ function canPlaceAt(map, latLng, occupied, minDistance) {
   return true;
 }
 
-export function installFlowArrows(map, featureCollection, conditionForZone, coastalPartsForMap = () => null) {
+export function installFlowArrows(map, featureCollection, conditionForZone, coastalPartsForMap = () => null, { landMask: initialLandMask = null } = {}) {
   if (!map.getPane("flowArrowsPane")) {
     const pane = map.createPane("flowArrowsPane");
     pane.style.zIndex = "440";
@@ -438,6 +446,8 @@ export function installFlowArrows(map, featureCollection, conditionForZone, coas
   // monteret, udløser hver addTo(layer) ellers en dyr DOM-opdatering.
   const layer = L.layerGroup([], { pane:"flowArrowsPane" });
 
+  let landMask = initialLandMask;
+  let destroyed = false;
   let counts = { wind:0, current:0 };
   const render = () => {
     counts = { wind:0, current:0 };
@@ -449,7 +459,7 @@ export function installFlowArrows(map, featureCollection, conditionForZone, coas
     const minDistance = minArrowSeparationPx(zoom);
     const occupied = { current: [], wind: [] };
 
-    const candidates = buildFlowArrowCandidates(featureCollection, conditionForZone, coastalPartsForMap?.(), zoom);
+    const candidates = buildFlowArrowCandidates(featureCollection, conditionForZone, coastalPartsForMap?.(), zoom, landMask);
     for (const candidate of candidates) {
       try {
         const position = latLngFromPoint(candidate.point);
@@ -480,6 +490,19 @@ export function installFlowArrows(map, featureCollection, conditionForZone, coas
 
   map.on("zoomend moveend resize", render);
   render();
-  return { layer, refresh:render, counts:()=>({ ...(layer.ravFlowCounts||counts) }),
-    destroy:()=>{map.off('zoomend moveend resize',render);map.removeLayer(layer);layer.clearLayers();} };
+  layer.ravCurrentMaskStatus = landMask ? 'ready' : 'loading';
+  const ready = landMask ? Promise.resolve(true) : loadCurrentArrowLandMask().then(mask => {
+    if (destroyed) return false;
+    landMask = mask;
+    layer.ravCurrentMaskStatus = 'ready';
+    render();
+    return true;
+  }).catch(() => {
+    if (!destroyed) layer.ravCurrentMaskStatus = 'unavailable';
+    // Missing map evidence must not become a current arrow. Wind, weather,
+    // scores and the map stay usable; no supplier data are changed or removed.
+    return false;
+  });
+  return { layer, ready, refresh:render, counts:()=>({ ...(layer.ravFlowCounts||counts) }),
+    destroy:()=>{destroyed=true;map.off('zoomend moveend resize',render);map.removeLayer(layer);layer.clearLayers();} };
 }

@@ -1,4 +1,4 @@
-const APP_VERSION = "4.0.551";
+const APP_VERSION = "4.0.552";
 const CACHE_PREFIX = "ravradar-app-";
 const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}`;
 const STATIC = [
@@ -30,6 +30,9 @@ self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET')return;const url=new URL(event.request.url);if(url.origin!==self.location.origin)return;
   if(event.request.mode==='navigate'){event.respondWith(networkFirst(event.request));return;}
   if(url.pathname.includes('/data/live/')){event.respondWith(liveData(event.request));return;}
+  // Immutable display-only coast evidence: exact content key, no background
+  // refetch or installation prefetch. The map still verifies its pinned SHA.
+  if(url.pathname.endsWith('/data/map/current-arrow-land-mask.json')&&/^[a-f0-9]{64}$/.test(url.searchParams.get('sha256')||'')){event.respondWith(cacheFirst(event.request));return;}
   if(url.pathname.endsWith('/version.json')||url.pathname.includes('/data/diagnostics/')||url.pathname.endsWith('/data/zones.geojson')||url.pathname.endsWith('/data/zone-plan.json')){event.respondWith(networkFirst(event.request));return;}
   const versioned=url.searchParams.get('v')===APP_VERSION;
   if(versioned||/\.(?:png|svg|ico|webp|woff2)$/.test(url.pathname)){event.respondWith(cacheFirst(event.request));return;}

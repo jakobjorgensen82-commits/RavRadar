@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
-import { buildFlowArrowCandidates, installFlowArrows } from '../js/map/map-view.js';
+import { buildFlowArrowCandidates as buildWithLandMask, installFlowArrows } from '../js/map/map-view.js';
+import { createCurrentArrowLandMask } from '../js/map/current-arrow-land-mask.js';
 import { buildPublicConditions, buildPublicConditionDetails } from './public-conditions-lib.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
@@ -8,6 +9,12 @@ import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trus
 
 const failures=[];
 const need=(ok,message)=>{if(!ok)failures.push(message);};
+// Synthetic geometry isolates provenance/density behavior; no real coastline
+// or production land/water classification is claimed by this fixture.
+const landMask=createCurrentArrowLandMask({schemaVersion:1,coverage:[7.7,54.4,15.6,57.9],polygons:[{
+  bbox:[7.01,53.51,7.02,53.52],rings:[[[7.01,53.51],[7.02,53.51],[7.02,53.52],[7.01,53.52],[7.01,53.51]]]
+}]});
+const buildFlowArrowCandidates=(...args)=>buildWithLandMask(...args,landMask);
 const modelBinding=ravScoreModelBinding();
 const scoreProfile=resolvePublicRavScoreProfile({modelCoverageReady:true,modelMemoryReady:true,modelMigrationReady:true});
 const flowPoints={
@@ -67,6 +74,30 @@ reserveParts.parts.P3.flowPoints.sources.wind='open-meteo-wind-grid';
 const reserveArrows=buildFlowArrowCandidates(features,zoneFor,reserveParts,10);
 need(reserveArrows.some(row=>row.partId==='P3'&&row.type==='wind'&&row.source==='open-meteo-wind-grid'&&row.point[0]===11.2),'En verificeret reservevind skal vise sin egen celles pil, ikke forsvinde eller ommærkes til DMI.');
 
+// The public selected-hour projection intentionally omits parent H0 grid
+// coordinates in later hours. Cached DMI must obey the same proof contract.
+for (const currentSource of ['dmi', 'dmi-cache']) {
+  const unlocated = buildFlowArrowCandidates(features, () => ({
+    currentSource, flowPoints:null,
+    current:{currentDirectionDeg:80,windDirectionDeg:260}
+  }), null, 8);
+  need(!unlocated.some(row=>row.type==='current'),`${currentSource}: en strøm uden den viste times gitterpunkt må ikke falde tilbage til zonepunktet.`);
+  need(unlocated.filter(row=>row.type==='wind').length===1,`${currentSource}: afvisning af en ubevist strøm må ikke fjerne vindpilen.`);
+  const located = buildFlowArrowCandidates(features, () => ({
+    currentSource, flowPoints, current:{currentDirectionDeg:80}
+  }), null, 8);
+  need(located.length===1&&located[0].point[0]===10.1,`${currentSource}: et dokumenteret originalt gitterpunkt skal bevares uændret.`);
+}
+for (const source of ['dmi-marine-grid','copernicus-current-grid','dmi-regional-proxy-grid']) {
+  for (const point of [null, [], [null,56], [true,56], ['',56], [Infinity,56], [10,91], [181,56]]) {
+    const unlocated = buildFlowArrowCandidates(features, () => ({
+      currentSource:'dmi-cache', current:{currentDirectionDeg:80},
+      flowPoints:{current:point,sources:{current:source}}
+    }), null, 8);
+    need(!unlocated.some(row=>row.type==='current'),`${source}: en kildetype alene må ikke godkende et ugyldigt eller manglende gitterpunkt ${JSON.stringify(point)}.`);
+  }
+}
+
 const gridPoint=(longitude,latitude,extra={})=>({longitude,latitude,...extra});
 const recordWithGrid=(gridPoints,extra={},hourly=[])=>({model:{completeness:{currentVectorSemanticsVersion:3,currentVectorSelection:'nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer',currentMaxDistanceKm:5,samplingPoint:[9,54],gridPoints,...extra}},hourly});
 const recordWithCurrent=(sourceOverrides={},extra={})=>{
@@ -123,8 +154,8 @@ const makeMap=zoom=>({
   latLngToLayerPoint(latLng){const scale=1000;return{x:latLng.lng*scale,y:latLng.lat*scale,distanceTo(other){return Math.hypot(this.x-other.x,this.y-other.y);}};},
   hasLayer(layer){return this.visibleLayer===layer;},removeLayer(layer){if(this.visibleLayer===layer)this.visibleLayer=null;},on(){}
 });
-const overviewLayer=installFlowArrows(makeMap(8),features,zoneFor,()=>details.coastalParts);
-const closeLayer=installFlowArrows(makeMap(10),features,zoneFor,()=>details.coastalParts);
+const overviewLayer=installFlowArrows(makeMap(8),features,zoneFor,()=>details.coastalParts,{landMask});
+const closeLayer=installFlowArrows(makeMap(10),features,zoneFor,()=>details.coastalParts,{landMask});
 need(overviewLayer.counts().wind===1&&overviewLayer.counts().current===1,'Det renderede landslag skal have én pil af hver type i den syntetiske zone.');
 need(closeLayer.counts().wind===2&&closeLayer.counts().current===2,'Det renderede indzoomede lag skal vise flere fysisk adskilte DMI-pile.');
 

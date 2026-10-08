@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import runpy
+import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -139,6 +140,50 @@ assert spec and spec.loader
 runner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runner)
 product = runner.PRODUCTS[0]
+
+# Exercise the actual normal shard caller, not a pre-masked in-memory stand-in.
+# The Baltic provider documents land/fill -999. The original NetCDF attributes
+# must become missing values during the caller's real xr.open_dataset read.
+# This proves sentinel handling only; it does not prove any production cell's
+# physical wetness or the current correctness of a saved score/memory.
+for missing_attributes in (
+    {"_FillValue": -999.0},
+    {"missing_value": -999.0},
+    {"_FillValue": -999.0, "missing_value": -999.0},
+):
+    native = xr.Dataset(
+        data_vars={
+            "uo": (("time", "depth", "latitude", "longitude"),
+                   np.array([[[[-999.0, 0.0]], [[-999.0, 0.2]]]]),
+                   missing_attributes.copy()),
+            "vo": (("time", "depth", "latitude", "longitude"),
+                   np.array([[[[-999.0, 0.0]], [[-999.0, 0.3]]]]),
+                   missing_attributes.copy()),
+        },
+        coords={
+            "time": np.array(["2026-08-18T10:00:00"], dtype="datetime64[s]"),
+            "depth": [0.5, 3.0], "latitude": [57.0], "longitude": [9.2, 9.22],
+        },
+    )
+    native_target = {"partId": "cf-mask-test", "parentZoneId": "cf-mask-zone",
+                     "name": "Synthetic native-mask regression", "waterPoint": [9.2, 57.0]}
+    with tempfile.TemporaryDirectory(prefix="rr-current-native-mask-test-") as directory:
+        scratch = Path(directory)
+        native.to_netcdf(scratch / f"{product['source']}.nc")
+        digest, observed_times, native_rows = runner.acquire_shard_rows(
+            product=product, shard_targets=[native_target],
+            times_by_part={native_target["partId"]: [times[0]]},
+            fixture_directory=scratch, temporary=scratch, shard_index=0,
+        )
+        assert digest.startswith("sha256:") and len(digest) == 71
+        assert observed_times == [times[0]] and len(native_rows) == 1
+        assert native_rows[0]["gridPoint"] == [9.22, 57.0]
+        assert native_rows[0]["verticalLayerM"] == 3.0
+        assert native_rows[0]["sharedLayerCount"] == 2, "Genuine zero U/V must remain valid"
+        assert native_rows[0]["componentPair"] == "same-time-cell-layer"
+        assert native_rows[0]["interpolation"] is False
+print("OK: Actual Copernicus shard reader masks original CF land/fill values and preserves valid zero layers.")
+
 many = [
     {"partId": f"p-{index:03d}", "parentZoneId": "z", "name": "x", "waterPoint": [9.1 + (index % 10) * 0.01, 57.0 + (index // 10) * 0.01]}
     for index in range(50)

@@ -14,6 +14,7 @@ import {
 } from './lib/live-current-pilot.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
 import { buildFlowArrowCandidates } from '../js/map/map-view.js';
+import { createCurrentArrowLandMask } from '../js/map/current-arrow-land-mask.js';
 
 const part = { partId: 'P1', zoneId: 'Z1', waterPoint: [10, 55] };
 const canonicalJson = value => {
@@ -791,7 +792,10 @@ const coastalParts = { enabled: true, zones: {
 }, parts: {
   P1: { zoneId: 'Z1', flowPoints: flow, current: { time: '2026-08-18T13:00:00.000Z', weather: { currentDirectionDeg: 143 } } },
 } };
-const arrows = buildFlowArrowCandidates(features, () => ({ current: {}, flowPoints: {} }), coastalParts, 10);
+const syntheticLandMask = createCurrentArrowLandMask({schemaVersion:1,coverage:[7.7,54.4,15.6,57.9],polygons:[{
+  bbox:[7.01,53.51,7.02,53.52],rings:[[[7.01,53.51],[7.02,53.51],[7.02,53.52],[7.01,53.52],[7.01,53.51]]]
+}]});
+const arrows = buildFlowArrowCandidates(features, () => ({ current: {}, flowPoints: {} }), coastalParts, 10, syntheticLandMask);
 assert.equal(arrows.length, 1);
 assert.equal(arrows[0].source, 'copernicus-current-grid');
 assert.deepEqual(arrows[0].point, [10.02, 55]);

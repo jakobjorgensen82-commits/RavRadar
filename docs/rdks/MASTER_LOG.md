@@ -1,3 +1,41 @@
+# 2026-10-08 – Ejer kræver landsdækkende strømpilsrettelse
+
+Den nye menneskelige ordre gælder både kendte og hidtil usete landpile.
+DEC-0293 og den separate lokale 4.0.552-kandidat bruger én fælles,
+checksummet OpenStreetMap-landmaske for alle hoved-/lokalpile og kilder;
+ingen punktflytning, stednavneliste, geometri-, vejr- eller scoreændring.
+DMI-cache kan ikke omgå originalt punktbevis. Ukendt/manglende kortgrundlag
+giver ingen blå pil, mens vind og øvrig visning fortsætter. Klarstatus
+afventer virkelig afsluttet kontrol; masken cachegenbruges uden
+baggrundsgenhentning eller opstartsprefetch. RDKS, Markdown-/webhåndbog,
+issues og changelog er opdateret. Lokale mål og browserkalder er kontrolleret;
+egen kilde-CI, versionspakning, sikker levering og offentlig effekt mangler.
+eller statuscommit; separate revisioner, brugerdata og assistent er åbne.
+
+Den ekstra landsdækkende kontrol fandt og rettede også en normal app-kalder,
+der fejlagtigt behandlede strøm uden vind som installationsfejl, mens masken
+blev læst. Den faktiske kalder gav først rød målprøve og består efter en
+afgrænset ventetidsundtagelse. Indlæsning og beregning har en reel omkostning;
+første hovedvisning går forud, men nul browserbelastning loves ikke.
+
+Ejerens efterfølgende scorekontrol er særskilt åben. Kortpile er ikke scoreinput,
+men begge kan bruge samme strømdata; visningsrettelsen fjerner ikke data fra
+de to strømtilstande. Original celle/maskestatus og faktisk brug skal spores.
+Lokal Windows-klargøring fejler på eksisterende pinned eccodeslib; lokal fuld
+kildegate er ikke grøn. Den nye faktisk-kalder NetCDF-måltest består i normal
+GitHub-kontrol med rigtige afhængigheder; det beviser ikke produktionscellernes
+fysiske gyldighed. Første samlede kildekontrol stoppede på korttestens import
+fra en data-URL. Den afgrænsede adapter bruger nu den rigtige maskemoduls
+fil-URL; den eksisterende testgruppe og pilemål består lokalt. Ny samlet
+kildekontrol på kandidatens præcise rettede head er stadig påkrævet.
+Ingen afhængighed, produktionslæser, score- eller modelbinding ændres.
+
+Ejeren har nu godkendt én skrivefri GitHub-diagnose af den særskilt udpegede,
+allerede gemte private pakke. Den tidligere udløbne pakkes kontrakt må ikke
+genbruges med et andet mål. Kun afgrænsede, privatlivssikre resultater må
+afleveres; ingen ny vejrhentning, produktionsændring eller deploy er godkendt
+som del af læsningen. Det præcise mål og kørselsevidens opbevares privat.
+
 # Lokal alarmrettelse – 2026-10-08 00.47 DK – ikke leveret
 
 En fuldt pagineret læsekontrol viser fire afsluttede fejlede almindelige

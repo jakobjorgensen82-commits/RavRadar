@@ -229,12 +229,23 @@ async function expectRejected(name, mutate, pattern, { binding } = {}) {
 
 const cleanRoot = await freshFixture();
 try {
+  // Official public coast evidence must pass the unchanged recursive gate.
+  const mapRoot=path.join(cleanRoot,'data','map');
+  await fs.mkdir(mapRoot,{recursive:true});
+  await fs.copyFile('data/map/current-arrow-land-mask.json',path.join(mapRoot,'current-arrow-land-mask.json'));
   const result = await auditPagesArtifactPrivacy(cleanRoot);
   assert.equal(result.liveFileCount, 4);
   assert.equal(result.datasetId, datasetId);
 } finally {
   await fs.rm(cleanRoot, { recursive: true, force: true });
 }
+
+await expectRejected('private point hidden in public land-mask file',async root=>{
+  const mapRoot=path.join(root,'data','map');await fs.mkdir(mapRoot,{recursive:true});
+  const document=JSON.parse(await fs.readFile('data/map/current-arrow-land-mask.json','utf8'));
+  document.gridPoint=[10,55];
+  await fs.writeFile(path.join(mapRoot,'current-arrow-land-mask.json'),jsonText(document));
+},/private sampling\/grid field/);
 
 const publicProfileBytes = await fs.readFile(new URL('../data/jordrav/context-20261006/profiles.json', import.meta.url));
 async function writePublicProfile(root, bytes = publicProfileBytes, directory = 'context-20261006') {
