@@ -8,6 +8,17 @@ Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leve
 
 ## 89.174 Landsdækkende landkontrol før en blå strømpil vises
 
+Opfølgning 8. oktober: Visningskoden er sikkert merget efter grøn kildekontrol,
+og ejerens ene almindelige manuelle efterfølger er startet. Det er endnu ikke
+bevis for offentligt deploy eller kortvirkning. Der kommer ikke flere eller
+større pile. En særskilt lokal skrivefri diagnose låser én godkendt gemt pakke
+til dens oprindelige kode og krypteringsbinding. Første kontrol af DMI til score
+og 48-timers hukommelse er et kilde-/time-/værdimatch, ikke et kausalt bevis eller
+en afgørelse af native celleværdier. Andre leverandører og beholdt transport-
+kontekst er endnu ikke målt. Lokale syntetiske tests er ikke faktisk pakke-
+inspektion. De daterede kandidatbeskrivelser nedenfor er historik; offentlig
+virkning og den samlede datadiagnose er fortsat særskilt åbne.
+
 Den lokale 4.0.552-kandidat kontrollerer alle hovedzoners og lokale kystdeles
 strømpile mod det samme landsdækkende OpenStreetMap-kystudtræk. Den bruger
 ikke en liste over kendte fejlsteder. Originale modelpunkter flyttes aldrig.

@@ -6,7 +6,9 @@ const text = fs.readFileSync('.github/workflows/audit-saved-weather-inputs.yml',
 const gh = value => '${{ ' + value + ' }}';
 
 test('sealed-source diagnosis is fixed-artifact, source-gated, read-only and secret-separated', () => {
-  const sealed = fs.readFileSync('.github/workflows/audit-sealed-current-source.yml', 'utf8').replace(/\r\n/g, '\n');
+  const full = fs.readFileSync('.github/workflows/audit-sealed-current-source.yml', 'utf8').replace(/\r\n/g, '\n');
+  const sealed = full.split('\n  inspect-oct8-arrow-score:')[0];
+  assert.equal(full.split('\n  inspect-oct8-arrow-score:').length, 2, 'new fixed scope must be one isolated sibling job');
   const producer = fs.readFileSync('.github/workflows/reusable-weather-build.yml', 'utf8').replace(/\r\n/g, '\n');
   const masterBinding = /^\s+STAGED_PRIVATE_BUILD_MASTER_SECRET: (\$\{\{ secrets\.[A-Z_]+ \}\})$/m;
   const producerBinding = producer.match(masterBinding)?.[1];
@@ -32,6 +34,34 @@ test('sealed-source diagnosis is fixed-artifact, source-gated, read-only and sec
   assert.match(sealed, /\*\) exit 1/);
   assert.match(sealed, /--scope "\$INSPECTION_SCOPE"/);
   assert.match(sealed, /target.parent != root or target.is_symlink\(\)/);
+});
+
+test('new owner-approved Oct8 job is fixed-target, original-reader and secret-separated, not an old-target override', () => {
+  const full = fs.readFileSync('.github/workflows/audit-sealed-current-source.yml', 'utf8').replace(/\r\n/g, '\n');
+  const fresh = full.split('\n  inspect-oct8-arrow-score:')[1];
+  assert.ok(fresh);
+  assert.match(full, /inspect:\n    if: inputs.inspection_scope != 'OCT8_ARROW_SCORE_210_673'/);
+  assert.match(fresh, /if: inputs.inspection_scope == 'OCT8_ARROW_SCORE_210_673'/);
+  assert.match(fresh, /READ-SEALED-ARROW-SCORE-11558849419/);
+  assert.match(fresh, /test "\$GITHUB_REF" = refs\/heads\/main/);
+  assert.match(fresh, /test "\$GITHUB_SHA" = "\$EXPECTED_MAIN_HEAD"/);
+  assert.match(fresh, /actions\/runs\/37776075804\/attempts\/1/);
+  assert.match(fresh, /actions\/artifacts\/11558849419\/zip/);
+  assert.match(fresh, /stat -c %s .* = 213787612/);
+  assert.match(fresh, /772b08cdcb97e22f4c39c5ed25cbf00aff0c971917e5679969b593dbc09e3b4a/);
+  assert.match(fresh, /git archive e6b34db2d82d18b69fdeec21a63b8b10a6f6fa3d \| tar -x/);
+  const secret = gh('secrets.SUPABASE_SERVICE_ROLE_KEY');
+  assert.equal((fresh.match(/secrets\./g) ?? []).length, 1);
+  assert.equal((full.match(/secrets\./g) ?? []).length, 2, 'same existing key once per mutually exclusive fixed job');
+  assert.ok(fresh.indexOf('test "$SOURCE_REQUIRED" = false') < fresh.indexOf(secret));
+  assert.ok(fresh.indexOf('sha256sum --check --status') < fresh.indexOf(secret));
+  assert.match(fresh, /entry.compress_type != zipfile.ZIP_STORED/);
+  assert.match(fresh, /len\(entries\) != 1 or entries\[0\].filename != 'sealed.bin'/);
+  assert.match(fresh, /--producer-root "\$RUNNER_TEMP\/sealed-arrow-producer"/);
+  assert.match(fresh, /path: \$\{\{ runner.temp \}\}\/sealed-arrow-score-safe.json/);
+  assert.doesNotMatch(fresh, /11281483201|37136425685|audit-sealed-current-source\.mjs|secrets: inherit|actions\/cache|gh workflow run|--publish|--migrate|npm run/);
+  assert.doesNotMatch(full, /(?:contents|actions|pull-requests|pages|id-token): write|set -x/);
+  assert.match(fresh, /target.parent != root or target.is_symlink\(\)/);
 });
 
 test('saved-input audit is manual, source-gated main-only and cannot invoke production work', () => {

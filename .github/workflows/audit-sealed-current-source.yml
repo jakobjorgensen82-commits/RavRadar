@@ -4,17 +4,18 @@ on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: "Skriv READ-SEALED-LYNGBY-11281483201 eller READ-SEALED-NATIONAL-11281483201 for valgt kontrol"
+        description: "Skriv den eksakte faste pakkes bekræftelse; ingen flytbar kilde"
         required: true
         type: string
       inspection_scope:
-        description: "Skrivefri kontrol i SAMME godkendte originalpakke; ingen nye inputs"
+        description: "Særskilte faste godkendte originalpakker; ingen flytbare inputs"
         required: true
         default: LYNGBY_NEIGHBORS
         type: choice
         options:
           - LYNGBY_NEIGHBORS
           - NATIONAL_210_673
+          - OCT8_ARROW_SCORE_210_673
       expected_main_head:
         description: "Eksakt main med allerede grøn kildekontrol"
         required: true
@@ -32,6 +33,7 @@ concurrency:
 
 jobs:
   inspect:
+    if: inputs.inspection_scope != 'OCT8_ARROW_SCORE_210_673'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -140,6 +142,132 @@ jobs:
               target = root / name
               if target.parent != root or target.is_symlink():
                   raise SystemExit('SEALED_CURRENT_SOURCE_CLEANUP_REJECTED')
+              if target.is_dir():
+                  shutil.rmtree(target)
+              elif target.exists():
+                  target.unlink()
+          PY
+
+  inspect-oct8-arrow-score:
+    if: inputs.inspection_scope == 'OCT8_ARROW_SCORE_210_673'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Require exact newly approved package and current main
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+          EXPECTED_MAIN_HEAD: ${{ inputs.expected_main_head }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = jakobjorgensen82-commits/RavRadar
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$CONFIRMATION" = READ-SEALED-ARROW-SCORE-11558849419
+          [[ "$EXPECTED_MAIN_HEAD" =~ ^[a-f0-9]{40}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_MAIN_HEAD"
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          git merge-base --is-ancestor e6b34db2d82d18b69fdeec21a63b8b10a6f6fa3d "$GITHUB_SHA"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/11558849419" > "$RUNNER_TEMP/sealed-arrow-artifact.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/37776075804/attempts/1" > "$RUNNER_TEMP/sealed-arrow-run.json"
+          node scripts/audit-sealed-arrow-score.mjs target \
+            --artifact "$RUNNER_TEMP/sealed-arrow-artifact.json" --run "$RUNNER_TEMP/sealed-arrow-run.json"
+      - name: Verify live exact-content source validation for current main
+        id: source-proof-oct8
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Stop unless current main already has live green source proof
+        env:
+          SOURCE_REQUIRED: ${{ steps.source-proof-oct8.outputs.required }}
+        run: test "$SOURCE_REQUIRED" = false
+      - name: Archive the exact original producer without contract migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir "$RUNNER_TEMP/sealed-arrow-producer"
+          git archive e6b34db2d82d18b69fdeec21a63b8b10a6f6fa3d | tar -x -C "$RUNNER_TEMP/sealed-arrow-producer"
+      - name: Authenticate only the fixed ZIP and measure its one ciphertext member
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/11558849419/zip" > "$RUNNER_TEMP/sealed-arrow.zip"
+          test "$(stat -c %s "$RUNNER_TEMP/sealed-arrow.zip")" = 213787612
+          echo '772b08cdcb97e22f4c39c5ed25cbf00aff0c971917e5679969b593dbc09e3b4a'"  $RUNNER_TEMP/sealed-arrow.zip" | sha256sum --check --status
+          python3 - <<'PY'
+          import os, pathlib, zipfile
+          root = pathlib.Path(os.environ['RUNNER_TEMP'])
+          destination = root / 'sealed-arrow-source'
+          destination.mkdir(mode=0o700)
+          with zipfile.ZipFile(root / 'sealed-arrow.zip') as archive:
+              entries = archive.infolist()
+              if len(entries) != 1 or entries[0].filename != 'sealed.bin':
+                  raise SystemExit('SEALED_ARROW_ZIP_REJECTED')
+              entry = entries[0]
+              # A single stored encrypted blob; do not invent ZIP-minus-header length.
+              if entry.compress_type != zipfile.ZIP_STORED or entry.flag_bits & 1 or not 100 <= entry.file_size <= 213787612 or entry.file_size != entry.compress_size:
+                  raise SystemExit('SEALED_ARROW_ZIP_REJECTED')
+              with archive.open(entry) as source, (destination / 'sealed.bin').open('xb') as output:
+                  measured = 0
+                  while chunk := source.read(1024 * 1024):
+                      measured += len(chunk)
+                      if measured > entry.file_size:
+                          raise SystemExit('SEALED_ARROW_ZIP_REJECTED')
+                      output.write(chunk)
+                  if measured != entry.file_size:
+                      raise SystemExit('SEALED_ARROW_ZIP_REJECTED')
+              print('SEALED_ARROW_CIPHERTEXT_BYTES=' + str(measured))
+          PY
+          mkdir "$RUNNER_TEMP/sealed-arrow-private"
+      - name: Open using exact producer AAD and original contracts with existing internal key
+        env:
+          STAGED_PRIVATE_BUILD_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: >-
+          node scripts/audit-sealed-arrow-score.mjs open
+          --producer-root "$RUNNER_TEMP/sealed-arrow-producer"
+          --input "$RUNNER_TEMP/sealed-arrow-source/sealed.bin"
+          --private-root "$RUNNER_TEMP/sealed-arrow-private"
+          --bundle "$RUNNER_TEMP/sealed-arrow-private/bundle"
+          --report "$RUNNER_TEMP/sealed-arrow-score-safe.json"
+      - name: Inspect saved original selections and memory offline with no secrets
+        run: >-
+          node scripts/audit-sealed-arrow-score.mjs inspect
+          --producer-root "$RUNNER_TEMP/sealed-arrow-producer"
+          --private-root "$RUNNER_TEMP/sealed-arrow-private"
+          --bundle "$RUNNER_TEMP/sealed-arrow-private/bundle"
+          --mask-root "$GITHUB_WORKSPACE"
+          --report "$RUNNER_TEMP/sealed-arrow-score-safe.json"
+      - name: Upload only bounded safe aggregates
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sealed-arrow-score-safe-report
+          path: ${{ runner.temp }}/sealed-arrow-score-safe.json
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Remove only this job's isolated scratch files
+        if: always()
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, shutil
+          root = pathlib.Path(os.environ['RUNNER_TEMP']).resolve()
+          for name in ('sealed-arrow-source', 'sealed-arrow-private', 'sealed-arrow-producer', 'sealed-arrow.zip', 'sealed-arrow-artifact.json', 'sealed-arrow-run.json'):
+              target = root / name
+              if target.parent != root or target.is_symlink():
+                  raise SystemExit('SEALED_ARROW_CLEANUP_REJECTED')
               if target.is_dir():
                   shutil.rmtree(target)
               elif target.exists():

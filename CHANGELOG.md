@@ -1,4 +1,36 @@
-# Landsdækkende strømpilsrettelse – lokal 4.0.552-kandidat, 8. oktober 2026
+# Skrivefri original-/scorekontrol – afgrænset kildekandidat, 8. oktober 2026
+
+Visningsrettelsen 4.0.552 er sikkert merget efter den faktisk grønne, præcise
+kildekontrol. Ejerens annullerede vejrhentning er helt stoppet; den nyeste
+engangstilladelse er brugt til præcis én almindelig manuel efterfølger på den
+mergede kode. Ingen ekstra manuel efterfølger, ændret cron eller produktionsovergang
+under aktiv writer. Offentligt deploy og faktisk kortvirkning er endnu ikke bevist.
+Ejeren har trukket spørgsmålet om flere/større pile tilbage; antal og stil ændres ikke.
+
+Den særskilte lokale diagnosekandidat læser kun én ny, udtrykkeligt godkendt,
+allerede gemt krypteret originalpakke. Den gamle faste pakkes læser og tilladelse
+bevares uændret i en separat, gensidigt udelukket gren af samme skrivefri workflow.
+Den nye gren låser pakke, repository, run, forsøg, digest, størrelse og udløb;
+kræver aktuel main og levende grøn kildekontrol før eksisterende intern nøgle;
+og arkiverer netop pakkens oprindelige producentkode til autentificering og læsning.
+Ingen kontraktmigration, pointer-, data-, model-, SQL- eller deployændring udføres.
+
+Den første målte del er gemte DMI-valg til allerede beregnede scoreprojektioner
+og den aktive 48-timers strømhukommelse for alle 673 kystdele. Output er alene
+bounded sikre aggregater. Match af time, kilde og værdiprojektion er ikke en
+lagret kausal sammenkædning; kortland er ikke bevis for ugyldig native modelcelle.
+Andre strømleverandørers grounding og den beholdte CandidateG-transportkontekst
+rapporteres endnu som ikke målt. Den samlede score-/native-maskediagnose er åben.
+Ingen scorer beregnes om, og ingen historik nulstilles, beskæres eller renormaliseres.
+
+39 måltests for nye og eksisterende normale diagnosekaldere består lokalt,
+herunder virkelig oprindelig producentkode, GCM/AAD og kontraktafvisning med
+syntetiske tomme vejrdata. Dette er ikke autentificering af den rigtige pakke,
+national vejrdækning, heljobskapacitet eller fungerende offentlig levering.
+Egen præcis kilde-CI, sikker integration uden writer og faktisk godkendt
+pakkeinspektion mangler. Den store revision, brugerdata og Spørg RavRadar er ikke færdige.
+
+# Historik: landsdækkende lokal 4.0.552-kandidat før merge, 8. oktober 2026
 
 Ejerens nyeste menneskelige ordre kræver en fælles rettelse i hele landet,
 også for hidtil usete landpile. Den separate kandidat fra faktisk main

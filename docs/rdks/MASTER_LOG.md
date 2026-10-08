@@ -1,3 +1,21 @@
+# 2026-10-08 – Display sikkert merget; ny fast original-/scorediagnose er lokal kildekandidat
+
+Efter den faktiske grønne præcise kilde-CI er visningsrettelsen sikkert merget.
+Den af ejeren annullerede writer er helt terminal; ny engangstilladelse er
+forbrugt ved én almindelig manuel efterfølger på mergens kode. Ingen ændret
+cron, ekstra successor eller produktionsændring under denne writer. Flere/
+større pile er udtrykkeligt fravalgt. Offentlig virkning er stadig særskilt åben.
+
+Ejerens konkrete ja til en ny allerede gemt originalpakke giver en separat
+fast læsegren, ikke genbrug af den gamle udløbne pakkes autoritet. Original
+producentkode bruges til GCM/AAD/kontrakter og normale kildelæsere. Kun sikre
+aggregater; ingen rå vektorer, private fakta, nye vejrhentninger eller datapointer-
+ændringer. 39 måltests består lokalt med reelle normale kaldere og syntetisk
+tom vejrpakke. Første afgrænsede DMI-score/48h-match er ikke et kausalt join,
+native vådmaskebevis, øvrige leverandørers scoregrounding eller CandidateG-
+transportbevis. Egen præcis kilde-CI/integration og faktisk pakkeinspektion mangler.
+Den gamle faste læsegren og alle tidligere særskilte grænser bevares.
+
 # 2026-10-08 – Ejer kræver landsdækkende strømpilsrettelse
 
 Den nye menneskelige ordre gælder både kendte og hidtil usete landpile.
