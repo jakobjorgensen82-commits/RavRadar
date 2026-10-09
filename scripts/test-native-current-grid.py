@@ -150,6 +150,43 @@ class PreparationTests(unittest.TestCase):
 
 if NATIVE:
     class NativeTests(unittest.TestCase):
+        def test_actual_decoder_with_both_authorized_header_shapes_not_original_values(self):
+            import eccodes
+            producer_path = Path(__file__).with_name('update-dmi-bulk.py')
+            spec = importlib.util.spec_from_file_location('shape_producer', producer_path)
+            producer = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(producer)
+            for collection, ni, nj, first_lat, last_lat, first_lon, last_lon, di, dj in (
+                ('dkss_lf', 810, 390, 56.461, 57.109, 8.138, 10.385, .003, .002),
+                ('dkss_nsbs', 414, 348, 48.525, 65.875, 355.875, 30.292, .083, .05),
+            ):
+                with self.subTest(collection=collection):
+                    gid = eccodes.codes_grib_new_from_samples('regular_ll_sfc_grib1')
+                    try:
+                        for key, value in [('Ni', ni), ('Nj', nj), ('latitudeOfFirstGridPointInDegrees', first_lat),
+                                           ('latitudeOfLastGridPointInDegrees', last_lat),
+                                           ('longitudeOfFirstGridPointInDegrees', first_lon),
+                                           ('longitudeOfLastGridPointInDegrees', last_lon),
+                                           ('iDirectionIncrementInDegrees', di), ('jDirectionIncrementInDegrees', dj),
+                                           ('scanningMode', 64), ('dataDate', 20261009), ('dataTime', 0), ('stepRange', '120'),
+                                           ('indicatorOfParameter', 49)]:
+                            eccodes.codes_set(gid, key, value)
+                        eccodes.codes_set_values(gid, [.2] * (ni * nj))
+                        producer.GRID_INDEX_CACHE.clear()
+                        report = audit.field_report(gid, collection, eccodes, producer)
+                        self.assertGreater(report['candidateChecks'], 0)
+                        for name in ('candidateIndexMismatches', 'candidateCoordinateMismatches', 'candidateValueMismatches'):
+                            self.assertEqual(report[name], 0)
+                        self.assertLess(report['maximumLongitudeVsEndpointDegrees'], 1e-9)
+                        if collection == 'dkss_lf':
+                            self.assertEqual(report['nativePointsOutsideDeclaredLatitudeBounds'], 64 * ni)
+                            self.assertAlmostEqual(report['maximumLatitudeVsEndpointDegrees'], .1296658097686375)
+                        else:
+                            self.assertEqual(report['nativePointsOutsideDeclaredLatitudeBounds'], 0)
+                            self.assertLess(report['maximumLatitudeVsEndpointDegrees'], 1e-9)
+                    finally:
+                        eccodes.codes_release(gid)
+
         def test_actual_normal_candidates_against_native_index_array(self):
             import eccodes
             self.assertEqual(eccodes.codes_get_api_version(), '2.48.2')
