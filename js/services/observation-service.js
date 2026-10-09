@@ -1,23 +1,23 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.552';
-import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.552';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.553';
+import { authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.553';
 import {
   TRIP_EVIDENCE_SCHEMA_VERSION,
   assertObservationTripQualityBinding,
   assertTripEvidencePrivacy,
   migrateLegacyUnattestedObservationColumns
-} from './trip-evidence-contract.js?v=4.0.552';
+} from './trip-evidence-contract.js?v=4.0.553';
 import {
   assertTripObservationNestedPrivacy,
   expectedCalibrationEligibility,
   projectTripStoragePayload,
   tripEvidenceIntegrityIssues
-} from './calibration-eligibility.js?v=4.0.552';
+} from './calibration-eligibility.js?v=4.0.553';
 import {
   RAVSCORE_MODEL_ID,
   assertRavScoreModelBinding,
   ravScoreModelBinding
-} from '../core/ravscore-model-contract.js?v=4.0.552';
-import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.552';
+} from '../core/ravscore-model-contract.js?v=4.0.553';
+import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.553';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
 const LOCAL_KEY='ravradar-observations-v2';
 const OUTBOX_KEY='ravradar-observation-outbox-v1';
@@ -69,9 +69,15 @@ export function getLocalObservations(){return readMigratedRows(LOCAL_KEY);}
 export function getObservationSyncStatus(){const rows=getLocalObservations(),pending=readMigratedRows(OUTBOX_KEY);return {local:rows.length,pending:pending.length,synced:rows.filter(x=>x.sync_status==='synced').length,lastAttemptAt:localStorage.getItem('ravradar-observation-last-sync')};}
 export async function getOwnTripObservations({ limit = 100 } = {}) {
   if (!enabled) throw new Error('Login og turlog er ikke aktiveret endnu.');
+  const identity = authIdentityEpoch();
   const active = await requireFreshSession();
   const userId = active?.user?.id;
   if (!userId) throw new Error('Din konto kunne ikke knyttes sikkert til turloggen. Log ind igen.');
+  const assertOwner = () => {
+    if (authIdentityEpoch() !== identity || currentSession()?.user?.id !== userId)
+      throw new Error('Kontoen blev ændret. Prøv igen fra den rigtige konto.');
+  };
+  assertOwner();
   const safeLimit = Math.max(1, Math.min(200, Math.round(Number(limit) || 100)));
   const url = `${PUBLIC_CONFIG.supabaseUrl}/functions/v1/trip-log`;
   const response = await authorizedFetch(url, {
@@ -79,8 +85,10 @@ export async function getOwnTripObservations({ limit = 100 } = {}) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ limit: safeLimit })
   });
+  assertOwner();
   if (!response.ok) throw new Error(`Dine ture kunne ikke hentes (${response.status}).`);
   const body = await response.json();
+  assertOwner();
   if (!Array.isArray(body?.rows)) throw new Error('Dine ture kunne ikke hentes sikkert.');
   return body.rows;
 }
@@ -101,7 +109,45 @@ async function postRemote(row){
   }
   if(!response.ok)throw new Error('Turen kunne ikke sendes lige nu. Den bliver liggende på enheden, så du kan prøve igen.');
 }
-export async function syncPendingObservations(){if(!enabled)return getObservationSyncStatus();const queue=readMigratedRows(OUTBOX_KEY),remaining=[];for(const row of queue){try{await postRemote({...row,sync_status:undefined,sync_error:undefined});upsertLocal({...row,sync_status:'synced',synced_at:new Date().toISOString(),sync_error:null});}catch(error){remaining.push({...row,sync_status:'pending',sync_error:error.message});upsertLocal({...row,sync_status:'pending',sync_error:error.message});}}write(OUTBOX_KEY,remaining);localStorage.setItem('ravradar-observation-last-sync',new Date().toISOString());return getObservationSyncStatus();}
+function settleObservationSync(row, state){
+  const original=JSON.stringify(row);
+  // The request awaited external work. Only acknowledge the exact original;
+  // another submission/tab may have added, changed or removed a row meanwhile.
+  const local=getLocalObservations();
+  const localIndex=local.findIndex(value=>value.id===row.id&&JSON.stringify(value)===original);
+  if(localIndex>=0){local[localIndex]={...local[localIndex],...state};write(LOCAL_KEY,local);}
+  const pending=readMigratedRows(OUTBOX_KEY);
+  const pendingIndex=pending.findIndex(value=>value.id===row.id&&JSON.stringify(value)===original);
+  if(pendingIndex>=0){
+    if(state.sync_status==='synced')pending.splice(pendingIndex,1);
+    else pending[pendingIndex]={...pending[pendingIndex],...state};
+    write(OUTBOX_KEY,pending);
+  }
+}
+let observationSyncPromise=null;
+async function drainPendingObservations(){
+  const attempted=new Set();
+  while(true){
+    const row=readMigratedRows(OUTBOX_KEY).find(value=>!attempted.has(value.id));
+    if(!row)break;
+    attempted.add(row.id);
+    try{
+      await postRemote({...row,sync_status:undefined,sync_error:undefined});
+      settleObservationSync(row,{sync_status:'synced',synced_at:new Date().toISOString(),sync_error:null});
+    }catch(error){
+      settleObservationSync(row,{sync_status:'pending',sync_error:error.message});
+    }
+  }
+  localStorage.setItem('ravradar-observation-last-sync',new Date().toISOString());
+  return getObservationSyncStatus();
+}
+export async function syncPendingObservations(){
+  if(!enabled)return getObservationSyncStatus();
+  if(!observationSyncPromise){
+    observationSyncPromise=drainPendingObservations().finally(()=>{observationSyncPromise=null;});
+  }
+  return observationSyncPromise;
+}
 export async function submitObservation({zone,huntMode,result,grams=null,scoreResult,weather,gps=null,tripId=null,observedAt=null}){
   const session=currentSession();const row={id:crypto.randomUUID(),zone_id:zone.id,zone_name:zone.name,coast_type:zone.coastType||null,observed_at:observedAt||new Date().toISOString(),submitted_at:new Date().toISOString(),hunt_mode:huntMode,result,grams:grams===''||grams==null?null:Number(grams),anonymous_id:anonymousId(),user_id:session?.user?.id||null,trip_id:tripId,gps,rav_score:scoreResult?.score??null,score_level:scoreResult?.level??null,ai_probability:null,ai_confidence:null,model_version:observedRavScoreModelVersion(scoreResult),weather_snapshot:immutableWeatherSnapshot(weather,scoreResult),wind_speed_mps:weather?.windSpeedMps??null,wind_direction_deg:weather?.windDirectionDeg??null,wave_height_m:weather?.waveHeightM??null,wave_period_s:weather?.wavePeriodS??null,water_level_cm:weather?.waterLevelCm??null,current_speed_mps:weather?.currentSpeedMps??null,current_direction_deg:weather?.currentDirectionDeg??null,water_temperature_c:weather?.waterTemperatureC??null,sync_status:enabled?'pending':'local'};
   upsertLocal(row);if(!enabled)return {stored:'local',row};enqueue(row);const status=await syncPendingObservations();const stored=status.pending?'pending':'remote';return {stored,row,status};

@@ -1,10 +1,12 @@
-import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.552";
-import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.552";
-import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.552";
-import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.552";
-import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.552";
-import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.552";
-import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.552";
+import { authEnabled, authIdentityEpoch, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.553";
+import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.553";
+import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.553";
+import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.553";
+import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.553";
+import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.553";
+import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.553";
+
+const pendingHistoryViews = new WeakMap();
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>'"]/g, character => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[character]);
@@ -86,11 +88,16 @@ function renderHistoryRows(rows, context) {
 
 async function showTripHistory(dialog, context) {
   const content = dialog.querySelector('.dialog-content');
+  const identity = authIdentityEpoch(), userId = currentSession()?.user?.id;
+  const view = {};
+  pendingHistoryViews.set(dialog, view);
   content.innerHTML = `<h2>${t('account.history')}</h2><p class="form-status">${t('account.historyLoading')}</p>`;
   let remoteRows = [], loadError = null;
   try { remoteRows = await getOwnTripObservations({ limit: 100 }); }
   catch (error) { loadError = error; }
-  const userId = currentSession()?.user?.id;
+  if (!dialog.open || pendingHistoryViews.get(dialog) !== view
+      || authIdentityEpoch() !== identity || !userId || currentSession()?.user?.id !== userId) return;
+  pendingHistoryViews.delete(dialog);
   const rows = mergeOwnRows(remoteRows, getLocalObservations(), userId);
   const foundCount = rows.filter(rowFound).length;
   const totalMinutes = rows.reduce((sum, row) => sum + Math.max(0, Number(row.search_minutes) || 0), 0);
@@ -129,6 +136,7 @@ async function showAccountTripReport(dialog, context) {
 }
 
 function renderAccount(dialog, context, message = '') {
+  pendingHistoryViews.delete(dialog);
   const session = currentSession();
   const signedIn = Boolean(session?.access_token && session?.user?.id);
   const content = dialog.querySelector('.dialog-content');

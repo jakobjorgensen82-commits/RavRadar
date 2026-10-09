@@ -26,7 +26,7 @@ SAFE_FAILURE_CODES = frozenset(('EXACT_INPUT_REQUIRED', 'EXACT_HEADER_REQUIRED',
     'NONFINITE_NATIVE_COORDINATE', 'UNSUPPORTED_CURRENT_GRID', 'GRID_SIZE_BOUND',
     'NATIVE_VALUE_COUNT_MISMATCH', 'DIAGNOSIS_TIME_BOUND', 'DIAGNOSIS_MESSAGE_BOUND',
     'BOTH_CURRENT_COMPONENTS_REQUIRED', 'INPUT_CHANGED', 'REPORT_SIZE_BOUND',
-    'IMPORT_FAILURE', 'IO_FAILURE', 'UNCLASSIFIED'))
+    'IMPORT_FAILURE', 'IO_FAILURE', 'UNEXPECTED_CURRENT_TIME', 'UNCLASSIFIED'))
 
 
 def safe_failure_code(error):
@@ -161,6 +161,46 @@ def field_report(gid, collection, native, producer):
     return report
 
 
+def summarize_current_fields(fields):
+    """All field occurrences, never a sampled/truncated list or unique-cell count.
+
+    Two fixed component summaries bound output independently of layer count.
+    Every mismatch contributes, including one in the very last field. Grid/time
+    identities still govern exact vector pairing separately in audit_file.
+    """
+    count_fields = {
+        'pointChecks': 'pointsChecked',
+        'nativeChecksOutsideDeclaredLatitudeBounds': 'nativePointsOutsideDeclaredLatitudeBounds',
+        'validPointChecks': 'nativeValidPoints',
+        'validChecksOutsideDeclaredLatitudeBounds': 'validPointsOutsideDeclaredLatitudeBounds',
+        'candidateChecks': 'candidateChecks',
+        'candidateIndexMismatches': 'candidateIndexMismatches',
+        'candidateCoordinateMismatches': 'candidateCoordinateMismatches',
+        'candidateValueMismatches': 'candidateValueMismatches',
+        'candidatesWithLatitudeDifference': 'candidatesWithLatitudeDifference',
+    }
+    maximum_fields = ('maximumLatitudeVsEndpointDegrees', 'maximumLongitudeVsEndpointDegrees',
+                      'maximumValidLatitudeVsEndpointDegrees', 'maximumCandidateLatitudeVsEndpointDegrees')
+    time_keys = ('referenceDate', 'referenceTime', 'validityDate', 'validityTime')
+    if any(tuple(field[key] for key in time_keys) != (20261009, 0, 20261014, 0) for field in fields):
+        raise ValueError('UNEXPECTED_CURRENT_TIME')
+    result = []
+    for component in ('current-u', 'current-v'):
+        rows = [field for field in fields if field['component'] == component]
+        if not rows:
+            raise ValueError('BOTH_CURRENT_COMPONENTS_REQUIRED')
+        summary = dict(component=component, fieldCount=len(rows),
+                       uniqueGridCount=len({row['gridSectionDigest'] for row in rows}),
+                       uniqueLayerTimeCount=len({row['layerTimeIdentitySha256'] for row in rows}),
+                       minimumPointsPerField=min(row['pointsChecked'] for row in rows),
+                       maximumPointsPerField=max(row['pointsChecked'] for row in rows),
+                       **{key: rows[0][key] for key in time_keys})
+        summary.update({key: sum(row[source] for row in rows) for key, source in count_fields.items()})
+        summary.update({key: max(row[key] for row in rows) for key in maximum_fields})
+        result.append(summary)
+    return result
+
+
 def audit_file(path, collection, native, producer, deadline):
     before = fingerprint(path, collection)
     producer.GRID_INDEX_CACHE.clear()
@@ -193,7 +233,8 @@ def audit_file(path, collection, native, producer, deadline):
     return dict(collection=collection, bytes=FILES[collection][0], contentSha256=before,
                 completeUniqueVectorPairs=sum(sorted(parts) == ['current-u', 'current-v'] for parts in pairs.values()),
                 unpairedOrRepeatedLayers=sum(sorted(parts) != ['current-u', 'current-v'] for parts in pairs.values()),
-                messagesRead=messages, currentFields=fields, originalUnchanged=True)
+                messagesRead=messages, currentFieldCount=len(fields),
+                currentComponents=summarize_current_fields(fields), originalUnchanged=True)
 
 
 def main():

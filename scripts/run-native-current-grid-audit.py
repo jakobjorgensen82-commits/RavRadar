@@ -39,7 +39,7 @@ NATIVE_FAILURE_CODES = frozenset(('EXACT_INPUT_REQUIRED', 'EXACT_HEADER_REQUIRED
     'NONFINITE_NATIVE_COORDINATE', 'UNSUPPORTED_CURRENT_GRID', 'GRID_SIZE_BOUND',
     'NATIVE_VALUE_COUNT_MISMATCH', 'DIAGNOSIS_TIME_BOUND', 'DIAGNOSIS_MESSAGE_BOUND',
     'BOTH_CURRENT_COMPONENTS_REQUIRED', 'INPUT_CHANGED', 'REPORT_SIZE_BOUND',
-    'IMPORT_FAILURE', 'IO_FAILURE', 'UNCLASSIFIED'))
+    'IMPORT_FAILURE', 'IO_FAILURE', 'UNEXPECTED_CURRENT_TIME', 'UNCLASSIFIED'))
 NATIVE_FAILURE_REASONS = frozenset(f'{phase}:{code}' for phase in ('SETUP', 'DKSS_LF', 'DKSS_NSBS')
                                  for code in NATIVE_FAILURE_CODES)
 
@@ -128,37 +128,50 @@ def safe_report(value):
             or type(value['files']) is not list or len(value['files']) != 2):
         raise ValueError('REPORT_SCOPE_REJECTED')
     for item, collection in zip(value['files'], TARGETS):
-        exact_keys(item, 'collection bytes contentSha256 messagesRead currentFields originalUnchanged completeUniqueVectorPairs unpairedOrRepeatedLayers')
+        exact_keys(item, 'collection bytes contentSha256 messagesRead currentFieldCount currentComponents originalUnchanged completeUniqueVectorPairs unpairedOrRepeatedLayers')
         if (item['collection'] != collection or item['bytes'] != TARGETS[collection][1]
                 or item['originalUnchanged'] is not True):
             raise ValueError('REPORT_ORIGINAL_REJECTED')
         digest(item['contentSha256'])
-        for key in ('messagesRead', 'completeUniqueVectorPairs', 'unpairedOrRepeatedLayers'):
+        for key in ('messagesRead', 'currentFieldCount', 'completeUniqueVectorPairs', 'unpairedOrRepeatedLayers'):
             integer(item[key], MAX_MESSAGES)
-        fields = item['currentFields']
-        if type(fields) is not list or not 2 <= len(fields) <= item['messagesRead']:
+        fields = item['currentComponents']
+        if (type(fields) is not list or len(fields) != 2
+                or not 2 <= item['currentFieldCount'] <= item['messagesRead']
+                or 2 * item['completeUniqueVectorPairs'] > item['currentFieldCount']
+                or item['unpairedOrRepeatedLayers'] > item['currentFieldCount']):
             raise ValueError('REPORT_CURRENT_FIELDS_REJECTED')
-        for field in fields:
-            exact_keys(field, 'component pointsChecked nativePointsOutsideDeclaredLatitudeBounds maximumLatitudeVsEndpointDegrees maximumLongitudeVsEndpointDegrees gridSectionDigest ni nj layerTimeIdentitySha256 referenceDate referenceTime validityDate validityTime candidateChecks candidateIndexMismatches candidateCoordinateMismatches candidateValueMismatches nativeValidPoints validPointsOutsideDeclaredLatitudeBounds maximumValidLatitudeVsEndpointDegrees candidatesWithLatitudeDifference maximumCandidateLatitudeVsEndpointDegrees')
-            if field['component'] not in ('current-u', 'current-v'):
+        for field, component in zip(fields, ('current-u', 'current-v')):
+            exact_keys(field, 'component fieldCount uniqueGridCount uniqueLayerTimeCount minimumPointsPerField maximumPointsPerField pointChecks nativeChecksOutsideDeclaredLatitudeBounds maximumLatitudeVsEndpointDegrees maximumLongitudeVsEndpointDegrees referenceDate referenceTime validityDate validityTime candidateChecks candidateIndexMismatches candidateCoordinateMismatches candidateValueMismatches validPointChecks validChecksOutsideDeclaredLatitudeBounds maximumValidLatitudeVsEndpointDegrees candidatesWithLatitudeDifference maximumCandidateLatitudeVsEndpointDegrees')
+            if field['component'] != component:
                 raise ValueError('REPORT_COMPONENT_REJECTED')
-            digest(field['gridSectionDigest'], 32)
-            digest(field['layerTimeIdentitySha256'])
-            for key in ('pointsChecked', 'nativePointsOutsideDeclaredLatitudeBounds', 'ni', 'nj', 'candidateChecks', 'candidateIndexMismatches', 'candidateCoordinateMismatches', 'candidateValueMismatches', 'nativeValidPoints', 'validPointsOutsideDeclaredLatitudeBounds', 'candidatesWithLatitudeDifference'):
+            for key in ('fieldCount', 'uniqueGridCount', 'uniqueLayerTimeCount'):
+                integer(field[key], MAX_MESSAGES)
+            for key in ('minimumPointsPerField', 'maximumPointsPerField'):
                 integer(field[key], 400000)
-            if (field['pointsChecked'] != field['ni'] * field['nj']
-                    or field['referenceDate'] != 20261009 or field['referenceTime'] != 0
+            for key in ('pointChecks', 'nativeChecksOutsideDeclaredLatitudeBounds', 'candidateChecks',
+                        'candidateIndexMismatches', 'candidateCoordinateMismatches', 'candidateValueMismatches',
+                        'validPointChecks', 'validChecksOutsideDeclaredLatitudeBounds', 'candidatesWithLatitudeDifference'):
+                integer(field[key], field['fieldCount'] * 400000)
+            if (field['referenceDate'] != 20261009 or field['referenceTime'] != 0
                     or field['validityDate'] != 20261014 or field['validityTime'] != 0):
                 raise ValueError('REPORT_TIME_GRID_REJECTED')
-            if not (field['validPointsOutsideDeclaredLatitudeBounds'] <= field['nativeValidPoints'] <= field['pointsChecked']
-                    and field['candidatesWithLatitudeDifference'] <= field['candidateChecks']):
+            if not (1 <= field['uniqueGridCount'] <= field['fieldCount']
+                    and 1 <= field['uniqueLayerTimeCount'] <= field['fieldCount']
+                    and 2 <= field['minimumPointsPerField'] <= field['maximumPointsPerField']
+                    and field['minimumPointsPerField'] * field['fieldCount'] <= field['pointChecks']
+                    <= field['maximumPointsPerField'] * field['fieldCount']
+                    and field['validChecksOutsideDeclaredLatitudeBounds'] <= field['validPointChecks'] <= field['pointChecks']
+                    and field['validChecksOutsideDeclaredLatitudeBounds'] <= field['nativeChecksOutsideDeclaredLatitudeBounds'] <= field['pointChecks']
+                    and all(field[key] <= field['candidateChecks'] for key in ('candidatesWithLatitudeDifference',
+                             'candidateIndexMismatches', 'candidateCoordinateMismatches', 'candidateValueMismatches'))):
                 raise ValueError('REPORT_SUBSET_REJECTED')
             for key in ('maximumLatitudeVsEndpointDegrees', 'maximumLongitudeVsEndpointDegrees', 'maximumValidLatitudeVsEndpointDegrees', 'maximumCandidateLatitudeVsEndpointDegrees'):
                 number = field[key]
                 if type(number) not in (int, float) or not math.isfinite(number) or not 0 <= number <= 360:
                     raise ValueError('REPORT_DISTANCE_REJECTED')
-        if {field['component'] for field in fields} != {'current-u', 'current-v'}:
-            raise ValueError('REPORT_BOTH_COMPONENTS_REQUIRED')
+        if sum(field['fieldCount'] for field in fields) != item['currentFieldCount']:
+            raise ValueError('REPORT_CURRENT_FIELDS_REJECTED')
     encoded = json.dumps(value, sort_keys=True, allow_nan=False)
     if len(encoded.encode()) > 65536:
         raise ValueError('REPORT_SIZE_REJECTED')
