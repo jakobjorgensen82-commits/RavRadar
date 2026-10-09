@@ -57,6 +57,9 @@ jobs:
       # En ra PR-checkout har med vilje ikke Supabase-hemmeligheder og kan
       # derfor ikke hydrere den centrale admin-sandhed, som fuld produktion
       # kraever. De kildebaserede gates her maa aldrig bygge eller deploye.
+      - name: Validate bounded native current diagnosis on artificial data only
+        run: python -B scripts/test-native-current-grid.py --native
+
       - name: Validate source contracts and release governance
         run: npm run validate:source
 

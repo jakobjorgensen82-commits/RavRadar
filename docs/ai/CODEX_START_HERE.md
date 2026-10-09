@@ -1,4 +1,12 @@
-# Originaldiagnose udført; læsning af gemte scoretimer rettet lokalt – 8. oktober 2026
+# Afgrænset kontrol af originale DMI-strømgitre – 9. oktober 2026
+
+Ejeren har godkendt én skrivefri GitHub-diagnose af præcis to allerede identificerede DMI-filer. Der må ikke hentes andre filer eller gentages efter fejl. Den eksisterende låste decoder fra verificeret main læser originale strømfelter; kandidatindeks, koordinater, værdimatch samt parring af samme gitter, lag og tid kontrolleres uden at eksponere rå strømværdier. En særskilt kontrol sammenholder decoderens koordinater med de deklarerede endepunkter. Det er ikke en produktionsrettelse eller bevis for korrekt score.
+
+Diagnosen har læserettigheder, ingen produktionshemmeligheder, samme eksklusive kø som vejrhentningen og kræver præcis grøn kilde-CI. Den accepterer kun første forsøg og første dispatch, faste filadresser, størrelser og allerede læste headerhashes. Decoderen arbejder i privat midlertidigt område; kun en strengt feltkontrolleret, størrelsesbegrænset rapport kan uploades. Ingen cache, produktionsdata, geometri, kildevalg, historik, strømhukommelse, scoreformel, binding eller deploy ændres.
+
+Ti lokale måltests består uden providerdata. Afvigelser tælles særskilt for alle gitterceller, gyldige strømværdier og de faktiske afprøvede kandidater. Manglende værdier må ikke frikende eller belaste de gyldige data; gyldig nulstrøm bevares. En ekstra kunstig native GRIB-prøve er koblet til den normale PR-kontrol og skal bestå før originalerne læses. Ny præcis kilde-CI, sikker integration uden aktiv writer og faktisk diagnose mangler stadig. Den tidligere anden pakkediagnose er allerede gennemført; dens tilladelse er forbrugt og kan ikke genbruges. Den store revision, numerisk kildeårsag, brugerdata, Spørg RavRadar og selvstændig drift er fortsat åbne.
+
+# Historik: Originaldiagnose udført; læsning af gemte scoretimer rettet lokalt – 8. oktober 2026
 
 4.0.552's landsdækkende pilevisning er fortsat produktionsleveret. Den første
 særskilt godkendte skrivefri originaldiagnose er nu faktisk gennemført efter

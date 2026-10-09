@@ -1,0 +1,86 @@
+name: Diagnose exact two approved DMI current grids
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Engangsdiagnose af præcis to ejer-godkendte filer; ingen vejrhentning"
+        required: true
+        type: string
+      expected_main_head:
+        description: "Eksakt main med verificeret kilde-CI"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: ravradar-weather-production-v2
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Require fixed one-shot authority and exact source head
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+          EXPECTED_MAIN_HEAD: ${{ inputs.expected_main_head }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = jakobjorgensen82-commits/RavRadar
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$CONFIRMATION" = READ-TWO-DMI-CURRENT-GRIDS-20261009-ONCE
+          [[ "$EXPECTED_MAIN_HEAD" =~ ^[a-f0-9]{40}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_MAIN_HEAD"
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/workflows/audit-native-current-grid.yml/runs?event=workflow_dispatch&per_page=100" --jq '.workflow_runs[].id' > "$RUNNER_TEMP/native-grid-run-ids.txt"
+          test "$(wc -l < "$RUNNER_TEMP/native-grid-run-ids.txt")" = 1
+          test "$(cat "$RUNNER_TEMP/native-grid-run-ids.txt")" = "$GITHUB_RUN_ID"
+      - name: Verify live exact-content source validation
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Stop unless source already has live green proof
+        env:
+          SOURCE_REQUIRED: ${{ steps.source-proof.outputs.required }}
+        run: test "$SOURCE_REQUIRED" = false
+      - name: Materialize unchanged original decoder and existing pinned dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir "$RUNNER_TEMP/native-grid-producer"
+          git archive a8b8f4d612e930dd61cb8657898540763afb8bfe | tar -x -C "$RUNNER_TEMP/native-grid-producer"
+          python -m pip install --disable-pip-version-check -r "$RUNNER_TEMP/native-grid-producer/requirements-dmi.txt"
+      - name: Verify diagnosis with artificial native GRIB before any provider read
+        run: python -B scripts/test-native-current-grid.py --native
+      - name: Read exactly two originals once and run unchanged decoder privately
+        timeout-minutes: 5
+        run: python -B scripts/run-native-current-grid-audit.py --producer "$RUNNER_TEMP/native-grid-producer/scripts/update-dmi-bulk.py"
+      - name: Upload only validated bounded safe aggregates
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-current-grid-safe-report
+          path: ${{ runner.temp }}/native-current-grid-safe.json
+          if-no-files-found: error
+          retention-days: 7
