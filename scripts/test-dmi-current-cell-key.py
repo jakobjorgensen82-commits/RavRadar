@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import ast
 import copy
+from datetime import datetime, timezone
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 import hashlib
 import importlib.util
@@ -119,6 +120,126 @@ def synthetic_masked_lf_field(missing_rows, *, value):
             if row not in missing_rows]
 
 
+class PersistedNativeSamplingRegression(unittest.TestCase):
+    """Actual source constructor, own tuples/capture; no original/native claim."""
+
+    def setUp(self):
+        from lib import dmi_native_provenance as provenance
+        self.namespace, _ = load_actual_functions(extra_names=("native_component_source",))
+        self.namespace.update({"datetime": datetime, "timezone": timezone})
+        for name in ("sampling_identity", "component_collection_allowed", "COMPONENT_FIELD_SET",
+                     "COMPONENT_KIND", "COMPONENT_SPATIAL_SELECTION", "COLLECTION_FAMILY",
+                     "SPATIAL_PROVENANCE_VERSION"):
+            self.namespace[name] = getattr(provenance, name)
+        self.source = self.namespace["native_component_source"]
+        self.zone = {"id": "PART::OWN-001", "parentZoneId": "OWN-AREA", "lat": 57., "lon": 10.}
+        self.rows = {field: {**candidate(7, 57., 10., value=0., distance=0.),
+                            "_gridCoordinateInterpretation": "dmi-dkss-grib1-header-endpoints-v1"}
+                     for field in (U, V)}
+        self.capture = {"itemId": "own-synthetic-asset", "assetIdentitySha256": "b" * 64,
+                        "assetSizeBytes": 16, "contentLengthBytes": 16, "contentSha256": "d" * 64,
+                        "acquiredAt": "2026-01-01T01:00:00Z"}
+
+    def construct(self, rows=None, *, legacy=False):
+        rows = self.rows if rows is None else rows
+        return self.source("dkss_lf", "2026-01-01T00:00:00Z", "2026-01-01T03:00:00Z",
+            component="current", zone=self.zone, grid_candidate=self.rows[U], capture=self.capture,
+            spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+            verticalLayer="surface:0", verticalLayerRankM=0.,
+            **({} if legacy else {"grid_tuple": rows}))
+
+    def test_actual_source_persists_selected_index_and_interpretation_not_values(self):
+        before = copy.deepcopy((self.rows, self.capture))
+        source = self.construct()
+        self.assertIsNotNone(source)
+        self.assertNotIn("grid_tuple", source)
+        receipt = source.get("nativeGridSampling")
+        self.assertIsInstance(receipt, dict, "actual normal source loses durable native-node evidence")
+        self.assertEqual(receipt["contractId"], "dmi-native-grid-sampling-v1")
+        self.assertEqual(receipt["elementIndex"], 7)
+        self.assertEqual(receipt["gridIndexIdentitySha256"], INDEX_IDENTITY)
+        self.assertEqual(receipt["coordinateInterpretation"], "dmi-dkss-grib1-header-endpoints-v1")
+        self.assertEqual(receipt["fieldSet"], [U, V])
+        self.assertEqual(receipt["optionalFieldSet"], [])
+        self.assertEqual(receipt["gridPoint"], source["gridPoint"])
+        self.assertNotIn("value", json.dumps(receipt))
+        self.assertEqual((self.rows, self.capture), before)
+        self.assertEqual(json.loads(json.dumps(source)), source)
+
+    def test_actual_source_refuses_different_node_order_rule_or_missing_field(self):
+        for field, value in (("index", 8), ("index", True),
+                             ("_gridIndexIdentity", "e" * 64),
+                             ("_gridCoordinateInterpretation", "eccodes-native-coordinates-v1"),
+                             ("_gridCoordinateInterpretation", None),
+                             ("_gridCoordinateInterpretation", []),
+                             ("latitude", True), ("value", float("nan")), ("value", True)):
+            with self.subTest(field=field, value=str(value)):
+                rows = copy.deepcopy(self.rows)
+                rows[V][field] = value
+                self.assertIsNone(self.construct(rows))
+        self.assertIsNone(self.construct({U: self.rows[U]}))
+        self.assertIsNone(self.construct({**self.rows, "unrequested-field": self.rows[U]}))
+
+    def test_legacy_source_is_not_automatically_relabelled(self):
+        source = self.construct(legacy=True)
+        self.assertIsNotNone(source)
+        self.assertNotIn("nativeGridSampling", source)
+        self.assertNotIn("_gridIndexIdentity", source)
+        self.assertNotIn("_gridCoordinateInterpretation", source)
+
+    def test_normal_private_storage_roundtrip_preserves_distinct_hour_records(self):
+        from lib.dmi_bulk_storage import read_dmi_bulk_document, write_dmi_bulk_document
+        first = self.construct()
+        rows = copy.deepcopy(self.rows)
+        for row in rows.values():
+            row["index"] = 8
+        second = self.source("dkss_lf", "2026-01-01T00:00:00Z", "2026-01-01T04:00:00Z",
+            component="current", zone=self.zone, grid_candidate=rows[U], grid_tuple=rows,
+            capture=self.capture, spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+            verticalLayer="surface:0", verticalLayerRankM=0.)
+        document = {"schemaVersion": 2, "zones": {self.zone["id"]: {"hourly": {
+            source["nativeValidTime"]: {"time": source["nativeValidTime"], "sources": {"current": source}}
+            for source in (first, second)
+        }}}}
+        before = copy.deepcopy(document)
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "own-synthetic-dmi.json"
+            write_dmi_bulk_document(target, document)
+            restored = read_dmi_bulk_document(target)
+        self.assertEqual(document, before)
+        self.assertEqual(restored, before)
+        hours = restored["zones"][self.zone["id"]]["hourly"]
+        receipts = [hour["sources"]["current"]["nativeGridSampling"] for hour in hours.values()]
+        self.assertEqual([row["elementIndex"] for row in receipts], [7, 8])
+        receipts[0]["gridPoint"][0] = 99
+        self.assertEqual(receipts[1]["gridPoint"], [10., 57.])
+        self.assertEqual(first["nativeGridSampling"]["gridPoint"], [10., 57.])
+
+    def test_all_fresh_component_tuples_and_optional_wave_direction_are_checked(self):
+        from lib import dmi_native_provenance as provenance
+        for component, fields in provenance.COMPONENT_FIELD_SET.items():
+            collection = ("harmonie_dini_sf" if component == "wind" else
+                          "wam_dw" if component == "wave" else "dkss_lf")
+            for optional in (((), ("mean-wave-dir",)) if component == "wave" else ((),)):
+                with self.subTest(component=component, optional=optional):
+                    rows = {field: {**self.rows[U], "_gridCoordinateInterpretation":
+                            "eccodes-native-coordinates-v1"} for field in (*fields, *optional)}
+                    source = self.source(collection, "2026-01-01T00:00:00Z", "2026-01-01T03:00:00Z",
+                        component=component, zone=self.zone, grid_candidate=rows[fields[0]],
+                        grid_tuple=rows, capture=self.capture, optional_field_set=optional,
+                        spatial_selection=provenance.COMPONENT_SPATIAL_SELECTION[component])
+                    self.assertIsNotNone(source)
+                    self.assertEqual(source["nativeGridSampling"]["fieldSet"], list(fields))
+                    self.assertEqual(source["nativeGridSampling"]["optionalFieldSet"], list(optional))
+                    if optional:
+                        rows[optional[0]]["index"] = 9
+                        self.assertIsNone(self.source(collection, "2026-01-01T00:00:00Z",
+                            "2026-01-01T03:00:00Z", component=component, zone=self.zone,
+                            grid_candidate=rows[fields[0]], grid_tuple=rows, capture=self.capture,
+                            optional_field_set=optional,
+                            spatial_selection=provenance.COMPONENT_SPATIAL_SELECTION[component]))
+
+
 class CurrentCellJoinRegression(unittest.TestCase):
     def select(self, u, v):
         fields = {U: u, V: v}
@@ -199,11 +320,13 @@ class CurrentCellJoinRegression(unittest.TestCase):
 
     def test_grid_point_metadata_never_leaks_private_order_identity(self):
         row = candidate(10, 40.000001)
+        row['_gridCoordinateInterpretation'] = 'dmi-dkss-grib1-header-endpoints-v1'
         before = copy.deepcopy(row)
         for excluded in ((), ("index", "value")):
             with self.subTest(excluded=excluded):
                 metadata = grid_point_metadata(row, excluded)
                 self.assertNotIn("_gridIndexIdentity", metadata)
+                self.assertNotIn("_gridCoordinateInterpretation", metadata)
                 self.assertEqual(metadata["gridDefinitionSha256"], DEFINITION)
                 self.assertEqual(metadata["latitude"], round(row["latitude"], 5))
                 self.assertEqual(row, before)
@@ -367,8 +490,38 @@ class DkssOrdinaryHeaderCallerRegression(unittest.TestCase):
             self.assertAlmostEqual(row['latitude'], self.zone['lat'], places=12)
             self.assertAlmostEqual(row['longitude'], self.zone['lon'], places=12)
             self.assertRegex(row['_gridIndexIdentity'], r'^[0-9a-f]{64}$')
+            self.assertEqual(row['_gridCoordinateInterpretation'], 'dmi-dkss-grib1-header-endpoints-v1')
         self.assertEqual(len(self.element_calls), 2)
         self.assertEqual(self.gid, before)
+
+    def test_actual_header_batch_tuple_flows_into_normal_source_constructor(self):
+        from lib import dmi_native_provenance as provenance
+        source_functions, _ = load_actual_functions(("native_component_source",))
+        source_functions.update(datetime=datetime, timezone=timezone)
+        for name in ("sampling_identity", "component_collection_allowed", "COMPONENT_FIELD_SET",
+                     "COMPONENT_KIND", "COMPONENT_SPATIAL_SELECTION", "COLLECTION_FAMILY",
+                     "SPATIAL_PROVENANCE_VERSION"):
+            source_functions[name] = getattr(provenance, name)
+        zone = {**self.zone, "id": "PART::SYNTHETIC_ONLY", "parentZoneId": "SYNTHETIC_ONLY"}
+        self.gid['syntheticValues'][262457] = 0.
+        u = self.functions['valid_candidates_batch'](self.gid, 'dkss_lf', [zone])[zone['id']]
+        self.gid['syntheticValues'][262457] = -.5
+        v = self.functions['valid_candidates_batch'](self.gid, 'dkss_lf', [zone])[zone['id']]
+        selected = self.functions['select_common_grid_tuple']({U: u, V: v}, (U, V))
+        self.assertIsNotNone(selected)
+        source = source_functions['native_component_source']('dkss_lf',
+            '2026-01-01T00:00:00Z', '2026-01-01T03:00:00Z', component='current', zone=zone,
+            grid_candidate=selected[U], grid_tuple=selected,
+            capture={'itemId': 'own-synthetic-header-reply', 'assetIdentitySha256': 'b' * 64,
+                     'assetSizeBytes': 16, 'contentLengthBytes': 16, 'contentSha256': 'd' * 64,
+                     'acquiredAt': '2026-01-01T01:00:00Z'},
+            spatial_selection='nearest-shared-grid-cell-no-spatial-interpolation')
+        self.assertIsNotNone(source)
+        self.assertEqual(source['nativeGridSampling']['elementIndex'], 262457)
+        self.assertEqual(source['nativeGridSampling']['coordinateInterpretation'],
+                         'dmi-dkss-grib1-header-endpoints-v1')
+        self.assertEqual(selected[U]['value'], 0.)
+        self.assertEqual(len(self.element_calls), 2)
 
     def test_disjoint_actual_probe_nodes_do_not_form_vector_and_missing_stays_missing(self):
         signature = self.functions['grid_cache_signature'](self.gid)
@@ -548,7 +701,33 @@ if REAL:
                     expected = self.producer.dkss_header_grid_point(geometry, index)
                     self.assertEqual((row["latitude"], row["longitude"]),
                                      (expected["lat"], expected["lon"]))
+                    self.assertEqual(row['_gridCoordinateInterpretation'],
+                                     'dmi-dkss-grib1-header-endpoints-v1')
             return rows
+
+        def assert_native_selection_record(self, collection, zone, pair, index):
+            # Capture metadata below belongs only to this artificial control.
+            # Actual native index/value/coordinates above come from the normal
+            # batch caller, not an inserted selected tuple.
+            source = self.producer.native_component_source(collection, self.TIME, self.TIME,
+                component='current', zone=zone, grid_candidate=pair[U], grid_tuple=pair,
+                capture={'itemId': 'own-artificial-native-control',
+                         'assetIdentitySha256': 'b' * 64, 'assetSizeBytes': 16,
+                         'contentLengthBytes': 16, 'contentSha256': 'd' * 64,
+                         'acquiredAt': self.TIME},
+                spatial_selection='nearest-shared-grid-cell-no-spatial-interpolation',
+                verticalLayer='surface:0', verticalLayerRankM=0.,
+                vectorSelection=self.producer.CURRENT_VECTOR_SELECTION,
+                vectorSemanticsVersion=self.producer.CURRENT_VECTOR_SEMANTICS_VERSION)
+            self.assertIsNotNone(source)
+            self.assertEqual(source['nativeGridSampling']['elementIndex'], index)
+            self.assertEqual(source['nativeGridSampling']['gridIndexIdentitySha256'], pair[U]['_gridIndexIdentity'])
+            self.assertEqual(source['nativeGridSampling']['coordinateInterpretation'],
+                             'dmi-dkss-grib1-header-endpoints-v1')
+            self.assertNotIn('value', json.dumps(source['nativeGridSampling']))
+            self.assertTrue(self.producer.complete_native_source_for_hour(source, 'current',
+                zone['id'], self.producer.sampling_identity(zone), self.TIME))
+            self.assertEqual(json.loads(json.dumps(source)), source)
 
         def test_native_lf_disjoint_masks_do_not_pair_after_real_union(self):
             with self.grid(self.LF, self.ALIAS) as (gid, values, cells):
@@ -588,6 +767,7 @@ if REAL:
                 self.assertIsNotNone(pair)
                 self.assertEqual((pair[U]["index"], pair[V]["index"]), (index, index))
                 self.assertEqual(pair[U]["value"], 0.0)
+                self.assert_native_selection_record('dkss_lf', zone, pair, index)
 
         def test_native_nsbs_normal_grid_same_index_remains_valid(self):
             index = 200 * 414 + 100
@@ -599,6 +779,8 @@ if REAL:
                 pair = self.producer.select_common_grid_tuple({U: u, V: v}, (U, V))
                 self.assertIsNotNone(pair)
                 self.assertEqual((pair[U]["index"], pair[V]["index"]), (index, index))
+
+                self.assert_native_selection_record('dkss_nsbs', zone, pair, index)
 
         def wave_file(self, gid, values, path, direction_index):
             # Real artificial WAM fields on a regular synthetic grid. The
@@ -662,6 +844,11 @@ if REAL:
                             self.assertEqual(hour["mean-wave-dir"], 90.0)
                             self.assertEqual(hour["sources"]["wave"]["optionalFieldSet"], ["mean-wave-dir"])
                             self.assertNotIn("_gridIndexIdentity", json.dumps(output))
+                            self.assertNotIn("_gridCoordinateInterpretation", json.dumps(output))
+                            receipt = hour['sources']['wave']['nativeGridSampling']
+                            self.assertEqual(receipt['elementIndex'], self.WAVE_INDEX)
+                            self.assertEqual(receipt['coordinateInterpretation'], 'eccodes-native-coordinates-v1')
+                            self.assertEqual(receipt['optionalFieldSet'], ['mean-wave-dir'])
                         else:
                             self.assertIsNone(hour)
                             self.assertEqual(diagnostics["rejectedScalarTuples"][zone["id"]]["wave"],

@@ -6,6 +6,7 @@ import json
 import pathlib
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 from lib.dmi_bulk_storage import (
@@ -30,7 +31,71 @@ def fixture():
     }}}}
 
 
+def sampling_fixture():
+    # Own synthetic sources only: storage equivalence is not native evidence.
+    registration = {
+        "contractId": "dmi-native-grid-sampling-v1", "elementIndex": 7,
+        "gridIndexIdentitySha256": "a" * 64,
+        "coordinateInterpretation": "dmi-dkss-grib1-header-endpoints-v1",
+        "gridDefinitionSha256": "b" * 64, "gridPoint": [2.0, 1.0],
+        "fieldSet": ["current-u", "current-v"], "optionalFieldSet": [],
+    }
+    start = datetime(2026, 10, 9, tzinfo=timezone.utc)
+    hourly = {}
+    for index in range(41):
+        time = (start + timedelta(hours=index)).isoformat().replace("+00:00", "Z")
+        hourly[time] = {"time": time, "sources": {"current": {
+            "collection": "dkss_nsbs", "modelRun": "2026-10-09T00:00:00Z",
+            "nativeValidTime": time, "gridPoint": [2.0, 1.0],
+            "leadTimeHours": index, "nativeGridSampling": copy.deepcopy(registration),
+        }}}
+    return {"schemaVersion": 2, "zones": {"PART::TEST": {"hourly": hourly}}}
+
+
 class StorageTest(unittest.TestCase):
+    def test_sampling_registration_deduplicates_without_losing_hours_or_aliasing(self):
+        logical = sampling_fixture()
+        before = copy.deepcopy(logical)
+        wrapper = encode_dmi_bulk_document(logical)
+        self.assertEqual(logical, before)
+        tables = wrapper["sourceTables"]
+        self.assertEqual(len(tables["spatial"]), 1)
+        self.assertIn("nativeGridSampling", tables["spatial"][0])
+        self.assertEqual(len(tables["semantics"]), 41)
+        self.assertTrue(all("nativeGridSampling" not in row for row in tables["semantics"]))
+        self.assertEqual(len(tables["asset"]), 41)
+        with tempfile.TemporaryDirectory() as directory:
+            target = pathlib.Path(directory) / "sampling.json"
+            write_dmi_bulk_document(target, logical)
+            self.assertEqual(logical, before)
+            decoded = read_dmi_bulk_document(target)
+        self.assertEqual(decoded, before)
+        hours = list(decoded["zones"]["PART::TEST"]["hourly"].values())
+        hours[0]["sources"]["current"]["nativeGridSampling"]["fieldSet"][0] = "changed"
+        self.assertEqual(hours[1]["sources"]["current"]["nativeGridSampling"]["fieldSet"],
+                         ["current-u", "current-v"])
+        self.assertEqual(logical, before)
+
+    def test_legacy_semantic_registration_survives_and_duplicate_still_rejects(self):
+        logical = sampling_fixture()
+        legacy = encode_dmi_bulk_document(logical)
+        registration = next(iter(logical["zones"]["PART::TEST"]["hourly"].values()))[
+            "sources"]["current"]["nativeGridSampling"]
+        for spatial in legacy["sourceTables"]["spatial"]:
+            spatial.pop("nativeGridSampling", None)
+        for semantics in legacy["sourceTables"]["semantics"]:
+            semantics["nativeGridSampling"] = copy.deepcopy(registration)
+        decoded = decode_dmi_bulk_wrapper(copy.deepcopy(legacy))
+        self.assertEqual(decoded, logical)
+        # Read compatibility is limited to this field; overlapping keys still
+        # reject before mutation, even if the duplicate has identical content.
+        duplicate = copy.deepcopy(legacy)
+        duplicate["sourceTables"]["spatial"][0]["nativeGridSampling"] = copy.deepcopy(registration)
+        before = copy.deepcopy(duplicate)
+        with self.assertRaises(ValueError):
+            decode_dmi_bulk_wrapper(duplicate)
+        self.assertEqual(duplicate, before)
+
     def test_lossless_roundtrip_and_no_mutable_alias(self):
         expected = fixture()
         wrapper = encode_dmi_bulk_document(expected)

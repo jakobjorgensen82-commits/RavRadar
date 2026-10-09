@@ -19,7 +19,12 @@ const SPATIAL_FIELDS = new Set([
   'samplingPointSha256', 'samplingIdentitySha256', 'sourceRegistrySha256',
   'coastalPartId', 'partId', 'zoneId', 'entityId', 'entityType', 'parentZoneId',
   'samplingContext', 'physicalPointSha256', 'verticalLayer', 'verticalLayerRankM',
+  'nativeGridSampling',
 ]);
+// Previous v1 writers kept this then-unknown key in semantics. Read it there
+// without relabelling original data; duplicate fields still fail per source.
+// Storage compatibility never implies sampling/authenticity qualification.
+const LEGACY_SEMANTIC_FIELDS = new Set(['nativeGridSampling']);
 
 function isObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -98,7 +103,9 @@ function validateTables(tables) {
       const keys = Object.keys(row);
       if ((group === 'asset' && keys.some(key => !ASSET_FIELDS.has(key)))
         || (group === 'spatial' && keys.some(key => !SPATIAL_FIELDS.has(key)))
-        || (group === 'semantics' && keys.some(key => ASSET_FIELDS.has(key) || SPATIAL_FIELDS.has(key)))) {
+        || (group === 'semantics' && keys.some(key => (
+          (ASSET_FIELDS.has(key) || SPATIAL_FIELDS.has(key)) && !LEGACY_SEMANTIC_FIELDS.has(key)
+        )))) {
         throw new Error('DMI source table partition is invalid');
       }
     }

@@ -2363,6 +2363,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                     # The three message handles carry fields at one node.
                     "index": 17,
                     "_gridIndexIdentity": hashlib.sha256(b"synthetic-wam-parser-grid-order").hexdigest(),
+                    "_gridCoordinateInterpretation": "eccodes-native-coordinates-v1",
                     "gridDefinitionSha256": "d" * 64,
                     "_candidateCount": 1,
                 }] if zone["id"] == zones[0]["id"] else [])

@@ -4352,6 +4352,7 @@ def nearest_candidates(
     zone: dict[str, Any],
     signature: tuple[Any, ...] | None = None,
     nearest_lookup: Any = None,
+    coordinate_interpretation: str = "eccodes-native-coordinates-v1",
 ) -> list[dict[str, Any]]:
     """Find flere mulige havpunkter uden at antage, at de fire nærmeste er gyldige.
 
@@ -4373,6 +4374,7 @@ def nearest_candidates(
         geometry = dkss_header_geometry_for_message(gid, collection, grid_cache_signature(gid))
         if geometry is not None:
             nearest_lookup = lambda latitude, longitude: dkss_header_grid_nearest(geometry, latitude, longitude)
+            coordinate_interpretation = "dmi-dkss-grib1-header-endpoints-v1"
     if collection not in MARINE_COLLECTIONS and candidate_target == 4:
         try:
             candidates = codes_grib_find_nearest(gid, zone["lat"], zone["lon"], npoints=4)
@@ -4399,6 +4401,7 @@ def nearest_candidates(
                     "latitude": float(candidate.get("lat")),
                     "longitude": float(candidate.get("lon")),
                     "distanceKm": haversine_km(zone["lat"], zone["lon"], float(candidate.get("lat")), float(candidate.get("lon"))),
+                    "_gridCoordinateInterpretation": "eccodes-native-coordinates-v1",
                 })
             except (TypeError, ValueError):
                 continue
@@ -4466,7 +4469,9 @@ def nearest_candidates(
                 continue
             prior = by_index.get(index)
             if prior is None or distance < prior["distanceKm"]:
-                by_index[index] = {"index": index, "latitude": lat, "longitude": lon, "distanceKm": distance}
+                by_index[index] = {"index": index, "latitude": lat, "longitude": lon,
+                                   "distanceKm": distance,
+                                   "_gridCoordinateInterpretation": coordinate_interpretation}
     normalized = sorted(by_index.values(), key=lambda item: item["distanceKm"])[:candidate_target]
     GRID_INDEX_CACHE[cache_key] = normalized
     return normalized
@@ -4504,6 +4509,7 @@ def warm_marine_grid_cache(
                 nearest_candidates(
                     gid, collection, zone, signature=signature,
                     nearest_lookup=lambda latitude, longitude: dkss_header_grid_nearest(geometry, latitude, longitude),
+                    coordinate_interpretation="dmi-dkss-grib1-header-endpoints-v1",
                 )
         except Exception:
             for key in pending_keys:
@@ -4627,6 +4633,7 @@ def warm_atmospheric_grid_cache(
                 "latitude": lat,
                 "longitude": lon,
                 "distanceKm": haversine_km(zone_lat, zone_lon, lat, lon),
+                "_gridCoordinateInterpretation": "eccodes-native-coordinates-v1",
             }
             for index, lat, lon in nearest
         ]
@@ -4718,6 +4725,7 @@ def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]
                 "distanceKm": candidate["distanceKm"],
                 "gridDefinitionSha256": definition_sha256,
                 "_gridIndexIdentity": index_identity,
+                "_gridCoordinateInterpretation": candidate.get("_gridCoordinateInterpretation"),
             })
         if rows:
             resolved[zone_id] = rows
@@ -4772,6 +4780,7 @@ def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) 
                     "index": int(candidate["index"]),
                     "gridDefinitionSha256": definition_sha256,
                     "_gridIndexIdentity": index_identity,
+                    "_gridCoordinateInterpretation": candidate.get("_gridCoordinateInterpretation"),
                     "_candidateCount": len(candidates),
                 }
                 break
@@ -5992,7 +6001,7 @@ def grid_point_metadata(
             else value
         )
         for key, value in candidate.items()
-        if key not in excluded_keys and key != "_gridIndexIdentity"
+        if key not in excluded_keys and key not in {"_gridIndexIdentity", "_gridCoordinateInterpretation"}
     }
 
 
@@ -6047,6 +6056,66 @@ def select_common_grid_tuple(
     return {parameter: indexed[parameter][selected_key] for parameter in required_parameters}
 
 
+def native_grid_sampling_receipt(
+    source: dict[str, Any],
+    grid_candidate: dict[str, Any],
+    grid_tuple: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Record fresh selection evidence without relabelling retained originals.
+
+    This proves what the normal producer selected, not provider correctness or
+    historical eligibility. All component fields must have read the same native
+    element using the same coordinate interpretation. Never persist their values.
+    """
+    if not isinstance(grid_tuple, dict):
+        return None
+    fields = source["fieldSet"] + source["optionalFieldSet"]
+    selected_key = candidate_node_key(grid_candidate)
+    if selected_key is None or set(grid_tuple) != set(fields):
+        return None
+    interpretation = None
+    for field in fields:
+        row = grid_tuple[field]
+        if not isinstance(row, dict) or candidate_node_key(row) != selected_key:
+            return None
+        for key in ("latitude", "longitude", "value", "distanceKm"):
+            number = row.get(key)
+            if not (isinstance(number, (int, float)) and not isinstance(number, bool)
+                    and math.isfinite(float(number))):
+                return None
+        if not (-90 <= row["latitude"] <= 90 and -180 <= row["longitude"] <= 360
+                and row["distanceKm"] >= 0
+                and math.isclose(row["distanceKm"], source["distanceKm"], rel_tol=0, abs_tol=0.00002)):
+            return None
+        rule = row.get("_gridCoordinateInterpretation")
+        if not isinstance(rule, str) or rule not in {
+            "dmi-dkss-grib1-header-endpoints-v1", "eccodes-native-coordinates-v1",
+        }:
+            return None
+        if interpretation is not None and rule != interpretation:
+            return None
+        interpretation = rule
+    definition, latitude, longitude, index_identity, index = selected_key
+    if (source["gridDefinitionSha256"] != definition
+            or source["gridPoint"] != [longitude, latitude]
+            or grid_candidate.get("_gridCoordinateInterpretation") != interpretation):
+        return None
+    # The record stays inside the original hour/component source and the normal
+    # private container's integrity checks. A new self-hash would not prove an
+    # original was sampled correctly; it also must not invent a cross-language
+    # floating-point JSON contract. Reuse eligibility is a separate verifier.
+    return {
+        "contractId": "dmi-native-grid-sampling-v1",
+        "elementIndex": index,
+        "gridIndexIdentitySha256": index_identity,
+        "coordinateInterpretation": interpretation,
+        "gridDefinitionSha256": definition,
+        "gridPoint": list(source["gridPoint"]),
+        "fieldSet": list(source["fieldSet"]),
+        "optionalFieldSet": list(source["optionalFieldSet"]),
+    }
+
+
 def native_component_source(
     collection: str,
     model_run: str,
@@ -6058,6 +6127,7 @@ def native_component_source(
     capture: dict[str, Any] | None,
     spatial_selection: str,
     optional_field_set: tuple[str, ...] = (),
+    grid_tuple: dict[str, dict[str, Any]] | None = None,
     **extra: Any,
 ) -> dict[str, Any] | None:
     identity = sampling_identity(zone)
@@ -6116,7 +6186,7 @@ def native_component_source(
     ):
         return None
     definition, latitude, longitude = cell_key
-    return {
+    source = {
         "provider": "dmi",
         "fallback": False,
         "collection": collection,
@@ -6144,6 +6214,14 @@ def native_component_source(
         **({"itemUpdatedAt": item_updated_at} if item_updated_at else {}),
         **extra,
     }
+    if "nativeGridSampling" in extra:
+        return None
+    if grid_tuple is not None:
+        receipt = native_grid_sampling_receipt(source, grid_candidate, grid_tuple)
+        if receipt is None:
+            return None
+        source["nativeGridSampling"] = receipt
+    return source
 
 
 def prefer_marine_component_hour_candidate(
@@ -6378,6 +6456,46 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         if family == "current" and zone.get("researchCurrent"):
                             research_vector_choices.setdefault(str(zone["id"]), []).append(candidate_choice)
                             continue
+                        source_extra = {
+                            "vectorSelection": "nearest-shared-grid-cell-no-spatial-interpolation",
+                            "vectorSemanticsVersion": 1,
+                        }
+                        if family == "wind":
+                            source_extra.update({
+                                "vectorSemanticsVersion": WIND_VECTOR_VERSION,
+                                "vectorReference": "earth-relative-east-north",
+                                "vectorTransform": first["_windReference"][0],
+                            })
+                        if family == "current":
+                            source_extra = {
+                                "verticalLayer": layer_key,
+                                "verticalLayerRankM": round(layer_rank, 3),
+                                "vectorSelection": CURRENT_VECTOR_SELECTION,
+                                "vectorSemanticsVersion": CURRENT_VECTOR_SEMANTICS_VERSION,
+                            }
+                        component = PARAMETER_COMPONENT[first_key]
+                        source = native_component_source(
+                            collection,
+                            model_run,
+                            valid_time,
+                            component=component,
+                            zone=zone,
+                            grid_candidate=first,
+                            grid_tuple={first_key: first, second_key: second},
+                            capture=source_capture,
+                            spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+                            **source_extra,
+                        )
+                        if source is None:
+                            diagnostics.setdefault("rejectedVectorTuples", {}).setdefault(
+                                zone["id"], {},
+                            )[family] = "INVALID_VECTOR_PROVENANCE"
+                            # An internal proof failure is not upstream/spatial
+                            # absence and must not authorize a processed receipt.
+                            raise DmiGridLookupError(
+                                "Fresh native vector selection could not be verified",
+                                "NATIVE_VECTOR_PROVENANCE_INVALID",
+                            )
                         previous_choice = selected_vector_choices.get(selection_key)
                         # Strøm: vælg først den nærmeste gyldige vandkolonne og
                         # derefter dens dybeste fælles U/V-lag. Vind har kun ét lag.
@@ -6466,29 +6584,19 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                                 vector_search["selected"] = False
                                 vector_search["rejectedReason"] = "VALID_POINT_TOO_FAR"
                                 continue
-                            tail_source = native_component_source(
-                                collection,
-                                model_run,
-                                valid_time,
-                                component="windTail",
-                                zone=zone,
-                                grid_candidate=first,
-                                capture=source_capture,
-                                spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
-                                vectorSelection="nearest-shared-grid-cell-no-spatial-interpolation",
-                                vectorSemanticsVersion=1,
-                            )
                             if not prefer_marine_component_hour_candidate(
                                 point,
                                 zone,
                                 valid_time,
                                 "windTail",
-                                tail_source,
+                                source,
                                 {first_key: first["value"], second_key: second["value"]},
                             ):
                                 vector_search["selected"] = False
                                 vector_search["rejectedReason"] = "BETTER_NATIVE_COMPONENT_ALREADY_SELECTED"
                                 continue
+                        # Validate the full fresh selection before replacing any
+                        # retained values, source, grid summary or choice state.
                         selected_vector_choices[selection_key] = candidate_choice
                         if not zone.get("privateStage"):
                             touched.add(zone["id"])
@@ -6501,39 +6609,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                                 "verticalLayerRankM": round(layer_rank, 3),
                             }
                             point["collections"][key] = collection
-                        source_extra = {
-                            "vectorSelection": "nearest-shared-grid-cell-no-spatial-interpolation",
-                            "vectorSemanticsVersion": 1,
-                        }
-                        if family == "wind":
-                            source_extra.update({
-                                "vectorSemanticsVersion": WIND_VECTOR_VERSION,
-                                "vectorReference": "earth-relative-east-north",
-                                "vectorTransform": first["_windReference"][0],
-                            })
-                        if family == "current":
-                            source_extra = {
-                                "verticalLayer": layer_key,
-                                "verticalLayerRankM": round(layer_rank, 3),
-                                "vectorSelection": CURRENT_VECTOR_SELECTION,
-                                "vectorSemanticsVersion": CURRENT_VECTOR_SEMANTICS_VERSION,
-                            }
-                        component = PARAMETER_COMPONENT[first_key]
-                        source = native_component_source(
-                            collection,
-                            model_run,
-                            valid_time,
-                            component=component,
-                            zone=zone,
-                            grid_candidate=first,
-                            capture=source_capture,
-                            spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
-                            **source_extra,
-                        )
-                        if source:
-                            hour.setdefault("sources", {})[component] = source
-                        else:
-                            (hour.get("sources") or {}).pop(component, None)
+                        hour.setdefault("sources", {})[component] = source
                     continue
 
                 if parameter in {"significant-wave-height", "mean-wave-dir", "dominant-wave-period"}:
@@ -6589,6 +6665,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         component=component,
                         zone=zone,
                         grid_candidate=nearest,
+                        grid_tuple={parameter: nearest},
                         capture=source_capture,
                         spatial_selection="nearest-valid-grid-cell-no-spatial-interpolation",
                         **source_extra,
@@ -6689,6 +6766,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
             component="wave",
             zone=zone,
             grid_candidate=height,
+            grid_tuple={**selected, **({"mean-wave-dir": direction} if direction is not None else {})},
             capture=source_capture,
             spatial_selection="nearest-shared-wave-height-period-grid-cell-no-spatial-interpolation",
             optional_field_set=optional_fields,
@@ -6716,12 +6794,12 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
         hour.setdefault("sources", {})["wave"] = source
         for parameter, candidate in (("significant-wave-height", height), ("dominant-wave-period", period)):
             point["gridPoints"][parameter] = {
-                **{key: round(value, 5) if isinstance(value, (int, float)) else value for key, value in candidate.items() if key not in {"value", "index", "_wavePeriodField", "_gridIndexIdentity"}},
+                **grid_point_metadata(candidate, ("value", "index", "_wavePeriodField")),
             }
             point["collections"][parameter] = collection
         if direction is not None:
             point["gridPoints"]["mean-wave-dir"] = {
-                **{key: round(value, 5) if isinstance(value, (int, float)) else value for key, value in direction.items() if key not in {"value", "index", "_gridIndexIdentity"}},
+                **grid_point_metadata(direction, ("value", "index")),
             }
             point["collections"]["mean-wave-dir"] = collection
         else:

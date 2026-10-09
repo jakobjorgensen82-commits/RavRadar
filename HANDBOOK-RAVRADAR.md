@@ -6,6 +6,58 @@
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
 
+## 89.179 Samplingregistrering før gemning af nye felter
+
+Den isolerede kandidat gemmer nu den faktiske nye feltudvælgelse i hver
+komponent/times kilde som `nativeGridSampling`: fælles originalt elementindeks,
+gitterets læserækkefølgeidentitet, anvendt koordinatfortolkning, gitterpunkt og
+de faktisk valgte felter. Registreringen indeholder ingen strømværdier.
+Den interne opslagstags kopi fjernes fortsat fra almindelige `gridPoints`.
+Registreringen er ikke selvstændig autentificering af DMI eller automatisk
+godkendelse af gammel historik; den følger den eksisterende originale kilde
+og private lagrings integritetskontrol. Der tilføjes ikke et selvhash som falsk
+bevis eller en ny, udokumenteret flydende-tal-JSON-hashkontrakt.
+
+Begge normale batchkald viderefører den regel, der faktisk blev brugt til
+opslaget. Vektor, skalar og bølgetuple giver de faktisk udvalgte felter til
+den normale kildekonstruktør. Uens indeks, gitterrækkefølge, fortolkning,
+manglende felter og ugyldige tal afvises. Nulværdier bevares. Eksisterende
+originaler uden registrering får ingen ny mærkning, version eller sletning.
+
+Vektorkilden kontrolleres før ændring af en tidligere gyldig time, gitterresumé,
+valgt tuple eller tilgængelighedskvittering. En intern kildefejl er en navngiven
+fejl, ikke rumlig mangel hos DMI, et afsluttet felt eller tilladelse til genbrug.
+Den eksisterende normale aktivtransaktion bevarer originaltilstanden ved fejl.
+
+29 lokale måltests består: faktisk udtrukket producentkode med egne kunstige
+input, sammenhængende header/batch/kildekald og faktisk privat gemning/genlæsning.
+Lagringssuite har 14 beståede tests samt bestået Node-kontrol. 41 forskellige
+timer bevares med én fælles registrering i den rumlige tabel, ikke 41 kopier
+blandet med timeafhængig semantik. Begge nye læsere accepterer den tidligere
+semantiktabels samme felt; dobbelte felter, bounds og øvrige afvisninger bevares.
+Format-id er uændret, men gamle binære læsere forstår ikke det nye rumlige felt;
+aktivering kræver samordnet levering af begge læsere og alle genbrugskaldere.
+Ingen eksisterende originalfil flyttes, slettes eller opgraderes af dette.
+De nye fuld-import-prøver af vektorafvisning og transaktionsrollback samt den
+opdaterede nativekontrol skal stadig bestå i GitHub;
+lokal syntakskontrol er ikke bevis for disse. Ingen ekstra dependencies installeres.
+Den eksisterende afgrænsede Python-bro kører lagring, native proveniens,
+continuity, vind og wave-bootstrap én gang hver. Kildeplanen har stadig
+47 kommandoer; ingen produktionsgate eller runnergrænse ændres.
+
+Den tidligere præcise head 3c649724 bestod GitHub-kildekontrollen med 51 faktiske
+native testnoder, den kritiske sourcegate og uændret valideret træ den 9. oktober
+kl. 20.10 dansk tid. Det gælder ikke denne efterfølgende ændring. Tidligere udsagn
+om uafklaret nativekontrol erstattes alene for den tidligere head.
+
+Cacheklar, processed-kvitteringer, native/protected/retained originaler,
+strømhukommelse, RavScore og centralt valgt SOURCE inklusive T+3 skal endnu have
+fælles, tabsfri anvendelsesregler. Parser20/grid9 ændres ikke alene for at kalde
+overgangen færdig. 4.0.555 forbliver uden merge/aktivering; hverken hele revisionen,
+brugerdata eller bred Spørg RavRadar er færdige. Ingen produktionsændring under
+aktiv vejrhentning, ny originaldiagnose, manuel vejrhentning, SQL-installation,
+admin-/geometri-, scoreformel-, prioritet- eller cronændring følger af kildearbejdet.
+
 ## 89.178 Gitterplacering fra DMI-filens endepunkter
 
 DMI's [officielle FAQ](https://www.dmi.dk/friedata/dokumentation/faq)

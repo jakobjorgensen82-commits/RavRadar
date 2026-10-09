@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import {
   DMI_BULK_STORAGE_SCHEMA,
   decodeDmiBulkWrapper,
@@ -31,6 +33,76 @@ try {
   assert.equal(Object.getPrototypeOf(decoded.zones['PART::T'].hourly['2026-09-08T12:00:00Z'].sources.current), Object.prototype);
   assert.doesNotThrow(() => structuredClone(decoded.zones['PART::T'].hourly['2026-09-08T12:00:00Z'].sources.current));
   assert.throws(() => { decoded.zones['PART::T'].hourly['2026-09-08T12:00:00Z'].sources.current.provider = 'other'; });
+
+  // Own synthetic sources: this proves storage, not native qualification.
+  const registration = {
+    contractId: 'dmi-native-grid-sampling-v1', elementIndex: 7,
+    gridIndexIdentitySha256: 'a'.repeat(64),
+    coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1',
+    gridDefinitionSha256: 'b'.repeat(64), gridPoint: [2, 1],
+    fieldSet: ['current-u', 'current-v'], optionalFieldSet: [],
+  };
+  const sampling = { schemaVersion: 2, zones: { 'PART::TEST': { hourly: {} } } };
+  for (let index = 0; index < 41; index += 1) {
+    const time = new Date(Date.UTC(2026, 9, 9, index)).toISOString().replace('.000Z', 'Z');
+    sampling.zones['PART::TEST'].hourly[time] = { time, sources: { current: {
+      collection: 'dkss_nsbs', modelRun: '2026-10-09T00:00:00Z',
+      nativeValidTime: time, gridPoint: [2, 1], leadTimeHours: index,
+      nativeGridSampling: structuredClone(registration),
+    } } };
+  }
+  const samplingBefore = structuredClone(sampling);
+  const samplingFile = path.join(directory, 'sampling.json');
+  await writeDmiBulkDocument(samplingFile, sampling);
+  assert.deepEqual(sampling, samplingBefore);
+  const samplingStored = JSON.parse(await fs.readFile(samplingFile, 'utf8'));
+  assert.equal(samplingStored.storageSchema, DMI_BULK_STORAGE_SCHEMA);
+  assert.equal(samplingStored.sourceTables.spatial.length, 1);
+  assert.deepEqual(samplingStored.sourceTables.spatial[0].nativeGridSampling, registration);
+  assert.equal(samplingStored.sourceTables.semantics.length, 41);
+  assert.ok(samplingStored.sourceTables.semantics.every(row => !Object.hasOwn(row, 'nativeGridSampling')));
+  assert.equal(samplingStored.sourceTables.asset.length, 41);
+  const samplingDecoded = await readDmiBulkDocument(samplingFile);
+  assert.deepEqual(samplingDecoded, samplingBefore);
+  const samplingHours = Object.values(samplingDecoded.zones['PART::TEST'].hourly);
+  assert.throws(() => { samplingHours[0].sources.current.nativeGridSampling.fieldSet[0] = 'changed'; });
+  const mutableHour = structuredClone(samplingHours[0]);
+  mutableHour.sources.current.nativeGridSampling.fieldSet[0] = 'changed';
+  assert.deepEqual(samplingHours[1].sources.current.nativeGridSampling.fieldSet, ['current-u', 'current-v']);
+
+  // Existing v1 wrappers treated the formerly unknown key as semantics.
+  const legacySampling = structuredClone(samplingStored);
+  for (const spatial of legacySampling.sourceTables.spatial) delete spatial.nativeGridSampling;
+  for (const semantics of legacySampling.sourceTables.semantics) semantics.nativeGridSampling = structuredClone(registration);
+  assert.deepEqual(decodeDmiBulkWrapper(structuredClone(legacySampling)), samplingBefore);
+  const duplicateSampling = structuredClone(legacySampling);
+  duplicateSampling.sourceTables.spatial[0].nativeGridSampling = structuredClone(registration);
+  const duplicateBefore = structuredClone(duplicateSampling);
+  assert.throws(() => decodeDmiBulkWrapper(duplicateSampling));
+  assert.deepEqual(duplicateSampling, duplicateBefore);
+
+  // The two normal codecs must actually read each other's output, not merely
+  // agree with independent fixture assertions. Only own bounded temp files.
+  const pythonFile = path.join(directory, 'python-sampling.json');
+  const pythonCode = [
+    'import json, pathlib, sys',
+    'sys.path.insert(0, str(pathlib.Path(sys.argv[1]) / "scripts"))',
+    'from lib.dmi_bulk_storage import read_dmi_bulk_document, write_dmi_bulk_document',
+    'logical = json.load(sys.stdin)',
+    'write_dmi_bulk_document(sys.argv[2], logical)',
+    'print(json.dumps(read_dmi_bulk_document(sys.argv[3]), allow_nan=False))',
+  ].join('\n');
+  const crossed = spawnSync(process.env.PYTHON || 'python', [
+    '-B', '-c', pythonCode, fileURLToPath(new URL('../', import.meta.url)), pythonFile, samplingFile,
+  ], {
+    input: JSON.stringify(samplingBefore), encoding: 'utf8', shell: false,
+    windowsHide: true, timeout: 30_000, maxBuffer: 1024 * 1024,
+  });
+  assert.equal(crossed.error, undefined, 'Bounded Python storage codec could not execute');
+  assert.equal(crossed.signal, null, 'Bounded Python storage codec was interrupted');
+  assert.equal(crossed.status, 0, crossed.stderr);
+  assert.deepEqual(JSON.parse(crossed.stdout), samplingBefore, 'Python must read normal Node output losslessly');
+  assert.deepEqual(await readDmiBulkDocument(pythonFile), samplingBefore, 'Node must read normal Python output losslessly');
   const malformed = structuredClone(stored);
   malformed.document.zones['PART::T'].hourly['2026-09-08T12:00:00Z'].sources.current.$dmiSource[0] = true;
   const malformedBefore = structuredClone(malformed);

@@ -55,6 +55,8 @@ zone = {
 candidate = {
     "gridDefinitionSha256": "a" * 64,
     "_gridIndexIdentity": hashlib.sha256(b"synthetic-provenance-grid-order").hexdigest(),
+    # Existing own GRIB2/native-coordinate fixture; not DKSS header evidence.
+    "_gridCoordinateInterpretation": "eccodes-native-coordinates-v1",
     "index": 7,
     "longitude": 2.0,
     "latitude": 1.0,
@@ -2026,7 +2028,8 @@ try:
         losing_candidate = {
             **candidate,
             "longitude": 2.02,
-            "distanceKm": 1.0,
+            # Own valid farther candidate, not an inconsistent distance claim.
+            "distanceKm": producer.haversine_km(1.0, 2.0, 1.0, 2.02),
             "index": 9,
         }
         existing_source = producer.native_component_source(
