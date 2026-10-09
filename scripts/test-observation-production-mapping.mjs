@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 const values = new Map();
 globalThis.localStorage = {
@@ -14,6 +15,7 @@ globalThis.fetch = async () => ({ ok: true, json: async () => ({}) });
 const {
   getLocalObservations,
   getObservationSyncStatus,
+  getOwnTripObservations,
   projectLegacyObservationWeatherSnapshot,
   remoteObservationPayload,
   submitObservation,
@@ -226,4 +228,59 @@ for (const outcome of ['changed-original', 'already-acknowledged', 'still-pendin
   }
 }
 
-console.log('Observation production mapping: OK');
+// Keep the real observation/auth import graph. Fetch is only an in-memory
+// HTTP boundary: a private JSON body can finish after its response headers.
+const { version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+const auth = await import(`../js/services/auth-service.js?v=${version}`);
+const { PUBLIC_CONFIG } = await import('../config.js');
+const turn = () => new Promise(resolve => setImmediate(resolve));
+let privateReadCases = 0;
+for (const action of ['unchanged', 'refresh', 'switch', 'logout', 'same-owner-relogin']) {
+  let loginOwner = 'synthetic-owner-a', bodyStream, requests = 0;
+  const sessionFor = owner => ({ access_token: `synthetic-token-${owner}`,
+    refresh_token: `synthetic-refresh-${owner}`, expires_at: 9_999_999_999, user: { id: owner } });
+  globalThis.fetch = async input => {
+    const url = new URL(input);
+    assert.equal(url.origin, new URL(PUBLIC_CONFIG.supabaseUrl).origin);
+    if (url.pathname === '/auth/v1/token' && url.searchParams.get('grant_type') === 'password')
+      return Response.json(sessionFor(loginOwner));
+    if (url.pathname === '/auth/v1/token' && url.searchParams.get('grant_type') === 'refresh_token')
+      return Response.json({ ...sessionFor('synthetic-owner-a'), access_token: 'synthetic-renewed-token' });
+    if (url.pathname === '/auth/v1/logout') return Response.json({});
+    if (url.pathname === '/functions/v1/trip-log') {
+      requests += 1;
+      return new Response(new ReadableStream({ start(controller) { bodyStream = controller; } }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    throw new Error('TEST_NETWORK_FORBIDDEN');
+  };
+  await auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only');
+  const rows = [{ id: 'synthetic-private-trip-a', user_id: 'synthetic-owner-a' }];
+  const localBefore = values.get(localKey), outboxBefore = values.get(outboxKey);
+  let settled = false;
+  const pending = getOwnTripObservations().then(
+    value => { settled = true; return { ok: true, value }; },
+    error => { settled = true; return { ok: false, error }; },
+  );
+  await turn();
+  assert.equal(requests, 1);
+  assert.equal(settled, false, 'The actual private response body must still be pending.');
+  if (action === 'refresh') await auth.refreshSession({ force: true });
+  if (action === 'switch') {
+    loginOwner = 'synthetic-owner-b';
+    await auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only');
+  }
+  if (action === 'logout' || action === 'same-owner-relogin') await auth.signOut();
+  if (action === 'same-owner-relogin') await auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only');
+  bodyStream.enqueue(new TextEncoder().encode(JSON.stringify({ rows })));
+  bodyStream.close();
+  const result = await pending;
+  const sameLogin = action === 'unchanged' || action === 'refresh';
+  assert.equal(result.ok, sameLogin, `${action}: private body completion must belong to the initiating login.`);
+  if (sameLogin) assert.deepEqual(result.value, rows, 'A legitimate same-login read must not be lost on token renewal.');
+  assert.equal(values.get(localKey), localBefore, 'A rejected private read must not clear local observations.');
+  assert.equal(values.get(outboxKey), outboxBefore, 'A rejected private read must not clear pending observations.');
+  privateReadCases += 1;
+}
+
+console.log(`Observation production mapping: OK; ${privateReadCases} actual private-body/login-boundary cases without network.`);

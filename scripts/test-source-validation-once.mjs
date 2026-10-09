@@ -29,6 +29,10 @@ const publicPrivacyGroup = fs.readFileSync('scripts/test-tracked-runtime-privacy
 for (const file of [
   'scripts/test-observation-production-mapping.mjs',
   'scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
+  'scripts/test-public-page-resume-4.0.292.mjs',
+  'scripts/test-rav-assistant-main-edge-roundtrip.mjs',
+  'scripts/test-auth-bootstrap-4.0.66.mjs',
+  'scripts/test-user-account-trip-log-4.0.264.mjs',
 ]) assert.equal(publicPrivacyGroup.split(`'${file}'`).length - 1, 1,
   `The existing source privacy group must execute ${file} exactly once.`);
 assert.equal((pythonContractGroup.match(/'test-dmi-bulk-supervised\.py'/g) || []).length, 1,

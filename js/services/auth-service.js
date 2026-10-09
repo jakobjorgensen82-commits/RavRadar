@@ -6,7 +6,11 @@ const DEFAULT_TIMEOUT_MS = 12000;
 const enabled = Boolean(PUBLIC_CONFIG.supabaseUrl && PUBLIC_CONFIG.supabasePublishableKey);
 let session = readStoredSession();
 let listeners = new Set();
-let refreshPromise = null;
+let refreshState = null;
+let hydrationState = null;
+// Explicit login/callback identity transitions are distinct from renewal of
+// the same login. A late logout must not clear a subsequently chosen session.
+let identityEpoch = 0;
 
 function readStoredSession() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch { return null; }
@@ -69,60 +73,100 @@ function tokenNeedsRefresh() {
   return Number(session.expires_at) <= Math.floor(Date.now() / 1000) + REFRESH_MARGIN_SECONDS;
 }
 async function hydrateSessionUser() {
-  if (!session?.access_token || session?.user?.id) return session;
-  const user = await authRequest("/user");
-  saveSession({ ...session, user });
-  return session;
+  const active = session;
+  if (!active?.access_token || active?.user?.id) return active;
+  if (hydrationState?.session === active) return hydrationState.promise;
+  const pending = authRequest("/user").then(user => {
+    if (session !== active) throw new Error("Kontoen blev ændret. Prøv igen fra den rigtige konto.");
+    saveSession({ ...active, user });
+    return session;
+  }).finally(() => {
+    if (hydrationState?.promise === pending) hydrationState = null;
+  });
+  hydrationState = { session: active, promise: pending };
+  return pending;
 }
 export async function refreshSession({ force = false } = {}) {
   if (!enabled) throw new Error("Loginforbindelsen er ikke klar lige nu.");
-  if (!session?.refresh_token) {
-    if (session?.access_token && !force) return session;
+  const active = session;
+  if (!active?.refresh_token) {
+    if (active?.access_token && !force) return active;
     throw new Error("Din login-session kunne ikke fornyes. Log ind igen.");
   }
-  if (!force && !tokenNeedsRefresh()) return session;
-  if (refreshPromise) return refreshPromise;
-  refreshPromise = authRequest("/token?grant_type=refresh_token", {
+  if (!force && !tokenNeedsRefresh()) return active;
+  if (refreshState?.session === active) return refreshState.promise;
+  const pending = authRequest("/token?grant_type=refresh_token", {
     method: "POST",
-    body: JSON.stringify({ refresh_token: session.refresh_token })
+    body: JSON.stringify({ refresh_token: active.refresh_token })
   }, { useAuthorization: false }).then(next => {
-    if (!next.refresh_token) next.refresh_token = session?.refresh_token;
+    if (session !== active) throw new Error("Kontoen blev ændret. Prøv igen fra den rigtige konto.");
+    if (!next.refresh_token) next.refresh_token = active.refresh_token;
     saveSession(next);
     return session;
   }).catch(error => {
-    if (error.status === 400 || error.status === 401) saveSession(null);
+    if (session === active && (error.status === 400 || error.status === 401)) saveSession(null);
     throw error;
-  }).finally(() => { refreshPromise = null; });
-  return refreshPromise;
+  }).finally(() => {
+    if (refreshState?.promise === pending) refreshState = null;
+  });
+  refreshState = { session: active, promise: pending };
+  return pending;
 }
 export async function requireFreshSession() {
+  const startingEpoch = identityEpoch;
+  const ownerId = session?.user?.id;
+  const assertIdentity = () => {
+    if (identityEpoch !== startingEpoch || !session?.access_token
+      || (ownerId && session?.user?.id && session.user.id !== ownerId)) {
+      throw new Error("Kontoen blev ændret. Prøv igen fra den rigtige konto.");
+    }
+  };
   if (!session?.access_token) throw new Error("Du er ikke logget ind.");
   if (tokenNeedsRefresh()) await refreshSession();
+  assertIdentity();
   if (!session?.user?.id) await hydrateSessionUser();
+  assertIdentity();
   return session;
 }
 export async function authorizedFetch(url, options = {}, { retry401 = true, timeoutMs=DEFAULT_TIMEOUT_MS } = {}) {
+  const startingEpoch = identityEpoch;
   const active = await requireFreshSession();
-  const guard=timeoutSignal(timeoutMs,options.signal);
-  let response;
-  try { response = await fetch(url, {
-    ...options,
-    headers: {
-      apikey: PUBLIC_CONFIG.supabasePublishableKey,
-      Authorization: `Bearer ${active.access_token}`,
-      ...(options.headers || {})
-    },
-    signal:guard.signal
-  }); } catch(error) { throw friendlyNetworkError(error); } finally { guard.done(); }
-  if (response.status === 401 && retry401 && session?.refresh_token) {
-    await refreshSession({ force: true });
-    return authorizedFetch(url, options, { retry401: false, timeoutMs });
+  const ownerId = active?.user?.id;
+  const assertOwner = candidate => {
+    if (identityEpoch !== startingEpoch || !ownerId || candidate?.user?.id !== ownerId || session?.user?.id !== ownerId) {
+      throw new Error("Kontoen blev ændret. Prøv igen fra den rigtige konto.");
+    }
+  };
+  async function requestOnce(current, mayRetry) {
+    assertOwner(current);
+    const guard=timeoutSignal(timeoutMs,options.signal);
+    let response;
+    try { response = await fetch(url, {
+      ...options,
+      headers: {
+        apikey: PUBLIC_CONFIG.supabasePublishableKey,
+        Authorization: `Bearer ${current.access_token}`,
+        ...(options.headers || {})
+      },
+      signal:guard.signal
+    }); } catch(error) { throw friendlyNetworkError(error); } finally { guard.done(); }
+    assertOwner(current);
+    if (response.status === 401 && mayRetry && session?.refresh_token) {
+      await refreshSession({ force: true });
+      const renewed = await requireFreshSession();
+      assertOwner(renewed);
+      return requestOnce(renewed, false);
+    }
+    return response;
   }
-  return response;
+  return requestOnce(active, retry401);
 }
 
 export function authEnabled() { return enabled; }
 export function currentSession() { return session; }
+// Same-login renewal leaves this unchanged; explicit auth choices do not.
+// This is only in-process caller protection, not a cross-tab owner receipt.
+export function authIdentityEpoch() { return identityEpoch; }
 export function onAuthChange(listener) { listeners.add(listener); return () => listeners.delete(listener); }
 export async function sendMagicLink(email) {
   const redirectTo = typeof location === 'undefined' ? null : `${location.origin}${location.pathname}`;
@@ -130,21 +174,29 @@ export async function sendMagicLink(email) {
   await authRequest(path, { method: "POST", body: JSON.stringify({ email, create_user: true }) }, { useAuthorization: false });
 }
 export async function signInWithPassword(email, password) {
+  const startingEpoch = ++identityEpoch;
   const next = await authRequest("/token?grant_type=password", { method: "POST", body: JSON.stringify({ email, password }) }, { useAuthorization: false });
+  if (identityEpoch !== startingEpoch) throw new Error("Kontoen blev ændret. Prøv igen fra den rigtige konto.");
   saveSession(next); return session;
 }
 export async function signUpWithPassword(email, password) {
+  const startingEpoch = ++identityEpoch;
   const next = await authRequest("/signup", { method: "POST", body: JSON.stringify({ email, password }) }, { useAuthorization: false });
+  if (identityEpoch !== startingEpoch) throw new Error("Kontoen blev ændret. Prøv igen fra den rigtige konto.");
   if (next.access_token) saveSession(next); return next;
 }
 export async function signOut() {
-  if (enabled && session?.access_token) await authRequest("/logout", { method: "POST" }).catch(() => {});
+  const active = session;
+  const startingEpoch = ++identityEpoch;
+  if (enabled && active?.access_token) await authRequest("/logout", { method: "POST" }).catch(() => {});
+  if (identityEpoch !== startingEpoch) throw new Error("Kontoen blev ændret. Prøv igen fra den rigtige konto.");
   saveSession(null);
 }
 export async function consumeAuthCallback() {
   const values = new URLSearchParams(location.hash.replace(/^#/, ""));
   const accessToken = values.get("access_token");
   if (!accessToken) return session;
+  identityEpoch += 1;
   saveSession({ access_token: accessToken, refresh_token: values.get("refresh_token"), expires_in: Number(values.get("expires_in") || 0), token_type: values.get("token_type") || "bearer", user: { email: values.get("email") || null } });
   history.replaceState(null, "", location.pathname + location.search);
   await hydrateSessionUser().catch(() => {});

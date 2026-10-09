@@ -34,8 +34,14 @@ function runTransaction(db, mode, operation) {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, mode);
     const store = transaction.objectStore(STORE_NAME);
+    let result;
+    // A successful request can still be rolled back by its transaction.
+    // Only completion admits restored data or acknowledges a saved snapshot.
+    transaction.oncomplete = () => resolve(result);
+    transaction.onabort = () => reject(transaction.error || new Error("Brugerdata kunne ikke gemmes."));
+    transaction.onerror = () => reject(transaction.error || new Error("Brugerdata kunne ikke gemmes."));
     const request = operation(store);
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => { result = request.result; };
     request.onerror = () => reject(request.error || new Error("Brugerdata kunne ikke gemmes."));
   });
 }

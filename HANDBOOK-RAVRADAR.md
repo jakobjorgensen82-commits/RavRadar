@@ -15,6 +15,30 @@ bevares til et senere legitimt genforsøg. Gemning i browseren er ikke det
 samme som bekræftet gemning på serveren; atomisk sikkerhed mellem faner og
 hele den aftalte lagrings-/eksportleverance er fortsat særskilt åbne.
 
+Den lokale backup kvitterer nu først, når hele IndexedDB-transaktionen er
+afsluttet. Et vellykket enkelt databasekald kan stadig efterfølges af en
+afbrydelse og er derfor ikke en gemmekvittering. Afbrudt læsning må ikke
+gendanne snapshotdata; både første og senere afbrudte gemninger når den
+eksisterende fejlbehandling. Den reelle opstart og normal senere backup
+består den målrettede kontrol. Skema, nøgler og gendannelsespolitik består.
+Dette beviser ikke fysisk diskholdbarhed eller gemning på serveren.
+
+Loginfornyelse og brugeropslag er knyttet til deres oprindelige session.
+Et sent svar må ikke genskabe et logout eller overskrive en nyere konto.
+Et gammelt logout må heller ikke rydde et eksplicit nyt login; legitim
+fornyelse af samme login skal samtidig bevare muligheden for logout.
+Eksplicit login, signup, callback og logout markeres før første afventede
+kald; et gammelt loginresultat må ikke tilsidesætte et senere valg.
+Autoriserede kald låser loginidentiteten før fornyelse og bevarer den
+gennem svar og den normale ene 401-genkørsel. Kontoskift, logout og nyt
+login til samme konto afviser gamle kald; legitim fornyelse består.
+Turloggen kontrollerer ejeren efter hele JSON-svaret, og en gammel
+historikvisning må ikke tegne private ture eller overskrive en nyere visning.
+27 ejer-/sessionforløb samt formular- og cacheforløb, fem private bodyforløb
+og elleve normale dialogforløb består uden netværk. Dette er målrettet kontrol
+af normale kald, ikke bevis for alle brugerflader, atomisk sikkerhed mellem
+browserfaner eller installeret eksport.
+
 Lav RavScore udelukker ikke ravfund. Den beskriver modellerede forhold,
 ikke en målt fundchance eller forventet mængde. Den eksisterende Edge-del
 får kontrollerede DA/DE/EN-svar på otte hele spørgsmålsformer, der faktisk
@@ -23,10 +47,16 @@ vej. Forespørgsler efter andres private fund afvises også efter en lang
 indledning. Ingen interne fejl, logs, private oplysninger eller raw data
 føjes til assistentens offentlige viden.
 
-Måltests på normale indsendelser og den reelle Edge-handler består lokalt.
+Måltests på normale indsendelser og klient-til-Edge-kæden består lokalt.
+Syv DA/DE/EN-svar accepteres med alle seks bindingsheaders, mens 36
+headerfejl giver ærlig fallback. Private forespørgsler afvises; ukendte,
+sammensatte og kvalificerede spørgsmål bevarer den almindelige kvotevej.
+Den præcise tyske BernsteinScore/trotzdem-form fejlrutes stadig til
+farveviden og tælles ikke som korrekt eller Edge-leveret.
 Begge vejrbundles, vejrdata, scorer og geometri er uændrede. Egen GitHub-
 kontrol, sikker integration og faktisk offentlig levering mangler. Den
-statiske håndbogskopi afventer aktiv writers afslutning; ingen SQL køres.
+statiske håndbogskopi kontrolleres kun som lokal kildefil; ingen SQL køres,
+og en særskilt diff skal bevise uændrede bytes uden for håndbogspayloaden.
 Den samlede revision, numerisk strøm-/scorekontrol, bred assistentviden,
 holdbar brugerdata og drift uden Codex er ikke afsluttet af disse delrettelser.
 

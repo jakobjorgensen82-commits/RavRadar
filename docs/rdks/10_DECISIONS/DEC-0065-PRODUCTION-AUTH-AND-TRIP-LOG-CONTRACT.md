@@ -2,13 +2,38 @@
 
 ## 9. oktober 2026 – lokal 4.0.553-købevarelse, ikke samlet lagringsleverance
 
+Normal loginfornyelse og brugeropslag er nu sessionbundne. Gamle svar
+kan ikke genskabe logout, overskrive en nyere konto eller rydde dens
+igangværende fornyelse. Et gammelt logout kan ikke rydde et nyt eksplicit
+login; normal fornyelse af samme login må ikke forhindre logout.
+Eksplicit login, signup, callback og logout markeres før første afventede
+kald; et gammelt loginresultat må ikke tilsidesætte et senere valg.
+Autoriserede kald låser loginidentiteten før fornyelse og bevarer den
+gennem svar og den normale ene 401-genkørsel. Kontoskift, logout og nyt
+login til samme konto afviser gamle kald; legitim fornyelse består.
+Turlog kontrollerer ejeren efter hele JSON-svaret, og en gammel
+historikvisning må ikke tegne private ture eller overskrive en nyere view.
+Den reelle modulimport består 27 ejer-/sessionforløb, 19 formularforløb
+og fire cachekald; fem private bodyforløb og elleve normale dialogforløb
+består uden netværk. Andre brugerflader er ikke dermed generelt bevist.
+Ingen cross-tabgaranti eller installeret eksport påstås; tidligere
+eksportdelta for expectedUserId er ikke kopieret ind i denne kandidat.
+
+Samme kandidat retter den eksisterende IndexedDB-backup, som tidligere
+kvitterede et enkelt request før transaktionens endelige afslutning.
+Kun oncomplete må nu melde backup/gendannet læsning klar; onabort/onerror
+går til eksisterende fejlbehandling. Normal opstart, afbrudt læsning,
+requestfejl, afbrudt første og senere backup er afprøvet uden netværk.
+Skema, nøgler og gendannelsespolitik består. Fysisk diskholdbarhed,
+fjernlagring og faktisk eksportinstallation er ikke bevist af dette.
+
 En afventet indsendelse kunne erstatte hele køen fra et gammelt snapshot og
 fjerne en nyere ventende tur. Den normale service genlæser nu køen og
 kvitterer kun den præcise oprindelige post. Samtidige kald deler ét forløb;
 højst ét forsøg pr. identitet og senere legitimt genforsøg bevares. Normal
 indsendelse med holdt HTTP-svar, nyere fejl og genforsøg består lokalt.
 Genlæsning er ikke atomisk mellem browserprocesser. Ingen backend, SQL,
-ejerskabsregel eller vejrmodel ændres. Præcis CI og offentlig levering samt
+server-ejerskabsregel eller vejrmodel ændres. Præcis CI og offentlig levering samt
 den samlede holdbare lagrings-/eksportinstallation mangler.
 
 **Status:** PRODUKTIONSVERIFICERET; OPRINDELIG CHROME-OUTBOX AFVENTER EJERENS GENINDLÆSNING
