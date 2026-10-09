@@ -21,6 +21,8 @@ TARGETS = {
                   'ddca4aeded193eae21b66a54f58b6ea15dcc7fa70f37dfb7eb69bc90d4aedde5'),
 }
 
+MAX_MESSAGES = 4096  # Must match the private scanner; other bounds stay unchanged.
+
 FAILURE_PHASES = frozenset(('PREPARE', 'READ_DKSS_LF', 'READ_DKSS_NSBS',
                           'NATIVE_PROCESS', 'VALIDATE_REPORT', 'PUBLISH_REPORT', 'CLEANUP'))
 FAILURE_REASONS = frozenset(('UNAPPROVED_REDIRECT', 'EXACT_RESPONSE_REQUIRED', 'EXACT_SIZE_REQUIRED',
@@ -132,7 +134,7 @@ def safe_report(value):
             raise ValueError('REPORT_ORIGINAL_REJECTED')
         digest(item['contentSha256'])
         for key in ('messagesRead', 'completeUniqueVectorPairs', 'unpairedOrRepeatedLayers'):
-            integer(item[key], 128)
+            integer(item[key], MAX_MESSAGES)
         fields = item['currentFields']
         if type(fields) is not list or not 2 <= len(fields) <= item['messagesRead']:
             raise ValueError('REPORT_CURRENT_FIELDS_REJECTED')

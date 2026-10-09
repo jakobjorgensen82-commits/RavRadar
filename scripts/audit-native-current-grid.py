@@ -18,7 +18,9 @@ FILES = {
     'dkss_lf': (5653412, '53e6938d72f866e38de810798e26b46ab966d5f7cdd947bab333526e684631f6'),
     'dkss_nsbs': (8947388, 'ddca4aeded193eae21b66a54f58b6ea15dcc7fa70f37dfb7eb69bc90d4aedde5'),
 }
-MAX_MESSAGES = 128
+# A forecast file is a container, not a promise of at most 128 fields.
+# Keep a finite scan guard alongside exact bytes, 120s analysis and 64KiB output.
+MAX_MESSAGES = 4096
 MAX_POINTS = 400000
 SAFE_FAILURE_CODES = frozenset(('EXACT_INPUT_REQUIRED', 'EXACT_HEADER_REQUIRED', 'UNSUPPORTED_GRID',
     'NONFINITE_NATIVE_COORDINATE', 'UNSUPPORTED_CURRENT_GRID', 'GRID_SIZE_BOUND',
