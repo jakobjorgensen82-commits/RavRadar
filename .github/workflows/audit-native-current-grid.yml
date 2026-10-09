@@ -48,21 +48,26 @@ jobs:
           test "$GITHUB_EVENT_NAME" = workflow_dispatch
           test "$GITHUB_REF" = refs/heads/main
           test "$GITHUB_RUN_ATTEMPT" = 1
-          test "$CONFIRMATION" = READ-TWO-DMI-CURRENT-GRIDS-20261009-SECOND-ONCE
+          test "$CONFIRMATION" = READ-TWO-DMI-CURRENT-GRIDS-20261009-THIRD-ONCE
           [[ "$EXPECTED_MAIN_HEAD" =~ ^[a-f0-9]{40}$ ]]
           test "$GITHUB_SHA" = "$EXPECTED_MAIN_HEAD"
           test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
           gh api --paginate "repos/$GITHUB_REPOSITORY/actions/workflows/audit-native-current-grid.yml/runs?event=workflow_dispatch&per_page=100" --jq '.workflow_runs[].id' > "$RUNNER_TEMP/native-grid-run-ids.txt"
-          # Fresh human authority permits exactly one successor to this known
-          # failed attempt, not an arbitrary retry or a third provider read.
-          test "$(wc -l < "$RUNNER_TEMP/native-grid-run-ids.txt")" = 2
+          # Fresh third-attempt authority permits one successor to BOTH known
+          # failures, not a fourth provider read or another attempt of either.
+          test "$(wc -l < "$RUNNER_TEMP/native-grid-run-ids.txt")" = 3
           test "$(grep -Fxc -- 37922643090 "$RUNNER_TEMP/native-grid-run-ids.txt")" = 1
+          test "$(grep -Fxc -- 37926182907 "$RUNNER_TEMP/native-grid-run-ids.txt")" = 1
           test "$(grep -Fxc -- "$GITHUB_RUN_ID" "$RUNNER_TEMP/native-grid-run-ids.txt")" = 1
           test "$GITHUB_RUN_ID" != 37922643090
+          test "$GITHUB_RUN_ID" != 37926182907
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/37922643090" --jq \
             'select(.id == 37922643090 and .run_attempt == 1 and .status == "completed" and .conclusion == "failure" and .event == "workflow_dispatch" and .head_sha == "1ee6f78e09cf70eabd1454ac4973a8d8aae51b8e" and .path == ".github/workflows/audit-native-current-grid.yml") | .id' > "$RUNNER_TEMP/native-grid-predecessor.txt"
           test "$(cat "$RUNNER_TEMP/native-grid-predecessor.txt")" = 37922643090
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/37926182907" --jq \
+            'select(.id == 37926182907 and .run_attempt == 1 and .status == "completed" and .conclusion == "failure" and .event == "workflow_dispatch" and .head_sha == "c65a800573eb2c161d0448be4869c6cad4e4afc5" and .path == ".github/workflows/audit-native-current-grid.yml") | .id' > "$RUNNER_TEMP/native-grid-second-predecessor.txt"
+          test "$(cat "$RUNNER_TEMP/native-grid-second-predecessor.txt")" = 37926182907
       - name: Verify live exact-content source validation
         id: source-proof
         run: node scripts/weather-source-gate.mjs check

@@ -1,4 +1,12 @@
-# Diagnoseprocessens runtime og private fejlkvittering – 9. oktober 2026
+# Diagnosens feltgrænse og tredje særskilte tilladelse – 9. oktober 2026
+
+Det andet, særskilt godkendte originalforsøg er gennemført efter præcis grøn kildekontrol og sikker integration. Begge faste filer blev hentet og identitetskontrolleret. Analysen stoppede ved diagnosens egen grænse på 128 GRIB-felter i NSBS-filen; ingen færdig rapport blev produceret. Dette er en diagnosebegrænsning, ikke dokumentation for fejl i DMI-data. Det første forsøgs præcise fejlårsag kan stadig ikke fastslås. Begge engangstilladelser er forbrugt.
+
+Den lokale rettelse tillader højst 4096 felter i både analysen og rapportkontrollen. De præcise filadresser, størrelser og headerhashes, den uændrede decoder, 120 sekunders analysegrænse, 180 sekunders procesgrænse og højst 64 KiB ufølsom rapport bevares. Hele filen skal være gennemgået; en delrapport må ikke kaldes fuld kontrol. Femten lokale måltests består, herunder strømfelter efter 300 andre felter og bevarede hårde grænser. En rigtig kunstig GRIB-fil med 302 felter skal også bestå i GitHub; lokal kontrol er ikke native eller offentlig leveringsdokumentation.
+
+Ejeren har givet én ny, præcis tilladelse til et tredje skrivefrit forsøg på de samme to filer efter bestået GitHub-kontrol. Engangsreglen kræver begge præcise fejlede forgængere og ét nyt første forsøg på kontrolleret main. Fjerde forsøg, genkørsel, gammel bekræftelse eller ændret forgænger afvises. Ny præcis kildekontrol og sikker integration uden aktiv writer mangler. Der er ikke foretaget en numerisk rettelse, ny vejrhentning, ændring af scorer/historik/cache eller deploy. Kortvisningen er leveret; det samlede strøm- og scoregrundlag er fortsat åbent.
+
+# Historik: Diagnoseprocessens runtime og private fejlkvittering – 9. oktober 2026
 
 Den særskilt godkendte originaldiagnose er forsøgt efter præcis grøn kilde-/native-kontrol og sikker integration uden aktiv writer. Læse-/analyseleddet fejlede uden rapport. Det kan ikke udledes af den begrænsede log, om stoppet skete under download, processtart eller rapportkontrol. Engangstilladelsen er forbrugt; ingen automatisk gentagelse eller nye providerlæsninger. Kortrettelsen er leveret, men numerisk strømgeografi, historik, strømhukommelse og score er fortsat åbne.
 

@@ -49,8 +49,33 @@ def synthetic_safe_report():
 
 
 class PreparationTests(unittest.TestCase):
+    def test_whole_file_scan_does_not_assume_at_most_128_messages(self):
+        from types import SimpleNamespace
+        from itertools import chain, repeat
+        # Ordinary decoder loop, synthetic messages only. Current fields may
+        # occur after many irrelevant fields; never stop early and call it full.
+        with tempfile.TemporaryDirectory(prefix='rr-native-many-fields-') as tmp:
+            path = Path(tmp) / 'synthetic.grib'
+            path.write_bytes(b'fixture')
+            messages = iter(chain(repeat('other', 300), ['current-u', 'current-v']))
+            released = []
+            native = SimpleNamespace(codes_grib_new_from_file=lambda _: next(messages, None),
+                                     codes_release=released.append)
+            producer = SimpleNamespace(GRID_INDEX_CACHE={}, classify_parameter=lambda gid, _: gid)
+            field = synthetic_safe_report()['files'][0]['currentFields'][0]
+            with patch.object(audit, 'fingerprint', return_value='c'*64), \
+                    patch.object(audit, 'field_report', return_value={k:v for k,v in field.items() if k != 'component'}):
+                result = audit.audit_file(path, 'dkss_lf', native, producer, float('inf'))
+            self.assertEqual(result['messagesRead'], 302)
+            self.assertEqual(result['completeUniqueVectorPairs'], 1)
+            self.assertEqual(len(released), 302)
+            report = synthetic_safe_report()
+            report['files'][0] = result
+            runner.safe_report(report)  # Parent validator must accept the same bound.
+
     def test_native_error_vocabulary_never_returns_private_library_text(self):
         self.assertEqual(audit.SAFE_FAILURE_CODES, runner.NATIVE_FAILURE_CODES)
+        self.assertEqual(audit.MAX_MESSAGES, runner.MAX_MESSAGES)
         self.assertEqual(str(audit.NativeAuditFailure('dkss_lf', ValueError('UNSUPPORTED_GRID'))),
                          'DKSS_LF:UNSUPPORTED_GRID')
         self.assertEqual(str(audit.NativeAuditFailure('PRIVATE_LOCATION', ValueError('PRIVATE_PAYLOAD'))),
@@ -65,6 +90,32 @@ class PreparationTests(unittest.TestCase):
                                    ('x' * 4097, 'NATIVE_DIAGNOSIS_INCOMPLETE')]:
                 file.write_text(text)
                 self.assertEqual(runner.bounded_native_failure(file), expected)
+
+    def test_many_message_repair_keeps_hard_scan_time_and_output_limits(self):
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory(prefix='rr-native-field-bounds-') as tmp:
+            path = Path(tmp) / 'synthetic.grib'
+            path.write_bytes(b'fixture')
+            released = []
+            native = SimpleNamespace(codes_grib_new_from_file=lambda _: 'other',
+                                     codes_release=released.append)
+            producer = SimpleNamespace(GRID_INDEX_CACHE={}, classify_parameter=lambda *_: None)
+            with patch.object(audit, 'fingerprint', return_value='c'*64):
+                with self.assertRaisesRegex(ValueError, '^DIAGNOSIS_MESSAGE_BOUND$'):
+                    audit.audit_file(path, 'dkss_lf', native, producer, float('inf'))
+                self.assertEqual(len(released), audit.MAX_MESSAGES + 1)
+                released.clear()
+                with self.assertRaisesRegex(ValueError, '^DIAGNOSIS_TIME_BOUND$'):
+                    audit.audit_file(path, 'dkss_lf', native, producer, 0)
+                self.assertEqual(released, [])
+        report = synthetic_safe_report()
+        report['files'][0]['messagesRead'] = audit.MAX_MESSAGES + 1
+        with self.assertRaisesRegex(ValueError, '^REPORT_COUNT_REJECTED$'):
+            runner.safe_report(report)
+        report['files'][0]['messagesRead'] = 1000
+        report['files'][0]['currentFields'] *= 100
+        with self.assertRaisesRegex(ValueError, '^REPORT_SIZE_REJECTED$'):
+            runner.safe_report(report)
 
     def test_normal_wrapper_failure_receipt_is_bounded_and_first_error_survives_cleanup(self):
         for scenario, expected in [('lf', 'READ_DKSS_LF:IO_FAILURE'),
@@ -279,9 +330,10 @@ class PreparationTests(unittest.TestCase):
         self.assertIn('test "$GITHUB_RUN_ATTEMPT" = 1', text)
         self.assertIn('group: ravradar-weather-production-v2', text)
         self.assertIn('event=workflow_dispatch&per_page=100', text)
-        self.assertIn('test "$(wc -l < "$RUNNER_TEMP/native-grid-run-ids.txt")" = 2', text)
-        self.assertIn('READ-TWO-DMI-CURRENT-GRIDS-20261009-SECOND-ONCE', text)
+        self.assertIn('test "$(wc -l < "$RUNNER_TEMP/native-grid-run-ids.txt")" = 3', text)
+        self.assertIn('READ-TWO-DMI-CURRENT-GRIDS-20261009-THIRD-ONCE', text)
         self.assertIn('grep -Fxc -- 37922643090', text)
+        self.assertIn('grep -Fxc -- 37926182907', text)
         self.assertIn('.run_attempt == 1 and .status == "completed" and .conclusion == "failure"', text)
         self.assertIn('.head_sha == "1ee6f78e09cf70eabd1454ac4973a8d8aae51b8e"', text)
         self.assertLess(text.index('Verify diagnosis with artificial native GRIB'), text.index('Read exactly two originals once'))
@@ -289,6 +341,51 @@ class PreparationTests(unittest.TestCase):
 
 if NATIVE:
     class NativeTests(unittest.TestCase):
+        def test_complete_artificial_grib_file_with_current_after_300_other_fields(self):
+            import eccodes
+            import time
+            producer_path = Path(__file__).with_name('update-dmi-bulk.py')
+            spec = importlib.util.spec_from_file_location('many_field_producer', producer_path)
+            producer = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(producer)
+            with tempfile.TemporaryDirectory(prefix='rr-native-complete-file-') as tmp:
+                path = Path(tmp) / 'artificial.grib'
+                gid = eccodes.codes_grib_new_from_samples('regular_ll_sfc_grib1')
+                try:
+                    for key, value in [('Ni', 8), ('Nj', 8), ('latitudeOfFirstGridPointInDegrees', 56),
+                                       ('latitudeOfLastGridPointInDegrees', 56.07),
+                                       ('longitudeOfFirstGridPointInDegrees', 10),
+                                       ('longitudeOfLastGridPointInDegrees', 10.07),
+                                       ('iDirectionIncrementInDegrees', .01), ('jDirectionIncrementInDegrees', .01),
+                                       ('scanningMode', 64), ('dataDate', 20261009), ('dataTime', 0), ('stepRange', '120')]:
+                        eccodes.codes_set(gid, key, value)
+                    eccodes.codes_set_values(gid, [.2 + i / 1000 for i in range(64)])
+                    with path.open('wb') as output:
+                        eccodes.codes_set(gid, 'indicatorOfParameter', 82)
+                        for _ in range(300):
+                            eccodes.codes_write(gid, output)
+                        for parameter in (49, 50):
+                            eccodes.codes_set(gid, 'indicatorOfParameter', parameter)
+                            eccodes.codes_write(gid, output)
+                finally:
+                    eccodes.codes_release(gid)
+                original = path.read_bytes()
+                # Only test fixture identity changes; normal fingerprint,
+                # entire native file scan, classifier and candidates are real.
+                identity = (len(original), hashlib.sha256(original[:68]).hexdigest())
+                with patch.dict(audit.FILES, {'dkss_lf': identity}):
+                    result = audit.audit_file(path, 'dkss_lf', eccodes, producer, time.monotonic() + 30)
+                self.assertEqual(result['messagesRead'], 302)
+                self.assertEqual(result['completeUniqueVectorPairs'], 1)
+                self.assertEqual(result['unpairedOrRepeatedLayers'], 0)
+                self.assertEqual(len(result['currentFields']), 2)
+                self.assertEqual(path.read_bytes(), original)
+                self.assertEqual(result['contentSha256'], hashlib.sha256(original).hexdigest())
+                for field in result['currentFields']:
+                    self.assertGreater(field['candidateChecks'], 0)
+                    for key in ('candidateIndexMismatches', 'candidateCoordinateMismatches', 'candidateValueMismatches'):
+                        self.assertEqual(field[key], 0)
+
         def test_actual_workflow_shell_rejects_any_unapproved_successor(self):
             import textwrap
             if not sys.platform.startswith('linux'):
@@ -301,18 +398,23 @@ case "$*" in
  *git/ref/heads/main*) printf '%s\\n' "$RR_MAIN" ;;
  *actions/workflows/audit-native-current-grid.yml/runs*) printf '%s\\n' "$RR_HISTORY" ;;
  *actions/runs/37922643090*) if [ "$RR_PREDECESSOR" = valid ]; then printf '%s\\n' 37922643090; fi ;;
+ *actions/runs/37926182907*) if [ "$RR_SECOND_PREDECESSOR" = valid ]; then printf '%s\\n' 37926182907; fi ;;
  *) exit 91 ;;
 esac
 '''
             cases = [('exact', {}, True),
                      ('only-self', {'RR_HISTORY': fake_id}, False),
-                     ('third', {'RR_HISTORY': '37922643090\n38888888888\n' + fake_id}, False),
-                     ('wrong-previous', {'RR_HISTORY': '38888888888\n' + fake_id}, False),
-                     ('duplicate', {'RR_HISTORY': '37922643090\n37922643090'}, False),
+                     ('fourth', {'RR_HISTORY': '37922643090\n37926182907\n38888888888\n' + fake_id}, False),
+                     ('missing-first', {'RR_HISTORY': '37926182907\n' + fake_id}, False),
+                     ('missing-second', {'RR_HISTORY': '37922643090\n' + fake_id}, False),
+                     ('wrong-previous', {'RR_HISTORY': '38888888888\n37926182907\n' + fake_id}, False),
+                     ('duplicate', {'RR_HISTORY': '37922643090\n37922643090\n' + fake_id}, False),
                      ('rerun', {'GITHUB_RUN_ATTEMPT': '2'}, False),
                      ('old-confirmation', {'CONFIRMATION': 'READ-TWO-DMI-CURRENT-GRIDS-20261009-ONCE'}, False),
+                     ('second-confirmation', {'CONFIRMATION': 'READ-TWO-DMI-CURRENT-GRIDS-20261009-SECOND-ONCE'}, False),
                      ('main-changed', {'RR_MAIN': 'b' * 40}, False),
-                     ('previous-changed', {'RR_PREDECESSOR': 'changed'}, False)]
+                     ('previous-changed', {'RR_PREDECESSOR': 'changed'}, False),
+                     ('second-previous-changed', {'RR_SECOND_PREDECESSOR': 'changed'}, False)]
             with tempfile.TemporaryDirectory(prefix='rr-native-guard-fixture-') as tmp:
                 commands = Path(tmp) / 'commands'
                 commands.mkdir()
@@ -326,9 +428,9 @@ esac
                                    RUNNER_TEMP=tmp, GITHUB_REPOSITORY='jakobjorgensen82-commits/RavRadar',
                                    GITHUB_EVENT_NAME='workflow_dispatch', GITHUB_REF='refs/heads/main',
                                    GITHUB_RUN_ATTEMPT='1', GITHUB_RUN_ID=fake_id, GITHUB_SHA=sha,
-                                   EXPECTED_MAIN_HEAD=sha, RR_MAIN=sha, RR_PREDECESSOR='valid',
-                                   RR_HISTORY='37922643090\n' + fake_id,
-                                   CONFIRMATION='READ-TWO-DMI-CURRENT-GRIDS-20261009-SECOND-ONCE')
+                                   EXPECTED_MAIN_HEAD=sha, RR_MAIN=sha, RR_PREDECESSOR='valid', RR_SECOND_PREDECESSOR='valid',
+                                   RR_HISTORY='37922643090\n37926182907\n' + fake_id,
+                                   CONFIRMATION='READ-TWO-DMI-CURRENT-GRIDS-20261009-THIRD-ONCE')
                         env.update(overrides)
                         result = subprocess.run(['/bin/bash', '-c', script], env=env, capture_output=True,
                                                 timeout=10, check=False)
