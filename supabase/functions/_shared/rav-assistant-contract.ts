@@ -87,6 +87,9 @@ const SECURITY_PATTERN = /api.?key|password|passwort|adgangskode|supabase|databa
 const OUT_OF_SCOPE_PATTERN = /(?<![\p{L}\p{N}_])(?:roulade|biskuitrolle|swiss roll|kage|kuchen|cake|fodbold|fußball|football|opskrift|rezept|recipe|politik|politics|aktie|stock price|matematik|math homework|cykeldæk|fahrradreifen|bicycle tyre|weekendtur|wochenendreise|weekend trip|paris)(?![\p{L}\p{N}_])/iu;
 const AMBER_DOMAIN_PATTERN = /(?<![\p{L}\p{N}_])(?:rav\p{L}*|bernstein\p{L}*|succinit|succinite|copal|kopal|amber\p{L}*|harpiks|harz|resin|fossili[sz]|inklusion|einschluss|inclusion|fluorescen|fluoreszenz|fluorescen[ct]e|uv.?light|395\s*nm|fosfor|phosphor|phosphorus|danefæ|kesse|kescher|kyst|küste|coast|strand|beach|hav|meer|sea|bølge|welle|wave|strøm|strömung|current|vandstand|wasserstand|water level|wader|wathose|opskyl|spülsaum|wash line|tang|seegras|seaweed|revle|sandbank|sandbar|revlehul|brandungsrückstrom|rip current|rende|rinne|channel|høfde|buhne|groyne|opdrift|auftrieb|buoyancy|massefylde|dichte|density|saltation|sediment|geologi|geology|geologie|istid|eiszeit|ice age)(?![\p{L}\p{N}_])/iu;
 
+// Refuse explicit requests for other users' private finds before provider use.
+const PRIVATE_FIND_REQUEST_PATTERN = /(?<!\p{L})(?:vis(?:e)?|hent(?:e)?|udlever(?:e)?|afslør(?:e)?|show|retrieve|reveal|list|zeig(?:e|en)?|nenn(?:e|en)?)(?!\p{L})(?=[\s\S]*(?:andre brugeres|andres|other users?['’]?|other people['’]?s|anderer (?:nutzer|benutzer)))(?=[\s\S]*(?:privat\p{L}*|præcise? positioner|precise locations|genauen? standorte))(?=[\s\S]*(?:ravfund|fundsteder|ture|positioner|bernsteinfunde?|standorte|amber finds|find locations|trips|locations))/iu;
+
 function finite(value) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -210,8 +213,41 @@ export function normaliseAssistantLocale(value) {
 
 export function routeAssistantQuestion(question) {
   const text = String(question || "").trim();
-  if (!text || SECURITY_PATTERN.test(text) || OUT_OF_SCOPE_PATTERN.test(text)) return "fixed-refusal";
+  if (!text || SECURITY_PATTERN.test(text) || PRIVATE_FIND_REQUEST_PATTERN.test(text) || OUT_OF_SCOPE_PATTERN.test(text)) return "fixed-refusal";
   return AMBER_DOMAIN_PATTERN.test(text) ? "provider" : "fixed-refusal";
+}
+
+// These complete questions ask only about finding amber despite a low score.
+// Keep extra clauses, places, dates and private qualifications on their normal
+// route. The answer uses the existing score.no-find-guarantee and
+// amber.weather-does-not-create facts, never a selected score or find forecast.
+const SCORE_FIND_QUESTIONS = Object.freeze({
+  da: Object.freeze([
+    "kan der stadig ligge rav, selv om scoren er lav",
+    "så kan jeg stadig finde rav ved en lav ravscore",
+    "og hvis tallet er lavt, kan jeg stadig finde rav",
+    "kan jeg stadig finde rav hvis ravscore er lav",
+  ]),
+  de: Object.freeze([
+    "und wenn der wert niedrig ist, kann ich trotzdem bernstein finden",
+    "kann ich bei einem niedrigen bernsteinscore trotzdem bernstein finden",
+  ]),
+  en: Object.freeze([
+    "and if the number is low, can i still find amber",
+    "can i still find amber if amberscore is low",
+  ]),
+});
+const SCORE_FIND_ANSWERS = Object.freeze({
+  da: "En lav RavScore udelukker ikke et ravfund. Scoren beskriver modellerede forhold; den er ikke en målt fundchance og fortæller ikke, hvor meget rav du vil finde. Rav kan stadig være til stede fra tidligere opskyl eller lokale lagre.",
+  de: "Ein niedriger BernsteinScore schließt einen Bernsteinfund nicht aus. Der Score beschreibt modellierte Bedingungen; er ist keine gemessene Fundwahrscheinlichkeit und sagt nicht, wie viel Bernstein du finden wirst. Bernstein aus früherem Spülsaum oder örtlichen Vorräten kann weiterhin vorhanden sein.",
+  en: "A low AmberScore does not rule out finding amber. The score describes modelled conditions; it is not a measured find probability and does not tell you how much amber you will find. Amber from earlier wash or local stores may still be present.",
+});
+
+export function assistantScoreFindAnswer(question, locale) {
+  if (!normaliseAssistantLocale(locale)) return null;
+  const text = String(question || "").trim().toLowerCase()
+    .replace(/\s+/gu, " ").replace(/[?!.]+$/u, "");
+  return SCORE_FIND_QUESTIONS[locale].includes(text) ? SCORE_FIND_ANSWERS[locale] : null;
 }
 
 export function publicAssistantContext(value, locale) {

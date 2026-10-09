@@ -1,5 +1,16 @@
 # DEC-0065: Produktionslogin og privat turlog skal verificeres mod den aktive Supabase-kontrakt
 
+## 9. oktober 2026 – lokal 4.0.553-købevarelse, ikke samlet lagringsleverance
+
+En afventet indsendelse kunne erstatte hele køen fra et gammelt snapshot og
+fjerne en nyere ventende tur. Den normale service genlæser nu køen og
+kvitterer kun den præcise oprindelige post. Samtidige kald deler ét forløb;
+højst ét forsøg pr. identitet og senere legitimt genforsøg bevares. Normal
+indsendelse med holdt HTTP-svar, nyere fejl og genforsøg består lokalt.
+Genlæsning er ikke atomisk mellem browserprocesser. Ingen backend, SQL,
+ejerskabsregel eller vejrmodel ændres. Præcis CI og offentlig levering samt
+den samlede holdbare lagrings-/eksportinstallation mangler.
+
 **Status:** PRODUKTIONSVERIFICERET; OPRINDELIG CHROME-OUTBOX AFVENTER EJERENS GENINDLÆSNING
 
 **Dato:** 2026-08-23

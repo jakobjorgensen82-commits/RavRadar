@@ -25,6 +25,12 @@ assert.ok(fs.readFileSync('scripts/test-copernicus-current-pilot.py', 'utf8').in
   'runpy.run_path(str(ROOT / "scripts/test-copernicus-dataset-updating.py"), run_name="__main__")'),
   'The existing Copernicus source group must execute the actual subset/checkpoint regression suite.');
 const pythonContractGroup = fs.readFileSync('scripts/test-current-operational-python-contracts.mjs', 'utf8');
+const publicPrivacyGroup = fs.readFileSync('scripts/test-tracked-runtime-privacy.mjs', 'utf8');
+for (const file of [
+  'scripts/test-observation-production-mapping.mjs',
+  'scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
+]) assert.equal(publicPrivacyGroup.split(`'${file}'`).length - 1, 1,
+  `The existing source privacy group must execute ${file} exactly once.`);
 assert.equal((pythonContractGroup.match(/'test-dmi-bulk-supervised\.py'/g) || []).length, 1,
   'The existing Python source group must execute the DMI supervisor regression exactly once.');
 assert.equal((scripts['test:flow-arrow-runtime'].match(/node scripts\/test-current-arrow-land-mask\.mjs/g) || []).length, 1,

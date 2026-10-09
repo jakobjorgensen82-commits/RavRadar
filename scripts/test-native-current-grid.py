@@ -28,27 +28,151 @@ def coordinates(ni=4, nj=5, first_lat=10, last_lat=10.04, first_lon=20, last_lon
             [first_lon + col * (last_lon-first_lon)/(ni-1) for row in range(nj) for col in range(ni)])
 
 
+def synthetic_field(component='current-u'):
+    return dict(component=component, pointsChecked=20, ni=4, nj=5,
+                nativePointsOutsideDeclaredLatitudeBounds=0,
+                nativeValidPoints=20, validPointsOutsideDeclaredLatitudeBounds=0,
+                maximumValidLatitudeVsEndpointDegrees=0., candidatesWithLatitudeDifference=0,
+                maximumCandidateLatitudeVsEndpointDegrees=0.,
+                maximumLatitudeVsEndpointDegrees=0., maximumLongitudeVsEndpointDegrees=0.,
+                gridSectionDigest='a'*32, layerTimeIdentitySha256='b'*64,
+                referenceDate=20261009, referenceTime=0, validityDate=20261014, validityTime=0,
+                candidateChecks=9, candidateIndexMismatches=0,
+                candidateCoordinateMismatches=0, candidateValueMismatches=0)
 def synthetic_safe_report():
-    def field(component):
-        return dict(component=component, pointsChecked=20, ni=4, nj=5,
-                    nativePointsOutsideDeclaredLatitudeBounds=0,
-                    nativeValidPoints=20, validPointsOutsideDeclaredLatitudeBounds=0,
-                    maximumValidLatitudeVsEndpointDegrees=0., candidatesWithLatitudeDifference=0,
-                    maximumCandidateLatitudeVsEndpointDegrees=0.,
+    def component(name):
+        return dict(component=name, fieldCount=1, uniqueGridCount=1, uniqueLayerTimeCount=1,
+                    minimumPointsPerField=20, maximumPointsPerField=20, pointChecks=20,
+                    nativeChecksOutsideDeclaredLatitudeBounds=0, validPointChecks=20,
+                    validChecksOutsideDeclaredLatitudeBounds=0, maximumValidLatitudeVsEndpointDegrees=0.,
+                    candidatesWithLatitudeDifference=0, maximumCandidateLatitudeVsEndpointDegrees=0.,
                     maximumLatitudeVsEndpointDegrees=0., maximumLongitudeVsEndpointDegrees=0.,
-                    gridSectionDigest='a'*32, layerTimeIdentitySha256='b'*64,
                     referenceDate=20261009, referenceTime=0, validityDate=20261014, validityTime=0,
                     candidateChecks=9, candidateIndexMismatches=0,
                     candidateCoordinateMismatches=0, candidateValueMismatches=0)
     return dict(scope='EXACT_TWO_CURRENT_FILES_NATIVE_CONFORMANCE_NOT_SCORE_PROOF', nativeVersion='2.48.2',
                 centralAdminTargetsTested=False, productionWritten=False, valuesExposed=False,
                 coordinateCorrectionMade=False, files=[dict(collection=name, bytes=target[1],
-                contentSha256='c'*64, messagesRead=3, currentFields=[field('current-u'),field('current-v')],
+                contentSha256='c'*64, messagesRead=3, currentFieldCount=2,
+                currentComponents=[component('current-u'), component('current-v')],
                 originalUnchanged=True, completeUniqueVectorPairs=1, unpairedOrRepeatedLayers=0)
                 for name, target in runner.TARGETS.items()])
 
 
 class PreparationTests(unittest.TestCase):
+    def test_complete_many_current_fields_fit_fixed_report_without_losing_last_mismatch(self):
+        from types import SimpleNamespace
+        from itertools import cycle, islice
+        report = synthetic_safe_report()
+        with tempfile.TemporaryDirectory(prefix='rr-native-report-capacity-') as tmp:
+            path = Path(tmp) / 'synthetic.grib'
+            path.write_bytes(b'fixture')
+            for target in report['files']:
+                count = audit.MAX_MESSAGES
+                messages = iter(islice(cycle(('current-u', 'current-v')), count))
+                released = []
+                native = SimpleNamespace(codes_grib_new_from_file=lambda _: next(messages, None),
+                                         codes_release=released.append)
+                producer = SimpleNamespace(GRID_INDEX_CACHE={}, classify_parameter=lambda gid, _: gid)
+                field = synthetic_field()
+                field.pop('component')
+                calls = []
+                def result(*_):
+                    row = dict(field, layerTimeIdentitySha256=f'{len(calls)//2:064x}')
+                    calls.append(None)
+                    if len(calls) == count:
+                        row.update(candidateIndexMismatches=1, candidateCoordinateMismatches=2,
+                                   candidateValueMismatches=3, candidatesWithLatitudeDifference=4,
+                                   maximumCandidateLatitudeVsEndpointDegrees=.125,
+                                   nativeValidPoints=17, validPointsOutsideDeclaredLatitudeBounds=2,
+                                   nativePointsOutsideDeclaredLatitudeBounds=3)
+                    return row
+                with patch.object(audit, 'fingerprint', return_value='c'*64), \
+                        patch.object(audit, 'field_report', side_effect=result):
+                    actual = audit.audit_file(path, target['collection'], native, producer, float('inf'))
+                self.assertEqual(actual['messagesRead'], count)
+                self.assertEqual(len(released), count)
+                self.assertEqual(actual['completeUniqueVectorPairs'], count//2)
+                target.clear()
+                target.update(actual)
+        encoded = runner.safe_report(report)
+        self.assertLess(len(encoded.encode()), 12000)
+        print(f'SYNTHETIC_MAXIMUM_REPORT_BYTES={len(encoded.encode())}')
+        for target in report['files']:
+            self.assertEqual(target['currentFieldCount'], audit.MAX_MESSAGES)
+            self.assertEqual(len(target['currentComponents']), 2)
+            last = target['currentComponents'][1]
+            self.assertEqual(last['candidateIndexMismatches'], 1)
+            self.assertEqual(last['candidateCoordinateMismatches'], 2)
+            self.assertEqual(last['candidateValueMismatches'], 3)
+            self.assertEqual(last['candidatesWithLatitudeDifference'], 4)
+            self.assertEqual(last['maximumCandidateLatitudeVsEndpointDegrees'], .125)
+            self.assertEqual(last['validPointChecks'], 20*(audit.MAX_MESSAGES//2)-3)
+            self.assertEqual(last['validChecksOutsideDeclaredLatitudeBounds'], 2)
+
+    def test_aggregation_checks_last_time_and_does_not_omit_sparse_or_different_grid_fields(self):
+        fields = [synthetic_field('current-u'), synthetic_field('current-v')]
+        last = dict(synthetic_field('current-v'), gridSectionDigest='d'*32,
+                    layerTimeIdentitySha256='e'*64, pointsChecked=40, nativeValidPoints=0,
+                    nativePointsOutsideDeclaredLatitudeBounds=4,
+                    maximumLatitudeVsEndpointDegrees=.4)
+        fields.append(last)
+        result = audit.summarize_current_fields(fields)
+        self.assertEqual(result[1]['fieldCount'], 2)
+        self.assertEqual(result[1]['uniqueGridCount'], 2)
+        self.assertEqual(result[1]['uniqueLayerTimeCount'], 2)
+        self.assertEqual(result[1]['pointChecks'], 60)
+        self.assertEqual(result[1]['validPointChecks'], 20)
+        self.assertEqual(result[1]['maximumPointsPerField'], 40)
+        self.assertEqual(result[1]['nativeChecksOutsideDeclaredLatitudeBounds'], 4)
+        self.assertEqual(result[1]['maximumLatitudeVsEndpointDegrees'], .4)
+        self.assertEqual(result[1]['maximumValidLatitudeVsEndpointDegrees'], 0)
+        last['validityTime'] = 100
+        with self.assertRaisesRegex(ValueError, '^UNEXPECTED_CURRENT_TIME$'):
+            audit.summarize_current_fields(fields)
+
+    def test_parent_rejects_unreconciled_counts_and_unbounded_component_lists(self):
+        import copy
+        for key, value in [('fieldCount', 0), ('fieldCount', 2), ('uniqueGridCount', 2),
+                           ('uniqueLayerTimeCount', 2), ('minimumPointsPerField', 21),
+                           ('pointChecks', 21), ('validPointChecks', 21),
+                           ('validChecksOutsideDeclaredLatitudeBounds', 1),
+                           ('candidateValueMismatches', 10), ('candidateIndexMismatches', True),
+                           ('maximumCandidateLatitudeVsEndpointDegrees', float('inf'))]:
+            report = synthetic_safe_report()
+            report['files'][0]['currentComponents'][0][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                runner.safe_report(report)
+        for key, value in [('currentFieldCount', 1), ('currentFieldCount', 3),
+                           ('completeUniqueVectorPairs', 2), ('unpairedOrRepeatedLayers', 3)]:
+            report = synthetic_safe_report()
+            report['files'][0][key] = value
+            with self.subTest(fileKey=key), self.assertRaises(ValueError):
+                runner.safe_report(report)
+        report = synthetic_safe_report()
+        report['files'][0]['currentComponents'].reverse()
+        with self.assertRaisesRegex(ValueError, '^REPORT_COMPONENT_REJECTED$'):
+            runner.safe_report(report)
+
+    def test_largest_allowed_counter_representation_still_fits_without_raising_output_bound(self):
+        report = synthetic_safe_report()
+        for item in report['files']:
+            item.update(messagesRead=audit.MAX_MESSAGES, currentFieldCount=audit.MAX_MESSAGES,
+                        completeUniqueVectorPairs=audit.MAX_MESSAGES//2, unpairedOrRepeatedLayers=0)
+            for row in item['currentComponents']:
+                n = audit.MAX_MESSAGES//2
+                row.update(fieldCount=n, uniqueGridCount=n, uniqueLayerTimeCount=n,
+                           minimumPointsPerField=400000, maximumPointsPerField=400000)
+                for key in ('pointChecks', 'nativeChecksOutsideDeclaredLatitudeBounds', 'validPointChecks',
+                            'validChecksOutsideDeclaredLatitudeBounds', 'candidateChecks',
+                            'candidateIndexMismatches', 'candidateCoordinateMismatches',
+                            'candidateValueMismatches', 'candidatesWithLatitudeDifference'):
+                    row[key] = n * 400000
+                for key in ('maximumLatitudeVsEndpointDegrees', 'maximumLongitudeVsEndpointDegrees',
+                            'maximumValidLatitudeVsEndpointDegrees', 'maximumCandidateLatitudeVsEndpointDegrees'):
+                    row[key] = 359.99999999999994
+        self.assertLess(len(runner.safe_report(report).encode()), 12000)
+
     def test_whole_file_scan_does_not_assume_at_most_128_messages(self):
         from types import SimpleNamespace
         from itertools import chain, repeat
@@ -62,7 +186,7 @@ class PreparationTests(unittest.TestCase):
             native = SimpleNamespace(codes_grib_new_from_file=lambda _: next(messages, None),
                                      codes_release=released.append)
             producer = SimpleNamespace(GRID_INDEX_CACHE={}, classify_parameter=lambda gid, _: gid)
-            field = synthetic_safe_report()['files'][0]['currentFields'][0]
+            field = synthetic_field()
             with patch.object(audit, 'fingerprint', return_value='c'*64), \
                     patch.object(audit, 'field_report', return_value={k:v for k,v in field.items() if k != 'component'}):
                 result = audit.audit_file(path, 'dkss_lf', native, producer, float('inf'))
@@ -113,8 +237,8 @@ class PreparationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, '^REPORT_COUNT_REJECTED$'):
             runner.safe_report(report)
         report['files'][0]['messagesRead'] = 1000
-        report['files'][0]['currentFields'] *= 100
-        with self.assertRaisesRegex(ValueError, '^REPORT_SIZE_REJECTED$'):
+        report['files'][0]['currentComponents'] *= 100
+        with self.assertRaisesRegex(ValueError, '^REPORT_CURRENT_FIELDS_REJECTED$'):
             runner.safe_report(report)
 
     def test_normal_wrapper_failure_receipt_is_bounded_and_first_error_survives_cleanup(self):
@@ -293,30 +417,14 @@ class PreparationTests(unittest.TestCase):
                 runner.NoRedirect().redirect_request(None, None, 302, None, None, 'https://other.invalid')
 
     def test_safe_report_rejects_unlisted_raw_field_and_invalid_counts(self):
-        def field(component):
-            return dict(component=component, pointsChecked=20, ni=4, nj=5,
-                        nativePointsOutsideDeclaredLatitudeBounds=0,
-                        nativeValidPoints=20, validPointsOutsideDeclaredLatitudeBounds=0,
-                        maximumValidLatitudeVsEndpointDegrees=0., candidatesWithLatitudeDifference=0,
-                        maximumCandidateLatitudeVsEndpointDegrees=0.,
-                        maximumLatitudeVsEndpointDegrees=0., maximumLongitudeVsEndpointDegrees=0.,
-                        gridSectionDigest='a'*32, layerTimeIdentitySha256='b'*64,
-                        referenceDate=20261009, referenceTime=0, validityDate=20261014, validityTime=0,
-                        candidateChecks=9, candidateIndexMismatches=0,
-                        candidateCoordinateMismatches=0, candidateValueMismatches=0)
-        report = dict(scope='EXACT_TWO_CURRENT_FILES_NATIVE_CONFORMANCE_NOT_SCORE_PROOF', nativeVersion='2.48.2',
-                      centralAdminTargetsTested=False, productionWritten=False, valuesExposed=False,
-                      coordinateCorrectionMade=False, files=[dict(collection=name, bytes=target[1],
-                      contentSha256='c'*64, messagesRead=3, currentFields=[field('current-u'),field('current-v')],
-                      originalUnchanged=True, completeUniqueVectorPairs=1, unpairedOrRepeatedLayers=0)
-                      for name, target in runner.TARGETS.items()])
+        report = synthetic_safe_report()
         import copy
         self.assertLess(len(runner.safe_report(report)), 65536)
         for key, value in [('rawValues', [123]), ('candidateChecks', 'secret'),
                            ('candidateChecks', -1), ('maximumLatitudeVsEndpointDegrees', float('nan')),
                            ('gridSectionDigest', 'private-string')]:
             changed = copy.deepcopy(report)
-            changed['files'][0]['currentFields'][0][key] = value
+            changed['files'][0]['currentComponents'][0][key] = value
             with self.subTest(key=key), self.assertRaises(ValueError):
                 runner.safe_report(changed)
 
@@ -330,10 +438,11 @@ class PreparationTests(unittest.TestCase):
         self.assertIn('test "$GITHUB_RUN_ATTEMPT" = 1', text)
         self.assertIn('group: ravradar-weather-production-v2', text)
         self.assertIn('event=workflow_dispatch&per_page=100', text)
-        self.assertIn('test "$(wc -l < "$RUNNER_TEMP/native-grid-run-ids.txt")" = 3', text)
-        self.assertIn('READ-TWO-DMI-CURRENT-GRIDS-20261009-THIRD-ONCE', text)
+        self.assertIn('test "$(wc -l < "$RUNNER_TEMP/native-grid-run-ids.txt")" = 4', text)
+        self.assertIn('READ-TWO-DMI-CURRENT-GRIDS-20261009-FOURTH-ONCE', text)
         self.assertIn('grep -Fxc -- 37922643090', text)
         self.assertIn('grep -Fxc -- 37926182907', text)
+        self.assertIn('grep -Fxc -- 37929176317', text)
         self.assertIn('.run_attempt == 1 and .status == "completed" and .conclusion == "failure"', text)
         self.assertIn('.head_sha == "1ee6f78e09cf70eabd1454ac4973a8d8aae51b8e"', text)
         self.assertLess(text.index('Verify diagnosis with artificial native GRIB'), text.index('Read exactly two originals once'))
@@ -378,13 +487,57 @@ if NATIVE:
                 self.assertEqual(result['messagesRead'], 302)
                 self.assertEqual(result['completeUniqueVectorPairs'], 1)
                 self.assertEqual(result['unpairedOrRepeatedLayers'], 0)
-                self.assertEqual(len(result['currentFields']), 2)
+                self.assertEqual(result['currentFieldCount'], 2)
+                self.assertEqual(len(result['currentComponents']), 2)
                 self.assertEqual(path.read_bytes(), original)
                 self.assertEqual(result['contentSha256'], hashlib.sha256(original).hexdigest())
-                for field in result['currentFields']:
+                for field in result['currentComponents']:
                     self.assertGreater(field['candidateChecks'], 0)
                     for key in ('candidateIndexMismatches', 'candidateCoordinateMismatches', 'candidateValueMismatches'):
                         self.assertEqual(field[key], 0)
+                # Grow the same artificial container beyond the old output
+                # limit. Both normal main scans, JSON encoding and the parent
+                # validator run here, not merely the new aggregation helper.
+                # Re-read exact native messages to build the artificial file;
+                # do not infer GRIB lengths from compression or message count.
+                current_messages = []
+                with path.open('rb') as source:
+                    while True:
+                        current = eccodes.codes_grib_new_from_file(source)
+                        if current is None:
+                            break
+                        try:
+                            if producer.classify_parameter(current, 'dkss_lf') in ('current-u', 'current-v'):
+                                current_messages.append(eccodes.codes_get_message(current))
+                        finally:
+                            eccodes.codes_release(current)
+                self.assertEqual(len(current_messages), 2)
+                expanded = original + b''.join(current_messages) * 99
+                path.write_bytes(expanded)
+                identity = (len(expanded), hashlib.sha256(expanded[:68]).hexdigest())
+                identities = {collection: identity for collection in audit.FILES}
+                targets = {collection: (runner.TARGETS[collection][0], *identity) for collection in runner.TARGETS}
+                captured = io.StringIO()
+                with patch.dict(audit.FILES, identities), patch.dict(runner.TARGETS, targets), \
+                        patch.object(sys, 'argv', [audit.__file__, '--producer', str(producer_path),
+                                      '--lf', str(path), '--nsbs', str(path)]), \
+                        patch.object(runner.urllib.request, 'build_opener', side_effect=AssertionError('network prohibited')), \
+                        redirect_stdout(captured):
+                    audit.main()
+                    complete = json.loads(captured.getvalue())
+                    safe = runner.safe_report(complete)
+                self.assertLess(len(safe.encode()), 12000)
+                self.assertEqual(path.read_bytes(), expanded)
+                for item in complete['files']:
+                    self.assertEqual(item['messagesRead'], 500)
+                    self.assertEqual(item['currentFieldCount'], 200)
+                    self.assertEqual(item['completeUniqueVectorPairs'], 0)
+                    self.assertEqual(item['unpairedOrRepeatedLayers'], 1)
+                    for summary in item['currentComponents']:
+                        self.assertEqual(summary['fieldCount'], 100)
+                        self.assertEqual(summary['pointChecks'], 6400)
+                        self.assertEqual(summary['candidateValueMismatches'], 0)
+                print(f'SYNTHETIC_TWO_COMPLETE_FILES_REPORT_BYTES={len(safe.encode())}')
 
         def test_actual_workflow_shell_rejects_any_unapproved_successor(self):
             import textwrap
@@ -399,22 +552,26 @@ case "$*" in
  *actions/workflows/audit-native-current-grid.yml/runs*) printf '%s\\n' "$RR_HISTORY" ;;
  *actions/runs/37922643090*) if [ "$RR_PREDECESSOR" = valid ]; then printf '%s\\n' 37922643090; fi ;;
  *actions/runs/37926182907*) if [ "$RR_SECOND_PREDECESSOR" = valid ]; then printf '%s\\n' 37926182907; fi ;;
+ *actions/runs/37929176317*) if [ "$RR_THIRD_PREDECESSOR" = valid ]; then printf '%s\\n' 37929176317; fi ;;
  *) exit 91 ;;
 esac
 '''
             cases = [('exact', {}, True),
                      ('only-self', {'RR_HISTORY': fake_id}, False),
-                     ('fourth', {'RR_HISTORY': '37922643090\n37926182907\n38888888888\n' + fake_id}, False),
-                     ('missing-first', {'RR_HISTORY': '37926182907\n' + fake_id}, False),
-                     ('missing-second', {'RR_HISTORY': '37922643090\n' + fake_id}, False),
-                     ('wrong-previous', {'RR_HISTORY': '38888888888\n37926182907\n' + fake_id}, False),
-                     ('duplicate', {'RR_HISTORY': '37922643090\n37922643090\n' + fake_id}, False),
+                     ('fifth', {'RR_HISTORY': '37922643090\n37926182907\n37929176317\n38888888888\n' + fake_id}, False),
+                     ('missing-first', {'RR_HISTORY': '37926182907\n37929176317\n' + fake_id}, False),
+                     ('missing-second', {'RR_HISTORY': '37922643090\n37929176317\n' + fake_id}, False),
+                     ('missing-third', {'RR_HISTORY': '37922643090\n37926182907\n' + fake_id}, False),
+                     ('wrong-previous', {'RR_HISTORY': '38888888888\n37926182907\n37929176317\n' + fake_id}, False),
+                     ('duplicate', {'RR_HISTORY': '37922643090\n37922643090\n37929176317\n' + fake_id}, False),
                      ('rerun', {'GITHUB_RUN_ATTEMPT': '2'}, False),
                      ('old-confirmation', {'CONFIRMATION': 'READ-TWO-DMI-CURRENT-GRIDS-20261009-ONCE'}, False),
                      ('second-confirmation', {'CONFIRMATION': 'READ-TWO-DMI-CURRENT-GRIDS-20261009-SECOND-ONCE'}, False),
+                     ('third-confirmation', {'CONFIRMATION': 'READ-TWO-DMI-CURRENT-GRIDS-20261009-THIRD-ONCE'}, False),
                      ('main-changed', {'RR_MAIN': 'b' * 40}, False),
                      ('previous-changed', {'RR_PREDECESSOR': 'changed'}, False),
-                     ('second-previous-changed', {'RR_SECOND_PREDECESSOR': 'changed'}, False)]
+                     ('second-previous-changed', {'RR_SECOND_PREDECESSOR': 'changed'}, False),
+                     ('third-previous-changed', {'RR_THIRD_PREDECESSOR': 'changed'}, False)]
             with tempfile.TemporaryDirectory(prefix='rr-native-guard-fixture-') as tmp:
                 commands = Path(tmp) / 'commands'
                 commands.mkdir()
@@ -429,8 +586,8 @@ esac
                                    GITHUB_EVENT_NAME='workflow_dispatch', GITHUB_REF='refs/heads/main',
                                    GITHUB_RUN_ATTEMPT='1', GITHUB_RUN_ID=fake_id, GITHUB_SHA=sha,
                                    EXPECTED_MAIN_HEAD=sha, RR_MAIN=sha, RR_PREDECESSOR='valid', RR_SECOND_PREDECESSOR='valid',
-                                   RR_HISTORY='37922643090\n37926182907\n' + fake_id,
-                                   CONFIRMATION='READ-TWO-DMI-CURRENT-GRIDS-20261009-THIRD-ONCE')
+                                   RR_THIRD_PREDECESSOR='valid', RR_HISTORY='37922643090\n37926182907\n37929176317\n' + fake_id,
+                                   CONFIRMATION='READ-TWO-DMI-CURRENT-GRIDS-20261009-FOURTH-ONCE')
                         env.update(overrides)
                         result = subprocess.run(['/bin/bash', '-c', script], env=env, capture_output=True,
                                                 timeout=10, check=False)
