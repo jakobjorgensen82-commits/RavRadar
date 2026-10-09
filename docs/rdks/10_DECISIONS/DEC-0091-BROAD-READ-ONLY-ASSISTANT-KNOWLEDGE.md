@@ -1,5 +1,19 @@
 # DEC-0091 – Bred, versionsbundet og read-only viden i Spørg RavRadar
 
+## 9. oktober 2026 – lokal 4.0.553-rettelse af score-til-fund-svar
+
+Faktisk offentlig browserafprøvning viser fjernsvar, der udleder reduceret
+fundchance af lav score. Otte hele DA/DE/EN-spørgsmålsformer får nu et
+kontrolleret svar i den eksisterende Edge-del baseret på de eksisterende
+offentlige fakta: score er ikke målt fundchance eller mængde, og lav score
+udelukker ikke fund. Kun input, som faktisk når Edge, dækkes. Hele inputtet
+kontrolleres; ekstra ukendte eller sammensatte led beholder normal routing.
+Andres private fund afvises, også efter lang indledning. Bindinger, CORS,
+størrelse, sprog, kvoter og provider bevares. Normal handlerkontrol består
+lokalt; offentlig levering mangler. Dette aktiverer hverken den brede
+isolerede assistentkandidat eller bindingsadskillelsen i bero. Interne fejl,
+privat diagnostik og produktionsfakta må ikke indgå i den offentlige viden.
+
 ## Status
 
 Besluttet og produktionsverificeret i 4.0.293/4.0.294. Den offentlige formuleringstest udløste og lukkede en afgrænset 4.0.294-hotfix. **Kildebegrænsningen i beslutningens punkt 1 er historisk og erstattet af DEC-0105**, som tillader kildeklassificeret ekstern forskning, officielle kilder, RavRadars systematiske forskningsgrundlag og navngiven praktisk ekspertviden. Read-only-, sikkerheds-, privacy- og modelgrænserne består.

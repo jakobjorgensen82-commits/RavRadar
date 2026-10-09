@@ -173,4 +173,257 @@ await failed.send('magic');
 assert.equal(failed.status.textContent, 'Test: prøv igen senere');
 cases += 1;
 
-console.log(`OK: Auth-timeout/admin bevares; ${cases} normale konto-submit-scenarier og 4 normale cache-kald består offline, sekundær kontrast ${contrast.toFixed(2)}:1.`);
+// Exercise the normal imported auth module, not a rewritten implementation.
+// Only browser storage and held synthetic HTTP responses are replaced.
+const originalGlobals = new Map(['fetch', 'localStorage', 'location', 'history'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
+const sessionA = { access_token: 'synthetic-a-token', refresh_token: 'synthetic-a-refresh', expires_at: 1, user: { id: 'synthetic-owner-a' } };
+const sessionB = { access_token: 'synthetic-b-token', refresh_token: 'synthetic-b-refresh', expires_at: 9_999_999_999, user: { id: 'synthetic-owner-b' } };
+let moduleSequence = 0, ownerCases = 0;
+async function authHarness(initial, signedIn = sessionB, { holdLogout = false, holdLogin = false, callbackUser = null } = {}) {
+  const stored = new Map([['ravradar-auth-session', JSON.stringify(initial)]]);
+  const refreshes = [], users = [], changes = [], logouts = [], requests = [], logins = [];
+  globalThis.location = { hash: '', pathname: '/', search: '', origin: 'https://example.invalid' };
+  globalThis.history = { replaceState() {} };
+  globalThis.localStorage = {
+    getItem: key => stored.get(key) ?? null,
+    setItem: (key, value) => stored.set(key, String(value)),
+    removeItem: key => stored.delete(key),
+  };
+  globalThis.fetch = async (input, options) => {
+    const url = new URL(input);
+    if (url.pathname.endsWith('/token') && url.searchParams.get('grant_type') === 'refresh_token') {
+      return new Promise(resolve => refreshes.push({ resolve, token: JSON.parse(options.body).refresh_token }));
+    }
+    if (url.pathname.endsWith('/user')) return callbackUser
+      ? Response.json(callbackUser)
+      : new Promise(resolve => users.push({ resolve }));
+    if (url.pathname.endsWith('/signup') || (url.pathname.endsWith('/token') && url.searchParams.get('grant_type') === 'password')) return holdLogin
+      ? new Promise(resolve => logins.push({ resolve }))
+      : Response.json(signedIn);
+    if (url.pathname.endsWith('/logout')) return holdLogout
+      ? new Promise(resolve => logouts.push({ resolve }))
+      : Response.json({});
+    if (url.origin === 'https://example.invalid' && url.pathname === '/synthetic-owner-operation')
+      return new Promise(resolve => requests.push({ resolve, authorization: options.headers.Authorization }));
+    throw new Error('Unexpected synthetic auth request');
+  };
+  const api = await import(`../js/services/auth-service.js?owner-race=${++moduleSequence}`);
+  api.onAuthChange(value => changes.push(value));
+  return { api, stored, refreshes, users, changes, logouts, requests, logins };
+}
+const outcome = promise => promise.then(value => ({ ok: true, value }), error => ({ ok: false, error }));
+try {
+  for (const [action, status] of [['logout', 200], ['switch', 200], ['switch', 400]]) {
+    const test = await authHarness(sessionA);
+    const pending = outcome(test.api.requireFreshSession());
+    assert.equal(test.refreshes.length, 1);
+    if (action === 'logout') await test.api.signOut();
+    else await test.api.signInWithPassword('synthetic@example.invalid', 'synthetic-only');
+    const expected = test.api.currentSession();
+    const saved = test.stored.get('ravradar-auth-session'), notifications = test.changes.length;
+    test.refreshes[0].resolve(Response.json({ ...sessionA, expires_at: 9_999_999_999 }, { status }));
+    const result = await pending;
+    assert.equal(test.api.currentSession() === expected, true, `${action}: a late refresh must not replace the current session`);
+    assert.equal(test.stored.get('ravradar-auth-session') === saved, true, `${action}: a late refresh must not rewrite stored credentials`);
+    assert.equal(test.changes.length, notifications, 'A stale result must not emit a new auth state');
+    assert.equal(result.ok, false, 'The stale caller must not report success for another session');
+    if (status === 400) assert.equal(result.error.status, 400, 'Preserve the original auth rejection');
+    ownerCases += 1;
+  }
+  for (const action of ['logout', 'switch']) {
+    const test = await authHarness({ ...sessionA, expires_at: 9_999_999_999, user: {} });
+    const pending = outcome(test.api.requireFreshSession());
+    assert.equal(test.users.length, 1);
+    if (action === 'logout') await test.api.signOut();
+    else await test.api.signInWithPassword('synthetic@example.invalid', 'synthetic-only');
+    const expected = test.api.currentSession(), saved = test.stored.get('ravradar-auth-session');
+    test.users[0].resolve(Response.json(sessionA.user));
+    assert.equal((await pending).ok, false, 'A stale user lookup must reject its original caller');
+    assert.equal(test.api.currentSession() === expected, true, 'User hydration must not pair an old owner with the new token');
+    assert.equal(test.stored.get('ravradar-auth-session') === saved, true);
+    ownerCases += 1;
+  }
+  {
+    const test = await authHarness(sessionA);
+    const first = test.api.requireFreshSession(), second = test.api.requireFreshSession();
+    assert.equal(test.refreshes.length, 1, 'Same-session callers still share one refresh');
+    test.refreshes[0].resolve(Response.json({ access_token: 'synthetic-a-renewed', expires_at: 9_999_999_999, user: sessionA.user }));
+    const results = await Promise.all([first, second]);
+    assert.equal(results[0], results[1]);
+    assert.equal(results[0].refresh_token, sessionA.refresh_token, 'Missing replacement refresh token uses the initiating session');
+    assert.equal(test.changes.length, 1);
+    ownerCases += 1;
+  }
+  {
+    const test = await authHarness({ ...sessionA, expires_at: 9_999_999_999, user: {} });
+    const pending = [test.api.requireFreshSession(), test.api.requireFreshSession()];
+    for (const request of test.users) request.resolve(Response.json(sessionA.user));
+    const results = await Promise.all(pending);
+    assert.equal(results.every(result => result.user.id === sessionA.user.id && result.access_token === sessionA.access_token), true,
+      'Concurrent legitimate hydration must remain usable');
+    ownerCases += 1;
+  }
+  for (const status of [400, 500]) {
+    const test = await authHarness(sessionA), before = test.api.currentSession();
+    const pending = outcome(test.api.requireFreshSession());
+    test.refreshes[0].resolve(Response.json({}, { status }));
+    const result = await pending;
+    assert.equal(result.ok, false);
+    assert.equal(result.error.status, status);
+    assert.equal(test.api.currentSession(), status === 400 ? null : before, 'Only rejection of the still-current credentials clears the session');
+    ownerCases += 1;
+  }
+  {
+    const test = await authHarness(sessionA, { ...sessionB, expires_at: 1 });
+    const old = outcome(test.api.requireFreshSession());
+    await test.api.signInWithPassword('synthetic@example.invalid', 'synthetic-only');
+    const next = outcome(test.api.requireFreshSession()), expected = test.api.currentSession();
+    test.refreshes[0].resolve(Response.json({ ...sessionA, expires_at: 9_999_999_999 }));
+    assert.equal((await old).ok, false);
+    assert.equal(test.api.currentSession(), expected);
+    assert.equal(test.refreshes.length, 2, 'The new session must not inherit the old refresh promise');
+    const concurrent = outcome(test.api.requireFreshSession());
+    assert.equal(test.refreshes.length, 2, 'Old cleanup must not discard the new session\'s pending refresh');
+    test.refreshes[1].resolve(Response.json(sessionB));
+    assert.equal((await next).value.user.id, sessionB.user.id);
+    assert.equal((await concurrent).value.user.id, sessionB.user.id);
+    ownerCases += 1;
+  }
+  for (const [status, newLogin] of [[200, sessionB], [400, sessionB], [200, { ...sessionA, expires_at: 9_999_999_999 }]]) {
+    const test = await authHarness({ ...sessionA, expires_at: 9_999_999_999 }, newLogin, { holdLogout: true });
+    const oldLogout = outcome(test.api.signOut());
+    assert.equal(test.logouts.length, 1);
+    await test.api.signInWithPassword('synthetic@example.invalid', 'synthetic-only');
+    const expected = test.api.currentSession(), saved = test.stored.get('ravradar-auth-session'), notifications = test.changes.length;
+    test.logouts[0].resolve(Response.json({}, { status }));
+    assert.equal((await oldLogout).ok, false, 'A late logout must not report the newly logged-in account as logged out');
+    assert.equal(test.api.currentSession(), expected, 'A late logout must not clear a new session');
+    assert.equal(test.stored.get('ravradar-auth-session'), saved);
+    assert.equal(test.changes.length, notifications);
+    ownerCases += 1;
+  }
+  {
+    const test = await authHarness({ ...sessionA, expires_at: 9_999_999_999 }, sessionB, { holdLogout: true });
+    const logout = outcome(test.api.signOut());
+    const renewal = test.api.refreshSession({ force: true });
+    test.refreshes[0].resolve(Response.json({ ...sessionA, access_token: 'synthetic-a-renewed', expires_at: 9_999_999_999 }));
+    await renewal;
+    test.logouts[0].resolve(Response.json({}));
+    assert.equal((await logout).ok, true, 'An ordinary same-owner renewal must not prevent an already requested logout');
+    assert.equal(test.api.currentSession(), null);
+    ownerCases += 1;
+  }
+  for (const [action, status] of [['switch', 401], ['switch', 200], ['logout', 200]]) {
+    const test = await authHarness({ ...sessionA, expires_at: 9_999_999_999 });
+    const pending = outcome(test.api.authorizedFetch('https://example.invalid/synthetic-owner-operation'));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(test.requests.length, 1);
+    assert.equal(test.requests[0].authorization, `Bearer ${sessionA.access_token}`);
+    if (action === 'logout') await test.api.signOut();
+    else await test.api.signInWithPassword('synthetic@example.invalid', 'synthetic-only');
+    const expected = test.api.currentSession();
+    test.requests[0].resolve(Response.json({ syntheticOwner: 'a' }, { status }));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(test.requests.length, 1, 'An old response must not resend its payload under another account');
+    assert.equal(test.refreshes.length, 0, 'An old 401 must not renew another account');
+    const result = await pending;
+    assert.equal(result.ok, false, 'A previous account response must not be handed to a new account or logged-out caller');
+    assert.equal(test.api.currentSession(), expected);
+    assert.equal(test.requests.length, 1, 'An old 401 must not resend its payload under another account');
+    assert.equal(test.refreshes.length, 0, 'An old 401 must not renew another account');
+    ownerCases += 1;
+  }
+  {
+    const test = await authHarness({ ...sessionA, expires_at: 9_999_999_999 });
+    const pending = outcome(test.api.authorizedFetch('https://example.invalid/synthetic-owner-operation'));
+    await new Promise(resolve => setImmediate(resolve));
+    test.requests[0].resolve(Response.json({}, { status: 401 }));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(test.refreshes.length, 1);
+    test.refreshes[0].resolve(Response.json({ ...sessionA, access_token: 'synthetic-a-renewed', expires_at: 9_999_999_999 }));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(test.requests.length, 2, 'A genuine same-owner 401 retains the single existing retry');
+    assert.equal(test.requests[1].authorization, 'Bearer synthetic-a-renewed');
+    test.requests[1].resolve(Response.json({ syntheticOwner: 'a' }));
+    assert.equal((await pending).value.status, 200);
+    ownerCases += 1;
+  }
+  {
+    const test = await authHarness({ ...sessionA, expires_at: 9_999_999_999 });
+    const pending = outcome(test.api.authorizedFetch('https://example.invalid/synthetic-owner-operation'));
+    await new Promise(resolve => setImmediate(resolve));
+    const renewal = test.api.refreshSession({ force: true });
+    test.refreshes[0].resolve(Response.json({ ...sessionA, access_token: 'synthetic-a-renewed', expires_at: 9_999_999_999 }));
+    await renewal;
+    test.requests[0].resolve(Response.json({ syntheticOwner: 'a' }));
+    assert.equal((await pending).value.status, 200, 'A legitimate same-owner token renewal does not discard an ordinary response');
+    ownerCases += 1;
+  }
+  for (const status of [200, 401]) {
+    const sameOwner = { ...sessionA, access_token: 'synthetic-a-new-login', expires_at: 9_999_999_999 };
+    const test = await authHarness({ ...sessionA, expires_at: 9_999_999_999 }, sameOwner);
+    const old = outcome(test.api.authorizedFetch('https://example.invalid/synthetic-owner-operation'));
+    await new Promise(resolve => setImmediate(resolve));
+    await test.api.signOut();
+    await test.api.signInWithPassword('synthetic@example.invalid', 'synthetic-only');
+    const expected = test.api.currentSession();
+    test.requests[0].resolve(Response.json({ syntheticOwner: 'a' }, { status }));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(test.refreshes.length, 0, 'An old 401 must not renew an explicitly new login to the same owner');
+    assert.equal(test.requests.length, 1, 'An old payload must not retry under a new login, even with the same owner ID');
+    assert.equal((await old).ok, false, 'A pre-logout response must not be accepted by the new same-owner login');
+    assert.equal(test.api.currentSession(), expected);
+    ownerCases += 1;
+  }
+  for (const kind of ['signInWithPassword', 'signUpWithPassword']) {
+    for (const later of ['login', 'logout']) {
+      const test = await authHarness({ ...sessionA, expires_at: 9_999_999_999 }, sessionB, { holdLogin: true });
+      const old = outcome(test.api[kind]('synthetic@example.invalid', 'synthetic-only'));
+      assert.equal(test.logins.length, 1);
+      if (later === 'logout') await test.api.signOut();
+      else {
+        const newest = test.api.signInWithPassword('synthetic@example.invalid', 'synthetic-only');
+        test.logins[1].resolve(Response.json(sessionB));
+        await newest;
+      }
+      const expected = test.api.currentSession(), saved = test.stored.get('ravradar-auth-session');
+      const notifications = test.changes.length;
+      test.logins[0].resolve(Response.json({ ...sessionA, expires_at: 9_999_999_999 }));
+      assert.equal((await old).ok, false, 'A previous login/signup result must not override a later explicit auth choice');
+      assert.equal(test.api.currentSession(), expected);
+      assert.equal(test.stored.get('ravradar-auth-session'), saved);
+      assert.equal(test.changes.length, notifications);
+      ownerCases += 1;
+    }
+  }
+  for (const operation of ['requireFreshSession', 'authorizedFetch']) {
+    const test = await authHarness(sessionA, sessionB, { callbackUser: sessionB.user });
+    // This normal callback is registered first on the SAME pending refresh.
+    // It changes login identity between refresh settlement and the old
+    // caller's continuation, without replacing requireFreshSession itself.
+    const renewal = test.api.refreshSession();
+    const switched = renewal.then(() => {
+      globalThis.location.hash = '#access_token=synthetic-b-token&refresh_token=synthetic-b-refresh&expires_in=3600';
+      return test.api.consumeAuthCallback();
+    });
+    const old = outcome(operation === 'requireFreshSession'
+      ? test.api.requireFreshSession()
+      : test.api.authorizedFetch('https://example.invalid/synthetic-owner-operation', {
+        method: 'POST', body: 'synthetic-owner-a-payload',
+      }));
+    test.refreshes[0].resolve(Response.json({ ...sessionA, access_token: 'synthetic-a-renewed', expires_at: 9_999_999_999 }));
+    await switched;
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(test.requests.length, 0, 'An account change during the initial refresh must prevent the original payload from reaching the new account');
+    assert.equal((await old).ok, false, 'The original fresh-session caller must not return a different login identity after awaiting refresh');
+    assert.equal(test.api.currentSession().user.id, sessionB.user.id);
+    ownerCases += 1;
+  }
+} finally {
+  for (const [key, descriptor] of originalGlobals) {
+    if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+    else delete globalThis[key];
+  }
+}
+
+console.log(`OK: Auth-timeout/admin bevares; ${cases} normale konto-submit-scenarier, ${ownerCases} session-ejerskabsforløb og 4 normale cache-kald består offline, sekundær kontrast ${contrast.toFixed(2)}:1.`);

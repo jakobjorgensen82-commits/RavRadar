@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { assertAllowedOrigin, corsHeaders, enforceRateLimits, fetchWithTimeout, GatewayError, readJsonObject, safeGatewayError } from "../_shared/public-gateway.ts";
 import {
   assistantPrompt,
+  assistantScoreFindAnswer,
   assistantSystemInstruction,
   extractCloudflareAssistantResult,
   normaliseAssistantLocale,
@@ -61,9 +62,15 @@ Deno.serve(async (request) => {
     }
     const locale = normaliseAssistantLocale(body.locale);
     if (!locale) return assistantJsonResponse(request, { error: "LOCALE_NOT_SUPPORTED" }, 400);
-    const question = String(body.question || "").trim().slice(0, 600);
+    const rawQuestion = String(body.question || "").trim();
+    const question = rawQuestion.slice(0, 600);
     if (!question) return assistantJsonResponse(request, { error: "QUESTION_REQUIRED" }, 400);
-    if (routeAssistantQuestion(question) === "fixed-refusal") return assistantJsonResponse(request, { answer: RAV_ASSISTANT_REFUSALS[locale] });
+    if (routeAssistantQuestion(rawQuestion) === "fixed-refusal"
+        || routeAssistantQuestion(question) === "fixed-refusal") return assistantJsonResponse(request, { answer: RAV_ASSISTANT_REFUSALS[locale] });
+
+    // Do not swallow private, compound or unknown suffixes in the provider prefix.
+    const scoreFindAnswer = assistantScoreFindAnswer(rawQuestion, locale);
+    if (scoreFindAnswer) return assistantJsonResponse(request, { answer: scoreFindAnswer });
 
     await enforceRateLimits(request, "ravradar-assistant", { minute: 6, hour: 40, globalDay: 300 });
     const { accountId, token } = cloudflareCredential();
