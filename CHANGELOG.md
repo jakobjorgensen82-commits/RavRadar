@@ -1,4 +1,12 @@
-# Lokal 4.0.554 – bevist afslutning og publicering af DMI-checkpoint
+# Isoleret 4.0.555-kandidat – native-node-kobling, ikke aktiveringsbevis
+
+- Normal fælles feltkobling kræver samme native indeks og privat identitet for hele gittersektionen; offentlige grid-/sourcefelter bevares. Afgrænsede måltests består; faktisk native CI, cache-/historikovergang og numerisk produktionseffekt er endnu åbne. Kandidaten må ikke merges eller aktiveres før disse krav er afklaret.
+- Den eksisterende PR-nativekontrol får egne kunstige GRIB-mål gennem den fastlåste decoder. Ingen originale filer, providerhentning, nye dependencies eller vejrhentning. Sourceplanen bevarer sine 47 kommandoer.
+- Forældet workflowinventar og rækkefølgekontrol er rettet uden at åbne ny dispatch eller lempe dependencyparitet; måltesten består.
+- Faktisk 4.0.554-deploy 37955527084 på main 232640149b3a74674e42618465026c65d05eee81 gennemførte gemning, privat publicering, Edge, Pages, offentlig 210/673-kontrol og terminalbevis 9. oktober kl. 18.07 dansk tid. Browseren viste versionsnummeret og ét korrekt kontrolleret svar; ekstern AI og frisk vejreffekt er ikke bevist.
+- De separate lokale eksport- og tyske tokenrettelser er ikke med i denne kandidat. Revision, fysisk strømgeografi, scorefrikendelse, bindingsadskillelse og konkret tilbageholdte destinationer er ikke afsluttet eller aktiveret. Ingen manuel vejrhentning eller ændret cron.
+
+# Historisk lokal 4.0.554 – leveret som dokumenteret ovenfor
 
 Den næste afgrænsede kandidat tager den normale checkpointrettelse til faktisk main-kode. Den kopierer ikke hele den isolerede revision eller aktiverer den. 4.0.553's særskilte tur-, login-, backup- og Edge-rettelser er videreført som kildeforgænger, ikke erklæret offentligt leveret. Den præcise nye GitHub-kontrol, sikker integration og faktisk produktionseffekt mangler.
 

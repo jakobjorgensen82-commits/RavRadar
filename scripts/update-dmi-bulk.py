@@ -4186,6 +4186,25 @@ def grid_definition_sha256_from_signature(signature: tuple[Any, ...]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def grid_index_identity_sha256_from_cache(cache_signature: tuple[Any, ...]) -> str:
+    """Bind native indices to the full grid section, including scan order.
+
+    This private candidate identity is not the legacy public grid digest and
+    must never be copied to persisted/public grid metadata or provenance.
+    """
+    grid_definition_signature_from_cache(cache_signature)
+    if not isinstance(cache_signature[0], str) or not re.fullmatch(
+        r"[0-9a-fA-F]{32}", cache_signature[0],
+    ):
+        raise DmiGridLookupError(
+            "DMI native-index grid identity could not be verified",
+            "GRID_IDENTITY_READ_FAILED",
+        )
+    return grid_definition_sha256_from_signature((
+        "grid-native-index-order-v1", *cache_signature,
+    ))
+
+
 def grid_definition_sha256(gid: int) -> str:
     return grid_definition_sha256_from_signature(grid_signature(gid))
 
@@ -4521,6 +4540,7 @@ def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]
     definition_sha256 = grid_definition_sha256_from_signature(
         grid_definition_signature_from_cache(cache_signature)
     )
+    index_identity = grid_index_identity_sha256_from_cache(cache_signature)
     warm_marine_grid_cache(gid, collection, zones, cache_signature)
     warm_atmospheric_grid_cache(gid, collection, zones, cache_signature)
     missing = safe_get(gid, "missingValue")
@@ -4558,6 +4578,7 @@ def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]
                 "longitude": candidate["longitude"],
                 "distanceKm": candidate["distanceKm"],
                 "gridDefinitionSha256": definition_sha256,
+                "_gridIndexIdentity": index_identity,
             })
         if rows:
             resolved[zone_id] = rows
@@ -4575,6 +4596,7 @@ def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) 
     definition_sha256 = grid_definition_sha256_from_signature(
         grid_definition_signature_from_cache(cache_signature)
     )
+    index_identity = grid_index_identity_sha256_from_cache(cache_signature)
     warm_marine_grid_cache(gid, collection, zones, cache_signature)
     warm_atmospheric_grid_cache(gid, collection, zones, cache_signature)
     missing = safe_get(gid, "missingValue")
@@ -4610,6 +4632,7 @@ def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) 
                     "distanceKm": candidate["distanceKm"],
                     "index": int(candidate["index"]),
                     "gridDefinitionSha256": definition_sha256,
+                    "_gridIndexIdentity": index_identity,
                     "_candidateCount": len(candidates),
                 }
                 break
@@ -5830,20 +5853,40 @@ def grid_point_metadata(
             else value
         )
         for key, value in candidate.items()
-        if key not in excluded_keys
+        if key not in excluded_keys and key != "_gridIndexIdentity"
     }
+
+
+def candidate_node_key(candidate: dict[str, Any]) -> tuple[str, float, float, str, int] | None:
+    """Distinguish native nodes even when decoded coordinates alias.
+
+    Equal rounded latitude/longitude is not evidence that two fields read the
+    same native element. Require both the order-sensitive grid and its index.
+    Keep the public three-part cell key unchanged for original provenance.
+    """
+    cell_key = candidate_cell_key(candidate)
+    identity = candidate.get("_gridIndexIdentity")
+    index = candidate.get("index")
+    if not (
+        cell_key is not None
+        and isinstance(identity, str)
+        and re.fullmatch(r"[0-9a-f]{64}", identity)
+        and isinstance(index, int) and not isinstance(index, bool) and index >= 0
+    ):
+        return None
+    return (*cell_key, identity, index)
 
 
 def select_common_grid_tuple(
     candidates_by_parameter: dict[str, list[dict[str, Any]]],
     required_parameters: tuple[str, ...],
 ) -> dict[str, dict[str, Any]] | None:
-    """Select one exact grid definition/cell shared by every required field."""
-    indexed: dict[str, dict[tuple[str, float, float], dict[str, Any]]] = {}
+    """Select one exact order-sensitive native node shared by every field."""
+    indexed: dict[str, dict[tuple[str, float, float, str, int], dict[str, Any]]] = {}
     for parameter in required_parameters:
-        rows: dict[tuple[str, float, float], dict[str, Any]] = {}
+        rows: dict[tuple[str, float, float, str, int], dict[str, Any]] = {}
         for candidate in candidates_by_parameter.get(parameter) or []:
-            key = candidate_cell_key(candidate)
+            key = candidate_node_key(candidate)
             if key is None:
                 continue
             previous = rows.get(key)
@@ -6481,11 +6524,11 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
             continue
         optional_fields: tuple[str, ...] = ()
         direction_by_cell = {
-            candidate_cell_key(candidate): candidate
+            candidate_node_key(candidate): candidate
             for candidate in candidates_by_parameter.get("mean-wave-dir") or []
-            if candidate_cell_key(candidate) is not None
+            if candidate_node_key(candidate) is not None
         }
-        direction = direction_by_cell.get(candidate_cell_key(height))
+        direction = direction_by_cell.get(candidate_node_key(height))
         if direction is not None:
             direction_value = direction.get("value")
             if not (
@@ -6534,12 +6577,12 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
         hour.setdefault("sources", {})["wave"] = source
         for parameter, candidate in (("significant-wave-height", height), ("dominant-wave-period", period)):
             point["gridPoints"][parameter] = {
-                **{key: round(value, 5) if isinstance(value, (int, float)) else value for key, value in candidate.items() if key not in {"value", "index", "_wavePeriodField"}},
+                **{key: round(value, 5) if isinstance(value, (int, float)) else value for key, value in candidate.items() if key not in {"value", "index", "_wavePeriodField", "_gridIndexIdentity"}},
             }
             point["collections"][parameter] = collection
         if direction is not None:
             point["gridPoints"]["mean-wave-dir"] = {
-                **{key: round(value, 5) if isinstance(value, (int, float)) else value for key, value in direction.items() if key not in {"value", "index"}},
+                **{key: round(value, 5) if isinstance(value, (int, float)) else value for key, value in direction.items() if key not in {"value", "index", "_gridIndexIdentity"}},
             }
             point["collections"]["mean-wave-dir"] = collection
         else:

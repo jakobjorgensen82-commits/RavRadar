@@ -1,10 +1,55 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.554
+**Håndbogsversion:** 4.0.555
 
-4.0.554 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+4.0.555 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.177 Samme native gitterpunkt før feltkobling
+
+Den isolerede 4.0.555-kandidat afviser, at samme afrundede koordinat alene
+beviser et fælles modelpunkt. Strøm-, vind- og bølgefelter kobles kun, når
+den normale producent har samme native elementindeks og samme private
+identitet for hele gittersektionen, inklusive læserækkefølge. Den eksisterende
+offentlige tredelte gitteridentitet ændres ikke. Den nye private kontrolmarkør
+udelades af gemte gitterpunkter og kildeproveniens. Gyldige fælles punkter og
+nulværdier bevares; valgfri bølgeretning skal komme fra samme punkt.
+
+Tolv afgrænsede tests af de faktiske producentfunktioner består. Fem
+eksisterende syntetiske fixtures beholder deres assertions, og schedulerens
+normale Node/Python-prøve består. Den eksisterende sourcegruppe når nye mål
+én gang og beholder 47 kommandoer. PR'ens nativekontrol skal bruge den rigtige
+fastlåste decoder og egne kunstige GRIB-filer; den er endnu ikke bestået.
+Manglende faktisk nåbarhed må give fejl, ikke en indsat kandidat eller et skip.
+Workflowinventar og rækkefølge består efter registrering af det allerede
+eksisterende diagnoseworkflow; ingen ny dispatch eller providerlæsning følger.
+
+Kandidaten må ikke merges eller aktiveres, før gamle cachekvitteringer,
+native/protected/retained historik, strømhukommelse og SOURCE inklusive T+3
+har en dokumenteret tabsfri overgang. Cacheklar-genvejen kan ellers undgå ny
+parsing. Parser20/grid9 og snæver auditeret decoderkompatibilitet er endnu
+uændrede; det er et åbent krav, ikke en frikendelse af gamle rækker. Et simpelt
+versionsbump er ikke en fuld overgang. Ingen original proveniens ommærkes,
+gyldige timer slettes ikke, og administrative punkter ændres ikke. Fysisk
+korrekt koordinatfortolkning og faktisk påvirkning af scorer er stadig åbne.
+
+4.0.554 blev faktisk leveret på main 232640149b3a74674e42618465026c65d05eee81
+gennem normalt deploy 37955527084 den 9. oktober kl. 18.07 dansk tid:
+privat gemning/publicering, Edge, Pages, offentlig 210/673-kontrol og terminal.
+Browseren viste versionsnummeret og ét korrekt kontrolleret score-/fundsvar.
+Det er ikke bevis for fungerende ekstern AI eller en frisk vejrgeneration.
+De tidligere lokale 4.0.553/554-afsnit nedenfor er historik; deres leveringsstatus
+erstattes af dette afsnit, ikke deres dokumenterede teknik og restbegrænsninger.
+
+De separate lokale eksport- og tyske tokenrettelser er ikke medleveret her.
+Begge modelbundles er uændrede, og geodata ændres kun i topversionsfeltet.
+Den statiske SQL-håndbogskopi er en lokal tekstkopi, ikke databaseinstallation.
+Den store revision og bindingsadskillelsen er ikke aktiveret; særskilte
+destinationsafvisninger består. Hele revisionen, holdbar brugerdata, bred
+Spørg RavRadar og drift uden Codex omkring 21. oktober er fortsat åbne.
+Ingen ekstra originaldiagnose, manuel vejrhentning, annullering eller ændret
+cron følger af kandidaten.
 
 ## 89.176 Afsluttet DMI-gemning før næste skrivning
 

@@ -20,6 +20,7 @@ for (const file of [
   'test-current-operational-live-builder.py',
   'test-current-operational-producer-chain.py',
   'test-dmi-bulk-supervised.py',
+  'test-dmi-current-cell-key.py',
 ]) {
   test(file, { timeout: 160_000 }, () => {
     const result = spawnSync(python, ['-B', path.join(root, 'scripts', file)], {

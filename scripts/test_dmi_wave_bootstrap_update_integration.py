@@ -2360,7 +2360,9 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                     "latitude": zone["lat"],
                     "longitude": zone["lon"],
                     "distanceKm": 0.0,
-                    "index": gid,
+                    # The three message handles carry fields at one node.
+                    "index": 17,
+                    "_gridIndexIdentity": hashlib.sha256(b"synthetic-wam-parser-grid-order").hexdigest(),
                     "gridDefinitionSha256": "d" * 64,
                     "_candidateCount": 1,
                 }] if zone["id"] == zones[0]["id"] else [])
@@ -2442,6 +2444,8 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertEqual(accepted_hour["significant-wave-height"], 1.0)
         self.assertEqual(accepted_hour["dominant-wave-period"], 6.0)
         self.assertEqual(accepted_hour["mean-wave-dir"], 270.0)
+        for point in active["zones"][zones[0]["id"]]["gridPoints"].values():
+            self.assertNotIn("_gridIndexIdentity", point)
         self.assertEqual(
             accepted_hour["sources"]["wave"]["contentSha256"],
             capture["contentSha256"],

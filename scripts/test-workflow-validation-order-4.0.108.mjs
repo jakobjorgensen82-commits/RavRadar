@@ -86,7 +86,7 @@ productionWorkflowNames.add('run-current-weather-once.yml');
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'audit-saved-weather-inputs.yml', 'audit-sealed-current-source.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'notify-weather-failure.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'recover-sealed-weather-36396834072.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml', 'watch-missed-weather-schedule.yml'];
+const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'audit-native-current-grid.yml', 'audit-saved-weather-inputs.yml', 'audit-sealed-current-source.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'notify-weather-failure.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'recover-sealed-weather-36396834072.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml', 'watch-missed-weather-schedule.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
@@ -213,7 +213,19 @@ for (const workflowName of sourceGateWorkflowNames) {
     if (sourceGateRun < 0) break;
     sourceGatePathCount += 1;
     const sourceGateStep = workflow.lastIndexOf('\n      - name:', sourceGateRun);
-    const dependencyStep = workflow.lastIndexOf('\n      - name:', sourceGateStep - 1);
+    let dependencyStep = workflow.lastIndexOf('\n      - name:', sourceGateStep - 1);
+    // The existing PR-only native step is the sole permitted interposition.
+    // Every other source path still requires immediate dependency parity.
+    const immediateBlock = workflow.slice(dependencyStep, sourceGateStep);
+    if (workflowName === 'validate-pull-request.yml'
+      && immediateBlock.includes('name: Validate bounded native current diagnosis on artificial data only')) {
+      assert.doesNotMatch(immediateBlock, /(?:^|\n)\s+(?:if|continue-on-error):/);
+      for (const command of [
+        'python -B scripts/test-native-current-grid.py --native',
+        'python -B scripts/test-dmi-current-cell-key.py --real-eccodes',
+      ]) assert.ok(immediateBlock.includes(command));
+      dependencyStep = workflow.lastIndexOf('\n      - name:', dependencyStep - 1);
+    }
     if (sourceGateStep < 0 || dependencyStep < 0) {
       throw new Error(`${workflowName}: validate:source mangler en umiddelbart forudgående dependency-step.`);
     }
@@ -296,6 +308,19 @@ if (/\.nc(?:\s|$)/m.test(historicalWavePilot)) {
   throw new Error('Den historiske bølgepilot må ikke uploade NetCDF-filer.');
 }
 const pullRequestValidation = fs.readFileSync(`${workflowDirectory}/validate-pull-request.yml`, 'utf8').replace(/\r\n/g, '\n');
+// Both native gates use artificial messages in the existing PR job. This is
+// not authority to dispatch another original-file diagnosis or weather run.
+for (const marker of [
+  'python -B scripts/test-native-current-grid.py --native',
+  'python -B scripts/test-dmi-current-cell-key.py --real-eccodes',
+]) {
+  assert.equal(pullRequestValidation.split(marker).length - 1, 1,
+    `Exactly one artificial native gate is required: ${marker}`);
+  assert.ok(pullRequestValidation.indexOf(marker)
+    < pullRequestValidation.indexOf('name: Validate source contracts and release governance'));
+}
+assert.doesNotMatch(pullRequestValidation, /run-native-current-grid-audit\.py|DMI_API_KEY|workflow_dispatch:/,
+  'A pull-request native test must not acquire originals or gain dispatch authority.');
 for (const marker of [
   'pull_request:',
   'permissions:\n  contents: read',

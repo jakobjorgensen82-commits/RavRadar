@@ -805,7 +805,8 @@ module.time.time=real_time
 cell='a'*64
 other='b'*64
 def candidate(definition,lat,lon,distance,value):
- return {'gridDefinitionSha256':definition,'latitude':lat,'longitude':lon,'distanceKm':distance,'value':value}
+ return {'gridDefinitionSha256':definition,'latitude':lat,'longitude':lon,'distanceKm':distance,'value':value,
+  'index':7,'_gridIndexIdentity':module.hashlib.sha256(('synthetic-scheduler-grid-order:'+definition).encode()).hexdigest()}
 height=candidate(cell,1,2,0.0,1.2)
 period=candidate(cell,1,2,0.0,6.0)
 direction=candidate(other,1,2,0.0,270.0)
@@ -1025,6 +1026,7 @@ with tempfile.TemporaryDirectory() as temporary:
  assert produced['sources']['wave']['entityId']=='PART::TEST'
  assert produced['sources']['wave']['parentZoneId']=='ZONE-TEST'
  assert produced['sources']['wave']['collection']=='wam_dw'
+ assert all('_gridIndexIdentity' not in point for point in producer_output['zones']['PART::TEST']['gridPoints'].values())
  assert produced['sources']['wave']['optionalFieldSet']==['mean-wave-dir']
  assert touched=={'PART::TEST'} and not interrupted and messages==3
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import json
 import os
@@ -49,6 +50,8 @@ zone = {
 }
 candidate = {
     "gridDefinitionSha256": "a" * 64,
+    "_gridIndexIdentity": hashlib.sha256(b"synthetic-provenance-grid-order").hexdigest(),
+    "index": 7,
     "longitude": 2.0,
     "latitude": 1.0,
     "distanceKm": 0.0,
@@ -1762,6 +1765,9 @@ try:
         "longitude": 2.0,
         "distanceKm": 0.0,
     }]
+    producer.codes_get = lambda gid, key: (
+        "a" * 32 if key == "md5GridSection" else original_codes_get(gid, key)
+    )
 
     class NumpyArrayLike:
         """Exercise the documented ecCodes ndarray protocol without NumPy."""
@@ -1793,6 +1799,8 @@ try:
 
     def counting_codes_get(_gid, key):
         metadata_calls.append(key)
+        if key == "md5GridSection":
+            return "a" * 32
         return 9999.0 if key == "missingValue" else f"grid-{key}"
 
     second_zone = {**zone, "id": "PART::TEST-2"}
@@ -1817,7 +1825,7 @@ try:
     )
     assert counted_rows[zone["id"]][0]["gridDefinitionSha256"] != (
         producer.grid_definition_sha256_from_signature(
-            ("grid-md5GridSection", *legacy_definition_signature)
+            ("a" * 32, *legacy_definition_signature)
         )
     )
 
@@ -1826,7 +1834,7 @@ try:
     # internal nearest-index cache.
     def grid_identity_codes_get(gid, key):
         if key == "md5GridSection":
-            return f"grid-section-{gid}"
+            return f"{gid:032x}"
         return f"grid-{key}"
 
     producer.codes_get = grid_identity_codes_get
@@ -1834,6 +1842,9 @@ try:
     second_cache_signature = producer.grid_cache_signature(1002)
     assert first_cache_signature[1:] == second_cache_signature[1:]
     assert first_cache_signature != second_cache_signature
+    assert producer.grid_index_identity_sha256_from_cache(first_cache_signature) != (
+        producer.grid_index_identity_sha256_from_cache(second_cache_signature)
+    )
     producer.GRID_INDEX_CACHE.clear()
 
     def one_grid_candidate(index):
@@ -1961,6 +1972,7 @@ try:
         assert grid_points["current-u"]["gridDefinitionSha256"] == "a" * 64
         assert grid_points["sea-mean-deviation"]["gridDefinitionSha256"] == "a" * 64
         assert all("_candidateCount" not in point for point in grid_points.values())
+        assert all("_gridIndexIdentity" not in point for point in grid_points.values())
         hour = output["zones"][zone["id"]]["hourly"][valid_time]
         assert "current-u" in hour and "sea-mean-deviation" in hour
         assert {"wind-tail-u-10m", "wind-tail-v-10m"} <= set(hour)

@@ -6,6 +6,7 @@ are used; only ecCodes/file transport is replaced with in-memory messages.
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import io
 import sys
@@ -33,7 +34,8 @@ RUN = "2026-09-19T00:00:00Z"
 OLD_RUN = "2026-09-18T18:00:00Z"
 VALID = "2026-09-19T03:00:00Z"
 ZONE = {"id": "PART::TEST", "parentZoneId": "ZONE", "coastalPart": True, "coastType": "east", "lon": 2.0, "lat": 1.0}
-POINT = {"gridDefinitionSha256": "a" * 64, "longitude": 2.0, "latitude": 1.0, "distanceKm": 0.0, "index": 1}
+POINT = {"gridDefinitionSha256": "a" * 64, "longitude": 2.0, "latitude": 1.0, "distanceKm": 0.0, "index": 1,
+         "_gridIndexIdentity": hashlib.sha256(b"synthetic-chain-grid-order").hexdigest()}
 CAPTURE = {"itemId": "synthetic-item", "assetIdentitySha256": "b" * 64, "assetSizeBytes": 128, "acquiredAt": RUN, "contentLengthBytes": 128, "contentSha256": "c" * 64}
 PEAK = {"shortName": "pp1d", "paramId": 231, "indicatorOfParameter": 231}
 
@@ -532,6 +534,8 @@ class WaveSemanticsTests(unittest.TestCase):
                 self.assertEqual(row["dominant-wave-period"], 8.0)
                 self.assertEqual(row["sources"]["wave"]["wavePeriodField"], PEAK)
                 self.assertTrue(producer.complete_native_source_for_hour(row["sources"]["wave"], "wave", ZONE["id"], output["zones"][ZONE["id"]], VALID))
+                for point in output["zones"][ZONE["id"]]["gridPoints"].values():
+                    self.assertNotIn("_gridIndexIdentity", point)
 
     def test_old_ambiguous_wave_is_not_relabelled_but_other_components_survive(self):
         legacy = source("wave")
