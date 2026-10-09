@@ -1,10 +1,54 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.553
+**Håndbogsversion:** 4.0.554
 
-4.0.553 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+4.0.554 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.176 Afsluttet DMI-gemning før næste skrivning
+
+Den lokale 4.0.554-kandidat kontrollerer den normale DMI-checkpointgemning,
+ikke hele den isolerede revisions aktivering. En vellykket skrive-, lukke-
+eller flyttekvittering er ikke alene bevis for en færdig fil. Gemmeren
+kontrollerer sine fulde bytes med en afgrænset hashscan, den uændrede parser
+på samme egne læsehåndtag, faktisk lukning, fil-/mappeidentitet, den rigtige
+målfil og fravær af den midlertidige fil. Første fejl bevares.
+
+Usikker afslutning eller publicering bevarer arbejdet og stopper den normale
+DMI-kø før senere skrivning. En fejltekst må ikke give adgang til genstart.
+Selvstændigt bevist sikker fejl med lukkede håndtag tillader legitimt senere
+genbrug af gemmeren og en frisk caller. Den samme normale updater-kæde
+bevarer sin første afvisning og starter ikke gemmeren igen. Det er ikke
+automatisk recovery eller nulstilling. En usikker gemmer beholder sine egne
+håndtag og sin midlertidige fil og afviser også en frisk caller. En sen
+flyttefejl må ikke rulle en allerede gyldig målfil tilbage.
+Parseren åbner ikke længere et tredje, usporbart håndtag i writerens kontrol.
+Normale læsesignaturer, parserpolitik, serializer og øvrig updater er bevaret
+med mekanisk bytekontrol mod faktisk main. Nye måltests nås én gang gennem
+eksisterende sourcegruppe; ingen nye workflowblade eller tidsbudgetter.
+
+Den relevante lokale sourcegruppe bestod før sidste caller-regression med
+185 testnoder og én eksisterende frivillig kapacitetsprøve sprunget over;
+den brede gruppe gentages ikke for status. Den endelige lille DMI-gruppe
+har 51 beståede og samme kapacitetsskip. Det ekstra fuldfilscans nationale
+tids-/kapacitetsomkostning er endnu ikke bevist. Det er ikke national kapacitetskontrol,
+eksakt ny GitHub-kontrol, offentlig levering eller samlet driftssikkerhed.
+Hele revisionens processtop, SOURCE, original-B/S-før-T, historik, gemning,
+upload, tab af runner og 210/673-kapacitet er fortsat særskilt åbne.
+
+Den godkendte fjerde originaldiagnose er gennemført uden produktionsskrivning.
+Limfjordsmodellens decoder-koordinater afviger op til cirka 0,13 breddegrad
+fra gitterets angivne endepunkter; samme forskel findes ikke i den undersøgte
+Nordsø/Østersø-fil. Det er ikke en færdig numerisk rettelse eller en frikendelse
+af adminmål, historik, strømhukommelse eller score og forklarer ikke alene
+landpilene ved Øster Hurup. Engangstilladelsen er forbrugt.
+
+Ingen vejrdata, strøm-/scoreværdi, kildevalg, adminpunkt eller geometri ændres.
+Begge vejrbundles skal være uændrede; geodata følger kun topversionsfeltet.
+Den statiske SQL-håndbogskopi er en lokal kildefil, ikke SQLinstallation.
+Sikker integration, normalt kontrolleret deploy og faktisk effekt i næste
+gyldige generation mangler. Ingen ekstra manuel vejrhentning eller ændret cron.
 
 ## 89.175 Ventende ture og svar om score versus fund
 

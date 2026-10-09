@@ -1,6 +1,6 @@
-import { submitHandbookReview, exportLocalHandbookDrafts, centralReviewStorageEnabled } from '../services/handbook-review-store.js?v=4.0.553';
-import { currentSession, getCurrentRole, signInAsExpert, signOut, expertLoginConfig } from '../services/auth-service.js?v=4.0.553';
-import { sanitizeTrustedHtml } from '../services/html-sanitizer.js?v=4.0.553';
+import { submitHandbookReview, exportLocalHandbookDrafts, centralReviewStorageEnabled } from '../services/handbook-review-store.js?v=4.0.554';
+import { currentSession, getCurrentRole, signInAsExpert, signOut, expertLoginConfig } from '../services/auth-service.js?v=4.0.554';
+import { sanitizeTrustedHtml } from '../services/html-sanitizer.js?v=4.0.554';
 const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const content=document.querySelector('#handbookContent');
 const toc=document.querySelector('#handbookToc');
