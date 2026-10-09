@@ -206,6 +206,8 @@ if REAL:
 
         LF = (810, 390, 56.461, 57.109, 8.138, 10.385, .003, .002)
         NSBS = (414, 348, 48.525, 65.875, 355.875, 30.292, .083, .05)
+        WAVE = (201, 201, 56.4, 56.8, 10.0, 10.4, .002, .002)
+        WAVE_INDEX = 100 * 201 + 100
         ALIAS = (262457, 315107)
         TIME = "2026-10-09T00:00:00Z"
         allocated_fixture_bytes = 0
@@ -273,15 +275,21 @@ if REAL:
                     "coastalPart": True, "coastType": coast_type,
                     "lat": coordinate[0], "lon": coordinate[1]}
 
-        def require_native_union(self, gid, collection, zone, indices):
+        def native_union(self, gid, collection, zone):
             producer = self.producer
             signature = producer.grid_cache_signature(gid)
             producer.warm_marine_grid_cache(gid, collection, [zone], signature)
             union = producer.nearest_candidates(gid, collection, zone, signature=signature)
+            self.assertLessEqual(len(union), producer.grid_candidate_target(collection, zone))
+            return union
+
+        def require_native_union(self, gid, collection, zone, indices):
+            union = self.native_union(gid, collection, zone)
             actual = {row["index"] for row in union}
             self.assertTrue(
                 set(indices) <= actual,
-                "NATIVE_REACHABILITY_UNPROVED: actual normal probe union did not contain every required node",
+                "NATIVE_REACHABILITY_UNPROVED: actual normal probe union did not contain every required node; "
+                f"syntheticExpectedIndices={list(indices)}; syntheticActualIndices={sorted(actual)}",
             )
             return union
 
@@ -314,12 +322,16 @@ if REAL:
         def test_native_lf_same_index_and_zero_remain_valid(self):
             with self.grid(self.LF, self.ALIAS) as (gid, values, cells):
                 zone = self.zone(cells[self.ALIAS[0]])
-                self.require_native_union(gid, "dkss_lf", zone, (self.ALIAS[0],))
-                u = self.masked_candidates(gid, values, "dkss_lf", zone, self.ALIAS[0], 0.0, 49)
-                v = self.masked_candidates(gid, values, "dkss_lf", zone, self.ALIAS[0], -.5, 50)
+                # Positive caller proof must use a node the real lookup reaches,
+                # not assume that the independently derived alias is reachable.
+                union = self.native_union(gid, "dkss_lf", zone)
+                self.assertTrue(union, "Real LF lookup returned no positive control node")
+                index = union[0]["index"]
+                u = self.masked_candidates(gid, values, "dkss_lf", zone, index, 0.0, 49)
+                v = self.masked_candidates(gid, values, "dkss_lf", zone, index, -.5, 50)
                 pair = self.producer.select_common_grid_tuple({U: u, V: v}, (U, V))
                 self.assertIsNotNone(pair)
-                self.assertEqual((pair[U]["index"], pair[V]["index"]), (self.ALIAS[0],) * 2)
+                self.assertEqual((pair[U]["index"], pair[V]["index"]), (index, index))
                 self.assertEqual(pair[U]["value"], 0.0)
 
         def test_native_nsbs_normal_grid_same_index_remains_valid(self):
@@ -334,11 +346,11 @@ if REAL:
                 self.assertEqual((pair[U]["index"], pair[V]["index"]), (index, index))
 
         def wave_file(self, gid, values, path, direction_index):
-            # Real artificial WAM fields on the LF-shaped synthetic grid. The
+            # Real artificial WAM fields on a regular synthetic grid. The
             # native classifier must confirm every shortName; no stubbed field
             # identity or source-capture return value is permitted.
-            fields = (("swh", "significant-wave-height", self.ALIAS[0], 1.0),
-                      ("pp1d", "dominant-wave-period", self.ALIAS[0], 8.0),
+            fields = (("swh", "significant-wave-height", self.WAVE_INDEX, 1.0),
+                      ("pp1d", "dominant-wave-period", self.WAVE_INDEX, 8.0),
                       ("mwd", "mean-wave-dir", direction_index, 90.0))
             with path.open("wb") as output:
                 for short_name, expected, index, value in fields:
@@ -361,13 +373,18 @@ if REAL:
             return digest
 
         def test_native_optional_wave_direction_requires_same_node(self):
-            with self.grid(self.LF, self.ALIAS) as (gid, values, cells):
-                zone = self.zone(cells[self.ALIAS[0]])
-                self.require_native_union(gid, "wam_dw", zone, self.ALIAS)
+            # The old LF-shaped wave fixture placed the target at a domain
+            # boundary: ordinary WAM probing correctly failed OutOfAreaError.
+            # Keep this control well inside its own artificial WAM domain;
+            # the separate LF alias reachability gate remains strict and OPEN.
+            indices = (self.WAVE_INDEX, self.WAVE_INDEX + 1)
+            with self.grid(self.WAVE, indices) as (gid, values, cells):
+                zone = self.zone(cells[self.WAVE_INDEX], "east")
+                self.require_native_union(gid, "wam_dw", zone, indices)
                 path = self.directory / "synthetic-wave.grib"
                 for same_node in (False, True):
                     with self.subTest(same_node=same_node):
-                        digest = self.wave_file(gid, values, path, self.ALIAS[0 if same_node else 1])
+                        digest = self.wave_file(gid, values, path, indices[0 if same_node else 1])
                         output, diagnostics = {"zones": {}}, {}
                         found, _, interrupted, messages, _ = self.producer.process_grib(
                             path, "wam_dw", self.TIME, self.TIME, [zone], output, diagnostics,
