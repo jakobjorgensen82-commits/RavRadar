@@ -20,8 +20,16 @@ const sourceView = source => {
     ...(source.modelRun == null ? {} : { modelRun: time(source.modelRun) }),
     ...(source.nativeValidTimes == null ? {} : { nativeValidTimes: source.nativeValidTimes.map(time) }) };
 };
+// Exact public projection contract of the original producer. This comparison
+// intentionally does NOT claim that omitted run/cell IDs were publicly stored.
+const publicSourceFields = ['status', 'reason', 'provider', 'collection', 'source', 'sourceClass',
+  'controlledLivePilot', 'temporalResolution', 'verticalLayer', 'vectorSelection',
+  'vectorSemanticsVersion', 'method', 'fallback', 'distanceKm'];
+const publicSourceView = source => source && Object.fromEntries(publicSourceFields
+  .filter(key => source[key] !== undefined).map(key => [key, source[key]]));
 export function measureSavedCurrentSelection({ part, record, bulk, pilot, referenceAt,
-  storedRows = [], integratedEvidence = [], candidateEvidence = [], readers, mask }) {
+  storedRows = [], integratedEvidence = [], candidateEvidence = [], readers, mask, projectionKind = 'private' }) {
+  if (!['private', 'public'].includes(projectionKind)) fail('PROJECTION_KIND');
   if (!part?.partId || !finite(part.onshoreDirectionDeg)) fail('SELECTION_PART');
   const bulkId = 'PART::' + part.partId, identity = readers.dmiExpectedIdentityForPart(part, bulkId);
   // Missing continuity stays missing. Do not fabricate hourly rows from score
@@ -43,6 +51,8 @@ export function measureSavedCurrentSelection({ part, record, bulk, pilot, refere
     return result;
   };
   const projection = { rows: 0, matched: 0, mismatched: 0, unavailable: 0,
+    modeWeatherCompared: 0, modeWeatherMismatches: 0,
+    arrowPointMatched: 0, arrowPointMismatched: 0, arrowPointUnavailable: 0,
     providers: { dmi: 0, copernicus: 0, 'open-meteo': 0 }, mapLocation: locations() };
   const seen = new Set();
   for (const stored of storedRows) {
@@ -54,12 +64,29 @@ export function measureSavedCurrentSelection({ part, record, bulk, pilot, refere
     if (source?.status !== 'verified' || !Object.hasOwn(projection.providers, source.provider)) {
       projection.unavailable++; continue;
     }
+    const expectedSource = readers.displayedCurrentProvenance(source);
+    const expectedView = projectionKind === 'public' ? publicSourceView(expectedSource) : sourceView(expectedSource);
     if (row.currentSpeedMps !== stored.weather.currentSpeedMps
       || row.currentDirectionDeg !== stored.weather.currentDirectionDeg
-      || !isDeepStrictEqual(sourceView(readers.displayedCurrentProvenance(source)),
-        sourceView(stored.weather.currentProvenance))) { projection.mismatched++; continue; }
+      || !isDeepStrictEqual(expectedView,
+        projectionKind === 'public' ? stored.weather.currentProvenance : sourceView(stored.weather.currentProvenance))) {
+      projection.mismatched++; continue;
+    }
     projection.matched++; projection.providers[source.provider]++;
     projection.mapLocation[location(source.gridPoint)]++;
+    for (const weather of stored.modeWeather ?? []) {
+      if (weather == null) continue;
+      projection.modeWeatherCompared++;
+      if (weather.time !== undefined && time(weather.time) !== key
+        || weather.currentSpeedMps !== stored.weather.currentSpeedMps
+        || weather.currentDirectionDeg !== stored.weather.currentDirectionDeg
+        || !isDeepStrictEqual(weather.currentProvenance, stored.weather.currentProvenance)) projection.modeWeatherMismatches++;
+    }
+    const point = stored.flowPoints?.current;
+    if (!Array.isArray(point) || !Array.isArray(source.gridPoint)) projection.arrowPointUnavailable++;
+    else if (point.length === 2 && source.gridPoint.length === 2
+      && point.every((value, i) => finite(value) && finite(source.gridPoint[i]) && Math.abs(value - source.gridPoint[i]) <= 1e-7)) projection.arrowPointMatched++;
+    else projection.arrowPointMismatched++;
   }
   const memories = {};
   for (const [kind, evidence, maximum] of [['integrated', integratedEvidence, 50], ['candidateG', candidateEvidence, 49]]) {

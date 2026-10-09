@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createCurrentArrowLandMask, CURRENT_ARROW_LAND_MASK_SHA256 } from '../js/map/current-arrow-land-mask.js';
 import { measureSavedCurrentSelection, selectSavedCandidateRoot,
   validateSavedCandidateState } from './lib/sealed-arrow-score-selection.mjs';
+import { savedPrivateScoreRows, readSavedPublicScoreRows } from './lib/sealed-arrow-score-hours.mjs';
 
 export const SEALED_ARROW_SCORE_TARGET = Object.freeze({
   repository: 'jakobjorgensen82-commits/RavRadar', repositoryId: 1306858343,
@@ -63,7 +64,7 @@ export async function originalArrowScoreReaders(producerRoot) {
   if (!stat.isDirectory() || stat.isSymbolicLink()) fail('PRODUCER_ROOT');
   const load = relative => import(pathToFileURL(path.join(root, relative)).href);
   const [workflow, bundle, staged, bulk, hourly, bounds, adapters, memory, forecast, continuity,
-    assembly, spatial, regime, candidate, candidateBinding] = await Promise.all([
+    assembly, spatial, regime, candidate, candidateBinding, publicHours] = await Promise.all([
     load('scripts/private-production-runtime-workflow.mjs'),
     load('scripts/private-production-runtime-bundle.mjs'),
     load('scripts/staged-private-production-runtime.mjs'),
@@ -74,10 +75,11 @@ export async function originalArrowScoreReaders(producerRoot) {
     load('scripts/lib/protected-live-current-assembly.mjs'),
     load('scripts/lib/current-spatial-runtime-proof.mjs'), load('js/core/ravscore-regime-memory.js'),
     load('scripts/lib/ravscore-candidate-g-rollback-runtime.mjs'), load('scripts/rollback-assets/ravscore-model-contract.js'),
+    load('scripts/lib/public-hour-delivery-pack.mjs'),
   ]);
   return { root, ...workflow, ...bundle, ...staged, ...bulk, ...hourly,
     ...bounds, ...adapters, ...memory, ...forecast, ...continuity, ...assembly, ...spatial, ...regime, ...candidate,
-    candidateModelBinding: candidateBinding.ravScoreModelBinding };
+    ...publicHours, candidateModelBinding: candidateBinding.ravScoreModelBinding };
 }
 export async function originalArrowScoreExpectation(readers, now = new Date().toISOString()) {
   const t = SEALED_ARROW_SCORE_TARGET;
@@ -101,7 +103,7 @@ export function measureArrowScorePart({ part, record, bulk, mask, readers }) {
     exactRows.set(key, row);
   }
   const seenScoreTimes = new Set();
-  for (const row of part.hourly ?? []) {
+  for (const row of savedPrivateScoreRows(part)) {
     const key = timeKey(row.time);
     if (seenScoreTimes.has(key)) fail('DUPLICATE_SCORE_TIME');
     seenScoreTimes.add(key);
@@ -197,6 +199,7 @@ export async function inspectSealedArrowScores({ producerRoot, privateRoot, bund
       || timeKey(conditions.productionReferenceAt) !== expected.productionReferenceAt
       || Object.keys(conditions.zones ?? {}).length !== 210
       || Object.keys(conditions.coastalParts?.parts ?? {}).length !== 673) fail('CONDITIONS_IDENTITY');
+    const savedPublic = await readSavedPublicScoreRows({ conditions, payload, privateRoot, readers });
     const maskFile = path.join(maskRoot, 'data/map/current-arrow-land-mask.json');
     const maskStat = await fs.lstat(maskFile);
     if (!maskStat.isFile() || maskStat.isSymbolicLink() || maskStat.size !== 4481562) fail('MASK_BOUND');
@@ -212,11 +215,14 @@ export async function inspectSealedArrowScores({ producerRoot, privateRoot, bund
       ? pilotDocument : null; // Same admission entry as the original normal caller.
     const candidateRoot = selectSavedCandidateRoot(conditions, readers);
     const selectedInputs = { projection: { rows: 0, matched: 0, mismatched: 0, unavailable: 0,
+      modeWeatherCompared: 0, modeWeatherMismatches: 0,
+      arrowPointMatched: 0, arrowPointMismatched: 0, arrowPointUnavailable: 0,
       providers: { dmi: 0, copernicus: 0, 'open-meteo': 0 }, mapLocation: locations() },
     memories: Object.fromEntries(['integrated', 'candidateG'].map(kind => [kind,
       { finite: 0, missing: 0, matched: 0, mismatched: 0, unavailable: 0,
         providers: { dmi: 0, copernicus: 0, 'open-meteo': 0 }, mapLocation: locations() }])) };
     let candidateStatesReplayed = 0;
+    const publicProjection = structuredClone(selectedInputs.projection);
     const addCounts = (target, input) => {
       for (const [key, value] of Object.entries(input)) {
         if (typeof value === 'number') target[key] += value;
@@ -257,10 +263,14 @@ export async function inspectSealedArrowScores({ producerRoot, privateRoot, bund
       const candidateEvidence = candidateRoot ? validateSavedCandidateState(candidateState, part, readers) : [];
       candidateStatesReplayed += Number(candidateRoot !== null);
       const selected = measureSavedCurrentSelection({ part, record, bulk, pilot,
-        referenceAt: expected.productionReferenceAt, storedRows: part.hourly ?? [],
+        referenceAt: expected.productionReferenceAt, storedRows: savedPrivateScoreRows(part),
         integratedEvidence: part.ravScoreModel?.currentState?.currentEvidence ?? [],
         candidateEvidence, readers, mask });
       addCounts(selectedInputs, selected);
+      const published = measureSavedCurrentSelection({ part, record, bulk, pilot,
+        referenceAt: expected.productionReferenceAt, storedRows: savedPublic.rows.get(partId),
+        readers, mask, projectionKind: 'public' });
+      addCounts(publicProjection, published.projection);
       totals.parts++; totals.storedScoreRows += p.rows; totals.storedDmiScoreRows += p.dmiRows;
       totals.storedOtherProviderScoreRows += p.otherProviderRows;
       totals.dmiScoreSelectionMismatches += p.normalSelectionMismatch;
@@ -284,6 +294,9 @@ export async function inspectSealedArrowScores({ producerRoot, privateRoot, bund
       nationalPartsMeasured: 673, coastlineSha256: CURRENT_ARROW_LAND_MASK_SHA256,
       continuity: meta ? 'ORIGINAL_DMI_ONLY' : 'NOT_PRESENT', totals,
       selectedInputs, controlledPilotPresent: pilot !== null,
+      savedScoreStorage: savedPublic.summary, publicProjection,
+      privateProjectionScope: 'SAVED_PRIVATE_CURRENT_OR_ORIGINAL_INLINE_ROWS',
+      publicProjectionScope: 'SAVED_PUBLIC_HOURS_WITH_PUBLIC_PROVENANCE_NOT_PERSISTED_CAUSAL_JOIN',
       candidateRoot: candidateRoot?.kind ?? 'NOT_PRESENT', candidateStatesReplayed,
       attribution: 'SAVED_INPUT_TIME_SOURCE_AND_PROJECTION_MATCH_NOT_PERSISTED_CAUSAL_JOIN',
       nativeWetMask: 'NOT_MEASURED_COASTLINE_IS_NOT_PROVIDER_CELL_VALIDITY',

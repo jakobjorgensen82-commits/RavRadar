@@ -1,3 +1,17 @@
+# 2026-10-08 sen aften – originaldiagnose udført; gemte scoretimers læser rettet lokalt
+
+Opfølgning 8. oktober sent om aftenen: Den første godkendte originaldiagnose
+er nu udført efter sin præcise kilde-CI og sikre integration. Den giver
+afgrænsede match i strømhukommelsen, men frikender ikke scoregrundlaget.
+Rapportens nul scoretimer skyldtes, at diagnosen overså den normale separate
+timepakke. Hovedfilens aktuelle score og pakkens prognosetimer læses nu
+lokalt med originale læsere og uændret autentificering. Privat proveniens
+og offentlig projektion sammenlignes hver for sig. En samlet normal
+gemnings-/krypteringsprøve med 673 syntetiske dele består. Manglende timer
+opfindes ikke; der beregnes ingen nye scorer. Ny præcis CI, integration og
+en særskilt godkendt gentagen pakkediagnose mangler. Første engangsordre er
+forbrugt. Native vådmaske og numerisk korrekthed er fortsat åbne.
+
 # 2026-10-08 aften – Display leveret; normal originaldiagnose udvidet lokalt
 
 Den almindelige efterfølger har afsluttet gemning, fulde kontroller, deploy
