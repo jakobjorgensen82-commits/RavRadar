@@ -1,4 +1,25 @@
-# 2026-09-17 – metadatarettelse kræver ny append-only modelbinding
+# Aktuel 4.0.556 – klientgrænser uden ny vejrbinding
+
+Den afgrænsede lokale kandidat retter kontosvar, turformularens oprindelige
+aktive tur, turens faktiske afleveringskvittering og ejerbundne uændrede genforsøg,
+sletningens genlæsningskvittering og assistentens UI-fejlmeddelelse.
+En afbrudt aktiv-oprydning må ikke lade en ny besvarelse overskrive den først gemte tur.
+De otte ændrede produktfiler ligger uden for begge faktiske modelclosures.
+Begge eksisterende bundles er uændrede og kontrolleret med normale --check-kald:
+integreret `ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb`
+over 68 filer og rollback `8d9142b5f7d9b5a3e5a0f3593e73df0c7ffaf3d80c036317967cb713f09197e3`
+over 66 filer. Browserens versionsparametre er cacheidentitet, ikke en ny fysisk
+modelbinding. De seks nye mål dækker 70 brugerdata- og 12 UI-prøver lokalt;
+normal baggrundssynkronisering beviser ikke automatisk rydning af en bevaret v2-tur.
+Dette er ikke installation eller offentlig levering.
+
+Ejeren kræver konkret parallel delegation med samlet integration hos hovedagenten.
+Alle fem målområder er fortsat åbne. Originaldata og deres beviser skal bevares;
+kompakt strømhukommelse eller identiske tal giver ikke nye native gitterbeviser.
+Interne fejlanalyser er ikke offentlig assistentviden. Ældre bindingshashes og
+leveringstilstande nedenfor er historik, hvor de modsiges af aktuelle kontroller.
+
+# Historik: 2026-09-17 – metadatarettelse kræver ny append-only modelbinding
 
 - `local-zone-score.js` indgår i RavScore-bundlens transitive closure. Selv en
   korrekt metadataoverførsel ændrer derfor bundlehash og skal bindes ærligt.

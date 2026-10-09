@@ -1,4 +1,34 @@
-# Aktuel cache-hotfix – 4.0.551, 2026-10-07
+# Aktuelt samlet mål – 4.0.556-kandidat og fem åbne leveringsspor
+
+Færdiggør RavRadar med dokumenteret selvstændig drift uden Codex omkring
+21. oktober 2026. Ejeren kræver parallelle afgrænsede delegationer på strømdata
+og score, den samlede vejrhentningsrevision, brugerdata, Spørg RavRadar og drift.
+Hovedagenten kontrollerer integration og koordinerer produktionsskrivning.
+Genbrug afsluttede leverancer og faktisk evidens; ventetid på ét spor må ikke
+standse de øvrige. Arbejd i eksisterende isolerede checkouts, ikke cb79.
+
+Den særskilte lille 4.0.556-klientkandidat retter forsinkede konto-/rettighedssvar,
+en gammel turformular, falsk tur-/slettekvittering, genforsøgets oprindelige ejer,
+id, indhold og tid, bevarelse af første komplette tur ved afbrudt oprydning samt
+intern UI-fejltekst. 70 brugerdata-
+og 12 UI-målprøver samt versions-/RDKS-/håndbogs- og begge bundlekontroller består
+lokalt. Præcis kilde-PR-kontrol, sikker levering og offentlig effekt mangler.
+Den aktiverer ikke den isolerede revision eller en ny modelbinding. Automatisk
+rydning af bevarede v2-ture efter baggrundssynkronisering er ikke bevist.
+
+Næste kritiske strømtrin er no-loss-kvalificering af eksisterende kompakt hukommelse
+og faktisk regional reference før ny brug; begge har konkrete lokale modprøver.
+Vejrhentningsrevisionens normale original-B/S-før-T-, stop-/ejer-/gemningskæde,
+timeout/runner-tab og 210/673-kapacitet er fortsat åbne. Brugerdata kræver faktiske
+installerede gemme-/genlæsnings-/eksport-/rettighedsforløb og ærlig anonym samlet
+viderebrug. Bred assistentviden og eksisterende ekstern AI skal leveres og prøves
+offentligt gennem den aftalte bindingsvej. Codex-kontrol er ikke selvstændig drift.
+
+Ingen nye manuelle vejrhentninger, cronændringer, diagnoser, installationer eller
+destinationsrettigheder gives her. Historiske engangsordrer må ikke genbruges.
+Ingen produktionsændring under aktiv writer. Hele målet og alle fem spor er åbne.
+
+# Historik: cache-hotfix – 4.0.551, 2026-10-07
 
 4.0.551 er en separat minimal cache-rettelse fra main 4.0.549. Den normale gendannelseskalder accepterer allerede en gyldig hel UTC-time uden millisekunder, men SOURCE-kontinuitet kræver kanonisk tidsformat. Kun den validerede kaldertime kanoniseres før sammenfletning; lagrede referencer, autentificering, originale kildebeviser, central routing og hård no-loss er uændrede. Seks eksisterende CLI-varianter dækker gyldige og beskadigede beviser ved kanonisk time, schedulerformat og næste time; et manglende nyt sluttidspunkt opfindes ikke. Ejerens konkrete ja omfatter denne separate GitHub-rettelse med kontrolleret levering og derefter én vejrhentning uden overlappende writer. Den tidligere ordre om ingen ekstra hentning er erstattet alene for dette ene efterfølgende forløb. Særskilte afvisninger, den isolerede store revision og assistentkandidaten ændres ikke. Kilde-CI, sikker merge, deploy og faktisk ny cache-/vejrgeneration er endnu åbne; generisk produktionsfejlkode er ikke bevis for den skjulte indre exception. Tidligere Fur/no-loss-tab er en særskilt åben årsag. Brugerdata, Spørg RavRadar og Codex-uafhængig drift før abonnementets udløb er ikke færdige.
 

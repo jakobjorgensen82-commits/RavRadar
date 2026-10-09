@@ -1,4 +1,4 @@
-import { DATA_BASE, MANIFEST_SHA256, MODEL_VERSION } from './dataset-binding.js?v=4.0.554';
+import { DATA_BASE, MANIFEST_SHA256, MODEL_VERSION } from './dataset-binding.js?v=4.0.556';
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 const MAX_DECODED_BYTES = 80 * 1024 * 1024;

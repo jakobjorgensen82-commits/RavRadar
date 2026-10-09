@@ -1,4 +1,4 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.554";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.556";
 
 const STORAGE_KEY = "ravradar-auth-session";
 const REFRESH_MARGIN_SECONDS = 300;
@@ -203,12 +203,21 @@ export async function consumeAuthCallback() {
   return session;
 }
 export async function getCurrentProfile() {
+  const identity = authIdentityEpoch();
   const s = await requireFreshSession();
   const userId = s.user?.id;
   if (!userId) throw new Error("Din login-session kunne ikke knyttes til din konto. Log ind igen.");
+  const assertOwner = () => {
+    if (authIdentityEpoch() !== identity || currentSession()?.user?.id !== userId)
+      throw new Error("Kontoen blev ændret. Prøv igen fra den rigtige konto.");
+  };
+  assertOwner();
   const response = await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/profiles?select=id,email,display_name,role,is_active&id=eq.${encodeURIComponent(userId)}&limit=1`);
+  assertOwner();
   if (!response.ok) throw new Error(`Kunne ikke kontrollere brugerprofilen (${response.status})`);
-  return (await response.json())[0] || null;
+  const profiles = await response.json();
+  assertOwner();
+  return profiles[0] || null;
 }
 export async function getCurrentRole(){ return (await getCurrentProfile())?.role || null; }
 export function expertLoginConfig(){ return { username: PUBLIC_CONFIG.expertLoginUsername || 'ekspert', email: PUBLIC_CONFIG.expertAuthEmail || 'ekspert@ravradar.dk' }; }

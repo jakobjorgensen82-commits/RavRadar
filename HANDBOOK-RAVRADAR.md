@@ -1,10 +1,48 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.554
+**Håndbogsversion:** 4.0.556
 
-4.0.554 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+4.0.556 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.181 Klientens kontosvar, turformular og fejlmeddelelse
+
+Den lokale 4.0.556-kandidat afviser gamle profil- og rettighedssvar, hvis loginforløbet
+eller kontoen ændres, mens svaret hentes. Almindelig tokenfornyelse og første
+brugerhydrering bevares. En turformular kan ikke afslutte eller kassere en anden
+eller ændret aktiv tur; den nuværende lokale tur og kø bevares ved afvisning.
+Det er ikke en atomisk lås mellem faner eller bevis for serverens adgangskontrol.
+
+Ejersletningskommandoen kræver et faktisk tomt array ved genlæsning af Supabase-ture,
+før den må melde verificeret sletning. Fejlobjekter eller HTTP-/JSON-fejl er ikke
+bevis for tom lagring. Ingen faktisk sletning eller kontoskabning er gennemført.
+Spørg RavRadars yderste fejlgrænse viser en eksisterende oversat neutral besked
+frem for interne fejltekster og bevarer normale svar, genforsøg og indlæsningsstatus.
+
+En tur, der kun er lokal eller afventer serveren, må ikke meldes afleveret eller
+fjernes fra sin v2-kø. Genforsøg bevarer den oprindelige ejer, id, indhold og tid;
+kontoskift eller ændret indhold afvises før ny skrivning. Kvitteringen gælder den
+konkrete tur. Baggrundssynkronisering rydder ikke i sig selv den bevarede v2-tur;
+næste normale afslutningsforsøg kan kontrollere den samme tur igen. Anonyme ture
+overdrages ikke automatisk til en ny konto.
+
+Hvis den komplette tur er gemt, men oprydningen af den aktive tur afbrydes, må
+en ny besvarelse ikke overskrive den første rapport. Identisk genbesvarelse
+bevarer køens oprindelige bytes og genforsøger kun oprydningen; ændret indhold
+afvises med originalerne bevaret. Lagerfejl bevarer den første fejl. Dette er
+ikke fysisk browserholdbarhed eller atomisk samordning mellem faner.
+
+70 relevante brugerdata- og 12 UI-målprøver består lokalt. De seks nye mål nås én gang gennem
+den eksisterende normale sourcegruppe. Begge vejrbundles, scoreformel, vejrdata,
+geometri og centrale bindingsregler er uændrede. Det er endnu ikke præcis ny
+GitHub-kontrol, installation, fungerende ekstern AI eller offentlig effekt.
+Den statiske SQL-håndbogskopi er kun en lokal kildefil, ikke en installation.
+
+Hele strøm-/scoreovergangen, vejrhentningsrevisionen, varig brugerdata, bred
+assistentviden og selvstændig drift uden Codex er stadig åbne. Ejeren kræver
+parallel delegation, men hovedagenten koordinerer sikker integration og levering.
+Aktiv vejrhentning må ikke afbrydes eller konkurrere med produktionsændringer.
 
 ## 89.176 Afsluttet DMI-gemning før næste skrivning
 

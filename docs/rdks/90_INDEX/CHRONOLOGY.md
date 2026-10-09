@@ -1,4 +1,22 @@
-## 2026-10-02 – offentlig539, ny16Zmåling og isoleret540
+# Lokal 4.0.556 – afgrænsede klientrettelser; offentlig levering afventer
+
+Denne særskilte kandidat er udtaget fra den aktuelle main-kode. Den forbedrer normale brugerforløb uden at overføre hele brugerdata-, assistent- eller vejrhentningsrevisionen. De eksisterende 68- og 66-fils vejrbundles er uændrede; versioneringen må kun ændre geodataenes topversionsfelt og de eksisterende release-/cachefelter.
+
+Profil- og rettighedssvar bindes nu til det loginforløb og den ejer, der startede opslaget. Logout, nyt login til samme ejer eller kontoskift under et forsinket svar må ikke give gamle profil- eller administratorrettigheder tilbage. Normal tokenfornyelse og første brugerhydrering bevares. En åben turformular må heller ikke afslutte eller kassere en ny eller ændret aktiv tur. Den aktuelle lokale tur og kø bevares ved afvisning; dette er ikke en atomisk lås mellem faner eller server-RLS-bevis.
+
+Den eksisterende ejersletningskommando må kun melde verificeret tom Supabase-turlagring efter et faktisk tomt array. Fejlobjekter, manglende/ugyldig JSON og HTTP-fejl må ikke give falsk slettekvittering. Der er ikke udført sletning eller kontoskabning. Spørg RavRadars yderste UI-fejlgrænse bruger en eksisterende oversat, neutral fejlmeddelelse i stedet for interne exceptiontekster; normale svar, genforsøg og indlæsningsstatus bevares.
+
+En tur, som kun er gemt lokalt eller afventer serveren, må ikke få en falsk afleveringskvittering eller fjernes fra den lokale v2-kø. Genforsøg bruger den oprindelige ejer, tur-id, indhold og indsendelsestid; kontoskift eller ændret indhold afvises før ny skrivning. Kvitteringen kontrolleres for den konkrete tur, ikke blot det samlede køantal. Normal baggrundssynkronisering af observationer er ikke i sig selv automatisk rydning af den bevarede v2-tur; næste normale afslutningsforsøg kan kontrollere den samme tur igen. Ingen automatisk overdragelse af anonyme ture til en ny konto indføres.
+
+En afbrydelse efter gemning af den komplette tur, men før den aktive tur fjernes, må ikke lade en ny besvarelse overskrive den første gemte rapport. Identisk genbesvarelse bevarer køens oprindelige bytes og genforsøger kun oprydningen; ændret indhold afvises med begge originaler bevaret. Lagerfejl bevarer den første fejl. Det er en normal lokal lagringskontrol, ikke bevis for fysisk browserholdbarhed eller atomisk samordning mellem faner.
+
+70 nye brugerdata-målprøver og 12 UI-målprøver består lokalt med faktiske normale funktioner og egne kunstige input. Den normale privacy-sourcegruppe kører alle seks nye mål præcis én gang sammen med sine seks tidligere mål; der er stadig 47 sourcekommandoer. Lokal evidens er ikke præcis GitHub-kontrol, installation, ekstern AI eller offentlig effekt. Versions-, dokumentations-, integrations- og produktionskontroller skal gennemføres før levering.
+
+Ejeren kræver udtrykkeligt delegation på alle fem arbejdsområder. Afgrænsede spor arbejder parallelt i eksisterende isolerede checkouts, mens hovedagenten koordinerer integration og produktionsskrivning. Målet om selvstændig drift uden Codex omkring 21. oktober 2026 består. Dette giver ikke nye diagnose-, installations-, destinations-, manuel-vejrhentnings-, cron- eller revisionsaktiveringstilladelser, og ingen produktionsændring må ske under aktiv writer.
+
+Strøm-/scoreovergangen, hele vejrhentningsrevisionen, varig brugerdata med ejerrettigheder og anonym samlet viderebrug, bred assistentviden samt selvstændig drift er stadig åbne. De numeriske strømrettelser ligger særskilt på HOLD: faktisk historisk anvendelse og SOURCE/T+3 kontrolleres lokalt, men kompakt legacy-strømhukommelse og tidligere regionale referencer har konkrete uafsluttede anvendelseshuller. Bevar gyldige originaler, central routing og hård no-loss; ingen sletning, nulstilling, falske nye beviser, blanketlandmaske, renormalisering, kilde-, admin-/geometri- eller scoreformelændring følger af klientkandidaten. Interne fejlundersøgelser er ikke offentlig assistentviden. De tidligere konkrete afvisninger består.
+
+## Historik: 2026-10-02 – offentlig539, ny16Zmåling og isoleret540
 
 21:02:23 ordinary37036350223 faktisk afsluttet/save/upload/Pages/terminal.
 21:21:47/21:42:04 538/539 faktisk offentliggjort med egne fornyede gates.

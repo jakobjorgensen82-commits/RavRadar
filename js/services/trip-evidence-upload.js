@@ -1,5 +1,5 @@
-import { assertTripEvidencePrivacy, toObservationTripColumns } from './trip-evidence-contract.js?v=4.0.554';
-import { listPendingTripEvidence, markTripEvidenceSubmitted } from './trip-evidence-store.js?v=4.0.554';
+import { assertTripEvidencePrivacy, toObservationTripColumns } from './trip-evidence-contract.js?v=4.0.556';
+import { listPendingTripEvidence, markTripEvidenceSubmitted } from './trip-evidence-store.js?v=4.0.556';
 
 export async function uploadPendingTripEvidence({ persist, storage = null } = {}) {
   if (typeof persist !== 'function') throw new Error('Databasefunktionen mangler.');
@@ -11,7 +11,10 @@ export async function uploadPendingTripEvidence({ persist, storage = null } = {}
     try {
       const payload = toObservationTripColumns(evidence);
       assertTripEvidencePrivacy(payload);
-      await persist(payload, { conflictTarget: 'trip_id' });
+      const receipt = await persist(payload, { conflictTarget: 'trip_id' });
+      if (receipt?.stored === 'pending' || receipt?.stored === 'local') {
+        throw new Error('Turen er gemt på enheden og afventer afsendelse.');
+      }
       if (!markTripEvidenceSubmitted(tripId, storage)) {
         throw new Error('Den bekræftede tur fandtes ikke længere i den lokale kø.');
       }

@@ -52,6 +52,12 @@ for (const script of [
   'scripts/test-rav-assistant-main-edge-roundtrip.mjs',
   'scripts/test-auth-bootstrap-4.0.66.mjs',
   'scripts/test-user-account-trip-log-4.0.264.mjs',
+  'scripts/test-profile-permission-owner-epoch.mjs',
+  'scripts/test-delete-trip-owner-data-readback.mjs',
+  'scripts/test-trip-evidence-controller-active-intent.mjs',
+  'scripts/test-assistant-ui-error-boundary.mjs',
+  'scripts/test-trip-evidence-upload-receipt.mjs',
+  'scripts/test-trip-evidence-storage-interruption.mjs',
 ]) {
   const result = spawnSync(process.execPath, [script], { cwd: process.cwd(), encoding: 'utf8', timeout: 30_000, maxBuffer: 1024 * 1024 });
   assert.equal(result.status, 0, `${script} failed:\n${result.stdout}\n${result.stderr}`);

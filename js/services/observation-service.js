@@ -1,23 +1,23 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.554';
-import { authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.554';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.556';
+import { authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.556';
 import {
   TRIP_EVIDENCE_SCHEMA_VERSION,
   assertObservationTripQualityBinding,
   assertTripEvidencePrivacy,
   migrateLegacyUnattestedObservationColumns
-} from './trip-evidence-contract.js?v=4.0.554';
+} from './trip-evidence-contract.js?v=4.0.556';
 import {
   assertTripObservationNestedPrivacy,
   expectedCalibrationEligibility,
   projectTripStoragePayload,
   tripEvidenceIntegrityIssues
-} from './calibration-eligibility.js?v=4.0.554';
+} from './calibration-eligibility.js?v=4.0.556';
 import {
   RAVSCORE_MODEL_ID,
   assertRavScoreModelBinding,
   ravScoreModelBinding
-} from '../core/ravscore-model-contract.js?v=4.0.554';
-import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.554';
+} from '../core/ravscore-model-contract.js?v=4.0.556';
+import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.556';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
 const LOCAL_KEY='ravradar-observations-v2';
 const OUTBOX_KEY='ravradar-observation-outbox-v1';
@@ -152,7 +152,22 @@ export async function submitObservation({zone,huntMode,result,grams=null,scoreRe
   const session=currentSession();const row={id:crypto.randomUUID(),zone_id:zone.id,zone_name:zone.name,coast_type:zone.coastType||null,observed_at:observedAt||new Date().toISOString(),submitted_at:new Date().toISOString(),hunt_mode:huntMode,result,grams:grams===''||grams==null?null:Number(grams),anonymous_id:anonymousId(),user_id:session?.user?.id||null,trip_id:tripId,gps,rav_score:scoreResult?.score??null,score_level:scoreResult?.level??null,ai_probability:null,ai_confidence:null,model_version:observedRavScoreModelVersion(scoreResult),weather_snapshot:immutableWeatherSnapshot(weather,scoreResult),wind_speed_mps:weather?.windSpeedMps??null,wind_direction_deg:weather?.windDirectionDeg??null,wave_height_m:weather?.waveHeightM??null,wave_period_s:weather?.wavePeriodS??null,water_level_cm:weather?.waterLevelCm??null,current_speed_mps:weather?.currentSpeedMps??null,current_direction_deg:weather?.currentDirectionDeg??null,water_temperature_c:weather?.waterTemperatureC??null,sync_status:enabled?'pending':'local'};
   upsertLocal(row);if(!enabled)return {stored:'local',row};enqueue(row);const status=await syncPendingObservations();const stored=status.pending?'pending':'remote';return {stored,row,status};
 }
+function sameObservationValue(left,right){
+  if(left===right)return true;
+  if(!left||!right||typeof left!=='object'||typeof right!=='object'||Array.isArray(left)!==Array.isArray(right))return false;
+  if(Array.isArray(left)&&left.length!==right.length)return false;
+  const keys=Object.keys(left);
+  return keys.length===Object.keys(right).length&&keys.every(key=>Object.hasOwn(right,key)&&sameObservationValue(left[key],right[key]));
+}
+function tripObservationReceipt(row,status){
+  const local=getLocalObservations().find(value=>value.id===row.id);
+  const pending=readMigratedRows(OUTBOX_KEY).some(value=>value.id===row.id);
+  const stored=!pending&&local?.sync_status==='synced'
+    &&sameObservationValue(remoteObservationPayload(local),remoteObservationPayload(row))?'remote':'pending';
+  return {stored,row,status};
+}
 export async function submitTripEvidenceObservation(columns){
+  const identity=authIdentityEpoch();
   columns=structuredClone(columns||{});
   if(columns?.schema_version!==TRIP_EVIDENCE_SCHEMA_VERSION)throw new Error('Turen har et ugyldigt format og kan ikke gemmes.');
   assertObservationTripQualityBinding(columns);
@@ -163,6 +178,27 @@ export async function submitTripEvidenceObservation(columns){
   const existing=getLocalObservations().find(row=>row.trip_id===columns.trip_id);
   let session=currentSession();
   if(session?.access_token&&!session?.user?.id)session=await requireFreshSession();
+  const userId=session?.user?.id||null;
+  const assertOwner=()=>{
+    if(authIdentityEpoch()!==identity||(currentSession()?.user?.id||null)!==userId)
+      throw new Error('Kontoen blev ændret. Prøv igen fra den rigtige konto.');
+  };
+  assertOwner();
+  if(existing){
+    if((existing.user_id||null)!==userId)throw new Error('Log ind med den konto, som turen tilhører, før den kan sendes.');
+    if(Object.entries(columns).some(([key,value])=>!sameObservationValue(existing[key],value)))
+      throw new Error('Den gemte tur er ændret og kan ikke sendes som samme tur.');
+    const pending=readMigratedRows(OUTBOX_KEY).find(row=>row.id===existing.id);
+    if(pending&&!sameObservationValue(remoteObservationPayload(pending),remoteObservationPayload(existing)))
+      throw new Error('Den gemte tur er ændret og kan ikke sendes som samme tur.');
+    if(!enabled)return {stored:'local',row:existing};
+    // Retry the original immutable row, including owner and first submission time.
+    // Even a restored synced row needs a new normal server acknowledgment.
+    enqueue(existing);
+    const status=await syncPendingObservations();
+    assertOwner();
+    return tripObservationReceipt(existing,status);
+  }
   const features=columns.calibration_features||{};
   const row={
     id:existing?.id||columns.trip_id,
@@ -213,7 +249,7 @@ export async function submitTripEvidenceObservation(columns){
   };
   const rowIssues=tripEvidenceIntegrityIssues(row);if(rowIssues.length)throw new Error(`Turen kunne ikke bindes sikkert til lagringen (${rowIssues.join(', ')}).`);
   assertTripObservationNestedPrivacy(row);
-  upsertLocal(row);if(!enabled)return {stored:'local',row};enqueue(row);const status=await syncPendingObservations();const stored=status.pending?'pending':'remote';return {stored,row,status};
+  upsertLocal(row);if(!enabled)return {stored:'local',row};enqueue(row);const status=await syncPendingObservations();assertOwner();return tripObservationReceipt(row,status);
 }
 
 export async function submitAccountTripReportObservation(columns){

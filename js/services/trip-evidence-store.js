@@ -5,7 +5,7 @@ import {
   createTripStartRecord,
   migrateLegacyUnattestedTripEvidence,
   migrateLegacyUnattestedTripStart
-} from './trip-evidence-contract.js?v=4.0.554';
+} from './trip-evidence-contract.js?v=4.0.556';
 
 const ACTIVE_KEY = 'ravradar-trip-evidence-v2-active';
 const PENDING_KEY = 'ravradar-trip-evidence-v2-pending';
@@ -73,6 +73,16 @@ export function markTripEvidenceStopped(endedAt, storage = null) {
   return stopped;
 }
 
+function sameTripEvidenceValue(left, right) {
+  if (left === right) return true;
+  if (!left || !right || typeof left !== 'object' || typeof right !== 'object'
+    || Array.isArray(left) !== Array.isArray(right)) return false;
+  if (Array.isArray(left) && left.length !== right.length) return false;
+  const fields = Object.keys(left);
+  return fields.length === Object.keys(right).length
+    && fields.every(key => Object.hasOwn(right, key) && sameTripEvidenceValue(left[key], right[key]));
+}
+
 export function finishTripEvidence(completion, storage = null) {
   const target = resolveStorage(storage);
   const active = loadActiveTripEvidence(target);
@@ -82,7 +92,17 @@ export function finishTripEvidence(completion, storage = null) {
     endedAt: active.stoppedAt || completion?.endedAt
   });
   const pending = listPendingTripEvidence(target);
-  const next = [...pending.filter(item => item?.tripId !== evidence.tripId), evidence];
+  const existing = pending.filter(item => item?.tripId === evidence.tripId);
+  if (existing.length) {
+    if (!existing.every(item => sameTripEvidenceValue(item, evidence))) {
+      throw new Error('Den gemte tur er ændret og kan ikke afsluttes som samme tur.');
+    }
+    // Completion was already saved before an interrupted active cleanup.
+    // Keep the original queue bytes and retry only that remaining cleanup.
+    target.removeItem(ACTIVE_KEY);
+    return existing[0];
+  }
+  const next = [...pending, evidence];
 
   // Skriv først den komplette tur. Hvis browserens lager er fuldt, bevares
   // den aktive tur, så brugerens data ikke forsvinder ved en halv operation.
