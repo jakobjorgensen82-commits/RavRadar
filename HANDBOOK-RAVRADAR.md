@@ -8,6 +8,12 @@ Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leve
 
 ## 89.174 Landsdækkende landkontrol før en blå strømpil vises
 
+Opfølgning 9. oktober: Ejeren har godkendt én skrivefri GitHub-diagnose af præcis to allerede identificerede DMI-filer. Der må ikke hentes andre filer eller gentages efter fejl. Den eksisterende låste decoder fra verificeret main læser originale strømfelter; kandidatindeks, koordinater, værdimatch samt parring af samme gitter, lag og tid kontrolleres uden at eksponere rå strømværdier. En særskilt kontrol sammenholder decoderens koordinater med de deklarerede endepunkter. Det er ikke en produktionsrettelse eller bevis for korrekt score.
+
+Diagnosen har læserettigheder, ingen produktionshemmeligheder, samme eksklusive kø som vejrhentningen og kræver præcis grøn kilde-CI. Den accepterer kun første forsøg og første dispatch, faste filadresser, størrelser og allerede læste headerhashes. Decoderen arbejder i privat midlertidigt område; kun en strengt feltkontrolleret, størrelsesbegrænset rapport kan uploades. Ingen cache, produktionsdata, geometri, kildevalg, historik, strømhukommelse, scoreformel, binding eller deploy ændres.
+
+Ni lokale måltests består uden providerdata. En ekstra kunstig native GRIB-prøve er koblet til den normale PR-kontrol og skal bestå før originalerne læses. Ny præcis kilde-CI, sikker integration uden aktiv writer og faktisk diagnose mangler stadig. Den tidligere anden pakkediagnose er allerede gennemført; dens tilladelse er forbrugt og kan ikke genbruges. Den store revision, numerisk kildeårsag, brugerdata, Spørg RavRadar og selvstændig drift er fortsat åbne.
+
 Opfølgning 8. oktober sent om aftenen: Den første godkendte originaldiagnose
 er nu udført efter sin præcise kilde-CI og sikre integration. Den giver
 afgrænsede match i strømhukommelsen, men frikender ikke scoregrundlaget.
