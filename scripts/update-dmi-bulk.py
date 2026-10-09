@@ -4218,6 +4218,124 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return radius * 2 * math.atan2(math.sqrt(a), math.sqrt(max(0.0, 1 - a)))
 
 
+def dkss_grib1_header_geometry(
+    cache_signature: tuple[Any, ...], scanning_mode: int,
+) -> dict[str, Any]:
+    """Interpret regular DKSS GRIB1 axes from original extents, not rounded steps.
+
+    DMI documents millidegree quantisation and extent/(point-count-1):
+    https://www.dmi.dk/friedata/dokumentation/faq
+    Latitude uses the corresponding regular-axis construction. Native values,
+    bitmap, original bytes, order-sensitive identity and indices are untouched.
+    GRIB1 Flag8 supports +/-i, +/-j and i/j-consecutive order; reserved bits are
+    not guessed. This does not authenticate old cached coordinate claims.
+    """
+    if not isinstance(cache_signature, tuple) or len(cache_signature) != 11:
+        raise ValueError("DKSS header grid identity is incomplete")
+    _, grid_type, ni, nj, points, lat_first, lon_first, lat_last, lon_last, _, _ = cache_signature
+    if not (
+        grid_type == "regular_ll"
+        and all(isinstance(value, int) and not isinstance(value, bool)
+                for value in (ni, nj, points, scanning_mode))
+        and 2 <= ni < 65535 and 2 <= nj < 65535 and points == ni * nj
+        and 0 <= scanning_mode <= 255 and scanning_mode & 31 == 0
+        and all(isinstance(value, (int, float)) and not isinstance(value, bool)
+                and math.isfinite(value) for value in (lat_first, lon_first, lat_last, lon_last))
+        and -90 <= lat_first <= 90 and -90 <= lat_last <= 90
+        and -360 <= lon_first <= 360 and -360 <= lon_last <= 360
+    ):
+        raise ValueError("DKSS regular GRIB1 header or scan order is invalid")
+    latitude_span = float(lat_last) - float(lat_first)
+    longitude_span = (
+        -((float(lon_first) - float(lon_last)) % 360.)
+        if scanning_mode & 128 else (float(lon_last) - float(lon_first)) % 360.
+    )
+    if not (
+        latitude_span != 0 and (latitude_span > 0) == bool(scanning_mode & 64)
+        and 0 < abs(longitude_span) < 180
+    ):
+        raise ValueError("DKSS regional extents conflict with original scan direction")
+    return {"ni": ni, "nj": nj, "points": points,
+            "latFirst": float(lat_first), "latLast": float(lat_last),
+            "lonFirst": float(lon_first), "lonLast": float(lon_last),
+            "latitudeStep": latitude_span / (nj - 1),
+            "longitudeStep": longitude_span / (ni - 1),
+            "jConsecutive": bool(scanning_mode & 32)}
+
+
+def dkss_header_grid_point(geometry: dict[str, Any], index: int) -> dict[str, Any]:
+    """Map the original unpacked-array index to its header-defined coordinate."""
+    if not isinstance(index, int) or isinstance(index, bool) or not 0 <= index < geometry["points"]:
+        raise ValueError("DKSS native index is outside its original grid")
+    if geometry["jConsecutive"]:
+        column, row = divmod(index, geometry["nj"])
+    else:
+        row, column = divmod(index, geometry["ni"])
+    latitude = (geometry["latLast"] if row == geometry["nj"] - 1
+                else geometry["latFirst"] + row * geometry["latitudeStep"])
+    longitude = (geometry["lonLast"] if column == geometry["ni"] - 1
+                 else geometry["lonFirst"] + column * geometry["longitudeStep"])
+    longitude = longitude % 360.
+    if longitude > 180:
+        longitude -= 360.
+    return {"index": index, "lat": latitude, "lon": longitude}
+
+
+def dkss_header_grid_nearest(
+    geometry: dict[str, Any], latitude: float, longitude: float,
+) -> list[dict[str, Any]]:
+    """Return the same four surrounding native indices, using unrounded axes.
+
+    An explicitly out-of-domain probe returns no candidates, as the existing
+    marine OutOfArea policy permits. Unknown/malformed input is a hard error,
+    never a fallback to rounded coordinates. No full-grid array is allocated.
+    """
+    if not all(isinstance(value, (int, float)) and not isinstance(value, bool)
+               and math.isfinite(value) for value in (latitude, longitude)):
+        raise ValueError("DKSS target coordinate is invalid")
+    row_position = (latitude - geometry["latFirst"]) / geometry["latitudeStep"]
+    delta = ((longitude - geometry["lonFirst"]) % 360.
+             if geometry["longitudeStep"] > 0 else -((geometry["lonFirst"] - longitude) % 360.))
+    column_position = delta / geometry["longitudeStep"]
+    # Only compensate floating arithmetic at exact endpoints, not geographic
+    # truncation or out-of-domain points. This is <1e-8 of one native grid step.
+    tolerance = 1e-8
+    if not (-tolerance <= row_position <= geometry["nj"] - 1 + tolerance
+            and -tolerance <= column_position <= geometry["ni"] - 1 + tolerance):
+        return []
+    row_position = min(max(row_position, 0.), geometry["nj"] - 1)
+    column_position = min(max(column_position, 0.), geometry["ni"] - 1)
+    row_first = min(math.floor(row_position), geometry["nj"] - 2)
+    column_first = min(math.floor(column_position), geometry["ni"] - 2)
+    return [dkss_header_grid_point(
+        geometry, column * geometry["nj"] + row if geometry["jConsecutive"]
+        else row * geometry["ni"] + column,
+    ) for row in (row_first, row_first + 1) for column in (column_first, column_first + 1)]
+
+
+def dkss_header_geometry_for_message(
+    gid: int, collection: str, cache_signature: tuple[Any, ...],
+) -> dict[str, Any] | None:
+    """Use the DMI placement rule only for its regular GRIB1 DKSS family."""
+    if collection not in {"dkss_nsbs", "dkss_idw", "dkss_ws", "dkss_lf", "dkss_lb", "dkss_if"}:
+        return None
+    try:
+        edition = codes_get(gid, "edition")
+        if not isinstance(edition, int) or isinstance(edition, bool):
+            raise ValueError("DKSS original GRIB edition is invalid")
+        if edition != 1:
+            return None
+        if not isinstance(cache_signature, tuple) or len(cache_signature) != 11:
+            raise ValueError("DKSS original grid identity is incomplete")
+        if cache_signature[1] != "regular_ll":
+            return None
+        return dkss_grib1_header_geometry(cache_signature, codes_get(gid, "scanningMode"))
+    except Exception as exc:
+        raise DmiGridLookupError(
+            "DKSS original header geometry could not be verified", "DKSS_HEADER_GEOMETRY_INVALID",
+        ) from exc
+
+
 def grid_candidate_target(collection: str, zone: dict[str, Any]) -> int:
     if collection in MARINE_COLLECTIONS:
         return (
@@ -4251,6 +4369,10 @@ def nearest_candidates(
     cached = GRID_INDEX_CACHE.get(cache_key)
     if cached is not None:
         return cached
+    if nearest_lookup is None and collection.startswith("dkss_"):
+        geometry = dkss_header_geometry_for_message(gid, collection, grid_cache_signature(gid))
+        if geometry is not None:
+            nearest_lookup = lambda latitude, longitude: dkss_header_grid_nearest(geometry, latitude, longitude)
     if collection not in MARINE_COLLECTIONS and candidate_target == 4:
         try:
             candidates = codes_grib_find_nearest(gid, zone["lat"], zone["lon"], npoints=4)
@@ -4356,7 +4478,7 @@ def warm_marine_grid_cache(
     zones: list[dict[str, Any]],
     signature: tuple[Any, ...],
 ) -> None:
-    """Warm the unchanged marine probe union with one ecCodes nearest object."""
+    """Warm the existing marine probe union using its verified grid interpretation."""
     if collection not in MARINE_COLLECTIONS or not zones:
         return
     pending = [
@@ -4370,6 +4492,23 @@ def warm_marine_grid_cache(
         ) not in GRID_INDEX_CACHE
     ]
     if not pending:
+        return
+    geometry = dkss_header_geometry_for_message(gid, collection, signature)
+    if geometry is not None:
+        # Do not warm corrected DKSS entries with ecCodes' rounded latitude
+        # iterator. Both ordinary batch callers then reuse this same index map.
+        pending_keys = [(collection, signature, zone["id"], grid_candidate_target(collection, zone))
+                        for zone in pending]
+        try:
+            for zone in pending:
+                nearest_candidates(
+                    gid, collection, zone, signature=signature,
+                    nearest_lookup=lambda latitude, longitude: dkss_header_grid_nearest(geometry, latitude, longitude),
+                )
+        except Exception:
+            for key in pending_keys:
+                GRID_INDEX_CACHE.pop(key, None)
+            raise
         return
     if not (
         callable(codes_grib_nearest_new)

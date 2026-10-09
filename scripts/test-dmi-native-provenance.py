@@ -33,6 +33,10 @@ for name in (
     "codes_grib_new_from_file", "codes_release",
 ):
     setattr(eccodes, name, lambda *args, **kwargs: None)
+# Legacy nearest-object assertions below explicitly exercise the unchanged
+# GRIB2 route. This synthetic API is not a regular DKSS GRIB1 header fixture;
+# that header/value path has its own exact-caller and real native targets.
+eccodes.codes_get = lambda _gid, key: 2 if key == "edition" else None
 sys.modules["eccodes"] = eccodes
 spec = importlib.util.spec_from_file_location("ravradar_update_dmi_bulk", ROOT / "scripts/update-dmi-bulk.py")
 assert spec and spec.loader
@@ -1799,6 +1803,8 @@ try:
 
     def counting_codes_get(_gid, key):
         metadata_calls.append(key)
+        if key == "edition":
+            return 2
         if key == "md5GridSection":
             return "a" * 32
         return 9999.0 if key == "missingValue" else f"grid-{key}"
@@ -1814,7 +1820,8 @@ try:
     assert set(counted_rows) == {zone["id"], second_zone["id"]}
     assert metadata_calls.count("md5GridSection") == 1
     assert metadata_calls.count("missingValue") == 1
-    assert len(metadata_calls) == 12
+    assert metadata_calls.count("edition") == 1
+    assert len(metadata_calls) == 13
     legacy_definition_signature = tuple(
         f"grid-{key}" for key in producer.GRID_DEFINITION_KEYS
     )
@@ -1833,6 +1840,8 @@ try:
     # identical dimensions and different grid-section md5 must never share the
     # internal nearest-index cache.
     def grid_identity_codes_get(gid, key):
+        if key == "edition":
+            return 2
         if key == "md5GridSection":
             return f"{gid:032x}"
         return f"grid-{key}"

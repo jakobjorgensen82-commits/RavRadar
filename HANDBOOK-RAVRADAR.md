@@ -6,6 +6,44 @@
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
 
+## 89.178 Gitterplacering fra DMI-filens endepunkter
+
+DMI's [officielle FAQ](https://www.dmi.dk/friedata/dokumentation/faq)
+forklarer, at GRIB1's afrundede afstandsfelter kan give geografisk
+fejlplacering. Reglen er endepunktsafstand delt med antal punkter minus én.
+FAQ-eksemplet viser længdegraden; den tilsvarende regelmæssige
+breddegradsakse er en eksplicit testet fortolkning, ikke bevis for en
+præcis uafrundet geografisk oprindelse.
+
+Den isolerede kandidat bruger reglen fra hver DKSS regular_ll/GRIB1-fils
+egne endepunkter, antal punkter og læserækkefølge i de normale marine
+opslag og begge batchkald. Originale nummererede elementer, værdier,
+bitmap, manglende værdier og gyldige nulværdier bevares. Originalfilen,
+centrale adminpunkter, kildeprioritet og scoreformel ændres ikke.
+Andre modeller og filtyper beholder den eksisterende vej.
+Ugyldig geometri giver en navngiven fejl uden afrundet tilbagefald;
+et faktisk opslag uden for gitteret giver ingen kandidater.
+
+23 lokale måltests består, inklusive otte rent geometriske
+læserækkefølger og normale batchkald med kunstige header-/værdisvar.
+Det er ikke native- eller produktionsbevis. Den opdaterede kontrol
+med den rigtige fastlåste decoder er endnu ikke bestået. Den gamle
+forventning om at nå to afrundede aliasindeks i ét nærområde er
+erstattet af faktisk nåbarhed ved deres forskellige headerberegnede
+koordinater. Aliasobservationen, nul-kontrollerne og strenge krav om
+fælles indeks bevares; ingen kandidatindsættelse eller skip.
+
+Denne kilde erstatter tidligere udsagn om manglende officiel støtte
+til endepunktsfortolkningen. Den frikender ikke observerede landpunkter
+i andre modeller, adminsampling, historisk strøm, strømhukommelse eller
+RavScore. 4.0.555 forbliver uden merge/aktivering, indtil cache,
+native/protected/retained historik, original-B/S og SOURCE inklusive
+T+3 har en dokumenteret tabsfri overgang. Gamle rækker må ikke
+opgraderes af en ny dokumentoverskrift. Gyldige originaler og timer
+må ikke slettes eller ommærkes. Ingen ny originaldiagnose,
+vejrhentning, ændret cron, SQL-installation eller deploy følger heraf.
+
+
 ## 89.177 Samme native gitterpunkt før feltkobling
 
 Den isolerede 4.0.555-kandidat afviser, at samme afrundede koordinat alene
