@@ -6,6 +6,10 @@ import tempfile
 import unittest
 import sys
 import io
+import json
+import os
+import subprocess
+from contextlib import redirect_stdout
 from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location('audit', Path(__file__).with_name('audit-native-current-grid.py'))
@@ -24,7 +28,107 @@ def coordinates(ni=4, nj=5, first_lat=10, last_lat=10.04, first_lon=20, last_lon
             [first_lon + col * (last_lon-first_lon)/(ni-1) for row in range(nj) for col in range(ni)])
 
 
+def synthetic_safe_report():
+    def field(component):
+        return dict(component=component, pointsChecked=20, ni=4, nj=5,
+                    nativePointsOutsideDeclaredLatitudeBounds=0,
+                    nativeValidPoints=20, validPointsOutsideDeclaredLatitudeBounds=0,
+                    maximumValidLatitudeVsEndpointDegrees=0., candidatesWithLatitudeDifference=0,
+                    maximumCandidateLatitudeVsEndpointDegrees=0.,
+                    maximumLatitudeVsEndpointDegrees=0., maximumLongitudeVsEndpointDegrees=0.,
+                    gridSectionDigest='a'*32, layerTimeIdentitySha256='b'*64,
+                    referenceDate=20261009, referenceTime=0, validityDate=20261014, validityTime=0,
+                    candidateChecks=9, candidateIndexMismatches=0,
+                    candidateCoordinateMismatches=0, candidateValueMismatches=0)
+    return dict(scope='EXACT_TWO_CURRENT_FILES_NATIVE_CONFORMANCE_NOT_SCORE_PROOF', nativeVersion='2.48.2',
+                centralAdminTargetsTested=False, productionWritten=False, valuesExposed=False,
+                coordinateCorrectionMade=False, files=[dict(collection=name, bytes=target[1],
+                contentSha256='c'*64, messagesRead=3, currentFields=[field('current-u'),field('current-v')],
+                originalUnchanged=True, completeUniqueVectorPairs=1, unpairedOrRepeatedLayers=0)
+                for name, target in runner.TARGETS.items()])
+
+
 class PreparationTests(unittest.TestCase):
+    def test_normal_wrapper_failure_receipt_is_bounded_and_first_error_survives_cleanup(self):
+        for scenario, expected in [('lf', 'READ_DKSS_LF:IO_FAILURE'),
+                                   ('nsbs', 'READ_DKSS_NSBS:IO_FAILURE'),
+                                   ('child', 'NATIVE_PROCESS:NATIVE_DIAGNOSIS_INCOMPLETE'),
+                                   ('report', 'VALIDATE_REPORT:REPORT_FIELDS_REJECTED'),
+                                   ('cleanup', 'CLEANUP:IO_FAILURE'),
+                                   ('lf-and-cleanup', 'READ_DKSS_LF:IO_FAILURE')]:
+            with self.subTest(scenario=scenario), tempfile.TemporaryDirectory(prefix='rr-native-failure-fixture-') as tmp:
+                calls, output = [], io.StringIO()
+                def download(collection, destination):
+                    calls.append(collection)
+                    if (scenario.startswith('lf') and collection == 'dkss_lf'
+                            or scenario == 'nsbs' and collection == 'dkss_nsbs'):
+                        raise OSError('SYNTHETIC_PRIVATE_PATH_AND_PAYLOAD')
+                    with destination.open('xb') as target:
+                        target.write(b'artificial fixture only')
+                def child(command, **kwargs):
+                    from types import SimpleNamespace
+                    report = synthetic_safe_report()
+                    if scenario == 'report':
+                        report['private_payload'] = 'SYNTHETIC_PRIVATE_PATH_AND_PAYLOAD'
+                    kwargs['stdout'].write(json.dumps(report).encode())
+                    return SimpleNamespace(returncode=1 if scenario == 'child' else 0)
+                remove = runner.shutil.rmtree
+                def cleanup(path):
+                    if scenario in ('cleanup', 'lf-and-cleanup'):
+                        raise OSError('SYNTHETIC_PRIVATE_CLEANUP_DETAIL')
+                    return remove(path)
+                with patch.dict(os.environ, {'RUNNER_TEMP': tmp}), \
+                        patch.object(sys, 'argv', [runner.__file__, '--producer', str(Path(__file__).with_name('update-dmi-bulk.py'))]), \
+                        patch.object(runner, 'download_once', side_effect=download), \
+                        patch.object(runner.subprocess, 'run', side_effect=child), \
+                        patch.object(runner.shutil, 'rmtree', side_effect=cleanup), redirect_stdout(output):
+                    with self.assertRaises(runner.AuditFailure) as caught:
+                        runner.main()
+                self.assertEqual(str(caught.exception), expected)
+                self.assertNotIn('PRIVATE', str(caught.exception))
+                self.assertEqual(output.getvalue(), '', 'never announce READY before actual cleanup')
+                self.assertEqual(calls, ['dkss_lf'] if scenario.startswith('lf') else ['dkss_lf', 'dkss_nsbs'])
+                self.assertEqual((Path(tmp) / 'native-current-grid-safe.json').exists(), scenario == 'cleanup')
+
+    def test_normal_wrapper_launches_actual_private_python_with_runtime_library_path(self):
+        # Exercise the real main/launch/output/validation/cleanup path. Only the
+        # provider read and child program are fixtures; no external data/network.
+        report = synthetic_safe_report()
+        actual_run = subprocess.run
+        expected_library_path = os.environ.get('LD_LIBRARY_PATH', 'synthetic-runtime-library-location')
+        program = ('import os, json\n'
+                   f'assert os.environ.get("LD_LIBRARY_PATH") == {expected_library_path!r}\n'
+                   'assert "SYNTHETIC_PRIVATE_CREDENTIAL" not in os.environ\n')
+        if NATIVE:
+            program += 'import eccodes\nassert eccodes.codes_get_api_version() == "2.48.2"\n'
+        program += f'print({json.dumps(report)!r})\n'
+        calls = []
+        def fixture_download(collection, destination):
+            calls.append(collection)
+            with destination.open('xb') as target:
+                target.write(b'artificial owned fixture, never a provider original')
+        def launch(command, **kwargs):
+            self.assertEqual(command[0], sys.executable)
+            self.assertEqual(command[1], '-B')
+            self.assertEqual(Path(command[2]).name, 'audit-native-current-grid.py')
+            self.assertEqual(kwargs['timeout'], 180)
+            return actual_run([command[0], '-B', '-c', program], **kwargs)
+        with tempfile.TemporaryDirectory(prefix='rr-native-process-fixture-') as tmp:
+            output = io.StringIO()
+            with patch.dict(os.environ, {'RUNNER_TEMP': tmp,
+                            'LD_LIBRARY_PATH': expected_library_path,
+                            'SYNTHETIC_PRIVATE_CREDENTIAL': 'must-not-reach-child'}), \
+                    patch.object(sys, 'argv', [runner.__file__, '--producer', str(Path(__file__).with_name('update-dmi-bulk.py'))]), \
+                    patch.object(runner, 'download_once', side_effect=fixture_download), \
+                    patch.object(runner.subprocess, 'run', side_effect=launch), \
+                    patch.object(runner.urllib.request, 'build_opener', side_effect=AssertionError('network prohibited')), \
+                    redirect_stdout(output):
+                runner.main()
+            self.assertEqual(calls, ['dkss_lf', 'dkss_nsbs'])
+            self.assertEqual(json.loads((Path(tmp) / 'native-current-grid-safe.json').read_text()), report)
+            self.assertFalse((Path(tmp) / 'native-current-grid-private').exists())
+            self.assertEqual(output.getvalue().strip(), 'NATIVE_CURRENT_GRID_SAFE_REPORT_READY')
+
     def test_missing_cells_do_not_claim_valid_current_displacement_and_zero_is_valid(self):
         valid_value = lambda value, missing: None if value == missing else value
         report = audit.valid_coordinate_differences([0, -999, -999, -999, 1, 2],
@@ -161,6 +265,25 @@ class PreparationTests(unittest.TestCase):
 
 if NATIVE:
     class NativeTests(unittest.TestCase):
+        def test_actual_linux_python_runtime_dependency_without_provider_data(self):
+            if not sys.platform.startswith('linux'):
+                self.skipTest('Linux runtime proof is required in normal GitHub source CI')
+            keys = ('PATH', 'HOME', 'LANG', 'SYSTEMROOT', 'SSL_CERT_FILE')
+            legacy_env = {key: os.environ[key] for key in keys if key in os.environ}
+            fixed_env = dict(legacy_env)
+            if 'LD_LIBRARY_PATH' in os.environ:
+                fixed_env['LD_LIBRARY_PATH'] = os.environ['LD_LIBRARY_PATH']
+            program = 'import eccodes; assert eccodes.codes_get_api_version() == "2.48.2"; print("NATIVE_RUNTIME_OK")'
+            legacy = subprocess.run([sys.executable, '-B', '-c', program], env=legacy_env,
+                                    capture_output=True, timeout=30, check=False)
+            fixed = subprocess.run([sys.executable, '-B', '-c', program], env=fixed_env,
+                                   capture_output=True, timeout=30, check=False)
+            self.assertEqual(fixed.returncode, 0, 'actual private native runtime must launch')
+            self.assertEqual(fixed.stdout.strip(), b'NATIVE_RUNTIME_OK')
+            # Safe classification, never raw stderr, paths or library diagnostics.
+            print('SYNTHETIC_LINUX_PRIVATE_RUNTIME_LEGACY_LAUNCH=' + ('OK' if legacy.returncode == 0 else 'FAILED'))
+            print('SYNTHETIC_LINUX_PRIVATE_RUNTIME_FIXED_LAUNCH=OK')
+
         def test_actual_decoder_with_both_authorized_header_shapes_not_original_values(self):
             import eccodes
             producer_path = Path(__file__).with_name('update-dmi-bulk.py')
