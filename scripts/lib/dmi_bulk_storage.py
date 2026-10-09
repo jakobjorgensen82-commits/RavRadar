@@ -30,8 +30,12 @@ SPATIAL_FIELDS = frozenset({
     "samplingPointSha256", "samplingIdentitySha256", "sourceRegistrySha256",
     "coastalPartId", "partId", "zoneId", "entityId", "entityType",
     "parentZoneId", "samplingContext", "physicalPointSha256", "verticalLayer",
-    "verticalLayerRankM",
+    "verticalLayerRankM", "nativeGridSampling",
 })
+# Older v1 writers preserved this then-unknown field in semantics. Accept its
+# original partition on read only; the per-reference overlap guard remains.
+# This is lossless storage compatibility, not sampling/authenticity approval.
+LEGACY_SEMANTIC_FIELDS = frozenset({"nativeGridSampling"})
 
 
 def _reject_non_finite(value: str) -> None:
@@ -155,7 +159,9 @@ def _validate_tables(tables: Any) -> dict[str, list[dict[str, Any]]]:
             if (
                 (group == "asset" and not keys <= ASSET_FIELDS)
                 or (group == "spatial" and not keys <= SPATIAL_FIELDS)
-                or (group == "semantics" and bool(keys & (ASSET_FIELDS | SPATIAL_FIELDS)))
+                or (group == "semantics" and bool(
+                    keys & ((ASSET_FIELDS | SPATIAL_FIELDS) - LEGACY_SEMANTIC_FIELDS)
+                ))
             ):
                 raise ValueError("DMI source table partition is invalid")
     return tables

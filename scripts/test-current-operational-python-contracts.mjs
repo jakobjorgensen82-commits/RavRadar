@@ -20,6 +20,12 @@ for (const file of [
   'test-current-operational-live-builder.py',
   'test-current-operational-producer-chain.py',
   'test-dmi-bulk-supervised.py',
+  'test-dmi-current-cell-key.py',
+  'test-dmi-bulk-storage.py',
+  'test-dmi-native-provenance.py',
+  'test-dmi-native-chain-continuity.py',
+  'test-dmi-wind-reference.py',
+  'test_dmi_wave_bootstrap_update_integration.py',
 ]) {
   test(file, { timeout: 160_000 }, () => {
     const result = spawnSync(python, ['-B', path.join(root, 'scripts', file)], {

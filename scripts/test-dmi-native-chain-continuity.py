@@ -6,6 +6,7 @@ are used; only ecCodes/file transport is replaced with in-memory messages.
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import io
 import sys
@@ -33,7 +34,9 @@ RUN = "2026-09-19T00:00:00Z"
 OLD_RUN = "2026-09-18T18:00:00Z"
 VALID = "2026-09-19T03:00:00Z"
 ZONE = {"id": "PART::TEST", "parentZoneId": "ZONE", "coastalPart": True, "coastType": "east", "lon": 2.0, "lat": 1.0}
-POINT = {"gridDefinitionSha256": "a" * 64, "longitude": 2.0, "latitude": 1.0, "distanceKm": 0.0, "index": 1}
+POINT = {"gridDefinitionSha256": "a" * 64, "longitude": 2.0, "latitude": 1.0, "distanceKm": 0.0, "index": 1,
+         "_gridIndexIdentity": hashlib.sha256(b"synthetic-chain-grid-order").hexdigest(),
+         "_gridCoordinateInterpretation": "eccodes-native-coordinates-v1"}
 CAPTURE = {"itemId": "synthetic-item", "assetIdentitySha256": "b" * 64, "assetSizeBytes": 128, "acquiredAt": RUN, "contentLengthBytes": 128, "contentSha256": "c" * 64}
 PEAK = {"shortName": "pp1d", "paramId": 231, "indicatorOfParameter": 231}
 
@@ -89,6 +92,83 @@ def catalog_item(collection, offset):
 
 
 class ComponentContinuityTests(unittest.TestCase):
+    def test_normal_vector_rejection_preserves_retained_values_source_and_summary(self):
+        # Own messages and candidate replies through the real process_grib.
+        # No original/provider/native-decoder claim. A missing fresh selection
+        # record must never cause old valid values or provenance to be erased.
+        for rule in (None, "unrecognised-coordinate-rule"):
+            with self.subTest(rule=rule):
+                output = document("current", source("current", OLD_RUN), (0.1, 0.2))
+                point = output["zones"][ZONE["id"]]
+                point["gridPoints"] = {"current-u": {"old": "preserve"},
+                                       "current-v": {"old": "preserve"}}
+                point["collections"] = {"current-u": "dkss_idw", "current-v": "dkss_idw"}
+                before = copy.deepcopy(output)
+                handles = iter((1, 2, None))
+                diagnostics = {}
+                outcomes = {}
+                with patch.object(Path, "open", lambda *args, **kwargs: io.BytesIO(b"synthetic")), \
+                        patch.object(producer, "codes_grib_new_from_file", lambda _: next(handles)), \
+                        patch.object(producer, "field_signature", lambda _: {}), \
+                        patch.object(producer, "safe_get", lambda gid, key, default=None:
+                            {"typeOfLevel": "depthBelowSea", "level": 1}.get(key, default)), \
+                        patch.object(producer, "classify_parameter", lambda gid, _: "current-u" if gid == 1 else "current-v"), \
+                        patch.object(producer, "valid_candidates_batch", lambda gid, *_: {ZONE["id"]: [{
+                            **POINT, "value": float(gid + 2), "_gridCoordinateInterpretation": rule,
+                        }]}), \
+                        patch.object(producer, "raw_cache_source_capture", lambda *_: CAPTURE), \
+                        patch.object(producer, "should_stop_work", lambda: False):
+                    with self.assertRaises(producer.DmiGridLookupError) as failed:
+                        producer.process_grib(Path("synthetic.grib"), "dkss_nsbs", RUN, VALID,
+                            [ZONE], output, diagnostics, current_part_outcomes=outcomes)
+                self.assertEqual(failed.exception.failure_code, "NATIVE_VECTOR_PROVENANCE_INVALID")
+                self.assertEqual(output, before)
+                self.assertEqual(outcomes, {}, "Internal failure is not spatial unavailability or completion")
+                self.assertEqual(diagnostics["rejectedVectorTuples"][ZONE["id"]]["current"],
+                                 "INVALID_VECTOR_PROVENANCE")
+
+    def test_normal_transaction_rejection_preserves_all_originals_and_failure_code(self):
+        # Real wrapper -> real process_grib with own in-memory field replies.
+        # Rejected selection cannot commit staging, diagnostics or part proof.
+        output = document("current", source("current", OLD_RUN), (0.1, 0.2))
+        output["zones"][ZONE["id"]]["gridPoints"] = {"current-u": {"old": "keep"}}
+        private_output = copy.deepcopy(output)
+        diagnostics = {"errors": [{"failureCode": "EARLIER_SYNTHETIC_FAILURE"}]}
+        outcomes = {"previous": {"partId": "TEST", "preserve": True}}
+        before = copy.deepcopy((output, private_output, diagnostics, outcomes))
+        flushed = []
+        handles = iter((1, 2, None))
+
+        def unexpected_validator(*args):
+            self.fail("A failed asset must not reach completion validators")
+
+        with patch.object(Path, "open", lambda *args, **kwargs: io.BytesIO(b"synthetic")), \
+                patch.object(producer, "codes_grib_new_from_file", lambda _: next(handles)), \
+                patch.object(producer, "field_signature", lambda _: {}), \
+                patch.object(producer, "safe_get", lambda gid, key, default=None:
+                    {"typeOfLevel": "depthBelowSea", "level": 1}.get(key, default)), \
+                patch.object(producer, "classify_parameter", lambda gid, _: "current-u" if gid == 1 else "current-v"), \
+                patch.object(producer, "valid_candidates_batch", lambda gid, *_: {ZONE["id"]: [{
+                    **POINT, "value": float(gid + 2), "_gridCoordinateInterpretation": None,
+                }]}), \
+                patch.object(producer, "raw_cache_source_capture", lambda *_: CAPTURE), \
+                patch.object(producer, "should_stop_work", lambda: False):
+            with self.assertRaises(producer.DmiGridLookupError) as failed:
+                producer.process_grib_transactionally(
+                    Path("synthetic.grib"), "dkss_nsbs", RUN, VALID, [ZONE], output,
+                    diagnostics, private_stage_output=private_output,
+                    current_part_outcomes=outcomes,
+                    failure_flush=lambda: flushed.append(copy.deepcopy(
+                        (output, private_output, diagnostics, outcomes))),
+                    stage_validator=unexpected_validator,
+                    current_stage_validator=unexpected_validator,
+                )
+        self.assertEqual(failed.exception.failure_code, "NATIVE_VECTOR_PROVENANCE_INVALID")
+        self.assertEqual(producer.collection_failure_code(failed.exception),
+                         "NATIVE_VECTOR_PROVENANCE_INVALID")
+        self.assertEqual((output, private_output, diagnostics, outcomes), before)
+        self.assertEqual(flushed, [before], "Failure flush sees originals, never an uncommitted asset")
+
     def test_source_original_bank_and_run_seam_survive_actual_native_cache_codec(self):
         # Synthetic SOURCE, not evidence about a historical Fur generation.
         # Exercise the normal producer merge/admission and actual cold codec.
@@ -532,6 +612,8 @@ class WaveSemanticsTests(unittest.TestCase):
                 self.assertEqual(row["dominant-wave-period"], 8.0)
                 self.assertEqual(row["sources"]["wave"]["wavePeriodField"], PEAK)
                 self.assertTrue(producer.complete_native_source_for_hour(row["sources"]["wave"], "wave", ZONE["id"], output["zones"][ZONE["id"]], VALID))
+                for point in output["zones"][ZONE["id"]]["gridPoints"].values():
+                    self.assertNotIn("_gridIndexIdentity", point)
 
     def test_old_ambiguous_wave_is_not_relabelled_but_other_components_survive(self):
         legacy = source("wave")

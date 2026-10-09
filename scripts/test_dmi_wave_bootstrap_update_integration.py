@@ -2360,7 +2360,10 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                     "latitude": zone["lat"],
                     "longitude": zone["lon"],
                     "distanceKm": 0.0,
-                    "index": gid,
+                    # The three message handles carry fields at one node.
+                    "index": 17,
+                    "_gridIndexIdentity": hashlib.sha256(b"synthetic-wam-parser-grid-order").hexdigest(),
+                    "_gridCoordinateInterpretation": "eccodes-native-coordinates-v1",
                     "gridDefinitionSha256": "d" * 64,
                     "_candidateCount": 1,
                 }] if zone["id"] == zones[0]["id"] else [])
@@ -2442,6 +2445,8 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertEqual(accepted_hour["significant-wave-height"], 1.0)
         self.assertEqual(accepted_hour["dominant-wave-period"], 6.0)
         self.assertEqual(accepted_hour["mean-wave-dir"], 270.0)
+        for point in active["zones"][zones[0]["id"]]["gridPoints"].values():
+            self.assertNotIn("_gridIndexIdentity", point)
         self.assertEqual(
             accepted_hour["sources"]["wave"]["contentSha256"],
             capture["contentSha256"],
@@ -3732,13 +3737,16 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         dmi_end = workflow.index("\n      - name:", dmi_start + 1)
         dmi = workflow[dmi_start:dmi_end]
         transition_guard = "steps.historical-wave-transition.outputs.required == 'true'"
+        recovery_guard = "steps.dmi-recovery-budget.outputs.extended == 'true'"
         extended_guard = (
-            f"(inputs.extended_provider_bootstrap == true || {transition_guard} || ({cutover_guard}))"
+            f"(inputs.extended_provider_bootstrap == true || {transition_guard} || {recovery_guard} || ({cutover_guard}))"
         )
         for marker in (
             f"DMI_BULK_MAX_DOWNLOAD_MB: ${{{{ {extended_guard} && '4096' || '2048' }}}}",
-            f"DMI_BULK_MAX_RUNTIME_SECONDS: ${{{{ (inputs.extended_provider_bootstrap == true || {transition_guard}) && '3600' || ({cutover_guard}) && '3000' || '1500' }}}}",
-            f"DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{{{ {extended_guard} && '180' || '120' }}}}",
+            f"DMI_BULK_MAX_RUNTIME_SECONDS: ${{{{ inputs.quick_confirmation && '900' || (inputs.extended_provider_bootstrap == true || {transition_guard} || {recovery_guard}) && '3600' || ({cutover_guard}) && '3000' || '1500' }}}}",
+            f"DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{{{ inputs.quick_confirmation && '120' || {extended_guard} && '180' || '120' }}}}",
+            f"DMI_BULK_COLLECTIONS_PER_RUN: ${{{{ {extended_guard} && '6' || '3' }}}}",
+            f"DMI_BULK_ADAPTIVE_RECOVERY: ${{{{ inputs.quick_confirmation != true && {recovery_guard} }}}}",
             "DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{ "
             f"({cutover_guard} && steps.ravscore-wave-bootstrap-target.outputs.mode) || "
             f"({transition_guard} && steps.historical-wave-transition.outputs.mode) || 'none' }}}}",
@@ -3746,9 +3754,16 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             self.assertIn(marker, dmi)
         self.assertIn(
             "DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed == 'true' || "
-            f"{transition_guard} || ({cutover_guard}) }}}}",
+            f"{transition_guard} || {recovery_guard} || ({cutover_guard}) }}}}",
             dmi,
         )
+        bootstrap_mode = next(
+            line for line in dmi.splitlines()
+            if "DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE:" in line
+        )
+        self.assertNotIn("dmi-recovery-budget", bootstrap_mode,
+                         "adaptive operational recovery must not activate legacy bootstrap")
+        self.assertNotIn("candidate-maintenance", bootstrap_mode)
 
         weather_start = workflow.index("- name: Update central weather cache")
         weather_end = workflow.index("\n      - name:", weather_start + 1)

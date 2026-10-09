@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import math
 from pathlib import Path
@@ -44,6 +45,8 @@ def reference(**changes):
 
 def pair(frame=None, longitude=30.0):
     base = {"latitude": 40.0, "longitude": longitude, "distanceKm": 0.0,
+            "index": 7, "_gridIndexIdentity": hashlib.sha256(b"synthetic-wind-grid-order").hexdigest(),
+            "_gridCoordinateInterpretation": "eccodes-native-coordinates-v1",
             "gridDefinitionSha256": "b" * 64, "_windReference": frame or reference()}
     return ({**base, "value": 1.0}, {**base, "value": 0.0})
 
@@ -168,6 +171,7 @@ class WindReferenceTest(unittest.TestCase):
         self.assertTrue(complete_native_source_for_hour(source, "wind", zone["id"], sampling_identity(zone), time))
         for point in output["zones"][zone["id"]]["gridPoints"].values():
             self.assertNotIn("_windReference", point)
+            self.assertNotIn("_gridIndexIdentity", point)
         producer.wind_from_uv(hour)
         saved = copy.deepcopy(hour)
         producer.wind_from_uv(hour)

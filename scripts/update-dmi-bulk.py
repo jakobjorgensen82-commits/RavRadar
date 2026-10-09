@@ -4186,6 +4186,25 @@ def grid_definition_sha256_from_signature(signature: tuple[Any, ...]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def grid_index_identity_sha256_from_cache(cache_signature: tuple[Any, ...]) -> str:
+    """Bind native indices to the full grid section, including scan order.
+
+    This private candidate identity is not the legacy public grid digest and
+    must never be copied to persisted/public grid metadata or provenance.
+    """
+    grid_definition_signature_from_cache(cache_signature)
+    if not isinstance(cache_signature[0], str) or not re.fullmatch(
+        r"[0-9a-fA-F]{32}", cache_signature[0],
+    ):
+        raise DmiGridLookupError(
+            "DMI native-index grid identity could not be verified",
+            "GRID_IDENTITY_READ_FAILED",
+        )
+    return grid_definition_sha256_from_signature((
+        "grid-native-index-order-v1", *cache_signature,
+    ))
+
+
 def grid_definition_sha256(gid: int) -> str:
     return grid_definition_sha256_from_signature(grid_signature(gid))
 
@@ -4197,6 +4216,124 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     dl = math.radians(lon2 - lon1)
     a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
     return radius * 2 * math.atan2(math.sqrt(a), math.sqrt(max(0.0, 1 - a)))
+
+
+def dkss_grib1_header_geometry(
+    cache_signature: tuple[Any, ...], scanning_mode: int,
+) -> dict[str, Any]:
+    """Interpret regular DKSS GRIB1 axes from original extents, not rounded steps.
+
+    DMI documents millidegree quantisation and extent/(point-count-1):
+    https://www.dmi.dk/friedata/dokumentation/faq
+    Latitude uses the corresponding regular-axis construction. Native values,
+    bitmap, original bytes, order-sensitive identity and indices are untouched.
+    GRIB1 Flag8 supports +/-i, +/-j and i/j-consecutive order; reserved bits are
+    not guessed. This does not authenticate old cached coordinate claims.
+    """
+    if not isinstance(cache_signature, tuple) or len(cache_signature) != 11:
+        raise ValueError("DKSS header grid identity is incomplete")
+    _, grid_type, ni, nj, points, lat_first, lon_first, lat_last, lon_last, _, _ = cache_signature
+    if not (
+        grid_type == "regular_ll"
+        and all(isinstance(value, int) and not isinstance(value, bool)
+                for value in (ni, nj, points, scanning_mode))
+        and 2 <= ni < 65535 and 2 <= nj < 65535 and points == ni * nj
+        and 0 <= scanning_mode <= 255 and scanning_mode & 31 == 0
+        and all(isinstance(value, (int, float)) and not isinstance(value, bool)
+                and math.isfinite(value) for value in (lat_first, lon_first, lat_last, lon_last))
+        and -90 <= lat_first <= 90 and -90 <= lat_last <= 90
+        and -360 <= lon_first <= 360 and -360 <= lon_last <= 360
+    ):
+        raise ValueError("DKSS regular GRIB1 header or scan order is invalid")
+    latitude_span = float(lat_last) - float(lat_first)
+    longitude_span = (
+        -((float(lon_first) - float(lon_last)) % 360.)
+        if scanning_mode & 128 else (float(lon_last) - float(lon_first)) % 360.
+    )
+    if not (
+        latitude_span != 0 and (latitude_span > 0) == bool(scanning_mode & 64)
+        and 0 < abs(longitude_span) < 180
+    ):
+        raise ValueError("DKSS regional extents conflict with original scan direction")
+    return {"ni": ni, "nj": nj, "points": points,
+            "latFirst": float(lat_first), "latLast": float(lat_last),
+            "lonFirst": float(lon_first), "lonLast": float(lon_last),
+            "latitudeStep": latitude_span / (nj - 1),
+            "longitudeStep": longitude_span / (ni - 1),
+            "jConsecutive": bool(scanning_mode & 32)}
+
+
+def dkss_header_grid_point(geometry: dict[str, Any], index: int) -> dict[str, Any]:
+    """Map the original unpacked-array index to its header-defined coordinate."""
+    if not isinstance(index, int) or isinstance(index, bool) or not 0 <= index < geometry["points"]:
+        raise ValueError("DKSS native index is outside its original grid")
+    if geometry["jConsecutive"]:
+        column, row = divmod(index, geometry["nj"])
+    else:
+        row, column = divmod(index, geometry["ni"])
+    latitude = (geometry["latLast"] if row == geometry["nj"] - 1
+                else geometry["latFirst"] + row * geometry["latitudeStep"])
+    longitude = (geometry["lonLast"] if column == geometry["ni"] - 1
+                 else geometry["lonFirst"] + column * geometry["longitudeStep"])
+    longitude = longitude % 360.
+    if longitude > 180:
+        longitude -= 360.
+    return {"index": index, "lat": latitude, "lon": longitude}
+
+
+def dkss_header_grid_nearest(
+    geometry: dict[str, Any], latitude: float, longitude: float,
+) -> list[dict[str, Any]]:
+    """Return the same four surrounding native indices, using unrounded axes.
+
+    An explicitly out-of-domain probe returns no candidates, as the existing
+    marine OutOfArea policy permits. Unknown/malformed input is a hard error,
+    never a fallback to rounded coordinates. No full-grid array is allocated.
+    """
+    if not all(isinstance(value, (int, float)) and not isinstance(value, bool)
+               and math.isfinite(value) for value in (latitude, longitude)):
+        raise ValueError("DKSS target coordinate is invalid")
+    row_position = (latitude - geometry["latFirst"]) / geometry["latitudeStep"]
+    delta = ((longitude - geometry["lonFirst"]) % 360.
+             if geometry["longitudeStep"] > 0 else -((geometry["lonFirst"] - longitude) % 360.))
+    column_position = delta / geometry["longitudeStep"]
+    # Only compensate floating arithmetic at exact endpoints, not geographic
+    # truncation or out-of-domain points. This is <1e-8 of one native grid step.
+    tolerance = 1e-8
+    if not (-tolerance <= row_position <= geometry["nj"] - 1 + tolerance
+            and -tolerance <= column_position <= geometry["ni"] - 1 + tolerance):
+        return []
+    row_position = min(max(row_position, 0.), geometry["nj"] - 1)
+    column_position = min(max(column_position, 0.), geometry["ni"] - 1)
+    row_first = min(math.floor(row_position), geometry["nj"] - 2)
+    column_first = min(math.floor(column_position), geometry["ni"] - 2)
+    return [dkss_header_grid_point(
+        geometry, column * geometry["nj"] + row if geometry["jConsecutive"]
+        else row * geometry["ni"] + column,
+    ) for row in (row_first, row_first + 1) for column in (column_first, column_first + 1)]
+
+
+def dkss_header_geometry_for_message(
+    gid: int, collection: str, cache_signature: tuple[Any, ...],
+) -> dict[str, Any] | None:
+    """Use the DMI placement rule only for its regular GRIB1 DKSS family."""
+    if collection not in {"dkss_nsbs", "dkss_idw", "dkss_ws", "dkss_lf", "dkss_lb", "dkss_if"}:
+        return None
+    try:
+        edition = codes_get(gid, "edition")
+        if not isinstance(edition, int) or isinstance(edition, bool):
+            raise ValueError("DKSS original GRIB edition is invalid")
+        if edition != 1:
+            return None
+        if not isinstance(cache_signature, tuple) or len(cache_signature) != 11:
+            raise ValueError("DKSS original grid identity is incomplete")
+        if cache_signature[1] != "regular_ll":
+            return None
+        return dkss_grib1_header_geometry(cache_signature, codes_get(gid, "scanningMode"))
+    except Exception as exc:
+        raise DmiGridLookupError(
+            "DKSS original header geometry could not be verified", "DKSS_HEADER_GEOMETRY_INVALID",
+        ) from exc
 
 
 def grid_candidate_target(collection: str, zone: dict[str, Any]) -> int:
@@ -4215,6 +4352,7 @@ def nearest_candidates(
     zone: dict[str, Any],
     signature: tuple[Any, ...] | None = None,
     nearest_lookup: Any = None,
+    coordinate_interpretation: str = "eccodes-native-coordinates-v1",
 ) -> list[dict[str, Any]]:
     """Find flere mulige havpunkter uden at antage, at de fire nærmeste er gyldige.
 
@@ -4232,6 +4370,11 @@ def nearest_candidates(
     cached = GRID_INDEX_CACHE.get(cache_key)
     if cached is not None:
         return cached
+    if nearest_lookup is None and collection.startswith("dkss_"):
+        geometry = dkss_header_geometry_for_message(gid, collection, grid_cache_signature(gid))
+        if geometry is not None:
+            nearest_lookup = lambda latitude, longitude: dkss_header_grid_nearest(geometry, latitude, longitude)
+            coordinate_interpretation = "dmi-dkss-grib1-header-endpoints-v1"
     if collection not in MARINE_COLLECTIONS and candidate_target == 4:
         try:
             candidates = codes_grib_find_nearest(gid, zone["lat"], zone["lon"], npoints=4)
@@ -4258,6 +4401,7 @@ def nearest_candidates(
                     "latitude": float(candidate.get("lat")),
                     "longitude": float(candidate.get("lon")),
                     "distanceKm": haversine_km(zone["lat"], zone["lon"], float(candidate.get("lat")), float(candidate.get("lon"))),
+                    "_gridCoordinateInterpretation": "eccodes-native-coordinates-v1",
                 })
             except (TypeError, ValueError):
                 continue
@@ -4325,7 +4469,9 @@ def nearest_candidates(
                 continue
             prior = by_index.get(index)
             if prior is None or distance < prior["distanceKm"]:
-                by_index[index] = {"index": index, "latitude": lat, "longitude": lon, "distanceKm": distance}
+                by_index[index] = {"index": index, "latitude": lat, "longitude": lon,
+                                   "distanceKm": distance,
+                                   "_gridCoordinateInterpretation": coordinate_interpretation}
     normalized = sorted(by_index.values(), key=lambda item: item["distanceKm"])[:candidate_target]
     GRID_INDEX_CACHE[cache_key] = normalized
     return normalized
@@ -4337,7 +4483,7 @@ def warm_marine_grid_cache(
     zones: list[dict[str, Any]],
     signature: tuple[Any, ...],
 ) -> None:
-    """Warm the unchanged marine probe union with one ecCodes nearest object."""
+    """Warm the existing marine probe union using its verified grid interpretation."""
     if collection not in MARINE_COLLECTIONS or not zones:
         return
     pending = [
@@ -4351,6 +4497,24 @@ def warm_marine_grid_cache(
         ) not in GRID_INDEX_CACHE
     ]
     if not pending:
+        return
+    geometry = dkss_header_geometry_for_message(gid, collection, signature)
+    if geometry is not None:
+        # Do not warm corrected DKSS entries with ecCodes' rounded latitude
+        # iterator. Both ordinary batch callers then reuse this same index map.
+        pending_keys = [(collection, signature, zone["id"], grid_candidate_target(collection, zone))
+                        for zone in pending]
+        try:
+            for zone in pending:
+                nearest_candidates(
+                    gid, collection, zone, signature=signature,
+                    nearest_lookup=lambda latitude, longitude: dkss_header_grid_nearest(geometry, latitude, longitude),
+                    coordinate_interpretation="dmi-dkss-grib1-header-endpoints-v1",
+                )
+        except Exception:
+            for key in pending_keys:
+                GRID_INDEX_CACHE.pop(key, None)
+            raise
         return
     if not (
         callable(codes_grib_nearest_new)
@@ -4469,6 +4633,7 @@ def warm_atmospheric_grid_cache(
                 "latitude": lat,
                 "longitude": lon,
                 "distanceKm": haversine_km(zone_lat, zone_lon, lat, lon),
+                "_gridCoordinateInterpretation": "eccodes-native-coordinates-v1",
             }
             for index, lat, lon in nearest
         ]
@@ -4521,6 +4686,7 @@ def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]
     definition_sha256 = grid_definition_sha256_from_signature(
         grid_definition_signature_from_cache(cache_signature)
     )
+    index_identity = grid_index_identity_sha256_from_cache(cache_signature)
     warm_marine_grid_cache(gid, collection, zones, cache_signature)
     warm_atmospheric_grid_cache(gid, collection, zones, cache_signature)
     missing = safe_get(gid, "missingValue")
@@ -4558,6 +4724,8 @@ def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]
                 "longitude": candidate["longitude"],
                 "distanceKm": candidate["distanceKm"],
                 "gridDefinitionSha256": definition_sha256,
+                "_gridIndexIdentity": index_identity,
+                "_gridCoordinateInterpretation": candidate.get("_gridCoordinateInterpretation"),
             })
         if rows:
             resolved[zone_id] = rows
@@ -4575,6 +4743,7 @@ def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) 
     definition_sha256 = grid_definition_sha256_from_signature(
         grid_definition_signature_from_cache(cache_signature)
     )
+    index_identity = grid_index_identity_sha256_from_cache(cache_signature)
     warm_marine_grid_cache(gid, collection, zones, cache_signature)
     warm_atmospheric_grid_cache(gid, collection, zones, cache_signature)
     missing = safe_get(gid, "missingValue")
@@ -4610,6 +4779,8 @@ def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) 
                     "distanceKm": candidate["distanceKm"],
                     "index": int(candidate["index"]),
                     "gridDefinitionSha256": definition_sha256,
+                    "_gridIndexIdentity": index_identity,
+                    "_gridCoordinateInterpretation": candidate.get("_gridCoordinateInterpretation"),
                     "_candidateCount": len(candidates),
                 }
                 break
@@ -5830,20 +6001,40 @@ def grid_point_metadata(
             else value
         )
         for key, value in candidate.items()
-        if key not in excluded_keys
+        if key not in excluded_keys and key not in {"_gridIndexIdentity", "_gridCoordinateInterpretation"}
     }
+
+
+def candidate_node_key(candidate: dict[str, Any]) -> tuple[str, float, float, str, int] | None:
+    """Distinguish native nodes even when decoded coordinates alias.
+
+    Equal rounded latitude/longitude is not evidence that two fields read the
+    same native element. Require both the order-sensitive grid and its index.
+    Keep the public three-part cell key unchanged for original provenance.
+    """
+    cell_key = candidate_cell_key(candidate)
+    identity = candidate.get("_gridIndexIdentity")
+    index = candidate.get("index")
+    if not (
+        cell_key is not None
+        and isinstance(identity, str)
+        and re.fullmatch(r"[0-9a-f]{64}", identity)
+        and isinstance(index, int) and not isinstance(index, bool) and index >= 0
+    ):
+        return None
+    return (*cell_key, identity, index)
 
 
 def select_common_grid_tuple(
     candidates_by_parameter: dict[str, list[dict[str, Any]]],
     required_parameters: tuple[str, ...],
 ) -> dict[str, dict[str, Any]] | None:
-    """Select one exact grid definition/cell shared by every required field."""
-    indexed: dict[str, dict[tuple[str, float, float], dict[str, Any]]] = {}
+    """Select one exact order-sensitive native node shared by every field."""
+    indexed: dict[str, dict[tuple[str, float, float, str, int], dict[str, Any]]] = {}
     for parameter in required_parameters:
-        rows: dict[tuple[str, float, float], dict[str, Any]] = {}
+        rows: dict[tuple[str, float, float, str, int], dict[str, Any]] = {}
         for candidate in candidates_by_parameter.get(parameter) or []:
-            key = candidate_cell_key(candidate)
+            key = candidate_node_key(candidate)
             if key is None:
                 continue
             previous = rows.get(key)
@@ -5865,6 +6056,66 @@ def select_common_grid_tuple(
     return {parameter: indexed[parameter][selected_key] for parameter in required_parameters}
 
 
+def native_grid_sampling_receipt(
+    source: dict[str, Any],
+    grid_candidate: dict[str, Any],
+    grid_tuple: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Record fresh selection evidence without relabelling retained originals.
+
+    This proves what the normal producer selected, not provider correctness or
+    historical eligibility. All component fields must have read the same native
+    element using the same coordinate interpretation. Never persist their values.
+    """
+    if not isinstance(grid_tuple, dict):
+        return None
+    fields = source["fieldSet"] + source["optionalFieldSet"]
+    selected_key = candidate_node_key(grid_candidate)
+    if selected_key is None or set(grid_tuple) != set(fields):
+        return None
+    interpretation = None
+    for field in fields:
+        row = grid_tuple[field]
+        if not isinstance(row, dict) or candidate_node_key(row) != selected_key:
+            return None
+        for key in ("latitude", "longitude", "value", "distanceKm"):
+            number = row.get(key)
+            if not (isinstance(number, (int, float)) and not isinstance(number, bool)
+                    and math.isfinite(float(number))):
+                return None
+        if not (-90 <= row["latitude"] <= 90 and -180 <= row["longitude"] <= 360
+                and row["distanceKm"] >= 0
+                and math.isclose(row["distanceKm"], source["distanceKm"], rel_tol=0, abs_tol=0.00002)):
+            return None
+        rule = row.get("_gridCoordinateInterpretation")
+        if not isinstance(rule, str) or rule not in {
+            "dmi-dkss-grib1-header-endpoints-v1", "eccodes-native-coordinates-v1",
+        }:
+            return None
+        if interpretation is not None and rule != interpretation:
+            return None
+        interpretation = rule
+    definition, latitude, longitude, index_identity, index = selected_key
+    if (source["gridDefinitionSha256"] != definition
+            or source["gridPoint"] != [longitude, latitude]
+            or grid_candidate.get("_gridCoordinateInterpretation") != interpretation):
+        return None
+    # The record stays inside the original hour/component source and the normal
+    # private container's integrity checks. A new self-hash would not prove an
+    # original was sampled correctly; it also must not invent a cross-language
+    # floating-point JSON contract. Reuse eligibility is a separate verifier.
+    return {
+        "contractId": "dmi-native-grid-sampling-v1",
+        "elementIndex": index,
+        "gridIndexIdentitySha256": index_identity,
+        "coordinateInterpretation": interpretation,
+        "gridDefinitionSha256": definition,
+        "gridPoint": list(source["gridPoint"]),
+        "fieldSet": list(source["fieldSet"]),
+        "optionalFieldSet": list(source["optionalFieldSet"]),
+    }
+
+
 def native_component_source(
     collection: str,
     model_run: str,
@@ -5876,6 +6127,7 @@ def native_component_source(
     capture: dict[str, Any] | None,
     spatial_selection: str,
     optional_field_set: tuple[str, ...] = (),
+    grid_tuple: dict[str, dict[str, Any]] | None = None,
     **extra: Any,
 ) -> dict[str, Any] | None:
     identity = sampling_identity(zone)
@@ -5934,7 +6186,7 @@ def native_component_source(
     ):
         return None
     definition, latitude, longitude = cell_key
-    return {
+    source = {
         "provider": "dmi",
         "fallback": False,
         "collection": collection,
@@ -5962,6 +6214,14 @@ def native_component_source(
         **({"itemUpdatedAt": item_updated_at} if item_updated_at else {}),
         **extra,
     }
+    if "nativeGridSampling" in extra:
+        return None
+    if grid_tuple is not None:
+        receipt = native_grid_sampling_receipt(source, grid_candidate, grid_tuple)
+        if receipt is None:
+            return None
+        source["nativeGridSampling"] = receipt
+    return source
 
 
 def prefer_marine_component_hour_candidate(
@@ -6196,6 +6456,46 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         if family == "current" and zone.get("researchCurrent"):
                             research_vector_choices.setdefault(str(zone["id"]), []).append(candidate_choice)
                             continue
+                        source_extra = {
+                            "vectorSelection": "nearest-shared-grid-cell-no-spatial-interpolation",
+                            "vectorSemanticsVersion": 1,
+                        }
+                        if family == "wind":
+                            source_extra.update({
+                                "vectorSemanticsVersion": WIND_VECTOR_VERSION,
+                                "vectorReference": "earth-relative-east-north",
+                                "vectorTransform": first["_windReference"][0],
+                            })
+                        if family == "current":
+                            source_extra = {
+                                "verticalLayer": layer_key,
+                                "verticalLayerRankM": round(layer_rank, 3),
+                                "vectorSelection": CURRENT_VECTOR_SELECTION,
+                                "vectorSemanticsVersion": CURRENT_VECTOR_SEMANTICS_VERSION,
+                            }
+                        component = PARAMETER_COMPONENT[first_key]
+                        source = native_component_source(
+                            collection,
+                            model_run,
+                            valid_time,
+                            component=component,
+                            zone=zone,
+                            grid_candidate=first,
+                            grid_tuple={first_key: first, second_key: second},
+                            capture=source_capture,
+                            spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+                            **source_extra,
+                        )
+                        if source is None:
+                            diagnostics.setdefault("rejectedVectorTuples", {}).setdefault(
+                                zone["id"], {},
+                            )[family] = "INVALID_VECTOR_PROVENANCE"
+                            # An internal proof failure is not upstream/spatial
+                            # absence and must not authorize a processed receipt.
+                            raise DmiGridLookupError(
+                                "Fresh native vector selection could not be verified",
+                                "NATIVE_VECTOR_PROVENANCE_INVALID",
+                            )
                         previous_choice = selected_vector_choices.get(selection_key)
                         # Strøm: vælg først den nærmeste gyldige vandkolonne og
                         # derefter dens dybeste fælles U/V-lag. Vind har kun ét lag.
@@ -6284,29 +6584,19 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                                 vector_search["selected"] = False
                                 vector_search["rejectedReason"] = "VALID_POINT_TOO_FAR"
                                 continue
-                            tail_source = native_component_source(
-                                collection,
-                                model_run,
-                                valid_time,
-                                component="windTail",
-                                zone=zone,
-                                grid_candidate=first,
-                                capture=source_capture,
-                                spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
-                                vectorSelection="nearest-shared-grid-cell-no-spatial-interpolation",
-                                vectorSemanticsVersion=1,
-                            )
                             if not prefer_marine_component_hour_candidate(
                                 point,
                                 zone,
                                 valid_time,
                                 "windTail",
-                                tail_source,
+                                source,
                                 {first_key: first["value"], second_key: second["value"]},
                             ):
                                 vector_search["selected"] = False
                                 vector_search["rejectedReason"] = "BETTER_NATIVE_COMPONENT_ALREADY_SELECTED"
                                 continue
+                        # Validate the full fresh selection before replacing any
+                        # retained values, source, grid summary or choice state.
                         selected_vector_choices[selection_key] = candidate_choice
                         if not zone.get("privateStage"):
                             touched.add(zone["id"])
@@ -6319,39 +6609,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                                 "verticalLayerRankM": round(layer_rank, 3),
                             }
                             point["collections"][key] = collection
-                        source_extra = {
-                            "vectorSelection": "nearest-shared-grid-cell-no-spatial-interpolation",
-                            "vectorSemanticsVersion": 1,
-                        }
-                        if family == "wind":
-                            source_extra.update({
-                                "vectorSemanticsVersion": WIND_VECTOR_VERSION,
-                                "vectorReference": "earth-relative-east-north",
-                                "vectorTransform": first["_windReference"][0],
-                            })
-                        if family == "current":
-                            source_extra = {
-                                "verticalLayer": layer_key,
-                                "verticalLayerRankM": round(layer_rank, 3),
-                                "vectorSelection": CURRENT_VECTOR_SELECTION,
-                                "vectorSemanticsVersion": CURRENT_VECTOR_SEMANTICS_VERSION,
-                            }
-                        component = PARAMETER_COMPONENT[first_key]
-                        source = native_component_source(
-                            collection,
-                            model_run,
-                            valid_time,
-                            component=component,
-                            zone=zone,
-                            grid_candidate=first,
-                            capture=source_capture,
-                            spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
-                            **source_extra,
-                        )
-                        if source:
-                            hour.setdefault("sources", {})[component] = source
-                        else:
-                            (hour.get("sources") or {}).pop(component, None)
+                        hour.setdefault("sources", {})[component] = source
                     continue
 
                 if parameter in {"significant-wave-height", "mean-wave-dir", "dominant-wave-period"}:
@@ -6407,6 +6665,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         component=component,
                         zone=zone,
                         grid_candidate=nearest,
+                        grid_tuple={parameter: nearest},
                         capture=source_capture,
                         spatial_selection="nearest-valid-grid-cell-no-spatial-interpolation",
                         **source_extra,
@@ -6481,11 +6740,11 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
             continue
         optional_fields: tuple[str, ...] = ()
         direction_by_cell = {
-            candidate_cell_key(candidate): candidate
+            candidate_node_key(candidate): candidate
             for candidate in candidates_by_parameter.get("mean-wave-dir") or []
-            if candidate_cell_key(candidate) is not None
+            if candidate_node_key(candidate) is not None
         }
-        direction = direction_by_cell.get(candidate_cell_key(height))
+        direction = direction_by_cell.get(candidate_node_key(height))
         if direction is not None:
             direction_value = direction.get("value")
             if not (
@@ -6507,6 +6766,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
             component="wave",
             zone=zone,
             grid_candidate=height,
+            grid_tuple={**selected, **({"mean-wave-dir": direction} if direction is not None else {})},
             capture=source_capture,
             spatial_selection="nearest-shared-wave-height-period-grid-cell-no-spatial-interpolation",
             optional_field_set=optional_fields,
@@ -6534,12 +6794,12 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
         hour.setdefault("sources", {})["wave"] = source
         for parameter, candidate in (("significant-wave-height", height), ("dominant-wave-period", period)):
             point["gridPoints"][parameter] = {
-                **{key: round(value, 5) if isinstance(value, (int, float)) else value for key, value in candidate.items() if key not in {"value", "index", "_wavePeriodField"}},
+                **grid_point_metadata(candidate, ("value", "index", "_wavePeriodField")),
             }
             point["collections"][parameter] = collection
         if direction is not None:
             point["gridPoints"]["mean-wave-dir"] = {
-                **{key: round(value, 5) if isinstance(value, (int, float)) else value for key, value in direction.items() if key not in {"value", "index"}},
+                **grid_point_metadata(direction, ("value", "index")),
             }
             point["collections"]["mean-wave-dir"] = collection
         else:

@@ -58,7 +58,11 @@ jobs:
       # derfor ikke hydrere den centrale admin-sandhed, som fuld produktion
       # kraever. De kildebaserede gates her maa aldrig bygge eller deploye.
       - name: Validate bounded native current diagnosis on artificial data only
-        run: python -B scripts/test-native-current-grid.py --native
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B scripts/test-native-current-grid.py --native
+          python -B scripts/test-dmi-current-cell-key.py --real-eccodes
 
       - name: Validate source contracts and release governance
         run: npm run validate:source

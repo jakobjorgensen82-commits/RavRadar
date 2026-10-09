@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import json
 import os
@@ -32,6 +33,10 @@ for name in (
     "codes_grib_new_from_file", "codes_release",
 ):
     setattr(eccodes, name, lambda *args, **kwargs: None)
+# Legacy nearest-object assertions below explicitly exercise the unchanged
+# GRIB2 route. This synthetic API is not a regular DKSS GRIB1 header fixture;
+# that header/value path has its own exact-caller and real native targets.
+eccodes.codes_get = lambda _gid, key: 2 if key == "edition" else None
 sys.modules["eccodes"] = eccodes
 spec = importlib.util.spec_from_file_location("ravradar_update_dmi_bulk", ROOT / "scripts/update-dmi-bulk.py")
 assert spec and spec.loader
@@ -49,6 +54,10 @@ zone = {
 }
 candidate = {
     "gridDefinitionSha256": "a" * 64,
+    "_gridIndexIdentity": hashlib.sha256(b"synthetic-provenance-grid-order").hexdigest(),
+    # Existing own GRIB2/native-coordinate fixture; not DKSS header evidence.
+    "_gridCoordinateInterpretation": "eccodes-native-coordinates-v1",
+    "index": 7,
     "longitude": 2.0,
     "latitude": 1.0,
     "distanceKm": 0.0,
@@ -1762,6 +1771,9 @@ try:
         "longitude": 2.0,
         "distanceKm": 0.0,
     }]
+    producer.codes_get = lambda gid, key: (
+        "a" * 32 if key == "md5GridSection" else original_codes_get(gid, key)
+    )
 
     class NumpyArrayLike:
         """Exercise the documented ecCodes ndarray protocol without NumPy."""
@@ -1793,6 +1805,10 @@ try:
 
     def counting_codes_get(_gid, key):
         metadata_calls.append(key)
+        if key == "edition":
+            return 2
+        if key == "md5GridSection":
+            return "a" * 32
         return 9999.0 if key == "missingValue" else f"grid-{key}"
 
     second_zone = {**zone, "id": "PART::TEST-2"}
@@ -1806,7 +1822,8 @@ try:
     assert set(counted_rows) == {zone["id"], second_zone["id"]}
     assert metadata_calls.count("md5GridSection") == 1
     assert metadata_calls.count("missingValue") == 1
-    assert len(metadata_calls) == 12
+    assert metadata_calls.count("edition") == 1
+    assert len(metadata_calls) == 13
     legacy_definition_signature = tuple(
         f"grid-{key}" for key in producer.GRID_DEFINITION_KEYS
     )
@@ -1817,7 +1834,7 @@ try:
     )
     assert counted_rows[zone["id"]][0]["gridDefinitionSha256"] != (
         producer.grid_definition_sha256_from_signature(
-            ("grid-md5GridSection", *legacy_definition_signature)
+            ("a" * 32, *legacy_definition_signature)
         )
     )
 
@@ -1825,8 +1842,10 @@ try:
     # identical dimensions and different grid-section md5 must never share the
     # internal nearest-index cache.
     def grid_identity_codes_get(gid, key):
+        if key == "edition":
+            return 2
         if key == "md5GridSection":
-            return f"grid-section-{gid}"
+            return f"{gid:032x}"
         return f"grid-{key}"
 
     producer.codes_get = grid_identity_codes_get
@@ -1834,6 +1853,9 @@ try:
     second_cache_signature = producer.grid_cache_signature(1002)
     assert first_cache_signature[1:] == second_cache_signature[1:]
     assert first_cache_signature != second_cache_signature
+    assert producer.grid_index_identity_sha256_from_cache(first_cache_signature) != (
+        producer.grid_index_identity_sha256_from_cache(second_cache_signature)
+    )
     producer.GRID_INDEX_CACHE.clear()
 
     def one_grid_candidate(index):
@@ -1961,6 +1983,7 @@ try:
         assert grid_points["current-u"]["gridDefinitionSha256"] == "a" * 64
         assert grid_points["sea-mean-deviation"]["gridDefinitionSha256"] == "a" * 64
         assert all("_candidateCount" not in point for point in grid_points.values())
+        assert all("_gridIndexIdentity" not in point for point in grid_points.values())
         hour = output["zones"][zone["id"]]["hourly"][valid_time]
         assert "current-u" in hour and "sea-mean-deviation" in hour
         assert {"wind-tail-u-10m", "wind-tail-v-10m"} <= set(hour)
@@ -2005,7 +2028,8 @@ try:
         losing_candidate = {
             **candidate,
             "longitude": 2.02,
-            "distanceKm": 1.0,
+            # Own valid farther candidate, not an inconsistent distance claim.
+            "distanceKm": producer.haversine_km(1.0, 2.0, 1.0, 2.02),
             "index": 9,
         }
         existing_source = producer.native_component_source(

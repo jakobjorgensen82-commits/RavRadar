@@ -1,10 +1,151 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.554
+**Håndbogsversion:** 4.0.555
 
-4.0.554 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+4.0.555 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.179 Samplingregistrering før gemning af nye felter
+
+Den isolerede kandidat gemmer nu den faktiske nye feltudvælgelse i hver
+komponent/times kilde som `nativeGridSampling`: fælles originalt elementindeks,
+gitterets læserækkefølgeidentitet, anvendt koordinatfortolkning, gitterpunkt og
+de faktisk valgte felter. Registreringen indeholder ingen strømværdier.
+Den interne opslagstags kopi fjernes fortsat fra almindelige `gridPoints`.
+Registreringen er ikke selvstændig autentificering af DMI eller automatisk
+godkendelse af gammel historik; den følger den eksisterende originale kilde
+og private lagrings integritetskontrol. Der tilføjes ikke et selvhash som falsk
+bevis eller en ny, udokumenteret flydende-tal-JSON-hashkontrakt.
+
+Begge normale batchkald viderefører den regel, der faktisk blev brugt til
+opslaget. Vektor, skalar og bølgetuple giver de faktisk udvalgte felter til
+den normale kildekonstruktør. Uens indeks, gitterrækkefølge, fortolkning,
+manglende felter og ugyldige tal afvises. Nulværdier bevares. Eksisterende
+originaler uden registrering får ingen ny mærkning, version eller sletning.
+
+Vektorkilden kontrolleres før ændring af en tidligere gyldig time, gitterresumé,
+valgt tuple eller tilgængelighedskvittering. En intern kildefejl er en navngiven
+fejl, ikke rumlig mangel hos DMI, et afsluttet felt eller tilladelse til genbrug.
+Den eksisterende normale aktivtransaktion bevarer originaltilstanden ved fejl.
+
+29 lokale måltests består: faktisk udtrukket producentkode med egne kunstige
+input, sammenhængende header/batch/kildekald og faktisk privat gemning/genlæsning.
+Lagringssuite har 14 beståede tests samt bestået Node-kontrol. 41 forskellige
+timer bevares med én fælles registrering i den rumlige tabel, ikke 41 kopier
+blandet med timeafhængig semantik. Begge nye læsere accepterer den tidligere
+semantiktabels samme felt; dobbelte felter, bounds og øvrige afvisninger bevares.
+Format-id er uændret, men gamle binære læsere forstår ikke det nye rumlige felt;
+aktivering kræver samordnet levering af begge læsere og alle genbrugskaldere.
+Ingen eksisterende originalfil flyttes, slettes eller opgraderes af dette.
+Head ed37b172 bestod 57 faktiske native testnoder i GitHub og de normale
+fuld-import-prøver af vektorafvisning, transaktionsrollback, lagring, proveniens
+og vind. Den samlede kildekontrol fejlede kl. 21.11 dansk tid den 9. oktober:
+én wave-bootstrap-prøve forventede en ældre workflow-budgetstreng. De øvrige
+62 prøver i den suite bestod. Forventningen følger nu de eksisterende præcise
+adaptive og quick-confirmation-gates; workflow, budget og bootstrap ændres ikke.
+Lokal prøve af den faktiske workflow-only-metode består og afviser tre egne
+usikre mutationer. Hele suiten og den præcise nye head kræver ny GitHub-kontrol;
+ingen proofupload eller aktivering er krediteret. Ingen dependencies installeres.
+Den eksisterende afgrænsede Python-bro kører lagring, native proveniens,
+continuity, vind og wave-bootstrap én gang hver. Kildeplanen har stadig
+47 kommandoer; ingen produktionsgate eller runnergrænse ændres.
+
+Den tidligere præcise head 3c649724 bestod GitHub-kildekontrollen med 51 faktiske
+native testnoder, den kritiske sourcegate og uændret valideret træ den 9. oktober
+kl. 20.10 dansk tid. Det gælder ikke denne efterfølgende ændring. Tidligere udsagn
+om uafklaret nativekontrol erstattes alene for den tidligere head.
+
+Cacheklar, processed-kvitteringer, native/protected/retained originaler,
+strømhukommelse, RavScore og centralt valgt SOURCE inklusive T+3 skal endnu have
+fælles, tabsfri anvendelsesregler. Parser20/grid9 ændres ikke alene for at kalde
+overgangen færdig. 4.0.555 forbliver uden merge/aktivering; hverken hele revisionen,
+brugerdata eller bred Spørg RavRadar er færdige. Ingen produktionsændring under
+aktiv vejrhentning, ny originaldiagnose, manuel vejrhentning, SQL-installation,
+admin-/geometri-, scoreformel-, prioritet- eller cronændring følger af kildearbejdet.
+
+## 89.178 Gitterplacering fra DMI-filens endepunkter
+
+DMI's [officielle FAQ](https://www.dmi.dk/friedata/dokumentation/faq)
+forklarer, at GRIB1's afrundede afstandsfelter kan give geografisk
+fejlplacering. Reglen er endepunktsafstand delt med antal punkter minus én.
+FAQ-eksemplet viser længdegraden; den tilsvarende regelmæssige
+breddegradsakse er en eksplicit testet fortolkning, ikke bevis for en
+præcis uafrundet geografisk oprindelse.
+
+Den isolerede kandidat bruger reglen fra hver DKSS regular_ll/GRIB1-fils
+egne endepunkter, antal punkter og læserækkefølge i de normale marine
+opslag og begge batchkald. Originale nummererede elementer, værdier,
+bitmap, manglende værdier og gyldige nulværdier bevares. Originalfilen,
+centrale adminpunkter, kildeprioritet og scoreformel ændres ikke.
+Andre modeller og filtyper beholder den eksisterende vej.
+Ugyldig geometri giver en navngiven fejl uden afrundet tilbagefald;
+et faktisk opslag uden for gitteret giver ingen kandidater.
+
+23 lokale måltests består, inklusive otte rent geometriske
+læserækkefølger og normale batchkald med kunstige header-/værdisvar.
+Det er ikke native- eller produktionsbevis. Den opdaterede kontrol
+med den rigtige fastlåste decoder er endnu ikke bestået. Den gamle
+forventning om at nå to afrundede aliasindeks i ét nærområde er
+erstattet af faktisk nåbarhed ved deres forskellige headerberegnede
+koordinater. Aliasobservationen, nul-kontrollerne og strenge krav om
+fælles indeks bevares; ingen kandidatindsættelse eller skip.
+
+Denne kilde erstatter tidligere udsagn om manglende officiel støtte
+til endepunktsfortolkningen. Den frikender ikke observerede landpunkter
+i andre modeller, adminsampling, historisk strøm, strømhukommelse eller
+RavScore. 4.0.555 forbliver uden merge/aktivering, indtil cache,
+native/protected/retained historik, original-B/S og SOURCE inklusive
+T+3 har en dokumenteret tabsfri overgang. Gamle rækker må ikke
+opgraderes af en ny dokumentoverskrift. Gyldige originaler og timer
+må ikke slettes eller ommærkes. Ingen ny originaldiagnose,
+vejrhentning, ændret cron, SQL-installation eller deploy følger heraf.
+
+
+## 89.177 Samme native gitterpunkt før feltkobling
+
+Den isolerede 4.0.555-kandidat afviser, at samme afrundede koordinat alene
+beviser et fælles modelpunkt. Strøm-, vind- og bølgefelter kobles kun, når
+den normale producent har samme native elementindeks og samme private
+identitet for hele gittersektionen, inklusive læserækkefølge. Den eksisterende
+offentlige tredelte gitteridentitet ændres ikke. Den nye private kontrolmarkør
+udelades af gemte gitterpunkter og kildeproveniens. Gyldige fælles punkter og
+nulværdier bevares; valgfri bølgeretning skal komme fra samme punkt.
+
+Tolv afgrænsede tests af de faktiske producentfunktioner består. Fem
+eksisterende syntetiske fixtures beholder deres assertions, og schedulerens
+normale Node/Python-prøve består. Den eksisterende sourcegruppe når nye mål
+én gang og beholder 47 kommandoer. PR'ens nativekontrol skal bruge den rigtige
+fastlåste decoder og egne kunstige GRIB-filer; den er endnu ikke bestået.
+Manglende faktisk nåbarhed må give fejl, ikke en indsat kandidat eller et skip.
+Workflowinventar og rækkefølge består efter registrering af det allerede
+eksisterende diagnoseworkflow; ingen ny dispatch eller providerlæsning følger.
+
+Kandidaten må ikke merges eller aktiveres, før gamle cachekvitteringer,
+native/protected/retained historik, strømhukommelse og SOURCE inklusive T+3
+har en dokumenteret tabsfri overgang. Cacheklar-genvejen kan ellers undgå ny
+parsing. Parser20/grid9 og snæver auditeret decoderkompatibilitet er endnu
+uændrede; det er et åbent krav, ikke en frikendelse af gamle rækker. Et simpelt
+versionsbump er ikke en fuld overgang. Ingen original proveniens ommærkes,
+gyldige timer slettes ikke, og administrative punkter ændres ikke. Fysisk
+korrekt koordinatfortolkning og faktisk påvirkning af scorer er stadig åbne.
+
+4.0.554 blev faktisk leveret på main 232640149b3a74674e42618465026c65d05eee81
+gennem normalt deploy 37955527084 den 9. oktober kl. 18.07 dansk tid:
+privat gemning/publicering, Edge, Pages, offentlig 210/673-kontrol og terminal.
+Browseren viste versionsnummeret og ét korrekt kontrolleret score-/fundsvar.
+Det er ikke bevis for fungerende ekstern AI eller en frisk vejrgeneration.
+De tidligere lokale 4.0.553/554-afsnit nedenfor er historik; deres leveringsstatus
+erstattes af dette afsnit, ikke deres dokumenterede teknik og restbegrænsninger.
+
+De separate lokale eksport- og tyske tokenrettelser er ikke medleveret her.
+Begge modelbundles er uændrede, og geodata ændres kun i topversionsfeltet.
+Den statiske SQL-håndbogskopi er en lokal tekstkopi, ikke databaseinstallation.
+Den store revision og bindingsadskillelsen er ikke aktiveret; særskilte
+destinationsafvisninger består. Hele revisionen, holdbar brugerdata, bred
+Spørg RavRadar og drift uden Codex omkring 21. oktober er fortsat åbne.
+Ingen ekstra originaldiagnose, manuel vejrhentning, annullering eller ændret
+cron følger af kandidaten.
 
 ## 89.176 Afsluttet DMI-gemning før næste skrivning
 
