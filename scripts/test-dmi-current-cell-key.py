@@ -283,13 +283,23 @@ if REAL:
             self.assertLessEqual(len(union), producer.grid_candidate_target(collection, zone))
             return union
 
+        def bounded_synthetic_lookup_details(self, gid, zone, union):
+            # Artificial coordinates/indices only; never print field values.
+            direct = self.ec.codes_grib_find_nearest(gid, zone["lat"], zone["lon"], npoints=4)
+            return {"syntheticTarget": [zone["lat"], zone["lon"]],
+                    "syntheticDirect": [{"index": row["index"], "lat": row["lat"], "lon": row["lon"]}
+                                        for row in direct],
+                    "syntheticWarmClosest": [{key: row[key] for key in ("index", "latitude", "longitude", "distanceKm")}
+                                             for row in union[:4]]}
+
         def require_native_union(self, gid, collection, zone, indices):
             union = self.native_union(gid, collection, zone)
             actual = {row["index"] for row in union}
             self.assertTrue(
                 set(indices) <= actual,
                 "NATIVE_REACHABILITY_UNPROVED: actual normal probe union did not contain every required node; "
-                f"syntheticExpectedIndices={list(indices)}; syntheticActualIndices={sorted(actual)}",
+                f"syntheticExpectedIndices={list(indices)}; syntheticCandidateCount={len(actual)}; "
+                f"syntheticLookup={self.bounded_synthetic_lookup_details(gid, zone, union)}",
             )
             return union
 
@@ -385,7 +395,13 @@ if REAL:
                 for same_node in (False, True):
                     with self.subTest(same_node=same_node):
                         digest = self.wave_file(gid, values, path, indices[0 if same_node else 1])
-                        output, diagnostics = {"zones": {}}, {}
+                        # Match normal main's initial_zone_records exactly:
+                        # native provenance is checked against this identity.
+                        # Omitting it is correctly rejected, not a decoder bug.
+                        output, diagnostics = {"zones": {zone["id"]: {
+                            **(self.producer.sampling_identity(zone) or {}),
+                            "hourly": {}, "gridPoints": {}, "collections": {},
+                        }}}, {}
                         found, _, interrupted, messages, _ = self.producer.process_grib(
                             path, "wam_dw", self.TIME, self.TIME, [zone], output, diagnostics,
                         )
@@ -394,7 +410,10 @@ if REAL:
                         self.assertEqual(found, {"significant-wave-height", "dominant-wave-period", "mean-wave-dir"})
                         hour = output["zones"].get(zone["id"], {}).get("hourly", {}).get(self.TIME)
                         if same_node:
-                            self.assertIsNotNone(hour, "Normal positive wave publication did not complete")
+                            self.assertIsNotNone(
+                                hour, "Normal positive wave publication did not complete; "
+                                f"reason={diagnostics.get('rejectedScalarTuples', {}).get(zone['id'], {}).get('wave')}",
+                            )
                             self.assertEqual(hour["mean-wave-dir"], 90.0)
                             self.assertEqual(hour["sources"]["wave"]["optionalFieldSet"], ["mean-wave-dir"])
                             self.assertNotIn("_gridIndexIdentity", json.dumps(output))
