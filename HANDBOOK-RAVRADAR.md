@@ -18,14 +18,21 @@ målfil og fravær af den midlertidige fil. Første fejl bevares.
 Usikker afslutning eller publicering bevarer arbejdet og stopper den normale
 DMI-kø før senere skrivning. En fejltekst må ikke give adgang til genstart.
 Selvstændigt bevist sikker fejl med lukkede håndtag tillader legitimt senere
-genbrug; en sen flyttefejl må ikke rulle en allerede gyldig målfil tilbage.
+genbrug af gemmeren og en frisk caller. Den samme normale updater-kæde
+bevarer sin første afvisning og starter ikke gemmeren igen. Det er ikke
+automatisk recovery eller nulstilling. En usikker gemmer beholder sine egne
+håndtag og sin midlertidige fil og afviser også en frisk caller. En sen
+flyttefejl må ikke rulle en allerede gyldig målfil tilbage.
 Parseren åbner ikke længere et tredje, usporbart håndtag i writerens kontrol.
 Normale læsesignaturer, parserpolitik, serializer og øvrig updater er bevaret
 med mekanisk bytekontrol mod faktisk main. Nye måltests nås én gang gennem
 eksisterende sourcegruppe; ingen nye workflowblade eller tidsbudgetter.
 
-Den relevante lokale sourcegruppe har 185 beståede testnoder og én eksisterende
-frivillig kapacitetsprøve sprunget over. Det er ikke national kapacitetskontrol,
+Den relevante lokale sourcegruppe bestod før sidste caller-regression med
+185 testnoder og én eksisterende frivillig kapacitetsprøve sprunget over;
+den brede gruppe gentages ikke for status. Den endelige lille DMI-gruppe
+har 51 beståede og samme kapacitetsskip. Det ekstra fuldfilscans nationale
+tids-/kapacitetsomkostning er endnu ikke bevist. Det er ikke national kapacitetskontrol,
 eksakt ny GitHub-kontrol, offentlig levering eller samlet driftssikkerhed.
 Hele revisionens processtop, SOURCE, original-B/S-før-T, historik, gemning,
 upload, tab af runner og 210/673-kapacitet er fortsat særskilt åbne.

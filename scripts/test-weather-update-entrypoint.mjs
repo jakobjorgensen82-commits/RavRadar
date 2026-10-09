@@ -188,3 +188,88 @@ test('actual DMI queue propagates an uncertain real checkpoint but preserves pro
     } else assert.deepEqual(await fs.readFile(file), original);
   });
 });
+
+test('actual normal checkpoint chain retains its first failure and permits only proved safe fresh reuse', async t => {
+  const source = await sourceText(producerPath);
+  const header = 'let dmiStoreWriteChain = Promise.resolve();';
+  const start = source.indexOf(header);
+  const end = source.indexOf('\nconst output = {', start);
+  assert.equal(source.split(header).length, 2);
+  assert.ok(start > 0 && end > start);
+  // Use the exact normal closure, including its rejected Promise chain. A
+  // direct writer retry is not evidence that this old caller can recover.
+  const createCheckpoint = new Function('writeDmiForecastFileAtomic',
+    'DMI_FORECAST_STORE_PATH', 'nextDmiForecastStore',
+    `${source.slice(start, end)}\nreturn writeDmiForecastStoreCheckpoint;`);
+  t.mock.method(globalThis, 'fetch', async () => { assert.fail('NETWORK_FORBIDDEN'); });
+  for (const fault of ['proved-closed-sync-failure', 'unproved-sync-and-close']) await t.test(fault, async st => {
+    const uncertain = fault === 'unproved-sync-and-close';
+    const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-weather-checkpoint-chain-'));
+    let closeRetained;
+    st.after(async () => {
+      if (closeRetained) await closeRetained();
+      assert.equal(path.dirname(folder), path.resolve(os.tmpdir()));
+      assert.ok(path.basename(folder).startsWith('rr-weather-checkpoint-chain-'));
+      await fs.rm(folder, { recursive: true, force: true });
+    });
+    const file = path.join(folder, 'forecast.json');
+    const document = { schemaVersion: 2, zones: {}, runtime: { nextZoneCursor: 0 } };
+    const original = Buffer.from(JSON.stringify(document));
+    await fs.writeFile(file, original);
+    document.runtime.nextZoneCursor = 1;
+    const first = new Error('SYNTHETIC_CHECKPOINT_CHAIN_FIRST_FAILURE');
+    const open = fs.open.bind(fs);
+    let firstHandle, firstStage, stageOpens = 0, writerCalls = 0;
+    st.mock.method(fs, 'open', async (target, ...args) => {
+      const handle = await open(target, ...args);
+      if (!String(target).startsWith(file + '.forecast-stage-')) return handle;
+      stageOpens++;
+      if (args[0] === 'wx' && !firstHandle) {
+        firstHandle = handle; firstStage = target;
+        st.mock.method(handle, 'sync', async () => { throw first; });
+        if (uncertain) {
+          closeRetained = handle.close.bind(handle);
+          st.mock.method(handle, 'close', async () => {});
+        }
+      }
+      return handle;
+    });
+    const countedWriter = (...args) => { writerCalls++; return writeDmiForecastFileAtomic(...args); };
+    const checkpoint = createCheckpoint(countedWriter, file, document);
+    await assert.rejects(checkpoint(), error => error === first);
+    const opensAfterFirst = stageOpens;
+    await assert.rejects(checkpoint(), error => error === first);
+    assert.equal(writerCalls, 1, 'the rejected normal chain must not start its writer again');
+    assert.equal(stageOpens, opensAfterFirst);
+    assert.equal(opensAfterFirst, 1);
+    assert.deepEqual(await fs.readFile(file), original);
+    assert.equal(isDmiForecastCheckpointStopUnproved(first), uncertain);
+    assert.equal(isDmiForecastCheckpointStopUnproved(new Error(first.message)), false);
+    assert.equal(isDmiForecastCheckpointStopUnproved(first.message), false);
+    assert.equal(isDmiForecastCheckpointStopUnproved({ message: first.message, code: 'DMI_FORECAST_FILE_WRITER_STOP_UNPROVED' }), false);
+
+    const freshCheckpoint = createCheckpoint(countedWriter, file, document);
+    if (uncertain) {
+      assert.ok((await firstHandle.stat()).isFile());
+      assert.ok((await fs.stat(firstStage)).isFile());
+      await assert.rejects(writeDmiForecastFileAtomic(file, document), error => error === first);
+      await assert.rejects(freshCheckpoint(), error => error === first);
+      assert.equal(writerCalls, 2, 'fresh caller reaches the real writer refusal, not a replacement');
+      assert.equal(stageOpens, opensAfterFirst, 'private refusal remains locked without a new file handle');
+      assert.deepEqual(await fs.readFile(file), original);
+      assert.ok((await firstHandle.stat()).isFile());
+      assert.ok((await fs.stat(firstStage)).isFile());
+    } else {
+      await assert.rejects(firstHandle.stat(), { code: 'EBADF' });
+      await assert.rejects(fs.stat(firstStage), { code: 'ENOENT' });
+      await writeDmiForecastFileAtomic(file, document);
+      assert.deepEqual(JSON.parse(await fs.readFile(file, 'utf8')), document);
+      document.runtime.nextZoneCursor = 2;
+      await freshCheckpoint();
+      assert.equal(writerCalls, 2);
+      assert.equal(stageOpens, opensAfterFirst + 4, 'both safe retries own one write and one shared scan/parser handle');
+      assert.deepEqual(JSON.parse(await fs.readFile(file, 'utf8')), document);
+      assert.deepEqual(await fs.readdir(folder), ['forecast.json']);
+    }
+  });
+});
