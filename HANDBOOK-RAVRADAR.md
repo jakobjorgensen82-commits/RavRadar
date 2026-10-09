@@ -37,6 +37,13 @@ eksakt ny GitHub-kontrol, offentlig levering eller samlet driftssikkerhed.
 Hele revisionens processtop, SOURCE, original-B/S-før-T, historik, gemning,
 upload, tab af runner og 210/673-kapacitet er fortsat særskilt åbne.
 
+Den godkendte fjerde originaldiagnose er gennemført uden produktionsskrivning.
+Limfjordsmodellens decoder-koordinater afviger op til cirka 0,13 breddegrad
+fra gitterets angivne endepunkter; samme forskel findes ikke i den undersøgte
+Nordsø/Østersø-fil. Det er ikke en færdig numerisk rettelse eller en frikendelse
+af adminmål, historik, strømhukommelse eller score og forklarer ikke alene
+landpilene ved Øster Hurup. Engangstilladelsen er forbrugt.
+
 Ingen vejrdata, strøm-/scoreværdi, kildevalg, adminpunkt eller geometri ændres.
 Begge vejrbundles skal være uændrede; geodata følger kun topversionsfeltet.
 Den statiske SQL-håndbogskopi er en lokal kildefil, ikke SQLinstallation.
