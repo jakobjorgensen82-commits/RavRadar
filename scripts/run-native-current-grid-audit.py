@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import urllib.request
+import urllib.error
 
 TARGETS = {
     'dkss_lf': ('https://dmi-opendata.s3.eu-north-1.amazonaws.com/forecastdata/DKSS_LF_SF/DKSS_LF_SF_2026-10-09T000000Z_2026-10-14T000000Z.grib', 5653412,
@@ -30,12 +31,31 @@ FAILURE_REASONS = frozenset(('UNAPPROVED_REDIRECT', 'EXACT_RESPONSE_REQUIRED', '
     'REPORT_SIZE_REJECTED', 'REPORT_ALREADY_EXISTS', 'NATIVE_DIAGNOSIS_INCOMPLETE',
     'PRIVATE_SCRATCH_CLEANUP_REJECTED'))
 
+# Deliberately duplicated fixed vocabulary: the parent never trusts arbitrary
+# text from native libraries. The test requires both vocabularies to match.
+NATIVE_FAILURE_CODES = frozenset(('EXACT_INPUT_REQUIRED', 'EXACT_HEADER_REQUIRED', 'UNSUPPORTED_GRID',
+    'NONFINITE_NATIVE_COORDINATE', 'UNSUPPORTED_CURRENT_GRID', 'GRID_SIZE_BOUND',
+    'NATIVE_VALUE_COUNT_MISMATCH', 'DIAGNOSIS_TIME_BOUND', 'DIAGNOSIS_MESSAGE_BOUND',
+    'BOTH_CURRENT_COMPONENTS_REQUIRED', 'INPUT_CHANGED', 'REPORT_SIZE_BOUND',
+    'IMPORT_FAILURE', 'IO_FAILURE', 'UNCLASSIFIED'))
+NATIVE_FAILURE_REASONS = frozenset(f'{phase}:{code}' for phase in ('SETUP', 'DKSS_LF', 'DKSS_NSBS')
+                                 for code in NATIVE_FAILURE_CODES)
+
+
+def bounded_native_failure(stderr_path):
+    if stderr_path.stat().st_size > 4096:
+        return 'NATIVE_DIAGNOSIS_INCOMPLETE'
+    prefix = 'NATIVE_GRID_DIAGNOSIS_NOT_COMPLETED:'
+    matches = [line[len(prefix):] for line in stderr_path.read_text(encoding='utf8', errors='replace').splitlines()
+               if line.startswith(prefix)]
+    return matches[0] if len(matches) == 1 and matches[0] in NATIVE_FAILURE_REASONS else 'NATIVE_DIAGNOSIS_INCOMPLETE'
+
 
 class AuditFailure(Exception):
     def __init__(self, phase, error):
         self.phase = phase if phase in FAILURE_PHASES else 'PREPARE'
         message = str(error)
-        if type(error) is ValueError and message in FAILURE_REASONS:
+        if type(error) is ValueError and message in FAILURE_REASONS | NATIVE_FAILURE_REASONS:
             self.reason = message
         elif isinstance(error, urllib.error.HTTPError):
             self.reason = 'HTTP_FAILURE'
@@ -169,7 +189,9 @@ def main():
             result = subprocess.run([sys.executable, '-B', str(script), '--producer', str(args.producer.resolve(strict=True)),
                                      '--lf', str(scratch / 'dkss_lf.grib'), '--nsbs', str(scratch / 'dkss_nsbs.grib')],
                                     cwd=scratch, env=env, stdout=out, stderr=err, timeout=180, check=False)
-        if result.returncode != 0 or (scratch / 'stdout.private').stat().st_size > 65536:
+        if result.returncode != 0:
+            raise ValueError(bounded_native_failure(scratch / 'stderr.private'))
+        if (scratch / 'stdout.private').stat().st_size > 65536:
             raise ValueError('NATIVE_DIAGNOSIS_INCOMPLETE')
         phase = 'VALIDATE_REPORT'
         encoded = safe_report(json.loads((scratch / 'stdout.private').read_text(encoding='utf8')))

@@ -49,10 +49,28 @@ def synthetic_safe_report():
 
 
 class PreparationTests(unittest.TestCase):
+    def test_native_error_vocabulary_never_returns_private_library_text(self):
+        self.assertEqual(audit.SAFE_FAILURE_CODES, runner.NATIVE_FAILURE_CODES)
+        self.assertEqual(str(audit.NativeAuditFailure('dkss_lf', ValueError('UNSUPPORTED_GRID'))),
+                         'DKSS_LF:UNSUPPORTED_GRID')
+        self.assertEqual(str(audit.NativeAuditFailure('PRIVATE_LOCATION', ValueError('PRIVATE_PAYLOAD'))),
+                         'SETUP:UNCLASSIFIED')
+        prefix = 'NATIVE_GRID_DIAGNOSIS_NOT_COMPLETED:'
+        with tempfile.TemporaryDirectory(prefix='rr-native-error-fixture-') as tmp:
+            file = Path(tmp) / 'stderr.private'
+            for text, expected in [(prefix + 'DKSS_NSBS:UNSUPPORTED_GRID\n', 'DKSS_NSBS:UNSUPPORTED_GRID'),
+                                   (prefix + 'DKSS_NSBS:PRIVATE_PAYLOAD', 'NATIVE_DIAGNOSIS_INCOMPLETE'),
+                                   ('PRIVATE_PATH_AND_VALUE', 'NATIVE_DIAGNOSIS_INCOMPLETE'),
+                                   ((prefix + 'SETUP:IO_FAILURE\n') * 2, 'NATIVE_DIAGNOSIS_INCOMPLETE'),
+                                   ('x' * 4097, 'NATIVE_DIAGNOSIS_INCOMPLETE')]:
+                file.write_text(text)
+                self.assertEqual(runner.bounded_native_failure(file), expected)
+
     def test_normal_wrapper_failure_receipt_is_bounded_and_first_error_survives_cleanup(self):
         for scenario, expected in [('lf', 'READ_DKSS_LF:IO_FAILURE'),
                                    ('nsbs', 'READ_DKSS_NSBS:IO_FAILURE'),
                                    ('child', 'NATIVE_PROCESS:NATIVE_DIAGNOSIS_INCOMPLETE'),
+                                   ('child-known', 'NATIVE_PROCESS:DKSS_LF:UNSUPPORTED_CURRENT_GRID'),
                                    ('report', 'VALIDATE_REPORT:REPORT_FIELDS_REJECTED'),
                                    ('cleanup', 'CLEANUP:IO_FAILURE'),
                                    ('lf-and-cleanup', 'READ_DKSS_LF:IO_FAILURE')]:
@@ -71,7 +89,9 @@ class PreparationTests(unittest.TestCase):
                     if scenario == 'report':
                         report['private_payload'] = 'SYNTHETIC_PRIVATE_PATH_AND_PAYLOAD'
                     kwargs['stdout'].write(json.dumps(report).encode())
-                    return SimpleNamespace(returncode=1 if scenario == 'child' else 0)
+                    if scenario == 'child-known':
+                        kwargs['stderr'].write(b'NATIVE_GRID_DIAGNOSIS_NOT_COMPLETED:DKSS_LF:UNSUPPORTED_CURRENT_GRID\n')
+                    return SimpleNamespace(returncode=1 if scenario.startswith('child') else 0)
                 remove = runner.shutil.rmtree
                 def cleanup(path):
                     if scenario in ('cleanup', 'lf-and-cleanup'):
@@ -259,12 +279,61 @@ class PreparationTests(unittest.TestCase):
         self.assertIn('test "$GITHUB_RUN_ATTEMPT" = 1', text)
         self.assertIn('group: ravradar-weather-production-v2', text)
         self.assertIn('event=workflow_dispatch&per_page=100', text)
-        self.assertIn('test "$(wc -l < "$RUNNER_TEMP/native-grid-run-ids.txt")" = 1', text)
+        self.assertIn('test "$(wc -l < "$RUNNER_TEMP/native-grid-run-ids.txt")" = 2', text)
+        self.assertIn('READ-TWO-DMI-CURRENT-GRIDS-20261009-SECOND-ONCE', text)
+        self.assertIn('grep -Fxc -- 37922643090', text)
+        self.assertIn('.run_attempt == 1 and .status == "completed" and .conclusion == "failure"', text)
+        self.assertIn('.head_sha == "1ee6f78e09cf70eabd1454ac4973a8d8aae51b8e"', text)
         self.assertLess(text.index('Verify diagnosis with artificial native GRIB'), text.index('Read exactly two originals once'))
 
 
 if NATIVE:
     class NativeTests(unittest.TestCase):
+        def test_actual_workflow_shell_rejects_any_unapproved_successor(self):
+            import textwrap
+            if not sys.platform.startswith('linux'):
+                self.skipTest('Actual workflow shell checked in Linux source CI')
+            workflow = Path(__file__).resolve().parent.parent / '.github/workflows/audit-native-current-grid.yml'
+            script = textwrap.dedent(workflow.read_text().split('        run: |\n', 1)[1].split('\n      - name:', 1)[0])
+            fake_id, sha = '39999999999', 'a' * 40
+            gh = '''#!/bin/sh
+case "$*" in
+ *git/ref/heads/main*) printf '%s\\n' "$RR_MAIN" ;;
+ *actions/workflows/audit-native-current-grid.yml/runs*) printf '%s\\n' "$RR_HISTORY" ;;
+ *actions/runs/37922643090*) if [ "$RR_PREDECESSOR" = valid ]; then printf '%s\\n' 37922643090; fi ;;
+ *) exit 91 ;;
+esac
+'''
+            cases = [('exact', {}, True),
+                     ('only-self', {'RR_HISTORY': fake_id}, False),
+                     ('third', {'RR_HISTORY': '37922643090\n38888888888\n' + fake_id}, False),
+                     ('wrong-previous', {'RR_HISTORY': '38888888888\n' + fake_id}, False),
+                     ('duplicate', {'RR_HISTORY': '37922643090\n37922643090'}, False),
+                     ('rerun', {'GITHUB_RUN_ATTEMPT': '2'}, False),
+                     ('old-confirmation', {'CONFIRMATION': 'READ-TWO-DMI-CURRENT-GRIDS-20261009-ONCE'}, False),
+                     ('main-changed', {'RR_MAIN': 'b' * 40}, False),
+                     ('previous-changed', {'RR_PREDECESSOR': 'changed'}, False)]
+            with tempfile.TemporaryDirectory(prefix='rr-native-guard-fixture-') as tmp:
+                commands = Path(tmp) / 'commands'
+                commands.mkdir()
+                for name, body in [('gh', gh), ('git', '#!/bin/sh\nprintf "%s\\n" "$GITHUB_SHA"\n')]:
+                    file = commands / name
+                    file.write_text(body)
+                    file.chmod(0o700)
+                for name, overrides, accepted in cases:
+                    with self.subTest(name=name):
+                        env = dict(os.environ, PATH=str(commands) + os.pathsep + os.environ['PATH'],
+                                   RUNNER_TEMP=tmp, GITHUB_REPOSITORY='jakobjorgensen82-commits/RavRadar',
+                                   GITHUB_EVENT_NAME='workflow_dispatch', GITHUB_REF='refs/heads/main',
+                                   GITHUB_RUN_ATTEMPT='1', GITHUB_RUN_ID=fake_id, GITHUB_SHA=sha,
+                                   EXPECTED_MAIN_HEAD=sha, RR_MAIN=sha, RR_PREDECESSOR='valid',
+                                   RR_HISTORY='37922643090\n' + fake_id,
+                                   CONFIRMATION='READ-TWO-DMI-CURRENT-GRIDS-20261009-SECOND-ONCE')
+                        env.update(overrides)
+                        result = subprocess.run(['/bin/bash', '-c', script], env=env, capture_output=True,
+                                                timeout=10, check=False)
+                        self.assertEqual(result.returncode == 0, accepted)
+
         def test_actual_linux_python_runtime_dependency_without_provider_data(self):
             if not sys.platform.startswith('linux'):
                 self.skipTest('Linux runtime proof is required in normal GitHub source CI')

@@ -20,6 +20,28 @@ FILES = {
 }
 MAX_MESSAGES = 128
 MAX_POINTS = 400000
+SAFE_FAILURE_CODES = frozenset(('EXACT_INPUT_REQUIRED', 'EXACT_HEADER_REQUIRED', 'UNSUPPORTED_GRID',
+    'NONFINITE_NATIVE_COORDINATE', 'UNSUPPORTED_CURRENT_GRID', 'GRID_SIZE_BOUND',
+    'NATIVE_VALUE_COUNT_MISMATCH', 'DIAGNOSIS_TIME_BOUND', 'DIAGNOSIS_MESSAGE_BOUND',
+    'BOTH_CURRENT_COMPONENTS_REQUIRED', 'INPUT_CHANGED', 'REPORT_SIZE_BOUND',
+    'IMPORT_FAILURE', 'IO_FAILURE', 'UNCLASSIFIED'))
+
+
+def safe_failure_code(error):
+    if type(error) is ValueError and str(error) in SAFE_FAILURE_CODES:
+        return str(error)
+    if isinstance(error, ImportError):
+        return 'IMPORT_FAILURE'
+    if isinstance(error, OSError):
+        return 'IO_FAILURE'
+    return 'UNCLASSIFIED'
+
+
+class NativeAuditFailure(Exception):
+    def __init__(self, collection, error):
+        self.phase = collection.upper() if collection in FILES else 'SETUP'
+        self.code = safe_failure_code(error)
+        super().__init__(f'{self.phase}:{self.code}')
 
 
 def fingerprint(path, collection):
@@ -185,11 +207,16 @@ def main():
     producer = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(producer)
     deadline = time.monotonic() + 120
+    files = []
+    for collection, file in [('dkss_lf', args.lf), ('dkss_nsbs', args.nsbs)]:
+        try:
+            files.append(audit_file(file, collection, eccodes, producer, deadline))
+        except Exception as error:
+            raise NativeAuditFailure(collection, error) from None
     report = dict(scope='EXACT_TWO_CURRENT_FILES_NATIVE_CONFORMANCE_NOT_SCORE_PROOF',
                   nativeVersion=eccodes.codes_get_api_version(), centralAdminTargetsTested=False,
                   productionWritten=False, valuesExposed=False, coordinateCorrectionMade=False,
-                  files=[audit_file(args.lf, 'dkss_lf', eccodes, producer, deadline),
-                         audit_file(args.nsbs, 'dkss_nsbs', eccodes, producer, deadline)])
+                  files=files)
     encoded = json.dumps(report, sort_keys=True)
     if len(encoded.encode()) > 65536:
         raise ValueError('REPORT_SIZE_BOUND')
@@ -199,7 +226,8 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except Exception:
+    except Exception as error:
         # Never print library exceptions which could include original data/paths.
-        print('NATIVE_GRID_DIAGNOSIS_NOT_COMPLETED', file=sys.stderr)
+        failure = error if isinstance(error, NativeAuditFailure) else NativeAuditFailure(None, error)
+        print(f'NATIVE_GRID_DIAGNOSIS_NOT_COMPLETED:{failure}', file=sys.stderr)
         sys.exit(1)
