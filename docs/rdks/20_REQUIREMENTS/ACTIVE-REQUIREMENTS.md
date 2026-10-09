@@ -1,4 +1,18 @@
-# Lokal 4.0.553 – ventende brugerdata bevares; afgrænsede score-/fundsvar
+# Lokal 4.0.554 – bevist afslutning og publicering af DMI-checkpoint
+
+Den næste afgrænsede kandidat tager den normale checkpointrettelse til faktisk main-kode. Den kopierer ikke hele den isolerede revision eller aktiverer den. 4.0.553's særskilte tur-, login-, backup- og Edge-rettelser er videreført som kildeforgænger, ikke erklæret offentligt leveret. Den præcise nye GitHub-kontrol, sikker integration og faktisk produktionseffekt mangler.
+
+Et normal-kald kunne tidligere acceptere en tilsyneladende filflytning uden bevis for målfilen eller fjerne en midlertidig fil, selv om dens filhåndtag ikke var bevist lukket. Den normale atomiske DMI-gemmer kontrollerer nu sine fulde serialiserede bytes med afgrænset hashscan, den oprindelige parserpolitik på samme sporede læsehåndtag, faktisk afslutning af egne håndtag, fil-/mappeidentitet, flytning og fravær af den midlertidige fil. Første fejl bevares. Usikker afslutning eller publicering bevarer arbejdet og stopper den normale DMI-kø før senere skrivning; en fejltekst alene kan ikke give adgang til genstart. En faktisk lukket, selvstændigt kontrolleret sikker fejl tillader fortsat legitimt senere genbrug. En sen flyttefejl må ikke rulle en allerede gyldig målfil tilbage.
+
+Reelt falsk success ved et tredje parserhåndtag blev reproduceret og rettet: writerens hashscan og strukturkontrol bruger nu ét eget læsehåndtag før flytning. Parserpolitik, offentlige læsesignaturer, serializer, record-writer og updaterens øvrige kode er bevaret med mekanisk invers refaktor- og bytekontrol mod faktisk main. Nye mål er nåbare én gang gennem den eksisterende sourcegruppe; der er stadig 47 kommandoer og ingen ekstra produktionsworkflowblade. Den relevante ottefils sourcegruppe består lokalt med 185 beståede testnoder og én eksisterende, frivillig kapacitetsprøve sprunget over. Den lille DMI-gruppe består med 48 beståede og samme kapacitetsskip. Dette er ikke bestået national kapacitetsprøve eller præcis ny GitHub-kontrol.
+
+Rettelsen ændrer ingen vejr-/historik-/strømhukommelsesværdi, scoreformel, routing, kildeprioritet, adminpunkt, geometri, datakontrakt, tidsbudget eller workflowaktivering. Begge vejrbundles skal være eksakt uændrede; geodata må kun ændre det stående godkendte topversionsfelt. Håndbogens statiske SQL-kopi er kun en lokal kildefil, aldrig en databaseinstallation.
+
+Bevist afslutning i denne ene proces er ikke samlet eksklusiv skrivning mellem processer, sikring mod tab af runner eller strøm, holdbar fjernupload eller original-B/S-før-T-bevis. Hele revisionens SOURCE-/historik-/timeout-/fireminutters-/210/673-/save-upload-kæde er fortsat åben. Normal produktion og kontrolleret effekt skal verificeres efter sikker levering; en lokal prøve eller grønt source-run er ikke færdiggørelse. Ingen manuel vejrhentning, annullering, replacement eller ændret cron følger af kandidaten.
+
+Originaldiagnosens fjerde specifikke tilladelse er stadig ubrugt og afventer aktiv writers afslutning og frisk admission. Ingen femte gentagelse er tilladt. Numerisk strømgeografi, strømhukommelse og score er åbne, også efter den leverede visningsrettelse. Bred assistentviden, holdbar brugerdata og selvstændig drift uden Codex omkring 21. oktober er ikke afsluttet; bindingsadskillelsen er fortsat i bero og særskilte afvisninger består.
+
+# Videreført kildeforgænger 4.0.553 – ventende brugerdata bevares; afgrænsede score-/fundsvar
 
 Fire konkrete rettelser er ført til en separat kandidat på aktuel main: bevarelse af ventende ture, korrekt kvittering af lokal backup, sessionbundet loginfornyelse og afgrænsede score-/fundsvar. Den store isolerede revision og assistentens brede vidensudvidelse er ikke kopieret eller aktiveret. Kandidaten er lokalt kontrolleret, ikke offentligt leveret. Egen præcis GitHub-kontrol, sikker integration uden aktiv writer, normalt kontrolleret deploy og offentlig effekt mangler.
 

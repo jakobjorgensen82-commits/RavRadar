@@ -41,7 +41,7 @@ import {
 import { buildDataQuality } from './lib/data-quality.mjs';
 import { repairWaterLevelContinuity } from './lib/water-level-continuity.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
-import { readDmiForecastFile, writeDmiForecastFileAtomic } from './lib/dmi-forecast-file.mjs';
+import { readDmiForecastFile, writeDmiForecastFileAtomic, isDmiForecastCheckpointStopUnproved } from './lib/dmi-forecast-file.mjs';
 import { dmiWaveDirectionMatchesSource } from './lib/dmi-wave-tuple-proof.mjs';
 import { originalContextForProtectedDmiCurrent, verifiedProtectedDmiPartHourly } from './lib/protected-dmi-current-context.mjs';
 import { mergeProtectedLiveCurrentPilotIntoRecord,
@@ -4382,6 +4382,9 @@ for (const feature of targetFeatures) {
     await writeDmiForecastStoreCheckpoint();
     console.log(`DMI succes: ${zoneId} (${acquisitionPhase})`);
   } catch (error) {
+    // A live/uncertain checkpoint is not a provider miss. Preserve the actual
+    // writer refusal before any later zone, component, history or public write.
+    if (isDmiForecastCheckpointStopUnproved(error)) throw error;
     const message = error instanceof Error ? error.message : String(error);
     output.zones[zoneId].attempts = [...(output.zones[zoneId]?.attempts ?? []), { provider: 'dmi', message }];
     console.warn(`${zoneId}: DMI-kø fejlede: ${message}`);

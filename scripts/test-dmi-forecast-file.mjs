@@ -7,12 +7,17 @@ import crypto from 'node:crypto';
 import { constants as bufferConstants } from 'node:buffer';
 import { inspectDmiForecastFile, readDmiForecastFile, readDmiForecastRecord,
   writeDmiForecastFileAtomic, writeDmiForecastRecords, DMI_FORECAST_FILE_MAX_BYTES, hashDmiForecastDocument,
+  isDmiForecastCheckpointStopUnproved,
 } from './lib/dmi-forecast-file.mjs';
 import { PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
 import { assertUsableDmiProgressRecovery } from './lib/verified-dmi-progress-inputs.mjs';
 import { buildWaterSourceForecastIndex, packWaterSourceForecastContinuity,
   unpackWaterSourceForecastContinuity } from './lib/water-source-forecast-routing.mjs';
 import { dmiWaterSourceFixture } from './test-helpers/dmi-water-source-fixture.mjs';
+
+// Keep the normal caller regression in the existing single source-test group.
+// node:test runs these same-process tests serially; no extra workflow leaf.
+await import('./test-weather-update-entrypoint.mjs');
 
 async function fixture(t) {
   const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-dmi-forecast-file-'));
@@ -27,6 +32,232 @@ const document = () => ({ schemaVersion: 2, runtime: { nextZoneCursor: 0 },
   zones: { ZONE: { zoneId: 'ZONE', point: [10, 56], hourly: [{ time: '2026-09-30T00:00:00.000Z',
     sources: { wave: { title: 'Quotes " and slash \\; æøå 😀' } } }] } },
   partContinuity: { schemaVersion: 1, entries: [{ partId: 'PART', gzipBase64: 'synthetic' }] } });
+
+for (const fault of ['rename-noop', 'copy-instead-of-rename']) test(`normal DMI checkpoint refuses unproved publication: ${fault}`, async t => {
+  const folder = await fixture(t), file = path.join(folder, 'forecast.json');
+  const original = Buffer.from(JSON.stringify(document()));
+  await fs.writeFile(file, original);
+  const next = document(); next.runtime.nextZoneCursor = 1;
+  const copy = fs.copyFile.bind(fs);
+  let stage;
+  t.mock.method(fs, 'rename', async (from, to) => {
+    stage = from;
+    if (fault === 'copy-instead-of-rename') await copy(from, to);
+  });
+  await assert.rejects(writeDmiForecastFileAtomic(file, next), /PUBLICATION_UNPROVED/);
+  assert.ok((await fs.stat(stage)).isFile(), 'uncertain publication retains its actual stage');
+  if (fault === 'rename-noop') assert.deepEqual(await fs.readFile(file), original);
+  else assert.deepEqual(await readDmiForecastFile(file), next);
+  let opens = 0;
+  const open = fs.open.bind(fs);
+  t.mock.method(fs, 'open', async (...args) => { opens++; return open(...args); });
+  await assert.rejects(writeDmiForecastFileAtomic(file, next), error => {
+    assert.equal(isDmiForecastCheckpointStopUnproved(error), true);
+    assert.equal(isDmiForecastCheckpointStopUnproved(new Error(error.message)), false);
+    return true;
+  });
+  assert.equal(opens, 0, 'no replacement checkpoint after ambiguous publication');
+});
+
+for (const fault of ['close-noop', 'sync-and-close-noop', 'short-write', 'safe-sync-failure',
+  'rename-before-error', 'rename-then-error', 'cleanup-noop']) test(`normal DMI checkpoint retains uncertainty and permits proved safe reuse: ${fault}`, async t => {
+  const folder = await fixture(t), file = path.join(folder, 'forecast.json');
+  const original = Buffer.from(JSON.stringify(document()));
+  await fs.writeFile(file, original);
+  const next = document(); next.runtime.nextZoneCursor = 1;
+  const open = fs.open.bind(fs), rename = fs.rename.bind(fs), unlink = fs.unlink.bind(fs);
+  const sentinel = new Error('SYNTHETIC_DMI_CHECKPOINT_PRIMARY');
+  let stage, ownHandle, closeOwn, closes = 0, renames = 0, unlinks = 0;
+  const hooks = [];
+  hooks.push(t.mock.method(fs, 'open', async (target, ...args) => {
+    const handle = await open(target, ...args);
+    if (String(target).startsWith(file + '.forecast-stage-') && args[0] === 'wx') {
+      stage = target; ownHandle = handle; closeOwn = handle.close.bind(handle);
+      if (fault.includes('close-noop')) t.mock.method(handle, 'close', async () => { closes++; });
+      if (fault === 'short-write') t.mock.method(handle, 'writeFile', async () => {});
+      if (['sync-and-close-noop', 'safe-sync-failure', 'cleanup-noop'].includes(fault)) {
+        t.mock.method(handle, 'sync', async () => { throw sentinel; });
+      }
+    }
+    return handle;
+  }));
+  hooks.push(t.mock.method(fs, 'rename', async (...args) => {
+    renames++;
+    if (fault === 'rename-before-error') throw sentinel;
+    const result = await rename(...args);
+    if (fault === 'rename-then-error') throw sentinel;
+    return result;
+  }));
+  hooks.push(t.mock.method(fs, 'unlink', async target => {
+    unlinks++;
+    if (fault !== 'cleanup-noop') return unlink(target);
+  }));
+  let first;
+  await assert.rejects(writeDmiForecastFileAtomic(file, next), error => {
+    first = error;
+    if (['sync-and-close-noop', 'safe-sync-failure', 'cleanup-noop', 'rename-before-error', 'rename-then-error'].includes(fault)) assert.equal(error, sentinel);
+    else assert.match(error.message, fault === 'short-write' ? /WRITE_INCOMPLETE/ : /WRITER_STOP_UNPROVED/);
+    return true;
+  });
+  const safe = ['short-write', 'safe-sync-failure', 'rename-before-error', 'rename-then-error'].includes(fault);
+  assert.equal(isDmiForecastCheckpointStopUnproved(first), !safe);
+  if (fault === 'rename-then-error') assert.deepEqual(await readDmiForecastFile(file), next);
+  else assert.deepEqual(await fs.readFile(file), original);
+  assert.equal(renames, fault.startsWith('rename-') ? 1 : 0);
+  if (fault.includes('close-noop')) {
+    assert.equal(closes, 1); assert.equal(unlinks, 0);
+    assert.ok((await ownHandle.stat()).isFile());
+  } else await assert.rejects(ownHandle.stat(), { code: 'EBADF' });
+  if (safe || fault === 'rename-then-error') await assert.rejects(fs.stat(stage), { code: 'ENOENT' });
+  else assert.ok((await fs.stat(stage)).isFile());
+  for (const hook of hooks) hook.mock.restore();
+  if (safe) {
+    await writeDmiForecastFileAtomic(file, next);
+    assert.deepEqual(await readDmiForecastFile(file), next);
+    assert.deepEqual(await fs.readdir(folder), ['forecast.json']);
+  } else {
+    await assert.rejects(writeDmiForecastFileAtomic(file, next), error => error === first);
+    // Test-only closure after awaited normal refusal. Runtime cannot release,
+    // relabel or clean this retained writer through an error-string match.
+    if (fault.includes('close-noop')) await closeOwn();
+  }
+});
+
+for (const fault of ['changed-valid-bytes', 'scan-close-noop', 'scan-read-and-close-noop',
+  'scan-close-after-error']) test(`normal DMI checkpoint verifies its own bounded stage scan: ${fault}`, async t => {
+  const folder = await fixture(t), file = path.join(folder, 'forecast.json');
+  const original = Buffer.from(JSON.stringify(document()));
+  await fs.writeFile(file, original);
+  const next = document(); next.runtime.nextZoneCursor = 1;
+  const open = fs.open.bind(fs), sentinel = new Error('SYNTHETIC_DMI_SCAN_PRIMARY');
+  if (fault === 'changed-valid-bytes') next.zones.ZONE.padding = 'x'.repeat(512 * 1024);
+  let stage, scanHandle, closeScan, scanCloses = 0, largestRead = 0, bytesRead = 0;
+  const hook = t.mock.method(fs, 'open', async (target, ...args) => {
+    const handle = await open(target, ...args);
+    if (!String(target).startsWith(file + '.forecast-stage-')) return handle;
+    stage = target;
+    if (args[0] === 'wx' && fault === 'changed-valid-bytes') {
+      const sync = handle.sync.bind(handle);
+      t.mock.method(handle, 'sync', async () => {
+        await sync();
+        const before = await fs.readFile(target, 'utf8');
+        const changed = before.replace('"nextZoneCursor":1', '"nextZoneCursor":2');
+        assert.notEqual(changed, before);
+        assert.equal(Buffer.byteLength(changed), Buffer.byteLength(before));
+        await fs.writeFile(target, changed);
+      });
+    }
+    if (args[0] === 'r' && !scanHandle) {
+      scanHandle = handle; closeScan = handle.close.bind(handle);
+      const read = handle.read.bind(handle);
+      let parsing = false;
+      t.mock.method(handle, 'read', async (buffer, offset, length, position) => {
+        largestRead = Math.max(largestRead, buffer.length);
+        if (fault === 'scan-read-and-close-noop') throw sentinel;
+        if (position === 0 && bytesRead > 0) parsing = true;
+        const result = await read(buffer, offset, length, position);
+        if (!parsing) bytesRead += result.bytesRead;
+        return result;
+      });
+      t.mock.method(handle, 'close', async () => {
+        scanCloses++;
+        if (fault.endsWith('noop')) return;
+        await closeScan();
+        if (fault === 'scan-close-after-error') throw sentinel;
+      });
+    }
+    return handle;
+  });
+  let first;
+  await assert.rejects(writeDmiForecastFileAtomic(file, next), error => {
+    first = error;
+    if (fault === 'scan-read-and-close-noop' || fault === 'scan-close-after-error') assert.equal(error, sentinel);
+    else assert.match(error.message, fault === 'changed-valid-bytes' ? /WRITE_CONTENT_CHANGED/ : /WRITER_STOP_UNPROVED/);
+    return true;
+  });
+  const uncertain = fault.endsWith('noop');
+  assert.equal(isDmiForecastCheckpointStopUnproved(first), uncertain);
+  assert.equal(scanCloses, 1);
+  assert.equal(largestRead, 256 * 1024, 'the full-file scan has a fixed bounded buffer');
+  if (fault !== 'scan-read-and-close-noop') {
+    assert.equal(bytesRead, Buffer.byteLength(JSON.stringify(next) + '\n'));
+  }
+  assert.deepEqual(await fs.readFile(file), original);
+  hook.mock.restore();
+  if (uncertain) {
+    assert.ok((await scanHandle.stat()).isFile());
+    assert.ok((await fs.stat(stage)).isFile());
+    await assert.rejects(writeDmiForecastFileAtomic(file, next), error => error === first);
+    await closeScan(); // Test-only disposal, never runtime adoption/release.
+  } else {
+    await assert.rejects(scanHandle.stat(), { code: 'EBADF' });
+    assert.deepEqual(await fs.readdir(folder), ['forecast.json']);
+    await writeDmiForecastFileAtomic(file, next);
+    assert.deepEqual(await readDmiForecastFile(file), next);
+  }
+});
+
+for (const fault of ['parser-close-noop', 'parser-read-and-close-noop',
+  'parser-close-after-error', 'parser-read-and-close-after-error']) test(`normal DMI checkpoint owns the parser handle through publication: ${fault}`, async t => {
+  let closeParser;
+  t.after(async () => { if (closeParser) await closeParser().catch(() => {}); });
+  const folder = await fixture(t), file = path.join(folder, 'forecast.json');
+  const original = Buffer.from(JSON.stringify(document()));
+  await fs.writeFile(file, original);
+  const next = document(); next.runtime.nextZoneCursor = 1;
+  const open = fs.open.bind(fs), primary = new Error('SYNTHETIC_DMI_PARSER_READ');
+  const secondary = new Error('SYNTHETIC_DMI_PARSER_CLOSE'), modes = [];
+  let stage, parserHandle, parserReads = 0, parserCloses = 0;
+  const hook = t.mock.method(fs, 'open', async (target, ...args) => {
+    const handle = await open(target, ...args);
+    if (!String(target).startsWith(file + '.forecast-stage-')) return handle;
+    stage = target; modes.push(args[0]);
+    if (args[0] !== 'r') return handle;
+    const read = handle.read.bind(handle), close = handle.close.bind(handle);
+    let parsing = false;
+    t.mock.method(handle, 'read', async (buffer, offset, length, position) => {
+      // The actual Cursor requests its fixed 256 KiB buffer at position zero.
+      // The preceding hashscan requests only the bytes of this small fixture.
+      if (position === 0 && length === 256 * 1024) {
+        parsing = true; parserReads++; parserHandle = handle; closeParser = close;
+        if (fault.includes('read-and-close')) throw primary;
+      }
+      return read(buffer, offset, length, position);
+    });
+    t.mock.method(handle, 'close', async () => {
+      if (!parsing) return close();
+      parserCloses++;
+      if (fault.endsWith('noop')) return;
+      await close();
+      throw secondary;
+    });
+    return handle;
+  });
+  let first;
+  await assert.rejects(writeDmiForecastFileAtomic(file, next), error => {
+    first = error;
+    if (fault.includes('read-and-close')) assert.equal(error, primary);
+    else if (fault.endsWith('after-error')) assert.equal(error, secondary);
+    else assert.match(error.message, /WRITER_STOP_UNPROVED/);
+    return true;
+  }).finally(() => t.diagnostic(`actual stage opens: ${modes.join(',')}; parser reads: ${parserReads}`));
+  const uncertain = fault.endsWith('noop');
+  assert.equal(isDmiForecastCheckpointStopUnproved(first), uncertain);
+  assert.equal(parserReads, 1); assert.equal(parserCloses, 1);
+  assert.deepEqual(modes, ['wx', 'r'], 'parser and full-byte scan share the tracked read handle');
+  assert.deepEqual(await fs.readFile(file), original);
+  hook.mock.restore();
+  if (uncertain) {
+    assert.ok((await parserHandle.stat()).isFile());
+    assert.ok((await fs.stat(stage)).isFile());
+    await assert.rejects(writeDmiForecastFileAtomic(file, next), error => error === first);
+  } else {
+    await assert.rejects(parserHandle.stat(), { code: 'EBADF' });
+    assert.deepEqual(await fs.readdir(folder), ['forecast.json']);
+    await writeDmiForecastFileAtomic(file, next);
+    assert.deepEqual(await readDmiForecastFile(file), next);
+  }
+});
 
 test('recordwise forecast copy preserves SOURCE bank independently of zones and PART continuity', async t => {
   const folder = await fixture(t), file = path.join(folder, 'source.json'), output = path.join(folder, 'copy.json');

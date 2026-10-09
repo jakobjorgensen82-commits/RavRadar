@@ -26,6 +26,13 @@ const delimiter = byte => whitespace(byte) || byte === 44 || byte === 125 || byt
 const safeId = value => typeof value === 'string' && value.length > 0 && value.length < 256
   && !['__proto__', 'constructor', 'prototype'].includes(value);
 
+// Actual in-process checkpoint state, not a cross-process owner or a receipt
+// that authorizes a replacement worker. Preserve an uncertain handle/stage.
+const checkpointWriters = new Map(), checkpointStopErrors = new WeakSet();
+export function isDmiForecastCheckpointStopUnproved(error) {
+  return checkpointStopErrors.has(error);
+}
+
 // JSON.parse validates grammar/escapes. This second bounded pass rejects
 // duplicate object keys (including escaped aliases) at every depth.
 function uniqueKeys(text) {
@@ -194,6 +201,80 @@ class Cursor {
   }
 }
 
+async function inspectDmiForecastHandle(file, handle, stat, maximumRecordBytes) {
+  const cursor = new Cursor(handle, maximumRecordBytes);
+  const result = { file: path.resolve(file), bytes: stat.size, stat, metadata: {}, zones: new Map(),
+    zoneGeometry: {}, hasPartContinuity: false, continuity: null,
+    waterSourceContinuity: null, largestRecordBytes: 0 };
+  const descriptor = row => {
+    result.largestRecordBytes = Math.max(result.largestRecordBytes, row.bytes);
+    return { offset: row.offset, bytes: row.bytes, sha256: row.sha256 };
+  };
+  if (!equalStat(stat, await handle.stat())) invalid('CHANGED');
+  let sawZones = false;
+  let metadataBytes = 0;
+  await cursor.object(async key => {
+    if (!safeId(key)) invalid('INVALID_KEY');
+    if (key === 'zones') {
+      sawZones = true;
+      await cursor.object(async id => {
+        if (!safeId(id) || result.zones.size >= MAX_ZONES) invalid('STRUCTURE_LIMIT');
+        const row = await cursor.raw();
+        if (!plain(row.value) || !Array.isArray(row.value.hourly)) invalid('SHAPE_INVALID');
+        result.zones.set(id, descriptor(row));
+        result.zoneGeometry[id] = { zoneId: row.value.zoneId,
+          point: Array.isArray(row.value.point) && row.value.point.length === 2
+            && row.value.point.every(value => typeof value === 'number' && Number.isFinite(value))
+            ? row.value.point : null };
+      });
+    } else if (key === 'partContinuity' || key === 'waterSourceContinuity') {
+      const isWaterSource = key === 'waterSourceContinuity';
+      await cursor.space();
+      if (await cursor.peek() !== 123) {
+        const row = await cursor.raw(MAX_METADATA_BYTES);
+        if (row.value !== null) invalid('SHAPE_INVALID');
+        result.metadata[key] = null;
+        return;
+      }
+      if (!isWaterSource) result.hasPartContinuity = true;
+      const continuity = { metadata: {}, entries: [] };
+      result[isWaterSource ? 'waterSourceContinuity' : 'continuity'] = continuity;
+      let sawEntries = false;
+      await cursor.object(async name => {
+        if (!safeId(name)) invalid('INVALID_KEY');
+        if (name === 'entries') {
+          sawEntries = true;
+          const ids = new Set();
+          await cursor.array(async index => {
+            if (index >= (isWaterSource ? MAX_WATER_SOURCE_ENTRIES : MAX_PARTS)) invalid('STRUCTURE_LIMIT');
+            const row = await cursor.raw(Math.min(isWaterSource ? MAX_WATER_SOURCE_ENTRY_BYTES
+              : MAX_CONTINUITY_ENTRY_BYTES, maximumRecordBytes));
+            const id = row.value?.[isWaterSource ? 'sourceKey' : 'partId'];
+            if (!plain(row.value) || !safeId(id) || ids.has(id)) invalid('SHAPE_INVALID');
+            ids.add(id);
+            continuity.entries.push(descriptor(row));
+          });
+        } else {
+          const row = await cursor.raw(MAX_METADATA_BYTES);
+          metadataBytes += row.bytes;
+          if (metadataBytes > 8 * MAX_METADATA_BYTES) invalid('STRUCTURE_LIMIT');
+          continuity.metadata[name] = row.value;
+        }
+      });
+      if (!sawEntries) invalid('SHAPE_INVALID');
+    } else {
+      const row = await cursor.raw(MAX_METADATA_BYTES);
+      metadataBytes += row.bytes;
+      if (metadataBytes > 8 * MAX_METADATA_BYTES) invalid('STRUCTURE_LIMIT');
+      result.metadata[key] = row.value;
+    }
+  });
+  await cursor.space();
+  if (await cursor.peek() !== null || !sawZones) invalid('INVALID_JSON');
+  if (!equalStat(stat, await handle.stat())) invalid('CHANGED');
+  return result;
+}
+
 export async function inspectDmiForecastFile(file, {
   maximumBytes = DMI_FORECAST_FILE_MAX_BYTES,
   maximumRecordBytes = DMI_FORECAST_RECORD_MAX_BYTES,
@@ -203,79 +284,9 @@ export async function inspectDmiForecastFile(file, {
     || maximumRecordBytes > DMI_FORECAST_RECORD_MAX_BYTES) invalid('BOUNDS_INVALID');
   const stat = await regularFile(file, maximumBytes);
   const handle = await fs.open(file, 'r');
-  const cursor = new Cursor(handle, maximumRecordBytes);
-  const result = { file: path.resolve(file), bytes: stat.size, stat, metadata: {}, zones: new Map(),
-    zoneGeometry: {}, hasPartContinuity: false, continuity: null,
-    waterSourceContinuity: null, largestRecordBytes: 0 };
-  const descriptor = row => {
-    result.largestRecordBytes = Math.max(result.largestRecordBytes, row.bytes);
-    return { offset: row.offset, bytes: row.bytes, sha256: row.sha256 };
-  };
   let failed = false;
   try {
-    if (!equalStat(stat, await handle.stat())) invalid('CHANGED');
-    let sawZones = false;
-    let metadataBytes = 0;
-    await cursor.object(async key => {
-      if (!safeId(key)) invalid('INVALID_KEY');
-      if (key === 'zones') {
-        sawZones = true;
-        await cursor.object(async id => {
-          if (!safeId(id) || result.zones.size >= MAX_ZONES) invalid('STRUCTURE_LIMIT');
-          const row = await cursor.raw();
-          if (!plain(row.value) || !Array.isArray(row.value.hourly)) invalid('SHAPE_INVALID');
-          result.zones.set(id, descriptor(row));
-          result.zoneGeometry[id] = { zoneId: row.value.zoneId,
-            point: Array.isArray(row.value.point) && row.value.point.length === 2
-              && row.value.point.every(value => typeof value === 'number' && Number.isFinite(value))
-              ? row.value.point : null };
-        });
-      } else if (key === 'partContinuity' || key === 'waterSourceContinuity') {
-        const isWaterSource = key === 'waterSourceContinuity';
-        await cursor.space();
-        if (await cursor.peek() !== 123) {
-          const row = await cursor.raw(MAX_METADATA_BYTES);
-          if (row.value !== null) invalid('SHAPE_INVALID');
-          result.metadata[key] = null;
-          return;
-        }
-        if (!isWaterSource) result.hasPartContinuity = true;
-        const continuity = { metadata: {}, entries: [] };
-        result[isWaterSource ? 'waterSourceContinuity' : 'continuity'] = continuity;
-        let sawEntries = false;
-        await cursor.object(async name => {
-          if (!safeId(name)) invalid('INVALID_KEY');
-          if (name === 'entries') {
-            sawEntries = true;
-            const ids = new Set();
-            await cursor.array(async index => {
-              if (index >= (isWaterSource ? MAX_WATER_SOURCE_ENTRIES : MAX_PARTS)) invalid('STRUCTURE_LIMIT');
-              const row = await cursor.raw(Math.min(isWaterSource ? MAX_WATER_SOURCE_ENTRY_BYTES
-                : MAX_CONTINUITY_ENTRY_BYTES, maximumRecordBytes));
-              const id = row.value?.[isWaterSource ? 'sourceKey' : 'partId'];
-              if (!plain(row.value) || !safeId(id) || ids.has(id)) invalid('SHAPE_INVALID');
-              ids.add(id);
-              continuity.entries.push(descriptor(row));
-            });
-          } else {
-            const row = await cursor.raw(MAX_METADATA_BYTES);
-            metadataBytes += row.bytes;
-            if (metadataBytes > 8 * MAX_METADATA_BYTES) invalid('STRUCTURE_LIMIT');
-            continuity.metadata[name] = row.value;
-          }
-        });
-        if (!sawEntries) invalid('SHAPE_INVALID');
-      } else {
-        const row = await cursor.raw(MAX_METADATA_BYTES);
-        metadataBytes += row.bytes;
-        if (metadataBytes > 8 * MAX_METADATA_BYTES) invalid('STRUCTURE_LIMIT');
-        result.metadata[key] = row.value;
-      }
-    });
-    await cursor.space();
-    if (await cursor.peek() !== null || !sawZones) invalid('INVALID_JSON');
-    if (!equalStat(stat, await handle.stat())) invalid('CHANGED');
-    return result;
+    return await inspectDmiForecastHandle(file, handle, stat, maximumRecordBytes);
   } catch (error) {
     failed = true;
     throw error;
@@ -393,15 +404,45 @@ export function hashDmiForecastDocument(document) {
 
 export async function writeDmiForecastFileAtomic(file, document) {
   const destination = path.resolve(file);
+  if (checkpointWriters.has(destination)) throw checkpointWriters.get(destination).error;
   await fs.mkdir(path.dirname(destination), { recursive: true });
-  const old = await fs.lstat(destination).catch(error => {
+  const parent = await fs.realpath(path.dirname(destination));
+  const directory = await fs.lstat(parent, { bigint: true });
+  const canonical = path.join(parent, path.basename(destination));
+  for (const key of [destination, canonical]) if (checkpointWriters.has(key)) throw checkpointWriters.get(key).error;
+  const temporary = `${destination}.forecast-stage-${crypto.randomUUID()}`;
+  const record = { error: new Error('DMI_FORECAST_FILE_WRITER_BUSY'), handle: null, temporary };
+  checkpointStopErrors.add(record.error);
+  for (const key of [destination, canonical]) checkpointWriters.set(key, record);
+  let handle, bytes = 0, primary = null, retained = false, written = null, stageIdentity = null;
+  let created = false;
+  const byteHash = crypto.createHash('sha256');
+  const retain = error => {
+    primary ??= error; retained = true; record.error = primary; record.handle = handle;
+    if (primary && (typeof primary === 'object' || typeof primary === 'function')) checkpointStopErrors.add(primary);
+  };
+  const closeOwned = async () => {
+    if (!handle) return;
+    try { await handle.close(); } catch (error) { primary ??= error; }
+    let closed = false;
+    try { await handle.stat(); }
+    catch (error) { if (error?.code === 'EBADF') closed = true; else primary ??= error; }
+    if (closed) { handle = null; record.handle = null; }
+    else retain(primary ?? new Error('DMI_FORECAST_FILE_WRITER_STOP_UNPROVED'));
+  };
+  const inspectPath = target => fs.lstat(target, { bigint: true }).catch(error => {
     if (error?.code === 'ENOENT') return null;
     throw error;
   });
-  if (old && (!old.isFile() || old.isSymbolicLink())) invalid('INVALID_FILE');
-  const temporary = `${destination}.forecast-stage-${crypto.randomUUID()}`;
-  const handle = await fs.open(temporary, 'wx', 0o600);
-  let bytes = 0;
+  const same = (left, right) => left && right && right.isFile() && !right.isSymbolicLink()
+    && ['dev', 'ino', 'size', 'mtimeNs'].every(key => left[key] === right[key]);
+  const unchangedParent = async () => {
+    const actual = await fs.lstat(parent, { bigint: true });
+    if (await fs.realpath(path.dirname(destination)) !== parent || !actual.isDirectory()
+      || actual.isSymbolicLink() || actual.dev !== directory.dev || actual.ino !== directory.ino) {
+      invalid('PUBLICATION_UNPROVED');
+    }
+  };
   let pending = [];
   let pendingBytes = 0;
   const flush = async () => {
@@ -414,6 +455,7 @@ export async function writeDmiForecastFileAtomic(file, document) {
     const length = Buffer.byteLength(text);
     bytes += length;
     if (bytes > DMI_FORECAST_FILE_MAX_BYTES) invalid('INVALID_SIZE');
+    byteHash.update(text);
     // Do not copy a whole large record into an aggregate pending string.
     if (length >= CHUNK_BYTES) {
       await flush();
@@ -425,22 +467,106 @@ export async function writeDmiForecastFileAtomic(file, document) {
     }
   };
   try {
-    // Native stringify per bounded zone/PART is substantially cheaper than
-    // an async scalar traversal of every proof field in the national store.
-    // The complete stage still passes the same parser and structural checks.
-    for (const chunk of documentJsonChunks(document)) await append(chunk);
-    await append('\n');
-    await flush();
-    await handle.sync();
-    await handle.close();
-    await inspectDmiForecastFile(temporary);
-    await fs.rename(temporary, destination);
-    return { bytes, maximumBytes: DMI_FORECAST_FILE_MAX_BYTES };
+    const old = await inspectPath(destination);
+    if (old && (!old.isFile() || old.isSymbolicLink())) invalid('INVALID_FILE');
+    await unchangedParent();
+    try {
+      handle = await fs.open(temporary, 'wx', 0o600);
+      created = true;
+      record.handle = handle;
+      stageIdentity = await handle.stat({ bigint: true });
+      // Keep the existing bounded serializer and exact persisted JSON shape.
+      for (const chunk of documentJsonChunks(document)) await append(chunk);
+      await append('\n');
+      await flush();
+      await handle.sync();
+      written = await handle.stat({ bigint: true });
+      if (!written.isFile() || written.size !== BigInt(bytes)) invalid('WRITE_INCOMPLETE');
+    } catch (error) { primary = error; }
+    await closeOwned();
+    if (primary) throw primary;
+    // Main's bounded parser does not bind an expected whole-file digest.
+    // Verify only our own completed stage, using one bounded buffer and an
+    // owned read handle. Neither a valid different JSON body nor a failed
+    // close may authorize publication or erase the first error.
+    try {
+      if (!same(written, await inspectPath(temporary))) invalid('PUBLICATION_UNPROVED');
+      handle = await fs.open(temporary, 'r');
+      record.handle = handle;
+      if (!same(written, await handle.stat({ bigint: true }))) invalid('PUBLICATION_UNPROVED');
+      const buffer = Buffer.allocUnsafe(CHUNK_BYTES), actualHash = crypto.createHash('sha256');
+      let offset = 0;
+      while (offset < bytes) {
+        const { bytesRead } = await handle.read(buffer, 0, Math.min(buffer.length, bytes - offset), offset);
+        if (!bytesRead) invalid('WRITE_INCOMPLETE');
+        actualHash.update(buffer.subarray(0, bytesRead));
+        offset += bytesRead;
+      }
+      if (!same(written, await handle.stat({ bigint: true }))
+        || !same(written, await inspectPath(temporary))) invalid('PUBLICATION_UNPROVED');
+      if (actualHash.digest('hex') !== byteHash.digest('hex')) invalid('WRITE_CONTENT_CHANGED');
+      // Run the existing parser/structure policy on this same tracked handle.
+      // No unowned third open may outlive the close/publication boundary.
+      await inspectDmiForecastHandle(temporary, handle,
+        await regularFile(temporary, DMI_FORECAST_FILE_MAX_BYTES), DMI_FORECAST_RECORD_MAX_BYTES);
+      if (!same(written, await handle.stat({ bigint: true }))
+        || !same(written, await inspectPath(temporary))) invalid('PUBLICATION_UNPROVED');
+    } catch (error) { primary ??= error; }
+    await closeOwned();
+    if (primary) throw primary;
+    // From here, changed identity or an ambiguous move must preserve work.
+    // In particular, a late rename error must not roll back a valid new file.
+    let safelyRejectedMove = false;
+    try {
+      await unchangedParent();
+      const current = await inspectPath(destination);
+      if ((old ? !same(old, current) : current !== null)
+        || !same(written, await inspectPath(temporary))) invalid('PUBLICATION_UNPROVED');
+      try { await fs.rename(temporary, destination); }
+      catch (error) {
+        // A rejected syscall is not by itself an uncertain live writer. The
+        // fd is already proved closed; independently prove either the exact
+        // committed file or the unchanged original plus our complete stage.
+        // Neither observation turns the failed invocation into success.
+        try {
+          await unchangedParent();
+          const target = await inspectPath(destination), staged = await inspectPath(temporary);
+          safelyRejectedMove = (same(written, target) && staged === null)
+            || ((old ? same(old, target) : target === null) && same(written, staged));
+        } catch { /* Preserve the actual rename error and uncertain work. */ }
+        throw error;
+      }
+      await unchangedParent();
+      if (!same(written, await inspectPath(destination)) || await inspectPath(temporary) !== null) {
+        invalid('PUBLICATION_UNPROVED');
+      }
+    } catch (error) {
+      if (!safelyRejectedMove) retain(error);
+      throw error;
+    }
   } catch (error) {
-    await handle.close().catch(() => {});
-    await fs.unlink(temporary).catch(() => {});
-    throw error;
+    primary ??= error;
+    throw primary;
+  } finally {
+    if (!retained) {
+      try {
+        await unchangedParent();
+        const staged = await inspectPath(temporary);
+        if (staged) {
+          // Closed failed serialization may have no complete byte identity;
+          // only this invocation's actual stage may be removed.
+          if (!created || !stageIdentity || !staged.isFile() || staged.isSymbolicLink()
+            || staged.dev !== stageIdentity.dev || staged.ino !== stageIdentity.ino
+            || written && !same(written, staged)) invalid('CLEANUP_UNPROVED');
+          await fs.unlink(temporary);
+        }
+        if (await inspectPath(temporary) !== null) invalid('CLEANUP_UNPROVED');
+      } catch (error) { retain(error); }
+    }
+    if (!retained) for (const key of [destination, canonical]) checkpointWriters.delete(key);
+    if (primary) throw primary;
   }
+  return { bytes, maximumBytes: DMI_FORECAST_FILE_MAX_BYTES };
 }
 
 // A record-at-a-time output stage for recovery. The existing installComponents
