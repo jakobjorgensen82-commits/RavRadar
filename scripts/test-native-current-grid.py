@@ -638,18 +638,45 @@ esac
                         report = audit.field_report(gid, collection, eccodes, producer)
                         self.assertGreater(report['candidateChecks'], 0)
                         self.assertEqual(report['nativeValidPoints'], ni * nj)
-                        for name in ('candidateIndexMismatches', 'candidateCoordinateMismatches', 'candidateValueMismatches'):
+                        # Index/value conformance remains zero. Coordinates are
+                        # compared against two DISTINCT oracles: the raw native
+                        # iterator below and DMI's header-defined extent rule.
+                        # A deliberate geography correction must not masquerade
+                        # as an unchanged-native-coordinate claim.
+                        for name in ('candidateIndexMismatches', 'candidateValueMismatches'):
                             self.assertEqual(report[name], 0)
                         self.assertLess(report['maximumLongitudeVsEndpointDegrees'], 1e-9)
                         if collection == 'dkss_lf':
+                            self.assertEqual(report['candidateCoordinateMismatches'], report['candidateChecks'])
                             self.assertEqual(report['nativePointsOutsideDeclaredLatitudeBounds'], 64 * ni)
                             self.assertEqual(report['validPointsOutsideDeclaredLatitudeBounds'], 64 * ni)
                             self.assertGreater(report['candidatesWithLatitudeDifference'], 0)
                             self.assertGreater(report['maximumCandidateLatitudeVsEndpointDegrees'], .01)
                             self.assertAlmostEqual(report['maximumLatitudeVsEndpointDegrees'], .1296658097686375)
                         else:
+                            self.assertEqual(report['candidateCoordinateMismatches'], 0)
                             self.assertEqual(report['nativePointsOutsideDeclaredLatitudeBounds'], 0)
                             self.assertLess(report['maximumLatitudeVsEndpointDegrees'], 1e-9)
+                        # Independent arithmetic from this fixture's declared
+                        # header, not a call to the producer's geometry helper.
+                        # Every actual ordinary candidate must match its OWN
+                        # original index, even when the native iterator differs.
+                        longitude_span = (last_lon - first_lon) % 360
+                        probes = [dict(id=f'HEADER_TEST::{r}::{c}',
+                                       coastType='limfjord' if collection == 'dkss_lf' else 'east',
+                                       lat=first_lat + r * (last_lat - first_lat),
+                                       lon=first_lon + c * longitude_span)
+                                  for r in (.2, .5, .8) for c in (.2, .5, .8)]
+                        candidates = producer.valid_candidates_batch(gid, collection, probes)
+                        self.assertEqual(set(candidates), {zone['id'] for zone in probes})
+                        for rows in candidates.values():
+                            self.assertTrue(rows)
+                            for candidate in rows:
+                                row, column = divmod(candidate['index'], ni)
+                                expected_lat = first_lat + row * (last_lat - first_lat) / (nj - 1)
+                                expected_lon = audit.longitude(first_lon + column * longitude_span / (ni - 1))
+                                self.assertAlmostEqual(candidate['latitude'], expected_lat, places=9)
+                                self.assertAlmostEqual(candidate['longitude'], expected_lon, places=9)
                     finally:
                         eccodes.codes_release(gid)
 

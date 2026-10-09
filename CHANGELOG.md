@@ -2,6 +2,7 @@
 
 - Normal DKSS regular_ll/GRIB1-placering følger DMI's dokumenterede endepunktsafstand/(punktantal−1), ikke afrundede afstandsfelter. Originale indekser, værdier og bitmap bevares; der bruges ingen numerisk landmaske eller admin-/scoreformelændring.
 - 23 lokale måltests består. Nativekontrollens tidligere ét-nærområde-antagelse erstattes af strengt faktisk opslag ved hvert indeks' forskellige headerberegnede koordinat. Den gamle aliasobservation, positive/nul-kontroller og afvisning af forskellige indeks bevares. Opdateret native CI og tabsfri cache-/historikovergang er fortsat åbne.
+- Eksisterende diagnoses kunstige nativefixture skelner nu decoderens rå koordinater fra DMI's headerfortolkning. Indeks og værdier skal fortsat matche uden fejl; alle normale kandidatkoordinater får en uafhængig header-/indekskontrol. Ingen ændring af decoder, diagnoseformat eller engangsautoritet.
 - Normal fælles feltkobling kræver samme native indeks og privat identitet for hele gittersektionen; offentlige grid-/sourcefelter bevares. Afgrænsede måltests består; faktisk native CI, cache-/historikovergang og numerisk produktionseffekt er endnu åbne. Kandidaten må ikke merges eller aktiveres før disse krav er afklaret.
 - Den eksisterende PR-nativekontrol får egne kunstige GRIB-mål gennem den fastlåste decoder. Ingen originale filer, providerhentning, nye dependencies eller vejrhentning. Sourceplanen bevarer sine 47 kommandoer.
 - Forældet workflowinventar og rækkefølgekontrol er rettet uden at åbne ny dispatch eller lempe dependencyparitet; måltesten består.
