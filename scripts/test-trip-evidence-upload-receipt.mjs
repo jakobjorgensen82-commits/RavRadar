@@ -7,7 +7,7 @@ import * as quality from '../js/services/calibration-eligibility.js';
 import * as model from '../js/core/ravscore-model-contract.js';
 import * as account from '../js/services/account-trip-report-contract.js';
 import { createTripEvidenceController } from '../js/services/trip-evidence-controller.js';
-import { listPendingTripEvidence } from '../js/services/trip-evidence-store.js';
+import { listPendingTripEvidence, tripEvidenceStorageKeys } from '../js/services/trip-evidence-store.js';
 
 // Real controller/uploader/store plus actual auth/service bodies in the existing
 // VM seam. Only HTTP, browser storage and timer ownership are synthetic.
@@ -39,8 +39,8 @@ const sessionFor = owner => ({ access_token: 'synthetic-token', refresh_token: '
 const payload = id => trip.toObservationTripColumns(trip.completeTripEvidence(trip.createTripStartRecord(start(id)), { ...answer, ...stop }));
 const clean = value => JSON.parse(JSON.stringify(value));
 
-function harness(owner = A) {
-  const values = new Map(owner ? [['ravradar-auth-session', JSON.stringify(sessionFor(owner))]] : []);
+function harness(owner = A, hydrated = true) {
+  const values = new Map(owner ? [['ravradar-auth-session', JSON.stringify(hydrated ? sessionFor(owner) : { ...sessionFor(owner), user: null })]] : []);
   const timers = new Set();
   const state = { failSubmit: true, nextOwner: owner, submits: [], writes: [], failWrite: null };
   const storage = { values, getItem: key => values.get(key) ?? null,
@@ -49,6 +49,10 @@ function harness(owner = A) {
   const config = { supabaseUrl: 'https://example.invalid', supabasePublishableKey: 'synthetic-public' };
   const fetch = async (input, options) => {
     const url = new URL(input); assert.equal(url.origin, config.supabaseUrl);
+    if (url.pathname === '/auth/v1/user') {
+      state.hydration.reached(); await state.hydration.promise;
+      return Response.json({ id: owner });
+    }
     if (url.pathname === '/auth/v1/logout') return Response.json({});
     if (url.pathname === '/auth/v1/token') return Response.json(sessionFor(state.nextOwner));
     if (url.pathname === '/functions/v1/submit-observation') {
@@ -65,7 +69,9 @@ function harness(owner = A) {
   vm.runInNewContext(`${authBody}\nthis.api={authIdentityEpoch,currentSession,requireFreshSession,authorizedFetch,signOut,signInWithPassword};`, authScope);
   const auth = authScope.api;
   const serviceScope = { ...trip, ...quality, ...model, ...account, ...auth,
-    PUBLIC_CONFIG: config, localStorage: storage, fetch, crypto, structuredClone, performance, setTimeout, window: { addEventListener() {} } };
+    PUBLIC_CONFIG: config, localStorage: storage, fetch, crypto, structuredClone, performance, setTimeout,
+    Date: class extends Date { constructor(...args) { super(...(args.length || state.clockMs === undefined ? args : [state.clockMs++])); } },
+    window: { addEventListener() {} } };
   vm.runInNewContext(`${serviceBody}\nthis.api={submitTripEvidenceObservation,syncPendingObservations,getLocalObservations,getObservationSyncStatus};`, serviceScope);
   const service = serviceScope.api;
   const controller = persist => createTripEvidenceController({ storage, openDialog: async () => answer,
@@ -228,3 +234,53 @@ for (const change of ['same-owner-new-login', 'different-local-receipt']) {
     } finally { release(); if (pending) await pending; h.finish(); }
   });
 }
+
+// Combined normal store/intent/receipt boundary, not another isolated receipt stub.
+test('interrupted completion preserves its first report through pending receipt and account switch', async () => {
+  const h = harness(), keys = tripEvidenceStorageKeys;
+  const remove = h.storage.removeItem, error = new Error('synthetic-active-cleanup-stop');
+  const make = value => createTripEvidenceController({ storage: h.storage, openDialog: async () => value,
+    persist: h.service.submitTripEvidenceObservation });
+  try {
+    h.storage.removeItem = key => { if (key === keys.active) throw error; remove(key); };
+    const controller = make(answer); controller.start(start(firstTrip));
+    await assert.rejects(controller.stop(stop), value => value === error);
+    const firstQueue = h.storage.getItem(keys.pending);
+    assert.equal(h.state.submits.length, 0);
+    h.storage.removeItem = remove;
+    await assert.rejects(make({ ...answer, found: true, grams: 5 }).resume());
+    assert.equal(h.storage.getItem(keys.pending), firstQueue); assert.equal(h.state.submits.length, 0);
+    assert.equal((await make(answer).resume()).status, 'queued');
+    assert.equal(h.storage.getItem(keys.pending), firstQueue);
+    const originalBody = h.state.submits[0];
+    await h.login(B); assert.equal((await make(answer).flush()).failed, 1);
+    assert.equal(h.state.submits.length, 1); assert.equal(h.storage.getItem(keys.pending), firstQueue);
+    await h.login(A); h.state.failSubmit = false;
+    assert.equal((await make(answer).flush()).submitted, 1);
+    assert.equal(h.state.submits[1], originalBody);
+    assert.equal(listPendingTripEvidence(h.storage).length, 0);
+    assert.equal(h.service.getObservationSyncStatus().pending, 0);
+  } finally { h.storage.removeItem = remove; h.finish(); }
+});
+
+test('shared initial hydration preserves the first immutable row through both normal submits', async () => {
+  const h = harness(A, false);
+  let release, reached, first, second;
+  const ready = new Promise(resolve => { reached = resolve; });
+  const held = new Promise(resolve => { release = resolve; });
+  h.state.hydration = { promise: held, reached };
+  h.state.clockMs = Date.parse('2026-10-10T00:00:00.000Z');
+  try {
+    const columns = payload(firstTrip); h.state.failSubmit = false;
+    first = h.service.submitTripEvidenceObservation(columns); await ready;
+    second = h.service.submitTripEvidenceObservation(columns);
+    release(); const results = await Promise.all([first, second]);
+    assert.equal(h.state.submits.length, 1, 'The shared normal drain sends the original once');
+    const firstSubmittedAt = JSON.parse(h.state.submits[0]).submitted_at;
+    const local = h.service.getLocalObservations()[0];
+    assert.equal(local.submitted_at, firstSubmittedAt, 'Hydration continuation retains the first committed row');
+    assert.equal(local.sync_status, 'synced');
+    assert.equal(results.every(result => result.stored === 'remote'), true);
+    assert.equal(h.service.getObservationSyncStatus().pending, 0);
+  } finally { release(); await Promise.allSettled([first, second].filter(Boolean)); h.finish(); }
+});

@@ -175,7 +175,6 @@ export async function submitTripEvidenceObservation(columns){
   if(integrityIssues.length)throw new Error(`Turen er inkonsistent og kan ikke gemmes (${integrityIssues.join(', ')}).`);
   if(columns.calibration_eligible!==expectedCalibrationEligibility(columns,ravScoreModelBinding()))throw new Error('Turens kalibreringsstatus er inkonsistent.');
   assertTripEvidencePrivacy(columns);
-  const existing=getLocalObservations().find(row=>row.trip_id===columns.trip_id);
   let session=currentSession();
   if(session?.access_token&&!session?.user?.id)session=await requireFreshSession();
   const userId=session?.user?.id||null;
@@ -184,6 +183,7 @@ export async function submitTripEvidenceObservation(columns){
       throw new Error('Kontoen blev ændret. Prøv igen fra den rigtige konto.');
   };
   assertOwner();
+  const existing=getLocalObservations().find(row=>row.trip_id===columns.trip_id);
   if(existing){
     if((existing.user_id||null)!==userId)throw new Error('Log ind med den konto, som turen tilhører, før den kan sendes.');
     if(Object.entries(columns).some(([key,value])=>!sameObservationValue(existing[key],value)))

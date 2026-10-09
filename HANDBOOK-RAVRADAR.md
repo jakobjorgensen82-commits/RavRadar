@@ -33,7 +33,11 @@ bevarer køens oprindelige bytes og genforsøger kun oprydningen; ændret indhol
 afvises med originalerne bevaret. Lagerfejl bevarer den første fejl. Dette er
 ikke fysisk browserholdbarhed eller atomisk samordning mellem faner.
 
-70 relevante brugerdata- og 12 UI-målprøver består lokalt. De seks nye mål nås én gang gennem
+To samtidige indsendelser under første brugerhydrering genlæser den oprindelige
+tur efter hydreringen og bevarer dens første indsendelsestid. En ny lokal række
+må ikke overskrive den faktisk kvitterede original.
+
+72 relevante brugerdata- og 12 UI-målprøver består lokalt. De seks nye mål nås én gang gennem
 den eksisterende normale sourcegruppe. Begge vejrbundles, scoreformel, vejrdata,
 geometri og centrale bindingsregler er uændrede. Det er endnu ikke præcis ny
 GitHub-kontrol, installation, fungerende ekstern AI eller offentlig effekt.

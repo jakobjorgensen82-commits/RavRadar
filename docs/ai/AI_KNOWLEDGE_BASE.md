@@ -9,7 +9,8 @@ Begge eksisterende bundles er uændrede og kontrolleret med normale --check-kald
 integreret `ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb`
 over 68 filer og rollback `8d9142b5f7d9b5a3e5a0f3593e73df0c7ffaf3d80c036317967cb713f09197e3`
 over 66 filer. Browserens versionsparametre er cacheidentitet, ikke en ny fysisk
-modelbinding. De seks nye mål dækker 70 brugerdata- og 12 UI-prøver lokalt;
+modelbinding. De seks nye mål dækker 72 brugerdata- og 12 UI-prøver lokalt;
+fælles første brugerhydrering må ikke ændre den først gemte turs indsendelsestid.
 normal baggrundssynkronisering beviser ikke automatisk rydning af en bevaret v2-tur.
 Dette er ikke installation eller offentlig levering.
 

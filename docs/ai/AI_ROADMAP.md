@@ -10,7 +10,7 @@ standse de øvrige. Arbejd i eksisterende isolerede checkouts, ikke cb79.
 Den særskilte lille 4.0.556-klientkandidat retter forsinkede konto-/rettighedssvar,
 en gammel turformular, falsk tur-/slettekvittering, genforsøgets oprindelige ejer,
 id, indhold og tid, bevarelse af første komplette tur ved afbrudt oprydning samt
-intern UI-fejltekst. 70 brugerdata-
+intern UI-fejltekst og samtidige indsendelser under første brugerhydrering. 72 brugerdata-
 og 12 UI-målprøver samt versions-/RDKS-/håndbogs- og begge bundlekontroller består
 lokalt. Præcis kilde-PR-kontrol, sikker levering og offentlig effekt mangler.
 Den aktiverer ikke den isolerede revision eller en ny modelbinding. Automatisk
