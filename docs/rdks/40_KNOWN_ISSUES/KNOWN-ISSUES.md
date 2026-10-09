@@ -1,4 +1,14 @@
-# Afgrænset kontrol af originale DMI-strømgitre – 9. oktober 2026
+# Diagnoseprocessens runtime og private fejlkvittering – 9. oktober 2026
+
+Den særskilt godkendte originaldiagnose er forsøgt efter præcis grøn kilde-/native-kontrol og sikker integration uden aktiv writer. Læse-/analyseleddet fejlede uden rapport. Det kan ikke udledes af den begrænsede log, om stoppet skete under download, processtart eller rapportkontrol. Engangstilladelsen er forbrugt; ingen automatisk gentagelse eller nye providerlæsninger. Kortrettelsen er leveret, men numerisk strømgeografi, historik, strømhukommelse og score er fortsat åbne.
+
+En ny lokal prøve går gennem den faktiske private Python-proces med kunstige filer og blokeret netværk. Den viste, at runtime-indstillingen for delte biblioteker blev fjernet. Den lokale rettelse bevarer denne eksisterende runtime-indstilling, men ingen credentials. Hele kaldet samt syv fejlforløb består lokalt. Faste, ufølsomme fase-/fejlkoder erstatter den anonyme fejl; rå stderr, koordinater og strømværdier offentliggøres ikke. Første fejl bevares ved oprydningsfejl, og succes meldes først efter oprydning.
+
+Den første præcise kilde-CI består. Den kunstige Linux-prøve viser, at både det gamle og det rettede procesmiljø kan gennemføre en native start. Den fjernede runtime-indstilling er derfor ikke dokumenteret som originalstoppets årsag. Diagnosen returnerer nu kun faste kilde-/fejlkoder ved kendte analysefejl; ukendt, for stor eller tvetydig bibliotekstekst forbliver skjult.
+
+Ejeren har efter fejlen givet en ny, præcis tilladelse til én yderligere skrivefri diagnose af de samme to filer. Den nye engangskontrol kræver præcis den kendte fejlede forgænger og ét nyt første forsøg på verificeret main. Ændret forgænger, tredje forsøg, genkørsel og gammel bekræftelse afvises. Den faktiske workflow-skal afprøves med kunstige kørselskvitteringer i Linux-kildekontrollen. Den udvidede kode kræver sin egen nye præcise kilde-CI før merge og diagnose. Decoderen, filadresserne, datagrænser og produktionsdata er uændrede. Ingen numerisk rettelse, ekstra vejrhentning, bindingsændring eller deploy udføres her.
+
+# Historik: Afgrænset kontrol af originale DMI-strømgitre – 9. oktober 2026
 
 Ejeren har godkendt én skrivefri GitHub-diagnose af præcis to allerede identificerede DMI-filer. Der må ikke hentes andre filer eller gentages efter fejl. Den eksisterende låste decoder fra verificeret main læser originale strømfelter; kandidatindeks, koordinater, værdimatch samt parring af samme gitter, lag og tid kontrolleres uden at eksponere rå strømværdier. En særskilt kontrol sammenholder decoderens koordinater med de deklarerede endepunkter. Det er ikke en produktionsrettelse eller bevis for korrekt score.
 

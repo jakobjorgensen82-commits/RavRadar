@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import urllib.request
+import urllib.error
 
 TARGETS = {
     'dkss_lf': ('https://dmi-opendata.s3.eu-north-1.amazonaws.com/forecastdata/DKSS_LF_SF/DKSS_LF_SF_2026-10-09T000000Z_2026-10-14T000000Z.grib', 5653412,
@@ -19,6 +20,53 @@ TARGETS = {
     'dkss_nsbs': ('https://dmi-opendata.s3.eu-north-1.amazonaws.com/forecastdata/DKSS_NSBS_SF/DKSS_NSBS_SF_2026-10-09T000000Z_2026-10-14T000000Z.grib', 8947388,
                   'ddca4aeded193eae21b66a54f58b6ea15dcc7fa70f37dfb7eb69bc90d4aedde5'),
 }
+
+FAILURE_PHASES = frozenset(('PREPARE', 'READ_DKSS_LF', 'READ_DKSS_NSBS',
+                          'NATIVE_PROCESS', 'VALIDATE_REPORT', 'PUBLISH_REPORT', 'CLEANUP'))
+FAILURE_REASONS = frozenset(('UNAPPROVED_REDIRECT', 'EXACT_RESPONSE_REQUIRED', 'EXACT_SIZE_REQUIRED',
+    'EXACT_ORIGINAL_REQUIRED', 'REPORT_FIELDS_REJECTED', 'REPORT_COUNT_REJECTED',
+    'REPORT_DIGEST_REJECTED', 'REPORT_SCOPE_REJECTED', 'REPORT_ORIGINAL_REJECTED',
+    'REPORT_CURRENT_FIELDS_REJECTED', 'REPORT_COMPONENT_REJECTED', 'REPORT_TIME_GRID_REJECTED',
+    'REPORT_SUBSET_REJECTED', 'REPORT_DISTANCE_REJECTED', 'REPORT_BOTH_COMPONENTS_REQUIRED',
+    'REPORT_SIZE_REJECTED', 'REPORT_ALREADY_EXISTS', 'NATIVE_DIAGNOSIS_INCOMPLETE',
+    'PRIVATE_SCRATCH_CLEANUP_REJECTED'))
+
+# Deliberately duplicated fixed vocabulary: the parent never trusts arbitrary
+# text from native libraries. The test requires both vocabularies to match.
+NATIVE_FAILURE_CODES = frozenset(('EXACT_INPUT_REQUIRED', 'EXACT_HEADER_REQUIRED', 'UNSUPPORTED_GRID',
+    'NONFINITE_NATIVE_COORDINATE', 'UNSUPPORTED_CURRENT_GRID', 'GRID_SIZE_BOUND',
+    'NATIVE_VALUE_COUNT_MISMATCH', 'DIAGNOSIS_TIME_BOUND', 'DIAGNOSIS_MESSAGE_BOUND',
+    'BOTH_CURRENT_COMPONENTS_REQUIRED', 'INPUT_CHANGED', 'REPORT_SIZE_BOUND',
+    'IMPORT_FAILURE', 'IO_FAILURE', 'UNCLASSIFIED'))
+NATIVE_FAILURE_REASONS = frozenset(f'{phase}:{code}' for phase in ('SETUP', 'DKSS_LF', 'DKSS_NSBS')
+                                 for code in NATIVE_FAILURE_CODES)
+
+
+def bounded_native_failure(stderr_path):
+    if stderr_path.stat().st_size > 4096:
+        return 'NATIVE_DIAGNOSIS_INCOMPLETE'
+    prefix = 'NATIVE_GRID_DIAGNOSIS_NOT_COMPLETED:'
+    matches = [line[len(prefix):] for line in stderr_path.read_text(encoding='utf8', errors='replace').splitlines()
+               if line.startswith(prefix)]
+    return matches[0] if len(matches) == 1 and matches[0] in NATIVE_FAILURE_REASONS else 'NATIVE_DIAGNOSIS_INCOMPLETE'
+
+
+class AuditFailure(Exception):
+    def __init__(self, phase, error):
+        self.phase = phase if phase in FAILURE_PHASES else 'PREPARE'
+        message = str(error)
+        if type(error) is ValueError and message in FAILURE_REASONS | NATIVE_FAILURE_REASONS:
+            self.reason = message
+        elif isinstance(error, urllib.error.HTTPError):
+            self.reason = 'HTTP_FAILURE'
+        elif isinstance(error, (TimeoutError, subprocess.TimeoutExpired)):
+            self.reason = 'TIMEOUT'
+        elif isinstance(error, OSError):
+            self.reason = 'IO_FAILURE'
+        else:
+            self.reason = 'UNCLASSIFIED'
+        # Never include original exception messages, paths, URLs or stderr.
+        super().__init__(f'{self.phase}:{self.reason}')
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -126,32 +174,50 @@ def main():
     report_path = runner / 'native-current-grid-safe.json'
     if report_path.exists():
         raise ValueError('REPORT_ALREADY_EXISTS')
+    phase, failure = 'PREPARE', None
     try:
         for collection in TARGETS:
+            phase = 'READ_' + collection.upper()
             download_once(collection, scratch / (collection + '.grib'))
+        phase = 'NATIVE_PROCESS'
         script = Path(__file__).with_name('audit-native-current-grid.py').resolve()
-        env = {key: os.environ[key] for key in ('PATH', 'HOME', 'LANG', 'SYSTEMROOT', 'SSL_CERT_FILE') if key in os.environ}
+        # setup-python's Linux interpreter needs its existing shared-library path.
+        # Preserve this runtime setting, not GitHub/production credentials.
+        env = {key: os.environ[key] for key in ('PATH', 'HOME', 'LANG', 'SYSTEMROOT', 'SSL_CERT_FILE', 'LD_LIBRARY_PATH') if key in os.environ}
         env['PYTHONDONTWRITEBYTECODE'] = '1'
         with (scratch / 'stdout.private').open('xb') as out, (scratch / 'stderr.private').open('xb') as err:
             result = subprocess.run([sys.executable, '-B', str(script), '--producer', str(args.producer.resolve(strict=True)),
                                      '--lf', str(scratch / 'dkss_lf.grib'), '--nsbs', str(scratch / 'dkss_nsbs.grib')],
                                     cwd=scratch, env=env, stdout=out, stderr=err, timeout=180, check=False)
-        if result.returncode != 0 or (scratch / 'stdout.private').stat().st_size > 65536:
+        if result.returncode != 0:
+            raise ValueError(bounded_native_failure(scratch / 'stderr.private'))
+        if (scratch / 'stdout.private').stat().st_size > 65536:
             raise ValueError('NATIVE_DIAGNOSIS_INCOMPLETE')
+        phase = 'VALIDATE_REPORT'
         encoded = safe_report(json.loads((scratch / 'stdout.private').read_text(encoding='utf8')))
+        phase = 'PUBLISH_REPORT'
         with report_path.open('x', encoding='utf8') as report:
             report.write(encoded + '\n')
-        print('NATIVE_CURRENT_GRID_SAFE_REPORT_READY')
+    except Exception as error:
+        failure = AuditFailure(phase, error)
     finally:
         # Only our exclusive exact child, never a production/cache directory.
-        if scratch.parent != runner or scratch.is_symlink() or scratch.resolve() != runner / scratch.name:
-            raise ValueError('PRIVATE_SCRATCH_CLEANUP_REJECTED')
-        shutil.rmtree(scratch)
+        try:
+            if scratch.parent != runner or scratch.is_symlink() or scratch.resolve() != runner / scratch.name:
+                raise ValueError('PRIVATE_SCRATCH_CLEANUP_REJECTED')
+            shutil.rmtree(scratch)
+        except Exception as error:
+            if failure is None:
+                failure = AuditFailure('CLEANUP', error)
+    if failure is not None:
+        raise failure from None
+    print('NATIVE_CURRENT_GRID_SAFE_REPORT_READY')
 
 
 if __name__ == '__main__':
     try:
         main()
-    except Exception:
-        print('NATIVE_CURRENT_GRID_AUDIT_NOT_COMPLETED', file=sys.stderr)
+    except Exception as error:
+        safe_failure = error if isinstance(error, AuditFailure) else AuditFailure('PREPARE', error)
+        print(f'NATIVE_CURRENT_GRID_AUDIT_NOT_COMPLETED:{safe_failure}', file=sys.stderr)
         sys.exit(1)
