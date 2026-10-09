@@ -89,18 +89,21 @@ def safe_report(value):
         if type(fields) is not list or not 2 <= len(fields) <= item['messagesRead']:
             raise ValueError('REPORT_CURRENT_FIELDS_REJECTED')
         for field in fields:
-            exact_keys(field, 'component pointsChecked nativePointsOutsideDeclaredLatitudeBounds maximumLatitudeVsEndpointDegrees maximumLongitudeVsEndpointDegrees gridSectionDigest ni nj layerTimeIdentitySha256 referenceDate referenceTime validityDate validityTime candidateChecks candidateIndexMismatches candidateCoordinateMismatches candidateValueMismatches')
+            exact_keys(field, 'component pointsChecked nativePointsOutsideDeclaredLatitudeBounds maximumLatitudeVsEndpointDegrees maximumLongitudeVsEndpointDegrees gridSectionDigest ni nj layerTimeIdentitySha256 referenceDate referenceTime validityDate validityTime candidateChecks candidateIndexMismatches candidateCoordinateMismatches candidateValueMismatches nativeValidPoints validPointsOutsideDeclaredLatitudeBounds maximumValidLatitudeVsEndpointDegrees candidatesWithLatitudeDifference maximumCandidateLatitudeVsEndpointDegrees')
             if field['component'] not in ('current-u', 'current-v'):
                 raise ValueError('REPORT_COMPONENT_REJECTED')
             digest(field['gridSectionDigest'], 32)
             digest(field['layerTimeIdentitySha256'])
-            for key in ('pointsChecked', 'nativePointsOutsideDeclaredLatitudeBounds', 'ni', 'nj', 'candidateChecks', 'candidateIndexMismatches', 'candidateCoordinateMismatches', 'candidateValueMismatches'):
+            for key in ('pointsChecked', 'nativePointsOutsideDeclaredLatitudeBounds', 'ni', 'nj', 'candidateChecks', 'candidateIndexMismatches', 'candidateCoordinateMismatches', 'candidateValueMismatches', 'nativeValidPoints', 'validPointsOutsideDeclaredLatitudeBounds', 'candidatesWithLatitudeDifference'):
                 integer(field[key], 400000)
             if (field['pointsChecked'] != field['ni'] * field['nj']
                     or field['referenceDate'] != 20261009 or field['referenceTime'] != 0
                     or field['validityDate'] != 20261014 or field['validityTime'] != 0):
                 raise ValueError('REPORT_TIME_GRID_REJECTED')
-            for key in ('maximumLatitudeVsEndpointDegrees', 'maximumLongitudeVsEndpointDegrees'):
+            if not (field['validPointsOutsideDeclaredLatitudeBounds'] <= field['nativeValidPoints'] <= field['pointsChecked']
+                    and field['candidatesWithLatitudeDifference'] <= field['candidateChecks']):
+                raise ValueError('REPORT_SUBSET_REJECTED')
+            for key in ('maximumLatitudeVsEndpointDegrees', 'maximumLongitudeVsEndpointDegrees', 'maximumValidLatitudeVsEndpointDegrees', 'maximumCandidateLatitudeVsEndpointDegrees'):
                 number = field[key]
                 if type(number) not in (int, float) or not math.isfinite(number) or not 0 <= number <= 360:
                     raise ValueError('REPORT_DISTANCE_REJECTED')

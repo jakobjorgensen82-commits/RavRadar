@@ -25,6 +25,14 @@ def coordinates(ni=4, nj=5, first_lat=10, last_lat=10.04, first_lon=20, last_lon
 
 
 class PreparationTests(unittest.TestCase):
+    def test_missing_cells_do_not_claim_valid_current_displacement_and_zero_is_valid(self):
+        valid_value = lambda value, missing: None if value == missing else value
+        report = audit.valid_coordinate_differences([0, -999, -999, -999, 1, 2],
+            [10, 10, 10.03, 10.03, 10.04, 10.04], 2, 3, 10, 10.04, valid_value, -999)
+        self.assertEqual(report['nativeValidPoints'], 3)
+        self.assertEqual(report['validPointsOutsideDeclaredLatitudeBounds'], 0)
+        self.assertAlmostEqual(report['maximumValidLatitudeVsEndpointDegrees'], 0)
+
     def test_longitude_wrap_is_coordinate_not_index_change(self):
         self.assertAlmostEqual(audit.longitude(355.875), -4.125)
         self.assertAlmostEqual(audit.longitude(-4.125), -4.125)
@@ -113,6 +121,9 @@ class PreparationTests(unittest.TestCase):
         def field(component):
             return dict(component=component, pointsChecked=20, ni=4, nj=5,
                         nativePointsOutsideDeclaredLatitudeBounds=0,
+                        nativeValidPoints=20, validPointsOutsideDeclaredLatitudeBounds=0,
+                        maximumValidLatitudeVsEndpointDegrees=0., candidatesWithLatitudeDifference=0,
+                        maximumCandidateLatitudeVsEndpointDegrees=0.,
                         maximumLatitudeVsEndpointDegrees=0., maximumLongitudeVsEndpointDegrees=0.,
                         gridSectionDigest='a'*32, layerTimeIdentitySha256='b'*64,
                         referenceDate=20261009, referenceTime=0, validityDate=20261014, validityTime=0,
@@ -175,11 +186,15 @@ if NATIVE:
                         producer.GRID_INDEX_CACHE.clear()
                         report = audit.field_report(gid, collection, eccodes, producer)
                         self.assertGreater(report['candidateChecks'], 0)
+                        self.assertEqual(report['nativeValidPoints'], ni * nj)
                         for name in ('candidateIndexMismatches', 'candidateCoordinateMismatches', 'candidateValueMismatches'):
                             self.assertEqual(report[name], 0)
                         self.assertLess(report['maximumLongitudeVsEndpointDegrees'], 1e-9)
                         if collection == 'dkss_lf':
                             self.assertEqual(report['nativePointsOutsideDeclaredLatitudeBounds'], 64 * ni)
+                            self.assertEqual(report['validPointsOutsideDeclaredLatitudeBounds'], 64 * ni)
+                            self.assertGreater(report['candidatesWithLatitudeDifference'], 0)
+                            self.assertGreater(report['maximumCandidateLatitudeVsEndpointDegrees'], .01)
                             self.assertAlmostEqual(report['maximumLatitudeVsEndpointDegrees'], .1296658097686375)
                         else:
                             self.assertEqual(report['nativePointsOutsideDeclaredLatitudeBounds'], 0)

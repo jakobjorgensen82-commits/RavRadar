@@ -68,6 +68,21 @@ def check_coordinates(ni, nj, first_lat, last_lat, first_lon, last_lon, scan, la
     }
 
 
+def valid_coordinate_differences(values, lats, ni, nj, first_lat, last_lat, valid_value, missing):
+    valid = outside = 0
+    maximum = 0.0
+    for index, value in enumerate(values):
+        if valid_value(value, missing) is None:
+            continue
+        valid += 1
+        latitude = float(lats[index])
+        outside += not first_lat - 1e-9 <= latitude <= last_lat + 1e-9
+        endpoint = first_lat + (index // ni) * (last_lat - first_lat) / (nj - 1)
+        maximum = max(maximum, abs(latitude - endpoint))
+    return dict(nativeValidPoints=valid, validPointsOutsideDeclaredLatitudeBounds=outside,
+                maximumValidLatitudeVsEndpointDegrees=maximum)
+
+
 def field_report(gid, collection, native, producer):
     get = lambda key: native.codes_get(gid, key)
     if get('edition') != 1 or get('gridType') != 'regular_ll':
@@ -91,7 +106,11 @@ def field_report(gid, collection, native, producer):
     values = native.codes_get_array(gid, 'values')
     if len(values) != ni * nj:
         raise ValueError('NATIVE_VALUE_COUNT_MISMATCH')
+    report.update(valid_coordinate_differences(values, lats, ni, nj, first_lat, last_lat,
+                                               producer.valid_value, get('missingValue')))
     checked = bad_index = bad_coordinate = bad_value = 0
+    shifted = 0
+    candidate_maximum = 0.0
     for rows in candidates.values():
         for candidate in rows:
             checked += 1
@@ -102,12 +121,18 @@ def field_report(gid, collection, native, producer):
             bad_coordinate += (abs(candidate['latitude'] - float(lats[index])) > 1e-9
                                or abs(longitude(candidate['longitude']) - float(lons[index])) > 1e-9)
             bad_value += candidate['value'] != float(values[index])
+            endpoint = first_lat + (index // ni) * (last_lat - first_lat) / (nj - 1)
+            difference = abs(float(lats[index]) - endpoint)
+            shifted += difference > 1e-9
+            candidate_maximum = max(candidate_maximum, difference)
     identity = [get(key) for key in ('dataDate', 'dataTime', 'validityDate', 'validityTime', 'typeOfLevel', 'level')]
     report.update(gridSectionDigest=str(get('md5GridSection')), ni=ni, nj=nj,
                   layerTimeIdentitySha256=hashlib.sha256(json.dumps(identity).encode()).hexdigest(),
                   referenceDate=int(get('dataDate')), referenceTime=int(get('dataTime')),
                   validityDate=int(get('validityDate')), validityTime=int(get('validityTime')),
                   candidateChecks=checked, candidateIndexMismatches=bad_index,
+                  candidatesWithLatitudeDifference=shifted,
+                  maximumCandidateLatitudeVsEndpointDegrees=candidate_maximum,
                   candidateCoordinateMismatches=bad_coordinate, candidateValueMismatches=bad_value)
     return report
 
