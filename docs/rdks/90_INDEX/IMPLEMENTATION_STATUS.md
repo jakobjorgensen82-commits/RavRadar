@@ -1,3 +1,9 @@
+# Isoleret 4.0.555 – præcis CI-fejl i én workflowforventning
+
+Head ed37b172655d55c7cb10999a301cfe8c49010fe4 bestod 57 faktiske native testnoder og normale fuld-import-kontroller af lagring, proveniens, vektorafvisning/transaktionsrollback og vind. Samlet GitHub-kildekontrol 37977331419-1 fejlede den 9. oktober kl. 21.11 dansk tid på én forældet wave-bootstrap-budgetforventning; de øvrige 62 forløb i samme suite bestod. Ingen uændret-træ-gate eller proofupload er krediteret.
+
+Den ene forventning følger nu workflowets allerede eksisterende præcise adaptive/quick-confirmation-gates. Genopretningsbudget må fortsat ikke aktivere legacy bootstrap eller candidate-maintenance-bootstrap. Lokal kørsel af den faktiske workflow-only-metode består og afviser tre egne usikre mutationer; dette erstatter ikke fuld normal Python-import eller præcis ny GitHub-kontrol. Produktionsworkflow, budgetter, bootstrap, modelbinding og data ændres ikke af testrettelsen. Kandidaten forbliver DRAFT/HOLD; cache-/historik-/SOURCE/T+3-/scoreovergang og hele målet er åbne. Ingen merge, ekstra vejrhentning, diagnose eller installation følger heraf.
+
 # Isoleret 4.0.555 – nye samplingregistreringer; cacheovergang stadig åben
 
 Den normale kildekonstruktør modtager nu den faktisk valgte felt-tuple fra vektor-, skalar- og bølgekalderne. Begge batchkald bevarer den faktisk anvendte koordinatfortolkning. Hver ny komponent/time får nativeGridSampling med fælles originalt indeks, gitterrækkefølge, fortolkning, gitterpunkt og feltsæt, uden strømværdier eller intern opslagstag i gridPoints. Uens eller ufuldstændige friske tuples afvises; gyldige nulværdier bevares. Gamle originaler får ingen ny registrering, ommærkning eller sletning. Registreringen erstatter ikke eksisterende autentificering eller private containerkontroller og er ikke en færdig genbrugsgodkendelse.

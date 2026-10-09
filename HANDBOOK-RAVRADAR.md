@@ -38,9 +38,15 @@ semantiktabels samme felt; dobbelte felter, bounds og øvrige afvisninger bevare
 Format-id er uændret, men gamle binære læsere forstår ikke det nye rumlige felt;
 aktivering kræver samordnet levering af begge læsere og alle genbrugskaldere.
 Ingen eksisterende originalfil flyttes, slettes eller opgraderes af dette.
-De nye fuld-import-prøver af vektorafvisning og transaktionsrollback samt den
-opdaterede nativekontrol skal stadig bestå i GitHub;
-lokal syntakskontrol er ikke bevis for disse. Ingen ekstra dependencies installeres.
+Head ed37b172 bestod 57 faktiske native testnoder i GitHub og de normale
+fuld-import-prøver af vektorafvisning, transaktionsrollback, lagring, proveniens
+og vind. Den samlede kildekontrol fejlede kl. 21.11 dansk tid den 9. oktober:
+én wave-bootstrap-prøve forventede en ældre workflow-budgetstreng. De øvrige
+62 prøver i den suite bestod. Forventningen følger nu de eksisterende præcise
+adaptive og quick-confirmation-gates; workflow, budget og bootstrap ændres ikke.
+Lokal prøve af den faktiske workflow-only-metode består og afviser tre egne
+usikre mutationer. Hele suiten og den præcise nye head kræver ny GitHub-kontrol;
+ingen proofupload eller aktivering er krediteret. Ingen dependencies installeres.
 Den eksisterende afgrænsede Python-bro kører lagring, native proveniens,
 continuity, vind og wave-bootstrap én gang hver. Kildeplanen har stadig
 47 kommandoer; ingen produktionsgate eller runnergrænse ændres.
