@@ -285,10 +285,16 @@ if REAL:
 
         def bounded_synthetic_lookup_details(self, gid, zone, union):
             # Artificial coordinates/indices only; never print field values.
-            direct = self.ec.codes_grib_find_nearest(gid, zone["lat"], zone["lon"], npoints=4)
+            try:
+                direct = self.ec.codes_grib_find_nearest(gid, zone["lat"], zone["lon"], npoints=4)
+                direct_summary = [{"index": row["index"], "lat": row["lat"], "lon": row["lon"]}
+                                  for row in direct]
+            except self.producer.OutOfAreaError:
+                # Do not replace the original strict reachability failure by
+                # an expected boundary error from this optional diagnostic.
+                direct_summary = "OUT_OF_AREA"
             return {"syntheticTarget": [zone["lat"], zone["lon"]],
-                    "syntheticDirect": [{"index": row["index"], "lat": row["lat"], "lon": row["lon"]}
-                                        for row in direct],
+                    "syntheticDirect": direct_summary,
                     "syntheticWarmClosest": [{key: row[key] for key in ("index", "latitude", "longitude", "distanceKm")}
                                              for row in union[:4]]}
 
