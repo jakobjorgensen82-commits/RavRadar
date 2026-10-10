@@ -23,9 +23,9 @@ frem for interne fejltekster og bevarer normale svar, genforsøg og indlæsnings
 En tur, der kun er lokal eller afventer serveren, må ikke meldes afleveret eller
 fjernes fra sin v2-kø. Genforsøg bevarer den oprindelige ejer, id, indhold og tid;
 kontoskift eller ændret indhold afvises før ny skrivning. Kvitteringen gælder den
-konkrete tur. Baggrundssynkronisering rydder ikke i sig selv den bevarede v2-tur;
-næste normale afslutningsforsøg kan kontrollere den samme tur igen. Anonyme ture
-overdrages ikke automatisk til en ny konto.
+konkrete tur. En frisk baggrundskvittering kan kun afslutte den præcist matchende,
+uændrede v2-tur under samme ejer og loginforløb; en gammel synkroniseringsmarkør
+er ikke bevis. Anonyme ture overdrages ikke automatisk til en ny konto.
 
 Hvis den komplette tur er gemt, men oprydningen af den aktive tur afbrydes, må
 en ny besvarelse ikke overskrive den første rapport. Identisk genbesvarelse
@@ -43,7 +43,7 @@ HTTP-success alene er ikke en gemmekvittering. Den normale indsendelse kræver e
 
 Spørg RavRadars eksisterende kontrollerede svar om lav score udvides med otte præcise hele spørgsmålsformer på dansk, tysk og engelsk, herunder to offentligt observerede danske fejlforløb. Svaret fastslår, at lav score ikke udelukker ravfund, men heller ikke er en målt fundchance. Sammensatte, private eller sted-/tidsafhængige spørgsmål må ikke matches som et fragment. Normale client/Edge-prøver giver 15 kontrollerede svar, 48 bindingsafvisninger, fem private afvisninger og 12 normale fail-closed-forløb; den eksisterende tyske trotzdem-misrouting er fortsat åben. Dette er ikke den brede vidensudvidelse eller bevis for fungerende ekstern AI.
 
-Oprydning efter turens kvittering er bundet til den faktisk sendte lokale rapport. Ændret indhold eller en modstridende dublet med samme tur-id bevares; harmløs nøgleorden og identiske dubletter accepteres uden tab af andre ture. To samtidige normale kald kan dele den samme friske serverkvittering uden en falsk fejl, men en allerede fjernet køpost accepteres kun gennem den faktiske indsendelsesfunktion med præcis tur, ejer og uændret loginforløb. En løs eller indpakket callbackkvittering giver ikke denne undtagelse. Femten nye målprøver består gennem samme normale controller, uploader og loginfunktioner. Dette indfører ikke automatisk v2-oprydning, kontoovertagelse eller atomisk skrivning mellem faner.
+Oprydning efter turens kvittering er bundet til den faktisk sendte lokale rapport. Ændret indhold eller en modstridende dublet med samme tur-id bevares; harmløs nøgleorden og identiske dubletter accepteres uden tab af andre ture. To samtidige normale kald kan dele den samme friske serverkvittering uden en falsk fejl, men en allerede fjernet køpost accepteres kun gennem den faktiske indsendelsesfunktion med præcis tur, ejer og uændret loginforløb. En løs eller indpakket callbackkvittering giver ikke denne undtagelse. Femten nye målprøver består gennem samme normale controller, uploader og loginfunktioner. Denne kontrol giver ikke kontoovertagelse eller atomisk skrivning mellem faner; den særskilte normale baggrundsoprydning kræver den samme uændrede rapport og en frisk kvittering.
 
 Kontoens manuelle tur- og fundformular fastholder den ejer og det loginforløb, som åbnede formularen. Nyt login eller kontoskift under formularen må ikke sende den gamle besvarelse som den nye konto; et forsinket svar må heller ikke vise den gamle afleveringskvittering under et nyt login. Normal tokenfornyelse, annullering og gemning med efterfølgende visning i egen turlog bevares. Ti nye prøver bruger de faktiske login-, indsendelses- og kontofunktioner; syntetiske formularer og HTTP-svar er ikke installeret brugerdata- eller adgangskontrolbevis.
 
@@ -56,7 +56,9 @@ notifikationer. Gamle callbacks, fornyelser og oprydning kan ikke frigive et nye
 lager- og notifikationsfejl bevarer den første fejl og eksisterende sessionsadfærd.
 Det er ikke atomisk beskyttelse mellem faner eller installeret adgangskontrolbevis.
 
-158 relevante brugerdata- og 12 UI-målprøver består lokalt. De seks nye mål nås én gang gennem
+Normal opstart og online-genforsøg kan nu afslutte den uændrede bevarede v2-tur efter en direkte, frisk JSON-kvittering med stored: true. Den oprindelige ejer, loginforløb, tur-id, indhold og indsendelsestid skal stadig passe, og den samme lokale observation og outboxpost skal faktisk være afklaret. Den normale uploader reserverer hele sit eksisterende køudsnit før første ventepunkt, så også indpakkede callbacks og flere ventende ture bevarer deres legitime afslutningsforløb. Reservationerne er bundet til hver konkret rapport og frigives i egen finally; andre baggrundsture kan fortsat afsluttes. Ukendte eller modstridende kødata, kontoskift, manglende kvittering og ændret indhold bevares. En lokal oprydningsfejl ændrer ikke en faktisk gemt observation til uploadfejl. Fyrre nye målprøver og 22 relevante tidligere kontroller består lokalt gennem de faktiske normale kaldere. Dette er ikke atomisk samordning mellem faner eller installeret serverbevis.
+
+198 relevante brugerdata- og 12 UI-målprøver består lokalt. De seks nye mål nås én gang gennem
 den eksisterende normale sourcegruppe. Begge vejrbundles, scoreformel, vejrdata,
 geometri og centrale bindingsregler er uændrede. Den tidligere head har præcis grøn
 GitHub-kontrol; den nye funktionelle head skal kontrolleres særskilt. Installation,

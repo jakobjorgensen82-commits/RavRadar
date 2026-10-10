@@ -2,7 +2,7 @@ import { assertTripEvidencePrivacy, toObservationTripColumns } from './trip-evid
 import { listPendingTripEvidence, markTripEvidenceSubmitted } from './trip-evidence-store.js?v=4.0.556';
 
 import { authIdentityEpoch, currentSession } from './auth-service.js?v=4.0.556';
-import { submitTripEvidenceObservation } from './observation-service.js?v=4.0.556';
+import { reserveTripEvidenceUpload, submitTripEvidenceObservation } from './observation-service.js?v=4.0.556';
 
 function sameUploadedTripValue(left, right) {
   if (left === right) return true;
@@ -27,6 +27,8 @@ export async function uploadPendingTripEvidence({ persist, storage = null } = {}
   const pending = listPendingTripEvidence(storage);
   const result = { attempted: pending.length, submitted: 0, failed: 0, failures: [] };
 
+  const release = reserveTripEvidenceUpload(pending);
+  try {
   for (const evidence of pending) {
     const tripId = String(evidence?.tripId || 'unknown');
     try {
@@ -56,4 +58,5 @@ export async function uploadPendingTripEvidence({ persist, storage = null } = {}
   }
 
   return result;
+  } finally { release(); }
 }

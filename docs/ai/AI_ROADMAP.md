@@ -12,14 +12,16 @@ en gammel turformular, falsk tur-/slettekvittering, genforsøgets oprindelige ej
 id, indhold og tid, bevarelse af første komplette tur ved afbrudt oprydning samt
 intern UI-fejltekst, samtidige indsendelser under første brugerhydrering og nye kald under
 uafsluttede kontovalg. Alle tre turindsendelser kontrolleres før lokal gemning;
-offline-gemning og normale loginnotifikationer bevares. 158 brugerdata-
+offline-gemning og normale loginnotifikationer bevares. 198 brugerdata-
 og 12 UI-målprøver samt versions-/RDKS-/håndbogs- og begge bundlekontroller består
 lokalt. Den tidligere head har præcis grøn kilde-PR-kontrol; den nye funktionelle head
 kræver ny kontrol. Sikker levering og offentlig effekt mangler.
 En lokal backup må ikke gendanne et udlogget login; tre nye prøver i det
 eksisterende opstartsmål bevarer aktive login, ture og ventende indsendelser.
-Den aktiverer ikke den isolerede revision eller en ny modelbinding. Automatisk
-rydning af bevarede v2-ture efter baggrundssynkronisering er ikke bevist.
+Den aktiverer ikke den isolerede revision eller en ny modelbinding. Normal opstart og
+online-genforsøg afslutter kun en uændret v2-tur efter frisk stored: true, samme ejer/login
+og faktisk afklaring af observation og outbox. Hele uploaderens køudsnit reserveres per
+rapport indtil egen finally; fyrre nye og 22 relevante gamle prøver består lokalt.
 Gemmekvitteringen kræver faktisk stored: true efter hele svaret og uændret loginforløb.
 Oprydning bevarer ændret turindhold; samtidige normale kald kan kun dele den præcise
 friske kvittering fra den direkte indsendelse. Løse callbackkvitteringer er ikke bevis.
