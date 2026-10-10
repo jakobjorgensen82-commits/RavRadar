@@ -14,12 +14,16 @@ const environment = Object.fromEntries(
     .map(key => [key, process.env[key]]),
 );
 environment.PYTHONUTF8 = '1';
+if (process.platform !== 'linux') {
+  console.log('Native Linux supervisor-loss contract not executed on this platform');
+}
 for (const file of [
   'test-regional-current-operational.py',
   'test-current-operational-closure.py',
   'test-current-operational-live-builder.py',
   'test-current-operational-producer-chain.py',
   'test-dmi-bulk-supervised.py',
+  ...(process.platform === 'linux' ? ['test-dmi-supervisor-parent-loss.py'] : []),
 ]) {
   test(file, { timeout: 160_000 }, () => {
     const result = spawnSync(python, ['-B', path.join(root, 'scripts', file)], {

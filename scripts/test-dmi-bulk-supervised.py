@@ -110,7 +110,7 @@ class SupervisorTests(unittest.TestCase):
                 normal_wait = child.wait
 
                 def observe_wait(*wait_args, **wait_kwargs):
-                    if not wait_args and "timeout" not in wait_kwargs:
+                    if not wait_args and wait_kwargs == {"timeout": 0.25}:
                         self.assertIsNone(child.poll(), "EOF precedes actual writer exit")
                         completion_waits.append(child.pid)
                     return normal_wait(*wait_args, **wait_kwargs)
@@ -272,7 +272,7 @@ class SupervisorTests(unittest.TestCase):
                     normal_wait = child.wait
 
                     def interrupt_completion_wait(*wait_args, **wait_kwargs):
-                        if not wait_args and "timeout" not in wait_kwargs:
+                        if not wait_args and wait_kwargs == {"timeout": 0.25}:
                             # Actual pipe EOF is not process-exit evidence. The
                             # owned producer keeps writing after closing output.
                             self.assertIsNone(child.poll())

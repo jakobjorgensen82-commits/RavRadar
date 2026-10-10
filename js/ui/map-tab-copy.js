@@ -1,4 +1,4 @@
-import { registerI18nMessages } from '../i18n.js?v=4.0.563';
+import { registerI18nMessages } from '../i18n.js?v=4.0.564';
 registerI18nMessages({
   da:{'jordrav.coastTab':'Kystprognose','jordrav.landTab':'Jordrav','jordrav.navigation':'Kortvisning'},
   de:{'jordrav.coastTab':'Küstenprognose','jordrav.landTab':'Landbernstein','jordrav.navigation':'Kartenansicht'},

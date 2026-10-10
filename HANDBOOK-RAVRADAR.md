@@ -1,10 +1,36 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.563
+**Håndbogsversion:** 4.0.564
 
-Den lokale 4.0.563 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+Den lokale 4.0.564 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.188 Stop af vejrhentningens egne processer
+
+Den normale DMI-supervisor fastholder første afbrydelsessignal, også omkring
+oprettelse af underprocessen. Den faktisk ejede proces og dens outputlæser
+skal være afsluttet, før der gives normal succes. EOF alene er ikke proces-exit.
+Ved afbrydelse bevares første fejl; eksisterende stop- og lukkegrænser ændres ikke.
+
+Fire eksisterende måltests består lokalt. De dækker normal EOF-afslutning,
+afbrydelse i exitventen, reader-startfejl og brudt log-pipe gennem normale kaldere.
+En afgrænset Linux-prøve skal desuden måle SIGTERM, SIGINT og sund afslutning
+med den faktiske direkte producer, reader og oprindelige pipe-fd. Den er endnu
+ikke udført her; lokal Windows-kontrol er ikke native Linux- eller runnerbevis.
+
+Dette gælder supervisorens egne direkte processer, ikke alle samtidige skrivere.
+Samlet skrivning, særskilt finalizer, SIGKILL, tab af runner og failure-SAVE
+er fortsat åbne. Et stop eller en exception giver ikke i sig selv ret til gemning.
+Originaler B/S, legitimt krypteret genbrug, tidsbudgetter og modelbindinger bevares.
+564 er lokal og afventer præcis kildekontrol, sikker levering og faktisk effekt.
+
+563 er kildeverificeret, merget og faktisk leveret. Det ene rettelsesdeploy uden
+vejrhentning bestod offentlig model-/implementerings-/210/673-kontrol og terminal
+afslutning kl. 18.20 dansk tid. Samme vejrdata, scorer og geometri blev genbrugt.
+Privat restore blev gennemført; private publiceringer var allerede aktuelle og
+SQL allerede ajour, ikke nye uploads eller migrationer. De tidligere ventestatusser
+i historiske afsnit er erstattet af denne status. Hele revisionen er ikke færdig.
 
 ## 89.187 Eksisterende GitHub-adgang ved rettelsesdeploy
 

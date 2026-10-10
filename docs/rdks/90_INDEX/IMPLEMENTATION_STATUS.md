@@ -1,4 +1,14 @@
-# Lokal 4.0.563 – eksisterende GitHub-adgang ved rettelsesdeploy
+# Lokal 4.0.564 – stop af vejrhentningens egne processer
+
+Den normale DMI-supervisor fastholder første SIGTERM/SIGINT før oprettelse af underprocessen. Signalet afbryder ikke selve Popen eller den eksisterende oprydning. Den faktisk returnerede underproces forsøges stoppet inden for de eksisterende grænser; ukendt ophør giver ingen normal succes, og første fejl bevares. Normal afslutning kræver faktisk proces-exit, afsluttet outputlæser og lukket pipe. Ventetiden efter EOF er nu afbrydelig. De eksisterende TERM10/KILL10- og reader2-grænser bevares; ingen ny reserve, providerkilde, filgrænse eller score-/model-/geometriændring.
+
+Fire eksisterende måltests består lokalt gennem normal main/Popen: sund afslutning efter EOF, afbrydelse i exitventen, fejl ved reader-start og brudt log-pipe. Alle gamle assertions bevares; kun to observerbetingelser følger den nye korte wait-form. En afgrænset normal Linux-test måler SIGTERM, SIGINT og sund afslutning med direkte producer, faktisk reader og oprindelig pipe-fd. Den er endnu ikke udført her; Windows er ikke native Linux-bevis. Præcis ny kildekontrol og sikker levering af 564 mangler.
+
+Dette lukker ikke samlet skrivning, vilkårlige descendants, blokeret Popen/log, særskilt finalizer, SIGKILL, tab af runner eller failure-SAVE. Stop af den direkte producer kvalificerer ikke cachegemning. Original B/S, legitimt krypteret genbrug, fireminuttersgrænsen og den inaktive separate revision bevares.
+
+563 har bestået præcis GitHub-kildekontrol og er flettet ind i main via PR #554. Det ene nye funktionelle rettelsesdeploy uden vejrhentning leverede faktisk Pages kl. 18.19 og bestod offentlig model-/implementerings-/210/673-kontrol, almindelig reseal og terminal afslutning kl. 18.20 dansk tid. Samme datasæt blev genbrugt uden nye vejrkald eller ændrede vejr-, score- eller geometriværdier. Privat restore blev faktisk gennemført; checkpoint- og runtime-publicering svarede allerede aktuelle, ikke nye private uploads. SQL var allerede ajour, ikke en ny migration; den eksisterende assistent-Edge blev faktisk opdateret. Dette er ikke levering af den særskilte assistent-/brugerdata-/strømrettelse. Ingen produktionsændring eller merge af 564 under nogen aktiv writer. Den normale vejrhentning kl. 17.19 er et særskilt leveret forløb; historiske ventestatusser er erstattet af denne aktuelle status. Alle fem hovedmål er fortsat åbne.
+
+# Historik: lokal 4.0.563 – eksisterende GitHub-adgang ved rettelsesdeploy
 
 Normal vejrhentning afsluttede faktisk gemning, privat upload, Pages, 210/673-kontrol og terminal levering 10. oktober kl. 17.19 dansk tid. PR #553 er flettet ind efter præcis grøn kildekontrol. Det efterfølgende rettelsesdeploy stoppede kl. 17.28 før produktionsskrivning: tokenet var faktisk til stede, men den nye læsers alfanumeriske formatkontrol afviste det. Den første forklaring om manglende token blev korrigeret; dette var ikke en fejlet vejrhentning eller en ny målt størrelsesfejl.
 

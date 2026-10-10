@@ -1,4 +1,11 @@
-# Lokal 4.0.563 – 2026-10-10
+# Lokal 4.0.564 – 2026-10-10
+
+- Retter DMI-supervisorens egen SIGTERM/SIGINT-grænse: første signal fastholdes før Popen, den faktiske underproces forsøges stoppet ved afbrydelse, og ukendt ophør eller en åben outputlæser må ikke give normal succes. Eksisterende stopgrænser, kaldere og første fejl bevares.
+- Fire eksisterende lokale EOF-/afbrydelses-/reader-/logmål består; alle assertions bevares. Normal Linux-routing har tre afgrænsede direkte producer-/reader-/pipe-kontroller, som endnu ikke er udført her. Præcis ny kildekontrol og offentlig effekt mangler.
+- Ingen samlet writer-/SAVE-/runner-tab-frikendelse, særskilt finalizerrettelse, reserveudvidelse, original-, model-, score-, kilde- eller geometriændring. Geodata ændres kun i topversionsfeltet.
+- 563 er kildeverificeret og merget. Det ene nye rettelsesdeploy leverede faktisk Pages og bestod offentlig 210/673-kontrol samt reseal/terminal kl. 18.20 dansk tid uden nye vejrkald eller ændrede værdier. Private publiceringer var allerede aktuelle og SQL allerede ajour; det er ikke nye uploads eller migrationer. Ingen ny vejrhentning eller automatisk genforsøg følger. De fem samlede opgaver er fortsat åbne.
+
+# Historik: lokal 4.0.563 – 2026-10-10
 
 - Retter den konkrete tokenformat-afvisning i rettelsesdeployet. Tokenet var faktisk til stede; normal vejrhentning havde gennemført hele leveringen. Det fejlede forløb var kun et rettelsesdeploy før produktionsskrivning.
 - Den faktisk brugte headerbygger accepterer HTTP-bearer-grammatik uden fast GitHub-prefix eller længde. Linjeskift, kontroltegn, anførselstegn og backslash afvises; stdin-transport og neutral child-miljø bevares. Eksisterende normaltest består med syntetiske gamle og nye tokenformer.
