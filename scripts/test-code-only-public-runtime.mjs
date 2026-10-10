@@ -775,3 +775,16 @@ assert.throws(() => resolveFailedIntegratedMaintenancePublicSource({
 }), /exact public-only source proof/);
 
 console.log('Code-only public runtime reuse contract passed.');
+
+// Preserve bounded transfer and first-error STOP while making its exact file visible.
+const publicSnapshotStart = workflow.indexOf('- name: Download exact currently public code-only source');
+const publicSnapshotEnd = workflow.indexOf('\n      - name:', publicSnapshotStart + 1);
+const publicSnapshot = workflow.slice(publicSnapshotStart, publicSnapshotEnd);
+assert.ok(publicSnapshot.includes('curl --version'), 'Snapshot must identify the actual curl runtime');
+assert.ok(publicSnapshot.includes('--write-out "Public snapshot file=$local_name bound=$maximum_bytes http=%{http_code} declared=%header{content-length} received=%{size_download}\\n"'),
+  'Snapshot failures must identify file, bound, HTTP status, declared Content-Length and actual received byte count');
+assert.ok(publicSnapshot.includes('--max-filesize "$maximum_bytes"'), 'Diagnostic must not loosen the byte bound');
+assert.ok(publicSnapshot.includes('--connect-timeout 10 --max-time 60'), 'Diagnostic must preserve request deadlines');
+assert.ok(publicSnapshot.includes('set -euo pipefail'), 'Snapshot must retain first-error STOP');
+assert.doesNotMatch(publicSnapshot, /continue-on-error|\|\|\s*true|--ignore-content-length|--compressed/,
+  'Diagnostic must neither suppress a failure nor change the transferred representation');

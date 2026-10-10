@@ -1,3 +1,7 @@
+# 4.0.561 – supplerende afgrænset deploy-diagnostik
+
+Den præcise kildekontrol på `4289d71` bestod, og PR #551 er flettet ind. Den almindelige vejrhentning afsluttede faktisk fulde data- og leveringskontroller; det efterfølgende kode-only-deploy stoppede ved en offentlig læsning før produktionsskrivning. Den nye afgrænsede rettelse identificerer fil, størrelsesgrænse, HTTP-status, modtagne bytes og curl-version i det eksisterende kald. Ingen ekstra læsning, højere grænse, nyt tidsbudget, modelbinding eller genforsøg tilføjes. Den eksisterende måltest består. Den historiske transportårsag er fortsat åben; dette er diagnostik, ikke bevis for rettet deploy eller offentlig 561. Tidligere afventende kildekontrolstatus nedenfor er erstattet; alle fem samlede opgaver er fortsat åbne.
+
 # Lokal 4.0.561 – bevaret cache og samtidige kladder
 
 Denne afgrænsede leverance samler rettelser i privat cache og normale klientkald. Det normale private cacheforløb kræver fysisk lukning og kontrollerer de faktisk skrevne bytes med afgrænset læsning før publicering. Forkert indhold med samme længde, udskiftet arbejdsfil og usikker lukning må ikke erstatte en gyldig tidligere pakke. Usikker ejerskab/lukning bevarer arbejdsområdet; kun sikkert egne, lukkede fejlrester må ryddes. Det eksisterende format, tidsbudget, autentificering og kildeprioritet bevares. Dette lukker de påviste lokale fejl, ikke alle scenarier ved tab af runner, upload eller national kapacitet.
