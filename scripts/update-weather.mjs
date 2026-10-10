@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import path from 'node:path';
+import { assertWeatherTransportSettlement, isWeatherTransportStopUnproved, throwWeatherTransportStopUnproved } from './lib/weather-transport-settlement.mjs';
 import { writePublicRuntimeFromFull } from './public-conditions-lib.mjs';
 import { hydratePrivateConditionsHourly, packPrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 import { enrichCurrentProvenanceDocuments } from './enrich-current-provenance.mjs';
@@ -318,6 +319,7 @@ async function waterStationRouting() {
 
 
 async function fetchJson(url, { provider, retries = 1, dmi = false, timeoutMs = REQUEST_TIMEOUT_MS } = {}) {
+  assertWeatherTransportSettlement();
   if (WEATHER_CACHE_ONLY) {
     const error = new Error(provider + ': network disabled in weather cache-only mode');
     error.code = 'WEATHER_CACHE_ONLY_NETWORK_DISABLED';
@@ -342,6 +344,7 @@ async function fetchJson(url, { provider, retries = 1, dmi = false, timeoutMs = 
   }
   let lastError;
   for (let attempt = 0; attempt <= retries; attempt += 1) {
+    assertWeatherTransportSettlement();
     if (dmi) {
       if (dmiRequestBudgetUsed >= DMI_REQUEST_BUDGET) {
         const error = new Error(`${provider}: DMI requestbudget opbrugt (${DMI_REQUEST_BUDGET} kald)`);
@@ -359,8 +362,10 @@ async function fetchJson(url, { provider, retries = 1, dmi = false, timeoutMs = 
     state.requests += 1;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    let response = null, bodySettled = false, cancellation = null;
     try {
-      const response = await fetch(url, {
+      assertWeatherTransportSettlement();
+      response = await fetch(url, {
         headers: { Accept: 'application/json, application/geo+json', 'User-Agent': USER_AGENT },
         signal: controller.signal
       });
@@ -371,7 +376,10 @@ async function fetchJson(url, { provider, retries = 1, dmi = false, timeoutMs = 
         if (retryAfterHeader) error.retryAfter = Number(retryAfterHeader);
         throw error;
       }
-      const data = await response.json();
+      const text = await response.text();
+      bodySettled = true; // Fulfilled body consumption, before JSON parsing.
+      const data = JSON.parse(text);
+      assertWeatherTransportSettlement();
       state.failures = 0;
       state.circuitOpenedAt = null;
       state.lastSuccessAt = new Date().toISOString();
@@ -380,6 +388,18 @@ async function fetchJson(url, { provider, retries = 1, dmi = false, timeoutMs = 
       state.latencyTotalMs += Date.now() - startedAt;
       return data;
     } catch (error) {
+      const firstFailure = { error }; // Never use error truthiness for ownership.
+      if (response && !bodySettled) {
+        try {
+          cancellation = response.body?.cancel();
+          await cancellation;
+          bodySettled = true;
+        } catch {
+          controller.abort();
+          throwWeatherTransportStopUnproved({ response, controller, cancellation }, firstFailure.error);
+        }
+      }
+      assertWeatherTransportSettlement();
       lastError = error?.name === 'AbortError' ? new Error(`${provider}: timeout after ${timeoutMs} ms`) : error;
       state.failures += 1;
       state.lastError = lastError instanceof Error ? lastError.message : String(lastError);
@@ -401,8 +421,9 @@ async function fetchJson(url, { provider, retries = 1, dmi = false, timeoutMs = 
       if (!retryable || attempt >= retries) throw lastError;
       await sleep(Math.min(5000, 750 * 2 ** attempt));
     } finally {
+      controller.abort();
       clearTimeout(timeout);
-      if (dmi) releaseDmiRequestSlot();
+      if (dmi && (!response || bodySettled)) releaseDmiRequestSlot();
     }
   }
   throw lastError ?? new Error(`${provider}: ukendt fejl`);
@@ -1027,7 +1048,17 @@ function topologyStationInterpolation(feature, point, stations, levels) {
 
 async function observedDmiWaterLevel(feature, coastCorridors) {
   try {
-    const [rawStations, freshLevels, routing, cachedLevels] = await Promise.all([dmiWaterStations(), dmiLatestSeaLevels(), waterStationRouting(), cachedStationLevels(new Date().toISOString())]);
+    const inputs = [dmiWaterStations(), dmiLatestSeaLevels(), waterStationRouting(), cachedStationLevels(new Date().toISOString())];
+    let values;
+    try { values = await Promise.all(inputs); }
+    catch (firstError) {
+      const settled = await Promise.allSettled(inputs);
+      if (settled.some(result => result.status === 'rejected' && isWeatherTransportStopUnproved(result.reason))) {
+        throwWeatherTransportStopUnproved(inputs, firstError);
+      }
+      throw firstError;
+    }
+    const [rawStations, freshLevels, routing, cachedLevels] = values;
     const levels = new Map(cachedLevels);
     for (const [stationId, level] of freshLevels) levels.set(String(stationId), level);
     const stations = deduplicateStationSites(rawStations, levels);
@@ -1053,6 +1084,8 @@ async function observedDmiWaterLevel(feature, coastCorridors) {
     const coastPath = coastCorridors.get(feature.properties?.id);
     return interpolateWaterLevelAlongCoast(point, coastPath, stations, levels, { haversineKm, requireBracket: true });
   } catch (error) {
+    if (isWeatherTransportStopUnproved(error)) throw error;
+    assertWeatherTransportSettlement();
     if (!['DMI_RATE_LIMIT_COOLDOWN', 'CIRCUIT_OPEN'].includes(error?.code) && error?.status !== 429) {
       console.warn(`DMI kystvandstand fejlede: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -3860,6 +3893,7 @@ async function forecastFromOpenMeteo(feature, generatedAt) {
   ), {
     onError: component => componentErrors.push(component), concurrency: 2,
   });
+  assertWeatherTransportSettlement();
   const hourly = trimOpenMeteoForecast(buildOpenMeteoIndependentHourlyComponents(responses, {
     onInvalidField: (component, variable, code) => componentErrors.push(`${component}:${variable}:${code}`),
   }), generatedAt);
@@ -4043,6 +4077,7 @@ async function readCoastalPointStateInjections() {
 }
 
 async function fallbackForZone(feature, generatedAt, previous, attempts) {
+  assertWeatherTransportSettlement();
   // Fetch the useful horizon independently of any current-condition request.
   // Retain exact-time old components only where the fresh response has a hole.
   const oldForecast = previous?.zones?.[feature.properties?.id]?.forecast ?? null;
@@ -4056,14 +4091,18 @@ async function fallbackForZone(feature, generatedAt, previous, attempts) {
       ], { limit: Number.MAX_SAFE_INTEGER }), generatedAt),
     };
   } catch (error) {
+    assertWeatherTransportSettlement();
     attempts.push({ provider: 'open-meteo-forecast', message: error instanceof Error ? error.message : String(error) });
   }
   for (const [name, provider] of [['open-meteo', fromOpenMeteo], ['met-norway', fromMetNorway]]) {
+    assertWeatherTransportSettlement();
     try {
       if (name === 'open-meteo' && !forecast) continue;
       const result = withoutZoneCurrent(await provider(feature, generatedAt, forecast));
+      assertWeatherTransportSettlement();
       return withoutZoneCurrent({ ...result, forecast, stale: false, fallback: true, attempts });
     } catch (error) {
+      assertWeatherTransportSettlement();
       attempts.push({ provider: name, message: error instanceof Error ? error.message : String(error) });
     }
   }
@@ -4314,6 +4353,7 @@ await mapWithConcurrency(features, WEATHER_CONCURRENCY, async feature => {
     output.errors.push({ zoneId, message: error instanceof Error ? error.message : String(error) });
   }
 });
+assertWeatherTransportSettlement();
 reportWeatherBuildStage('public-zone-forecast-ready', {
   resolvedZoneCount: Object.keys(output.zones).length,
   errorCount: output.errors.length,
@@ -4419,8 +4459,10 @@ if (!observationDue) {
   await mapWithConcurrency(features, WEATHER_CONCURRENCY, async feature => {
     const zoneId = feature.properties?.id;
     const observation = await observedDmiWaterLevel(feature, coastCorridors);
+    assertWeatherTransportSettlement();
     if (zoneId && output.zones[zoneId]) applyObservedWaterLevel(output.zones[zoneId], feature, observation, generatedAt);
   });
+  assertWeatherTransportSettlement();
   dmiPersistentRuntime.lastObservationAt = generatedAt;
   dmiPersistentRuntime.observations ??= {};
   dmiPersistentRuntime.observations.lastAttemptAt = generatedAt;
@@ -4586,7 +4628,11 @@ delete nextDmiForecastStore.runtime.rateLimitedUntil;
 nextDmiForecastStore.coverage = summarizeAvailableCoverage(nextDmiForecastStore.zones, generatedAt, dmiForecastCoverage, round);
 nextDmiForecastStore.dataQuality = summarizeDmiComponentCoverage(nextDmiForecastStore.zones, generatedAt);
 output.weatherEngine.dmiForecastCache = { ...nextDmiForecastStore.coverage, ...nextDmiForecastStore.dataQuality };
-const rawStationRegistry = await dmiWaterStations().catch(() => readCachedWaterStations());
+const rawStationRegistry = await dmiWaterStations().catch(error => {
+  if (isWeatherTransportStopUnproved(error)) throw error;
+  assertWeatherTransportSettlement();
+  return readCachedWaterStations();
+});
 const retainedWaterSourceIndex = await unpackWaterSourceForecastContinuity(
   dmiForecastStore.waterSourceContinuity, canonicalForecastHour(generatedAt),
 );
@@ -4601,7 +4647,11 @@ nextDmiForecastStore.waterSourceContinuity = await packWaterSourceForecastContin
   waterSourceForecastIndex, canonicalForecastHour(generatedAt),
 );
 const forecastAwareRegistry = applyWaterSourceForecastStatus(rawStationRegistry, waterSourceForecastIndex, generatedAt, { minimumHours: 96 });
-const qualityLevels = dmiObservationSkipReason ? await cachedStationLevels(generatedAt) : await dmiLatestSeaLevels().catch(() => new Map());
+const qualityLevels = dmiObservationSkipReason ? await cachedStationLevels(generatedAt) : await dmiLatestSeaLevels().catch(error => {
+  if (isWeatherTransportStopUnproved(error)) throw error;
+  assertWeatherTransportSettlement();
+  return new Map();
+});
 const observationResultUsable = !dmiObservationSkipReason && dmiSeaLevelObservationRun.succeeded && dmiSeaLevelObservationRun.validLevelCount > 0;
 let stationLifecycle = await updateStationObservationLifecycle(forecastAwareRegistry, qualityLevels, generatedAt, { observationAttempted: observationResultUsable, forecastStore: nextDmiForecastStore });
 let stationRegistry = stationLifecycle.stations;

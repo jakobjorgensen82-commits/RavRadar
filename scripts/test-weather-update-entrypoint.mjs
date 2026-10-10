@@ -10,11 +10,82 @@ const producerPath = new URL('./update-weather.mjs', import.meta.url);
 const sourceText = async file => (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 
+function inverseOceanObsSettlement(source) {
+  const invert = (after, before) => {
+    assert.equal(source.split(after).length, 2, 'exact OceanObs delta must occur once');
+    source = source.replace(after, before);
+  };
+  invert("import { assertWeatherTransportSettlement, isWeatherTransportStopUnproved, throwWeatherTransportStopUnproved } from './lib/weather-transport-settlement.mjs';",
+    "import { assertWeatherTransportSettlement, throwWeatherTransportStopUnproved } from './lib/weather-transport-settlement.mjs';");
+  invert('    const inputs = [dmiWaterStations(), dmiLatestSeaLevels(), waterStationRouting(), cachedStationLevels(new Date().toISOString())];\n'
+    + '    let values;\n'
+    + '    try { values = await Promise.all(inputs); }\n'
+    + '    catch (firstError) {\n'
+    + '      const settled = await Promise.allSettled(inputs);\n'
+    + "      if (settled.some(result => result.status === 'rejected' && isWeatherTransportStopUnproved(result.reason))) {\n"
+    + '        throwWeatherTransportStopUnproved(inputs, firstError);\n'
+    + '      }\n'
+    + '      throw firstError;\n'
+    + '    }\n'
+    + '    const [rawStations, freshLevels, routing, cachedLevels] = values;\n',
+  '    const [rawStations, freshLevels, routing, cachedLevels] = await Promise.all([dmiWaterStations(), dmiLatestSeaLevels(), waterStationRouting(), cachedStationLevels(new Date().toISOString())]);\n');
+  const observedCatch = '    return interpolateWaterLevelAlongCoast(point, coastPath, stations, levels, { haversineKm, requireBracket: true });\n  } catch (error) {\n';
+  invert(observedCatch + '    if (isWeatherTransportStopUnproved(error)) throw error;\n    assertWeatherTransportSettlement();\n', observedCatch);
+  const observation = '    const observation = await observedDmiWaterLevel(feature, coastCorridors);\n';
+  invert(observation + '    assertWeatherTransportSettlement();\n', observation);
+  invert('  });\n  assertWeatherTransportSettlement();\n  dmiPersistentRuntime.lastObservationAt = generatedAt;\n',
+    '  });\n  dmiPersistentRuntime.lastObservationAt = generatedAt;\n');
+  invert('const rawStationRegistry = await dmiWaterStations().catch(error => {\n'
+    + '  if (isWeatherTransportStopUnproved(error)) throw error;\n  assertWeatherTransportSettlement();\n'
+    + '  return readCachedWaterStations();\n});\n',
+  'const rawStationRegistry = await dmiWaterStations().catch(() => readCachedWaterStations());\n');
+  invert('const qualityLevels = dmiObservationSkipReason ? await cachedStationLevels(generatedAt) : await dmiLatestSeaLevels().catch(error => {\n'
+    + '  if (isWeatherTransportStopUnproved(error)) throw error;\n  assertWeatherTransportSettlement();\n'
+    + '  return new Map();\n});\n',
+  'const qualityLevels = dmiObservationSkipReason ? await cachedStationLevels(generatedAt) : await dmiLatestSeaLevels().catch(() => new Map());\n');
+  return source;
+}
+
+function inverseLegacyTransportSettlement(source) {
+  source = inverseOceanObsSettlement(source);
+  const transportImport = "import { assertWeatherTransportSettlement, throwWeatherTransportStopUnproved } from './lib/weather-transport-settlement.mjs';\n";
+  assert.equal(source.split(transportImport).length, 2);
+  source = source.replace(transportImport, '');
+  const guards = /^[ \t]*assertWeatherTransportSettlement\(\);\n/gm;
+  assert.equal([...source.matchAll(guards)].length, 12);
+  source = source.replace(guards, '');
+  const invert = (after, before) => {
+    assert.equal(source.split(after).length, 2, 'exact transport delta must occur once');
+    source = source.replace(after, before);
+  };
+  invert('    let response = null, bodySettled = false, cancellation = null;\n', '');
+  invert('      response = await fetch(url, {\n', '      const response = await fetch(url, {\n');
+  invert('      const text = await response.text();\n'
+    + '      bodySettled = true; // Fulfilled body consumption, before JSON parsing.\n'
+    + '      const data = JSON.parse(text);\n', '      const data = await response.json();\n');
+  invert('      const firstFailure = { error }; // Never use error truthiness for ownership.\n'
+    + '      if (response && !bodySettled) {\n'
+    + '        try {\n'
+    + '          cancellation = response.body?.cancel();\n'
+    + '          await cancellation;\n'
+    + '          bodySettled = true;\n'
+    + '        } catch {\n'
+    + '          controller.abort();\n'
+    + '          throwWeatherTransportStopUnproved({ response, controller, cancellation }, firstFailure.error);\n'
+    + '        }\n'
+    + '      }\n', '');
+  invert('    } finally {\n      controller.abort();\n      clearTimeout(timeout);\n',
+    '    } finally {\n      clearTimeout(timeout);\n');
+  invert('      if (dmi && (!response || bodySettled)) releaseDmiRequestSlot();\n',
+    '      if (dmi) releaseDmiRequestSlot();\n');
+  return source;
+}
+
 // Main 42eb83053cbcc878e51faac73e803846ee54234b has a top-level updater,
 // not the isolated 519 restored SOURCE/session API. This checks the actual
 // DMI queue body only; it is not SOURCE, original-B/S, history or whole-job proof.
 test('main updater is byte-identical outside the checkpoint import and normal queue refusal', async () => {
-  const source = await sourceText(producerPath);
+  const source = inverseLegacyTransportSettlement(await sourceText(producerPath));
   const currentImport = "import { readDmiForecastFile, writeDmiForecastFileAtomic, isDmiForecastCheckpointStopUnproved } from './lib/dmi-forecast-file.mjs';";
   const baselineImport = "import { readDmiForecastFile, writeDmiForecastFileAtomic } from './lib/dmi-forecast-file.mjs';";
   const refusal = "    // A live/uncertain checkpoint is not a provider miss. Preserve the actual\n    // writer refusal before any later zone, component, history or public write.\n    if (isDmiForecastCheckpointStopUnproved(error)) throw error;\n";

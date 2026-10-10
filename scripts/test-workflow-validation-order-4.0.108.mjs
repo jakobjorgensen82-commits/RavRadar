@@ -86,7 +86,7 @@ productionWorkflowNames.add('run-current-weather-once.yml');
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'audit-saved-weather-inputs.yml', 'audit-sealed-current-source.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'notify-weather-failure.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'recover-sealed-weather-36396834072.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml', 'watch-missed-weather-schedule.yml'];
+const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'audit-native-current-grid.yml', 'audit-saved-weather-inputs.yml', 'audit-sealed-current-source.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'notify-weather-failure.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'recover-sealed-weather-36396834072.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml', 'watch-missed-weather-schedule.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
@@ -213,11 +213,24 @@ for (const workflowName of sourceGateWorkflowNames) {
     if (sourceGateRun < 0) break;
     sourceGatePathCount += 1;
     const sourceGateStep = workflow.lastIndexOf('\n      - name:', sourceGateRun);
-    const dependencyStep = workflow.lastIndexOf('\n      - name:', sourceGateStep - 1);
+    let dependencyStep = workflow.lastIndexOf('\n      - name:', sourceGateStep - 1);
+    let dependencyEnd = sourceGateStep;
+    if (workflowName === 'validate-pull-request.yml') {
+      dependencyStep = workflow.lastIndexOf('\n      - name: Install source-gate dependencies\n', sourceGateStep - 1);
+      dependencyEnd = workflow.indexOf('\n      - ', dependencyStep + 1);
+      assert.ok(dependencyStep >= 0 && dependencyEnd > dependencyStep && dependencyEnd < sourceGateStep,
+        'PR source gate requires its actual dependency block before the fixed source-only prefix');
+      const intervening = workflow.slice(dependencyEnd, sourceGateStep);
+      assert.deepEqual([...intervening.matchAll(/^      - (.+)$/gm)].map(match => match[1]), [
+        'name: Validate bounded native current diagnosis on artificial data only',
+      ], 'Only the exact ordered PR source-only steps may intervene; no unknown step');
+      assert.doesNotMatch(intervening, /^\s+(?:if|continue-on-error):/m,
+        'The PR ownership/native prefix must run unconditionally and fail closed');
+    }
     if (sourceGateStep < 0 || dependencyStep < 0) {
       throw new Error(`${workflowName}: validate:source mangler en umiddelbart forudgående dependency-step.`);
     }
-    const dependencyBlock = workflow.slice(dependencyStep, sourceGateStep);
+    const dependencyBlock = workflow.slice(dependencyStep, dependencyEnd);
     const sourceGateBlockEnd = workflow.indexOf('\n\n', sourceGateStep);
     const sourceGateBlock = workflow.slice(sourceGateStep, sourceGateBlockEnd < 0 ? workflow.length : sourceGateBlockEnd);
     if (!dependencyBlock.includes('name: Install source-gate dependencies')) {
@@ -276,7 +289,7 @@ for (const workflowName of sourceGateWorkflowNames) {
     searchFrom = sourceGateRun + 1;
   }
 }
-assert.equal(sourceGatePathCount, 5, 'Præcis fem kendte validate:source-stier skal have dependency- og historikdækning.');
+assert.equal(sourceGatePathCount, 6, 'Præcis seks kendte validate:source-stier skal have dependency- og historikdækning.');
 const historicalWavePilot = fs.readFileSync(`${workflowDirectory}/build-ravscore-historical-wave-pilot.yml`, 'utf8').replace(/\r\n/g, '\n');
 for (const marker of [
   'workflow_dispatch:',
@@ -322,6 +335,8 @@ for (const marker of [
 const prGateOrder = [
   'name: Require exact pull-request source head',
   'name: Build deterministic source-tree content identity',
+  'name: Install source-gate dependencies',
+  'name: Validate bounded native current diagnosis on artificial data only',
   'name: Validate source contracts and release governance',
   'name: Require validated source tree to remain unchanged',
   'name: Upload tree-content source validation proof',
@@ -2054,25 +2069,73 @@ if (/\b(?:push|pull_request|schedule|workflow_run):/.test(tripStorageDeployment)
 if (tripStorageDeployment.includes('pages: write') || tripStorageDeployment.includes('id-token: write') || tripStorageDeployment.includes('deploy-pages')) {
   throw new Error('Turlager-deploymentet må ikke kunne deploye Pages.');
 }
-const exactSourceValidation = tripStorageDeployment.indexOf('name: Validate exact source head before external writes');
-const exactSourceProof = tripStorageDeployment.indexOf('name: Verify exact-content source validation with GitHub');
-const legacySourceFetchBeforeValidation = Math.max(
-  tripStorageDeployment.indexOf('name: Fetch exact public Candidate G source commit before source validation'),
-  tripStorageDeployment.indexOf('name: Prepare exact pinned Candidate G source before source validation'),
-);
-if (!(exactSourceProof >= 0 && exactSourceProof < legacySourceFetchBeforeValidation
-  && legacySourceFetchBeforeValidation < exactSourceValidation)
-  || tripStorageDeployment.split('git fetch --no-tags --depth=1 origin "$legacy_source_head"').length - 1 !== 1) {
-  throw new Error('Turlager-deploymentet skal kontrollere sourceproof og kun derefter hente præcis den pinnede Candidate G-sourcecommit før validate:source.');
-}
-for (const marker of [
-  "if: steps.source-proof.outputs.required != 'false'",
-  "steps.source-record.outcome == 'success' || (steps.source-proof.outcome == 'success' && steps.source-proof.outputs.required == 'false')",
-]) {
-  if (!tripStorageDeployment.includes(marker)) {
-    throw new Error(`Turlager-deploymentets exact-content sourceproof mangler ${marker}`);
+function assertTripStorageSourceValidation(workflow) {
+  const jobsStart = workflow.indexOf('\njobs:\n');
+  assert.ok(jobsStart >= 0, 'Turlager-workflowet skal have en eksplicit jobs-sektion.');
+  const headers = [...workflow.slice(jobsStart).matchAll(/^  ([A-Za-z_][A-Za-z0-9_-]*):[ \t]*$/gm)];
+  assert.deepEqual(headers.map((match) => match[1]).sort(),
+    ['deploy-trip-storage', 'reject-unknown-operation', 'repair-existing-worker'],
+    'Turlager-workflowet må kun have de to kendte WRITE-jobs og det afvisende job.');
+  const jobs = new Map(headers.map((match, index) => [match[1], workflow.slice(
+    jobsStart + match.index, index + 1 < headers.length ? jobsStart + headers[index + 1].index : workflow.length,
+  )]));
+  const fetchCommand = 'git fetch --no-tags --depth=1 origin "$legacy_source_head"';
+  assert.equal(workflow.split(fetchCommand).length - 1, 2,
+    'Præcis de to kendte WRITE-jobs må hver hente én pinned sourcecommit.');
+  assert.match(jobs.get('reject-unknown-operation'), /^      - run: exit 1$/m);
+  for (const jobName of ['deploy-trip-storage', 'repair-existing-worker']) {
+    const job = jobs.get(jobName);
+    const proofName = 'name: Verify exact-content source validation with GitHub';
+    const proofCommand = 'run: node scripts/weather-source-gate.mjs check';
+    const gateName = 'name: Validate exact source head before external writes';
+    const gateCommand = 'run: npm run validate:source';
+    for (const marker of [proofName, proofCommand, fetchCommand, gateName, gateCommand]) {
+      assert.equal(job.split(marker).length - 1, 1, `${jobName} skal have præcis én ${marker}`);
+    }
+    const fetchSteps = [...job.matchAll(/name: (?:Fetch exact public Candidate G source commit|Prepare exact pinned Candidate G source) before source validation/g)];
+    assert.equal(fetchSteps.length, 1, `${jobName} skal have præcis ét pinned source-trin.`);
+    const exactSourceProof = job.indexOf(proofName);
+    const legacySourceFetchBeforeValidation = fetchSteps[0].index;
+    const exactSourceValidation = job.indexOf(gateName);
+    if (!(exactSourceProof >= 0 && exactSourceProof < job.indexOf(proofCommand)
+      && job.indexOf(proofCommand) < legacySourceFetchBeforeValidation
+      && legacySourceFetchBeforeValidation < job.indexOf(fetchCommand)
+      && job.indexOf(fetchCommand) < exactSourceValidation
+      && exactSourceValidation < job.indexOf(gateCommand))) {
+      throw new Error('Turlager-deploymentet skal kontrollere sourceproof og kun derefter hente præcis den pinnede Candidate G-sourcecommit før validate:source.');
+    }
+    for (const marker of [
+      "if: steps.source-proof.outputs.required != 'false'",
+      "steps.source-record.outcome == 'success' || (steps.source-proof.outcome == 'success' && steps.source-proof.outputs.required == 'false')",
+    ]) {
+      if (!job.includes(marker)) {
+        throw new Error(`Turlager-deploymentets exact-content sourceproof mangler ${marker} i ${jobName}`);
+      }
+    }
   }
+  return jobs;
 }
+const tripSourceJobs = assertTripStorageSourceValidation(tripStorageDeployment);
+for (const jobName of ['deploy-trip-storage', 'repair-existing-worker']) {
+  const job = tripSourceJobs.get(jobName);
+  const fetchCommand = 'git fetch --no-tags --depth=1 origin "$legacy_source_head"';
+  const proofCommand = 'run: node scripts/weather-source-gate.mjs check';
+  const gateCommand = 'run: npm run validate:source';
+  const mutateJob = (changed) => tripStorageDeployment.replace(job, changed);
+  assert.throws(() => assertTripStorageSourceValidation(mutateJob(job.replace(fetchCommand, `${fetchCommand}\n          ${fetchCommand}`))),
+    undefined, `${jobName}: en ekstra fetch skal afvises.`);
+  for (const [left, right] of [[proofCommand, fetchCommand], [fetchCommand, gateCommand]]) {
+    const reordered = job.replace(left, '__TRIP_SOURCE_ORDER__').replace(right, left).replace('__TRIP_SOURCE_ORDER__', right);
+    assert.throws(() => assertTripStorageSourceValidation(mutateJob(reordered)),
+      undefined, `${jobName}: forkert rækkefølge af proof/fetch/gate skal afvises.`);
+  }
+  assert.throws(() => assertTripStorageSourceValidation(tripStorageDeployment.replace(job, '')),
+    undefined, `${jobName}: et manglende WRITE-job skal afvises.`);
+  assert.throws(() => assertTripStorageSourceValidation(mutateJob(job.replace(`  ${jobName}:`, '  unknown-write-job:'))),
+    undefined, `${jobName}: et ukendt WRITE-job skal afvises.`);
+}
+const exactSourceValidation = tripStorageDeployment.indexOf(tripSourceJobs.get('deploy-trip-storage'))
+  + tripSourceJobs.get('deploy-trip-storage').indexOf('name: Validate exact source head before external writes');
 const tripQualityCas = tripStorageDeployment.indexOf('name: Reconfirm current origin/main before the Candidate G database contract');
 const tripQualityWrite = tripStorageDeployment.indexOf('name: Atomically apply and verify the Candidate G trip-quality contract');
 const d1SchemaCas = tripStorageDeployment.indexOf('name: Reconfirm current origin/main before D1 schema and phase inspection');
@@ -2190,8 +2253,56 @@ if (!(prepareD1Position < legacyIntentPosition
   && reconcilePosition < finalEdgeProbePosition)) {
   throw new Error('Turlager-cutover skal være legacy-marker → maintenance/new Edge-attestation/dræn → Worker → sync → frisk markør → D1-attestation/dræn → reconciliation → slutattestation.');
 }
-if ((tripStorageDeployment.match(/node scripts\/verify-trip-storage-edge\.mjs/g) || []).length !== 9) {
+if ((tripSourceJobs.get('deploy-trip-storage').match(/node scripts\/verify-trip-storage-edge\.mjs/g) || []).length !== 9) {
   throw new Error('Turlager-cutover skal attestere begge Edge-funktioner i normal- og begge fasebevidste failure-forløb.');
+}
+function assertTripRepairEdgeAttestations(repair) {
+  const steps = new Map();
+  for (const name of [
+    'Read-only existing D1 repair preparation and live preflight',
+    'Quiesce the existing D1 installation',
+    'Restore and attest normal D1 after replacement',
+    'Reattest and lease once for D1-only failure roll-forward',
+    'Reattest D1 recovery without masking the primary failure',
+  ]) {
+    const header = `      - name: ${name}\n`;
+    assert.equal(repair.split(header).length - 1, 1, `Repair skal have præcis ét ${name}-trin.`);
+    const start = repair.indexOf(header);
+    const end = repair.indexOf('\n      - name:', start + header.length);
+    steps.set(name, repair.slice(start, end < 0 ? repair.length : end));
+  }
+  const preflight = steps.get('Read-only existing D1 repair preparation and live preflight');
+  const shellCall = /^          node scripts\/verify-trip-storage-edge\.mjs$/gm;
+  assert.equal((repair.match(shellCall) || []).length, 1, 'Repair skal have præcis ét shell-preflight-kald.');
+  assert.equal((preflight.match(shellCall) || []).length, 1, 'Edge-shellkaldet skal ligge i repair-preflight.');
+  assert.match(preflight, /^          EXPECTED_TRIP_STORAGE_MODE: d1$/m);
+  const binding = "            run('EDGE_ATTESTATION', 'node', ['scripts/verify-trip-storage-edge.mjs'], { env: { ...env, EXPECTED_TRIP_STORAGE_MODE: mode } });";
+  for (const [name, mode] of [
+    ['Quiesce the existing D1 installation', 'maintenance'],
+    ['Restore and attest normal D1 after replacement', 'd1'],
+    ['Reattest and lease once for D1-only failure roll-forward', 'maintenance'],
+    ['Reattest D1 recovery without masking the primary failure', 'd1'],
+  ]) {
+    const step = steps.get(name);
+    assert.equal(step.split(binding).length - 1, 1, `${name} skal binde det faktiske Edge-script til mode.`);
+    const calls = [...step.matchAll(/^          edge\('([^'\n]*)'\);$/gm)].map((match) => match[1]);
+    assert.deepEqual(calls, [mode], `${name} skal udføre præcis én Edge-attestation i korrekt mode.`);
+  }
+  return steps;
+}
+const tripRepairJob = tripSourceJobs.get('repair-existing-worker');
+const tripRepairEdgeSteps = assertTripRepairEdgeAttestations(tripRepairJob);
+const tripRepairPreflight = tripRepairEdgeSteps.get('Read-only existing D1 repair preparation and live preflight');
+const tripRepairShellCall = '          node scripts/verify-trip-storage-edge.mjs';
+for (const replacement of ['', `${tripRepairShellCall}\n${tripRepairShellCall}`]) {
+  assert.throws(() => assertTripRepairEdgeAttestations(tripRepairJob.replace(tripRepairPreflight,
+    tripRepairPreflight.replace(tripRepairShellCall, replacement))), undefined, 'Manglende eller dobbelt repair-preflight skal afvises.');
+}
+const tripRepairQuiesce = tripRepairEdgeSteps.get('Quiesce the existing D1 installation');
+const tripRepairEdgeCall = "          edge('maintenance');";
+for (const replacement of ['', `${tripRepairEdgeCall}\n${tripRepairEdgeCall}`, "          edge('d1');"]) {
+  assert.throws(() => assertTripRepairEdgeAttestations(tripRepairJob.replace(tripRepairQuiesce,
+    tripRepairQuiesce.replace(tripRepairEdgeCall, replacement))), undefined, 'Manglende, dobbelt eller forkert-mode repair-attestation skal afvises.');
 }
 if (!tripStorageDeployment.includes('EXPECTED_TRIP_STORAGE_MODE: supabase')
   || !tripStorageDeployment.includes('EXPECTED_TRIP_STORAGE_MODE: maintenance')

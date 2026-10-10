@@ -1,25 +1,25 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.567';
-import { assertAuthIdentitySettled, authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.567';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.568';
+import { assertAuthIdentitySettled, authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.568';
 import {
   TRIP_EVIDENCE_SCHEMA_VERSION,
   assertObservationTripQualityBinding,
   assertTripEvidencePrivacy,
   migrateLegacyUnattestedObservationColumns,
   toObservationTripColumns
-} from './trip-evidence-contract.js?v=4.0.567';
+} from './trip-evidence-contract.js?v=4.0.568';
 import {
   assertTripObservationNestedPrivacy,
   expectedCalibrationEligibility,
   projectTripStoragePayload,
   tripEvidenceIntegrityIssues
-} from './calibration-eligibility.js?v=4.0.567';
+} from './calibration-eligibility.js?v=4.0.568';
 import {
   RAVSCORE_MODEL_ID,
   assertRavScoreModelBinding,
   ravScoreModelBinding
-} from '../core/ravscore-model-contract.js?v=4.0.567';
-import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.567';
-import { markTripEvidenceSubmitted, tripEvidenceStorageKeys } from './trip-evidence-store.js?v=4.0.567';
+} from '../core/ravscore-model-contract.js?v=4.0.568';
+import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.568';
+import { markTripEvidenceSubmitted, tripEvidenceStorageKeys } from './trip-evidence-store.js?v=4.0.568';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
 const LOCAL_KEY='ravradar-observations-v2';
 const OUTBOX_KEY='ravradar-observation-outbox-v1';

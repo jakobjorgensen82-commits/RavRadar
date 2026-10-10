@@ -7,6 +7,7 @@ import { loadOpenMeteoPartRuntime, runOpenMeteoPartRuntime } from './open-meteo-
 import { runCopernicusComponentRuntime } from './copernicus-component-runtime.mjs';
 import { createWeatherComponentSelectionHistory, snapshotWeatherComponentSelectionHistory } from './weather-component-selection-history.mjs';
 import { SCORING_RESERVE_COMPONENTS } from './ravscore-production-adapters.mjs';
+import { assertWeatherTransportSettlement, isWeatherTransportStopUnproved } from './weather-transport-settlement.mjs';
 
 const HISTORY_MAX_BYTES = 128 * 1024 * 1024;
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -70,6 +71,7 @@ export async function prepareWeatherComponentRuntime({
   loadOpenMeteo = loadOpenMeteoPartRuntime, runOpenMeteo = runOpenMeteoPartRuntime,
   runCopernicus = runCopernicusComponentRuntime,
 } = {}) {
+  assertWeatherTransportSettlement();
   if (typeof privateCacheRoot !== 'string' || !path.isAbsolute(privateCacheRoot)
     || path.resolve(privateCacheRoot) === path.parse(privateCacheRoot).root
     || typeof readVerifiedHourly !== 'function'
@@ -95,14 +97,25 @@ export async function prepareWeatherComponentRuntime({
   let omLoadFailed = false;
   // Load both retained sources before deciding where acquisition is needed.
   try { om = await loadOpenMeteo(omOptions); inputs.openMeteoComponentIndex = om.index; }
-  catch { omLoadFailed = true; failures.push('OPEN_METEO_COMPONENT_CACHE_UNAVAILABLE'); }
-  const plan = () => buildWeatherComponentNeeds({ parts, productionReferenceAt,
-    readVerifiedHourly: part => readVerifiedHourly(part, inputs) });
+  catch (error) {
+    if (isWeatherTransportStopUnproved(error)) throw error;
+    assertWeatherTransportSettlement();
+    omLoadFailed = true; failures.push('OPEN_METEO_COMPONENT_CACHE_UNAVAILABLE');
+  }
+  const plan = () => {
+    assertWeatherTransportSettlement();
+    return buildWeatherComponentNeeds({ parts, productionReferenceAt,
+      readVerifiedHourly: part => readVerifiedHourly(part, inputs) });
+  };
   try {
     cp = await runCopernicus({ ...cpOptions,
       needs: plan().needs.filter(row => SCORING_RESERVE_COMPONENTS.includes(row.component)), budgetMs: 0 });
     inputs.copernicusComponentIndex = cp.index;
-  } catch { failures.push('COPERNICUS_COMPONENT_CACHE_UNAVAILABLE'); }
+  } catch (error) {
+    if (isWeatherTransportStopUnproved(error)) throw error;
+    assertWeatherTransportSettlement();
+    failures.push('COPERNICUS_COMPONENT_CACHE_UNAVAILABLE');
+  }
   const before = plan();
   // Report every necessary missing component, but do not repeatedly spend
   // acquisition budget on fields whose source policy excludes reserves.
@@ -116,7 +129,9 @@ export async function prepareWeatherComponentRuntime({
       copernicusPasses[pass] = copernicusPassSummary(cp.summary,
         { requestedNeeds: needs.length, budgetMs,
           outcome: cp.summary?.transportFailure ? 'RECOVERED_AFTER_TRANSPORT_FAILURE' : 'COMPLETED' });
-    } catch {
+    } catch (error) {
+      if (isWeatherTransportStopUnproved(error)) throw error;
+      assertWeatherTransportSettlement();
       failures.push(failureCode);
       copernicusPasses[pass] = copernicusPassSummary(null,
         { requestedNeeds: needs.length, budgetMs, outcome: 'FAILED' });
@@ -125,7 +140,9 @@ export async function prepareWeatherComponentRuntime({
       try {
         cp = await runCopernicus({ ...cpOptions, needs: [], budgetMs: 0 });
         inputs.copernicusComponentIndex = cp.index;
-      } catch {
+      } catch (error) {
+        if (isWeatherTransportStopUnproved(error)) throw error;
+        assertWeatherTransportSettlement();
         cp = null;
         inputs.copernicusComponentIndex = null;
         failures.push('COPERNICUS_COMPONENT_DURABLE_SNAPSHOT_UNAVAILABLE');
@@ -154,7 +171,9 @@ export async function prepareWeatherComponentRuntime({
           .filter(row => SCORING_RESERVE_COMPONENTS.includes(row.component)), budgetMs: openMeteoBudgetMs,
         requestTimeoutMs: openMeteoRequestTimeoutMs, maxRetries: openMeteoMaximumRetries });
       inputs.openMeteoComponentIndex = om.index;
-    } catch {
+    } catch (error) {
+      if (isWeatherTransportStopUnproved(error)) throw error;
+      assertWeatherTransportSettlement();
       failures.push('OPEN_METEO_COMPONENT_REFRESH_UNAVAILABLE');
       // The read-only loader can return a rebased/empty in-memory bank which
       // has never existed on disk. Even a failed acquisition may have saved
@@ -164,7 +183,9 @@ export async function prepareWeatherComponentRuntime({
         om = await runOpenMeteo({ ...omOptions, requiredPairs: [], budgetMs: 0,
           requestTimeoutMs: openMeteoRequestTimeoutMs, maxRetries: openMeteoMaximumRetries });
         inputs.openMeteoComponentIndex = om.index;
-      } catch {
+      } catch (error) {
+        if (isWeatherTransportStopUnproved(error)) throw error;
+        assertWeatherTransportSettlement();
         om = null;
         inputs.openMeteoComponentIndex = null;
         failures.push('OPEN_METEO_COMPONENT_DURABLE_SNAPSHOT_UNAVAILABLE');

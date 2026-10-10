@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { spawnSync } from 'node:child_process';
 import { loadOpenMeteoPartRuntime, runOpenMeteoPartRuntime } from './lib/open-meteo-part-runtime.mjs';
 import { OPEN_METEO_PART_RESPONSE_MAX_BYTES, selectedOpenMeteoPartRecord,
   buildOpenMeteoPartRequest, readOpenMeteoPartResponse, mergeOpenMeteoPartBank } from './lib/open-meteo-part-bank.mjs';
@@ -180,4 +181,129 @@ test('read-only load rebases a legitimate central parent change without silently
   assert.equal(result.bank.records.length, 1);
   assert.equal(rebased.bank.records.length, 0);
   assert.equal(await fs.readFile(input.bankPath, 'utf8'), before, 'read-only load never overwrites the original bank');
+});
+
+const settlementDeferred = () => {
+  let resolve;
+  const promise = new Promise(done => { resolve = done; });
+  return { promise, resolve };
+};
+const settlementPause = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+
+test('PART settlement: HTTP retry waits for actual body cancellation', async t => {
+  const input = await fixture(t), cancel = settlementDeferred(), entered = settlementDeferred();
+  let calls = 0, settled = false, operation;
+  try {
+    operation = runOpenMeteoPartRuntime({ ...input, fetchImpl: async () => {
+      calls++;
+      if (calls > 1) return new Response(responseText);
+      return new Response(new ReadableStream({ cancel() { entered.resolve(); return cancel.promise; } }), { status: 503 });
+    } });
+    operation.then(() => { settled = true; }, () => { settled = true; });
+    await entered.promise;
+    await settlementPause(300);
+    assert.deepEqual({ calls, settled }, { calls: 1, settled: false }, 'cancel request is not completed teardown');
+    await assert.rejects(fs.access(path.join(input.privateCacheRoot, 'weather-component-fallback-cursor.json')), /ENOENT/);
+    cancel.resolve();
+    const result = await operation;
+    assert.equal(calls, 2);
+    assert.equal(result.summary.transport.retries, 1);
+    assert.equal(selected(result.index).values.windSpeedMps, 4);
+  } finally { cancel.resolve(); if (operation) await operation.catch(() => {}); }
+});
+
+test('PART settlement: late headers are cancelled before timeout returns and never admitted', async t => {
+  const input = await fixture(t), headers = settlementDeferred(), aborted = settlementDeferred();
+  const cancel = settlementDeferred(), cancelling = settlementDeferred();
+  let controller, operation, settled = false, cancelCalls = 0;
+  const response = new Response(new ReadableStream({
+    start(value) { controller = value; },
+    cancel() { cancelCalls++; cancelling.resolve(); return cancel.promise; },
+  }));
+  try {
+    operation = runOpenMeteoPartRuntime({ ...input, requestTimeoutMs: 20, maxRetries: 0,
+      fetchImpl: (_url, { signal }) => {
+        signal.addEventListener('abort', aborted.resolve, { once: true });
+        return headers.promise;
+      },
+    });
+    operation.then(() => { settled = true; }, () => { settled = true; });
+    await aborted.promise;
+    await settlementPause(20);
+    assert.equal(settled, false, 'timed-out fetch is still actually pending');
+    headers.resolve(response);
+    await Promise.race([cancelling.promise, settlementPause(100)]);
+    assert.equal(cancelCalls, 1, 'late headers must enter owned cancellation');
+    assert.equal(settled, false, 'late response cancellation must itself finish');
+    cancel.resolve();
+    const result = await operation;
+    assert.equal(result.summary.transport.timeouts, 1);
+    assert.equal(result.summary.failures.length, 1);
+    assert.equal(result.bank.records.length, 0);
+  } finally {
+    headers.resolve(response); cancel.resolve();
+    try { controller.close(); } catch { /* Already cancelled by the actual caller. */ }
+    if (operation) await operation.catch(() => {});
+  }
+});
+
+test('PART settlement: timed-out reader awaits cancellation before cursor or return', async t => {
+  const input = await fixture(t), aborted = settlementDeferred(), cancel = settlementDeferred();
+  let controller, operation, settled = false, cancellations = 0;
+  try {
+    operation = runOpenMeteoPartRuntime({ ...input, requestTimeoutMs: 20, maxRetries: 0,
+      fetchImpl: async (_url, { signal }) => {
+        signal.addEventListener('abort', aborted.resolve, { once: true });
+        return new Response(new ReadableStream({ start(value) { controller = value; },
+          cancel() { cancellations++; return cancel.promise; } }));
+      },
+    });
+    operation.then(() => { settled = true; }, () => { settled = true; });
+    await aborted.promise;
+    await settlementPause(20);
+    assert.equal(settled, false);
+    assert.equal(cancellations, 1);
+    await assert.rejects(fs.access(path.join(input.privateCacheRoot, 'weather-component-fallback-cursor.json')), /ENOENT/);
+    cancel.resolve();
+    const result = await operation;
+    assert.equal(result.summary.transport.timeouts, 1);
+    assert.equal(result.bank.records.length, 0);
+  } finally {
+    cancel.resolve(); try { controller?.close(); } catch { /* Actual cancellation already closed it. */ }
+    if (operation) await operation.catch(() => {});
+  }
+});
+
+test('PART settlement: rejected cancellation retains the actual resource and falsy first cause', async t => {
+  for (const first of [0, null]) await t.test(String(first), async st => {
+    const input = await fixture(st);
+    // Each ordinary module instance has a permanent STOP latch. An isolated
+    // child owns only these synthetic streams; no public reset or provider.
+    const code = `
+      import assert from 'node:assert/strict';
+      import fs from 'node:fs/promises';
+      import { runOpenMeteoPartRuntime } from './scripts/lib/open-meteo-part-runtime.mjs';
+      import { assertWeatherTransportSettlement, isWeatherTransportStopUnproved } from './scripts/lib/weather-transport-settlement.mjs';
+      const input = ${JSON.stringify({ ...input, now: undefined })};
+      const first = ${JSON.stringify(first)};
+      let calls = 0, cancellationCalls = 0, caught;
+      const response = new Response(new ReadableStream({ cancel() { cancellationCalls++; return Promise.reject(new Error('synthetic cleanup failure')); } }));
+      Object.defineProperty(response, 'url', { get() { throw first; } });
+      try { await runOpenMeteoPartRuntime({ ...input, fetchImpl: async () => { calls++; return response; } }); }
+      catch (error) { caught = error; }
+      assert.equal(isWeatherTransportStopUnproved(caught), true);
+      assert.equal(caught.cause, first);
+      assert.equal(calls, 1); assert.equal(cancellationCalls, 1);
+      assert.throws(assertWeatherTransportSettlement, error => error === caught);
+      await assert.rejects(runOpenMeteoPartRuntime({ ...input, budgetMs: 0, fetchImpl: () => { calls++; } }), error => error === caught);
+      assert.equal(calls, 1);
+      await assert.rejects(fs.access(input.privateCacheRoot + '/weather-component-fallback-cursor.json'), /ENOENT/);
+    `;
+    const child = spawnSync(process.execPath, ['--input-type=module', '-e', code], {
+      cwd: new URL('..', import.meta.url), encoding: 'utf8', timeout: 5000, maxBuffer: 64 * 1024,
+    });
+    assert.equal(child.error, undefined);
+    assert.equal(child.status, 0, child.stderr);
+    assert.equal(child.stdout, '');
+  });
 });

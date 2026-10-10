@@ -1,4 +1,20 @@
-# Lokal 4.0.567 – stop af egne procesgrupper
+# Lokal 4.0.568 – afvent svar før fallback og næste skrivning
+
+Den lokale kandidat afventer den faktisk startede forespørgsel, svarkrop og eventuelle annullering, før et nyt forsøg eller fallback kan begynde. En anmodning om afbrydelse er ikke bevis for afslutning. Ukendt eller afvist oprydning fastholder den faktiske ressource og stopper det berørte normale forløb før fallback eller næste skrivning; det er ikke en kvittering for samlet writerophør.
+
+Samtidige observationsopslag samles fra de samme allerede startede kald, også når ét fejler først. Den første fejl bevares, mens de øvrige kald afventes; en senere stopusikkerhed må ikke blive en almindelig manglende observation. De normale Open-Meteo-PART-kaldere, observationskaldere og måltests indgår. Sædvanlig fallback efter kendt afslutning, retrybudgetter, providerprioritet, scoreformel, administratorens data, geometri og historiske originaler bevares.
+
+De berørte syntetiske normale måltests består lokalt. 568 er sendt som PR #558. Kildekontrol 38090257227/1 på præcis 936821954340e96e501eb36d647347314911f36b fejlede 11. oktober kl. 00.15.26 dansk tid i trin 9, alene på den forældede statiske assertion i test-weather-acquisition-workflows.mjs:158. Testen forventer den gamle fetch-deklaration; den eksisterende cache-only-kontrol står fortsat før netværkskaldet. Det er en kildekontrolfejl, ikke en vejrhentningsfejl eller bevis for en ny grøn kontrol. 568 er hverken merget eller offentligt leveret.
+
+Den statiske kontrol er lokalt rettet til den faktiske fetchJson; fire negative kontroller og én normal cache-only-prøve består uden netværkskald. Den rettede head afventer ny præcis GitHub-kontrol.
+
+567 på præcis ed80f3811d11b369c14fb39c6878cb3dab5ec648 bestod native Linux- og kildekontrollen kl. 22.41 dansk tid og er fortsat klar, men ikke merget. Ved seneste aflæsning kl. 00.14.07 var den naturlige vejrhentning 38083296276 på main 008 aktiv i trin 104 siden kl. 00.06.40. Dette erstatter den tidligere ventestatus nedenfor, ikke kravet om ny præcis kildekontrol af rettet 568. Den særskilte RESTORE-tilladelse er stadig ubesvaret; afviste produktændringer er ikke genforsøgt.
+
+Den faktiske offentlige evidens for 565 og 566 genbruges uden nye browser- eller providerkald. 566 blev leveret og offentligt kontrolleret kl. 22.24 dansk tid; den lokale 568-kandidat ændrer ikke i sig selv produktionen. De eksisterende I68/C66- og continuationbindinger bevares; ingen bundle-, numerisk SQL- eller originalopgradering følger.
+
+Samlet eksklusiv skrivning, Copernicus-processernes samlede ophør, SAVE, RESTORE, capture, runner-tab og den samlede fireminuttersgrænse er fortsat åbne. Fremtidige claim-/raw-save-/source-CI-kandidater samt særskilte strøm- og cacheændringer er ikke med. Fælles decoder og numerisk 190000-SQL afventer stadig deres præcise afklaringer; ingen nye tilladelser gives. Alle fem hovedmål er åbne. Ingen merge, deploy, SQL-installation eller ekstra vejrhentning under aktiv writer følger af denne forberedelse.
+
+# Historik: lokal 4.0.567 – stop af egne procesgrupper
 
 DMI-supervisoren, den normale finalizer og Copernicus-kalderen opretter på Linux hver sin egen procesgruppe. En afsluttet hovedproces er ikke bevis for, at dens underprocesser er stoppet. Den præcist ejede hovedproces holdes derfor uafventet, indtil sidste stopsignal er sendt til dens verificerede gruppe; efter afventning må gruppen kun kontrolleres, aldrig signaleres på ny. Normal afslutning kræver, at gruppen faktisk er væk. Ukendt ophør giver ikke en normal kvittering for gemning eller genbrug.
 

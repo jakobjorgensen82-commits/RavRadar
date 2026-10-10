@@ -8,6 +8,8 @@ import {
 } from './open-meteo-part-bank.mjs';
 import { produceOpenMeteoPartComponents } from '../produce-open-meteo-part-components.mjs';
 import { pruneUnusableOpenMeteoPartBank } from './open-meteo-usable-part-bank.mjs';
+import { assertWeatherTransportSettlement, isWeatherTransportStopUnproved,
+  throwWeatherTransportStopUnproved } from './weather-transport-settlement.mjs';
 
 const failure = (code, retryable = false, retryAfterMs = 0) =>
   Object.assign(new Error(code), { code, retryable, retryAfterMs });
@@ -76,6 +78,7 @@ async function readBankFile(paths, maximumBytes = OPEN_METEO_PART_BANK_MAX_BYTES
   } finally { await handle?.close(); }
 }
 async function saveBankFile(paths, bank) {
+  assertWeatherTransportSettlement();
   await checkedParent(paths, { create: true });
   const bytes = Buffer.from(JSON.stringify(bank));
   if (bytes.length > OPEN_METEO_PART_BANK_MAX_BYTES) throw failure('OPEN_METEO_PRIVATE_BANK_SIZE_INVALID');
@@ -103,6 +106,7 @@ async function saveBankFile(paths, bank) {
 // This helper does not acquire weather or mutate a cache. The caller supplies
 // current central PARTs and the whole private history+forecast retention span.
 export async function loadOpenMeteoPartRuntime(options = {}) {
+  assertWeatherTransportSettlement();
   const paths = privatePaths(options);
   const previous = await readBankFile(paths);
   const { bank } = pruneUnusableOpenMeteoPartBank(mergeOpenMeteoPartBank(previous, [], options), options);
@@ -117,23 +121,38 @@ function retryAfter(response, now) {
   return Number.isFinite(instant) ? Math.max(0, instant - now()) : 0;
 }
 async function responseAttempt(url, { fetchImpl, timeoutMs, stats, now }) {
+  assertWeatherTransportSettlement();
   const controller = new AbortController();
-  let timer;
-  const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => {
-      stats.timeouts += 1;
-      controller.abort();
-      reject(failure('OPEN_METEO_PART_REQUEST_TIMEOUT', true));
-    }, timeoutMs);
-  });
-  const operation = (async () => {
+  const resource = { controller, response: null, body: null, reader: null, cancellation: null };
+  let firstFailure, cancellationFailure, cancellationSettlement, bodyFinished = false, result;
+  const remember = error => { if (!firstFailure) firstFailure = { value: error }; };
+  const cancelBody = () => {
+    if (!resource.body || bodyFinished || cancellationSettlement) return;
+    try { resource.cancellation = Promise.resolve(resource.reader ? resource.reader.cancel() : resource.body.cancel()); }
+    catch (error) { resource.cancellation = Promise.reject(error); }
+    cancellationSettlement = resource.cancellation.catch(error => {
+      cancellationFailure = { value: error };
+      remember(error);
+    });
+  };
+  const timer = setTimeout(() => {
+    stats.timeouts += 1;
+    remember(failure('OPEN_METEO_PART_REQUEST_TIMEOUT', true));
+    try { controller.abort(); } catch (error) { remember(error); }
+    // Let a cooperative abort settle the pending read first. If it does not,
+    // own and await cancellation too; never detach its rejection or lifetime.
+    queueMicrotask(cancelBody);
+  }, timeoutMs);
+  try {
     let response;
     try { response = await fetchImpl(url, { method: 'GET', redirect: 'error',
       headers: { accept: 'application/json' }, signal: controller.signal }); }
     catch { throw failure('OPEN_METEO_PART_NETWORK_UNAVAILABLE', true); }
+    resource.response = response;
+    resource.body = response.body;
+    if (firstFailure) throw firstFailure.value;
     if (response.url && response.url !== url) throw failure('OPEN_METEO_PART_RESPONSE_URL_MISMATCH');
     if (!response.ok) {
-      void response.body?.cancel().catch(() => {});
       throw failure('OPEN_METEO_PART_HTTP_UNAVAILABLE', response.status === 429 || response.status >= 500,
         retryAfter(response, now));
     }
@@ -142,31 +161,49 @@ async function responseAttempt(url, { fetchImpl, timeoutMs, stats, now }) {
       && Number(declaredSize) > OPEN_METEO_PART_RESPONSE_MAX_BYTES) throw failure('OPEN_METEO_PART_RESPONSE_TOO_LARGE');
     if (!response.body?.getReader) throw failure('OPEN_METEO_PART_RESPONSE_STREAM_REQUIRED');
     const reader = response.body.getReader();
+    resource.reader = reader;
     const chunks = [];
     let bytes = 0;
     try {
       while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        let next;
+        try { next = await reader.read(); }
+        catch (error) { bodyFinished = true; throw error; }
+        const { done, value } = next;
+        if (done) { bodyFinished = true; break; }
         if (!(value instanceof Uint8Array)) throw failure('OPEN_METEO_PART_RESPONSE_BYTES_INVALID');
         bytes += value.byteLength;
         if (bytes > OPEN_METEO_PART_RESPONSE_MAX_BYTES) throw failure('OPEN_METEO_PART_RESPONSE_TOO_LARGE');
         chunks.push(Buffer.from(value));
       }
     } catch (error) {
-      if (error.code?.startsWith('OPEN_METEO_')) throw error;
+      if (error?.code?.startsWith('OPEN_METEO_')) throw error;
       throw failure('OPEN_METEO_PART_RESPONSE_INTERRUPTED', true);
-    } finally { reader.releaseLock(); }
+    }
+    if (firstFailure) throw firstFailure.value;
     stats.responseBytes += bytes;
     let responseText;
     // Preserve a BOM rather than silently stripping bytes from the evidence.
     // JSON admission may subsequently reject it, but its hash is never relabeled.
     try { responseText = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(Buffer.concat(chunks)); }
     catch { throw failure('OPEN_METEO_PART_RESPONSE_ENCODING_INVALID'); }
-    return { responseText, acquiredAt: new Date(now()).toISOString() };
-  })();
-  try { return await Promise.race([operation, timeout]); }
-  finally { clearTimeout(timer); controller.abort(); }
+    result = { responseText, acquiredAt: new Date(now()).toISOString() };
+  } catch (error) { remember(error); }
+  finally {
+    try {
+      if (firstFailure) cancelBody();
+      await cancellationSettlement;
+      if (cancellationFailure) throwWeatherTransportStopUnproved(resource, firstFailure.value);
+      try { resource.reader?.releaseLock(); }
+      catch (error) { remember(error); throwWeatherTransportStopUnproved(resource, firstFailure.value); }
+    } finally {
+      clearTimeout(timer);
+      try { controller.abort(); } catch (error) { remember(error); }
+    }
+  }
+  if (firstFailure) throw firstFailure.value;
+  assertWeatherTransportSettlement();
+  return result;
 }
 
 // The production workflow owns single-writer serialization and private cache
@@ -177,6 +214,7 @@ export async function runOpenMeteoPartRuntime({
   requestTimeoutMs = 15_000, maxRetries = 2,
   fetchImpl = globalThis.fetch, now = Date.now,
 } = {}) {
+  assertWeatherTransportSettlement();
   if (!Number.isInteger(budgetMs) || budgetMs < 0 || !Number.isInteger(requestTimeoutMs) || requestTimeoutMs < 1
     || !Number.isInteger(maxRetries) || maxRetries < 0 || maxRetries > 3 || typeof fetchImpl !== 'function'
     || typeof now !== 'function') throw failure('OPEN_METEO_PART_TRANSPORT_BUDGET_INVALID');
@@ -200,11 +238,14 @@ export async function runOpenMeteoPartRuntime({
     if (openMeteoPartSha256(request) !== openMeteoPartSha256(canonical)) throw failure('OPEN_METEO_PART_TRANSPORT_REQUEST_INVALID');
     const url = `${canonical.endpoint}?${new URLSearchParams(canonical.query)}`;
     for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+      assertWeatherTransportSettlement();
       if (!remaining()) throw failure('OPEN_METEO_PART_RUNTIME_BUDGET_REACHED');
       stats.httpAttempts += 1;
       try { return await responseAttempt(url, { fetchImpl, timeoutMs: Math.min(requestTimeoutMs, remaining()), stats, now }); }
       catch (error) {
-        if (!error.retryable || attempt === maxRetries) throw error;
+        if (isWeatherTransportStopUnproved(error)) throw error;
+        assertWeatherTransportSettlement();
+        if (!error?.retryable || attempt === maxRetries) throw error;
         const delay = Math.max(250 * 2 ** attempt, error.retryAfterMs ?? 0);
         if (delay >= remaining()) throw failure('OPEN_METEO_PART_RUNTIME_BUDGET_REACHED');
         stats.retries += 1;
@@ -221,6 +262,7 @@ export async function runOpenMeteoPartRuntime({
     // Do not decode the entire growing bank again for every small checkpoint.
     checkpoint: bank => saveBankFile(paths, bank),
   });
+  assertWeatherTransportSettlement();
   if (result.summary.lastAttemptedPartId !== null) {
     await saveBankFile(cursorPaths, { kind: 'WEATHER_COMPONENT_FALLBACK_CURSOR', schemaVersion: 1,
       openMeteoLastAttemptedPartId: result.summary.lastAttemptedPartId });

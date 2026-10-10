@@ -4,6 +4,8 @@ import {
 } from './lib/open-meteo-part-bank.mjs';
 import { pruneUnusableOpenMeteoPartBank } from './lib/open-meteo-usable-part-bank.mjs';
 import { hasValue } from './lib/weather-component-needs.mjs';
+import { assertWeatherTransportSettlement, isWeatherTransportStopUnproved,
+  throwWeatherTransportStopUnproved } from './lib/weather-transport-settlement.mjs';
 
 // No top-level provider calls or filesystem writes. The normal producer owns
 // transport deadlines/retries, the private cache path and durable checkpoint.
@@ -14,6 +16,7 @@ export async function produceOpenMeteoPartComponents({
   requiredPairs, retentionStartAt, retentionEndAt,
   checkpointEveryParts = 10, startAfterPartId = null,
 } = {}) {
+  assertWeatherTransportSettlement();
   if (typeof fetchResponse !== 'function') throw new Error('OPEN_METEO_PART_TRANSPORT_REQUIRED');
   if (!Number.isInteger(checkpointEveryParts) || checkpointEveryParts < 1 || checkpointEveryParts > 50) {
     throw new Error('OPEN_METEO_PART_CHECKPOINT_BATCH_INVALID');
@@ -72,6 +75,7 @@ export async function produceOpenMeteoPartComponents({
     });
     work.push(...components.map(component => ({ part, component })));
   }
+  assertWeatherTransportSettlement();
   await checkpoint(bank);
   // Keep the existing two transport slots occupied independently. Waiting for
   // both siblings of one PART wasted the free slot behind a slow marine reply.
@@ -82,6 +86,7 @@ export async function produceOpenMeteoPartComponents({
   try {
     while (position < work.length || active.size) {
       while (active.size < 2 && position < work.length && shouldContinue()) {
+        assertWeatherTransportSettlement();
         const id = position++;
         const { part, component } = work[id];
         lastAttemptedPartId = part.partId;
@@ -95,11 +100,16 @@ export async function produceOpenMeteoPartComponents({
           return readOpenMeteoPartResponse({ ...response, request }, { part, spatialPolicies,
             onInvalid: code => { componentWarnings[code] = (componentWarnings[code] ?? 0) + 1; },
           });
-        })().then(value => ({ id, part, component, value }), () => ({ id, part, component, failed: true }));
+        // Keep rejection handled even while a sibling checkpoint is awaiting
+        // I/O; the original branded error is rethrown at the consumption edge.
+        })().then(value => ({ id, part, component, value }),
+          error => ({ id, part, component, failed: true, error }));
         active.set(id, operation);
       }
       if (!active.size) break;
       const result = await Promise.race(active.values());
+      if (result.failed && isWeatherTransportStopUnproved(result.error)) throw result.error;
+      assertWeatherTransportSettlement();
       active.delete(result.id);
       if (result.failed) {
         failures.push({ component: result.component, channel: result.component === 'wind' ? 'weather' : 'marine',
@@ -122,6 +132,7 @@ export async function produceOpenMeteoPartComponents({
       if (pendingCheckpointParts.size >= checkpointEveryParts) {
         bank = builder.snapshot();
         // A failed checkpoint is a real persistence error, not a provider miss.
+        assertWeatherTransportSettlement();
         await checkpoint(bank);
         pendingCheckpointParts.clear();
       }
@@ -129,14 +140,20 @@ export async function produceOpenMeteoPartComponents({
   } catch (error) {
     // No new request or write after persistence failure. Already-started
     // bounded transports must settle before outer recovery/cleanup proceeds.
-    await Promise.allSettled(active.values());
+    const settled = await Promise.allSettled(active.values());
+    if (!isWeatherTransportStopUnproved(error) && settled.some(result =>
+      result.status === 'fulfilled' && result.value.failed && isWeatherTransportStopUnproved(result.value.error))) {
+      throwWeatherTransportStopUnproved(active, error);
+    }
     throw error;
   }
   deferred = work.length - position;
   if (pendingCheckpointParts.size > 0) {
     bank = builder.snapshot();
+    assertWeatherTransportSettlement();
     await checkpoint(bank);
   }
+  assertWeatherTransportSettlement();
   return { bank, summary: { requests, deferred, failures, componentWarnings, records: bank.records.length,
     lastAttemptedPartId, componentsNotAdmitted, retired } };
 }
