@@ -86,6 +86,8 @@ Det eksisterende fulde turlagerworkflow indeholder ikke en Worker-only-indstilli
 
 ## Afgrænset eksisterende-Worker-reparation – lokal 4.0.558, 2026-10-10
 
+PR #548's første fulde kildekontrol afviste en test, der fejlagtigt talte main-kontroller på tværs af den fulde installation og den nye reparation. Den normale installationsgren afgrænses nu entydigt i testen; alle tidligere assertions, præcis tre main-kontroller og SQL-/rækkefølge-/slutkontroller bevares. LF/CRLF samt manglende og dubleret job afprøves. Den målrettede normale kontrol består; den ændrede head kræver ny fuld GitHub-kontrol. Ejeren har særskilt godkendt præcis én afgrænset eksisterende-Worker-operation efter grøn kildekontrol og afsluttet vejrhentning; tilladelsen er ikke installation eller en bredere overgang.
+
 PR #547's normale D1-kvitteringer har bestået præcis kildekontrol på head `11d24dab`, kørsel `38028049478`, forsøg 1. Det er ikke backendinstallation. Det eksisterende turlagerworkflow får et særskilt udtrykkeligt valg `existing-worker-repair`; default fuld installation bevares, ukendte valg afvises og begge grene deler workflowets eksklusive lås.
 
 Den afgrænsede gren kræver read-only applied-migrations/SQL-/Candidate-G-verifikation, faktisk aktiveret D1, ti entydige eksisterende EU-shards med de forventede skemaer samt Edge-, Worker-health-, privat count- og unsigned-afvisningskontroller. Ingen databaseoprettelse/adoption, SQL-installation, aktiveringsmarkør, turmigration, Edge-kode eller secret-skrivning følger af denne gren.

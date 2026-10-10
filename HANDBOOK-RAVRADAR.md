@@ -8,6 +8,10 @@ Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leve
 
 ## 89.182 Afgrænset reparation af det eksisterende turlager
 
+Den normale fulde installationsgren og den nye reparation kontrolleres hver for
+sig. En test må ikke låne eller tælle kontrolpunkter fra den anden gren. De
+oprindelige krav består; ændret kode kræver sin egen fulde kildekontrol.
+
 En Workerrettelse må ikke samtidig geninstallere databaser, ændre Edge-kode,
 migrere ture eller skrive nye secrets. Det eksisterende driftsworkflow får derfor
 et særskilt, udtrykkeligt valgt reparationsforløb med samme eksklusive lås som den

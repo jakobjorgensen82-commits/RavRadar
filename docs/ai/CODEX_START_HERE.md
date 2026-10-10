@@ -1,5 +1,7 @@
 # Lokal 4.0.558 – afgrænset reparation af eksisterende turlager-Worker
 
+PR #548's første fulde kildekontrol afviste en test, der fejlagtigt talte main-kontroller på tværs af den fulde installation og den nye reparation. Den normale installationsgren afgrænses nu entydigt i testen; alle tidligere assertions, præcis tre main-kontroller og SQL-/rækkefølge-/slutkontroller bevares. LF/CRLF samt manglende og dubleret job afprøves. Den målrettede normale kontrol består; den ændrede head kræver ny fuld GitHub-kontrol. Ejeren har særskilt godkendt præcis én afgrænset eksisterende-Worker-operation efter grøn kildekontrol og afsluttet vejrhentning; tilladelsen er ikke installation eller en bredere overgang.
+
 4.0.557's normale D1-kvitteringsrettelse har bestået fuld kildekontrol på PR #547's præcise head `11d24dab`, kørsel `38028049478`, forsøg 1. Det er ikke merge, backendinstallation eller offentlig levering. 4.0.556 er fortsat den senest verificerede offentlige leverance.
 
 Det eksisterende turlagerworkflow får et særskilt, udtrykkeligt valgt `existing-worker-repair`-forløb. Det normale fulde installationsvalg bevares; ukendte valg afvises, og begge valg deler samme eksklusive workflowlås. Reparationen må ikke oprette eller adoptere databaser, installere SQL, ændre Edge-kode, migrere ture, ændre aktiveringsmarkør eller skrive nye secrets.

@@ -1,5 +1,6 @@
 # Lokal 4.0.558 – 2026-10-10
 
+- Rettet den normale installationskontrol til dens entydige job, uden at ændre de tidligere tre main-kontroller eller øvrige assertions. Første #548-CI blev afvist; ændret head skal gennem ny fuld kontrol. Ejerens præcise, betingede reparationsautoritet er registreret, ikke udført.
 - Tilføjet et udtrykkeligt valgt, eksklusivt forløb til afgrænset reparation af den eksisterende turlager-Worker. Normal fuld installation bevares; ukendte valg afvises.
 - Reparationen læser og kontrollerer eksisterende SQL, aktivering, ti EU-shards, skema og private grænser; ingen databaseoprettelse, SQL-installation, turmigration, Edge-deploy eller secret-skrivning.
 - Eksakt main, afgrænset maintenance/drain/lease, én syvminutters Worker-erstatning og højst ét eget D1-fremadgående recoveryforløb. Faktisk trafikførende versionskvittering skal passe før normal afslutning; oprydning må ikke skjule den oprindelige fejl.
