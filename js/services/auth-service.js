@@ -1,4 +1,4 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.559";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.560";
 
 const STORAGE_KEY = "ravradar-auth-session";
 const REFRESH_MARGIN_SECONDS = 300;
@@ -51,10 +51,30 @@ function friendlyAuthResponse(body,status){
   if(/rate limit|too many/.test(raw))return problem('Der er sendt for mange forsøg på kort tid. Vent lidt, og prøv igen.');
   return problem('Login kunne ikke gennemføres. Prøv igen.');
 }
+// Consume only JSON under the existing request deadline. A timed-out POST
+// has an unknown remote outcome; abort is not a server-completion receipt.
+async function readResponseJson(response, guard) {
+  if (guard.signal.aborted) throw friendlyNetworkError(guard.signal.reason);
+  let abort;
+  const interrupted = new Promise((resolve, reject) => {
+    abort = () => reject(guard.signal.reason);
+    guard.signal.addEventListener('abort', abort, { once: true });
+  });
+  try {
+    // Attach a rejection handler even when timeout wins. Do not await an
+    // uncooperative body's cleanup or treat requested abort as observed stop.
+    const parsing = Promise.resolve().then(() => response.json()).catch(() => undefined);
+    const body = await Promise.race([parsing, interrupted]);
+    if (guard.signal.aborted) throw guard.signal.reason;
+    return body;
+  } catch (error) { throw friendlyNetworkError(error); }
+  finally { guard.signal.removeEventListener('abort', abort); }
+}
 async function authRequest(path, options = {}, { useAuthorization = true, timeoutMs=DEFAULT_TIMEOUT_MS } = {}) {
   if (!enabled) throw new Error("Login er ikke tilgængeligt lige nu.");
   const guard=timeoutSignal(timeoutMs,options.signal);
   let response;
+  try {
   try { response = await fetch(`${PUBLIC_CONFIG.supabaseUrl}/auth/v1${path}`, {
     ...options,
     headers: {
@@ -64,10 +84,12 @@ async function authRequest(path, options = {}, { useAuthorization = true, timeou
       ...(options.headers || {})
     },
     signal:guard.signal
-  }); } catch(error) { throw friendlyNetworkError(error); } finally { guard.done(); }
-  const body = await response.json().catch(() => ({}));
+  }); } catch(error) { throw friendlyNetworkError(error); }
+  const parsed = await readResponseJson(response, guard);
+  const body = parsed === undefined ? {} : parsed;
   if (!response.ok) throw friendlyAuthResponse(body,response.status);
   return body;
+  } finally { guard.done(); }
 }
 function tokenNeedsRefresh() {
   if (!session?.access_token) return true;
@@ -131,7 +153,7 @@ export async function requireFreshSession() {
   assertIdentity();
   return session;
 }
-export async function authorizedFetch(url, options = {}, { retry401 = true, timeoutMs=DEFAULT_TIMEOUT_MS } = {}) {
+export async function authorizedFetch(url, options = {}, { retry401 = true, timeoutMs=DEFAULT_TIMEOUT_MS, consumeJson = false } = {}) {
   const startingEpoch = identityEpoch;
   const active = await requireFreshSession();
   const ownerId = active?.user?.id;
@@ -144,6 +166,7 @@ export async function authorizedFetch(url, options = {}, { retry401 = true, time
     assertOwner(current);
     const guard=timeoutSignal(timeoutMs,options.signal);
     let response;
+    try {
     try { response = await fetch(url, {
       ...options,
       headers: {
@@ -152,15 +175,20 @@ export async function authorizedFetch(url, options = {}, { retry401 = true, time
         ...(options.headers || {})
       },
       signal:guard.signal
-    }); } catch(error) { throw friendlyNetworkError(error); } finally { guard.done(); }
+    }); } catch(error) { throw friendlyNetworkError(error); }
     assertOwner(current);
     if (response.status === 401 && mayRetry && session?.refresh_token) {
+      guard.done();
       await refreshSession({ force: true });
       const renewed = await requireFreshSession();
       assertOwner(renewed);
       return requestOnce(renewed, false);
     }
-    return response;
+    if (consumeJson !== true) return response;
+    const body = response.ok ? await readResponseJson(response, guard) : undefined;
+    assertOwner(current);
+    return { response, body };
+    } finally { guard.done(); }
   }
   return requestOnce(active, retry401);
 }
@@ -238,10 +266,10 @@ export async function getCurrentProfile() {
       throw new Error("Kontoen blev ændret. Prøv igen fra den rigtige konto.");
   };
   assertOwner();
-  const response = await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/profiles?select=id,email,display_name,role,is_active&id=eq.${encodeURIComponent(userId)}&limit=1`);
+  const { response, body: profiles } = await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/profiles?select=id,email,display_name,role,is_active&id=eq.${encodeURIComponent(userId)}&limit=1`, {}, { consumeJson: true });
   assertOwner();
   if (!response.ok) throw new Error(`Kunne ikke kontrollere brugerprofilen (${response.status})`);
-  const profiles = await response.json();
+  if (!Array.isArray(profiles)) throw new Error("Brugerprofilen kunne ikke hentes sikkert.");
   assertOwner();
   return profiles[0] || null;
 }

@@ -44,7 +44,7 @@ const sessionFor = owner => ({ access_token: 'synthetic-token', refresh_token: '
 const payload = id => trip.toObservationTripColumns(trip.completeTripEvidence(trip.createTripStartRecord(start(id)), { ...answer, ...stop }));
 const clean = value => JSON.parse(JSON.stringify(value));
 
-function harness(owner = A, hydrated = true) {
+function harness(owner = A, hydrated = true, clock = null) {
   const values = new Map(owner ? [['ravradar-auth-session', JSON.stringify(hydrated ? sessionFor(owner) : { ...sessionFor(owner), user: null })]] : []);
   const timers = new Set();
   const state = { failSubmit: true, nextOwner: owner, submits: [], writes: [], failWrite: null, requests: [] };
@@ -68,13 +68,15 @@ function harness(owner = A, hydrated = true) {
       if (state.hold) { state.hold.reached(); await state.hold.promise; }
       return state.submitResponse ?? { ok: !state.failSubmit, status: state.failSubmit ? 503 : 200, json: async () => ({ stored: true }) };
     }
+    if (state.tripLogTransport) return state.tripLogTransport(url, options);
+    if (state.tripLogResponse) return state.tripLogResponse;
     assert.equal(url.pathname, '/functions/v1/trip-log');
     return Response.json({ rows: [], snapshot_at: '2026-10-09T22:00:00.000Z', next_cursor: null });
   };
   const authScope = { PUBLIC_CONFIG: config, localStorage: storage, fetch, AbortController, DOMException, URLSearchParams,
     location: { hash: '', pathname: '/', search: '' }, history: { replaceState() {} },
-    setTimeout(callback, delay) { const timer = setTimeout(() => { timers.delete(timer); callback(); }, delay); timers.add(timer); return timer; },
-    clearTimeout(timer) { clearTimeout(timer); timers.delete(timer); } };
+    setTimeout(callback, delay) { const timer = (clock ? clock.set : setTimeout)(() => { timers.delete(timer); callback(); }, delay); timers.add(timer); return timer; },
+    clearTimeout(timer) { (clock ? clock.clear : clearTimeout)(timer); timers.delete(timer); } };
   vm.runInNewContext(`${authBody}\nthis.api={authEnabled,authIdentityEpoch,currentSession,requireFreshSession,authorizedFetch,signOut,signInWithPassword,refreshSession,signUpWithPassword,consumeAuthCallback,getCurrentProfile,sendMagicLink,onAuthChange,...(typeof assertAuthIdentitySettled === 'function' ? { assertAuthIdentitySettled } : {})};`, authScope);
   const auth = authScope.api;
   const serviceScope = { ...trip, ...quality, ...model, ...account, ...auth, ...store,
@@ -92,7 +94,7 @@ function harness(owner = A, hydrated = true) {
     persist: persist ?? service.submitTripEvidenceObservation });
   return { state, storage, service, controller, auth, authLocation: authScope.location, createController: createTripEvidenceController,
     async login(next) { await auth.signOut(); state.nextOwner = next; await auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only'); },
-    finish() { const leaked = timers.size; for (const timer of timers) clearTimeout(timer); assert.equal(leaked, 0); } };
+    finish() { const leaked = timers.size; for (const timer of timers) (clock ? clock.clear : clearTimeout)(timer); assert.equal(leaked, 0); } };
 }
 
 for (const [label, receipt, queued] of [
@@ -1365,4 +1367,179 @@ test('manual row receipt: ordinary failed own report stays queued',async()=>{
     assert.ok(panel.content.innerHTML.includes(t('account.reportQueued')));
     assert.equal(panel.content.innerHTML.includes(t('account.reportRemote')),false);
   }finally{form.resolve(null);if(operation)await operation;h.finish();}
+});
+
+function virtualDeadlineClock(){
+  let now=0,next=0;const jobs=new Map();
+  return{jobs,set(callback,delay){const id=++next;jobs.set(id,{at:now+delay,callback});return id;},clear(id){jobs.delete(id);},
+    async advance(ms){now+=ms;for(const[id,job]of [...jobs])if(job.at<=now){jobs.delete(id);job.callback();}await new Promise(resolve=>setImmediate(resolve));}};
+}
+function heldJson(value){
+  const read=deferred();let controller;
+  const stream=new ReadableStream({start(value){controller=value;},pull(){read.resolve();}});
+  return{response:new Response(stream,{headers:{'Content-Type':'application/json'}}),read:read.promise,
+    release(){try{controller.enqueue(new TextEncoder().encode(JSON.stringify(value)));controller.close();}catch{} }};
+}
+for(const action of ['logout','own-log','queued-upload'])test('normal body deadline: held '+action+' must reach a bounded result',async()=>{
+  const clock=virtualDeadlineClock(),h=harness(A,true,clock),body=heldJson(action==='logout'?{}:action==='own-log'?{rows:[]}:{stored:true});
+  const operations=[];let complete=false,result,error;
+  try{
+    if(action==='logout')h.state.authTransport=()=>Promise.resolve(body.response);
+    if(action==='own-log')h.state.tripLogResponse=body.response;
+    if(action==='queued-upload')h.state.submitResponse=body.response;
+    const operation=action==='logout'?h.auth.signOut():action==='own-log'?h.service.getOwnTripObservations():h.service.submitTripEvidenceObservation(payload(firstTrip));
+    operations.push(operation.then(value=>{complete=true;result=value;},value=>{complete=true;error=value;}));
+    await body.read;await new Promise(resolve=>setImmediate(resolve));
+    if(action==='queued-upload'){
+      const next=h.service.submitTripEvidenceObservation(payload(secondTrip));operations.push(next.catch(()=>{}));
+      await new Promise(resolve=>setImmediate(resolve));
+      assert.equal(h.service.getObservationSyncStatus().pending,2);assert.equal(h.state.submits.length,1);
+    }
+    await clock.advance(12_001);
+    console.log(JSON.stringify({boundary:action,completeAfterVirtualDeadline:complete,remainingTimeouts:clock.jobs.size,pending:action==='queued-upload'?h.service.getObservationSyncStatus().pending:null,posts:h.state.submits.length}));
+    assert.equal(complete,true,'The normal12s guard must still bound the body phase; headers alone must not leave the operation indefinitely pending');
+    if(action==='logout')assert.equal(h.auth.currentSession(),null);
+    if(action==='own-log')assert.ok(error);
+    if(action==='queued-upload')assert.equal(result.stored,'pending');
+  }finally{body.release();h.state.submitResponse={ok:false,status:503,json:async()=>({})};await Promise.all(operations);h.finish();assert.equal(clock.jobs.size,0);}
+});
+test('normal body deadline: existing header deadline still aborts through normal auth',async()=>{
+  const clock=virtualDeadlineClock(),h=harness(A,true,clock);let operation,aborted=false;
+  try{
+    h.state.authTransport=(url,options)=>new Promise((resolve,reject)=>options.signal.addEventListener('abort',()=>{aborted=true;reject(options.signal.reason);},{once:true}));
+    operation=h.auth.signOut();await clock.advance(12_001);await operation;
+    assert.equal(aborted,true);assert.equal(h.auth.currentSession(),null);
+  }finally{if(operation)await operation;h.finish();assert.equal(clock.jobs.size,0);}
+});
+test('normal body deadline: ordinary EOF read and logout preserve normal behavior',async()=>{
+  const clock=virtualDeadlineClock(),h=harness(A,true,clock);
+  try{assert.deepEqual(clean(await h.service.getOwnTripObservations()),[]);await h.auth.signOut();assert.equal(h.auth.currentSession(),null);}
+  finally{h.finish();assert.equal(clock.jobs.size,0);}
+});
+test('JSON deadline: default and explicit false return exact Response without body consumption',async()=>{
+ for(const flag of [undefined,false,0,'true',{},()=>{throw new Error('No generic executor');}]){
+  const clock=virtualDeadlineClock(),h=harness(A,true,clock);let reads=0;
+  try{
+   const response={ok:true,status:200,json:async()=>{reads+=1;return{rows:[]};}};h.state.tripLogResponse=response;
+   const actual=await h.auth.authorizedFetch('https://example.invalid/functions/v1/trip-log',{},flag===undefined?{}:{consumeJson:flag});
+   assert.equal(actual,response);assert.equal(reads,0);assert.equal(clock.jobs.size,0);await clock.advance(12_001);assert.equal(reads,0);
+  }finally{h.finish();}
+ }
+});
+test('JSON deadline: non-ok response is header-only under fixed JSON opt-in',async()=>{
+ const clock=virtualDeadlineClock(),h=harness(A,true,clock);let reads=0;
+ try{const response={ok:false,status:503,json:async()=>{reads++;throw new Error('PRIVATE_BODY');}};h.state.tripLogResponse=response;
+  const actual=await h.auth.authorizedFetch('https://example.invalid/functions/v1/trip-log',{}, {consumeJson:true});
+  assert.equal(actual.response,response);assert.equal(actual.body,undefined);assert.equal(reads,0);assert.equal(clock.jobs.size,0);
+ }finally{h.finish();}
+});
+for(const retry of [true,false])test('JSON deadline: ordinary401 same-owner renewal retry='+retry,async()=>{
+ const clock=virtualDeadlineClock(),h=harness(A,true,clock),requests=[];let refreshes=0,reads=0;
+ try{
+  h.state.tripLogTransport=(url,options)=>{requests.push(options.headers.Authorization);return Promise.resolve({ok:requests.length>1,status:requests.length===1?401:200,json:async()=>{reads++;return{rows:[]};}});};
+  h.state.authTransport=async url=>{assert.equal(url.searchParams.get('grant_type'),'refresh_token');refreshes++;return Response.json({...sessionFor(A),access_token:'synthetic-renewed'});};
+  const actual=await h.auth.authorizedFetch('https://example.invalid/functions/v1/trip-log',{}, {consumeJson:true,retry401:retry});
+  assert.equal(actual.response.status,retry?200:401);assert.equal(requests.length,retry?2:1);assert.equal(refreshes,retry?1:0);assert.equal(reads,retry?1:0);
+  if(retry){assert.deepEqual(clean(actual.body),{rows:[]});assert.deepEqual(requests,['Bearer synthetic-token','Bearer synthetic-renewed']);}
+ }finally{h.finish();}
+});
+test('JSON deadline: old401 cannot refresh or retry under a new explicit owner',async()=>{
+ const clock=virtualDeadlineClock(),h=harness(A,true,clock),headers=deferred(),reached=deferred();let operation,refreshes=0;
+ try{
+  h.state.tripLogTransport=async()=>{reached.resolve();return headers.promise;};
+  operation=h.auth.authorizedFetch('https://example.invalid/functions/v1/trip-log',{}, {consumeJson:true}).then(value=>({value}),error=>({error}));
+  await reached.promise;h.state.authTransport=async url=>{if(url.searchParams.get('grant_type')==='refresh_token')refreshes++;return Response.json(sessionFor(B));};
+  await h.auth.signInWithPassword('synthetic@example.invalid','synthetic-only');headers.resolve({ok:false,status:401,json:async()=>({})});
+  const result=await operation;assert.match(result.error.message,/Kontoen blev ændret/);assert.equal(refreshes,0);assert.equal(h.state.requests.filter(x=>x.includes('trip-log')).length,1);
+ }finally{headers.resolve({ok:false,status:401});if(operation)await operation;h.finish();}
+});
+for(const choice of ['login','signup','callback','refresh','hydrate'])test('JSON deadline: timed-out '+choice+' ignores late body and releases own pending state',async()=>{
+ const clock=virtualDeadlineClock(),h=harness(A,choice!=='hydrate',clock),body=heldJson(choice==='callback'||choice==='hydrate'?{id:B}:sessionFor(B));let operation;
+ try{
+  h.state.authTransport=async()=>body.response;
+  if(choice==='callback')h.authLocation.hash='#access_token=synthetic-callback&refresh_token=synthetic-refresh';
+  operation=(choice==='login'?h.auth.signInWithPassword('synthetic@example.invalid','synthetic-only')
+   :choice==='signup'?h.auth.signUpWithPassword('synthetic@example.invalid','synthetic-only')
+   :choice==='callback'?h.auth.consumeAuthCallback():choice==='refresh'?h.auth.refreshSession({force:true}):h.auth.requireFreshSession())
+   .then(value=>({value}),error=>({error}));
+  await body.read;await new Promise(resolve=>setImmediate(resolve));
+  if(['login','signup','callback'].includes(choice))await assert.rejects(h.auth.requireFreshSession(),/Kontoen blev ændret/);
+  await clock.advance(12_001);const result=await operation;
+  if(choice!=='callback')assert.match(result.error.message,/svarede ikke i tide/);
+  const after=JSON.stringify(h.auth.currentSession());body.release();await new Promise(resolve=>setImmediate(resolve));assert.equal(JSON.stringify(h.auth.currentSession()),after);
+  assert.notEqual(h.auth.currentSession()?.user?.id,B,'A late timed-out result must never commit a new owner');
+  h.state.authTransport=async()=>Response.json(choice==='hydrate'||choice==='callback'?{id:A}:sessionFor(A));
+  assert.equal((await h.auth.requireFreshSession()).user.id,A,'Own finally state permits a later legitimate operation');
+ }finally{body.release();if(operation)await operation;h.finish();assert.equal(clock.jobs.size,0);}
+});
+test('JSON deadline: timeout of older login never releases newer pending intent',async()=>{
+ const clock=virtualDeadlineClock(),h=harness(A,true,clock),a=heldJson(sessionFor(A)),b=heldJson(sessionFor(B));const operations=[];let calls=0;
+ try{
+  h.state.authTransport=async()=>++calls===1?a.response:b.response;
+  const first=h.auth.signInWithPassword('synthetic-a@example.invalid','synthetic-only').then(value=>({value}),error=>({error}));operations.push(first);await a.read;await turn();
+  await clock.advance(6_000);const second=h.auth.signInWithPassword('synthetic-b@example.invalid','synthetic-only');operations.push(second.catch(()=>{}));await b.read;await turn();
+  await clock.advance(6_001);assert.match((await first).error.message,/svarede ikke i tide/);await assert.rejects(h.auth.requireFreshSession(),/Kontoen blev ændret/);
+  b.release();await second;assert.equal(h.auth.currentSession().user.id,B);a.release();await turn();assert.equal(h.auth.currentSession().user.id,B);
+ }finally{a.release();b.release();await Promise.allSettled(operations);h.finish();}
+});
+test('JSON deadline: timed-out POST is unknown remote outcome; exact original retries normally',async()=>{
+ const clock=virtualDeadlineClock(),h=harness(A,true,clock),body=heldJson({stored:true});let operation;
+ try{
+  h.state.submitResponse=body.response;const controller=h.controller();controller.start(start(firstTrip));operation=controller.stop(stop);await body.read;await turn();
+  const originalV2=h.storage.getItem(tripEvidenceStorageKeys.pending),originalPayload=h.state.submits[0];
+  await clock.advance(12_001);assert.equal((await operation).status,'queued');assert.equal(h.storage.getItem(tripEvidenceStorageKeys.pending),originalV2);
+  assert.equal(h.service.getObservationSyncStatus().pending,1);assert.equal(h.state.submits.length,1,'No hidden automatic retry after unknown outcome');
+  body.release();await turn();assert.equal(h.service.getObservationSyncStatus().pending,1);assert.equal(h.storage.getItem(tripEvidenceStorageKeys.pending),originalV2);
+  h.state.submitResponse=undefined;h.state.failSubmit=false;const retry=await controller.flush();assert.equal(retry.submitted,1);assert.equal(retry.failed,0);
+  assert.equal(h.state.submits.length,2);assert.equal(h.state.submits[1],originalPayload);assert.equal(h.service.getObservationSyncStatus().pending,0);assert.equal(h.storage.getItem(tripEvidenceStorageKeys.pending),'[]');
+ }finally{body.release();if(operation)await operation;h.finish();}
+});
+test('JSON deadline: first transport error stays exact, without JSON or retry',async()=>{
+ const clock=virtualDeadlineClock(),h=harness(A,true,clock),first=new Error('SYNTHETIC_FIRST_TRANSPORT');
+ try{h.state.tripLogTransport=async()=>{throw first;};await assert.rejects(h.auth.authorizedFetch('https://example.invalid/functions/v1/trip-log',{}, {consumeJson:true}),error=>error===first);assert.equal(h.state.requests.length,1);}
+ finally{h.finish();}
+});
+test('JSON deadline: explicit abort rejects body promptly and preserves original reason',async()=>{
+ const clock=virtualDeadlineClock(),h=harness(A,true,clock),body=heldJson({rows:[]}),controller=new AbortController(),reason=new Error('SYNTHETIC_CALLER_ABORT');let operation;
+ try{h.state.tripLogResponse=body.response;operation=h.auth.authorizedFetch('https://example.invalid/functions/v1/trip-log',{signal:controller.signal},{consumeJson:true}).then(value=>({value}),error=>({error}));await body.read;await turn();controller.abort(reason);assert.equal((await operation).error,reason);}
+ finally{body.release();if(operation)await operation;h.finish();}
+});
+
+test('JSON deadline: total12seconds covers headers and body without restarting the budget',async()=>{
+ const clock=virtualDeadlineClock(),h=harness(A,true,clock),headers=deferred(),reached=deferred(),body=heldJson({rows:[]});let operation,complete=false;
+ try{
+  h.state.tripLogTransport=async()=>{reached.resolve();return headers.promise;};
+  operation=h.service.getOwnTripObservations().then(value=>{complete=true;return{value};},error=>{complete=true;return{error};});
+  await reached.promise;await clock.advance(6_000);headers.resolve(body.response);await body.read;await turn();
+  await clock.advance(5_999);assert.equal(complete,false);assert.equal(clock.jobs.size,1);
+  await clock.advance(2);assert.equal(complete,true);assert.match((await operation).error.message,/svarede ikke i tide/);
+ }finally{headers.resolve(body.response);body.release();if(operation)await operation;h.finish();}
+});
+test('JSON deadline: late logout body cannot clear a subsequent explicit login',async()=>{
+ const clock=virtualDeadlineClock(),h=harness(A,true,clock),body=heldJson({});let operation;
+ try{
+  h.state.authTransport=async()=>body.response;operation=h.auth.signOut();await body.read;await turn();await clock.advance(12_001);await operation;
+  assert.equal(h.auth.currentSession(),null);h.state.authTransport=async()=>Response.json(sessionFor(B));await h.auth.signInWithPassword('synthetic@example.invalid','synthetic-only');
+  const next=JSON.stringify(h.auth.currentSession());body.release();await turn();assert.equal(JSON.stringify(h.auth.currentSession()),next);assert.equal((await h.auth.requireFreshSession()).user.id,B);
+ }finally{body.release();if(operation)await operation;h.finish();}
+});
+test('JSON deadline: malformed own-log body becomes existing safe failure with zero storage writes',async()=>{
+ const clock=virtualDeadlineClock(),h=harness(A,true,clock);
+ try{
+  h.state.tripLogResponse={ok:true,status:200,json:async()=>{throw new SyntaxError('UNSAFE_SYNTHETIC_BODY');}};
+  const before=JSON.stringify([...h.storage.values]);await assert.rejects(h.service.getOwnTripObservations(),error=>error.message==='Dine ture kunne ikke hentes sikkert.');
+  assert.equal(JSON.stringify([...h.storage.values]),before);assert.equal(h.state.writes.length,0);
+ }finally{h.finish();}
+});
+test('JSON deadline: observed signal abort settles a transport-owned stream without unbounded cancel await',async()=>{
+ const clock=virtualDeadlineClock(),h=harness(A,true,clock),reached=deferred();let controller,operation,aborts=0,cancels=0;
+ try{
+  h.state.tripLogTransport=async(url,options)=>{
+   const stream=new ReadableStream({start(value){controller=value;},pull(){reached.resolve();},cancel(){cancels++;return new Promise(()=>{});}});
+   options.signal.addEventListener('abort',()=>{aborts++;controller.error(options.signal.reason);},{once:true});
+   return new Response(stream);
+  };
+  operation=h.service.getOwnTripObservations().then(value=>({value}),error=>({error}));await reached.promise;await turn();await clock.advance(12_001);
+  assert.match((await operation).error.message,/svarede ikke i tide/);assert.equal(aborts,1);assert.equal(cancels,0);
+ }finally{try{controller?.close();}catch{}if(operation)await operation;h.finish();}
 });

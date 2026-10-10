@@ -1,5 +1,5 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.559";
-import { authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession, getCurrentProfile } from "./auth-service.js?v=4.0.559";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.560";
+import { authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession, getCurrentProfile } from "./auth-service.js?v=4.0.560";
 export const PERMISSIONS=Object.freeze([
  {id:'admin_access',label:'Åbn administrationen'},
  {id:'handbook_view',label:'Læs håndbogen'},
@@ -30,10 +30,10 @@ export async function listProfiles(){
    throw new Error('Kontoen blev ændret. Prøv igen fra den rigtige konto.');
  };
  assertOwner();
- const r=await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/profiles?select=id,email,display_name,role,is_active,user_permissions(permission_key,enabled)&order=email`);
+ const {response:r,body:profiles}=await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/profiles?select=id,email,display_name,role,is_active,user_permissions(permission_key,enabled)&order=email`,{},{consumeJson:true});
  assertOwner();
  if(!r.ok)throw new Error(`Brugere kunne ikke hentes (${r.status})`);
- const profiles=await r.json();
+ if(!Array.isArray(profiles))throw new Error('Brugere kunne ikke hentes sikkert.');
  assertOwner();
  return profiles;
 }
@@ -50,10 +50,10 @@ export async function myAccess(){
  assertOwner();
  if(!profile?.is_active)throw new Error('Din RavRadar-konto er deaktiveret.');
  if(profile.role==='owner')return {profile,permissions:new Set(PERMISSIONS.map(p=>p.id))};
- const r=await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/user_permissions?user_id=eq.${id}&enabled=eq.true&select=permission_key`);
+ const {response:r,body:permissions}=await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/user_permissions?user_id=eq.${id}&enabled=eq.true&select=permission_key`,{},{consumeJson:true});
  assertOwner();
  if(!r.ok)throw new Error(`Rettigheder kunne ikke hentes (${r.status})`);
- const permissions=await r.json();
+ if(!Array.isArray(permissions))throw new Error('Rettigheder kunne ikke hentes sikkert.');
  assertOwner();
  return {profile,permissions:new Set(permissions.map(x=>x.permission_key))};
 }

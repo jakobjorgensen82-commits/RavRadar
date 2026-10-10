@@ -1,4 +1,18 @@
-# Lokal 4.0.559 – sikre klientlæsninger og præcis tur-/assistentkvittering
+# Lokal 4.0.560 – afgrænset svartid gennem normal JSON-læsning
+
+Den eksisterende 12-sekundersfrist omfatter nu også JSON-kroppen i almindelige auth-kald, brugerprofil, profiloversigt og egne rettigheder samt udtrykkeligt valgte læse-/gemmekald for egne ture. Tiden nulstilles ikke, når headers modtages. Et fast, bogstaveligt `consumeJson: true` vælger denne eksisterende læsevej; standardkald returnerer fortsat den samme Response uden at læse kroppen. Ukendt profil-/rettighedsformat må ikke blive en tom, vellykket adgangskontrol. Ingen generisk callback, nyt tidsbudget, rettighed eller skjult genforsøg tilføjes.
+
+Et timeout efter indsendelse betyder ukendt fjernudfald, ikke kvitteret afbrydelse på serveren. Den præcise oprindelige tur og køpost bevares; et senere svar må ikke rydde dem. Et senere normalt genforsøg bruger det samme id, indhold og indsendelsestid. Login, logout, callback, første brugerindlæsning, ejergrænser, normal tokenfornyelse, én tilladt 401-fornyelse og eksisterende lagrings-/kvitteringskontroller bevares. Andre endnu ikke tilvalgte JSON-kaldere og anonym raw fetch er ikke frikendt.
+
+Fem faktiske klient-/testfiler er integreret og helfilkontrolleret. Tur-/authmålets 66 prøver og profil-/rettighedsmålets 41 prøver består gennem normale funktioner uden kildesubstitution; alle oprindelige assertions og begge eksisterende 68-/66-fils vejrbundles er bevaret. Præcis fuld GitHub-kontrol, sikker levering og offentlig effekt mangler; lokale prøver er ikke hosted brugerforløb eller serverholdbarhedsbevis.
+
+Den særskilt godkendte eksisterende-Worker-operation er faktisk gennemført 10. oktober kl. 09.30 dansk tid: PR #548 blev sikkert flettet ind efter afsluttet vejrhentning og præcis kildekontrol; kørsel `38034598465` erstattede én eksisterende Worker og kontrollerede normal D1-drift bagefter. Fuld installation, SQL, Edge-kode og ekstra recovery blev ikke udført. Kilden følger nu main; den betingede engangstilladelse er forbrugt og må ikke genbruges til en ny operation.
+
+PR #549 har bestået præcis GitHub-kontrol og er flettet ind som `719bd951`. Dens kode-only-levering `38034831818` blev faktisk afsluttet 10. oktober kl. 09.44 dansk tid med genbrug af gemt vejr, privat gemning/upload, Edge-deploy, Pages-deploy, offentlig kontrol af 210 zoner/673 dele og efterfølgende forsegling. Den almindelige browser viser 4.0.559 efter genindlæsning. Ingen ny vejrhentning er startet. Den separate cachepakke og numeriske strøm-/scoreovergang er ikke del af 4.0.560; åbne skrive-/publiceringslivstider skal lukkes før deres egen levering.
+
+Alle fem målområder forbliver åbne: landsdækkende strømdata og score, hele vejrhentningsrevisionen, varige brugerdata med ejerrettigheder og anonym samlet viderebrug, bred Spørg RavRadar og selvstændig drift uden Codex. Fristen er i dag, 10. oktober; parallel delegation fortsætter. Ingen bindingsadskillelse, ny installation/destination, geometri-, kilde- eller scoreformelændring, ekstra vejrhentning eller ændret cron følger. Ingen produktionsændring under aktiv writer. Interne undersøgelser tilføjes ikke til offentlig assistentviden.
+
+# Historik: 4.0.559 – sikre klientlæsninger og præcis tur-/assistentkvittering
 
 Denne afgrænsede kildeleverance samler syv normale klient-/Edge-filer; den er endnu ikke offentlig levering eller bevis for hosted brugerforløb. Profiloversigten afviser forsinkede svar efter logout, kontoskift eller et nyt login til samme ejer, men bevarer normal tokenfornyelse og første hydrering.
 

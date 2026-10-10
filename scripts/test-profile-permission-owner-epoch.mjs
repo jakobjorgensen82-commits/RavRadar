@@ -175,3 +175,44 @@ for(const action of ['unchanged','renewal','logout','same-owner-login','differen
 test('profiles-list: initial hydration and same-login renewal preserved',()=>profilesListScenario('renewal',{hydrate:true}));
 test('profiles-list: actual normal admin renderer rejects late old profile body',()=>profilesListScenario('same-owner-login',{render:true}));
 test('profiles-list: actual normal admin renderer retains legitimate renewal',()=>profilesListScenario('renewal',{render:true}));
+
+// Reuse the same actual module bodies above, with only own synthetic transport,
+// session storage and a virtual request clock. Never a profile/auth facade.
+async function jsonConsumerScenario(caller,mode){
+ const profile={id:ownerA,role:'expert',is_active:true},initial=sessionFor();
+ const saved=new Map([['ravradar-auth-session',JSON.stringify(initial)]]),timers=new Map(),reached=deferred(),release=deferred();
+ let now=0,id=0,reads=0,requests=0,settled=false,operation;
+ const heldPath=caller==='permissions'?'/rest/v1/user_permissions':'/rest/v1/profiles';
+ const scope={PUBLIC_CONFIG:config,AbortController,DOMException,
+  localStorage:{getItem:key=>saved.get(key)??null,setItem:(key,value)=>saved.set(key,String(value)),removeItem:key=>saved.delete(key)},
+  setTimeout(callback,ms){const timer=++id;timers.set(timer,{at:now+ms,callback});return timer;},clearTimeout:timer=>timers.delete(timer),
+  async fetch(input,options){const url=new URL(input);assert.equal(url.origin,config.supabaseUrl);assert.equal(options.headers.Authorization,'Bearer synthetic-original');requests++;
+   const selected=url.pathname===heldPath;assert.ok(['/rest/v1/profiles','/rest/v1/user_permissions'].includes(url.pathname));
+   return{ok:!(mode==='http-error'&&selected),status:mode==='http-error'&&selected?503:200,async json(){
+    if(selected){reads++;reached.resolve();await release.promise;if(mode==='malformed')throw new SyntaxError('SYNTHETIC_UNSAFE_BODY');if(mode==='null')return null;if(mode==='object')return {};if(mode==='empty')return [];}
+    return url.pathname==='/rest/v1/profiles'?[structuredClone(profile)]:[{permission_key:'handbook_view'}];
+   }};
+  }};
+ vm.runInNewContext(`${authBody}\nthis.api={getCurrentProfile,authorizedFetch,currentSession,requireFreshSession,authIdentityEpoch};`,scope);
+ const access={...scope.api,PUBLIC_CONFIG:config};vm.runInNewContext(`${permissionsBody}\nthis.api={myAccess,listProfiles};`,access);
+ const original=JSON.stringify([...saved]);
+ try{
+  const promise=caller==='profile'?scope.api.getCurrentProfile():caller==='list'?access.api.listProfiles():access.api.myAccess();
+  operation=promise.then(value=>{settled=true;return{value};},error=>{settled=true;return{error};});
+  if(mode==='http-error'){const outcome=await operation;assert.match(outcome.error.message,/503/);assert.equal(reads,0);return;}
+  await reached.promise;await new Promise(resolve=>setImmediate(resolve));assert.equal(settled,false);
+  if(mode==='deadline'){
+   now=12_001;for(const[timer,job]of[...timers])if(job.at<=now){timers.delete(timer);job.callback();}
+   await new Promise(resolve=>setImmediate(resolve));assert.equal(settled,true,caller+' must finish rather than keep an unguarded JSON body pending');
+   assert.match((await operation).error.message,/svarede ikke i tide/);
+  }else{
+   release.resolve();const outcome=await operation;
+   if(['malformed','null','object'].includes(mode)){assert.ok(outcome.error,'Unknown JSON shape must not become empty successful access');assert.doesNotMatch(outcome.error.message,/SYNTHETIC_UNSAFE_BODY/);}
+   else{assert.equal(outcome.error,undefined);if(mode==='empty'){if(caller==='profile')assert.equal(outcome.value,null);else if(caller==='list')assert.deepEqual(outcome.value,[]);else assert.equal(outcome.value.permissions.size,0);}
+    else if(caller==='profile')assert.deepEqual(outcome.value,profile);else if(caller==='list')assert.deepEqual(outcome.value,[profile]);else assert.equal(outcome.value.permissions.has('handbook_view'),true);}
+  }
+  assert.equal(requests,caller==='permissions'?2:1,'No retry or extra identity lookup');
+ }finally{release.resolve();if(operation)await operation;assert.equal(timers.size,0);assert.equal(JSON.stringify([...saved]),original);}
+}
+for(const caller of ['profile','list','permissions'])for(const mode of ['deadline','malformed','null','object','empty','ordinary','http-error'])
+ test('profile JSON consumer: '+caller+' '+mode,()=>jsonConsumerScenario(caller,mode));
