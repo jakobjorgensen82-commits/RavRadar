@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { unpackPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
+import { unpackPrivateWeatherComponentPack, privateWeatherPackJsonReadsClosed } from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_FILES as FILES } from './lib/private-weather-component-inventory.mjs';
 import { PRIVATE_WEATHER_PROGRESS_ONLY_FILES as DMI_FILES } from './lib/private-weather-progress-files.mjs';
 import { mergeVerifiedProtectedProgressComponents,
@@ -68,6 +68,7 @@ export async function reconcileProtectedWeatherSources({
   }
   const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-paired-source-'));
   let phase = 'LOAD_CONDITIONS';
+  let packInvocation = null;
   try {
     const [workingConditions, conditions] = await Promise.all([
       fs.readFile(path.join(root, 'data/live/conditions.json'), 'utf8').then(JSON.parse),
@@ -83,10 +84,11 @@ export async function reconcileProtectedWeatherSources({
       throw new Error('PAIRED_SOURCE_GENERATION_ORDER_INVALID');
     }
     phase = 'VERIFY_DONOR_PACK';
-    const donorFiles = await unpackPrivateWeatherComponentPack({
+    packInvocation = unpackPrivateWeatherComponentPack({
       restoredRoot: donorRoot, outputRoot: path.join(temporary, 'donor-verified'),
       conditions, pythonExecutable,
     });
+    const donorFiles = await packInvocation;
     phase = 'VERIFY_WORKING_BANKS';
     const latestFiles = (await Promise.all(BANKS.map(relative => existingFile(root, relative)))).filter(Boolean);
     phase = 'MERGE_WEATHER_BANKS';
@@ -137,7 +139,9 @@ export async function reconcileProtectedWeatherSources({
     if (actualParent !== parent || !path.basename(resolved).startsWith('rr-paired-source-')) {
       throw new Error('PAIRED_SOURCE_CLEANUP_PATH_INVALID');
     }
-    await fs.rm(resolved, { recursive: true, force: true });
+    if (packInvocation === null || privateWeatherPackJsonReadsClosed(packInvocation)) {
+      await fs.rm(resolved, { recursive: true, force: true });
+    }
   }
 }
 

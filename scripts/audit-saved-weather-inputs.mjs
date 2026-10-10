@@ -19,7 +19,7 @@ import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 import { unpackDmiPartContinuity, assertDmiPartContinuityTotalSize } from './lib/dmi-part-continuity.mjs';
 import { originalContextForProtectedDmiCurrent } from './lib/protected-dmi-current-context.mjs';
 import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-native-current-proofs.mjs';
-import { unpackPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
+import { unpackPrivateWeatherComponentPack, privateWeatherPackJsonReadsClosed } from './lib/private-weather-component-pack.mjs';
 import { safeWeatherComponentSummary } from './lib/weather-component-safe-summary.mjs';
 import { weatherComponentProgressCache, withAuthenticatedWeatherProgress,
   WEATHER_PROGRESS_CIPHER_PATH, WEATHER_PROGRESS_MAX_CIPHER_BYTES } from './weather-component-progress-cache.mjs';
@@ -476,6 +476,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
   ...credentials
 } = {}) {
   let work = null, safeOutput = null, phase = 'SETUP';
+  let baselinePackInvocation = null;
   try {
     if (!['describe', 'audit'].includes(mode)) fail('MODE_INVALID');
     const ctx = await context(privateRoot, repositoryRoot);
@@ -548,9 +549,12 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     try {
       const componentPackPresent = manifest.files.some(file => file.relativePath === PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath);
       if (privateWeatherComponentMarker(conditions) && !componentPackPresent) fail('BASELINE_COMPONENT_PACK_REJECTED');
-      if (componentPackPresent) baselineComponentFiles = await withoutSavedAuditSecrets(() => unpackPrivateWeatherComponentPack({
-        restoredRoot: payloadRoot, outputRoot: path.join(work, 'baseline-components'), conditions, pythonExecutable,
-      }));
+      if (componentPackPresent) baselineComponentFiles = await withoutSavedAuditSecrets(() => {
+        baselinePackInvocation = unpackPrivateWeatherComponentPack({
+          restoredRoot: payloadRoot, outputRoot: path.join(work, 'baseline-components'), conditions, pythonExecutable,
+        });
+        return baselinePackInvocation;
+      });
     } catch { fail('BASELINE_COMPONENT_PACK_REJECTED'); }
     const basePath = path.join(work, 'progress-base.json');
     const captured = await weatherComponentProgressCache({ mode: 'capture-base', repositoryRoot: payloadRoot,
@@ -602,6 +606,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
       protectedBaselineComponentFallback: safeWeatherComponentSummary(conditions.weatherEngine?.componentFallback),
       resources: { maxRssBytes: process.resourceUsage().maxRSS * 1024, currentHeapBytes: process.memoryUsage().heapUsed } };
     phase = 'PRIVATE_CLEANUP';
+    if (baselinePackInvocation !== null && !privateWeatherPackJsonReadsClosed(baselinePackInvocation)) fail('BASELINE_COMPONENT_PACK_REJECTED');
     try { await fs.rm(work, { recursive: true, force: true }); work = null; }
     catch { fail('PRIVATE_TEMP_CLEANUP_FAILED'); }
     await fs.writeFile(safeOutput, `${JSON.stringify(report)}\n`, { flag: 'wx', mode: 0o600 });
@@ -613,7 +618,8 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     if (safeOutput) await fs.writeFile(safeOutput, `${JSON.stringify(report)}\n`, { flag: 'wx', mode: 0o600 }).catch(() => {});
     return report;
   } finally {
-    if (work && path.dirname(work) === await fs.realpath(privateRoot).catch(() => null)
+    if (work && (baselinePackInvocation === null || privateWeatherPackJsonReadsClosed(baselinePackInvocation))
+      && path.dirname(work) === await fs.realpath(privateRoot).catch(() => null)
       && path.basename(work).startsWith('saved-input-audit-')) await fs.rm(work, { recursive: true, force: true }).catch(() => {});
   }
 }

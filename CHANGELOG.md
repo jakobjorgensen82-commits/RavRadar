@@ -1,3 +1,11 @@
+# Lokal 4.0.561 – 2026-10-10
+
+- Normal privat cache kontrollerer fysisk lukning, egen arbejdsfil og de faktisk skrevne bytes før publicering. Forkert indhold med uændret længde eller usikker lukning må ikke erstatte en gyldig pakke; usikre arbejdsrester bevares.
+- Normale admin-, håndbogs- og besøgsopslag holder den eksisterende svarfrist gennem JSON og fejltekst. Frisk genlæsning før fjernelse af en kvitteret kladde bevarer samtidige tilføjelser og sletninger.
+- 40 cachemål, 56 admin-/kladde-/svartidsmål og otte tidligere authmål består lokalt. Eksisterende modelbindinger, format, rettigheder og tidsbudget bevares.
+- 4.0.560 er faktisk offentligt leveret og verificeret for 210 zoner/673 dele. 561 afventer præcis kildekontrol, sikker levering og faktisk effekt. Alle fem samlede målområder er fortsat åbne.
+- Samler kendte fejl i konkrete leverancer og genbruger relevant evidens. Ingen ny vejrhentning, ændret cron, isoleret revisionsaktivering eller ny installationstilladelse.
+
 # Lokal 4.0.560 – 2026-10-10
 
 - Bevarer den eksisterende 12-sekundersfrist gennem JSON-læsning i normale auth-kald, profil-/rettighedslæsninger og tilvalgte egne tur-/indsendelseskald. Ukendt profilformat bliver ikke vellykket adgang. Standardens Response-retur, ejergrænser, tokenfornyelse og hidtidige tidsbudgetter består.

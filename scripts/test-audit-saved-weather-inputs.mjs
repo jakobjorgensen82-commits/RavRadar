@@ -245,7 +245,7 @@ test('offline subprocess scope removes secrets and restores them even after fail
 
 async function fixture(t, { corrupt = false, changedAt = Infinity, wrongContracts = false,
   wrongBaseline = false, cipherTamper = false, forecastAbsent = false,
-  nativeProofs = false, baselinePackTamper = false } = {}) {
+  nativeProofs = false, baselinePackTamper = false, packReaderBank = null } = {}) {
   const folder = await temp(t);
   const source = path.join(folder, 'source'), privateRoot = path.join(folder, 'private'),
     buildRoot = path.join(folder, 'build'), predecessorRoot = path.join(folder, 'old-reader'), progressRoot = path.join(folder, 'progress');
@@ -289,6 +289,19 @@ async function fixture(t, { corrupt = false, changedAt = Infinity, wrongContract
       const bytes = await fs.readFile(descriptor.sourcePath); bytes[bytes.length - 1] ^= 1;
       await fs.writeFile(descriptor.sourcePath, bytes);
     }
+  }
+  if (packReaderBank) {
+    assert.equal(nativeProofs, false, 'This own reader fixture does not impersonate native provenance.');
+    const ledger = '{"synthetic":"reader-only component ledger"}';
+    await write(source, PRIVATE_WEATHER_COMPONENT_FILES.openMeteoBank, packReaderBank);
+    await write(source, PRIVATE_WEATHER_COMPONENT_FILES.selectedComponents, ledger);
+    conditions.weatherComponentInputs = { schemaVersion: 1, kind: 'PRIVATE_WEATHER_COMPONENT_INPUTS',
+      sourceSelectionApplied: true, openMeteoBankSha256: packReaderBank.bankSha256, copernicusBankSha256: null,
+      selectedComponentsSha256: crypto.createHash('sha256').update(ledger).digest('hex') };
+    await write(source, 'data/live/conditions.json', conditions);
+    const descriptor = await buildPrivateWeatherComponentPack({ repositoryRoot: source, conditions });
+    files.push({ ...descriptor, privacyClass: 'PRIVATE_PRODUCTION_RUNTIME' });
+    await write(progressRoot, PRIVATE_WEATHER_COMPONENT_FILES.openMeteoBank, packReaderBank);
   }
   const bundlePath = path.join(buildRoot, 'bundle');
   await createPrivateProductionRuntimeBundle({ privateRoot: buildRoot, bundlePath, repositoryRoot: source, files,
@@ -706,4 +719,106 @@ test('sealed CLI failure never logs private path or exception payload', async t 
   assert.deepEqual(failure, { kind: 'SEALED_CURRENT_SOURCE_AUDIT', status: 'FAILED_CLOSED',
     failedMode: 'open', privatePayloadIncluded: false, rawVectorsIncluded: false, productionPointerUnchanged: true });
   safeReport(failure, directory);
+});
+
+for (const location of ['baseline', 'progress']) for (const fault of ['close-noop', 'none'])
+test('main audit pack JSON lifetime / ' + location + ' / ' + fault, { timeout: 30_000 }, async t => {
+  const native = await import('node:fs');
+  const { syncBuiltinESMExports } = await import('node:module');
+  const childProcess = (await import('node:child_process')).default;
+  const { openMeteoPartSha256 } = await import('./lib/open-meteo-part-bank.mjs');
+  const body = { kind: 'RAVRADAR_PRIVATE_OPEN_METEO_PART_COMPONENT_BANK', schemaVersion: 1,
+    responses: {}, records: [], syntheticReaderOnly: true };
+  const packReaderBank = { ...body, bankSha256: openMeteoPartSha256(body) };
+  const f = await fixture(t, { packReaderBank });
+  const original = { open: fs.open, readFile: fs.readFile, mkdtemp: fs.mkdtemp, rm: fs.rm };
+  const preserved = new Map();
+  for (const file of [f.options.progressFile, f.options.descriptorPath,
+    path.join(f.source, 'data/live/conditions.json'), path.join(f.source, PRIVATE_WEATHER_COMPONENT_FILES.openMeteoBank),
+    path.join(f.source, '.cache/weather-component-inputs.pack')]) preserved.set(file, await original.readFile(file));
+  const archiveHashes = f.built.objects.map(row => crypto.createHash('sha256').update(row.bytes).digest('hex'));
+  const privateRoot = await fs.realpath(f.privateRoot), temporaryParent = await fs.realpath(os.tmpdir());
+  let armed = true, reader, fd, identity, actualClose, observationFailure, reads = 0, closes = 0, launches = 0;
+  const roots = [], removals = [], hooks = [];
+  const probe = () => {
+    try { const stat = native.fstatSync(fd); assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino); return 'OPEN_SAME_OBJECT'; }
+    catch (error) { if (Object.getOwnPropertyDescriptor(error, 'code')?.value === 'EBADF') return 'CLOSED'; throw error; }
+  };
+  hooks.push(t.mock.method(globalThis, 'fetch', () => { throw Error('NO_REAL_NETWORK_ALLOWED'); }));
+  hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_CP_OR_PROVIDER_CHILD_ALLOWED'); }));
+  syncBuiltinESMExports();
+  hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
+    const folder = await Reflect.apply(original.mkdtemp, fs, args);
+    if (armed && /^(saved-input-audit-|rr-encrypted-progress-)/.test(path.basename(folder))) {
+      const physical = await fs.realpath(folder), stat = await fs.stat(physical);
+      const kind = path.basename(folder).startsWith('saved-input-audit-') ? 'baseline' : 'progress';
+      roots.push({ folder: physical, requested: path.resolve(folder), kind, dev: stat.dev, ino: stat.ino });
+    }
+    return folder;
+  }));
+  hooks.push(t.mock.method(fs, 'rm', async (file, ...args) => {
+    const row = roots.find(row => row.folder === path.resolve(String(file)) || row.requested === path.resolve(String(file)));
+    if (armed && row) removals.push(row.kind);
+    return Reflect.apply(original.rm, fs, [file, ...args]);
+  }));
+  hooks.push(t.mock.method(fs, 'open', async (file, flags, ...args) => {
+    const stack = new Error().stack;
+    let selected = false;
+    if (armed && !reader && flags === 'r' && typeof file === 'string' && stack.includes('at readSmallJson (')
+      && stack.includes('private-weather-component-pack.mjs')) {
+      const physical = await fs.realpath(file);
+      selected = roots.some(row => row.kind === location && physical === path.join(row.folder,
+        location === 'baseline' ? 'baseline-components' : 'verified', PRIVATE_WEATHER_COMPONENT_FILES.openMeteoBank));
+    }
+    const handle = await Reflect.apply(original.open, fs, [file, flags, ...args]);
+    if (selected) {
+      reader = handle; fd = handle.fd; actualClose = handle.close.bind(handle); reads++;
+      try {
+        identity = native.fstatSync(fd); const stat = await fs.stat(await fs.realpath(file));
+        assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
+        handle.close = async () => { closes++; if (fault !== 'close-noop') await actualClose(); };
+      } catch (error) { observationFailure = { error }; throw error; }
+    }
+    return handle;
+  }));
+  try {
+    const report = await auditSavedWeatherInputs(f.options); armed = false;
+    if (observationFailure) throw observationFailure.error;
+    if (!reader) t.diagnostic(JSON.stringify({ location, fault, status: report.status, code: report.code, phase: report.phase, roots: roots.map(row => row.kind) }));
+    assert.ok(reader, 'The actual audit reached its own selected normal pack reader.');
+    assert.equal(reads, 1); assert.equal(closes, 1); assert.equal(launches, 0);
+    const selectedRoot = roots.find(row => row.kind === location);
+    const stageExists = await fs.stat(selectedRoot.folder).then(stat => {
+      assert.equal(stat.dev, selectedRoot.dev); assert.equal(stat.ino, selectedRoot.ino); return true;
+    }, error => { if (error.code === 'ENOENT') return false; throw error; });
+    for (const [file, bytes] of preserved) assert.deepEqual(await original.readFile(file), bytes);
+    assert.deepEqual(f.built.objects.map(row => crypto.createHash('sha256').update(row.bytes).digest('hex')), archiveHashes);
+    safeReport(report, f.privateRoot);
+    const fdState = probe();
+    t.diagnostic(JSON.stringify({ kind: 'MAIN_AUDIT_PACK_READER', location, fault, status: report.status, code: report.code ?? null,
+      phase: report.phase ?? null, fdState, reads, closes, stageExists, cleanupCalls: removals.filter(kind => kind === location).length,
+      auditWorkCleanupCalls: removals.filter(kind => kind === 'baseline').length, launches, originalsUnchanged: true,
+      ownerClaim: 'none: physical scratch/reader lifetime only' }));
+    assert.equal(fdState, fault === 'none' ? 'CLOSED' : 'OPEN_SAME_OBJECT');
+    if (fault === 'none') {
+      assert.equal(report.status, 'AUDIT_COMPLETED');
+      assert.equal(stageExists, false); assert.equal(removals.filter(kind => kind === location).length, 1);
+    } else {
+      assert.equal(report.status, 'AUDIT_FAILED_CLOSED');
+      assert.equal(report.code, location === 'baseline' ? 'BASELINE_COMPONENT_PACK_REJECTED' : 'PROGRESS_AUTHENTICATION_REJECTED');
+      assert.equal(stageExists, true); assert.equal(removals.filter(kind => kind === location).length, 0);
+    }
+  } finally {
+    armed = false; for (const hook of hooks.reverse()) hook.mock.restore(); syncBuiltinESMExports();
+    if (reader && probe() !== 'CLOSED') await actualClose();
+    if (reader) assert.equal(probe(), 'CLOSED');
+    for (const row of roots) {
+      const stat = await fs.stat(row.folder).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+      if (!stat) continue;
+      assert.equal(stat.dev, row.dev); assert.equal(stat.ino, row.ino);
+      assert.equal(path.dirname(row.folder), row.kind === 'baseline' ? privateRoot : temporaryParent);
+      assert.ok(path.basename(row.folder).startsWith(row.kind === 'baseline' ? 'saved-input-audit-' : 'rr-encrypted-progress-'));
+      await original.rm(row.folder, { recursive: true, force: true });
+    }
+  }
 });

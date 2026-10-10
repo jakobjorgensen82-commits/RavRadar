@@ -1481,3 +1481,2344 @@ test('cipher commit flushes and closes complete authenticated bytes before repla
     // directory crash durability or national four-minute capacity.
   });
 });
+
+for (const mode of ['save', 'inspect']) for (const fault of ['close-noop', 'none'])
+test('main pack JSON physical lifetime / ' + mode + ' / ' + fault, { timeout: 30_000 }, async t => {
+  const native = await import('node:fs');
+  const { syncBuiltinESMExports } = await import('node:module');
+  const childProcess = (await import('node:child_process')).default;
+  const originals = { open: fs.open, readFile: fs.readFile, mkdtemp: fs.mkdtemp, rm: fs.rm };
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const root = await fs.realpath(mode === 'save' ? f.source : f.target);
+  const preserved = new Map();
+  for (const file of [f.sourceBase, f.targetBase, path.join(root, 'data/live/conditions.json'),
+    path.join(root, files.openMeteoBank), path.join(root, WEATHER_PROGRESS_CIPHER_PATH)]) {
+    preserved.set(file, await originals.readFile(file));
+  }
+  let armed = true, reader, fd, identity, actualClose, selectedPath, observationFailure;
+  let reads = 0, closes = 0, inspected = 0, launches = 0;
+  const temporaries = [], removed = [], hooks = [];
+  const nativeProbe = () => {
+    try {
+      const stat = native.fstatSync(fd);
+      assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino);
+      return 'OPEN_SAME_OBJECT';
+    } catch (error) {
+      if (Object.getOwnPropertyDescriptor(error, 'code')?.value === 'EBADF') return 'CLOSED';
+      throw error;
+    }
+  };
+  const isSelected = (file, stack) => armed && !reader && typeof file === 'string'
+    && stack.includes('at readSmallJson (') && stack.includes('private-weather-component-pack.mjs')
+    && (mode === 'save' ? path.resolve(file) === path.join(root, files.openMeteoBank)
+      : temporaries.some(row => path.resolve(file) === path.join(row.folder, 'verified', files.openMeteoBank)));
+  const bind = async (handle, file) => {
+    reader = handle; fd = handle.fd; actualClose = handle.close.bind(handle);
+    try {
+      selectedPath = await fs.realpath(file); identity = native.fstatSync(fd);
+      const stat = await fs.stat(selectedPath);
+      assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
+      assert.equal(temporaries.length, 1, 'The actual parent created its own private staging directory.');
+      handle.close = async () => { closes++; if (fault !== 'close-noop') await actualClose(); };
+    } catch (error) { observationFailure = { error }; throw error; }
+  };
+  hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_NATIVE_OR_PROVIDER_CHILD_ALLOWED'); }));
+  syncBuiltinESMExports();
+  hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
+    const folder = await Reflect.apply(originals.mkdtemp, fs, args);
+    if (armed && path.basename(folder).startsWith('rr-encrypted-progress-')) {
+      const physical = await fs.realpath(folder), stat = await fs.stat(physical);
+      temporaries.push({ folder: physical, dev: stat.dev, ino: stat.ino });
+    }
+    return folder;
+  }));
+  hooks.push(t.mock.method(fs, 'rm', async (file, ...args) => {
+    if (armed && temporaries.some(row => path.resolve(String(file)) === row.folder)) removed.push(path.resolve(String(file)));
+    return Reflect.apply(originals.rm, fs, [file, ...args]);
+  }));
+  hooks.push(t.mock.method(fs, 'open', async (file, flags, ...args) => {
+    const selected = isSelected(file, new Error().stack) && flags === 'r';
+    const handle = await Reflect.apply(originals.open, fs, [file, flags, ...args]);
+    if (selected) { reads++; await bind(handle, file); }
+    return handle;
+  }));
+  let result, failure;
+  try {
+    try {
+      result = mode === 'save' ? await f.call('save') : await withAuthenticatedWeatherProgress({
+        repositoryRoot: root, basePath: f.targetBase, repository, encryptionKey,
+      }, async input => { inspected++; assert.ok(input.files.length); return 'INSPECTED'; });
+    } catch (error) { failure = { error }; }
+    armed = false;
+    if (observationFailure) throw observationFailure.error;
+    assert.ok(reader, 'Actual normal pack JSON reader was reached.');
+    assert.equal(reads, 1); assert.equal(closes, 1); assert.equal(launches, 0);
+    const fdState = nativeProbe();
+    const stagingExists = await fs.stat(temporaries[0].folder).then(stat => {
+      assert.equal(stat.dev, temporaries[0].dev); assert.equal(stat.ino, temporaries[0].ino); return true;
+    }, error => { if (error.code === 'ENOENT') return false; throw error; });
+    const unchanged = [...await Promise.all([...preserved].map(async ([file, bytes]) =>
+      [file, (await originals.readFile(file)).equals(bytes)]))];
+    t.diagnostic(JSON.stringify({ kind: 'MAIN_PACK_READER_NORMAL_CALLER', mode, fault, reads, closes, launches,
+      fdState, stagingExists, stagingCleanupCalls: removed.length, inspected,
+      saved: result?.saved === true, code: result?.code ?? null,
+      failure: failure ? String(failure.error?.message ?? failure.error) : null,
+      originalNonCipherUnchanged: unchanged.filter(([file]) => file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)).every(([,same]) => same),
+      originalCipherUnchanged: unchanged.find(([file]) => file === path.join(root, WEATHER_PROGRESS_CIPHER_PATH))[1],
+      ownerClaim: 'none: this exact main baseline has no paired/SOURCE owner at these callers' }));
+    for (const [file, same] of unchanged) if (file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH) || fault !== 'none') assert.equal(same, true, file);
+    assert.equal(fdState, fault === 'none' ? 'CLOSED' : 'OPEN_SAME_OBJECT');
+    if (fault === 'none') {
+      assert.equal(failure, undefined);
+      if (mode === 'save') assert.equal(result.saved, true); else { assert.equal(result, 'INSPECTED'); assert.equal(inspected, 1); }
+      assert.equal(stagingExists, false); assert.equal(removed.length, 1);
+    } else {
+      if (mode === 'save') assert.notEqual(result?.saved, true); else { assert.ok(failure); assert.equal(inspected, 0); }
+      assert.equal(stagingExists, true, 'Unproved actual reader prevents cleanup of this same parent staging directory.');
+      assert.equal(removed.length, 0);
+    }
+  } finally {
+    armed = false;
+    for (const hook of hooks.reverse()) hook.mock.restore();
+    syncBuiltinESMExports();
+    // Teardown happens only after the measured result; never manufacture stop/closure success.
+    if (reader && nativeProbe() !== 'CLOSED') await actualClose();
+    if (reader) assert.equal(nativeProbe(), 'CLOSED');
+    for (const row of temporaries) {
+      const stat = await fs.stat(row.folder).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+      if (stat) {
+        assert.equal(stat.dev, row.dev); assert.equal(stat.ino, row.ino);
+        assert.equal(path.dirname(row.folder), await fs.realpath(os.tmpdir()));
+        assert.ok(path.basename(row.folder).startsWith('rr-encrypted-progress-'));
+        await originals.rm(row.folder, { recursive: true, force: true });
+      }
+    }
+  }
+});
+
+
+
+for (const mode of ['nested-union', 'donor', 'install']) for (const fault of ['close-noop', 'none'])
+test('main remaining pack JSON lifetime / ' + mode + ' / ' + fault, { timeout: 30_000 }, async t => {
+  const native = await import('node:fs');
+  const { syncBuiltinESMExports } = await import('node:module');
+  const childProcess = (await import('node:child_process')).default;
+  const originals = { open: fs.open, readFile: fs.readFile, mkdtemp: fs.mkdtemp, mkdir: fs.mkdir, rm: fs.rm };
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const root = await fs.realpath(f.target);
+  const sourceRoot = await fs.realpath(f.source);
+  let installSource, execute;
+  await write(root, 'data/live/coastal-parts-v2.json', { partCount: 1, zones: { ZONE: [part] } });
+  if (mode === 'nested-union') {
+    // Reuse the existing normal-union native-temperature fixture, not the generic bank fixture's custom test policy.
+    for (const destination of [sourceRoot, root]) await write(destination, files.openMeteoBank, nativeTemperatureBank(reference, 14));
+    assert.equal((await f.call('save')).saved, true);
+    await fs.copyFile(path.join(sourceRoot, WEATHER_PROGRESS_CIPHER_PATH), path.join(root, WEATHER_PROGRESS_CIPHER_PATH));
+    await buildPrivateWeatherComponentPack({ repositoryRoot: root, conditions: JSON.parse(baseline) });
+    execute = () => f.call('restore', f.target, { productionReferenceAt: reference });
+  } else if (mode === 'donor') {
+    await write(root, files.openMeteoBank, nativeTemperatureBank(reference, 14));
+    await write(sourceRoot, files.openMeteoBank, nativeTemperatureBank(reference, 17,
+      new Date(Date.parse(reference) + 300000).toISOString()));
+    const bank = JSON.parse(await fs.readFile(path.join(sourceRoot, files.openMeteoBank), 'utf8'));
+    const ledger = await fs.readFile(path.join(sourceRoot, files.selectedComponents));
+    const conditions = { productionReferenceAt: reference, weatherComponentInputs: {
+      schemaVersion: 1, kind: 'PRIVATE_WEATHER_COMPONENT_INPUTS', sourceSelectionApplied: true,
+      openMeteoBankSha256: bank.bankSha256, copernicusBankSha256: null,
+      selectedComponentsSha256: crypto.createHash('sha256').update(ledger).digest('hex'),
+    } };
+    await write(root, 'data/live/conditions.json', { productionReferenceAt: new Date(Date.parse(reference) - 3600000).toISOString() });
+    await write(sourceRoot, 'data/live/conditions.json', conditions);
+    await buildPrivateWeatherComponentPack({ repositoryRoot: sourceRoot, conditions });
+    execute = () => reconcileProtectedWeatherSources({ root, donorRoot: sourceRoot,
+      productionReferenceAt: new Date(Date.parse(reference) + 3600000).toISOString() });
+  } else {
+    const { installRestoredPrivateRuntime, PRIVATE_RUNTIME_FILES } = await import('./private-production-runtime-workflow.mjs');
+    installSource = path.join(await fs.realpath(f.folder), 'restored');
+    for (const descriptor of PRIVATE_RUNTIME_FILES) await write(installSource, descriptor.relativePath,
+      descriptor.id === 'full-conditions' ? { legacy: true } : 'own-synthetic-' + descriptor.id);
+    // Existing installer fixture's base-file shape, plus a real normally created component pack.
+    const pack = await buildPrivateWeatherComponentPack({ repositoryRoot: sourceRoot, conditions: { legacy: true } });
+    await fs.mkdir(path.join(installSource, '.cache'), { recursive: true });
+    await fs.copyFile(pack.sourcePath, path.join(installSource, '.cache/weather-component-inputs.pack'));
+    execute = () => installRestoredPrivateRuntime({ restoredRoot: installSource, repositoryRoot: root });
+  }
+  const preserved = new Map();
+  for (const file of [f.sourceBase, f.targetBase, path.join(root, 'data/live/conditions.json'),
+    path.join(root, files.openMeteoBank), path.join(root, WEATHER_PROGRESS_CIPHER_PATH),
+    path.join(sourceRoot, files.openMeteoBank), path.join(sourceRoot, WEATHER_PROGRESS_CIPHER_PATH)]) {
+    preserved.set(file, await originals.readFile(file));
+  }
+  let armed = true, reader, fd, identity, actualClose, selectedPath, observationFailure;
+  let reads = 0, closes = 0, inspected = 0, launches = 0;
+  const temporaries = [], removed = [], hooks = [];
+  const nativeProbe = () => {
+    try {
+      const stat = native.fstatSync(fd);
+      assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino);
+      return 'OPEN_SAME_OBJECT';
+    } catch (error) {
+      if (Object.getOwnPropertyDescriptor(error, 'code')?.value === 'EBADF') return 'CLOSED';
+      throw error;
+    }
+  };
+  const isSelected = async (file, stack) => {
+    if (!armed || reader || typeof file !== 'string' || !stack.includes('at readSmallJson (')
+      || !stack.includes('private-weather-component-pack.mjs')) return false;
+    // Windows temp aliases may name the same own file; bind only after realpath identity.
+    const physical = await fs.realpath(file);
+    return temporaries.some(row => physical === path.join(row.folder,
+      ...(mode === 'nested-union' ? ['protected-verified'] : mode === 'donor' ? ['donor-verified'] : []),
+      files.openMeteoBank));
+  };
+  const bind = async (handle, file) => {
+    reader = handle; fd = handle.fd; actualClose = handle.close.bind(handle);
+    try {
+      selectedPath = await fs.realpath(file); identity = native.fstatSync(fd);
+      const stat = await fs.stat(selectedPath);
+      assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
+      assert.equal(temporaries.length, 1, 'The actual parent created its own private staging directory.');
+      handle.close = async () => { closes++; if (fault !== 'close-noop') await actualClose(); };
+    } catch (error) { observationFailure = { error }; throw error; }
+  };
+  hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_NATIVE_OR_PROVIDER_CHILD_ALLOWED'); }));
+  syncBuiltinESMExports();
+  hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
+    const folder = await Reflect.apply(originals.mkdtemp, fs, args);
+    if (armed && path.basename(folder).startsWith(mode === 'donor' ? 'rr-paired-source-' : 'rr-encrypted-progress-')) {
+      const physical = await fs.realpath(folder), stat = await fs.stat(physical);
+      temporaries.push({ folder: physical, requested: path.resolve(folder), dev: stat.dev, ino: stat.ino });
+    }
+    return folder;
+  }));
+  hooks.push(t.mock.method(fs, 'mkdir', async (file, ...args) => {
+    const result = await Reflect.apply(originals.mkdir, fs, [file, ...args]);
+    if (armed && mode === 'install' && typeof file === 'string' && file.startsWith(installSource + '.weather-components-')
+      && path.dirname(file) === path.dirname(installSource)) {
+      const physical = await fs.realpath(file), stat = await fs.stat(physical);
+      if (!temporaries.some(row => row.folder === physical)) temporaries.push({ folder: physical, dev: stat.dev, ino: stat.ino });
+    }
+    return result;
+  }));
+  hooks.push(t.mock.method(fs, 'rm', async (file, ...args) => {
+    if (armed && temporaries.some(row => path.resolve(String(file)) === row.folder || path.resolve(String(file)) === row.requested)) removed.push(path.resolve(String(file)));
+    return Reflect.apply(originals.rm, fs, [file, ...args]);
+  }));
+  hooks.push(t.mock.method(fs, 'open', async (file, flags, ...args) => {
+    const selected = flags === 'r' && await isSelected(file, new Error().stack);
+    const handle = await Reflect.apply(originals.open, fs, [file, flags, ...args]);
+    if (selected) { reads++; await bind(handle, file); }
+    return handle;
+  }));
+  let result, failure;
+  try {
+    try {
+      result = await execute();
+    } catch (error) { failure = { error }; }
+    armed = false;
+    if (observationFailure) throw observationFailure.error;
+    if (!reader) t.diagnostic(JSON.stringify({ mode, fault, stageCount: temporaries.length, failure: String(failure?.error?.message), cause: String(failure?.error?.cause?.message) }));
+    assert.ok(reader, 'Actual normal pack JSON reader was reached.');
+    assert.equal(reads, 1); assert.equal(closes, 1); assert.equal(launches, 0);
+    const fdState = nativeProbe();
+    const stagingExists = await fs.stat(temporaries[0].folder).then(stat => {
+      assert.equal(stat.dev, temporaries[0].dev); assert.equal(stat.ino, temporaries[0].ino); return true;
+    }, error => { if (error.code === 'ENOENT') return false; throw error; });
+    const unchanged = [...await Promise.all([...preserved].map(async ([file, bytes]) =>
+      [file, (await originals.readFile(file)).equals(bytes)]))];
+    t.diagnostic(JSON.stringify({ kind: 'MAIN_REMAINING_PACK_READER_NORMAL_CALLER', mode, fault, reads, closes, launches,
+      fdState, stagingExists, stagingCleanupCalls: removed.length, inspected,
+      restored: result?.restored === true, installed: result?.installed === true, code: result?.code ?? null, unionFailureCode: result?.unionFailureCode ?? null,
+      failure: failure ? String(failure.error?.message ?? failure.error) : null,
+      originalNonCipherUnchanged: unchanged.filter(([file]) => file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)).every(([,same]) => same),
+      originalCipherUnchanged: unchanged.find(([file]) => file === path.join(root, WEATHER_PROGRESS_CIPHER_PATH))[1],
+      ownerClaim: 'none: this exact main baseline has no paired/SOURCE owner at these callers' }));
+    for (const [file, same] of unchanged) {
+      const expectedInstall = fault === 'none' && (file === path.join(root, files.openMeteoBank)
+        || mode === 'install' && file === path.join(root, 'data/live/conditions.json'));
+      if (!expectedInstall) assert.equal(same, true, file);
+    }
+    assert.equal(fdState, fault === 'none' ? 'CLOSED' : 'OPEN_SAME_OBJECT');
+    if (fault === 'none') {
+      assert.equal(failure, undefined);
+      if (mode === 'nested-union') assert.equal(result.restored, true);
+      else if (mode === 'install') assert.equal(result.installed, true);
+      else assert.equal(result.publicValuesCopied, false);
+      assert.equal(stagingExists, false); assert.equal(removed.length, 1);
+    } else {
+      if (mode === 'nested-union') {
+        assert.equal(result.status, 'RESTORE_REPAIR_REQUIRED');
+        assert.equal(result.unionFailureCode, 'PROTECTED_PROGRESS_BASE_UNPACK_FAILED');
+      } else assert.ok(failure);
+      assert.equal(stagingExists, true, 'Unproved actual reader prevents cleanup of this same parent staging directory.');
+      assert.equal(removed.length, 0);
+    }
+  } finally {
+    armed = false;
+    for (const hook of hooks.reverse()) hook.mock.restore();
+    syncBuiltinESMExports();
+    // Teardown happens only after the measured result; never manufacture stop/closure success.
+    if (reader && nativeProbe() !== 'CLOSED') await actualClose();
+    if (reader) assert.equal(nativeProbe(), 'CLOSED');
+    for (const row of temporaries) {
+      const stat = await fs.stat(row.folder).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+      if (stat) {
+        assert.equal(stat.dev, row.dev); assert.equal(stat.ino, row.ino);
+        if (mode === 'install') {
+          assert.equal(path.dirname(row.folder), path.dirname(installSource));
+          assert.ok(row.folder.startsWith(installSource + '.weather-components-'));
+        } else {
+          assert.equal(path.dirname(row.folder), await fs.realpath(os.tmpdir()));
+          assert.ok(path.basename(row.folder).startsWith(mode === 'donor' ? 'rr-paired-source-' : 'rr-encrypted-progress-'));
+        }
+        await originals.rm(row.folder, { recursive: true, force: true });
+      }
+    }
+  }
+});
+
+
+
+for (const mode of ['inspect']) for (const fault of ['close-noop', 'none'])
+test('main pack archive input physical lifetime / ' + mode + ' / ' + fault, { timeout: 30_000 }, async t => {
+  const native = await import('node:fs');
+  const { syncBuiltinESMExports } = await import('node:module');
+  const childProcess = (await import('node:child_process')).default;
+  const originals = { open: fs.open, readFile: fs.readFile, mkdtemp: fs.mkdtemp, rm: fs.rm };
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const root = await fs.realpath(mode === 'save' ? f.source : f.target);
+  const preserved = new Map();
+  for (const file of [f.sourceBase, f.targetBase, path.join(root, 'data/live/conditions.json'),
+    path.join(root, files.openMeteoBank), path.join(root, WEATHER_PROGRESS_CIPHER_PATH)]) {
+    preserved.set(file, await originals.readFile(file));
+  }
+  let armed = true, reader, fd, identity, actualClose, selectedPath, observationFailure;
+  let reads = 0, closes = 0, inspected = 0, launches = 0;
+  const temporaries = [], removed = [], hooks = [];
+  const nativeProbe = () => {
+    try {
+      const stat = native.fstatSync(fd);
+      assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino);
+      return 'OPEN_SAME_OBJECT';
+    } catch (error) {
+      if (Object.getOwnPropertyDescriptor(error, 'code')?.value === 'EBADF') return 'CLOSED';
+      throw error;
+    }
+  };
+  const isSelected = (file, stack) => armed && !reader && typeof file === 'string'
+    && stack.includes('at unpackPackWithJsonReadLifetime (') && stack.includes('private-weather-component-pack.mjs')
+    && (mode === 'save' ? path.resolve(file) === path.join(root, files.openMeteoBank)
+      : temporaries.some(row => path.resolve(file) === path.join(row.folder, '.cache/weather-component-inputs.pack')));
+  const bind = async (handle, file) => {
+    reader = handle; fd = handle.fd; actualClose = handle.close.bind(handle);
+    try {
+      selectedPath = await fs.realpath(file); identity = native.fstatSync(fd);
+      const stat = await fs.stat(selectedPath);
+      assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
+      assert.equal(temporaries.length, 1, 'The actual parent created its own private staging directory.');
+      handle.close = async () => { closes++; if (fault !== 'close-noop') await actualClose(); };
+    } catch (error) { observationFailure = { error }; throw error; }
+  };
+  hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_NATIVE_OR_PROVIDER_CHILD_ALLOWED'); }));
+  syncBuiltinESMExports();
+  hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
+    const folder = await Reflect.apply(originals.mkdtemp, fs, args);
+    if (armed && path.basename(folder).startsWith('rr-encrypted-progress-')) {
+      const physical = await fs.realpath(folder), stat = await fs.stat(physical);
+      temporaries.push({ folder: physical, dev: stat.dev, ino: stat.ino });
+    }
+    return folder;
+  }));
+  hooks.push(t.mock.method(fs, 'rm', async (file, ...args) => {
+    if (armed && temporaries.some(row => path.resolve(String(file)) === row.folder)) removed.push(path.resolve(String(file)));
+    return Reflect.apply(originals.rm, fs, [file, ...args]);
+  }));
+  hooks.push(t.mock.method(fs, 'open', async (file, flags, ...args) => {
+    const selected = isSelected(file, new Error().stack) && flags === 'r';
+    const handle = await Reflect.apply(originals.open, fs, [file, flags, ...args]);
+    if (selected) { reads++; await bind(handle, file); }
+    return handle;
+  }));
+  let result, failure;
+  try {
+    try {
+      result = mode === 'save' ? await f.call('save') : await withAuthenticatedWeatherProgress({
+        repositoryRoot: root, basePath: f.targetBase, repository, encryptionKey,
+      }, async input => { inspected++; assert.ok(input.files.length); return 'INSPECTED'; });
+    } catch (error) { failure = { error }; }
+    armed = false;
+    if (observationFailure) throw observationFailure.error;
+    assert.ok(reader, 'Actual normal unpack archive input reader was reached.');
+    assert.equal(reads, 1); assert.equal(closes, 1); assert.equal(launches, 0);
+    const fdState = nativeProbe();
+    const stagingExists = await fs.stat(temporaries[0].folder).then(stat => {
+      assert.equal(stat.dev, temporaries[0].dev); assert.equal(stat.ino, temporaries[0].ino); return true;
+    }, error => { if (error.code === 'ENOENT') return false; throw error; });
+    const unchanged = [...await Promise.all([...preserved].map(async ([file, bytes]) =>
+      [file, (await originals.readFile(file)).equals(bytes)]))];
+    t.diagnostic(JSON.stringify({ kind: 'MAIN_PACK_ARCHIVE_READER_NORMAL_CALLER', mode, fault, reads, closes, launches,
+      fdState, stagingExists, stagingCleanupCalls: removed.length, inspected,
+      saved: result?.saved === true, code: result?.code ?? null,
+      failure: failure ? String(failure.error?.message ?? failure.error) : null,
+      originalNonCipherUnchanged: unchanged.filter(([file]) => file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)).every(([,same]) => same),
+      originalCipherUnchanged: unchanged.find(([file]) => file === path.join(root, WEATHER_PROGRESS_CIPHER_PATH))[1],
+      ownerClaim: 'none: this exact main baseline has no paired/SOURCE owner at these callers' }));
+    for (const [file, same] of unchanged) if (file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH) || fault !== 'none') assert.equal(same, true, file);
+    assert.equal(fdState, fault === 'none' ? 'CLOSED' : 'OPEN_SAME_OBJECT');
+    if (fault === 'none') {
+      assert.equal(failure, undefined);
+      if (mode === 'save') assert.equal(result.saved, true); else { assert.equal(result, 'INSPECTED'); assert.equal(inspected, 1); }
+      assert.equal(stagingExists, false); assert.equal(removed.length, 1);
+    } else {
+      if (mode === 'save') assert.notEqual(result?.saved, true); else { assert.ok(failure); assert.equal(inspected, 0); }
+      assert.equal(stagingExists, true, 'Unproved actual reader prevents cleanup of this same parent staging directory.');
+      assert.equal(removed.length, 0);
+    }
+  } finally {
+    armed = false;
+    for (const hook of hooks.reverse()) hook.mock.restore();
+    syncBuiltinESMExports();
+    // Teardown happens only after the measured result; never manufacture stop/closure success.
+    if (reader && nativeProbe() !== 'CLOSED') await actualClose();
+    if (reader) assert.equal(nativeProbe(), 'CLOSED');
+    for (const row of temporaries) {
+      const stat = await fs.stat(row.folder).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+      if (stat) {
+        assert.equal(stat.dev, row.dev); assert.equal(stat.ino, row.ino);
+        assert.equal(path.dirname(row.folder), await fs.realpath(os.tmpdir()));
+        assert.ok(path.basename(row.folder).startsWith('rr-encrypted-progress-'));
+        await originals.rm(row.folder, { recursive: true, force: true });
+      }
+    }
+  }
+});
+
+
+
+for (const mode of ['restore']) for (const fault of ['close-noop', 'none'])
+test('main direct restore pack JSON lifetime / ' + mode + ' / ' + fault, { timeout: 30_000 }, async t => {
+  const native = await import('node:fs');
+  const { syncBuiltinESMExports } = await import('node:module');
+  const childProcess = (await import('node:child_process')).default;
+  const originals = { open: fs.open, readFile: fs.readFile, mkdtemp: fs.mkdtemp, rm: fs.rm };
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const root = await fs.realpath(mode === 'save' ? f.source : f.target);
+  const preserved = new Map();
+  for (const file of [f.sourceBase, f.targetBase, path.join(root, 'data/live/conditions.json'),
+    path.join(root, files.openMeteoBank), path.join(root, WEATHER_PROGRESS_CIPHER_PATH)]) {
+    preserved.set(file, await originals.readFile(file));
+  }
+  let armed = true, reader, fd, identity, actualClose, selectedPath, observationFailure;
+  let reads = 0, closes = 0, inspected = 0, launches = 0;
+  const temporaries = [], removed = [], hooks = [];
+  const nativeProbe = () => {
+    try {
+      const stat = native.fstatSync(fd);
+      assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino);
+      return 'OPEN_SAME_OBJECT';
+    } catch (error) {
+      if (Object.getOwnPropertyDescriptor(error, 'code')?.value === 'EBADF') return 'CLOSED';
+      throw error;
+    }
+  };
+  const isSelected = (file, stack) => armed && !reader && typeof file === 'string'
+    && stack.includes('at readSmallJson (') && stack.includes('private-weather-component-pack.mjs')
+    && (mode === 'save' ? path.resolve(file) === path.join(root, files.openMeteoBank)
+      : temporaries.some(row => path.resolve(file) === path.join(row.folder, 'verified', files.openMeteoBank)));
+  const bind = async (handle, file) => {
+    reader = handle; fd = handle.fd; actualClose = handle.close.bind(handle);
+    try {
+      selectedPath = await fs.realpath(file); identity = native.fstatSync(fd);
+      const stat = await fs.stat(selectedPath);
+      assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
+      assert.equal(temporaries.length, 1, 'The actual parent created its own private staging directory.');
+      handle.close = async () => { closes++; if (fault !== 'close-noop') await actualClose(); };
+    } catch (error) { observationFailure = { error }; throw error; }
+  };
+  hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_NATIVE_OR_PROVIDER_CHILD_ALLOWED'); }));
+  syncBuiltinESMExports();
+  hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
+    const folder = await Reflect.apply(originals.mkdtemp, fs, args);
+    if (armed && path.basename(folder).startsWith('rr-encrypted-progress-')) {
+      const physical = await fs.realpath(folder), stat = await fs.stat(physical);
+      temporaries.push({ folder: physical, dev: stat.dev, ino: stat.ino });
+    }
+    return folder;
+  }));
+  hooks.push(t.mock.method(fs, 'rm', async (file, ...args) => {
+    if (armed && temporaries.some(row => path.resolve(String(file)) === row.folder)) removed.push(path.resolve(String(file)));
+    return Reflect.apply(originals.rm, fs, [file, ...args]);
+  }));
+  hooks.push(t.mock.method(fs, 'open', async (file, flags, ...args) => {
+    const selected = isSelected(file, new Error().stack) && flags === 'r';
+    const handle = await Reflect.apply(originals.open, fs, [file, flags, ...args]);
+    if (selected) { reads++; await bind(handle, file); }
+    return handle;
+  }));
+  let result, failure;
+  try {
+    try {
+      result = await f.call('restore', f.target);
+    } catch (error) { failure = { error }; }
+    armed = false;
+    if (observationFailure) throw observationFailure.error;
+    assert.ok(reader, 'Actual normal pack JSON reader was reached.');
+    assert.equal(reads, 1); assert.equal(closes, 1); assert.equal(launches, 0);
+    const fdState = nativeProbe();
+    const stagingExists = await fs.stat(temporaries[0].folder).then(stat => {
+      assert.equal(stat.dev, temporaries[0].dev); assert.equal(stat.ino, temporaries[0].ino); return true;
+    }, error => { if (error.code === 'ENOENT') return false; throw error; });
+    const unchanged = [...await Promise.all([...preserved].map(async ([file, bytes]) =>
+      [file, (await originals.readFile(file)).equals(bytes)]))];
+    t.diagnostic(JSON.stringify({ kind: 'MAIN_DIRECT_RESTORE_PACK_READER', mode, fault, reads, closes, launches,
+      fdState, stagingExists, stagingCleanupCalls: removed.length, inspected,
+      restored: result?.restored === true, code: result?.code ?? null,
+      failure: failure ? String(failure.error?.message ?? failure.error) : null,
+      originalNonCipherUnchanged: unchanged.filter(([file]) => file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)).every(([,same]) => same),
+      originalCipherUnchanged: unchanged.find(([file]) => file === path.join(root, WEATHER_PROGRESS_CIPHER_PATH))[1],
+      ownerClaim: 'none: this exact main baseline has no paired/SOURCE owner at these callers' }));
+    for (const [file, same] of unchanged) if (file !== path.join(root, files.openMeteoBank) || fault !== 'none') assert.equal(same, true, file);
+    assert.equal(fdState, fault === 'none' ? 'CLOSED' : 'OPEN_SAME_OBJECT');
+    if (fault === 'none') {
+      assert.equal(failure, undefined);
+      assert.equal(result.restored, true);
+      assert.equal(stagingExists, false); assert.equal(removed.length, 1);
+    } else {
+      assert.equal(result.restored, false); assert.equal(result.code, 'PROGRESS_UNAVAILABLE');
+      assert.equal(stagingExists, true, 'Unproved actual reader prevents cleanup of this same parent staging directory.');
+      assert.equal(removed.length, 0);
+    }
+  } finally {
+    armed = false;
+    for (const hook of hooks.reverse()) hook.mock.restore();
+    syncBuiltinESMExports();
+    // Teardown happens only after the measured result; never manufacture stop/closure success.
+    if (reader && nativeProbe() !== 'CLOSED') await actualClose();
+    if (reader) assert.equal(nativeProbe(), 'CLOSED');
+    for (const row of temporaries) {
+      const stat = await fs.stat(row.folder).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+      if (stat) {
+        assert.equal(stat.dev, row.dev); assert.equal(stat.ino, row.ino);
+        assert.equal(path.dirname(row.folder), await fs.realpath(os.tmpdir()));
+        assert.ok(path.basename(row.folder).startsWith('rr-encrypted-progress-'));
+        await originals.rm(row.folder, { recursive: true, force: true });
+      }
+    }
+  }
+});
+
+
+
+for (const mode of ['inspect']) for (const fault of ['read-null-close-error', 'read-zero-close-noop', 'closed-then-zero', 'probe-callback-null', 'probe-proxy-ebadf'])
+test('main pack archive first-error and probe / ' + mode + ' / ' + fault, { timeout: 30_000 }, async t => {
+  const native = await import('node:fs');
+  const { syncBuiltinESMExports } = await import('node:module');
+  const childProcess = (await import('node:child_process')).default;
+  const originals = { open: fs.open, readFile: fs.readFile, mkdtemp: fs.mkdtemp, rm: fs.rm };
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const root = await fs.realpath(mode === 'save' ? f.source : f.target);
+  const preserved = new Map();
+  for (const file of [f.sourceBase, f.targetBase, path.join(root, 'data/live/conditions.json'),
+    path.join(root, files.openMeteoBank), path.join(root, WEATHER_PROGRESS_CIPHER_PATH)]) {
+    preserved.set(file, await originals.readFile(file));
+  }
+  let armed = true, reader, fd, identity, actualClose, selectedPath, observationFailure;
+  let reads = 0, closes = 0, inspected = 0, launches = 0, inputReads = 0, probeCalls = 0, proxyTraps = 0;
+  const uncertain = ['read-zero-close-noop', 'probe-callback-null', 'probe-proxy-ebadf'].includes(fault);
+  const remainsOpen = ['read-zero-close-noop', 'probe-proxy-ebadf'].includes(fault);
+  const originalFstat = native.fstat;
+  const temporaries = [], removed = [], hooks = [];
+  const nativeProbe = () => {
+    try {
+      const stat = native.fstatSync(fd);
+      assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino);
+      return 'OPEN_SAME_OBJECT';
+    } catch (error) {
+      if (Object.getOwnPropertyDescriptor(error, 'code')?.value === 'EBADF') return 'CLOSED';
+      throw error;
+    }
+  };
+  const isSelected = (file, stack) => armed && !reader && typeof file === 'string'
+    && stack.includes('at unpackPackWithJsonReadLifetime (') && stack.includes('private-weather-component-pack.mjs')
+    && (mode === 'save' ? path.resolve(file) === path.join(root, files.openMeteoBank)
+      : temporaries.some(row => path.resolve(file) === path.join(row.folder, '.cache/weather-component-inputs.pack')));
+  const bind = async (handle, file) => {
+    reader = handle; fd = handle.fd; actualClose = handle.close.bind(handle);
+    try {
+      selectedPath = await fs.realpath(file); identity = native.fstatSync(fd);
+      const stat = await fs.stat(selectedPath);
+      assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
+      assert.equal(temporaries.length, 1, 'The actual parent created its own private staging directory.');
+      if (fault.startsWith('read-')) handle.read = async () => { inputReads++; throw fault === 'read-null-close-error' ? null : 0; };
+      handle.close = async () => {
+        closes++;
+        if (remainsOpen) return;
+        await actualClose();
+        if (fault === 'closed-then-zero') throw 0;
+        if (fault === 'read-null-close-error') throw Error('OWN_SECONDARY_CLOSE_ERROR');
+      };
+    } catch (error) { observationFailure = { error }; throw error; }
+  };
+  hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_NATIVE_OR_PROVIDER_CHILD_ALLOWED'); }));
+  hooks.push(t.mock.method(native.default, 'fstat', (number, callback) => {
+    const stack = new Error().stack;
+    if (!armed || !reader || number !== fd || !stack.includes('at unpackPackWithJsonReadLifetime (')) return originalFstat(number, callback);
+    probeCalls++;
+    if (fault === 'probe-callback-null') { callback(null); return; }
+    if (fault === 'probe-proxy-ebadf') {
+      callback(new Proxy({ code: 'EBADF' }, {
+        get(target, key) { proxyTraps++; return Reflect.get(target, key); },
+        getOwnPropertyDescriptor(target, key) { proxyTraps++; return Reflect.getOwnPropertyDescriptor(target, key); },
+      })); return;
+    }
+    return originalFstat(number, callback);
+  }));
+  syncBuiltinESMExports();
+  hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
+    const folder = await Reflect.apply(originals.mkdtemp, fs, args);
+    if (armed && path.basename(folder).startsWith('rr-encrypted-progress-')) {
+      const physical = await fs.realpath(folder), stat = await fs.stat(physical);
+      temporaries.push({ folder: physical, dev: stat.dev, ino: stat.ino });
+    }
+    return folder;
+  }));
+  hooks.push(t.mock.method(fs, 'rm', async (file, ...args) => {
+    if (armed && temporaries.some(row => path.resolve(String(file)) === row.folder)) removed.push(path.resolve(String(file)));
+    return Reflect.apply(originals.rm, fs, [file, ...args]);
+  }));
+  hooks.push(t.mock.method(fs, 'open', async (file, flags, ...args) => {
+    const selected = isSelected(file, new Error().stack) && flags === 'r';
+    const handle = await Reflect.apply(originals.open, fs, [file, flags, ...args]);
+    if (selected) { reads++; await bind(handle, file); }
+    return handle;
+  }));
+  let result, failure;
+  try {
+    try {
+      result = mode === 'save' ? await f.call('save') : await withAuthenticatedWeatherProgress({
+        repositoryRoot: root, basePath: f.targetBase, repository, encryptionKey,
+      }, async input => { inspected++; assert.ok(input.files.length); return 'INSPECTED'; });
+    } catch (error) { failure = { error }; }
+    armed = false;
+    if (observationFailure) throw observationFailure.error;
+    assert.ok(reader, 'Actual normal unpack archive input reader was reached.');
+    assert.equal(reads, 1); assert.equal(closes, 1); assert.equal(launches, 0);
+    const fdState = nativeProbe();
+    const stagingExists = await fs.stat(temporaries[0].folder).then(stat => {
+      assert.equal(stat.dev, temporaries[0].dev); assert.equal(stat.ino, temporaries[0].ino); return true;
+    }, error => { if (error.code === 'ENOENT') return false; throw error; });
+    const unchanged = [...await Promise.all([...preserved].map(async ([file, bytes]) =>
+      [file, (await originals.readFile(file)).equals(bytes)]))];
+    t.diagnostic(JSON.stringify({ kind: 'MAIN_PACK_ARCHIVE_PRIMARY_PROBE', mode, fault, reads, closes, launches,
+      fdState, stagingExists, inputReads, probeCalls, proxyTraps, stagingCleanupCalls: removed.length, inspected,
+      saved: result?.saved === true, code: result?.code ?? null,
+      failure: failure ? String(failure.error?.message ?? failure.error) : null,
+      originalNonCipherUnchanged: unchanged.filter(([file]) => file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)).every(([,same]) => same),
+      originalCipherUnchanged: unchanged.find(([file]) => file === path.join(root, WEATHER_PROGRESS_CIPHER_PATH))[1],
+      ownerClaim: 'none: this exact main baseline has no paired/SOURCE owner at these callers' }));
+    for (const [file, same] of unchanged) if (file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH) || fault !== 'none') assert.equal(same, true, file);
+    assert.equal(fdState, remainsOpen ? 'OPEN_SAME_OBJECT' : 'CLOSED');
+    assert.equal(probeCalls, 1); assert.equal(proxyTraps, 0);
+    assert.ok(failure); assert.equal(inspected, 0);
+    if (fault === 'read-null-close-error') { assert.equal(failure.error, null); assert.equal(inputReads, 1); }
+    else if (fault === 'read-zero-close-noop' || fault === 'closed-then-zero') assert.equal(failure.error, 0);
+    else assert.equal(failure.error.message, 'WEATHER_PACK_ARCHIVE_CLOSE_UNPROVED');
+    assert.equal(stagingExists, uncertain);
+    assert.equal(removed.length, uncertain ? 0 : 1);
+  } finally {
+    armed = false;
+    for (const hook of hooks.reverse()) hook.mock.restore();
+    syncBuiltinESMExports();
+    // Teardown happens only after the measured result; never manufacture stop/closure success.
+    if (reader && nativeProbe() !== 'CLOSED') await actualClose();
+    if (reader) assert.equal(nativeProbe(), 'CLOSED');
+    for (const row of temporaries) {
+      const stat = await fs.stat(row.folder).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+      if (stat) {
+        assert.equal(stat.dev, row.dev); assert.equal(stat.ino, row.ino);
+        assert.equal(path.dirname(row.folder), await fs.realpath(os.tmpdir()));
+        assert.ok(path.basename(row.folder).startsWith('rr-encrypted-progress-'));
+        await originals.rm(row.folder, { recursive: true, force: true });
+      }
+    }
+  }
+});
+
+
+
+for (const mode of ['save']) for (const fault of ['close-noop', 'none'])
+test('main create-spec pack JSON lifetime / ' + mode + ' / ' + fault, { timeout: 30_000 }, async t => {
+  const native = await import('node:fs');
+  const { syncBuiltinESMExports } = await import('node:module');
+  const childProcess = (await import('node:child_process')).default;
+  const originals = { open: fs.open, readFile: fs.readFile, mkdtemp: fs.mkdtemp, rm: fs.rm };
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const root = await fs.realpath(f.source);
+  const { buildPrivateRuntimeCreateSpec, PRIVATE_RUNTIME_FILES, PRIVATE_RUNTIME_CONTRACT_FILES } =
+    await import('./private-production-runtime-workflow.mjs');
+  const { ravScoreModelBinding } = await import('../js/core/ravscore-model-contract.js');
+  const { fileURLToPath } = await import('node:url');
+  // Existing workflow fixture shape and exact source-only contract inputs.
+  const sourceTree = fileURLToPath(new URL('../', import.meta.url));
+  const conditions = { datasetId: 'rr-synthetic-private-workflow', generatedAt: reference, productionReferenceAt: reference,
+    zones: Object.fromEntries(Array.from({ length: 210 }, (_, i) => ['z-' + i, {}])),
+    coastalParts: { modelBinding: ravScoreModelBinding(),
+      parts: Object.fromEntries(Array.from({ length: 673 }, (_, i) => ['p-' + i, {}])) } };
+  for (const descriptor of PRIVATE_RUNTIME_FILES) await write(root, descriptor.relativePath,
+    descriptor.id === 'full-conditions' ? conditions : 'own-synthetic-' + descriptor.id);
+  for (const relative of [...new Set(Object.values(PRIVATE_RUNTIME_CONTRACT_FILES).flat())]) {
+    await fs.mkdir(path.dirname(path.join(root, relative)), { recursive: true });
+    await fs.copyFile(path.join(sourceTree, relative), path.join(root, relative));
+  }
+  const priorPack = await buildPrivateWeatherComponentPack({ repositoryRoot: root, conditions });
+  const originalPackBytes = await fs.readFile(priorPack.sourcePath);
+  const originalPackIdentity = await fs.stat(priorPack.sourcePath);
+  const preserved = new Map();
+  for (const file of [f.sourceBase, f.targetBase, path.join(root, 'data/live/conditions.json'),
+    path.join(root, files.openMeteoBank), path.join(root, WEATHER_PROGRESS_CIPHER_PATH)]) {
+    preserved.set(file, await originals.readFile(file));
+  }
+  let armed = true, reader, fd, identity, actualClose, selectedPath, observationFailure;
+  let reads = 0, closes = 0, inspected = 0, launches = 0;
+  const temporaries = [], removed = [], hooks = [];
+  const nativeProbe = () => {
+    try {
+      const stat = native.fstatSync(fd);
+      assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino);
+      return 'OPEN_SAME_OBJECT';
+    } catch (error) {
+      if (Object.getOwnPropertyDescriptor(error, 'code')?.value === 'EBADF') return 'CLOSED';
+      throw error;
+    }
+  };
+  const isSelected = (file, stack) => armed && !reader && typeof file === 'string'
+    && stack.includes('at readSmallJson (') && stack.includes('private-weather-component-pack.mjs')
+    && (mode === 'save' ? path.resolve(file) === path.join(root, files.openMeteoBank)
+      : temporaries.some(row => path.resolve(file) === path.join(row.folder, 'verified', files.openMeteoBank)));
+  const bind = async (handle, file) => {
+    reader = handle; fd = handle.fd; actualClose = handle.close.bind(handle);
+    try {
+      selectedPath = await fs.realpath(file); identity = native.fstatSync(fd);
+      const stat = await fs.stat(selectedPath);
+      assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
+      assert.equal(temporaries.length, 0, 'This normal spec caller has no creator scratch to acquire or remove.');
+      handle.close = async () => { closes++; if (fault !== 'close-noop') await actualClose(); };
+    } catch (error) { observationFailure = { error }; throw error; }
+  };
+  hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_NATIVE_OR_PROVIDER_CHILD_ALLOWED'); }));
+  syncBuiltinESMExports();
+  hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
+    const folder = await Reflect.apply(originals.mkdtemp, fs, args);
+    if (armed && path.basename(folder).startsWith('rr-encrypted-progress-')) {
+      const physical = await fs.realpath(folder), stat = await fs.stat(physical);
+      temporaries.push({ folder: physical, dev: stat.dev, ino: stat.ino });
+    }
+    return folder;
+  }));
+  hooks.push(t.mock.method(fs, 'rm', async (file, ...args) => {
+    if (armed && temporaries.some(row => path.resolve(String(file)) === row.folder)) removed.push(path.resolve(String(file)));
+    return Reflect.apply(originals.rm, fs, [file, ...args]);
+  }));
+  hooks.push(t.mock.method(fs, 'open', async (file, flags, ...args) => {
+    const selected = isSelected(file, new Error().stack) && flags === 'r';
+    const handle = await Reflect.apply(originals.open, fs, [file, flags, ...args]);
+    if (selected) { reads++; await bind(handle, file); }
+    return handle;
+  }));
+  let result, failure;
+  try {
+    try {
+      result = await buildPrivateRuntimeCreateSpec({ repositoryRoot: root });
+    } catch (error) { failure = { error }; }
+    armed = false;
+    if (observationFailure) throw observationFailure.error;
+    assert.ok(reader, 'Actual normal pack JSON reader was reached.');
+    assert.equal(reads, 1); assert.equal(closes, 1); assert.equal(launches, 0);
+    const fdState = nativeProbe();
+    const stagingExists = null;
+    assert.deepEqual(await originals.readFile(priorPack.sourcePath), originalPackBytes);
+    const unchanged = [...await Promise.all([...preserved].map(async ([file, bytes]) =>
+      [file, (await originals.readFile(file)).equals(bytes)]))];
+    t.diagnostic(JSON.stringify({ kind: 'MAIN_CREATE_SPEC_PACK_READER', mode, fault, reads, closes, launches,
+      fdState, stagingExists, stagingCleanupCalls: removed.length, inspected,
+      specReturned: Boolean(result?.metadata), code: result?.code ?? null,
+      failure: failure ? String(failure.error?.message ?? failure.error) : null,
+      originalNonCipherUnchanged: unchanged.filter(([file]) => file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)).every(([,same]) => same),
+      originalCipherUnchanged: unchanged.find(([file]) => file === path.join(root, WEATHER_PROGRESS_CIPHER_PATH))[1],
+      ownerClaim: 'none: this exact main baseline has no paired/SOURCE owner at these callers' }));
+    for (const [file, same] of unchanged) if (file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH) || fault !== 'none') assert.equal(same, true, file);
+    assert.equal(fdState, fault === 'none' ? 'CLOSED' : 'OPEN_SAME_OBJECT');
+    assert.equal(removed.length, 0);
+    if (fault === 'none') {
+      assert.equal(failure, undefined);
+      assert.equal(result.metadata.zoneCount, 210); assert.equal(result.metadata.partCount, 673);
+      assert.equal(result.files.some(row => row.relativePath === '.cache/weather-component-inputs.pack'), true);
+    } else {
+      assert.equal(result, undefined); assert.equal(failure.error.message, 'WEATHER_PACK_JSON_CLOSE_UNPROVED');
+      const current = await fs.stat(priorPack.sourcePath);
+      assert.equal(current.dev, originalPackIdentity.dev); assert.equal(current.ino, originalPackIdentity.ino);
+    }
+  } finally {
+    armed = false;
+    for (const hook of hooks.reverse()) hook.mock.restore();
+    syncBuiltinESMExports();
+    // Teardown happens only after the measured result; never manufacture stop/closure success.
+    if (reader && nativeProbe() !== 'CLOSED') await actualClose();
+    if (reader) assert.equal(nativeProbe(), 'CLOSED');
+    for (const row of temporaries) {
+      const stat = await fs.stat(row.folder).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+      if (stat) {
+        assert.equal(stat.dev, row.dev); assert.equal(stat.ino, row.ino);
+        assert.equal(path.dirname(row.folder), await fs.realpath(os.tmpdir()));
+        assert.ok(path.basename(row.folder).startsWith('rr-encrypted-progress-'));
+        await originals.rm(row.folder, { recursive: true, force: true });
+      }
+    }
+  }
+});
+
+
+
+test('main exact pack invocation keeps uncertain and healthy concurrent lifetimes separate', { timeout: 30_000 }, async t => {
+  const { privateWeatherPackJsonReadsClosed } = await import('./lib/private-weather-component-pack.mjs');
+  const native = await import('node:fs');
+  const first = await fixture(t), second = await fixture(t);
+  const selectedPath = await fs.realpath(path.join(first.source, files.openMeteoBank));
+  const originalOpen = fs.open;
+  let handle, fd, identity, close, closes = 0, observationFailure;
+  const hook = t.mock.method(fs, 'open', async (file, flags, ...args) => {
+    const selected = !handle && flags === 'r' && new Error().stack.includes('at readSmallJson (')
+      && typeof file === 'string' && await fs.realpath(file) === selectedPath;
+    const opened = await originalOpen(file, flags, ...args);
+    if (selected) {
+      handle = opened; fd = opened.fd; close = opened.close.bind(opened);
+      try {
+        identity = native.fstatSync(fd); const stat = await fs.stat(selectedPath);
+        assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
+        opened.close = async () => { closes++; };
+      } catch (error) { observationFailure = { error }; throw error; }
+    }
+    return opened;
+  });
+  try {
+    const uncertain = buildPrivateWeatherComponentPack({ repositoryRoot: first.source, conditions: {} });
+    const healthy = buildPrivateWeatherComponentPack({ repositoryRoot: second.source, conditions: {} });
+    const copied = healthy.then(result => result);
+    assert.equal(privateWeatherPackJsonReadsClosed(uncertain), false, 'Pending is never stopped evidence.');
+    assert.equal(privateWeatherPackJsonReadsClosed(healthy), false);
+    for (const absent of [undefined, null, {}, [], Promise.resolve(), copied]) assert.equal(privateWeatherPackJsonReadsClosed(absent), false);
+    const results = await Promise.allSettled([uncertain, healthy, copied]);
+    if (observationFailure) throw observationFailure.error;
+    assert.equal(results[0].status, 'rejected'); assert.equal(results[0].reason.message, 'WEATHER_PACK_JSON_CLOSE_UNPROVED');
+    assert.equal(results[1].status, 'fulfilled'); assert.equal(results[2].status, 'fulfilled');
+    assert.equal(privateWeatherPackJsonReadsClosed(uncertain), false);
+    assert.equal(privateWeatherPackJsonReadsClosed(healthy), true);
+    assert.equal(privateWeatherPackJsonReadsClosed(copied), false);
+    assert.equal(privateWeatherPackJsonReadsClosed(results[1].value), false);
+    assert.equal(closes, 1);
+    const current = native.fstatSync(fd); assert.equal(current.dev, identity.dev); assert.equal(current.ino, identity.ino);
+    t.diagnostic(JSON.stringify({ exactHealthy: true, uncertainRemainsFalse: true, copiedRemainsFalse: true,
+      unknownPendingFalse: true, ownFdStillOpen: true, closes, ownerClaim: 'none' }));
+  } finally {
+    hook.mock.restore();
+    if (handle) {
+      await close();
+      assert.throws(() => native.fstatSync(fd), error => Object.getOwnPropertyDescriptor(error, 'code')?.value === 'EBADF');
+    }
+  }
+});
+
+for (const mode of ['inspect']) for (const fault of ['close-noop', 'none'])
+test('main unpack destination output physical lifetime / ' + mode + ' / ' + fault, { timeout: 30_000 }, async t => {
+  const native = await import('node:fs');
+  const { syncBuiltinESMExports } = await import('node:module');
+  const childProcess = (await import('node:child_process')).default;
+  const originals = { open: fs.open, readFile: fs.readFile, mkdtemp: fs.mkdtemp, rm: fs.rm };
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const root = await fs.realpath(mode === 'save' ? f.source : f.target);
+  const preserved = new Map();
+  for (const file of [f.sourceBase, f.targetBase, path.join(root, 'data/live/conditions.json'),
+    path.join(root, files.openMeteoBank), path.join(root, WEATHER_PROGRESS_CIPHER_PATH)]) {
+    preserved.set(file, await originals.readFile(file));
+  }
+  let armed = true, writer, fd, identity, actualClose, selectedPath, observationFailure;
+  let opens = 0, closes = 0, inspected = 0, launches = 0;
+  const temporaries = [], removed = [], hooks = [];
+  const nativeProbe = () => {
+    try {
+      const stat = native.fstatSync(fd);
+      assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino);
+      return 'OPEN_SAME_OBJECT';
+    } catch (error) {
+      if (Object.getOwnPropertyDescriptor(error, 'code')?.value === 'EBADF') return 'CLOSED';
+      throw error;
+    }
+  };
+  const isSelected = (file, stack) => armed && !writer && typeof file === 'string'
+    && stack.includes('at unpackPackWithJsonReadLifetime (') && stack.includes('private-weather-component-pack.mjs')
+    && (mode === 'save' ? path.resolve(file) === path.join(root, files.openMeteoBank)
+      : temporaries.some(row => path.resolve(file) === path.join(row.folder, 'verified', files.openMeteoBank)));
+  const bind = async (handle, file) => {
+    writer = handle; fd = handle.fd; actualClose = handle.close.bind(handle);
+    try {
+      selectedPath = await fs.realpath(file); identity = native.fstatSync(fd);
+      const stat = await fs.stat(selectedPath);
+      assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
+      assert.equal(temporaries.length, 1, 'The actual parent created its own private staging directory.');
+      handle.close = async () => { closes++; if (fault !== 'close-noop') await actualClose(); };
+    } catch (error) { observationFailure = { error }; throw error; }
+  };
+  hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_NATIVE_OR_PROVIDER_CHILD_ALLOWED'); }));
+  syncBuiltinESMExports();
+  hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
+    const folder = await Reflect.apply(originals.mkdtemp, fs, args);
+    if (armed && path.basename(folder).startsWith('rr-encrypted-progress-')) {
+      const physical = await fs.realpath(folder), stat = await fs.stat(physical);
+      temporaries.push({ folder: physical, dev: stat.dev, ino: stat.ino });
+    }
+    return folder;
+  }));
+  hooks.push(t.mock.method(fs, 'rm', async (file, ...args) => {
+    if (armed && temporaries.some(row => path.resolve(String(file)) === row.folder)) removed.push(path.resolve(String(file)));
+    return Reflect.apply(originals.rm, fs, [file, ...args]);
+  }));
+  hooks.push(t.mock.method(fs, 'open', async (file, flags, ...args) => {
+    const selected = isSelected(file, new Error().stack) && flags === 'wx';
+    const handle = await Reflect.apply(originals.open, fs, [file, flags, ...args]);
+    if (selected) { opens++; await bind(handle, file); }
+    return handle;
+  }));
+  let result, failure;
+  try {
+    try {
+      result = mode === 'save' ? await f.call('save') : await withAuthenticatedWeatherProgress({
+        repositoryRoot: root, basePath: f.targetBase, repository, encryptionKey,
+      }, async input => { inspected++; assert.ok(input.files.length); return 'INSPECTED'; });
+    } catch (error) { failure = { error }; }
+    armed = false;
+    if (observationFailure) throw observationFailure.error;
+    assert.ok(writer, 'Actual normal unpack destination output handle was reached.');
+    assert.equal(opens, 1); assert.equal(closes, 1); assert.equal(launches, 0);
+    const fdState = nativeProbe();
+    const stagingExists = await fs.stat(temporaries[0].folder).then(stat => {
+      assert.equal(stat.dev, temporaries[0].dev); assert.equal(stat.ino, temporaries[0].ino); return true;
+    }, error => { if (error.code === 'ENOENT') return false; throw error; });
+    const unchanged = [...await Promise.all([...preserved].map(async ([file, bytes]) =>
+      [file, (await originals.readFile(file)).equals(bytes)]))];
+    t.diagnostic(JSON.stringify({ kind: 'MAIN_PACK_DESTINATION_OUTPUT_NORMAL_CALLER', mode, fault, opens, closes, launches,
+      fdState, stagingExists, stagingCleanupCalls: removed.length, inspected,
+      saved: result?.saved === true, code: result?.code ?? null,
+      failure: failure ? String(failure.error?.message ?? failure.error) : null,
+      originalNonCipherUnchanged: unchanged.filter(([file]) => file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)).every(([,same]) => same),
+      originalCipherUnchanged: unchanged.find(([file]) => file === path.join(root, WEATHER_PROGRESS_CIPHER_PATH))[1],
+      ownerClaim: 'none: this exact main baseline has no paired/SOURCE owner at these callers' }));
+    for (const [file, same] of unchanged) if (file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH) || fault !== 'none') assert.equal(same, true, file);
+    assert.equal(fdState, fault === 'none' ? 'CLOSED' : 'OPEN_SAME_OBJECT');
+    if (fault === 'none') {
+      assert.equal(failure, undefined);
+      if (mode === 'save') assert.equal(result.saved, true); else { assert.equal(result, 'INSPECTED'); assert.equal(inspected, 1); }
+      assert.equal(stagingExists, false); assert.equal(removed.length, 1);
+    } else {
+      if (mode === 'save') assert.notEqual(result?.saved, true); else { assert.ok(failure); assert.equal(inspected, 0); }
+      assert.equal(stagingExists, true, 'Unproved actual output close prevents cleanup of this same parent staging directory.');
+      assert.equal(removed.length, 0);
+    }
+  } finally {
+    armed = false;
+    for (const hook of hooks.reverse()) hook.mock.restore();
+    syncBuiltinESMExports();
+    // Teardown happens only after the measured result; never manufacture stop/closure success.
+    if (writer && nativeProbe() !== 'CLOSED') await actualClose();
+    if (writer) assert.equal(nativeProbe(), 'CLOSED');
+    for (const row of temporaries) {
+      const stat = await fs.stat(row.folder).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+      if (stat) {
+        assert.equal(stat.dev, row.dev); assert.equal(stat.ino, row.ino);
+        assert.equal(path.dirname(row.folder), await fs.realpath(os.tmpdir()));
+        assert.ok(path.basename(row.folder).startsWith('rr-encrypted-progress-'));
+        await originals.rm(row.folder, { recursive: true, force: true });
+      }
+    }
+  }
+});
+
+
+for (const mode of ['inspect']) for (const fault of ['write-null-close-error', 'write-zero-close-noop', 'closed-then-zero', 'probe-callback-null', 'probe-proxy-ebadf'])
+test('main unpack destination output primary and probe / ' + mode + ' / ' + fault, { timeout: 30_000 }, async t => {
+  const native = await import('node:fs');
+  const { syncBuiltinESMExports } = await import('node:module');
+  const childProcess = (await import('node:child_process')).default;
+  const originals = { open: fs.open, readFile: fs.readFile, mkdtemp: fs.mkdtemp, rm: fs.rm };
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const root = await fs.realpath(mode === 'save' ? f.source : f.target);
+  const preserved = new Map();
+  for (const file of [f.sourceBase, f.targetBase, path.join(root, 'data/live/conditions.json'),
+    path.join(root, files.openMeteoBank), path.join(root, WEATHER_PROGRESS_CIPHER_PATH)]) {
+    preserved.set(file, await originals.readFile(file));
+  }
+  let armed = true, writer, fd, identity, actualClose, selectedPath, observationFailure;
+  let opens = 0, closes = 0, inspected = 0, launches = 0, outputWrites = 0, probeCalls = 0, proxyTraps = 0;
+  const uncertain = ['write-zero-close-noop', 'probe-callback-null', 'probe-proxy-ebadf'].includes(fault);
+  const remainsOpen = ['write-zero-close-noop', 'probe-proxy-ebadf'].includes(fault);
+  const originalFstat = native.fstat;
+  const temporaries = [], removed = [], hooks = [];
+  const nativeProbe = () => {
+    try {
+      const stat = native.fstatSync(fd);
+      assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino);
+      return 'OPEN_SAME_OBJECT';
+    } catch (error) {
+      if (Object.getOwnPropertyDescriptor(error, 'code')?.value === 'EBADF') return 'CLOSED';
+      throw error;
+    }
+  };
+  const isSelected = (file, stack) => armed && !writer && typeof file === 'string'
+    && stack.includes('at unpackPackWithJsonReadLifetime (') && stack.includes('private-weather-component-pack.mjs')
+    && (mode === 'save' ? path.resolve(file) === path.join(root, files.openMeteoBank)
+      : temporaries.some(row => path.resolve(file) === path.join(row.folder, 'verified', files.openMeteoBank)));
+  const bind = async (handle, file) => {
+    writer = handle; fd = handle.fd; actualClose = handle.close.bind(handle);
+    try {
+      selectedPath = await fs.realpath(file); identity = native.fstatSync(fd);
+      const stat = await fs.stat(selectedPath);
+      assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
+      assert.equal(temporaries.length, 1, 'The actual parent created its own private staging directory.');
+      if (fault.startsWith('write-')) handle.writeFile = async () => { outputWrites++; throw fault === 'write-null-close-error' ? null : 0; };
+      handle.close = async () => {
+        closes++;
+        if (remainsOpen) return;
+        await actualClose();
+        if (fault === 'closed-then-zero') throw 0;
+        if (fault === 'write-null-close-error') throw Error('OWN_SECONDARY_CLOSE_ERROR');
+      };
+    } catch (error) { observationFailure = { error }; throw error; }
+  };
+  hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_NATIVE_OR_PROVIDER_CHILD_ALLOWED'); }));
+  hooks.push(t.mock.method(native.default, 'fstat', (number, callback) => {
+    const stack = new Error().stack;
+    if (!armed || !writer || number !== fd || !stack.includes('at unpackPackWithJsonReadLifetime (')) return originalFstat(number, callback);
+    probeCalls++;
+    if (fault === 'probe-callback-null') { callback(null); return; }
+    if (fault === 'probe-proxy-ebadf') {
+      callback(new Proxy({ code: 'EBADF' }, {
+        get(target, key) { proxyTraps++; return Reflect.get(target, key); },
+        getOwnPropertyDescriptor(target, key) { proxyTraps++; return Reflect.getOwnPropertyDescriptor(target, key); },
+      })); return;
+    }
+    return originalFstat(number, callback);
+  }));
+  syncBuiltinESMExports();
+  hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
+    const folder = await Reflect.apply(originals.mkdtemp, fs, args);
+    if (armed && path.basename(folder).startsWith('rr-encrypted-progress-')) {
+      const physical = await fs.realpath(folder), stat = await fs.stat(physical);
+      temporaries.push({ folder: physical, dev: stat.dev, ino: stat.ino });
+    }
+    return folder;
+  }));
+  hooks.push(t.mock.method(fs, 'rm', async (file, ...args) => {
+    if (armed && temporaries.some(row => path.resolve(String(file)) === row.folder)) removed.push(path.resolve(String(file)));
+    return Reflect.apply(originals.rm, fs, [file, ...args]);
+  }));
+  hooks.push(t.mock.method(fs, 'open', async (file, flags, ...args) => {
+    const selected = isSelected(file, new Error().stack) && flags === 'wx';
+    const handle = await Reflect.apply(originals.open, fs, [file, flags, ...args]);
+    if (selected) { opens++; await bind(handle, file); }
+    return handle;
+  }));
+  let result, failure;
+  try {
+    try {
+      result = mode === 'save' ? await f.call('save') : await withAuthenticatedWeatherProgress({
+        repositoryRoot: root, basePath: f.targetBase, repository, encryptionKey,
+      }, async input => { inspected++; assert.ok(input.files.length); return 'INSPECTED'; });
+    } catch (error) { failure = { error }; }
+    armed = false;
+    if (observationFailure) throw observationFailure.error;
+    assert.ok(writer, 'Actual normal unpack destination output handle was reached.');
+    assert.equal(opens, 1); assert.equal(closes, 1); assert.equal(launches, 0);
+    const fdState = nativeProbe();
+    const stagingExists = await fs.stat(temporaries[0].folder).then(stat => {
+      assert.equal(stat.dev, temporaries[0].dev); assert.equal(stat.ino, temporaries[0].ino); return true;
+    }, error => { if (error.code === 'ENOENT') return false; throw error; });
+    const unchanged = [...await Promise.all([...preserved].map(async ([file, bytes]) =>
+      [file, (await originals.readFile(file)).equals(bytes)]))];
+    t.diagnostic(JSON.stringify({ kind: 'MAIN_PACK_DESTINATION_OUTPUT_PRIMARY_PROBE', mode, fault, opens, closes, launches,
+      fdState, stagingExists, outputWrites, probeCalls, proxyTraps, stagingCleanupCalls: removed.length, inspected,
+      saved: result?.saved === true, code: result?.code ?? null,
+      failure: failure ? String(failure.error?.message ?? failure.error) : null,
+      originalNonCipherUnchanged: unchanged.filter(([file]) => file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)).every(([,same]) => same),
+      originalCipherUnchanged: unchanged.find(([file]) => file === path.join(root, WEATHER_PROGRESS_CIPHER_PATH))[1],
+      ownerClaim: 'none: this exact main baseline has no paired/SOURCE owner at these callers' }));
+    for (const [file, same] of unchanged) if (file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH) || fault !== 'none') assert.equal(same, true, file);
+    assert.equal(fdState, remainsOpen ? 'OPEN_SAME_OBJECT' : 'CLOSED');
+    assert.equal(probeCalls, 1); assert.equal(proxyTraps, 0);
+    assert.ok(failure); assert.equal(inspected, 0);
+    if (fault === 'write-null-close-error') { assert.equal(failure.error, null); assert.equal(outputWrites, 1); }
+    else if (fault === 'write-zero-close-noop' || fault === 'closed-then-zero') assert.equal(failure.error, 0);
+    else assert.equal(failure.error.message, 'WEATHER_PACK_OUTPUT_CLOSE_UNPROVED');
+    assert.equal(stagingExists, uncertain);
+    assert.equal(removed.length, uncertain ? 0 : 1);
+  } finally {
+    armed = false;
+    for (const hook of hooks.reverse()) hook.mock.restore();
+    syncBuiltinESMExports();
+    // Teardown happens only after the measured result; never manufacture stop/closure success.
+    if (writer && nativeProbe() !== 'CLOSED') await actualClose();
+    if (writer) assert.equal(nativeProbe(), 'CLOSED');
+    for (const row of temporaries) {
+      const stat = await fs.stat(row.folder).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+      if (stat) {
+        assert.equal(stat.dev, row.dev); assert.equal(stat.ino, row.ino);
+        assert.equal(path.dirname(row.folder), await fs.realpath(os.tmpdir()));
+        assert.ok(path.basename(row.folder).startsWith('rr-encrypted-progress-'));
+        await originals.rm(row.folder, { recursive: true, force: true });
+      }
+    }
+  }
+});
+
+for (const mode of ['copy', 'inspect']) for (const fault of ['close-noop', 'none'])
+test('main pack caller stream physical lifetime / ' + mode + ' / ' + fault, { timeout: 30_000 }, async t => {
+  const native = (await import('node:fs')).default;
+  const { syncBuiltinESMExports } = await import('node:module');
+  const childProcess = (await import('node:child_process')).default;
+  const original = { createReadStream: native.createReadStream, close: native.close,
+    fstatSync: native.fstatSync, statSync: native.statSync, realpathSync: native.realpathSync,
+    readFile: fs.readFile, mkdtemp: fs.mkdtemp, rm: fs.rm };
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const root = await fs.realpath(mode === 'inspect' ? f.target : f.source);
+  const selectedFile = path.join(root, files.openMeteoBank);
+  const preserved = new Map();
+  for (const file of [f.sourceBase, f.targetBase, path.join(root, 'data/live/conditions.json'),
+    selectedFile, path.join(root, WEATHER_PROGRESS_CIPHER_PATH)]) preserved.set(file, await original.readFile(file));
+  const temporaries = [], removals = [], hooks = [];
+  let stream, fd, identity, observationFailure, armed = true;
+  let opens = 0, closes = 0, closeEvents = 0, launches = 0, inspected = 0;
+  const probe = () => {
+    try { const stat = original.fstatSync(fd); assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino); return 'OPEN_SAME_OBJECT'; }
+    catch (error) { if (Object.getOwnPropertyDescriptor(error, 'code')?.value === 'EBADF') return 'CLOSED'; throw error; }
+  };
+  hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_CP_OR_PROVIDER_CHILD_ALLOWED'); }));
+  hooks.push(t.mock.method(globalThis, 'fetch', () => { throw Error('NO_NETWORK_ALLOWED'); }));
+  hooks.push(t.mock.method(native, 'createReadStream', (...args) => {
+    const stack = new Error().stack;
+    const selected = armed && !stream && typeof args[0] === 'string'
+      && (mode === 'inspect'
+        ? temporaries.some(row => path.resolve(args[0]) === path.join(row.folder, 'verified', files.openMeteoBank))
+          && stack.includes('at digestFile (')
+        : path.resolve(args[0]) === selectedFile && !stack.includes('at digestFile (')
+          && stack.includes('at buildPackWithJsonReadLifetime ('));
+    const created = Reflect.apply(original.createReadStream, native, args);
+    if (selected) {
+      stream = created;
+      created.once('open', number => {
+        opens++; fd = number;
+        try {
+          assert.equal(created.fd, fd);
+          assert.equal(original.realpathSync(args[0]), mode === 'inspect'
+            ? path.join(temporaries[0].folder, 'verified', files.openMeteoBank) : selectedFile);
+          identity = original.fstatSync(fd); const stat = original.statSync(args[0]);
+          assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
+        } catch (error) { observationFailure = { error }; }
+      });
+      created.once('close', () => { closeEvents++; });
+    }
+    return created;
+  }));
+  hooks.push(t.mock.method(native, 'close', (number, callback) => {
+    if (!armed || !stream || number !== fd || stream.fd !== fd) return Reflect.apply(original.close, native, [number, callback]);
+    closes++;
+    try { assert.equal(probe(), 'OPEN_SAME_OBJECT'); }
+    catch (error) { observationFailure = { error }; return Reflect.apply(original.close, native, [number, callback]); }
+    if (fault === 'close-noop') { callback(null); return; }
+    return Reflect.apply(original.close, native, [number, callback]);
+  }));
+  syncBuiltinESMExports();
+  hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
+    const folder = await Reflect.apply(original.mkdtemp, fs, args);
+    if (armed && path.basename(folder).startsWith('rr-encrypted-progress-')) {
+      const physical = await fs.realpath(folder), stat = await fs.stat(physical);
+      temporaries.push({ folder: physical, dev: stat.dev, ino: stat.ino });
+    }
+    return folder;
+  }));
+  hooks.push(t.mock.method(fs, 'rm', async (file, ...args) => {
+    if (armed && temporaries.some(row => path.resolve(String(file)) === row.folder)) removals.push(String(file));
+    return Reflect.apply(original.rm, fs, [file, ...args]);
+  }));
+  let result, failure;
+  try {
+    try {
+      result = mode === 'inspect' ? await withAuthenticatedWeatherProgress({ repositoryRoot: root,
+        basePath: f.targetBase, repository, encryptionKey }, async input => {
+          inspected++; assert.equal(input.verifiedRoot, path.join(temporaries[0].folder, 'verified'));
+          for (const row of input.files) assert.equal(crypto.createHash('sha256')
+            .update(await original.readFile(row.sourcePath)).digest('hex'), row.sha256);
+          return { inspected: true };
+        }) : await f.call('save');
+    } catch (error) { failure = { error }; }
+    armed = false;
+    if (observationFailure) throw observationFailure.error;
+    assert.ok(stream, 'Actual normal selected copy/inspect ReadStream reached.');
+    assert.equal(opens, 1); assert.equal(closes, 1); assert.equal(launches, 0);
+    assert.equal(closeEvents, 1, 'Logical close alone is explicitly not the physical proof.');
+    assert.equal(temporaries.length, 1);
+    const fdState = probe();
+    const stagingExists = await fs.stat(temporaries[0].folder).then(stat => {
+      assert.equal(stat.dev, temporaries[0].dev); assert.equal(stat.ino, temporaries[0].ino); return true;
+    }, error => { if (error.code === 'ENOENT') return false; throw error; });
+    const unchanged = await Promise.all([...preserved].map(async ([file, bytes]) => [file, (await original.readFile(file)).equals(bytes)]));
+    t.diagnostic(JSON.stringify({ kind: 'MAIN_PACK_CALLER_STREAM_LIFETIME', mode, fault, inspected, opens, closes, closeEvents, launches,
+      fdState, stagingExists, stagingCleanupCalls: removals.length, saved: result?.saved === true, code: result?.code ?? null,
+      failure: failure ? String(failure.error?.message ?? failure.error) : null,
+      nonCipherOriginalsUnchanged: unchanged.filter(([file]) => file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)).every(([,same]) => same),
+      previousCipherUnchanged: unchanged.find(([file]) => file === path.join(root, WEATHER_PROGRESS_CIPHER_PATH))[1],
+      ownerClaim: 'none; exact invocation retention is not an exclusive global writer lock' }));
+    for (const [file, same] of unchanged) if (mode === 'inspect' || fault !== 'none' || file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)) assert.equal(same, true, file);
+    assert.equal(fdState, fault === 'none' ? 'CLOSED' : 'OPEN_SAME_OBJECT');
+    if (fault === 'none') {
+      assert.equal(failure, undefined);
+      assert.equal(mode === 'inspect' ? result.inspected : result.saved, true);
+      assert.equal(inspected, mode === 'inspect' ? 1 : 0);
+      assert.equal(stagingExists, false); assert.equal(removals.length, 1);
+    } else {
+      if (mode === 'inspect') assert.equal(failure?.error?.message, 'WEATHER_PACK_STREAM_CLOSE_UNPROVED');
+      else { assert.equal(failure, undefined); assert.notEqual(result?.saved, true); }
+      assert.equal(inspected, 0);
+      assert.equal(stagingExists, true); assert.equal(removals.length, 0);
+    }
+  } finally {
+    armed = false;
+    for (const hook of hooks.reverse()) hook.mock.restore();
+    syncBuiltinESMExports();
+    // Real cleanup only after measuring the normal result and own physical fd.
+    if (Number.isInteger(fd) && probe() !== 'CLOSED') await new Promise((resolve, reject) => original.close(fd, error => error ? reject(error) : resolve()));
+    if (Number.isInteger(fd)) assert.equal(probe(), 'CLOSED');
+    for (const row of temporaries) {
+      const stat = await fs.stat(row.folder).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+      if (stat) {
+        assert.equal(stat.dev, row.dev); assert.equal(stat.ino, row.ino);
+        assert.equal(path.dirname(row.folder), await fs.realpath(os.tmpdir()));
+        assert.ok(path.basename(row.folder).startsWith('rr-encrypted-progress-'));
+        await original.rm(row.folder, { recursive: true, force: true });
+      }
+    }
+  }
+});
+
+for (const fault of ['digest-null-close-error', 'digest-zero-close-noop', 'closed-then-error',
+  'probe-null', 'probe-proxy', 'read-error-close-noop'])
+test('main pack stream first error and probe / ' + fault, { timeout: 30_000 }, async t => {
+  const mode = 'inspect';
+  const native = (await import('node:fs')).default;
+  const primary = new Error('OWN_STREAM_READ_FIRST');
+  const secondary = new Error('OWN_STREAM_CLOSE_SECONDARY');
+  const rawFirst = fault.startsWith('digest-null') ? null : fault.startsWith('digest-zero') ? 0 : primary;
+  const unknown = ['digest-zero-close-noop', 'probe-null', 'probe-proxy', 'read-error-close-noop'].includes(fault);
+  let injected = 0, probes = 0, traps = 0;
+  const { syncBuiltinESMExports } = await import('node:module');
+  const childProcess = (await import('node:child_process')).default;
+  const original = { createReadStream: native.createReadStream, close: native.close, read: native.read,
+    fstat: native.fstat, createHash: crypto.createHash,
+    fstatSync: native.fstatSync, statSync: native.statSync, realpathSync: native.realpathSync,
+    readFile: fs.readFile, mkdtemp: fs.mkdtemp, rm: fs.rm };
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const root = await fs.realpath(mode === 'inspect' ? f.target : f.source);
+  const selectedFile = path.join(root, files.openMeteoBank);
+  const preserved = new Map();
+  for (const file of [f.sourceBase, f.targetBase, path.join(root, 'data/live/conditions.json'),
+    selectedFile, path.join(root, WEATHER_PROGRESS_CIPHER_PATH)]) preserved.set(file, await original.readFile(file));
+  const temporaries = [], removals = [], hooks = [];
+  let stream, fd, identity, observationFailure, armed = true;
+  let opens = 0, closes = 0, closeEvents = 0, launches = 0, inspected = 0;
+  const probe = () => {
+    try { const stat = original.fstatSync(fd); assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino); return 'OPEN_SAME_OBJECT'; }
+    catch (error) { if (Object.getOwnPropertyDescriptor(error, 'code')?.value === 'EBADF') return 'CLOSED'; throw error; }
+  };
+  hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_CP_OR_PROVIDER_CHILD_ALLOWED'); }));
+  hooks.push(t.mock.method(globalThis, 'fetch', () => { throw Error('NO_NETWORK_ALLOWED'); }));
+  hooks.push(t.mock.method(native, 'createReadStream', (...args) => {
+    const stack = new Error().stack;
+    const selected = armed && !stream && typeof args[0] === 'string'
+      && (mode === 'inspect'
+        ? temporaries.some(row => path.resolve(args[0]) === path.join(row.folder, 'verified', files.openMeteoBank))
+          && stack.includes('at digestFile (')
+        : path.resolve(args[0]) === selectedFile && !stack.includes('at digestFile (')
+          && stack.includes('at buildPackWithJsonReadLifetime ('));
+    const created = Reflect.apply(original.createReadStream, native, args);
+    if (selected) {
+      stream = created;
+      created.once('open', number => {
+        opens++; fd = number;
+        try {
+          assert.equal(created.fd, fd);
+          assert.equal(original.realpathSync(args[0]), mode === 'inspect'
+            ? path.join(temporaries[0].folder, 'verified', files.openMeteoBank) : selectedFile);
+          identity = original.fstatSync(fd); const stat = original.statSync(args[0]);
+          assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
+        } catch (error) { observationFailure = { error }; }
+      });
+      created.once('close', () => { closeEvents++; });
+    }
+    return created;
+  }));
+  hooks.push(t.mock.method(native, 'close', (number, callback) => {
+    if (!armed || !stream || number !== fd || stream.fd !== fd) return Reflect.apply(original.close, native, [number, callback]);
+    closes++;
+    try { assert.equal(probe(), 'OPEN_SAME_OBJECT'); }
+    catch (error) { observationFailure = { error }; return Reflect.apply(original.close, native, [number, callback]); }
+    if (fault.endsWith('close-noop')) { callback(null); return; }
+    return Reflect.apply(original.close, native, [number, error => {
+      assert.equal(error, null);
+      callback(fault.endsWith('close-error') || fault === 'closed-then-error' ? secondary : null);
+    }]);
+  }));
+  hooks.push(t.mock.method(native, 'read', (...args) => {
+    if (!armed || fault !== 'read-error-close-noop' || !stream || args[0] !== fd || stream.fd !== fd)
+      return Reflect.apply(original.read, native, args);
+    const callback = args.at(-1); injected++;
+    assert.equal(probe(), 'OPEN_SAME_OBJECT');
+    return Reflect.apply(original.read, native, [...args.slice(0, -1), (error, bytes, buffer) => {
+      assert.equal(error, null); callback(primary, bytes, buffer);
+    }]);
+  }));
+  hooks.push(t.mock.method(crypto, 'createHash', (...args) => {
+    const hash = Reflect.apply(original.createHash, crypto, args), update = hash.update.bind(hash);
+    hash.update = (...values) => {
+      if (armed && stream && fault.startsWith('digest-') && new Error().stack.includes('at digestFile (')) {
+        injected++; assert.equal(probe(), 'OPEN_SAME_OBJECT'); throw rawFirst;
+      }
+      return update(...values);
+    };
+    return hash;
+  }));
+  hooks.push(t.mock.method(native, 'fstat', (number, callback) => {
+    if (!armed || !stream || number !== fd || !new Error().stack.includes('at readPackChunks ('))
+      return Reflect.apply(original.fstat, native, [number, callback]);
+    probes++; assert.equal(closeEvents, 1);
+    if (fault === 'probe-null') { callback(null); return; }
+    if (fault === 'probe-proxy') {
+      callback(new Proxy({ code: 'EBADF' }, { get() { traps++; throw Error('NO_PROXY_GET'); },
+        getOwnPropertyDescriptor() { traps++; throw Error('NO_PROXY_DESCRIPTOR'); } })); return;
+    }
+    return Reflect.apply(original.fstat, native, [number, callback]);
+  }));
+  syncBuiltinESMExports();
+  hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
+    const folder = await Reflect.apply(original.mkdtemp, fs, args);
+    if (armed && path.basename(folder).startsWith('rr-encrypted-progress-')) {
+      const physical = await fs.realpath(folder), stat = await fs.stat(physical);
+      temporaries.push({ folder: physical, dev: stat.dev, ino: stat.ino });
+    }
+    return folder;
+  }));
+  hooks.push(t.mock.method(fs, 'rm', async (file, ...args) => {
+    if (armed && temporaries.some(row => path.resolve(String(file)) === row.folder)) removals.push(String(file));
+    return Reflect.apply(original.rm, fs, [file, ...args]);
+  }));
+  let result, failure;
+  try {
+    try {
+      result = mode === 'inspect' ? await withAuthenticatedWeatherProgress({ repositoryRoot: root,
+        basePath: f.targetBase, repository, encryptionKey }, async input => {
+          inspected++; assert.equal(input.verifiedRoot, path.join(temporaries[0].folder, 'verified'));
+          for (const row of input.files) assert.equal(crypto.createHash('sha256')
+            .update(await original.readFile(row.sourcePath)).digest('hex'), row.sha256);
+          return { inspected: true };
+        }) : await f.call('save');
+    } catch (error) { failure = { error }; }
+    armed = false;
+    if (observationFailure) throw observationFailure.error;
+    assert.ok(stream, 'Actual normal selected copy/inspect ReadStream reached.');
+    assert.equal(opens, 1); assert.equal(closes, 1); assert.equal(launches, 0);
+    assert.equal(closeEvents, 1, 'Logical close alone is explicitly not the physical proof.');
+    assert.equal(temporaries.length, 1);
+    const fdState = probe();
+    const stagingExists = await fs.stat(temporaries[0].folder).then(stat => {
+      assert.equal(stat.dev, temporaries[0].dev); assert.equal(stat.ino, temporaries[0].ino); return true;
+    }, error => { if (error.code === 'ENOENT') return false; throw error; });
+    const unchanged = await Promise.all([...preserved].map(async ([file, bytes]) => [file, (await original.readFile(file)).equals(bytes)]));
+    t.diagnostic(JSON.stringify({ kind: 'MAIN_PACK_STREAM_ERROR_PROBE', mode, fault, inspected, probes, injected, traps, opens, closes, closeEvents, launches,
+      fdState, stagingExists, stagingCleanupCalls: removals.length, saved: result?.saved === true, code: result?.code ?? null,
+      failure: failure ? String(failure.error?.message ?? failure.error) : null,
+      nonCipherOriginalsUnchanged: unchanged.filter(([file]) => file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)).every(([,same]) => same),
+      previousCipherUnchanged: unchanged.find(([file]) => file === path.join(root, WEATHER_PROGRESS_CIPHER_PATH))[1],
+      ownerClaim: 'none; exact invocation retention is not an exclusive global writer lock' }));
+    for (const [file, same] of unchanged) assert.equal(same, true, file);
+    assert.equal(fdState, fault.endsWith('close-noop') ? 'OPEN_SAME_OBJECT' : 'CLOSED');
+    assert.ok(failure && Object.hasOwn(failure, 'error'));
+    if (fault.startsWith('digest-') || fault === 'read-error-close-noop') {
+      assert.equal(injected, 1); assert.strictEqual(failure.error, rawFirst);
+    } else if (fault === 'closed-then-error') assert.strictEqual(failure.error, secondary);
+    else assert.equal(failure.error.message, 'WEATHER_PACK_STREAM_CLOSE_UNPROVED');
+    assert.equal(probes, 1); assert.equal(traps, 0); assert.equal(inspected, 0);
+    assert.equal(stagingExists, unknown); assert.equal(removals.length, unknown ? 0 : 1);
+  } finally {
+    armed = false;
+    for (const hook of hooks.reverse()) hook.mock.restore();
+    syncBuiltinESMExports();
+    // Real cleanup only after measuring the normal result and own physical fd.
+    if (Number.isInteger(fd) && probe() !== 'CLOSED') await new Promise((resolve, reject) => original.close(fd, error => error ? reject(error) : resolve()));
+    if (Number.isInteger(fd)) assert.equal(probe(), 'CLOSED');
+    for (const row of temporaries) {
+      const stat = await fs.stat(row.folder).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+      if (stat) {
+        assert.equal(stat.dev, row.dev); assert.equal(stat.ino, row.ino);
+        assert.equal(path.dirname(row.folder), await fs.realpath(os.tmpdir()));
+        assert.ok(path.basename(row.folder).startsWith('rr-encrypted-progress-'));
+        await original.rm(row.folder, { recursive: true, force: true });
+      }
+    }
+  }
+});
+
+for (const fault of ['close-noop', 'none'])
+test('main SAVE pack build output physical lifetime / ' + fault, { timeout: 30_000 }, async t => {
+  const native = (await import('node:fs')).default;
+  const { syncBuiltinESMExports } = await import('node:module');
+  const childProcess = (await import('node:child_process')).default;
+  const original = { open: fs.open, close: native.close,
+    fstatSync: native.fstatSync, statSync: native.statSync, realpathSync: native.realpathSync,
+    readFile: fs.readFile, mkdtemp: fs.mkdtemp, rm: fs.rm };
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const root = await fs.realpath(f.source), selectedFile = path.join(root, files.openMeteoBank);
+  const preserved = new Map();
+  for (const file of [f.sourceBase, f.targetBase, path.join(root, 'data/live/conditions.json'),
+    selectedFile, path.join(root, WEATHER_PROGRESS_CIPHER_PATH)]) preserved.set(file, await original.readFile(file));
+  const temporaries = [], removals = [], hooks = [];
+  let writer, fd, identity, actualClose, outputPath, observationFailure, armed = true;
+  let opens = 0, closes = 0, launches = 0;
+  const probe = () => {
+    try { const stat = original.fstatSync(fd); assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino); return 'OPEN_SAME_OBJECT'; }
+    catch (error) { if (Object.getOwnPropertyDescriptor(error, 'code')?.value === 'EBADF') return 'CLOSED'; throw error; }
+  };
+  hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_CP_OR_PROVIDER_CHILD_ALLOWED'); }));
+  hooks.push(t.mock.method(globalThis, 'fetch', () => { throw Error('NO_NETWORK_ALLOWED'); }));
+  hooks.push(t.mock.method(fs, 'open', async (...args) => {
+    const stack = new Error().stack, opened = await Reflect.apply(original.open, fs, args);
+    if (!armed || writer || args[1] !== 'wx' || typeof args[0] !== 'string'
+      || !stack.includes('at buildPackWithJsonReadLifetime (')
+      || !temporaries.some(row => path.dirname(args[0]) === path.join(row.folder, '.cache')
+        && path.basename(args[0]).startsWith('weather-component-inputs.pack.tmp-'))) return opened;
+    writer = opened; fd = opened.fd; actualClose = opened.close.bind(opened); opens++;
+    try {
+      outputPath = await fs.realpath(args[0]);
+      identity = original.fstatSync(fd); const stat = await fs.stat(outputPath);
+      assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
+      opened.close = async () => {
+        closes++; assert.equal(probe(), 'OPEN_SAME_OBJECT');
+        if (fault !== 'close-noop') await actualClose();
+      };
+    } catch (error) { observationFailure = { error }; throw error; }
+    return opened;
+  }));
+  syncBuiltinESMExports();
+  hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
+    const folder = await Reflect.apply(original.mkdtemp, fs, args);
+    if (armed && path.basename(folder).startsWith('rr-encrypted-progress-')) {
+      const physical = await fs.realpath(folder), stat = await fs.stat(physical);
+      temporaries.push({ folder: physical, dev: stat.dev, ino: stat.ino });
+    }
+    return folder;
+  }));
+  hooks.push(t.mock.method(fs, 'rm', async (file, ...args) => {
+    if (armed && temporaries.some(row => path.resolve(String(file)) === row.folder)) removals.push(String(file));
+    return Reflect.apply(original.rm, fs, [file, ...args]);
+  }));
+  let result, failure;
+  try {
+    try { result = await f.call('save'); } catch (error) { failure = { error }; }
+    armed = false;
+    if (observationFailure) throw observationFailure.error;
+    assert.ok(writer, 'Actual normal SAVE build pack output handle reached.');
+    assert.equal(opens, 1); assert.equal(closes, 1); assert.equal(launches, 0);
+    assert.equal(temporaries.length, 1);
+    const fdState = probe();
+    const stagingExists = await fs.stat(temporaries[0].folder).then(stat => {
+      assert.equal(stat.dev, temporaries[0].dev); assert.equal(stat.ino, temporaries[0].ino); return true;
+    }, error => { if (error.code === 'ENOENT') return false; throw error; });
+    const unchanged = await Promise.all([...preserved].map(async ([file, bytes]) => [file, (await original.readFile(file)).equals(bytes)]));
+    t.diagnostic(JSON.stringify({ kind: 'MAIN_SAVE_PACK_BUILD_OUTPUT_LIFETIME', fault, opens, closes, launches,
+      fdState, stagingExists, stagingCleanupCalls: removals.length, saved: result?.saved === true, code: result?.code ?? null,
+      failure: failure ? String(failure.error?.message ?? failure.error) : null,
+      nonCipherOriginalsUnchanged: unchanged.filter(([file]) => file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)).every(([,same]) => same),
+      previousCipherUnchanged: unchanged.find(([file]) => file === path.join(root, WEATHER_PROGRESS_CIPHER_PATH))[1],
+      ownerClaim: 'none; exact invocation retention is not an exclusive global writer lock' }));
+    for (const [file, same] of unchanged) if (fault !== 'none' || file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)) assert.equal(same, true, file);
+    assert.equal(fdState, fault === 'none' ? 'CLOSED' : 'OPEN_SAME_OBJECT');
+    assert.equal(failure, undefined);
+    if (fault === 'none') {
+      assert.equal(result.saved, true); assert.equal(stagingExists, false); assert.equal(removals.length, 1);
+    } else {
+      assert.notEqual(result?.saved, true);
+      assert.equal(stagingExists, true); assert.equal(removals.length, 0);
+    }
+  } finally {
+    armed = false;
+    for (const hook of hooks.reverse()) hook.mock.restore();
+    syncBuiltinESMExports();
+    // Real cleanup only after measuring the normal result and own physical fd.
+    if (Number.isInteger(fd) && probe() !== 'CLOSED') await actualClose();
+    if (Number.isInteger(fd)) assert.equal(probe(), 'CLOSED');
+    for (const row of temporaries) {
+      const stat = await fs.stat(row.folder).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+      if (stat) {
+        assert.equal(stat.dev, row.dev); assert.equal(stat.ino, row.ino);
+        assert.equal(path.dirname(row.folder), await fs.realpath(os.tmpdir()));
+        assert.ok(path.basename(row.folder).startsWith('rr-encrypted-progress-'));
+        await original.rm(row.folder, { recursive: true, force: true });
+      }
+    }
+  }
+});
+
+for (const fault of ['sync-null-close-error', 'sync-zero-close-noop', 'closed-then-error', 'probe-null-open'])
+test('main pack build output raw first error / ' + fault, { timeout: 30_000 }, async t => {
+  const native = (await import('node:fs')).default;
+  const { privateWeatherPackJsonReadsClosed } = await import('./lib/private-weather-component-pack.mjs');
+  const primary = fault === 'sync-null-close-error' ? null : 0;
+  const secondary = new Error('OWN_PACK_BUILD_CLOSE_SECONDARY');
+  const unknown = fault === 'sync-zero-close-noop' || fault === 'probe-null-open';
+  let probes = 0, syncs = 0;
+  const { syncBuiltinESMExports } = await import('node:module');
+  const childProcess = (await import('node:child_process')).default;
+  const original = { open: fs.open, close: native.close, fstat: native.fstat,
+    fstatSync: native.fstatSync, statSync: native.statSync, realpathSync: native.realpathSync,
+    readFile: fs.readFile, mkdtemp: fs.mkdtemp, rm: fs.rm };
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const root = await fs.realpath(f.source), selectedFile = path.join(root, files.openMeteoBank);
+  const preserved = new Map();
+  for (const file of [f.sourceBase, f.targetBase, path.join(root, 'data/live/conditions.json'),
+    selectedFile, path.join(root, WEATHER_PROGRESS_CIPHER_PATH)]) preserved.set(file, await original.readFile(file));
+  const temporaries = [], removals = [], hooks = [];
+  let writer, fd, identity, actualClose, outputPath, observationFailure, armed = true;
+  let opens = 0, closes = 0, launches = 0;
+  const probe = () => {
+    try { const stat = original.fstatSync(fd); assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino); return 'OPEN_SAME_OBJECT'; }
+    catch (error) { if (Object.getOwnPropertyDescriptor(error, 'code')?.value === 'EBADF') return 'CLOSED'; throw error; }
+  };
+  hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_CP_OR_PROVIDER_CHILD_ALLOWED'); }));
+  hooks.push(t.mock.method(globalThis, 'fetch', () => { throw Error('NO_NETWORK_ALLOWED'); }));
+  hooks.push(t.mock.method(fs, 'open', async (...args) => {
+    const stack = new Error().stack, opened = await Reflect.apply(original.open, fs, args);
+    if (!armed || writer || args[1] !== 'wx' || typeof args[0] !== 'string'
+      || !stack.includes('at buildPackWithJsonReadLifetime (')
+      || path.dirname(args[0]) !== path.join(root, '.cache')
+      || !path.basename(args[0]).startsWith('weather-component-inputs.pack.tmp-')) return opened;
+    writer = opened; fd = opened.fd; actualClose = opened.close.bind(opened); opens++;
+    try {
+      outputPath = await fs.realpath(args[0]);
+      identity = original.fstatSync(fd); const stat = await fs.stat(outputPath);
+      assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
+      const actualSync = opened.sync.bind(opened);
+      opened.sync = async () => { syncs++; if (fault.startsWith('sync-')) throw primary; await actualSync(); };
+      opened.close = async () => {
+        closes++; assert.equal(probe(), 'OPEN_SAME_OBJECT');
+        if (!unknown) await actualClose();
+        if (fault === 'sync-null-close-error' || fault === 'closed-then-error') throw secondary;
+      };
+    } catch (error) { observationFailure = { error }; throw error; }
+    return opened;
+  }));
+  hooks.push(t.mock.method(native, 'fstat', (number, callback) => {
+    if (!armed || !writer || number !== fd || !new Error().stack.includes('at closeOutput ('))
+      return Reflect.apply(original.fstat, native, [number, callback]);
+    probes++;
+    if (fault === 'probe-null-open') { callback(null); return; }
+    return Reflect.apply(original.fstat, native, [number, callback]);
+  }));
+  syncBuiltinESMExports();
+  hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
+    const folder = await Reflect.apply(original.mkdtemp, fs, args);
+    if (armed && path.basename(folder).startsWith('rr-encrypted-progress-')) {
+      const physical = await fs.realpath(folder), stat = await fs.stat(physical);
+      temporaries.push({ folder: physical, dev: stat.dev, ino: stat.ino });
+    }
+    return folder;
+  }));
+  hooks.push(t.mock.method(fs, 'rm', async (file, ...args) => {
+    if (armed && temporaries.some(row => path.resolve(String(file)) === row.folder)) removals.push(String(file));
+    return Reflect.apply(original.rm, fs, [file, ...args]);
+  }));
+  let result, failure, invocation;
+  try {
+    try {
+      invocation = buildPrivateWeatherComponentPack({ repositoryRoot: root, conditions: {}, includeOperationalProgress: true });
+      result = await invocation;
+    } catch (error) { failure = { error }; }
+    armed = false;
+    if (observationFailure) throw observationFailure.error;
+    assert.ok(writer, 'Actual normal SAVE build pack output handle reached.');
+    assert.equal(opens, 1); assert.equal(closes, 1); assert.equal(launches, 0);
+    assert.equal(temporaries.length, 0, 'Normal pack entry does not create a separate parent workspace.');
+    const fdState = probe();
+    const stagingExists = await fs.stat(outputPath).then(stat => {
+      assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino); return true;
+    }, error => { if (error.code === 'ENOENT') return false; throw error; });
+    const unchanged = await Promise.all([...preserved].map(async ([file, bytes]) => [file, (await original.readFile(file)).equals(bytes)]));
+    t.diagnostic(JSON.stringify({ kind: 'MAIN_PACK_BUILD_OUTPUT_RAW_FIRST', fault, opens, closes, launches, probes, syncs,
+      trackedClosed: privateWeatherPackJsonReadsClosed(invocation),
+      fdState, stagingExists, stagingCleanupCalls: removals.length, saved: result?.saved === true, code: result?.code ?? null,
+      failure: failure ? String(failure.error?.message ?? failure.error) : null,
+      nonCipherOriginalsUnchanged: unchanged.filter(([file]) => file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)).every(([,same]) => same),
+      previousCipherUnchanged: unchanged.find(([file]) => file === path.join(root, WEATHER_PROGRESS_CIPHER_PATH))[1],
+      ownerClaim: 'none; exact invocation retention is not an exclusive global writer lock' }));
+    for (const [file, same] of unchanged) assert.equal(same, true, file);
+    assert.equal(fdState, unknown ? 'OPEN_SAME_OBJECT' : 'CLOSED');
+    assert.ok(failure && Object.hasOwn(failure, 'error'));
+    if (fault.startsWith('sync-')) assert.strictEqual(failure.error, primary);
+    else if (fault === 'closed-then-error') assert.strictEqual(failure.error, secondary);
+    else assert.equal(failure.error.message, 'WEATHER_PACK_BUILD_OUTPUT_CLOSE_UNPROVED');
+    assert.equal(probes, 1); assert.equal(syncs, 1);
+    assert.equal(privateWeatherPackJsonReadsClosed(invocation), !unknown);
+    assert.equal(stagingExists, unknown);
+    await assert.rejects(fs.stat(path.join(root, '.cache/weather-component-inputs.pack')), { code: 'ENOENT' });
+  } finally {
+    armed = false;
+    for (const hook of hooks.reverse()) hook.mock.restore();
+    syncBuiltinESMExports();
+    // Real cleanup only after measuring the normal result and own physical fd.
+    if (Number.isInteger(fd) && probe() !== 'CLOSED') await actualClose();
+    if (Number.isInteger(fd)) assert.equal(probe(), 'CLOSED');
+    for (const row of temporaries) {
+      const stat = await fs.stat(row.folder).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+      if (stat) {
+        assert.equal(stat.dev, row.dev); assert.equal(stat.ino, row.ino);
+        assert.equal(path.dirname(row.folder), await fs.realpath(os.tmpdir()));
+        assert.ok(path.basename(row.folder).startsWith('rr-encrypted-progress-'));
+        await original.rm(row.folder, { recursive: true, force: true });
+      }
+    }
+  }
+});
+
+for (const fault of ['close-then-replacement-error'])
+test('main SAVE pack build output replacement safety / ' + fault, { timeout: 30_000 }, async t => {
+  const native = (await import('node:fs')).default;
+  const { syncBuiltinESMExports } = await import('node:module');
+  const childProcess = (await import('node:child_process')).default;
+  const original = { open: fs.open, close: native.close, unlink: fs.unlink, rename: fs.rename, writeFile: fs.writeFile,
+    fstatSync: native.fstatSync, statSync: native.statSync, realpathSync: native.realpathSync,
+    readFile: fs.readFile, mkdtemp: fs.mkdtemp, rm: fs.rm };
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const root = await fs.realpath(f.source), selectedFile = path.join(root, files.openMeteoBank);
+  const preserved = new Map();
+  for (const file of [f.sourceBase, f.targetBase, path.join(root, 'data/live/conditions.json'),
+    selectedFile, path.join(root, WEATHER_PROGRESS_CIPHER_PATH)]) preserved.set(file, await original.readFile(file));
+  const temporaries = [], removals = [], hooks = [];
+  let writer, fd, identity, actualClose, outputPath, observationFailure, armed = true;
+  let opens = 0, closes = 0, launches = 0;
+  let movedPath, movedIdentity, replacementIdentity, movedBytes;
+  const unlinks = [];
+  const probe = () => {
+    try { const stat = original.fstatSync(fd); assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino); return 'OPEN_SAME_OBJECT'; }
+    catch (error) { if (Object.getOwnPropertyDescriptor(error, 'code')?.value === 'EBADF') return 'CLOSED'; throw error; }
+  };
+  hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_CP_OR_PROVIDER_CHILD_ALLOWED'); }));
+  hooks.push(t.mock.method(globalThis, 'fetch', () => { throw Error('NO_NETWORK_ALLOWED'); }));
+  hooks.push(t.mock.method(fs, 'open', async (...args) => {
+    const stack = new Error().stack, opened = await Reflect.apply(original.open, fs, args);
+    if (!armed || writer || args[1] !== 'wx' || typeof args[0] !== 'string'
+      || !stack.includes('at buildPackWithJsonReadLifetime (')
+      || !temporaries.some(row => path.dirname(args[0]) === path.join(row.folder, '.cache')
+        && path.basename(args[0]).startsWith('weather-component-inputs.pack.tmp-'))) return opened;
+    writer = opened; fd = opened.fd; actualClose = opened.close.bind(opened); opens++;
+    try {
+      outputPath = await fs.realpath(args[0]);
+      identity = original.fstatSync(fd); const stat = await fs.stat(outputPath);
+      assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
+      opened.close = async () => {
+        closes++; assert.equal(probe(), 'OPEN_SAME_OBJECT');
+        movedBytes = await original.readFile(outputPath);
+        await actualClose();
+        movedPath = outputPath + '.own-synthetic-moved';
+        await original.rename(outputPath, movedPath);
+        movedIdentity = await fs.stat(movedPath);
+        assert.equal(movedIdentity.dev, identity.dev); assert.equal(movedIdentity.ino, identity.ino);
+        await original.writeFile(outputPath, 'OWN_SYNTHETIC_REPLACEMENT_MUST_SURVIVE', { flag: 'wx' });
+        replacementIdentity = await fs.stat(outputPath);
+        assert.notEqual(replacementIdentity.ino, identity.ino);
+        throw new Error('OWN_CLOSE_AFTER_ACTUAL_STAGE_REPLACEMENT');
+      };
+    } catch (error) { observationFailure = { error }; throw error; }
+    return opened;
+  }));
+  hooks.push(t.mock.method(fs, 'unlink', async (file, ...args) => {
+    if (armed && outputPath && path.resolve(String(file)) === outputPath) unlinks.push(String(file));
+    return Reflect.apply(original.unlink, fs, [file, ...args]);
+  }));
+  syncBuiltinESMExports();
+  hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
+    const folder = await Reflect.apply(original.mkdtemp, fs, args);
+    if (armed && path.basename(folder).startsWith('rr-encrypted-progress-')) {
+      const physical = await fs.realpath(folder), stat = await fs.stat(physical);
+      temporaries.push({ folder: physical, dev: stat.dev, ino: stat.ino });
+    }
+    return folder;
+  }));
+  hooks.push(t.mock.method(fs, 'rm', async (file, ...args) => {
+    if (armed && temporaries.some(row => path.resolve(String(file)) === row.folder)) removals.push(String(file));
+    return Reflect.apply(original.rm, fs, [file, ...args]);
+  }));
+  let result, failure;
+  try {
+    try { result = await f.call('save'); } catch (error) { failure = { error }; }
+    armed = false;
+    if (observationFailure) throw observationFailure.error;
+    assert.ok(writer, 'Actual normal SAVE build pack output handle reached.');
+    assert.equal(opens, 1); assert.equal(closes, 1); assert.equal(launches, 0);
+    assert.equal(temporaries.length, 1);
+    const fdState = probe();
+    const stagingExists = await fs.stat(temporaries[0].folder).then(stat => {
+      assert.equal(stat.dev, temporaries[0].dev); assert.equal(stat.ino, temporaries[0].ino); return true;
+    }, error => { if (error.code === 'ENOENT') return false; throw error; });
+    const replacementExists = await fs.stat(outputPath).then(stat => {
+      assert.equal(stat.dev, replacementIdentity.dev); assert.equal(stat.ino, replacementIdentity.ino); return true;
+    }, error => { if (error.code === 'ENOENT') return false; throw error; });
+    const movedExists = await fs.stat(movedPath).then(stat => {
+      assert.equal(stat.dev, movedIdentity.dev); assert.equal(stat.ino, movedIdentity.ino); return true;
+    }, error => { if (error.code === 'ENOENT') return false; throw error; });
+    const unchanged = await Promise.all([...preserved].map(async ([file, bytes]) => [file, (await original.readFile(file)).equals(bytes)]));
+    t.diagnostic(JSON.stringify({ kind: 'MAIN_SAVE_PACK_BUILD_OUTPUT_REPLACEMENT', fault, opens, closes, launches,
+      replacementExists, movedExists, replacementUnlinks: unlinks.length,
+      fdState, stagingExists, stagingCleanupCalls: removals.length, saved: result?.saved === true, code: result?.code ?? null,
+      failure: failure ? String(failure.error?.message ?? failure.error) : null,
+      nonCipherOriginalsUnchanged: unchanged.filter(([file]) => file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)).every(([,same]) => same),
+      previousCipherUnchanged: unchanged.find(([file]) => file === path.join(root, WEATHER_PROGRESS_CIPHER_PATH))[1],
+      ownerClaim: 'none; exact invocation retention is not an exclusive global writer lock' }));
+    for (const [file, same] of unchanged) if (fault !== 'none' || file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)) assert.equal(same, true, file);
+    assert.equal(fdState, 'CLOSED'); assert.equal(failure, undefined);
+    assert.notEqual(result?.saved, true);
+    assert.equal(stagingExists, true, 'Closed fd does not authorize deleting unknown replacement/staging.');
+    assert.equal(removals.length, 0); assert.equal(unlinks.length, 0);
+    assert.equal(replacementExists, true); assert.equal(movedExists, true);
+    assert.deepEqual(await original.readFile(movedPath), movedBytes);
+  } finally {
+    armed = false;
+    for (const hook of hooks.reverse()) hook.mock.restore();
+    syncBuiltinESMExports();
+    // Real cleanup only after measuring the normal result and own physical fd.
+    if (Number.isInteger(fd) && probe() !== 'CLOSED') await actualClose();
+    if (Number.isInteger(fd)) assert.equal(probe(), 'CLOSED');
+    for (const row of temporaries) {
+      const stat = await fs.stat(row.folder).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+      if (stat) {
+        assert.equal(stat.dev, row.dev); assert.equal(stat.ino, row.ino);
+        assert.equal(path.dirname(row.folder), await fs.realpath(os.tmpdir()));
+        assert.ok(path.basename(row.folder).startsWith('rr-encrypted-progress-'));
+        await original.rm(row.folder, { recursive: true, force: true });
+      }
+    }
+  }
+});
+
+for (const fault of ['closed-error', 'cleanup-noop', 'cleanup-then-error', 'stage-absent',
+  'stage-stat-error', 'rename-noop', 'rename-copy', 'rename-then-error', 'post-rename-stat-error'])
+test('main SAVE pack own identity publication / ' + fault, { timeout: 30_000 }, async t => {
+  const native = (await import('node:fs')).default;
+  const primary = new Error('OWN_FIRST_BUILD_FAILURE');
+  const held = !['closed-error', 'cleanup-then-error', 'rename-then-error'].includes(fault);
+  let unlinks = 0, renames = 0, statFaults = 0, publishedPath, movedPath, publishedOwnIdentity = false;
+  const { syncBuiltinESMExports } = await import('node:module');
+  const childProcess = (await import('node:child_process')).default;
+  const original = { open: fs.open, close: native.close, unlink: fs.unlink, rename: fs.rename,
+    lstat: fs.lstat, copyFile: fs.copyFile,
+    fstatSync: native.fstatSync, statSync: native.statSync, realpathSync: native.realpathSync,
+    readFile: fs.readFile, mkdtemp: fs.mkdtemp, rm: fs.rm };
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const root = await fs.realpath(f.source), selectedFile = path.join(root, files.openMeteoBank);
+  const preserved = new Map();
+  for (const file of [f.sourceBase, f.targetBase, path.join(root, 'data/live/conditions.json'),
+    selectedFile, path.join(root, WEATHER_PROGRESS_CIPHER_PATH)]) preserved.set(file, await original.readFile(file));
+  const temporaries = [], removals = [], hooks = [];
+  let writer, fd, identity, actualClose, outputPath, observationFailure, armed = true;
+  let opens = 0, closes = 0, launches = 0;
+  const probe = () => {
+    try { const stat = original.fstatSync(fd); assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino); return 'OPEN_SAME_OBJECT'; }
+    catch (error) { if (Object.getOwnPropertyDescriptor(error, 'code')?.value === 'EBADF') return 'CLOSED'; throw error; }
+  };
+  hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_CP_OR_PROVIDER_CHILD_ALLOWED'); }));
+  hooks.push(t.mock.method(globalThis, 'fetch', () => { throw Error('NO_NETWORK_ALLOWED'); }));
+  hooks.push(t.mock.method(fs, 'open', async (...args) => {
+    const stack = new Error().stack, opened = await Reflect.apply(original.open, fs, args);
+    if (!armed || writer || args[1] !== 'wx' || typeof args[0] !== 'string'
+      || !stack.includes('at buildPackWithJsonReadLifetime (')
+      || !temporaries.some(row => path.dirname(args[0]) === path.join(row.folder, '.cache')
+        && path.basename(args[0]).startsWith('weather-component-inputs.pack.tmp-'))) return opened;
+    writer = opened; fd = opened.fd; actualClose = opened.close.bind(opened); opens++;
+    try {
+      outputPath = await fs.realpath(args[0]);
+      identity = original.fstatSync(fd); const stat = await fs.stat(outputPath);
+      assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
+      const actualSync = opened.sync.bind(opened);
+      opened.sync = async () => {
+        if (fault.startsWith('cleanup-')) throw primary;
+        return actualSync();
+      };
+      opened.close = async () => {
+        closes++; assert.equal(probe(), 'OPEN_SAME_OBJECT'); await actualClose();
+        if (fault === 'stage-absent') {
+          movedPath = outputPath + '.own-synthetic-moved';
+          await original.rename(outputPath, movedPath);
+          const stat = await fs.stat(movedPath);
+          assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino);
+        }
+        if (fault === 'closed-error') throw primary;
+      };
+    } catch (error) { observationFailure = { error }; throw error; }
+    return opened;
+  }));
+  hooks.push(t.mock.method(fs, 'lstat', async (file, ...args) => {
+    if (armed && writer && path.resolve(String(file)) === outputPath
+      && (fault === 'stage-stat-error' || fault === 'post-rename-stat-error' && renames === 1)) {
+      statFaults++; throw Object.assign(new Error('OWN_STAT_UNKNOWN'), { code: 'EACCES' });
+    }
+    return Reflect.apply(original.lstat, fs, [file, ...args]);
+  }));
+  hooks.push(t.mock.method(fs, 'unlink', async (file, ...args) => {
+    if (!armed || !writer || path.resolve(String(file)) !== outputPath)
+      return Reflect.apply(original.unlink, fs, [file, ...args]);
+    unlinks++;
+    if (fault === 'cleanup-noop') return;
+    const result = await Reflect.apply(original.unlink, fs, [file, ...args]);
+    if (fault === 'cleanup-then-error') throw new Error('OWN_UNLINK_AFTER_ABSENCE');
+    return result;
+  }));
+  hooks.push(t.mock.method(fs, 'rename', async (from, to, ...args) => {
+    if (!armed || !writer || path.resolve(String(from)) !== outputPath)
+      return Reflect.apply(original.rename, fs, [from, to, ...args]);
+    renames++; publishedPath = path.resolve(String(to));
+    assert.equal(path.dirname(publishedPath), path.dirname(outputPath));
+    assert.equal(path.basename(publishedPath), 'weather-component-inputs.pack');
+    if (fault === 'rename-noop') return;
+    if (fault === 'rename-copy') { await original.copyFile(from, to); return; }
+    const result = await Reflect.apply(original.rename, fs, [from, to, ...args]);
+    const stat = await fs.stat(publishedPath);
+    assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino); publishedOwnIdentity = true;
+    if (fault === 'rename-then-error') throw primary;
+    return result;
+  }));
+  syncBuiltinESMExports();
+  hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
+    const folder = await Reflect.apply(original.mkdtemp, fs, args);
+    if (armed && path.basename(folder).startsWith('rr-encrypted-progress-')) {
+      const physical = await fs.realpath(folder), stat = await fs.stat(physical);
+      temporaries.push({ folder: physical, dev: stat.dev, ino: stat.ino });
+    }
+    return folder;
+  }));
+  hooks.push(t.mock.method(fs, 'rm', async (file, ...args) => {
+    if (armed && temporaries.some(row => path.resolve(String(file)) === row.folder)) removals.push(String(file));
+    return Reflect.apply(original.rm, fs, [file, ...args]);
+  }));
+  let result, failure;
+  try {
+    try { result = await f.call('save'); } catch (error) { failure = { error }; }
+    armed = false;
+    if (observationFailure) throw observationFailure.error;
+    assert.ok(writer, 'Actual normal SAVE build pack output handle reached.');
+    assert.equal(opens, 1); assert.equal(closes, 1); assert.equal(launches, 0);
+    assert.equal(temporaries.length, 1);
+    const fdState = probe();
+    const stagingExists = await fs.stat(temporaries[0].folder).then(stat => {
+      assert.equal(stat.dev, temporaries[0].dev); assert.equal(stat.ino, temporaries[0].ino); return true;
+    }, error => { if (error.code === 'ENOENT') return false; throw error; });
+    const unchanged = await Promise.all([...preserved].map(async ([file, bytes]) => [file, (await original.readFile(file)).equals(bytes)]));
+    t.diagnostic(JSON.stringify({ kind: 'MAIN_SAVE_PACK_OWN_IDENTITY_PUBLICATION', fault, opens, closes, launches,
+      unlinks, renames, statFaults, publishedOwnIdentity,
+      fdState, stagingExists, stagingCleanupCalls: removals.length, saved: result?.saved === true, code: result?.code ?? null,
+      failure: failure ? String(failure.error?.message ?? failure.error) : null,
+      nonCipherOriginalsUnchanged: unchanged.filter(([file]) => file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)).every(([,same]) => same),
+      previousCipherUnchanged: unchanged.find(([file]) => file === path.join(root, WEATHER_PROGRESS_CIPHER_PATH))[1],
+      ownerClaim: 'none; exact invocation retention is not an exclusive global writer lock' }));
+    for (const [file, same] of unchanged) if (fault !== 'none' || file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)) assert.equal(same, true, file);
+    assert.equal(fdState, 'CLOSED'); assert.equal(failure, undefined); assert.notEqual(result?.saved, true);
+    assert.equal(stagingExists, held); assert.equal(removals.length, held ? 0 : 1);
+    assert.equal(unlinks, fault.startsWith('cleanup-') || fault === 'closed-error' ? 1 : 0);
+    assert.equal(renames, fault.startsWith('rename-') || fault === 'post-rename-stat-error' ? 1 : 0);
+    assert.equal(statFaults, fault === 'stage-stat-error' || fault === 'post-rename-stat-error' ? 1 : 0);
+    if (movedPath) { const stat = await fs.stat(movedPath); assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino); }
+    if (fault === 'rename-copy') {
+      const source = await fs.stat(outputPath), live = await fs.stat(publishedPath);
+      assert.equal(source.ino, identity.ino); assert.notEqual(live.ino, identity.ino);
+    }
+    if (fault === 'post-rename-stat-error') assert.equal((await fs.stat(publishedPath)).ino, identity.ino);
+    if (fault === 'cleanup-then-error') await assert.rejects(fs.stat(outputPath), { code: 'ENOENT' });
+  } finally {
+    armed = false;
+    for (const hook of hooks.reverse()) hook.mock.restore();
+    syncBuiltinESMExports();
+    // Real cleanup only after measuring the normal result and own physical fd.
+    if (Number.isInteger(fd) && probe() !== 'CLOSED') await actualClose();
+    if (Number.isInteger(fd)) assert.equal(probe(), 'CLOSED');
+    for (const row of temporaries) {
+      const stat = await fs.stat(row.folder).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+      if (stat) {
+        assert.equal(stat.dev, row.dev); assert.equal(stat.ino, row.ino);
+        assert.equal(path.dirname(row.folder), await fs.realpath(os.tmpdir()));
+        assert.ok(path.basename(row.folder).startsWith('rr-encrypted-progress-'));
+        await original.rm(row.folder, { recursive: true, force: true });
+      }
+    }
+  }
+});
+
+for (const fault of ['rename-null-completed', 'rename-zero-poststate-unknown'])
+test('main pack publication raw first error / ' + fault, { timeout: 30_000 }, async t => {
+  const native = (await import('node:fs')).default;
+  const { privateWeatherPackJsonReadsClosed } = await import('./lib/private-weather-component-pack.mjs');
+  const primary = fault === 'rename-null-completed' ? null : 0;
+  const secondary = new Error('OWN_PACK_BUILD_CLOSE_SECONDARY');
+  const unknown = fault === 'rename-zero-poststate-unknown';
+  let renames = 0, destination, expectedOutput, statFaults = 0;
+  let probes = 0, syncs = 0;
+  const { syncBuiltinESMExports } = await import('node:module');
+  const childProcess = (await import('node:child_process')).default;
+  const original = { open: fs.open, close: native.close, fstat: native.fstat,
+    rename: fs.rename, lstat: fs.lstat,
+    fstatSync: native.fstatSync, statSync: native.statSync, realpathSync: native.realpathSync,
+    readFile: fs.readFile, mkdtemp: fs.mkdtemp, rm: fs.rm };
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const root = await fs.realpath(f.source), selectedFile = path.join(root, files.openMeteoBank);
+  const preserved = new Map();
+  for (const file of [f.sourceBase, f.targetBase, path.join(root, 'data/live/conditions.json'),
+    selectedFile, path.join(root, WEATHER_PROGRESS_CIPHER_PATH)]) preserved.set(file, await original.readFile(file));
+  const temporaries = [], removals = [], hooks = [];
+  let writer, fd, identity, actualClose, outputPath, observationFailure, armed = true;
+  let opens = 0, closes = 0, launches = 0;
+  const probe = () => {
+    try { const stat = original.fstatSync(fd); assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino); return 'OPEN_SAME_OBJECT'; }
+    catch (error) { if (Object.getOwnPropertyDescriptor(error, 'code')?.value === 'EBADF') return 'CLOSED'; throw error; }
+  };
+  hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_CP_OR_PROVIDER_CHILD_ALLOWED'); }));
+  hooks.push(t.mock.method(globalThis, 'fetch', () => { throw Error('NO_NETWORK_ALLOWED'); }));
+  hooks.push(t.mock.method(fs, 'open', async (...args) => {
+    const stack = new Error().stack, opened = await Reflect.apply(original.open, fs, args);
+    if (!armed || writer || args[1] !== 'wx' || typeof args[0] !== 'string'
+      || !stack.includes('at buildPackWithJsonReadLifetime (')
+      || path.dirname(args[0]) !== path.join(root, '.cache')
+      || !path.basename(args[0]).startsWith('weather-component-inputs.pack.tmp-')) return opened;
+    writer = opened; fd = opened.fd; actualClose = opened.close.bind(opened); opens++;
+    try {
+      outputPath = await fs.realpath(args[0]);
+      identity = original.fstatSync(fd); const stat = await fs.stat(outputPath);
+      assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
+      const actualSync = opened.sync.bind(opened);
+      opened.sync = async () => { syncs++; await actualSync(); };
+      opened.close = async () => {
+        closes++; assert.equal(probe(), 'OPEN_SAME_OBJECT');
+        await actualClose();
+      };
+    } catch (error) { observationFailure = { error }; throw error; }
+    return opened;
+  }));
+  hooks.push(t.mock.method(native, 'fstat', (number, callback) => {
+    if (!armed || !writer || number !== fd || !new Error().stack.includes('at closeOutput ('))
+      return Reflect.apply(original.fstat, native, [number, callback]);
+    probes++;
+    if (fault === 'probe-null-open') { callback(null); return; }
+    return Reflect.apply(original.fstat, native, [number, callback]);
+  }));
+  hooks.push(t.mock.method(fs, 'rename', async (from, to, ...args) => {
+    if (!armed || !writer || path.resolve(String(from)) !== outputPath)
+      return Reflect.apply(original.rename, fs, [from, to, ...args]);
+    renames++; destination = path.resolve(String(to));
+    expectedOutput = await original.readFile(outputPath);
+    await Reflect.apply(original.rename, fs, [from, to, ...args]);
+    assert.equal((await fs.stat(destination)).ino, identity.ino);
+    throw primary;
+  }));
+  hooks.push(t.mock.method(fs, 'lstat', async (file, ...args) => {
+    if (armed && writer && unknown && renames === 1 && path.resolve(String(file)) === outputPath) {
+      statFaults++; throw Object.assign(new Error('OWN_POST_RENAME_STAT_UNKNOWN'), { code: 'EACCES' });
+    }
+    return Reflect.apply(original.lstat, fs, [file, ...args]);
+  }));
+  syncBuiltinESMExports();
+  hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
+    const folder = await Reflect.apply(original.mkdtemp, fs, args);
+    if (armed && path.basename(folder).startsWith('rr-encrypted-progress-')) {
+      const physical = await fs.realpath(folder), stat = await fs.stat(physical);
+      temporaries.push({ folder: physical, dev: stat.dev, ino: stat.ino });
+    }
+    return folder;
+  }));
+  hooks.push(t.mock.method(fs, 'rm', async (file, ...args) => {
+    if (armed && temporaries.some(row => path.resolve(String(file)) === row.folder)) removals.push(String(file));
+    return Reflect.apply(original.rm, fs, [file, ...args]);
+  }));
+  let result, failure, invocation;
+  try {
+    try {
+      invocation = buildPrivateWeatherComponentPack({ repositoryRoot: root, conditions: {}, includeOperationalProgress: true });
+      result = await invocation;
+    } catch (error) { failure = { error }; }
+    armed = false;
+    if (observationFailure) throw observationFailure.error;
+    assert.ok(writer, 'Actual normal SAVE build pack output handle reached.');
+    assert.equal(opens, 1); assert.equal(closes, 1); assert.equal(launches, 0);
+    assert.equal(temporaries.length, 0, 'Normal pack entry does not create a separate parent workspace.');
+    const fdState = probe();
+    const stagingExists = await fs.stat(outputPath).then(stat => {
+      assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino); return true;
+    }, error => { if (error.code === 'ENOENT') return false; throw error; });
+    const unchanged = await Promise.all([...preserved].map(async ([file, bytes]) => [file, (await original.readFile(file)).equals(bytes)]));
+    t.diagnostic(JSON.stringify({ kind: 'MAIN_PACK_PUBLICATION_RAW_FIRST', fault, opens, closes, launches, probes, syncs, renames, statFaults,
+      trackedClosed: privateWeatherPackJsonReadsClosed(invocation),
+      fdState, stagingExists, stagingCleanupCalls: removals.length, saved: result?.saved === true, code: result?.code ?? null,
+      failure: failure ? String(failure.error?.message ?? failure.error) : null,
+      nonCipherOriginalsUnchanged: unchanged.filter(([file]) => file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)).every(([,same]) => same),
+      previousCipherUnchanged: unchanged.find(([file]) => file === path.join(root, WEATHER_PROGRESS_CIPHER_PATH))[1],
+      ownerClaim: 'none; exact invocation retention is not an exclusive global writer lock' }));
+    for (const [file, same] of unchanged) assert.equal(same, true, file);
+    assert.equal(fdState, 'CLOSED');
+    assert.ok(failure && Object.hasOwn(failure, 'error'));
+    assert.strictEqual(failure.error, primary);
+    assert.equal(probes, 1); assert.equal(syncs, 1);
+    assert.equal(privateWeatherPackJsonReadsClosed(invocation), !unknown);
+    assert.equal(stagingExists, false); assert.equal(renames, 1); assert.equal(statFaults, unknown ? 1 : 0);
+    assert.equal((await fs.stat(destination)).ino, identity.ino);
+    assert.deepEqual(await original.readFile(destination), expectedOutput,
+      'Actually published own bytes survive the first error; no rollback/delete.');
+  } finally {
+    armed = false;
+    for (const hook of hooks.reverse()) hook.mock.restore();
+    syncBuiltinESMExports();
+    // Real cleanup only after measuring the normal result and own physical fd.
+    if (Number.isInteger(fd) && probe() !== 'CLOSED') await actualClose();
+    if (Number.isInteger(fd)) assert.equal(probe(), 'CLOSED');
+    for (const row of temporaries) {
+      const stat = await fs.stat(row.folder).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+      if (stat) {
+        assert.equal(stat.dev, row.dev); assert.equal(stat.ino, row.ino);
+        assert.equal(path.dirname(row.folder), await fs.realpath(os.tmpdir()));
+        assert.ok(path.basename(row.folder).startsWith('rr-encrypted-progress-'));
+        await original.rm(row.folder, { recursive: true, force: true });
+      }
+    }
+  }
+});
+
+for (const fault of ['equal-length-payload', 'none'])
+test('main SAVE pack exact own output bytes / ' + fault, { timeout: 30_000 }, async t => {
+  const native = (await import('node:fs')).default;
+  const { syncBuiltinESMExports } = await import('node:module');
+  const childProcess = (await import('node:child_process')).default;
+  const original = { open: fs.open, close: native.close,
+    fstatSync: native.fstatSync, statSync: native.statSync, realpathSync: native.realpathSync,
+    readFile: fs.readFile, mkdtemp: fs.mkdtemp, rm: fs.rm };
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const root = await fs.realpath(f.source), selectedFile = path.join(root, files.openMeteoBank);
+  const preserved = new Map();
+  for (const file of [f.sourceBase, f.targetBase, path.join(root, 'data/live/conditions.json'),
+    selectedFile, path.join(root, WEATHER_PROGRESS_CIPHER_PATH)]) preserved.set(file, await original.readFile(file));
+  const temporaries = [], removals = [], hooks = [];
+  let writer, fd, identity, actualClose, outputPath, observationFailure, armed = true;
+  let opens = 0, closes = 0, launches = 0, writes = 0, altered = 0;
+  const expectedHash = crypto.createHash('sha256');
+  let expectedBytes = 0, actualBytes, actualHash, expectedDigest, inspectCalls = 0, inspectResult, inspectFailure;
+  const probe = () => {
+    try { const stat = original.fstatSync(fd); assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino); return 'OPEN_SAME_OBJECT'; }
+    catch (error) { if (Object.getOwnPropertyDescriptor(error, 'code')?.value === 'EBADF') return 'CLOSED'; throw error; }
+  };
+  hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_CP_OR_PROVIDER_CHILD_ALLOWED'); }));
+  hooks.push(t.mock.method(globalThis, 'fetch', () => { throw Error('NO_NETWORK_ALLOWED'); }));
+  hooks.push(t.mock.method(fs, 'open', async (...args) => {
+    const stack = new Error().stack, opened = await Reflect.apply(original.open, fs, args);
+    if (!armed || writer || args[1] !== 'wx' || typeof args[0] !== 'string'
+      || !stack.includes('at buildPackWithJsonReadLifetime (')
+      || !temporaries.some(row => path.dirname(args[0]) === path.join(row.folder, '.cache')
+        && path.basename(args[0]).startsWith('weather-component-inputs.pack.tmp-'))) return opened;
+    writer = opened; fd = opened.fd; actualClose = opened.close.bind(opened); opens++;
+    try {
+      outputPath = await fs.realpath(args[0]);
+      identity = original.fstatSync(fd); const stat = await fs.stat(outputPath);
+      assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
+      const actualWrite = opened.writeFile.bind(opened);
+      opened.writeFile = async (data, ...rest) => {
+        assert.equal(probe(), 'OPEN_SAME_OBJECT');
+        assert.ok(Buffer.isBuffer(data), 'Actual builder writes its existing own buffers.');
+        writes++; expectedBytes += data.length; expectedHash.update(data);
+        if (fault === 'equal-length-payload' && writes === 2) {
+          const changed = Buffer.from(data); assert.ok(changed.length > 0);
+          changed[0] ^= 1; altered++;
+          assert.equal(changed.length, data.length);
+          return actualWrite(changed, ...rest);
+        }
+        return actualWrite(data, ...rest);
+      };
+      opened.close = async () => {
+        closes++; assert.equal(probe(), 'OPEN_SAME_OBJECT');
+        const actual = await original.readFile(outputPath), stat = await fs.stat(outputPath);
+        assert.equal(stat.dev, identity.dev); assert.equal(stat.ino, identity.ino);
+        actualBytes = actual.length; actualHash = crypto.createHash('sha256').update(actual).digest('hex');
+        expectedDigest = expectedHash.digest('hex');
+        await actualClose();
+      };
+    } catch (error) { observationFailure = { error }; throw error; }
+    return opened;
+  }));
+  syncBuiltinESMExports();
+  hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
+    const folder = await Reflect.apply(original.mkdtemp, fs, args);
+    if (armed && path.basename(folder).startsWith('rr-encrypted-progress-')) {
+      const physical = await fs.realpath(folder), stat = await fs.stat(physical);
+      temporaries.push({ folder: physical, dev: stat.dev, ino: stat.ino });
+    }
+    return folder;
+  }));
+  hooks.push(t.mock.method(fs, 'rm', async (file, ...args) => {
+    if (armed && temporaries.some(row => path.resolve(String(file)) === row.folder)) removals.push(String(file));
+    return Reflect.apply(original.rm, fs, [file, ...args]);
+  }));
+  let result, failure;
+  try {
+    try { result = await f.call('save'); } catch (error) { failure = { error }; }
+    armed = false;
+    if (observationFailure) throw observationFailure.error;
+    assert.ok(writer, 'Actual normal SAVE build pack output handle reached.');
+    assert.equal(opens, 1); assert.equal(closes, 1); assert.equal(launches, 0);
+    assert.equal(temporaries.length, 1);
+    const fdState = probe();
+    const stagingExists = await fs.stat(temporaries[0].folder).then(stat => {
+      assert.equal(stat.dev, temporaries[0].dev); assert.equal(stat.ino, temporaries[0].ino); return true;
+    }, error => { if (error.code === 'ENOENT') return false; throw error; });
+    const unchanged = await Promise.all([...preserved].map(async ([file, bytes]) => [file, (await original.readFile(file)).equals(bytes)]));
+    try {
+      inspectResult = await withAuthenticatedWeatherProgress({
+        repositoryRoot: f.source, basePath: f.sourceBase, repository, encryptionKey,
+      }, async () => { inspectCalls++; return { inspected: true }; });
+    } catch (error) { inspectFailure = { error }; }
+    t.diagnostic(JSON.stringify({ kind: 'MAIN_SAVE_PACK_EXACT_OUTPUT_BYTES', fault, opens, closes, launches,
+      writes, altered, expectedBytes, actualBytes, exactOutputBytes: actualHash === expectedDigest,
+      inspectCalls, inspected: inspectResult?.inspected === true, inspectError: inspectFailure ? String(inspectFailure.error?.message ?? inspectFailure.error) : null,
+      fdState, stagingExists, stagingCleanupCalls: removals.length, saved: result?.saved === true, code: result?.code ?? null,
+      failure: failure ? String(failure.error?.message ?? failure.error) : null,
+      nonCipherOriginalsUnchanged: unchanged.filter(([file]) => file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)).every(([,same]) => same),
+      previousCipherUnchanged: unchanged.find(([file]) => file === path.join(root, WEATHER_PROGRESS_CIPHER_PATH))[1],
+      ownerClaim: 'none; exact invocation retention is not an exclusive global writer lock' }));
+    for (const [file, same] of unchanged) if (fault !== 'none' || file !== path.join(root, WEATHER_PROGRESS_CIPHER_PATH)) assert.equal(same, true, file);
+    assert.equal(fdState, 'CLOSED');
+    assert.equal(actualBytes, expectedBytes); assert.ok(writes >= 2);
+    assert.equal(altered, fault === 'none' ? 0 : 1);
+    assert.equal(failure, undefined);
+    if (fault === 'none') {
+      assert.equal(result.saved, true); assert.equal(stagingExists, false); assert.equal(removals.length, 1);
+      assert.equal(actualHash, expectedDigest); assert.equal(inspectCalls, 1); assert.equal(inspectResult.inspected, true);
+    } else {
+      assert.notEqual(actualHash, expectedDigest);
+      assert.notEqual(result?.saved, true, 'Altered own pack bytes must not replace the previous valid encrypted snapshot.');
+    }
+  } finally {
+    armed = false;
+    for (const hook of hooks.reverse()) hook.mock.restore();
+    syncBuiltinESMExports();
+    // Real cleanup only after measuring the normal result and own physical fd.
+    if (Number.isInteger(fd) && probe() !== 'CLOSED') await actualClose();
+    if (Number.isInteger(fd)) assert.equal(probe(), 'CLOSED');
+    for (const row of temporaries) {
+      const stat = await fs.stat(row.folder).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+      if (stat) {
+        assert.equal(stat.dev, row.dev); assert.equal(stat.ino, row.ino);
+        assert.equal(path.dirname(row.folder), await fs.realpath(os.tmpdir()));
+        assert.ok(path.basename(row.folder).startsWith('rr-encrypted-progress-'));
+        await original.rm(row.folder, { recursive: true, force: true });
+      }
+    }
+  }
+});
+
+for (const fault of ['reader-close-noop', 'reader-close-before-error', 'reader-close-after-error',
+  'read-null-close-noop', 'read-zero-close-after-error', 'probe-null-open', 'probe-false-open',
+  'probe-eacces-open', 'probe-inherited-open', 'probe-accessor-open', 'probe-proxy-open',
+  'probe-own-ebadf', 'stage-before-open', 'stage-during-read', 'bytes-during-read',
+  'write-noop', 'write-short', 'header-change', 'rename-before-error-existing', 'multichunk'])
+test('main pack own byte scan boundary / ' + fault, { timeout: 30_000 }, async t => {
+  const native = (await import('node:fs')).default;
+  const { syncBuiltinESMExports } = await import('node:module');
+  const { privateWeatherPackJsonReadsClosed } = await import('./lib/private-weather-component-pack.mjs');
+  const childProcess = (await import('node:child_process')).default;
+  const original = { open: fs.open, readFile: fs.readFile, writeFile: fs.writeFile, rename: fs.rename,
+    lstat: fs.lstat, unlink: fs.unlink, mkdtemp: fs.mkdtemp, rm: fs.rm, fstat: native.fstat, fstatSync: native.fstatSync };
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const root = await fs.realpath(f.source), destination = path.join(root, '.cache/weather-component-inputs.pack');
+  if (fault === 'multichunk') await write(root, files.fallbackCursor, { padding: 'x'.repeat(2 * 1024 * 1024) });
+  if (fault === 'rename-before-error-existing') await original.writeFile(destination, 'own previous synthetic destination');
+  const preserved = new Map();
+  for (const file of [f.sourceBase, f.targetBase, path.join(root, 'data/live/conditions.json'),
+    path.join(root, files.openMeteoBank), path.join(root, files.fallbackCursor),
+    path.join(root, WEATHER_PROGRESS_CIPHER_PATH),
+    ...(fault === 'rename-before-error-existing' ? [destination] : [])]) preserved.set(file, await original.readFile(file));
+  const primary = fault === 'read-null-close-noop' ? null : 0, secondary = new Error('OWN_SCAN_CLOSE_SECONDARY');
+  const renameError = new Error('OWN_RENAME_BEFORE_MUTATION');
+  const direct = fault.startsWith('read-') || fault === 'reader-close-after-error' || fault === 'rename-before-error-existing';
+  const physicalOpen = fault === 'reader-close-noop' || fault === 'reader-close-before-error'
+    || fault === 'read-null-close-noop' || /^probe-.*-open$/.test(fault);
+  const held = physicalOpen || fault.startsWith('stage-') || fault === 'bytes-during-read';
+  const healthy = fault === 'probe-own-ebadf' || fault === 'multichunk';
+  const temporaries = [], removals = [], hooks = [];
+  let output, reader, outputFd, readerFd, outputIdentity, readerIdentity, stage, moved,
+    outputClose, readerClose, outputClosedBeforeReader = false, observerFailure;
+  let writes=0, outputCloses=0, readerCloses=0, scans=0, scanProbes=0, traps=0, unlinks=0, renames=0, launches=0, armed=true;
+  let maxRead=0, readBytes=0, invocation, result, failure;
+  const rawState=(fd,identity)=>{
+    try { const stat=original.fstatSync(fd); assert.equal(stat.dev,identity.dev);assert.equal(stat.ino,identity.ino);return 'OPEN_SAME_OBJECT'; }
+    catch(error){if(Object.getOwnPropertyDescriptor(error,'code')?.value==='EBADF')return 'CLOSED';throw error;}
+  };
+  const replaceStage=async()=>{
+    moved=stage+'.own-synthetic-moved';await original.rename(stage,moved);
+    assert.equal((await fs.stat(moved)).ino,outputIdentity.ino);
+    await original.writeFile(stage,Buffer.alloc(Number((await fs.stat(moved)).size),35),{flag:'wx'});
+    assert.notEqual((await fs.stat(stage)).ino,outputIdentity.ino);
+  };
+  hooks.push(t.mock.method(childProcess,'spawn',()=>{launches++;throw Error('NO_CP_OR_PROVIDER_CHILD_ALLOWED');}));
+  hooks.push(t.mock.method(globalThis,'fetch',()=>{throw Error('NO_NETWORK_ALLOWED');}));
+  hooks.push(t.mock.method(fs,'open',async(...args)=>{
+    const numericRead=armed && output && !reader && typeof args[1]==='number' && path.resolve(String(args[0]))===stage;
+    if(numericRead){
+      assert.equal(outputCloses,1);
+      assert.equal(rawState(outputFd,outputIdentity),'CLOSED');
+      outputClosedBeforeReader=true;
+      if(fault==='stage-before-open')await replaceStage();
+    }
+    const stack=new Error().stack,opened=await Reflect.apply(original.open,fs,args);
+    if(numericRead){
+      reader=opened;readerFd=opened.fd;readerIdentity=original.fstatSync(readerFd);
+      assert.equal(readerIdentity.ino,(await fs.stat(stage)).ino);
+      readerClose=opened.close.bind(opened);const actualRead=opened.read.bind(opened);
+      opened.read=async(buffer,offset,length,position)=>{
+        assert.equal(rawState(readerFd,readerIdentity),'OPEN_SAME_OBJECT');
+        scans++;maxRead=Math.max(maxRead,length);assert.ok(length>0&&length<=256*1024);assert.equal(position,readBytes);
+        if(fault==='read-null-close-noop'||fault==='read-zero-close-after-error')throw primary;
+        const answer=await actualRead(buffer,offset,length,position);readBytes+=answer.bytesRead;
+        if(scans===1&&fault==='stage-during-read')await replaceStage();
+        if(scans===1&&fault==='bytes-during-read'){
+          const bytes=await original.readFile(stage);bytes[bytes.length-1]^=1;await original.writeFile(stage,bytes);
+          const before=await fs.stat(stage);await fs.utimes(stage,before.atime,new Date(before.mtimeMs+2000));
+        }
+        return answer;
+      };
+      opened.close=async()=>{
+        readerCloses++;assert.equal(rawState(readerFd,readerIdentity),'OPEN_SAME_OBJECT');
+        if(!physicalOpen)await readerClose();
+        if(fault==='reader-close-before-error'||fault==='reader-close-after-error'||fault==='read-zero-close-after-error')throw secondary;
+      };
+      return opened;
+    }
+    if(!armed||output||args[1]!=='wx'||!stack.includes('at buildPackWithJsonReadLifetime (')
+      ||!path.basename(String(args[0])).startsWith('weather-component-inputs.pack.tmp-'))return opened;
+    output=opened;outputFd=opened.fd;outputIdentity=original.fstatSync(outputFd);
+    stage=await fs.realpath(args[0]);assert.equal(outputIdentity.ino,(await fs.stat(stage)).ino);
+    assert.ok(direct?path.dirname(stage)===path.dirname(destination):temporaries.some(r=>path.dirname(stage)===path.join(r.folder,'.cache')));
+    outputClose=opened.close.bind(opened);const actualWrite=opened.writeFile.bind(opened);
+    opened.writeFile=async(bytes,...rest)=>{
+      writes++;
+      if(writes===2&&fault==='write-noop')return;
+      if(writes===2&&fault==='write-short')return actualWrite(bytes.subarray(0,bytes.length-1),...rest);
+      if(writes===1&&fault==='header-change'){const other=Buffer.from(bytes);other[0]^=1;return actualWrite(other,...rest);}
+      return actualWrite(bytes,...rest);
+    };
+    opened.close=async()=>{outputCloses++;await outputClose();assert.equal(rawState(outputFd,outputIdentity),'CLOSED');};
+    return opened;
+  }));
+  hooks.push(t.mock.method(native,'fstat',(fd,callback)=>{
+    if(!armed||!reader||fd!==readerFd||!new Error().stack.includes('at verifyOutputBytes ('))
+      return Reflect.apply(original.fstat,native,[fd,callback]);
+    scanProbes++;
+    if(fault==='probe-null-open'){callback(null);return;}
+    if(fault==='probe-false-open'){callback(false);return;}
+    if(fault==='probe-eacces-open'){callback(Object.assign(Error('OWN_PROBE_UNKNOWN'),{code:'EACCES'}));return;}
+    if(fault==='probe-inherited-open'){callback(Object.create({code:'EBADF'}));return;}
+    if(fault==='probe-accessor-open'){callback(Object.defineProperty({},'code',{get(){traps++;return 'EBADF';}}));return;}
+    if(fault==='probe-proxy-open'){callback(new Proxy({code:'EBADF'},{get(){traps++;return 'EBADF';},getOwnPropertyDescriptor(){traps++;return {value:'EBADF',configurable:true};}}));return;}
+    return Reflect.apply(original.fstat,native,[fd,callback]);
+  }));
+  hooks.push(t.mock.method(fs,'unlink',async(file,...rest)=>{
+    if(armed&&output&&path.resolve(String(file))===stage)unlinks++;
+    return Reflect.apply(original.unlink,fs,[file,...rest]);
+  }));
+  hooks.push(t.mock.method(fs,'rename',async(from,to,...rest)=>{
+    if(armed&&output&&path.resolve(String(from))===stage){renames++;if(fault==='rename-before-error-existing')throw renameError;}
+    return Reflect.apply(original.rename,fs,[from,to,...rest]);
+  }));
+  hooks.push(t.mock.method(fs,'mkdtemp',async(...args)=>{
+    const folder=await Reflect.apply(original.mkdtemp,fs,args);
+    if(armed&&path.basename(folder).startsWith('rr-encrypted-progress-')){
+      const physical=await fs.realpath(folder),stat=await fs.stat(physical);temporaries.push({folder:physical,dev:stat.dev,ino:stat.ino});
+    }return folder;
+  }));
+  hooks.push(t.mock.method(fs,'rm',async(file,...rest)=>{
+    if(armed&&temporaries.some(row=>path.resolve(String(file))===row.folder))removals.push(String(file));
+    return Reflect.apply(original.rm,fs,[file,...rest]);
+  }));
+  syncBuiltinESMExports();
+  const started=performance.now();
+  try{
+    try{
+      if(direct){invocation=buildPrivateWeatherComponentPack({repositoryRoot:root,conditions:{},includeOperationalProgress:true});result=await invocation;}
+      else result=await f.call('save');
+    }catch(error){failure={error};}
+    armed=false;
+    if(observerFailure)throw observerFailure.error;
+    assert.ok(output);assert.equal(outputCloses,1);assert.equal(launches,0);assert.equal(traps,0);
+    const short=fault==='write-noop'||fault==='write-short';
+    assert.equal(Boolean(reader),!short);
+    if(reader){assert.equal(outputClosedBeforeReader,true);assert.equal(readerCloses,1);assert.equal(scanProbes,1);}
+    const readerState=reader?rawState(readerFd,readerIdentity):'NOT_OPENED';
+    const stageExists=await fs.lstat(stage).then(()=>true,error=>{if(error.code==='ENOENT')return false;throw error;});
+    const originals=await Promise.all([...preserved].map(async([file,bytes])=>[file,(await original.readFile(file)).equals(bytes)]));
+    t.diagnostic(JSON.stringify({kind:'MAIN_PACK_OWN_BYTE_SCAN_BOUNDARY',fault,direct,writes,outputCloses,
+      outputClosedBeforeReader,readerCloses,scanProbes,scans,maxRead,readBytes,readerState,stageExists,unlinks,renames,
+      saved:result?.saved===true,code:result?.code??null,failure:failure?String(failure.error?.message??failure.error):null,
+      trackedClosed:invocation?privateWeatherPackJsonReadsClosed(invocation):null,workspaces:temporaries.length,
+      workspaceRemovals:removals.length,traps,launches,elapsedMs:performance.now()-started,
+      originalsUnchanged:originals.every(([file,same])=>same||healthy&&file===path.join(root,WEATHER_PROGRESS_CIPHER_PATH)),
+      priorCipherUnchanged:originals.find(([file])=>file===path.join(root,WEATHER_PROGRESS_CIPHER_PATH))[1],
+      scope:'Own synthetic normal caller only; no global owner, national capacity, or runner-loss claim.'}));
+    for(const[file,same]of originals)if(!healthy||file!==path.join(root,WEATHER_PROGRESS_CIPHER_PATH))assert.equal(same,true,file);
+    if(reader)assert.equal(readerState,physicalOpen?'OPEN_SAME_OBJECT':'CLOSED');
+    assert.equal(stageExists,held);
+    if(direct){
+      assert.ok(failure&&Object.hasOwn(failure,'error'));
+      assert.strictEqual(failure.error,fault==='rename-before-error-existing'?renameError:fault==='reader-close-after-error'?secondary:primary);
+      assert.equal(privateWeatherPackJsonReadsClosed(invocation),!held);assert.equal(temporaries.length,0);
+    }else{
+      assert.equal(failure,undefined);assert.equal(result.saved===true,healthy);
+      assert.equal(temporaries.length,1);assert.equal(removals.length,held?0:1);
+      if(held)assert.equal((await fs.stat(temporaries[0].folder)).ino,temporaries[0].ino);
+    }
+    assert.equal(renames,healthy||fault==='rename-before-error-existing'?1:0);
+    assert.equal(unlinks,!held&&!healthy?1:0);
+    if(moved){assert.equal((await fs.stat(moved)).ino,outputIdentity.ino);assert.notEqual((await fs.stat(stage)).ino,outputIdentity.ino);}
+    if(fault==='multichunk'){assert.ok(readBytes>2*1024*1024);assert.ok(scans>8);assert.equal(maxRead,256*1024);}
+  }finally{
+    armed=false;for(const hook of hooks.reverse())hook.mock.restore();syncBuiltinESMExports();
+    if(reader&&rawState(readerFd,readerIdentity)!=='CLOSED')await readerClose();
+    if(reader)assert.equal(rawState(readerFd,readerIdentity),'CLOSED');
+    if(!reader&&output&&rawState(outputFd,outputIdentity)!=='CLOSED')await outputClose();
+    for(const row of temporaries){
+      const stat=await fs.stat(row.folder).catch(error=>{if(error.code==='ENOENT')return null;throw error;});
+      if(stat){assert.equal(stat.dev,row.dev);assert.equal(stat.ino,row.ino);
+        assert.equal(path.dirname(row.folder),await fs.realpath(os.tmpdir()));assert.ok(path.basename(row.folder).startsWith('rr-encrypted-progress-'));
+        await original.rm(row.folder,{recursive:true,force:true});}
+    }
+  }
+});

@@ -1,5 +1,5 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.560";
-import { authorizedFetch, currentSession, requireFreshSession } from "./auth-service.js?v=4.0.560";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.561";
+import { authorizedFetch, currentSession, requireFreshSession } from "./auth-service.js?v=4.0.561";
 
 const PREFIX="ravradar-admin-document:";
 const listeners=new Set();
@@ -33,16 +33,17 @@ function writeLocal(key,payload){
 async function remoteRead(key){
   if(!enabled)return null; await requireFreshSession();
   const q=encodeURIComponent(`eq.${key}`);
-  const r=await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/admin_documents?document_key=${q}&select=payload,version,updated_at,updated_by&limit=1`);
+  const {response:r,body:rows}=await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/admin_documents?document_key=${q}&select=payload,version,updated_at,updated_by&limit=1`,{},{consumeJson:true});
   if(!r.ok)throw new Error(`Central læsning fejlede (${r.status})`);
-  return (await r.json())[0]??null;
+  if(!Array.isArray(rows))throw new Error("Central læsning gav et ugyldigt svar.");
+  return rows[0]??null;
 }
 async function remoteWrite(key,payload){
   if(!enabled)throw new Error("Supabase er ikke konfigureret"); await requireFreshSession();
   const body={document_key:key,payload};
-  const r=await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/rpc/save_ravradar_admin_document`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({p_document_key:key,p_payload:payload})});
-  if(!r.ok){ const detail=await r.text().catch(()=>""); throw new Error(`Central gemning fejlede (${r.status})${detail?`: ${detail.slice(0,160)}`:''}`); }
-  const rows=await r.json().catch(()=>[]); const row=Array.isArray(rows)?rows[0]:rows;
+  const {response:r,body:rows,errorText}=await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/rpc/save_ravradar_admin_document`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({p_document_key:key,p_payload:payload})},{consumeJson:true,consumeErrorText:true});
+  if(!r.ok){ const detail=errorText; throw new Error(`Central gemning fejlede (${r.status})${detail?`: ${detail.slice(0,160)}`:''}`); }
+  const row=Array.isArray(rows)?rows[0]:rows;
   const verified=await remoteRead(key);
   if(!verified?.payload)throw new Error("Central gemning kunne ikke verificeres efter skrivning");
   return verified||row||body;

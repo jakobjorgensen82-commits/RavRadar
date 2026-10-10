@@ -1,10 +1,32 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.560
+**Håndbogsversion:** 4.0.561
 
-4.0.560 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+4.0.561 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.185 Bevaret cache og samtidige kladder
+
+Den private cache kontrollerer den færdigskrevne arbejdsfil før publicering.
+Forkert indhold med samme længde eller usikker lukning må ikke erstatte en
+gyldig tidligere pakke. Usikre arbejdsrester bevares til sikker håndtering.
+Format, autentificering, kildeprioritet og tidsbudget er uændrede.
+
+Admin-, håndbogs- og besøgsopslag bruger nu den eksisterende svarfrist gennem
+indhold og fejltekst. Når en håndbogskladde er gemt på serveren, genlæses den
+lokale bank før netop den kladde fjernes. Nyere kladder bevares; tidligere
+slettede kladder genopstår ikke. Ulæselig lagring må ikke overskrives som tom.
+Dette er ikke en garanti for atomisk skrivning mellem forskellige faner.
+
+40 cachemål, 56 admin-/kladde-/svartidsmål og otte tidligere authmål består
+lokalt gennem normale funktioner. 561 afventer præcis kildekontrol,
+levering og faktisk effekt. 560 er offentligt leveret og verificeret for
+210 zoner/673 dele uden en ny vejrhentning.
+
+De samlede opgaver med strømdata, vejrhentningsrevision, brugerdata,
+Spørg RavRadar og selvstændig drift er stadig åbne. Denne afgrænsede
+rettelse ændrer ikke scoreformel, geometri, rettigheder eller cron.
 
 ## 89.184 Afgrænset svartid og bevarede ture
 

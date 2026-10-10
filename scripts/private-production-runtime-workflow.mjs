@@ -27,7 +27,7 @@ import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE,
   PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
   assertPrivateRuntimeInventory, privateWeatherComponentMarker } from './lib/private-weather-component-inventory.mjs';
-import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
+import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack, privateWeatherPackJsonReadsClosed } from './lib/private-weather-component-pack.mjs';
 import { assertPrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 import {
   inspectPrivatePublicHourDeliveryPack,
@@ -214,7 +214,7 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
 
 export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
   decisionId: 'DEC-0122-OWNER-APPROVAL-2026-09-09',
-  releaseVersion: '4.0.560',
+  releaseVersion: '4.0.561',
   // The first cutover is over. A release-version bump cannot renew this authority.
   retired: true,
   invocationMarker: 'APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
@@ -230,7 +230,7 @@ export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
 export const PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY = Object.freeze({
   schemaVersion: '1.0.0',
   kind: 'RAVRADAR_PRIVATE_RUNTIME_CAPACITY_RESUME_EVIDENCE',
-  releaseVersion: '4.0.560',
+  releaseVersion: '4.0.561',
   priorRunId: '34738698219',
   priorRunAttempt: 1,
   priorSourceHead: '099b70a8314864ba85f0fb7ea3858b3f3816d9ed',
@@ -1548,11 +1548,15 @@ export async function installRestoredPrivateRuntime({
   }
   const componentStage = hasExtension ? `${sourceRoot}.weather-components-${crypto.randomUUID()}` : null;
   let componentFiles = [];
+  let componentInvocation = null;
   if (hasExtension) {
-    try { componentFiles = await unpackPrivateWeatherComponentPack({ restoredRoot: sourceRoot, outputRoot: componentStage, conditions }); }
+    componentInvocation = unpackPrivateWeatherComponentPack({ restoredRoot: sourceRoot, outputRoot: componentStage, conditions });
+    try { componentFiles = await componentInvocation; }
     catch (error) {
       // Cleanup must not replace the original unpack/integrity failure.
-      await fs.rm(componentStage, { recursive: true, force: true }).catch(() => {});
+      if (privateWeatherPackJsonReadsClosed(componentInvocation)) {
+        await fs.rm(componentStage, { recursive: true, force: true }).catch(() => {});
+      }
       throw error;
     }
   }
@@ -1623,7 +1627,7 @@ export async function installRestoredPrivateRuntime({
     }
     throw error;
   } finally {
-    if (componentStage) {
+    if (componentStage && privateWeatherPackJsonReadsClosed(componentInvocation)) {
       try { await fs.rm(componentStage, { recursive: true, force: true }); }
       catch (error) {
         // A failed install/rollback is primary. Cleanup alone stays fatal.

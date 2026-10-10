@@ -1,3 +1,15 @@
+# Lokal 4.0.561 – bevaret cache og samtidige kladder
+
+Denne afgrænsede leverance samler otte cache-/kontrolfiler og fem klient-/testfiler. Det normale private cacheforløb kræver fysisk lukning og kontrollerer de faktisk skrevne bytes med afgrænset læsning før publicering. Forkert indhold med samme længde, udskiftet arbejdsfil og usikker lukning må ikke erstatte en gyldig tidligere pakke. Usikker ejerskab/lukning bevarer arbejdsområdet; kun sikkert egne, lukkede fejlrester må ryddes. Det eksisterende format, tidsbudget, autentificering og kildeprioritet bevares. Dette lukker de påviste lokale fejl, ikke alle scenarier ved tab af runner, upload eller national kapacitet.
+
+Normale admin-, håndbogs- og besøgsopslag vælger nu den eksisterende 12-sekundersfrist gennem JSON og fejltekst. Standardkald og vellykket DELETE beholder deres hidtidige Response. En kvitteret håndbogskladde fjernes fra den frisk genlæste lokale bank, ikke fra et gammelt snapshot: nyere kladder bevares, slettede kladder genopstår ikke, og ulæselig lagring overskrives ikke som tom. Ingen nye rettigheder, serverkvitteringer eller globale atomiske garantier påstås.
+
+40 cachemål og 56 admin-/kladde-/svartidsmål består gennem de normale funktioner; otte tidligere authmål består også. Eksisterende assertions og de integrerede/Candidate G-modelbindinger bevares. Præcis GitHub-kildekontrol, sikker levering og faktisk effekt for 561 afventer; de lokale prøver er ikke produktionsevidens.
+
+4.0.560 er faktisk offentligt leveret efter normal genbrug, checkpointgemning/upload, private publicering, Edge og Pages. Kontrol af 210 zoner/673 dele, genforsegling og terminal levering består. Ingen ny vejrhentning blev startet. Den tidligere særskilte Worker-reparation er forbrugt og må ikke gentages på samme tilladelse.
+
+Ejeren kræver konkrete forbedringer og færre undersøgelsesrunder: saml beslægtede rettelser, genbrug relevant evidens, og åbn kun ny analyse ved konkret fejl eller sikkerhedsrisiko. Delegation er udtrykkeligt tilladt. Fristen er fortsat i dag, 10. oktober 2026. Strømdata/score, den samlede revision, brugerdata, Spørg RavRadar og selvstændig drift er alle fortsat åbne. Isoleret numerisk revision, assistentovergang, brugerdatarettigheder og særskilte installationer aktiveres ikke af denne leverance. Ingen produktionsændring under aktiv writer; cron og forbrugte engangsordrer bevares.
+
 # Lokal 4.0.560 – afgrænset svartid gennem normal JSON-læsning
 
 Den eksisterende 12-sekundersfrist omfatter nu også JSON-kroppen i almindelige auth-kald, brugerprofil, profiloversigt og egne rettigheder samt udtrykkeligt valgte læse-/gemmekald for egne ture. Tiden nulstilles ikke, når headers modtages. Et fast, bogstaveligt `consumeJson: true` vælger denne eksisterende læsevej; standardkald returnerer fortsat den samme Response uden at læse kroppen. Ukendt profil-/rettighedsformat må ikke blive en tom, vellykket adgangskontrol. Ingen generisk callback, nyt tidsbudget, rettighed eller skjult genforsøg tilføjes.
