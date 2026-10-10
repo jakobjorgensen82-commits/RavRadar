@@ -1,4 +1,8 @@
-# Lokal 4.0.556 – afgrænsede klientrettelser; offentlig levering afventer
+# 2026-10-10 – lokal 4.0.566, efter faktisk offentlig 565
+
+565 blev faktisk leveret og offentligt kontrolleret kl. 21.46 dansk tid. To almindelige assistentspørgsmål fik HTTP 200: relevansafvisningen var væk, ukendt udstyr blev ikke opfundet, men et evidensløst usikkert svar indeholdt en udokumenteret forklaring. 566 indfører generel usikkerhed uden gæt og eksisterende-only privat restore; normale måltests og uafhængig gennemgang består. Ingen nye modelbindinger eller SQL. Ny præcis kildekontrol og offentlig 566-effekt mangler; alle fem mål og særskilte numeriske overgange er åbne. Historiske ventestatusser nedenfor er erstattet.
+
+# Historik: lokal 4.0.556 – afgrænsede klientrettelser; offentlig levering afventer
 
 Denne særskilte kandidat er udtaget fra den aktuelle main-kode. Den forbedrer normale brugerforløb uden at overføre hele brugerdata-, assistent- eller vejrhentningsrevisionen. De eksisterende 68- og 66-fils vejrbundles er uændrede; versioneringen må kun ændre geodataenes topversionsfelt og de eksisterende release-/cachefelter.
 

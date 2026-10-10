@@ -1,13 +1,13 @@
-import { openTripEvidenceDialog } from '../ui/trip-evidence-dialog.js?v=4.0.565';
-import { t } from '../i18n.js?v=4.0.565';
+import { openTripEvidenceDialog } from '../ui/trip-evidence-dialog.js?v=4.0.566';
+import { t } from '../i18n.js?v=4.0.566';
 import {
   beginTripEvidence,
   discardActiveTripEvidence,
   finishTripEvidence,
   loadActiveTripEvidence,
   markTripEvidenceStopped
-} from './trip-evidence-store.js?v=4.0.565';
-import { uploadPendingTripEvidence } from './trip-evidence-upload.js?v=4.0.565';
+} from './trip-evidence-store.js?v=4.0.566';
+import { uploadPendingTripEvidence } from './trip-evidence-upload.js?v=4.0.566';
 
 export function createTripEvidenceController({ storage = null, openDialog = openTripEvidenceDialog, persist = null } = {}) {
   if (typeof openDialog !== 'function') throw new Error('Turformularen mangler.');
