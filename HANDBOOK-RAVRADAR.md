@@ -13,6 +13,10 @@ Forkert indhold med samme længde eller usikker lukning må ikke erstatte en
 gyldig tidligere pakke. Usikre arbejdsrester bevares til sikker håndtering.
 Format, autentificering, kildeprioritet og tidsbudget er uændrede.
 
+Den eksisterende CP-kontrol afprøver fejl gennem den faktisk ejede læsevej.
+En efterfølgende oprydningsfejl må ikke skjule den oprindelige læsefejl;
+oprydning alene skal stadig afvise gemning og bevare den tidligere pakke.
+
 Admin-, håndbogs- og besøgsopslag bruger nu den eksisterende svarfrist gennem
 indhold og fejltekst. Når en håndbogskladde er gemt på serveren, genlæses den
 lokale bank før netop den kladde fjernes. Nyere kladder bevares; tidligere
