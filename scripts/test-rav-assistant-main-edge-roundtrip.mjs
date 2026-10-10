@@ -63,6 +63,7 @@ globalThis.fetch = async (input, init) => {
       assert.match(providerBody.messages[0].content, /Lack of supporting facts is uncertainty, not an unrelated topic\./);
       assert.match(providerBody.messages[0].content, /never invent a property, a device or instructions for its use\./);
       assert.match(providerBody.messages[0].content, /A relevant word does not make an unrelated or private request permissible\./);
+      assert.match(providerBody.messages[0].content, /Uncertainty never licenses speculation/);
       assert.doesNotMatch(JSON.stringify(providerBody), /TEST_PRIVATE_CONTEXT_MARKER/);
       controlledProviderCalls += 1;
       return Response.json(controlledProviderResponse);
@@ -309,7 +310,7 @@ try {
   assert.equal(classifyRavQuestion(unknownQuestion), 'unknown');
   assert.equal(routeRavQuestion(unknownQuestion), 'remote-candidate');
   const finalResult = { schemaVersion: 'rav-assistant-response-v1', locale: 'da',
-    disposition: 'uncertain', answer: 'Jeg kender ikke dette begreb. Kan du beskrive, hvad du mener?', evidenceIds: [] };
+    disposition: 'uncertain', answer: contract.RAV_ASSISTANT_UNCERTAIN_REPLIES.da, evidenceIds: [] };
   const intermediate = { ...finalResult, answer: 'SYNTHETIC_INTERMEDIATE_NOT_FINAL' };
   const finalMessage = { type: 'message', role: 'assistant', channel: 'final',
     content: [{ type: 'output_text', text: JSON.stringify(finalResult) }] };
@@ -347,6 +348,24 @@ try {
   assertBeforeQuota();
   assert.equal(controlledProviderCalls, beforePrivateCalls);
   assert.equal(controlledQuotaCalls, beforePrivateQuota);
+  controlledProviderResponse = null;
+  for (const [locale, question, guess] of [
+    ['da', 'Hvorfor kan et ravstykke efter gnidning løfte små papirstumper?', 'Det kan skyldes overfladefriktion eller magnetisk påvirkning.'],
+    ['de', 'Wie funktioniert ein Bernsteinombrometer?', 'Vielleicht nutzt es eine magnetische Wirkung.'],
+    ['en', 'How does an amberombrometer work?', 'It might use a magnetic effect.'],
+  ]) {
+    reset();
+    controlledProviderResponse = { result: { response: JSON.stringify({
+      schemaVersion: 'rav-assistant-response-v1', locale, disposition: 'uncertain', answer: guess, evidenceIds: [],
+    }) } };
+    const beforeCalls = controlledProviderCalls, beforeQuota = controlledQuotaCalls;
+    assert.equal(await askRavRadar(question, context, { language: locale }), contract.RAV_ASSISTANT_UNCERTAIN_REPLIES[locale]);
+    assertRemote(question, locale, 200);
+    assert.deepEqual(exchanges[0].result, { answer: contract.RAV_ASSISTANT_UNCERTAIN_REPLIES[locale] });
+    assert.equal(controlledProviderCalls - beforeCalls, 1);
+    assert.equal(controlledQuotaCalls - beforeQuota, 3);
+    assert.notEqual(exchanges[0].result.answer, guess);
+  }
   controlledProviderResponse = null;
   console.log('OK: 3 explicit wrong-channel outputs skipped, 3 no-final outputs rejected, 12 final-response header mutations fall back, private request still precedes quota; synthetic provider only.');
   assert.equal(JSON.stringify(context), contextBefore);

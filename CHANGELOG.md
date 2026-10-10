@@ -1,4 +1,11 @@
-# Lokal 4.0.565 – 2026-10-10
+# Lokal 4.0.566 – 2026-10-10
+
+- Stopper udokumenterede forklaringer i usikre assistentsvar uden fakta-id'er. Den generelle instruktion kræver fagligt belæg; validatoren giver en lokaliseret afklaring efter eksisterende schema-, sprog-, privatlivs- og sikkerhedskontroller. Tre normale klient-/Edge-forløb på dansk, tysk og engelsk består med kontrolleret provider; dokumenterede svar og vidensbindinger er uændrede.
+- Genlæsning af privat gemt produktion må ikke oprette et manglende Supabase-lager. Normal måltest består, og almindelig publicerings oprettelses-/retryadfærd bevares. Ingen nye nøgler, lagerkald, migrationer eller originalændringer.
+- 565 er faktisk leveret og offentligt kontrolleret kl. 21.46 dansk tid. Browseren viste både fjernet relevansafvisning og en konkret udokumenteret magnetisk forklaring, som 566 retter. SQL var allerede ajour; rettelsesdeployets private publiceringer var ikke nye uploads. Den naturlige vejrhentning leverede faktisk kl. 21.25 med ny privat gemning/upload.
+- 566 afventer præcis GitHub-kildekontrol, sikker levering og offentlig effekt. De isolerede numeriske strøm-/cache-/rollbackændringer er ikke med. Alle fem hovedmål er fortsat åbne; nye præcise decoder-/SQL-tilladelser afventer, og samlet descendant-/runner-tab-/SAVE-afslutning er ikke bevist.
+
+# Historik: lokal 4.0.565 – 2026-10-10
 
 - Retter den generelle assistentinstruktion efter en faktisk offentlig afvisning af et relevant ravspørgsmål: manglende faktastøtte skal give usikkerhed eller afklaring. Ingen nye fakta, spørgsmålsspecifik validator, vidensbinding eller sikkerhedsundtagelse. Normal klient-/servertest består med kontrolleret provider; offentlig effekt mangler.
 - Den tidligere eksakte 565-kilde bestod GitHub-kontrollen kl. 19.42 dansk tid. Assistenttilføjelsen kræver ny præcis kildekontrol; gamle ventestatusser nedenfor er historiske.

@@ -83,6 +83,12 @@ export const RAV_ASSISTANT_WEIGHT_ANSWERS = Object.freeze({
   en: "RavRadar’s integrated coastal-process model is the only public score model. RavScore weights 20% huntability, 50% delivery potential from verified model-grid-current evidence with bounded wave-approach attenuation, and 30% wave energy and mobilisation opportunity.",
 });
 
+export const RAV_ASSISTANT_UNCERTAIN_REPLIES = Object.freeze({
+  da: "Det kan jeg ikke besvare sikkert ud fra den tilgængelige viden. Kan du præcisere spørgsmålet?",
+  de: "Das kann ich anhand des verfügbaren Wissens nicht sicher beantworten. Kannst du die Frage genauer beschreiben?",
+  en: "I cannot answer that reliably from the available knowledge. Can you clarify the question?",
+});
+
 const SECURITY_PATTERN = /api.?key|password|passwort|adgangskode|supabase|database|datenbank|sql|source code|kildekode|quellcode|system.?prompt|systeminstruk|admin|token|secret|hemmelig|geheim|credential|hack/i;
 const OUT_OF_SCOPE_PATTERN = /(?<![\p{L}\p{N}_])(?:roulade|biskuitrolle|swiss roll|kage|kuchen|cake|fodbold|fußball|football|opskrift|rezept|recipe|politik|politics|aktie|stock price|matematik|math homework|cykeldæk|fahrradreifen|bicycle tyre|weekendtur|wochenendreise|weekend trip|paris)(?![\p{L}\p{N}_])/iu;
 const AMBER_DOMAIN_PATTERN = /(?<![\p{L}\p{N}_])(?:rav\p{L}*|bernstein\p{L}*|succinit|succinite|copal|kopal|amber\p{L}*|harpiks|harz|resin|fossili[sz]|inklusion|einschluss|inclusion|fluorescen|fluoreszenz|fluorescen[ct]e|uv.?light|395\s*nm|fosfor|phosphor|phosphorus|danefæ|kesse|kescher|kyst|küste|coast|strand|beach|hav|meer|sea|bølge|welle|wave|strøm|strömung|current|vandstand|wasserstand|water level|wader|wathose|opskyl|spülsaum|wash line|tang|seegras|seaweed|revle|sandbank|sandbar|revlehul|brandungsrückstrom|rip current|rende|rinne|channel|høfde|buhne|groyne|opdrift|auftrieb|buoyancy|massefylde|dichte|density|saltation|sediment|geologi|geology|geologie|istid|eiszeit|ice age)(?![\p{L}\p{N}_])/iu;
@@ -307,6 +313,7 @@ export function assistantSystemInstruction() {
     "Disposition semantics are strict: use answer for every relevant question that the supplied facts can answer, including safety boundaries, missing data and explaining that a find cannot be guaranteed. Use out_of_scope only for an unrelated topic. Use uncertain only for a relevant question that the supplied facts and selected-zone context cannot answer.",
     "An amber-specific physical-property question or an unfamiliar term for amber-hunting equipment remains relevant even when it is absent from the supplied facts. Lack of supporting facts is uncertainty, not an unrelated topic. Use uncertain, state the limit or ask for clarification, and never invent a property, a device or instructions for its use. A relevant word does not make an unrelated or private request permissible.",
     "For example, asking why a rubbed amber piece attracts paper, or how an unfamiliar amber-hunting instrument works, is in-domain. Answer only the parts supported by supplied facts; otherwise use uncertain with a brief clarification. Do not use the fixed out-of-scope reply for a relevant question merely because its answer is not in the facts.",
+    "Uncertainty never licenses speculation: do not suggest unsupported causes, properties or uses, even with words such as may, might or possibly. When no supplied fact supports the explanation, state only that you cannot answer reliably or ask for clarification.",
     "Disposition examples: ‘Can you guarantee a find?’ is answer because the no-find-guarantee fact answers it. ‘Does this score mean safe?’ is answer because the safety-boundary fact answers it. ‘What happens when coherent zone data are missing?’ is answer because the local-missing fact answers it. The answer may explain uncertainty, but its disposition is still answer when a supplied fact supports it.",
     "For a relevant answer, include every supplied fact ID that is necessary to support the main claim. In particular, safety uses safety.not-a-safety-rating, no-find guarantees use score.no-find-guarantee, missing coherent data uses score.local-missing, and the waders wind question uses huntability.waders-wind-led.",
     "For strong seaward-current questions cite transport.current-led and sequence.release-transport-deposition. For falling-water questions cite water-level.context. For questions about the exact final path across bars and channels cite transport.grid-not-surf-zone and coast.sorting-and-traps.",
@@ -403,6 +410,12 @@ export function validateAssistantResult(value, locale) {
     return { answer: RAV_ASSISTANT_REFUSALS[locale], disposition: value.disposition, evidenceIds };
   }
   if (value.disposition === "answer" && !evidenceIds.length) return null;
+  if (value.disposition === "uncertain" && !evidenceIds.length) {
+    // Unsupported prose remains unsupported even when the provider labels it
+    // uncertain. Keep the validated schema, locale and security checks above;
+    // never publish a guessed cause or use without any bound public evidence.
+    return { answer: RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition: value.disposition, evidenceIds };
+  }
   if (value.disposition === "answer" && evidenceIds.includes("score.integrated-only") && evidenceIds.includes("score.weights-20-50-30")) {
     return { answer: RAV_ASSISTANT_WEIGHT_ANSWERS[locale], disposition: value.disposition, evidenceIds };
   }

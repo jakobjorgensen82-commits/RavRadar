@@ -1,4 +1,12 @@
-# Lokal 4.0.565 – afbrydelse af finalizer og strømsupplement
+# Lokal 4.0.566 – usikkerhed uden gæt og eksisterende privat lager
+
+10. oktober kl. 21.46 dansk tid blev 565 faktisk leveret gennem det normale rettelsesdeploy efter præcis kildekontrol og merge. Offentlig model-/implementerings-/210/673-kontrol og terminal afslutning bestod; SQL var allerede ajour og private publiceringer ikke nye uploads. Browserkontrollen viste både forbedret relevans og en udokumenteret forklaring i et usikkert svar uden fakta.
+
+566 retter den generelle assistentinstruktion og normale svarvalidator: usikkerhed uden fakta-id'er giver kun lokaliseret afklaring, efter uændrede schema-/sprog-/privatlivs-/sikkerhedskontroller. Tre normale klient-/Edge-prøver består med kontrolleret provider. Privat restore kræver nu eksisterende lager og stopper før POST ved 404; almindelig publicerings oprettelse og retry bevares. Den normale måltest og uafhængige gennemgang består. Ingen nye faglige fakta, model-/vidensbindinger, SQL, kilder, scorer, originaler eller geometri ændres. Geodataenes eneste ændring er topversionsfeltet.
+
+566 er endnu lokal; præcis GitHub-kontrol og offentlig effekt mangler. De særskilte numeriske strøm-/cache-/rollbackkandidater holdes ude. Den isolerede syvzone-SOURCE/T+3-prøve består for kold historik, ikke som bevis for allerede opvarmet hukommelse eller produktion. Præcise fælles-decoder-/numeriske SQL-tilladelser afventer. Samlet descendant-/runner-tab-/SAVE-afslutning og alle fem hovedmål er fortsat åbne. Tidligere 565-ventestatus nedenfor er historisk.
+
+# Historik: lokal 4.0.565 – afbrydelse af finalizer og strømsupplement
 
 ## Seneste delta: assistentens relevans og godkendt strømovergang
 

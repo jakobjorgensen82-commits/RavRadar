@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import test from 'node:test';
 import { runInNewContext } from 'node:vm';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
@@ -1585,6 +1586,68 @@ try {
     repositoryRoot: repository,
     expected: first.expected,
     now: '2026-08-29T11:05:00.000Z',
+  });
+
+  await test('ordinary protected restore requires an existing bucket without changing publication defaults', async () => {
+    const bucketPath = `/storage/v1/bucket/${PROTECTED_PRIVATE_RUNTIME_POLICY.bucketId}`;
+    const objectPrefix = `/storage/v1/object/authenticated/${PROTECTED_PRIVATE_RUNTIME_POLICY.bucketId}/`;
+    const originalPointer = documents.row();
+    for (const missing of [true, false]) {
+      const calls = [];
+      const clients = createProtectedPrivateRuntimeClients({
+        supabaseUrl: 'https://synthetic-project.supabase.co',
+        serviceRoleKey: 'synthetic-service-role-key',
+        storageBackend: 'supabase',
+        fetchImpl: async (url, options = {}) => {
+          const pathname = new URL(url).pathname;
+          const method = options.method ?? 'GET';
+          calls.push({ method, pathname });
+          assert.equal(method, 'GET', 'ordinary restore must never create, overwrite or remove remote storage');
+          if (pathname === '/rest/v1/admin_documents') {
+            return new Response(JSON.stringify([originalPointer]), { status: 200 });
+          }
+          if (pathname === bucketPath) {
+            return missing ? new Response('', { status: 404 }) : new Response(JSON.stringify({
+              id: PROTECTED_PRIVATE_RUNTIME_POLICY.bucketId,
+              name: PROTECTED_PRIVATE_RUNTIME_POLICY.bucketId,
+              public: false,
+              file_size_limit: PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes,
+              allowed_mime_types: [PROTECTED_PRIVATE_RUNTIME_POLICY.mimeType],
+            }), { status: 200 });
+          }
+          assert.ok(pathname.startsWith(objectPrefix), 'only the selected synthetic archive may be read');
+          const objectPath = decodeURIComponent(pathname.slice(objectPrefix.length));
+          assert.equal(objectPath, originalPointer.payload.current.objects[0].objectPath);
+          const bytes = storage.objects.get(objectPath);
+          assert.ok(Buffer.isBuffer(bytes));
+          return new Response(bytes, { status: 200, headers: { 'content-length': String(bytes.length) } });
+        },
+      });
+      const bundlePath = path.join(restoreRoot, missing ? 'existing-only-missing' : 'existing-only-restored');
+      const restore = restoreProtectedPrivateProductionRuntime({
+        privateRoot: restoreRoot, bundlePath, repositoryRoot: repository,
+        expected: first.expected, now: '2026-08-29T11:05:00.000Z',
+        request: clients.documentRequest, storage: clients.storage,
+      });
+      if (missing) {
+        await assert.rejects(restore, /restore requires an existing bucket/);
+        assert.deepEqual(calls, [
+          { method: 'GET', pathname: '/rest/v1/admin_documents' },
+          { method: 'GET', pathname: bucketPath },
+        ]);
+        assert.equal(await fs.lstat(bundlePath).catch(() => null), null);
+      } else {
+        const restored = await restore;
+        assert.equal(restored.restored, true);
+        assert.equal(restored.rollbackSelected, false);
+        assert.equal(calls.filter(call => call.pathname.startsWith(objectPrefix)).length, 1);
+        await verifyPrivateProductionRuntimeBundle({
+          privateRoot: restoreRoot, bundlePath, repositoryRoot: repository,
+          expected: first.expected, now: '2026-08-29T11:05:00.000Z',
+        });
+      }
+      assert.deepEqual(documents.row(), originalPointer);
+    }
   });
 
   const second = await createGeneration(1);

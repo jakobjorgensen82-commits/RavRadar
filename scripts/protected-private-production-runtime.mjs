@@ -1821,7 +1821,7 @@ export async function restoreProtectedPrivateProductionRuntime({
   if (isLatestUnpairedWeatherGeneration(row.payload.current)) {
     throw new Error('The exact 15Z weather generation requires paired 11Z/15Z restore; single-generation fallback is unsafe');
   }
-  await storage.ensurePrivateBucket();
+  await storage.ensurePrivateBucket({ allowCreate: false });
   const context = await assertPrivateRoot({ privateRoot, repositoryRoot });
   const finalBundle = resolvePrivateCandidate(
     context,
@@ -2251,9 +2251,10 @@ export function createProtectedPrivateRuntimeClients({
       headers,
     }, 'bucket read', async response => ({ response, parsed: await responseText(response) }));
   }
-  async function ensurePrivateBucket() {
+  async function ensurePrivateBucket({ allowCreate = true } = {}) {
     let { response, parsed } = await readBucket();
     if (response.status === 404) {
+      if (!allowCreate) throw new Error('Protected private runtime restore requires an existing bucket');
       response = await retryableFetch(bucketEndpoint, {
         method: 'POST',
         headers,

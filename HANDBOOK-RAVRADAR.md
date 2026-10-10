@@ -1,10 +1,34 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.565
+**Håndbogsversion:** 4.0.566
 
-Den lokale 4.0.565 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+Den lokale 4.0.566 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.191 Usikkerhed uden gæt og genlæsning uden oprettelse
+
+Et usikkert svar uden understøttende fakta skal ikke foreslå mulige årsager
+eller anvendelser. Den normale svarvalidator giver i stedet en kort,
+sprogrigtig afklaring, efter de eksisterende sikkerheds- og privatlivskontroller.
+Svar med gyldige fakta-id'er bevarer deres hidtidige behandling. Tre normale
+klient-/serverprøver på dansk, tysk og engelsk består med kontrolleret provider.
+Dette tilfører ikke ny fagviden og garanterer ikke alle AI-svars rigtighed.
+
+Genlæsning af gemte private produktionsdata skal finde det eksisterende lager.
+Er lageret væk, stopper genlæsningen før nogen oprettelse. Almindelig
+publicering beholder sin eksisterende oprettelses- og retryadfærd.
+Den normale syntetiske prøve består; der er ikke oprettet lager eller installeret SQL.
+
+565 blev faktisk leveret og offentligt kontrolleret 10. oktober kl. 21.46
+dansk tid. Browseren viste både forbedret relevans og et usikkert svar med en
+udokumenteret forklaring; sidstnævnte er baggrunden for 566. Rettelsesdeployet
+genbrugte gemte vejrdata, og SQL var allerede ajour. 566 er endnu lokal og
+kræver præcis kildekontrol samt verificeret offentlig effekt. De større
+strømdata-, brugerdata- og vidensleverancer er fortsat åbne.
+
+De nye kapitler erstatter tidligere ventestatus for 565. Historiske beskrivelser
+nedenfor er ikke aktuelle leveringskvitteringer for 566.
 
 ## 89.190 Relevante ravspørgsmål og nye strømfortolkninger
 

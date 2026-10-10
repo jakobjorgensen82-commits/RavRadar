@@ -1,4 +1,14 @@
-# Lokal 4.0.565 – afbrydelse af finalizer og strømsupplement
+# Lokal 4.0.566 – fagligt begrundet usikkerhed og eksisterende privat lager
+
+Version 4.0.565 er faktisk leveret 10. oktober kl. 21.46 dansk tid efter præcis GitHub-kildekontrol, merge og det normale rettelsesdeploy uden vejrhentning. Den eksisterende assistent-Edge og Pages blev opdateret; offentlig model-/implementerings-/210/673-kontrol, almindelig reseal og terminal afslutning bestod. SQL var allerede ajour, ikke en ny migration. Privat restore blev faktisk gennemført; private publiceringer i rettelsesdeployet var ikke nye uploads. Den særskilte naturlige vejrhentning afsluttede faktisk ny privat gemning/upload og offentlig levering kl. 21.25.
+
+Browserkontrol af 565 viste HTTP 200 for to normale assistentspørgsmål. Relevante ravspørgsmål blev ikke længere afvist som uvedkommende, og ukendt udstyr blev ikke opfundet. Men et svar uden fakta foreslog en udokumenteret magnetisk forklaring. 566 retter den generelle instruktion og den normale svarvalidator: et usikkert svar uden gyldige fakta-id'er returnerer kun lokaliseret ærlig usikkerhed og mulighed for afklaring. Eksisterende schema-, sprog-, længde-, privatlivs- og sikkerhedskontroller udføres først; dokumenterede svar og deres bindinger bevares. Tre normale klient-/Edge-forløb på dansk, tysk og engelsk består med kontrolleret provider. Dette er ikke den omfattende vidensudvidelse eller bevis for ekstern AI's samlede kvalitet.
+
+Genlæsning af privat gemt produktion bruger nu kun et eksisterende lager. Et manglende Supabase-lager giver stop før oprettelse; den almindelige publicerings eksisterende oprettelses- og retryadfærd er uændret. Normal syntetisk måltest består; ingen lageroprettelse, nye nøgler, SQL eller ændrede originaler følger. Model-, videns- og implementeringsbindinger er uændrede for den afgrænsede 566-kilde. Ny præcis GitHub-kildekontrol og faktisk offentlig 566-effekt mangler.
+
+Strøm-/cache-/strømhukommelsesovergangen og den bevarede rollbackkandidat er ikke del af denne levering. Nye præcise tilladelser til den fælles decoder og en selvstændig numerisk SQL-efterfølger afventer; afviste writes gentages ikke. Den nye isolerede normale syvzone-SOURCE/T+3-prøve består for kold historik, men er ikke bevis for oprydning af allerede opvarmet strømhukommelse eller produktionseffekt. Samlet descendant-/runner-tab-/SAVE-afslutning er fortsat åben. Alle fem hovedmål er åbne. Ingen produktionsændring under aktiv writer, ekstra vejrhentning eller aktivering af den isolerede revision følger.
+
+# Historik: lokal 4.0.565 – afbrydelse af finalizer og strømsupplement
 
 ## Seneste delta: assistentens relevans og godkendt strømovergang
 
