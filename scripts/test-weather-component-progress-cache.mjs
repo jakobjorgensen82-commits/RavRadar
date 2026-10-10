@@ -3822,3 +3822,75 @@ test('main pack own byte scan boundary / ' + fault, { timeout: 30_000 }, async t
     }
   }
 });
+
+test('normal SAVE CP launch preserves inherited runner tracking without forwarding credentials', async t => {
+  const childProcess = (await import('node:child_process')).default;
+  const { syncBuiltinESMExports } = await import('node:module');
+  for (const trackingPresent of [true, false]) await t.test(trackingPresent ? 'existing runner marker' : 'no marker invented', async st => {
+    const f = await fixture(st);
+    assert.equal((await f.call('save')).saved, true);
+    const cipher = await fs.readFile(path.join(f.source, WEATHER_PROGRESS_CIPHER_PATH));
+    const originalBase = await fs.readFile(f.sourceBase);
+    const conditions = await fs.readFile(path.join(f.source, 'data/live/conditions.json'));
+    // Dispatch-only artificial bank. It is NEVER admitted by a replacement
+    // interpreter: the unchanged normal spawn boundary throws before launch.
+    await write(f.source, files.copernicusBank, { bankSha256: 'synthetic-dispatch-only' });
+    const bankBytes = await fs.readFile(path.join(f.source, files.copernicusBank));
+    const root = await fs.realpath(f.source), inheritedEnvironment = process.env;
+    const pythonExecutable = inheritedEnvironment.PYTHON ?? 'python';
+    const marker = 'github_02660000-0000-4000-8000-000000000001';
+    const runtimeKeys = ['PATH', 'TEMP', 'TMP', 'TMPDIR', 'SystemRoot', 'WINDIR',
+      'LANG', 'LC_ALL', 'LC_CTYPE', 'TZ', 'LD_LIBRARY_PATH', 'DYLD_LIBRARY_PATH'];
+    const ownEnvironment = Object.fromEntries(runtimeKeys.filter(key => typeof inheritedEnvironment[key] === 'string')
+      .map(key => [key, inheritedEnvironment[key]]));
+    Object.assign(ownEnvironment, { GITHUB_TOKEN: 'synthetic-github-secret',
+      SUPABASE_SERVICE_ROLE_KEY: 'synthetic-storage-secret', WEATHER_PROGRESS_MASTER_SECRET: 'synthetic-progress-secret',
+      COPERNICUSMARINE_SERVICE_PASSWORD: 'synthetic-provider-secret', PYTHONPATH: 'synthetic-import-injection' });
+    if (trackingPresent) ownEnvironment.RUNNER_TRACKING_ID = marker;
+    let observed = null, launches = 0, result;
+    const spawnMock = st.mock.method(childProcess, 'spawn', (executable, argv, options) => {
+      launches++;
+      observed = { executable, argv: [...argv], options: { ...options, env: { ...options.env } } };
+      throw Object.assign(new Error('SYNTHETIC_LAUNCH_REFUSED'), { code: 'ENOENT' });
+    });
+    syncBuiltinESMExports();
+    try {
+      // Do not mutate HOME/TMPDIR or a real parent's marker/credentials. This
+      // test process temporarily presents only its explicit synthetic env.
+      process.env = ownEnvironment;
+      result = await f.call('save', f.source, { pythonExecutable, masterSecret: null });
+    } finally {
+      process.env = inheritedEnvironment;
+      spawnMock.mock.restore();
+      syncBuiltinESMExports();
+    }
+    assert.equal(launches, 1);
+    assert.equal(result.saved, false);
+    assert.equal(result.status, 'CACHE_MISS');
+    assert.equal(result.code, 'PROGRESS_UNAVAILABLE');
+    assert.equal(observed.executable, pythonExecutable);
+    assert.deepEqual(observed.argv.slice(0, 6), [path.resolve('scripts/run-copernicus-weather-components.py'),
+      '--bank', path.join(root, files.copernicusBank), '--cache-directory',
+      path.join(root, '.cache/copernicus-components/'), '--storage-inventory']);
+    assert.equal(observed.argv.length, 7);
+    const scratch = path.dirname(observed.argv[6]);
+    assert.equal(path.basename(observed.argv[6]), 'inventory.json');
+    assert.ok(path.basename(scratch).startsWith('rr-cp-storage-inventory-'));
+    await assert.rejects(fs.lstat(scratch), { code: 'ENOENT' });
+    assert.deepEqual(Object.keys(observed.options).sort(), ['env', 'stdio', 'windowsHide']);
+    assert.equal(observed.options.windowsHide, true);
+    assert.equal(observed.options.stdio, 'ignore');
+    assert.equal(observed.options.env.PYTHONUTF8, '1');
+    for (const key of ['GITHUB_TOKEN', 'SUPABASE_SERVICE_ROLE_KEY', 'WEATHER_PROGRESS_MASTER_SECRET',
+      'COPERNICUSMARINE_SERVICE_PASSWORD', 'PYTHONPATH']) assert.equal(Object.hasOwn(observed.options.env, key), false);
+    for (const key of runtimeKeys) assert.equal(observed.options.env[key], ownEnvironment[key]);
+    assert.deepEqual(await fs.readFile(f.sourceBase), originalBase);
+    assert.deepEqual(await fs.readFile(path.join(f.source, WEATHER_PROGRESS_CIPHER_PATH)), cipher);
+    assert.deepEqual(await fs.readFile(path.join(f.source, 'data/live/conditions.json')), conditions);
+    assert.deepEqual(await fs.readFile(path.join(f.source, files.copernicusBank)), bankBytes);
+    // This is environment propagation, NOT a launched-child/kill/runner-loss
+    // receipt. A missing marker must fail even though SAVE safely refused.
+    assert.equal(observed.options.env.RUNNER_TRACKING_ID, trackingPresent ? marker : undefined);
+    assert.equal(Object.hasOwn(observed.options.env, 'RUNNER_TRACKING_ID'), trackingPresent);
+  });
+});

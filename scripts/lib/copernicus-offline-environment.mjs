@@ -5,6 +5,8 @@
 const RUNTIME_KEYS = Object.freeze([
   'PATH', 'TEMP', 'TMP', 'TMPDIR', 'SystemRoot', 'WINDIR',
   'LANG', 'LC_ALL', 'LC_CTYPE', 'TZ', 'LD_LIBRARY_PATH', 'DYLD_LIBRARY_PATH',
+  // Preserve the runner's existing cleanup marker, not a stop receipt.
+  'RUNNER_TRACKING_ID',
 ]);
 
 export function copernicusOfflineEnvironment(source = process.env) {
