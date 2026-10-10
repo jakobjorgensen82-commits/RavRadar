@@ -1,4 +1,12 @@
-# Aktuel cache-hotfix – 4.0.551, 2026-10-07
+# Aktuelt leveringsspor – lokal 4.0.557, 2026-10-10
+
+Ejeren har 10. oktober krævet færdiggørelse i dag, langt før den tidligere måldato omkring 21. oktober. Prioritér konkrete sikre leverancer og dokumenteret produktionseffekt; fristen må ikke bruges til at omgå kontroller eller erklære uafsluttet arbejde færdigt.
+
+4.0.556 er offentligt leveret fra main `c84a889b` gennem PR #546 og kode-only `38020500484`; tidligere manuelle engangsordrer er forbrugt. Den lokale 4.0.557 retter normale D1-kvitteringer uden SQL- eller modelændring og består 102 målprøver samt alle 13 privacy-childforløb. Præcis ny source-CI, merge og en særskilt autoriseret Worker-installation mangler. Det nuværende fulde turlagerworkflow må ikke kaldes en Worker-only-kørsel.
+
+Fortsæt parallelle afgrænsede spor for strømdata/score, hele vejrhentningsrevisionen, brugerdata/rettigheder/anonym samlet statistik, Spørg RavRadar og faktisk selvstændig drift uden Codex. Genbrug de gennemførte 4.0.556-leverancer og evidens; luk ikke et helt spor på delrettelser. De isolerede revisioner og bindingsadskillelsen forbliver på deres dokumenterede HOLD. Afvent ikke et nyt »fortsæt« til sikkert upåvirket arbejde. Ingen produktionsændring under aktiv writer; ingen nye manuelle vejrhentnings-, cron-, diagnose-, destinations- eller installationstilladelser.
+
+# Historik: cache-hotfix – 4.0.551, 2026-10-07
 
 4.0.551 er en separat minimal cache-rettelse fra main 4.0.549. Den normale gendannelseskalder accepterer allerede en gyldig hel UTC-time uden millisekunder, men SOURCE-kontinuitet kræver kanonisk tidsformat. Kun den validerede kaldertime kanoniseres før sammenfletning; lagrede referencer, autentificering, originale kildebeviser, central routing og hård no-loss er uændrede. Seks eksisterende CLI-varianter dækker gyldige og beskadigede beviser ved kanonisk time, schedulerformat og næste time; et manglende nyt sluttidspunkt opfindes ikke. Ejerens konkrete ja omfatter denne separate GitHub-rettelse med kontrolleret levering og derefter én vejrhentning uden overlappende writer. Den tidligere ordre om ingen ekstra hentning er erstattet alene for dette ene efterfølgende forløb. Særskilte afvisninger, den isolerede store revision og assistentkandidaten ændres ikke. Kilde-CI, sikker merge, deploy og faktisk ny cache-/vejrgeneration er endnu åbne; generisk produktionsfejlkode er ikke bevis for den skjulte indre exception. Tidligere Fur/no-loss-tab er en særskilt åben årsag. Brugerdata, Spørg RavRadar og Codex-uafhængig drift før abonnementets udløb er ikke færdige.
 

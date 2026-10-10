@@ -1,4 +1,11 @@
-# Lokal 4.0.556 – afgrænsede klientrettelser; offentlig levering afventer
+# Lokal 4.0.557 – 2026-10-10
+
+- Hærdet normale D1-kvitteringer i eksisterende count/store/list/delete: ugyldige resultater må ikke blive nul, tom historik eller falsk skrive-/slettekvittering. Sletning kræver en kvitteret barriere og sikre del- og totalantal, før næste trin.
+- Bevaret SQL, lagerskema, ejerskab, idempotens og begge vejrbundles. Det eksisterende regressionsmål nås én gang gennem privacygruppen; 47 topkommandoer bevares.
+- Faktisk lokalt integreret og måltestet: 102/102 samt alle 13 normale privacy-childforløb. Præcis ny source-CI, merge og særskilt Worker-installation afventer. Ingen eksportaktivering eller ny beslutning om opbevaring og viderebrug.
+- 4.0.556 er siden faktisk leveret via PR #546 og kode-only `38020500484` med samme vejrpakke og offentlig 210/673-kontrol. Hele revisionen, strøm-/scoreovergangen, brugerdata, bred assistentviden og Codex-uafhængig drift er ikke færdige.
+
+# Historik: 4.0.556 – kildeforgænger før verificeret offentlig levering
 
 Denne særskilte kandidat er udtaget fra den aktuelle main-kode. Den forbedrer normale brugerforløb uden at overføre hele brugerdata-, assistent- eller vejrhentningsrevisionen. De eksisterende 68- og 66-fils vejrbundles er uændrede; versioneringen må kun ændre geodataenes topversionsfelt og de eksisterende release-/cachefelter.
 

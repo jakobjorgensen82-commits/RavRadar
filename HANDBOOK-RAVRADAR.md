@@ -1,8 +1,8 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.556
+**Håndbogsversion:** 4.0.557
 
-4.0.556 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+4.0.557 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
 
@@ -6027,6 +6027,8 @@ Nøddriften viser ét komplet, auditeret dataset med tydelig besked om, at datae
 Et reelt hul over tre timer genstarter Candidate G fra de verificerede prøver efter hullet. RavRadar opfinder eller interpolerer ikke manglende timer. Candidate G 20/50/30, scorefysikken, DMI-først, vejr, normal sortering, konto-/turdata, geometri og land-/vandpunkter er uændrede. Se [DEC-0085](docs/rdks/10_DECISIONS/DEC-0085-CAUSAL-PRODUCTION-AND-BOUNDED-RECOVERY.md).
 
 ## Supabase-login og EU-turlager – historisk 4.0.287-cutover
+
+**Når lageret svarer.** RavRadar må kun behandle en lageroperation som fuldført, når lageret faktisk kvitterer for den. Et manglende eller ugyldigt svar er ikke en tom turlog eller nul gemte ture. Ved ejersletning skal beskyttelsen mod senere genoprettelse være kvitteret før sletningen starter; sikre del- og totalantal kontrolleres før næste trin, og en fejl stopper efterfølgende sekventielt arbejde. Den lokale 4.0.557 ændrer ikke turenes indhold, ejerskab eller lagerskema. Rettelsen er måltestet med kunstige input; installation og normal hosted kontrol er særskilte, endnu åbne leveringspunkter.
 
 Supabase håndterer fortsat login, profiler, rettigheder, rate limit og RavRadars offentlige Edge-gateway. Normale ture gemmes i ti Cloudflare D1-databaser, som er låst til EU. Det giver op til 5 GB samlet gratis turlager i stedet for at lade turene vokse mod Supabases 500 MB-databaseloft.
 

@@ -1,4 +1,16 @@
-# Lokal 4.0.556 – afgrænsede klientrettelser; offentlig levering afventer
+# Lokal 4.0.557 – normale D1-kvitteringer; backendinstallation afventer
+
+Den afgrænsede kandidat er udtaget fra offentligt leveret 4.0.556/main `c84a889b`. PR #546 og kode-only-kørsel `38020500484` er gennemført med verificeret genbrug af samme vejrpakke og offentlig 210/673-kontrol. Den tidligere 4.0.556-tekst nedenfor er historik fra før denne levering; den er ikke aktuel ventestatus.
+
+Den normale Worker kræver nu en positiv boolesk D1-kvittering ved tælling, historiklæsning, lagring og ejersletning. Gyldige udseende rækker i et fejlet eller manglende resultat må ikke blive nul, tom historik eller en falsk skrivekvittering. Slettebarrieren kvitteres før første sletning, og hver slettetælling samt dens løbende sum skal være sikre, ikke-negative heltal før næste sekventielle trin. Ejerskab, idempotens, payloadhash, SQL, ti EU-shards, svarprojektion og eksisterende genforsøgsgrænser er uændrede.
+
+Workerrettelsen og dens normale mål er faktisk lokalt integreret. 102/102 målprøver og den normale privacygruppe med alle 13 childforløb består; source-once kontrollerer fortsat 47 topkommandoer. De fire ændrede filer er kontrolleret med fuld byte-invers. Begge 68-/66-fils vejrbundles er uændrede. Præcis ny GitHub-kontrol, sikker merge og autoriseret Worker-installation er endnu åbne; et Pages-deploy installerer ikke D1-Workeren.
+
+Det eksisterende turlagerworkflow har ingen Worker-only-indstilling og omfatter også SQL, Edge, migration og modeændringer. En afgrænset leveringsvej for den eksisterende Worker forberedes særskilt; den er ikke installeret eller en ny operationstilladelse. Den brede tilbageholdte eksport-/rettighedspakke og bindingsadskillelsen er ikke kopieret eller aktiveret. Opbevaring, testoprindelse og anonym samlet viderebrug er fortsat særskilte åbne punkter.
+
+Alle fem målområder består: landsdækkende strømdata/scoreovergang, hele vejrhentningsrevisionen, varige brugerdata, bred Spørg RavRadar og selvstændig drift uden Codex. Ejeren har 10. oktober krævet færdiggørelse i dag; den tidligere måldato omkring 21. oktober er erstattet. Fristen er ikke bevis for færdiggørelse eller ny driftstilladelse. Parallel delegation er udtrykkeligt godkendt; hovedagenten koordinerer integration og produktionsskrivning. Ingen nye diagnose-, installations-, destinations-, manuel-vejrhentnings-, cron- eller revisionsaktiveringstilladelser følger. Ingen produktionsændring under aktiv writer, og interne undersøgelser er ikke offentlig assistentviden.
+
+# Historik: 4.0.556 – kildeforgænger før verificeret offentlig levering
 
 Denne særskilte kandidat er udtaget fra den aktuelle main-kode. Den forbedrer normale brugerforløb uden at overføre hele brugerdata-, assistent- eller vejrhentningsrevisionen. De eksisterende 68- og 66-fils vejrbundles er uændrede; versioneringen må kun ændre geodataenes topversionsfelt og de eksisterende release-/cachefelter.
 
