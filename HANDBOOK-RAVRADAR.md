@@ -1,10 +1,44 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.569
+**Håndbogsversion:** 4.0.570
 
-Den lokale 4.0.569 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+Den lokale 4.0.570 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.195 Profilens ejer kontrolleres før rollebrug
+
+Den lokale 570-kandidat kontrollerer, hvem den modtagne profil tilhører,
+før profilens rolle bruges. Det er ikke nok, at forespørgslen bad om den
+rigtige bruger, eller at serveren svarede uden HTTP-fejl. En lokal prøve
+gennem det normale kald viste, at et svar med en anden ejer ellers
+kunne blive accepteret. Det er ikke bevis for en faktisk datalæk fra
+den hostede database.
+
+En tom profilliste giver fortsat ingen rolle. Hvis der er en række,
+skal den være et objekt med netop den forventede brugers id.
+Manglende eller forkert id, ugyldig rækkeform og flere rækker afvises.
+De eksisterende kontroller af bruger og loginforløb bevares før og
+efter læsningen. En normal sessionsfornyelse for samme bruger i samme
+loginforløb forbliver gyldig; session og gemte data ryddes ikke.
+
+Den eksisterende normale måltest består med 50 af 50 kontroller:
+41 hidtidige og ni nye, med egne syntetiske svar og uden rigtigt
+netværk. Dette beviser den afgrænsede lokale rettelse, ikke en offentlig
+570-levering eller afslutning af hele brugerdataopgaven.
+
+569 på præcis 388f6f118 har bestået kildekontrol 38094833674/1.
+Den tidligere ventestatus i kapitel 89.194 er derfor historisk.
+Kildekontrol er ikke i sig selv offentlig levering. 570 kræver egen
+præcis kildekontrol og sikker levering. Ingen ny vejrstatus eller
+ekstra vejrhentning følger af dette arbejde.
+
+I68/C66, continuation, lager-ABI, assistentfakta, scoreformel, geometri
+og historiske originaler er uændrede. Geodata ændres kun i topversionen.
+Alle fem hovedmål og de særskilte decoder-/190000-SQL-/RESTORE-
+afklaringer er åbne. Revisionen er inaktiv; samlet writer, CP-cohort,
+SAVE, runner-tab og heljobsbudget er ikke afsluttet. Ingen nye
+bindings-, installations- eller produktionshandlinger følger.
 
 ## 89.194 Hele, godkendte tekstenheder i assistentsvar
 

@@ -1,4 +1,18 @@
-# Lokal 4.0.569 – godkendt ordlyd i faktabaserede assistentsvar
+# Lokal 4.0.570 – profilens ejer kontrolleres før rollebrug
+
+En lokal syntetisk prøve gennem den normale getCurrentRole → getCurrentProfile-kæde viste, at et svar med en anden profils ejer kunne blive brugt, selv om forespørgslen var filtreret på den indloggede bruger. Et HTTP 200-svar og et korrekt forespørgselsfilter beviser ikke svarets ejer. Fundet er ikke en konstateret læk i den hostede database eller et bevis for svigt i dens adgangspolitikker.
+
+570 kontrollerer den faktisk modtagne profilliste, før en rolle returneres: enten ingen rækker eller præcis én ikke-null objekt-række, som ikke er et array og har den forventede brugers id. Forkert eller manglende ejer, ugyldig rækkeform og flere rækker afvises. Eksisterende kontroller af bruger og loginforløb før og efter læsningen bevares. Et legitimt tomt resultat giver fortsat ingen rolle, og en gyldig profil samt normal sessionsfornyelse for samme bruger i samme loginforløb accepteres uden at rydde session eller gemte data.
+
+Den eksisterende normale profil-/ejerprøve består med 50 af 50 kontroller: de 41 hidtidige og ni additive prøver, herunder seks ugyldige svar og tre gyldige forløb. Prøverne bruger egne syntetiske svar uden rigtigt netværk. Denne evidens genbruges; den er ikke en offentlig leveringskvittering eller afslutning af hele brugerdataopgaven.
+
+569 på præcis 388f6f118909a1a891b654a37654572bc6ae84ac har bestået kildekontrol 38094833674/1. Det erstatter den tidligere ventestatus for 569 nedenfor. Kildekontrol er ikke merge eller offentlig levering; 570 er en lokal kandidat og kræver egen præcis kildekontrol samt sikker levering. Der er ikke indhentet ny vejrstatus eller startet vejrhentning som del af denne rettelse.
+
+I68/C66, continuation, lager-ABI, scoreformel, administratorens data, geometri, historiske originaler og assistentens faktabank er uændrede. Versionsmekanik ændrer kun releasefelter og cache-suffikser; geodata ændres alene i topversionsfeltet. De allerede gennemgåede 569-assistentrettelser bevares. Ingen nye fakta, source33-genforsøg, bindingsomlægning, SQL-installation eller aktivering af andre fremtidige kandidater følger.
+
+Alle fem hovedmål er fortsat åbne. De tre særskilte afklaringer om fælles decoder, numerisk 190000-SQL og RESTORE er fortsat afventende; ingen nye tilladelser gives. Samlet writer, CP-cohort, SAVE/RESTORE, capture, runner-tab og heljobsbudget er ikke afsluttet. Den særskilte revision er inaktiv. Tidligere leverings- og testbeviser bevares som historik; ingen produktion ændres under aktiv writer.
+
+# Historik: lokal 4.0.569 – godkendt ordlyd i faktabaserede assistentsvar
 
 Offentlig 566 viste et materielt forkert svar om at kende rav fra sten; et efterfølgende svar rettede ikke fejlen. Det offentlige svar dokumenterer ikke, hvilke interne fakta-id'er der blev valgt. En særskilt lokal prøve gennem den normale klient og Edge viste derimod den konkrete kontraktfejl: fri, modsagt tekst kunne passere sammen med et eksisterende gyldigt fakta-id. Medlemskab af faktalisten er ikke i sig selv faglig dokumentation.
 
