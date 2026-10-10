@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { unpackPrivateWeatherComponentPack } from './private-weather-component-pack.mjs';
+import { unpackPrivateWeatherComponentPack, privateWeatherPackJsonReadsClosed } from './private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE } from './private-weather-component-inventory.mjs';
 import { OPEN_METEO_NATIVE_NEAREST_POLICIES, OPEN_METEO_PART_COMPONENTS } from './open-meteo-part-bank.mjs';
 import { mergeVerifiedOpenMeteoGenerations } from './verified-open-meteo-generation-union.mjs';
@@ -82,11 +82,25 @@ async function cpOriginalFiles(directory, prefix = '') {
   return result;
 }
 
-export async function mergeVerifiedProtectedProgressComponents({
+const unionJsonReadLifetimes = new WeakMap();
+// Only the actual nested pack read lifetime; never an owner or admission.
+export function protectedProgressPackJsonReadsClosed(invocation) {
+  const state = unionJsonReadLifetimes.get(invocation);
+  return state?.settled === true
+    && (state.packInvocation === null || privateWeatherPackJsonReadsClosed(state.packInvocation));
+}
+export function mergeVerifiedProtectedProgressComponents(options = {}) {
+  const state = { settled: false, packInvocation: null };
+  const invocation = mergeWithPackJsonReadLifetime(options, state);
+  unionJsonReadLifetimes.set(invocation, state);
+  invocation.then(() => { state.settled = true; }, () => { state.settled = true; });
+  return invocation;
+}
+async function mergeWithPackJsonReadLifetime({
   root, progressFiles, progressVerifiedRoot, temporaryDirectory, productionReferenceAt,
   completeFiles = null, completeIsNewer = false,
   pythonExecutable = process.env.PYTHON ?? 'python',
-} = {}) {
+} = {}, readState) {
   if (!Array.isArray(progressFiles) || typeof root !== 'string' || typeof progressVerifiedRoot !== 'string'
     || typeof temporaryDirectory !== 'string' || typeof completeIsNewer !== 'boolean'
     || (completeIsNewer && completeFiles === null)) {
@@ -112,11 +126,12 @@ export async function mergeVerifiedProtectedProgressComponents({
   productionReferenceAt = new Date(productionReferenceAt).toISOString();
   if (protectedFiles === null) {
     const conditions = JSON.parse(await fs.readFile(path.join(root, 'data/live/conditions.json'), 'utf8'));
-    protectedFiles = await unpackPrivateWeatherComponentPack({
+    readState.packInvocation = unpackPrivateWeatherComponentPack({
       restoredRoot: root,
       outputRoot: path.join(temporaryDirectory, 'protected-verified'),
       conditions, pythonExecutable,
-    }).catch(() => { throw new Error('PROTECTED_PROGRESS_BASE_UNPACK_FAILED'); });
+    });
+    protectedFiles = await readState.packInvocation.catch(() => { throw new Error('PROTECTED_PROGRESS_BASE_UNPACK_FAILED'); });
   }
   const registry = JSON.parse(await fs.readFile(path.join(root, 'data/live/coastal-parts-v2.json'), 'utf8'));
   const parts = Object.entries(registry.zones ?? {}).flatMap(([zoneId, rows]) =>

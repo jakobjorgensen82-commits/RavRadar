@@ -475,15 +475,22 @@ test('real CP original static/dynamic NetCDF, receipts and cursor survive exact 
     await fs.readFile(path.join(source, file.relativePath)));
   const originalPack = await fs.readFile(path.join(source, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath));
   for (const failure of ['inventory-read', 'cleanup-only']) await t.test(`CP inventory ${failure} with cleanup failure`, async t => {
-    const readFile = fs.readFile, rm = fs.rm;
+    const open = fs.open, rm = fs.rm;
     const cleanupError = new Error('synthetic inventory cleanup error');
     const ownedInventory = value => path.dirname(path.resolve(String(value))) === path.resolve(os.tmpdir())
       && path.basename(String(value)).startsWith('rr-cp-storage-inventory-');
     const retained = [];
-    t.mock.method(fs, 'readFile', async (file, ...args) => {
+    t.mock.method(fs, 'open', async (file, ...args) => {
+      const handle = await open(file, ...args);
       if (failure === 'inventory-read' && path.basename(String(file)) === 'inventory.json'
-        && ownedInventory(path.dirname(String(file)))) throw new Error('synthetic inventory read error');
-      return readFile(file, ...args);
+        && ownedInventory(path.dirname(String(file)))) {
+        // The normal reader now owns a FileHandle through read and close.
+        // Inject at that actual read boundary without replacing its cleanup.
+        t.mock.method(handle, 'readFile', async () => {
+          throw new Error('synthetic inventory read error');
+        });
+      }
+      return handle;
     });
     t.mock.method(fs, 'rm', async (directory, ...args) => {
       if (ownedInventory(directory)) {

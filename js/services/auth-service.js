@@ -1,4 +1,4 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.560";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.561";
 
 const STORAGE_KEY = "ravradar-auth-session";
 const REFRESH_MARGIN_SECONDS = 300;
@@ -51,9 +51,9 @@ function friendlyAuthResponse(body,status){
   if(/rate limit|too many/.test(raw))return problem('Der er sendt for mange forsøg på kort tid. Vent lidt, og prøv igen.');
   return problem('Login kunne ikke gennemføres. Prøv igen.');
 }
-// Consume only JSON under the existing request deadline. A timed-out POST
+// Consume fixed JSON or error text under the existing deadline. A timed-out POST
 // has an unknown remote outcome; abort is not a server-completion receipt.
-async function readResponseJson(response, guard) {
+async function readResponseBody(response, guard, readText = false) {
   if (guard.signal.aborted) throw friendlyNetworkError(guard.signal.reason);
   let abort;
   const interrupted = new Promise((resolve, reject) => {
@@ -63,7 +63,7 @@ async function readResponseJson(response, guard) {
   try {
     // Attach a rejection handler even when timeout wins. Do not await an
     // uncooperative body's cleanup or treat requested abort as observed stop.
-    const parsing = Promise.resolve().then(() => response.json()).catch(() => undefined);
+    const parsing = Promise.resolve().then(() => readText ? response.text() : response.json()).catch(() => readText ? "" : undefined);
     const body = await Promise.race([parsing, interrupted]);
     if (guard.signal.aborted) throw guard.signal.reason;
     return body;
@@ -85,7 +85,7 @@ async function authRequest(path, options = {}, { useAuthorization = true, timeou
     },
     signal:guard.signal
   }); } catch(error) { throw friendlyNetworkError(error); }
-  const parsed = await readResponseJson(response, guard);
+  const parsed = await readResponseBody(response, guard);
   const body = parsed === undefined ? {} : parsed;
   if (!response.ok) throw friendlyAuthResponse(body,response.status);
   return body;
@@ -153,7 +153,7 @@ export async function requireFreshSession() {
   assertIdentity();
   return session;
 }
-export async function authorizedFetch(url, options = {}, { retry401 = true, timeoutMs=DEFAULT_TIMEOUT_MS, consumeJson = false } = {}) {
+export async function authorizedFetch(url, options = {}, { retry401 = true, timeoutMs=DEFAULT_TIMEOUT_MS, consumeJson = false, consumeErrorText = false } = {}) {
   const startingEpoch = identityEpoch;
   const active = await requireFreshSession();
   const ownerId = active?.user?.id;
@@ -184,10 +184,11 @@ export async function authorizedFetch(url, options = {}, { retry401 = true, time
       assertOwner(renewed);
       return requestOnce(renewed, false);
     }
-    if (consumeJson !== true) return response;
-    const body = response.ok ? await readResponseJson(response, guard) : undefined;
+    if (consumeJson !== true && consumeErrorText !== true) return response;
+    const body = response.ok && consumeJson === true ? await readResponseBody(response, guard) : undefined;
+    const errorText = !response.ok && consumeErrorText === true ? await readResponseBody(response, guard, true) : undefined;
     assertOwner(current);
-    return { response, body };
+    return consumeErrorText === true ? { response, body, errorText } : { response, body };
     } finally { guard.done(); }
   }
   return requestOnce(active, retry401);

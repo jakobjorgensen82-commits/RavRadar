@@ -9,9 +9,9 @@ import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createGzip, createGunzip } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
-import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
+import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack, privateWeatherPackJsonReadsClosed } from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_PACK_FILE } from './lib/private-weather-component-inventory.mjs';
-import { mergeVerifiedProtectedProgressComponents, protectedProgressUnionFailureCode } from './lib/verified-protected-progress-components.mjs';
+import { mergeVerifiedProtectedProgressComponents, protectedProgressUnionFailureCode, protectedProgressPackJsonReadsClosed } from './lib/verified-protected-progress-components.mjs';
 
 export const WEATHER_PROGRESS_CIPHER_PATH = '.cache/weather-private-progress.encrypted';
 const PURPOSE = 'RAVRADAR_WEATHER_PRIVATE_PROGRESS_ONLY';
@@ -149,6 +149,7 @@ export async function withAuthenticatedWeatherProgress({
   maximumEncryptedBytes = MAX_CIPHER_BYTES, maximumPackBytes = MAX_PACK_BYTES,
 } = {}, inspect) {
   let temporary = null;
+  let packInvocation = null;
   try {
     if (typeof inspect !== 'function') fail('INSPECTION_CALLBACK_REQUIRED');
     if (!Number.isSafeInteger(maximumEncryptedBytes) || maximumEncryptedBytes < 1024
@@ -211,8 +212,9 @@ export async function withAuthenticatedWeatherProgress({
     await pipeline(createReadStream(compressed), createGunzip(), boundedStream(maximumPackBytes),
       createWriteStream(packPath, { flags: 'wx', mode: 0o600 }));
     const verifiedRoot = path.join(temporary.folder, 'verified');
-    const files = await unpackPrivateWeatherComponentPack({ restoredRoot: temporary.folder,
+    packInvocation = unpackPrivateWeatherComponentPack({ restoredRoot: temporary.folder,
       outputRoot: verifiedRoot, conditions: {}, pythonExecutable, includeOperationalProgress: true });
+    const files = await packInvocation;
     // Reconfirm after the potentially slower CP-original validation and again
     // after the consumer. Private paths/content must never enter a public log.
     if (await conditionsDigest(root) !== base.baselineSha256) fail('BASELINE_MISMATCH');
@@ -224,7 +226,7 @@ export async function withAuthenticatedWeatherProgress({
     if (await conditionsDigest(root) !== base.baselineSha256) fail('BASELINE_MISMATCH');
     return result;
   } finally {
-    if (temporary) {
+    if (temporary && (packInvocation === null || privateWeatherPackJsonReadsClosed(packInvocation))) {
       try { await temporary.cleanup(); }
       catch { fail('TEMPORARY_CLEANUP_FAILED'); }
     }
@@ -288,6 +290,8 @@ export async function weatherComponentProgressCache({
   maximumEncryptedBytes = MAX_CIPHER_BYTES,
 } = {}) {
   let temporary = null;
+  let packInvocation = null;
+  let unionInvocation = null;
   let cipherTemporary = null;
   let restoreInstalled = false;
   try {
@@ -312,10 +316,11 @@ export async function weatherComponentProgressCache({
       if (!Number.isSafeInteger(maximumEncryptedBytes) || maximumEncryptedBytes < 1024
         || maximumEncryptedBytes > MAX_CIPHER_BYTES) fail('SIZE_BUDGET_INVALID');
       temporary = await temporaryRoot();
-      const pack = await buildPrivateWeatherComponentPack({
+      packInvocation = buildPrivateWeatherComponentPack({
         repositoryRoot: root, outputRoot: temporary.folder, conditions: {}, pythonExecutable,
         includeOperationalProgress: true,
       });
+      const pack = await packInvocation;
       if (!pack) return status('SKIPPED', 'NO_COMPONENT_PROGRESS');
       await checkedPath(root, WEATHER_PROGRESS_CIPHER_PATH, { optional: true, maximum: MAX_CIPHER_BYTES });
       await fs.mkdir(path.dirname(cipherPath), { recursive: true, mode: 0o700 });
@@ -395,18 +400,20 @@ export async function weatherComponentProgressCache({
     await fs.mkdir(path.dirname(packPath), { recursive: true, mode: 0o700 });
     await pipeline(createReadStream(compressed), createGunzip(), boundedStream(MAX_PACK_BYTES),
       createWriteStream(packPath, { flags: 'wx', mode: 0o600 }));
-    const files = await unpackPrivateWeatherComponentPack({ restoredRoot: temporary.folder,
+    packInvocation = unpackPrivateWeatherComponentPack({ restoredRoot: temporary.folder,
       outputRoot: path.join(temporary.folder, 'verified'), conditions: {}, pythonExecutable,
       includeOperationalProgress: true });
+    const files = await packInvocation;
     // Reconfirm after the potentially slower CP-original validation.
     if (await conditionsDigest(root) !== base.baselineSha256) fail('BASELINE_MISMATCH');
     let reconciled;
     try {
-      reconciled = await mergeVerifiedProtectedProgressComponents({
+      unionInvocation = mergeVerifiedProtectedProgressComponents({
         root, progressFiles: files, progressVerifiedRoot: path.join(temporary.folder, 'verified'),
         temporaryDirectory: temporary.folder,
         productionReferenceAt, pythonExecutable,
       });
+      reconciled = await unionInvocation;
     } catch (error) {
       return status('RESTORE_REPAIR_REQUIRED', 'PROTECTED_PROGRESS_UNION_FAILED', {
         requiresProtectedRestore: true, unionFailureCode: protectedProgressUnionFailureCode(error),
@@ -440,7 +447,10 @@ export async function weatherComponentProgressCache({
     if (cipherTemporary) await fs.unlink(cipherTemporary).catch(() => {});
     // Preserve earlier primary errors, especially failed rollback/union,
     // even when their best-effort temporary cleanup also fails.
-    if (temporary) await temporary.cleanup().catch(() => {});
+    if (temporary && (packInvocation === null || privateWeatherPackJsonReadsClosed(packInvocation))
+      && (unionInvocation === null || protectedProgressPackJsonReadsClosed(unionInvocation))) {
+      await temporary.cleanup().catch(() => {});
+    }
   }
 }
 

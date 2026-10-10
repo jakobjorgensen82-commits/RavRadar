@@ -1,17 +1,23 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.560';
-import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.560';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.561';
+import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.561';
 
 const KEY='ravradar-handbook-review-drafts-v1';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
 const TABLE_URL=()=>`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/handbook_reviews`;
 
 function drafts(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return[]}}
+function draftsForUpdate(){
+ const raw=localStorage.getItem(KEY);
+ let rows;
+ try{rows=JSON.parse(raw??'[]');}catch{throw new Error('Lokale nødkladder kunne ikke læses sikkert.');}
+ if(!Array.isArray(rows))throw new Error('Lokale nødkladder kunne ikke læses sikkert.');
+ return rows;
+}
 function save(rows){localStorage.setItem(KEY,JSON.stringify(rows));}
 function id(){return crypto.randomUUID?.()||`review-${Date.now()}-${Math.random().toString(36).slice(2)}`;}
 export function centralReviewStorageEnabled(){return enabled&&Boolean(currentSession()?.access_token);}
 
-async function responseError(response,action){
- const raw=await response.text().catch(()=> '');
+async function responseError(response,action,raw=''){
  let body=null;try{body=raw?JSON.parse(raw):null;}catch{}
  const message=body?.message||body?.error_description||body?.hint||body?.details||raw||`HTTP ${response.status}`;
  const code=body?.code?` [${body.code}]`:'';
@@ -41,14 +47,13 @@ function reviewPayload(review,{includeOptional=true}={}){
 }
 
 async function insertPayload(payload){
- const response=await authorizedFetch(TABLE_URL(),{
+ const {response,body:rows,errorText}=await authorizedFetch(TABLE_URL(),{
   method:'POST',
   headers:{'Content-Type':'application/json',Prefer:'return=representation'},
   body:JSON.stringify(payload)
- });
- if(!response.ok)throw await responseError(response,'Central gemning fejlede');
- const rows=await response.json().catch(()=>[]);
- return rows[0]||null;
+ },{consumeJson:true,consumeErrorText:true});
+ if(!response.ok)throw await responseError(response,'Central gemning fejlede',errorText);
+ return rows?.[0]||null;
 }
 
 async function remoteInsert(review){
@@ -64,10 +69,9 @@ async function remoteInsert(review){
   if(!/client_payload|expert_name|organization|schema cache|column/i.test(error.message))throw error;
   inserted=await insertPayload(reviewPayload(review,{includeOptional:false}));
  }
- const verify=await authorizedFetch(`${TABLE_URL()}?id=eq.${encodeURIComponent(review.id)}&select=*`,{headers:{'Cache-Control':'no-store'}});
- if(!verify.ok)throw await responseError(verify,'Rettelsen blev skrevet, men kunne ikke verificeres');
- const rows=await verify.json();
- if(rows.length!==1||rows[0].id!==review.id)throw new Error('Rettelsen kunne ikke læses tilbage fra Supabase. Kontrollér RLS-politikken for egne reviews.');
+ const {response:verify,body:rows,errorText}=await authorizedFetch(`${TABLE_URL()}?id=eq.${encodeURIComponent(review.id)}&select=*`,{headers:{'Cache-Control':'no-store'}},{consumeJson:true,consumeErrorText:true});
+ if(!verify.ok)throw await responseError(verify,'Rettelsen blev skrevet, men kunne ikke verificeres',errorText);
+ if(!Array.isArray(rows)||rows.length!==1||rows[0]?.id!==review.id)throw new Error('Rettelsen kunne ikke læses tilbage fra Supabase. Kontrollér RLS-politikken for egne reviews.');
  return rows[0]||inserted;
 }
 
@@ -87,13 +91,13 @@ export function exportLocalHandbookDrafts(){
 export function localHandbookDraftCount(){return drafts().length;}
 export function listLocalHandbookDrafts(){return drafts();}
 export function deleteLocalHandbookDraft(reviewId){const rows=drafts().filter(x=>x.id!==reviewId);save(rows);return rows;}
-export async function retryLocalHandbookDraft(reviewId){const rows=drafts();const review=rows.find(x=>x.id===reviewId);if(!review)throw new Error('Den lokale nødkladde findes ikke længere.');const row=await remoteInsert(review);save(rows.filter(x=>x.id!==reviewId));return row;}
+export async function retryLocalHandbookDraft(reviewId){const rows=drafts();const review=rows.find(x=>x.id===reviewId);if(!review)throw new Error('Den lokale nødkladde findes ikke længere.');const row=await remoteInsert(review);save(draftsForUpdate().filter(x=>x.id!==reviewId));return row;}
 
 export async function listHandbookReviews(){
  if(!enabled||!currentSession()?.access_token)return[];
- const response=await authorizedFetch(`${TABLE_URL()}?select=*&order=created_at.desc`);
- if(!response.ok)throw await responseError(response,'Kunne ikke hente ekspertrettelser');
- const rows=await response.json();
+ const {response,body:rows,errorText}=await authorizedFetch(`${TABLE_URL()}?select=*&order=created_at.desc`,{},{consumeJson:true,consumeErrorText:true});
+ if(!response.ok)throw await responseError(response,'Kunne ikke hente ekspertrettelser',errorText);
+ if(!Array.isArray(rows))throw new Error('Kunne ikke hente ekspertrettelser: ugyldigt svar.');
  return rows.filter(row=>!String(row.resolution_note||'').startsWith('[ARKIVERET]'));
 }
 
@@ -103,25 +107,25 @@ export async function archiveHandbookReview(reviewId,reason='Arkiveret af ejer')
 
 export async function updateHandbookReview(reviewId,patch){
  await requireFreshSession();
- const response=await authorizedFetch(`${TABLE_URL()}?id=eq.${encodeURIComponent(reviewId)}`,{
+ const {response,body:rows,errorText}=await authorizedFetch(`${TABLE_URL()}?id=eq.${encodeURIComponent(reviewId)}`,{
   method:'PATCH',headers:{'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(patch)
- });
- if(!response.ok)throw await responseError(response,'Kunne ikke opdatere ekspertrettelse');
- return (await response.json().catch(()=>[]))[0]||null;
+ },{consumeJson:true,consumeErrorText:true});
+ if(!response.ok)throw await responseError(response,'Kunne ikke opdatere ekspertrettelse',errorText);
+ return rows?.[0]||null;
 }
 
 async function deleteOrArchiveProbe(probeId){
- const response=await authorizedFetch(`${TABLE_URL()}?id=eq.${encodeURIComponent(probeId)}`,{method:'DELETE',headers:{Prefer:'return=representation'}});
+ const {response,errorText}=await authorizedFetch(`${TABLE_URL()}?id=eq.${encodeURIComponent(probeId)}`,{method:'DELETE',headers:{Prefer:'return=representation'}},{consumeErrorText:true});
  if(response.ok){
-  const verify=await authorizedFetch(`${TABLE_URL()}?id=eq.${encodeURIComponent(probeId)}&select=id`,{headers:{'Cache-Control':'no-store'}});
-  if(!verify.ok)throw await responseError(verify,'Oprydningen kunne ikke verificeres');
-  if((await verify.json()).length)throw new Error('Testreviewet blev ikke fjernet igen.');
+  const {response:verify,body:rows,errorText:verifyErrorText}=await authorizedFetch(`${TABLE_URL()}?id=eq.${encodeURIComponent(probeId)}&select=id`,{headers:{'Cache-Control':'no-store'}},{consumeJson:true,consumeErrorText:true});
+  if(!verify.ok)throw await responseError(verify,'Oprydningen kunne ikke verificeres',verifyErrorText);
+  if(!Array.isArray(rows)||rows.length)throw new Error('Testreviewet blev ikke fjernet igen.');
   return'deleted';
  }
  // Nogle eksisterende installationer har med vilje ingen DELETE-policy. I så fald
  // efterlades højst én tydeligt mærket, afvist systemtestpost i stedet for at fejle
  // eller kræve en ny Supabase-installation.
- const deleteError=await responseError(response,'Testreview kunne ikke slettes');
+ const deleteError=await responseError(response,'Testreview kunne ikke slettes',errorText);
  const archived=await updateHandbookReview(probeId,{
   status:'rejected',
   resolution_note:`[ARKIVERET] Automatisk systemtest afsluttet og skjult fra reviewkøen. DELETE var ikke tilladt; auditsporet er bevaret. ${deleteError.message}`
