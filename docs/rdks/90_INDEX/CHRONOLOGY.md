@@ -1,4 +1,10 @@
-# 2026-10-10 – lokal 4.0.567, egen procesgruppe før genbrug
+# 2026-10-10 – lokal 4.0.568, afventede svar og observationskald
+
+568 samler de afgrænsede transportrettelser: faktisk svar-/body-/cancel-afslutning før retry eller fallback, samme samtidige observationskald afventet med første fejl bevaret, og stop før næste normale skrivning ved ukendt oprydning. Berørte syntetiske måltests består; det er ikke bevis for global writer-, SAVE-, RESTORE- eller runner-tab-sikkerhed. De særskilte claim/raw-save/source-CI- og numeriske kandidater er ikke med.
+
+567 på præcis ed80f3811d11b369c14fb39c6878cb3dab5ec648 bestod native Linux- og kildekontrol kl. 22.41 dansk tid, men er ikke merget under aktiv vejrhentning 38083296276. 568 kræver egen præcis kildekontrol og sikker levering. Offentlig 565/566-evidens genbruges; 566 er faktisk leveret kl. 22.24. Ingen model-/continuationbindinger, scoreformel, kilder, adminpunkter, geometri eller historiske originaler ændres. Geodata får kun topversionsfeltet. Decoder-/190000-SQL-afklaringer og alle fem mål forbliver åbne; ingen nye tilladelser eller produktionshandlinger følger.
+
+# Historik: 2026-10-10 – lokal 4.0.567, egen procesgruppe før genbrug
 
 Normale DMI-supervisor-/finalizer-/Copernicus-kaldere får verificeret egen Linux-procesgruppe. Sidste stopsignal sendes før hovedprocessens afventning; derefter kræves faktisk gruppefravær uden nye signaler. Berørte Windows-målprøver består; de nye seks Linux-underprocesforløb er endnu ikke kørt. 566 bestod præcis kildekontrol kl. 22.13 og blev faktisk leveret og offentligt kontrolleret kl. 22.24. Browseren viser versionen og HTTP 200 med ærlig usikkerhed uden udokumenteret forklaring. Privat restore/lokal gemning er faktisk; private publiceringer var ikke nye uploads, SQL allerede ajour. Varm syvzone-SOURCE/T+3 består isoleret, ikke som produktionsbevis. Runner-tab, samlet sikker gemning og alle fem mål er åbne. Ingen ekstra vejrhentning eller ny installation følger.
 

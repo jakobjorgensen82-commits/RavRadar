@@ -1,4 +1,12 @@
-# Lokal 4.0.567 – 2026-10-10
+# Lokal 4.0.568 – 2026-10-10
+
+- Afventer den faktisk startede transport, svarkrop og annullering før retry/fallback. Afvist eller ukendt oprydning fastholder den faktiske ressource og stopper det berørte forløb før næste skrivning; afbrydelsesanmodning er ikke en afslutningskvittering.
+- Samme samtidige observationsopslag afventes også efter første fejl. Første fejl bevares, og senere stopusikkerhed må ikke blive almindelig manglende observation. Normal fallback efter kendt afslutning, budgetter og providerprioritet bevares.
+- Berørte normale syntetiske måltests består lokalt. Ingen samlet writer-, CP-cohort-, SAVE-, RESTORE-, capture- eller runner-tab-frikendelse. Fremtidige claim/raw-save/source-CI- og særskilte numeriske kandidater holdes ude.
+- 567 exact ed80f381 bestod native Linux- og kildekontrol kl. 22.41, men er ikke merget under aktiv vejrhentning 38083296276. 568 er kun lokal kandidat; egen præcis kildekontrol og offentlig levering mangler. Faktisk offentlig 565/566-evidens genbruges uden nye kald.
+- I68/C66/continuation, historiske originaler, scoreformel, admin og geometri bevares. Geodata ændres kun i topversionsfeltet. Decoder-/190000-SQL-afklaringer og alle fem hovedmål er stadig åbne; ingen nye tilladelser eller installationer følger.
+
+# Historik: lokal 4.0.567 – 2026-10-10
 
 - Normal Linux-vejrhentning og strømsupplement afslutter nu den verificeret ejede procesgruppe, ikke kun den direkte underproces. Sidste gruppesignal sendes før hovedprocessen afventes; derefter kræves gruppefravær uden nye signaler. Windows-adfærd og eksisterende budgetter, signaler og første fejl bevares.
 - Tretten berørte Windows-DMI-prøver og den gamle Copernicus-prøve består. Seks nye normale Linux-forløb med fortsat skrivende underproces afventer faktisk kildekontrol. Ingen generel runner-tab-, SAVE- eller fireminuttersfrikendelse.

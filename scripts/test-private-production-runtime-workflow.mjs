@@ -153,6 +153,14 @@ try {
     'The private hourly storage codec must remain in the reviewed producer inventory',
   );
   const contractFiles = [...new Set(Object.values(PRIVATE_RUNTIME_CONTRACT_FILES).flat())];
+  for (const relative of [
+    'scripts/lib/weather-transport-settlement.mjs',
+  ]) {
+    assert.ok(PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.includes(relative),
+      'The transport-settlement implementation must remain in the reviewed producer inventory.');
+    assert.equal(PRIVATE_RUNTIME_CONTRACT_FILES.fullRuntimeContractSha256.includes(relative), false,
+      'Transport settlement must not retag preserved originals through the storage ABI.');
+  }
   for (const relative of ['scripts/lib/water-source-continuity-contract.mjs',
     'scripts/lib/water-source-forecast-routing.mjs']) {
     assert.ok(PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.includes(relative),

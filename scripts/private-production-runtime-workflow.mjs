@@ -46,6 +46,7 @@ const PRIVATE_RUNTIME_SOURCE_FILES = Object.freeze({
     'scripts/plan-dmi-recovery.py',
     'scripts/lib/dmi_adaptive_recovery.py',
     'scripts/run-dmi-bulk-supervised.py',
+    'scripts/lib/weather-transport-settlement.mjs',
     'scripts/update-weather.mjs',
     'scripts/enrich-current-provenance.mjs',
     'scripts/check-weather-update.py',
@@ -214,7 +215,7 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
 
 export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
   decisionId: 'DEC-0122-OWNER-APPROVAL-2026-09-09',
-  releaseVersion: '4.0.567',
+  releaseVersion: '4.0.568',
   // The first cutover is over. A release-version bump cannot renew this authority.
   retired: true,
   invocationMarker: 'APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
@@ -230,7 +231,7 @@ export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
 export const PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY = Object.freeze({
   schemaVersion: '1.0.0',
   kind: 'RAVRADAR_PRIVATE_RUNTIME_CAPACITY_RESUME_EVIDENCE',
-  releaseVersion: '4.0.567',
+  releaseVersion: '4.0.568',
   priorRunId: '34738698219',
   priorRunAttempt: 1,
   priorSourceHead: '099b70a8314864ba85f0fb7ea3858b3f3816d9ed',

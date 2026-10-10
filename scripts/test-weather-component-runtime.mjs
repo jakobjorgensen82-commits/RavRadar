@@ -15,6 +15,7 @@ import { recordSelectedWeatherComponents, snapshotWeatherComponentSelectionHisto
   from './lib/weather-component-selection-history.mjs';
 import { loadCopernicusComponentAuthority } from './lib/copernicus-component-index.mjs';
 import { runCopernicusComponentRuntime } from './lib/copernicus-component-runtime.mjs';
+import { runOpenMeteoPartRuntime } from './lib/open-meteo-part-runtime.mjs';
 
 const reference = '2026-09-19T00:00:00.000Z';
 const at = offset => new Date(Date.parse(reference) + offset * 3_600_000).toISOString();
@@ -624,4 +625,86 @@ test('actual CP callers retain the owned child before fallback or outer cleanup 
       assert.equal(terminalError.cause, undefined);
     }
   });
+});
+
+test('PART settlement: actual prepare waits for runtime body teardown before fallback or scoring', async t => {
+  let finishCancellation, observedAbort, bodyController, settled = false, operation, plans = 0;
+  const cancellation = new Promise(resolve => { finishCancellation = resolve; });
+  const aborted = new Promise(resolve => { observedAbort = resolve; });
+  const calls = [];
+  const options = await fixture(t, {
+    copernicusBudgetMs: 0, openMeteoBudgetMs: 1000, openMeteoRequestTimeoutMs: 20, openMeteoMaximumRetries: 0,
+    loadOpenMeteo: undefined,
+    openMeteoSpatialPolicies: Object.fromEntries(['wind', 'wave', 'waterTemperature'].map(component => [component,
+      { policyId: 'synthetic-exact-cell-only', maximumDistanceKm: 0,
+        ...(component === 'waterTemperature' ? { cellSelection: 'nearest' } : {}) }])),
+    readVerifiedHourly: () => { plans++; const values = rows(); values[0].windSpeedMps = null; return values; },
+    runOpenMeteo: options => {
+      calls.push(options.budgetMs);
+      return runOpenMeteoPartRuntime({ ...options, fetchImpl: async (_url, { signal }) => {
+        signal.addEventListener('abort', observedAbort, { once: true });
+        return new Response(new ReadableStream({ start(value) { bodyController = value; }, cancel() { return cancellation; } }));
+      } });
+    },
+  });
+  try {
+    operation = prepareWeatherComponentRuntime(options);
+    operation.then(() => { settled = true; }, () => { settled = true; });
+    await aborted;
+    const plansBeforeCleanup = plans;
+    await new Promise(resolve => setTimeout(resolve, 30));
+    assert.equal(settled, false);
+    assert.equal(plans, plansBeforeCleanup, 'no post-acquisition planning while body cleanup is pending');
+    assert.deepEqual(calls, [1000], 'no offline acquisition may overtake the pending body');
+    await assert.rejects(fs.access(path.join(options.privateCacheRoot, 'weather-component-fallback-cursor.json')), /ENOENT/);
+    finishCancellation();
+    const result = await operation;
+    assert.equal(result.summary.openMeteo.transport.timeouts, 1);
+    assert.equal(result.summary.openMeteo.failures.length, 1);
+    assert.deepEqual(calls, [1000]);
+  } finally {
+    finishCancellation(); try { bodyController?.close(); } catch { /* The real runtime cancelled it. */ }
+    if (operation) await operation.catch(() => {});
+  }
+});
+
+test('PART settlement: actual prepare propagates rejected cancellation without offline recovery', async t => {
+  const options = await fixture(t);
+  const script = `
+    import assert from 'node:assert/strict';
+    import fs from 'node:fs/promises';
+    import { prepareWeatherComponentRuntime } from './scripts/lib/weather-component-runtime.mjs';
+    import { runOpenMeteoPartRuntime } from './scripts/lib/open-meteo-part-runtime.mjs';
+    import { assertWeatherTransportSettlement, isWeatherTransportStopUnproved } from './scripts/lib/weather-transport-settlement.mjs';
+    const values = ${JSON.stringify(rows())}; values[0].windSpeedMps = null;
+    const calls = []; let requests = 0, cancellations = 0, caught;
+    const options = ${JSON.stringify(options)};
+    try {
+      await prepareWeatherComponentRuntime({ ...options, copernicusBudgetMs: 0, openMeteoBudgetMs: 1000,
+        openMeteoSpatialPolicies: Object.fromEntries(['wind', 'wave', 'waterTemperature'].map(component => [component,
+          { policyId: 'synthetic-exact-cell-only', maximumDistanceKm: 0,
+            ...(component === 'waterTemperature' ? { cellSelection: 'nearest' } : {}) }])),
+        readVerifiedHourly: () => values,
+        runCopernicus: async () => ({ index: {}, bankSha256: 'sha256:' + 'c'.repeat(64), summary: {} }),
+        runOpenMeteo: options => {
+          calls.push(options.budgetMs);
+          return runOpenMeteoPartRuntime({ ...options, fetchImpl: async () => {
+            requests++;
+            return new Response(new ReadableStream({ cancel() { cancellations++; return Promise.reject(null); } }), { status: 503 });
+          } });
+        },
+      });
+    } catch (error) { caught = error; }
+    assert.equal(isWeatherTransportStopUnproved(caught), true);
+    assert.equal(caught.code, 'OPEN_METEO_PART_HTTP_UNAVAILABLE', 'first HTTP failure survives falsy cleanup failure');
+    assert.deepEqual(calls, [1000]); assert.equal(requests, 1); assert.equal(cancellations, 1);
+    assert.throws(assertWeatherTransportSettlement, error => error === caught);
+    await assert.rejects(fs.access(options.privateCacheRoot + '/weather-component-fallback-cursor.json'), /ENOENT/);
+  `;
+  const child = childProcess.spawnSync(process.execPath, ['--input-type=module', '-'], {
+    cwd: new URL('..', import.meta.url), input: script, encoding: 'utf8', timeout: 5000, maxBuffer: 64 * 1024,
+  });
+  assert.equal(child.error, undefined);
+  assert.equal(child.status, 0, child.stderr);
+  assert.equal(child.stdout, '');
 });

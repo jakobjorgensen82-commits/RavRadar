@@ -1,10 +1,39 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.567
+**Håndbogsversion:** 4.0.568
 
-Den lokale 4.0.567 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+Den lokale 4.0.568 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.193 Afvent svaret, før næste forsøg starter
+
+Et fejlet opslag er ikke nødvendigvis færdigt. Serveren kan stadig sende
+svaret, eller afslutningen af læsningen kan være i gang. Den lokale
+568-kandidat afventer derfor den faktisk startede forespørgsel, svarkrop
+og eventuelle annullering, før et nyt forsøg eller en reservekilde bruges.
+Hvis oprydningens afslutning er ukendt eller afvist, fastholdes ressourcen,
+og det berørte forløb stopper før fallback eller næste skrivning.
+
+Når flere observationsopslag allerede er startet samtidig, afventes de
+samme kald, selv om ét fejler først. Den første fejl bevares; en senere
+usikker afslutning må ikke skjules som en almindelig manglende observation.
+Kendte, afsluttede providerfejl kan fortsat bruge den normale fallback.
+Budgetter, kildeprioritet, scoreformel, administratorens punkter og geometri
+samt historiske originaler ændres ikke.
+
+De berørte syntetiske måltests består lokalt. Dette er ikke bevis for
+samlet eksklusiv skrivning eller sikker SAVE, RESTORE, capture, alle
+Copernicus-underprocesser eller tab af runner. De særskilte kandidater til
+disse opgaver er ikke med. Alle fem hovedmål er åbne, og decoder- samt
+190000-SQL-afklaringerne afventer stadig; kapitlet giver ingen nye
+tilladelser.
+
+567 bestod præcis native Linux- og kildekontrol kl. 22.41 dansk tid, men
+er fortsat ikke merget under aktiv vejrhentning 38083296276. Det erstatter
+den gamle ventestatus i kapitel 89.192. 568 er lokal og kræver egen
+kildekontrol og sikker levering. Den allerede dokumenterede offentlige
+565/566-evidens genbruges; ingen ny offentlig effekt påstås.
 
 ## 89.192 Stop af egen procesgruppe før genbrug
 
