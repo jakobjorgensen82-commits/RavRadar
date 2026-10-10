@@ -119,11 +119,15 @@ export function discardActiveTripEvidence(storage = null) {
   return { tripId: active.tripId };
 }
 
-export function markTripEvidenceSubmitted(tripId, storage = null) {
+export function markTripEvidenceSubmitted(tripId, storage = null, expectedEvidence = null) {
   const target = resolveStorage(storage);
   const normalized = String(tripId || '').trim();
   if (!normalized) throw new Error('Tur-id mangler.');
   const pending = listPendingTripEvidence(target);
+  if (expectedEvidence && (expectedEvidence.tripId !== normalized
+    || pending.some(item => item?.tripId === normalized && !sameTripEvidenceValue(item, expectedEvidence)))) {
+    throw new Error('Den gemte tur er ændret og kan ikke markeres som sendt.');
+  }
   const next = pending.filter(item => item?.tripId !== normalized);
   if (next.length === pending.length) return false;
   target.setItem(PENDING_KEY, JSON.stringify(next));

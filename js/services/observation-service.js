@@ -96,18 +96,29 @@ function upsertLocal(row){const safe=migrateLegacyTripObservationRow(row),rows=g
 function enqueue(row){const safe=migrateLegacyTripObservationRow(row),rows=readMigratedRows(OUTBOX_KEY);if(!rows.some(x=>x.id===safe.id))rows.push(safe);write(OUTBOX_KEY,rows);}
 export function remoteObservationPayload(row){const normalized=migrateLegacyTripObservationRow(structuredClone(row||{}));const {id:clientObservationId,gps:localGps,route,track,position,coordinates,latitude,longitude,location,sync_status,sync_error,synced_at,...remote}=normalized;const publicZoneId=remote.actual_zone_id||(typeof remote.zone_id==='string'?remote.zone_id:null);const payload={...remote,zone_id:Number.isSafeInteger(remote.zone_id)?remote.zone_id:null,actual_zone_id:publicZoneId,client_observation_id:clientObservationId,gps:null};return Number(payload.schema_version??1)===TRIP_EVIDENCE_SCHEMA_VERSION?projectTripStoragePayload(payload):payload;}
 async function postRemote(row){
+  const identity=authIdentityEpoch();
+  const assertIdentity=()=>{
+    if(authIdentityEpoch()!==identity)throw new Error('Kontoen blev ændret. Prøv igen fra den rigtige konto.');
+  };
   const url=`${PUBLIC_CONFIG.supabaseUrl}/functions/v1/submit-observation`;
   const payload=remoteObservationPayload(row);
   const options={method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)};
   let response;
   if(payload.user_id){
     const active=await requireFreshSession();
+    assertIdentity();
     if(active?.user?.id!==payload.user_id)throw new Error('Log ind med den konto, som turen tilhører, før den kan sendes.');
     response=await authorizedFetch(url,options);
   }else{
     response=await fetch(url,{...options,headers:{apikey:PUBLIC_CONFIG.supabasePublishableKey,Authorization:`Bearer ${PUBLIC_CONFIG.supabasePublishableKey}`,...options.headers}});
   }
+  assertIdentity();
   if(!response.ok)throw new Error('Turen kunne ikke sendes lige nu. Den bliver liggende på enheden, så du kan prøve igen.');
+  let receipt;
+  try{receipt=await response.json();}catch{receipt=null;}
+  assertIdentity();
+  if(!receipt||typeof receipt!=='object'||Array.isArray(receipt)||receipt.stored!==true)
+    throw new Error('Turen kunne ikke sendes lige nu. Den bliver liggende på enheden, så du kan prøve igen.');
 }
 function settleObservationSync(row, state){
   const original=JSON.stringify(row);

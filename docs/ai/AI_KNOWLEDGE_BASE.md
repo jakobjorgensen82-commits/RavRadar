@@ -4,14 +4,24 @@ Den afgrænsede lokale kandidat retter kontosvar, turformularens oprindelige
 aktive tur, turens faktiske afleveringskvittering og ejerbundne uændrede genforsøg,
 sletningens genlæsningskvittering og assistentens UI-fejlmeddelelse.
 En afbrudt aktiv-oprydning må ikke lade en ny besvarelse overskrive den først gemte tur.
-De otte ændrede produktfiler ligger uden for begge faktiske modelclosures.
+De elleve ændrede produktfiler ligger uden for begge faktiske modelclosures.
 Begge eksisterende bundles er uændrede og kontrolleret med normale --check-kald:
 integreret `ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb`
 over 68 filer og rollback `8d9142b5f7d9b5a3e5a0f3593e73df0c7ffaf3d80c036317967cb713f09197e3`
 over 66 filer. Browserens versionsparametre er cacheidentitet, ikke en ny fysisk
-modelbinding. De seks nye mål dækker 72 brugerdata- og 12 UI-prøver lokalt;
+modelbinding. De seks nye mål dækker 111 brugerdata- og 12 UI-prøver lokalt;
 fælles første brugerhydrering må ikke ændre den først gemte turs indsendelsestid.
-normal baggrundssynkronisering beviser ikke automatisk rydning af en bevaret v2-tur.
+Den eksisterende opstartstest har desuden tre nye backup-/logoutprøver:
+loginoplysninger må hverken gemmes i nye snapshots eller gendannes fra gamle.
+Aktive login samt tur- og outboxoriginaler bevares; fysisk sletning af gamle
+snapshotbytes og serverens token-tilbagekaldelse er ikke bevist.
+Den normale indsendelse kræver et faktisk stored: true-svar og oprindeligt loginforløb.
+Otte præcise hele score-/fundspørgsmål får det eksisterende kontrollerede svar;
+private, sammensatte og sted-/tidsafhængige fragmenter er ikke nye matches.
+Normal baggrundssynkronisering beviser ikke automatisk rydning af en bevaret v2-tur.
+Oprydning kræver den faktisk sendte lokale rapport; ændrede og modstridende ture bevares.
+To samtidige normale kald deler kun en præcis frisk kvittering fra den direkte indsendelse.
+Kontoens manuelle turformular må ikke overtage en ny ejer efter formularen eller vise gammel kvittering.
 Dette er ikke installation eller offentlig levering.
 
 Ejeren kræver konkret parallel delegation med samlet integration hos hovedagenten.

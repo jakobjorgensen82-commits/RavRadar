@@ -37,7 +37,17 @@ To samtidige indsendelser under første brugerhydrering genlæser den oprindelig
 tur efter hydreringen og bevarer dens første indsendelsestid. En ny lokal række
 må ikke overskrive den faktisk kvitterede original.
 
-72 relevante brugerdata- og 12 UI-målprøver består lokalt. De seks nye mål nås én gang gennem
+Den normale lokale backup må ikke gemme eller gendanne loginoplysninger. En gammel sikkerhedskopi kunne tidligere genoprette et lokalt login efter faktisk logout; det er nu afvist både ved ny backup og ved genlæsning af eksisterende snapshots. Aktive login og de oprindelige tur-/kødata bevares. Tre nye prøver gennem den eksisterende normale opstartstest kontrollerer faktisk logout, frisk loginmodulindlæsning, backup uden credentials og tabsfri genlæsning. Dette er ikke bevis for serverens token-tilbagekaldelse eller fysisk sletning af gamle backupbytes ved en mislykket ny gemning.
+
+HTTP-success alene er ikke en gemmekvittering. Den normale indsendelse kræver et faktisk JSON-objekt med stored: true og samme oprindelige loginforløb efter hele svaret. Ugyldige svar, logout og nyt login til samme eller en anden konto bevarer indsendelsen; legitim tokenfornyelse består. Fjorten nye prøver gennem den faktiske controller, uploader og indsendelsesfunktion kontrollerer dette med egne kunstige input. Automatisk v2-oprydning er fortsat en særskilt kontrol, ikke en følge af HTTP-status.
+
+Spørg RavRadars eksisterende kontrollerede svar om lav score udvides med otte præcise hele spørgsmålsformer på dansk, tysk og engelsk, herunder to offentligt observerede danske fejlforløb. Svaret fastslår, at lav score ikke udelukker ravfund, men heller ikke er en målt fundchance. Sammensatte, private eller sted-/tidsafhængige spørgsmål må ikke matches som et fragment. Normale client/Edge-prøver giver 15 kontrollerede svar, 48 bindingsafvisninger, fem private afvisninger og 12 normale fail-closed-forløb; den eksisterende tyske trotzdem-misrouting er fortsat åben. Dette er ikke den brede vidensudvidelse eller bevis for fungerende ekstern AI.
+
+Oprydning efter turens kvittering er bundet til den faktisk sendte lokale rapport. Ændret indhold eller en modstridende dublet med samme tur-id bevares; harmløs nøgleorden og identiske dubletter accepteres uden tab af andre ture. To samtidige normale kald kan dele den samme friske serverkvittering uden en falsk fejl, men en allerede fjernet køpost accepteres kun gennem den faktiske indsendelsesfunktion med præcis tur, ejer og uændret loginforløb. En løs eller indpakket callbackkvittering giver ikke denne undtagelse. Femten nye målprøver består gennem samme normale controller, uploader og loginfunktioner. Dette indfører ikke automatisk v2-oprydning, kontoovertagelse eller atomisk skrivning mellem faner.
+
+Kontoens manuelle tur- og fundformular fastholder den ejer og det loginforløb, som åbnede formularen. Nyt login eller kontoskift under formularen må ikke sende den gamle besvarelse som den nye konto; et forsinket svar må heller ikke vise den gamle afleveringskvittering under et nyt login. Normal tokenfornyelse, annullering og gemning med efterfølgende visning i egen turlog bevares. Ti nye prøver bruger de faktiske login-, indsendelses- og kontofunktioner; syntetiske formularer og HTTP-svar er ikke installeret brugerdata- eller adgangskontrolbevis.
+
+111 relevante brugerdata- og 12 UI-målprøver består lokalt. De seks nye mål nås én gang gennem
 den eksisterende normale sourcegruppe. Begge vejrbundles, scoreformel, vejrdata,
 geometri og centrale bindingsregler er uændrede. Det er endnu ikke præcis ny
 GitHub-kontrol, installation, fungerende ekstern AI eller offentlig effekt.

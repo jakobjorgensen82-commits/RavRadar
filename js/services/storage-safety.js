@@ -25,7 +25,7 @@ function collectRavRadarStorage() {
   const values = {};
   for (let index = 0; index < localStorage.length; index += 1) {
     const key = localStorage.key(index);
-    if (key?.startsWith(KEY_PREFIX)) values[key] = localStorage.getItem(key);
+    if (key?.startsWith(KEY_PREFIX) && key !== "ravradar-auth-session") values[key] = localStorage.getItem(key);
   }
   return values;
 }
@@ -65,7 +65,7 @@ function restoreMissingValues(snapshot) {
   if (!snapshot?.values || typeof snapshot.values !== "object") return 0;
   let restored = 0;
   for (const [key, value] of Object.entries(snapshot.values)) {
-    if (!key.startsWith(KEY_PREFIX) || value == null || localStorage.getItem(key) !== null) continue;
+    if (!key.startsWith(KEY_PREFIX) || key === "ravradar-auth-session" || value == null || localStorage.getItem(key) !== null) continue;
     localStorage.setItem(key, value);
     restored += 1;
   }

@@ -10,7 +10,7 @@ globalThis.localStorage = {
   get length() { return values.size; }
 };
 globalThis.window = { addEventListener() {} };
-globalThis.fetch = async () => ({ ok: true, json: async () => ({}) });
+globalThis.fetch = async () => ({ ok: true, json: async () => ({ stored: true }) });
 
 const {
   getLocalObservations,
@@ -153,9 +153,9 @@ globalThis.fetch = async (_url, options) => {
   if (sentIds.length === 1) {
     firstRequestStarted();
     await firstRequestGate;
-    return { ok: true };
+    return { ok: true, json: async () => ({ stored: true }) };
   }
-  return { ok: payload.result !== 'small' };
+  return { ok: payload.result !== 'small', json: async () => ({ stored: true }) };
 };
 const normalSubmission = result => submitObservation({
   zone: { id: 'DK-B01-01', name: 'Testzone', coastType: 'sand' },
@@ -180,7 +180,7 @@ assert.equal(JSON.parse(values.get(localKey)).find(row => row.id === firstSubmit
 assert.equal(JSON.parse(values.get(localKey)).find(row => row.id === secondSubmitted.row.id).sync_status, 'pending');
 globalThis.fetch = async (_url, options) => {
   sentIds.push(JSON.parse(options.body).client_observation_id);
-  return { ok: true };
+  return { ok: true, json: async () => ({ stored: true }) };
 };
 const recoveredStatus = await syncPendingObservations();
 assert.equal(recoveredStatus.pending, 0);
@@ -199,7 +199,7 @@ for (const outcome of ['changed-original', 'already-acknowledged', 'still-pendin
     requestCount += 1;
     requestStarted();
     await requestGate;
-    return { ok: outcome === 'changed-original' };
+    return { ok: outcome === 'changed-original', json: async () => ({ stored: true }) };
   };
   const submission = normalSubmission('none');
   await requestReady;

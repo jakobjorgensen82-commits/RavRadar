@@ -114,6 +114,9 @@ async function showTripHistory(dialog, context) {
 }
 
 async function showAccountTripReport(dialog, context) {
+  const identity = authIdentityEpoch(), userId = currentSession()?.user?.id;
+  const isCurrentOwner = () => Boolean(userId) && authIdentityEpoch() === identity
+    && currentSession()?.user?.id === userId;
   dialog.close();
   try {
     const answer = await openAccountTripReportDialog({
@@ -123,15 +126,17 @@ async function showAccountTripReport(dialog, context) {
       zones: context.zones,
       coastalParts: context.coastalParts
     });
+    if (!isCurrentOwner()) throw new Error(t('account.reportFailed'));
     if (!dialog.open) dialog.showModal();
     if (!answer) return renderAccount(dialog, context);
     const report = buildAccountTripReport({ ...answer, tripId: crypto.randomUUID() });
     const result = await submitAccountTripReportObservation(toAccountObservationColumns(report));
+    if (!isCurrentOwner()) throw new Error(t('account.reportFailed'));
     const message = t(result.stored === 'remote' ? 'account.reportRemote' : 'account.reportQueued');
     renderAccount(dialog, context, message);
   } catch (error) {
     if (!dialog.open) dialog.showModal();
-    renderAccount(dialog, context, error?.message || t('account.reportFailed'));
+    renderAccount(dialog, context, isCurrentOwner() ? error?.message || t('account.reportFailed') : t('account.reportFailed'));
   }
 }
 

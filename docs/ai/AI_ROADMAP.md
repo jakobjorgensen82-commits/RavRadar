@@ -10,11 +10,19 @@ standse de øvrige. Arbejd i eksisterende isolerede checkouts, ikke cb79.
 Den særskilte lille 4.0.556-klientkandidat retter forsinkede konto-/rettighedssvar,
 en gammel turformular, falsk tur-/slettekvittering, genforsøgets oprindelige ejer,
 id, indhold og tid, bevarelse af første komplette tur ved afbrudt oprydning samt
-intern UI-fejltekst og samtidige indsendelser under første brugerhydrering. 72 brugerdata-
+intern UI-fejltekst og samtidige indsendelser under første brugerhydrering. 111 brugerdata-
 og 12 UI-målprøver samt versions-/RDKS-/håndbogs- og begge bundlekontroller består
 lokalt. Præcis kilde-PR-kontrol, sikker levering og offentlig effekt mangler.
+En lokal backup må ikke gendanne et udlogget login; tre nye prøver i det
+eksisterende opstartsmål bevarer aktive login, ture og ventende indsendelser.
 Den aktiverer ikke den isolerede revision eller en ny modelbinding. Automatisk
 rydning af bevarede v2-ture efter baggrundssynkronisering er ikke bevist.
+Gemmekvitteringen kræver faktisk stored: true efter hele svaret og uændret loginforløb.
+Oprydning bevarer ændret turindhold; samtidige normale kald kan kun dele den præcise
+friske kvittering fra den direkte indsendelse. Løse callbackkvitteringer er ikke bevis.
+Den manuelle kontoformular bevarer oprindeligt login og må ikke sende som ny ejer.
+Otte præcise score-/fundspørgsmål genbruger det eksisterende kontrollerede svar;
+bred vidensudvidelse, tysk trotzdem-misrouting og ekstern AI er stadig åbne.
 
 Næste kritiske strømtrin er no-loss-kvalificering af eksisterende kompakt hukommelse
 og faktisk regional reference før ny brug; begge har konkrete lokale modprøver.
