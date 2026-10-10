@@ -50,13 +50,13 @@ GitHub Actions har følgende faste secrets til de relevante manuelle og planlagt
 - `TRIP_PSEUDONYM_SECRET_V1`, mindst 32 tilfældige bytes, til stabil pseudonymisering;
 - de eksisterende `SUPABASE_URL` og `SUPABASE_SERVICE_ROLE_KEY` til afgrænsede migrations- og administrationsoperationer.
 
-`SUPABASE_ACCESS_TOKEN` er derimod kun et management-token til det manuelle **Deploy RavRadar trip storage**-workflow. Login, profil, Edge-runtime, indsendelse af ture, D1-lagring og den daglige D1-monitor bruger det ikke. Det må derfor være udløbet eller fraværende i normal drift.
+`SUPABASE_ACCESS_TOKEN` bruges til Supabase-management i **Deploy RavRadar trip storage**, `deploy-code-only-repair.yml` og `apply-weather-model-binding-only.yml`, ikke kun i turlagerworkflowet. De aktuelle login-/profil-/turkald, Edge-runtime, D1-monitor og normale `update-and-deploy.yml`-/`run-current-weather-once.yml`-kæder bruger det ikke. Code-only bruger det derimod til sit normale assistant-Edge-deploy og, ved `integrated`/`integrated-historical-maintenance`, læsning af migrationshistorik. Udløb kan derfor lade installeret drift fortsætte, men blokere nødvendige kode-/backendreparationer; det konkrete godkendte workflow afgør behovet.
 
 Secretværdier må aldrig skrives i PR, issue, log, artifact, dokumentation eller chat. `TRIP_PSEUDONYM_SECRET_V1` er en stabil identitetsnøgle: blind rotation gør eksisterende kontoture ulæselige. En nødvendig rotation kræver en særskilt versioneret v2-migration. Gateway-secret kan roteres koordineret gennem GitHub → Cloudflare → Supabase.
 
 Aktuel credential-status og politik er:
 
-- det installerede `SUPABASE_ACCESS_TOKEN` udløber 25. august 2027, men skal ikke kalenderfornyes. Det kan udløbe uden at stoppe normal drift;
+- det installerede `SUPABASE_ACCESS_TOKEN` udløber 25. august 2027, men skal ikke kalenderfornyes. Udløb stopper ikke i sig selv de ovennævnte runtime-/vejrkald, men kan blokere managementforløbene;
 - Cloudflare deploy-tokenet har kun D1 Write og Workers Scripts Write og er sat til **No expiration**;
 - Cloudflare audit-tokenet har kun D1 Read og er sat til **No expiration**;
 - gateway-secret kan roteres koordineret, mens pseudonym-secret kun må roteres gennem en særskilt v2-migration.
@@ -65,7 +65,7 @@ Cloudflare-tokenværdierne ændrede sig ikke, da udløbet blev fjernet. De skal 
 
 Det tidligere kalenderbaserede **Warn before RavRadar credential expiry**-workflow er pensioneret. Der skal ikke oprettes mail-, GitHub-issue-, kalender- eller Codex-varsler om Supabase-PAT'ets udløb, fordi udløbet ikke er en runtimehændelse.
 
-Når en konkret Edge-/Worker-deploy, migration eller D1 roll-forward-reparation bliver nødvendig, er den sikre behovsstyrede proces:
+Ved behov for et nyt PAT til en konkret godkendt turlager-deploy, migration eller D1 roll-forward-reparation i **Deploy RavRadar trip storage** er den behovsstyrede proces:
 
 1. opret et nyt Supabase-PAT med kortest praktiske udløb gennem den godkendte interaktive kanal;
 2. opdatér GitHub-secretet `SUPABASE_ACCESS_TOKEN` uden at vise værdien;

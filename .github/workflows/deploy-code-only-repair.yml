@@ -213,24 +213,14 @@ jobs:
           rm -rf "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT"
           mkdir -p "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT" .cache .geometry-v2-work "$RAVRADAR_OPERATIONAL_WORK"
           curl --version
-          fetch_public() {
-            local remote_path="$1" local_name="$2" maximum_bytes="$3"
-            curl --fail --silent --show-error --location --retry 3 \
-              --connect-timeout 10 --max-time 60 --max-filesize "$maximum_bytes" \
-              --header 'Cache-Control: no-cache' \
-              "$RAVRADAR_PUBLIC_BASE_URL/$remote_path?code-only=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
-              --write-out "Public snapshot file=$local_name bound=$maximum_bytes http=%{http_code} declared=%header{content-length} received=%{size_download}\n" \
-              --output "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT/$local_name"
-          }
-          fetch_public data/live/manifest.json manifest.json 1048576
-          details_bytes="$(LIVE_MANIFEST="$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT/manifest.json" node --input-type=module -e "import fs from 'node:fs'; import { manifestBoundedPublicDetailsBytes } from './scripts/prepare-code-only-public-runtime.mjs'; const value=JSON.parse(fs.readFileSync(process.env.LIVE_MANIFEST,'utf8')).publicConditionDetailsBytes; process.stdout.write(String(manifestBoundedPublicDetailsBytes(value)));")"
-          fetch_public data/live/public-conditions.json public-conditions.json 33554432
-          fetch_public data/live/public-condition-details.json public-condition-details.json "$details_bytes"
-          fetch_public data/live/coastal-parts-v2.json coastal-parts-v2.json 16777216
-          fetch_public data/zones.geojson zones.geojson 33554432
-          fetch_public data/water-level-station-routing.json water-level-station-routing.json 4194304
+          node scripts/acquire-code-only-public-snapshot.mjs acquire
           target_reference="$(jq -er '.productionReferenceAt | select(type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00(.000)?Z$"))' "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT/manifest.json")"
           echo "target_reference=$target_reference" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RECOVER_PUBLIC_RUN_ID: ${{ inputs.recover_public_run_id }}
 
       - name: Download exact public maintenance handoff
         if: inputs.recover_public_run_id != ''
@@ -314,6 +304,7 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/ravscore-operational-activation.mjs read --output "$RAVRADAR_OPERATIONAL_WORK/current.json"
+          node scripts/acquire-code-only-public-snapshot.mjs assert-current
           for field in model status bindingCurrent centralVersion initialCutoverRequired legacySourceRequired sourceHead activeImplementationClosureSha256 deploymentId; do
             output_name="$(printf '%s' "$field" | sed -E 's/([A-Z])/_\L\1/g')"
             echo "$output_name=$(jq -r --arg field "$field" 'if has($field) then .[$field] else "" end' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"

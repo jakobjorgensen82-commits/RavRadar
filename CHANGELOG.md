@@ -1,3 +1,10 @@
+# Lokal 4.0.562 – 2026-10-10
+
+- Afgrænser normal kode-only-transport til det allerede forseglede Pages-artifact ved præcis central/offentlig identitet. De seks filer og deres grænser samt alle efterfølgende genbrugs-/original-/modelkontroller bevares; ingen automatisk nyere kilde, alternativ destination eller providerhentning.
+- Ny samlet 360-sekundersfrist og ny streaminggrænse under 10 milliarder dekodede bytes. Den gamle 60-sekundersgrænse var pr. curl-forsøg, ikke samlet. Pages garanterer ikke deployment over 1 GB; en læsergrænse er ikke kapacitetsbevis.
+- Supplerer normal fil-/HTTP-/størrelseslogning med faktiske udtrukne størrelser og sikre fejlgrunde; bevarer fuld EOF/CRC, præcis rå manifestkontrol og private arbejdsrester ved usikker afslutning. Ingen tar-fil eller komplet website udtrækkes til disk.
+- Lokal integration og Node-måltest med fire direkte kildevalgsprøver består. 13 faktiske Linux-forløb, præcis kildekontrol og faktisk levering afventer. Historisk curl63-årsag er ikke bevist, og alle fem samlede mål er fortsat åbne.
+
 # Lokal 4.0.561 – 2026-10-10
 
 - Supplerende workflowrettelse: det eksisterende kode-only-kald logger fil, uændret størrelsesgrænse, HTTP-status, erklæret Content-Length, modtagne bytes og faktisk curl-version. Den eksisterende måltest består; ingen ekstra læsning eller genkørsel følger. PR #551 er flettet ind efter præcis kildekontrol. Det efterfølgende deploy stoppede før produktionsskrivning, og den historiske transportårsag er fortsat åben. Dette er ikke offentlig levering af 561 eller afslutning af de fem samlede opgaver.
