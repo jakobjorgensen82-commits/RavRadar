@@ -1,10 +1,10 @@
-import { authEnabled, authIdentityEpoch, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.554";
-import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.554";
-import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.554";
-import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.554";
-import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.554";
-import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.554";
-import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.554";
+import { authEnabled, authIdentityEpoch, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.556";
+import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.556";
+import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.556";
+import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.556";
+import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.556";
+import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.556";
+import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.556";
 
 const pendingHistoryViews = new WeakMap();
 
@@ -114,6 +114,9 @@ async function showTripHistory(dialog, context) {
 }
 
 async function showAccountTripReport(dialog, context) {
+  const identity = authIdentityEpoch(), userId = currentSession()?.user?.id;
+  const isCurrentOwner = () => Boolean(userId) && authIdentityEpoch() === identity
+    && currentSession()?.user?.id === userId;
   dialog.close();
   try {
     const answer = await openAccountTripReportDialog({
@@ -123,15 +126,17 @@ async function showAccountTripReport(dialog, context) {
       zones: context.zones,
       coastalParts: context.coastalParts
     });
+    if (!isCurrentOwner()) throw new Error(t('account.reportFailed'));
     if (!dialog.open) dialog.showModal();
     if (!answer) return renderAccount(dialog, context);
     const report = buildAccountTripReport({ ...answer, tripId: crypto.randomUUID() });
     const result = await submitAccountTripReportObservation(toAccountObservationColumns(report));
+    if (!isCurrentOwner()) throw new Error(t('account.reportFailed'));
     const message = t(result.stored === 'remote' ? 'account.reportRemote' : 'account.reportQueued');
     renderAccount(dialog, context, message);
   } catch (error) {
     if (!dialog.open) dialog.showModal();
-    renderAccount(dialog, context, error?.message || t('account.reportFailed'));
+    renderAccount(dialog, context, isCurrentOwner() ? error?.message || t('account.reportFailed') : t('account.reportFailed'));
   }
 }
 

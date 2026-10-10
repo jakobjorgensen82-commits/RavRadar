@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import test from 'node:test';
+import vm from 'node:vm';
 import { createPublicPageResumeHandler } from '../js/core/public-page-resume.js';
 import { initializeUserDataSafety } from '../js/services/storage-safety.js';
 
@@ -118,14 +120,14 @@ async function storageHarness(check) {
       return request;
     } },
     localStorage: { get length() { return values.size; }, key: index => [...values.keys()][index],
-      getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) },
+      getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) },
     addEventListener: (name, listener) => listeners.set(name, listener),
     document: { visibilityState: 'visible', addEventListener: (name, listener) => listeners.set(name, listener) },
     setTimeout: callback => { timers.push(callback); return timers.length; }, clearTimeout() {}, setInterval() {},
   });
   console.warn = (...args) => warnings.push(args);
   const turn = () => new Promise(resolve => setImmediate(resolve));
-  try { await check({ values, transactions, listeners, timers, warnings, turn }); }
+  try { await check({ values, transactions, listeners, timers, warnings, turn, previous }); }
   finally {
     console.warn = oldWarn;
     for (const [name, descriptor] of original) {
@@ -187,5 +189,128 @@ for (const outcome of ['complete', 'write-abort', 'read-abort', 'request-error']
     }
   });
 }
+
+// Actual auth/logout and initializer; only browser storage, transaction events
+// and the logout HTTP response are synthetic. No real account or network.
+const authBody = (await fs.readFile(new URL('../js/services/auth-service.js', import.meta.url), 'utf8'))
+  .replace(/^import[^\n]+\r?\n/gm, '').replace(/^export\s+/gm, '');
+const authKey = 'ravradar-auth-session';
+const syntheticSession = JSON.stringify({
+  access_token: 'synthetic-access-only', refresh_token: 'synthetic-refresh-only',
+  expires_at: 9_999_999_999, user: { id: 'synthetic-owner' },
+});
+const nativeSetTimeout = globalThis.setTimeout, nativeClearTimeout = globalThis.clearTimeout;
+
+function snapshotAuthHarness() {
+  const timers = new Set(), calls = [], unexpected = [];
+  const scope = {
+    PUBLIC_CONFIG: { supabaseUrl: 'https://example.invalid', supabasePublishableKey: 'synthetic-public' },
+    localStorage: globalThis.localStorage, AbortController, DOMException,
+    setTimeout(callback, delay) {
+      const timer = nativeSetTimeout(() => { timers.delete(timer); callback(); }, delay);
+      timers.add(timer);
+      return timer;
+    },
+    clearTimeout(timer) { nativeClearTimeout(timer); timers.delete(timer); },
+    async fetch(url, options) {
+      calls.push({ url, method: options.method, authorization: options.headers.Authorization });
+      if (url !== 'https://example.invalid/auth/v1/logout' || options.method !== 'POST') {
+        unexpected.push(url);
+        throw new Error('UNEXPECTED_SYNTHETIC_AUTH_ROUTE');
+      }
+      return Response.json({});
+    },
+  };
+  vm.runInNewContext(`${authBody}\nthis.api = { signOut, currentSession };`, scope,
+    { filename: 'actual-auth-snapshot-readback.js' });
+  return {
+    api: scope.api, calls,
+    close() {
+      const leaked = timers.size;
+      for (const timer of timers) nativeClearTimeout(timer);
+      timers.clear();
+      assert.equal(leaked, 0, 'Actual logout must settle and clear its timeout.');
+      assert.deepEqual(unexpected, [], 'No unplanned HTTP route is accepted.');
+    },
+  };
+}
+
+async function completeSnapshotInitialization({ transactions, turn }) {
+  const initialization = initializeUserDataSafety();
+  await turn();
+  transactions[0].request.onsuccess();
+  transactions[0].oncomplete();
+  await turn();
+  transactions[1].request.onsuccess();
+  transactions[1].oncomplete();
+  const result = await initialization;
+  assert.equal(result.available, true);
+  return result;
+}
+
+await test('actual logout remains signed out after normal snapshot restore and fresh auth load', async () => {
+  await storageHarness(async context => {
+    const { values, previous, transactions } = context;
+    values.set(authKey, syntheticSession);
+    previous.values = Object.fromEntries(values);
+    const auth = snapshotAuthHarness();
+    let freshAuth;
+    try {
+      assert.equal(auth.api.currentSession().user.id, 'synthetic-owner');
+      await auth.api.signOut();
+      assert.deepEqual(auth.calls, [{ url: 'https://example.invalid/auth/v1/logout', method: 'POST', authorization: 'Bearer synthetic-access-only' }]);
+      assert.equal(auth.api.currentSession(), null);
+      assert.equal(values.has(authKey), false);
+      await completeSnapshotInitialization(context);
+      freshAuth = snapshotAuthHarness();
+      assert.equal(freshAuth.api.currentSession(), null, 'An old durable snapshot must not undo actual logout.');
+      assert.equal(values.has(authKey), false);
+      assert.equal(Object.hasOwn(transactions[1].snapshot.values, authKey), false);
+    } finally { freshAuth?.close(); auth.close(); }
+  });
+});
+
+await test('normal backup excludes credentials without changing the active auth session', async () => {
+  await storageHarness(async context => {
+    const { values, previous, transactions } = context;
+    values.set(authKey, syntheticSession);
+    values.set('ravradar-auth-session-setting', 'synthetic-noncredential-value');
+    previous.values[authKey] = '{"access_token":"synthetic-stale-only"}';
+    const auth = snapshotAuthHarness();
+    try {
+      const active = auth.api.currentSession();
+      await completeSnapshotInitialization(context);
+      assert.equal(values.get(authKey), syntheticSession, 'The active login remains byte-identical.');
+      assert.equal(auth.api.currentSession(), active);
+      assert.deepEqual(auth.calls, []);
+      assert.equal(transactions[1].snapshot.values['ravradar-observations-v2'], '[{"id":"synthetic-original"}]');
+      assert.equal(transactions[1].snapshot.values['ravradar-auth-session-setting'], 'synthetic-noncredential-value');
+      assert.equal(Object.hasOwn(transactions[1].snapshot.values, authKey), false, 'Authentication is not durable trip data.');
+    } finally { auth.close(); }
+  });
+});
+
+await test('normal restore preserves missing trip/outbox bytes and never replaces existing local data', async () => {
+  await storageHarness(async context => {
+    const { values, previous, transactions } = context;
+    const trip = '[{"id":"synthetic-pending-trip","samples":[]}]';
+    const outbox = '[{"id":"synthetic-pending-observation","pendingSync":true}]';
+    previous.values = {
+      'ravradar-trip-evidence-v2-pending': trip,
+      'ravradar-observation-outbox-v1': outbox,
+      'ravradar-observations-v2': '[{"id":"synthetic-stale-original"}]',
+      'foreign-key': 'not-ravradar', 'ravradar-null-value': null,
+    };
+    const result = await completeSnapshotInitialization(context);
+    assert.equal(result.restored, 2);
+    assert.equal(values.get('ravradar-trip-evidence-v2-pending'), trip);
+    assert.equal(values.get('ravradar-observation-outbox-v1'), outbox);
+    assert.equal(values.get('ravradar-observations-v2'), '[{"id":"synthetic-original"}]');
+    assert.equal(values.has('foreign-key'), false);
+    assert.equal(values.has('ravradar-null-value'), false);
+    assert.equal(values.has(authKey), false);
+    assert.deepEqual(transactions[1].snapshot.values, Object.fromEntries(values));
+  });
+});
 
 console.log('OK: Safari/bfcache-genoptagelse genoptegner en færdig forside og genindlæser kun efter en afbrudt opstart.');

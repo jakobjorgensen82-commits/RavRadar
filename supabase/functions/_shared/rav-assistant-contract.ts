@@ -227,14 +227,22 @@ const SCORE_FIND_QUESTIONS = Object.freeze({
     "så kan jeg stadig finde rav ved en lav ravscore",
     "og hvis tallet er lavt, kan jeg stadig finde rav",
     "kan jeg stadig finde rav hvis ravscore er lav",
+    "betyder lav ravscore, at jeg ikke kan finde rav",
+    "kan jeg finde rav, selvom scoren er lav",
+    "betyder en lav ravscore, at jeg ikke kan finde rav",
+    "kan jeg finde rav, selv om scoren er lav",
   ]),
   de: Object.freeze([
     "und wenn der wert niedrig ist, kann ich trotzdem bernstein finden",
     "kann ich bei einem niedrigen bernsteinscore trotzdem bernstein finden",
+    "bedeutet ein niedriger bernsteinscore, dass ich keinen bernstein finden kann",
+    "kann ich bernstein finden, obwohl der bernsteinscore niedrig ist",
   ]),
   en: Object.freeze([
     "and if the number is low, can i still find amber",
     "can i still find amber if amberscore is low",
+    "does a low amberscore mean i cannot find amber",
+    "can i find amber even if the amberscore is low",
   ]),
 });
 const SCORE_FIND_ANSWERS = Object.freeze({

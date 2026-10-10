@@ -1,12 +1,13 @@
-import { openTripEvidenceDialog } from '../ui/trip-evidence-dialog.js?v=4.0.554';
+import { openTripEvidenceDialog } from '../ui/trip-evidence-dialog.js?v=4.0.556';
+import { t } from '../i18n.js?v=4.0.556';
 import {
   beginTripEvidence,
   discardActiveTripEvidence,
   finishTripEvidence,
   loadActiveTripEvidence,
   markTripEvidenceStopped
-} from './trip-evidence-store.js?v=4.0.554';
-import { uploadPendingTripEvidence } from './trip-evidence-upload.js?v=4.0.554';
+} from './trip-evidence-store.js?v=4.0.556';
+import { uploadPendingTripEvidence } from './trip-evidence-upload.js?v=4.0.556';
 
 export function createTripEvidenceController({ storage = null, openDialog = openTripEvidenceDialog, persist = null } = {}) {
   if (typeof openDialog !== 'function') throw new Error('Turformularen mangler.');
@@ -14,6 +15,7 @@ export function createTripEvidenceController({ storage = null, openDialog = open
   const showCompletion = async ({ zones, coastalParts } = {}) => {
     const active = loadActiveTripEvidence(storage);
     if (!active?.stoppedAt) throw new Error('Turen skal stoppes, før den kan besvares.');
+    const activeSnapshot = JSON.stringify(active);
     const searchMinutes = Math.max(1, Math.round((Date.parse(active.stoppedAt) - Date.parse(active.startedAt)) / 60000));
     const answer = await openDialog({
       searchMinutes,
@@ -24,6 +26,9 @@ export function createTripEvidenceController({ storage = null, openDialog = open
       coastalParts
     });
     if (!answer) return { status: 'deferred', tripId: active.tripId };
+    if (JSON.stringify(loadActiveTripEvidence(storage)) !== activeSnapshot) {
+      throw new Error(t('trip.status.failed'));
+    }
     if (answer.action === 'discard') {
       discardActiveTripEvidence(storage);
       return { status: 'discarded', tripId: active.tripId };

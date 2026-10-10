@@ -363,6 +363,14 @@ try {
     ['de', 'Kann ich bei einem niedrigen BernsteinScore trotzdem Bernstein finden?'],
     ['en', 'And if the number is low, can I still find amber?'],
     ['en', 'Can I still find amber if AmberScore is low?'],
+    ['da', 'Betyder lav RavScore, at jeg ikke kan finde rav?'],
+    ['da', 'Kan jeg finde rav, selvom scoren er lav?'],
+    ['da', 'Betyder en lav RavScore, at jeg ikke kan finde rav?'],
+    ['da', 'Kan jeg finde rav, selv om scoren er lav?'],
+    ['de', 'Bedeutet ein niedriger BernsteinScore, dass ich keinen Bernstein finden kann?'],
+    ['de', 'Kann ich Bernstein finden, obwohl der BernsteinScore niedrig ist?'],
+    ['en', 'Does a low AmberScore mean I cannot find amber?'],
+    ['en', 'Can I find amber even if the AmberScore is low?'],
   ];
   const scoreFindAnswers = {
     da: 'En lav RavScore udelukker ikke et ravfund. Scoren beskriver modellerede forhold; den er ikke en målt fundchance og fortæller ikke, hvor meget rav du vil finde. Rav kan stadig være til stede fra tidligere opskyl eller lokale lagre.',
@@ -390,7 +398,7 @@ try {
   assert.equal((await send(scoreFindQuestions[0][1],'da',{})).status,409);
   assert.equal((await send(scoreFindQuestions[0][1],'da',undefined,'https://not-allowed.invalid')).status,403);
   assert.equal((await send(scoreFindQuestions[0][1],'fr')).status,400);
-  console.log('OK: actual Edge entry gives 16 whole-question low-score answers without quota/provider; 24 compound/qualified questions remain ordinary, and refusal/binding/origin/locale remain first.');
+  console.log('OK: actual Edge entry gives 32 whole-question low-score answers without quota/provider; 48 compound/qualified questions remain ordinary, and refusal/binding/origin/locale remain first.');
   assert.equal((await send('Hvad er rav?','da',{})).status,409);
   assert.equal((await send('Hvad er rav?','da',undefined,'https://not-allowed.invalid')).status,403);
   const oversized=await send('rav '.repeat(5000));

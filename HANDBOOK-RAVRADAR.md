@@ -1,10 +1,74 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.554
+**Håndbogsversion:** 4.0.556
 
-4.0.554 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+4.0.556 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.181 Klientens kontosvar, turformular og fejlmeddelelse
+
+Den lokale 4.0.556-kandidat afviser gamle profil- og rettighedssvar, hvis loginforløbet
+eller kontoen ændres, mens svaret hentes. Almindelig tokenfornyelse og første
+brugerhydrering bevares. En turformular kan ikke afslutte eller kassere en anden
+eller ændret aktiv tur; den nuværende lokale tur og kø bevares ved afvisning.
+Det er ikke en atomisk lås mellem faner eller bevis for serverens adgangskontrol.
+
+Ejersletningskommandoen kræver et faktisk tomt array ved genlæsning af Supabase-ture,
+før den må melde verificeret sletning. Fejlobjekter eller HTTP-/JSON-fejl er ikke
+bevis for tom lagring. Ingen faktisk sletning eller kontoskabning er gennemført.
+Spørg RavRadars yderste fejlgrænse viser en eksisterende oversat neutral besked
+frem for interne fejltekster og bevarer normale svar, genforsøg og indlæsningsstatus.
+
+En tur, der kun er lokal eller afventer serveren, må ikke meldes afleveret eller
+fjernes fra sin v2-kø. Genforsøg bevarer den oprindelige ejer, id, indhold og tid;
+kontoskift eller ændret indhold afvises før ny skrivning. Kvitteringen gælder den
+konkrete tur. En frisk baggrundskvittering kan kun afslutte den præcist matchende,
+uændrede v2-tur under samme ejer og loginforløb; en gammel synkroniseringsmarkør
+er ikke bevis. Anonyme ture overdrages ikke automatisk til en ny konto.
+
+Hvis den komplette tur er gemt, men oprydningen af den aktive tur afbrydes, må
+en ny besvarelse ikke overskrive den første rapport. Identisk genbesvarelse
+bevarer køens oprindelige bytes og genforsøger kun oprydningen; ændret indhold
+afvises med originalerne bevaret. Lagerfejl bevarer den første fejl. Dette er
+ikke fysisk browserholdbarhed eller atomisk samordning mellem faner.
+
+To samtidige indsendelser under første brugerhydrering genlæser den oprindelige
+tur efter hydreringen og bevarer dens første indsendelsestid. En ny lokal række
+må ikke overskrive den faktisk kvitterede original.
+
+Den normale lokale backup må ikke gemme eller gendanne loginoplysninger. En gammel sikkerhedskopi kunne tidligere genoprette et lokalt login efter faktisk logout; det er nu afvist både ved ny backup og ved genlæsning af eksisterende snapshots. Aktive login og de oprindelige tur-/kødata bevares. Tre nye prøver gennem den eksisterende normale opstartstest kontrollerer faktisk logout, frisk loginmodulindlæsning, backup uden credentials og tabsfri genlæsning. Dette er ikke bevis for serverens token-tilbagekaldelse eller fysisk sletning af gamle backupbytes ved en mislykket ny gemning.
+
+HTTP-success alene er ikke en gemmekvittering. Den normale indsendelse kræver et faktisk JSON-objekt med stored: true og samme oprindelige loginforløb efter hele svaret. Ugyldige svar, logout og nyt login til samme eller en anden konto bevarer indsendelsen; legitim tokenfornyelse består. Fjorten nye prøver gennem den faktiske controller, uploader og indsendelsesfunktion kontrollerer dette med egne kunstige input. Automatisk v2-oprydning er fortsat en særskilt kontrol, ikke en følge af HTTP-status.
+
+Spørg RavRadars eksisterende kontrollerede svar om lav score udvides med otte præcise hele spørgsmålsformer på dansk, tysk og engelsk, herunder to offentligt observerede danske fejlforløb. Svaret fastslår, at lav score ikke udelukker ravfund, men heller ikke er en målt fundchance. Sammensatte, private eller sted-/tidsafhængige spørgsmål må ikke matches som et fragment. Normale client/Edge-prøver giver 15 kontrollerede svar, 48 bindingsafvisninger, fem private afvisninger og 12 normale fail-closed-forløb; den eksisterende tyske trotzdem-misrouting er fortsat åben. Dette er ikke den brede vidensudvidelse eller bevis for fungerende ekstern AI.
+
+Oprydning efter turens kvittering er bundet til den faktisk sendte lokale rapport. Ændret indhold eller en modstridende dublet med samme tur-id bevares; harmløs nøgleorden og identiske dubletter accepteres uden tab af andre ture. To samtidige normale kald kan dele den samme friske serverkvittering uden en falsk fejl, men en allerede fjernet køpost accepteres kun gennem den faktiske indsendelsesfunktion med præcis tur, ejer og uændret loginforløb. En løs eller indpakket callbackkvittering giver ikke denne undtagelse. Femten nye målprøver består gennem samme normale controller, uploader og loginfunktioner. Denne kontrol giver ikke kontoovertagelse eller atomisk skrivning mellem faner; den særskilte normale baggrundsoprydning kræver den samme uændrede rapport og en frisk kvittering.
+
+Kontoens manuelle tur- og fundformular fastholder den ejer og det loginforløb, som åbnede formularen. Nyt login eller kontoskift under formularen må ikke sende den gamle besvarelse som den nye konto; et forsinket svar må heller ikke vise den gamle afleveringskvittering under et nyt login. Normal tokenfornyelse, annullering og gemning med efterfølgende visning i egen turlog bevares. Ti nye prøver bruger de faktiske login-, indsendelses- og kontofunktioner; syntetiske formularer og HTTP-svar er ikke installeret brugerdata- eller adgangskontrolbevis.
+
+Et uafsluttet login-, signup-, callback- eller logoutvalg må ikke lade nye profilopslag
+eller turindsendelser låne det tidligere login. Alle tre normale indsendelsesfunktioner
+afviser dette før lokal gemning. Manuel efterregistrering fastholder også det oprindelige
+login gennem første brugerhydrering. Udløbet, allerede kendt login bevarer offline-gemning;
+normal tokenfornyelse er ikke et kontoskift. Færdige login afklares før deres normale
+notifikationer. Gamle callbacks, fornyelser og oprydning kan ikke frigive et nyere kontovalg;
+lager- og notifikationsfejl bevarer den første fejl og eksisterende sessionsadfærd.
+Det er ikke atomisk beskyttelse mellem faner eller installeret adgangskontrolbevis.
+
+Normal opstart og online-genforsøg kan nu afslutte den uændrede bevarede v2-tur efter en direkte, frisk JSON-kvittering med stored: true. Den oprindelige ejer, loginforløb, tur-id, indhold og indsendelsestid skal stadig passe, og den samme lokale observation og outboxpost skal faktisk være afklaret. Den normale uploader reserverer hele sit eksisterende køudsnit før første ventepunkt, så også indpakkede callbacks og flere ventende ture bevarer deres legitime afslutningsforløb. Reservationerne er bundet til hver konkret rapport og frigives i egen finally; andre baggrundsture kan fortsat afsluttes. Ukendte eller modstridende kødata, kontoskift, manglende kvittering og ændret indhold bevares. En lokal oprydningsfejl ændrer ikke en faktisk gemt observation til uploadfejl. Fyrre nye målprøver og 22 relevante tidligere kontroller består lokalt gennem de faktiske normale kaldere. Dette er ikke atomisk samordning mellem faner eller installeret serverbevis.
+
+198 relevante brugerdata- og 12 UI-målprøver består lokalt. De seks nye mål nås én gang gennem
+den eksisterende normale sourcegruppe. Begge vejrbundles, scoreformel, vejrdata,
+geometri og centrale bindingsregler er uændrede. Den tidligere head har præcis grøn
+GitHub-kontrol; den nye funktionelle head skal kontrolleres særskilt. Installation,
+fungerende ekstern AI og offentlig effekt er endnu ikke bevist.
+Den statiske SQL-håndbogskopi er kun en lokal kildefil, ikke en installation.
+
+Hele strøm-/scoreovergangen, vejrhentningsrevisionen, varig brugerdata, bred
+assistentviden og selvstændig drift uden Codex er stadig åbne. Ejeren kræver
+parallel delegation, men hovedagenten koordinerer sikker integration og levering.
+Aktiv vejrhentning må ikke afbrydes eller konkurrere med produktionsændringer.
 
 ## 89.176 Afsluttet DMI-gemning før næste skrivning
 

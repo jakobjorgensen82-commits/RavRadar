@@ -46,5 +46,6 @@ if (remainingD1.length) throw new Error('D1-verifikationen fandt fortsat en turp
 const supabaseVerify = await fetch(`${supabaseUrl}/rest/v1/observations?select=id&user_id=eq.${encodeURIComponent(userId)}&limit=1`, {
   headers: { apikey: serviceKey, authorization: `Bearer ${serviceKey}` },
 });
-if (!supabaseVerify.ok || (await supabaseVerify.json()).length) throw new Error('Supabase-verifikationen fandt fortsat en turpost.');
+const remainingSupabase = supabaseVerify.ok ? await supabaseVerify.json() : null;
+if (!Array.isArray(remainingSupabase) || remainingSupabase.length) throw new Error('Supabase-verifikationen kunne ikke bekræfte, at ejerens ture er slettet.');
 console.log(`Ejerens turdata er slettet og verificeret uden payloadudskrift. D1 slettede ${deletedFromD1} poster; Supabase er tom for ejeren.`);

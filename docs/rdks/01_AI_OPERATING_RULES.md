@@ -1,5 +1,15 @@
 # AI operating rules
 
+## Aktuel menneskelig delegation og leveringsgrænse
+
+Ejeren kræver parallelle, afgrænsede delegationer på strøm/score, vejrhentningsrevision,
+brugerdata, Spørg RavRadar og selvstændig drift uden Codex. Genbrug agenter og
+eksisterende isolerede checkouts; undgå overlappende ændringer. Hovedagenten ejer
+samlet integration og produktionsskrivning. Arbejd ikke i cb79. Delegation giver
+ingen nye data-, diagnose-, installations-, destinations-, manuel-vejrhentnings-,
+cron- eller revisionsaktiveringstilladelser. Ingen produktionsændring under aktiv
+writer. Alle fem målområder er fortsat åbne, og lokale måltests er ikke levering.
+
 ## Før arbejdet
 - Læs `AGENTS.md`, `00_READ_FIRST.md`, `90_INDEX/CURRENT_TRUTH.md` og `90_INDEX/IMPLEMENTATION_STATUS.md`.
 - Find relevante aktive beslutninger, krav, features og issues.

@@ -1,0 +1,1275 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import test from 'node:test';
+import vm from 'node:vm';
+import * as trip from '../js/services/trip-evidence-contract.js';
+import * as quality from '../js/services/calibration-eligibility.js';
+import * as model from '../js/core/ravscore-model-contract.js';
+import * as account from '../js/services/account-trip-report-contract.js';
+import * as store from '../js/services/trip-evidence-store.js';
+import { formatDateTime, formatNumber, t } from '../js/i18n.js';
+import { openTripEvidenceDialog } from '../js/ui/trip-evidence-dialog.js';
+import { listPendingTripEvidence, tripEvidenceStorageKeys } from '../js/services/trip-evidence-store.js';
+
+// Actual controller/uploader/auth/service bodies share one login fixture in the
+// existing VM seam. Only HTTP, browser storage and timer ownership are synthetic.
+const source = file => fs.readFileSync(new URL(file, import.meta.url), 'utf8')
+  .replace(/^import[\s\S]*?;\r?\n/gm, '').replace(/^export\s+/gm, '');
+const authBody = source('../js/services/auth-service.js');
+const serviceBody = source('../js/services/observation-service.js');
+const uploaderBody = source('../js/services/trip-evidence-upload.js');
+const controllerBody = source('../js/services/trip-evidence-controller.js');
+const accountBody = source('../js/ui/account-panel.js');
+const A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', B = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const firstTrip = '11111111-1111-4111-8111-111111111111';
+const secondTrip = '22222222-2222-4222-8222-222222222222';
+const binding = model.ravScoreModelBinding();
+const start = id => ({ tripId: id, startedAt: '2026-08-23T06:00:00.000Z', mode: 'waders',
+  zoneId: 'DK-B04-12', coastalPartId: 'DK-B04-12-P01', forecastCalibrationEligible: true, dataQualityFlags: [],
+  forecastSnapshot: { id: 'rr-synthetic-210', issuedAt: '2026-08-23T05:00:00.000Z',
+    validAt: '2026-08-23T06:00:00.000Z', capturedAt: '2026-08-23T06:00:00.000Z' },
+  calibrationFeatures: { modelVersion: binding.modelId, appVersion: '4.0.317', modelStateVersion: binding.stateSchemaVersion,
+    modelVariantId: binding.variantId, modelProfileId: binding.profileId, modelComponentSchemaId: binding.componentSchemaId,
+    modelExplanationSchemaId: binding.explanationSchemaId, modelRankingPolicyId: binding.rankingPolicyId,
+    modelBestTimePolicyId: binding.bestTimePolicyId, modelPresentationPolicyId: binding.presentationPolicyId,
+    modelContractSha256: binding.modelContractSha256, modelBundleSha256: binding.modelBundleSha256,
+    totalScore: 50, scoreBoundLower: 50, scoreBoundUpper: 50, scoreBoundModelUncertaintyPoints: 0,
+    scoreBoundRawLower: 50, scoreBoundRawUpper: 50, historyCoverageHours: 48, scoreQuality: 'FULL_HISTORY',
+    scoreSemantics: 'EXACT_POINT_SCORE', scoreCalibrationEligible: true, conservativeTailResetApplied: false,
+    historyReasonCodes: [], huntabilityScore: 50, transportScore: 50, mobilisationScore: 50, reasonCodes: [] } });
+const stop = { endedAt: '2026-08-23T07:00:00.000Z' };
+const answer = { zoneId: 'DK-B04-12', coastalPartId: 'DK-B04-12-P01', searchCoverage: 'normal', found: false, grams: null };
+const sessionFor = owner => ({ access_token: 'synthetic-token', refresh_token: 'synthetic-refresh',
+  expires_at: 9_999_999_999, user: { id: owner } });
+const payload = id => trip.toObservationTripColumns(trip.completeTripEvidence(trip.createTripStartRecord(start(id)), { ...answer, ...stop }));
+const clean = value => JSON.parse(JSON.stringify(value));
+
+function harness(owner = A, hydrated = true) {
+  const values = new Map(owner ? [['ravradar-auth-session', JSON.stringify(hydrated ? sessionFor(owner) : { ...sessionFor(owner), user: null })]] : []);
+  const timers = new Set();
+  const state = { failSubmit: true, nextOwner: owner, submits: [], writes: [], failWrite: null, requests: [] };
+  const storage = { values, getItem: key => values.get(key) ?? null,
+    setItem(key, value) { state.writes.push(key); if (state.failWrite?.key === key) throw state.failWrite.error; values.set(key, String(value)); },
+    removeItem: key => values.delete(key) };
+  const config = { supabaseUrl: 'https://example.invalid', supabasePublishableKey: 'synthetic-public' };
+  const fetch = async (input, options) => {
+    const url = new URL(input); assert.equal(url.origin, config.supabaseUrl);
+    state.requests.push(url.pathname + url.search);
+    if (state.authTransport && url.pathname.startsWith('/auth/v1/')) return state.authTransport(url, options);
+    if (url.pathname === '/rest/v1/profiles') return Response.json([{ id: url.searchParams.get('id')?.slice(3) || owner, role: 'user', is_active: true }]);
+    if (url.pathname === '/auth/v1/user') {
+      state.hydration.reached(); await state.hydration.promise;
+      return Response.json({ id: owner });
+    }
+    if (url.pathname === '/auth/v1/logout') return Response.json({});
+    if (url.pathname === '/auth/v1/token') return Response.json(sessionFor(state.nextOwner));
+    if (url.pathname === '/functions/v1/submit-observation') {
+      state.submits.push(options.body);
+      if (state.hold) { state.hold.reached(); await state.hold.promise; }
+      return state.submitResponse ?? { ok: !state.failSubmit, status: state.failSubmit ? 503 : 200, json: async () => ({ stored: true }) };
+    }
+    assert.equal(url.pathname, '/functions/v1/trip-log');
+    return Response.json({ rows: [], snapshot_at: '2026-10-09T22:00:00.000Z', next_cursor: null });
+  };
+  const authScope = { PUBLIC_CONFIG: config, localStorage: storage, fetch, AbortController, DOMException, URLSearchParams,
+    location: { hash: '', pathname: '/', search: '' }, history: { replaceState() {} },
+    setTimeout(callback, delay) { const timer = setTimeout(() => { timers.delete(timer); callback(); }, delay); timers.add(timer); return timer; },
+    clearTimeout(timer) { clearTimeout(timer); timers.delete(timer); } };
+  vm.runInNewContext(`${authBody}\nthis.api={authEnabled,authIdentityEpoch,currentSession,requireFreshSession,authorizedFetch,signOut,signInWithPassword,refreshSession,signUpWithPassword,consumeAuthCallback,getCurrentProfile,sendMagicLink,onAuthChange,...(typeof assertAuthIdentitySettled === 'function' ? { assertAuthIdentitySettled } : {})};`, authScope);
+  const auth = authScope.api;
+  const serviceScope = { ...trip, ...quality, ...model, ...account, ...auth, ...store,
+    PUBLIC_CONFIG: config, localStorage: storage, fetch, crypto, structuredClone, performance, setTimeout,
+    Date: class extends Date { constructor(...args) { super(...(args.length || state.clockMs === undefined ? args : [state.clockMs++])); } },
+    window: { addEventListener(name, listener) { (state.listeners ??= new Map()).set(name, listener); } } };
+  vm.runInNewContext(`${serviceBody}\nthis.api={reserveTripEvidenceUpload,submitObservation,submitTripEvidenceObservation,syncPendingObservations,getLocalObservations,getObservationSyncStatus,remoteObservationPayload,submitAccountTripReportObservation,getOwnTripObservations};`, serviceScope);
+  const service = serviceScope.api;
+  const uploaderScope = { ...trip, ...store, ...auth, reserveTripEvidenceUpload: service.reserveTripEvidenceUpload, submitTripEvidenceObservation: service.submitTripEvidenceObservation };
+  vm.runInNewContext(`${uploaderBody}\nthis.api={uploadPendingTripEvidence};`, uploaderScope);
+  const controllerScope = { ...store, ...uploaderScope.api, t, openTripEvidenceDialog };
+  vm.runInNewContext(`${controllerBody}\nthis.api={createTripEvidenceController};`, controllerScope);
+  const { createTripEvidenceController } = controllerScope.api;
+  const controller = persist => createTripEvidenceController({ storage, openDialog: async () => answer,
+    persist: persist ?? service.submitTripEvidenceObservation });
+  return { state, storage, service, controller, auth, authLocation: authScope.location, createController: createTripEvidenceController,
+    async login(next) { await auth.signOut(); state.nextOwner = next; await auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only'); },
+    finish() { const leaked = timers.size; for (const timer of timers) clearTimeout(timer); assert.equal(leaked, 0); } };
+}
+
+for (const [label, receipt, queued] of [
+  ['pending', { stored: 'pending' }, true], ['local', { stored: 'local' }, true],
+  ['remote', { stored: 'remote' }, false], ['undefined legacy', undefined, false],
+  ['opaque numeric legacy', 1, false], ['opaque null legacy', null, false], ['opaque object legacy', {}, false],
+]) test(`normal uploader receipt ${label}`, async () => {
+  const h = harness();
+  try {
+    const controller = h.controller(async () => receipt); controller.start(start(firstTrip));
+    const result = await controller.stop(stop);
+    assert.equal(result.status, queued ? 'queued' : 'submitted');
+    assert.equal(listPendingTripEvidence(h.storage).length, queued ? 1 : 0);
+    assert.equal(h.state.submits.length, 0);
+  } finally { h.finish(); }
+});
+
+for (const asynchronous of [false, true]) test(`normal ${asynchronous ? 'rejection' : 'throw'} preserves first failure and queued evidence`, async () => {
+  const h = harness(), error = new Error('synthetic-first-error');
+  try {
+    const controller = h.controller(() => { if (asynchronous) return Promise.reject(error); throw error; });
+    controller.start(start(firstTrip)); assert.equal((await controller.stop(stop)).status, 'queued');
+    const before = h.storage.getItem('ravradar-trip-evidence-v2-pending');
+    const retried = await controller.flush();
+    assert.equal(retried.failures[0].message, error.message);
+    assert.equal(h.storage.getItem('ravradar-trip-evidence-v2-pending'), before);
+  } finally { h.finish(); }
+});
+
+test('actual503 service receipt stays queued; same-owner200 retry preserves exact immutable body', async () => {
+  const h = harness();
+  try {
+    const controller = h.controller(); controller.start(start(firstTrip));
+    assert.equal((await controller.stop(stop)).status, 'queued');
+    const original = clean(h.service.getLocalObservations()[0]);
+    assert.equal(listPendingTripEvidence(h.storage).length, 1);
+    assert.equal(h.service.getLocalObservations().length, 1); assert.equal(h.service.getObservationSyncStatus().pending, 1);
+    h.state.failSubmit = false;
+    const retried = await controller.flush(); assert.equal(retried.submitted, 1); assert.equal(retried.failed, 0);
+    assert.equal(listPendingTripEvidence(h.storage).length, 0);
+    assert.equal(h.service.getObservationSyncStatus().pending, 0);
+    assert.equal(h.service.getLocalObservations()[0].submitted_at, original.submitted_at);
+    assert.equal(h.state.submits.length, 2); assert.equal(h.state.submits[1] === h.state.submits[0], true, 'Retry sends exact original body');
+  } finally { h.finish(); }
+});
+
+for (const originalOwner of [A, null]) test(`existing ${originalOwner ? 'owner' : 'anonymous'} row cannot be adopted by a new login`, async () => {
+  const h = harness(originalOwner);
+  try {
+    await h.service.submitTripEvidenceObservation(payload(firstTrip));
+    await h.login(B); h.state.writes.length = 0;
+    const local = h.storage.getItem('ravradar-observations-v2'), pending = h.storage.getItem('ravradar-observation-outbox-v1');
+    await assert.rejects(h.service.submitTripEvidenceObservation(payload(firstTrip)), /konto|Konto/);
+    assert.equal(h.state.submits.length, 1); assert.equal(h.state.writes.length, 0);
+    assert.equal(h.storage.getItem('ravradar-observations-v2'), local);
+    assert.equal(h.storage.getItem('ravradar-observation-outbox-v1'), pending);
+    assert.equal(h.service.getLocalObservations().some(row => row.user_id === B), false);
+  } finally { h.finish(); }
+});
+
+test('changed existing content rejects before writes or HTTP; key order alone is compatible', async () => {
+  const h = harness();
+  try {
+    const columns = payload(firstTrip); await h.service.submitTripEvidenceObservation(columns);
+    h.state.writes.length = 0; const before = JSON.stringify([...h.storage.values]);
+    await assert.rejects(h.service.submitTripEvidenceObservation({ ...columns, search_coverage: 'thorough' }));
+    assert.equal(h.state.writes.length, 0); assert.equal(h.state.submits.length, 1);
+    assert.equal(JSON.stringify([...h.storage.values]), before);
+    const reordered = { ...columns, calibration_features: Object.fromEntries(Object.entries(columns.calibration_features).reverse()) };
+    h.state.failSubmit = false;
+    assert.equal((await h.service.submitTripEvidenceObservation(reordered)).stored, 'remote');
+    assert.equal(h.state.submits[1] === h.state.submits[0], true, 'Key ordering never changes the retried body');
+  } finally { h.finish(); }
+});
+
+test('a successfully sent exact row is remote even when another owner remains pending', async () => {
+  const h = harness(B);
+  try {
+    await h.service.submitTripEvidenceObservation(payload(firstTrip));
+    await h.login(A); h.state.failSubmit = false;
+    const result = await h.service.submitTripEvidenceObservation(payload(secondTrip));
+    assert.equal(result.status.pending, 1); assert.equal(result.stored, 'remote');
+    assert.equal(h.service.getLocalObservations().find(row => row.trip_id === secondTrip).sync_status, 'synced');
+  } finally { h.finish(); }
+});
+
+test('existing-row storage failure preserves first exception and original local bytes', async () => {
+  const h = harness();
+  try {
+    await h.service.submitTripEvidenceObservation(payload(firstTrip));
+    const original = h.storage.getItem('ravradar-observations-v2');
+    const error = new Error('synthetic-outbox-quota');
+    h.state.failWrite = { key: 'ravradar-observation-outbox-v1', error };
+    await assert.rejects(h.service.submitTripEvidenceObservation(payload(firstTrip)), value => value === error);
+    assert.equal(h.storage.getItem('ravradar-observations-v2') === original, true, 'A failed outbox write cannot overwrite original local bytes');
+    assert.equal(h.state.submits.length, 1);
+  } finally { h.finish(); }
+});
+
+test('restored previously-synced row still requires a fresh normal server receipt', async () => {
+  const h = harness();
+  try {
+    h.state.failSubmit = false;
+    assert.equal((await h.service.submitTripEvidenceObservation(payload(firstTrip))).stored, 'remote');
+    const original = h.state.submits[0]; h.state.failSubmit = true;
+    assert.equal((await h.service.submitTripEvidenceObservation(payload(firstTrip))).stored, 'pending');
+    assert.equal(h.state.submits.length, 2); assert.equal(h.state.submits[1] === original, true, 'Reconfirmation sends exact original body');
+    assert.equal(h.service.getObservationSyncStatus().pending, 1);
+  } finally { h.finish(); }
+});
+
+test('a conflicting same-id outbox entry is preserved and rejected before retry I/O', async () => {
+  const h = harness();
+  try {
+    await h.service.submitTripEvidenceObservation(payload(firstTrip));
+    const queued = JSON.parse(h.storage.getItem('ravradar-observation-outbox-v1'));
+    queued[0].search_coverage = 'thorough';
+    h.storage.setItem('ravradar-observation-outbox-v1', JSON.stringify(queued));
+    const before = JSON.stringify([...h.storage.values]); h.state.writes.length = 0;
+    await assert.rejects(h.service.submitTripEvidenceObservation(payload(firstTrip)));
+    assert.equal(h.state.submits.length, 1); assert.equal(h.state.writes.length, 0);
+    assert.equal(JSON.stringify([...h.storage.values]) === before, true);
+  } finally { h.finish(); }
+});
+
+for (const change of ['same-owner-new-login', 'different-local-receipt']) {
+  test(`awaited normal retry cannot acknowledge ${change}`, async () => {
+    const h = harness(); let release, reached;
+    const ready = new Promise(resolve => { reached = resolve; });
+    const held = new Promise(resolve => { release = resolve; });
+    let pending;
+    try {
+      await h.service.submitTripEvidenceObservation(payload(firstTrip));
+      h.state.failSubmit = false; h.state.hold = { promise: held, reached };
+      pending = h.service.submitTripEvidenceObservation(payload(firstTrip))
+        .then(value => ({ value }), error => ({ error }));
+      await ready;
+      if (change === 'same-owner-new-login') await h.login(A);
+      else {
+        const rows = clean(h.service.getLocalObservations());
+        rows[0].search_coverage = 'thorough'; rows[0].sync_status = 'synced';
+        h.storage.setItem('ravradar-observations-v2', JSON.stringify(rows));
+        h.storage.setItem('ravradar-observation-outbox-v1', '[]');
+      }
+      release(); const result = await pending;
+      if (change === 'same-owner-new-login') {
+        assert.match(result.error?.message ?? '', /Kontoen blev ændret/);
+        assert.equal(h.service.getObservationSyncStatus().pending, 1);
+      } else {
+        assert.equal(result.value?.stored, 'pending');
+        assert.equal(h.service.getLocalObservations()[0].search_coverage, 'thorough');
+      }
+    } finally { release(); if (pending) await pending; h.finish(); }
+  });
+}
+
+// Combined normal store/intent/receipt boundary, not another isolated receipt stub.
+test('interrupted completion preserves its first report through pending receipt and account switch', async () => {
+  const h = harness(), keys = tripEvidenceStorageKeys;
+  const remove = h.storage.removeItem, error = new Error('synthetic-active-cleanup-stop');
+  const make = value => h.createController({ storage: h.storage, openDialog: async () => value,
+    persist: h.service.submitTripEvidenceObservation });
+  try {
+    h.storage.removeItem = key => { if (key === keys.active) throw error; remove(key); };
+    const controller = make(answer); controller.start(start(firstTrip));
+    await assert.rejects(controller.stop(stop), value => value === error);
+    const firstQueue = h.storage.getItem(keys.pending);
+    assert.equal(h.state.submits.length, 0);
+    h.storage.removeItem = remove;
+    await assert.rejects(make({ ...answer, found: true, grams: 5 }).resume());
+    assert.equal(h.storage.getItem(keys.pending), firstQueue); assert.equal(h.state.submits.length, 0);
+    assert.equal((await make(answer).resume()).status, 'queued');
+    assert.equal(h.storage.getItem(keys.pending), firstQueue);
+    const originalBody = h.state.submits[0];
+    await h.login(B); assert.equal((await make(answer).flush()).failed, 1);
+    assert.equal(h.state.submits.length, 1); assert.equal(h.storage.getItem(keys.pending), firstQueue);
+    await h.login(A); h.state.failSubmit = false;
+    assert.equal((await make(answer).flush()).submitted, 1);
+    assert.equal(h.state.submits[1], originalBody);
+    assert.equal(listPendingTripEvidence(h.storage).length, 0);
+    assert.equal(h.service.getObservationSyncStatus().pending, 0);
+  } finally { h.storage.removeItem = remove; h.finish(); }
+});
+
+test('shared initial hydration preserves the first immutable row through both normal submits', async () => {
+  const h = harness(A, false);
+  let release, reached, first, second;
+  const ready = new Promise(resolve => { reached = resolve; });
+  const held = new Promise(resolve => { release = resolve; });
+  h.state.hydration = { promise: held, reached };
+  h.state.clockMs = Date.parse('2026-10-10T00:00:00.000Z');
+  try {
+    const columns = payload(firstTrip); h.state.failSubmit = false;
+    first = h.service.submitTripEvidenceObservation(columns); await ready;
+    second = h.service.submitTripEvidenceObservation(columns);
+    release(); const results = await Promise.all([first, second]);
+    assert.equal(h.state.submits.length, 1, 'The shared normal drain sends the original once');
+    const firstSubmittedAt = JSON.parse(h.state.submits[0]).submitted_at;
+    const local = h.service.getLocalObservations()[0];
+    assert.equal(local.submitted_at, firstSubmittedAt, 'Hydration continuation retains the first committed row');
+    assert.equal(local.sync_status, 'synced');
+    assert.equal(results.every(result => result.stored === 'remote'), true);
+    assert.equal(h.service.getObservationSyncStatus().pending, 0);
+  } finally { release(); await Promise.allSettled([first, second].filter(Boolean)); h.finish(); }
+});
+
+const pendingKey = 'ravradar-trip-evidence-v2-pending';
+const turn = () => new Promise(resolve => setImmediate(resolve));
+
+test('two real concurrent uploader callers accept one identical fresh remote receipt', async () => {
+  const h = harness(); let release, first, second;
+  const body = new Promise(resolve => { release = resolve; });
+  let reads = 0;
+  try {
+    h.state.submitResponse = { ok: true, status: 200, async json() { reads += 1; return body; } };
+    const controller = h.controller(); controller.start(start(firstTrip));
+    first = controller.stop(stop);
+    await turn();
+    assert.equal(reads, 1, 'First actual caller is waiting in the real JSON-body boundary');
+    second = controller.flush();
+    await turn();
+    assert.equal(h.state.submits.length, 1, 'Second normal call joins the same real drain');
+    release({ stored: true });
+    const [completion, flush] = await Promise.all([first, second]);
+    assert.equal(completion.status, 'submitted');
+    assert.equal(h.service.getObservationSyncStatus().pending, 0);
+    assert.equal(JSON.parse(h.storage.getItem(pendingKey)).length, 0);
+    assert.equal(flush.failed, 0, 'A second actual caller must not label the identical acknowledged trip queued');
+    assert.equal(flush.submitted, 1);
+    assert.equal(h.state.submits.length, 1);
+  } finally { release({ stored: true }); await Promise.allSettled([first, second].filter(Boolean)); h.finish(); }
+});
+
+for (const replacement of ['changed same-id evidence', 'conflicting duplicate same-id evidence']) {
+  test(`actual uploader preserves ${replacement} arriving during its body wait`, async () => {
+    const h = harness(); let release, pending;
+    const body = new Promise(resolve => { release = resolve; });
+    let reads = 0;
+    try {
+      h.state.submitResponse = { ok: true, status: 200, async json() { reads += 1; return body; } };
+      const controller = h.controller(); controller.start(start(firstTrip));
+      pending = controller.stop(stop);
+      await turn();
+      assert.equal(reads, 1);
+      const rows = JSON.parse(h.storage.getItem(pendingKey));
+      const changed = { ...rows[0], searchCoverage: 'thorough' };
+      // Synthetic bank mutation stands for a changed/legacy local value; this
+      // is not evidence that another current controller creates the conflict.
+      const preserved = JSON.stringify(replacement.startsWith('conflicting') ? [rows[0], changed] : [changed]);
+      h.storage.setItem(pendingKey, preserved);
+      release({ stored: true });
+      const result = await pending;
+      assert.equal(h.service.getObservationSyncStatus().pending, 0);
+      assert.equal(h.service.getLocalObservations()[0].search_coverage, 'normal');
+      assert.equal(JSON.parse(h.state.submits[0]).search_coverage, 'normal');
+      assert.equal(h.storage.getItem(pendingKey) === preserved, true, 'An old exact server receipt cannot delete a different current record');
+      assert.equal(result.status, 'queued');
+      assert.equal(h.state.submits.length, 1);
+    } finally { release({ stored: true }); if (pending) await pending; h.finish(); }
+  });
+}
+
+test('control: local cleanup failure does not turn actual remote storage back into pending upload', async () => {
+  const h = harness(); let release, pending;
+  const body = new Promise(resolve => { release = resolve; });
+  let reads = 0;
+  const error = new Error('SYNTHETIC_FIRST_LOCAL_CLEANUP_FAILURE');
+  try {
+    h.state.submitResponse = { ok: true, status: 200, async json() { reads += 1; return body; } };
+    const controller = h.controller(); controller.start(start(firstTrip));
+    pending = controller.stop(stop);
+    await turn(); assert.equal(reads, 1);
+    const original = h.storage.getItem(pendingKey);
+    h.state.failWrite = { key: pendingKey, error };
+    release({ stored: true });
+    const result = await pending;
+    assert.equal(result.status, 'queued');
+    assert.equal(h.storage.getItem(pendingKey), original);
+    assert.equal(h.service.getObservationSyncStatus().pending, 0);
+    assert.equal(h.service.getLocalObservations()[0].sync_status, 'synced');
+    assert.equal(h.state.submits.length, 1);
+    h.state.failWrite = null;
+  } finally { release({ stored: true }); if (pending) await pending; h.state.failWrite = null; h.finish(); }
+});
+
+for (const kind of ['explicit false', 'stale typed receipt', 'opaque', 'wrapped actual service']) {
+  test(`missing queue rejects ${kind} callback without a fresh direct receipt`, async () => {
+    const h = harness();
+    try {
+      h.state.failSubmit = false;
+      const controller = h.controller(async columns => {
+        const receipt = kind === 'wrapped actual service'
+          ? await h.service.submitTripEvidenceObservation(columns)
+          : kind === 'stale typed receipt' ? { stored: 'remote', row: { ...columns, id: firstTrip, user_id: A } }
+            : kind === 'explicit false' ? { stored: false } : undefined;
+        h.storage.removeItem(pendingKey);
+        return receipt;
+      });
+      controller.start(start(firstTrip));
+      assert.equal((await controller.stop(stop)).status, 'queued');
+      assert.equal(h.storage.getItem(pendingKey), null);
+      assert.equal(h.state.submits.length, kind === 'wrapped actual service' ? 1 : 0);
+    } finally { h.finish(); }
+  });
+}
+
+for (const transition of ['same-owner new login', 'other-owner new login', 'logout', 'same-login renewal']) {
+  test(`uploader intent rejects stale opaque receipt after ${transition}`, async () => {
+    const h = harness(); let release, pending, reached;
+    const ready = new Promise(resolve => { reached = resolve; });
+    const held = new Promise(resolve => { release = resolve; });
+    try {
+      const controller = h.controller(async () => { reached(); await held; });
+      controller.start(start(firstTrip)); pending = controller.stop(stop); await ready;
+      const original = h.storage.getItem(pendingKey);
+      if (transition === 'logout') await h.auth.signOut();
+      else if (transition === 'same-login renewal') await h.auth.refreshSession({ force: true });
+      else await h.login(transition === 'same-owner new login' ? A : B);
+      release(); const result = await pending;
+      const renewal = transition === 'same-login renewal';
+      assert.equal(result.status, renewal ? 'submitted' : 'queued');
+      assert.equal(h.storage.getItem(pendingKey), renewal ? '[]' : original);
+      assert.equal(h.state.submits.length, 0);
+    } finally { release(); if (pending) await pending; h.finish(); }
+  });
+}
+
+test('uploader permits legitimate initial owner hydration within the same login intent', async () => {
+  const h = harness(A, false); let release, reached, pending;
+  const ready = new Promise(resolve => { reached = resolve; });
+  const held = new Promise(resolve => { release = resolve; });
+  h.state.hydration = { promise: held, reached };
+  try {
+    h.state.failSubmit = false;
+    const identity = h.auth.authIdentityEpoch();
+    const controller = h.controller(); controller.start(start(firstTrip));
+    pending = controller.stop(stop); await ready;
+    assert.equal(h.auth.currentSession().user, null);
+    release(); assert.equal((await pending).status, 'submitted');
+    assert.equal(h.auth.authIdentityEpoch(), identity);
+    assert.equal(h.auth.currentSession().user.id, A);
+    assert.equal(h.service.getLocalObservations()[0].user_id, A);
+    assert.equal(h.storage.getItem(pendingKey), '[]');
+    assert.equal(h.state.submits.length, 1);
+  } finally { release(); if (pending) await pending; h.finish(); }
+});
+
+for (const variant of ['reordered keys', 'exact duplicate']) {
+  test(`guarded removal accepts harmless ${variant} without losing unrelated evidence`, async () => {
+    const h = harness(); let release, pending;
+    const held = new Promise(resolve => { release = resolve; });
+    let reads = 0;
+    try {
+      h.state.submitResponse = { ok: true, status: 200, async json() { reads += 1; return held; } };
+      const controller = h.controller(); controller.start(start(firstTrip));
+      pending = controller.stop(stop); await turn(); assert.equal(reads, 1);
+      const [original] = JSON.parse(h.storage.getItem(pendingKey));
+      const other = trip.completeTripEvidence(trip.createTripStartRecord(start(secondTrip)), { ...answer, ...stop });
+      const reordered = value => Array.isArray(value) ? value.map(reordered)
+        : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).reverse().map(([key, entry]) => [key, reordered(entry)])) : value;
+      h.storage.setItem(pendingKey, JSON.stringify(variant === 'exact duplicate'
+        ? [original, other, clean(original)] : [reordered(original), other]));
+      release({ stored: true }); assert.equal((await pending).status, 'submitted');
+      assert.deepEqual(JSON.parse(h.storage.getItem(pendingKey)), [other]);
+      assert.equal(h.state.submits.length, 1);
+    } finally { release({ stored: true }); if (pending) await pending; h.finish(); }
+  });
+}
+
+const reportAnswer = { startedAt: '2026-08-23T06:00:00.000Z', searchMinutes: 60, mode: 'waders',
+  zoneId: 'DK-B04-12', coastalPartId: 'DK-B04-12-P01', searchCoverage: 'normal', found: false, grams: null };
+const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; };
+
+function ui(h, form) {
+  const content = { innerHTML: '', querySelector: () => null };
+  const dialog = { open: true, querySelector: () => content,
+    close() { this.open = false; }, showModal() { this.open = true; } };
+  const scope = { ...h.auth, ...h.service, ...account, formatDateTime, formatNumber, t, ...quality, ...model, crypto,
+    openAccountTripReportDialog: () => form.promise };
+  vm.runInNewContext(`${accountBody}\nthis.api={showAccountTripReport,showTripHistory};`, scope);
+  return { dialog, content, ...scope.api };
+}
+
+async function transition(h, kind) {
+  if (kind === 'logout') await h.auth.signOut();
+  else if (kind === 'renewal') await h.auth.refreshSession({ force: true });
+  else if (kind !== 'unchanged') await h.login(kind === 'same-owner new login' ? A : B);
+}
+
+for (const kind of ['other-owner new login', 'same-owner new login', 'logout', 'renewal', 'unchanged', 'cancel after other login']) {
+  test(`manual account form original login intent: ${kind}`, async () => {
+    const h = harness(), form = deferred(), panel = ui(h, form); let operation;
+    try {
+      h.state.failSubmit = false;
+      operation = panel.showAccountTripReport(panel.dialog, {});
+      await turn(); assert.equal(panel.dialog.open, false, 'Actual account caller is awaiting its report dialog');
+      await transition(h, kind);
+      form.resolve(kind.startsWith('cancel') ? null : reportAnswer); await operation;
+      const permitted = kind === 'renewal' || kind === 'unchanged';
+      assert.equal(h.state.submits.length, permitted ? 1 : 0, 'A report opened under an old login cannot acquire the current owner');
+      assert.equal(h.service.getLocalObservations().length, permitted ? 1 : 0);
+      if (permitted) {
+        assert.equal(h.service.getLocalObservations()[0].user_id, A);
+        assert.equal(h.service.getObservationSyncStatus().pending, 0);
+        assert.ok(panel.content.innerHTML.includes(t('account.reportRemote')));
+        await panel.showTripHistory(panel.dialog, {});
+        assert.equal((panel.content.innerHTML.match(/class="trip-log-row"/g) || []).length, 1);
+      }
+    } finally { form.resolve(null); if (operation) await operation; h.finish(); }
+  });
+}
+
+for (const kind of ['other-owner new login', 'same-owner new login', 'logout', 'renewal']) {
+  test(`manual account report held response cannot acknowledge a stale login: ${kind}`, async () => {
+    const h = harness(), form = deferred(), panel = ui(h, form), body = deferred(); let operation, reads = 0;
+    try {
+      h.state.submitResponse = { ok: true, status: 200, async json() { reads += 1; return body.promise; } };
+      form.resolve(reportAnswer); operation = panel.showAccountTripReport(panel.dialog, {});
+      await turn(); assert.equal(reads, 1, 'Actual normal postRemote reaches the awaited body');
+      const originalOwner = h.service.getLocalObservations()[0].user_id;
+      assert.equal(originalOwner, A);
+      await transition(h, kind); body.resolve({ stored: true }); await operation;
+      assert.equal(h.state.submits.length, 1);
+      assert.equal(h.service.getLocalObservations()[0].user_id, A);
+      const acknowledged = panel.content.innerHTML.includes(t('account.reportRemote'))
+        || panel.content.innerHTML.includes(t('account.reportQueued'));
+      assert.equal(acknowledged, kind === 'renewal', 'A late old-report acknowledgment must not be presented under a new login');
+      assert.equal(h.service.getObservationSyncStatus().pending, kind === 'renewal' ? 0 : 1);
+    } finally { form.resolve(null); body.resolve({ stored: true }); if (operation) await operation; h.finish(); }
+  });
+}
+
+// The normal Edge returns { stored: true } only after its storage operation.
+// A successful HTTP status alone must never become a completed trip receipt.
+for (const [label, body] of [
+  ['missing stored', {}], ['false stored', { stored: false }],
+  ['string stored', { stored: 'true' }], ['numeric stored', { stored: 1 }],
+  ['null body', null], ['array body', []], ['malformed JSON', undefined],
+]) test(`stored receipt: 200 ${label} preserves both queues`, async () => {
+  const h = harness(); let reads = 0, originalQueue;
+  try {
+    h.state.submitResponse = { ok: true, status: 200, async json() {
+      reads += 1;
+      originalQueue = h.storage.getItem(tripEvidenceStorageKeys.pending);
+      if (label === 'malformed JSON') throw new SyntaxError('SYNTHETIC_UNSAFE_RESPONSE_DETAIL');
+      return body;
+    } };
+    const controller = h.controller(); controller.start(start(firstTrip));
+    const result = await controller.stop(stop);
+    assert.equal(result.status, 'queued');
+    assert.equal(reads, 1);
+    assert.equal(h.storage.getItem(tripEvidenceStorageKeys.pending), originalQueue);
+    assert.equal(h.service.getObservationSyncStatus().pending, 1);
+    const row = h.service.getLocalObservations()[0];
+    assert.equal(row.sync_status, 'pending');
+    assert.equal(row.sync_error, 'Turen kunne ikke sendes lige nu. Den bliver liggende på enheden, så du kan prøve igen.');
+    assert.equal(h.state.submits.length, 1);
+  } finally { h.finish(); }
+});
+
+for (const owner of [A, null]) test(`stored receipt: exact success preserves normal ${owner ? 'account' : 'anonymous'} submit`, async () => {
+  const h = harness(owner); let reads = 0;
+  try {
+    h.state.submitResponse = { ok: true, status: 200, async json() { reads += 1; return { stored: true }; } };
+    const controller = h.controller(); controller.start(start(firstTrip));
+    const result = await controller.stop(stop);
+    assert.equal(result.status, 'submitted');
+    assert.equal(reads, 1);
+    assert.equal(listPendingTripEvidence(h.storage).length, 0);
+    assert.equal(h.service.getObservationSyncStatus().pending, 0);
+    assert.equal(h.service.getLocalObservations()[0].user_id, owner);
+    assert.equal(JSON.parse(h.state.submits[0]).user_id, owner);
+    assert.equal(h.state.submits.length, 1);
+  } finally { h.finish(); }
+});
+
+for (const transition of ['logout', 'same-owner new login', 'other-owner new login', 'anonymous login', 'same-login renewal']) {
+  test(`held stored body: ${transition}`, async () => {
+    const h = harness(transition === 'anonymous login' ? null : A);
+    let reads = 0, release, pending, settled = false;
+    const held = new Promise(resolve => { release = resolve; });
+    try {
+      h.state.submitResponse = { ok: true, status: 200, async json() { reads += 1; return held; } };
+      const controller = h.controller(); controller.start(start(firstTrip));
+      pending = controller.stop(stop).then(result => { settled = true; return result; });
+      await new Promise(resolve => setImmediate(resolve));
+      assert.equal(reads, 1, 'Actual postRemote must reach the held JSON body.');
+      assert.equal(settled, false, 'No UI or storage acknowledgment precedes the body.');
+      const originalQueue = h.storage.getItem(tripEvidenceStorageKeys.pending);
+      const originalPayload = JSON.stringify(h.service.getLocalObservations()[0]);
+      const identity = h.auth.authIdentityEpoch();
+      if (transition === 'logout') await h.auth.signOut();
+      else if (transition === 'same-login renewal') await h.auth.refreshSession({ force: true });
+      else await h.login(transition === 'same-owner new login' ? A : B);
+      const renewal = transition === 'same-login renewal';
+      assert.equal(h.auth.authIdentityEpoch() === identity, renewal);
+      release({ stored: true });
+      const result = await pending;
+      assert.equal(result.status, renewal ? 'submitted' : 'queued');
+      assert.equal(h.service.getObservationSyncStatus().pending, renewal ? 0 : 1);
+      if (renewal) assert.equal(listPendingTripEvidence(h.storage).length, 0);
+      else {
+        assert.equal(h.storage.getItem(tripEvidenceStorageKeys.pending), originalQueue);
+        const row = h.service.getLocalObservations()[0];
+        const original = JSON.parse(originalPayload);
+        assert.equal(JSON.stringify(h.service.remoteObservationPayload(row)), JSON.stringify(h.service.remoteObservationPayload(original)));
+        assert.equal(row.sync_status, 'pending');
+      }
+      assert.equal(h.state.submits.length, 1);
+    } finally { release({ stored: true }); if (pending) await pending; h.finish(); }
+  });
+}
+
+// Additive to the existing actual root receipt/auth/service fixture.
+for (const choice of ['logout', 'login', 'same-owner login']) for (const caller of ['fresh', 'profile', 'manual', 'v2', 'legacy']) {
+  test(`pending identity: new ${caller} during ${choice} does not borrow the old login`, async () => {
+    const h = harness(), reached = deferred(), release = deferred();
+    const operations = [];
+    let evidence;
+    h.state.failSubmit = false;
+    h.state.authTransport = async url => {
+      assert.equal(url.pathname, choice === 'logout' ? '/auth/v1/logout' : '/auth/v1/token');
+      reached.resolve(); await release.promise;
+      return Response.json(choice === 'logout' ? {} : sessionFor(choice === 'login' ? B : A));
+    };
+    try {
+      const transition = choice === 'logout' ? h.auth.signOut() : h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only');
+      operations.push(transition);
+      await Promise.race([reached.promise, transition.then(() => { throw new Error('Pending choice was not reached'); })]);
+      assert.equal(h.auth.currentSession().user.id, A);
+      h.state.writes.length = 0;
+      const previousRequests = h.state.requests.length;
+      const pending = caller === 'fresh' ? h.auth.requireFreshSession()
+        : caller === 'profile' ? h.auth.getCurrentProfile()
+        : caller === 'manual' ? h.service.submitAccountTripReportObservation(account.toAccountObservationColumns(account.buildAccountTripReport({ ...reportAnswer, tripId: firstTrip })))
+        : caller === 'v2' ? h.service.submitTripEvidenceObservation(payload(firstTrip))
+        : h.service.submitObservation({ zone: { id: 'DK-B04-12', name: 'synthetic-zone' }, huntMode: 'waders', result: 'none', tripId: firstTrip });
+      const outcome = pending.then(value => ({ value }), error => ({ error }));
+      operations.push(outcome);
+      const result = await outcome;
+      evidence = { error: result.error?.message ?? null, newRequests: h.state.requests.length - previousRequests,
+        submits: h.state.submits.length, writes: [...h.state.writes], rows: h.service.getLocalObservations().length };
+    } finally {
+      release.resolve(); await Promise.allSettled(operations); h.finish();
+    }
+    assert.ok(evidence.error, 'The new operation must reject before using the superseded login');
+    assert.match(evidence.error, /Kontoen blev ændret/);
+    assert.equal(evidence.newRequests, 0);
+    assert.equal(evidence.submits, 0);
+    assert.equal(evidence.writes.length, 0, 'No old-owner observation may be created before the auth gate');
+    assert.equal(evidence.rows, 0);
+  });
+}
+
+for (const choice of ['logout', 'login', 'signup', 'callback']) {
+  test(`pending identity: ${choice} remains closed while its normal JSON body is pending`, async () => {
+    const h = harness(), reached = deferred(), release = deferred(); let operation;
+    const result = choice === 'logout' ? {} : choice === 'callback' ? { id: B } : sessionFor(B);
+    h.state.authTransport = async () => ({ ok: true, status: 200, async json() { reached.resolve(); return release.promise; } });
+    try {
+      if (choice === 'callback') h.authLocation.hash = '#access_token=synthetic-callback&refresh_token=synthetic-refresh';
+      operation = choice === 'logout' ? h.auth.signOut() : choice === 'login' ? h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only')
+        : choice === 'signup' ? h.auth.signUpWithPassword('synthetic@example.invalid', 'synthetic-only') : h.auth.consumeAuthCallback();
+      await reached.promise;
+      const before = h.state.requests.length;
+      const fresh = h.auth.requireFreshSession().then(value => ({ value }), error => ({ error }));
+      // A missing guard may join callback hydration; always release it before checking.
+      await turn(); const requests = h.state.requests.length - before;
+      release.resolve(result); const outcome = await fresh; await operation;
+      assert.match(outcome.error?.message ?? '', /Kontoen blev ændret/);
+      assert.equal(requests, 0);
+      assert.equal(h.auth.currentSession()?.user?.id ?? null, choice === 'logout' ? null : B);
+    } finally { release.resolve(result); if (operation) await Promise.allSettled([operation]); h.finish(); }
+  });
+}
+
+for (const oldResult of ['success', 'failure']) for (const phase of ['fetch', 'body']) {
+  test(`pending identity: old ${oldResult} at ${phase} cannot release the newer login gate`, async () => {
+    const h = harness(), reached = [deferred(), deferred()], release = [deferred(), deferred()];
+    const operations = []; let calls = 0;
+    h.state.authTransport = async url => {
+      assert.equal(url.searchParams.get('grant_type'), 'password'); const index = calls++;
+      const ok = index === 1 || oldResult === 'success';
+      const response = { ok, status: ok ? 200 : 400, async json() {
+        if (phase === 'body') { reached[index].resolve(); await release[index].promise; }
+        return ok ? sessionFor(index ? B : A) : { message: 'Invalid login credentials' };
+      } };
+      if (phase === 'fetch') { reached[index].resolve(); await release[index].promise; }
+      return response;
+    };
+    try {
+      for (let index = 0; index < 2; index++) {
+        operations.push(h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only').then(value => ({ value }), error => ({ error })));
+        await reached[index].promise;
+      }
+      release[0].resolve(); const old = await operations[0]; assert.ok(old.error);
+      const before = h.state.requests.length;
+      const pending = await h.auth.requireFreshSession().then(value => ({ value }), error => ({ error }));
+      assert.match(pending.error?.message ?? '', /Kontoen blev ændret/);
+      assert.equal(h.state.requests.length, before);
+      release[1].resolve(); const next = await operations[1]; assert.equal(next.value.user.id, B);
+      assert.equal((await h.auth.requireFreshSession()).user.id, B);
+    } finally { for (const gate of release) gate.resolve(); await Promise.allSettled(operations); h.finish(); }
+  });
+}
+
+for (const choice of ['failed login', 'signup without token', 'failed callback']) {
+  test(`pending identity: ${choice} clears only its own completed gate`, async () => {
+    const h = harness(), reached = deferred(), release = deferred(); let operation, fresh;
+    const failed = choice !== 'signup without token';
+    h.state.authTransport = async () => ({ ok: !failed, status: failed ? 400 : 200, async json() {
+      reached.resolve(); await release.promise; return failed ? { message: 'Invalid login credentials' } : { user: { id: B } };
+    } });
+    try {
+      if (choice === 'failed callback') h.authLocation.hash = '#access_token=synthetic-callback&refresh_token=synthetic-refresh';
+      operation = (choice === 'failed login' ? h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only')
+        : choice === 'signup without token' ? h.auth.signUpWithPassword('synthetic@example.invalid', 'synthetic-only') : h.auth.consumeAuthCallback())
+        .then(value => ({ value }), error => ({ error }));
+      await reached.promise;
+      fresh = h.auth.requireFreshSession().then(value => ({ value }), error => ({ error }));
+      await turn(); release.resolve(); const pending = await fresh; const completed = await operation;
+      assert.match(pending.error?.message ?? '', /Kontoen blev ændret/);
+      if (choice === 'failed login') assert.match(completed.error?.message ?? '', /E-mail eller adgangskode/);
+      else assert.ok(completed.value);
+      h.state.authTransport = async url => { assert.equal(url.pathname, '/auth/v1/user'); return Response.json({ id: B }); };
+      const active = await h.auth.requireFreshSession();
+      assert.equal(active.user.id, choice === 'failed callback' ? B : A);
+    } finally { release.resolve(); await Promise.allSettled([operation, fresh].filter(Boolean)); h.finish(); }
+  });
+}
+
+for (const kind of ['same-login renewal', 'ordinary hydration', 'magic-link request']) {
+  test(`pending identity: ${kind} does not become an explicit identity gate`, async () => {
+    const h = harness(A, kind !== 'ordinary hydration'), reached = deferred(), release = deferred();
+    const operations = []; let calls = 0;
+    h.state.failSubmit = false;
+    h.state.authTransport = async url => {
+      calls += 1;
+      assert.equal(url.pathname, kind === 'ordinary hydration' ? '/auth/v1/user' : kind === 'magic-link request' ? '/auth/v1/otp' : '/auth/v1/token');
+      reached.resolve(); await release.promise;
+      return Response.json(kind === 'ordinary hydration' ? { id: A } : kind === 'magic-link request' ? {} : { ...sessionFor(A), access_token: 'synthetic-renewed' });
+    };
+    try {
+      operations.push(kind === 'ordinary hydration' ? h.auth.requireFreshSession() : kind === 'magic-link request'
+        ? h.auth.sendMagicLink('synthetic@example.invalid') : h.auth.refreshSession({ force: true }));
+      await reached.promise;
+      const fresh = h.auth.requireFreshSession(); operations.push(fresh);
+      if (kind !== 'ordinary hydration') {
+        assert.equal((await fresh).user.id, A);
+        const manual = await h.service.submitAccountTripReportObservation(account.toAccountObservationColumns(account.buildAccountTripReport({ ...reportAnswer, tripId: firstTrip })));
+        assert.equal(manual.stored, 'remote');
+        const v2 = await h.service.submitTripEvidenceObservation(payload(secondTrip)); assert.equal(v2.stored, 'remote');
+      }
+      release.resolve(); await Promise.all(operations);
+      assert.equal(h.auth.authIdentityEpoch(), 0); assert.equal(calls, 1);
+      assert.equal((await h.auth.requireFreshSession()).user.id, A);
+    } finally { release.resolve(); await Promise.allSettled(operations); h.finish(); }
+  });
+}
+
+for (const choice of ['logout', 'login']) test(`pending identity: actual account dialog during ${choice} cannot report queued or remote`, async () => {
+  const h = harness(), reached = deferred(), release = deferred(), form = deferred(), panel = ui(h, form); const operations = [];
+  h.state.authTransport = async () => { reached.resolve(); await release.promise; return Response.json(choice === 'logout' ? {} : sessionFor(B)); };
+  try {
+    operations.push(choice === 'logout' ? h.auth.signOut() : h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only'));
+    await reached.promise; h.state.writes.length = 0;
+    form.resolve(reportAnswer); const report = panel.showAccountTripReport(panel.dialog, {}); operations.push(report); await report;
+    assert.equal(h.state.writes.length, 0); assert.equal(h.state.submits.length, 0); assert.equal(h.service.getLocalObservations().length, 0);
+    assert.equal(panel.content.innerHTML.includes(t('account.reportQueued')) || panel.content.innerHTML.includes(t('account.reportRemote')), false);
+    assert.ok(panel.content.innerHTML.includes('Kontoen blev ændret. Prøv igen fra den rigtige konto.'));
+  } finally { form.resolve(null); release.resolve(); await Promise.allSettled(operations); h.finish(); }
+});
+
+for (const caller of ['manual', 'v2']) test(`pending identity: ${caller} must retain its epoch across the original hydration await`, async () => {
+  const h = harness(A, false), reached = deferred(), release = deferred(); const operations = [];
+  h.state.authTransport = async url => {
+    if (url.pathname === '/auth/v1/user') { reached.resolve(); await release.promise; return Response.json({ id: A }); }
+    return Response.json(sessionFor(A));
+  };
+  try {
+    const report = (caller === 'manual'
+      ? h.service.submitAccountTripReportObservation(account.toAccountObservationColumns(account.buildAccountTripReport({ ...reportAnswer, tripId: firstTrip })))
+      : h.service.submitTripEvidenceObservation(payload(firstTrip))).then(value => ({ value }), error => ({ error }));
+    operations.push(report);
+    await reached.promise;
+    const login = h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only'); operations.push(login); await login;
+    h.state.writes.length = 0; release.resolve();
+    const result = await report;
+    assert.match(result.error?.message ?? '', /Kontoen blev ændret/);
+    assert.equal(h.service.getLocalObservations().length, 0); assert.equal(h.state.submits.length, 0); assert.equal(h.state.writes.length, 0);
+  } finally { release.resolve(); await Promise.allSettled(operations); h.finish(); }
+});
+
+for (const caller of ['manual', 'v2', 'legacy']) test(`pending identity: offline renewal preserves normal ${caller} local-first retention`, async () => {
+  const h = harness();
+  try {
+    h.auth.currentSession().expires_at = 1;
+    h.state.authTransport = async url => {
+      assert.equal(url.pathname, '/auth/v1/token'); assert.equal(url.searchParams.get('grant_type'), 'refresh_token');
+      throw new TypeError('synthetic offline transport');
+    };
+    const result = await (caller === 'manual'
+      ? h.service.submitAccountTripReportObservation(account.toAccountObservationColumns(account.buildAccountTripReport({ ...reportAnswer, tripId: firstTrip })))
+      : caller === 'v2' ? h.service.submitTripEvidenceObservation(payload(firstTrip))
+      : h.service.submitObservation({ zone: { id: 'DK-B04-12', name: 'synthetic-zone' }, huntMode: 'waders', result: 'none', tripId: firstTrip }));
+    assert.equal(result.stored, 'pending'); assert.equal(result.row.user_id, A);
+    assert.equal(h.service.getLocalObservations().length, 1); assert.equal(h.service.getObservationSyncStatus().pending, 1);
+    assert.equal(h.state.submits.length, 0); assert.equal(h.auth.currentSession().user.id, A);
+  } finally { h.finish(); }
+});
+
+for (const choice of ['login', 'signup', 'callback', 'logout']) test(`auth notification: committed ${choice} is already settled for its normal subscribers`, async () => {
+  const h = harness(), notifications = [], operations = [];
+  h.state.authTransport = async url => Response.json(url.pathname === '/auth/v1/user' ? { id: B }
+    : url.pathname === '/auth/v1/logout' ? {} : sessionFor(B));
+  const unsubscribe = h.auth.onAuthChange(active => {
+    const fresh = h.auth.requireFreshSession().then(value => ({ value }), error => ({ error }));
+    const profile = h.auth.getCurrentProfile().then(value => ({ value }), error => ({ error }));
+    operations.push(fresh, profile); notifications.push({ owner: active?.user?.id ?? null, fresh, profile });
+  });
+  try {
+    if (choice === 'callback') h.authLocation.hash = '#access_token=synthetic-callback&refresh_token=synthetic-refresh';
+    const operation = choice === 'login' ? h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only')
+      : choice === 'signup' ? h.auth.signUpWithPassword('synthetic@example.invalid', 'synthetic-only')
+      : choice === 'callback' ? h.auth.consumeAuthCallback() : h.auth.signOut();
+    operations.push(operation); await operation; await Promise.all(operations);
+    assert.equal(notifications.length, choice === 'callback' ? 2 : 1, 'No additional auth notification');
+    const committed = notifications.at(-1), fresh = await committed.fresh, profile = await committed.profile;
+    if (choice === 'logout') {
+      assert.equal(committed.owner, null);
+      assert.match(fresh.error?.message ?? '', /Du er ikke logget ind/);
+      assert.match(profile.error?.message ?? '', /Du er ikke logget ind/);
+    } else {
+      assert.equal(committed.owner, B);
+      assert.equal(fresh.error, undefined, 'A committed login cannot notify before its own pending gate is settled');
+      assert.equal(fresh.value.user.id, B); assert.equal(profile.error, undefined); assert.equal(profile.value.id, B);
+    }
+  } finally { unsubscribe(); await Promise.allSettled(operations); h.finish(); }
+});
+
+test('auth notification: late old callback hydration cannot release a newer pending login', async () => {
+  const h = harness(), reached = [deferred(), deferred()], release = [deferred(), deferred()], operations = [], notifications = [];
+  h.state.authTransport = async url => {
+    const index = url.pathname === '/auth/v1/user' ? 0 : 1;
+    reached[index].resolve(); await release[index].promise;
+    return Response.json(index ? sessionFor(B) : { id: A });
+  };
+  const unsubscribe = h.auth.onAuthChange(active => {
+    const fresh = h.auth.requireFreshSession().then(value => ({ value }), error => ({ error }));
+    operations.push(fresh); notifications.push({ owner: active?.user?.id ?? null, fresh });
+  });
+  try {
+    h.authLocation.hash = '#access_token=synthetic-callback&refresh_token=synthetic-refresh';
+    const callback = h.auth.consumeAuthCallback(); operations.push(callback); await reached[0].promise;
+    const login = h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only'); operations.push(login); await reached[1].promise;
+    release[0].resolve(); await callback;
+    assert.deepEqual(notifications.map(item => item.owner), [null, A]);
+    for (const notice of notifications) assert.match((await notice.fresh).error?.message ?? '', /Kontoen blev ændret/);
+    release[1].resolve(); await login;
+    assert.equal(notifications.length, 3); assert.equal(notifications[2].owner, B);
+    assert.equal((await notifications[2].fresh).value?.user?.id, B);
+  } finally { for (const gate of release) gate.resolve(); unsubscribe(); await Promise.allSettled(operations); h.finish(); }
+});
+
+for (const kind of ['renewal', 'hydration']) test(`auth notification: default ${kind} commit cannot release a newer pending login`, async () => {
+  const h = harness(A, kind !== 'hydration'), reached = [deferred(), deferred()], release = [deferred(), deferred()], operations = [];
+  h.state.authTransport = async url => {
+    const index = url.searchParams.get('grant_type') === 'password' ? 1 : 0;
+    reached[index].resolve(); await release[index].promise;
+    return Response.json(index ? sessionFor(B) : kind === 'hydration' ? { id: A } : { ...sessionFor(A), access_token: 'synthetic-renewed' });
+  };
+  try {
+    const ordinary = (kind === 'hydration' ? h.auth.requireFreshSession() : h.auth.refreshSession({ force: true }))
+      .then(value => ({ value }), error => ({ error }));
+    operations.push(ordinary); await reached[0].promise;
+    const login = h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only'); operations.push(login); await reached[1].promise;
+    release[0].resolve(); await ordinary;
+    const before = h.state.requests.length;
+    await assert.rejects(h.auth.requireFreshSession(), /Kontoen blev ændret/);
+    await assert.rejects(h.service.submitObservation({ zone: { id: 'DK-B04-12', name: 'synthetic-zone' }, huntMode: 'waders', result: 'none' }), /Kontoen blev ændret/);
+    assert.equal(h.state.requests.length, before); assert.equal(h.service.getLocalObservations().length, 0);
+    release[1].resolve(); await login; assert.equal((await h.auth.requireFreshSession()).user.id, B);
+  } finally { for (const gate of release) gate.resolve(); await Promise.allSettled(operations); h.finish(); }
+});
+
+for (const failure of ['storage', 'listener']) test(`auth notification: throwing ${failure} preserves the first error without a stuck own gate`, async () => {
+  const h = harness(), error = new Error(`synthetic-first-${failure}`), operations = []; let notices = 0;
+  h.state.authTransport = async () => Response.json(sessionFor(B));
+  if (failure === 'storage') h.state.failWrite = { key: 'ravradar-auth-session', error };
+  const unsubscribe = h.auth.onAuthChange(() => { notices += 1; if (failure === 'listener') throw error; });
+  try {
+    const login = h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only').then(value => ({ value }), caught => ({ error: caught }));
+    operations.push(login); assert.equal((await login).error, error);
+    assert.equal(notices, failure === 'storage' ? 0 : 1);
+    assert.equal((await h.auth.requireFreshSession()).user.id, B, 'Preserve existing in-memory session semantics after commit failure');
+    assert.equal(JSON.parse(h.storage.getItem('ravradar-auth-session')).user.id, failure === 'storage' ? A : B);
+  } finally { unsubscribe(); await Promise.allSettled(operations); h.finish(); }
+});
+
+for (const throwing of [false, true]) test(`auth notification: listener starts B inside A notification${throwing ? ' then throws' : ''}`, async () => {
+  const h = harness(), reached = deferred(), release = deferred(), operations = [], notifications = [], error = new Error('synthetic-listener-first');
+  let calls = 0, next;
+  h.state.authTransport = async () => {
+    if (calls++ === 0) return Response.json(sessionFor(A));
+    reached.resolve(); await release.promise; return Response.json(sessionFor(B));
+  };
+  const unsubscribe = h.auth.onAuthChange(active => {
+    notifications.push(active.user.id);
+    if (active.user.id === A) {
+      next = h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only'); operations.push(next);
+      if (throwing) throw error;
+    }
+  });
+  try {
+    const first = h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only').then(value => ({ value }), caught => ({ error: caught }));
+    operations.push(first); await reached.promise;
+    const outcome = await first;
+    if (throwing) assert.equal(outcome.error, error); else assert.equal(outcome.value.user.id, A);
+    await assert.rejects(h.auth.requireFreshSession(), /Kontoen blev ændret/);
+    assert.deepEqual(notifications, [A]);
+    release.resolve(); await next; assert.deepEqual(notifications, [A, B]);
+    assert.equal((await h.auth.requireFreshSession()).user.id, B);
+  } finally { release.resolve(); unsubscribe(); await Promise.allSettled(operations); h.finish(); }
+});
+
+// Automatic retained-v2 completion through existing normal startup/online callers.
+const app = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
+const startup = app.match(/^\s*syncPendingObservations\(\)\.catch\(\(\)=>\{\}\);updateTripUi\(\);/m)?.[0];
+assert.ok(startup);
+
+async function queue(h) {
+  const controller = h.controller(); controller.start(start(firstTrip));
+  assert.equal((await controller.stop(stop)).status, 'queued');
+  assert.equal(h.state.submits.length, 1);
+  assert.equal(h.service.getObservationSyncStatus().pending, 1);
+  return h.storage.getItem(pendingKey);
+}
+async function automatic(h, caller) {
+  if (caller === 'online') return h.state.listeners.get('online')();
+  vm.runInNewContext(startup, { syncPendingObservations: h.service.syncPendingObservations, updateTripUi() {} });
+  return h.service.syncPendingObservations(); // Join the existing drain, not a parallel retry.
+}
+
+for (const caller of ['startup', 'online']) test(`ROOT58 actual ${caller} settles the exact retained v2 after fresh stored:true`, async () => {
+  const h = harness();
+  try {
+    await queue(h); const body = h.state.submits[0], row = h.service.getLocalObservations()[0];
+    h.state.failSubmit = false; await automatic(h, caller);
+    assert.equal(h.state.submits.length, 2); assert.equal(h.state.submits[1], body);
+    assert.equal(h.service.getObservationSyncStatus().pending, 0);
+    assert.equal(h.service.getLocalObservations()[0].sync_status, 'synced');
+    assert.equal(h.service.getLocalObservations()[0].submitted_at, row.submitted_at);
+    assert.equal(JSON.parse(h.storage.getItem(pendingKey)).length, 0, 'Fresh exact acknowledgment must finish retained v2');
+  } finally { h.finish(); }
+});
+for (const condition of ['offline', 'other-owner', 'same-owner-new-login', 'invalid-receipt']) {
+  test(`ROOT58 automatic retry preserves original v2 on ${condition}`, async () => {
+    const h = harness(); let release, operation;
+    try {
+      const before = await queue(h);
+      if (condition === 'other-owner') await h.login(B);
+      h.state.failSubmit = condition === 'offline';
+      if (condition === 'invalid-receipt') h.state.submitResponse = Response.json({ stored: false });
+      if (condition === 'same-owner-new-login') {
+        let reached; const ready = new Promise(resolve => { reached = resolve; });
+        h.state.submitResponse = { ok: true, status: 200, async json() { reached(); return new Promise(resolve => { release = () => resolve({ stored: true }); }); } };
+        operation = automatic(h, 'online'); await ready; await h.login(A); release(); await operation;
+      } else await automatic(h, 'online');
+      assert.equal(h.storage.getItem(pendingKey), before);
+      assert.equal(h.service.getObservationSyncStatus().pending, 1);
+      if (condition === 'other-owner') assert.equal(h.state.submits.length, 1);
+    } finally { release?.(); if (operation) await operation; h.finish(); }
+  });
+}
+
+// Appended only to the existing SAME auth/service/controller/store VM fixture.
+test('normal wrapping callback retains its existing success when the actual service stores its row', async () => {
+  const h = harness();
+  try {
+    h.state.failSubmit = false;
+    const controller = h.controller(columns => h.service.submitTripEvidenceObservation(columns));
+    controller.start(start(firstTrip));
+    assert.equal((await controller.stop(stop)).status, 'submitted');
+    assert.equal(h.storage.getItem(pendingKey), '[]');
+    assert.equal(h.state.submits.length, 1);
+  } finally { h.finish(); }
+});
+
+test('normal wrapping multi-row flush preserves both existing success receipts', async () => {
+  const h = harness();
+  try {
+    await queue(h);
+    const second = h.controller(); second.start(start(secondTrip));
+    assert.equal((await second.stop(stop)).status, 'queued');
+    assert.equal(JSON.parse(h.storage.getItem(pendingKey)).length, 2);
+    h.state.failSubmit = false;
+    const result = await h.controller(columns => h.service.submitTripEvidenceObservation(columns)).flush();
+    assert.equal(result.submitted, 2); assert.equal(result.failed, 0);
+    assert.equal(h.storage.getItem(pendingKey), '[]');
+  } finally { h.finish(); }
+});
+
+for (const wrapped of [false, true]) test(`automatic initial hydration with retained original; foreground wrapper=${wrapped}`, async () => {
+  const seeded = harness(); let bank;
+  try { await queue(seeded); bank = [...seeded.storage.values].filter(([key]) => key !== 'ravradar-auth-session'); }
+  finally { seeded.finish(); }
+  const h = harness(A, false); let reached, release, operation, flushing;
+  const ready = new Promise(resolve => { reached = resolve; });
+  const promise = new Promise(resolve => { release = resolve; });
+  h.state.hydration = { promise, reached };
+  try {
+    for (const [key, value] of bank) h.storage.setItem(key, value);
+    h.state.failSubmit = false;
+    operation = automatic(h, 'startup'); await ready;
+    assert.equal(h.auth.currentSession().user, null);
+    if (wrapped) flushing = h.controller(columns => h.service.submitTripEvidenceObservation(columns)).flush();
+    release(); await operation;
+    if (flushing) { const result = await flushing; assert.equal(result.submitted, 1); assert.equal(result.failed, 0); }
+    assert.equal(h.auth.currentSession().user.id, A); assert.equal(h.auth.authIdentityEpoch(), 0);
+    assert.equal(h.storage.getItem(pendingKey), '[]'); assert.equal(h.state.submits.length, 1);
+  } finally { release(); await Promise.allSettled([operation, flushing].filter(Boolean)); h.finish(); }
+});
+
+const autoRuntimeBody = source('../js/services/trip-evidence-runtime.js');
+function actualRuntime(h) {
+  const scope = { createTripEvidenceController: h.createController, openTripEvidenceStartDialog() {} };
+  vm.runInNewContext(`${autoRuntimeBody}\nthis.create=createPublicTripEvidenceRuntime;`, scope);
+  return scope.create({ getContext: () => ({}), storage: h.storage,
+    persist: h.service.submitTripEvidenceObservation, openDialog: async () => answer });
+}
+function holdBody(h) {
+  let reached, release;
+  const ready = new Promise(resolve => { reached = resolve; });
+  const body = new Promise(resolve => { release = resolve; });
+  h.state.submitResponse = { ok: true, status: 200, async json() { reached(); return body; } };
+  return { ready, release: () => release({ stored: true }) };
+}
+
+test('snapshot reservation leaves a later background-only neighbor free to finish', async () => {
+  const h = harness(); let foreground, neighbor, releaseFirst, releaseSecond, reachedFirst, reachedSecond;
+  const firstReady = new Promise(resolve => { reachedFirst = resolve; });
+  const secondReady = new Promise(resolve => { reachedSecond = resolve; });
+  const firstBody = new Promise(resolve => { releaseFirst = () => resolve({ stored: true }); });
+  const secondBody = new Promise(resolve => { releaseSecond = () => resolve({ stored: true }); });
+  try {
+    await queue(h); let bodies = 0;
+    h.state.submitResponse = { ok: true, status: 200, async json() {
+      if (++bodies === 1) { reachedFirst(); return firstBody; }
+      reachedSecond(); return secondBody;
+    } };
+    foreground = h.controller(columns => h.service.submitTripEvidenceObservation(columns)).flush();
+    await firstReady;
+    const backgroundOnly = h.createController({ storage: h.storage, persist: null, openDialog: async () => answer });
+    backgroundOnly.start(start(secondTrip)); assert.equal((await backgroundOnly.stop(stop)).status, 'queued');
+    const transitions = [], setItem = h.storage.setItem;
+    h.storage.setItem = (key, value) => { if (key === pendingKey) transitions.push(JSON.parse(value).map(row => row.tripId)); return setItem(key, value); };
+    neighbor = h.service.submitTripEvidenceObservation(payload(secondTrip));
+    releaseFirst(); await secondReady; releaseSecond();
+    assert.equal((await neighbor).stored, 'remote');
+    const result = await foreground; assert.equal(result.submitted, 1); assert.equal(result.failed, 0);
+    assert.deepEqual(transitions, [[firstTrip], []], 'Neighbor cleans while the earlier uploader snapshot remains reserved');
+    assert.equal(h.state.submits.length, 3); assert.equal(h.storage.getItem(pendingKey), '[]');
+  } finally { releaseFirst(); releaseSecond(); await Promise.allSettled([foreground, neighbor].filter(Boolean)); h.finish(); }
+});
+
+test('overlapping wrapped uploaders preserve direct-only missing-queue refusal without duplicate HTTP', async () => {
+  const h = harness(); let held, first, second;
+  try {
+    await queue(h); held = holdBody(h);
+    first = h.controller(columns => h.service.submitTripEvidenceObservation(columns)).flush(); await held.ready;
+    second = h.controller(columns => h.service.submitTripEvidenceObservation(columns)).flush();
+    held.release(); const results = await Promise.all([first, second]);
+    assert.deepEqual(results.map(result => [result.submitted, result.failed]).sort(), [[0, 1], [1, 0]]);
+    assert.equal(h.state.submits.length, 2); assert.equal(h.storage.getItem(pendingKey), '[]');
+    assert.equal(results.find(result => result.failed).failures[0].message, 'Den bekræftede tur fandtes ikke længere i den lokale kø.');
+  } finally { held?.release(); await Promise.allSettled([first, second].filter(Boolean)); h.finish(); }
+});
+
+for (const outcome of ['throw', 'offline', 'false receipt', 'outbox quota', 'local quota']) {
+  test(`snapshot finally releases its exact row after ${outcome}; next automatic retry finishes`, async () => {
+    const h = harness();
+    try {
+      const original = await queue(h), firstError = new Error('SYNTHETIC_FIRST_UPLOAD_FAILURE');
+      if (outcome === 'false receipt') h.state.submitResponse = Response.json({ stored: false });
+      if (outcome === 'outbox quota' || outcome === 'local quota') h.state.failWrite = {
+        key: outcome === 'outbox quota' ? 'ravradar-observation-outbox-v1' : 'ravradar-observations-v2', error: firstError };
+      const result = await h.controller(outcome === 'throw' ? () => { throw firstError; }
+        : columns => h.service.submitTripEvidenceObservation(columns)).flush();
+      assert.equal(result.submitted, 0); assert.equal(result.failed, 1); assert.equal(h.storage.getItem(pendingKey), original);
+      if (outcome === 'throw' || outcome.endsWith('quota')) assert.equal(result.failures[0].message, firstError.message);
+      h.state.failWrite = null; h.state.submitResponse = undefined; h.state.failSubmit = false;
+      await automatic(h, 'online');
+      assert.equal(h.storage.getItem(pendingKey), '[]'); assert.equal(h.service.getObservationSyncStatus().pending, 0);
+      assert.equal(h.state.submits.at(-1), h.state.submits[0]);
+    } finally { h.state.failWrite = null; h.finish(); }
+  });
+}
+
+for (const transition of ['logout', 'same-owner new login', 'other-owner new login', 'same-login renewal']) {
+  test(`wrapped actual server body with ${transition} preserves original intent`, async () => {
+    const h = harness(); let held, operation;
+    try {
+      const original = await queue(h); held = holdBody(h);
+      operation = h.controller(columns => h.service.submitTripEvidenceObservation(columns)).flush(); await held.ready;
+      if (transition === 'logout') await h.auth.signOut();
+      else if (transition === 'same-login renewal') await h.auth.refreshSession({ force: true });
+      else await h.login(transition === 'same-owner new login' ? A : B);
+      held.release(); const result = await operation;
+      const renewed = transition === 'same-login renewal';
+      assert.equal(result.submitted, renewed ? 1 : 0); assert.equal(result.failed, renewed ? 0 : 1);
+      assert.equal(h.storage.getItem(pendingKey), renewed ? '[]' : original);
+      assert.equal(h.state.submits.length, 2); assert.equal(h.state.submits[1], h.state.submits[0]);
+    } finally { held?.release(); if (operation) await operation; h.finish(); }
+  });
+}
+
+test('failed initial hydration releases its snapshot before a fresh automatic same-login attempt', async () => {
+  const seeded = harness(); let bank;
+  try { await queue(seeded); bank = [...seeded.storage.values].filter(([key]) => key !== 'ravradar-auth-session'); }
+  finally { seeded.finish(); }
+  const h = harness(A, false);
+  try {
+    for (const [key, value] of bank) h.storage.setItem(key, value);
+    const original = h.storage.getItem(pendingKey);
+    h.state.authTransport = async url => { assert.equal(url.pathname, '/auth/v1/user'); return Response.json({}, { status: 503 }); };
+    const result = await h.controller(columns => h.service.submitTripEvidenceObservation(columns)).flush();
+    assert.equal(result.submitted, 0); assert.equal(result.failed, 1); assert.equal(h.storage.getItem(pendingKey), original);
+    assert.equal(h.state.submits.length, 0);
+    h.state.authTransport = null; h.state.hydration = { promise: Promise.resolve(), reached() {} }; h.state.failSubmit = false;
+    await automatic(h, 'online');
+    assert.equal(h.storage.getItem(pendingKey), '[]'); assert.equal(h.auth.authIdentityEpoch(), 0);
+    assert.equal(h.state.submits.length, 1);
+  } finally { h.finish(); }
+});
+
+test('automatic receipt and simultaneous actual runtime.flush share exact remote success', async () => {
+  const h = harness(); let held, automaticRun, flushing;
+  try {
+    await queue(h); const body = h.state.submits[0]; held = holdBody(h);
+    automaticRun = automatic(h, 'online'); await held.ready;
+    flushing = actualRuntime(h).flush(); await new Promise(resolve => setImmediate(resolve));
+    assert.equal(h.state.submits.length, 2);
+    held.release(); await automaticRun;
+    const result = await flushing;
+    assert.equal(result.submitted, 1); assert.equal(result.failed, 0);
+    assert.equal(h.state.submits.length, 2); assert.equal(h.state.submits[1], body);
+    assert.equal(h.storage.getItem(pendingKey), '[]');
+  } finally { held?.release(); await Promise.allSettled([automaticRun, flushing].filter(Boolean)); h.finish(); }
+});
+
+test('first successful normal controller completion remains submitted after automatic cleanup', async () => {
+  const h = harness();
+  try {
+    h.state.failSubmit = false; const controller = h.controller(); controller.start(start(firstTrip));
+    assert.equal((await controller.stop(stop)).status, 'submitted');
+    assert.equal(h.storage.getItem(pendingKey), '[]'); assert.equal(h.state.submits.length, 1);
+  } finally { h.finish(); }
+});
+
+for (const timing of ['before', 'body']) test(`automatic cleanup preserves changed same-id evidence ${timing}`, async () => {
+  const h = harness(); let held, operation;
+  try {
+    await queue(h); const changed = JSON.parse(h.storage.getItem(pendingKey)); changed[0].searchCoverage = 'thorough';
+    const original = JSON.stringify(changed);
+    h.state.failSubmit = false;
+    if (timing === 'body') { held = holdBody(h); operation = automatic(h, 'online'); await held.ready; }
+    h.storage.setItem(pendingKey, original);
+    if (held) { held.release(); await operation; } else await automatic(h, 'startup');
+    assert.equal(h.storage.getItem(pendingKey), original);
+    assert.equal(h.service.getObservationSyncStatus().pending, 0);
+    assert.equal(h.service.getLocalObservations()[0].sync_status, 'synced');
+  } finally { held?.release(); if (operation) await operation; h.finish(); }
+});
+
+for (const variant of ['key reorder', 'identical duplicate', 'conflicting duplicate']) {
+  test(`automatic guarded store removal handles ${variant} and preserves unrelated evidence`, async () => {
+    const h = harness(); let held, operation;
+    try {
+      await queue(h); const evidence = JSON.parse(h.storage.getItem(pendingKey))[0];
+      const unrelated = { ...structuredClone(evidence), tripId: secondTrip };
+      h.storage.setItem(pendingKey, JSON.stringify([evidence, unrelated]));
+      held = holdBody(h); operation = automatic(h, 'online'); await held.ready;
+      const other = variant === 'key reorder' ? Object.fromEntries(Object.entries(evidence).reverse())
+        : variant === 'identical duplicate' ? structuredClone(evidence) : { ...evidence, searchCoverage: 'thorough' };
+      const pending = variant === 'key reorder' ? [other, unrelated] : [evidence, other, unrelated];
+      const original = JSON.stringify(pending); h.storage.setItem(pendingKey, original);
+      held.release(); await operation;
+      if (variant === 'conflicting duplicate') assert.equal(h.storage.getItem(pendingKey), original);
+      else assert.deepEqual(JSON.parse(h.storage.getItem(pendingKey)), [unrelated]);
+      assert.equal(h.state.submits.length, 2);
+    } finally { held?.release(); if (operation) await operation; h.finish(); }
+  });
+}
+
+for (const variant of ['malformed', 'object', 'unknown', 'legacy-unrelated']) {
+  test(`automatic receipt never migrates or overwrites ${variant} v2 queue`, async () => {
+    const h = harness();
+    try {
+      await queue(h); const evidence = JSON.parse(h.storage.getItem(pendingKey))[0];
+      const original = variant === 'malformed' ? '{synthetic-invalid' : variant === 'object' ? '{"synthetic":true}'
+        : JSON.stringify(variant === 'unknown' ? [{ ...evidence, schemaVersion: 99 }]
+          : [evidence, { tripId: secondTrip, schemaVersion: 2, syntheticOriginal: 'DO_NOT_MIGRATE' }]);
+      h.storage.setItem(pendingKey, original); h.state.failSubmit = false;
+      await automatic(h, 'online');
+      assert.equal(h.storage.getItem(pendingKey), original);
+      assert.equal(h.service.getObservationSyncStatus().pending, 0);
+    } finally { h.finish(); }
+  });
+}
+
+for (const laterLogin of [false, true]) test(`anonymous retained evidence stays original during automatic receipt; login=${laterLogin}`, async () => {
+  const h = harness(null);
+  try {
+    const original = await queue(h), row = JSON.stringify(h.service.getLocalObservations()[0]);
+    if (laterLogin) await h.login(B);
+    h.state.failSubmit = false; await automatic(h, 'online');
+    assert.equal(h.storage.getItem(pendingKey), original);
+    assert.equal(h.service.getLocalObservations()[0].user_id, null);
+    assert.equal(JSON.parse(h.state.submits[1]).user_id, null);
+    assert.equal(h.state.submits[1], h.state.submits[0]);
+    assert.equal(JSON.parse(row).submitted_at, h.service.getLocalObservations()[0].submitted_at);
+  } finally { h.finish(); }
+});
+
+for (const key of ['ravradar-observations-v2', 'ravradar-observation-outbox-v1']) {
+  test(`automatic cleanup requires exact settlement of ${key}`, async () => {
+    const h = harness(); let held, operation;
+    try {
+      const original = await queue(h); held = holdBody(h); operation = automatic(h, 'online'); await held.ready;
+      const changed = JSON.parse(h.storage.getItem(key)); changed[0].search_coverage = 'thorough';
+      const replacement = JSON.stringify(changed); h.storage.setItem(key, replacement);
+      held.release(); await operation;
+      assert.equal(h.storage.getItem(pendingKey), original);
+      assert.equal(h.storage.getItem(key), replacement);
+    } finally { held?.release(); if (operation) await operation; h.finish(); }
+  });
+}
+
+test('cleanup write failure preserves first local error and remote receipt; fresh normal retry recovers', async () => {
+  const h = harness(); let held, joining;
+  try {
+    const original = await queue(h), body = h.state.submits[0]; held = holdBody(h);
+    const online = automatic(h, 'online'); await held.ready;
+    joining = h.service.syncPendingObservations(); const first = new Error('SYNTHETIC_FIRST_CLEANUP_QUOTA');
+    const checked = assert.rejects(joining, error => error === first);
+    h.state.failWrite = { key: pendingKey, error: first }; held.release(); await online; await checked;
+    assert.equal(h.storage.getItem(pendingKey), original);
+    assert.equal(h.service.getObservationSyncStatus().pending, 0);
+    assert.equal(h.service.getLocalObservations()[0].sync_status, 'synced');
+    h.state.failWrite = null; h.state.submitResponse = undefined; h.state.failSubmit = false;
+    const retried = await actualRuntime(h).flush();
+    assert.equal(retried.failed, 0); assert.equal(retried.submitted, 1);
+    assert.equal(h.state.submits.length, 3); assert.equal(h.state.submits[2], body);
+    assert.equal(h.storage.getItem(pendingKey), '[]');
+  } finally { held?.release(); h.state.failWrite = null; if (joining) await Promise.allSettled([joining]); h.finish(); }
+});
+
+test('a restored synced flag without an outbox POST is never fresh automatic cleanup proof', async () => {
+  const h = harness();
+  try {
+    const original = await queue(h); const rows = JSON.parse(h.storage.getItem('ravradar-observations-v2'));
+    rows[0].sync_status = 'synced'; h.storage.setItem('ravradar-observations-v2', JSON.stringify(rows));
+    h.storage.setItem('ravradar-observation-outbox-v1', '[]'); h.state.failSubmit = false;
+    await automatic(h, 'online');
+    assert.equal(h.state.submits.length, 1); assert.equal(h.storage.getItem(pendingKey), original);
+    assert.equal((await actualRuntime(h).flush()).submitted, 1);
+    assert.equal(h.state.submits.length, 2); assert.equal(h.storage.getItem(pendingKey), '[]');
+  } finally { h.finish(); }
+});
+
+test('remote renewal to another owner during body cannot clear original evidence even without epoch change', async () => {
+  const h = harness(); let held, operation;
+  try {
+    const original = await queue(h); held = holdBody(h); operation = automatic(h, 'online'); await held.ready;
+    h.state.nextOwner = B; await h.auth.refreshSession({ force: true }); assert.equal(h.auth.authIdentityEpoch(), 0);
+    held.release(); await operation;
+    assert.equal(h.storage.getItem(pendingKey), original); assert.equal(h.auth.currentSession().user.id, B);
+    assert.equal(h.service.getLocalObservations()[0].user_id, A);
+  } finally { held?.release(); if (operation) await operation; h.finish(); }
+});
