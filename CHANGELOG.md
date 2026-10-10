@@ -1,5 +1,6 @@
 # Lokal 4.0.561 – 2026-10-10
 
+- Supplerende workflowrettelse: det eksisterende kode-only-kald logger fil, uændret størrelsesgrænse, HTTP-status, modtagne bytes og faktisk curl-version. Den eksisterende måltest består; ingen ekstra læsning eller genkørsel følger. PR #551 er flettet ind efter præcis kildekontrol. Det efterfølgende deploy stoppede før produktionsskrivning, og den historiske transportårsag er fortsat åben. Dette er ikke offentlig levering af 561 eller afslutning af de fem samlede opgaver.
 - Normal privat cache kontrollerer fysisk lukning, egen arbejdsfil og de faktisk skrevne bytes før publicering. Forkert indhold med uændret længde eller usikker lukning må ikke erstatte en gyldig pakke; usikre arbejdsrester bevares.
 - Normale admin-, håndbogs- og besøgsopslag holder den eksisterende svarfrist gennem JSON og fejltekst. Frisk genlæsning før fjernelse af en kvitteret kladde bevarer samtidige tilføjelser og sletninger.
 - 40 cachemål, 56 admin-/kladde-/svartidsmål og otte tidligere authmål består lokalt. Eksisterende modelbindinger, format, rettigheder og tidsbudget bevares.

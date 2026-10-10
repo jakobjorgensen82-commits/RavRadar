@@ -212,12 +212,14 @@ jobs:
           set -euo pipefail
           rm -rf "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT"
           mkdir -p "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT" .cache .geometry-v2-work "$RAVRADAR_OPERATIONAL_WORK"
+          curl --version
           fetch_public() {
             local remote_path="$1" local_name="$2" maximum_bytes="$3"
             curl --fail --silent --show-error --location --retry 3 \
               --connect-timeout 10 --max-time 60 --max-filesize "$maximum_bytes" \
               --header 'Cache-Control: no-cache' \
               "$RAVRADAR_PUBLIC_BASE_URL/$remote_path?code-only=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+              --write-out "Public snapshot file=$local_name bound=$maximum_bytes http=%{http_code} received=%{size_download}\n" \
               --output "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT/$local_name"
           }
           fetch_public data/live/manifest.json manifest.json 1048576
