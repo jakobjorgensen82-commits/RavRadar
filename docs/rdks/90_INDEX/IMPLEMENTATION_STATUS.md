@@ -4,7 +4,7 @@ Ejerens nyeste ordre prioriterer præcis logning og en konkret rettelse før næ
 
 De seks filgrænser bevares. En ny samlet 360-sekundersfrist og en ny streaminggrænse under 10 milliarder dekodede bytes afgrænser arbejdet; de er ikke gamle grænser eller kapacitetsbevis. Kun seks faste filer skrives, øvrigt indhold læses til EOF/CRC. Loggen viser sikre filnavne, forventede og faktiske størrelser samt afgrænsede fejlgrunde. Se håndbog 89.186 for transport- og ressourcekontrakten.
 
-Rettelsen er indarbejdet lokalt. Den eksisterende Node-måltest med fire direkte kildevalgsprøver består; 13 faktiske Linux-extractorforløb er koblet til kildekontrollen, men kan ikke køres på den lokale Windows-runtime. Præcis GitHub-kontrol og faktisk levering afventer. Historisk cacheblanding er en mistanke, ikke bevist årsag. Arbejdet sker via delegation; alle fem samlede mål er åbne. Ingen nye vejrkørsler, installationer, modelbindinger, score-/geometriændringer eller tilladelser følger.
+Rettelsen er indarbejdet lokalt. Node-måltesten og 13 faktiske Linux-extractorforløb består i GitHub. Den første kildekontrol stoppede på en statisk kontrol, der stadig ledte efter filgrænsen i det gamle workflowkald. Kontrollen følger nu den faktiske læser og kræver samme manifestbundne grænse; dens måltest består lokalt. En ny præcis GitHub-kontrol og faktisk levering afventer. Historisk cacheblanding er en mistanke, ikke bevist årsag. Alle fem samlede mål er åbne. Ingen nye vejrkørsler, installationer, modelbindinger, score-/geometriændringer eller tilladelser følger.
 
 # 4.0.561 – supplerende afgrænset deploy-diagnostik
 

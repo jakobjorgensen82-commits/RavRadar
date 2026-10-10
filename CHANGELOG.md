@@ -3,7 +3,7 @@
 - Afgrænser normal kode-only-transport til det allerede forseglede Pages-artifact ved præcis central/offentlig identitet. De seks filer og deres grænser samt alle efterfølgende genbrugs-/original-/modelkontroller bevares; ingen automatisk nyere kilde, alternativ destination eller providerhentning.
 - Ny samlet 360-sekundersfrist og ny streaminggrænse under 10 milliarder dekodede bytes. Den gamle 60-sekundersgrænse var pr. curl-forsøg, ikke samlet. Pages garanterer ikke deployment over 1 GB; en læsergrænse er ikke kapacitetsbevis.
 - Supplerer normal fil-/HTTP-/størrelseslogning med faktiske udtrukne størrelser og sikre fejlgrunde; bevarer fuld EOF/CRC, præcis rå manifestkontrol og private arbejdsrester ved usikker afslutning. Ingen tar-fil eller komplet website udtrækkes til disk.
-- Lokal integration og Node-måltest med fire direkte kildevalgsprøver består. 13 faktiske Linux-forløb, præcis kildekontrol og faktisk levering afventer. Historisk curl63-årsag er ikke bevist, og alle fem samlede mål er fortsat åbne.
+- Node-måltesten og 13 faktiske Linux-forløb består i GitHub. Første kildekontrol fandt en statisk kontrol af det gamle workflowkald; den følger nu den normale læser og kræver fortsat manifestbundet detailstørrelse. Måltesten består lokalt; ny præcis kildekontrol og faktisk levering afventer. Historisk curl63-årsag er ikke bevist, og alle fem samlede mål er fortsat åbne.
 
 # Lokal 4.0.561 – 2026-10-10
 

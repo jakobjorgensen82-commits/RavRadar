@@ -27,7 +27,10 @@ logning kræves. Usikker afslutning bevarer det private arbejdsområde. Den
 historiske curl63-log beviser ikke, hvilken fil eller størrelse der udløste
 stoppet; årsagen er stadig åben. Dette er hverken en ny checkpointfunktion,
 offentlig levering eller ændring af vejr, score, geometri, modelbinding eller
-privat originalkontrol. Node-måltesten består; 13 Linux-forløb, præcis kildekontrol og levering afventer.
+privat originalkontrol. Node-måltesten og 13 Linux-forløb består i GitHub.
+En statisk kontrol af det gamle workflowkald er rettet til den faktiske læser;
+samme manifestbundne detailgrænse består. Måltesten er grøn lokalt, men en ny
+præcis kildekontrol og faktisk levering afventer.
 
 ## 89.185 Bevaret cache og samtidige kladder
 

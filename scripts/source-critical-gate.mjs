@@ -162,11 +162,20 @@ for (const marker of [
   'saved-weather-continuation',
   'uses: ./.github/workflows/reusable-pages-deploy.yml',
 ]) assert.ok(codeOnlyWorkflow.includes(marker), `Code-only-workflowet mangler ${marker}.`);
+const codeOnlyAcquisition = read('scripts/acquire-code-only-public-snapshot.mjs');
 for (const marker of [
-  'manifestBoundedPublicDetailsBytes',
-  'fetch_public data/live/public-condition-details.json public-condition-details.json "$details_bytes"',
+  'node scripts/acquire-code-only-public-snapshot.mjs acquire',
+  'node scripts/acquire-code-only-public-snapshot.mjs assert-current',
 ]) assert.ok(codeOnlyWorkflow.includes(marker),
-  `Code-only-workflowets download mangler manifestbundet detailstørrelse: ${marker}`);
+  `Code-only-workflowet mangler den normale afgrænsede læser: ${marker}`);
+for (const marker of [
+  "from './prepare-code-only-public-runtime.mjs'",
+  "['data/live/public-condition-details.json', 'public-condition-details.json', null]",
+  'manifestBoundedPublicDetailsBytes(manifest.publicConditionDetailsBytes)',
+  'cap: cap ?? detailCap',
+  "'--max-filesize', String(cap)",
+]) assert.ok(codeOnlyAcquisition.includes(marker),
+  `Code-only-læserens download mangler manifestbundet detailstørrelse: ${marker}`);
 for (const forbidden of [
   'DMI_API_KEY',
   'COPERNICUSMARINE_SERVICE_USERNAME',
@@ -177,7 +186,10 @@ for (const forbidden of [
   'npm run validate:source',
   'npm run validate',
   'npm run release:gate',
-]) assert.ok(!codeOnlyWorkflow.includes(forbidden), `Code-only-workflowet må ikke indeholde ${forbidden}.`);
+]) {
+  assert.ok(!codeOnlyWorkflow.includes(forbidden), `Code-only-workflowet må ikke indeholde ${forbidden}.`);
+  assert.ok(!codeOnlyAcquisition.includes(forbidden), `Code-only-læseren må ikke indeholde ${forbidden}.`);
+}
 assert.equal(
   (codeOnlyWorkflow.match(/supabase db push --linked/g) || []).length,
   2,
