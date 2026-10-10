@@ -1,4 +1,10 @@
-# Aktuelt leveringsspor – lokal 4.0.557, 2026-10-10
+# Aktuelt leveringsspor – lokal 4.0.558, 2026-10-10
+
+Før den særskilte Workerrettelse faktisk installeres, færdiggøres det valgte existing-worker-repair-forløb på eksisterende normale kald. PR #547's præcise source-kontrol er bestået, men installation er ikke udført. Det afgrænsede forløb må kun læse skemaer og eksisterende shardbindinger; ingen SQL, migration, Edge-kode eller nye secrets. Den installerede trafikførende Worker-version og faktisk D1-retur skal kontrolleres, ikke blot et grønt CLI-trin.
+
+Under den aktive naturlige vejrhentning fortsættes sikker lokal integration og præcis kildelevering parallelt for alle fem områder. Ingen merge, backendinstallation eller andet produktionswrite under writer. Main-specifikke rettelser skal udtages uden kopi af hele den tilbageholdte revision; faktiske normale kaldere og originale data er afgørende. National kapacitetsprøve og den brede assistentleverance er fortsat åbne.
+
+# Historik: leveringsspor 4.0.557 før afsluttet kildekontrol
 
 Ejeren har 10. oktober krævet færdiggørelse i dag, langt før den tidligere måldato omkring 21. oktober. Prioritér konkrete sikre leverancer og dokumenteret produktionseffekt; fristen må ikke bruges til at omgå kontroller eller erklære uafsluttet arbejde færdigt.
 

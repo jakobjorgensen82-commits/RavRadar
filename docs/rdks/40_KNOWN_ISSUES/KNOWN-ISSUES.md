@@ -1,4 +1,20 @@
-# Lokal 4.0.557 – normale D1-kvitteringer; backendinstallation afventer
+# Lokal 4.0.558 – afgrænset reparation af eksisterende turlager-Worker
+
+4.0.557's normale D1-kvitteringsrettelse har bestået fuld kildekontrol på PR #547's præcise head `11d24dab`, kørsel `38028049478`, forsøg 1. Det er ikke merge, backendinstallation eller offentlig levering. 4.0.556 er fortsat den senest verificerede offentlige leverance.
+
+Det eksisterende turlagerworkflow får et særskilt, udtrykkeligt valgt `existing-worker-repair`-forløb. Det normale fulde installationsvalg bevares; ukendte valg afvises, og begge valg deler samme eksklusive workflowlås. Reparationen må ikke oprette eller adoptere databaser, installere SQL, ændre Edge-kode, migrere ture, ændre aktiveringsmarkør eller skrive nye secrets.
+
+Før skrivning kræves den præcise grønne kildeversion, aktuel main, læst installationsstatus og SQL-verifikation samt ti eksisterende, entydige EU-shards med de faktiske forventede skemaer. Eksisterende Edge-, privat HMAC-/Worker-count- og unsigned-afvisningskontroller bevares. De læste data, credentials og rå leverandørsvar må ikke logges.
+
+Selve den endnu ikke udførte operation går kortvarigt gennem eksisterende maintenance med afgrænset lease, dobbelt kontrol, 20 sekunders drain og mindst 600 sekunders restlease før én højst syv minutter lang erstatning af den samme Worker. En frisk versionskvittering må ikke alene frikende den installerede kode: den faktisk trafikførende version skal genlæses og passe, før afslutning. Den normale D1-tilstand genoprettes og kontrolleres; der skiftes ikke tilbage til Supabase-turlagring.
+
+Efter en fejl må kun forløbets eget, faktiske vedligeholdelsesintent tillade ét afgrænset D1-fremadgående reparationsforsøg med frisk main-, lease- og privat kontrol. En grøn oprydning må ikke gøre den oprindelige fejlkørsel grøn. Annullering eller tab af runner er ikke en gennemført genoprettelse; eksisterende leaseudløb er en anden mekanisme. Der er ikke bevist en atomisk leverandørgaranti mod ny Worker-oprettelse, hvis den eksisterende Worker forsvinder mellem kontrol og deploy.
+
+Den afgrænsede leveringsvej er lokalt integreret og målprøvet; egen præcis GitHub-kontrol, sikker merge og konkret driftstilladelse samt faktisk installation og normale brugerforløb er fortsat åbne. Den brede eksport-/rettighedspakke, testoprindelse, opbevaring, anonym samlet viderebrug og tilbageholdte bindingsovergange aktiveres ikke. Faktisk lokal integration har bestået 127 målprøver gennem normale kaldere, kritisk kildegate, RDKS-/sikkerheds-/versionskontrol og begge uændrede modelbundles. De 100 ændrede filer omfatter 83 rent mekaniske versionsændringer; geodata er uændrede bortset fra topversionsfeltet.
+
+Alle fem ejerkrævede arbejdsområder er fortsat åbne. Fristen er 10. oktober 2026, ikke 21. oktober. Delegation fortsætter parallelt med én koordineret produktionsskribent; ingen produktionsændring under aktiv vejrhentning, nye vejrhentningsordrer eller omgåelse af særskilte afvisninger.
+
+# Historik: 4.0.557 – normale D1-kvitteringer; backendinstallation afventer
 
 Den afgrænsede kandidat er udtaget fra offentligt leveret 4.0.556/main `c84a889b`. PR #546 og kode-only-kørsel `38020500484` er gennemført med verificeret genbrug af samme vejrpakke og offentlig 210/673-kontrol. Den tidligere 4.0.556-tekst nedenfor er historik fra før denne levering; den er ikke aktuel ventestatus.
 

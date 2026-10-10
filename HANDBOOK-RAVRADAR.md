@@ -1,10 +1,33 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.557
+**Håndbogsversion:** 4.0.558
 
-4.0.557 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+4.0.558 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.182 Afgrænset reparation af det eksisterende turlager
+
+En Workerrettelse må ikke samtidig geninstallere databaser, ændre Edge-kode,
+migrere ture eller skrive nye secrets. Det eksisterende driftsworkflow får derfor
+et særskilt, udtrykkeligt valgt reparationsforløb med samme eksklusive lås som den
+fulde installation. Ukendte valg afvises; den fulde installation bevares.
+
+Reparationen kræver den præcise kontrollerede kildeversion, aktuel main, faktisk
+eksisterende EU-shards og skemaer samt de normale private lagerkontroller.
+Kortvarig maintenance, dobbelt kontrol, drain og tilstrækkelig restlease går forud
+for én afgrænset erstatning af samme Worker. En frisk CLI-kvittering er ikke nok:
+den faktisk trafikførende version skal passe, og normal D1-drift skal genlæses.
+
+Kun forløbets eget maintenance-intent kan tillade ét afgrænset fremadgående
+reparationsforsøg efter fejl. Grøn oprydning er ikke en vellykket oprindelig
+installation. Leaseudløb ved tab af runner er ikke en observeret genoprettelse,
+og der er ikke bevist en atomisk garanti mod oprettelse, hvis Workeren forsvinder
+mellem kontrol og deploy.
+
+Det er en lokal leveringsvej, ikke en udført installation eller bevis for
+brugerens normale gemme-/læseforløb. Den ændrer ikke turdata, RavScore, vejr,
+modelbindinger, opbevaring, testoprindelse eller den tilbageholdte eksport.
 
 ## 89.181 Klientens kontosvar, turformular og fejlmeddelelse
 

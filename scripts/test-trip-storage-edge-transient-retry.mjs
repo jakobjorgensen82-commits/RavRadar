@@ -893,3 +893,399 @@ test('556 control positive normal '+label+' preserves original payload',async()=
   else assert.equal(result.value.duplicate,!options.fresh);
 });
 }
+
+// Additive existing-D1 repair contract. Old receipt assertions above are unchanged.
+{
+const { test: repairTest } = await import('node:test');
+const { compileFunction } = await import('node:vm');
+const { DatabaseSync } = await import('node:sqlite');
+const path = await import('node:path');
+const storage = await import('../supabase/functions/_shared/trip-storage.js');
+const classification = await import('./lib/trip-storage-legacy-classification.mjs');
+const preparation = fs.readFileSync('scripts/prepare-cloudflare-trip-storage.mjs','utf8');
+const workflow = fs.readFileSync('.github/workflows/deploy-trip-storage.yml','utf8');
+const schema = fs.readFileSync('cloudflare/trip-gateway/migrations/001_trip_observations.sql','utf8');
+const evaluate = (source, scope) => compileFunction('return (async()=>{\n'+source+'\n})();',Object.keys(scope))(...Object.values(scope));
+const withoutImports = source => source.replace(/^import[\s\S]*?;\r?\n/gm,'');
+const names=classification.TRIP_STORAGE_REQUIRED_SHARD_NAMES;
+const shardRows=()=>names.map((name,index)=>({name,uuid:`00000000-0000-4000-8000-${String(index).padStart(12,'0')}`,jurisdiction:'eu'}));
+
+async function prepareFixture({args=['--existing-worker-repair'],list=shardRows(),mutate=()=>{},databaseMutation=()=>{},fetchFailure=false}={}) {
+  const calls=[],writes=[],files=[],databases=names.map(()=>new DatabaseSync(':memory:'));
+  let error=null;
+  try {
+    for(const database of databases){database.exec(schema);database.prepare('insert into trip_storage_control(control_key,control_value) values(?,?)').run('d1_activation_attempted','true');}
+    databaseMutation(databases);
+    const boundedFetch=async(input,init={})=>{
+      const url=new URL(String(input));calls.push({url:url.pathname,query:url.search,method:init.method||'GET'});
+      if(fetchFailure)throw new TypeError('private synthetic cause');
+      let body;
+      if(url.hostname==='api.github.com') {
+        const evidence=classification.LEGACY_D1_ACTIVATION_EVIDENCE;
+        body=url.pathname.endsWith('/jobs')?{total_count:1,jobs:[{name:classification.LEGACY_D1_ACTIVATION_JOB_NAME,run_attempt:1,status:'completed',conclusion:'success',steps:[...classification.LEGACY_D1_ACTIVATION_D1_STEPS.map(name=>({name,status:'completed',conclusion:'success'})),{name:classification.LEGACY_D1_ACTIVATION_SUPABASE_ROLLBACK_STEP,status:'completed',conclusion:'skipped'}]}]}:{id:evidence.runId,head_sha:evidence.headSha,head_branch:evidence.headBranch,event:evidence.event,path:evidence.workflowPath,status:'completed',conclusion:'success'};
+      } else if(url.pathname.endsWith('/database')) {
+        const page=Number(url.searchParams.get('page'));const result=page===1?list:[];
+        body={success:true,result,result_info:{page,per_page:100,count:result.length,total_count:list.length,total_pages:1}};
+      } else if(url.pathname.endsWith('/query')) {
+        const index=Number(url.pathname.split('/').at(-2).slice(-12));
+        const {sql,params=[]}=JSON.parse(init.body);calls.at(-1).sql=sql;
+        const write=!/^\s*select\b/i.test(sql);if(write)writes.push(sql);
+        const statement=databases[index].prepare(sql);
+        const results=write?(statement.run(...params),[]):statement.all(...params).map(row=>({...row}));
+        body={success:true,result:[{success:true,results}]};
+      } else throw new Error('Unexpected provider route');
+      mutate(body,{url,init,calls});
+      return {ok:true,status:200,headers:{get:()=>null},json:async()=>body};
+    };
+    await evaluate(withoutImports(preparation),{
+      fs:{writeFileSync:(name,value,options)=>files.push({name,value,options}),appendFileSync:(...value)=>files.push({output:value})},path,
+      D1_TRIP_SCHEMA_STATEMENTS:storage.D1_TRIP_SCHEMA_STATEMENTS,boundedFetch,
+      TRIP_STORAGE_REQUIRED_SHARD_NAMES:names,SHARD_COUNT:10,
+      classifyExistingTripStorageDatabases:classification.classifyExistingTripStorageDatabases,
+      verifyLegacyActivationEvidence:classification.verifyLegacyActivationEvidence,
+      process:{argv:['node','scripts/prepare-cloudflare-trip-storage.mjs',...args],env:{CLOUDFLARE_ACCOUNT_ID:'synthetic',CLOUDFLARE_API_TOKEN:'synthetic',TRIP_WRANGLER_CONFIG_PATH:'/synthetic/wrangler.json',GITHUB_TOKEN:'synthetic',GITHUB_REPOSITORY:classification.LEGACY_D1_ACTIVATION_EVIDENCE.repository}},
+      console:{log:()=>{}},
+    });
+  }catch(caught){error=caught;}finally{for(const database of databases)database.close();}
+  return {calls,writes,files,error};
+}
+
+repairTest('repair actual CLI selects read-only existing bindings with real ordinary SQLite metadata',async()=>{
+  const result=await prepareFixture({list:shardRows().reverse()});
+  assert.equal(result.error,null);assert.equal(result.writes.length,0);assert.equal(result.files.length,1);
+  assert.equal(result.calls.some(call=>call.url.includes('/actions/')),false);
+  const config=JSON.parse(result.files[0].value);
+  assert.deepEqual(config.d1_databases.map(row=>row.database_name),names);
+  assert.deepEqual(config.d1_databases.map(row=>row.binding),names.map((_,index)=>'TRIP_DB_'+index));
+  assert.equal(result.files[0].options.mode,0o600);
+  assert.equal(result.calls.length,13); // two bounded list pages, ten metadata reads, one control read.
+});
+repairTest('repair default CLI retains legacy evidence, nine DDL statements per shard and config',async()=>{
+  const result=await prepareFixture({args:[]});assert.equal(result.error,null);
+  assert.equal(result.writes.length,90);assert.equal(result.calls.filter(call=>call.url.includes('/actions/')).length,2);assert.equal(result.files.length,1);
+});
+for(const args of [['--unknown'],['--existing-worker-repair','--unknown'],['--existing-worker-repair','--existing-worker-repair']])
+repairTest('repair rejects unknown arguments before I/O '+args.join(' '),async()=>{
+  const result=await prepareFixture({args});assert.ok(result.error);assert.equal(result.calls.length,0);assert.deepEqual(result.files,[]);assert.deepEqual(result.writes,[]);
+});
+for(const [label,make] of [
+  ['empty',()=>[]],['partial',()=>shardRows().slice(1)],['extra',()=>[...shardRows(),{name:'extra'}]],
+  ['duplicate name',()=>shardRows().map((row,index)=>index===9?{...row,name:names[0]}:row)],
+  ['duplicate ID',()=>shardRows().map((row,index)=>index===9?{...row,uuid:shardRows()[0].uuid}:row)],
+  ['wrong jurisdiction',()=>shardRows().map((row,index)=>index===9?{...row,jurisdiction:'us'}:row)],
+  ['missing ID',()=>shardRows().map((row,index)=>index===9?{...row,uuid:undefined}:row)],
+]) repairTest('repair refuses '+label+' without creation/adoption',async()=>{
+  const result=await prepareFixture({list:make()});assert.ok(result.error);assert.deepEqual(result.files,[]);assert.deepEqual(result.writes,[]);
+});
+for(const [label,mutation] of [
+  ['absent activation',db=>db[0].exec('delete from trip_storage_control')],
+  ['missing table',db=>db[8].exec('drop table trip_owner_erasure_tombstones')],
+  ['wrong unique index',db=>db[8].exec('drop index trip_observation_registry_owner_client_unique; create index trip_observation_registry_owner_client_unique on trip_observation_registry(owner_subject,client_observation_id)')],
+  ['wrong order',db=>db[8].exec('drop index trip_observations_owner_time; create index trip_observations_owner_time on trip_observations(observed_at desc,owner_subject)')],
+  ['wrong collation',db=>db[8].exec('drop index trip_observations_owner_time; create index trip_observations_owner_time on trip_observations(owner_subject collate nocase,observed_at desc)')],
+]) repairTest('repair actual SQLite '+label+' rejects without schema repair',async()=>{
+  const result=await prepareFixture({databaseMutation:mutation});assert.ok(result.error);assert.deepEqual(result.files,[]);assert.deepEqual(result.writes,[]);
+});
+for(const [label,mutation] of [
+  ['provider false',body=>body.success=false],['provider missing',body=>delete body.success],
+  ['result false',body=>{if(body.result?.[0]?.results)body.result[0].success=false;}],
+  ['result missing',body=>{if(body.result?.[0]?.results)delete body.result[0].success;}],
+  ['result multiple',body=>{if(body.result?.[0]?.results)body.result.push(body.result[0]);}],
+  ['invalid rows',body=>{if(body.result?.[0]?.results)body.result[0].results=null;}],
+  ['pagination mismatch',body=>{if(body.result_info)body.result_info.page=2;}],
+]) repairTest('repair '+label+' acknowledgment stops without output',async()=>{
+  const result=await prepareFixture({mutate:mutation});assert.ok(result.error);assert.deepEqual(result.files,[]);assert.deepEqual(result.writes,[]);
+});
+repairTest('repair optional pagination totals and harmless SQLite auxiliary index remain compatible',async()=>{
+  const result=await prepareFixture({mutate:body=>{if(body.result_info)delete body.result_info;},databaseMutation:db=>db[2].exec('create index harmless_extra_index on trip_observations(created_at)')});
+  assert.equal(result.error,null);assert.equal(result.writes.length,0);
+});
+repairTest('repair transport failure stays sanitized and cannot create config',async()=>{
+  const result=await prepareFixture({fetchFailure:true});assert.ok(result.error);assert.doesNotMatch(result.error.message,/private synthetic cause/);assert.deepEqual(result.files,[]);assert.deepEqual(result.writes,[]);
+});
+function noProviderMutation(result) {
+  assert.equal(result.calls.some(call=>call.method!=='GET'&&!/^\s*select\b/i.test(call.sql||'')),false);
+}
+for(const list of [[],shardRows().slice(1),[...shardRows(),{name:'unexpected'}]])
+repairTest('repair rejects installation/adoption with zero provider write at database count '+list.length,async()=>{
+  const result=await prepareFixture({list});assert.ok(result.error);noProviderMutation(result);
+});
+for(const [label,results] of [['empty',[]],['false',[{control_value:'false'}]],['boolean',[{control_value:true}]],['null',[null]],['duplicate',[{control_value:'true'},{control_value:'true'}]]])
+repairTest('repair activation '+label+' does not publish config',async()=>{
+  const result=await prepareFixture({mutate:(body,{init})=>{if(init.body&&JSON.parse(init.body).sql.startsWith('select control_value'))body.result[0].results=results;}});
+  assert.ok(result.error);assert.deepEqual(result.files,[]);noProviderMutation(result);
+});
+repairTest('repair SQL literal case change is not erased by schema normalization',async()=>{
+  const result=await prepareFixture({databaseMutation:db=>{
+    db[5].exec('drop table trip_observations');
+    db[5].exec(storage.D1_TRIP_SCHEMA_STATEMENTS[0].replace("'live'","'LIVE'"));
+    db[5].exec(storage.D1_TRIP_SCHEMA_STATEMENTS[1]);db[5].exec(storage.D1_TRIP_SCHEMA_STATEMENTS[2]);
+  }});assert.ok(result.error);assert.deepEqual(result.files,[]);noProviderMutation(result);
+});
+
+const repairJob=workflow.replaceAll('\r\n','\n').split('  repair-existing-worker:\n')[1]||'';
+const steps=[...repairJob.matchAll(/      - name: ([^\n]+)\n([\s\S]*?)(?=      - (?:name:|uses:)|$)/g)].map(match=>({
+  name:match[1],text:match[2],id:/^        id: (.+)$/m.exec(match[2])?.[1],condition:/^        if: (.+)$/m.exec(match[2])?.[1],
+  code:/          node --input-type=module <<'REPAIR_NODE'\n([\s\S]*?)          REPAIR_NODE/.exec(match[2])?.[1]?.replace(/^          /gm,''),
+})).filter(step=>step.code);
+const condition=(value,steps,failed,cancelled=false)=>value?Function('steps','failure','cancelled','return '+value.replace(/^\$\{\{\s*|\s*\}\}$/g,''))(steps,()=>failed,()=>cancelled):!failed;
+async function workflowFixture({failCommand,driftCommand,preflightFailure=false,invalidLease=false,recoveryFailure=false,edgeUnavailable=false,badDeployVersion=false,lateDrift='',expireAfterWorkerPreflight=false,cancelRecovery=false,deployVersions={}}={}) {
+  const states={},calls=[],logs=[];let firstError=preflightFailure?new Error('PREFLIGHT_FAILED'):null,clock=1800000000000,failedOnce=false;
+  for(const step of steps){
+    if(!condition(step.condition,states,!!firstError,cancelRecovery)) {states[step.id]={outcome:'skipped',outputs:{}};continue;}
+    const outputs={},env={GITHUB_SHA:'a'.repeat(40),GITHUB_REF:'refs/heads/main',GITHUB_OUTPUT:'/synthetic/output',SUPABASE_PROJECT_ID:'synthetic',SUPABASE_URL:'https://synthetic.invalid',SUPABASE_PUBLISHABLE_KEY:'synthetic',TRIP_GATEWAY_SHARED_SECRET:'synthetic-existing-secret-at-least-32-characters',TRIP_WRANGLER_CONFIG_PATH:'/synthetic/config'};
+    const deadlineId=/REPAIR_LEASE_DEADLINE: \$\{\{ steps\.([a-z_]+)\.outputs\.deadline \}\}/.exec(step.text)?.[1];
+    if(deadlineId)env.REPAIR_LEASE_DEADLINE=invalidLease?'0':states[deadlineId].outputs.deadline;
+    const versionId=/REPAIR_EXPECTED_WORKER_VERSION: \$\{\{ steps\.([a-z_]+)\.outputs\.version \}\}/.exec(step.text)?.[1];
+    if(versionId)env.REPAIR_EXPECTED_WORKER_VERSION=states[versionId]?.outputs.version||'';
+    const execFileSync=(command,args,options)=>{
+      const action=command==='git'?(args[0]==='fetch'?'fetch':'head'):command==='supabase'?(args.at(-1)==='TRIP_STORAGE_MODE=d1'?'restore':'maintenance'):command==='npx'?(args.includes('deploy')?'deploy':'secret'):command==='sleep'?'drain':args[0].includes('verify-trip-storage-edge')?'edge':'worker';
+      const recordedAction=action==='worker'&&step.id.endsWith('replace')&&!calls.some(call=>call.step===step.id&&call.action==='deploy')?'worker-preflight':action;
+      calls.push({step:step.id,action:recordedAction,args,options});
+      if((!failedOnce&&recordedAction===failCommand)||(recoveryFailure&&step.id.startsWith('repair_recovery')&&action==='maintenance')){failedOnce=true;throw new Error('do not print synthetic secret cause');}
+      if(action==='head')return action===driftCommand||(lateDrift===step.id)?'b'.repeat(40):env.GITHUB_SHA;
+      if(action==='drain'){clock+=20000;return '';}
+      if(recordedAction==='worker-preflight'&&expireAfterWorkerPreflight)clock+=21*60000;
+      if(action==='deploy')return badDeployVersion?'unrecognized output':'Current Version ID: '+(deployVersions[step.id]||'11111111-1111-4111-8111-111111111111')+'\n';
+      return '';
+    };
+    try {
+      await evaluate(withoutImports(step.code),{execFileSync,fs:{appendFileSync:(_path,value)=>{for(const line of value.trim().split('\n')){const [key,...rest]=line.split('=');outputs[key]=rest.join('=');}}},process:{env},Date:class extends Date{static now(){return clock;}},console:{log:value=>logs.push(value)},waitForTripStorageEdgeReadiness:async()=>({ok:!edgeUnavailable})});
+      states[step.id]={outcome:'success',outputs};
+    }catch(error){firstError??=error;states[step.id]={outcome:'failure',outputs,error};}
+  }
+  return {states,calls,logs,firstError};
+}
+repairTest('repair workflow separates full default, repair and unknown selections',()=>{
+  assert.match(workflow,/deploy-trip-storage:\r?\n    if: \$\{\{ inputs\.operation == '' \|\| inputs\.operation == 'full-install' \}\}/);
+  assert.match(workflow,/repair-existing-worker:\r?\n    if: \$\{\{ inputs\.operation == 'existing-worker-repair' \}\}/);
+  assert.match(workflow,/reject-unknown-operation:[\s\S]*?run: exit 1/);assert.equal(steps.length,6);
+  assert.doesNotMatch(repairJob,/db push|functions deploy|migrate-trip-storage-to-cloudflare|mark-cloudflare-trip-storage|TRIP_STORAGE_MODE=supabase|TRIP_PSEUDONYM_SECRET_V1|readiness\.mjs publish/);
+  assert.match(repairJob,/prepare-cloudflare-trip-storage\.mjs --existing-worker-repair/);
+  assert.match(repairJob,/apply-candidate-g-trip-quality-migration\.mjs --verify-only/);
+  for(const step of steps.filter(step=>step.id.endsWith('replace')))assert.match(step.text,/timeout-minutes: 7/);
+});
+repairTest('repair actual workflow node steps preserve exact-main/lease/drain and version receipt',async()=>{
+  const result=await workflowFixture();assert.equal(result.firstError,null);
+  assert.deepEqual(result.calls.filter(call=>['maintenance','secret','deploy','restore','drain'].includes(call.action)).map(call=>call.action),['maintenance','drain','deploy','restore']);
+  assert.equal(result.calls.some(call=>call.action==='secret'),false);
+  for(const call of result.calls.filter(call=>call.action==='deploy'))assert.equal(call.options.input,undefined);
+  assert.equal(result.calls.some(call=>call.step.startsWith('repair_recovery')),false);assert.equal(result.logs.length,1);assert.match(result.logs[0],/source=a{40} version=11111111/);
+  for(const action of ['maintenance','deploy','restore']){const at=result.calls.findIndex(call=>call.action===action);assert.deepEqual(result.calls.slice(at-3,at).map(call=>call.action),['fetch','head','head']);}
+});
+repairTest('repair failed preflight has no intent and zero recovery/mutation',async()=>{
+  const result=await workflowFixture({preflightFailure:true});assert.equal(result.firstError.message,'PREFLIGHT_FAILED');assert.deepEqual(result.calls,[]);
+});
+for(const action of ['fetch','head','maintenance','edge','drain','worker-preflight','deploy','worker','restore'])
+repairTest('repair failure at '+action+' keeps first failure and at most one D1-forward recovery',async()=>{
+  const result=await workflowFixture({failCommand:action});assert.ok(result.firstError);assert.doesNotMatch(result.firstError.message,/synthetic secret/);
+  const attempted=result.states.repair_quiesce.outputs.intent==='true';
+  assert.equal(result.calls.some(call=>call.step==='repair_recovery_replace'),attempted);
+  assert.ok(result.calls.filter(call=>call.step==='repair_recovery_replace'&&call.action==='deploy').length<=1);
+  assert.ok(result.calls.filter(call=>call.action==='deploy').length<=2);
+});
+repairTest('repair main drift or insufficient lease cannot reach replacement',async()=>{
+  for(const options of [{driftCommand:'head'},{invalidLease:true}]){const result=await workflowFixture(options);assert.ok(result.firstError);assert.equal(result.calls.some(call=>call.action==='secret'||call.action==='deploy'||call.action==='restore'),false);}
+});
+repairTest('repair secondary recovery failure never masks first failure or starts second replacement',async()=>{
+  const result=await workflowFixture({failCommand:'deploy',recoveryFailure:true});assert.equal(result.firstError.message,'TRIP_REPAIR_WORKER_DEPLOY');assert.equal(result.calls.filter(call=>call.action==='deploy').length,1);
+});
+repairTest('repair unknown recovery Edge or missing deployed version never reports success',async()=>{
+  const edge=await workflowFixture({failCommand:'deploy',edgeUnavailable:true});assert.equal(edge.firstError.message,'TRIP_REPAIR_WORKER_DEPLOY');assert.equal(edge.calls.filter(call=>call.action==='deploy').length,1);
+  const version=await workflowFixture({badDeployVersion:true});assert.equal(version.firstError.message,'TRIP_REPAIR_DEPLOY_IDENTITY_MISSING');assert.equal(version.calls.filter(call=>call.action==='restore').length,0);
+});
+for(const stage of ['repair_replace','repair_restore','repair_recovery_quiesce','repair_recovery_replace','repair_recovery_restore'])
+repairTest('repair exact-main drift at '+stage+' prevents its mutation',async()=>{
+  const result=await workflowFixture({lateDrift:stage,...(stage.startsWith('repair_recovery')?{failCommand:'deploy'}:{})});
+  assert.ok(result.firstError);assert.equal(result.calls.some(call=>call.step===stage&&['maintenance','secret','deploy','restore'].includes(call.action)),false);
+});
+repairTest('repair expiry during signed preflight cannot allow stale primary or recovery deploy',async()=>{
+  const result=await workflowFixture({expireAfterWorkerPreflight:true});assert.equal(result.firstError.message,'TRIP_REPAIR_LEASE_INVALID');assert.equal(result.calls.some(call=>call.action==='deploy'||call.action==='restore'),false);
+});
+repairTest('repair cancellation never starts a failure-recovery mutation',async()=>{
+  const result=await workflowFixture({failCommand:'deploy',cancelRecovery:true});assert.equal(result.firstError.message,'TRIP_REPAIR_WORKER_DEPLOY');assert.equal(result.calls.some(call=>call.step.startsWith('repair_recovery')),false);
+});
+repairTest('repair uses unchanged normal expiring-maintenance behavior, never claims a permanent lock',async()=>{
+  const source=fs.readFileSync('supabase/functions/_shared/trip-store.ts','utf8');
+  const start=source.indexOf('export function tripStorageMode('),end=source.indexOf('\nfunction activeTripStorageMode',start);
+  assert.ok(start>=0&&end>start);
+  const body=source.slice(start,end).replace('export function','function').replace(': TripStorageMode','');
+  const now=1800000000000,deadline=now+20*60000;
+  const result=await evaluate(body+'\nreturn [tripStorageMode(now),tripStorageMode(deadline)];',{
+    now,deadline,Deno:{env:{get:()=>`maintenance:${new Date(deadline).toISOString()}`}},
+    TRIP_STORAGE_MAINTENANCE_MAX_LEASE_MS:30*60000,GatewayError:class extends Error{},
+  });assert.deepEqual(result,['maintenance','d1']);
+});
+repairTest('deployment workflow requires its own primary receipt after deploy and before/after restore',async()=>{
+  const result=await workflowFixture();assert.equal(result.firstError,null);
+  const calls=result.calls.filter(call=>Object.hasOwn(call.options?.env||{},'EXPECTED_TRIP_WORKER_VERSION'));
+  assert.deepEqual(calls.map(call=>call.step),['repair_replace','repair_restore','repair_restore']);
+  assert.ok(calls.every(call=>call.options.env.EXPECTED_TRIP_WORKER_VERSION===result.states.repair_replace.outputs.version));
+  assert.match(result.states.repair_replace.outputs.version,/^11111111-/);
+});
+repairTest('deployment workflow recovery never reuses the failed primary version receipt',async()=>{
+  const recovered='22222222-2222-4222-8222-222222222222';
+  const result=await workflowFixture({failCommand:'worker',deployVersions:{repair_recovery_replace:recovered}});
+  assert.equal(result.firstError.message,'TRIP_REPAIR_WORKER_ATTESTATION');
+  assert.equal(result.states.repair_replace.outputs.version,undefined);
+  assert.equal(result.states.repair_recovery_replace.outputs.version,recovered);
+  const calls=result.calls.filter(call=>call.step==='repair_recovery_restore');
+  assert.equal(calls.filter(call=>call.action==='worker').length,2);
+  assert.ok(calls.filter(call=>call.action==='worker').every(call=>call.options.env.EXPECTED_TRIP_WORKER_VERSION===recovered));
+});
+}
+
+// Active-deployment receipt: the normal verifier, never a historical UUID search.
+{
+const { test: deploymentTest } = await import('node:test');
+const { verifyActiveWorkerDeployment } = await import('./verify-cloudflare-trip-gateway.mjs');
+const { compileFunction } = await import('node:vm');
+const { boundedFetch, TRIP_STORAGE_NETWORK_TIMEOUT_CODE, TRIP_STORAGE_NETWORK_TIMEOUT_MS } = await import('./lib/bounded-fetch.mjs');
+const { normalizeCloudflareGatewayUrl, tripGatewaySignature } = await import('../supabase/functions/_shared/trip-storage.js');
+const expected = '11111111-1111-4111-8111-111111111111', other = '22222222-2222-4222-8222-222222222222';
+const accountId='a'.repeat(32), apiToken='synthetic-token', workerName='ravradar-trip-gateway';
+const valid=()=>({success:true,result:{deployments:[{id:other,strategy:'percentage',versions:[{version_id:expected,percentage:100}],author_email:'do-not-retain@example.invalid',annotations:{private:'do-not-retain'}}]},result_info:{page:1,per_page:1,count:1,total_count:17}});
+async function probe({body=valid(),response,fetchImpl,...overrides}={}) {
+  const calls=[];
+  const result=await verifyActiveWorkerDeployment({accountId,apiToken,workerName,expectedVersion:expected,...overrides,
+    fetchImpl:async(input,init)=>{calls.push({input,init});return fetchImpl?fetchImpl(input,init):response||new Response(JSON.stringify(body),{status:200});}});
+  return {result,calls};
+}
+deploymentTest('deployment receipt accepts only active exact100 UUID and emits no extra metadata',async()=>{
+  const {result,calls}=await probe();assert.deepEqual(result,{deploymentId:other,versionId:expected});assert.equal(calls.length,1);
+  assert.equal(calls[0].input,`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${workerName}/deployments?page=1&per_page=1`);
+  assert.equal(calls[0].init.method,'GET');assert.equal(calls[0].init.redirect,'error');assert.equal(calls[0].init.cache,'no-store');assert.equal(calls[0].init.body,undefined);
+  assert.equal(calls[0].init.headers.Authorization,'Bearer '+apiToken);assert.equal(calls[0].init.signal.aborted,true);
+  assert.doesNotMatch(JSON.stringify(result),/author|private|do-not-retain|token/);
+});
+deploymentTest('deployment receipt allows omitted optional pagination and unrelated harmless metadata',async()=>{
+  const body=valid();delete body.result_info;body.other='ignored';assert.equal((await probe({body})).result.versionId,expected);
+});
+for(const [label,mutate]of [
+  ['mismatch',b=>b.result.deployments[0].versions[0].version_id=other],
+  ['historical-only',b=>{b.result.deployments.push(structuredClone(b.result.deployments[0]));b.result.deployments[0].versions[0].version_id=other;}],
+  ['split',b=>b.result.deployments[0].versions=[{version_id:expected,percentage:99},{version_id:other,percentage:1}]],
+  ['extra-zero',b=>b.result.deployments[0].versions.push({version_id:other,percentage:0})],
+  ['string100',b=>b.result.deployments[0].versions[0].percentage='100'],
+  ['success-false',b=>b.success=false],['success-absent',b=>delete b.success],['success-string',b=>b.success='true'],
+  ['result-array',b=>b.result=[]],['result-null',b=>b.result=null],['rows-null',b=>b.result.deployments=null],['rows-empty',b=>b.result.deployments=[]],
+  ['row-null',b=>b.result.deployments=[null]],['versions-null',b=>b.result.deployments[0].versions=null],['version-row-null',b=>b.result.deployments[0].versions=[null]],
+  ['deployment-id',b=>b.result.deployments[0].id='not-a-uuid'],['version-id',b=>b.result.deployments[0].versions[0].version_id='not-a-uuid'],
+  ['strategy',b=>b.result.deployments[0].strategy='unknown'],['page',b=>b.result_info.page=2],['per-page',b=>b.result_info.per_page=20],['count',b=>b.result_info.count=2],['page-null',b=>b.result_info=null],
+])deploymentTest('deployment receipt rejects '+label,async()=>{
+  const body=valid();mutate(body);await assert.rejects(probe({body}),{message:'TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED'});
+});
+for(const status of [401,403,404,429,500,502,503,504])deploymentTest('deployment receipt HTTP'+status+' fails once without raw error or retry',async()=>{
+  let calls=0,cancelled=0;
+  const response=new Response(new ReadableStream({start(c){c.enqueue(new TextEncoder().encode('do-not-retain'));},cancel(){cancelled++;}}),{status});
+  await assert.rejects(probe({fetchImpl:async()=>{calls++;return response;}}),{message:'TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED'});
+  assert.equal(calls,1);assert.equal(cancelled,1);
+});
+for(const raw of ['{malformed','null','[]','"provider error with synthetic token"'])deploymentTest('deployment receipt malformed body '+raw.slice(0,12),async()=>{
+  await assert.rejects(probe({response:new Response(raw)}),{message:'TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED'});
+});
+deploymentTest('deployment receipt bounds streamed bytes and cancels oversize without Content-Length',async()=>{
+  let cancelled=0;const response=new Response(new ReadableStream({start(c){c.enqueue(new Uint8Array(65537));},cancel(){cancelled++;}}));
+  await assert.rejects(probe({response}),{message:'TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED'});assert.equal(cancelled,1);
+});
+deploymentTest('deployment receipt refuses oversized advertised body before reading and cancels',async()=>{
+  let cancelled=0;const response=new Response(new ReadableStream({cancel(){cancelled++;}}),{headers:{'content-length':'65537'}});
+  await assert.rejects(probe({response}),{message:'TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED'});assert.equal(cancelled,1);
+});
+deploymentTest('deployment receipt sanitizes transport rejection',async()=>{
+  await assert.rejects(probe({fetchImpl:async()=>{throw new Error('do-not-retain raw provider token');}}),{message:'TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED'});
+});
+deploymentTest('deployment receipt bounds held transport and awaits its abort',async()=>{
+  let aborted=false,transport;
+  try {await assert.rejects(probe({timeoutMs:5,fetchImpl:(_input,{signal})=>transport=new Promise((_,reject)=>signal.addEventListener('abort',()=>{aborted=true;reject(new Error('private timeout cause'));},{once:true}))}),{message:'TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED'});}
+  finally {await transport?.catch(()=>{});}assert.equal(aborted,true);
+});
+deploymentTest('deployment receipt bounds held body and closes stream',async()=>{
+  let cancelled=0;const response=new Response(new ReadableStream({cancel(){cancelled++;}}));
+  await assert.rejects(probe({timeoutMs:5,response}),{message:'TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED'});assert.equal(cancelled,1);
+});
+for(const overrides of [{expectedVersion:''},{expectedVersion:undefined},{expectedVersion:other.slice(1)},{workerName:'other-worker'},{accountId:'../different'},{apiToken:''}])deploymentTest('deployment receipt invalid intent makes zero HTTP '+JSON.stringify(overrides),async()=>{
+  let calls=0;await assert.rejects(probe({...overrides,fetchImpl:async()=>{calls++;return new Response('{}');}}),{message:'TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED'});assert.equal(calls,0);
+});
+async function verifierMain({claim,body=valid(),badConfig=false}={}) {
+  let code=fs.readFileSync('scripts/verify-cloudflare-trip-gateway.mjs','utf8').replaceAll('\r\n','\n');
+  code=code.slice(0,code.lastIndexOf('\nif (process.argv[1]')).replace(/^import[\s\S]*?from ['"][^'"]+['"];\n/gm,'').replace(/^export /gm,'');
+  const calls=[],logs=[],configReads=[];
+  const fetchImpl=async(input,init)=>{
+    calls.push({input:String(input),init});
+    if(String(input).includes('api.cloudflare.com'))return new Response(JSON.stringify(body));
+    if(String(input).endsWith('/health'))return new Response(JSON.stringify({ok:true,contract_version:'4.0.311',shards:10,storage_schema_version:1,idempotency_registry_schema_version:2,owner_erasure_tombstone_schema_version:1}));
+    return init.headers['X-RavRadar-Signature']?new Response(JSON.stringify({ok:true,trip_count:0})):new Response('',{status:401});
+  };
+  const env={CLOUDFLARE_TRIP_GATEWAY_URL:'https://synthetic-gateway.example.workers.dev',TRIP_GATEWAY_SHARED_SECRET:'synthetic-existing-shared-secret-with-32-characters',CLOUDFLARE_ACCOUNT_ID:accountId,CLOUDFLARE_API_TOKEN:apiToken,TRIP_WRANGLER_CONFIG_PATH:'/synthetic/config'};
+  if(claim!==undefined)env.EXPECTED_TRIP_WORKER_VERSION=claim;
+  let error;try{await compileFunction('return(async()=>{'+code+'\nawait main();})();',['fs','process','fetch','globalThis','boundedFetch','TRIP_STORAGE_NETWORK_TIMEOUT_CODE','TRIP_STORAGE_NETWORK_TIMEOUT_MS','normalizeCloudflareGatewayUrl','tripGatewaySignature','console'])(
+    {readFileSync:p=>{configReads.push(p);return JSON.stringify({name:badConfig?'wrong-worker':workerName});}},{env},fetchImpl,{fetch:fetchImpl},boundedFetch,TRIP_STORAGE_NETWORK_TIMEOUT_CODE,TRIP_STORAGE_NETWORK_TIMEOUT_MS,normalizeCloudflareGatewayUrl,tripGatewaySignature,{log:value=>logs.push(value)});
+  }catch(caught){error=caught;}return{calls,logs,configReads,error};
+}
+deploymentTest('deployment normal CLI default retains exactly original three probes and no config/provider read',async()=>{
+  const result=await verifierMain();assert.equal(result.error,undefined);assert.equal(result.calls.length,3);assert.deepEqual(result.configReads,[]);assert.equal(result.logs.length,1);
+});
+deploymentTest('deployment normal CLI optional healthy claim performs one bounded active metadata read',async()=>{
+  const result=await verifierMain({claim:expected});assert.equal(result.error,undefined);assert.equal(result.calls.length,4);assert.deepEqual(result.configReads,['/synthetic/config']);assert.equal(result.logs.length,1);assert.doesNotMatch(JSON.stringify(result.logs),/author|do-not-retain|token/);
+});
+deploymentTest('deployment normal CLI optional mismatched claim cannot print normal success',async()=>{
+  const body=valid();body.result.deployments[0].versions[0].version_id=other;const result=await verifierMain({claim:expected,body});assert.equal(result.error?.message,'TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED');assert.deepEqual(result.logs,[]);
+});
+deploymentTest('deployment normal CLI empty required claim cannot silently fall back to default',async()=>{
+  const result=await verifierMain({claim:''});assert.equal(result.error?.message,'TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED');assert.deepEqual(result.logs,[]);assert.equal(result.calls.length,3);
+});
+deploymentTest('deployment normal CLI wrong config cannot query another Worker',async()=>{
+  const result=await verifierMain({claim:expected,badConfig:true});assert.equal(result.error?.message,'TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED');assert.deepEqual(result.logs,[]);assert.equal(result.calls.length,3);
+});
+}
+
+// Active-deployment cleanup must not await an unbounded stream cancel promise.
+{
+const { test: deploymentCleanupTest } = await import('node:test');
+const { verifyActiveWorkerDeployment } = await import('./verify-cloudflare-trip-gateway.mjs');
+const accountId='a'.repeat(32), expectedVersion='11111111-1111-4111-8111-111111111111';
+const deploymentId='22222222-2222-4222-8222-222222222222';
+const receipt=()=>({success:true,result:{deployments:[{id:deploymentId,strategy:'percentage',versions:[{version_id:expectedVersion,percentage:100}]}]}});
+const options={accountId,apiToken:'synthetic-token',workerName:'ravradar-trip-gateway',expectedVersion};
+const failure='TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED';
+for(const kind of ['advertised-oversize','streamed-oversize','malformed-utf8','held-read'])deploymentCleanupTest('deployment cleanup pending cancel '+kind,async()=>{
+  let finishCancel,cancelRequested=0,cancelCompleted=false,signal,observer;
+  const cancellation=new Promise(resolve=>{finishCancel=()=>{cancelCompleted=true;resolve();};});
+  const stream=new ReadableStream({start(controller){
+    if(kind==='streamed-oversize')controller.enqueue(new Uint8Array(65_537));
+    if(kind==='malformed-utf8')controller.enqueue(new Uint8Array([255]));
+  },cancel(){cancelRequested++;return cancellation;}});
+  const response=new Response(stream,kind==='advertised-oversize'?{headers:{'content-length':'65537'}}:{});
+  const operation=verifyActiveWorkerDeployment({...options,timeoutMs:10,fetchImpl:async(_url,init)=>{signal=init.signal;return response;}})
+    .then(value=>({value}),error=>({error}));
+  const notSettled=Symbol('observer expired');
+  try{
+    const result=await Promise.race([operation,new Promise(resolve=>{observer=setTimeout(()=>resolve(notSettled),150);})]);
+    assert.notEqual(result,notSettled,'verification must settle even while underlying cancel remains pending');
+    assert.equal(result.error?.message,failure);assert.equal(result.value,undefined);
+    assert.equal(cancelRequested,1);assert.equal(cancelCompleted,false);
+    assert.equal(signal.aborted,true);assert.equal(stream.locked,false);
+  }finally{clearTimeout(observer);finishCancel();await cancellation;await operation;}
+});
+for(const valid of [true,false])deploymentCleanupTest('deployment cleanup full EOF preserves '+(valid?'success':'malformed failure'),async()=>{
+  let cancelled=0,signal;const stream=new ReadableStream({start(controller){controller.enqueue(new TextEncoder().encode(valid?JSON.stringify(receipt()):'{malformed'));controller.close();},cancel(){cancelled++;return new Promise(()=>{});}});
+  let result,error;try{result=await verifyActiveWorkerDeployment({...options,fetchImpl:async(_url,init)=>{signal=init.signal;return new Response(stream);}});}catch(caught){error=caught;}
+  if(valid){assert.equal(error,undefined);assert.deepEqual(result,{deploymentId,versionId:expectedVersion});}
+  else{assert.equal(error?.message,failure);assert.equal(result,undefined);}
+  assert.equal(cancelled,0);assert.equal(signal.aborted,true);assert.equal(stream.locked,false);
+});
+deploymentCleanupTest('deployment cleanup rejected cancellation preserves first sanitized failure',async()=>{
+  let cancelled=0;const stream=new ReadableStream({cancel(){cancelled++;return Promise.reject(new Error('synthetic raw cancellation error'));}});
+  await assert.rejects(verifyActiveWorkerDeployment({...options,fetchImpl:async()=>new Response(stream,{headers:{'content-length':'65537'}})}),{message:failure});
+  await Promise.resolve();assert.equal(cancelled,1);assert.equal(stream.locked,false);
+});
+for(const id of [[deploymentId],null,{},42])deploymentCleanupTest('deployment receipt rejects nonstring deployment ID '+JSON.stringify(id),async()=>{
+  const body=receipt();body.result.deployments[0].id=id;
+  await assert.rejects(verifyActiveWorkerDeployment({...options,fetchImpl:async()=>new Response(JSON.stringify(body))}),{message:failure});
+});
+for(const descriptor of [[accountId],{toString:()=>accountId},null,42])deploymentCleanupTest('deployment receipt rejects nonstring account descriptor '+(Array.isArray(descriptor)?'array':typeof descriptor),async()=>{
+  let calls=0;await assert.rejects(verifyActiveWorkerDeployment({...options,accountId:descriptor,fetchImpl:async()=>{calls++;return new Response(JSON.stringify(receipt()));}}),{message:failure});
+  assert.equal(calls,0);
+});
+}

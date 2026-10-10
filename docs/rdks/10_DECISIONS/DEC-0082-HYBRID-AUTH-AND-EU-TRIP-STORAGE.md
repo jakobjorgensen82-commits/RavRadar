@@ -83,3 +83,15 @@ En fuldført tælling, historiklæsning, lagring eller ejersletning kræver en p
 Workerrettelsen, det eksisterende mål og dets én-gangs source-child er faktisk lokalt integreret: 102 målprøver og alle 13 normale privacy-childforløb består; 47 topkommandoer og begge vejrbundles bevares. Præcis ny source-CI og særskilt Worker-installation mangler. Dette ændrer ikke behandlingsformål, opbevaring, eksport, schema eller modelbinding.
 
 Det eksisterende fulde turlagerworkflow indeholder ikke en Worker-only-indstilling. Det må ikke dispatches som en ren installation af denne rettelse uden myndighed til hele dets SQL-/Edge-/migrations-/modeforløb. Et særskilt afgrænset reparationsforslag forberedes lokalt; ingen ny driftstilladelse eller omgåelse af vedligeholdelse, exact-main, EU-, privacy- og attestationkrav følger af dette tillæg.
+
+## Afgrænset eksisterende-Worker-reparation – lokal 4.0.558, 2026-10-10
+
+PR #547's normale D1-kvitteringer har bestået præcis kildekontrol på head `11d24dab`, kørsel `38028049478`, forsøg 1. Det er ikke backendinstallation. Det eksisterende turlagerworkflow får et særskilt udtrykkeligt valg `existing-worker-repair`; default fuld installation bevares, ukendte valg afvises og begge grene deler workflowets eksklusive lås.
+
+Den afgrænsede gren kræver read-only applied-migrations/SQL-/Candidate-G-verifikation, faktisk aktiveret D1, ti entydige eksisterende EU-shards med de forventede skemaer samt Edge-, Worker-health-, privat count- og unsigned-afvisningskontroller. Ingen databaseoprettelse/adoption, SQL-installation, aktiveringsmarkør, turmigration, Edge-kode eller secret-skrivning følger af denne gren.
+
+Den eneste kodeerstatning er normal deploy af den samme Worker efter exact-main, maintenance-lease, dobbelt attestation, 20 sekunders drain og mindst 600 sekunders restlease; den samlede erstatningskontrol har højst syv minutter. Frisk CLI-version og faktisk trafikførende versionsgenlæsning skal stemme. Egen erstatningskvittering skal også passe før og efter den parrede D1-genoprettelse; primary og recovery må ikke låne hinandens tidligere UUID.
+
+Efter fejl kræver ét højst afgrænset D1-fremadgående forsøg eget faktisk maintenance-intent, ny lease/drain, privat kontrol og frisk main. Ingen Supabase-toggle eller genkørsel efter annullering. Oprindelig fejlstatus bevares. Automatisk leaseudløb er ikke observeret recovery, og ingen atomisk leverandørgaranti mod ny Worker-oprettelse ved samtidig bortfald er bevist.
+
+Dette tillæg beskriver lokal kode og nødvendige gates, ikke en ny operationstilladelse. Egen source-CI, sikker merge uden aktiv writer, konkret installationsautoritet samt faktisk installation og normale brugerforløb kræves fortsat. De tilbageholdte eksport-, formåls-, opbevarings-, testoprindelses- og bindingsovergange er uændrede.

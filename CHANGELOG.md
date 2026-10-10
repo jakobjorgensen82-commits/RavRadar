@@ -1,4 +1,12 @@
-# Lokal 4.0.557 – 2026-10-10
+# Lokal 4.0.558 – 2026-10-10
+
+- Tilføjet et udtrykkeligt valgt, eksklusivt forløb til afgrænset reparation af den eksisterende turlager-Worker. Normal fuld installation bevares; ukendte valg afvises.
+- Reparationen læser og kontrollerer eksisterende SQL, aktivering, ti EU-shards, skema og private grænser; ingen databaseoprettelse, SQL-installation, turmigration, Edge-deploy eller secret-skrivning.
+- Eksakt main, afgrænset maintenance/drain/lease, én syvminutters Worker-erstatning og højst ét eget D1-fremadgående recoveryforløb. Faktisk trafikførende versionskvittering skal passe før normal afslutning; oprydning må ikke skjule den oprindelige fejl.
+- PR #547's præcise 4.0.557-kildekontrol er bestået. Den nye leveringsvej er ikke installeret; egen CI, sikker merge, konkret driftstilladelse og hosted brugerforløb mangler.
+- Alle fem målområder forbliver åbne med ejerens frist 10. oktober. Ingen ny autoritet til afviste overgange, revision eller manuelle vejrhentninger.
+
+# Historik: Lokal 4.0.557 – 2026-10-10
 
 - Hærdet normale D1-kvitteringer i eksisterende count/store/list/delete: ugyldige resultater må ikke blive nul, tom historik eller falsk skrive-/slettekvittering. Sletning kræver en kvitteret barriere og sikre del- og totalantal, før næste trin.
 - Bevaret SQL, lagerskema, ejerskab, idempotens og begge vejrbundles. Det eksisterende regressionsmål nås én gang gennem privacygruppen; 47 topkommandoer bevares.
