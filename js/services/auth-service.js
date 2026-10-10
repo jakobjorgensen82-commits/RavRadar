@@ -1,4 +1,4 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.569";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.570";
 
 const STORAGE_KEY = "ravradar-auth-session";
 const REFRESH_MARGIN_SECONDS = 300;
@@ -270,7 +270,10 @@ export async function getCurrentProfile() {
   const { response, body: profiles } = await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/profiles?select=id,email,display_name,role,is_active&id=eq.${encodeURIComponent(userId)}&limit=1`, {}, { consumeJson: true });
   assertOwner();
   if (!response.ok) throw new Error(`Kunne ikke kontrollere brugerprofilen (${response.status})`);
-  if (!Array.isArray(profiles)) throw new Error("Brugerprofilen kunne ikke hentes sikkert.");
+  if (!Array.isArray(profiles) || profiles.length > 1
+    || (profiles.length === 1 && (!profiles[0] || typeof profiles[0] !== "object"
+      || Array.isArray(profiles[0]) || profiles[0].id !== userId)))
+    throw new Error("Brugerprofilen kunne ikke hentes sikkert.");
   assertOwner();
   return profiles[0] || null;
 }

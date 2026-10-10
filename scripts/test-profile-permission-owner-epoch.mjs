@@ -216,3 +216,85 @@ async function jsonConsumerScenario(caller,mode){
 }
 for(const caller of ['profile','list','permissions'])for(const mode of ['deadline','malformed','null','object','empty','ordinary','http-error'])
  test('profile JSON consumer: '+caller+' '+mode,()=>jsonConsumerScenario(caller,mode));
+
+// The real role caller must not turn a contradictory profile receipt into a
+// role. This uses actual auth/JSON consumption, not a profile/auth facade.
+async function profileReadbackScenario(rows, expectedRole, { renewal = false } = {}) {
+  const bank = new Map([['ravradar-auth-session', JSON.stringify(sessionFor())]]);
+  const reached = deferred(), release = deferred(), timers = new Set(), operations = [];
+  let profiles = 0, refreshes = 0;
+  const scope = {
+    PUBLIC_CONFIG: config, AbortController, DOMException,
+    localStorage: {
+      getItem: key => bank.get(key) ?? null,
+      setItem: (key, value) => bank.set(key, String(value)), removeItem: key => bank.delete(key),
+    },
+    setTimeout(callback, delay) {
+      const timer = setTimeout(() => { timers.delete(timer); callback(); }, delay);
+      timers.add(timer); return timer;
+    },
+    clearTimeout(timer) { clearTimeout(timer); timers.delete(timer); },
+    async fetch(input, options) {
+      const url = new URL(input);
+      assert.equal(url.origin, config.supabaseUrl, 'Only synthetic local HTTP responses');
+      if (url.pathname === '/auth/v1/token') {
+        assert.equal(url.searchParams.get('grant_type'), 'refresh_token');
+        refreshes += 1;
+        return Response.json(sessionFor(ownerA, 'synthetic-renewed'));
+      }
+      assert.equal(url.pathname, '/rest/v1/profiles');
+      assert.equal(url.searchParams.get('id'), `eq.${ownerA}`);
+      assert.equal(url.searchParams.get('limit'), '1');
+      assert.equal(options.headers.Authorization, 'Bearer synthetic-original');
+      profiles += 1;
+      return { ok: true, status: 200, async json() {
+        reached.resolve(); await release.promise; return structuredClone(rows);
+      } };
+    },
+  };
+  vm.runInNewContext(`${authBody}\nthis.api = { getCurrentRole, refreshSession, currentSession, authIdentityEpoch };`,
+    scope, { filename: 'actual-auth-profile-readback.js' });
+  const auth = scope.api;
+  const pending = auth.getCurrentRole().then(value => ({ value }), error => ({ error }));
+  operations.push(pending);
+  try {
+    await Promise.race([reached.promise, pending.then(() => { throw new Error('Actual profile body was not reached'); })]);
+    if (renewal) {
+      const renewing = auth.refreshSession({ force: true }); operations.push(renewing); await renewing;
+    }
+    const chosen = auth.currentSession(), stored = bank.get('ravradar-auth-session');
+    release.resolve();
+    const outcome = await pending;
+    assert.equal(auth.currentSession(), chosen);
+    assert.equal(bank.get('ravradar-auth-session'), stored);
+    assert.equal(auth.currentSession().user.id, ownerA);
+    assert.equal(auth.authIdentityEpoch(), 0, 'Same-login renewal must not become another login intent');
+    if (expectedRole === undefined) {
+      assert.equal(outcome.value, undefined, 'Malformed or another-owner receipt must not supply a role');
+      assert.equal(outcome.error?.message, 'Brugerprofilen kunne ikke hentes sikkert.');
+    } else {
+      assert.equal(outcome.error, undefined);
+      assert.equal(outcome.value, expectedRole);
+    }
+    assert.equal(profiles, 1);
+    assert.equal(refreshes, renewal ? 1 : 0);
+  } finally {
+    release.resolve(); await Promise.allSettled(operations);
+    const remaining = timers.size;
+    for (const timer of timers) clearTimeout(timer);
+    assert.equal(remaining, 0, 'Actual auth request guards must already be closed');
+  }
+}
+for (const [label, rows] of [
+  ['foreign owner', [{ id: ownerB, role: 'owner', is_active: true }]],
+  ['missing owner id', [{ role: 'owner', is_active: true }]],
+  ['null profile', [null]],
+  ['array profile', [[]]],
+  ['primitive profile', ['owner']],
+  ['multiple rows', [{ id: ownerA, role: 'owner' }, { id: ownerA, role: 'owner' }]],
+]) test('profile readback: reject ' + label, () => profileReadbackScenario(rows));
+test('profile readback: empty remains no role', () => profileReadbackScenario([], null));
+test('profile readback: one exact owner retains role', () =>
+  profileReadbackScenario([{ id: ownerA, role: 'owner', is_active: true }], 'owner'));
+test('profile readback: exact owner permits same-login renewal during JSON body', () =>
+  profileReadbackScenario([{ id: ownerA, role: 'owner', is_active: true }], 'owner', { renewal: true }));

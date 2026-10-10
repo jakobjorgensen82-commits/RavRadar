@@ -1,4 +1,12 @@
-# 2026-10-11 – lokal 4.0.569, kanoniske assistentsvar
+# 2026-10-11 – lokal 4.0.570, ejerbundet profilgenlæsning
+
+Den normale getCurrentRole → getCurrentProfile-kæde kunne i en lokal syntetisk prøve bruge et svar med forkert ejer trods korrekt forespørgselsfilter. 570 kræver tom profilliste eller én objekt-række med præcis forventet bruger-id, før rollen returneres. Forkert ejer, manglende id, null, array, primitiv række og flere rækker afvises; legitimt tomt resultat, egen profil og samme-login-fornyelse bevares.
+
+Den eksisterende normale måltest består 50/50: 41 hidtidige kontroller og ni additive uden rigtigt netværk. Dette er lokal kalderevidens, ikke påvist hostet datalæk eller offentlig 570-levering. 569 på præcis 388f6f118909a1a891b654a37654572bc6ae84ac har bestået kildekontrol 38094833674/1; den tidligere ventestatus er historisk. 570 kræver egen præcis kildekontrol og sikker levering. Ingen ny vejrstatus er indhentet.
+
+I68/C66, continuation, lager-ABI, assistentfakta, scoreformel, geometri og historiske originaler bevares. Versionsmekanik er alene releasefelter/cache-suffikser og geodataenes topversion. Alle fem mål og de særskilte decoder-/190000-SQL-/RESTORE-afklaringer forbliver åbne; revisionen er inaktiv. Ingen nye tilladelser, bindinger, SQL- eller produktionshandlinger følger.
+
+# Historik: 2026-10-11 – lokal 4.0.569, kanoniske assistentsvar
 
 Et faktisk forkert offentligt 566-svar og en separat lokal normal klient–Edge-prøve viste grænsen mellem et kendt fakta-id og fagligt korrekt fri tekst. 569 gengiver derfor hele gennemgåede DA/DE/EN-enheder for de 38 eksisterende serverfakta. Valgt kontekst bruger alene modtagne, validerede værdier, dansk tid, konservativ historikgrænse/interval og ukendt-ikke-nul; over 900 tegn gives afklaring uden afklippede forbehold.
 

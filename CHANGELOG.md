@@ -1,4 +1,13 @@
-# Lokal 4.0.569 – 2026-10-11
+# Lokal 4.0.570 – 2026-10-11
+
+- Profilens ejer kontrolleres i det faktisk modtagne svar, før getCurrentRole bruger rollen. Et korrekt forespørgselsfilter eller HTTP 200 er ikke alene ejerbevis.
+- Tom profilliste er fortsat gyldig. Én række skal være et ikke-null objekt, ikke et array, med præcis forventet bruger-id. Forkert ejer, manglende id, ugyldig form og flere rækker afvises; normale ejer-/loginforløbskontroller, samme-login-fornyelse og gemte data bevares.
+- Den eksisterende normale profil-/ejerprøve består 50/50: 41 hidtidige og ni additive kontroller uden rigtigt netværk. Den lokale regression er ikke bevis for en hostet RLS-læk eller offentlig 570-effekt.
+- 569 exact 388f6f118909a1a891b654a37654572bc6ae84ac har bestået kildekontrol 38094833674/1. Den tidligere ventestatus nedenfor er historik; kildekontrol er ikke offentlig levering. 570 kræver egen præcis kildekontrol og sikker levering.
+- I68/C66, continuation, lager-ABI, assistentfakta, scoreformel, admin/geometri og historiske originaler er uændrede. Geodata følger kun releaseversionen i topfeltet; øvrig versionsmekanik ændrer alene releasefelter/cache-suffikser.
+- Alle fem mål og de særskilte decoder-/190000-SQL-/RESTORE-afklaringer er fortsat åbne. Revision/global writer/CP-cohort/SAVE/runner-tab/heljobsbudget er ikke afsluttet. Ingen nye tilladelser, SQL-installation, ekstra vejrhentning eller produktionsændring følger.
+
+# Historik: lokal 4.0.569 – 2026-10-11
 
 - Faktabaserede assistentsvar gengives som hele, gennemgåede DA/DE/EN-tekstenheder for de 38 eksisterende fakta. Fri providertekst bliver ikke fagligt dokumenteret alene ved at medtage et kendt id; den konkrete lokale modsætningsprøve består nu.
 - Valgt zone gengives kun fra faktisk modtagne, validerede værdier med konservativ historikgrænse/interval, dansk tid og tydelig ukendt-ikke-nul-kvalifikation. Ingen aktualitet, proveniens eller landretning opfindes.
