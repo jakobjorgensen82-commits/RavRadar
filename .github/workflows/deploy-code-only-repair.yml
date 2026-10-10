@@ -219,7 +219,7 @@ jobs:
               --connect-timeout 10 --max-time 60 --max-filesize "$maximum_bytes" \
               --header 'Cache-Control: no-cache' \
               "$RAVRADAR_PUBLIC_BASE_URL/$remote_path?code-only=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
-              --write-out "Public snapshot file=$local_name bound=$maximum_bytes http=%{http_code} received=%{size_download}\n" \
+              --write-out "Public snapshot file=$local_name bound=$maximum_bytes http=%{http_code} declared=%header{content-length} received=%{size_download}\n" \
               --output "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT/$local_name"
           }
           fetch_public data/live/manifest.json manifest.json 1048576

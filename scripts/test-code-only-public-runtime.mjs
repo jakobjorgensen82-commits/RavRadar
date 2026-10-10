@@ -781,8 +781,8 @@ const publicSnapshotStart = workflow.indexOf('- name: Download exact currently p
 const publicSnapshotEnd = workflow.indexOf('\n      - name:', publicSnapshotStart + 1);
 const publicSnapshot = workflow.slice(publicSnapshotStart, publicSnapshotEnd);
 assert.ok(publicSnapshot.includes('curl --version'), 'Snapshot must identify the actual curl runtime');
-assert.ok(publicSnapshot.includes('--write-out "Public snapshot file=$local_name bound=$maximum_bytes http=%{http_code} received=%{size_download}\\n"'),
-  'Snapshot failures must identify file, bound, HTTP status and actual received byte count');
+assert.ok(publicSnapshot.includes('--write-out "Public snapshot file=$local_name bound=$maximum_bytes http=%{http_code} declared=%header{content-length} received=%{size_download}\\n"'),
+  'Snapshot failures must identify file, bound, HTTP status, declared Content-Length and actual received byte count');
 assert.ok(publicSnapshot.includes('--max-filesize "$maximum_bytes"'), 'Diagnostic must not loosen the byte bound');
 assert.ok(publicSnapshot.includes('--connect-timeout 10 --max-time 60'), 'Diagnostic must preserve request deadlines');
 assert.ok(publicSnapshot.includes('set -euo pipefail'), 'Snapshot must retain first-error STOP');
