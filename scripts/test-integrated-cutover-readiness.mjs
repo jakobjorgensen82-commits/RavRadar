@@ -246,7 +246,23 @@ const checkpointReadbackSql = checkpointMigration.slice(checkpointReadbackStart)
 assert.doesNotMatch(checkpointReadbackSql, /\bfrom\s+public\.admin_documents\b/i,
   'cutover metadata readback must not read checkpoint payload rows');
 
-const workflow = await fs.readFile('.github/workflows/deploy-trip-storage.yml', 'utf8');
+function fullInstallationJob(text) {
+  const headers = [...text.matchAll(/^  ([a-zA-Z][a-zA-Z0-9_-]*):[ \t]*\r?$/gm)];
+  const selected = headers.filter(header => header[1] === 'deploy-trip-storage');
+  assert.equal(selected.length, 1, 'Exactly one normal full-installation job is required');
+  const index = headers.indexOf(selected[0]);
+  return text.slice(selected[0].index, headers[index + 1]?.index ?? text.length);
+}
+for (const eol of ['\n', '\r\n']) {
+  const expected = ['  deploy-trip-storage:', '    run: exact-full-install', ''].join(eol);
+  const unrelated = ['  repair-existing-worker:', '    run: unrelated-repair-check', ''].join(eol);
+  assert.equal(fullInstallationJob('jobs:' + eol + expected + unrelated), expected);
+  assert.throws(() => fullInstallationJob('jobs:' + eol + unrelated), /Exactly one normal full-installation job/);
+  assert.throws(() => fullInstallationJob('jobs:' + eol + expected + expected), /Exactly one normal full-installation job/);
+}
+// Every existing full-install assertion remains exact; another job cannot add
+// or supply its main checks, migration commands, ordering or final publisher.
+const workflow = fullInstallationJob(await fs.readFile('.github/workflows/deploy-trip-storage.yml', 'utf8'));
 assert.match(workflow,
   /uses: supabase\/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf[\s\S]*?version: 2\.117\.0/,
   'backend cutover must pin the verified Supabase CLI version');

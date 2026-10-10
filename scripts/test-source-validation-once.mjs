@@ -39,6 +39,7 @@ for (const file of [
   'scripts/test-assistant-ui-error-boundary.mjs',
   'scripts/test-trip-evidence-upload-receipt.mjs',
   'scripts/test-trip-evidence-storage-interruption.mjs',
+  'scripts/test-trip-storage-edge-transient-retry.mjs',
 ]) assert.equal(publicPrivacyGroup.split(`'${file}'`).length - 1, 1,
   `The existing source privacy group must execute ${file} exactly once.`);
 assert.equal((pythonContractGroup.match(/'test-dmi-bulk-supervised\.py'/g) || []).length, 1,

@@ -1,4 +1,5 @@
 import { pathToFileURL } from 'node:url';
+import fs from 'node:fs';
 import { normalizeCloudflareGatewayUrl, tripGatewaySignature } from '../supabase/functions/_shared/trip-storage.js';
 import {
   boundedFetch,
@@ -248,6 +249,67 @@ export async function runWorkerCountReadProbe({
   throw workerCountFailure('TRIP_STORAGE_WORKER_COUNT_TRANSIENT_EXHAUSTED', { probeKind });
 }
 
+export async function verifyActiveWorkerDeployment({
+  accountId, apiToken, workerName, expectedVersion,
+  fetchImpl = globalThis.fetch, timeoutMs = TRIP_STORAGE_NETWORK_TIMEOUT_MS,
+}) {
+  const failure = () => new Error('TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED');
+  const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+  if (typeof accountId !== 'string' || !/^[a-f0-9]{32}$/i.test(accountId) || typeof apiToken !== 'string' || !apiToken.trim()
+    || workerName !== 'ravradar-trip-gateway' || typeof expectedVersion !== 'string' || !uuid.test(expectedVersion)
+    || typeof fetchImpl !== 'function' || !Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > TRIP_STORAGE_NETWORK_TIMEOUT_MS) throw failure();
+  const controller = new AbortController();
+  let timer, reader;
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(() => { controller.abort(); reject(failure()); }, timeoutMs);
+  });
+  try {
+    const response = await Promise.race([boundedFetch(
+      `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/workers/scripts/${encodeURIComponent(workerName)}/deployments?page=1&per_page=1`, {
+        method: 'GET', redirect: 'error', cache: 'no-store', signal: controller.signal,
+        headers: { Authorization: `Bearer ${apiToken}`, accept: 'application/json' },
+      }, { fetchImpl, timeoutMs }), deadline]);
+    reader = response?.body?.getReader();
+    if (response?.status !== 200 || response?.ok !== true || !reader) throw failure();
+    const length = response.headers.get('content-length');
+    if (length !== null && (!/^\d+$/.test(length) || Number(length) > 65_536)) throw failure();
+    const decoder = new TextDecoder('utf-8', { fatal: true });
+    let bytes = 0, text = '';
+    for (;;) {
+      const { value, done } = await Promise.race([reader.read(), deadline]);
+      if (done) break;
+      bytes += value.byteLength;
+      if (bytes > 65_536) throw failure();
+      text += decoder.decode(value, { stream: true });
+    }
+    const body = JSON.parse(text + decoder.decode());
+    const deployments = body?.result?.deployments;
+    const info = body?.result_info;
+    if (body?.success !== true || !body.result || typeof body.result !== 'object' || Array.isArray(body.result)
+      || !Array.isArray(deployments) || deployments.length !== 1
+      || (info !== undefined && (!info || typeof info !== 'object' || Array.isArray(info)
+        || (info.page !== undefined && info.page !== 1)
+        || (info.per_page !== undefined && info.per_page !== 1)
+        || (info.count !== undefined && info.count !== 1)))) throw failure();
+    const current = deployments[0], versions = current?.versions;
+    if (!current || typeof current !== 'object' || Array.isArray(current) || typeof current.id !== 'string' || !uuid.test(current.id)
+      || current.strategy !== 'percentage' || !Array.isArray(versions) || versions.length !== 1
+      || !versions[0] || typeof versions[0] !== 'object' || Array.isArray(versions[0])
+      || versions[0].percentage !== 100 || typeof versions[0].version_id !== 'string'
+      || !uuid.test(versions[0].version_id) || versions[0].version_id.toLowerCase() !== expectedVersion.toLowerCase()) throw failure();
+    return { deploymentId: current.id, versionId: versions[0].version_id };
+  } catch {
+    throw failure();
+  } finally {
+    clearTimeout(timer);
+    controller.abort();
+    // Request cancellation without awaiting an unbounded underlying cancel operation.
+    try { reader?.cancel().catch(() => {}); } catch { /* Never replace the verification result. */ }
+    try { reader?.releaseLock(); } catch { /* Cleanup must not replace the verification result. */ }
+  }
+}
+
+
 async function main() {
   const gatewayUrl = normalizeCloudflareGatewayUrl(process.env.CLOUDFLARE_TRIP_GATEWAY_URL || '');
   const sharedSecret = process.env.TRIP_GATEWAY_SHARED_SECRET || '';
@@ -267,6 +329,15 @@ async function main() {
     sharedSecret,
     probeKind: WORKER_COUNT_SIGNED_PROBE_KIND,
   });
+  if (Object.hasOwn(process.env, 'EXPECTED_TRIP_WORKER_VERSION')) {
+    let configuration;
+    try { configuration = JSON.parse(fs.readFileSync(process.env.TRIP_WRANGLER_CONFIG_PATH, 'utf8')); }
+    catch { throw new Error('TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED'); }
+    await verifyActiveWorkerDeployment({
+      accountId: process.env.CLOUDFLARE_ACCOUNT_ID, apiToken: process.env.CLOUDFLARE_API_TOKEN,
+      workerName: configuration?.name, expectedVersion: process.env.EXPECTED_TRIP_WORKER_VERSION,
+    });
+  }
   console.log(`Cloudflare-gatewayen er grøn: privat HMAC-grænse, 10 shards og ${count.tripCount} samlede poster.`);
 }
 

@@ -85,7 +85,8 @@ async function matchingTripRows(databaseList, record) {
         where client_observation_id = ? or (? is not null and trip_id = ?)
         limit 2`
     ).bind(record.client_observation_id, record.trip_id, record.trip_id).all();
-    return (verification?.results || []).map(row => ({ ...row, database_index: index }));
+    if (verification?.success !== true || !Array.isArray(verification.results)) throw new Error('TRIP_STORAGE_INVALID');
+    return verification.results.map(row => ({ ...row, database_index: index }));
   }));
   return rowsByDatabase.flat();
 }
@@ -117,16 +118,26 @@ async function ownerErased(controlDatabase, ownerSubject) {
       where owner_subject = ?
       limit 1`
   ).bind(ownerSubject).all();
-  return (query?.results || []).length === 1;
+  const rows = query?.results;
+  if (query?.success !== true || !Array.isArray(rows) || rows.length > 1
+    || (rows.length === 1 && rows[0]?.owner_subject !== ownerSubject)) {
+    throw new Error('TRIP_ERASURE_STATE_INVALID');
+  }
+  return rows.length === 1;
 }
 
 async function purgeOwnerTrips(databaseList, ownerSubject) {
   let deleted = 0;
   for (const database of databaseList) {
     const result = await database.prepare('delete from trip_observations where owner_subject = ?').bind(ownerSubject).run();
-    deleted += Number(result?.meta?.changes || 0);
+    if (result?.success !== true || !Number.isSafeInteger(result.meta?.changes) || result.meta.changes < 0
+      || !Number.isSafeInteger(deleted + result.meta.changes)) {
+      throw new Error('TRIP_DELETE_INVALID');
+    }
+    deleted += result.meta.changes;
   }
-  await databaseList[0].prepare('delete from trip_observation_registry where owner_subject = ?').bind(ownerSubject).run();
+  const registry = await databaseList[0].prepare('delete from trip_observation_registry where owner_subject = ?').bind(ownerSubject).run();
+  if (registry?.success !== true) throw new Error('TRIP_DELETE_INVALID');
   if (!Number.isSafeInteger(deleted) || deleted < 0) throw new Error('TRIP_DELETE_INVALID');
   return deleted;
 }
@@ -137,7 +148,7 @@ async function reserveTripIdentity(
   targetDatabaseIndex,
   expectedPayloadSha256 = record.payload_sha256,
 ) {
-  await controlDatabase.prepare(
+  const reservation = await controlDatabase.prepare(
     `insert into trip_observation_registry (
       client_observation_id, trip_id, owner_subject, payload_sha256, target_database_index
     )
@@ -154,13 +165,15 @@ async function reserveTripIdentity(
     targetDatabaseIndex,
     record.owner_subject,
   ).run();
+  if (reservation?.success !== true) throw new Error('TRIP_STORAGE_INVALID');
   const verification = await controlDatabase.prepare(
     `select client_observation_id, trip_id, owner_subject, payload_sha256, target_database_index
       from trip_observation_registry
       where client_observation_id = ? or (? is not null and trip_id = ?)
       limit 2`
   ).bind(record.client_observation_id, record.trip_id, record.trip_id).all();
-  const rows = verification?.results || [];
+  if (verification?.success !== true || !Array.isArray(verification.results)) throw new Error('TRIP_STORAGE_INVALID');
+  const rows = verification.results;
   if (await ownerErased(controlDatabase, record.owner_subject)) {
     throw new Error('TRIP_OWNER_ERASED');
   }
@@ -225,6 +238,7 @@ async function storeTrip(env, body) {
       record.payload_sha256,
       record.source,
     ).run();
+    if (insert?.success !== true || !Number.isSafeInteger(insert.meta?.changes) || insert.meta.changes < 0) throw new Error('TRIP_STORAGE_INVALID');
   }
   if (await ownerErased(databaseList[0], record.owner_subject)) {
     await purgeOwnerTrips(databaseList, record.owner_subject);
@@ -253,7 +267,8 @@ async function listTrips(env, body) {
         order by observed_at desc
         limit ?`
     ).bind(ownerSubject, limit).all();
-    for (const row of query?.results || []) {
+    if (query?.success !== true || !Array.isArray(query.results)) throw new Error('TRIP_STORAGE_INVALID');
+    for (const row of query.results) {
       const storedPayload = JSON.parse(String(row.payload_json || ''));
       const storedDigestPayload = { ...storedPayload };
       delete storedDigestPayload.submitted_at;
@@ -279,7 +294,12 @@ async function countTrips(env) {
   let total = 0;
   for (const database of databases(env)) {
     const query = await database.prepare('select count(*) as trip_count from trip_observations').all();
-    total += Number(query?.results?.[0]?.trip_count || 0);
+    const rows = query?.results;
+    if (query?.success !== true || !Array.isArray(rows) || rows.length !== 1
+      || !Number.isSafeInteger(rows[0]?.trip_count) || rows[0].trip_count < 0) {
+      throw new Error('TRIP_COUNT_INVALID');
+    }
+    total += rows[0].trip_count;
   }
   if (!Number.isSafeInteger(total) || total < 0) throw new Error('TRIP_COUNT_INVALID');
   return total;
@@ -291,11 +311,12 @@ async function deleteOwnerTrips(env, body) {
     throw new Error('TRIP_OWNER_INVALID');
   }
   const databaseList = databases(env);
-  await databaseList[0].prepare(
+  const tombstone = await databaseList[0].prepare(
     `insert into trip_owner_erasure_tombstones (owner_subject)
       values (?)
       on conflict do nothing`
   ).bind(ownerSubject).run();
+  if (tombstone?.success !== true) throw new Error('TRIP_DELETE_INVALID');
   return purgeOwnerTrips(databaseList, ownerSubject);
 }
 

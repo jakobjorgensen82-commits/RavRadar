@@ -58,6 +58,7 @@ for (const script of [
   'scripts/test-assistant-ui-error-boundary.mjs',
   'scripts/test-trip-evidence-upload-receipt.mjs',
   'scripts/test-trip-evidence-storage-interruption.mjs',
+  'scripts/test-trip-storage-edge-transient-retry.mjs',
 ]) {
   const result = spawnSync(process.execPath, [script], { cwd: process.cwd(), encoding: 'utf8', timeout: 30_000, maxBuffer: 1024 * 1024 });
   assert.equal(result.status, 0, `${script} failed:\n${result.stdout}\n${result.stderr}`);

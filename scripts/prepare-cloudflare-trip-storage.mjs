@@ -9,6 +9,10 @@ import {
   verifyLegacyActivationEvidence,
 } from './lib/trip-storage-legacy-classification.mjs';
 
+const arguments_ = process.argv.slice(2);
+const repairOnly = arguments_.length === 1 && arguments_[0] === '--existing-worker-repair';
+if (arguments_.length && !repairOnly) throw new Error('TRIP_PREPARATION_ARGUMENTS_INVALID');
+
 const accountId = process.env.CLOUDFLARE_ACCOUNT_ID?.trim();
 const apiToken = process.env.CLOUDFLARE_API_TOKEN?.trim();
 const configPath = process.env.TRIP_WRANGLER_CONFIG_PATH?.trim();
@@ -36,11 +40,25 @@ async function cloudflare(pathname, init = {}) {
   return body;
 }
 
-async function listDatabases() {
+async function listDatabases(readOnlyRepair = false) {
   const rows = [];
   for (let page = 1; ; page += 1) {
     const body = await cloudflare(`/d1/database?page=${page}&per_page=100`);
     if (!Array.isArray(body.result)) throw new Error('Cloudflare returnerede en ugyldig databaseliste.');
+    if (readOnlyRepair) {
+      const info = body.result_info;
+      if ((page === 1 && body.result.length !== SHARD_COUNT) || (page === 2 && body.result.length !== 0)
+        || (info?.page !== undefined && info.page !== page)
+        || (info?.per_page !== undefined && info.per_page !== 100)
+        || (info?.count !== undefined && info.count !== body.result.length)
+        || (info?.total_count !== undefined && info.total_count !== SHARD_COUNT)) {
+        throw new Error('TRIP_REPAIR_DATABASE_LIST_INVALID');
+      }
+      // An explicit empty second page also bounds providers omitting optional totals.
+      if (page === 2) return rows;
+      rows.push(...body.result);
+      continue;
+    }
     rows.push(...body.result);
     const totalPages = Number(body.result_info?.total_pages || 1);
     if (page >= totalPages) return rows;
@@ -130,6 +148,69 @@ function writeWranglerConfiguration(databases) {
   fs.writeFileSync(outputPath, `${JSON.stringify(configuration, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
 }
 
+function schemaTokens(sql) {
+  if (typeof sql !== 'string') throw new Error('TRIP_REPAIR_SCHEMA_INVALID');
+  // Preserve quoted literals exactly, normalize only SQL words/spacing.
+  const tokens = sql.match(/'(?:''|[^'])*'|"(?:""|[^"])*"|[A-Za-z_][A-Za-z_0-9]*|\d+|[^\s]/g) || [];
+  const normalized = tokens.map(token => /^[A-Za-z_]/.test(token) ? token.toLowerCase() : token);
+  const exists = normalized.indexOf('if');
+  if (exists >= 0 && normalized.slice(exists, exists + 3).join(' ') === 'if not exists') normalized.splice(exists, 3);
+  if (normalized.at(-1) === ';') normalized.pop();
+  return JSON.stringify(normalized);
+}
+
+async function repairQuery(database, sql, params = []) {
+  const body = await cloudflare(`/d1/database/${database.uuid}/query`, {
+    method: 'POST', body: JSON.stringify({ sql, params }),
+  });
+  if (!Array.isArray(body.result) || body.result.length !== 1
+    || body.result[0]?.success !== true || !Array.isArray(body.result[0].results)) {
+    throw new Error('TRIP_REPAIR_READBACK_INVALID');
+  }
+  return body.result[0].results;
+}
+
+async function prepareExistingRepair() {
+  const databases = await listDatabases(true);
+  if (classifyExistingTripStorageDatabases(databases) !== 'legacy') {
+    throw new Error('TRIP_REPAIR_EXISTING_D1_REQUIRED');
+  }
+  if (databases.some(database => typeof database?.uuid !== 'string'
+    || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(database.uuid))
+    || new Set(databases.map(database => database.uuid.toLowerCase())).size !== SHARD_COUNT) {
+    throw new Error('TRIP_REPAIR_DATABASE_ID_INVALID');
+  }
+  const ordered = TRIP_STORAGE_REQUIRED_SHARD_NAMES.map(name => databases.find(database => database.name === name));
+  const definitions = D1_TRIP_SCHEMA_STATEMENTS.map(sql => {
+    const match = /^create\s+(?:unique\s+)?(table|index)\s+if\s+not\s+exists\s+([a-z_]+)/i.exec(sql.trim());
+    if (!match) throw new Error('TRIP_REPAIR_SOURCE_SCHEMA_INVALID');
+    return { type: match[1], name: match[2], tokens: schemaTokens(sql) };
+  });
+  for (const database of ordered) {
+    const rows = await repairQuery(database,
+      `select type, name, sql from sqlite_master where name in (${definitions.map(() => '?').join(',')})`,
+      definitions.map(definition => definition.name));
+    if (rows.length !== definitions.length || definitions.some(definition => {
+      const matches = rows.filter(row => row?.name === definition.name);
+      return matches.length !== 1 || matches[0].type !== definition.type
+        || schemaTokens(matches[0].sql) !== definition.tokens;
+    })) throw new Error('TRIP_REPAIR_SCHEMA_MISMATCH');
+  }
+  const activation = await repairQuery(ordered[0],
+    "select control_value from trip_storage_control where control_key = ?",
+    ['d1_activation_attempted']);
+  if (activation.length !== 1 || activation[0]?.control_value !== 'true') {
+    throw new Error('TRIP_REPAIR_ACTIVATION_REQUIRED');
+  }
+  writeWranglerConfiguration(ordered);
+  // No marker, legacy evidence adoption, schema operation or output receipt.
+  console.log('Existing ten EU D1 bindings and ordinary schema read-only verified for Worker repair.');
+}
+
+if (repairOnly) {
+  try { await prepareExistingRepair(); }
+  catch { throw new Error('TRIP_REPAIR_PREPARATION_FAILED'); }
+} else {
 required(accountId, 'CLOUDFLARE_ACCOUNT_ID');
 required(apiToken, 'CLOUDFLARE_API_TOKEN');
 const existingDatabases = await listDatabases();
@@ -148,3 +229,4 @@ const activationAttempted = await d1ActivationAttempted(databases[0]);
 writeWranglerConfiguration(databases);
 publishActivationState(activationAttempted, legacyD1Detected);
 console.log(`Cloudflare D1 er klargjort med ${databases.length} EU-låste shards, skema v1 og en verificeret cutoverfase.`);
+}

@@ -1,4 +1,36 @@
-# Lokal 4.0.556 – afgrænsede klientrettelser; offentlig levering afventer
+# Lokal 4.0.558 – afgrænset reparation af eksisterende turlager-Worker
+
+PR #548's første fulde kildekontrol afviste en test, der talte main-kontroller på tværs af fuld installation og reparation. Den entydigt afgrænsede normale test bevarer alle gamle assertions; den rettede head `fb0a1ded` har nu bestået fuld GitHub-kontrol `38031210351`, forsøg 1. Det er ikke merge eller installation. Ejeren har særskilt godkendt præcis én afgrænset eksisterende-Worker-operation efter grøn kontrol og afsluttet vejrhentning; ingen bredere overgang følger.
+
+Ny konkret procesfejl skal lukkes før operationen: en timeout af den direkte deploy-proces kan efterlade dens underproces kørende. Den afgrænsede rettelse samler den faste npm/Wrangler-kæde i sin egen Linux-procesgruppe og kræver både faktisk child-close og observeret bortfald af gruppen før succes eller recovery. En signalanmodning eller ukendt stopstatus er ikke en kvittering. 180 sekunders udførelse og højst fem sekunders TERM/KILL-afslutning bevares inden for den eksisterende syvminuttersgrænse; højst én primary og ét eget recoveryforsøg består. En allerede accepteret leverandørhandling påstås ikke tilbagekaldt. Den ændrede head skal gennem egen fuld GitHub-kontrol, inklusive den rigtige neutrale Linux-underprocesprøve. Ingen produktionsændring under aktiv vejrhentning.
+
+4.0.557's normale D1-kvitteringsrettelse har bestået fuld kildekontrol på PR #547's præcise head `11d24dab`, kørsel `38028049478`, forsøg 1. Det er ikke merge, backendinstallation eller offentlig levering. 4.0.556 er fortsat den senest verificerede offentlige leverance.
+
+Det eksisterende turlagerworkflow får et særskilt, udtrykkeligt valgt `existing-worker-repair`-forløb. Det normale fulde installationsvalg bevares; ukendte valg afvises, og begge valg deler samme eksklusive workflowlås. Reparationen må ikke oprette eller adoptere databaser, installere SQL, ændre Edge-kode, migrere ture, ændre aktiveringsmarkør eller skrive nye secrets.
+
+Før skrivning kræves den præcise grønne kildeversion, aktuel main, læst installationsstatus og SQL-verifikation samt ti eksisterende, entydige EU-shards med de faktiske forventede skemaer. Eksisterende Edge-, privat HMAC-/Worker-count- og unsigned-afvisningskontroller bevares. De læste data, credentials og rå leverandørsvar må ikke logges.
+
+Selve den endnu ikke udførte operation går kortvarigt gennem eksisterende maintenance med afgrænset lease, dobbelt kontrol, 20 sekunders drain og mindst 600 sekunders restlease før én højst syv minutter lang erstatning af den samme Worker. En frisk versionskvittering må ikke alene frikende den installerede kode: den faktisk trafikførende version skal genlæses og passe, før afslutning. Den normale D1-tilstand genoprettes og kontrolleres; der skiftes ikke tilbage til Supabase-turlagring.
+
+Efter en fejl må kun forløbets eget, faktiske vedligeholdelsesintent tillade ét afgrænset D1-fremadgående reparationsforsøg med frisk main-, lease- og privat kontrol. En grøn oprydning må ikke gøre den oprindelige fejlkørsel grøn. Annullering eller tab af runner er ikke en gennemført genoprettelse; eksisterende leaseudløb er en anden mekanisme. Der er ikke bevist en atomisk leverandørgaranti mod ny Worker-oprettelse, hvis den eksisterende Worker forsvinder mellem kontrol og deploy.
+
+Den afgrænsede leveringsvej er faktisk lokalt integreret og målprøvet. Ejeren har givet den konkrete betingede driftstilladelse; ny præcis GitHub-kontrol af procesrettelsen, sikker merge, afsluttet vejrhentning, faktisk installation og normale brugerforløb mangler stadig. Den tidligere kandidat bestod 127 normale målprøver; den nye procesrettelse har bestået 44 lokale kontroller med én ærligt sprunget Linux-procesprøve. Begge vejrbundles bevares. Den brede eksport-/rettighedspakke, testoprindelse, opbevaring, anonym samlet viderebrug og tilbageholdte bindingsovergange aktiveres ikke. Den tidligere 100-fils versionsændring omfatter 83 rent mekaniske filer; geodata er fortsat uændrede bortset fra topversionsfeltet.
+
+Alle fem ejerkrævede arbejdsområder er fortsat åbne. Fristen er 10. oktober 2026, ikke 21. oktober. Delegation fortsætter parallelt med én koordineret produktionsskribent; ingen produktionsændring under aktiv vejrhentning, nye vejrhentningsordrer eller omgåelse af særskilte afvisninger.
+
+# Historik: 4.0.557 – normale D1-kvitteringer; backendinstallation afventer
+
+Den afgrænsede kandidat er udtaget fra offentligt leveret 4.0.556/main `c84a889b`. PR #546 og kode-only-kørsel `38020500484` er gennemført med verificeret genbrug af samme vejrpakke og offentlig 210/673-kontrol. Den tidligere 4.0.556-tekst nedenfor er historik fra før denne levering; den er ikke aktuel ventestatus.
+
+Den normale Worker kræver nu en positiv boolesk D1-kvittering ved tælling, historiklæsning, lagring og ejersletning. Gyldige udseende rækker i et fejlet eller manglende resultat må ikke blive nul, tom historik eller en falsk skrivekvittering. Slettebarrieren kvitteres før første sletning, og hver slettetælling samt dens løbende sum skal være sikre, ikke-negative heltal før næste sekventielle trin. Ejerskab, idempotens, payloadhash, SQL, ti EU-shards, svarprojektion og eksisterende genforsøgsgrænser er uændrede.
+
+Workerrettelsen og dens normale mål er faktisk lokalt integreret. 102/102 målprøver og den normale privacygruppe med alle 13 childforløb består; source-once kontrollerer fortsat 47 topkommandoer. De fire ændrede filer er kontrolleret med fuld byte-invers. Begge 68-/66-fils vejrbundles er uændrede. Præcis ny GitHub-kontrol, sikker merge og autoriseret Worker-installation er endnu åbne; et Pages-deploy installerer ikke D1-Workeren.
+
+Det eksisterende turlagerworkflow har ingen Worker-only-indstilling og omfatter også SQL, Edge, migration og modeændringer. En afgrænset leveringsvej for den eksisterende Worker forberedes særskilt; den er ikke installeret eller en ny operationstilladelse. Den brede tilbageholdte eksport-/rettighedspakke og bindingsadskillelsen er ikke kopieret eller aktiveret. Opbevaring, testoprindelse og anonym samlet viderebrug er fortsat særskilte åbne punkter.
+
+Alle fem målområder består: landsdækkende strømdata/scoreovergang, hele vejrhentningsrevisionen, varige brugerdata, bred Spørg RavRadar og selvstændig drift uden Codex. Ejeren har 10. oktober krævet færdiggørelse i dag; den tidligere måldato omkring 21. oktober er erstattet. Fristen er ikke bevis for færdiggørelse eller ny driftstilladelse. Parallel delegation er udtrykkeligt godkendt; hovedagenten koordinerer integration og produktionsskrivning. Ingen nye diagnose-, installations-, destinations-, manuel-vejrhentnings-, cron- eller revisionsaktiveringstilladelser følger. Ingen produktionsændring under aktiv writer, og interne undersøgelser er ikke offentlig assistentviden.
+
+# Historik: 4.0.556 – kildeforgænger før verificeret offentlig levering
 
 Denne særskilte kandidat er udtaget fra den aktuelle main-kode. Den forbedrer normale brugerforløb uden at overføre hele brugerdata-, assistent- eller vejrhentningsrevisionen. De eksisterende 68- og 66-fils vejrbundles er uændrede; versioneringen må kun ændre geodataenes topversionsfelt og de eksisterende release-/cachefelter.
 

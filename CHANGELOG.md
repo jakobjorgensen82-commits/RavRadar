@@ -1,4 +1,21 @@
-# Lokal 4.0.556 – afgrænsede klientrettelser; offentlig levering afventer
+# Lokal 4.0.558 – 2026-10-10
+
+- Afgrænset deploy-processtop: timeout må ikke tillade recovery, før den egne normale npm/Wrangler-procesgruppe faktisk er væk og direkte child-close er observeret. Fast kommando, 180 sekunders udførelse, højst fem sekunders afslutning og eksisterende one-primary/one-recovery-grænse bevares. Rigtig Linux-prøve og ny præcis source-CI kræves før operationen.
+- Rettet den normale installationskontrol til dens entydige job, uden at ændre de tidligere tre main-kontroller eller øvrige assertions. Første #548-CI blev afvist; ændret head skal gennem ny fuld kontrol. Ejerens præcise, betingede reparationsautoritet er registreret, ikke udført.
+- Tilføjet et udtrykkeligt valgt, eksklusivt forløb til afgrænset reparation af den eksisterende turlager-Worker. Normal fuld installation bevares; ukendte valg afvises.
+- Reparationen læser og kontrollerer eksisterende SQL, aktivering, ti EU-shards, skema og private grænser; ingen databaseoprettelse, SQL-installation, turmigration, Edge-deploy eller secret-skrivning.
+- Eksakt main, afgrænset maintenance/drain/lease, én syvminutters Worker-erstatning og højst ét eget D1-fremadgående recoveryforløb. Faktisk trafikførende versionskvittering skal passe før normal afslutning; oprydning må ikke skjule den oprindelige fejl.
+- PR #547's præcise 4.0.557-kildekontrol er bestået. Den nye leveringsvej er ikke installeret; egen CI, sikker merge, konkret driftstilladelse og hosted brugerforløb mangler.
+- Alle fem målområder forbliver åbne med ejerens frist 10. oktober. Ingen ny autoritet til afviste overgange, revision eller manuelle vejrhentninger.
+
+# Historik: Lokal 4.0.557 – 2026-10-10
+
+- Hærdet normale D1-kvitteringer i eksisterende count/store/list/delete: ugyldige resultater må ikke blive nul, tom historik eller falsk skrive-/slettekvittering. Sletning kræver en kvitteret barriere og sikre del- og totalantal, før næste trin.
+- Bevaret SQL, lagerskema, ejerskab, idempotens og begge vejrbundles. Det eksisterende regressionsmål nås én gang gennem privacygruppen; 47 topkommandoer bevares.
+- Faktisk lokalt integreret og måltestet: 102/102 samt alle 13 normale privacy-childforløb. Præcis ny source-CI, merge og særskilt Worker-installation afventer. Ingen eksportaktivering eller ny beslutning om opbevaring og viderebrug.
+- 4.0.556 er siden faktisk leveret via PR #546 og kode-only `38020500484` med samme vejrpakke og offentlig 210/673-kontrol. Hele revisionen, strøm-/scoreovergangen, brugerdata, bred assistentviden og Codex-uafhængig drift er ikke færdige.
+
+# Historik: 4.0.556 – kildeforgænger før verificeret offentlig levering
 
 Denne særskilte kandidat er udtaget fra den aktuelle main-kode. Den forbedrer normale brugerforløb uden at overføre hele brugerdata-, assistent- eller vejrhentningsrevisionen. De eksisterende 68- og 66-fils vejrbundles er uændrede; versioneringen må kun ændre geodataenes topversionsfelt og de eksisterende release-/cachefelter.
 

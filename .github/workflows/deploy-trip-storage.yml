@@ -3,6 +3,14 @@ run-name: "Deploy RavRadar trip storage [d1]"
 
 on:
   workflow_dispatch:
+    inputs:
+      operation:
+        description: Existing full installation or separately authorized existing-D1 Worker repair
+        type: choice
+        default: full-install
+        options:
+          - full-install
+          - existing-worker-repair
 
 permissions:
   contents: read
@@ -14,6 +22,7 @@ concurrency:
 
 jobs:
   deploy-trip-storage:
+    if: ${{ inputs.operation == '' || inputs.operation == 'full-install' }}
     name: Validate, migrate and deploy trip storage
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -961,3 +970,465 @@ jobs:
         continue-on-error: true
         timeout-minutes: 3
         run: node scripts/verify-cloudflare-trip-gateway.mjs
+
+  reject-unknown-operation:
+    if: ${{ inputs.operation != '' && inputs.operation != 'full-install' && inputs.operation != 'existing-worker-repair' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: exit 1
+
+  repair-existing-worker:
+    if: ${{ inputs.operation == 'existing-worker-repair' }}
+    name: Bounded existing-D1 Worker repair
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
+      TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
+      TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-trip-repair-wrangler.json
+    steps:
+      - name: Require the exact main head
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "Trip storage may only deploy from main."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+
+      - name: Require checked-out trip-storage HEAD to equal current origin/main
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Restore source-content validation locator
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/weather-source-validation.json
+          key: weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-trip-storage-repair
+          restore-keys: |
+            weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-
+
+      - name: Verify exact-content source validation with GitHub
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Prepare exact pinned Candidate G source before source validation
+        if: steps.source-proof.outputs.required != 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          read -r legacy_source_head legacy_source_tree < <(node --input-type=module -e "import { LEGACY_CANDIDATE_G_SOURCE_HEAD, LEGACY_CANDIDATE_G_SOURCE_TREE } from './scripts/lib/ravscore-legacy-candidate-g-source.mjs'; process.stdout.write(LEGACY_CANDIDATE_G_SOURCE_HEAD + ' ' + LEGACY_CANDIDATE_G_SOURCE_TREE + '\n');")
+          [[ "$legacy_source_head" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$legacy_source_tree" =~ ^[a-f0-9]{40}$ ]]
+          git fetch --no-tags --depth=1 origin "$legacy_source_head"
+          test "$(git rev-parse FETCH_HEAD^{commit})" = "$legacy_source_head"
+          test "$(git rev-parse "${legacy_source_head}^{tree}")" = "$legacy_source_tree"
+
+      - uses: actions/setup-python@v7
+        if: steps.source-proof.outputs.required != 'false'
+        with:
+          python-version: "3.12"
+
+      - name: Install source-gate dependencies
+        if: steps.source-proof.outputs.required != 'false'
+        run: >-
+          python -m pip install --disable-pip-version-check
+          -r requirements-dmi.txt
+          -r requirements-geometry.txt
+          -r requirements-copernicus.txt
+
+      - name: Validate exact source head before external writes
+        id: source-gate
+        if: steps.source-proof.outputs.required != 'false'
+        run: npm run validate:source
+
+      - name: Record actual source validation outcome
+        id: source-record
+        if: always() && github.ref == 'refs/heads/main' && (steps.source-gate.outcome == 'success' || steps.source-gate.outcome == 'failure' || steps.source-gate.outcome == 'cancelled')
+        run: node scripts/weather-source-gate.mjs record
+        env:
+          SOURCE_GATE_OUTCOME: ${{ steps.source-gate.outcome }}
+
+      - name: Preserve latest verified source-content validation outcome
+        if: always() && (steps.source-record.outcome == 'success' || (steps.source-proof.outcome == 'success' && steps.source-proof.outputs.required == 'false'))
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/weather-source-validation.json
+          key: weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-trip-storage-repair
+
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        with:
+          version: 2.117.0
+
+      - name: Seal the exact integrated public implementation identity
+        id: integrated_cutover
+        shell: bash
+        run: |
+          set -euo pipefail
+          cutover_workdir="$(mktemp -d)"
+          identity_workdir="$(mktemp -d)"
+          node scripts/seal-ravscore-public-browser-closure.mjs --root . --output "$identity_workdir/public-browser-closure.json" --model integrated --identity-output "$identity_workdir/public-implementation-identity.json"
+          closure_sha="$(node -e "const fs=require('node:fs');const value=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));if(!/^[a-f0-9]{64}$/.test(value.implementationClosureSha256))process.exit(1);process.stdout.write(value.implementationClosureSha256)" "$identity_workdir/public-implementation-identity.json")"
+          echo "workdir=$cutover_workdir" >> "$GITHUB_OUTPUT"
+          echo "closure_sha=$closure_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Assert exact integrated backend source before migration planning
+        env:
+          RAVRADAR_EXPECTED_SOURCE_HEAD: ${{ github.sha }}
+        run: >-
+          node scripts/integrated-cutover-readiness.mjs assert-source
+          --public-implementation-closure-sha256
+          "${{ steps.integrated_cutover.outputs.closure_sha }}"
+
+      - name: Read exact applied metadata without SQL installation
+        timeout-minutes: 5
+        shell: bash
+        env:
+          RAVRADAR_EXPECTED_SOURCE_HEAD: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          node scripts/integrated-cutover-readiness.mjs prepare-workdir --output "${{ steps.integrated_cutover.outputs.workdir }}"
+          (
+            cd "${{ steps.integrated_cutover.outputs.workdir }}"
+            supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
+            supabase migration list --linked > "$RUNNER_TEMP/trip-repair-applied.txt"
+          )
+          node scripts/integrated-cutover-readiness.mjs applied --migration-list "$RUNNER_TEMP/trip-repair-applied.txt"
+          node scripts/integrated-cutover-readiness.mjs verify-db
+          node scripts/apply-candidate-g-trip-quality-migration.mjs --verify-only
+
+      - name: Read-only existing D1 repair preparation and live preflight
+        timeout-minutes: 5
+        shell: bash
+        env:
+          EXPECTED_TRIP_STORAGE_MODE: d1
+        run: |
+          set -euo pipefail
+          node scripts/prepare-cloudflare-trip-storage.mjs --existing-worker-repair
+          node scripts/audit-cloudflare-trip-storage.mjs
+          node scripts/verify-trip-storage-edge.mjs
+          node scripts/verify-cloudflare-trip-gateway.mjs
+
+      - name: Quiesce the existing D1 installation
+        id: repair_quiesce
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          node --input-type=module <<'REPAIR_NODE'
+          import { execFileSync } from 'node:child_process';
+          import fs from 'node:fs';
+          const env = process.env;
+          function run(label, command, args, options = {}) {
+            try { return execFileSync(command, args, { encoding: 'utf8', stdio: 'pipe', timeout: 180000,
+              maxBuffer: 1024 * 1024, ...options }); }
+            catch { throw new Error('TRIP_REPAIR_' + label); }
+          }
+          function exactMain() {
+            if (env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) throw new Error('TRIP_REPAIR_MAIN_INVALID');
+            run('MAIN_FETCH', 'git', ['fetch', '--no-tags', '--depth=1', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
+            for (const ref of ['HEAD^{commit}', 'origin/main^{commit}']) {
+              if (run('MAIN_READ', 'git', ['rev-parse', ref]).trim() !== env.GITHUB_SHA) throw new Error('TRIP_REPAIR_MAIN_CHANGED');
+            }
+          }
+          function edge(mode) {
+            run('EDGE_ATTESTATION', 'node', ['scripts/verify-trip-storage-edge.mjs'], { env: { ...env, EXPECTED_TRIP_STORAGE_MODE: mode } });
+          }
+          function worker(expectedVersion) {
+            run('WORKER_ATTESTATION', 'node', ['scripts/verify-cloudflare-trip-gateway.mjs'],
+              expectedVersion === undefined ? {} : { env: { ...env, EXPECTED_TRIP_WORKER_VERSION: expectedVersion } });
+          }
+          function lease(minimumSeconds) {
+            const deadline = Number(env.REPAIR_LEASE_DEADLINE);
+            if (!Number.isSafeInteger(deadline) || deadline - Date.now() < minimumSeconds * 1000
+              || deadline - Date.now() > 20 * 60000) throw new Error('TRIP_REPAIR_LEASE_INVALID');
+          }
+          function output(name, value) { fs.appendFileSync(env.GITHUB_OUTPUT, name + '=' + value + '\n'); }
+          exactMain();
+          output('intent', 'true');
+          const deadline = Date.now() + 20 * 60000;
+          output('deadline', String(deadline));
+          run('MAINTENANCE', 'supabase', ['secrets', 'set', '--project-ref', env.SUPABASE_PROJECT_ID,
+            'TRIP_STORAGE_MODE=maintenance:' + new Date(deadline).toISOString()]);
+          edge('maintenance');
+          run('DRAIN', 'sleep', ['20']);
+          REPAIR_NODE
+
+      - name: Replace and attest the same-SQL Worker
+        id: repair_replace
+        timeout-minutes: 7
+        shell: bash
+        env:
+          REPAIR_LEASE_DEADLINE: ${{ steps.repair_quiesce.outputs.deadline }}
+        run: |
+          node --input-type=module <<'REPAIR_NODE'
+          import { execFileSync } from 'node:child_process';
+          import fs from 'node:fs';
+          const env = process.env;
+          function run(label, command, args, options = {}) {
+            try { return execFileSync(command, args, { encoding: 'utf8', stdio: 'pipe', timeout: 180000,
+              maxBuffer: 1024 * 1024, ...options }); }
+            catch { throw new Error('TRIP_REPAIR_' + label); }
+          }
+          function exactMain() {
+            if (env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) throw new Error('TRIP_REPAIR_MAIN_INVALID');
+            run('MAIN_FETCH', 'git', ['fetch', '--no-tags', '--depth=1', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
+            for (const ref of ['HEAD^{commit}', 'origin/main^{commit}']) {
+              if (run('MAIN_READ', 'git', ['rev-parse', ref]).trim() !== env.GITHUB_SHA) throw new Error('TRIP_REPAIR_MAIN_CHANGED');
+            }
+          }
+          function edge(mode) {
+            run('EDGE_ATTESTATION', 'node', ['scripts/verify-trip-storage-edge.mjs'], { env: { ...env, EXPECTED_TRIP_STORAGE_MODE: mode } });
+          }
+          function worker(expectedVersion) {
+            run('WORKER_ATTESTATION', 'node', ['scripts/verify-cloudflare-trip-gateway.mjs'],
+              expectedVersion === undefined ? {} : { env: { ...env, EXPECTED_TRIP_WORKER_VERSION: expectedVersion } });
+          }
+          function lease(minimumSeconds) {
+            const deadline = Number(env.REPAIR_LEASE_DEADLINE);
+            if (!Number.isSafeInteger(deadline) || deadline - Date.now() < minimumSeconds * 1000
+              || deadline - Date.now() > 20 * 60000) throw new Error('TRIP_REPAIR_LEASE_INVALID');
+          }
+          function output(name, value) { fs.appendFileSync(env.GITHUB_OUTPUT, name + '=' + value + '\n'); }
+          worker();
+          exactMain();
+          lease(600);
+          import { deployTripWorker } from './scripts/lib/trip-worker-deploy-process.mjs';
+          output('deploy_intent', 'true');
+          let deployed;
+          try {
+            const result = await deployTripWorker({ configPath: env.TRIP_WRANGLER_CONFIG_PATH, env });
+            if (result?.terminationConfirmed !== true) throw new Error('TRIP_REPAIR_WORKER_DEPLOY');
+            output('deploy_stopped', 'true');
+            deployed = result.stdout;
+          } catch (error) {
+            if (error?.terminationConfirmed === true) output('deploy_stopped', 'true');
+            throw new Error('TRIP_REPAIR_WORKER_DEPLOY');
+          }
+          const versions = [...deployed.matchAll(/^Current Version ID: ([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\s*$/gim)];
+          if (versions.length !== 1) throw new Error('TRIP_REPAIR_DEPLOY_IDENTITY_MISSING');
+          worker(versions[0][1]);
+          output('version', versions[0][1]);
+          console.log('Worker repair source=' + env.GITHUB_SHA + ' version=' + versions[0][1]);
+          REPAIR_NODE
+
+      - name: Restore and attest normal D1 after replacement
+        id: repair_restore
+        timeout-minutes: 5
+        shell: bash
+        env:
+          REPAIR_LEASE_DEADLINE: ${{ steps.repair_quiesce.outputs.deadline }}
+          REPAIR_EXPECTED_WORKER_VERSION: ${{ steps.repair_replace.outputs.version }}
+        run: |
+          node --input-type=module <<'REPAIR_NODE'
+          import { execFileSync } from 'node:child_process';
+          import fs from 'node:fs';
+          const env = process.env;
+          function run(label, command, args, options = {}) {
+            try { return execFileSync(command, args, { encoding: 'utf8', stdio: 'pipe', timeout: 180000,
+              maxBuffer: 1024 * 1024, ...options }); }
+            catch { throw new Error('TRIP_REPAIR_' + label); }
+          }
+          function exactMain() {
+            if (env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) throw new Error('TRIP_REPAIR_MAIN_INVALID');
+            run('MAIN_FETCH', 'git', ['fetch', '--no-tags', '--depth=1', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
+            for (const ref of ['HEAD^{commit}', 'origin/main^{commit}']) {
+              if (run('MAIN_READ', 'git', ['rev-parse', ref]).trim() !== env.GITHUB_SHA) throw new Error('TRIP_REPAIR_MAIN_CHANGED');
+            }
+          }
+          function edge(mode) {
+            run('EDGE_ATTESTATION', 'node', ['scripts/verify-trip-storage-edge.mjs'], { env: { ...env, EXPECTED_TRIP_STORAGE_MODE: mode } });
+          }
+          function worker(expectedVersion) {
+            run('WORKER_ATTESTATION', 'node', ['scripts/verify-cloudflare-trip-gateway.mjs'],
+              expectedVersion === undefined ? {} : { env: { ...env, EXPECTED_TRIP_WORKER_VERSION: expectedVersion } });
+          }
+          function lease(minimumSeconds) {
+            const deadline = Number(env.REPAIR_LEASE_DEADLINE);
+            if (!Number.isSafeInteger(deadline) || deadline - Date.now() < minimumSeconds * 1000
+              || deadline - Date.now() > 20 * 60000) throw new Error('TRIP_REPAIR_LEASE_INVALID');
+          }
+          function output(name, value) { fs.appendFileSync(env.GITHUB_OUTPUT, name + '=' + value + '\n'); }
+          worker(env.REPAIR_EXPECTED_WORKER_VERSION || '');
+          exactMain();
+          lease(1);
+          run('RESTORE_D1', 'supabase', ['secrets', 'set', '--project-ref', env.SUPABASE_PROJECT_ID, 'TRIP_STORAGE_MODE=d1']);
+          edge('d1');
+          worker(env.REPAIR_EXPECTED_WORKER_VERSION || '');
+          REPAIR_NODE
+
+      - name: Reattest and lease once for D1-only failure roll-forward
+        id: repair_recovery_quiesce
+        if: ${{ failure() && !cancelled() && steps.repair_quiesce.outputs.intent == 'true' && (steps.repair_replace.outputs.deploy_intent != 'true' || steps.repair_replace.outputs.deploy_stopped == 'true') }}
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          node --input-type=module <<'REPAIR_NODE'
+          import { execFileSync } from 'node:child_process';
+          import fs from 'node:fs';
+          const env = process.env;
+          function run(label, command, args, options = {}) {
+            try { return execFileSync(command, args, { encoding: 'utf8', stdio: 'pipe', timeout: 180000,
+              maxBuffer: 1024 * 1024, ...options }); }
+            catch { throw new Error('TRIP_REPAIR_' + label); }
+          }
+          function exactMain() {
+            if (env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) throw new Error('TRIP_REPAIR_MAIN_INVALID');
+            run('MAIN_FETCH', 'git', ['fetch', '--no-tags', '--depth=1', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
+            for (const ref of ['HEAD^{commit}', 'origin/main^{commit}']) {
+              if (run('MAIN_READ', 'git', ['rev-parse', ref]).trim() !== env.GITHUB_SHA) throw new Error('TRIP_REPAIR_MAIN_CHANGED');
+            }
+          }
+          function edge(mode) {
+            run('EDGE_ATTESTATION', 'node', ['scripts/verify-trip-storage-edge.mjs'], { env: { ...env, EXPECTED_TRIP_STORAGE_MODE: mode } });
+          }
+          function worker(expectedVersion) {
+            run('WORKER_ATTESTATION', 'node', ['scripts/verify-cloudflare-trip-gateway.mjs'],
+              expectedVersion === undefined ? {} : { env: { ...env, EXPECTED_TRIP_WORKER_VERSION: expectedVersion } });
+          }
+          function lease(minimumSeconds) {
+            const deadline = Number(env.REPAIR_LEASE_DEADLINE);
+            if (!Number.isSafeInteger(deadline) || deadline - Date.now() < minimumSeconds * 1000
+              || deadline - Date.now() > 20 * 60000) throw new Error('TRIP_REPAIR_LEASE_INVALID');
+          }
+          function output(name, value) { fs.appendFileSync(env.GITHUB_OUTPUT, name + '=' + value + '\n'); }
+          import { waitForTripStorageEdgeReadiness } from './scripts/lib/trip-storage-edge-readiness.mjs';
+          const options = { baseUrl: env.SUPABASE_URL, publishableKey: env.SUPABASE_PUBLISHABLE_KEY };
+          const maintained = await waitForTripStorageEdgeReadiness({ ...options, expectedStorageMode: 'maintenance' });
+          if (!maintained.ok) {
+            const normal = await waitForTripStorageEdgeReadiness({ ...options, expectedStorageMode: 'd1' });
+            if (!normal.ok) throw new Error('TRIP_REPAIR_RECOVERY_EDGE_INVALID');
+          }
+          exactMain();
+          output('intent', 'true');
+          const deadline = Date.now() + 20 * 60000;
+          output('deadline', String(deadline));
+          run('MAINTENANCE', 'supabase', ['secrets', 'set', '--project-ref', env.SUPABASE_PROJECT_ID,
+            'TRIP_STORAGE_MODE=maintenance:' + new Date(deadline).toISOString()]);
+          edge('maintenance');
+          run('DRAIN', 'sleep', ['20']);
+          REPAIR_NODE
+
+      - name: One bounded D1-only recovery replacement
+        id: repair_recovery_replace
+        if: ${{ failure() && !cancelled() && steps.repair_recovery_quiesce.outcome == 'success' }}
+        timeout-minutes: 7
+        shell: bash
+        env:
+          REPAIR_LEASE_DEADLINE: ${{ steps.repair_recovery_quiesce.outputs.deadline }}
+        run: |
+          node --input-type=module <<'REPAIR_NODE'
+          import { execFileSync } from 'node:child_process';
+          import fs from 'node:fs';
+          const env = process.env;
+          function run(label, command, args, options = {}) {
+            try { return execFileSync(command, args, { encoding: 'utf8', stdio: 'pipe', timeout: 180000,
+              maxBuffer: 1024 * 1024, ...options }); }
+            catch { throw new Error('TRIP_REPAIR_' + label); }
+          }
+          function exactMain() {
+            if (env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) throw new Error('TRIP_REPAIR_MAIN_INVALID');
+            run('MAIN_FETCH', 'git', ['fetch', '--no-tags', '--depth=1', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
+            for (const ref of ['HEAD^{commit}', 'origin/main^{commit}']) {
+              if (run('MAIN_READ', 'git', ['rev-parse', ref]).trim() !== env.GITHUB_SHA) throw new Error('TRIP_REPAIR_MAIN_CHANGED');
+            }
+          }
+          function edge(mode) {
+            run('EDGE_ATTESTATION', 'node', ['scripts/verify-trip-storage-edge.mjs'], { env: { ...env, EXPECTED_TRIP_STORAGE_MODE: mode } });
+          }
+          function worker(expectedVersion) {
+            run('WORKER_ATTESTATION', 'node', ['scripts/verify-cloudflare-trip-gateway.mjs'],
+              expectedVersion === undefined ? {} : { env: { ...env, EXPECTED_TRIP_WORKER_VERSION: expectedVersion } });
+          }
+          function lease(minimumSeconds) {
+            const deadline = Number(env.REPAIR_LEASE_DEADLINE);
+            if (!Number.isSafeInteger(deadline) || deadline - Date.now() < minimumSeconds * 1000
+              || deadline - Date.now() > 20 * 60000) throw new Error('TRIP_REPAIR_LEASE_INVALID');
+          }
+          function output(name, value) { fs.appendFileSync(env.GITHUB_OUTPUT, name + '=' + value + '\n'); }
+          worker();
+          exactMain();
+          lease(600);
+          import { deployTripWorker } from './scripts/lib/trip-worker-deploy-process.mjs';
+          output('deploy_intent', 'true');
+          let deployed;
+          try {
+            const result = await deployTripWorker({ configPath: env.TRIP_WRANGLER_CONFIG_PATH, env });
+            if (result?.terminationConfirmed !== true) throw new Error('TRIP_REPAIR_WORKER_DEPLOY');
+            output('deploy_stopped', 'true');
+            deployed = result.stdout;
+          } catch (error) {
+            if (error?.terminationConfirmed === true) output('deploy_stopped', 'true');
+            throw new Error('TRIP_REPAIR_WORKER_DEPLOY');
+          }
+          const versions = [...deployed.matchAll(/^Current Version ID: ([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\s*$/gim)];
+          if (versions.length !== 1) throw new Error('TRIP_REPAIR_DEPLOY_IDENTITY_MISSING');
+          worker(versions[0][1]);
+          output('version', versions[0][1]);
+          console.log('Worker repair source=' + env.GITHUB_SHA + ' version=' + versions[0][1]);
+          REPAIR_NODE
+
+      - name: Reattest D1 recovery without masking the primary failure
+        id: repair_recovery_restore
+        if: ${{ failure() && !cancelled() && steps.repair_recovery_replace.outcome == 'success' }}
+        timeout-minutes: 5
+        shell: bash
+        env:
+          REPAIR_LEASE_DEADLINE: ${{ steps.repair_recovery_quiesce.outputs.deadline }}
+          REPAIR_EXPECTED_WORKER_VERSION: ${{ steps.repair_recovery_replace.outputs.version }}
+        run: |
+          node --input-type=module <<'REPAIR_NODE'
+          import { execFileSync } from 'node:child_process';
+          import fs from 'node:fs';
+          const env = process.env;
+          function run(label, command, args, options = {}) {
+            try { return execFileSync(command, args, { encoding: 'utf8', stdio: 'pipe', timeout: 180000,
+              maxBuffer: 1024 * 1024, ...options }); }
+            catch { throw new Error('TRIP_REPAIR_' + label); }
+          }
+          function exactMain() {
+            if (env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) throw new Error('TRIP_REPAIR_MAIN_INVALID');
+            run('MAIN_FETCH', 'git', ['fetch', '--no-tags', '--depth=1', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
+            for (const ref of ['HEAD^{commit}', 'origin/main^{commit}']) {
+              if (run('MAIN_READ', 'git', ['rev-parse', ref]).trim() !== env.GITHUB_SHA) throw new Error('TRIP_REPAIR_MAIN_CHANGED');
+            }
+          }
+          function edge(mode) {
+            run('EDGE_ATTESTATION', 'node', ['scripts/verify-trip-storage-edge.mjs'], { env: { ...env, EXPECTED_TRIP_STORAGE_MODE: mode } });
+          }
+          function worker(expectedVersion) {
+            run('WORKER_ATTESTATION', 'node', ['scripts/verify-cloudflare-trip-gateway.mjs'],
+              expectedVersion === undefined ? {} : { env: { ...env, EXPECTED_TRIP_WORKER_VERSION: expectedVersion } });
+          }
+          function lease(minimumSeconds) {
+            const deadline = Number(env.REPAIR_LEASE_DEADLINE);
+            if (!Number.isSafeInteger(deadline) || deadline - Date.now() < minimumSeconds * 1000
+              || deadline - Date.now() > 20 * 60000) throw new Error('TRIP_REPAIR_LEASE_INVALID');
+          }
+          function output(name, value) { fs.appendFileSync(env.GITHUB_OUTPUT, name + '=' + value + '\n'); }
+          worker(env.REPAIR_EXPECTED_WORKER_VERSION || '');
+          exactMain();
+          lease(1);
+          run('RESTORE_D1', 'supabase', ['secrets', 'set', '--project-ref', env.SUPABASE_PROJECT_ID, 'TRIP_STORAGE_MODE=d1']);
+          edge('d1');
+          worker(env.REPAIR_EXPECTED_WORKER_VERSION || '');
+          REPAIR_NODE
