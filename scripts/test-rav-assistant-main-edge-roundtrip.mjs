@@ -26,6 +26,7 @@ let controlledProviderResponse = null;
 let controlledProviderUrl;
 let controlledProviderCalls = 0;
 let controlledQuotaCalls = 0;
+const controlledProviderPrompts = [];
 const controlledEnvironment = {
   PUBLIC_RATE_LIMIT_SECRET: 'SYNTHETIC_ONLY_RATE_SECRET',
   SUPABASE_URL: 'https://quota.invalid',
@@ -65,6 +66,7 @@ globalThis.fetch = async (input, init) => {
       assert.match(providerBody.messages[0].content, /A relevant word does not make an unrelated or private request permissible\./);
       assert.match(providerBody.messages[0].content, /Uncertainty never licenses speculation/);
       assert.doesNotMatch(JSON.stringify(providerBody), /TEST_PRIVATE_CONTEXT_MARKER/);
+      controlledProviderPrompts.push(JSON.parse(providerBody.messages[1].content));
       controlledProviderCalls += 1;
       return Response.json(controlledProviderResponse);
     }
@@ -197,6 +199,48 @@ try {
     assert.equal(exchanges[0].body.context.result.score, null);
   };
 
+  const assertKnownEvidenceDoesNotValidateContradiction = async () => {
+    reset();
+    responseMutation = null;
+    const question = 'Hvordan kan jeg kende rav fra sten på stranden?';
+    const evidenceId = 'amber.mostly-sinks';
+    const contradictedAnswer = 'De fleste baltiske ravstykker flyder på overfladen af almindeligt dansk havvand.';
+    assert.match(contract.RAV_ASSISTANT_FACTS.find(fact => fact.id === evidenceId)?.text || '',
+      /sinks in ordinary Danish seawater/);
+    assert.equal(classifyRavQuestion(question), 'unknown');
+    assert.equal(routeRavQuestion(question), 'remote-candidate');
+    controlledProviderResponse = { result: { response: JSON.stringify({
+      schemaVersion: 'rav-assistant-response-v1', locale: 'da', disposition: 'answer',
+      answer: contradictedAnswer, evidenceIds: [evidenceId],
+    }) } };
+    const beforeCalls = controlledProviderCalls, beforeQuota = controlledQuotaCalls;
+    const answer = await askRavRadar(question, context, { language: 'da' });
+    assert.equal(exchanges.length, 1, 'The normal client must reach the actual Edge handler.');
+    assert.equal(exchanges[0].body.question, question);
+    assert.equal(controlledProviderCalls - beforeCalls, 1);
+    assert.equal(controlledQuotaCalls - beforeQuota, 3);
+    assert.equal(blockedNetworkCalls, 0);
+    assert.equal(JSON.stringify(context), contextBefore);
+    console.log(JSON.stringify({ case: 'known-evidence-contradiction',
+      route: routeRavQuestion(question), status: exchanges[0].status,
+      unchangedBindingHeaders: Object.keys(headerValues).length,
+      acceptedContradiction: answer === contradictedAnswer,
+      controlledProviderCalls: controlledProviderCalls - beforeCalls,
+      controlledQuotaCalls: controlledQuotaCalls - beforeQuota, blockedNetworkCalls }));
+    assert.notEqual(answer, contradictedAnswer,
+      'An existing fact ID must not certify prose that contradicts that supplied fact.');
+    assert.notEqual(exchanges[0].result.answer, contradictedAnswer,
+      'The actual Edge response must not publish the contradicted prose as a grounded answer.');
+    const expected = 'Det meste baltiske rav har en massefylde omkring 1,05–1,10 g/cm³ og synker i almindeligt dansk havvand, men er under vand stadig meget lettere end sand og sten. Saltindhold og temperatur ændrer opdriften lidt, men ikke nok til at få det meste rav til at flyde.';
+    assert.equal(exchanges[0].status, 200);
+    assert.deepEqual(exchanges[0].result, { answer: expected });
+    assert.equal(answer, expected);
+    controlledProviderResponse = null;
+  };
+
+  if (process.argv.includes('--known-evidence-contradiction-only')) {
+    await assertKnownEvidenceDoesNotValidateContradiction();
+  } else {
   let acceptedControlled = 0;
   for (const [locale, question] of controlled) {
     reset();
@@ -367,12 +411,140 @@ try {
     assert.notEqual(exchanges[0].result.answer, guess);
   }
   controlledProviderResponse = null;
+  // BEGIN canonical snapshot roundtrip: the same client/Edge/HTTP fixture.
+  // Independent expected labels/layout from the reviewed v3 snapshot contract;
+  // never call the product renderer to construct the expected response.
+  const snapshotWords = {
+    da: {
+      supplied: 'Modtagne zoneværdier', mode: 'På stranden', time: 'Tid i Danmark', score: 'RavScore',
+      lower: 'konservativ nedre grænse', range: 'modelinterval 57–76 (spænd 19 point)',
+      unavailable: 'RavScore midlertidigt utilgængelig', missing: 'Udeladte vejrdata er ukendte, ikke nul.',
+      labels: ['Vind', 'Vindretning, modtagne grader', 'Bølger', 'Bølgeperiode', 'Vandstand', 'Strøm', 'Strømretning, modtagne grader', 'Vandtemperatur'],
+    },
+    de: {
+      supplied: 'Übermittelte Gebietswerte', mode: 'Am Strand', time: 'Zeit in Dänemark', score: 'BernsteinScore',
+      lower: 'konservative Untergrenze', range: 'Modellintervall 57–76 (Spanne 19 Punkte)',
+      unavailable: 'BernsteinScore vorübergehend nicht verfügbar', missing: 'Ausgelassene Wetterwerte sind unbekannt, nicht null.',
+      labels: ['Wind', 'Windrichtung, übermittelte Grad', 'Wellen', 'Wellenperiode', 'Wasserstand', 'Strömung', 'Strömungsrichtung, übermittelte Grad', 'Wassertemperatur'],
+    },
+    en: {
+      supplied: 'Supplied zone values', mode: 'On the beach', time: 'Time in Denmark', score: 'AmberScore',
+      lower: 'conservative lower bound', range: 'model interval 57–76 (span 19 points)',
+      unavailable: 'AmberScore temporarily unavailable', missing: 'Omitted weather values are unknown, not zero.',
+      labels: ['Wind', 'Wind direction, supplied degrees', 'Waves', 'Wave period', 'Water level', 'Current', 'Current direction, supplied degrees', 'Water temperature'],
+    },
+  };
+  const fullSnapshotResult = {
+    available: true, score: 68, level: 'good', scoreQuality: 'FULL_HISTORY',
+    calibrationEligible: true, scoreSemantics: 'EXACT_POINT_SCORE', conservativeTailResetApplied: false,
+    scoreBounds: { lower: 68, upper: 68, modelUncertaintyPoints: 0, rawLower: 68, rawUpper: 68 },
+    historyCoverageHours: 48, historyReasonCodes: [],
+  };
+  const historySnapshotResult = {
+    available: true, score: 57, level: 'fair', scoreQuality: 'HISTORY_INCOMPLETE',
+    calibrationEligible: false, scoreSemantics: 'CONSERVATIVE_ENCLOSING_LOWER_BOUND', conservativeTailResetApplied: false,
+    scoreBounds: { lower: 57, upper: 76, modelUncertaintyPoints: 19, rawLower: 56.5, rawUpper: 76.2 },
+    historyCoverageHours: 11, historyReasonCodes: ['CURRENT_HISTORY_INCOMPLETE'],
+  };
+  const unavailableSnapshotResult = {
+    available: false, score: null, level: null, scoreQuality: 'UNAVAILABLE',
+    calibrationEligible: false, scoreSemantics: null, conservativeTailResetApplied: false,
+    scoreBounds: null, historyCoverageHours: null, historyReasonCodes: [],
+  };
+  const snapshotWeather = {
+    time: '2026-08-27T12:00:00Z', windSpeedMps: 7.2, windDirectionDeg: 270,
+    waveHeightM: 1.3, wavePeriodS: 6, waterLevelCm: -4, currentSpeedMps: 0.2,
+    currentDirectionDeg: 90, waterTemperatureC: 14.5,
+  };
+  const snapshotQuestion = 'Hvordan kan jeg kende rav fra sten på stranden?';
+  assert.equal(classifyRavQuestion(snapshotQuestion), 'unknown');
+  assert.equal(routeRavQuestion(snapshotQuestion), 'remote-candidate');
+  let snapshotCases = 0;
+  for (const locale of ['da', 'de', 'en']) for (const variant of ['FULL', 'HISTORY', 'missing-zone', 'malformed']) {
+    reset();
+    controlledProviderPrompts.length = 0;
+    const words = snapshotWords[locale];
+    const result = variant === 'HISTORY' ? historySnapshotResult : fullSnapshotResult;
+    const malformed = variant === 'malformed';
+    const weather = malformed ? {
+      time: 'INVALID_SUPPLIED_TIME', windSpeedMps: '7.2', windDirectionDeg: true,
+      waveHeightM: [1.3], wavePeriodS: { value: 6 }, waterLevelCm: 0,
+      currentSpeedMps: false, currentDirectionDeg: null, waterTemperatureC: '14.5',
+    } : { ...snapshotWeather };
+    const input = {
+      modelBinding: { ...binding }, mode: 'beach',
+      zone: variant === 'missing-zone' ? null : { id: 'zone-1', name: 'Test Coast', coastType: 'strand', coordinates: ['TEST_PRIVATE_CONTEXT_MARKER'] },
+      result: { ...result, ...(malformed ? { score: '68' } : {}), internalDiagnostics: { token: 'TEST_PRIVATE_CONTEXT_MARKER' } },
+      weather: { ...weather, provider: 'SYNTHETIC_PROVIDER_NOT_PUBLIC', rawVector: { private: 'TEST_PRIVATE_CONTEXT_MARKER' } },
+      account: { email: 'TEST_PRIVATE_CONTEXT_MARKER' }, privateTrips: ['TEST_PRIVATE_CONTEXT_MARKER'],
+    };
+    const inputBefore = JSON.stringify(input);
+    controlledProviderResponse = { result: { response: JSON.stringify({
+      schemaVersion: 'rav-assistant-response-v1', locale, disposition: 'answer',
+      answer: 'SYNTHETIC_INVENTED_ZONE_SCORE_99', evidenceIds: ['public-context.selected-zone-only'],
+    }) } };
+    const beforeCalls = controlledProviderCalls, beforeQuota = controlledQuotaCalls;
+    const answer = await askRavRadar(snapshotQuestion, input, { language: locale });
+    assert.equal(exchanges.length, 1);
+    assert.equal(exchanges[0].body.question, snapshotQuestion);
+    assert.equal(exchanges[0].body.locale, locale);
+    assert.equal(exchanges[0].status, 200);
+    assert.equal(controlledProviderCalls - beforeCalls, 1);
+    assert.equal(controlledQuotaCalls - beforeQuota, 3);
+    assert.equal(controlledProviderPrompts.length, 1);
+    const supplied = controlledProviderPrompts[0].publicSelectedZoneContext;
+    assert.deepEqual(Object.keys(supplied).sort(), ['locale', 'mode', 'modelBinding', 'result', 'weather', 'zone']);
+    assert.equal(supplied.locale, locale);
+    assert.equal(supplied.mode, 'beach');
+    assert.deepEqual(supplied.modelBinding, binding);
+    assert.deepEqual(supplied.zone, variant === 'missing-zone'
+      ? { id: null, name: null, coastType: null } : { id: 'zone-1', name: 'Test Coast', coastType: 'strand' });
+    assert.deepEqual(supplied.result, malformed ? unavailableSnapshotResult : result);
+    assert.deepEqual(supplied.weather, malformed ? {
+      time: 'INVALID_SUPPLIED_TIME', windSpeedMps: null, windDirectionDeg: null,
+      waveHeightM: null, wavePeriodS: null, waterLevelCm: 0, currentSpeedMps: null,
+      currentDirectionDeg: null, waterTemperatureC: null,
+    } : snapshotWeather);
+    assert.doesNotMatch(JSON.stringify(supplied), /TEST_PRIVATE_CONTEXT_MARKER|SYNTHETIC_PROVIDER_NOT_PUBLIC|rawVector|coordinates|internalDiagnostics|email/);
+    let expected;
+    if (variant === 'missing-zone') {
+      expected = t('assistant.local.noZone', {}, locale);
+    } else {
+      const lines = [words.supplied + ': "Test Coast"', words.mode];
+      if (!malformed) lines.push(words.time + ': ' + new Intl.DateTimeFormat({ da: 'da-DK', de: 'de-DE', en: 'en-GB' }[locale], {
+        timeZone: 'Europe/Copenhagen', year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', timeZoneName: 'short',
+      }).format(new Date(Date.UTC(2026, 7, 27, 12))));
+      lines.push(malformed ? words.unavailable : variant === 'HISTORY'
+        ? `${words.score}: 57 (${words.lower}); ${words.range}.` : `${words.score}: 68`);
+      const values = locale === 'en' ? ['7.2', '270', '1.3', '6', '-4', '0.2', '90', '14.5']
+        : ['7,2', '270', '1,3', '6', '-4', '0,2', '90', '14,5'];
+      if (malformed) lines.push(words.labels[4] + ': 0 cm');
+      else for (const [index, unit] of ['m/s', '°', 'm', 's', 'cm', 'm/s', '°', '°C'].entries())
+        lines.push(`${words.labels[index]}: ${values[index]} ${unit}`);
+      lines.push(words.missing);
+      expected = lines.join('\n');
+    }
+    assert.ok(expected.length <= 900);
+    assert.deepEqual(exchanges[0].result, { answer: expected });
+    assert.equal(answer, expected);
+    assert.doesNotMatch(answer, /SYNTHETIC_INVENTED_ZONE_SCORE_99|INVALID_SUPPLIED_TIME|CURRENT_HISTORY_INCOMPLETE|TEST_PRIVATE_CONTEXT_MARKER/);
+    assert.equal(JSON.stringify(input), inputBefore);
+    assert.equal(blockedNetworkCalls, 0);
+    snapshotCases += 1;
+  }
+  controlledProviderResponse = null;
+  assert.equal(snapshotCases, 12);
+  console.log('OK: 12 actual client/Edge canonical snapshots; FULL/HISTORY/missing/malformed; exact sanitized prompt, input unchanged, 3 quota/1 provider each, six headers, zero real network.');
+  // END canonical snapshot roundtrip.
   console.log('OK: 3 explicit wrong-channel outputs skipped, 3 no-final outputs rejected, 12 final-response header mutations fall back, private request still precedes quota; synthetic provider only.');
   assert.equal(JSON.stringify(context), contextBefore);
   assert.equal(preflightVerified, true);
   assert.equal(blockedNetworkCalls, 0, 'Neither provider nor any other real network request may be attempted.');
   console.log(`OK: normal main client -> actual Edge -> client: ${acceptedControlled} controlled DA/DE/EN answers; ${rejectedHeaders} missing/wrong binding fallbacks; ${privateQuestions.length} private refusals; ${ordinary.length} ordinary fail-closed paths; 3 local security refusals; no network/provider.`);
   console.log('OPEN: exact German BernsteinScore/trotzdem question remains a local colour misroute; all sixteen controlled forms avoid provider, but only fifteen have normal-client Edge delivery. No live browser, working quota or external-AI claim.');
+  await assertKnownEvidenceDoesNotValidateContradiction();
+  }
 } finally {
   declarationHook.deregister();
   for (const [name, descriptor] of savedGlobals) {

@@ -1,10 +1,53 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.568
+**Håndbogsversion:** 4.0.569
 
-Den lokale 4.0.568 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+Den lokale 4.0.569 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.194 Hele, godkendte tekstenheder i assistentsvar
+
+Den lokale 569-kandidat bruger faste, gennemgåede formuleringer på dansk,
+tysk og engelsk for de 38 eksisterende serverfakta. En fri formulering
+bliver ikke dokumenteret alene ved at henvise til et kendt fakta-id.
+Alle forbehold og negationer bevares. Den ændrede gengivelse retter en
+lokalt reproduceret grænse efter et faktisk forkert offentligt 566-svar;
+det er ikke i sig selv bevis for en rettelse på hjemmesiden.
+
+Ved flere valgte fakta samles hele tekstenheder. Hvis de ikke kan være
+inden for 900 tegn, beder assistenten om en afgrænsning i stedet for at
+afkorte forbehold eller kun besvare de første dele. Et usikkert svar
+bevarer sin usikkerhed. Relevansen af valgte fakta og fuld dækning af
+spørgsmålet er fortsat selvstændige kvalitetskrav.
+
+En valgt zone kan vises ud fra de faktisk modtagne og validerede felter.
+Ufuldstændig historik bevarer nedre grænse og interval. Udeladte vejrdata
+er ukendte, ikke nul; retning mærkes som modtagne grader. Gyldig tid
+vises eksplicit i dansk tid. Det er ikke en ny kontrol af aktualitet
+eller datakilde, og manglende tal eller landretning bliver ikke opfundet.
+
+De to normale lokale måltests består med 114 sprog-/faktaenheder,
+15 sammensætningskontroller og 12 kontekstrundture. De hidtidige parser-,
+sprog-, privatlivs-, sikkerheds-, kvote- og bindingskontroller bevares;
+parserens svarforventning følger den kanoniske tekst. Intet rigtigt
+netværk blev brugt. Der er ikke gennemført ny ekstern AI- eller
+offentlig 569-kontrol. Den særskilte større videnspakke, relevante
+faktavalg og fuld dækning af opfølgninger og sammensatte spørgsmål
+er ikke leveret med denne ændring.
+
+568 på præcis 0d634 bestod kildekontrol 38091525175/1 kl. 00.34.19
+dansk tid den 11. oktober. Det erstatter den gamle røde ventestatus i
+kapitel 89.193; 567/568 er stadig ikke merget eller offentligt leveret.
+Seneste aflæsning kl. 01.03.55 viste den naturlige vejrhentning
+38083296276 på main 008 aktiv i trin 104. Ingen fejl eller afslutning
+antages. 569 kræver egen præcis kildekontrol og sikker levering.
+
+I68/C66, continuation, faktabank og normaliseret klient er uændrede.
+Alle fem hovedmål og de tre præcise decoder-/190000-SQL-/RESTORE-
+afklaringer er åbne. Revisionen er inaktiv; samlet writer, SAVE,
+CP-cohort, runner-tab og heljobsbudget er ikke afsluttet. Ingen nye
+bindings-, installations- eller produktionshandlinger følger.
 
 ## 89.193 Afvent svaret, før næste forsøg starter
 

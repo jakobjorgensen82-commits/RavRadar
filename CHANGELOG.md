@@ -1,4 +1,14 @@
-# Lokal 4.0.568 – 2026-10-10
+# Lokal 4.0.569 – 2026-10-11
+
+- Faktabaserede assistentsvar gengives som hele, gennemgåede DA/DE/EN-tekstenheder for de 38 eksisterende fakta. Fri providertekst bliver ikke fagligt dokumenteret alene ved at medtage et kendt id; den konkrete lokale modsætningsprøve består nu.
+- Valgt zone gengives kun fra faktisk modtagne, validerede værdier med konservativ historikgrænse/interval, dansk tid og tydelig ukendt-ikke-nul-kvalifikation. Ingen aktualitet, proveniens eller landretning opfindes.
+- Sammensatte svar bevarer alle enheder og forbehold; over 900 tegn gives en afklarende fokusforespørgsel. Usikkerhed, privatliv, sikkerhed, præcis vægtkombination, kvote og seks bindingsheaders bevares.
+- Begge normale måltests består: 114 kanoniske enheder + 15 sammensætningskontroller og 12 kontekstrundture med nul rigtigt netværk. De hidtidige parser-, sprog-, privatlivs-, sikkerheds-, kvote- og bindingskontroller bevares; parserens svarforventning følger den kanoniske tekst. Ikke en offentlig AI-/569-leveringskvittering.
+- I68/C66/continuation, knowledge992 og den normaliserede klient er uændrede. Den særskilte 95-fakta/456-emners kandidat, ID-relevans, fuld compound-/opfølgningsdækning og alle fem hovedmål er åbne. Ingen source33-genforsøg eller nye tilladelser.
+- 568 exact 0d634c5a4a673ab466bcd7f5f22b88896d8233cd bestod 38091525175/1 kl. 00.34.19 dansk tid; den tidligere statiske testfejl er historik. 567/568 er stadig ikke merget eller offentligt leveret. Seneste aflæsning kl. 01.03.55 viste naturlig 38083296276/main 008 aktiv i trin 104; ingen vejrfejl antages.
+- Decoder-, numerisk 190000-SQL- og RESTORE-afklaringer afventer. Revision/global writer/CP-cohort/SAVE/runner-tab/heljobsbudget er ikke aktiveret eller lukket. Geodata ændres kun i topversionsfeltet.
+
+# Historik: lokal 4.0.568 – 2026-10-10
 
 - Afventer den faktisk startede transport, svarkrop og annullering før retry/fallback. Afvist eller ukendt oprydning fastholder den faktiske ressource og stopper det berørte forløb før næste skrivning; afbrydelsesanmodning er ikke en afslutningskvittering.
 - Samme samtidige observationsopslag afventes også efter første fejl. Første fejl bevares, og senere stopusikkerhed må ikke blive almindelig manglende observation. Normal fallback efter kendt afslutning, budgetter og providerprioritet bevares.
