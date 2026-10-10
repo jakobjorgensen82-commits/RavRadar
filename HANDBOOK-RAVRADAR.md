@@ -12,6 +12,14 @@ Den normale fulde installationsgren og den nye reparation kontrolleres hver for
 sig. En test må ikke låne eller tælle kontrolpunkter fra den anden gren. De
 oprindelige krav består; ændret kode kræver sin egen fulde kildekontrol.
 
+En afbrudt deploy må ikke efterlade en underproces, som kan skrive samtidig med
+reparationen. Den faste npm/Wrangler-kæde får derfor sin egen Linux-procesgruppe.
+Succes og recovery kræver både faktisk child-close og observeret bortfald af
+gruppen; en signalanmodning eller ukendt stopstatus er ikke bevis. Udførelsen
+bevarer 180 sekunders grænse med højst fem sekunders afgrænset TERM/KILL-stop.
+En allerede accepteret leverandørhandling påstås ikke tilbagekaldt. Den rigtige
+neutrale Linux-underprocesprøve skal bestå i den nye præcise GitHub-kontrol.
+
 En Workerrettelse må ikke samtidig geninstallere databaser, ændre Edge-kode,
 migrere ture eller skrive nye secrets. Det eksisterende driftsworkflow får derfor
 et særskilt, udtrykkeligt valgt reparationsforløb med samme eksklusive lås som den

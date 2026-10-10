@@ -1,5 +1,6 @@
 # Lokal 4.0.558 – 2026-10-10
 
+- Afgrænset deploy-processtop: timeout må ikke tillade recovery, før den egne normale npm/Wrangler-procesgruppe faktisk er væk og direkte child-close er observeret. Fast kommando, 180 sekunders udførelse, højst fem sekunders afslutning og eksisterende one-primary/one-recovery-grænse bevares. Rigtig Linux-prøve og ny præcis source-CI kræves før operationen.
 - Rettet den normale installationskontrol til dens entydige job, uden at ændre de tidligere tre main-kontroller eller øvrige assertions. Første #548-CI blev afvist; ændret head skal gennem ny fuld kontrol. Ejerens præcise, betingede reparationsautoritet er registreret, ikke udført.
 - Tilføjet et udtrykkeligt valgt, eksklusivt forløb til afgrænset reparation af den eksisterende turlager-Worker. Normal fuld installation bevares; ukendte valg afvises.
 - Reparationen læser og kontrollerer eksisterende SQL, aktivering, ti EU-shards, skema og private grænser; ingen databaseoprettelse, SQL-installation, turmigration, Edge-deploy eller secret-skrivning.

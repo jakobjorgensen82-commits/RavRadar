@@ -1029,7 +1029,7 @@ const steps=[...repairJob.matchAll(/      - name: ([^\n]+)\n([\s\S]*?)(?=      -
   code:/          node --input-type=module <<'REPAIR_NODE'\n([\s\S]*?)          REPAIR_NODE/.exec(match[2])?.[1]?.replace(/^          /gm,''),
 })).filter(step=>step.code);
 const condition=(value,steps,failed,cancelled=false)=>value?Function('steps','failure','cancelled','return '+value.replace(/^\$\{\{\s*|\s*\}\}$/g,''))(steps,()=>failed,()=>cancelled):!failed;
-async function workflowFixture({failCommand,driftCommand,preflightFailure=false,invalidLease=false,recoveryFailure=false,edgeUnavailable=false,badDeployVersion=false,lateDrift='',expireAfterWorkerPreflight=false,cancelRecovery=false,deployVersions={}}={}) {
+async function workflowFixture({failCommand,driftCommand,preflightFailure=false,invalidLease=false,recoveryFailure=false,edgeUnavailable=false,badDeployVersion=false,lateDrift='',expireAfterWorkerPreflight=false,cancelRecovery=false,deployVersions={},unknownDeployStep='',falseReceiptStep=''}={}) {
   const states={},calls=[],logs=[];let firstError=preflightFailure?new Error('PREFLIGHT_FAILED'):null,clock=1800000000000,failedOnce=false;
   for(const step of steps){
     if(!condition(step.condition,states,!!firstError,cancelRecovery)) {states[step.id]={outcome:'skipped',outputs:{}};continue;}
@@ -1050,12 +1050,52 @@ async function workflowFixture({failCommand,driftCommand,preflightFailure=false,
       return '';
     };
     try {
-      await evaluate(withoutImports(step.code),{execFileSync,fs:{appendFileSync:(_path,value)=>{for(const line of value.trim().split('\n')){const [key,...rest]=line.split('=');outputs[key]=rest.join('=');}}},process:{env},Date:class extends Date{static now(){return clock;}},console:{log:value=>logs.push(value)},waitForTripStorageEdgeReadiness:async()=>({ok:!edgeUnavailable})});
+      const deployTripWorker=async({configPath,env:deployEnv})=>{
+        try {
+          const stdout=execFileSync('npx',['--yes','wrangler@4.28.1','deploy','--config',configPath],{env:deployEnv});
+          if(step.id===unknownDeployStep)throw new Error('unknown owned process state');
+          return {stdout,terminationConfirmed:step.id!==falseReceiptStep};
+        } catch {
+          throw Object.assign(new Error('TRIP_REPAIR_WORKER_DEPLOY'),{terminationConfirmed:step.id!==unknownDeployStep});
+        }
+      };
+      await evaluate(withoutImports(step.code),{execFileSync,deployTripWorker,fs:{appendFileSync:(_path,value)=>{for(const line of value.trim().split('\n')){const [key,...rest]=line.split('=');outputs[key]=rest.join('=');}}},process:{env},Date:class extends Date{static now(){return clock;}},console:{log:value=>logs.push(value)},waitForTripStorageEdgeReadiness:async()=>({ok:!edgeUnavailable})});
       states[step.id]={outcome:'success',outputs};
     }catch(error){firstError??=error;states[step.id]={outcome:'failure',outputs,error};}
   }
   return {states,calls,logs,firstError};
 }
+repairTest('deploy-process workflow unknown primary stop prevents every recovery mutation',async()=>{
+  const result=await workflowFixture({failCommand:'deploy',unknownDeployStep:'repair_replace'});
+  assert.equal(result.firstError.message,'TRIP_REPAIR_WORKER_DEPLOY');
+  assert.equal(result.states.repair_replace.outputs.deploy_intent,'true');
+  assert.equal(result.states.repair_replace.outputs.deploy_stopped,undefined);
+  assert.deepEqual(result.calls.filter(call=>['maintenance','deploy','restore','drain'].includes(call.action)).map(call=>call.action),['maintenance','drain','deploy']);
+  assert.equal(result.calls.some(call=>call.step.startsWith('repair_recovery')),false);
+});
+repairTest('deploy-process workflow confirmed failed stop permits exactly one normal recovery',async()=>{
+  const result=await workflowFixture({failCommand:'deploy'});
+  assert.equal(result.firstError.message,'TRIP_REPAIR_WORKER_DEPLOY');
+  assert.equal(result.states.repair_replace.outputs.deploy_stopped,'true');
+  assert.equal(result.states.repair_recovery_replace.outputs.deploy_stopped,'true');
+  assert.equal(result.calls.filter(call=>call.action==='deploy').length,2);
+  assert.equal(result.calls.filter(call=>call.action==='restore').length,1);
+});
+repairTest('deploy-process workflow false resolved receipt is not stop proof',async()=>{
+  const result=await workflowFixture({falseReceiptStep:'repair_replace'});
+  assert.equal(result.firstError.message,'TRIP_REPAIR_WORKER_DEPLOY');
+  assert.equal(result.states.repair_replace.outputs.deploy_stopped,undefined);
+  assert.equal(result.calls.filter(call=>call.action==='deploy').length,1);
+  assert.equal(result.calls.some(call=>call.action==='restore'||call.step.startsWith('repair_recovery')),false);
+});
+repairTest('deploy-process workflow unknown recovery stop never restores or replaces again',async()=>{
+  const result=await workflowFixture({failCommand:'worker',unknownDeployStep:'repair_recovery_replace'});
+  assert.equal(result.firstError.message,'TRIP_REPAIR_WORKER_ATTESTATION');
+  assert.equal(result.states.repair_recovery_replace.outputs.deploy_intent,'true');
+  assert.equal(result.states.repair_recovery_replace.outputs.deploy_stopped,undefined);
+  assert.equal(result.calls.filter(call=>call.action==='deploy').length,2);
+  assert.equal(result.calls.filter(call=>call.action==='restore').length,0);
+});
 repairTest('repair workflow separates full default, repair and unknown selections',()=>{
   assert.match(workflow,/deploy-trip-storage:\r?\n    if: \$\{\{ inputs\.operation == '' \|\| inputs\.operation == 'full-install' \}\}/);
   assert.match(workflow,/repair-existing-worker:\r?\n    if: \$\{\{ inputs\.operation == 'existing-worker-repair' \}\}/);
@@ -1287,5 +1327,123 @@ for(const id of [[deploymentId],null,{},42])deploymentCleanupTest('deployment re
 for(const descriptor of [[accountId],{toString:()=>accountId},null,42])deploymentCleanupTest('deployment receipt rejects nonstring account descriptor '+(Array.isArray(descriptor)?'array':typeof descriptor),async()=>{
   let calls=0;await assert.rejects(verifyActiveWorkerDeployment({...options,accountId:descriptor,fetchImpl:async()=>{calls++;return new Response(JSON.stringify(receipt()));}}),{message:failure});
   assert.equal(calls,0);
+});
+}
+
+// Owned deploy lifecycle: additive to the same normal repair source target.
+{
+const { test: processTest } = await import('node:test');
+const { EventEmitter } = await import('node:events');
+const { spawn: realSpawn } = await import('node:child_process');
+const { setTimeout: realDelay } = await import('node:timers/promises');
+const { deployTripWorker } = await import('./lib/trip-worker-deploy-process.mjs');
+async function processFixture(scenario, overrides = {}) {
+  const host = Object.assign(new EventEmitter(), { platform: 'linux' });
+  const child = Object.assign(new EventEmitter(), { pid: 24444, unref() { this.unreferenced = true; } });
+  for (const key of ['stdout', 'stderr']) child[key] = Object.assign(new EventEmitter(), { destroy() { this.destroyed = true; } });
+  let clock = 0, group = true, tick = 0, spawned = false;
+  const signals = [], calls = [];
+  const finish = code => { group = false; child.emit('exit', code, code === 0 ? null : 'SIGTERM'); child.emit('close'); };
+  const options = { configPath: '/own/generated/config.json', env: { OWN_SYNTHETIC: 'true' }, timeoutMs: 40,
+    termGraceMs: 20, killGraceMs: 20, processImpl: host, now: () => clock,
+    spawnImpl(command, args, opts) {
+      calls.push({ command, args, opts });
+      if (scenario === 'spawn-throw') throw new Error('private provider text');
+      spawned = true;
+      if (scenario === 'spawn-error') delete child.pid;
+      return child;
+    },
+    killImpl(pid, signal) {
+      assert.equal(pid, -24444, 'only the newly owned process group');
+      if (signal === 0) {
+        if (scenario === 'probe-unknown') throw Object.assign(new Error('private'), { code: 'EPERM' });
+        if (!group) throw Object.assign(new Error('gone'), { code: 'ESRCH' });
+        return true;
+      }
+      signals.push(signal);
+      if (scenario === 'termination-unknown' || scenario === 'probe-unknown') return true;
+      if (scenario === 'needs-kill' && signal === 'SIGTERM') return true;
+      if (scenario === 'close-missing') { group = false; return true; }
+      finish(1); return true;
+    },
+    async delay(ms) {
+      clock += ms;
+      if (++tick !== 1) return;
+      if (scenario === 'success') { child.stdout.emit('data', Buffer.from('Current Version ID: own-version\n')); finish(0); }
+      if (scenario === 'nonzero') { group = false; child.emit('exit', 1, null); child.emit('close'); }
+      if (scenario === 'lingering' || scenario === 'probe-unknown') { child.emit('exit', 0, null); child.emit('close'); }
+      if (scenario === 'stdout-limit' || scenario === 'stderr-limit') child[scenario.split('-')[0]].emit('data', Buffer.alloc(1024 * 1024 + 1));
+      if (scenario === 'stream-error') child.stdout.emit('error', new Error('private payload'));
+      if (scenario === 'spawn-error') { group = false; child.emit('error', new Error('private spawn')); child.emit('close'); }
+      if (scenario === 'interrupt') host.emit('SIGTERM');
+      if (scenario === 'close-missing') { group = false; child.emit('exit', 0, null); }
+    }, ...overrides,
+  };
+  let value, error;
+  try { value = await deployTripWorker(options); } catch (caught) { error = caught; }
+  assert.equal(host.listenerCount('SIGINT') + host.listenerCount('SIGTERM'), 0);
+  assert.ok(clock <= 80, 'execution plus cleanup stays bounded');
+  return { value, error, calls, signals, child, spawned };
+}
+processTest('deploy-process fixed pinned command, owned group and positive closed receipt', async () => {
+  const result = await processFixture('success');
+  assert.equal(result.error, undefined); assert.equal(result.value.terminationConfirmed, true);
+  assert.equal(result.value.stdout, 'Current Version ID: own-version\n');
+  assert.deepEqual(result.calls[0], { command: 'npx', args: ['--yes', 'wrangler@4.28.1', 'deploy', '--config', '/own/generated/config.json'],
+    opts: { env: { OWN_SYNTHETIC: 'true' }, detached: true, stdio: ['ignore', 'pipe', 'pipe'] } });
+  assert.deepEqual(result.signals, []);
+});
+for (const [scenario, reason, signals] of [
+  ['timeout', 'timeout', ['SIGTERM']], ['needs-kill', 'timeout', ['SIGTERM', 'SIGKILL']],
+  ['nonzero', 'exit', []], ['lingering', 'descendants', ['SIGTERM']],
+  ['stdout-limit', 'stdout-limit', ['SIGTERM']], ['stderr-limit', 'stderr-limit', ['SIGTERM']],
+  ['stream-error', 'stdout', ['SIGTERM']], ['interrupt', 'interrupted', ['SIGTERM']],
+  ['spawn-throw', 'spawn', []], ['spawn-error', 'spawn', []],
+]) processTest('deploy-process preserves first '+scenario+' error after observed stop', async () => {
+  const result = await processFixture(scenario);
+  assert.equal(result.value, undefined); assert.equal(result.error.message, 'TRIP_REPAIR_WORKER_DEPLOY');
+  assert.equal(result.error.reason, reason); assert.equal(result.error.terminationConfirmed, true);
+  assert.deepEqual(result.signals, signals); assert.doesNotMatch(JSON.stringify(result.error), /private/);
+});
+for (const [scenario, reason] of [['termination-unknown', 'timeout'], ['probe-unknown', 'descendants'], ['close-missing', 'timeout']])
+processTest('deploy-process '+scenario+' is bounded but never claims stop', async () => {
+  const result = await processFixture(scenario);
+  assert.equal(result.value, undefined); assert.equal(result.error.reason, reason);
+  assert.equal(result.error.terminationConfirmed, false); assert.equal(result.child.unreferenced, true);
+  assert.equal(result.child.stdout.destroyed, true); assert.equal(result.child.stderr.destroyed, true);
+});
+processTest('deploy-process non-Linux and invalid bounds have zero process intent', async () => {
+  for (const overrides of [{ processImpl: Object.assign(new EventEmitter(), { platform: 'win32' }) }, { timeoutMs: 180001 }, { configPath: '' }]) {
+    const result = await processFixture('success', overrides);
+    assert.equal(result.error.reason, 'invalid-options'); assert.equal(result.error.terminationConfirmed, true); assert.deepEqual(result.calls, []);
+  }
+});
+processTest('deploy-process Linux real neutral descendant cannot act after timeout stop receipt', { skip: process.platform !== 'linux' }, async () => {
+  let child, captured = '', receipt;
+  const signals = [];
+  // Fixed own neutral process only. No npm/Cloudflare/credentials/network.
+  const leaf = `process.on('SIGTERM',()=>{}); console.log('LEAF '+process.pid); setTimeout(()=>console.log('LATE-NEUTRAL-ACTION'),1800); setTimeout(()=>process.exit(0),2200);`;
+  const wrapper = `const{spawn}=require('node:child_process'); console.log('WRAPPER '+process.pid); const c=spawn(process.execPath,['-e',${JSON.stringify(leaf)}],{stdio:'inherit'}); process.on('SIGTERM',()=>{}); c.on('exit',()=>{}); setTimeout(()=>process.exit(0),2500).unref();`;
+  const groupGone = () => { try { process.kill(-child.pid, 0); return false; } catch (error) { if (error.code === 'ESRCH') return true; throw error; } };
+  try {
+    await assert.rejects(deployTripWorker({ configPath: '/own/no-provider/config', env: {}, timeoutMs: 400, termGraceMs: 50, killGraceMs: 1000,
+      spawnImpl(command, args, options) {
+        assert.equal(command, 'npx'); assert.equal(args[1], 'wrangler@4.28.1'); assert.equal(options.detached, true);
+        child = realSpawn(process.execPath, ['-e', wrapper], options);
+        child.stdout.on('data', chunk => { captured += chunk; }); return child;
+      },
+      killImpl(pid, signal) { assert.equal(pid, -child.pid); if (signal) signals.push(signal); return process.kill(pid, signal); },
+    }), error => { receipt = error; return error.message === 'TRIP_REPAIR_WORKER_DEPLOY'; });
+    assert.match(captured, /LEAF \d+/); assert.match(captured, /WRAPPER \d+/);
+    assert.equal(receipt.reason, 'timeout'); assert.equal(receipt.terminationConfirmed, true);
+    assert.deepEqual(signals, ['SIGTERM', 'SIGKILL']); assert.equal(groupGone(), true);
+    await realDelay(30); assert.doesNotMatch(captured, /LATE-NEUTRAL-ACTION/);
+  } finally {
+    if (child) {
+      if (!groupGone()) { try { process.kill(-child.pid, 'SIGKILL'); } catch (error) { if (error.code !== 'ESRCH') throw error; } }
+      for (let i = 0; i < 150 && !groupGone(); i++) await realDelay(20);
+      assert.equal(groupGone(), true, 'all owned neutral group processes observed gone');
+    }
+  }
 });
 }

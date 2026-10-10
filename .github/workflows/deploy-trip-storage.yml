@@ -1212,7 +1212,18 @@ jobs:
           worker();
           exactMain();
           lease(600);
-          const deployed = run('WORKER_DEPLOY', 'npx', ['--yes', 'wrangler@4.28.1', 'deploy', '--config', env.TRIP_WRANGLER_CONFIG_PATH]);
+          import { deployTripWorker } from './scripts/lib/trip-worker-deploy-process.mjs';
+          output('deploy_intent', 'true');
+          let deployed;
+          try {
+            const result = await deployTripWorker({ configPath: env.TRIP_WRANGLER_CONFIG_PATH, env });
+            if (result?.terminationConfirmed !== true) throw new Error('TRIP_REPAIR_WORKER_DEPLOY');
+            output('deploy_stopped', 'true');
+            deployed = result.stdout;
+          } catch (error) {
+            if (error?.terminationConfirmed === true) output('deploy_stopped', 'true');
+            throw new Error('TRIP_REPAIR_WORKER_DEPLOY');
+          }
           const versions = [...deployed.matchAll(/^Current Version ID: ([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\s*$/gim)];
           if (versions.length !== 1) throw new Error('TRIP_REPAIR_DEPLOY_IDENTITY_MISSING');
           worker(versions[0][1]);
@@ -1267,7 +1278,7 @@ jobs:
 
       - name: Reattest and lease once for D1-only failure roll-forward
         id: repair_recovery_quiesce
-        if: ${{ failure() && !cancelled() && steps.repair_quiesce.outputs.intent == 'true' }}
+        if: ${{ failure() && !cancelled() && steps.repair_quiesce.outputs.intent == 'true' && (steps.repair_replace.outputs.deploy_intent != 'true' || steps.repair_replace.outputs.deploy_stopped == 'true') }}
         timeout-minutes: 5
         shell: bash
         run: |
@@ -1357,7 +1368,18 @@ jobs:
           worker();
           exactMain();
           lease(600);
-          const deployed = run('WORKER_DEPLOY', 'npx', ['--yes', 'wrangler@4.28.1', 'deploy', '--config', env.TRIP_WRANGLER_CONFIG_PATH]);
+          import { deployTripWorker } from './scripts/lib/trip-worker-deploy-process.mjs';
+          output('deploy_intent', 'true');
+          let deployed;
+          try {
+            const result = await deployTripWorker({ configPath: env.TRIP_WRANGLER_CONFIG_PATH, env });
+            if (result?.terminationConfirmed !== true) throw new Error('TRIP_REPAIR_WORKER_DEPLOY');
+            output('deploy_stopped', 'true');
+            deployed = result.stdout;
+          } catch (error) {
+            if (error?.terminationConfirmed === true) output('deploy_stopped', 'true');
+            throw new Error('TRIP_REPAIR_WORKER_DEPLOY');
+          }
           const versions = [...deployed.matchAll(/^Current Version ID: ([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\s*$/gim)];
           if (versions.length !== 1) throw new Error('TRIP_REPAIR_DEPLOY_IDENTITY_MISSING');
           worker(versions[0][1]);
