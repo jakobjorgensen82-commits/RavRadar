@@ -1,10 +1,36 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.561
+**Håndbogsversion:** 4.0.562
 
-4.0.561 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+Den lokale 4.0.562 beholder bindingen `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.186 Samme gemte offentlige kilde ved rettelsesdeploy
+
+RavRadar kan allerede levere kode med gemte data uden ny vejrhentning. Den
+lokale 4.0.562-rettelse knytter den normale transport til ét allerede forseglet
+Pages-artifact, når offentligt manifest og centralt aktiv kilde passer præcist.
+Run, forsøg, kildeversion, filhashes og det rå manifest skal passe; den centrale
+identitet genlæses bagefter. En fejl må ikke vælge nyere data. De særlige
+historiske reparations-/recoveryveje og alle senere kontroller består.
+
+De samme seks offentlige filer og størrelsesgrænser bevares. Rettelsen tilføjer
+en samlet 360-sekundersfrist; den gamle 60-sekundersfrist var pr. curl-forsøg.
+En ny streaminggrænse under 10 milliarder dekodede bytes omfatter hele tar-filen,
+som ikke gemmes. Grænsen følger Pages' uofficielle platformloft og er ikke en
+garanti for deployment over den officielt understøttede 1 GB. Kun seks faste
+outputfiler skrives; øvrigt indhold gennemlæses til EOF/CRC og kasseres.
+
+Præcis rå manifestkontrol, filgrænser, egne lukninger og eksisterende sikker
+logning kræves. Usikker afslutning bevarer det private arbejdsområde. Den
+historiske curl63-log beviser ikke, hvilken fil eller størrelse der udløste
+stoppet; årsagen er stadig åben. Dette er hverken en ny checkpointfunktion,
+offentlig levering eller ændring af vejr, score, geometri, modelbinding eller
+privat originalkontrol. Node-måltesten og 13 Linux-forløb består i GitHub.
+En statisk kontrol af det gamle workflowkald er rettet til den faktiske læser;
+samme manifestbundne detailgrænse består. Måltesten er grøn lokalt, men en ny
+præcis kildekontrol og faktisk levering afventer.
 
 ## 89.185 Bevaret cache og samtidige kladder
 

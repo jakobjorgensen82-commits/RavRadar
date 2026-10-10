@@ -780,11 +780,88 @@ console.log('Code-only public runtime reuse contract passed.');
 const publicSnapshotStart = workflow.indexOf('- name: Download exact currently public code-only source');
 const publicSnapshotEnd = workflow.indexOf('\n      - name:', publicSnapshotStart + 1);
 const publicSnapshot = workflow.slice(publicSnapshotStart, publicSnapshotEnd);
+const publicAcquisition = fs.readFileSync('scripts/acquire-code-only-public-snapshot.mjs', 'utf8');
 assert.ok(publicSnapshot.includes('curl --version'), 'Snapshot must identify the actual curl runtime');
-assert.ok(publicSnapshot.includes('--write-out "Public snapshot file=$local_name bound=$maximum_bytes http=%{http_code} declared=%header{content-length} received=%{size_download}\\n"'),
-  'Snapshot failures must identify file, bound, HTTP status, declared Content-Length and actual received byte count');
-assert.ok(publicSnapshot.includes('--max-filesize "$maximum_bytes"'), 'Diagnostic must not loosen the byte bound');
-assert.ok(publicSnapshot.includes('--connect-timeout 10 --max-time 60'), 'Diagnostic must preserve request deadlines');
+assert.ok(publicSnapshot.includes('node scripts/acquire-code-only-public-snapshot.mjs acquire'),
+  'The initial snapshot must use the normal bounded acquisition helper');
+assert.ok(publicSnapshot.indexOf('node scripts/acquire-code-only-public-snapshot.mjs acquire')
+  < publicSnapshot.indexOf('target_reference='),
+  'The production reference must be read only after acquisition succeeds');
+assert.doesNotMatch(publicSnapshot, /fetch_public\s*\(/,
+  'The initial snapshot must not bypass the normal acquisition helper');
+assert.ok(publicAcquisition.includes("'--write-out', '%{http_code}\\t%header{content-length}\\t%{size_download}\\n'"),
+  'Snapshot failures must measure HTTP status, declared Content-Length and actual received byte count');
+for (const field of ['Public snapshot file=${name}', 'bound=${cap}', 'http=${http}',
+  'declared=${declared}', 'received=${received}']) {
+  assert.ok(publicAcquisition.includes(field),
+    'Snapshot failures must identify their exact file, bound and measured transfer fields');
+}
+assert.ok(publicAcquisition.includes("'--max-filesize', String(cap)"),
+  'Diagnostic must not loosen the byte bound');
+assert.ok(publicAcquisition.includes("'--connect-timeout', '10'")
+  && publicAcquisition.includes("'--max-time', String(Math.min(60, seconds))"),
+  'Diagnostic must preserve request deadlines');
+for (const fileBound of [
+  "['data/live/manifest.json', 'manifest.json', MiB]",
+  "['data/live/public-conditions.json', 'public-conditions.json', 32 * MiB]",
+  "['data/live/public-condition-details.json', 'public-condition-details.json', null]",
+  "['data/live/coastal-parts-v2.json', 'coastal-parts-v2.json', 16 * MiB]",
+  "['data/zones.geojson', 'zones.geojson', 32 * MiB]",
+  "['data/water-level-station-routing.json', 'water-level-station-routing.json', 4 * MiB]",
+  'manifestBoundedPublicDetailsBytes(manifest.publicConditionDetailsBytes)',
+]) assert.ok(publicAcquisition.includes(fileBound), 'Acquisition must retain each original file byte bound');
 assert.ok(publicSnapshot.includes('set -euo pipefail'), 'Snapshot must retain first-error STOP');
 assert.doesNotMatch(publicSnapshot, /continue-on-error|\|\|\s*true|--ignore-content-length|--compressed/,
   'Diagnostic must neither suppress a failure nor change the transferred representation');
+assert.doesNotMatch(publicAcquisition, /--ignore-content-length|--compressed/,
+  'The acquisition helper must not change the transferred representation or ignore its byte bound');
+const acquisitionCurrentStart = workflow.indexOf('- name: Read exact centrally active operational RavScore');
+const acquisitionCurrentEnd = workflow.indexOf('\n      - name:', acquisitionCurrentStart + 1);
+assert.ok(acquisitionCurrentStart >= 0 && acquisitionCurrentEnd > acquisitionCurrentStart,
+  'The later normal central-state read must remain present');
+const acquisitionCurrent = workflow.slice(acquisitionCurrentStart, acquisitionCurrentEnd);
+const currentRead = acquisitionCurrent.indexOf('node scripts/ravscore-operational-activation.mjs read');
+const currentAssertion = acquisitionCurrent.indexOf('node scripts/acquire-code-only-public-snapshot.mjs assert-current');
+const currentOutputs = acquisitionCurrent.indexOf('for field in model status');
+assert.ok(currentRead >= 0 && currentRead < currentAssertion && currentAssertion < currentOutputs,
+  'Acquisition identity must be rechecked after the normal fresh central read and before its outputs');
+
+import { selectPublicAcquisition } from './acquire-code-only-public-snapshot.mjs';
+import { spawnSync } from 'node:child_process';
+
+assert.deepEqual(selectPublicAcquisition(centralSource, sourceManifest, ''), {
+  mode: 'sealed-active-artifact',
+  selected: matchedSource,
+}, 'The actual selector must bind the exact central/public match to the sealed artifact');
+assert.deepEqual(selectPublicAcquisition({
+  ...centralSource, model: 'legacy-candidate-g', status: 'CANDIDATE_G_ACTIVE',
+}, sourceManifest, ''), { mode: 'existing-public-route' },
+'The actual selector must preserve the legacy/missed-cutover public route');
+assert.deepEqual(selectPublicAcquisition(centralSource, sourceManifest, '123'),
+  { mode: 'existing-public-route' },
+  'Explicit recovery must keep the existing maintenance source-resolution route');
+assert.throws(() => selectPublicAcquisition(centralSource,
+  { ...sourceManifest, datasetId: 'unknown-drift' }, ''),
+/ahead of central state without an exact repair policy/,
+'An unrecognized public/central mismatch must not select or silently fall back');
+
+// Run the complete normal extractor suite once, pinned to the actual product bytes.
+if (process.platform === 'linux') {
+  const extractorPath = 'scripts/extract-code-only-public-source.py';
+  const extractorSha256 = crypto.createHash('sha256')
+    .update(fs.readFileSync(extractorPath)).digest('hex');
+  const extractorContracts = spawnSync('python3', [
+    '-I', '-B', 'scripts/test-code-only-public-extractor.py',
+    '--extractor', extractorPath, '--extractor-sha256', extractorSha256,
+  ], { encoding: 'utf8', timeout: 60_000, maxBuffer: 65_536 });
+  assert.equal(extractorContracts.error, undefined,
+    'The normal extractor contract suite must actually start and finish within its test bound');
+  assert.equal(extractorContracts.signal, null,
+    'The normal extractor contract suite must not terminate by signal');
+  assert.equal(extractorContracts.status, 0,
+    extractorContracts.stderr || extractorContracts.stdout || 'Extractor contracts failed');
+  process.stdout.write(extractorContracts.stdout);
+  process.stderr.write(extractorContracts.stderr);
+} else {
+  console.log('Linux extractor CLI contracts not executed on this platform');
+}

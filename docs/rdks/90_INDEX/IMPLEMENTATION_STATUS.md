@@ -1,3 +1,11 @@
+# Lokal 4.0.562 – samme gemte generation ved rettelsesdeploy
+
+Ejerens nyeste ordre prioriterer præcis logning og en konkret rettelse før næste vejrhentning. Den normale DEC-0148-transport bruger nu ét allerede forseglet Pages-artifact, når central og offentlig kilde passer præcist; run/forsøg/head/id, rå manifestbytes, hash og størrelse samt en senere central genlæsning skal passe. Ukendt mismatch giver stop, ikke nyere data eller en alternativ kilde. Særlige historiske veje og alle senere original-, model-, privat- og deploykontroller består.
+
+De seks filgrænser bevares. En ny samlet 360-sekundersfrist og en ny streaminggrænse under 10 milliarder dekodede bytes afgrænser arbejdet; de er ikke gamle grænser eller kapacitetsbevis. Kun seks faste filer skrives, øvrigt indhold læses til EOF/CRC. Loggen viser sikre filnavne, forventede og faktiske størrelser samt afgrænsede fejlgrunde. Se håndbog 89.186 for transport- og ressourcekontrakten.
+
+Rettelsen er indarbejdet lokalt. Node-måltesten og 13 faktiske Linux-extractorforløb består i GitHub. Den første kildekontrol stoppede på en statisk kontrol, der stadig ledte efter filgrænsen i det gamle workflowkald. Kontrollen følger nu den faktiske læser og kræver samme manifestbundne grænse; dens måltest består lokalt. En ny præcis GitHub-kontrol og faktisk levering afventer. Historisk cacheblanding er en mistanke, ikke bevist årsag. Alle fem samlede mål er åbne. Ingen nye vejrkørsler, installationer, modelbindinger, score-/geometriændringer eller tilladelser følger.
+
 # 4.0.561 – supplerende afgrænset deploy-diagnostik
 
 Den præcise kildekontrol på `4289d71` bestod, og PR #551 er flettet ind. Den almindelige vejrhentning afsluttede faktisk fulde data- og leveringskontroller; det efterfølgende kode-only-deploy stoppede ved en offentlig læsning før produktionsskrivning. Den nye afgrænsede rettelse identificerer fil, størrelsesgrænse, HTTP-status, modtagne bytes og curl-version i det eksisterende kald. Ingen ekstra læsning, højere grænse, nyt tidsbudget, modelbinding eller genforsøg tilføjes. Den eksisterende måltest består. Den historiske transportårsag er fortsat åben; dette er diagnostik, ikke bevis for rettet deploy eller offentlig 561. Tidligere afventende kildekontrolstatus nedenfor er erstattet; alle fem samlede opgaver er fortsat åbne.
