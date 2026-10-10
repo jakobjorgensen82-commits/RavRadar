@@ -101,21 +101,19 @@ class SupervisorTests(unittest.TestCase):
             )]
             owned = []
             completion_waits = []
+            normal_wait = supervisor._OwnedProcess.wait
+
+            def observe_wait(owner, *wait_args, **wait_kwargs):
+                if not wait_args and wait_kwargs == {"timeout": 0.25}:
+                    self.assertIsNone(owner.child.poll(), "EOF precedes actual writer exit")
+                    completion_waits.append(owner.child.pid)
+                return normal_wait(owner, *wait_args, **wait_kwargs)
 
             def retain_popen(*args, **kwargs):
                 self.assertEqual(args[0],
                                  [supervisor.sys.executable, "-u", str(supervisor.PRODUCER)])
                 child = subprocess.Popen(command, **kwargs)
                 owned.append(child)
-                normal_wait = child.wait
-
-                def observe_wait(*wait_args, **wait_kwargs):
-                    if not wait_args and wait_kwargs == {"timeout": 0.25}:
-                        self.assertIsNone(child.poll(), "EOF precedes actual writer exit")
-                        completion_waits.append(child.pid)
-                    return normal_wait(*wait_args, **wait_kwargs)
-
-                child.wait = observe_wait
                 return child
 
             normal_run = supervisor.run_supervised
@@ -130,6 +128,7 @@ class SupervisorTests(unittest.TestCase):
                     patch.object(supervisor, "run_supervised", side_effect=run_owned) as run,
                     patch.object(supervisor, "stop_process") as stop,
                     patch.object(supervisor, "finalize_checkpoint") as finalize,
+                    patch.object(supervisor._OwnedProcess, "wait", observe_wait),
                 ):
                     self.assertEqual(supervisor.main(), 7)
                 self.assertEqual(run.call_count, 1)
@@ -262,28 +261,33 @@ class SupervisorTests(unittest.TestCase):
             original_interruption = KeyboardInterrupt("synthetic main interruption")
             reader_failure = RuntimeError("synthetic own reader start failure")
             wait_calls = []
+            normal_wait = supervisor._OwnedProcess.wait
+            normal_terminate = supervisor._OwnedProcess.terminate
+
+            def interrupt_completion_wait(owner, *wait_args, **wait_kwargs):
+                if (completion_wait_failure and not wait_args
+                        and wait_kwargs == {"timeout": 0.25}):
+                    # Actual EOF is not process-exit evidence. Observe the
+                    # normal owner wait; never reap its leader in the fixture.
+                    self.assertIsNone(owner.child.poll())
+                    before = heartbeat.read_bytes()
+                    supervisor.time.sleep(0.04)
+                    self.assertNotEqual(heartbeat.read_bytes(), before)
+                    wait_calls.append(owner.child.pid)
+                    raise original_interruption
+                return normal_wait(owner, *wait_args, **wait_kwargs)
+
+            def terminate_owned(owner):
+                if stop_rejected:
+                    stop_calls.append(owner.child.pid)
+                    raise rejected_stop
+                return normal_terminate(owner)
 
             def retain_popen(*args, **kwargs):
                 self.assertEqual(args[0],
                                  [supervisor.sys.executable, "-u", str(supervisor.PRODUCER)])
                 child = subprocess.Popen(command, **kwargs)
                 owned.append(child)
-                if completion_wait_failure:
-                    normal_wait = child.wait
-
-                    def interrupt_completion_wait(*wait_args, **wait_kwargs):
-                        if not wait_args and wait_kwargs == {"timeout": 0.25}:
-                            # Actual pipe EOF is not process-exit evidence. The
-                            # owned producer keeps writing after closing output.
-                            self.assertIsNone(child.poll())
-                            before = heartbeat.read_bytes()
-                            supervisor.time.sleep(0.04)
-                            self.assertNotEqual(heartbeat.read_bytes(), before)
-                            wait_calls.append(child.pid)
-                            raise original_interruption
-                        return normal_wait(*wait_args, **wait_kwargs)
-
-                    child.wait = interrupt_completion_wait
                 if reader_failure_at:
                     # Establish the actual live writer before injecting the
                     # reader's start failure; no fake Popen or private source.
@@ -291,11 +295,6 @@ class SupervisorTests(unittest.TestCase):
                     while not heartbeat.exists() and supervisor.time.monotonic() < deadline:
                         supervisor.time.sleep(0.005)
                     self.assertTrue(heartbeat.exists(), "owned producer started")
-                if stop_rejected:
-                    def reject_stop():
-                        stop_calls.append(child.pid)
-                        raise rejected_stop
-                    child.terminate = reject_stop
                 return child
 
             read_fd, write_fd = os.pipe()
@@ -332,6 +331,8 @@ class SupervisorTests(unittest.TestCase):
                         patch.dict(supervisor.os.environ, {}, clear=True),
                         patch.object(supervisor, "run_supervised", side_effect=run_owned) as run,
                         patch.object(supervisor, "finalize_checkpoint") as finalize,
+                        patch.object(supervisor._OwnedProcess, "wait", interrupt_completion_wait),
+                        patch.object(supervisor._OwnedProcess, "terminate", terminate_owned),
                         reader_fail_patch,
                     ):
                         expected_error = (KeyboardInterrupt if interruption or completion_wait_failure else
@@ -636,8 +637,13 @@ class SupervisorTests(unittest.TestCase):
         )
 
     def test_finalize_checkpoint_is_bounded_and_uses_existing_producer(self):
+        # This existing mock checks argv/budgets only, not native ownership.
+        # Real child/group coverage is in the normal native parent-loss target.
         completed = Mock(wait=Mock(return_value=0))
-        with patch.object(supervisor.subprocess, "Popen", return_value=completed) as child:
+        with (
+            patch.object(supervisor.subprocess, "Popen", return_value=completed) as child,
+            patch.object(supervisor, "_OwnedProcess", side_effect=lambda value: value),
+        ):
             self.assertEqual(supervisor.finalize_checkpoint({}), 0)
         self.assertEqual(
             child.call_args.args[0],
@@ -654,10 +660,9 @@ class SupervisorTests(unittest.TestCase):
         finalized_partial = Mock(wait=Mock(
             return_value=supervisor.ONEOFF_FINALIZED_INCOMPLETE_EXIT_CODE
         ))
-        with patch.object(
-            supervisor.subprocess,
-            "Popen",
-            return_value=finalized_partial,
+        with (
+            patch.object(supervisor.subprocess, "Popen", return_value=finalized_partial),
+            patch.object(supervisor, "_OwnedProcess", side_effect=lambda value: value),
         ):
             self.assertEqual(supervisor.finalize_checkpoint({
                 supervisor.ONEOFF_CONTINUATION_PROTOCOL_ENV: "1",
@@ -690,6 +695,30 @@ class SupervisorTests(unittest.TestCase):
             offset = [0.0]
             actual_waits = []
             actual_kills = []
+            normal_owner_wait = supervisor._OwnedProcess.wait
+
+            def observe_wait(owner, *wait_args, **wait_kwargs):
+                child = owner.child
+                if not actual_timeouts:
+                    self.assertLessEqual(wait_kwargs["timeout"], 0.25)
+                    try:
+                        return normal_owner_wait(owner, timeout=0.3)
+                    except subprocess.TimeoutExpired as error:
+                        self.assertEqual(len(owned), 1)
+                        self.assertIsNone(child.poll())
+                        self.assertTrue(heartbeat.read_bytes().startswith(b"started"))
+                        self.assertEqual(original.read_bytes(), original_bytes)
+                        actual_timeouts.append(error)
+                        offset[0] = 420.0
+                        raise
+                self.assertEqual(wait_args, ())
+                self.assertEqual(wait_kwargs, {},
+                                 "preserve subprocess.run's unbounded kill/reap wait")
+                result = normal_owner_wait(owner, *wait_args, **wait_kwargs)
+                self.assertIsNotNone(child.poll(),
+                                     "own writer must be reaped before failure output")
+                self.assertEqual(original.read_bytes(), original_bytes)
+                return result
 
             def run_test_finalizer(args, **kwargs):
                 self.assertEqual(args,
@@ -713,29 +742,6 @@ class SupervisorTests(unittest.TestCase):
                 actual_waits.append(actual_wait)
                 actual_kills.append(actual_kill)
 
-                def observe_wait(*wait_args, **wait_kwargs):
-                    if not actual_timeouts:
-                        self.assertLessEqual(wait_kwargs["timeout"], 0.25)
-                        try:
-                            return actual_wait(timeout=0.3)
-                        except subprocess.TimeoutExpired as error:
-                            self.assertEqual(len(owned), 1)
-                            self.assertIsNone(child.poll())
-                            self.assertTrue(heartbeat.read_bytes().startswith(b"started"))
-                            self.assertEqual(original.read_bytes(), original_bytes)
-                            actual_timeouts.append(error)
-                            offset[0] = 420.0
-                            raise
-                    self.assertEqual(wait_args, ())
-                    self.assertEqual(wait_kwargs, {},
-                                     "preserve subprocess.run's unbounded kill/reap wait")
-                    result = actual_wait(*wait_args, **wait_kwargs)
-                    self.assertIsNotNone(child.poll(),
-                                         "own writer must be reaped before failure output")
-                    self.assertEqual(original.read_bytes(), original_bytes)
-                    return result
-
-                child.wait = observe_wait
                 return child
 
             try:
@@ -744,6 +750,7 @@ class SupervisorTests(unittest.TestCase):
                     patch.object(supervisor, "run_supervised",
                                  return_value=supervisor.SupervisedResult(-9, True, None)) as producer,
                     patch.object(supervisor.subprocess, "Popen", side_effect=run_test_finalizer) as finalizer,
+                    patch.object(supervisor._OwnedProcess, "wait", observe_wait),
                     patch.object(supervisor.time, "monotonic",
                                  side_effect=lambda: actual_clock() + offset[0]),
                 ):
@@ -772,6 +779,7 @@ class SupervisorTests(unittest.TestCase):
             completed = Mock(poll=Mock(return_value=0), wait=Mock(return_value=0))
             with (
                 patch.object(supervisor.subprocess, "Popen", return_value=completed),
+                patch.object(supervisor, "_OwnedProcess", side_effect=lambda value: value),
                 patch.object(supervisor.time, "monotonic", side_effect=[0.0, 421.0, 421.0]),
             ):
                 code = supervisor.finalize_checkpoint({"GITHUB_OUTPUT": str(output_path)})

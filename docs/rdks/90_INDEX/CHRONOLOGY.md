@@ -1,4 +1,8 @@
-# 2026-10-10 – lokal 4.0.566, efter faktisk offentlig 565
+# 2026-10-10 – lokal 4.0.567, egen procesgruppe før genbrug
+
+Normale DMI-supervisor-/finalizer-/Copernicus-kaldere får verificeret egen Linux-procesgruppe. Sidste stopsignal sendes før hovedprocessens afventning; derefter kræves faktisk gruppefravær uden nye signaler. Berørte Windows-målprøver består; de nye seks Linux-underprocesforløb er endnu ikke kørt. 566 bestod præcis kildekontrol kl. 22.13 og blev faktisk leveret og offentligt kontrolleret kl. 22.24. Browseren viser versionen og HTTP 200 med ærlig usikkerhed uden udokumenteret forklaring. Privat restore/lokal gemning er faktisk; private publiceringer var ikke nye uploads, SQL allerede ajour. Varm syvzone-SOURCE/T+3 består isoleret, ikke som produktionsbevis. Runner-tab, samlet sikker gemning og alle fem mål er åbne. Ingen ekstra vejrhentning eller ny installation følger.
+
+# Historik: 2026-10-10 – lokal 4.0.566, efter faktisk offentlig 565
 
 565 blev faktisk leveret og offentligt kontrolleret kl. 21.46 dansk tid. To almindelige assistentspørgsmål fik HTTP 200: relevansafvisningen var væk, ukendt udstyr blev ikke opfundet, men et evidensløst usikkert svar indeholdt en udokumenteret forklaring. 566 indfører generel usikkerhed uden gæt og eksisterende-only privat restore; normale måltests og uafhængig gennemgang består. Ingen nye modelbindinger eller SQL. Ny præcis kildekontrol og offentlig 566-effekt mangler; alle fem mål og særskilte numeriske overgange er åbne. Historiske ventestatusser nedenfor er erstattet.
 

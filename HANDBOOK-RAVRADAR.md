@@ -1,10 +1,38 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.566
+**Håndbogsversion:** 4.0.567
 
-Den lokale 4.0.566 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+Den lokale 4.0.567 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.192 Stop af egen procesgruppe før genbrug
+
+På Linux opretter den normale vejrhentning, dens finalizer og det supplerende
+strømkald hver sin procesgruppe. Hovedprogrammet kan afslutte, mens en
+underproces stadig skriver eller holder en outputkanal åben. Derfor er
+direkte proces-exit ikke i sig selv en færdigmelding.
+
+Den præcist ejede hovedproces holdes uafventet, indtil det sidste stopsignal
+er sendt til dens verificerede gruppe. Efter afventning må der ikke sendes
+nye signaler til et muligt genbrugt gruppenummer. Normal afslutning kræver,
+at gruppen faktisk er væk; ukendt ophør giver ikke tilladelse til gemning.
+Eksisterende budgetter, Windows-adfærd, signaler og første fejl bevares.
+
+De berørte Windows-målprøver består. Seks nye normale Linux-forløb med en
+fortsat skrivende, TERM-ignorerende underproces er endnu ikke kørt. Præcis
+kildekontrol og offentlig levering mangler. SIGKILL af supervisoren selv,
+undslupne grupper, tab af runner, sikker gemning/upload og fejlworkerens
+samlede fireminuttersgrænse er fortsat åbne.
+
+566 bestod præcis kildekontrol kl. 22.13 dansk tid og blev faktisk leveret
+med offentlig 210/673-kontrol og terminal afslutning kl. 22.24. Browseren
+viser versionen og et normalt HTTP 200-svar med ærlig usikkerhed uden gæt.
+Privat restore/lokal gemning er faktisk; private publiceringer var ikke nye
+uploads, SQL allerede ajour. Varm syvzone-SOURCE/T+3 består i den isolerede
+prøve med bevarede originaler og scorehistorik, ikke som produktionsbevis.
+Alle fem hovedmål er åbne. Dette kapitel erstatter tidligere ventestatusser;
+historiske kapitler er ikke nye leveringskvitteringer.
 
 ## 89.191 Usikkerhed uden gæt og genlæsning uden oprettelse
 

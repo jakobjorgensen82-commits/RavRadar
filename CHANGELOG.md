@@ -1,4 +1,11 @@
-# Lokal 4.0.566 – 2026-10-10
+# Lokal 4.0.567 – 2026-10-10
+
+- Normal Linux-vejrhentning og strømsupplement afslutter nu den verificeret ejede procesgruppe, ikke kun den direkte underproces. Sidste gruppesignal sendes før hovedprocessen afventes; derefter kræves gruppefravær uden nye signaler. Windows-adfærd og eksisterende budgetter, signaler og første fejl bevares.
+- Tretten berørte Windows-DMI-prøver og den gamle Copernicus-prøve består. Seks nye normale Linux-forløb med fortsat skrivende underproces afventer faktisk kildekontrol. Ingen generel runner-tab-, SAVE- eller fireminuttersfrikendelse.
+- 566 er præcist kildeverificeret kl. 22.13 og faktisk leveret med offentlig 210/673-kontrol og terminal afslutning kl. 22.24 dansk tid. Browseren viser versionen og HTTP 200 med ærlig usikkerhed uden udokumenteret forklaring. Privat restore/lokal gemning er faktisk; private publiceringer var ikke nye uploads, SQL allerede ajour. Varm syvzone-SOURCE/T+3 består isoleret, ikke som ny produktionsgeneration.
+- Ingen nye kilder, numeriske data, modelbindinger, SQL, scoreformel, adminpunkter eller geometri. Geodata ændres kun i topversionsfeltet. Alle fem hovedmål er åbne; særskilte numeriske ændringer er ikke med.
+
+# Historik: lokal 4.0.566 – 2026-10-10
 
 - Stopper udokumenterede forklaringer i usikre assistentsvar uden fakta-id'er. Den generelle instruktion kræver fagligt belæg; validatoren giver en lokaliseret afklaring efter eksisterende schema-, sprog-, privatlivs- og sikkerhedskontroller. Tre normale klient-/Edge-forløb på dansk, tysk og engelsk består med kontrolleret provider; dokumenterede svar og vidensbindinger er uændrede.
 - Genlæsning af privat gemt produktion må ikke oprette et manglende Supabase-lager. Normal måltest består, og almindelig publicerings oprettelses-/retryadfærd bevares. Ingen nye nøgler, lagerkald, migrationer eller originalændringer.

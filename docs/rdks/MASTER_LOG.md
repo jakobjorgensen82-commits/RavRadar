@@ -1,4 +1,16 @@
-# Lokal 4.0.566 – usikkerhed uden gæt og eksisterende privat lager
+# Lokal 4.0.567 – stop af egne procesgrupper
+
+DMI-supervisoren, den normale finalizer og Copernicus-kalderen opretter på Linux hver sin egen procesgruppe. En afsluttet hovedproces er ikke bevis for, at dens underprocesser er stoppet. Den præcist ejede hovedproces holdes derfor uafventet, indtil sidste stopsignal er sendt til dens verificerede gruppe; efter afventning må gruppen kun kontrolleres, aldrig signaleres på ny. Normal afslutning kræver, at gruppen faktisk er væk. Ukendt ophør giver ikke en normal kvittering for gemning eller genbrug.
+
+Eksisterende signalhåndtering, første fejl, argumenter, providerprioritet, budgetter og Windows-adfærd bevares. Tretten berørte DMI-målprøver og den eksisterende Copernicus-prøve består på Windows. Den normale Linux-prøve er udvidet med en fortsat skrivende, TERM-ignorerende underproces for supervisor, finalizer og supplement, både ved sund afslutning og SIGTERM. Den er endnu ikke kørt; præcis GitHub-kontrol og sikker offentlig levering af 567 mangler.
+
+566 bestod præcis GitHub-kildekontrol kl. 22.13 dansk tid og er flettet ind via PR #556. Det ene normale rettelsesdeploy med allerede gemte vejrdata leverede faktisk Pages kl. 22.23 og bestod offentlig model-/implementerings-/210/673-kontrol samt reseal og terminal afslutning kl. 22.24. Browseren viser 4.0.566 og et normalt HTTP 200-svar med ærlig usikkerhed, uden den tidligere udokumenterede magnetiske forklaring. Privat restore og lokal checkpointgemning blev gennemført; de private publiceringer var ikke nye uploads, og SQL var allerede ajour. Dette afslutter kun den afgrænsede 566-leverance, ikke vidensudvidelsen eller de fem hovedmål.
+
+Den isolerede varme syvzone-SOURCE/T+3-prøve består gennem normal gemning/genlæsning: LF-vandstand giver ikke gammel LF-strømhukommelse ny anvendelsestilladelse. Tilladte LF- og NSBS-zoner, bølgehukommelse, originalbank, gammelt tilstandspar og offentliggjort scorehistorik bevares. Dette er syntetisk evidens, ikke faktisk ny produktionsgeneration.
+
+SIGKILL af selve supervisoren, undslupne procesgrupper, tab af runner, samlet eksklusiv skrivning, sikker gemning/upload og fejlworkerens fireminuttersgrænse er stadig åbne. Strøm-/cache-/rollbackændringerne holdes uden for denne leverance; de præcise fælles-decoder- og numeriske SQL-spørgsmål afventer fortsat. Alle fem hovedmål er åbne. Tidligere ventestatusser nedenfor er historiske; ingen produktionsændring under aktiv writer eller aktivering af den isolerede revision følger.
+
+# Historik: lokal 4.0.566 – usikkerhed uden gæt og eksisterende privat lager
 
 10. oktober kl. 21.46 dansk tid blev 565 faktisk leveret gennem det normale rettelsesdeploy efter præcis kildekontrol og merge. Offentlig model-/implementerings-/210/673-kontrol og terminal afslutning bestod; SQL var allerede ajour og private publiceringer ikke nye uploads. Browserkontrollen viste både forbedret relevans og en udokumenteret forklaring i et usikkert svar uden fakta.
 
