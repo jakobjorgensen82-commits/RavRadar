@@ -1,5 +1,5 @@
 import { PUBLIC_CONFIG } from '../../config.js?v=4.0.556';
-import { authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.556';
+import { assertAuthIdentitySettled, authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.556';
 import {
   TRIP_EVIDENCE_SCHEMA_VERSION,
   assertObservationTripQualityBinding,
@@ -160,6 +160,7 @@ export async function syncPendingObservations(){
   return observationSyncPromise;
 }
 export async function submitObservation({zone,huntMode,result,grams=null,scoreResult,weather,gps=null,tripId=null,observedAt=null}){
+  assertAuthIdentitySettled();
   const session=currentSession();const row={id:crypto.randomUUID(),zone_id:zone.id,zone_name:zone.name,coast_type:zone.coastType||null,observed_at:observedAt||new Date().toISOString(),submitted_at:new Date().toISOString(),hunt_mode:huntMode,result,grams:grams===''||grams==null?null:Number(grams),anonymous_id:anonymousId(),user_id:session?.user?.id||null,trip_id:tripId,gps,rav_score:scoreResult?.score??null,score_level:scoreResult?.level??null,ai_probability:null,ai_confidence:null,model_version:observedRavScoreModelVersion(scoreResult),weather_snapshot:immutableWeatherSnapshot(weather,scoreResult),wind_speed_mps:weather?.windSpeedMps??null,wind_direction_deg:weather?.windDirectionDeg??null,wave_height_m:weather?.waveHeightM??null,wave_period_s:weather?.wavePeriodS??null,water_level_cm:weather?.waterLevelCm??null,current_speed_mps:weather?.currentSpeedMps??null,current_direction_deg:weather?.currentDirectionDeg??null,water_temperature_c:weather?.waterTemperatureC??null,sync_status:enabled?'pending':'local'};
   upsertLocal(row);if(!enabled)return {stored:'local',row};enqueue(row);const status=await syncPendingObservations();const stored=status.pending?'pending':'remote';return {stored,row,status};
 }
@@ -178,6 +179,7 @@ function tripObservationReceipt(row,status){
   return {stored,row,status};
 }
 export async function submitTripEvidenceObservation(columns){
+  assertAuthIdentitySettled();
   const identity=authIdentityEpoch();
   columns=structuredClone(columns||{});
   if(columns?.schema_version!==TRIP_EVIDENCE_SCHEMA_VERSION)throw new Error('Turen har et ugyldigt format og kan ikke gemmes.');
@@ -264,12 +266,15 @@ export async function submitTripEvidenceObservation(columns){
 }
 
 export async function submitAccountTripReportObservation(columns){
+  assertAuthIdentitySettled();
+  const identity=authIdentityEpoch();
   columns=structuredClone(columns||{});
   if(columns?.schema_version!==1||!columns?.data_quality_flags?.includes(ACCOUNT_TRIP_REPORT_SOURCE))throw new Error('Efterregistreringen har et ugyldigt format og kan ikke gemmes.');
   if(columns.calibration_eligible!==false)throw new Error('Efterregistreringen mangler de nødvendige historiske oplysninger og kan ikke gemmes som en almindelig RavRadar-tur.');
   assertTripEvidencePrivacy(columns);
   let session=currentSession();
   if(session?.access_token&&!session?.user?.id)session=await requireFreshSession();
+  if(authIdentityEpoch()!==identity||(currentSession()?.user?.id||null)!==(session?.user?.id||null))throw new Error('Kontoen blev ændret. Prøv igen fra den rigtige konto.');
   if(!session?.user?.id)throw new Error('Log ind, før du indberetter en tur fra din konto.');
   const existing=getLocalObservations().find(row=>row.trip_id===columns.trip_id);
   const submittedAt=new Date().toISOString();

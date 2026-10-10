@@ -4,12 +4,12 @@ Den afgrænsede lokale kandidat retter kontosvar, turformularens oprindelige
 aktive tur, turens faktiske afleveringskvittering og ejerbundne uændrede genforsøg,
 sletningens genlæsningskvittering og assistentens UI-fejlmeddelelse.
 En afbrudt aktiv-oprydning må ikke lade en ny besvarelse overskrive den først gemte tur.
-De elleve ændrede produktfiler ligger uden for begge faktiske modelclosures.
+De tolv ændrede produktfiler ligger uden for begge faktiske modelclosures.
 Begge eksisterende bundles er uændrede og kontrolleret med normale --check-kald:
 integreret `ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb`
 over 68 filer og rollback `8d9142b5f7d9b5a3e5a0f3593e73df0c7ffaf3d80c036317967cb713f09197e3`
 over 66 filer. Browserens versionsparametre er cacheidentitet, ikke en ny fysisk
-modelbinding. De seks nye mål dækker 111 brugerdata- og 12 UI-prøver lokalt;
+modelbinding. De seks nye mål dækker 158 brugerdata- og 12 UI-prøver lokalt;
 fælles første brugerhydrering må ikke ændre den først gemte turs indsendelsestid.
 Den eksisterende opstartstest har desuden tre nye backup-/logoutprøver:
 loginoplysninger må hverken gemmes i nye snapshots eller gendannes fra gamle.
@@ -22,6 +22,12 @@ Normal baggrundssynkronisering beviser ikke automatisk rydning af en bevaret v2-
 Oprydning kræver den faktisk sendte lokale rapport; ændrede og modstridende ture bevares.
 To samtidige normale kald deler kun en præcis frisk kvittering fra den direkte indsendelse.
 Kontoens manuelle turformular må ikke overtage en ny ejer efter formularen eller vise gammel kvittering.
+Et igangværende eksplicit kontovalg afviser nye profilopslag og alle tre normale turindsendelser
+før lokal gemning; den manuelle indsendelse fastholder også login gennem brugerhydrering.
+Normal offline-gemning med allerede kendt ejer og samme-logins fornyelse bevares.
+Færdige login afklares før deres normale notifikationer; ældre callbacks og oprydning
+kan ikke frigive et nyere kontovalg. Den tidligere kandidat har præcis grøn kildekontrol,
+men den nye funktionelle head kræver ny kontrol og faktisk sikker levering.
 Dette er ikke installation eller offentlig levering.
 
 Ejeren kræver konkret parallel delegation med samlet integration hos hovedagenten.

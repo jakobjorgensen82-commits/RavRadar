@@ -47,13 +47,16 @@ const clean = value => JSON.parse(JSON.stringify(value));
 function harness(owner = A, hydrated = true) {
   const values = new Map(owner ? [['ravradar-auth-session', JSON.stringify(hydrated ? sessionFor(owner) : { ...sessionFor(owner), user: null })]] : []);
   const timers = new Set();
-  const state = { failSubmit: true, nextOwner: owner, submits: [], writes: [], failWrite: null };
+  const state = { failSubmit: true, nextOwner: owner, submits: [], writes: [], failWrite: null, requests: [] };
   const storage = { values, getItem: key => values.get(key) ?? null,
     setItem(key, value) { state.writes.push(key); if (state.failWrite?.key === key) throw state.failWrite.error; values.set(key, String(value)); },
     removeItem: key => values.delete(key) };
   const config = { supabaseUrl: 'https://example.invalid', supabasePublishableKey: 'synthetic-public' };
   const fetch = async (input, options) => {
     const url = new URL(input); assert.equal(url.origin, config.supabaseUrl);
+    state.requests.push(url.pathname + url.search);
+    if (state.authTransport && url.pathname.startsWith('/auth/v1/')) return state.authTransport(url, options);
+    if (url.pathname === '/rest/v1/profiles') return Response.json([{ id: url.searchParams.get('id')?.slice(3) || owner, role: 'user', is_active: true }]);
     if (url.pathname === '/auth/v1/user') {
       state.hydration.reached(); await state.hydration.promise;
       return Response.json({ id: owner });
@@ -68,16 +71,17 @@ function harness(owner = A, hydrated = true) {
     assert.equal(url.pathname, '/functions/v1/trip-log');
     return Response.json({ rows: [], snapshot_at: '2026-10-09T22:00:00.000Z', next_cursor: null });
   };
-  const authScope = { PUBLIC_CONFIG: config, localStorage: storage, fetch, AbortController, DOMException,
+  const authScope = { PUBLIC_CONFIG: config, localStorage: storage, fetch, AbortController, DOMException, URLSearchParams,
+    location: { hash: '', pathname: '/', search: '' }, history: { replaceState() {} },
     setTimeout(callback, delay) { const timer = setTimeout(() => { timers.delete(timer); callback(); }, delay); timers.add(timer); return timer; },
     clearTimeout(timer) { clearTimeout(timer); timers.delete(timer); } };
-  vm.runInNewContext(`${authBody}\nthis.api={authEnabled,authIdentityEpoch,currentSession,requireFreshSession,authorizedFetch,signOut,signInWithPassword,refreshSession};`, authScope);
+  vm.runInNewContext(`${authBody}\nthis.api={authEnabled,authIdentityEpoch,currentSession,requireFreshSession,authorizedFetch,signOut,signInWithPassword,refreshSession,signUpWithPassword,consumeAuthCallback,getCurrentProfile,sendMagicLink,onAuthChange,...(typeof assertAuthIdentitySettled === 'function' ? { assertAuthIdentitySettled } : {})};`, authScope);
   const auth = authScope.api;
   const serviceScope = { ...trip, ...quality, ...model, ...account, ...auth,
     PUBLIC_CONFIG: config, localStorage: storage, fetch, crypto, structuredClone, performance, setTimeout,
     Date: class extends Date { constructor(...args) { super(...(args.length || state.clockMs === undefined ? args : [state.clockMs++])); } },
     window: { addEventListener() {} } };
-  vm.runInNewContext(`${serviceBody}\nthis.api={submitTripEvidenceObservation,syncPendingObservations,getLocalObservations,getObservationSyncStatus,remoteObservationPayload,submitAccountTripReportObservation,getOwnTripObservations};`, serviceScope);
+  vm.runInNewContext(`${serviceBody}\nthis.api={submitObservation,submitTripEvidenceObservation,syncPendingObservations,getLocalObservations,getObservationSyncStatus,remoteObservationPayload,submitAccountTripReportObservation,getOwnTripObservations};`, serviceScope);
   const service = serviceScope.api;
   const uploaderScope = { ...trip, ...store, ...auth, submitTripEvidenceObservation: service.submitTripEvidenceObservation };
   vm.runInNewContext(`${uploaderBody}\nthis.api={uploadPendingTripEvidence};`, uploaderScope);
@@ -86,7 +90,7 @@ function harness(owner = A, hydrated = true) {
   const { createTripEvidenceController } = controllerScope.api;
   const controller = persist => createTripEvidenceController({ storage, openDialog: async () => answer,
     persist: persist ?? service.submitTripEvidenceObservation });
-  return { state, storage, service, controller, auth, createController: createTripEvidenceController,
+  return { state, storage, service, controller, auth, authLocation: authScope.location, createController: createTripEvidenceController,
     async login(next) { await auth.signOut(); state.nextOwner = next; await auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only'); },
     finish() { const leaked = timers.size; for (const timer of timers) clearTimeout(timer); assert.equal(leaked, 0); } };
 }
@@ -601,3 +605,315 @@ for (const transition of ['logout', 'same-owner new login', 'other-owner new log
     } finally { release({ stored: true }); if (pending) await pending; h.finish(); }
   });
 }
+
+// Additive to the existing actual root receipt/auth/service fixture.
+for (const choice of ['logout', 'login', 'same-owner login']) for (const caller of ['fresh', 'profile', 'manual', 'v2', 'legacy']) {
+  test(`pending identity: new ${caller} during ${choice} does not borrow the old login`, async () => {
+    const h = harness(), reached = deferred(), release = deferred();
+    const operations = [];
+    let evidence;
+    h.state.failSubmit = false;
+    h.state.authTransport = async url => {
+      assert.equal(url.pathname, choice === 'logout' ? '/auth/v1/logout' : '/auth/v1/token');
+      reached.resolve(); await release.promise;
+      return Response.json(choice === 'logout' ? {} : sessionFor(choice === 'login' ? B : A));
+    };
+    try {
+      const transition = choice === 'logout' ? h.auth.signOut() : h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only');
+      operations.push(transition);
+      await Promise.race([reached.promise, transition.then(() => { throw new Error('Pending choice was not reached'); })]);
+      assert.equal(h.auth.currentSession().user.id, A);
+      h.state.writes.length = 0;
+      const previousRequests = h.state.requests.length;
+      const pending = caller === 'fresh' ? h.auth.requireFreshSession()
+        : caller === 'profile' ? h.auth.getCurrentProfile()
+        : caller === 'manual' ? h.service.submitAccountTripReportObservation(account.toAccountObservationColumns(account.buildAccountTripReport({ ...reportAnswer, tripId: firstTrip })))
+        : caller === 'v2' ? h.service.submitTripEvidenceObservation(payload(firstTrip))
+        : h.service.submitObservation({ zone: { id: 'DK-B04-12', name: 'synthetic-zone' }, huntMode: 'waders', result: 'none', tripId: firstTrip });
+      const outcome = pending.then(value => ({ value }), error => ({ error }));
+      operations.push(outcome);
+      const result = await outcome;
+      evidence = { error: result.error?.message ?? null, newRequests: h.state.requests.length - previousRequests,
+        submits: h.state.submits.length, writes: [...h.state.writes], rows: h.service.getLocalObservations().length };
+    } finally {
+      release.resolve(); await Promise.allSettled(operations); h.finish();
+    }
+    assert.ok(evidence.error, 'The new operation must reject before using the superseded login');
+    assert.match(evidence.error, /Kontoen blev ændret/);
+    assert.equal(evidence.newRequests, 0);
+    assert.equal(evidence.submits, 0);
+    assert.equal(evidence.writes.length, 0, 'No old-owner observation may be created before the auth gate');
+    assert.equal(evidence.rows, 0);
+  });
+}
+
+for (const choice of ['logout', 'login', 'signup', 'callback']) {
+  test(`pending identity: ${choice} remains closed while its normal JSON body is pending`, async () => {
+    const h = harness(), reached = deferred(), release = deferred(); let operation;
+    const result = choice === 'logout' ? {} : choice === 'callback' ? { id: B } : sessionFor(B);
+    h.state.authTransport = async () => ({ ok: true, status: 200, async json() { reached.resolve(); return release.promise; } });
+    try {
+      if (choice === 'callback') h.authLocation.hash = '#access_token=synthetic-callback&refresh_token=synthetic-refresh';
+      operation = choice === 'logout' ? h.auth.signOut() : choice === 'login' ? h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only')
+        : choice === 'signup' ? h.auth.signUpWithPassword('synthetic@example.invalid', 'synthetic-only') : h.auth.consumeAuthCallback();
+      await reached.promise;
+      const before = h.state.requests.length;
+      const fresh = h.auth.requireFreshSession().then(value => ({ value }), error => ({ error }));
+      // A missing guard may join callback hydration; always release it before checking.
+      await turn(); const requests = h.state.requests.length - before;
+      release.resolve(result); const outcome = await fresh; await operation;
+      assert.match(outcome.error?.message ?? '', /Kontoen blev ændret/);
+      assert.equal(requests, 0);
+      assert.equal(h.auth.currentSession()?.user?.id ?? null, choice === 'logout' ? null : B);
+    } finally { release.resolve(result); if (operation) await Promise.allSettled([operation]); h.finish(); }
+  });
+}
+
+for (const oldResult of ['success', 'failure']) for (const phase of ['fetch', 'body']) {
+  test(`pending identity: old ${oldResult} at ${phase} cannot release the newer login gate`, async () => {
+    const h = harness(), reached = [deferred(), deferred()], release = [deferred(), deferred()];
+    const operations = []; let calls = 0;
+    h.state.authTransport = async url => {
+      assert.equal(url.searchParams.get('grant_type'), 'password'); const index = calls++;
+      const ok = index === 1 || oldResult === 'success';
+      const response = { ok, status: ok ? 200 : 400, async json() {
+        if (phase === 'body') { reached[index].resolve(); await release[index].promise; }
+        return ok ? sessionFor(index ? B : A) : { message: 'Invalid login credentials' };
+      } };
+      if (phase === 'fetch') { reached[index].resolve(); await release[index].promise; }
+      return response;
+    };
+    try {
+      for (let index = 0; index < 2; index++) {
+        operations.push(h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only').then(value => ({ value }), error => ({ error })));
+        await reached[index].promise;
+      }
+      release[0].resolve(); const old = await operations[0]; assert.ok(old.error);
+      const before = h.state.requests.length;
+      const pending = await h.auth.requireFreshSession().then(value => ({ value }), error => ({ error }));
+      assert.match(pending.error?.message ?? '', /Kontoen blev ændret/);
+      assert.equal(h.state.requests.length, before);
+      release[1].resolve(); const next = await operations[1]; assert.equal(next.value.user.id, B);
+      assert.equal((await h.auth.requireFreshSession()).user.id, B);
+    } finally { for (const gate of release) gate.resolve(); await Promise.allSettled(operations); h.finish(); }
+  });
+}
+
+for (const choice of ['failed login', 'signup without token', 'failed callback']) {
+  test(`pending identity: ${choice} clears only its own completed gate`, async () => {
+    const h = harness(), reached = deferred(), release = deferred(); let operation, fresh;
+    const failed = choice !== 'signup without token';
+    h.state.authTransport = async () => ({ ok: !failed, status: failed ? 400 : 200, async json() {
+      reached.resolve(); await release.promise; return failed ? { message: 'Invalid login credentials' } : { user: { id: B } };
+    } });
+    try {
+      if (choice === 'failed callback') h.authLocation.hash = '#access_token=synthetic-callback&refresh_token=synthetic-refresh';
+      operation = (choice === 'failed login' ? h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only')
+        : choice === 'signup without token' ? h.auth.signUpWithPassword('synthetic@example.invalid', 'synthetic-only') : h.auth.consumeAuthCallback())
+        .then(value => ({ value }), error => ({ error }));
+      await reached.promise;
+      fresh = h.auth.requireFreshSession().then(value => ({ value }), error => ({ error }));
+      await turn(); release.resolve(); const pending = await fresh; const completed = await operation;
+      assert.match(pending.error?.message ?? '', /Kontoen blev ændret/);
+      if (choice === 'failed login') assert.match(completed.error?.message ?? '', /E-mail eller adgangskode/);
+      else assert.ok(completed.value);
+      h.state.authTransport = async url => { assert.equal(url.pathname, '/auth/v1/user'); return Response.json({ id: B }); };
+      const active = await h.auth.requireFreshSession();
+      assert.equal(active.user.id, choice === 'failed callback' ? B : A);
+    } finally { release.resolve(); await Promise.allSettled([operation, fresh].filter(Boolean)); h.finish(); }
+  });
+}
+
+for (const kind of ['same-login renewal', 'ordinary hydration', 'magic-link request']) {
+  test(`pending identity: ${kind} does not become an explicit identity gate`, async () => {
+    const h = harness(A, kind !== 'ordinary hydration'), reached = deferred(), release = deferred();
+    const operations = []; let calls = 0;
+    h.state.failSubmit = false;
+    h.state.authTransport = async url => {
+      calls += 1;
+      assert.equal(url.pathname, kind === 'ordinary hydration' ? '/auth/v1/user' : kind === 'magic-link request' ? '/auth/v1/otp' : '/auth/v1/token');
+      reached.resolve(); await release.promise;
+      return Response.json(kind === 'ordinary hydration' ? { id: A } : kind === 'magic-link request' ? {} : { ...sessionFor(A), access_token: 'synthetic-renewed' });
+    };
+    try {
+      operations.push(kind === 'ordinary hydration' ? h.auth.requireFreshSession() : kind === 'magic-link request'
+        ? h.auth.sendMagicLink('synthetic@example.invalid') : h.auth.refreshSession({ force: true }));
+      await reached.promise;
+      const fresh = h.auth.requireFreshSession(); operations.push(fresh);
+      if (kind !== 'ordinary hydration') {
+        assert.equal((await fresh).user.id, A);
+        const manual = await h.service.submitAccountTripReportObservation(account.toAccountObservationColumns(account.buildAccountTripReport({ ...reportAnswer, tripId: firstTrip })));
+        assert.equal(manual.stored, 'remote');
+        const v2 = await h.service.submitTripEvidenceObservation(payload(secondTrip)); assert.equal(v2.stored, 'remote');
+      }
+      release.resolve(); await Promise.all(operations);
+      assert.equal(h.auth.authIdentityEpoch(), 0); assert.equal(calls, 1);
+      assert.equal((await h.auth.requireFreshSession()).user.id, A);
+    } finally { release.resolve(); await Promise.allSettled(operations); h.finish(); }
+  });
+}
+
+for (const choice of ['logout', 'login']) test(`pending identity: actual account dialog during ${choice} cannot report queued or remote`, async () => {
+  const h = harness(), reached = deferred(), release = deferred(), form = deferred(), panel = ui(h, form); const operations = [];
+  h.state.authTransport = async () => { reached.resolve(); await release.promise; return Response.json(choice === 'logout' ? {} : sessionFor(B)); };
+  try {
+    operations.push(choice === 'logout' ? h.auth.signOut() : h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only'));
+    await reached.promise; h.state.writes.length = 0;
+    form.resolve(reportAnswer); const report = panel.showAccountTripReport(panel.dialog, {}); operations.push(report); await report;
+    assert.equal(h.state.writes.length, 0); assert.equal(h.state.submits.length, 0); assert.equal(h.service.getLocalObservations().length, 0);
+    assert.equal(panel.content.innerHTML.includes(t('account.reportQueued')) || panel.content.innerHTML.includes(t('account.reportRemote')), false);
+    assert.ok(panel.content.innerHTML.includes('Kontoen blev ændret. Prøv igen fra den rigtige konto.'));
+  } finally { form.resolve(null); release.resolve(); await Promise.allSettled(operations); h.finish(); }
+});
+
+for (const caller of ['manual', 'v2']) test(`pending identity: ${caller} must retain its epoch across the original hydration await`, async () => {
+  const h = harness(A, false), reached = deferred(), release = deferred(); const operations = [];
+  h.state.authTransport = async url => {
+    if (url.pathname === '/auth/v1/user') { reached.resolve(); await release.promise; return Response.json({ id: A }); }
+    return Response.json(sessionFor(A));
+  };
+  try {
+    const report = (caller === 'manual'
+      ? h.service.submitAccountTripReportObservation(account.toAccountObservationColumns(account.buildAccountTripReport({ ...reportAnswer, tripId: firstTrip })))
+      : h.service.submitTripEvidenceObservation(payload(firstTrip))).then(value => ({ value }), error => ({ error }));
+    operations.push(report);
+    await reached.promise;
+    const login = h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only'); operations.push(login); await login;
+    h.state.writes.length = 0; release.resolve();
+    const result = await report;
+    assert.match(result.error?.message ?? '', /Kontoen blev ændret/);
+    assert.equal(h.service.getLocalObservations().length, 0); assert.equal(h.state.submits.length, 0); assert.equal(h.state.writes.length, 0);
+  } finally { release.resolve(); await Promise.allSettled(operations); h.finish(); }
+});
+
+for (const caller of ['manual', 'v2', 'legacy']) test(`pending identity: offline renewal preserves normal ${caller} local-first retention`, async () => {
+  const h = harness();
+  try {
+    h.auth.currentSession().expires_at = 1;
+    h.state.authTransport = async url => {
+      assert.equal(url.pathname, '/auth/v1/token'); assert.equal(url.searchParams.get('grant_type'), 'refresh_token');
+      throw new TypeError('synthetic offline transport');
+    };
+    const result = await (caller === 'manual'
+      ? h.service.submitAccountTripReportObservation(account.toAccountObservationColumns(account.buildAccountTripReport({ ...reportAnswer, tripId: firstTrip })))
+      : caller === 'v2' ? h.service.submitTripEvidenceObservation(payload(firstTrip))
+      : h.service.submitObservation({ zone: { id: 'DK-B04-12', name: 'synthetic-zone' }, huntMode: 'waders', result: 'none', tripId: firstTrip }));
+    assert.equal(result.stored, 'pending'); assert.equal(result.row.user_id, A);
+    assert.equal(h.service.getLocalObservations().length, 1); assert.equal(h.service.getObservationSyncStatus().pending, 1);
+    assert.equal(h.state.submits.length, 0); assert.equal(h.auth.currentSession().user.id, A);
+  } finally { h.finish(); }
+});
+
+for (const choice of ['login', 'signup', 'callback', 'logout']) test(`auth notification: committed ${choice} is already settled for its normal subscribers`, async () => {
+  const h = harness(), notifications = [], operations = [];
+  h.state.authTransport = async url => Response.json(url.pathname === '/auth/v1/user' ? { id: B }
+    : url.pathname === '/auth/v1/logout' ? {} : sessionFor(B));
+  const unsubscribe = h.auth.onAuthChange(active => {
+    const fresh = h.auth.requireFreshSession().then(value => ({ value }), error => ({ error }));
+    const profile = h.auth.getCurrentProfile().then(value => ({ value }), error => ({ error }));
+    operations.push(fresh, profile); notifications.push({ owner: active?.user?.id ?? null, fresh, profile });
+  });
+  try {
+    if (choice === 'callback') h.authLocation.hash = '#access_token=synthetic-callback&refresh_token=synthetic-refresh';
+    const operation = choice === 'login' ? h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only')
+      : choice === 'signup' ? h.auth.signUpWithPassword('synthetic@example.invalid', 'synthetic-only')
+      : choice === 'callback' ? h.auth.consumeAuthCallback() : h.auth.signOut();
+    operations.push(operation); await operation; await Promise.all(operations);
+    assert.equal(notifications.length, choice === 'callback' ? 2 : 1, 'No additional auth notification');
+    const committed = notifications.at(-1), fresh = await committed.fresh, profile = await committed.profile;
+    if (choice === 'logout') {
+      assert.equal(committed.owner, null);
+      assert.match(fresh.error?.message ?? '', /Du er ikke logget ind/);
+      assert.match(profile.error?.message ?? '', /Du er ikke logget ind/);
+    } else {
+      assert.equal(committed.owner, B);
+      assert.equal(fresh.error, undefined, 'A committed login cannot notify before its own pending gate is settled');
+      assert.equal(fresh.value.user.id, B); assert.equal(profile.error, undefined); assert.equal(profile.value.id, B);
+    }
+  } finally { unsubscribe(); await Promise.allSettled(operations); h.finish(); }
+});
+
+test('auth notification: late old callback hydration cannot release a newer pending login', async () => {
+  const h = harness(), reached = [deferred(), deferred()], release = [deferred(), deferred()], operations = [], notifications = [];
+  h.state.authTransport = async url => {
+    const index = url.pathname === '/auth/v1/user' ? 0 : 1;
+    reached[index].resolve(); await release[index].promise;
+    return Response.json(index ? sessionFor(B) : { id: A });
+  };
+  const unsubscribe = h.auth.onAuthChange(active => {
+    const fresh = h.auth.requireFreshSession().then(value => ({ value }), error => ({ error }));
+    operations.push(fresh); notifications.push({ owner: active?.user?.id ?? null, fresh });
+  });
+  try {
+    h.authLocation.hash = '#access_token=synthetic-callback&refresh_token=synthetic-refresh';
+    const callback = h.auth.consumeAuthCallback(); operations.push(callback); await reached[0].promise;
+    const login = h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only'); operations.push(login); await reached[1].promise;
+    release[0].resolve(); await callback;
+    assert.deepEqual(notifications.map(item => item.owner), [null, A]);
+    for (const notice of notifications) assert.match((await notice.fresh).error?.message ?? '', /Kontoen blev ændret/);
+    release[1].resolve(); await login;
+    assert.equal(notifications.length, 3); assert.equal(notifications[2].owner, B);
+    assert.equal((await notifications[2].fresh).value?.user?.id, B);
+  } finally { for (const gate of release) gate.resolve(); unsubscribe(); await Promise.allSettled(operations); h.finish(); }
+});
+
+for (const kind of ['renewal', 'hydration']) test(`auth notification: default ${kind} commit cannot release a newer pending login`, async () => {
+  const h = harness(A, kind !== 'hydration'), reached = [deferred(), deferred()], release = [deferred(), deferred()], operations = [];
+  h.state.authTransport = async url => {
+    const index = url.searchParams.get('grant_type') === 'password' ? 1 : 0;
+    reached[index].resolve(); await release[index].promise;
+    return Response.json(index ? sessionFor(B) : kind === 'hydration' ? { id: A } : { ...sessionFor(A), access_token: 'synthetic-renewed' });
+  };
+  try {
+    const ordinary = (kind === 'hydration' ? h.auth.requireFreshSession() : h.auth.refreshSession({ force: true }))
+      .then(value => ({ value }), error => ({ error }));
+    operations.push(ordinary); await reached[0].promise;
+    const login = h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only'); operations.push(login); await reached[1].promise;
+    release[0].resolve(); await ordinary;
+    const before = h.state.requests.length;
+    await assert.rejects(h.auth.requireFreshSession(), /Kontoen blev ændret/);
+    await assert.rejects(h.service.submitObservation({ zone: { id: 'DK-B04-12', name: 'synthetic-zone' }, huntMode: 'waders', result: 'none' }), /Kontoen blev ændret/);
+    assert.equal(h.state.requests.length, before); assert.equal(h.service.getLocalObservations().length, 0);
+    release[1].resolve(); await login; assert.equal((await h.auth.requireFreshSession()).user.id, B);
+  } finally { for (const gate of release) gate.resolve(); await Promise.allSettled(operations); h.finish(); }
+});
+
+for (const failure of ['storage', 'listener']) test(`auth notification: throwing ${failure} preserves the first error without a stuck own gate`, async () => {
+  const h = harness(), error = new Error(`synthetic-first-${failure}`), operations = []; let notices = 0;
+  h.state.authTransport = async () => Response.json(sessionFor(B));
+  if (failure === 'storage') h.state.failWrite = { key: 'ravradar-auth-session', error };
+  const unsubscribe = h.auth.onAuthChange(() => { notices += 1; if (failure === 'listener') throw error; });
+  try {
+    const login = h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only').then(value => ({ value }), caught => ({ error: caught }));
+    operations.push(login); assert.equal((await login).error, error);
+    assert.equal(notices, failure === 'storage' ? 0 : 1);
+    assert.equal((await h.auth.requireFreshSession()).user.id, B, 'Preserve existing in-memory session semantics after commit failure');
+    assert.equal(JSON.parse(h.storage.getItem('ravradar-auth-session')).user.id, failure === 'storage' ? A : B);
+  } finally { unsubscribe(); await Promise.allSettled(operations); h.finish(); }
+});
+
+for (const throwing of [false, true]) test(`auth notification: listener starts B inside A notification${throwing ? ' then throws' : ''}`, async () => {
+  const h = harness(), reached = deferred(), release = deferred(), operations = [], notifications = [], error = new Error('synthetic-listener-first');
+  let calls = 0, next;
+  h.state.authTransport = async () => {
+    if (calls++ === 0) return Response.json(sessionFor(A));
+    reached.resolve(); await release.promise; return Response.json(sessionFor(B));
+  };
+  const unsubscribe = h.auth.onAuthChange(active => {
+    notifications.push(active.user.id);
+    if (active.user.id === A) {
+      next = h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only'); operations.push(next);
+      if (throwing) throw error;
+    }
+  });
+  try {
+    const first = h.auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only').then(value => ({ value }), caught => ({ error: caught }));
+    operations.push(first); await reached.promise;
+    const outcome = await first;
+    if (throwing) assert.equal(outcome.error, error); else assert.equal(outcome.value.user.id, A);
+    await assert.rejects(h.auth.requireFreshSession(), /Kontoen blev ændret/);
+    assert.deepEqual(notifications, [A]);
+    release.resolve(); await next; assert.deepEqual(notifications, [A, B]);
+    assert.equal((await h.auth.requireFreshSession()).user.id, B);
+  } finally { release.resolve(); unsubscribe(); await Promise.allSettled(operations); h.finish(); }
+});

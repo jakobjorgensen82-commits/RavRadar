@@ -47,10 +47,20 @@ Oprydning efter turens kvittering er bundet til den faktisk sendte lokale rappor
 
 Kontoens manuelle tur- og fundformular fastholder den ejer og det loginforløb, som åbnede formularen. Nyt login eller kontoskift under formularen må ikke sende den gamle besvarelse som den nye konto; et forsinket svar må heller ikke vise den gamle afleveringskvittering under et nyt login. Normal tokenfornyelse, annullering og gemning med efterfølgende visning i egen turlog bevares. Ti nye prøver bruger de faktiske login-, indsendelses- og kontofunktioner; syntetiske formularer og HTTP-svar er ikke installeret brugerdata- eller adgangskontrolbevis.
 
-111 relevante brugerdata- og 12 UI-målprøver består lokalt. De seks nye mål nås én gang gennem
+Et uafsluttet login-, signup-, callback- eller logoutvalg må ikke lade nye profilopslag
+eller turindsendelser låne det tidligere login. Alle tre normale indsendelsesfunktioner
+afviser dette før lokal gemning. Manuel efterregistrering fastholder også det oprindelige
+login gennem første brugerhydrering. Udløbet, allerede kendt login bevarer offline-gemning;
+normal tokenfornyelse er ikke et kontoskift. Færdige login afklares før deres normale
+notifikationer. Gamle callbacks, fornyelser og oprydning kan ikke frigive et nyere kontovalg;
+lager- og notifikationsfejl bevarer den første fejl og eksisterende sessionsadfærd.
+Det er ikke atomisk beskyttelse mellem faner eller installeret adgangskontrolbevis.
+
+158 relevante brugerdata- og 12 UI-målprøver består lokalt. De seks nye mål nås én gang gennem
 den eksisterende normale sourcegruppe. Begge vejrbundles, scoreformel, vejrdata,
-geometri og centrale bindingsregler er uændrede. Det er endnu ikke præcis ny
-GitHub-kontrol, installation, fungerende ekstern AI eller offentlig effekt.
+geometri og centrale bindingsregler er uændrede. Den tidligere head har præcis grøn
+GitHub-kontrol; den nye funktionelle head skal kontrolleres særskilt. Installation,
+fungerende ekstern AI og offentlig effekt er endnu ikke bevist.
 Den statiske SQL-håndbogskopi er kun en lokal kildefil, ikke en installation.
 
 Hele strøm-/scoreovergangen, vejrhentningsrevisionen, varig brugerdata, bred

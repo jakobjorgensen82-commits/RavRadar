@@ -70,7 +70,8 @@ assert.match(account, /t\('account\.historyLoadError'\)/);
 
 assert.match(auth, /authRequest\("\/user"\)/);
 assert.match(auth, /redirect_to=\$\{encodeURIComponent\(redirectTo\)\}/);
-assert.match(auth, /await hydrateSessionUser\(\)\.catch/);
+assert.match(auth, /await hydrateSessionUser\(startingEpoch\)\.catch/,
+  'Callbackens brugerhydrering skal afklare sit eget loginvalg før normal notifikation.');
 assert.match(app, /openAccountDialog\(accountDialog,userDataContext\(\)\)/);
 assert.match(learning, /getLocalObservations\(\)/, 'Den eksisterende lokale læringsmodel skal fortsat have sine observationer.');
 
