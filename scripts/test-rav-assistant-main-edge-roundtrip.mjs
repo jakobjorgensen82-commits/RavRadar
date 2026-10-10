@@ -22,6 +22,17 @@ let blockedNetworkCalls = 0;
 let preflightVerified = false;
 let browserLanguage = 'da';
 let responseMutation = null;
+let controlledProviderResponse = null;
+let controlledProviderUrl;
+let controlledProviderCalls = 0;
+let controlledQuotaCalls = 0;
+const controlledEnvironment = {
+  PUBLIC_RATE_LIMIT_SECRET: 'SYNTHETIC_ONLY_RATE_SECRET',
+  SUPABASE_URL: 'https://quota.invalid',
+  SUPABASE_SERVICE_ROLE_KEY: 'SYNTHETIC_ONLY_NOT_A_CREDENTIAL',
+  CLOUDFLARE_ACCOUNT_ID: 'a'.repeat(32),
+  CLOUDFLARE_WORKERS_AI_TOKEN: 'SYNTHETIC_ONLY_NOT_A_CREDENTIAL',
+};
 const envReads = [];
 const exchanges = [];
 let publicConfig;
@@ -34,12 +45,26 @@ globalThis.localStorage = {
 };
 globalThis.Deno = {
   serve(handler) { assert.equal(edgeHandler, undefined); edgeHandler = handler; },
-  env: { get(name) { envReads.push(name); return undefined; } },
+  env: { get(name) { envReads.push(name); return controlledProviderResponse === null ? undefined : controlledEnvironment[name]; } },
 };
 globalThis.fetch = async (input, init) => {
   // Never delegate to the saved fetch, even for unexpected URLs or nested
   // quota/provider requests. An attempted real request also fails the test.
   const request = new Request(input, init);
+  if (insideHandler && controlledProviderResponse !== null) {
+    if (request.url === 'https://quota.invalid/rest/v1/rpc/consume_public_request_limit') {
+      controlledQuotaCalls += 1;
+      return Response.json(true);
+    }
+    if (request.url === controlledProviderUrl) {
+      const providerBody = await request.json();
+      assert.equal(providerBody.messages.length, 2);
+      assert.deepEqual(providerBody.messages.map(message => message.role), ['system', 'user']);
+      assert.doesNotMatch(JSON.stringify(providerBody), /TEST_PRIVATE_CONTEXT_MARKER/);
+      controlledProviderCalls += 1;
+      return Response.json(controlledProviderResponse);
+    }
+  }
   if (insideHandler || request.url !== `${publicConfig?.supabaseUrl}/functions/v1/ravradar-assistant`) {
     blockedNetworkCalls += 1;
     throw new Error('TEST_NETWORK_FORBIDDEN');
@@ -108,6 +133,7 @@ try {
   assert.ok(publicConfig.supabaseUrl && publicConfig.supabasePublishableKey);
   const contract = await import('../supabase/functions/_shared/rav-assistant-contract.ts');
   binding = contract.RAV_ASSISTANT_RAVSCORE_MODEL_BINDING;
+  controlledProviderUrl = `https://api.cloudflare.com/client/v4/accounts/${"a".repeat(32)}/ai/run/${contract.RAV_ASSISTANT_MODEL}`;
   const names = contract.RAV_ASSISTANT_BINDING_HEADERS;
   headerValues = {
     [names.modelId]: binding.modelId,
@@ -274,6 +300,52 @@ try {
     assert.equal(exchanges.length, 0);
     assert.equal(envReads.length, 0);
   }
+  // The normal client reaches the actual quota/provider/validator path using
+  // synthetic HTTP only. No saved fetch or real credentials are available.
+  const unknownQuestion = 'Hvordan bruger jeg et ravombrometer til at finde rav?';
+  assert.equal(classifyRavQuestion(unknownQuestion), 'unknown');
+  assert.equal(routeRavQuestion(unknownQuestion), 'remote-candidate');
+  const finalResult = { schemaVersion: 'rav-assistant-response-v1', locale: 'da',
+    disposition: 'uncertain', answer: 'Jeg kender ikke dette begreb. Kan du beskrive, hvad du mener?', evidenceIds: [] };
+  const intermediate = { ...finalResult, answer: 'SYNTHETIC_INTERMEDIATE_NOT_FINAL' };
+  const finalMessage = { type: 'message', role: 'assistant', channel: 'final',
+    content: [{ type: 'output_text', text: JSON.stringify(finalResult) }] };
+  for (const hidden of [
+    { type: 'reasoning', content: [{ type: 'reasoning_text', text: JSON.stringify(intermediate) }] },
+    { type: 'message', role: 'user', content: [{ text: JSON.stringify(intermediate) }] },
+    { type: 'message', role: 'assistant', channel: 'analysis', content: [{ text: JSON.stringify(intermediate) }] },
+  ]) {
+    reset();
+    controlledProviderResponse = { result: { output: [hidden, finalMessage] } };
+    const oldCalls = controlledProviderCalls, oldQuota = controlledQuotaCalls;
+    assert.equal(await askRavRadar(unknownQuestion, context, { language: 'da' }), finalResult.answer);
+    assertRemote(unknownQuestion, 'da', 200);
+    assert.deepEqual(exchanges[0].result, { answer: finalResult.answer });
+    assert.equal(controlledProviderCalls - oldCalls, 1);
+    assert.equal(controlledQuotaCalls - oldQuota, 3);
+    reset();
+    controlledProviderResponse = { result: { output: [hidden] } };
+    assert.equal(await askRavRadar(unknownQuestion, context, { language: 'da' }), t('assistant.unknown', {}, 'da'));
+    assertRemote(unknownQuestion, 'da', 502);
+    assert.deepEqual(exchanges[0].result, { error: 'ASSISTANT_RESPONSE_REJECTED' });
+  }
+  controlledProviderResponse = { result: { output: [finalMessage] } };
+  for (const header of Object.keys(headerValues)) for (const kind of ['missing', 'wrong']) {
+    reset(); responseMutation = { header, kind };
+    assert.equal(await askRavRadar(unknownQuestion, context, { language: 'da' }), t('assistant.unknown', {}, 'da'));
+    assertRemote(unknownQuestion, 'da', 200);
+    assert.deepEqual(exchanges[0].result, { answer: finalResult.answer });
+  }
+  responseMutation = null;
+  reset();
+  const beforePrivateCalls = controlledProviderCalls, beforePrivateQuota = controlledQuotaCalls;
+  assert.equal(await askRavRadar(privateQuestions[0][1], context, { language: 'da' }), contract.RAV_ASSISTANT_REFUSALS.da);
+  assertRemote(privateQuestions[0][1], 'da', 200);
+  assertBeforeQuota();
+  assert.equal(controlledProviderCalls, beforePrivateCalls);
+  assert.equal(controlledQuotaCalls, beforePrivateQuota);
+  controlledProviderResponse = null;
+  console.log('OK: 3 explicit wrong-channel outputs skipped, 3 no-final outputs rejected, 12 final-response header mutations fall back, private request still precedes quota; synthetic provider only.');
   assert.equal(JSON.stringify(context), contextBefore);
   assert.equal(preflightVerified, true);
   assert.equal(blockedNetworkCalls, 0, 'Neither provider nor any other real network request may be attempted.');

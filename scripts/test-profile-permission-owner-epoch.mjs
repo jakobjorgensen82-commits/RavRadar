@@ -121,3 +121,57 @@ for (const caller of ['profile', 'owner-access', 'permissions']) {
     test(`${caller}: held body ${action} preserves the original login intent`, () => scenario(caller, action));
   }
 }
+
+// listProfiles is a separate normal caller from getCurrentProfile/myAccess.
+async function profilesListScenario(action,{hydrate=false,render=false}={}){
+  const initial=sessionFor();if(hydrate)initial.user={};
+  const bank=new Map([['ravradar-auth-session',JSON.stringify(initial)]]),timers=new Set(),operations=[];
+  const reached=deferred(),release=deferred(),authRelease=deferred();
+  const rows=[{id:ownerA,email:'synthetic-private-profile@example.invalid',role:'expert',is_active:true,user_permissions:[]}];
+  let nextOwner=ownerA,holdAuth=false,requests=0,hydrations=0,refreshes=0;
+  const scope={PUBLIC_CONFIG:config,AbortController,DOMException,localStorage:{getItem:k=>bank.get(k)??null,setItem:(k,v)=>bank.set(k,String(v)),removeItem:k=>bank.delete(k)},
+    setTimeout(fn,ms){const timer=setTimeout(()=>{timers.delete(timer);fn();},ms);timers.add(timer);return timer;},clearTimeout(timer){clearTimeout(timer);timers.delete(timer);},
+    async fetch(input,options){const url=new URL(input);assert.equal(url.origin,config.supabaseUrl);
+      if(url.pathname==='/auth/v1/user'){hydrations++;return Response.json({id:ownerA});}
+      if(url.pathname==='/auth/v1/logout'){if(holdAuth)await authRelease.promise;return Response.json({});}
+      if(url.pathname==='/auth/v1/token'){
+        if(url.searchParams.get('grant_type')==='refresh_token'){refreshes++;return Response.json(sessionFor(ownerA,'synthetic-renewed'));}
+        assert.equal(url.searchParams.get('grant_type'),'password');if(holdAuth)await authRelease.promise;return Response.json(sessionFor(nextOwner,'synthetic-new-login'));
+      }
+      assert.equal(url.pathname,'/rest/v1/profiles');assert.equal(url.searchParams.get('order'),'email');assert.equal(options.headers.Authorization,'Bearer synthetic-original');requests++;
+      return{ok:true,status:200,async json(){reached.resolve();await release.promise;return structuredClone(rows);}};
+    }};
+  vm.runInNewContext(`${authBody}\nthis.api={authIdentityEpoch,currentSession,requireFreshSession,authorizedFetch,getCurrentProfile,signOut,signInWithPassword,refreshSession};`,scope);
+  const auth=scope.api,permissions={...auth,PUBLIC_CONFIG:config};
+  vm.runInNewContext(`${permissionsBody}\nthis.listProfiles=listProfiles;this.PERMISSIONS=PERMISSIONS;this.EXPERT_PERMISSIONS=EXPERT_PERMISSIONS;`,permissions);
+  const track=p=>{operations.push(p);return p;};
+  const host={innerHTML:'',querySelectorAll:()=>[]},state={access:{profile:{role:'owner'},permissions:new Set()},profiles:[]};
+  const view={state,content:{innerHTML:''},document:{querySelector:selector=>{assert.equal(selector,'#profilesList');return host;}},listProfiles:permissions.listProfiles,PERMISSIONS:permissions.PERMISSIONS,EXPERT_PERMISSIONS:permissions.EXPERT_PERMISSIONS,esc:String};
+  if(render){const dashboard=fs.readFileSync(new URL('../js/ui/admin-dashboard.js',import.meta.url),'utf8');const start=dashboard.indexOf('async function renderUsers(){'),end=dashboard.indexOf('async function renderHandbook(){',start);assert.ok(start>=0&&end>start);vm.runInNewContext(dashboard.slice(start,end)+'\nthis.renderUsers=renderUsers;',view);}
+  let result;
+  try{
+    const pending=track((render?view.renderUsers():permissions.listProfiles()).then(value=>({value}),error=>({error})));
+    await Promise.race([reached.promise,pending.then(()=>{throw new Error('Normal profiles body was not reached');})]);
+    if(action==='renewal')await track(auth.refreshSession({force:true}));
+    else if(action==='logout')await track(auth.signOut());
+    else if(action==='pending-login'||action==='pending-logout'){
+      holdAuth=true;nextOwner=ownerB;
+      track((action==='pending-login'?auth.signInWithPassword('synthetic@example.invalid','synthetic-only'):auth.signOut()).catch(error=>({error})));
+    }else if(action!=='unchanged'){
+      await track(auth.signOut());nextOwner=action==='different-owner-login'?ownerB:ownerA;
+      await track(auth.signInWithPassword('synthetic@example.invalid','synthetic-only'));
+    }
+    const chosen=auth.currentSession(),saved=bank.get('ravradar-auth-session');
+    release.resolve();result=await pending;
+    assert.equal(auth.currentSession(),chosen);assert.equal(bank.get('ravradar-auth-session'),saved);
+    if(action==='renewal'||action==='unchanged'){
+      assert.equal(result.error,undefined);if(render){assert.match(host.innerHTML,/synthetic-private-profile@example.invalid/);assert.deepEqual(state.profiles,rows);}else assert.deepEqual(result.value,rows);
+    }else if(render){assert.doesNotMatch(host.innerHTML,/synthetic-private-profile@example.invalid/);assert.deepEqual(state.profiles,[]);assert.match(host.innerHTML,/Kontoen blev ændret/);}
+    else{assert.equal(result.value,undefined,'Old private profiles must not reach the caller after an identity choice');assert.match(result.error?.message||'',/Kontoen blev ændret/);}
+  }finally{release.resolve();authRelease.resolve();await Promise.allSettled(operations);const leaked=timers.size;for(const timer of timers)clearTimeout(timer);assert.equal(leaked,0);}
+  assert.equal(requests,1);assert.equal(hydrations,hydrate?1:0);assert.equal(refreshes,action==='renewal'?1:0);
+}
+for(const action of ['unchanged','renewal','logout','same-owner-login','different-owner-login','pending-login','pending-logout'])test('profiles-list: held body '+action,()=>profilesListScenario(action));
+test('profiles-list: initial hydration and same-login renewal preserved',()=>profilesListScenario('renewal',{hydrate:true}));
+test('profiles-list: actual normal admin renderer rejects late old profile body',()=>profilesListScenario('same-owner-login',{render:true}));
+test('profiles-list: actual normal admin renderer retains legitimate renewal',()=>profilesListScenario('renewal',{render:true}));

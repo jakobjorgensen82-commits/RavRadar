@@ -1,4 +1,18 @@
-# Lokal 4.0.558 – afgrænset reparation af eksisterende turlager-Worker
+# Lokal 4.0.559 – sikre klientlæsninger og præcis tur-/assistentkvittering
+
+Denne afgrænsede kildeleverance samler syv normale klient-/Edge-filer; den er endnu ikke offentlig levering eller bevis for hosted brugerforløb. Profiloversigten afviser forsinkede svar efter logout, kontoskift eller et nyt login til samme ejer, men bevarer normal tokenfornyelse og første hydrering.
+
+Turlagerets normale ændrings- og kvitteringskald må ikke fortolke en ulæselig lokal bank eller kø som en tom liste og overskrive tidligere ture. Manglende nøgle er fortsat en legitim tom start; den eksisterende visningsfallback består. En manuel turs svar afgøres af netop den kvitterede række, ikke andre ventende ture. Eksisterende ejerskab, payload, HTTP-kald, genforsøg og køpolitik bevares. Det er ikke en atomisk lås mellem faner eller et hosted adgangskontrolbevis.
+
+Spørg RavRadars eksisterende Edge-svarudtræk afviser udtrykkeligt reasoning-, user- og ikke-final-kanaler før struktureret svarvalg. Gyldige tidligere providerformer og alle seks model-/vidensheaders bevares. Normale mål prøver forkert kanal før final, manglende final, headerafvigelser og privat afvisning før kvote. Det er ikke en bred vidensudvidelse eller bevis for fungerende ekstern AI; bundne klient-/vidensændringer og øvrige spørgsmål er fortsat åbne. Interne fejlundersøgelser tilføjes ikke til offentlig assistentviden.
+
+Alle syv filer er faktisk lokalt integreret med kontrolleret helfil-delta og bevarede assertions. Profilens ti mål, læsesikkerhedens fjorten mål, turkvitteringens tre nye plus ti eksisterende kontroller og de to normale Edge-/klientmål består. Begge eksisterende 68-/66-fils vejrbundles er uændrede. Ny versions-, dokumentations- og præcis GitHub-kontrol, sikker levering og faktisk effekt kræves fortsat.
+
+PR #548's præcise procesrettelse på `94c39953` har nu bestået fuld GitHub-kontrol `38032928767`, forsøg 1, inklusive den faktisk udførte neutrale Linux-underprocesprøve. Den særskilt godkendte eksisterende-Worker-operation er ikke udført; den kræver afsluttet vejrhentning og alle øvrige eksisterende driftkontroller. En Pages-/Edgeleverance installerer ikke turlager-Workeren.
+
+Den separate cachelæsepakke er ikke en del af denne release: normale stream-/skrivelivstider skal først lukkes med faktisk fysisk stop og bevarelse af gyldige originaler. Hele revisionen, strømdata/score, brede brugerrettigheder, bred Spørg RavRadar og selvstændig drift uden Codex forbliver åbne. Fristen er i dag, 10. oktober; parallel delegation og alle særskilte data-, bindings-, installations- og destinationstilladelser består. Ingen ekstra vejrhentning, ændret cron eller produktionsændring under aktiv writer.
+
+# Historik: 4.0.558 – afgrænset eksisterende-Worker-kilde før installation
 
 PR #548's første fulde kildekontrol afviste en test, der talte main-kontroller på tværs af fuld installation og reparation. Den entydigt afgrænsede normale test bevarer alle gamle assertions; den rettede head `fb0a1ded` har nu bestået fuld GitHub-kontrol `38031210351`, forsøg 1. Det er ikke merge eller installation. Ejeren har særskilt godkendt præcis én afgrænset eksisterende-Worker-operation efter grøn kontrol og afsluttet vejrhentning; ingen bredere overgang følger.
 

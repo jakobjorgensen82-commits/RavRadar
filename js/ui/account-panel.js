@@ -1,10 +1,10 @@
-import { authEnabled, authIdentityEpoch, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.558";
-import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.558";
-import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.558";
-import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.558";
-import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.558";
-import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.558";
-import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.558";
+import { authEnabled, authIdentityEpoch, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.559";
+import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.559";
+import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.559";
+import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.559";
+import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.559";
+import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.559";
+import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.559";
 
 const pendingHistoryViews = new WeakMap();
 

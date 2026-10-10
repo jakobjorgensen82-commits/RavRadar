@@ -1273,3 +1273,96 @@ test('remote renewal to another owner during body cannot clear original evidence
     assert.equal(h.service.getLocalObservations()[0].user_id, A);
   } finally { held?.release(); if (operation) await operation; h.finish(); }
 });
+
+for(const key of ['ravradar-observations-v2','ravradar-observation-outbox-v1'])test('durable read: new normal v2 submit preserves unreadable original '+key,async()=>{
+ const h=harness(),read=h.storage.getItem,firstError=new Error('synthetic-original-storage-read-failure');
+ try{
+  await h.service.submitTripEvidenceObservation(payload(firstTrip));
+  const original=h.storage.values.get(key);assert.ok(original.includes(firstTrip));
+  const beforeRequests=h.state.submits.length;
+  h.storage.getItem=requested=>{if(requested===key)throw firstError;return read(requested);};
+  const result=await h.service.submitTripEvidenceObservation(payload(secondTrip)).then(value=>({value}),error=>({error}));
+  assert.equal(h.storage.values.get(key),original,'A failed read must never authorize overwriting the original saved bank');
+  assert.equal(result.error,firstError,'Preserve the first storage exception');
+  assert.equal(h.state.submits.length,beforeRequests,'Do not send from an unreadable saved bank');
+ }finally{h.storage.getItem=read;h.finish();}
+});
+test('durable read: malformed outbox is preserved instead of becoming an empty queue',async()=>{
+ const h=harness();
+ try{
+  await h.service.submitTripEvidenceObservation(payload(firstTrip));
+  const key='ravradar-observation-outbox-v1',original='{"recoverable-prefix":"synthetic-original"';
+  h.storage.setItem(key,original);const beforeRequests=h.state.submits.length;
+  const result=await h.service.submitTripEvidenceObservation(payload(secondTrip)).then(value=>({value}),error=>({error}));
+  assert.equal(h.storage.values.get(key),original,'Unknown original bytes must survive a refused normal submission');
+  assert.ok(result.error);assert.equal(h.state.submits.length,beforeRequests);
+ }finally{h.finish();}
+});
+
+for(const caller of ['manual','legacy'])for(const key of ['ravradar-observations-v2','ravradar-observation-outbox-v1'])test('durable read: '+caller+' preserves read failure '+key,async()=>{
+ const h=harness(),read=h.storage.getItem,error=new Error('synthetic-first-read-error');
+ try{
+  await h.service.submitTripEvidenceObservation(payload(firstTrip));const original=h.storage.values.get(key),submits=h.state.submits.length;
+  h.storage.getItem=requested=>{if(requested===key)throw error;return read(requested);};
+  const operation=caller==='manual'?h.service.submitAccountTripReportObservation(account.toAccountObservationColumns(account.buildAccountTripReport({...reportAnswer,tripId:secondTrip})))
+   :h.service.submitObservation({zone:{id:'DK-B04-12',name:'synthetic-zone'},huntMode:'waders',result:'none',tripId:secondTrip});
+  const result=await operation.then(value=>({value}),error=>({error}));
+  assert.equal(h.storage.values.get(key)===original,true);assert.equal(result.error,error);assert.equal(h.state.submits.length,submits);
+ }finally{h.storage.getItem=read;h.finish();}
+});
+for(const original of ['null','{}','"not-an-array"',''])test('durable read: nonarray outbox remains original '+JSON.stringify(original),async()=>{
+ const h=harness();try{
+  await h.service.submitTripEvidenceObservation(payload(firstTrip));const key='ravradar-observation-outbox-v1';h.storage.setItem(key,original);
+  const before=h.state.submits.length;const result=await h.service.submitTripEvidenceObservation(payload(secondTrip)).then(value=>({value}),error=>({error}));
+  assert.equal(h.storage.values.get(key),original);assert.equal(result.error?.message,'Gemte ture kunne ikke læses sikkert.');assert.equal(h.state.submits.length,before);
+ }finally{h.finish();}
+});
+for(const empty of [null,'[]'])test('durable read: genuinely missing or empty bank accepts normal owner save '+empty,async()=>{
+ const h=harness();try{
+  if(empty!==null){h.storage.setItem('ravradar-observations-v2',empty);h.storage.setItem('ravradar-observation-outbox-v1',empty);}
+  h.state.failSubmit=false;const result=await h.service.submitTripEvidenceObservation(payload(firstTrip));
+  assert.equal(result.stored,'remote');assert.equal(h.state.submits.length,1);
+  assert.equal(h.service.getLocalObservations().length,1);assert.equal(h.service.getObservationSyncStatus().pending,0);
+ }finally{h.finish();}
+});
+test('durable read: ordinary history fallback stays read-only on unavailable local storage',()=>{
+ const h=harness(),read=h.storage.getItem;try{
+  const original='{"unparsed":"synthetic"';h.storage.setItem('ravradar-observations-v2',original);const writes=h.state.writes.length;
+  assert.equal(h.service.getLocalObservations().length,0);assert.equal(h.storage.values.get('ravradar-observations-v2'),original);
+  h.storage.getItem=key=>{if(key==='ravradar-observations-v2')throw new Error('synthetic-display-read-error');return read(key);};
+  assert.equal(h.service.getLocalObservations().length,0);assert.equal(h.state.writes.length,writes);
+ }finally{h.storage.getItem=read;h.finish();}
+});
+
+for (const kind of ['other-owner pending', 'same-owner pending'])
+test('manual row receipt: actual account UI confirms its stored row despite '+kind, async () => {
+  const h=harness(),form=deferred(),panel=ui(h,form);let operation;
+  try {
+    const first=await h.service.submitTripEvidenceObservation(payload(firstTrip));
+    assert.equal(first.stored,'pending');
+    const original=clean(h.service.remoteObservationPayload(h.service.getLocalObservations()[0]));
+    if(kind==='other-owner pending')await h.login(B);
+    Object.defineProperty(h.state,'submitResponse',{get(){
+      const row=JSON.parse(h.state.submits.at(-1));
+      return {ok:row.trip_id!==firstTrip,status:row.trip_id===firstTrip?503:200,json:async()=>({stored:true})};
+    }});
+    form.resolve(reportAnswer);operation=panel.showAccountTripReport(panel.dialog,{});await operation;
+    const rows=h.service.getLocalObservations(),manual=rows.find(row=>row.trip_id!==firstTrip);
+    assert.equal(manual.user_id,kind==='other-owner pending'?B:A);
+    assert.equal(manual.sync_status,'synced','The actual normal direct POST was acknowledged and locally settled');
+    assert.equal(h.service.getObservationSyncStatus().pending,1,'The unrelated original remains legitimately queued');
+    assert.deepEqual(clean(h.service.remoteObservationPayload(rows.find(row=>row.trip_id===firstTrip))),original);
+    assert.ok(panel.content.innerHTML.includes(t('account.reportRemote')),'Only the submitted report determines its normal user-facing receipt');
+    assert.equal(panel.content.innerHTML.includes(t('account.reportQueued')),false);
+  } finally {form.resolve(null);if(operation)await operation;h.finish();}
+});
+test('manual row receipt: ordinary failed own report stays queued',async()=>{
+  const h=harness(),form=deferred(),panel=ui(h,form);let operation;
+  try{
+    form.resolve(reportAnswer);operation=panel.showAccountTripReport(panel.dialog,{});await operation;
+    assert.equal(h.service.getObservationSyncStatus().pending,1);
+    assert.equal(h.service.getLocalObservations()[0].sync_status,'pending');
+    assert.ok(panel.content.innerHTML.includes(t('account.reportQueued')));
+    assert.equal(panel.content.innerHTML.includes(t('account.reportRemote')),false);
+  }finally{form.resolve(null);if(operation)await operation;h.finish();}
+});

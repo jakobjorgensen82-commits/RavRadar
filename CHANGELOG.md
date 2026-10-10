@@ -1,4 +1,13 @@
-# Lokal 4.0.558 – 2026-10-10
+# Lokal 4.0.559 – 2026-10-10
+
+- Normal profiloversigt bindes til oprindeligt login/ejer; forsinkede svar efter logout eller kontoskift afvises uden at blokere normal fornyelse.
+- Ulæselig lokal turbank/kø må ikke autorisere tom overskrivning. Den enkelte manuelle turs kvittering adskilles fra andre ventende ture; eksisterende payload, kø og brugerfunktioner består.
+- Eksisterende Edge-svarudtræk accepterer ikke udtrykkelige reasoning-, user- eller ikke-final-kanaler som slutsvar. Normale svarformer, privat afvisning og alle seks bindingsheaders bevares.
+- Syv faktisk integrerede filer med helfilkontrol og normale måltests. Begge vejrbundles uændret; præcis ny source-CI og faktisk offentlig effekt afventer. Den åbne cachelæsepakke er udtrykkeligt ikke del af releasen.
+- Procesrettelsen på PR #548 har bestået præcis GitHub-kontrol inklusive rigtig Linux-underprocesprøve. Den betinget godkendte eksisterende-Worker-operation er ikke udført og må ikke køres under aktiv vejrhentning.
+- Alle fem målområder, bred viden/AI, strøm-/scoreovergang, hele revisionen, brugerrettigheder og selvstændig drift forbliver åbne; dagens frist ændrer ingen sikkerheds- eller tilladelsesgrænser.
+
+# Historik: 4.0.558 – 2026-10-10
 
 - Afgrænset deploy-processtop: timeout må ikke tillade recovery, før den egne normale npm/Wrangler-procesgruppe faktisk er væk og direkte child-close er observeret. Fast kommando, 180 sekunders udførelse, højst fem sekunders afslutning og eksisterende one-primary/one-recovery-grænse bevares. Rigtig Linux-prøve og ny præcis source-CI kræves før operationen.
 - Rettet den normale installationskontrol til dens entydige job, uden at ændre de tidligere tre main-kontroller eller øvrige assertions. Første #548-CI blev afvist; ændret head skal gennem ny fuld kontrol. Ejerens præcise, betingede reparationsautoritet er registreret, ikke udført.
