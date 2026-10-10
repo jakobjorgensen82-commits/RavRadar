@@ -1,10 +1,82 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.563
+**Håndbogsversion:** 4.0.565
 
-Den lokale 4.0.563 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+Den lokale 4.0.565 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.190 Relevante ravspørgsmål og nye strømfortolkninger
+
+Assistenten må ikke kalde et relevant ravspørgsmål uvedkommende, alene fordi
+svaret mangler i dens leverede fakta. Den skal forklare usikkerhed eller bede
+om præcisering. Den må ikke opfinde egenskaber, udstyr eller vejrtal; private
+forespørgsler er stadig afgrænset. Den generelle instruktion er justeret efter
+en faktisk offentlig afvisning. Den normale klient-/servertest består med
+kontrolleret provider, men offentlig effekt og ekstern AI er ikke bevist.
+Dette er ikke den omfattende vidensudvidelse.
+
+Ejeren har godkendt korrekt decoderfortolkning til nye strømdata og ny
+strømhukommelse, også hvis fremtidige scorer ændres. Gamle originalpakker og
+offentliggjorte scorer bevares uændret. Kildeprioritet, scoreformel, adminpunkter
+og geometri ændres ikke. Aktivering kræver databevarelse, gyldig historik,
+korrekte bindinger og afsluttet vejrhentning. Ingen nye DMI-downloads eller
+SQL-installation følger. De syv zoners undtagelse gælder fortsat kun vandstand;
+øvrige leverings- og sikkerhedsgrænser bevares.
+
+## 89.189 Afbrydelse før gemning og genbrug
+
+Seneste status: den tidligere eksakte 565-kilde bestod GitHub-kontrollen kl.
+19.42 dansk tid, også gennem normale Linux-kaldere. Tilføjelsen i afsnit 89.190
+kræver ny kontrol af det præcise head; offentlig effekt mangler.
+
+DMI-finalizeren og den supplerende strømhentning fastholder første
+afbrydelsessignal omkring oprettelsen af deres egen underproces. Den faktisk
+returnerede proces afsluttes og afventes, før fejlbehandling, recovery eller nyt
+forsøg fortsætter. Første fejl og tidligere signalhåndteringer bevares.
+
+Det gamle kill/reap-forløb og hele recovery-tiden er uændrede. Der indføres
+ingen ny stopreserve. Afventning af egen proces er ikke en hård totalfrist:
+en usædvanligt fastlåst proces kan stadig kræve runnerens yderste grænse.
+Fire lokale DMI-prøver og to Copernicus-prøver plus hele den gamle retry-test
+består gennem normale kaldere. Præcis ny kildekontrol og offentlig effekt
+af 565 mangler; lokale prøver er ikke et gennemført deploy.
+
+Samlet eksklusiv skrivning, descendants, SIGKILL, tab af runner og gemning efter
+procesfejl er fortsat åbne. En undtagelse eller grøn cachemarkør giver ikke
+automatisk ret til gemning. Originaler B/S, krypteret genbrug, kildeprioritet,
+tidsbudgetter og modelbindinger bevares. Vejrdata, scorer og geometri ændres ikke.
+
+564 bestod faktisk kildekontrol og den afgrænsede native Linux-prøve kl. 18.40
+dansk tid. Det er ikke bevis for den nye 565. 563 er faktisk offentligt leveret;
+ingen ny produktionsændring sker under en aktiv vejrhentning. Hele revisionen,
+strømgrundlaget, den særskilte assistent og brugerdata er ikke færdige.
+
+## 89.188 Stop af vejrhentningens egne processer
+
+Den normale DMI-supervisor fastholder første afbrydelsessignal, også omkring
+oprettelse af underprocessen. Den faktisk ejede proces og dens outputlæser
+skal være afsluttet, før der gives normal succes. EOF alene er ikke proces-exit.
+Ved afbrydelse bevares første fejl; eksisterende stop- og lukkegrænser ændres ikke.
+
+Fire eksisterende måltests består lokalt. De dækker normal EOF-afslutning,
+afbrydelse i exitventen, reader-startfejl og brudt log-pipe gennem normale kaldere.
+En afgrænset Linux-prøve skal desuden måle SIGTERM, SIGINT og sund afslutning
+med den faktiske direkte producer, reader og oprindelige pipe-fd. Den er endnu
+ikke udført her; lokal Windows-kontrol er ikke native Linux- eller runnerbevis.
+
+Dette gælder supervisorens egne direkte processer, ikke alle samtidige skrivere.
+Samlet skrivning, særskilt finalizer, SIGKILL, tab af runner og failure-SAVE
+er fortsat åbne. Et stop eller en exception giver ikke i sig selv ret til gemning.
+Originaler B/S, legitimt krypteret genbrug, tidsbudgetter og modelbindinger bevares.
+564 er lokal og afventer præcis kildekontrol, sikker levering og faktisk effekt.
+
+563 er kildeverificeret, merget og faktisk leveret. Det ene rettelsesdeploy uden
+vejrhentning bestod offentlig model-/implementerings-/210/673-kontrol og terminal
+afslutning kl. 18.20 dansk tid. Samme vejrdata, scorer og geometri blev genbrugt.
+Privat restore blev gennemført; private publiceringer var allerede aktuelle og
+SQL allerede ajour, ikke nye uploads eller migrationer. De tidligere ventestatusser
+i historiske afsnit er erstattet af denne status. Hele revisionen er ikke færdig.
 
 ## 89.187 Eksisterende GitHub-adgang ved rettelsesdeploy
 

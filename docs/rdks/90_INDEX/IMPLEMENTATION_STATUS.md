@@ -1,4 +1,37 @@
-# Lokal 4.0.563 – eksisterende GitHub-adgang ved rettelsesdeploy
+# Lokal 4.0.565 – afbrydelse af finalizer og strømsupplement
+
+## Seneste delta: assistentens relevans og godkendt strømovergang
+
+Den offentlige assistent svarede HTTP 200, men afviste et relevant spørgsmål om rav efter gnidning som uvedkommende. Den generelle instruktion skelner nu mellem uvedkommende emner og manglende faktastøtte: relevante ravspørgsmål skal få ærlig usikkerhed eller afklaring. Ingen opdigtede egenskaber, udstyr, nye fakta, spørgsmålsspecifik validator eller ændrede vidensbindinger. Private forespørgsler forbliver afgrænset. Normal klient-/servertest består med kontrolleret provider; offentlig effekt og ekstern AI er ikke bevist.
+
+Den tidligere eksakte 565-kilde bestod GitHub-kontrollen kl. 19.42 dansk tid, inklusive normale Linux-kaldere. Assistenttilføjelsen kræver ny kontrol af præcis det nye head før merge. Gamle ventestatusser er historiske; offentlig effekt af den ændrede kandidat mangler.
+
+Ejerens nye ja godkender korrekt decoderfortolkning til nye strømdata og ny strømhukommelse, også med mulige fremtidige scoreændringer. Gamle originalpakker og offentliggjort scorehistorik bevares uændret; kildeprioritet, scoreformel, adminpunkter og geometri ændres ikke. Aktivering kræver databevarelse, gyldig historik, korrekte bindinger og afsluttet vejrhentning. Ingen nye DMI-downloads eller SQL-installation følger. De syv zoners undtagelse gælder fortsat kun vandstand. Den isolerede strømrettelse er under lokal gennemgang, ikke aktiveret.
+
+Den særskilte omfattende assistentlevering, brugerdata og samlede revision er åbne. Den godkendte lokale assistentkomposition og dens måltest ophæver ikke den særskilt afviste kildegruppes leveringsgrænse. Ingen produktionsændring under aktiv writer og ingen ny manuel vejrhentning følger.
+
+
+DMI-finalizerens og Copernicus-supplementets normale kaldere fastholder nu første SIGTERM/SIGINT før Popen. Den faktisk returnerede direkte underproces afsluttes og afventes før fejlbehandling, recovery eller nyt forsøg. Første fejl og tidligere signalhåndteringer bevares. Det gamle kill/reap-forløb, hele recovery-tiden, providerprioritet, argumenter og alle eksisterende tidsbudgetter er uændrede; der indføres ingen ny stopreserve eller hård totalfrist.
+
+Tre faktisk reproducerede afbrydelser efter procesoprettelse, men før kalders modtagelse af procesreferencen, efterlod tidligere egne underprocesser kørende. Samme normale finalizer-, provider- og recovery-kaldere består nu. Fire DMI-målprøver og to Copernicus-prøver plus hele den gamle retry-test består lokalt; Copernicus-måltesten er føjet til den eksisterende kildebro uden at fjerne kontroller eller ændre broens budgetter. Ny præcis GitHub-kildekontrol, merge og offentlig effekt af 565 mangler.
+
+Et forslag med en ny endelig oprydningsfrist er forkastet: de faktiske workflowkaldere kan gemme cache efter en procesfejl, så ukendt fysisk ophør må ikke indføres som et almindeligt timeoutresultat. Denne rettelse bevarer den gamle afventning af egen proces; den er ikke bevis for samlet eksklusiv skrivning, alle descendants, SIGKILL, tab af runner eller sikker failure-SAVE. Original-B/S-før-T, fireminuttersgrænsen, national heljobskapacitet og den inaktive separate revision er fortsat åbne. Ingen originaler, kilder, numeriske data, scoreformel, adminpunkter, geometri eller modelbindinger ændres; geodata får kun nyt topversionsfelt.
+
+564 bestod faktisk præcis GitHub-kildekontrol kl. 18.40 dansk tid, inklusive den normale Linux-prøve af direkte producer, outputlæser og pipe. Det er evidens for den daværende eksakte kilde, ikke for den nye 565. 564 blev ikke merget eller leveret under den aktive vejrhentning. 563 er faktisk offentligt leveret; de historiske ventestatusser nedenfor er erstattet af denne aktuelle status.
+
+Browserforbindelsen virker igen. Afgrænset kontrol af det offentlige kort og repræsentative assistentspørgsmål er udført. Kortvisning alene frikender ikke strømmenes gitterplacering, originalassociation eller scoregrundlag. Den særskilte assistent og brugerdata er ikke leveret; ekstern AI er ikke bevist fungerende. Alle fem hovedmål er fortsat åbne. Ingen merge eller produktionsændring under en aktiv writer; ingen ny vejrhentning eller automatisk genforsøg følger.
+
+# Historik: lokal 4.0.564 – stop af vejrhentningens egne processer
+
+Den normale DMI-supervisor fastholder første SIGTERM/SIGINT før oprettelse af underprocessen. Signalet afbryder ikke selve Popen eller den eksisterende oprydning. Den faktisk returnerede underproces forsøges stoppet inden for de eksisterende grænser; ukendt ophør giver ingen normal succes, og første fejl bevares. Normal afslutning kræver faktisk proces-exit, afsluttet outputlæser og lukket pipe. Ventetiden efter EOF er nu afbrydelig. De eksisterende TERM10/KILL10- og reader2-grænser bevares; ingen ny reserve, providerkilde, filgrænse eller score-/model-/geometriændring.
+
+Fire eksisterende måltests består lokalt gennem normal main/Popen: sund afslutning efter EOF, afbrydelse i exitventen, fejl ved reader-start og brudt log-pipe. Alle gamle assertions bevares; kun to observerbetingelser følger den nye korte wait-form. En afgrænset normal Linux-test måler SIGTERM, SIGINT og sund afslutning med direkte producer, faktisk reader og oprindelig pipe-fd. Den er endnu ikke udført her; Windows er ikke native Linux-bevis. Præcis ny kildekontrol og sikker levering af 564 mangler.
+
+Dette lukker ikke samlet skrivning, vilkårlige descendants, blokeret Popen/log, særskilt finalizer, SIGKILL, tab af runner eller failure-SAVE. Stop af den direkte producer kvalificerer ikke cachegemning. Original B/S, legitimt krypteret genbrug, fireminuttersgrænsen og den inaktive separate revision bevares.
+
+563 har bestået præcis GitHub-kildekontrol og er flettet ind i main via PR #554. Det ene nye funktionelle rettelsesdeploy uden vejrhentning leverede faktisk Pages kl. 18.19 og bestod offentlig model-/implementerings-/210/673-kontrol, almindelig reseal og terminal afslutning kl. 18.20 dansk tid. Samme datasæt blev genbrugt uden nye vejrkald eller ændrede vejr-, score- eller geometriværdier. Privat restore blev faktisk gennemført; checkpoint- og runtime-publicering svarede allerede aktuelle, ikke nye private uploads. SQL var allerede ajour, ikke en ny migration; den eksisterende assistent-Edge blev faktisk opdateret. Dette er ikke levering af den særskilte assistent-/brugerdata-/strømrettelse. Ingen produktionsændring eller merge af 564 under nogen aktiv writer. Den normale vejrhentning kl. 17.19 er et særskilt leveret forløb; historiske ventestatusser er erstattet af denne aktuelle status. Alle fem hovedmål er fortsat åbne.
+
+# Historik: lokal 4.0.563 – eksisterende GitHub-adgang ved rettelsesdeploy
 
 Normal vejrhentning afsluttede faktisk gemning, privat upload, Pages, 210/673-kontrol og terminal levering 10. oktober kl. 17.19 dansk tid. PR #553 er flettet ind efter præcis grøn kildekontrol. Det efterfølgende rettelsesdeploy stoppede kl. 17.28 før produktionsskrivning: tokenet var faktisk til stede, men den nye læsers alfanumeriske formatkontrol afviste det. Den første forklaring om manglende token blev korrigeret; dette var ikke en fejlet vejrhentning eller en ny målt størrelsesfejl.
 

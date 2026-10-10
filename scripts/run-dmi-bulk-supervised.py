@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import queue
 import re
+import signal
 import subprocess
 import sys
 import threading
@@ -91,12 +92,34 @@ def run_supervised(
     active_asset: dict[str, str] | None = None
     timed_out = False
     stop_attempted = False
-    process = popen(
-        command, cwd=ROOT, env=environment, stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace",
-        bufsize=1,
-    )
+    reader_join_attempted = False
+    process: subprocess.Popen | None = None
+    primary_failure: BaseException | None = None
+    pending_signal: int | None = None
+    previous_handlers = []
+
+    def request_stop(signum, _frame) -> None:
+        nonlocal pending_signal
+        # Never unwind Popen before its actual child reference is retained, or
+        # interrupt the existing bounded cleanup with a second signal.
+        if pending_signal is None:
+            pending_signal = signum
+
+    def check_interruption() -> None:
+        if pending_signal is not None:
+            raise SystemExit(128 + pending_signal)
+
     try:
+        for signum in (signal.SIGTERM, signal.SIGINT):
+            previous_handlers.append((signum, signal.getsignal(signum)))
+            signal.signal(signum, request_stop)
+        check_interruption()
+        process = popen(
+            command, cwd=ROOT, env=environment, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace",
+            bufsize=1,
+        )
+        check_interruption()
         # Guard setup after retaining Popen too: even an output-reader start
         # failure must not abandon the already live writer.
         events: queue.Queue[tuple[str, str | None]] = queue.Queue()
@@ -112,6 +135,7 @@ def run_supervised(
         reader = threading.Thread(target=pump_output, daemon=True)
         reader.start()
         while True:
+            check_interruption()
             # En fastlåst parser kan fortsætte med at skrive statuslinjer. Timeouten
             # må derfor ikke afhænge af, at outputkøen bliver tom.
             if (asset_started_at is not None
@@ -157,26 +181,39 @@ def run_supervised(
         # EOF proves only that output ended, not that the retained writer did.
         # Keep completion waits inside the same interruption/stop guard, and
         # close its pipe only after actual exit and a finished reader.
+        while True:
+            check_interruption()
+            try:
+                returncode = int(process.wait(timeout=0.25))
+                break
+            except subprocess.TimeoutExpired:
+                pass
+        reader_join_attempted = True
         reader.join(timeout=2.0)
-        returncode = int(process.wait())
-        if not reader.is_alive() and process.stdout is not None:
+        check_interruption()
+        if reader.is_alive():
+            raise RuntimeError("DMI_SUPERVISOR_OUTPUT_READER_STOP_UNPROVED")
+        if process.stdout is not None:
             process.stdout.close()
         return SupervisedResult(returncode, timed_out, active_asset)
-    except BaseException:
+    except BaseException as failure:
+        primary_failure = failure
         # A failed output pipe or interruption is terminal, not permission to
         # abandon the retained writer and start a replacement/finalizer. Reuse
         # the existing bounded stop, then close only a proved stopped reader.
         # Cleanup must never replace the original exception. Unknown cessation
         # leaves the pipe owned and propagates the terminal failure, no result.
         try:
-            if not stop_attempted:
+            if process is not None and not stop_attempted:
                 stop_attempted = True
                 stop_process(process)
         except BaseException:
             pass
         try:
-            if process.poll() is not None:
-                if reader is not None and reader.ident is not None:
+            if process is not None and process.poll() is not None:
+                if (not reader_join_attempted and reader is not None
+                        and reader.ident is not None):
+                    reader_join_attempted = True
                     reader.join(timeout=2.0)
                 if ((reader is None or not reader.is_alive())
                         and process.stdout is not None):
@@ -184,6 +221,19 @@ def run_supervised(
         except BaseException:
             pass
         raise
+    finally:
+        restore_failure: BaseException | None = None
+        for signum, previous in reversed(previous_handlers):
+            try:
+                signal.signal(signum, previous)
+            except BaseException as failure:
+                if restore_failure is None:
+                    restore_failure = failure
+        if primary_failure is None:
+            # Also reject an interruption latched during normal completion.
+            check_interruption()
+            if restore_failure is not None:
+                raise restore_failure
 
 
 def write_failure_outputs(environment: dict[str, str], code: str) -> None:
@@ -200,6 +250,10 @@ def write_failure_outputs(environment: dict[str, str], code: str) -> None:
         )
 
 
+# Resource retention only: this does not lock other writers or authorize SAVE.
+_unclosed_finalizer_processes: list[subprocess.Popen] = []
+
+
 def finalize_checkpoint(
     environment: dict[str, str],
     *,
@@ -213,19 +267,75 @@ def finalize_checkpoint(
         DMI_BULK_FINALIZE_REASON=reason,
         DMI_BULK_MAX_RUNTIME_SECONDS="600", DMI_BULK_FINALIZE_RESERVE_SECONDS="180",
     )
+    process = None
+    primary_failure = None
+    pending_signal = None
+    previous_handlers = []
+    command = [sys.executable, "-u", str(PRODUCER)]
+
+    def latch_interruption(signum, _frame):
+        nonlocal pending_signal
+        if pending_signal is None:
+            pending_signal = signum
+
+    def check_interruption():
+        if pending_signal is not None:
+            raise SystemExit(128 + pending_signal)
+
     try:
-        completed = subprocess.run(
-            [sys.executable, "-u", str(PRODUCER)], cwd=ROOT, env=final_env,
-            check=False, timeout=timeout,
-        )
-    except subprocess.TimeoutExpired:
-        write_failure_outputs(environment, "DMI_SUPERVISED_FINALIZE_TIMEOUT")
-        return 2
-    return (
-        2
-        if int(completed.returncode) == ONEOFF_FINALIZED_INCOMPLETE_EXIT_CODE
-        else int(completed.returncode)
-    )
+        for signum in (signal.SIGTERM, signal.SIGINT):
+            previous_handlers.append((signum, signal.signal(signum, latch_interruption)))
+        check_interruption()
+        process = subprocess.Popen(command, cwd=ROOT, env=final_env)
+        deadline = time.monotonic() + timeout
+        while True:
+            check_interruption()
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise subprocess.TimeoutExpired(command, timeout)
+            try:
+                returncode = process.wait(timeout=min(0.25, remaining))
+                break
+            except subprocess.TimeoutExpired:
+                continue
+        check_interruption()
+        return 2 if returncode == ONEOFF_FINALIZED_INCOMPLETE_EXIT_CODE else returncode
+    except BaseException as failure:
+        primary_failure = failure
+        closed = False
+        if process is not None:
+            try:
+                try:
+                    if process.poll() is None:
+                        process.kill()
+                finally:
+                    # Preserve subprocess.run's kill/reap cleanup: this has
+                    # no finite stop reserve and is not a hard total deadline.
+                    process.wait()
+            except BaseException:
+                pass  # Cleanup cannot replace the first actual failure.
+            try:
+                closed = process.poll() is not None
+            except BaseException:
+                closed = False
+            if not closed:
+                _unclosed_finalizer_processes.append(process)
+        if closed and pending_signal is None and isinstance(failure, subprocess.TimeoutExpired):
+            write_failure_outputs(environment, "DMI_SUPERVISED_FINALIZE_TIMEOUT")
+            return 2
+        raise
+    finally:
+        restore_failure = None
+        for signum, previous in reversed(previous_handlers):
+            try:
+                signal.signal(signum, previous)
+            except BaseException as failure:
+                if restore_failure is None:
+                    restore_failure = failure
+        if primary_failure is None:
+            check_interruption()
+            if restore_failure is not None:
+                raise restore_failure
 
 
 def main() -> int:

@@ -13,7 +13,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 MODULE_PATH = Path(__file__).with_name("run-dmi-bulk-supervised.py")
 SPEC = importlib.util.spec_from_file_location("dmi_supervisor", MODULE_PATH)
@@ -110,7 +110,7 @@ class SupervisorTests(unittest.TestCase):
                 normal_wait = child.wait
 
                 def observe_wait(*wait_args, **wait_kwargs):
-                    if not wait_args and "timeout" not in wait_kwargs:
+                    if not wait_args and wait_kwargs == {"timeout": 0.25}:
                         self.assertIsNone(child.poll(), "EOF precedes actual writer exit")
                         completion_waits.append(child.pid)
                     return normal_wait(*wait_args, **wait_kwargs)
@@ -272,7 +272,7 @@ class SupervisorTests(unittest.TestCase):
                     normal_wait = child.wait
 
                     def interrupt_completion_wait(*wait_args, **wait_kwargs):
-                        if not wait_args and "timeout" not in wait_kwargs:
+                        if not wait_args and wait_kwargs == {"timeout": 0.25}:
                             # Actual pipe EOF is not process-exit evidence. The
                             # owned producer keeps writing after closing output.
                             self.assertIsNone(child.poll())
@@ -636,8 +636,8 @@ class SupervisorTests(unittest.TestCase):
         )
 
     def test_finalize_checkpoint_is_bounded_and_uses_existing_producer(self):
-        completed = subprocess.CompletedProcess([], 0)
-        with patch.object(supervisor.subprocess, "run", return_value=completed) as child:
+        completed = Mock(wait=Mock(return_value=0))
+        with patch.object(supervisor.subprocess, "Popen", return_value=completed) as child:
             self.assertEqual(supervisor.finalize_checkpoint({}), 0)
         self.assertEqual(
             child.call_args.args[0],
@@ -649,14 +649,14 @@ class SupervisorTests(unittest.TestCase):
             child_environment["DMI_BULK_FINALIZE_REASON"],
             supervisor.WATCHDOG_FAILURE_CODE,
         )
-        self.assertLessEqual(child.call_args.kwargs["timeout"], 600)
+        self.assertLessEqual(completed.wait.call_args.kwargs["timeout"], 600)
 
-        finalized_partial = subprocess.CompletedProcess(
-            [], supervisor.ONEOFF_FINALIZED_INCOMPLETE_EXIT_CODE
-        )
+        finalized_partial = Mock(wait=Mock(
+            return_value=supervisor.ONEOFF_FINALIZED_INCOMPLETE_EXIT_CODE
+        ))
         with patch.object(
             supervisor.subprocess,
-            "run",
+            "Popen",
             return_value=finalized_partial,
         ):
             self.assertEqual(supervisor.finalize_checkpoint({
@@ -664,9 +664,10 @@ class SupervisorTests(unittest.TestCase):
             }), 2)
 
     def test_main_real_finalizer_timeout_reaps_owned_writer_before_failure(self):
-        # The old timeout test injects an exception. Exercise the actual
-        # subprocess.run kill/wait boundary through the normal main caller,
-        # retaining only this test's process and immutable synthetic B/S.
+        # Normal main/finalizer with a real own writer. Only the existing
+        # synthetic timeout transport advances the 420s clock after a real
+        # wait timeout; no native/provider process or budget change.
+        import time
         with tempfile.TemporaryDirectory(prefix="rr-finalizer-real-timeout-") as directory:
             output_path = Path(directory) / "github-output.txt"
             heartbeat = Path(directory) / "heartbeat"
@@ -684,20 +685,19 @@ class SupervisorTests(unittest.TestCase):
             )]
             owned = []
             actual_timeouts = []
-            actual_run = subprocess.run
             actual_popen = subprocess.Popen
-
-            def retain_popen(*args, **kwargs):
-                self.assertEqual(args[0], command)
-                child = actual_popen(*args, **kwargs)
-                owned.append(child)
-                return child
+            actual_clock = time.monotonic
+            offset = [0.0]
+            actual_waits = []
+            actual_kills = []
 
             def run_test_finalizer(args, **kwargs):
                 self.assertEqual(args,
                                  [supervisor.sys.executable, "-u", str(supervisor.PRODUCER)])
-                self.assertEqual(kwargs["timeout"], 420)
-                self.assertFalse(kwargs["check"])
+                self.assertEqual(supervisor.bounded_seconds(
+                    kwargs["env"], "DMI_BULK_SUPERVISED_FINALIZE_TIMEOUT_SECONDS",
+                    420, 120, 600), 420)
+                self.assertNotIn("check", kwargs)  # Popen never converts a nonzero exit.
                 self.assertEqual(kwargs["cwd"], supervisor.ROOT)
                 environment = kwargs["env"]
                 self.assertEqual(environment["DMI_BULK_FINALIZE_ONLY"], "true")
@@ -706,27 +706,46 @@ class SupervisorTests(unittest.TestCase):
                 self.assertEqual(environment["DMI_BULK_MAX_RUNTIME_SECONDS"], "600")
                 self.assertEqual(environment["DMI_BULK_FINALIZE_RESERVE_SECONDS"], "180")
                 self.assertEqual(json.loads(environment["DMI_BULK_SUPERVISOR_SKIPPED_ASSETS"]), [])
-                # Only the fixture's transport timeout is shortened. The
-                # production command, environment and 420-second budget above
-                # are unmodified and verified at the existing caller seam.
-                with patch.object(supervisor.subprocess, "Popen", side_effect=retain_popen):
-                    try:
-                        return actual_run(command, **{**kwargs, "timeout": 0.3})
-                    except subprocess.TimeoutExpired as error:
-                        self.assertEqual(len(owned), 1)
-                        self.assertIsNotNone(owned[0].poll(),
-                                             "run must reap its own writer before raising timeout")
-                        self.assertTrue(heartbeat.read_bytes().startswith(b"started"))
-                        self.assertEqual(original.read_bytes(), original_bytes)
-                        actual_timeouts.append(error)
-                        raise
+                child = actual_popen(command, **kwargs)
+                owned.append(child)
+                actual_wait = child.wait
+                actual_kill = child.kill
+                actual_waits.append(actual_wait)
+                actual_kills.append(actual_kill)
+
+                def observe_wait(*wait_args, **wait_kwargs):
+                    if not actual_timeouts:
+                        self.assertLessEqual(wait_kwargs["timeout"], 0.25)
+                        try:
+                            return actual_wait(timeout=0.3)
+                        except subprocess.TimeoutExpired as error:
+                            self.assertEqual(len(owned), 1)
+                            self.assertIsNone(child.poll())
+                            self.assertTrue(heartbeat.read_bytes().startswith(b"started"))
+                            self.assertEqual(original.read_bytes(), original_bytes)
+                            actual_timeouts.append(error)
+                            offset[0] = 420.0
+                            raise
+                    self.assertEqual(wait_args, ())
+                    self.assertEqual(wait_kwargs, {},
+                                     "preserve subprocess.run's unbounded kill/reap wait")
+                    result = actual_wait(*wait_args, **wait_kwargs)
+                    self.assertIsNotNone(child.poll(),
+                                         "own writer must be reaped before failure output")
+                    self.assertEqual(original.read_bytes(), original_bytes)
+                    return result
+
+                child.wait = observe_wait
+                return child
 
             try:
                 with (
                     patch.dict(supervisor.os.environ, {"GITHUB_OUTPUT": str(output_path)}, clear=True),
                     patch.object(supervisor, "run_supervised",
                                  return_value=supervisor.SupervisedResult(-9, True, None)) as producer,
-                    patch.object(supervisor.subprocess, "run", side_effect=run_test_finalizer) as finalizer,
+                    patch.object(supervisor.subprocess, "Popen", side_effect=run_test_finalizer) as finalizer,
+                    patch.object(supervisor.time, "monotonic",
+                                 side_effect=lambda: actual_clock() + offset[0]),
                 ):
                     self.assertEqual(supervisor.main(), 2)
                 self.assertEqual(producer.call_count, 1)
@@ -742,17 +761,18 @@ class SupervisorTests(unittest.TestCase):
                 self.assertNotIn("status=success", written)
                 self.assertEqual(original.read_bytes(), original_bytes)
             finally:
-                for child in owned:
+                for child, actual_kill, actual_wait in zip(owned, actual_kills, actual_waits):
                     if child.poll() is None:
-                        child.kill()
-                    child.wait(timeout=5)
+                        actual_kill()
+                    actual_wait(timeout=5)
 
     def test_failed_finalizer_writes_bounded_nonempty_outputs(self):
         with tempfile.TemporaryDirectory() as directory:
             output_path = Path(directory) / "github-output.txt"
-            with patch.object(
-                supervisor.subprocess, "run",
-                side_effect=subprocess.TimeoutExpired(["producer"], 420),
+            completed = Mock(poll=Mock(return_value=0), wait=Mock(return_value=0))
+            with (
+                patch.object(supervisor.subprocess, "Popen", return_value=completed),
+                patch.object(supervisor.time, "monotonic", side_effect=[0.0, 421.0, 421.0]),
             ):
                 code = supervisor.finalize_checkpoint({"GITHUB_OUTPUT": str(output_path)})
             self.assertEqual(code, 2)
@@ -760,6 +780,73 @@ class SupervisorTests(unittest.TestCase):
             self.assertIn("status=failed\n", written)
             self.assertIn("terminal_code=DMI_SUPERVISED_FINALIZE_TIMEOUT\n", written)
             self.assertIn("strict_current_anchor_ready=false\n", written)
+
+    def test_main_finalizer_latches_interrupt_until_own_child_is_retained(self):
+        import signal
+        import time
+        with tempfile.TemporaryDirectory(prefix="rr-finalizer-own-interrupt-") as raw:
+            root = Path(raw)
+            producer = root / "producer.py"
+            marker = root / "started"
+            original = root / "original-BS"
+            original_bytes = b"immutable synthetic B/S\n"
+            original.write_bytes(original_bytes)
+            producer.write_text(
+                "import os, pathlib, time\n"
+                "assert os.environ['DMI_BULK_FINALIZE_ONLY'] == 'true'\n"
+                f"pathlib.Path({str(marker)!r}).write_text('started')\n"
+                "time.sleep(4)\n", encoding="utf-8",
+            )
+            output = root / "github-output"
+            actual_popen = subprocess.Popen
+            owned = []
+            prior_handler = signal.getsignal(signal.SIGINT)
+            observed_error = None
+
+            def observe_launch(*args, **kwargs):
+                self.assertEqual(args[0], [sys.executable, "-u", str(producer)])
+                self.assertEqual(kwargs["cwd"], supervisor.ROOT)
+                self.assertEqual(kwargs["env"]["DMI_BULK_FINALIZE_REASON"],
+                                 supervisor.WATCHDOG_LIMIT_CODE)
+                child = actual_popen(*args, **kwargs)
+                owned.append(child)
+                deadline = time.monotonic() + 2
+                while not marker.exists() and time.monotonic() < deadline:
+                    time.sleep(0.01)
+                self.assertTrue(marker.exists(), "own child must actually be running")
+                self.assertIsNone(child.poll())
+                # Real Python signal delivery after real Popen creation but
+                # before the normal caller has received its own child reference.
+                signal.raise_signal(signal.SIGINT)
+                return child
+
+            try:
+                with (
+                    patch.dict(supervisor.os.environ, {"GITHUB_OUTPUT": str(output)},
+                               clear=True),
+                    patch.object(supervisor, "PRODUCER", producer),
+                    patch.object(supervisor, "run_supervised",
+                                 return_value=supervisor.SupervisedResult(-9, True, None)),
+                    patch.object(supervisor.subprocess, "Popen", side_effect=observe_launch),
+                ):
+                    try:
+                        supervisor.main()
+                    except BaseException as error:
+                        observed_error = error
+                self.assertEqual(len(owned), 1)
+                self.assertIsNotNone(owned[0].poll(),
+                                     "finalizer escaped with its actual direct child live")
+                self.assertIsInstance(observed_error, SystemExit)
+                self.assertEqual(observed_error.code, 130)
+                self.assertIs(signal.getsignal(signal.SIGINT), prior_handler)
+                self.assertFalse(output.exists(), "interruption is not a terminal output receipt")
+                self.assertEqual(original.read_bytes(), original_bytes)
+            finally:
+                # Dispose only this test's retained actual Popen, AFTER assertions.
+                for child in owned:
+                    if child.poll() is None:
+                        child.kill()
+                    child.wait(timeout=5)
 
 
 if __name__ == "__main__":
