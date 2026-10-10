@@ -1,4 +1,10 @@
-# Lokal 4.0.562 – 2026-10-10
+# Lokal 4.0.563 – 2026-10-10
+
+- Retter den konkrete tokenformat-afvisning i rettelsesdeployet. Tokenet var faktisk til stede; normal vejrhentning havde gennemført hele leveringen. Det fejlede forløb var kun et rettelsesdeploy før produktionsskrivning.
+- Den faktisk brugte headerbygger accepterer HTTP-bearer-grammatik uden fast GitHub-prefix eller længde. Linjeskift, kontroltegn, anførselstegn og backslash afvises; stdin-transport og neutral child-miljø bevares. Eksisterende normaltest består med syntetiske gamle og nye tokenformer.
+- Ingen nye nøgler, tjenester, rettigheder, grænser, vejr-/score-/historikværdier eller modelbindinger. Geodata ændres kun i topversionsfeltet. Ny præcis kildekontrol, sikker levering og offentlig effekt mangler; alle fem hovedmål er fortsat åbne.
+
+# Historik: lokal 4.0.562 – 2026-10-10
 
 - Afgrænser normal kode-only-transport til det allerede forseglede Pages-artifact ved præcis central/offentlig identitet. De seks filer og deres grænser samt alle efterfølgende genbrugs-/original-/modelkontroller bevares; ingen automatisk nyere kilde, alternativ destination eller providerhentning.
 - Ny samlet 360-sekundersfrist og ny streaminggrænse under 10 milliarder dekodede bytes. Den gamle 60-sekundersgrænse var pr. curl-forsøg, ikke samlet. Pages garanterer ikke deployment over 1 GB; en læsergrænse er ikke kapacitetsbevis.

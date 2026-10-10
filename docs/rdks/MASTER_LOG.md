@@ -1,4 +1,12 @@
-# Lokal 4.0.562 – samme gemte generation ved rettelsesdeploy
+# Lokal 4.0.563 – eksisterende GitHub-adgang ved rettelsesdeploy
+
+Normal vejrhentning afsluttede faktisk gemning, privat upload, Pages, 210/673-kontrol og terminal levering 10. oktober kl. 17.19 dansk tid. PR #553 er flettet ind efter præcis grøn kildekontrol. Det efterfølgende rettelsesdeploy stoppede kl. 17.28 før produktionsskrivning: tokenet var faktisk til stede, men den nye læsers alfanumeriske formatkontrol afviste det. Den første forklaring om manglende token blev korrigeret; dette var ikke en fejlet vejrhentning eller en ny målt størrelsesfejl.
+
+Den faktisk brugte headerbygger accepterer nu HTTP-bearer-grammatik uden fast GitHub-prefix eller længde. Linjeskift, kontroltegn, anførselstegn og backslash afvises; tokenet forbliver i curl-konfiguration på stdin, ikke argv, child-miljø eller log. Den eksisterende måltest består med syntetiske gamle og nye tokenformer. Ingen nye nøgler, rettigheder, tjenester, ændrede fil-/tidsgrænser, originaler eller modelbindinger.
+
+563 er lokal; ny præcis kildekontrol og faktisk levering mangler. Tidligere 562-ventestatus for kildekontrol er erstattet, men offentlig 562/563 og historisk curl63-årsag er ikke bevist. Alle fem mål er fortsat åbne; continuation-flags frikender ikke gitterplacering, originalassociation, de syv zoners kilder eller SOURCE/T+3. Ingen automatisk genforsøg eller ny vejrhentning følger.
+
+# Historik: lokal 4.0.562 – samme gemte generation ved rettelsesdeploy
 
 Ejerens nyeste ordre prioriterer præcis logning og en konkret rettelse før næste vejrhentning. Den normale DEC-0148-transport bruger nu ét allerede forseglet Pages-artifact, når central og offentlig kilde passer præcist; run/forsøg/head/id, rå manifestbytes, hash og størrelse samt en senere central genlæsning skal passe. Ukendt mismatch giver stop, ikke nyere data eller en alternativ kilde. Særlige historiske veje og alle senere original-, model-, privat- og deploykontroller består.
 
