@@ -225,3 +225,87 @@ for invalid in ((0, 1, 0), (4, 1, 0), (1, 3301, 0), (1, 1, 121)):
         raise AssertionError(f"Unbounded retry setting was accepted: {invalid}")
 
 print("OK: Copernicus retries are process-isolated, time-bounded and capped.")
+
+
+# These use the existing real main/PILOT seam, not a provider/native import.
+import signal
+import time
+import unittest
+from unittest.mock import patch
+
+
+class OwnedPilotTests(unittest.TestCase):
+    def assert_interrupted_launch(self, recovery):
+        with tempfile.TemporaryDirectory(prefix="rr-cp-own-interrupt-") as raw:
+            root = Path(raw)
+            pilot = root / "pilot.py"
+            marker = root / "started"
+            original = root / "original-BS"
+            original_bytes = b"immutable synthetic CP B/S\n"
+            original.write_bytes(original_bytes)
+            pilot.write_text(
+                "import pathlib, sys, time\n"
+                f"recovery = {recovery!r}\n"
+                "if recovery and '--checkpoint-only' not in sys.argv:\n"
+                "    raise SystemExit(75)\n"
+                f"pathlib.Path({str(marker)!r}).write_text('started')\n"
+                "time.sleep(4)\n", encoding="utf-8",
+            )
+            output = root / "github-output"
+            actual_popen = module.subprocess.Popen
+            owned = []
+            prior_handler = signal.getsignal(signal.SIGINT)
+            observed_error = None
+
+            def observe_launch(*args, **kwargs):
+                self.assertEqual(args[0][:3], [sys.executable, "-u", str(pilot)])
+                self.assertEqual(kwargs["cwd"], module.ROOT)
+                child = actual_popen(*args, **kwargs)
+                owned.append(child)
+                selected = not recovery or "--checkpoint-only" in args[0]
+                if selected:
+                    deadline = time.monotonic() + 2
+                    while not marker.exists() and time.monotonic() < deadline:
+                        time.sleep(0.01)
+                    self.assertTrue(marker.exists(), "own child must actually be running")
+                    self.assertIsNone(child.poll())
+                    signal.raise_signal(signal.SIGINT)
+                return child
+
+            try:
+                with (
+                    patch.object(module, "PILOT", pilot),
+                    patch.object(sys, "argv", [str(SCRIPT), "--attempts", "2",
+                                 "--timeout-seconds", "3", "--backoff-seconds", "0",
+                                 "--", "--synthetic-own-marker"]),
+                    patch.dict(os.environ, {"GITHUB_OUTPUT": str(output)}),
+                    patch.object(module.subprocess, "Popen", side_effect=observe_launch),
+                ):
+                    try:
+                        module.main()
+                    except BaseException as error:
+                        observed_error = error
+                self.assertEqual(len(owned), 2 if recovery else 1,
+                                 "no recovery/retry may follow an interrupted child")
+                self.assertTrue(all(child.poll() is not None for child in owned),
+                                "CP escaped with its actual direct child live")
+                self.assertIsInstance(observed_error, SystemExit)
+                self.assertEqual(observed_error.code, 130)
+                self.assertIs(signal.getsignal(signal.SIGINT), prior_handler)
+                self.assertFalse(output.exists(), "interruption is not reusable progress")
+                self.assertEqual(original.read_bytes(), original_bytes)
+            finally:
+                for child in owned:
+                    if child.poll() is None:
+                        child.kill()
+                    child.wait(timeout=5)
+
+    def test_main_provider_latches_interrupt_until_own_child_is_retained(self):
+        self.assert_interrupted_launch(False)
+
+    def test_main_recovery_latches_interrupt_until_own_child_is_retained(self):
+        self.assert_interrupted_launch(True)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,4 +1,16 @@
-# Lokal 4.0.564 – stop af vejrhentningens egne processer
+# Lokal 4.0.565 – afbrydelse af finalizer og strømsupplement
+
+DMI-finalizerens og Copernicus-supplementets normale kaldere fastholder nu første SIGTERM/SIGINT før Popen. Den faktisk returnerede direkte underproces afsluttes og afventes før fejlbehandling, recovery eller nyt forsøg. Første fejl og tidligere signalhåndteringer bevares. Det gamle kill/reap-forløb, hele recovery-tiden, providerprioritet, argumenter og alle eksisterende tidsbudgetter er uændrede; der indføres ingen ny stopreserve eller hård totalfrist.
+
+Tre faktisk reproducerede afbrydelser efter procesoprettelse, men før kalders modtagelse af procesreferencen, efterlod tidligere egne underprocesser kørende. Samme normale finalizer-, provider- og recovery-kaldere består nu. Fire DMI-målprøver og to Copernicus-prøver plus hele den gamle retry-test består lokalt; Copernicus-måltesten er føjet til den eksisterende kildebro uden at fjerne kontroller eller ændre broens budgetter. Ny præcis GitHub-kildekontrol, merge og offentlig effekt af 565 mangler.
+
+Et forslag med en ny endelig oprydningsfrist er forkastet: de faktiske workflowkaldere kan gemme cache efter en procesfejl, så ukendt fysisk ophør må ikke indføres som et almindeligt timeoutresultat. Denne rettelse bevarer den gamle afventning af egen proces; den er ikke bevis for samlet eksklusiv skrivning, alle descendants, SIGKILL, tab af runner eller sikker failure-SAVE. Original-B/S-før-T, fireminuttersgrænsen, national heljobskapacitet og den inaktive separate revision er fortsat åbne. Ingen originaler, kilder, numeriske data, scoreformel, adminpunkter, geometri eller modelbindinger ændres; geodata får kun nyt topversionsfelt.
+
+564 bestod faktisk præcis GitHub-kildekontrol kl. 18.40 dansk tid, inklusive den normale Linux-prøve af direkte producer, outputlæser og pipe. Det er evidens for den daværende eksakte kilde, ikke for den nye 565. 564 blev ikke merget eller leveret under den aktive vejrhentning. 563 er faktisk offentligt leveret; de historiske ventestatusser nedenfor er erstattet af denne aktuelle status.
+
+Browserforbindelsen virker igen. Afgrænset kontrol af det offentlige kort og repræsentative assistentspørgsmål er udført. Kortvisning alene frikender ikke strømmenes gitterplacering, originalassociation eller scoregrundlag. Den særskilte assistent og brugerdata er ikke leveret; ekstern AI er ikke bevist fungerende. Alle fem hovedmål er fortsat åbne. Ingen merge eller produktionsændring under en aktiv writer; ingen ny vejrhentning eller automatisk genforsøg følger.
+
+# Historik: lokal 4.0.564 – stop af vejrhentningens egne processer
 
 Den normale DMI-supervisor fastholder første SIGTERM/SIGINT før oprettelse af underprocessen. Signalet afbryder ikke selve Popen eller den eksisterende oprydning. Den faktisk returnerede underproces forsøges stoppet inden for de eksisterende grænser; ukendt ophør giver ingen normal succes, og første fejl bevares. Normal afslutning kræver faktisk proces-exit, afsluttet outputlæser og lukket pipe. Ventetiden efter EOF er nu afbrydelig. De eksisterende TERM10/KILL10- og reader2-grænser bevares; ingen ny reserve, providerkilde, filgrænse eller score-/model-/geometriændring.
 

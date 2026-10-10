@@ -18,6 +18,7 @@ if (process.platform !== 'linux') {
   console.log('Native Linux supervisor-loss contract not executed on this platform');
 }
 for (const file of [
+  'test-copernicus-bounded-retry-4.0.289.py',
   'test-regional-current-operational.py',
   'test-current-operational-closure.py',
   'test-current-operational-live-builder.py',

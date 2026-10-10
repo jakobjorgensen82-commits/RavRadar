@@ -250,6 +250,10 @@ def write_failure_outputs(environment: dict[str, str], code: str) -> None:
         )
 
 
+# Resource retention only: this does not lock other writers or authorize SAVE.
+_unclosed_finalizer_processes: list[subprocess.Popen] = []
+
+
 def finalize_checkpoint(
     environment: dict[str, str],
     *,
@@ -263,19 +267,75 @@ def finalize_checkpoint(
         DMI_BULK_FINALIZE_REASON=reason,
         DMI_BULK_MAX_RUNTIME_SECONDS="600", DMI_BULK_FINALIZE_RESERVE_SECONDS="180",
     )
+    process = None
+    primary_failure = None
+    pending_signal = None
+    previous_handlers = []
+    command = [sys.executable, "-u", str(PRODUCER)]
+
+    def latch_interruption(signum, _frame):
+        nonlocal pending_signal
+        if pending_signal is None:
+            pending_signal = signum
+
+    def check_interruption():
+        if pending_signal is not None:
+            raise SystemExit(128 + pending_signal)
+
     try:
-        completed = subprocess.run(
-            [sys.executable, "-u", str(PRODUCER)], cwd=ROOT, env=final_env,
-            check=False, timeout=timeout,
-        )
-    except subprocess.TimeoutExpired:
-        write_failure_outputs(environment, "DMI_SUPERVISED_FINALIZE_TIMEOUT")
-        return 2
-    return (
-        2
-        if int(completed.returncode) == ONEOFF_FINALIZED_INCOMPLETE_EXIT_CODE
-        else int(completed.returncode)
-    )
+        for signum in (signal.SIGTERM, signal.SIGINT):
+            previous_handlers.append((signum, signal.signal(signum, latch_interruption)))
+        check_interruption()
+        process = subprocess.Popen(command, cwd=ROOT, env=final_env)
+        deadline = time.monotonic() + timeout
+        while True:
+            check_interruption()
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise subprocess.TimeoutExpired(command, timeout)
+            try:
+                returncode = process.wait(timeout=min(0.25, remaining))
+                break
+            except subprocess.TimeoutExpired:
+                continue
+        check_interruption()
+        return 2 if returncode == ONEOFF_FINALIZED_INCOMPLETE_EXIT_CODE else returncode
+    except BaseException as failure:
+        primary_failure = failure
+        closed = False
+        if process is not None:
+            try:
+                try:
+                    if process.poll() is None:
+                        process.kill()
+                finally:
+                    # Preserve subprocess.run's kill/reap cleanup: this has
+                    # no finite stop reserve and is not a hard total deadline.
+                    process.wait()
+            except BaseException:
+                pass  # Cleanup cannot replace the first actual failure.
+            try:
+                closed = process.poll() is not None
+            except BaseException:
+                closed = False
+            if not closed:
+                _unclosed_finalizer_processes.append(process)
+        if closed and pending_signal is None and isinstance(failure, subprocess.TimeoutExpired):
+            write_failure_outputs(environment, "DMI_SUPERVISED_FINALIZE_TIMEOUT")
+            return 2
+        raise
+    finally:
+        restore_failure = None
+        for signum, previous in reversed(previous_handlers):
+            try:
+                signal.signal(signum, previous)
+            except BaseException as failure:
+                if restore_failure is None:
+                    restore_failure = failure
+        if primary_failure is None:
+            check_interruption()
+            if restore_failure is not None:
+                raise restore_failure
 
 
 def main() -> int:

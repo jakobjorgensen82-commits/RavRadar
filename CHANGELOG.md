@@ -1,4 +1,12 @@
-# Lokal 4.0.564 – 2026-10-10
+# Lokal 4.0.565 – 2026-10-10
+
+- Lukker tre faktisk reproducerede afbrydelseshuller i normale DMI-finalizer-/Copernicus-provider-/recovery-kaldere. Første SIGTERM/SIGINT fastholdes før Popen; egen direkte proces afsluttes og afventes før fejlbehandling eller genbrug. Gamle kill/reap-grænser, fuld recovery-tid, første fejl og tidligere signalhåndteringer bevares.
+- Fire DMI-målprøver og to Copernicus-prøver plus hele den gamle retry-test består lokalt. Den eksisterende Copernicus-måltest køres også gennem den normale kildebro; alle andre børn og budgetter bevares. Ny præcis kildekontrol, merge og offentlig effekt mangler.
+- Et forslag med ny endelig oprydningsfrist er forkastet, fordi normal cachegemning efter en procesfejl ikke beviser fysisk writerophør. Ingen samlet SAVE-/descendant-/runner-tab-frikendelse eller hård totalfrist følger af rettelsen. Original-B/S-før-T, fireminuttersgrænsen og national heljobskapacitet er fortsat åbne.
+- 564 bestod faktisk præcis GitHub-kildekontrol og den afgrænsede native Linux-prøve kl. 18.40 dansk tid, men er ikke offentligt leveret. 563 er faktisk offentligt leveret. Browserkontrol virker igen; strøm-/scoregrundlag og ekstern AI er ikke frikendt. Alle fem opgaver er fortsat åbne.
+- Ingen nye kilder, numeriske data, scoreformel, geometri, adminpunkter, modelbindinger eller tjenester. Geodata ændres kun i topversionsfeltet. Ingen produktionsændring under aktiv writer og ingen ny manuel vejrhentning følger.
+
+# Historik: lokal 4.0.564 – 2026-10-10
 
 - Retter DMI-supervisorens egen SIGTERM/SIGINT-grænse: første signal fastholdes før Popen, den faktiske underproces forsøges stoppet ved afbrydelse, og ukendt ophør eller en åben outputlæser må ikke give normal succes. Eksisterende stopgrænser, kaldere og første fejl bevares.
 - Fire eksisterende lokale EOF-/afbrydelses-/reader-/logmål består; alle assertions bevares. Normal Linux-routing har tre afgrænsede direkte producer-/reader-/pipe-kontroller, som endnu ikke er udført her. Præcis ny kildekontrol og offentlig effekt mangler.

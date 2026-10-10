@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -45,6 +46,85 @@ def bounded_time_slices(timeout_seconds: float) -> tuple[float, float, float]:
     return provider_soft_seconds, provider_hard_seconds, recovery_seconds
 
 
+# Retain only actual owned children whose exit could not be established. This
+# is resource lifetime, not shared-writer exclusion or permission for SAVE.
+_unclosed_pilot_processes: list[subprocess.Popen] = []
+
+
+def _run_pilot_process(
+    command: Sequence[str], environment: dict[str, str], *,
+    timeout_seconds: float,
+) -> subprocess.CompletedProcess | None:
+    """Return None for a timeout ONLY after this invocation's direct child exits."""
+    process = None
+    primary_failure = None
+    pending_signal = None
+    previous_handlers = []
+
+    def latch_interruption(signum, _frame):
+        nonlocal pending_signal
+        if pending_signal is None:
+            pending_signal = signum
+
+    def check_interruption():
+        if pending_signal is not None:
+            raise SystemExit(128 + pending_signal)
+
+    try:
+        for signum in (signal.SIGTERM, signal.SIGINT):
+            previous_handlers.append((signum, signal.signal(signum, latch_interruption)))
+        check_interruption()
+        process = subprocess.Popen(command, cwd=ROOT, env=environment)
+        process_deadline = time.monotonic() + timeout_seconds
+        while True:
+            check_interruption()
+            remaining = process_deadline - time.monotonic()
+            if remaining <= 0:
+                raise subprocess.TimeoutExpired(command, timeout_seconds)
+            try:
+                returncode = process.wait(timeout=min(0.25, remaining))
+                break
+            except subprocess.TimeoutExpired:
+                continue
+        check_interruption()
+        return subprocess.CompletedProcess(command, returncode)
+    except BaseException as failure:
+        primary_failure = failure
+        closed = False
+        if process is not None:
+            try:
+                try:
+                    if process.poll() is None:
+                        process.kill()
+                finally:
+                    # Preserve subprocess.run's kill/reap cleanup: this has
+                    # no finite stop reserve and is not a hard total deadline.
+                    process.wait()
+            except BaseException:
+                pass  # Cleanup cannot replace the first actual failure.
+            try:
+                closed = process.poll() is not None
+            except BaseException:
+                closed = False
+            if not closed:
+                _unclosed_pilot_processes.append(process)
+        if closed and pending_signal is None and isinstance(failure, subprocess.TimeoutExpired):
+            return None
+        raise
+    finally:
+        restore_failure = None
+        for signum, previous in reversed(previous_handlers):
+            try:
+                signal.signal(signum, previous)
+            except BaseException as failure:
+                if restore_failure is None:
+                    restore_failure = failure
+        if primary_failure is None:
+            check_interruption()
+            if restore_failure is not None:
+                raise restore_failure
+
+
 def run_timeout_recovery(
     command: Sequence[str],
     *,
@@ -53,15 +133,10 @@ def run_timeout_recovery(
     """Promote only already-fsynced receipts; this command must do no network work."""
     recovery_environment = dict(os.environ)
     recovery_environment.pop(SOFT_DEADLINE_EPOCH_ENV, None)
-    try:
-        completed = subprocess.run(
-            command,
-            cwd=ROOT,
-            check=False,
-            timeout=timeout_seconds,
-            env=recovery_environment,
-        )
-    except subprocess.TimeoutExpired:
+    completed = _run_pilot_process(
+        command, recovery_environment, timeout_seconds=timeout_seconds,
+    )
+    if completed is None:
         print(
             "Copernicus local timeout recovery exceeded its reserved budget.",
             file=sys.stderr,
@@ -105,14 +180,22 @@ def run_bounded(
         child_environment["RAVRADAR_COPERNICUS_ATTEMPT_ORDINAL"] = str(
             attempt - 1
         )
-        try:
-            completed = subprocess.run(
-                command,
-                cwd=ROOT,
-                check=False,
-                timeout=provider_hard_seconds,
-                env=child_environment,
-            )
+        completed = _run_pilot_process(
+            command, child_environment, timeout_seconds=provider_hard_seconds,
+        )
+        if completed is None:
+            reason = "timeout"
+            if timeout_recovery_command is not None and run_timeout_recovery(
+                timeout_recovery_command,
+                timeout_seconds=recovery_seconds,
+            ):
+                return {
+                    "ok": True,
+                    "attempt": attempt,
+                    "reason": "timeout-recovered-progress",
+                    "boundedProgress": True,
+                }
+        else:
             if completed.returncode == 0:
                 return {
                     "ok": True,
@@ -168,18 +251,6 @@ def run_bounded(
                 reason = "bounded-progress"
             else:
                 reason = f"exit-{completed.returncode}"
-        except subprocess.TimeoutExpired:
-            reason = "timeout"
-            if timeout_recovery_command is not None and run_timeout_recovery(
-                timeout_recovery_command,
-                timeout_seconds=recovery_seconds,
-            ):
-                return {
-                    "ok": True,
-                    "attempt": attempt,
-                    "reason": "timeout-recovered-progress",
-                    "boundedProgress": True,
-                }
         print(f"Copernicus attempt {attempt}/{attempts} ended safely ({reason}).", file=sys.stderr)
         if attempt < attempts:
             sleep(backoff_seconds)

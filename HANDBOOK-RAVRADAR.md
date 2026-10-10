@@ -1,10 +1,34 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.564
+**Håndbogsversion:** 4.0.565
 
-Den lokale 4.0.564 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+Den lokale 4.0.565 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.189 Afbrydelse før gemning og genbrug
+
+DMI-finalizeren og den supplerende strømhentning fastholder første
+afbrydelsessignal omkring oprettelsen af deres egen underproces. Den faktisk
+returnerede proces afsluttes og afventes, før fejlbehandling, recovery eller nyt
+forsøg fortsætter. Første fejl og tidligere signalhåndteringer bevares.
+
+Det gamle kill/reap-forløb og hele recovery-tiden er uændrede. Der indføres
+ingen ny stopreserve. Afventning af egen proces er ikke en hård totalfrist:
+en usædvanligt fastlåst proces kan stadig kræve runnerens yderste grænse.
+Fire lokale DMI-prøver og to Copernicus-prøver plus hele den gamle retry-test
+består gennem normale kaldere. Præcis ny kildekontrol og offentlig effekt
+af 565 mangler; lokale prøver er ikke et gennemført deploy.
+
+Samlet eksklusiv skrivning, descendants, SIGKILL, tab af runner og gemning efter
+procesfejl er fortsat åbne. En undtagelse eller grøn cachemarkør giver ikke
+automatisk ret til gemning. Originaler B/S, krypteret genbrug, kildeprioritet,
+tidsbudgetter og modelbindinger bevares. Vejrdata, scorer og geometri ændres ikke.
+
+564 bestod faktisk kildekontrol og den afgrænsede native Linux-prøve kl. 18.40
+dansk tid. Det er ikke bevis for den nye 565. 563 er faktisk offentligt leveret;
+ingen ny produktionsændring sker under en aktiv vejrhentning. Hele revisionen,
+strømgrundlaget, den særskilte assistent og brugerdata er ikke færdige.
 
 ## 89.188 Stop af vejrhentningens egne processer
 
