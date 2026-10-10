@@ -4,7 +4,11 @@ Den lokale kandidat afventer den faktisk startede forespørgsel, svarkrop og eve
 
 Samtidige observationsopslag samles fra de samme allerede startede kald, også når ét fejler først. Den første fejl bevares, mens de øvrige kald afventes; en senere stopusikkerhed må ikke blive en almindelig manglende observation. De normale Open-Meteo-PART-kaldere, observationskaldere og måltests indgår. Sædvanlig fallback efter kendt afslutning, retrybudgetter, providerprioritet, scoreformel, administratorens data, geometri og historiske originaler bevares.
 
-De berørte syntetiske normale måltests består lokalt. 568 er ikke kildeverificeret eller offentligt leveret endnu. 567 på præcis ed80f3811d11b369c14fb39c6878cb3dab5ec648 bestod native Linux- og kildekontrollen kl. 22.41 dansk tid, men er fortsat ikke merget under den aktive vejrhentning 38083296276. Dette erstatter den tidligere 567-ventestatus nedenfor, ikke kravet om en ny kontrol af 568.
+De berørte syntetiske normale måltests består lokalt. 568 er sendt som PR #558. Kildekontrol 38090257227/1 på præcis 936821954340e96e501eb36d647347314911f36b fejlede 11. oktober kl. 00.15.26 dansk tid i trin 9, alene på den forældede statiske assertion i test-weather-acquisition-workflows.mjs:158. Testen forventer den gamle fetch-deklaration; den eksisterende cache-only-kontrol står fortsat før netværkskaldet. Det er en kildekontrolfejl, ikke en vejrhentningsfejl eller bevis for en ny grøn kontrol. 568 er hverken merget eller offentligt leveret.
+
+Den statiske kontrol er lokalt rettet til den faktiske fetchJson; fire negative kontroller og én normal cache-only-prøve består uden netværkskald. Den rettede head afventer ny præcis GitHub-kontrol.
+
+567 på præcis ed80f3811d11b369c14fb39c6878cb3dab5ec648 bestod native Linux- og kildekontrollen kl. 22.41 dansk tid og er fortsat klar, men ikke merget. Ved seneste aflæsning kl. 00.14.07 var den naturlige vejrhentning 38083296276 på main 008 aktiv i trin 104 siden kl. 00.06.40. Dette erstatter den tidligere ventestatus nedenfor, ikke kravet om ny præcis kildekontrol af rettet 568. Den særskilte RESTORE-tilladelse er stadig ubesvaret; afviste produktændringer er ikke genforsøgt.
 
 Den faktiske offentlige evidens for 565 og 566 genbruges uden nye browser- eller providerkald. 566 blev leveret og offentligt kontrolleret kl. 22.24 dansk tid; den lokale 568-kandidat ændrer ikke i sig selv produktionen. De eksisterende I68/C66- og continuationbindinger bevares; ingen bundle-, numerisk SQL- eller originalopgradering følger.
 

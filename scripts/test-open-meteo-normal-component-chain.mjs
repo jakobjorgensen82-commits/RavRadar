@@ -326,3 +326,18 @@ test('OceanObs settlement: ordinary settled late failures and normal observation
   assert.equal(runtime.calls.next, 3, 'existing empty-level fallback reaches lifecycle caller');
   runtime.assertSettled();
 });
+
+test('cache-only normal fetchJson rejects before network, DMI slot or retry work', async () => {
+  let calls = 0;
+  const runtime = transportContext(async () => {
+    calls += 1;
+    throw new Error('synthetic fetch must not be reached');
+  });
+  runtime.context.WEATHER_CACHE_ONLY = true;
+  await assert.rejects(runtime.fetchJson({ dmi: true }),
+    error => error?.code === 'WEATHER_CACHE_ONLY_NETWORK_DISABLED');
+  assert.equal(calls, 0);
+  assert.equal(runtime.active(), 0);
+  assert.deepEqual(runtime.sleeps, []);
+  runtime.assertSettled();
+});

@@ -2,7 +2,11 @@
 
 568 samler de afgrænsede transportrettelser: faktisk svar-/body-/cancel-afslutning før retry eller fallback, samme samtidige observationskald afventet med første fejl bevaret, og stop før næste normale skrivning ved ukendt oprydning. Berørte syntetiske måltests består; det er ikke bevis for global writer-, SAVE-, RESTORE- eller runner-tab-sikkerhed. De særskilte claim/raw-save/source-CI- og numeriske kandidater er ikke med.
 
-567 på præcis ed80f3811d11b369c14fb39c6878cb3dab5ec648 bestod native Linux- og kildekontrol kl. 22.41 dansk tid, men er ikke merget under aktiv vejrhentning 38083296276. 568 kræver egen præcis kildekontrol og sikker levering. Offentlig 565/566-evidens genbruges; 566 er faktisk leveret kl. 22.24. Ingen model-/continuationbindinger, scoreformel, kilder, adminpunkter, geometri eller historiske originaler ændres. Geodata får kun topversionsfeltet. Decoder-/190000-SQL-afklaringer og alle fem mål forbliver åbne; ingen nye tilladelser eller produktionshandlinger følger.
+11. oktober kl. 00.15.26 dansk tid fejlede PR #558's kildekontrol 38090257227/1 på præcis 936821954340e96e501eb36d647347314911f36b i trin 9. Den eneste fejl er en forældet statisk fetch-assertion i test-weather-acquisition-workflows.mjs:158; den eksisterende cache-only-kontrol før netværk er bevaret. Dette er ikke en vejrhentningsfejl. Rettet 568 kræver ny præcis kildekontrol; ingen merge eller offentlig levering er sket.
+
+Den statiske kontrol er lokalt rettet til den faktiske fetchJson; fire negative kontroller og én normal cache-only-prøve består uden netværkskald. Den rettede head afventer ny præcis GitHub-kontrol.
+
+567 på præcis ed80f3811d11b369c14fb39c6878cb3dab5ec648 bestod native Linux- og kildekontrol kl. 22.41 dansk tid og er klar, men ikke merget. Ved seneste aflæsning kl. 00.14.07 var naturlig vejrhentning 38083296276 på main 008 aktiv i trin 104 siden kl. 00.06.40. Offentlig 565/566-evidens genbruges; 566 er faktisk leveret kl. 22.24. Ingen model-/continuationbindinger, scoreformel, kilder, adminpunkter, geometri eller historiske originaler ændres. Geodata får kun topversionsfeltet. Decoder-/190000-SQL-afklaringer, den ubesvarede særskilte RESTORE-tilladelse og alle fem mål forbliver åbne; afviste produktændringer er ikke genforsøgt, og ingen nye tilladelser eller produktionshandlinger følger.
 
 # Historik: 2026-10-10 – lokal 4.0.567, egen procesgruppe før genbrug
 

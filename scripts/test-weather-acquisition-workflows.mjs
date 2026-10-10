@@ -151,12 +151,39 @@ for (const job of ['validate', 'operational-118-preflight', 'resume-private-capa
 }
 
 const weatherRuntime = read('scripts/update-weather.mjs');
-assert.equal((weatherRuntime.match(/\bfetch\(/g) || []).length, 1,
-  'All update:weather network access must remain behind fetchJson');
-const cacheOnlyGuard = weatherRuntime.indexOf('if (WEATHER_CACHE_ONLY) {');
-const networkFetch = weatherRuntime.indexOf('const response = await fetch(url');
-assert.ok(cacheOnlyGuard >= 0 && networkFetch > cacheOnlyGuard,
-  'Cache-only guard must fail before the sole network fetch');
-assert.match(weatherRuntime, /error\.code = 'WEATHER_CACHE_ONLY_NETWORK_DISABLED'/);
+function assertCacheOnlyBeforeFetch(runtime) {
+  assert.equal((runtime.match(/\bfetch\(/g) || []).length, 1,
+    'All update:weather network access must remain behind fetchJson');
+  assert.equal((runtime.match(/^async function fetchJson\(/gm) || []).length, 1,
+    'Exactly one actual fetchJson declaration');
+  const start = runtime.indexOf('async function fetchJson(');
+  const end = runtime.indexOf('\nasync function fetchAllFeatures(', start);
+  assert.ok(start >= 0 && end > start, 'Actual fetchJson extraction must be bounded');
+  const fetchJson = runtime.slice(start, end);
+  const guard = fetchJson.match(/^  if \(WEATHER_CACHE_ONLY\) \{\n    const error = new Error\([^\n]+\);\n    error\.code = 'WEATHER_CACHE_ONLY_NETWORK_DISABLED';\n    throw error;\n  \}\n/m)?.[0];
+  assert.ok(guard, 'Cache-only mode must throw its existing error');
+  assert.match(fetchJson, /^async function fetchJson\([^\n]+\) \{\n  assertWeatherTransportSettlement\(\);\n  if \(WEATHER_CACHE_ONLY\) \{/,
+    'Cache-only rejection stays at the actual function entry');
+  const cacheOnlyGuard = fetchJson.indexOf(guard);
+  const networkFetch = fetchJson.indexOf('response = await fetch(url');
+  assert.equal((fetchJson.match(/\bfetch\(/g) || []).length, 1,
+    'The sole network fetch must be inside actual fetchJson');
+  assert.ok(cacheOnlyGuard >= 0 && networkFetch > cacheOnlyGuard + guard.length,
+    'Cache-only guard must fail before the sole network fetch');
+  assert.match(fetchJson, /error\.code = 'WEATHER_CACHE_ONLY_NETWORK_DISABLED'/);
+  return guard;
+}
+const cacheOnlyGuard = assertCacheOnlyBeforeFetch(weatherRuntime);
+assert.throws(() => assertCacheOnlyBeforeFetch(weatherRuntime.replace(cacheOnlyGuard, '')),
+  'A removed cache-only rejection must fail the static contract');
+assert.throws(() => assertCacheOnlyBeforeFetch(weatherRuntime.replace(cacheOnlyGuard, '')
+  .replace('  throw lastError ??', `${cacheOnlyGuard}  throw lastError ??`)),
+  'A rejection moved after the network fetch must fail the static contract');
+assert.throws(() => assertCacheOnlyBeforeFetch(`${weatherRuntime}\nfetch('synthetic-only');\n`),
+  'An additional fetch must fail the static contract');
+assert.throws(() => assertCacheOnlyBeforeFetch(weatherRuntime
+  .replace('response = await fetch(url', 'response = await syntheticTransport(url')
+  + '\nasync function syntheticOutside() { const response = await fetch(url); }\n'),
+  'A sole fetch outside fetchJson must fail the static contract');
 
 console.log('OK: DMI-first acquisition, one encrypted private progress path, safe diagnostics and retired plaintext entrances.');

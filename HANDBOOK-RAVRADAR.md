@@ -29,11 +29,23 @@ disse opgaver er ikke med. Alle fem hovedmål er åbne, og decoder- samt
 190000-SQL-afklaringerne afventer stadig; kapitlet giver ingen nye
 tilladelser.
 
-567 bestod præcis native Linux- og kildekontrol kl. 22.41 dansk tid, men
-er fortsat ikke merget under aktiv vejrhentning 38083296276. Det erstatter
-den gamle ventestatus i kapitel 89.192. 568 er lokal og kræver egen
-kildekontrol og sikker levering. Den allerede dokumenterede offentlige
-565/566-evidens genbruges; ingen ny offentlig effekt påstås.
+568 er sendt til gennemgang som PR #558. Den præcise kildekontrol på
+9368219 fejlede 11. oktober kl. 00.15.26 dansk tid på én forældet statisk
+testforventning; cache-only-kontrollen før netværk er bevaret. Det er ikke
+en vejrhentningsfejl. En rettet kandidat kræver ny præcis kildekontrol;
+568 er hverken merget eller offentligt leveret.
+
+Den statiske kontrol er lokalt rettet til den faktiske fetchJson; fire
+negative kontroller og én normal cache-only-prøve består uden netværkskald.
+Den rettede head afventer ny præcis GitHub-kontrol.
+
+567 bestod præcis native Linux- og kildekontrol kl. 22.41 dansk tid og er
+klar, men fortsat ikke merget. Ved seneste aflæsning kl. 00.14.07 var den naturlige
+vejrhentning 38083296276 på main 008 aktiv i trin 104 siden kl. 00.06.40.
+Det erstatter den gamle ventestatus i kapitel 89.192. Den allerede
+dokumenterede offentlige 565/566-evidens genbruges. Den særskilte
+RESTORE-tilladelse er stadig ubesvaret; afviste produktændringer er ikke
+genforsøgt, og ingen ny offentlig effekt påstås.
 
 ## 89.192 Stop af egen procesgruppe før genbrug
 
