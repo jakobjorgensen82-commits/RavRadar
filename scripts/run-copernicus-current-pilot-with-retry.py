@@ -46,16 +46,87 @@ def bounded_time_slices(timeout_seconds: float) -> tuple[float, float, float]:
     return provider_soft_seconds, provider_hard_seconds, recovery_seconds
 
 
+def _require_owned_group_wait() -> None:
+    if os.name == "posix" and (
+        not all(hasattr(os, name) for name in ("waitid", "WNOWAIT", "WEXITED", "WNOHANG"))
+        or signal.getsignal(signal.SIGCHLD) != signal.SIG_DFL
+    ):
+        raise RuntimeError("OWN_PROCESS_GROUP_WAIT_UNAVAILABLE")
+
+
+class _OwnedProcess:
+    """Keep the own session leader waitable until its last group signal.
+
+    No group signal is allowed after reap. Escaped sessions and loss of this
+    wrapper itself remain outside this process-group owner.
+    """
+    def __init__(self, process):
+        self.child = process
+        self.reaped = False
+
+    def _observe_leader(self):
+        result = os.waitid(os.P_PID, self.child.pid, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+        if result is not None and result.si_pid != self.child.pid:
+            raise RuntimeError("OWN_PROCESS_GROUP_LEADER_UNPROVED")
+        return result
+
+    def _signal_group(self, signum):
+        if self.reaped:
+            return
+        self._observe_leader()
+        if (os.getpgid(self.child.pid) != self.child.pid
+                or os.getsid(self.child.pid) != self.child.pid
+                or self.child.pid == os.getpgrp()):
+            raise RuntimeError("OWN_PROCESS_GROUP_IDENTITY_UNPROVED")
+        os.killpg(self.child.pid, signum)
+
+    def kill(self):
+        if os.name == "posix":
+            self._signal_group(signal.SIGKILL)
+        else:
+            self.child.kill()
+
+    def poll(self):
+        if os.name != "posix":
+            return self.child.poll()
+        try:
+            return self._wait(timeout=0)
+        except subprocess.TimeoutExpired:
+            return None
+
+    def wait(self, timeout=None):
+        return self._wait(timeout=timeout)
+
+    def _wait(self, timeout=None):
+        if os.name != "posix":
+            return self.child.wait(timeout=timeout) if timeout is not None else self.child.wait()
+        deadline = None if timeout is None else time.monotonic() + timeout
+        while True:
+            if not self.reaped and self._observe_leader() is not None:
+                self._signal_group(signal.SIGKILL)
+                self.child.wait()
+                self.reaped = True
+            if self.reaped:
+                try:
+                    os.killpg(self.child.pid, 0)
+                except ProcessLookupError:
+                    return self.child.returncode
+            remaining = None if deadline is None else deadline - time.monotonic()
+            if remaining is not None and remaining <= 0:
+                raise subprocess.TimeoutExpired(self.child.args, timeout)
+            time.sleep(0.01 if remaining is None else min(0.01, remaining))
+
+
 # Retain only actual owned children whose exit could not be established. This
 # is resource lifetime, not shared-writer exclusion or permission for SAVE.
-_unclosed_pilot_processes: list[subprocess.Popen] = []
+_unclosed_pilot_processes: list[_OwnedProcess] = []
 
 
 def _run_pilot_process(
     command: Sequence[str], environment: dict[str, str], *,
     timeout_seconds: float,
 ) -> subprocess.CompletedProcess | None:
-    """Return None for a timeout ONLY after this invocation's direct child exits."""
+    """Return None for a timeout ONLY after the owned process group is absent."""
     process = None
     primary_failure = None
     pending_signal = None
@@ -74,7 +145,10 @@ def _run_pilot_process(
         for signum in (signal.SIGTERM, signal.SIGINT):
             previous_handlers.append((signum, signal.signal(signum, latch_interruption)))
         check_interruption()
-        process = subprocess.Popen(command, cwd=ROOT, env=environment)
+        _require_owned_group_wait()
+        process = subprocess.Popen(command, cwd=ROOT, env=environment,
+                                   start_new_session=os.name == "posix")
+        process = _OwnedProcess(process)
         process_deadline = time.monotonic() + timeout_seconds
         while True:
             check_interruption()
@@ -97,8 +171,8 @@ def _run_pilot_process(
                     if process.poll() is None:
                         process.kill()
                 finally:
-                    # Preserve subprocess.run's kill/reap cleanup: this has
-                    # no finite stop reserve and is not a hard total deadline.
+                    # Preserve the existing unbounded cleanup, now including
+                    # owned group absence. No new finite stop reserve is added.
                     process.wait()
             except BaseException:
                 pass  # Cleanup cannot replace the first actual failure.

@@ -260,6 +260,7 @@ class OwnedPilotTests(unittest.TestCase):
             def observe_launch(*args, **kwargs):
                 self.assertEqual(args[0][:3], [sys.executable, "-u", str(pilot)])
                 self.assertEqual(kwargs["cwd"], module.ROOT)
+                self.assertIs(kwargs["start_new_session"], os.name == "posix")
                 child = actual_popen(*args, **kwargs)
                 owned.append(child)
                 selected = not recovery or "--checkpoint-only" in args[0]

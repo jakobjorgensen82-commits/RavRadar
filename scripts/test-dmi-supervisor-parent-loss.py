@@ -2,8 +2,8 @@
 
 No Windows skip counts as evidence. The existing source bridge runs this target
 on native Linux. Import the repository's real supervisor through its existing
-test seam; do not rewrite Popen or create a separate child session. The direct
-producer inherits the supervisor's process group/session on the main launch path.
+test seam; do not rewrite Popen or inject a separate child session. The normal
+product launch owns its producer's group/session.
 This measures SIGTERM/SIGINT and normal completion of the supervisor's own
 producer/reader. It does not prove hosted runner loss, all descendants, shared
 writer quiescence, authenticated B/S or failure SAVE.
@@ -34,7 +34,7 @@ CLEANUP_SECONDS = 3.0
 # the existing PRODUCER seam selects our own file instead of the DMI program.
 # Its argv, cwd and environment propagation are real; no topology is injected.
 SUPERVISOR = r'''
-import errno, json, os, pathlib, runpy, sys
+import errno, importlib.util, json, os, pathlib, runpy, sys
 def no_network(event, args):
     if event.startswith("socket."):
         raise RuntimeError("SYNTHETIC_NETWORK_FORBIDDEN")
@@ -43,14 +43,28 @@ seam = runpy.run_path(sys.argv[1], run_name="supervisor_loss_fixture_seam")
 supervisor = seam["supervisor"]
 supervisor.PRODUCER = pathlib.Path(sys.argv[2])
 root = pathlib.Path(os.environ["OWN_SUPERVISOR_LOSS_ROOT"])
-normal_run = supervisor.run_supervised
+caller = os.environ.get("OWN_PROCESS_CALLER", "supervised")
+if caller == "cp":
+    spec = importlib.util.spec_from_file_location("own_cp", supervisor.ROOT /
+        "scripts/run-copernicus-current-pilot-with-retry.py")
+    supervisor = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(supervisor)
+    supervisor.PILOT = pathlib.Path(sys.argv[2])
+    sys.argv = [str(spec.origin), "--attempts", "1", "--timeout-seconds", "6",
+                "--backoff-seconds", "0", "--", "--refresh-only"]
+normal_run = getattr(supervisor, "run_supervised", None)
 normal_popen = supervisor.subprocess.Popen
-normal_thread = supervisor.threading.Thread
+normal_thread = getattr(getattr(supervisor, "threading", None), "Thread", None)
 owned = []
 readers = []
 
 def retain_popen(*args, **kwargs):
     child = normal_popen(*args, **kwargs)
+    if child.stdout is None:
+        owned.append((child, None, None, None))
+        (root / "supervisor-reader-ready").write_text(json.dumps({
+            "producerPid": child.pid, "pipeDevice": None, "pipeInode": None}), encoding="ascii")
+        return child
     descriptor = child.stdout.fileno()
     identity = os.fstat(descriptor)
     owned.append((child, descriptor, identity.st_dev, identity.st_ino))
@@ -81,37 +95,45 @@ def run_owned(command, environment, *, watchdog_seconds):
     return normal_run(command, environment, watchdog_seconds=watchdog_seconds,
                       popen=retain_popen)
 
-supervisor.run_supervised = run_owned
-supervisor.threading.Thread = retain_reader
+if caller == "supervised":
+    supervisor.run_supervised = run_owned
+    supervisor.threading.Thread = retain_reader
+else:
+    supervisor.subprocess.Popen = retain_popen
+    if caller == "finalizer":
+        supervisor.run_supervised = lambda *a, **k: supervisor.SupervisedResult(-9, True, None)
 failure = None
 try:
     code = supervisor.main()
 except BaseException as error:
     failure = error
 finally:
-    supervisor.run_supervised = normal_run
-    supervisor.threading.Thread = normal_thread
+    supervisor.subprocess.Popen = normal_popen
+    if normal_run is not None:
+        supervisor.run_supervised = normal_run
+        supervisor.threading.Thread = normal_thread
 
 try:
-    if len(owned) != 1 or len(readers) != 1:
+    if len(owned) != 1 or len(readers) != (1 if caller == "supervised" else 0):
         raise RuntimeError("OWN_READER_COMPLETION_OBSERVATION_FAILED")
     child, descriptor, device, inode = owned[0]
-    reader = readers[0]
+    reader = readers[0] if readers else None
     try:
-        actual = os.fstat(descriptor)
+        actual = os.fstat(descriptor) if descriptor is not None else None
     except OSError as error:
         pipe_state = "CLOSED_OWN_EBADF" if error.errno == errno.EBADF else "UNKNOWN_ERROR"
     else:
-        pipe_state = ("OPEN_SAME_OBJECT" if
+        pipe_state = "NOT_PIPED" if actual is None else ("OPEN_SAME_OBJECT" if
                       (actual.st_dev, actual.st_ino) == (device, inode)
                       else "OPEN_CHANGED_OBJECT")
     # Probe the original fd BEFORE opening the observation file; do not close,
     # signal or wait for any producer here. Only normal supervisor code may stop it.
     observation = {
         "producerPid": child.pid, "producerExited": child.poll() is not None,
-        "readerStarted": reader.ident is not None, "readerAlive": reader.is_alive(),
+        "readerStarted": reader.ident is not None if reader else False,
+        "readerAlive": reader.is_alive() if reader else False,
         "pipeDevice": device, "pipeInode": inode,
-        "pipeClosed": child.stdout.closed, "pipeState": pipe_state,
+        "pipeClosed": child.stdout.closed if child.stdout else None, "pipeState": pipe_state,
     }
     (root / "supervisor-completed").write_text(json.dumps(observation), encoding="ascii")
 except BaseException:
@@ -124,7 +146,7 @@ raise SystemExit(code)
 '''
 
 PRODUCER = r'''
-import json, os, pathlib, sys, time
+import json, os, pathlib, subprocess, sys, time
 def no_network(event, args):
     if event.startswith("socket."):
         raise RuntimeError("SYNTHETIC_NETWORK_FORBIDDEN")
@@ -133,6 +155,8 @@ root = pathlib.Path(os.environ["OWN_SUPERVISOR_LOSS_ROOT"])
 state = pathlib.Path("/proc/self/stat").read_text().rsplit(")", 1)[1].split()
 identity = {"pid": os.getpid(), "ppid": os.getppid(), "pgid": os.getpgrp(),
             "sid": os.getsid(0), "start": int(state[19])}
+if os.environ.get("OWN_PROCESS_DESCENDANT") == "1":
+    subprocess.Popen([sys.executable, "-u", str(root / "descendant.py")])
 with (root / "heartbeat").open("wb", buffering=0) as output:
     output.write(b".")
     (root / "ready.new").write_text(json.dumps(identity), encoding="ascii")
@@ -142,6 +166,27 @@ with (root / "heartbeat").open("wb", buffering=0) as output:
         output.write(b".")
         if (root / "finish-own-producer").exists():
             break
+        time.sleep(0.01)
+'''
+
+DESCENDANT = r'''
+import json, os, pathlib, signal, sys, time
+def no_network(event, args):
+    if event.startswith("socket."):
+        raise RuntimeError("SYNTHETIC_NETWORK_FORBIDDEN")
+sys.addaudithook(no_network)
+signal.signal(signal.SIGTERM, signal.SIG_IGN)
+root = pathlib.Path(os.environ["OWN_SUPERVISOR_LOSS_ROOT"])
+state = pathlib.Path("/proc/self/stat").read_text().rsplit(")", 1)[1].split()
+identity = {"pid": os.getpid(), "ppid": os.getppid(), "pgid": os.getpgrp(),
+            "sid": os.getsid(0), "start": int(state[19])}
+with (root / "descendant-heartbeat").open("wb", buffering=0) as output:
+    output.write(b".")
+    (root / "descendant-ready.new").write_text(json.dumps(identity), encoding="ascii")
+    (root / "descendant-ready.new").rename(root / "descendant-ready")
+    deadline = time.monotonic() + 8.0
+    while time.monotonic() < deadline:
+        output.write(b".")
         time.sleep(0.01)
 '''
 
@@ -199,7 +244,15 @@ class SupervisorParentLoss(unittest.TestCase):
     def test_normal_completion_closes_own_producer_and_reader(self):
         self.assert_own_supervisor_completion(None)
 
-    def assert_own_supervisor_completion(self, interruption):
+    def test_normal_callers_stop_group_descendant_before_returning(self):
+        for caller in ("supervised", "finalizer", "cp"):
+            for interruption in (None, signal.SIGTERM):
+                with self.subTest(caller=caller, interruption=interruption):
+                    self.assert_own_supervisor_completion(interruption, caller=caller,
+                                                         descendant=True)
+
+    def assert_own_supervisor_completion(self, interruption, *, caller="supervised",
+                                        descendant=False):
         self.assertEqual(sys.platform, "linux", "NATIVE_LINUX_REQUIRED; no Windows skip/proof")
         for name in ("pidfd_open", "waitid", "P_PIDFD", "WNOWAIT"):
             self.assertTrue(hasattr(os, name), f"NATIVE_LINUX_API_REQUIRED:{name}")
@@ -220,8 +273,9 @@ class SupervisorParentLoss(unittest.TestCase):
         parent_root = Path(tempfile.gettempdir()).resolve()
         root = Path(tempfile.mkdtemp(prefix="rr-supervisor-loss-", dir=parent_root)).resolve()
         parent = None
-        parent_fd = child_fd = None
+        parent_fd = child_fd = descendant_fd = None
         child_verified = False
+        descendant_verified = False
         old_handler = signal.getsignal(signal.SIGALRM)
 
         def hard_deadline(_number, _frame):
@@ -235,13 +289,16 @@ class SupervisorParentLoss(unittest.TestCase):
             original.write_bytes(b"own unchanged synthetic B/S\n")
             producer = root / "synthetic-producer.py"
             producer.write_text(PRODUCER, encoding="utf-8")
+            if descendant:
+                (root / "descendant.py").write_text(DESCENDANT, encoding="utf-8")
             # Retain only runtime necessities, not provider credentials or the
             # source gate's GITHUB_OUTPUT; no DMI timing/budget overrides.
             environment = {name: value for name, value in os.environ.items()
                            if name in {"PATH", "LD_LIBRARY_PATH", "LIBRARY_PATH",
                                        "LANG", "LC_ALL", "LC_CTYPE"}}
             environment.update({"PYTHONDONTWRITEBYTECODE": "1", "PYTHONNOUSERSITE": "1",
-                "PYTHONUTF8": "1", "OWN_SUPERVISOR_LOSS_ROOT": str(root)})
+                "PYTHONUTF8": "1", "OWN_SUPERVISOR_LOSS_ROOT": str(root),
+                "OWN_PROCESS_CALLER": caller, "OWN_PROCESS_DESCENDANT": "1" if descendant else "0"})
             parent = subprocess.Popen([sys.executable, "-u", "-c", SUPERVISOR,
                 str(TEST_SEAM), str(producer)], cwd=ROOT, env=environment,
                 stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
@@ -251,7 +308,8 @@ class SupervisorParentLoss(unittest.TestCase):
             ready = root / "ready"
             reader_ready = root / "supervisor-reader-ready"
             startup_deadline = time.monotonic() + 4.0
-            while not ready.exists() or not reader_ready.exists():
+            while (not ready.exists() or not reader_ready.exists()
+                   or (descendant and not (root / "descendant-ready").exists())):
                 self.assertIsNone(parent.poll(), "actual supervisor exited before fixture readiness")
                 self.assertLess(time.monotonic(), startup_deadline, "OWN_FIXTURE_STARTUP_TIMEOUT")
                 time.sleep(0.01)
@@ -266,27 +324,45 @@ class SupervisorParentLoss(unittest.TestCase):
             observed_reader = json.loads(read_small(reader_ready))
             self.assertEqual(set(observed_reader), {"producerPid", "pipeDevice", "pipeInode"})
             self.assertEqual(observed_reader["producerPid"], pid)
-            self.assertIs(type(observed_reader["pipeDevice"]), int)
-            self.assertIs(type(observed_reader["pipeInode"]), int)
+            if caller == "supervised":
+                self.assertIs(type(observed_reader["pipeDevice"]), int)
+                self.assertIs(type(observed_reader["pipeInode"]), int)
+            else:
+                self.assertIsNone(observed_reader["pipeDevice"])
+                self.assertIsNone(observed_reader["pipeInode"])
             self.assertEqual(identity, announced)
             self.assertEqual(identity["ppid"], parent.pid, "not the actual supervisor's direct child")
             supervisor_identity = process_identity(parent.pid)
             self.assertEqual(supervisor_identity["ppid"], os.getpid())
-            # Main's unchanged Popen inherits its supervisor's group/session.
-            # No isolated-revision start_new_session prerequisite is imported.
+            # Session/group creation is the actual normal Popen argument, not
+            # fixture topology. The runner/supervisor group is never signalled.
             self.assertEqual((identity["pgid"], identity["sid"]),
-                             (supervisor_identity["pgid"], supervisor_identity["sid"]),
-                             "actual main producer did not inherit supervisor topology")
-            self.assertNotEqual(identity["pgid"], pid)
+                             (pid, pid), "actual normal launch did not own its group")
+            self.assertNotEqual(identity["pgid"], supervisor_identity["pgid"])
             # A retained pidfd plus stable kernel identity brackets these reads;
             # no caller PID/readiness JSON is by itself signalling authority.
-            self.assertEqual(read_small(Path(f"/proc/{pid}/cmdline")).split(b"\0")[:-1],
+            actual_argv = read_small(Path(f"/proc/{pid}/cmdline")).split(b"\0")[:-1]
+            self.assertEqual(actual_argv[:3],
                              [os.fsencode(sys.executable), b"-u", os.fsencode(producer)])
+            self.assertEqual(actual_argv[3:], [b"--refresh-only"] if caller == "cp" else [])
             self.assertEqual(Path(f"/proc/{pid}/cwd").resolve(), ROOT)
             self.assertEqual(process_identity(pid), identity)
             assert_pidfd_identity(child_fd, pid)
             self.assertIsNone(parent.poll())
             child_verified = True
+            if descendant:
+                announced_descendant = json.loads(read_small(root / "descendant-ready"))
+                descendant_pid = announced_descendant["pid"]
+                self.assertNotIn(descendant_pid, (pid, parent.pid, os.getpid()))
+                descendant_fd = os.pidfd_open(descendant_pid, 0)
+                assert_pidfd_identity(descendant_fd, descendant_pid)
+                self.assertEqual(process_identity(descendant_pid), announced_descendant)
+                self.assertEqual(announced_descendant["ppid"], pid)
+                self.assertEqual((announced_descendant["pgid"], announced_descendant["sid"]),
+                                 (pid, pid))
+                self.assertEqual(read_small(Path(f"/proc/{descendant_pid}/cmdline")).split(b"\0")[:-1],
+                    [os.fsencode(sys.executable), b"-u", os.fsencode(root / "descendant.py")])
+                descendant_verified = True
 
             heartbeat = root / "heartbeat"
             initial = heartbeat.stat().st_size
@@ -307,6 +383,27 @@ class SupervisorParentLoss(unittest.TestCase):
                 signal.pidfd_send_signal(parent_fd, signal.SIGINT)
             else:
                 signal.pidfd_send_signal(parent_fd, signal.SIGTERM)
+            if descendant:
+                # Observe death BEFORE any test kill/reap. As test subreaper we
+                # must then reap our exact adopted zombie so the product can
+                # observe genuine group absence; no signal is sent here.
+                self.assertTrue(exited(descendant_fd, 1.0), "OWN_DESCENDANT_STILL_WRITING")
+                self.assertIsNone(parent.poll(), "group zombie must not be called absent")
+                self.assertFalse((root / "supervisor-completed").exists(),
+                                 "no normal completion before actual group absence")
+                dead_size = (root / "descendant-heartbeat").stat().st_size
+                time.sleep(0.03)
+                self.assertEqual((root / "descendant-heartbeat").stat().st_size, dead_size)
+                # SIGKILL can finish the descendant just before its parent.
+                # Wait for actual adoption, not a changed PID or a test signal.
+                while True:
+                    try:
+                        reaped = os.waitid(os.P_PIDFD, descendant_fd, os.WEXITED | os.WNOHANG)
+                        break
+                    except ChildProcessError:
+                        self.assertIsNone(parent.poll())
+                        time.sleep(0.01)  # Enclosed by the unchanged hard test deadline.
+                self.assertEqual(reaped.si_pid, descendant_pid)
             # Fast controlled fixture only; NOT the full production stop reserve.
             code = parent.wait(timeout=1.0)
             if interruption == signal.SIGTERM:
@@ -341,12 +438,14 @@ class SupervisorParentLoss(unittest.TestCase):
             observed = json.loads(read_small(root / "supervisor-completed"))
             self.assertEqual(observed["producerPid"], pid)
             self.assertIs(observed["producerExited"], True)
-            self.assertIs(observed["readerStarted"], True)
+            self.assertIs(observed["readerStarted"], caller == "supervised")
             self.assertIs(observed["readerAlive"], False)
             self.assertEqual((observed["pipeDevice"], observed["pipeInode"]),
                              (observed_reader["pipeDevice"], observed_reader["pipeInode"]))
-            self.assertIs(observed["pipeClosed"], True)
-            self.assertEqual(observed["pipeState"], "CLOSED_OWN_EBADF")
+            self.assertIs(observed["pipeClosed"], True if caller == "supervised" else None)
+            self.assertEqual(observed["pipeState"], "CLOSED_OWN_EBADF" if caller == "supervised" else "NOT_PIPED")
+            with self.assertRaises(ProcessLookupError):
+                os.killpg(pid, 0)
             size = heartbeat.stat().st_size
             time.sleep(0.03)
             self.assertEqual(heartbeat.stat().st_size, size)
@@ -372,8 +471,19 @@ class SupervisorParentLoss(unittest.TestCase):
                         os.waitid(os.P_PIDFD, child_fd, os.WEXITED | os.WNOHANG)
                     except ChildProcessError:
                         pass  # A future fixed supervisor may already reap it.
+                if descendant_fd is not None:
+                    if not descendant_verified:
+                        raise RuntimeError("OWN_DESCENDANT_UNVERIFIED; exact root retained")
+                    if not exited(descendant_fd):
+                        signal.pidfd_send_signal(descendant_fd, signal.SIGKILL)
+                    if not exited(descendant_fd, 1.0):
+                        raise RuntimeError("OWN_DESCENDANT_STOP_UNPROVED; exact root retained")
+                    try:
+                        os.waitid(os.P_PIDFD, descendant_fd, os.WEXITED | os.WNOHANG)
+                    except ChildProcessError:
+                        pass
                 require_no_children()
-                for descriptor in (child_fd, parent_fd):
+                for descriptor in (descendant_fd, child_fd, parent_fd):
                     if descriptor is not None:
                         os.close(descriptor)
                         try:

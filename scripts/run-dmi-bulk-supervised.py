@@ -52,7 +52,96 @@ def bounded_seconds(environment: dict[str, str], name: str, default: int,
     return max(minimum, min(maximum, value))
 
 
-def stop_process(process: subprocess.Popen, *, grace_seconds: float = 10.0) -> None:
+def _require_owned_group_wait() -> None:
+    if os.name == "posix" and (
+        not all(hasattr(os, name) for name in ("waitid", "WNOWAIT", "WEXITED", "WNOHANG"))
+        or signal.getsignal(signal.SIGCHLD) != signal.SIG_DFL
+    ):
+        raise RuntimeError("OWN_PROCESS_GROUP_WAIT_UNAVAILABLE")
+
+
+class _OwnedProcess:
+    """Retain the session leader until the last signal to its own POSIX group.
+
+    A direct-child exit is not group completion. WNOWAIT prevents PID/group-id
+    reuse before signalling; after reap we only observe, never signal a group.
+    Escaped sessions and loss of this supervisor itself are outside this owner.
+    """
+    def __init__(self, process):
+        self.child = process
+        self.reaped = False
+
+    @property
+    def stdout(self):
+        return self.child.stdout
+
+    def _observe_leader(self):
+        result = os.waitid(os.P_PID, self.child.pid, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+        if result is not None and result.si_pid != self.child.pid:
+            raise RuntimeError("OWN_PROCESS_GROUP_LEADER_UNPROVED")
+        return result
+
+    def _signal_group(self, signum):
+        if self.reaped:
+            return  # No group-id signalling after our exact leader was reaped.
+        self._observe_leader()  # ECHILD is a hard failure, never signalling authority.
+        if (os.getpgid(self.child.pid) != self.child.pid
+                or os.getsid(self.child.pid) != self.child.pid
+                or self.child.pid == os.getpgrp()):
+            raise RuntimeError("OWN_PROCESS_GROUP_IDENTITY_UNPROVED")
+        os.killpg(self.child.pid, signum)
+
+    def terminate(self):
+        if os.name == "posix":
+            self._signal_group(signal.SIGTERM)
+        else:
+            self.child.terminate()
+
+    def kill(self):
+        if os.name == "posix":
+            self._signal_group(signal.SIGKILL)
+        else:
+            self.child.kill()
+
+    def poll(self):
+        if os.name != "posix":
+            return self.child.poll()
+        try:
+            return self._wait(timeout=0)
+        except subprocess.TimeoutExpired:
+            return None
+
+    def wait(self, timeout=None):
+        return self._wait(timeout=timeout)
+
+    def _wait(self, timeout=None):
+        if os.name != "posix":
+            return self.child.wait(timeout=timeout) if timeout is not None else self.child.wait()
+        deadline = None if timeout is None else time.monotonic() + timeout
+        while True:
+            if not self.reaped and self._observe_leader() is not None:
+                # Normal completion must not release a still-writing descendant
+                # or one holding the output pipe. The unreaped leader anchors
+                # this last signal even when it has already exited successfully.
+                self._signal_group(signal.SIGKILL)
+                self.child.wait()
+                self.reaped = True
+            if self.reaped:
+                try:
+                    os.killpg(self.child.pid, 0)
+                except ProcessLookupError:
+                    return self.child.returncode
+            remaining = None if deadline is None else deadline - time.monotonic()
+            if remaining is not None and remaining <= 0:
+                raise subprocess.TimeoutExpired(self.child.args, timeout)
+            time.sleep(0.01 if remaining is None else min(0.01, remaining))
+
+
+# Unknown group/reader cessation retains resources; it is not a SAVE receipt.
+_unclosed_supervised_processes: list[_OwnedProcess] = []
+
+
+def stop_process(process, *, grace_seconds: float = 10.0) -> None:
     if process.poll() is not None:
         return
     process.terminate()
@@ -93,7 +182,7 @@ def run_supervised(
     timed_out = False
     stop_attempted = False
     reader_join_attempted = False
-    process: subprocess.Popen | None = None
+    process = None
     primary_failure: BaseException | None = None
     pending_signal: int | None = None
     previous_handlers = []
@@ -114,11 +203,13 @@ def run_supervised(
             previous_handlers.append((signum, signal.getsignal(signum)))
             signal.signal(signum, request_stop)
         check_interruption()
+        _require_owned_group_wait()
         process = popen(
             command, cwd=ROOT, env=environment, stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace",
-            bufsize=1,
+            bufsize=1, start_new_session=os.name == "posix",
         )
+        process = _OwnedProcess(process)
         check_interruption()
         # Guard setup after retaining Popen too: even an output-reader start
         # failure must not abandon the already live writer.
@@ -136,6 +227,9 @@ def run_supervised(
         reader.start()
         while True:
             check_interruption()
+            if os.name == "posix":
+                # Even continuous descendant output cannot hide leader exit.
+                process.poll()
             # En fastlåst parser kan fortsætte med at skrive statuslinjer. Timeouten
             # må derfor ikke afhænge af, at outputkøen bliver tom.
             if (asset_started_at is not None
@@ -220,6 +314,8 @@ def run_supervised(
                     process.stdout.close()
         except BaseException:
             pass
+        if process is not None:
+            _unclosed_supervised_processes.append(process)
         raise
     finally:
         restore_failure: BaseException | None = None
@@ -251,7 +347,7 @@ def write_failure_outputs(environment: dict[str, str], code: str) -> None:
 
 
 # Resource retention only: this does not lock other writers or authorize SAVE.
-_unclosed_finalizer_processes: list[subprocess.Popen] = []
+_unclosed_finalizer_processes: list[_OwnedProcess] = []
 
 
 def finalize_checkpoint(
@@ -286,7 +382,10 @@ def finalize_checkpoint(
         for signum in (signal.SIGTERM, signal.SIGINT):
             previous_handlers.append((signum, signal.signal(signum, latch_interruption)))
         check_interruption()
-        process = subprocess.Popen(command, cwd=ROOT, env=final_env)
+        _require_owned_group_wait()
+        process = subprocess.Popen(command, cwd=ROOT, env=final_env,
+                                   start_new_session=os.name == "posix")
+        process = _OwnedProcess(process)
         deadline = time.monotonic() + timeout
         while True:
             check_interruption()
@@ -309,8 +408,8 @@ def finalize_checkpoint(
                     if process.poll() is None:
                         process.kill()
                 finally:
-                    # Preserve subprocess.run's kill/reap cleanup: this has
-                    # no finite stop reserve and is not a hard total deadline.
+                    # Preserve the existing unbounded cleanup, now including
+                    # owned group absence. No new finite stop reserve is added.
                     process.wait()
             except BaseException:
                 pass  # Cleanup cannot replace the first actual failure.
