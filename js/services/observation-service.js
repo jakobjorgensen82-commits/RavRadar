@@ -1,25 +1,25 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.558';
-import { assertAuthIdentitySettled, authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.558';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.559';
+import { assertAuthIdentitySettled, authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.559';
 import {
   TRIP_EVIDENCE_SCHEMA_VERSION,
   assertObservationTripQualityBinding,
   assertTripEvidencePrivacy,
   migrateLegacyUnattestedObservationColumns,
   toObservationTripColumns
-} from './trip-evidence-contract.js?v=4.0.558';
+} from './trip-evidence-contract.js?v=4.0.559';
 import {
   assertTripObservationNestedPrivacy,
   expectedCalibrationEligibility,
   projectTripStoragePayload,
   tripEvidenceIntegrityIssues
-} from './calibration-eligibility.js?v=4.0.558';
+} from './calibration-eligibility.js?v=4.0.559';
 import {
   RAVSCORE_MODEL_ID,
   assertRavScoreModelBinding,
   ravScoreModelBinding
-} from '../core/ravscore-model-contract.js?v=4.0.558';
-import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.558';
-import { markTripEvidenceSubmitted, tripEvidenceStorageKeys } from './trip-evidence-store.js?v=4.0.558';
+} from '../core/ravscore-model-contract.js?v=4.0.559';
+import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.559';
+import { markTripEvidenceSubmitted, tripEvidenceStorageKeys } from './trip-evidence-store.js?v=4.0.559';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
 const LOCAL_KEY='ravradar-observations-v2';
 const OUTBOX_KEY='ravradar-observation-outbox-v1';
@@ -66,9 +66,17 @@ function migrateLegacyTripObservationRow(row){
   }
   return projectLegacyObservationRow(normalized);
 }
-function readMigratedRows(key){const rows=read(key,[]);if(!Array.isArray(rows))return [];const migrated=rows.map(migrateLegacyTripObservationRow);if(migrated.some((row,index)=>row!==rows[index]))write(key,migrated);return migrated;}
-export function getLocalObservations(){return readMigratedRows(LOCAL_KEY);}
-export function getObservationSyncStatus(){const rows=getLocalObservations(),pending=readMigratedRows(OUTBOX_KEY);return {local:rows.length,pending:pending.length,synced:rows.filter(x=>x.sync_status==='synced').length,lastAttemptAt:localStorage.getItem('ravradar-observation-last-sync')};}
+function readStoredObservationRows(key){
+  const raw=localStorage.getItem(key);
+  if(raw===null)return [];
+  let rows;
+  try{rows=JSON.parse(raw);}catch{throw new Error('Gemte ture kunne ikke læses sikkert.');}
+  if(!Array.isArray(rows))throw new Error('Gemte ture kunne ikke læses sikkert.');
+  return rows;
+}
+function readMigratedRows(key,strict=true){const rows=strict?readStoredObservationRows(key):read(key,[]);if(!Array.isArray(rows))return [];const migrated=rows.map(migrateLegacyTripObservationRow);if(migrated.some((row,index)=>row!==rows[index]))write(key,migrated);return migrated;}
+export function getLocalObservations(){return readMigratedRows(LOCAL_KEY,false);}
+export function getObservationSyncStatus(){const rows=readMigratedRows(LOCAL_KEY),pending=readMigratedRows(OUTBOX_KEY);return {local:rows.length,pending:pending.length,synced:rows.filter(x=>x.sync_status==='synced').length,lastAttemptAt:localStorage.getItem('ravradar-observation-last-sync')};}
 export async function getOwnTripObservations({ limit = 100 } = {}) {
   if (!enabled) throw new Error('Login og turlog er ikke aktiveret endnu.');
   const identity = authIdentityEpoch();
@@ -94,7 +102,7 @@ export async function getOwnTripObservations({ limit = 100 } = {}) {
   if (!Array.isArray(body?.rows)) throw new Error('Dine ture kunne ikke hentes sikkert.');
   return body.rows;
 }
-function upsertLocal(row){const safe=migrateLegacyTripObservationRow(row),rows=getLocalObservations();const i=rows.findIndex(x=>x.id===safe.id);if(i>=0)rows[i]=safe;else rows.push(safe);write(LOCAL_KEY,rows);}
+function upsertLocal(row){const safe=migrateLegacyTripObservationRow(row),rows=readMigratedRows(LOCAL_KEY);const i=rows.findIndex(x=>x.id===safe.id);if(i>=0)rows[i]=safe;else rows.push(safe);write(LOCAL_KEY,rows);}
 function enqueue(row){const safe=migrateLegacyTripObservationRow(row),rows=readMigratedRows(OUTBOX_KEY);if(!rows.some(x=>x.id===safe.id))rows.push(safe);write(OUTBOX_KEY,rows);}
 export function remoteObservationPayload(row){const normalized=migrateLegacyTripObservationRow(structuredClone(row||{}));const {id:clientObservationId,gps:localGps,route,track,position,coordinates,latitude,longitude,location,sync_status,sync_error,synced_at,...remote}=normalized;const publicZoneId=remote.actual_zone_id||(typeof remote.zone_id==='string'?remote.zone_id:null);const payload={...remote,zone_id:Number.isSafeInteger(remote.zone_id)?remote.zone_id:null,actual_zone_id:publicZoneId,client_observation_id:clientObservationId,gps:null};return Number(payload.schema_version??1)===TRIP_EVIDENCE_SCHEMA_VERSION?projectTripStoragePayload(payload):payload;}
 async function postRemote(row){
@@ -127,7 +135,7 @@ function settleObservationSync(row, state){
   const original=JSON.stringify(row);
   // The request awaited external work. Only acknowledge the exact original;
   // another submission/tab may have added, changed or removed a row meanwhile.
-  const local=getLocalObservations();
+  const local=readMigratedRows(LOCAL_KEY);
   const localIndex=local.findIndex(value=>value.id===row.id&&JSON.stringify(value)===original);
   if(localIndex>=0){local[localIndex]={...local[localIndex],...state};write(LOCAL_KEY,local);}
   const pending=readMigratedRows(OUTBOX_KEY);
@@ -226,7 +234,7 @@ function sameObservationValue(left,right){
   return keys.length===Object.keys(right).length&&keys.every(key=>Object.hasOwn(right,key)&&sameObservationValue(left[key],right[key]));
 }
 function tripObservationReceipt(row,status){
-  const local=getLocalObservations().find(value=>value.id===row.id);
+  const local=readMigratedRows(LOCAL_KEY).find(value=>value.id===row.id);
   const pending=readMigratedRows(OUTBOX_KEY).some(value=>value.id===row.id);
   const stored=!pending&&local?.sync_status==='synced'
     &&sameObservationValue(remoteObservationPayload(local),remoteObservationPayload(row))?'remote':'pending';
@@ -250,7 +258,7 @@ export async function submitTripEvidenceObservation(columns){
       throw new Error('Kontoen blev ændret. Prøv igen fra den rigtige konto.');
   };
   assertOwner();
-  const existing=getLocalObservations().find(row=>row.trip_id===columns.trip_id);
+  const existing=readMigratedRows(LOCAL_KEY).find(row=>row.trip_id===columns.trip_id);
   if(existing){
     if((existing.user_id||null)!==userId)throw new Error('Log ind med den konto, som turen tilhører, før den kan sendes.');
     if(Object.entries(columns).some(([key,value])=>!sameObservationValue(existing[key],value)))
@@ -332,7 +340,7 @@ export async function submitAccountTripReportObservation(columns){
   if(session?.access_token&&!session?.user?.id)session=await requireFreshSession();
   if(authIdentityEpoch()!==identity||(currentSession()?.user?.id||null)!==(session?.user?.id||null))throw new Error('Kontoen blev ændret. Prøv igen fra den rigtige konto.');
   if(!session?.user?.id)throw new Error('Log ind, før du indberetter en tur fra din konto.');
-  const existing=getLocalObservations().find(row=>row.trip_id===columns.trip_id);
+  const existing=readMigratedRows(LOCAL_KEY).find(row=>row.trip_id===columns.trip_id);
   const submittedAt=new Date().toISOString();
   const row={
     id:existing?.id||columns.trip_id,
@@ -384,6 +392,6 @@ export async function submitAccountTripReportObservation(columns){
     sync_status:enabled?'pending':'local'
   };
   assertTripEvidencePrivacy(row);
-  upsertLocal(row);if(!enabled)return {stored:'local',row};enqueue(row);const status=await syncPendingObservations();const stored=status.pending?'pending':'remote';return {stored,row,status};
+  upsertLocal(row);if(!enabled)return {stored:'local',row};enqueue(row);const status=await syncPendingObservations();return tripObservationReceipt(row,status);
 }
 if(typeof window!=='undefined'){window.addEventListener('online',()=>syncPendingObservations().catch(()=>{}));}

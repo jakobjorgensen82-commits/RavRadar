@@ -1,4 +1,4 @@
-import { initialiseI18n, registerI18nMessages } from '../i18n.js?v=4.0.558';
+import { initialiseI18n, registerI18nMessages } from '../i18n.js?v=4.0.559';
 
 registerI18nMessages({
   da:{

@@ -1,10 +1,32 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.558
+**Håndbogsversion:** 4.0.559
 
-4.0.558 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+4.0.559 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.183 Sikre klientlæsninger og præcis kvittering
+
+Profiloversigten følger det login og den ejer, der startede opslaget. Et sent svar
+efter logout, kontoskift eller nyt login må ikke vise den tidligere oversigt.
+Normal tokenfornyelse og første brugerindlæsning bevares.
+
+Hvis en gemt turbank eller kø ikke kan læses sikkert, må den ikke behandles som
+tom og erstattes under lagring. En manglende nøgle er stadig en normal tom start;
+den hidtidige visningsfallback bevares. En manuel turs kvittering følger netop
+den tur, ikke andre ventende ture. Dette er ikke en atomisk flerfanelås eller
+bevis for de hosted brugerforløb.
+
+Assistentens eksisterende serversvarudtræk springer udtrykkelige reasoning-,
+user- og ikke-final-kanaler over, før et struktureret slutsvar vælges. Gyldige
+tidligere svarformer og alle seks model-/vidensbindinger bevares. Ændringen giver
+ikke adgang til intern fejlviden og ændrer ikke vejrets modelbindinger.
+
+Disse afgrænsede rettelser er lokalt integreret og målprøvet. Præcis ny
+kildekontrol, sikker offentlig levering og faktisk bruger-/AI-effekt mangler.
+Den separate cachelæsepakke og hele revisionen er ikke del af denne release;
+alle fem ejerkrævede målområder er fortsat åbne.
 
 ## 89.182 Afgrænset reparation af det eksisterende turlager
 

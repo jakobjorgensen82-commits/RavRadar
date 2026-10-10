@@ -1,5 +1,5 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.558";
-import { authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession, getCurrentProfile } from "./auth-service.js?v=4.0.558";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.559";
+import { authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession, getCurrentProfile } from "./auth-service.js?v=4.0.559";
 export const PERMISSIONS=Object.freeze([
  {id:'admin_access',label:'Åbn administrationen'},
  {id:'handbook_view',label:'Læs håndbogen'},
@@ -21,7 +21,22 @@ export const EXPERT_PERMISSION_IDS=Object.freeze([
 ]);
 export const EXPERT_PERMISSIONS=Object.freeze(PERMISSIONS.filter(permission=>EXPERT_PERMISSION_IDS.includes(permission.id)));
 function enabled(){return Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey&&currentSession()?.access_token);}
-export async function listProfiles(){if(!enabled())return [];await requireFreshSession();const r=await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/profiles?select=id,email,display_name,role,is_active,user_permissions(permission_key,enabled)&order=email`);if(!r.ok)throw new Error(`Brugere kunne ikke hentes (${r.status})`);return r.json();}
+export async function listProfiles(){
+ if(!enabled())return [];
+ const identity=authIdentityEpoch(),startingOwner=currentSession()?.user?.id;
+ const active=await requireFreshSession(),ownerId=startingOwner??active?.user?.id;
+ const assertOwner=()=>{
+  if(authIdentityEpoch()!==identity||!ownerId||currentSession()?.user?.id!==ownerId)
+   throw new Error('Kontoen blev ændret. Prøv igen fra den rigtige konto.');
+ };
+ assertOwner();
+ const r=await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/profiles?select=id,email,display_name,role,is_active,user_permissions(permission_key,enabled)&order=email`);
+ assertOwner();
+ if(!r.ok)throw new Error(`Brugere kunne ikke hentes (${r.status})`);
+ const profiles=await r.json();
+ assertOwner();
+ return profiles;
+}
 export async function savePermissions(userId,values){if(!enabled())throw new Error('Supabase-login mangler.');await requireFreshSession();const r=await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/rpc/save_ravradar_permissions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({p_user_id:userId,p_permissions:values})});if(!r.ok)throw new Error(`Rettigheder kunne ikke gemmes (${r.status})`);}
 export async function myAccess(){
  if(!enabled())return {profile:null,permissions:new Set()};

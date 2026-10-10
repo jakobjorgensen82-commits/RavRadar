@@ -276,6 +276,23 @@ for (const payload of [
   answer: valid.answer, disposition: 'answer', evidenceIds: valid.evidenceIds,
 });
 
+// Explicit non-final or non-assistant output must never supply the answer.
+// The three pre-existing untyped response formats above remain supported.
+for (const metadata of [
+  { type: 'reasoning' }, { type: 'reasoning_text' },
+  { role: 'user' }, { role: 'system' }, { role: 'tool' }, { role: null },
+  { channel: 'analysis' }, { channel: 'commentary' }, { channel: null },
+]) {
+  const intermediate = { ...valid, answer: 'SYNTHETIC_INTERMEDIATE_NOT_FINAL' };
+  for (const hidden of [{ ...metadata, content: intermediate }, { ...intermediate, ...metadata }]) {
+    assert.equal(extractCloudflareAssistantResult({ result: { nested: { output: [hidden] } } }), null);
+    assert.deepEqual(extractCloudflareAssistantResult({ result: { output: [hidden,
+      { type: 'message', role: 'assistant', channel: 'final',
+        content: [{ type: 'output_text', text: JSON.stringify(valid) }] },
+    ] } }), valid);
+  }
+}
+
 const refusal = validateAssistantResult({
   schemaVersion: 'rav-assistant-response-v1', locale: 'de', disposition: 'out_of_scope',
   answer: 'Ein beliebiger Text.', evidenceIds: [],
