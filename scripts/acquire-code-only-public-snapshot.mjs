@@ -182,6 +182,15 @@ async function digestFile(file, expectedBytes, cap, deadline) {
   return result;
 }
 
+// Validate only the HTTP bearer/config grammar, never GitHub's opaque token format.
+export function githubAuthorizationStdin(token) {
+  if (typeof token !== 'string' || /[\r\n]/.test(token)
+    || !/^[A-Za-z0-9._~+\/-]+=*$/.test(token)) {
+    fail('PUBLIC_ACQUISITION_GITHUB_AUTH_REQUIRED');
+  }
+  return `header = "Authorization: Bearer ${token}"\n`;
+}
+
 async function download(url, file, cap, deadline, authenticated = false) {
   const seconds = Math.max(1, Math.floor(remaining(deadline) / 1000));
   const args = ['--disable', '--fail', '--silent', '--show-error', '--location',
@@ -191,11 +200,9 @@ async function download(url, file, cap, deadline, authenticated = false) {
     '--write-out', '%{http_code}\t%header{content-length}\t%{size_download}\n'];
   let input = '';
   if (authenticated) {
-    const token = process.env.GH_TOKEN;
-    if (!/^[A-Za-z0-9_]+$/.test(token ?? '')) fail('PUBLIC_ACQUISITION_GITHUB_AUTH_REQUIRED');
     args.push('--header', 'Accept: application/vnd.github+json', '--header',
       'X-GitHub-Api-Version: 2022-11-28', '--config', '-');
-    input = `header = "Authorization: Bearer ${token}"\n`;
+    input = githubAuthorizationStdin(process.env.GH_TOKEN);
   } else args.push('--header', 'Cache-Control: no-cache');
   args.push(url);
   await child('curl', args, { deadline, env: neutralEnvironment(), input });

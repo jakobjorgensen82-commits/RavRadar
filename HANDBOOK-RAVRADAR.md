@@ -1,10 +1,29 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.562
+**Håndbogsversion:** 4.0.563
 
-Den lokale 4.0.562 beholder bindingen `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+Den lokale 4.0.563 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.187 Eksisterende GitHub-adgang ved rettelsesdeploy
+
+GitHubs eksisterende adgangstoken er en uigennemsigtig HTTP-bearer-værdi.
+RavRadar må ikke kræve et gammelt GitHub-prefix, en bestemt længde eller kun
+alfanumeriske tegn. Den normale headerbygger tillader bearer-grammatikkens tegn,
+men afviser linjeskift, kontroltegn, anførselstegn og backslash. Tokenet sendes
+kun via curl-konfiguration på stdin, ikke kommandolinje, child-miljø eller log.
+Ingen nye nøgler, tjenester eller rettigheder kræves.
+
+Den lokale 4.0.563 retter denne konkrete format-afvisning. Den eksisterende
+måltest består med gamle og lange syntetiske JWT-former samt skadelige tegn.
+Alle kilde-, original-, model-, filstørrelses- og tidskontroller bevares.
+Præcis ny kildekontrol og faktisk offentlig levering mangler. En rettelse i
+kildekode er ikke bevis for et gennemført deploy eller hele revisionen.
+
+GitHub dokumenterer formatændringen og anbefaler ingen klientbinding til
+tokenets indhold: [officiel meddelelse fra april 2026](https://github.blog/changelog/2026-04-24-notice-about-upcoming-new-format-for-github-app-installation-tokens/).
+Bearer-grammatikken følger [RFC 6750, afsnit 2.1](https://www.rfc-editor.org/rfc/rfc6750.html#section-2.1).
 
 ## 89.186 Samme gemte offentlige kilde ved rettelsesdeploy
 

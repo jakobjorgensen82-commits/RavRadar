@@ -826,8 +826,31 @@ const currentOutputs = acquisitionCurrent.indexOf('for field in model status');
 assert.ok(currentRead >= 0 && currentRead < currentAssertion && currentAssertion < currentOutputs,
   'Acquisition identity must be rechecked after the normal fresh central read and before its outputs');
 
-import { selectPublicAcquisition } from './acquire-code-only-public-snapshot.mjs';
+import { selectPublicAcquisition, githubAuthorizationStdin } from './acquire-code-only-public-snapshot.mjs';
 import { spawnSync } from 'node:child_process';
+
+// Synthetic tokens only: GitHub format may change; the bearer/config safety contract must not.
+const syntheticLongGithubToken = `ghs_12345_${'a'.repeat(220)}.${'b'.repeat(220)}.${'c_-'.repeat(40)}`;
+assert.ok(syntheticLongGithubToken.length > 520);
+for (const token of ['ghp_SYNTHETIC123', 'github_pat_SYNTHETIC_123',
+  'ghs_12345_header.payload-signature', 'A~B+C/D==', syntheticLongGithubToken]) {
+  assert.equal(githubAuthorizationStdin(token), `header = "Authorization: Bearer ${token}"\n`);
+}
+for (const token of [undefined, null, 123, {}, '', ' ', 'a b', 'a"b', "a'b", 'a\\b',
+  'a=b', '=abc', 'abc\n', 'abc\r\n', 'a\nb', 'a\rb', 'a\u007fb', 'a\u0080b',
+  ...Array.from({ length: 32 }, (_, code) => `a${String.fromCharCode(code)}b`)]) {
+  assert.throws(() => githubAuthorizationStdin(token),
+    error => error?.message === 'PUBLIC_ACQUISITION_GITHUB_AUTH_REQUIRED');
+}
+assert.ok(publicAcquisition.includes('input = githubAuthorizationStdin(process.env.GH_TOKEN);'),
+  'The actual authenticated downloader must use the tested bearer-token encoder');
+assert.ok(publicAcquisition.includes("'X-GitHub-Api-Version: 2022-11-28', '--config', '-');"),
+  'GitHub authorization must remain in curl config stdin, not argv');
+assert.ok(publicAcquisition.includes("await child('curl', args, { deadline, env: neutralEnvironment(), input });"),
+  'The actual curl caller must retain neutral environment and separate stdin');
+assert.doesNotMatch(publicAcquisition.slice(publicAcquisition.indexOf('function neutralEnvironment'),
+  publicAcquisition.indexOf('function remaining')), /GH_TOKEN|GITHUB_TOKEN|Authorization/,
+  'The curl child environment must not inherit the GitHub credential');
 
 assert.deepEqual(selectPublicAcquisition(centralSource, sourceManifest, ''), {
   mode: 'sealed-active-artifact',
