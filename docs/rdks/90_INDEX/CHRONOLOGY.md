@@ -1,4 +1,12 @@
-# 2026-10-10 – lokal 4.0.568, afventede svar og observationskald
+# 2026-10-11 – lokal 4.0.569, kanoniske assistentsvar
+
+Et faktisk forkert offentligt 566-svar og en separat lokal normal klient–Edge-prøve viste grænsen mellem et kendt fakta-id og fagligt korrekt fri tekst. 569 gengiver derfor hele gennemgåede DA/DE/EN-enheder for de 38 eksisterende serverfakta. Valgt kontekst bruger alene modtagne, validerede værdier, dansk tid, konservativ historikgrænse/interval og ukendt-ikke-nul; over 900 tegn gives afklaring uden afklippede forbehold.
+
+Begge eksisterende normale mål består lokalt: 114 lokaliserede enheder + 15 sammensætningskontroller og 12 kontekstrundture, med nul rigtigt netværk. De hidtidige parser-, sprog-, privatlivs-, sikkerheds-, kvote- og bindingskontroller bevares; parserens svarforventning følger den kanoniske tekst. Dette er ikke ekstern AI eller offentlig 569-levering. ID-relevans, fuld compound-/opfølgningsdækning og den helde 95-fakta/456-emners videnspakke er fortsat åbne; I68/C66/continuation/knowledge992 og normaliseret klient er uændrede.
+
+568 exact 0d634c5a4a673ab466bcd7f5f22b88896d8233cd bestod 38091525175/1 kl. 00.34.19 dansk tid med faktisk native/source/bevis. Det erstatter tidligere rød 568-status, ikke historikken. 567/568 er fortsat ikke merget eller offentligt leveret. Seneste aflæsning kl. 01.03.55 viste 38083296276/main 008 aktiv i trin 104; ingen afslutning eller fejl antages. Alle fem mål og de tre præcise decoder-/190000-SQL-/RESTORE-afklaringer består åbne. Revisionen er inaktiv; ingen bindings-, SQL- eller produktionsaktivering følger.
+
+# Historik: 2026-10-10 – lokal 4.0.568, afventede svar og observationskald
 
 568 samler de afgrænsede transportrettelser: faktisk svar-/body-/cancel-afslutning før retry eller fallback, samme samtidige observationskald afventet med første fejl bevaret, og stop før næste normale skrivning ved ukendt oprydning. Berørte syntetiske måltests består; det er ikke bevis for global writer-, SAVE-, RESTORE- eller runner-tab-sikkerhed. De særskilte claim/raw-save/source-CI- og numeriske kandidater er ikke med.
 

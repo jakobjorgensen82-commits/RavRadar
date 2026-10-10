@@ -16,6 +16,7 @@ import {
   RAV_ASSISTANT_MODEL,
   RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,
   RAV_ASSISTANT_REFUSALS,
+  RAV_ASSISTANT_UNCERTAIN_REPLIES,
   RAV_ASSISTANT_WEIGHT_ANSWERS,
   routeAssistantQuestion,
   sameAssistantRavScoreModelBinding,
@@ -273,8 +274,72 @@ for (const payload of [
   { result: { output: [{ content: [{ text: `\`\`\`json\n${JSON.stringify(valid)}\n\`\`\`` }] }] } },
   { success: true, result: { nested: { message: { content: valid } } } },
 ]) assert.deepEqual(validateAssistantResult(extractCloudflareAssistantResult(payload), 'en'), {
-  answer: valid.answer, disposition: 'answer', evidenceIds: valid.evidenceIds,
+  answer: RAV_ASSISTANT_FACTS.find(fact => fact.id === 'mobilisation.wave-memory').text,
+  disposition: 'answer', evidenceIds: valid.evidenceIds,
 });
+
+// BEGIN canonical-grounding contracts: independent reviewed wording oracle.
+// These hashes come from the reviewed 38-fact translation map, not renderer
+// output. The context ID uses the existing no-zone text for this empty input.
+const canonicalAnswerHashes = {
+  da: 'a603c07e9105dae37a6a9847dcf5dc4b96076d92e5b65a99dfceb82afb1f7096',
+  de: '80345357ddaf1d5c33efbb17d88681dea7a44b571aa69af1afb1a70ec1bffbdb',
+  en: 'f59653a90971362f76a8c11e00cfe2f4e7caa18bf52c250183cae6a6d867b8e5',
+};
+const noZoneAnswers = {
+  da: 'Vælg først en zone, så kan jeg forklare dens score.',
+  de: 'Wähle zuerst eine Zone, dann kann ich ihren Score erklären.',
+  en: 'Select a zone first, then I can explain its score.',
+};
+const focusAnswers = {
+  da: 'Spørgsmålet rummer mere, end jeg kan besvare samlet og med alle forbehold her. Hvilken del vil du have uddybet først?',
+  de: 'Die Frage umfasst mehr, als ich hier zusammen mit allen Einschränkungen beantworten kann. Welchen Teil soll ich zuerst erläutern?',
+  en: 'The question covers more than I can answer together here with every qualification intact. Which part should I explain first?',
+};
+for (const locale of ['da', 'de', 'en']) {
+  const rows = [];
+  const supplied = { ...valid, locale, answer: 'SYNTHETIC_UNSUPPORTED_PROVIDER_PROSE' };
+  for (const fact of RAV_ASSISTANT_FACTS) {
+    const result = validateAssistantResult({ ...supplied, evidenceIds: [fact.id] }, locale);
+    assert.equal(result?.disposition, 'answer', `${locale}: ${fact.id}`);
+    assert.deepEqual(result.evidenceIds, [fact.id]);
+    assert.ok(result.answer.length > 0 && result.answer.length <= 900);
+    assert.notEqual(result.answer, supplied.answer);
+    if (fact.id === 'public-context.selected-zone-only') assert.equal(result.answer, noZoneAnswers[locale]);
+    else if (locale === 'en') assert.equal(result.answer, fact.text);
+    rows.push([fact.id, result.answer]);
+  }
+  assert.equal(rows.length, 38);
+  assert.equal(crypto.createHash('sha256').update(JSON.stringify(rows)).digest('hex'), canonicalAnswerHashes[locale],
+    `${locale}: every complete canonical unit must match independently reviewed wording`);
+  const units = new Map(rows); // Already checked against the independent oracle above.
+  const compoundIds = ['amber.mostly-sinks', 'identification.avoid-destructive-tests'];
+  assert.deepEqual(validateAssistantResult({ ...supplied, evidenceIds: compoundIds }, locale), {
+    answer: compoundIds.map(id => units.get(id)).join('\n\n'), disposition: 'answer', evidenceIds: compoundIds,
+  });
+  const partialIds = ['amber.mostly-sinks'];
+  assert.deepEqual(validateAssistantResult({ ...supplied, disposition: 'uncertain', evidenceIds: partialIds }, locale), {
+    answer: units.get(partialIds[0]) + '\n\n' + RAV_ASSISTANT_UNCERTAIN_REPLIES[locale],
+    disposition: 'uncertain', evidenceIds: partialIds,
+  });
+  const weightIds = ['score.integrated-only', 'score.weights-20-50-30'];
+  assert.deepEqual(validateAssistantResult({ ...supplied, evidenceIds: weightIds }, locale), {
+    answer: RAV_ASSISTANT_WEIGHT_ANSWERS[locale], disposition: 'answer', evidenceIds: weightIds,
+  });
+  const weightsAndSafety = [...weightIds, 'safety.not-a-safety-rating'];
+  assert.deepEqual(validateAssistantResult({ ...supplied, evidenceIds: weightsAndSafety }, locale), {
+    answer: weightsAndSafety.map(id => units.get(id)).join('\n\n'), disposition: 'answer', evidenceIds: weightsAndSafety,
+  }, 'The weights shortcut must never discard another selected fact');
+  const overflowingIds = ['transport.grid-not-surf-zone', 'sequence.release-transport-deposition'];
+  assert.ok(overflowingIds.map(id => units.get(id)).join('\n\n').length > 900);
+  assert.deepEqual(validateAssistantResult({ ...supplied, evidenceIds: overflowingIds }, locale), {
+    answer: focusAnswers[locale], disposition: 'uncertain', evidenceIds: [],
+  }, 'Overflow must request focus, not clip a fact or omit a selected qualification');
+}
+assert.equal(validateAssistantResult({ ...valid, locale: 'fr' }, 'fr'), null);
+assert.equal(validateAssistantResult({ ...valid, evidenceIds: [valid.evidenceIds[0], valid.evidenceIds[0]] }, 'en'), null);
+console.log('OK: 114 canonical locale/fact units, 15 complete/partial/weights/overflow compositions; no free provider prose.');
+// END canonical-grounding contracts.
 
 // Explicit non-final or non-assistant output must never supply the answer.
 // The three pre-existing untyped response formats above remain supported.

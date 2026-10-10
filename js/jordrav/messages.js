@@ -1,5 +1,5 @@
-import { registerI18nMessages } from '../i18n.js?v=4.0.568';
-import { LANDSCAPES } from './landscape-context.js?v=4.0.568';
+import { registerI18nMessages } from '../i18n.js?v=4.0.569';
+import { LANDSCAPES } from './landscape-context.js?v=4.0.569';
 
 const da = {
   title:'Jordrav – geologiske muligheder | RavRadar', description:'Udforsk geologiske muligheder for jordrav i Danmark med jordarter, landskabsdannelse og luftfoto.',

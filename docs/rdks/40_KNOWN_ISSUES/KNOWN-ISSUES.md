@@ -1,4 +1,20 @@
-# Lokal 4.0.568 – afvent svar før fallback og næste skrivning
+# Lokal 4.0.569 – godkendt ordlyd i faktabaserede assistentsvar
+
+Offentlig 566 viste et materielt forkert svar om at kende rav fra sten; et efterfølgende svar rettede ikke fejlen. Det offentlige svar dokumenterer ikke, hvilke interne fakta-id'er der blev valgt. En særskilt lokal prøve gennem den normale klient og Edge viste derimod den konkrete kontraktfejl: fri, modsagt tekst kunne passere sammen med et eksisterende gyldigt fakta-id. Medlemskab af faktalisten er ikke i sig selv faglig dokumentation.
+
+569 erstatter sådan fri svartekst med hele, godkendte tekst-enheder for de valgte eksisterende fakta-id'er. Alle 38 serverfakta har gennemgået dansk, tysk og engelsk ordlyd med samme forbehold, subjekter og negationer; faktabanken og dens SHA er uændrede. Den eksisterende præcise vægtkombination bevares. Usikkerhed bevares, og et samlet svar, der ikke kan rummes inden for 900 tegn med alle forbehold, beder om fokus i stedet for at klippe tekst eller udelade enheder.
+
+Valgt zone kan gengives som én kanonisk kontekstenhed ud fra de faktisk modtagne og validerede felter. Historikufuldstændighed bevarer konservativ nedre grænse og interval. Udeladte vejrdata er ukendte, ikke nul; retninger mærkes neutralt som modtagne grader, og gyldig tidsangivelse vises eksplicit i dansk tid via Europe/Copenhagen. Dette beviser ikke aktualitet, oprindelse eller ægthed af klientens kontekst og opfinder ingen landretning eller manglende værdier.
+
+De to eksisterende normale måltests består på de faktiske serverfiler: 114 kanoniske sprog-/faktaenheder og 15 sammensætningskontroller samt 12 klient–Edge-rundture for komplet, ufuldstændig, manglende og ugyldig kontekst. Den modsagte tekst bliver ikke svaret. De hidtidige parser-, sprog-, privatlivs-, sikkerheds-, kvote- og bindingskontroller bevares; parserens svarforventning følger den kanoniske tekst. Seks bindingsheaders og de eksisterende kontrollerede kvote-/providerkald bevares; prøverne bruger nul rigtige netværkskald. Dette er lokalt kalderevidens, ikke ekstern AI- eller offentlig leveringskontrol.
+
+Kun de to ubundne serverblade ændres funktionelt. I68/C66, continuation, klientens normaliserede kode, den eksisterende knowledge-SHA 9926586b, sikkerhed og faktabank bevares. Versionsmekanik ændrer alene releasefelter/cache-suffikser; geodata alene topversionsfeltet. Korrekt valg af relevante fakta-id'er, fuld dækning af sammensatte spørgsmål, disposition/opfølgninger, den særskilte 95-fakta/456-emners kandidat og hele assistentleveringen er stadig åbne. Ingen source33-genforsøg, bindingsomlægning eller SQL-installation følger.
+
+568 på præcis 0d634c5a4a673ab466bcd7f5f22b88896d8233cd bestod kildekontrol 38091525175/1 kl. 00.34.19 dansk tid den 11. oktober, inklusive native trin, uændret kilde og bevis. 567 og 568 er fortsat ikke merget eller offentligt leveret. Den tidligere 568-fejl på en forældet statisk assertion er historik, ikke aktuel rød kontrol. Seneste aflæsning kl. 01.03.55 viste naturlig vejrhentning 38083296276 på main 008 aktiv i trin 104; ingen fejl eller afslutning udledes heraf. 569 er kun lokal kandidat og kræver egen præcis kildekontrol og sikker levering efter afsluttet writer.
+
+Alle fem hovedmål er åbne. De tre præcise afklaringer om fælles decoder, numerisk 190000-SQL og særskilt RESTORE er fortsat afventende; ingen nye tilladelser gives. CP-cohort, global writer, SAVE/RESTORE, capture, runner-tab og heljobsbudget er ikke afsluttet. Den særskilte revision er inaktiv, og dens fremtidige produktændringer indgår ikke i denne release.
+
+# Historik: lokal 4.0.568 – afvent svar før fallback og næste skrivning
 
 Den lokale kandidat afventer den faktisk startede forespørgsel, svarkrop og eventuelle annullering, før et nyt forsøg eller fallback kan begynde. En anmodning om afbrydelse er ikke bevis for afslutning. Ukendt eller afvist oprydning fastholder den faktiske ressource og stopper det berørte normale forløb før fallback eller næste skrivning; det er ikke en kvittering for samlet writerophør.
 

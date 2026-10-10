@@ -310,6 +310,7 @@ export function assistantSystemInstruction() {
     "Reply in the requested locale. Keep the answer under 900 characters.",
     "Use RavRadar's exact public terminology: in Danish write rav, jagtbarhed, strømevidens and mobiliseringsmulighed; in German write Bernstein, Suchbarkeit, Strömungsevidenz and Mobilisierungsmöglichkeit; in English write amber, huntability, current evidence and mobilisation opportunity. Never create hybrid words across languages.",
     "evidenceIds must contain only IDs from the supplied facts that directly support the answer. Out-of-scope answers must use an empty evidenceIds array.",
+    "The server publishes canonical fact units, not your prose. Include every necessary ID for all supported parts. When using supplied selected-zone values, also include public-context.selected-zone-only; never substitute invented values. Mark relevant unsupported parts uncertain.",
     "Disposition semantics are strict: use answer for every relevant question that the supplied facts can answer, including safety boundaries, missing data and explaining that a find cannot be guaranteed. Use out_of_scope only for an unrelated topic. Use uncertain only for a relevant question that the supplied facts and selected-zone context cannot answer.",
     "An amber-specific physical-property question or an unfamiliar term for amber-hunting equipment remains relevant even when it is absent from the supplied facts. Lack of supporting facts is uncertainty, not an unrelated topic. Use uncertain, state the limit or ask for clarification, and never invent a property, a device or instructions for its use. A relevant word does not make an unrelated or private request permissible.",
     "For example, asking why a rubbed amber piece attracts paper, or how an unfamiliar amber-hunting instrument works, is in-domain. Answer only the parts supported by supplied facts; otherwise use uncertain with a brief clarification. Do not use the fixed out-of-scope reply for a relevant question merely because its answer is not in the facts.",
@@ -394,7 +395,326 @@ export function normaliseAssistantTerminology(value, locale) {
   return text.trim();
 }
 
-export function validateAssistantResult(value, locale) {
+// Canonical translations of the unchanged English public facts, not provider prose.
+const CANONICAL_FACT_TRANSLATIONS = Object.freeze({
+  "score.integrated-only": {
+    "da": "Den integrerede kystproces-RavScore er RavRadars eneste offentlige scoremodel. Candidate G bevares kun som historisk rollback-orakel; den er hverken en offentlig model, en skyggemodel eller en runtime-fallback.",
+    "de": "Der integrierte Küstenprozess-BernsteinScore ist RavRadars einziges öffentliches Score-Modell. Candidate G bleibt ausschließlich ein historisches Rollback-Orakel; er ist weder öffentliches Modell noch Schattenmodell oder Laufzeit-Fallback."
+  },
+  "score.weights-20-50-30": {
+    "da": "Den integrerede RavScore kombinerer 20 % jagtbarhed, 50 % leveringspotentiale fra verificeret modelgrid-strømevidens med begrænset dæmpning fra bølgernes tilgangsretning og 30 % bølgeenergi og mobiliseringsmulighed.",
+    "de": "Der integrierte BernsteinScore kombiniert 20 % Suchbarkeit, 50 % Lieferpotenzial aus verifizierter Modellgitter-Strömungsevidenz mit begrenzter Dämpfung durch die Wellenanlaufrichtung und 30 % Wellenenergie und Mobilisierungsmöglichkeit."
+  },
+  "score.local-missing": {
+    "da": "Mangler et nødvendigt direkte vejrinput, eller er det ugyldigt for selve scoretimen, er timen utilgængelig og udelades af rangeringer. Det er noget andet end et hul i tidligere historik. RavRadar må ikke interpolere, videreføre en værdi eller låne en score fra en anden model, zone, kystdel eller time.",
+    "de": "Fehlt ein notwendiger direkter Wetterwert für die Score-Stunde selbst oder ist er ungültig, ist diese Stunde nicht verfügbar und wird nicht rangiert. Das ist von einer Lücke in früherer Historie zu unterscheiden. RavRadar darf weder interpolieren noch Werte fortschreiben oder einen Score aus einem anderen Modell, Gebiet, Küstenabschnitt oder einer anderen Stunde übernehmen."
+  },
+  "score.history-incomplete": {
+    "da": "Når de direkte vejrinput for aktuelle og fremtidige scoretimer er komplette, men nødvendig tidligere historik har et hul, viser RavRadar stadig en konservativ nedre scoregrænse med et udtrykkeligt modelinterval fra nedre til øvre grænse i hele aktuel- og femdøgnsprognosen. En midlertidig besked forsvinder automatisk, når den nødvendige historik er komplet. Antallet af verificerede historiktimer beskriver dækning, ikke en bevist ubrudt sekvens. Tilstanden er ikke egnet til kalibrering.",
+    "de": "Sind die direkten Wetterwerte der aktuellen und prognostizierten Score-Stunden vollständig, fehlt aber benötigte frühere Historie, veröffentlicht RavRadar weiterhin eine konservative Score-Untergrenze mit ausdrücklichem Modellintervall von Unter- bis Obergrenze für die gesamte aktuelle und Fünf-Tage-Prognose. Ein vorübergehender Hinweis verschwindet automatisch, sobald die nötige Historie vollständig ist. Die Zahl verifizierter Historienstunden beschreibt die Abdeckung, beweist aber keine lückenlose Folge. Dieser Zustand ist nicht für die Kalibrierung geeignet."
+  },
+  "score.no-find-guarantee": {
+    "da": "RavScore beskriver relativ modelevidens og søgeforhold. Det er et indeks, ikke en procentuel fundchance eller en påstand om fundpræcision, fordi RavRadar ikke har repræsentativ evidens for ture med og uden fund.",
+    "de": "Der BernsteinScore beschreibt relative Modellevidenz und Suchbedingungen. Er ist ein Index, keine prozentuale Fundchance oder Aussage zur Fundgenauigkeit, denn RavRadar besitzt keine repräsentative Evidenz zu Suchen mit und ohne Fund."
+  },
+  "amber.origin-and-secondary-stores": {
+    "da": "Rav er fossiliseret harpiks fra fortidens træer og er mange millioner år gammelt. Et dansk strandfund kan gentagne gange være flyttet og genaflejret gennem geologiske lag, istidsmateriale, havbunden og ældre strandlagre; det enkelte stykke kan ikke dateres pålideligt alene ud fra udseendet.",
+    "de": "Bernstein ist fossiles Harz uralter Bäume und viele Millionen Jahre alt. Ein dänischer Strandfund kann wiederholt durch geologische Schichten, eiszeitliches Material, Meeresboden und ältere Strandlager transportiert und umgelagert worden sein. Ein einzelnes Stück lässt sich nicht allein anhand seines Aussehens zuverlässig datieren."
+  },
+  "amber.mostly-sinks": {
+    "da": "Det meste baltiske rav har en massefylde omkring 1,05–1,10 g/cm³ og synker i almindeligt dansk havvand, men er under vand stadig meget lettere end sand og sten. Saltindhold og temperatur ændrer opdriften lidt, men ikke nok til at få det meste rav til at flyde.",
+    "de": "Der meiste baltische Bernstein hat eine Dichte von etwa 1,05–1,10 g/cm³ und sinkt in gewöhnlichem dänischem Meerwasser, bleibt unter Wasser aber viel leichter als Sand und Stein. Salzgehalt und Temperatur verändern den Auftrieb geringfügig, jedoch nicht genug, um den meisten Bernstein schwimmen zu lassen."
+  },
+  "amber.piece-variation": {
+    "da": "Luftbobler, porøsitet, urenheder, størrelse og form kan ændre det enkelte ravstykkes adfærd. Et stykke kan rulle, glide, hoppe eller kortvarigt bevæge sig svævende i vandet; derfor gælder ingen enkelt naturlig strømtærskel for alt rav.",
+    "de": "Luftblasen, Porosität, Verunreinigungen, Größe und Form können das Verhalten eines einzelnen Bernsteinstücks verändern. Es kann rollen, gleiten, springen oder sich kurzzeitig schwebend im Wasser bewegen. Deshalb gibt es keinen einheitlichen natürlichen Strömungsschwellenwert für allen Bernstein."
+  },
+  "amber.weather-does-not-create": {
+    "da": "Vejret skaber ikke rav. Det kan kun frigøre og flytte rav, der allerede findes i et lokalt lager eller et lager opstrøms. Derfor kan to næsten ens storme give meget forskellige fund, hvis et lager er skjult, netop blotlagt eller allerede tømt.",
+    "de": "Wetter erzeugt keinen Bernstein. Es kann nur Bernstein freisetzen und bewegen, der bereits in einem örtlichen oder stromaufwärts gelegenen Lager vorhanden ist. Zwei fast gleiche Stürme können deshalb sehr unterschiedliche Funde ergeben, wenn ein Lager verborgen, frisch freigelegt oder bereits erschöpft ist."
+  },
+  "safety.not-a-safety-rating": {
+    "da": "RavScore er ikke en sikkerhedsvurdering. Brugeren skal selv vurdere strøm, dybde, bund, vandstand, bølger, vejr og lokale forhold på stedet.",
+    "de": "Der BernsteinScore ist keine Sicherheitsbewertung. Nutzer müssen Strömung, Tiefe, Untergrund, Wasserstand, Wellen, Wetter und örtliche Bedingungen selbst vor Ort beurteilen."
+  },
+  "huntability.waders-wind-led": {
+    "da": "Ved wadersjagt er vinden det vigtigste jagtbarhedssignal. Jagtbarheden er 100 til og med 6 m/s og falder derefter; signifikant bølgehøjde er kun en blød nedadgående korrektion. Wadersscoren kan aldrig overstige wadersjagtbarheden. Strandjagt har ikke et tilsvarende jagtbarhedsloft.",
+    "de": "Beim Waten ist Wind das wichtigste Signal der Suchbarkeit. Sie beträgt bis einschließlich 6 m/s 100 und sinkt danach; die signifikante Wellenhöhe korrigiert nur sanft nach unten. Der Wathosen-Score kann die Suchbarkeit beim Waten nie überschreiten. Für die Strandsuche gilt keine entsprechende Suchbarkeitsobergrenze."
+  },
+  "transport.current-led": {
+    "da": "Verificeret modelgridstrøm er RavScores vigtigste relative transportevidens. En komponent mod land understøtter evidens mod kystzonen; strøm langs kysten er stadig relevant fysisk sammenhæng, men afklarer ikke lokal ravlevering. Udstrøm er negativ forsyningsevidens, ikke bevis for, at alt lokalt rav er væk.",
+    "de": "Verifizierte Modellgitterströmung ist das wichtigste relative Transportsignal des BernsteinScores. Eine landwärts gerichtete Komponente stützt Evidenz zur Küstenzone; küstenparallele Strömung bleibt physikalisch relevant, klärt aber keine örtliche Bernsteinanlieferung. Ausströmung ist negative Versorgungsevidenz, kein Beweis, dass aller örtliche Bernstein verschwunden ist."
+  },
+  "wind.indirect-not-bottom-current": {
+    "da": "Vind virker især indirekte ved at opbygge bølger, påvirke overfladelag og vandstand og flytte let opskyl. Vindretningen alene viser ikke pålideligt retningen for bundbundet rav. Ingen vindretning er universelt bedst, fordi kystens orientering og det forudgående forløb har betydning.",
+    "de": "Wind wirkt vor allem indirekt: Er baut Wellen auf, beeinflusst Oberflächenschichten und Wasserstand und bewegt leichtes Treibgut. Die Windrichtung allein zeigt die Richtung bodengebundenen Bernsteins nicht zuverlässig. Keine Windrichtung ist überall die beste, denn Küstenausrichtung und vorangegangener Verlauf sind wichtig."
+  },
+  "waves.height-not-enough": {
+    "da": "Bølgehøjde alene beskriver ikke mobilisering tilstrækkeligt. Bølgeperiode, varighed, vanddybde og bund har også betydning. Lange bølger når dybere end korte bølger med samme højde, og en kort top er ikke det samme som flere timers udviklet sø.",
+    "de": "Die Wellenhöhe allein beschreibt Mobilisierung nicht ausreichend. Wellenperiode, Dauer, Wassertiefe und Meeresboden sind ebenfalls wichtig. Lange Wellen reichen tiefer als kurze gleicher Höhe; eine kurze Spitze ist nicht mit stundenlang entwickeltem Seegang gleichzusetzen."
+  },
+  "transport.grid-not-surf-zone": {
+    "da": "Verificeret modelgridstrøm pr. kystdel er relativ transportevidens for kystzonen. Brug af en ejergodkendt regional proxy og dens afstand oplyses; den er ikke et lokalt gridpunkt. RavRadar opløser ikke undertow, fødestrømme, langsgående brændingsstrøm, ripstrømme eller præcise ruter ved revler/render. Et kausalt energivægtet middel af bølgeretningen bruger kun nuværende og tidligere timer, aldrig fremtidige. Med fire timers halveringstid tæller ældre timer gradvist mindre. Det kan kun dæmpe eksisterende forsyning med op til 15 % i leveringsdelen på 50 %, aldrig skabe eller øge forsyning. Det kan højst fjerne 7,5 rå RavScore-point før afrunding; det viste heltal kan flytte sig 8 point. Det er ikke en fysisk landingsandel og fjerner ikke den strukturelle usikkerhed på den sidste vej ind.",
+    "de": "Verifizierte Modellgitterströmung je Küstenabschnitt ist relative Transportevidenz zur Küstenzone. Eine genutzte, vom Eigentümer genehmigte Regionalproxy samt Abstand wird genannt; sie ist kein örtlicher Gitterpunkt. RavRadar löst weder Unter-, Zubringer-, Längs- oder Rippströmungen der Brandungszone noch genaue Routen durch Bänke/Rinnen auf. Das kausale energiegewichtete Wellenrichtungsmittel nutzt nur aktuelle und frühere, nie künftige Stunden. Bei vier Stunden Halbwertszeit zählen ältere Stunden weniger. Es kann bestehende Versorgung im 50-%-Lieferanteil höchstens um 15 % dämpfen, nie erzeugen oder erhöhen. Vor Rundung entfallen höchstens 7,5 rohe BernsteinScore-Punkte; die angezeigte ganze Zahl kann sich um 8 ändern. Das ist kein physischer Anlandungsanteil und beseitigt die strukturelle Unsicherheit des letzten Wegstücks nicht."
+  },
+  "mobilisation.wave-memory": {
+    "da": "RavScores mobiliseringsdel er en relativ bølgeenergi-prior baseret på bølgehøjde i anden ganget med bølgeperiode. Dens fire timers opbygning og 48 timers halveringstid er afprøvede arbejdsantagelser. RavRadar observerer ikke lokale ravlagre eller faktisk bevægelse; værdierne er hverken universelle naturlige grænser eller fundkalibrerede regler.",
+    "de": "Die Mobilisierungskomponente des BernsteinScores ist eine relative Wellenenergie-Annahme aus Wellenhöhe zum Quadrat mal Wellenperiode. Vier Stunden Aufbau und 48 Stunden Halbwertszeit sind getestete Arbeitsannahmen. RavRadar beobachtet weder örtliche Bernsteinvorräte noch tatsächliche Bewegung; die Werte sind weder allgemeine Naturgrenzen noch anhand von Funden kalibrierte Regeln."
+  },
+  "water-level.context": {
+    "da": "Faldende vand kan ledsage en vis bevægelse ud mod havet. Lavere vand kan også blotlægge materiale, der allerede er leveret eller tilbageholdt bag revler og langs kanter, så et mindre område bliver lettere at søge; det beviser ikke, at faldet koncentrerede materialet. Uden lokal dybdekortlægning giver denne sammenhæng ingen RavScore-point og beviser hverken, at rav ankom, eller at alt rav forsvandt.",
+    "de": "Fallendes Wasser kann mit einer gewissen seewärtigen Bewegung einhergehen. Niedrigeres Wasser kann auch bereits angeliefertes oder hinter Bänken und an Rändern zurückgehaltenes Material freilegen und eine kleinere Fläche leichter absuchbar machen. Das beweist nicht, dass der Wasserstandsrückgang das Material konzentriert hat. Ohne örtliche Tiefenkenntnis gibt dieser Zusammenhang keine BernsteinScore-Punkte und beweist weder Ankunft noch vollständiges Verschwinden des Bernsteins."
+  },
+  "coast.sorting-and-traps": {
+    "da": "Revler, render, åbninger, høfder, moler, kystknæk, strandhældning samt op- og tilbageskyl kan helt lokalt bremse, dreje, tilbageholde eller frigive let materiale. Overgange, ender og begge sider af en konstruktion er mulige fælder, aldrig garantier for rav.",
+    "de": "Sandbänke, Rinnen, Lücken, Buhnen, Molen, Küstenknicke, Strandneigung sowie Auf- und Rücklauf können leichtes Material sehr örtlich abbremsen, umlenken, zurückhalten oder freisetzen. Übergänge, Enden und beide Seiten eines Bauwerks sind mögliche Fallen, niemals eine Garantie für Bernstein."
+  },
+  "field-signs.clues-not-proof": {
+    "da": "Frisk våd tang, træ, frø, kul, skaller, mørke bånd og nye opskylslinjer er spor efter havets sortering af let materiale. Følg fraktionen og undersøg kanter og lommer, men hverken tang eller noget andet enkelt felttegn beviser, at der er rav.",
+    "de": "Frisches nasses Seegras, Holz, Samen, Kohle, Muschelschalen, dunkle Bänder und neue Spülsäume deuten auf die Sortierung leichten Materials durch das Meer hin. Folge dieser Fraktion und untersuche Ränder und Taschen. Weder Seegras noch ein anderes einzelnes Feldzeichen beweist Bernstein."
+  },
+  "identification.uv-clue-not-proof": {
+    "da": "Lav vægt i forhold til størrelse og en harpiksagtig overflade er nyttige første spor. Langbølget UV omkring 395 nm får ofte baltisk rav til at fluorescere tydeligt, men andre materialer kan også fluorescere; UV er derfor ikke et endeligt bevis.",
+    "de": "Geringes Gewicht im Verhältnis zur Größe und eine harzartige Oberfläche sind nützliche erste Hinweise. Langwelliges UV um 395 nm lässt baltischen Bernstein oft deutlich fluoreszieren, aber andere Materialien können ebenfalls fluoreszieren. UV ist deshalb kein endgültiger Beweis."
+  },
+  "identification.avoid-destructive-tests": {
+    "da": "Undgå varme nåle, ild og andre ødelæggende hjemmetests. Værdifulde eller usikre fund bør vurderes af en fagperson.",
+    "de": "Vermeide heiße Nadeln, Feuer und andere zerstörende Heimtests. Wertvolle oder unsichere Funde sollten von einer Fachperson beurteilt werden."
+  },
+  "technique.follow-the-fraction": {
+    "da": "En systematisk søgning følger rækkefølgen læs, vælg, følg og sammenlign: læs opskyllet, vælg den mest lovende sorterede fraktion, følg den langs kysten og sammenlign med nabostrækninger. Skift søgelinje, når materialet ændrer sig.",
+    "de": "Systematisches Suchen folgt der Reihenfolge lesen, wählen, folgen und vergleichen: Lies den Spülsaum, wähle die aussichtsreichste sortierte Fraktion, folge ihr entlang der Küste und vergleiche mit Nachbarabschnitten. Ändere die Suchlinie, wenn sich das Material verändert."
+  },
+  "sequence.release-transport-deposition": {
+    "da": "Et ravjagtforløb kan omfatte frigørelse, transport, levering nær kysten, aflejring og tilbageholdelse. RavScore bruger bølgeenergi som mobiliseringsmulighed, verificeret modelgridstrøm som relativ forsyningsevidens og en begrænset dæmpning fra bølgernes tilgang før leveringsdelen, men opløser ikke den sidste vej gennem revler og render. Stærk udstrøm kan føre noget materiale væk, mens lavere vand kan blotlægge materiale, der allerede er leveret eller tilbageholdt bag en revle. Det viser ikke, at vandstandsfaldet koncentrerede materialet, og én modelstrømværdi fortæller aldrig hele historien.",
+    "de": "Ein Bernsteinjagd-Ereignis kann Freisetzung, Transport, küstennahe Anlieferung, Ablagerung und Rückhalt umfassen. Der BernsteinScore nutzt Wellenenergie als Mobilisierungsmöglichkeit, verifizierte Modellgitterströmung als relative Versorgungsevidenz und begrenzte Wellenanlaufdämpfung vor dem Lieferanteil, löst aber den letzten Weg durch Bänke und Rinnen nicht auf. Starke Ausströmung kann Material wegtragen, während niedrigeres Wasser bereits angeliefertes oder hinter einer Bank zurückgehaltenes Material freilegt. Das beweist keine Konzentration durch den Wasserstandsrückgang; ein einzelner Modellströmungswert erklärt nie den ganzen Verlauf."
+  },
+  "amber.resin-maturation": {
+    "da": "Rav er ikke almindelig træsaft, og harpiks bliver ikke til rav blot ved at tørre. Harpiksen skal hærde, begraves og gennemgå langsom kemisk modning, herunder polymerisering og tværbinding over geologisk tid.",
+    "de": "Bernstein ist kein gewöhnlicher Baumsaft, und Harz wird nicht allein durch Trocknen zu Bernstein. Es muss aushärten, eingebettet werden und über geologische Zeit langsam chemisch reifen, unter anderem durch Polymerisation und Vernetzung."
+  },
+  "amber.baltic-age-range": {
+    "da": "Det vigtigste baltiske succinitlag er fra sen eocæn, omkring 36–35 millioner år siden. Løst baltisk rav uden sikker lagtilknytning beskrives passende med et bredere interval på cirka 37,7–34 millioner år og kan ikke dateres alene efter udseendet.",
+    "de": "Der wichtigste baltische Succinit-Horizont stammt aus dem späten Eozän, etwa vor 36–35 Millionen Jahren. Für losen baltischen Bernstein ohne sichere Schichtzuordnung ist eine breitere Spanne von etwa 37,7–34 Millionen Jahren angemessen; das Aussehen allein erlaubt keine Datierung."
+  },
+  "amber.botanical-origin-uncertain": {
+    "da": "Baltisk rav stammer fra nåletræsharpiks, men det præcise harpiksproducerende træ er stadig videnskabeligt omdiskuteret. En fremtrædende hypotese baseret på FTIR og fossiler er ikke en endelig bestemmelse.",
+    "de": "Baltischer Bernstein stammt aus Nadelbaumharz; welche Baumart das Harz genau erzeugte, ist wissenschaftlich weiterhin umstritten. Eine führende Hypothese aus FTIR- und Fossilbefunden ist keine endgültige Bestimmung."
+  },
+  "amber.transport-saltation": {
+    "da": "Kontrollerede forsøg med ensartede ravpartikler dokumenterer saltation som bundtransport: gentagne små hop langs bunden. Præcist målt massefylde, synkehastighed og transporttærskler gælder de undersøgte prøver og må ikke gøres til universelle værdier for naturlige stykker.",
+    "de": "Kontrollierte Versuche mit gleichartigen Bernsteinpartikeln dokumentieren Saltation als Bodentransport: wiederholte kleine Sprünge am Grund. Genau gemessene Dichte, Sinkgeschwindigkeit und Transportschwellen gelten für die jeweiligen Proben und dürfen nicht als allgemeine Werte natürlicher Stücke gelten."
+  },
+  "amber.cold-water-buoyancy": {
+    "da": "Ved samme saltindhold er koldere havvand normalt lidt tættere og kan mindske forskellen mellem ravets og vandets densitet lidt. Det meste baltiske rav synker stadig. Effekten på løft eller mobilisering af naturlige stykker under lokale forhold er ikke kvantificeret, og temperatur indgår ikke i RavScore.",
+    "de": "Bei gleichem Salzgehalt ist kälteres Meerwasser gewöhnlich etwas dichter und kann den Dichteunterschied zu Bernstein geringfügig verringern. Der meiste baltische Bernstein sinkt weiterhin. Der Einfluss auf Anheben oder Mobilisieren natürlicher Stücke unter örtlichen Bedingungen ist nicht quantifiziert; Temperatur ist kein Eingangswert des BernsteinScores."
+  },
+  "identification.fluorescence-varies": {
+    "da": "Ravs fluorescens varierer med sammensætning, forvitring og behandling, og nogle efterligninger fluorescerer også. RavRadars praktiske søgeråd er en langbølget ravlygte omkring 395 nm i mørke omgivelser efterfulgt af fysisk kontrol; fluorescens alene er ikke bevis.",
+    "de": "Die Fluoreszenz von Bernstein hängt von Zusammensetzung, Verwitterung und Behandlung ab; auch manche Imitationen fluoreszieren. RavRadars praktischer Suchhinweis ist eine langwellige Bernsteinlampe um 395 nm bei Dunkelheit mit anschließender physischer Prüfung des Fundes. Fluoreszenz allein ist kein Beweis."
+  },
+  "identification.treatments-and-imitations": {
+    "da": "Plast, glas, copal, presset rav, kompositter, fyldninger, farvestoffer og varmebehandling kan efterligne eller ændre rav. Ingen enkelt hjemmetest skelner pålideligt mellem alle tilfælde; kombiner ikke-destruktive tegn og få værdifuldt eller usædvanligt materiale undersøgt fagligt.",
+    "de": "Kunststoff, Glas, Copal, Pressbernstein, Verbundmaterialien, Füllungen, Farbstoffe und Wärmebehandlung können Bernstein imitieren oder verändern. Kein einzelner Heimtest unterscheidet alle Fälle zuverlässig. Kombiniere zerstörungsfreie Hinweise und lasse wertvolles oder ungewöhnliches Material fachlich untersuchen."
+  },
+  "care.preventive-conservation": {
+    "da": "Rav er blødt, varmefølsomt og sårbart over for stærkt lys, opløsningsmidler og ustabile forhold. Rens et almindeligt robust fund forsigtigt med lunkent vand. Undgå varme nåle, ild, alkohol, acetone og olier, og hold usædvanlige indeslutninger stabile til en faglig vurdering.",
+    "de": "Bernstein ist weich, wärmeempfindlich und anfällig für starkes Licht, Lösungsmittel und instabile Bedingungen. Reinige einen gewöhnlichen robusten Fund vorsichtig mit lauwarmem Wasser. Vermeide heiße Nadeln, Feuer, Alkohol, Aceton und Öle; bewahre ungewöhnliche Einschlüsse unter stabilen Bedingungen für eine fachliche Beurteilung auf."
+  },
+  "safety.rip-current": {
+    "da": "Et hul i en revle kan samle udadgående strøm. Tegn kan være en mørkere, roligere rende, færre brydende bølger og skum, der bevæger sig udad. Bliver man fanget, bør man ikke kæmpe direkte imod strømmen, men bevæge sig parallelt med kysten og følge myndighedernes aktuelle råd.",
+    "de": "Eine Lücke in einer Sandbank kann seewärtige Strömung bündeln. Hinweise können eine dunklere, ruhigere Rinne, weniger brechende Wellen und seewärts treibender Schaum sein. Wer hineingerät, sollte nicht direkt gegen die Strömung kämpfen, sondern sich parallel zum Ufer bewegen und aktuelle Behördenhinweise beachten."
+  },
+  "safety.cold-water": {
+    "da": "Pludselig nedsænkning i koldt vand kan give ufrivillig gispen, hurtig vejrtrækning og tab af fysisk handleevne. Klæd dig efter vandtemperaturen, brug egnet opdriftsudstyr, undgå at vade alene, og husk, at waders ikke er sikkerhedsudstyr.",
+    "de": "Plötzliches Eintauchen in kaltes Wasser kann unwillkürliches Luftschnappen, schnelle Atmung und Verlust körperlicher Leistungsfähigkeit auslösen. Kleide dich nach der Wassertemperatur, verwende geeignete Auftriebshilfen, wate nicht allein und bedenke, dass Wathosen keine Sicherheitsausrüstung sind."
+  },
+  "safety.white-phosphorus": {
+    "da": "Hvid fosfor kan ligne rav og kan selvantænde, når det tørrer. Lad et mistænkeligt ravlignende fund ligge, hvis det ryger, lugter kemisk eller bliver varmt. Hold afstand og kontakt politiet efter Forsvarets aktuelle danske vejledning.",
+    "de": "Weißer Phosphor kann Bernstein ähneln und sich beim Trocknen selbst entzünden. Ein verdächtiger bernsteinähnlicher Fund, der raucht, chemisch riecht oder warm wird, muss liegen bleiben. Halte Abstand und verständige die Polizei gemäß den aktuellen dänischen Hinweisen der Streitkräfte."
+  },
+  "rules.access-and-collection": {
+    "da": "Mange danske strande har almindelig adgang, og små naturgenstande må ofte samles til privat brug. Ejerskab, reservater, militære områder, lokale skilte og aktuelle regler kan dog ændre forholdene. Aktuel officiel vejledning og stedets begrænsninger gælder.",
+    "de": "Viele dänische Strände sind allgemein zugänglich, und kleine Naturgegenstände dürfen oft privat gesammelt werden. Eigentumsverhältnisse, Schutzgebiete, Militärflächen, örtliche Schilder und aktuelle Regeln können dies jedoch ändern. Maßgeblich sind aktuelle amtliche Hinweise und örtliche Beschränkungen."
+  },
+  "rules.danefae": {
+    "da": "Et almindeligt naturligt ravstykke er normalt ikke danefæ, men usædvanlige bearbejdede eller arkæologiske ravgenstande kan være det. Polér dem ikke; bevar fundets sammenhæng og kontakt et lokalt arkæologisk museum eller Nationalmuseet.",
+    "de": "Ein gewöhnliches natürliches Bernsteinstück ist normalerweise kein Danefæ; ungewöhnliche bearbeitete oder archäologische Bernsteinobjekte können es sein. Poliere sie nicht, bewahre den Fundzusammenhang und kontaktiere ein örtliches archäologisches Museum oder das dänische Nationalmuseum."
+  },
+  "evidence.source-classes": {
+    "da": "RavRadar skelner mellem direkte ravforsøg, fagfællebedømte kystfysiske analogier, officielle regler og sikkerhedsråd samt navngivne praktikeres erfaring. Kilderne kan supplere hinanden, men må ikke fremstilles som lige stærk evidens.",
+    "de": "RavRadar unterscheidet direkte Bernsteinversuche, begutachtete küstenphysikalische Analogien, amtliche Regeln und Sicherheitshinweise sowie Erfahrungen namentlich bekannter Praktiker. Sie können einander ergänzen, dürfen aber nicht als gleich starke Evidenz dargestellt werden."
+  },
+  "public-context.selected-zone-only": {
+    "da": "En fjernassistent må kun forklare den lille offentlige kontekst for den valgte zone, som RavRadar har sendt. Landsdækkende rangeringer og præcise beregninger af bedste tidspunkt forbliver deterministiske RavRadar-funktioner og må ikke opfindes af modellen.",
+    "de": "Eine Fernassistenz darf nur den kleinen von RavRadar übermittelten öffentlichen Kontext des ausgewählten Gebiets erklären. Landesweite Ranglisten und genaue Berechnungen des besten Zeitpunkts bleiben deterministische RavRadar-Funktionen und dürfen nicht vom Modell erfunden werden."
+  }
+});
+const CANONICAL_FOCUS_REPLIES = Object.freeze({
+  "da": "Spørgsmålet rummer mere, end jeg kan besvare samlet og med alle forbehold her. Hvilken del vil du have uddybet først?",
+  "de": "Die Frage umfasst mehr, als ich hier zusammen mit allen Einschränkungen beantworten kann. Welchen Teil soll ich zuerst erläutern?",
+  "en": "The question covers more than I can answer together here with every qualification intact. Which part should I explain first?"
+});
+const CANONICAL_CONTEXT_LABELS = Object.freeze({
+  "da": {
+    "common.missing": "Mangler",
+    "common.unknown": "Ukendt",
+    "assistant.local.noZone": "Vælg først en zone, så kan jeg forklare dens score.",
+    "score.unavailable": "RavScore midlertidigt utilgængelig",
+    "score.historyIncomplete.short": "Historik ufuldstændig",
+    "score.historyIncomplete.range": "modelinterval {lower}–{upper} (spænd {span} point)",
+    "weather.wind": "Vind",
+    "weather.windDirection": "Vindretning, modtagne grader",
+    "weather.waves": "Bølger",
+    "weather.waterLevel": "Vandstand",
+    "weather.current": "Strøm",
+    "weather.currentDirection": "Strømretning, modtagne grader",
+    "weather.waterTemperature": "Vandtemperatur",
+    "weather.time": "Tid i Danmark",
+    "mode.beachShort": "På stranden",
+    "mode.wadersShort": "I vandet",
+    "context.supplied": "Modtagne zoneværdier",
+    "context.lowerBound": "konservativ nedre grænse",
+    "weather.wavePeriod": "Bølgeperiode",
+    "context.score": "RavScore",
+    "context.missing": "Udeladte vejrdata er ukendte, ikke nul."
+  },
+  "de": {
+    "common.missing": "Fehlt",
+    "common.unknown": "Unbekannt",
+    "assistant.local.noZone": "Wähle zuerst eine Zone, dann kann ich ihren Score erklären.",
+    "score.unavailable": "BernsteinScore vorübergehend nicht verfügbar",
+    "score.historyIncomplete.short": "Historie unvollständig",
+    "score.historyIncomplete.range": "Modellintervall {lower}–{upper} (Spanne {span} Punkte)",
+    "weather.wind": "Wind",
+    "weather.windDirection": "Windrichtung, übermittelte Grad",
+    "weather.waves": "Wellen",
+    "weather.waterLevel": "Wasserstand",
+    "weather.current": "Strömung",
+    "weather.currentDirection": "Strömungsrichtung, übermittelte Grad",
+    "weather.waterTemperature": "Wassertemperatur",
+    "weather.time": "Zeit in Dänemark",
+    "mode.beachShort": "Am Strand",
+    "mode.wadersShort": "Im Wasser",
+    "context.supplied": "Übermittelte Gebietswerte",
+    "context.lowerBound": "konservative Untergrenze",
+    "weather.wavePeriod": "Wellenperiode",
+    "context.score": "BernsteinScore",
+    "context.missing": "Ausgelassene Wetterwerte sind unbekannt, nicht null."
+  },
+  "en": {
+    "common.missing": "Missing",
+    "common.unknown": "Unknown",
+    "assistant.local.noZone": "Select a zone first, then I can explain its score.",
+    "score.unavailable": "AmberScore temporarily unavailable",
+    "score.historyIncomplete.short": "History incomplete",
+    "score.historyIncomplete.range": "model interval {lower}–{upper} (span {span} points)",
+    "weather.wind": "Wind",
+    "weather.windDirection": "Wind direction, supplied degrees",
+    "weather.waves": "Waves",
+    "weather.waterLevel": "Water level",
+    "weather.current": "Current",
+    "weather.currentDirection": "Current direction, supplied degrees",
+    "weather.waterTemperature": "Water temperature",
+    "weather.time": "Time in Denmark",
+    "mode.beachShort": "On the beach",
+    "mode.wadersShort": "In the water",
+    "context.supplied": "Supplied zone values",
+    "context.lowerBound": "conservative lower bound",
+    "weather.wavePeriod": "Wave period",
+    "context.score": "AmberScore",
+    "context.missing": "Omitted weather values are unknown, not zero."
+  }
+});
+
+function canonicalFactText(id, locale) {
+  if (locale === "en") return RAV_ASSISTANT_FACTS.find(fact => fact.id === id)?.text ?? null;
+  return CANONICAL_FACT_TRANSLATIONS[id]?.[locale] ?? null;
+}
+
+function canonicalContextTime(value, locale) {
+  if (typeof value !== "string") return null;
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d{1,9})?(Z|[+-]\d{2}:\d{2})$/);
+  const stamp = Date.parse(value);
+  if (!match || !Number.isFinite(stamp)) return null;
+  const offset = match[8] === "Z" ? 0
+    : (match[8][0] === "-" ? -1 : 1)
+      * (Number(match[8].slice(1, 3)) * 60 + Number(match[8].slice(4, 6)));
+  const wall = new Date(stamp + offset * 60_000);
+  const expected = match.slice(1, 7).map(Number);
+  const actual = [wall.getUTCFullYear(), wall.getUTCMonth() + 1, wall.getUTCDate(),
+    wall.getUTCHours(), wall.getUTCMinutes(), wall.getUTCSeconds()];
+  if (expected.some((value, index) => value !== actual[index])) return null;
+  return new Intl.DateTimeFormat({ da:"da-DK", de:"de-DE", en:"en-GB" }[locale], {
+    timeZone:"Europe/Copenhagen", year:"numeric", month:"2-digit", day:"2-digit",
+    hour:"2-digit", minute:"2-digit", timeZoneName:"short",
+  }).format(new Date(stamp));
+}
+
+function canonicalSelectedZone(context, locale) {
+  const supplied = publicAssistantContext(context, locale);
+  const labels = CANONICAL_CONTEXT_LABELS[locale];
+  if (!supplied.zone.id) return labels["assistant.local.noZone"];
+  const number = (value, digits) => finite(value) === null
+    ? labels["common.missing"]
+    : new Intl.NumberFormat({ da:"da-DK", de:"de-DE", en:"en-GB" }[locale],
+      { maximumFractionDigits:digits }).format(value);
+  const rows = [labels["context.supplied"] + ": "
+    + JSON.stringify(supplied.zone.name || supplied.zone.id)];
+  if (context?.mode === "beach" || context?.mode === "waders") {
+    rows.push(labels[supplied.mode === "beach" ? "mode.beachShort" : "mode.wadersShort"]);
+  }
+  // Format only a valid supplied ISO time; never claim freshness or provenance.
+  const time = canonicalContextTime(supplied.weather.time, locale);
+  if (time !== null) rows.push(labels["weather.time"] + ": " + time);
+  const result = supplied.result;
+  if (!result.available) {
+    rows.push(labels["score.unavailable"]);
+  } else if (result.scoreQuality === "HISTORY_INCOMPLETE") {
+    const bounds = result.scoreBounds;
+    const range = labels["score.historyIncomplete.range"]
+      .replace("{lower}", number(bounds.lower, 1))
+      .replace("{upper}", number(bounds.upper, 1))
+      .replace("{span}", number(bounds.modelUncertaintyPoints, 1));
+    rows.push(labels["context.score"] + ": " + number(result.score, 1)
+      + " (" + labels["context.lowerBound"] + "); " + range + ".");
+  } else {
+    rows.push(labels["context.score"] + ": " + number(result.score, 1));
+  }
+  const fields = [
+    ["windSpeedMps", "weather.wind", "m/s", 1],
+    ["windDirectionDeg", "weather.windDirection", "°", 1],
+    ["waveHeightM", "weather.waves", "m", 1],
+    ["wavePeriodS", "weather.wavePeriod", "s", 1],
+    ["waterLevelCm", "weather.waterLevel", "cm", 0],
+    ["currentSpeedMps", "weather.current", "m/s", 2],
+    ["currentDirectionDeg", "weather.currentDirection", "°", 1],
+    ["waterTemperatureC", "weather.waterTemperature", "°C", 1],
+  ];
+  for (const [field, label, unit, digits] of fields) {
+    const value = supplied.weather[field];
+    if (finite(value) !== null) rows.push(labels[label] + ": " + number(value, digits) + " " + unit);
+  }
+  rows.push(labels["context.missing"]);
+  return rows.join("\n");
+}
+
+function composeCanonicalAssistantResult(evidenceIds, locale, disposition, context) {
+  const units = evidenceIds.map(id => id === "public-context.selected-zone-only"
+    ? canonicalSelectedZone(context, locale) : canonicalFactText(id, locale));
+  if (units.some(text => typeof text !== "string" || !text)) return null;
+  if (disposition === "uncertain") units.push(RAV_ASSISTANT_UNCERTAIN_REPLIES[locale]);
+  const answer = units.join("\n\n");
+  // All units or an honest request to focus: no clipping or silent first-N selection.
+  if (answer.length > 900) {
+    return { answer:CANONICAL_FOCUS_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
+  }
+  if (!answer || SECURITY_PATTERN.test(answer)) return null;
+  return { answer, disposition, evidenceIds };
+}
+
+export function validateAssistantResult(value, locale, context = {}) {
+  if (!RAV_ASSISTANT_LOCALES.includes(locale)) return null;
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const expectedKeys = ["answer", "disposition", "evidenceIds", "locale", "schemaVersion"];
   if (Object.keys(value).sort().join("|") !== expectedKeys.join("|")) return null;
@@ -416,8 +736,8 @@ export function validateAssistantResult(value, locale) {
     // never publish a guessed cause or use without any bound public evidence.
     return { answer: RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition: value.disposition, evidenceIds };
   }
-  if (value.disposition === "answer" && evidenceIds.includes("score.integrated-only") && evidenceIds.includes("score.weights-20-50-30")) {
+  if (value.disposition === "answer" && evidenceIds.length === 2 && evidenceIds.includes("score.integrated-only") && evidenceIds.includes("score.weights-20-50-30")) {
     return { answer: RAV_ASSISTANT_WEIGHT_ANSWERS[locale], disposition: value.disposition, evidenceIds };
   }
-  return { answer, disposition: value.disposition, evidenceIds };
+  return composeCanonicalAssistantResult(evidenceIds, locale, value.disposition, context);
 }
