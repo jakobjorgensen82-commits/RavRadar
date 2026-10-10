@@ -60,6 +60,9 @@ globalThis.fetch = async (input, init) => {
       const providerBody = await request.json();
       assert.equal(providerBody.messages.length, 2);
       assert.deepEqual(providerBody.messages.map(message => message.role), ['system', 'user']);
+      assert.match(providerBody.messages[0].content, /Lack of supporting facts is uncertainty, not an unrelated topic\./);
+      assert.match(providerBody.messages[0].content, /never invent a property, a device or instructions for its use\./);
+      assert.match(providerBody.messages[0].content, /A relevant word does not make an unrelated or private request permissible\./);
       assert.doesNotMatch(JSON.stringify(providerBody), /TEST_PRIVATE_CONTEXT_MARKER/);
       controlledProviderCalls += 1;
       return Response.json(controlledProviderResponse);

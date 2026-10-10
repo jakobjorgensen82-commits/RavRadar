@@ -1,5 +1,16 @@
 # Lokal 4.0.565 – afbrydelse af finalizer og strømsupplement
 
+## Seneste delta: assistentens relevans og godkendt strømovergang
+
+Den offentlige assistent svarede HTTP 200, men afviste et relevant spørgsmål om rav efter gnidning som uvedkommende. Den generelle instruktion skelner nu mellem uvedkommende emner og manglende faktastøtte: relevante ravspørgsmål skal få ærlig usikkerhed eller afklaring. Ingen opdigtede egenskaber, udstyr, nye fakta, spørgsmålsspecifik validator eller ændrede vidensbindinger. Private forespørgsler forbliver afgrænset. Normal klient-/servertest består med kontrolleret provider; offentlig effekt og ekstern AI er ikke bevist.
+
+Den tidligere eksakte 565-kilde bestod GitHub-kontrollen kl. 19.42 dansk tid, inklusive normale Linux-kaldere. Assistenttilføjelsen kræver ny kontrol af præcis det nye head før merge. Gamle ventestatusser er historiske; offentlig effekt af den ændrede kandidat mangler.
+
+Ejerens nye ja godkender korrekt decoderfortolkning til nye strømdata og ny strømhukommelse, også med mulige fremtidige scoreændringer. Gamle originalpakker og offentliggjort scorehistorik bevares uændret; kildeprioritet, scoreformel, adminpunkter og geometri ændres ikke. Aktivering kræver databevarelse, gyldig historik, korrekte bindinger og afsluttet vejrhentning. Ingen nye DMI-downloads eller SQL-installation følger. De syv zoners undtagelse gælder fortsat kun vandstand. Den isolerede strømrettelse er under lokal gennemgang, ikke aktiveret.
+
+Den særskilte omfattende assistentlevering, brugerdata og samlede revision er åbne. Den godkendte lokale assistentkomposition og dens måltest ophæver ikke den særskilt afviste kildegruppes leveringsgrænse. Ingen produktionsændring under aktiv writer og ingen ny manuel vejrhentning følger.
+
+
 DMI-finalizerens og Copernicus-supplementets normale kaldere fastholder nu første SIGTERM/SIGINT før Popen. Den faktisk returnerede direkte underproces afsluttes og afventes før fejlbehandling, recovery eller nyt forsøg. Første fejl og tidligere signalhåndteringer bevares. Det gamle kill/reap-forløb, hele recovery-tiden, providerprioritet, argumenter og alle eksisterende tidsbudgetter er uændrede; der indføres ingen ny stopreserve eller hård totalfrist.
 
 Tre faktisk reproducerede afbrydelser efter procesoprettelse, men før kalders modtagelse af procesreferencen, efterlod tidligere egne underprocesser kørende. Samme normale finalizer-, provider- og recovery-kaldere består nu. Fire DMI-målprøver og to Copernicus-prøver plus hele den gamle retry-test består lokalt; Copernicus-måltesten er føjet til den eksisterende kildebro uden at fjerne kontroller eller ændre broens budgetter. Ny præcis GitHub-kildekontrol, merge og offentlig effekt af 565 mangler.

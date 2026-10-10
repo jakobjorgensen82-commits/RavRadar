@@ -5,6 +5,12 @@
   "updatedAt": "2026-10-10",
   "sections": [
     {
+      "id": "assistant-relevance-current-interpretation-2026-10-10",
+      "chapter": "89.190",
+      "title": "Relevante ravspørgsmål og nye strømfortolkninger",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Manglende viden om et relevant ravspørgsmål er usikkerhed, ikke automatisk et uvedkommende emne.</div><p>Assistentens generelle instruktion er rettet efter en faktisk offentlig afvisning. Den skal forklare usikkerhed eller bede om præcisering, ikke opfinde egenskaber, udstyr eller vejrtal. Private forespørgsler forbliver afgrænset. Den normale klient-/servertest består med kontrolleret provider; offentlig effekt og ekstern AI er ikke bevist. Dette er ikke den omfattende vidensudvidelse.</p><p>Den tidligere eksakte 565-kilde bestod GitHub-kontrollen kl. 19.42 dansk tid, også gennem normale Linux-kaldere. Tilføjelsen kræver ny kontrol af præcis det nye head; gamle ventestatusser er historiske.</p><p>Ejeren har godkendt korrekt decoderfortolkning til nye strømdata og ny strømhukommelse, også hvis fremtidige scorer ændres. Gamle originalpakker og offentliggjorte scorer bevares uændret. Kildeprioritet, scoreformel, adminpunkter og geometri ændres ikke. Aktivering kræver databevarelse, gyldig historik, korrekte bindinger og afsluttet vejrhentning. Ingen nye DMI-downloads eller SQL-installation følger. De syv zoners undtagelse gælder fortsat kun vandstand; øvrige leverings- og sikkerhedsgrænser bevares.</p>"
+    },
+    {
       "id": "own-finalizer-supplement-signal-stop-2026-10-10",
       "chapter": "89.189",
       "title": "Afbrydelse før gemning og genbrug",

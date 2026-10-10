@@ -6,7 +6,29 @@ Den lokale 4.0.565 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
 
+## 89.190 Relevante ravspørgsmål og nye strømfortolkninger
+
+Assistenten må ikke kalde et relevant ravspørgsmål uvedkommende, alene fordi
+svaret mangler i dens leverede fakta. Den skal forklare usikkerhed eller bede
+om præcisering. Den må ikke opfinde egenskaber, udstyr eller vejrtal; private
+forespørgsler er stadig afgrænset. Den generelle instruktion er justeret efter
+en faktisk offentlig afvisning. Den normale klient-/servertest består med
+kontrolleret provider, men offentlig effekt og ekstern AI er ikke bevist.
+Dette er ikke den omfattende vidensudvidelse.
+
+Ejeren har godkendt korrekt decoderfortolkning til nye strømdata og ny
+strømhukommelse, også hvis fremtidige scorer ændres. Gamle originalpakker og
+offentliggjorte scorer bevares uændret. Kildeprioritet, scoreformel, adminpunkter
+og geometri ændres ikke. Aktivering kræver databevarelse, gyldig historik,
+korrekte bindinger og afsluttet vejrhentning. Ingen nye DMI-downloads eller
+SQL-installation følger. De syv zoners undtagelse gælder fortsat kun vandstand;
+øvrige leverings- og sikkerhedsgrænser bevares.
+
 ## 89.189 Afbrydelse før gemning og genbrug
+
+Seneste status: den tidligere eksakte 565-kilde bestod GitHub-kontrollen kl.
+19.42 dansk tid, også gennem normale Linux-kaldere. Tilføjelsen i afsnit 89.190
+kræver ny kontrol af det præcise head; offentlig effekt mangler.
 
 DMI-finalizeren og den supplerende strømhentning fastholder første
 afbrydelsessignal omkring oprettelsen af deres egen underproces. Den faktisk

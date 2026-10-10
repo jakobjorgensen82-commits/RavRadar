@@ -2,6 +2,8 @@
 
 ## Aktuel menneskelig delegation og leveringsgrænse
 
+Ejerens seneste ja tillader korrekt fortolkning til nye strømdata og ny strømhukommelse, med mulige fremtidige scoreændringer, men bevarer gamle originaler og offentliggjort historik. Aktivering kræver databevarelse, gyldig historik, korrekte bindinger og afsluttet writer; ingen nye DMI-downloads eller SQL-installation følger. Tidligere særskilte afvisninger ophæves ikke. Relevante ravspørgsmål uden faktastøtte skal få usikkerhed eller afklaring, ikke automatisk uvedkommende-afvisning; private og uvedkommende forespørgsler forbliver afgrænset.
+
 Ejeren kræver parallelle, afgrænsede delegationer på strøm/score, vejrhentningsrevision,
 brugerdata, Spørg RavRadar og selvstændig drift uden Codex. Genbrug agenter og
 eksisterende isolerede checkouts; undgå overlappende ændringer. Hovedagenten ejer

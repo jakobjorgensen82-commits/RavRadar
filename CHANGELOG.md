@@ -1,5 +1,9 @@
 # Lokal 4.0.565 – 2026-10-10
 
+- Retter den generelle assistentinstruktion efter en faktisk offentlig afvisning af et relevant ravspørgsmål: manglende faktastøtte skal give usikkerhed eller afklaring. Ingen nye fakta, spørgsmålsspecifik validator, vidensbinding eller sikkerhedsundtagelse. Normal klient-/servertest består med kontrolleret provider; offentlig effekt mangler.
+- Den tidligere eksakte 565-kilde bestod GitHub-kontrollen kl. 19.42 dansk tid. Assistenttilføjelsen kræver ny præcis kildekontrol; gamle ventestatusser nedenfor er historiske.
+- Dokumenterer ejerens afgrænsede decoder-overgang for nye strømdata og ny strømhukommelse. Gamle originaler og offentliggjort scorehistorik bevares. Databevarelse, gyldig historik, korrekte bindinger og afsluttet writer kræves før aktivering. Ingen nye DMI-downloads, SQL-installation eller ændring af kildeprioritet, formel, adminpunkter eller geometri.
+
 - Lukker tre faktisk reproducerede afbrydelseshuller i normale DMI-finalizer-/Copernicus-provider-/recovery-kaldere. Første SIGTERM/SIGINT fastholdes før Popen; egen direkte proces afsluttes og afventes før fejlbehandling eller genbrug. Gamle kill/reap-grænser, fuld recovery-tid, første fejl og tidligere signalhåndteringer bevares.
 - Fire DMI-målprøver og to Copernicus-prøver plus hele den gamle retry-test består lokalt. Den eksisterende Copernicus-måltest køres også gennem den normale kildebro; alle andre børn og budgetter bevares. Ny præcis kildekontrol, merge og offentlig effekt mangler.
 - Et forslag med ny endelig oprydningsfrist er forkastet, fordi normal cachegemning efter en procesfejl ikke beviser fysisk writerophør. Ingen samlet SAVE-/descendant-/runner-tab-frikendelse eller hård totalfrist følger af rettelsen. Original-B/S-før-T, fireminuttersgrænsen og national heljobskapacitet er fortsat åbne.
