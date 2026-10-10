@@ -1,4 +1,11 @@
-# Lokal 4.0.559 – 2026-10-10
+# Lokal 4.0.560 – 2026-10-10
+
+- Bevarer den eksisterende 12-sekundersfrist gennem JSON-læsning i normale auth-kald, profil-/rettighedslæsninger og tilvalgte egne tur-/indsendelseskald. Ukendt profilformat bliver ikke vellykket adgang. Standardens Response-retur, ejergrænser, tokenfornyelse og hidtidige tidsbudgetter består.
+- Ukendt udfald efter POST bevarer den uændrede originale tur og kø; sent svar er ikke afleveringskvittering eller bevis for serverstop. 66 tur-/authmål og 41 profil-/rettighedsmål består; alle tidligere assertions og begge vejrbundles er bevaret.
+- Den præcist godkendte eksisterende-Worker-operation er faktisk gennemført og normal D1-drift kontrolleret. Ingen SQL/Edge-installation eller ekstra recovery; engangstilladelsen er forbrugt.
+- PR #549's præcise kildekontrol, merge, genbrug af gemt vejr, faktisk Edge-/Pages-deploy og offentlig 210/673-kontrol er gennemført. Browseren viser 4.0.559. Ny 4.0.560-kildekontrol og offentlig effekt afventer. Cache-/numerikpakkerne er ikke del af denne release; alle fem målområder består.
+
+# Historik: 4.0.559 – 2026-10-10
 
 - Normal profiloversigt bindes til oprindeligt login/ejer; forsinkede svar efter logout eller kontoskift afvises uden at blokere normal fornyelse.
 - Ulæselig lokal turbank/kø må ikke autorisere tom overskrivning. Den enkelte manuelle turs kvittering adskilles fra andre ventende ture; eksisterende payload, kø og brugerfunktioner består.

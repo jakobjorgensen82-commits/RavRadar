@@ -1,25 +1,25 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.559';
-import { assertAuthIdentitySettled, authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.559';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.560';
+import { assertAuthIdentitySettled, authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.560';
 import {
   TRIP_EVIDENCE_SCHEMA_VERSION,
   assertObservationTripQualityBinding,
   assertTripEvidencePrivacy,
   migrateLegacyUnattestedObservationColumns,
   toObservationTripColumns
-} from './trip-evidence-contract.js?v=4.0.559';
+} from './trip-evidence-contract.js?v=4.0.560';
 import {
   assertTripObservationNestedPrivacy,
   expectedCalibrationEligibility,
   projectTripStoragePayload,
   tripEvidenceIntegrityIssues
-} from './calibration-eligibility.js?v=4.0.559';
+} from './calibration-eligibility.js?v=4.0.560';
 import {
   RAVSCORE_MODEL_ID,
   assertRavScoreModelBinding,
   ravScoreModelBinding
-} from '../core/ravscore-model-contract.js?v=4.0.559';
-import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.559';
-import { markTripEvidenceSubmitted, tripEvidenceStorageKeys } from './trip-evidence-store.js?v=4.0.559';
+} from '../core/ravscore-model-contract.js?v=4.0.560';
+import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.560';
+import { markTripEvidenceSubmitted, tripEvidenceStorageKeys } from './trip-evidence-store.js?v=4.0.560';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
 const LOCAL_KEY='ravradar-observations-v2';
 const OUTBOX_KEY='ravradar-observation-outbox-v1';
@@ -90,15 +90,13 @@ export async function getOwnTripObservations({ limit = 100 } = {}) {
   assertOwner();
   const safeLimit = Math.max(1, Math.min(200, Math.round(Number(limit) || 100)));
   const url = `${PUBLIC_CONFIG.supabaseUrl}/functions/v1/trip-log`;
-  const response = await authorizedFetch(url, {
+  const { response, body } = await authorizedFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ limit: safeLimit })
-  });
+  }, { consumeJson: true });
   assertOwner();
   if (!response.ok) throw new Error(`Dine ture kunne ikke hentes (${response.status}).`);
-  const body = await response.json();
-  assertOwner();
   if (!Array.isArray(body?.rows)) throw new Error('Dine ture kunne ikke hentes sikkert.');
   return body.rows;
 }
@@ -113,19 +111,18 @@ async function postRemote(row){
   const url=`${PUBLIC_CONFIG.supabaseUrl}/functions/v1/submit-observation`;
   const payload=remoteObservationPayload(row);
   const options={method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)};
-  let response;
+  let response,receipt;
   if(payload.user_id){
     const active=await requireFreshSession();
     assertIdentity();
     if(active?.user?.id!==payload.user_id)throw new Error('Log ind med den konto, som turen tilhører, før den kan sendes.');
-    response=await authorizedFetch(url,options);
+    ({response,body:receipt}=await authorizedFetch(url,options,{consumeJson:true}));
   }else{
     response=await fetch(url,{...options,headers:{apikey:PUBLIC_CONFIG.supabasePublishableKey,Authorization:`Bearer ${PUBLIC_CONFIG.supabasePublishableKey}`,...options.headers}});
   }
   assertIdentity();
   if(!response.ok)throw new Error('Turen kunne ikke sendes lige nu. Den bliver liggende på enheden, så du kan prøve igen.');
-  let receipt;
-  try{receipt=await response.json();}catch{receipt=null;}
+  if(!payload.user_id){try{receipt=await response.json();}catch{receipt=null;}}
   assertIdentity();
   if(!receipt||typeof receipt!=='object'||Array.isArray(receipt)||receipt.stored!==true)
     throw new Error('Turen kunne ikke sendes lige nu. Den bliver liggende på enheden, så du kan prøve igen.');

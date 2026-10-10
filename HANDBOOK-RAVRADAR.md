@@ -1,10 +1,34 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.559
+**Håndbogsversion:** 4.0.560
 
-4.0.559 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+4.0.560 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.184 Afgrænset svartid og bevarede ture
+
+Et normalt login-, profil-, rettigheds- eller tilvalgt turlogkald må ikke hænge på en uafsluttet
+JSON-læsning, efter at HTTP-headers er modtaget. Den samme eksisterende
+12-sekundersfrist dækker headers og indhold uden at blive nulstillet.
+Standardkald, som selv læser Response, er ikke omfattet af dette nye tilvalg.
+
+Et timeout efter indsendelse betyder ukendt fjernudfald. Den oprindelige tur
+og kø bevares; et sent svar må ikke rydde dem. Et senere normalt genforsøg
+bruger samme tur-id, indhold og indsendelsestid. Serverstop påstås ikke.
+Ejergrænser, almindelig tokenfornyelse og eksisterende kvitteringskrav består.
+
+Ukendt JSON-format i profil-/rettighedslæsninger afvises sikkert; en gyldig
+tom liste bevarer den hidtidige betydning. Ingen rettigheder tilføjes.
+
+66 tur-/authmål, 41 profil-/rettighedsmål og helfilkontrol består lokalt. Præcis ny kildekontrol,
+sikker levering og faktisk offentlig effekt mangler; dette er ikke et bevis
+for alle brugerrettigheder eller fungerende fjernlagring.
+
+Den særskilt godkendte reparation af det eksisterende turlager er gennemført:
+én Worker blev erstattet, og normal D1-drift blev kontrolleret bagefter.
+Ingen SQL eller Edge-kode blev installeret, og ekstra recovery blev ikke brugt.
+Det erstatter ikke prøver af brugerens normale gemme-/genlæseforløb.
 
 ## 89.183 Sikre klientlæsninger og præcis kvittering
 
