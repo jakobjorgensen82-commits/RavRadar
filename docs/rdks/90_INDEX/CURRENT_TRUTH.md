@@ -1,4 +1,18 @@
-# Lokal 4.0.574 – en kasseret tur må ikke gendannes fra gammel browserbackup
+# 4.0.574 driftsopfølgning – normal lokal actionsti og sikre gemningsdiagnoser
+
+Den almindelige vejrhentning 38124400431/1 på main 36a639b fejlede den 11. oktober kl. 11.24 dansk tid. Producenten afsluttede med fejl; både rå-cachegemning og upload af den lokalt krypterede progressionsfil blev faktisk afvist. Grønne continue-on-error-trin er ikke gemnings- eller uploadbevis. Intet nyt offentligt datasæt blev leveret. 574 var allerede offentligt leveret gennem 38122980458/1 kl. 10.05; nedenstående ældre kandidatstatus er historik.
+
+En konkret ny regressionsmulighed ligger i vores faste lokale action: den officielle GitHub Runner kan bevare et overflødigt /./ i scriptargumentet. Python-kohorten sammenlignede argumentet med den kanoniske sti og kunne derfor afvise samme fil før workerstart. Rettelsen fjerner alene bogstavelige /./-komponenter i scriptargumentet, og kun hvis resultatet er den allerede faste ENTRY. Andre argumenter, .., symlinkaliaser, alternative stier, ejerskab, procesophør, lås og gemningskvitteringer ændres ikke.
+
+Den ydre CLI beholder DMI_RAW_SAVE_REFUSED og exit 1. En ekstra diagnoselinje viser kun internt valgt fase og fast tilladt årsagskode; ukendte fejl bliver UNKNOWN. Rå fejltekster, getters, proxyfælder, filstier, nøgler, netadresser og credentials udskrives ikke. Den første fejl bevares også ved fejl under frigivelse. Diagnostik er observation, aldrig ejerskab eller gemningsbevis.
+
+Den gennemgåede normale Node-måltest består 21/21 inklusive parent; de præcise produkt- og testbytes er genverificeret og resultatet genbruges. En additiv normal Linux-case kontrollerer faktisk /proc-argv med /./ og genbruger de hidtidige proces-, låse-, original- og kvitteringskontroller. Den nye native-case er endnu ikke kørt. Den samlede Linux- og kildekontrol skal bestå på PR'ens præcise head før merge; lokal syntaks eller grøn topstatus alene er ikke nok.
+
+Dette er en afgrænset pipelineopfølgning på 4.0.574, ikke en ny UI-/modelrelease. I68/C66, storage-ABI, scoreformel, geometri, historiske originaler, scheduler og alle tilladelsesgrænser bevares. Der kræves ingen bindingsinstallation. Producentens kildeidentitet følger de faktiske nye bytes; gamle originaler ommærkes ikke. Ingen ny vejrhentning, rerun, cronændring, SQL- eller backendinstallation følger.
+
+Den faktiske fejlkørsels scriptargument og indre afvisningsårsag blev ikke logget. /./ er derfor en konkret begrundet hypotese, ikke en endeligt bevist produktionsårsag. Producentens budget-/kontinuitetsfejl og holdbar fjernlagring/genbrug er fortsat åbne. Rettelsen er ikke leveret eller produktionsverificeret ved denne dokumentation. Alle fem hovedmål er fortsat åbne.
+
+# Historik: lokal 4.0.574 – en kasseret tur må ikke gendannes fra gammel browserbackup
 
 En lokal prøve gennem det normale turdialog-, lager- og opstartsforløb viste en konkret fejl: efter Kassér tur var den aktive nøgle fjernet, og en ældre browserbackup kunne derfor sætte den kasserede tur tilbage. Fundet bygger på egne syntetiske data, ikke læsning eller sletning af en rigtig brugers ture.
 

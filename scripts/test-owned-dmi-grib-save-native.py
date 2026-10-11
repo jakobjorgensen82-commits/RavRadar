@@ -188,7 +188,10 @@ class OwnedRawSaveNative(unittest.TestCase):
     def test_interrupt_stops_term_ignoring_descendant_before_reap_and_never_saves(self):
         self.actual_chain(interrupt=True)
 
-    def actual_chain(self, *, interrupt):
+    def test_local_action_dot_script_spelling_uses_same_fixed_cohort_before_saved(self):
+        self.actual_chain(interrupt=False, dot_script=True)
+
+    def actual_chain(self, *, interrupt, dot_script=False):
         self.assertEqual(sys.platform, 'linux', 'NATIVE_LINUX_REQUIRED; not a skip')
         for name in ('pidfd_open', 'waitid', 'P_PIDFD', 'WNOWAIT'):
             self.assertTrue(hasattr(os, name), f'NATIVE_LINUX_REQUIRED:{name}')
@@ -250,9 +253,14 @@ class OwnedRawSaveNative(unittest.TestCase):
                 'GITHUB_OUTPUT': str(output)})
             for name in ('stdout', 'stderr'):
                 logs.append((root / name).open('wb'))
-            parent = subprocess.Popen([str(NODE24), str(root / ENTRY)], cwd=root, env=environment,
+            action_script = str(root) + '/./' + ENTRY.as_posix() if dot_script else str(root / ENTRY)
+            parent = subprocess.Popen([str(NODE24), action_script], cwd=root, env=environment,
                 stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1])
             fds['action'] = retain_pidfd(parent.pid)
+            if dot_script:
+                self.assertIn('/./', action_script)
+                self.assertEqual(small(f'/proc/{parent.pid}/cmdline').split(b'\0')[:-1],
+                                 [os.fsencode(NODE24), os.fsencode(action_script)])
             wait_until(lambda: (root / 'worker-ready').exists())
             ready = json.loads(small(root / 'worker-ready'))
             for role in ('cohort', 'worker'):
@@ -327,7 +335,8 @@ class OwnedRawSaveNative(unittest.TestCase):
             self.assertFalse(claim.exists(), 'claim was not released after proved group closure')
             self.assertEqual(small(output), b'' if interrupt else b'saved=true\n')
             self.assertEqual(small(root / 'stdout'), b'')
-            self.assertEqual(small(root / 'stderr'), b'DMI_RAW_SAVE_REFUSED\n' if interrupt else b'')
+            self.assertEqual(small(root / 'stderr'), (b'DMI_RAW_SAVE_REFUSED\n'
+                b'DMI_RAW_SAVE_DIAGNOSTIC stage=CLOSURE reason=DMI_RAW_SAVE_INTERRUPTED\n') if interrupt else b'')
             self.assertEqual(small(root / 'synthetic-api-call'), b'.')
             self.assertEqual(raw.read_bytes(), b'synthetic raw original\n')
             if interrupt:
@@ -652,7 +661,8 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
             else:
                 self.assertEqual(small(output), b'saved=true\n' if finalize_ok else b'')
             self.assertEqual(small(root / 'stdout'), b'')
-            self.assertEqual(small(root / 'stderr'), b'' if finalize_ok else b'DMI_RAW_SAVE_REFUSED\n')
+            self.assertEqual(small(root / 'stderr'), b'' if finalize_ok else (b'DMI_RAW_SAVE_REFUSED\n'
+                b'DMI_RAW_SAVE_DIAGNOSTIC stage=API reason=DMI_RAW_SAVE_API_FAILED\n'))
             self.assertEqual(raw.read_bytes(), own_raw)
             self.assertFalse(any(p.name in {'cache.tgz', 'cache.tzst'}
                                  for p in (root / 'sdk-temp').rglob('*')), 'SDK archive still present')
@@ -942,7 +952,8 @@ class OwnedRawDistributionNative(unittest.TestCase):
             self.assertEqual(small(output), b'distribution_ready=true\n' if warm else b'')
             self.assertNotIn(b'saved=', small(output))
             self.assertEqual(small(root / 'stdout'), b'')
-            self.assertEqual(small(root / 'stderr'), b'' if warm else b'DMI_RAW_SAVE_REFUSED\n')
+            self.assertEqual(small(root / 'stderr'), b'' if warm else (b'DMI_RAW_SAVE_REFUSED\n'
+                b'DMI_RAW_SAVE_DIAGNOSTIC stage=API reason=DMI_RAW_SAVE_API_FAILED\n'))
             for name, contents in originals.items():
                 self.assertEqual((action / name).read_bytes(), contents)
             if warm:
