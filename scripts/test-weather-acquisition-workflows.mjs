@@ -56,8 +56,15 @@ assert.match(seal, /steps\.component-progress-restore\.outputs\.captured == 'tru
 assert.match(seal, /steps\.dmi-bulk\.outcome == 'success' \|\| steps\.dmi-bulk\.outcome == 'failure'/,
   'An early restore gate failure must not create a misleading new progress checkpoint');
 const save = step(normal, 'Save only the authenticated encrypted private weather snapshot');
-assert.match(save, /path: \.cache\/weather-private-progress\.encrypted/);
-assert.match(save, /weather-private-progress-encrypted-v2-/);
+assert.match(save, /uses: \.\/\.github\/actions\/save-owned-dmi-grib/);
+assert.match(save, /operation: upload-encrypted-progress\s+key: weather-private-progress-encrypted-v2-/);
+assert.match(save,
+  /always\(\).*steps\.component-progress-seal\.outcome == 'success'.*steps\.component-progress-seal\.outputs\.saved == 'true'/);
+assert.match(save, /continue-on-error: true/);
+assert.doesNotMatch(save, /\bpath:|actions\/cache\/save@/,
+  'Cipher upload must not accept a caller path or bypass the owned operation');
+const encryptedProgressUploadAction = read('.github/actions/save-owned-dmi-grib/index.cjs');
+assert.match(encryptedProgressUploadAction, /const CIPHER_PATH = '\.cache\/weather-private-progress\.encrypted'/);
 const coverage = step(normal, 'Report counts for each weather component after central cache');
 const weather = step(normal, 'Update central weather cache');
 assert.match(weather, /timeout-minutes: 80/);
