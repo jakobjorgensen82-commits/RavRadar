@@ -1,4 +1,8 @@
-# 2026-10-11 – lokal 4.0.574, kassering bevares ved normal genstart
+# 2026-10-11 – lokal 4.0.575, brugerdata og fem assistentrettelser samlet
+
+Kontobundet eksport og negative oprindelsesmarkører er samlet med praktiske assistentopfølgninger, tyske ordgrænser og sikre kvotefejlmarkører. Normale lokale målprøver består; historiske orakler, originaler og 54 migrationer bevares. Normal C→I→T har beregnet nye kildemetadata, ikke ændret fysisk scoreformel. Ny 130000 er uinstalleret med uændret funktionel SQL og 20 afledte bindingsfelter. Præcis samlet installationsgodkendelse, kildekontrol og offentlig effekt mangler. Statistikdefault-ON og toårs-/30dages-opbevaring er godkendte krav, ikke aktivering eller samtykke. Alle fem mål er åbne; tidligere 21. oktober-plan er afløst af den overskredne 10. oktober-frist og ejerens krav om hurtig konkret færdiggørelse.
+
+# Historik: 2026-10-11 – lokal 4.0.574, kassering bevares ved normal genstart
 
 Den normale kasserings- og backupkæde havde en lokalt reproduceret genopståelsesfejl. Kun discard-skrivningen ændres til null under eksisterende nøgle; tre normale målforløb består og genbruges. Øvrige ture og indsendelser bevares. To funktionelle blade plus normal versionsmekanik og dokumentation; ingen backend-, SQL- eller modelændring. Præcis kildekontrol og offentlig levering er åbne efter 573.
 

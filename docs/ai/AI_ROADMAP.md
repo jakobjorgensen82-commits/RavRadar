@@ -1,4 +1,12 @@
-# Aktuelt samlet mål – 4.0.556-kandidat og fem åbne leveringsspor
+# Aktuelt samlet mål – konkret levering af 575 og fem åbne spor
+
+Ejerens krævede 10. oktober-frist er overskredet; den ældre plan omkring 21. oktober nedenfor er historisk og må ikke bruges som ny udsættelse. Arbejd via afgrænsede parallelle delegationer med hovedagentens integration og eksklusiv produktionsskrivning. Prioritér faktisk fejlrettelse og levering, ikke gentagne undersøgelser eller lokale testmiljøer.
+
+Næste leverance er den samlede gennemgåede brugerdata- og assistentkandidat575 efter separat normal573/574-levering. Den skal gennem egen kildekontrol, præcis godkendelse af den nye samlede130000-identitet, autentificeret originalbevarelse, ledig writer, installation og offentlig efterkontrol. Lokal eksport-/lager-/assistent-PASS er ikke færdiggørelse.
+
+Fortsæt samtidigt den afgrænsede fælles DMI-koordinatrettelse, ny korrekt strømhukommelse, årsagsafgrænsning til score, revisionens proces-/lagrings-/runner-/nationalgates og selvstændig drift uden Codex. Statistik som standard, to års inaktivitet, 30 dages varsel og sikker sletning er godkendte, men særskilte uimplementerede brugerdataopgaver. Eksisterende grænser og alle fem åbne mål består.
+
+# Historik: 4.0.556-kandidat og fem åbne leveringsspor
 
 Færdiggør RavRadar med dokumenteret selvstændig drift uden Codex omkring
 21. oktober 2026. Ejeren kræver parallelle afgrænsede delegationer på strømdata

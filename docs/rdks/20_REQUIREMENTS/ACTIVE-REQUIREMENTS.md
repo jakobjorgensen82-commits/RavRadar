@@ -1,4 +1,13 @@
-# Lokal 4.0.574 – en kasseret tur må ikke gendannes fra gammel browserbackup
+# Aktuelle brugerdata- og assistentkrav – lokal 4.0.575
+
+- Egne ture lagres og eksporteres med kontobundet adgang; kontoskift, afbrydelse og transportfejl må ikke give en anden ejers data eller en falsk afleveringskvittering. Historiske originaler og gyldige manglende oprindelsesfelter bevares.
+- unknown og synthetic-test er negative oprindelsesmarkører, aldrig bevis for autentiske kalibreringsdata eller tilladelse til viderebrug. Gemt privat tur og statistikadgang er forskellige kontrakter.
+- Statistik skal være slået til som udgangspunkt efter ejerens nyeste godkendelse. Dette må ikke fremstilles som samtykke. Eksisterende fravalg og ukendt historik må ikke ommærkes; privat turlog og eksport fungerer uafhængigt. Serverautoritet, fremadrettet optagelse, fravalg, behandlingsgrundlag og reel anonymitet skal verificeres før brug.
+- To års inaktivitet kræver 30 dages dokumenteret varsel og mulighed for at bevare kontoen ved login. Sletning må ikke genopstå gennem backup. Varsling, sletning og statistik er ikke implementeret eller aktiveret i 575.
+- Assistentens snævre emneopfølgning må ikke gemme rå samtaler eller private fakta; nulstilling, sprog og kontekstgrænser bevares. Lokal svarkontrol beviser ikke fungerende ekstern AI. Interne fejlrapporter er ikke assistentviden til brugerne.
+- Den samlede 575-kandidat kræver egen kildekontrol, præcis installationsautoritet, autentificerede originaler, no-loss, ledig writer og offentlig effekt. Normal bindingsændring er ikke tilladelse til scoreformel-, admin- eller geometriændring. Alle fem mål er åbne, og 10. oktober-fristen er overskredet.
+
+# Historik: Lokal 4.0.574 – en kasseret tur må ikke gendannes fra gammel browserbackup
 
 En lokal prøve gennem det normale turdialog-, lager- og opstartsforløb viste en konkret fejl: efter Kassér tur var den aktive nøgle fjernet, og en ældre browserbackup kunne derfor sætte den kasserede tur tilbage. Fundet bygger på egne syntetiske data, ikke læsning eller sletning af en rigtig brugers ture.
 

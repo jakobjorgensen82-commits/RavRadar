@@ -1,10 +1,28 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.574
+**Håndbogsversion:** 4.0.575
 
-Den lokale 4.0.574 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
-og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
-Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+Den lokale 4.0.575 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og `modelBundleSha256=249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932` over 68 kanonisk normaliserede transitive implementeringsfiler.
+Dette er den nye samlede kildeidentitet, ikke bevis for installation eller offentlig levering. Den fysiske scorekontrakt er uændret.
+
+## 89.200 Egne ture, sikker eksport og afgrænsede assistentopfølgninger
+
+Den lokale 575-kandidat samler den gennemgåede brugerdatarettelse med fem små assistentrettelser. Den ændrer ikke vejrets fysiske scoreformel, administratorpunkter eller geometri. Gamle originaler og 54 historiske migrationer bevares.
+
+Eksporten skal kun indeholde den aktuelle ejers ture. Den henter sider gennem den normale signerede lagerkæde, uden at sætte et vilkårligt loft på hele eksporten. Kontoskift eller afbrydelse må ikke efterlade en eksport til den forkerte bruger. En gemt tur er ikke automatisk tilladelse til statistisk viderebrug.
+
+En privat, manuel rapport kan have oprindelsen unknown eller synthetic-test; begge er negative oplysninger, som udelukker kalibrering. Historiske ture uden dette valg ommærkes ikke. Den normale målprøve følger faktisk signeret lagring, læsning og eksport gennem ti lokale SQLite-shards, afviser en anden ejer og ugyldige markører og bevarer tur og registrering ved konflikt. Det er ikke et bevis for installeret D1 eller et rigtigt brugerforløb i produktion.
+
+Assistenten kan bruge et snævert, midlertidigt emne til en praktisk opfølgning om strøm langs kysten. Det er ikke generel samtalehukommelse og indeholder ikke den rå samtale eller private oplysninger. Skift i sprog, tilstand eller relevant kontekst rydder emnet. Tyske farveord kontrolleres som hele ord. Kvotefejl får afgrænsede kontrolmarkører, uden at afsløre spørgsmål, tokens eller private svar. Det retter ikke i sig selv den endnu uafklarede hostede AI-fejl.
+
+De normale lokale målprøver for assistent, konto, eksport, privat runtime og hybridlagring består. Gamle sammenligningsfunktioner og assertions bevares. Et grønt lokalt resultat er ikke offentlig levering eller bevis for en fungerende ekstern AI.
+
+Den inaktive Candidate G-kompatibilitet har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=55fd7dfa5ee36596c729d93225a448ea5b8f1e7142c44b8b1bda5c3d4d84c957` over 66 transitive filer. Fortsættelsens kildeidentitet er a5430dd21e3135d6efc09e22df3dd0cdcafee723f962ff1d3cb52e7765b2aaa0. Bindingerne er beregnet af den normale kilde, ikke kopieret fra en gammel kandidat.
+
+130000-migrationen er endnu ikke installeret. Dens funktionelle SQL er uændret; 20 bindingsfelter følger den faktiske samlede kilde. Præcis godkendelse af den samlede installation afventes. Levering kræver derefter kildekontrol, autentificerede originaler, bevis for databevarelse, ledig writer og faktisk offentlig effekt.
+
+Ejeren har godkendt to års inaktivitet med 30 dages varsel og mulighed for at bevare kontoen ved login samt statistik slået til som udgangspunkt. Disse funktioner er ikke aktiveret her. Standardvalget er ikke samtykke eller anonymitetsbevis. Privat turlog og eksport skal være uafhængige af statistikvalget. Alle fem hovedmål er fortsat åbne.
 
 ## 89.199 Kasserede ture kommer ikke tilbage fra gammel browserbackup
 

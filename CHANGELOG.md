@@ -1,4 +1,13 @@
-# Lokal 4.0.574 – 2026-10-11
+# Lokal 4.0.575 – 2026-10-11
+
+- Samler den gennemgåede brugerdatarettelse med fem små assistentrettelser. Egne ture får kontobundet, sideopdelt eksport; afbrudt eksport og kontoskift må ikke sende eller vise en anden ejers data. Gemmekvittering er ikke tilladelse til statistisk viderebrug.
+- Bevarer valgfri negativ oprindelse: unknown og synthetic-test kan lagres som private rapporter, men bliver ikke gyldige kalibreringsdata. Manglende historisk oprindelse ændres ikke. Signeret lagring, læsning og eksport gennem ti lokale SQLite-shards består; ugyldige markører afvises før transport, og ændret genindsendelse af samme tur afvises.
+- Assistenten bevarer kun et afgrænset emne til praktiske opfølgninger om strøm langs kysten. Sprog-, konto-, kontekst- og tilstandsskift rydder emnet. Tyske farveord kræver ordgrænser; rot inde i trotzdem er ikke rødt. Sikre kvotefejlmarkører tilføjes uden spørgsmål, tokens eller private payloads; den observerede hostede AI-fejls årsag er fortsat uafklaret.
+- Normale målprøver består: assistentsammensætning, konto/eksport, privat runtime og signeret hybridlagring. Den sidste lagertests historiske orakel bevares. Dette er lokale syntetiske kontroller, ikke installeret D1/Supabase eller fungerende ekstern AI.
+- Nye bindingsidentiteter er beregnet gennem de normale generatorer. Fysiske kontrakter, scoreformel, administratorpunkter, geometri og 54 historiske migrationer bevares. Den nye 130000-fil har samme funktionelle SQL som den tidligere gennemgåede udgave; kun 20 bindingsfelter følger den samlede kilde. Den er ikke installeret, og præcis samlet installationsgodkendelse afventes.
+- To års inaktivitet, 30 dages varsel, login-redning, sikker sletning og statistik slået til som udgangspunkt er godkendte krav, ikke aktiverede funktioner. Defaultvalg er ikke samtykke eller anonymitetsbevis. Alle fem hovedmål er fortsat åbne. Kandidaten kræver præcis kildekontrol, godkendt installation, databevarelse, ledig writer og faktisk offentlig efterkontrol.
+
+# Historik: Lokal 4.0.574 – 2026-10-11
 
 - Kassér tur gemmer null under den eksisterende aktive nøgle. En ældre browserbackup kan dermed ikke genskabe netop den kasserede tur ved normal opstart, så længe nulværdien er bevaret.
 - Tre beståede normale kontroller genbruges: kassering/genstart, bevaret original og første fejl ved skrivefejl, samt gendannelse af en ikke-kasseret tur. Nye ture, afventende ture, outbox og gamle assertions bevares.

@@ -1,4 +1,12 @@
-# Lokal 4.0.574 – en kasseret tur må ikke gendannes fra gammel browserbackup
+# Lokal 4.0.575 – samlet brugerdata- og assistentkandidat
+
+Den gennemgåede brugerdatarettelse er samlet med fem afgrænsede assistentrettelser: kontobundet sideopdelt eksport, negativ oprindelse uden kalibreringsadgang, praktiske langs-kysten-opfølgninger, tyske ordgrænser og sikre kvotefejlmarkører. De normale lokale konto-, eksport-, lagrings-, runtime- og assistentprøver består. Den gamle lagertests historiske sammenligninger bevares. Kontrollerne er syntetiske; installeret lager, rigtige brugerforløb og ekstern AI er ikke bevist.
+
+Normal C→I→T beregner den samlede kilde, og ny 130000 bevarer funktionel SQL med kun 20 afledte bindingsfelter. De 54 historiske migrationer, gyldige originaler, fysiske kontrakter, scoreformel, geometri og adminpunkter bevares. Den samlede installationsgodkendelse afventes særskilt; ingen produktionsinstallation er udført. Kandidaten kræver præcis kildekontrol, autentificeret databevarelse, ledig writer og offentlig efterkontrol. 573/574 leveres separat før den nye binding.
+
+Ejerens seneste godkendelse kræver statistik slået til som udgangspunkt. Dette er ikke samtykke eller anonymitetsbevis; privat turlog og eksport må ikke afhænge af valget. To års inaktivitet, 30 dages varsel, login-redning og sikker sletning er også krav, ikke installeret funktionalitet. Alle fem hovedmål er åbne. Fristen 10. oktober blev overskredet og flyttes ikke tilbage til 21. oktober. Arbejdet fortsætter gennem afgrænsede parallelle delegationer og konkret levering.
+
+# Historik: Lokal 4.0.574 – en kasseret tur må ikke gendannes fra gammel browserbackup
 
 En lokal prøve gennem det normale turdialog-, lager- og opstartsforløb viste en konkret fejl: efter Kassér tur var den aktive nøgle fjernet, og en ældre browserbackup kunne derfor sætte den kasserede tur tilbage. Fundet bygger på egne syntetiske data, ikke læsning eller sletning af en rigtig brugers ture.
 

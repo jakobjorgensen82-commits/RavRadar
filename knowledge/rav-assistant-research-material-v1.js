@@ -75,7 +75,7 @@ export const RAV_ASSISTANT_RESEARCH_MATERIAL = Object.freeze([
     'Einschlüsse sind keine neutrale Zählung des damaligen Lebens. Harz fing bestimmte kleine Organismen nahe am Baum; viele andere berührten es nie oder wurden nicht erhalten.',
     'Inclusions are not an unbiased census of past life. Resin trapped particular small organisms near the tree, while many others never contacted it or were not preserved.',
     ['Viser indeslutninger i rav alle dyr fra ravskoven?','Zeigen Einschlüsse alle Tiere des Bernsteinwaldes?','Do amber inclusions represent all animals in the amber forest?']),
-  fact('amber-colour-range-research', /(?:hvilke|andre).*farver.*rav|rav.*(?:blå|grøn|rød|hvid)|welche.*farben.*bernstein|bernstein.*(?:blau|grün|rot|weiß)|what colours.*amber|amber.*(?:blue|green|red|white)/iu,
+  fact('amber-colour-range-research', /(?:hvilke|andre).*farver.*rav|rav.*(?:blå|grøn|rød|hvid)|welche.*farben.*bernstein|bernstein.*(?:blau|grün|(?<![\p{L}\p{N}_])rot(?:e|er|es|en|em)?(?![\p{L}\p{N}_])|weiß)|what colours.*amber|amber.*(?:blue|green|red|white)/iu,
     'official-guidance', ['gia-amber','amber-spectroscopy-2025'],
     'Naturligt rav findes ikke kun i honninggul. Det kan være næsten farveløst, hvidligt, gult, orange, rødt, brunt og i sjældne tilfælde vise grønne eller blå optiske virkninger; farve alene beviser ikke ægthed.',
     'Natürlicher Bernstein ist nicht nur honiggelb. Er kann fast farblos, weißlich, gelb, orange, rot oder braun sein und selten grüne oder blaue optische Effekte zeigen; Farbe allein beweist keine Echtheit.',

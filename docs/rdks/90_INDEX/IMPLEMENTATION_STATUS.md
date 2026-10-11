@@ -1,4 +1,20 @@
-# Lokal 4.0.574 – en kasseret tur må ikke gendannes fra gammel browserbackup
+# Lokal 4.0.575 – sammenhængende turlagring, eksport og små assistentrettelser
+
+575 samler den gennemgåede brugerdatarettelse med fem små assistentblade på den uændrede 574-forløber. Den bevarer 574's kassering af ture. Turlagring og eksport bruger fortsat de eksisterende tjenester; ingen ny nøgle, plan, vejrhentning eller statistik aktiveres.
+
+Den normale konto- og eksportmåltest består med 35 prøver uden skip, inklusive kontoskift, forsinkede svar, annullering, store eksportforløb og afvisning af delvise filer. Den normale bevarelsesmåltest består med otte prøver uden skip, inklusive originale filer og den præcise 050000-forgænger. Den samlede assistentmåltest består gennem klient, faktisk Edge-kode og tilbage til klient med syntetisk transport. Den kontrollerer danske, tyske og engelske svar, sikkerhed, privatliv, de seks bindinger og afvisning af modstridende svar. Dette er ikke offentlig drift eller bevis for fungerende ekstern AI.
+
+Assistenten giver nu en praktisk forklaring på strøm langs stranden og kan besvare en snævert afgrænset lokal opfølgning. Kun et emneord beholdes; spørgsmål, svar og stedoplysninger sendes ikke som samtalehistorik. Emnet nulstilles ved ændret kontekst, sprog, område, søgemåde og lukning. Den tyske farvegenkendelse matcher hele ord og gyldige bøjningsformer, så trotzdem ikke bliver til rot. Fejllogning for kvoteopslag indeholder kun afgrænsede korrelationsfelter, aldrig rå svar, legitimationsoplysninger eller brugeridentiteter. Den påviste hostede 401/503-årsag er fortsat uafklaret; logningen er ikke en årsagsrettelse.
+
+Normal beregning fra den faktiske sammensætning giver I68 `249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932`, C66 `55fd7dfa5ee36596c729d93225a448ea5b8f1e7142c44b8b1bda5c3d4d84c957` og T12 `a5430dd21e3135d6efc09e22df3dd0cdcafee723f962ff1d3cb52e7765b2aaa0`. De fysiske kontrakter, faktatekster, scoreformel, administratorpunkter og geometri ændres ikke. Alle 54 historiske migrationer bevares. Den uinstallerede 130000-kandidat følger den samme gennemgåede funktionalitet med præcis 20 nye bindingsfelter; helinvers til den gamle kandidat er bevist. Den præcise samlede installationsautoritet er særskilt afventende, ikke udledt af lokal kildeintegration.
+
+574's præcise GitHub-kildekontrol på 62685d62dbbf1d47df0e2ff8ad59677b6a135b5e består. Før levering af 575 kræves egen præcis kildekontrol, bevarede autentificerede originaler, en afsluttet writer, tilladt installation og faktisk offentlig verifikation. 573 og 574 skal leveres gennem deres normale forløb først. Den isolerede vejrhentningsrevision, CP-, numerik- og RESTORE-kandidater er ikke med i denne sammensætning.
+
+Ejerens godkendte opbevaring er fortsat krav: private ture beholdes ved brug af kontoen; efter to års inaktivitet kræves 30 dages varsel og login-redning. Automatisk varsling, sletning og beskyttelse mod genopståede backupdata er ikke implementeret her. Statistik skal være slået til som udgangspunkt med fravalg, men er ikke samtykke, en anonymitetsgaranti eller aktiveret behandling. Autoritativt kontovalg, behandlingsgrundlag og faktisk anonym samlet statistik er fortsat åbne. Egen turlog og eksport skal være uafhængige af statistikvalget.
+
+Alle fem hovedmål er fortsat åbne, og fristen 10. oktober er overskredet. Ældre afsnit nedenfor er historik; lokal test, grøn kildekontrol og delrettelser er ikke samlet færdiggørelse.
+
+# Historik: lokal 4.0.574 – en kasseret tur må ikke gendannes fra gammel browserbackup
 
 En lokal prøve gennem det normale turdialog-, lager- og opstartsforløb viste en konkret fejl: efter Kassér tur var den aktive nøgle fjernet, og en ældre browserbackup kunne derfor sætte den kasserede tur tilbage. Fundet bygger på egne syntetiske data, ikke læsning eller sletning af en rigtig brugers ture.
 

@@ -1,4 +1,10 @@
-# Aktuel 4.0.556 – klientgrænser uden ny vejrbinding
+# Aktuel lokal 4.0.575 – samlet brugerdata- og assistentkilde, ikke offentlig effekt
+
+Kontobundet sideopdelt eksport og negativ rapportoprindelse er samlet med praktiske langs-kysten-opfølgninger, tyske ordgrænser og sikre kvotefejlmarkører. De normale lokale målprøver består; historiske sammenligninger og 54 migrationer bevares. Dette er ikke bevis for installeret lager eller ekstern AI. Den hostede AI-fejl er fortsat årsagsmæssigt uafklaret.
+
+Normal C→I→T har beregnet nye kildeidentiteter; fysiske scorekontrakter, originaler og admin/geometri bevares. Ny 130000 er ikke installeret, og præcis samlet installationsgodkendelse afventes. Statistikdefault-ON er et godkendt krav, ikke samtykke, anonymitet eller aktiv viderebrug. To års inaktivitet, 30 dages varsel og sikker sletning er ikke aktiveret. Alle fem mål er åbne. Interne diagnoser må ikke optages som private fakta eller fejlviden i den offentlige assistents svar.
+
+# Historik: 4.0.556 – klientgrænser uden ny vejrbinding
 
 Den afgrænsede lokale kandidat retter kontosvar, turformularens oprindelige
 aktive tur, turens faktiske afleveringskvittering og ejerbundne uændrede genforsøg,
