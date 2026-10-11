@@ -1,3 +1,31 @@
+# Lokal 4.0.575 – integration med den leverede vejrrettelse
+
+Den samlede lokale kilde bevarer både den gennemgåede 575-brugerdata-/assistentkandidat og alle vejrrettelser i main til og med PR575. Vejrrettelsen har bestået præcis GitHub-kildekontrol og er merget; den almindelige cron-vejrhentning startede den 11. oktober kl. 22.19 dansk tid på den rettede main-kode. Dens afslutning, nye generation og faktiske effekt er endnu ikke bevist ved dette notat. Den offentligt verificerede baseline er fortsat 4.0.574.
+
+575 er ikke installeret eller offentligt leveret. Denne nye sammensætning kræver egen præcis kildekontrol, autentificerede originaler, databevarelse, afsluttet writer, præcis installationsautoritet og faktisk offentlig verifikation. Ingen SQL, Worker, Edge-funktion eller produktion ændres under den aktive vejrhentning. Den normale procesprøve bevarer main-kodens stoppede, dobbelte npm-observation inden samme oprindelige alarm; den tidligere før-stop-assertion genindføres ikke.
+
+Historiske dokumentationsafsnit fra begge kildegrene bevares nedenfor; deres tidligere afventende CI-, cron- og leveringsstatus er dateret historik. Den nye webhåndbog bevarer samtlige kapitler og giver det kolliderende nye brugerdataafsnit det ledige kapitel 89.208. Funktionel SQL uden for håndbogspayload, alle 54 historiske migrationer, modelkontrakter, scoreformel, administratorpunkter, geometri og gyldige originaler må ikke ændres af sammenføjningen. Alle fem hovedmål er fortsat åbne.
+
+# Lokal 4.0.575 følgeintegration – fast servertrin for ejerens turkilder
+
+Den eksisterende eksplicit bekræftede CLI er fortsat eneste produktionskalder. Dens faste forløb er flyttet til en server-only funktion: validering, samme ejer-HMAC, signeret D1-sletning, Supabase-sletning og de to oprindelige genlæsninger. Rækkefølge, første fejl, adgangsoplysninger, URL'er, tombstonepolitik og ingen automatisk gentagelse bevares. Der er ingen fri executor, offentlig route, Auth-/profilsletning eller aktivering af opbevaringspolitik.
+
+Kvitteringen er kun et afgrænset turkildetrin. En guarded tom D1-liste efter tombstone er ikke et selvstændigt bevis for fysisk række- eller backupfravær. En senere serverkalder skal selv autentificere og autorisere ejeren; et browserleveret bruger-id er ikke autoritet.
+
+De tre gennemgåede blade er nu integreret i den faktiske frosne 575-kilde. Den normale måltest består 23/23 uden skip; de 16 gamle testkroppe er byteeksakte, og den gamle operation er bevaret med alene indrykning/fetch-seam. I68/C66/T12, 130000-kandidaten, model, adminpunkter, geometri, historiske originaler og øvrige funktioner er uændrede. Ingen virkelig tur er slettet. Egen præcis kildekontrol og eventuel sikker levering af denne følgeintegration mangler.
+
+Forløberens PR565 har faktisk bestået præcis GitHub-kildekontrol og det tilhørende kildebevis; dens tidligere afventende CI-status nedenfor er historik. Dette er ikke 575-installation eller offentlig levering. Den aktive korte vejrhentning bruger allerede leveret main; dens tilladelse er forbrugt. De særskilte DMI-driftsrettelser er ikke kopieret ind her. Ingen produktionsændring sker under aktiv writer; alle fem hovedmål, installationstilladelser, statistikkrav, backup-/retentionskrav og AI-blokeringer består.
+
+# Historik: Aktuelle brugerdata- og assistentkrav – lokal 4.0.575
+
+- Egne ture lagres og eksporteres med kontobundet adgang; kontoskift, afbrydelse og transportfejl må ikke give en anden ejers data eller en falsk afleveringskvittering. Historiske originaler og gyldige manglende oprindelsesfelter bevares.
+- unknown og synthetic-test er negative oprindelsesmarkører, aldrig bevis for autentiske kalibreringsdata eller tilladelse til viderebrug. Gemt privat tur og statistikadgang er forskellige kontrakter.
+- Statistik skal være slået til som udgangspunkt efter ejerens nyeste godkendelse. Dette må ikke fremstilles som samtykke. Eksisterende fravalg og ukendt historik må ikke ommærkes; privat turlog og eksport fungerer uafhængigt. Serverautoritet, fremadrettet optagelse, fravalg, behandlingsgrundlag og reel anonymitet skal verificeres før brug.
+- To års inaktivitet kræver 30 dages dokumenteret varsel og mulighed for at bevare kontoen ved login. Sletning må ikke genopstå gennem backup. Varsling, sletning og statistik er ikke implementeret eller aktiveret i 575.
+- Assistentens snævre emneopfølgning må ikke gemme rå samtaler eller private fakta; nulstilling, sprog og kontekstgrænser bevares. Lokal svarkontrol beviser ikke fungerende ekstern AI. Interne fejlrapporter er ikke assistentviden til brugerne.
+- Den samlede 575-kandidat kræver egen kildekontrol, præcis installationsautoritet, autentificerede originaler, no-loss, ledig writer og offentlig effekt. Normal bindingsændring er ikke tilladelse til scoreformel-, admin- eller geometriændring. Alle fem mål er åbne, og 10. oktober-fristen er overskredet.
+
+# Historik: Lokal 4.0.574 – en kasseret tur må ikke gendannes fra gammel browserbackup
 # Lokal 4.0.574 procesrettelse – logudskrivning må ikke blokere stopkontrollen
 
 Den normale DMI-supervisor læser kontrolmarkører uafhængigt af den ordnede logudskrivning. En blokeret logmodtager må dermed ikke holde asset-watchdog tilbage. Første læse-/logfejl bevares, også ved EOF; reader og logger deler én samlet eksisterende oprydningsfrist på to sekunder. Uafsluttede processer eller outputtråde fastholdes med deres faktiske referencer og må ikke føre til succes, replacement eller finalizer.

@@ -1,16 +1,16 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.574";
-import { localRavKnowledgeAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.574";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.574";
-import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.574";
-import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.574";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.575";
+import { localRavKnowledgeAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.575";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.575";
+import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.575";
+import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.575";
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   ravScoreModelBinding,
-} from "../core/ravscore-model-contract.js?v=4.0.574";
-import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.574";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.574";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.574";
-import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.574";
+} from "../core/ravscore-model-contract.js?v=4.0.575";
+import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.575";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.575";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.575";
+import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.575";
 
 // Compatibility name for existing source-contract tests. The implementation
 // now selects the only adapter matching the artifact's exact active binding.
@@ -185,6 +185,7 @@ function clock(iso, language) {
 
 export function classifyRavQuestion(question) {
   const text = String(question || '').trim();
+  if (isPracticalAlongshoreQuestion(text)) return 'practical-alongshore';
   for (const [intent, pattern] of Object.entries(INTENT_PATTERNS)) if (pattern.test(text)) return intent;
   const knowledge = matchLocalRavKnowledge(text);
   if (knowledge) return `knowledge:${knowledge.id}`;
@@ -294,6 +295,11 @@ function equipmentAnswer(context, language) {
 
 function localAnswer(question, context, language, now = Date.now()) {
   const intent = classifyRavQuestion(question);
+  if (intent === 'practical-alongshore') {
+    const topic = matchLocalRavKnowledge('Kan strøm langs kysten flytte rav?');
+    const answer = topic.answers[language] + '\n\n' + t('assistant.local.signs', {}, language);
+    return answer.length <= 900 ? answer : t('assistant.unknown', {}, language);
+  }
   const presentation = presentIntegratedRavScoreExplanation(context?.result, { language });
   if (presentation.available) {
     if (intent === 'current') return `${presentation.sections.gridCurrent}\n\n${presentation.sections.lastMile}`;
@@ -409,12 +415,50 @@ export async function askRavRadar(question, context = {}, options = {}) {
   const safe = String(question || '').trim().slice(0, 600);
   if (!safe) throw new Error(t('assistant.empty', {}, language));
   const route = routeRavQuestion(safe);
+  if (classifyRavQuestion(safe) === 'practical-alongshore' && !isPracticalAlongshoreQuestion(question)) {
+    return t('assistant.unknown', {}, language);
+  }
   if (route === 'fixed-refusal') return t('assistant.refusal', {}, language);
   if (route === 'local-deterministic' || options?.localOnly) {
     return localAnswer(safe, context, language, options?.now ?? Date.now());
   }
   return await remoteAnswer(safe, context, language)
     || localAnswer(safe, context, language, options?.now ?? Date.now());
+}
+
+// A generic transport premise plus a practical search question, not a live
+// forecast, safety assessment, score calculation or inferred earlier turn.
+// Consume the whole input: extra/unknown clauses keep their ordinary route.
+function isPracticalAlongshoreQuestion(value) {
+  const raw = String(value || '').trim();
+  if (raw.length > 600) return false;
+  const text = raw.normalize('NFKC').replace(/\s+/gu, ' ');
+  const transport = 'strøm(?:men)? (?:går|løber|bevæger sig) (?:langs (?:stranden|kysten)|parallelt med (?:stranden|kysten))(?: i stedet for mod land)?';
+  const search = '(?:(?:er det|kan det være) (?:så )?(?:stadig )?(?:godt|relevant|værd) at (?:lede|søge)(?: efter rav)?|(?:kan|bør) (?:jeg|vi) (?:så )?(?:stadig )?(?:lede|søge) efter rav)';
+  return new RegExp('^(?:(?:når|hvis) ' + transport + ',? ' + search + '|' + search + ',? (?:når|hvis) ' + transport + ')[?.!]*$', 'iu').test(text);
+}
+
+
+// Only this explicit authored topic may be retained by the local dialog.
+// No question, answer, location details or transcript is retained/sent.
+export function assistantTopicForQuestion(question) {
+  const text = String(question || '').trim();
+  return !SECURITY_PATTERN.test(text) && !OUT_OF_SCOPE_PATTERN.test(text)
+    && isPracticalAlongshoreQuestion(text) ? 'alongshore' : null;
+}
+
+export function assistantLocalFollowupAnswer(question, topic, language = getLanguage()) {
+  const raw = String(question || '').trim();
+  if (raw.length > 600 || SECURITY_PATTERN.test(raw) || OUT_OF_SCOPE_PATTERN.test(raw)) return null;
+  const text = raw.normalize('NFKC').replace(/\s+/gu, ' ');
+  const patterns = [
+    /^(?:(?:og|så) )?hvor (?:skal|kan|bør) (?:jeg|vi) (?:kigge|lede|søge)(?: efter rav)? (?:i den situation|i det tilfælde|så|der)[?.!]*$/iu,
+    /^(?:(?:und|also) )?wo (?:soll|kann|sollte) (?:ich|wir) (?:dann )?(?:nach bernstein )?suchen (?:in dieser situation|in diesem fall|dann|dort)[?.!]*$/iu,
+    /^(?:(?:and|so) )?where (?:should|can) (?:i|we) (?:look|search)(?: for amber)? (?:in that situation|in that case|then|there)[?.!]*$/iu,
+  ];
+  if (!patterns.some(pattern=>pattern.test(text))) return null;
+  if (topic !== 'alongshore') return t('assistant.unknown', {}, language);
+  return localRavKnowledgeAnswer('Hvordan leder jeg systematisk på stranden?', language);
 }
 
 export function quickQuestions(language = getLanguage()) {

@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import './test-post-cutover-migration-routing.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { REQUIRED_CUTOVER_MIGRATIONS, LATEST_REQUIRED_CUTOVER_MIGRATION }
+  from './integrated-cutover-readiness.mjs';
 import {
   assertPostCutoverRepairProjection,
   assertCodeOnlyModelBinding,
@@ -255,6 +259,48 @@ for (const marker of [
 ]) assert.ok(decision.includes(marker), `DEC-0148 mangler ${marker}`);
 
 const workflow = fs.readFileSync('.github/workflows/deploy-code-only-repair.yml', 'utf8');
+const prewriteOrder = [
+  'Rebind saved private runtime to current source without changing measurements',
+  'Require exact code-only reuse invariants',
+  'Reverify the same assistant originals before binding installation',
+  'Dry-run and require only the latest exact integrated migration',
+  'Reconfirm current main before the database binding write',
+  'Apply exact dry-run-verified post-cutover binding',
+  'Read back migration and database binding',
+].map(name => workflow.indexOf(`- name: ${name}`));
+assert.ok(prewriteOrder.every((offset, index) => offset >= 0
+  && (index === 0 || offset > prewriteOrder[index - 1])),
+'The actual ordinary original/no-loss path must finish before the same database write');
+assert.equal((workflow.match(/supabase db push --linked --skip-vault/g) ?? []).length, 1);
+assert.ok(workflow.includes('Assistant successor cannot recover a historical cutover'));
+assert.ok(workflow.includes('migration_args+=(--metadata-only)'));
+assert.ok(workflow.includes('--verify-assistant-prewrite'));
+assert.ok(workflow.includes('--require-prewrite-gate'));
+const originalGateRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rr-code-only-original-gate-'));
+try {
+  const listPath = path.join(originalGateRoot, 'list.txt');
+  const dryPath = path.join(originalGateRoot, 'dry.txt');
+  for (const [pending, required, status] of [[true, 'false', 1], [true, 'true', 0], [false, 'false', 0]]) {
+    fs.writeFileSync(listPath, `Local | Remote | Time (UTC)\n${REQUIRED_CUTOVER_MIGRATIONS.map(item =>
+      `${item.version} | ${pending && item.version === LATEST_REQUIRED_CUTOVER_MIGRATION.version ? '' : item.version} | state`).join('\n')}`);
+    fs.writeFileSync(dryPath, pending
+      ? `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • ${LATEST_REQUIRED_CUTOVER_MIGRATION.filename}\nFinished supabase db push.`
+      : 'DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.');
+    const result = spawnSync(process.execPath, ['scripts/verify-code-only-migration-plan.mjs',
+      '--require-prewrite-gate', '--migration-list', listPath, '--dry-run', dryPath,
+      '--migrations-directory', path.resolve('supabase/migrations')], { encoding: 'utf8', windowsHide: true,
+      timeout: 30000, env: { SystemRoot: process.env.SystemRoot, PATH: process.env.PATH,
+        TEMP: os.tmpdir(), TMP: os.tmpdir(), RAVRADAR_ASSISTANT_PREWRITE_REQUIRED: required,
+        RAVRADAR_USERDATA_UPGRADE_OPT_IN: 'true', RAVRADAR_USERDATA_PREWRITE_REQUIRED: required,
+        RAVRADAR_USERDATA_PREWRITE_VERIFIED: required } });
+    assert.equal(result.status, status, result.stderr || result.error?.message);
+    if (status !== 0) assert.match(result.stderr, /requires the completed normal original-preservation path/);
+  }
+} finally {
+  assert.equal(path.dirname(originalGateRoot), path.resolve(os.tmpdir()));
+  assert.ok(path.basename(originalGateRoot).startsWith('rr-code-only-original-gate-'));
+  fs.rmSync(originalGateRoot, { recursive: true, force: true });
+}
 for (const marker of [
   'workflow_dispatch:',
   'DEPLOY-CODE-ONLY-REPAIR',
@@ -775,6 +821,197 @@ assert.throws(() => resolveFailedIntegratedMaintenancePublicSource({
 }), /exact public-only source proof/);
 
 console.log('Code-only public runtime reuse contract passed.');
+// Explicit owner-export delivery runs through the existing workflow/CLI seams.
+const { default: userdataTest } = await import('node:test');
+const userdataWorkflow = workflow.replaceAll('\r\n', '\n');
+const userdataSteps = [...userdataWorkflow.matchAll(/      - name: ([^\n]+)\n([\s\S]*?)(?=      - (?:name:|uses:)|$)/g)]
+  .map(match => ({ name: match[1], text: match[2], id: /^        id: (.+)$/m.exec(match[2])?.[1] || match[1],
+    code: /          node --input-type=module <<'(?:REPAIR_NODE|USERDATA_EDGE_NODE|USERDATA_FINAL_NODE|NODE)'\n([\s\S]*?)          (?:REPAIR_NODE|USERDATA_EDGE_NODE|USERDATA_FINAL_NODE|NODE)/.exec(match[2])?.[1]?.replace(/^          /gm, '') }));
+const userdataStep = name => { const value = userdataSteps.find(step => step.name === name); assert.ok(value, name); return value; };
+const userdataEvaluate = (code, scope) => new (Object.getPrototypeOf(async function(){}).constructor)(...Object.keys(scope),
+  code.replace(/^import[\s\S]*?;\r?\n/gm, ''))(...Object.values(scope));
+
+function userdataSelection({ optIn = false, predecessorApplied = true, assistantApplied = false, userdataApplied = false, latestVersion = '20261010130000' } = {}) {
+  const outputs = {};
+  const rows = [{ remote: predecessorApplied ? '20261005000000' : '' },
+    { remote: assistantApplied ? '20261010120000' : '' }, { remote: userdataApplied ? '20261010130000' : '' }];
+  return userdataEvaluate(userdataStep('Require originals before the pending assistant binding').code, {
+    fs: { readFileSync: () => '', appendFileSync: (_file, text) => { const [key, value] = text.trim().split('='); outputs[key] = value; } },
+    latest: { version: latestVersion }, parseSupabaseMigrationList: () => rows,
+    process: { env: { RAVRADAR_USERDATA_UPGRADE_OPT_IN: String(optIn), RUNNER_TEMP: '/synthetic', GITHUB_ENV: '/synthetic/env' } },
+  }).then(() => outputs);
+}
+userdataTest('userdata delivery: opt-in is explicit and sole130000 requires installed050000', async () => {
+  await assert.rejects(userdataSelection(), /explicit.*opt-in/);
+  await assert.rejects(userdataSelection({ optIn: true, predecessorApplied: false }), /installed current050000/);
+  await assert.rejects(userdataSelection({ optIn: true, assistantApplied: true }), /no intermediary/);
+  await assert.rejects(userdataSelection({ optIn: true, latestVersion: '20261010120000' }), /installed current050000/);
+  await assert.rejects(userdataSelection({ optIn: true, userdataApplied: true }), /automatic replay/);
+  const ok = await userdataSelection({ optIn: true });
+  assert.equal(ok.RAVRADAR_USERDATA_PREWRITE_REQUIRED, 'true');
+  assert.equal(ok.RAVRADAR_ASSISTANT_PREWRITE_REQUIRED, 'false');
+});
+userdataTest('userdata delivery: existing assistant selector and no-write current default remain distinct', async () => {
+  const assistant = await userdataSelection({ latestVersion: '20261010120000', assistantApplied: false });
+  assert.equal(assistant.RAVRADAR_ASSISTANT_PREWRITE_REQUIRED, 'true');
+  assert.equal(assistant.RAVRADAR_USERDATA_PREWRITE_REQUIRED, 'false');
+  const current = await userdataSelection({ userdataApplied: true });
+  assert.equal(current.RAVRADAR_USERDATA_PREWRITE_REQUIRED, 'false');
+  assert.match(userdataWorkflow, /upgrade_existing_owner_export:[\s\S]*?default: false/);
+  assert.match(userdataWorkflow, /group: ravradar-weather-production-v2/);
+  assert.match(userdataWorkflow, /inputs.upgrade_existing_owner_export == true && 'ravradar-trip-storage-production'/);
+});
+userdataTest('userdata delivery: immutable direct predecessor is checked before its normal DB readback', async () => {
+  const step = userdataStep('Verify installed current050000 predecessor before userdata preparation');
+  const original = fs.readFileSync('supabase/migrations/20261005000000_owner_water_level_only_binding.sql');
+  const verify = (version, bytes) => userdataEvaluate(step.code, {
+    assert, createHash: crypto.createHash, fs: { readFileSync: () => bytes }, latest: { version },
+  });
+  await verify('20261005000000', original);
+  await assert.rejects(verify('20261010120000', original), /source must end at current050000/);
+  await assert.rejects(verify('20261010130000', original), /source must end at current050000/);
+  await assert.rejects(verify('20261005000000', Buffer.concat([original, Buffer.from('\n')])), /remain immutable/);
+  assert.match(step.text, /cd "\$RAVRADAR_PREDECESSOR_SOURCE_ROOT"/);
+  assert.ok(step.text.indexOf('must remain immutable') < step.text.indexOf('node scripts/integrated-cutover-readiness.mjs verify-db'));
+});
+userdataTest('userdata delivery: normal migration CLI rejects absent opt-in, unproved originals and combined pending', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'rr-userdata-plan-'));
+  try {
+    const list = path.join(root, 'list.txt'), dry = path.join(root, 'dry.txt');
+    for (const [optIn, verified, combined, expected] of [['false','true',false,1],['true','false',false,1],['true','true',true,1],['true','true',false,0]]) {
+      const pending = new Set(['20261010130000', ...(combined ? ['20261010120000'] : [])]);
+      const fixtureMigrations = [...REQUIRED_CUTOVER_MIGRATIONS, ...(combined ? [{ version: '20261010120000',
+        filename: '20261010120000_assistant_knowledge_bound_successor.sql' }] : [])];
+      fs.writeFileSync(list, `Local | Remote | Time (UTC)\n${fixtureMigrations.map(item => `${item.version} | ${pending.has(item.version) ? '' : item.version} | state`).join('\n')}`);
+      fs.writeFileSync(dry, `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n${fixtureMigrations.filter(item => pending.has(item.version)).map(item => ` • ${item.filename}`).join('\n')}\nFinished supabase db push.`);
+      const result = spawnSync(process.execPath, ['scripts/verify-code-only-migration-plan.mjs', '--require-prewrite-gate',
+        '--migration-list', list, '--dry-run', dry, '--migrations-directory', path.resolve('supabase/migrations')], {
+        encoding: 'utf8', timeout: 30000, windowsHide: true, env: { SystemRoot: process.env.SystemRoot, PATH: process.env.PATH,
+          TEMP: os.tmpdir(), TMP: os.tmpdir(), RAVRADAR_USERDATA_UPGRADE_OPT_IN: optIn,
+          RAVRADAR_USERDATA_PREWRITE_REQUIRED: 'true', RAVRADAR_USERDATA_PREWRITE_VERIFIED: verified } });
+      assert.equal(result.status, expected, result.stderr || result.error?.message);
+    }
+  } finally { assert.equal(path.dirname(root), path.resolve(os.tmpdir())); fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+// Execute the actual workflow's inline programs; only child processes and clocks
+// are synthetic. DDL/process/provider implementations retain their prior receipts.
+async function userdataOperationFixture({ fail = '', unknownStop = false, falseStop = false, expireAt = '', driftAt = '' } = {}) {
+  const first = userdataSteps.findIndex(step => step.name === 'Read-only existing D1 repair preparation and live preflight');
+  const last = userdataSteps.findIndex(step => step.name === 'Restore and attest normal D1 after replacement');
+  assert.ok(first >= 0 && last > first);
+  const calls = [], states = {}; let error = null, clock = 1800000000000;
+  for (const step of userdataSteps.slice(first, last + 1)) {
+    if (error) { states[step.id] = { outcome: 'skipped' }; continue; }
+    assert.match(step.text, /if: env.RAVRADAR_USERDATA_PREWRITE_REQUIRED == 'true'/);
+    const env = { GITHUB_REF: 'refs/heads/main', GITHUB_SHA: 'a'.repeat(40), GITHUB_OUTPUT: '/synthetic/output',
+      SUPABASE_PROJECT_ID: 'synthetic', TRIP_STORAGE_OWNER_EXPORT_UPGRADE: '1',
+      TRIP_STORAGE_UPGRADE_PREFLIGHT: /TRIP_STORAGE_UPGRADE_PREFLIGHT: '0'/.test(step.text) ? '0' : '1',
+      TRIP_WRANGLER_CONFIG_PATH: '/synthetic/config', REPAIR_LEASE_DEADLINE: states.repair_quiesce?.outputs?.deadline,
+      REPAIR_EXPECTED_WORKER_VERSION: states.repair_replace?.outputs?.version,
+      EXPECTED_TRIP_STORAGE_MODE: step.id === 'userdata_trip_edges' ? 'maintenance' : 'd1' };
+    const outputs = {};
+    const execFileSync = (command, args, options = {}) => {
+      const action = command === 'git' ? (args[0] === 'fetch' ? 'fetch' : 'head')
+        : command === 'sleep' ? 'drain' : command === 'npx' ? 'worker-deploy'
+        : command === 'supabase' ? (args[0] === 'functions' ? args[2] : args.at(-1) === 'TRIP_STORAGE_MODE=d1' ? 'restore' : 'maintenance')
+        : args[0].includes('prepare-cloudflare') ? (args[1]?.endsWith('-apply') ? '002' : 'schema')
+        : args[0].includes('verify-trip-storage-edge') ? 'edge-readback' : 'worker-readback';
+      calls.push({ step: step.id, action, args, env: options.env || env });
+      if (action === fail) throw new Error('private synthetic cause must not be logged');
+      if (step.id + ':' + action === expireAt) clock += 21 * 60000;
+      if (action === 'head') return step.id === driftAt ? 'b'.repeat(40) : env.GITHUB_SHA;
+      if (action === 'drain') clock += 20000;
+      if (action === 'worker-deploy') return 'Current Version ID: 11111111-1111-4111-8111-111111111111\n';
+      return '';
+    };
+    try {
+      if (!step.code) {
+        // These remain direct normal CLI calls, with no parallel SQL implementation.
+        if (step.id === 'owner_upgrade_apply') execFileSync('node', ['scripts/prepare-cloudflare-trip-storage.mjs','--existing-owner-export-upgrade-apply']);
+        else {
+          assert.match(step.text, /--existing-owner-export-upgrade-plan/);
+          execFileSync('node',['scripts/prepare-cloudflare-trip-storage.mjs','--existing-owner-export-upgrade-plan']);
+          execFileSync('node',['scripts/verify-trip-storage-edge.mjs']);
+          execFileSync('node',['scripts/verify-cloudflare-trip-gateway.mjs']);
+        }
+      } else await userdataEvaluate(step.code, { execFileSync, process: { env }, console: { log(){} },
+        fs: { appendFileSync: (_file,text) => { const [key,...value] = text.trim().split('='); outputs[key] = value.join('='); } },
+        Date: class extends Date { static now() { return clock; } },
+        deployTripWorker: async () => {
+          const stdout = execFileSync('npx',['--yes','wrangler@4.28.1','deploy']);
+          if (unknownStop) throw new Error('unknown child termination');
+          return { stdout, terminationConfirmed: !falseStop };
+        },
+      });
+      states[step.id] = { outcome: 'success', outputs };
+    } catch (cause) { error ??= cause; states[step.id] = { outcome: 'failure', outputs }; }
+  }
+  return { calls, states, error };
+}
+userdataTest('userdata delivery: same-run SQL/readback then exact002, one Worker, two Edges and bound restore before publication', async () => {
+  const positions = ['Reverify the same userdata originals before binding installation', 'Apply exact dry-run-verified post-cutover binding',
+    'Read back migration and database binding', 'Read-only existing D1 repair preparation and live preflight',
+    'Apply only missing exact owner-export indexes on existing shards', 'Replace and attest the same-SQL Worker',
+    'Deploy and attest exact userdata trip Edges once', 'Restore and attest normal D1 after replacement',
+    'Audit regenerated integrated public runtime'].map(name => userdataWorkflow.indexOf('- name: ' + name));
+  assert.ok(positions.every((at,i) => at >= 0 && (!i || at > positions[i-1])));
+  const result = await userdataOperationFixture(); assert.equal(result.error, null, result.error?.stack);
+  assert.deepEqual(result.calls.filter(call => ['maintenance','drain','002','worker-deploy','trip-log','submit-observation','restore'].includes(call.action)).map(call => call.action),
+    ['maintenance','drain','002','worker-deploy','trip-log','submit-observation','restore']);
+  const final = result.calls.filter(call => ['userdata_trip_edges','repair_restore'].includes(call.step));
+  assert.ok(final.every(call => call.env.TRIP_STORAGE_UPGRADE_PREFLIGHT === '0'));
+  assert.ok(final.filter(call => call.action === 'worker-readback').every(call => call.env.EXPECTED_TRIP_WORKER_VERSION === result.states.repair_replace.outputs.version));
+});
+for (const fail of ['schema','maintenance','002','worker-deploy','trip-log','submit-observation','restore'])
+  userdataTest('userdata delivery: first failure at ' + fail + ' cannot start another mutation or recovery', async () => {
+    const result = await userdataOperationFixture({ fail }); assert.ok(result.error);
+    const at = result.calls.findIndex(call => call.action === fail); assert.equal(at, result.calls.length-1);
+    assert.ok(result.calls.filter(call => call.action === 'worker-deploy').length <= 1);
+    assert.equal(result.calls.some(call => call.step.startsWith('repair_recovery')), false);
+  });
+for (const options of [{unknownStop:true},{falseStop:true}, {expireAt:'repair_replace:worker-readback'},
+  {expireAt:'userdata_trip_edges:worker-readback'}, {expireAt:'repair_restore:worker-readback'},
+  {driftAt:'repair_replace'}, {driftAt:'userdata_trip_edges'}, {driftAt:'repair_restore'}])
+  userdataTest('userdata delivery: unknown outcome/expired lease/main drift stops ' + JSON.stringify(options), async () => {
+    const result = await userdataOperationFixture(options); assert.ok(result.error);
+    assert.equal(result.calls.some(call => call.action === 'restore'), false);
+    if (options.unknownStop || options.falseStop) assert.equal(result.calls.some(call => ['trip-log','submit-observation'].includes(call.action)),false);
+    assert.ok(result.calls.filter(call => call.action === 'worker-deploy').length <= 1);
+  });
+
+async function userdataFinalFixture({ missing = [], fail = '', versionId = '11111111-1111-4111-8111-111111111111' } = {}) {
+  const step = userdataStep('Require installed owner-export storage before userdata publication');
+  const calls = [], env = { GITHUB_SHA:'a'.repeat(40),TRIP_OWNER_EXPORT_PLAN_PATH:'/synthetic/final',
+    TRIP_STORAGE_OWNER_EXPORT_UPGRADE:'1',TRIP_STORAGE_UPGRADE_PREFLIGHT:'0',EXPECTED_TRIP_STORAGE_MODE:'d1' };
+  let error = null;
+  try { await userdataEvaluate(step.code, { process:{env}, fs:{readFileSync:()=>Buffer.from(JSON.stringify({sourceSha:env.GITHUB_SHA,missing,versionId}))},
+    execFileSync:(command,args,options)=>{calls.push({command,args,options});if(args[0].includes(fail) && fail)throw new Error('synthetic private provider failure');return '';},
+  }); } catch(cause) { error=cause; }
+  return {calls,error};
+}
+userdataTest('userdata final: already-applied130000 is read-only, exact002 and version/capability verified before publication',async()=>{
+  const selected=await userdataSelection({userdataApplied:true});
+  assert.equal(selected.RAVRADAR_USERDATA_PREWRITE_REQUIRED,'false');
+  assert.equal(selected.RAVRADAR_USERDATA_FINAL_REQUIRED,'true');
+  const old=await userdataSelection({latestVersion:'20261010120000'});
+  assert.equal(old.RAVRADAR_USERDATA_FINAL_REQUIRED,'false');
+  const result=await userdataFinalFixture();assert.equal(result.error,null,result.error?.stack);
+  assert.equal(result.calls.length,3);assert.ok(result.calls.every(call=>call.command==='node'));
+  assert.deepEqual(result.calls[0].args,['scripts/prepare-cloudflare-trip-storage.mjs','--existing-owner-export-upgrade-plan']);
+  assert.equal(result.calls[1].options.env.EXPECTED_TRIP_WORKER_VERSION,'11111111-1111-4111-8111-111111111111');
+  assert.ok(result.calls.every(call=>call.options.env.TRIP_STORAGE_UPGRADE_PREFLIGHT==='0'));
+  assert.ok(userdataWorkflow.indexOf('Require installed owner-export storage before userdata publication')<userdataWorkflow.indexOf('id: checkpoint-publish'));
+});
+for(const options of [{missing:['synthetic-shard']},{missing:null},{versionId:[]},
+  {fail:'prepare-cloudflare'},{fail:'verify-cloudflare'},{fail:'verify-trip-storage-edge'}])
+  userdataTest('userdata final: failed/missing physical index or final receipt stops '+JSON.stringify(options),async()=>{
+    const result=await userdataFinalFixture(options);assert.ok(result.error);
+    assert.equal(result.error.message,'USERDATA_FINAL_STORAGE_UNVERIFIED');
+    assert.ok(result.calls.every(call=>call.command==='node'&&!call.args.some(arg=>/apply$|deploy|secrets|push/.test(arg))));
+    if(options.missing!==undefined||Array.isArray(options.versionId))assert.equal(result.calls.length,1);
+  });
+
 
 // Preserve bounded transfer and first-error STOP while making its exact file visible.
 const publicSnapshotStart = workflow.indexOf('- name: Download exact currently public code-only source');

@@ -1,10 +1,10 @@
-import { authEnabled, authIdentityEpoch, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.574";
-import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.574";
-import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.574";
-import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.574";
-import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.574";
-import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.574";
-import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.574";
+import { authEnabled, authIdentityEpoch, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.575";
+import { getLocalObservations, getOwnTripExport, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.575";
+import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.575";
+import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.575";
+import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.575";
+import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.575";
+import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.575";
 
 const pendingHistoryViews = new WeakMap();
 
@@ -152,6 +152,9 @@ function renderAccount(dialog, context, message = '') {
     ${message ? `<p class="notice" role="status">${escapeHtml(message)}</p>` : ''}
     <a id="accountTripReportLink" class="account-feature-link" href="#indberet-tur">${t('account.report')} <span aria-hidden="true">→</span></a>
     <a id="tripHistoryLink" class="account-feature-link" href="#mine-ture">${t('account.history')} <span aria-hidden="true">→</span></a>
+    <button id="tripExportButton" class="account-feature-link" type="button">${t('account.exportTrips')}</button>
+    <p class="muted">${t('account.exportTripsScope')}</p>
+    <p id="tripExportStatus" class="form-status" role="status" aria-live="polite"></p>
     <p class="account-privacy-note">${t('account.privacy')}</p>
     <button id="signOutButton" class="primary-button" type="button">${t('account.logout')}</button>` : `
     <h2>${t('account.optional')}</h2>
@@ -168,6 +171,40 @@ function renderAccount(dialog, context, message = '') {
 
   content.querySelector('#accountTripReportLink')?.addEventListener('click', event => { event.preventDefault(); showAccountTripReport(dialog, context); });
   content.querySelector('#tripHistoryLink')?.addEventListener('click', event => { event.preventDefault(); showTripHistory(dialog, context); });
+  content.querySelector('#tripExportButton')?.addEventListener('click', async event => {
+    const button = event.currentTarget, status = content.querySelector('#tripExportStatus');
+    const ownerId = session?.user?.id;
+    const identity = authIdentityEpoch();
+    let cancelled = false;
+    const cancel = () => { cancelled = true; };
+    const isActive = () => {
+      if (authIdentityEpoch() !== identity || !dialog.open || !button.isConnected) cancel();
+      return !cancelled;
+    };
+    dialog.addEventListener('close', cancel);
+    dialog.addEventListener('cancel', cancel);
+    button.disabled = true;
+    status.textContent = t('account.exportTripsWorking');
+    try {
+      if (!ownerId || currentSession()?.user?.id !== ownerId || !isActive()) throw new Error('OWNER_CHANGED');
+      const data = await getOwnTripExport({ isActive });
+      if (currentSession()?.user?.id !== ownerId || !isActive()) throw new Error('OWNER_CHANGED');
+      const href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
+      try {
+        const link = document.createElement('a');
+        link.href = href;
+        link.download = `ravradar-mine-ture-${data.exported_at.slice(0, 10)}.json`;
+        link.click();
+      } finally { setTimeout(() => URL.revokeObjectURL(href), 0); }
+      status.textContent = t('account.exportTripsReady');
+    } catch {
+      if (isActive()) status.textContent = t('account.exportTripsFailed');
+    } finally {
+      dialog.removeEventListener('close', cancel);
+      dialog.removeEventListener('cancel', cancel);
+      button.disabled = false;
+    }
+  });
   content.querySelector('#signOutButton')?.addEventListener('click', async () => { await signOut(); renderAccount(dialog, context); });
   content.querySelector('#authForm')?.addEventListener('submit', async event => {
     event.preventDefault();

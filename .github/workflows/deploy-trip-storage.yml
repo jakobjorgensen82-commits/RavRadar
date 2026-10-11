@@ -11,6 +11,7 @@ on:
         options:
           - full-install
           - existing-worker-repair
+          - existing-owner-export-upgrade
 
 permissions:
   contents: read
@@ -972,13 +973,13 @@ jobs:
         run: node scripts/verify-cloudflare-trip-gateway.mjs
 
   reject-unknown-operation:
-    if: ${{ inputs.operation != '' && inputs.operation != 'full-install' && inputs.operation != 'existing-worker-repair' }}
+    if: ${{ inputs.operation != '' && inputs.operation != 'full-install' && inputs.operation != 'existing-worker-repair' && inputs.operation != 'existing-owner-export-upgrade' }}
     runs-on: ubuntu-latest
     steps:
       - run: exit 1
 
   repair-existing-worker:
-    if: ${{ inputs.operation == 'existing-worker-repair' }}
+    if: ${{ inputs.operation == 'existing-worker-repair' || inputs.operation == 'existing-owner-export-upgrade' }}
     name: Bounded existing-D1 Worker repair
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -994,6 +995,9 @@ jobs:
       CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
       TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
       TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-trip-repair-wrangler.json
+      TRIP_OWNER_EXPORT_PLAN_PATH: /tmp/ravradar-owner-export-upgrade.json
+      TRIP_STORAGE_OWNER_EXPORT_UPGRADE: ${{ inputs.operation == 'existing-owner-export-upgrade' && '1' || '0' }}
+      TRIP_STORAGE_UPGRADE_PREFLIGHT: ${{ inputs.operation == 'existing-owner-export-upgrade' && '1' || '0' }}
     steps:
       - name: Require the exact main head
         run: |
@@ -1124,7 +1128,11 @@ jobs:
           EXPECTED_TRIP_STORAGE_MODE: d1
         run: |
           set -euo pipefail
-          node scripts/prepare-cloudflare-trip-storage.mjs --existing-worker-repair
+          if [ "$TRIP_STORAGE_OWNER_EXPORT_UPGRADE" = "1" ]; then
+            node scripts/prepare-cloudflare-trip-storage.mjs --existing-owner-export-upgrade-plan
+          else
+            node scripts/prepare-cloudflare-trip-storage.mjs --existing-worker-repair
+          fi
           node scripts/audit-cloudflare-trip-storage.mjs
           node scripts/verify-trip-storage-edge.mjs
           node scripts/verify-cloudflare-trip-gateway.mjs
@@ -1173,6 +1181,14 @@ jobs:
           run('DRAIN', 'sleep', ['20']);
           REPAIR_NODE
 
+      - name: Apply only missing exact owner-export indexes on existing shards
+        id: owner_upgrade_apply
+        if: inputs.operation == 'existing-owner-export-upgrade'
+        timeout-minutes: 5
+        env:
+          REPAIR_LEASE_DEADLINE: ${{ steps.repair_quiesce.outputs.deadline }}
+        run: node scripts/prepare-cloudflare-trip-storage.mjs --existing-owner-export-upgrade-apply
+
       - name: Replace and attest the same-SQL Worker
         id: repair_replace
         timeout-minutes: 7
@@ -1210,6 +1226,9 @@ jobs:
           }
           function output(name, value) { fs.appendFileSync(env.GITHUB_OUTPUT, name + '=' + value + '\n'); }
           worker();
+          if (env.TRIP_STORAGE_OWNER_EXPORT_UPGRADE === '1') {
+            run('UPGRADE_READBACK', 'node', ['scripts/prepare-cloudflare-trip-storage.mjs', '--existing-owner-export-upgrade-check']);
+          }
           exactMain();
           lease(600);
           import { deployTripWorker } from './scripts/lib/trip-worker-deploy-process.mjs';
@@ -1278,7 +1297,7 @@ jobs:
 
       - name: Reattest and lease once for D1-only failure roll-forward
         id: repair_recovery_quiesce
-        if: ${{ failure() && !cancelled() && steps.repair_quiesce.outputs.intent == 'true' && (steps.repair_replace.outputs.deploy_intent != 'true' || steps.repair_replace.outputs.deploy_stopped == 'true') }}
+        if: ${{ inputs.operation != 'existing-owner-export-upgrade' && failure() && !cancelled() && steps.repair_quiesce.outputs.intent == 'true' && (steps.repair_replace.outputs.deploy_intent != 'true' || steps.repair_replace.outputs.deploy_stopped == 'true') }}
         timeout-minutes: 5
         shell: bash
         run: |

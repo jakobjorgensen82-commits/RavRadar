@@ -26,7 +26,7 @@ const entries = await Promise.all(Object.entries(sources).map(async ([label, fil
 ]));
 const documents = Object.fromEntries(entries);
 const checkpointMigration = await fs.readFile(
-  'supabase/migrations/20261005000000_owner_water_level_only_binding.sql',
+  'supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql',
   'utf8',
 );
 const stableTripMigration = await fs.readFile(
@@ -34,7 +34,7 @@ const stableTripMigration = await fs.readFile(
   'utf8',
 );
 const currentTripMigration = await fs.readFile(
-  'supabase/migrations/20261005000000_owner_water_level_only_binding.sql',
+  'supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql',
   'utf8',
 );
 const definitions = Object.fromEntries(Object.entries(documents).map(([label, source]) => [
@@ -56,6 +56,7 @@ const CHECKPOINT_FUNCTION_NAMES = Object.freeze([
   'public.ravradar_ravscore_checkpoint_top20_predecessor_projection',
   'public.ravradar_ravscore_checkpoint_cp_close_predecessor_projection',
   'public.ravradar_ravscore_checkpoint_owner_current_predecessor_projection',
+  'public.ravradar_ravscore_checkpoint_userdata_predecessor_projection',
   'public.ravradar_ravscore_checkpoint_cas',
   'public.ravradar_ravscore_checkpoint_contract',
 ]);
@@ -172,8 +173,15 @@ for (const [label, source] of Object.entries({
   const waterProjection=functionDefinition(source,label,
     'public.ravradar_ravscore_checkpoint_water_level_predecessor_projection');
   assert.match(waterProjection,
-    /if public\.ravradar_ravscore_checkpoint_payload_valid\(v_projected, p_target_reference\)\s+then return v_projected; end if;\s+return null;/,
-    `${label} the final water-only projection must retain the entire current validator`);
+    /v_projected := public\.ravradar_ravscore_checkpoint_userdata_predecessor_projection\(v_projected, p_target_reference\);\s+if v_projected is not null then return v_projected; end if;\s+return null;/,
+    `${label} water-only projection must reach the separately attested userdata successor`);
+  const userdataProjection = functionDefinition(source, label, 'public.ravradar_ravscore_checkpoint_userdata_predecessor_projection');
+  assert.match(userdataProjection, /if public\.ravradar_ravscore_checkpoint_payload_valid\(v_projected, p_target_reference\)\s+then return v_projected; end if;\s+return null;/);
+  assert.match(userdataProjection, /count\(\*\)[\s\S]*<> 673[\s\S]*state\.value ->> 'modelBundleSha256' is distinct from 'ffc67b30/);
+  assert.match(userdataProjection, /candidateGRollbackCompanion,modelBinding,modelBundleSha256}'\s+is distinct from '8d9142b5/);
+  assert.match(userdataProjection, /continuationStateContractSha256' is distinct from '4115f371/);
+  assert.doesNotMatch(userdataProjection, /\bsecurity definer\b|\b(?:insert|update|delete)\s+|\bexecute\s+|\{currentEvidence\}|\{currentSupplyIndex\}|\{transportEvidence\}/i);
+  assert.match(source, /revoke all on function public\.ravradar_ravscore_checkpoint_userdata_predecessor_projection\(jsonb,timestamptz\)\s+from public, anon, authenticated;/);
   assert.match(waterProjection,/count\(\*\)[\s\S]*<> 673[\s\S]*state\.value ->> 'modelBundleSha256' is distinct from '4ebe158f/);
   assert.match(waterProjection,/candidateGRollbackCompanion,modelBinding,modelBundleSha256}'\s+is distinct from '3e5aae87/);
   assert.doesNotMatch(waterProjection,/\bsecurity definer\b|\b(?:insert|update|delete)\s+|\bexecute\s+|\{currentEvidence\}|\{currentSupplyIndex\}|\{transportEvidence\}/i);
@@ -194,10 +202,12 @@ for (const [label, source] of Object.entries({
   assert.match(metadata, /v_validator_oids\[8\]/);
   assert.match(metadata,/water-level-predecessor-projection/);
   assert.match(metadata,/v_validator_oids\[9\]/);
+  assert.match(metadata, /userdata-predecessor-projection/);
+  assert.match(metadata, /v_validator_oids\[10\]/);
   assert.match(metadata, /'checkpointCasStatementTimeout55Seconds'[\s\S]*'statement_timeout=55s' = any \(p\.proconfig\)/);
   assert.match(checkpointGeneratedBlock(source, label), /set statement_timeout = '55s';/,
     `${label} installer must enforce, not merely claim, the actual existing 55s timeout`);
-  for (const variable of ['v_water_level_predecessor_payload','v_owner_current_predecessor_payload', 'v_cp_close_predecessor_payload', 'v_top20_predecessor_payload']) {
+  for (const variable of ['v_userdata_predecessor_payload', 'v_water_level_predecessor_payload','v_owner_current_predecessor_payload', 'v_cp_close_predecessor_payload', 'v_top20_predecessor_payload']) {
     const projectedComparison = casDefinition.slice(casDefinition.indexOf(
       `v_central_is_compatible_predecessor and ${variable} is not null then`));
     const branchEnd = projectedComparison.search(/\n    (?:else|elsif)\b/);

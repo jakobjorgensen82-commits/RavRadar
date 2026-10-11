@@ -1,10 +1,48 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.574
+**Håndbogsversion:** 4.0.575
 
-Den lokale 4.0.574 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
-og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
-Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+Den lokale 4.0.575 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og `modelBundleSha256=249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932` over 68 kanonisk normaliserede transitive implementeringsfiler.
+Dette er den nye samlede kildeidentitet, ikke bevis for installation eller offentlig levering. Den fysiske scorekontrakt er uændret.
+
+## 89.209 Samlet kilde med den nye vejrrettelse
+
+Den lokale 575-kilde samler de gennemgåede konto-, eksport- og assistentrettelser med de leverede vejrrettelser. Den almindelige cron-vejrhentning startede den 11. oktober kl. 22.19 dansk tid på den rettede kode. Afslutning og effekt på en ny generation er endnu ikke bekræftet her.
+
+575 er ikke installeret eller offentligt leveret. Den offentligt verificerede baseline er fortsat 4.0.574. Sammenføjningen kræver egen kildekontrol, bevaring af originale data, afsluttet vejrhentning, præcis installationsgodkendelse og faktisk offentlig kontrol. Ingen produktionsændring sker under den aktive vejrhentning.
+
+Alle tidligere kapitler fra begge kildegrene bevares. Deres ældre test- og leveringsstatus er historik. Scoreformel, administratorpunkter, geometri og gyldige originaler ændres ikke. Alle fem hovedmål er fortsat åbne.
+
+## 89.207 Kontrolleret sletning af ejerens turkilder
+
+Det eksisterende serverforløb skal bruge den samme ejer gennem validering, signerede lagerkald, sletning og genlæsning. Det er nu samlet i én fast serverfunktion. Den eksisterende kommandolinje er fortsat eneste produktionskalder og kræver stadig et udtrykkeligt bekræftelsesflag. Rækkefølge, første fejl og adgangsoplysninger ændres ikke, og der er ingen automatisk gentagelse.
+
+En kvittering fortæller kun, at dette turkildetrin er bekræftet. Lagerets tomme liste kan skyldes en eksisterende spærring af ejeren; den beviser ikke alene fysisk fravær af rækker eller backupdata. Funktionen sletter ikke login, profil eller backup og aktiverer ikke automatisk sletning efter inaktivitet. En eventuel ny serverkalder skal selv kontrollere ejerens adgang; et bruger-id fra browseren er ikke tilstrækkeligt.
+
+De 23 normale målprøver består efter faktisk lokal integration, uden fejl eller skip. De 16 gamle testkroppe er bevaret. Forløberens præcise GitHub-kildekontrol er også bestået; ældre afventende CI-status nedenfor er historik. Det er ikke installation eller offentlig levering af 575. Denne følgeintegrations egen kildekontrol og levering afventes. Ingen rigtig tur er slettet, og modelbindinger, scoreformel, administratorpunkter, geometri og originaler er uændrede. Alle fem hovedmål er fortsat åbne.
+
+## 89.208 Egne ture, sikker eksport og afgrænsede assistentopfølgninger
+
+Den anden kildekontrol stoppede i en testobservatør: ni native-prøver bestod, og én afviste et procesnavn. Den afviste tekst er ukendt. npm ændrer dokumenteret sit procesnavn under opstart. Testen følger nu kun disse afgrænsede navnetilstande efter dobbelt kontrol af den samme fastholdte procesidentitet og præcise programfil. Alle øvrige ejerskabs-, låse-, luknings- og tidskontroller bevares. En lokal helperprøve med 17 syntetiske delkontroller består; næste præcise Linux- og fulde kildekontrol mangler stadig. Produktfunktioner, bindinger og offentlig drift ændres ikke af denne testrettelse.
+
+Den første kildekontrol fandt to forældede testopstillinger. De følger nu de eksisterende sikkerhedskrav og appens faktiske emnetilstand. De normale målprøver består; gamle kontroller bevares. Produktfunktioner og modelbindinger ændres ikke af denne testrettelse. Ny præcis kildekontrol og offentlig levering mangler stadig.
+
+Den lokale 575-kandidat samler den gennemgåede brugerdatarettelse med fem små assistentrettelser. Den ændrer ikke vejrets fysiske scoreformel, administratorpunkter eller geometri. Gamle originaler og 54 historiske migrationer bevares.
+
+Eksporten skal kun indeholde den aktuelle ejers ture. Den henter sider gennem den normale signerede lagerkæde, uden at sætte et vilkårligt loft på hele eksporten. Kontoskift eller afbrydelse må ikke efterlade en eksport til den forkerte bruger. En gemt tur er ikke automatisk tilladelse til statistisk viderebrug.
+
+En privat, manuel rapport kan have oprindelsen unknown eller synthetic-test; begge er negative oplysninger, som udelukker kalibrering. Historiske ture uden dette valg ommærkes ikke. Den normale målprøve følger faktisk signeret lagring, læsning og eksport gennem ti lokale SQLite-shards, afviser en anden ejer og ugyldige markører og bevarer tur og registrering ved konflikt. Det er ikke et bevis for installeret D1 eller et rigtigt brugerforløb i produktion.
+
+Assistenten kan bruge et snævert, midlertidigt emne til en praktisk opfølgning om strøm langs kysten. Det er ikke generel samtalehukommelse og indeholder ikke den rå samtale eller private oplysninger. Skift i sprog, tilstand eller relevant kontekst rydder emnet. Tyske farveord kontrolleres som hele ord. Kvotefejl får afgrænsede kontrolmarkører, uden at afsløre spørgsmål, tokens eller private svar. Det retter ikke i sig selv den endnu uafklarede hostede AI-fejl.
+
+De normale lokale målprøver for assistent, konto, eksport, privat runtime og hybridlagring består. Gamle sammenligningsfunktioner og assertions bevares. Et grønt lokalt resultat er ikke offentlig levering eller bevis for en fungerende ekstern AI.
+
+Den inaktive Candidate G-kompatibilitet har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=55fd7dfa5ee36596c729d93225a448ea5b8f1e7142c44b8b1bda5c3d4d84c957` over 66 transitive filer. Fortsættelsens kildeidentitet er a5430dd21e3135d6efc09e22df3dd0cdcafee723f962ff1d3cb52e7765b2aaa0. Bindingerne er beregnet af den normale kilde, ikke kopieret fra en gammel kandidat.
+
+130000-migrationen er endnu ikke installeret. Dens funktionelle SQL er uændret; 20 bindingsfelter følger den faktiske samlede kilde. Præcis godkendelse af den samlede installation afventes. Levering kræver derefter kildekontrol, autentificerede originaler, bevis for databevarelse, ledig writer og faktisk offentlig effekt.
+
+Ejeren har godkendt to års inaktivitet med 30 dages varsel og mulighed for at bevare kontoen ved login samt statistik slået til som udgangspunkt. Disse funktioner er ikke aktiveret her. Standardvalget er ikke samtykke eller anonymitetsbevis. Privat turlog og eksport skal være uafhængige af statistikvalget. Alle fem hovedmål er fortsat åbne.
 
 ## 89.206 Logudskrivning må ikke forsinke processtoppet
 
