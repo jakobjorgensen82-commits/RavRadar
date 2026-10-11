@@ -1,4 +1,11 @@
-# Lokal 4.0.575 – 2026-10-11
+# Lokal 4.0.575 fast servertrin for ejerens turkilder – 2026-10-11
+
+- Flytter alene den eksisterende CLI's faste turkildesletning til en server-only funktion. Det eksplicitte CLI-flag, ejer-HMAC, signeret D1-kald, Supabase-kald, genlæsning, første fejl og ingen automatisk gentagelse bevares.
+- Ingen offentlig route, Auth-/profilsletning, automatisk retention eller virkelig sletning aktiveres. Kvitteringen er ikke fysisk D1-/backupfravær; en ny serverkalder skal selv autorisere ejeren.
+- Faktisk integreret normal måltest: 23/23 PASS uden skip; de gamle 16 testkroppe og operationen er bevaret. I68/C66/T12 og den eksisterende 130000-kandidat er uændrede. Egen præcis CI og sikker levering af følgeintegrationen mangler.
+- PR565-forløberens præcise CI og kildebevis består nu; 575 er fortsat ikke installeret/offentligt leveret. Vejrhentning har første prioritet, og alle fem hovedmål er åbne.
+
+# Historik: lokal 4.0.575 – 2026-10-11
 
 - Anden præcise kildekontrol 38124466358/1 bestod de indledende Node- og Python-kontroller, men native-målet gav ni beståede og én fejl i observatørens procesnavnekontrol. Den faktisk afviste kommandolinje blev ikke logget og er fortsat ukendt. Den præcise npm 11.19.0-kilde dokumenterer dog en opstartstitel npm før den senere titel npm ci; den gamle assertion udelod denne lovlige fase. Den afgrænsede testrettelse accepterer kun den faste oprindelige kommando eller disse dokumenterede titler efter kontrol af samme fastholdte procesobjekt, fuld kerneidentitet og præcis executable både før og efter aflæsningen. De ti hidtidige cases og de øvrige ejerskabs-, låse-, status-, luknings- og tidsgrænser bevares. Én lokal helperprøve med 17 syntetiske delkontroller består; det er ikke native Linux-bevis. Fuld kildekontrol blev ikke kørt i det fejlede forløb, og næste præcise normale Linux-kontrol er endnu ukørt. Produkt, modelbindinger og produktion ændres ikke af observatørrettelsen.
 

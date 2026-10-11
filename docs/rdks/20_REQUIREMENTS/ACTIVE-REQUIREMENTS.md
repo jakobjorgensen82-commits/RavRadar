@@ -1,4 +1,14 @@
-# Aktuelle brugerdata- og assistentkrav – lokal 4.0.575
+# Lokal 4.0.575 følgeintegration – fast servertrin for ejerens turkilder
+
+Den eksisterende eksplicit bekræftede CLI er fortsat eneste produktionskalder. Dens faste forløb er flyttet til en server-only funktion: validering, samme ejer-HMAC, signeret D1-sletning, Supabase-sletning og de to oprindelige genlæsninger. Rækkefølge, første fejl, adgangsoplysninger, URL'er, tombstonepolitik og ingen automatisk gentagelse bevares. Der er ingen fri executor, offentlig route, Auth-/profilsletning eller aktivering af opbevaringspolitik.
+
+Kvitteringen er kun et afgrænset turkildetrin. En guarded tom D1-liste efter tombstone er ikke et selvstændigt bevis for fysisk række- eller backupfravær. En senere serverkalder skal selv autentificere og autorisere ejeren; et browserleveret bruger-id er ikke autoritet.
+
+De tre gennemgåede blade er nu integreret i den faktiske frosne 575-kilde. Den normale måltest består 23/23 uden skip; de 16 gamle testkroppe er byteeksakte, og den gamle operation er bevaret med alene indrykning/fetch-seam. I68/C66/T12, 130000-kandidaten, model, adminpunkter, geometri, historiske originaler og øvrige funktioner er uændrede. Ingen virkelig tur er slettet. Egen præcis kildekontrol og eventuel sikker levering af denne følgeintegration mangler.
+
+Forløberens PR565 har faktisk bestået præcis GitHub-kildekontrol og det tilhørende kildebevis; dens tidligere afventende CI-status nedenfor er historik. Dette er ikke 575-installation eller offentlig levering. Den aktive korte vejrhentning bruger allerede leveret main; dens tilladelse er forbrugt. De særskilte DMI-driftsrettelser er ikke kopieret ind her. Ingen produktionsændring sker under aktiv writer; alle fem hovedmål, installationstilladelser, statistikkrav, backup-/retentionskrav og AI-blokeringer består.
+
+# Historik: Aktuelle brugerdata- og assistentkrav – lokal 4.0.575
 
 - Egne ture lagres og eksporteres med kontobundet adgang; kontoskift, afbrydelse og transportfejl må ikke give en anden ejers data eller en falsk afleveringskvittering. Historiske originaler og gyldige manglende oprindelsesfelter bevares.
 - unknown og synthetic-test er negative oprindelsesmarkører, aldrig bevis for autentiske kalibreringsdata eller tilladelse til viderebrug. Gemt privat tur og statistikadgang er forskellige kontrakter.

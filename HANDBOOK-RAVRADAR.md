@@ -6,6 +6,14 @@ Den lokale 4.0.575 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette er den nye samlede kildeidentitet, ikke bevis for installation eller offentlig levering. Den fysiske scorekontrakt er uændret.
 
+## 89.207 Kontrolleret sletning af ejerens turkilder
+
+Det eksisterende serverforløb skal bruge den samme ejer gennem validering, signerede lagerkald, sletning og genlæsning. Det er nu samlet i én fast serverfunktion. Den eksisterende kommandolinje er fortsat eneste produktionskalder og kræver stadig et udtrykkeligt bekræftelsesflag. Rækkefølge, første fejl og adgangsoplysninger ændres ikke, og der er ingen automatisk gentagelse.
+
+En kvittering fortæller kun, at dette turkildetrin er bekræftet. Lagerets tomme liste kan skyldes en eksisterende spærring af ejeren; den beviser ikke alene fysisk fravær af rækker eller backupdata. Funktionen sletter ikke login, profil eller backup og aktiverer ikke automatisk sletning efter inaktivitet. En eventuel ny serverkalder skal selv kontrollere ejerens adgang; et bruger-id fra browseren er ikke tilstrækkeligt.
+
+De 23 normale målprøver består efter faktisk lokal integration, uden fejl eller skip. De 16 gamle testkroppe er bevaret. Forløberens præcise GitHub-kildekontrol er også bestået; ældre afventende CI-status nedenfor er historik. Det er ikke installation eller offentlig levering af 575. Denne følgeintegrations egen kildekontrol og levering afventes. Ingen rigtig tur er slettet, og modelbindinger, scoreformel, administratorpunkter, geometri og originaler er uændrede. Alle fem hovedmål er fortsat åbne.
+
 ## 89.200 Egne ture, sikker eksport og afgrænsede assistentopfølgninger
 
 Den anden kildekontrol stoppede i en testobservatør: ni native-prøver bestod, og én afviste et procesnavn. Den afviste tekst er ukendt. npm ændrer dokumenteret sit procesnavn under opstart. Testen følger nu kun disse afgrænsede navnetilstande efter dobbelt kontrol af den samme fastholdte procesidentitet og præcise programfil. Alle øvrige ejerskabs-, låse-, luknings- og tidskontroller bevares. En lokal helperprøve med 17 syntetiske delkontroller består; næste præcise Linux- og fulde kildekontrol mangler stadig. Produktfunktioner, bindinger og offentlig drift ændres ikke af denne testrettelse.
