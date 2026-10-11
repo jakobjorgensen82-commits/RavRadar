@@ -1,4 +1,11 @@
-# 4.0.574 driftsopfølgning – 2026-10-11
+# 4.0.574 kort vejrhentning fra aktuel beskyttet generation – 2026-10-11
+
+- Retter den korte kørsels kildevalg efter en succesfuld generationsovergang: explicit protected-current bruger normal autentificeret current B/S, ikke gammel cipher bundet til forgængeren.
+- Frisk eksakt current/restored/manifest/model/kontrakt-/bytekontrol; legitim kandidat bevares og kontrolleres mod B-packen. Separat tabsfri materialisering kun ved fravær. Ingen tom bootstrap i denne gren.
+- Gamle cipherkontroller, producentens READY, dataintegritet og alle senere gates bevares. Ingen ændret tidsplan, budget, scoreformel, originaler, modelbindinger eller SQL.
+- Faktisk kortforsøg 38132323971/1 fejlede før providerarbejde på korrekt BASELINE_MISMATCH; ingen nye offentlige data. Normale måltests består lokalt, kilde- og driftsbevis mangler. PR #567 er merget, men faktisk cachegemning/upload er endnu ikke verificeret.
+
+# Historik: 4.0.574 driftsopfølgning – 2026-10-11
 
 - Den faste cache-actions proceskontrol accepterer samme faste script med overflødigt /./, som den officielle GitHub Runner kan bevare. Ingen øvrig stinormalisering eller ændring af ejerskabs-/ophørskontroller.
 - Afvist gemning får en sikker fast-enum-fase og årsagskode. Oprindelig afvisningsmarkør, exitstatus, første fejl og kvitteringskrav bevares; ingen rå fejl eller private data logges.
