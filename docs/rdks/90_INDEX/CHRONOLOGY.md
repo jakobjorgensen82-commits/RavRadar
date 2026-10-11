@@ -1,4 +1,10 @@
-# 2026-10-11 – lokal 4.0.573, særskilt krypteret uploadkvittering
+# 2026-10-11 – lokal 4.0.574, kassering bevares ved normal genstart
+
+Den normale kasserings- og backupkæde havde en lokalt reproduceret genopståelsesfejl. Kun discard-skrivningen ændres til null under eksisterende nøgle; tre normale målforløb består og genbruges. Øvrige ture og indsendelser bevares. To funktionelle blade plus normal versionsmekanik og dokumentation; ingen backend-, SQL- eller modelændring. Præcis kildekontrol og offentlig levering er åbne efter 573.
+
+Ejerens toårs-/30dages-opbevaringskrav og ønske om statistik som standard er registreret, men aktiveres ikke. Statistikønsket er ikke samtykke eller anonymitetsbevis. Den særskilt godkendte direkte 050000→130000-installation forbliver uden for denne release. Tidligere afventende ejerbeslutninger er historiske på netop disse punkter; øvrige grænser består.
+
+# Historik: 2026-10-11 – lokal 4.0.573, særskilt krypteret uploadkvittering
 
 Den lokale 573-kandidat adskiller en færdig lokal krypteret gemning fra en positiv kvittering for upload. saved:true fra den eksisterende SAVE betyder fortsat kun lokal fil og rapport. Det må ikke i sig selv beskrives som en ny holdbart gemt fjernversion.
 

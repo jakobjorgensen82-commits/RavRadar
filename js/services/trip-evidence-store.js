@@ -5,7 +5,7 @@ import {
   createTripStartRecord,
   migrateLegacyUnattestedTripEvidence,
   migrateLegacyUnattestedTripStart
-} from './trip-evidence-contract.js?v=4.0.573';
+} from './trip-evidence-contract.js?v=4.0.574';
 
 const ACTIVE_KEY = 'ravradar-trip-evidence-v2-active';
 const PENDING_KEY = 'ravradar-trip-evidence-v2-pending';
@@ -115,7 +115,8 @@ export function discardActiveTripEvidence(storage = null) {
   const target = resolveStorage(storage);
   const active = loadActiveTripEvidence(target);
   if (!active) throw new Error('Der er ingen aktiv ravtur at afslutte.');
-  target.removeItem(ACTIVE_KEY);
+  // Keep an explicit empty value: an absent key admits an older backup on startup.
+  target.setItem(ACTIVE_KEY, 'null');
   return { tripId: active.tripId };
 }
 

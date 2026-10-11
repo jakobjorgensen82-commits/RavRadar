@@ -1,4 +1,22 @@
-# Lokal 4.0.573 – særskilt kvittering for krypteret upload
+# Lokal 4.0.574 – en kasseret tur må ikke gendannes fra gammel browserbackup
+
+En lokal prøve gennem det normale turdialog-, lager- og opstartsforløb viste en konkret fejl: efter Kassér tur var den aktive nøgle fjernet, og en ældre browserbackup kunne derfor sætte den kasserede tur tilbage. Fundet bygger på egne syntetiske data, ikke læsning eller sletning af en rigtig brugers ture.
+
+574 ændrer kun kasseringens lokale skrivning. Den eksisterende aktive nøgle gemmes med JSON-værdien null i stedet for at blive fjernet. Den normale læser ser fortsat ingen aktiv tur, mens opstartens gendannelse ikke overskriver en nøgle, der allerede findes. En ny legitim tur kan fortsat startes. Afventende ture, outbox, normal indsendelse og øvrige backupnøgler ændres ikke.
+
+De tre gennemgåede normale målforløb består: kasseret tur forbliver væk efter gammel backup; mislykket null-skrivning bevarer originalen og første fejl; en reelt manglende, ikke-kasseret tur gendannes stadig. Alle gamle assertions er bevaret. Den beståede evidens genbruges uden ny gentagelse. Det er ikke en garanti ved manuel rydning af lokal lagerplads, samtidige browserprocesser eller fjernbackup.
+
+Dette er en selvstændig kode-only kandidat på den gennemgåede 573-kilde. Præcis 574-kildekontrol, senere sikker levering og offentlig effekt mangler. PR #563/573 skal færdigleveres først, og der må ikke ske produktionsændringer under en aktiv writer. Ingen ny vejrhentning, SQL, Worker-/Edge-installation, score-, geometri- eller bindingsændring indgår.
+
+Nye ejerbeslutninger er registreret som krav, ikke implementeret funktion: ture beholdes, mens kontoen bruges; brugeren skal kunne eksportere og slette; efter to års inaktivitet skal der være 30 dages varsel, og login skal bevare kontoen. Virkelig sletning og beskyttelse mod genopståede data skal omfatte backup; den faktiske backupfrist skal undersøges før et løfte. Konto-/inaktivitetsdrift, varsling og samlet sletteforløb er endnu ikke implementeret af denne rettelse.
+
+Ejeren ønsker samlet vejr-/turstatistik slået til som standard. Det er ikke aktivt samtykke eller dokumentation for anonymitet, og statistik aktiveres ikke her. Controller Jakob Jørgensen, offentlig kontakt ravradar@outlook.dk, almindelig e-mailkonto uden indsamling af navn og Gmail alene som testkonto er allerede afklaret.
+
+Den særskilt godkendte brugerdata-installation er afgrænset direkte fra anvendt 050000 til den præcise 130000-kandidat, med bevarede originaler og alle gates før drift. Den skal ske før eventuel CP-/numerisk SQL og må ikke låne den tidligere 120000-rute. Den frosne brugerdata50-pakke, CP-/numerik-/RESTORE-arbejde og andre kandidater er ikke del af 574. Den observerede assistentfejl RATE_LIMIT_UNAVAILABLE undersøges særskilt; den rettes ikke af kasseringens lokale ændring.
+
+Tidligere daterede afsnit bevares som historik. Deres afventende ejerbeslutninger er erstattet alene på de udtrykkeligt nævnte punkter ovenfor; kildekontrol er ikke installation, og alle fem hovedmål er fortsat åbne.
+
+# Historik: lokal 4.0.573 – særskilt kvittering for krypteret upload
 
 Den lokale 573-kandidat adskiller en færdig lokal krypteret gemning fra en positiv kvittering for upload. saved:true fra den eksisterende SAVE betyder fortsat kun lokal fil og rapport. Det må ikke i sig selv beskrives som en ny holdbart gemt fjernversion.
 

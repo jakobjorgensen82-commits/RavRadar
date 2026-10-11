@@ -1,4 +1,12 @@
-# Lokal 4.0.573 – 2026-10-11
+# Lokal 4.0.574 – 2026-10-11
+
+- Kassér tur gemmer null under den eksisterende aktive nøgle. En ældre browserbackup kan dermed ikke genskabe netop den kasserede tur ved normal opstart, så længe nulværdien er bevaret.
+- Tre beståede normale kontroller genbruges: kassering/genstart, bevaret original og første fejl ved skrivefejl, samt gendannelse af en ikke-kasseret tur. Nye ture, afventende ture, outbox og gamle assertions bevares.
+- To funktionelle blade: turens lokale lager og den eksisterende opstartsmåltest. Normal versionsmekanik og dokumentation følger; ingen SQL, backendinstallation, model-/score-/geometriændring eller ny vejrhentning.
+- Opbevaring med to års inaktivitet og 30 dages varsel/login-redning er godkendte krav, ikke implementeret kontosletning. Statistik som standard er et ejerønske, ikke samtykke eller en anonymitetsgaranti, og aktiveres ikke. Den særskilte brugerdata50-installation holdes uden for denne release.
+- Lokal kandidat, ikke offentlig levering. Præcis kildekontrol og sikker kode-only-levering efter 573 og ledig writer mangler.
+
+# Historik: Lokal 4.0.573 – 2026-10-11
 
 - Adskiller lokal saved-kvittering fra uploaded efter positiv officiel servicekvittering, faktisk eget procesophør og frigivelse. HTTP 200 med afvist finalisering er ikke uploadsucces.
 - Bruger kun eksisterende faste ciphertext-sti og run-/attempt-nøgle. Samme åbne filidentitet og bytes kontrolleres omkring uploaden; begge gamle seal-success/saved-guards bevares. Ingen fri sti, ny tjeneste eller ændring af SAVE/RESTORE-format.
