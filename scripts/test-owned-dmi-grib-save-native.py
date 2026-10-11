@@ -28,6 +28,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -116,6 +117,40 @@ def exited(fd, seconds=0):
            or not flags & select.POLLIN for number, flags in events):
         raise RuntimeError('OWN_PIDFD_EXIT_UNPROVED')
     return True
+
+
+def require_action_exit_after_proc_race(fd, error, remaining):
+    # An inaccessible/disappearing /proc tree is not itself exit evidence.
+    # Wait on the already retained kernel object within the existing observer
+    # alarm only; a live/unknown process must still fail this test.
+    if error.errno not in (errno.ENOENT, errno.ESRCH, errno.EACCES, errno.EPERM):
+        raise error
+    if remaining <= 0 or not exited(fd, remaining):
+        raise error
+
+
+class OwnedProcExitObservation(unittest.TestCase):
+    def test_proc_exit_observation_requires_same_retained_pidfd_and_existing_budget(self):
+        for code in (errno.ENOENT, errno.ESRCH, errno.EACCES, errno.EPERM):
+            with self.subTest(code=code), mock.patch(
+                    __name__ + '.exited', return_value=True) as physical:
+                require_action_exit_after_proc_race(17, OSError(code, 'own proc race'), 0.125)
+                physical.assert_called_once_with(17, 0.125)
+
+    def test_proc_exit_observation_never_accepts_live_unknown_or_expired(self):
+        for code, budget, physical_exit in (
+                (errno.EACCES, 0.125, False), (errno.ENOENT, 0.125, False),
+                (errno.EPERM, 0, True), (errno.EIO, 0.125, True)):
+            error = OSError(code, 'own refusal')
+            with self.subTest(code=code), mock.patch(
+                    __name__ + '.exited', return_value=physical_exit) as physical:
+                with self.assertRaises(OSError) as refused:
+                    require_action_exit_after_proc_race(17, error, budget)
+                self.assertIs(refused.exception, error)
+                if code == errno.EIO or budget <= 0:
+                    physical.assert_not_called()
+                else:
+                    physical.assert_called_once_with(17, budget)
 
 
 def retain_pidfd(pid):
@@ -715,8 +750,9 @@ class OwnedRawDistributionNative(unittest.TestCase):
                 try:
                     self.assertEqual(identity(parent.pid), observed['action'])
                     descriptors = list(Path(f'/proc/{parent.pid}/fd').iterdir())
-                except (FileNotFoundError, ProcessLookupError):
-                    self.assertTrue(exited(fds['action']), 'Process disappearance needs actual pidfd exit')
+                except OSError as error:
+                    require_action_exit_after_proc_race(fds['action'], error,
+                                                       signal.getitimer(signal.ITIMER_REAL)[0])
                     descriptors = []
                 remaining = set()
                 for item in descriptors:
@@ -724,6 +760,11 @@ class OwnedRawDistributionNative(unittest.TestCase):
                         remaining.add(os.readlink(item))
                     except FileNotFoundError:
                         pass  # Closed during this inventory; never qualifies an open pipe.
+                    except OSError as error:
+                        require_action_exit_after_proc_race(fds['action'], error,
+                                                           signal.getitimer(signal.ITIMER_REAL)[0])
+                        remaining.clear()  # Earlier observations predate the proved exit.
+                        break  # Kernel-proved exit closed all of its descriptors.
                 self.assertTrue(pipe_targets.isdisjoint(remaining))
             self.assertEqual((root / '.cache/dmi-grib/own.grib').read_bytes(), own_raw)
             for config_path in config_paths:
