@@ -1,4 +1,11 @@
-# Lokal 4.0.574 stopkontrol uafhængig af logudskrivning – 2026-10-11
+# Lokal 4.0.574 samme-GRIB-læsning – 2026-10-11
+
+- Samme originale åbne fil og Linux-læselease binder capturekontrol, ecCodes-læsning, EOF og copy-on-write-transaktion. Ukendt fil-/lease-/oprydningsstatus afvises; en genåbnet fil kan ikke erstatte den oprindelige.
+- Pending SIGIO drænes aldrig. Den første fejl bevares, og uafsluttede referencer fastholdes uden at godkende næste asset eller checkpoint.
+- Statisk helbyte-/inversekontrol består; 232 øvrige produktdefinitioner, 68 gamle testmetoders assertions og gammelt native-prefix bevares. Tre fixtures får egne faktiske filer. Fire nye normale Linux-native scenarier er forberedt, men UKØRTE; præcis Linux-kildekontrol og offentlig effekt mangler.
+- Ingen versions-, budget-, prioriterings-, modelbindings-, storage-ABI-, score-, admin- eller geometriændring. Kun producentens faktiske kildeidentitet ændres. Historiske originaler bevares; ingen SQL-installation eller merge under aktiv writer. Hele revisionen og de fem hovedmål er fortsat åbne.
+
+# Historik: 4.0.574 stopkontrol uafhængig af logudskrivning – 2026-10-11
 
 - Den normale supervisor adskiller kontrolmarkører fra ordnet logudskrivning, så en blokeret modtager ikke holder asset-watchdog tilbage. Første fejl bevares gennem EOF og oprydning.
 - Reader og logger deler én samlet eksisterende tosekundersfrist. Uafsluttede tråde/processer fastholdes; ingen falsk succes, replacement eller finalizer. Proces-/gruppeejerskab og eksisterende stopbudgetter er uændrede.

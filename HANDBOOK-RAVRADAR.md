@@ -6,6 +6,17 @@ Den lokale 4.0.574 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
 
+## 89.210 Den samme vejrfil skal læses og kontrolleres
+
+Når en GRIB-fil kontrolleres og derefter læses, skal det være den samme åbne fil hele vejen. Den lokale DMI-opfølgning fastholder derfor det oprindelige filhåndtag og en Linux-læselås fra kontrollen af filens registrerede indhold gennem aflæsningen til filens slutning og den isolerede transaktion. En ny åbning af samme filnavn er ikke bevis for, at indholdet er det samme.
+
+Hvis låsen brydes, filnavnet peger på en anden fil, eller sikker afslutning ikke kan bevises, afvises videre arbejde. De faktiske uafsluttede referencer bevares, og ændringer i den isolerede transaktion rulles tilbage. Et afventende signal med ukendt oprindelse fjernes ikke blot for at kunne fortsætte; den første fejl bevares.
+
+Fire Linux-prøver er forberedt med egne små kunstige filer: normal læsning, brud på læselåsen, udskiftning af filnavnets mål og et fremmed signal før læseren får ejerskab. De bruger den normale læser og faktiske filhåndtag; testprocessens ophør skal bevises før testfilerne fjernes. Prøverne er endnu ikke kørt. Statisk byte- og kodekontrol erstatter ikke den normale Linux-kildekontrol på det præcise head.
+
+Dette er en lokal pipelineopfølgning til 4.0.574, ikke et nyt offentligt leverings- eller vejrgenerationsbevis. Tidsbudgetter, kildernes prioritet, modelbindinger, storage-ABI, scoreformel, administratorpunkter, geometri og historiske originaler bevares. Producentens kildeidentitet følger de reelle kodebytes. Det løser ikke i sig selv senere genbrug af filnavne, holdbar gemning og upload, tab af runner eller national kapacitet. Alle fem hovedmål er fortsat åbne; ingen merge eller produktionsændring sker under aktiv writer. De tidligere kapitler bevarer deres historiske status og evidens.
+
+
 ## 89.206 Logudskrivning må ikke forsinke processtoppet
 
 Hvis modtageren af loggen går i stå, skal stopkontrollen stadig kunne læse arbejdsmarkører og reagere på tidsgrænsen. Den normale DMI-supervisor adskiller derfor den ordnede logudskrivning fra læsning og stopkontrol. Den første læse- eller logfejl bevares, også hvis barnet allerede har afsluttet sit output.

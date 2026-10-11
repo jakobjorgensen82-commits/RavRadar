@@ -1,4 +1,14 @@
-# Lokal 4.0.574 procesrettelse – logudskrivning må ikke blokere stopkontrollen
+# Lokal 4.0.574 DMI-opfølgning – samme åbne GRIB-fil gennem hele læsningen
+
+Den normale producent bruger samme originale åbne fil og Linux-læselease fra kontrol af capturebytes gennem ecCodes, faktisk EOF og den isolerede copy-on-write-transaktion. Filidentitet og lease kontrolleres undervejs; decoder eller kalder må ikke genåbne en anden fil som erstatningsbevis. Ved leasebrud, ændret filsti eller uafklaret oprydning afvises videre behandling, og de faktiske uafsluttede referencer fastholdes. Pending SIGIO konsumeres aldrig for at fremstille sikker oprydning; ukendt signaloprindelse kræver typed refusal med den første fejl bevaret.
+
+Den uafhængige statiske helbyte-/inversekontrol består. 232 øvrige produktdefinitioner, de 68 gamle testmetoders assertions og hele det gamle native-testprefix bevares; tre eksisterende transaktionsfixtures får egne faktiske filer. Fire forberedte Linux-native scenarier bruger normale kaldere, faktisk ecCodes/fd/lease og egne små syntetiske filer: sund læsning, leasebrud, filstiudskiftning og fremmed pending signal før ejerskab. Alle fire er endnu UKØRTE. Windows-/syntaks- og bytekontrol er ikke native bevis.
+
+Næste gate er én normal Linux-kildekontrol på kandidatens præcise PR-head, inklusive den eksisterende native-provenance-kalder, hele DMI-integrationstargetet, uændret kildetræ og kildebevis. Ingen merge eller produktionsændring under aktiv writer. Denne opfølgning har intet nyt offentligt leverings- eller normalt generationsbevis; ældre afsnit nedenfor bevares som kronologisk evidens, ikke aktuel status for denne kandidat.
+
+Version 4.0.574, faste budgetter, kildeprioritet, scoreformel, I68/C66/continuation, storage-ABI, adminpunkter, geometri og historiske originaler er uændrede. Producentens sourceinventory skal afspejle de reelle ændrede kodebytes uden ommærkning af gamle originaler; ingen modelgenerator eller bindingsinstallation bruges. Holdbar SAVE/upload/genbrug, senere pathname-genbrug, samlet eksklusiv skrivning, runner-tab, fireminuttersgrænsen, national kapacitet og alle fem hovedmål er fortsat åbne. Ingen nye tilladelser, SQL-installation eller øvrig revisionsaktivering følger.
+
+# Historik: 4.0.574 procesrettelse – logudskrivning må ikke blokere stopkontrollen
 
 Den normale DMI-supervisor læser kontrolmarkører uafhængigt af den ordnede logudskrivning. En blokeret logmodtager må dermed ikke holde asset-watchdog tilbage. Første læse-/logfejl bevares, også ved EOF; reader og logger deler én samlet eksisterende oprydningsfrist på to sekunder. Uafsluttede processer eller outputtråde fastholdes med deres faktiske referencer og må ikke føre til succes, replacement eller finalizer.
 

@@ -2449,144 +2449,82 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         )
 
     def test_669_of_670_wave_asset_preserves_valid_parts_atomically(self) -> None:
-        zones = [
-            {
-                "id": f"PART::SYNTHETIC-{index:03d}",
-                "coastType": "east",
-            }
-            for index in range(670)
-        ]
-        active = {
-            "generatedAt": TARGET,
-            "zones": {
-                zone["id"]: {"hourly": {}, "sentinel": "active"}
-                for zone in zones
-            },
-        }
-        before = copy.deepcopy(active)
-        accepted_ids = {zone["id"] for zone in zones[:-1]}
-        asset = SimpleNamespace(valid_time=TARGET)
-
-        def fake_process(*args, **_kwargs):
-            staged = args[5]
-            for zone_id in accepted_ids:
-                staged["zones"][zone_id]["hourly"][TARGET] = {
-                    "candidate": True,
-                    "sources": {"wave": self._synthetic_wave_lineage()},
+        with tempfile.TemporaryDirectory(prefix="rr-grib-transaction-") as owned_directory:
+            owned_path = Path(owned_directory) / "synthetic.grib"
+            owned_path.write_bytes(b"synthetic")
+            zones = [
+                {
+                    "id": f"PART::SYNTHETIC-{index:03d}",
+                    "coastType": "east",
                 }
-            return (
-                {"significant-wave-height", "dominant-wave-period"},
-                set(accepted_ids),
-                False,
-                2,
-                1,
-            )
+                for index in range(670)
+            ]
+            active = {
+                "generatedAt": TARGET,
+                "zones": {
+                    zone["id"]: {"hourly": {}, "sentinel": "active"}
+                    for zone in zones
+                },
+            }
+            before = copy.deepcopy(active)
+            accepted_ids = {zone["id"] for zone in zones[:-1]}
+            asset = SimpleNamespace(valid_time=TARGET)
 
-        def rejection_code(document, zone, *_args):
-            hour = (
-                ((document.get("zones") or {}).get(zone["id"]) or {})
-                .get("hourly", {})
-                .get(TARGET, {})
-            )
-            return None if hour.get("candidate") is True else "INVALID_WAVE_TUPLE"
+            def fake_process(*args, **_kwargs):
+                staged = args[5]
+                for zone_id in accepted_ids:
+                    staged["zones"][zone_id]["hourly"][TARGET] = {
+                        "candidate": True,
+                        "sources": {"wave": self._synthetic_wave_lineage()},
+                    }
+                return (
+                    {"significant-wave-height", "dominant-wave-period"},
+                    set(accepted_ids),
+                    False,
+                    2,
+                    1,
+                )
 
-        summary: dict = {}
+            def rejection_code(document, zone, *_args):
+                hour = (
+                    ((document.get("zones") or {}).get(zone["id"]) or {})
+                    .get("hourly", {})
+                    .get(TARGET, {})
+                )
+                return None if hour.get("candidate") is True else "INVALID_WAVE_TUPLE"
 
-        def stage_validator(staged, _private, outcome):
-            observed = producer.private_wave_bootstrap_asset_summary(
-                staged, zones, "wam_dw", asset,
-            )
-            summary.update(observed)
-            return producer.operational_wave_asset_stage_admissible(
-                active,
-                staged,
-                zones,
-                "wam_dw",
-                asset,
-                observed,
-                outcome,
-            )
+            summary: dict = {}
 
-        with (
-            patch.object(producer, "process_grib", side_effect=fake_process),
-            patch.object(
-                producer,
-                "private_wave_bootstrap_hour_rejection_code",
-                side_effect=rejection_code,
-            ),
-            patch.object(
-                producer,
-                "complete_native_source_for_hour",
-                return_value=False,
-            ),
-        ):
-            producer.process_grib_transactionally(
-                Path("synthetic.grib"),
-                "wam_dw",
-                utc_offset(TARGET, -6),
-                TARGET,
-                zones,
-                active,
-                {},
-                stage_validator=stage_validator,
-                validation_error="synthetic partial WAM asset",
-            )
+            def stage_validator(staged, _private, outcome):
+                observed = producer.private_wave_bootstrap_asset_summary(
+                    staged, zones, "wam_dw", asset,
+                )
+                summary.update(observed)
+                return producer.operational_wave_asset_stage_admissible(
+                    active,
+                    staged,
+                    zones,
+                    "wam_dw",
+                    asset,
+                    observed,
+                    outcome,
+                )
 
-        self.assertEqual(summary["acceptedCount"], 669)
-        self.assertEqual(summary["rejectedCount"], 1)
-        for zone_id in accepted_ids:
-            self.assertTrue(active["zones"][zone_id]["hourly"][TARGET]["candidate"])
-        self.assertEqual(active["zones"][zones[-1]["id"]], before["zones"][zones[-1]["id"]])
-        self.assertFalse(producer.operational_wave_asset_stage_complete(
-            summary,
-            (
-                {"significant-wave-height", "dominant-wave-period"},
-                accepted_ids,
-                False,
-                2,
-                1,
-            ),
-        ))
-
-    def test_zero_valid_wave_parts_still_roll_back_whole_asset(self) -> None:
-        zones = [{"id": "PART::SYNTHETIC"}]
-        active = {
-            "generatedAt": TARGET,
-            "zones": {zones[0]["id"]: {"hourly": {}, "sentinel": "active"}},
-        }
-        before = copy.deepcopy(active)
-        asset = SimpleNamespace(valid_time=TARGET)
-
-        def fake_process(*_args, **_kwargs):
-            return (
-                {"significant-wave-height", "dominant-wave-period"},
-                set(),
-                False,
-                2,
-                1,
-            )
-
-        summary = self._wave_summary(
-            zones,
-            set(),
-            {"INVALID_WAVE_TUPLE": 1},
-        )
-
-        def stage_validator(staged, _private, outcome):
-            return producer.operational_wave_asset_stage_admissible(
-                active,
-                staged,
-                zones,
-                "wam_dw",
-                asset,
-                summary,
-                outcome,
-            )
-
-        with patch.object(producer, "process_grib", side_effect=fake_process):
-            with self.assertRaises(RuntimeError):
+            with (
+                patch.object(producer, "process_grib", side_effect=fake_process),
+                patch.object(
+                    producer,
+                    "private_wave_bootstrap_hour_rejection_code",
+                    side_effect=rejection_code,
+                ),
+                patch.object(
+                    producer,
+                    "complete_native_source_for_hour",
+                    return_value=False,
+                ),
+            ):
                 producer.process_grib_transactionally(
-                    Path("synthetic.grib"),
+                    owned_path,
                     "wam_dw",
                     utc_offset(TARGET, -6),
                     TARGET,
@@ -2597,80 +2535,151 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                     validation_error="synthetic partial WAM asset",
                 )
 
-        self.assertEqual(active, before)
+            self.assertEqual(summary["acceptedCount"], 669)
+            self.assertEqual(summary["rejectedCount"], 1)
+            for zone_id in accepted_ids:
+                self.assertTrue(active["zones"][zone_id]["hourly"][TARGET]["candidate"])
+            self.assertEqual(active["zones"][zones[-1]["id"]], before["zones"][zones[-1]["id"]])
+            self.assertFalse(producer.operational_wave_asset_stage_complete(
+                summary,
+                (
+                    {"significant-wave-height", "dominant-wave-period"},
+                    accepted_ids,
+                    False,
+                    2,
+                    1,
+                ),
+            ))
 
-    def test_partial_wave_asset_cannot_mutate_a_rejected_part(self) -> None:
-        zones = [{"id": "PART::ACCEPTED"}, {"id": "PART::REJECTED"}]
-        active = {
-            "generatedAt": TARGET,
-            "zones": {
-                zone["id"]: {"hourly": {}, "sentinel": "active"}
-                for zone in zones
-            },
-        }
-        before = copy.deepcopy(active)
-        asset = SimpleNamespace(valid_time=TARGET)
-
-        def fake_process(*args, **_kwargs):
-            staged = args[5]
-            staged["zones"]["PART::ACCEPTED"]["hourly"][TARGET] = {
-                "candidate": True,
-                "sources": {"wave": self._synthetic_wave_lineage()},
+    def test_zero_valid_wave_parts_still_roll_back_whole_asset(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="rr-grib-transaction-") as owned_directory:
+            owned_path = Path(owned_directory) / "synthetic.grib"
+            owned_path.write_bytes(b"synthetic")
+            zones = [{"id": "PART::SYNTHETIC"}]
+            active = {
+                "generatedAt": TARGET,
+                "zones": {zones[0]["id"]: {"hourly": {}, "sentinel": "active"}},
             }
-            staged["zones"]["PART::REJECTED"]["hourly"][TARGET] = {
-                "significant-wave-height": "invalid-mutation",
-            }
-            return (
-                {"significant-wave-height", "dominant-wave-period"},
-                {"PART::ACCEPTED"},
-                False,
-                2,
-                2,
-            )
+            before = copy.deepcopy(active)
+            asset = SimpleNamespace(valid_time=TARGET)
 
-        def rejection_code(document, zone, *_args):
-            hour = (
-                ((document.get("zones") or {}).get(zone["id"]) or {})
-                .get("hourly", {})
-                .get(TARGET, {})
-            )
-            return None if hour.get("candidate") is True else "INVALID_WAVE_TUPLE"
-
-        def stage_validator(staged, _private, outcome):
-            summary = producer.private_wave_bootstrap_asset_summary(
-                staged, zones, "wam_dw", asset,
-            )
-            return producer.operational_wave_asset_stage_admissible(
-                active, staged, zones, "wam_dw", asset, summary, outcome,
-            )
-
-        with (
-            patch.object(producer, "process_grib", side_effect=fake_process),
-            patch.object(
-                producer,
-                "private_wave_bootstrap_hour_rejection_code",
-                side_effect=rejection_code,
-            ),
-            patch.object(
-                producer,
-                "complete_native_source_for_hour",
-                return_value=False,
-            ),
-        ):
-            with self.assertRaises(RuntimeError):
-                producer.process_grib_transactionally(
-                    Path("synthetic.grib"),
-                    "wam_dw",
-                    utc_offset(TARGET, -6),
-                    TARGET,
-                    zones,
-                    active,
-                    {},
-                    stage_validator=stage_validator,
-                    validation_error="synthetic rejected mutation",
+            def fake_process(*_args, **_kwargs):
+                return (
+                    {"significant-wave-height", "dominant-wave-period"},
+                    set(),
+                    False,
+                    2,
+                    1,
                 )
 
-        self.assertEqual(active, before)
+            summary = self._wave_summary(
+                zones,
+                set(),
+                {"INVALID_WAVE_TUPLE": 1},
+            )
+
+            def stage_validator(staged, _private, outcome):
+                return producer.operational_wave_asset_stage_admissible(
+                    active,
+                    staged,
+                    zones,
+                    "wam_dw",
+                    asset,
+                    summary,
+                    outcome,
+                )
+
+            with patch.object(producer, "process_grib", side_effect=fake_process):
+                with self.assertRaises(RuntimeError):
+                    producer.process_grib_transactionally(
+                        owned_path,
+                        "wam_dw",
+                        utc_offset(TARGET, -6),
+                        TARGET,
+                        zones,
+                        active,
+                        {},
+                        stage_validator=stage_validator,
+                        validation_error="synthetic partial WAM asset",
+                    )
+
+            self.assertEqual(active, before)
+
+    def test_partial_wave_asset_cannot_mutate_a_rejected_part(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="rr-grib-transaction-") as owned_directory:
+            owned_path = Path(owned_directory) / "synthetic.grib"
+            owned_path.write_bytes(b"synthetic")
+            zones = [{"id": "PART::ACCEPTED"}, {"id": "PART::REJECTED"}]
+            active = {
+                "generatedAt": TARGET,
+                "zones": {
+                    zone["id"]: {"hourly": {}, "sentinel": "active"}
+                    for zone in zones
+                },
+            }
+            before = copy.deepcopy(active)
+            asset = SimpleNamespace(valid_time=TARGET)
+
+            def fake_process(*args, **_kwargs):
+                staged = args[5]
+                staged["zones"]["PART::ACCEPTED"]["hourly"][TARGET] = {
+                    "candidate": True,
+                    "sources": {"wave": self._synthetic_wave_lineage()},
+                }
+                staged["zones"]["PART::REJECTED"]["hourly"][TARGET] = {
+                    "significant-wave-height": "invalid-mutation",
+                }
+                return (
+                    {"significant-wave-height", "dominant-wave-period"},
+                    {"PART::ACCEPTED"},
+                    False,
+                    2,
+                    2,
+                )
+
+            def rejection_code(document, zone, *_args):
+                hour = (
+                    ((document.get("zones") or {}).get(zone["id"]) or {})
+                    .get("hourly", {})
+                    .get(TARGET, {})
+                )
+                return None if hour.get("candidate") is True else "INVALID_WAVE_TUPLE"
+
+            def stage_validator(staged, _private, outcome):
+                summary = producer.private_wave_bootstrap_asset_summary(
+                    staged, zones, "wam_dw", asset,
+                )
+                return producer.operational_wave_asset_stage_admissible(
+                    active, staged, zones, "wam_dw", asset, summary, outcome,
+                )
+
+            with (
+                patch.object(producer, "process_grib", side_effect=fake_process),
+                patch.object(
+                    producer,
+                    "private_wave_bootstrap_hour_rejection_code",
+                    side_effect=rejection_code,
+                ),
+                patch.object(
+                    producer,
+                    "complete_native_source_for_hour",
+                    return_value=False,
+                ),
+            ):
+                with self.assertRaises(RuntimeError):
+                    producer.process_grib_transactionally(
+                        owned_path,
+                        "wam_dw",
+                        utc_offset(TARGET, -6),
+                        TARGET,
+                        zones,
+                        active,
+                        {},
+                        stage_validator=stage_validator,
+                        validation_error="synthetic rejected mutation",
+                    )
+
+            self.assertEqual(active, before)
 
     def test_partial_wave_asset_cannot_mix_with_existing_valid_lineage(self) -> None:
         zones = [
