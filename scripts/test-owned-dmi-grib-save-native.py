@@ -130,10 +130,55 @@ def require_action_exit_after_proc_race(fd, error, remaining):
 
 
 def fixed_npm_observation_title(command, node24):
-    # npm's actual CLI entry first sets process.title='npm', before npm.load
-    # sets 'npm ci'. This mutable title is not executable/ownership proof;
-    # the native caller still requires its retained pidfd and exact /proc/exe.
+    # Recognition only: argv0 is never sufficient for the stopped npm proof.
     return command in (os.fsencode(node24), b'npm', b'npm ci')
+
+
+def fixed_npm_observation_cmdline(command, node24, npm_cli):
+    startup = [os.fsencode(node24), os.fsencode(npm_cli), b'ci',
+               b'--ignore-scripts', b'--no-audit', b'--no-fund']
+    if command == b'\0'.join(startup) + b'\0':
+        return True
+    # libuv copies the new title before clearing the old argv tail. A read
+    # between those writes is not a completed npm title. Nor does argv0 alone
+    # distinguish the worker's pre-exec child from the actual fixed npm CLI.
+    title = command.split(b'\0', 1)[0]
+    return (command.endswith(b'\0') and title in (b'npm', b'npm ci')
+            and not command[len(title):].strip(b'\0'))
+
+
+def stop_fixed_npm_observation(pid, fd, node24, npm_cli, expected_identity):
+    # The caller's existing SIGALRM remains the sole observer deadline. This
+    # loop neither restarts the action nor changes npm, its inputs or budget.
+    def require_same_runtime():
+        if exited(fd) or identity(pid) != expected_identity:
+            raise RuntimeError('OWN_NPM_PROCESS_CHANGED_OR_EXITED')
+        if Path(os.readlink(f'/proc/{pid}/exe')).resolve() != node24:
+            raise RuntimeError('OWN_NPM_EXECUTABLE_CHANGED')
+        if exited(fd):
+            raise RuntimeError('OWN_NPM_PROCESS_EXITED_DURING_OBSERVATION')
+
+    while True:
+        require_same_runtime()
+        if not fixed_npm_observation_cmdline(small(f'/proc/{pid}/cmdline'), node24, npm_cli):
+            time.sleep(0.001)
+            continue
+        signal.pidfd_send_signal(fd, signal.SIGSTOP)
+        while True:
+            require_same_runtime()
+            if small(f'/proc/{pid}/stat').decode('ascii').rsplit(')', 1)[1].split()[0] == 'T':
+                break
+            time.sleep(0.001)
+        first = small(f'/proc/{pid}/cmdline')
+        second = small(f'/proc/{pid}/cmdline')
+        require_same_runtime()
+        if first == second and fixed_npm_observation_cmdline(first, node24, npm_cli):
+            return
+        # A title write may have started after the first read. Resume only
+        # this retained, unchanged kernel object; incomplete/foreign titles
+        # never qualify, and a persistent refusal reaches the original alarm.
+        signal.pidfd_send_signal(fd, signal.SIGCONT)
+        time.sleep(0.001)
 
 
 class OwnedProcExitObservation(unittest.TestCase):
@@ -146,6 +191,89 @@ class OwnedProcExitObservation(unittest.TestCase):
                         b'npm-foreign', b'/foreign/bin/node'):
             with self.subTest(command=command):
                 self.assertFalse(fixed_npm_observation_title(command, node24))
+
+    def test_fixed_npm_cmdline_requires_exact_cli_or_completed_actual_title(self):
+        node24 = Path('/own/runtime/bin/node')
+        npm_cli = Path('/own/runtime/lib/node_modules/npm/bin/npm-cli.js')
+        startup = b'\0'.join([os.fsencode(node24), os.fsencode(npm_cli), b'ci',
+                              b'--ignore-scripts', b'--no-audit', b'--no-fund']) + b'\0'
+        for command in (startup, b'npm\0', b'npm\0\0', b'npm ci\0', b'npm ci\0\0'):
+            with self.subTest(command=command):
+                self.assertTrue(fixed_npm_observation_cmdline(command, node24, npm_cli))
+        for command in (b'', b'node', b'npm install', b'npm ci extra',
+                        b'npm-foreign', b'/foreign/bin/node', os.fsencode(node24), b'npm', b'npm ci',
+                        b'nnpm/old-argv-tail\0', b'npm\0old-argv-tail\0',
+                        startup.replace(b'ci\0', b'install\0'),
+                        startup.replace(os.fsencode(npm_cli), b'/foreign/npm-cli.js'),
+                        os.fsencode(node24) + b'\0/own/worker.cjs\0--fixed-distribution-worker\0'):
+            with self.subTest(command=command):
+                self.assertFalse(fixed_npm_observation_cmdline(command, node24, npm_cli))
+
+    def test_fixed_npm_observation_rechecks_stopped_title_on_same_kernel_object(self):
+        node24 = Path('/own/runtime/bin/node').resolve()
+        npm_cli = Path('/own/runtime/lib/node_modules/npm/bin/npm-cli.js')
+        expected = {'pid': 29, 'ppid': 23, 'pgid': 23, 'sid': 23, 'start': '17'}
+        commands = iter((b'npm/old-argv-tail\0', b'npm\0', b'npm/old-argv-tail\0', b'npm\0',
+                         b'npm ci\0', b'npm ci\0', b'npm ci\0'))
+
+        def observe(path):
+            if path == '/proc/29/cmdline':
+                return next(commands)
+            self.assertEqual(path, '/proc/29/stat')
+            return b'29 (own) T 23 23 23\n'
+
+        with mock.patch.multiple(signal, SIGSTOP=19, SIGCONT=18, create=True), \
+                mock.patch(__name__ + '.small', side_effect=observe), \
+                mock.patch(__name__ + '.exited', return_value=False) as physical, \
+                mock.patch(__name__ + '.identity', return_value=expected) as identities, \
+                mock.patch(__name__ + '.os.readlink', return_value=str(node24)) as executable, \
+                mock.patch(__name__ + '.signal.pidfd_send_signal', create=True) as signals, \
+                mock.patch(__name__ + '.time.sleep') as sleeps:
+            stop_fixed_npm_observation(29, 17, node24, npm_cli, expected)
+            self.assertEqual(signals.call_args_list, [mock.call(17, signal.SIGSTOP),
+                             mock.call(17, signal.SIGCONT), mock.call(17, signal.SIGSTOP)])
+            self.assertEqual(sleeps.call_args_list, [mock.call(0.001), mock.call(0.001)])
+            self.assertEqual(physical.call_args_list, [mock.call(17)] * 14)
+            self.assertEqual(identities.call_args_list, [mock.call(29)] * 7)
+            self.assertEqual(executable.call_args_list, [mock.call('/proc/29/exe')] * 7)
+
+    def test_fixed_npm_observation_never_stops_unknown_title_or_restarts_deadline(self):
+        node24 = Path('/own/runtime/bin/node').resolve()
+        expected = {'pid': 29, 'ppid': 23, 'pgid': 23, 'sid': 23, 'start': '17'}
+        with mock.patch(__name__ + '.small', return_value=b'npm install\0'), \
+                mock.patch(__name__ + '.exited', return_value=False), \
+                mock.patch(__name__ + '.identity', return_value=expected), \
+                mock.patch(__name__ + '.os.readlink', return_value=str(node24)), \
+                mock.patch(__name__ + '.signal.pidfd_send_signal', create=True) as signals, \
+                mock.patch(__name__ + '.signal.setitimer', create=True) as timer, \
+                mock.patch(__name__ + '.time.sleep', side_effect=TimeoutError('own alarm')):
+            with self.assertRaisesRegex(TimeoutError, 'own alarm'):
+                stop_fixed_npm_observation(29, 17, node24, Path('/own/npm-cli.js'), expected)
+            signals.assert_not_called()
+            timer.assert_not_called()
+
+    def test_fixed_npm_observation_refuses_exit_identity_or_executable_change(self):
+        node24 = Path('/own/runtime/bin/node').resolve()
+        expected = {'pid': 29, 'ppid': 23, 'pgid': 23, 'sid': 23, 'start': '17'}
+        changed = {**expected, 'start': '18'}
+        foreign = str(Path('/foreign/bin/node').resolve())
+        for physical, identities, runtimes, stops in (
+                ([True], [expected], [str(node24)], 0),
+                ([False], [changed], [str(node24)], 0),
+                ([False], [expected], [foreign], 0),
+                ([False, False, True], [expected], [str(node24)], 1),
+                ([False, False, False], [expected, changed], [str(node24)], 1),
+                ([False, False, False], [expected, expected], [str(node24), foreign], 1)):
+            with self.subTest(physical=physical, identities=identities, runtimes=runtimes), \
+                    mock.patch.multiple(signal, SIGSTOP=19, SIGCONT=18, create=True), \
+                    mock.patch(__name__ + '.small', return_value=b'npm\0'), \
+                    mock.patch(__name__ + '.exited', side_effect=physical), \
+                    mock.patch(__name__ + '.identity', side_effect=identities), \
+                    mock.patch(__name__ + '.os.readlink', side_effect=runtimes), \
+                    mock.patch(__name__ + '.signal.pidfd_send_signal', create=True) as signals:
+                with self.assertRaises(RuntimeError):
+                    stop_fixed_npm_observation(29, 17, node24, Path('/own/npm-cli.js'), expected)
+                self.assertEqual(signals.call_args_list, [mock.call(17, signal.SIGSTOP)] * stops)
 
     def test_proc_exit_observation_requires_same_retained_pidfd_and_existing_budget(self):
         for code in (errno.ENOENT, errno.ESRCH, errno.EACCES, errno.EPERM):
@@ -895,9 +1023,6 @@ class OwnedRawDistributionNative(unittest.TestCase):
             self.assertEqual(small(f'/proc/{worker_pid}/cmdline').split(b'\0')[:-1],
                              [os.fsencode(NODE24), os.fsencode(root / ENTRY), b'--fixed-distribution-worker'])
             self.assertEqual(Path(os.readlink(f'/proc/{npm_pid}/exe')).resolve(), NODE24)
-            npm_command = small(f'/proc/{npm_pid}/cmdline').split(b'\0')[0]
-            self.assertTrue(fixed_npm_observation_title(npm_command, NODE24),
-                            'Actual npm may set its process title; no alternate executable')
             worker = observed['worker']
             self.assertEqual((worker['pgid'], worker['sid']), (worker_pid, worker_pid))
             self.assertEqual((observed['npm']['pgid'], observed['npm']['sid']),
@@ -905,10 +1030,7 @@ class OwnedRawDistributionNative(unittest.TestCase):
             self.assertNotEqual(observed['cohort']['pgid'], worker_pid)
             # Pause only our already kernel-identified npm object to observe
             # the real pending interval; this does not replace npm or SDK code.
-            signal.pidfd_send_signal(fds['npm'], signal.SIGSTOP)
-            while small(f'/proc/{npm_pid}/stat').decode('ascii').rsplit(')', 1)[1].split()[0] != 'T':
-                self.assertFalse(exited(fds['npm']))
-                time.sleep(0.001)
+            stop_fixed_npm_observation(npm_pid, fds['npm'], NODE24, npm_cli, observed['npm'])
             claim_fd = os.open(root / CLAIM, os.O_RDONLY | os.O_NOFOLLOW)
             claim_stat = os.fstat(claim_fd)
             claim_identity = (claim_stat.st_dev, claim_stat.st_ino)
