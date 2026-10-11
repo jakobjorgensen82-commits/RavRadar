@@ -1,4 +1,12 @@
-# Lokal 4.0.574 – 2026-10-11
+# 4.0.574 driftsopfølgning – 2026-10-11
+
+- Den faste cache-actions proceskontrol accepterer samme faste script med overflødigt /./, som den officielle GitHub Runner kan bevare. Ingen øvrig stinormalisering eller ændring af ejerskabs-/ophørskontroller.
+- Afvist gemning får en sikker fast-enum-fase og årsagskode. Oprindelig afvisningsmarkør, exitstatus, første fejl og kvitteringskrav bevares; ingen rå fejl eller private data logges.
+- 21/21 gennemgåede normale Node-prøver genbruges. Den additive normale Linux-case med faktisk /proc-scriptargument og præcis source-CI er endnu åbne; ingen leveringspåstand.
+- Faktisk vejrhentning 38124400431/1 fejlede kl. 11.24 dansk tid uden nye offentlige data. Rå gemning og krypteret upload blev afvist. /./ er en begrundet regressionshypotese, ikke en målt historisk root cause; producentens særskilte fejl er fortsat åben.
+- Pipelineopfølgning på eksisterende version, ikke ny UI-/modelrelease. Ingen ændring af modelbindinger, score, geometri, originaler, scheduler eller installationstilladelser. 574 var allerede offentligt leveret kl. 10.05; gammel kandidatstatus nedenfor er historik.
+
+# Historik: lokal 4.0.574 – 2026-10-11
 
 - Kassér tur gemmer null under den eksisterende aktive nøgle. En ældre browserbackup kan dermed ikke genskabe netop den kasserede tur ved normal opstart, så længe nulværdien er bevaret.
 - Tre beståede normale kontroller genbruges: kassering/genstart, bevaret original og første fejl ved skrivefejl, samt gendannelse af en ikke-kasseret tur. Nye ture, afventende ture, outbox og gamle assertions bevares.

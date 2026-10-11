@@ -217,6 +217,9 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
     const events = [];
     const ipc = [];
     const outputs = [];
+    const diagnostics = [];
+    let cliDone;
+    const cliFinished = new Promise(resolve => { cliDone = resolve; });
     const ownerValue = Object.freeze({});
     const env = { INPUT_PATH: '.cache/dmi-grib', INPUT_KEY: 'dmi-grib-v4-Linux-2026-W41-42-1',
       RUNNER_OS: 'Linux', GITHUB_RUN_ID: '42', GITHUB_RUN_ATTEMPT: '1',
@@ -226,9 +229,17 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
       env, platform: 'linux', versions: { node: '24.19.0' }, argv: ['node', ownedRawAction],
       ppid: 12345,
       chdir(value) { events.push(['cwd', value]); },
+      stderr: { write(value) { diagnostics.push(value); } },
+    });
+    if (options.cli) Object.defineProperty(processFixture, 'exitCode', {
+      set(value) { cliDone(value); },
     });
     const owner = {
-      async acquireWeatherAcquisitionWriter() { events.push('acquire'); return ownerValue; },
+      async acquireWeatherAcquisitionWriter() {
+        events.push('acquire');
+        if (Object.hasOwn(options, 'acquireError')) throw options.acquireError;
+        return ownerValue;
+      },
       async assertWeatherAcquisitionWriter(value) {
         assert.equal(value, ownerValue); events.push('assert');
         if (Object.hasOwn(options, 'assertError')) throw options.assertError;
@@ -290,6 +301,7 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
       if (specifier === '../../../scripts/lib/weather-acquisition-writer.mjs') return owner;
       return ownedRawRequire(specifier);
     };
+    if (options.cli) require.main = module;
     const context = vmOwnedRawCache.createContext({ require, module, exports: module.exports,
       __dirname: path.dirname(ownedRawAction), __filename: ownedRawAction, process: processFixture,
       Buffer, URL, console });
@@ -309,7 +321,8 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
     function dispose() {
       for (const stream of child?.stdio || []) stream?.destroy();
     }
-    return { ...module.exports, events, ipc, outputs, env, started, finish, receipt, processFixture, dispose };
+    return { ...module.exports, events, ipc, outputs, env, started, finish, receipt, processFixture, dispose,
+      diagnostics, cliFinished };
   }
   try {
     await t.test('distribution receipt is separate and waits for actual fixture closure and release', async () => {
@@ -494,6 +507,62 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
         } finally { value.dispose(); }
       });
     }
+
+    await t.test('normal CLI failure diagnostic is fixed-enum only and never evaluates unknown error properties', async () => {
+      const unknown = 'DMI_RAW_SAVE_DIAGNOSTIC stage=LEASE reason=UNKNOWN\n';
+      const known = 'DMI_RAW_SAVE_DIAGNOSTIC stage=LEASE reason=WEATHER_ACQUISITION_WRITER_UNPROVED\n';
+      let accessorCalls = 0;
+      const accessor = Object.create(null, {
+        code: { get() { accessorCalls += 1; throw new Error('DO_NOT_READ_SECRET'); } },
+        message: { get() { accessorCalls += 1; return 'WEATHER_ACQUISITION_WRITER_UNPROVED'; } },
+      });
+      let proxyCalls = 0;
+      const proxy = new Proxy({}, {
+        get() { proxyCalls += 1; throw new Error('DO_NOT_READ_PROXY'); },
+        getOwnPropertyDescriptor() { proxyCalls += 1; throw new Error('DO_NOT_INSPECT_PROXY'); },
+        ownKeys() { proxyCalls += 1; throw new Error('DO_NOT_ENUMERATE_PROXY'); },
+      });
+      for (const [raw, expected] of [
+        [Object.freeze({ code: 'WEATHER_ACQUISITION_WRITER_UNPROVED' }), known],
+        [new Error('WEATHER_ACQUISITION_WRITER_UNPROVED'), known],
+        [null, unknown], [0, unknown],
+        [{ stage: 'OUTPUT', code: 'UNRECOGNIZED' }, unknown],
+        [{ code: 'UNKNOWN_SECRET_TOKEN', message: 'https://secret.invalid/?token=DO_NOT_LOG' }, unknown],
+        [Object.create({ code: 'WEATHER_ACQUISITION_WRITER_UNPROVED' }), unknown],
+        [accessor, unknown], [proxy, unknown],
+      ]) {
+        const value = fixture({ cli: true, assertError: raw });
+        assert.equal(await value.cliFinished, 1);
+        assert.deepEqual(value.diagnostics, ['DMI_RAW_SAVE_REFUSED\n', expected]);
+        assert.deepEqual(value.events, ['acquire', 'assert', 'release']);
+        assert.deepEqual(value.outputs, []);
+        assert.deepEqual(value.ipc, []);
+      }
+      const occupied = fixture({ cli: true, acquireError: Object.freeze({ code: 'EEXIST' }) });
+      assert.equal(await occupied.cliFinished, 1);
+      assert.deepEqual(occupied.diagnostics, ['DMI_RAW_SAVE_REFUSED\n',
+        'DMI_RAW_SAVE_DIAGNOSTIC stage=LEASE reason=EEXIST\n']);
+      assert.deepEqual(occupied.events, ['acquire']);
+      assert.deepEqual(occupied.outputs, []);
+      const failedWorker = fixture({ cli: true, releaseError: new Error('DO_NOT_REPLACE_PRIMARY') });
+      await failedWorker.started;
+      await failedWorker.finish({ api: null, closure: { schemaVersion: 1,
+        kind: 'DMI_RAW_SAVE_COHORT_CLOSED', workerExitCode: 1, interrupted: false } });
+      assert.equal(await failedWorker.cliFinished, 1);
+      assert.deepEqual(failedWorker.diagnostics, ['DMI_RAW_SAVE_REFUSED\n',
+        'DMI_RAW_SAVE_DIAGNOSTIC stage=API reason=DMI_RAW_SAVE_API_FAILED\n']);
+      assert.deepEqual(failedWorker.events, ['acquire', 'assert', 'spawn', 'release']);
+      assert.deepEqual(failedWorker.outputs, []);
+      failedWorker.dispose();
+      const input = fixture({ cli: true, env: { INPUT_PATH: 'not-the-fixed-path' } });
+      assert.equal(await input.cliFinished, 1);
+      assert.deepEqual(input.diagnostics, ['DMI_RAW_SAVE_REFUSED\n',
+        'DMI_RAW_SAVE_DIAGNOSTIC stage=INPUT reason=DMI_RAW_SAVE_INPUT_REFUSED\n']);
+      assert.deepEqual(input.events, []);
+      assert.deepEqual(input.outputs, []);
+      assert.equal(accessorCalls, 0);
+      assert.equal(proxyCalls, 0);
+    });
   } finally {
     loader.deregister();
     delete globalThis[apiSlot];

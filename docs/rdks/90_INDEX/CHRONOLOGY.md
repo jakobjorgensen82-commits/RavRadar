@@ -1,4 +1,10 @@
-# 2026-10-11 – lokal 4.0.574, kassering bevares ved normal genstart
+# 2026-10-11 – 4.0.574 driftsopfølgning efter faktisk fejlet vejrhentning
+
+38124400431/1 fejlede kl. 11.24 dansk tid uden nye offentlige data. Producentfejl, rå-SAVE-afvisning og afvist krypteret upload holdes adskilt; lokal kryptering er ikke holdbar fjernlagring. Kandidaten retter alene den faste lokale actions /./-scriptstavemåde og tilføjer fast-enum-fejldiagnostik. Den faktiske historiske indre fejlårsag er ikke målt. 21/21 normale Node-prøver genbruges; additiv /proc-native-case og præcis Linux/source-CI er endnu åbne. Ingen ændring af modelbindinger, score, geometri, originaler, SQL eller scheduler og ingen ny vejrordre. Det er en pipelineopfølgning, ikke en ny UI-version eller produktionsverificeret rettelse. Alle fem mål forbliver åbne.
+
+574 er faktisk offentliggjort kl. 10.05 gennem 38122980458/1. Den ældre lokale kandidatstatus nedenfor er historik.
+
+# Historik: 2026-10-11 – lokal 4.0.574, kassering bevares ved normal genstart
 
 Den normale kasserings- og backupkæde havde en lokalt reproduceret genopståelsesfejl. Kun discard-skrivningen ændres til null under eksisterende nøgle; tre normale målforløb består og genbruges. Øvrige ture og indsendelser bevares. To funktionelle blade plus normal versionsmekanik og dokumentation; ingen backend-, SQL- eller modelændring. Præcis kildekontrol og offentlig levering er åbne efter 573.
 

@@ -6,6 +6,14 @@ Den lokale 4.0.574 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
 
+## 89.200 Gemning accepterer GitHubs normale filsti
+
+Den almindelige vejrhentning den 11. oktober fejlede uden at levere nye offentlige data. Rå gemning og upload af den lokalt krypterede fil blev afvist. En grøn ydre kontrol er ikke bevis for gemning, når den indre operation er afvist.
+
+En afgrænset rettelse tillader samme faste programfil med et overflødigt /./ i stien. GitHub kan bruge denne stavemåde. Andre filstier og argumenter accepteres ikke, og kontrol med processer, skrivelås og positiv gemningskvittering bevares. Fejlloggen får kun faste faser og årsagskoder, aldrig rå fejltekster eller private oplysninger.
+
+Den konkrete tidligere indre fejl blev ikke logget, så årsagen er endnu ikke endeligt bevist. 21 normale lokale Node-prøver består; den nye Linux-prøve, præcis kildekontrol og faktisk driftseffekt er endnu åbne. Producentens andre fejl er særskilte. Dette er en pipelineopfølgning på 4.0.574, ikke en ny UI- eller modelversion. Ingen vejrdata, scorer, historik, administratorpunkter, SQL eller tidsplan ændres. Alle fem hovedmål er fortsat åbne.
+
 ## 89.199 Kasserede ture kommer ikke tilbage fra gammel browserbackup
 
 En tur, som brugeren har valgt at kassere, skal ikke komme tilbage ved næste normale opstart. En lokal prøve viste, at en gammel browserbackup kunne genskabe turen, fordi kassering fjernede den aktive nøgle.

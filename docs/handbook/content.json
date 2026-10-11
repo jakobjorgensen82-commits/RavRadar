@@ -5,6 +5,12 @@
   "updatedAt": "2026-10-11",
   "sections": [
     {
+      "id": "fixed-local-action-script-path-2026-10-11",
+      "chapter": "89.200",
+      "title": "Gemning accepterer GitHubs normale filsti",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Samme faste fil kan have et overflødigt /./ i stien. Gemning kræver stadig faktisk afslutning og positiv kvittering.</div><p>Den almindelige vejrhentning den 11. oktober fejlede uden at levere nye offentlige data. Rå gemning og upload af den lokalt krypterede fil blev afvist. En grøn ydre kontrol er ikke bevis for gemning, når den indre operation er afvist.</p><p>En afgrænset rettelse tillader samme faste programfil med et overflødigt /./ i stien. GitHub kan bruge denne stavemåde. Andre filstier og argumenter accepteres ikke, og kontrol med processer, skrivelås og positiv gemningskvittering bevares. Fejlloggen får kun faste faser og årsagskoder, aldrig rå fejltekster eller private oplysninger.</p><p>Den konkrete tidligere indre fejl blev ikke logget, så årsagen er endnu ikke endeligt bevist. 21 normale lokale Node-prøver består; den nye Linux-prøve, præcis kildekontrol og faktisk driftseffekt er endnu åbne. Producentens andre fejl er særskilte. Dette er en pipelineopfølgning på 4.0.574, ikke en ny UI- eller modelversion. Ingen vejrdata, scorer, historik, administratorpunkter, SQL eller tidsplan ændres. Alle fem hovedmål er fortsat åbne.</p>"
+    },
+    {
       "id": "discarded-trip-backup-no-resurrection-2026-10-11",
       "chapter": "89.199",
       "title": "Kasserede ture kommer ikke tilbage fra gammel browserbackup",
