@@ -235,6 +235,264 @@ def require_no_children() -> None:
 
 
 class SupervisorParentLoss(unittest.TestCase):
+    def test_full_log_pipe_cannot_block_asset_watchdog_or_claim_logger_completion(self):
+        self.assertEqual(sys.platform, "linux", "NATIVE_LINUX_REQUIRED; no Windows skip/proof")
+        import array
+        import fcntl
+        import termios
+
+        for name in ("pidfd_open", "waitid", "P_PIDFD", "WNOWAIT", "pipe2"):
+            self.assertTrue(hasattr(os, name), f"NATIVE_LINUX_API_REQUIRED:{name}")
+        self.assertTrue(hasattr(signal, "pidfd_send_signal"))
+        self.assertEqual(signal.getsignal(signal.SIGCHLD), signal.SIG_DFL)
+        self.assertEqual(signal.getitimer(signal.ITIMER_REAL), (0.0, 0.0))
+        require_no_children()
+        # As in the existing harness, adoption is test cleanup/reaping only;
+        # it never stops the producer or satisfies the measurement below.
+        libc = ctypes.CDLL(None, use_errno=True)
+        libc.prctl.argtypes = [ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong]
+        libc.prctl.restype = ctypes.c_int
+        previous = ctypes.c_int()
+        self.assertEqual(libc.prctl(37, ctypes.addressof(previous), 0, 0, 0), 0)
+        self.assertEqual(libc.prctl(36, 1, 0, 0, 0), 0)
+        parent_root = Path(tempfile.gettempdir()).resolve()
+        root = Path(tempfile.mkdtemp(prefix="rr-supervisor-loss-", dir=parent_root)).resolve()
+        parent = None
+        parent_fd = child_fd = read_fd = write_fd = None
+        child_verified = False
+        old_handler = signal.getsignal(signal.SIGALRM)
+
+        def hard_deadline(_number, _frame):
+            raise TimeoutError("OWN_SUPERVISOR_LOG_SINK_HARD_DEADLINE")
+
+        def replace_once(source, before, after):
+            self.assertEqual(source.count(before), 1, "Existing normal fixture anchor changed")
+            return source.replace(before, after, 1)
+
+        def queued_bytes():
+            value = array.array("i", [0])
+            fcntl.ioctl(read_fd, termios.FIONREAD, value, True)
+            return value[0]
+
+        started_at = time.monotonic()
+        signal.signal(signal.SIGALRM, hard_deadline)
+        signal.setitimer(signal.ITIMER_REAL, BODY_SECONDS)
+        try:
+            original = root / "original-BS"
+            original.write_bytes(b"own unchanged synthetic B/S\n")
+            read_fd, write_fd = os.pipe2(os.O_NONBLOCK | os.O_CLOEXEC)
+            filled = 0
+            while True:
+                try:
+                    filled += os.write(write_fd, b"f" * 4096)
+                except BlockingIOError:
+                    break
+            self.assertGreater(filled, 0)
+            self.assertEqual(queued_bytes(), filled)
+            os.set_blocking(write_fd, True)
+            pipe_identity = os.fstat(write_fd)
+
+            # Reuse the existing actual main/run_supervised/Popen harness.
+            # Only its already-present log/watchdog keyword seams are selected;
+            # all kernel process/session/stop operations remain the product's.
+            old_run = '''def run_owned(command, environment, *, watchdog_seconds):
+    return normal_run(command, environment, watchdog_seconds=watchdog_seconds,
+                      popen=retain_popen)
+'''
+            new_run = '''log_fd = int(os.environ["OWN_BLOCKED_LOG_FD"])
+logged = []
+def own_log(line):
+    logged.append(line)
+    if len(logged) == 1:
+        identity = os.fstat(log_fd)
+        (root / "log-entered.new").write_text(json.dumps({"device": identity.st_dev,
+            "inode": identity.st_ino, "banner": line}), encoding="ascii")
+        (root / "log-entered.new").rename(root / "log-entered")
+    os.write(log_fd, line.encode("utf-8"))
+    (root / "log-returned").write_bytes(b"own sink write returned")
+def forbid_finalizer(*args, **kwargs):
+    (root / "unexpected-finalizer").write_bytes(b"unexpected normal finalizer call")
+    raise RuntimeError("OWN_FIXTURE_UNEXPECTED_FINALIZER")
+supervisor.finalize_checkpoint = forbid_finalizer
+def run_owned(command, environment, *, watchdog_seconds):
+    if owned:
+        (root / "unexpected-restart").write_bytes(b"unexpected normal restart")
+        raise RuntimeError("OWN_FIXTURE_UNEXPECTED_RESTART")
+    result = normal_run(command, environment, watchdog_seconds=0.1,
+                        popen=retain_popen, log=own_log)
+    (root / "unexpected-result").write_bytes(b"unexpected SupervisedResult")
+    return result
+'''
+            supervisor_source = replace_once(SUPERVISOR, old_run, new_run)
+            tail = '''if failure is not None:
+    raise failure
+raise SystemExit(code)
+'''
+            observed_tail = '''retained = supervisor._unclosed_supervised_outputs
+if len(retained) != 1 or len(supervisor._unclosed_supervised_processes) != 1:
+    raise RuntimeError("OWN_LOG_SINK_RETENTION_MISSING")
+process, retained_reader, logger, events, log_events, log = retained[0]
+observation.update({"failure": str(failure), "mainReturned": failure is None,
+    "sameProcess": process.child is owned[0][0]
+        and supervisor._unclosed_supervised_processes[0] is process,
+    "sameReader": retained_reader is readers[0], "sameLog": log is own_log,
+    "loggerAlive": logger.is_alive(), "loggerStarted": logger.ident is not None,
+    "queuedLog": log_events.qsize(), "logCalls": len(logged)})
+(root / "sink-unknown.new").write_text(json.dumps(observation), encoding="ascii")
+(root / "sink-unknown.new").rename(root / "sink-unknown")
+# The measurement is already persisted. Fixture release/join below is cleanup,
+# never product quiescence or permission to return a SupervisedResult.
+while not (root / "release-own-sink").exists():
+    supervisor.time.sleep(0.01)
+logger.join(timeout=1.0)
+if logger.is_alive():
+    raise RuntimeError("OWN_FIXTURE_LOGGER_CLEANUP_UNPROVED")
+owned[0][0].stdout.close()
+os.close(log_fd)
+if failure is not None:
+    raise failure
+raise RuntimeError("OWN_FIXTURE_MISSING_FATAL_RESULT")
+'''
+            supervisor_source = replace_once(supervisor_source, tail, observed_tail)
+            producer_source = replace_once(PRODUCER,
+                '    deadline = time.monotonic() + 8.0\n',
+                '    print("own banner before asset START", flush=True)\n    marked = False\n    deadline = time.monotonic() + 8.0\n')
+            marker = json.dumps({"collection": "dkss_idw", "modelRun": "2026-08-30T06:00:00Z",
+                                 "validTime": "2026-08-30T12:00:00Z", "itemId": "own-synthetic",
+                                 "assetIdentitySha256": "a" * 64, "assetRevisionSha256": "b" * 64},
+                                separators=(",", ":"))
+            producer_source = replace_once(producer_source,
+                '    while time.monotonic() < deadline:\n',
+                '    while time.monotonic() < deadline:\n'
+                '        if not marked and (root / "allow-own-start").exists():\n'
+                f'            print({("DMI_ASSET_PROCESSING_START=" + marker)!r}, flush=True)\n'
+                '            marked = True\n')
+            producer = root / "synthetic-producer.py"
+            producer.write_text(producer_source, encoding="utf-8")
+            environment = {name: value for name, value in os.environ.items()
+                           if name in {"PATH", "LD_LIBRARY_PATH", "LIBRARY_PATH", "LANG", "LC_ALL", "LC_CTYPE"}}
+            environment.update({"PYTHONDONTWRITEBYTECODE": "1", "PYTHONNOUSERSITE": "1", "PYTHONUTF8": "1",
+                                "OWN_SUPERVISOR_LOSS_ROOT": str(root), "OWN_BLOCKED_LOG_FD": str(write_fd)})
+            parent = subprocess.Popen([sys.executable, "-u", "-c", supervisor_source,
+                                       str(TEST_SEAM), str(producer)], cwd=ROOT, env=environment,
+                                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                      stderr=subprocess.DEVNULL, pass_fds=(write_fd,))
+            parent_fd = os.pidfd_open(parent.pid, 0)
+            assert_pidfd_identity(parent_fd, parent.pid)
+            ready_paths = [root / name for name in ("ready", "supervisor-reader-ready", "log-entered")]
+            while not all(path.exists() for path in ready_paths):
+                self.assertIsNone(parent.poll(), "Normal supervisor exited before actual sink blockage")
+                self.assertLess(time.monotonic() - started_at, 4.0)
+                time.sleep(0.01)
+            announced = json.loads(read_small(root / "ready"))
+            pid = announced["pid"]
+            self.assertIs(type(pid), int)
+            self.assertGreater(pid, 1)
+            self.assertNotIn(pid, (os.getpid(), parent.pid))
+            child_fd = os.pidfd_open(pid, 0)
+            assert_pidfd_identity(child_fd, pid)
+            identity = process_identity(pid)
+            self.assertEqual(identity, announced)
+            self.assertEqual((identity["ppid"], identity["pgid"], identity["sid"]), (parent.pid, pid, pid))
+            self.assertEqual(process_identity(parent.pid)["ppid"], os.getpid())
+            self.assertEqual(read_small(Path(f"/proc/{pid}/cmdline")).split(b"\0")[:-1],
+                             [os.fsencode(sys.executable), b"-u", os.fsencode(producer)])
+            self.assertEqual(Path(f"/proc/{pid}/cwd").resolve(), ROOT)
+            self.assertEqual(process_identity(pid), identity)
+            assert_pidfd_identity(child_fd, pid)
+            child_verified = True
+            log_entered = json.loads(read_small(root / "log-entered"))
+            self.assertEqual(log_entered, {"device": pipe_identity.st_dev, "inode": pipe_identity.st_ino,
+                                           "banner": "own banner before asset START\n"})
+            self.assertEqual(queued_bytes(), filled)
+            self.assertFalse((root / "log-returned").exists())
+            heartbeat = root / "heartbeat"
+            size = heartbeat.stat().st_size
+            time.sleep(0.03)
+            self.assertGreater(heartbeat.stat().st_size, size)
+            self.assertFalse(exited(child_fd))
+            (root / "allow-own-start").write_bytes(b"permit normal START behind blocked banner\n")
+            # No test signal, stop file, sink read or release precedes this exit.
+            self.assertTrue(exited(child_fd, 1.0), "Normal watchdog did not stop the actual producer")
+            self.assertEqual(queued_bytes(), filled)
+            while not (root / "sink-unknown").exists():
+                self.assertIsNone(parent.poll())
+                time.sleep(0.01)  # The unchanged eight-second body alarm bounds this wait.
+            observation = json.loads(read_small(root / "sink-unknown"))
+            self.assertEqual(observation["failure"], "DMI_SUPERVISOR_LOGGER_STOP_UNPROVED")
+            for key in ("sameProcess", "sameReader", "sameLog", "loggerAlive", "loggerStarted", "producerExited"):
+                self.assertIs(observation[key], True, key)
+            for key in ("mainReturned", "readerAlive", "pipeClosed"):
+                self.assertIs(observation[key], False, key)
+            self.assertEqual(observation["pipeState"], "OPEN_SAME_OBJECT")
+            self.assertEqual(observation["logCalls"], 1)
+            self.assertGreaterEqual(observation["queuedLog"], 1)
+            self.assertEqual(observation["producerPid"], pid)
+            self.assertEqual(queued_bytes(), filled)
+            self.assertFalse(exited(parent_fd))
+            for name in ("log-returned", "unexpected-result", "unexpected-restart", "unexpected-finalizer", "finish-own-producer"):
+                self.assertFalse((root / name).exists(), name)
+            size = heartbeat.stat().st_size
+            time.sleep(0.03)
+            self.assertEqual(heartbeat.stat().st_size, size)
+            self.assertEqual(original.read_bytes(), b"own unchanged synthetic B/S\n")
+            self.assertLess(time.monotonic() - started_at, 7.0, "Synthetic producer expiry cannot satisfy the test")
+
+            # Only after BOTH product-death and unknown-logger observations may
+            # the fixture drain its own sink and allow fixture shutdown.
+            drained = bytearray()
+            (root / "release-own-sink").write_bytes(b"post-measurement fixture cleanup\n")
+            while not exited(parent_fd):
+                try:
+                    drained.extend(os.read(read_fd, 65536))
+                except BlockingIOError:
+                    time.sleep(0.01)
+                self.assertLessEqual(len(drained), filled + 4096)
+            self.assertEqual(parent.wait(timeout=0.5), 1, "Unknown logger completion must remain fatal after fixture release")
+            self.assertTrue((root / "log-returned").exists())
+        finally:
+            primary = sys.exc_info()[1]
+            signal.setitimer(signal.ITIMER_REAL, CLEANUP_SECONDS)
+            try:
+                if parent_fd is not None and not exited(parent_fd):
+                    signal.pidfd_send_signal(parent_fd, signal.SIGKILL)
+                if parent is not None:
+                    parent.wait(timeout=1.0)
+                if child_fd is not None:
+                    if not child_verified:
+                        raise RuntimeError("OWN_CHILD_UNVERIFIED; exact root retained")
+                    if not exited(child_fd):
+                        signal.pidfd_send_signal(child_fd, signal.SIGKILL)
+                    if not exited(child_fd, 1.0):
+                        raise RuntimeError("OWN_CHILD_STOP_UNPROVED; exact root retained")
+                    try:
+                        os.waitid(os.P_PIDFD, child_fd, os.WEXITED | os.WNOHANG)
+                    except ChildProcessError:
+                        pass
+                require_no_children()
+                for descriptor in (child_fd, parent_fd, read_fd, write_fd):
+                    if descriptor is not None:
+                        os.close(descriptor)
+                        try:
+                            os.fstat(descriptor)
+                        except OSError as error:
+                            if error.errno != errno.EBADF:
+                                raise
+                        else:
+                            raise RuntimeError("OWN_FIXTURE_FD_CLOSE_UNPROVED")
+                self.assertEqual(libc.prctl(36, previous.value, 0, 0, 0), 0)
+                self.assertEqual(root.parent, parent_root)
+                self.assertTrue(root.name.startswith("rr-supervisor-loss-"))
+                shutil.rmtree(root)
+                self.assertFalse(root.exists())
+            except BaseException as cleanup_error:
+                if primary is None:
+                    raise
+                primary.add_note(f"OWN_FIXTURE_CLEANUP_UNPROVED:{type(cleanup_error).__name__}; root retained")
+            finally:
+                signal.setitimer(signal.ITIMER_REAL, 0)
+                signal.signal(signal.SIGALRM, old_handler)
+
     def test_sigterm_supervisor_cannot_leave_real_producer_alive(self):
         self.assert_own_supervisor_completion(signal.SIGTERM)
 

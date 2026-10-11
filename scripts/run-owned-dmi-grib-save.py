@@ -32,6 +32,15 @@ def main():
     with open(f'/proc/{parent_pid}/cmdline', 'rb') as handle:
         parent_argv = handle.read(16385)
     parent_fields = parent_argv.split(b'\0')[:-1]
+    # Local actions can spell the same absolute script with redundant /./.
+    # Remove only that exact component in SCRIPT, never resolve caller paths,
+    # follow a symlink alias, collapse //, accept .., or normalize other argv.
+    if len(parent_fields) > 1:
+        script = parent_fields[1]
+        while b'/./' in script:
+            script = script.replace(b'/./', b'/')
+        if script == os.fsencode(str(ENTRY)):
+            parent_fields[1] = script
     if (len(parent_argv) > 16384 or os.getppid() != parent_pid
             or Path(parent_executable).name != 'node'
             or os.fsencode(str(ENTRY)) not in parent_fields

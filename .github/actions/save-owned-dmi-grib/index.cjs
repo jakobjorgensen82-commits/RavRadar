@@ -19,6 +19,36 @@ const LOCK_SHA256 = '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd
 
 function refused(code) { return new Error(code); }
 
+// CLI-local observation only: never an input, owner, closure or SAVE receipt.
+let cliPhase = 'UNKNOWN';
+const REFUSAL_REASONS = new Set([
+  'DMI_RAW_SAVE_INPUT_REFUSED', 'DMI_RAW_SAVE_V2_REQUIRED', 'DMI_RAW_SAVE_ARGUMENT_REFUSED',
+  'DMI_RAW_DISTRIBUTION_INPUT_REFUSED', 'WEATHER_CIPHER_UPLOAD_INPUT_REFUSED',
+  'WEATHER_ACQUISITION_WRITER_ARGUMENTS_INVALID', 'WEATHER_ACQUISITION_WRITER_OWNER_INVALID',
+  'WEATHER_ACQUISITION_WRITER_BUSY', 'WEATHER_ACQUISITION_WRITER_UNPROVED',
+  'WEATHER_ACQUISITION_WRITER_CLOSE_UNPROVED', 'WEATHER_ACQUISITION_WRITER_RELEASE_UNPROVED',
+  'DMI_RAW_SAVE_CHILD_FAILED', 'DMI_RAW_SAVE_COHORT_UNPROVED', 'DMI_RAW_SAVE_INTERRUPTED',
+  'DMI_RAW_SAVE_RECEIPT_BOUND', 'DMI_RAW_SAVE_PIPE_FAILED', 'DMI_RAW_SAVE_PIPE_NOT_CLOSED',
+  'DMI_RAW_SAVE_RECEIPT_INVALID', 'DMI_RAW_SAVE_API_FAILED', 'DMI_RAW_SAVE_NOT_FINALIZED',
+  'WEATHER_CIPHER_UPLOAD_NOT_FINALIZED', 'DMI_RAW_DISTRIBUTION_NOT_READY',
+  'EEXIST', 'EACCES', 'ENOENT',
+]);
+function refusalDiagnostic(error) {
+  let reason = 'UNKNOWN';
+  if (error !== null && (typeof error === 'object' || typeof error === 'function')
+      && !types.isProxy(error)) {
+    for (const key of ['code', 'message']) {
+      const descriptor = Object.getOwnPropertyDescriptor(error, key);
+      if (descriptor && Object.hasOwn(descriptor, 'value')
+          && typeof descriptor.value === 'string' && REFUSAL_REASONS.has(descriptor.value)) {
+        reason = descriptor.value;
+        break;
+      }
+    }
+  }
+  return `DMI_RAW_SAVE_DIAGNOSTIC stage=${cliPhase} reason=${reason}\n`;
+}
+
 function fixedInputs() {
   const env = process.env;
   const key = env.INPUT_KEY;
@@ -404,8 +434,10 @@ function parseReceipt(text) {
 }
 
 async function runOwnedOperation(operation) {
+  if (require.main === module) cliPhase = 'INPUT';
   const input = operation === 'save' ? fixedInputs()
     : operation === 'cipher' ? fixedCipherInputs() : fixedDistributionInputs();
+  if (require.main === module) cliPhase = 'LOAD';
   const owner = require('../../../scripts/lib/weather-acquisition-writer.mjs');
   let lease;
   let child;
@@ -420,15 +452,18 @@ async function runOwnedOperation(operation) {
   process.on('SIGTERM', interrupt);
   process.on('SIGINT', interrupt);
   try {
+    if (require.main === module) cliPhase = 'LEASE';
     lease = await owner.acquireWeatherAcquisitionWriter();
     await owner.assertWeatherAcquisitionWriter(lease);
     if (interrupted) throw refused('DMI_RAW_SAVE_INTERRUPTED');
+    if (require.main === module) cliPhase = 'SPAWN';
     child = spawn('python3', ['-B', path.join(ROOT, 'scripts/run-owned-dmi-grib-save.py'),
       ...(operation === 'distribution' ? ['--prepare-distribution']
         : operation === 'cipher' ? ['--upload-encrypted-progress'] : [])], {
       cwd: ROOT, env: process.env, shell: false,
       stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
     });
+    if (require.main === module) cliPhase = 'CLOSURE';
     const closureText = collectReceipt(child.stdout);
     const errorText = collectReceipt(child.stderr);
     const apiText = collectReceipt(child.stdio[3]);
@@ -446,6 +481,7 @@ async function runOwnedOperation(operation) {
     }
     physicalClosed = true;
     if (interrupted || closure.interrupted) throw refused('DMI_RAW_SAVE_INTERRUPTED');
+    if (require.main === module) cliPhase = 'API';
     if (closure.workerExitCode !== 0) throw refused('DMI_RAW_SAVE_API_FAILED');
     const receipt = parseReceipt(apiText());
     if (operation === 'distribution') {
@@ -466,6 +502,7 @@ async function runOwnedOperation(operation) {
         || receipt.key !== input.key || !Number.isSafeInteger(receipt.cacheId) || receipt.cacheId <= 0) {
       throw refused('DMI_RAW_SAVE_NOT_FINALIZED');
     }
+    if (require.main === module) cliPhase = 'LEASE';
     await owner.assertWeatherAcquisitionWriter(lease);
   } catch (error) {
     firstFailure = { value: error };
@@ -476,6 +513,7 @@ async function runOwnedOperation(operation) {
         catch (error) { firstFailure ??= { value: error }; }
       }
       else {
+        if (firstFailure === null && require.main === module) cliPhase = 'LEASE_RELEASE';
         try { await owner.releaseWeatherAcquisitionWriter(lease); }
         catch (error) { firstFailure ??= { value: error }; }
       }
@@ -485,6 +523,7 @@ async function runOwnedOperation(operation) {
   }
   if (firstFailure !== null) throw firstFailure.value;
   if (interrupted) throw refused('DMI_RAW_SAVE_INTERRUPTED');
+  if (require.main === module) cliPhase = 'OUTPUT';
   if (operation === 'distribution') {
     if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'distribution_ready=true\n');
     return { distributionReady: true };
@@ -502,6 +541,7 @@ async function runOwnedDistribution() { return runOwnedOperation('distribution')
 async function runOwnedCipherUpload() { return runOwnedOperation('cipher'); }
 module.exports = { runApiWorker, runOwnedSave, runOwnedDistribution };
 if (require.main === module) {
+  cliPhase = 'INPUT';
   const selectedSave = process.env.INPUT_OPERATION === 'upload-encrypted-progress' ? runOwnedCipherUpload
     : !process.env.INPUT_OPERATION || process.env.INPUT_OPERATION === 'save' ? runOwnedSave : null;
   const operation = process.argv.length === 2 ? selectedSave
@@ -512,8 +552,9 @@ if (require.main === module) {
   Promise.resolve().then(() => {
     if (!operation) throw refused('DMI_RAW_SAVE_ARGUMENT_REFUSED');
     return operation();
-  }).catch(() => {
+  }).catch(error => {
     process.stderr.write('DMI_RAW_SAVE_REFUSED\n');
+    process.stderr.write(refusalDiagnostic(error));
     process.exitCode = 1;
   });
 }

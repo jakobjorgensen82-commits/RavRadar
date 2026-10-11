@@ -1268,6 +1268,182 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     bank_before = copy.deepcopy(donor_bank)
     retained_pair = (TARGET["partId"], VALID_TIME.isoformat().replace("+00:00", "Z"))
 
+    # The pre-provider checker may validate a rebase in RAM while the strict
+    # post-provider checker still reads an expired original attempt. Persist
+    # only that validated derived stage; immutable donor evidence stays exact.
+    persisted_rebase = root / "checker-persist-validated-rebase"
+    shutil.copytree(amm15, persisted_rebase)
+    persist_registry = shifted_matrix(5)
+    persist_registry["dmiCurrentInputSha256"] = file_sha256(persisted_rebase / "dmi.json")
+    persist_registry["operationalRequiredPairs"].append({
+        "partId": TARGET["partId"], "validTime": persist_registry["operationalRangeEndAt"],
+    })
+    persist_registry["operationalRequiredPairCount"] += 1
+    persist_registry["operationalDmiVerifiedPairCount"] -= 1
+    persist_registry["dmiVerifiedPairCount"] -= 1
+    persist_registry["operationalRequiredPairsSha256"] = required_pairs_sha256(
+        persist_registry["operationalRequiredPairs"])
+    write(persisted_rebase / "registry.json", persist_registry)
+    persist_reference = persist_registry["productionReferenceAt"]
+    persist_stage_path = persisted_rebase / "source-stage.json"
+    old_stage_bytes = persist_stage_path.read_bytes()
+    immutable_names = (
+        "copernicus-current-donor-bank.json", "shadow.json", "dmi.json",
+        "targets.json", "registry.json",
+    )
+    immutable_bytes = {name: (persisted_rebase / name).read_bytes() for name in immutable_names}
+    in_memory_only = run_checker(persisted_rebase, "--at", persist_reference,
+        "--allow-nonmatching-seal", "--require-source-stage-reusable")
+    assert in_memory_only.returncode == 0, in_memory_only.stdout + in_memory_only.stderr
+    assert "valid IN_PROGRESS" in in_memory_only.stdout
+    assert persist_stage_path.read_bytes() == old_stage_bytes
+    old_strict = run_checker(persisted_rebase, "--at", persist_reference,
+        "--require-source-stage-reusable")
+    assert old_strict.returncode != 0
+    assert "Copernicus source attempt reference mismatch" in old_strict.stdout
+    persisted = run_checker(persisted_rebase, "--at", persist_reference,
+        "--allow-nonmatching-seal", "--persist-validated-rebase",
+        "--require-source-stage-reusable")
+    assert persisted.returncode == 0, persisted.stdout + persisted.stderr
+    persisted_stage = json.loads(persist_stage_path.read_text(encoding="utf-8"))
+    assert persisted_stage["status"] == "IN_PROGRESS"
+    assert persisted_stage["attempts"] == []
+    assert persisted_stage["positiveAdmissions"] == amm15_stage["positiveAdmissions"]
+    assert persisted_stage["admissionAttempts"] == amm15_stage["admissionAttempts"]
+    assert persisted_stage["selectedRecordRefCount"] == 1
+    assert persisted_stage["missingPairCount"] == 1
+    assert persisted_stage["requiredPairCount"] == 2
+    assert persist_stage_path.read_bytes() != old_stage_bytes
+    assert {name: (persisted_rebase / name).read_bytes() for name in immutable_names} == immutable_bytes
+
+    # Use the real bounded caller with only its process seam controlled. Both
+    # provider and recovery time out without touching files or doing network I/O;
+    # this is a checker regression, not proof of native process settlement.
+    retry_spec = importlib.util.spec_from_file_location("checker_rebase_retry_fixture",
+        ROOT / "scripts/run-copernicus-current-pilot-with-retry.py")
+    assert retry_spec is not None and retry_spec.loader is not None
+    retry_module = importlib.util.module_from_spec(retry_spec)
+    retry_spec.loader.exec_module(retry_module)
+    stage_before_timeout = persist_stage_path.read_bytes()
+    with patch.object(retry_module, "_run_pilot_process", return_value=None) as timeout_process:
+        timed_out = retry_module.run_bounded([sys.executable, "fixture-provider"],
+            attempts=1, timeout_seconds=120, backoff_seconds=20,
+            timeout_recovery_command=[sys.executable, "fixture-recovery"])
+    assert timed_out == {"ok": False, "attempt": 1, "reason": "timeout"}
+    assert timeout_process.call_count == 2
+    strict_after_timeout = run_checker(persisted_rebase, "--at", persist_reference,
+        "--require-source-stage-reusable")
+    assert strict_after_timeout.returncode == 0, strict_after_timeout.stdout + strict_after_timeout.stderr
+    assert "1/2 exact DMI-gap pairs selected; 1 remain" in strict_after_timeout.stdout
+    assert run_checker(persisted_rebase, "--at", persist_reference,
+        "--require-source-stage-ready").returncode != 0
+    assert persist_stage_path.read_bytes() == stage_before_timeout
+    assert {name: (persisted_rebase / name).read_bytes() for name in immutable_names} == immutable_bytes
+
+    # No opt-in may write when the donor is invalid or its actual selected
+    # projection differs from the independently valid shadow/stage generation.
+    for bank_case in ("invalid", "different-projection"):
+        rejected_folder = root / ("checker-rebase-bank-" + bank_case)
+        shutil.copytree(persisted_rebase, rejected_folder)
+        (rejected_folder / "source-stage.json").write_bytes(old_stage_bytes)
+        rejected_bank = rejected_folder / "copernicus-current-donor-bank.json"
+        if bank_case == "invalid":
+            write(rejected_bank, {"invalid": True})
+        else:
+            rejected_bank.write_bytes((full / "copernicus-current-donor-bank.json").read_bytes())
+        rejected_before = {name: (rejected_folder / name).read_bytes()
+            for name in (*immutable_names, "source-stage.json")}
+        rejected = run_checker(rejected_folder, "--at", persist_reference,
+            "--allow-nonmatching-seal", "--persist-validated-rebase",
+            "--require-source-stage-reusable")
+        assert rejected.returncode != 0
+        assert {name: (rejected_folder / name).read_bytes()
+            for name in rejected_before} == rejected_before
+
+    checker_spec = importlib.util.spec_from_file_location("checker_rebase_fixture", CHECKER)
+    assert checker_spec is not None and checker_spec.loader is not None
+    checker_module = importlib.util.module_from_spec(checker_spec)
+    checker_spec.loader.exec_module(checker_module)
+    real_projection = checker_module.projected_donor_shadow
+    for mutated_name in (*immutable_names, "source-stage.json"):
+        mutation_folder = root / ("checker-rebase-mutation-" + mutated_name)
+        shutil.copytree(persisted_rebase, mutation_folder)
+        (mutation_folder / "source-stage.json").write_bytes(old_stage_bytes)
+        mutation_before = {name: (mutation_folder / name).read_bytes()
+            for name in (*immutable_names, "source-stage.json")}
+
+        def mutate_after_actual_projection(*args, **kwargs):
+            result = real_projection(*args, **kwargs)
+            path = mutation_folder / mutated_name
+            path.write_bytes(path.read_bytes() + b"\n")
+            return result
+
+        with patch.object(checker_module, "projected_donor_shadow",
+                          side_effect=mutate_after_actual_projection) as projection_call:
+            try:
+                checker_module.inspect(mutation_folder / "shadow.json",
+                    mutation_folder / "registry.json", mutation_folder / "dmi.json",
+                    mutation_folder / "targets.json", persist_reference,
+                    allow_nonmatching_seal=True,
+                    source_stage_path=mutation_folder / "source-stage.json",
+                    donor_bank_path=mutation_folder / "copernicus-current-donor-bank.json",
+                    persist_validated_rebase=True)
+            except (OSError, ValueError, RuntimeError):
+                pass
+            else:
+                raise AssertionError("Changed rebase input must stop before stage commit")
+        assert projection_call.call_count == 1
+        for name, original in mutation_before.items():
+            assert (mutation_folder / name).read_bytes() == (
+                original + b"\n" if name == mutated_name else original)
+
+    readback_folder = root / "checker-rebase-prepared-readback-failure"
+    shutil.copytree(persisted_rebase, readback_folder)
+    (readback_folder / "source-stage.json").write_bytes(old_stage_bytes)
+    readback_before = {name: (readback_folder / name).read_bytes()
+        for name in (*immutable_names, "source-stage.json")}
+    real_prepare = checker_module._prepare_validated_json_snapshot
+
+    def corrupt_prepared_stage(*args, **kwargs):
+        prepared = real_prepare(*args, **kwargs)
+        prepared.temporary.write_bytes(prepared.temporary.read_bytes() + b" ")
+        return prepared
+
+    with patch.object(checker_module, "_prepare_validated_json_snapshot",
+                      side_effect=corrupt_prepared_stage) as prepared_call, patch.object(
+        checker_module, "_commit_verified_json_snapshot",
+        wraps=checker_module._commit_verified_json_snapshot,
+    ) as commit_call:
+        try:
+            checker_module.inspect(readback_folder / "shadow.json",
+                readback_folder / "registry.json", readback_folder / "dmi.json",
+                readback_folder / "targets.json", persist_reference,
+                allow_nonmatching_seal=True,
+                source_stage_path=readback_folder / "source-stage.json",
+                persist_validated_rebase=True)
+        except RuntimeError as error:
+            assert str(error) == "Prepared JSON payload changed before commit"
+        else:
+            raise AssertionError("Failed prepared readback must not reach stage commit")
+    assert prepared_call.call_count == 1
+    assert commit_call.call_count == 0
+    assert {name: (readback_folder / name).read_bytes() for name in readback_before} == readback_before
+    assert not list(readback_folder.glob(".source-stage.json.prepared-*.tmp"))
+
+    # The write option cannot silently turn the strict terminal caller into a
+    # rebasing reader, nor choose a default stage path on its caller's behalf.
+    no_allow = run_checker(persisted_rebase, "--at", persist_reference,
+        "--persist-validated-rebase", "--require-source-stage-reusable")
+    assert no_allow.returncode != 0
+    no_stage_command = list(persisted.args)
+    stage_option_index = no_stage_command.index("--source-stage")
+    del no_stage_command[stage_option_index:stage_option_index + 2]
+    no_stage = subprocess.run(no_stage_command, cwd=ROOT, capture_output=True, text=True, check=False)
+    assert no_stage.returncode != 0
+    assert persist_stage_path.read_bytes() == stage_before_timeout
+    assert {name: (persisted_rebase / name).read_bytes() for name in immutable_names} == immutable_bytes
+    print("OK: checker persisted validated rebase survives timeout without changing donor originals or missing pairs.")
+
     # After one full bank -> projection -> stage transaction, an honest
     # no-record attempt cannot justify rebuilding or rewriting an identical
     # generation. The attempt journal must still advance and fully validate.

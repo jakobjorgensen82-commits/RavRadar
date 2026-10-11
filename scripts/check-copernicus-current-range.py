@@ -9,6 +9,10 @@ from pathlib import Path
 from typing import Any
 
 from lib.copernicus_current import (
+    _commit_verified_json_snapshot,
+    _discard_prepared_json_snapshot,
+    _prepare_validated_json_snapshot,
+    _verify_prepared_json_snapshot,
     canonical_sha256,
     file_sha256,
     load_targets,
@@ -75,6 +79,15 @@ def arguments() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--persist-validated-rebase",
+        action="store_true",
+        help=(
+            "Atomically save only an already validated, donor-matching current "
+            "IN_PROGRESS projection before bounded acquisition; requires "
+            "--allow-nonmatching-seal and an existing --source-stage"
+        ),
+    )
+    parser.add_argument(
         "--allow-invalid-shadow-as-absent",
         action="store_true",
         help=(
@@ -83,7 +96,12 @@ def arguments() -> argparse.Namespace:
             "quarantine and replace it"
         ),
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.persist_validated_rebase and (
+        not args.allow_nonmatching_seal or args.source_stage is None
+    ):
+        parser.error("--persist-validated-rebase requires --allow-nonmatching-seal and --source-stage")
+    return args
 
 
 def canonical_time(value: Any) -> str:
@@ -103,9 +121,25 @@ def inspect(
     source_stage_path: Path | None = None,
     allow_invalid_shadow_as_absent: bool = False,
     donor_bank_path: Path | None = None,
+    persist_validated_rebase: bool = False,
 ) -> dict[str, Any]:
+    bank_path = donor_bank_path or (DEFAULT_DONOR_BANK if shadow_path == DEFAULT_SHADOW
+                                    else shadow_path.with_name("copernicus-current-donor-bank.json"))
+    input_pins: dict[Path, str | None] = {}
+    if persist_validated_rebase:
+        if not allow_nonmatching_seal or source_stage_path is None:
+            raise ValueError("Durable rebase requires the explicit pre-provider caller")
+        inputs = [registry_path, dmi_path, targets_path, bank_path, shadow_path, source_stage_path]
+        if len({path.resolve() for path in inputs}) != len(inputs):
+            raise ValueError("Durable source-stage destination aliases another input")
+        for path in inputs:
+            if path.is_symlink() or (path.exists() and not path.is_file()):
+                raise ValueError("Durable rebase requires regular input files")
+            input_pins[path] = file_sha256(path) if path.exists() else None
     registry = validate_target_registry(json.loads(registry_path.read_text(encoding="utf-8")))
     operational_contract = registry["schemaVersion"] == 3
+    if persist_validated_rebase and not operational_contract:
+        raise ValueError("Durable rebase requires the operational target registry")
     required_pair_count = (
         registry["operationalRequiredPairCount"]
         if operational_contract else registry["requiredPairCount"]
@@ -131,8 +165,6 @@ def inspect(
 
     bank = None
     if operational_contract:
-        bank_path = donor_bank_path or (DEFAULT_DONOR_BANK if shadow_path == DEFAULT_SHADOW
-                                        else shadow_path.with_name("copernicus-current-donor-bank.json"))
         try:
             bank = load_copernicus_donor_bank(bank_path, targets=targets)
         except (OSError, UnicodeError, TypeError, ValueError, RuntimeError):
@@ -160,6 +192,37 @@ def inspect(
             return False
         return (stage["selectedRecordRefsSha256"] == canonical_sha256(refs)
                 and stage["missingPairsSha256"] == required_pairs_sha256(missing))
+
+    def persist_stage_rebase(stage: dict[str, Any], original: dict[str, Any]) -> bool:
+        if not persist_validated_rebase or stage == original:
+            return False
+        # Rebase creates only current IN_PROGRESS evidence. Original positive
+        # acquisitions/witnesses stay in the unchanged bank and shadow; old
+        # negative attempts are filtered by the existing strict rebase policy.
+        if bank is None or stage["status"] != SOURCE_STAGE_PROGRESS_STATUS:
+            raise RuntimeError("Durable rebase lacks a validated donor-bound progress stage")
+        binding = {
+            "kind": "copernicus-pre-provider-source-stage-rebase",
+            "sourceStageId": stage["sourceStageId"],
+            "inputSha256": [input_pins[path] for path in input_pins],
+        }
+        prepared = None
+        try:
+            prepared = _prepare_validated_json_snapshot(
+                source_stage_path, stage, binding=binding, indent=2,
+            )
+            verified = _verify_prepared_json_snapshot(prepared, binding=binding)
+            # Check every original byte binding immediately before the sole
+            # atomic replacement. Never write a stale in-memory projection.
+            for path, expected in input_pins.items():
+                if path.is_symlink() or not path.is_file() or file_sha256(path) != expected:
+                    raise RuntimeError("Copernicus rebase input changed before commit")
+            _commit_verified_json_snapshot(verified)
+            if file_sha256(source_stage_path) != prepared.payloadSha256:
+                raise RuntimeError("Durable Copernicus source-stage readback differs")
+        finally:
+            _discard_prepared_json_snapshot(prepared)
+        return True
 
     if not shadow_path.exists() or shadow_path.stat().st_size <= 0:
         return {
@@ -232,10 +295,12 @@ def inspect(
             and source_stage_path.stat().st_size > 0
         )
         validated_stage: dict[str, Any] | None = None
+        original_stage: dict[str, Any] | None = None
         if source_stage_present:
             try:
+                original_stage = json.loads(source_stage_path.read_text(encoding="utf-8"))
                 validated_stage = validate_reusable_source_stage(
-                    json.loads(source_stage_path.read_text(encoding="utf-8")),
+                    original_stage,
                     registry=registry,
                     shadow=cache,
                     target_identities=target_identities,
@@ -248,6 +313,7 @@ def inspect(
         if validated_stage is not None:
             if not bank_matches_stage(validated_stage):
                 return bank_requires_projection()
+            baseline_saved = persist_stage_rebase(validated_stage, original_stage)
             stage_ready = validated_stage["status"] == SOURCE_STAGE_STATUS
             return {
                 "cachePresent": True,
@@ -257,6 +323,7 @@ def inspect(
                 "sourceStageReady": stage_ready,
                 "sourceStageReusable": True,
                 "sourceStageStatus": validated_stage["status"],
+                "sourceStageBaselineSaved": baseline_saved,
                 "productionReferenceAt": reference,
                 "requiredPairCount": required_pair_count,
                 "selectedRecordRefCount": validated_stage["selectedRecordRefCount"],
@@ -394,6 +461,7 @@ def write_outputs(path: Path | None, state: dict[str, Any]) -> None:
         handle.write(f"operational_seal_present={'true' if state.get('operationalSealPresent', state['completeRangePresent']) else 'false'}\n")
         handle.write(f"source_stage_ready={'true' if state.get('sourceStageReady') else 'false'}\n")
         handle.write(f"source_stage_reusable={'true' if state.get('sourceStageReusable') else 'false'}\n")
+        handle.write(f"source_stage_baseline_saved={'true' if state.get('sourceStageBaselineSaved') else 'false'}\n")
         handle.write(f"shadow_invalid={'true' if state.get('shadowInvalid') else 'false'}\n")
         handle.write(f"donor_bank_invalid={'true' if state.get('donorBankInvalid') else 'false'}\n")
         handle.write(f"donor_projection_required={'true' if state.get('donorProjectionRequired') else 'false'}\n")
@@ -431,8 +499,11 @@ def main() -> int:
         source_stage_path,
         args.allow_invalid_shadow_as_absent,
         args.donor_bank,
+        args.persist_validated_rebase,
     )
     write_outputs(args.github_output, state)
+    if state.get("sourceStageBaselineSaved"):
+        print("Copernicus current-reference IN_PROGRESS baseline saved atomically before provider work.")
     if args.require_complete and not state["completeRangePresent"]:
         raise RuntimeError("The exact activation-complete Copernicus seal is required but absent")
     if args.require_source_stage_ready and not state.get("sourceStageReady"):

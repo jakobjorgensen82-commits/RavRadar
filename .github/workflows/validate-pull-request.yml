@@ -92,6 +92,16 @@ jobs:
       - name: Validate source contracts and release governance
         run: npm run validate:source
 
+      - name: Validate durable Copernicus current-reference baseline on artificial data only
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B scripts/test-copernicus-current-source-stage.py
+          python -B scripts/test-copernicus-range-checker-v2.py
+
+      - name: Validate download-inclusive DMI capacity on artificial data only
+        run: python -B scripts/test_dmi_wave_bootstrap_update_integration.py
+
       - name: Require validated source tree to remain unchanged
         shell: bash
         run: |

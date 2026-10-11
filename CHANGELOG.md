@@ -1,3 +1,11 @@
+# Lokal 4.0.575 – integration med den leverede vejrrettelse
+
+Den samlede lokale kilde bevarer både den gennemgåede 575-brugerdata-/assistentkandidat og alle vejrrettelser i main til og med PR575. Vejrrettelsen har bestået præcis GitHub-kildekontrol og er merget; den almindelige cron-vejrhentning startede den 11. oktober kl. 22.19 dansk tid på den rettede main-kode. Dens afslutning, nye generation og faktiske effekt er endnu ikke bevist ved dette notat. Den offentligt verificerede baseline er fortsat 4.0.574.
+
+575 er ikke installeret eller offentligt leveret. Denne nye sammensætning kræver egen præcis kildekontrol, autentificerede originaler, databevarelse, afsluttet writer, præcis installationsautoritet og faktisk offentlig verifikation. Ingen SQL, Worker, Edge-funktion eller produktion ændres under den aktive vejrhentning. Den normale procesprøve bevarer main-kodens stoppede, dobbelte npm-observation inden samme oprindelige alarm; den tidligere før-stop-assertion genindføres ikke.
+
+Historiske dokumentationsafsnit fra begge kildegrene bevares nedenfor; deres tidligere afventende CI-, cron- og leveringsstatus er dateret historik. Den nye webhåndbog bevarer samtlige kapitler og giver det kolliderende nye brugerdataafsnit det ledige kapitel 89.208. Funktionel SQL uden for håndbogspayload, alle 54 historiske migrationer, modelkontrakter, scoreformel, administratorpunkter, geometri og gyldige originaler må ikke ændres af sammenføjningen. Alle fem hovedmål er fortsat åbne.
+
 # Lokal 4.0.575 fast servertrin for ejerens turkilder – 2026-10-11
 
 - Flytter alene den eksisterende CLI's faste turkildesletning til en server-only funktion. Det eksplicitte CLI-flag, ejer-HMAC, signeret D1-kald, Supabase-kald, genlæsning, første fejl og ingen automatisk gentagelse bevares.
@@ -18,6 +26,53 @@
 - To års inaktivitet, 30 dages varsel, login-redning, sikker sletning og statistik slået til som udgangspunkt er godkendte krav, ikke aktiverede funktioner. Defaultvalg er ikke samtykke eller anonymitetsbevis. Alle fem hovedmål er fortsat åbne. Kandidaten kræver præcis kildekontrol, godkendt installation, databevarelse, ledig writer og faktisk offentlig efterkontrol.
 
 # Historik: Lokal 4.0.574 – 2026-10-11
+# Lokal 4.0.574 stopkontrol uafhængig af logudskrivning – 2026-10-11
+
+- Den normale supervisor adskiller kontrolmarkører fra ordnet logudskrivning, så en blokeret modtager ikke holder asset-watchdog tilbage. Første fejl bevares gennem EOF og oprydning.
+- Reader og logger deler én samlet eksisterende tosekundersfrist. Uafsluttede tråde/processer fastholdes; ingen falsk succes, replacement eller finalizer. Proces-/gruppeejerskab og eksisterende stopbudgetter er uændrede.
+- Ti målrettede prøver består lokalt; 24 gamle supervisor-testmetoder og fire gamle native-procesprøver er uændrede. Ny fysisk Linux-prøve med eget fyldt log-rør og præcis GitHub-kildekontrol afventes. PR574's downloadrettelse har bestået alle 68 prøver og præcis kildekontrol, men er ikke leveret i produktion.
+- Ingen model-, score-, admin-, geometri-, storage-ABI- eller SQL-ændring. Kildeidentitet følger reelle bytes; originaler ommærkes ikke. Hele revisionen og de fem hovedmål er fortsat åbne.
+
+# Historik: 4.0.574 samlet DMI-downloadfrist – 2026-10-11
+
+- Én absolut arbejdsfrist minus den aktuelle caller-reserve omfatter request, retries, backoff og chunks på Linux; ingen udvidede tidsbudgetter eller ændret kildeprioritet.
+- Budgetudløb følger de normale reserve-/budgetgrene, ikke upstream-fravær. WAM giver ved positiv reserve plads til senere samlinger; forskningsbootstrap stopper uden cursorfremskridt. Afbrudt download må ikke erstatte gammel cache eller registreres som gennemført.
+- I68/C66/continuation, storage-ABI, scoreformel, adminpunkter, geometri og historiske originaler bevares. Samlet processtop, native blokering/logning, holdbar fjernlagring, runner-tab og national kapacitet er fortsat åbne.
+- To nye offline måltests og to berørte ældre måltests består; 65 gamle testmetoder er uændrede. Native Linux-prøven med fire syntetiske Requests/Retry-faser, præcis kildekontrol og normal driftseffekt afventes. PR572/573 er merget, cron er aktivt; ejerens nye særskilte korte kørsel på leveret main er accepteret uden gentagelsestilladelse.
+
+# Historik: 4.0.574 DMI-kapacitetsmåling omfatter hentning – 2026-10-11
+
+- Flytter alene startmålingen foran download_asset i hovedløkken og WAM-bootstrap; slutmåling og observation bevares. Senere kapacitetsvalg kan dermed medregne den faktisk brugte hente-/genbrugstid.
+- Faste budgetter, prioritetspolitik, originaler, parser, cacheformat, I68/C66/continuation og storage-ABI bevares. Ingen bindingsgenerering eller SQL-installation.
+- Første ukendte download, processing-fejl, deadlinehåndhævelse og historisk årsag afklares ikke af denne efterfølger. Den syntetiske kapacitetsprøve består lokalt. Den første native-observerfejl er historik. Observerrettelsen kræver fuldt fast npm-argv eller færdig npm/npm ci-titel, to ens aflæsninger med stoppet barn og genkontrol af samme pidfd/startidentitet/parent/gruppe/executable. Overgange må kun observeres videre inden den oprindelige 8-sekundersalarm; ingen ny frist, skip eller udvidet tilladelsesliste. De 12 gamle native-testmetoder er AST-uændrede; fire nye helperprøver består lokalt over tre plus ét måltestkald. Den korrigerede native-kontrol, fulde kildekontrol og Copernicus-kontrol består faktisk. Den efterfølgende DMI-målfil kørte 64 tests; to forældede statiske workflowforventninger fejlede. Kun disse to metoder er rettet til de eksisterende budgetvalg og den faste ejede cipher-action med begge seal-vagter; begge består lokalt. Øvrige DMI-tests er uændrede. Den første afviste CI-buffer blev ikke logget; Node/npm-koden forklarer observerhullet, ikke den historiske hændelsesårsag. Vejrprodukt, workflow, budgetter og kildebinding er uændrede af testrettelserne. PR572 har bestået den fulde GitHub-kildekontrol på det præcise head samt kildebeviset og er lagt i main. Dens effekt i en efterfølgende ny vejrgeneration er endnu ikke verificeret. Efterfølgerens præcise CI og produktionseffekt er endnu ikke verificeret.
+- Samme 4.0.574; tidligere Copernicus-beviser bevares nedenfor.
+- Den lokale efterfølger tilføjer otte observationslinjer: brugt downloadtid registreres på samme controller og samlingsfamilie før main-grenens normale budgetstop eller checkpoint/continue og før WAM-grenens checkpoint/genkast. Kontrolflow, fejlhåndtering, commitstatus, originaler, faste budgetter og watchdogs bevares. Én ny syntetisk caller-måltest består med faktisk WAM-kalder og den eksakte main-fejlgren udtrukket fra AST. Den bekræfter observation før flush, samme WAM-fejlobjekt, korrekt familieadmission og ingen parser/commit eller ændrede originalrækker. Alle 64 eksisterende testmetoder er uændrede; de er ikke genkørt lokalt for denne efterfølger.
+
+# Historik: 4.0.574 Copernicus-arbejdsstatus gemmes før hentning – 2026-10-11
+
+- Det seneste kortforsøg fejlede efter Copernicus-timeout/recovery-timeout. Slutkontrollen afviste en udløbet tidsreference i kildeoplysningerne. Forløbet passer med, at gemningen af den validerede projektion ikke nåede at blive færdig; det præcise afbrydelsespunkt er ikke målt.
+- Kun før-provider-trinnet får --persist-validated-rebase: eksisterende stage-/donorbankvalidering, frisk kontrol af inputbytes og normal atomisk snapshot-skrivning af alene source-stage. Positive originaler, friskhed, forsøgstidspunkter, budgetter og streng slutkontrol bevares.
+- Rå SAVE og krypteret UPLOAD lykkedes faktisk; vejrhentning og deploy gjorde ikke. Cron er efter ejerens anmodning gemt inaktivt.
+- Lokal workflow-måltest og rangechecker-v2 består. Source-stage-prøven er lokalt ukørt grundet manglende xarray og er ført til normal Linux-kildekontrol. Ingen versionsændring; præcis CI og driftseffekt mangler, alle fem mål er åbne.
+
+# Historik: 4.0.574 kort vejrhentning fra aktuel beskyttet generation – 2026-10-11
+
+- PR #569 første Linux-kontrol afslørede den eksisterende tests manglende npm-opstartstitel. Test-only accepteres nu præcis npm før npm ci; kernestyret executable-, ejerskabs- og afslutningskontrol bevares. Ny præcis kilde- og driftseffekt mangler endnu.
+
+- Retter den korte kørsels kildevalg efter en succesfuld generationsovergang: explicit protected-current bruger normal autentificeret current B/S, ikke gammel cipher bundet til forgængeren.
+- Frisk eksakt current/restored/manifest/model/kontrakt-/bytekontrol; legitim kandidat bevares og kontrolleres mod B-packen. Separat tabsfri materialisering kun ved fravær. Ingen tom bootstrap i denne gren.
+- Gamle cipherkontroller, producentens READY, dataintegritet og alle senere gates bevares. Ingen ændret tidsplan, budget, scoreformel, originaler, modelbindinger eller SQL.
+- Faktisk kortforsøg 38132323971/1 fejlede før providerarbejde på korrekt BASELINE_MISMATCH; ingen nye offentlige data. Normale måltests består lokalt, kilde- og driftsbevis mangler. PR #567 er merget, men faktisk cachegemning/upload er endnu ikke verificeret.
+
+# Historik: 4.0.574 driftsopfølgning – 2026-10-11
+
+- Den faste cache-actions proceskontrol accepterer samme faste script med overflødigt /./, som den officielle GitHub Runner kan bevare. Ingen øvrig stinormalisering eller ændring af ejerskabs-/ophørskontroller.
+- Afvist gemning får en sikker fast-enum-fase og årsagskode. Oprindelig afvisningsmarkør, exitstatus, første fejl og kvitteringskrav bevares; ingen rå fejl eller private data logges.
+- 21/21 gennemgåede normale Node-prøver genbruges. Den additive normale Linux-case med faktisk /proc-scriptargument og præcis source-CI er endnu åbne; ingen leveringspåstand.
+- Faktisk vejrhentning 38124400431/1 fejlede kl. 11.24 dansk tid uden nye offentlige data. Rå gemning og krypteret upload blev afvist. /./ er en begrundet regressionshypotese, ikke en målt historisk root cause; producentens særskilte fejl er fortsat åben.
+- Pipelineopfølgning på eksisterende version, ikke ny UI-/modelrelease. Ingen ændring af modelbindinger, score, geometri, originaler, scheduler eller installationstilladelser. 574 var allerede offentligt leveret kl. 10.05; gammel kandidatstatus nedenfor er historik.
+
+# Historik: lokal 4.0.574 – 2026-10-11
 
 - Kassér tur gemmer null under den eksisterende aktive nøgle. En ældre browserbackup kan dermed ikke genskabe netop den kasserede tur ved normal opstart, så længe nulværdien er bevaret.
 - Tre beståede normale kontroller genbruges: kassering/genstart, bevaret original og første fejl ved skrivefejl, samt gendannelse af en ikke-kasseret tur. Nye ture, afventende ture, outbox og gamle assertions bevares.

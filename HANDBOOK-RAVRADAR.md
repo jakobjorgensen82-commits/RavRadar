@@ -6,6 +6,14 @@ Den lokale 4.0.575 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette er den nye samlede kildeidentitet, ikke bevis for installation eller offentlig levering. Den fysiske scorekontrakt er uændret.
 
+## 89.209 Samlet kilde med den nye vejrrettelse
+
+Den lokale 575-kilde samler de gennemgåede konto-, eksport- og assistentrettelser med de leverede vejrrettelser. Den almindelige cron-vejrhentning startede den 11. oktober kl. 22.19 dansk tid på den rettede kode. Afslutning og effekt på en ny generation er endnu ikke bekræftet her.
+
+575 er ikke installeret eller offentligt leveret. Den offentligt verificerede baseline er fortsat 4.0.574. Sammenføjningen kræver egen kildekontrol, bevaring af originale data, afsluttet vejrhentning, præcis installationsgodkendelse og faktisk offentlig kontrol. Ingen produktionsændring sker under den aktive vejrhentning.
+
+Alle tidligere kapitler fra begge kildegrene bevares. Deres ældre test- og leveringsstatus er historik. Scoreformel, administratorpunkter, geometri og gyldige originaler ændres ikke. Alle fem hovedmål er fortsat åbne.
+
 ## 89.207 Kontrolleret sletning af ejerens turkilder
 
 Det eksisterende serverforløb skal bruge den samme ejer gennem validering, signerede lagerkald, sletning og genlæsning. Det er nu samlet i én fast serverfunktion. Den eksisterende kommandolinje er fortsat eneste produktionskalder og kræver stadig et udtrykkeligt bekræftelsesflag. Rækkefølge, første fejl og adgangsoplysninger ændres ikke, og der er ingen automatisk gentagelse.
@@ -14,7 +22,7 @@ En kvittering fortæller kun, at dette turkildetrin er bekræftet. Lagerets tomm
 
 De 23 normale målprøver består efter faktisk lokal integration, uden fejl eller skip. De 16 gamle testkroppe er bevaret. Forløberens præcise GitHub-kildekontrol er også bestået; ældre afventende CI-status nedenfor er historik. Det er ikke installation eller offentlig levering af 575. Denne følgeintegrations egen kildekontrol og levering afventes. Ingen rigtig tur er slettet, og modelbindinger, scoreformel, administratorpunkter, geometri og originaler er uændrede. Alle fem hovedmål er fortsat åbne.
 
-## 89.200 Egne ture, sikker eksport og afgrænsede assistentopfølgninger
+## 89.208 Egne ture, sikker eksport og afgrænsede assistentopfølgninger
 
 Den anden kildekontrol stoppede i en testobservatør: ni native-prøver bestod, og én afviste et procesnavn. Den afviste tekst er ukendt. npm ændrer dokumenteret sit procesnavn under opstart. Testen følger nu kun disse afgrænsede navnetilstande efter dobbelt kontrol af den samme fastholdte procesidentitet og præcise programfil. Alle øvrige ejerskabs-, låse-, luknings- og tidskontroller bevares. En lokal helperprøve med 17 syntetiske delkontroller består; næste præcise Linux- og fulde kildekontrol mangler stadig. Produktfunktioner, bindinger og offentlig drift ændres ikke af denne testrettelse.
 
@@ -35,6 +43,62 @@ Den inaktive Candidate G-kompatibilitet har `modelContractSha256=c73dac1b4376005
 130000-migrationen er endnu ikke installeret. Dens funktionelle SQL er uændret; 20 bindingsfelter følger den faktiske samlede kilde. Præcis godkendelse af den samlede installation afventes. Levering kræver derefter kildekontrol, autentificerede originaler, bevis for databevarelse, ledig writer og faktisk offentlig effekt.
 
 Ejeren har godkendt to års inaktivitet med 30 dages varsel og mulighed for at bevare kontoen ved login samt statistik slået til som udgangspunkt. Disse funktioner er ikke aktiveret her. Standardvalget er ikke samtykke eller anonymitetsbevis. Privat turlog og eksport skal være uafhængige af statistikvalget. Alle fem hovedmål er fortsat åbne.
+
+## 89.206 Logudskrivning må ikke forsinke processtoppet
+
+Hvis modtageren af loggen går i stå, skal stopkontrollen stadig kunne læse arbejdsmarkører og reagere på tidsgrænsen. Den normale DMI-supervisor adskiller derfor den ordnede logudskrivning fra læsning og stopkontrol. Den første læse- eller logfejl bevares, også hvis barnet allerede har afsluttet sit output.
+
+Læsning og logudskrivning deler én samlet oprydningsfrist på to sekunder; hver tråd får ikke en ny frist. Hvis processen eller en outputtråd stadig lever, fastholdes de faktiske referencer. Arbejdet må ikke kaldes afsluttet, og der må ikke startes en erstatningsproces eller slutbehandling på den baggrund. De oprindelige regler for procesejerskab, stop, tidsbudgetter og databevarelse ændres ikke.
+
+Ti målrettede prøver består lokalt. En ny Linux-prøve med et eget fyldt log-rør skal kontrollere faktisk barnestop før røret frigives; den afventer den normale GitHub-kontrol. Den foregående downloadrettelse har nu bestået præcis kildekontrol og alle 68 downloadprøver, inklusive fire syntetiske Requests/Retry-faser. Ingen af de to kandidater er endnu produktionsleveret. De tidligere afventende testoplysninger nedenfor er historik. Dette er ikke bevis for holdbar fjernlagring, tab af runner eller national kapacitet. Modelbindinger, scoreformel, administratorpunkter, geometri og gyldige originaler bevares. Alle fem hovedmål er fortsat åbne.
+
+## 89.205 En samlet tidsgrænse for en DMI-download
+
+En langsom fil må ikke få en ny tidsfrist ved hvert genforsøg eller hvert stykke af filen. På Linux får hentningen derfor én samlet grænse fra den eksisterende arbejdstid, med den aktuelle reserve til senere datakilder trukket fra. De samlede tidsbudgetter og kildernes prioritet ændres ikke.
+
+Når grænsen nås, behandles det som brugt arbejdstid, ikke som bevis for manglende DMI-data. Bølgeforløbet giver ved positiv reserve plads til senere bølgekilder; den private forskningsopbygning stopper uden at flytte sin markør. En afbrudt fil erstatter ikke den gamle gyldige cache og tæller ikke som gennemført arbejde.
+
+To nye måltests uden ekstern transport og to berørte ældre måltests består lokalt. De 65 gamle testmetoder er uændrede. Den nye Linux-prøve med fire syntetiske Requests/Retry-faser på eget loopback, præcis kildekontrol og faktisk driftseffekt afventes. Det er ikke bevis for samlet processtop, sikker upload eller national kapacitet; blokerende native kald og logning kan kræve den eksisterende overordnede stopkontrol. Modelbindinger, scoreformel, administratorpunkter, geometri og historiske originaler bevares. PR572/573 er lagt i main, og cron er genaktiveret efter en faktisk offentlig levering; alle fem hovedmål er fortsat åbne.
+
+## 89.204 Hentetid tæller med i DMI-kapaciteten
+
+Når systemet vurderer, hvor meget det kan nå, skal tiden til at hente eller genbruge en fil indgå sammen med behandlingen. Den afgrænsede rettelse starter den eksisterende måling før hentningen i både det almindelige DMI-forløb og bølgeforløbets indledende opbygning. Slutmålingen bevares. Det kan ændre senere vurderinger af kapaciteten, men ikke de faste tidsgrænser eller prioriteringsreglerne.
+
+Originale data, læsefortolkning, cacheformat og modelbindinger ændres ikke. Der kræves ingen ny bindings- eller databaseinstallation. Den første fil kan stadig have ukendt tidspris. Denne efterfølger løser ikke processing-fejl eller håndhævelse af deadline. Den historiske fejlårsag og rettelsens effekt på en ny vejrgeneration er derfor ikke bevist.
+
+Den nye kapacitetsprøve med egne kunstige input består lokalt. Den første fejl i npm-observationsprøven er historik. Rettelsen kræver det fulde faste npm-kald eller færdig npm/npm ci-titel, to ens aflæsninger med stoppet barn og samme fastholdte proceshåndtag, startidentitet, forælder, gruppe og faktiske programfil. Den oprindelige 8-sekundersalarm bevares uden ekstra tid, oversprunget kontrol eller udvidet tilladelsesliste. De 12 gamle native-testmetoders kodestruktur er uændret; fire nye hjælpeprøver består lokalt over tre plus ét måltestkald. Den korrigerede Linux-procesprøve, fulde kildekontrol og Copernicus-kontrol er faktisk bestået. Den efterfølgende DMI-målfil kørte 64 prøver; to gamle statiske forventninger til workflowet fejlede. Kun de to forventninger er rettet til de eksisterende budgetvalg og den faste krypterede gemningsvej med begge beskyttelseskrav; begge består lokalt, og øvrige DMI-prøver er uændrede. Den første afviste CI-aflæsning blev ikke logget, så den historiske hændelsesårsag er fortsat ukendt. Vejrprodukt, workflow, budgetter og kildebinding ændres ikke af testrettelserne. PR572 har bestået den fulde GitHub-kildekontrol på det præcise head samt kildebeviset og er lagt i main. Dens effekt i en efterfølgende ny vejrgeneration er endnu ikke verificeret. Efterfølgerens præcise CI og produktionseffekt er endnu ikke verificeret. Version 4.0.574 bevares. Den foregående Copernicus-rettelse er lagt i main; dens tidligere status nedenfor er historik, ikke aktuel teststatus for denne nye ændring.
+
+Den lokale efterfølger registrerer med otte ekstra linjer også allerede brugt tid ved en downloadfejl. Observationen sker før det eksisterende stop, checkpoint eller genkast på den samme controller og for den samme kildefamilie. Fejlforløb, originaler, commitstatus, faste budgetter og watchdogs bevares. Én ny prøve med egne kunstige input består gennem den faktiske bølgekalder og hovedløkkens uændrede fejlgren. Den bekræfter rækkefølgen før checkpoint, bevaret fejlobjekt og ingen parser, commit eller ændrede originalrækker. Alle 64 hidtidige testmetoder er uændrede og er ikke genkørt lokalt for denne efterfølger.
+
+## 89.203 Gem arbejdsstatus før Copernicus-hentning
+
+Det korte forsøg den 11. oktober fejlede efter en timeout og en mislykket genopretning. Kontrollen før hentning havde beregnet en gyldig arbejdsstatus til det aktuelle tidspunkt i hukommelsen. Slutkontrollen afviste derefter en udløbet tidsreference i kildeoplysningerne. Forløbet passer med, at gemningen ikke nåede at blive færdig; det præcise afbrydelsespunkt er ikke målt.
+
+Rettelsen gemmer kun den allerede validerede arbejdsstatus før hentning. Den skal passe til de originale gemte data, og inputfilerne kontrolleres igen umiddelbart før en atomisk erstatning af arbejdsfilen. Originalbanken bevares. Ufuldstændige data forbliver ufuldstændige; tidsgrænser, friskhed og den strenge slutkontrol ændres ikke.
+
+Rå cachegemning og upload af det krypterede fremskridt lykkedes faktisk i dette forsøg. Det er ikke en færdig vejrhentning, senere genindlæsning eller levering af nye offentlige data. Ejeren har fået fremtidig cron gemt inaktivt. Denne rettelse genstarter ikke tidsplanen.
+
+De små lokale workflow- og rangechecker-prøver består. Prøven for arbejdsstatus kræver en Python-afhængighed, der ikke findes lokalt, og afventer den normale Linux-kontrol. Rettelsen er endnu ikke produktionsverificeret. Version 4.0.574 bevares, vejrhentning har fuld prioritet, og alle fem hovedmål er åbne. De tidligere statusafsnit nedenfor skal læses som historik, hvor dette afsnit erstatter deres driftstilstand.
+
+## 89.202 Procesprøven genkender npm-opstart
+
+GitHub-kontrollen fandt først en fejl i en eksisterende procesprøve. npm kalder sig først npm og senere npm ci. Prøven genkendte ikke den første fase. Kun denne testforventning er rettet; den faktiske programfil, procesidentitet, skrivelås og afslutning skal stadig kontrolleres. Ny GitHub-kontrol skal bestå før levering.
+
+## 89.201 Kort vejrhentning fra den aktuelle gemte generation
+
+Et gemt fremskridt kan tilhøre den generation, der var i drift før en vellykket vejrhentning. Når en ny generation er gemt, skal det gamle fremskridt fortsat afvises. Fejlen den 11. oktober i det korte forsøg opstod før DMI-hentning og skyldtes netop forskellig generation.
+
+Den nye udtrykkelige korte indgang bruger i stedet de aktuelt autentificerede, beskyttede vejrdata. Generation, model, kontrakt og faktiske filbytes skal passe sammen. En eksisterende kandidat bevares og kontrolleres mod sin gemte pakke; ellers dannes en separat arbejdsfil med den normale tabsfri materialisering. Manglende eller tomme input stopper før leverandørarbejde. Det giver ikke i sig selv komplette eller friske data: producenten og alle beregnings-, databevarelses- og deploykontroller skal stadig bestå.
+
+Den gamle korte indgang til et præcist krypteret fremskridt er uændret. Tidsbudgetter, tidsplan, scoreformel, kilder, administratorpunkter og originaler ændres ikke. Lokale måltests består; sikker levering og faktisk offentlig effekt mangler. Cache-rettelsen i PR #567 er lagt i main med bestået GitHub-kontrol, men faktisk gemning og upload er stadig ikke bevist. Alle øvrige leverancer er sat på hold, mens vejrhentningsfejlen har fuld prioritet.
+
+## 89.200 Gemning accepterer GitHubs normale filsti
+
+Den almindelige vejrhentning den 11. oktober fejlede uden at levere nye offentlige data. Rå gemning og upload af den lokalt krypterede fil blev afvist. En grøn ydre kontrol er ikke bevis for gemning, når den indre operation er afvist.
+
+En afgrænset rettelse tillader samme faste programfil med et overflødigt /./ i stien. GitHub kan bruge denne stavemåde. Andre filstier og argumenter accepteres ikke, og kontrol med processer, skrivelås og positiv gemningskvittering bevares. Fejlloggen får kun faste faser og årsagskoder, aldrig rå fejltekster eller private oplysninger.
+
+Den konkrete tidligere indre fejl blev ikke logget, så årsagen er endnu ikke endeligt bevist. 21 normale lokale Node-prøver består; den nye Linux-prøve, præcis kildekontrol og faktisk driftseffekt er endnu åbne. Producentens andre fejl er særskilte. Dette er en pipelineopfølgning på 4.0.574, ikke en ny UI- eller modelversion. Ingen vejrdata, scorer, historik, administratorpunkter, SQL eller tidsplan ændres. Alle fem hovedmål er fortsat åbne.
 
 ## 89.199 Kasserede ture kommer ikke tilbage fra gammel browserbackup
 

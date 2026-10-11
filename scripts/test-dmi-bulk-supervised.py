@@ -856,6 +856,179 @@ class SupervisorTests(unittest.TestCase):
                         child.kill()
                     child.wait(timeout=5)
 
+    def test_logger_start_failure_stops_owned_producer_and_preserves_cause(self):
+        self.assert_async_output_failure("logger-start")
+
+    def test_reader_failure_preserves_exact_falsy_exception(self):
+        self.assert_async_output_failure("reader-error")
+
+    def test_last_log_failure_after_reader_eof_cannot_return_success(self):
+        self.assert_async_output_failure("last-log-error")
+
+    def test_blocked_logger_retains_resources_without_resetting_teardown(self):
+        self.assert_async_output_failure("blocked-log")
+
+    def assert_async_output_failure(self, scenario):
+        # Actual normal main/Popen/threads, but explicit local exception/event
+        # seams. The separate native target measures a blocked kernel logpipe.
+        class FalsyFailure(RuntimeError):
+            def __bool__(self):
+                return False
+
+        primary = FalsyFailure("owned synthetic output failure")
+        sink_entered = supervisor.threading.Event()
+        sink_release = supervisor.threading.Event()
+        reader_finished = supervisor.threading.Event()
+        owned = []
+        threads = {}
+        joins = []
+        seen_lines = []
+        normal_thread = supervisor.threading.Thread
+        normal_run = supervisor.run_supervised
+        normal_stop = supervisor.stop_process
+        retained_before = len(supervisor._unclosed_supervised_outputs)
+
+        with tempfile.TemporaryDirectory(prefix="rr-supervisor-async-output-") as directory:
+            original = Path(directory) / "original-BS"
+            original_bytes = b"synthetic immutable original B/S\n"
+            original.write_bytes(original_bytes)
+            code = "import time\nprint('owned banner', flush=True)\n"
+            if scenario != "last-log-error":
+                code += (
+                    f"print({marker('DMI_ASSET_PROCESSING_START', ASSET_A)!r}, flush=True)\n"
+                    "time.sleep(6)\n"
+                )
+            else:
+                code += "raise SystemExit(7)\n"
+            command = [sys.executable, "-u", "-c", code]
+
+            def retain_popen(*args, **kwargs):
+                self.assertEqual(args[0], [supervisor.sys.executable, "-u", str(supervisor.PRODUCER)])
+                child = subprocess.Popen(command, **kwargs)
+                owned.append(child)
+                if scenario == "reader-error":
+                    actual_stdout = child.stdout
+
+                    class OwnReaderFailure:
+                        def __iter__(self):
+                            yield actual_stdout.readline()
+                            raise primary
+
+                        def close(self):
+                            actual_stdout.close()
+
+                        @property
+                        def closed(self):
+                            return actual_stdout.closed
+
+                    child.stdout = OwnReaderFailure()
+                return child
+
+            def retain_thread(*args, **kwargs):
+                name = kwargs["target"].__name__
+                thread = normal_thread(*args, **kwargs)
+                threads[name] = thread
+                normal_join = thread.join
+
+                def observe_join(*join_args, **join_kwargs):
+                    joins.append((name, join_kwargs.get("timeout"), supervisor.time.monotonic()))
+                    return normal_join(*join_args, **join_kwargs)
+
+                thread.join = observe_join
+                if name == "pump_output":
+                    thread_run = thread.run
+
+                    def observe_reader_end():
+                        try:
+                            thread_run()
+                        finally:
+                            reader_finished.set()
+
+                    thread.run = observe_reader_end
+                elif name == "pump_log" and scenario == "logger-start":
+                    self.assertIn("pump_output", threads)
+                    self.assertIsNotNone(threads["pump_output"].ident)
+
+                    def fail_logger_start():
+                        raise primary
+
+                    thread.start = fail_logger_start
+                return thread
+
+            def log_line(line):
+                seen_lines.append(line)
+                if scenario == "last-log-error":
+                    if not reader_finished.wait(timeout=5):
+                        raise AssertionError("actual output reader did not reach EOF")
+                    raise primary
+                if scenario == "blocked-log":
+                    sink_entered.set()
+                    if not sink_release.wait(timeout=6):
+                        raise AssertionError("own blocked-log fixture deadline reached")
+
+            def run_owned(command, environment, *, watchdog_seconds):
+                return normal_run(command, environment, watchdog_seconds=0.1,
+                                  popen=retain_popen, log=log_line)
+
+            try:
+                with (
+                    patch.dict(supervisor.os.environ, {}, clear=True),
+                    patch.object(supervisor.threading, "Thread", side_effect=retain_thread),
+                    patch.object(supervisor, "run_supervised", side_effect=run_owned) as run,
+                    patch.object(supervisor, "stop_process", wraps=normal_stop) as stop,
+                    patch.object(supervisor, "finalize_checkpoint") as finalize,
+                ):
+                    with self.assertRaises(RuntimeError) as raised:
+                        supervisor.main()
+                self.assertEqual(run.call_count, 1)
+                self.assertEqual(stop.call_count, 1, "no duplicate stop after output failure")
+                finalize.assert_not_called()
+                self.assertEqual(len(owned), 1)
+                self.assertIsNotNone(owned[0].poll(), "the actual producer must be stopped")
+                self.assertEqual(original.read_bytes(), original_bytes)
+                self.assertGreater(len(supervisor._unclosed_supervised_outputs), retained_before)
+                retained = supervisor._unclosed_supervised_outputs[-1]
+                self.assertIs(retained[0].child, owned[0])
+                self.assertIs(retained[1], threads["pump_output"])
+                self.assertIs(retained[2], threads["pump_log"])
+                self.assertIsNotNone(retained[3])
+                self.assertIsNotNone(retained[4])
+                self.assertIs(retained[5], log_line)
+                if scenario == "blocked-log":
+                    self.assertEqual(str(raised.exception), "DMI_SUPERVISOR_LOGGER_STOP_UNPROVED")
+                    self.assertTrue(sink_entered.is_set())
+                    self.assertFalse(sink_release.is_set())
+                    self.assertTrue(threads["pump_log"].is_alive())
+                    self.assertFalse(threads["pump_output"].is_alive())
+                    self.assertFalse(owned[0].stdout.closed, "unknown sink keeps actual owned resources")
+                    logger_joins = [entry for entry in joins if entry[0] == "pump_log"]
+                    self.assertEqual(len(logger_joins), 2)
+                    self.assertGreater(logger_joins[0][1], 0)
+                    self.assertLessEqual(logger_joins[0][1], 2.0)
+                    self.assertEqual(logger_joins[1][1], 0.0, "cleanup cannot reset the same teardown window")
+                else:
+                    self.assertIs(raised.exception, primary)
+                    self.assertTrue(owned[0].stdout.closed)
+                    self.assertFalse(threads["pump_output"].is_alive())
+                    self.assertFalse(threads["pump_log"].is_alive())
+                    if scenario == "last-log-error":
+                        self.assertTrue(reader_finished.is_set())
+                        self.assertEqual(seen_lines, ["owned banner\n"])
+            finally:
+                # Release only our own synthetic sink AFTER the assertions;
+                # do not turn this disposal into product stop evidence.
+                sink_release.set()
+                for child in owned:
+                    if child.poll() is None:
+                        child.kill()
+                    child.wait(timeout=5)
+                for thread in threads.values():
+                    if thread.ident is not None:
+                        thread.join(timeout=3)
+                        self.assertFalse(thread.is_alive(), "own fixture thread cleanup")
+                for child in owned:
+                    child.stdout.close()
+
 
 if __name__ == "__main__":
     unittest.main()
