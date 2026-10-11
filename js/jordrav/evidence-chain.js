@@ -1,5 +1,5 @@
-import { searchContext } from './search-context.js?v=4.0.572';
-import { landscapeContext } from './landscape-context.js?v=4.0.572';
+import { searchContext } from './search-context.js?v=4.0.573';
+import { landscapeContext } from './landscape-context.js?v=4.0.573';
 export const EVIDENCE_CHAIN_VERSION='0.1.0';
 // An order for investigating missing evidence, not a ranking of find chances.
 // No names, known finds, coastline distances, heights or numerical bonuses.

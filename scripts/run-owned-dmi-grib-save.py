@@ -20,7 +20,8 @@ _retained_children = []
 
 def main():
     distribution = sys.argv[1:] == ['--prepare-distribution']
-    if (sys.platform != 'linux' or (len(sys.argv) != 1 and not distribution)
+    ciphertext = sys.argv[1:] == ['--upload-encrypted-progress']
+    if (sys.platform != 'linux' or (len(sys.argv) != 1 and not distribution and not ciphertext)
             or signal.getsignal(signal.SIGCHLD) != signal.SIG_DFL
             or not all(hasattr(os, name) for name in ('waitid', 'WNOWAIT', 'WEXITED', 'WNOHANG'))):
         raise RuntimeError('DMI_RAW_SAVE_PLATFORM_REFUSED')
@@ -34,7 +35,9 @@ def main():
     if (len(parent_argv) > 16384 or os.getppid() != parent_pid
             or Path(parent_executable).name != 'node'
             or os.fsencode(str(ENTRY)) not in parent_fields
-            or (distribution and parent_fields[1:] != [os.fsencode(str(ENTRY)), b'--prepare-distribution'])):
+            or (distribution and parent_fields[1:] != [os.fsencode(str(ENTRY)), b'--prepare-distribution'])
+            or (ciphertext and (parent_fields[1:] != [os.fsencode(str(ENTRY))]
+                                or os.environ.get('INPUT_OPERATION') != 'upload-encrypted-progress'))):
         raise RuntimeError('DMI_RAW_SAVE_PARENT_UNPROVED')
     os.fstat(3)  # Own inherited private IPC pipe, never a path supplied by callers.
     pending = None
@@ -79,7 +82,8 @@ def main():
             previous.append((signum, signal.signal(signum, interrupt)))
         if pending:
             raise RuntimeError('DMI_RAW_SAVE_INTERRUPTED')
-        fixed_worker = '--fixed-distribution-worker' if distribution else '--fixed-api-worker'
+        fixed_worker = ('--fixed-distribution-worker' if distribution else
+                        '--fixed-cipher-worker' if ciphertext else '--fixed-api-worker')
         child = subprocess.Popen([parent_executable, str(ENTRY), fixed_worker],
                                  cwd=ROOT, env=os.environ.copy(), start_new_session=True,
                                  stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,

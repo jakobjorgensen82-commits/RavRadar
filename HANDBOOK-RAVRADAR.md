@@ -1,10 +1,24 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.572
+**Håndbogsversion:** 4.0.573
 
-Den lokale 4.0.572 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+Den lokale 4.0.573 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.198 Lokal gemning og særskilt uploadkvittering
+
+En fil, der er gemt på den aktuelle arbejdsmaskine, er ikke nødvendigvis gemt på fjernlageret. 573-kandidaten holder derfor lokal gemning og uploadkvittering adskilt. De gamle data bevares; et lokalt saved-svar alene bliver ikke til en påstand om holdbar fjernlagring.
+
+Kun den normale, allerede krypterede fil og dens eksisterende uploadnøgle bruges. Krypteringen skal først være afsluttet med succes og have meldt lokal gemning. En vilkårlig filsti accepteres ikke. Den samme åbne fils identitet og fulde indhold kontrolleres før og efter uploaden.
+
+En positiv uploadkvittering kræver både lagerets positive svar og faktisk afslutning af de ejede processer, rør og skrivelås. Et HTTP 200-svar, hvor den endelige gemning afvises, tæller ikke som succes. Ved uklar afslutning gives ingen normal uploadkvittering. Det beviser endnu ikke senere genlæsning, overlevelse af tab af hele arbejdsmaskinen eller deltagelse af alle andre skrivere.
+
+De eksisterende npm-konfigurationer og proceskontroller bevares. Den normale lokale workflow-prøve består 29/29, og rækkefølgeprøven består. De to nye native prøver med den officielle SDK er endnu ikke kørt lokalt. Alle ti normale native-prøver skal bestå i den præcise Linux-kildekontrol; gamle beståede prøver er ikke bevis for det nye uploadforløb.
+
+PR #562 på præcis aacab3b5fea8e373fe4f54587480ad35711841b2 har bestået normal kildekontrol 38102579362/1 kl. 03.45.44 dansk tid den 11. oktober; det syvfelts kildebevis er uafhængigt kontrolleret. PR er klar, men ikke merget eller offentligt leveret. RAW571 med de egne npm-konfigurationer og 572-assistentens samling af fem identifikationsfakta er forløbere, som bevares. 573 kræver sin egen præcise kildekontrol og sikker levering; ingen ny produktions- eller vejrstatus antages.
+
+Alle fem hovedmål er fortsat åbne. Samlet fireminuttersforløb, alle skriveres deltagelse, runner-tab, national kapacitet, holdbar fjernlagring og senere autentificeret genbrug er ikke afsluttet. Decoder-/190000-SQL-/RESTORE-afklaringer og source33-grænsen består uændret. I68/C66, continuation, faktabank, lager-ABI, låste afhængigheder, scoreformel, geometri og historiske originaler ændres ikke. Den særskilte C272-/RESTORE-kandidat og øvrige lokale ændringer er ikke med. Ingen ny tjeneste, SQL-installation eller aktivering følger.
 
 ## 89.197 Identifikationssvar med alle forbehold
 

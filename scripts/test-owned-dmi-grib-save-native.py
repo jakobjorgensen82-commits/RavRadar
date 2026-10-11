@@ -385,7 +385,13 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
     def test_official_sdk_finalize_http_200_false_never_saves(self):
         self.official_chain(finalize_ok=False)
 
-    def official_chain(self, *, finalize_ok):
+    def test_official_sdk_fixed_cipher_finalize_17_closes_before_uploaded(self):
+        self.official_chain(finalize_ok=True, ciphertext=True)
+
+    def test_official_sdk_fixed_cipher_http_200_false_never_uploads(self):
+        self.official_chain(finalize_ok=False, ciphertext=True)
+
+    def official_chain(self, *, finalize_ok, ciphertext=False):
         import hashlib
         from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -416,7 +422,13 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
         server_failure = []
         old_alarm = signal.getsignal(signal.SIGALRM)
         own_raw = b'synthetic raw original\n'
-        key = 'dmi-grib-v4-Linux-2026-W41-17-1'
+        key = ('weather-private-progress-encrypted-v2-Linux-main-17-1'
+               if ciphertext else 'dmi-grib-v4-Linux-2026-W41-17-1')
+        cipher_path = '.cache/weather-private-progress.encrypted'
+        # Opaque own bytes test the transport only. This is NOT a fabricated
+        # authenticated SAVE, GCM result or proof of the upstream seal caller.
+        own_cipher = b'own opaque synthetic encrypted-progress transport bytes\\n'
+        cipher_identity = None
         service = '/twirp/github.actions.results.api.v1.CacheService/'
         case = self
 
@@ -438,9 +450,11 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
             case.assertEqual((worker['pgid'], worker['sid']), (worker['pid'], worker['pid']))
             case.assertNotEqual(cohort['pgid'], worker['pgid'])
             case.assertEqual(small(f"/proc/{worker['pid']}/cmdline").split(b'\0')[:-1],
-                [os.fsencode(NODE24), os.fsencode(root / ENTRY), b'--fixed-api-worker'])
+                [os.fsencode(NODE24), os.fsencode(root / ENTRY),
+                 b'--fixed-cipher-worker' if ciphertext else b'--fixed-api-worker'])
             case.assertEqual(small(f"/proc/{cohort['pid']}/cmdline").split(b'\0')[1:-1],
-                [b'-B', os.fsencode(root / COHORT)])
+                [b'-B', os.fsencode(root / COHORT)]
+                + ([b'--upload-encrypted-progress'] if ciphertext else []))
             claim_fd = os.open(root / CLAIM, os.O_RDONLY | os.O_NOFOLLOW)
             stat = os.fstat(claim_fd)
             claim_identity = (stat.st_dev, stat.st_ino)
@@ -457,6 +471,19 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
             case.assertEqual(small(root / CLAIM), b'')
             case.assertEqual(small(root / 'action-output'), b'')
             case.assertEqual((root / '.cache/dmi-grib/own.grib').read_bytes(), own_raw)
+            if ciphertext:
+                case.assertEqual((root / cipher_path).read_bytes(), own_cipher)
+                current_cipher = (root / cipher_path).lstat()
+                case.assertEqual((current_cipher.st_dev, current_cipher.st_ino), cipher_identity)
+                matched = []
+                for entry in Path(f"/proc/{observed['worker']['pid']}/fd").iterdir():
+                    try:
+                        value = entry.stat()
+                    except FileNotFoundError:
+                        continue
+                    if (value.st_dev, value.st_ino) == cipher_identity:
+                        matched.append(int(entry.name))
+                case.assertEqual(len(matched), 1, 'The actual fixed worker owns one selected cipher fd')
             os.killpg(observed['worker']['pid'], 0)  # Observation, not a signal.
 
         class Transport(HTTPServer):
@@ -537,11 +564,18 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                     env=runtime_environment(), stdin=subprocess.DEVNULL,
                     capture_output=True, timeout=1, check=True)
                 names = listing.stdout.decode('utf-8').splitlines()
-                case.assertEqual(sorted(names), ['.cache/dmi-grib/', '.cache/dmi-grib/own.grib'])
-                extracted = subprocess.run([tar, '-xOf', str(archive), '.cache/dmi-grib/own.grib'],
+                if ciphertext:
+                    case.assertEqual(sorted(names), [cipher_path])
+                else:
+                    case.assertEqual(sorted(names), ['.cache/dmi-grib/', '.cache/dmi-grib/own.grib'])
+                extracted = subprocess.run([tar, '-xOf', str(archive),
+                    cipher_path if ciphertext else '.cache/dmi-grib/own.grib'],
                     cwd=root, env=runtime_environment(), stdin=subprocess.DEVNULL,
                     capture_output=True, timeout=1, check=True)
-                case.assertEqual(extracted.stdout, own_raw)
+                if ciphertext:
+                    case.assertEqual(extracted.stdout, own_cipher)
+                else:
+                    case.assertEqual(extracted.stdout, own_raw)
                 case.assertEqual(listing.stderr + extracted.stderr, b'')
                 calls.append('put')
                 self.reply(201)
@@ -573,6 +607,10 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
             raw = root / '.cache/dmi-grib/own.grib'
             raw.parent.mkdir(parents=True)
             raw.write_bytes(own_raw)
+            if ciphertext:
+                (root / cipher_path).write_bytes(own_cipher)
+                value = (root / cipher_path).lstat()
+                cipher_identity = (value.st_dev, value.st_ino)
             (root / 'sdk-temp').mkdir()
             output = root / 'action-output'
             output.write_bytes(b'')
@@ -580,7 +618,8 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
             server.timeout = 0.02
             environment = runtime_environment()
             environment.update({'PYTHONDONTWRITEBYTECODE': '1', 'PYTHONNOUSERSITE': '1',
-                'INPUT_PATH': '.cache/dmi-grib', 'INPUT_KEY': key,
+                'INPUT_PATH': '' if ciphertext else '.cache/dmi-grib', 'INPUT_KEY': key,
+                'INPUT_OPERATION': 'upload-encrypted-progress' if ciphertext else 'save',
                 'GITHUB_REF': 'refs/heads/main', 'GITHUB_EVENT_NAME': 'workflow_dispatch',
                 'GITHUB_RUN_ID': '17', 'GITHUB_RUN_ATTEMPT': '1', 'RUNNER_OS': 'Linux',
                 'GITHUB_SERVER_URL': 'https://github.com', 'ACTIONS_CACHE_SERVICE_V2': '1',
@@ -604,7 +643,14 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                 os.killpg(observed['worker']['pid'], 0)
             self.assertEqual(calls, ['create', 'put', 'finalize'])
             self.assertFalse((root / CLAIM).exists())
-            self.assertEqual(small(output), b'saved=true\n' if finalize_ok else b'')
+            if ciphertext:
+                self.assertEqual(small(output), b'uploaded=true\n' if finalize_ok else b'')
+                self.assertNotIn(b'saved=', small(output))
+                self.assertEqual((root / cipher_path).read_bytes(), own_cipher)
+                value = (root / cipher_path).lstat()
+                self.assertEqual((value.st_dev, value.st_ino), cipher_identity)
+            else:
+                self.assertEqual(small(output), b'saved=true\n' if finalize_ok else b'')
             self.assertEqual(small(root / 'stdout'), b'')
             self.assertEqual(small(root / 'stderr'), b'' if finalize_ok else b'DMI_RAW_SAVE_REFUSED\n')
             self.assertEqual(raw.read_bytes(), own_raw)
@@ -967,7 +1013,7 @@ if __name__ == '__main__':
     parser.add_argument('--node24-path', required=True,
                         help='Actual Node24 executable supplied by normal CI setup')
     parser.add_argument('--official-sdk-only', action='store_true',
-                        help='Only the two real-SDK loopback cases; default runs all native cases')
+                        help='Only real-SDK raw/cipher loopback cases; default runs all native cases')
     parser.add_argument('--distribution-only', action='store_true',
                         help='Only real npm prepare cases; requires the fixed warm offline cache')
     args = parser.parse_args()

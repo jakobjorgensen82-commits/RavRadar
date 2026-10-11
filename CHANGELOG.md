@@ -1,4 +1,12 @@
-# Lokal 4.0.572 – 2026-10-11
+# Lokal 4.0.573 – 2026-10-11
+
+- Adskiller lokal saved-kvittering fra uploaded efter positiv officiel servicekvittering, faktisk eget procesophør og frigivelse. HTTP 200 med afvist finalisering er ikke uploadsucces.
+- Bruger kun eksisterende faste ciphertext-sti og run-/attempt-nøgle. Samme åbne filidentitet og bytes kontrolleres omkring uploaden; begge gamle seal-success/saved-guards bevares. Ingen fri sti, ny tjeneste eller ændring af SAVE/RESTORE-format.
+- Syv blade i forhold til den gennemgåede 572-kandidat. Egne npm-konfigurationer, observatøren for de otte hidtidige native-prøver og øvrige assertions bevares. Lokal normal workflow-måltest består 29/29, og workflow-rækkefølgeprøven består; de to nye native SDK-prøver er ukørte lokalt, og alle ti kræves på præcis 573-Linux-CI.
+- PR #562 på præcis aacab3b5fea8e373fe4f54587480ad35711841b2 har bestået normal kildekontrol 38102579362/1 kl. 03.45.44 dansk tid den 11. oktober; det syvfelts kildebevis er uafhængigt kontrolleret. PR er klar, men ikke merget eller offentligt leveret. RAW571 med de egne npm-konfigurationer og 572-assistentens samling af fem identifikationsfakta er forløbere, som bevares. 573 kræver sin egen præcise kildekontrol og sikker levering; ingen ny produktions- eller vejrstatus antages.
+- Alle fem hovedmål er fortsat åbne. Samlet fireminuttersforløb, alle skriveres deltagelse, runner-tab, national kapacitet, holdbar fjernlagring og senere autentificeret genbrug er ikke afsluttet. Decoder-/190000-SQL-/RESTORE-afklaringer og source33-grænsen består uændret. I68/C66, continuation, faktabank, lager-ABI, låste afhængigheder, scoreformel, geometri og historiske originaler ændres ikke. Den særskilte C272-/RESTORE-kandidat og øvrige lokale ændringer er ikke med. Ingen ny tjeneste, SQL-installation eller aktivering følger.
+
+# Historik: Lokal 4.0.572 – 2026-10-11
 
 - Samler fem allerede valgte identifikationsfakta i gennemgået DA/DE/EN-ordlyd på 861/893/828 tegn. Samtlige påstande, negationer og forbehold bevares; ingen nye fakta eller spørgsmålsspecifik routing.
 - Bevarer ekstra sikkerhed, kontekst og usikkerhed. Hele svaret skal passe inden for 900 tegn; ellers gives fortsat ærlig fokusafklaring, ikke afskæring eller de første få fakta.

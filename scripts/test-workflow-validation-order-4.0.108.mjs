@@ -1424,10 +1424,17 @@ for (const marker of [
   'weather-component-progress-cache.mjs save',
 ]) assert.ok(normalEncryptedSeal.includes(marker), `Krypteret provider-save mangler ${marker}`);
 for (const marker of [
-  'uses: actions/cache/save@v6',
-  'path: .cache/weather-private-progress.encrypted',
+  'uses: ./.github/actions/save-owned-dmi-grib',
+  'operation: upload-encrypted-progress',
+  "steps.component-progress-seal.outcome == 'success'",
+  "steps.component-progress-seal.outputs.saved == 'true'",
+  'continue-on-error: true',
   'weather-private-progress-encrypted-v2-',
 ]) assert.ok(normalEncryptedSave.includes(marker), `Krypteret snapshotcache mangler ${marker}`);
+assert.doesNotMatch(normalEncryptedSave, /\bpath:/,
+  'Cipher-upload skal vælge sin faste fil i den ejede action, aldrig en caller-valgt sti.');
+assert.doesNotMatch(normalEncryptedSave, /uses: actions\/cache\/save@/,
+  'Cipher-upload må ikke have en parallel uobserveret cache-SAVE-rute.');
 assert.doesNotMatch(text, /open-meteo-current-fallback-v2-|open-meteo-current-donor-bank-v1-/,
   'Normalproduktionen må ikke have parallelle Open-Meteo-plaintextcaches.');
 for (const marker of [

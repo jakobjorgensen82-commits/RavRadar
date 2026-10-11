@@ -1,15 +1,18 @@
 'use strict';
 
-// Two fixed operations, never a caller-selected command runner. Distribution
-// preparation is not SAVE; both require their own actual cohort closure.
+// Fixed raw SAVE, ciphertext upload and distribution operations only; never a
+// caller-selected path/command runner. Each needs its own actual cohort closure.
 const fs = require('node:fs');
 const crypto = require('node:crypto');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
 const { findPackageJSON } = require('node:module');
 const { pathToFileURL } = require('node:url');
+const { types } = require('node:util');
 const ROOT = path.resolve(__dirname, '../../..');
 const CACHE_PATH = '.cache/dmi-grib';
+const CIPHER_PATH = '.cache/weather-private-progress.encrypted';
+const MAX_CIPHER_BYTES = 384 * 1024 * 1024; // Same existing local SAVE/RESTORE cap.
 const API_VERSION = '6.1.0';
 const MAX_RECEIPT_BYTES = 4096;
 const LOCK_SHA256 = '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5';
@@ -47,6 +50,19 @@ function fixedDistributionInputs() {
     throw refused('DMI_RAW_DISTRIBUTION_INPUT_REFUSED');
   }
   return null;
+}
+
+function fixedCipherInputs() {
+  fixedDistributionInputs();
+  const env = process.env;
+  if (env.INPUT_OPERATION !== 'upload-encrypted-progress' || (env.INPUT_PATH || '') !== ''
+      || !/^[1-9][0-9]*$/.test(env.GITHUB_RUN_ID || '')
+      || !/^[1-9][0-9]*$/.test(env.GITHUB_RUN_ATTEMPT || '')
+      || env.INPUT_KEY !== `weather-private-progress-encrypted-v2-Linux-main-${env.GITHUB_RUN_ID}-${env.GITHUB_RUN_ATTEMPT}`
+      || !env.ACTIONS_CACHE_SERVICE_V2) {
+    throw refused('WEATHER_CIPHER_UPLOAD_INPUT_REFUSED');
+  }
+  return { key: env.INPUT_KEY, path: CIPHER_PATH };
 }
 
 function assertFixedWorkerParent() {
@@ -267,6 +283,99 @@ async function runApiWorker() {
   // This private IPC is NOT physical closure and is never a workflow output.
 }
 
+async function runCipherApiWorker() {
+  const input = fixedCipherInputs();
+  assertFixedWorkerParent();
+  assertDistributionLock();
+  process.chdir(ROOT);
+  const packageFile = findPackageJSON('@actions/cache', pathToFileURL(__filename));
+  if (!packageFile || JSON.parse(fs.readFileSync(packageFile, 'utf8')).version !== API_VERSION) {
+    throw refused('DMI_RAW_SAVE_API_UNAVAILABLE');
+  }
+  const cache = await import('@actions/cache');
+  if (typeof cache.isFeatureAvailable !== 'function'
+      || typeof cache.saveCache !== 'function' || !cache.isFeatureAvailable()) {
+    throw refused('DMI_RAW_SAVE_API_UNAVAILABLE');
+  }
+  // This is byte selection for the existing successful seal caller, not GCM
+  // authentication, a seal-report binding, or proof that other writers stopped.
+  const absolute = path.join(ROOT, CIPHER_PATH);
+  const parents = [ROOT, path.join(ROOT, '.cache')].map(directory => {
+    const stat = fs.lstatSync(directory, { bigint: true });
+    if (!stat.isDirectory() || stat.isSymbolicLink() || fs.realpathSync(directory) !== directory) {
+      throw refused('WEATHER_CIPHER_UPLOAD_PATH_REFUSED');
+    }
+    return { directory, dev: stat.dev, ino: stat.ino };
+  });
+  const same = (a, b) => a.isFile() && b.isFile() && !a.isSymbolicLink() && !b.isSymbolicLink()
+    && a.dev === b.dev && a.ino === b.ino && a.size === b.size
+    && a.mtimeNs === b.mtimeNs && a.ctimeNs === b.ctimeNs;
+  const original = fs.lstatSync(absolute, { bigint: true });
+  if (!original.isFile() || original.isSymbolicLink()
+      || original.size <= 0n || original.size > BigInt(MAX_CIPHER_BYTES)) {
+    throw refused('WEATHER_CIPHER_UPLOAD_FILE_REFUSED');
+  }
+  const fd = fs.openSync(absolute, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+  let first = null;
+  let receipt;
+  try {
+    const assertIdentity = () => {
+      for (const expected of parents) {
+        const actual = fs.lstatSync(expected.directory, { bigint: true });
+        if (!actual.isDirectory() || actual.isSymbolicLink()
+            || actual.dev !== expected.dev || actual.ino !== expected.ino
+            || fs.realpathSync(expected.directory) !== expected.directory) {
+          throw refused('WEATHER_CIPHER_UPLOAD_PATH_CHANGED');
+        }
+      }
+      if (!same(original, fs.fstatSync(fd, { bigint: true }))
+          || !same(original, fs.lstatSync(absolute, { bigint: true }))) {
+        throw refused('WEATHER_CIPHER_UPLOAD_FILE_CHANGED');
+      }
+    };
+    const digest = () => {
+      assertIdentity();
+      const hash = crypto.createHash('sha256');
+      const buffer = Buffer.alloc(256 * 1024);
+      let position = 0;
+      while (position < Number(original.size)) {
+        const requested = Math.min(buffer.length, Number(original.size) - position);
+        const count = fs.readSync(fd, buffer, 0, requested, position);
+        if (!Number.isInteger(count) || count <= 0 || count > requested) {
+          throw refused('WEATHER_CIPHER_UPLOAD_READ_FAILED');
+        }
+        hash.update(buffer.subarray(0, count));
+        position += count;
+      }
+      assertIdentity();
+      return hash.digest('hex');
+    };
+    const sha256 = digest();
+    const cacheId = await cache.saveCache([CIPHER_PATH], input.key, undefined, false);
+    if (!Number.isSafeInteger(cacheId) || cacheId <= 0) throw refused('WEATHER_CIPHER_UPLOAD_NOT_FINALIZED');
+    if (digest() !== sha256) throw refused('WEATHER_CIPHER_UPLOAD_FILE_CHANGED');
+    receipt = { schemaVersion: 1, kind: 'WEATHER_CIPHER_V2_FINALIZED',
+      apiVersion: API_VERSION, path: input.path, key: input.key, cacheId,
+      bytes: Number(original.size), sha256 };
+  } catch (error) { first = { error }; }
+  // Exactly one close of the actual owned descriptor. If this cannot qualify,
+  // emit no API receipt; the parent still requires actual process/group closure
+  // before releasing its lease, so even a failed worker cannot authorize SAVE.
+  try { fs.closeSync(fd); } catch (error) { first ??= { error }; }
+  let closed = false;
+  try { fs.fstatSync(fd); }
+  catch (error) {
+    if (error !== null && typeof error === 'object' && !types.isProxy(error)) {
+      const code = Object.getOwnPropertyDescriptor(error, 'code');
+      closed = !!code && Object.hasOwn(code, 'value') && code.value === 'EBADF';
+    }
+    if (!closed) first ??= { error };
+  }
+  if (!closed) first ??= { error: refused('WEATHER_CIPHER_UPLOAD_CLOSE_UNPROVED') };
+  if (first !== null) throw first.error;
+  fs.writeSync(3, JSON.stringify(receipt));
+}
+
 function collectReceipt(stream) {
   const chunks = [];
   let size = 0;
@@ -295,7 +404,8 @@ function parseReceipt(text) {
 }
 
 async function runOwnedOperation(operation) {
-  const input = operation === 'save' ? fixedInputs() : fixedDistributionInputs();
+  const input = operation === 'save' ? fixedInputs()
+    : operation === 'cipher' ? fixedCipherInputs() : fixedDistributionInputs();
   const owner = require('../../../scripts/lib/weather-acquisition-writer.mjs');
   let lease;
   let child;
@@ -314,7 +424,8 @@ async function runOwnedOperation(operation) {
     await owner.assertWeatherAcquisitionWriter(lease);
     if (interrupted) throw refused('DMI_RAW_SAVE_INTERRUPTED');
     child = spawn('python3', ['-B', path.join(ROOT, 'scripts/run-owned-dmi-grib-save.py'),
-      ...(operation === 'distribution' ? ['--prepare-distribution'] : [])], {
+      ...(operation === 'distribution' ? ['--prepare-distribution']
+        : operation === 'cipher' ? ['--upload-encrypted-progress'] : [])], {
       cwd: ROOT, env: process.env, shell: false,
       stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
     });
@@ -341,6 +452,14 @@ async function runOwnedOperation(operation) {
       if (receipt.schemaVersion !== 1 || receipt.kind !== 'DMI_RAW_DISTRIBUTION_READY'
           || receipt.apiVersion !== API_VERSION || receipt.lockSha256 !== LOCK_SHA256) {
         throw refused('DMI_RAW_DISTRIBUTION_NOT_READY');
+      }
+    } else if (operation === 'cipher') {
+      if (receipt.schemaVersion !== 1 || receipt.kind !== 'WEATHER_CIPHER_V2_FINALIZED'
+          || receipt.apiVersion !== API_VERSION || receipt.path !== CIPHER_PATH
+          || receipt.key !== input.key || !Number.isSafeInteger(receipt.cacheId) || receipt.cacheId <= 0
+          || !Number.isSafeInteger(receipt.bytes) || receipt.bytes <= 0 || receipt.bytes > MAX_CIPHER_BYTES
+          || typeof receipt.sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(receipt.sha256)) {
+        throw refused('WEATHER_CIPHER_UPLOAD_NOT_FINALIZED');
       }
     } else if (receipt.schemaVersion !== 1 || receipt.kind !== 'DMI_RAW_SAVE_V2_FINALIZED'
         || receipt.apiVersion !== API_VERSION || receipt.path !== input.path
@@ -370,16 +489,24 @@ async function runOwnedOperation(operation) {
     if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'distribution_ready=true\n');
     return { distributionReady: true };
   }
+  if (operation === 'cipher') {
+    if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'uploaded=true\n');
+    return { uploaded: true };
+  }
   if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'saved=true\n');
   return { saved: true };
 }
 
 async function runOwnedSave() { return runOwnedOperation('save'); }
 async function runOwnedDistribution() { return runOwnedOperation('distribution'); }
+async function runOwnedCipherUpload() { return runOwnedOperation('cipher'); }
 module.exports = { runApiWorker, runOwnedSave, runOwnedDistribution };
 if (require.main === module) {
-  const operation = process.argv.length === 2 ? runOwnedSave
+  const selectedSave = process.env.INPUT_OPERATION === 'upload-encrypted-progress' ? runOwnedCipherUpload
+    : !process.env.INPUT_OPERATION || process.env.INPUT_OPERATION === 'save' ? runOwnedSave : null;
+  const operation = process.argv.length === 2 ? selectedSave
     : process.argv.length === 3 && process.argv[2] === '--fixed-api-worker' ? runApiWorker
+    : process.argv.length === 3 && process.argv[2] === '--fixed-cipher-worker' ? runCipherApiWorker
     : process.argv.length === 3 && process.argv[2] === '--prepare-distribution' ? runOwnedDistribution
     : process.argv.length === 3 && process.argv[2] === '--fixed-distribution-worker' ? runDistributionWorker : null;
   Promise.resolve().then(() => {

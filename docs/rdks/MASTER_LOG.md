@@ -1,4 +1,20 @@
-# Lokal 4.0.572 – hele identifikationsfakta med mindre gentagelse
+# Lokal 4.0.573 – særskilt kvittering for krypteret upload
+
+Den lokale 573-kandidat adskiller en færdig lokal krypteret gemning fra en positiv kvittering for upload. saved:true fra den eksisterende SAVE betyder fortsat kun lokal fil og rapport. Det må ikke i sig selv beskrives som en ny holdbart gemt fjernversion.
+
+Kun upload af den eksisterende faste krypterede fil til den eksisterende run-/attempt-nøgle tilføjes den normale lokale action. Den har ingen fri filsti eller kommando. Begge eksisterende adgangsbetingelser bevares: krypteringstrinnet skal være afsluttet med succes, og dets saved-værdi skal være true. Fortsættelsespolitikken, selve gemningen, formatet, den forudgående autentificering og alle tidsgrænser er uændrede.
+
+Den valgte fils faktiske åbne håndtag, identitet, størrelse og fulde bytefingeraftryk følges før og efter den låste officielle SDKs upload og finalisering. Egen mappe- og filidentitet kontrolleres. uploaded:true kræver en positiv servicekvittering samt faktisk afslutning af den ejede procesgruppe, rør og egen skrivelås. Ubevist ophør giver ingen uploadkvittering. Et HTTP 200-svar med afvist finalisering er ikke succes. Bytekontrollen er ikke ny autentificering af den krypterede fil eller bevis for, at alle øvrige skrivere er stoppet.
+
+I forhold til den gennemgåede 572-kandidat omfatter 573 syv produkt- og testblade: den faste action/cohort, normal workflow-routing og de eksisterende normale måltests. De aktuelle særskilte npm-konfigurationer, de otte hidtidige native-prøver og observatørrettelsen bevares. Den normale lokale workflow-måltest består 29/29, og workflow-rækkefølgeprøven består. Disse resultater er ikke et nyt native SDK- eller hostet uploadbevis.
+
+To additive prøver i det eksisterende native SDK-mål fastholder finaliseringssvaret og kontrollerer positiv afslutning samt HTTP 200 med afvisning. De bruger egne små loopback-data, ikke GitHub-cache eller vejrtjenester. De to nye prøver er lokalt ukørte; alle ti normale native-prøver skal bestå i 573-kandidatens præcise Linux-kildekontrol. De otte tidligere Linux-prøver for RAW571 erstatter ikke dette nye bevis.
+
+PR #562 på præcis aacab3b5fea8e373fe4f54587480ad35711841b2 har bestået normal kildekontrol 38102579362/1 kl. 03.45.44 dansk tid den 11. oktober; det syvfelts kildebevis er uafhængigt kontrolleret. PR er klar, men ikke merget eller offentligt leveret. RAW571 med de egne npm-konfigurationer og 572-assistentens samling af fem identifikationsfakta er forløbere, som bevares. 573 kræver sin egen præcise kildekontrol og sikker levering; ingen ny produktions- eller vejrstatus antages.
+
+Alle fem hovedmål er fortsat åbne. Samlet fireminuttersforløb, alle skriveres deltagelse, runner-tab, national kapacitet, holdbar fjernlagring og senere autentificeret genbrug er ikke afsluttet. Decoder-/190000-SQL-/RESTORE-afklaringer og source33-grænsen består uændret. I68/C66, continuation, faktabank, lager-ABI, låste afhængigheder, scoreformel, geometri og historiske originaler ændres ikke. Den særskilte C272-/RESTORE-kandidat og øvrige lokale ændringer er ikke med. Ingen ny tjeneste, SQL-installation eller aktivering følger.
+
+# Historik: lokal 4.0.572 – hele identifikationsfakta med mindre gentagelse
 
 Offentlig 570 svarede med en ærlig anmodning om fokus på det enkle spørgsmål om at kende rav fra sten på stranden. Den tidligere forkerte stenforklaring blev ikke vist, men det kendte spørgsmål blev heller ikke besvaret. Svaret afslører ikke de valgte fakta-id'er. Et særskilt offentligt spørgsmål om opdigtet ravudstyr fik nu ærlig usikkerhed; det er ikke effektbevis for den nye 572-kandidat eller ubetinget dokumentation for leverandør-AI.
 

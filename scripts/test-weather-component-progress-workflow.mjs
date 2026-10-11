@@ -166,7 +166,21 @@ assert.match(save, /saved == true/);
 assert.match(save, /WEATHER_PROGRESS_MASTER_SECRET: \$\{\{ secrets\.SUPABASE_SERVICE_ROLE_KEY \}\}/);
 const upload = step('Save only the authenticated encrypted private weather snapshot');
 assert.match(upload, /always\(\).*steps.component-progress-seal.outputs.saved == 'true'/);
-assert.match(upload, /path: \.cache\/weather-private-progress.encrypted\s+key: weather-private-progress-encrypted-v2-/);
+assert.match(upload, /steps\.component-progress-seal\.outcome == 'success'/);
+assert.match(upload, /uses: \.\/\.github\/actions\/save-owned-dmi-grib/);
+assert.match(upload, /operation: upload-encrypted-progress\s+key: weather-private-progress-encrypted-v2-/);
+assert.doesNotMatch(upload, /\bpath:/, 'Cipher upload must derive its one fixed path, not accept caller paths');
+const cipherAction = await fs.readFile('.github/actions/save-owned-dmi-grib/index.cjs', 'utf8');
+assert.match(cipherAction, /const CIPHER_PATH = '\.cache\/weather-private-progress\.encrypted'/);
+const cipherProducer = await fs.readFile('scripts/weather-component-progress-cache.mjs', 'utf8');
+assert.match(cipherProducer, /WEATHER_PROGRESS_MAX_CIPHER_BYTES = 384 \* 1024 \* 1024/);
+assert.match(cipherAction, /MAX_CIPHER_BYTES = 384 \* 1024 \* 1024/);
+assert.match(cipherProducer, /boundedStream\(maximumEncryptedBytes - prefix\.length - 16\)/);
+assert.match(cipherProducer, /appendFile\(cipherTemporary, cipher\.getAuthTag\(\)\)[\s\S]*encryptedBytes > maximumEncryptedBytes/);
+assert.match(cipherAction, /env\.INPUT_KEY !== `weather-private-progress-encrypted-v2-Linux-main-\$\{env\.GITHUB_RUN_ID\}-\$\{env\.GITHUB_RUN_ATTEMPT\}`/);
+assert.match(cipherAction, /cache\.saveCache\(\[CIPHER_PATH\], input\.key, undefined, false\)/);
+assert.ok(cipherAction.indexOf('if (firstFailure !== null) throw firstFailure.value;')
+  < cipherAction.indexOf("'uploaded=true\\n'"), 'Upload output follows closure and actual claim release');
 for (const file of ['update-and-deploy', 'run-current-weather-once']) {
   const caller = await fs.readFile(`.github/workflows/${file}.yml`, 'utf8');
   assert.doesNotMatch(caller, /WEATHER_PROGRESS_ENCRYPTION_KEY/);

@@ -1,15 +1,20 @@
 name: Save owned DMI GRIB cache
-description: Fixed raw-cache saver; requires the shared acquisition owner and packaged official cache API.
+description: Fixed raw-cache SAVE or sealed-cipher upload under its own acquisition owner and official cache API.
 inputs:
+  operation:
+    description: Fixed save or upload-encrypted-progress operation; never a caller-selected path.
+    default: save
   path:
     description: Existing raw DMI cache path; no other input path is accepted.
-    required: true
+    required: false
   key:
-    description: Existing OS/week/run/attempt cache key.
+    description: Exact existing raw or encrypted-progress run/attempt cache key.
     required: true
 outputs:
   saved:
     description: True only after v2 finalization, physical cohort closure and own claim release.
+  uploaded:
+    description: True only after fixed cipher byte checks, v2 finalization, physical cohort closure and own claim release.
 runs:
   using: node24
   main: index.cjs
