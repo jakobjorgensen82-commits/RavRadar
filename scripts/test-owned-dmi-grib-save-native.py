@@ -153,6 +153,63 @@ class OwnedProcExitObservation(unittest.TestCase):
                     physical.assert_called_once_with(17, budget)
 
 
+
+def require_owned_npm_command(fd, expected, npm_cli):
+    # npm 11.19.0 sets 'npm' in cli/entry.js before load, then 'npm ci'
+    # in npm.js. process.title rewrites argv memory; it is not identity.
+    pid = expected['pid']
+    for phase in ('before', 'after'):
+        retained = [int(line.split(':', 1)[1])
+                    for line in small(f'/proc/self/fdinfo/{fd}').decode('ascii').splitlines()
+                    if line.startswith('Pid:')]
+        if retained != [pid] or exited(fd) or identity(pid) != expected:
+            raise RuntimeError('OWN_NPM_IDENTITY_UNPROVED')
+        if Path(os.readlink(f'/proc/{pid}/exe')).resolve() != NODE24:
+            raise RuntimeError('OWN_NPM_EXECUTABLE_UNPROVED')
+        if phase == 'before':
+            command = small(f'/proc/{pid}/cmdline')
+    original = b'\0'.join((os.fsencode(NODE24), os.fsencode(npm_cli), b'ci',
+                            b'--ignore-scripts', b'--no-audit', b'--no-fund')) + b'\0'
+    if (command != original
+            and not (command.endswith(b'\0')
+                     and command.rstrip(b'\0') in (b'npm', b'npm ci'))):
+        raise RuntimeError('OWN_NPM_COMMAND_UNPROVED')
+
+
+class OwnedNpmCommandObservation(unittest.TestCase):
+    def test_fixed_command_and_documented_titles_require_same_owned_identity(self):
+        node = Path(sys.executable).resolve()
+        npm_cli = node.parent / 'npm/bin/npm-cli.js'
+        expected = {'pid': 73, 'ppid': 72, 'pgid': 72, 'sid': 72, 'start': '71'}
+        original = b'\0'.join((os.fsencode(node), os.fsencode(npm_cli), b'ci',
+                               b'--ignore-scripts', b'--no-audit', b'--no-fund')) + b'\0'
+        cases = [(original, None), (b'npm\0\0', None), (b'npm ci\0', None),
+                 (b'npm install\0', 'command'), (b'npm\0extra\0', 'command'),
+                 (b'npm', 'command'), (b'', 'command'),
+                 (original.replace(b'ci\0', b'install\0'), 'command'),
+                 (original.replace(b'npm-cli.js', b'other-cli.js'), 'command')]
+        cases += [(b'npm\0', field) for field in
+                  ('pidfd', 'exited', 'exe', *expected)]
+        for command, failure in cases:
+            changed = dict(expected)
+            if failure in expected:
+                changed[failure] = 'changed' if failure == 'start' else 99
+            reads = lambda path: (command if path.endswith('/cmdline') else
+                                  b'Pid:\t99\n' if failure == 'pidfd' else b'Pid:\t73\n')
+            with self.subTest(failure=failure, command=command), \
+                    mock.patch(__name__ + '.NODE24', node), \
+                    mock.patch(__name__ + '.small', side_effect=reads), \
+                    mock.patch(__name__ + '.exited', side_effect=[False, failure == 'exited']), \
+                    mock.patch(__name__ + '.identity', side_effect=[expected, changed]), \
+                    mock.patch(__name__ + '.os.readlink', return_value=str(
+                        node.with_name('foreign-executable') if failure == 'exe' else node)):
+                if failure:
+                    with self.assertRaises(RuntimeError):
+                        require_owned_npm_command(17, expected, npm_cli)
+                else:
+                    require_owned_npm_command(17, expected, npm_cli)
+
+
 def retain_pidfd(pid):
     fd = os.pidfd_open(pid, 0)
     try:
@@ -868,9 +925,7 @@ class OwnedRawDistributionNative(unittest.TestCase):
             self.assertEqual(small(f'/proc/{worker_pid}/cmdline').split(b'\0')[:-1],
                              [os.fsencode(NODE24), os.fsencode(root / ENTRY), b'--fixed-distribution-worker'])
             self.assertEqual(Path(os.readlink(f'/proc/{npm_pid}/exe')).resolve(), NODE24)
-            npm_command = small(f'/proc/{npm_pid}/cmdline').split(b'\0')[0]
-            self.assertTrue(npm_command in (os.fsencode(NODE24), b'npm ci'),
-                            'Actual npm may set its process title; no alternate executable')
+            require_owned_npm_command(fds['npm'], observed['npm'], npm_cli)
             worker = observed['worker']
             self.assertEqual((worker['pgid'], worker['sid']), (worker_pid, worker_pid))
             self.assertEqual((observed['npm']['pgid'], observed['npm']['sid']),
