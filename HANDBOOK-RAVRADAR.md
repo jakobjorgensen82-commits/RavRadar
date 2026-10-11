@@ -6,6 +6,10 @@ Den lokale 4.0.574 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
 
+## 89.202 Procesprøven genkender npm-opstart
+
+GitHub-kontrollen fandt først en fejl i en eksisterende procesprøve. npm kalder sig først npm og senere npm ci. Prøven genkendte ikke den første fase. Kun denne testforventning er rettet; den faktiske programfil, procesidentitet, skrivelås og afslutning skal stadig kontrolleres. Ny GitHub-kontrol skal bestå før levering.
+
 ## 89.201 Kort vejrhentning fra den aktuelle gemte generation
 
 Et gemt fremskridt kan tilhøre den generation, der var i drift før en vellykket vejrhentning. Når en ny generation er gemt, skal det gamle fremskridt fortsat afvises. Fejlen den 11. oktober i det korte forsøg opstod før DMI-hentning og skyldtes netop forskellig generation.

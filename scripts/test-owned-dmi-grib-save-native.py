@@ -129,7 +129,24 @@ def require_action_exit_after_proc_race(fd, error, remaining):
         raise error
 
 
+def fixed_npm_observation_title(command, node24):
+    # npm's actual CLI entry first sets process.title='npm', before npm.load
+    # sets 'npm ci'. This mutable title is not executable/ownership proof;
+    # the native caller still requires its retained pidfd and exact /proc/exe.
+    return command in (os.fsencode(node24), b'npm', b'npm ci')
+
+
 class OwnedProcExitObservation(unittest.TestCase):
+    def test_fixed_npm_title_accepts_only_runtime_and_both_actual_cli_phases(self):
+        node24 = Path('/own/runtime/bin/node')
+        for command in (os.fsencode(node24), b'npm', b'npm ci'):
+            with self.subTest(command=command):
+                self.assertTrue(fixed_npm_observation_title(command, node24))
+        for command in (b'', b'node', b'npm install', b'npm ci extra',
+                        b'npm-foreign', b'/foreign/bin/node'):
+            with self.subTest(command=command):
+                self.assertFalse(fixed_npm_observation_title(command, node24))
+
     def test_proc_exit_observation_requires_same_retained_pidfd_and_existing_budget(self):
         for code in (errno.ENOENT, errno.ESRCH, errno.EACCES, errno.EPERM):
             with self.subTest(code=code), mock.patch(
@@ -879,7 +896,7 @@ class OwnedRawDistributionNative(unittest.TestCase):
                              [os.fsencode(NODE24), os.fsencode(root / ENTRY), b'--fixed-distribution-worker'])
             self.assertEqual(Path(os.readlink(f'/proc/{npm_pid}/exe')).resolve(), NODE24)
             npm_command = small(f'/proc/{npm_pid}/cmdline').split(b'\0')[0]
-            self.assertTrue(npm_command in (os.fsencode(NODE24), b'npm ci'),
+            self.assertTrue(fixed_npm_observation_title(npm_command, NODE24),
                             'Actual npm may set its process title; no alternate executable')
             worker = observed['worker']
             self.assertEqual((worker['pgid'], worker['sid']), (worker_pid, worker_pid))

@@ -1,5 +1,7 @@
 # 2026-10-11 – afvist gammelt checkpoint og præcis kort protected-current-fortsættelse
 
+PR #569 er oprettet. Første præcise kildekørsel 38133848482/1 på b4d3385 fejlede i den eksisterende native npm-procestitelprøve, før fuld kildekontrol. Den officielle npm-indgang sætter først titlen npm og senere npm ci; testen accepterede kun den sidste fase og den faste Node-sti. Kun testobservationen udvides med præcis npm og en additiv positiv/negativ prøve. Faktisk Node24-executable, fastholdt procesidentitet, parent, gruppe/session, lås, pipes og fysisk afslutning bevares. Produktets proceskontrol ændres ikke. Den lille lokale prøve består; ny eksakt Linux-/kildekontrol og faktisk vejrlevering mangler stadig. Ingen ny vejrhentning er startet.
+
 38132323971/1 fejlede kl. 12.35 dansk tid før providerarbejde: BASELINE_MISMATCH, fordi cipher fra 38111216765-1 var bundet til den B, som eksisterede før den nye publicering. Ny lokal rettelse genoptager eksplicit fra autentisk current B/S og bevarer den gamle ciphergren; ingen ommærkning eller datakontrol sænkes. Normale måltests består, men GitHub-kontrol, merge og faktisk driftseffekt mangler. PR #567 er merget med kilde-/Linuxbevis; faktisk SAVE/UPLOAD er stadig åbne. Ejeren giver én ny kort kørsel efter rettelsen og fuld prioritet til vejrhentningsfejlen; ingen almindelig reservekørsel eller ændret cron. Alle fem mål er fortsat åbne.
 
 # Historik: 2026-10-11 – 4.0.574 driftsopfølgning efter faktisk fejlet vejrhentning
