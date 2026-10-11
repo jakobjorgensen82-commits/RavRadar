@@ -1,8 +1,9 @@
 # Lokal 4.0.574 samme-GRIB-læsning – 2026-10-11
 
+- Opfølgning 12. oktober: Første præcise kildekontrol fejlede på den gamle statiske watchdog-forventning til den nye interne adapter. Den afgrænsede testrettelse kræver præcis adapter, videresendte argumenter og samme ejede transaktionslæser; alle syv normale watchdogs bevares. Én målrettet suite består med 29 tests og syv negative kodeændringer; 27 øvrige gamle metoder er uændrede. Ny præcis Linux-kildekontrol og offentlig effekt afventes.
 - Samme originale åbne fil og Linux-læselease binder capturekontrol, ecCodes-læsning, EOF og copy-on-write-transaktion. Ukendt fil-/lease-/oprydningsstatus afvises; en genåbnet fil kan ikke erstatte den oprindelige.
 - Pending SIGIO drænes aldrig. Den første fejl bevares, og uafsluttede referencer fastholdes uden at godkende næste asset eller checkpoint.
-- Statisk helbyte-/inversekontrol består; 232 øvrige produktdefinitioner, 68 gamle testmetoders assertions og gammelt native-prefix bevares. Tre fixtures får egne faktiske filer. Fire nye normale Linux-native scenarier er forberedt, men UKØRTE; præcis Linux-kildekontrol og offentlig effekt mangler.
+- Statisk helbyte-/inversekontrol består; 232 øvrige produktdefinitioner, 68 gamle testmetoders assertions og gammelt native-prefix bevares. Tre fixtures får egne faktiske filer. Fire nye normale Linux-native scenarier er forberedt; direkte positiv Linux-kvittering, fuld præcis kildekontrol og offentlig effekt mangler. Samlet source-RED er ikke bevis for, at de er ukørte.
 - Ingen versions-, budget-, prioriterings-, modelbindings-, storage-ABI-, score-, admin- eller geometriændring. Kun producentens faktiske kildeidentitet ændres. Historiske originaler bevares; ingen SQL-installation eller merge under aktiv writer. Hele revisionen og de fem hovedmål er fortsat åbne.
 
 # Historik: 4.0.574 stopkontrol uafhængig af logudskrivning – 2026-10-11
