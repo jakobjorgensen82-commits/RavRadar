@@ -211,8 +211,10 @@ class WeatherAcquisitionWriterTests(unittest.TestCase):
             if other != fd:
                 os.dup2(other, fd)
             with mock.patch.object(os, "close", wraps=RAW_CLOSE) as closing:
-                self.blocked(owner)
+                with self.assertRaises(self.a.WeatherAcquisitionWriterError):
+                    self.a.release_weather_acquisition_writer(owner)
                 self.assertEqual(closing.call_count, 0)
+            self.blocked(owner)
             self.assertEqual(RAW_FSTAT(fd).st_ino, replacement.stat().st_ino)
             self.assertTrue(self.f.file.exists())
         finally:
@@ -232,9 +234,9 @@ class WeatherAcquisitionWriterTests(unittest.TestCase):
             with mock.patch.object(os, "unlink", wraps=RAW_UNLINK) as unlink:
                 with self.assertRaises(self.a.WeatherAcquisitionWriterError):
                     self.a.release_weather_acquisition_writer(owner)
-                self.blocked(owner)
                 self.assertEqual(closed.call_count, 1)
                 self.assertEqual(unlink.call_count, 0)
+        self.blocked(owner)
         self.assertEqual(self.f.file.read_bytes(), b"replacement")
 
     def test_replaced_cache_and_root_identities_refuse(self):
@@ -278,8 +280,8 @@ class WeatherAcquisitionWriterTests(unittest.TestCase):
             with self.assertRaises(self.a.WeatherAcquisitionWriterError) as failure:
                 self.a.release_weather_acquisition_writer(owner)
             self.assertEqual(failure.exception.code, "WEATHER_ACQUISITION_WRITER_CLOSE_UNPROVED")
-            self.blocked(owner)
             self.assertEqual(closing.call_count, 1)
+        self.blocked(owner)
         RAW_FSTAT(self.f.handles[0][0])
 
     def test_falsy_first_close_failure_survives_secondary_probe(self):
