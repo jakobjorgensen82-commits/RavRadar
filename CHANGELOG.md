@@ -1,4 +1,13 @@
-# Lokal 4.0.571 – 2026-10-11
+# Lokal 4.0.572 – 2026-10-11
+
+- Samler fem allerede valgte identifikationsfakta i gennemgået DA/DE/EN-ordlyd på 861/893/828 tegn. Samtlige påstande, negationer og forbehold bevares; ingen nye fakta eller spørgsmålsspecifik routing.
+- Bevarer ekstra sikkerhed, kontekst og usikkerhed. Hele svaret skal passe inden for 900 tegn; ellers gives fortsat ærlig fokusafklaring, ikke afskæring eller de første få fakta.
+- Normal standardmåltest består med syv nye forløb samt hidtidige kontekst-, sprog-, privatlivs-, kvote-, svar- og bindingskontroller; nul rigtigt netværk. Den kontrollerede reproduktion beviser ikke browserkaldets skjulte faktaudvalg.
+- Offentlig 570 gav fortsat kun fokus på det kendte rav/sten-spørgsmål; offentlig 572-effekt er åben. Et ukendt ravudstyrsspørgsmål gav nu ærlig usikkerhed i 570, ikke som effekt af denne kandidat.
+- I forhold til den gennemgåede RAW571-kandidat tilføjes kun to yderligere ubundne funktionelle blade. I68/C66/continuation/ABI, 38-faktabank og SHA 9926586b, klientens normaliserede kode, scoreformel, geometri og historiske originaler bevares. Geodata ændres kun i topversionen.
+- RAW571-kildekontrol 38101181608/1 på præcis d3feb3692288c23b778b9e8461cde1e4b29d7736 er faktisk bestået: alle otte native prøver og native-current-trin 13 bestod; fuld kildekontrol i trin 14 bestod kl. 03.24.55, uændret kildetræ i trin 15 kl. 03.24.56 og proof-upload i trin 16 kl. 03.24.57. Hele jobbet afsluttede med succes kl. 03.25.02 dansk tid den 11. oktober. Det lille kildebevis er særskilt verificeret mod head og den uafhængigt beregnede kildedigest cf07a45c3eab1da16d18d01c6bbfbe79e9055cca84734c9d78103ac099964e33. De tidligere native fejl og rettelser bevares som historik nedenfor; kildebeviset er ikke produktionslevering. 572 forbereder én samlet levering af den gennemgåede RAW571-kandidat og de to yderligere assistentrettelser. Før levering kræves 572-kandidatens egen præcise kildekontrol og en ledig normal writer. Offentlig 570 er leveret; offentlig 572-effekt og alle fem hovedmål er fortsat åbne. Ingen ny vejrhentning eller produktionshandling følger af denne dokumentation. Decoder-/190000-SQL-/RESTORE-grænser er uændrede; ingen source33-genforsøg, modelbundet compound-integration eller SQL-installation.
+
+# Historik: Lokal 4.0.571 – 2026-10-11
 
 - Samler en isoleret 17-blads kildekandidat til rå DMI-cachegemning gennem fast Node24-action og låst officiel cache-API. Klargøring og gemning holdes adskilt; ukendt procesophør eller ejerskab giver ingen normal kvittering.
 - Bruger egen kooperativ skrivelås og faktisk ejet procesgruppe. Actionens afhængigheder installeres i dens egen .npm-cache; ingen bred bruger-cachekopi. Eksisterende vejrsproducenter vender tilbage til Node22 efter klargøring.

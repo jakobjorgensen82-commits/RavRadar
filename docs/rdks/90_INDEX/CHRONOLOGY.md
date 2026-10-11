@@ -1,4 +1,12 @@
-# 2026-10-11 – lokal 4.0.571, isoleret rå-SAVE-kildekandidat
+# 2026-10-11 – lokal 4.0.572, samlede identifikationsfakta
+
+Offentlig 570 gav ærlig fokusafklaring, men intet fagligt svar på et enkelt kendt spørgsmål om rav og sten. De valgte fakta-id'er er ikke offentlige. Den lokale kandidat reproducerer én relevant fem-fakta-kombination og samler dens eksisterende påstande og forbehold på DA/DE/EN uden afskæring eller vilkårligt deludvalg.
+
+Den normale standardmåltest består med de syv nye forløb og de hidtidige kontroller, nul rigtige netværkskald. Ekstra sikkerhed, kontekst og usikkerhed forbliver obligatoriske; den eksisterende 900-tegnsgrænse og fokusafklaring består. Offentlig effekt, korrekt valg af fakta og fuld compound-dækning er fortsat åbne.
+
+De to yderligere funktionelle filer i forhold til den gennemgåede RAW571-kandidat ligger uden for I68/C66 og continuation12; 38 fakta og SHA 9926586b er uændrede. Compound571 og source33 holdes adskilt. RAW571-kildekontrol 38101181608/1 på præcis d3feb3692288c23b778b9e8461cde1e4b29d7736 er faktisk bestået: alle otte native prøver og native-current-trin 13 bestod; fuld kildekontrol i trin 14 bestod kl. 03.24.55, uændret kildetræ i trin 15 kl. 03.24.56 og proof-upload i trin 16 kl. 03.24.57. Hele jobbet afsluttede med succes kl. 03.25.02 dansk tid den 11. oktober. Det lille kildebevis er særskilt verificeret mod head og den uafhængigt beregnede kildedigest cf07a45c3eab1da16d18d01c6bbfbe79e9055cca84734c9d78103ac099964e33. De tidligere native fejl og rettelser bevares som historik nedenfor; kildebeviset er ikke produktionslevering. 572 forbereder én samlet levering af den gennemgåede RAW571-kandidat og de to yderligere assistentrettelser. Før levering kræves 572-kandidatens egen præcise kildekontrol og en ledig normal writer. Offentlig 570 er leveret; offentlig 572-effekt og alle fem hovedmål er fortsat åbne. Ingen ny vejrhentning eller produktionshandling følger af denne dokumentation. Ingen provider- eller SQL-handling følger.
+
+# Historik: 2026-10-11 – lokal 4.0.571, isoleret rå-SAVE-kildekandidat
 
 Den gennemgåede 17-blads rå-cachekandidat er sammensat lokalt, ikke aktiveret. Fast Node24-action, låst officiel cache-API og faktisk ejet procesgruppe adskiller klargøring fra gemning. Ukendt ophør eller ejerskab må ikke give en normal gemningskvittering eller frigive den kooperative lås.
 

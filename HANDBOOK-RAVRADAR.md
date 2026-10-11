@@ -1,10 +1,24 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.571
+**Håndbogsversion:** 4.0.572
 
-Den lokale 4.0.571 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+Den lokale 4.0.572 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.197 Identifikationssvar med alle forbehold
+
+Et enkelt spørgsmål om at kende rav fra sten fik i offentlig 570 kun en anmodning om at vælge et snævrere emne. Det undgik den tidligere forkerte forklaring, men besvarede ikke spørgsmålet. Den lokale 572-rettelse mindsker gentagelse mellem allerede godkendte oplysninger; offentlig effekt er endnu ikke kontrolleret.
+
+Når alle fem relevante faktablokke er valgt, samles de i én gennemgået tekst på dansk, tysk eller engelsk. Oplysningerne om vægt, synkning, UV, efterligninger og forsigtige tests bevares. UV er fortsat kun et spor, og værdifulde, usikre eller usædvanlige fund kræver faglig vurdering. Der tilføjes ingen nye faglige påstande.
+
+Andre valgte oplysninger, sikkerhed og usikkerhed må ikke udelades. Hele svaret skal fortsat passe inden for 900 tegn. Ellers beder assistenten om fokus; den klipper ikke forbehold af og vælger ikke blot de første oplysninger. Et manglende fakta-id får ikke automatisk de øvrige oplysninger med.
+
+Den normale lokale klient- og serverprøve består med de syv nye forløb og de hidtidige sprog-, privatlivs-, kvote-, kontekst- og bindingskontroller. Prøven bruger egne syntetiske svar uden netværk. Det offentlige svar viser ikke de interne valgte fakta, så prøven beviser ikke, at browserkaldet havde netop denne kombination.
+
+I forhold til den gennemgåede RAW571-kandidat ændres yderligere kun serverens sammensætning og den eksisterende test. Faktabank, klient, modelbindinger, scoreformel, originaler og geometri bevares. Versionsfelter følger releasen; geodata ændres alene i topversionen. Bred forståelse af sammensatte spørgsmål, den separate vidensudvidelse og offentlig 572-effekt er fortsat åbne.
+
+RAW571-kildekontrol 38101181608/1 på præcis d3feb3692288c23b778b9e8461cde1e4b29d7736 er faktisk bestået: alle otte native prøver og native-current-trin 13 bestod; fuld kildekontrol i trin 14 bestod kl. 03.24.55, uændret kildetræ i trin 15 kl. 03.24.56 og proof-upload i trin 16 kl. 03.24.57. Hele jobbet afsluttede med succes kl. 03.25.02 dansk tid den 11. oktober. Det lille kildebevis er særskilt verificeret mod head og den uafhængigt beregnede kildedigest cf07a45c3eab1da16d18d01c6bbfbe79e9055cca84734c9d78103ac099964e33. De tidligere native fejl og rettelser bevares som historik nedenfor; kildebeviset er ikke produktionslevering. 572 forbereder én samlet levering af den gennemgåede RAW571-kandidat og de to yderligere assistentrettelser. Før levering kræves 572-kandidatens egen præcise kildekontrol og en ledig normal writer. Offentlig 570 er leveret; offentlig 572-effekt og alle fem hovedmål er fortsat åbne. Ingen ny vejrhentning eller produktionshandling følger af denne dokumentation. Alle særskilte data- og installationstilladelser består; ingen SQL-installation eller bindingsændring følger.
 
 ## 89.196 Isoleret kildekandidat til ejet rå-cachegemning
 
