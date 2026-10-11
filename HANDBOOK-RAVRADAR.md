@@ -1,10 +1,38 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.570
+**Håndbogsversion:** 4.0.571
 
-Den lokale 4.0.570 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+Den lokale 4.0.571 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.196 Isoleret kildekandidat til ejet rå-cachegemning
+
+Den lokale 571-kandidat samler klargøring og gemning af rå DMI-cache i et afgrænset forløb. Den bruger den faste lokale action, Node24 og den låste officielle cache-API. Kandidaten er endnu ikke aktiveret eller produktionsverificeret.
+
+Programmet skal eje sin procesgruppe og den kooperative lokale skrivelås. Hvis ophør eller ejerskab er uklart, gives ingen normal kvittering. Låsen må ikke frigives som om arbejdet var afsluttet. Dette er ikke bevis for, at alle andre skrivere deltager, eller at tab af hele runneren er løst.
+
+Klargøring af afhængigheder betyder ikke, at data er gemt. En gemningskvittering kræver normal API-afslutning, faktisk ophør af den ejede procesgruppe og frigivelse af egen lås. Et svar uden HTTP-fejl er ikke nok, hvis API'en afviser finaliseringen. Afhængigheder bruger kun actionens egen cache; ingen bred bruger-cache kopieres.
+
+De samlede lokale workflow-prøver består 20 af 20, og rækkefølgeprøven består. Den lokale afhængighedsprøve kunne ikke importere pakken, fordi node_modules manglede. Første faktiske kildekontrol 38097743747/1 på head 1359704b4d82cc3d911a586dd4a3a6e9b593cbf4 viste 18 beståede Node-prøver. Ved den gennemlæste aflæsning stod trin 11 derefter stille uden Python-resultater. Dette er ikke en terminal CI-fejl eller et bestået Linux-bevis.
+
+Tre Python-prøver erstattede midlertidigt os.close, mens de også startede en virkelig underproces. Erstatningen ramte dermed underprocessens rør og kunne holde dem åbne. En lille, afgrænset Windows-prøve viste denne mekanisme; den viste ikke Linux-kørslens faktiske hæng. Kun testen er rettet: kontrollen med den konkurrerende proces ligger nu uden for erstatningen. Alle 19 tilfælde og gamle kontroller bevares, og én kontrol af den forventede afvisning er tilføjet. De tre berørte normale prøver består lokalt på Windows med uændret produktkode.
+
+Den efterfølgende kildekontrol 38099046598/1 på præcis 0c3076364384972d3e798318ef68b1926aab0bd5 fejlede kl. 02.41.36 dansk tid den 11. oktober. De 18 JavaScript-prøver bestod på 570 ms, og alle 19 Python-prøver bestod faktisk på Linux på 0,656 s. De seks native prøver gav fire beståede og to fejl på 1,866 s. Med varm offline-cache afsluttede npm med kode 1 i stedet for 0. Med tom cache manglede den forventede npm-debuglog. Det er en fejl i kildekontrollen, ikke en fejlet vejrhentning eller et samlet bestået rå-cacheforløb.
+
+Begge npm-konfigurationskilder pegede på samme /dev/null. Den officielle npm-kode afviser en sådan gentagelse; det understøtter årsagsforklaringen, men en bestået native genprøve mangler. Den lokale rettelse bruger to forskellige tomme filer i actionens egen, eksisterende cache. Filerne oprettes eksklusivt; identitet og faktisk lukning kontrolleres, og hver fil kontrolleres igen før oprydning. Første fejl bevares. Ukendt ophør må ikke give oprydning eller normal kvittering. Cachekey, låste afhængigheder, tjeneste, autentificering og tidsgrænser ændres ikke.
+
+Den afgrænsede Node-prøve består med otte nye delprøver, ni noder med overordnet prøve, uden fejl eller skip på 2,55 s. Den bruger faktisk fil-I/O med en kontrolleret npm-proces, ikke en rigtig installation eller SDK-gemning. Gamle statiske assertions bevares; de tidligere 20 protokolprøver er ikke gentaget. Native måltesten har 35 additive linjer og bestået lokal Python-syntaks, men er ikke kørt på Linux efter rettelsen. Ny præcis Linux-kildekontrol, alle seks native prøver og den fulde kildegate afventes. Ingen prøve springes over, og ingen tidsgrænse svækkes.
+
+Den næste faktiske kildekontrol 38100716639/1 på præcis 44f54b11fa23533b6b210815202110b65ea549eb fejlede kl. 03.07.37 dansk tid den 11. oktober. Alle 18 JavaScript- og 19 Python-prøver bestod på Linux. De seks native prøver gav fem beståede og én fejl i testens proceskontrol. Den kolde offline-prøve bestod med den forventede manglende pakke og korrekte, ejede konfigurationsfiler. Varm klargøring nåede klar-kvitteringen, men testen fik ikke adgang til at læse procesoplysninger, mens Node afsluttede. Den tidligere ventestatus ovenfor er dermed historisk; hele forløbet er ikke bestået. Dette er ikke en fejl i produktionsvejrhentningen.
+
+Kun testens proceskontrol rettes nu. Hvis adgangen til procesoplysninger forsvinder, skal det allerede åbnede handle til netop samme proces bevise dens afslutning inden for den oprindelige resttid. En levende eller ukendt proces giver stadig fejl. Ingen frist forlænges, ingen prøve springes over, og npm-produktet ændres ikke. To nye, afgrænsede helperprøver består på 0,002 s med kontrollerede input. De seks gamle forløb bevares; normalmålet har derfor otte prøver. Alle otte skal stadig bestå faktisk på Linux, og den nye præcise kildekontrol mangler.
+
+Den allerede gemte observation omkring kl. 02.53 viste naturlig 38098034982 på main 63751c6 aktiv i DMI-trin 79 uden et fejlet trin. Der er ikke foretaget ny polling eller produktionshandling som del af denne dokumentation.
+
+570 bestod kildekontrol 38096235154/1 kl. 01.57.18 dansk tid den 11. oktober og er merget til main 63751c6. Kode-only 38096843930/1 på main 63751c6 afsluttede faktisk Edge kl. 02.06.43, Pages kl. 02.08.10, offentlig 210/673-kontrol kl. 02.08.54 og terminal succes kl. 02.09.02 dansk tid. Gemte runtime-, checkpoint- og private publiceringstrin bestod; ingen ny SQL-installation udledes. 567–569 er også merget. Naturlig 38083296276 afsluttede offentlig 210/673-levering kl. 01.23.32. Tidligere ventestatusser i de gamle kapitler er historik.
+
+Alle fem hovedmål er åbne. Samlet writer, CP-cohort, SAVE/RESTORE, capture, runner-tab, fjernholdbarhed og samlet tidsbudget er ikke afsluttet. Decoder-, numerisk 190000-SQL- og krypteret RESTORE-afklaring afventer fortsat. I68/C66, continuation, lager-ABI, scoreformel, geometri, originaler og de tidligere assistent-/profilrettelser bevares. Geodata ændres kun i topversionen. Ingen nye tilladelser eller produktionshandlinger følger.
 
 ## 89.195 Profilens ejer kontrolleres før rollebrug
 

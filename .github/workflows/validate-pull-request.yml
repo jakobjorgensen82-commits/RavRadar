@@ -54,6 +54,35 @@ jobs:
           -r requirements-geometry.txt
           -r requirements-copernicus.txt
 
+      # The fixed local cache action uses Node24. Exercise it only against its
+      # own synthetic native fixture; never invoke the real cache service here.
+      - name: Set up Node24 for isolated acquisition contracts
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install exact local cache-action dependencies without scripts
+        working-directory: .github/actions/save-owned-dmi-grib
+        env:
+          npm_config_cache: ${{ github.workspace }}/.github/actions/save-owned-dmi-grib/.npm-cache
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Verify locked cache API distribution without runtime calls
+        run: node scripts/test-owned-dmi-cache-dependency.mjs
+
+      - name: Validate isolated acquisition ownership and raw-save cohort
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test scripts/test-weather-acquisition-writer.mjs
+          python -B scripts/test-weather-acquisition-writer.py
+          python -B scripts/test-owned-dmi-grib-save-native.py --node24-path "$(command -v node)"
+
+      - name: Restore Node22 for existing source validation
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
       # En ra PR-checkout har med vilje ikke Supabase-hemmeligheder og kan
       # derfor ikke hydrere den centrale admin-sandhed, som fuld produktion
       # kraever. De kildebaserede gates her maa aldrig bygge eller deploye.
