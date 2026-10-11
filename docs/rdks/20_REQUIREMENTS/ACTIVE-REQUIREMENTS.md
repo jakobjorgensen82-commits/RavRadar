@@ -1,4 +1,14 @@
-# 4.0.574 driftsrettelse – kort fortsættelse fra den aktuelle beskyttede generation
+# 4.0.574 driftsrettelse – gem valideret Copernicus-arbejdsstatus før hentning
+
+Det seneste korte forsøg den 11. oktober fejlede efter en timeout og recovery-timeout. Kontrollen før providerarbejde havde valideret en projektion til den aktuelle reference i hukommelsen. Slutkontrollen afviste derefter en udløbet tidsreference i kildeoplysningerne. Forløbet passer med, at gemningen ikke nåede at blive færdig; det præcise afbrydelsespunkt er ikke målt.
+
+Den lokale rettelse giver kun trin 92 flaget --persist-validated-rebase. Den eksisterende validering skal godkende source-stage og den præcise donorbankprojektion; alle inputbytes genkontrolleres før den normale forberedte JSON-snapshot erstatter alene source-stage atomisk. Den positive originalbank og shadow ændres ikke. Forsøgstidspunkter, friskhed, tidsbudgetter og den strenge slutkontrol bevares. IN_PROGRESS bliver ikke READY, og rettelsen ændrer ikke manglende par til gyldige data.
+
+Rå SAVE og krypteret UPLOAD lykkedes faktisk i dette forsøg. Det er gemningsbevis, ikke en vellykket vejrhentning, en senere restore eller et deploy. Cron er gemt inaktivt efter ejerens udtrykkelige anmodning; denne rettelse genaktiverer den ikke.
+
+Den normale workflow-måltest og rangechecker-v2 består lokalt. Source-stage-måltesten kræver xarray, som mangler i den lokale Windows-runtime; den er ikke kørt dér, og der er ikke installeret eller indsat en shim. Den skal køre i den normale Linux-kildekontrol. Præcis kildekontrol og rettelsens faktiske driftseffekt er fortsat åbne. Samme version 4.0.574 bevares. Vejrhentning har eneste prioritet; alle fem hovedmål er åbne. Tidligere udsagn nedenfor om ubrugt kortforsøg og ubevist cacheupload er historiske.
+
+# Historik: 4.0.574 driftsrettelse – kort fortsættelse fra den aktuelle beskyttede generation
 
 PR #569 er oprettet. Første præcise kildekørsel 38133848482/1 på b4d3385 fejlede i den eksisterende native npm-procestitelprøve, før fuld kildekontrol. Den officielle npm-indgang sætter først titlen npm og senere npm ci; testen accepterede kun den sidste fase og den faste Node-sti. Kun testobservationen udvides med præcis npm og en additiv positiv/negativ prøve. Faktisk Node24-executable, fastholdt procesidentitet, parent, gruppe/session, lås, pipes og fysisk afslutning bevares. Produktets proceskontrol ændres ikke. Den lille lokale prøve består; ny eksakt Linux-/kildekontrol og faktisk vejrlevering mangler stadig. Ingen ny vejrhentning er startet.
 

@@ -1,4 +1,12 @@
-# 2026-10-11 – afvist gammelt checkpoint og præcis kort protected-current-fortsættelse
+# 2026-10-11 – Copernicus-projektion skal gemmes før tidsbegrænset hentning
+
+Det seneste kortforsøg fejlede efter timeout og recovery-timeout. Kontrollen før providerarbejde havde valideret en projektion til den aktuelle reference i hukommelsen. Slutkontrollen afviste derefter en udløbet tidsreference i kildeoplysningerne. Forløbet passer med, at gemningen ikke nåede at blive færdig; det præcise afbrydelsespunkt er ikke målt.
+
+Den lokale rettelse gemmer alene den allerede validerede, donorbankbundne IN_PROGRESS-projektion atomisk før providerarbejde, efter frisk kontrol af inputbytes. Originalbank/shadow, forsøgstidspunkter, friskhed, budgetter og streng slutkontrol bevares. Lokal workflow-måltest og rangechecker-v2 består; source-stage-prøven kræver manglende lokal xarray og afventer faktisk normal Linux-CI. Ingen installation eller shim blev brugt.
+
+Rå SAVE og krypteret UPLOAD er faktisk bekræftet, ikke vejr-/deploysuccess eller senere restore. Cron er gemt inaktivt efter ejerordre. Version 4.0.574 og alle fem åbne mål bevares; øvrige leverancer afventer vejrhentningsrettelsen. Ældre status nedenfor er historisk.
+
+# Historik: 2026-10-11 – afvist gammelt checkpoint og præcis kort protected-current-fortsættelse
 
 PR #569 er oprettet. Første præcise kildekørsel 38133848482/1 på b4d3385 fejlede i den eksisterende native npm-procestitelprøve, før fuld kildekontrol. Den officielle npm-indgang sætter først titlen npm og senere npm ci; testen accepterede kun den sidste fase og den faste Node-sti. Kun testobservationen udvides med præcis npm og en additiv positiv/negativ prøve. Faktisk Node24-executable, fastholdt procesidentitet, parent, gruppe/session, lås, pipes og fysisk afslutning bevares. Produktets proceskontrol ændres ikke. Den lille lokale prøve består; ny eksakt Linux-/kildekontrol og faktisk vejrlevering mangler stadig. Ingen ny vejrhentning er startet.
 

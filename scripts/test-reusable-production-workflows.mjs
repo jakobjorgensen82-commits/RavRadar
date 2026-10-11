@@ -447,6 +447,15 @@ for (const stepName of [
 const copernicusStageGate = indentedBody(
   build, '      - name: Require reusable Copernicus source stage before combined current closure',
 );
+const copernicusPreProviderInspect = indentedBody(
+  build, '      - name: Inspect target-bound Copernicus source stage after fresh DMI',
+);
+assert.match(copernicusPreProviderInspect, /--persist-validated-rebase/,
+  'normal pre-provider caller durably materializes a validated rebase before bounded acquisition');
+assert.equal((build.match(/--persist-validated-rebase/g) || []).length, 1,
+  'stage-only materialization belongs only to the explicit pre-provider caller');
+assert.doesNotMatch(copernicusStageGate, /--allow-nonmatching-seal|--persist-validated-rebase/,
+  'terminal source-stage gate reads exact on-disk evidence without rebase or writes');
 const safeAcquisitionArtifact = indentedBody(
   build, '      - name: Preserve safe weather acquisition diagnostics before terminal gates',
 );
