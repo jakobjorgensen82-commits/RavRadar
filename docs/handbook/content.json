@@ -2,8 +2,14 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.574",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-10-11",
+  "updatedAt": "2026-10-12",
   "sections": [
+    {
+      "id": "dmi-same-open-grib-read-lease-2026-10-11",
+      "chapter": "89.210",
+      "title": "Den samme vejrfil skal læses og kontrolleres",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Kontrol og læsning skal følge samme åbne vejrfil, ikke blot samme filnavn.</div><p>Den lokale DMI-opfølgning fastholder det oprindelige filhåndtag og en Linux-læselås fra kontrollen af registreret indhold gennem læsning til filens slutning og den isolerede transaktion. En ny åbning af samme filnavn kan ikke erstatte dette bevis.</p><p>Brud på låsen, et ændret mål for filnavnet eller uafklaret afslutning stopper videre arbejde. De faktiske uafsluttede referencer bevares, og ændringer i den isolerede transaktion rulles tilbage. Et afventende signal med ukendt oprindelse fjernes ikke blot for at kunne fortsætte; den første fejl bevares.</p><p>Fire Linux-prøver er forberedt med egne små kunstige filer: normal læsning, låsebrud, udskiftning af filnavnets mål og fremmed signal før ejerskab. De bruger den normale læser og faktiske filhåndtag; testprocessens ophør skal bevises før testfilerne fjernes. Direkte positiv Linux-kvittering for alle fire mangler endnu; samlet source-RED beviser ikke ukørte prøver. Statisk byte- og kodekontrol er ikke native bevis; næste gate er normal Linux-kildekontrol på det præcise head.</p><p>Dette er samme 4.0.574 og endnu ikke offentlig levering eller bevis for en ny normal vejrgeneration. Tidsbudgetter, kildeprioritet, modelbindinger, storage-ABI, scoreformel, administratorpunkter, geometri og historiske originaler bevares. Producentens kildeidentitet følger de faktiske bytes. Senere filnavnegenbrug, holdbar gemning og upload, tab af runner, national kapacitet og alle fem hovedmål er fortsat åbne. Ingen merge eller produktionsændring sker under aktiv writer. Ældre kapitler bevarer deres historiske evidens.</p><p>Opfølgning 12. oktober: Første præcise kildekontrol stoppede på en gammel testforventning til den nye interne læseadapter. De syv normale kald har stadig deres stopkontrol. Den rettede kodekontrol kræver præcise argumenter og samme ejede transaktionslæser; ekstra ubeskyttede kald og ændrede stopkontroller afvises. Én målrettet suite består med 29 tests, inklusive syv negative kodeændringer. Det er ikke offentlig levering; ny præcis Linux-kildekontrol og dokumenterede resultater for låseprøverne afventes.</p>"
+    },
     {
       "id": "dmi-watchdog-independent-log-sink-2026-10-11",
       "chapter": "89.206",

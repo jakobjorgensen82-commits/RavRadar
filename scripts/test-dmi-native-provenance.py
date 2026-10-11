@@ -3492,3 +3492,318 @@ assert producer.native_component_source(
 ) is None
 
 print("OK: DMI producer and import-safe native provenance verifier have exact parity.")
+
+
+# One normal-caller Linux lease regression. The existing tests above keep their
+# decoder stubs; this child imports the actual pinned ecCodes in a fresh process.
+# No provider, received/private original, kernel mock or new product executor.
+if sys.platform == "linux":
+    import os as _lease_os
+    import select as _lease_select
+    import shutil as _lease_shutil
+    import signal as _lease_signal
+    import subprocess as _lease_subprocess
+    import time as _lease_time
+
+    _lease_native = r"""
+import copy, errno, fcntl, hashlib, importlib.util, json, os, pathlib, signal, sys
+if sys.stdin.buffer.read(1) != b"G":
+    raise SystemExit(78)
+import eccodes as ec
+assert ec.codes_get_api_version() == "2.48.2"
+source, directory, scenario = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.argv[3]
+os.environ["DMI_BULK_RAW_DIR"] = str(directory)
+sys.path.insert(0, str(source.parent))
+spec = importlib.util.spec_from_file_location("lease_native_producer", source)
+p = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = p
+spec.loader.exec_module(p)
+assert p.RAW_DIR.resolve() == directory.resolve()
+path = directory / "own-two-message.grib"
+gid = ec.codes_grib_new_from_samples("regular_ll_sfc_grib1")
+try:
+    for key, value in (("Ni", 3), ("Nj", 3),
+            ("latitudeOfFirstGridPointInDegrees", 56.5),
+            ("latitudeOfLastGridPointInDegrees", 56.7),
+            ("longitudeOfFirstGridPointInDegrees", 9.),
+            ("longitudeOfLastGridPointInDegrees", 9.2),
+            ("iDirectionIncrementInDegrees", .1), ("jDirectionIncrementInDegrees", .1),
+            ("scanningMode", 64), ("resolutionAndComponentFlags", 128),
+            ("dataDate", 20261009), ("dataTime", 0), ("stepRange", "0")):
+        ec.codes_set(gid, key, value)
+    with path.open("xb") as writer:
+        for parameter, value in ((49, .25), (50, -.5)):
+            ec.codes_set(gid, "indicatorOfParameter", parameter)
+            ec.codes_set_values(gid, [value] * 9)
+            writer.write(ec.codes_get_message(gid))
+finally:
+    ec.codes_release(gid)
+original = path.read_bytes()
+assert 0 < len(original) < 1024 * 1024
+initial = path.stat()
+when = "2026-10-09T00:00:00Z"
+capture = {"collection": "dkss_lf", "modelRun": when, "validTime": when,
+    "itemId": "own-lease-native", "acquiredAt": when,
+    "assetIdentitySha256": hashlib.sha256(b"own-lease-native").hexdigest(),
+    "assetSizeBytes": len(original), "contentLengthBytes": len(original),
+    "contentSha256": hashlib.sha256(original).hexdigest()}
+manifest = p.load_raw_cache_manifest()
+manifest.setdefault("assets", {})[path.name] = capture
+p.save_raw_cache_manifest(manifest)
+manifest_bytes = p.raw_cache_manifest_path().read_bytes()
+sentinel = directory / "original-bank.sentinel"
+sentinel.write_bytes(b"old B/S history - never rewritten")
+sentinel_bytes = sentinel.read_bytes()
+zone = {"id": "PART::SYNTHETIC", "parentZoneId": "SYNTHETIC", "coastalPart": True,
+    "coastType": "limfjord", "lat": 56.6, "lon": 9.1}
+output = {"generatedAt": when, "zones": {zone["id"]: {
+    **p.sampling_identity(zone), "hourly": {}, "gridPoints": {}, "collections": {}}}}
+diagnostics, outcomes = {}, {}
+before = copy.deepcopy((output, diagnostics, outcomes))
+seen, flushes = [], []
+
+if scenario == "foreign-pending":
+    # A real thread-directed kernel signal arrives AFTER the product preflight,
+    # BEFORE its first open has acquired any descriptor/handler/read lease.
+    # Only the launch/open observation is wrapped; signal and filesystem APIs
+    # remain real. The dedicated child exits with the foreign signal pending.
+    import threading
+    missing = directory / "own-absent-before-acquisition.grib"
+    assert not missing.exists()
+    original_open = p.os.open
+    original_decode = p.codes_grib_new_from_file
+    observed_errors, decode_calls, validator_calls = [], [], []
+    entry_mask = signal.pthread_sigmask(signal.SIG_BLOCK, set())
+    entry_handler = signal.getsignal(signal.SIGIO)
+    assert signal.SIGIO not in entry_mask and signal.SIGIO not in signal.sigpending()
+    assert entry_handler == signal.SIG_DFL
+
+    def open_with_foreign_signal(file, flags, *args, **kwargs):
+        if file == missing:
+            assert not observed_errors
+            assert signal.SIGIO in signal.pthread_sigmask(signal.SIG_BLOCK, set())
+            assert signal.getsignal(signal.SIGIO) == entry_handler
+            assert signal.SIGIO not in signal.sigpending()
+            signal.pthread_kill(threading.get_ident(), signal.SIGIO)
+            assert signal.SIGIO in signal.sigpending()
+            try:
+                return original_open(file, flags, *args, **kwargs)
+            except BaseException as exc:
+                observed_errors.append(exc)
+                raise
+        return original_open(file, flags, *args, **kwargs)
+
+    def observe_decode(handle):
+        decode_calls.append(handle)
+        return original_decode(handle)
+
+    def observe_validator(*args):
+        validator_calls.append(args)
+        raise AssertionError("foreign pending signal reached the normal validator")
+
+    p.os.open = open_with_foreign_signal
+    p.codes_grib_new_from_file = observe_decode
+    try:
+        try:
+            p.process_grib_transactionally(missing, "dkss_lf", when, when, [zone],
+                output, diagnostics, current_part_outcomes=outcomes,
+                current_stage_validator=observe_validator,
+                failure_flush=lambda: flushes.append(True))
+        except p.GribReadUnproven as failure:
+            assert len(observed_errors) == 1
+            assert type(observed_errors[0]) is FileNotFoundError
+            assert observed_errors[0].errno == errno.ENOENT
+            assert failure.__cause__ is observed_errors[0]
+        else:
+            raise AssertionError("foreign pending signal was consumed or accepted")
+        assert len(p._UNSETTLED_GRIB_READS) == 1
+        retained = p._UNSETTLED_GRIB_READS[0]
+        assert retained.retained and not retained.active and not retained.lease_acquired
+        assert not retained.handler_installed and not retained.close_attempted
+        assert retained.fd is None and retained.handle is None and retained.capture is None
+        assert retained.primary is observed_errors[0]
+        assert isinstance(retained.secondary, p.GribReadUnproven)
+        assert str(retained.secondary) == "DMI_GRIB_READ_SIGNAL_RESTORE_UNPROVED"
+        assert set(retained.old_mask) == set(entry_mask)
+        assert signal.SIGIO in signal.sigpending()
+        assert signal.SIGIO in signal.pthread_sigmask(signal.SIG_BLOCK, set())
+        assert signal.getsignal(signal.SIGIO) == entry_handler
+        assert not decode_calls and not validator_calls and not flushes
+        assert (output, diagnostics, outcomes) == before
+        try:
+            p.process_grib_transactionally(path, "dkss_lf", when, when, [zone],
+                output, diagnostics, current_part_outcomes=outcomes,
+                current_stage_validator=observe_validator,
+                failure_flush=lambda: flushes.append(True))
+        except p.GribReadUnproven as failure:
+            assert str(failure) == "DMI_GRIB_PREVIOUS_READ_UNSETTLED"
+        else:
+            raise AssertionError("retained signal state allowed a later normal reader")
+        assert len(observed_errors) == 1 and not decode_calls and not validator_calls and not flushes
+        assert (output, diagnostics, outcomes) == before
+        assert signal.SIGIO in signal.sigpending()
+        assert signal.SIGIO in signal.pthread_sigmask(signal.SIG_BLOCK, set())
+        assert signal.getsignal(signal.SIGIO) == entry_handler
+        assert sentinel.read_bytes() == sentinel_bytes
+        assert p.raw_cache_manifest_path().read_bytes() == manifest_bytes
+        assert path.read_bytes() == original and not missing.exists()
+    finally:
+        p.os.open = original_open
+        p.codes_grib_new_from_file = original_decode
+    print(json.dumps({"case": scenario, "foreignSignalPending": True,
+        "preOwnership": True, "maskRetained": True, "handlerUnchanged": True,
+        "firstCauseExact": True, "noDecodeValidatorFlushCommit": True,
+        "nextReaderRefused": True, "originalsPreserved": True}), flush=True)
+    raise SystemExit(0)  # no sigwait/unmask/handler substitution during own teardown
+actual_read = p.codes_grib_new_from_file
+def observe(handle):
+    fd = handle.fileno()
+    identity = os.fstat(fd)
+    assert (identity.st_dev, identity.st_ino) == (initial.st_dev, initial.st_ino)
+    assert fcntl.fcntl(fd, fcntl.F_GETLEASE) == fcntl.F_RDLCK
+    seen.append((id(handle), fd, identity.st_dev, identity.st_ino))
+    message = actual_read(handle)
+    if scenario == "replace" and len(seen) == 1:
+        # Same native file object was read; mutate only this fixture's namespace
+        # before the normal decoder can accept the returned first message.
+        path.rename(directory / "preserved-original.grib")
+        path.write_bytes(b"a different own fixture must never be adopted")
+    return message
+p.codes_grib_new_from_file = observe  # observer delegates every native call unchanged
+old_handler = signal.getsignal(signal.SIGIO)
+owned = None
+if scenario == "healthy":
+    result = p.process_grib(path, "dkss_lf", when, when, [zone], output, diagnostics,
+        current_part_outcomes=outcomes)
+    assert result[0] == {"current-u", "current-v"} and result[3] == 2 and not result[2]
+    assert len(seen) == 3 and len(set(seen)) == 1  # two messages and real EOF
+    hour = output["zones"][zone["id"]]["hourly"][when]
+    assert (hour["current-u"], hour["current-v"]) == (.25, -.5)
+    assert hour["sources"]["current"]["contentSha256"] == capture["contentSha256"]
+    try:
+        os.fstat(seen[0][1])
+    except OSError as exc:
+        assert type(exc) is OSError and exc.errno == errno.EBADF
+    else:
+        raise AssertionError("the actual decoder fd is still open")
+    assert signal.getsignal(signal.SIGIO) == old_handler and not p._UNSETTLED_GRIB_READS
+else:
+    try:
+        with p._grib_read_scope(path, "dkss_lf", when, when) as reader:
+            owned = reader
+            shared_capture = reader.capture
+            source_asset = p.canonical_current_source_asset({
+                "collection": "dkss_lf", "modelRun": when, "validTime": when,
+                **shared_capture})
+            def validate(stage, _private, result, part_outcomes):
+                assert reader.capture is shared_capture
+                assert source_asset["contentSha256"] == capture["contentSha256"]
+                assert result[3] == 2 and part_outcomes["complete"] is True
+                assert fcntl.fcntl(reader.fd, fcntl.F_GETLEASE) == fcntl.F_RDLCK
+                assert stage["zones"][zone["id"]]["hourly"][when]["sources"]["current"]["contentSha256"] == source_asset["contentSha256"]
+                # This normal proof builder uses the same captured source object
+                # as the caller; it is not a fixture-created trust flag.
+                proof = p.build_current_part_outcome_proof(part_outcomes["spatialUnavailablePartIds"],
+                    ["SYNTHETIC"], "sha256:" + "a" * 64, "sha256:" + "b" * 64, source_asset)
+                assert proof is not None
+                if scenario == "break":
+                    try:
+                        writer = os.open(path, os.O_WRONLY | os.O_NONBLOCK)
+                    except OSError as exc:
+                        assert exc.errno in (errno.EAGAIN, errno.EWOULDBLOCK)
+                    else:
+                        os.close(writer)
+                        raise AssertionError("kernel admitted a writer during the read lease")
+                    assert fcntl.fcntl(reader.fd, fcntl.F_GETLEASE) == fcntl.F_UNLCK
+                else:
+                    raise AssertionError("unknown fixed native scenario")
+                return True
+            p.process_grib_transactionally(path, "dkss_lf", when, when, [zone],
+                output, diagnostics, current_part_outcomes=outcomes, _owned_read=reader,
+                current_stage_validator=validate, failure_flush=lambda: flushes.append(True))
+    except p.GribReadUnproven:
+        assert owned is not None and owned in p._UNSETTLED_GRIB_READS
+        assert owned.retained and not owned.close_attempted
+        assert owned.handle.fileno() == owned.fd
+        actual = os.fstat(owned.fd)
+        assert (actual.st_dev, actual.st_ino) == (initial.st_dev, initial.st_ino)
+        assert owned.capture is shared_capture and not flushes
+        assert (output, diagnostics, outcomes) == before
+        assert len(seen) == (1 if scenario == "replace" else 3) and len(set(seen)) == 1
+    else:
+        raise AssertionError("uncertain input reached a successful transaction")
+    # Disposal is by this dedicated process's actual exit, AFTER the retention
+    # assertions. The parent proves pidfd exit/reap before removing own files.
+assert sentinel.read_bytes() == sentinel_bytes
+assert p.raw_cache_manifest_path().read_bytes() == manifest_bytes
+if scenario == "replace":
+    assert (directory / "preserved-original.grib").read_bytes() == original
+    assert path.read_bytes() == b"a different own fixture must never be adopted"
+else:
+    assert path.read_bytes() == original
+print(json.dumps({"case": scenario, "actualMessages": 1 if scenario == "replace" else 2,
+    "sameOwnedFd": True, "actualEOF": scenario != "replace",
+    "originalsPreserved": True, "unknownRefused": scenario != "healthy"}), flush=True)
+"""
+    compile(_lease_native, "<own-native-grib-lease>", "exec")
+    for _lease_case in ("healthy", "break", "replace", "foreign-pending"):
+        _lease_directory = tempfile.mkdtemp(prefix="rr-native-grib-lease-")
+        _lease_process, _lease_pidfd, _lease_settled = None, None, False
+        try:
+            _lease_started = _lease_time.monotonic()
+            _lease_process = _lease_subprocess.Popen(
+                [sys.executable, "-I", "-B", "-c", _lease_native,
+                 str(Path(__file__).with_name("update-dmi-bulk.py")), _lease_directory, _lease_case],
+                stdin=_lease_subprocess.PIPE, stdout=_lease_subprocess.PIPE,
+                stderr=_lease_subprocess.PIPE,
+            )
+            _lease_pidfd = _lease_os.pidfd_open(_lease_process.pid)
+            _lease_process.stdin.write(b"G")
+            _lease_process.stdin.close()
+            _lease_process.stdin = None
+            _lease_stdout, _lease_stderr = _lease_process.communicate(
+                timeout=max(0, 8 - (_lease_time.monotonic() - _lease_started)))
+            _lease_poll = _lease_select.poll()
+            _lease_poll.register(_lease_pidfd, _lease_select.POLLIN)
+            assert _lease_poll.poll(0), "the held child pidfd must prove physical exit"
+            _lease_settled = True
+            assert _lease_process.returncode == 0, _lease_stderr.decode("utf-8", "replace")[:2000]
+            _lease_receipt = json.loads(_lease_stdout.decode("utf-8"))
+            if _lease_case == "foreign-pending":
+                assert _lease_receipt == {"case": _lease_case, "foreignSignalPending": True,
+                    "preOwnership": True, "maskRetained": True, "handlerUnchanged": True,
+                    "firstCauseExact": True, "noDecodeValidatorFlushCommit": True,
+                    "nextReaderRefused": True, "originalsPreserved": True}
+            else:
+                assert _lease_receipt == {"case": _lease_case,
+                    "actualMessages": 1 if _lease_case == "replace" else 2,
+                    "sameOwnedFd": True, "actualEOF": _lease_case != "replace", "originalsPreserved": True,
+                    "unknownRefused": _lease_case != "healthy"}
+        finally:
+            if _lease_process is not None and not _lease_settled:
+                if _lease_pidfd is not None:
+                    try:
+                        _lease_signal.pidfd_send_signal(_lease_pidfd, _lease_signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    _lease_process.communicate(timeout=3)
+                    _lease_poll = _lease_select.poll()
+                    _lease_poll.register(_lease_pidfd, _lease_select.POLLIN)
+                    _lease_settled = bool(_lease_poll.poll(0))
+                else:
+                    # The launch barrier precedes every native import/call.
+                    # Without a pidfd, EOF tells only our unreleased child to
+                    # exit; actual wait is required before any fixture cleanup.
+                    if _lease_process.stdin is not None:
+                        _lease_process.stdin.close()
+                        _lease_process.stdin = None
+                    _lease_process.communicate(timeout=3)
+                    _lease_settled = _lease_process.returncode is not None
+                # No numeric PID fallback, broad pkill or unknown child cleanup.
+            if _lease_pidfd is not None:
+                _lease_os.close(_lease_pidfd)
+            if _lease_settled:
+                _lease_shutil.rmtree(_lease_directory)
+    print("OK: own Linux GRIB lease, normal decoder/EOF/commit and refusal controls.")
+else:
+    print("Linux GRIB read-lease contracts not executed on this platform")

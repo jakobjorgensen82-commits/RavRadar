@@ -419,16 +419,73 @@ class SupervisorTests(unittest.TestCase):
 
     def test_every_asset_download_and_transactional_parse_is_exactly_supervised(self):
         tree = ast.parse(supervisor.PRODUCER.read_text(encoding="utf-8"))
+        self.assert_exact_asset_supervision(tree)
+
+    def assert_exact_asset_supervision(self, tree):
         parents: dict[ast.AST, ast.AST] = {}
         for node in ast.walk(tree):
             for child in ast.iter_child_nodes(node):
                 parents[child] = node
+
+        decoders = [node for node in tree.body
+                    if isinstance(node, ast.FunctionDef) and node.name == "process_grib"]
+        transactions = [node for node in tree.body
+                        if isinstance(node, ast.FunctionDef)
+                        and node.name == "process_grib_transactionally"]
+        self.assertEqual(len(decoders), 1)
+        self.assertEqual(len(transactions), 1)
+        decoder, transaction = decoders[0], transactions[0]
+        expected_adapter = ast.parse("""
+if _owned_read is None:
+    return process_grib_transactionally(
+        path, collection, model_run, valid_time, zones, output, diagnostics,
+        current_shadow, private_stage_output, current_part_outcomes,
+        allowed_parameters,
+        locked_operational_reference=locked_operational_reference,
+        trusted_current_pair_source_keys=trusted_current_pair_source_keys,
+    )
+""").body[0]
+        self.assertEqual(ast.dump(decoder.body[0]), ast.dump(expected_adapter),
+                         "only the exact None-guarded library adapter is separate from the watchdog calls")
+        adapter_call = decoder.body[0].body[0].value
+
+        # The adapter cannot be an exemption for another decoder entry point.
+        # The sole callback must use the transaction's actual owned read scope.
+        decoder_calls = [node for node in ast.walk(tree)
+                         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                         and node.func.id == "process_grib"]
+        self.assertEqual(len(decoder_calls), 1)
+        expected_callback = ast.parse("""
+process_grib(
+    path, collection, model_run, valid_time, zones, output_stage, diagnostics,
+    shadow_stage, private_output_stage, part_outcomes_stage,
+    allowed_parameters=allowed_parameters,
+    _owned_read=reader,
+    **({"locked_operational_reference": locked_operational_reference}
+       if locked_operational_reference is not None else {}),
+    **({"trusted_current_pair_source_keys": trusted_current_pair_source_keys}
+       if trusted_current_pair_source_keys is not None else {}),
+)
+""", mode="eval").body
+        self.assertEqual(ast.dump(decoder_calls[0]), ast.dump(expected_callback),
+                         "the decoder must receive the exact transaction reader and forwarded inputs")
+        read_scope = transaction.body[1]  # The first statement after its docstring.
+        self.assertIsInstance(read_scope, ast.With)
+        expected_scope = ast.parse("""
+with _grib_read_scope(path, collection, model_run, valid_time, _owned_read) as reader:
+    pass
+""").body[0]
+        self.assertEqual([ast.dump(item) for item in read_scope.items],
+                         [ast.dump(item) for item in expected_scope.items])
+        self.assertIn(decoder_calls[0], tuple(ast.walk(read_scope)))
 
         guarded_calls = []
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
                 continue
             if node.func.id not in {"download_asset", "process_grib_transactionally"}:
+                continue
+            if node is adapter_call:
                 continue
             guarded_calls.append(node)
             parent = parents.get(node)
@@ -448,6 +505,48 @@ class SupervisorTests(unittest.TestCase):
                 f"{node.func.id} at line {node.lineno} is outside the exact watchdog",
             )
         self.assertEqual(len(guarded_calls), 7)
+
+    def test_asset_supervision_rejects_extra_calls_changed_adapter_and_missing_guard(self):
+        source = supervisor.PRODUCER.read_text(encoding="utf-8")
+        for mutation in ("extra-call", "adapter-guard", "adapter-argument",
+                         "adapter-keyword", "adapter-return", "callback-reader",
+                         "missing-watchdog"):
+            with self.subTest(mutation=mutation):
+                tree = ast.parse(source)
+                decoder = next(node for node in tree.body
+                               if isinstance(node, ast.FunctionDef) and node.name == "process_grib")
+                adapter = decoder.body[0]
+                if mutation == "extra-call":
+                    tree.body.append(ast.parse("process_grib_transactionally()").body[0])
+                elif mutation == "adapter-guard":
+                    adapter.test.comparators[0] = ast.Constant(value=False)
+                elif mutation == "adapter-argument":
+                    adapter.body[0].value.args[2] = ast.Name(id="valid_time", ctx=ast.Load())
+                elif mutation == "adapter-keyword":
+                    adapter.body[0].value.keywords.pop()
+                elif mutation == "adapter-return":
+                    adapter.body[0] = ast.Expr(value=adapter.body[0].value)
+                elif mutation == "callback-reader":
+                    callback = next(node for node in ast.walk(tree)
+                                    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                                    and node.func.id == "process_grib")
+                    next(keyword for keyword in callback.keywords
+                         if keyword.arg == "_owned_read").value = ast.Constant(value=None)
+                else:
+                    watchdog = next(node for node in ast.walk(tree)
+                                    if isinstance(node, ast.With) and any(
+                                        isinstance(item.context_expr, ast.Call)
+                                        and isinstance(item.context_expr.func, ast.Name)
+                                        and item.context_expr.func.id == "supervised_asset_operation"
+                                        for item in node.items))
+                    parent = next(node for node in ast.walk(tree)
+                                  if watchdog in tuple(ast.iter_child_nodes(node)))
+                    body = next(value for _name, value in ast.iter_fields(parent)
+                                if isinstance(value, list) and watchdog in value)
+                    index = body.index(watchdog)
+                    body[index:index + 1] = watchdog.body
+                with self.assertRaises(AssertionError):
+                    self.assert_exact_asset_supervision(tree)
 
     def test_structured_asset_start_and_matching_end_clear_watchdog(self):
         start = marker("DMI_ASSET_PROCESSING_START", ASSET_A)

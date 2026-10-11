@@ -17,11 +17,13 @@ import os
 import pathlib
 import re
 import signal
+import stat
 import sys
 import tempfile
 import threading
 import time
 from datetime import datetime, timedelta, timezone
+from types import MappingProxyType
 from typing import Any, Iterable, NamedTuple
 from urllib.parse import urljoin, urlparse
 
@@ -3981,19 +3983,296 @@ def download_asset(
     return path, False
 
 
+
+class GribReadUnproven(AssetDownloadCleanupUnproven):
+    """The owned GRIB read cannot authorize traversal, commit or checkpoint."""
+
+
+_UNSETTLED_GRIB_READS: list[Any] = []
+
+
+class _OwnedGribRead:
+    """One Linux read lease; no pathname reopening, transfer or reacquisition.
+
+    A lease protects this inode, NOT future pathname-based SAVE or namespace
+    replacement. Each check therefore also compares the current pathname.
+    SIGIO is an irreversible refusal latch, never an asynchronous new error.
+    """
+
+    def __init__(self, path, collection, model_run, valid_time):
+        self.path = path
+        self.binding = (collection, model_run, valid_time)
+        self.pid = os.getpid()
+        self.thread = threading.get_ident()
+        self.fd = None
+        self.handle = None
+        self.identity = None
+        self.capture = None
+        self.broken = False
+        self.active = False
+        self.retained = False
+        self.close_attempted = False
+        self.physically_closed = False
+        self.old_mask = None
+        self.old_handler = None
+        self.handler_installed = False
+        self.lease_acquired = False
+        self.commits = []
+        self.failure_flushes = []
+        self.primary = None
+        self.secondary = None
+        self.native_handles = []
+
+    def _refuse(self, message, cause=None):
+        error = GribReadUnproven(message)
+        if cause is not None:
+            raise error from cause
+        raise error
+
+    def _latch(self, _number, _frame):
+        self.broken = True
+
+    @staticmethod
+    def _identity(info):
+        return (info.st_dev, info.st_ino, info.st_mode, info.st_size,
+                info.st_mtime_ns, info.st_ctime_ns)
+
+    def check(self, path=None, binding=None):
+        if (not self.active or self.retained or self.broken
+                or os.getpid() != self.pid
+                or threading.get_ident() != self.thread
+                or self.handle is None or self.handle.fileno() != self.fd
+                or (path is not None and path != self.path)
+                or (binding is not None and binding != self.binding)):
+            self._refuse("DMI_GRIB_READ_OWNERSHIP_UNPROVED")
+        try:
+            if (self.fcntl.fcntl(self.fd, self.fcntl.F_GETLEASE)
+                    != self.fcntl.F_RDLCK
+                    or self._identity(os.fstat(self.fd)) != self.identity
+                    or self._identity(self.path.lstat()) != self.identity):
+                self._refuse("DMI_GRIB_READ_CHANGED")
+        except GribReadUnproven:
+            raise
+        except BaseException as exc:
+            self._refuse("DMI_GRIB_READ_CHECK_UNPROVED", exc)
+
+    def measure(self):
+        self.check()
+        self.handle.seek(0)
+        digest = hashlib.sha256()
+        while True:
+            chunk = self.handle.read(1024 * 1024)
+            self.check()
+            if not chunk:
+                break
+            digest.update(chunk)
+        self.handle.seek(0)
+        self.check()
+        return self.identity[3], digest.hexdigest()
+
+    def remember_commit(self, *documents):
+        # Staged zone roots and shadow mappings are copy-on-write. Keep the
+        # actual previous roots, rather than reconstructing original values.
+        self.check()
+        self.commits.append(tuple(
+            (document, dict(document)) for document in documents
+            if document is not None
+        ))
+
+    def _rollback(self):
+        for group in reversed(self.commits):
+            for document, original in group:
+                restore_mapping(document, original)
+
+    def _retain(self, error):
+        self.retained = True
+        self.secondary = error
+        if not any(value is self for value in _UNSETTLED_GRIB_READS):
+            _UNSETTLED_GRIB_READS.append(self)
+
+    def _close(self):
+        # Never retry close or substitute a newly opened descriptor. The raw
+        # original fd, not FileHandle.closed/close fulfillment, is the witness.
+        if self.fd is None:
+            return
+        if self.close_attempted:
+            self._refuse("DMI_GRIB_READ_CLOSE_REPEATED")
+        self.close_attempted = True
+        close_error = None
+        try:
+            if self.handle is not None:
+                self.handle.close()
+            else:
+                os.close(self.fd)
+        except BaseException as exc:
+            close_error = exc
+        try:
+            os.fstat(self.fd)
+        except OSError as exc:
+            if type(exc) is not OSError or exc.errno != 9:
+                self._refuse("DMI_GRIB_READ_CLOSE_UNPROVED", close_error if close_error is not None else exc)
+        except BaseException as exc:
+            self._refuse("DMI_GRIB_READ_CLOSE_UNPROVED", close_error if close_error is not None else exc)
+        else:
+            self._refuse("DMI_GRIB_READ_CLOSE_UNPROVED", close_error)
+        self.physically_closed = True
+        return close_error
+
+    def _restore_signal(self):
+        if self.old_mask is None:
+            return
+        # Pending SIGIO has no proved origin, including on acquisition failure.
+        # Do not consume it or unmask it under a substituted/default handler.
+        # The caller retains this signal state and refuses further processing.
+        if signal.SIGIO in signal.sigpending():
+            self._refuse("DMI_GRIB_READ_SIGNAL_RESTORE_UNPROVED")
+        if self.handler_installed:
+            signal.signal(signal.SIGIO, self.old_handler)
+            self.handler_installed = False
+        signal.pthread_sigmask(signal.SIG_SETMASK, self.old_mask)
+        self.old_mask = None
+
+    def __enter__(self):
+        try:
+            if _UNSETTLED_GRIB_READS:
+                self._refuse("DMI_GRIB_PREVIOUS_READ_UNSETTLED")
+            if (sys.platform != "linux"
+                    or threading.current_thread() is not threading.main_thread()
+                    or not all(hasattr(signal, name) for name in (
+                        "SIGIO", "pthread_sigmask", "sigpending", "sigwait"))):
+                self._refuse("DMI_GRIB_READ_LEASE_UNSUPPORTED")
+            import fcntl
+            self.fcntl = fcntl
+            if not all(hasattr(fcntl, name) for name in (
+                    "F_SETLEASE", "F_GETLEASE", "F_RDLCK", "F_UNLCK", "F_SETOWN")):
+                self._refuse("DMI_GRIB_READ_LEASE_UNSUPPORTED")
+            self.old_mask = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGIO})
+            self.old_handler = signal.getsignal(signal.SIGIO)
+            if (signal.SIGIO in self.old_mask
+                    or signal.SIGIO in signal.sigpending()
+                    or self.old_handler != signal.SIG_DFL):
+                # This is a foreign signal state: do not drain or replace it.
+                try:
+                    signal.pthread_sigmask(signal.SIG_SETMASK, self.old_mask)
+                except BaseException as restore_error:
+                    self._retain(restore_error)
+                    self._refuse("DMI_GRIB_FOREIGN_SIGNAL_RESTORE_UNPROVED", restore_error)
+                self.old_mask = None
+                self._refuse("DMI_GRIB_READ_SIGNAL_OCCUPIED")
+            self.fd = os.open(self.path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+            original = os.fstat(self.fd)
+            if (not stat.S_ISREG(original.st_mode)
+                    or self._identity(self.path.lstat()) != self._identity(original)):
+                self._refuse("DMI_GRIB_READ_NOT_OWN_REGULAR_FILE")
+            self.identity = self._identity(original)
+            self.handle = os.fdopen(self.fd, "rb", buffering=0)
+            signal.signal(signal.SIGIO, self._latch)
+            self.handler_installed = True
+            fcntl.fcntl(self.fd, fcntl.F_SETOWN, self.pid)
+            fcntl.fcntl(self.fd, fcntl.F_SETLEASE, fcntl.F_RDLCK)
+            self.lease_acquired = True
+            self.active = True
+            signal.pthread_sigmask(signal.SIG_SETMASK, self.old_mask)
+            self.check()
+            capture = raw_cache_source_capture(self.path, *self.binding, self)
+            self.capture = MappingProxyType(capture) if capture is not None else None
+            self.check()
+            return self
+        except BaseException as exc:
+            self.primary = exc
+            # Failed acquisition never becomes ordinary upstream absence. If
+            # ownership was established then lost, retain rather than unlock.
+            if self.active:
+                # A failed read with a still intact lease can close normally;
+                # a broken/unknown lease remains retained by __exit__.
+                self.__exit__(type(exc), exc, exc.__traceback__)
+            elif not self.retained:
+                try:
+                    close_error = self._close()
+                    self._restore_signal()
+                    if close_error is not None:
+                        self.secondary = close_error
+                except BaseException as cleanup:
+                    self._retain(cleanup)
+            if isinstance(exc, GribReadUnproven):
+                raise
+            self._refuse("DMI_GRIB_READ_ACQUIRE_UNPROVED", exc)
+
+    def __exit__(self, _kind, failure, _traceback):
+        self.primary = failure
+        cleanup_error = None
+        closed_error = None
+        try:
+            self.check()
+            signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGIO})
+            self.check()
+            self.fcntl.fcntl(self.fd, self.fcntl.F_SETLEASE, self.fcntl.F_UNLCK)
+            if self.fcntl.fcntl(self.fd, self.fcntl.F_GETLEASE) != self.fcntl.F_UNLCK:
+                self._refuse("DMI_GRIB_READ_RELEASE_UNPROVED")
+            self.lease_acquired = False
+            closed_error = self._close()
+            self._restore_signal()
+            if self.broken:
+                self._refuse("DMI_GRIB_READ_BREAK_BEFORE_RELEASE")
+            self.active = False
+        except BaseException as exc:
+            cleanup_error = exc
+            self._retain(exc)
+        if failure is not None or cleanup_error is not None or closed_error is not None:
+            try:
+                self._rollback()
+            except BaseException as rollback_error:
+                self._retain(rollback_error)
+                if cleanup_error is None:
+                    cleanup_error = rollback_error
+        if cleanup_error is not None:
+            # Preserve the actual first exception object as the cause. The
+            # refusal type, not its text, prevents normal parser skip/flush.
+            self._refuse("DMI_GRIB_READ_END_UNPROVED", failure if failure is not None else cleanup_error)
+        for flush in self.failure_flushes:
+            try:
+                flush()
+            except BaseException:
+                if failure is None:
+                    raise
+        self.commits.clear()
+        self.failure_flushes.clear()
+        if failure is None and closed_error is not None:
+            raise closed_error
+        return False
+
+
+@contextmanager
+def _grib_read_scope(path, collection, model_run, valid_time, borrowed=None):
+    if borrowed is None:
+        with _OwnedGribRead(path, collection, model_run, valid_time) as reader:
+            yield reader
+    else:
+        if type(borrowed) is not _OwnedGribRead:
+            raise GribReadUnproven("DMI_GRIB_READ_FOREIGN_SCOPE")
+        borrowed.check(path, (collection, model_run, valid_time))
+        yield borrowed
+        borrowed.check()
+
+
 def raw_cache_source_capture(
     path: pathlib.Path,
     collection: str,
     model_run: str,
     valid_time: str,
+    _owned_read: _OwnedGribRead | None = None,
 ) -> dict[str, Any] | None:
     """Resolve an exact local capture without inventing STAC/acquisition facts."""
     row = (load_raw_cache_manifest().get("assets") or {}).get(path.name) or {}
-    try:
-        actual_size = path.stat().st_size
-        actual_content_sha256 = file_content_sha256(path)
-    except OSError:
-        return None
+    if _owned_read is not None:
+        _owned_read.check(path, (collection, model_run, valid_time))
+        actual_size, actual_content_sha256 = _owned_read.measure()
+    else:
+        try:
+            actual_size = path.stat().st_size
+            actual_content_sha256 = file_content_sha256(path)
+        except OSError:
+            return None
     if not (
         row.get("collection") == collection
         and iso(row.get("modelRun")) == iso(model_run)
@@ -6202,7 +6481,17 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                  trusted_current_pair_source_keys: set[
                      tuple[str, str, str]
                  ] | None = None,
-                 locked_operational_reference: str | None = None) -> tuple[set[str], set[str], bool, int, int]:
+                 locked_operational_reference: str | None = None,
+                 _owned_read: _OwnedGribRead | None = None) -> tuple[set[str], set[str], bool, int, int]:
+    if _owned_read is None:
+        return process_grib_transactionally(
+            path, collection, model_run, valid_time, zones, output, diagnostics,
+            current_shadow, private_stage_output, current_part_outcomes,
+            allowed_parameters,
+            locked_operational_reference=locked_operational_reference,
+            trusted_current_pair_source_keys=trusted_current_pair_source_keys,
+        )
+    _owned_read.check(path, (collection, model_run, valid_time))
     found, touched = set(), set()
     vector_candidates: dict[tuple[str, str, str], dict[str, list[dict[str, Any]]]] = {}
     scalar_tuple_candidates: dict[tuple[str, str], dict[str, list[dict[str, Any]]]] = {}
@@ -6225,7 +6514,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
     current_candidate_available_part_zone_ids: set[str] = set()
     if current_part_outcomes is not None:
         current_part_outcomes.clear()
-    source_capture = raw_cache_source_capture(path, collection, model_run, valid_time)
+    source_capture = _owned_read.capture
     shadow_source_asset = canonical_current_source_asset({
         "collection": collection,
         "modelRun": model_run,
@@ -6249,16 +6538,21 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
     messages_seen = 0
     zone_lookups = 0
     interrupted = False
-    with path.open("rb") as handle:
+    with _grib_read_scope(path, collection, model_run, valid_time, _owned_read) as reader:
+        handle = reader.handle
         while True:
+            reader.check()
             if should_stop_work():
                 interrupted = True
                 break
             gid = codes_grib_new_from_file(handle)
             if gid is None:
+                reader.check()
                 break
             messages_seen += 1
+            message_failure = None
             try:
+                reader.check()
                 sig = field_signature(gid)
                 sig_key = "|".join(str(sig.get(k) or "") for k in ("shortName", "name", "units", "typeOfLevel", "level", "paramId"))
                 if sig_key not in inventory and len(inventory) < 120:
@@ -6580,8 +6874,19 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                     point["collections"][parameter] = collection
                 if interrupted:
                     break
+            except BaseException as exc:
+                message_failure = exc
+                raise
             finally:
-                codes_release(gid)
+                try:
+                    codes_release(gid)
+                except BaseException as release_error:
+                    reader.native_handles.append(gid)
+                    reader._retain(release_error)
+                    reader._refuse(
+                        "DMI_GRIB_NATIVE_RELEASE_UNPROVED",
+                        message_failure if message_failure is not None else release_error,
+                    )
     # Wave height and period are the shared mobilisation/rollback tuple. Build
     # and validate the complete candidate before mutating the retained row. A
     # partial or malformed new asset must never destroy an older valid tuple.
@@ -6730,6 +7035,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                 )
             ),
         })
+    _owned_read.check()
     return found, touched, interrupted, messages_seen, zone_lookups
 
 
@@ -6829,6 +7135,7 @@ def process_grib_transactionally(
         tuple[str, str, str]
     ] | None = None,
     validation_error: str = "GRIB asset stage validation failed",
+    _owned_read: _OwnedGribRead | None = None,
 ) -> tuple[set[str], set[str], bool, int, int]:
     """Parse one asset against copy-on-write state and commit only at EOF.
 
@@ -6836,89 +7143,103 @@ def process_grib_transactionally(
     staging and research-shadow state remain isolated until the complete asset
     and any caller-supplied invariant have passed.
     """
-    output_stage = build_asset_stage_document(
-        output,
-        zones,
-        valid_time,
-        private_stage=False,
-    )
-    private_output_stage = (
-        build_asset_stage_document(
-            private_stage_output,
+    with _grib_read_scope(path, collection, model_run, valid_time, _owned_read) as reader:
+        output_stage = build_asset_stage_document(
+            output,
             zones,
             valid_time,
-            private_stage=True,
+            private_stage=False,
         )
-        if private_stage_output is not None
-        else None
-    )
-    diagnostics_snapshot = copy.deepcopy(diagnostics)
-    shadow_stage = (
-        build_current_shadow_stage(current_shadow, zones, collection)
-        if current_shadow is not None
-        else None
-    )
-    part_outcomes_stage = {} if current_part_outcomes is not None else None
-    try:
-        if prepare_stage is not None:
-            prepare_stage(output_stage, private_output_stage)
-        outcome = process_grib(
-            path,
-            collection,
-            model_run,
-            valid_time,
-            zones,
-            output_stage,
-            diagnostics,
-            shadow_stage,
-            private_output_stage,
-            part_outcomes_stage,
-            allowed_parameters=allowed_parameters,
-            **({
-                "locked_operational_reference": locked_operational_reference,
-            } if locked_operational_reference is not None else {}),
-            **({
-                "trusted_current_pair_source_keys":
-                    trusted_current_pair_source_keys,
-            } if trusted_current_pair_source_keys is not None else {}),
+        private_output_stage = (
+            build_asset_stage_document(
+                private_stage_output,
+                zones,
+                valid_time,
+                private_stage=True,
+            )
+            if private_stage_output is not None
+            else None
         )
-        found, touched, interrupted, messages_seen, zone_lookups = outcome
-        if interrupted:
+        diagnostics_snapshot = copy.deepcopy(diagnostics)
+        shadow_stage = (
+            build_current_shadow_stage(current_shadow, zones, collection)
+            if current_shadow is not None
+            else None
+        )
+        part_outcomes_stage = {} if current_part_outcomes is not None else None
+        reader.remember_commit(output, private_stage_output, current_shadow, current_part_outcomes)
+        reader.commits.append(((diagnostics, diagnostics_snapshot),))
+        try:
+            if prepare_stage is not None:
+                prepare_stage(output_stage, private_output_stage)
+            outcome = process_grib(
+                path,
+                collection,
+                model_run,
+                valid_time,
+                zones,
+                output_stage,
+                diagnostics,
+                shadow_stage,
+                private_output_stage,
+                part_outcomes_stage,
+                allowed_parameters=allowed_parameters,
+                _owned_read=reader,
+                **({
+                    "locked_operational_reference": locked_operational_reference,
+                } if locked_operational_reference is not None else {}),
+                **({
+                    "trusted_current_pair_source_keys":
+                        trusted_current_pair_source_keys,
+                } if trusted_current_pair_source_keys is not None else {}),
+            )
+            found, touched, interrupted, messages_seen, zone_lookups = outcome
+            if interrupted:
+                restore_mapping(diagnostics, diagnostics_snapshot)
+                if failure_flush is not None:
+                    reader.failure_flushes.append(failure_flush)
+                return set(), set(), True, 0, 0
+            reader.check()
+            if stage_validator is not None and not stage_validator(
+                output_stage,
+                private_output_stage,
+                outcome,
+            ):
+                raise RuntimeError(validation_error)
+            if current_stage_validator is not None and not current_stage_validator(
+                output_stage,
+                private_output_stage,
+                outcome,
+                part_outcomes_stage,
+            ):
+                raise RuntimeError(validation_error)
+            if shadow_stage is not None and finalize_shadow_stage is not None:
+                # Source proof and its regional samples form one private stage.
+                # No bulk or shadow mutation may escape if proof capture fails.
+                finalize_shadow_stage(shadow_stage)
+        except AssetDownloadCleanupUnproven:
+            restore_mapping(diagnostics, diagnostics_snapshot)
+            raise
+        except BaseException as primary:
+            try:
+                reader.check()
+            except BaseException:
+                reader._refuse("DMI_GRIB_READ_FAILED_UNPROVEN", primary)
             restore_mapping(diagnostics, diagnostics_snapshot)
             if failure_flush is not None:
-                failure_flush()
-            return set(), set(), True, 0, 0
-        if stage_validator is not None and not stage_validator(
-            output_stage,
-            private_output_stage,
-            outcome,
-        ):
-            raise RuntimeError(validation_error)
-        if current_stage_validator is not None and not current_stage_validator(
-            output_stage,
-            private_output_stage,
-            outcome,
-            part_outcomes_stage,
-        ):
-            raise RuntimeError(validation_error)
-        if shadow_stage is not None and finalize_shadow_stage is not None:
-            # Source proof and its regional samples form one private stage.
-            # No bulk or shadow mutation may escape if proof capture fails.
-            finalize_shadow_stage(shadow_stage)
-    except Exception:
-        restore_mapping(diagnostics, diagnostics_snapshot)
-        if failure_flush is not None:
-            failure_flush()
-        raise
-    commit_asset_stage_document(output, output_stage)
-    if private_stage_output is not None and private_output_stage is not None:
-        commit_asset_stage_document(private_stage_output, private_output_stage)
-    if current_shadow is not None and shadow_stage is not None:
-        restore_mapping(current_shadow, shadow_stage)
-    if current_part_outcomes is not None and part_outcomes_stage is not None:
-        current_part_outcomes.clear()
-        current_part_outcomes.update(part_outcomes_stage)
-    return found, touched, False, messages_seen, zone_lookups
+                reader.failure_flushes.append(failure_flush)
+            raise
+        reader.check()
+        commit_asset_stage_document(output, output_stage)
+        if private_stage_output is not None and private_output_stage is not None:
+            commit_asset_stage_document(private_stage_output, private_output_stage)
+        if current_shadow is not None and shadow_stage is not None:
+            restore_mapping(current_shadow, shadow_stage)
+        if current_part_outcomes is not None and part_outcomes_stage is not None:
+            current_part_outcomes.clear()
+            current_part_outcomes.update(part_outcomes_stage)
+        reader.check()
+        return found, touched, False, messages_seen, zone_lookups
 
 
 def private_wave_bootstrap_hour_rejection_code(
@@ -7816,6 +8137,8 @@ def execute_private_wave_history_bootstrap(
                         stage_validator=bootstrap_stage_complete,
                         validation_error="private WAM bootstrap GRIB tuple is missing",
                     )
+            except GribReadUnproven:
+                raise
             except (
                 DmiGridLookupError,
                 KeyError,
@@ -13717,396 +14040,390 @@ def main() -> int:
                     if bootstrap_operational_wam:
                         run_info["rawAssetsReused"] += 1
                 progress(f"{collection}: behandler forecast-step {asset_number}/{len(assets)} {asset['valid']} ({'genbrugt' if reused else 'downloadet'})")
-                current_part_outcome_observation: dict[str, Any] = {}
-                source_capture = (
-                    raw_cache_source_capture(
-                        path,
-                        collection,
-                        asset_model_run,
-                        asset["valid"],
-                    )
-                    if collection in MARINE_COLLECTIONS
-                    or collection in WAVE_BOOTSTRAP_COLLECTIONS
-                    else None
-                )
-                if collection in MARINE_COLLECTIONS:
-                    step_source_asset = canonical_current_source_asset({
-                        "collection": collection,
-                        "modelRun": asset_model_run,
-                        "validTime": asset["valid"],
-                        **(source_capture or {}),
-                    }) if source_capture is not None else None
-                elif collection in WAVE_BOOTSTRAP_COLLECTIONS:
-                    expected_wave_asset = official_wave_asset_identity(
-                        collection, asset_model_run, asset,
-                    )
-                    step_source_asset = (
-                        expected_wave_asset
-                        if expected_wave_asset is not None
-                        and source_capture is not None
-                        and source_capture.get("itemId")
-                            == expected_wave_asset["itemId"]
-                        and source_capture.get("assetIdentitySha256")
-                            == expected_wave_asset["assetIdentitySha256"]
-                        and (
-                            expected_wave_asset["assetSizeBytes"] is None
-                            or source_capture.get("contentLengthBytes")
-                                == expected_wave_asset["assetSizeBytes"]
-                        )
-                        else None
-                    )
-                else:
-                    step_source_asset = None
-                validated_current_stage: dict[str, Any] = {}
-                regional_input_changed = False
-                validated_wave_stage: dict[str, Any] = {}
-                validated_wave_rejections: dict[str, int] = {}
-                allowed_parameters = operational_asset_parameter_filter(
-                    collection,
-                    asset["valid"],
-                    asset_model_run,
-                    required_current_valid_times,
-                )
-                operational_wave_asset = (
-                    MappingWaveAsset(
-                        asset,
-                        asset_model_run,
-                        official_identity=official_wave_asset_identity(
-                            collection,
-                            asset_model_run,
-                            asset,
-                        ),
-                    )
-                    if bootstrap_operational_wam
-                    else None
-                )
-                operational_wave_zones = collection_operational_wave_zones
-
-                def validate_operational_wave_stage(
-                    staged_result: dict[str, Any],
-                    _private_stage: dict[str, Any] | None,
-                    outcome: tuple[set[str], set[str], bool, int, int],
-                ) -> bool:
-                    if not bootstrap_operational_wam:
-                        return True
-                    if operational_wave_asset is None:
-                        return False
-                    summary = private_wave_bootstrap_asset_summary(
-                        staged_result,
-                        operational_wave_zones,
-                        collection,
-                        operational_wave_asset,
-                    )
-                    validated_wave_stage.clear()
-                    validated_wave_stage.update(summary)
-                    validated_wave_rejections.clear()
-                    validated_wave_rejections.update(
-                        observed_wave_asset_rejections(
-                            result["diagnostics"],
-                            staged_result,
-                            operational_wave_zones,
-                            collection,
-                            operational_wave_asset,
-                        )
-                    )
-                    return operational_wave_asset_stage_admissible(
-                        wave_candidate,
-                        staged_result,
-                        operational_wave_zones,
-                        collection,
-                        operational_wave_asset,
-                        summary,
-                        outcome,
-                    )
-
-                def validate_operational_current_stage(
-                    staged_result: dict[str, Any],
-                    _private_stage: dict[str, Any] | None,
-                    outcome: tuple[set[str], set[str], bool, int, int],
-                    part_outcomes: dict[str, Any] | None,
-                ) -> bool:
-                    def reject(code: str) -> bool:
-                        # The transaction still rolls back. Only this bounded,
-                        # payload-free reason survives in the safe error row.
-                        validated_current_stage["rejectionCode"] = code
-                        return False
-
-                    if collection not in MARINE_COLLECTIONS:
-                        return True
-                    if step_source_asset is None:
-                        return reject("DKSS_STAGE_SOURCE_CAPTURE_MISSING")
-                    if not REQUIRED_TARGETS["marine"] <= set(outcome[0]):
-                        return reject("DKSS_STAGE_REQUIRED_FIELDS_MISSING")
-                    if not outcome[1]:
-                        return reject("DKSS_STAGE_NO_TOUCHED_ZONES")
-                    if not isinstance(part_outcomes, dict) or part_outcomes.get("complete") is not True:
-                        return reject("DKSS_STAGE_PART_OUTCOME_INCOMPLETE")
-                    if part_outcomes.get("targetPartIds") != current_target_ids:
-                        return reject("DKSS_STAGE_TARGET_SET_MISMATCH")
-                    try:
-                        proof = build_current_part_outcome_proof(
-                            part_outcomes.get("spatialUnavailablePartIds"),
-                            current_target_ids,
-                            current_target_registry_sha256,
-                            processing_signature,
-                            step_source_asset,
-                        )
-                    except (TypeError, ValueError):
-                        return reject("DKSS_STAGE_OUTCOME_PROOF_INVALID")
-                    try:
-                        valid_at = datetime.fromisoformat(
-                            asset["valid"].replace("Z", "+00:00")
-                        )
-                        staged_attestation = coastal_part_current_attestation(
-                            staged_result,
-                            coastal_part_targets,
-                            valid_at,
-                            valid_at,
-                            [step_source_asset],
-                            [],
-                        )
-                    except (TypeError, ValueError):
-                        return reject("DKSS_STAGE_ATTESTATION_INVALID")
-                    expected_part_ids = set(current_target_ids) - set(
-                        proof["spatialUnavailablePartIds"]
-                    )
-                    new_source_part_ids = {
-                        row["partId"]
-                        for row in staged_attestation.get("verifiedPairs") or []
-                    }
-                    if not new_source_part_ids <= expected_part_ids:
-                        return reject("DKSS_STAGE_NEW_SOURCE_OUTSIDE_OUTCOME")
-                    for part_id in current_target_ids:
-                        zone_id = f"PART::{part_id}"
-                        before_hour = (
-                            (((result.get("zones") or {}).get(zone_id) or {}).get(
-                                "hourly"
-                            ) or {}).get(asset["valid"])
-                        )
-                        after_hour = (
-                            (((staged_result.get("zones") or {}).get(zone_id) or {}).get(
-                                "hourly"
-                            ) or {}).get(asset["valid"])
-                        )
-                        before_tuple = (
-                            before_hour.get("current-u"),
-                            before_hour.get("current-v"),
-                            (before_hour.get("sources") or {}).get("current"),
-                        ) if isinstance(before_hour, dict) else None
-                        after_tuple = (
-                            after_hour.get("current-u"),
-                            after_hour.get("current-v"),
-                            (after_hour.get("sources") or {}).get("current"),
-                        ) if isinstance(after_hour, dict) else None
-                        if part_id in new_source_part_ids:
-                            continue
-                        if part_id not in expected_part_ids:
-                            before_source = canonical_current_source_asset(
-                                before_tuple[2] if before_tuple is not None else None
+                try:
+                    with _grib_read_scope(path, collection, asset_model_run, asset["valid"]) as reader:
+                        current_part_outcome_observation: dict[str, Any] = {}
+                        source_capture = reader.capture
+                        if collection in MARINE_COLLECTIONS:
+                            step_source_asset = canonical_current_source_asset({
+                                "collection": collection,
+                                "modelRun": asset_model_run,
+                                "validTime": asset["valid"],
+                                **(source_capture or {}),
+                            }) if source_capture is not None else None
+                        elif collection in WAVE_BOOTSTRAP_COLLECTIONS:
+                            expected_wave_asset = official_wave_asset_identity(
+                                collection, asset_model_run, asset,
                             )
-                            before_source_key = json.dumps(
-                                before_source,
-                                sort_keys=True,
-                                separators=(",", ":"),
-                                ensure_ascii=False,
-                            ) if before_source is not None else ""
-                            before_trusted = (
-                                part_id,
-                                asset["valid"],
-                                before_source_key,
-                            ) in actual_current_pair_source_keys
-                            if before_trusted and after_tuple != before_tuple:
-                                return reject("DKSS_STAGE_TRUSTED_UNAVAILABLE_CHANGED")
-                            continue
-                        if after_tuple != before_tuple:
-                            return reject("DKSS_STAGE_EXPECTED_ROW_CHANGED")
-                        retained_source = canonical_current_source_asset(
-                            after_tuple[2] if after_tuple is not None else None
-                        )
-                        if retained_source is None:
-                            return reject("DKSS_STAGE_EXPECTED_SOURCE_MISSING")
-                        retained_source_key = json.dumps(
-                            retained_source,
-                            sort_keys=True,
-                            separators=(",", ":"),
-                            ensure_ascii=False,
-                        )
-                        if (
-                            part_id,
-                            asset["valid"],
-                            retained_source_key,
-                        ) not in actual_current_pair_source_keys:
-                            return reject("DKSS_STAGE_EXPECTED_SOURCE_UNTRUSTED")
-                    validated_current_stage["partOutcomeProof"] = proof
-                    return True
-
-                def preserve_operational_regional_source(shadow_stage: dict[str, Any]) -> None:
-                    nonlocal regional_input_changed
-                    if (
-                        collection == REGIONAL_PROXY_REQUIRED_COLLECTION
-                        and regional_proxy_configuration_status == "CONFIGURED"
-                        and regional_lf_is_native_source_time(
-                            asset_model_run, asset["valid"],
-                        )
-                    ):
-                        observation_args = {
-                            "source_asset": step_source_asset,
-                            "processing_signature": processing_signature,
-                            "target_registry_sha256": current_target_registry_sha256,
-                            "policy": regional_proxy_policy,
-                            "regional_part_ids": regional_target_part_ids,
-                        }
-                        before_observation = regional_asset_observation(
-                            current_shadow, **observation_args,
-                        )
-                        capture_counts = capture_regional_source_proof(
-                            shadow_stage,
-                            previous_shadow=current_shadow,
-                            policy=regional_proxy_policy,
-                            targets=coastal_part_targets,
-                            source_asset=step_source_asset,
-                            part_outcome_proof=validated_current_stage["partOutcomeProof"],
-                            processing_signature=processing_signature,
-                        )
-                        after_observation = regional_asset_observation(
-                            shadow_stage, **observation_args,
-                        )
-                        regional_input_changed = (
-                            before_observation is None or after_observation is None
-                            or before_observation != after_observation
-                        )
-                        if (after_observation is not None
-                                and not capture_counts["invalidSamples"]
-                                and not capture_counts["blockedIndex"]):
-                            validated_current_stage["regionalObservation"] = after_observation
-
-                if bootstrap_operational_wam:
-                    clear_wave_target_rejection_diagnostics(
-                        result["diagnostics"],
-                        operational_wave_zones,
-                    )
-                with supervised_asset_operation(supervised_identity):
-                    try:
-                        found, touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
-                            path,
-                            collection,
-                            asset_model_run,
-                            asset["valid"],
-                            zones,
-                            wave_candidate,
-                            result["diagnostics"],
-                            current_shadow,
-                            coastal_point_stage,
-                            current_part_outcome_observation,
-                            allowed_parameters=allowed_parameters,
-                            failure_flush=lambda: checkpoint_controller.flush_if_due(force=True),
-                            stage_validator=validate_operational_wave_stage,
-                            current_stage_validator=validate_operational_current_stage,
-                            finalize_shadow_stage=preserve_operational_regional_source,
-                            locked_operational_reference=canonical_time(locked_production_reference),
-                            trusted_current_pair_source_keys=(
-                                actual_current_pair_source_keys
-                                if collection in MARINE_COLLECTIONS
+                            step_source_asset = (
+                                expected_wave_asset
+                                if expected_wave_asset is not None
+                                and source_capture is not None
+                                and source_capture.get("itemId")
+                                    == expected_wave_asset["itemId"]
+                                and source_capture.get("assetIdentitySha256")
+                                    == expected_wave_asset["assetIdentitySha256"]
+                                and (
+                                    expected_wave_asset["assetSizeBytes"] is None
+                                    or source_capture.get("contentLengthBytes")
+                                        == expected_wave_asset["assetSizeBytes"]
+                                )
                                 else None
-                            ),
-                            validation_error=(
-                                OPERATIONAL_CURRENT_STAGE_VALIDATION_ERROR
-                                if collection in MARINE_COLLECTIONS
-                                else "operational WAM asset lacks required fields"
-                            ),
+                            )
+                        else:
+                            step_source_asset = None
+                        validated_current_stage: dict[str, Any] = {}
+                        regional_input_changed = False
+                        validated_wave_stage: dict[str, Any] = {}
+                        validated_wave_rejections: dict[str, int] = {}
+                        allowed_parameters = operational_asset_parameter_filter(
+                            collection,
+                            asset["valid"],
+                            asset_model_run,
+                            required_current_valid_times,
                         )
-                    except (
-                        DmiGridLookupError,
-                        KeyError,
-                        TypeError,
-                        IndexError,
-                        AttributeError,
-                        ValueError,
-                        RuntimeError,
-                        OSError,
-                    ) as exc:
-                        if bootstrap_operational_wam and validated_wave_stage:
-                            wave_asset_coverage = result["diagnostics"].setdefault(
-                                "operationalWaveAssetCoverageByCollection", {}
-                            ).setdefault(collection, {})
-                            accumulate_wave_asset_coverage(
-                                wave_asset_coverage,
-                                validated_wave_stage,
-                                admitted=False,
-                                observed_rejected_by_code=(
-                                    validated_wave_rejections
+                        operational_wave_asset = (
+                            MappingWaveAsset(
+                                asset,
+                                asset_model_run,
+                                official_identity=official_wave_asset_identity(
+                                    collection,
+                                    asset_model_run,
+                                    asset,
                                 ),
                             )
-                            run_info["assetsRejectedAfterTraversal"] += 1
-                            rejected_by_code = run_info[
-                                "waveObservedRejectionEventsByCode"
-                            ]
-                            for code, count in validated_wave_rejections.items():
-                                rejected_by_code[code] = (
-                                    int(rejected_by_code.get(code) or 0)
-                                    + int(count)
-                                )
-                            controlled_reason = (
-                                "NO_USABLE_TUPLES"
-                                if int(
-                                    validated_wave_stage.get("acceptedCount")
-                                    or 0
-                                ) == 0
-                                else "LINEAGE_OR_ADMISSION_DEFERRED"
-                            )
-                            controlled = result["diagnostics"].setdefault(
-                                "operationalWaveControlledRejectionsByCollection",
-                                {},
-                            ).setdefault(collection, {})
-                            controlled[controlled_reason] = int(
-                                controlled.get(controlled_reason) or 0
-                            ) + 1
-                            run_info["assetsObserved"] += 1
-                            recognized.update(REQUIRED_TARGETS["wave"])
-                            run_info["recognizedParameters"] = sorted(recognized)
-                            checkpoint_controller.observe_asset_duration(
-                                time.monotonic() - asset_processing_started,
-                                cost_family=collection,
-                            )
-                            checkpoint_controller.mark_bulk_dirty()
-                            checkpoint_controller.flush_if_due(force=True)
-                            progress(
-                                f"{collection}: forecast-step "
-                                f"{asset_number}/{len(assets)} blev læst færdig "
-                                "men gav ingen sikkert admittérbar tidsdel; "
-                                "aktiv cache er uændret, og næste asset fortsætter"
-                            )
-                            continue
-                        if bounded_primary_refresh:
-                            run_info["assetsBoundedRefreshFailed"] += 1
-                            result["diagnostics"]["assetsBoundedDkssRefreshFailed"] = int(
-                                result["diagnostics"].get(
-                                    "assetsBoundedDkssRefreshFailed"
-                                ) or 0
-                            ) + 1
-                        result["diagnostics"]["errors"].append({
-                            "collection": collection,
-                            "validTime": supervised_identity["validTime"],
-                            "message": safe_error_message(exc),
-                            "failureCode": operational_current_stage_failure_code(
+                            if bootstrap_operational_wam
+                            else None
+                        )
+                        operational_wave_zones = collection_operational_wave_zones
+
+                        def validate_operational_wave_stage(
+                            staged_result: dict[str, Any],
+                            _private_stage: dict[str, Any] | None,
+                            outcome: tuple[set[str], set[str], bool, int, int],
+                        ) -> bool:
+                            if not bootstrap_operational_wam:
+                                return True
+                            if operational_wave_asset is None:
+                                return False
+                            summary = private_wave_bootstrap_asset_summary(
+                                staged_result,
+                                operational_wave_zones,
                                 collection,
-                                exc,
-                                validated_current_stage.get("rejectionCode"),
+                                operational_wave_asset,
+                            )
+                            validated_wave_stage.clear()
+                            validated_wave_stage.update(summary)
+                            validated_wave_rejections.clear()
+                            validated_wave_rejections.update(
+                                observed_wave_asset_rejections(
+                                    result["diagnostics"],
+                                    staged_result,
+                                    operational_wave_zones,
+                                    collection,
+                                    operational_wave_asset,
+                                )
+                            )
+                            return operational_wave_asset_stage_admissible(
+                                wave_candidate,
+                                staged_result,
+                                operational_wave_zones,
+                                collection,
+                                operational_wave_asset,
+                                summary,
+                                outcome,
+                            )
+
+                        def validate_operational_current_stage(
+                            staged_result: dict[str, Any],
+                            _private_stage: dict[str, Any] | None,
+                            outcome: tuple[set[str], set[str], bool, int, int],
+                            part_outcomes: dict[str, Any] | None,
+                        ) -> bool:
+                            def reject(code: str) -> bool:
+                                # The transaction still rolls back. Only this bounded,
+                                # payload-free reason survives in the safe error row.
+                                validated_current_stage["rejectionCode"] = code
+                                return False
+
+                            if collection not in MARINE_COLLECTIONS:
+                                return True
+                            if step_source_asset is None:
+                                return reject("DKSS_STAGE_SOURCE_CAPTURE_MISSING")
+                            if not REQUIRED_TARGETS["marine"] <= set(outcome[0]):
+                                return reject("DKSS_STAGE_REQUIRED_FIELDS_MISSING")
+                            if not outcome[1]:
+                                return reject("DKSS_STAGE_NO_TOUCHED_ZONES")
+                            if not isinstance(part_outcomes, dict) or part_outcomes.get("complete") is not True:
+                                return reject("DKSS_STAGE_PART_OUTCOME_INCOMPLETE")
+                            if part_outcomes.get("targetPartIds") != current_target_ids:
+                                return reject("DKSS_STAGE_TARGET_SET_MISMATCH")
+                            try:
+                                proof = build_current_part_outcome_proof(
+                                    part_outcomes.get("spatialUnavailablePartIds"),
+                                    current_target_ids,
+                                    current_target_registry_sha256,
+                                    processing_signature,
+                                    step_source_asset,
+                                )
+                            except (TypeError, ValueError):
+                                return reject("DKSS_STAGE_OUTCOME_PROOF_INVALID")
+                            try:
+                                valid_at = datetime.fromisoformat(
+                                    asset["valid"].replace("Z", "+00:00")
+                                )
+                                staged_attestation = coastal_part_current_attestation(
+                                    staged_result,
+                                    coastal_part_targets,
+                                    valid_at,
+                                    valid_at,
+                                    [step_source_asset],
+                                    [],
+                                )
+                            except (TypeError, ValueError):
+                                return reject("DKSS_STAGE_ATTESTATION_INVALID")
+                            expected_part_ids = set(current_target_ids) - set(
+                                proof["spatialUnavailablePartIds"]
+                            )
+                            new_source_part_ids = {
+                                row["partId"]
+                                for row in staged_attestation.get("verifiedPairs") or []
+                            }
+                            if not new_source_part_ids <= expected_part_ids:
+                                return reject("DKSS_STAGE_NEW_SOURCE_OUTSIDE_OUTCOME")
+                            for part_id in current_target_ids:
+                                zone_id = f"PART::{part_id}"
+                                before_hour = (
+                                    (((result.get("zones") or {}).get(zone_id) or {}).get(
+                                        "hourly"
+                                    ) or {}).get(asset["valid"])
+                                )
+                                after_hour = (
+                                    (((staged_result.get("zones") or {}).get(zone_id) or {}).get(
+                                        "hourly"
+                                    ) or {}).get(asset["valid"])
+                                )
+                                before_tuple = (
+                                    before_hour.get("current-u"),
+                                    before_hour.get("current-v"),
+                                    (before_hour.get("sources") or {}).get("current"),
+                                ) if isinstance(before_hour, dict) else None
+                                after_tuple = (
+                                    after_hour.get("current-u"),
+                                    after_hour.get("current-v"),
+                                    (after_hour.get("sources") or {}).get("current"),
+                                ) if isinstance(after_hour, dict) else None
+                                if part_id in new_source_part_ids:
+                                    continue
+                                if part_id not in expected_part_ids:
+                                    before_source = canonical_current_source_asset(
+                                        before_tuple[2] if before_tuple is not None else None
+                                    )
+                                    before_source_key = json.dumps(
+                                        before_source,
+                                        sort_keys=True,
+                                        separators=(",", ":"),
+                                        ensure_ascii=False,
+                                    ) if before_source is not None else ""
+                                    before_trusted = (
+                                        part_id,
+                                        asset["valid"],
+                                        before_source_key,
+                                    ) in actual_current_pair_source_keys
+                                    if before_trusted and after_tuple != before_tuple:
+                                        return reject("DKSS_STAGE_TRUSTED_UNAVAILABLE_CHANGED")
+                                    continue
+                                if after_tuple != before_tuple:
+                                    return reject("DKSS_STAGE_EXPECTED_ROW_CHANGED")
+                                retained_source = canonical_current_source_asset(
+                                    after_tuple[2] if after_tuple is not None else None
+                                )
+                                if retained_source is None:
+                                    return reject("DKSS_STAGE_EXPECTED_SOURCE_MISSING")
+                                retained_source_key = json.dumps(
+                                    retained_source,
+                                    sort_keys=True,
+                                    separators=(",", ":"),
+                                    ensure_ascii=False,
+                                )
+                                if (
+                                    part_id,
+                                    asset["valid"],
+                                    retained_source_key,
+                                ) not in actual_current_pair_source_keys:
+                                    return reject("DKSS_STAGE_EXPECTED_SOURCE_UNTRUSTED")
+                            validated_current_stage["partOutcomeProof"] = proof
+                            return True
+
+                        def preserve_operational_regional_source(shadow_stage: dict[str, Any]) -> None:
+                            nonlocal regional_input_changed
+                            if (
+                                collection == REGIONAL_PROXY_REQUIRED_COLLECTION
+                                and regional_proxy_configuration_status == "CONFIGURED"
+                                and regional_lf_is_native_source_time(
+                                    asset_model_run, asset["valid"],
+                                )
+                            ):
+                                observation_args = {
+                                    "source_asset": step_source_asset,
+                                    "processing_signature": processing_signature,
+                                    "target_registry_sha256": current_target_registry_sha256,
+                                    "policy": regional_proxy_policy,
+                                    "regional_part_ids": regional_target_part_ids,
+                                }
+                                before_observation = regional_asset_observation(
+                                    current_shadow, **observation_args,
+                                )
+                                capture_counts = capture_regional_source_proof(
+                                    shadow_stage,
+                                    previous_shadow=current_shadow,
+                                    policy=regional_proxy_policy,
+                                    targets=coastal_part_targets,
+                                    source_asset=step_source_asset,
+                                    part_outcome_proof=validated_current_stage["partOutcomeProof"],
+                                    processing_signature=processing_signature,
+                                )
+                                after_observation = regional_asset_observation(
+                                    shadow_stage, **observation_args,
+                                )
+                                regional_input_changed = (
+                                    before_observation is None or after_observation is None
+                                    or before_observation != after_observation
+                                )
+                                if (after_observation is not None
+                                        and not capture_counts["invalidSamples"]
+                                        and not capture_counts["blockedIndex"]):
+                                    validated_current_stage["regionalObservation"] = after_observation
+
+                        if bootstrap_operational_wam:
+                            clear_wave_target_rejection_diagnostics(
+                                result["diagnostics"],
+                                operational_wave_zones,
+                            )
+                        with supervised_asset_operation(supervised_identity):
+                            found, touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
+                                path,
+                                collection,
+                                asset_model_run,
+                                asset["valid"],
+                                zones,
+                                wave_candidate,
+                                result["diagnostics"],
+                                current_shadow,
+                                coastal_point_stage,
+                                current_part_outcome_observation,
+                                allowed_parameters=allowed_parameters,
+                                _owned_read=reader,
+                                failure_flush=lambda: checkpoint_controller.flush_if_due(force=True),
+                                stage_validator=validate_operational_wave_stage,
+                                current_stage_validator=validate_operational_current_stage,
+                                finalize_shadow_stage=preserve_operational_regional_source,
+                                locked_operational_reference=canonical_time(locked_production_reference),
+                                trusted_current_pair_source_keys=(
+                                    actual_current_pair_source_keys
+                                    if collection in MARINE_COLLECTIONS
+                                    else None
+                                ),
+                                validation_error=(
+                                    OPERATIONAL_CURRENT_STAGE_VALIDATION_ERROR
+                                    if collection in MARINE_COLLECTIONS
+                                    else "operational WAM asset lacks required fields"
+                                ),
+                            )
+                except GribReadUnproven:
+                    raise
+                except (
+                    DmiGridLookupError,
+                    KeyError,
+                    TypeError,
+                    IndexError,
+                    AttributeError,
+                    ValueError,
+                    RuntimeError,
+                    OSError,
+                ) as exc:
+                    if bootstrap_operational_wam and validated_wave_stage:
+                        wave_asset_coverage = result["diagnostics"].setdefault(
+                            "operationalWaveAssetCoverageByCollection", {}
+                        ).setdefault(collection, {})
+                        accumulate_wave_asset_coverage(
+                            wave_asset_coverage,
+                            validated_wave_stage,
+                            admitted=False,
+                            observed_rejected_by_code=(
+                                validated_wave_rejections
                             ),
-                            "failureClass": "asset-processing",
-                            "partialProgressPreserved": (
-                                False if bootstrap_operational_wam else True
-                            ),
-                            "activeCachePreserved": True,
-                        })
+                        )
+                        run_info["assetsRejectedAfterTraversal"] += 1
+                        rejected_by_code = run_info[
+                            "waveObservedRejectionEventsByCode"
+                        ]
+                        for code, count in validated_wave_rejections.items():
+                            rejected_by_code[code] = (
+                                int(rejected_by_code.get(code) or 0)
+                                + int(count)
+                            )
+                        controlled_reason = (
+                            "NO_USABLE_TUPLES"
+                            if int(
+                                validated_wave_stage.get("acceptedCount")
+                                or 0
+                            ) == 0
+                            else "LINEAGE_OR_ADMISSION_DEFERRED"
+                        )
+                        controlled = result["diagnostics"].setdefault(
+                            "operationalWaveControlledRejectionsByCollection",
+                            {},
+                        ).setdefault(collection, {})
+                        controlled[controlled_reason] = int(
+                            controlled.get(controlled_reason) or 0
+                        ) + 1
+                        run_info["assetsObserved"] += 1
+                        recognized.update(REQUIRED_TARGETS["wave"])
+                        run_info["recognizedParameters"] = sorted(recognized)
+                        checkpoint_controller.observe_asset_duration(
+                            time.monotonic() - asset_processing_started,
+                            cost_family=collection,
+                        )
+                        checkpoint_controller.mark_bulk_dirty()
                         checkpoint_controller.flush_if_due(force=True)
                         progress(
                             f"{collection}: forecast-step "
-                            f"{asset_number}/{len(assets)} {asset['valid']} "
-                            "failed transactionally and was skipped; later files "
-                            "and providers receive the exact residual"
+                            f"{asset_number}/{len(assets)} blev læst færdig "
+                            "men gav ingen sikkert admittérbar tidsdel; "
+                            "aktiv cache er uændret, og næste asset fortsætter"
                         )
                         continue
+                    if bounded_primary_refresh:
+                        run_info["assetsBoundedRefreshFailed"] += 1
+                        result["diagnostics"]["assetsBoundedDkssRefreshFailed"] = int(
+                            result["diagnostics"].get(
+                                "assetsBoundedDkssRefreshFailed"
+                            ) or 0
+                        ) + 1
+                    result["diagnostics"]["errors"].append({
+                        "collection": collection,
+                        "validTime": supervised_identity["validTime"],
+                        "message": safe_error_message(exc),
+                        "failureCode": operational_current_stage_failure_code(
+                            collection,
+                            exc,
+                            validated_current_stage.get("rejectionCode"),
+                        ),
+                        "failureClass": "asset-processing",
+                        "partialProgressPreserved": (
+                            False if bootstrap_operational_wam else True
+                        ),
+                        "activeCachePreserved": True,
+                    })
+                    checkpoint_controller.flush_if_due(force=True)
+                    progress(
+                        f"{collection}: forecast-step "
+                        f"{asset_number}/{len(assets)} {asset['valid']} "
+                        "failed transactionally and was skipped; later files "
+                        "and providers receive the exact residual"
+                    )
+                    continue
                 asset_processing_seconds = time.monotonic() - asset_processing_started
                 if bootstrap_operational_wam:
                     clear_wave_target_rejection_diagnostics(
