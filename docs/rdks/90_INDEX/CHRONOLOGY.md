@@ -1,4 +1,10 @@
-# 2026-10-11 – 4.0.574 driftsopfølgning efter faktisk fejlet vejrhentning
+# 2026-10-11 – afvist gammelt checkpoint og præcis kort protected-current-fortsættelse
+
+PR #569 er oprettet. Første præcise kildekørsel 38133848482/1 på b4d3385 fejlede i den eksisterende native npm-procestitelprøve, før fuld kildekontrol. Den officielle npm-indgang sætter først titlen npm og senere npm ci; testen accepterede kun den sidste fase og den faste Node-sti. Kun testobservationen udvides med præcis npm og en additiv positiv/negativ prøve. Faktisk Node24-executable, fastholdt procesidentitet, parent, gruppe/session, lås, pipes og fysisk afslutning bevares. Produktets proceskontrol ændres ikke. Den lille lokale prøve består; ny eksakt Linux-/kildekontrol og faktisk vejrlevering mangler stadig. Ingen ny vejrhentning er startet.
+
+38132323971/1 fejlede kl. 12.35 dansk tid før providerarbejde: BASELINE_MISMATCH, fordi cipher fra 38111216765-1 var bundet til den B, som eksisterede før den nye publicering. Ny lokal rettelse genoptager eksplicit fra autentisk current B/S og bevarer den gamle ciphergren; ingen ommærkning eller datakontrol sænkes. Normale måltests består, men GitHub-kontrol, merge og faktisk driftseffekt mangler. PR #567 er merget med kilde-/Linuxbevis; faktisk SAVE/UPLOAD er stadig åbne. Ejeren giver én ny kort kørsel efter rettelsen og fuld prioritet til vejrhentningsfejlen; ingen almindelig reservekørsel eller ændret cron. Alle fem mål er fortsat åbne.
+
+# Historik: 2026-10-11 – 4.0.574 driftsopfølgning efter faktisk fejlet vejrhentning
 
 38124400431/1 fejlede kl. 11.24 dansk tid uden nye offentlige data. Producentfejl, rå-SAVE-afvisning og afvist krypteret upload holdes adskilt; lokal kryptering er ikke holdbar fjernlagring. Kandidaten retter alene den faste lokale actions /./-scriptstavemåde og tilføjer fast-enum-fejldiagnostik. Den faktiske historiske indre fejlårsag er ikke målt. 21/21 normale Node-prøver genbruges; additiv /proc-native-case og præcis Linux/source-CI er endnu åbne. Ingen ændring af modelbindinger, score, geometri, originaler, SQL eller scheduler og ingen ny vejrordre. Det er en pipelineopfølgning, ikke en ny UI-version eller produktionsverificeret rettelse. Alle fem mål forbliver åbne.
 

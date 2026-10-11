@@ -6,6 +6,18 @@ Den lokale 4.0.574 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
 
+## 89.202 Procesprøven genkender npm-opstart
+
+GitHub-kontrollen fandt først en fejl i en eksisterende procesprøve. npm kalder sig først npm og senere npm ci. Prøven genkendte ikke den første fase. Kun denne testforventning er rettet; den faktiske programfil, procesidentitet, skrivelås og afslutning skal stadig kontrolleres. Ny GitHub-kontrol skal bestå før levering.
+
+## 89.201 Kort vejrhentning fra den aktuelle gemte generation
+
+Et gemt fremskridt kan tilhøre den generation, der var i drift før en vellykket vejrhentning. Når en ny generation er gemt, skal det gamle fremskridt fortsat afvises. Fejlen den 11. oktober i det korte forsøg opstod før DMI-hentning og skyldtes netop forskellig generation.
+
+Den nye udtrykkelige korte indgang bruger i stedet de aktuelt autentificerede, beskyttede vejrdata. Generation, model, kontrakt og faktiske filbytes skal passe sammen. En eksisterende kandidat bevares og kontrolleres mod sin gemte pakke; ellers dannes en separat arbejdsfil med den normale tabsfri materialisering. Manglende eller tomme input stopper før leverandørarbejde. Det giver ikke i sig selv komplette eller friske data: producenten og alle beregnings-, databevarelses- og deploykontroller skal stadig bestå.
+
+Den gamle korte indgang til et præcist krypteret fremskridt er uændret. Tidsbudgetter, tidsplan, scoreformel, kilder, administratorpunkter og originaler ændres ikke. Lokale måltests består; sikker levering og faktisk offentlig effekt mangler. Cache-rettelsen i PR #567 er lagt i main med bestået GitHub-kontrol, men faktisk gemning og upload er stadig ikke bevist. Alle øvrige leverancer er sat på hold, mens vejrhentningsfejlen har fuld prioritet.
+
 ## 89.200 Gemning accepterer GitHubs normale filsti
 
 Den almindelige vejrhentning den 11. oktober fejlede uden at levere nye offentlige data. Rå gemning og upload af den lokalt krypterede fil blev afvist. En grøn ydre kontrol er ikke bevis for gemning, når den indre operation er afvist.

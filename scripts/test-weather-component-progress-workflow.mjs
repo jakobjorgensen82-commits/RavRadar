@@ -3,6 +3,8 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import crypto from 'node:crypto';
+import { privateRuntimeBundleContentSha256 } from './private-production-runtime-bundle.mjs';
 import { PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES } from './private-production-runtime-workflow.mjs';
 
 for (const file of ['scripts/lib/verified-protected-progress-components.mjs',
@@ -49,6 +51,8 @@ assert.match(restore, /restore-keys: \$\{\{ !inputs\.quick_confirmation && forma
   'A short confirmation must not silently use another run');
 const validateSource = step('Validate requested short-confirmation progress source');
 assert.match(validateSource, /QUICK_PROGRESS_SOURCE.*inputs\.quick_progress_source/);
+assert.match(validateSource, /"\$QUICK_PROGRESS_SOURCE" = protected-current \|\|/);
+assert.match(restore, /!\(inputs\.quick_confirmation && inputs\.quick_progress_source == 'protected-current'\)/);
 assert.match(validateSource, /\^\[0-9\]\+-\[1-9\]\[0-9\]\*\$/);
 assert.ok(workflow.indexOf(validateSource) < workflow.indexOf(restore));
 assert.doesNotMatch(bind, /continue-on-error|\|\| true/);
@@ -71,24 +75,158 @@ assert.match(donor, /if \(store\.hasPartContinuity\)/);
 assert.doesNotMatch(donor, /readFile(?:Sync)?\('data\/live\/dmi-forecast-cache\.json'/,
   'The continuity donor classifier must validate the large forecast incrementally');
 const confirmation = step('Require recovered progress before short confirmation');
+assert.match(bind, /QUICK_PROTECTED_BASELINE:.*inputs\.quick_confirmation && inputs\.quick_progress_source == 'protected-current'/);
+assert.match(bind, /test "\$captured" = "true" && test "\$QUICK_PROTECTED_BASELINE" != "true"/);
+assert.ok(confirmation.indexOf('if test "$QUICK_PROGRESS_SOURCE" = protected-current; then')
+  < confirmation.indexOf('report="$RUNNER_TEMP/weather-progress-restore-report.json"'));
+assert.match(confirmation, /test "\$\{\{ steps\.private-runtime-install\.outcome \}\}" = success/);
+assert.match(confirmation, /test "\$\{\{ steps\.private-runtime-state\.outputs\.available \}\}" = true/);
+assert.match(confirmation, /test "\$\{\{ steps\.component-progress-restore\.outputs\.captured \}\}" = true/);
+for (const transition of ['exact-weather-recovery.outputs.required',
+  'historical-wave-predecessor.outputs.required', 'weather-source-handoff.outputs.reused']) {
+  assert.ok(confirmation.includes(`test "${'${{ steps.'}${transition} }}" != true`));
+}
+assert.match(confirmation, /--input "\$source_path" --output "\$RUNNER_TEMP\/protected-quick-dmi-input\.json"/);
+assert.match(confirmation, /if ! test -e \.cache\/dmi-candidate-progress\.json; then/);
+assert.match(confirmation, /packHash\.digest\('hex'\) !== entries\[0\]\.sha256/);
+assert.doesNotMatch(confirmation, /zones":\{\}|strict_active_ready=true|ENCRYPTED_PROGRESS_RESTORED/);
+assert.ok(workflow.indexOf(confirmation) < workflow.indexOf(step('Refresh DMI water-source registry')));
 assert.match(confirmation, /test "\$PROGRESS_CACHE_MATCHED_KEY" = "\$expected"/);
 assert.match(confirmation, /\.status == "RESTORED" and \.restored == true and \.fileCount > 0/);
 assert.match(confirmation,
   /import \{ assertUsableDmiProgressRecovery \} from '\.\/scripts\/lib\/verified-dmi-progress-inputs\.mjs'/);
 assert.match(confirmation, /assertUsableDmiProgressRecovery\(report\.dmiProgress, \{ allowAbsent: true \}\)/,
   'A short confirmation permits an omitted legacy forecast or valid no-change, but rejects failed forecast admission');
-assert.ok(confirmation.indexOf('assertUsableDmiProgressRecovery(report.dmiProgress')
-  < confirmation.indexOf('test -s .cache/dmi-candidate-progress.json'));
+const encryptedConfirmation = confirmation.slice(confirmation.indexOf('report="$RUNNER_TEMP/weather-progress-restore-report.json"'));
+assert.ok(encryptedConfirmation.indexOf('assertUsableDmiProgressRecovery(report.dmiProgress')
+  < encryptedConfirmation.indexOf('test -s .cache/dmi-candidate-progress.json'));
 assert.doesNotMatch(confirmation, /continue-on-error|\|\| true/,
   'A known forecast restore rejection must not be swallowed');
 const assertionBlock = confirmation.match(/node --input-type=module <<'NODE'\n([\s\S]*?)\n          NODE/);
 assert.ok(assertionBlock, 'The actual quick-confirmation assertion must remain executable');
 const assertionScript = assertionBlock[1].replace(/^ {10}/gm, '');
+const protectedBlock = confirmation.match(/node --input-type=module <<'NODE_PROTECTED'\n([\s\S]*?)\n          NODE_PROTECTED/);
+assert.ok(protectedBlock, 'The protected-current assertion must be the actual workflow code');
+const protectedScript = protectedBlock[1].replace(/^ {10}/gm, '');
+const protectedDmiBlock = confirmation.match(/python - <<'PYTHON_PROTECTED'\n([\s\S]*?)\n          PYTHON_PROTECTED/);
+assert.ok(protectedDmiBlock);
+const protectedDmiScript = protectedDmiBlock[1].replace(/^ {10}/gm, '');
 const normalAssertionBlock = bind.match(/node --input-type=module <<'NODE'\n([\s\S]*?)\n          NODE/);
 assert.ok(normalAssertionBlock, 'The actual normal restore assertion must remain executable');
 const normalAssertionScript = normalAssertionBlock[1].replace(/^ {10}/gm, '');
 const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-quick-confirmation-contract-'));
 try {
+  const fixtureRoot = path.join(temporary, 'protected-root');
+  const fixtureBundle = path.join(temporary, 'protected-bundle');
+  await fs.mkdir(path.join(fixtureRoot, 'data/live'), { recursive: true });
+  await fs.mkdir(path.join(fixtureRoot, '.cache'), { recursive: true });
+  await fs.mkdir(fixtureBundle);
+  const conditionsBytes = Buffer.from('{"synthetic":true}\n');
+  const dmiBytes = Buffer.from('{"zones":{"synthetic":{"hourly":[{"time":"2026-10-11T10:00:00Z"}]}}}\n');
+  const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+  const fixtureManifest = { datasetId: 'synthetic', productionReferenceAt: '2026-10-11T10:00:00Z',
+    generatedAt: '2026-10-11T10:01:00Z', modelBinding: { synthetic: true },
+    contractHashes: { synthetic: true }, files: [
+      { relativePath: 'data/live/conditions.json', bytes: conditionsBytes.length, sha256: hash(conditionsBytes) },
+      { relativePath: 'data/live/dmi-bulk-cache.json', bytes: dmiBytes.length, sha256: hash(dmiBytes) },
+    ], bundleContentSha256: null };
+  fixtureManifest.bundleContentSha256 = privateRuntimeBundleContentSha256(fixtureManifest);
+  const descriptor = { ...fixtureManifest, sourceHead: '1'.repeat(40) };
+  const base = { baselineSha256: hash(conditionsBytes), protectedBundleContentSha256: fixtureManifest.bundleContentSha256 };
+  const fixtures = async () => {
+    await fs.writeFile(path.join(fixtureRoot, 'data/live/conditions.json'), conditionsBytes);
+    await fs.writeFile(path.join(fixtureRoot, 'data/live/dmi-bulk-cache.json'), dmiBytes);
+    await fs.writeFile(path.join(fixtureBundle, 'manifest.json'), JSON.stringify(fixtureManifest));
+    await fs.writeFile(path.join(temporary, 'weather-progress-base.json'), JSON.stringify(base));
+    for (const name of ['private-runtime-current-source.json', 'private-runtime-restored-source.json']) {
+      await fs.writeFile(path.join(temporary, name), JSON.stringify(descriptor));
+    }
+    await fs.writeFile(path.join(fixtureRoot, '.cache/private-production-runtime-expected.json'),
+      JSON.stringify({ modelBinding: fixtureManifest.modelBinding, contractHashes: fixtureManifest.contractHashes }));
+  };
+  const protectedEnv = { ...process.env, RUNNER_TEMP: temporary, GITHUB_WORKSPACE: fixtureRoot,
+    RAVRADAR_PRIVATE_RUNTIME_BUNDLE: fixtureBundle };
+  for (const name of ['exact', 'changed-conditions', 'changed-dmi', 'previous-generation',
+    'base-mismatch', 'model-mismatch', 'duplicate-descriptor', 'missing-input']) {
+    await fixtures();
+    if (name === 'changed-conditions') await fs.appendFile(path.join(fixtureRoot, 'data/live/conditions.json'), ' ');
+    if (name === 'changed-dmi') await fs.appendFile(path.join(fixtureRoot, 'data/live/dmi-bulk-cache.json'), ' ');
+    if (name === 'previous-generation') await fs.writeFile(path.join(temporary, 'private-runtime-restored-source.json'),
+      JSON.stringify({ ...descriptor, datasetId: 'previous' }));
+    if (name === 'base-mismatch') await fs.writeFile(path.join(temporary, 'weather-progress-base.json'),
+      JSON.stringify({ ...base, protectedBundleContentSha256: '0'.repeat(64) }));
+    if (name === 'model-mismatch') await fs.writeFile(path.join(fixtureRoot, '.cache/private-production-runtime-expected.json'),
+      JSON.stringify({ modelBinding: { different: true }, contractHashes: fixtureManifest.contractHashes }));
+    if (name === 'duplicate-descriptor') {
+      const duplicate = { ...fixtureManifest, files: [...fixtureManifest.files, fixtureManifest.files[1]] };
+      duplicate.bundleContentSha256 = privateRuntimeBundleContentSha256(duplicate);
+      await fs.writeFile(path.join(fixtureBundle, 'manifest.json'), JSON.stringify(duplicate));
+    }
+    if (name === 'missing-input') await fs.unlink(path.join(fixtureRoot, 'data/live/dmi-bulk-cache.json'));
+    const result = spawnSync(process.execPath, ['--input-type=module'], {
+      input: protectedScript, encoding: 'utf8', cwd: process.cwd(), env: protectedEnv,
+    });
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, name === 'exact' ? 0 : 1, `actual protected quick gate: ${name}`);
+    assert.equal(result.stdout, '');
+    assert.equal(result.stderr.trim(), name === 'exact' ? '' : 'PROTECTED_QUICK_BASELINE_REQUIRED');
+  }
+  for (const name of ['legitimate-distinct-candidate', 'legitimate-active', 'changed-candidate', 'foreign-candidate']) {
+    await fixtures();
+    const relative = name === 'legitimate-active' ? '.cache/dmi-active-complete.json' : '.cache/dmi-candidate-progress.json';
+    const bytes = Buffer.from('{"zones":{"different-synthetic":{"hourly":[{"time":"2026-10-11T11:00:00Z"}]}}}\n');
+    await fs.writeFile(path.join(fixtureRoot, relative), bytes);
+    const packed = { kind: 'PRIVATE_WEATHER_COMPONENT_PACK', schemaVersion: 1, marker: null,
+      files: [{ relativePath: relative, bytes: bytes.length, sha256: hash(bytes) }] };
+    const magic = Buffer.from('RR-WEATHER-COMPONENT-PACK-1\n');
+    const header = Buffer.from(JSON.stringify(packed));
+    const length = Buffer.alloc(4);
+    length.writeUInt32BE(header.length);
+    const packBytes = Buffer.concat([magic, length, header, bytes]);
+    const packRelative = '.cache/weather-component-inputs.pack';
+    await fs.writeFile(path.join(fixtureRoot, packRelative), packBytes);
+    const manifest = { ...fixtureManifest, files: [...fixtureManifest.files,
+      { relativePath: packRelative, bytes: packBytes.length, sha256: hash(packBytes) }] };
+    manifest.bundleContentSha256 = privateRuntimeBundleContentSha256(manifest);
+    await fs.writeFile(path.join(fixtureBundle, 'manifest.json'), JSON.stringify(manifest));
+    for (const file of ['private-runtime-current-source.json', 'private-runtime-restored-source.json']) {
+      await fs.writeFile(path.join(temporary, file), JSON.stringify({ ...manifest, sourceHead: '1'.repeat(40) }));
+    }
+    await fs.writeFile(path.join(temporary, 'weather-progress-base.json'),
+      JSON.stringify({ ...base, protectedBundleContentSha256: manifest.bundleContentSha256 }));
+    if (name === 'changed-candidate') await fs.appendFile(path.join(fixtureRoot, relative), ' ');
+    if (name === 'foreign-candidate') await fs.writeFile(path.join(fixtureRoot, '.cache/dmi-active-complete.json'), bytes);
+    const result = spawnSync(process.execPath, ['--input-type=module'], {
+      input: protectedScript, encoding: 'utf8', cwd: process.cwd(), env: protectedEnv,
+    });
+    const succeeds = name.startsWith('legitimate-');
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, succeeds ? 0 : 1, `actual protected companion binding: ${name}`);
+    assert.equal(result.stdout, '');
+    assert.equal(result.stderr.trim(), succeeds ? '' : 'PROTECTED_QUICK_BASELINE_REQUIRED');
+    for (const file of [relative, packRelative, '.cache/dmi-active-complete.json']) {
+      await fs.unlink(path.join(fixtureRoot, file)).catch(error => { if (error.code !== 'ENOENT') throw error; });
+    }
+  }
+  await fixtures();
+  const python = process.env.PYTHON_EXECUTABLE || (process.platform === 'win32' ? 'python' : 'python3');
+  const materialized = path.join(temporary, 'protected-quick-dmi-input.json');
+  const materializer = spawnSync(python, ['scripts/materialize-dmi-bulk-storage.py',
+    '--input', path.join(fixtureRoot, 'data/live/dmi-bulk-cache.json'), '--output', materialized],
+  { encoding: 'utf8', cwd: process.cwd(), env: protectedEnv });
+  assert.equal(materializer.error, undefined);
+  assert.equal(materializer.status, 0, materializer.stderr);
+  assert.deepEqual(await fs.readFile(path.join(fixtureRoot, 'data/live/dmi-bulk-cache.json')), dmiBytes);
+  for (const [name, bytes, succeeds] of [['materialized', null, true],
+    ['empty', '{"zones":{}}', false], ['malformed', '{"PRIVATE_TOKEN_ABCDEF":', false]]) {
+    if (bytes !== null) await fs.writeFile(materialized, bytes);
+    const result = spawnSync(python, ['-'], { input: protectedDmiScript, encoding: 'utf8',
+      cwd: process.cwd(), env: protectedEnv });
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, succeeds ? 0 : 1, `actual protected DMI input: ${name}`);
+    assert.equal(result.stdout, '');
+    assert.equal(result.stderr.trim(), succeeds ? '' : 'PROTECTED_QUICK_DMI_INPUT_REQUIRED');
+  }
   for (const [status, succeeds] of [['MERGED', true], ['ACCEPTED_NO_CHANGE', true],
     ['NOT_PRESENT', true], ['REJECTED', false], ['RETAINED', false], ['UNKNOWN', false], [null, false]]) {
     const report = { status: 'RESTORED', restored: true, fileCount: 3,

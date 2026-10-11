@@ -1074,7 +1074,7 @@ jobs:
           QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
         run: |
           set -euo pipefail
-          [[ "$QUICK_PROGRESS_SOURCE" =~ ^[0-9]+-[1-9][0-9]*$ ]]
+          [[ "$QUICK_PROGRESS_SOURCE" = protected-current || "$QUICK_PROGRESS_SOURCE" =~ ^[0-9]+-[1-9][0-9]*$ ]]
 
       - name: Restore encrypted private weather progress only
         id: component-progress-cache
@@ -1083,7 +1083,7 @@ jobs:
         # conditions bytes and bundle hash. This also permits the exact 11Z
         # recovery to resume its own progress after a later no-loss stop;
         # a snapshot from the 15Z anchor is rejected by the binder below.
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current')
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-private-progress.encrypted
@@ -1096,6 +1096,7 @@ jobs:
         shell: bash
         env:
           WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          QUICK_PROTECTED_BASELINE: ${{ inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current' }}
         run: |
           set -euo pipefail
           protected_bundle_sha256="$(node --input-type=module -e '
@@ -1111,7 +1112,7 @@ jobs:
             --report "$RUNNER_TEMP/weather-progress-base-report.json"
           captured="$(jq -r '.captured == true' "$RUNNER_TEMP/weather-progress-base-report.json")"
           echo "captured=$captured" >> "$GITHUB_OUTPUT"
-          if test "$captured" = "true"; then
+          if test "$captured" = "true" && test "$QUICK_PROTECTED_BASELINE" != "true"; then
             node scripts/weather-component-progress-cache.mjs restore \
               --root "$GITHUB_WORKSPACE" --base "$RUNNER_TEMP/weather-progress-base.json" \
               --report "$RUNNER_TEMP/weather-progress-restore-report.json"
@@ -1145,6 +1146,171 @@ jobs:
           PROGRESS_CACHE_MATCHED_KEY: ${{ steps.component-progress-cache.outputs.cache-matched-key }}
         run: |
           set -euo pipefail
+          if test "$QUICK_PROGRESS_SOURCE" = protected-current; then
+            # This is the current authenticated B's actual producer input,
+            # not an old progress snapshot rebased onto a new generation.
+            test "${{ steps.private-runtime-install.outcome }}" = success
+            test "${{ steps.private-runtime-state.outputs.available }}" = true
+            test "${{ steps.component-progress-restore.outcome }}" = success
+            test "${{ steps.component-progress-restore.outputs.captured }}" = true
+            test "${{ steps.exact-weather-recovery.outputs.required }}" != true
+            test "${{ steps.historical-wave-predecessor.outputs.required }}" != true
+            test "${{ steps.weather-source-handoff.outputs.reused }}" != true
+            verify_protected_quick_baseline() {
+              node --input-type=module <<'NODE_PROTECTED'
+          import fs from 'node:fs/promises';
+          import { createReadStream } from 'node:fs';
+          import crypto from 'node:crypto';
+          import path from 'node:path';
+          import { privateRuntimeBundleContentSha256, canonicalPrivateRuntimeJson } from './scripts/private-production-runtime-bundle.mjs';
+          try {
+            const manifest = JSON.parse(await fs.readFile(
+              path.join(process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE, 'manifest.json'), 'utf8'));
+            const base = JSON.parse(await fs.readFile(
+              path.join(process.env.RUNNER_TEMP, 'weather-progress-base.json'), 'utf8'));
+            const current = JSON.parse(await fs.readFile(
+              path.join(process.env.RUNNER_TEMP, 'private-runtime-current-source.json'), 'utf8'));
+            const restored = JSON.parse(await fs.readFile(
+              path.join(process.env.RUNNER_TEMP, 'private-runtime-restored-source.json'), 'utf8'));
+            const expected = JSON.parse(await fs.readFile(
+              path.join(process.env.GITHUB_WORKSPACE, '.cache/private-production-runtime-expected.json'), 'utf8'));
+            for (const key of ['datasetId', 'productionReferenceAt', 'generatedAt', 'bundleContentSha256']) {
+              if (typeof manifest[key] !== 'string' || !manifest[key]
+                || current[key] !== manifest[key] || restored[key] !== manifest[key]) throw new Error();
+            }
+            if (typeof current.sourceHead !== 'string' || current.sourceHead !== restored.sourceHead) throw new Error();
+            for (const key of ['modelBinding', 'contractHashes']) {
+              if (!manifest[key] || canonicalPrivateRuntimeJson(current[key]) !== canonicalPrivateRuntimeJson(manifest[key])
+                || canonicalPrivateRuntimeJson(restored[key]) !== canonicalPrivateRuntimeJson(manifest[key])
+                || canonicalPrivateRuntimeJson(expected[key]) !== canonicalPrivateRuntimeJson(manifest[key])) throw new Error();
+            }
+            if (!Array.isArray(manifest.files)
+              || privateRuntimeBundleContentSha256(manifest) !== manifest.bundleContentSha256
+              || base.protectedBundleContentSha256 !== manifest.bundleContentSha256) throw new Error();
+            for (const relative of ['data/live/conditions.json', 'data/live/dmi-bulk-cache.json']) {
+              const descriptors = manifest.files.filter(file => file.relativePath === relative);
+              if (descriptors.length !== 1) throw new Error();
+              const descriptor = descriptors[0];
+              if (!Number.isSafeInteger(descriptor.bytes) || descriptor.bytes < 1
+                || !/^[0-9a-f]{64}$/.test(descriptor.sha256)) throw new Error();
+              const absolute = path.join(process.env.GITHUB_WORKSPACE, relative);
+              let current = process.env.GITHUB_WORKSPACE;
+              for (const segment of relative.split('/')) {
+                current = path.join(current, segment);
+                if ((await fs.lstat(current)).isSymbolicLink()) throw new Error();
+              }
+              const stat = await fs.lstat(absolute);
+              if (!stat.isFile() || stat.size !== descriptor.bytes) throw new Error();
+              const hash = crypto.createHash('sha256');
+              let bytes = 0;
+              for await (const chunk of createReadStream(absolute)) {
+                bytes += chunk.length;
+                if (bytes > descriptor.bytes) throw new Error();
+                hash.update(chunk);
+              }
+              const digest = hash.digest('hex');
+              if (bytes !== descriptor.bytes || digest !== descriptor.sha256
+                || relative === 'data/live/conditions.json' && digest !== base.baselineSha256) throw new Error();
+            }
+            const companions = [];
+            const cacheStat = await fs.lstat(path.join(process.env.GITHUB_WORKSPACE, '.cache'));
+            if (!cacheStat.isDirectory() || cacheStat.isSymbolicLink()) throw new Error();
+            for (const relative of ['.cache/dmi-candidate-progress.json', '.cache/dmi-active-complete.json']) {
+              try { await fs.lstat(path.join(process.env.GITHUB_WORKSPACE, relative)); companions.push(relative); }
+              catch (error) { if (error.code !== 'ENOENT') throw error; }
+            }
+            if (companions.length) {
+              const packRelative = '.cache/weather-component-inputs.pack';
+              const entries = manifest.files.filter(file => file.relativePath === packRelative);
+              if (entries.length !== 1) throw new Error();
+              const packFile = path.join(process.env.GITHUB_WORKSPACE, packRelative);
+              const packStat = await fs.lstat(packFile);
+              if (!packStat.isFile() || packStat.isSymbolicLink() || packStat.size !== entries[0].bytes) throw new Error();
+              const packHash = crypto.createHash('sha256');
+              let packBytes = 0;
+              for await (const chunk of createReadStream(packFile)) {
+                packBytes += chunk.length;
+                if (packBytes > entries[0].bytes) throw new Error();
+                packHash.update(chunk);
+              }
+              if (packBytes !== entries[0].bytes || packHash.digest('hex') !== entries[0].sha256) throw new Error();
+              const handle = await fs.open(packFile, 'r');
+              let packed;
+              try {
+                const magic = Buffer.from('RR-WEATHER-COMPONENT-PACK-1\n');
+                const read = async (size, position) => {
+                  const buffer = Buffer.alloc(size);
+                  let offset = 0;
+                  while (offset < size) {
+                    const result = await handle.read(buffer, offset, size - offset, position + offset);
+                    if (!result.bytesRead) throw new Error();
+                    offset += result.bytesRead;
+                  }
+                  return buffer;
+                };
+                if (!(await read(magic.length, 0)).equals(magic)) throw new Error();
+                const size = (await read(4, magic.length)).readUInt32BE();
+                if (size < 2 || size > 32 * 1024 * 1024) throw new Error();
+                packed = JSON.parse((await read(size, magic.length + 4)).toString('utf8'));
+                if (packed.kind !== 'PRIVATE_WEATHER_COMPONENT_PACK' || packed.schemaVersion !== 1
+                  || !Array.isArray(packed.files)) throw new Error();
+              } finally { await handle.close(); }
+              for (const relative of companions) {
+                const entries = packed.files.filter(file => file.relativePath === relative);
+                if (entries.length !== 1 || !Number.isSafeInteger(entries[0].bytes) || entries[0].bytes < 1
+                  || !/^[0-9a-f]{64}$/.test(entries[0].sha256)) throw new Error();
+                const absolute = path.join(process.env.GITHUB_WORKSPACE, relative);
+                const stat = await fs.lstat(absolute);
+                if (!stat.isFile() || stat.isSymbolicLink() || stat.size !== entries[0].bytes) throw new Error();
+                const hash = crypto.createHash('sha256');
+                let bytes = 0;
+                for await (const chunk of createReadStream(absolute)) {
+                  bytes += chunk.length;
+                  if (bytes > entries[0].bytes) throw new Error();
+                  hash.update(chunk);
+                }
+                if (bytes !== entries[0].bytes || hash.digest('hex') !== entries[0].sha256) throw new Error();
+              }
+            }
+          } catch {
+            console.error('PROTECTED_QUICK_BASELINE_REQUIRED');
+            process.exitCode = 1;
+          }
+          NODE_PROTECTED
+            }
+            verify_protected_quick_baseline
+            mkdir -p .cache
+            source_path=data/live/dmi-bulk-cache.json
+            if test -e .cache/dmi-candidate-progress.json; then
+              source_path=.cache/dmi-candidate-progress.json
+            fi
+            python scripts/materialize-dmi-bulk-storage.py \
+              --input "$source_path" --output "$RUNNER_TEMP/protected-quick-dmi-input.json"
+            python - <<'PYTHON_PROTECTED'
+          import os, sys
+          from pathlib import Path
+          sys.path.insert(0, 'scripts')
+          from lib.dmi_bulk_storage import read_dmi_bulk_document
+          try:
+              document = read_dmi_bulk_document(Path(os.environ['RUNNER_TEMP']) / 'protected-quick-dmi-input.json', expand_sources=False)
+              zones = document.get('zones')
+              if not isinstance(zones, dict) or not any(
+                  isinstance(zone, dict) and isinstance(zone.get('hourly'), (dict, list)) and zone['hourly']
+                  for zone in zones.values()
+              ):
+                  raise ValueError()
+          except Exception:
+              print('PROTECTED_QUICK_DMI_INPUT_REQUIRED', file=sys.stderr)
+              sys.exit(1)
+          PYTHON_PROTECTED
+            verify_protected_quick_baseline
+            if ! test -e .cache/dmi-candidate-progress.json; then
+              cp "$RUNNER_TEMP/protected-quick-dmi-input.json" .cache/dmi-candidate-progress.json
+            fi
+            test -s .cache/dmi-candidate-progress.json
+            echo "The current protected DMI input is resumed; producer READY is still required."
+            exit 0
+          fi
           report="$RUNNER_TEMP/weather-progress-restore-report.json"
           [[ "$QUICK_PROGRESS_SOURCE" =~ ^[0-9]+-[1-9][0-9]*$ ]]
           expected="weather-private-progress-encrypted-v2-${RUNNER_OS}-main-${QUICK_PROGRESS_SOURCE}"
