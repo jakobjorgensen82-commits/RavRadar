@@ -314,3 +314,96 @@ await test('normal restore preserves missing trip/outbox bytes and never replace
 });
 
 console.log('OK: Safari/bfcache-genoptagelse genoptegner en færdig forside og genindlæser kun efter en afbrudt opstart.');
+
+// Actual discard/controller/store -> actual startup/IDB restore. Browser events
+// and IDB transaction completion are synthetic; no HTTP or real account is used.
+const { createTripEvidenceController } = await import('../js/services/trip-evidence-controller.js');
+const { ravScoreModelBinding } = await import('../js/core/ravscore-model-contract.js');
+const binding = ravScoreModelBinding();
+const start = (tripId, startedAt = '2026-08-23T06:00:00.000Z') => ({
+  tripId, startedAt, mode: 'waders', zoneId: 'DK-B04-12', coastalPartId: 'DK-B04-12-P01',
+  forecastSnapshot: { id: 'rr-test-210', issuedAt: '2026-08-23T05:00:00.000Z',
+    validAt: startedAt, capturedAt: startedAt },
+  forecastCalibrationEligible: true, dataQualityFlags: [],
+  calibrationFeatures: {
+    modelVersion: binding.modelId, appVersion: '4.0.317', modelStateVersion: binding.stateSchemaVersion,
+    modelVariantId: binding.variantId, modelProfileId: binding.profileId,
+    modelComponentSchemaId: binding.componentSchemaId, modelExplanationSchemaId: binding.explanationSchemaId,
+    modelRankingPolicyId: binding.rankingPolicyId, modelBestTimePolicyId: binding.bestTimePolicyId,
+    modelPresentationPolicyId: binding.presentationPolicyId,
+    modelContractSha256: binding.modelContractSha256, modelBundleSha256: binding.modelBundleSha256,
+    totalScore: 50, scoreBoundLower: 50, scoreBoundUpper: 50, scoreBoundModelUncertaintyPoints: 0,
+    scoreBoundRawLower: 50, scoreBoundRawUpper: 50, historyCoverageHours: 48,
+    scoreQuality: 'FULL_HISTORY', scoreSemantics: 'EXACT_POINT_SCORE', scoreCalibrationEligible: true,
+    conservativeTailResetApplied: false, historyReasonCodes: [], huntabilityScore: 50,
+    transportScore: 50, mobilisationScore: 50, reasonCodes: [],
+  },
+});
+
+const discardKey = 'ravradar-trip-evidence-v2-active';
+const discardId = '11111111-1111-4111-8111-111111111111';
+const discardStop = { endedAt: '2026-08-23T07:00:00.000Z' };
+
+await test('discard restore: an explicitly discarded trip cannot return from the old snapshot', async () => {
+  await storageHarness(async context => {
+    const { values, previous, transactions } = context;
+    const pending = '[{"id":"synthetic-other-pending"}]';
+    const outbox = '[{"id":"synthetic-other-outbox"}]';
+    values.set('ravradar-trip-evidence-v2-pending', pending);
+    values.set('ravradar-observation-outbox-v1', outbox);
+    const controller = createTripEvidenceController({ storage: localStorage,
+      openDialog: async () => { previous.values = Object.fromEntries(values); return { action: 'discard' }; },
+      persist: async () => assert.fail('Discard must never submit anything') });
+    controller.start(start(discardId));
+    const result = await controller.stop(discardStop);
+    assert.equal(result.status, 'discarded');
+    assert.equal(result.tripId, discardId);
+    assert.equal(controller.active(), null);
+    await completeSnapshotInitialization(context);
+    assert.equal(controller.active(), null, 'The committed old backup must not resurrect a discarded trip');
+    assert.equal(values.get('ravradar-trip-evidence-v2-pending'), pending);
+    assert.equal(values.get('ravradar-observation-outbox-v1'), outbox);
+    assert.equal(transactions[1].snapshot.values[discardKey], 'null');
+    const fresh = createTripEvidenceController({ storage: localStorage, openDialog: async () => null });
+    assert.equal(fresh.active(), null);
+    const nextId = '22222222-2222-4222-8222-222222222222';
+    fresh.start(start(nextId));
+    assert.equal(fresh.active().tripId, nextId, 'A later legitimate trip is not blocked by the explicit empty value');
+  });
+});
+
+await test('discard restore: a failed empty-value write preserves the actual original and first error', async () => {
+  await storageHarness(async ({ values }) => {
+    const failure = new Error('SYNTHETIC_DISCARD_WRITE_FAILED');
+    const originalSet = localStorage.setItem;
+    let stoppedOriginal;
+    const controller = createTripEvidenceController({ storage: localStorage,
+      openDialog: async () => { stoppedOriginal = values.get(discardKey); return { action: 'discard' }; } });
+    controller.start(start(discardId));
+    localStorage.setItem = (key, value) => {
+      if (key === discardKey && value === 'null') throw failure;
+      originalSet(key, value);
+    };
+    try {
+      await assert.rejects(controller.stop(discardStop), error => error === failure);
+      assert.equal(values.get(discardKey), stoppedOriginal);
+      assert.equal(controller.active().tripId, discardId);
+      assert.equal(values.has('ravradar-trip-evidence-v2-pending'), false);
+    } finally { localStorage.setItem = originalSet; }
+  });
+});
+
+await test('discard restore: an actually missing non-discarded active trip still restores', async () => {
+  await storageHarness(async context => {
+    const { values, previous } = context;
+    const controller = createTripEvidenceController({ storage: localStorage, openDialog: async () => null });
+    controller.start(start(discardId));
+    assert.equal((await controller.stop(discardStop)).status, 'deferred');
+    const original = values.get(discardKey);
+    previous.values = Object.fromEntries(values);
+    values.delete(discardKey);
+    await completeSnapshotInitialization(context);
+    assert.equal(values.get(discardKey), original);
+    assert.equal(controller.active().tripId, discardId);
+  });
+});

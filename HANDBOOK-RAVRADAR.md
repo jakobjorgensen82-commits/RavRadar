@@ -1,10 +1,24 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.573
+**Håndbogsversion:** 4.0.574
 
-Den lokale 4.0.573 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+Den lokale 4.0.574 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.199 Kasserede ture kommer ikke tilbage fra gammel browserbackup
+
+En tur, som brugeren har valgt at kassere, skal ikke komme tilbage ved næste normale opstart. En lokal prøve viste, at en gammel browserbackup kunne genskabe turen, fordi kassering fjernede den aktive nøgle.
+
+Den lokale 574-rettelse gemmer i stedet en udtrykkelig tom værdi under den samme nøgle. Turen vises fortsat ikke som aktiv, og opstarten erstatter ikke værdien med den gamle backup. En ny tur kan stadig startes. Afventende ture og leveringskøen ændres ikke.
+
+Tre normale prøver med egne syntetiske data består: kasseret tur gendannes ikke, skrivefejl bevarer originalen og den første fejl, og en ikke-kasseret tur med en faktisk manglende nøgle gendannes stadig. Resultaterne genbruges uden gentagelse. De beviser ikke fysisk diskholdbarhed, samtidige browserprocesser eller virkningen af manuelt ryddet lager.
+
+574 er en lokal kodekandidat, ikke offentlig levering. Den kræver sin egen præcise kildekontrol og sikker kode-only-levering efter 573 og en afsluttet writer. Modelbindinger, scoreformel, geometri, backend og historiske originaler ændres ikke; ingen ny vejrhentning eller SQL-installation følger.
+
+Ejeren har godkendt et fremtidigt opbevaringsforløb: ture beholdes, mens kontoen bruges; brugeren skal kunne eksportere og slette; to års inaktivitet efterfølges af 30 dages varsel, hvor login bevarer kontoen. Dette er ikke implementeret kontosletning eller automatisk varsling i 574. Backupfrist og beskyttelse mod genopståede slettede data skal dokumenteres, før der gives løfter.
+
+Samlet vejr-/turstatistik ønskes slået til som standard, men aktiveres ikke her. Ønsket er ikke aktivt samtykke eller bevis for anonymitet. Den særskilte brugerdata-installation og dens godkendte direkte 050000→130000-rækkefølge er ikke en del af denne rettelse. Alle fem hovedmål er fortsat åbne.
 
 ## 89.198 Lokal gemning og særskilt uploadkvittering
 
