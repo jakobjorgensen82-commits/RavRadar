@@ -139,6 +139,7 @@ class _OwnedProcess:
 
 # Unknown group/reader cessation retains resources; it is not a SAVE receipt.
 _unclosed_supervised_processes: list[_OwnedProcess] = []
+_unclosed_supervised_outputs: list[tuple[object, ...]] = []
 
 
 def stop_process(process, *, grace_seconds: float = 10.0) -> None:
@@ -177,13 +178,18 @@ def run_supervised(
     log: Callable[[str], None] = lambda line: print(line, end="", flush=True),
 ) -> SupervisedResult:
     reader: threading.Thread | None = None
+    logger: threading.Thread | None = None
+    events = None
+    log_events = None
     asset_started_at: float | None = None
     active_asset: dict[str, str] | None = None
     timed_out = False
     stop_attempted = False
-    reader_join_attempted = False
+    teardown_deadline: float | None = None
     process = None
     primary_failure: BaseException | None = None
+    first_failure: BaseException | None = None
+    failure_lock = threading.Lock()
     pending_signal: int | None = None
     previous_handlers = []
 
@@ -197,6 +203,28 @@ def run_supervised(
     def check_interruption() -> None:
         if pending_signal is not None:
             raise SystemExit(128 + pending_signal)
+
+    def retain_failure(failure: BaseException) -> BaseException:
+        nonlocal first_failure
+        # Only capture the exception under this lock; no logging, I/O or stop.
+        with failure_lock:
+            if first_failure is None:
+                first_failure = failure
+            return first_failure
+
+    def check_output_failure() -> None:
+        with failure_lock:
+            failure = first_failure
+        if failure is not None:
+            raise failure
+
+    def join_output_threads() -> None:
+        nonlocal teardown_deadline
+        if teardown_deadline is None:
+            teardown_deadline = time.monotonic() + 2.0
+        for thread in (reader, logger):
+            if thread is not None and thread.ident is not None:
+                thread.join(timeout=max(0.0, teardown_deadline - time.monotonic()))
 
     try:
         for signum in (signal.SIGTERM, signal.SIGINT):
@@ -214,18 +242,39 @@ def run_supervised(
         # Guard setup after retaining Popen too: even an output-reader start
         # failure must not abandon the already live writer.
         events: queue.Queue[tuple[str, str | None]] = queue.Queue()
+        log_events: queue.Queue[str | None] = queue.Queue()
 
         def pump_output() -> None:
             try:
                 assert process.stdout is not None
                 for line in process.stdout:
                     events.put(("line", line))
+                    log_events.put(line)
+            except BaseException as failure:
+                retain_failure(failure)
             finally:
-                events.put(("eof", None))
+                for destination, terminal in ((log_events, None), (events, ("eof", None))):
+                    try:
+                        destination.put(terminal)
+                    except BaseException as failure:
+                        retain_failure(failure)
+
+        def pump_log() -> None:
+            try:
+                while True:
+                    line = log_events.get()
+                    if line is None:
+                        return
+                    log(line)
+            except BaseException as failure:
+                retain_failure(failure)
 
         reader = threading.Thread(target=pump_output, daemon=True)
         reader.start()
+        logger = threading.Thread(target=pump_log, daemon=True)
+        logger.start()
         while True:
+            check_output_failure()
             check_interruption()
             if os.name == "posix":
                 # Even continuous descendant output cannot hide leader exit.
@@ -244,6 +293,7 @@ def run_supervised(
                 if process.poll() is not None and not reader.is_alive():
                     break
                 continue
+            check_output_failure()
             if event == "eof":
                 # Closed output cannot retire an active asset's existing
                 # watchdog while its retained producer is still alive.
@@ -251,7 +301,6 @@ def run_supervised(
                     continue
                 break
             assert line is not None
-            log(line)
             started_asset = parse_asset_marker(line, ASSET_START_MARKER)
             ended_asset = parse_asset_marker(line, ASSET_END_MARKER)
             if started_asset is not None:
@@ -276,22 +325,25 @@ def run_supervised(
         # Keep completion waits inside the same interruption/stop guard, and
         # close its pipe only after actual exit and a finished reader.
         while True:
+            check_output_failure()
             check_interruption()
             try:
                 returncode = int(process.wait(timeout=0.25))
                 break
             except subprocess.TimeoutExpired:
                 pass
-        reader_join_attempted = True
-        reader.join(timeout=2.0)
+        join_output_threads()
+        check_output_failure()
         check_interruption()
         if reader.is_alive():
             raise RuntimeError("DMI_SUPERVISOR_OUTPUT_READER_STOP_UNPROVED")
+        if logger.is_alive():
+            raise RuntimeError("DMI_SUPERVISOR_LOGGER_STOP_UNPROVED")
         if process.stdout is not None:
             process.stdout.close()
         return SupervisedResult(returncode, timed_out, active_asset)
     except BaseException as failure:
-        primary_failure = failure
+        primary_failure = retain_failure(failure)
         # A failed output pipe or interruption is terminal, not permission to
         # abandon the retained writer and start a replacement/finalizer. Reuse
         # the existing bounded stop, then close only a proved stopped reader.
@@ -305,18 +357,17 @@ def run_supervised(
             pass
         try:
             if process is not None and process.poll() is not None:
-                if (not reader_join_attempted and reader is not None
-                        and reader.ident is not None):
-                    reader_join_attempted = True
-                    reader.join(timeout=2.0)
+                join_output_threads()
                 if ((reader is None or not reader.is_alive())
+                        and (logger is None or not logger.is_alive())
                         and process.stdout is not None):
                     process.stdout.close()
         except BaseException:
             pass
         if process is not None:
             _unclosed_supervised_processes.append(process)
-        raise
+            _unclosed_supervised_outputs.append((process, reader, logger, events, log_events, log))
+        raise primary_failure
     finally:
         restore_failure: BaseException | None = None
         for signum, previous in reversed(previous_handlers):

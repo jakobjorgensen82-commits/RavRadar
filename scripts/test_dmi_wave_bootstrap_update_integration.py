@@ -2,8 +2,9 @@
 """Focused red-team contracts for the WAM bootstrap producer integration.
 
 The fixtures are synthetic and contain no production part ids, coordinates,
-wave values or signed URLs.  The update module is imported with an ecCodes stub;
-no network request is made.
+wave values or signed URLs. The update module is imported with an ecCodes stub;
+no external/provider transport is used. One native Linux deadline test uses
+real Requests/urllib3 against its own synthetic loopback HTTP server only.
 """
 from __future__ import annotations
 
@@ -3711,6 +3712,570 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             "CRITICAL_WAM_RUNTIME_RESERVED",
         )
         self.assertNotIn("errors", result["diagnostics"])
+
+    def test_download_work_deadline_preserves_all_three_caller_boundaries(self) -> None:
+        import ast
+        from contextlib import contextmanager
+
+        tree = ast.parse((SCRIPTS / "update-dmi-bulk.py").read_text("utf-8"))
+        functions = {node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)}
+        callers = {
+            "main": ("main", "WORK_DEADLINE - max(0.0, reserve_for_pending_critical)"),
+            "wam": ("execute_private_wave_history_bootstrap", "WORK_DEADLINE - max(0.0, preserve_for_later_wam)"),
+            "research": ("replay_current_field_shadow_from_cache", "WORK_DEADLINE"),
+        }
+        codes = {}
+        for caller, (name, expected_deadline) in callers.items():
+            # Keep the actual download statement and all its handlers intact.
+            # Only the enclosing iteration/return boundary is a small fixture.
+            matches = [node for node in ast.walk(functions[name]) if isinstance(node, ast.Try)
+                       and any(isinstance(child, ast.Call)
+                               and isinstance(child.func, ast.Name) and child.func.id == "download_asset"
+                               for statement in node.body if isinstance(statement, ast.With)
+                               for child in ast.walk(statement))]
+            self.assertEqual(len(matches), 1, caller)
+            block = matches[0]
+            call = next(node for statement in block.body for node in ast.walk(statement)
+                        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                        and node.func.id == "download_asset")
+            deadline = [item.value for item in call.keywords if item.arg == "work_deadline"]
+            self.assertEqual(len(deadline), 1, caller)
+            self.assertEqual(ast.dump(deadline[0]), ast.dump(ast.parse(expected_deadline, mode="eval").body))
+            seam = ast.parse("def exercise():\n    global budget_stop, budget_stop_code\n    for attempt in range(2):\n        visits.append(attempt)\n        asset_processing_started = time.monotonic()\n    return None\n")
+            seam.body[0].body[1].body.append(copy.deepcopy(block))
+            seam.body[0].body[1].body.extend(ast.parse("after_download.append(attempt)").body)
+            if caller == "wam":
+                helpers = [node for node in ast.walk(functions[name]) if isinstance(node, ast.FunctionDef)
+                           and node.name == "record_runtime_reserved_hour"]
+                self.assertEqual(len(helpers), 1)
+                seam.body.insert(0, copy.deepcopy(helpers[0]))
+            codes[caller] = compile(ast.fix_missing_locations(seam), str(SCRIPTS / "update-dmi-bulk.py"), "exec")
+
+        class FalsyBudget(producer.AssetDownloadRuntimeBudget):
+            def __bool__(self):
+                return False
+
+        for caller, reserve in (("main", 137.0), ("main", 0.0), ("wam", 25.0), ("wam", 0.0), ("research", 0.0)):
+            with self.subTest(caller=caller, reserve=reserve), tempfile.TemporaryDirectory() as folder:
+                failure = FalsyBudget("synthetic deadline boundary")
+                budget = {"bytes": 17}
+                original = b"synthetic old cache bytes remain unchanged"
+                result = {"zones": {"SYNTHETIC-OLD": {"hourly": {TARGET: {"unchanged": True}}}},
+                          "diagnostics": {"errors": []}, "processedSources": {"old": "retained"}}
+                before = copy.deepcopy(result)
+                temporary_files, exits, deadlines = [], [], []
+                make_temp = producer.tempfile.NamedTemporaryFile
+                deadline_value = 1000.0 - reserve
+
+                @contextmanager
+                def observe_deadline(value):
+                    # Offline handler/I/O proof only. The next native method
+                    # exercises the real POSIX arming and interruption.
+                    self.assertEqual(value, deadline_value)
+                    deadlines.append(value)
+                    yield
+
+                class Response:
+                    headers = {"content-length": "10"}
+
+                    def __enter__(self):
+                        return self
+
+                    def __exit__(self, _kind, error, _traceback):
+                        exits.append(error)
+                        return False
+
+                    def raise_for_status(self):
+                        pass
+
+                    def iter_content(self, size):
+                        if size != 1024 * 1024:
+                            raise AssertionError("Normal chunk size changed")
+                        yield b"part"
+                        raise failure
+
+                class Session:
+                    def get(self, *_args, **_kwargs):
+                        return Response()
+
+                def observe_temp(*args, **kwargs):
+                    handle = make_temp(*args, **kwargs)
+                    temporary_files.append(handle)
+                    return handle
+
+                snapshots = []
+
+                def write_pending(actual_result, _fresh, actual_budget, status):
+                    self.assertIs(actual_result, result)
+                    self.assertIs(actual_budget, budget)
+                    self.assertEqual(status, "partial")
+                    self.assertTrue(all(handle.closed for handle in temporary_files))
+                    snapshots.append(copy.deepcopy(actual_result))
+
+                with (
+                    patch.object(producer, "RAW_DIR", Path(folder)),
+                    patch.object(producer, "WORK_DEADLINE", 1000.0),
+                    patch.object(producer, "DOWNLOAD_SESSION", Session()),
+                    patch.object(producer, "asset_download_work_deadline", observe_deadline),
+                    patch.object(producer, "raw_cache_source_capture", return_value=None),
+                    patch.object(producer, "register_raw_cache_asset") as register,
+                    patch.object(producer, "process_grib_transactionally") as parse,
+                    patch.object(producer, "write_checkpoint", side_effect=write_pending),
+                    patch.object(producer, "progress"),
+                    patch.object(producer.tempfile, "NamedTemporaryFile", observe_temp),
+                ):
+                    href = "https://example.invalid/synthetic-deadline.grib"
+                    old_path = producer.cached_asset_path(href)
+                    old_path.write_bytes(original)
+                    old_identity = old_path.stat()
+                    asset_dict = {"href": href, "valid": TARGET, "id": "synthetic-deadline", "size": 10}
+                    asset = SimpleNamespace(href=href, valid_time=TARGET, item_id="synthetic-deadline",
+                                            model_run=OLD_RUN, size_bytes=10,
+                                            item_created_at=None, item_updated_at=None)
+                    controller = producer.ProgressCheckpointController(result, {"SYNTHETIC-OLD"}, budget)
+                    controller.mark_bulk_dirty()  # Progress predates this interrupted asset.
+                    namespace = dict(vars(producer), controller=controller, checkpoint_controller=controller,
+                                     WORK_DEADLINE=1000.0, preserve_for_later_wam=reserve,
+                                     reserve_for_pending_critical=reserve, collection="wam_dw",
+                                     asset=asset if caller == "wam" else asset_dict, asset_model_run=OLD_RUN,
+                                     model_run=OLD_RUN, budget=budget, result=result, run_info={},
+                                     bounded_primary_refresh=False, collection_summary={},
+                                     runtime_reserved_hours={}, later_collections=["wam_nsb"],
+                                     supervised_identity=producer.supervised_asset_identity("wam_dw", OLD_RUN, asset_dict),
+                                     summary={"interrupted": False, "bootstrapDownloads": 0, "bootstrapDownloadedBytes": 0,
+                                              "errors": [], "assetsCompleted": 0, "samplesWritten": 0},
+                                     resolved=[], bootstrap_remaining=1, before_bytes=17,
+                                     visits=[], after_download=[])
+                    with patch.object(controller, "note_committed_asset", wraps=controller.note_committed_asset) as commit:
+                        exec(codes[caller], namespace)
+                        if caller == "wam" and reserve == 0:
+                            with self.assertRaises(producer.AssetDownloadRuntimeBudget) as caught:
+                                namespace["exercise"]()
+                            self.assertIs(caught.exception, failure)
+                        else:
+                            returned = namespace["exercise"]()
+                            if caller == "research":
+                                self.assertIs(returned, namespace["summary"])
+                                self.assertTrue(returned["interrupted"])
+                                self.assertEqual(returned["reason"], "runtime-budget-reached")
+                                self.assertEqual((returned["bootstrapDownloads"], returned["bootstrapDownloadedBytes"],
+                                                  returned["assetsCompleted"], returned["samplesWritten"]), (0, 0, 0, 0))
+                                self.assertEqual(namespace["resolved"], [])
+                        count = 2 if caller == "wam" and reserve > 0 else 1
+                        self.assertEqual(namespace["visits"], list(range(count)))
+                        self.assertEqual(namespace["after_download"], [])
+                        if caller == "main":
+                            self.assertEqual(namespace["budget_stop_code"],
+                                             "CRITICAL_COLLECTION_RUNTIME_RESERVED" if reserve > 0 else "RUNTIME_BUDGET_REACHED")
+                        if caller == "wam" and reserve > 0:
+                            self.assertEqual(namespace["runtime_reserved_hours"], {"wam_dw": {TARGET}})
+                            self.assertEqual(namespace["collection_summary"]["runtimeReservedAssetCount"], 2)
+                            self.assertNotIn("processedAssetCount", namespace["collection_summary"])
+                        self.assertEqual(deadlines, [deadline_value] * count)
+                        self.assertEqual(len(exits), count)
+                        self.assertTrue(all(error is failure for error in exits))
+                        self.assertEqual(budget["bytes"], 17 + 4 * count)
+                        self.assertEqual(old_path.read_bytes(), original)
+                        actual = old_path.stat()
+                        self.assertEqual((actual.st_dev, actual.st_ino), (old_identity.st_dev, old_identity.st_ino))
+                        self.assertEqual(list(Path(folder).iterdir()), [old_path])
+                        self.assertEqual(len(temporary_files), count)
+                        self.assertTrue(all(handle.closed and not Path(handle.name).exists() for handle in temporary_files))
+                        self.assertEqual(result["zones"], before["zones"])
+                        self.assertEqual(result["processedSources"], before["processedSources"])
+                        self.assertEqual(len(snapshots), 1 if caller == "wam" else 0)
+                        if caller != "wam":
+                            # These branches return/break to their caller; they
+                            # do not themselves claim a checkpoint. Pending
+                            # valid data remains available to the normal flush.
+                            self.assertTrue(controller.bulk_dirty)
+                            self.assertTrue(controller.flush_if_due(force=True))
+                        self.assertTrue(all(saved["zones"] == before["zones"]
+                                            and saved["processedSources"] == before["processedSources"] for saved in snapshots))
+                        self.assertEqual(len(snapshots), 1)
+                        self.assertEqual(controller.committed_assets_since_write, 0)
+                        commit.assert_not_called()
+                    register.assert_not_called()
+                    parse.assert_not_called()
+
+    def test_download_fatal_guard_and_cleanup_cannot_escape_collection_boundary(self) -> None:
+        import ast
+
+        # Synthetic signal ownership only: this deliberately makes no native
+        # Linux claim. The separate loopback method exercises actual signals.
+        class Signals:
+            SIGALRM, ITIMER_REAL, SIG_BLOCK, SIG_SETMASK = 14, 0, 1, 2
+
+            def __init__(self, clock, *, timer=(0.0, 0.0), blocked=False, pending=False,
+                         restore_failure=False, setup_elapsed=0.0):
+                self.clock, self.timer = clock, timer
+                self.mask = {self.SIGALRM} if blocked else set()
+                self.pending = {self.SIGALRM} if pending else set()
+                self.original = object()
+                self.handler = self.original
+                self.restore_failure = restore_failure
+                self.setup_elapsed = setup_elapsed
+                self.arms = []
+
+            def pthread_sigmask(self, how, values):
+                old = set(self.mask)
+                self.mask = self.mask | set(values) if how == self.SIG_BLOCK else set(values)
+                return old
+
+            def getitimer(self, _which):
+                return self.timer
+
+            def setitimer(self, _which, seconds):
+                self.arms.append(seconds)
+                old, self.timer = self.timer, (seconds, 0.0)
+                return old
+
+            def getsignal(self, _which):
+                return self.handler
+
+            def signal(self, _which, handler):
+                if handler is self.original and self.restore_failure:
+                    raise OSError("synthetic signal restoration failure")
+                old, self.handler = self.handler, handler
+                if handler is not self.original:
+                    self.clock[0] += self.setup_elapsed
+                return old
+
+            def sigpending(self):
+                return set(self.pending)
+
+            def sigwait(self, values):
+                self.pending -= set(values)
+                return self.SIGALRM
+
+        class FirstCause(RuntimeError):
+            def __bool__(self):
+                return False
+
+        posix = SimpleNamespace(**{**vars(producer.os), "name": "posix"})
+        for kind in ("foreign-timer", "foreign-mask", "foreign-pending", "expired", "no-reset", "restore-failure"):
+            with self.subTest(guard=kind):
+                clock = [100.0]
+                signals = Signals(clock, timer=(9.0, 2.0) if kind == "foreign-timer" else (0.0, 0.0),
+                                  blocked=kind == "foreign-mask", pending=kind == "foreign-pending",
+                                  restore_failure=kind == "restore-failure", setup_elapsed=2.0)
+                old_timer, old_mask, old_pending = signals.timer, set(signals.mask), set(signals.pending)
+                first = FirstCause("synthetic first body failure")
+                entered = []
+                with (patch.object(producer, "os", posix), patch.object(producer, "signal", signals),
+                      patch.object(producer.time, "monotonic", side_effect=lambda: clock[0])):
+                    if kind == "no-reset":
+                        with producer.asset_download_work_deadline(110.0):
+                            entered.append(True)
+                            self.assertEqual(signals.arms, [8.0], "Setup time must not extend the absolute deadline")
+                            clock[0] = 105.0
+                            with self.assertRaises(producer.AssetDownloadCleanupUnproven):
+                                with producer.asset_download_work_deadline(200.0):
+                                    self.fail("Nested scope cannot borrow/reset an already-owned timer")
+                            self.assertEqual(signals.arms, [8.0])
+                            clock[0] = 109.0
+                        self.assertEqual(signals.arms, [8.0, 0.0])
+                    else:
+                        expected = producer.AssetDownloadRuntimeBudget if kind == "expired" else producer.AssetDownloadCleanupUnproven
+                        with self.assertRaises(expected) as caught:
+                            with producer.asset_download_work_deadline(100.0 if kind == "expired" else 110.0):
+                                entered.append(True)
+                                raise first
+                        if kind == "restore-failure":
+                            self.assertIs(caught.exception.__cause__, first)
+                            self.assertEqual(signals.arms, [8.0, 0.0])
+                            self.assertEqual(signals.mask, {signals.SIGALRM}, "Unknown restoration must not unmask the alarm")
+                        else:
+                            self.assertEqual(entered, [])
+                            self.assertEqual(signals.arms, [])
+                            self.assertEqual(signals.timer, old_timer)
+                    if kind != "restore-failure":
+                        self.assertIs(signals.handler, signals.original)
+                        self.assertEqual(signals.mask, old_mask)
+                        self.assertEqual(signals.pending, old_pending)
+
+        main = next(node for node in ast.parse((SCRIPTS / "update-dmi-bulk.py").read_text("utf-8")).body
+                    if isinstance(node, ast.FunctionDef) and node.name == "main")
+        inner = [node for node in ast.walk(main) if isinstance(node, ast.Try)
+                 and any(isinstance(child, ast.Call) and isinstance(child.func, ast.Name)
+                         and child.func.id == "download_asset"
+                         for statement in node.body if isinstance(statement, ast.With)
+                         for child in ast.walk(statement))]
+        self.assertEqual(len(inner), 1)
+        outer = [node for node in ast.walk(main) if isinstance(node, ast.Try) and node is not inner[0]
+                 and any(child is inner[0] for statement in node.body for child in ast.walk(statement))]
+        self.assertEqual(len(outer), 1)
+        self.assertEqual((outer[0].orelse, outer[0].finalbody), ([], []))
+        actual_outer = copy.deepcopy(outer[0])
+        actual_outer.body = [copy.deepcopy(inner[0])]
+        seam = ast.parse("for attempt in range(2):\n    visits.append(attempt)\n    asset_processing_started = time.monotonic()\n")
+        seam.body[0].body.append(actual_outer)
+        seam.body[0].body.extend(ast.parse("after_collection.append(attempt)").body)
+        code = compile(ast.fix_missing_locations(seam), str(SCRIPTS / "update-dmi-bulk.py"), "exec")
+
+        for phase in ("alarm-restore", "response-close", "file-close"):
+            with self.subTest(cleanup=phase), tempfile.TemporaryDirectory() as folder:
+                first = FirstCause("synthetic original download failure")
+                secondary = OSError("synthetic cleanup failure")
+                clock = [100.0]
+                signals = Signals(clock, restore_failure=phase == "alarm-restore")
+                retained, files, close_errors = [], [], []
+                make_temp = producer.tempfile.NamedTemporaryFile
+
+                class Response:
+                    headers = {"content-length": "10"}
+
+                    def __enter__(self):
+                        return self
+
+                    def __exit__(self, _kind, error, _traceback):
+                        close_errors.append(error)
+                        if phase == "response-close":
+                            raise secondary
+                        return False
+
+                    def raise_for_status(self):
+                        pass
+
+                    def iter_content(self, _size):
+                        yield b"part"
+                        raise first
+
+                response = Response()
+
+                class File:
+                    def __init__(self, actual):
+                        self.actual, self.name, self.exits = actual, actual.name, 0
+
+                    def __enter__(self):
+                        return self.actual.__enter__()
+
+                    def __exit__(self, *args):
+                        self.exits += 1
+                        result = self.actual.__exit__(*args)
+                        if phase == "file-close":
+                            raise secondary
+                        return result
+
+                def own_temp(*args, **kwargs):
+                    handle = File(make_temp(*args, **kwargs))
+                    files.append(handle)
+                    return handle
+
+                result = {"zones": {"OLD": {"unchanged": True}}, "diagnostics": {"errors": []},
+                          "processedSources": {"old": "retained"}}
+                before = copy.deepcopy(result)
+                with (
+                    patch.object(producer, "os", posix), patch.object(producer, "signal", signals),
+                    patch.object(producer.time, "monotonic", side_effect=lambda: clock[0]),
+                    patch.object(producer, "RAW_DIR", Path(folder)),
+                    patch.object(producer, "DOWNLOAD_SESSION", SimpleNamespace(get=lambda *_a, **_k: response)),
+                    patch.object(producer, "raw_cache_source_capture", return_value=None),
+                    patch.object(producer, "register_raw_cache_asset") as register,
+                    patch.object(producer, "process_grib_transactionally") as parse,
+                    patch.object(producer, "write_checkpoint") as checkpoint,
+                    patch.object(producer, "progress"),
+                    patch.object(producer, "_UNSETTLED_ASSET_DOWNLOADS", retained),
+                    patch.object(producer.tempfile, "NamedTemporaryFile", own_temp),
+                ):
+                    href = "https://example.invalid/synthetic-fatal.grib"
+                    old_path = producer.cached_asset_path(href)
+                    old_path.write_bytes(b"unchanged synthetic original")
+                    budget = {"bytes": 17}
+                    controller = producer.ProgressCheckpointController(result, set(), budget)
+                    controller.mark_bulk_dirty()
+                    asset = {"href": href, "size": 10, "id": "synthetic-fatal", "valid": TARGET}
+                    namespace = dict(vars(producer), WORK_DEADLINE=150.0, reserve_for_pending_critical=10.0,
+                                     collection="wam_dw", asset=asset, asset_model_run=OLD_RUN,
+                                     supervised_identity=producer.supervised_asset_identity("wam_dw", OLD_RUN, asset),
+                                     budget=budget, result=result, run_info={}, state={}, bounded_primary_refresh=False,
+                                     checkpoint_controller=controller, collection_refresh_only=False,
+                                     visits=[], after_collection=[])
+                    with self.assertRaises(producer.AssetDownloadCleanupUnproven) as caught:
+                        exec(code, namespace)
+                    self.assertIs(caught.exception.__cause__, first)
+                    self.assertEqual(namespace["visits"], [0])
+                    self.assertEqual(namespace["after_collection"], [])
+                    self.assertEqual(namespace["state"], {})
+                    self.assertEqual(result, before)
+                    self.assertEqual(controller.asset_seconds_by_family, {})
+                    self.assertEqual(controller.committed_assets_since_write, 0)
+                    self.assertTrue(controller.bulk_dirty)
+                    checkpoint.assert_not_called()
+                    register.assert_not_called()
+                    parse.assert_not_called()
+                    self.assertEqual(budget["bytes"], 21)
+                    self.assertEqual(old_path.read_bytes(), b"unchanged synthetic original")
+                    self.assertEqual(len(retained), 1)
+                    self.assertEqual(len(files), 1)
+                    self.assertIs(retained[0][0], files[0])
+                    self.assertIs(retained[0][1], response)
+                    self.assertEqual(files[0].exits, 1)
+                    self.assertTrue(files[0].actual.closed)
+                    self.assertTrue(Path(files[0].name).exists(), "Unknown cleanup must retain its own temporary file")
+                    self.assertEqual(Path(files[0].name).read_bytes(), b"part")
+                    self.assertEqual(len(close_errors), 1)
+                    self.assertIs(close_errors[0], caught.exception if phase == "alarm-restore" else first)
+
+    @unittest.skipUnless(sys.platform == "linux", "POSIX download deadline is not native-tested on Windows")
+    def test_native_download_deadline_interrupts_requests_retry_and_chunks(self) -> None:
+        import signal
+        import threading
+        import time
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+
+        self.assertTrue(hasattr(signal, "setitimer"))
+        self.assertEqual(signal.getitimer(signal.ITIMER_REAL), (0.0, 0.0))
+        old_handler = signal.getsignal(signal.SIGALRM)
+        old_mask = signal.pthread_sigmask(signal.SIG_BLOCK, set())
+        self.assertNotIn(signal.SIGALRM, old_mask)
+        self.assertNotIn(signal.SIGALRM, signal.sigpending())
+        chunk_bytes = 1024 * 1024
+        # This is real Requests/urllib3 over an owned loopback socket, not DMI,
+        # native GRIB qualification, supervisor loss or a durable SAVE receipt.
+        for phase in ("headers", "retry-request", "retry-backoff", "chunks"):
+            with self.subTest(phase=phase), tempfile.TemporaryDirectory() as folder:
+                self.assertEqual(signal.getitimer(signal.ITIMER_REAL), (0.0, 0.0))
+                self.assertIs(signal.getsignal(signal.SIGALRM), old_handler)
+                self.assertEqual(signal.pthread_sigmask(signal.SIG_BLOCK, set()), old_mask)
+                self.assertNotIn(signal.SIGALRM, signal.sigpending())
+                release = threading.Event()
+                entered = threading.Event()
+                observed = {"requests": 0, "retrySleep": 0, "retrySleepReturned": 0}
+                server_errors = []
+
+                class Handler(BaseHTTPRequestHandler):
+                    protocol_version = "HTTP/1.1"
+
+                    def log_message(self, *_args):
+                        pass
+
+                    def do_GET(self):
+                        try:
+                            if self.client_address[0] != "127.0.0.1" or self.path != "/synthetic.grib":
+                                raise AssertionError("Only the owned loopback request is permitted")
+                            observed["requests"] += 1
+                            if phase.startswith("retry-") and observed["requests"] == 1:
+                                self.send_response(503)
+                                self.send_header("Content-Length", "0")
+                                if phase == "retry-backoff":
+                                    self.send_header("Retry-After", "60")
+                                self.end_headers()
+                                self.wfile.flush()
+                                return
+                            if phase == "chunks":
+                                self.send_response(200)
+                                self.send_header("Content-Length", str(chunk_bytes + 64))
+                                self.end_headers()
+                                self.wfile.write(b"x" * chunk_bytes)
+                                self.wfile.flush()
+                            entered.set()
+                            if not release.wait(10.0):
+                                raise AssertionError("Owned transport was not released after client settlement")
+                            self.close_connection = True
+                        except BaseException as error:
+                            server_errors.append(error)
+                            self.close_connection = True
+
+                server = HTTPServer(("127.0.0.1", 0), Handler)
+                thread = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.01})
+                session = producer.requests.Session()
+                session.trust_env = False
+                # The production retry object is unchanged; only its fixture
+                # transport scheme is HTTP so no TLS bypass/certificate is used.
+                adapter = producer.HTTPAdapter(max_retries=producer._retry)
+                session.mount("http://", adapter)
+                self.assertIs(adapter.max_retries, producer._retry)
+                href = f"http://127.0.0.1:{server.server_port}/synthetic.grib"
+                budget = {"bytes": 17}
+                sleep = producer.Retry.sleep
+                response_close = producer.requests.Response.close
+                closed_responses = []
+                temporary_files = []
+                make_temp = producer.tempfile.NamedTemporaryFile
+
+                def observe_sleep(retry, response=None):
+                    observed["retrySleep"] += 1
+                    if phase == "retry-backoff":
+                        entered.set()
+                    result = sleep(retry, response)
+                    observed["retrySleepReturned"] += 1
+                    return result
+
+                def observe_response_close(response):
+                    result = response_close(response)
+                    closed_responses.append(response)
+                    return result
+
+                def observe_temp(*args, **kwargs):
+                    handle = make_temp(*args, **kwargs)
+                    temporary_files.append(handle)
+                    return handle
+
+                thread.start()
+                try:
+                    with (
+                        patch.object(producer, "RAW_DIR", Path(folder)),
+                        patch.object(producer, "DOWNLOAD_SESSION", session),
+                        patch.object(producer, "raw_cache_source_capture", return_value=None),
+                        patch.object(producer, "register_raw_cache_asset") as register,
+                        patch.object(producer, "process_grib_transactionally") as parse,
+                        patch.object(producer, "progress"),
+                        patch.object(producer.Retry, "sleep", observe_sleep),
+                        patch.object(producer.requests.Response, "close", observe_response_close),
+                        patch.object(producer.tempfile, "NamedTemporaryFile", observe_temp),
+                    ):
+                        old_path = producer.cached_asset_path(href)
+                        original = b"synthetic retained original; not qualified for this new asset"
+                        old_path.write_bytes(original)
+                        old_identity = old_path.stat()
+                        started = time.monotonic()
+                        deadline = started + 1.5
+                        with self.assertRaises(producer.AssetDownloadRuntimeBudget):
+                            with producer.supervised_asset_operation({
+                                "collection": "wam_dw", "modelRun": OLD_RUN,
+                                "validTime": TARGET, "itemId": "synthetic-deadline",
+                            }):
+                                producer.download_asset(
+                                    href, chunk_bytes + 64, budget,
+                                    collection="wam_dw", model_run=OLD_RUN,
+                                    valid_time=TARGET, item_id="synthetic-deadline",
+                                    work_deadline=deadline,
+                                )
+                        elapsed = time.monotonic() - started
+                        self.assertTrue(entered.is_set(), "The real blocking phase must actually be reached")
+                        self.assertFalse(release.is_set(), "Server release cannot be the reason for client return")
+                        self.assertGreaterEqual(elapsed, 1.4)
+                        self.assertLess(elapsed, 4.0, "Absolute work deadline must interrupt the 60-second wait")
+                        self.assertEqual(observed["requests"], 2 if phase == "retry-request" else 1)
+                        if phase == "retry-backoff":
+                            self.assertEqual((observed["retrySleep"], observed["retrySleepReturned"]), (1, 0))
+                        if phase == "retry-request":
+                            self.assertEqual((observed["retrySleep"], observed["retrySleepReturned"]), (1, 1))
+                        self.assertEqual(budget["bytes"], 17 + (chunk_bytes if phase == "chunks" else 0))
+                        self.assertEqual(old_path.read_bytes(), original)
+                        actual = old_path.stat()
+                        self.assertEqual((actual.st_dev, actual.st_ino), (old_identity.st_dev, old_identity.st_ino))
+                        self.assertEqual(list(Path(folder).iterdir()), [old_path])
+                        self.assertEqual(len(temporary_files), 1 if phase == "chunks" else 0)
+                        self.assertTrue(all(handle.closed and not Path(handle.name).exists() for handle in temporary_files))
+                        if phase == "chunks":
+                            self.assertEqual(len(closed_responses), 1)
+                            self.assertTrue(closed_responses[0].raw.closed)
+                        register.assert_not_called()
+                        parse.assert_not_called()
+                        self.assertEqual(signal.getitimer(signal.ITIMER_REAL), (0.0, 0.0))
+                        self.assertIs(signal.getsignal(signal.SIGALRM), old_handler)
+                        self.assertEqual(signal.pthread_sigmask(signal.SIG_BLOCK, set()), old_mask)
+                        self.assertNotIn(signal.SIGALRM, signal.sigpending())
+                finally:
+                    release.set()
+                    session.close()
+                    server.shutdown()
+                    thread.join(3.0)
+                    server.server_close()
+                self.assertFalse(thread.is_alive())
+                self.assertEqual(server_errors, [])
 
     def test_truncated_download_is_not_registered_for_resume(self) -> None:
         class Response:
