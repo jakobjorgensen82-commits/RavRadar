@@ -5,6 +5,12 @@
   "updatedAt": "2026-10-11",
   "sections": [
     {
+      "id": "dmi-watchdog-independent-log-sink-2026-10-11",
+      "chapter": "89.206",
+      "title": "Logudskrivning må ikke forsinke processtoppet",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Stopkontrollen skal kunne reagere, selv om modtageren af loggen går i stå.</div><p>Den normale DMI-supervisor adskiller ordnet logudskrivning fra læsning af arbejdsmarkører og stopkontrol. Første læse- eller logfejl bevares, også når barnet har afsluttet sit output. Læsning og logudskrivning deler én samlet oprydningsfrist på to sekunder; hver tråd får ikke en ny frist.</p><p>Hvis processen eller en outputtråd stadig lever, fastholdes de faktiske referencer. Arbejdet må ikke kaldes afsluttet, og der må ikke startes en erstatningsproces eller slutbehandling på den baggrund. De oprindelige regler for procesejerskab, stop, tidsbudgetter og databevarelse ændres ikke.</p><p>Ti målrettede prøver består lokalt. En ny Linux-prøve med eget fyldt log-rør skal kontrollere faktisk barnestop før røret frigives og afventer den normale GitHub-kontrol. Den foregående downloadrettelse har bestået præcis kildekontrol og alle 68 prøver, inklusive fire syntetiske Requests/Retry-faser; tidligere afventende teststatus nedenfor er historik. Ingen af de to kandidater er endnu produktionsleveret. Dette er ikke bevis for holdbar fjernlagring, tab af runner eller national kapacitet. Modelbindinger, scoreformel, administratorpunkter, geometri og gyldige originaler bevares. Alle fem hovedmål er fortsat åbne.</p>"
+    },
+    {
       "id": "dmi-download-work-deadline-2026-10-11",
       "chapter": "89.205",
       "title": "En samlet tidsgrænse for en DMI-download",

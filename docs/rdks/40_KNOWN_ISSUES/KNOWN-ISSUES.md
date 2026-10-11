@@ -1,4 +1,14 @@
-# Lokal 4.0.574 driftsrettelse – én samlet frist for DMI-download
+# Lokal 4.0.574 procesrettelse – logudskrivning må ikke blokere stopkontrollen
+
+Den normale DMI-supervisor læser kontrolmarkører uafhængigt af den ordnede logudskrivning. En blokeret logmodtager må dermed ikke holde asset-watchdog tilbage. Første læse-/logfejl bevares, også ved EOF; reader og logger deler én samlet eksisterende oprydningsfrist på to sekunder. Uafsluttede processer eller outputtråde fastholdes med deres faktiske referencer og må ikke føre til succes, replacement eller finalizer.
+
+Ti målrettede prøver består lokalt. De 24 gamle supervisor-testmetoder og de fire gamle native-procesprøver er uændrede. En ny Linux-prøve gennem den normale supervisor med eget fyldt log-rør skal bevise faktisk barnestop før røret frigives og bevare den åbne logger som uafsluttet; den er endnu ikke kørt. Præcis GitHub-kildekontrol og offentlig levering af denne efterfølger afventes.
+
+PR574's downloadrettelse har nu faktisk bestået præcis GitHub-kildekontrol og alle 68 downloadprøver, inklusive de fire syntetiske Requests/Retry-faser. Den er ikke produktionsleveret. Tidligere afventende teststatus nedenfor er historik. Den nye procesrettelse ligger oven på denne kildeverificerede kandidat; ingen merge, deploy eller installation sker under aktiv writer.
+
+Version 4.0.574, faste tidsbudgetter, proces-/gruppeejerskab, oprindelige stop- og finalizerforløb, kilders prioritet, modelbindinger, storage-ABI, adminpunkter, geometri og gyldige originaler bevares. Producentens kildeidentitet følger de faktiske bytes uden ommærkning af historik. Ingen SQL-installation, ny providerdiagnose eller ekstra vejrhentning følger. Dette lukker ikke holdbar SAVE/upload/genbrug, tab af runner, fireminuttersgrænsen, samlet eksklusiv skrivning eller national heljobskapacitet. Alle fem hovedmål og den isolerede revisions aktiveringsgrænser er fortsat åbne.
+
+# Historik: 4.0.574 driftsrettelse – én samlet frist for DMI-download
 
 Downloaden får den eksisterende absolutte arbejdsfrist minus den aktuelle kalders reserve. Linux-alarmen omfatter request, retries, backoff og chunks uden at nulstille fristen. Den særskilte budgetundtagelse er ikke upstream-fravær: hovedløkken vælger den relevante reserve-/budgetgren, WAM afgiver ved positiv reserve tiden til senere WAM-samlinger, og forskningsbootstrap afsluttes som afbrudt uden at avancere cursoren. Gyldig eksisterende cache bevares; en afbrudt fil må ikke registreres eller committes.
 

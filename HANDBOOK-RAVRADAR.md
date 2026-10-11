@@ -6,6 +6,14 @@ Den lokale 4.0.574 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
 
+## 89.206 Logudskrivning må ikke forsinke processtoppet
+
+Hvis modtageren af loggen går i stå, skal stopkontrollen stadig kunne læse arbejdsmarkører og reagere på tidsgrænsen. Den normale DMI-supervisor adskiller derfor den ordnede logudskrivning fra læsning og stopkontrol. Den første læse- eller logfejl bevares, også hvis barnet allerede har afsluttet sit output.
+
+Læsning og logudskrivning deler én samlet oprydningsfrist på to sekunder; hver tråd får ikke en ny frist. Hvis processen eller en outputtråd stadig lever, fastholdes de faktiske referencer. Arbejdet må ikke kaldes afsluttet, og der må ikke startes en erstatningsproces eller slutbehandling på den baggrund. De oprindelige regler for procesejerskab, stop, tidsbudgetter og databevarelse ændres ikke.
+
+Ti målrettede prøver består lokalt. En ny Linux-prøve med et eget fyldt log-rør skal kontrollere faktisk barnestop før røret frigives; den afventer den normale GitHub-kontrol. Den foregående downloadrettelse har nu bestået præcis kildekontrol og alle 68 downloadprøver, inklusive fire syntetiske Requests/Retry-faser. Ingen af de to kandidater er endnu produktionsleveret. De tidligere afventende testoplysninger nedenfor er historik. Dette er ikke bevis for holdbar fjernlagring, tab af runner eller national kapacitet. Modelbindinger, scoreformel, administratorpunkter, geometri og gyldige originaler bevares. Alle fem hovedmål er fortsat åbne.
+
 ## 89.205 En samlet tidsgrænse for en DMI-download
 
 En langsom fil må ikke få en ny tidsfrist ved hvert genforsøg eller hvert stykke af filen. På Linux får hentningen derfor én samlet grænse fra den eksisterende arbejdstid, med den aktuelle reserve til senere datakilder trukket fra. De samlede tidsbudgetter og kildernes prioritet ændres ikke.
