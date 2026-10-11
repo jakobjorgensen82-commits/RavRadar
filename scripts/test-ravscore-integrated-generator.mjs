@@ -1138,9 +1138,18 @@ assert.ok(
 );
 assert.match(
   encryptedProgressSaveStep.block,
-  /actions\/cache\/save@v6[\s\S]*path: \.cache\/weather-private-progress\.encrypted[\s\S]*weather-private-progress-encrypted-v2-/,
-  'normal maintenance must publish only the authenticated encrypted progress snapshot',
+  /uses: \.\/\.github\/actions\/save-owned-dmi-grib[\s\S]*operation: upload-encrypted-progress\s+key: weather-private-progress-encrypted-v2-/,
+  'normal maintenance must publish the encrypted progress snapshot through its fixed owned upload',
 );
+assert.match(encryptedProgressSaveStep.block,
+  /always\(\).*steps\.component-progress-seal\.outcome == 'success'.*steps\.component-progress-seal\.outputs\.saved == 'true'/,
+  'normal maintenance may upload only after the authenticated local seal succeeds');
+assert.match(encryptedProgressSaveStep.block, /continue-on-error: true/);
+assert.doesNotMatch(encryptedProgressSaveStep.block, /\bpath:|actions\/cache\/save@/,
+  'normal maintenance must not supply a caller path or bypass the owned upload');
+const encryptedProgressUploadAction = await fs.readFile('.github/actions/save-owned-dmi-grib/index.cjs', 'utf8');
+assert.match(encryptedProgressUploadAction, /const CIPHER_PATH = '\.cache\/weather-private-progress\.encrypted'/,
+  'the owned upload must retain the one fixed encrypted snapshot path');
 assert.ok(
   copernicusSelectorStep.block.includes("if: steps.preflight.outputs.should_run == 'true'")
     && !copernicusSelectorStep.block.includes("steps.dmi-terminal-gate.outputs.ready == 'true'")

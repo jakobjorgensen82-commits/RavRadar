@@ -238,7 +238,68 @@ try {
     controlledProviderResponse = null;
   };
 
-  if (process.argv.includes('--known-evidence-contradiction-only')) {
+
+  const assertCanonicalIdentificationUnion = async () => {
+    const ids = ["amber.mostly-sinks","identification.uv-clue-not-proof","identification.avoid-destructive-tests","identification.fluorescence-varies","identification.treatments-and-imitations"];
+    const expected = {
+  "da": "Første spor: lav vægt for størrelsen og harpiksagtig overflade. Det meste baltiske rav har massefylde omkring 1,05–1,10 g/cm³, synker i almindeligt dansk havvand og er under vand meget lettere end sand og sten. Salt og temperatur ændrer opdriften lidt, ikke nok til at få det meste rav til at flyde. RavRadars søgeråd er langbølget UV omkring 395 nm i mørke og fysisk kontrol: baltisk rav fluorescerer ofte tydeligt, men fluorescensen varierer med sammensætning, forvitring og behandling; også efterligninger kan lyse. UV er ikke bevis. Plast, glas, copal, presset rav, kompositter, fyldninger, farvestoffer og varmebehandling kan efterligne eller ændre rav. Ingen enkelt hjemmetest skelner alle tilfælde pålideligt; kombiner ikke-destruktive tegn. Undgå varme nåle, ild og andre ødelæggende tests; få værdifulde, usikre eller usædvanlige fund vurderet fagligt.",
+  "de": "Erste Hinweise: geringes Gewicht für die Größe, harzartige Oberfläche. Der meiste baltische Bernstein (Dichte ca. 1,05–1,10 g/cm³) sinkt in normalem dänischem Meerwasser, ist darin aber viel leichter als Sand/Stein. Salzgehalt/Temperatur ändern den Auftrieb leicht, nicht genug, um die meisten schwimmen zu lassen. RavRadar rät: langwelliges UV um 395 nm im Dunkeln, dann physisch prüfen. Baltischer Bernstein fluoresziert oft deutlich; Zusammensetzung, Verwitterung und Behandlung verändern dies. Auch Imitate können fluoreszieren; UV ist kein Beweis. Kunststoff, Glas, Copal, Pressbernstein, Verbunde, Füllungen, Farbstoffe und Wärmebehandlung können Bernstein imitieren/verändern. Kein einzelner Heimtest trennt alle Fälle zuverlässig: zerstörungsfreie Hinweise kombinieren. Keine heißen Nadeln, Feuer oder zerstörenden Tests; wertvolle/unsichere/ungewöhnliche Funde fachlich prüfen lassen.",
+  "en": "First clues: low weight for size and a resin-like surface. Most Baltic amber (density about 1.05–1.10 g/cm³) sinks in ordinary Danish seawater but is much lighter than sand and stone underwater. Salinity and temperature alter buoyancy slightly, not enough to float most amber. RavRadar recommends long-wave UV around 395 nm in darkness, followed by physical checking: Baltic amber often fluoresces clearly, but composition, weathering and treatment affect fluorescence; imitations may fluoresce too. UV is not proof. Plastic, glass, copal, pressed amber, composites, fillings, dyes and heat treatment can imitate or alter amber. No single home test reliably separates every case: combine non-destructive clues. Avoid hot needles, fire and other destructive tests; valuable, uncertain or unusual finds need specialist assessment."
+};
+    const cases = [
+      ['da', 'Hvordan kan jeg kende rav fra sten på stranden?'],
+      ['da', 'Hvordan skelner jeg rav fra sten ved stranden?'],
+      ['de', 'Wie kann ich Bernstein von Steinen unterscheiden?'],
+      ['en', 'How can I tell amber from stones on the beach?'],
+    ];
+    const ask = async (question, locale, evidenceIds, disposition = 'answer') => {
+      reset(); responseMutation = null; browserLanguage = locale;
+      assert.equal(routeRavQuestion(question), 'remote-candidate');
+      controlledProviderResponse = { result: { response: JSON.stringify({
+        schemaVersion:'rav-assistant-response-v1', locale, disposition,
+        answer:'SYNTHETIC_UNTRUSTED_PROSE', evidenceIds,
+      }) } };
+      const beforeCalls = controlledProviderCalls, beforeQuota = controlledQuotaCalls;
+      const answer = await askRavRadar(question, context, { language:locale });
+      assertRemote(question, locale, 200);
+      assert.equal(answer, exchanges[0].result.answer);
+      assert.equal(controlledProviderCalls - beforeCalls, 1);
+      assert.equal(controlledQuotaCalls - beforeQuota, 3);
+      assert.equal(blockedNetworkCalls, 0);
+      assert.equal(JSON.stringify(context), contextBefore);
+      assert.notEqual(answer, 'SYNTHETIC_UNTRUSTED_PROSE');
+      return answer;
+    };
+    for (const [locale, question] of cases) {
+      const answer = await ask(question, locale, [...ids].reverse());
+      assert.equal(answer, expected[locale], 'All selected identification claims must fit as a reviewed union, not focus or first-N.');
+      assert.ok(answer.length <= 900);
+    }
+    const unsupported = await ask('Hvordan bruger jeg et ravombrometer til at finde rav?', 'da', [], 'uncertain');
+    assert.equal(unsupported, contract.RAV_ASSISTANT_UNCERTAIN_REPLIES.da);
+    const focus = 'Spørgsmålet rummer mere, end jeg kan besvare samlet og med alle forbehold her. Hvilken del vil du have uddybet først?';
+    const safety = await ask(cases[0][1], 'da', [...ids, 'safety.white-phosphorus']);
+    assert.equal(safety, focus, 'A selected safety unit must not be silently removed to fit a compact identification union.');
+    const uncertain = await ask(cases[0][1], 'da', ids, 'uncertain');
+    assert.equal(uncertain, focus, 'Unknown remainder must not become a fully answered identification claim.');
+    const invalid = contract.validateAssistantResult({
+      schemaVersion:'rav-assistant-response-v1', locale:'da', disposition:'answer',
+      answer:'SYNTHETIC_UNTRUSTED_PROSE', evidenceIds:[...ids, ids[0]],
+    }, 'da');
+    assert.equal(invalid, null, 'Grouping must not weaken duplicate evidence validation.');
+    const partialIds = ids.filter(id => id !== 'identification.avoid-destructive-tests');
+    const partial = contract.validateAssistantResult({
+      schemaVersion:'rav-assistant-response-v1', locale:'da', disposition:'answer',
+      answer:'SYNTHETIC_UNTRUSTED_PROSE', evidenceIds:partialIds,
+    }, 'da');
+    assert.notEqual(partial.answer, expected.da, 'A missing member cannot acquire its claims from the full union.');
+    controlledProviderResponse = null;
+    console.log('OK: 7 normal client/Edge canonical-union roundtrips; DA/DE/EN, independent variant, unknown/safety/remainder, 6 headers, 3 quota/1 provider each, zero real network; duplicate/partial unchanged.');
+  };
+
+  if (process.argv.includes('--canonical-identification-union-only')) {
+    await assertCanonicalIdentificationUnion();
+  } else if (process.argv.includes('--known-evidence-contradiction-only')) {
     await assertKnownEvidenceDoesNotValidateContradiction();
   } else {
   let acceptedControlled = 0;
@@ -544,6 +605,7 @@ try {
   console.log(`OK: normal main client -> actual Edge -> client: ${acceptedControlled} controlled DA/DE/EN answers; ${rejectedHeaders} missing/wrong binding fallbacks; ${privateQuestions.length} private refusals; ${ordinary.length} ordinary fail-closed paths; 3 local security refusals; no network/provider.`);
   console.log('OPEN: exact German BernsteinScore/trotzdem question remains a local colour misroute; all sixteen controlled forms avoid provider, but only fifteen have normal-client Edge delivery. No live browser, working quota or external-AI claim.');
   await assertKnownEvidenceDoesNotValidateContradiction();
+  await assertCanonicalIdentificationUnion();
   }
 } finally {
   declarationHook.deregister();
