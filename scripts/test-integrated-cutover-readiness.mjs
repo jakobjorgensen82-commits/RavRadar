@@ -721,12 +721,19 @@ try {
     dryRunPath,
     `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • ${LATEST_REQUIRED_CUTOVER_MIGRATION.filename}\nFinished supabase db push.`,
   );
+  const helperEnvironment = {
+    ...process.env,
+    RAVRADAR_USERDATA_UPGRADE_OPT_IN: 'true',
+    RAVRADAR_USERDATA_PREWRITE_REQUIRED: 'true',
+    RAVRADAR_USERDATA_PREWRITE_VERIFIED: 'true',
+  };
   const helperRun = spawnSync(process.execPath, [
     path.resolve('scripts/verify-code-only-migration-plan.mjs'),
     '--migration-list', migrationListPath,
     '--dry-run', dryRunPath,
     '--migrations-directory', path.resolve('supabase/migrations'),
-  ], { encoding: 'utf8' });
+    '--require-prewrite-gate',
+  ], { encoding: 'utf8', env: helperEnvironment });
   assert.equal(helperRun.status, 0,
     helperRun.stderr || helperRun.stdout || helperRun.error?.message);
   assert.match(
@@ -734,6 +741,23 @@ try {
     /exactly 20261010130000_owner_export_origin_bound_successor.sql/,
     'the live code-only helper must admit exactly the current checkpoint bridge',
   );
+  for (const optIn of [undefined, 'false']) {
+    const rejectedEnvironment = { ...helperEnvironment };
+    delete rejectedEnvironment.RAVRADAR_USERDATA_UPGRADE_OPT_IN;
+    if (optIn !== undefined) rejectedEnvironment.RAVRADAR_USERDATA_UPGRADE_OPT_IN = optIn;
+    const rejectedRun = spawnSync(process.execPath, [
+      path.resolve('scripts/verify-code-only-migration-plan.mjs'),
+      '--migration-list', migrationListPath,
+      '--dry-run', dryRunPath,
+      '--migrations-directory', path.resolve('supabase/migrations'),
+      '--require-prewrite-gate',
+    ], { encoding: 'utf8', env: rejectedEnvironment });
+    assert.equal(rejectedRun.status, 1,
+      `pending userdata migration must reject ${optIn === undefined ? 'missing' : 'false'} opt-in`);
+    assert.match(rejectedRun.stderr,
+      /The pending userdata binding requires explicit existing-owner-export opt-in/);
+    assert.equal(rejectedRun.stdout, '', 'rejected opt-in must not emit a successful migration plan');
+  }
 } finally {
   await fs.rm(codeOnlyHelperDirectory, { recursive: true, force: true });
 }

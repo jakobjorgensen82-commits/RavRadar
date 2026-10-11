@@ -8,6 +8,8 @@ Dette er den nye samlede kildeidentitet, ikke bevis for installation eller offen
 
 ## 89.200 Egne ture, sikker eksport og afgrænsede assistentopfølgninger
 
+Den første kildekontrol fandt to forældede testopstillinger. De følger nu de eksisterende sikkerhedskrav og appens faktiske emnetilstand. De normale målprøver består; gamle kontroller bevares. Produktfunktioner og modelbindinger ændres ikke af denne testrettelse. Ny præcis kildekontrol og offentlig levering mangler stadig.
+
 Den lokale 575-kandidat samler den gennemgåede brugerdatarettelse med fem små assistentrettelser. Den ændrer ikke vejrets fysiske scoreformel, administratorpunkter eller geometri. Gamle originaler og 54 historiske migrationer bevares.
 
 Eksporten skal kun indeholde den aktuelle ejers ture. Den henter sider gennem den normale signerede lagerkæde, uden at sætte et vilkårligt loft på hele eksporten. Kontoskift eller afbrydelse må ikke efterlade en eksport til den forkerte bruger. En gemt tur er ikke automatisk tilladelse til statistisk viderebrug.
