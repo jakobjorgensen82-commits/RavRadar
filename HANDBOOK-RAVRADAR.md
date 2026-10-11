@@ -1,10 +1,24 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.570
+**Håndbogsversion:** 4.0.571
 
-Den lokale 4.0.570 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+Den lokale 4.0.571 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+
+## 89.196 Isoleret kildekandidat til ejet rå-cachegemning
+
+Den lokale 571-kandidat samler klargøring og gemning af rå DMI-cache i et afgrænset forløb. Den bruger den faste lokale action, Node24 og den låste officielle cache-API. Kandidaten er endnu ikke aktiveret eller produktionsverificeret.
+
+Programmet skal eje sin procesgruppe og den kooperative lokale skrivelås. Hvis ophør eller ejerskab er uklart, gives ingen normal kvittering. Låsen må ikke frigives som om arbejdet var afsluttet. Dette er ikke bevis for, at alle andre skrivere deltager, eller at tab af hele runneren er løst.
+
+Klargøring af afhængigheder betyder ikke, at data er gemt. En gemningskvittering kræver normal API-afslutning, faktisk ophør af den ejede procesgruppe og frigivelse af egen lås. Et svar uden HTTP-fejl er ikke nok, hvis API'en afviser finaliseringen. Afhængigheder bruger kun actionens egen cache; ingen bred bruger-cache kopieres.
+
+De samlede lokale workflow-prøver består 20 af 20, og rækkefølgeprøven består. Afhængighedsprøven kunne ikke importere pakken, fordi lokale node_modules mangler. Alle seks native Linux-prøver er endnu ukørte. De omfatter den officielle SDK mod lokal loopback og klargøring med varm eller tom offline-cache. Normal Linux-kildekontrol på præcis kandidatkode er derfor næste nødvendige bevis.
+
+570 bestod kildekontrol 38096235154/1 kl. 01.57.18 dansk tid den 11. oktober og er merget til main 63751c6. Kode-only 38096843930/1 på main 63751c6 afsluttede faktisk Edge kl. 02.06.43, Pages kl. 02.08.10, offentlig 210/673-kontrol kl. 02.08.54 og terminal succes kl. 02.09.02 dansk tid. Gemte runtime-, checkpoint- og private publiceringstrin bestod; ingen ny SQL-installation udledes. 567–569 er også merget. Naturlig 38083296276 afsluttede offentlig 210/673-levering kl. 01.23.32. Tidligere ventestatusser i de gamle kapitler er historik.
+
+Alle fem hovedmål er åbne. Samlet writer, CP-cohort, SAVE/RESTORE, capture, runner-tab, fjernholdbarhed og samlet tidsbudget er ikke afsluttet. Decoder-, numerisk 190000-SQL- og krypteret RESTORE-afklaring afventer fortsat. I68/C66, continuation, lager-ABI, scoreformel, geometri, originaler og de tidligere assistent-/profilrettelser bevares. Geodata ændres kun i topversionen. Ingen nye tilladelser eller produktionshandlinger følger.
 
 ## 89.195 Profilens ejer kontrolleres før rollebrug
 

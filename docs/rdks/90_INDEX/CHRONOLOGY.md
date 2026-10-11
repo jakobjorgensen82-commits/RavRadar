@@ -1,4 +1,14 @@
-# 2026-10-11 – lokal 4.0.570, ejerbundet profilgenlæsning
+# 2026-10-11 – lokal 4.0.571, isoleret rå-SAVE-kildekandidat
+
+Den gennemgåede 17-blads rå-cachekandidat er sammensat lokalt, ikke aktiveret. Fast Node24-action, låst officiel cache-API og faktisk ejet procesgruppe adskiller klargøring fra gemning. Ukendt ophør eller ejerskab må ikke give en normal gemningskvittering eller frigive den kooperative lås.
+
+Samlet lokal workflow-prøve består 20/20; workflow-rækkefølgeprøven består. Afhængighedsprøven er IMPORT_FAILED uden installerede ROOT-node_modules, og alle seks native Linux-prøver er ukørte. Normal præcis Linux-kildekontrol er næste nye bevis; ingen falsk SDK, installation eller genkørsel er foretaget her.
+
+570 exact 28ef1d37f bestod 38096235154/1 kl. 01.57.18 dansk tid og er merget via PR #560 til main 63751c6. Kode-only 38096843930/1 på main 63751c6 afsluttede faktisk Edge kl. 02.06.43, Pages kl. 02.08.10, offentlig 210/673-kontrol kl. 02.08.54 og terminal succes kl. 02.09.02 dansk tid. Gemte runtime-, checkpoint- og private publiceringstrin bestod; ingen ny SQL-installation udledes. 567–569 er merget efter præcise kildebeviser. Naturlig 38083296276 afsluttede offentlig 210/673-levering kl. 01.23.32. Dette erstatter tidligere ventestatusser, ikke tidligere evidens.
+
+Alle fem mål er åbne. Samlet writer, SAVE/RESTORE, CP-cohort, capture, runner-tab, fjernholdbarhed og samlet budget er ikke afsluttet. Fælles decoder, numerisk 190000-SQL og krypteret RESTORE afventer stadig; ingen nye tilladelser, bindingsændringer eller produktion følger. I68/C66/continuation/ABI, originaler, score og geometri bevares; geodata kun topversion.
+
+# Historik: 2026-10-11 – lokal 4.0.570, ejerbundet profilgenlæsning
 
 Den normale getCurrentRole → getCurrentProfile-kæde kunne i en lokal syntetisk prøve bruge et svar med forkert ejer trods korrekt forespørgselsfilter. 570 kræver tom profilliste eller én objekt-række med præcis forventet bruger-id, før rollen returneres. Forkert ejer, manglende id, null, array, primitiv række og flere rækker afvises; legitimt tomt resultat, egen profil og samme-login-fornyelse bevares.
 

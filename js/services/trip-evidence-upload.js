@@ -1,8 +1,8 @@
-import { assertTripEvidencePrivacy, toObservationTripColumns } from './trip-evidence-contract.js?v=4.0.570';
-import { listPendingTripEvidence, markTripEvidenceSubmitted } from './trip-evidence-store.js?v=4.0.570';
+import { assertTripEvidencePrivacy, toObservationTripColumns } from './trip-evidence-contract.js?v=4.0.571';
+import { listPendingTripEvidence, markTripEvidenceSubmitted } from './trip-evidence-store.js?v=4.0.571';
 
-import { authIdentityEpoch, currentSession } from './auth-service.js?v=4.0.570';
-import { reserveTripEvidenceUpload, submitTripEvidenceObservation } from './observation-service.js?v=4.0.570';
+import { authIdentityEpoch, currentSession } from './auth-service.js?v=4.0.571';
+import { reserveTripEvidenceUpload, submitTripEvidenceObservation } from './observation-service.js?v=4.0.571';
 
 function sameUploadedTripValue(left, right) {
   if (left === right) return true;

@@ -1,4 +1,13 @@
-# Lokal 4.0.570 – 2026-10-11
+# Lokal 4.0.571 – 2026-10-11
+
+- Samler en isoleret 17-blads kildekandidat til rå DMI-cachegemning gennem fast Node24-action og låst officiel cache-API. Klargøring og gemning holdes adskilt; ukendt procesophør eller ejerskab giver ingen normal kvittering.
+- Bruger egen kooperativ skrivelås og faktisk ejet procesgruppe. Actionens afhængigheder installeres i dens egen .npm-cache; ingen bred bruger-cachekopi. Eksisterende vejrsproducenter vender tilbage til Node22 efter klargøring.
+- Samlet lokal workflow-prøve 20/20 og workflow-rækkefølgeprøve består. Lokal afhængighedsprøve er IMPORT_FAILED uden node_modules. Seks native Linux-prøver er ukørte; normal præcis Linux-kildekontrol mangler. Ingen SDK-, native- eller holdbarhedssucces udledes af syntetiske prøver.
+- 570 exact 28ef1d37f bestod kildekontrol 38096235154/1 kl. 01.57.18 dansk tid og er merget som main 63751c6. Kode-only 38096843930/1 på main 63751c6 afsluttede faktisk Edge kl. 02.06.43, Pages kl. 02.08.10, offentlig 210/673-kontrol kl. 02.08.54 og terminal succes kl. 02.09.02 dansk tid. Gemte runtime-, checkpoint- og private publiceringstrin bestod; ingen ny SQL-installation udledes. 567–569 er merget; naturlig 38083296276 afsluttede offentlig 210/673-levering kl. 01.23.32.
+- 571 er ikke merget, aktiveret eller produktionsverificeret. Alle fem mål, samlet writer, CP-cohort, SAVE/RESTORE, capture, runner-tab, fjernholdbarhed og heljobsbudget er åbne. Fælles decoder, numerisk 190000-SQL og krypteret RESTORE afventer; ingen nye tilladelser.
+- I68/C66/continuation/ABI, canonical569, profile570, originaler, scoreformel og geometri bevares. Kun mekaniske releasefelter og geodataenes topversion ændres. Ingen source33-genforsøg eller SQL-installation.
+
+# Historik: lokal 4.0.570 – 2026-10-11
 
 - Profilens ejer kontrolleres i det faktisk modtagne svar, før getCurrentRole bruger rollen. Et korrekt forespørgselsfilter eller HTTP 200 er ikke alene ejerbevis.
 - Tom profilliste er fortsat gyldig. Én række skal være et ikke-null objekt, ikke et array, med præcis forventet bruger-id. Forkert ejer, manglende id, ugyldig form og flere rækker afvises; normale ejer-/loginforløbskontroller, samme-login-fornyelse og gemte data bevares.

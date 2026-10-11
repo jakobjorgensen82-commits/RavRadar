@@ -445,7 +445,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.570 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.571 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -1233,7 +1233,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.570 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.571 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -1258,7 +1258,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.570 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.571 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -1358,6 +1358,24 @@ jobs:
         with:
           path: .cache/weather-source-validation.json
           key: weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Select Node24 for fixed raw-cache distribution preparation
+        if: steps.preflight.outputs.should_run == 'true'
+        id: dmi-cache-api-node24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Prepare locked raw-cache API under its actual owned cohort
+        if: steps.preflight.outputs.should_run == 'true'
+        id: dmi-cache-api-prepare
+        run: node "$GITHUB_WORKSPACE/.github/actions/save-owned-dmi-grib/index.cjs" --prepare-distribution
+
+      - name: Restore Node22 for normal weather producers
+        if: always() && steps.dmi-cache-api-node24.outcome == 'success'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
 
       - name: Materialize bounded deployed DMI storage before conditional point activation
         if: steps.preflight.outputs.should_run == 'true' && hashFiles('data/live/dmi-bulk-cache.json') != ''
@@ -1545,7 +1563,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.570 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.571 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1568,8 +1586,8 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Save progressed DMI GRIB download cache
-        if: always() && steps.dmi-progress-write-authority.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped'
-        uses: actions/cache/save@v6
+        if: always() && steps.dmi-progress-write-authority.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-cache-api-prepare.outcome == 'success' && steps.dmi-cache-api-prepare.outputs.distribution_ready == 'true'
+        uses: ./.github/actions/save-owned-dmi-grib
         with:
           path: .cache/dmi-grib
           key: dmi-grib-v4-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -1906,7 +1924,7 @@ jobs:
           RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: ${{ inputs.quick_confirmation && '60000' || '90000' }}
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.570 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.571 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Report counts for each weather component after central cache

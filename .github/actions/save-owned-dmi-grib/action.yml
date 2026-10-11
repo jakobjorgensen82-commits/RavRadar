@@ -1,0 +1,15 @@
+name: Save owned DMI GRIB cache
+description: Fixed raw-cache saver; requires the shared acquisition owner and packaged official cache API.
+inputs:
+  path:
+    description: Existing raw DMI cache path; no other input path is accepted.
+    required: true
+  key:
+    description: Existing OS/week/run/attempt cache key.
+    required: true
+outputs:
+  saved:
+    description: True only after v2 finalization, physical cohort closure and own claim release.
+runs:
+  using: node24
+  main: index.cjs
