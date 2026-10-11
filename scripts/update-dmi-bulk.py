@@ -16,8 +16,10 @@ import math
 import os
 import pathlib
 import re
+import signal
 import sys
 import tempfile
+import threading
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable, NamedTuple
@@ -3742,6 +3744,106 @@ def cached_capture_matches_official(
     )
 
 
+class AssetDownloadRuntimeBudget(RuntimeError):
+    """The caller's existing download work deadline has elapsed."""
+
+
+class AssetDownloadCleanupUnproven(RuntimeError):
+    """The download guard or its owned cleanup cannot safely continue."""
+
+
+_UNSETTLED_ASSET_DOWNLOADS: list[tuple[Any, ...]] = []
+
+
+@contextmanager
+def asset_download_work_deadline(work_deadline: float | None):
+    if work_deadline is None:
+        yield
+        return
+    if (
+        isinstance(work_deadline, bool)
+        or not isinstance(work_deadline, (int, float))
+        or not math.isfinite(work_deadline)
+    ):
+        raise AssetDownloadCleanupUnproven("DMI asset work deadline is invalid")
+    if (
+        os.name != "posix"
+        or threading.current_thread() is not threading.main_thread()
+        or not all(hasattr(signal, name) for name in (
+            "SIGALRM", "ITIMER_REAL", "getitimer", "setitimer",
+            "pthread_sigmask", "sigpending", "sigwait",
+        ))
+    ):
+        raise AssetDownloadCleanupUnproven("DMI asset work deadline requires POSIX main-thread signals")
+    alarm = {signal.SIGALRM}
+    try:
+        previous_mask = signal.pthread_sigmask(signal.SIG_BLOCK, alarm)
+    except BaseException as exc:
+        raise AssetDownloadCleanupUnproven("DMI asset alarm ownership is unavailable") from exc
+    previous_handler = None
+    owns_alarm = False
+    entered = False
+    failure = None
+    restoration_failure = None
+
+    def expired(_signum, _frame):
+        if failure is None:
+            raise AssetDownloadRuntimeBudget("DMI asset download runtime budget reached")
+
+    try:
+        previous_timer = signal.getitimer(signal.ITIMER_REAL)
+        if (
+            any(previous_timer)
+            or signal.SIGALRM in previous_mask
+            or signal.SIGALRM in signal.sigpending()
+        ):
+            raise AssetDownloadCleanupUnproven("DMI asset alarm is already owned or pending")
+        remaining = work_deadline - time.monotonic()
+        if remaining <= 0:
+            expired(None, None)
+        previous_handler = signal.getsignal(signal.SIGALRM)
+        signal.signal(signal.SIGALRM, expired)
+        owns_alarm = True
+        remaining = work_deadline - time.monotonic()
+        if remaining <= 0:
+            expired(None, None)
+        signal.setitimer(signal.ITIMER_REAL, remaining)
+        signal.pthread_sigmask(signal.SIG_SETMASK, previous_mask)
+        entered = True
+        yield
+        if time.monotonic() >= work_deadline:
+            expired(None, None)
+    except BaseException as exc:
+        failure = (exc, exc.__traceback__)
+    finally:
+        if owns_alarm:
+            try:
+                # Block and drain only this scope's alarm before restoring its
+                # predecessor. Cleanup/promotion does not run under our timer.
+                signal.pthread_sigmask(signal.SIG_BLOCK, alarm)
+                signal.setitimer(signal.ITIMER_REAL, 0.0)
+                if signal.SIGALRM in signal.sigpending():
+                    signal.sigwait(alarm)
+                signal.signal(signal.SIGALRM, previous_handler)
+            except BaseException as exc:
+                restoration_failure = (exc,)
+        if restoration_failure is None:
+            try:
+                signal.pthread_sigmask(signal.SIG_SETMASK, previous_mask)
+            except BaseException as exc:
+                restoration_failure = (exc,)
+    if restoration_failure is not None:
+        raise AssetDownloadCleanupUnproven("DMI asset alarm restoration is unproved") from (
+            failure[0] if failure is not None else restoration_failure[0]
+        )
+    if failure is not None:
+        if not entered and not isinstance(failure[0], (
+            AssetDownloadRuntimeBudget, AssetDownloadCleanupUnproven,
+        )):
+            raise AssetDownloadCleanupUnproven("DMI asset alarm setup failed") from failure[0]
+        raise failure[0].with_traceback(failure[1])
+
+
 def download_asset(
     href: str,
     expected_size: int | None,
@@ -3753,6 +3855,7 @@ def download_asset(
     item_id: str | None = None,
     item_created_at: str | None = None,
     item_updated_at: str | None = None,
+    work_deadline: float | None = None,
 ) -> tuple[pathlib.Path, bool]:
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     if expected_size is not None and (
@@ -3788,8 +3891,16 @@ def download_asset(
             return path, True
     if expected_size and budget["bytes"] + expected_size > MAX_DOWNLOAD_BYTES:
         raise RuntimeError("DMI bulk download budget would be exceeded")
+    response_context = None
+    tmp_context = None
+    tmp_path: pathlib.Path | None = None
+    failure = None
+    cleanup_failure = None
+    content_digest = hashlib.sha256()
     try:
-        with DOWNLOAD_SESSION.get(href, stream=True, timeout=REQUEST_TIMEOUT) as response:
+        with asset_download_work_deadline(work_deadline):
+            response_context = DOWNLOAD_SESSION.get(href, stream=True, timeout=REQUEST_TIMEOUT)
+            response = response_context.__enter__()
             response.raise_for_status()
             try:
                 content_length = int(response.headers.get("content-length", "0") or 0)
@@ -3801,32 +3912,63 @@ def download_asset(
                 raise RuntimeError("DMI bulk asset length conflicts with STAC metadata")
             if budget["bytes"] + content_length > MAX_DOWNLOAD_BYTES:
                 raise RuntimeError("DMI bulk download budget exceeded before next asset")
-            tmp_path: pathlib.Path | None = None
-            content_digest = hashlib.sha256()
+            tmp_context = tempfile.NamedTemporaryFile(dir=RAW_DIR, delete=False)
+            tmp_path = pathlib.Path(tmp_context.name)
+            tmp = tmp_context.__enter__()
+            for chunk in response.iter_content(1024 * 1024):
+                if not chunk:
+                    continue
+                budget["bytes"] += len(chunk)
+                if budget["bytes"] > MAX_DOWNLOAD_BYTES:
+                    raise RuntimeError("DMI bulk download budget exceeded during asset download")
+                content_digest.update(chunk)
+                tmp.write(chunk)
+    except BaseException as exc:
+        failure = (exc, exc.__traceback__)
+    finally:
+        for context in (tmp_context, response_context):
+            if context is not None:
+                try:
+                    context.__exit__(
+                        type(failure[0]) if failure is not None else None,
+                        failure[0] if failure is not None else None,
+                        failure[1] if failure is not None else None,
+                    )
+                except BaseException as exc:
+                    if cleanup_failure is None:
+                        cleanup_failure = (exc,)
+    if cleanup_failure is not None or (
+        failure is not None and isinstance(failure[0], AssetDownloadCleanupUnproven)
+    ):
+        _UNSETTLED_ASSET_DOWNLOADS.append((tmp_context, response_context, tmp_path, failure, cleanup_failure))
+        if failure is not None and isinstance(failure[0], AssetDownloadCleanupUnproven):
+            raise failure[0].with_traceback(failure[1])
+        raise AssetDownloadCleanupUnproven("DMI asset download cleanup is unproved") from (
+            failure[0] if failure is not None else cleanup_failure[0]
+        )
+    if failure is None:
+        try:
+            actual_size = tmp_path.stat().st_size
+            if (
+                actual_size <= 0
+                or (content_length and actual_size != content_length)
+                or (expected_size is not None and actual_size != expected_size)
+            ):
+                raise RuntimeError("DMI bulk asset download is incomplete")
+            if work_deadline is not None and time.monotonic() >= work_deadline:
+                raise AssetDownloadRuntimeBudget("DMI asset download runtime budget reached")
+        except BaseException as exc:
+            failure = (exc, exc.__traceback__)
+    if failure is not None:
+        if tmp_path is not None:
             try:
-                with tempfile.NamedTemporaryFile(dir=RAW_DIR, delete=False) as tmp:
-                    tmp_path = pathlib.Path(tmp.name)
-                    for chunk in response.iter_content(1024 * 1024):
-                        if not chunk:
-                            continue
-                        budget["bytes"] += len(chunk)
-                        if budget["bytes"] > MAX_DOWNLOAD_BYTES:
-                            raise RuntimeError("DMI bulk download budget exceeded during asset download")
-                        content_digest.update(chunk)
-                        tmp.write(chunk)
-                actual_size = tmp_path.stat().st_size
-                if (
-                    actual_size <= 0
-                    or (content_length and actual_size != content_length)
-                    or (expected_size is not None and actual_size != expected_size)
-                ):
-                    raise RuntimeError("DMI bulk asset download is incomplete")
-            except Exception:
-                if tmp_path is not None:
-                    tmp_path.unlink(missing_ok=True)
-                raise
-    except requests.RequestException:
-        raise RuntimeError("DMI bulk asset request failed") from None
+                tmp_path.unlink(missing_ok=True)
+            except BaseException:
+                _UNSETTLED_ASSET_DOWNLOADS.append((tmp_path, failure))
+                raise AssetDownloadCleanupUnproven("DMI asset temporary cleanup is unproved") from failure[0]
+        if isinstance(failure[0], requests.RequestException):
+            raise RuntimeError("DMI bulk asset request failed") from None
+        raise failure[0].with_traceback(failure[1])
     tmp_path.replace(path)
     acquired_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     register_raw_cache_asset(
@@ -7482,6 +7624,23 @@ def execute_private_wave_history_bootstrap(
             asset.valid_time for asset in assets
             if epoch(asset.valid_time) < epoch(configuration["targetHour"])
         }
+
+        def record_runtime_reserved_hour(valid_time: str) -> None:
+            runtime_reserved_hours.setdefault(collection, set()).add(valid_time)
+            collection_summary["runtimeReservedAssetCount"] = int(
+                collection_summary.get("runtimeReservedAssetCount") or 0
+            ) + 1
+            if collection_summary["runtimeReservedAssetCount"] == 1:
+                collection_summary["status"] = "history-incomplete"
+                collection_summary["failureCode"] = "CRITICAL_WAM_RUNTIME_RESERVED"
+                result["diagnostics"].setdefault("schedulerYields", []).append({
+                    "collection": collection,
+                    "reasonCode": "CRITICAL_WAM_RUNTIME_RESERVED",
+                    "reservedForCollections": later_collections,
+                    "reservedSeconds": round(preserve_for_later_wam, 3),
+                    "partialProgressPreserved": True,
+                })
+
         for asset_number, asset in enumerate(assets, start=1):
             private_asset_reference = {
                 **asset.download_reference(),
@@ -7526,28 +7685,7 @@ def execute_private_wave_history_bootstrap(
                     raise RuntimeError(
                         "private WAM bootstrap runtime budget reached"
                     )
-                runtime_reserved_hours.setdefault(collection, set()).add(
-                    asset.valid_time
-                )
-                collection_summary["runtimeReservedAssetCount"] = int(
-                    collection_summary.get("runtimeReservedAssetCount") or 0
-                ) + 1
-                if collection_summary["runtimeReservedAssetCount"] == 1:
-                    collection_summary["status"] = "history-incomplete"
-                    collection_summary["failureCode"] = (
-                        "CRITICAL_WAM_RUNTIME_RESERVED"
-                    )
-                    result["diagnostics"].setdefault(
-                        "schedulerYields", []
-                    ).append({
-                        "collection": collection,
-                        "reasonCode": "CRITICAL_WAM_RUNTIME_RESERVED",
-                        "reservedForCollections": later_collections,
-                        "reservedSeconds": round(
-                            preserve_for_later_wam, 3,
-                        ),
-                        "partialProgressPreserved": True,
-                    })
+                record_runtime_reserved_hour(asset.valid_time)
                 continue
             supervised_asset = {
                 "valid": asset.valid_time,
@@ -7598,7 +7736,23 @@ def execute_private_wave_history_bootstrap(
                         item_id=asset.item_id,
                         item_created_at=asset.item_created_at,
                         item_updated_at=asset.item_updated_at,
+                        work_deadline=WORK_DEADLINE - max(0.0, preserve_for_later_wam),
                     )
+            except AssetDownloadCleanupUnproven:
+                raise
+            except AssetDownloadRuntimeBudget as exc:
+                try:
+                    controller.observe_asset_duration(
+                        time.monotonic() - asset_processing_started,
+                        cost_family=collection,
+                    )
+                    controller.flush_if_due(force=True)
+                except BaseException:
+                    raise AssetDownloadCleanupUnproven("DMI asset budget checkpoint is unproved") from exc
+                if preserve_for_later_wam <= 0:
+                    raise
+                record_runtime_reserved_hour(asset.valid_time)
+                continue
             except Exception:
                 controller.observe_asset_duration(
                     time.monotonic() - asset_processing_started,
@@ -11320,6 +11474,7 @@ def replay_current_field_shadow_from_cache(
                             item_id=str(asset.get("id") or "") or None,
                             item_created_at=asset.get("itemCreatedAt"),
                             item_updated_at=asset.get("itemUpdatedAt"),
+                            work_deadline=WORK_DEADLINE,
                         )
                     resolved.append((asset, path))
                     bootstrap_remaining -= 1
@@ -11328,6 +11483,12 @@ def replay_current_field_shadow_from_cache(
                         summary["bootstrapDownloadedBytes"] += max(
                             0, int(budget.get("bytes") or 0) - before_bytes
                         )
+                except AssetDownloadCleanupUnproven:
+                    raise
+                except AssetDownloadRuntimeBudget:
+                    summary["interrupted"] = True
+                    summary["reason"] = "runtime-budget-reached"
+                    return summary
                 except Exception as exc:
                     summary["errors"].append({"collection": collection, "message": safe_error_message(exc)})
         if not model_run or not resolved:
@@ -12309,6 +12470,8 @@ def main() -> int:
                     )
                 ),
             )
+        except (AssetDownloadCleanupUnproven, AssetDownloadRuntimeBudget):
+            raise
         except Exception:
             checkpoint_controller.flush_if_due(force=True)
             raise
@@ -13504,12 +13667,23 @@ def main() -> int:
                             item_id=str(asset.get("id") or "") or None,
                             item_created_at=asset.get("itemCreatedAt"),
                             item_updated_at=asset.get("itemUpdatedAt"),
+                            work_deadline=WORK_DEADLINE - max(0.0, reserve_for_pending_critical),
                         )
+                except AssetDownloadCleanupUnproven:
+                    raise
                 except RuntimeError as exc:
                     checkpoint_controller.observe_asset_duration(
                         time.monotonic() - asset_processing_started,
                         cost_family=collection,
                     )
+                    if isinstance(exc, AssetDownloadRuntimeBudget):
+                        budget_stop = safe_error_message(exc)
+                        budget_stop_code = (
+                            "CRITICAL_COLLECTION_RUNTIME_RESERVED"
+                            if reserve_for_pending_critical > 0
+                            else "RUNTIME_BUDGET_REACHED"
+                        )
+                        break
                     if bounded_primary_refresh:
                         run_info["assetsBoundedRefreshFailed"] += 1
                         result["diagnostics"]["assetsBoundedDkssRefreshFailed"] = int(
@@ -14756,6 +14930,8 @@ def main() -> int:
                     })
             if budget_stop:
                 checkpoint_controller.flush_if_due(force=True)
+        except AssetDownloadCleanupUnproven:
+            raise
         except Exception as exc:
             if not collection_refresh_only:
                 primary_critical_work_observed = True

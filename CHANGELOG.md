@@ -1,4 +1,11 @@
-# Lokal 4.0.574 DMI-kapacitetsmåling omfatter hentning – 2026-10-11
+# Lokal 4.0.574 samlet DMI-downloadfrist – 2026-10-11
+
+- Én absolut arbejdsfrist minus den aktuelle caller-reserve omfatter request, retries, backoff og chunks på Linux; ingen udvidede tidsbudgetter eller ændret kildeprioritet.
+- Budgetudløb følger de normale reserve-/budgetgrene, ikke upstream-fravær. WAM giver ved positiv reserve plads til senere samlinger; forskningsbootstrap stopper uden cursorfremskridt. Afbrudt download må ikke erstatte gammel cache eller registreres som gennemført.
+- I68/C66/continuation, storage-ABI, scoreformel, adminpunkter, geometri og historiske originaler bevares. Samlet processtop, native blokering/logning, holdbar fjernlagring, runner-tab og national kapacitet er fortsat åbne.
+- To nye offline måltests og to berørte ældre måltests består; 65 gamle testmetoder er uændrede. Native Linux-prøven med fire syntetiske Requests/Retry-faser, præcis kildekontrol og normal driftseffekt afventes. PR572/573 er merget, cron er aktivt; ejerens nye særskilte korte kørsel på leveret main er accepteret uden gentagelsestilladelse.
+
+# Historik: 4.0.574 DMI-kapacitetsmåling omfatter hentning – 2026-10-11
 
 - Flytter alene startmålingen foran download_asset i hovedløkken og WAM-bootstrap; slutmåling og observation bevares. Senere kapacitetsvalg kan dermed medregne den faktisk brugte hente-/genbrugstid.
 - Faste budgetter, prioritetspolitik, originaler, parser, cacheformat, I68/C66/continuation og storage-ABI bevares. Ingen bindingsgenerering eller SQL-installation.

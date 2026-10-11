@@ -1,4 +1,12 @@
-# 2026-10-11 – lokal korrektion af DMI-kapacitetsmåling
+# Lokal 4.0.574 driftsrettelse – én samlet frist for DMI-download
+
+Downloaden får den eksisterende absolutte arbejdsfrist minus den aktuelle kalders reserve. Linux-alarmen omfatter request, retries, backoff og chunks uden at nulstille fristen. Den særskilte budgetundtagelse er ikke upstream-fravær: hovedløkken vælger den relevante reserve-/budgetgren, WAM afgiver ved positiv reserve tiden til senere WAM-samlinger, og forskningsbootstrap afsluttes som afbrudt uden at avancere cursoren. Gyldig eksisterende cache bevares; en afbrudt fil må ikke registreres eller committes.
+
+Dette er en afgrænset pipelineopfølgning, ikke en ny UI-/modelrelease. Faste budgetter, kildeprioritet, I68/C66/continuation, storage-ABI, scoreformel, adminpunkter og geometri bevares. Producentens kildeidentitet følger de faktiske bytes; historiske originaler ommærkes ikke. Ingen SQL-installation, ekstra vejrhentning eller providerdiagnose følger.
+
+PR572 og PR573 er kildeverificeret og merget. Den afsluttede korte vejrhentning har faktisk leveret et nyt offentligt datasæt, men dens indre DMI-status var ikke en fuldt gyldig ny DMI-generation. Cron er genaktiveret; den tidligere manuelle engangstilladelse er forbrugt. To nye offline måltests og to berørte ældre måltests består lokalt. De 65 hidtidige testmetoder er uændrede. Den nye native Linux-prøve med fire Requests/Retry-faser mod egne syntetiske loopback-input, præcis GitHub-kildekontrol og effekt i normal drift afventes. Ejerens nye direkte ordre tillader én særskilt kort kørsel på allerede leveret main; den er accepteret i GitHub og giver ingen gentagelsestilladelse. Den lukker ikke samlet fysisk processtop, blokerende native kald/logning, holdbar SAVE/upload/genbrug, runner-tab, fireminuttersgrænsen eller national heljobskapacitet. Alle fem hovedmål og den isolerede revisions aktiveringsgrænser består.
+
+# Historik: 2026-10-11 – lokal korrektion af DMI-kapacitetsmåling
 
 Den normale startmåling flyttes foran download_asset i DMI-hovedløkken og WAM-bootstrap, så de eksisterende afsluttede observationer omfatter hentning/cachegenbrug. Det kan ændre senere kapacitetsvalg, men ikke faste tidsbudgetter eller prioritetspolitik. Originaler, parser, cacheformat, I68/C66/continuation og storage-ABI bevares; ingen binding eller SQL skal installeres.
 

@@ -5,6 +5,12 @@
   "updatedAt": "2026-10-11",
   "sections": [
     {
+      "id": "dmi-download-work-deadline-2026-10-11",
+      "chapter": "89.205",
+      "title": "En samlet tidsgrænse for en DMI-download",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En langsom download må ikke få en ny tidsfrist ved hvert genforsøg.</div><p>På Linux får hentningen én samlet grænse fra den eksisterende arbejdstid, med den aktuelle reserve til senere datakilder trukket fra. Request, genforsøg, ventetid og filstykker deler den samme grænse. De samlede tidsbudgetter og kildernes prioritet ændres ikke.</p><p>Når grænsen nås, behandles det som brugt arbejdstid, ikke som bevis for manglende DMI-data. Bølgeforløbet giver ved positiv reserve plads til senere bølgekilder; den private forskningsopbygning stopper uden at flytte sin markør. En afbrudt fil erstatter ikke den gamle gyldige cache og tæller ikke som gennemført arbejde.</p><p>To nye måltests uden ekstern transport og to berørte ældre måltests består lokalt. De 65 gamle testmetoder er uændrede. Den nye Linux-prøve med fire syntetiske Requests/Retry-faser på eget loopback, præcis kildekontrol og faktisk driftseffekt afventes. Det er ikke bevis for samlet processtop, sikker upload eller national kapacitet; blokerende native kald og logning kan kræve den eksisterende overordnede stopkontrol. Modelbindinger, scoreformel, administratorpunkter, geometri og historiske originaler bevares. PR572/573 er lagt i main, og cron er genaktiveret efter en faktisk offentlig levering; alle fem hovedmål er fortsat åbne.</p>"
+    },
+    {
       "id": "dmi-download-inclusive-capacity-2026-10-11",
       "chapter": "89.204",
       "title": "Hentetid tæller med i DMI-kapaciteten",

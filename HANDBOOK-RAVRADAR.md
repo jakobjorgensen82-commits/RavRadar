@@ -6,6 +6,14 @@ Den lokale 4.0.574 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
 
+## 89.205 En samlet tidsgrænse for en DMI-download
+
+En langsom fil må ikke få en ny tidsfrist ved hvert genforsøg eller hvert stykke af filen. På Linux får hentningen derfor én samlet grænse fra den eksisterende arbejdstid, med den aktuelle reserve til senere datakilder trukket fra. De samlede tidsbudgetter og kildernes prioritet ændres ikke.
+
+Når grænsen nås, behandles det som brugt arbejdstid, ikke som bevis for manglende DMI-data. Bølgeforløbet giver ved positiv reserve plads til senere bølgekilder; den private forskningsopbygning stopper uden at flytte sin markør. En afbrudt fil erstatter ikke den gamle gyldige cache og tæller ikke som gennemført arbejde.
+
+To nye måltests uden ekstern transport og to berørte ældre måltests består lokalt. De 65 gamle testmetoder er uændrede. Den nye Linux-prøve med fire syntetiske Requests/Retry-faser på eget loopback, præcis kildekontrol og faktisk driftseffekt afventes. Det er ikke bevis for samlet processtop, sikker upload eller national kapacitet; blokerende native kald og logning kan kræve den eksisterende overordnede stopkontrol. Modelbindinger, scoreformel, administratorpunkter, geometri og historiske originaler bevares. PR572/573 er lagt i main, og cron er genaktiveret efter en faktisk offentlig levering; alle fem hovedmål er fortsat åbne.
+
 ## 89.204 Hentetid tæller med i DMI-kapaciteten
 
 Når systemet vurderer, hvor meget det kan nå, skal tiden til at hente eller genbruge en fil indgå sammen med behandlingen. Den afgrænsede rettelse starter den eksisterende måling før hentningen i både det almindelige DMI-forløb og bølgeforløbets indledende opbygning. Slutmålingen bevares. Det kan ændre senere vurderinger af kapaciteten, men ikke de faste tidsgrænser eller prioriteringsreglerne.
