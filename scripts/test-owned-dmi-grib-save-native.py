@@ -22,6 +22,7 @@ from pathlib import Path
 import select
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import tempfile
@@ -671,6 +672,8 @@ class OwnedRawDistributionNative(unittest.TestCase):
         pipe_targets = set()
         old_alarm = signal.getsignal(signal.SIGALRM)
         own_raw = b'synthetic raw original\n'
+        config_paths = (root / ENTRY.parent / '.npm-cache/.ravradar-user.npmrc',
+                        root / ENTRY.parent / '.npm-cache/.ravradar-global.npmrc')
 
         def deadline(_number, _frame):
             raise TimeoutError('OWN_DISTRIBUTION_OBSERVER_DEADLINE')
@@ -723,6 +726,9 @@ class OwnedRawDistributionNative(unittest.TestCase):
                         pass  # Closed during this inventory; never qualifies an open pipe.
                 self.assertTrue(pipe_targets.isdisjoint(remaining))
             self.assertEqual((root / '.cache/dmi-grib/own.grib').read_bytes(), own_raw)
+            for config_path in config_paths:
+                self.assertFalse(config_path.exists(), 'Only closed own npm configs may be removed before ready')
+                self.assertFalse(config_path.is_symlink())
 
         signal.signal(signal.SIGALRM, deadline)
         signal.setitimer(signal.ITIMER_REAL, BODY_SECONDS)
@@ -807,6 +813,35 @@ class OwnedRawDistributionNative(unittest.TestCase):
             pipe_targets = action_sockets | action_child_pipes
             self.assertEqual(len(pipe_targets), 3)
             assert_pending()
+            # Observe the actual npm process while our retained pidfd has it
+            # stopped. Distinct empty private files must replace the duplicate
+            # /dev/null configuration, without borrowing any host npmrc.
+            npm_environment = dict(item.split(b'=', 1) for item in
+                                   small(f'/proc/{npm_pid}/environ').split(b'\0') if item)
+            self.assertEqual(npm_environment[b'npm_config_cache'], os.fsencode(own_cache))
+            self.assertEqual(npm_environment[b'npm_config_userconfig'], os.fsencode(config_paths[0]))
+            self.assertEqual(npm_environment[b'npm_config_globalconfig'], os.fsencode(config_paths[1]))
+            self.assertNotEqual(config_paths[0], config_paths[1])
+            config_identities = []
+            for config_path in config_paths:
+                config_stat = config_path.lstat()
+                self.assertEqual(config_path.resolve(strict=True), config_path)
+                self.assertTrue(stat.S_ISREG(config_stat.st_mode))
+                self.assertEqual((config_stat.st_size, config_stat.st_nlink,
+                                  stat.S_IMODE(config_stat.st_mode)), (0, 1, 0o400))
+                config_fd = os.open(config_path, os.O_RDONLY | os.O_NOFOLLOW)
+                try:
+                    opened_config = os.fstat(config_fd)
+                    self.assertEqual((opened_config.st_dev, opened_config.st_ino),
+                                     (config_stat.st_dev, config_stat.st_ino))
+                    self.assertEqual(os.read(config_fd, 1), b'')
+                    config_identities.append((opened_config.st_dev, opened_config.st_ino))
+                finally:
+                    os.close(config_fd)
+                with self.assertRaises(OSError) as closed_config:
+                    os.fstat(config_fd)
+                self.assertEqual(closed_config.exception.errno, errno.EBADF)
+            self.assertNotEqual(config_identities[0], config_identities[1])
             signal.pidfd_send_signal(fds['npm'], signal.SIGCONT)
             while not exited(fds['action']):
                 if small(output):

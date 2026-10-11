@@ -485,3 +485,166 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
     delete globalThis[apiSlot];
   }
 });
+
+
+// Real owned-file I/O with the unchanged full action body. Process/npm boundaries
+// are controlled here; this is NOT an npm install, SDK or native cohort proof.
+testOwnedRawCache('owned distribution npm configuration: distinct empty sources and close boundary', async t => {
+  const rawFs = ownedRawRequire('node:fs');
+  async function fixture(options = {}) {
+    const parent = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'rr-owned-npm-config-')));
+    const action = path.join(parent, 'checkout/.github/actions/save-owned-dmi-grib');
+    const cache = path.join(action, '.npm-cache');
+    const runtime = path.join(parent, 'runtime');
+    await fs.mkdir(action, { recursive: true });
+    await fs.mkdir(runtime);
+    await fs.writeFile(path.join(action, 'package.json'), ownedRawPackage);
+    await fs.writeFile(path.join(action, 'package-lock.json'), ownedRawLock);
+    const file = path.join(action, 'index.cjs');
+    const execPath = path.join(runtime, 'bin/node');
+    const npmLink = path.join(runtime, 'bin/npm');
+    const npmCli = path.join(runtime, 'lib/node_modules/npm/bin/npm-cli.js');
+    const configs = ['.ravradar-user.npmrc', '.ravradar-global.npmrc'].map(name => path.join(cache, name));
+    const processFixture = { platform: 'linux', versions: { node: '24.19.0' }, execPath,
+      ppid: 12345, env: { GITHUB_REF: 'refs/heads/main', RUNNER_OS: 'Linux',
+        GITHUB_SERVER_URL: 'https://github.com', GITHUB_EVENT_NAME: 'workflow_dispatch',
+        NPM_CONFIG_USERCONFIG: '/SYNTHETIC_INHERITED_CONFIG',
+        npm_config_globalconfig: '/SYNTHETIC_INHERITED_CONFIG', npm_config_offline: 'true' } };
+    const opened = new Set();
+    const installer = new OwnedRawEmitter();
+    let settings, command, args, parentAdmission = false, failUnlink = false;
+    const controlledFs = new Proxy(rawFs, { get(target, name) {
+      if (name === 'readFileSync') return (p, ...rest) => {
+        if (p === '/proc/12345/cmdline') return Buffer.from('python3\0-B\0'
+          + path.resolve(action, '../../../scripts/run-owned-dmi-grib-save.py') + '\0');
+        if (p === path.join(path.dirname(npmCli), '../package.json')) return '{"name":"npm"}';
+        return target.readFileSync(p, ...rest);
+      };
+      if (name === 'realpathSync') return p => p === npmLink ? npmCli : target.realpathSync(p);
+      if (name === 'openSync') return (...args) => {
+        const fd = target.openSync(...args); opened.add(fd); return fd;
+      };
+      if (name === 'fstatSync') return (fd, ...rest) => {
+        if (parentAdmission && fd === 3 && !opened.has(fd)) {
+          parentAdmission = false; return { isFIFO: () => true, isSocket: () => false };
+        }
+        if (opened.has(fd) && Object.hasOwn(options, 'statFailure')) throw options.statFailure;
+        return target.fstatSync(fd, ...rest);
+      };
+      if (name === 'closeSync') return fd => {
+        if (options.noopClose) return;
+        target.closeSync(fd); opened.delete(fd);
+      };
+      if (name === 'unlinkSync') return p => {
+        if (failUnlink) throw new Error('SYNTHETIC_SECONDARY_UNLINK');
+        if (options.noopUnlink) return;
+        return target.unlinkSync(p);
+      };
+      return target[name];
+    } });
+    const module = { exports: {} };
+    const require = name => name === 'node:fs' ? controlledFs
+      : name === 'node:child_process' ? { spawn(c, a, s) {
+        command = c; args = a; settings = s; return installer;
+      } } : ownedRawRequire(name);
+    const context = vmOwnedRawCache.createContext({ require, module, exports: module.exports,
+      __dirname: action, __filename: file, process: processFixture, Buffer, URL, console });
+    new vmOwnedRawCache.Script(ownedRawSource, { filename: file }).runInContext(context);
+    const api = vmOwnedRawCache.runInContext('({ createDistributionConfigFiles, runDistributionWorker })', context);
+    return { ...api, action, cache, configs, installer, options, opened,
+      runDistributionWorker() { parentAdmission = true; return api.runDistributionWorker(); },
+      get settings() { return settings; }, get command() { return command; }, get args() { return args; },
+      secondaryUnlinkFailure() { failUnlink = true; },
+      async dispose() {
+        for (const fd of opened) rawFs.closeSync(fd);
+        await fs.rm(parent, { recursive: true, force: true });
+      },
+    };
+  }
+  await t.test('normal worker uses distinct own empty configs, no inherited source, and waits for close', async () => {
+    const f = await fixture();
+    try {
+      let settled = false;
+      const operation = f.runDistributionWorker();
+      operation.then(() => { settled = true; }, () => { settled = true; });
+      assert.equal(f.settings.env.npm_config_userconfig, f.configs[0]);
+      assert.equal(f.settings.env.npm_config_globalconfig, f.configs[1]);
+      assert.equal(f.settings.env.NPM_CONFIG_USERCONFIG, undefined);
+      assert.equal(f.settings.env.npm_config_offline, 'true');
+      assert.equal(f.settings.env.npm_config_cache, f.cache);
+      assert.equal(f.settings.shell, false);
+      assert.equal(f.settings.stdio, 'ignore');
+      assert.deepEqual(Array.from(f.args).slice(1), ['ci', '--ignore-scripts', '--no-audit', '--no-fund']);
+      const identities = f.configs.map(p => rawFs.lstatSync(p, { bigint: true }));
+      for (const entry of identities) { assert.equal(entry.isFile(), true); assert.equal(entry.size, 0n); assert.equal(entry.nlink, 1n); }
+      assert.notEqual(identities[0].ino, identities[1].ino);
+      assert.equal(f.opened.size, 0, 'Own creation descriptors physically closed before npm');
+      f.installer.emit('error', new Error('SYNTHETIC_SPAWN_ERROR'));
+      await Promise.resolve();
+      assert.equal(settled, false);
+      for (const p of f.configs) assert.equal(rawFs.existsSync(p), true);
+      const rejected = assert.rejects(operation, /SYNTHETIC_SPAWN_ERROR/);
+      f.installer.emit('close', 17, null);
+      await rejected;
+      for (const p of f.configs) assert.equal(rawFs.existsSync(p), false);
+    } finally { await f.dispose(); }
+  });
+  await t.test('pre-existing config is not adopted or overwritten', async () => {
+    const f = await fixture();
+    try {
+      await fs.mkdir(f.cache); await fs.writeFile(f.configs[0], 'OWN_SYNTHETIC_EXISTING');
+      assert.throws(() => f.createDistributionConfigFiles(f.action, f.cache), e => e.code === 'EEXIST');
+      assert.equal(await fs.readFile(f.configs[0], 'utf8'), 'OWN_SYNTHETIC_EXISTING');
+      assert.equal(f.settings, undefined);
+    } finally { await f.dispose(); }
+  });
+  await t.test('content and file-identity tampering refuse cleanup of unknown files', async () => {
+    for (const replace of [false, true]) {
+      const f = await fixture();
+      try {
+        const configs = f.createDistributionConfigFiles(f.action, f.cache);
+        if (replace) { await fs.rename(f.configs[0], f.configs[0] + '.old'); await fs.writeFile(f.configs[0], ''); }
+        else { await fs.chmod(f.configs[0], 0o600); await fs.writeFile(f.configs[0], 'OWN_TAMPER'); }
+        assert.throws(() => configs.assertFiles(), /CONFIG_CHANGED/);
+        assert.throws(() => configs.removeAfterInstallerClose(), /CONFIG_CHANGED/);
+        assert.equal(rawFs.existsSync(f.configs[0]), true);
+      } finally { await f.dispose(); }
+    }
+  });
+  await t.test('cache replacement and a directory-link config cannot qualify', async () => {
+    const f = await fixture();
+    try {
+      const configs = f.createDistributionConfigFiles(f.action, f.cache);
+      await fs.rename(f.cache, f.cache + '.old'); await fs.mkdir(f.cache);
+      assert.throws(() => configs.assertFiles(), /CONFIG_ROOT_CHANGED/);
+      await fs.symlink(f.cache + '.old', f.configs[0], process.platform === 'win32' ? 'junction' : 'dir');
+      assert.throws(() => f.createDistributionConfigFiles(f.action, f.cache), e => ['EEXIST', 'ELOOP'].includes(e.code));
+      assert.equal(rawFs.lstatSync(f.configs[0]).isSymbolicLink(), true);
+    } finally { await f.dispose(); }
+  });
+  await t.test('no-op physical close cannot start installer', async () => {
+    const f = await fixture({ noopClose: true });
+    try {
+      assert.throws(() => f.createDistributionConfigFiles(f.action, f.cache), /CONFIG_CLOSE_UNPROVED/);
+      assert.equal(f.opened.size, 1); assert.equal(f.settings, undefined);
+    } finally { await f.dispose(); }
+  });
+  for (const raw of [null, 0]) await t.test('raw ' + raw + ' first failure survives secondary cleanup failure', async () => {
+    const f = await fixture();
+    try {
+      const operation = f.runDistributionWorker();
+      f.installer.emit('error', raw); f.secondaryUnlinkFailure();
+      const rejected = assert.rejects(operation, error => Object.is(error, raw));
+      f.installer.emit('close', 17, null); await rejected;
+      for (const p of f.configs) assert.equal(rawFs.existsSync(p), true);
+    } finally { await f.dispose(); }
+  });
+  await t.test('no-op unlink cannot become successful distribution cleanup', async () => {
+    const f = await fixture({ noopUnlink: true });
+    try {
+      const configs = f.createDistributionConfigFiles(f.action, f.cache);
+      assert.throws(() => configs.removeAfterInstallerClose(), /CONFIG_CLEANUP_UNPROVED/);
+      for (const p of f.configs) assert.equal(rawFs.existsSync(p), true);
+    } finally { await f.dispose(); }
+  });
+});

@@ -74,6 +74,83 @@ function assertDistributionLock() {
   return action;
 }
 
+function createDistributionConfigFiles(action, npmCache) {
+  const identity = value => ({ dev: value.dev, ino: value.ino });
+  const same = (left, right) => left.dev === right.dev && left.ino === right.ino;
+  const directory = file => {
+    const entry = fs.lstatSync(file, { bigint: true });
+    if (!entry.isDirectory() || entry.isSymbolicLink() || fs.realpathSync(file) !== file) {
+      throw refused('DMI_RAW_DISTRIBUTION_CONFIG_ROOT_REFUSED');
+    }
+    return identity(entry);
+  };
+  const actionIdentity = directory(action);
+  try { fs.mkdirSync(npmCache, { mode: 0o700 }); }
+  catch (error) { if (error?.code !== 'EEXIST') throw error; }
+  const cacheIdentity = directory(npmCache);
+  const assertRoots = () => {
+    if (!same(directory(action), actionIdentity) || !same(directory(npmCache), cacheIdentity)) {
+      throw refused('DMI_RAW_DISTRIBUTION_CONFIG_ROOT_CHANGED');
+    }
+  };
+  const rows = [];
+  for (const name of ['.ravradar-user.npmrc', '.ravradar-global.npmrc']) {
+    assertRoots();
+    const file = path.join(npmCache, name);
+    let fd;
+    let entry;
+    let first;
+    try {
+      fd = fs.openSync(file, fs.constants.O_WRONLY | fs.constants.O_CREAT
+        | fs.constants.O_EXCL | fs.constants.O_NOFOLLOW, 0o400);
+      entry = fs.fstatSync(fd, { bigint: true });
+      if (!entry.isFile() || entry.size !== 0n || entry.nlink !== 1n) {
+        throw refused('DMI_RAW_DISTRIBUTION_CONFIG_REFUSED');
+      }
+    } catch (error) { first = { error }; }
+    finally {
+      if (fd !== undefined) {
+        try {
+          fs.closeSync(fd);
+          try { fs.fstatSync(fd); throw refused('DMI_RAW_DISTRIBUTION_CONFIG_CLOSE_UNPROVED'); }
+          catch (error) {
+            if (!Object.hasOwn(error ?? {}, 'code') || error.code !== 'EBADF') throw error;
+          }
+        } catch (error) { first ??= { error }; }
+      }
+    }
+    if (first) throw first.error;
+    rows.push({ file, entry });
+  }
+  if (same(rows[0].entry, rows[1].entry)) throw refused('DMI_RAW_DISTRIBUTION_CONFIG_REFUSED');
+  const assertFile = ({ file, entry }) => {
+    const current = fs.lstatSync(file, { bigint: true });
+    if (!current.isFile() || current.isSymbolicLink() || !same(current, entry)
+        || current.size !== 0n || current.nlink !== 1n || current.mode !== entry.mode
+        || current.mtimeNs !== entry.mtimeNs || current.ctimeNs !== entry.ctimeNs) {
+      throw refused('DMI_RAW_DISTRIBUTION_CONFIG_CHANGED');
+    }
+  };
+  const assertFiles = () => {
+    assertRoots();
+    for (const row of rows) assertFile(row);
+  };
+  assertFiles();
+  return { user: rows[0].file, global: rows[1].file, assertFiles,
+    removeAfterInstallerClose() {
+      assertFiles();
+      for (const row of rows) {
+        assertRoots();
+        assertFile(row);
+        const { file } = row;
+        fs.unlinkSync(file);
+        try { fs.lstatSync(file); throw refused('DMI_RAW_DISTRIBUTION_CONFIG_CLEANUP_UNPROVED'); }
+        catch (error) { if (error?.code !== 'ENOENT') throw error; }
+      }
+    },
+  };
+}
+
 async function runDistributionWorker() {
   fixedDistributionInputs();
   assertFixedWorkerParent();
@@ -91,7 +168,10 @@ async function runDistributionWorker() {
       if (error?.code !== 'ENOENT') throw error;
     }
   }
-  if (fs.existsSync(path.join(action, '.npmrc'))) throw refused('DMI_RAW_DISTRIBUTION_CONFIG_REFUSED');
+  try {
+    fs.lstatSync(path.join(action, '.npmrc'));
+    throw refused('DMI_RAW_DISTRIBUTION_CONFIG_REFUSED');
+  } catch (error) { if (error?.code !== 'ENOENT') throw error; }
   // The normal setup-node selection supplies this actual Node24 distribution.
   // Never guess an Actions runner bundle, or execute a caller-supplied command.
   const runtimePrefix = fs.realpathSync(path.resolve(path.dirname(process.execPath), '..'));
@@ -107,21 +187,39 @@ async function runDistributionWorker() {
   const npmEnvironment = Object.fromEntries(Object.entries(process.env).filter(([name]) =>
     ['PATH', 'HOME', 'LANG', 'LC_ALL', 'LC_CTYPE', 'RUNNER_TRACKING_ID'].includes(name)));
   npmEnvironment.npm_config_cache = npmCache;
-  npmEnvironment.npm_config_userconfig = '/dev/null';
-  npmEnvironment.npm_config_globalconfig = '/dev/null';
+  const configs = createDistributionConfigFiles(action, npmCache);
+  npmEnvironment.npm_config_userconfig = configs.user;
+  npmEnvironment.npm_config_globalconfig = configs.global;
   // The existing npm offline setting may restrict transport, never qualify
   // completion. This permits a genuine locked-cache source-CI fixture.
   if (process.env.npm_config_offline === 'true' || process.env.NPM_CONFIG_OFFLINE === 'true') {
     npmEnvironment.npm_config_offline = 'true';
   }
-  const installer = spawn(process.execPath,
-    [npmCli, 'ci', '--ignore-scripts', '--no-audit', '--no-fund'],
-    { cwd: action, env: npmEnvironment, shell: false, stdio: 'ignore' });
-  const exit = await new Promise((resolve, reject) => {
-    installer.once('error', reject);
-    installer.once('close', (code, signal) => resolve({ code, signal }));
-  });
-  if (exit.code !== 0 || exit.signal !== null) throw refused('DMI_RAW_DISTRIBUTION_INSTALL_FAILED');
+  let installerClosed = false;
+  let first;
+  try {
+    configs.assertFiles();
+    const installer = spawn(process.execPath,
+      [npmCli, 'ci', '--ignore-scripts', '--no-audit', '--no-fund'],
+      { cwd: action, env: npmEnvironment, shell: false, stdio: 'ignore' });
+    const exit = await new Promise(resolve => {
+      installer.once('error', error => { first ??= { error }; });
+      installer.once('close', (code, signal) => {
+        installerClosed = true;
+        resolve({ code, signal });
+      });
+    });
+    if (first) throw first.error;
+    configs.assertFiles();
+    if (exit.code !== 0 || exit.signal !== null) throw refused('DMI_RAW_DISTRIBUTION_INSTALL_FAILED');
+  } catch (error) { first ??= { error }; }
+  finally {
+    if (installerClosed) {
+      try { configs.removeAfterInstallerClose(); }
+      catch (error) { first ??= { error }; }
+    }
+  }
+  if (first) throw first.error;
   assertDistributionLock();
   const afterAction = fs.statSync(action);
   if (fs.realpathSync(action) !== action || afterAction.dev !== actionIdentity.dev
