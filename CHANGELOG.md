@@ -1,4 +1,11 @@
-# 4.0.574 Copernicus-arbejdsstatus gemmes før hentning – 2026-10-11
+# Lokal 4.0.574 DMI-kapacitetsmåling omfatter hentning – 2026-10-11
+
+- Flytter alene startmålingen foran download_asset i hovedløkken og WAM-bootstrap; slutmåling og observation bevares. Senere kapacitetsvalg kan dermed medregne den faktisk brugte hente-/genbrugstid.
+- Faste budgetter, prioritetspolitik, originaler, parser, cacheformat, I68/C66/continuation og storage-ABI bevares. Ingen bindingsgenerering eller SQL-installation.
+- Første fil uden kendt pris, fejl uden observation og historisk årsag er fortsat åbne. Den syntetiske kapacitetsprøve består lokalt. Den første native-observerfejl er historik. Observerrettelsen kræver fuldt fast npm-argv eller færdig npm/npm ci-titel, to ens aflæsninger med stoppet barn og genkontrol af samme pidfd/startidentitet/parent/gruppe/executable. Overgange må kun observeres videre inden den oprindelige 8-sekundersalarm; ingen ny frist, skip eller udvidet tilladelsesliste. De 12 gamle native-testmetoder er AST-uændrede; fire nye helperprøver består lokalt over tre plus ét måltestkald. Den korrigerede native-kontrol, fulde kildekontrol og Copernicus-kontrol består faktisk. Den efterfølgende DMI-målfil kørte 64 tests; to forældede statiske workflowforventninger fejlede. Kun disse to metoder er rettet til de eksisterende budgetvalg og den faste ejede cipher-action med begge seal-vagter; begge består lokalt. Øvrige DMI-tests er uændrede. Den første afviste CI-buffer blev ikke logget; Node/npm-koden forklarer observerhullet, ikke den historiske hændelsesårsag. Vejrprodukt, workflow, budgetter og kildebinding er uændrede af testrettelserne. Ny samlet præcis Linux-kildekontrol og offentlig effekt er fortsat åbne.
+- Samme 4.0.574; aktiv kort kørsel og midlertidig ejerautoriseret cronpause ændres ikke. Alle fem mål er åbne; tidligere Copernicus-beviser bevares nedenfor.
+
+# Historik: 4.0.574 Copernicus-arbejdsstatus gemmes før hentning – 2026-10-11
 
 - Det seneste kortforsøg fejlede efter Copernicus-timeout/recovery-timeout. Slutkontrollen afviste en udløbet tidsreference i kildeoplysningerne. Forløbet passer med, at gemningen af den validerede projektion ikke nåede at blive færdig; det præcise afbrydelsespunkt er ikke målt.
 - Kun før-provider-trinnet får --persist-validated-rebase: eksisterende stage-/donorbankvalidering, frisk kontrol af inputbytes og normal atomisk snapshot-skrivning af alene source-stage. Positive originaler, friskhed, forsøgstidspunkter, budgetter og streng slutkontrol bevares.

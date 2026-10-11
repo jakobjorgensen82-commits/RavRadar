@@ -3333,6 +3333,61 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertEqual(metrics["reconstructedProofCompleteAssets"], 1)
         self.assertEqual(metrics["rejectedByCode"], {})
 
+    def test_asset_cost_includes_download_in_both_normal_callers(self) -> None:
+        source = (SCRIPTS / "update-dmi-bulk.py").read_text("utf-8")
+        bootstrap_start = source.index("def execute_private_wave_history_bootstrap(")
+        main_start = source.rindex(
+            "for asset_number, asset in enumerate(assets, start=1):"
+        )
+        scopes = {
+            "bootstrap": source[bootstrap_start:source.index(
+                "\ndef wind_from_uv(", bootstrap_start
+            )],
+            "main": source[main_start:source.index(
+                'result["diagnostics"]["parametersByCollection"][collection]',
+                main_start,
+            )],
+        }
+        timer_text = "asset_processing_started = time.monotonic()"
+        elapsed_text = (
+            "asset_processing_seconds = time.monotonic() - asset_processing_started"
+        )
+        for name, scope in scopes.items():
+            with self.subTest(caller=name):
+                download = scope.index("path, reused = download_asset(")
+                processing = scope.index("process_grib_transactionally(", download)
+                self.assertEqual(scope.count(timer_text), 1)
+                self.assertLess(scope.index(timer_text), download)
+                self.assertLess(download, processing)
+                self.assertLess(processing, scope.index(elapsed_text, processing))
+
+        # Synthetic elapsed costs; this is scheduler accounting, not native proof.
+        with patch.object(producer, "runtime_remaining", return_value=200.0):
+            for download_seconds, expected_start in ((120.0, False), (0.0, True)):
+                with self.subTest(download_seconds=download_seconds):
+                    controller = producer.ProgressCheckpointController(
+                        {"zones": {}, "diagnostics": {}}, set(), {"bytes": 0}
+                    )
+                    controller.observe_asset_duration(
+                        download_seconds + 20.0, cost_family="wam_dw"
+                    )
+                    self.assertEqual(
+                        controller.asset_seconds_by_family["wam_dw"],
+                        [download_seconds + 20.0],
+                    )
+                    self.assertEqual(
+                        controller.can_start_asset(
+                            reserve_seconds=50.0, cost_family="wam_dw"
+                        ),
+                        expected_start,
+                    )
+                    self.assertTrue(controller.can_start_asset(
+                        reserve_seconds=50.0, cost_family="dkss_lf"
+                    ))
+                    self.assertEqual(controller.committed_assets_since_write, 0)
+                    self.assertFalse(controller.bulk_dirty)
+                    self.assertFalse(controller.sidecars_dirty)
+
     def test_strict_current_lead_limit_counts_only_one_actual_attempt(self) -> None:
         self.assertTrue(producer.strict_current_lead_attempt_available(
             "dkss_lf", "dkss_lf", 0, 1,
@@ -3732,13 +3787,14 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         dmi_end = workflow.index("\n      - name:", dmi_start + 1)
         dmi = workflow[dmi_start:dmi_end]
         transition_guard = "steps.historical-wave-transition.outputs.required == 'true'"
+        recovery_guard = "steps.dmi-recovery-budget.outputs.extended == 'true'"
         extended_guard = (
-            f"(inputs.extended_provider_bootstrap == true || {transition_guard} || ({cutover_guard}))"
+            f"(inputs.extended_provider_bootstrap == true || {transition_guard} || {recovery_guard} || ({cutover_guard}))"
         )
         for marker in (
             f"DMI_BULK_MAX_DOWNLOAD_MB: ${{{{ {extended_guard} && '4096' || '2048' }}}}",
-            f"DMI_BULK_MAX_RUNTIME_SECONDS: ${{{{ (inputs.extended_provider_bootstrap == true || {transition_guard}) && '3600' || ({cutover_guard}) && '3000' || '1500' }}}}",
-            f"DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{{{ {extended_guard} && '180' || '120' }}}}",
+            f"DMI_BULK_MAX_RUNTIME_SECONDS: ${{{{ inputs.quick_confirmation && '900' || (inputs.extended_provider_bootstrap == true || {transition_guard} || {recovery_guard}) && '3600' || ({cutover_guard}) && '3000' || '1500' }}}}",
+            f"DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{{{ inputs.quick_confirmation && '120' || {extended_guard} && '180' || '120' }}}}",
             "DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{ "
             f"({cutover_guard} && steps.ravscore-wave-bootstrap-target.outputs.mode) || "
             f"({transition_guard} && steps.historical-wave-transition.outputs.mode) || 'none' }}}}",
@@ -3746,7 +3802,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             self.assertIn(marker, dmi)
         self.assertIn(
             "DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed == 'true' || "
-            f"{transition_guard} || ({cutover_guard}) }}}}",
+            f"{transition_guard} || {recovery_guard} || ({cutover_guard}) }}}}",
             dmi,
         )
 
@@ -3884,7 +3940,23 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertIn("weather-component-progress-cache.mjs save", encrypted_seal)
         self.assertIn("steps.component-progress-restore.outputs.captured == 'true'", encrypted_seal)
         encrypted_save = normal[normal_names[6]][1]
-        self.assertIn("path: .cache/weather-private-progress.encrypted", encrypted_save)
+        self.assertIn("uses: ./.github/actions/save-owned-dmi-grib", encrypted_save)
+        self.assertIn("operation: upload-encrypted-progress", encrypted_save)
+        self.assertIn(
+            "if: always() && steps.component-progress-seal.outcome == 'success' "
+            "&& steps.component-progress-seal.outputs.saved == 'true'",
+            encrypted_save,
+        )
+        self.assertIn("continue-on-error: true", encrypted_save)
+        self.assertIn(
+            "key: weather-private-progress-encrypted-v2-${{ runner.os }}-main-"
+            "${{ github.run_id }}-${{ github.run_attempt }}",
+            encrypted_save,
+        )
+        self.assertNotRegex(encrypted_save, r"(?m)^\s*path:")
+        self.assertNotIn("actions/cache/save", encrypted_save)
+        action = (ROOT / ".github" / "actions" / "save-owned-dmi-grib" / "index.cjs").read_text("utf-8")
+        self.assertIn("const CIPHER_PATH = '.cache/weather-private-progress.encrypted';", action)
         self.assertIn("weather-private-progress-encrypted-v2-", encrypted_save)
         inventory = (
             ROOT / "scripts" / "lib" / "private-weather-component-inventory.mjs"
