@@ -3787,13 +3787,14 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         dmi_end = workflow.index("\n      - name:", dmi_start + 1)
         dmi = workflow[dmi_start:dmi_end]
         transition_guard = "steps.historical-wave-transition.outputs.required == 'true'"
+        recovery_guard = "steps.dmi-recovery-budget.outputs.extended == 'true'"
         extended_guard = (
-            f"(inputs.extended_provider_bootstrap == true || {transition_guard} || ({cutover_guard}))"
+            f"(inputs.extended_provider_bootstrap == true || {transition_guard} || {recovery_guard} || ({cutover_guard}))"
         )
         for marker in (
             f"DMI_BULK_MAX_DOWNLOAD_MB: ${{{{ {extended_guard} && '4096' || '2048' }}}}",
-            f"DMI_BULK_MAX_RUNTIME_SECONDS: ${{{{ (inputs.extended_provider_bootstrap == true || {transition_guard}) && '3600' || ({cutover_guard}) && '3000' || '1500' }}}}",
-            f"DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{{{ {extended_guard} && '180' || '120' }}}}",
+            f"DMI_BULK_MAX_RUNTIME_SECONDS: ${{{{ inputs.quick_confirmation && '900' || (inputs.extended_provider_bootstrap == true || {transition_guard} || {recovery_guard}) && '3600' || ({cutover_guard}) && '3000' || '1500' }}}}",
+            f"DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{{{ inputs.quick_confirmation && '120' || {extended_guard} && '180' || '120' }}}}",
             "DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{ "
             f"({cutover_guard} && steps.ravscore-wave-bootstrap-target.outputs.mode) || "
             f"({transition_guard} && steps.historical-wave-transition.outputs.mode) || 'none' }}}}",
@@ -3801,7 +3802,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             self.assertIn(marker, dmi)
         self.assertIn(
             "DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed == 'true' || "
-            f"{transition_guard} || ({cutover_guard}) }}}}",
+            f"{transition_guard} || {recovery_guard} || ({cutover_guard}) }}}}",
             dmi,
         )
 
@@ -3939,7 +3940,23 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertIn("weather-component-progress-cache.mjs save", encrypted_seal)
         self.assertIn("steps.component-progress-restore.outputs.captured == 'true'", encrypted_seal)
         encrypted_save = normal[normal_names[6]][1]
-        self.assertIn("path: .cache/weather-private-progress.encrypted", encrypted_save)
+        self.assertIn("uses: ./.github/actions/save-owned-dmi-grib", encrypted_save)
+        self.assertIn("operation: upload-encrypted-progress", encrypted_save)
+        self.assertIn(
+            "if: always() && steps.component-progress-seal.outcome == 'success' "
+            "&& steps.component-progress-seal.outputs.saved == 'true'",
+            encrypted_save,
+        )
+        self.assertIn("continue-on-error: true", encrypted_save)
+        self.assertIn(
+            "key: weather-private-progress-encrypted-v2-${{ runner.os }}-main-"
+            "${{ github.run_id }}-${{ github.run_attempt }}",
+            encrypted_save,
+        )
+        self.assertNotRegex(encrypted_save, r"(?m)^\s*path:")
+        self.assertNotIn("actions/cache/save", encrypted_save)
+        action = (ROOT / ".github" / "actions" / "save-owned-dmi-grib" / "index.cjs").read_text("utf-8")
+        self.assertIn("const CIPHER_PATH = '.cache/weather-private-progress.encrypted';", action)
         self.assertIn("weather-private-progress-encrypted-v2-", encrypted_save)
         inventory = (
             ROOT / "scripts" / "lib" / "private-weather-component-inventory.mjs"
