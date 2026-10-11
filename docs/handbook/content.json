@@ -5,6 +5,12 @@
   "updatedAt": "2026-10-11",
   "sections": [
     {
+      "id": "dmi-download-inclusive-capacity-2026-10-11",
+      "chapter": "89.204",
+      "title": "Hentetid tæller med i DMI-kapaciteten",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En afsluttet tidsmåling skal også medregne hentningen. Det giver ikke i sig selv flere gyldige vejrdata.</div><p>Når systemet vurderer, hvor meget det kan nå, skal tiden til at hente eller genbruge en fil indgå sammen med behandlingen. Den afgrænsede rettelse starter den eksisterende måling før hentningen i både det almindelige DMI-forløb og bølgeforløbets indledende opbygning. Slutmålingen bevares. Det kan ændre senere vurderinger af kapaciteten, men ikke de faste tidsgrænser eller prioriteringsreglerne.</p><p>Originale data, læsefortolkning, cacheformat og modelbindinger ændres ikke. Der kræves ingen ny bindings- eller databaseinstallation. Den første fil kan stadig have ukendt tidspris, og mislykkede hentninger giver ikke automatisk en afsluttet observation. Den historiske fejlårsag og rettelsens effekt på en ny vejrgeneration er derfor ikke bevist.</p><p>Den nye prøve med egne kunstige input består lokalt, og de gamle testmetoder er uændrede. Hele den normale DMI-integrationstest er ført ind i GitHub-kontrollen; den og den præcise Linux-kildekontrol afventer faktisk kørsel. Produktionseffekten er endnu ikke bevist. Version 4.0.574 bevares. Den aktive korte kørsel ændres ikke; cronpausen er midlertidig og ejerautoriseret. Alle fem hovedmål er åbne. Den foregående Copernicus-rettelse er lagt i main; dens tidligere status nedenfor er historik, ikke aktuel teststatus for denne nye ændring.</p>"
+    },
+    {
       "id": "copernicus-durable-pre-provider-rebase-2026-10-11",
       "chapter": "89.203",
       "title": "Gem arbejdsstatus før Copernicus-hentning",

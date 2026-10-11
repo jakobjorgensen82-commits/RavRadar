@@ -7585,6 +7585,7 @@ def execute_private_wave_history_bootstrap(
                     f"{asset_number}/{len(assets)}; later operational processing continues"
                 )
                 continue
+            asset_processing_started = time.monotonic()
             try:
                 with supervised_asset_operation(supervised_identity):
                     path, reused = download_asset(
@@ -7609,7 +7610,6 @@ def execute_private_wave_history_bootstrap(
                 f"{collection}: privat WAM-bootstrap {asset_number}/{len(assets)} "
                 f"({'genbrugt' if reused else 'downloadet'})"
             )
-            asset_processing_started = time.monotonic()
             staged_asset_summary: dict[str, Any] = {}
             staged_asset_rejections: dict[str, int] = {}
             asset_coverage = collection_summary.setdefault("assetCoverage", {})
@@ -13487,6 +13487,7 @@ def main() -> int:
                     # the long-horizon critical queue at its head forever.
                     state["criticalNativeCursorValidTime"] = asset["valid"]
                     checkpoint_controller.mark_bulk_dirty()
+                asset_processing_started = time.monotonic()
                 try:
                     with supervised_asset_operation(supervised_identity):
                         path, reused = download_asset(
@@ -13534,7 +13535,6 @@ def main() -> int:
                     if bootstrap_operational_wam:
                         run_info["rawAssetsReused"] += 1
                 progress(f"{collection}: behandler forecast-step {asset_number}/{len(assets)} {asset['valid']} ({'genbrugt' if reused else 'downloadet'})")
-                asset_processing_started = time.monotonic()
                 current_part_outcome_observation: dict[str, Any] = {}
                 source_capture = (
                     raw_cache_source_capture(
@@ -14394,7 +14394,7 @@ def main() -> int:
                     else f"steps={run_info['assetsProcessed']}, "
                 )
                 progress(
-                    f"{collection}: forecast-step behandlet på "
+                    f"{collection}: forecast-step hentet/genbrugt og behandlet på "
                     f"{asset_processing_seconds:.1f}s; {checkpoint_status}; "
                     f"{wave_progress}"
                     f"felter={sorted(recognized)}, "

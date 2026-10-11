@@ -6,6 +6,14 @@ Den lokale 4.0.574 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
 
+## 89.204 Hentetid tæller med i DMI-kapaciteten
+
+Når systemet vurderer, hvor meget det kan nå, skal tiden til at hente eller genbruge en fil indgå sammen med behandlingen. Den afgrænsede rettelse starter den eksisterende måling før hentningen i både det almindelige DMI-forløb og bølgeforløbets indledende opbygning. Slutmålingen bevares. Det kan ændre senere vurderinger af kapaciteten, men ikke de faste tidsgrænser eller prioriteringsreglerne.
+
+Originale data, læsefortolkning, cacheformat og modelbindinger ændres ikke. Der kræves ingen ny bindings- eller databaseinstallation. Den første fil kan stadig have ukendt tidspris, og mislykkede hentninger giver ikke automatisk en afsluttet observation. Den historiske fejlårsag og rettelsens effekt på en ny vejrgeneration er derfor ikke bevist.
+
+Den nye prøve med egne kunstige input består lokalt, og de gamle testmetoder er uændrede. Hele den normale DMI-integrationstest er ført ind i GitHub-kontrollen; den og den præcise Linux-kildekontrol afventer faktisk kørsel. Produktionseffekten er endnu ikke bevist. Version 4.0.574 bevares. Den aktive korte kørsel ændres ikke; cronpausen er midlertidig og ejerautoriseret. Alle fem hovedmål er åbne. Den foregående Copernicus-rettelse er lagt i main; dens tidligere status nedenfor er historik, ikke aktuel teststatus for denne nye ændring.
+
 ## 89.203 Gem arbejdsstatus før Copernicus-hentning
 
 Det korte forsøg den 11. oktober fejlede efter en timeout og en mislykket genopretning. Kontrollen før hentning havde beregnet en gyldig arbejdsstatus til det aktuelle tidspunkt i hukommelsen. Slutkontrollen afviste derefter en udløbet tidsreference i kildeoplysningerne. Forløbet passer med, at gemningen ikke nåede at blive færdig; det præcise afbrydelsespunkt er ikke målt.

@@ -1,4 +1,10 @@
-# 2026-10-11 – Copernicus-projektion skal gemmes før tidsbegrænset hentning
+# 2026-10-11 – lokal korrektion af DMI-kapacitetsmåling
+
+Den normale startmåling flyttes foran download_asset i DMI-hovedløkken og WAM-bootstrap, så de eksisterende afsluttede observationer omfatter hentning/cachegenbrug. Det kan ændre senere kapacitetsvalg, men ikke faste tidsbudgetter eller prioritetspolitik. Originaler, parser, cacheformat, I68/C66/continuation og storage-ABI bevares; ingen binding eller SQL skal installeres.
+
+Ukendt pris for første fil, downloadfejl uden observation og historisk produktionsårsag er stadig åbne. Den nye syntetiske måltest består lokalt, og gamle testmetoder er uændrede. Hele den normale DMI-integrationstest er tilføjet PR-workflowet; faktisk kørsel, præcis Linux-kildekontrol og produktionseffekt afventer. Lokal rettelse er ikke bevis for en vellykket ny generation. Samme 4.0.574, den aktive korte kørsel og den midlertidige ejerautoriserede cronpause bevares. Alle fem mål er åbne. Den foregående Copernicus-rettelse er merget; dens daværende status nedenfor bevares som historik.
+
+# Historik: 2026-10-11 – Copernicus-projektion skal gemmes før tidsbegrænset hentning
 
 Det seneste kortforsøg fejlede efter timeout og recovery-timeout. Kontrollen før providerarbejde havde valideret en projektion til den aktuelle reference i hukommelsen. Slutkontrollen afviste derefter en udløbet tidsreference i kildeoplysningerne. Forløbet passer med, at gemningen ikke nåede at blive færdig; det præcise afbrydelsespunkt er ikke målt.
 

@@ -3333,6 +3333,61 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertEqual(metrics["reconstructedProofCompleteAssets"], 1)
         self.assertEqual(metrics["rejectedByCode"], {})
 
+    def test_asset_cost_includes_download_in_both_normal_callers(self) -> None:
+        source = (SCRIPTS / "update-dmi-bulk.py").read_text("utf-8")
+        bootstrap_start = source.index("def execute_private_wave_history_bootstrap(")
+        main_start = source.rindex(
+            "for asset_number, asset in enumerate(assets, start=1):"
+        )
+        scopes = {
+            "bootstrap": source[bootstrap_start:source.index(
+                "\ndef wind_from_uv(", bootstrap_start
+            )],
+            "main": source[main_start:source.index(
+                'result["diagnostics"]["parametersByCollection"][collection]',
+                main_start,
+            )],
+        }
+        timer_text = "asset_processing_started = time.monotonic()"
+        elapsed_text = (
+            "asset_processing_seconds = time.monotonic() - asset_processing_started"
+        )
+        for name, scope in scopes.items():
+            with self.subTest(caller=name):
+                download = scope.index("path, reused = download_asset(")
+                processing = scope.index("process_grib_transactionally(", download)
+                self.assertEqual(scope.count(timer_text), 1)
+                self.assertLess(scope.index(timer_text), download)
+                self.assertLess(download, processing)
+                self.assertLess(processing, scope.index(elapsed_text, processing))
+
+        # Synthetic elapsed costs; this is scheduler accounting, not native proof.
+        with patch.object(producer, "runtime_remaining", return_value=200.0):
+            for download_seconds, expected_start in ((120.0, False), (0.0, True)):
+                with self.subTest(download_seconds=download_seconds):
+                    controller = producer.ProgressCheckpointController(
+                        {"zones": {}, "diagnostics": {}}, set(), {"bytes": 0}
+                    )
+                    controller.observe_asset_duration(
+                        download_seconds + 20.0, cost_family="wam_dw"
+                    )
+                    self.assertEqual(
+                        controller.asset_seconds_by_family["wam_dw"],
+                        [download_seconds + 20.0],
+                    )
+                    self.assertEqual(
+                        controller.can_start_asset(
+                            reserve_seconds=50.0, cost_family="wam_dw"
+                        ),
+                        expected_start,
+                    )
+                    self.assertTrue(controller.can_start_asset(
+                        reserve_seconds=50.0, cost_family="dkss_lf"
+                    ))
+                    self.assertEqual(controller.committed_assets_since_write, 0)
+                    self.assertFalse(controller.bulk_dirty)
+                    self.assertFalse(controller.sidecars_dirty)
+
     def test_strict_current_lead_limit_counts_only_one_actual_attempt(self) -> None:
         self.assertTrue(producer.strict_current_lead_attempt_available(
             "dkss_lf", "dkss_lf", 0, 1,

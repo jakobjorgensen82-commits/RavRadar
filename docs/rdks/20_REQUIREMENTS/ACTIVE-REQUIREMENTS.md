@@ -1,4 +1,12 @@
-# 4.0.574 driftsrettelse – gem valideret Copernicus-arbejdsstatus før hentning
+# Lokal 4.0.574 driftsrettelse – medregn DMI-hentetid i kapacitetsmålingen
+
+Den afgrænsede rettelse flytter den eksisterende startmåling foran download_asset i både DMI-hovedløkken og den private WAM-bootstrap. De eksisterende slutmålinger og observationskald bevares. En afsluttet observation omfatter dermed også hentning eller cachegenbrug. Det er en funktionel kapacitetsrettelse, ikke kun logning: senere vurderinger af, hvad der kan nås, kan ændres.
+
+Faste tidsbudgetter, prioritetspolitik, originale data, parser og cacheformat ændres ikke. Det faktiske kildeinventar placerer update-dmi-bulk.py uden for I68, C66 og continuation-kontraktens 12 filer. Storage-ABI og modelbindinger bevares; ingen bindingsgenerering eller SQL-installation kræves. Producentens kildeidentitet skal fortsat følge de reelle kodebytes, uden ommærkning af gamle originaler.
+
+Ukendt pris for første fil, downloadfejl uden afsluttet observation og den historiske produktionsårsag er fortsat åbne. Rettelsen er ikke bevis for komplet kapacitetsdækning eller en vellykket ny generation. Den nye syntetiske måltest består lokalt; de gamle testmetoder er uændrede. Hele den normale DMI-integrationstest er nu ført ind i PR-workflowet og afventer faktisk kørsel sammen med den præcise Linux-kildekontrol. Produktionseffekten er fortsat åben. Den allerede aktive korte kørsel ændres ikke, og den midlertidige ejerautoriserede cronpause bevares. Dette er samme 4.0.574, ikke en ny release; vejrhentning har eneste prioritet, og alle fem mål er åbne. Den foregående Copernicus-rettelse er merget; dens tidligere status- og testnotater nedenfor bevares som historik.
+
+# Historik: 4.0.574 driftsrettelse – gem valideret Copernicus-arbejdsstatus før hentning
 
 Det seneste korte forsøg den 11. oktober fejlede efter en timeout og recovery-timeout. Kontrollen før providerarbejde havde valideret en projektion til den aktuelle reference i hukommelsen. Slutkontrollen afviste derefter en udløbet tidsreference i kildeoplysningerne. Forløbet passer med, at gemningen ikke nåede at blive færdig; det præcise afbrydelsespunkt er ikke målt.
 

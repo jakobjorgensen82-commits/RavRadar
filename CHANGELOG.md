@@ -1,4 +1,11 @@
-# 4.0.574 Copernicus-arbejdsstatus gemmes før hentning – 2026-10-11
+# Lokal 4.0.574 DMI-kapacitetsmåling omfatter hentning – 2026-10-11
+
+- Flytter alene startmålingen foran download_asset i hovedløkken og WAM-bootstrap; slutmåling og observation bevares. Senere kapacitetsvalg kan dermed medregne den faktisk brugte hente-/genbrugstid.
+- Faste budgetter, prioritetspolitik, originaler, parser, cacheformat, I68/C66/continuation og storage-ABI bevares. Ingen bindingsgenerering eller SQL-installation.
+- Første fil uden kendt pris, fejl uden observation og historisk årsag er fortsat åbne. Den nye syntetiske måltest består lokalt; gamle testmetoder er uændrede. Hele den normale DMI-integrationstest er tilføjet PR-workflowet; faktisk Linux-kildekontrol, fuld målfil og ny generations-/produktionseffekt afventer.
+- Samme 4.0.574; aktiv kort kørsel og midlertidig ejerautoriseret cronpause ændres ikke. Alle fem mål er åbne; tidligere Copernicus-beviser bevares nedenfor.
+
+# Historik: 4.0.574 Copernicus-arbejdsstatus gemmes før hentning – 2026-10-11
 
 - Det seneste kortforsøg fejlede efter Copernicus-timeout/recovery-timeout. Slutkontrollen afviste en udløbet tidsreference i kildeoplysningerne. Forløbet passer med, at gemningen af den validerede projektion ikke nåede at blive færdig; det præcise afbrydelsespunkt er ikke målt.
 - Kun før-provider-trinnet får --persist-validated-rebase: eksisterende stage-/donorbankvalidering, frisk kontrol af inputbytes og normal atomisk snapshot-skrivning af alene source-stage. Positive originaler, friskhed, forsøgstidspunkter, budgetter og streng slutkontrol bevares.
