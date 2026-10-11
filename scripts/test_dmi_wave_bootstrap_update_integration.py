@@ -3388,6 +3388,164 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                     self.assertFalse(controller.bulk_dirty)
                     self.assertFalse(controller.sidecars_dirty)
 
+    def test_failed_download_cost_is_observed_without_commit(self) -> None:
+        import ast
+
+        # Execute the real main download handler, not a reimplementation of it.
+        # Only its enclosing iteration is synthetic; continue/break stay intact.
+        source = (SCRIPTS / "update-dmi-bulk.py").read_text("utf-8")
+        main = next(node for node in ast.parse(source).body
+                    if isinstance(node, ast.FunctionDef) and node.name == "main")
+        download_blocks = []
+        for loop in ast.walk(main):
+            if not isinstance(loop, ast.For) or not isinstance(loop.target, ast.Tuple):
+                continue
+            if [getattr(item, "id", None) for item in loop.target.elts] != [
+                "asset_number", "asset",
+            ]:
+                continue
+            for index, statement in enumerate(loop.body):
+                if isinstance(statement, ast.Try) and any(
+                    isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name)
+                    and node.func.id == "download_asset"
+                    for body in statement.body for node in ast.walk(body)
+                ):
+                    download_blocks.append((loop, index, statement))
+        self.assertEqual(len(download_blocks), 1)
+        loop, index, download_try = download_blocks[0]
+        timer = loop.body[index - 1]
+        self.assertIsInstance(timer, ast.Assign)
+        self.assertEqual(timer.targets[0].id, "asset_processing_started")
+        guards = [statement for statement in loop.body[:index]
+                  if isinstance(statement, ast.If) and any(
+                      isinstance(node, ast.Call)
+                      and isinstance(node.func, ast.Attribute)
+                      and node.func.attr == "can_start_asset"
+                      and isinstance(node.func.value, ast.Name)
+                      and node.func.value.id == "checkpoint_controller"
+                      for node in ast.walk(statement.test))]
+        self.assertEqual(len(guards), 1)
+        main_seam = ast.parse("for attempt in range(2):\n    visits.append(attempt)\n")
+        main_seam.body[0].body.extend(copy.deepcopy([
+            guards[0], timer, download_try,
+        ]))
+        main_seam.body[0].body.extend(ast.parse(
+            "after_download.append(attempt)"
+        ).body)
+        main_code = compile(ast.fix_missing_locations(main_seam),
+                            str(SCRIPTS / "update-dmi-bulk.py"), "exec")
+
+        def fake_list(collection: str, _configuration: dict):
+            return fake_plan(), (StacWaveAsset(
+                valid_time=utc_offset(TARGET, -1),
+                model_run=utc_offset(TARGET, -6),
+                item_id=f"synthetic-{collection}",
+                href=f"https://example.invalid/{collection}.grib",
+                collection=collection,
+            ),)
+
+        for caller in ("wam-rethrow", "main-continue", "main-budget-break"):
+            with self.subTest(caller=caller):
+                clock = [100.0]
+                events = []
+                result = {"zones": {"SYNTHETIC-OLD": {
+                    "hourly": {"original": {"unchanged": True}},
+                }}, "diagnostics": {"errors": []}}
+                budget = {"bytes": 17}
+                fresh = {"SYNTHETIC-OLD"}
+                before = copy.deepcopy((result["zones"], budget, fresh))
+                failure = RuntimeError(
+                    "synthetic download budget reached"
+                    if caller == "main-budget-break" else "synthetic download failed"
+                )
+
+                def failed_download(_href, _size, actual_budget, **metadata):
+                    self.assertIs(actual_budget, budget)
+                    self.assertEqual(metadata["collection"], "wam_dw")
+                    events.append("download")
+                    clock[0] += 140.0
+                    raise failure
+
+                with (
+                    patch.object(producer.time, "monotonic", side_effect=lambda: clock[0]),
+                    patch.object(producer, "WORK_DEADLINE", 440.0),
+                    patch.object(producer, "download_asset", side_effect=failed_download) as download,
+                    patch.object(producer, "list_private_wave_bootstrap_assets", side_effect=fake_list),
+                    patch.object(producer, "progress"),
+                    patch.object(producer, "write_checkpoint") as checkpoint,
+                    patch.object(producer, "process_grib_transactionally") as process_grib,
+                    patch.object(producer, "safe_error_message", wraps=producer.safe_error_message) as error_message,
+                ):
+                    controller = producer.ProgressCheckpointController(result, fresh, budget)
+                    real_observe = controller.observe_asset_duration
+                    real_flush = controller.flush_if_due
+
+                    def observe(seconds, *, cost_family):
+                        events.append("observe")
+                        return real_observe(seconds, cost_family=cost_family)
+
+                    def flush(*, force=False):
+                        self.assertTrue(force)
+                        self.assertEqual(controller.asset_seconds_by_family, {"wam_dw": [140.0]})
+                        events.append("flush")
+                        return real_flush(force=force)
+
+                    with (
+                        patch.object(controller, "observe_asset_duration", side_effect=observe),
+                        patch.object(controller, "flush_if_due", side_effect=flush),
+                        patch.object(controller, "note_committed_asset", wraps=controller.note_committed_asset) as commit,
+                    ):
+                        if caller == "wam-rethrow":
+                            with self.assertRaises(RuntimeError) as caught:
+                                producer.execute_private_wave_history_bootstrap(
+                                    result, synthetic_parts(unique=True), budget, fresh,
+                                    {"mode": MIGRATION_MODE, "targetHour": TARGET,
+                                     "productionTargetHour": TARGET},
+                                    checkpoint_controller=controller,
+                                )
+                            self.assertIs(caught.exception, failure)
+                            self.assertEqual(events, ["download", "observe", "flush"])
+                        else:
+                            asset = {"href": "https://example.invalid/wam_dw.grib",
+                                     "valid": TARGET, "id": "synthetic-wam_dw"}
+                            namespace = dict(vars(producer),
+                                checkpoint_controller=controller,
+                                reserve_for_pending_critical=50.0,
+                                collection="wam_dw", asset=asset, assets=[asset],
+                                asset_number=1, asset_model_run=OLD_RUN,
+                                supervised_identity=producer.supervised_asset_identity("wam_dw", OLD_RUN, asset),
+                                budget=budget, result=result, run_info={},
+                                bounded_primary_refresh=False, visits=[], after_download=[],
+                            )
+                            exec(main_code, namespace)
+                            self.assertEqual(namespace["after_download"], [])
+                            self.assertEqual(error_message.call_count, 2 if caller == "main-continue" else 1)
+                            self.assertTrue(all(call.args == (failure,) for call in error_message.call_args_list))
+                            if caller == "main-continue":
+                                self.assertEqual(namespace["visits"], [0, 1])
+                                self.assertEqual(events, ["download", "observe", "flush", "flush"])
+                                self.assertEqual(namespace["budget_stop_code"], "CRITICAL_COLLECTION_RUNTIME_RESERVED")
+                                self.assertEqual(len(result["diagnostics"]["errors"]), 1)
+                                self.assertEqual(result["diagnostics"]["errors"][0]["failureClass"], "asset-download")
+                                self.assertTrue(result["diagnostics"]["errors"][0]["partialProgressPreserved"])
+                            else:
+                                self.assertEqual(namespace["visits"], [0])
+                                self.assertEqual(events, ["download", "observe"])
+                                self.assertEqual(namespace["budget_stop_code"], "RUNTIME_BUDGET_REACHED")
+                                self.assertEqual(result["diagnostics"]["errors"], [])
+                        commit.assert_not_called()
+                    download.assert_called_once()
+                    process_grib.assert_not_called()
+                    checkpoint.assert_not_called()
+                    self.assertEqual(controller.asset_seconds_by_family, {"wam_dw": [140.0]})
+                    self.assertFalse(controller.can_start_asset(reserve_seconds=50.0, cost_family="wam_dw"))
+                    self.assertTrue(controller.can_start_asset(reserve_seconds=50.0, cost_family="dkss_lf"))
+                    self.assertEqual(controller.committed_assets_since_write, 0)
+                    self.assertFalse(controller.bulk_dirty)
+                    self.assertFalse(controller.sidecars_dirty)
+                    self.assertEqual((result["zones"], budget, fresh), before)
+
     def test_strict_current_lead_limit_counts_only_one_actual_attempt(self) -> None:
         self.assertTrue(producer.strict_current_lead_attempt_available(
             "dkss_lf", "dkss_lf", 0, 1,

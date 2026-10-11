@@ -7600,6 +7600,10 @@ def execute_private_wave_history_bootstrap(
                         item_updated_at=asset.item_updated_at,
                     )
             except Exception:
+                controller.observe_asset_duration(
+                    time.monotonic() - asset_processing_started,
+                    cost_family=collection,
+                )
                 controller.flush_if_due(force=True)
                 raise
             if reused:
@@ -13502,6 +13506,10 @@ def main() -> int:
                             item_updated_at=asset.get("itemUpdatedAt"),
                         )
                 except RuntimeError as exc:
+                    checkpoint_controller.observe_asset_duration(
+                        time.monotonic() - asset_processing_started,
+                        cost_family=collection,
+                    )
                     if bounded_primary_refresh:
                         run_info["assetsBoundedRefreshFailed"] += 1
                         result["diagnostics"]["assetsBoundedDkssRefreshFailed"] = int(
