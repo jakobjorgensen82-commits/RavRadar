@@ -699,9 +699,31 @@ function canonicalSelectedZone(context, locale) {
   return rows.join("\n");
 }
 
+// Reviewed claim-preserving unions compact overlapping facts, never select a subset.
+// A union applies only when every member ID was selected; other units remain mandatory.
+const CANONICAL_FACT_UNIONS = Object.freeze([
+  Object.freeze({ ids:Object.freeze(["amber.mostly-sinks","identification.uv-clue-not-proof","identification.avoid-destructive-tests","identification.fluorescence-varies","identification.treatments-and-imitations"]), text:Object.freeze({
+  "da": "Første spor: lav vægt for størrelsen og harpiksagtig overflade. Det meste baltiske rav har massefylde omkring 1,05–1,10 g/cm³, synker i almindeligt dansk havvand og er under vand meget lettere end sand og sten. Salt og temperatur ændrer opdriften lidt, ikke nok til at få det meste rav til at flyde. RavRadars søgeråd er langbølget UV omkring 395 nm i mørke og fysisk kontrol: baltisk rav fluorescerer ofte tydeligt, men fluorescensen varierer med sammensætning, forvitring og behandling; også efterligninger kan lyse. UV er ikke bevis. Plast, glas, copal, presset rav, kompositter, fyldninger, farvestoffer og varmebehandling kan efterligne eller ændre rav. Ingen enkelt hjemmetest skelner alle tilfælde pålideligt; kombiner ikke-destruktive tegn. Undgå varme nåle, ild og andre ødelæggende tests; få værdifulde, usikre eller usædvanlige fund vurderet fagligt.",
+  "de": "Erste Hinweise: geringes Gewicht für die Größe, harzartige Oberfläche. Der meiste baltische Bernstein (Dichte ca. 1,05–1,10 g/cm³) sinkt in normalem dänischem Meerwasser, ist darin aber viel leichter als Sand/Stein. Salzgehalt/Temperatur ändern den Auftrieb leicht, nicht genug, um die meisten schwimmen zu lassen. RavRadar rät: langwelliges UV um 395 nm im Dunkeln, dann physisch prüfen. Baltischer Bernstein fluoresziert oft deutlich; Zusammensetzung, Verwitterung und Behandlung verändern dies. Auch Imitate können fluoreszieren; UV ist kein Beweis. Kunststoff, Glas, Copal, Pressbernstein, Verbunde, Füllungen, Farbstoffe und Wärmebehandlung können Bernstein imitieren/verändern. Kein einzelner Heimtest trennt alle Fälle zuverlässig: zerstörungsfreie Hinweise kombinieren. Keine heißen Nadeln, Feuer oder zerstörenden Tests; wertvolle/unsichere/ungewöhnliche Funde fachlich prüfen lassen.",
+  "en": "First clues: low weight for size and a resin-like surface. Most Baltic amber (density about 1.05–1.10 g/cm³) sinks in ordinary Danish seawater but is much lighter than sand and stone underwater. Salinity and temperature alter buoyancy slightly, not enough to float most amber. RavRadar recommends long-wave UV around 395 nm in darkness, followed by physical checking: Baltic amber often fluoresces clearly, but composition, weathering and treatment affect fluorescence; imitations may fluoresce too. UV is not proof. Plastic, glass, copal, pressed amber, composites, fillings, dyes and heat treatment can imitate or alter amber. No single home test reliably separates every case: combine non-destructive clues. Avoid hot needles, fire and other destructive tests; valuable, uncertain or unusual finds need specialist assessment."
+}) }),
+]);
+
 function composeCanonicalAssistantResult(evidenceIds, locale, disposition, context) {
-  const units = evidenceIds.map(id => id === "public-context.selected-zone-only"
-    ? canonicalSelectedZone(context, locale) : canonicalFactText(id, locale));
+  const pending = new Set(evidenceIds);
+  const units = [];
+  for (const id of evidenceIds) {
+    if (!pending.delete(id)) continue;
+    const union = CANONICAL_FACT_UNIONS.find(group => group.ids.includes(id)
+      && group.ids.every(member => evidenceIds.includes(member)));
+    if (union) {
+      units.push(union.text[locale]);
+      for (const member of union.ids) pending.delete(member);
+    } else {
+      units.push(id === "public-context.selected-zone-only"
+        ? canonicalSelectedZone(context, locale) : canonicalFactText(id, locale));
+    }
+  }
   if (units.some(text => typeof text !== "string" || !text)) return null;
   if (disposition === "uncertain") units.push(RAV_ASSISTANT_UNCERTAIN_REPLIES[locale]);
   const answer = units.join("\n\n");

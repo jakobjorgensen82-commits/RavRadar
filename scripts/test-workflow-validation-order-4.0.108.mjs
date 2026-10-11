@@ -222,6 +222,11 @@ for (const workflowName of sourceGateWorkflowNames) {
         'PR source gate requires its actual dependency block before the fixed source-only prefix');
       const intervening = workflow.slice(dependencyEnd, sourceGateStep);
       assert.deepEqual([...intervening.matchAll(/^      - (.+)$/gm)].map(match => match[1]), [
+        'name: Set up Node24 for isolated acquisition contracts',
+        'name: Install exact local cache-action dependencies without scripts',
+        'name: Verify locked cache API distribution without runtime calls',
+        'name: Validate isolated acquisition ownership and raw-save cohort',
+        'name: Restore Node22 for existing source validation',
         'name: Validate bounded native current diagnosis on artificial data only',
       ], 'Only the exact ordered PR source-only steps may intervene; no unknown step');
       assert.doesNotMatch(intervening, /^\s+(?:if|continue-on-error):/m,
@@ -332,10 +337,34 @@ for (const marker of [
 ]) {
   if (!pullRequestValidation.includes(marker)) throw new Error(`PR-kildegaten mangler ${marker}`);
 }
+// The Node24-only action is tested in source CI, not activated as a SAVE step.
+for (const marker of [
+  'name: Set up Node24 for isolated acquisition contracts\n        uses: actions/setup-node@v7\n        with:\n          node-version: 24',
+  'name: Install exact local cache-action dependencies without scripts\n        working-directory: .github/actions/save-owned-dmi-grib\n        env:\n          npm_config_cache: ${{ github.workspace }}/.github/actions/save-owned-dmi-grib/.npm-cache\n        run: npm ci --ignore-scripts --no-audit --no-fund',
+  'name: Verify locked cache API distribution without runtime calls\n        run: node scripts/test-owned-dmi-cache-dependency.mjs',
+  'name: Validate isolated acquisition ownership and raw-save cohort\n        shell: bash\n        run: |\n          set -euo pipefail\n          node --test scripts/test-weather-acquisition-writer.mjs\n          python -B scripts/test-weather-acquisition-writer.py\n          python -B scripts/test-owned-dmi-grib-save-native.py --node24-path "$(command -v node)"',
+  'name: Restore Node22 for existing source validation\n        uses: actions/setup-node@v7\n        with:\n          node-version: 22',
+]) {
+  assert.ok(pullRequestValidation.includes(marker), `PR ownership source gate lacks ${marker}`);
+}
+assert.deepEqual(
+  pullRequestValidation.split('\n').filter(line =>
+    line.includes('python -B scripts/test-owned-dmi-grib-save-native.py')),
+  ['          python -B scripts/test-owned-dmi-grib-save-native.py --node24-path "$(command -v node)"'],
+);
+assert.deepEqual([...pullRequestValidation.matchAll(/node-version: (\d+)/g)].map(match => Number(match[1])),
+  [22, 24, 22], 'Preserve original Node22 and restore it after the dedicated Node24 contracts');
+assert.ok(!pullRequestValidation.includes('uses: ./.github/actions/save-owned-dmi-grib'),
+  'Source CI must never activate the production raw cache action');
 const prGateOrder = [
   'name: Require exact pull-request source head',
   'name: Build deterministic source-tree content identity',
   'name: Install source-gate dependencies',
+  'name: Set up Node24 for isolated acquisition contracts',
+  'name: Install exact local cache-action dependencies without scripts',
+  'name: Verify locked cache API distribution without runtime calls',
+  'name: Validate isolated acquisition ownership and raw-save cohort',
+  'name: Restore Node22 for existing source validation',
   'name: Validate bounded native current diagnosis on artificial data only',
   'name: Validate source contracts and release governance',
   'name: Require validated source tree to remain unchanged',
@@ -1395,10 +1424,17 @@ for (const marker of [
   'weather-component-progress-cache.mjs save',
 ]) assert.ok(normalEncryptedSeal.includes(marker), `Krypteret provider-save mangler ${marker}`);
 for (const marker of [
-  'uses: actions/cache/save@v6',
-  'path: .cache/weather-private-progress.encrypted',
+  'uses: ./.github/actions/save-owned-dmi-grib',
+  'operation: upload-encrypted-progress',
+  "steps.component-progress-seal.outcome == 'success'",
+  "steps.component-progress-seal.outputs.saved == 'true'",
+  'continue-on-error: true',
   'weather-private-progress-encrypted-v2-',
 ]) assert.ok(normalEncryptedSave.includes(marker), `Krypteret snapshotcache mangler ${marker}`);
+assert.doesNotMatch(normalEncryptedSave, /\bpath:/,
+  'Cipher-upload skal vælge sin faste fil i den ejede action, aldrig en caller-valgt sti.');
+assert.doesNotMatch(normalEncryptedSave, /uses: actions\/cache\/save@/,
+  'Cipher-upload må ikke have en parallel uobserveret cache-SAVE-rute.');
 assert.doesNotMatch(text, /open-meteo-current-fallback-v2-|open-meteo-current-donor-bank-v1-/,
   'Normalproduktionen må ikke have parallelle Open-Meteo-plaintextcaches.');
 for (const marker of [

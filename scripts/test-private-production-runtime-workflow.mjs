@@ -154,12 +154,19 @@ try {
   );
   const contractFiles = [...new Set(Object.values(PRIVATE_RUNTIME_CONTRACT_FILES).flat())];
   for (const relative of [
+    'scripts/lib/weather-acquisition-writer.mjs',
+    'scripts/lib/weather_acquisition_writer.py',
     'scripts/lib/weather-transport-settlement.mjs',
+    'scripts/run-owned-dmi-grib-save.py',
+    '.github/actions/save-owned-dmi-grib/action.yml',
+    '.github/actions/save-owned-dmi-grib/index.cjs',
+    '.github/actions/save-owned-dmi-grib/package.json',
+    '.github/actions/save-owned-dmi-grib/package-lock.json',
   ]) {
     assert.ok(PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.includes(relative),
-      'The transport-settlement implementation must remain in the reviewed producer inventory.');
+      'Acquisition ownership and the fixed raw-cache saver must remain in the reviewed producer inventory.');
     assert.equal(PRIVATE_RUNTIME_CONTRACT_FILES.fullRuntimeContractSha256.includes(relative), false,
-      'Transport settlement must not retag preserved originals through the storage ABI.');
+      'Acquisition implementation must not retag preserved originals through the storage ABI.');
   }
   for (const relative of ['scripts/lib/water-source-continuity-contract.mjs',
     'scripts/lib/water-source-forecast-routing.mjs']) {
