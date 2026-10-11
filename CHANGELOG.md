@@ -1,4 +1,11 @@
-# 4.0.574 kort vejrhentning fra aktuel beskyttet generation – 2026-10-11
+# 4.0.574 Copernicus-arbejdsstatus gemmes før hentning – 2026-10-11
+
+- Det seneste kortforsøg fejlede efter Copernicus-timeout/recovery-timeout. Slutkontrollen afviste en udløbet tidsreference i kildeoplysningerne. Forløbet passer med, at gemningen af den validerede projektion ikke nåede at blive færdig; det præcise afbrydelsespunkt er ikke målt.
+- Kun før-provider-trinnet får --persist-validated-rebase: eksisterende stage-/donorbankvalidering, frisk kontrol af inputbytes og normal atomisk snapshot-skrivning af alene source-stage. Positive originaler, friskhed, forsøgstidspunkter, budgetter og streng slutkontrol bevares.
+- Rå SAVE og krypteret UPLOAD lykkedes faktisk; vejrhentning og deploy gjorde ikke. Cron er efter ejerens anmodning gemt inaktivt.
+- Lokal workflow-måltest og rangechecker-v2 består. Source-stage-prøven er lokalt ukørt grundet manglende xarray og er ført til normal Linux-kildekontrol. Ingen versionsændring; præcis CI og driftseffekt mangler, alle fem mål er åbne.
+
+# Historik: 4.0.574 kort vejrhentning fra aktuel beskyttet generation – 2026-10-11
 
 - PR #569 første Linux-kontrol afslørede den eksisterende tests manglende npm-opstartstitel. Test-only accepteres nu præcis npm før npm ci; kernestyret executable-, ejerskabs- og afslutningskontrol bevares. Ny præcis kilde- og driftseffekt mangler endnu.
 

@@ -1890,6 +1890,7 @@ jobs:
           --targets data/live/coastal-parts-v2.json
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --allow-nonmatching-seal
+          --persist-validated-rebase
           --allow-invalid-shadow-as-absent
           --github-output "$GITHUB_OUTPUT"
 

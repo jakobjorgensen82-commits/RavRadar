@@ -6,6 +6,16 @@ Den lokale 4.0.574 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
 
+## 89.203 Gem arbejdsstatus før Copernicus-hentning
+
+Det korte forsøg den 11. oktober fejlede efter en timeout og en mislykket genopretning. Kontrollen før hentning havde beregnet en gyldig arbejdsstatus til det aktuelle tidspunkt i hukommelsen. Slutkontrollen afviste derefter en udløbet tidsreference i kildeoplysningerne. Forløbet passer med, at gemningen ikke nåede at blive færdig; det præcise afbrydelsespunkt er ikke målt.
+
+Rettelsen gemmer kun den allerede validerede arbejdsstatus før hentning. Den skal passe til de originale gemte data, og inputfilerne kontrolleres igen umiddelbart før en atomisk erstatning af arbejdsfilen. Originalbanken bevares. Ufuldstændige data forbliver ufuldstændige; tidsgrænser, friskhed og den strenge slutkontrol ændres ikke.
+
+Rå cachegemning og upload af det krypterede fremskridt lykkedes faktisk i dette forsøg. Det er ikke en færdig vejrhentning, senere genindlæsning eller levering af nye offentlige data. Ejeren har fået fremtidig cron gemt inaktivt. Denne rettelse genstarter ikke tidsplanen.
+
+De små lokale workflow- og rangechecker-prøver består. Prøven for arbejdsstatus kræver en Python-afhængighed, der ikke findes lokalt, og afventer den normale Linux-kontrol. Rettelsen er endnu ikke produktionsverificeret. Version 4.0.574 bevares, vejrhentning har fuld prioritet, og alle fem hovedmål er åbne. De tidligere statusafsnit nedenfor skal læses som historik, hvor dette afsnit erstatter deres driftstilstand.
+
 ## 89.202 Procesprøven genkender npm-opstart
 
 GitHub-kontrollen fandt først en fejl i en eksisterende procesprøve. npm kalder sig først npm og senere npm ci. Prøven genkendte ikke den første fase. Kun denne testforventning er rettet; den faktiske programfil, procesidentitet, skrivelås og afslutning skal stadig kontrolleres. Ny GitHub-kontrol skal bestå før levering.

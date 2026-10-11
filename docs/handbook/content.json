@@ -5,6 +5,12 @@
   "updatedAt": "2026-10-11",
   "sections": [
     {
+      "id": "copernicus-durable-pre-provider-rebase-2026-10-11",
+      "chapter": "89.203",
+      "title": "Gem arbejdsstatus før Copernicus-hentning",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Valideret delarbejde skal ligge sikkert på disk før næste hentning. Det er ikke det samme som færdige vejrdata.</div><p>Det korte forsøg den 11. oktober fejlede efter en timeout og en mislykket genopretning. Kontrollen før hentning havde beregnet en gyldig arbejdsstatus til det aktuelle tidspunkt i hukommelsen. Slutkontrollen afviste derefter en udløbet tidsreference i kildeoplysningerne. Forløbet passer med, at gemningen ikke nåede at blive færdig; det præcise afbrydelsespunkt er ikke målt.</p><p>Rettelsen gemmer kun den allerede validerede arbejdsstatus før hentning. Den skal passe til de originale gemte data, og inputfilerne kontrolleres igen umiddelbart før en atomisk erstatning af arbejdsfilen. Originalbanken bevares. Ufuldstændige data forbliver ufuldstændige; tidsgrænser, friskhed og den strenge slutkontrol ændres ikke.</p><p>Rå cachegemning og upload af det krypterede fremskridt lykkedes faktisk i dette forsøg. Det er ikke en færdig vejrhentning, senere genindlæsning eller levering af nye offentlige data. Ejeren har fået fremtidig cron gemt inaktivt. Denne rettelse genstarter ikke tidsplanen.</p><p>De små lokale workflow- og rangechecker-prøver består. Prøven for arbejdsstatus kræver en Python-afhængighed, der ikke findes lokalt, og afventer den normale Linux-kontrol. Rettelsen er endnu ikke produktionsverificeret. Version 4.0.574 bevares, vejrhentning har fuld prioritet, og alle fem hovedmål er åbne. De tidligere statusafsnit nedenfor skal læses som historik, hvor dette afsnit erstatter deres driftstilstand.</p>"
+    },
+    {
       "id": "fixed-npm-observer-title-2026-10-11",
       "chapter": "89.202",
       "title": "Procesprøven genkender npm-opstart",
