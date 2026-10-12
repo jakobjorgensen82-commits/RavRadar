@@ -1,3 +1,19 @@
+# Aktuel 4.0.574 – to godkendte faste Supabase-læsninger, 2026-10-12
+
+- [x] Ny inventarkalder er integreret, og det komplette normale readiness-target består lokalt: gamle kontroller, katalog 15 sekunder, log 10 sekunder og ny inventarprøve 5 sekunder, inklusive tre præcise historiske kørsler, friske nul-job-aflæsninger, ændret identitet og afvisningsvagter. Frisk, fuldstændigt og begrænset main-inventar afviser alle reelle eller ændrede queued-kørsler. Kun de tre allerede menneskeligt afgrænsede historiske kørsler kan undtages med hver sit præcise id/SHA/UTC-dato/main/update-and-deploy.yml/attempt 1/workflow_dispatch/queued og hver sin friske jobaflæsning med nul jobs; ukendt, ændret eller ufuldstændig evidens afvises. Ingen blanketregel, annullering, cronændring eller atomisk lease. SELECTens præcise 11.725 LF-bytes/SHA256 825ee5c9674923c0a3601c893ba871b2518d91cb12026a513e72fc9d6893944b bevares med specifik .gitattributes text eol=lf.
+- [x] Forudgående PR #579 er sikkert merget den 12. oktober kl. 13.28.51 dansk tid til main da4bcf51968fa938bfa3708c83c82f128e305b63 med hele det genlæste fdbc1404-træ; alle 68 kapacitetsprøver, fem normale Linux-prøver, kildekontrol og kildebevis bestod.
+- [ ] PR #579's faktiske nye generationseffekt og læserleverancens egen fulde præcise kildekontrol. Lokal target-PASS og forgængerens kildebevis er ikke kontoaflæsning, installation eller denne efterfølgers kildebevis.
+- [x] Lokal kildeintegration af særskilt læsejob for ejerens faste metadata-only turkatalog-SELECT og historiske rate-log-GET; ingen frit valgt SQL, projekt, destination eller tidsvindue.
+- [x] SELECT låst til 11.725 bytes/SHA256 825ee5c9674923c0a3601c893ba871b2518d91cb12026a513e72fc9d6893944b. Ingen tur-/brugerrækker; lokal SQL-kildelæsning er ikke databaseudførelse/installation.
+- [x] Always READ_REVIEW_REQUIRED. Manglende current-grid-original/owner-FFC-historical successor-kildeorakler står eksplicit ukendte; disse SQL-filer er ikke tilføjet. Fuld Auth/trigger/CHECK/typed-RPC-korrekthed er ikke bevist.
+- [x] Bevar katalogets 15/30 sekunders request-/totalfrister og 256/192/16 KiB svar-/metadata-/rapportgrænser; loggens 10 sekunder, 32 KiB og færre end otte faste kategoripar. Otte eller flere afvises. Ingen retry/redirect/rå payload/credential i output.
+- [x] Eksisterende normalt readiness-target består lokalt, inklusive faktisk afventede 15- og 10-sekundersfrister. Første URL-fixturefejl rettet kun i fire nye globalThis.URL-referencer; gammelt testprefix og tidligere assertions bevares.
+- [ ] Præcis kildekontrol af nyt head og sikker levering med eksakt main/første forsøg, grønt kildebevis, frisk afsluttet-writer-kontrol og genkontrol af main. Snapshot er ikke atomisk lease.
+- [ ] Gennemfør hver af de to allerede godkendte faktiske læsninger efter gates; ingen privat konto er endnu aflæst gennem denne kildeleverance.
+- [ ] Afklar de konkrete læseresultater uden at gøre en tom log til sundhedsbevis eller READ_REVIEW_REQUIRED til installationsgodkendelse. Turlagring/Auth, ekstern AI og alle fem mål er fortsat åbne.
+
+Eksisterende Supabase-nøgle gives kun til det valgte særskilte læsestep, ikke til install/repair. Ingen nye nøgler, planer, tjenester, ekstra vejrhentning, produktionsskrivning eller nye tilladelser. Ældre DMI/T+3-status nedenfor bevares som historik.
+
 # Aktuel 4.0.574 – SOURCE-trend og DMI-opfølgning, 2026-10-12
 
 - [x] Reproducér bankoverskridende T+3-afvisning gennem den eksisterende normale SOURCE-måltest, ikke en erstatningskalder.

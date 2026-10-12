@@ -1337,3 +1337,364 @@ await assert.rejects(checkIntegratedCutoverReadiness({
 }), /does not match the exact source/);
 
 console.log('Integrated backend cutover readiness: migration fail-closed, metadata-only DB readback, no-write Edge binding, protected exact-head marker and read-only checker are green.');
+
+// Fixed metadata-only Management caller. Controlled transport fixtures only:
+// not measured PostgreSQL types, Auth, installed RPCs, triggers or production.
+const typedCatalogModule = await import('./read-typed-trip-catalog.mjs');
+const typedColumnTypes = {
+  schema_version:'int2',rav_score:'int2',user_id:'uuid',anonymous_id:'uuid',trip_id:'uuid',client_observation_id:'uuid',
+  trip_started_at:'timestamptz',trip_ended_at:'timestamptz',observed_at:'timestamptz',submitted_at:'timestamptz',
+  forecast_issued_at:'timestamptz',forecast_valid_at:'timestamptz',forecast_captured_at:'timestamptz',
+  search_minutes:'int4',found:'bool',calibration_eligible:'bool',grams:'numeric',wind_speed_mps:'numeric',
+  wind_direction_deg:'numeric',wave_height_m:'numeric',wave_period_s:'numeric',water_level_cm:'numeric',
+  current_speed_mps:'numeric',current_direction_deg:'numeric',search_coverage:'text',hunt_mode:'text',
+  result:'text',actual_zone_id:'text',actual_coastal_part_id:'text',forecast_zone_id:'text',
+  forecast_coastal_part_id:'text',model_version:'text',forecast_snapshot_id:'text',
+  calibration_features:'jsonb',weather_snapshot:'jsonb',data_quality_flags:'jsonb',gps:'jsonb',
+};
+const typedSignatures = [
+  'auth.role()','auth.uid()','public.ravradar_trip_payload_has_sensitive_key(jsonb)',
+  'public.ravradar_trip_v3_score_quality_allowed(text,jsonb)',
+  'public.ravradar_trip_v3_calibration_truth_allowed(text,jsonb,boolean,text,text,text,text)',
+  'public.ravradar_trip_v3_binding_allowed(text,jsonb,boolean,text,text,text,text)',
+  'public.ravradar_trip_v3_active_binding_admitted(text,text,text,text,text,text,text,text,text,text,text,jsonb,boolean,text,text,text,text)',
+  'public.ravradar_observation_require_active_v3_binding()',
+  'public.ravradar_trip_v3_js9_projection_matches(numeric,numeric,integer)',
+  'public.ravradar_trip_v3_ffc_historical_original_valid(public.observations)',
+  'public.ravradar_trip_v3_ffc_historical_admitted(jsonb,uuid)',
+];
+const typedRows = [
+  {kind:'engine',name:'server',metadata:{serverVersionNum:160001,targetCount:1,
+    counts:{columns:37,constraints:0,indexes:0,triggers:0,functions:11,roles:3,memberships:0}}},
+  {kind:'relation',name:'public.observations',metadata:{kind:'r',owner:'synthetic-owner-NOT-LOGGED',
+    rls:true,forceRls:false,hasInheritance:false}},
+  ...Object.entries(typedColumnTypes).map(([name,typeName],index)=>({kind:'column',name,metadata:{
+    position:index+1,typeSchema:'pg_catalog',typeName,typeKind:'b',formattedType:typeName,typmod:-1,
+    notNull:false,identity:'',generated:'',arrayDimensions:0,hasMissingValue:false,defaultBytes:null,default:null,
+  }})),
+  ...typedSignatures.map(name=>({kind:'function',name,metadata:{
+    present:false,owner:null,kind:null,language:null,arguments:null,result:null,volatility:null,strict:null,
+    securityDefiner:null,returnsSet:null,searchPath:null,otherConfiguration:false,definitionBytes:null,
+    definition:null,sameNameCount:0,aclCount:0,execute:{anon:null,authenticated:null,service_role:null},acl:null,
+  }})),
+  ...['anon','authenticated','service_role'].map(name=>({kind:'role',name,metadata:{
+    present:true,superuser:false,inherit:true,createRole:false,createDb:false,login:false,replication:false,
+    bypassRls:name==='service_role',tablePrivileges:{select:true,insert:name==='service_role',
+      update:false,delete:false,anyColumnSelect:true,anyColumnInsert:name==='service_role',anyColumnUpdate:false},
+  }})),
+];
+const typedDocument = {schemaVersion:'ravradar-typed-trip-catalog-read-v1',rows:typedRows};
+const typedEnvelope = [{bytes:Buffer.byteLength(JSON.stringify(typedDocument)),metadata:typedDocument}];
+const typedCalls=[];
+const typedReport = await typedCatalogModule.readTypedTripCatalog({
+  accessToken:'synthetic-management-token-NOT-LOGGED',
+  fetchImpl:async(url,init)=>{
+    typedCalls.push({url,init});
+    return new Response(JSON.stringify(typedEnvelope),{status:201});
+  },
+});
+assert.equal(typedCalls.length,1);
+assert.equal(typedCalls[0].url,'https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query');
+assert.equal(typedCalls[0].init.method,'POST');
+assert.equal(typedCalls[0].init.redirect,'error');
+assert.equal(JSON.parse(typedCalls[0].init.body).read_only,true);
+assert.deepEqual(Object.keys(JSON.parse(typedCalls[0].init.body)).sort(),['query','read_only']);
+assert.equal(typedReport.status,'READ_REVIEW_REQUIRED');
+assert.equal(typedReport.columns.length,37);
+assert.equal(typedReport.fullTypedRpcTriggerCheckProved,false);
+assert.equal(typedReport.completeOldOrNewCheckSourceMatch,false);
+assert.equal(typedReport.authRoleUidSourceMatch,false);
+assert.doesNotMatch(JSON.stringify(typedReport),/synthetic-owner|management-token|definition|memberRole|grantedRole/);
+for(const [response,code] of [
+  [new Response('PRIVATE-BODY-MUST-NOT-LEAK',{status:503}),'CATALOG_HTTP_STATUS'],
+  [new Response(JSON.stringify({unexpected:typedEnvelope}),{status:201}),'CATALOG_ENVELOPE'],
+  [new Response(new Uint8Array(262145),{status:201}),'CATALOG_BODY_BOUND'],
+]) {
+  let attempts=0;
+  await assert.rejects(typedCatalogModule.readTypedTripCatalog({accessToken:'synthetic',
+    fetchImpl:async()=>{attempts++;return response;}}),new RegExp(code));
+  assert.equal(attempts,1,'fixed catalog read must not retry any refusal');
+}
+let typedUnexpectedCalls=0;
+await assert.rejects(typedCatalogModule.readTypedTripCatalog({accessToken:'synthetic',
+  query:'select anything',fetchImpl:async()=>{typedUnexpectedCalls++;}}),/CATALOG_ARGUMENTS/);
+assert.equal(typedUnexpectedCalls,0,'caller must reject free query options before any network');
+const typedDomainEnvelope=structuredClone(typedEnvelope);
+typedDomainEnvelope[0].metadata.rows.find(row=>row.kind==='column').metadata.typeKind='d';
+const typedDomainReport=await typedCatalogModule.readTypedTripCatalog({accessToken:'synthetic',
+  fetchImpl:async()=>new Response(JSON.stringify(typedDomainEnvelope),{status:201})});
+assert.ok(typedDomainReport.refusalCodes.includes('UNREVIEWED_TYPE'));
+assert.equal(typedDomainReport.fullTypedRpcTriggerCheckProved,false);
+const typedDuplicateEnvelope=structuredClone(typedEnvelope);
+typedDuplicateEnvelope[0].metadata.rows.push(typedDuplicateEnvelope[0].metadata.rows[0]);
+await assert.rejects(typedCatalogModule.readTypedTripCatalog({accessToken:'synthetic',
+  fetchImpl:async()=>new Response(JSON.stringify(typedDuplicateEnvelope),{status:201})}),/CATALOG_DUPLICATE/);
+const typedOverflowEnvelope=structuredClone(typedEnvelope);
+typedOverflowEnvelope[0].bytes=196609;
+await assert.rejects(typedCatalogModule.readTypedTripCatalog({accessToken:'synthetic',
+  fetchImpl:async()=>new Response(JSON.stringify(typedOverflowEnvelope),{status:201})}),/CATALOG_DOCUMENT_BOUND/);
+
+const typedOptionalSourceUrls = new Set([
+  new globalThis.URL('../supabase/migrations/20261012000000_current_grid_original_bound_successor.sql',import.meta.url).href,
+  new globalThis.URL('../supabase/migrations/20261012010000_owner_ffc_historical_trip_intake.sql',import.meta.url).href,
+]);
+const typedSourceRead = fs.readFile;
+try {
+  let missingReads = 0, missingFetches = 0;
+  fs.readFile = async(input,...args) => {
+    if(input instanceof globalThis.URL && typedOptionalSourceUrls.has(input.href)) {
+      missingReads++;
+      throw Object.assign(new Error('synthetic missing reviewed successor'),{code:'ENOENT'});
+    }
+    return typedSourceRead(input,...args);
+  };
+  const missingReport=await typedCatalogModule.readTypedTripCatalog({accessToken:'synthetic',
+    fetchImpl:async()=>{missingFetches++;return new Response(JSON.stringify(typedEnvelope),{status:201});}});
+  assert.equal(missingReads,2,'only the two fixed successor oracles may be absent');
+  assert.equal(missingFetches,1,'missing successor review evidence must not prevent the fixed SELECT');
+  assert.ok(missingReport.refusalCodes.includes('REVIEWED_SUCCESSOR_SOURCE_MISSING'));
+  assert.equal(missingReport.status,'READ_REVIEW_REQUIRED');
+  assert.equal(missingReport.fullTypedRpcTriggerCheckProved,false);
+  for(const signature of typedSignatures.slice(8)) {
+    assert.equal(missingReport.functions.find(row=>row.signature===signature).bodySignatureConfigurationMatch,false,
+      'absent successor SOURCE must never attest its function body');
+  }
+  let deniedFetches=0;
+  fs.readFile = async(input,...args) => {
+    if(input instanceof globalThis.URL && typedOptionalSourceUrls.has(input.href))
+      throw Object.assign(new Error('synthetic successor permission denial'),{code:'EACCES'});
+    return typedSourceRead(input,...args);
+  };
+  await assert.rejects(typedCatalogModule.readTypedTripCatalog({accessToken:'synthetic',
+    fetchImpl:async()=>{deniedFetches++;throw Error('not called');}}),
+    error=>error.code==='EACCES');
+  assert.equal(deniedFetches,0,'non-ENOENT successor errors remain hard before transport');
+} finally { fs.readFile=typedSourceRead; }
+
+const typedBaseSql=(await fs.readFile('supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql','utf8')).replace(/\r\n?/g,'\n');
+const typedBaseMarker='create or replace function public.ravradar_trip_payload_has_sensitive_key(';
+const typedBaseAt=typedBaseSql.indexOf(typedBaseMarker);
+const typedBaseEnd=typedBaseSql.indexOf('\n$$;',typedBaseAt);
+assert.ok(typedBaseAt>=0 && typedBaseEnd>typedBaseAt,'positive oracle must be the actual existing BASE SOURCE');
+const typedBaseDefinition=typedBaseSql.slice(typedBaseAt,typedBaseEnd+4);
+const typedBaseArguments=typedBaseDefinition.slice(typedBaseMarker.length,
+  typedBaseDefinition.indexOf(')\nreturns')).replace(/\s+/g,' ').trim();
+const typedBaseEnvelope=structuredClone(typedEnvelope);
+Object.assign(typedBaseEnvelope[0].metadata.rows.find(row=>row.name===typedSignatures[2]).metadata,{
+  present:true,owner:'synthetic-owner-NOT-LOGGED',kind:'f',language:'plpgsql',arguments:typedBaseArguments,
+  result:'boolean',volatility:'i',strict:true,securityDefiner:false,returnsSet:false,
+  searchPath:'search_path=public',otherConfiguration:false,
+  definition:typedBaseDefinition,definitionBytes:Buffer.byteLength(typedBaseDefinition),sameNameCount:1,
+});
+typedBaseEnvelope[0].bytes=Buffer.byteLength(JSON.stringify(typedBaseEnvelope[0].metadata));
+const typedBaseRead=async envelope=>typedCatalogModule.readTypedTripCatalog({accessToken:'synthetic',
+  fetchImpl:async()=>new Response(JSON.stringify(envelope),{status:201})});
+const typedBaseReport=await typedBaseRead(typedBaseEnvelope);
+assert.equal(typedBaseReport.functions.find(row=>row.signature===typedSignatures[2]).bodySignatureConfigurationMatch,true,
+  'complete actual BASE SOURCE body/signature/configuration must match, not parser marker counts');
+assert.equal(typedBaseReport.fullTypedRpcTriggerCheckProved,false);
+for(const [field,value] of [['present',false],['sameNameCount',2],['result','integer'],['arguments','wrong_name jsonb'],
+  ['searchPath','search_path=pg_catalog, public'],['strict',false]]) {
+  const changed=structuredClone(typedBaseEnvelope);
+  changed[0].metadata.rows.find(row=>row.name===typedSignatures[2]).metadata[field]=value;
+  const changedReport=await typedBaseRead(changed);
+  assert.equal(changedReport.functions.find(row=>row.signature===typedSignatures[2]).bodySignatureConfigurationMatch,false,
+    'source body alone cannot approve altered signature/type/configuration: '+field);
+}
+
+let typedHeldController;
+const typedHeldBody=new Response(new ReadableStream({start(controller){typedHeldController=controller;}}),{status:201});
+let typedDeadlineAttempts=0;
+await assert.rejects(typedCatalogModule.readTypedTripCatalog({accessToken:'synthetic',
+  fetchImpl:async(_url,init)=>{typedDeadlineAttempts++;
+    init.signal.addEventListener('abort',()=>typedHeldController.error(new Error('synthetic transport abort')),{once:true});
+    return typedHeldBody;}}),/CATALOG_REQUEST_DEADLINE/);
+assert.equal(typedDeadlineAttempts,1,'actual fixed 15s stream deadline must not retry');
+console.log('Fixed typed-catalog caller: one pinned metadata read, bounded private projection and real client-deadline refusal; no database execution.');
+
+
+// Fixed historical rate-log reader, controlled normal transport only.
+// Each fresh module is a synthetic testcase, never authority for a live repeat.
+assert.equal(Object.hasOwn(process.env,'SUPABASE_ACCESS_TOKEN'),false,
+  'offline rate fixtures must not capture or replace an ambient Management token');
+const fixedRatePriorFetch=globalThis.fetch;
+process.env.SUPABASE_ACCESS_TOKEN='synthetic-rate-token-NOT-LOGGED';
+try {
+  const rateFixtures=[
+    ['categories',()=>new Response(JSON.stringify({result:[
+      {status:401,error_code:'UNAUTHORIZED_MISSING_API_KEY'},
+      {status:null,error_code:'42501'},
+    ],error:null}),{status:200}),'RECORDED_CATEGORIES',2],
+    ['empty',()=>new Response(JSON.stringify({result:[],error:null}),{status:200}),
+      'NO_MATCHING_RECORDED_EVENTS',0],
+    ['http',()=>new Response('PRIVATE-LOG-BODY-NOT-LOGGED',{status:503}),'LOG_HTTP_REJECTED',null],
+    ['envelope',()=>new Response(JSON.stringify({data:[],error:null}),{status:200}),
+      'LOG_SCHEMA_UNAVAILABLE',null],
+    ['oversize',()=>new Response(new Uint8Array(32769),{status:200}),'LOG_BODY_TOO_LARGE',null],
+    ['row-cap',()=>new Response(JSON.stringify({result:Array(8).fill(
+      {status:null,error_code:'42501'}),error:null}),{status:200}),'LOG_ROW_CAP_REACHED',null],
+    ['unknown-code',()=>new Response(JSON.stringify({result:[
+      {status:null,error_code:'PRIVATE-NOT-ALLOWLISTED'},
+    ],error:null}),{status:200}),'LOG_SCHEMA_UNAVAILABLE',null],
+    ['missing-fields',()=>new Response(JSON.stringify({result:[
+      {status:null,error_code:'LOG_FIELDS_UNAVAILABLE'},
+    ],error:null}),{status:200}),'LOG_FIELDS_UNAVAILABLE',null],
+    ['held-stream',()=>new Response(new ReadableStream({start(){}}),{status:200}),
+      'LOG_DEADLINE_EXCEEDED',null],
+  ];
+  for(const [label,response,status,rowCount] of rateFixtures) {
+    const module=await import('./read-fixed-public-rate-log-20261012.mjs?offline_fixed_case='+label);
+    let requests=0;
+    globalThis.fetch=async(url,init)=>{
+      requests++;
+      assert.equal(url.origin,'https://api.supabase.com');
+      assert.equal(url.pathname,'/v1/projects/afqhhdrkjfjtpadntdzo/analytics/endpoints/logs');
+      assert.deepEqual([...url.searchParams.keys()].sort(),['iso_timestamp_end','iso_timestamp_start','sql']);
+      assert.equal(url.searchParams.get('iso_timestamp_start'),'2026-10-12T03:45:00Z');
+      assert.equal(url.searchParams.get('iso_timestamp_end'),'2026-10-12T03:46:00Z');
+      assert.match(url.searchParams.get('sql'),/timestamp >= '2026-10-12 03:45:11'/);
+      assert.match(url.searchParams.get('sql'),/timestamp < '2026-10-12 03:45:13'/);
+      assert.equal(init.method,'GET'); assert.equal(init.body,undefined);
+      assert.equal(init.redirect,'error'); assert.equal(init.cache,'no-store');
+      assert.equal(init.credentials,'omit');
+      return response();
+    };
+    const report=await module.readFixedPublicRateLog20261012();
+    assert.equal(report.requestStatus,status,label);
+    assert.equal(report.rowCount,rowCount,label);
+    assert.equal(report.privatePayloadLogged,false);
+    assert.equal(report.scope.sqlStart,'2026-10-12T03:45:11Z');
+    assert.equal(report.scope.sqlEndExclusive,'2026-10-12T03:45:13Z');
+    if(rowCount===null) assert.equal(report.pairs,null,'refusal must not expose partial rows');
+    assert.doesNotMatch(JSON.stringify(report),/PRIVATE-|synthetic-rate-token|Bearer/);
+    assert.equal(requests,1,'each controlled ordinary call must use one GET with no retry');
+    assert.equal((await module.readFixedPublicRateLog20261012()).requestStatus,'LOG_READ_ALREADY_CONSUMED');
+    assert.equal(requests,1,'one-shot state must refuse a second call before transport');
+  }
+  const argumentModule=await import('./read-fixed-public-rate-log-20261012.mjs?offline_fixed_case=argument');
+  let argumentRequests=0;globalThis.fetch=async()=>{argumentRequests++;throw Error('not called');};
+  assert.equal((await argumentModule.readFixedPublicRateLog20261012({sql:'not allowed'})).requestStatus,
+    'LOG_ARGUMENTS_FORBIDDEN');
+  assert.equal(argumentRequests,0);
+} finally {
+  globalThis.fetch=fixedRatePriorFetch;delete process.env.SUPABASE_ACCESS_TOKEN;
+}
+console.log('Fixed rate-log normal caller fixtures: exact historical GET, strict bounded results and one-shot/deadline refusals; no account log read.');
+const typedWorkflowSource=await fs.readFile('.github/workflows/deploy-trip-storage.yml','utf8');
+const typedReadJob=typedWorkflowSource.slice(typedWorkflowSource.indexOf('  read-fixed-supabase-metadata:'),
+  typedWorkflowSource.indexOf('  reject-unknown-operation:'));
+assert.ok(typedReadJob.includes("inputs.operation == 'typed-trip-catalog-read'"));
+assert.ok(typedReadJob.includes("inputs.operation == 'fixed-public-rate-log-read'"));
+assert.ok(typedReadJob.includes('test "$GITHUB_RUN_ATTEMPT" = 1'));
+assert.ok(typedReadJob.includes('test "$GITHUB_REF" = refs/heads/main'));
+assert.ok(typedReadJob.indexOf('test "$GITHUB_REPOSITORY" = jakobjorgensen82-commits/RavRadar') <
+  typedReadJob.indexOf('uses: actions/checkout@v7'),'fixed repository must be checked before checkout/GitHub reads');
+assert.ok(typedReadJob.includes('node scripts/weather-source-gate.mjs check'));
+assert.ok(typedReadJob.includes('steps.fixed_read_source.outputs.required'));
+assert.ok(typedReadJob.includes('node scripts/check-fixed-supabase-account-read-idle.mjs'));
+assert.ok(typedReadJob.indexOf('Require genuinely fresh idle main') <
+  typedReadJob.indexOf('node scripts/read-typed-trip-catalog.mjs'));
+assert.doesNotMatch(typedReadJob,/supabase db push|apply-candidate-g|functions deploy|wrangler|upload-artifact|cache\/save|SUPABASE_DB_PASSWORD|SUPABASE_SERVICE_ROLE_KEY/);
+assert.equal((typedReadJob.match(/SUPABASE_ACCESS_TOKEN:/g)||[]).length,2);
+
+// Actual fixed reader idle guard with controlled metadata transport only.
+// No account read, GitHub request, watchdog change or new runtime executor.
+const fixedIdleModule=await import('./check-fixed-supabase-account-read-idle.mjs');
+const fixedIdleOwn=123456789;
+const fixedIdleLegacy=[
+  [34868901509,'2026-09-14T16:29:10Z','c4930944a6273c00f201994504e3971ad3f2b165'],
+  [34613079069,'2026-09-11T14:55:55Z','5587001b45ffea056addaf6cd20084719540336a'],
+  [34228112413,'2026-09-08T12:47:45Z','b814b525962514a368536f456477881390d6b333'],
+].map(([id,at,sha])=>({id,head_branch:'main',path:'.github/workflows/update-and-deploy.yml',
+  status:'queued',conclusion:null,run_attempt:1,event:'workflow_dispatch',
+  head_sha:sha,created_at:at,updated_at:at}));
+function fixedIdleFixture({queued=fixedIdleLegacy,total=queued.length,jobs={total_count:0,jobs:[]},
+  active=[{id:fixedIdleOwn,status:'in_progress',head_branch:'main'}],otherStatus=null}={}) {
+  const calls=[];
+  const options={repository:'jakobjorgensen82-commits/RavRadar',runId:fixedIdleOwn,
+    githubToken:'synthetic-idle-token-NOT-LOGGED',fetchImpl:async(input,init)=>{
+      const url=new globalThis.URL(input);calls.push(url.pathname+url.search);
+      assert.equal(url.origin,'https://api.github.com');
+      assert.equal(init.method,'GET');assert.equal(init.body,undefined);
+      assert.equal(init.redirect,'error');assert.equal(init.cache,'no-store');assert.equal(init.credentials,'omit');
+      assert.equal(init.headers.authorization,'Bearer synthetic-idle-token-NOT-LOGGED');
+      let document;
+      if(url.pathname==='/repos/jakobjorgensen82-commits/RavRadar/actions/runs') {
+        assert.equal(url.searchParams.get('branch'),'main');
+        const status=url.searchParams.get('status');
+        assert.ok(['in_progress','queued','waiting','pending','requested'].includes(status));
+        assert.equal(url.searchParams.get('per_page'),status==='queued'?'100':'1');
+        document=status==='queued'?{total_count:total,workflow_runs:queued}
+          :status==='in_progress'?{total_count:active.length,workflow_runs:active}
+          :otherStatus===status?{total_count:1,workflow_runs:[{id:999}]}
+          :{total_count:0,workflow_runs:[]};
+      } else {
+        assert.ok(fixedIdleLegacy.some(run=>url.pathname===
+          '/repos/jakobjorgensen82-commits/RavRadar/actions/runs/'+run.id+'/attempts/1/jobs'));
+        assert.equal(url.search,'?per_page=1');document=jobs;
+      }
+      return new Response(JSON.stringify(document),{status:200});
+    }};
+  return {calls,options,invoke:()=>fixedIdleModule.checkFixedSupabaseAccountReadIdle(options)};
+}
+const fixedIdlePositive=fixedIdleFixture();
+assert.deepEqual(await fixedIdlePositive.invoke(),{schemaVersion:1,status:'FIXED_READ_MAIN_IDLE',
+  requests:8,inertQueuedRuns:3,emptyJobInventories:3,atomicWriterLease:false});
+assert.equal(fixedIdlePositive.calls.length,8);
+assert.equal(fixedIdlePositive.calls.filter(route=>route.includes('/attempts/1/jobs')).length,3);
+const fixedIdleEmpty=fixedIdleFixture({queued:[]});
+assert.equal((await fixedIdleEmpty.invoke()).requests,5);
+for(let index=0;index<3;index++)for(const changed of [
+  {id:fixedIdleLegacy[index].id+1},{head_sha:'a'.repeat(40)},{head_branch:'feature'},
+  {path:'.github/workflows/run-current-weather-once.yml'},{run_attempt:2},{event:'schedule'},
+  {status:'in_progress'},{conclusion:'failure'},
+  {created_at:'2026-09-01T00:00:00Z'},{updated_at:'2026-10-12T00:00:00Z'},
+]) {
+  const queued=structuredClone(fixedIdleLegacy);Object.assign(queued[index],changed);
+  const fixture=fixedIdleFixture({queued});
+  await assert.rejects(fixture.invoke(),/FIXED_READ_MAIN_NOT_IDLE/);
+  assert.equal(fixture.calls.some(route=>route.includes('/jobs')),false,
+    'validate every exact legacy identity before any jobs read');
+}
+for(const settings of [
+  {queued:fixedIdleLegacy.slice(0,2),total:3},
+  {queued:[...fixedIdleLegacy,{id:777}],total:4},
+  {queued:[fixedIdleLegacy[0],fixedIdleLegacy[0],fixedIdleLegacy[2]]},
+  {active:[{id:fixedIdleOwn,status:'in_progress',head_branch:'main'},{id:987}]},
+  {otherStatus:'waiting'},{otherStatus:'pending'},{otherStatus:'requested'},
+])await assert.rejects(fixedIdleFixture(settings).invoke(),/FIXED_READ_(INVENTORY_INCOMPLETE|MAIN_NOT_IDLE)/);
+for(const jobs of [{total_count:1,jobs:[{id:1}]},{total_count:0,jobs:[{id:1}]},{jobs:[]}])
+  await assert.rejects(fixedIdleFixture({jobs}).invoke(),/FIXED_READ_LEGACY_JOBS_NOT_EMPTY/);
+let fixedIdleForbiddenCalls=0;
+await assert.rejects(fixedIdleModule.checkFixedSupabaseAccountReadIdle({
+  repository:'other/RavRadar',runId:fixedIdleOwn,githubToken:'synthetic',
+  fetchImpl:async()=>{fixedIdleForbiddenCalls++;},
+}),/FIXED_READ_GITHUB_SCOPE/);
+assert.equal(fixedIdleForbiddenCalls,0);
+for(const response of [
+  new Response('PRIVATE-GITHUB-BODY-NOT-LOGGED',{status:403}),
+  new Response(new Uint8Array(65537),{status:200}),
+]) {
+  let calls=0;
+  await assert.rejects(fixedIdleModule.checkFixedSupabaseAccountReadIdle({
+    repository:'jakobjorgensen82-commits/RavRadar',runId:fixedIdleOwn,githubToken:'synthetic',
+    fetchImpl:async()=>{calls++;return response;},
+  }),/FIXED_READ_IDLE_(UNAVAILABLE|BOUND)/);
+  assert.equal(calls,1,'fixed guard never retries transport or inventory refusals');
+}
+let fixedIdleDeadlineCalls=0;
+await assert.rejects(fixedIdleModule.checkFixedSupabaseAccountReadIdle({
+  repository:'jakobjorgensen82-commits/RavRadar',runId:fixedIdleOwn,githubToken:'synthetic',
+  fetchImpl:async()=>{fixedIdleDeadlineCalls++;return new Response(new ReadableStream({start(){}}),{status:200});},
+}),/FIXED_READ_IDLE_DEADLINE/);
+assert.equal(fixedIdleDeadlineCalls,1,'same real five-second request/body deadline, no retry');
+const fixedIdleSource=await fs.readFile('scripts/check-fixed-supabase-account-read-idle.mjs','utf8');
+const cadenceSource=await fs.readFile('scripts/check-weather-cadence-watchdog.mjs','utf8');
+for(const [id,at,sha] of [
+  [34868901509,'2026-09-14T16:29:10Z','c4930944a6273c00f201994504e3971ad3f2b165'],
+  [34613079069,'2026-09-11T14:55:55Z','5587001b45ffea056addaf6cd20084719540336a'],
+  [34228112413,'2026-09-08T12:47:45Z','b814b525962514a368536f456477881390d6b333'],
+])for(const value of [String(id),at,sha]) {
+  assert.ok(fixedIdleSource.includes(value)&&cadenceSource.includes(value),'same precise existing history, not a blanket queue rule');
+}
+console.log('Fixed account-reader idle guard: exact historical queues plus fresh empty attempt-1 jobs, complete bounded inventories and real five-second body deadline; controlled input only.');
