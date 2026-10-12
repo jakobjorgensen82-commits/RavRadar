@@ -5,7 +5,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { REQUIRED_CUTOVER_MIGRATIONS, LATEST_REQUIRED_CUTOVER_MIGRATION }
+import { REQUIRED_CUTOVER_MIGRATIONS, LATEST_REQUIRED_CUTOVER_MIGRATION,
+  TRIP_BINDING_POLICY_SOURCE_MIGRATION }
   from './integrated-cutover-readiness.mjs';
 import {
   assertPostCutoverRepairProjection,
@@ -280,11 +281,15 @@ const originalGateRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rr-code-only-ori
 try {
   const listPath = path.join(originalGateRoot, 'list.txt');
   const dryPath = path.join(originalGateRoot, 'dry.txt');
-  for (const [pending, required, status] of [[true, 'false', 1], [true, 'true', 0], [false, 'false', 0]]) {
+  for (const [pending, required, status] of [[true, 'false', 1], [true, 'true', 1], [false, 'false', 0]]) {
+    // A missing userdata predecessor also leaves every later successor pending.
+    // Completed original preservation cannot authorize an old130000 replay.
+    const pendingMigrations = pending ? REQUIRED_CUTOVER_MIGRATIONS.filter(item =>
+      item.version >= TRIP_BINDING_POLICY_SOURCE_MIGRATION.version) : [];
     fs.writeFileSync(listPath, `Local | Remote | Time (UTC)\n${REQUIRED_CUTOVER_MIGRATIONS.map(item =>
-      `${item.version} | ${pending && item.version === LATEST_REQUIRED_CUTOVER_MIGRATION.version ? '' : item.version} | state`).join('\n')}`);
+      `${item.version} | ${pendingMigrations.includes(item) ? '' : item.version} | state`).join('\n')}`);
     fs.writeFileSync(dryPath, pending
-      ? `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • ${LATEST_REQUIRED_CUTOVER_MIGRATION.filename}\nFinished supabase db push.`
+      ? `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n${pendingMigrations.map(item => ` • ${item.filename}`).join('\n')}\nFinished supabase db push.`
       : 'DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.');
     const result = spawnSync(process.execPath, ['scripts/verify-code-only-migration-plan.mjs',
       '--require-prewrite-gate', '--migration-list', listPath, '--dry-run', dryPath,
@@ -294,7 +299,9 @@ try {
         RAVRADAR_USERDATA_UPGRADE_OPT_IN: 'true', RAVRADAR_USERDATA_PREWRITE_REQUIRED: required,
         RAVRADAR_USERDATA_PREWRITE_VERIFIED: required } });
     assert.equal(result.status, status, result.stderr || result.error?.message);
-    if (status !== 0) assert.match(result.stderr, /requires the completed normal original-preservation path/);
+    if (status !== 0) assert.match(result.stderr, required === 'true'
+      ? /only the exact latest required integrated migration/
+      : /requires the completed normal original-preservation path/);
   }
 } finally {
   assert.equal(path.dirname(originalGateRoot), path.resolve(os.tmpdir()));
@@ -837,7 +844,8 @@ function userdataSelection({ optIn = false, predecessorApplied = true, assistant
     { remote: assistantApplied ? '20261010120000' : '' }, { remote: userdataApplied ? '20261010130000' : '' }];
   return userdataEvaluate(userdataStep('Require originals before the pending assistant binding').code, {
     fs: { readFileSync: () => '', appendFileSync: (_file, text) => { const [key, value] = text.trim().split('='); outputs[key] = value; } },
-    latest: { version: latestVersion }, parseSupabaseMigrationList: () => rows,
+    latest: { version: latestVersion }, userdataPolicy: TRIP_BINDING_POLICY_SOURCE_MIGRATION,
+    parseSupabaseMigrationList: () => rows,
     process: { env: { RAVRADAR_USERDATA_UPGRADE_OPT_IN: String(optIn), RUNNER_TEMP: '/synthetic', GITHUB_ENV: '/synthetic/env' } },
   }).then(() => outputs);
 }
@@ -851,10 +859,11 @@ userdataTest('userdata delivery: opt-in is explicit and sole130000 requires inst
   assert.equal(ok.RAVRADAR_USERDATA_PREWRITE_REQUIRED, 'true');
   assert.equal(ok.RAVRADAR_ASSISTANT_PREWRITE_REQUIRED, 'false');
 });
-userdataTest('userdata delivery: existing assistant selector and no-write current default remain distinct', async () => {
-  const assistant = await userdataSelection({ latestVersion: '20261010120000', assistantApplied: false });
-  assert.equal(assistant.RAVRADAR_ASSISTANT_PREWRITE_REQUIRED, 'true');
-  assert.equal(assistant.RAVRADAR_USERDATA_PREWRITE_REQUIRED, 'false');
+userdataTest('userdata delivery: unfinished historical assistant is refused and no-write current remains distinct', async () => {
+  // The old120000 positive is superseded: its absent current130000 binding
+  // cannot be made legitimate with a fake policy or an unordered installed row.
+  await assert.rejects(userdataSelection({ latestVersion: '20261010120000', assistantApplied: false }),
+    /explicit.*opt-in/);
   const current = await userdataSelection({ userdataApplied: true });
   assert.equal(current.RAVRADAR_USERDATA_PREWRITE_REQUIRED, 'false');
   assert.match(userdataWorkflow, /upgrade_existing_owner_export:[\s\S]*?default: false/);
@@ -878,10 +887,13 @@ userdataTest('userdata delivery: normal migration CLI rejects absent opt-in, unp
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'rr-userdata-plan-'));
   try {
     const list = path.join(root, 'list.txt'), dry = path.join(root, 'dry.txt');
-    for (const [optIn, verified, combined, expected] of [['false','true',false,1],['true','false',false,1],['true','true',true,1],['true','true',false,0]]) {
-      const pending = new Set(['20261010130000', ...(combined ? ['20261010120000'] : [])]);
+    for (const [optIn, verified, combined, expected] of [['false','true',false,1],['true','false',false,1],['true','true',true,1],['true','true',false,1]]) {
+      const pending = new Set(REQUIRED_CUTOVER_MIGRATIONS.filter(item =>
+        item.version >= TRIP_BINDING_POLICY_SOURCE_MIGRATION.version).map(item => item.version));
+      if (combined) pending.add('20261010120000');
       const fixtureMigrations = [...REQUIRED_CUTOVER_MIGRATIONS, ...(combined ? [{ version: '20261010120000',
-        filename: '20261010120000_assistant_knowledge_bound_successor.sql' }] : [])];
+        filename: '20261010120000_assistant_knowledge_bound_successor.sql' }] : [])]
+        .sort((a, b) => a.version.localeCompare(b.version));
       fs.writeFileSync(list, `Local | Remote | Time (UTC)\n${fixtureMigrations.map(item => `${item.version} | ${pending.has(item.version) ? '' : item.version} | state`).join('\n')}`);
       fs.writeFileSync(dry, `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n${fixtureMigrations.filter(item => pending.has(item.version)).map(item => ` • ${item.filename}`).join('\n')}\nFinished supabase db push.`);
       const result = spawnSync(process.execPath, ['scripts/verify-code-only-migration-plan.mjs', '--require-prewrite-gate',
@@ -991,11 +1003,11 @@ async function userdataFinalFixture({ missing = [], fail = '', versionId = '1111
   return {calls,error};
 }
 userdataTest('userdata final: already-applied130000 is read-only, exact002 and version/capability verified before publication',async()=>{
-  const selected=await userdataSelection({userdataApplied:true});
+  const selected=await userdataSelection({userdataApplied:true,latestVersion:LATEST_REQUIRED_CUTOVER_MIGRATION.version});
   assert.equal(selected.RAVRADAR_USERDATA_PREWRITE_REQUIRED,'false');
   assert.equal(selected.RAVRADAR_USERDATA_FINAL_REQUIRED,'true');
-  const old=await userdataSelection({latestVersion:'20261010120000'});
-  assert.equal(old.RAVRADAR_USERDATA_FINAL_REQUIRED,'false');
+  // Superseded old120000 scope cannot omit the actual userdata predecessor.
+  await assert.rejects(userdataSelection({latestVersion:'20261010120000'}),/explicit.*opt-in/);
   const result=await userdataFinalFixture();assert.equal(result.error,null,result.error?.stack);
   assert.equal(result.calls.length,3);assert.ok(result.calls.every(call=>call.command==='node'));
   assert.deepEqual(result.calls[0].args,['scripts/prepare-cloudflare-trip-storage.mjs','--existing-owner-export-upgrade-plan']);
