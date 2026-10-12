@@ -9,6 +9,7 @@ export const PULL_REQUEST_SOURCE_JOB = 'Source validation and release gate';
 export const PULL_REQUEST_SOURCE_STEPS = Object.freeze([
   'Require exact pull-request source head',
   'Validate source contracts and release governance',
+  'Validate native PostgreSQL checkpoint CAS on artificial data only',
   'Require validated source tree to remain unchanged',
   'Upload tree-content source validation proof',
 ]);

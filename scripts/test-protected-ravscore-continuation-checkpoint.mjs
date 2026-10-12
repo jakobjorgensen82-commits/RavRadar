@@ -362,6 +362,30 @@ const rpcFailureIncludes = pattern => error => {
   return true;
 };
 
+
+// Native PostgreSQL is a separate mandatory Linux source leaf, never a
+// MemoryCentral/Windows representation proof. Reuse these exact 673 builders
+// and the normal checkpoint saver; do not run the simulated RPC tests here.
+if (process.argv.includes('--native-postgres')) {
+  try {
+    const { runNativeCheckpointSqlComparison } =
+      await import('./lib/checkpoint-cas-native-postgres.mjs');
+    const report = await runNativeCheckpointSqlComparison({
+      repositoryRoot: path.resolve('.'), sourceDocumentAt, atHour,
+      saveCheckpoint: saveRavScoreContinuationCheckpoint,
+    });
+    console.log(JSON.stringify(report));
+  } catch (error) {
+    const category = /^NATIVE_POSTGRES_[A-Z0-9_]+$/.test(error?.message ?? '')
+      ? error.message : error?.code === 'ERR_ASSERTION'
+        ? 'NATIVE_POSTGRES_ASSERTION_FAILED' : 'NATIVE_POSTGRES_UNKNOWN_FAILURE';
+    console.error(JSON.stringify({ kind: 'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',
+      sqlProof: false, category }));
+    process.exitCode = 1;
+  }
+  process.exit(process.exitCode ?? 0);
+}
+
 const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ravscore-protected-checkpoint-'));
 const sourcePath = path.join(tempRoot, 'source.json');
 const localCheckpointPath = checkpointPathFor('local');

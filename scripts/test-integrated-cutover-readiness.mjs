@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -49,11 +50,12 @@ const EXACT_PREDECESSOR_CONTINUATION_HASH =
   '46683362ec6b69835695db375f7de976a8dd0a75b7367a27e2854b653d73e0ab';
 
 await inspectMigrationSources();
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 45,
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 46,
   'The active backend must preserve every predecessor, storage security and the exact checkpoint bridge');
 assert.equal(LATEST_RAVSCORE_BINDING_MIGRATION.version, '20260920220000');
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-2).version, '20261005000000');
-assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261010130000');
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-3).version, '20261005000000');
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-2).version, '20261010130000');
+assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261012200000');
 
 const integratedMigration = await fs.readFile(
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
@@ -374,6 +376,7 @@ const unicodeList = `
  20261004190000    │                  │ 2026-10-04 19:00:00
  20261005000000    │                  │ 2026-10-05 00:00:00
  20261010130000    │                  │ 2026-10-10 13:00:00
+ 20261012200000    │                  │ 2026-10-12 20:00:00
 `;
 assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260826', remote: '20260826' },
@@ -422,6 +425,7 @@ assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20261004190000', remote: null },
   { local: '20261005000000', remote: null },
   { local: '20261010130000', remote: null },
+  { local: '20261012200000', remote: null },
 ]);
 
 // Captured verbatim from backend readiness run 34333553305 with Supabase CLI 2.117.0.
@@ -479,6 +483,7 @@ const currentFirstInstallList = `${capturedFirstEightInstallList}
    \`20261004190000\` | \` \`    | \`2026-10-04 19:00:00\`
    \`20261005000000\` | \` \`    | \`2026-10-05 00:00:00\`
    \`20261010130000\` | \` \`    | \`2026-10-10 13:00:00\`
+   \`20261012200000\` | \` \`    | \`2026-10-12 20:00:00\`
 `;
 assert.deepEqual(parseSupabaseMigrationList(currentFirstInstallList),
   REQUIRED_CUTOVER_MIGRATIONS.map(item => ({ local: item.version, remote: null })));
@@ -612,6 +617,7 @@ await assert.rejects(
        20261004190000 | | pending
        20261005000000 | | pending
        20261010130000 | | pending
+       20261012200000 | | pending
     `,
     dryRunText: currentFirstInstallDryRun,
   }),
@@ -666,6 +672,7 @@ const appliedList = `
  20261004190000 | 20261004190000 | now
  20261005000000 | 20261005000000 | now
  20261010130000 | 20261010130000 | now
+ 20261012200000 | 20261012200000 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
@@ -738,9 +745,26 @@ try {
     helperRun.stderr || helperRun.stdout || helperRun.error?.message);
   assert.match(
     helperRun.stdout,
-    /exactly 20261010130000_owner_export_origin_bound_successor.sql/,
+    /exactly 20261012200000_checkpoint_cas_single_projection_successor.sql/,
     'the live code-only helper must admit exactly the current checkpoint bridge',
   );
+  // Keep exercising the previous userdata opt-in refusal through the real
+  // helper. The implementation successor must not permit replaying that
+  // binding migration, even when its existing opt-in is supplied.
+  await fs.writeFile(migrationListPath,
+    `Local | Remote | Time (UTC)\n${REQUIRED_CUTOVER_MIGRATIONS.map((item, index) =>
+      `${item.version} | ${index < REQUIRED_CUTOVER_MIGRATIONS.length - 2 ? item.version : ''} | state`).join('\n')}`);
+  await fs.writeFile(dryRunPath,
+    `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n${REQUIRED_CUTOVER_MIGRATIONS.slice(-2).map(item => ` • ${item.filename}`).join('\n')}\nFinished supabase db push.`);
+  const refusedReplay = spawnSync(process.execPath, [
+    path.resolve('scripts/verify-code-only-migration-plan.mjs'),
+    '--migration-list', migrationListPath, '--dry-run', dryRunPath,
+    '--migrations-directory', path.resolve('supabase/migrations'),
+    '--require-prewrite-gate',
+  ], { encoding: 'utf8', env: helperEnvironment });
+  assert.equal(refusedReplay.status, 1);
+  assert.match(refusedReplay.stderr, /only the exact latest required integrated migration/);
+  assert.equal(refusedReplay.stdout, '');
   for (const optIn of [undefined, 'false']) {
     const rejectedEnvironment = { ...helperEnvironment };
     delete rejectedEnvironment.RAVRADAR_USERDATA_UPGRADE_OPT_IN;
@@ -845,6 +869,7 @@ try {
  20261004190000 │ │ pending
  20261005000000 │ │ pending
  20261010130000 │ │ pending
+ 20261012200000 │ │ pending
  `;
   const hydrated = await hydrateTemporaryRemoteMigrationHistory({
     workdir: isolatedWorkdir,
@@ -903,6 +928,7 @@ try {
  20261004190000 │ │ pending
  20261005000000 │ │ pending
  20261010130000 │ │ pending
+ 20261012200000 │ │ pending
     `,
   }), /unknown post-cutover migration 20260830/);
 } finally {
@@ -964,6 +990,45 @@ await assert.rejects(buildIntegratedCutoverReadiness('short', {
 const expectedPolicy = await expectedTripBindingPolicy();
 const expectedActiveAdmissionPolicy = await expectedTripActiveAdmissionPolicy();
 const expectedCheckpointContract = await expectedCheckpointCasContract();
+
+// The normal hashed readback takes exactly the new CAS body, never an expected
+// hash override; the other twelve immutable function bodies stay unchanged.
+const singleProjectionMigration = await fs.readFile(path.resolve(
+  'supabase/migrations/20261012200000_checkpoint_cas_single_projection_successor.sql'), 'utf8');
+function checkpointSqlBody(source, name) {
+  const start = source.indexOf(`create or replace function public.${name}(`);
+  assert.ok(start >= 0);
+  const from = source.indexOf('as $$', start) + 'as $$'.length;
+  return source.slice(from, source.indexOf('$$;', from)).replace(/\r\n?/g, '\n').trim();
+}
+const oldCasBody = checkpointSqlBody(checkpointMigration, 'ravradar_ravscore_checkpoint_cas');
+const newCasBody = checkpointSqlBody(singleProjectionMigration, 'ravradar_ravscore_checkpoint_cas');
+assert.notEqual(newCasBody, oldCasBody);
+assert.ok(expectedCheckpointContract.definition.includes(`-- cas-function --\n${newCasBody}\n-- checkpoint-history-exclusion --`));
+assert.ok(!expectedCheckpointContract.definition.includes(oldCasBody));
+assert.equal(expectedCheckpointContract.sha256,
+  createHash('sha256').update(expectedCheckpointContract.definition).digest('hex'));
+assert.equal((singleProjectionMigration.match(/create or replace function /g) || []).length, 1);
+assert.match(singleProjectionMigration, /set statement_timeout = '55s'/);
+assert.match(singleProjectionMigration, /from public, anon, authenticated/);
+assert.match(singleProjectionMigration, /to service_role/);
+assert.match(newCasBody, /elsif public\.ravradar_ravscore_checkpoint_predecessor_payload_valid/);
+for (const projection of ['userdata', 'water_level', 'owner_current', 'cp_close', 'top20']) {
+  assert.equal((newCasBody.match(new RegExp(`public\\.ravradar_ravscore_checkpoint_${projection}_predecessor_projection\\(`, 'g')) || []).length, 1);
+}
+for (const unchangedName of [
+  'ravradar_ravscore_checkpoint_canonical_time',
+  'ravradar_ravscore_checkpoint_has_forbidden_key',
+  'ravradar_ravscore_checkpoint_integrated_state_valid',
+  'ravradar_ravscore_checkpoint_candidate_state_valid',
+  'ravradar_ravscore_checkpoint_payload_valid',
+  'ravradar_ravscore_checkpoint_predecessor_payload_valid',
+  'version_admin_document',
+  ...['userdata', 'water_level', 'owner_current', 'cp_close', 'top20']
+    .map(name => `ravradar_ravscore_checkpoint_${name}_predecessor_projection`),
+]) assert.ok(expectedCheckpointContract.definition.includes(checkpointSqlBody(checkpointMigration, unchangedName)));
+// Source/readback routing only: these assertions are NOT native PostgreSQL,
+// equality/race/timeout or hosted publish evidence.
 assert.equal(expectedPolicy.definition, expectedPolicy.definition.trim());
 assert.equal(expectedActiveAdmissionPolicy.definition,
   expectedActiveAdmissionPolicy.definition.trim());
