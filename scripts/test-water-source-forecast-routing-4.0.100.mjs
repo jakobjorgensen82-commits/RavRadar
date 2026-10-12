@@ -752,3 +752,97 @@ assert.ok(compareRavScoreBestTimeCandidates(candidate(routedTieHourly[0]),candid
 assert.equal(compareRavScoreBestTimeCandidates(candidate(routedTieHourly[0]),candidate(routedTieHourly[1]),'beach')<0,true,
   'Beach timing remains earliest-at-equal-score, not a water-level bonus.');
 console.log('OK: målestationer og DMI-prognosepunkter leverer samme DKSS-femdøgnsformat, kan afstandsinterpoleres og styrer zoneprognosen.');
+
+// Own synthetic native-shaped SOURCE frames: derive T+3 after the normal
+// active/donor selection, not from a bank-local cached trend. No live data.
+{
+  const at='2026-08-05T06:00:00.000Z',future='2026-08-05T09:00:00.000Z';
+  const generation='2026-08-05T06:02:00Z',oldRun='2026-08-05T00:00:00Z';
+  const source={sourceKey:'tidewater:SPLIT-SYNTHETIC',stationId:'SPLIT-SYNTHETIC',
+    name:'Own synthetic source',sourceType:'forecast-point',point:[10,56]};
+  const entity='SOURCE::'+source.sourceKey;
+  const frames=Object.fromEntries(Array.from({length:41},(_,i)=>{
+    const time=new Date(Date.parse(at)+i*3*3600000).toISOString();
+    return [time,dmiWaterSourceFixture(source,time,5+6*i,oldRun)];
+  }));
+  const complete={generatedAt:generation,timeStrideHours:3,zones:{[entity]:{hourly:frames}}};
+  const partial={...complete,zones:{[entity]:{hourly:{[at]:structuredClone(frames[at])}}}};
+  const originalInputs=JSON.stringify({complete,partial});
+  const fullIndex=buildWaterSourceForecastIndex([source],complete,generation);
+  const oldSourcePack=await packWaterSourceForecastContinuity(fullIndex,at);
+  const retained=await unpackWaterSourceForecastContinuity(oldSourcePack,at);
+  const sourceIdentity={entityId:entity,parentZoneId:entity,entityType:'water-level-source',
+    samplingContext:'water-level-source-point',samplingPoint:source.point};
+  const feature={properties:{id:'SPLIT-SYNTHETIC-ZONE',name:'Own synthetic zone',
+    dataPoint:[10,56],coastLine:[[10,55.9],[10,56.1]],onshoreDirectionDeg:0}};
+  const testPart={partId:'SPLIT-SYNTHETIC-ZONE-P1',zoneId:feature.properties.id,waterPoint:[10,56]};
+  const central={zones:{[testPart.zoneId]:{enabled:true,requireAll:true,
+    stations:[{sourceKey:source.sourceKey}]}}};
+  const direct=[{time:at,waterLevelCm:null,waterLevelTrendCm3h:null,
+    windSpeedMps:4,waveHeightM:0.2,currentSpeedMps:0.1,waterTemperatureC:12}];
+  const project=sourceIndex=>{
+    const inputSnapshot=JSON.stringify([direct,[...sourceIndex]]);
+    const target={zones:{[testPart.zoneId]:{current:{},forecast:{hourly:structuredClone(direct)},waterLevel:{}}}};
+    const store={zones:{[testPart.zoneId]:{hourly:structuredClone(direct)}}};
+    applyWaterSourceRouting({features:[feature],output:target,forecastStore:store,
+      sources:[source],index:sourceIndex,routing:central,haversineKm:()=>0,generatedAt:generation});
+    const partResult=applyVerifiedWaterSourceRoutingToPartHourly({part:testPart,parentFeature:feature,
+      hourly:structuredClone(direct),sources:[source],index:sourceIndex,routing:central,haversineKm:()=>0});
+    const parent=target.zones[testPart.zoneId].forecast.hourly[0],partRow=partResult.hourly[0];
+    assert.equal(parent.waterLevelCm,5);assert.equal(partRow.waterLevelCm,5);
+    for(const field of ['windSpeedMps','waveHeightM','currentSpeedMps','waterTemperatureC'])
+      assert.equal(partRow[field],direct[0][field],'SOURCE trend must not alter '+field);
+    assert.equal(JSON.stringify([direct,[...sourceIndex]]),inputSnapshot,
+      'Routing does not rewrite original SOURCE rows, cached trends or direct PART input');
+    return {parent:parent.waterLevelTrendCm3h,store:store.zones[testPart.zoneId].hourly[0].waterLevelTrendCm3h,
+      current:target.zones[testPart.zoneId].current.waterLevelTrendCm3h,part:partRow.waterLevelTrendCm3h};
+  };
+  const expected={parent:6,store:6,current:6,part:6};
+  assert.deepEqual(project(fullIndex),expected,'Complete single-bank normal SOURCE trend');
+  for(const options of [{protectedBulkCache:complete},{historicalBulkCache:complete},
+    {retainedSourceIndex:retained}]) {
+    const union=buildWaterSourceForecastIndex([source],partial,generation,options);
+    const current=union.get(source.sourceKey).hourly.find(row=>row.time===at);
+    const next=union.get(source.sourceKey).hourly.find(row=>row.time===future);
+    assert.equal(current.waterLevelTrendCm3h,null,'The original bank-local cached null is preserved');
+    assert.equal(current.waterLevelCm,5);assert.equal(next.waterLevelCm,11);
+    for(const row of [current,next]) assert.ok(verifiedDmiForecastSource(
+      row.sources.waterLevel,'waterLevel',row.time,sourceIdentity));
+    for(const field of ['entityId','collection','modelRun','gridDefinitionSha256'])
+      assert.equal(current.sources.waterLevel[field],next.sources.waterLevel[field]);
+    assert.deepEqual(current.sources.waterLevel.gridPoint,next.sources.waterLevel.gridPoint);
+    assert.deepEqual(project(union),expected,'Comparable split-bank endpoints must derive the trend');
+    const storedUnion=await packWaterSourceForecastContinuity(union,at);
+    const coldIndex=buildWaterSourceForecastIndex([source],{...partial,zones:{}},generation,{
+      retainedSourceIndex:await unpackWaterSourceForecastContinuity(storedUnion,at)});
+    assert.deepEqual(project(coldIndex),expected,'Normal saved SOURCE import keeps the comparable trend usable');
+  }
+  const unknown={parent:null,store:null,current:null,part:null};
+  assert.deepEqual(project(buildWaterSourceForecastIndex([source],partial,generation)),unknown,
+    'A finite scalar without T+3 support is not a known trend');
+  for(const [label,change] of [
+    ['mixed run',proof=>{proof.modelRun='2026-08-05T03:00:00Z';
+      proof.leadTimeHours=(Date.parse(proof.nativeValidTime)-Date.parse(proof.modelRun))/3600000;}],
+    ['mixed grid',proof=>{proof.gridDefinitionSha256='c'.repeat(64);}],
+    ['mixed grid point',proof=>{proof.gridPoint=[10.01,56];proof.distanceKm=0.63;}],
+    ['mixed collection',proof=>{proof.collection='dkss_nsbs';}],
+    ['false SOURCE identity',proof=>{proof.entityId='SOURCE::OTHER';proof.parentZoneId='SOURCE::OTHER';}],
+    ['unsupported future collection',proof=>{proof.collection='dkss_not_real';}],
+  ]) {
+    const alternative=structuredClone(complete);
+    for(const row of Object.values(alternative.zones[entity].hourly))change(row.sources.waterLevel);
+    const alternativeBefore=JSON.stringify(alternative);
+    assert.deepEqual(project(buildWaterSourceForecastIndex([source],partial,generation,{
+      protectedBulkCache:alternative})),unknown,label+' cannot produce a split-series trend');
+    assert.equal(JSON.stringify(alternative),alternativeBefore,'Alternative native-shaped frames are unchanged');
+  }
+  // Selection happens first. Do not reach behind a selected new-run T+3 to
+  // manufacture a trend from the old protected pair.
+  const preferredFuture=dmiWaterSourceFixture(source,future,99,'2026-08-05T03:00:00Z');
+  const newerOnly={...complete,zones:{[entity]:{hourly:{[future]:preferredFuture}}}};
+  const selected=buildWaterSourceForecastIndex([source],newerOnly,generation,{protectedBulkCache:complete});
+  assert.equal(selected.get(source.sourceKey).hourly.find(row=>row.time===future).waterLevelCm,99);
+  assert.deepEqual(project(selected),unknown,'Selected new run keeps priority over an old comparable pair');
+  assert.equal(JSON.stringify({complete,partial}),originalInputs,'All original frame bytes/values remain unchanged');
+}
+console.log('SOURCE_SPLIT_BANK_T3: complete and selected same-series endpoints remain usable after normal save/import; mixed, false and missing support stays null.');

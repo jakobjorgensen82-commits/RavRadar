@@ -1,3 +1,15 @@
+# Aktuel 4.0.574 – bankoverskridende T+3 og åben DMI-kapacitet, 2026-10-12
+
+Den normale SOURCE-routing krævede en bank-lokal tre-timers trend, selv når T og T+3 allerede var individuelt verificeret og forenet i det routede indeks. Den eksisterende måltest reproducerer den konkrete afvisning. Lokal rettelse bruger den kvalificerede aktuelle vandstand og det kvalificerede T+3-punkt samlet; samme kilde, samling, run og grid, hver rækkes gyldige originalbinding og fremtidige kildeadmission kræves fortsat. Normal måltest består også for beskyttet, historisk, retained og gemt/koldt genindlæst bank. Manglende eller blandede beviser, falsk binding og manglende kildevægt afvises uden renormalisering.
+
+Rettelsen er ikke produktionsleveret, og den beviser ikke alene årsagen til alle manglende offentlige T+3-tal. Syvzonernes faktiske nye kildeafgrænsning og strømhukommelse, Fur og fuld DMI-kapacitet forbliver åbne.
+
+Den afgrænsede DMI-statistikrettelse er kildegennemgået og nu lokalt integreret uden V1-testhunkene. Den fjerner gentagne diagnostikopslag, ikke numeriske målinger eller provenance. Første inventars 22 felter/rækkefølge, messagesSeen, caps 120/240 og eksisterende klassifikation bevares. Produkt, normal måltest og native-barn består syntakskontrollen; positiv native-prøve efter rettelsen er endnu ikke udført.
+
+Fire normale Linux-læseleaseprøver er faktisk bestået på både 9d4a291a og 5a60d665. Den korrigerede femte statistikprøve gav reel baseline-RED i kontrol 38229144079/job 114744006345 på 5a60d665, afsluttet med fejl 12. oktober kl. 11.30.06 dansk tid: seks plus seks opslag mod krævede tre plus nul. Originaler, output, inventarer og feltrækkefølge samt samme filhåndtag, EOF og frigivelse bestod før tællerafvisningen. Dette er ikke længere en aktiv eller ubevist kontrol. Det nye heads native-PASS og fulde præcise kildekontrol mangler fortsat; tællerbevis er ikke målt CPU-tid eller løsning af nationalt throughput.
+
+PR #578 er kildeverificeret på bb926b5f, ikke merget eller leveret. Den delvise nye DMI-generation og den øvrige revision lukkes ikke af uploadrettelsen eller lokale måltests. Samme 4.0.574; I68/C66/T12, parser 20/parametermapping 4/grid 9, processing-signatur, storage-ABI, kildeprioritet, scoreformel, adminpunkter, geometri og gamle originaler bevares. Producentens reviewinventar følger reelle kodebytes uden historisk ommærkning. Ingen produktion under aktiv writer, SQL-installation, nye nøgler/planer eller ekstra vejrhentning. Alle fem mål er åbne; gamle afventende notater nedenfor bevares som kronologisk historik.
+
 # Aktuel 4.0.574 upload-opfølgning – 2026-10-12
 
 Den påviste recovery-fejl kan godkende en samtidig matchende pointer, selv om arkivets upload eller bytekontrol fejlede. Den lokale rettelse åbner kun denne recovery efter fuld upload og verificeret genlæsning. Første fejl, gyldige B/S-originaler og referencekontroller bevares; ingen oprydning følger et afvist arkiv. Gamle positive mistet PATCH-svar-forløb ændres ikke.

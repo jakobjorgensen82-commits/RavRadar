@@ -1,3 +1,18 @@
+# Aktuel 4.0.574 – SOURCE-trend og DMI-opfølgning, 2026-10-12
+
+- [x] Reproducér bankoverskridende T+3-afvisning gennem den eksisterende normale SOURCE-måltest, ikke en erstatningskalder.
+- [x] Lokal rettelse og PASS for aktiv/beskyttet/historisk/retained/gemt-koldt kildebank; eksakt identitet, originalbinding, fremtidig kildeadmission og ingen renormalisering bevares. Blandede, manglende og falske beviser afvises fortsat.
+- [x] Uafhængig kildegennemgang af DMI-statistikrettelsen: numberOfMissing/minimum/maximum bruges ikke af klassifikation, numeriske data eller provenance. Første 22-feltsinventar, rækkefølge, messagesSeen, caps 120/240 og API bevares.
+- [x] Integrér kun DMI-produkt-hunkene lokalt; V1-testen er ikke tilføjet. Produkt, normal måltest og native-barn består syntakskontrollen, ikke en positiv native-prøve efter rettelsen.
+- [x] Faktisk PASS for de fire normale Linux-prøver med samme åbne fil og læselease på både 9d4a291a og 5a60d665; den faste normale kildegruppe inkluderer nu native-provenance-prøven.
+- [x] Reel baseline-RED i den femte statistikprøve efter korrigerede egne input: kontrol 38229144079/job 114744006345 på 5a60d665 sluttede med fejl 12. oktober kl. 11.30.06 dansk tid. Faktisk seks plus seks statistikopslag mod krævede tre plus nul, efter beståede original-, output-, inventar-/rækkefølge-, filhåndtags-, EOF- og frigivelseskontroller.
+- [ ] Positiv normal native-prøve efter produktrettelsen og fuld præcis kildekontrol af det nye head. Antal opslag er ikke CPU-tids- eller nationalt kapacitetsbevis.
+- [x] PR #578's præcise kildekontrol på bb926b5f består.
+- [ ] Sikker merge efter afsluttet writer, nye opfølgningers egen præcise kildekontrol, levering og faktisk generations-/produktionseffekt. PR #578 er fortsat ikke merget eller leveret.
+- [ ] Fuld ny DMI-generation, national kapacitet, den samlede revision, brugerdata, Spørg RavRadar og dokumenteret selvstændig drift uden Codex.
+
+Samme 4.0.574, uændret I68/C66/T12, parser 20/parametermapping 4/grid 9, processing-signatur, storage-ABI, kildeprioritet, scoreformel, adminpunkter, geometri og historiske originaler. Producentens kildeinventar følger faktiske ændrede bytes uden ommærkning af historik. Ingen produktion under aktiv writer, SQL-installation, nye nøgler/planer eller ekstra vejrhentning. Ældre afventende status nedenfor er historik, hvor nyere dokumenteret evidens erstatter den.
+
 # Aktuel 4.0.574 opfølgning – verificeret privat upload, 2026-10-12
 
 - [x] Afgræns recovery efter mistet pointer-svar til fuldt uploadet og byteverificeret arkiv; tidligere upload-/download-/integritetsfejl må ikke blive succes ved pointermatch.
