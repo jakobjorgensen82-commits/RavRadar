@@ -1,4 +1,8 @@
-# Aktuelt samlet mål – 4.0.556-kandidat og fem åbne leveringsspor
+# Aktuelt samlet mål – 4.0.576-kandidat og fem åbne leveringsspor
+
+Opfølgning 12. oktober: Arbejd kontinuerligt via ejerautoriserede afgrænsede delegationer med konkrete leverancer, ikke testspiraler. Ejerens krav om hurtig færdiggørelse erstatter en ventende 21.-oktoberplan; ingen ny dato loves. Den samlede CURRENT-only strøm-/originalkandidat er implementeret lokalt, jf. DEC-0294, men præcis kilde-/native-kontrol, faktisk no-loss, konkrete eksterne myndigheder og offentlig levering mangler. Den foregående lease-opfølgning er kildeverificeret/merget, og almindelig cron kører; ingen ekstra manuel kørsel er tilladt på forbrugte engangsordrer.
+
+Næste konkrete strømleverance er én sammenhængende source-PR med normal kildekontrol, dernæst kun sikre godkendte installationer og faktisk ny generation efter writerophør. Den separate revision fortsætter isoleret med normale SOURCE-/gemnings-/publisherkaldere og fysisk procesejerskab. Brugerdata-/assistentkandidaten er frosset særskilt, ikke retagget til strømrettelsen. Alle fem spor er åbne; lokale tests eller Codex-overvågning er ikke selvstændig drift. Ældre målstatus nedenfor er historik, hvor den er erstattet her.
 
 Færdiggør RavRadar med dokumenteret selvstændig drift uden Codex omkring
 21. oktober 2026. Ejeren kræver parallelle afgrænsede delegationer på strømdata

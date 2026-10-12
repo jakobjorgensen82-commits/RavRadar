@@ -1,10 +1,26 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.574
+**Håndbogsversion:** 4.0.576
 
-Den lokale 4.0.574 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
-og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
-Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
+Den lokale 4.0.576 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og `modelBundleSha256=5c3673a2fe7f4ddf4785ad993350107c048c7e5b051440baff5fef3ffb461ef4` over 71 kanonisk normaliserede transitive implementeringsfiler.
+Den fysiske model er uændret; kildebindingen følger den reelle strømrettelse. Dette er en lokal kandidat, ikke SQL-installation eller nyt offentligt leveringsbevis. Historiske originaler ommærkes ikke.
+
+Inaktiv Candidate G har fortsat `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og den reelle lokale `modelBundleSha256=b166f4d27ce07d5b513c8beb6c5a0881878938d06a083a40e3c95240584a692b` over 69 transitive filer. De deklarerede forbrugere og `version.json.releaseContract.modelBindings` følger denne lokale kilde, ikke en ny offentlig aktivering. Continuation er `dea864bfdbd02705e2029cbe9075b6aa12dec05ebe3eb8621f100205e8856546`; storage-ABI og offentlig kontrakt er uændrede. Daterede ældre bindingstal nedenfor er historiske originaler og bevares.
+
+## 89.211 Strømpunkt, strømdata og score skal hænge sammen
+
+En pil er en visning af data, ikke det, scoren regnes ud fra. Derfor er det ikke tilstrækkeligt at skjule en pil på land. Strømkoordinaten skal fortolkes rigtigt fra den originale DMI-fil, og den samme dokumenterede kilde og time skal følge cache, historik, strømhukommelse og scoreberegning.
+
+Den lokale 4.0.576 retter kun strømfelternes GRIB1-gitter og native indeks. Gyldige originale værdier og nulstrøm bevares. Vind, bølger, vandstand og vandtemperatur beholder deres hidtidige fortolkning. Der kommer ikke flere eller større pile, og administratorens punkter, geometri, kildeprioritet og scoreformel ændres ikke. Fremtidige scorer kan ændres, når de bruger den korrekt fortolkede strøm; tidligere offentliggjort scorehistorik og originale pakker bevares.
+
+Gammel cachefortolkning kan ikke vinde over ny strømfortolkning blot ved at få en ny etiket. En særskilt overgang kontrollerer hele de originale tilstande og de forseglede filbytes, før en separat efterfølger dannes. Originalens filantal, størrelser og hashes skal passe, og en manglende valgfri timepakke opfindes ikke. Overgangen gælder kun en strengt nyere almindelig time; kode-only og gammel checkpoint-fallback afviser den.
+
+Normale lokale prøver bevarer egne kontrollerede data for 673 kystdele og 118 timer og afviser korrupte originaler. Lagringens nye SQL-kilde og fulde genlæsningskontrol er forberedt, men ikke installeret. De 54 gamle migrationsfiler bevares. Præcis Linux-/GitHub-kontrol, faktisk bevarelse af de autentificerede originaler, nødvendige konkrete installationstilladelser, en ny normal vejrgeneration og offentlig effekt mangler stadig. Lokal kontrol er ikke levering. Den gamle centrale model-/profilbinding bevares indtil den kontrollerede offentlige afslutning; en lokal kopi er ikke en central ændring.
+
+De syv kystzoners dkss_lf-undtagelse er fortsat kun vandstand. Strøm, dens tilhørende hukommelse og vandtemperatur fra dkss_lf forbliver udelukket dér, mens Limfjordens egne zoner beholder relevante data. Central SOURCE-interpolation og T+3 bevares; manglende timer får ingen fundne værdier eller automatisk vægtudligning. Den separate store revision er stadig isoleret og inaktiv. Brugerdata, Spørg RavRadar og dokumenteret drift uden Codex er fortsat åbne leverancer. Se DEC-0294.
+
+Den foregående rettelse af læsning fra samme åbne vejrfil har bestået præcis Linux-kildekontrol og er lagt på main. Ældre afventende status i kapitel 89.210 nedenfor er historik; dette er ikke bevis for den nye strømrettelses produktionseffekt.
 
 ## 89.210 Den samme vejrfil skal læses og kontrolleres
 

@@ -13,6 +13,7 @@ import {
 } from '../js/core/ravscore-model-contract.js';
 import {
   assertOwnerCurrentOriginalExpectation,
+  assertCurrentGridSamplingOriginalExpectation,
 } from './lib/bounded-conditions-predecessor-transition.mjs';
 
 export const PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY = Object.freeze({
@@ -631,8 +632,14 @@ export async function verifyPrivateProductionRuntimeBundle({
   if (!isWithin(context.realPrivateRoot, realBundle)) {
     throw new Error('Private runtime bundle escapes through a symlink');
   }
-  const original = Object.hasOwn(expected, 'ownerCurrentDomainTransition')
-    ? assertOwnerCurrentOriginalExpectation(expected) : null;
+  const gridOriginalRequired = Object.hasOwn(expected, 'currentGridSamplingTransition');
+  if (gridOriginalRequired && Object.hasOwn(expected, 'ownerCurrentDomainTransition')) {
+    throw new Error('Private runtime cannot combine distinct original transitions');
+  }
+  const original = gridOriginalRequired
+    ? assertCurrentGridSamplingOriginalExpectation(expected)
+    : Object.hasOwn(expected, 'ownerCurrentDomainTransition')
+      ? assertOwnerCurrentOriginalExpectation(expected) : null;
   const { manifest, validated } = await readAndValidateManifest(realBundle, original);
   validateExpectations(validated, expected, original);
   const nowMs = Date.parse(canonicalTime(now, 'Private runtime verification time'));

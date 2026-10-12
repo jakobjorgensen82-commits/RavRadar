@@ -1,5 +1,7 @@
 # DEC-0293 – Landsdækkende landkontrol for strømpile
 
+Opfølgning 12. oktober: Den særskilte lokale numeriske CURRENT-only rettelse og originalovergang er samlet i 4.0.576, se DEC-0294. Gamle diagnosetilladelser og daterede kandidatstatusser nedenfor er historik og kan ikke genbruges. Visningsrettelsen består; fuld numerisk/offentlig effekt er fortsat åben.
+
 - **Status:** Visningsrettelse produktionsleveret og målrettet browserverificeret; numerisk diagnose åben
 - **Ejerordre:** 8. oktober 2026: Rettelsen skal gælde hele landet og også hidtil usete tilfælde.
 - **Omfang:** Kortets præsentation, ikke kilders fysiske gyldighed eller RavScore.

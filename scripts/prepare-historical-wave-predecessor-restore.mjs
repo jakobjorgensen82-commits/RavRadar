@@ -13,6 +13,8 @@ import {
   BOUNDED_CONDITIONS_PREDECESSOR_POLICY,
   buildBoundedConditionsPredecessorRestoreExpectation,
   buildOwnerCurrentOriginalRestoreExpectation,
+  buildCurrentGridSamplingOriginalRestoreExpectation,
+  CURRENT_GRID_SAMPLING_PREDECESSOR_POLICY,
   OWNER_CURRENT_DOMAIN_PREDECESSOR,
   OWNER_WATER_LEVEL_ONLY_PREDECESSOR,
 } from './lib/bounded-conditions-predecessor-transition.mjs';
@@ -86,7 +88,14 @@ export async function prepareHistoricalWavePredecessorRestore(options) {
       currentBinding: ravScoreModelBinding(),
       currentContractHashes: await privateRuntimeContractHashes(),
       now: options.now ?? new Date().toISOString() });
-  const expectation = historicalExpectation ?? boundedConditionsExpectation ?? ownerCurrentExpectation;
+  const currentGridSamplingExpectation = historicalExpectation || boundedConditionsExpectation
+    || ownerCurrentExpectation ? null
+    : await buildCurrentGridSamplingOriginalRestoreExpectation({
+      sourceDescription, targetReferenceAt: options.targetReferenceAt,
+      now: options.now ?? new Date().toISOString(),
+    });
+  const expectation = historicalExpectation ?? boundedConditionsExpectation ?? ownerCurrentExpectation
+    ?? currentGridSamplingExpectation;
   if (!ownerCurrentExpectation
     && ravScoreModelBinding().modelBundleSha256 !== OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding.modelBundleSha256
     && [OWNER_CURRENT_DOMAIN_PREDECESSOR.modelBinding.modelBundleSha256,
@@ -95,15 +104,24 @@ export async function prepareHistoricalWavePredecessorRestore(options) {
     && sourceDescription.modelBinding?.modelBundleSha256 !== ravScoreModelBinding().modelBundleSha256) {
     throw new Error('Owner original generation no longer matches the exact approved binding bridge');
   }
+
+  if (!currentGridSamplingExpectation
+    && sourceDescription.modelBinding?.modelBundleSha256
+      === CURRENT_GRID_SAMPLING_PREDECESSOR_POLICY.sourceModelBinding.modelBundleSha256
+    && sourceDescription.modelBinding.modelBundleSha256 !== ravScoreModelBinding().modelBundleSha256) {
+    throw new Error('Current-grid original generation is not the exact reviewed native-grid SOURCE bridge');
+  }
   const transitionKind = historicalExpectation
     ? 'historical-wave-input'
     : boundedConditionsExpectation ? 'bounded-conditions-writer'
-      : ownerCurrentExpectation ? 'owner-current-domain-original' : '';
+      : ownerCurrentExpectation ? 'owner-current-domain-original'
+        : currentGridSamplingExpectation ? 'current-grid-sampling-original' : '';
   const sourceHead = historicalExpectation
     ? HISTORICAL_WAVE_INPUT_TRANSITION_POLICY.sourceHead
     : boundedConditionsExpectation
       ? BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceHead
-      : ownerCurrentExpectation ? ownerCurrentExpectation.sourceHead : '';
+      : ownerCurrentExpectation ? ownerCurrentExpectation.sourceHead
+        : currentGridSamplingExpectation ? currentGridSamplingExpectation.sourceHead : '';
   if (expectation) await atomicWriteJson(options.outputPath, expectation);
   await fs.appendFile(options.githubOutputPath, [
     `required=${expectation ? 'true' : 'false'}`,

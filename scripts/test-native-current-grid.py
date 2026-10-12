@@ -638,8 +638,49 @@ esac
                         report = audit.field_report(gid, collection, eccodes, producer)
                         self.assertGreater(report['candidateChecks'], 0)
                         self.assertEqual(report['nativeValidPoints'], ni * nj)
-                        for name in ('candidateIndexMismatches', 'candidateCoordinateMismatches', 'candidateValueMismatches'):
+                        for name in ('candidateIndexMismatches', 'candidateValueMismatches'):
                             self.assertEqual(report[name], 0)
+                        # The report compares against ecCodes' raw latitude array.
+                        # CURRENT candidates instead map the same native index to
+                        # the original declared endpoints. Verify that mapping
+                        # independently; do not change the diagnostic's meaning.
+                        native_values = eccodes.codes_get_array(gid, 'values')
+                        native_lats = eccodes.codes_get_array(gid, 'latitudes')
+                        native_lons = [((float(value) + 180) % 360) - 180
+                                       for value in eccodes.codes_get_array(gid, 'longitudes')]
+                        header_first_lat, header_last_lat = (float(eccodes.codes_get(gid, key)) for key in (
+                            'latitudeOfFirstGridPointInDegrees', 'latitudeOfLastGridPointInDegrees'))
+                        header_first_lon, header_last_lon = (((float(eccodes.codes_get(gid, key)) + 180) % 360) - 180
+                            for key in ('longitudeOfFirstGridPointInDegrees', 'longitudeOfLastGridPointInDegrees'))
+                        self.assertEqual(eccodes.codes_get(gid, 'scanningMode'), 64)
+                        probes = [dict(id=f'AUDIT::{r}::{c}',
+                                       coastType='limfjord' if collection == 'dkss_lf' else 'east',
+                                       lat=header_first_lat + r * (header_last_lat - header_first_lat),
+                                       lon=header_first_lon + c * (header_last_lon - header_first_lon))
+                                  for r in (.2, .5, .8) for c in (.2, .5, .8)]
+                        candidates = producer.valid_candidates_batch(gid, collection, probes)
+                        checked = native_coordinate_mismatches = 0
+                        for rows in candidates.values():
+                            for candidate in rows:
+                                index = candidate['index']
+                                self.assertIs(type(index), int)
+                                self.assertTrue(0 <= index < ni * nj)
+                                row, column = divmod(index, ni)
+                                expected_lat = header_first_lat + row * (header_last_lat - header_first_lat) / (nj - 1)
+                                expected_lon = header_first_lon + column * (header_last_lon - header_first_lon) / (ni - 1)
+                                self.assertAlmostEqual(candidate['latitude'], expected_lat, delta=1e-9)
+                                self.assertAlmostEqual(candidate['longitude'], expected_lon, delta=1e-9)
+                                self.assertEqual(candidate['value'], float(native_values[index]))
+                                native_coordinate_mismatches += (
+                                    abs(candidate['latitude'] - float(native_lats[index])) > 1e-9
+                                    or abs(((candidate['longitude'] + 180) % 360) - 180 - native_lons[index]) > 1e-9)
+                                checked += 1
+                        self.assertEqual(checked, report['candidateChecks'])
+                        self.assertEqual(report['candidateCoordinateMismatches'], native_coordinate_mismatches)
+                        if collection == 'dkss_lf':
+                            self.assertGreater(native_coordinate_mismatches, 0)
+                        else:
+                            self.assertEqual(native_coordinate_mismatches, 0)
                         self.assertLess(report['maximumLongitudeVsEndpointDegrees'], 1e-9)
                         if collection == 'dkss_lf':
                             self.assertEqual(report['nativePointsOutsideDeclaredLatitudeBounds'], 64 * ni)

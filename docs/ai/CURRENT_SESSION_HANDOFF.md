@@ -1,4 +1,8 @@
-# Lokal alarmrettelse – 2026-10-08 00.47 DK – ikke leveret
+# Aktuel lokal 4.0.576 – 12. oktober, ikke offentlig strømlevering
+
+Den samlede CURRENT-only strømfortolkning, originale cache-/historik-/scorekæde, typed restore, normal fuld originalmigrant og canonical/readback er samlet i eksisterende isoleret checkout; se DEC-0294 og privat checkpoint. De gamle originaler og frosne brugerdata-/assistentkandidater bevares. Præcis source/native-CI, konkret ny SQL/destination/teknisk metadataautoritet, autentificeret no-loss og ny offentlig effekt mangler. Foregående lease-opfølgning er kildeverificeret/merget, almindelig cron kører. Ingen aktiv writer må få productionændringer. Den separate store revision er isoleret/inaktiv; alle fem mål er åbne. Aktuel menneskelig delegation og hurtig konkret levering gælder; gamle 21.-oktoberstatusser og engangsordrer er ikke nye tilladelser.
+
+# Historik: lokal alarmrettelse – 2026-10-08 00.47 DK – ikke leveret
 
 En fuldt pagineret læsekontrol viser fire afsluttede fejlede almindelige
 vejrhentninger den7.oktober uden en tilsvarende alarmkørsel eller ejer-issue.

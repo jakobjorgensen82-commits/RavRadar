@@ -198,10 +198,20 @@ jobs:
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           import { isLatestUnpairedWeatherGeneration } from './scripts/protected-private-production-runtime.mjs';
+          import { buildCurrentGridSamplingOriginalRestoreExpectation }
+            from './scripts/lib/bounded-conditions-predecessor-transition.mjs';
           const source = JSON.parse(fs.readFileSync(
             process.env.RUNNER_TEMP + '/code-only-current-private-source.json', 'utf8'));
           if (isLatestUnpairedWeatherGeneration(source)) {
             throw new Error('The sealed 11Z/15Z weather pair must be recovered by the next normal weather run; use the binding-only workflow before it, not code-only deployment');
+          }
+          const currentGridOriginal = await buildCurrentGridSamplingOriginalRestoreExpectation({
+            sourceDescription: source,
+            targetReferenceAt: source.productionReferenceAt,
+          });
+          if (currentGridOriginal?.currentGridSamplingTransition
+            === 'EXACT_CURRENT_GRID_SAMPLING_ORIGINAL_RESTORE_V1') {
+            throw new Error('Current-grid source succession requires the next normal NEW-hour weather run; code-only deployment cannot install or publish its original archive bridge');
           }
           NODE
 

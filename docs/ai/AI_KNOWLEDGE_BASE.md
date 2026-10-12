@@ -1,4 +1,8 @@
-# Aktuel 4.0.556 – klientgrænser uden ny vejrbinding
+# Aktuel lokal 4.0.576 – strømfortolkning og fulde originaler
+
+DEC-0294 er aktuel kildebeslutning: kun CURRENT_U/V-gitter/native indeks og tilhørende kvalifikationer; scalarfelter/scoreformel/adminpunkter ændres ikke. Kilde-/modelbindingerne følger reelle nye bytes, mens gamle originaler valideres fuldt uden retag. Normale CURRENT/TARGET-restore, migrant, readback og syv mirrors er lokale. 54 gamle SQL-migrationer er uændrede. Præcis native/kilde-CI, konkrete nye installationsgrænser, autentificeret no-loss og produktionseffekt mangler; alle fem spor er åbne. Frosne 565/575 forbliver særskilte. Den tidligere lease-opfølgning er nu faktisk kildeverificeret/merget, ikke den nye koordinatrettelse. Private diagnoser og interne fejl må ikke føjes til Spørg RavRadars brugerrettede viden.
+
+# Historik: 4.0.556 – klientgrænser uden ny vejrbinding
 
 Den afgrænsede lokale kandidat retter kontosvar, turformularens oprindelige
 aktive tur, turens faktiske afleveringskvittering og ejerbundne uændrede genforsøg,

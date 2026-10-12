@@ -1,4 +1,8 @@
-# Lokal 4.0.574 DMI-opfølgning – samme åbne GRIB-fil gennem hele læsningen
+# 2026-10-12 – lokal 4.0.576 strøm-/originalkandidat
+
+Efter kildeverificeret lease-opfølgning og almindelig cronstart er CURRENT-only koordinat-/cache-/historik-/scorekæde, typed originalrestore/migrant og canonical/readback samlet lokalt. Historiske originaler, 54 gamle SQL-filer, fysisk model og administratorpunkter bevares. Source/native-CI, konkret ekstern myndighed, faktisk no-loss og offentlig effekt mangler. DEC-0294 er aktuel beslutning; alle fem mål er åbne. Isoleret revision og frossen 565/575 aktiveres ikke af denne status. Ingen ekstra vejrstart eller produktion under writer.
+
+# Historik: lokal 4.0.574 DMI-opfølgning – samme åbne GRIB-fil gennem hele læsningen
 
 Opfølgning 12. oktober: Den første præcise Linux-kildekontrol fejlede på en statisk forventning, som også krævede en selvstændig watchdog omkring den nye interne læseadapter. De syv normale download- og transaktionskald har fortsat deres eksisterende watchdog. Testrettelsen kræver adapterens præcise None-vagt, returnering og videresendte argumenter samt transaktionens samme ejede læser; ingen generel undtagelse gives. Den ene målrettede supervisorsuite består med 29 tests, herunder syv negative ændringer af kodekontrollen. De 27 øvrige gamle testmetoder er uændrede. Præcis ny Linux-kildekontrol, dokumenteret resultat for de fire leaseprøver og offentlig effekt afventes; den røde kontrol må ikke omgås.
 

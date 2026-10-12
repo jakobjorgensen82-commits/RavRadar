@@ -1570,6 +1570,30 @@ export function assertWaterLevelOnlyPredecessorState(state, samplingContextKey) 
   return state;
 }
 
+// Original validation only: the released current-grid predecessor keeps ITS
+// exact binding. No migration, repair, initialization or continuation admission.
+export function assertCurrentGridSamplingPredecessorState(state, samplingContextKey) {
+  const predecessor =
+    'ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb';
+  const physicalContract =
+    'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b';
+  if (!state || typeof state !== 'object' || Array.isArray(state)
+    || state.schemaVersion !== '6.0.0'
+    || RAVSCORE_STATE_SCHEMA_VERSION !== '6.0.0'
+    || state.modelBundleSha256 !== predecessor
+    || state.modelContractSha256 !== physicalContract
+    || RAVSCORE_MODEL_CONTRACT_SHA256 !== physicalContract
+    || typeof samplingContextKey !== 'string' || !samplingContextKey) {
+    throw new Error('Current-grid-sampling original has an incompatible predecessor binding');
+  }
+  const validated = validateIntegratedState(state, samplingContextKey, null, predecessor);
+  if (!validated || validated.stateV5MigrationApplied
+    || validated.historyBoundsRepairApplied || validated.canonicalState !== state) {
+    throw new Error('Current-grid-sampling original is not a canonical unrepaired predecessor state');
+  }
+  return state;
+}
+
 function integratedContext(initialState) {
   return initialState?.schemaVersion === RAVSCORE_STATE_SCHEMA_VERSION
     || initialState?.modelId === RAVSCORE_MODEL_ID;

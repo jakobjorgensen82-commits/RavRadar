@@ -385,3 +385,331 @@ try {
 }
 
 console.log('Bounded conditions predecessor transition: exact historical and water-only originals, rejection controls and source-identity retirement passed.');
+
+// One normal descriptor-routing/controlled-IO case. No authenticated B/S,
+// archive payload, native DMI or public/production effect is proved here.
+{
+  const { pathToFileURL } = await import('node:url');
+  const { createHash } = await import('node:crypto');
+  const normalScriptUrl = relative => pathToFileURL(path.resolve('scripts', relative)).href;
+  const [gridHelper, protectedRuntime, currentModel, candidateModel, privateWorkflow] = await Promise.all([
+    import(normalScriptUrl('lib/bounded-conditions-predecessor-transition.mjs')),
+    import(normalScriptUrl('protected-private-production-runtime.mjs')),
+    import(pathToFileURL(path.resolve('js/core/ravscore-model-contract.js')).href),
+    import(normalScriptUrl('rollback-assets/ravscore-model-contract.js')),
+    import(normalScriptUrl('private-production-runtime-workflow.mjs')),
+  ]);
+  const { CURRENT_GRID_SAMPLING_PREDECESSOR_POLICY: gridPolicy,
+    assertCurrentGridSamplingOriginalExpectation } = gridHelper;
+  const { PROTECTED_PRIVATE_RUNTIME_POLICY: pointerPolicy,
+    describeCurrentProtectedPrivateProductionRuntime,
+    describeTargetProtectedPrivateProductionRuntime } = protectedRuntime;
+  const clone = value => JSON.parse(JSON.stringify(value));
+  const sha = value => createHash('sha256').update(value).digest('hex');
+
+  // Exact existing controlled pointer transport from the protected-runtime target.
+  function fakeDocuments() {
+    let row = null;
+    let loseNextPatch = false;
+    let commitThenLoseNextPatch = false;
+    return {
+      request: async (suffix, options = {}) => {
+        const method = options.method ?? 'GET';
+        if (method === 'GET') return row ? [clone(row)] : [];
+        if (method === 'POST') {
+          if (row) return [];
+          const body = JSON.parse(options.body);
+          row = { document_key: body.document_key, payload: body.payload, version: 1 };
+          return [clone(row)];
+        }
+        if (method === 'PATCH') {
+          if (loseNextPatch) {
+            loseNextPatch = false;
+            return [];
+          }
+          const expectedVersion = Number(/version=eq\.(\d+)/.exec(suffix)?.[1]);
+          if (!row || row.version !== expectedVersion) return [];
+          row = { ...row, payload: JSON.parse(options.body).payload, version: row.version + 1 };
+          if (commitThenLoseNextPatch) {
+            commitThenLoseNextPatch = false;
+            throw new Error('synthetic response lost after committed patch');
+          }
+          return [clone(row)];
+        }
+        throw new Error(`unexpected document method ${method}`);
+      },
+      row: () => clone(row),
+      setRow: value => { row = clone(value); },
+      losePatch: () => { loseNextPatch = true; },
+      commitThenLosePatch: () => { commitThenLoseNextPatch = true; },
+    };
+  }
+  const documents = fakeDocuments();
+  const requestMethods = [];
+  const request = async (suffix, options = {}, operation) => {
+    requestMethods.push(options.method ?? 'GET');
+    assert.equal(options.method ?? 'GET', 'GET', 'Descriptor caller attempted a write');
+    return documents.request(suffix, options, operation);
+  };
+  const objectSha256 = sha('controlled-pointer-only-no-stored-object');
+  const descriptor = {
+    schemaVersion: pointerPolicy.schemaVersion,
+    kind: pointerPolicy.descriptorKind,
+    privacyClass: pointerPolicy.privacyClass,
+    bucketId: pointerPolicy.bucketId,
+    objectSha256, objectBytes: 1, objectCount: 1,
+    objects: [{
+      index: 0,
+      objectPath: 'bundles/sha256/' + objectSha256
+        + '/part-000-' + objectSha256 + '.json.gz.part',
+      objectSha256, objectBytes: 1,
+    }],
+    bundleContentSha256: sha('controlled-descriptor-only-no-authenticated-bundle'),
+    datasetId: 'rr-current-grid-descriptor-routing-test',
+    productionReferenceAt: '2026-10-11T16:00:00.000Z',
+    generatedAt: '2026-10-11T16:05:00.000Z',
+    sourceHead: '7791d92e3368a715e3b68d9e76d460447a60f795',
+    modelBinding: clone(gridPolicy.sourceModelBinding),
+    contractHashes: clone(gridPolicy.sourceContractHashes),
+  };
+  documents.setRow({
+    document_key: pointerPolicy.documentKey, version: 1,
+    payload: {
+      schemaVersion: pointerPolicy.schemaVersion, kind: pointerPolicy.pointerKind,
+      current: descriptor, previous: null,
+    },
+  });
+  const pointerBefore = JSON.stringify(documents.row());
+  const current = await describeCurrentProtectedPrivateProductionRuntime({ request });
+  assert.equal(current.kind, gridPolicy.sourceDescriptionKind);
+  assert.equal(current.privatePayloadIncluded, false);
+  assert.deepEqual(current.modelBinding, gridPolicy.sourceModelBinding);
+  assert.deepEqual(current.contractHashes, gridPolicy.sourceContractHashes);
+
+  // Actual generated globals and actual normal default contracts, no overrides.
+  const integratedBinding = currentModel.ravScoreModelBinding();
+  const candidateBinding = candidateModel.ravScoreModelBinding();
+  const actualContracts = await privateWorkflow.privateRuntimeContractHashes();
+  assert.equal(integratedBinding.modelBundleSha256,
+    '5c3673a2fe7f4ddf4785ad993350107c048c7e5b051440baff5fef3ffb461ef4');
+  assert.equal(candidateBinding.modelBundleSha256,
+    'b166f4d27ce07d5b513c8beb6c5a0881878938d06a083a40e3c95240584a692b');
+  assert.equal(actualContracts.continuationStateContractSha256,
+    'dea864bfdbd02705e2029cbe9075b6aa12dec05ebe3eb8621f100205e8856546');
+  assert.equal(actualContracts.fullRuntimeContractSha256,
+    gridPolicy.sourceContractHashes.fullRuntimeContractSha256);
+  assert.equal(actualContracts.publicProjectionContractSha256,
+    gridPolicy.sourceContractHashes.publicProjectionContractSha256);
+
+  const gridTemporaryPrefix = 'rr-current-grid-descriptor-';
+  const gridTemporary = await fs.mkdtemp(path.join(os.tmpdir(), gridTemporaryPrefix));
+  try {
+    const sourceDescriptionPath = path.join(gridTemporary, 'current-source.json');
+    const outputPath = path.join(gridTemporary, 'expected.json');
+    const githubOutputPath = path.join(gridTemporary, 'github-output.txt');
+    const now = '2026-10-11T17:10:00.000Z';
+    await fs.writeFile(sourceDescriptionPath, JSON.stringify(current) + '\n', { flag: 'wx' });
+    await fs.writeFile(githubOutputPath, '', { flag: 'wx' });
+    const prepared = await prepareHistoricalWavePredecessorRestore({
+      sourceDescriptionPath, outputPath, githubOutputPath,
+      targetReferenceAt: '2026-10-11T17:00:00.000Z', now,
+    });
+    assert.deepEqual(prepared, {
+      required: true, transitionKind: 'current-grid-sampling-original',
+      privatePayloadIncluded: false,
+    });
+    const expectedText = await fs.readFile(outputPath, 'utf8');
+    const gridExpected = JSON.parse(expectedText);
+    assert.strictEqual(assertCurrentGridSamplingOriginalExpectation(gridExpected), gridExpected);
+    assert.equal(gridExpected.currentGridSamplingTransition,
+      'EXACT_CURRENT_GRID_SAMPLING_ORIGINAL_RESTORE_V1');
+    assert.equal(Object.hasOwn(gridExpected, 'ownerCurrentDomainTransition'), false);
+    for (const field of ['sourceHead', 'datasetId', 'bundleContentSha256',
+      'productionReferenceAt', 'generatedAt']) assert.equal(gridExpected[field], current[field]);
+    assert.deepEqual(gridExpected.modelBinding, current.modelBinding);
+    assert.deepEqual(gridExpected.contractHashes, current.contractHashes);
+    assert.equal(gridExpected.minimumReferenceAt, current.productionReferenceAt);
+    assert.equal(gridExpected.minimumGeneratedAt, current.generatedAt);
+    assert.notEqual(gridExpected.modelBinding.modelBundleSha256, integratedBinding.modelBundleSha256);
+    assert.notEqual(gridExpected.contractHashes.continuationStateContractSha256,
+      actualContracts.continuationStateContractSha256);
+    const githubOutput = await fs.readFile(githubOutputPath, 'utf8');
+    assert.match(githubOutput, /required=true/);
+    assert.match(githubOutput, /transition_kind=current-grid-sampling-original/);
+    assert.ok(githubOutput.includes('source_head=' + current.sourceHead));
+
+    // Actual normal --describe-target function, not a relabelled CURRENT fixture.
+    const restored = await describeTargetProtectedPrivateProductionRuntime({
+      request, targetReferenceAt: current.productionReferenceAt,
+      datasetId: current.datasetId, bundleContentSha256: current.bundleContentSha256,
+    });
+    assert.equal(restored.kind, gridPolicy.restoredSourceDescriptionKind);
+    assert.notEqual(restored.kind, current.kind);
+    const controlledManifest = {
+      bundleContentSha256: descriptor.bundleContentSha256,
+      datasetId: descriptor.datasetId,
+      productionReferenceAt: descriptor.productionReferenceAt,
+      generatedAt: descriptor.generatedAt,
+      modelBinding: clone(descriptor.modelBinding),
+      contractHashes: clone(descriptor.contractHashes),
+    };
+    const expectedBefore = JSON.stringify(gridExpected);
+    const restoredBefore = JSON.stringify(restored);
+    const manifestBefore = JSON.stringify(controlledManifest);
+    assert.strictEqual(secondRestoreExpectation({
+      expected: gridExpected, source: restored, manifest: controlledManifest,
+    }), gridExpected);
+    const rejectionLabels = [];
+    const reject = (label, options, pattern) => {
+      assert.throws(() => secondRestoreExpectation(options), pattern, label);
+      rejectionLabels.push(label);
+    };
+    reject('actual CURRENT source is wrong in second restore',
+      { expected: gridExpected, source: current, manifest: controlledManifest },
+      /not the exact current-grid sampling original/);
+    reject('source-head mismatch against original',
+      { expected: gridExpected, source: { ...restored, sourceHead: 'b'.repeat(40) },
+        manifest: controlledManifest }, /not the exact current-grid sampling original/);
+    reject('source/manifest generation mismatch',
+      { expected: gridExpected, source: { ...restored, datasetId: restored.datasetId + '-wrong' },
+        manifest: controlledManifest }, /contradicts the authenticated bundle/);
+    reject('manifest contract mismatch',
+      { expected: gridExpected, source: restored,
+        manifest: { ...controlledManifest, contractHashes: {
+          ...controlledManifest.contractHashes, continuationStateContractSha256: 'f'.repeat(64),
+        } } }, /contradicts the authenticated bundle/);
+    reject('mixed owner/current-grid expectation',
+      { expected: { ...gridExpected, ownerCurrentDomainTransition: 'EXACT_ORIGINAL_RESTORE_V1' },
+        source: restored, manifest: controlledManifest },
+      /requires its exact original expectation/);
+    for (const hint of ['pairedLatestAnchor', 'historicalWeatherPair']) {
+      reject('no historical waiver: ' + hint,
+        { expected: gridExpected, source: restored, manifest: controlledManifest, [hint]: true },
+        /not the exact current-grid sampling original/);
+    }
+    await assert.rejects(() => describeTargetProtectedPrivateProductionRuntime({
+      request, targetReferenceAt: current.productionReferenceAt,
+      datasetId: current.datasetId + '-wrong', bundleContentSha256: current.bundleContentSha256,
+    }), /exact target reference and dataset/);
+    rejectionLabels.push('actual target description cannot select wrong dataset');
+    await fs.writeFile(sourceDescriptionPath, JSON.stringify(restored) + '\n');
+    await assert.rejects(() => prepareHistoricalWavePredecessorRestore({
+      sourceDescriptionPath, outputPath, githubOutputPath,
+      targetReferenceAt: '2026-10-11T17:00:00.000Z', now,
+    }), /not the exact reviewed native-grid SOURCE bridge/);
+    rejectionLabels.push('actual TARGET source is wrong in prepare');
+    assert.equal(await fs.readFile(outputPath, 'utf8'), expectedText);
+    assert.equal(JSON.stringify(gridExpected), expectedBefore);
+    assert.equal(JSON.stringify(restored), restoredBefore);
+    assert.equal(JSON.stringify(controlledManifest), manifestBefore);
+    assert.equal(JSON.stringify(documents.row()), pointerBefore);
+    assert.ok(requestMethods.length >= 3 && requestMethods.every(method => method === 'GET'));
+    assert.equal(rejectionLabels.length, 9);
+    console.log(JSON.stringify({
+      status: 'PASS_ONE_NORMAL_CURRENT_GRID_DESCRIPTOR_ROUTING_CONTROLLED_IO_CASE',
+      testsRun: 1, skipped: 0, actualCurrentBinding: integratedBinding.modelBundleSha256,
+      actualCandidateBinding: candidateBinding.modelBundleSha256,
+      actualContinuationContract: actualContracts.continuationStateContractSha256,
+      descriptorCalls: requestMethods.length, pointerWrites: 0,
+      originalIdentityPreserved: true, actualDescribeTargetKind: restored.kind,
+      rejectionLabels, modelMocks: false, sourceOverrides: false,
+      authenticatedBS: false, nativeGridProof: false, productionEffect: false,
+    }));
+  } finally {
+    // Delete only this case's own explicitly checked synthetic temporary files.
+    const resolvedTemporary = path.resolve(gridTemporary);
+    assert.equal(path.dirname(resolvedTemporary), path.resolve(os.tmpdir()));
+    assert.ok(path.basename(resolvedTemporary).startsWith(gridTemporaryPrefix));
+    await fs.rm(resolvedTemporary, { recursive: true, force: true });
+  }
+}
+
+// Narrow workflow SOURCE-routing assertions for the native-grid original.
+// This proves caller wiring/order only, not B/S, provider, runner or public effect.
+{
+  const gridNormalWorkflow = workflowSource.replace(/\r\n/g, '\n');
+  const gridCodeOnlyWorkflow = codeOnlyWorkflow.replace(/\r\n/g, '\n');
+  const gridStep = (source, name) => {
+    const marker = '      - name: ' + name + '\n';
+    const start = source.indexOf(marker);
+    assert.ok(start >= 0, 'Missing normal current-grid workflow step: ' + name);
+    assert.equal(source.indexOf(marker, start + marker.length), -1);
+    const end = source.slice(start + marker.length).search(/^      - (?:name:|uses:)/m);
+    return end < 0 ? source.slice(start)
+      : source.slice(start, start + marker.length + end);
+  };
+  const type = 'current-grid-sampling-original';
+  const excludedType = "steps.historical-wave-predecessor.outputs.transition_kind != '" + type + "'";
+  const hour = gridStep(gridNormalWorkflow,
+    'Require a strictly new normal hour for current-grid source succession');
+  assert.ok(hour.includes("transition_kind == '" + type + "'"));
+  assert.ok(hour.includes('assertCurrentGridSamplingOriginalExpectation(expected)'));
+  assert.ok(hour.includes('target <= Date.parse(expected.productionReferenceAt)'));
+  assert.ok(hour.includes('target !== Date.parse(expected.targetReferenceAt)'));
+  assert.ok(hour.includes('test "$QUICK_CONFIRMATION" != \'true\''));
+  for (const name of [
+    'Restore the latest atomic schema-6 and Candidate G rollback checkpoint',
+    'Restore protected atomic RavScore checkpoint when cache is absent',
+    'Materialize the exact audited predecessor reader before old-reader secret use',
+  ]) {
+    const guarded = gridStep(gridNormalWorkflow, name);
+    assert.ok(guarded.includes(excludedType), 'Current-grid must not enter old reader/checkpoint: ' + name);
+    assert.ok(guarded.includes("transition_kind != 'owner-current-domain-original'"),
+      'Existing owner original exclusion changed: ' + name);
+  }
+  const protectedRestore = gridStep(gridNormalWorkflow,
+    'Restore newest compatible private runtime from protected storage');
+  const localRestore = gridStep(gridNormalWorkflow,
+    'Verify and restore the private production runtime bundle');
+  for (const restore of [protectedRestore, localRestore]) {
+    assert.ok(restore.includes("CURRENT_GRID_ORIGINAL_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.transition_kind == 'current-grid-sampling-original' }}"));
+    assert.ok(restore.includes('CURRENT_GRID_ORIGINAL_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}'));
+    const branch = restore.slice(restore.indexOf('if test "$CURRENT_GRID_ORIGINAL_REQUIRED"'),
+      restore.indexOf('elif test "$OWNER_CURRENT_ORIGINAL_REQUIRED"'));
+    assert.ok(branch.includes('restore_expected="$CURRENT_GRID_ORIGINAL_EXPECTED"'));
+    assert.ok(!branch.includes('RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT'));
+  }
+  assert.ok(protectedRestore.includes('no reader, checkpoint or stateless replacement is permitted.'));
+  assert.ok(localRestore.includes('--source-description "$RUNNER_TEMP/private-runtime-restored-source.json"'));
+  const migrant = gridStep(gridNormalWorkflow,
+    'Preserve nationwide originals before new-hour current-grid reconstruction');
+  for (const argument of ['--current-grid-original \\',
+    '--current-grid-original-expectation "$CURRENT_GRID_ORIGINAL_EXPECTED"',
+    '--source "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"',
+    '--bundle-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json"',
+    '--predecessor-descriptor "$RUNNER_TEMP/private-runtime-restored-source.json"',
+    '--expected-source-head "$EXPECTED_SOURCE_HEAD"']) assert.ok(migrant.includes(argument));
+  assert.ok(migrant.includes("test \"${{ steps.current-grid-original-hour.outcome }}\" = 'success'"));
+  assert.ok(migrant.includes('test ! -e "$migrated_root"'));
+  assert.ok(migrant.includes('original_has_public_pack="$(jq -er'));
+  assert.ok(migrant.includes('true) test -s "$migrated_root/.cache/public-hour-delivery.pack" ;;'));
+  assert.ok(migrant.includes('false) test ! -e "$migrated_root/.cache/public-hour-delivery.pack" ;;'));
+
+  assert.ok(migrant.includes("'CURRENT_GRID_ORIGINAL_ARCHIVE_BRIDGE'"));
+  assert.ok(!migrant.includes('--predecessor-root'));
+  assert.ok(!migrant.includes('--owner-current-original'));
+  const install = gridStep(gridNormalWorkflow,
+    'Install only the allowlisted restored private runtime files');
+  assert.ok(install.includes('CURRENT_GRID_MIGRATED_ROOT: ${{ steps.current-grid-original-migration.outputs.restored_path }}'));
+  assert.ok(install.includes('restored_root="$CURRENT_GRID_MIGRATED_ROOT"'));
+  assert.ok(install.includes("test \"${{ steps.current-grid-original-migration.outcome }}\" = 'success'"));
+  assert.ok(gridNormalWorkflow.indexOf(hour) < gridNormalWorkflow.indexOf(protectedRestore));
+  assert.ok(gridNormalWorkflow.indexOf(localRestore) < gridNormalWorkflow.indexOf(migrant));
+  assert.ok(gridNormalWorkflow.indexOf(migrant) < gridNormalWorkflow.indexOf(install));
+  const rejectCodeOnly = gridStep(gridCodeOnlyWorkflow,
+    'Preserve the protected 11Z and 15Z pair for the next normal weather run');
+  assert.ok(rejectCodeOnly.includes('await buildCurrentGridSamplingOriginalRestoreExpectation'));
+  assert.ok(rejectCodeOnly.includes("'EXACT_CURRENT_GRID_SAMPLING_ORIGINAL_RESTORE_V1'"));
+  assert.ok(rejectCodeOnly.includes('code-only deployment cannot install or publish'));
+  for (const writeName of [
+    'Atomically record the exact already-public historical cutover',
+    'Apply exact dry-run-verified post-cutover binding',
+    'Try newest current-compatible private runtime',
+    'Install migrated saved private runtime atomically',
+  ]) assert.ok(gridCodeOnlyWorkflow.indexOf(rejectCodeOnly)
+    < gridCodeOnlyWorkflow.indexOf(gridStep(gridCodeOnlyWorkflow, writeName)),
+  'Current-grid code-only refusal must precede this existing write: ' + writeName);
+  assert.ok(gridCodeOnlyWorkflow.includes('MODEL_BINDING_METADATA_ONLY|OWNER_CURRENT_ORIGINAL_ARCHIVE_BRIDGE'));
+  assert.ok(!gridCodeOnlyWorkflow.includes('|CURRENT_GRID_ORIGINAL_ARCHIVE_BRIDGE'));
+  assert.ok(!gridCodeOnlyWorkflow.includes('--current-grid-original'));
+}
