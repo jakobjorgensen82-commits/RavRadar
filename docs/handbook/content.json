@@ -5,6 +5,12 @@
   "updatedAt": "2026-10-12",
   "sections": [
     {
+      "id": "fixed-account-reader-normal-format-corrections-2026-10-12",
+      "chapter": "89.216",
+      "title": "Kontrollæserne skal forstå databankens normale formater",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> To små læserfejl er reproduceret og rettet lokalt; præcis kildekontrol og sikker levering af denne opfølgning mangler stadig.</div><p>Loglæseren accepterer de to sikre PostgreSQL-kategorier, som den faste forespørgsel selv kan danne. Kataloglæseren kan læse den normale funktionsdefinition uden afsluttende SQL-input-semikolon. Samme dollar-tag, hele funktionskroppen, konfiguration og slutanker kræves fortsat; efterfølgende SQL, ændret krop, manglende funktion og overload afvises.</p><p>Begge normale reproduktioner gav RED før rettelsen og PASS efter den. Hele det eksisterende normale måltesttarget består, og uafhængig kildegennemgang bevarer alle gamle assertions. Forespørgsler, frister, grænser, privatliv og engangsregler ændres ikke. Katalograpporten kræver fortsat gennemgang; fuld adgangskontrol og installation er ikke bevist.</p><p>PR #578, #579 og #580 er faktisk kildeleveret. De to godkendte kontoaflæsninger er gennemført og forbrugt; detaljer gemmes kun i det private checkpoint. Denne efterfølgers præcise kildekontrol og sikre levering afventes. Rettelserne beviser ikke årsagen til alle faktiske afvigelser. Ingen automatisk ny kontoaflæsning, installation eller produktionsændring under aktiv vejrhentning. Samme 4.0.574 og uændrede modelbindinger, score, geometri og originaler. Alle fem hovedmål er fortsat åbne; ældre kapitlers afventende status er historik.</p>"
+    },
+    {
       "id": "fixed-approved-supabase-metadata-readers-2026-10-12",
       "chapter": "89.215",
       "title": "To faste skrivefri kontroller før videre levering",

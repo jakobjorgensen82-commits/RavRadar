@@ -1502,6 +1502,45 @@ for(const [field,value] of [['present',false],['sameNameCount',2],['result','int
     'source body alone cannot approve altered signature/type/configuration: '+field);
 }
 
+// PostgreSQL's pg_get_functiondef closes the matching dollar tag with newline,
+// not a SQL-input semicolon. Keep the prior semicoloned SOURCE positive above.
+const typedPgNoSemicolonDefinition=typedBaseDefinition
+  .replace(/\bas \$\$/i,()=> 'AS $function$')
+  .replace(/\n\$\$;$/,()=> '\n$function$\n');
+assert.ok(typedPgNoSemicolonDefinition.endsWith('$function$\n'),
+  'normal native-style fixture must omit only the terminal SQL-input semicolon');
+const typedPgEnvelope=fields=>{
+  const envelope=structuredClone(typedBaseEnvelope);
+  const row=envelope[0].metadata.rows.find(item=>item.name===typedSignatures[2]);
+  Object.assign(row.metadata,{definition:typedPgNoSemicolonDefinition},fields);
+  row.metadata.definitionBytes=Buffer.byteLength(row.metadata.definition);
+  envelope[0].bytes=Buffer.byteLength(JSON.stringify(envelope[0].metadata));
+  return envelope;
+};
+const typedPgReport=await typedBaseRead(typedPgEnvelope({}));
+assert.equal(typedPgReport.functions.find(row=>row.signature===typedSignatures[2]).bodySignatureConfigurationMatch,true,
+  'same actual reviewed SOURCE body with matching native dollar tag and no terminal semicolon must match');
+assert.equal(typedPgReport.status,'READ_REVIEW_REQUIRED');
+assert.equal(typedPgReport.completeOldOrNewCheckSourceMatch,false);
+assert.equal(typedPgReport.authRoleUidSourceMatch,false);
+assert.equal(typedPgReport.wholeTriggerSourceMatch,false);
+assert.equal(typedPgReport.fullTypedRpcTriggerCheckProved,false);
+for(const [label,fields] of [
+  ['changed-body',{definition:typedPgNoSemicolonDefinition.replace('return false;',()=> 'return true;')}],
+  ['trailing-ddl',{definition:typedPgNoSemicolonDefinition+
+    'ALTER FUNCTION public.ravradar_trip_payload_has_sensitive_key(jsonb) RESET ALL;\n'}],
+  ['mismatched-tag',{definition:typedPgNoSemicolonDefinition.replace(/\$function\$\n$/,()=> '$different$\n')}],
+  ['not-present',{present:false}],
+  ['overloaded',{sameNameCount:2}],
+  ['unreviewed-configuration',{searchPath:'search_path=pg_catalog, public'}],
+]) {
+  const report=await typedBaseRead(typedPgEnvelope(fields));
+  assert.equal(report.functions.find(row=>row.signature===typedSignatures[2]).bodySignatureConfigurationMatch,false,
+    'optional terminal semicolon must not approve '+label);
+  assert.equal(report.status,'READ_REVIEW_REQUIRED');
+  assert.equal(report.fullTypedRpcTriggerCheckProved,false);
+}
+
 let typedHeldController;
 const typedHeldBody=new Response(new ReadableStream({start(controller){typedHeldController=controller;}}),{status:201});
 let typedDeadlineAttempts=0;
@@ -1521,6 +1560,13 @@ const fixedRatePriorFetch=globalThis.fetch;
 process.env.SUPABASE_ACCESS_TOKEN='synthetic-rate-token-NOT-LOGGED';
 try {
   const rateFixtures=[
+    ['pg-fallback-categories',()=>new Response(JSON.stringify({result:[
+      {status:null,error_code:'NOT_RECORDED'},
+      {status:null,error_code:'UNRECOGNIZED_CODE'},
+    ],error:null}),{status:200}),'RECORDED_CATEGORIES',2],
+    ['pg-gateway-code-refused',()=>new Response(JSON.stringify({result:[
+      {status:null,error_code:'UNAUTHORIZED_MISSING_API_KEY'},
+    ],error:null}),{status:200}),'LOG_SCHEMA_UNAVAILABLE',null],
     ['categories',()=>new Response(JSON.stringify({result:[
       {status:401,error_code:'UNAUTHORIZED_MISSING_API_KEY'},
       {status:null,error_code:'42501'},
@@ -1562,6 +1608,10 @@ try {
     const report=await module.readFixedPublicRateLog20261012();
     assert.equal(report.requestStatus,status,label);
     assert.equal(report.rowCount,rowCount,label);
+    if(label==='pg-fallback-categories') assert.deepEqual(report.pairs,[
+      {status:null,error_code:'NOT_RECORDED'},
+      {status:null,error_code:'UNRECOGNIZED_CODE'},
+    ],'admit only the exact already-query-generated PostgreSQL fallback categories');
     assert.equal(report.privatePayloadLogged,false);
     assert.equal(report.scope.sqlStart,'2026-10-12T03:45:11Z');
     assert.equal(report.scope.sqlEndExclusive,'2026-10-12T03:45:13Z');
