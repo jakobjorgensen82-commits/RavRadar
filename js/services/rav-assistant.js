@@ -1,23 +1,23 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.575";
-import { localRavKnowledgeAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.575";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.575";
-import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.575";
-import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.575";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.576";
+import { localRavKnowledgeAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.576";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.576";
+import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.576";
+import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.576";
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   ravScoreModelBinding,
-} from "../core/ravscore-model-contract.js?v=4.0.575";
-import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.575";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.575";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.575";
-import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.575";
+} from "../core/ravscore-model-contract.js?v=4.0.576";
+import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.576";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.576";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.576";
+import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.576";
 
 // Compatibility name for existing source-contract tests. The implementation
 // now selects the only adapter matching the artifact's exact active binding.
 const presentIntegratedRavScoreExplanation = presentActiveRavScoreExplanation;
 const ACTIVE_RAVSCORE_MODEL_BINDING = ravScoreModelBinding();
 const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = 'rav-assistant-public-knowledge-v1';
-const RAV_ASSISTANT_KNOWLEDGE_SHA256 = '9926586b1b97032e6d762c4e030c6705ba3581e647abec7e7bfbba5604412694';
+const RAV_ASSISTANT_KNOWLEDGE_SHA256 = '72d84309e5ed5e4a180fc02b2d476041fcd65a576336a949df0bd43e87774378';
 const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
   modelId:'x-ravradar-model-id',
   modelStateVersion:'x-ravradar-model-state-version',
@@ -27,7 +27,7 @@ const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
   knowledgeSha256:'x-ravradar-assistant-knowledge-sha256',
 });
 
-const SECURITY_PATTERN = /api.?key|password|passwort|adgangskode|supabase|database|datenbank|sql|source code|kildekode|quellcode|system.?prompt|systeminstruk|admin|token|secret|hemmelig|geheim/i;
+const SECURITY_PATTERN = /api.?key|api[\s\u2010-\u2015-]*(?:nøgle|schlüssel|schluessel)|password|passwort|adgangskode|supabase|database|datenbank|sql|source code|kildekode|quellcode|system.?prompt|systeminstruk|admin|token|secret|hemmelig|geheim/i;
 const OUT_OF_SCOPE_PATTERN = /(?<![\p{L}\p{N}_])(?:roulade|biskuitrolle|swiss roll|kage|kuchen|cake|fodbold|fußball|football|opskrift|rezept|recipe|politik|politics|aktie|stock price|matematik|math homework)(?![\p{L}\p{N}_])/iu;
 const AMBER_DOMAIN_PATTERN = /(?<![\p{L}\p{N}_])(?:rav\p{L}*|bernstein\p{L}*|succinit|succinite|copal|kopal|amber\p{L}*|harpiks|harz|resin|fossili[sz]|inklusion|einschluss|inclusion|fluorescen|fluoreszenz|fluorescen[ct]e|uv.?light|395\s*nm|fosfor|phosphor|phosphorus|danefæ|kesse|kescher|kyst|küste|coast|strand|beach|hav|meer|sea|bølge|welle|wave|strøm|strömung|current|vandstand|wasserstand|water level|wader|wathose|opskyl|spülsaum|wash line|tang|seegras|seaweed|revle|sandbank|sandbar|revlehul|brandungsrückstrom|rip current|rende|rinne|channel|høfde|buhne|groyne|opdrift|auftrieb|buoyancy|massefylde|dichte|density|saltation|sediment|geologi|geology|geologie|istid|eiszeit|ice age)(?![\p{L}\p{N}_])/iu;
 const INTENT_PATTERNS = Object.freeze({
@@ -183,8 +183,22 @@ function clock(iso, language) {
   return formatDateTime(iso, { weekday:'short', hour:'2-digit', minute:'2-digit' }, language);
 }
 
+// General model meaning, not an explanation of a selected coast or hour.
+// Match the WHOLE raw message, as in the existing low-score/find contract.
+function isGeneralHighScoreNoFindQuestion(value) {
+  const raw = String(value || '').trim();
+  if (raw.length > 600 || SECURITY_PATTERN.test(raw) || OUT_OF_SCOPE_PATTERN.test(raw)) return false;
+  const text = raw.normalize('NFKC').replace(/\s+/gu, ' ');
+  return [
+    /^(?:hvorfor|hvordan) kan (?:scoren|ravscore) være høj,? (?:uden at (?:jeg|vi|man) finder rav|(?:selv ?om|når) (?:jeg|vi|man) ikke finder rav)[?!.]*$/iu,
+    /^(?:warum|wie) kann (?:der (?:bernsteinscore|ravscore|score)|bernsteinscore|ravscore) hoch sein,? (?:obwohl (?:ich keinen bernstein finde|wir keinen bernstein finden|man keinen bernstein findet)|ohne dass (?:ich bernstein finde|wir bernstein finden|man bernstein findet))[?!.]*$/iu,
+    /^(?:why|how) can (?:the (?:amberscore|ravscore|score)|amberscore|ravscore) be high,? (?:without (?:me|us) finding (?:any )?amber|even (?:if|though) (?:i|we) (?:do not|don't) find (?:any )?amber)[?!.]*$/iu,
+  ].some(pattern => pattern.test(text));
+}
+
 export function classifyRavQuestion(question) {
   const text = String(question || '').trim();
+  if (practicalSearchPlan(text)) return 'practical-search-plan';
   if (isPracticalAlongshoreQuestion(text)) return 'practical-alongshore';
   for (const [intent, pattern] of Object.entries(INTENT_PATTERNS)) if (pattern.test(text)) return intent;
   const knowledge = matchLocalRavKnowledge(text);
@@ -293,7 +307,85 @@ function equipmentAnswer(context, language) {
   return t('assistant.local.equipment', {}, language) + extra;
 }
 
+// Account for each independent field question before a broad catalogue match
+// can consume its neighbours. Current authored units only; no chat history.
+// Vocabulary certifies only understood qualifications; it never supplies facts.
+const FIELD_COMPOUND_WORDS = new Set(('jeg vi mig os er en et at og på i til skal bør kan vil være helt det den de der som hvilken hvilket hvilke hvad hvor hvordan bruge bruger vælge nyttigt nyttige anbefaler anbefales har brug for du systematisk vandet vand gå med trygt ud begynder begyndere nybegynder nybegyndere lede leder søger søge kigge se finder finde rav stranden strand udstyr betyder høj lav score ravscore sikker sikkert sikre så genkender identificerer genkende identificere '
+  + 'ich wir mich uns bin sind ein eine das die der es und am im zu auf für ist kann können soll sollte brauche brauchen benutzen wählen nützlich wo wie was welche welcher welches möchte möchten wollen anfänger finden suchen suche schauen bernstein strand ausrüstung bedeutet hoher niedriger score ravscore sicher sein gefahrlos ins wasser gehen waten erkenne erkennen '
+  + 'what which where how why i we me us am are a an the it and on in into to for is can should do does want would like need use choose useful recommend beginner beginners look search find finding amber beach equipment mean means high low score ravscore sure be of safely safe go wade water identify recognise recognize').split(/\s+/u));
+
+function fieldCompoundAnswer(question, language) {
+  const raw = String(question || '').trim();
+  if (raw.length > 600) return null;
+  const text = raw.normalize('NFKC').replace(/\s+/gu, ' ');
+  const starter = String.raw`(?:hvor|hvordan|hvad|hvilk(?:et|en|e)|kan|er|betyder|wo|wie|was|welch(?:e|es|er)|kann|bin|bedeutet|where|how|what|which|can|am|does)\b`;
+  const parts = text.split(new RegExp(
+    String.raw`[?？]\s*(?=\p{L})|[,:.;]\s*(?:(?:og|und|and)\s+)?(?=${starter})|\s+(?:og|und|and)\s+(?=${starter})`, 'iu')).map(part => part.trim()).filter(Boolean);
+  if (parts.some(part => tomorrowQuestion(part)
+    || ['current','wind','waves','water','best-time','score','model','practical-alongshore'].includes(classifyRavQuestion(part)))) return null;
+  const units = [];
+  let beachContext = false, unresolved = false;
+  for (const part of parts) {
+    const clause = part.replace(/^(?:og|und|and)\s+/iu, '');
+    const words = clause.toLowerCase().match(/\p{L}+/gu) || [];
+    const covered = words.length > 0 && !/\d/u.test(clause)
+      && words.every(word => FIELD_COMPOUND_WORDS.has(word));
+    // A whole beginner statement supplies no fact and is not an unanswered request.
+    if (covered && /^(?:jeg er (?:en )?(?:nybegynder|begynder)|ich bin (?:ein )?anfänger|i am (?:a )?beginner)[.!]*$/iu.test(clause)) continue;
+    const identification = /^(?:hvordan (?:(?:genkender|identificerer) (?:jeg|vi)|kan (?:jeg|vi) (?:genkende|identificere)) rav|wie (?:erkenne ich|erkennen wir) bernstein|how (?:do|can) (?:i|we) (?:identify|recognise|recognize) amber)[?.!]*$/iu.test(clause);
+    const safety = INTENT_PATTERNS.safety.test(clause);
+    const certainty = !safety
+      && /(?<!\p{L})(?:sikker|sikkert|sikre|sicher|sure|certain|guaranteed)(?!\p{L})/iu.test(clause)
+      && /(?:finde[rn]?|find(?:ing)?)\s+(?:rav|bernstein|amber)(?!\p{L})|bernstein\s+zu\s+finden/iu.test(clause);
+    const search = /(?<!\p{L})(?:lede|leder|søge|søger|kigge|suchen|suche|schauen|look|search)(?!\p{L})/iu.test(clause);
+    const beach = /(?<!\p{L})(?:stranden|strand|beach)(?!\p{L})/iu.test(clause);
+    const intent = classifyRavQuestion(clause);
+    if (intent === 'best-place' && !(covered && search && (beach || beachContext))) return null;
+    let unit = null;
+    if (safety) {
+      unit = { key:'safety', answer:t('assistant.local.safety', {}, language) };
+      if (!covered) unresolved = true;
+    } else if (covered && identification) {
+      unit = { key:'identification', answer:t('assistant.local.identification', {}, language) };
+    } else if (covered && certainty) {
+      unit = { key:'limitations', answer:t('assistant.local.limitations', {}, language) };
+    } else if (covered && INTENT_PATTERNS['beach-or-water'].test(clause)) {
+      unit = { key:'beach-or-water', answer:t('assistant.local.beachOrWater', {}, language) };
+    } else if (covered && search && (beach || beachContext)
+      && !['best-time','score'].includes(intent)) {
+      beachContext = true;
+      unit = { key:'beach-method', answer:localRavKnowledgeAnswer('strandjagt teknik', language) };
+    } else if (covered && intent === 'equipment') {
+      unit = { key:'equipment', answer:t('assistant.local.equipment', {}, language) };
+    }
+    if (unit?.answer) units.push(unit);
+    else {
+      // A different known topic belongs to the established normal composer,
+      // not to this field-only coverage contract. Do not relabel it unknown.
+      if (matchLocalRavKnowledge(clause)
+        || !['unknown','equipment','safety','limitations','technique','beach-or-water','identification'].includes(intent)) return null;
+      unresolved = true;
+    }
+  }
+  // Ordinary single questions and unrelated compounds keep their existing
+  // routes. Finding certainty is a self-contained follow-up, not safety.
+  if (parts.length === 1 && units[0]?.key !== 'limitations') return null;
+  if (!units.some(unit => ['beach-method','equipment','beach-or-water','limitations'].includes(unit.key))) return null;
+  const answers = [...new Set(units.map(unit => unit.answer))];
+  if (unresolved) answers.push(t('assistant.unknown', {}, language));
+  const answer = answers.join('\n\n');
+  // All understood units or an honest unresolved answer: never first-N or
+  // clipping that silently removes a qualification or an unanswered clause.
+  const topic = !unresolved && units.some(unit => unit.key === 'identification')
+    && units.some(unit => unit.key === 'equipment')
+    && units.every(unit => ['identification','equipment'].includes(unit.key)) ? 'field-identification-equipment' : null;
+  return { answer:answer.length <= 900 ? answer : t('assistant.unknown', {}, language),
+    topic:answer.length <= 900 ? topic : null };
+}
+
 function localAnswer(question, context, language, now = Date.now()) {
+  const plan = practicalSearchPlan(question);
+  if (plan) return practicalSearchPlanAnswer(plan, language);
   const intent = classifyRavQuestion(question);
   if (intent === 'practical-alongshore') {
     const topic = matchLocalRavKnowledge('Kan strøm langs kysten flytte rav?');
@@ -393,18 +485,18 @@ async function remoteAnswer(question, context, language) {
       body:JSON.stringify({ question, locale:normaliseLanguage(language), context:publicAssistantContext(context, language) }),
       signal:controller.signal
     });
-    if (!response.ok) return null;
+    if (!response.ok) return t('assistant.remoteUnavailable', {}, language);
     const responseBindingMatches = response.headers.get(RAV_ASSISTANT_BINDING_HEADERS.modelId) === ACTIVE_RAVSCORE_MODEL_BINDING.modelId
       && response.headers.get(RAV_ASSISTANT_BINDING_HEADERS.modelStateVersion) === ACTIVE_RAVSCORE_MODEL_BINDING.stateSchemaVersion
       && response.headers.get(RAV_ASSISTANT_BINDING_HEADERS.modelContractSha256) === ACTIVE_RAVSCORE_MODEL_BINDING.modelContractSha256
       && response.headers.get(RAV_ASSISTANT_BINDING_HEADERS.modelBundleSha256) === ACTIVE_RAVSCORE_MODEL_BINDING.modelBundleSha256
       && response.headers.get(RAV_ASSISTANT_BINDING_HEADERS.knowledgeSchema) === RAV_ASSISTANT_KNOWLEDGE_SCHEMA
       && response.headers.get(RAV_ASSISTANT_BINDING_HEADERS.knowledgeSha256) === RAV_ASSISTANT_KNOWLEDGE_SHA256;
-    if (!responseBindingMatches) return null;
+    if (!responseBindingMatches) return t('assistant.remoteUnavailable', {}, language);
     const answer = (await response.json())?.answer;
-    return typeof answer === 'string' && answer.trim() && answer.length <= 900 ? answer.trim() : null;
+    return typeof answer === 'string' && answer.trim() && answer.length <= 900 ? answer.trim() : t('assistant.remoteUnavailable', {}, language);
   } catch {
-    return null;
+    return t('assistant.remoteUnavailable', {}, language);
   } finally {
     clearTimeout(timer);
   }
@@ -412,18 +504,105 @@ async function remoteAnswer(question, context, language) {
 
 export async function askRavRadar(question, context = {}, options = {}) {
   const language = normaliseLanguage(options?.language || context?.locale || getLanguage());
-  const safe = String(question || '').trim().slice(0, 600);
-  if (!safe) throw new Error(t('assistant.empty', {}, language));
+  const raw = String(question || '').trim();
+  if (!raw) throw new Error(t('assistant.empty', {}, language));
+  if (SECURITY_PATTERN.test(raw) || OUT_OF_SCOPE_PATTERN.test(raw)) return t('assistant.refusal', {}, language);
+  const safe = raw.slice(0, 600);
   const route = routeRavQuestion(safe);
   if (classifyRavQuestion(safe) === 'practical-alongshore' && !isPracticalAlongshoreQuestion(question)) {
     return t('assistant.unknown', {}, language);
   }
   if (route === 'fixed-refusal') return t('assistant.refusal', {}, language);
+  const field = fieldCompoundAnswer(raw, language);
+  if (field) return field.answer;
+  if (isGeneralHighScoreNoFindQuestion(question)) {
+    return t('assistant.local.limitations', {}, language) + '\n\n' + t('assistant.local.availability', {}, language);
+  }
+  if (practicalSearchPlan(safe) && !practicalSearchPlan(question)) return t('assistant.unknown', {}, language);
   if (route === 'local-deterministic' || options?.localOnly) {
     return localAnswer(safe, context, language, options?.now ?? Date.now());
   }
   return await remoteAnswer(safe, context, language)
     || localAnswer(safe, context, language, options?.now ?? Date.now());
+}
+
+
+// A complete time-bounded field request, not a forecast or an inferred place.
+// The three independent clauses describe the task, time and optional premises;
+// anything left over keeps the ordinary route. No private context is consulted.
+function practicalSearchPlan(value) {
+  const raw = String(value || '').trim();
+  if (raw.length > 600) return null;
+  const text = raw.normalize('NFKC').replace(/\s+/gu, ' ').replace(/[?.!]+$/u, '');
+  const grammars = [
+    { request:/^(?:hvordan (?:planlægger|tilrettelægger) (?:jeg|vi)|(?:lav|læg|giv mig) en plan for) (.+)$/iu,
+      duration:/^(?:(en halv|en|to|tre) (?:times?|timers)|([1-9]\d{0,2}) minutter(?:s)?) (?:ravjagt|ravtur|søgning efter rav)(?: på stranden)?$/iu,
+      split:/,? (?:når|hvis) /iu, join:/,? og /iu,
+      current:/^(?:strømmen|strøm) (?:går|løber) (?:langs (?:kysten|stranden)|parallelt med (?:kysten|stranden))$/iu,
+      sparse:/^(?:der (?:er|ligger) (?:næsten ingen|meget lidt|lidt|ingen) (?:tang|opskyl)|der (?:næsten ikke|ikke) er (?:tang|opskyl))$/iu,
+      hours:{'en halv':30,en:60,to:120,tre:180} },
+    { request:/^(?:wie (?:plane|organisiere) ich|(?:erstelle|gib mir) einen plan für) (.+)$/iu,
+      duration:/^(?:(eine halbe|eine|zwei|drei) stunden?|([1-9]\d{0,2}) minuten) (?:bernsteinsuche|bernsteinjagd)(?: am strand)?$/iu,
+      split:/,? (?:wenn|falls) /iu, join:/,? und /iu,
+      current:/^die strömung (?:(?:flie(?:ß|ss)t|verläuft) (?:entlang der küste|parallel zur küste)|(?:entlang der küste|parallel zur küste) (?:flie(?:ß|ss)t|verläuft))$/iu,
+      sparse:/^(?:es (?:fast kein|kein|wenig|sehr wenig) (?:seegras|spülsaum) gibt|(?:fast kein|kein|wenig|sehr wenig) (?:seegras|spülsaum) da ist)$/iu,
+      hours:{'eine halbe':30,eine:60,zwei:120,drei:180} },
+    { request:/^(?:how (?:do|should|can) (?:i|we) plan|(?:make|give me) a plan for) (.+)$/iu,
+      duration:/^(?:(half an|an|one|two|three) hours?|([1-9]\d{0,2}) minutes?) (?:of )?(?:amber hunting|amber searching|searching for amber)(?: on the beach)?$/iu,
+      split:/,? (?:when|if) /iu, join:/,? and /iu,
+      current:/^the current (?:flows|runs) (?:along the coast|alongshore|parallel to the coast)$/iu,
+      sparse:/^(?:there is|there's) (?:almost no|no|little|very little) (?:seaweed|wrack)$/iu,
+      hours:{'half an':30,an:60,one:60,two:120,three:180} },
+  ];
+  for (const grammar of grammars) {
+    const request = text.match(grammar.request);
+    if (!request) continue;
+    const [task, ...conditions] = request[1].split(grammar.split);
+    if (conditions.length > 1) continue;
+    const duration = task.match(grammar.duration);
+    if (!duration) continue;
+    const minutes = duration[1] ? grammar.hours[duration[1].toLowerCase()] : Number(duration[2]);
+    // The route is a short beach outing, not an expedition or safety judgement.
+    if (!Number.isSafeInteger(minutes) || minutes < 15 || minutes > 180) continue;
+    const seen = new Set();
+    for (const condition of conditions.flatMap(part => part.split(grammar.join))) {
+      const kind = grammar.current.test(condition) ? 'alongshore' : grammar.sparse.test(condition) ? 'sparse' : null;
+      if (!kind || seen.has(kind)) { seen.add('unknown'); break; }
+      seen.add(kind);
+    }
+    if (!seen.has('unknown')) return { minutes, alongshore:seen.has('alongshore'), sparse:seen.has('sparse') };
+  }
+  return null;
+}
+
+function practicalSearchPlanAnswer(plan, language) {
+  // Suggested allocation of the user's time, not a model threshold or promise.
+  const first = Math.max(3, Math.round(plan.minutes / 6));
+  const last = plan.minutes - first;
+  const copy = {
+    da:[`Forsigtig strandplan for ${plan.minutes} minutter – ikke en vadeplan:`,
+      `0–${first} min: Se efter opskyl, let materiale og overgange fra land. Vælg en kort strækning med sikker adgang.`,
+      `${first}–${last} min: Gå langsomt langs kanter og små ansamlinger; sammenlign også foran og bag opskyllet.`,
+      `${last}–${plan.minutes} min: Gense de tydeligste spor, eller afslut turen, hvis der ikke er noget at følge.`,
+      'Med den strømretning, du beskriver, kan du sammenligne overgange langs stranden; den fortæller ikke, hvor rav ender.',
+      'Når der er lidt tang som beskrevet, så kig også efter træstumper, frø og sorterede bånd; få spor er ikke bevis på intet rav.',
+      'Bliv på land ved usikre forhold. Planen garanterer hverken sikre forhold eller fund.'],
+    de:[`Vorsichtiger Strandplan für ${plan.minutes} Minuten – kein Watplan:`,
+      `0–${first} Min.: Suche vom Land aus nach Spülsäumen, Leichtmaterial und Übergängen. Wähle einen kurzen Abschnitt mit sicherem Zugang.`,
+      `${first}–${last} Min.: Gehe langsam an Kanten und kleinen Ansammlungen entlang; vergleiche auch vor und hinter dem Spülsaum.`,
+      `${last}–${plan.minutes} Min.: Prüfe die deutlichsten Spuren erneut oder beende die Suche, wenn es keine gibt.`,
+      'Bei der beschriebenen Strömungsrichtung kannst du Übergänge am Strand vergleichen; sie sagt nicht, wo Bernstein endet.',
+      'Bei wenig Seegras wie beschrieben achte auch auf Holz, Samen und sortierte Bänder; wenige Spuren beweisen nicht, dass Bernstein fehlt.',
+      'Bleibe bei unsicheren Bedingungen an Land. Der Plan garantiert weder Sicherheit noch Funde.'],
+    en:[`Cautious beach plan for ${plan.minutes} minutes – not a wading plan:`,
+      `0–${first} min: Look from land for wrack lines, light material and transitions. Choose a short stretch with safe access.`,
+      `${first}–${last} min: Search slowly along edges and small accumulations; compare in front of and behind the wrack line too.`,
+      `${last}–${plan.minutes} min: Recheck the clearest clues, or finish if there is nothing to follow.`,
+      'With the current direction you describe, compare transitions along the beach; it does not tell you where amber ends up.',
+      'With little seaweed as described, also look for wood, seeds and sorted bands; few clues do not prove there is no amber.',
+      'Stay on land in uncertain conditions. The plan guarantees neither safety nor finds.'],
+  }[language];
+  return [copy[0],copy[1],copy[2],copy[3],...(plan.alongshore?[copy[4]]:[]),...(plan.sparse?[copy[5]]:[]),copy[6]].join('\n\n');
 }
 
 // A generic transport premise plus a practical search question, not a live
@@ -443,14 +622,25 @@ function isPracticalAlongshoreQuestion(value) {
 // No question, answer, location details or transcript is retained/sent.
 export function assistantTopicForQuestion(question) {
   const text = String(question || '').trim();
-  return !SECURITY_PATTERN.test(text) && !OUT_OF_SCOPE_PATTERN.test(text)
-    && isPracticalAlongshoreQuestion(text) ? 'alongshore' : null;
+  if (SECURITY_PATTERN.test(text) || OUT_OF_SCOPE_PATTERN.test(text)) return null;
+  return fieldCompoundAnswer(text, getLanguage())?.topic
+    ?? (isPracticalAlongshoreQuestion(text) ? 'alongshore' : null);
 }
 
 export function assistantLocalFollowupAnswer(question, topic, language = getLanguage()) {
   const raw = String(question || '').trim();
   if (raw.length > 600 || SECURITY_PATTERN.test(raw) || OUT_OF_SCOPE_PATTERN.test(raw)) return null;
   const text = raw.normalize('NFKC').replace(/\s+/gu, ' ');
+  const daylight = [
+    /^(?:(?:og|så) )?hvis (?:jeg|vi) kun (?:leder|søger) i dagslys[?.!]*$/iu,
+    /^(?:(?:und|also) )?wenn (?:ich nur bei tageslicht suche|wir nur bei tageslicht suchen)[?.!]*$/iu,
+    /^(?:(?:and|so) )?if (?:i|we) only (?:search|look) in daylight[?.!]*$/iu,
+  ];
+  if (daylight.some(pattern => pattern.test(text))) {
+    if (topic !== 'field-identification-equipment') return t('assistant.unknown', {}, language);
+    const answer = t('assistant.local.technique', {}, language) + '\n\n' + t('assistant.local.identification', {}, language);
+    return answer.length <= 900 ? answer : t('assistant.unknown', {}, language);
+  }
   const patterns = [
     /^(?:(?:og|så) )?hvor (?:skal|kan|bør) (?:jeg|vi) (?:kigge|lede|søge)(?: efter rav)? (?:i den situation|i det tilfælde|så|der)[?.!]*$/iu,
     /^(?:(?:und|also) )?wo (?:soll|kann|sollte) (?:ich|wir) (?:dann )?(?:nach bernstein )?suchen (?:in dieser situation|in diesem fall|dann|dort)[?.!]*$/iu,

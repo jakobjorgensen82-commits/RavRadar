@@ -733,7 +733,8 @@ as $$
         '29ea9a19647bf7d5edad0eee159267086d546f0d90a9f2778a77077351aad948',
         '4ebe158f68954f32b47cb71d5222ab0cf676faaf4b323d743f9d43bf34a63a51',
         'ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb',
-        '249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932'
+        '249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932',
+        'c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5'
       )
     -- RAVSCORE_INTEGRATED_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
@@ -757,7 +758,8 @@ as $$
         '28a69936b3d9a9c655e967c5e0c352d8401e5894ef3011bbfc55c85ad37f7ce7',
         '3e5aae87b19934091a7882fbd8f5b5570b7c83ba786ea6f3bac52a8fd71fcd1e',
         '8d9142b5f7d9b5a3e5a0f3593e73df0c7ffaf3d80c036317967cb713f09197e3',
-        '55fd7dfa5ee36596c729d93225a448ea5b8f1e7142c44b8b1bda5c3d4d84c957'
+        '55fd7dfa5ee36596c729d93225a448ea5b8f1e7142c44b8b1bda5c3d4d84c957',
+        '2fdc7426ea99382731c6f4d118eacf4fc271f505fcf121bc67c5349c62938af9'
       )
     -- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
@@ -1785,7 +1787,7 @@ begin
     or p_state ->> 'modelContractSha256'
       is distinct from 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b'
     or p_state ->> 'modelBundleSha256'
-      is distinct from '249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932'
+      is distinct from 'c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5'
     -- RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED_END
     or coalesce(p_state ->> 'samplingContextKey', '') !~ '^sha256:[0-9a-f]{64}$'
     or not public.ravradar_ravscore_checkpoint_canonical_time(p_reference_text)
@@ -2763,7 +2765,7 @@ begin
       '^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED_BEGIN
     or p_payload ->> 'continuationStateContractSha256' is distinct from
-      'a5430dd21e3135d6efc09e22df3dd0cdcafee723f962ff1d3cb52e7765b2aaa0'
+      '7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED_END
     or coalesce(p_payload ->> 'generationSha256', '') !~ '^[0-9a-f]{64}$'
     or coalesce(p_payload ->> 'stateSha256', '') !~ '^[0-9a-f]{64}$'
@@ -2812,7 +2814,7 @@ begin
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932"
+    "modelBundleSha256": "c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5"
   }'::jsonb then
     return false;
   end if;
@@ -2893,7 +2895,7 @@ begin
     "bestTimePolicyId": "score-water-tie-earliest-v2",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8",
-    "modelBundleSha256": "55fd7dfa5ee36596c729d93225a448ea5b8f1e7142c44b8b1bda5c3d4d84c957"
+    "modelBundleSha256": "2fdc7426ea99382731c6f4d118eacf4fc271f505fcf121bc67c5349c62938af9"
   }'::jsonb then
     return false;
   end if;
@@ -2910,6 +2912,50 @@ $$;
 -- head 7198b685f4bc9d86bd6432b049380f4279ab797c while this migration is
 -- deployed. Validate it by projecting only its continuation hash through the
 -- current full payload validator. This is a migration bridge, not a fallback.
+create or replace function public.ravradar_ravscore_checkpoint_account_assistant_predecessor_projection(
+  p_payload jsonb,
+  p_target_reference timestamptz
+)
+returns jsonb
+language plpgsql
+stable
+set search_path = pg_catalog, public
+as $$
+declare
+  v_projected jsonb;
+  v_states jsonb;
+begin
+  if p_payload is null
+    or p_target_reference is null
+    or pg_catalog.octet_length(p_payload::text) > 16777216
+    or p_payload #>> '{modelBinding,modelBundleSha256}' is distinct from '249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932'
+    or p_payload ->> 'continuationStateContractSha256' is distinct from 'a5430dd21e3135d6efc09e22df3dd0cdcafee723f962ff1d3cb52e7765b2aaa0'
+    or p_payload #>> '{candidateGRollbackCompanion,modelBinding,modelBundleSha256}'
+      is distinct from '55fd7dfa5ee36596c729d93225a448ea5b8f1e7142c44b8b1bda5c3d4d84c957'
+    or pg_catalog.jsonb_typeof(p_payload -> 'states') is distinct from 'object'
+  then return null; end if;
+  if (select pg_catalog.count(*) from pg_catalog.jsonb_each(p_payload -> 'states')) <> 673
+    or exists (select 1 from pg_catalog.jsonb_each(p_payload -> 'states') as state(part_id,value)
+      where state.value ->> 'modelBundleSha256' is distinct from '249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932')
+  then return null; end if;
+  select pg_catalog.jsonb_object_agg(state.part_id, pg_catalog.jsonb_set(
+    state.value, '{modelBundleSha256}', pg_catalog.to_jsonb('c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5'::text), false))
+    into v_states from pg_catalog.jsonb_each(p_payload -> 'states') as state(part_id,value);
+  v_projected := pg_catalog.jsonb_set(pg_catalog.jsonb_set(p_payload,
+    '{modelBinding,modelBundleSha256}', pg_catalog.to_jsonb('c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5'::text), false),
+    '{states}', v_states, false);
+  v_projected := pg_catalog.jsonb_set(pg_catalog.jsonb_set(v_projected,
+    '{continuationStateContractSha256}', pg_catalog.to_jsonb('7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b'::text), false),
+    '{candidateGRollbackCompanion,modelBinding,modelBundleSha256}',
+    pg_catalog.to_jsonb('2fdc7426ea99382731c6f4d118eacf4fc271f505fcf121bc67c5349c62938af9'::text), false);
+  if public.ravradar_ravscore_checkpoint_payload_valid(v_projected, p_target_reference)
+  then return v_projected; end if;
+  return null;
+exception when others then return null;
+end;
+$$;
+revoke all on function public.ravradar_ravscore_checkpoint_account_assistant_predecessor_projection(jsonb,timestamptz) from public, anon, authenticated;
+
 create or replace function public.ravradar_ravscore_checkpoint_userdata_predecessor_projection(
   p_payload jsonb,
   p_target_reference timestamptz
@@ -2946,8 +2992,8 @@ begin
     '{continuationStateContractSha256}', pg_catalog.to_jsonb('a5430dd21e3135d6efc09e22df3dd0cdcafee723f962ff1d3cb52e7765b2aaa0'::text), false),
     '{candidateGRollbackCompanion,modelBinding,modelBundleSha256}',
     pg_catalog.to_jsonb('55fd7dfa5ee36596c729d93225a448ea5b8f1e7142c44b8b1bda5c3d4d84c957'::text), false);
-  if public.ravradar_ravscore_checkpoint_payload_valid(v_projected, p_target_reference)
-  then return v_projected; end if;
+  v_projected := public.ravradar_ravscore_checkpoint_account_assistant_predecessor_projection(v_projected, p_target_reference);
+  if v_projected is not null then return v_projected; end if;
   return null;
 exception when others then return null;
 end;
@@ -3142,26 +3188,29 @@ stable
 set search_path = pg_catalog, public
 as $$
 begin
-  if p_current_implementation_sha256 = 'a5430dd21e3135d6efc09e22df3dd0cdcafee723f962ff1d3cb52e7765b2aaa0'
+  if p_current_implementation_sha256 = '7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b'
+    and public.ravradar_ravscore_checkpoint_account_assistant_predecessor_projection(p_payload, p_target_reference) is not null
+  then return true; end if;
+  if p_current_implementation_sha256 = '7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b'
     and public.ravradar_ravscore_checkpoint_userdata_predecessor_projection(p_payload, p_target_reference) is not null
   then return true; end if;
-  if p_current_implementation_sha256 = 'a5430dd21e3135d6efc09e22df3dd0cdcafee723f962ff1d3cb52e7765b2aaa0'
+  if p_current_implementation_sha256 = '7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b'
     and public.ravradar_ravscore_checkpoint_water_level_predecessor_projection(p_payload, p_target_reference) is not null
   then return true; end if;
-  if p_current_implementation_sha256 = 'a5430dd21e3135d6efc09e22df3dd0cdcafee723f962ff1d3cb52e7765b2aaa0'
+  if p_current_implementation_sha256 = '7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b'
     and public.ravradar_ravscore_checkpoint_owner_current_predecessor_projection(p_payload, p_target_reference) is not null
   then return true; end if;
-  if p_current_implementation_sha256 = 'a5430dd21e3135d6efc09e22df3dd0cdcafee723f962ff1d3cb52e7765b2aaa0'
+  if p_current_implementation_sha256 = '7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b'
     and public.ravradar_ravscore_checkpoint_cp_close_predecessor_projection(p_payload, p_target_reference) is not null
   then return true; end if;
-  if p_current_implementation_sha256 = 'a5430dd21e3135d6efc09e22df3dd0cdcafee723f962ff1d3cb52e7765b2aaa0'
+  if p_current_implementation_sha256 = '7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b'
     and public.ravradar_ravscore_checkpoint_top20_predecessor_projection(
       p_payload, p_target_reference) is not null
   then return true; end if;
   if p_payload is not null
     and p_target_reference = '2026-09-24T15:00:00.000Z'::timestamptz
     and p_current_implementation_sha256 =
-      'a5430dd21e3135d6efc09e22df3dd0cdcafee723f962ff1d3cb52e7765b2aaa0'
+      '7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b'
     and p_payload -> 'schemaVersion' = '5'::jsonb
     and p_payload ->> 'status' =
       'ravscore-schema6-with-measured-candidate-g-continuation'
@@ -3244,6 +3293,7 @@ declare
   v_owner_current_predecessor_payload jsonb;
   v_water_level_predecessor_payload jsonb;
   v_userdata_predecessor_payload jsonb;
+  v_account_assistant_predecessor_payload jsonb;
   v_disposition text;
   v_result jsonb;
 begin
@@ -3293,7 +3343,44 @@ begin
         using errcode = '22023';
     end if;
     v_central_reference := (v_payload ->> 'productionReferenceAt')::timestamptz;
-    if public.ravradar_ravscore_checkpoint_payload_valid(
+    -- These five immutable predecessor projections have disjoint exact
+    -- top-level model hashes. Each non-null result has already passed the
+    -- unchanged FULL current payload validator. Keep that result for equality;
+    -- do not validate/copy it again through the predecessor boolean wrapper.
+    if p_payload ->> 'continuationStateContractSha256' =
+      '7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b'
+    then
+      case v_payload #>> '{modelBinding,modelBundleSha256}'
+        when '249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932' then
+          v_account_assistant_predecessor_payload :=
+            public.ravradar_ravscore_checkpoint_account_assistant_predecessor_projection(v_payload, v_central_reference);
+        when 'ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb' then
+          v_userdata_predecessor_payload :=
+            public.ravradar_ravscore_checkpoint_userdata_predecessor_projection(v_payload, v_central_reference);
+        when '4ebe158f68954f32b47cb71d5222ab0cf676faaf4b323d743f9d43bf34a63a51' then
+          v_water_level_predecessor_payload :=
+            public.ravradar_ravscore_checkpoint_water_level_predecessor_projection(v_payload, v_central_reference);
+        when '29ea9a19647bf7d5edad0eee159267086d546f0d90a9f2778a77077351aad948' then
+          v_owner_current_predecessor_payload :=
+            public.ravradar_ravscore_checkpoint_owner_current_predecessor_projection(v_payload, v_central_reference);
+        when '3a14f458122f5bc0ea8a60c07abbcbd68d022c0322a87e77242891f21631c852' then
+          v_cp_close_predecessor_payload :=
+            public.ravradar_ravscore_checkpoint_cp_close_predecessor_projection(v_payload, v_central_reference);
+        when 'c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb' then
+          v_top20_predecessor_payload :=
+            public.ravradar_ravscore_checkpoint_top20_predecessor_projection(v_payload, v_central_reference);
+        else null;
+      end case;
+    end if;
+    if v_account_assistant_predecessor_payload is not null
+      or v_userdata_predecessor_payload is not null
+      or v_water_level_predecessor_payload is not null
+      or v_owner_current_predecessor_payload is not null
+      or v_cp_close_predecessor_payload is not null
+      or v_top20_predecessor_payload is not null
+    then
+      v_central_is_compatible_predecessor := true;
+    elsif public.ravradar_ravscore_checkpoint_payload_valid(
       v_payload,
       v_central_reference
     ) then
@@ -3308,15 +3395,13 @@ begin
       raise exception 'protected RavScore checkpoint central row is invalid'
         using errcode = '22023';
     end if;
-    v_top20_predecessor_payload :=
-      public.ravradar_ravscore_checkpoint_top20_predecessor_projection(
-        v_payload, v_central_reference);
-    v_cp_close_predecessor_payload := public.ravradar_ravscore_checkpoint_cp_close_predecessor_projection(
-      v_payload, v_central_reference);
-    v_owner_current_predecessor_payload := public.ravradar_ravscore_checkpoint_owner_current_predecessor_projection(v_payload, v_central_reference);
-    v_water_level_predecessor_payload := public.ravradar_ravscore_checkpoint_water_level_predecessor_projection(v_payload, v_central_reference);
-    v_userdata_predecessor_payload := public.ravradar_ravscore_checkpoint_userdata_predecessor_projection(v_payload, v_central_reference);
-    if v_central_is_compatible_predecessor and v_userdata_predecessor_payload is not null then
+    if v_central_is_compatible_predecessor and v_account_assistant_predecessor_payload is not null then
+      v_exact_predecessor_same_target_transition := v_central_reference = p_target_reference
+        and (v_account_assistant_predecessor_payload #- '{generationSha256}' #- '{stateSha256}'
+          #- '{candidateGRollbackCompanion,generationSha256}')
+        = (p_payload #- '{generationSha256}' #- '{stateSha256}'
+          #- '{candidateGRollbackCompanion,generationSha256}');
+    elsif v_central_is_compatible_predecessor and v_userdata_predecessor_payload is not null then
       v_exact_predecessor_same_target_transition := v_central_reference = p_target_reference
         and (v_userdata_predecessor_payload #- '{generationSha256}' #- '{stateSha256}'
           #- '{candidateGRollbackCompanion,generationSha256}')
@@ -3451,6 +3536,7 @@ declare
   v_owner_current_projection_definition text;
   v_water_level_projection_definition text;
   v_userdata_projection_definition text;
+  v_account_assistant_projection_definition text;
   v_canonical_time_oid oid := pg_catalog.to_regprocedure(
     'public.ravradar_ravscore_checkpoint_canonical_time(text)'
   );
@@ -3484,7 +3570,8 @@ declare
     ),
     pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_owner_current_predecessor_projection(jsonb,timestamptz)'),
     pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_water_level_predecessor_projection(jsonb,timestamptz)'),
-    pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_userdata_predecessor_projection(jsonb,timestamptz)')
+    pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_userdata_predecessor_projection(jsonb,timestamptz)'),
+    pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_account_assistant_predecessor_projection(jsonb,timestamptz)')
   ];
 begin
   if auth.role() is distinct from 'service_role' then
@@ -3532,6 +3619,9 @@ begin
   select pg_catalog.btrim(p.prosrc, E' \n\r\t') into v_userdata_projection_definition
   from pg_catalog.pg_proc p where p.oid = v_validator_oids[10];
 
+  select pg_catalog.btrim(p.prosrc, E' \n\r\t') into v_account_assistant_projection_definition
+  from pg_catalog.pg_proc p where p.oid = v_validator_oids[11];
+
   v_checkpoint_definition := v_canonical_time_definition
     || E'\n-- forbidden-key-validator --\n' || v_forbidden_definition
     || E'\n-- integrated-state-validator --\n' || v_integrated_state_definition
@@ -3544,14 +3634,15 @@ begin
     || E'\n-- cp-close-predecessor-projection --\n' || v_cp_close_projection_definition
     || E'\n-- owner-current-predecessor-projection --\n' || v_owner_current_projection_definition
     || E'\n-- water-level-predecessor-projection --\n' || v_water_level_projection_definition
-    || E'\n-- userdata-predecessor-projection --\n' || v_userdata_projection_definition;
+    || E'\n-- userdata-predecessor-projection --\n' || v_userdata_projection_definition
+    || E'\n-- account-assistant-predecessor-projection --\n' || v_account_assistant_projection_definition;
 
   return pg_catalog.jsonb_build_object(
     'schemaVersion', 'ravscore-checkpoint-db-v1',
     'appliedMigrationVersion', case when exists (
       select 1
       from supabase_migrations.schema_migrations m
-      where m.version::text = '20261010130000'
+      where m.version::text = '20261013210000'
     ) then '20260920220000' else null end,
     'checkpointContract', pg_catalog.jsonb_build_object(
       'id', 'ravscore-checkpoint-metadata-cas-v1',
@@ -3707,3 +3798,99 @@ drop policy if exists ravradar_private_runtime_deny_client_read
 create policy ravradar_private_runtime_deny_client_read
 on storage.objects as restrictive for select to anon, authenticated
 using (bucket_id <> 'ravradar-private-production-runtime');
+
+-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_BEGIN
+create table public.account_activity_journal (
+  user_id uuid primary key references public.profiles(id) on delete cascade,
+  first_observed_at timestamptz not null,
+  last_activity_at timestamptz not null,
+  constraint account_activity_order check (last_activity_at >= first_observed_at)
+);
+alter table public.account_activity_journal enable row level security;
+revoke all on table public.account_activity_journal from public, anon, authenticated;
+
+-- No parameters: identity is the validated JWT's auth.uid(), time is generated
+-- here. profile.updated_at, admin edits and browser timestamps are not evidence.
+create function public.record_account_activity()
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  own_user_id uuid := auth.uid();
+  observed_at timestamptz := clock_timestamp();
+begin
+  if own_user_id is null or auth.role() is distinct from 'authenticated' then
+    raise exception 'ACCOUNT_ACTIVITY_AUTH_REQUIRED' using errcode = '42501';
+  end if;
+  insert into public.account_activity_journal as journal
+    (user_id, first_observed_at, last_activity_at)
+  values (own_user_id, observed_at, observed_at)
+  on conflict (user_id) do update
+    set last_activity_at = greatest(journal.last_activity_at, excluded.last_activity_at);
+  return jsonb_build_object('recorded', true);
+end;
+$$;
+revoke all on function public.record_account_activity() from public, anon;
+grant execute on function public.record_account_activity() to authenticated;
+comment on table public.account_activity_journal is
+  'Positive server activity only. Missing/failed observations are unknown, not inactivity. No deletion authority; future complete coverage + delivered-notice + atomic fresh owner activity check required.';
+
+create table public.account_statistics_preferences (
+  user_id uuid primary key references public.profiles(id) on delete cascade,
+  enabled boolean not null
+);
+alter table public.account_statistics_preferences enable row level security;
+revoke all on table public.account_statistics_preferences from public, anon, authenticated;
+
+create function public.get_own_statistics_preference()
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare own_user_id uuid := auth.uid(); stored_value boolean;
+begin
+  if own_user_id is null or auth.role() is distinct from 'authenticated'
+    or not exists (select 1 from public.profiles where id = own_user_id) then
+    raise exception 'ACCOUNT_PREFERENCE_AUTH_REQUIRED' using errcode = '42501';
+  end if;
+  select enabled into stored_value from public.account_statistics_preferences where user_id = own_user_id;
+  if not found then return jsonb_build_object('enabled', true, 'source', 'default'); end if;
+  return jsonb_build_object('enabled', stored_value, 'source', 'stored');
+end;
+$$;
+
+create function public.enable_own_statistics_preference()
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare own_user_id uuid := auth.uid();
+begin
+  if own_user_id is null or auth.role() is distinct from 'authenticated'
+    or not exists (select 1 from public.profiles where id = own_user_id) then
+    raise exception 'ACCOUNT_PREFERENCE_AUTH_REQUIRED' using errcode = '42501';
+  end if;
+  insert into public.account_statistics_preferences (user_id, enabled) values (own_user_id, true)
+  on conflict (user_id) do update set enabled = excluded.enabled;
+  return public.get_own_statistics_preference();
+end;
+$$;
+
+create function public.disable_own_statistics_preference()
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare own_user_id uuid := auth.uid();
+begin
+  if own_user_id is null or auth.role() is distinct from 'authenticated'
+    or not exists (select 1 from public.profiles where id = own_user_id) then
+    raise exception 'ACCOUNT_PREFERENCE_AUTH_REQUIRED' using errcode = '42501';
+  end if;
+  insert into public.account_statistics_preferences (user_id, enabled) values (own_user_id, false)
+  on conflict (user_id) do update set enabled = excluded.enabled;
+  return public.get_own_statistics_preference();
+end;
+$$;
+revoke all on function public.get_own_statistics_preference() from public, anon;
+grant execute on function public.get_own_statistics_preference() to authenticated;
+revoke all on function public.enable_own_statistics_preference() from public, anon;
+grant execute on function public.enable_own_statistics_preference() to authenticated;
+revoke all on function public.disable_own_statistics_preference() from public, anon;
+grant execute on function public.disable_own_statistics_preference() to authenticated;
+comment on table public.account_statistics_preferences is
+  'Own-user preference only. Missing means owner-requested ON, explicit false is retained. No consent or anonymity proof; no aggregate processing enabled.';
+-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_END

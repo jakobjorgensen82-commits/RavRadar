@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readAccountAssistantCanonicalSource } from './lib/account-assistant-successor-source.mjs';
 import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
@@ -28,7 +29,7 @@ const SQL_BINDING_PATHS = Object.freeze([
   'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
 ]);
 const CHECKPOINT_METADATA_CAS_MIGRATION_PATH =
-  'supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql';
+  'supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql';
 const CHECKPOINT_METADATA_CAS_MARKER = 'RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED';
 const CHECKPOINT_METADATA_CAS_INNER_MARKERS = Object.freeze([
   'RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED',
@@ -252,6 +253,27 @@ function expectedMigration(source, canonicalMigration) {
   return synchronized;
 }
 
+const ACCOUNT_SCHEMA_MARKER = 'ACCOUNT_ASSISTANT_SCHEMA_GENERATED';
+function synchronizeAccountSchema(source, accountSource, relative) {
+  const block = '-- ' + ACCOUNT_SCHEMA_MARKER + '_BEGIN\n'
+    + accountSource.trimEnd() + '\n-- ' + ACCOUNT_SCHEMA_MARKER + '_END';
+  const hasStart = source.includes('-- ' + ACCOUNT_SCHEMA_MARKER + '_BEGIN');
+  const hasEnd = source.includes('-- ' + ACCOUNT_SCHEMA_MARKER + '_END');
+  if (hasStart || hasEnd) {
+    return replaceGeneratedBlock(source, ACCOUNT_SCHEMA_MARKER, block, relative + ' account schema');
+  }
+  // Refuse an unowned pre-existing table/RPC instead of duplicating or adopting it.
+  for (const name of ['account_activity_journal', 'account_statistics_preferences',
+    'record_account_activity', 'get_own_statistics_preference',
+    'enable_own_statistics_preference', 'disable_own_statistics_preference']) {
+    assert(!source.includes('public.' + name), relative + ' already contains account objects outside their generated block');
+  }
+  if (relative === 'supabase/schema.sql') return source.trimEnd() + '\n\n' + block + '\n';
+  const end = /notify pgrst,\s*'reload schema';\s*commit;\s*$/.exec(source);
+  assert(end, 'Installation copy must retain its final transaction');
+  return source.slice(0, end.index) + block + '\n\n' + source.slice(end.index);
+}
+
 export async function synchronizeRavScoreModelBinding({ write = false, root = ROOT } = {}) {
   const binding = ravScoreModelBinding();
   assertRavScoreModelBinding(binding);
@@ -259,12 +281,9 @@ export async function synchronizeRavScoreModelBinding({ write = false, root = RO
   assertCandidateGRollbackModelBinding(candidateBinding);
   const continuationHash = await ravScoreContinuationImplementationSha256({ repositoryRoot: root });
 
-  // Historical migrations are immutable. The newest migration is a read-only,
-  // prevalidated anchor; only its exact outer generated block may flow forward
-  // into the mutable schema and installation copies.
-  const checkpointMigrationPath = path.join(root, CHECKPOINT_METADATA_CAS_MIGRATION_PATH);
-  const checkpointMigration = (await fs.readFile(checkpointMigrationPath, 'utf8'))
-    .replace(/\r\n?/g, '\n');
+  // Sparse immutable successor is reconstructed only as a pinned READ view.
+  const { canonicalSource: checkpointMigration, accountSource } =
+    await readAccountAssistantCanonicalSource({ migrationsDirectory: path.join(root, 'supabase/migrations') });
   const checkpointBlock = checkpointMetadataCasBlock(
     checkpointMigration,
     binding,
@@ -277,12 +296,12 @@ export async function synchronizeRavScoreModelBinding({ write = false, root = RO
     const sqlPath = path.join(root, relative);
     const sql = (await fs.readFile(sqlPath, 'utf8')).replace(/\r\n?/g, '\n');
     const expectedTripBindings = expectedMigration(sql, checkpointMigration);
-    const expectedSql = replaceGeneratedBlock(
+    const expectedSql = synchronizeAccountSchema(replaceGeneratedBlock(
       expectedTripBindings,
       CHECKPOINT_METADATA_CAS_MARKER,
       checkpointBlock,
       `${relative} checkpoint metadata CAS`,
-    );
+    ), accountSource, relative);
     sqlPlans.push(Object.freeze({ relative, sqlPath, sql, expectedSql }));
   }
 

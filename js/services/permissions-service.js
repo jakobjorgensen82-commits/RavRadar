@@ -1,5 +1,5 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.575";
-import { authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession, getCurrentProfile } from "./auth-service.js?v=4.0.575";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.576";
+import { authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession, getCurrentProfile } from "./auth-service.js?v=4.0.576";
 export const PERMISSIONS=Object.freeze([
  {id:'admin_access',label:'Åbn administrationen'},
  {id:'handbook_view',label:'Læs håndbogen'},
@@ -59,3 +59,35 @@ export async function myAccess(){
 }
 export async function myPermissions(){return [...(await myAccess()).permissions];}
 export function hasPermission(access,key){return access?.profile?.role==='owner'||access?.permissions?.has('full_admin')||access?.permissions?.has(key);}
+
+// Own-user preference only. This never enables aggregate processing, grants
+// consent, or makes trip pseudonyms anonymous. Server-confirmed absence is ON;
+// missing/failed/malformed responses are unknown, never an implied default.
+async function ownStatisticsPreference(operation) {
+ const identity=authIdentityEpoch(),startingOwner=currentSession()?.user?.id;
+ const active=await requireFreshSession(),ownerId=startingOwner??active?.user?.id;
+ const assertOwner=()=>{
+  if(authIdentityEpoch()!==identity||!ownerId||currentSession()?.user?.id!==ownerId)
+   throw new Error('Kontoen blev ændret. Prøv igen fra den rigtige konto.');
+ };
+ assertOwner();
+ const {response,body}=await authorizedFetch(
+  `${PUBLIC_CONFIG.supabaseUrl}/rest/v1/rpc/${operation}`,
+  {method:'POST',headers:{'Content-Type':'application/json'},body:'{}'},
+  {consumeJson:true,expectedUserId:ownerId});
+ assertOwner();
+ if(!response.ok||!body||typeof body!=='object'||Array.isArray(body)
+  ||Object.keys(body).sort().join(',')!=='enabled,source'||typeof body.enabled!=='boolean'
+  ||!['default','stored'].includes(body.source)||(body.source==='default'&&body.enabled!==true))
+  throw new Error('Kontovalget kunne ikke bekræftes.');
+ return Object.freeze({enabled:body.enabled,source:body.source});
+}
+export async function getOwnStatisticsPreference(){
+ return ownStatisticsPreference('get_own_statistics_preference');
+}
+export async function setOwnStatisticsPreference(enabled){
+ if(typeof enabled!=='boolean')throw new Error('Kontovalget er ugyldigt.');
+ const value=await ownStatisticsPreference(enabled?'enable_own_statistics_preference':'disable_own_statistics_preference');
+ if(value.source!=='stored'||value.enabled!==enabled)throw new Error('Kontovalget kunne ikke bekræftes.');
+ return value;
+}

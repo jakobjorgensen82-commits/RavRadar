@@ -44,6 +44,7 @@ async function scenario(caller, action, { hydrate = false } = {}) {
     async fetch(input, options) {
       const url = new URL(input);
       assert.equal(url.origin, config.supabaseUrl, 'No external transport');
+      if(url.pathname==='/rest/v1/rpc/record_account_activity'){assert.equal(options.method,'POST');assert.equal(options.body,'{}');return Response.json({}, {status:503});}
       if (url.pathname === '/auth/v1/user') { hydrations += 1; return Response.json({ id: ownerA }); }
       if (url.pathname === '/auth/v1/logout') return Response.json({});
       if (url.pathname === '/auth/v1/token') {
@@ -132,6 +133,7 @@ async function profilesListScenario(action,{hydrate=false,render=false}={}){
   const scope={PUBLIC_CONFIG:config,AbortController,DOMException,localStorage:{getItem:k=>bank.get(k)??null,setItem:(k,v)=>bank.set(k,String(v)),removeItem:k=>bank.delete(k)},
     setTimeout(fn,ms){const timer=setTimeout(()=>{timers.delete(timer);fn();},ms);timers.add(timer);return timer;},clearTimeout(timer){clearTimeout(timer);timers.delete(timer);},
     async fetch(input,options){const url=new URL(input);assert.equal(url.origin,config.supabaseUrl);
+      if(url.pathname==='/rest/v1/rpc/record_account_activity'){assert.equal(options.method,'POST');assert.equal(options.body,'{}');return Response.json({}, {status:503});}
       if(url.pathname==='/auth/v1/user'){hydrations++;return Response.json({id:ownerA});}
       if(url.pathname==='/auth/v1/logout'){if(holdAuth)await authRelease.promise;return Response.json({});}
       if(url.pathname==='/auth/v1/token'){
@@ -186,7 +188,7 @@ async function jsonConsumerScenario(caller,mode){
  const scope={PUBLIC_CONFIG:config,AbortController,DOMException,
   localStorage:{getItem:key=>saved.get(key)??null,setItem:(key,value)=>saved.set(key,String(value)),removeItem:key=>saved.delete(key)},
   setTimeout(callback,ms){const timer=++id;timers.set(timer,{at:now+ms,callback});return timer;},clearTimeout:timer=>timers.delete(timer),
-  async fetch(input,options){const url=new URL(input);assert.equal(url.origin,config.supabaseUrl);assert.equal(options.headers.Authorization,'Bearer synthetic-original');requests++;
+  async fetch(input,options){const url=new URL(input);assert.equal(url.origin,config.supabaseUrl);if(url.pathname==='/rest/v1/rpc/record_account_activity'){assert.equal(options.method,'POST');assert.equal(options.body,'{}');return Response.json({}, {status:503});}assert.equal(options.headers.Authorization,'Bearer synthetic-original');requests++;
    const selected=url.pathname===heldPath;assert.ok(['/rest/v1/profiles','/rest/v1/user_permissions'].includes(url.pathname));
    return{ok:!(mode==='http-error'&&selected),status:mode==='http-error'&&selected?503:200,async json(){
     if(selected){reads++;reached.resolve();await release.promise;if(mode==='malformed')throw new SyntaxError('SYNTHETIC_UNSAFE_BODY');if(mode==='null')return null;if(mode==='object')return {};if(mode==='empty')return [];}
@@ -237,6 +239,7 @@ async function profileReadbackScenario(rows, expectedRole, { renewal = false } =
     async fetch(input, options) {
       const url = new URL(input);
       assert.equal(url.origin, config.supabaseUrl, 'Only synthetic local HTTP responses');
+      if(url.pathname==='/rest/v1/rpc/record_account_activity'){assert.equal(options.method,'POST');assert.equal(options.body,'{}');return Response.json({}, {status:503});}
       if (url.pathname === '/auth/v1/token') {
         assert.equal(url.searchParams.get('grant_type'), 'refresh_token');
         refreshes += 1;
@@ -298,3 +301,76 @@ test('profile readback: one exact owner retains role', () =>
   profileReadbackScenario([{ id: ownerA, role: 'owner', is_active: true }], 'owner'));
 test('profile readback: exact owner permits same-login renewal during JSON body', () =>
   profileReadbackScenario([{ id: ownerA, role: 'owner', is_active: true }], 'owner', { renewal: true }));
+
+// STATISTICS-PREFERENCE normal account -> permissions -> actual auth chain.
+// Only browser DOM/storage and fixed synthetic HTTP responses are supplied.
+test('statistics preference: normal default OFF owner-switch logout and late-result isolation', async()=>{
+ const preferenceSource=body('permissions-service'),accountSource=fs.readFileSync(new URL('../js/ui/account-panel.js',import.meta.url),'utf8').replace(/^import[^\n]+\r?\n/gm,'').replace(/^export\s+/gm,'');
+ const tick=()=>new Promise(resolve=>setImmediate(resolve));
+ for(const mode of ['default-off-readback','switch-read','logout-write','http-failure','malformed-readback']){
+  const originals=new Map([['pending','own-pending'],['outbox','own-outbox'],['backup','own-backup'],['tombstone','own-tombstone']]);
+  const bank=new Map(originals);bank.set('ravradar-auth-session',JSON.stringify(sessionFor()));
+  const values=new Map(),calls=[],held=[],timers=new Set();let loginOwner=ownerA;
+  const authScope={PUBLIC_CONFIG:config,AbortController,DOMException,
+   localStorage:{getItem:k=>bank.get(k)??null,setItem:(k,v)=>bank.set(k,String(v)),removeItem:k=>bank.delete(k)},
+   setTimeout(fn,ms){const id=setTimeout(()=>{timers.delete(id);fn();},ms);timers.add(id);return id;},clearTimeout(id){clearTimeout(id);timers.delete(id);},
+   async fetch(input,options){const url=new URL(input);assert.equal(url.origin,config.supabaseUrl);
+    if(url.pathname==='/auth/v1/token')return Response.json(sessionFor(loginOwner,'token-'+loginOwner));
+    if(url.pathname==='/auth/v1/logout')return Response.json({});
+    if(url.pathname==='/rest/v1/rpc/record_account_activity')return Response.json({}, {status:503});
+    assert.ok(['/rest/v1/rpc/get_own_statistics_preference','/rest/v1/rpc/enable_own_statistics_preference','/rest/v1/rpc/disable_own_statistics_preference'].includes(url.pathname));
+    assert.equal(options.method,'POST');assert.equal(options.body,'{}','Browser cannot select another owner/time or submit trip data');
+    const owner=options.headers.Authorization==='Bearer synthetic-original'?ownerA:options.headers.Authorization==='Bearer token-'+ownerB?ownerB:null;
+    assert.ok(owner);const verb=url.pathname.split('/').at(-1).split('_')[0];calls.push({owner,verb});
+    if(verb==='enable')values.set(owner,true);if(verb==='disable')values.set(owner,false);
+    const value={enabled:values.has(owner)?values.get(owner):true,source:values.has(owner)?'stored':'default'};
+    if(mode==='http-failure')return Response.json({}, {status:503});
+    if(mode==='malformed-readback')return Response.json({enabled:false,source:'default'});
+    if((mode==='switch-read'&&verb==='get')||(mode==='logout-write'&&verb==='disable'))
+     return {ok:true,status:200,json:()=>new Promise(resolve=>held.push({resolve,value,owner}))};
+    return Response.json(value);
+   }};
+  vm.runInNewContext(authBody+'\nthis.api={authIdentityEpoch,authorizedFetch,currentSession,requireFreshSession,getCurrentProfile,onAuthChange,signInWithPassword,signOut};',authScope);
+  const auth=authScope.api,permissionScope={...auth,PUBLIC_CONFIG:config};
+  vm.runInNewContext(preferenceSource+'\nthis.api={getOwnStatisticsPreference,setOwnStatisticsPreference};',permissionScope);
+  let nodes=new Map();const events=new Map();
+  const node=()=>({checked:false,disabled:true,indeterminate:false,isConnected:true,textContent:'',handlers:new Map(),addEventListener(n,f){this.handlers.set(n,f);}});
+  const content={_html:'',get innerHTML(){return this._html;},set innerHTML(v){this._html=v;for(const n of nodes.values())n.isConnected=false;nodes=new Map();if(v.includes('id="accountStatisticsPreference"')){for(const id of['#accountStatisticsPreference','#accountStatisticsStatus'])nodes.set(id,node());}},querySelector:s=>nodes.get(s)??null};
+  const dialog={open:false,querySelector:()=>content,showModal(){this.open=true;},addEventListener(n,f){if(!events.has(n))events.set(n,new Set());events.get(n).add(f);},removeEventListener(n,f){events.get(n)?.delete(f);},close(){this.open=false;for(const fn of [...events.get('close')??[]])fn();}};
+  const ui={...auth,...permissionScope.api,authEnabled:()=>true,t:key=>key};
+  vm.runInNewContext(accountSource+'\nthis.openAccountDialog=openAccountDialog;',ui);
+  const open=()=>{ui.openAccountDialog(dialog);return nodes.get('#accountStatisticsPreference');};
+  try{
+   const input=open();assert.equal(input.disabled,true);assert.equal(input.indeterminate,true);await tick();
+   if(mode==='switch-read'){
+    assert.equal(held.length,1);loginOwner=ownerB;await auth.signInWithPassword('other@example.invalid','synthetic-only');
+    assert.equal(input.disabled,true);assert.equal(input.indeterminate,true);
+    values.set(ownerB,false);const next=open();await tick();assert.equal(held.length,2);
+    held[0].resolve(held[0].value);await tick();assert.equal(next.indeterminate,true,'Old owner result never initializes new owner checkbox');
+    held[1].resolve(held[1].value);await tick();assert.equal(next.checked,false);assert.equal(next.indeterminate,false);assert.equal(next.disabled,false);
+    assert.equal(auth.currentSession().user.id,ownerB);
+   }else if(mode==='http-failure'||mode==='malformed-readback'){
+    assert.equal(input.disabled,true);assert.equal(input.indeterminate,true,'Unknown is not default ON or stored OFF');
+    assert.equal(nodes.get('#accountStatisticsStatus').textContent,'account.statisticsUnavailable');assert.equal(values.size,0);
+   }else{
+    assert.equal(input.checked,true,'Only server-confirmed missing preference defaults ON');assert.equal(input.disabled,false);
+    assert.equal(values.size,0,'Default read does not backfill/write a preference');
+    input.checked=false;const pending=input.handlers.get('change')();await tick();
+    if(mode==='logout-write'){
+     assert.equal(held.length,1);await auth.signOut();assert.equal(input.disabled,true);assert.equal(input.indeterminate,true);
+     held[0].resolve(held[0].value);await pending;assert.equal(auth.currentSession(),null);assert.equal(input.indeterminate,true);assert.equal(nodes.get('#accountStatisticsStatus').textContent,'');
+    }else{
+     await pending;assert.equal(input.checked,false);assert.equal(input.disabled,false);assert.equal(values.get(ownerA),false);
+     dialog.close();const reopened=open();await tick();assert.equal(reopened.checked,false,'Explicit OFF survives normal server readback/reopen');
+     assert.equal(reopened.indeterminate,false);assert.deepEqual(calls.map(x=>x.verb),['get','disable','get']);
+    }
+   }
+   for(const[k,v]of originals)assert.equal(bank.get(k),v,'Trip/outbox/backup/tombstone inputs stay untouched');
+  }finally{for(const h of held)h.resolve(h.value);await tick();dialog.close();assert.equal(timers.size,0);}
+ }
+ const sql=fs.readFileSync(new URL('../supabase/migrations/20261012191000_account_statistics_preference.sql',import.meta.url),'utf8');
+ for(const name of['get','enable','disable'])assert.match(sql,new RegExp('create function public\\.'+name+'_own_statistics_preference\\(\\)'));
+ assert.equal((sql.match(/own_user_id uuid := auth\.uid\(\)/g)||[]).length,3);
+ assert.match(sql,/revoke all on table public\.account_statistics_preferences from public, anon, authenticated/);
+ assert.doesNotMatch(sql,/update public\.(profiles|observations)|delete from|insert into public\.observations/i);
+});

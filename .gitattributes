@@ -42,3 +42,4 @@ scripts/typed-trip-catalog-read.sql text eol=lf
 supabase/migrations/20261005000000_owner_water_level_only_binding.sql text eol=lf
 supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql text eol=lf
 supabase/migrations/20261012200000_checkpoint_cas_single_projection_successor.sql text eol=lf
+supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql text eol=lf

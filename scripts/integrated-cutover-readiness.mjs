@@ -18,6 +18,7 @@ import {
   ravScoreModelBinding as candidateGRollbackModelBinding,
 } from './rollback-assets/ravscore-model-contract.js';
 import { buildSupabaseAdminHeaders } from './lib/supabase-admin-rest.mjs';
+import { ACCOUNT_ASSISTANT_MIGRATION, readAccountAssistantCanonicalSource } from './lib/account-assistant-successor-source.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MIGRATIONS_DIRECTORY = path.join(ROOT, 'supabase', 'migrations');
@@ -274,6 +275,7 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20261012200000_checkpoint_cas_single_projection_successor',
     filename: '20261012200000_checkpoint_cas_single_projection_successor.sql',
   }),
+  ACCOUNT_ASSISTANT_MIGRATION,
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
@@ -282,6 +284,7 @@ export const TRIP_BINDING_POLICY_SOURCE_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20261010130000');
 export const CHECKPOINT_CAS_SOURCE_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20261012200000');
+export const ACCOUNT_ASSISTANT_SOURCE_MIGRATION = ACCOUNT_ASSISTANT_MIGRATION;
 export const CHECKPOINT_NATIVE_HOLD_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260923140000');
 export const CHECKPOINT_COMPANION_ID_MIGRATION =
@@ -306,10 +309,7 @@ function normaliseTripBindingPolicyDefinition(value) {
 }
 
 export async function expectedTripBindingPolicy({ migrationsDirectory = MIGRATIONS_DIRECTORY } = {}) {
-  const migration = await fs.readFile(path.join(
-    migrationsDirectory,
-    TRIP_BINDING_POLICY_SOURCE_MIGRATION.filename,
-  ), 'utf8');
+  const { canonicalSource: migration } = await readAccountAssistantCanonicalSource({ migrationsDirectory });
   const scoreQualityMatch = migration.match(
     /create or replace function public\.ravradar_trip_v3_score_quality_allowed\([\s\S]*?\)\s*returns boolean[\s\S]*?as \$\$([\s\S]*?)\$\$;/i,
   );
@@ -342,19 +342,9 @@ function sqlFunctionBody(source, functionName, label) {
 export async function expectedCheckpointCasContract({
   migrationsDirectory = MIGRATIONS_DIRECTORY,
 } = {}) {
-  const migration = await fs.readFile(path.join(
-    migrationsDirectory,
-    // The append-only weather-binding successor reasserts all checkpoint
-    // functions, including the later native-hold and companion-ID validators
-    // with the new model hashes. Read the exact final definitions installed
-    // by that migration rather than mixing in the older validator bodies.
-    TRIP_BINDING_POLICY_SOURCE_MIGRATION.filename,
-  ), 'utf8');
-  // Only CAS is replaced by the implementation-only successor. Keep the
-  // other twelve definitions bound to their immutable userdata migration.
-  const casMigration = await fs.readFile(path.join(
-    migrationsDirectory, CHECKPOINT_CAS_SOURCE_MIGRATION.filename,
-  ), 'utf8');
+  // Exact sparse successor view includes actual200000-derived CAS; it does
+  // not change the userdata130000 lifecycle or legacy returned migration ID.
+  const { canonicalSource: migration } = await readAccountAssistantCanonicalSource({ migrationsDirectory });
   const definitions = [
     ['public.ravradar_ravscore_checkpoint_canonical_time', 'canonical-time validator'],
     ['public.ravradar_ravscore_checkpoint_has_forbidden_key', 'forbidden-key validator'],
@@ -375,8 +365,10 @@ export async function expectedCheckpointCasContract({
       'exact water-level-only binding predecessor projection'],
     ['public.ravradar_ravscore_checkpoint_userdata_predecessor_projection',
       'exact userdata binding predecessor projection'],
+    ['public.ravradar_ravscore_checkpoint_account_assistant_predecessor_projection',
+      'exact account/assistant binding predecessor projection'],
   ].map(([functionName, label]) => sqlFunctionBody(
-    functionName === 'public.ravradar_ravscore_checkpoint_cas' ? casMigration : migration,
+    migration,
     functionName,
     label,
   ));
@@ -392,7 +384,8 @@ export async function expectedCheckpointCasContract({
     + `\n-- cp-close-predecessor-projection --\n${definitions[9]}`
     + `\n-- owner-current-predecessor-projection --\n${definitions[10]}`
     + `\n-- water-level-predecessor-projection --\n${definitions[11]}`
-    + `\n-- userdata-predecessor-projection --\n${definitions[12]}`;
+    + `\n-- userdata-predecessor-projection --\n${definitions[12]}`
+    + `\n-- account-assistant-predecessor-projection --\n${definitions[13]}`;
   return Object.freeze({
     id: CHECKPOINT_CAS_CONTRACT_ID,
     sha256: sha256(definition),
@@ -739,6 +732,7 @@ export async function assertSupabaseMigrationPlan({
   migrationListText,
   dryRunText,
   migrationsDirectory = MIGRATIONS_DIRECTORY,
+  allowAccountAssistantPrewritePlan = false,
 } = {}) {
   await inspectMigrationSources({ migrationsDirectory });
   const rows = parseSupabaseMigrationList(migrationListText);
@@ -751,6 +745,10 @@ export async function assertSupabaseMigrationPlan({
   }
 
   const pending = [...local].filter(version => !remote.has(version));
+  if (pending.includes(ACCOUNT_ASSISTANT_MIGRATION.version)) {
+    assert.equal(allowAccountAssistantPrewritePlan, true,
+      'Pending account/assistant successor requires its exact prewrite route');
+  }
   const unexpectedPending = pending.filter(version => !requiredVersions.has(version));
   assert.deepEqual(unexpectedPending, [],
     `refusing db push with unexpected pending migrations: ${unexpectedPending.join(', ')}`);

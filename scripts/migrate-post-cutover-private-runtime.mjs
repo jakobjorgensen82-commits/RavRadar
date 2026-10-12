@@ -889,6 +889,32 @@ export function assertUserdataPrewriteBindings(identity, previousCandidate, curr
   }
 }
 
+// Separate fixed successor. Never reinterpret the historic userdata grant.
+export function assertAccountAssistantPrewriteBindings(identity, previousCandidate, currentIntegrated, currentCandidate, currentContractHashes) {
+  if (identity.modelBinding.modelBundleSha256 !== '249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932'
+    || previousCandidate.modelBundleSha256 !== '55fd7dfa5ee36596c729d93225a448ea5b8f1e7142c44b8b1bda5c3d4d84c957'
+    || currentIntegrated.modelBundleSha256 !== 'c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5'
+    || currentCandidate.modelBundleSha256 !== '2fdc7426ea99382731c6f4d118eacf4fc271f505fcf121bc67c5349c62938af9'
+    || identity.contractHashes.continuationStateContractSha256 !== 'a5430dd21e3135d6efc09e22df3dd0cdcafee723f962ff1d3cb52e7765b2aaa0'
+    || currentContractHashes.continuationStateContractSha256 !== '7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b') {
+    throw new Error('Account/assistant pre-write proof is outside its exact successor');
+  }
+}
+
+// Resolve only the three fixed CLI intents before constructing any client.
+export function assertExclusivePrewriteIntent(argv) {
+  const flags = ['--verify-assistant-prewrite', '--verify-userdata-prewrite', '--verify-account-assistant-prewrite'];
+  const selected = argv.filter(value => flags.includes(value));
+  if (selected.length > 1) throw new Error('Pre-write intent is ambiguous');
+  if (selected.length && argv.includes('--owner-current-original')) {
+    throw new Error('Pre-write intent cannot use the owner-current-original route');
+  }
+}
+
+export async function verifyAccountAssistantPrewritePreservation(options = {}) {
+  return verifyBindingPrewritePreservation(options, 'account-assistant');
+}
+
 export async function verifyAssistantPrewritePreservation(options = {}) {
   return verifyBindingPrewritePreservation(options, 'assistant');
 }
@@ -922,7 +948,10 @@ async function verifyBindingPrewritePreservation({ sourceRoot, outputRoot,
   const report = await readJson(reportPath, 'Same normal migration result');
   const currentIntegrated = ravScoreModelBinding();
   const currentCandidate = candidateModelBinding();
-  if (intent === 'userdata') {
+  if (intent === 'account-assistant') {
+    assertAccountAssistantPrewriteBindings(identity, modules.candidate.ravScoreModelBinding(),
+      currentIntegrated, currentCandidate, await privateRuntimeContractHashes({ repositoryRoot: repository }));
+  } else if (intent === 'userdata') {
     assertUserdataPrewriteBindings(identity, modules.candidate.ravScoreModelBinding(),
       currentIntegrated, currentCandidate, await privateRuntimeContractHashes({ repositoryRoot: repository }));
   } else if (identity.modelBinding.modelBundleSha256 !== 'ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb'
@@ -1611,6 +1640,7 @@ function argument(argv, name) {
 
 async function main() {
   const argv = process.argv.slice(2);
+  assertExclusivePrewriteIntent(argv);
   const options = {
     sourceRoot: argument(argv, '--source'),
     outputRoot: argument(argv, '--output'),
@@ -1623,6 +1653,12 @@ async function main() {
     expectedSourceHead: argument(argv, '--expected-source-head'),
     reportPath: argument(argv, '--report'),
   };
+  if (argv.includes('--verify-account-assistant-prewrite')) {
+    const { documentRequest } = createProtectedPrivateRuntimeClients({ storageBackend: 'supabase' });
+    await verifyAccountAssistantPrewritePreservation({ ...options, request: documentRequest });
+    console.log('Account/assistant original preservation reverified before binding installation.');
+    return;
+  }
   if (argv.includes('--verify-userdata-prewrite')) {
     if (argv.includes('--verify-assistant-prewrite')) throw new Error('Pre-write intent is ambiguous');
     const { documentRequest } = createProtectedPrivateRuntimeClients({ storageBackend: 'supabase' });

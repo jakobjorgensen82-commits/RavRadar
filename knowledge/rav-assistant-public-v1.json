@@ -1,6 +1,6 @@
 {
   "schemaVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.575",
+  "releaseVersion": "4.0.576",
   "ravScoreModelBinding": {
     "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
     "stateSchemaVersion": "6.0.0",
@@ -12,7 +12,7 @@
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932"
+    "modelBundleSha256": "c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5"
   },
   "scoreModel": {
     "id": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
@@ -212,6 +212,10 @@
     {
       "id": "public-context.selected-zone-only",
       "text": "A remote assistant may explain only the small selected-zone public context supplied by RavRadar. National rankings and exact best-time calculations remain deterministic RavRadar functions and must not be invented by the model."
+    },
+    {
+      "id": "identification.spectroscopy-limits",
+      "text": "FTIR and Raman provide useful evidence about amber chemistry and alteration. Comparing the surface and interior can reveal differences, but natural variation and heat treatment can overlap. A single spectrum does not by itself establish an exact age or an unambiguous weathering stage. Qualified assessment combines comparative spectra, other analytical methods and the specimen's geological context; spectroscopy is not categorically incapable of detecting treatment."
     }
   ],
   "fixedRefusals": {
