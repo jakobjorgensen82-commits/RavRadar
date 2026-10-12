@@ -1,25 +1,27 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.574';
-import { assertAuthIdentitySettled, authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.574';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.575';
+import { collectOwnTripExport } from './own-trip-export.js?v=4.0.575';
+import { assertAuthIdentitySettled, authIdentityEpoch, authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.575';
 import {
   TRIP_EVIDENCE_SCHEMA_VERSION,
   assertObservationTripQualityBinding,
   assertTripEvidencePrivacy,
   migrateLegacyUnattestedObservationColumns,
   toObservationTripColumns
-} from './trip-evidence-contract.js?v=4.0.574';
+} from './trip-evidence-contract.js?v=4.0.575';
 import {
+  observationOriginFields,
   assertTripObservationNestedPrivacy,
   expectedCalibrationEligibility,
   projectTripStoragePayload,
   tripEvidenceIntegrityIssues
-} from './calibration-eligibility.js?v=4.0.574';
+} from './calibration-eligibility.js?v=4.0.575';
 import {
   RAVSCORE_MODEL_ID,
   assertRavScoreModelBinding,
   ravScoreModelBinding
-} from '../core/ravscore-model-contract.js?v=4.0.574';
-import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.574';
-import { markTripEvidenceSubmitted, tripEvidenceStorageKeys } from './trip-evidence-store.js?v=4.0.574';
+} from '../core/ravscore-model-contract.js?v=4.0.575';
+import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.575';
+import { markTripEvidenceSubmitted, tripEvidenceStorageKeys } from './trip-evidence-store.js?v=4.0.575';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
 const LOCAL_KEY='ravradar-observations-v2';
 const OUTBOX_KEY='ravradar-observation-outbox-v1';
@@ -99,6 +101,61 @@ export async function getOwnTripObservations({ limit = 100 } = {}) {
   if (!response.ok) throw new Error(`Dine ture kunne ikke hentes (${response.status}).`);
   if (!Array.isArray(body?.rows)) throw new Error('Dine ture kunne ikke hentes sikkert.');
   return body.rows;
+}
+export async function getOwnTripExport({ isActive = () => true } = {}) {
+  if (!enabled) throw new Error('TRIP_EXPORT_UNAVAILABLE');
+  if (typeof isActive !== 'function') throw new Error('TRIP_EXPORT_INVALID');
+  const identity = authIdentityEpoch();
+  const assertActive = () => {
+    if (authIdentityEpoch() !== identity) throw new Error('TRIP_EXPORT_OWNER_CHANGED');
+    if (isActive() !== true) throw new Error('TRIP_EXPORT_CANCELLED');
+  };
+  assertActive();
+  const active = await requireFreshSession();
+  assertActive();
+  const userId = active?.user?.id;
+  if (!userId) throw new Error('TRIP_EXPORT_OWNER_REQUIRED');
+  const assertOwner = async () => {
+    assertActive();
+    if (currentSession()?.user?.id !== userId) throw new Error('TRIP_EXPORT_OWNER_CHANGED');
+    const fresh = await requireFreshSession();
+    assertActive();
+    if (fresh?.user?.id !== userId || currentSession()?.user?.id !== userId) throw new Error('TRIP_EXPORT_OWNER_CHANGED');
+  };
+  // Pace NEW pages, not retries. The first twelve pages fit the existing
+  // minute bucket; thereafter a full-minute pause and conservative spacing
+  // also keep this one export below the unchanged hourly budget. Other
+  // traffic and the shared daily limit can still refuse: fail closed then.
+  // Only transient time/count metadata is retained, never a resumable copy.
+  let completedPages = 0, nextPageAt = 0;
+  const awaitPageCapacity = async () => {
+    while (performance.now() < nextPageAt) {
+      assertActive();
+      if (currentSession()?.user?.id !== userId) throw new Error('TRIP_EXPORT_OWNER_CHANGED');
+      await new Promise(resolve => setTimeout(resolve, Math.min(1000, nextPageAt - performance.now())));
+    }
+    // A delay is not fresh-login evidence. Recheck after the final timer,
+    // including cancellation/account changes during that asynchronous gap.
+    await assertOwner();
+  };
+  return collectOwnTripExport({
+    userId, assertOwner,
+    readLocal: () => JSON.parse(localStorage.getItem(LOCAL_KEY) ?? '[]'),
+    readPending: () => JSON.parse(localStorage.getItem(OUTBOX_KEY) ?? '[]'),
+    readPage: async cursor => {
+      await awaitPageCapacity();
+      assertActive();
+      const { response, body } = await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/functions/v1/trip-log`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation: 'export-page', cursor }),
+      }, { expectedUserId: userId, retry401: false, consumeJson: true });
+      assertActive();
+      if (!response.ok) throw new Error('TRIP_EXPORT_UNAVAILABLE');
+      completedPages += 1;
+      nextPageAt = performance.now() + (completedPages < 12 ? 0 : completedPages === 12 ? 61_000 : 36_000);
+      return body;
+    },
+  });
 }
 function upsertLocal(row){const safe=migrateLegacyTripObservationRow(row),rows=readMigratedRows(LOCAL_KEY);const i=rows.findIndex(x=>x.id===safe.id);if(i>=0)rows[i]=safe;else rows.push(safe);write(LOCAL_KEY,rows);}
 function enqueue(row){const safe=migrateLegacyTripObservationRow(row),rows=readMigratedRows(OUTBOX_KEY);if(!rows.some(x=>x.id===safe.id))rows.push(safe);write(OUTBOX_KEY,rows);}
@@ -218,9 +275,9 @@ export async function syncPendingObservations(){
   }
   return observationSyncPromise;
 }
-export async function submitObservation({zone,huntMode,result,grams=null,scoreResult,weather,gps=null,tripId=null,observedAt=null}){
+export async function submitObservation({zone,huntMode,result,grams=null,scoreResult,weather,gps=null,tripId=null,observedAt=null,observationOrigin:origin}){
   assertAuthIdentitySettled();
-  const session=currentSession();const row={id:crypto.randomUUID(),zone_id:zone.id,zone_name:zone.name,coast_type:zone.coastType||null,observed_at:observedAt||new Date().toISOString(),submitted_at:new Date().toISOString(),hunt_mode:huntMode,result,grams:grams===''||grams==null?null:Number(grams),anonymous_id:anonymousId(),user_id:session?.user?.id||null,trip_id:tripId,gps,rav_score:scoreResult?.score??null,score_level:scoreResult?.level??null,ai_probability:null,ai_confidence:null,model_version:observedRavScoreModelVersion(scoreResult),weather_snapshot:immutableWeatherSnapshot(weather,scoreResult),wind_speed_mps:weather?.windSpeedMps??null,wind_direction_deg:weather?.windDirectionDeg??null,wave_height_m:weather?.waveHeightM??null,wave_period_s:weather?.wavePeriodS??null,water_level_cm:weather?.waterLevelCm??null,current_speed_mps:weather?.currentSpeedMps??null,current_direction_deg:weather?.currentDirectionDeg??null,water_temperature_c:weather?.waterTemperatureC??null,sync_status:enabled?'pending':'local'};
+  const session=currentSession();const row={...(origin===undefined?{}:observationOriginFields({observation_origin:origin})),id:crypto.randomUUID(),zone_id:zone.id,zone_name:zone.name,coast_type:zone.coastType||null,observed_at:observedAt||new Date().toISOString(),submitted_at:new Date().toISOString(),hunt_mode:huntMode,result,grams:grams===''||grams==null?null:Number(grams),anonymous_id:anonymousId(),user_id:session?.user?.id||null,trip_id:tripId,gps,rav_score:scoreResult?.score??null,score_level:scoreResult?.level??null,ai_probability:null,ai_confidence:null,model_version:observedRavScoreModelVersion(scoreResult),weather_snapshot:immutableWeatherSnapshot(weather,scoreResult),wind_speed_mps:weather?.windSpeedMps??null,wind_direction_deg:weather?.windDirectionDeg??null,wave_height_m:weather?.waveHeightM??null,wave_period_s:weather?.wavePeriodS??null,water_level_cm:weather?.waterLevelCm??null,current_speed_mps:weather?.currentSpeedMps??null,current_direction_deg:weather?.currentDirectionDeg??null,water_temperature_c:weather?.waterTemperatureC??null,sync_status:enabled?'pending':'local'};
   upsertLocal(row);if(!enabled)return {stored:'local',row};enqueue(row);const status=await syncPendingObservations();const stored=status.pending?'pending':'remote';return {stored,row,status};
 }
 function sameObservationValue(left,right){
@@ -274,6 +331,7 @@ export async function submitTripEvidenceObservation(columns){
   }
   const features=columns.calibration_features||{};
   const row={
+    ...observationOriginFields(columns),
     id:existing?.id||columns.trip_id,
     zone_id:columns.actual_zone_id,
     zone_name:columns.zone_name||columns.actual_zone_id,
@@ -338,8 +396,10 @@ export async function submitAccountTripReportObservation(columns){
   if(authIdentityEpoch()!==identity||(currentSession()?.user?.id||null)!==(session?.user?.id||null))throw new Error('Kontoen blev ændret. Prøv igen fra den rigtige konto.');
   if(!session?.user?.id)throw new Error('Log ind, før du indberetter en tur fra din konto.');
   const existing=readMigratedRows(LOCAL_KEY).find(row=>row.trip_id===columns.trip_id);
+  if(existing&&!sameObservationValue(observationOriginFields(existing),observationOriginFields(columns)))throw new Error('Den gemte tur er ændret og kan ikke sendes som samme tur.');
   const submittedAt=new Date().toISOString();
   const row={
+    ...observationOriginFields(columns),
     id:existing?.id||columns.trip_id,
     zone_id:columns.actual_zone_id,
     zone_name:columns.zone_name||columns.actual_zone_id,

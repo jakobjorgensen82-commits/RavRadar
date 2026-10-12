@@ -16,14 +16,14 @@ import {
   TRIP_STORAGE_SIGNED_LOGIN_SIGNATURE_PATH,
 } from "../_shared/trip-storage-contract-probe.js";
 import { verifyTripGatewaySignature } from "../_shared/trip-storage.js";
-import { listOwnTripObservations } from "../_shared/trip-store.ts";
+import { exportOwnTripPage, listOwnTripObservations } from "../_shared/trip-store.ts";
 import { tripStorageReadinessHeaders } from "../_shared/trip-storage-readiness.ts";
 
 Deno.serve(async (request) => {
   try {
     assertAllowedOrigin(request);
     if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: tripStorageReadinessHeaders(request) });
+      return new Response(null, { status: 204, headers: tripStorageReadinessHeaders(request, true) });
     }
     const contractProbeHeader = request.headers.get(TRIP_STORAGE_CONTRACT_PROBE_HEADER);
     if (contractProbeHeader !== null) {
@@ -48,16 +48,22 @@ Deno.serve(async (request) => {
         status: contractProbe.status,
         headers: {
           "Content-Type": "application/json; charset=utf-8",
-          ...tripStorageReadinessHeaders(request),
+          ...tripStorageReadinessHeaders(request, true),
         },
       });
     }
     const payload = await readJsonObject(request, 4 * 1024);
-    const unknown = Object.keys(payload).filter(key => key !== "limit");
+    const exportRequested = payload.operation === "export-page";
+    const allowedFields = exportRequested ? ["operation", "cursor"] : ["limit"];
+    const unknown = Object.keys(payload).filter(key => !allowedFields.includes(key));
     if (unknown.length) throw new GatewayError(400, "UNKNOWN_FIELDS");
+    if (exportRequested && !(payload.cursor === null || (typeof payload.cursor === "string" && payload.cursor.length <= 512))) {
+      throw new GatewayError(400, "INVALID_EXPORT_CURSOR");
+    }
     const limit = Math.max(1, Math.min(200, Math.round(Number(payload.limit) || 100)));
     await enforceRateLimits(request, "trip-log", { minute: 12, hour: 120, globalDay: 5000 });
     const userId = await requireAuthenticatedUserId(request);
+    if (exportRequested) return jsonResponse(request, await exportOwnTripPage(userId, payload.cursor as string | null));
     const rows = await listOwnTripObservations(userId, limit);
     return jsonResponse(request, { rows });
   } catch (error) {

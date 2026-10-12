@@ -21,18 +21,20 @@ function sleep(milliseconds) {
   return new Promise(resolve => setTimeout(resolve, milliseconds));
 }
 
-function validHealth(response, body) {
+function validHealth(response, body, preUpgrade = false) {
   return response?.ok === true
     && body?.ok === true
     && body?.contract_version === '4.0.311'
     && body?.shards === 10
     && body?.storage_schema_version === 1
     && body?.idempotency_registry_schema_version === 2
-    && body?.owner_erasure_tombstone_schema_version === 1;
+    && body?.owner_erasure_tombstone_schema_version === 1
+    && (body?.trip_export_version === 1 || (preUpgrade === true && !Object.hasOwn(body, 'trip_export_version')));
 }
 
 export async function waitForWorkerHealth({
   gatewayUrl,
+  preUpgrade = false,
   fetchImpl = fetch,
   retryDelaysMs = WORKER_HEALTH_RETRY_DELAYS_MS,
   fetchTimeoutMs = TRIP_STORAGE_NETWORK_TIMEOUT_MS,
@@ -46,13 +48,13 @@ export async function waitForWorkerHealth({
         headers: { accept: 'application/json' },
       }, { fetchImpl, timeoutMs: fetchTimeoutMs });
       lastBody = await lastResponse.json().catch(() => ({}));
-      if (validHealth(lastResponse, lastBody)) return { response: lastResponse, body: lastBody };
+      if (validHealth(lastResponse, lastBody, preUpgrade)) return { verified: true, response: lastResponse, body: lastBody };
     } catch {
       lastResponse = null;
       lastBody = {};
     }
   }
-  return { response: lastResponse, body: lastBody };
+  return { verified: false, response: lastResponse, body: lastBody };
 }
 
 function workerCountFailure(code, { attempts = 1, status = null, probeKind = null } = {}) {
@@ -249,15 +251,7 @@ export async function runWorkerCountReadProbe({
   throw workerCountFailure('TRIP_STORAGE_WORKER_COUNT_TRANSIENT_EXHAUSTED', { probeKind });
 }
 
-export async function verifyActiveWorkerDeployment({
-  accountId, apiToken, workerName, expectedVersion,
-  fetchImpl = globalThis.fetch, timeoutMs = TRIP_STORAGE_NETWORK_TIMEOUT_MS,
-}) {
-  const failure = () => new Error('TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED');
-  const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
-  if (typeof accountId !== 'string' || !/^[a-f0-9]{32}$/i.test(accountId) || typeof apiToken !== 'string' || !apiToken.trim()
-    || workerName !== 'ravradar-trip-gateway' || typeof expectedVersion !== 'string' || !uuid.test(expectedVersion)
-    || typeof fetchImpl !== 'function' || !Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > TRIP_STORAGE_NETWORK_TIMEOUT_MS) throw failure();
+async function readWorkerMetadata(url, { apiToken, fetchImpl, timeoutMs }, failure) {
   const controller = new AbortController();
   let timer, reader;
   const deadline = new Promise((_, reject) => {
@@ -265,7 +259,7 @@ export async function verifyActiveWorkerDeployment({
   });
   try {
     const response = await Promise.race([boundedFetch(
-      `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/workers/scripts/${encodeURIComponent(workerName)}/deployments?page=1&per_page=1`, {
+      url, {
         method: 'GET', redirect: 'error', cache: 'no-store', signal: controller.signal,
         headers: { Authorization: `Bearer ${apiToken}`, accept: 'application/json' },
       }, { fetchImpl, timeoutMs }), deadline]);
@@ -283,6 +277,32 @@ export async function verifyActiveWorkerDeployment({
       text += decoder.decode(value, { stream: true });
     }
     const body = JSON.parse(text + decoder.decode());
+    return body;
+  } catch {
+    throw failure();
+  } finally {
+    clearTimeout(timer);
+    controller.abort();
+    // Request cancellation without awaiting an unbounded underlying cancel operation.
+    try { reader?.cancel().catch(() => {}); } catch { /* Never replace the verification result. */ }
+    try { reader?.releaseLock(); } catch { /* Cleanup must not replace the verification result. */ }
+  }
+}
+
+export async function verifyActiveWorkerDeployment({
+  accountId, apiToken, workerName, expectedVersion, discoverVersion = false,
+  fetchImpl = globalThis.fetch, timeoutMs = TRIP_STORAGE_NETWORK_TIMEOUT_MS,
+}) {
+  const failure = () => new Error('TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED');
+  const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+  if (typeof accountId !== 'string' || !/^[a-f0-9]{32}$/i.test(accountId) || typeof apiToken !== 'string' || !apiToken.trim()
+    || workerName !== 'ravradar-trip-gateway' || typeof discoverVersion !== 'boolean'
+    || (discoverVersion ? expectedVersion !== undefined : (typeof expectedVersion !== 'string' || !uuid.test(expectedVersion)))
+    || typeof fetchImpl !== 'function' || !Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > TRIP_STORAGE_NETWORK_TIMEOUT_MS) throw failure();
+  const body = await readWorkerMetadata(
+    `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${workerName}/deployments?page=1&per_page=1`,
+    { apiToken, fetchImpl, timeoutMs }, failure);
+  try {
     const deployments = body?.result?.deployments;
     const info = body?.result_info;
     if (body?.success !== true || !body.result || typeof body.result !== 'object' || Array.isArray(body.result)
@@ -296,18 +316,47 @@ export async function verifyActiveWorkerDeployment({
       || current.strategy !== 'percentage' || !Array.isArray(versions) || versions.length !== 1
       || !versions[0] || typeof versions[0] !== 'object' || Array.isArray(versions[0])
       || versions[0].percentage !== 100 || typeof versions[0].version_id !== 'string'
-      || !uuid.test(versions[0].version_id) || versions[0].version_id.toLowerCase() !== expectedVersion.toLowerCase()) throw failure();
+      || !uuid.test(versions[0].version_id) || (!discoverVersion && versions[0].version_id.toLowerCase() !== expectedVersion.toLowerCase())) throw failure();
     return { deploymentId: current.id, versionId: versions[0].version_id };
-  } catch {
-    throw failure();
-  } finally {
-    clearTimeout(timer);
-    controller.abort();
-    // Request cancellation without awaiting an unbounded underlying cancel operation.
-    try { reader?.cancel().catch(() => {}); } catch { /* Never replace the verification result. */ }
-    try { reader?.releaseLock(); } catch { /* Cleanup must not replace the verification result. */ }
-  }
+  } catch { throw failure(); }
 }
+
+export async function verifyExistingWorkerBindings({
+  accountId, apiToken, workerName, expectedVersion, expectedBindings,
+  fetchImpl = globalThis.fetch, timeoutMs = TRIP_STORAGE_NETWORK_TIMEOUT_MS,
+}) {
+  const failure = () => new Error('TRIP_STORAGE_WORKER_BINDINGS_UNVERIFIED');
+  const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+  const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+  if (!Array.isArray(expectedBindings) || expectedBindings.length !== 10
+    || expectedBindings.some((row, index) => !object(row) || row.binding !== `TRIP_DB_${index}`
+      || row.database_name !== `ravradar-trips-${index}` || typeof row.database_id !== 'string' || !uuid.test(row.database_id))
+    || new Set(expectedBindings.map(row => row.database_id.toLowerCase())).size !== 10) throw failure();
+  try {
+    const options = { accountId, apiToken, workerName, fetchImpl, timeoutMs };
+    const current = await verifyActiveWorkerDeployment({ ...options, expectedVersion, discoverVersion: expectedVersion === undefined });
+    const body = await readWorkerMetadata(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${workerName}/versions/${current.versionId}`,
+      { apiToken, fetchImpl, timeoutMs }, failure);
+    const result = body?.result, bindings = result?.resources?.bindings;
+    // Exact wrangler@4.28.1 ApiVersion.resources.bindings: WorkerMetadataBinding[].
+    // D1 metadata uses type/name/id, not the different current-settings schema.
+    if (body?.success !== true || !object(result) || result.id !== current.versionId
+      || !object(result.resources) || !Array.isArray(bindings) || bindings.length > 100
+      || bindings.some(row => !object(row) || typeof row.name !== 'string' || typeof row.type !== 'string')
+      || new Set(bindings.map(row => row.name)).size !== bindings.length) throw failure();
+    const d1 = bindings.filter(row => row.type === 'd1');
+    if (d1.length !== 10 || expectedBindings.some(expected => {
+      const row = d1.find(binding => binding.name === expected.binding);
+      return !row || typeof row.id !== 'string' || row.id.toLowerCase() !== expected.database_id.toLowerCase();
+    })) throw failure();
+    const after = await verifyActiveWorkerDeployment({ ...options, expectedVersion: current.versionId });
+    if (after.deploymentId !== current.deploymentId) throw failure();
+    // Do not retain settings, author, annotations or unrelated/secret bindings.
+    return { ...current, bindings: expectedBindings.map(row => ({ binding: row.binding, database_name: row.database_name, database_id: row.database_id })) };
+  } catch { throw failure(); }
+}
+
 
 
 async function main() {
@@ -315,8 +364,10 @@ async function main() {
   const sharedSecret = process.env.TRIP_GATEWAY_SHARED_SECRET || '';
   if (sharedSecret.length < 32) throw new Error('Worker-verifikationens delte hemmelighed mangler.');
 
-  const health = await waitForWorkerHealth({ gatewayUrl });
-  if (!validHealth(health.response, health.body)) {
+  const preUpgrade = process.env.TRIP_STORAGE_UPGRADE_PREFLIGHT === '1'
+    && !Object.hasOwn(process.env, 'EXPECTED_TRIP_WORKER_VERSION');
+  const health = await waitForWorkerHealth({ gatewayUrl, preUpgrade });
+  if (health.verified !== true) {
     throw new Error('Workerens offentlige, datasikre health-kontrakt fejlede efter afgrænset udbredelsesventetid.');
   }
 
@@ -333,7 +384,9 @@ async function main() {
     let configuration;
     try { configuration = JSON.parse(fs.readFileSync(process.env.TRIP_WRANGLER_CONFIG_PATH, 'utf8')); }
     catch { throw new Error('TRIP_STORAGE_WORKER_DEPLOYMENT_UNVERIFIED'); }
-    await verifyActiveWorkerDeployment({
+    const verify = process.env.TRIP_STORAGE_OWNER_EXPORT_UPGRADE === '1' ? verifyExistingWorkerBindings : verifyActiveWorkerDeployment;
+    await verify({
+      expectedBindings: configuration?.d1_databases,
       accountId: process.env.CLOUDFLARE_ACCOUNT_ID, apiToken: process.env.CLOUDFLARE_API_TOKEN,
       workerName: configuration?.name, expectedVersion: process.env.EXPECTED_TRIP_WORKER_VERSION,
     });

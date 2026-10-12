@@ -13,6 +13,7 @@
   ],
   "properties": {
     "schemaVersion": { "const": 3 },
+    "observationOrigin": { "enum": ["unknown", "synthetic-test"] },
     "tripId": { "type": "string", "format": "uuid" },
     "tripStartedAt": { "$ref": "#/$defs/dateTime" },
     "tripEndedAt": { "$ref": "#/$defs/dateTime" },

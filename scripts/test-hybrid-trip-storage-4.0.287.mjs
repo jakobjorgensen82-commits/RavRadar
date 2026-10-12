@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
+import { buildAccountTripReport, toAccountObservationColumns } from '../js/services/account-trip-report-contract.js';
+import { applySchema } from './prepare-cloudflare-trip-storage.mjs';
 import { handleRequest } from '../cloudflare/trip-gateway/worker.js';
 import { WORKER_HEALTH_RETRY_DELAYS_MS, waitForWorkerHealth } from './verify-cloudflare-trip-gateway.mjs';
 import {
@@ -18,6 +21,9 @@ import {
   canonicalJson,
   countCloudflareTrips,
   deleteCloudflareTrips,
+  exportCloudflareTripPage,
+  createTripExportCursor,
+  readTripExportCursor,
   assertExternalTripNestedContract,
   assertNoPrivateLocation,
   externalOwnerSubject,
@@ -104,6 +110,10 @@ const payload = {
   result: 'none',
   gps: null,
 };
+// Explicit test-only selection; no flag still runs every historical case below.
+if (process.argv.includes('--real-sqlite-export-only')) {
+  await checkRealSqliteSignedExport({ payload, userOwner, secret, gatewaySecret, gatewayUrl });
+} else {
 const external = externalTripPayload(payload);
 assert.equal('user_id' in external, false);
 assert.equal('anonymous_id' in external, false);
@@ -137,7 +147,8 @@ const tripInputFieldNames4010 = [
   'forecast_snapshot_id', 'forecast_issued_at', 'forecast_valid_at', 'forecast_captured_at', 'calibration_features',
   'data_quality_flags', 'forecast_target_at', 'report_accuracy',
 ];
-assert.deepEqual(TRIP_INPUT_FIELD_NAMES, tripInputFieldNames4010);
+assert.deepEqual(TRIP_INPUT_FIELD_NAMES, [...tripInputFieldNames4010, 'observation_origin']);
+assert.equal(Object.hasOwn(external, 'observation_origin'), false, 'Legacy absence is not retagged as new provenance.');
 function externalTripPayload4010(payload) {
   const external = {};
   for (const key of tripInputFieldNames4010) {
@@ -633,6 +644,7 @@ const eventualHealth = await waitForWorkerHealth({
           storage_schema_version: 1,
           idempotency_registry_schema_version: 2,
           owner_erasure_tombstone_schema_version: 1,
+          trip_export_version: 1,
           shards: 10,
         }
       : { ok: false }), { status: healthy ? 200 : 404, headers: { 'Content-Type': 'application/json' } });
@@ -643,6 +655,27 @@ assert.equal(eventualHealth.body?.ok, true);
 assert.ok(WORKER_HEALTH_RETRY_DELAYS_MS.length >= 2);
 assert.ok(WORKER_HEALTH_RETRY_DELAYS_MS.reduce((sum, delay) => sum + delay, 0) <= 60_000);
 
+// The old healthy Worker receipt must not admit a new export installation.
+let exportHealthAttempts = 0;
+const exportHealth = await waitForWorkerHealth({
+  gatewayUrl, retryDelaysMs: [0, 0],
+  fetchImpl: async () => {
+    exportHealthAttempts += 1;
+    return Response.json({ ...eventualHealth.body,
+      trip_export_version: exportHealthAttempts === 1 ? undefined : 1 });
+  },
+});
+assert.equal(exportHealthAttempts, 2, 'Old 4.0.311 health without export capability must not pass');
+assert.equal(exportHealth.body.trip_export_version, 1);
+assert.equal(exportHealth.verified, true);
+for (const version of [undefined, 0, 2, '1']) {
+  const unavailableExport = await waitForWorkerHealth({
+    gatewayUrl, retryDelaysMs: [0, 0],
+    fetchImpl: async () => Response.json({ ...eventualHealth.body, trip_export_version: version }),
+  });
+  assert.equal(unavailableExport.verified, false, 'A retained old/mismatched health body is not a verified receipt');
+}
+
 function edgeAttestationResponse(mode) {
   return new Response(null, {
     status: 204,
@@ -650,6 +683,7 @@ function edgeAttestationResponse(mode) {
       'Access-Control-Allow-Origin': 'https://ravradar.dk',
       'X-RavRadar-Trip-Contract-Version': '4.0.311',
       'X-RavRadar-Trip-Storage-Mode': mode,
+      'X-RavRadar-Trip-Export-Version': '1',
     },
   });
 }
@@ -695,6 +729,23 @@ for (const request of convergedEdgeRequests) {
   assert.equal(request.init.cache, 'no-store');
   assert.equal(request.init.headers['cache-control'], 'no-cache, no-store');
   assert.ok(request.url.searchParams.get('_rr_trip_attestation'));
+}
+
+for (const version of [null, '0', '2', '01']) {
+  const oldEdge = await waitForTripStorageEdgeReadiness({
+    baseUrl: 'https://example.supabase.co', publishableKey: 'synthetic-publishable-key',
+    expectedStorageMode: 'd1', retryDelaysMs: [0, 0],
+    fetchImpl: async input => {
+      const response = edgeAttestationResponse('d1');
+      if (String(input).includes('/trip-log?')) {
+        if (version === null) response.headers.delete('X-RavRadar-Trip-Export-Version');
+        else response.headers.set('X-RavRadar-Trip-Export-Version', version);
+      }
+      return response;
+    },
+  });
+  assert.equal(oldEdge.ok, false, 'Old/absent/wrong Edge export capability cannot become ready');
+  assert.deepEqual(oldEdge.functionStatus, { 'submit-observation': true, 'trip-log': false });
 }
 
 const timestamp = 1_777_000_000_000;
@@ -771,6 +822,7 @@ class FakeD1Database {
               database.rows.set(storedClientId, {
                 storageSchemaVersion, ownerSubject, ownerKind, tripId: storedTripId, clientId: storedClientId,
                 observedAt, submittedAt, payloadJson, payloadSha256, source,
+                createdAt: new Date().toISOString(),
               });
             }
             return { success: true, meta: { changes: existing ? 0 : 1 } };
@@ -816,6 +868,19 @@ class FakeD1Database {
                   })),
               };
             }
+            if (normalized.includes('select client_observation_id, owner_subject, created_at')) {
+              const [ownerSubject, after, cutoff, limit] = args;
+              const result = {
+                success: true,
+                results: [...database.rows.values()]
+                  .filter(row => row.ownerSubject === ownerSubject && row.clientId > after && row.createdAt <= cutoff)
+                  .sort((a, b) => a.clientId < b.clientId ? -1 : 1)
+                  .slice(0, limit)
+                  .map(row => ({ client_observation_id: row.clientId, owner_subject: row.ownerSubject,
+                    created_at: row.createdAt, payload_json: row.payloadJson, payload_sha256: row.payloadSha256 })),
+              };
+              return database.exportQueryBarrier ? database.exportQueryBarrier(result) : result;
+            }
             if (normalized.includes('select payload_json, payload_sha256, observed_at')) {
               const [ownerSubject, limit] = args;
               return {
@@ -857,8 +922,12 @@ assert.deepEqual(await health.json(), {
   storage_schema_version: 1,
   idempotency_registry_schema_version: 2,
   owner_erasure_tombstone_schema_version: 1,
+  trip_export_version: 1,
   shards: 10,
 });
+assert.equal((await waitForWorkerHealth({ gatewayUrl, retryDelaysMs: [0],
+  fetchImpl: (input, init) => handleRequest(new Request(input, init), {}),
+})).verified, true, 'Actual Worker capability verifies without reading any owner or database');
 const unsigned = await handleRequest(new Request(`${gatewayUrl}/v1/trips/count`, {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
 }), env);
@@ -1714,6 +1783,107 @@ assert.doesNotMatch(schemaSql.match(/create table if not exists trip_owner_erasu
 assert.doesNotMatch(schemaSql.match(/create table if not exists trip_storage_control[\s\S]*?\);/i)?.[0] || '', /payload_json|weather_snapshot|coordinates|owner_subject|\bu\b|\bv\b/i);
 
 const worker = fs.readFileSync('cloudflare/trip-gateway/worker.js', 'utf8');
+// Real SQLite planning of the ACTUAL normal export query, not FakeD1's JS
+// sort. Only artificial SQL rows in memory; not real D1/Worker CPU capacity.
+const exportKeysetSql = worker.match(/`(select client_observation_id, owner_subject, created_at, payload_json, payload_sha256 from trip_observations[\s\S]*?limit \?)`/)?.[1];
+assert.ok(exportKeysetSql);
+const exportIndexSql = D1_TRIP_SCHEMA_STATEMENTS.find(sql => sql.includes('trip_observations_owner_export'));
+const exportIndexMigration = fs.readFileSync('cloudflare/trip-gateway/migrations/002_owner_export_keyset.sql', 'utf8');
+const normalizedSql = sql => sql.replace(/^--[^\n]*\r?\n/gm, '').trim().replace(/;$/, '').replace(/\s+/g, ' ');
+assert.equal(normalizedSql(exportIndexMigration), normalizedSql(exportIndexSql));
+assert.match(normalizedSql(exportIndexSql), /^create index if not exists trip_observations_owner_export on trip_observations\(owner_subject, client_observation_id, created_at\)$/);
+const exportSqlite = new DatabaseSync(':memory:');
+try {
+  // The historical migration stays untouched; the additive candidate is then
+  // applied twice in memory through the same statement as normal preparation.
+  exportSqlite.exec(schemaSql);
+  const insert = exportSqlite.prepare(`insert into trip_observations
+    (owner_subject,owner_kind,client_observation_id,observed_at,submitted_at,payload_json,payload_sha256,source,created_at)
+    values(?,?,?,?,?,?,?,?,?)`);
+  const sqlOwner = 'usr_v1_' + 'A'.repeat(43), sqlOtherOwner = 'usr_v1_' + 'B'.repeat(43);
+  const cutoff = '2026-10-01T00:00:00.000Z', oldAt = '2026-08-01T00:00:00.000Z';
+  const sqlId = index => `a0000000-0000-4000-8000-${String(index).padStart(12, '0')}`;
+  exportSqlite.exec('begin');
+  for (let index = 0; index < 10400; index++) insert.run(
+    index < 10200 ? sqlOwner : sqlOtherOwner, 'user', sqlId(index),
+    new Date(Date.parse(oldAt) + (10400 - index) * 1000).toISOString(), oldAt,
+    '{}', '0'.repeat(64), 'live', index >= 10000 && index < 10200 ? '2026-10-02T00:00:00.000Z' : oldAt,
+  );
+  exportSqlite.exec('commit');
+  const allOriginals = exportSqlite.prepare('select * from trip_observations order by client_observation_id');
+  const originalRows = canonicalJson(allOriginals.all());
+  const oldPlan = exportSqlite.prepare('explain query plan ' + exportKeysetSql).all(sqlOwner, '', cutoff, 201);
+  assert.ok(oldPlan.some(row => row.detail.includes('TEMP B-TREE')),
+    'The original display index requires a separate export sort.');
+  exportSqlite.exec(exportIndexSql); exportSqlite.exec(exportIndexSql);
+  for (const afterOrdinal of [0, 8000]) {
+    const after = afterOrdinal === 0 ? '' : sqlId(afterOrdinal - 1);
+    const plan = exportSqlite.prepare('explain query plan ' + exportKeysetSql).all(sqlOwner, after, cutoff, 201);
+    assert.ok(plan.some(row => row.detail.includes('trip_observations_owner_export')));
+    assert.equal(plan.some(row => row.detail.includes('TEMP B-TREE')), false);
+    const selected = exportSqlite.prepare(exportKeysetSql).all(sqlOwner, after, cutoff, 201);
+    assert.deepEqual(selected.map(row => row.client_observation_id),
+      Array.from({ length: 201 }, (_, index) => sqlId(afterOrdinal + index)));
+    assert.ok(selected.every(row => row.owner_subject === sqlOwner && row.created_at === oldAt));
+  }
+  assert.equal(canonicalJson(allOriginals.all()), originalRows, 'All 10400 original SQL rows remain exactly unchanged.');
+  const displayPlan = exportSqlite.prepare(`explain query plan
+    select payload_json, payload_sha256, observed_at from trip_observations
+    where owner_subject = ? order by observed_at desc limit ?`).all(sqlOwner, 100);
+  assert.ok(displayPlan.some(row => row.detail.includes('trip_observations_owner_time')),
+    'The existing display-list index is preserved.');
+  assert.equal(displayPlan.some(row => row.detail.includes('TEMP B-TREE')), false);
+} finally { exportSqlite.close(); }
+
+// Exercise the normal installer's schema writes AND metadata readback against
+// real, empty in-memory SQLite shards. No D1 account or private row is queried.
+async function checkInstalledExportIndex({ existingIndex = '', removeIndex = false, invalidReadback = false } = {}) {
+  const shards = Array.from({ length: 10 }, (_, index) => ({ name: `synthetic-shard-${index}`, uuid: `synthetic-${index}` }));
+  const sqliteShards = shards.map(() => new DatabaseSync(':memory:'));
+  const metadataReads = [];
+  let altered = false;
+  try {
+    for (const database of sqliteShards) database.exec(schemaSql);
+    if (existingIndex) sqliteShards[0].exec(existingIndex);
+    await applySchema(shards, { query: async (pathname, init) => {
+      const index = Number(pathname.match(/^\/d1\/database\/synthetic-(\d)\/query$/)?.[1]);
+      assert.ok(Number.isInteger(index) && index >= 0 && index < 10);
+      assert.equal(init.method, 'POST');
+      const body = JSON.parse(init.body);
+      assert.deepEqual(Object.keys(body), ['sql']);
+      const database = sqliteShards[index];
+      if (/^pragma /i.test(body.sql)) {
+        metadataReads.push([index, body.sql]);
+        if (index === 0 && removeIndex && !altered) {
+          database.exec('drop index trip_observations_owner_export'); altered = true;
+        }
+        const results = database.prepare(body.sql).all().map(row => ({ ...row }));
+        return { success: true, result: invalidReadback ? [] : [{ success: true, results }] };
+      }
+      assert.ok(D1_TRIP_SCHEMA_STATEMENTS.includes(body.sql), 'Only the normal additive schema statements may be executed');
+      database.exec(body.sql);
+      return { success: true, result: [{ success: true, results: [] }] };
+    } });
+    return metadataReads;
+  } finally { for (const database of sqliteShards) database.close(); }
+}
+const wrongOrderIndex = 'create index trip_observations_owner_export on trip_observations(owner_subject, created_at, client_observation_id)';
+await assert.rejects(checkInstalledExportIndex({ existingIndex: wrongOrderIndex }), /TRIP_EXPORT_INDEX_READBACK_INVALID/,
+  'CREATE IF NOT EXISTS success must not acknowledge an existing same-name wrong index');
+const indexMetadataReads = await checkInstalledExportIndex();
+assert.equal(indexMetadataReads.length, 20, 'Every one of ten normal shards requires both metadata readbacks');
+assert.deepEqual([...new Set(indexMetadataReads.map(([index]) => index))], Array.from({ length: 10 }, (_, index) => index));
+for (const existingIndex of [
+  'create index trip_observations_owner_export on trip_observations(owner_subject, client_observation_id)',
+  'create index trip_observations_owner_export on trip_observations(owner_subject, client_observation_id, created_at, observed_at)',
+  'create index trip_observations_owner_export on trip_observations(owner_subject collate nocase, client_observation_id, created_at)',
+  'create index trip_observations_owner_export on trip_observations(owner_subject desc, client_observation_id, created_at)',
+  'create unique index trip_observations_owner_export on trip_observations(owner_subject, client_observation_id, created_at)',
+  'create index trip_observations_owner_export on trip_observations(owner_subject, client_observation_id, created_at) where owner_subject is not null',
+  'create table other(owner_subject, client_observation_id, created_at); create index trip_observations_owner_export on other(owner_subject, client_observation_id, created_at)',
+]) await assert.rejects(checkInstalledExportIndex({ existingIndex }), /TRIP_EXPORT_INDEX_READBACK_INVALID/);
+await assert.rejects(checkInstalledExportIndex({ removeIndex: true }), /TRIP_EXPORT_INDEX_READBACK_INVALID/);
+await assert.rejects(checkInstalledExportIndex({ invalidReadback: true }), /TRIP_EXPORT_INDEX_READBACK_INVALID/);
 const tripStore = fs.readFileSync('supabase/functions/_shared/trip-store.ts', 'utf8');
 const submitFunction = fs.readFileSync('supabase/functions/submit-observation/index.ts', 'utf8');
 const tripLogFunction = fs.readFileSync('supabase/functions/trip-log/index.ts', 'utf8');
@@ -1765,4 +1935,278 @@ assert.match(submitFunction, /storeObservation/);
 assert.match(submitFunction, /const boundUserId = userId && payload\.user_id === userId \? userId : null/);
 assert.match(tripLogFunction, /requireAuthenticatedUserId/);
 assert.match(tripLogFunction, /listOwnTripObservations/);
-console.log('Hybrid turlagring: EU-D1-sharding, pseudonymisering, HMAC, global idempotens og ejer-sletningstombstones består.');
+// Read-only export exercises the real worker and signed client across all ten
+// synthetic shards. No live account, credential, database or user row is used.
+const exportEnv = { TRIP_GATEWAY_SHARED_SECRET: gatewaySecret };
+for (let index = 0; index < 10; index += 1) exportEnv[`TRIP_DB_${index}`] = new FakeD1Database();
+const exportIds = Array.from({ length: 501 }, (_, index) => `a0000000-0000-4000-8000-${String(index).padStart(12, '0')}`);
+async function exportFixture(id, owner = userOwner, createdAt = '2000-01-01T00:00:00.000Z') {
+  const record = await externalTripRecord({ owner, payload: { ...payload, client_observation_id: id, trip_id: null } });
+  return { ownerSubject: owner.subject, clientId: id, createdAt,
+    payloadJson: record.payload_json, payloadSha256: record.payload_sha256, observedAt: record.observed_at };
+}
+for (let index = 0; index < exportIds.length; index += 1) {
+  exportEnv[`TRIP_DB_${index % 10}`].rows.set(exportIds[index], await exportFixture(exportIds[index]));
+}
+const otherOwner = await externalOwnerSubject({ userId: anonymousId, secret });
+const otherId = 'b0000000-0000-4000-8000-000000000001';
+exportEnv.TRIP_DB_1.rows.set(otherId, await exportFixture(otherId, otherOwner));
+const futureId = 'c0000000-0000-4000-8000-000000000001';
+exportEnv.TRIP_DB_2.rows.set(futureId, await exportFixture(futureId, userOwner, new Date(Date.now() + 3_600_000).toISOString()));
+const exportFetch = (input, init) => handleRequest(new Request(input, init), exportEnv);
+const exportRead = cursor => exportCloudflareTripPage({ gatewayUrl, sharedSecret: gatewaySecret,
+  ownerSubject: userOwner.subject, cursor, fetchImpl: exportFetch });
+const initialExportState = canonicalJson([...Array(10)].map((_, i) => [...exportEnv[`TRIP_DB_${i}`].rows]));
+const exportFirst = await exportRead(null);
+const exportSecond = await exportRead(exportFirst.next_cursor);
+const exportThird = await exportRead(exportSecond.next_cursor);
+assert.deepEqual([exportFirst.rows.length, exportSecond.rows.length, exportThird.rows.length], [200, 200, 101]);
+assert.equal(exportThird.next_cursor, null);
+assert.equal(exportFirst.snapshot_at, exportThird.snapshot_at);
+assert.deepEqual([...exportFirst.rows, ...exportSecond.rows, ...exportThird.rows].map(row => row.client_observation_id), exportIds);
+assert.deepEqual(exportFirst.rows[0], JSON.parse(exportEnv.TRIP_DB_0.rows.get(exportIds[0]).payloadJson),
+  'Eksporten bevarer den gemte historiske payload i stedet for visningens modelprojektion.');
+assert.equal(canonicalJson([...Array(10)].map((_, i) => [...exportEnv[`TRIP_DB_${i}`].rows])), initialExportState,
+  'Alle gemte syntetiske rækker er byteidentiske efter eksport.');
+assert.equal(JSON.stringify(exportFirst).includes(userOwner.subject), false);
+assert.equal(JSON.stringify(exportFirst).includes(userId), false);
+assert.equal(JSON.stringify(exportFirst).includes('user_id'), false);
+await assert.rejects(exportCloudflareTripPage({ gatewayUrl, sharedSecret: gatewaySecret,
+  ownerSubject: otherOwner.subject, cursor: exportFirst.next_cursor, fetchImpl: exportFetch }), /REQUEST_REJECTED/);
+const tamperedCursor = JSON.stringify({ ...JSON.parse(exportFirst.next_cursor), after: exportIds[0] });
+await assert.rejects(exportRead(tamperedCursor), /REQUEST_REJECTED/);
+await assert.rejects(exportRead('not-json'), /REQUEST_REJECTED/);
+const fixedCursorTime = Date.now();
+const fixedCursor = await createTripExportCursor({ sharedSecret: gatewaySecret, ownerSubject: userOwner.subject,
+  after: exportIds[0], snapshotAt: exportFirst.snapshot_at, now: fixedCursorTime });
+await assert.rejects(readTripExportCursor({ sharedSecret: gatewaySecret, ownerSubject: userOwner.subject,
+  cursor: fixedCursor, now: fixedCursorTime + 300_001 }), /CURSOR_INVALID/);
+const forgedStored = exportEnv.TRIP_DB_0.rows.get(exportIds[0]);
+const oldPayloadJson = forgedStored.payloadJson;
+forgedStored.payloadJson = JSON.stringify({ ...JSON.parse(oldPayloadJson), grams: 999 });
+await assert.rejects(exportRead(null), /REQUEST_REJECTED/);
+forgedStored.payloadJson = oldPayloadJson;
+exportEnv.TRIP_DB_1.rows.set(exportIds[0], structuredClone(forgedStored));
+await assert.rejects(exportRead(null), /REQUEST_REJECTED/);
+exportEnv.TRIP_DB_1.rows.delete(exportIds[0]);
+exportEnv.TRIP_DB_0.tombstoneRows.add(userOwner.subject);
+await assert.rejects(exportRead(exportFirst.next_cursor), /REQUEST_REJECTED/,
+  'Ejer-sletning mellem sider må ikke ligne en vellykket tom slutside.');
+exportEnv.TRIP_DB_0.tombstoneRows.delete(userOwner.subject);
+exportEnv.TRIP_DB_5.exportQueryBarrier = result => {
+  exportEnv.TRIP_DB_0.tombstoneRows.add(userOwner.subject);
+  return result;
+};
+await assert.rejects(exportRead(null), /REQUEST_REJECTED/,
+  'Sletning under en side skal også afvise hele siden ved den normale efterkontrol.');
+
+const exportFunctionBody = worker.match(/async function exportTripPage\(env, body\) \{[\s\S]*?(?=\nasync function countTrips)/)?.[0] || '';
+assert.doesNotMatch(exportFunctionBody, /\.(?:run|batch|exec)\(/, 'Eksporten er ren læsning; ingen lager- eller slettekommando.');
+assert.match(tripLogFunction, /exportRequested[\s\S]*\["operation", "cursor"\]/);
+assert.match(tripLogFunction, /enforceRateLimits[\s\S]*requireAuthenticatedUserId[\s\S]*exportOwnTripPage\(userId/);
+assert.match(tripStore, /activeTripStorageMode\(\) !== "d1"[\s\S]*TRIP_EXPORT_UNAVAILABLE/);
+await checkRealSqliteSignedExport({ payload, userOwner, secret, gatewaySecret, gatewayUrl });
+await checkOriginReportStorage({ payload, userOwner, secret, gatewaySecret, gatewayUrl });
+console.log('Hybrid turlagring: 501 signerede eksportture/ti shards og reel 10400-rækkers SQLite-keyset uden ekstra sortering består lokalt.');
+}
+
+async function checkRealSqliteSignedExport({ payload, userOwner, secret, gatewaySecret, gatewayUrl }) {
+  const migrationPaths = [
+    'cloudflare/trip-gateway/migrations/001_trip_observations.sql',
+    'cloudflare/trip-gateway/migrations/002_owner_export_keyset.sql',
+  ];
+  const migrationBytes = migrationPaths.map(filename => fs.readFileSync(filename));
+  const shards = Array.from({ length: 10 }, (_, index) => ({
+    name: `real-sqlite-export-${index}`, uuid: `real-sqlite-export-${index}`,
+  }));
+  const databases = [];
+  const metadataReads = [];
+  const workerReads = [];
+  try {
+    for (const shard of shards) {
+      const database = new DatabaseSync(':memory:');
+      databases.push(database);
+      // Execute the actual files, including their unchanged comments/DDL.
+      for (const bytes of migrationBytes) database.exec(bytes.toString('utf8'));
+    }
+    await applySchema(shards, { query: async (pathname, init) => {
+      const index = shards.findIndex(shard => pathname === `/d1/database/${shard.uuid}/query`);
+      assert.notEqual(index, -1, 'Only these ten synthetic SQLite shards may be queried');
+      assert.equal(init.method, 'POST');
+      const body = JSON.parse(init.body);
+      assert.deepEqual(Object.keys(body), ['sql']);
+      if (/^pragma\b/i.test(body.sql)) metadataReads.push([index, body.sql]);
+      // Both DDL and metadata execute as received from the normal installer.
+      const results = databases[index].prepare(body.sql).all().map(row => ({ ...row }));
+      return { success: true, result: [{ success: true, results }] };
+    } });
+    assert.equal(metadataReads.length, 20);
+    assert.deepEqual([...new Set(metadataReads.map(([index]) => index))], shards.map((_, index) => index));
+
+    const sameCreatedAt = '2000-01-01T00:00:00.000Z';
+    const ownIds = Array.from({ length: 501 }, (_, index) => `a0000000-0000-4000-8000-${String(index).padStart(12, '0')}`);
+    const otherOwner = await externalOwnerSubject({ userId: '55555555-5555-4555-8555-555555555555', secret });
+    async function insertFixture(index, id, owner = userOwner, createdAt = sameCreatedAt) {
+      const record = await externalTripRecord({ owner, payload: { ...payload, client_observation_id: id, trip_id: null } });
+      const columns = [...Object.keys(record), 'created_at'];
+      databases[index].prepare(`insert into trip_observations (${columns.join(',')}) values (${columns.map(() => '?').join(',')})`)
+        .run(...Object.values(record), createdAt);
+      return record;
+    }
+    for (let index = 0; index < ownIds.length; index += 1) await insertFixture(index % 10, ownIds[index]);
+    await insertFixture(1, 'b0000000-0000-4000-8000-000000000001', otherOwner);
+    await insertFixture(2, 'c0000000-0000-4000-8000-000000000001', userOwner, '9999-12-31T23:59:59.999Z');
+    const originalTables = ['trip_observations', 'trip_observation_registry', 'trip_owner_erasure_tombstones', 'trip_storage_control'];
+    const storedRows = () => canonicalJson(databases.map(database => originalTables.map(table =>
+      database.prepare(`select * from ${table} order by rowid`).all().map(row => ({ ...row })))));
+    const beforeFirstPage = storedRows();
+    for (const database of databases) database.exec('pragma query_only = on');
+
+    const environment = { TRIP_GATEWAY_SHARED_SECRET: gatewaySecret };
+    databases.forEach((database, index) => {
+      environment[`TRIP_DB_${index}`] = { prepare(sql) {
+        const statement = database.prepare(sql);
+        return { bind(...parameters) { return { async all() {
+          workerReads.push({ index, sql, parameters });
+          // No SQL emulation, ordering or filtering: SQLite supplies every row.
+          return { success: true, results: statement.all(...parameters).map(row => ({ ...row })) };
+        } }; } };
+      } };
+    });
+    let signedRequests = 0;
+    const fetchImpl = async (input, init) => {
+      const request = new Request(input, init);
+      assert.equal(request.method, 'POST');
+      assert.equal(new URL(request.url).pathname, '/v1/trips/export-page');
+      assert.ok(request.headers.get('X-RavRadar-Signature'));
+      signedRequests += 1;
+      return handleRequest(request, environment);
+    };
+    const readPage = (cursor, ownerSubject = userOwner.subject) => exportCloudflareTripPage({
+      gatewayUrl, sharedSecret: gatewaySecret, ownerSubject, cursor, fetchImpl,
+    });
+    const first = await readPage(null);
+    assert.equal(storedRows(), beforeFirstPage, 'The first normal export page cannot mutate any fixture row');
+    const firstCursor = await readTripExportCursor({ sharedSecret: gatewaySecret, ownerSubject: userOwner.subject, cursor: first.next_cursor });
+    assert.equal(firstCursor.after, ownIds[199], 'Equal observation/storage timestamps must still advance by identity');
+    assert.equal(firstCursor.snapshotAt, first.snapshot_at);
+
+    // A later stored row has an old observation time but must not enter this
+    // existing cursor's storage snapshot. This is fixture setup, not a write
+    // through the read-only export route.
+    databases[3].exec('pragma query_only = off');
+    await insertFixture(3, 'd0000000-0000-4000-8000-000000000001', userOwner,
+      new Date(Date.parse(first.snapshot_at) + 1).toISOString());
+    databases[3].exec('pragma query_only = on');
+    const beforeRemainingPages = storedRows();
+    assert.equal(databases.reduce((count, database) => count + database.prepare('select count(*) as n from trip_observations').get().n, 0), 504);
+    const second = await readPage(first.next_cursor);
+    const third = await readPage(second.next_cursor);
+    assert.deepEqual([first.rows.length, second.rows.length, third.rows.length], [200, 200, 101]);
+    assert.equal(third.next_cursor, null);
+    assert.equal(second.snapshot_at, first.snapshot_at);
+    assert.equal(third.snapshot_at, first.snapshot_at);
+    assert.deepEqual([...first.rows, ...second.rows, ...third.rows].map(row => row.client_observation_id), ownIds);
+    const secondCursor = await readTripExportCursor({ sharedSecret: gatewaySecret, ownerSubject: userOwner.subject, cursor: second.next_cursor });
+    assert.equal(secondCursor.after, ownIds[399]);
+    assert.equal(signedRequests, 3);
+    assert.equal(workerReads.length, 36, 'Each page runs two real tombstone reads and ten real shard queries');
+    assert.deepEqual([...new Set(workerReads.map(({ index }) => index))], shards.map((_, index) => index));
+    const keysetReads = workerReads.filter(({ parameters }) => parameters.length === 4);
+    assert.equal(keysetReads.length, 30);
+    keysetReads.forEach(({ parameters }, index) => assert.deepEqual(parameters,
+      [userOwner.subject, ['', ownIds[199], ownIds[399]][Math.floor(index / 10)], first.snapshot_at, 201]));
+    const firstStoredPayload = databases[0].prepare('select payload_json from trip_observations where client_observation_id = ?').get(ownIds[0]).payload_json;
+    assert.deepEqual(first.rows[0], JSON.parse(firstStoredPayload));
+    assert.equal(JSON.stringify([first, second, third]).includes(userOwner.subject), false);
+    assert.equal(JSON.stringify([first, second, third]).includes('user_id'), false);
+    const readsBeforeRejectedCursors = workerReads.length;
+    await assert.rejects(readPage(first.next_cursor, otherOwner.subject), /REQUEST_REJECTED/);
+    const tampered = JSON.stringify({ ...JSON.parse(first.next_cursor), after: ownIds[0] });
+    await assert.rejects(readPage(tampered), /REQUEST_REJECTED/);
+    assert.equal(workerReads.length, readsBeforeRejectedCursors, 'Invalid owner/cursor must fail before any SQLite read');
+    assert.equal(signedRequests, 5);
+    assert.equal(storedRows(), beforeRemainingPages, 'All 504 synthetic rows and control tables remain unchanged');
+    migrationPaths.forEach((filename, index) => assert.deepEqual(fs.readFileSync(filename), migrationBytes[index]));
+  } finally {
+    for (const database of databases) database.close();
+  }
+  console.log('Real SQLite signed export: 10 shards, 20 index readbacks, 3 pages/501 own rows, 2 rejected cursors; 504 fixture rows unchanged; all databases closed.');
+}
+
+
+// Optional negative provenance is not proof of genuine data, consent or anonymity.
+// Use the normal manual-report projection and signed Worker routes, with actual
+// unchanged 001/002 SQL on ten private in-memory SQLite databases.
+async function checkOriginReportStorage({ payload, userOwner, secret, gatewaySecret, gatewayUrl }) {
+  const databases = [];
+  const environment = { TRIP_GATEWAY_SHARED_SECRET: gatewaySecret };
+  const requests = [];
+  try {
+    for (let index = 0; index < 10; index += 1) {
+      const database = new DatabaseSync(':memory:');
+      databases.push(database);
+      for (const migration of ['001_trip_observations.sql', '002_owner_export_keyset.sql']) {
+        database.exec(fs.readFileSync('cloudflare/trip-gateway/migrations/' + migration, 'utf8'));
+      }
+      environment['TRIP_DB_' + index] = { prepare(sql) { return { bind(...parameters) { return {
+        async all() { return { success: true, results: database.prepare(sql).all(...parameters).map(row => ({ ...row })) }; },
+        async run() { return { success: true, meta: { changes: Number(database.prepare(sql).run(...parameters).changes) } }; },
+      }; } }; } };
+    }
+    const fetchImpl = async (input, init) => {
+      const request = new Request(input, init);
+      assert.ok(request.headers.get('X-RavRadar-Signature'));
+      requests.push(new URL(request.url).pathname);
+      return handleRequest(request, environment);
+    };
+    const configuration = { gatewayUrl, sharedSecret: gatewaySecret, fetchImpl };
+    const rows = [];
+    for (const [index, origin] of ['unknown', 'synthetic-test'].entries()) {
+      const report = buildAccountTripReport({
+        observationOrigin: origin, tripId: 'e0000000-0000-4000-8000-00000000000' + index,
+        startedAt: payload.observed_at, searchMinutes: 30, searchCoverage: 'normal',
+        mode: 'beach', zoneId: payload.actual_zone_id, coastalPartId: payload.actual_coastal_part_id, found: false,
+      }, { now: Date.parse(payload.submitted_at) });
+      const row = { ...payload, ...toAccountObservationColumns(report),
+        client_observation_id: 'f0000000-0000-4000-8000-00000000000' + index };
+      rows.push(row);
+      assert.equal(row.schema_version, 1);
+      assert.equal(row.calibration_eligible, false);
+      assert.deepEqual(row.data_quality_flags, ['account-manual', 'historical-snapshot-unavailable', 'not-calibration-eligible']);
+      assert.deepEqual(await storeCloudflareTrip({ ...configuration, owner: userOwner, payload: row }), { stored: true, duplicate: false });
+    }
+    const storedRows = () => canonicalJson(databases.map(database =>
+      ['trip_observations', 'trip_observation_registry', 'trip_owner_erasure_tombstones', 'trip_storage_control']
+        .map(table => database.prepare('select * from ' + table + ' order by rowid').all().map(row => ({ ...row })))));
+    const storedBeforeRead = storedRows();
+    assert.equal(databases.reduce((sum, database) => sum + database.prepare('select count(*) as n from trip_observations').get().n, 0), 2);
+    // Normal export excludes the current millisecond; no fixture timestamp rewrite.
+    await new Promise(resolve => setTimeout(resolve, 2));
+    const listed = await listCloudflareTrips({ ...configuration, ownerSubject: userOwner.subject, limit: 10 });
+    const exported = await exportCloudflareTripPage({ ...configuration, ownerSubject: userOwner.subject, cursor: null });
+    const expected = rows.map(row => externalTripPayload(row));
+    assert.deepEqual(listed.toSorted((a, b) => a.client_observation_id.localeCompare(b.client_observation_id)), expected);
+    assert.deepEqual(exported.rows, expected);
+    assert.equal(exported.next_cursor, null);
+    for (const row of [...listed, ...exported.rows]) {
+      for (const privateKey of ['user_id', 'anonymous_id', 'gps', 'owner_subject']) assert.equal(Object.hasOwn(row, privateKey), false);
+      assert.equal(row.calibration_eligible, false);
+    }
+    const otherOwner = await externalOwnerSubject({ userId: '55555555-5555-4555-8555-555555555555', secret });
+    assert.deepEqual(await listCloudflareTrips({ ...configuration, ownerSubject: otherOwner.subject, limit: 10 }), []);
+    assert.deepEqual((await exportCloudflareTripPage({ ...configuration, ownerSubject: otherOwner.subject, cursor: null })).rows, []);
+    const requestsBeforeInvalid = requests.length;
+    for (const origin of [null, undefined, true, 'real', 'consented', {}, []]) {
+      await assert.rejects(storeCloudflareTrip({ ...configuration, owner: userOwner,
+        payload: { ...rows[0], observation_origin: origin } }), /TRIP_OBSERVATION_ORIGIN_INVALID/);
+    }
+    assert.equal(requests.length, requestsBeforeInvalid, 'Invalid provenance fails before any gateway request.');
+    await assert.rejects(storeCloudflareTrip({ ...configuration, owner: userOwner,
+      payload: { ...rows[1], observation_origin: 'unknown' } }), /IDEMPOTENCY_CONFLICT/);
+    assert.equal(storedRows(), storedBeforeRead, 'Readback, other-owner reads and a relabel attempt cannot change either report or its registry.');
+  } finally {
+    for (const database of databases) database.close();
+  }
+  console.log('Origin report storage: 2 report-only origins, signed STORE/LIST/EXPORT, other owner empty, 7 invalid origins/no transport, immutable replay; SQLite closed.');
+}

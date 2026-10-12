@@ -24,7 +24,16 @@ function sleep(milliseconds) {
   return new Promise(resolve => setTimeout(resolve, milliseconds));
 }
 
+export function matchesTripStorageReadiness(response, functionName, expectedStorageMode, preUpgrade = false) {
+  return TRIP_STORAGE_EDGE_FUNCTIONS.includes(functionName)
+    && response.headers.get('x-ravradar-trip-contract-version') === TRIP_STORAGE_EDGE_CONTRACT_VERSION
+    && response.headers.get('x-ravradar-trip-storage-mode') === expectedStorageMode
+    && (functionName !== 'trip-log' || response.headers.get('x-ravradar-trip-export-version') === '1'
+      || (preUpgrade === true && response.headers.get('x-ravradar-trip-export-version') === null));
+}
+
 async function attestFunction({
+  preUpgrade,
   baseUrl,
   publishableKey,
   expectedStorageMode,
@@ -48,8 +57,7 @@ async function attestFunction({
   }, { fetchImpl, timeoutMs: fetchTimeoutMs });
   return response.status === 204
     && response.headers.get('access-control-allow-origin') === 'https://ravradar.dk'
-    && response.headers.get('x-ravradar-trip-contract-version') === TRIP_STORAGE_EDGE_CONTRACT_VERSION
-    && response.headers.get('x-ravradar-trip-storage-mode') === expectedStorageMode;
+    && matchesTripStorageReadiness(response, functionName, expectedStorageMode, preUpgrade);
 }
 
 function validateNoWriteRetryDelays(retryDelaysMs) {
@@ -248,6 +256,7 @@ export async function runTripStorageNoWriteContractProbe({
 }
 
 export async function waitForTripStorageEdgeReadiness({
+  preUpgrade = false,
   baseUrl,
   publishableKey,
   expectedStorageMode,
@@ -272,6 +281,7 @@ export async function waitForTripStorageEdgeReadiness({
       const results = await Promise.all(TRIP_STORAGE_EDGE_FUNCTIONS.map(async functionName => [
         functionName,
         await attestFunction({
+          preUpgrade,
           baseUrl,
           publishableKey,
           expectedStorageMode,
