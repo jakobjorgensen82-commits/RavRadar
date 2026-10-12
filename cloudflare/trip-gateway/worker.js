@@ -3,11 +3,9 @@ import {
   assertNoPrivateLocation,
   assertStoredExternalTripContract,
   canonicalJson,
-  createTripExportCursor,
   externalTripPayload,
   externalTripRecord,
   isLegacyCompatibleTripReplay,
-  readTripExportCursor,
   sha256Hex,
   verifyTripGatewaySignature,
 } from '../../supabase/functions/_shared/trip-storage.js';
@@ -68,7 +66,6 @@ async function validatedRecord(body) {
     owner: { kind: supplied.owner_kind, subject: supplied.owner_subject },
     payload,
     source: supplied.source,
-    stored: true,
   });
   if (canonicalJson(supplied) !== canonicalJson(expected)) throw new Error('RECORD_INTEGRITY_INVALID');
   assertNoDirectIdentity(payload);
@@ -282,7 +279,7 @@ async function listTrips(env, body) {
       if ([2, 3].includes(schemaVersion)) {
         assertStoredExternalTripContract(storedPayload);
       }
-      const payload = externalTripPayload(storedPayload, { stored: true });
+      const payload = externalTripPayload(storedPayload);
       assertNoDirectIdentity(payload);
       assertNoPrivateLocation(payload);
       collected.push(payload);
@@ -291,68 +288,6 @@ async function listTrips(env, body) {
   if (await ownerErased(databaseList[0], ownerSubject)) return [];
   collected.sort((left, right) => String(right.observed_at || '').localeCompare(String(left.observed_at || '')));
   return collected.slice(0, limit);
-}
-
-async function exportTripPage(env, body) {
-  if (Object.keys(body).sort().join(',') !== 'cursor,owner_subject'
-    || !/^usr_v1_[A-Za-z0-9_-]{43}$/.test(String(body.owner_subject || ''))) {
-    throw new Error('TRIP_OWNER_INVALID');
-  }
-  const ownerSubject = body.owner_subject;
-  const sharedSecret = String(env.TRIP_GATEWAY_SHARED_SECRET || '');
-  const now = Date.now();
-  // This is a storage-time cutoff, not an atomic transaction across shards.
-  // Deliberately exclude the current millisecond so later inserts cannot join
-  // a page merely because they carry an old, client-supplied observation time.
-  const state = body.cursor === null
-    ? { after: '', snapshotAt: new Date(now - 1).toISOString() }
-    : await readTripExportCursor({ sharedSecret, ownerSubject, cursor: body.cursor, now });
-  const databaseList = databases(env);
-  if (await ownerErased(databaseList[0], ownerSubject)) throw new Error('TRIP_OWNER_ERASED');
-  const collected = [];
-  const identities = new Set();
-  for (const database of databaseList) {
-    const query = await database.prepare(
-      `select client_observation_id, owner_subject, created_at, payload_json, payload_sha256 from trip_observations
-        where owner_subject = ? and client_observation_id > ? and created_at <= ?
-        order by client_observation_id asc
-        limit ?`
-    ).bind(ownerSubject, state.after, state.snapshotAt, 201).all();
-    if (query?.success !== true || !Array.isArray(query.results) || query.results.length > 201) throw new Error('TRIP_EXPORT_INVALID');
-    for (const row of query.results) {
-      const identity = row.client_observation_id;
-      if (row.owner_subject !== ownerSubject
-        || typeof identity !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(identity)
-        || identity <= state.after || identities.has(identity)
-        || typeof row.created_at !== 'string' || !Number.isFinite(Date.parse(row.created_at))
-        || Date.parse(row.created_at) > Date.parse(state.snapshotAt)) throw new Error('TRIP_EXPORT_INVALID');
-      const payload = JSON.parse(String(row.payload_json || ''));
-      if (payload?.client_observation_id !== identity) throw new Error('TRIP_EXPORT_INVALID');
-      const digestPayload = { ...payload };
-      delete digestPayload.submitted_at;
-      if (await sha256Hex(canonicalJson(digestPayload)) !== row.payload_sha256) {
-        throw new Error('TRIP_STORED_RECORD_INTEGRITY_INVALID');
-      }
-      assertStoredExternalTripContract(payload);
-      assertNoDirectIdentity(payload);
-      assertNoPrivateLocation(payload);
-      // Do not run the display/model projection: the authenticated owner gets
-      // the stored payload, including historical quality/model information.
-      identities.add(identity);
-      collected.push(payload);
-    }
-  }
-  if (await ownerErased(databaseList[0], ownerSubject)) throw new Error('TRIP_OWNER_ERASED');
-  // Match SQLite's binary TEXT ordering, not a locale-dependent comparison.
-  collected.sort((a, b) => a.client_observation_id < b.client_observation_id ? -1 : 1);
-  const rows = collected.slice(0, 200);
-  const nextCursor = collected.length > 200
-    ? await createTripExportCursor({
-      sharedSecret, ownerSubject, after: rows.at(-1).client_observation_id,
-      snapshotAt: state.snapshotAt,
-    })
-    : null;
-  return { rows, snapshot_at: state.snapshotAt, next_cursor: nextCursor };
 }
 
 async function countTrips(env) {
@@ -395,11 +330,10 @@ export async function handleRequest(request, env) {
       storage_schema_version: 1,
       idempotency_registry_schema_version: 2,
       owner_erasure_tombstone_schema_version: 1,
-      trip_export_version: 1,
       shards: 10,
     });
   }
-  if (request.method !== 'POST' || !['/v1/trips/store', '/v1/trips/list', '/v1/trips/export-page', '/v1/trips/count', '/v1/trips/delete-owner'].includes(url.pathname)) {
+  if (request.method !== 'POST' || !['/v1/trips/store', '/v1/trips/list', '/v1/trips/count', '/v1/trips/delete-owner'].includes(url.pathname)) {
     return json(404, { ok: false, error: 'NOT_FOUND' });
   }
   try {
@@ -415,7 +349,6 @@ export async function handleRequest(request, env) {
     }
     if (url.pathname === '/v1/trips/store') return json(200, { ok: true, ...await storeTrip(env, body) });
     if (url.pathname === '/v1/trips/list') return json(200, { ok: true, rows: await listTrips(env, body) });
-    if (url.pathname === '/v1/trips/export-page') return json(200, { ok: true, ...await exportTripPage(env, body) });
     if (url.pathname === '/v1/trips/delete-owner') return json(200, { ok: true, deleted: await deleteOwnerTrips(env, body) });
   } catch (error) {
     const knownConflict = error?.message === 'TRIP_IDEMPOTENCY_CONFLICT';

@@ -2,9 +2,7 @@ import {
   TRIP_SEARCH_COVERAGE,
   TRIP_SEARCH_MODES,
   assertTripEvidencePrivacy
-} from './trip-evidence-contract.js?v=4.0.575';
-
-import { observationOriginFields } from './calibration-eligibility.js?v=4.0.575';
+} from './trip-evidence-contract.js?v=4.0.574';
 
 export const ACCOUNT_TRIP_REPORT_SCHEMA_VERSION = 1;
 export const ACCOUNT_TRIP_REPORT_SOURCE = 'account-manual';
@@ -66,7 +64,6 @@ export function buildAccountTripReport(input = {}, { now = Date.now() } = {}) {
   if (typeof input.found !== 'boolean') throw new Error('Fund eller intet fund skal angives.');
 
   const report = Object.freeze({
-    ...observationOriginFields(input, 'observationOrigin'),
     schemaVersion: ACCOUNT_TRIP_REPORT_SCHEMA_VERSION,
     reportSource: ACCOUNT_TRIP_REPORT_SOURCE,
     tripId: requiredUuid(input.tripId),
@@ -92,7 +89,6 @@ export function toAccountObservationColumns(report) {
     throw new Error('Kun en gyldig kontoindberetning kan gemmes gennem denne funktion.');
   }
   const columns = {
-    ...observationOriginFields(report, 'observationOrigin', 'observation_origin'),
     schema_version: report.schemaVersion,
     trip_id: report.tripId,
     trip_started_at: report.tripStartedAt,

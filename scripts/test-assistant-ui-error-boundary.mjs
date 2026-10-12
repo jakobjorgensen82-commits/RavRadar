@@ -23,36 +23,22 @@ const data = await import(`../js/services/data-service.js?v=${version}`);
 const app = await fs.readFile(new URL('../app.js', import.meta.url), 'utf8');
 const detailStart = app.indexOf('function ensureConditionDetails(');
 const detailEnd = app.indexOf('function nextConditionRuntimeGateAt(', detailStart);
-const assistantStart = app.indexOf('let assistantTopicState = null;');
+const assistantStart = app.indexOf('function assistantContext(){');
 const assistantEnd = app.indexOf('const quickBox=', assistantStart);
 assert.ok(detailStart >= 0 && detailEnd > detailStart && assistantStart >= 0 && assistantEnd > assistantStart);
 const actualUi = app.slice(detailStart, detailEnd) + app.slice(assistantStart, assistantEnd);
-for (const definition of ['let assistantTurn = 0;', 'function resetAssistantTopic()',
-  'function assistantTopicFrame()', 'function sameAssistantTopicFrame(', 'function assistantContext(){']) {
-  assert.ok(actualUi.includes(definition), `Actual UI extraction must include its lexical dependency: ${definition}`);
-}
 
 function fixture(locale, { manifest, load = data.loadConditionDetails } = {}) {
   language = locale;
   const messages = [];
-  const listeners = new Map();
-  const eventTarget = owner => ({ addEventListener(type, callback) {
-    const key = `${owner}:${type}`;
-    assert.equal(listeners.has(key), false);
-    listeners.set(key, callback);
-  } });
-  const assistantDialog = eventTarget('dialog'), assistantForm = eventTarget('form');
   let detailCalls = 0;
   const box = { scrollTop: 0, scrollHeight: 0, appendChild(node) { messages.push(node); } };
   const state = { selectedZone: null, conditions: { zones: {} }, zones: [], mode: 'waders' };
   const context = vm.createContext({
-    state, assistantDialog, activeManifest: manifest, runtimeGeneration: 0, conditionDetailsReady: false,
+    state, activeManifest: manifest, runtimeGeneration: 0, conditionDetailsReady: false,
     conditionDetailsPromise: null, pendingZoneDetails: new Map(),
     document: {
-      querySelector(selector) {
-        if (selector === '#assistantForm') return assistantForm;
-        assert.equal(selector, '#assistantMessages'); return box;
-      },
+      querySelector(selector) { assert.equal(selector, '#assistantMessages'); return box; },
       createElement() {
         const node = { children: [], className: '', textContent: '',
           appendChild(child) { this.children.push(child); },
@@ -67,8 +53,6 @@ function fixture(locale, { manifest, load = data.loadConditionDetails } = {}) {
     getLanguage: () => locale,
     t: (key, params) => i18n.t(key, params, locale),
     askRavRadar: assistant.askRavRadar,
-    assistantTopicForQuestion: assistant.assistantTopicForQuestion,
-    assistantLocalFollowupAnswer: assistant.assistantLocalFollowupAnswer,
     ravQuestionNeedsConditionDetails: assistant.ravQuestionNeedsConditionDetails,
     loadConditionDetails: (...args) => { detailCalls += 1; return load(...args); },
   });
@@ -80,38 +64,8 @@ function fixture(locale, { manifest, load = data.loadConditionDetails } = {}) {
     loading: () => messages.some(item => item.className.includes('loading')),
     detailCalls: () => detailCalls,
     recover: () => { context.conditionDetailsReady = true; },
-    topic: () => vm.runInContext('assistantTopicState?.topic ?? null', context),
-    emit: (owner, type) => {
-      const callback = listeners.get(`${owner}:${type}`);
-      assert.equal(typeof callback, 'function');
-      callback({});
-    },
   };
 }
-
-test('actual extracted topic state/frame/reset dependencies remain live, not guard stubs', async () => {
-  const ui = fixture('da');
-  const question = 'Når strømmen går langs stranden i stedet for mod land, er det så stadig godt at lede efter rav?';
-  const followup = 'Så hvor skal jeg kigge efter rav i den situation?';
-  assert.equal(assistant.assistantTopicForQuestion(question), 'alongshore');
-  for (const [owner, type] of [['dialog', 'close'], ['dialog', 'cancel'], ['form', 'reset']]) {
-    await ui.submit(question);
-    assert.equal(ui.topic(), 'alongshore');
-    ui.emit(owner, type);
-    assert.equal(ui.topic(), null, `The actual ${owner}/${type} listener must clear its own topic`);
-    await ui.submit(followup);
-    assert.equal(ui.answers().at(-1), i18n.t('assistant.unknown', {}, 'da'));
-  }
-  await ui.submit(question);
-  assert.equal(ui.topic(), 'alongshore');
-  ui.state.conditions = { zones: {} };
-  await ui.submit(followup);
-  assert.equal(ui.answers().at(-1), i18n.t('assistant.unknown', {}, 'da'), 'Changed context identity cannot borrow the old topic frame');
-  assert.equal(ui.topic(), null);
-  assert.equal(ui.detailCalls(), 0);
-  assert.equal(ui.loading(), false);
-  assert.equal(fetchCalls, 0);
-});
 const dynamic = { da: 'Hvorfor denne score?', de: 'Warum dieser Score?', en: 'Why this score?' };
 const fact = { da: 'Hvad er rav?', de: 'Was ist Bernstein?', en: 'What is amber?' };
 const safeFailure = locale => i18n.t('data.loadError', {}, locale);

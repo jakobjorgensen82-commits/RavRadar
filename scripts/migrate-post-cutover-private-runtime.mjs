@@ -65,9 +65,6 @@ import { readOwnerCurrentTransitionArchive, retainOwnerCurrentTransitionOriginal
 import { dmiMarineCollectionAllowedForZone } from './lib/dmi-marine-zone-exclusions.mjs';
 import { OWNER_CURRENT_DOMAIN_PREDECESSOR, buildOwnerCurrentOriginalRestoreExpectation }
   from './lib/bounded-conditions-predecessor-transition.mjs';
-import { privateRuntimeBundleContentSha256 } from './private-production-runtime-bundle.mjs';
-import { createProtectedPrivateRuntimeClients, describeTargetProtectedPrivateProductionRuntime }
-  from './protected-private-production-runtime.mjs';
 
 assertRuntimeBindingRegistry();
 
@@ -851,141 +848,6 @@ async function digestPrivateRuntimeFile(filePath) {
   return { bytes, sha256: hash.digest('hex') };
 }
 
-export async function assertRestoredOriginalInventory(sourceRoot, manifest) {
-  assertPrivateRuntimeInventory(manifest.files);
-  assertSame(privateRuntimeBundleContentSha256(manifest), manifest.bundleContentSha256,
-    'Preserved original manifest content hash');
-  const inventory = await assertExactRuntimeInventory(sourceRoot);
-  assertSame([...inventory].sort((a, b) => a.id.localeCompare(b.id)),
-    manifest.files.map(({ id, relativePath }) => ({ id, relativePath }))
-      .sort((a, b) => a.id.localeCompare(b.id)),
-    'Preserved original file inventory');
-  for (const file of manifest.files) {
-    assertSame(await digestPrivateRuntimeFile(path.join(sourceRoot, file.relativePath)),
-      { bytes: file.bytes, sha256: file.sha256 }, 'Preserved original file bytes');
-  }
-  return inventory;
-}
-
-export function assertMetadataOnlyMigrationResult(result) {
-  if (result.transitionKind !== 'MODEL_BINDING_METADATA_ONLY'
-    || result.repairedContinuationCount !== 0 || result.recomputedModeCount !== 0
-    || result.recomputedZoneCount !== 0) {
-    throw new Error('Assistant successor requires the actual metadata-only migration');
-  }
-}
-
-// This rechecks the SAME normal migration's retained source and output after
-// local preparation. The workflow must first run that migration with its hard
-// metadata-only requirement; an independently supplied report is not authority.
-export function assertUserdataPrewriteBindings(identity, previousCandidate, currentIntegrated, currentCandidate, currentContractHashes) {
-  if (identity.modelBinding.modelBundleSha256 !== 'ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb'
-    || previousCandidate.modelBundleSha256 !== '8d9142b5f7d9b5a3e5a0f3593e73df0c7ffaf3d80c036317967cb713f09197e3'
-    || currentIntegrated.modelBundleSha256 !== '249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932'
-    || currentCandidate.modelBundleSha256 !== '55fd7dfa5ee36596c729d93225a448ea5b8f1e7142c44b8b1bda5c3d4d84c957'
-    || identity.contractHashes.continuationStateContractSha256 !== '4115f37178ff3d8eab540f3d9355a1275a13a9dd3a896e07f06673564e76ee51'
-    || currentContractHashes.continuationStateContractSha256 !== 'a5430dd21e3135d6efc09e22df3dd0cdcafee723f962ff1d3cb52e7765b2aaa0') {
-    throw new Error('Userdata pre-write proof is outside its exact successor');
-  }
-}
-
-export async function verifyAssistantPrewritePreservation(options = {}) {
-  return verifyBindingPrewritePreservation(options, 'assistant');
-}
-
-export async function verifyUserdataPrewritePreservation(options = {}) {
-  return verifyBindingPrewritePreservation(options, 'userdata');
-}
-
-async function verifyBindingPrewritePreservation({ sourceRoot, outputRoot,
-  bundleManifestPath, predecessorDescriptorPath, request,
-  predecessorRoot, repositoryRoot, expectedSourceHead, reportPath } = {}, intent) {
-  const identity = validatePredecessorIdentity(
-    await readJson(predecessorDescriptorPath, 'Preserved predecessor identity'), expectedSourceHead);
-  const repository = await fs.realpath(repositoryRoot);
-  const source = await assertDirectoryOutside(repository, sourceRoot, 'Preserved original runtime');
-  const output = await assertDirectoryOutside(repository, outputRoot, 'Prepared successor runtime');
-  const predecessor = await assertDirectoryOutside(repository, predecessorRoot, 'Original reader source');
-  const modules = await importPredecessorModules(predecessor, expectedSourceHead);
-  const manifest = await readJson(bundleManifestPath, 'Preserved original manifest');
-  validatePredecessorManifest(manifest, modules.integrated.ravScoreModelBinding(), identity);
-  const oldReader = await import(pathToFileURL(path.join(predecessor,
-    'scripts/private-production-runtime-bundle.mjs')).href);
-  await oldReader.verifyPrivateProductionRuntimeBundle({
-    privateRoot: path.dirname(path.dirname(bundleManifestPath)),
-    bundlePath: path.dirname(bundleManifestPath), repositoryRoot: predecessor,
-    expected: { modelBinding: identity.modelBinding, contractHashes: identity.contractHashes,
-      datasetId: identity.datasetId, productionReferenceAt: identity.productionReferenceAt },
-  });
-  const inventory = await assertRestoredOriginalInventory(source, manifest);
-  assertSame(await assertExactRuntimeInventory(output), inventory, 'Prepared successor inventory');
-  const report = await readJson(reportPath, 'Same normal migration result');
-  const currentIntegrated = ravScoreModelBinding();
-  const currentCandidate = candidateModelBinding();
-  if (intent === 'userdata') {
-    assertUserdataPrewriteBindings(identity, modules.candidate.ravScoreModelBinding(),
-      currentIntegrated, currentCandidate, await privateRuntimeContractHashes({ repositoryRoot: repository }));
-  } else if (identity.modelBinding.modelBundleSha256 !== 'ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb'
-    || modules.candidate.ravScoreModelBinding().modelBundleSha256 !== '8d9142b5f7d9b5a3e5a0f3593e73df0c7ffaf3d80c036317967cb713f09197e3'
-    || currentIntegrated.modelBundleSha256 !== '34a25729a3dbddc8c73870a69f7b3a6899c7f1df9829c8078782139ff4e0e839'
-    || currentCandidate.modelBundleSha256 !== 'd064d3501541cdaa09fe6bf0fb073feeecf59fdacfa623d4006c7442d69dad72') {
-    throw new Error('Assistant pre-write proof is outside its exact successor');
-  }
-  if (report.schemaVersion !== 2 || report.kind !== 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_REBIND'
-    || report.transitionKind !== 'MODEL_BINDING_METADATA_ONLY' || report.migratedPartCount !== 673
-    || report.measurementsChanged !== false || report.candidateStatesChanged !== false
-    || report.privatePayloadIncluded !== false || report.copiedPrivateFileCount !== inventory.length) {
-    throw new Error('Assistant pre-write normal migration result is invalid');
-  }
-  for (const [key, value] of Object.entries({ predecessorSourceHead: identity.sourceHead,
-    datasetId: identity.datasetId, sourceBundleContentSha256: identity.bundleContentSha256,
-    previousIntegratedBundleSha256: identity.modelBinding.modelBundleSha256,
-    currentIntegratedBundleSha256: currentIntegrated.modelBundleSha256,
-    previousCandidateBundleSha256: modules.candidate.ravScoreModelBinding().modelBundleSha256,
-    currentCandidateBundleSha256: currentCandidate.modelBundleSha256,
-    previousContractHashes: identity.contractHashes,
-    currentContractHashes: await privateRuntimeContractHashes({ repositoryRoot: repository }) })) {
-    assertSame(report[key], value, 'Same normal migration identity');
-  }
-  for (const file of manifest.files) {
-    const expected = file.id === 'full-conditions'
-      ? { bytes: report.migratedConditionsBytes, sha256: report.migratedConditionsSha256 }
-      : file.id === PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.id && report.publicHourDeliveryRebound
-        ? { bytes: report.migratedPublicHourPackBytes, sha256: report.migratedPublicHourPackSha256 }
-        : { bytes: file.bytes, sha256: file.sha256 };
-    assertSame(await digestPrivateRuntimeFile(path.join(output, file.relativePath)), expected,
-      'Same normal migration output bytes');
-  }
-  // Check the actual whole condition documents as well as their byte receipts.
-  const original = await readJson(path.join(source, 'data/live/conditions.json'), 'Original conditions');
-  const prepared = await readJson(path.join(output, 'data/live/conditions.json'), 'Prepared conditions');
-  const bindingPaths = [
-    ...migrateExactModelBindingMetadata(original, identity.modelBinding, currentIntegrated),
-    ...migrateExactModelBindingMetadata(original, modules.candidate.ravScoreModelBinding(), currentCandidate),
-  ];
-  for (const [partId, part] of Object.entries(original.coastalParts?.parts ?? {})) {
-    const sampling = coastalPointStageIdentity({ ...part, partId });
-    modules.staging.assertIntegratedCoastalPointContinuation(part.ravScoreModel?.currentState,
-      { samplingContextKey: sampling.samplingContextKey });
-    if (part.ravScoreModel.currentState.modelBundleSha256 !== identity.modelBinding.modelBundleSha256) {
-      throw new Error('Assistant original continuation has another binding');
-    }
-    part.ravScoreModel.currentState.modelBundleSha256 = currentIntegrated.modelBundleSha256;
-    assertIntegratedCoastalPointContinuation(part.ravScoreModel.currentState,
-      { samplingContextKey: sampling.samplingContextKey });
-  }
-  const remaining = collectChangedPaths(original, prepared);
-  if (!bindingPaths.length || remaining.some(key =>
-    !/^publicHourDelivery\.(sourceDetailsSha256|startupNationalForecastSha256|rawBytes|packBytes|packSha256)$/.test(key))) {
-    throw new Error('Assistant prepared runtime changes more than exact binding metadata');
-  }
-  await assertRestoredOriginalInventory(source, manifest);
-  const fresh = await describeTargetProtectedPrivateProductionRuntime({ request,
-    targetReferenceAt: identity.productionReferenceAt });
-  assertSame(fresh, identity, 'Fresh selected protected generation');
-  return { preserved: true, fileCount: inventory.length, privatePayloadIncluded: false };
-}
-
 export async function copyPrivateRuntimeInventory(sourceRoot, outputRoot, inventory, {
   skipRelativePaths = [],
 } = {}) {
@@ -1467,7 +1329,6 @@ export async function migratePostCutoverPrivateRuntime({
   expectedSourceHead,
   reportPath,
   ownerCurrentOriginalOnly = false,
-  metadataOnly = false,
 } = {}) {
   if (!SOURCE_HEAD.test(String(expectedSourceHead ?? ''))) {
     throw new Error('Post-cutover migration requires an exact predecessor source head');
@@ -1513,7 +1374,6 @@ export async function migratePostCutoverPrivateRuntime({
   assertSame(manifest.files.map(({ id, relativePath }) => ({ id, relativePath }))
     .sort((a, b) => a.id.localeCompare(b.id)), [...runtimeFiles].sort((a, b) => a.id.localeCompare(b.id)),
   'Protected predecessor preserved file inventory');
-  if (metadataOnly) await assertRestoredOriginalInventory(source, manifest);
   const currentContractHashes = await privateRuntimeContractHashes({ repositoryRoot: repository });
   const currentIntegrated = ravScoreModelBinding();
   const currentCandidate = candidateModelBinding();
@@ -1541,7 +1401,6 @@ export async function migratePostCutoverPrivateRuntime({
       publicHourPackTargetPath: path.join(temporary, PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath),
       ownerCurrentOriginalOnly,
     });
-    if (metadataOnly) assertMetadataOnlyMigrationResult(result);
     await copyPrivateRuntimeInventory(source, temporary, runtimeFiles, {
       skipRelativePaths: result.publicHourDeliveryRebound
         ? [PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath]
@@ -1556,7 +1415,6 @@ export async function migratePostCutoverPrivateRuntime({
       migratedConditionsDigest = await digestPrivateRuntimeFile(path.join(temporary, 'data/live/conditions.json'));
     }
     assertSame(await assertExactRuntimeInventory(temporary), runtimeFiles, 'Migrated runtime preserved file inventory');
-    if (metadataOnly) await assertRestoredOriginalInventory(source, manifest);
     await fs.rename(temporary, output);
     migrationResult = result;
   } catch (error) {
@@ -1611,32 +1469,17 @@ function argument(argv, name) {
 
 async function main() {
   const argv = process.argv.slice(2);
-  const options = {
+  const report = await migratePostCutoverPrivateRuntime({
     sourceRoot: argument(argv, '--source'),
     outputRoot: argument(argv, '--output'),
     bundleManifestPath: argument(argv, '--bundle-manifest'),
     predecessorDescriptorPath: argument(argv, '--predecessor-descriptor'),
     predecessorRoot: argv.includes('--owner-current-original') ? null : argument(argv, '--predecessor-root'),
     ownerCurrentOriginalOnly: argv.includes('--owner-current-original'),
-    metadataOnly: argv.includes('--metadata-only'),
     repositoryRoot: argument(argv, '--repository-root'),
     expectedSourceHead: argument(argv, '--expected-source-head'),
     reportPath: argument(argv, '--report'),
-  };
-  if (argv.includes('--verify-userdata-prewrite')) {
-    if (argv.includes('--verify-assistant-prewrite')) throw new Error('Pre-write intent is ambiguous');
-    const { documentRequest } = createProtectedPrivateRuntimeClients({ storageBackend: 'supabase' });
-    await verifyUserdataPrewritePreservation({ ...options, request: documentRequest });
-    console.log('Userdata original preservation reverified before binding installation.');
-    return;
-  }
-  if (argv.includes('--verify-assistant-prewrite')) {
-    const { documentRequest } = createProtectedPrivateRuntimeClients({ storageBackend: 'supabase' });
-    await verifyAssistantPrewritePreservation({ ...options, request: documentRequest });
-    console.log('Assistant original preservation reverified before binding installation.');
-    return;
-  }
-  const report = await migratePostCutoverPrivateRuntime(options);
+  });
   console.log(JSON.stringify({
     status: 'post-cutover-private-runtime-migrated',
     migratedPartCount: report.migratedPartCount,

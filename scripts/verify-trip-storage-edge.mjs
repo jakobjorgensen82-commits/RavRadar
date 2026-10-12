@@ -4,7 +4,6 @@ import {
   TRIP_STORAGE_EDGE_FETCH_TIMEOUT_MS,
   TRIP_STORAGE_EDGE_SIGNED_LOGIN_PROBE_KIND,
   TRIP_STORAGE_EDGE_PREFLIGHT_PROBE_KIND,
-  matchesTripStorageReadiness,
   runTripStorageNoWriteContractProbe,
   waitForTripStorageEdgeReadiness,
 } from './lib/trip-storage-edge-readiness.mjs';
@@ -12,7 +11,6 @@ import {
 const baseUrl = (process.env.SUPABASE_URL || PUBLIC_CONFIG.supabaseUrl || '').replace(/\/$/, '');
 const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || PUBLIC_CONFIG.supabasePublishableKey || '';
 const expectedStorageMode = String(process.env.EXPECTED_TRIP_STORAGE_MODE || '').trim().toLowerCase();
-const preUpgrade = process.env.TRIP_STORAGE_UPGRADE_PREFLIGHT === '1';
 const sharedSecret = process.env.TRIP_GATEWAY_SHARED_SECRET || '';
 const fetchWithDeadline = createBoundedFetch({ timeoutMs: TRIP_STORAGE_EDGE_FETCH_TIMEOUT_MS });
 if (!baseUrl || !publishableKey) throw new Error('Edge-verifikationens offentlige konfiguration mangler.');
@@ -52,14 +50,13 @@ async function invokeNoWriteContractProbe(functionName, origin, probeKind, probe
 }
 
 const readiness = await waitForTripStorageEdgeReadiness({
-  preUpgrade,
   baseUrl,
   publishableKey,
   expectedStorageMode,
   fetchTimeoutMs: TRIP_STORAGE_EDGE_FETCH_TIMEOUT_MS,
 });
 if (!readiness.ok) {
-  throw new Error(`Begge levende Edge-funktioner er ikke eksakt 4.0.311/${expectedStorageMode} med tureksport v1 efter afgrænset udbredelsesventetid.`);
+  throw new Error(`Begge levende Edge-funktioner er ikke eksakt 4.0.311/${expectedStorageMode} efter afgrænset udbredelsesventetid.`);
 }
 
 for (const functionName of ['submit-observation', 'trip-log']) {
@@ -70,7 +67,8 @@ for (const functionName of ['submit-observation', 'trip-log']) {
     `${functionName}-allowed-preflight`,
     response => response.status === 204
       && response.headers.get('access-control-allow-origin') === 'https://ravradar.dk'
-      && matchesTripStorageReadiness(response, functionName, expectedStorageMode, preUpgrade),
+      && response.headers.get('x-ravradar-trip-contract-version') === '4.0.311'
+      && response.headers.get('x-ravradar-trip-storage-mode') === expectedStorageMode,
   );
   await invokeNoWriteContractProbe(
     functionName,
@@ -92,7 +90,8 @@ await invokeNoWriteContractProbe(
     const body = await response.json().catch(() => null);
     return body?.error === 'LOGIN_REQUIRED'
       && Object.keys(body).length === 1
-      && matchesTripStorageReadiness(response, 'trip-log', expectedStorageMode, preUpgrade);
+      && response.headers.get('x-ravradar-trip-contract-version') === '4.0.311'
+      && response.headers.get('x-ravradar-trip-storage-mode') === expectedStorageMode;
   },
 );
 

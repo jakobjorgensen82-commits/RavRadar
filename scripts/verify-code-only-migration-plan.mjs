@@ -27,19 +27,6 @@ assert.ok(
     || (plan.pendingVersions.length === 1 && plan.pendingVersions[0] === latest.version),
   'Code-only deployment may apply only the exact latest required integrated migration',
 );
-if (process.argv.includes('--require-prewrite-gate')
-    && plan.pendingVersions.includes('20261010120000')) {
-  assert.equal(process.env.RAVRADAR_ASSISTANT_PREWRITE_REQUIRED, 'true',
-    'The pending assistant binding requires the completed normal original-preservation path');
-}
-if (plan.pendingVersions.includes('20261010130000')) {
-  assert.equal(process.env.RAVRADAR_USERDATA_UPGRADE_OPT_IN, 'true',
-    'The pending userdata binding requires explicit existing-owner-export opt-in');
-  assert.ok(process.argv.includes('--require-prewrite-gate')
-    && process.env.RAVRADAR_USERDATA_PREWRITE_REQUIRED === 'true'
-    && process.env.RAVRADAR_USERDATA_PREWRITE_VERIFIED === 'true',
-    'The pending userdata binding requires the completed normal original-preservation path');
-}
 console.log(
   plan.pendingVersions.length === 0
     ? 'Code-only migration is already applied; retry is safe.'

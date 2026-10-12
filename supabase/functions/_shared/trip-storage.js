@@ -100,7 +100,7 @@ export const TRIP_INPUT_FIELD_NAMES = Object.freeze([
   'schema_version', 'trip_started_at', 'trip_ended_at', 'search_minutes', 'search_coverage', 'actual_zone_id',
   'actual_coastal_part_id', 'forecast_zone_id', 'forecast_coastal_part_id', 'calibration_eligible', 'found',
   'forecast_snapshot_id', 'forecast_issued_at', 'forecast_valid_at', 'forecast_captured_at', 'calibration_features',
-  'data_quality_flags', 'forecast_target_at', 'report_accuracy', 'observation_origin',
+  'data_quality_flags', 'forecast_target_at', 'report_accuracy',
 ]);
 const STORED_EXTERNAL_TRIP_FIELD_NAMES = new Set(
   TRIP_INPUT_FIELD_NAMES.filter(key =>
@@ -149,11 +149,6 @@ export const D1_TRIP_SCHEMA_STATEMENTS = Object.freeze([
     control_value text not null check (control_value = 'true'),
     updated_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
   )`,
-  // The display list keeps its existing owner/time index. Export keyset reads
-  // need owner/id order and a storage-time filter without sorting every own
-  // row on every page. Installation remains the controlled schema workflow.
-  `create index if not exists trip_observations_owner_export
-    on trip_observations(owner_subject, client_observation_id, created_at)`,
 ]);
 
 function isRecord(value) {
@@ -489,10 +484,6 @@ function assertWeatherSnapshotContract(value, allowLegacySchemaTwo = false, exac
 }
 
 export function assertExternalTripNestedContract(payload) {
-  if (payload && Object.hasOwn(payload, 'observation_origin')
-    && !['unknown', 'synthetic-test'].includes(payload.observation_origin)) {
-    throw new Error('TRIP_OBSERVATION_ORIGIN_INVALID');
-  }
   if (!isRecord(payload)) throw new Error('TRIP_PAYLOAD_REQUIRED');
   const schemaVersion = Number(payload.schema_version ?? 1);
   assertCalibrationFeatureContract(payload.calibration_features, schemaVersion === 3);
@@ -549,12 +540,9 @@ export function normalizeExternalTripQualityBinding(payload) {
   };
 }
 
-export function assertExternalTripQualityBinding(payload, { stored = false } = {}) {
+export function assertExternalTripQualityBinding(payload) {
   if (!isRecord(payload) || ![2, 3].includes(Number(payload.schema_version))) return;
   const schemaVersion = Number(payload.schema_version);
-  if (schemaVersion === 3 && stored === true && payload.calibration_eligible !== false) {
-    throw new Error('TRIP_CALIBRATION_ELIGIBILITY_INVALID');
-  }
   const combinations = schemaVersion === 3
     ? TRIP_QUALITY_FLAG_COMBINATIONS
     : LEGACY_TRIP_QUALITY_FLAG_COMBINATIONS;
@@ -593,7 +581,7 @@ export function assertExternalTripQualityBinding(payload, { stored = false } = {
       &&features?.scoreCalibrationEligible===true
       &&flags.length===0
       &&payload.calibration_eligible
-        !==(stored===true||globalWarmupReasonCount===1?false:sameForecastContext)){
+        !==(globalWarmupReasonCount===1?false:sameForecastContext)){
       throw new Error('TRIP_GLOBAL_WARMUP_LOCK_BINDING_INVALID');
     }
   }
@@ -678,17 +666,15 @@ export function assertNoPrivateLocation(value, depth = 0) {
   }
 }
 
-export function externalTripPayload(payload, { stored = false } = {}) {
+export function externalTripPayload(payload) {
   if (!isRecord(payload)) throw new Error('TRIP_PAYLOAD_REQUIRED');
-  if (Object.hasOwn(payload, 'observation_origin')
-    && !['unknown', 'synthetic-test'].includes(payload.observation_origin)) throw new Error('TRIP_OBSERVATION_ORIGIN_INVALID');
   const cloned = typeof structuredClone === 'function'
     ? structuredClone(payload)
     : JSON.parse(JSON.stringify(payload));
   const source = projectLegacyExternalTripPayload(cloned);
   const normalized = normalizeExternalTripQualityBinding(source);
   const schemaVersion = Number(normalized.schema_version ?? 1);
-  if (schemaVersion === 3) assertExternalTripQualityBinding(normalized, { stored });
+  if (schemaVersion === 3) assertExternalTripQualityBinding(normalized);
   const clone = schemaVersion === 3
     ? { ...normalized, calibration_eligible: false, gps: null }
     : normalized;
@@ -797,12 +783,12 @@ export function isLegacyCompatibleTripReplay(storedPayload, incomingPayload, opt
     || isLegacyUnattestedTripReplay(storedPayload, incomingPayload, options);
 }
 
-export async function externalTripRecord({ owner, payload, source = 'live', stored = false }) {
+export async function externalTripRecord({ owner, payload, source = 'live' }) {
   if (!owner || !['user', 'anonymous'].includes(owner.kind) || typeof owner.subject !== 'string') {
     throw new Error('TRIP_OWNER_INVALID');
   }
   if (!['live', 'supabase-migration'].includes(source)) throw new Error('TRIP_SOURCE_INVALID');
-  const externalPayload = externalTripPayload(payload, { stored });
+  const externalPayload = externalTripPayload(payload);
   const clientObservationId = externalPayload.client_observation_id;
   if (typeof clientObservationId !== 'string' || !clientObservationId) throw new Error('TRIP_CLIENT_ID_REQUIRED');
   if (typeof externalPayload.observed_at !== 'string' || typeof externalPayload.submitted_at !== 'string') {
@@ -935,64 +921,6 @@ export async function listCloudflareTrips({ gatewayUrl, sharedSecret, ownerSubje
     assertNoDirectIdentity(row);
     return row;
   });
-}
-
-// Owner-bound, short-lived continuation for a read-only export. The timestamp
-// refreshes between pages; the original storage cutoff never moves forward.
-const TRIP_EXPORT_CURSOR_PATH = '/internal/trip-export-cursor/v1';
-const TRIP_EXPORT_UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
-export function validTripExportSnapshot(value) {
-  return typeof value === 'string' && Number.isFinite(Date.parse(value))
-    && new Date(value).toISOString() === value;
-}
-
-export async function createTripExportCursor({ sharedSecret, ownerSubject, after, snapshotAt, now = Date.now() }) {
-  if (!TRIP_EXPORT_UUID.test(String(after || '')) || !validTripExportSnapshot(snapshotAt)) {
-    throw new Error('TRIP_EXPORT_CURSOR_INVALID');
-  }
-  const state = { v: 1, after, snapshot_at: snapshotAt, issued_at: String(now) };
-  const signature = await tripGatewaySignature({
-    secret: sharedSecret, timestamp: state.issued_at, method: 'CURSOR',
-    pathname: TRIP_EXPORT_CURSOR_PATH, bodyText: canonicalJson({ owner_subject: ownerSubject, ...state }),
-  });
-  return JSON.stringify({ ...state, signature });
-}
-
-export async function readTripExportCursor({ sharedSecret, ownerSubject, cursor, now = Date.now() }) {
-  if (typeof cursor !== 'string' || cursor.length > 512) throw new Error('TRIP_EXPORT_CURSOR_INVALID');
-  let value;
-  try { value = JSON.parse(cursor); } catch { throw new Error('TRIP_EXPORT_CURSOR_INVALID'); }
-  if (!isRecord(value) || Object.keys(value).sort().join(',') !== 'after,issued_at,signature,snapshot_at,v'
-    || value.v !== 1 || !TRIP_EXPORT_UUID.test(String(value.after || ''))
-    || !validTripExportSnapshot(value.snapshot_at) || Date.parse(value.snapshot_at) > now) {
-    throw new Error('TRIP_EXPORT_CURSOR_INVALID');
-  }
-  const { signature, ...state } = value;
-  if (!await verifyTripGatewaySignature({
-    secret: sharedSecret, timestamp: state.issued_at, signature, method: 'CURSOR',
-    pathname: TRIP_EXPORT_CURSOR_PATH, bodyText: canonicalJson({ owner_subject: ownerSubject, ...state }), now,
-  })) throw new Error('TRIP_EXPORT_CURSOR_INVALID');
-  return { after: state.after, snapshotAt: state.snapshot_at };
-}
-
-export async function exportCloudflareTripPage({ gatewayUrl, sharedSecret, ownerSubject, cursor = null, fetchImpl = fetch, now }) {
-  if (typeof ownerSubject !== 'string' || !ownerSubject) throw new Error('TRIP_OWNER_INVALID');
-  const result = await callTripGateway({
-    gatewayUrl, sharedSecret, pathname: '/v1/trips/export-page',
-    body: { owner_subject: ownerSubject, cursor }, fetchImpl, now,
-  });
-  if (Object.keys(result).sort().join(',') !== 'next_cursor,ok,rows,snapshot_at'
-    || !Array.isArray(result.rows) || result.rows.length > 200
-    || !validTripExportSnapshot(result.snapshot_at)
-    || !(result.next_cursor === null || (typeof result.next_cursor === 'string' && result.next_cursor.length <= 512))
-    || (result.next_cursor !== null && result.rows.length !== 200)) {
-    throw new Error('TRIP_GATEWAY_INVALID_RESPONSE');
-  }
-  for (const row of result.rows) {
-    assertNoDirectIdentity(row);
-    assertNoPrivateLocation(row);
-  }
-  return { rows: result.rows, snapshot_at: result.snapshot_at, next_cursor: result.next_cursor };
 }
 
 export async function countCloudflareTrips({ gatewayUrl, sharedSecret, fetchImpl = fetch, now }) {
