@@ -1,5 +1,9 @@
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { verifyExistingWorkerBindings } from './verify-cloudflare-trip-gateway.mjs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { D1_TRIP_SCHEMA_STATEMENTS } from '../supabase/functions/_shared/trip-storage.js';
 import { boundedFetch } from './lib/bounded-fetch.mjs';
 import {
@@ -8,10 +12,6 @@ import {
   classifyExistingTripStorageDatabases,
   verifyLegacyActivationEvidence,
 } from './lib/trip-storage-legacy-classification.mjs';
-
-const arguments_ = process.argv.slice(2);
-const repairOnly = arguments_.length === 1 && arguments_[0] === '--existing-worker-repair';
-if (arguments_.length && !repairOnly) throw new Error('TRIP_PREPARATION_ARGUMENTS_INVALID');
 
 const accountId = process.env.CLOUDFLARE_ACCOUNT_ID?.trim();
 const apiToken = process.env.CLOUDFLARE_API_TOKEN?.trim();
@@ -92,18 +92,48 @@ async function ensureDatabases(existingDatabases) {
   return selected;
 }
 
-async function applySchema(databases) {
+export async function applySchema(databases, { query = cloudflare } = {}) {
   for (const database of databases) {
     for (const sql of D1_TRIP_SCHEMA_STATEMENTS) {
-      const body = await cloudflare(`/d1/database/${database.uuid}/query`, {
+      const body = await query(`/d1/database/${database.uuid}/query`, {
         method: 'POST',
         body: JSON.stringify({ sql }),
       });
-      if (!Array.isArray(body.result) || body.result.some(result => result?.success !== true)) {
+      if (!Array.isArray(body.result) || body.result.length !== 1 || body.result[0]?.success !== true) {
         throw new Error(`Skemaet kunne ikke verificeres for ${database.name}.`);
       }
     }
+    await verifyOwnerExportIndex(database, query);
   }
+}
+
+async function verifyOwnerExportIndex(database, query) {
+  const invalid = () => new Error('TRIP_EXPORT_INDEX_READBACK_INVALID');
+  const readMetadata = async sql => {
+    const body = await query(`/d1/database/${database.uuid}/query`, {
+      method: 'POST', body: JSON.stringify({ sql }),
+    });
+    if (!Array.isArray(body?.result) || body.result.length !== 1
+      || body.result[0]?.success !== true || !Array.isArray(body.result[0].results)) throw invalid();
+    return body.result[0].results;
+  };
+  // Match migration 002's ordinary, full, ascending BINARY keyset index.
+  // CREATE IF NOT EXISTS alone accepts a pre-existing same-name wrong index.
+  const indexes = await readMetadata("pragma index_list('trip_observations')");
+  const matches = indexes.filter(row => row?.name === 'trip_observations_owner_export');
+  if (matches.length !== 1 || matches[0].unique !== 0
+    || matches[0].origin !== 'c' || matches[0].partial !== 0) throw invalid();
+  const columns = await readMetadata("pragma index_xinfo('trip_observations_owner_export')");
+  if (columns.some(row => !row || ![0, 1].includes(row.key)
+    || !Number.isSafeInteger(row.seqno) || row.seqno < 0)
+    || new Set(columns.map(row => row.seqno)).size !== columns.length) throw invalid();
+  // SQLite also reports auxiliary rowid metadata with key=0; it is not a
+  // fourth indexed key and cannot conceal an unexpected key=1 column.
+  const keys = columns.filter(row => row.key === 1);
+  const expected = ['owner_subject', 'client_observation_id', 'created_at'];
+  if (keys.length !== expected.length || keys.some((row, index) => row.seqno !== index
+    || row.name !== expected[index] || row.desc !== 0 || row.coll !== 'BINARY'
+    || !Number.isSafeInteger(row.cid) || row.cid < 0)) throw invalid();
 }
 
 async function d1ActivationAttempted(database) {
@@ -207,6 +237,123 @@ async function prepareExistingRepair() {
   console.log('Existing ten EU D1 bindings and ordinary schema read-only verified for Worker repair.');
 }
 
+function upgradeFailure() { return new Error('TRIP_OWNER_EXPORT_UPGRADE_UNVERIFIED'); }
+
+function upgradeMainAndLease(requireLease) {
+  const env = process.env;
+  if (env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) throw upgradeFailure();
+  const readGit = args => execFileSync('git', args, { encoding: 'utf8', stdio: 'pipe', timeout: 15000, maxBuffer: 4096 }).trim();
+  if (readGit(['rev-parse', 'HEAD^{commit}']) !== env.GITHUB_SHA
+    || readGit(['ls-remote', 'origin', 'refs/heads/main']) !== `${env.GITHUB_SHA}\trefs/heads/main`) throw upgradeFailure();
+  if (requireLease) {
+    const remaining = Number(env.REPAIR_LEASE_DEADLINE) - Date.now();
+    if (!Number.isSafeInteger(Number(env.REPAIR_LEASE_DEADLINE)) || remaining < 600000 || remaining > 1200000) throw upgradeFailure();
+  }
+}
+
+async function inspectOwnerExportShard(database, definitions) {
+  const rows = await repairQuery(database,
+    `select type, name, sql from sqlite_master where name in (${definitions.map(() => '?').join(',')})`,
+    definitions.map(row => row.name));
+  const absent = !rows.some(row => row?.name === 'trip_observations_owner_export');
+  if (rows.length !== definitions.length - Number(absent) || definitions.some((definition, index) => {
+    const matches = rows.filter(row => row?.name === definition.name);
+    if (absent && index === 9) return false;
+    return matches.length !== 1 || matches[0].type !== definition.type || schemaTokens(matches[0].sql) !== definition.tokens;
+  })) throw upgradeFailure();
+  if (!absent) await verifyOwnerExportIndex(database, cloudflare);
+  return absent;
+}
+
+async function inspectOwnerExportShards() {
+  const databases = await listDatabases(true);
+  if (classifyExistingTripStorageDatabases(databases) !== 'legacy'
+    || databases.some(row => typeof row.uuid !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(row.uuid))
+    || new Set(databases.map(row => row.uuid.toLowerCase())).size !== SHARD_COUNT) throw upgradeFailure();
+  const ordered = TRIP_STORAGE_REQUIRED_SHARD_NAMES.map(name => databases.find(row => row.name === name));
+  const definitions = D1_TRIP_SCHEMA_STATEMENTS.map(sql => {
+    const match = /^create\s+(?:unique\s+)?(table|index)\s+if\s+not\s+exists\s+([a-z_]+)/i.exec(sql.trim());
+    if (!match) throw upgradeFailure();
+    return { type: match[1], name: match[2], tokens: schemaTokens(sql) };
+  });
+  if (definitions.length !== 10 || definitions.at(-1).name !== 'trip_observations_owner_export') throw upgradeFailure();
+  const missing = [];
+  for (const database of ordered) {
+    if (await inspectOwnerExportShard(database, definitions)) missing.push(database.uuid);
+  }
+  const activation = await repairQuery(ordered[0],
+    'select control_value from trip_storage_control where control_key = ?', ['d1_activation_attempted']);
+  if (activation.length !== 1 || activation[0]?.control_value !== 'true') throw upgradeFailure();
+  return { ordered, missing, definitions, bindings: ordered.map((row, index) => ({ binding: `TRIP_DB_${index}`, database_name: row.name, database_id: row.uuid })) };
+}
+
+async function prepareOwnerExportUpgrade(phase) {
+  try {
+    if (!['plan', 'apply', 'check'].includes(phase) || process.env.TRIP_STORAGE_OWNER_EXPORT_UPGRADE !== '1') throw upgradeFailure();
+    const planPath = required(process.env.TRIP_OWNER_EXPORT_PLAN_PATH?.trim(), 'TRIP_OWNER_EXPORT_PLAN_PATH');
+    upgradeMainAndLease(phase !== 'plan');
+    // The immutable ordinary migration text is the only permitted write payload.
+    const migration = fs.readFileSync('cloudflare/trip-gateway/migrations/002_owner_export_keyset.sql');
+    const migrationSha256 = createHash('sha256').update(migration).digest('hex');
+    if (migrationSha256 !== 'a84490c7cd8a173447188cbec3c275714195f29688340cbbd35b33ff4248a4eb') throw upgradeFailure();
+    const inspection = await inspectOwnerExportShards();
+    const descriptor = { accountId, apiToken, workerName: 'ravradar-trip-gateway', expectedBindings: inspection.bindings };
+    if (phase === 'plan') {
+      const current = await verifyExistingWorkerBindings(descriptor);
+      upgradeMainAndLease(false);
+      writeWranglerConfiguration(inspection.ordered);
+      fs.writeFileSync(planPath, JSON.stringify({ sourceSha: process.env.GITHUB_SHA, migrationSha256,
+        versionId: current.versionId, bindings: inspection.bindings, missing: inspection.missing }) + '\n', { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+      return;
+    }
+    const planBytes = fs.readFileSync(planPath);
+    if (planBytes.length > 8192) throw upgradeFailure();
+    const plan = JSON.parse(planBytes.toString('utf8'));
+    const configuration = JSON.parse(fs.readFileSync(required(configPath, 'TRIP_WRANGLER_CONFIG_PATH'), 'utf8'));
+    if (plan?.sourceSha !== process.env.GITHUB_SHA || plan?.migrationSha256 !== migrationSha256
+      || typeof plan.versionId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(plan.versionId)
+      || JSON.stringify(plan.bindings) !== JSON.stringify(inspection.bindings)
+      || !Array.isArray(plan.missing) || plan.missing.length > 10 || new Set(plan.missing).size !== plan.missing.length
+      || plan.missing.some(id => !inspection.ordered.some(row => row.uuid === id))
+      || inspection.missing.some(id => !plan.missing.includes(id))
+      || configuration.name !== descriptor.workerName || JSON.stringify(configuration.d1_databases) !== JSON.stringify(plan.bindings)
+      || configuration.main !== path.resolve('cloudflare/trip-gateway/worker.js').replaceAll('\\', '/')
+      || JSON.stringify(Object.keys(configuration).sort()) !== JSON.stringify(['compatibility_date','d1_databases','main','name','observability','preview_urls','workers_dev'])
+      || configuration.compatibility_date !== '2026-08-26' || configuration.workers_dev !== true || configuration.preview_urls !== false
+      || JSON.stringify(configuration.observability) !== '{"enabled":true}') throw upgradeFailure();
+    descriptor.expectedVersion = plan.versionId;
+    await verifyExistingWorkerBindings(descriptor);
+    if (phase === 'check' && inspection.missing.length) throw upgradeFailure();
+    if (phase === 'apply') {
+      for (const database of inspection.ordered.filter(row => inspection.missing.includes(row.uuid))) {
+        await verifyExistingWorkerBindings(descriptor);
+        if (!await inspectOwnerExportShard(database, inspection.definitions)) continue;
+        upgradeMainAndLease(true);
+        const body = await cloudflare(`/d1/database/${database.uuid}/query`, {
+          method: 'POST', body: JSON.stringify({ sql: migration.toString('utf8') }),
+        });
+        if (!Array.isArray(body.result) || body.result.length !== 1 || body.result[0]?.success !== true) throw upgradeFailure();
+        await verifyOwnerExportIndex(database, cloudflare);
+      }
+      const final = await inspectOwnerExportShards();
+      if (final.missing.length || JSON.stringify(final.bindings) !== JSON.stringify(plan.bindings)) throw upgradeFailure();
+      await verifyExistingWorkerBindings(descriptor);
+    }
+    upgradeMainAndLease(true);
+  } catch { throw upgradeFailure(); }
+}
+
+async function main() {
+const arguments_ = process.argv.slice(2);
+const repairOnly = arguments_.length === 1 && arguments_[0] === '--existing-worker-repair';
+const upgradePhase = arguments_.length === 1 ? ({
+  '--existing-owner-export-upgrade-plan': 'plan',
+  '--existing-owner-export-upgrade-apply': 'apply',
+  '--existing-owner-export-upgrade-check': 'check',
+})[arguments_[0]] : undefined;
+if (arguments_.length && !repairOnly && !upgradePhase) throw new Error('TRIP_PREPARATION_ARGUMENTS_INVALID');
+if (upgradePhase) { await prepareOwnerExportUpgrade(upgradePhase); return; }
+
 if (repairOnly) {
   try { await prepareExistingRepair(); }
   catch { throw new Error('TRIP_REPAIR_PREPARATION_FAILED'); }
@@ -228,5 +375,9 @@ await applySchema(databases);
 const activationAttempted = await d1ActivationAttempted(databases[0]);
 writeWranglerConfiguration(databases);
 publishActivationState(activationAttempted, legacyD1Detected);
-console.log(`Cloudflare D1 er klargjort med ${databases.length} EU-låste shards, skema v1 og en verificeret cutoverfase.`);
+console.log(`Cloudflare D1 er klargjort med ${databases.length} EU-låste shards, skema v1, verificeret eksportindeks og cutoverfase.`);
+}
+}
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
 }
