@@ -1,4 +1,10 @@
-# Lokal 4.0.574 DMI-opfølgning – samme åbne GRIB-fil gennem hele læsningen
+# Lokal 4.0.574 opfølgning – verificér privat upload før recovery
+
+12. oktober: Den normale private publicering tillader kun recovery af et præcist matchende pointer-svar, efter at hele arkivet er uploadet og genlæste bytes er verificeret. Fejl under upload, download eller integritetskontrol må ikke blive succes på grund af en samtidig matchende pointer; første fejl og eksisterende originaler bevares, uden oprydning af refererede eller pensionerede objekter.
+
+Den eksisterende normale måltest består lokalt med to prøver, nul fejl og nul skip. Gamle positive B/S-, reference- og mistet PATCH-svar-forløb er uændrede. Det er ikke præcis GitHub-kildekontrol, faktisk upload eller produktionseffekt. Version 4.0.574, begge implementation-closures, modelbindinger, SQL, score, geometri og tidsbudgetter ændres ikke. DMI's delvise nye generation og den samlede revisions øvrige åbne punkter er ikke løst af denne rettelse. Ældre status nedenfor er historik; ingen produktionsændring under aktiv writer.
+
+# Historik: lokal 4.0.574 DMI-opfølgning – samme åbne GRIB-fil gennem hele læsningen
 
 Opfølgning 12. oktober: Den første præcise Linux-kildekontrol fejlede på en statisk forventning, som også krævede en selvstændig watchdog omkring den nye interne læseadapter. De syv normale download- og transaktionskald har fortsat deres eksisterende watchdog. Testrettelsen kræver adapterens præcise None-vagt, returnering og videresendte argumenter samt transaktionens samme ejede læser; ingen generel undtagelse gives. Den ene målrettede supervisorsuite består med 29 tests, herunder syv negative ændringer af kodekontrollen. De 27 øvrige gamle testmetoder er uændrede. Præcis ny Linux-kildekontrol, dokumenteret resultat for de fire leaseprøver og offentlig effekt afventes; den røde kontrol må ikke omgås.
 

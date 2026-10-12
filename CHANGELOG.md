@@ -1,4 +1,11 @@
-# Lokal 4.0.574 samme-GRIB-læsning – 2026-10-11
+# 4.0.574 opfølgning – verificeret privat upload, 2026-10-12
+
+- Recovery af et mistet pointer-svar kræver nu fuld upload og byteverificeret genlæsning. En samtidig matchende pointer må ikke skjule tidligere upload-, download- eller integritetsfejl.
+- Første fejl, eksisterende gyldige B/S-originaler, referencekontrol og gamle positive mistet PATCH-svar-forløb bevares. Afvist arkiv må ikke udløse oprydning.
+- To normale lokale målprøver består, nul fejl og nul skip. Præcis kildekontrol, sikker levering og faktisk upload-/driftseffekt afventes; lokale tests er ikke produktion.
+- Samme 4.0.574; ingen implementation-closure-, modelbindings-, SQL-regel-, score-, geometri- eller budgetændring. Kun håndbogens statiske lokale installerkopi synkroniseres; ingen SQL udføres. DMI's delvise nye generation og revisionens øvrige punkter er fortsat åbne.
+
+# Historik: lokal 4.0.574 samme-GRIB-læsning – 2026-10-11
 
 - Opfølgning 12. oktober: Første præcise kildekontrol fejlede på den gamle statiske watchdog-forventning til den nye interne adapter. Den afgrænsede testrettelse kræver præcis adapter, videresendte argumenter og samme ejede transaktionslæser; alle syv normale watchdogs bevares. Én målrettet suite består med 29 tests og syv negative kodeændringer; 27 øvrige gamle metoder er uændrede. Ny præcis Linux-kildekontrol og offentlig effekt afventes.
 - Samme originale åbne fil og Linux-læselease binder capturekontrol, ecCodes-læsning, EOF og copy-on-write-transaktion. Ukendt fil-/lease-/oprydningsstatus afvises; en genåbnet fil kan ikke erstatte den oprindelige.

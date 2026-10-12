@@ -5,6 +5,12 @@
   "updatedAt": "2026-10-12",
   "sections": [
     {
+      "id": "private-upload-verified-before-pointer-recovery-2026-10-12",
+      "chapter": "89.212",
+      "title": "En privat vejrpakke skal være gemt og kontrolleret",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Et matchende register beviser ikke, at hele vejrpakken er gemt korrekt.</div><p>Den normale publicering må først bruge et præcist matchende registersvar til at genkende et mistet svar, efter at hele pakken er uploadet og dens genlæste bytes er kontrolleret. Fejl under upload, genlæsning eller integritetskontrol skal fortsat give fejl, selv om en samtidig publicering viser det forventede register.</p><p>Den første fejl og alle eksisterende gyldige originaler bevares; et afvist arkiv må ikke udløse oprydning. De hidtidige positive forløb for originalpakker, referencetid og et mistet svar på registeropdateringen bevares. To normale lokale målprøver består med nul fejl og nul skip. Præcis GitHub-kildekontrol, sikker levering og faktisk gemnings- og driftseffekt mangler endnu.</p><p>Dette er en afgrænset opfølgning på samme 4.0.574, ikke en ny version eller et bevis for færdig selvstændig drift. Modelbindinger, implementation-closures, SQL, score, geometri og tidsbudgetter ændres ikke. DMI's delvise nye generation og revisionens øvrige åbne punkter forbliver åbne. Ingen produktionsændring sker under en aktiv vejrhentningsskriver.</p>"
+    },
+    {
       "id": "dmi-same-open-grib-read-lease-2026-10-11",
       "chapter": "89.210",
       "title": "Den samme vejrfil skal læses og kontrolleres",

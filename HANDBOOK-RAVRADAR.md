@@ -6,6 +6,14 @@ Den lokale 4.0.574 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
 
+## 89.212 En privat vejrpakke skal være gemt og kontrolleret
+
+Et matchende register er ikke bevis for, at hele vejrpakken er gemt korrekt. Den normale publicering må først bruge et præcist matchende registersvar til at genkende et mistet svar, efter at hele pakken er uploadet og dens genlæste bytes er kontrolleret. Fejl under upload, genlæsning eller integritetskontrol skal fortsat give fejl, selv om en samtidig publicering viser det forventede register.
+
+Den første fejl og alle eksisterende gyldige originaler bevares; et afvist arkiv må ikke udløse oprydning. De hidtidige positive forløb for originalpakker, referencetid og et mistet svar på registeropdateringen bevares. To normale lokale målprøver består med nul fejl og nul skip. Præcis GitHub-kildekontrol, sikker levering og faktisk gemnings- og driftseffekt mangler endnu.
+
+Dette er en afgrænset opfølgning på samme 4.0.574, ikke en ny version eller et bevis for færdig selvstændig drift. Modelbindinger, implementation-closures, SQL-regler, score, geometri og tidsbudgetter ændres ikke. Kun håndbogens statiske lokale installerkopi synkroniseres; ingen SQL udføres. DMI's delvise nye generation og revisionens øvrige åbne punkter forbliver åbne. Ingen produktionsændring sker under en aktiv vejrhentningsskriver.
+
 ## 89.210 Den samme vejrfil skal læses og kontrolleres
 
 Opfølgning 12. oktober: Første præcise kildekontrol stoppede på en gammel testforventning til den nye interne læseadapter. De syv normale kald har stadig deres stopkontrol. Den rettede kodekontrol kræver adapterens præcise argumenter og samme ejede læser i transaktionen; ekstra ubeskyttede kald og ændrede stopkontroller afvises. Én målrettet suite består med 29 tests, inklusive syv negative kodeændringer. Det er ikke offentlig levering; ny præcis Linux-kildekontrol og dokumenterede resultater for låseprøverne afventes.
