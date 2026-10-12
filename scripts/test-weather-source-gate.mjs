@@ -201,3 +201,19 @@ assert.deepEqual(
 );
 
 console.log('Source gate reuses only live-verified, SHA-256-identical PR or exact-main content.');
+
+// The mandatory native SQL leaf is part of the live immutable PR proof.
+// Outer success, absence, pending or SKIP cannot substitute for its real run.
+const nativeSqlStep = 'Validate native PostgreSQL checkpoint CAS on artificial data only';
+assert.ok(PULL_REQUEST_SOURCE_STEPS.includes(nativeSqlStep));
+for (const nativeOutcome of [null,
+  { status: 'completed', conclusion: 'skipped' },
+  { status: 'completed', conclusion: 'failure' },
+  { status: 'in_progress', conclusion: null }]) {
+  const job = { ...pullJob, steps: pullJob.steps.flatMap(step => step.name !== nativeSqlStep
+    ? [step] : nativeOutcome === null ? [] : [{ ...step, ...nativeOutcome }]) };
+  const api = pullApi({ job });
+  assert.equal((await discoverPullRequestSourceGate(env, digest, api)).required, true);
+  assert.equal((await decideSourceGate(discovered.record, env, api,
+    { sourceTreeSha256: digest })).required, true);
+}

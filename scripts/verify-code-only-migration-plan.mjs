@@ -22,11 +22,6 @@ const plan = await assertSupabaseMigrationPlan({
   dryRunText: await fs.readFile(argument('--dry-run'), 'utf8'),
   migrationsDirectory: path.resolve(argument('--migrations-directory')),
 });
-assert.ok(
-  plan.pendingVersions.length === 0
-    || (plan.pendingVersions.length === 1 && plan.pendingVersions[0] === latest.version),
-  'Code-only deployment may apply only the exact latest required integrated migration',
-);
 if (process.argv.includes('--require-prewrite-gate')
     && plan.pendingVersions.includes('20261010120000')) {
   assert.equal(process.env.RAVRADAR_ASSISTANT_PREWRITE_REQUIRED, 'true',
@@ -40,6 +35,11 @@ if (plan.pendingVersions.includes('20261010130000')) {
     && process.env.RAVRADAR_USERDATA_PREWRITE_VERIFIED === 'true',
     'The pending userdata binding requires the completed normal original-preservation path');
 }
+assert.ok(
+  plan.pendingVersions.length === 0
+    || (plan.pendingVersions.length === 1 && plan.pendingVersions[0] === latest.version),
+  'Code-only deployment may apply only the exact latest required integrated migration',
+);
 console.log(
   plan.pendingVersions.length === 0
     ? 'Code-only migration is already applied; retry is safe.'

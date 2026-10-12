@@ -6,6 +6,20 @@ Den lokale 4.0.575 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Den fysiske scorekontrakt er uændret. Dette er ikke installation, ny offentlig status eller bevis for den nye sammensætnings præcise kildekontrol.
 
+## 89.218 En delvis installation er ikke en færdig levering
+
+**Nyeste status 12. oktober:** En del er installeret, men checkpoint-publicering og den offentlige levering mangler.
+
+Kilden til 4.0.575 er kontrolleret og lagt i main. Den tidligere fejl i kontrollen af pakkede originaler er rettet, og kontrollen før skrivning bestod i det nye forsøg. Databaseændringen og lagerfunktionerne er installeret, men hele leveringen er ikke afsluttet.
+
+Et checkpoint med den fortsatte beregning blev gemt lokalt. Publiceringen til databasen ramte derefter forespørgselsfristen i begge forsøg. Assistentens opdatering og de offentlige sider blev ikke leveret. Den offentlige app er derfor stadig 4.0.574; lokal gemning må ikke forveksles med en bekræftet central kopi.
+
+Den lokale rettelse undgår at beregne den samme, fuldt validerede forgængerprojektion to gange. Kontrol af indhold, lighed, version, adgang og den eksisterende grænse på 55 sekunder bevares. Rettelsen skal installeres som en ny, særskilt migration; den allerede installerede migration ændres ikke. Den afsluttende kontrol af brugerdata-lageret må ikke bortfalde, fordi der tilføjes en nyere migration.
+
+Seks normale workflowprøver og hele det eksisterende readiness-target består lokalt. Den nye funktion er endnu ikke prøvet i en rigtig PostgreSQL-instans. Præcis kildekontrol og central publicering afventer. Ejeren har godkendt den præcise SQL-rettelse og ét rettelsesdeploy efter kontrollerne; tilladelsen er ubrugt, og fejl giver ikke automatisk gentagelse. Ingen kort eller anden manuel vejrhentning må startes. Efter verificeret rettelse og fuldt rettelsesdeploy skal cron aktiveres igen med uændret tidsplan; en forudgående pause er endnu ikke bekræftet. Det er fortsat samme 4.0.575, ikke en ny scoremodel. Originaler, ture, historik, fysiske regler, administratorpunkter og geometri bevares.
+
+Alle fem hovedmål og de fulde original-, Fur-, AI- og brugerforløb er fortsat åbne. Ingen private fejl eller brugerdata føres ind i assistentens offentlige svarviden. De ældre kapitler nedenfor er dateret historik; dette kapitel har forrang for den aktuelle installationsstatus.
+
 ## 89.217 En samlet kildekandidat uden at miste nyere rettelser
 
 **Nyere status 12. oktober – pakket kontrol rettet lokalt; installation afventer:**

@@ -460,11 +460,11 @@ jobs:
           set -euo pipefail
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
-          import { LATEST_REQUIRED_CUTOVER_MIGRATION as latest, parseSupabaseMigrationList } from './scripts/integrated-cutover-readiness.mjs';
+          import { LATEST_REQUIRED_CUTOVER_MIGRATION as latest, TRIP_BINDING_POLICY_SOURCE_MIGRATION as userdataPolicy, parseSupabaseMigrationList } from './scripts/integrated-cutover-readiness.mjs';
           const rows = parseSupabaseMigrationList(fs.readFileSync(`${process.env.RUNNER_TEMP}/code-only-migrations-before.txt`, 'utf8'));
           const required = latest.version === '20261010120000' && !rows.some(row => row.remote === latest.version);
           fs.appendFileSync(process.env.GITHUB_ENV, `RAVRADAR_ASSISTANT_PREWRITE_REQUIRED=${required}\n`);
-          const userdataPending = latest.version === '20261010130000' && !rows.some(row => row.remote === latest.version);
+          const userdataPending = !rows.some(row => row.remote === userdataPolicy.version);
           const optedIn = process.env.RAVRADAR_USERDATA_UPGRADE_OPT_IN === 'true';
           if (userdataPending && !optedIn) throw new Error('Pending userdata binding requires explicit existing-owner-export opt-in');
           if (optedIn && (latest.version !== '20261010130000' || !userdataPending
@@ -473,7 +473,12 @@ jobs:
             throw new Error('Userdata upgrade requires installed current050000 and sole pending130000; no intermediary or automatic replay');
           }
           fs.appendFileSync(process.env.GITHUB_ENV, `RAVRADAR_USERDATA_PREWRITE_REQUIRED=${optedIn && userdataPending}\n`);
-          fs.appendFileSync(process.env.GITHUB_ENV, `RAVRADAR_USERDATA_FINAL_REQUIRED=${latest.version === '20261010130000'}\n`);
+          // A later checkpoint-only migration must not suppress the installed
+          // userdata storage readback or replay the one-time userdata upgrade.
+          fs.appendFileSync(process.env.GITHUB_ENV, `RAVRADAR_USERDATA_FINAL_REQUIRED=${userdataPolicy.version === '20261010130000'}\n`);
+          // This implementation-only repair must never select the normal
+          // continuation-repair/recomputation branch for archived weather.
+          fs.appendFileSync(process.env.GITHUB_ENV, `RAVRADAR_CHECKPOINT_CAS_METADATA_ONLY=${latest.version === '20261012200000'}\n`);
           NODE
 
       - name: Hydrate only already-applied migration identities
@@ -795,6 +800,10 @@ jobs:
             migration_args+=(--metadata-only)
           fi
           if test "${RAVRADAR_USERDATA_PREWRITE_REQUIRED:-false}" = "true"; then
+            test "${{ steps.owner-current-original.outputs.transition_kind }}" != "owner-current-domain-original"
+            migration_args+=(--metadata-only)
+          fi
+          if test "${RAVRADAR_CHECKPOINT_CAS_METADATA_ONLY:-false}" = "true"; then
             test "${{ steps.owner-current-original.outputs.transition_kind }}" != "owner-current-domain-original"
             migration_args+=(--metadata-only)
           fi

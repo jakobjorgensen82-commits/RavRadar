@@ -102,6 +102,15 @@ jobs:
       - name: Validate download-inclusive DMI capacity on artificial data only
         run: python -B scripts/test_dmi_wave_bootstrap_update_integration.py
 
+      - name: Validate native PostgreSQL checkpoint CAS on artificial data only
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Use only PostgreSQL binaries already present in the normal runner.
+          # No package/runtime install, network, cloud database or skip fallback.
+          node scripts/test-code-only-userdata-policy-routing.mjs
+          node scripts/test-protected-ravscore-continuation-checkpoint.mjs --native-postgres
+
       - name: Require validated source tree to remain unchanged
         shell: bash
         run: |

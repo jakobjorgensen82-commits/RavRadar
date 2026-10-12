@@ -1,3 +1,15 @@
+# 4.0.575 – delvist installeret; checkpoint-publicering afventer, 2026-10-12
+
+Nyeste status 12. oktober: PR #584 bestod sin præcise kildekontrol og er lagt i main. Den rettede kontrol af originalerne umiddelbart før skrivning bestod derefter. Den uforanderlige 130000-migration er nu faktisk installeret og bekræftet ved databasekontrol; D1, Worker og turfunktionernes Edge-trin er også installeret. Det er en delvis installation, ikke en færdig offentlig 4.0.575.
+
+Det beskyttede checkpoint blev gemt lokalt, men publiceringen til databasen ramte dens forespørgselsfrist i begge forsøg, også efter den ene eksisterende gentagelse. Assistentens Edge-opdatering og Pages blev derfor ikke kørt. Den offentlige app forbliver på 4.0.574. En lokal gemning er ikke bevis for holdbar central publicering eller for, at almindelig vejrhentning kan fortsætte med en gammel originalpakke under en ny databasebinding.
+
+En afgrænset lokal rettelse genbruger nu én allerede fuldt valideret forgængerprojektion i checkpointets versionskontrollerede skrivning i stedet for at beregne den igen. Den forberedes som en ny 200000-migration; 130000 omskrives eller geninstalleres ikke. Normal definitionskontrol og migrationsplan følger den nye funktion, mens den afsluttende kontrol af det installerede brugerdata-lager fortsat kræves. Seks normale workflowprøver og hele det eksisterende readiness-target består lokalt. Det er ikke udførelse af den nye SQL i PostgreSQL.
+
+Den nye SQL-prøve i en rigtig PostgreSQL-instans, rettelsens præcise kildekontrol og en faktisk central publicering afventer. Ejeren har nu godkendt den præcise nye checkpoint-SQL-rettelse og ét kontrolleret rettelsesdeploy efter kontrollerne. Tilladelsen er endnu ubrugt; der følger ingen automatisk gentagelse med. Ingen kort eller anden manuel vejrhentning må startes. Efter faktisk verificeret checkpoint-rettelse og fuldt rettelsesdeploy skal cron aktiveres igen med uændret tidsplan; en forudgående pause er endnu ikke bekræftet. Databasefunktionens grænse på 55 sekunder, I68/C66/T12, lagerformat, scoreformel, kildeprioritet, ture, historik, autentiske originaler, adminpunkter og geometri er uændrede.
+
+Alle fem hovedmål er fortsat åbne. Den samlede private original-/producentkæde, Fur, fungerende ekstern AI og de fulde brugerforløb er ikke færdigbevist. Interne fejl og private data må ikke blive assistentens offentlige viden. Ældre afsnit bevares som dateret historik; denne nyeste status erstatter kun deres tidligere installations- og afventningsstatus.
+
 # Lokal 4.0.575-opfølgning – pakket førskrivningskontrol; installation afventer
 
 Nyere status 12. oktober: Forsøget på at installere 4.0.575 blev afvist i kontrollen umiddelbart før skrivning, fordi den forberedte pakke blev vurderet til at ændre mere end metadata. Den eksisterende 050000-binding bestod sin kontrol. SQL-installation og de efterfølgende D1-, Worker-, Edge- og Pages-trin blev ikke udført; 4.0.575 og 130000-overgangen er ikke installeret.

@@ -269,12 +269,19 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20261010130000_owner_export_origin_bound_successor',
     filename: '20261010130000_owner_export_origin_bound_successor.sql',
   }),
+  Object.freeze({
+    version: '20261012200000',
+    id: '20261012200000_checkpoint_cas_single_projection_successor',
+    filename: '20261012200000_checkpoint_cas_single_projection_successor.sql',
+  }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260920220000');
 export const TRIP_BINDING_POLICY_SOURCE_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20261010130000');
+export const CHECKPOINT_CAS_SOURCE_MIGRATION =
+  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20261012200000');
 export const CHECKPOINT_NATIVE_HOLD_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260923140000');
 export const CHECKPOINT_COMPANION_ID_MIGRATION =
@@ -343,6 +350,11 @@ export async function expectedCheckpointCasContract({
     // by that migration rather than mixing in the older validator bodies.
     TRIP_BINDING_POLICY_SOURCE_MIGRATION.filename,
   ), 'utf8');
+  // Only CAS is replaced by the implementation-only successor. Keep the
+  // other twelve definitions bound to their immutable userdata migration.
+  const casMigration = await fs.readFile(path.join(
+    migrationsDirectory, CHECKPOINT_CAS_SOURCE_MIGRATION.filename,
+  ), 'utf8');
   const definitions = [
     ['public.ravradar_ravscore_checkpoint_canonical_time', 'canonical-time validator'],
     ['public.ravradar_ravscore_checkpoint_has_forbidden_key', 'forbidden-key validator'],
@@ -364,7 +376,7 @@ export async function expectedCheckpointCasContract({
     ['public.ravradar_ravscore_checkpoint_userdata_predecessor_projection',
       'exact userdata binding predecessor projection'],
   ].map(([functionName, label]) => sqlFunctionBody(
-    migration,
+    functionName === 'public.ravradar_ravscore_checkpoint_cas' ? casMigration : migration,
     functionName,
     label,
   ));
