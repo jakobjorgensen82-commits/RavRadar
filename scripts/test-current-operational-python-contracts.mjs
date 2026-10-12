@@ -15,7 +15,7 @@ const environment = Object.fromEntries(
 );
 environment.PYTHONUTF8 = '1';
 if (process.platform !== 'linux') {
-  console.log('Native Linux supervisor-loss contract not executed on this platform');
+  console.log('Native Linux supervisor-loss and owned GRIB provenance contracts not executed on this platform');
 }
 for (const file of [
   'test-copernicus-bounded-retry-4.0.289.py',
@@ -24,7 +24,10 @@ for (const file of [
   'test-current-operational-live-builder.py',
   'test-current-operational-producer-chain.py',
   'test-dmi-bulk-supervised.py',
-  ...(process.platform === 'linux' ? ['test-dmi-supervisor-parent-loss.py'] : []),
+  ...(process.platform === 'linux' ? [
+    'test-dmi-supervisor-parent-loss.py',
+    'test-dmi-native-provenance.py',
+  ] : []),
 ]) {
   test(file, { timeout: 160_000 }, () => {
     const result = spawnSync(python, ['-B', path.join(root, 'scripts', file)], {

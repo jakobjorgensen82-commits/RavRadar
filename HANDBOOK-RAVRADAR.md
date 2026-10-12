@@ -6,6 +6,30 @@ Den lokale 4.0.574 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
 
+## 89.213 Tre timers vandstandsændring på tværs af gemte banker
+
+En gyldig vandstand nu og en gyldig vandstand tre timer senere kan ligge i hver sin gemte kildebank. Den normale centrale SOURCE-routing skal kunne beregne forskellen, når de to punkter efter genlæsning er verificeret og samlet i det samme routede indeks. Den aktuelle række skal ikke allerede have en gammel trend, beregnet inden bankerne blev samlet.
+
+Rettelsen bevarer kontrollen af samme kilde, samling, modelkørsel og gitterpunkt samt hver rækkes gyldige originalbinding og tilladelsen til den fremtidige kilde. De to tidspunkter behøver ikke komme fra samme rå fil. En manglende time, blandet identitet eller falsk binding giver fortsat ingen trend. Manglende kilder får ikke deres vægt fordelt på de øvrige. De oprindelige vandstandsmålinger og offentliggjort scorehistorik ændres ikke.
+
+Den eksisterende normale måltest viste fejlen før rettelsen og består med den lokale rettelse. Aktiv, beskyttet, historisk, retained og gemt/koldt genindlæst bank indgår sammen med negative kontrolforløb. Dette er lokal caller-kontrol, ikke offentlig levering eller bevis for årsagen til alle aktuelt manglende T+3-tal. Rettelsens faktiske effekt skal verificeres i en gyldig ny generation.
+
+Samme 4.0.574, uændrede modelbindinger og I68/C66/T12, storage-ABI, kildeprioritet, scoreformel, administratorpunkter og geometri. Ingen produktionsændring sker under en aktiv vejrhentningsskriver, og denne opfølgning giver ingen ny tilladelse til SQL-installation, nøgler, planer eller ekstra vejrhentning. Alle fem hovedmål og den samlede revision er fortsat åbne. Ældre afventende notater nedenfor bevares som historik og erstattes kun af nyere dokumenteret evidens.
+
+## 89.214 Mindre gentaget DMI-arbejde uden ændrede målinger
+
+DMI-læserens klassifikation bruger feltets header, ikke statistikfelterne numberOfMissing, minimum og maximum. Den afgrænsede, gennemgåede produktændring er integreret lokalt og læser kun disse tre statistikfelter, når en ny fuld inventarpost skal gemmes. En senere meddelelse af samme type skal ikke beregne statistikken igen alene til klassifikation eller gentaget diagnostik. Kun produkt-hunkene er indarbejdet, ikke den forkastede V1-test. Syntakskontrollen bevares, og faktisk efterfølgende Linux-kontrol er nu dokumenteret.
+
+De første 22 inventarfelter, deres rækkefølge, antallet messagesSeen og grænserne på 120 poster i kørselsinventaret og 240 i det vedvarende inventar bevares. Klassifikation, numerisk sampling, provenance og eksisterende kaldersignaturer ændres ikke. Parser 20, parametermapping 4, grid 9 og processing-signaturen bevares, ligesom storage-ABI og gyldige originaler. Producentens kildeinventar skal følge de faktiske nye kodebytes uden at ommærke gamle originaler.
+
+Den tidligere korrigerede statistikprøve afviste den gamle kode på 5a60d665 med seks plus seks opslag efter beståede bevarings-/læserkontroller. Efter produktrettelsen består nu alle fem normale Linux-prøver faktisk på 42748, inklusive tre plus nul statistikopslag og samme syntetiske prøves fulde original-/output-/inventar-/rækkefølge-/filhåndtags-/EOF-/frigivelseskontrol. Den almindelige kildegate i trin 14 og Copernicus-kontrollen i trin 15 bestod. Antal opslag er ikke målt CPU-tid eller national kapacitet.
+
+Den samlede 42748-kontrol fejlede fortsat i trin 16: 67 af 68 prøver bestod, mens én gammel syntetisk bølgefixture brugte det gamle mockseam field_signature. Det normale inventar læser nu codes_get. Kun denne testfixture er lokalt rettet til codes_get med samme tre fields.get(key)-felter. Classifier, kandidater, capture, stagevalidator, alle assertions og øvrige 67 prøver bevares; produktet og gates ændres ikke af testrettelsen.
+
+Ny normal Linux-kontrol af alle 68 prøver og det nye heads fulde præcise kontrol/kildebevis afventes. Den gamle fejlkørsel og skipped proof må ikke bruges til merge. Lokal Python mangler requests; ingen installation eller shim er brugt. Den normale kildegruppe inkluderer native-provenance-prøven; ældre grønne kontroller uden kaldet er ikke dens bevis. Fuld numerisk produktionsgeneration og national kapacitet er fortsat åbne.
+
+Den separate uploadrettelse i PR #578 har bestået præcis kildekontrol på bb926b5f og er sikkert merget den 12. oktober kl. 12.56.27 dansk tid efter frisk writer-kontrol. Main 310298a6f38b5cffbd9e73df75665e88868d5227 bevarer hele det gennemgåede Git-træ. Det er faktisk kildelevering, ikke endnu dokumenteret upload-/gemnings- eller ny vejrgenerationseffekt. DMI/T+3-opfølgningerne kræver stadig egen præcis kontrol og sikker levering. Ingen af disse leverancer gør DMI's fulde nye generation, den samlede revision eller selvstændig drift færdig; faktisk effekt mangler fortsat. Der foretages ingen produktionsændring under aktiv writer, SQL-installation, nye nøgler/planer eller ekstra vejrhentning.
+
 ## 89.212 En privat vejrpakke skal være gemt og kontrolleret
 
 Et matchende register er ikke bevis for, at hele vejrpakken er gemt korrekt. Den normale publicering må først bruge et præcist matchende registersvar til at genkende et mistet svar, efter at hele pakken er uploadet og dens genlæste bytes er kontrolleret. Fejl under upload, genlæsning eller integritetskontrol skal fortsat give fejl, selv om en samtidig publicering viser det forventede register.

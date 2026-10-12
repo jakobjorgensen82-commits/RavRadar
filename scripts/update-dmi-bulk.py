@@ -4389,9 +4389,52 @@ def safe_get(gid: int, key: str) -> Any:
         return None
 
 
+_FIELD_SIGNATURE_KEYS = (
+    "shortName", "name", "cfName", "parameterName", "units", "typeOfLevel",
+    "level", "paramId", "discipline", "parameterCategory", "parameterNumber",
+    "numberOfPoints", "numberOfMissing", "minimum", "maximum",
+    "indicatorOfParameter", "table2Version", "centre", "subCentre",
+    "generatingProcessIdentifier", "scaledValueOfFirstFixedSurface",
+    "typeOfFirstFixedSurface",
+)
+_FIELD_STATISTIC_KEYS = frozenset({"numberOfMissing", "minimum", "maximum"})
+
+
 def field_signature(gid: int) -> dict[str, Any]:
-    return {key: safe_get(gid, key) for key in
-            ("shortName", "name", "cfName", "parameterName", "units", "typeOfLevel", "level", "paramId", "discipline", "parameterCategory", "parameterNumber", "numberOfPoints", "numberOfMissing", "minimum", "maximum", "indicatorOfParameter", "table2Version", "centre", "subCentre", "generatingProcessIdentifier", "scaledValueOfFirstFixedSurface", "typeOfFirstFixedSurface")}
+    return {key: safe_get(gid, key) for key in _FIELD_SIGNATURE_KEYS}
+
+
+def _field_header_signature(gid: int) -> dict[str, Any]:
+    return {
+        key: safe_get(gid, key) for key in _FIELD_SIGNATURE_KEYS
+        if key not in _FIELD_STATISTIC_KEYS
+    }
+
+
+def _record_grib_field_inventory(
+    gid: int, inventory: dict[str, Any], persistent_fields: dict[str, Any],
+) -> dict[str, Any]:
+    # Statistics belong to the first recorded signature, not every later
+    # message. Keep the original ordered full signature when a record is new.
+    header = _field_header_signature(gid)
+    sig_key = "|".join(str(header.get(key) or "") for key in (
+        "shortName", "name", "units", "typeOfLevel", "level", "paramId",
+    ))
+    new_inventory = sig_key not in inventory and len(inventory) < 120
+    new_persistent = sig_key not in persistent_fields and len(persistent_fields) < 240
+    sig = {
+        key: safe_get(gid, key) if key in _FIELD_STATISTIC_KEYS else header[key]
+        for key in _FIELD_SIGNATURE_KEYS
+    } if new_inventory or new_persistent else header
+    if new_inventory:
+        inventory[sig_key] = {**sig, "messagesSeen": 1}
+    elif sig_key in inventory:
+        inventory[sig_key]["messagesSeen"] = int(inventory[sig_key].get("messagesSeen") or 0) + 1
+    if new_persistent:
+        persistent_fields[sig_key] = {**sig, "messagesSeen": 1}
+    elif sig_key in persistent_fields:
+        persistent_fields[sig_key]["messagesSeen"] = int(persistent_fields[sig_key].get("messagesSeen") or 0) + 1
+    return sig
 
 
 def wave_period_field_evidence(signature: dict[str, Any]) -> dict[str, Any]:
@@ -4403,7 +4446,7 @@ def wave_period_field_evidence(signature: dict[str, Any]) -> dict[str, Any]:
 
 
 def classify_parameter(gid: int, collection: str) -> str | None:
-    sig = field_signature(gid)
+    sig = _field_header_signature(gid)
     short = str(sig.get("shortName") or "").lower().strip()
     metadata = " ".join(str(sig.get(key) or "") for key in ("name", "cfName", "parameterName")).lower()
     level_type = str(sig.get("typeOfLevel") or "").lower()
@@ -6553,16 +6596,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
             message_failure = None
             try:
                 reader.check()
-                sig = field_signature(gid)
-                sig_key = "|".join(str(sig.get(k) or "") for k in ("shortName", "name", "units", "typeOfLevel", "level", "paramId"))
-                if sig_key not in inventory and len(inventory) < 120:
-                    inventory[sig_key] = {**sig, "messagesSeen": 1}
-                elif sig_key in inventory:
-                    inventory[sig_key]["messagesSeen"] = int(inventory[sig_key].get("messagesSeen") or 0) + 1
-                if sig_key not in persistent_fields and len(persistent_fields) < 240:
-                    persistent_fields[sig_key] = {**sig, "messagesSeen": 1}
-                elif sig_key in persistent_fields:
-                    persistent_fields[sig_key]["messagesSeen"] = int(persistent_fields[sig_key].get("messagesSeen") or 0) + 1
+                sig = _record_grib_field_inventory(gid, inventory, persistent_fields)
                 parameter = classify_parameter(gid, collection)
                 if not parameter:
                     continue

@@ -337,9 +337,11 @@ function verifiedWaterSourceTrendKnown(sourceRows, futureRows, zoneId) {
   // Retained hours are qualified independently. The exact T+3 support must
   // ALSO belong to the same SOURCE/collection/run/grid series for every
   // selected source; a valid scalar from a different series is not a trend.
+  // Derive from the selected endpoints, not a bank-local trend computed
+  // before active and independently qualified donor hours were joined.
   return sourceRows.length > 0 && sourceRows.length === futureRows.length
     && sourceRows.every((sourceRow, i) =>
-      finite(sourceRow?.waterLevelTrendCm3h) !== null
+      finite(sourceRow?.waterLevelCm) !== null
       && finite(futureRows[i]?.waterLevelCm) !== null
       && sameVerifiedDmiSourceSeries(sourceRow, futureRows[i]))
     && sourceRowsAllowedForZone(futureRows, zoneId);
