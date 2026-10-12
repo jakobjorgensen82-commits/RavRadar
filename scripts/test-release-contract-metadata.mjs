@@ -104,7 +104,7 @@ const RELEASE_METADATA_TEST_COMMAND = [
   OWNER_WATER_LEVEL_BINDING_SUCCESSOR_CHECK,
 ].join(' && ');
 const CHECKPOINT_MIGRATION_PATH =
-  'supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql';
+  'supabase/migrations/20261005000000_owner_water_level_only_binding.sql';
 const HISTORICAL_TRIP_MIGRATION_PATH =
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql';
 const CHECKPOINT_OUTER_BEGIN = '-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';
@@ -121,7 +121,6 @@ const SYNC_WRITABLE_PATHS = Object.freeze([
   'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
 ]);
 const SYNC_MIGRATION_PATHS = Object.freeze([
-  'supabase/migrations/20261005000000_owner_water_level_only_binding.sql',
   HISTORICAL_TRIP_MIGRATION_PATH,
   'supabase/migrations/20261002080000_top20_display_binding.sql',
   'supabase/migrations/20261002094500_restore_checkpoint_cas_timeout.sql',

@@ -7,11 +7,6 @@ on:
         description: "Skriv DEPLOY-CODE-ONLY-REPAIR eller DEPLOY-SAVED-WEATHER-REPAIR"
         required: true
         type: string
-      upgrade_existing_owner_export:
-        description: "Opgrader kun eksisterende ejer-turlager efter installeret current050000"
-        required: false
-        default: false
-        type: boolean
       publish_newest_saved_weather:
         description: "Fortsæt den nyeste centralt gemte og allerede validerede vejrpakke uden providerkald"
         required: false
@@ -55,16 +50,10 @@ jobs:
           SAVED_WEATHER: ${{ inputs.publish_newest_saved_weather }}
           RECOVER_PUBLIC_RUN_ID: ${{ inputs.recover_public_run_id }}
           RECOVER_PUBLIC_RUN_ATTEMPT: ${{ inputs.recover_public_run_attempt }}
-          UPGRADE_EXISTING_OWNER_EXPORT: ${{ inputs.upgrade_existing_owner_export }}
         run: |
           set -euo pipefail
           test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
           test "$GITHUB_REF" = "refs/heads/main"
-          if test "$UPGRADE_EXISTING_OWNER_EXPORT" = "true"; then
-            test "$CONFIRMATION" = "DEPLOY-CODE-ONLY-REPAIR"
-            test "$SAVED_WEATHER" != "true"
-            test -z "$RECOVER_PUBLIC_RUN_ID"
-          fi
           if test "$SAVED_WEATHER" = "true"; then
             test "$CONFIRMATION" = "DEPLOY-SAVED-WEATHER-REPAIR"
           else
@@ -94,9 +83,6 @@ jobs:
 
   build-code-only:
     needs: operational-recovery-gate
-    concurrency:
-      group: ${{ inputs.upgrade_existing_owner_export == true && 'ravradar-trip-storage-production' || format('ravradar-code-only-unshared-{0}', github.run_id) }}
-      cancel-in-progress: false
     name: Reuse exact runtime and build code-only artifact
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -131,7 +117,6 @@ jobs:
       RAVRADAR_OPERATIONAL_WORK: /tmp/ravradar-operational-model
       RAVRADAR_OPERATIONAL_HANDOFF: /tmp/ravradar-operational-handoff
       RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
-      RAVRADAR_USERDATA_UPGRADE_OPT_IN: ${{ inputs.upgrade_existing_owner_export == true && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -255,7 +240,6 @@ jobs:
           current="$RAVRADAR_OPERATIONAL_WORK/before-missed-cutover-recovery.json"
           public_manifest="$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT/manifest.json"
           if test "$(jq -r '.model' "$current")" = "legacy-candidate-g" && test "$(jq -r '.status' "$current")" = "CANDIDATE_G_ACTIVE" && test "$(jq -r '.centralVersion' "$current")" = "0" && test "$(jq -r '.initialCutoverRequired' "$current")" = "true" && test "$(jq -r '.legacySourceRequired' "$current")" = "true"; then
-            node --input-type=module -e "import { LATEST_REQUIRED_CUTOVER_MIGRATION as m } from './scripts/integrated-cutover-readiness.mjs'; if (m.version === '20261010120000') throw new Error('Assistant successor cannot recover a historical cutover');"
             manifest_sha256="$(TARGET_MANIFEST="$public_manifest" node --input-type=module -e "import fs from 'node:fs'; import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs'; process.stdout.write(sha256CanonicalJson(JSON.parse(fs.readFileSync(process.env.TARGET_MANIFEST, 'utf8'))));")"
             test "$manifest_sha256" = "4254bdb2ba157bbde3847c8d621ac7a3182e14296a3ae99aa40a2ac7f6f8211e"
             echo "required=true" >> "$GITHUB_OUTPUT"
@@ -453,35 +437,68 @@ jobs:
           supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
           supabase migration list --linked | tee "$RUNNER_TEMP/code-only-migrations-before.txt"
 
-      - name: Require originals before the pending assistant binding
-        if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
-        shell: bash
-        run: |
-          set -euo pipefail
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs';
-          import { LATEST_REQUIRED_CUTOVER_MIGRATION as latest, parseSupabaseMigrationList } from './scripts/integrated-cutover-readiness.mjs';
-          const rows = parseSupabaseMigrationList(fs.readFileSync(`${process.env.RUNNER_TEMP}/code-only-migrations-before.txt`, 'utf8'));
-          const required = latest.version === '20261010120000' && !rows.some(row => row.remote === latest.version);
-          fs.appendFileSync(process.env.GITHUB_ENV, `RAVRADAR_ASSISTANT_PREWRITE_REQUIRED=${required}\n`);
-          const userdataPending = latest.version === '20261010130000' && !rows.some(row => row.remote === latest.version);
-          const optedIn = process.env.RAVRADAR_USERDATA_UPGRADE_OPT_IN === 'true';
-          if (userdataPending && !optedIn) throw new Error('Pending userdata binding requires explicit existing-owner-export opt-in');
-          if (optedIn && (latest.version !== '20261010130000' || !userdataPending
-              || !rows.some(row => row.remote === '20261005000000')
-              || rows.some(row => row.remote > '20261005000000'))) {
-            throw new Error('Userdata upgrade requires installed current050000 and sole pending130000; no intermediary or automatic replay');
-          }
-          fs.appendFileSync(process.env.GITHUB_ENV, `RAVRADAR_USERDATA_PREWRITE_REQUIRED=${optedIn && userdataPending}\n`);
-          fs.appendFileSync(process.env.GITHUB_ENV, `RAVRADAR_USERDATA_FINAL_REQUIRED=${latest.version === '20261010130000'}\n`);
-          NODE
-
       - name: Hydrate only already-applied migration identities
         if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
         run: >-
           node scripts/integrated-cutover-readiness.mjs hydrate-history
           --workdir "${{ steps.migration-view.outputs.workdir }}"
           --migration-list "$RUNNER_TEMP/code-only-migrations-before.txt"
+
+      - name: Dry-run and require only the latest exact integrated migration
+        if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          cd "${{ steps.migration-view.outputs.workdir }}"
+          supabase migration list --linked | tee "$RUNNER_TEMP/code-only-migrations-plan.txt"
+          supabase db push --linked --dry-run --skip-vault 2>&1 | tee "$RUNNER_TEMP/code-only-migrations-dry-run.txt"
+          cd "$GITHUB_WORKSPACE"
+          node scripts/verify-code-only-migration-plan.mjs \
+            --migration-list "$RUNNER_TEMP/code-only-migrations-plan.txt" \
+            --dry-run "$RUNNER_TEMP/code-only-migrations-dry-run.txt" \
+            --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
+
+      - name: Reconfirm current main before the database binding write
+        if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Apply exact dry-run-verified post-cutover binding
+        if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          cd "${{ steps.migration-view.outputs.workdir }}"
+          supabase db push --linked --skip-vault
+
+      - name: Read back migration and database binding
+        if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          cd "${{ steps.migration-view.outputs.workdir }}"
+          supabase migration list --linked | tee "$RUNNER_TEMP/code-only-migrations-applied.txt"
+          cd "$GITHUB_WORKSPACE"
+          node scripts/integrated-cutover-readiness.mjs applied \
+            --migration-list "$RUNNER_TEMP/code-only-migrations-applied.txt"
+          node scripts/integrated-cutover-readiness.mjs verify-db
 
       - name: Build current private-runtime restore expectation
         if: inputs.publish_newest_saved_weather != true
@@ -680,30 +697,6 @@ jobs:
           --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --output "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT/expected.json"
 
-      - name: Verify installed current050000 predecessor before userdata preparation
-        if: env.RAVRADAR_USERDATA_PREWRITE_REQUIRED == 'true'
-        shell: bash
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: |
-          set -euo pipefail
-          test "${{ steps.current-private-install.outcome }}" != "success"
-          test "${{ steps.owner-current-original.outputs.transition_kind }}" != "owner-current-domain-original"
-          (
-          cd "$RAVRADAR_PREDECESSOR_SOURCE_ROOT"
-          node --input-type=module <<'NODE'
-          import assert from 'node:assert/strict';
-          import fs from 'node:fs';
-          import { createHash } from 'node:crypto';
-          import { LATEST_REQUIRED_CUTOVER_MIGRATION as latest } from './scripts/integrated-cutover-readiness.mjs';
-          assert.equal(latest.version, '20261005000000', 'Userdata predecessor source must end at current050000');
-          assert.equal(createHash('sha256').update(fs.readFileSync('supabase/migrations/20261005000000_owner_water_level_only_binding.sql')).digest('hex'),
-            '6b161bc71753b52c5728c8b9a03b02d5d0955d0e42e751a3f2a51a6ea6900496', 'Userdata predecessor migration must remain immutable');
-          NODE
-          node scripts/integrated-cutover-readiness.mjs verify-db
-          )
-
       - name: Install and import-check the exact predecessor restore compatibility closure
         if: steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original'
         shell: bash
@@ -790,14 +783,6 @@ jobs:
           if test "${{ steps.owner-current-original.outputs.transition_kind }}" = "owner-current-domain-original"; then
             migration_args=(--owner-current-original)
           fi
-          if test "${RAVRADAR_ASSISTANT_PREWRITE_REQUIRED:-false}" = "true"; then
-            test "${{ steps.owner-current-original.outputs.transition_kind }}" != "owner-current-domain-original"
-            migration_args+=(--metadata-only)
-          fi
-          if test "${RAVRADAR_USERDATA_PREWRITE_REQUIRED:-false}" = "true"; then
-            test "${{ steps.owner-current-original.outputs.transition_kind }}" != "owner-current-domain-original"
-            migration_args+=(--metadata-only)
-          fi
           node scripts/migrate-post-cutover-private-runtime.mjs \
             "${migration_args[@]}" \
             --source "$RAVRADAR_PREDECESSOR_PRIVATE_RESTORE" \
@@ -878,447 +863,6 @@ jobs:
           else
             jq -e '.providerRequestsPerformed == false and .weatherValuesChanged == false and .scoresChanged == false and .geometryChanged == false and .privatePayloadIncluded == false and .zoneCount == 210 and .coastalPartCount == 673' .geometry-v2-work/code-only-public-runtime-reuse.json
           fi
-
-
-      - name: Reverify the same assistant originals before binding installation
-        if: env.RAVRADAR_ASSISTANT_PREWRITE_REQUIRED == 'true'
-        shell: bash
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: |
-          set -euo pipefail
-          test "${{ steps.current-private-install.outcome }}" != "success"
-          test "${{ steps.migrated-private-install.outcome }}" = "success"
-          test "${{ steps.owner-current-original.outputs.transition_kind }}" != "owner-current-domain-original"
-          node scripts/migrate-post-cutover-private-runtime.mjs \
-            --verify-assistant-prewrite \
-            --predecessor-root "$RAVRADAR_PREDECESSOR_SOURCE_ROOT" \
-            --source "$RAVRADAR_PREDECESSOR_PRIVATE_RESTORE" \
-            --output "$RAVRADAR_MIGRATED_PRIVATE_RUNTIME_RESTORE" \
-            --bundle-manifest "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE/manifest.json" \
-            --predecessor-descriptor "$RAVRADAR_OPERATIONAL_WORK/target-private-runtime-source.json" \
-            --repository-root "$GITHUB_WORKSPACE" \
-            --expected-source-head "$(jq -er '.sourceHead' "$RAVRADAR_OPERATIONAL_WORK/target-private-runtime-source.json")" \
-            --report .geometry-v2-work/post-cutover-private-runtime-migration.json
-
-      - name: Reverify the same userdata originals before binding installation
-        if: env.RAVRADAR_USERDATA_PREWRITE_REQUIRED == 'true'
-        shell: bash
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: |
-          set -euo pipefail
-          test "${{ steps.current-private-install.outcome }}" != "success"
-          test "${{ steps.migrated-private-install.outcome }}" = "success"
-          test "${{ steps.owner-current-original.outputs.transition_kind }}" != "owner-current-domain-original"
-          node scripts/migrate-post-cutover-private-runtime.mjs \
-            --verify-userdata-prewrite \
-            --predecessor-root "$RAVRADAR_PREDECESSOR_SOURCE_ROOT" \
-            --source "$RAVRADAR_PREDECESSOR_PRIVATE_RESTORE" \
-            --output "$RAVRADAR_MIGRATED_PRIVATE_RUNTIME_RESTORE" \
-            --bundle-manifest "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE/manifest.json" \
-            --predecessor-descriptor "$RAVRADAR_OPERATIONAL_WORK/target-private-runtime-source.json" \
-            --repository-root "$GITHUB_WORKSPACE" \
-            --expected-source-head "$(jq -er '.sourceHead' "$RAVRADAR_OPERATIONAL_WORK/target-private-runtime-source.json")" \
-            --report .geometry-v2-work/post-cutover-private-runtime-migration.json
-          echo "RAVRADAR_USERDATA_PREWRITE_VERIFIED=true" >> "$GITHUB_ENV"
-
-      - name: Dry-run and require only the latest exact integrated migration
-        if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
-        shell: bash
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: |
-          set -euo pipefail
-          cd "${{ steps.migration-view.outputs.workdir }}"
-          supabase migration list --linked | tee "$RUNNER_TEMP/code-only-migrations-plan.txt"
-          supabase db push --linked --dry-run --skip-vault 2>&1 | tee "$RUNNER_TEMP/code-only-migrations-dry-run.txt"
-          cd "$GITHUB_WORKSPACE"
-          node scripts/verify-code-only-migration-plan.mjs \
-            --require-prewrite-gate \
-            --migration-list "$RUNNER_TEMP/code-only-migrations-plan.txt" \
-            --dry-run "$RUNNER_TEMP/code-only-migrations-dry-run.txt" \
-            --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
-
-      - name: Reconfirm current main before the database binding write
-        if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
-        shell: bash
-        env:
-          EXPECTED_HEAD_SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
-          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
-          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
-
-      - name: Apply exact dry-run-verified post-cutover binding
-        if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
-        shell: bash
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: |
-          set -euo pipefail
-          cd "${{ steps.migration-view.outputs.workdir }}"
-          supabase db push --linked --skip-vault
-
-      - name: Read back migration and database binding
-        if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
-        shell: bash
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: |
-          set -euo pipefail
-          cd "${{ steps.migration-view.outputs.workdir }}"
-          supabase migration list --linked | tee "$RUNNER_TEMP/code-only-migrations-applied.txt"
-          cd "$GITHUB_WORKSPACE"
-          node scripts/integrated-cutover-readiness.mjs applied \
-            --migration-list "$RUNNER_TEMP/code-only-migrations-applied.txt"
-          node scripts/integrated-cutover-readiness.mjs verify-db
-
-      - name: Read unchanged Candidate quality before owner-export upgrade
-        if: env.RAVRADAR_USERDATA_PREWRITE_REQUIRED == 'true'
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: node scripts/apply-candidate-g-trip-quality-migration.mjs --verify-only
-
-      - name: Read-only existing D1 repair preparation and live preflight
-        if: env.RAVRADAR_USERDATA_PREWRITE_REQUIRED == 'true'
-        timeout-minutes: 5
-        shell: bash
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
-          TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
-          TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-trip-repair-wrangler.json
-          TRIP_OWNER_EXPORT_PLAN_PATH: /tmp/ravradar-owner-export-upgrade.json
-          TRIP_STORAGE_OWNER_EXPORT_UPGRADE: '1'
-          TRIP_STORAGE_UPGRADE_PREFLIGHT: '1'
-          EXPECTED_TRIP_STORAGE_MODE: d1
-        run: |
-          set -euo pipefail
-          if [ "$TRIP_STORAGE_OWNER_EXPORT_UPGRADE" = "1" ]; then
-            node scripts/prepare-cloudflare-trip-storage.mjs --existing-owner-export-upgrade-plan
-          else
-            node scripts/prepare-cloudflare-trip-storage.mjs --existing-worker-repair
-          fi
-          node scripts/audit-cloudflare-trip-storage.mjs
-          node scripts/verify-trip-storage-edge.mjs
-          node scripts/verify-cloudflare-trip-gateway.mjs
-
-      - name: Quiesce the existing D1 installation
-        if: env.RAVRADAR_USERDATA_PREWRITE_REQUIRED == 'true'
-        id: repair_quiesce
-        timeout-minutes: 5
-        shell: bash
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
-          TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
-          TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-trip-repair-wrangler.json
-          TRIP_OWNER_EXPORT_PLAN_PATH: /tmp/ravradar-owner-export-upgrade.json
-          TRIP_STORAGE_OWNER_EXPORT_UPGRADE: '1'
-          TRIP_STORAGE_UPGRADE_PREFLIGHT: '1'
-        run: |
-          node --input-type=module <<'REPAIR_NODE'
-          import { execFileSync } from 'node:child_process';
-          import fs from 'node:fs';
-          const env = process.env;
-          function run(label, command, args, options = {}) {
-            try { return execFileSync(command, args, { encoding: 'utf8', stdio: 'pipe', timeout: 180000,
-              maxBuffer: 1024 * 1024, ...options }); }
-            catch { throw new Error('TRIP_REPAIR_' + label); }
-          }
-          function exactMain() {
-            if (env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) throw new Error('TRIP_REPAIR_MAIN_INVALID');
-            run('MAIN_FETCH', 'git', ['fetch', '--no-tags', '--depth=1', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
-            for (const ref of ['HEAD^{commit}', 'origin/main^{commit}']) {
-              if (run('MAIN_READ', 'git', ['rev-parse', ref]).trim() !== env.GITHUB_SHA) throw new Error('TRIP_REPAIR_MAIN_CHANGED');
-            }
-          }
-          function edge(mode) {
-            run('EDGE_ATTESTATION', 'node', ['scripts/verify-trip-storage-edge.mjs'], { env: { ...env, EXPECTED_TRIP_STORAGE_MODE: mode } });
-          }
-          function worker(expectedVersion) {
-            run('WORKER_ATTESTATION', 'node', ['scripts/verify-cloudflare-trip-gateway.mjs'],
-              expectedVersion === undefined ? {} : { env: { ...env, EXPECTED_TRIP_WORKER_VERSION: expectedVersion } });
-          }
-          function lease(minimumSeconds) {
-            const deadline = Number(env.REPAIR_LEASE_DEADLINE);
-            if (!Number.isSafeInteger(deadline) || deadline - Date.now() < minimumSeconds * 1000
-              || deadline - Date.now() > 20 * 60000) throw new Error('TRIP_REPAIR_LEASE_INVALID');
-          }
-          function output(name, value) { fs.appendFileSync(env.GITHUB_OUTPUT, name + '=' + value + '\n'); }
-          exactMain();
-          output('intent', 'true');
-          const deadline = Date.now() + 20 * 60000;
-          output('deadline', String(deadline));
-          run('MAINTENANCE', 'supabase', ['secrets', 'set', '--project-ref', env.SUPABASE_PROJECT_ID,
-            'TRIP_STORAGE_MODE=maintenance:' + new Date(deadline).toISOString()]);
-          edge('maintenance');
-          run('DRAIN', 'sleep', ['20']);
-          REPAIR_NODE
-
-      - name: Apply only missing exact owner-export indexes on existing shards
-        if: env.RAVRADAR_USERDATA_PREWRITE_REQUIRED == 'true'
-        id: owner_upgrade_apply
-        timeout-minutes: 5
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
-          TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
-          TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-trip-repair-wrangler.json
-          TRIP_OWNER_EXPORT_PLAN_PATH: /tmp/ravradar-owner-export-upgrade.json
-          TRIP_STORAGE_OWNER_EXPORT_UPGRADE: '1'
-          TRIP_STORAGE_UPGRADE_PREFLIGHT: '1'
-          REPAIR_LEASE_DEADLINE: ${{ steps.repair_quiesce.outputs.deadline }}
-        run: node scripts/prepare-cloudflare-trip-storage.mjs --existing-owner-export-upgrade-apply
-
-      - name: Replace and attest the same-SQL Worker
-        if: env.RAVRADAR_USERDATA_PREWRITE_REQUIRED == 'true'
-        id: repair_replace
-        timeout-minutes: 7
-        shell: bash
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
-          TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
-          TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-trip-repair-wrangler.json
-          TRIP_OWNER_EXPORT_PLAN_PATH: /tmp/ravradar-owner-export-upgrade.json
-          TRIP_STORAGE_OWNER_EXPORT_UPGRADE: '1'
-          TRIP_STORAGE_UPGRADE_PREFLIGHT: '1'
-          REPAIR_LEASE_DEADLINE: ${{ steps.repair_quiesce.outputs.deadline }}
-        run: |
-          node --input-type=module <<'REPAIR_NODE'
-          import { execFileSync } from 'node:child_process';
-          import fs from 'node:fs';
-          const env = process.env;
-          function run(label, command, args, options = {}) {
-            try { return execFileSync(command, args, { encoding: 'utf8', stdio: 'pipe', timeout: 180000,
-              maxBuffer: 1024 * 1024, ...options }); }
-            catch { throw new Error('TRIP_REPAIR_' + label); }
-          }
-          function exactMain() {
-            if (env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) throw new Error('TRIP_REPAIR_MAIN_INVALID');
-            run('MAIN_FETCH', 'git', ['fetch', '--no-tags', '--depth=1', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
-            for (const ref of ['HEAD^{commit}', 'origin/main^{commit}']) {
-              if (run('MAIN_READ', 'git', ['rev-parse', ref]).trim() !== env.GITHUB_SHA) throw new Error('TRIP_REPAIR_MAIN_CHANGED');
-            }
-          }
-          function edge(mode) {
-            run('EDGE_ATTESTATION', 'node', ['scripts/verify-trip-storage-edge.mjs'], { env: { ...env, EXPECTED_TRIP_STORAGE_MODE: mode } });
-          }
-          function worker(expectedVersion) {
-            run('WORKER_ATTESTATION', 'node', ['scripts/verify-cloudflare-trip-gateway.mjs'],
-              expectedVersion === undefined ? {} : { env: { ...env, EXPECTED_TRIP_WORKER_VERSION: expectedVersion } });
-          }
-          function lease(minimumSeconds) {
-            const deadline = Number(env.REPAIR_LEASE_DEADLINE);
-            if (!Number.isSafeInteger(deadline) || deadline - Date.now() < minimumSeconds * 1000
-              || deadline - Date.now() > 20 * 60000) throw new Error('TRIP_REPAIR_LEASE_INVALID');
-          }
-          function output(name, value) { fs.appendFileSync(env.GITHUB_OUTPUT, name + '=' + value + '\n'); }
-          worker();
-          if (env.TRIP_STORAGE_OWNER_EXPORT_UPGRADE === '1') {
-            run('UPGRADE_READBACK', 'node', ['scripts/prepare-cloudflare-trip-storage.mjs', '--existing-owner-export-upgrade-check']);
-          }
-          exactMain();
-          lease(600);
-          import { deployTripWorker } from './scripts/lib/trip-worker-deploy-process.mjs';
-          output('deploy_intent', 'true');
-          let deployed;
-          try {
-            const result = await deployTripWorker({ configPath: env.TRIP_WRANGLER_CONFIG_PATH, env });
-            if (result?.terminationConfirmed !== true) throw new Error('TRIP_REPAIR_WORKER_DEPLOY');
-            output('deploy_stopped', 'true');
-            deployed = result.stdout;
-          } catch (error) {
-            if (error?.terminationConfirmed === true) output('deploy_stopped', 'true');
-            throw new Error('TRIP_REPAIR_WORKER_DEPLOY');
-          }
-          const versions = [...deployed.matchAll(/^Current Version ID: ([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\s*$/gim)];
-          if (versions.length !== 1) throw new Error('TRIP_REPAIR_DEPLOY_IDENTITY_MISSING');
-          worker(versions[0][1]);
-          output('version', versions[0][1]);
-          console.log('Worker repair source=' + env.GITHUB_SHA + ' version=' + versions[0][1]);
-          REPAIR_NODE
-
-      - name: Deploy and attest exact userdata trip Edges once
-        id: userdata_trip_edges
-        if: env.RAVRADAR_USERDATA_PREWRITE_REQUIRED == 'true'
-        timeout-minutes: 7
-        shell: bash
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
-          TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
-          TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-trip-repair-wrangler.json
-          TRIP_OWNER_EXPORT_PLAN_PATH: /tmp/ravradar-owner-export-upgrade.json
-          TRIP_STORAGE_OWNER_EXPORT_UPGRADE: '1'
-          TRIP_STORAGE_UPGRADE_PREFLIGHT: '0'
-          REPAIR_LEASE_DEADLINE: ${{ steps.repair_quiesce.outputs.deadline }}
-          REPAIR_EXPECTED_WORKER_VERSION: ${{ steps.repair_replace.outputs.version }}
-          EXPECTED_TRIP_STORAGE_MODE: maintenance
-        run: |
-          node --input-type=module <<'USERDATA_EDGE_NODE'
-          import { execFileSync } from 'node:child_process';
-          const env = process.env;
-          function run(label, args) {
-            try { return execFileSync('supabase', args, { encoding: 'utf8', stdio: 'pipe', timeout: 180000, maxBuffer: 1024 * 1024 }); }
-            catch { throw new Error('USERDATA_' + label); }
-          }
-          function attest() {
-            execFileSync('node', ['scripts/verify-cloudflare-trip-gateway.mjs'], { env: { ...env, EXPECTED_TRIP_WORKER_VERSION: env.REPAIR_EXPECTED_WORKER_VERSION || '' }, stdio: 'pipe', timeout: 180000, maxBuffer: 1024 * 1024 });
-            if (env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) throw new Error('USERDATA_MAIN_INVALID');
-            const read = args => execFileSync('git', args, { encoding: 'utf8', stdio: 'pipe', timeout: 30000, maxBuffer: 1024 * 1024 }).trim();
-            read(['fetch', '--no-tags', '--depth=1', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
-            for (const ref of ['HEAD^{commit}', 'origin/main^{commit}']) if (read(['rev-parse', ref]) !== env.GITHUB_SHA) throw new Error('USERDATA_MAIN_CHANGED');
-            const deadline = Number(env.REPAIR_LEASE_DEADLINE);
-            if (!Number.isSafeInteger(deadline) || deadline - Date.now() < 240000 || deadline - Date.now() > 20 * 60000) throw new Error('USERDATA_LEASE_INVALID');
-          }
-          attest();
-          run('TRIP_LOG_DEPLOY', ['functions', 'deploy', 'trip-log', '--project-ref', env.SUPABASE_PROJECT_ID]);
-          attest();
-          run('OBSERVATION_DEPLOY', ['functions', 'deploy', 'submit-observation', '--project-ref', env.SUPABASE_PROJECT_ID]);
-          execFileSync('node', ['scripts/verify-trip-storage-edge.mjs'], { env, stdio: 'pipe', timeout: 180000, maxBuffer: 1024 * 1024 });
-          USERDATA_EDGE_NODE
-
-      - name: Restore and attest normal D1 after replacement
-        if: env.RAVRADAR_USERDATA_PREWRITE_REQUIRED == 'true'
-        id: repair_restore
-        timeout-minutes: 5
-        shell: bash
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
-          TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
-          TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-trip-repair-wrangler.json
-          TRIP_OWNER_EXPORT_PLAN_PATH: /tmp/ravradar-owner-export-upgrade.json
-          TRIP_STORAGE_OWNER_EXPORT_UPGRADE: '1'
-          TRIP_STORAGE_UPGRADE_PREFLIGHT: '0'
-          REPAIR_LEASE_DEADLINE: ${{ steps.repair_quiesce.outputs.deadline }}
-          REPAIR_EXPECTED_WORKER_VERSION: ${{ steps.repair_replace.outputs.version }}
-        run: |
-          node --input-type=module <<'REPAIR_NODE'
-          import { execFileSync } from 'node:child_process';
-          import fs from 'node:fs';
-          const env = process.env;
-          function run(label, command, args, options = {}) {
-            try { return execFileSync(command, args, { encoding: 'utf8', stdio: 'pipe', timeout: 180000,
-              maxBuffer: 1024 * 1024, ...options }); }
-            catch { throw new Error('TRIP_REPAIR_' + label); }
-          }
-          function exactMain() {
-            if (env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) throw new Error('TRIP_REPAIR_MAIN_INVALID');
-            run('MAIN_FETCH', 'git', ['fetch', '--no-tags', '--depth=1', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
-            for (const ref of ['HEAD^{commit}', 'origin/main^{commit}']) {
-              if (run('MAIN_READ', 'git', ['rev-parse', ref]).trim() !== env.GITHUB_SHA) throw new Error('TRIP_REPAIR_MAIN_CHANGED');
-            }
-          }
-          function edge(mode) {
-            run('EDGE_ATTESTATION', 'node', ['scripts/verify-trip-storage-edge.mjs'], { env: { ...env, EXPECTED_TRIP_STORAGE_MODE: mode } });
-          }
-          function worker(expectedVersion) {
-            run('WORKER_ATTESTATION', 'node', ['scripts/verify-cloudflare-trip-gateway.mjs'],
-              expectedVersion === undefined ? {} : { env: { ...env, EXPECTED_TRIP_WORKER_VERSION: expectedVersion } });
-          }
-          function lease(minimumSeconds) {
-            const deadline = Number(env.REPAIR_LEASE_DEADLINE);
-            if (!Number.isSafeInteger(deadline) || deadline - Date.now() < minimumSeconds * 1000
-              || deadline - Date.now() > 20 * 60000) throw new Error('TRIP_REPAIR_LEASE_INVALID');
-          }
-          function output(name, value) { fs.appendFileSync(env.GITHUB_OUTPUT, name + '=' + value + '\n'); }
-          worker(env.REPAIR_EXPECTED_WORKER_VERSION || '');
-          exactMain();
-          lease(1);
-          run('RESTORE_D1', 'supabase', ['secrets', 'set', '--project-ref', env.SUPABASE_PROJECT_ID, 'TRIP_STORAGE_MODE=d1']);
-          edge('d1');
-          worker(env.REPAIR_EXPECTED_WORKER_VERSION || '');
-          REPAIR_NODE
-
-      - name: Require installed owner-export storage before userdata publication
-        if: env.RAVRADAR_USERDATA_FINAL_REQUIRED == 'true'
-        timeout-minutes: 5
-        shell: bash
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
-          TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
-          TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-owner-export-final-wrangler.json
-          TRIP_OWNER_EXPORT_PLAN_PATH: /tmp/ravradar-owner-export-final-readiness.json
-          TRIP_STORAGE_OWNER_EXPORT_UPGRADE: '1'
-          TRIP_STORAGE_UPGRADE_PREFLIGHT: '0'
-          EXPECTED_TRIP_STORAGE_MODE: d1
-        run: |
-          node --input-type=module <<'USERDATA_FINAL_NODE'
-          import { execFileSync } from 'node:child_process';
-          import fs from 'node:fs';
-          const env = process.env;
-          function read(args, additionalEnv = {}) {
-            try { return execFileSync('node', args, { env: { ...env, ...additionalEnv }, stdio: 'pipe', timeout: 180000, maxBuffer: 1024 * 1024 }); }
-            catch { throw new Error('USERDATA_FINAL_STORAGE_UNVERIFIED'); }
-          }
-          read(['scripts/prepare-cloudflare-trip-storage.mjs', '--existing-owner-export-upgrade-plan']);
-          const bytes = fs.readFileSync(env.TRIP_OWNER_EXPORT_PLAN_PATH);
-          if (bytes.length > 8192) throw new Error('USERDATA_FINAL_STORAGE_UNVERIFIED');
-          let plan;
-          try { plan = JSON.parse(bytes.toString('utf8')); }
-          catch { throw new Error('USERDATA_FINAL_STORAGE_UNVERIFIED'); }
-          if (plan?.sourceSha !== env.GITHUB_SHA || !Array.isArray(plan.missing) || plan.missing.length !== 0
-            || typeof plan.versionId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(plan.versionId)) {
-            throw new Error('USERDATA_FINAL_STORAGE_UNVERIFIED');
-          }
-          read(['scripts/verify-cloudflare-trip-gateway.mjs'], { EXPECTED_TRIP_WORKER_VERSION: plan.versionId });
-          read(['scripts/verify-trip-storage-edge.mjs']);
-          USERDATA_FINAL_NODE
 
       - name: Audit regenerated integrated public runtime
         id: runtime-audit
@@ -1657,15 +1201,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          assistant_deploy_attempts=3
-          if test "${RAVRADAR_USERDATA_UPGRADE_OPT_IN:-false}" = "true"; then
-            assistant_deploy_attempts=1
-          fi
-          for ((attempt = 1; attempt <= assistant_deploy_attempts; attempt++)); do
+          for attempt in 1 2 3; do
             if supabase functions deploy ravradar-assistant --project-ref "$SUPABASE_PROJECT_ID"; then
               exit 0
             fi
-            if test "$attempt" -lt "$assistant_deploy_attempts"; then
+            if test "$attempt" -lt 3; then
               echo "RavRadar assistant deployment attempt $attempt of 3 failed; retrying." >&2
               sleep $((attempt * 5))
             fi

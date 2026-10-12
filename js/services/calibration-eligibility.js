@@ -1,16 +1,3 @@
-// A negative provenance disposition, never evidence of consent or genuine data.
-// Absence stays physically absent so old payloads and their hashes are unchanged.
-export function observationOrigin(record, key = 'observation_origin') {
-  if (!record || !Object.hasOwn(record, key)) return 'unknown';
-  const value = record[key];
-  if (value !== 'unknown' && value !== 'synthetic-test') throw new Error('TRIP_OBSERVATION_ORIGIN_INVALID');
-  return value;
-}
-export function observationOriginFields(record, inputKey = 'observation_origin', outputKey = inputKey) {
-  if (!record || !Object.hasOwn(record, inputKey)) return {};
-  return { [outputKey]: observationOrigin(record, inputKey) };
-}
-
 export const CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION = 3;
 const CANDIDATE_G_ROLLBACK_MODEL_ID =
   'RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3';
@@ -135,7 +122,7 @@ export const TRIP_STORAGE_INPUT_FIELD_NAMES = Object.freeze([
   'schema_version', 'trip_started_at', 'trip_ended_at', 'search_minutes', 'search_coverage', 'actual_zone_id',
   'actual_coastal_part_id', 'forecast_zone_id', 'forecast_coastal_part_id', 'calibration_eligible', 'found',
   'forecast_snapshot_id', 'forecast_issued_at', 'forecast_valid_at', 'forecast_captured_at', 'calibration_features',
-  'data_quality_flags', 'forecast_target_at', 'report_accuracy', 'observation_origin',
+  'data_quality_flags', 'forecast_target_at', 'report_accuracy',
 ]);
 
 export const TRIP_DATA_QUALITY_FLAG_NAMES = Object.freeze([
@@ -427,7 +414,6 @@ export function assertNoSensitiveTripData(value, { allowRootOwnerFields = false 
 }
 
 export function assertTripObservationNestedPrivacy(row) {
-  observationOrigin(row);
   if (!isRecord(row)) throw new Error('TRIP_PAYLOAD_REQUIRED');
   const schemaVersion = rowValue(row, 'schema_version', 'schemaVersion') ?? 1;
   if (!Number.isInteger(schemaVersion) || ![1, 2, CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION].includes(schemaVersion)) {
@@ -665,7 +651,6 @@ export function accountTripBindingStatus(row, expectedBinding, {
 }
 
 export function projectTripLogDto(row, expectedBinding) {
-  observationOrigin(row);
   const status = calibrationBindingStatus(row, expectedBinding);
   const binding = calibrationFeatureBinding(row?.calibration_features);
   const schemaVersion = Number.isInteger(row?.schema_version) ? row.schema_version : 1;
@@ -692,7 +677,6 @@ export function projectTripLogDto(row, expectedBinding) {
     rawUpper:features.scoreBoundRawUpper,
   }):null;
   return Object.freeze({
-    ...observationOriginFields(row),
     client_observation_id: typeof row?.client_observation_id === 'string' ? row.client_observation_id : null,
     trip_id: typeof row?.trip_id === 'string' ? row.trip_id : null,
     observed_at: validTime(row?.observed_at) ? row.observed_at : null,
@@ -730,7 +714,6 @@ export function projectTripStoragePayload(row, {
   historicalMigration = false,
 } = {}) {
   if (!isRecord(row)) throw new Error('TRIP_PAYLOAD_REQUIRED');
-  observationOrigin(row);
   const output = {};
   for (const key of TRIP_STORAGE_INPUT_FIELD_NAMES) {
     if (!includeOwnerIdentifiers && ['user_id', 'anonymous_id', 'gps'].includes(key)) continue;

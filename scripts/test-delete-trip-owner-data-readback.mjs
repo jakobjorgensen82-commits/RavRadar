@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
-import { eraseTripOwnerSources } from '../supabase/functions/_shared/trip-owner-erasure.js';
 import { deleteCloudflareTrips, externalOwnerSubject, listCloudflareTrips, verifyTripGatewaySignature }
   from '../supabase/functions/_shared/trip-storage.js';
 
@@ -17,8 +16,7 @@ const supabase = 'https://synthetic-trip-storage.supabase.co';
 const secret = 'synthetic-shared-secret-for-local-test-only';
 const routeOrder = ['d1-delete', 'supabase-delete', 'd1-readback', 'supabase-readback'];
 
-async function run({ body = [], status = 200, jsonError, firstError, failAt, confirmed = true,
-  direct = false, targetUserId = ownerId, heldReadback = null } = {}) {
+async function run({ body = [], status = 200, jsonError, firstError, failAt, confirmed = true } = {}) {
   const calls = [], logs = [];
   let bodyReads = 0;
   const fetchImpl = async (input, options) => {
@@ -56,7 +54,6 @@ async function run({ body = [], status = 200, jsonError, firstError, failAt, con
     if (failAt === 'supabase-readback') throw firstError;
     return { ok: status >= 200 && status < 300, status, async json() {
       bodyReads += 1;
-      if (heldReadback) { heldReadback.entered(); return await heldReadback.result; }
       if (jsonError) throw jsonError;
       return body;
     } };
@@ -65,20 +62,16 @@ async function run({ body = [], status = 200, jsonError, firstError, failAt, con
     URL, console: { log: value => logs.push(value) }, fetch: fetchImpl, externalOwnerSubject,
     deleteCloudflareTrips: options => deleteCloudflareTrips({ ...options, fetchImpl }),
     listCloudflareTrips: options => listCloudflareTrips({ ...options, fetchImpl }),
-    eraseTripOwnerSources: options => eraseTripOwnerSources({ ...options, fetchImpl }),
     process: {
       argv: ['node', 'synthetic-cli', ...(confirmed ? ['--confirm-delete-owner-data'] : [])],
-      env: { TARGET_SUPABASE_USER_ID: targetUserId, TRIP_PSEUDONYM_SECRET_V1: secret,
+      env: { TARGET_SUPABASE_USER_ID: ownerId, TRIP_PSEUDONYM_SECRET_V1: secret,
         CLOUDFLARE_TRIP_GATEWAY_URL: gateway, TRIP_GATEWAY_SHARED_SECRET: secret,
         SUPABASE_URL: supabase, SUPABASE_SERVICE_ROLE_KEY: 'synthetic-service-key' },
     },
   };
-  const result = await (direct
-    ? scope.eraseTripOwnerSources({ userId: targetUserId, pseudonymSecret: secret,
-      gatewayUrl: gateway, sharedSecret: secret, supabaseUrl: supabase, serviceKey: 'synthetic-service-key' })
-    : vm.runInNewContext(`(async () => { ${cli}\n})()`, scope,
-      { filename: 'actual-delete-owner-cli-with-synthetic-transport.js' }))
-    .then(value => ({ ok: true, value }), error => ({ ok: false, error }));
+  const result = await vm.runInNewContext(`(async () => { ${cli}\n})()`, scope,
+    { filename: 'actual-delete-owner-cli-with-synthetic-transport.js' })
+    .then(() => ({ ok: true }), error => ({ ok: false, error }));
   assert.deepEqual(calls, routeOrder.slice(0, calls.length), 'Preserve actual deletion/readback order; never retry');
   if (!result.ok) assert.deepEqual(logs, [], 'Failure cannot declare verified deletion');
   return { ...result, calls, logs, bodyReads };
@@ -138,56 +131,4 @@ test('missing explicit CLI confirmation reaches no transport', async () => {
   assert.equal(result.ok, false);
   assert.match(result.error.message, /eksplicitte flag/);
   assert.equal(result.calls.length, 0);
-});
-
-test('shared server erasure returns only the acknowledged trip-stage receipt', async () => {
-  const result = await run({ direct: true });
-  assert.equal(result.ok, true, result.error?.message);
-  assert.deepEqual(result.calls, routeOrder);
-  assert.deepEqual(result.logs, []);
-  assert.deepEqual(result.value, { deletedFromD1: 2, d1DeleteAcknowledged: true,
-    d1GuardedListEmpty: true, supabaseListEmpty: true });
-  assert.equal(Object.isFrozen(result.value), true);
-  assert.equal(JSON.stringify(result.value).includes(ownerId), false);
-  assert.equal(JSON.stringify(result.value).includes(secret), false);
-});
-
-for (const failAt of ['d1-delete', 'supabase-readback']) {
-  for (const firstError of [0, null]) {
-    test(`shared server erasure preserves raw ${firstError} at ${failAt}`, async () => {
-      const result = await run({ direct: true, failAt, firstError });
-      assert.equal(result.ok, false);
-      assert.equal(result.error, firstError);
-      assert.equal(result.value, undefined);
-      assert.equal(result.calls.length, routeOrder.indexOf(failAt) + 1);
-    });
-  }
-}
-
-test('shared server erasure rejects invalid owner before any transport', async () => {
-  const result = await run({ direct: true, targetUserId: 'not-an-owner-uuid' });
-  assert.equal(result.ok, false);
-  assert.match(result.error.message, /TARGET_SUPABASE_USER_ID er ugyldigt/);
-  assert.deepEqual(result.calls, []);
-});
-
-test('shared server erasure waits for actual Supabase body before any receipt', async () => {
-  let entered, resolveReadback;
-  const started = new Promise(resolve => { entered = resolve; });
-  const readback = new Promise(resolve => { resolveReadback = resolve; });
-  let settled = false;
-  const pending = run({ direct: true, heldReadback: { entered, result: readback } })
-    .finally(() => { settled = true; });
-  try {
-    await started;
-    assert.equal(settled, false);
-    resolveReadback([]);
-    const result = await pending;
-    assert.equal(result.ok, true);
-    assert.equal(result.value.supabaseListEmpty, true);
-    assert.deepEqual(result.calls, routeOrder);
-  } finally {
-    resolveReadback([]);
-    await pending;
-  }
 });

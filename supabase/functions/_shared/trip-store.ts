@@ -1,5 +1,5 @@
 import { fetchWithTimeout, GatewayError } from "./public-gateway.ts";
-import { canonicalJson, exportCloudflareTripPage, externalOwnerSubject, externalTripPayload, listCloudflareTrips, projectLegacyExternalTripPayload, storeCloudflareTrip } from "./trip-storage.js";
+import { canonicalJson, externalOwnerSubject, externalTripPayload, listCloudflareTrips, projectLegacyExternalTripPayload, storeCloudflareTrip } from "./trip-storage.js";
 import {
   SUPABASE_IDEMPOTENCY_SELECT,
   assertIdempotencySourceRow,
@@ -233,9 +233,6 @@ async function listFromSupabase(userId: string, limit: number) {
 
 export async function storeObservation(payload: Record<string, unknown>, authenticatedUserId: string | null) {
   const safePayload = projectLegacyExternalTripPayload(payload);
-  if (Object.hasOwn(safePayload, 'observation_origin') && activeTripStorageMode() === "supabase") {
-    throw new GatewayError(503, "OBSERVATION_STORE_UNAVAILABLE");
-  }
   await assertActiveRavScoreTripBinding(safePayload);
   if (activeTripStorageMode() === "supabase") {
     await storeInSupabase(safePayload);
@@ -267,19 +264,5 @@ export async function listOwnTripObservations(userId: string, limit = 100) {
   } catch (error) {
     if (error instanceof GatewayError) throw error;
     throw new GatewayError(503, "TRIP_LOG_UNAVAILABLE");
-  }
-}
-
-export async function exportOwnTripPage(userId: string, cursor: string | null = null) {
-  // The legacy Supabase list is capped/projected and is not a complete export.
-  // Never silently use it as an empty/successful substitute for D1 storage.
-  if (activeTripStorageMode() !== "d1") throw new GatewayError(503, "TRIP_EXPORT_UNAVAILABLE");
-  try {
-    const configuration = cloudflareConfiguration();
-    const owner = await externalOwnerSubject({ userId, secret: configuration.secret });
-    return await exportCloudflareTripPage({ ...configuration, ownerSubject: owner.subject, cursor });
-  } catch (error) {
-    if (error instanceof GatewayError) throw error;
-    throw new GatewayError(503, "TRIP_EXPORT_UNAVAILABLE");
   }
 }

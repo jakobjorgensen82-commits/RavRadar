@@ -5,7 +5,7 @@ export const TRIP_SEARCH_MODES = Object.freeze(['waders', 'beach']);
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.575';
+} from '../core/ravscore-model-contract.js?v=4.0.574';
 import {
   CALIBRATION_NUMERIC_RANGES,
   CALIBRATION_INELIGIBLE_REASON_HISTORY_INCOMPLETE,
@@ -15,7 +15,6 @@ import {
   CALIBRATION_INELIGIBLE_REASON_GLOBAL_WARMUP_LOCK,
   CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION,
   TRIP_NON_CALIBRATION_QUALITY_FLAGS,
-  observationOriginFields,
   assertCalibrationScoreQualityContract,
   assertNoSensitiveTripData,
   assertTripDataQualityFlags,
@@ -25,7 +24,7 @@ import {
   isExactCalibrationModelBinding,
   sameCalibrationModelBinding,
   tripEvidenceIntegrityIssues,
-} from './calibration-eligibility.js?v=4.0.575';
+} from './calibration-eligibility.js?v=4.0.574';
 
 export const LEGACY_TRIP_EVIDENCE_SCHEMA_VERSION = 2;
 export const RECONSTRUCTED_RAVSCORE_QUALITY_FLAG =
@@ -389,7 +388,6 @@ export function createTripStartRecord(input = {}) {
     throw new Error('Turstartens kalibreringsstatus matcher ikke den eksakte RavScore-modelbinding.');
   }
   const record = {
-    ...observationOriginFields(input, 'observationOrigin'),
     schemaVersion: TRIP_EVIDENCE_SCHEMA_VERSION,
     tripId: requiredUuid(input.tripId, 'Tur-id'),
     startedAt: started.iso,
@@ -444,7 +442,6 @@ export function completeTripEvidence(startRecord, completion = {}) {
   }
   if (startRecord?.schemaVersion !== TRIP_EVIDENCE_SCHEMA_VERSION) throw new Error('Turstart mangler den aktuelle kontrakt.');
   return buildTripEvidence({
-    ...observationOriginFields(startRecord, 'observationOrigin'),
     tripId: startRecord.tripId,
     startedAt: startRecord.startedAt,
     endedAt: completion.endedAt,
@@ -499,7 +496,6 @@ export function buildTripEvidence(input = {}) {
     ravScoreModelBinding(),
   );
   const evidence = Object.freeze({
-    ...observationOriginFields(input, 'observationOrigin'),
     schemaVersion: TRIP_EVIDENCE_SCHEMA_VERSION,
     tripId: requiredUuid(input.tripId, 'Tur-id'),
     tripStartedAt: started.iso,
@@ -544,7 +540,6 @@ export function toObservationTripColumns(evidence) {
     throw new Error('Kun den aktuelle turkontrakt kan gemmes som en ny observation.');
   }
   const columns = {
-    ...observationOriginFields(evidence, 'observationOrigin', 'observation_origin'),
     schema_version: evidence.schemaVersion,
     trip_id: evidence.tripId,
     trip_started_at: evidence.tripStartedAt,
