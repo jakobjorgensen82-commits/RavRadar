@@ -3562,6 +3562,140 @@ diagnostics, outcomes = {}, {}
 before = copy.deepcopy((output, diagnostics, outcomes))
 seen, flushes = [], []
 
+if scenario == "current-only":
+    # Same actual pinned decoder, parser, read lease and COW transaction as the
+    # existing lease cases. Own generated fixtures only; never provider data.
+    current_zone = {**zone, "lat": 56.15, "lon": 8.3}
+    expected_point = [8.3, 56.15]  # midpoint of fixture endpoints, NOT ecCodes coordinates
+    snapshots, current_rows, scalar_rows = [], [], []
+
+    def own_bitmap_fixture(name, parameters, split_pair=False):
+        fixture_path = directory / name
+        assert not fixture_path.exists()
+        handle = ec.codes_grib_new_from_samples("regular_ll_sfc_grib1")
+        scalar_reference = None
+        try:
+            for key, value in (("Ni", 3), ("Nj", 3),
+                    ("latitudeOfFirstGridPointInDegrees", 56.),
+                    ("latitudeOfLastGridPointInDegrees", 56.3),
+                    ("longitudeOfFirstGridPointInDegrees", 8.),
+                    ("longitudeOfLastGridPointInDegrees", 8.6),
+                    ("iDirectionIncrementInDegrees", .299),
+                    ("jDirectionIncrementInDegrees", .149),
+                    ("scanningMode", 64), ("resolutionAndComponentFlags", 128),
+                    ("dataDate", 20261009), ("dataTime", 0), ("stepRange", "0"),
+                    ("bitmapPresent", 1)):
+                ec.codes_set(handle, key, value)
+            assert ec.codes_get(handle, "edition") == 1
+            assert ec.codes_get(handle, "Ni") == ec.codes_get(handle, "Nj") == 3
+            missing = ec.codes_get(handle, "missingValue")
+            with fixture_path.open("xb") as writer:
+                for parameter in parameters:
+                    ec.codes_set(handle, "indicatorOfParameter", parameter)
+                    center_value = {49: 0., 50: -.5, 82: 7.}[parameter]
+                    values = [missing] * 9 if split_pair else [center_value + n + 1 for n in range(9)]
+                    values[0] = missing
+                    selected_index = 5 if split_pair and parameter == 50 else 4
+                    values[selected_index] = center_value
+                    ec.codes_set_values(handle, values)
+                    bitmap = list(ec.codes_get_array(handle, "bitmap"))
+                    assert bitmap[0] == 0 and bitmap[selected_index] == 1
+                    native = ec.codes_get_elements(handle, "values", [0, selected_index])
+                    assert native[0] == missing and native[1] == center_value
+                    if parameter == 82:
+                        nearest = ec.codes_grib_find_nearest(handle, current_zone["lat"], current_zone["lon"], npoints=4)
+                        scalar_reference = min(nearest, key=lambda row: row["distance"])
+                        assert int(scalar_reference["index"]) == 4
+                        scalar_reference = {"point": [round(float(scalar_reference["lon"]), 5),
+                            round(float(scalar_reference["lat"]), 5)], "value": center_value}
+                        # Ensure this fixture actually distinguishes rounded native
+                        # scalar coordinates from the current endpoint construction.
+                        assert max(abs(a - b) for a, b in zip(scalar_reference["point"], expected_point)) > .0001
+                    writer.write(ec.codes_get_message(handle))
+        finally:
+            ec.codes_release(handle)
+        payload = fixture_path.read_bytes()
+        assert 0 < len(payload) < 1024 * 1024
+        fixture_capture = {**capture, "itemId": name,
+            "assetIdentitySha256": hashlib.sha256(name.encode()).hexdigest(),
+            "assetSizeBytes": len(payload), "contentLengthBytes": len(payload),
+            "contentSha256": hashlib.sha256(payload).hexdigest()}
+        fixture_manifest = p.load_raw_cache_manifest()
+        fixture_manifest.setdefault("assets", {})[fixture_path.name] = fixture_capture
+        p.save_raw_cache_manifest(fixture_manifest)
+        return fixture_path, payload, fixture_capture, scalar_reference
+
+    for label, parameters in (("scalar-first", (82, 49, 50)), ("current-first", (49, 50, 82))):
+        fixture_path, payload, fixture_capture, scalar_reference = own_bitmap_fixture(
+            "own-current-only-" + label + ".grib", parameters)
+        fixture_manifest_bytes = p.raw_cache_manifest_path().read_bytes()
+        stage = {"generatedAt": when, "zones": {current_zone["id"]: {
+            **p.sampling_identity(current_zone), "hourly": {}, "gridPoints": {}, "collections": {}}}}
+        stage_diagnostics, stage_outcomes = {}, {}
+        p.GRID_INDEX_CACHE.clear()
+        with p._grib_read_scope(fixture_path, "dkss_lf", when, when) as reader:
+            owned_fd = reader.fd
+            assert fcntl.fcntl(owned_fd, fcntl.F_GETLEASE) == fcntl.F_RDLCK
+            result = p.process_grib_transactionally(fixture_path, "dkss_lf", when, when,
+                [current_zone], stage, stage_diagnostics, current_part_outcomes=stage_outcomes,
+                _owned_read=reader)
+            assert result[0] == {"sea-mean-deviation", "current-u", "current-v"}
+            assert result[3] == 3 and not result[2] and stage_outcomes["complete"] is True
+            hour = stage["zones"][current_zone["id"]]["hourly"][when]
+            assert (hour["current-u"], hour["current-v"]) == (0., -.5)
+            source_current = hour["sources"]["current"]
+            record = source_current["nativeGridSampling"]
+            assert record["elementIndex"] == 4 and record["fieldSet"] == ["current-u", "current-v"]
+            assert record["coordinateInterpretation"] == "dmi-dkss-grib1-header-endpoints-v1"
+            assert record["gridPoint"] == source_current["gridPoint"] == expected_point
+            assert source_current["contentSha256"] == fixture_capture["contentSha256"]
+            assert p.complete_native_source_for_hour(source_current, "current", current_zone["id"],
+                p.sampling_identity(current_zone), when)
+            scalar = hour["sources"]["waterLevel"]
+            assert scalar["gridPoint"] == scalar_reference["point"]
+            assert hour["sea-mean-deviation"] == scalar_reference["value"]
+            assert "nativeGridSampling" not in scalar
+            keys = list(p.GRID_INDEX_CACHE)
+            assert len(keys) == 2
+            assert sum(key[0] == "current-native-grid-sampling-v1" for key in keys) == 1
+            assert sum(key[0] == "dkss_lf" for key in keys) == 1
+            current_rows.append((hour["current-u"], hour["current-v"], copy.deepcopy(record)))
+            scalar_rows.append((hour["sea-mean-deviation"], copy.deepcopy(scalar["gridPoint"])))
+        try:
+            os.fstat(owned_fd)
+        except OSError as exc:
+            assert exc.errno == errno.EBADF
+        else:
+            raise AssertionError("current-only actual decoder fd remained open")
+        assert not p._UNSETTLED_GRIB_READS
+        assert fixture_path.read_bytes() == payload
+        assert p.raw_cache_manifest_path().read_bytes() == fixture_manifest_bytes
+        snapshots.append((fixture_path, payload))
+    assert current_rows[0] == current_rows[1] and scalar_rows[0] == scalar_rows[1]
+
+    # Genuine bitmap-separated U and V cannot borrow a value from a different
+    # native element. The real parser must finish but publish no synthetic pair.
+    split_path, split_bytes, _, _ = own_bitmap_fixture("own-current-only-split.grib", (49, 50), True)
+    split_manifest_bytes = p.raw_cache_manifest_path().read_bytes()
+    split_output = {"generatedAt": when, "zones": {current_zone["id"]: {
+        **p.sampling_identity(current_zone), "hourly": {}, "gridPoints": {}, "collections": {}}}}
+    split_outcomes = {}
+    split_result = p.process_grib_transactionally(split_path, "dkss_lf", when, when,
+        [current_zone], split_output, {}, current_part_outcomes=split_outcomes)
+    assert split_result[0] == {"current-u", "current-v"} and split_result[3] == 2 and not split_result[2]
+    assert split_outcomes["complete"] is True
+    assert all(not any(field in row for field in ("current-u", "current-v"))
+        and "current" not in (row.get("sources") or {})
+        for row in split_output["zones"][current_zone["id"]]["hourly"].values())
+    assert split_path.read_bytes() == split_bytes and p.raw_cache_manifest_path().read_bytes() == split_manifest_bytes
+    assert all(file.read_bytes() == payload for file, payload in snapshots)
+    assert path.read_bytes() == original and sentinel.read_bytes() == sentinel_bytes
+    assert not p._UNSETTLED_GRIB_READS
+    print(json.dumps({"case": scenario, "actualMessages": 8, "fieldOrdersChecked": 2,
+        "actualHeaderIndex": True, "bitmapZeroPreserved": True, "scalarNamespaceUnchanged": True,
+        "differentNativeElementsRefused": True, "originalsPreserved": True}), flush=True)
+    raise SystemExit(0)
+
 if scenario == "foreign-pending":
     # A real thread-directed kernel signal arrives AFTER the product preflight,
     # BEFORE its first open has acquired any descriptor/handler/read lease.
@@ -3746,7 +3880,7 @@ print(json.dumps({"case": scenario, "actualMessages": 1 if scenario == "replace"
     "originalsPreserved": True, "unknownRefused": scenario != "healthy"}), flush=True)
 """
     compile(_lease_native, "<own-native-grib-lease>", "exec")
-    for _lease_case in ("healthy", "break", "replace", "foreign-pending"):
+    for _lease_case in ("healthy", "break", "replace", "foreign-pending", "current-only"):
         _lease_directory = tempfile.mkdtemp(prefix="rr-native-grib-lease-")
         _lease_process, _lease_pidfd, _lease_settled = None, None, False
         try:
@@ -3769,7 +3903,11 @@ print(json.dumps({"case": scenario, "actualMessages": 1 if scenario == "replace"
             _lease_settled = True
             assert _lease_process.returncode == 0, _lease_stderr.decode("utf-8", "replace")[:2000]
             _lease_receipt = json.loads(_lease_stdout.decode("utf-8"))
-            if _lease_case == "foreign-pending":
+            if _lease_case == "current-only":
+                assert _lease_receipt == {"case": _lease_case, "actualMessages": 8, "fieldOrdersChecked": 2,
+                    "actualHeaderIndex": True, "bitmapZeroPreserved": True, "scalarNamespaceUnchanged": True,
+                    "differentNativeElementsRefused": True, "originalsPreserved": True}
+            elif _lease_case == "foreign-pending":
                 assert _lease_receipt == {"case": _lease_case, "foreignSignalPending": True,
                     "preOwnership": True, "maskRetained": True, "handlerUnchanged": True,
                     "firstCauseExact": True, "noDecodeValidatorFlushCommit": True,

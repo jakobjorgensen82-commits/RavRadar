@@ -4,6 +4,7 @@ import {
 } from './ravscore-candidate-g-rollback-runtime.mjs';
 import { buildIntegratedPartScoreSeries } from './ravscore-integrated-runtime.mjs';
 import { dmiMarineCollectionAllowedForZone } from './dmi-marine-zone-exclusions.mjs';
+import { originalCurrentDecoderHistory } from './ravscore-recovery-source-priority.mjs';
 import {
   canonicalRavScoreStateOnlyCurrentHold,
 } from '../../js/core/ravscore-integrated-state-pipeline.js';
@@ -14,9 +15,12 @@ import {
   ravScoreRecoveryReplayStartAt,
   selectRavScoreInitialState,
 } from './ravscore-recovery-replay.mjs';
-import { assertIntegratedCoastalPointContinuation, assertArchivedOwnerCurrentIntegratedOriginal }
+import { assertIntegratedCoastalPointContinuation, assertArchivedOwnerCurrentIntegratedOriginal,
+  assertCurrentGridSamplingIntegratedOriginal }
   from './coastal-point-staging-contract.mjs';
 import { ravScoreSamplingContextKey } from './ravscore-sampling-context.mjs';
+import { assertDmiPartHourlyGridSamplingApplicable, dmiExpectedIdentityForPart }
+  from './ravscore-production-adapters.mjs';
 import { buildCurrentSupplyMemory, buildCurrentSupplyScoreBounds,
   deriveCurrentSupplyEvidence } from '../../js/core/ravscore-current-supply-memory.js';
 import { buildBoundedCurrentTransportMemory, deriveCurrentTransportEvidence,
@@ -29,7 +33,7 @@ import { buildBoundedCurrentTransportMemory, deriveCurrentTransportEvidence,
 // for authentic permitted input. Original pair is returned PRIVATE for the
 // real caller to retain in its encrypted conditions transaction.
 function transitionOwnerCurrentHistory({ part, initialSelection,
-  previousCandidateGContinuation, recoverySources }) {
+  previousCandidateGContinuation, recoverySources, requireNativeGridSampling, liveCurrentPilot }) {
   const parentZoneId = part?.zoneId ?? part?.parentZoneId ?? part?.sourceZoneId;
   if (dmiMarineCollectionAllowedForZone('dkss_lf', parentZoneId)
     || initialSelection.state === null) return null;
@@ -43,7 +47,8 @@ function transitionOwnerCurrentHistory({ part, initialSelection,
   });
   assertCandidateGRollbackContinuation(originalCandidateGState, part);
   const hourly = buildRavScorePermittedCurrentHistory({ part,
-    referenceAt: originalIntegratedState.time, sourceRecords: recoverySources });
+    referenceAt: originalIntegratedState.time, sourceRecords: recoverySources,
+    requireNativeGridSampling, liveCurrentPilot });
   const supplyEvidence = hourly.map(row => deriveCurrentSupplyEvidence(row, {
     getNormalSpeed: value => value.currentCoastNormalSpeedMps,
     isVerified: value => value.currentProvenance?.status === 'verified',
@@ -126,9 +131,10 @@ function transitionOwnerCurrentHistory({ part, initialSelection,
     } };
 }
 
-export function ravScoreOwnerCurrentHistoryStartAt(part, initialState, replaySourceStartAt) {
+export function ravScoreOwnerCurrentHistoryStartAt(part, initialState, replaySourceStartAt,
+  { requireNativeGridSampling = false } = {}) {
   const parentZoneId = part?.zoneId ?? part?.parentZoneId ?? part?.sourceZoneId;
-  if (dmiMarineCollectionAllowedForZone('dkss_lf', parentZoneId) || !initialState) {
+  if ((!requireNativeGridSampling && dmiMarineCollectionAllowedForZone('dkss_lf', parentZoneId)) || !initialState) {
     return replaySourceStartAt;
   }
   const stateMs = Date.parse(initialState.time);
@@ -136,7 +142,36 @@ export function ravScoreOwnerCurrentHistoryStartAt(part, initialState, replaySou
   if (!Number.isFinite(stateMs) || !Number.isFinite(startMs)) {
     throw new Error('Current source transition requires a valid private history boundary');
   }
-  return new Date(Math.min(startMs, stateMs - 48 * 3_600_000)).toISOString();
+  return new Date(Math.min(startMs, stateMs - (requireNativeGridSampling ? 51 : 48) * 3_600_000)).toISOString();
+}
+
+function assertDecoderTransitionOriginal(record, part) {
+  const keys = ['schemaVersion', 'kind', 'parentZoneId', 'partId', 'coordinateInterpretation',
+    'referenceAt', 'originalIntegratedState', 'originalCandidateGState'];
+  const parentZoneId = part?.zoneId ?? part?.parentZoneId ?? part?.sourceZoneId;
+  if (!record || Object.keys(record).length !== keys.length
+    || keys.some(key => !Object.hasOwn(record, key))
+    || record.schemaVersion !== 1 || record.kind !== 'PRIVATE_CURRENT_DECODER_TRANSITION'
+    || record.parentZoneId !== parentZoneId || record.partId !== part?.partId
+    || !dmiMarineCollectionAllowedForZone('dkss_lf', parentZoneId)
+    || record.coordinateInterpretation !== 'dmi-dkss-grib1-header-endpoints-v1'
+    || typeof record.referenceAt !== 'string' || !Number.isFinite(Date.parse(record.referenceAt))
+    || Date.parse(record.referenceAt) % 3_600_000 !== 0
+    || new Date(record.referenceAt).toISOString() !== record.referenceAt) {
+    throw new Error('Private decoder transition archive has an incompatible target or envelope');
+  }
+  const assertOriginal = record.originalIntegratedState?.modelBundleSha256
+    === 'ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb'
+    ? assertCurrentGridSamplingIntegratedOriginal
+    : assertArchivedOwnerCurrentIntegratedOriginal;
+  assertOriginal(record.originalIntegratedState, {
+    samplingContextKey: ravScoreSamplingContextKey(part),
+  });
+  assertCandidateGRollbackContinuation(record.originalCandidateGState, part);
+  if (record.originalIntegratedState.time !== record.originalCandidateGState.time
+    || Date.parse(record.originalIntegratedState.time) > Date.parse(record.referenceAt)) {
+    throw new Error('Private decoder transition archive has an incompatible original time');
+  }
 }
 
 export function retainOwnerCurrentTransitionOriginal(next, previous, part) {
@@ -146,6 +181,10 @@ export function retainOwnerCurrentTransitionOriginal(next, previous, part) {
     'originalIntegratedState', 'originalCandidateGState'];
   for (const record of [next, previous]) {
     if (record === null || record === undefined) continue;
+    if (record.kind === 'PRIVATE_CURRENT_DECODER_TRANSITION') {
+      assertDecoderTransitionOriginal(record, part);
+      continue;
+    }
     if (!record || typeof record !== 'object' || Array.isArray(record)
       || Object.keys(record).length !== recordKeys.length
       || recordKeys.some(key => !Object.hasOwn(record, key))
@@ -163,7 +202,11 @@ export function retainOwnerCurrentTransitionOriginal(next, previous, part) {
       throw new Error('Private current source transition archive has an incompatible target or envelope');
     }
     try {
-      assertArchivedOwnerCurrentIntegratedOriginal(record.originalIntegratedState, {
+      const assertOriginal = record.originalIntegratedState?.modelBundleSha256
+        === 'ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb'
+        ? assertCurrentGridSamplingIntegratedOriginal
+        : assertArchivedOwnerCurrentIntegratedOriginal;
+      assertOriginal(record.originalIntegratedState, {
         samplingContextKey: ravScoreSamplingContextKey(part),
       });
       assertCandidateGRollbackContinuation(record.originalCandidateGState, part);
@@ -180,6 +223,7 @@ export function retainOwnerCurrentTransitionOriginal(next, previous, part) {
   if (next === null || next === undefined) return previous == null ? null : structuredClone(previous);
   const result = structuredClone(next);
   if (previous === null || previous === undefined) return result;
+  if (previous.kind !== next.kind) throw new Error('Private current transition cannot relabel an original archive');
   // The archive is never an initialization source or proof of permitted input.
   // Validate the preserved original pair structurally without pretending it
   // has the new source policy; keep its original model/context/time untouched.
@@ -289,6 +333,7 @@ function exactReplayBoundaryReference({
       validTime: marker.validTime,
       sourceValidTime: marker.sourceValidTime,
       holdAgeHours: marker.holdAgeHours,
+      expectedHold: marker,
     })
     : provided;
   if (reference === null || reference === undefined) return null;
@@ -302,11 +347,117 @@ function exactReplayBoundaryReference({
   return reference;
 }
 
+function exactRecoveryBoundaryHoldExpectation(sourceRecords, exactAt, part) {
+  let marker = null, hasCurrent = false;
+  for (const source of sourceRecords) {
+    if (!Array.isArray(source?.record?.hourly)) continue;
+    for (const row of source.record.hourly) {
+      if (Date.parse(row?.time) !== Date.parse(exactAt)) continue;
+      const candidate = exactPublicStateOnlyHoldAt([row], exactAt, part);
+      hasCurrent ||= [row.currentSpeedMps, row.currentDirectionDeg, row.currentUMps, row.currentVMps]
+        .some(value => typeof value === 'number' && Number.isFinite(value));
+      if (!candidate) continue;
+      if (marker && JSON.stringify(marker) !== JSON.stringify(candidate)) {
+        throw new Error('RavScore production has conflicting historical replay-boundary holds');
+      }
+      marker = candidate;
+    }
+  }
+  if (marker && hasCurrent) throw new Error('RavScore production replay boundary cannot select both current and hold');
+  // Resolver expectation only. The strict replay still qualifies the selected
+  // original and exact document scope before either model may consume it.
+  return marker;
+}
+
 /**
  * Model-bundled producer priority. Point activation is exact-context only;
  * otherwise integrated continuation outranks protected checkpoint, which
  * outranks the one-time Candidate G migration seed.
  */
+
+function transitionNewInitialCurrentApplication({ part, zone, initialSelection,
+  previousCandidateGContinuation, recoverySources, liveCurrentPilot, nativeCadenceHoldHours }) {
+  const state = initialSelection.state, other = previousCandidateGContinuation;
+  const fail = () => { const error = new Error('RAVSCORE_INITIAL_CURRENT_NEW_USE_NOT_READY');
+    error.code = 'RAVSCORE_INITIAL_CURRENT_NEW_USE_NOT_READY'; throw error; };
+  if (state === null && other === null) return null;
+  if (!state || !other || state.time !== other.time) fail();
+  assertIntegratedCoastalPointContinuation(state, { samplingContextKey: ravScoreSamplingContextKey(part) });
+  assertCandidateGRollbackContinuation(other, part);
+  const history = buildRavScorePermittedCurrentHistory({ part, referenceAt: state.time,
+    sourceRecords: recoverySources, requireNativeGridSampling: true, liveCurrentPilot,
+    preserveNativeCadenceHolds: true });
+  const incomplete = state.currentMemoryReady !== true || other.transportMemoryReady !== true;
+  if (incomplete && ((state.currentMemoryReady !== true
+      && (state.currentMemoryReady !== false || state.currentMemoryStatus !== 'WINDOW_INCOMPLETE'))
+    || (other.transportMemoryReady !== true
+      && (other.transportMemoryReady !== false || other.transportMemoryStatus !== 'WINDOW_INCOMPLETE')))) fail();
+  const boundary = Date.parse(state.time) - 48 * 3_600_000;
+  // A real selected native sample may support a boundary hold; it is never
+  // copied into intermediate hours or used to relabel old compact evidence.
+  let first = -1;
+  for (let i = 0; i < history.length && Date.parse(history[i].time) <= boundary; i++) {
+    if (history[i].currentProvenance?.status === 'verified') first = i;
+  }
+  if (incomplete) {
+    // Reproduce the retained partial window, including its actual missing rows.
+    // Never pad it to 48h, trim a hole, or promote an old readiness flag.
+    const start = Math.min(Date.parse(state.currentEvidence[0]?.time),
+      Date.parse(other.transportEvidence[0]?.time));
+    first = history.findIndex(row => Date.parse(row.time) === start);
+  }
+  if (first < 0) fail();
+  const hourly = history.slice(first);
+  if (!incomplete && hourly.some(row => row.currentProvenance?.status !== 'verified' && !row.currentStateOnlyHold)) fail();
+  const derived = buildIntegratedPartScoreSeries({ part, zone, hourly, nativeCadenceHoldHours })
+    .ravScoreState.continuationState;
+  const derivedOther = buildCandidateGRollbackPartScoreSeries({ part, zone, hourly,
+    nativeCadenceHoldHours, measuredColdStart: true }).candidateGState.continuationState;
+  if (!incomplete && (!derived.currentMemoryReady || !derivedOther.transportMemoryReady)) fail();
+  if (incomplete) {
+    const sameWindow = (left, right, prefix, evidenceKey) =>
+      ['ReferenceAt', 'MemoryReady', 'MemoryStatus', 'MemoryWindowHours', 'MemoryCoverageHours']
+        .every(key => JSON.stringify(left[prefix + key]) === JSON.stringify(right[prefix + key]))
+      && JSON.stringify(left[evidenceKey].map(row => [row.time, row.strength === null]))
+        === JSON.stringify(right[evidenceKey].map(row => [row.time, row.strength === null]));
+    if (!sameWindow(derived, state, 'current', 'currentEvidence')
+      || !sameWindow(derivedOther, other, 'transport', 'transportEvidence')) fail();
+  }
+  const integratedKeys = ['currentReferenceAt', 'currentMemoryReady', 'currentMemoryStatus',
+    'currentMemoryWindowHours', 'currentMemoryCoverageHours', 'currentEvidence',
+    'currentNativeHoldAuthorization', 'currentNativeHoldIntervalEnds', 'supplyPotential'];
+  const candidateKeys = ['transportReferenceAt', 'transportMemoryReady', 'transportMemoryStatus',
+    'transportMemoryWindowHours', 'transportMemoryCoverageHours', 'transportEvidence',
+    'transportPotential', 'outboundEpisodeEffectiveHours'];
+  const sameCurrentPair = (integrated, candidate) =>
+    integratedKeys.every(key => JSON.stringify(integrated[key]) === JSON.stringify(state[key]))
+    && candidateKeys.every(key => JSON.stringify(candidate[key]) === JSON.stringify(other[key]))
+    && JSON.stringify(integrated.historyBounds.current) === JSON.stringify(state.historyBounds.current);
+  // Equality alone is not lineage proof; all strict original/48h checks above
+  // still run. Unequal memory additionally requires the exact normal decoder
+  // association and reconstruction of the preserved OLD current pair.
+  if (sameCurrentPair(derived, derivedOther)) return null;
+  const originalHourly = originalCurrentDecoderHistory(recoverySources, hourly, part);
+  if (!originalHourly) fail();
+  const originalDerived = buildIntegratedPartScoreSeries({ part, zone,
+    hourly: originalHourly, nativeCadenceHoldHours }).ravScoreState.continuationState;
+  const originalOther = buildCandidateGRollbackPartScoreSeries({ part, zone,
+    hourly: originalHourly, nativeCadenceHoldHours, measuredColdStart: true }).candidateGState.continuationState;
+  if ((!incomplete && (!originalDerived.currentMemoryReady || !originalOther.transportMemoryReady))
+    || !sameCurrentPair(originalDerived, originalOther)) fail();
+  const privateRecord = { schemaVersion: 1, kind: 'PRIVATE_CURRENT_DECODER_TRANSITION',
+    parentZoneId: part.zoneId ?? part.parentZoneId ?? part.sourceZoneId, partId: part.partId,
+    coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1', referenceAt: state.time,
+    originalIntegratedState: structuredClone(state), originalCandidateGState: structuredClone(other) };
+  const integratedState = structuredClone(state), candidateGState = structuredClone(other);
+  for (const key of integratedKeys) integratedState[key] = structuredClone(derived[key]);
+  integratedState.historyBounds.current = structuredClone(derived.historyBounds.current);
+  for (const key of candidateKeys) candidateGState[key] = structuredClone(derivedOther[key]);
+  assertIntegratedCoastalPointContinuation(integratedState, { samplingContextKey: ravScoreSamplingContextKey(part) });
+  assertCandidateGRollbackContinuation(candidateGState, part);
+  return { integratedState, candidateGState, privateRecord };
+}
+
 export function selectRavScoreProductionInitialState(options = {}) {
   return selectRavScoreInitialState(options);
 }
@@ -332,6 +483,9 @@ export function buildRavScoreProductionPartSeries({
   candidateGNativeCadenceReferenceSample = null,
   resolveNativeCadenceReferenceSample = null,
   resolveCandidateGNativeCadenceReferenceSample = null,
+  requireNativeGridSampling = false,
+  assertRoutedWaterLevelApplicable = null,
+  liveCurrentPilot = null,
 } = {}) {
   if (!part || !zone || !initialSelection
     || typeof initialSelection.source !== 'string'
@@ -370,14 +524,21 @@ export function buildRavScoreProductionPartSeries({
     throw new Error('Candidate G native-cadence reference resolver must be a function');
   }
   for (const row of publicHourly) assertSelectedCurrentSourceDomain(row, part, zone);
+  if (requireNativeGridSampling) {
+    assertDmiPartHourlyGridSamplingApplicable(publicHourly,
+      dmiExpectedIdentityForPart(part).entityId, part, { assertRoutedWaterLevelApplicable, liveCurrentPilot });
+  }
   if (!dmiMarineCollectionAllowedForZone('dkss_lf', part?.zoneId ?? part?.parentZoneId ?? part?.sourceZoneId)
     && initialSelection.source === 'CANDIDATE_G_MIGRATION') {
     const error = new Error('Current source transition cannot relabel a legacy-only model state as a two-model pair');
     error.code = 'RAVSCORE_CURRENT_SOURCE_DOMAIN_LEGACY_UNSUPPORTED';
     throw error;
   }
-  const currentTransition = transitionOwnerCurrentHistory({ part, initialSelection,
-    previousCandidateGContinuation, recoverySources });
+  let currentTransition = transitionOwnerCurrentHistory({ part, initialSelection,
+    previousCandidateGContinuation, recoverySources, requireNativeGridSampling, liveCurrentPilot });
+  if (requireNativeGridSampling && currentTransition === null) currentTransition = transitionNewInitialCurrentApplication({
+    part, zone, initialSelection, previousCandidateGContinuation,
+    recoverySources, liveCurrentPilot, nativeCadenceHoldHours });
   if (currentTransition) {
     initialSelection = { ...initialSelection, state: currentTransition.integratedState };
     previousCandidateGContinuation = currentTransition.candidateGState;
@@ -393,7 +554,8 @@ export function buildRavScoreProductionPartSeries({
     publicHourly,
     replayStartAt,
     part,
-  );
+  ) ?? (requireNativeGridSampling && !publicHourly.some(row => Date.parse(row?.time) === Date.parse(replayStartAt))
+    ? exactRecoveryBoundaryHoldExpectation(recoverySources, replayStartAt, part) : null);
   const resolvedNativeCadenceReferenceSample = exactReplayBoundaryReference({
     marker: replayStartHold,
     resolver: resolveNativeCadenceReferenceSample,
@@ -410,6 +572,8 @@ export function buildRavScoreProductionPartSeries({
     publicHourly,
     nativeCadenceHoldHours,
     nativeCadenceReferenceSample: resolvedNativeCadenceReferenceSample,
+    requireNativeGridSampling,
+    liveCurrentPilot,
   });
   for (const row of recovery.hourly) assertSelectedCurrentSourceDomain(row, part, zone);
   const targetHold = exactPublicStateOnlyHoldAt(

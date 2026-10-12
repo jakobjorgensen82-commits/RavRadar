@@ -1,4 +1,12 @@
-# Lokal 4.0.574 DMI-opfølgning – samme åbne GRIB-fil gennem hele læsningen
+# Lokal 4.0.576 – strømfortolkning og bevarelse af originaler
+
+Den landsdækkende strømkandidat er samlet gennem normal producent, cache, originalhistorik, kildevalg, strømhukommelse, score, typed restore og tabsfri migrant. CURRENT_U/V korrigeres særskilt; scalarfelter, fysisk scoreformel, kildeprioritet, central routing/T+3 og administratorens punkter ændres ikke. De syv kystzoners dkss_lf-undtagelse er stadig KUN vandstand. Skjulte pile frikender ikke data. DEC-0294 beskriver omfang, afvisninger og gates.
+
+Normale lokale mål består, men præcis ny GitHub-/native-kildekontrol, konkrete installations-/destinationsgrænser, faktisk autentificeret originalbevarelse og ny offentlig produktionseffekt mangler. De 54 gamle migrationer er uændrede; den nye SQL-kilde er ikke installeret. Frosne 565/575 er ikke ommærket. Alle fem hovedmål er åbne; den store revision er stadig isoleret og inaktiv.
+
+Den foregående lease-rettelse PR576 har faktisk bestået præcis kildekontrol med fire Linux-leaseforløb og er merget. En almindelig cron-vejrhentning er i gang på den; det er ikke koordinatrettelsens leveringsbevis. Ingen ekstra vejrhentning, cronændring eller produktionsændring under aktiv writer. Ældre statusser nedenfor er historiske, hvor de er erstattet her.
+
+# Historik: lokal 4.0.574 DMI-opfølgning – samme åbne GRIB-fil gennem hele læsningen
 
 Opfølgning 12. oktober: Den første præcise Linux-kildekontrol fejlede på en statisk forventning, som også krævede en selvstændig watchdog omkring den nye interne læseadapter. De syv normale download- og transaktionskald har fortsat deres eksisterende watchdog. Testrettelsen kræver adapterens præcise None-vagt, returnering og videresendte argumenter samt transaktionens samme ejede læser; ingen generel undtagelse gives. Den ene målrettede supervisorsuite består med 29 tests, herunder syv negative ændringer af kodekontrollen. De 27 øvrige gamle testmetoder er uændrede. Præcis ny Linux-kildekontrol, dokumenteret resultat for de fire leaseprøver og offentlig effekt afventes; den røde kontrol må ikke omgås.
 

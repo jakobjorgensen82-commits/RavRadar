@@ -69,6 +69,7 @@ import {
 } from './lib/local-current-reference.mjs';
 import { localPartRuntimeProperties } from './lib/local-part-runtime.mjs';
 import {
+  readLiveCurrentPilot,
   controlledLiveCurrentProofStatus,
   latestVerifiedNativeCadenceSampleForPart,
   nativeCadenceHoldHoursForPart,
@@ -106,6 +107,7 @@ import {
   eligibleDmiNativeComponentSource as verifiedDmiNativeComponentSource,
   eligibleBulkCurrent as verifiedBulkCurrent,
   verifiedIntegratedPartHourly,
+  assertDmiPartHourlyGridSamplingApplicable,
 } from './lib/ravscore-production-adapters.mjs';
 import {
   FEGGESUND_WAVE_DISPOSITIONS,
@@ -160,7 +162,6 @@ const HEALTH_PATH = 'data/live/weather-health.json';
 const DMI_FORECAST_STORE_PATH = 'data/live/dmi-forecast-cache.json';
 const DMI_BULK_CACHE_PATH = process.env.DMI_BULK_CACHE_PATH || 'data/live/dmi-bulk-cache.json';
 const DEPLOYED_DMI_BULK_CACHE_PATH = '.cache/deployed-dmi-bulk-cache.json';
-const LIVE_CURRENT_PILOT_PATH = 'data/live/current-pilot-history.json';
 const RUNTIME_DIAGNOSTICS_PATH = 'data/live/ravradar-runtime-diagnostics.json';
 const CANDIDATE_G_MEASURED_WARMUP_STATUS = 'BUILDING_MEASURED_ONLY';
 const CANDIDATE_G_MEASURED_WARMUP_EVIDENCE_POLICY = 'MEASURED_ONLY';
@@ -1140,15 +1141,6 @@ async function readDmiBulkCache(cachePath = DMI_BULK_CACHE_PATH) {
       && cachePath === DMI_BULK_CACHE_PATH) {
       throw new Error('The current DMI candidate cannot be read', { cause: error });
     }
-    return null;
-  }
-}
-
-async function readLiveCurrentPilot() {
-  try {
-    const parsed = JSON.parse(await fs.readFile(LIVE_CURRENT_PILOT_PATH, 'utf8'));
-    return Number(parsed?.schemaVersion) === 1 && parsed?.controlledLivePilot === true ? parsed : null;
-  } catch {
     return null;
   }
 }
@@ -2202,6 +2194,10 @@ function scoreCoastalPartsRuntime(
   historicalDmiBulkCache = null,
   previousCurrentSourceDomainTransitions = null,
 ) {
+  // This NEW calculation, including its actual protected/progressive replay
+  // inputs, may not borrow corrected lookup proof from a newly parsed loser.
+  // Original readers/admission stay unchanged; unsupported originals are kept.
+  componentInputs = { ...componentInputs, requireNativeGridSampling: true };
   const forceHistoricalWaveMeasuredColdReplay =
     historicalWaveInputTransition !== null;
   const previousEvidenceTrust = previousCoastalParts?.evidenceTrust ?? null;
@@ -2438,14 +2434,16 @@ function scoreCoastalPartsRuntime(
         )),
       });
       const verifiedHourly = verifiedIntegratedPartHourly(
-        record, bulkCache, bulkId, { ...part, zoneId }, componentInputs,
+        record, bulkCache, bulkId, { ...part, zoneId },
+        { ...componentInputs, requireNativeGridSampling: false, liveCurrentPilot },
       );
       const routedWater = waterSourceRoutingContext
         ? applyVerifiedWaterSourceRoutingToPartHourly({
           part: { ...part, zoneId }, parentFeature: parent,
           hourly: verifiedHourly, ...waterSourceRoutingContext,
         }) : { hourly: verifiedHourly, diagnostic: null };
-      const hourly = routedWater.hourly;
+      const hourly = assertDmiPartHourlyGridSamplingApplicable(routedWater.hourly, bulkId,
+        { ...part, zoneId }, { assertRoutedWaterLevelApplicable: routedWater.assertRoutedWaterLevelApplicable, liveCurrentPilot });
       if (routedWater.diagnostic) furWaterRoutingTrace = routedWater.diagnostic;
       if (componentInputs.componentSelectionHistory) {
         recordSelectedWeatherComponents(componentInputs.componentSelectionHistory, { ...part, zoneId }, hourly);
@@ -2523,6 +2521,7 @@ function scoreCoastalPartsRuntime(
       const replayStartAt = ravScoreOwnerCurrentHistoryStartAt(
         { ...part, zoneId }, initialSelection.state,
         ravScoreRecoverySourceStartAt(initialSelection.state, generatedAt),
+        { requireNativeGridSampling: true },
       );
       let deployedRecoverySource = null;
       const protectedCurrentContexts = [deployedBulkCache, historicalDmiBulkCache];
@@ -2562,6 +2561,7 @@ function scoreCoastalPartsRuntime(
           );
           deployedRecoverySource = {
             source: 'deployed-private-runtime',
+            nativeCurrentContexts: protectedCurrentContexts,
             record: {
               ...deployedRecord,
               hourly: verifiedProtectedDmiPartHourly(
@@ -2569,7 +2569,7 @@ function scoreCoastalPartsRuntime(
                 protectedCurrentContexts,
                 bulkId,
                 { ...part, zoneId },
-                componentInputs,
+                { ...componentInputs, requireNativeGridSampling: false, liveCurrentPilot },
               ),
             },
           };
@@ -2603,6 +2603,7 @@ function scoreCoastalPartsRuntime(
         );
         progressiveRecoverySource = {
           source: 'progressive-private-dmi',
+          nativeCurrentContexts: [bulkCache],
           record: {
             ...progressiveRecord,
             hourly: verifiedIntegratedPartHourly(
@@ -2610,7 +2611,7 @@ function scoreCoastalPartsRuntime(
               bulkCache,
               bulkId,
               { ...part, zoneId },
-              componentInputs,
+              { ...componentInputs, requireNativeGridSampling: false, liveCurrentPilot },
             ),
           },
         };
@@ -2630,6 +2631,9 @@ function scoreCoastalPartsRuntime(
       let productionSeries;
       try {
         productionSeries = buildRavScoreProductionPartSeries({
+          requireNativeGridSampling: true,
+          liveCurrentPilot,
+          assertRoutedWaterLevelApplicable: routedWater.assertRoutedWaterLevelApplicable,
           part: { ...part, zoneId },
           zone,
           initialSelection,
@@ -2644,18 +2648,19 @@ function scoreCoastalPartsRuntime(
           publicHourly: hourly.filter(hour => Date.parse(hour.time) >= targetMs
             && Date.parse(hour.time) < targetMs + RAVSCORE_PUBLIC_FORECAST_HOURS * 3_600_000),
           nativeCadenceHoldHours,
-          resolveNativeCadenceReferenceSample: sourceValidTime =>
+          resolveNativeCadenceReferenceSample: (sourceValidTime, { expectedHold } = {}) =>
             latestVerifiedNativeCadenceSampleForPart(
               { ...part, zoneId },
               liveCurrentPilot,
               sourceValidTime,
+              { requireNativeGridSampling: true, expectedHold },
             ),
-          resolveCandidateGNativeCadenceReferenceSample: sourceValidTime =>
+          resolveCandidateGNativeCadenceReferenceSample: (sourceValidTime, { expectedHold } = {}) =>
             latestVerifiedNativeCadenceSampleForPart(
               { ...part, zoneId },
               liveCurrentPilot,
               sourceValidTime,
-              { projection: 'candidate-g-legacy-quantized' },
+              { projection: 'candidate-g-legacy-quantized', requireNativeGridSampling: true, expectedHold },
             ),
         });
       } catch (error) {
@@ -2671,6 +2676,8 @@ function scoreCoastalPartsRuntime(
               startAt: replayStartAt,
               targetAt: generatedAt,
               replayCandidate: isolatedSources => buildRavScoreRecoveryReplay({
+                requireNativeGridSampling: true,
+                liveCurrentPilot,
                 part: { ...part, zoneId },
                 initialState: initialSelection.state,
                 targetReferenceAt: generatedAt,
@@ -2702,6 +2709,8 @@ function scoreCoastalPartsRuntime(
               startAt: replayStartAt,
               targetAt: generatedAt,
               replayCandidate: isolatedSources => buildRavScoreRecoveryReplay({
+                requireNativeGridSampling: true,
+                liveCurrentPilot,
                 part: { ...part, zoneId },
                 initialState: initialSelection.state,
                 targetReferenceAt: generatedAt,
@@ -2748,6 +2757,7 @@ function scoreCoastalPartsRuntime(
             { ...part, zoneId },
             liveCurrentPilot,
             stateOnlyHold.sourceValidTime,
+            { requireNativeGridSampling: true, expectedHold: stateOnlyHold },
           )
           : null;
         const stateOnlyHoldReferenceInRecovery = stateOnlyHoldReference !== null
@@ -4278,7 +4288,7 @@ const historicalDmiBulkCache = process.env.DMI_PART_CONTINUITY_DONOR_PATH
 if (process.env.DMI_PART_CONTINUITY_DONOR_PATH && !historicalDmiBulkCache) {
   throw new Error('DMI_PART_CONTINUITY_DONOR_INVALID');
 }
-const liveCurrentPilot = await readLiveCurrentPilot();
+const liveCurrentPilot = await readLiveCurrentPilot(coastalPartsContract);
 const buildGeneratedAt = new Date().toISOString();
 const generatedAt = resolveProductionReferenceTime(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR, new Date(buildGeneratedAt));
 const activeParts = Object.entries(coastalPartsContract.zones ?? {}).flatMap(([zoneId, zoneParts]) =>
@@ -4785,12 +4795,17 @@ if (coastalPartsContract.enabled) {
     openMeteoSpatialPolicies: OPEN_METEO_NATIVE_NEAREST_POLICIES,
     copernicusBudgetMs: COMPONENT_COPERNICUS_BUDGET_MS,
     openMeteoBudgetMs: COMPONENT_OPEN_METEO_BUDGET_MS,
-    readVerifiedHourly: (part, inputs) => applyVerifiedWaterSourceRoutingToPartHourly({
-      part, parentFeature: parentById.get(part.zoneId),
-      hourly: verifiedIntegratedPartHourly(
-        planningRecords.get(part.partId), dmiBulkCache, `PART::${part.partId}`, part, inputs),
-      ...waterSourceRoutingContext,
-    }).hourly,
+    readVerifiedHourly: (part, inputs) => {
+      const routed = applyVerifiedWaterSourceRoutingToPartHourly({
+        part, parentFeature: parentById.get(part.zoneId),
+        hourly: verifiedIntegratedPartHourly(
+          planningRecords.get(part.partId), dmiBulkCache, `PART::${part.partId}`, part,
+          { ...inputs, requireNativeGridSampling: false, liveCurrentPilot }),
+        ...waterSourceRoutingContext,
+      });
+      return assertDmiPartHourlyGridSamplingApplicable(routed.hourly, `PART::${part.partId}`, part,
+        { assertRoutedWaterLevelApplicable: routed.assertRoutedWaterLevelApplicable, liveCurrentPilot });
+    },
   });
   planningRecords.clear();
   output.weatherEngine.componentFallback = weatherComponents.summary;

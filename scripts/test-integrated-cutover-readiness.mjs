@@ -49,10 +49,10 @@ const EXACT_PREDECESSOR_CONTINUATION_HASH =
   '46683362ec6b69835695db375f7de976a8dd0a75b7367a27e2854b653d73e0ab';
 
 await inspectMigrationSources();
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 44,
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 45,
   'The active backend must preserve every predecessor, storage security and the exact checkpoint bridge');
 assert.equal(LATEST_RAVSCORE_BINDING_MIGRATION.version, '20260920220000');
-assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261005000000');
+assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261012000000');
 
 const integratedMigration = await fs.readFile(
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
@@ -95,7 +95,7 @@ assert.doesNotMatch(rpcSql, /\bselect\s+\*\b/i,
   'integrated cutover RPC must not expose broad table data');
 
 const checkpointMigration = await fs.readFile(
-  'supabase/migrations/20261005000000_owner_water_level_only_binding.sql',
+  'supabase/migrations/20261012000000_current_grid_original_bound_successor.sql',
   'utf8',
 );
 const exactPredecessorMigration = await fs.readFile(
@@ -147,7 +147,7 @@ for (const marker of [
   "#- '{candidateGRollbackCompanion,generationSha256}'",
   'create or replace function public.ravradar_ravscore_checkpoint_contract()',
   "'schemaVersion', 'ravscore-checkpoint-db-v1'",
-  "'20261005000000'",
+  "'20261012000000'",
   "'checkpointContractDefinitionPresent'",
   "'checkpointCanonicalTimeHelperStableSecurityInvoker'",
   "'checkpointHistoryExclusionInstalled'",
@@ -372,6 +372,7 @@ const unicodeList = `
  20261003080000    │                  │ 2026-10-03 08:00:00
  20261004190000    │                  │ 2026-10-04 19:00:00
  20261005000000    │                  │ 2026-10-05 00:00:00
+ 20261012000000    │                  │ 2026-10-12 00:00:00
 `;
 assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260826', remote: '20260826' },
@@ -419,6 +420,7 @@ assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20261003080000', remote: null },
   { local: '20261004190000', remote: null },
   { local: '20261005000000', remote: null },
+  { local: '20261012000000', remote: null },
 ]);
 
 // Captured verbatim from backend readiness run 34333553305 with Supabase CLI 2.117.0.
@@ -475,6 +477,7 @@ const currentFirstInstallList = `${capturedFirstEightInstallList}
    \`20261003080000\` | \` \`    | \`2026-10-03 08:00:00\`
    \`20261004190000\` | \` \`    | \`2026-10-04 19:00:00\`
    \`20261005000000\` | \` \`    | \`2026-10-05 00:00:00\`
+   \`20261012000000\` | \` \`    | \`2026-10-12 00:00:00\`
 `;
 assert.deepEqual(parseSupabaseMigrationList(currentFirstInstallList),
   REQUIRED_CUTOVER_MIGRATIONS.map(item => ({ local: item.version, remote: null })));
@@ -607,6 +610,7 @@ await assert.rejects(
        20261003080000 | | pending
        20261004190000 | | pending
        20261005000000 | | pending
+       20261012000000 | | pending
     `,
     dryRunText: currentFirstInstallDryRun,
   }),
@@ -660,6 +664,7 @@ const appliedList = `
  20261003080000 | 20261003080000 | now
  20261004190000 | 20261004190000 | now
  20261005000000 | 20261005000000 | now
+ 20261012000000 | 20261012000000 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
@@ -725,7 +730,7 @@ try {
     helperRun.stderr || helperRun.stdout || helperRun.error?.message);
   assert.match(
     helperRun.stdout,
-    /exactly 20261005000000_owner_water_level_only_binding.sql/,
+    /exactly 20261012000000_current_grid_original_bound_successor.sql/,
     'the live code-only helper must admit exactly the current checkpoint bridge',
   );
 } finally {
@@ -814,6 +819,7 @@ try {
  20261003080000 │ │ pending
  20261004190000 │ │ pending
  20261005000000 │ │ pending
+ 20261012000000 │ │ pending
  `;
   const hydrated = await hydrateTemporaryRemoteMigrationHistory({
     workdir: isolatedWorkdir,
@@ -871,6 +877,7 @@ try {
  20261003080000 │ │ pending
  20261004190000 │ │ pending
  20261005000000 │ │ pending
+ 20261012000000 │ │ pending
     `,
   }), /unknown post-cutover migration 20260830/);
 } finally {
@@ -932,6 +939,44 @@ await assert.rejects(buildIntegratedCutoverReadiness('short', {
 const expectedPolicy = await expectedTripBindingPolicy();
 const expectedActiveAdmissionPolicy = await expectedTripActiveAdmissionPolicy();
 const expectedCheckpointContract = await expectedCheckpointCasContract();
+// Native-grid canonical readback must include BOTH complete fixed original
+// validators, in exact order, without projecting or rewriting old physical data.
+const gridOriginalCanonical = (await fs.readFile(
+  'supabase/migrations/20261005000000_owner_water_level_only_binding.sql', 'utf8',
+)).replace(/\r\n/g, '\n');
+const gridCanonicalSource = checkpointMigration.replace(/\r\n/g, '\n');
+const gridSqlDefinition = (source, name) => {
+  const marker = 'create or replace function public.' + name + '(';
+  const start = source.indexOf(marker), end = source.indexOf('\n$$;', start);
+  assert.ok(start >= 0 && source.indexOf(marker, start + 1) === -1 && end > start);
+  return source.slice(start, end + 4);
+};
+const gridOriginalStateName = 'ravradar_ravscore_checkpoint_grid_original_state_valid';
+const gridOriginalPayloadName = 'ravradar_ravscore_checkpoint_grid_original_payload_valid';
+const gridOriginalStateDefinition = gridSqlDefinition(gridCanonicalSource, gridOriginalStateName);
+const gridOriginalPayloadDefinition = gridSqlDefinition(gridCanonicalSource, gridOriginalPayloadName);
+const undoGridOriginalNamesAndMarkers = source => source
+  .replaceAll(gridOriginalStateName, 'ravradar_ravscore_checkpoint_integrated_state_valid')
+  .replaceAll(gridOriginalPayloadName, 'ravradar_ravscore_checkpoint_payload_valid')
+  .replace(/RAVSCORE_CURRENT_GRID_ORIGINAL_([A-Z0-9_]+)_FIXED_(BEGIN|END)/g,
+    'RAVSCORE_CHECKPOINT_$1_GENERATED_$2');
+assert.equal(undoGridOriginalNamesAndMarkers(gridOriginalStateDefinition),
+  gridSqlDefinition(gridOriginalCanonical, 'ravradar_ravscore_checkpoint_integrated_state_valid'),
+'The full fixed original-state physics must remain unchanged, not just its header');
+assert.equal(undoGridOriginalNamesAndMarkers(gridOriginalPayloadDefinition),
+  gridSqlDefinition(gridOriginalCanonical, 'ravradar_ravscore_checkpoint_payload_valid'),
+'The full original FFC/C8d/T4115 payload physics must remain unchanged');
+const gridStateReadbackTag = '\n-- current-grid-original-state-validator --\n';
+const gridPayloadReadbackTag = '\n-- current-grid-original-payload-validator --\n';
+assert.equal(expectedCheckpointContract.definition.split(gridStateReadbackTag).length, 2);
+assert.equal(expectedCheckpointContract.definition.split(gridPayloadReadbackTag).length, 2);
+const gridReadbackState = expectedCheckpointContract.definition
+  .split(gridStateReadbackTag)[1].split(gridPayloadReadbackTag)[0];
+const gridReadbackPayload = expectedCheckpointContract.definition.split(gridPayloadReadbackTag)[1];
+const gridSqlBody = source => source.slice(source.indexOf('as $$\n') + 'as $$\n'.length,
+  source.lastIndexOf('\n$$;')).trim();
+assert.equal(gridReadbackState, gridSqlBody(gridOriginalStateDefinition));
+assert.equal(gridReadbackPayload, gridSqlBody(gridOriginalPayloadDefinition));
 assert.equal(expectedPolicy.definition, expectedPolicy.definition.trim());
 assert.equal(expectedActiveAdmissionPolicy.definition,
   expectedActiveAdmissionPolicy.definition.trim());
@@ -1265,6 +1310,23 @@ await assert.rejects(verifyIntegratedDatabaseReadback({
 }), /checkpoint CAS contract definition hash drifted/);
 
 const previousCheckpointDatabase = structuredClone(checkpointDatabaseReadback);
+// Controlled readback IO only: these are not installed PostgreSQL/B/S receipts.
+for (const definition of [
+  expectedCheckpointContract.definition.split(gridStateReadbackTag)[0],
+  expectedCheckpointContract.definition.split(gridStateReadbackTag)[0]
+    + gridPayloadReadbackTag + gridReadbackPayload + gridStateReadbackTag + gridReadbackState,
+  expectedCheckpointContract.definition.replace(gridReadbackPayload,
+    gridReadbackPayload.replace("return true;", "return false;")),
+]) {
+  assert.notEqual(definition, expectedCheckpointContract.definition);
+  const invalidGridOriginalReadback = structuredClone(checkpointDatabaseReadback);
+  invalidGridOriginalReadback.checkpointContract.definition = definition;
+  await assert.rejects(verifyIntegratedDatabaseReadback({
+    url: URL,
+    serviceRoleKey: SERVICE_KEY,
+    fetchImpl: databaseReadbackFetch(databaseReadback, invalidGridOriginalReadback),
+  }), /checkpoint CAS contract definition hash drifted/);
+}
 previousCheckpointDatabase.appliedMigrationVersion = '20260909194000';
 await assert.rejects(verifyIntegratedDatabaseReadback({
   url: URL,

@@ -2,7 +2,7 @@ import {
   TRIP_SEARCH_COVERAGE,
   TRIP_SEARCH_MODES,
   assertTripEvidencePrivacy
-} from './trip-evidence-contract.js?v=4.0.574';
+} from './trip-evidence-contract.js?v=4.0.576';
 
 export const ACCOUNT_TRIP_REPORT_SCHEMA_VERSION = 1;
 export const ACCOUNT_TRIP_REPORT_SOURCE = 'account-manual';

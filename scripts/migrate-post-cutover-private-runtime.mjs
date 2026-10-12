@@ -18,6 +18,8 @@ import {
   privatePublicHourDeliveryMarker,
 } from './lib/public-hour-delivery-pack.mjs';
 import { rebindPublicHourPackExact } from './lib/rebind-public-hour-pack-exact.mjs';
+import { PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY, privateRuntimeBundleContentSha256 }
+  from './private-production-runtime-bundle.mjs';
 import { hydratePrivateConditionsHourly, packPrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 import {
   buildPublicConditionDetails,
@@ -31,6 +33,7 @@ import {
   coastalPointStageIdentity,
   assertArchivedOwnerCurrentIntegratedOriginal,
   assertWaterLevelOnlyIntegratedOriginal,
+  assertCurrentGridSamplingIntegratedOriginal,
 } from './lib/coastal-point-staging-contract.mjs';
 import {
   assertRavScoreModelBinding,
@@ -64,6 +67,9 @@ import { readOwnerCurrentTransitionArchive, retainOwnerCurrentTransitionOriginal
   from './lib/ravscore-production-part-pipeline.mjs';
 import { dmiMarineCollectionAllowedForZone } from './lib/dmi-marine-zone-exclusions.mjs';
 import { OWNER_CURRENT_DOMAIN_PREDECESSOR, buildOwnerCurrentOriginalRestoreExpectation }
+  from './lib/bounded-conditions-predecessor-transition.mjs';
+import { CURRENT_GRID_SAMPLING_PREDECESSOR_POLICY,
+  assertCurrentGridSamplingOriginalExpectation }
   from './lib/bounded-conditions-predecessor-transition.mjs';
 
 assertRuntimeBindingRegistry();
@@ -673,12 +679,19 @@ async function assertDirectoryOutside(repositoryRoot, requested, label) {
   return realCandidate;
 }
 
-async function readJson(file, label) {
+async function readJson(file, label, originalDescriptor = null) {
   let text;
   try {
-    text = await fs.readFile(file, 'utf8');
+    if (originalDescriptor) {
+      // Hash the SAME bytes that are parsed, not an earlier path observation.
+      const raw = await fs.readFile(file);
+      assertSame({ bytes: raw.length, sha256: crypto.createHash('sha256').update(raw).digest('hex') },
+        { bytes: originalDescriptor.bytes, sha256: originalDescriptor.sha256 },
+        `${label} sealed original bytes`);
+      text = raw.toString('utf8');
+    } else text = await fs.readFile(file, 'utf8');
   } catch {
-    throw new Error(`${label} cannot be read`);
+    throw new Error(`${label} cannot be read${originalDescriptor ? ' as its sealed original bytes' : ''}`);
   }
   try {
     return JSON.parse(text);
@@ -753,6 +766,221 @@ function ownerCurrentOriginalValidators(integrated = OWNER_CURRENT_DOMAIN_PREDEC
       },
     },
   };
+}
+
+// Only FFC/8d original validation. No historical repair, arbitrary binding,
+// archive import, metadata-only admission or new native evidence is created.
+function currentGridOriginalValidators() {
+  const policy = CURRENT_GRID_SAMPLING_PREDECESSOR_POLICY;
+  const bindingValidator = binding => ({
+    ravScoreModelBinding: () => structuredClone(binding),
+    assertRavScoreModelBinding: (value, label) => assertSame(value, binding, label),
+  });
+  return {
+    integrated: bindingValidator(policy.sourceModelBinding),
+    candidate: bindingValidator(policy.sourceCandidateModelBinding),
+    staging: { coastalPointStageIdentity,
+      assertCandidateGCoastalPointRollbackContinuation,
+      assertIntegratedCoastalPointContinuation: assertCurrentGridSamplingIntegratedOriginal,
+    },
+  };
+}
+
+function assertCurrentGridOriginalMigrationIdentity(identity, expected) {
+  const original = assertCurrentGridSamplingOriginalExpectation(expected);
+  const policy = CURRENT_GRID_SAMPLING_PREDECESSOR_POLICY;
+  if (identity.schemaVersion !== policy.sourceDescriptionSchemaVersion
+    || identity.kind !== policy.restoredSourceDescriptionKind
+    || identity.expectedZoneCount !== policy.expectedZoneCount
+    || identity.expectedPartCount !== policy.expectedPartCount
+    || identity.privatePayloadIncluded !== false
+    || ['sourceHead', 'datasetId', 'bundleContentSha256',
+      'productionReferenceAt', 'generatedAt'].some(key => identity[key] !== original[key])
+    || !same(identity.modelBinding, original.modelBinding)
+    || !same(identity.contractHashes, original.contractHashes)
+    || Date.parse(original.targetReferenceAt) <= Date.parse(original.productionReferenceAt)) {
+    throw new Error('Current-grid migration is not the prepared original and a strictly newer target');
+  }
+  // TARGET_SOURCE is compared as itself. Never relabel it to CURRENT_SOURCE
+  // to reconstruct or fabricate the normally prepared expectation.
+}
+
+export function validateCurrentGridOriginalPairGeneration(source) {
+  const policy = CURRENT_GRID_SAMPLING_PREDECESSOR_POLICY;
+  const partMap = source?.coastalParts?.parts;
+  const weatherZones = source?.zones;
+  const scoreZones = source?.coastalParts?.zones;
+  const reference = source?.productionReferenceAt;
+  if (!isPlainObject(source) || !isPlainObject(partMap)
+    || !isPlainObject(weatherZones) || !isPlainObject(scoreZones)
+    || Object.keys(partMap).length !== policy.expectedPartCount
+    || Object.keys(weatherZones).length !== policy.expectedZoneCount
+    || !same(Object.keys(weatherZones).sort(), Object.keys(scoreZones).sort())
+    || typeof reference !== 'string' || !Number.isFinite(Date.parse(reference))
+    || Date.parse(reference) % 3_600_000 !== 0
+    || new Date(reference).toISOString() !== reference) {
+    throw new Error('Current-grid originals require the exact canonical national generation');
+  }
+  assertSame(source.coastalParts.modelBinding, policy.sourceModelBinding,
+    'Current-grid original integrated binding');
+  const roots = [
+    ['ravScoreCandidateGRollback', 'rollbackModelBinding'],
+    ['ravScoreCandidateGWarmup', 'candidateModelBinding'],
+  ].filter(([root]) => Object.hasOwn(source, root));
+  if (roots.length !== 1) throw new Error('Current-grid originals require exactly one Candidate runtime');
+  const [rootName, bindingName] = roots[0];
+  const measuredWarmup = rootName === 'ravScoreCandidateGWarmup';
+  const descriptor = source[rootName];
+  const candidateParts = descriptor?.runtime?.parts;
+  const partIds = Object.keys(partMap).sort();
+  if (!isPlainObject(descriptor) || !isPlainObject(candidateParts)
+    || !same(Object.keys(candidateParts).sort(), partIds)) {
+    throw new Error('Current-grid original Candidate inventory differs from all active parts');
+  }
+  assertSame(descriptor.sourceModelBinding, policy.sourceModelBinding,
+    'Current-grid original Candidate source binding');
+  assertSame(descriptor[bindingName], policy.sourceCandidateModelBinding,
+    'Current-grid original Candidate descriptor binding');
+  assertSame(descriptor.runtime.modelBinding, policy.sourceCandidateModelBinding,
+    'Current-grid original Candidate runtime binding');
+  const activeParts = [];
+  const errors = [];
+  for (const partId of partIds) {
+    try {
+      const part = partMap[partId];
+      const candidatePart = candidateParts[partId];
+      if (!isPlainObject(part) || !isPlainObject(candidatePart)
+        || part.partId !== undefined && part.partId !== partId
+        || candidatePart.partId !== undefined && candidatePart.partId !== partId
+        || typeof part.zoneId !== 'string' || !Object.hasOwn(weatherZones, part.zoneId)
+        || !measuredWarmup && candidatePart.zoneId !== part.zoneId) {
+        throw new Error('original map key or parent-zone identity is incompatible');
+      }
+      const activePart = { ...part, partId };
+      const identity = coastalPointStageIdentity(activePart);
+      const integratedWrapper = part.ravScoreModel;
+      const candidateWrapper = candidatePart.ravScoreModel;
+      assertSame(bindingFromWrapper(integratedWrapper, `Part ${partId} original I wrapper`),
+        policy.sourceModelBinding, `Part ${partId} original I wrapper binding`);
+      if (measuredWarmup) {
+        // The normal measured-warmup producer stores only this two-level
+        // envelope. Its exact global 8d binding and matching part map bind
+        // the state to the authenticated integrated part identity above.
+        exactKeys(candidatePart, ['ravScoreModel'], `Part ${partId} original warmup part`);
+        exactKeys(candidateWrapper, ['currentState'], `Part ${partId} original warmup wrapper`);
+      } else {
+        const candidateIdentity = coastalPointStageIdentity({ ...candidatePart, partId });
+        if (identity.samplingContextKey !== candidateIdentity.samplingContextKey
+          || identity.expectedCandidateGStateKey !== candidateIdentity.expectedCandidateGStateKey) {
+          throw new Error('original I/C sampling identities differ');
+        }
+        assertSame(bindingFromWrapper(candidateWrapper, `Part ${partId} original C wrapper`),
+          policy.sourceCandidateModelBinding, `Part ${partId} original C wrapper binding`);
+      }
+      const integrated = integratedWrapper.currentState;
+      const candidate = candidateWrapper.currentState;
+      if (assertCurrentGridSamplingIntegratedOriginal(integrated, {
+        samplingContextKey: identity.samplingContextKey,
+        label: `Part ${partId} exact original integrated state`,
+      }) !== integrated || assertCandidateGCoastalPointRollbackContinuation(candidate,
+        identity.expectedCandidateGStateKey,
+        { label: `Part ${partId} exact original Candidate state` }) !== candidate) {
+        throw new Error('original validator replaced or normalized its state');
+      }
+      if (integrated.time !== candidate.time
+        || !Number.isFinite(Date.parse(integrated.time))
+        || Date.parse(integrated.time) > Date.parse(reference)) {
+        throw new Error('original pair time is incompatible with its generation');
+      }
+      activeParts.push(activePart);
+    } catch (error) {
+      errors.push({ scope: partId, message: error.message });
+    }
+  }
+  if (errors.length) throw new Error(
+    `Current-grid originals rejected ${errors.length} part pair(s): ${summarizeIndependentErrors(errors)}`,
+  );
+  // Inventory/control validation ONLY. No durability, fresh sampling, usable
+  // memory or production-preservation receipt follows from this return value.
+  return { activeParts, candidateRoot: rootName };
+}
+
+function currentGridControlRecord(source, part, candidateRoot) {
+  const integrated = part.ravScoreModel.currentState;
+  const candidate = source[candidateRoot].runtime.parts[part.partId].ravScoreModel.currentState;
+  const pair = { schemaVersion: 1, parentZoneId: part.zoneId, partId: part.partId,
+    referenceAt: integrated.time, originalIntegratedState: integrated,
+    originalCandidateGState: candidate };
+  return dmiMarineCollectionAllowedForZone('dkss_lf', part.zoneId)
+    ? { ...pair, kind: 'PRIVATE_CURRENT_DECODER_TRANSITION',
+      coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1' }
+    : { ...pair, kind: 'PRIVATE_OWNER_CURRENT_SOURCE_TRANSITION',
+      excludedCollection: 'dkss_lf', provedCurrentHours: 0, unknownCurrentHours: 49 };
+}
+
+export function retainCurrentGridOriginalControlArchive(source, migrated) {
+  const { activeParts, candidateRoot } = validateCurrentGridOriginalPairGeneration(source);
+  const originalParts = readOwnerCurrentTransitionArchive(source.ravScoreCurrentSourceDomainTransitions,
+    activeParts, { targetReferenceAt: source.productionReferenceAt });
+  for (const part of activeParts) {
+    const previous = originalParts[part.partId] ?? null;
+    // The WHOLE existing first record stays unchanged, not just its two raw
+    // states. A first older LF archive is not an archive of the current FFC pair.
+    const record = retainOwnerCurrentTransitionOriginal(previous === null
+      ? currentGridControlRecord(source, part, candidateRoot) : null, previous, part);
+    if (previous !== null) assertSame(record, previous, `Part ${part.partId} first original control record`);
+    originalParts[part.partId] = record;
+  }
+  const archive = { schemaVersion: 1, kind: 'PRIVATE_OWNER_CURRENT_SOURCE_TRANSITION_ARCHIVE',
+    privacyClass: 'PRIVATE_PRODUCTION_RUNTIME', parts: originalParts };
+  assertSame(Object.keys(archive.parts).sort(), activeParts.map(part => part.partId).sort(),
+    'Current-grid original control archive national inventory');
+  migrated.ravScoreCurrentSourceDomainTransitions = archive;
+  return archive;
+}
+
+export function classifyCurrentGridOriginalArchiveBridge({ source, migrated,
+  bindingMetadataPaths, verifiedChangedPaths } = {}) {
+  const { activeParts, candidateRoot } = validateCurrentGridOriginalPairGeneration(source);
+  const archive = migrated?.ravScoreCurrentSourceDomainTransitions;
+  exactKeys(archive, ['schemaVersion', 'kind', 'privacyClass', 'parts'],
+    'Current-grid original control archive');
+  if (archive.schemaVersion !== 1 || archive.kind !== 'PRIVATE_OWNER_CURRENT_SOURCE_TRANSITION_ARCHIVE'
+    || archive.privacyClass !== 'PRIVATE_PRODUCTION_RUNTIME' || !isPlainObject(archive.parts)
+    || !same(Object.keys(archive.parts).sort(), activeParts.map(part => part.partId).sort())) {
+    throw new Error('Current-grid original bridge lacks its exact national control archive');
+  }
+  const previous = readOwnerCurrentTransitionArchive(source.ravScoreCurrentSourceDomainTransitions,
+    activeParts, { targetReferenceAt: source.productionReferenceAt });
+  for (const part of activeParts) {
+    const record = archive.parts[part.partId];
+    // Normal record validator, one part at a time. Do not allocate a second
+    // entire 673-pair expected archive merely to classify the real difference.
+    retainOwnerCurrentTransitionOriginal(null, record, part);
+    assertSame(record, previous[part.partId]
+      ?? currentGridControlRecord(source, part, candidateRoot),
+    `Part ${part.partId} exact original control archive record`);
+  }
+  const allChanges = collectChangedPaths(source, migrated);
+  const allowed = new Set(verifiedChangedPaths);
+  if (allChanges.some(value => !allowed.has(value))
+    || [...allowed].some(value => !allChanges.includes(value))) {
+    throw new Error('Current-grid original archive bridge has unverified changes');
+  }
+  const archivePath = value => value === 'ravScoreCurrentSourceDomainTransitions'
+    || value.startsWith('ravScoreCurrentSourceDomainTransitions.');
+  const before = { ...source };
+  const after = { ...migrated };
+  delete before.ravScoreCurrentSourceDomainTransitions;
+  delete after.ravScoreCurrentSourceDomainTransitions;
+  if (classifyVerifiedRuntimeMigration({ source: before, migrated: after,
+    bindingMetadataPaths, verifiedChangedPaths: [...allowed].filter(value => !archivePath(value)),
+  }) !== 'MODEL_BINDING_METADATA_ONLY') {
+    throw new Error('Current-grid bridge must preserve every value outside exact bindings and original control records');
+  }
+  // NOT same-T metadata CAS; normal NEW-T reconstruction must qualify fresh
+  // grid evidence. Durable complete old B/S is a separate mandatory gate.
+  return 'CURRENT_GRID_ORIGINAL_ARCHIVE_BRIDGE';
 }
 
 export function preserveOwnerCurrentOriginalPairs(source, migrated) {
@@ -848,8 +1076,32 @@ async function digestPrivateRuntimeFile(filePath) {
   return { bytes, sha256: hash.digest('hex') };
 }
 
+function currentGridOriginalManifestFiles(manifest) {
+  if (manifest.schemaVersion !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.schemaVersion
+    || manifest.kind !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.kind
+    || manifest.privacyClass !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.privacyClass
+    || manifest.fileCount !== manifest.files.length
+    || privateRuntimeBundleContentSha256(manifest) !== manifest.bundleContentSha256) {
+    throw new Error('Current-grid original sealed manifest is invalid');
+  }
+  const files = new Map();
+  for (const file of manifest.files) {
+    exactKeys(file, ['id', 'relativePath', 'bytes', 'sha256', 'privacyClass'],
+      'Current-grid original sealed file');
+    if (!Number.isSafeInteger(file.bytes) || file.bytes < 0
+      || !SHA256.test(file.sha256)
+      || file.privacyClass !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.privacyClass
+      || files.has(file.id)) {
+      throw new Error('Current-grid original sealed file inventory is invalid');
+    }
+    files.set(file.id, Object.freeze({ ...file }));
+  }
+  return files;
+}
+
 export async function copyPrivateRuntimeInventory(sourceRoot, outputRoot, inventory, {
   skipRelativePaths = [],
+  expectedFileDigests = null,
 } = {}) {
   assertPrivateRuntimeInventory(inventory);
   assertSame(await assertExactRuntimeInventory(sourceRoot), inventory, 'Private runtime copy inventory');
@@ -865,6 +1117,15 @@ export async function copyPrivateRuntimeInventory(sourceRoot, outputRoot, invent
       digestPrivateRuntimeFile(from), digestPrivateRuntimeFile(to),
     ]);
     assertSame(before, after, `${descriptor.id} unchanged migration copy`);
+    if (expectedFileDigests) {
+      const original = expectedFileDigests.get(descriptor.id);
+      if (!original || original.relativePath !== descriptor.relativePath) {
+        throw new Error('Private runtime copy lacks its exact original descriptor');
+      }
+      const expected = { bytes: original.bytes, sha256: original.sha256 };
+      assertSame(before, expected, `${descriptor.id} sealed original input`);
+      assertSame(after, expected, `${descriptor.id} sealed original copy`);
+    }
   }
 }
 
@@ -911,7 +1172,14 @@ async function validateAndMigrateConditions({
   publicHourPackSourcePath,
   publicHourPackTargetPath,
   ownerCurrentOriginalOnly = false,
+  currentGridOriginalOnly = false,
 }) {
+  if (ownerCurrentOriginalOnly && currentGridOriginalOnly) {
+    throw new Error('Original migration policies cannot be combined');
+  }
+  // All 673 old I/C pairs are validated BEFORE cloning or stamping a working
+  // successor. This is original-control validation, not native-current proof.
+  if (currentGridOriginalOnly) validateCurrentGridOriginalPairGeneration(source);
   if (!isPlainObject(source)
       || source.datasetId !== predecessor.datasetId
       || Object.keys(source.zones ?? {}).length !== predecessor.expectedZoneCount
@@ -927,11 +1195,15 @@ async function validateAndMigrateConditions({
   assertRavScoreModelBinding(currentIntegratedBinding, 'Current integrated model binding');
   assertBindingUpgrade(source.coastalParts.modelBinding, currentIntegratedBinding,
     'Integrated model binding', { requireChange: false });
+  if (currentGridOriginalOnly) assertBindingUpgrade(source.coastalParts.modelBinding,
+    currentIntegratedBinding, 'Current-grid integrated successor');
   oldCandidateBinding.assertRavScoreModelBinding(oldCandidateBinding.ravScoreModelBinding(),
     'Predecessor Candidate G binding');
   assertCandidateBinding(currentCandidateBinding, 'Current Candidate G binding');
   assertBindingUpgrade(oldCandidateBinding.ravScoreModelBinding(), currentCandidateBinding,
     'Candidate G model binding', { requireChange: false });
+  if (currentGridOriginalOnly) assertBindingUpgrade(oldCandidateBinding.ravScoreModelBinding(),
+    currentCandidateBinding, 'Current-grid Candidate G successor');
 
   const predecessorIntegratedBinding = oldIntegratedBinding.ravScoreModelBinding();
   const predecessorCandidateBinding = oldCandidateBinding.ravScoreModelBinding();
@@ -1023,6 +1295,9 @@ async function validateAndMigrateConditions({
       });
       if (ownerCurrentOriginalOnly && reconciliation.repairPaths.length) {
         throw new Error('Owner current metadata bridge must not repair or recompute state');
+      }
+      if (currentGridOriginalOnly && reconciliation.repairPaths.length) {
+        throw new Error('Current-grid original bridge must not repair or recompute state');
       }
       migratedWrapper.currentState = reconciliation.canonicalState;
       for (const repairPath of reconciliation.repairPaths) {
@@ -1182,6 +1457,13 @@ async function validateAndMigrateConditions({
     }
   }
   let publicHourDeliveryRebound = false;
+  if (currentGridOriginalOnly) {
+    retainCurrentGridOriginalControlArchive(source, migrated);
+    for (const changed of collectChangedPaths(source.ravScoreCurrentSourceDomainTransitions,
+      migrated.ravScoreCurrentSourceDomainTransitions, 'ravScoreCurrentSourceDomainTransitions')) {
+      exactAllowedPaths.add(changed);
+    }
+  }
   const sourcePublicHourMarker = privatePublicHourDeliveryMarker(source);
   if (sourcePublicHourMarker
       && sourcePublicHourMarker.modelBinding.modelBundleSha256
@@ -1308,7 +1590,9 @@ async function validateAndMigrateConditions({
     recomputedModeCount,
     recomputedZoneCount,
     publicHourDeliveryRebound,
-    transitionKind: ownerArchiveRequired ? classifyOwnerCurrentArchiveBridge({
+    transitionKind: currentGridOriginalOnly ? classifyCurrentGridOriginalArchiveBridge({
+      source, migrated, bindingMetadataPaths, verifiedChangedPaths: exactAllowedPaths,
+    }) : ownerArchiveRequired ? classifyOwnerCurrentArchiveBridge({
       source, migrated, bindingMetadataPaths, verifiedChangedPaths: exactAllowedPaths,
     }) : classifyVerifiedRuntimeMigration({
       source,
@@ -1329,7 +1613,13 @@ export async function migratePostCutoverPrivateRuntime({
   expectedSourceHead,
   reportPath,
   ownerCurrentOriginalOnly = false,
+  currentGridOriginalOnly = false,
+  currentGridOriginalExpectation = null,
 } = {}) {
+  if (ownerCurrentOriginalOnly && currentGridOriginalOnly
+    || !currentGridOriginalOnly && currentGridOriginalExpectation !== null) {
+    throw new Error('Original migration policy or typed expectation is incompatible');
+  }
   if (!SOURCE_HEAD.test(String(expectedSourceHead ?? ''))) {
     throw new Error('Post-cutover migration requires an exact predecessor source head');
   }
@@ -1338,8 +1628,15 @@ export async function migratePostCutoverPrivateRuntime({
     expectedSourceHead,
   );
   const repository = await fs.realpath(path.resolve(repositoryRoot));
+  if (currentGridOriginalOnly) {
+    assertCurrentGridOriginalMigrationIdentity(predecessorIdentity, currentGridOriginalExpectation);
+    const actualRepository = await fs.realpath(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'));
+    if (repository !== actualRepository) {
+      throw new Error('Current-grid original migration requires the actual reviewed repository');
+    }
+  }
   const source = await assertDirectoryOutside(repository, sourceRoot, 'Predecessor restored runtime');
-  const predecessor = ownerCurrentOriginalOnly ? null
+  const predecessor = ownerCurrentOriginalOnly || currentGridOriginalOnly ? null
     : await assertDirectoryOutside(repository, predecessorRoot, 'Archived predecessor source');
   const output = path.resolve(outputRoot);
   const outputRelative = path.relative(repository, output);
@@ -1357,7 +1654,8 @@ export async function migratePostCutoverPrivateRuntime({
       currentContractHashes: await privateRuntimeContractHashes({ repositoryRoot: repository }) });
     if (!expectation) throw new Error('Owner current migration is not its exact original transition');
   }
-  const modules = ownerCurrentOriginalOnly ? ownerCurrentOriginalValidators(predecessorIdentity.modelBinding)
+  const modules = currentGridOriginalOnly ? currentGridOriginalValidators()
+    : ownerCurrentOriginalOnly ? ownerCurrentOriginalValidators(predecessorIdentity.modelBinding)
     : await importPredecessorModules(predecessor, expectedSourceHead);
   const oldIntegrated = modules.integrated.ravScoreModelBinding();
   const oldCandidate = modules.candidate.ravScoreModelBinding();
@@ -1374,11 +1672,33 @@ export async function migratePostCutoverPrivateRuntime({
   assertSame(manifest.files.map(({ id, relativePath }) => ({ id, relativePath }))
     .sort((a, b) => a.id.localeCompare(b.id)), [...runtimeFiles].sort((a, b) => a.id.localeCompare(b.id)),
   'Protected predecessor preserved file inventory');
+  const originalFiles = currentGridOriginalOnly ? currentGridOriginalManifestFiles(manifest) : null;
   const currentContractHashes = await privateRuntimeContractHashes({ repositoryRoot: repository });
+  if (currentGridOriginalOnly) {
+    const oldContracts = CURRENT_GRID_SAMPLING_PREDECESSOR_POLICY.sourceContractHashes;
+    exactKeys(currentContractHashes, Object.keys(oldContracts), 'Current-grid successor contract hashes');
+    if (currentContractHashes.fullRuntimeContractSha256 !== oldContracts.fullRuntimeContractSha256
+      || currentContractHashes.publicProjectionContractSha256 !== oldContracts.publicProjectionContractSha256
+      || !SHA256.test(currentContractHashes.continuationStateContractSha256)
+      || currentContractHashes.continuationStateContractSha256 === oldContracts.continuationStateContractSha256) {
+      throw new Error('Current-grid original migration lacks its genuine NEW-T contract successor');
+    }
+  }
   const currentIntegrated = ravScoreModelBinding();
   const currentCandidate = candidateModelBinding();
   const conditionsPath = path.join(source, 'data/live/conditions.json');
-  const conditions = await readJson(conditionsPath, 'Predecessor private conditions');
+  const conditions = await readJson(conditionsPath, 'Predecessor private conditions',
+    originalFiles?.get('full-conditions') ?? null);
+  if (originalFiles) {
+    const publicMarker = privatePublicHourDeliveryMarker(conditions);
+    const publicFile = originalFiles.get(PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.id);
+    if (Boolean(publicMarker) !== Boolean(publicFile)) {
+      throw new Error('Current-grid original public-hour pack inventory differs');
+    }
+    if (publicFile) assertSame({ bytes: publicMarker.packBytes, sha256: publicMarker.packSha256 },
+      { bytes: publicFile.bytes, sha256: publicFile.sha256 },
+      'Current-grid original sealed public-hour pack marker');
+  }
   const packedZoneHourly = Object.hasOwn(conditions, 'privateZoneHourly');
   if (conditions.productionReferenceAt !== manifest.productionReferenceAt
       || conditions.generatedAt !== manifest.generatedAt) {
@@ -1400,12 +1720,23 @@ export async function migratePostCutoverPrivateRuntime({
       publicHourPackSourcePath: path.join(source, PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath),
       publicHourPackTargetPath: path.join(temporary, PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath),
       ownerCurrentOriginalOnly,
+      currentGridOriginalOnly,
     });
     await copyPrivateRuntimeInventory(source, temporary, runtimeFiles, {
+      expectedFileDigests: originalFiles,
       skipRelativePaths: result.publicHourDeliveryRebound
         ? [PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath]
         : [],
     });
+    if (originalFiles && result.publicHourDeliveryRebound) {
+      // The normal rebind already checks each actually read compressed/raw
+      // hour against the sealed conditions marker. Its source pack is skipped
+      // by copy, so separately retain the original sealed whole-file check.
+      const original = originalFiles.get(PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.id);
+      assertSame(await digestPrivateRuntimeFile(path.join(source, original.relativePath)),
+        { bytes: original.bytes, sha256: original.sha256 },
+        'Current-grid sealed original public-hour pack after rebind');
+    }
     if (result.transitionKind !== 'CONTRACT_ONLY_REBIND') {
       migratedConditionsDigest = await atomicWriteJson(
         path.join(temporary, 'data/live/conditions.json'),
@@ -1469,13 +1800,21 @@ function argument(argv, name) {
 
 async function main() {
   const argv = process.argv.slice(2);
+  if (!argv.includes('--current-grid-original') && argv.includes('--current-grid-original-expectation')) {
+    throw new Error('Prepared current-grid expectation requires its original-only mode');
+  }
   const report = await migratePostCutoverPrivateRuntime({
     sourceRoot: argument(argv, '--source'),
     outputRoot: argument(argv, '--output'),
     bundleManifestPath: argument(argv, '--bundle-manifest'),
     predecessorDescriptorPath: argument(argv, '--predecessor-descriptor'),
-    predecessorRoot: argv.includes('--owner-current-original') ? null : argument(argv, '--predecessor-root'),
+    predecessorRoot: argv.includes('--owner-current-original') || argv.includes('--current-grid-original')
+      ? null : argument(argv, '--predecessor-root'),
     ownerCurrentOriginalOnly: argv.includes('--owner-current-original'),
+    currentGridOriginalOnly: argv.includes('--current-grid-original'),
+    currentGridOriginalExpectation: argv.includes('--current-grid-original')
+      ? await readJson(argument(argv, '--current-grid-original-expectation'),
+        'Prepared current-grid original expectation') : null,
     repositoryRoot: argument(argv, '--repository-root'),
     expectedSourceHead: argument(argv, '--expected-source-head'),
     reportPath: argument(argv, '--report'),

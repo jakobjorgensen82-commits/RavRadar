@@ -31,7 +31,8 @@ import {
   PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
   assertPrivateRuntimeInventory,
 } from './lib/private-weather-component-inventory.mjs';
-import { assertOwnerCurrentOriginalExpectation, OWNER_CURRENT_DOMAIN_PREDECESSOR, OWNER_CURRENT_DOMAIN_SUCCESSOR }
+import { assertOwnerCurrentOriginalExpectation, assertCurrentGridSamplingOriginalExpectation,
+  OWNER_CURRENT_DOMAIN_PREDECESSOR, OWNER_CURRENT_DOMAIN_SUCCESSOR }
   from './lib/bounded-conditions-predecessor-transition.mjs';
 
 const gzipAsync = promisify(gzip);
@@ -1804,6 +1805,22 @@ export async function restoreProtectedPrivateProductionRuntime({
       privatePayloadLogged: false,
     };
   }
+  const gridOriginalRequired = Object.hasOwn(expected ?? {}, 'currentGridSamplingTransition');
+  if (gridOriginalRequired && Object.hasOwn(expected ?? {}, 'ownerCurrentDomainTransition')) {
+    throw new Error('Protected runtime cannot combine distinct original transitions');
+  }
+  if (gridOriginalRequired) {
+    const original = assertCurrentGridSamplingOriginalExpectation(expected);
+    const selected = row.payload.current;
+    if (['sourceHead', 'datasetId', 'productionReferenceAt', 'generatedAt',
+      'bundleContentSha256'].some(key => selected[key] !== original[key])
+      || !same(selected.modelBinding, original.modelBinding)
+      || !same(selected.contractHashes, original.contractHashes)) {
+      const error = new Error('Current-grid original is no longer the exact protected current generation');
+      error.code = 'PROTECTED_PRIVATE_RUNTIME_INELIGIBLE';
+      throw error;
+    }
+  }
   if (Object.hasOwn(expected ?? {}, 'ownerCurrentDomainTransition')) {
     const original = assertOwnerCurrentOriginalExpectation(expected);
     const selected = row.payload.current;
@@ -1831,7 +1848,10 @@ export async function restoreProtectedPrivateProductionRuntime({
   if (await fs.lstat(finalBundle).catch(() => null)) {
     throw new Error('Private runtime restore destination already exists');
   }
-  const descriptors = [row.payload.current, row.payload.previous]
+  // The grid transition authenticates this exact current original. A failed
+  // download/verification must not silently substitute a previous generation.
+  const descriptors = (gridOriginalRequired
+    ? [row.payload.current] : [row.payload.current, row.payload.previous])
     .filter(Boolean)
     .filter((descriptor, index, all) => all.findIndex(
       candidate => candidate.objectSha256 === descriptor.objectSha256,

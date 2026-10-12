@@ -3,7 +3,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { canonicalPrivateRuntimeJson } from './private-production-runtime-bundle.mjs';
-import { assertOwnerCurrentOriginalExpectation }
+import { assertOwnerCurrentOriginalExpectation, assertCurrentGridSamplingOriginalExpectation,
+  CURRENT_GRID_SAMPLING_PREDECESSOR_POLICY }
   from './lib/bounded-conditions-predecessor-transition.mjs';
 import {
   COMPLETE_WEATHER_PREDECESSOR,
@@ -30,6 +31,24 @@ export function secondRestoreExpectation({ expected, source, manifest,
     || !same(source.modelBinding, manifest.modelBinding)
     || !same(source.contractHashes, manifest.contractHashes)) {
     throw new Error('Second restore source contradicts the authenticated bundle');
+  }
+
+  if (Object.hasOwn(expected, 'currentGridSamplingTransition')) {
+    const original = assertCurrentGridSamplingOriginalExpectation(expected);
+    const policy = CURRENT_GRID_SAMPLING_PREDECESSOR_POLICY;
+    if (pairedLatestAnchor || historicalWeatherPair
+      || source.schemaVersion !== policy.sourceDescriptionSchemaVersion
+      || source.kind !== policy.restoredSourceDescriptionKind
+      || source.expectedZoneCount !== policy.expectedZoneCount
+      || source.expectedPartCount !== policy.expectedPartCount
+      || source.privatePayloadIncluded !== false
+      || ['sourceHead', 'bundleContentSha256', 'datasetId',
+        'productionReferenceAt', 'generatedAt'].some(key => source[key] !== original[key])
+      || !same(source.modelBinding, original.modelBinding)
+      || !same(source.contractHashes, original.contractHashes)) {
+      throw new Error('Second restore is not the exact current-grid sampling original');
+    }
+    return expected;
   }
   if (Object.hasOwn(expected, 'ownerCurrentDomainTransition')) {
     const original = assertOwnerCurrentOriginalExpectation(expected);

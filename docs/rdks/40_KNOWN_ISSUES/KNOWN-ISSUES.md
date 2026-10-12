@@ -1,4 +1,10 @@
-# Lokal 4.0.574 DMI-opfølgning – samme åbne GRIB-fil gennem hele læsningen
+# Åbne issues – 4.0.576 lokal strømkandidat
+
+Den numeriske strømkilde er ikke offentligrettet endnu. Lokal CURRENT-only gitter-/cache-/historik-/scorekæde og fuld originalovergang er samlet; målrettede normale tests består. Mangler: præcis GitHub-/Linux-native-kontrol, faktisk autentificeret B/S-bevarelse, konkrete nye SQL/destinations-/tekniske centralmetadata-grænser, backendkontroller og ny offentlig generation med verificeret effekt. Visningsmasken alene og uændret score lukker ikke issuet. Se DEC-0294.
+
+Den foregående lease-opfølgnings røde sourceforventning er rettet; præcis kontrol består, og PR576 er merget. Almindelig cron kører, ikke koordinatrettelsen. Den separate store revision, Fur/gyldige timer, heljobskapacitet, holdbar gemning/genbrug, runner-tab, fireminuttersgrænse, brugerdata-/assistentinstallation og selvstændig drift er fortsat åbne. Browserforbindelsens sikkerhedspolitik kan aktuelt ikke indlæses; det må ikke omgås. Ingen lokalt resultat kaldes offentlig færdiggørelse.
+
+# Historik: lokal 4.0.574 DMI-opfølgning – samme åbne GRIB-fil gennem hele læsningen
 
 Opfølgning 12. oktober: Den første præcise Linux-kildekontrol fejlede på en statisk forventning, som også krævede en selvstændig watchdog omkring den nye interne læseadapter. De syv normale download- og transaktionskald har fortsat deres eksisterende watchdog. Testrettelsen kræver adapterens præcise None-vagt, returnering og videresendte argumenter samt transaktionens samme ejede læser; ingen generel undtagelse gives. Den ene målrettede supervisorsuite består med 29 tests, herunder syv negative ændringer af kodekontrollen. De 27 øvrige gamle testmetoder er uændrede. Præcis ny Linux-kildekontrol, dokumenteret resultat for de fire leaseprøver og offentlig effekt afventes; den røde kontrol må ikke omgås.
 

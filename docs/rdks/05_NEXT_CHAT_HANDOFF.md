@@ -1,4 +1,10 @@
-# NYESTE – 2026-10-04 – fuldført naboread; national kontrol afventer
+# NYESTE – 2026-10-12 – lokal 4.0.576 strøm-/originalkandidat
+
+Læs DEC-0294, aktuelt CURRENT_TRUTH/IMPLEMENTATION_STATUS og privat checkpoint før næste handling. CURRENT-only gitter/cache/historik/score, normal typed originalrestore/migrant, append-only canonical/readback og syv mirrors er lokale. Præcis kilde-/native-CI og faktisk no-loss/installation/offentlig effekt afventer. Ingen gammel original eller frossen 565/575 ommærkes. Scoreformel, adminpunkter, geometri og sourceprioritet er uændrede; de syv zoner får dkss_lf KUN vandstand.
+
+Foregående lease-PR576 er præcist kildeverificeret/merget. Den almindelige cron kører; ingen ekstra vejrhentning, cronændring eller produktion under writer. Den separate revision er isoleret/inaktiv, ikke færdig. Alle fem mål er åbne. Genbrug evidens og konkret myndighed, ikke gamle engangstilladelser. Næste trin: færdig kildepakke/PR/exact-head-CI, dernæst kun sikre konkret autoriserede overgange og verificeret effekt. Den resterende private restplan er arbejdsplan; der loves ikke 21. oktober.
+
+# Historik: 2026-10-04 – fuldført naboread; national kontrol afventer
 
 PR511 merged til bde77345 og correctedfixedread37172221379 SUCCESS04:50 DK.
 Lyngbys høje48h-memory er faktisk reproduceret, ikke tilskrevet landpunktet:

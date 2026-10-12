@@ -1,4 +1,10 @@
-# Lokal 4.0.574 DMI-opfølgning – samme åbne GRIB-fil gennem hele læsningen
+# Aktivt krav – 4.0.576 strømgrundlag og tabsfri levering
+
+DEC-0294 gennemfører den menneskeligt godkendte CURRENT-only overgang, ikke en ny fysisk model. Originalt gitter/native indeks skal følge korrekt strømfortolkning gennem cache, historik, strømhukommelse og RavScore. Ingen blanketændring af scalarfelter, landmaske-kassering, gammel originalretag, reset eller renormalisering. Syvzonegrænsen, central SOURCE/T+3, kildeprioritet og adminpunkter består.
+
+Præcis kilde-/native-kontrol, faktisk originalbevarelse og strengt nyere generation med alle efterdatagates er obligatoriske. Ny SQL/destination/central teknisk binding kræver konkret ekstern myndighed; lokal kilde eller kontrolleret readback er ikke installation. Ingen produktionsændring under aktiv writer eller ekstra manuel vejrhentning. Revision, brugerdata, Spørg RavRadar og selvstændig drift uden Codex skal fortsat afsluttes med faktisk effekt.
+
+# Historik: lokal 4.0.574 DMI-opfølgning – samme åbne GRIB-fil gennem hele læsningen
 
 Opfølgning 12. oktober: Den første præcise Linux-kildekontrol fejlede på en statisk forventning, som også krævede en selvstændig watchdog omkring den nye interne læseadapter. De syv normale download- og transaktionskald har fortsat deres eksisterende watchdog. Testrettelsen kræver adapterens præcise None-vagt, returnering og videresendte argumenter samt transaktionens samme ejede læser; ingen generel undtagelse gives. Den ene målrettede supervisorsuite består med 29 tests, herunder syv negative ændringer af kodekontrollen. De 27 øvrige gamle testmetoder er uændrede. Præcis ny Linux-kildekontrol, dokumenteret resultat for de fire leaseprøver og offentlig effekt afventes; den røde kontrol må ikke omgås.
 

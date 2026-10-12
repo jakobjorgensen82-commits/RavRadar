@@ -8,6 +8,7 @@ mode.  The script never changes the source caches and never prints vector values
 """
 from __future__ import annotations
 
+import sys
 import argparse
 import json
 import math
@@ -447,11 +448,47 @@ def copernicus_entries(
     return selected, range_seal, advisory
 
 
+def regional_original_carrier(sample, target, source_asset_sha256, context):
+    """Preserve a NEW positively bound original; never qualify or upgrade legacy.
+
+The ordinary main validates its full operational closure before either entry
+projection. The read-only mode independently validates the same original.
+"""
+    from copy import deepcopy
+    from lib import dmi_native_provenance as native
+    from lib import regional_source_proofs as proofs
+    source = (sample.get("layers", {}).get("bottom") or {}).get("nativeSource")
+    if source is None:
+        return {}
+    if context is None:
+        raise ValueError("REGIONAL_NEW_NATIVE_SOURCE_NOT_POSITIVELY_BOUND")
+    state, asset = proofs.regional_sample_authorization(context,
+        part_id=target["partId"], sample=sample)
+    bottom = sample["layers"]["bottom"]
+    identity = {"parentZoneId": target["parentZoneId"], "entityType": "private-research",
+        "samplingContext": "private-research-water-point", "samplingPoint": target["waterPoint"]}
+    if (state != "valid" or asset != native.canonical_current_source_asset(source)
+        or native.current_source_asset_sha256(source) != source_asset_sha256
+        or not native.native_source_common_for_hour(source, "current",
+            "REGIONAL_PROXY::" + target["partId"], identity, sample["validTime"])
+        or native.inspect_native_grid_sampling(source)["status"] != "coherent"
+        or source.get("gridPoint") != sample.get("gridPoint")
+        or source.get("distanceKm") != sample.get("distanceKm")
+        or source.get("modelRun") != sample.get("modelRun")
+        or source.get("verticalLayer") != bottom.get("verticalLayer")
+        or source.get("verticalLayerRankM") != bottom.get("verticalLayerRankM")
+        or source.get("vectorSelection") != native.CURRENT_VECTOR_SELECTION
+        or source.get("vectorSemanticsVersion") != native.CURRENT_VECTOR_SEMANTICS_VERSION):
+        raise ValueError("REGIONAL_NEW_NATIVE_SOURCE_NOT_POSITIVELY_BOUND")
+    return {"regionalNativeSource": deepcopy(source), proofs.SAMPLE_REF: sample[proofs.SAMPLE_REF]}
+
+
 def regional_entries(
     document: dict[str, Any],
     targets: dict[str, dict[str, Any]],
     assignments: list[dict[str, Any]],
     closure_proof: dict[str, Any],
+    *, regional_proof_context=None,
 ) -> list[dict[str, Any]]:
     if document.get("scoreImpact") is not False or document.get("publicRuntime") is not False:
         raise RuntimeError("REGIONAL_CLOSURE_CACHE_INVALID")
@@ -535,6 +572,7 @@ def regional_entries(
             })
         else:
             entry.update({
+                **regional_original_carrier(sample, target, assignment["sourceAssetSha256"], regional_proof_context),
                 "samplingPoint": canonical_point(target["waterPoint"]),
                 "gridPoint": grid,
                 "distanceKm": distance,
@@ -556,6 +594,7 @@ def regional_reference_entries(
     targets: dict[str, dict[str, Any]],
     assignments: list[dict[str, Any]],
     closure_proof: dict[str, Any],
+    *, regional_proof_context=None,
 ) -> list[dict[str, Any]]:
     """Build exact private source samples for holds crossing the H0 boundary.
 
@@ -667,6 +706,7 @@ def regional_reference_entries(
             "sourceProofSha256": source_proof_sha256,
             "vectorCommitmentSha256": vector_commitment_sha256,
             "authorizedHoldAssignmentSha256s": authorized_holds,
+            **regional_original_carrier(sample, target, source_asset_sha256, regional_proof_context),
             "samplingPoint": canonical_point(target["waterPoint"]),
             "gridPoint": grid,
             "distanceKm": distance,
@@ -887,11 +927,21 @@ def main() -> int:
         copernicus, copernicus_range_seal, advisory = copernicus_entries(
             copernicus_cache, targets, cop_assignments, closure_proof,
         )
+        from lib.regional_current_operational import _policy_and_target_binding
+        from lib.regional_source_proofs import create_regional_proof_context
+        regional_original_context = None
+        if regional_assignments:
+            _regional_parts, regional_policy_sha, regional_target_sha = _policy_and_target_binding(policy, targets_list)
+            regional_original_context = create_regional_proof_context(regional_cache,
+                target_ids=sorted(targets), target_registry_sha256=regional_target_sha,
+                policy_sha256=regional_policy_sha)
         regional = regional_entries(
             regional_cache, targets, regional_assignments, closure_proof,
+            regional_proof_context=regional_original_context,
         )
         regional_references = regional_reference_entries(
             regional_cache, targets, regional_assignments, closure_proof,
+            regional_proof_context=regional_original_context,
         )
         open_meteo = open_meteo_entries(
             open_meteo_cache, targets_list, targets, open_meteo_assignments, closure_proof,
@@ -1010,6 +1060,156 @@ def main() -> int:
     )
     return 0
 
+
+"""Verify one captured private regional scope using the original validators."""
+def verify_regional_read_scope():
+    import hashlib
+    import struct
+    import sys
+    from lib import regional_current_operational as regional
+    from lib import regional_source_proofs as proofs
+    from lib import dmi_native_provenance as native
+    from lib.current_operational_closure import _regional_assignments
+
+    # Existing private inventory envelopes. These are byte envelopes, not a
+    # claim that the parent/child Python object graphs fit national RAM.
+    limits = (768 << 20, 256 << 20, 768 << 20, 768 << 20)
+    def unique(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("READ_SCOPE_DUPLICATE_KEY")
+            result[key] = value
+        return result
+    def exact_read(length):
+        chunks, remaining = [], length
+        while remaining:
+            chunk = sys.stdin.buffer.read(min(remaining, 1 << 20))
+            if not chunk:
+                raise ValueError("READ_SCOPE_TRUNCATED")
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        return b"".join(chunks)
+    documents, digests = [], []
+    for maximum in limits:
+        length = struct.unpack(">Q", exact_read(8))[0]
+        if length < 2 or length > maximum:
+            raise ValueError("READ_SCOPE_FRAME_SIZE")
+        raw = exact_read(length)
+        digests.append(hashlib.sha256(raw).hexdigest())
+        documents.append(json.loads(raw.decode("utf-8"), object_pairs_hook=unique,
+            parse_constant=lambda _: (_ for _ in ()).throw(ValueError("READ_SCOPE_NUMBER"))))
+        del raw
+    if sys.stdin.buffer.read(1):
+        raise ValueError("READ_SCOPE_TRAILING_BYTES")
+    live, shadow, policy, registry = documents
+    if (not isinstance(live, dict) or live.get("schemaVersion") != 1
+        or live.get("controlledLivePilot") is not True or not isinstance(live.get("entries"), list)
+        or not isinstance(registry, dict) or not isinstance(registry.get("zones"), dict)):
+        raise ValueError("READ_SCOPE_FRAME_ORDER")
+    # Same central target projection as targets_from_registry, but over exact
+    # captured bytes rather than a second path read after the scope was bound.
+    targets = []
+    for parent, rows in registry["zones"].items():
+        for part in rows if isinstance(rows, list) else [rows]:
+            point = part["waterPoint"]
+            targets.append({"partId": str(part.get("partId") or ""),
+                "parentZoneId": str(part.get("sourceZoneId") or parent),
+                "waterPoint": [float(point[0]), float(point[1])]})
+    if len(targets) != int(registry.get("partCount") or len(targets)):
+        raise ValueError("READ_SCOPE_TARGET_COUNT")
+    target_fingerprint(targets)  # duplicate ID, nonfinite point, empty identity
+    entries = live.get("entries", [])
+    references = live.get("regionalReferenceEntries", [])
+    result = {"schemaVersion": 1, "inputSha256": digests, "associations": [],
+        "denied": [], "validationCounts": {"scopes": 1, "sources": 0}}
+    # An invalid optional regional scope must not erase unrelated live entries.
+    selected = [("entries", i, row) for i, row in enumerate(entries)
+        if row.get("source") == "dmi-dkss-lf-regional-proxy"]
+    selected += [("regionalReferenceEntries", i, row) for i, row in enumerate(references)]
+    try:
+        bound, policy_sha, target_sha = regional._policy_and_target_binding(policy, targets)
+        regional._validate_shadow_header(shadow)
+        context = proofs.create_regional_proof_context(shadow,
+            target_ids=sorted(row["partId"] for row in targets),
+            target_registry_sha256=target_sha, policy_sha256=policy_sha)
+        gaps = [{"partId": row["partId"], "validTime": row["validTime"]}
+            for _, _, row in selected if row.get("partId") in bound]
+        gaps = list({(g["partId"], g["validTime"]): g for g in gaps}.values())
+        samples, _ = regional._samples_by_part(shadow, gaps, bound, policy_sha,
+            target_sha, {}, {}, frozenset(), context)
+        pairs = regional._classify_pairs(gaps, samples)
+        assignments = _regional_assignments({"pairRefs": pairs})
+        by_pair = {(a["partId"], a["validTime"]): a for a in assignments}
+        target_map = {row["partId"]: row for row in targets}
+        closure = live["operationalClosure"]
+        expected_native = regional_entries(shadow, target_map,
+            [a for a in assignments if a["validTime"] >= closure["productionReferenceAt"]], closure,
+            regional_proof_context=context)
+        expected_refs = regional_reference_entries(shadow, target_map, assignments, closure,
+            regional_proof_context=context)
+        expected = {"entries": {(e["partId"], e["validTime"]): e for e in expected_native},
+            "regionalReferenceEntries": {(e["partId"], e["validTime"]): e for e in expected_refs}}
+        for field, index, entry in selected:
+            try:
+                part_id, time = entry["partId"], entry["validTime"]
+                projected = expected[field][(part_id, time)]
+                if {k: v for k, v in entry.items() if k not in
+                    ("regionalNativeSource", proofs.SAMPLE_REF)} != {k: v for k, v in projected.items()
+                        if k not in ("regionalNativeSource", proofs.SAMPLE_REF)}:
+                    raise ValueError("READ_SCOPE_ENTRY_PROJECTION")
+                anchor = shadow["anchors"]["REGIONAL_PROXY::" + part_id]
+                sample = regional_closure_sample(anchor,
+                    source_valid_time=entry["sourceValidTime"],
+                    source_model_run=entry["modelRun"],
+                    source_asset_sha256=entry["sourceAssetSha256"])
+                status, asset = proofs.regional_sample_authorization(context,
+                    part_id=part_id, sample=sample)
+                if status != "valid":
+                    raise ValueError("READ_SCOPE_ORIGINAL")
+                bottom, target = sample["layers"]["bottom"], target_map[part_id]
+                source = bottom.get("nativeSource")
+                identity = {"parentZoneId": target["parentZoneId"],
+                    "entityType": "private-research", "samplingContext": "private-research-water-point",
+                    "samplingPoint": target["waterPoint"]}
+                # Share the original common native predicate. Direct PART
+                # <=5km remains unchanged; the regional physical range is
+                # checked by the full regional sample validator, not waived.
+                if (not native.native_source_common_for_hour(source, "current",
+                        "REGIONAL_PROXY::" + part_id, identity, sample["validTime"])
+                    or native.inspect_native_grid_sampling(source)["status"] != "coherent"
+                    or native.canonical_current_source_asset(source) != asset
+                    or source["gridPoint"] != sample["gridPoint"]
+                    or source["distanceKm"] != sample["distanceKm"]
+                    or source["verticalLayer"] != bottom["verticalLayer"]
+                    or source["verticalLayerRankM"] != bottom["verticalLayerRankM"]
+                    or source.get("vectorSelection") != native.CURRENT_VECTOR_SELECTION
+                    or source.get("vectorSemanticsVersion") != native.CURRENT_VECTOR_SEMANTICS_VERSION):
+                    raise ValueError("READ_SCOPE_NATIVE_SOURCE")
+                if entry["classification"] != "REGIONAL_DMI_DERIVED_HOLD":
+                    if (entry.get("regionalNativeSource") != source
+                        or entry.get(proofs.SAMPLE_REF) != sample[proofs.SAMPLE_REF]):
+                        raise ValueError("READ_SCOPE_ORIGINAL_ASSOCIATION")
+                elif any(k in entry for k in ("regionalNativeSource", proofs.SAMPLE_REF)):
+                    raise ValueError("READ_SCOPE_HOLD_VECTOR")
+                result["associations"].append([field, index, sample[proofs.SAMPLE_REF]])
+            except (KeyError, ValueError, TypeError, RuntimeError):
+                result["denied"].append([field, index, "REGIONAL_ORIGINAL_UNQUALIFIED"])
+        result["validationCounts"]["sources"] = len(context["validatedSources"])
+    except (KeyError, ValueError, TypeError, RuntimeError):
+        result["associations"] = []
+        result["denied"] = [[field, index, "REGIONAL_SCOPE_UNAVAILABLE"] for field, index, _ in selected]
+    # Exact finite output shape; identities are private, never public logs.
+    print(json.dumps(result, separators=(",", ":"), allow_nan=False))
+    return 0
+
+if __name__ == "__main__" and "--verify-regional-read-scope" in sys.argv:
+    if sys.argv[1:] != ["--verify-regional-read-scope"]:
+        raise SystemExit(2)
+    try:
+        raise SystemExit(verify_regional_read_scope())
+    except (ValueError, TypeError, KeyError, RuntimeError):
+        raise SystemExit(3)
 
 if __name__ == "__main__":
     try:

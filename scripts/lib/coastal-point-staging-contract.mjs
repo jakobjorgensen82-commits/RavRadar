@@ -8,6 +8,7 @@ import {
 } from '../../js/core/ravscore-candidate-g-state-pipeline.js';
 import { buildIntegratedRavScoreStateSeries, assertOwnerCurrentArchivedPredecessorState,
   assertWaterLevelOnlyPredecessorState,
+  assertCurrentGridSamplingPredecessorState,
   RAVSCORE_OWNER_CURRENT_ARCHIVE_PREDECESSOR_BUNDLE_SHA256 }
   from '../../js/core/ravscore-integrated-state-pipeline.js';
 import {
@@ -294,6 +295,14 @@ export function assertWaterLevelOnlyIntegratedOriginal(state, {
 } = {}) {
   assertIntegratedContinuationShape(state,samplingContextKey,label);
   return assertWaterLevelOnlyPredecessorState(state,samplingContextKey);
+}
+
+// Original-only current-grid bridge: retain the old state and its exact binding.
+export function assertCurrentGridSamplingIntegratedOriginal(state, {
+  samplingContextKey, label = 'Current-grid-sampling technical original',
+} = {}) {
+  assertIntegratedContinuationShape(state, samplingContextKey, label);
+  return assertCurrentGridSamplingPredecessorState(state, samplingContextKey);
 }
 
 export function assertIntegratedCoastalPointContinuation(

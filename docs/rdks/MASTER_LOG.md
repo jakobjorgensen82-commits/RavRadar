@@ -1,4 +1,10 @@
-# Lokal 4.0.574 DMI-opfølgning – samme åbne GRIB-fil gennem hele læsningen
+# 2026-10-12 – lokal 4.0.576 CURRENT-only originalovergang
+
+Samtaledelta: Ejerens almindelige vejrhentning kører efter den kildeverificerede/mergede lease-opfølgning; andet sikkert arbejde fortsættes via afgrænset delegation. Den samlede strømkandidat retter CURRENT_U/V-gitter/native indeks og hele kvalifikations-/historik-/scorekæden uden scalar-/scoreformel-/adminændring. Typed restore, fuld originalmigrant, forseglede input, append-only canonical og eksakt readback er lokale. Normale mål består, men præcis ny source/native-CI, faktisk autentificeret no-loss, konkret ny installation/destination/teknisk centralmetadataautoritet og offentlig effekt mangler. Alle 54 tidligere migrationsfiler og frosne 565/575 bevares. Begge håndbøger og aktive krav/status/issues er opdateret; DEC-0294/CHANGELOG-4.0.576 beskriver grænserne.
+
+Den separate revisions lokale SOURCE→T→archive→publisher/owner-loss-resultater er ikke integration eller produktion. Brugerdata, Spørg RavRadar og drift uden Codex er åbne. Ingen ekstra manuel vejrhentning/ændret cron, statuscommit eller produktionsændring under writer. Ejerens krav om hurtig konkret afslutning erstatter gamle 21.-oktoberformuleringer; ingen færdigdato opfindes. Ældre poster nedenfor er historik.
+
+# Historik: lokal 4.0.574 DMI-opfølgning – samme åbne GRIB-fil gennem hele læsningen
 
 Opfølgning 12. oktober: Den første præcise Linux-kildekontrol fejlede på en statisk forventning, som også krævede en selvstændig watchdog omkring den nye interne læseadapter. De syv normale download- og transaktionskald har fortsat deres eksisterende watchdog. Testrettelsen kræver adapterens præcise None-vagt, returnering og videresendte argumenter samt transaktionens samme ejede læser; ingen generel undtagelse gives. Den ene målrettede supervisorsuite består med 29 tests, herunder syv negative ændringer af kodekontrollen. De 27 øvrige gamle testmetoder er uændrede. Præcis ny Linux-kildekontrol, dokumenteret resultat for de fire leaseprøver og offentlig effekt afventes; den røde kontrol må ikke omgås.
 
