@@ -1018,8 +1018,8 @@ jobs:
         shell: bash
         run: test "${{ steps.fixed_read_source.outputs.required }}" = false
 
-      # Conservative read-only snapshot: no other unfinished main run is allowed.
-      # This is not a writer lease and must not cancel, rerun or dispatch anything.
+      # No active writer; only the three exact inert legacy queues with fresh jobs=0.
+      # This bounded snapshot is not an atomic writer lease or cancellation authority.
       - name: Require genuinely fresh idle main before the fixed read
         timeout-minutes: 1
         shell: bash
@@ -1028,39 +1028,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          node --input-type=module <<'NODE'
-          try {
-          const repo=process.env.GITHUB_REPOSITORY, own=Number(process.env.GITHUB_RUN_ID);
-          if(repo!=='jakobjorgensen82-commits/RavRadar'
-            || !Number.isSafeInteger(own) || own<1 || !process.env.GITHUB_TOKEN) throw new Error('FIXED_READ_GITHUB_SCOPE');
-          for(const status of ['in_progress','queued','waiting','pending','requested']) {
-            const response=await fetch('https://api.github.com/repos/'+repo+
-              '/actions/runs?branch=main&per_page=1&status='+status,{
-              headers:{authorization:'Bearer '+process.env.GITHUB_TOKEN,
-                accept:'application/vnd.github+json','x-github-api-version':'2022-11-28'},
-              redirect:'error',signal:AbortSignal.timeout(5000)});
-            if(response.status!==200 || response.redirected || !response.body)
-              throw new Error('FIXED_READ_IDLE_UNAVAILABLE');
-            const chunks=[];let size=0;
-            for await(const chunk of response.body) {
-              size+=chunk.byteLength;
-              if(size>65536) throw new Error('FIXED_READ_IDLE_BOUND');
-              chunks.push(chunk);
-            }
-            const value=JSON.parse(Buffer.concat(chunks,size).toString('utf8'));
-            if(!Number.isSafeInteger(value.total_count) || !Array.isArray(value.workflow_runs)
-              || (status==='in_progress'
-                ? value.total_count!==1 || value.workflow_runs.length!==1 || value.workflow_runs[0].id!==own
-                : value.total_count!==0 || value.workflow_runs.length!==0))
-              throw new Error('FIXED_READ_MAIN_NOT_IDLE');
-          }
-          console.log('Fixed read main-idle snapshot confirmed; no writer lease claimed.');
-          } catch(error) {
-            console.error(/^FIXED_READ_[A-Z_]+$/.test(String(error.message))
-              ? error.message : 'FIXED_READ_IDLE_UNAVAILABLE');
-            process.exitCode=1;
-          }
-          NODE
+          node scripts/check-fixed-supabase-account-read-idle.mjs
           git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"

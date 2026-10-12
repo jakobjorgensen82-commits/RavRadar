@@ -1591,8 +1591,110 @@ assert.ok(typedReadJob.indexOf('test "$GITHUB_REPOSITORY" = jakobjorgensen82-com
   typedReadJob.indexOf('uses: actions/checkout@v7'),'fixed repository must be checked before checkout/GitHub reads');
 assert.ok(typedReadJob.includes('node scripts/weather-source-gate.mjs check'));
 assert.ok(typedReadJob.includes('steps.fixed_read_source.outputs.required'));
-assert.ok(typedReadJob.includes('/actions/runs?branch=main&per_page=1&status='));
+assert.ok(typedReadJob.includes('node scripts/check-fixed-supabase-account-read-idle.mjs'));
 assert.ok(typedReadJob.indexOf('Require genuinely fresh idle main') <
   typedReadJob.indexOf('node scripts/read-typed-trip-catalog.mjs'));
 assert.doesNotMatch(typedReadJob,/supabase db push|apply-candidate-g|functions deploy|wrangler|upload-artifact|cache\/save|SUPABASE_DB_PASSWORD|SUPABASE_SERVICE_ROLE_KEY/);
 assert.equal((typedReadJob.match(/SUPABASE_ACCESS_TOKEN:/g)||[]).length,2);
+
+// Actual fixed reader idle guard with controlled metadata transport only.
+// No account read, GitHub request, watchdog change or new runtime executor.
+const fixedIdleModule=await import('./check-fixed-supabase-account-read-idle.mjs');
+const fixedIdleOwn=123456789;
+const fixedIdleLegacy=[
+  [34868901509,'2026-09-14T16:29:10Z','c4930944a6273c00f201994504e3971ad3f2b165'],
+  [34613079069,'2026-09-11T14:55:55Z','5587001b45ffea056addaf6cd20084719540336a'],
+  [34228112413,'2026-09-08T12:47:45Z','b814b525962514a368536f456477881390d6b333'],
+].map(([id,at,sha])=>({id,head_branch:'main',path:'.github/workflows/update-and-deploy.yml',
+  status:'queued',conclusion:null,run_attempt:1,event:'workflow_dispatch',
+  head_sha:sha,created_at:at,updated_at:at}));
+function fixedIdleFixture({queued=fixedIdleLegacy,total=queued.length,jobs={total_count:0,jobs:[]},
+  active=[{id:fixedIdleOwn,status:'in_progress',head_branch:'main'}],otherStatus=null}={}) {
+  const calls=[];
+  const options={repository:'jakobjorgensen82-commits/RavRadar',runId:fixedIdleOwn,
+    githubToken:'synthetic-idle-token-NOT-LOGGED',fetchImpl:async(input,init)=>{
+      const url=new globalThis.URL(input);calls.push(url.pathname+url.search);
+      assert.equal(url.origin,'https://api.github.com');
+      assert.equal(init.method,'GET');assert.equal(init.body,undefined);
+      assert.equal(init.redirect,'error');assert.equal(init.cache,'no-store');assert.equal(init.credentials,'omit');
+      assert.equal(init.headers.authorization,'Bearer synthetic-idle-token-NOT-LOGGED');
+      let document;
+      if(url.pathname==='/repos/jakobjorgensen82-commits/RavRadar/actions/runs') {
+        assert.equal(url.searchParams.get('branch'),'main');
+        const status=url.searchParams.get('status');
+        assert.ok(['in_progress','queued','waiting','pending','requested'].includes(status));
+        assert.equal(url.searchParams.get('per_page'),status==='queued'?'100':'1');
+        document=status==='queued'?{total_count:total,workflow_runs:queued}
+          :status==='in_progress'?{total_count:active.length,workflow_runs:active}
+          :otherStatus===status?{total_count:1,workflow_runs:[{id:999}]}
+          :{total_count:0,workflow_runs:[]};
+      } else {
+        assert.ok(fixedIdleLegacy.some(run=>url.pathname===
+          '/repos/jakobjorgensen82-commits/RavRadar/actions/runs/'+run.id+'/attempts/1/jobs'));
+        assert.equal(url.search,'?per_page=1');document=jobs;
+      }
+      return new Response(JSON.stringify(document),{status:200});
+    }};
+  return {calls,options,invoke:()=>fixedIdleModule.checkFixedSupabaseAccountReadIdle(options)};
+}
+const fixedIdlePositive=fixedIdleFixture();
+assert.deepEqual(await fixedIdlePositive.invoke(),{schemaVersion:1,status:'FIXED_READ_MAIN_IDLE',
+  requests:8,inertQueuedRuns:3,emptyJobInventories:3,atomicWriterLease:false});
+assert.equal(fixedIdlePositive.calls.length,8);
+assert.equal(fixedIdlePositive.calls.filter(route=>route.includes('/attempts/1/jobs')).length,3);
+const fixedIdleEmpty=fixedIdleFixture({queued:[]});
+assert.equal((await fixedIdleEmpty.invoke()).requests,5);
+for(let index=0;index<3;index++)for(const changed of [
+  {id:fixedIdleLegacy[index].id+1},{head_sha:'a'.repeat(40)},{head_branch:'feature'},
+  {path:'.github/workflows/run-current-weather-once.yml'},{run_attempt:2},{event:'schedule'},
+  {status:'in_progress'},{conclusion:'failure'},
+  {created_at:'2026-09-01T00:00:00Z'},{updated_at:'2026-10-12T00:00:00Z'},
+]) {
+  const queued=structuredClone(fixedIdleLegacy);Object.assign(queued[index],changed);
+  const fixture=fixedIdleFixture({queued});
+  await assert.rejects(fixture.invoke(),/FIXED_READ_MAIN_NOT_IDLE/);
+  assert.equal(fixture.calls.some(route=>route.includes('/jobs')),false,
+    'validate every exact legacy identity before any jobs read');
+}
+for(const settings of [
+  {queued:fixedIdleLegacy.slice(0,2),total:3},
+  {queued:[...fixedIdleLegacy,{id:777}],total:4},
+  {queued:[fixedIdleLegacy[0],fixedIdleLegacy[0],fixedIdleLegacy[2]]},
+  {active:[{id:fixedIdleOwn,status:'in_progress',head_branch:'main'},{id:987}]},
+  {otherStatus:'waiting'},{otherStatus:'pending'},{otherStatus:'requested'},
+])await assert.rejects(fixedIdleFixture(settings).invoke(),/FIXED_READ_(INVENTORY_INCOMPLETE|MAIN_NOT_IDLE)/);
+for(const jobs of [{total_count:1,jobs:[{id:1}]},{total_count:0,jobs:[{id:1}]},{jobs:[]}])
+  await assert.rejects(fixedIdleFixture({jobs}).invoke(),/FIXED_READ_LEGACY_JOBS_NOT_EMPTY/);
+let fixedIdleForbiddenCalls=0;
+await assert.rejects(fixedIdleModule.checkFixedSupabaseAccountReadIdle({
+  repository:'other/RavRadar',runId:fixedIdleOwn,githubToken:'synthetic',
+  fetchImpl:async()=>{fixedIdleForbiddenCalls++;},
+}),/FIXED_READ_GITHUB_SCOPE/);
+assert.equal(fixedIdleForbiddenCalls,0);
+for(const response of [
+  new Response('PRIVATE-GITHUB-BODY-NOT-LOGGED',{status:403}),
+  new Response(new Uint8Array(65537),{status:200}),
+]) {
+  let calls=0;
+  await assert.rejects(fixedIdleModule.checkFixedSupabaseAccountReadIdle({
+    repository:'jakobjorgensen82-commits/RavRadar',runId:fixedIdleOwn,githubToken:'synthetic',
+    fetchImpl:async()=>{calls++;return response;},
+  }),/FIXED_READ_IDLE_(UNAVAILABLE|BOUND)/);
+  assert.equal(calls,1,'fixed guard never retries transport or inventory refusals');
+}
+let fixedIdleDeadlineCalls=0;
+await assert.rejects(fixedIdleModule.checkFixedSupabaseAccountReadIdle({
+  repository:'jakobjorgensen82-commits/RavRadar',runId:fixedIdleOwn,githubToken:'synthetic',
+  fetchImpl:async()=>{fixedIdleDeadlineCalls++;return new Response(new ReadableStream({start(){}}),{status:200});},
+}),/FIXED_READ_IDLE_DEADLINE/);
+assert.equal(fixedIdleDeadlineCalls,1,'same real five-second request/body deadline, no retry');
+const fixedIdleSource=await fs.readFile('scripts/check-fixed-supabase-account-read-idle.mjs','utf8');
+const cadenceSource=await fs.readFile('scripts/check-weather-cadence-watchdog.mjs','utf8');
+for(const [id,at,sha] of [
+  [34868901509,'2026-09-14T16:29:10Z','c4930944a6273c00f201994504e3971ad3f2b165'],
+  [34613079069,'2026-09-11T14:55:55Z','5587001b45ffea056addaf6cd20084719540336a'],
+  [34228112413,'2026-09-08T12:47:45Z','b814b525962514a368536f456477881390d6b333'],
+])for(const value of [String(id),at,sha]) {
+  assert.ok(fixedIdleSource.includes(value)&&cadenceSource.includes(value),'same precise existing history, not a blanket queue rule');
+}
+console.log('Fixed account-reader idle guard: exact historical queues plus fresh empty attempt-1 jobs, complete bounded inventories and real five-second body deadline; controlled input only.');
