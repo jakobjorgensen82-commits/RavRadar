@@ -1,3 +1,13 @@
+# Aktuel 4.0.574 – afgrænsede læsninger er ikke endnu kontoevidens, 2026-10-12
+
+Den lokale kildeimplementering af ejerens to godkendte faste Supabase-læsninger er klar til præcis kildekontrol, ikke faktisk kontoaflæsning: metadata-only turkatalog-SELECT og historisk rate-log-GET omkring 12. oktober kl. 05.45 dansk tid. Ingen tur-/brugerrækker læses; rå logs, funktionskroppe, rækkedata og credentials returneres ikke. SELECT er låst til 11.725 bytes/SHA256 825ee5c9674923c0a3601c893ba871b2518d91cb12026a513e72fc9d6893944b og read_only. Lokal SQL-kildelæsning er ikke databaseudførelse eller installation.
+
+Kataloget kan ikke erklære PASS: rapporten er altid READ_REVIEW_REQUIRED. De manglende current-grid-original- og owner-FFC-historical-kildeorakler giver eksplicit ukendt/REVIEWED_SUCCESSOR_SOURCE_MISSING; disse successor-SQL-filer tilføjes ikke. Hele Auth-, trigger-, CHECK- og typed-RPC-forløbet er ikke bevist. En tom rate-log betyder kun ingen matchende registrerede kategorier, ikke sund drift eller request-identifikation.
+
+Det eksisterende normale readiness-target består lokalt, også ved faktisk afventet 15-sekunders katalogfrist og 10-sekunders logfrist. Første lokale URL-fejl var i prøvens egne skyggefulde referencer; kun fire nye steder er rettet til globalThis.URL, uden ændring af det gamle testprefix. Katalogets øvrige 30 sekunder/256/192/16 KiB og loggens 32 KiB/otte kategoripar består; ingen grænseudvidelse, retry eller redirect.
+
+Præcis kildekontrol, sikker levering og faktisk aflæsning af begge allerede godkendte scopes mangler. Det særskilte læsejob kræver eksakt main/første forsøg, eksisterende grønt kildebevis, frisk afsluttet-writer-kontrol og genkontrol af main; kontrollen er ikke atomisk writerlease. Kun det valgte læsestep får eksisterende Supabase-nøgle. Ingen install/repair, produktionsskrivning, nye nøgler/planer/tjenester eller vejrhentning. Brugerdata, Auth, ekstern AI og alle fem hovedmål er ikke færdige. Ældre DMI/T+3-afsnit bevares som historik.
+
 # Aktuel 4.0.574 – bankoverskridende T+3 og åben DMI-kapacitet, 2026-10-12
 
 Den normale SOURCE-routing krævede en bank-lokal tre-timers trend, selv når T og T+3 allerede var individuelt verificeret og forenet i det routede indeks. Den eksisterende måltest reproducerer den konkrete afvisning. Lokal rettelse bruger den kvalificerede aktuelle vandstand og det kvalificerede T+3-punkt samlet; samme kilde, samling, run og grid, hver rækkes gyldige originalbinding og fremtidige kildeadmission kræves fortsat. Normal måltest består også for beskyttet, historisk, retained og gemt/koldt genindlæst bank. Manglende eller blandede beviser, falsk binding og manglende kildevægt afvises uden renormalisering.

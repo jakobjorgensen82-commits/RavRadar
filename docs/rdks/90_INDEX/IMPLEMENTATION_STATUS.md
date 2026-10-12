@@ -1,3 +1,16 @@
+# Aktuel 4.0.574 – to godkendte faste Supabase-læsninger, 2026-10-12
+
+- [x] Lokal kildeintegration af særskilt læsejob for ejerens faste metadata-only turkatalog-SELECT og historiske rate-log-GET; ingen frit valgt SQL, projekt, destination eller tidsvindue.
+- [x] SELECT låst til 11.725 bytes/SHA256 825ee5c9674923c0a3601c893ba871b2518d91cb12026a513e72fc9d6893944b. Ingen tur-/brugerrækker; lokal SQL-kildelæsning er ikke databaseudførelse/installation.
+- [x] Always READ_REVIEW_REQUIRED. Manglende current-grid-original/owner-FFC-historical successor-kildeorakler står eksplicit ukendte; disse SQL-filer er ikke tilføjet. Fuld Auth/trigger/CHECK/typed-RPC-korrekthed er ikke bevist.
+- [x] Bevar katalogets 15/30 sekunders request-/totalfrister og 256/192/16 KiB svar-/metadata-/rapportgrænser; loggens 10 sekunder, 32 KiB og otte faste kategoripar. Ingen retry/redirect/rå payload/credential i output.
+- [x] Eksisterende normalt readiness-target består lokalt, inklusive faktisk afventede 15- og 10-sekundersfrister. Første URL-fixturefejl rettet kun i fire nye globalThis.URL-referencer; gammelt testprefix og tidligere assertions bevares.
+- [ ] Præcis kildekontrol af nyt head og sikker levering med eksakt main/første forsøg, grønt kildebevis, frisk afsluttet-writer-kontrol og genkontrol af main. Snapshot er ikke atomisk lease.
+- [ ] Gennemfør hver af de to allerede godkendte faktiske læsninger efter gates; ingen privat konto er endnu aflæst gennem denne kildeleverance.
+- [ ] Afklar de konkrete læseresultater uden at gøre en tom log til sundhedsbevis eller READ_REVIEW_REQUIRED til installationsgodkendelse. Turlagring/Auth, ekstern AI og alle fem mål er fortsat åbne.
+
+Eksisterende Supabase-nøgle gives kun til det valgte særskilte læsestep, ikke til install/repair. Ingen nye nøgler, planer, tjenester, ekstra vejrhentning, produktionsskrivning eller nye tilladelser. Ældre DMI/T+3-status nedenfor bevares som historik.
+
 # Aktuel 4.0.574 – SOURCE-trend og DMI-opfølgning, 2026-10-12
 
 - [x] Reproducér bankoverskridende T+3-afvisning gennem den eksisterende normale SOURCE-måltest, ikke en erstatningskalder.

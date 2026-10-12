@@ -1,3 +1,13 @@
+# Aktuel 4.0.574 – faste skrivefri Supabase-læsninger, 2026-10-12
+
+Ejerens to eksisterende afgrænsede læsetilladelser får en lokal kildeimplementering: fast metadata-only SELECT af turkataloget og fast historisk GET af kategoriserede rate-logresultater omkring 12. oktober kl. 05.45 dansk tid, kun i afqhhdrkjfjtpadntdzo. Ingen private kontodata er faktisk læst, og ingen tur-/brugerrækker er med i forespørgslen.
+
+Den eksakte SELECT er 11.725 bytes/SHA256 825ee5c9674923c0a3601c893ba871b2518d91cb12026a513e72fc9d6893944b. Katalograpporten er altid READ_REVIEW_REQUIRED: fuld Auth-/trigger-/CHECK-/typed-RPC-korrekthed er ikke bevist. Manglende current-grid-original- og owner-FFC-historical-kildeorakler markeres eksplicit ukendte/REVIEWED_SUCCESSOR_SOURCE_MISSING; ingen af disse successor-SQL-filer tilføjes eller installeres. Lokal SQL-kildelæsning er hverken databaseudførelse eller installation.
+
+Katalogets 15 sekunders request-/bodyfrist og 30 sekunders totalfrist samt 256/192/16 KiB svar-/metadata-/rapportgrænser bevares. Loggens 10 sekunder, 32 KiB og otte faste kategoripar bevares. Ingen retry/redirect eller rå logs, funktionskroppe, rækkedata eller credentials udskrives; tom log er ikke sundhedsbevis. Det eksisterende normale lokale readiness-target består, inklusive reelt afventede fristprøver. Første lokale URL-fixturefejl er rettet kun i fire nye globalThis.URL-referencer; gammelt prefix og tidligere assertions bevares.
+
+Ny præcis kildekontrol, levering og de faktiske godkendte aflæsninger mangler. Læsejobbet kræver eksakt main/første forsøg, allerede grønt præcist kildebevis, frisk afsluttet-writer-kontrol og genkontrol af main; det er ikke en atomisk writerlease. Den eksisterende Supabase-nøgle gives kun til det valgte læsestep. Ingen install/repair, nye nøgler/planer/tjenester, vejrhentning eller produktionsskrivning følger. Dette beviser ikke fungerende turlagring, Auth eller ekstern AI. Ældre DMI/T+3-afsnit bevares som historik; alle fem mål forbliver åbne.
+
 # Aktuel 4.0.574 – samlet SOURCE-trend og afgrænset DMI-opfølgning, 2026-10-12
 
 Den normale SOURCE-routing mistede en ellers gyldig T+3-vandstandstrend, når den aktuelle og den fremtidige række lå i hver sin verificerede bank. Den lokale rettelse beregner trenden fra det samlede routede indeks efter kontrollen af den aktuelle vandstand og T+3-rækken. Eksakt kilde, samling, modelkørsel og gitterpunkt bevares sammen med hver rækkes gyldige originalbinding og kildeadmission; den aktuelle række skal ikke samtidig have en gammel bank-lokal trend. Manglende eller blandet evidens giver fortsat ingen trend, og manglende kildevægt renormaliseres ikke.

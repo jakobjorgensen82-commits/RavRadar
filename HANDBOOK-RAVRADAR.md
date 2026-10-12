@@ -6,6 +6,18 @@ Den lokale 4.0.574 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
 
+## 89.215 To faste skrivefri kontroller før videre levering
+
+Ejeren har allerede godkendt to præcist afgrænsede læsninger i det eksisterende Supabase-projekt afqhhdrkjfjtpadntdzo: en fast metadata-only SELECT af turkataloget og en fast historisk GET af status-/fejlkodekategorier omkring 12. oktober kl. 05.45 dansk tid. Den lokale kildeleverance giver dem et særskilt læsejob, ikke et installations- eller reparationsjob. Ingen privat konto er faktisk aflæst gennem denne kildeleverance, og tur-/brugerrækker er ikke med i forespørgslen.
+
+Katalogets SELECT er låst til 11.725 bytes og SHA256 825ee5c9674923c0a3601c893ba871b2518d91cb12026a513e72fc9d6893944b. Rapporten er altid READ_REVIEW_REQUIRED, aldrig automatisk PASS. Fuld kontrol af Auth, trigger, CHECK og typed-RPC er ikke bevist. De manglende current-grid-original- og owner-FFC-historical-kildeorakler står eksplicit ukendte; deres successor-SQL føres ikke ind i denne leverance. Lokal læsning af SQL-kilde er ikke databaseudførelse eller installation.
+
+Kataloglæseren bevarer 15 sekunders request-/bodyfrist, 30 sekunders totalfrist, 256 KiB svar, 192 KiB metadata og 16 KiB rapport. Loglæseren bevarer 10 sekunder, 32 KiB og højst otte faste kategoripar. Der er ingen automatisk gentagelse eller redirect. Rå logs, funktionskroppe, private rækkedata og credentials udskrives ikke. En tom log betyder kun, at der ikke blev fundet matchende registrerede kategorier; den beviser ikke sund drift eller sammenhæng med én bestemt request.
+
+Det eksisterende normale readiness-target består lokalt, også ved faktisk afventede 15- og 10-sekundersfrister. Den første URL-fixturefejl er rettet kun i fire nye globalThis.URL-referencer; gammelt testprefix og tidligere assertions bevares. Lokal PASS er ikke en gennemført kontolæsning, fungerende turlagring/Auth eller bevis for ekstern AI.
+
+Før de faktiske godkendte læsninger kræves det nye heads præcise kildekontrol og sikker levering, eksakt main, første run-attempt, allerede grønt kildebevis, frisk kontrol af afsluttet writer og genkontrol af main. Snapshot er ikke en atomisk writerlease. Kun den valgte læsestep får den eksisterende Supabase-nøgle. Ingen nye nøgler, planer, tjenester, SQL-installation, produktionsskrivning eller ekstra vejrhentning følger. Alle fem hovedmål og den samlede revision er fortsat åbne; gamle DMI/T+3-afsnit bevares som historik.
+
 ## 89.213 Tre timers vandstandsændring på tværs af gemte banker
 
 En gyldig vandstand nu og en gyldig vandstand tre timer senere kan ligge i hver sin gemte kildebank. Den normale centrale SOURCE-routing skal kunne beregne forskellen, når de to punkter efter genlæsning er verificeret og samlet i det samme routede indeks. Den aktuelle række skal ikke allerede have en gammel trend, beregnet inden bankerne blev samlet.

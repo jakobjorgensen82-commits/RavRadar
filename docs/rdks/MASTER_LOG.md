@@ -1,3 +1,13 @@
+# 2026-10-12 – 4.0.574 kildeleverance til de to faste godkendte læsninger
+
+Ejerens allerede givne metadata-only katalog-SELECT og historiske rate-log-GET får særskilt lokalt læsejob i eksisterende Supabase-projekt afqhhdrkjfjtpadntdzo. SELECT er fast 11.725 bytes/SHA256 825ee5c9674923c0a3601c893ba871b2518d91cb12026a513e72fc9d6893944b; logvindue/kategorier er fast omkring 12. oktober kl. 05.45 dansk tid. Ingen tur-/brugerrækker, rå logs, funktionskroppe eller credentials udskrives. Ingen privat konto er faktisk aflæst, og lokal læsning af SQL-kilde er ikke databaseudførelse eller installation.
+
+Katalogets resultat er altid READ_REVIEW_REQUIRED. Manglende current-grid-original- og owner-FFC-historical successor-kildeorakler står eksplicit ukendte/REVIEWED_SUCCESSOR_SOURCE_MISSING og tilføjes ikke som SQL. Fuld Auth/trigger/CHECK/typed-RPC-korrekthed er ikke bevist. Tom rate-log er ikke bevis for sund drift eller én bestemt request.
+
+Det eksisterende normale readiness-target består lokalt, inklusive faktisk afventede 15- og 10-sekundersfristprøver. Første lokale URL-fixturefejl rettet kun i fire nye globalThis.URL-referencer; tidligere testprefix/assertions er bevaret. Kataloget bevarer 15/30 sekunder og 256/192/16 KiB, loggen 10 sekunder/32 KiB/otte faste kategoripar. Ingen retry, redirect eller grænseudvidelse.
+
+Ny præcis kildekontrol, sikker levering og de to faktiske godkendte læsninger afventes. Det særskilte læsejob kræver eksakt main/første forsøg, allerede grønt kildebevis, frisk afsluttet-writer-kontrol og genkontrol af main; dette er ikke atomisk lease. Eksisterende Supabase-nøgle gives kun til den valgte læsestep. Ingen install/repair, nye nøgler/planer/tjenester, ekstra vejrhentning, produktionsskrivning eller nye tilladelser. Brugerdata, Auth, ekstern AI og alle fem mål forbliver åbne; gamle DMI/T+3-afsnit bevares som historik.
+
 # 2026-10-12 – 4.0.574 samlet SOURCE-trend og DMI-statistikopfølgning
 
 Den eksisterende normale SOURCE-måltest viste en reel afvisning af T+3-vandstandstrend, når kvalificerede T/T+3-punkter lå i hver sin bank. Den lokale rettelse bruger det samlede verificerede indeks uden kravet om gammel bank-lokal trend. Samme kilde, samling, modelkørsel og gitterpunkt, hver rækkes gyldige originalbinding og fremtidig kildeadmission bevares; manglende kilder renormaliseres ikke. Normal måltest består for aktiv, beskyttet, historisk, retained og gemt/koldt genindlæst bank samt de negative forløb. Lokal PASS er ikke offentlig effekt eller årsagsbevis for samtlige aktuelle T+3-mangler.

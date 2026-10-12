@@ -1,3 +1,12 @@
+# 4.0.574 lokal kildeopfølgning – faste Supabase-læsninger, 2026-10-12
+
+- Tilføjer særskilt læsejob til ejerens to allerede godkendte undersøgelser: fast metadata-only turkatalog-SELECT og fast historisk rate-log-GET. Ingen frit SQL-/projekt-/destinations-/tidsvinduesvalg, brugerrækker eller install/repair.
+- SELECT låst til 11.725 bytes/SHA256 825ee5c9674923c0a3601c893ba871b2518d91cb12026a513e72fc9d6893944b. Always READ_REVIEW_REQUIRED; manglende current-grid-original/owner-FFC-historical successor-kildeorakler står eksplicit ukendte og deres SQL tilføjes ikke. Lokal SQL-kildelæsning er ikke databaseudførelse eller installation.
+- Bevarer 15/30 sekunders katalogfrister, 256/192/16 KiB svar-/metadata-/rapportgrænser og loggens 10 sekunder/32 KiB/otte faste kategoripar. Ingen retry, redirect, rå logs, funktionskroppe, rækkedata eller credentials i output. Tom log er ikke sundhedsbevis.
+- Det eksisterende normale readiness-target består lokalt, inklusive faktisk afventede fristprøver. Første URL-fixturefejl rettet kun i fire nye globalThis.URL-referencer; gammelt testprefix og tidligere assertions bevares.
+- Nyt heads præcise kildekontrol, levering og faktiske kontolæsninger afventes. Eksakt main/første forsøg, allerede grønt kildebevis, frisk afsluttet-writer-kontrol og genkontrol af main kræves; snapshot er ikke atomisk lease. Eksisterende Supabase-nøgle gives kun til det valgte særskilte læsestep.
+- Ingen privat konto faktisk aflæst, produktionsskrivning, SQL-installation, nye nøgler/planer/tjenester eller ekstra vejrhentning. Kildeleverancen beviser ikke fungerende turlagring, Auth eller ekstern AI. Alle fem mål er åbne; gamle DMI/T+3-afsnit bevares som historik. Håndbogens statiske lokale kopi synkroniseres særskilt uden SQL-udførelse.
+
 # 4.0.574 lokal opfølgning – SOURCE T+3 og DMI-statistik, 2026-10-12
 
 - Retter lokalt normal SOURCE-routing, hvor verificerede T/T+3-punkter i hver sin bank mistede den afledte vandstandstrend. Det samlede indeks kræver fortsat samme kilde, samling, run og grid, hver rækkes gyldige originalbinding og fremtidig kildeadmission, men ikke en gammel bank-lokal trend.
