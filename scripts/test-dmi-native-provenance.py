@@ -3562,6 +3562,100 @@ diagnostics, outcomes = {}, {}
 before = copy.deepcopy((output, diagnostics, outcomes))
 seen, flushes = [], []
 
+if scenario == "header-statistics":
+    # Controlled unknown-field metadata only; the existing native child still
+    # owns the real reader, original capture, decoder messages, EOF and release.
+    # This is a call-count regression, not a timing or received-DMI data proof.
+    signature_keys = (
+        "shortName", "name", "cfName", "parameterName", "units", "typeOfLevel",
+        "level", "paramId", "discipline", "parameterCategory", "parameterNumber",
+        "numberOfPoints", "numberOfMissing", "minimum", "maximum",
+        "indicatorOfParameter", "table2Version", "centre", "subCentre",
+        "generatingProcessIdentifier", "scaledValueOfFirstFixedSurface",
+        "typeOfFirstFixedSurface",
+    )
+    statistic_keys = ("numberOfMissing", "minimum", "maximum")
+    first_metadata = {key: None for key in signature_keys}
+    first_metadata.update({
+        "shortName": "synthetic-999", "name": "synthetic-field",
+        "units": "synthetic-unit", "typeOfLevel": "depthBelowSea", "level": 1,
+        "paramId": 999, "indicatorOfParameter": 999, "numberOfPoints": 9,
+        "numberOfMissing": 2, "minimum": -0.25, "maximum": 0.5,
+    })
+    message_metadata = (
+        first_metadata,
+        {**first_metadata, "numberOfMissing": 7, "minimum": -99., "maximum": 99.},
+    )
+    original_decode = p.codes_grib_new_from_file
+    original_release = p.codes_release
+    message_handles, released_handles, key_reads = [], [], []
+
+    def counted_decode(handle):
+        fd = handle.fileno()
+        identity = os.fstat(fd)
+        assert (identity.st_dev, identity.st_ino) == (initial.st_dev, initial.st_ino)
+        assert fcntl.fcntl(fd, fcntl.F_GETLEASE) == fcntl.F_RDLCK
+        seen.append((id(handle), fd, identity.st_dev, identity.st_ino))
+        message = original_decode(handle)
+        if message is not None:
+            assert len(message_handles) < 2
+            message_handles.append(message)
+            key_reads.append([])
+        return message
+
+    def counted_metadata(gid, key):
+        assert message_handles and gid == message_handles[-1]
+        key_reads[-1].append(key)
+        return message_metadata[len(message_handles) - 1].get(key)
+
+    def counted_release(gid):
+        released_handles.append(gid)
+        return original_release(gid)
+
+    p.codes_grib_new_from_file = counted_decode
+    p.codes_get = counted_metadata
+    p.codes_release = counted_release
+    old_handler = signal.getsignal(signal.SIGIO)
+    result = p.process_grib(path, "dkss_lf", when, when, [zone], output, diagnostics,
+        current_part_outcomes=outcomes)
+    assert result == (set(), set(), False, 2, 0), result
+    assert len(seen) == 3 and len(set(seen)) == 1
+    assert len(message_handles) == 2 and released_handles == message_handles
+    assert output == before[0] and outcomes == before[2]
+    inventory_key = "|".join(str(first_metadata.get(key) or "") for key in (
+        "shortName", "name", "units", "typeOfLevel", "level", "paramId",
+    ))
+    expected_inventory = {inventory_key: {**first_metadata, "messagesSeen": 2}}
+    inventory = diagnostics["gribFieldInventory"]["dkss_lf"]
+    persistent = diagnostics["persistentFieldInventory"]["dkss_lf"]
+    assert inventory == expected_inventory
+    assert persistent["fields"] == expected_inventory
+    assert persistent["parserVersion"] == p.PARSER_VERSION
+    assert p.iso(persistent["capturedAt"]) is not None
+    assert list(inventory[inventory_key]) == [*signature_keys, "messagesSeen"]
+    assert list(persistent["fields"][inventory_key]) == [*signature_keys, "messagesSeen"]
+    assert signal.getsignal(signal.SIGIO) == old_handler and not p._UNSETTLED_GRIB_READS
+    assert sentinel.read_bytes() == sentinel_bytes
+    assert p.raw_cache_manifest_path().read_bytes() == manifest_bytes
+    assert path.read_bytes() == original
+    statistic_reads = [
+        {key: reads.count(key) for key in statistic_keys}
+        for reads in key_reads
+    ]
+    # OLD ordinary process: two statistics reads/key/message (6 then 6).
+    # NEW ordinary process: first inventory only (3 then 0), same old records.
+    expected_reads = [
+        {key: 1 for key in statistic_keys}, {key: 0 for key in statistic_keys},
+    ]
+    assert statistic_reads == expected_reads, (
+        "ordinary process_grib statistics regression: " + json.dumps(statistic_reads)
+    )
+    print(json.dumps({"case": scenario, "controlledMetadata": True,
+        "ordinaryDecoderMessages": 2, "sameOwnedFd": True, "actualEOF": True,
+        "statisticsReads": [3, 0], "inventoriesExact": True,
+        "unsupportedNoOutput": True, "originalsPreserved": True}), flush=True)
+    raise SystemExit(0)
+
 if scenario == "foreign-pending":
     # A real thread-directed kernel signal arrives AFTER the product preflight,
     # BEFORE its first open has acquired any descriptor/handler/read lease.
@@ -3746,7 +3840,7 @@ print(json.dumps({"case": scenario, "actualMessages": 1 if scenario == "replace"
     "originalsPreserved": True, "unknownRefused": scenario != "healthy"}), flush=True)
 """
     compile(_lease_native, "<own-native-grib-lease>", "exec")
-    for _lease_case in ("healthy", "break", "replace", "foreign-pending"):
+    for _lease_case in ("healthy", "break", "replace", "foreign-pending", "header-statistics"):
         _lease_directory = tempfile.mkdtemp(prefix="rr-native-grib-lease-")
         _lease_process, _lease_pidfd, _lease_settled = None, None, False
         try:
@@ -3774,6 +3868,12 @@ print(json.dumps({"case": scenario, "actualMessages": 1 if scenario == "replace"
                     "preOwnership": True, "maskRetained": True, "handlerUnchanged": True,
                     "firstCauseExact": True, "noDecodeValidatorFlushCommit": True,
                     "nextReaderRefused": True, "originalsPreserved": True}
+            elif _lease_case == "header-statistics":
+                assert _lease_receipt == {"case": _lease_case,
+                    "controlledMetadata": True, "ordinaryDecoderMessages": 2,
+                    "sameOwnedFd": True, "actualEOF": True, "statisticsReads": [3, 0],
+                    "inventoriesExact": True, "unsupportedNoOutput": True,
+                    "originalsPreserved": True}
             else:
                 assert _lease_receipt == {"case": _lease_case,
                     "actualMessages": 1 if _lease_case == "replace" else 2,
