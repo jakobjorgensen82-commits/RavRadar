@@ -115,6 +115,29 @@ async function hmac(value: string) {
   return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+// Internal correlation only: never log a credential, subject, request or body.
+// Missing response metadata remains unknown; it is not an auth/SQL diagnosis.
+function reportRateLimitUnavailable(scope: string, response: Response) {
+  try {
+    const match = /^(ravradar-assistant|trip-log|submit-observation):(minute|hour|global-day)$/.exec(scope);
+    const requestId = response.headers.get("sb-request-id");
+    const errorCode = response.headers.get("x-sb-error-code");
+    const knownCodes = ["42501", "22023", "PGRST301", "PGRST302", "PGRST303"];
+    const challenge = response.headers.get("www-authenticate");
+    console.warn("PUBLIC_RATE_LIMIT_RPC_REJECTED", {
+      route: match?.[1] ?? "unknown",
+      window: match?.[2] ?? "unknown",
+      status: response.status,
+      requestId: requestId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestId) ? requestId : null,
+      errorCode: errorCode && knownCodes.includes(errorCode) ? errorCode : null,
+      errorCodePresent: errorCode !== null,
+      authChallengePresent: challenge !== null,
+    });
+  } catch {
+    // Diagnostic failure must not replace the original public failure.
+  }
+}
+
 async function consume(scope: string, subjectHash: string, limit: number, windowSeconds: number) {
   const url = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -124,7 +147,11 @@ async function consume(scope: string, subjectHash: string, limit: number, window
     headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({ p_scope: scope, p_subject_hash: subjectHash, p_limit: limit, p_window_seconds: windowSeconds }),
   }, 5_000);
-  if (!response.ok) throw new GatewayError(503, "RATE_LIMIT_UNAVAILABLE");
+  if (!response.ok) {
+    const failure = new GatewayError(503, "RATE_LIMIT_UNAVAILABLE");
+    reportRateLimitUnavailable(scope, response);
+    throw failure;
+  }
   return (await response.json()) === true;
 }
 

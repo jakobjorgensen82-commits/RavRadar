@@ -49,10 +49,11 @@ const EXACT_PREDECESSOR_CONTINUATION_HASH =
   '46683362ec6b69835695db375f7de976a8dd0a75b7367a27e2854b653d73e0ab';
 
 await inspectMigrationSources();
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 44,
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 45,
   'The active backend must preserve every predecessor, storage security and the exact checkpoint bridge');
 assert.equal(LATEST_RAVSCORE_BINDING_MIGRATION.version, '20260920220000');
-assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261005000000');
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-2).version, '20261005000000');
+assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261010130000');
 
 const integratedMigration = await fs.readFile(
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
@@ -95,7 +96,7 @@ assert.doesNotMatch(rpcSql, /\bselect\s+\*\b/i,
   'integrated cutover RPC must not expose broad table data');
 
 const checkpointMigration = await fs.readFile(
-  'supabase/migrations/20261005000000_owner_water_level_only_binding.sql',
+  'supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql',
   'utf8',
 );
 const exactPredecessorMigration = await fs.readFile(
@@ -147,7 +148,7 @@ for (const marker of [
   "#- '{candidateGRollbackCompanion,generationSha256}'",
   'create or replace function public.ravradar_ravscore_checkpoint_contract()',
   "'schemaVersion', 'ravscore-checkpoint-db-v1'",
-  "'20261005000000'",
+  "'20261010130000'",
   "'checkpointContractDefinitionPresent'",
   "'checkpointCanonicalTimeHelperStableSecurityInvoker'",
   "'checkpointHistoryExclusionInstalled'",
@@ -372,6 +373,7 @@ const unicodeList = `
  20261003080000    │                  │ 2026-10-03 08:00:00
  20261004190000    │                  │ 2026-10-04 19:00:00
  20261005000000    │                  │ 2026-10-05 00:00:00
+ 20261010130000    │                  │ 2026-10-10 13:00:00
 `;
 assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260826', remote: '20260826' },
@@ -419,6 +421,7 @@ assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20261003080000', remote: null },
   { local: '20261004190000', remote: null },
   { local: '20261005000000', remote: null },
+  { local: '20261010130000', remote: null },
 ]);
 
 // Captured verbatim from backend readiness run 34333553305 with Supabase CLI 2.117.0.
@@ -475,6 +478,7 @@ const currentFirstInstallList = `${capturedFirstEightInstallList}
    \`20261003080000\` | \` \`    | \`2026-10-03 08:00:00\`
    \`20261004190000\` | \` \`    | \`2026-10-04 19:00:00\`
    \`20261005000000\` | \` \`    | \`2026-10-05 00:00:00\`
+   \`20261010130000\` | \` \`    | \`2026-10-10 13:00:00\`
 `;
 assert.deepEqual(parseSupabaseMigrationList(currentFirstInstallList),
   REQUIRED_CUTOVER_MIGRATIONS.map(item => ({ local: item.version, remote: null })));
@@ -607,6 +611,7 @@ await assert.rejects(
        20261003080000 | | pending
        20261004190000 | | pending
        20261005000000 | | pending
+       20261010130000 | | pending
     `,
     dryRunText: currentFirstInstallDryRun,
   }),
@@ -660,6 +665,7 @@ const appliedList = `
  20261003080000 | 20261003080000 | now
  20261004190000 | 20261004190000 | now
  20261005000000 | 20261005000000 | now
+ 20261010130000 | 20261010130000 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
@@ -715,19 +721,43 @@ try {
     dryRunPath,
     `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • ${LATEST_REQUIRED_CUTOVER_MIGRATION.filename}\nFinished supabase db push.`,
   );
+  const helperEnvironment = {
+    ...process.env,
+    RAVRADAR_USERDATA_UPGRADE_OPT_IN: 'true',
+    RAVRADAR_USERDATA_PREWRITE_REQUIRED: 'true',
+    RAVRADAR_USERDATA_PREWRITE_VERIFIED: 'true',
+  };
   const helperRun = spawnSync(process.execPath, [
     path.resolve('scripts/verify-code-only-migration-plan.mjs'),
     '--migration-list', migrationListPath,
     '--dry-run', dryRunPath,
     '--migrations-directory', path.resolve('supabase/migrations'),
-  ], { encoding: 'utf8' });
+    '--require-prewrite-gate',
+  ], { encoding: 'utf8', env: helperEnvironment });
   assert.equal(helperRun.status, 0,
     helperRun.stderr || helperRun.stdout || helperRun.error?.message);
   assert.match(
     helperRun.stdout,
-    /exactly 20261005000000_owner_water_level_only_binding.sql/,
+    /exactly 20261010130000_owner_export_origin_bound_successor.sql/,
     'the live code-only helper must admit exactly the current checkpoint bridge',
   );
+  for (const optIn of [undefined, 'false']) {
+    const rejectedEnvironment = { ...helperEnvironment };
+    delete rejectedEnvironment.RAVRADAR_USERDATA_UPGRADE_OPT_IN;
+    if (optIn !== undefined) rejectedEnvironment.RAVRADAR_USERDATA_UPGRADE_OPT_IN = optIn;
+    const rejectedRun = spawnSync(process.execPath, [
+      path.resolve('scripts/verify-code-only-migration-plan.mjs'),
+      '--migration-list', migrationListPath,
+      '--dry-run', dryRunPath,
+      '--migrations-directory', path.resolve('supabase/migrations'),
+      '--require-prewrite-gate',
+    ], { encoding: 'utf8', env: rejectedEnvironment });
+    assert.equal(rejectedRun.status, 1,
+      `pending userdata migration must reject ${optIn === undefined ? 'missing' : 'false'} opt-in`);
+    assert.match(rejectedRun.stderr,
+      /The pending userdata binding requires explicit existing-owner-export opt-in/);
+    assert.equal(rejectedRun.stdout, '', 'rejected opt-in must not emit a successful migration plan');
+  }
 } finally {
   await fs.rm(codeOnlyHelperDirectory, { recursive: true, force: true });
 }
@@ -814,6 +844,7 @@ try {
  20261003080000 │ │ pending
  20261004190000 │ │ pending
  20261005000000 │ │ pending
+ 20261010130000 │ │ pending
  `;
   const hydrated = await hydrateTemporaryRemoteMigrationHistory({
     workdir: isolatedWorkdir,
@@ -871,6 +902,7 @@ try {
  20261003080000 │ │ pending
  20261004190000 │ │ pending
  20261005000000 │ │ pending
+ 20261010130000 │ │ pending
     `,
   }), /unknown post-cutover migration 20260830/);
 } finally {
@@ -1502,6 +1534,45 @@ for(const [field,value] of [['present',false],['sameNameCount',2],['result','int
     'source body alone cannot approve altered signature/type/configuration: '+field);
 }
 
+// PostgreSQL's pg_get_functiondef closes the matching dollar tag with newline,
+// not a SQL-input semicolon. Keep the prior semicoloned SOURCE positive above.
+const typedPgNoSemicolonDefinition=typedBaseDefinition
+  .replace(/\bas \$\$/i,()=> 'AS $function$')
+  .replace(/\n\$\$;$/,()=> '\n$function$\n');
+assert.ok(typedPgNoSemicolonDefinition.endsWith('$function$\n'),
+  'normal native-style fixture must omit only the terminal SQL-input semicolon');
+const typedPgEnvelope=fields=>{
+  const envelope=structuredClone(typedBaseEnvelope);
+  const row=envelope[0].metadata.rows.find(item=>item.name===typedSignatures[2]);
+  Object.assign(row.metadata,{definition:typedPgNoSemicolonDefinition},fields);
+  row.metadata.definitionBytes=Buffer.byteLength(row.metadata.definition);
+  envelope[0].bytes=Buffer.byteLength(JSON.stringify(envelope[0].metadata));
+  return envelope;
+};
+const typedPgReport=await typedBaseRead(typedPgEnvelope({}));
+assert.equal(typedPgReport.functions.find(row=>row.signature===typedSignatures[2]).bodySignatureConfigurationMatch,true,
+  'same actual reviewed SOURCE body with matching native dollar tag and no terminal semicolon must match');
+assert.equal(typedPgReport.status,'READ_REVIEW_REQUIRED');
+assert.equal(typedPgReport.completeOldOrNewCheckSourceMatch,false);
+assert.equal(typedPgReport.authRoleUidSourceMatch,false);
+assert.equal(typedPgReport.wholeTriggerSourceMatch,false);
+assert.equal(typedPgReport.fullTypedRpcTriggerCheckProved,false);
+for(const [label,fields] of [
+  ['changed-body',{definition:typedPgNoSemicolonDefinition.replace('return false;',()=> 'return true;')}],
+  ['trailing-ddl',{definition:typedPgNoSemicolonDefinition+
+    'ALTER FUNCTION public.ravradar_trip_payload_has_sensitive_key(jsonb) RESET ALL;\n'}],
+  ['mismatched-tag',{definition:typedPgNoSemicolonDefinition.replace(/\$function\$\n$/,()=> '$different$\n')}],
+  ['not-present',{present:false}],
+  ['overloaded',{sameNameCount:2}],
+  ['unreviewed-configuration',{searchPath:'search_path=pg_catalog, public'}],
+]) {
+  const report=await typedBaseRead(typedPgEnvelope(fields));
+  assert.equal(report.functions.find(row=>row.signature===typedSignatures[2]).bodySignatureConfigurationMatch,false,
+    'optional terminal semicolon must not approve '+label);
+  assert.equal(report.status,'READ_REVIEW_REQUIRED');
+  assert.equal(report.fullTypedRpcTriggerCheckProved,false);
+}
+
 let typedHeldController;
 const typedHeldBody=new Response(new ReadableStream({start(controller){typedHeldController=controller;}}),{status:201});
 let typedDeadlineAttempts=0;
@@ -1521,6 +1592,13 @@ const fixedRatePriorFetch=globalThis.fetch;
 process.env.SUPABASE_ACCESS_TOKEN='synthetic-rate-token-NOT-LOGGED';
 try {
   const rateFixtures=[
+    ['pg-fallback-categories',()=>new Response(JSON.stringify({result:[
+      {status:null,error_code:'NOT_RECORDED'},
+      {status:null,error_code:'UNRECOGNIZED_CODE'},
+    ],error:null}),{status:200}),'RECORDED_CATEGORIES',2],
+    ['pg-gateway-code-refused',()=>new Response(JSON.stringify({result:[
+      {status:null,error_code:'UNAUTHORIZED_MISSING_API_KEY'},
+    ],error:null}),{status:200}),'LOG_SCHEMA_UNAVAILABLE',null],
     ['categories',()=>new Response(JSON.stringify({result:[
       {status:401,error_code:'UNAUTHORIZED_MISSING_API_KEY'},
       {status:null,error_code:'42501'},
@@ -1562,6 +1640,10 @@ try {
     const report=await module.readFixedPublicRateLog20261012();
     assert.equal(report.requestStatus,status,label);
     assert.equal(report.rowCount,rowCount,label);
+    if(label==='pg-fallback-categories') assert.deepEqual(report.pairs,[
+      {status:null,error_code:'NOT_RECORDED'},
+      {status:null,error_code:'UNRECOGNIZED_CODE'},
+    ],'admit only the exact already-query-generated PostgreSQL fallback categories');
     assert.equal(report.privatePayloadLogged,false);
     assert.equal(report.scope.sqlStart,'2026-10-12T03:45:11Z');
     assert.equal(report.scope.sqlEndExclusive,'2026-10-12T03:45:13Z');

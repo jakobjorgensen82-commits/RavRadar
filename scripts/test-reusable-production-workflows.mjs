@@ -627,7 +627,7 @@ const casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.end
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
 assert.equal(casTimeoutSettings.at(-1).migration,
-  '20261005000000_owner_water_level_only_binding.sql');
+  '20261010130000_owner_export_origin_bound_successor.sql');
 const restoredTimeoutMigration = fs.readFileSync(
   new URL('20261002094500_restore_checkpoint_cas_timeout.sql', migrationsUrl), 'utf8',
 ).replace(/\r\n?/g, '\n');

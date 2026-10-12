@@ -1,9 +1,10 @@
-import { getLocalObservations } from './observation-service.js?v=4.0.574';
-import { ravScoreModelBinding } from '../core/ravscore-model-contract.js?v=4.0.574';
+import { getLocalObservations } from './observation-service.js?v=4.0.575';
+import { ravScoreModelBinding } from '../core/ravscore-model-contract.js?v=4.0.575';
 import {
+  observationOrigin,
   calibrationEligibilityIssues,
   isCalibrationEligibleForBinding,
-} from './calibration-eligibility.js?v=4.0.574';
+} from './calibration-eligibility.js?v=4.0.575';
 const finite=v=>typeof v==='number'&&Number.isFinite(v);
 const found=row=>row.result&&!['none','no'].includes(row.result);
 const average=values=>values.length?values.reduce((a,b)=>a+b,0)/values.length:null;
@@ -13,13 +14,13 @@ function metricProposal(field,label,unit,successful,unsuccessful){const yes=succ
 export function analyzeObservationRows(rows=[]){
   const binding=ravScoreModelBinding();
   const source=Array.isArray(rows)?rows:[];
-  const valid=source.filter(row=>isCalibrationEligibleForBinding(row,binding));
+  const valid=source.filter(row=>observationOrigin(row)!=='synthetic-test'&&isCalibrationEligibleForBinding(row,binding));
   const successful=valid.filter(found),unsuccessful=valid.filter(r=>!found(r));
   const modes=Object.fromEntries(['waders','beach'].map(mode=>[mode,valid.filter(row=>row.hunt_mode===mode).length]));
   const zoneCount=new Set(valid.map(row=>row.zone_id)).size;
   const effortCount=valid.filter(row=>Number.isInteger(row.search_minutes)&&row.search_minutes>0).length;
   const snapshotLinkCount=valid.filter(row=>Boolean(row.forecast_snapshot_id||row.weather_snapshot?.snapshotId)).length;
-  const exclusionReasons=source.filter(row=>!isCalibrationEligibleForBinding(row,binding)).flatMap(row=>calibrationEligibilityIssues(row,binding));
+  const exclusionReasons=source.flatMap(row=>[...calibrationEligibilityIssues(row,binding),...(observationOrigin(row)==='synthetic-test'?['SYNTHETIC_TEST_OBSERVATION']:[])]);
   const exclusionCounts=Object.fromEntries([...new Set(exclusionReasons)].sort().map(reason=>[reason,exclusionReasons.filter(value=>value===reason).length]));
   return {status:'coverage-only',calibrationLocked:true,sampleSize:valid.length,excludedCount:source.length-valid.length,sourceCount:source.length,successCount:successful.length,noFindCount:unsuccessful.length,successRate:valid.length?Number((successful.length/valid.length).toFixed(3)):null,zoneCount,modes,effortCount,snapshotLinkCount,modelBinding:binding,exclusionCounts,suggestions:[],generatedAt:new Date().toISOString(),policy:'integrated-trip-schema3-current-binding-coverage-only-until-explicit-rdks-activation'};
 }
