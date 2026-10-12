@@ -513,7 +513,18 @@ async function accountActivityJournalScenario(mode) {
 }
 for(const mode of ['ordinary','callback','switch','null-error','zero-error','http-error','timeout','rejected-use'])
   await accountActivityJournalScenario(mode);
-const journalSql = await fs.readFile('supabase/migrations/20261012190000_account_activity_journal.sql','utf8');
+// Inspect the actual combined installation source, not a private draft migration.
+const accountMigrationSql = (await fs.readFile(
+  'supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql','utf8'
+)).replace(/\r\n?/g,'\n');
+const journalStart = 'create table public.account_activity_journal (';
+const journalEnd = 'grant execute on function public.record_account_activity() to authenticated;';
+assert.equal(accountMigrationSql.split(journalStart).length,2,'Exactly one installed journal definition');
+assert.equal(accountMigrationSql.split(journalEnd).length,2,'Exactly one installed journal grant');
+const journalOffset = accountMigrationSql.indexOf(journalStart);
+const journalEndOffset = accountMigrationSql.indexOf(journalEnd,journalOffset);
+assert.ok(journalEndOffset>journalOffset,'Complete actual journal section');
+const journalSql = accountMigrationSql.slice(journalOffset,journalEndOffset+journalEnd.length);
 assert.match(journalSql,/create function public\.record_account_activity\(\)/);
 assert.match(journalSql,/own_user_id uuid := auth\.uid\(\)/);
 assert.match(journalSql,/observed_at timestamptz := clock_timestamp\(\)/);

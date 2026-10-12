@@ -304,7 +304,7 @@ test('profile readback: exact owner permits same-login renewal during JSON body'
 
 // STATISTICS-PREFERENCE normal account -> permissions -> actual auth chain.
 // Only browser DOM/storage and fixed synthetic HTTP responses are supplied.
-test('statistics preference: normal default OFF owner-switch logout and late-result isolation', async()=>{
+test('statistics preference: normal default ON, explicit OFF, owner-switch logout and late-result isolation', async()=>{
  const preferenceSource=body('permissions-service'),accountSource=fs.readFileSync(new URL('../js/ui/account-panel.js',import.meta.url),'utf8').replace(/^import[^\n]+\r?\n/gm,'').replace(/^export\s+/gm,'');
  const tick=()=>new Promise(resolve=>setImmediate(resolve));
  for(const mode of ['default-off-readback','switch-read','logout-write','http-failure','malformed-readback']){
@@ -368,7 +368,15 @@ test('statistics preference: normal default OFF owner-switch logout and late-res
    for(const[k,v]of originals)assert.equal(bank.get(k),v,'Trip/outbox/backup/tombstone inputs stay untouched');
   }finally{for(const h of held)h.resolve(h.value);await tick();dialog.close();assert.equal(timers.size,0);}
  }
- const sql=fs.readFileSync(new URL('../supabase/migrations/20261012191000_account_statistics_preference.sql',import.meta.url),'utf8');
+ // Assert the actual combined installation section, never a private SQL draft.
+ const migrationSql=fs.readFileSync(new URL('../supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql',import.meta.url),'utf8').replace(/\r\n?/g,'\n');
+ const sectionStart='create table public.account_statistics_preferences (';
+ const sectionEnd='grant execute on function public.disable_own_statistics_preference() to authenticated;';
+ assert.equal(migrationSql.split(sectionStart).length,2,'Exactly one installed preference definition');
+ assert.equal(migrationSql.split(sectionEnd).length,2,'Exactly one installed preference grant');
+ const sectionOffset=migrationSql.indexOf(sectionStart),sectionEndOffset=migrationSql.indexOf(sectionEnd,sectionOffset);
+ assert.ok(sectionEndOffset>sectionOffset,'Complete actual preference section');
+ const sql=migrationSql.slice(sectionOffset,sectionEndOffset+sectionEnd.length);
  for(const name of['get','enable','disable'])assert.match(sql,new RegExp('create function public\\.'+name+'_own_statistics_preference\\(\\)'));
  assert.equal((sql.match(/own_user_id uuid := auth\.uid\(\)/g)||[]).length,3);
  assert.match(sql,/revoke all on table public\.account_statistics_preferences from public, anon, authenticated/);
