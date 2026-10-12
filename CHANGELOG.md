@@ -1,3 +1,21 @@
+# Lokal 4.0.575-kildekandidat – selektiv integration med aktuel main, 2026-10-12
+
+Den faktiske lokale sammensætning har nu bestået de berørte produktmål, originalbevarelse og de aktuelle normale kaldere. Det godkendte brugerdataforløb afgrænser også assistentens opdatering til ét forsøg uden automatisk gentagelse ved fejl; den øvrige leveringspolitik ændres ikke. De to præcist bytebundne migrationer bevares med deres originale LF-linjeskift på begge platforme, uden ændret SQL-indhold. Ny præcis GitHub-kontrol, faktisk installation og offentlig effekt afventes fortsat.
+
+Den gennemgåede brugerdata- og assistentkilde forberedes som en selektiv efterfølger til den aktuelle kilde med de senere DMI-, T+3-, publicerings- og kontrollæserrettelser. Der kopieres ikke en ældre samlet revision oven på main. Alle aktuelle vejrblade og læsernes nye kontroller bevares; kapitlerne til og med 89.216 og deres dokumenterede historik overskrives ikke.
+
+Kandidaten samler kontobundet sideopdelt eksport, ejerskifte-/afbrudsbeskyttelse, negativ rapportoprindelse og kontrolleret sletning af turkilder med de allerede gennemgåede, afgrænsede assistentrettelser. Langs-kysten-opfølgning bruger kun et midlertidigt lokalt emne, ikke rå samtalehistorik. Tyske ordgrænser og datasikre kvotefejlmarkører bevares. Interne fejl, private ture og driftsdiagnoser må ikke blive offentlig assistentviden. En gemt tur er ikke tilladelse til statistisk viderebrug.
+
+Den frosne 575-kilde på 87f48cea har faktisk bestået den normale præcise kildekontrol 38173134597/1 og sit verificerede kildebevis. De allerede beståede konto-, eksport-, hybridlager- og assistentprøver genbruges som delbeviser. De er ikke kontrol af denne nye sammensætning. Nye berørte kaldere, hele den præcise samlede kilde og dens kildebevis skal kontrolleres før sikker levering; dette dokumentationsforslag udfører ingen tests.
+
+Ejerens præcise betingede godkendelse den 12. oktober kl. 09.38 omfatter den samlede 565/575-overgang direkte fra 050000 til 130000 efter gates. Den skal ikke spørges igen og kræver ikke en irrelevant 120000-melleminstallation. De to særskilt godkendte faste kontoaflæsninger er gennemført og forbrugt; deres detaljer er private. Katalogets krav om gennemgang eller manglende andre GRID-kildeorakler er ikke i sig selv en ny 575-installationsgate eller tilladelse til disse andre migrationer.
+
+575 er fortsat en kildekandidat, ikke installeret eller offentligt verificeret. Autentificerede originale pakker, tabsfri metadataovergang, den aktuelle main-identitet, afsluttet writer, præcis migrationsplan samt database-, D1/Worker-, Edge- og brugerforløbsreadback skal fortsat bestå. Ingen produktionsændring sker under aktiv writer. Den faktiske RATE_LIMIT_UNAVAILABLE-fejl ligger før AI-kaldet og er fortsat årsagsmæssigt uafklaret; sikre fejlmarkører er ikke en årsagsrettelse eller bevis for ekstern AI.
+
+Det godkendte mål bevarer de fysiske scorekontrakter, storage-ABI, administratorpunkter, geometri, kildeprioritet og historiske originaler. Dets allerede beregnede I68/C66/T12-identiteter genbruges uændret; der genereres ikke nye bindinger for at få integrationen til at passe. Alle 54 gamle migrationer bevares. Statistikdefault-ON, behandling af inaktivitet, varsling og automatisk sletning er særskilte åbne krav, ikke aktiverede funktioner eller bevis for samtykke/anonymitet. Alle fem hovedmål er åbne.
+
+De ældre afsnit nedenfor er dateret historik. Deres tidligere afventende tilladelser, kildekontroller og leveringsstatus erstattes kun af den konkrete nyere evidens ovenfor; de senere leverede vejrrettelser og kontrollæsernes faktiske begrænsninger består.
+
 # 4.0.574 lokal fejlrettelse – kontrollæsernes normale formater, 2026-10-12
 
 PR #578, #579 og #580 har faktisk bestået hver sin præcise kildekontrol og er sikkert merget; nuværende main er c0b5cddff3b4168f083ebd197cbd8e4e8fe50fb0. De to godkendte engangslæsninger er gennemført og forbrugt. Resultaterne kræver fortsat gennemgang; de detaljerede kontokvitteringer gemmes kun i det private checkpoint. Ingen installation, fungerende brugerforløb eller ekstern AI er dermed bevist.

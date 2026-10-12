@@ -221,7 +221,7 @@ assert.match(workflow, /Persist or reconfirm the D1 boundary during failure roll
 assert.match(edgeReadiness, /X-RavRadar-Trip-Contract-Version/);
 assert.match(edgeReadiness, /X-RavRadar-Trip-Storage-Mode/);
 assert.match(submitObservation, /tripStorageReadinessHeaders\(request\)/);
-assert.match(tripLog, /tripStorageReadinessHeaders\(request\)/);
+assert.match(tripLog, /tripStorageReadinessHeaders\(request, true\)/);
 assert.match(edgeVerification, /for \(const functionName of \['submit-observation', 'trip-log'\]\)/);
 assert.match(edgeVerification, /runTripStorageNoWriteContractProbe/);
 assert.match(edgeVerification, /'trip-log-signed-login-response'/);

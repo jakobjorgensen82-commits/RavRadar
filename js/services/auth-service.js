@@ -1,4 +1,4 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.574";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.575";
 
 const STORAGE_KEY = "ravradar-auth-session";
 const REFRESH_MARGIN_SECONDS = 300;
@@ -153,10 +153,10 @@ export async function requireFreshSession() {
   assertIdentity();
   return session;
 }
-export async function authorizedFetch(url, options = {}, { retry401 = true, timeoutMs=DEFAULT_TIMEOUT_MS, consumeJson = false, consumeErrorText = false } = {}) {
+export async function authorizedFetch(url, options = {}, { retry401 = true, timeoutMs=DEFAULT_TIMEOUT_MS, consumeJson = false, consumeErrorText = false, expectedUserId = null } = {}) {
   const startingEpoch = identityEpoch;
   const active = await requireFreshSession();
-  const ownerId = active?.user?.id;
+  const ownerId = expectedUserId ?? active?.user?.id;
   const assertOwner = candidate => {
     if (identityEpoch !== startingEpoch || !ownerId || candidate?.user?.id !== ownerId || session?.user?.id !== ownerId) {
       throw new Error("Kontoen blev ændret. Prøv igen fra den rigtige konto.");

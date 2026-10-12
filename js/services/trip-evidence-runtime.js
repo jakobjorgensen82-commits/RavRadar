@@ -1,6 +1,7 @@
-import { createTripEvidenceController } from './trip-evidence-controller.js?v=4.0.574';
-import { createTripStartFromPublicState } from './trip-evidence-public-adapter.js?v=4.0.574';
-import { openTripEvidenceStartDialog } from '../ui/trip-evidence-dialog.js?v=4.0.574';
+import { observationOriginFields } from './calibration-eligibility.js?v=4.0.575';
+import { createTripEvidenceController } from './trip-evidence-controller.js?v=4.0.575';
+import { createTripStartFromPublicState } from './trip-evidence-public-adapter.js?v=4.0.575';
+import { openTripEvidenceStartDialog } from '../ui/trip-evidence-dialog.js?v=4.0.575';
 
 function defaultTripId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
@@ -30,9 +31,10 @@ export function createPublicTripEvidenceRuntime({
   };
 
   return Object.freeze({
-    start(selection = null, { tripId = createTripId(), startedAt = now() } = {}) {
+    start(selection = null, { tripId = createTripId(), startedAt = now(), observationOrigin } = {}) {
       const context = readContext(selection);
       const prepared = createTripStartFromPublicState({
+        ...(observationOrigin === undefined ? {} : observationOriginFields({ observationOrigin }, 'observationOrigin')),
         tripId,
         startedAt,
         mode: selection?.mode || context.mode,
@@ -46,6 +48,7 @@ export function createPublicTripEvidenceRuntime({
         modelBinding: context.modelBinding
       });
       return controller.start({
+        ...observationOriginFields(prepared, 'observationOrigin'),
         tripId: prepared.tripId,
         startedAt: prepared.startedAt,
         mode: prepared.mode,
@@ -57,7 +60,7 @@ export function createPublicTripEvidenceRuntime({
         dataQualityFlags: prepared.dataQualityFlags
       });
     },
-    async startWithPrompt({ tripId = createTripId(), startedAt = now() } = {}) {
+    async startWithPrompt({ tripId = createTripId(), startedAt = now(), observationOrigin } = {}) {
       const context = readContext();
       const selection = await openStartDialog({
         mode: context.mode,
@@ -67,7 +70,7 @@ export function createPublicTripEvidenceRuntime({
         coastalParts: context.coastalParts
       });
       if (!selection) return { status: 'cancelled' };
-      const record = this.start(selection, { tripId, startedAt });
+      const record = this.start(selection, { tripId, startedAt, observationOrigin });
       return { status: 'started', tripId: record.tripId };
     },
     stop() {
