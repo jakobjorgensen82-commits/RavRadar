@@ -3559,6 +3559,10 @@ zone = {"id": "PART::SYNTHETIC", "parentZoneId": "SYNTHETIC", "coastalPart": Tru
 output = {"generatedAt": when, "zones": {zone["id"]: {
     **p.sampling_identity(zone), "hourly": {}, "gridPoints": {}, "collections": {}}}}
 diagnostics, outcomes = {}, {}
+if scenario == "header-statistics":
+    # This normal stage slot exists even for unsupported fields. Keep the
+    # complete output-equality oracle, without changing the four lease cases.
+    output["zones"][zone["id"]]["marineSelection"] = {}
 before = copy.deepcopy((output, diagnostics, outcomes))
 seen, flushes = [], []
 
