@@ -2391,12 +2391,12 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                 patch.object(producer, "codes_release", return_value=None),
                 patch.object(
                     producer,
-                    "field_signature",
-                    side_effect=lambda gid: (
+                    "codes_get",
+                    side_effect=lambda gid, key: (
                         {"shortName": "pp1d", "paramId": 231, "indicatorOfParameter": 231}
                         if parameters[gid] == "dominant-wave-period"
                         else {"shortName": parameters[gid]}
-                    ),
+                    ).get(key),
                 ),
                 patch.object(
                     producer,
