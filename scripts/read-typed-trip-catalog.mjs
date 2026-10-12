@@ -106,7 +106,7 @@ async function reviewedBodies() {
 }
 function compiledBody(definition) {
   if (typeof definition !== 'string' || Buffer.byteLength(definition) > 32768) return null;
-  const match = /\bAS\s+(\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$)([\s\S]*)\1\s*;\s*$/i.exec(definition);
+  const match = /\bAS\s+(\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$)([\s\S]*)\1\s*;?\s*$/i.exec(definition);
   return match ? match[2].replace(/\r\n?/g,'\n').trim() : null;
 }
 function projectTypedCatalogMetadata(row, reviewed, successorSourceMissing) {

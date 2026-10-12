@@ -6,6 +6,14 @@ Den lokale 4.0.574 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Dette beskriver de eksisterende uændrede bindinger, ikke et nyt offentligt leveringsbevis.
 
+## 89.216 Kontrollæserne skal forstå databankens normale formater
+
+Loglæseren og kataloglæseren får hver en lille formatrettelse. Den ene accepterer de to sikre PostgreSQL-kategorier, som den faste forespørgsel allerede selv kan danne. Den anden kan læse den normale funktionsdefinition uden et afsluttende SQL-input-semikolon. Samme dollar-tag, hele funktionskroppen, konfiguration og slutanker kontrolleres stadig; efterfølgende SQL og ændrede eller manglende beviser godkendes ikke.
+
+Begge fejl er reproduceret før rettelsen. Efter den består hele den eksisterende normale måltest, også de nye negative forløb. Forespørgsler, frister, størrelsesgrænser, adgang, privatliv og engangsregler er uændrede. Katalograpporten kræver fortsat gennemgang og beviser ikke fuld adgangskontrol eller installation.
+
+PR #578, #579 og #580 er faktisk kildeleveret. De to godkendte kontoaflæsninger er gennemført og forbrugt; detaljer og kontrolresultater ligger kun i det private checkpoint. Denne nye formatopfølgnings præcise kildekontrol og sikre levering afventes. Lokal test er ikke produktion, og rettelserne beviser ikke årsagen til alle faktiske afvigelser. Der foretages ingen automatisk ny kontoaflæsning eller produktionsændring under aktiv vejrhentning. Alle fem hovedmål er fortsat åbne. Ældre kapitlers afventende status er historik.
+
 ## 89.215 To faste skrivefri kontroller før videre levering
 
 Den nye inventarkalder er faktisk integreret, og det komplette normale readiness-target består lokalt: gamle kontroller, katalogets 15-sekundersprøve, loggens 10-sekundersprøve og ny 5-sekunders inventarprøve med tre præcise historiske kørsler, friske nul-job-aflæsninger, ændret identitet og afvisningsvagter. Dette er ikke faktisk kontoaflæsning, produktion eller læserleverancens nye grønne kildebevis. Det friske, fuldstændige og begrænsede main-inventar afviser alle reelle eller ændrede queued-kørsler. Kun de tre allerede menneskeligt afgrænsede historiske kørsler kan ses bort fra: hver skal matche sit præcise id, SHA, UTC-dato, main, update-and-deploy.yml, attempt 1, workflow_dispatch og queued samt hver sin friske jobaflæsning med nul jobs. Ukendt, ændret eller ufuldstændig evidens afvises. Dette er ingen blanketregel, annullering, cronændring eller atomisk writerlease. En specifik .gitattributes text eol=lf-regel bevarer SELECTens præcise 11.725 LF-bytes/SHA256 825ee5c9674923c0a3601c893ba871b2518d91cb12026a513e72fc9d6893944b.

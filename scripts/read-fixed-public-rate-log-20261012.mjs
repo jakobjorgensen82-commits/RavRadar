@@ -126,7 +126,8 @@ function validateResult(bytes) {
       || typeof row.error_code !== 'string') fail('LOG_SCHEMA_UNAVAILABLE');
     if (row.error_code === 'LOG_FIELDS_UNAVAILABLE') fail('LOG_FIELDS_UNAVAILABLE');
     if (row.status === null) {
-      if (!PG_CODES.has(row.error_code)) fail('LOG_SCHEMA_UNAVAILABLE');
+      if (!PG_CODES.has(row.error_code)
+        && !['NOT_RECORDED','UNRECOGNIZED_CODE'].includes(row.error_code)) fail('LOG_SCHEMA_UNAVAILABLE');
     } else if (!Number.isInteger(row.status) || row.status < 100 || row.status > 599
       || !GATEWAY_CODES.has(row.error_code)) fail('LOG_SCHEMA_UNAVAILABLE');
     const key = JSON.stringify([row.status, row.error_code]);
