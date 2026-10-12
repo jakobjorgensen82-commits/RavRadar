@@ -1,5 +1,7 @@
 # Implementeringsstatus – lokal 4.0.576, ikke produktion
 
+PR577 er draft. Første exact-head-native-kontrol afviste én gammel LF-headerprøve, som krævede gamle raw-decoderkoordinater. Den enkelte test er rettet til uafhængig endpoint/indeks/originalværdikontrol og præcis raw-afvigelsesoptælling, uden produkt- eller rapportændring. Ny Linux-kildekontrol afventer. Før levering mangler også normal historisk aflevering af gamle FFC-køture efter ACTIVE-skift; købevarelse alene beviser ikke brugbar genaflevering.
+
 CURRENT-only GRIB1-gitter, adskilt cachekvalifikation, originale historikbeviser, normale projektioner/scorekaldere, typed CURRENT/TARGET-restore, fuld originalmigrant, canonical SQL-kilde/readback og syv bindingskopier er integreret lokalt. C69/I71 og continuation følger den reelle kilde; fysiske modeller, storage-ABI og offentlig kontrakt er uændrede. Se DEC-0294 og CHANGELOG-4.0.576.
 
 Migrantens faktiske forseglede-inputfejl er rettet og afvist gennem normalt målforløb. Kontrollerede nationalmål bevarer 673 tilstande og 118 timer; dette er ikke faktiske produktionsoriginaler. Readiness/bindingsmål består. Præcis ny Linux-/kildekontrol og faktisk offentlig effekt afventes. Ingen SQL/destination/central ACTIVE-opdatering er udført; konkret myndighed og autentificeret no-loss-kontrol mangler. Frosne brugerdata-/assistentleverancer er fortsat særskilte.
