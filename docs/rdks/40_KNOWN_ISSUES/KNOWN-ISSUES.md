@@ -1,4 +1,10 @@
-# Lokal 4.0.574 DMI-opfølgning – samme åbne GRIB-fil gennem hele læsningen
+# Aktuel 4.0.574 upload-opfølgning – 2026-10-12
+
+Den påviste recovery-fejl kan godkende en samtidig matchende pointer, selv om arkivets upload eller bytekontrol fejlede. Den lokale rettelse åbner kun denne recovery efter fuld upload og verificeret genlæsning. Første fejl, gyldige B/S-originaler og referencekontroller bevares; ingen oprydning følger et afvist arkiv. Gamle positive mistet PATCH-svar-forløb ændres ikke.
+
+Den normale måltest består lokalt med to prøver, nul fejl og nul skip; præcis kildekontrol, levering og faktisk upload-/produktionseffekt mangler. DMI's delvise nye generation og den samlede revision er fortsat åbne. Dette er samme 4.0.574 uden modelbindings-, SQL-, score-, geometri- eller budgetændring; ældre afsnit nedenfor er historik.
+
+# Historik: lokal 4.0.574 DMI-opfølgning – samme åbne GRIB-fil gennem hele læsningen
 
 Opfølgning 12. oktober: Den første præcise Linux-kildekontrol fejlede på en statisk forventning, som også krævede en selvstændig watchdog omkring den nye interne læseadapter. De syv normale download- og transaktionskald har fortsat deres eksisterende watchdog. Testrettelsen kræver adapterens præcise None-vagt, returnering og videresendte argumenter samt transaktionens samme ejede læser; ingen generel undtagelse gives. Den ene målrettede supervisorsuite består med 29 tests, herunder syv negative ændringer af kodekontrollen. De 27 øvrige gamle testmetoder er uændrede. Præcis ny Linux-kildekontrol, dokumenteret resultat for de fire leaseprøver og offentlig effekt afventes; den røde kontrol må ikke omgås.
 

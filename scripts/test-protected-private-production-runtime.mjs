@@ -2020,6 +2020,101 @@ try {
   assert.equal(referencedBeforeCasLoss.has(cleanStorage.removed[0]), false,
     'orphan cleanup must never delete current or previous');
 
+  await test('private publication cannot recover an unverified archive from a concurrent exact pointer', async () => {
+    const originalPointer = documents.row();
+    const concurrentArchive = await buildProtectedPrivateRuntimeArchive({
+      privateRoot,
+      bundlePath: fourth.bundlePath,
+      repositoryRoot: repository,
+      expected: fourth.expected,
+      now: '2026-08-29T14:05:00.000Z',
+      sourceHead: SOURCE_HEADS[3],
+    });
+    const concurrentPointer = {
+      document_key: originalPointer.document_key,
+      version: originalPointer.version + 1,
+      payload: {
+        schemaVersion: PROTECTED_PRIVATE_RUNTIME_POLICY.schemaVersion,
+        kind: PROTECTED_PRIVATE_RUNTIME_POLICY.pointerKind,
+        current: concurrentArchive.descriptor,
+        previous: originalPointer.payload.current,
+      },
+    };
+    assert.ok(originalPointer.payload.previous,
+      'the case must include an actual retired generation that recovery must not clean');
+    assert.notEqual(originalPointer.payload.previous.objectSha256,
+      concurrentPointer.payload.previous.objectSha256);
+
+    for (const phase of ['upload', 'download', 'integrity']) {
+      const failedDocuments = fakeDocuments();
+      failedDocuments.setRow(originalPointer);
+      const failedStorage = fakeStorage();
+      for (const [objectPath, bytes] of cleanStorage.objects) {
+        failedStorage.objects.set(objectPath, Buffer.from(bytes));
+      }
+      for (const object of concurrentArchive.objects) {
+        failedStorage.objects.set(object.descriptor.objectPath, Buffer.from(object.bytes));
+      }
+      const originalObjects = new Map([...failedStorage.objects].map(([objectPath, bytes]) =>
+        [objectPath, Buffer.from(bytes)]));
+      const primaryFailure = new Error('synthetic pre-commit ' + phase + ' failure');
+      let pointerReads = 0;
+      let pointerWrites = 0;
+      let failureInjected = false;
+      const request = async (suffix, options = {}) => {
+        if ((options.method ?? 'GET') === 'GET') pointerReads += 1;
+        else pointerWrites += 1;
+        return failedDocuments.request(suffix, options);
+      };
+      const client = {
+        ...failedStorage.client,
+        uploadImmutable: async (objectPath, bytes) => {
+          if (phase === 'upload') {
+            failureInjected = true;
+            failedDocuments.setRow(concurrentPointer);
+            throw primaryFailure;
+          }
+          return failedStorage.client.uploadImmutable(objectPath, bytes);
+        },
+        download: async objectPath => {
+          failureInjected = true;
+          failedDocuments.setRow(concurrentPointer);
+          if (phase === 'download') throw primaryFailure;
+          const bytes = await failedStorage.client.download(objectPath);
+          bytes[0] ^= 1;
+          return bytes;
+        },
+      };
+      await assert.rejects(publishProtectedPrivateProductionRuntime({
+        privateRoot,
+        bundlePath: fourth.bundlePath,
+        repositoryRoot: repository,
+        expected: fourth.expected,
+        now: '2026-08-29T14:05:00.000Z',
+        sourceHead: SOURCE_HEADS[3],
+        request,
+        storage: client,
+      }), error => {
+        if (phase === 'integrity') {
+          assert.equal(error.message, 'Protected private runtime storage readback is invalid');
+        } else assert.equal(error, primaryFailure,
+          'the first storage error must remain the rejection, not pointer recovery');
+        return true;
+      });
+      assert.equal(failureInjected, true, phase);
+      assert.equal(pointerWrites, 0,
+        phase + ': an unverified archive must never attempt a pointer write');
+      assert.equal(pointerReads, 1,
+        phase + ': an unverified archive must not enter lost-response recovery');
+      assert.deepEqual(failedDocuments.row(), concurrentPointer,
+        phase + ': the exact independently committed pointer must remain untouched');
+      assert.deepEqual(failedStorage.objects, originalObjects,
+        phase + ': every existing original byte must survive the failed publication');
+      assert.deepEqual(failedStorage.removed, [],
+        phase + ': neither referenced originals nor retired objects may be cleaned');
+    }
+  });
+
   const implementation = (await fs.readFile(
     'scripts/protected-private-production-runtime.mjs',
     'utf8',

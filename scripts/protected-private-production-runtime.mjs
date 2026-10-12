@@ -1395,10 +1395,12 @@ export async function publishProtectedPrivateProductionRuntime({
     await verifyStoredArchive(storage, built.descriptor);
   };
 
+  let archiveVerified = false;
   let expectedVersion;
   let readback;
   try {
     await uploadAndVerify();
+    archiveVerified = true;
     if (sameReference) {
       return {
         published: false,
@@ -1453,20 +1455,22 @@ export async function publishProtectedPrivateProductionRuntime({
     }
   } catch (error) {
     let committedDespiteLostResponse = false;
-    try {
-      const recovered = await readPointerRow(request, {
-        allowMissing: false,
-        policy,
-      });
-      const intendedVersion = existing ? existing.version + 1 : 1;
-      if (recovered.version === intendedVersion && same(recovered.payload, pointer)) {
-        expectedVersion = intendedVersion;
-        readback = recovered;
-        committedDespiteLostResponse = true;
+    if (archiveVerified) {
+      try {
+        const recovered = await readPointerRow(request, {
+          allowMissing: false,
+          policy,
+        });
+        const intendedVersion = existing ? existing.version + 1 : 1;
+        if (recovered.version === intendedVersion && same(recovered.payload, pointer)) {
+          expectedVersion = intendedVersion;
+          readback = recovered;
+          committedDespiteLostResponse = true;
+        }
+      } catch {
+        // The original publication error remains authoritative unless exact
+        // pointer version and payload can be proved by readback.
       }
-    } catch {
-      // The original publication error remains authoritative unless exact
-      // pointer version and payload can be proved by readback.
     }
     if (committedDespiteLostResponse) {
       // Continue to retention and the normal success result. Never issue a
