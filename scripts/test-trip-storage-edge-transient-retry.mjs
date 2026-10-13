@@ -838,6 +838,9 @@ const payload = { client_observation_id:'33333333-3333-4333-8333-333333333333', 
   actual_zone_id:'DK-B01-01', actual_coastal_part_id:'DK-B01-01-P01', hunt_mode:'beach', found:false, result:'none' };
 const record = await externalTripRecord({ owner,payload });
 const targetShard = Number.parseInt((await sha256Hex(record.client_observation_id)).slice(0,8),16)%10;
+const erasureMarkers = Array.from({length:10},(_,i)=>['tombstone',i]);
+const erasureOrder = [...erasureMarkers,...Array.from({length:10},(_,i)=>['purge',i]),['registry-delete',0],
+  ...Array.from({length:10},(_,i)=>['physical-read',i]),['registry-empty-read',0]];
 
 async function normal(mode,{ stage=null, success, absent=false, throwing=false, changes, counts=null, fresh=false, empty=false }={}) {
   const events=[], statuses=[], original=JSON.stringify(record);
@@ -854,6 +857,13 @@ async function normal(mode,{ stage=null, success, absent=false, throwing=false, 
     const query=sql.replace(/\s+/g,' ').trim();
     return {bind(...args){return {
       async all(){
+        if(query==='select owner_subject from trip_observations where owner_subject = ? limit 1'
+          ||query==='select owner_subject from trip_observation_registry where owner_subject = ? limit 1') {
+          assert.equal(mode,'delete');assert.deepEqual(args,[owner.subject]);
+          const at=query.includes('trip_observation_registry')?'registry-empty-read':'physical-read';
+          if(at==='registry-empty-read')assert.equal(shard,0);
+          events.push([at,shard]);return receipt(at,{success:true,results:[]});
+        }
         if(query==='select owner_subject from trip_owner_erasure_tombstones where owner_subject = ? limit 1') {
           assert.equal(shard,0);assert.deepEqual(args,[owner.subject]);events.push(['owner',shard]);
           return {success:true,results:[]};
@@ -882,10 +892,18 @@ async function normal(mode,{ stage=null, success, absent=false, throwing=false, 
           :query==='delete from trip_observation_registry where owner_subject = ?'?'registry-delete':null;
         assert.ok(at);events.push([at,shard]);
         if(['tombstone','purge','registry-delete'].includes(at))assert.deepEqual(args,[owner.subject]);
-        if(['tombstone','registry-write','registry-delete'].includes(at))assert.equal(shard,0);
+        if(['registry-write','registry-delete'].includes(at))assert.equal(shard,0);
         // A concurrent matching row can exist even when this write has no positive receipt.
         // Only this own in-memory flag changes; record bytes, files and databases do not.
-        if(at==='trip-write'){assert.equal(shard,targetShard);inserted=true;}
+        if(at==='trip-write'){
+          assert.equal(shard,targetShard);
+          assert.deepEqual(args.slice(0,10),[record.storage_schema_version,record.owner_subject,record.owner_kind,
+            record.trip_id,record.client_observation_id,record.observed_at,record.submitted_at,
+            record.payload_json,record.payload_sha256,record.source]);
+          assert.equal(args.length,11);assert.equal(args[10],record.owner_subject);
+          assert.match(query,/where not exists \( select 1 from trip_owner_erasure_tombstones where owner_subject = \? \)/);
+          inserted=true;
+        }
         return receipt(at,{success:true,meta:{changes:at==='purge'?(counts?.[shard]??(!empty&&shard===3?1:0)):at==='trip-write'?1:0}});
       },
     };}};
@@ -911,26 +929,26 @@ for(const stage of ['tombstone','purge','registry-delete'])for(const [label,succ
 ])test('556 delete refuses '+label+' receipt at '+stage,async()=>{
   const result=await normal('delete',{stage,success,absent});assert.equal(result.ok,false);assert.match(result.error.message,/REQUEST_REJECTED/);
   if(stage==='tombstone')assert.deepEqual(result.events,[['tombstone',0]]);
-  if(stage==='purge')assert.deepEqual(result.events,[['tombstone',0],['purge',0]]);
+  if(stage==='purge')assert.deepEqual(result.events,[...erasureMarkers,['purge',0]]);
 });
 for(const [label,changes] of [['missing',undefined],['null',null],['string','0'],['negative',-1],['fraction',0.5],['unsafe',Number.MAX_SAFE_INTEGER+1]])
 test('556 delete rejects '+label+' changes without later purge',async()=>{
   const result=await normal('delete',{stage:'purge',success:true,changes});assert.equal(result.ok,false);
-  assert.deepEqual(result.events,[['tombstone',0],['purge',0]]);
+  assert.deepEqual(result.events,[...erasureMarkers,['purge',0]]);
 });
 test('556 delete rejects first unsafe cumulative sum before later purge or registry',async()=>{
   const result=await normal('delete',{counts:[2**52,2**52]});assert.equal(result.ok,false);assert.deepEqual(result.statuses,[400]);
-  assert.deepEqual(result.events,[['tombstone',0],['purge',0],['purge',1]]);
+  assert.deepEqual(result.events,[...erasureMarkers,['purge',0],['purge',1]]);
 });
 for(const [label,options,total] of [['normal',{},1],['already empty',{empty:true},0],['maximum safe',{counts:[2**52-1,2**52,...Array(8).fill(0)]},Number.MAX_SAFE_INTEGER]])
 test('556 control positive '+label+' deletion preserves exact order',async()=>{
   const result=await normal('delete',options);assert.equal(result.ok,true);assert.equal(result.value,total);
-  assert.deepEqual(result.events,[['tombstone',0],...Array.from({length:10},(_,i)=>['purge',i]),['registry-delete',0]]);
+  assert.deepEqual(result.events,erasureOrder);assert.equal(result.events.length,32);
 });
 for(const stage of ['tombstone','purge','registry-delete'])test('556 control thrown first '+stage+' remains fixed and stops later work',async()=>{
   const result=await normal('delete',{stage,throwing:true});assert.equal(result.ok,false);assert.deepEqual(result.statuses,[400]);
   if(stage==='tombstone')assert.deepEqual(result.events,[['tombstone',0]]);
-  if(stage==='purge')assert.deepEqual(result.events,[['tombstone',0],['purge',0]]);
+  if(stage==='purge')assert.deepEqual(result.events,[...erasureMarkers,['purge',0]]);
 });
 
 for(const stage of ['matching-before','registry-write','registry-read','trip-write','matching-after','history'])for(const [label,success] of [['false',false],['missing',undefined],['nonboolean','true']])
@@ -1706,7 +1724,10 @@ const record = await externalTripRecord({ owner, payload: {
 const row = { client_observation_id: record.client_observation_id, owner_subject: owner.subject,
   created_at: '2000-01-01T12:00:00.000Z', payload_json: record.payload_json, payload_sha256: record.payload_sha256 };
 
-async function normal(mode, { fault = null, faulty, faultShard = 3, eraseDuringRead = false, throwing = false, empty = false, purgeCounts = null } = {}) {
+const erasureMarkers = Array.from({length:10},(_,i)=>['tombstone',i]);
+const erasureOrder = [...erasureMarkers,...Array.from({length:10},(_,i)=>['purge',i]),['registry',0],
+  ...Array.from({length:10},(_,i)=>['physical-read',i]),['registry-empty-read',0]];
+async function normal(mode, { fault = null, faulty, faultShard = 3, markerFaultShard = 0, eraseDuringRead = false, throwing = false, empty = false, purgeCounts = null } = {}) {
   const events = [], statuses = [], original = JSON.stringify(row);
   let tombstoned = false, requests = 0;
   const env = { TRIP_GATEWAY_SHARED_SECRET: sharedSecret };
@@ -1714,6 +1735,18 @@ async function normal(mode, { fault = null, faulty, faultShard = 3, eraseDuringR
     const query = sql.replace(/\s+/g, ' ').trim();
     return { bind(...args) { return {
       async all() {
+        if (query === 'select owner_subject from trip_observations where owner_subject = ? limit 1'
+          || query === 'select owner_subject from trip_observation_registry where owner_subject = ? limit 1') {
+          assert.equal(mode, 'delete'); assert.deepEqual(args, [owner.subject]);
+          const stage = query.includes('trip_observation_registry') ? 'registry-empty-read' : 'physical-read';
+          if (stage === 'registry-empty-read') assert.equal(shard, 0);
+          events.push([stage, shard]);
+          if (fault === stage && (stage !== 'physical-read' || shard === faultShard)) {
+            if (throwing) throw faulty;
+            return structuredClone(faulty);
+          }
+          return { success: true, results: [] };
+        }
         assert.equal(args[0], owner.subject); events.push(['read', shard, query]);
         if (query === 'select owner_subject from trip_owner_erasure_tombstones where owner_subject = ? limit 1') {
           assert.equal(shard, 0);
@@ -1732,8 +1765,9 @@ async function normal(mode, { fault = null, faulty, faultShard = 3, eraseDuringR
           : query === 'delete from trip_observations where owner_subject = ?' ? 'purge'
             : query === 'delete from trip_observation_registry where owner_subject = ?' ? 'registry' : null;
         assert.ok(stage); events.push([stage, shard]);
-        if (stage === 'tombstone' || stage === 'registry') assert.equal(shard, 0);
-        if (fault === stage && (stage !== 'purge' || shard === faultShard)) { if (throwing) throw faulty; return structuredClone(faulty); }
+        if (stage === 'registry') assert.equal(shard, 0);
+        if (fault === stage && (stage !== 'purge' || shard === faultShard)
+          && (stage !== 'tombstone' || shard === markerFaultShard)) { if (throwing) throw faulty; return structuredClone(faulty); }
         if (stage === 'tombstone') tombstoned = true;
         // Synthetic acknowledgment only: no file, database or record is deleted.
         return { success: true, meta: { changes: stage === 'purge' ? (purgeCounts?.[shard] ?? (!empty && shard === 3 ? 1 : 0)) : 0 } };
@@ -1784,7 +1818,7 @@ test('driver: control erasure appearing during actual awaited shard read refuses
 test('driver: control normal signed erasure keeps tombstone-first then ten shards then registry order', async () => {
   const result = await normal('delete'); assert.equal(result.ok, true); assert.equal(result.value, 1);
   assert.equal(result.tombstoned, true);
-  assert.deepEqual(result.events, [['tombstone', 0], ...Array.from({ length: 10 }, (_, i) => ['purge', i]), ['registry', 0]]);
+  assert.deepEqual(result.events, erasureOrder); assert.equal(result.events.length, 32);
 });
 
 for (const stage of ['read', 'tombstone', 'purge', 'registry']) for (const [label, faulty] of [
@@ -1794,13 +1828,13 @@ for (const stage of ['read', 'tombstone', 'purge', 'registry']) for (const [labe
   const result = await normal(stage === 'read' ? 'export' : 'delete', { fault: stage, faulty });
   assert.equal(result.ok, false); assert.match(result.error.message, /REQUEST_REJECTED/);
   if (stage === 'tombstone') assert.deepEqual(result.events, [['tombstone', 0]]);
-  if (stage === 'purge') assert.deepEqual(result.events, [['tombstone', 0], ...Array.from({length: 4}, (_,i) => ['purge',i])]);
+  if (stage === 'purge') assert.deepEqual(result.events, [...erasureMarkers, ...Array.from({length: 4}, (_,i) => ['purge',i])]);
 });
 for (const [label, changes] of [['missing', undefined], ['null', null], ['string', '0'], ['negative', -1], ['fraction', 0.5], ['unsafe', Number.MAX_SAFE_INTEGER + 1]])
 test('driver: invalid purge count ' + label + ' cannot be coerced or hidden by later success', async () => {
   const result = await normal('delete', { fault: 'purge', faulty: { success: true, meta: { changes } } });
   assert.equal(result.ok, false); assert.match(result.error.message, /REQUEST_REJECTED/);
-  assert.deepEqual(result.events, [['tombstone', 0], ...Array.from({length: 4}, (_,i) => ['purge',i])]);
+  assert.deepEqual(result.events, [...erasureMarkers, ...Array.from({length: 4}, (_,i) => ['purge',i])]);
 });
 for (const stage of ['read', 'tombstone', 'purge', 'registry']) test('driver: thrown first ' + stage + ' cause stops later work without payload leakage', async () => {
   const result = await normal(stage === 'read' ? 'export' : 'delete', {
@@ -1809,7 +1843,7 @@ for (const stage of ['read', 'tombstone', 'purge', 'registry']) test('driver: th
   assert.equal(result.ok, false); assert.match(result.error.message, /REQUEST_REJECTED/);
   assert.deepEqual(result.statuses, [400]);
   if (stage === 'tombstone') assert.deepEqual(result.events, [['tombstone', 0]]);
-  if (stage === 'purge') assert.deepEqual(result.events, [['tombstone', 0], ...Array.from({length: 4}, (_,i) => ['purge',i])]);
+  if (stage === 'purge') assert.deepEqual(result.events, [...erasureMarkers, ...Array.from({length: 4}, (_,i) => ['purge',i])]);
 });
 test('driver: acknowledged empty export remains a complete empty page', async () => {
   const result = await normal('export', { empty: true }); assert.equal(result.ok, true);
@@ -1817,11 +1851,13 @@ test('driver: acknowledged empty export remains a complete empty page', async ()
 });
 test('driver: acknowledged no-change erasure remains idempotently successful', async () => {
   const result = await normal('delete', { empty: true }); assert.equal(result.ok, true); assert.equal(result.value, 0);
-  assert.equal(result.events.length, 12); assert.equal(result.tombstoned, true);
+  assert.equal(result.events.length, 32); assert.equal(result.tombstoned, true);
+  assert.deepEqual(result.events, erasureOrder);
 });
 for (const stage of ['tombstone', 'registry']) test('driver: successful ' + stage + ' does not require unused driver metrics', async () => {
   const result = await normal('delete', { fault: stage, faulty: { success: true } });
-  assert.equal(result.ok, true); assert.equal(result.value, 1); assert.equal(result.events.length, 12);
+  assert.equal(result.ok, true); assert.equal(result.value, 1); assert.equal(result.events.length, 32);
+  assert.deepEqual(result.events, erasureOrder);
 });
 
 test('driver: cumulative safe counts overflow stops at first unsafe sum without successful HTTP receipt', async () => {
@@ -1831,14 +1867,40 @@ test('driver: cumulative safe counts overflow stops at first unsafe sum without 
   assert.equal(result.ok, false);
   assert.deepEqual(result.statuses, [400], 'Worker must not send success and rely on a downstream numeric rejection');
   assert.match(result.error.message, /REQUEST_REJECTED/);
-  assert.deepEqual(result.events, [['tombstone', 0], ['purge', 0], ['purge', 1]], 'No later shard or registry work after the first unsafe cumulative receipt');
+  assert.deepEqual(result.events, [...erasureMarkers, ['purge', 0], ['purge', 1]], 'No later shard or registry work after the first unsafe cumulative receipt');
   assert.equal(result.tombstoned, true);
 });
 test('driver: cumulative exact maximum safe total remains acknowledged without requiring tombstone metrics', async () => {
   const result = await normal('delete', { purgeCounts: [2 ** 52 - 1, 2 ** 52, 0, 0, 0, 0, 0, 0, 0, 0] });
   assert.equal(result.ok, true); assert.equal(result.value, Number.MAX_SAFE_INTEGER);
-  assert.deepEqual(result.statuses, [200]); assert.equal(result.events.length, 12);
+  assert.deepEqual(result.statuses, [200]); assert.equal(result.events.length, 32);
+  assert.deepEqual(result.events, erasureOrder);
   assert.equal(result.tombstoned, true);
+});
+
+for (const stage of ['physical-read', 'registry-empty-read']) for (const [label, faulty, throwing = false] of [
+  ['nonempty', { success: true, results: [{ owner_subject: owner.subject }] }],
+  ['malformed array', { success: true, results: {} }],
+  ['null results', { success: true, results: null }],
+  ['unacknowledged empty', { results: [] }],
+  ['failed empty', { success: false, results: [] }],
+  ['nonboolean success', { success: 'true', results: [] }],
+  ['thrown first cause', new Error('SYNTHETIC_PRIVATE_D1_CAUSE'), true],
+]) test('erasure readback: ' + stage + ' refuses ' + label + ' before receipt', async () => {
+  const result = await normal('delete', { fault: stage, faulty, throwing });
+  assert.equal(result.ok, false); assert.match(result.error.message, /REQUEST_REJECTED/);
+  assert.deepEqual(result.statuses, [400]);
+  assert.deepEqual(result.events, erasureOrder.slice(0, stage === 'physical-read' ? 25 : 32));
+  assert.equal(result.tombstoned, true);
+});
+for (const markerFaultShard of [3, 9]) for (const throwing of [false, true])
+test('erasure readback: failed marker ' + markerFaultShard + ', thrown=' + throwing + ' stops before any purge', async () => {
+  const result = await normal('delete', { fault: 'tombstone', markerFaultShard, throwing,
+    faulty: throwing ? new Error('SYNTHETIC_PRIVATE_D1_CAUSE') : { success: false } });
+  assert.equal(result.ok, false); assert.match(result.error.message, /REQUEST_REJECTED/);
+  assert.deepEqual(result.statuses, [400]);
+  assert.deepEqual(result.events, erasureMarkers.slice(0, markerFaultShard + 1));
+  assert.equal(result.tombstoned, true, 'Accepted earlier permanent markers are not rolled back');
 });
 
 }
@@ -2016,6 +2078,83 @@ upgradeTest('owner-upgrade unknown/false process stop cannot restore or recover'
   for(const extra of [{unknownDeployStep:'repair_replace'},{falseReceiptStep:'repair_replace'}]){
     const result=await runOwnerUpgradeWorkflow({operation:'existing-owner-export-upgrade',...extra});assert.ok(result.firstError);
     assert.equal(result.calls.filter(call=>call.action==='deploy').length,1);assert.equal(result.calls.some(call=>call.action==='restore'||call.step.startsWith('repair_recovery')),false);
+  }
+});
+}
+
+// A terminal physical-erasure claim needs more than a post-purge snapshot.
+// Actual signed Worker routes and unchanged DDL; only own in-memory SQLite.
+{
+const { test } = await import('node:test');
+const { DatabaseSync } = await import('node:sqlite');
+const { handleRequest } = await import('../cloudflare/trip-gateway/worker.js');
+const { externalOwnerSubject, storeCloudflareTrip, deleteCloudflareTrips, listCloudflareTrips }
+  = await import('../supabase/functions/_shared/trip-storage.js');
+test('erasure settlement: post-purge empty physical reads cannot precede a late owner insert', async () => {
+  const secret = 'synthetic-erasure-race-secret-at-least-32-characters';
+  const gatewayUrl = 'https://synthetic-erasure-race.example.workers.dev';
+  const owner = await externalOwnerSubject({ userId: '11111111-1111-4111-8111-111111111111', secret });
+  const payload = { client_observation_id: '33333333-3333-4333-8333-333333333333', trip_id: null,
+    observed_at: '2000-01-01T10:00:00.000Z', submitted_at: '2000-01-01T11:00:00.000Z',
+    actual_zone_id: 'DK-B01-01', actual_coastal_part_id: 'DK-B01-01-P01',
+    hunt_mode: 'beach', found: false, result: 'none' };
+  const databases = Array.from({ length: 10 }, () => new DatabaseSync(':memory:'));
+  let enteredInsert, releaseInsert, committedInsert, releasePostInsert;
+  const entered = new Promise(resolve => { enteredInsert = resolve; });
+  const mayInsert = new Promise(resolve => { releaseInsert = resolve; });
+  const inserted = new Promise(resolve => { committedInsert = resolve; });
+  const mayReturnInsert = new Promise(resolve => { releasePostInsert = resolve; });
+  let storing;
+  try {
+    const schema = fs.readFileSync('cloudflare/trip-gateway/migrations/001_trip_observations.sql', 'utf8');
+    const index = fs.readFileSync('cloudflare/trip-gateway/migrations/002_owner_export_keyset.sql', 'utf8');
+    const env = { TRIP_GATEWAY_SHARED_SECRET: secret };
+    for (const [shard, database] of databases.entries()) {
+      database.exec(schema); database.exec(index);
+      env[`TRIP_DB_${shard}`] = { prepare(sql) {
+        const statement = database.prepare(sql);
+        return { bind(...args) { return {
+          async all() { return { success: true, results: statement.all(...args) }; },
+          async run() {
+            const isTripInsert = /^\s*insert into trip_observations\s*\(/.test(sql);
+            if (isTripInsert) { enteredInsert(); await mayInsert; }
+            const result = statement.run(...args);
+            if (isTripInsert) { committedInsert(); await mayReturnInsert; }
+            return { success: true, meta: { changes: Number(result.changes) } };
+          },
+        }; } };
+      } };
+    }
+    const fetchImpl = (input, init) => {
+      const request = new Request(input, init), url = new URL(request.url);
+      assert.equal(url.origin, gatewayUrl);
+      assert.ok(['/v1/trips/store', '/v1/trips/delete-owner', '/v1/trips/list'].includes(url.pathname));
+      return handleRequest(request, env);
+    };
+    const args = { gatewayUrl, sharedSecret: secret, fetchImpl };
+    const physicalReadback = () => ({
+      rows: databases.reduce((sum, db) => sum + db.prepare('select owner_subject from trip_observations where owner_subject = ? limit 1').all(owner.subject).length, 0),
+      registry: databases[0].prepare('select owner_subject from trip_observation_registry where owner_subject = ? limit 1').all(owner.subject).length,
+    });
+    storing = storeCloudflareTrip({ ...args, owner, payload })
+      .then(value => ({ ok: true, value }), error => ({ ok: false, error }));
+    await Promise.race([entered, storing.then(() => { throw new Error('Store ended before the held normal insert'); })]);
+    assert.equal(await deleteCloudflareTrips({ ...args, ownerSubject: owner.subject }), 0);
+    const atDeleteReceipt = physicalReadback();
+    assert.deepEqual(atDeleteReceipt, { rows: 0, registry: 0 });
+    releaseInsert(); await inserted;
+    const afterLateInsert = physicalReadback();
+    assert.deepEqual(await listCloudflareTrips({ ...args, ownerSubject: owner.subject }), [],
+      'The tombstone-guarded list is empty even while a late physical row exists');
+    releasePostInsert();
+    assert.equal((await storing).ok, false, 'Existing final guard must refuse the late store');
+    assert.deepEqual(physicalReadback(), { rows: 0, registry: 0 }, 'Existing best-effort post-insert purge still runs');
+    assert.deepEqual(afterLateInsert, { rows: 0, registry: 0 },
+      'A terminal physical-erasure receipt must prevent an already admitted late INSERT, not merely hide it');
+  } finally {
+    releaseInsert(); releasePostInsert();
+    if (storing) await storing;
+    for (const database of databases) database.close();
   }
 });
 }
