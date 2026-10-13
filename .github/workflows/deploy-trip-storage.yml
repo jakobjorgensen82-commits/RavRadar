@@ -12,6 +12,7 @@ on:
           - full-install
           - existing-worker-repair
           - existing-owner-export-upgrade
+          - existing-owner-erasure-guard
           - typed-trip-catalog-read
           - fixed-public-rate-log-read
           - fixed-public-rate-log-read-20261013
@@ -1065,13 +1066,13 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
   reject-unknown-operation:
-    if: ${{ inputs.operation != '' && inputs.operation != 'full-install' && inputs.operation != 'existing-worker-repair' && inputs.operation != 'existing-owner-export-upgrade' && inputs.operation != 'typed-trip-catalog-read' && inputs.operation != 'fixed-public-rate-log-read' && inputs.operation != 'fixed-public-rate-log-read-20261013' && inputs.operation != 'fixed-storage-upload-log-read-20261013' }}
+    if: ${{ inputs.operation != '' && inputs.operation != 'full-install' && inputs.operation != 'existing-worker-repair' && inputs.operation != 'existing-owner-export-upgrade' && inputs.operation != 'existing-owner-erasure-guard' && inputs.operation != 'typed-trip-catalog-read' && inputs.operation != 'fixed-public-rate-log-read' && inputs.operation != 'fixed-public-rate-log-read-20261013' && inputs.operation != 'fixed-storage-upload-log-read-20261013' }}
     runs-on: ubuntu-latest
     steps:
       - run: exit 1
 
   repair-existing-worker:
-    if: ${{ inputs.operation == 'existing-worker-repair' || inputs.operation == 'existing-owner-export-upgrade' }}
+    if: ${{ inputs.operation == 'existing-worker-repair' || inputs.operation == 'existing-owner-export-upgrade' || inputs.operation == 'existing-owner-erasure-guard' }}
     name: Bounded existing-D1 Worker repair
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -1089,6 +1090,7 @@ jobs:
       TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-trip-repair-wrangler.json
       TRIP_OWNER_EXPORT_PLAN_PATH: /tmp/ravradar-owner-export-upgrade.json
       TRIP_STORAGE_OWNER_EXPORT_UPGRADE: ${{ inputs.operation == 'existing-owner-export-upgrade' && '1' || '0' }}
+      TRIP_STORAGE_OWNER_ERASURE_GUARD: ${{ inputs.operation == 'existing-owner-erasure-guard' && '1' || '0' }}
       TRIP_STORAGE_UPGRADE_PREFLIGHT: ${{ inputs.operation == 'existing-owner-export-upgrade' && '1' || '0' }}
     steps:
       - name: Require the exact main head
@@ -1214,6 +1216,7 @@ jobs:
           node scripts/apply-candidate-g-trip-quality-migration.mjs --verify-only
 
       - name: Read-only existing D1 repair preparation and live preflight
+        if: inputs.operation != 'existing-owner-erasure-guard'
         timeout-minutes: 5
         shell: bash
         env:
@@ -1229,8 +1232,44 @@ jobs:
           node scripts/verify-trip-storage-edge.mjs
           node scripts/verify-cloudflare-trip-gateway.mjs
 
+      # Metadata snapshot only: atomicWriterLease=false, not physical drain.
+      - name: Require fresh main-writer-idle metadata before owner-erasure INSERT guards
+        if: inputs.operation == 'existing-owner-erasure-guard'
+        timeout-minutes: 2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/check-fixed-supabase-account-read-idle.mjs
+
+      - name: Install and physically attest only the named owner-erasure INSERT guards
+        id: owner_erasure_guards
+        if: inputs.operation == 'existing-owner-erasure-guard'
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'ERASURE_NODE'
+          import fs from 'node:fs';
+          import { prepareOwnerErasureGuard, assertOwnerErasureSchemaAcknowledgment }
+            from './scripts/prepare-cloudflare-trip-storage.mjs';
+          const env=process.env;
+          if (env.TRIP_STORAGE_OWNER_ERASURE_GUARD !== '1') throw new Error('TRIP_OWNER_ERASURE_ROUTE_INVALID');
+          // Control budget only, not a claim that old requests ended.
+          env.REPAIR_LEASE_DEADLINE=String(Date.now()+20*60000);
+          const plan=await prepareOwnerErasureGuard('plan');
+          env.TRIP_OWNER_ERASURE_EXPECTED_WORKER_VERSION=plan.workerVersionId;
+          env.TRIP_OWNER_ERASURE_EXPECTED_BINDINGS_SHA256=plan.bindingMappingSha256;
+          const applied=await prepareOwnerErasureGuard('apply');
+          assertOwnerErasureSchemaAcknowledgment(applied,plan);
+          const checked=await prepareOwnerErasureGuard('check');
+          assertOwnerErasureSchemaAcknowledgment(checked,plan);
+          if (JSON.stringify(applied) !== JSON.stringify(checked)) throw new Error('TRIP_OWNER_ERASURE_SCHEMA_CHANGED');
+          fs.appendFileSync(env.GITHUB_OUTPUT,'schema_ready=true\nphysical_drain_claimed=false\nowner_erasure_verified=false\n');
+          console.log('Ten actual INSERT-fence schema acknowledgments; no owner/Auth/backup deletion or physical-drain claim.');
+          ERASURE_NODE
+
       - name: Quiesce the existing D1 installation
         id: repair_quiesce
+        if: inputs.operation != 'existing-owner-erasure-guard'
         timeout-minutes: 5
         shell: bash
         run: |
@@ -1283,6 +1322,7 @@ jobs:
 
       - name: Replace and attest the same-SQL Worker
         id: repair_replace
+        if: inputs.operation != 'existing-owner-erasure-guard'
         timeout-minutes: 7
         shell: bash
         env:
@@ -1344,6 +1384,7 @@ jobs:
 
       - name: Restore and attest normal D1 after replacement
         id: repair_restore
+        if: inputs.operation != 'existing-owner-erasure-guard'
         timeout-minutes: 5
         shell: bash
         env:
@@ -1389,7 +1430,7 @@ jobs:
 
       - name: Reattest and lease once for D1-only failure roll-forward
         id: repair_recovery_quiesce
-        if: ${{ inputs.operation != 'existing-owner-export-upgrade' && failure() && !cancelled() && steps.repair_quiesce.outputs.intent == 'true' && (steps.repair_replace.outputs.deploy_intent != 'true' || steps.repair_replace.outputs.deploy_stopped == 'true') }}
+        if: ${{ inputs.operation != 'existing-owner-erasure-guard' && inputs.operation != 'existing-owner-export-upgrade' && failure() && !cancelled() && steps.repair_quiesce.outputs.intent == 'true' && (steps.repair_replace.outputs.deploy_intent != 'true' || steps.repair_replace.outputs.deploy_stopped == 'true') }}
         timeout-minutes: 5
         shell: bash
         run: |
@@ -1441,7 +1482,7 @@ jobs:
 
       - name: One bounded D1-only recovery replacement
         id: repair_recovery_replace
-        if: ${{ failure() && !cancelled() && steps.repair_recovery_quiesce.outcome == 'success' }}
+        if: ${{ inputs.operation != 'existing-owner-erasure-guard' && failure() && !cancelled() && steps.repair_recovery_quiesce.outcome == 'success' }}
         timeout-minutes: 7
         shell: bash
         env:
@@ -1500,7 +1541,7 @@ jobs:
 
       - name: Reattest D1 recovery without masking the primary failure
         id: repair_recovery_restore
-        if: ${{ failure() && !cancelled() && steps.repair_recovery_replace.outcome == 'success' }}
+        if: ${{ inputs.operation != 'existing-owner-erasure-guard' && failure() && !cancelled() && steps.repair_recovery_replace.outcome == 'success' }}
         timeout-minutes: 5
         shell: bash
         env:

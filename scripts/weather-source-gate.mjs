@@ -81,6 +81,8 @@ if (mode === 'digest') {
       record = discovered.record;
       await writeJson(locatorPath, record);
       decision = await decideSourceGate(record, env, githubJson, { sourceTreeSha256 });
+    } else {
+      decision = discovered;
     }
   }
   await fs.appendFile(

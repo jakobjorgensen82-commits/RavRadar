@@ -343,6 +343,127 @@ async function prepareOwnerExportUpgrade(phase) {
   } catch { throw upgradeFailure(); }
 }
 
+
+// Schema acknowledgments are not owner-deletion, Auth or backup receipts.
+export function assertOwnerErasureSchemaAcknowledgment(value, expected) {
+  const fail=()=>{throw new Error('TRIP_OWNER_ERASURE_SCHEMA_ACK_INVALID');};
+  if (!expected || expected.kind !== 'TRIP_OWNER_ERASURE_INSERT_FENCE_SCHEMA_PLAN'
+    || !Array.isArray(expected.shardIdentities) || expected.shardIdentities.length !== 10
+    || expected.shardIdentities.some(value=>typeof value!=='string'||!/^[a-f0-9]{64}$/.test(value))
+    || new Set(expected.shardIdentities).size !== 10) fail();
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || JSON.stringify(Object.keys(value).sort()) !== JSON.stringify([
+      'authDeleted','backupsDeleted','bindingMappingSha256','kind','migrationSha256',
+      'ownerErased','physicalDrainClaimed','shards','sourceSha','workerVersionId'].sort())
+    || value.kind !== 'TRIP_OWNER_ERASURE_INSERT_FENCE_SCHEMA_ACK'
+    || value.migrationSha256 !== '40c4590dd2c10e4ce8384cb98ef4be5b399bf7ba5fe6bcc270430c1e6093d83e'
+    || value.sourceSha !== expected.sourceSha || !/^[a-f0-9]{40}$/.test(value.sourceSha)
+    || value.workerVersionId !== expected.workerVersionId
+    || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(value.workerVersionId)
+    || value.bindingMappingSha256 !== expected.bindingMappingSha256
+    || !/^[a-f0-9]{64}$/.test(value.bindingMappingSha256)
+    || value.ownerErased !== false || value.physicalDrainClaimed !== false
+    || value.authDeleted !== false || value.backupsDeleted !== false
+    || !Array.isArray(value.shards) || value.shards.length !== 10) fail();
+  const identities=new Set();
+  for (const [index,row] of value.shards.entries()) {
+    if (!row || typeof row !== 'object' || Array.isArray(row)
+      || Object.keys(row).sort().join(',') !== 'databaseIdentitySha256,index,triggerDefinitionSha256'
+      || row.index !== index || !/^[a-f0-9]{64}$/.test(row.databaseIdentitySha256)
+      || row.databaseIdentitySha256 !== expected.shardIdentities[index]
+      || identities.has(row.databaseIdentitySha256)
+      || row.triggerDefinitionSha256 !== expected.triggerDefinitionSha256) fail();
+    identities.add(row.databaseIdentitySha256);
+  }
+  if (!/^[a-f0-9]{64}$/.test(expected.triggerDefinitionSha256)) fail();
+  return value;
+}
+
+export async function prepareOwnerErasureGuard(phase) {
+  const failure = () => new Error('TRIP_OWNER_ERASURE_GUARD_UNVERIFIED');
+  if (!['plan', 'apply', 'check'].includes(phase) || process.env.TRIP_STORAGE_OWNER_ERASURE_GUARD !== '1') throw failure();
+  upgradeMainAndLease(phase === 'apply');
+  // Separate additive operation: never create/adopt shards or repair missing 002.
+  const migrations = [
+    ['001_trip_observations.sql', 'c076a6163f9dfeb869397f354ebe955efa03cd4fb5498d10c6dfc61715ae1368'],
+    ['002_owner_export_keyset.sql', 'a84490c7cd8a173447188cbec3c275714195f29688340cbbd35b33ff4248a4eb'],
+    ['003_owner_erasure_insert_guard.sql', '40c4590dd2c10e4ce8384cb98ef4be5b399bf7ba5fe6bcc270430c1e6093d83e'],
+  ].map(([name, expected]) => {
+    const bytes = fs.readFileSync(`cloudflare/trip-gateway/migrations/${name}`);
+    const text=bytes.toString('utf8');
+    if (/\r(?!\n)/.test(text)) throw failure();
+    const canonical=text.replace(/\r\n/g,'\n');
+    if (createHash('sha256').update(canonical).digest('hex') !== expected) throw failure();
+    return canonical;
+  });
+  const migration = migrations[2];
+  const expectedTrigger = schemaTokens(migration.slice(migration.indexOf('CREATE TRIGGER')));
+  const triggerDefinitionSha256=createHash('sha256').update(expectedTrigger).digest('hex');
+  const inspectTrigger = async database => {
+    const rows = await repairQuery(database,
+      'select type, name, tbl_name, sql from sqlite_master where name = ?',
+      ['trip_observations_erased_owner_no_insert']);
+    if (rows.length === 0) return null;
+    if (rows.length !== 1 || !rows[0] || Object.keys(rows[0]).sort().join(',') !== 'name,sql,tbl_name,type'
+      || rows[0]?.type !== 'trigger'
+      || rows[0].name !== 'trip_observations_erased_owner_no_insert'
+      || rows[0].tbl_name !== 'trip_observations'
+      || schemaTokens(rows[0].sql) !== expectedTrigger) throw failure();
+    return { databaseIdentitySha256:createHash('sha256').update(database.uuid.toLowerCase()).digest('hex'),
+      triggerDefinitionSha256:createHash('sha256').update(schemaTokens(rows[0].sql)).digest('hex') };
+  };
+  const inspection = await inspectOwnerExportShards();
+  if (inspection.missing.length) throw failure();
+  const descriptor = { accountId, apiToken, workerName: 'ravradar-trip-gateway', expectedBindings: inspection.bindings };
+  const current = await verifyExistingWorkerBindings(descriptor);
+  descriptor.expectedVersion = current.versionId;
+  const bindingMappingSha256=createHash('sha256').update(JSON.stringify(inspection.bindings)).digest('hex');
+  if (phase !== 'plan' && (process.env.TRIP_OWNER_ERASURE_EXPECTED_WORKER_VERSION !== current.versionId
+    || process.env.TRIP_OWNER_ERASURE_EXPECTED_BINDINGS_SHA256 !== bindingMappingSha256)) throw failure();
+  const missing = [];
+  // Inspect all ten definitions before the first possible DDL.
+  for (const database of inspection.ordered) if (!await inspectTrigger(database)) missing.push(database);
+  await verifyExistingWorkerBindings(descriptor);
+  const plan={kind:'TRIP_OWNER_ERASURE_INSERT_FENCE_SCHEMA_PLAN',sourceSha:process.env.GITHUB_SHA,
+    workerVersionId:current.versionId,bindingMappingSha256,triggerDefinitionSha256,
+    migrationSha256:'40c4590dd2c10e4ce8384cb98ef4be5b399bf7ba5fe6bcc270430c1e6093d83e',
+    shardIdentities:inspection.ordered.map(database=>createHash('sha256').update(database.uuid.toLowerCase()).digest('hex')),
+    missingShards:missing.map(database=>inspection.ordered.indexOf(database))};
+  if (phase === 'plan') return plan;
+  if (phase === 'check' && missing.length) throw failure();
+  if (phase === 'apply') {
+    for (const database of missing) {
+      await verifyExistingWorkerBindings(descriptor);
+      if (await inspectOwnerExportShard(database, inspection.definitions)) throw failure();
+      // An exact concurrent addition is not overwritten; any other definition refuses.
+      if (await inspectTrigger(database)) continue;
+      upgradeMainAndLease(true);
+      const body = await cloudflare(`/d1/database/${database.uuid}/query`, {
+        method: 'POST', body: JSON.stringify({ sql: migration }),
+      });
+      if (!Array.isArray(body.result) || body.result.length !== 1 || body.result[0]?.success !== true) throw failure();
+      if (!await inspectTrigger(database)) throw failure();
+    }
+    const final = await inspectOwnerExportShards();
+    if (final.missing.length || JSON.stringify(final.bindings) !== JSON.stringify(inspection.bindings)) throw failure();
+    for (const database of final.ordered) if (!await inspectTrigger(database)) throw failure();
+    await verifyExistingWorkerBindings(descriptor);
+  }
+  upgradeMainAndLease(phase === 'apply');
+  // Actual ten final metadata acknowledgments, never an owner-ledger/Auth phase.
+  const shards=[];
+  for (const [index,database] of inspection.ordered.entries()) {
+    const acknowledgment=await inspectTrigger(database); if (!acknowledgment) throw failure();
+    shards.push({index,...acknowledgment});
+  }
+  await verifyExistingWorkerBindings(descriptor);
+  upgradeMainAndLease(phase === 'apply');
+  const receipt={kind:'TRIP_OWNER_ERASURE_INSERT_FENCE_SCHEMA_ACK',sourceSha:process.env.GITHUB_SHA,
+    migrationSha256:plan.migrationSha256,workerVersionId:current.versionId,bindingMappingSha256,shards,
+    ownerErased:false,physicalDrainClaimed:false,authDeleted:false,backupsDeleted:false};
+  return assertOwnerErasureSchemaAcknowledgment(receipt,plan);
+}
+
 async function main() {
 const arguments_ = process.argv.slice(2);
 const repairOnly = arguments_.length === 1 && arguments_[0] === '--existing-worker-repair';
@@ -351,7 +472,13 @@ const upgradePhase = arguments_.length === 1 ? ({
   '--existing-owner-export-upgrade-apply': 'apply',
   '--existing-owner-export-upgrade-check': 'check',
 })[arguments_[0]] : undefined;
-if (arguments_.length && !repairOnly && !upgradePhase) throw new Error('TRIP_PREPARATION_ARGUMENTS_INVALID');
+const erasurePhase = arguments_.length === 1 ? ({
+  '--existing-owner-erasure-guard-plan': 'plan',
+  '--existing-owner-erasure-guard-apply': 'apply',
+  '--existing-owner-erasure-guard-check': 'check',
+})[arguments_[0]] : undefined;
+if (arguments_.length && !repairOnly && !upgradePhase && !erasurePhase) throw new Error('TRIP_PREPARATION_ARGUMENTS_INVALID');
+if (erasurePhase) { const receipt=await prepareOwnerErasureGuard(erasurePhase); console.log(JSON.stringify(receipt)); return receipt; }
 if (upgradePhase) { await prepareOwnerExportUpgrade(upgradePhase); return; }
 
 if (repairOnly) {
