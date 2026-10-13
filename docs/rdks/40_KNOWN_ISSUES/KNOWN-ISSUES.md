@@ -1,3 +1,15 @@
+## Samlet kildeforgænger for den afgrænsede strømlevering — 13. oktober 2026
+
+Den gennemgåede brugerdata-/læserkilde fra PR #591 på `49bcf267c32d384580528f3ba027062800e8de87` er nu kildeforgænger for den forberedte strøm-/publiceringskæde fra PR #592 på `c74737575e1404e98bbcef7f644684ab250e1b6c`. Begge hele kildehistorier bevares. Sammenføringen krævede kun fire dokumentfronter, inklusive alle kendt-issue-deltaer; der var ingen produktkonflikt. Dette er en kildekomposition, ikke en main-merge, installation eller ny offentlig generation.
+
+PR #588's faktisk grønne kilde på `5e1ade133de5476be624faa7d4ed53b0d2934883` bevares som præcis historisk evidens. PR #591's egen grønne head bevares særskilt. Ingen af disse beviser eller PR #592's tidligere kørsel er et alias for det nye samlede træ: én ny normal kildekontrol på den præcise samlede PR #592-head skal faktisk udføre source, native/PostgreSQL, uændret træ og kildebevis før levering.
+
+Ejeren har nu givet den særskilte tilladelse til alene de gennemgåede PR #588-/PR #592-strøm- og publiceringshandlinger gennem deres eksisterende sikkerhedskontroller. Ældre udsagn om kun kilde-PR-autoritet er historik på netop dette godkendte omfang. Autentiske B/S-originaler, tre originale I/C/T-familier, frisk pointer/version, førskrivningsplan og genlæsning samt relevante destinations- og efterdatagates må ikke springes over. Tilladelsen omfatter ikke SOURCE-G4, statistikrevisionen, vilkårlige nye destinationer eller en ny manuel vejrhentning.
+
+De særskilte 003-/eksisterende-Worker- og faste assistentloglæsningstilladelser er fortsat ubrugte ved denne klargøring. De gamle forbrugte læsninger forbliver forbrugte, og ingen automatisk gentagelse følger af sammenføringen. Driftens aktive writer skal faktisk være afsluttet, og frisk writer-fri kontrol skal bestå før main-merge eller produktionshandlinger.
+
+C69/I71/T12, alle 58 migrationsfiler i strømgrenen og de 57 genuine gamle SQL-filer fra 213-forgængeren bevares uændret. Originaler, offentliggjort scorehistorik, kilders prioritet, scoreformel, administratorpunkter, geometri og cron ændres ikke af dokumentkompositionen. Den samlede strøm-/scoreeffekt og revisions-, brugerdata-, assistent- og selvstændig-driftsmål er fortsat åbne, indtil deres faktiske normale leverings- og effektbeviser foreligger. Denne front erstatter kun de nedenstående historiske kilde-/tilladelsesudsagn på de præcist nævnte punkter; alle øvrige afslag, grænser og evidens bevares.
+
 # Lokal strømrettelse – afgrænset kildeforberedelse, 2026-10-13
 
 Den korrigerede native-prøve er faktisk bestået på den tidligere præcise PR-head. Den fulde kildekontrol stoppede derefter på gentagne beskedmetadata og flere gamle integrationstestforventninger. Beskedlokal klassifikation og geometri, strengt adskilte strøm-/scalar-cachekeys samt kildepinnens hele inverse er nu rettet lokalt. Normale updater-, installer-, routing-, workflow-, hold- og planlægningsmål består; den samlede nye Python-/Linux-/PostgreSQL-kontrol er endnu ikke kørt. Dette afsnit erstatter den følgende ældre afventningsstatus alene på disse delprøver. Ingen strømaktivering, originalpakke- eller offentlig effekt er bevist.
@@ -9,6 +21,21 @@ Første kildekontrol på strømrettelsen stoppede i den historiske native-prøve
 Originalkontrollen skal afvise blandede I/C/T-familier og samme-generation-erstatning med andre, ellers gyldige tal før kloning og ved relevant sidste kopikontrol. Hele aktuelle B/S skal bevares, også hvis det private kontrolarkiv allerede indeholder et ældre første originalpar.
 
 Den lokale bindingsforberedelse er nu faktisk materialiseret som en særskilt append-only 220000-migration med normale C69/I71/T12-bindinger. De syv normale bindingsforbrugere er synkroniseret; alle 57 historiske SQL-filer, administratorens valg og de øvrige felter bevares. Den normale readiness-prøve, den nye migrationsbyggers kontrol og bindingssynkroniseringens positive samt negative mål består lokalt. Kildeplanen bevarer alle 47 tidligere kontroller og adskiller den uforanderlige 213-kilde fra den aktuelle 220-kilde. Dette er ikke native-/nationalt, autentisk originalpakke- eller produktionsbevis. Faktisk native-kæde, originalernes førskrivningskontrol, særskilt installationsautoritet og ny generationseffekt står åbne; konto-/assistenttilladelsen er ikke numerisk tilladelse. Ingen installation, ny version eller SOURCE-G4-aktivering er udført. Alle fem hovedmål er fortsat åbne.
+## Faktisk status efter den faste assistentaflæsning — 13. oktober 2026
+
+Den almindelige vejrhentning afsluttede faktisk gemning, upload, Pages-deploy og offentlig 210/673-kontrol kl. 17.24 dansk tid. Det er ikke fuld DMI-/genopretnings- eller numerisk strømovergangsevidens. Den separate læserkilde blev derefter sikkert leveret efter præcis kildekontrol og frisk writer-fri kontrol.
+
+Ejerens ene 13. oktober-logforespørgsel er nu forbrugt: Supabase svarede HTTP 200, men læseren afviste envelope-formatet. Det er ikke et vellykket fejlkode- eller AI-årsagsbevis. Den særskilt godkendte ene joblog er også læst og forbrugt; der udføres ingen automatisk ny backendforespørgsel eller logdownload. Den konkrete 503-årsag og fungerende ekstern AI er åbne. Ældre afsnits afventende kildelevering og ubrugt tilladelse er historik på netop disse punkter; alle øvrige grænser bevares.
+
+
+## Lokal turlagring: afværg forsinket genindsættelse — 13. oktober 2026
+
+Den forberedte Worker kontrollerer samme databasedels slettemarkør ved indsættelse og opretter alle ti markører før fysisk sletning. En forsinket indsættelse fra den genuine gamle Worker kræver også et databaseværn; derfor er en særskilt, som udgangspunkt fravalgt 003-installationsvej forberedt. Den kontrollerer alle ti eksisterende EU-databaser, 001/002-schema, den eksisterende Worker-version, bindingskort og eksakt triggerdefinition før den første mulige ændring. Kun en manglende, navngiven INSERT-trigger må tilføjes. Den opretter ingen databaser, opdaterer ingen Worker/Edge, og udfører ingen automatisk reparation eller gentagelse.
+
+Den normale målfil registrerede 400 prøver: 399 bestod, ingen fejlede, og én Linux-specifik prøve er udtrykkeligt udeladt på Windows. Fysiske SQLite-prøver omfatter den gamle Workers tilbageholdte indsættelse, alle ti databasekvitteringer, 15 ugyldige kvitteringer og fem stopforløb. Testens workflowfortolker følger nu GitHubs implicitte `success()` for almindelige betingelser; tidligere negative forløb bevares.
+
+Dette er lokal kildeintegration, ikke hosted D1-installation, udført kontosletning, fysisk dræning af gamle requests eller Auth-/backup-sletning. Kvitteringen angiver udtrykkeligt disse grænser. Automatisk inaktivitetsvarsling, login-redning, anonym statistik og backupfristen er fortsat åbne. En særskilt præcis installations-/Worker-tilladelse og den normale kildekontrol mangler. Modelbindinger, gamle SQL-filer, geometri og eksisterende ture er ikke ændret. Alle fem hovedmål er åbne.
+
 # 4.0.576 – ny fast, skrivefri assistentkontrol, 2026-10-13
 
 Kildeklargøringen er nu tilpasset den leverede main `a7741ebb41812ec7cb7076050f3537936f10d9a0`. PR #587 er leveret gennem det kontrollerede rettelsesdeploy `38391450805`, som er afsluttet med succes. Den eksisterende omkostningsrettelse, alle 69 DMI-testmetoder og deres dokumentation bevares uændret. Dette er ikke en ny DMI-generation, målt effekt ved en ny behandlingsfejl eller AI-årsagsbevis. Det tidligere 289-baserede udkast bevares separat; de ældre afsnits forberedelsesstatus er historik på det konkret leverede punkt.
