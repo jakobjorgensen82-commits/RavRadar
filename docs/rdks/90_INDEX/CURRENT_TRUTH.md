@@ -1,3 +1,13 @@
+## Samlet kildeklargøring af turlager og fast assistentlæser — 13. oktober 2026
+
+PR #590 på `59c12f9f89fa1a9649d879a36fcf4de8c38e6e1d` og PR #591 på `3360cba769ae653ee37452efdea21e112cf169da` har hver bestået deres præcise normale kildekontrol. Deres produkt- og kalderrettelser er adskilte; kun denne changelog og de to RDKS-statusfronter kræver tabsfri sammenføring. De to tidligere grønne træer er ikke bevis for det nye samlede træ. Den samlede kilde-head skal bestå én faktisk normal PR-kontrol inklusive native PostgreSQL, uændret træ og kildebevis før levering.
+
+Den aktuelle produktions-main er fortsat `9179c261613cfadacd3da344dbdb4336d3f1f2f4` med den installerede 21310000-kontokontrakt. Ved denne klargøring var vejrhentning `38429584918` aktiv; ingen merge, hosted D1-/Worker-ændring eller ny Supabase-læsning er udført af sammenføringen. 220000-strømrevisionen, statistikrevisionen og SOURCE-G4 er ikke del af denne leverance. Gamle Supabase-SQL-filer, numeriske originaler, modelbindinger og geometri bevares.
+
+Ejeren har givet to særskilte nye, endnu ubrugte engangstilladelser: det afgrænsede 003-værn i de ti eksisterende D1-databaser med den ene eksisterende Worker-opdatering gennem det kontrollerede reparationsforløb, og den præcist fastlåste skrivefri assistentloglæsning. De må først anvendes efter relevant grøn kildekontrol og faktisk writer-fri kontrol og må ikke lånes til andre handlinger. De tidligere forbrugte Supabase-/jobloglæsninger forbliver forbrugte; ingen automatisk gentagelse tillades.
+
+Denne front erstatter alene de nedenstående historiske udsagn om manglende kildekontrol og de nu givne, nye tilladelser. Hosted 003-installation, faktisk Worker-opdatering, præcis 503-årsag og fungerende ekstern AI er stadig åbne indtil de relevante normale handlinger og deres faktiske resultater foreligger. 003-schemaets kvitteringer er ikke fysisk dræning, kontosletning eller Auth-/backup-sletning. Alle fem hovedmål er fortsat åbne.
+
 ## Dokumenteret rettelse: logsvarets fejlfelt er valgfrit — 13. oktober 2026
 
 Den officielle, tokenfri Supabase OpenAPI-kontrakt gør HTTP 200-svarets `error`-felt valgfrit. Læserens tidligere krav om præcis både `result` og `error` var derfor en konkret overstramning. Den minimale rettelse tillader nu også præcis `result` alene, når den uændrede normale array-/række-/status-/fejlkodevalidering består. Manglende resultat, ekstra felter, ugyldigt eksplicit fejlfelt, delvise eller ukendte rækker og de tidligere grænser afvises fortsat.
@@ -15,6 +25,21 @@ Den lille læserrettelse bevarer alle tidligere afslag og den oprindelige ni-fel
 
 Den faktisk integrerede normale offline-målfil består 31 tilfælde inklusive alle 23 tidligere og den reelle kropsfrist. Det er ikke hosted format- eller AI-årsagsbevis. Ny præcis kildekontrol og sikker kildelevering mangler; en eventuel ny Supabase-læsning kræver en ny særskilt engangstilladelse. Ingen ny forespørgsel, installation, vejrhentning eller ændring af bindinger, SQL og data er udført. Alle fem målområder er åbne.
 
+
+## Faktisk status efter den faste assistentaflæsning — 13. oktober 2026
+
+Den almindelige vejrhentning afsluttede faktisk gemning, upload, Pages-deploy og offentlig 210/673-kontrol kl. 17.24 dansk tid. Det er ikke fuld DMI-/genopretnings- eller numerisk strømovergangsevidens. Den separate læserkilde blev derefter sikkert leveret efter præcis kildekontrol og frisk writer-fri kontrol.
+
+Ejerens ene 13. oktober-logforespørgsel er nu forbrugt: Supabase svarede HTTP 200, men læseren afviste envelope-formatet. Det er ikke et vellykket fejlkode- eller AI-årsagsbevis. Den særskilt godkendte ene joblog er også læst og forbrugt; der udføres ingen automatisk ny backendforespørgsel eller logdownload. Den konkrete 503-årsag og fungerende ekstern AI er åbne. Ældre afsnits afventende kildelevering og ubrugt tilladelse er historik på netop disse punkter; alle øvrige grænser bevares.
+
+
+## Lokal turlagring: afværg forsinket genindsættelse — 13. oktober 2026
+
+Den forberedte Worker kontrollerer samme databasedels slettemarkør ved indsættelse og opretter alle ti markører før fysisk sletning. En forsinket indsættelse fra den genuine gamle Worker kræver også et databaseværn; derfor er en særskilt, som udgangspunkt fravalgt 003-installationsvej forberedt. Den kontrollerer alle ti eksisterende EU-databaser, 001/002-schema, den eksisterende Worker-version, bindingskort og eksakt triggerdefinition før den første mulige ændring. Kun en manglende, navngiven INSERT-trigger må tilføjes. Den opretter ingen databaser, opdaterer ingen Worker/Edge, og udfører ingen automatisk reparation eller gentagelse.
+
+Den normale målfil registrerede 400 prøver: 399 bestod, ingen fejlede, og én Linux-specifik prøve er udtrykkeligt udeladt på Windows. Fysiske SQLite-prøver omfatter den gamle Workers tilbageholdte indsættelse, alle ti databasekvitteringer, 15 ugyldige kvitteringer og fem stopforløb. Testens workflowfortolker følger nu GitHubs implicitte `success()` for almindelige betingelser; tidligere negative forløb bevares.
+
+Dette er lokal kildeintegration, ikke hosted D1-installation, udført kontosletning, fysisk dræning af gamle requests eller Auth-/backup-sletning. Kvitteringen angiver udtrykkeligt disse grænser. Automatisk inaktivitetsvarsling, login-redning, anonym statistik og backupfristen er fortsat åbne. En særskilt præcis installations-/Worker-tilladelse og den normale kildekontrol mangler. Modelbindinger, gamle SQL-filer, geometri og eksisterende ture er ikke ændret. Alle fem hovedmål er åbne.
 
 # 4.0.576 – ny fast, skrivefri assistentkontrol, 2026-10-13
 

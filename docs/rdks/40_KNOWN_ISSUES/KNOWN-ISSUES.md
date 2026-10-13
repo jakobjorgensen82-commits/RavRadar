@@ -1,3 +1,18 @@
+## Faktisk status efter den faste assistentaflæsning — 13. oktober 2026
+
+Den almindelige vejrhentning afsluttede faktisk gemning, upload, Pages-deploy og offentlig 210/673-kontrol kl. 17.24 dansk tid. Det er ikke fuld DMI-/genopretnings- eller numerisk strømovergangsevidens. Den separate læserkilde blev derefter sikkert leveret efter præcis kildekontrol og frisk writer-fri kontrol.
+
+Ejerens ene 13. oktober-logforespørgsel er nu forbrugt: Supabase svarede HTTP 200, men læseren afviste envelope-formatet. Det er ikke et vellykket fejlkode- eller AI-årsagsbevis. Den særskilt godkendte ene joblog er også læst og forbrugt; der udføres ingen automatisk ny backendforespørgsel eller logdownload. Den konkrete 503-årsag og fungerende ekstern AI er åbne. Ældre afsnits afventende kildelevering og ubrugt tilladelse er historik på netop disse punkter; alle øvrige grænser bevares.
+
+
+## Lokal turlagring: afværg forsinket genindsættelse — 13. oktober 2026
+
+Den forberedte Worker kontrollerer samme databasedels slettemarkør ved indsættelse og opretter alle ti markører før fysisk sletning. En forsinket indsættelse fra den genuine gamle Worker kræver også et databaseværn; derfor er en særskilt, som udgangspunkt fravalgt 003-installationsvej forberedt. Den kontrollerer alle ti eksisterende EU-databaser, 001/002-schema, den eksisterende Worker-version, bindingskort og eksakt triggerdefinition før den første mulige ændring. Kun en manglende, navngiven INSERT-trigger må tilføjes. Den opretter ingen databaser, opdaterer ingen Worker/Edge, og udfører ingen automatisk reparation eller gentagelse.
+
+Den normale målfil registrerede 400 prøver: 399 bestod, ingen fejlede, og én Linux-specifik prøve er udtrykkeligt udeladt på Windows. Fysiske SQLite-prøver omfatter den gamle Workers tilbageholdte indsættelse, alle ti databasekvitteringer, 15 ugyldige kvitteringer og fem stopforløb. Testens workflowfortolker følger nu GitHubs implicitte `success()` for almindelige betingelser; tidligere negative forløb bevares.
+
+Dette er lokal kildeintegration, ikke hosted D1-installation, udført kontosletning, fysisk dræning af gamle requests eller Auth-/backup-sletning. Kvitteringen angiver udtrykkeligt disse grænser. Automatisk inaktivitetsvarsling, login-redning, anonym statistik og backupfristen er fortsat åbne. En særskilt præcis installations-/Worker-tilladelse og den normale kildekontrol mangler. Modelbindinger, gamle SQL-filer, geometri og eksisterende ture er ikke ændret. Alle fem hovedmål er åbne.
+
 # 4.0.576 – ny fast, skrivefri assistentkontrol, 2026-10-13
 
 Kildeklargøringen er nu tilpasset den leverede main `a7741ebb41812ec7cb7076050f3537936f10d9a0`. PR #587 er leveret gennem det kontrollerede rettelsesdeploy `38391450805`, som er afsluttet med succes. Den eksisterende omkostningsrettelse, alle 69 DMI-testmetoder og deres dokumentation bevares uændret. Dette er ikke en ny DMI-generation, målt effekt ved en ny behandlingsfejl eller AI-årsagsbevis. Det tidligere 289-baserede udkast bevares separat; de ældre afsnits forberedelsesstatus er historik på det konkret leverede punkt.
