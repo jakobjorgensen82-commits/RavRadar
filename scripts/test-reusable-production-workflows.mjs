@@ -261,7 +261,7 @@ assertExactKeys(
   ['contents', 'actions', 'pages', 'id-token'],
   'deploy caller forwards every reusable deploy permission',
 );
-assertExactKeys(directKeys(indentedBody(deployCaller, '    with:'), 6), deployContract.inputs, 'deploy caller inputs');
+assertExactKeys(directKeys(indentedBody(deployCaller, '    with:'), 6), deployContract.inputs.filter(name => name !== 'pre_activation_recovery'), 'deploy caller inputs');
 assertExactKeys(directKeys(indentedBody(deployCaller, '    secrets:'), 6), deployContract.secrets, 'deploy caller secrets');
 for (const input of [
   'active_deployment_id',
@@ -627,7 +627,11 @@ const casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.end
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
 assert.equal(casTimeoutSettings.at(-1).migration,
-  '20261013210000_account_assistant_original_bound_successor.sql');
+  '20261013220000_current_grid_original_bound_successor.sql');
+assert.deepEqual(casTimeoutSettings.find(item =>
+  item.migration === '20261013210000_account_assistant_original_bound_successor.sql'),
+  { migration: '20261013210000_account_assistant_original_bound_successor.sql', timeout: '55s' },
+  'the installed account/assistant predecessor must retain its original scoped timeout');
 assert.deepEqual(casTimeoutSettings.find(item =>
   item.migration === '20261010130000_owner_export_origin_bound_successor.sql'),
   { migration: '20261010130000_owner_export_origin_bound_successor.sql', timeout: '55s' },
@@ -660,3 +664,186 @@ assert.doesNotMatch(restoredTimeoutMigration,
   /alter (?:role|database)|(?:insert into|update|delete from) public\.admin_documents|create.*(?:table|trigger)|drop\s/i);
 
 console.log('Reusable production workflow interface and failure contracts passed.');
+
+// Current-grid publication changes only its exact historical-to-current route.
+{
+  const { deferCurrentGridBindingEdges, currentGridEdgePublicationRequired, assertCurrentGridEdgeGeneration } =
+    await import('./lib/production-workflow-sources.mjs');
+  const { ravScoreModelBinding } = await import('../js/core/ravscore-model-contract.js');
+  const { CURRENT_GRID_SAMPLING_PREDECESSOR_POLICY: ffc,
+    CURRENT_GRID_SAMPLING_DELIVERED_575_POLICY: delivered,
+    CURRENT_GRID_SAMPLING_SELECTED_PREDECESSOR_POLICY: selected } =
+    await import('./lib/bounded-conditions-predecessor-transition.mjs');
+  assert.equal(deferCurrentGridBindingEdges('20261013210000'), false);
+  assert.equal(deferCurrentGridBindingEdges('20261013220000'), true);
+  const { LATEST_RAVSCORE_BINDING_MIGRATION, LATEST_REQUIRED_CUTOVER_MIGRATION } =
+    await import('./integrated-cutover-readiness.mjs');
+  assert.equal(LATEST_RAVSCORE_BINDING_MIGRATION.version, '20260920220000');
+  assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261013220000');
+  assert.equal(deferCurrentGridBindingEdges(LATEST_RAVSCORE_BINDING_MIGRATION.version), false);
+  assert.equal(deferCurrentGridBindingEdges(LATEST_REQUIRED_CUTOVER_MIGRATION.version), true);
+  const active = binding => ({ model: 'integrated', status: 'INTEGRATED_ACTIVE',
+    pending: false, modelBinding: structuredClone(binding) });
+  for (const policy of [ffc, delivered, selected]) {
+    const current = active(policy.sourceModelBinding), before = structuredClone(current);
+    assert.equal(await currentGridEdgePublicationRequired(current, 'integrated-historical-maintenance'), true);
+    assert.deepEqual(current, before);
+    for (const changed of [{ ...current, pending: true }, { ...current, status: 'PENDING' }])
+      await assert.rejects(currentGridEdgePublicationRequired(changed, 'integrated-historical-maintenance'));
+    await assert.rejects(currentGridEdgePublicationRequired(current, 'candidate-maintenance'));
+  }
+  assert.equal(await currentGridEdgePublicationRequired(active(ravScoreModelBinding()), 'integrated'), false);
+  const foreign = active({ ...selected.sourceModelBinding, profileId: 'other' });
+  assert.equal(await currentGridEdgePublicationRequired(foreign, 'integrated-historical-maintenance'), false,
+    'a bundle-only match must not defer the existing readiness gate');
+  const oldGeneration = { ...active(selected.sourceModelBinding),
+    datasetId: 'old', productionReferenceAt: '2026-10-13T00:00:00.000Z' };
+  const nextGeneration = { schemaVersion: 4, complete: true, zoneCount: 210, coastalPartCount: 673,
+    ravScoreModelBinding: ravScoreModelBinding(), ravScoreRuntime: { modelBinding: ravScoreModelBinding() },
+    datasetId: 'next', productionReferenceAt: '2026-10-13T01:00:00.000Z' };
+  await assertCurrentGridEdgeGeneration(oldGeneration, nextGeneration, nextGeneration.productionReferenceAt);
+  for (const changed of [{ ...nextGeneration, productionReferenceAt: oldGeneration.productionReferenceAt },
+    { ...nextGeneration, datasetId: 'old' }, { ...nextGeneration, ravScoreModelBinding: selected.sourceModelBinding },
+    { ...nextGeneration, ravScoreModelBinding: undefined, modelBinding: ravScoreModelBinding() }])
+    await assert.rejects(assertCurrentGridEdgeGeneration(oldGeneration, changed, nextGeneration.productionReferenceAt));
+  await assert.rejects(assertCurrentGridEdgeGeneration(oldGeneration, nextGeneration, '2026-10-13T02:00:00.000Z'));
+  const edge = indentedBody(build, '      - name: Deploy the three exact current-grid Edges only after new-generation gates');
+  for (const id of ["weather","full-validation","release-gate","checkpoint-disposition","checkpoint-build","checkpoint-save","checkpoint-publish","private-runtime-bundle-create","private-build-stage-seal","private-build-stage-upload","private-runtime-publish","private-runtime-anon-audit","pages-build","pages-privacy"])
+    assert(edge.includes('test "' + gh('steps.' + id + '.outcome') + '" = success'), id);
+  assert(edge.includes('steps.current-grid-original-migration.outcome'));
+  assert(edge.includes('check-production-target-freshness.mjs --target "$RAVRADAR_PRODUCTION_TARGET_HOUR" --maximum-age-minutes 150'));
+  assert.doesNotMatch(edge, /continue-on-error|always\(\)|\|\| true|--no-verify-jwt|db push/);
+  const deploys = [...edge.matchAll(/supabase functions deploy ([a-z-]+) --project-ref/g)].map(match => match[1]);
+  assert.deepEqual(deploys, ['trip-log', 'submit-observation', 'ravradar-assistant']);
+  const ordered = ['Audit the complete Pages artifact for private runtime material',
+    'Preserve the exact current-grid Pages target before remote upload',
+    "Current-grid pre-Edge - Configure GitHub Pages",
+    "Current-grid pre-Edge - Upload GitHub Pages artifact",
+    "Current-grid pre-Edge - Resolve and seal the exact uploaded Pages artifact",
+    'Deploy the three exact current-grid Edges only after new-generation gates',
+    'Require exact current-grid backend and Edge readiness after late deployment',
+    'Seal current-grid historical maintenance only after late Edge readiness',
+    'Seal privacy-safe operational deploy handoff', 'Upload GitHub Pages artifact'];
+  for (let i = 1; i < ordered.length; i++) assert(build.indexOf('name: ' + ordered[i - 1]) < build.indexOf('name: ' + ordered[i]));
+  for (const name of ["Require exact integrated backend and Edge readiness before integrated Pages", "Seal integrated return, initial cutover or historical maintenance plan after backend and public gates"])
+    assert(indentedBody(build, '      - name: ' + name).includes("steps.current-grid-edge-route.outputs.required != 'true'"));
+  const onceCaller = fs.readFileSync(new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+  assert(jobBlock(onceCaller, 'build-and-prepare').includes('SUPABASE_ACCESS_TOKEN: ' + gh('secrets.SUPABASE_ACCESS_TOKEN')));
+  const binding = fs.readFileSync(new URL('../.github/workflows/apply-weather-model-binding-only.yml', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+  assert(binding.includes("import { LATEST_REQUIRED_CUTOVER_MIGRATION } from './scripts/integrated-cutover-readiness.mjs';"));
+  assert(binding.includes('deferCurrentGridBindingEdges(LATEST_REQUIRED_CUTOVER_MIGRATION.version)'));
+  assert(!binding.includes('deferCurrentGridBindingEdges(LATEST_RAVSCORE_BINDING_MIGRATION.version)'));
+  for (const name of ['Reconfirm exact main before assistant Edge deployment',
+    'Deploy only the exact RavRadar assistant Edge function',
+    'Verify exact backend and assistant readback without weather or Pages'])
+    assert(indentedBody(binding, '      - name: ' + name).includes("if: steps.integrated-implementation.outputs.defer_edges != 'true'"));
+
+  const { assertCurrentGridEdgeArtifact } = await import('./lib/production-workflow-sources.mjs');
+  const { sha256CanonicalJson } = await import('./ravscore-operational-pages-recovery.mjs');
+  const identity = { repository: 'synthetic/repository', runId: 123, runAttempt: 1,
+    headSha: 'a'.repeat(40), ref: 'refs/heads/main', attemptId: 'pages-123-1' };
+  const implementation = { modelBinding: ravScoreModelBinding(), implementationClosureSha256: 'c'.repeat(64) };
+  const seal = { schemaVersion: 'ravscore-operational-pages-artifact-seal-v1', ...identity,
+    artifactId: 456, artifactName: 'github-pages', artifactDigestSha256: 'd'.repeat(64), artifactSizeBytes: 1234,
+    targetPublicManifestSha256: sha256CanonicalJson(nextGeneration),
+    targetImplementationClosureSha256: implementation.implementationClosureSha256,
+    targetModelBinding: ravScoreModelBinding(), createdAt: '2026-09-01T00:00:00.000Z', privatePayloadIncluded: false };
+  const allBefore = structuredClone({ oldGeneration, nextGeneration, seal, identity, implementation });
+  assert.equal(await assertCurrentGridEdgeArtifact(oldGeneration, nextGeneration,
+    nextGeneration.productionReferenceAt, seal, identity, implementation), sha256CanonicalJson(nextGeneration));
+  for (const change of [{ artifactId: 0 }, { artifactDigestSha256: 'bad' }, { artifactSizeBytes: 0 },
+    { runAttempt: 2 }, { headSha: 'b'.repeat(40) }, { privatePayloadIncluded: true },
+    { targetPublicManifestSha256: 'f'.repeat(64) }, { targetImplementationClosureSha256: 'f'.repeat(64) },
+    { targetModelBinding: selected.sourceModelBinding }, { extraField: true }])
+    await assert.rejects(assertCurrentGridEdgeArtifact(oldGeneration, nextGeneration,
+      nextGeneration.productionReferenceAt, { ...seal, ...change }, identity, implementation));
+  for (const change of [{ ravScoreRuntime: { modelBinding: selected.sourceModelBinding } },
+    { complete: false }, { coastalPartCount: 672 }, { zoneCount: 209 }])
+    await assert.rejects(assertCurrentGridEdgeArtifact(oldGeneration, { ...nextGeneration, ...change },
+      nextGeneration.productionReferenceAt, seal, identity, implementation));
+  await assert.rejects(assertCurrentGridEdgeArtifact(oldGeneration, nextGeneration,
+    nextGeneration.productionReferenceAt, seal, identity, { ...implementation, modelBinding: selected.sourceModelBinding }));
+  assert.deepEqual({ oldGeneration, nextGeneration, seal, identity, implementation }, allBefore);
+  for (const id of ["current-grid-pages-target","current-grid-pages-configure","current-grid-pages-upload","current-grid-pages-artifact-seal"])
+    assert(edge.includes('test "' + gh('steps.' + id + '.outcome') + '" = success'), id);
+  for (const [name, id] of [["Configure GitHub Pages","pages-configure"],["Upload GitHub Pages artifact","pages-upload"],["Resolve and seal the exact uploaded Pages artifact","pages-artifact-seal"]]) {
+    const late = indentedBody(build, '      - name: ' + name);
+    const early = indentedBody(build, '      - name: Current-grid pre-Edge - ' + name);
+    assert(late.includes("steps.current-grid-edge-route.outputs.required != 'true'"));
+    assert(early.includes("steps.current-grid-edge-route.outputs.required == 'true'"));
+    const mapping = "steps.current-grid-edge-route.outputs.required == 'true' && steps.current-grid-" + id + '.outcome || steps.' + id + '.outcome';
+    assert(build.includes(id.replaceAll('-', '_') + '_outcome: ' + gh(mapping)));
+  }
+  const remoteSeal = indentedBody(build, '      - name: Current-grid pre-Edge - Resolve and seal the exact uploaded Pages artifact');
+  for (const required of ['steps.current-grid-pages-upload.outputs.artifact_id',
+    'actions/artifacts/$artifact_id', '.expired == false', '.workflow_run.id == $runId',
+    '.workflow_run.head_sha == $headSha', 'normalizeArtifactDigestSha256', '.size_in_bytes',
+    'targetPublicManifestSha256', 'targetImplementationClosureSha256', 'targetModelBinding'])
+    assert(remoteSeal.includes(required), required);
+  const finalHandoff = indentedBody(build, '      - name: Seal privacy-safe operational deploy handoff');
+  const selectedHead = finalHandoff.split('          else\n')[0];
+  assert.doesNotMatch(selectedHead, /rm -rf|> .*pages-artifact-seal|cp .*manifest.json/);
+  for (const required of ['cmp "_site/data/live/manifest.json"', 'assertCurrentGridEdgeArtifact',
+    'assertIntegratedHistoricalMaintenancePlan', 'expectedCentralVersion: current.centralVersion',
+    'plan.sourceModelBinding, current.modelBinding', 'plan.sourceImplementationClosureSha256, current.activeImplementationClosureSha256',
+    'plan.requestedImplementationClosureSha256, seal.targetImplementationClosureSha256',
+    'plan.integratedManifestSha256, seal.targetPublicManifestSha256',
+    'plan.activeModelBinding, seal.targetModelBinding']) assert(finalHandoff.includes(required), required);
+  assert.doesNotMatch(edge, /classifyRavScoreOperationalPagesRecovery|--begin|--activate/);
+}
+
+
+// The ordinary caller omits the new optional input and retains both default
+// namespaces. Only the fixed internal recovery caller selects the new route.
+assert.equal(deployCaller.includes('pre_activation_recovery:'),false);
+assert.match(indentedBody(deploy,'      pre_activation_recovery:'),/default: false/);
+const phaseResume=jobBlock(recovery,'resume-pre-activation');
+const phasePages=jobBlock(recovery,'resume-pre-activation-pages');
+assert.equal(phasePages.includes('pre_activation_recovery: true'),true);
+assert.equal(phasePages.includes('uses: ./.github/workflows/reusable-pages-deploy.yml'),true);
+assert.equal(phaseResume.includes('version: 2.117.0'),true);
+for(const literal of ['for function in trip-log submit-observation ravradar-assistant;',
+  '--claim-pre-activation','--restore-pre-activation','--publish-pre-activation','--assert-pre-activation-owner',
+  'integrated-cutover-readiness.mjs publish','prepare-integrated-historical-maintenance','--prepare-pre-activation-handoff'])
+  assert.equal(phaseResume.includes(literal),true,literal);
+assert(phaseResume.indexOf('id: phase-pages-upload')<phaseResume.indexOf('--publish-pre-activation'));
+assert(phaseResume.indexOf('--publish-pre-activation')<phaseResume.indexOf('supabase functions deploy'));
+assert(phaseResume.indexOf('supabase functions deploy')<phaseResume.indexOf('integrated-cutover-readiness.mjs publish'));
+assert(phaseResume.indexOf('integrated-cutover-readiness.mjs publish')<phaseResume.indexOf('prepare-integrated-historical-maintenance'));
+assert(phaseResume.indexOf('prepare-integrated-historical-maintenance')<phaseResume.indexOf('--prepare-pre-activation-handoff'));
+for(const sourceText of [orchestrator,fs.readFileSync('.github/workflows/run-current-weather-once.yml','utf8')])
+  assert(jobBlock(sourceText.replace(/\r\n/g,'\n'),'operational-recovery-gate').includes('SUPABASE_ACCESS_TOKEN: '+gh('secrets.SUPABASE_ACCESS_TOKEN')));
+assert(deploy.includes("|| 'github-pages'"));
+assert(deploy.includes("|| format('pages-{0}-{1}', github.run_id, github.run_attempt)"));
+assert(deploy.indexOf('id: deployment-terminal')<deploy.indexOf('--clear-pre-activation'));
+assert(recovery.indexOf('--inspect-pre-activation')<recovery.indexOf('No durable RavScore transition'));
+assert(jobBlock(recovery,'operational-recovery-gate').includes('test "$PHASE_COMPLETE_RESULT" = success'));
+
+// The named original-preserving SQL prewrite must remain independent of Edge
+// deferral. Recheck the exact 877b normal caller, not an older workflow fixture.
+{
+  const binding = fs.readFileSync(new URL('../.github/workflows/apply-weather-model-binding-only.yml', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+  const names = [
+    'Preserve authenticated unchanged originals for the named current-grid successor',
+    'Dry-run and allow only the latest exact binding migration',
+    'Reconfirm main immediately before the one database write',
+    'Apply only the dry-run-verified binding migration',
+    'Read back applied migration and live database binding',
+  ];
+  let previous = -1;
+  for (const name of names) {
+    const at = binding.indexOf('      - name: ' + name);
+    assert(at > previous, 'original-preserving prewrite order: ' + name);
+    previous = at;
+    assert(!indentedBody(binding, '      - name: ' + name).includes('defer_edges'), 'Edge deferral must not skip SQL proof: ' + name);
+  }
+  const prepare = indentedBody(binding, '      - name: ' + names[0]);
+  const dryRun = indentedBody(binding, '      - name: ' + names[1]);
+  const apply = indentedBody(binding, '      - name: ' + names[3]);
+  assert(prepare.includes('node scripts/current-grid-binding-prewrite.mjs prepare'));
+  assert(dryRun.indexOf('supabase db push --linked --dry-run') >= 0);
+  assert(dryRun.indexOf('supabase db push --linked --dry-run') < dryRun.indexOf('node scripts/current-grid-binding-prewrite.mjs verify-plan'));
+  assert(apply.indexOf('node scripts/current-grid-binding-prewrite.mjs verify-plan') >= 0);
+  assert(apply.indexOf('node scripts/current-grid-binding-prewrite.mjs verify-plan') < apply.indexOf('supabase db push --linked --skip-vault'));
+  assert(indentedBody(binding, '      - name: ' + names[4]).includes('node scripts/integrated-cutover-readiness.mjs verify-db'));
+}

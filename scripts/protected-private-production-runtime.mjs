@@ -31,7 +31,8 @@ import {
   PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
   assertPrivateRuntimeInventory,
 } from './lib/private-weather-component-inventory.mjs';
-import { assertOwnerCurrentOriginalExpectation, OWNER_CURRENT_DOMAIN_PREDECESSOR, OWNER_CURRENT_DOMAIN_SUCCESSOR }
+import { assertOwnerCurrentOriginalExpectation, assertCurrentGridSamplingOriginalExpectation,
+  OWNER_CURRENT_DOMAIN_PREDECESSOR, OWNER_CURRENT_DOMAIN_SUCCESSOR }
   from './lib/bounded-conditions-predecessor-transition.mjs';
 
 const gzipAsync = promisify(gzip);
@@ -1792,6 +1793,10 @@ export async function restoreProtectedPrivateProductionRuntime({
   policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
 } = {}) {
   assertStorage(storage);
+  // The marker is a typed assertion request, not an authentication capability.
+  // Validate the fixed source family and actual successor before any request.
+  const currentGridOriginal = Object.hasOwn(expected ?? {}, 'currentGridSamplingTransition')
+    ? assertCurrentGridSamplingOriginalExpectation(expected) : null;
   const row = await readPointerRow(request, {
     allowMissing: true,
     policy,
@@ -1807,6 +1812,18 @@ export async function restoreProtectedPrivateProductionRuntime({
       targetUnchanged: true,
       privatePayloadLogged: false,
     };
+  }
+  if (currentGridOriginal !== null) {
+    const original = currentGridOriginal;
+    const selected = row.payload.current;
+    if (['sourceHead', 'datasetId', 'productionReferenceAt', 'generatedAt',
+      'bundleContentSha256'].some(key => selected[key] !== original[key])
+      || !same(selected.modelBinding, original.modelBinding)
+      || !same(selected.contractHashes, original.contractHashes)) {
+      const error = new Error('Current-grid original is no longer the exact protected current generation');
+      error.code = 'PROTECTED_PRIVATE_RUNTIME_INELIGIBLE';
+      throw error;
+    }
   }
   if (Object.hasOwn(expected ?? {}, 'ownerCurrentDomainTransition')) {
     const original = assertOwnerCurrentOriginalExpectation(expected);
@@ -1835,7 +1852,8 @@ export async function restoreProtectedPrivateProductionRuntime({
   if (await fs.lstat(finalBundle).catch(() => null)) {
     throw new Error('Private runtime restore destination already exists');
   }
-  const descriptors = [row.payload.current, row.payload.previous]
+  const descriptors = (currentGridOriginal !== null
+    ? [row.payload.current] : [row.payload.current, row.payload.previous])
     .filter(Boolean)
     .filter((descriptor, index, all) => all.findIndex(
       candidate => candidate.objectSha256 === descriptor.objectSha256,
@@ -1846,7 +1864,8 @@ export async function restoreProtectedPrivateProductionRuntime({
   try {
     for (let index = 0; index < descriptors.length; index += 1) {
       const descriptor = descriptors[index];
-      const exactDmiPredecessor = isApprovedExactWeatherPredecessor(descriptor, expected);
+      const exactDmiPredecessor = currentGridOriginal === null
+        && isApprovedExactWeatherPredecessor(descriptor, expected);
       if (!same(descriptor.modelBinding, expected.modelBinding)
         || (!same(descriptor.contractHashes, expected.contractHashes)
           && !exactDmiPredecessor)) {

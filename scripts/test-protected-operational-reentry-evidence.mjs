@@ -330,3 +330,179 @@ test('removes only its new unreferenced object after a proven failed compare-and
     await fs.rm(work, { recursive: true, force: true });
   }
 });
+
+test('pre-activation terminal takeover retains the same target through runner loss and genuine plan admission', async () => {
+  const {publishProtectedPreActivationTarget,inspectProtectedPreActivationTarget,
+    classifyProtectedPreActivationCurrent,claimProtectedPreActivationTarget,
+    restoreProtectedPreActivationTarget,prepareProtectedPreActivationHandoff,
+    clearProtectedPreActivationTarget}=await import('./protected-operational-reentry-evidence.mjs');
+  const activation=await import('./ravscore-operational-activation.mjs');
+  const {CANDIDATE_G_OPERATIONAL_ROLLBACK_ID}=await import('./lib/ravscore-candidate-g-rollback-runtime.mjs');
+  const {buildIntegratedCutoverReadiness}=await import('./integrated-cutover-readiness.mjs');
+  const {assertUploadedOperationalPagesTarget}=await import('./ravscore-operational-pages-recovery.mjs');
+  const {classifyProductionTargetFreshness}=await import('./check-production-target-freshness.mjs');
+  const work=await fs.mkdtemp(path.join(os.tmpdir(),'rr-operational-evidence-'));
+  const sourceHead='a'.repeat(40),sourceId='pages-43001-1',targetId='pages-43002-1';
+  const owner=id=>{const [,run,attempt]=id.match(/^pages-(?:recovery-)?(\d+)-(\d+)$/);return {repository,
+    runId:Number(run),runAttempt:Number(attempt),headSha:sourceHead,attemptId:id};};
+  const terminal=o=>({id:o.runId,run_attempt:o.runAttempt,head_sha:o.headSha,head_branch:'main',
+    repository:{full_name:repository},status:'completed',conclusion:'failure'});
+  const read=async(d,f)=>JSON.parse(await fs.readFile(path.join(d,f),'utf8'));
+  const write=(d,f,v)=>fs.writeFile(path.join(d,f),JSON.stringify(v));
+  try {
+    const sourceDir=path.join(work,'source'),targetDir=path.join(work,'target');
+    const source=await fixture(sourceDir,{deploymentId:sourceId,sourceHead});
+    const target=await fixture(targetDir,{deploymentId:targetId,hour:'11',sourceHead});
+    // Like the existing historical-maintenance target, this is a synthetic
+    // metadata oracle. It is not an authenticated B/S/numerical family proof.
+    const oldBinding={...source.binding,modelBundleSha256:'9'.repeat(64)};
+    source.manifest.ravScoreModelBinding=oldBinding;source.manifest.ravScoreRuntime.modelBinding=oldBinding;
+    source.seal.targetModelBinding=oldBinding;source.seal.targetPublicManifestSha256=sha256CanonicalJson(source.manifest);
+    await write(sourceDir,'manifest.json',source.manifest);await write(sourceDir,'target-binding.json',oldBinding);
+    await write(sourceDir,'pages-artifact-seal.json',source.seal);
+    const now=Date.now(),reference=new Date(Math.floor(now/3600000)*3600000).toISOString();
+    target.manifest.productionReferenceAt=reference;target.manifest.generatedAt=new Date(now).toISOString();
+    target.manifest.datasetId='rr-phase-target-210';
+    target.seal.targetPublicManifestSha256=sha256CanonicalJson(target.manifest);
+    target.seal.createdAt=new Date(now).toISOString();
+    await write(targetDir,'manifest.json',target.manifest);await write(targetDir,'pages-artifact-seal.json',target.seal);
+    const profile=JSON.parse(await fs.readFile(path.join(root,'data/admin/ravscore-profile-selection.json'),'utf8'));
+    const oldProfile={...profile,modelBundleSha256:oldBinding.modelBundleSha256};
+    let central={document_key:activation.RAVSCORE_OPERATIONAL_ACTIVATION_DOCUMENT_KEY,version:30,payload:{
+      schemaVersion:activation.RAVSCORE_OPERATIONAL_ACTIVATION_SCHEMA,status:activation.RAVSCORE_OPERATIONAL_STATUSES.integrated,
+      transitionKind:activation.RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedReturn,sourceHead,
+      datasetId:source.manifest.datasetId,productionReferenceAt:source.manifest.productionReferenceAt,
+      rollbackId:CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,activeModelBinding:oldBinding,
+      requestedModelBinding:oldBinding,sourceModelBinding:oldBinding,candidatePlanSha256:null,candidateFullSha256:null,
+      privateBundleContentSha256:null,publicManifestSha256:sha256CanonicalJson(source.manifest),
+      sourcePublicManifestSha256:sha256CanonicalJson(source.manifest),requestedPublicManifestSha256:sha256CanonicalJson(source.manifest),
+      sourceImplementationClosureSha256:source.seal.targetImplementationClosureSha256,
+      requestedImplementationClosureSha256:source.seal.targetImplementationClosureSha256,
+      sourceDeploymentId:sourceId,deploymentId:sourceId,automaticActivationAllowed:false,schedulerActivationAllowed:false,
+      calibrationEligible:false,requestedAt:source.seal.createdAt,activatedAt:source.seal.createdAt,failureCode:null,
+      returnPlanSha256:null,integratedReadinessSha256:null,integratedPublicAuditSha256:null,integratedManifestSha256:null}};
+    const profileRow={document_key:activation.RAVSCORE_PROFILE_SELECTION_DOCUMENT_KEY,version:20,payload:oldProfile};
+    activation.assertOperationalActivationDocument(central.payload,{allowSealedHistoricalBindings:true});
+    const resolved=activation.resolveOperationalRavScoreModel(central,{profileRow});
+    const sourceCurrent={...resolved,bindingCurrent:activation.operationalResolvedBindingCurrent(resolved)};
+    const server=remote(),requests=[];
+    const request=async(suffix,options={})=>{
+      requests.push({suffix,method:options.method??'GET'});
+      if(suffix.includes('document_key=in.')){assert.equal(options.method??'GET','GET');return clone([central,profileRow]);}
+      if(options.method==='PATCH')assert(suffix.includes('&version=eq.'+server.row().version+'&'));
+      return server.request(suffix,options);
+    };
+    const common={request,storage:server.storage,repository};
+    await publishProtectedOperationalEvidence({...common,directory:sourceDir,deploymentId:sourceId});
+    const runtimeAudit={datasetId:target.manifest.datasetId,privatePayloadIncluded:false};
+    const disposition={schemaVersion:'ravscore-continuation-checkpoint-disposition-v1',sourceHead,
+      datasetId:target.manifest.datasetId,disposition:'READY_PUBLISHED',rollbackStatus:'READY',rollbackActivationReady:true,
+      checkpointRequired:true,runtimeAuditSha256:sha256CanonicalJson(runtimeAudit),privatePayloadIncluded:false};
+    await write(targetDir,'checkpoint-runtime-audit.json',runtimeAudit);
+    await write(targetDir,'checkpoint-disposition.json',{...disposition,bindingSha256:sha256CanonicalJson(disposition)});
+    const audit={schemaVersion:1,status:'passed',model:{modelId:target.binding.modelId,stateSchemaVersion:target.binding.stateSchemaVersion,
+      modelContractSha256:target.binding.modelContractSha256,modelBundleSha256:target.binding.modelBundleSha256},
+      coverage:{expectedZoneCount:210,zoneCount:210,expectedPartCount:673,partCount:673},
+      history:{allCurrentScoresFullHistory:true,currentFullHistoryModeCount:420,currentHistoryIncompleteModeCount:0,currentUnavailableModeCount:0},
+      rollback:{status:'READY',activationReady:true,descriptorValid:true,generationReferenceBound:true,runtimePartCount:673,readyPartCount:673,reconstructedFromIntegratedState:false},
+      payload:{privacyContractPassed:true,publicStateOrEvidenceIncluded:false,publicRawVectorIncluded:false,publicUnapprovedCoordinateIncluded:false,publicShadowIncluded:false},errors:[],errorCounts:{}};
+    await write(targetDir,'public-audit.json',audit);await fs.unlink(path.join(targetDir,'handoff.json'));
+    const phase={schemaVersion:'ravradar-current-grid-pre-activation-v1',sourceHead,sourceCurrent,
+      sourceCurrentSha256:sha256CanonicalJson(sourceCurrent),checkpointOutcomes:{build:'success',save:'success',publish:'success'},privatePayloadIncluded:false};
+    await write(targetDir,'pre-activation.json',phase);
+    await publishProtectedPreActivationTarget({...common,directory:targetDir,deploymentId:targetId});
+    const original=clone(server.row()),originalFiles=new Map(server.objects);
+    const firstOwner=owner(targetId),secondOwner=owner('pages-recovery-43003-1');
+    for(const change of [{status:'in_progress',conclusion:null},{status:'queued',conclusion:null},{status:'unknown'},
+      {run_attempt:2},{head_branch:'feature'},{head_sha:'f'.repeat(40)},{repository:{full_name:'other/repo'}}]){
+      await assert.rejects(claimProtectedPreActivationTarget({...common,sourceHead,owner:secondOwner,attempt:{...terminal(firstOwner),...change}}));
+      assert.deepEqual(server.row(),original);
+    }
+    await assert.rejects(claimProtectedPreActivationTarget({...common,sourceHead:'b'.repeat(40),owner:secondOwner,attempt:terminal(firstOwner)}));
+    const originalCentral=clone(central);central={...central,version:central.version+1};
+    await assert.rejects(claimProtectedPreActivationTarget({...common,sourceHead,owner:secondOwner,attempt:terminal(firstOwner)}),/source state changed/);
+    central=originalCentral;assert.deepEqual(server.row(),original);
+    let caught;
+    try {await claimProtectedPreActivationTarget({...common,request:async(suffix,options={})=>{
+      if(options.method==='PATCH')throw null;return request(suffix,options);
+    },sourceHead,owner:secondOwner,attempt:terminal(firstOwner)});} catch(error){caught=error;}
+    assert(caught instanceof Error);assert.equal(caught.cause,null,'normal first transport cause remains null');
+    assert.deepEqual(server.row(),original,'failed/ambiguous CAS cannot release or adopt the slot');
+    assert.throws(()=>classifyProductionTargetFreshness({target:'not-time',maximumAgeMinutes:150}));
+    assert.throws(()=>classifyProductionTargetFreshness({target:new Date(Date.parse(reference)+2*3600000).toISOString(),maximumAgeMinutes:150}));
+    assert.throws(()=>classifyProductionTargetFreshness({target:new Date(Date.parse(reference)-118*3600000).toISOString(),maximumAgeMinutes:150}));
+    assert.doesNotThrow(()=>classifyProductionTargetFreshness({target:new Date(Date.parse(reference)-5*3600000).toISOString(),maximumAgeMinutes:150}),
+      'preferred age is soft, not a new hard 150/240-minute cutoff');
+    const phaseBytes=await fs.readFile(path.join(targetDir,'public-audit.json'));
+    await write(targetDir,'public-audit.json',{...audit,unexpected:'substitution'});
+    await assert.rejects(publishProtectedPreActivationTarget({...common,directory:targetDir,deploymentId:targetId}),/changed target bytes/);
+    await fs.writeFile(path.join(targetDir,'public-audit.json'),phaseBytes);
+    await claimProtectedPreActivationTarget({...common,sourceHead,owner:secondOwner,attempt:terminal(firstOwner)});
+    assert.deepEqual(server.row().payload.preActivation.originalTarget,original.payload.preActivation.originalTarget);
+    const claimed=clone(server.row());
+    // These are real persistence/owner interruptions, not mocked remote Edge success.
+    for(const boundary of ['before-first-Edge','partial-Edge','readiness-failure','plan-failure','runner-loss']){
+      const found=await inspectProtectedPreActivationTarget(common);
+      assert.equal(found.action,'PRE_ACTIVATION_PRESENT',boundary);assert.deepEqual(server.row(),claimed,boundary);
+      await assert.rejects(claimProtectedPreActivationTarget({...common,sourceHead,owner:owner('pages-recovery-43004-1'),
+        attempt:{...terminal(secondOwner),status:'in_progress',conclusion:null}}));
+    }
+    const restored=path.join(work,'restored');
+    await restoreProtectedPreActivationTarget({...common,directory:restored,owner:secondOwner});
+    const reseal={...target.seal,...{runId:secondOwner.runId,runAttempt:secondOwner.runAttempt,attemptId:secondOwner.attemptId,
+      artifactName:'github-pages-preactivation-'+secondOwner.runId+'-'+secondOwner.runAttempt,artifactId:9999,
+      artifactDigestSha256:'c'.repeat(64),artifactSizeBytes:12400,createdAt:new Date().toISOString()}};
+    await write(restored,'pages-artifact-seal.json',reseal);
+    const identity={repository,runId:secondOwner.runId,runAttempt:secondOwner.runAttempt,headSha:sourceHead,ref:'refs/heads/main',attemptId:secondOwner.attemptId};
+    assertUploadedOperationalPagesTarget({seal:reseal,workflowIdentity:identity,targetManifest:target.manifest,
+      targetModelBinding:target.binding,implementationClosureSha256:target.seal.targetImplementationClosureSha256});
+    for(const artifactName of ['github-pages-preactivation-43002-1','arbitrary','github-pages-preactivation-43003-2'])
+      assert.throws(()=>assertUploadedOperationalPagesTarget({seal:{...reseal,artifactName},workflowIdentity:identity,
+        targetManifest:target.manifest,targetModelBinding:target.binding,implementationClosureSha256:target.seal.targetImplementationClosureSha256}));
+    // A valid run/attempt is not authority for another sealed generation.
+    for (const targetManifest of [
+      {...target.manifest,datasetId:'rr-other-same-attempt-210'},
+      {...target.manifest,productionReferenceAt:'2026-01-01T00:00:00.000Z'},
+      {...target.manifest,ravScoreModelBinding:{...target.binding,modelBundleSha256:'7'.repeat(64)}},
+    ]) assert.throws(()=>assertUploadedOperationalPagesTarget({seal:reseal,workflowIdentity:identity,
+      targetManifest,targetModelBinding:target.binding,
+      implementationClosureSha256:target.seal.targetImplementationClosureSha256}));
+    for (const replay of [
+      {...identity,runId:identity.runId+1},
+      {...identity,runAttempt:identity.runAttempt+1},
+      {...identity,attemptId:'pages-'+identity.runId+'-'+identity.runAttempt},
+      {...identity,headSha:'6'.repeat(40)},
+    ]) assert.throws(()=>assertUploadedOperationalPagesTarget({seal:reseal,workflowIdentity:replay,
+      targetManifest:target.manifest,targetModelBinding:target.binding,
+      implementationClosureSha256:target.seal.targetImplementationClosureSha256}));
+    await publishProtectedPreActivationTarget({...common,directory:restored,deploymentId:secondOwner.attemptId});
+    const published=clone(server.row());
+    const readiness=await buildIntegratedCutoverReadiness(sourceHead,{publicImplementationClosureSha256:target.seal.targetImplementationClosureSha256});
+    const plan=activation.prepareIntegratedHistoricalMaintenance({currentRow:central,currentProfileRow:profileRow,sourceHead,
+      publicManifest:target.manifest,publicAudit:audit,readiness,sourceImplementationClosureSha256:source.seal.targetImplementationClosureSha256,
+      requestedImplementationClosureSha256:target.seal.targetImplementationClosureSha256,eventName:'schedule',ref:'refs/heads/main',githubSha:sourceHead});
+    await assert.rejects(prepareProtectedPreActivationHandoff({...common,directory:restored,owner:secondOwner,readiness:{},plan}));
+    await assert.rejects(prepareProtectedPreActivationHandoff({...common,directory:restored,owner:secondOwner,readiness,plan:{...plan,centralExpectedVersion:0}}));
+    assert.deepEqual(server.row(),published);await assert.rejects(fs.stat(path.join(restored,'handoff.json')),{code:'ENOENT'});
+    const prepared=await prepareProtectedPreActivationHandoff({...common,directory:restored,owner:secondOwner,readiness,plan});
+    assert.equal(prepared.handoff.checkpointPublishOutcome,'success');
+    assert.equal(prepared.handoff.action,'integrated-historical-maintenance');
+    assert.equal(prepared.handoff.centralVersion,central.version);assert.deepEqual(server.row(),published);
+    await buildProtectedOperationalEvidenceArchive({directory:restored,deploymentId:secondOwner.attemptId,repository});
+    await assert.rejects(clearProtectedPreActivationTarget({...common,sourceHead,baseUrl:'https://synthetic.invalid/',
+      fetchImpl:()=>{throw new Error('must reject before any public request');}}),/not actually active/);
+    const sourceVerification={schemaVersion:'ravscore-operational-pages-verification-v1',status:'passed',sourceHead,
+      datasetId:source.manifest.datasetId,productionReferenceAt:source.manifest.productionReferenceAt,model:'integrated',modelBinding:oldBinding,
+      implementationClosureSha256:source.seal.targetImplementationClosureSha256,publicManifestSha256:sha256CanonicalJson(source.manifest),
+      zoneCount:210,coastalPartCount:673,privatePayloadRead:false};
+    const pending=activation.operationalIntegratedHistoricalMaintenanceTransition({action:'integrated-historical-maintenance-begin',
+      currentRow:central,currentProfileRow:profileRow,expectedVersion:central.version,plan,readiness,
+      sourceManifest:source.manifest,publicManifest:target.manifest,publicAudit:audit,
+      sourceVerification,observedSourceDeploymentId:sourceId,deploymentId:secondOwner.attemptId});
+    central={...central,version:pending.nextVersion,payload:pending.document};
+    assert.equal((await classifyProtectedPreActivationCurrent({...common,sourceHead,attempt:terminal(secondOwner)})).action,'PENDING_PRE_ACTIVATION');
+    assert.deepEqual(server.row(),published,'pending coexistence does not replace durable evidence');
+    for(const [name,bytes] of originalFiles)assert.deepEqual(server.objects.get(name),bytes,'original immutable archive retained');
+    assert.equal(server.removed.length,0);
+  } finally {await fs.rm(work,{recursive:true,force:true});}
+});

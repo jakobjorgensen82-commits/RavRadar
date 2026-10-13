@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { readAccountAssistantCanonicalSource } from './lib/account-assistant-successor-source.mjs';
+import { readCurrentGridCanonicalSource } from './lib/current-grid-successor-source.mjs';
 
 const sources = Object.freeze({
   migration: 'supabase/migrations/20260920220000_public_hour_pack_capacity_binding.sql',
@@ -28,7 +29,10 @@ const entries = await Promise.all(Object.entries(sources).map(async ([label, fil
 const documents = Object.fromEntries(entries);
 // This pinned adapter preserves every immutable 130000/200000 byte and reconstructs
 // only the exact current sparse successor; it does not replay historical SQL.
-const { canonicalSource: checkpointMigration } = await readAccountAssistantCanonicalSource();
+const { canonicalSource: predecessorCheckpointMigration } = await readAccountAssistantCanonicalSource();
+// Normal 220 adapter validates immutable 213 bytes and the WHOLE inverse of its
+// six original validators/seven replacements; historical SQL is not retagged.
+const { canonicalSource: checkpointMigration } = await readCurrentGridCanonicalSource();
 const stableTripMigration = await fs.readFile(
   'supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql',
   'utf8',
@@ -58,7 +62,20 @@ const CHECKPOINT_FUNCTION_NAMES = Object.freeze([
   'public.ravradar_ravscore_checkpoint_cas',
   'public.ravradar_ravscore_checkpoint_contract',
 ]);
-for (const functionName of CHECKPOINT_FUNCTION_NAMES) {
+const GRID_ORIGINAL_FUNCTION_NAMES = Object.freeze(['ffc', '249', 'c1ac'].flatMap(family =>
+  ['state', 'payload'].map(kind => `public.ravradar_ravscore_checkpoint_grid_${family}_${kind}_valid`)));
+const changedCurrentFunctions = new Set([
+  'public.ravradar_ravscore_checkpoint_integrated_state_valid',
+  'public.ravradar_ravscore_checkpoint_payload_valid',
+  'public.ravradar_ravscore_checkpoint_cas',
+  'public.ravradar_ravscore_checkpoint_contract',
+]);
+for (const name of CHECKPOINT_FUNCTION_NAMES.filter(name => !changedCurrentFunctions.has(name))) {
+  assert.equal(functionDefinition(checkpointMigration, '220 canonical', name),
+    functionDefinition(predecessorCheckpointMigration, '213 canonical', name),
+    name + ' must retain its whole historical 213 definition');
+}
+for (const functionName of [...CHECKPOINT_FUNCTION_NAMES, ...GRID_ORIGINAL_FUNCTION_NAMES]) {
   const canonicalDefinition = normalize(functionDefinition(
     checkpointMigration,
     'checkpoint migration',
@@ -138,6 +155,14 @@ for (const [label, source] of Object.entries({
   assert.match(source,
     /revoke all on function public\.ravradar_ravscore_checkpoint_top20_predecessor_projection\(jsonb,timestamptz\)\s+from public, anon, authenticated;/,
     `${label} must not expose predecessor projection to public clients`);
+  for (const functionName of GRID_ORIGINAL_FUNCTION_NAMES) {
+    const original = functionDefinition(source, label, functionName);
+    assert.match(normalize(original), /language plpgsql stable set search_path = pg_catalog, public/i);
+    assert.doesNotMatch(original, /\bsecurity definer\b|\b(?:insert|update|delete)\s+|\bexecute\s+/i);
+    const parameter = functionName.endsWith('_state_valid') ? 'text' : 'timestamptz';
+    assert.ok(source.includes(`revoke all on function ${functionName}(jsonb,${parameter}) from public, anon, authenticated;`),
+      label + ' original validator must remain private');
+  }
   const casDefinition = functionDefinition(source, label, 'public.ravradar_ravscore_checkpoint_cas');
   const cpProjection = functionDefinition(source, label,
     'public.ravradar_ravscore_checkpoint_cp_close_predecessor_projection');

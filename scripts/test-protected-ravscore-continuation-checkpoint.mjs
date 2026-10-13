@@ -363,6 +363,37 @@ const rpcFailureIncludes = pattern => error => {
 };
 
 
+
+// Pure classification of the real native caller's bounded failure output.
+// These assertions are not PostgreSQL/SQL/installation proof.
+if (!process.argv.includes('--native-postgres')) {
+  const { nativePostgresFailureDiagnostic: diagnose,
+    nativePostgresFailureAnnotation: annotate } =
+      await import('./lib/checkpoint-cas-native-postgres.mjs');
+  assert.deepEqual(diagnose('CURRENT220', 'psql:<stdin>: ERROR: 42P01\n'),
+    {phase:'CURRENT220',sqlState:'42P01',category:'SQL_UNDEFINED_TABLE'});
+  assert.deepEqual(diagnose('ACCOUNT213', 'ERROR: 42501\r\n'),
+    {phase:'ACCOUNT213',sqlState:'42501',category:'SQL_PERMISSION'});
+  assert.deepEqual(diagnose('BASELINE_ADMISSION', 'ERROR: 57014\n'),
+    {phase:'BASELINE_ADMISSION',sqlState:'57014',category:'SQL_CANCELED'});
+  assert.deepEqual(diagnose('CURRENT220', 'ERROR: P0001\n'),
+    {phase:'CURRENT220',sqlState:'P0001',category:'SQL_RAISED_EXCEPTION'});
+  for (const raw of [undefined, null, {}, '', 'ERROR: 12345\n',
+    'ERROR: 42P01 raw SQL or private value\n', 'DETAIL: 42P01\n',
+    JSON.stringify({private:'ERROR: 42P01'}), 'x'.repeat(16_385)]) {
+    assert.deepEqual(diagnose('CURRENT220', raw),
+      {phase:'CURRENT220',sqlState:'UNKNOWN',category:'PSQL_COMMAND_FAILURE'});
+  }
+  const sensitive = 'ERROR: 42P01\nDETAIL: private-fixture-string\nCONTEXT: raw fixture SQL\n';
+  assert.equal(annotate('CURRENT220', sensitive),
+    '::error title=Native PostgreSQL source command::phase=CURRENT220 sqlstate=42P01 category=SQL_UNDEFINED_TABLE');
+  assert.doesNotMatch(annotate('CURRENT220', sensitive), /private-fixture-string|DETAIL|CONTEXT|raw fixture SQL/);
+  assert.equal(annotate('BAD\n::error::private', 'ERROR: 42501\n'),
+    '::error title=Native PostgreSQL source command::phase=UNKNOWN sqlstate=42501 category=SQL_PERMISSION');
+  assert.equal(annotate('NATIVE_SETUP', ''),
+    '::error title=Native PostgreSQL source command::phase=NATIVE_SETUP sqlstate=UNKNOWN category=PSQL_COMMAND_FAILURE');
+}
+
 // Native PostgreSQL is a separate mandatory Linux source leaf, never a
 // MemoryCentral/Windows representation proof. Reuse these exact 673 builders
 // and the normal checkpoint saver; do not run the simulated RPC tests here.

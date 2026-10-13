@@ -99,3 +99,19 @@ assert.match(deploy, /--retain-public-manifest-sha256/);
 assert.ok(deploy.indexOf('Publish exact target reentry evidence before any activation CAS')
   < deploy.indexOf('id: candidate-begin'));
 console.log('Pages generation order, exact reusable attempt, shared reentry and measured-warmup workflow integration: passed.');
+
+
+// Distinct fixed namespaces prevent a recovery and subsequent ordinary Pages
+// deployment in the same run from aliasing terminal evidence or immutable IDs.
+{
+  const ordinary=job('Deploy prepared Pages artifact');
+  const recovered=job('Recovery / Deploy exact pre-activation Pages artifact');
+  recovered.steps[0].conclusion='failure';
+  const both=[ordinary,recovered];
+  assert.equal(exactPagesAttemptStep(both,identity),'success');
+  const recoveryIdentity={...identity,attemptId:'pages-recovery-'+identity.runId+'-'+identity.runAttempt};
+  assert.equal(exactPagesAttemptStep(both,recoveryIdentity),'failure');
+  assert.throws(()=>exactPagesAttemptStep([ordinary],recoveryIdentity),/unambiguous/);
+  assert.throws(()=>exactPagesAttemptStep([recovered,recovered],recoveryIdentity),/unambiguous/);
+  assert.throws(()=>exactPagesAttemptStep(both,{...recoveryIdentity,attemptId:'pages-recovery-1-999'}),/identity/);
+}

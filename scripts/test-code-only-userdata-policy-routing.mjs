@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { withIssuedAccountAssistantSource } from './check-account-assistant-issued-source.mjs';
 import {
+  ACCOUNT_ASSISTANT_SOURCE_MIGRATION,
   LATEST_REQUIRED_CUTOVER_MIGRATION,
   REQUIRED_CUTOVER_MIGRATIONS,
   TRIP_BINDING_POLICY_SOURCE_MIGRATION,
@@ -39,6 +42,34 @@ assert.match(migrationStep,
   'the actual normal migration entry must require its existing metadata-only validator');
 assert.match(migrationStep, /node scripts\/migrate-post-cutover-private-runtime\.mjs[\s\S]*"\$\{migration_args\[@\]\}"/);
 
+// All eleven original213 cases execute real issued exports and the real
+// child import, never synthetic latest flags or rewritten import declarations.
+// Extraction omits the delimiter's preceding LF; the issued whole-caller
+// hash includes precisely that terminal LF, without trimming any body bytes.
+assert.equal(crypto.createHash('sha256').update(source + '\n').digest('hex'),
+  'c5549937ace91def8128702dac30a68a9068f5483d1dffb0c540975b3f1da5c1');
+await withIssuedAccountAssistantSource(async issuedRoot => {
+  const issuedWorkflow = await fs.readFile(path.join(issuedRoot,
+    '.github/workflows/deploy-code-only-repair.yml'), 'utf8');
+  assert.equal(crypto.createHash('sha256').update(issuedWorkflow).digest('hex'),
+    '6c289d39f3ddbcd07e9036e7e377444ada59c277711954d1e5b59efab68d79be');
+  const issuedStart = issuedWorkflow.indexOf(heading);
+  assert.ok(issuedStart >= 0);
+  assert.equal(issuedWorkflow.indexOf(heading, issuedStart + heading.length), -1);
+  const issuedNext = issuedWorkflow.indexOf('\n      - name:', issuedStart + heading.length);
+  assert.ok(issuedNext > issuedStart);
+  const issuedBlock = issuedWorkflow.slice(issuedStart, issuedNext).match(
+    /          node --input-type=module <<'NODE'\r?\n([\s\S]*?)\r?\n          NODE(?:\r?\n|$)/);
+  assert.ok(issuedBlock);
+  const issuedSource = issuedBlock[1].split(/\r?\n/).map(line => {
+    assert.ok(line.startsWith('          '));
+    return line.slice(10);
+  }).join('\n');
+  assert.equal(source, issuedSource, 'the whole current selector must remain the genuine issued213 caller');
+  const { LATEST_REQUIRED_CUTOVER_MIGRATION, REQUIRED_CUTOVER_MIGRATIONS,
+    TRIP_BINDING_POLICY_SOURCE_MIGRATION } = await import(pathToFileURL(
+      path.join(issuedRoot, 'scripts/integrated-cutover-readiness.mjs')).href);
+  const repositoryRoot = issuedRoot;
 assert.equal(TRIP_BINDING_POLICY_SOURCE_MIGRATION.version, '20261010130000');
 assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261013210000',
   'exercise the actual account/assistant successor, not a simulated latest flag');
@@ -135,4 +166,89 @@ try {
 } finally {
   // Only files created by this target in its own mkdtemp directory exist here.
   await fs.rm(directory, { recursive: true, force: true });
+}
+});
+
+
+// Today's real readiness is not the issued213 installation contract. Run the
+// same unchanged normal heredoc against the current physical source instead of
+// overriding latest/model exports or treating selector flags as SQL admission.
+assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261013220000');
+assert.equal(ACCOUNT_ASSISTANT_SOURCE_MIGRATION.version, '20261013210000');
+const currentAccountIndex = REQUIRED_CUTOVER_MIGRATIONS.findIndex(item =>
+  item.version === ACCOUNT_ASSISTANT_SOURCE_MIGRATION.version);
+const currentGridIndex = REQUIRED_CUTOVER_MIGRATIONS.findIndex(item =>
+  item.version === LATEST_REQUIRED_CUTOVER_MIGRATION.version);
+const currentUserdataIndex = REQUIRED_CUTOVER_MIGRATIONS.findIndex(item =>
+  item.version === TRIP_BINDING_POLICY_SOURCE_MIGRATION.version);
+assert.equal(currentAccountIndex + 1, currentGridIndex);
+assert.equal(currentGridIndex + 1, REQUIRED_CUTOVER_MIGRATIONS.length);
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS[currentAccountIndex - 1].version, '20261012200000');
+assert.ok(currentUserdataIndex > 0);
+const currentDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-current220-routing-'));
+try {
+  const output = path.join(currentDirectory, 'github-env.txt');
+  const migrationList = path.join(currentDirectory, 'code-only-migrations-before.txt');
+  async function runCurrentCase(appliedCount, optedIn, accountOptedIn = false) {
+    await fs.writeFile(migrationList,
+      `Local | Remote | Time (UTC)\n${REQUIRED_CUTOVER_MIGRATIONS.map((item, index) =>
+        `${item.version} | ${index < appliedCount ? item.version : ''} | fixture`).join('\n')}\n`);
+    await fs.writeFile(output, '');
+    const result = spawnSync(process.execPath, ['--input-type=module', '-e', source], {
+      cwd: repositoryRoot,
+      encoding: 'utf8',
+      timeout: 10_000,
+      env: {
+        ...(process.env.PATH ? { PATH: process.env.PATH } : {}),
+        ...(process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}),
+        RUNNER_TEMP: currentDirectory,
+        GITHUB_ENV: output,
+        RAVRADAR_USERDATA_UPGRADE_OPT_IN: optedIn ? 'true' : 'false',
+        RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN: accountOptedIn ? 'true' : 'false',
+      },
+    });
+    assert.equal(result.error, undefined, 'the actual current220 Node caller must execute');
+    return { ...result, environment: await fs.readFile(output, 'utf8') };
+  }
+  for (const appliedCount of [currentGridIndex, REQUIRED_CUTOVER_MIGRATIONS.length]) {
+    const neutral = await runCurrentCase(appliedCount, false);
+    assert.equal(neutral.status, 0, neutral.stderr || neutral.stdout);
+    for (const name of ['ASSISTANT_PREWRITE_REQUIRED', 'USERDATA_PREWRITE_REQUIRED',
+      'CHECKPOINT_CAS_METADATA_ONLY', 'ACCOUNT_ASSISTANT_PREWRITE_REQUIRED',
+      'ACCOUNT_ASSISTANT_METADATA_ONLY', 'ACCOUNT_ASSISTANT_FINAL_REQUIRED']) {
+      assert.match(neutral.environment, new RegExp(`^RAVRADAR_${name}=false$`, 'm'));
+    }
+    assert.match(neutral.environment, /^RAVRADAR_USERDATA_FINAL_REQUIRED=true$/m);
+    assert.doesNotMatch(neutral.environment, /CURRENT_GRID.*(?:VERIFIED|APPROVED)=true/,
+      'neutral selector flags must not claim the separate current220 original/SQL prewrite proof');
+  }
+  const currentMissing = await runCurrentCase(currentUserdataIndex, false);
+  assert.equal(currentMissing.status, 1);
+  assert.match(currentMissing.stderr, /Pending userdata binding requires explicit existing-owner-export opt-in/);
+  assert.doesNotMatch(currentMissing.environment, /RAVRADAR_USERDATA_FINAL_REQUIRED/);
+  for (const appliedCount of [currentUserdataIndex, currentUserdataIndex + 1,
+    REQUIRED_CUTOVER_MIGRATIONS.length]) {
+    const replay = await runCurrentCase(appliedCount, true);
+    assert.equal(replay.status, 1);
+    assert.match(replay.stderr,
+      /Userdata upgrade requires installed current050000 and sole pending130000; no intermediary or automatic replay/);
+    assert.doesNotMatch(replay.environment, /RAVRADAR_USERDATA_FINAL_REQUIRED/);
+    assert.doesNotMatch(replay.environment, /RAVRADAR_CHECKPOINT_CAS_METADATA_ONLY/);
+  }
+  for (const appliedCount of [currentGridIndex, REQUIRED_CUTOVER_MIGRATIONS.length]) {
+    const accountReplay = await runCurrentCase(appliedCount, false, true);
+    assert.equal(accountReplay.status, 1);
+    assert.match(accountReplay.stderr,
+      /Account\/assistant upgrade requires installed200000 and sole pending20261013210000; no replay/);
+    assert.doesNotMatch(accountReplay.environment, /RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED/);
+  }
+  const combined = await runCurrentCase(currentGridIndex, true, true);
+  assert.equal(combined.status, 1);
+  assert.match(combined.stderr,
+    /Userdata upgrade requires installed current050000 and sole pending130000; no intermediary or automatic replay/);
+  assert.doesNotMatch(combined.environment, /RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED/);
+  console.log('Current220 normal routing passed: 9 actual physical-source caller cases; no SQL admission, installs or provider calls.');
+} finally {
+  // Only this normal target's own mkdtemp files are removed.
+  await fs.rm(currentDirectory, { recursive: true, force: true });
 }

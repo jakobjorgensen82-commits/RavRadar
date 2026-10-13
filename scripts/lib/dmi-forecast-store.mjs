@@ -175,6 +175,75 @@ export function verifiedDmiPeakPeriodField(field) {
   return field.shortName === 'pp1d' || ids.includes(231);
 }
 
+const NATIVE_GRID_SAMPLING_KEYS = [
+  'contractId', 'elementIndex', 'gridIndexIdentitySha256', 'coordinateInterpretation',
+  'gridDefinitionSha256', 'gridPoint', 'fieldSet', 'optionalFieldSet',
+].sort().join(',');
+const gridSamplingInspection = (status, reasonCode) => ({ status, reasonCode });
+
+/**
+ * Inspect only the coherence of a native source's own sampling record.
+ * Unknown legacy/future records are not invalid original values. Coherence is
+ * neither source/container authentication, physical location proof, nor a new
+ * permission to reuse a row; existing verifiers/admission remain independent.
+ * Never infer a native index from a coordinate or change the original source.
+ */
+export function inspectDmiNativeGridSampling(source) {
+  if (!source || !Object.hasOwn(source, 'nativeGridSampling')) {
+    return gridSamplingInspection('unknown', 'NATIVE_RECORD_ABSENT');
+  }
+  const record = source.nativeGridSampling;
+  if (record === null) return gridSamplingInspection('unknown', 'NATIVE_RECORD_NULL');
+  if (!record || typeof record !== 'object' || Array.isArray(record)) {
+    return gridSamplingInspection('contradictory', 'NATIVE_RECORD_SHAPE');
+  }
+  if (typeof record.contractId === 'string' && record.contractId
+    && record.contractId !== 'dmi-native-grid-sampling-v1') {
+    return gridSamplingInspection('unknown', 'NATIVE_RECORD_UNSUPPORTED');
+  }
+  if (Object.keys(record).sort().join(',') !== NATIVE_GRID_SAMPLING_KEYS
+    || record.contractId !== 'dmi-native-grid-sampling-v1') {
+    return gridSamplingInspection('contradictory', 'NATIVE_RECORD_SHAPE');
+  }
+  if (!Number.isSafeInteger(record.elementIndex) || record.elementIndex < 0
+    || typeof record.gridIndexIdentitySha256 !== 'string'
+    || !SHA256.test(record.gridIndexIdentitySha256)) {
+    return gridSamplingInspection('contradictory', 'NATIVE_RECORD_INDEX');
+  }
+  if (!['dmi-dkss-grib1-header-endpoints-v1', 'eccodes-native-coordinates-v1'].includes(record.coordinateInterpretation)
+    || (record.coordinateInterpretation === 'dmi-dkss-grib1-header-endpoints-v1'
+      && (typeof source.collection !== 'string' || COLLECTION_FAMILY[source.collection] !== 'marine'))) {
+    return gridSamplingInspection('contradictory', 'NATIVE_RECORD_INTERPRETATION');
+  }
+  if (typeof record.gridDefinitionSha256 !== 'string' || !SHA256.test(record.gridDefinitionSha256)
+    || record.gridDefinitionSha256 !== source.gridDefinitionSha256
+    || !exactFinitePoint(record.gridPoint) || !exactFinitePoint(source.gridPoint)
+    || record.gridPoint.some((value, index) => value !== source.gridPoint[index])
+    || record.gridPoint[0] < -180 || record.gridPoint[0] > 360
+    || record.gridPoint[1] < -90 || record.gridPoint[1] > 90) {
+    return gridSamplingInspection('contradictory', 'NATIVE_RECORD_GRID');
+  }
+  if (typeof source.component !== 'string' || typeof source.collection !== 'string'
+    || !Object.hasOwn(COMPONENT_COLLECTIONS, source.component)
+    || !COMPONENT_COLLECTIONS[source.component].has(source.collection)
+    || !exactStringArray(source.fieldSet, COMPONENT_FIELD_SET[source.component])
+    || !Array.isArray(source.optionalFieldSet)
+    || !exactStringArray(record.fieldSet, source.fieldSet)
+    || !exactStringArray(record.optionalFieldSet, source.optionalFieldSet)
+    || (source.component === 'wave'
+      ? source.optionalFieldSet.length > 1 || source.optionalFieldSet.some(value => value !== 'mean-wave-dir')
+      : source.optionalFieldSet.length !== 0)) {
+    return gridSamplingInspection('contradictory', 'NATIVE_RECORD_FIELDS');
+  }
+  return gridSamplingInspection('coherent', 'NATIVE_RECORD_COHERENT');
+}
+
+function sameNativeGridSamplingRecord(first, second) {
+  return ['contractId', 'elementIndex', 'gridIndexIdentitySha256', 'coordinateInterpretation', 'gridDefinitionSha256']
+    .every(key => first[key] === second[key])
+    && ['gridPoint', 'fieldSet', 'optionalFieldSet'].every(key => exactStringArray(first[key], second[key]));
+}
+
 export function verifiedDmiNativeSource(source, component, nativeTime) {
   const runMs = explicitTimestampMs(source?.modelRun);
   const validMs = explicitTimestampMs(source?.nativeValidTime);
@@ -283,6 +352,8 @@ const NATIVE_STEP_KEYS = new Set([
   'acquiredAt', 'optionalFieldSet', 'itemCreatedAt', 'itemUpdatedAt',
   'wavePeriodSemantics', 'wavePeriodField',
 ]);
+const CURRENT_NATIVE_STEP_KEYS = new Set([...NATIVE_STEP_KEYS,
+  'nativeGridSampling', 'gridPoint', 'distanceKm']);
 
 function matchesExpectedIdentity(source, expectedIdentity) {
   return Boolean(expectedIdentity
@@ -309,6 +380,14 @@ function reconstructNativeEndpoint(source, step) {
     optionalFieldSet: step.optionalFieldSet,
   };
   for (const key of ['nativeValidTimes', 'nativeSteps', 'temporalResolution', 'forecastAgeHours']) delete endpoint[key];
+  // Only current endpoints carry the new independently inspected record.
+  // Legacy non-current endpoint reconstruction remains unchanged.
+  if (source.component === 'current') {
+    if (Object.hasOwn(step, 'gridPoint')) endpoint.gridPoint = structuredClone(step.gridPoint);
+    if (Object.hasOwn(step, 'distanceKm')) endpoint.distanceKm = step.distanceKm;
+    if (Object.hasOwn(step, 'nativeGridSampling')) endpoint.nativeGridSampling = structuredClone(step.nativeGridSampling);
+    else delete endpoint.nativeGridSampling;
+  }
   for (const key of ['itemCreatedAt', 'itemUpdatedAt', 'wavePeriodSemantics', 'wavePeriodField']) {
     if (Object.hasOwn(step, key)) endpoint[key] = step[key];
     else delete endpoint[key];
@@ -353,7 +432,8 @@ export function verifiedDmiForecastSource(source, component, rowTime, expectedId
   for (let index = 0; index < source.nativeSteps.length; index += 1) {
     const step = source.nativeSteps[index];
     if (!step || typeof step !== 'object' || Array.isArray(step)
-      || Object.keys(step).some(key => !NATIVE_STEP_KEYS.has(key))
+      || Object.keys(step).some(key => !(component === 'current' ? CURRENT_NATIVE_STEP_KEYS : NATIVE_STEP_KEYS).has(key))
+      || (component === 'current' && Object.hasOwn(step, 'gridPoint') !== Object.hasOwn(step, 'distanceKm'))
       || step.nativeValidTime !== source.nativeValidTimes[index]) return null;
     const endpoint = reconstructNativeEndpoint(source, step);
     const verified = verifiedDmiNativeSource(endpoint, component, step.nativeValidTime);
@@ -380,6 +460,63 @@ export function verifiedDmiForecastSource(source, component, rowTime, expectedId
     ? ['mean-wave-dir']
     : [];
   if (!exactStringArray(source.optionalFieldSet, expectedOptional)) return null;
+  return source;
+}
+
+/**
+ * Inspect each actual original endpoint, after the normal exact forecast/entity
+ * verifier, without changing that verifier's historical admission contract.
+ * Selected top-level metadata cannot qualify another or absent original.
+ */
+export function inspectDmiForecastGridSampling(source, component, rowTime, expectedIdentity) {
+  const result = (status, reasonCode, counts = {}) => ({
+    status, reasonCode, coherentNativeCount: counts.coherent ?? 0,
+    unknownNativeCount: counts.unknown ?? 0, contradictoryNativeCount: counts.contradictory ?? 0,
+  });
+  if (!verifiedDmiForecastSource(source, component, rowTime, expectedIdentity)) {
+    return result('source-invalid', 'SOURCE_INVALID');
+  }
+  const counts = { coherent: 0, unknown: 0, contradictory: 0 };
+  for (const step of source.nativeSteps) {
+    counts[inspectDmiNativeGridSampling(reconstructNativeEndpoint(source, step)).status] += 1;
+  }
+  if (counts.contradictory) return result('contradictory', 'NATIVE_RECORDS_CONTRADICTORY', counts);
+  const selectedStep = source.nativeSteps.find(step => step.itemId === source.itemId
+    && step.assetIdentitySha256 === source.assetIdentitySha256
+    && step.nativeValidTime === source.nativeValidTime && step.acquiredAt === source.acquiredAt);
+  const selectedEndpoint = reconstructNativeEndpoint(source, selectedStep);
+  const selectedStatus = inspectDmiNativeGridSampling(selectedEndpoint).status;
+  // The top optional fields describe the aggregate, while its grid point
+  // must still agree with its own selected original registration exactly.
+  const topEndpoint = { ...source, optionalFieldSet: selectedEndpoint.optionalFieldSet };
+  if (Object.hasOwn(source, 'nativeGridSampling')) topEndpoint.nativeGridSampling = source.nativeGridSampling;
+  else delete topEndpoint.nativeGridSampling;
+  const topStatus = inspectDmiNativeGridSampling(topEndpoint).status;
+  if (topStatus === 'contradictory'
+    || ((topStatus === 'coherent' || selectedStatus === 'coherent')
+      && (topStatus !== selectedStatus
+        || !sameNativeGridSamplingRecord(topEndpoint.nativeGridSampling, selectedEndpoint.nativeGridSampling)))) {
+    return result('contradictory', 'SELECTED_NATIVE_RECORD_MISMATCH', counts);
+  }
+  return counts.unknown
+    ? result('unknown', 'NATIVE_RECORDS_UNKNOWN', counts)
+    : result('coherent', 'NATIVE_RECORDS_COHERENT', counts);
+}
+
+/**
+ * A NEW-use boundary, not an original-data sanitizer. Unknown sampling cannot
+ * attest the corrected lookup, but it is not permission to erase, relabel or
+ * replace an authenticated original. Stop the new projection before mutation.
+ * The fixed error contains no entity, coordinates, values or source payload.
+ */
+export function assertDmiForecastGridSamplingApplicable(source, component, rowTime, expectedIdentity) {
+  const inspection = inspectDmiForecastGridSampling(source, component, rowTime, expectedIdentity);
+  if (inspection.status !== 'coherent') {
+    const error = new Error(`DMI_GRID_SAMPLING_APPLICABILITY_${inspection.status.toUpperCase().replaceAll('-', '_')}`);
+    error.code = 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED';
+    error.samplingStatus = inspection.status;
+    throw error;
+  }
   return source;
 }
 
@@ -556,6 +693,12 @@ function componentSource(bracket, component, targetMs, generatedAt) {
       leadTimeHours: source.leadTimeHours,
       acquiredAt: source.acquiredAt,
       optionalFieldSet: [...source.optionalFieldSet],
+      // A selected endpoint cannot qualify another endpoint. Preserve absent
+      // legacy metadata as absent; do not infer historical native indices.
+      ...(component === 'current' && Object.hasOwn(source, 'nativeGridSampling') ? {
+        nativeGridSampling: structuredClone(source.nativeGridSampling),
+        gridPoint: structuredClone(source.gridPoint), distanceKm: source.distanceKm,
+      } : {}),
       ...(component === 'wave' ? {
         wavePeriodSemantics: source.wavePeriodSemantics,
         wavePeriodField: { ...source.wavePeriodField },
@@ -569,6 +712,9 @@ function componentSource(bracket, component, targetMs, generatedAt) {
     : [];
   return {
     ...selected,
+    ...(component === 'current' && Object.hasOwn(selected, 'nativeGridSampling') ? {
+      nativeGridSampling: structuredClone(selected.nativeGridSampling),
+    } : {}),
     optionalFieldSet,
     leadTimeHours: Number.isFinite(modelRunMs) ? round((targetMs - modelRunMs) / 3600000, 2) : null,
     forecastAgeHours: Number.isFinite(modelRunMs) && Number.isFinite(generatedMs) ? round((generatedMs - modelRunMs) / 3600000, 2) : null,

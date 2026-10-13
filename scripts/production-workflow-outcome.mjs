@@ -68,6 +68,8 @@ const RECOVERY_ACTIONS = new Set([
   'SAFE_SOURCE_ABORT',
   'TARGET_RECONCILE',
   'EXACT_TARGET_REDEPLOY',
+  'PRE_ACTIVATION_RESUME',
+  'COMPLETED_PRE_ACTIVATION',
 ]);
 const OPERATIONAL_ACTIONS = new Set([
   'integrated',
@@ -319,7 +321,11 @@ function recoveryContract(evidence) {
       exactTargetRedeployed: false,
     };
   }
-  if (proof.recoveryAction === 'EXACT_TARGET_REDEPLOY') {
+  if (proof.recoveryAction === 'COMPLETED_PRE_ACTIVATION') {
+    return { valid: jobs.recoverOperationalPagesTarget === 'skipped'
+      && jobs.finalizeOperationalPagesRecovery === 'success', exactTargetRedeployed: false };
+  }
+  if (['EXACT_TARGET_REDEPLOY', 'PRE_ACTIVATION_RESUME'].includes(proof.recoveryAction)) {
     return {
       valid: jobs.recoverOperationalPagesTarget === 'success'
         && jobs.finalizeOperationalPagesRecovery === 'success',

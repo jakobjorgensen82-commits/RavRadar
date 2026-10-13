@@ -1,3 +1,4 @@
+import { latestVerifiedNativeCadenceSampleForPart, stateOnlyCurrentRowForbiddenFields } from './live-current-pilot.mjs';
 import crypto from 'node:crypto';
 import {
   RAVSCORE_CURRENT_SUPPLY_POLICY,
@@ -23,6 +24,7 @@ import {
 } from './coastal-point-staging-contract.mjs';
 import { ravScoreSamplingContextKey } from './ravscore-sampling-context.mjs';
 import {
+  assertRegionalSanitizedCurrentApplicable,
   coastNormalSpeedMpsFromUv,
   dmiExpectedIdentityForPart,
   verifiedControlledLiveCurrentSource,
@@ -30,6 +32,7 @@ import {
 } from './ravscore-production-adapters.mjs';
 import { verifyCompactFeggesundWaveProxy } from './feggesund-wave-proxy.mjs';
 import { dmiMarineCollectionAllowedForZone } from './dmi-marine-zone-exclusions.mjs';
+import { assertDmiForecastGridSamplingApplicable } from './dmi-forecast-store.mjs';
 
 export const RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS = 72;
 export const RAVSCORE_COLD_START_REPLAY_HOURS =
@@ -233,7 +236,7 @@ function compactCurrentHoldProof(provenance) {
   return { status: 'verified' };
 }
 
-function currentComponent(row, part) {
+function currentComponent(row, part, { requireNativeGridSampling = false, liveCurrentPilot = null } = {}) {
   const expectedPoint = part?.waterPoint;
   if (!finite(row?.currentSpeedMps)
     || !finite(row?.currentDirectionDeg)
@@ -269,6 +272,14 @@ function currentComponent(row, part) {
     || (Number(row.currentSpeedMps) > 0.01
       && circularDistanceDeg(derivedDirection, directionDeg) > 0.51)
     || coastNormalSpeedMps === null) return null;
+  // Check the actual rich original BEFORE compaction discards native endpoints.
+  // Historical admission/signatures stay unchanged. A compact memory marker,
+  // or a different fresh parser result, cannot attest this original lookup.
+  if (requireNativeGridSampling && provenance.provider === 'dmi'
+    && !assertRegionalSanitizedCurrentApplicable(row, part, liveCurrentPilot)) {
+    assertDmiForecastGridSamplingApplicable(provenance, 'current', row.time,
+      dmiExpectedIdentityForPart(part));
+  }
   const projectedProvenance = provenanceProjection(provenance, CURRENT_PROVENANCE_KEYS);
   return {
     signature: digest({
@@ -417,16 +428,40 @@ function addComponent(target, componentName, candidate) {
  * their already qualified private records, including the pre-state window.
  * Missing/excluded input stays unknown; no wave/last-mile replay is done here.
  */
-export function buildRavScorePermittedCurrentHistory({ part, referenceAt, sourceRecords = [] } = {}) {
+export function buildRavScorePermittedCurrentHistory({ part, referenceAt, sourceRecords = [],
+  requireNativeGridSampling = false, liveCurrentPilot = null, preserveNativeCadenceHolds = false } = {}) {
+  if (preserveNativeCadenceHolds && !requireNativeGridSampling) throw new Error('INITIAL_HISTORY_REQUIRES_STRICT_ORIGINALS');
   const end = canonicalHour(referenceAt);
   const endMs = Date.parse(end);
-  const startMs = endMs - RAVSCORE_COLD_START_REPLAY_HOURS * HOUR_MS;
+  const lookback = preserveNativeCadenceHolds ? 3 : 0;
+  const boundaryMs = endMs - RAVSCORE_COLD_START_REPLAY_HOURS * HOUR_MS;
+  let startMs = boundaryMs - lookback * HOUR_MS;
   const parentZoneId = part?.zoneId ?? part?.parentZoneId ?? part?.sourceZoneId;
-  if (dmiMarineCollectionAllowedForZone('dkss_lf', parentZoneId)
+  if (preserveNativeCadenceHolds && Array.isArray(sourceRecords)) {
+    let supportMs = null;
+    for (const source of sourceRecords) {
+      const rows = source?.record?.hourly;
+      if (!Array.isArray(rows)) continue;
+      for (const row of rows) {
+        const ms = Date.parse(row?.time);
+        const provenance = row?.currentProvenance?.status === 'verified'
+          ? row.currentProvenance : row?.sources?.current;
+        if (!dmiMarineCollectionAllowedForZone(provenance?.collection, parentZoneId)) continue;
+        if (ms >= startMs && ms <= boundaryMs
+          && [row.currentSpeedMps, row.currentDirectionDeg, row.currentUMps, row.currentVMps].some(finite)
+          && (supportMs === null || ms > supportMs)) supportMs = ms;
+      }
+    }
+    // This chooses only the causal support time, not a competing source.
+    // Every candidate at/after it still reaches ordinary strict admission.
+    if (supportMs !== null) startMs = supportMs;
+  }
+  if ((dmiMarineCollectionAllowedForZone('dkss_lf', parentZoneId) && !requireNativeGridSampling)
     || !Array.isArray(sourceRecords)) {
     throw new Error('Current source transition requires an owner-scoped target and qualified records');
   }
   const union = new Map();
+  const nativeSources = new Map();
   for (const source of sourceRecords) {
     const record = source?.record;
     if (!record || !Array.isArray(record.hourly)) continue;
@@ -446,8 +481,17 @@ export function buildRavScorePermittedCurrentHistory({ part, referenceAt, source
       seen.add(time);
       const provenance = row.currentProvenance?.status === 'verified'
         ? row.currentProvenance : row.sources?.current;
-      if (!dmiMarineCollectionAllowedForZone(provenance?.collection, parentZoneId)) continue;
-      const current = currentComponent(row, part);
+      const hold = preserveNativeCadenceHolds
+        ? exactOperationalStateOnlyHold(row.currentStateOnlyHold, row.time, part) : null;
+      if (!dmiMarineCollectionAllowedForZone(hold?.collection ?? provenance?.collection, parentZoneId)) continue;
+      if (hold && stateOnlyCurrentRowForbiddenFields(row).some(key => row[key] !== null && row[key] !== undefined)) {
+        failClosed('RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID', 'Current history hold contains a projection');
+      }
+      if (hold && !latestVerifiedNativeCadenceSampleForPart(part, liveCurrentPilot, hold.sourceValidTime,
+        { requireNativeGridSampling: true, expectedHold: hold })) {
+        failClosed('RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID', 'Current history hold lacks its exact original');
+      }
+      const current = currentComponent(row, part, { requireNativeGridSampling, liveCurrentPilot });
       if (!current && [row.currentSpeedMps, row.currentDirectionDeg,
         row.currentUMps, row.currentVMps].some(finite)) {
         failClosed('RAVSCORE_RECOVERY_REPLAY_CURRENT_UNVERIFIED',
@@ -455,13 +499,30 @@ export function buildRavScorePermittedCurrentHistory({ part, referenceAt, source
       }
       const components = union.get(time) ?? {};
       addComponent(components, 'current', current);
+      if (current && !nativeSources.has(time)) nativeSources.set(time, provenance);
+      if (hold) addComponent(components, 'currentHold', { signature: digest(hold), row: hold });
+      if (components.current && components.currentHold) {
+        failClosed('RAVSCORE_RECOVERY_REPLAY_CONFLICT', 'Current history cannot select both a vector and a hold');
+      }
       union.set(time, components);
     }
   }
-  return Array.from({ length: RAVSCORE_COLD_START_REPLAY_HOURS + 1 }, (_, offset) => {
+  for (const components of union.values()) {
+    const hold = components.currentHold?.row;
+    if (!hold) continue;
+    const native = nativeSources.get(hold.sourceValidTime);
+    if (!native || ['sourceAssetSha256', 'sourceProofSha256', 'vectorCommitmentSha256',
+      'closureId', 'closureContractId', 'targetIdentityFingerprint', 'parentZoneId']
+      .some(key => native[key] !== hold[key])) {
+      failClosed('RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID', 'Current history hold has a different selected native original');
+    }
+  }
+  return Array.from({ length: (endMs - startMs) / HOUR_MS + 1 }, (_, offset) => {
     const time = new Date(startMs + offset * HOUR_MS).toISOString();
     const selected = union.get(time)?.current;
-    return selected ? { time, ...selected.row } : { time, currentProvenance: null };
+    const hold = union.get(time)?.currentHold?.row;
+    return selected ? { time, ...selected.row } : { time, currentProvenance: null,
+      ...(hold ? { currentStateOnlyHold: hold } : {}) };
   });
 }
 
@@ -880,6 +941,8 @@ export function buildRavScoreRecoveryReplay({
   publicHourly = [],
   nativeCadenceHoldHours = 0,
   nativeCadenceReferenceSample = null,
+  requireNativeGridSampling = false,
+  liveCurrentPilot = null,
 } = {}) {
   const target = canonicalHour(targetReferenceAt);
   if (!finite(nativeCadenceHoldHours)
@@ -1005,7 +1068,20 @@ export function buildRavScoreRecoveryReplay({
         && parsed <= migrationWaveEndMs;
       if (!needsReplay && !needsMigrationWave) continue;
       const time = canonicalHour(row.time);
-      const current = needsReplay ? currentComponent(row, part) : null;
+      const candidateHold = needsReplay && requireNativeGridSampling
+        ? exactOperationalStateOnlyHold(row.currentStateOnlyHold, time, part) : null;
+      const currentHold = candidateHold && dmiMarineCollectionAllowedForZone(candidateHold.collection,
+        part?.zoneId ?? part?.parentZoneId ?? part?.sourceZoneId) ? candidateHold : null;
+      if (candidateHold && !currentHold) {
+        failClosed('RAVSCORE_CURRENT_SOURCE_DOMAIN_EXCLUDED', 'Current replay hold is excluded for its target zone');
+      }
+      if (currentHold && (stateOnlyCurrentRowForbiddenFields(row).some(key => row[key] !== null && row[key] !== undefined)
+        || !latestVerifiedNativeCadenceSampleForPart(part, liveCurrentPilot, currentHold.sourceValidTime,
+          { requireNativeGridSampling: true, expectedHold: currentHold }))) {
+        failClosed('RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID',
+          'Current replay hold lacks its exact original or contains a projection');
+      }
+      const current = needsReplay ? currentComponent(row, part, { requireNativeGridSampling, liveCurrentPilot }) : null;
       const hasCurrentPayload = [
         row?.currentSpeedMps,
         row?.currentDirectionDeg,
@@ -1024,6 +1100,7 @@ export function buildRavScoreRecoveryReplay({
           // CP/Open-Meteo wave reserve.  The one-time Candidate G bridge is
           // intentionally stricter: its 40-hour history must be direct DMI.
           allowVerifiedFallback: needsReplay && !needsMigrationWave,
+          requireNativeGridSampling,
         })
         : null;
       const hasWavePayload = [
@@ -1043,12 +1120,48 @@ export function buildRavScoreRecoveryReplay({
         migrationWaveByTime.set(time, targetWave);
       }
       if (needsReplay) {
-        if (current || wave) {
+        if (current || wave || currentHold) {
           const targetRow = union.get(time) ?? {};
           addComponent(targetRow, 'current', current);
           addComponent(targetRow, 'wave', wave);
+          if (currentHold) addComponent(targetRow, 'currentHold', { signature: digest(currentHold), row: currentHold });
+          if (targetRow.current && targetRow.currentHold) {
+            failClosed('RAVSCORE_RECOVERY_REPLAY_CONFLICT', 'Current replay cannot select both a vector and a hold');
+          }
           union.set(time, targetRow);
         }
+      }
+    }
+  }
+  const heldSourceTimes = new Set([...union.values()].map(row => row.currentHold?.row.sourceValidTime).filter(Boolean));
+  const selectedNativeSources = new Map();
+  if (heldSourceTimes.size) {
+    // Only the actual selected hold's rich native support is used, including
+    // support at/before initial state. Compact state cannot supply its proof.
+    for (const source of sourceRecords) {
+      if (!Array.isArray(source?.record?.hourly)) continue;
+      for (const row of source.record.hourly) {
+        if (!Number.isFinite(Date.parse(row?.time)) || !heldSourceTimes.has(canonicalHour(row.time))) continue;
+        const current = currentComponent(row, part, { requireNativeGridSampling: true, liveCurrentPilot });
+        if (!current && [row.currentSpeedMps, row.currentDirectionDeg, row.currentUMps, row.currentVMps].some(finite)) {
+          failClosed('RAVSCORE_RECOVERY_REPLAY_CURRENT_UNVERIFIED', 'Current replay hold support lacks exact verified provenance');
+        }
+        if (!current) continue;
+        const time = canonicalHour(row.time), selected = selectedNativeSources.get(time) ?? {};
+        addComponent(selected, 'current', current);
+        selected.provenance = row.currentProvenance?.status === 'verified' ? row.currentProvenance : row.sources?.current;
+        selectedNativeSources.set(time, selected);
+      }
+    }
+    for (const components of union.values()) {
+      const hold = components.currentHold?.row;
+      if (!hold) continue;
+      const native = selectedNativeSources.get(hold.sourceValidTime)?.provenance;
+      if (!native || ['sourceAssetSha256', 'sourceProofSha256', 'vectorCommitmentSha256',
+        'closureId', 'closureContractId', 'targetIdentityFingerprint', 'parentZoneId']
+        .some(key => native[key] !== hold[key])) {
+        failClosed('RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID',
+          'Current replay hold has a different selected native original');
       }
     }
   }
@@ -1073,8 +1186,8 @@ export function buildRavScoreRecoveryReplay({
   verifiedNativeCadenceBoundaryReference(
     nativeCadenceReferenceSample,
     {
-      authorizedHolds: canonicalPublicRows
-        .map(row => row.currentStateOnlyHold)
+      authorizedHolds: [...canonicalPublicRows.map(row => row.currentStateOnlyHold),
+        ...[...union.values()].map(row => row.currentHold?.row)]
         .filter(marker => marker?.validTime === replayBoundaryAt),
       nativeCadenceHoldHours,
     },
@@ -1097,6 +1210,7 @@ export function buildRavScoreRecoveryReplay({
         wavePeriodS: null,
         waveDirectionDeg: null,
       }),
+      ...(row.currentHold ? { currentStateOnlyHold: row.currentHold.row } : {}),
     };
   });
   const completeCausalPositionCount = coldStart

@@ -7,6 +7,7 @@ public runtime data.
 """
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import datetime, timezone
 import json
 import math
@@ -331,6 +332,7 @@ def representative_profile(
             "verticalLayerRankM": round(float(row["layerRank"]), 3),
             "uMps": round(float(row["first"]["value"]), 5),
             "vMps": round(float(row["second"]["value"]), 5),
+            **({"nativeSource": deepcopy(row["nativeSource"])} if "nativeSource" in row else {}),
         }
 
     return {

@@ -1,3 +1,10 @@
+# Lokal strømrettelse – afgrænset kildeforberedelse, 2026-10-13
+
+Afgrænset kildeopfølgning til DEC-0293 og ejerens godkendelse af nye strømdata/-hukommelse: native koordinatafkodning, adskilt gittercache, strømpar/genbrug, historik og begge nye strømtilstande skal følges sammen. Den leverede visningslandmaske bliver ikke en numerisk kildeafvisning. Tre autentiske originalfamilier holdes adskilt, og den allerede rettede same-read/manifest-integritetskant genbruges i den normale migrator uden at erstatte account metadataOnly eller pakket førskrivningskontrol.
+
+Forslaget korrigerer kun DKSS GRIB1-strømmens U/V-fortolkning og dens sammenhæng gennem native gitter, datacache, historik, ny strømhukommelse og fremtidig score. Andre felters numeriske valg og cacheadgang, kildeprioritet, scoreformel, administratorpunkter og geometri bevares. Gamle originalpakker og offentliggjorte scorer må ikke omskrives.
+
+Den samlede aktuelle kilde er endnu ikke native-/nationalt eller offentligt verificeret. Legitim bindingsfølge, autentiske originalers bevarelse og den særskilte numeriske SQL-/aktiveringsgrænse står åbne; konto-/assistenttilladelsen er ikke numerisk tilladelse. Ingen ny version eller SOURCE-G4-procesrettelse indgår. Alle fem hovedmål er fortsat åbne.
 # 4.0.576 – ny fast, skrivefri assistentkontrol, 2026-10-13
 
 Kildeklargøringen er nu tilpasset den leverede main `a7741ebb41812ec7cb7076050f3537936f10d9a0`. PR #587 er leveret gennem det kontrollerede rettelsesdeploy `38391450805`, som er afsluttet med succes. Den eksisterende omkostningsrettelse, alle 69 DMI-testmetoder og deres dokumentation bevares uændret. Dette er ikke en ny DMI-generation, målt effekt ved en ny behandlingsfejl eller AI-årsagsbevis. Det tidligere 289-baserede udkast bevares separat; de ældre afsnits forberedelsesstatus er historik på det konkret leverede punkt.

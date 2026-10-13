@@ -3,6 +3,10 @@ name: Reusable RavRadar Pages deployment
 on:
   workflow_call:
     inputs:
+      pre_activation_recovery:
+        required: false
+        type: boolean
+        default: false
       active_deployment_id:
         required: true
         type: string
@@ -54,7 +58,7 @@ permissions:
 
 jobs:
   deploy-pages:
-    name: Deploy prepared Pages artifact
+    name: ${{ inputs.pre_activation_recovery && 'Deploy exact pre-activation Pages artifact' || 'Deploy prepared Pages artifact' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
@@ -92,7 +96,7 @@ jobs:
       - name: Download sealed operational handoff
         uses: actions/download-artifact@v8
         with:
-          name: ravscore-operational-handoff-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ${{ inputs.pre_activation_recovery && format('ravscore-operational-preactivation-handoff-{0}-{1}', github.run_id, github.run_attempt) || format('ravscore-operational-handoff-{0}-{1}', github.run_id, github.run_attempt) }}
           path: ${{ env.RAVRADAR_OPERATIONAL_HANDOFF }}
 
       - name: Verify exact privacy-safe handoff identity
@@ -118,6 +122,21 @@ jobs:
             test "$(sha256sum "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json" | awk '{print $1}')" = "$(jq -er '.codeOnlyReuseReportSha256 | select(test("^[a-f0-9]{64}$"))' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")"
             jq -e '.providerRequestsPerformed == false and .weatherValuesChanged == false and .geometryChanged == false and .privatePayloadIncluded == false and .zoneCount == 210 and .coastalPartCount == 673 and ((.mode == "code-only-reuse" and .scoresChanged == false) or (.mode == "post-cutover-contract-rebind" and .scoresChanged == false and .savedProtectedRuntimeReused == true and .publicRuntimeAdvanced == false) or (.mode == "post-cutover-last-mile-repair" and .scoresChanged == true and .savedProtectedRuntimeReused == true and .publicRuntimeAdvanced == false))' "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json" >/dev/null
           fi
+
+      - name: Require the fixed pre-activation owner before recovery Pages admission
+        if: inputs.pre_activation_recovery == true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ inputs.operational_action }}" = integrated-historical-maintenance
+          test "${{ inputs.code_only_repair }}" = false
+          test "${{ inputs.exact_public_recovery }}" = false
+          test "${{ inputs.legacy_source_required }}" = false
+          node scripts/protected-operational-reentry-evidence.mjs --assert-pre-activation-owner \
+            --repository "$GITHUB_REPOSITORY" --output /tmp/ravradar-pre-activation-owner.json
 
       - name: Require horizon-valid weather before any Pages begin CAS
         if: inputs.code_only_repair != true
@@ -421,7 +440,7 @@ jobs:
           --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
           --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
           --source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")"
-          --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+          --deployment-id "${{ inputs.pre_activation_recovery && format('pages-recovery-{0}-{1}', github.run_id, github.run_attempt) || format('pages-{0}-{1}', github.run_id, github.run_attempt) }}"
           --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -438,7 +457,7 @@ jobs:
           --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
           --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
           --source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")"
-          --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+          --deployment-id "${{ inputs.pre_activation_recovery && format('pages-recovery-{0}-{1}', github.run_id, github.run_attempt) || format('pages-{0}-{1}', github.run_id, github.run_attempt) }}"
           --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -455,7 +474,7 @@ jobs:
           --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
           --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
           --source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")"
-          --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+          --deployment-id "${{ inputs.pre_activation_recovery && format('pages-recovery-{0}-{1}', github.run_id, github.run_attempt) || format('pages-{0}-{1}', github.run_id, github.run_attempt) }}"
           --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -473,7 +492,7 @@ jobs:
           --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
           --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
           --source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")"
-          --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+          --deployment-id "${{ inputs.pre_activation_recovery && format('pages-recovery-{0}-{1}', github.run_id, github.run_attempt) || format('pages-{0}-{1}', github.run_id, github.run_attempt) }}"
           --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -500,7 +519,7 @@ jobs:
             --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json" \
             "${source_attestation[@]}" \
             --source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")" \
-            --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}" \
+            --deployment-id "${{ inputs.pre_activation_recovery && format('pages-recovery-{0}-{1}', github.run_id, github.run_attempt) || format('pages-{0}-{1}', github.run_id, github.run_attempt) }}" \
             --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -518,7 +537,7 @@ jobs:
           --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
           --source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"
           --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
-          --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+          --deployment-id "${{ inputs.pre_activation_recovery && format('pages-recovery-{0}-{1}', github.run_id, github.run_attempt) || format('pages-{0}-{1}', github.run_id, github.run_attempt) }}"
           --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -537,7 +556,7 @@ jobs:
           --source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"
           --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
           --source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")"
-          --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+          --deployment-id "${{ inputs.pre_activation_recovery && format('pages-recovery-{0}-{1}', github.run_id, github.run_attempt) || format('pages-{0}-{1}', github.run_id, github.run_attempt) }}"
           --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -590,6 +609,8 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: ${{ inputs.pre_activation_recovery && format('github-pages-preactivation-{0}-{1}', github.run_id, github.run_attempt) || 'github-pages' }}
 
       - name: Verify deployed exact model, implementation and 210/673 artifact
         id: public-verification
@@ -684,7 +705,7 @@ jobs:
             --expected-version "$pending_version" \
             --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
             --verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json" \
-            --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+            --deployment-id "${{ inputs.pre_activation_recovery && format('pages-recovery-{0}-{1}', github.run_id, github.run_attempt) || format('pages-{0}-{1}', github.run_id, github.run_attempt) }}"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -700,7 +721,7 @@ jobs:
             --expected-version "$pending_version" \
             --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
             --verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json" \
-            --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+            --deployment-id "${{ inputs.pre_activation_recovery && format('pages-recovery-{0}-{1}', github.run_id, github.run_attempt) || format('pages-{0}-{1}', github.run_id, github.run_attempt) }}"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -716,7 +737,7 @@ jobs:
             --expected-version "$pending_version" \
             --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
             --verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json" \
-            --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}" \
+            --deployment-id "${{ inputs.pre_activation_recovery && format('pages-recovery-{0}-{1}', github.run_id, github.run_attempt) || format('pages-{0}-{1}', github.run_id, github.run_attempt) }}" \
             --output "$RAVRADAR_OPERATIONAL_HANDOFF/completed.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -733,7 +754,7 @@ jobs:
             --expected-version "$pending_version" \
             --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
             --verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json" \
-            --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}" \
+            --deployment-id "${{ inputs.pre_activation_recovery && format('pages-recovery-{0}-{1}', github.run_id, github.run_attempt) || format('pages-{0}-{1}', github.run_id, github.run_attempt) }}" \
             --output "$RAVRADAR_OPERATIONAL_HANDOFF/completed.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -751,7 +772,7 @@ jobs:
             --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
             --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json" \
             --verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json" \
-            --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+            --deployment-id "${{ inputs.pre_activation_recovery && format('pages-recovery-{0}-{1}', github.run_id, github.run_attempt) || format('pages-{0}-{1}', github.run_id, github.run_attempt) }}"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -770,7 +791,7 @@ jobs:
             --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
             --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json" \
             --verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json" \
-            --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}" \
+            --deployment-id "${{ inputs.pre_activation_recovery && format('pages-recovery-{0}-{1}', github.run_id, github.run_attempt) || format('pages-{0}-{1}', github.run_id, github.run_attempt) }}" \
             --output "$RAVRADAR_OPERATIONAL_HANDOFF/completed.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -787,7 +808,7 @@ jobs:
           --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
           --verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json"
           --requested-implementation-closure-sha256 "${{ inputs.integrated_implementation_closure_sha256 }}"
-          --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+          --deployment-id "${{ inputs.pre_activation_recovery && format('pages-recovery-{0}-{1}', github.run_id, github.run_attempt) || format('pages-{0}-{1}', github.run_id, github.run_attempt) }}"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -1025,3 +1046,15 @@ jobs:
               ;;
           esac
           echo "deployed_verified=true" >> "$GITHUB_OUTPUT"
+
+      - name: Clear only the publicly verified completed pre-activation phase
+        if: steps.deployment-terminal.outputs.deployed_verified == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/protected-operational-reentry-evidence.mjs --clear-pre-activation \
+            --repository "$GITHUB_REPOSITORY" --base-url "$RAVRADAR_PUBLIC_BASE_URL" \
+            --output /tmp/ravradar-pre-activation-complete.json

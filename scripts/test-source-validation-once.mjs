@@ -18,12 +18,17 @@ assert.deepEqual(plan.remaining, declared.filter(command => command !== plan.gat
 assert.equal(plan.gate, 'node scripts/source-critical-gate.mjs');
 assert.ok(plan.preflight.includes('node scripts/build-ravscore-model-bundle.mjs --check'));
 assert.ok(plan.preflight.includes('node scripts/sync-ravscore-model-binding.mjs --check'));
-// Preserve the 47-command bounded baseline plus exactly one normal current
-// account/assistant successor source check. No prior check is removed.
-const successorCheck = 'node scripts/build-account-assistant-binding-successor.mjs --check';
-assert.equal(declared.filter(command => command === successorCheck).length, 1,
-  'The actual account/assistant successor must be checked exactly once.');
-assert.ok(declared.filter(command => command !== successorCheck).length <= 47,
+// Preserve all 47 baseline commands, the genuine issued213 historical check,
+// and exactly one current220 check. Never rebuild issued213 on changed source.
+const issuedCheck = 'node scripts/check-account-assistant-issued-source.mjs';
+const successorCheck = 'node scripts/build-current-grid-original-binding-successor.mjs --check';
+for (const check of [issuedCheck, successorCheck]) {
+  assert.equal(declared.filter(command => command === check).length, 1,
+    'Historical and current source must each be checked exactly once.');
+}
+assert.equal(declared.includes('node scripts/build-account-assistant-binding-successor.mjs --check'), false,
+  'The immutable issued213 builder must not be rerun against current220 source.');
+assert.ok(declared.filter(command => ![issuedCheck, successorCheck].includes(command)).length <= 47,
   `Kildegaten er igen blevet for bred uden den præcise efterfølgerkontrol: ${declared.length} kommandoer.`);
 assert.equal(declared.filter(command => command === 'python scripts/test-copernicus-current-pilot.py').length, 1);
 assert.ok(fs.readFileSync('scripts/test-copernicus-current-pilot.py', 'utf8').includes(

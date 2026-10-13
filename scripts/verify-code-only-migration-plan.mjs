@@ -9,6 +9,7 @@ import {
   ACCOUNT_ASSISTANT_SOURCE_MIGRATION,
   assertSupabaseMigrationPlan,
 } from './integrated-cutover-readiness.mjs';
+import { CURRENT_GRID_MIGRATION } from './lib/current-grid-successor-source.mjs';
 
 function argument(name) {
   const index = process.argv.indexOf(name);
@@ -17,6 +18,9 @@ function argument(name) {
 }
 
 const latest = LATEST_REQUIRED_CUTOVER_MIGRATION;
+const currentGridRoute = process.argv.includes('--current-grid-prewrite-plan');
+assert.ok(!(currentGridRoute && process.argv.includes('--account-assistant-prewrite-plan')),
+  'Current-grid and account/assistant prewrite routes are separate');
 assert.equal(latest, REQUIRED_CUTOVER_MIGRATIONS.at(-1));
 const plan = await assertSupabaseMigrationPlan({
   migrationListText: await fs.readFile(argument('--migration-list'), 'utf8'),
@@ -48,8 +52,10 @@ if (plan.pendingVersions.includes(ACCOUNT_ASSISTANT_SOURCE_MIGRATION.version)) {
 }
 if (process.argv.includes('--expected-pending-version')) {
   const expected = argument('--expected-pending-version');
-  assert.equal(expected, ACCOUNT_ASSISTANT_SOURCE_MIGRATION.version,
-    'Only the fixed account/assistant pending version can be pinned');
+  assert.equal(expected, currentGridRoute
+    ? CURRENT_GRID_MIGRATION.version : ACCOUNT_ASSISTANT_SOURCE_MIGRATION.version,
+  currentGridRoute ? 'Only the fixed current-grid pending version can be pinned'
+    : 'Only the fixed account/assistant pending version can be pinned');
   assert.deepEqual(plan.pendingVersions, [expected],
     'Pending plan changed or is already applied; do not reuse a one-install grant');
 }
@@ -58,6 +64,20 @@ assert.ok(
     || (plan.pendingVersions.length === 1 && plan.pendingVersions[0] === latest.version),
   'Code-only deployment may apply only the exact latest required integrated migration',
 );
+if (currentGridRoute || plan.pendingVersions.includes(CURRENT_GRID_MIGRATION.version)) {
+  assert.equal(currentGridRoute, true,
+    'Pending current-grid successor requires its exact prewrite route');
+  assert.equal(process.env.RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN, 'true',
+    'Pending current-grid binding requires its own named opt-in');
+  assert.ok(process.argv.includes('--require-prewrite-gate')
+    && process.env.RAVRADAR_CURRENT_GRID_PREWRITE_REQUIRED === 'true'
+    && process.env.RAVRADAR_CURRENT_GRID_PREWRITE_VERIFIED === 'true',
+  'Pending current-grid binding requires actual same-original prewrite proof');
+  assert.equal(argument('--expected-pending-version'), CURRENT_GRID_MIGRATION.version,
+    'Only the fixed current-grid pending version can be pinned');
+  assert.deepEqual(plan.pendingVersions, [CURRENT_GRID_MIGRATION.version],
+    'Current-grid plan changed or is already applied; do not reuse a one-install grant');
+}
 console.log(
   plan.pendingVersions.length === 0
     ? 'Code-only migration is already applied; retry is safe.'

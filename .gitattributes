@@ -47,3 +47,5 @@ supabase/migrations/20261013210000_account_assistant_original_bound_successor.sq
 cloudflare/trip-gateway/worker-legacy-erasure.test-fixture.js text eol=lf
 # The additive INSERT guard is sent as the exact reviewed LF payload.
 cloudflare/trip-gateway/migrations/003_owner_erasure_insert_guard.sql text eol=lf
+# The current-grid successor builder verifies exact, immutable LF source bytes.
+supabase/migrations/20261013220000_current_grid_original_bound_successor.sql text eol=lf

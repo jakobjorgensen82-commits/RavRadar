@@ -1696,6 +1696,8 @@ original_find_nearest = producer.codes_grib_find_nearest
 original_codes_get = producer.codes_get
 original_get_elements = producer.codes_get_elements
 original_nearest_candidates = producer.nearest_candidates
+original_nearest_for_message = producer._nearest_candidates_for_message
+original_metadata_classify = producer.classify_parameter
 try:
     producer.GRID_INDEX_CACHE.clear()
 
@@ -1756,12 +1758,13 @@ try:
     else:
         raise AssertionError("Non-DKSS out-of-area lookup must remain fail-closed")
 
-    producer.nearest_candidates = lambda *_args, **_kwargs: [{
+    producer._nearest_candidates_for_message = lambda *_args, **_kwargs: [{
         "index": 7,
         "latitude": 1.0,
         "longitude": 2.0,
         "distanceKm": 0.0,
     }]
+    batch_nearest_for_message = producer._nearest_candidates_for_message
 
     class NumpyArrayLike:
         """Exercise the documented ecCodes ndarray protocol without NumPy."""
@@ -1790,13 +1793,23 @@ try:
     # Grid identity and its digest are message-local work. Adding more zones
     # must not multiply ecCodes metadata calls before a cache hit can be read.
     metadata_calls = []
+    field_metadata_calls = []
+    reading_field_metadata = [False]
+
+    def counting_classify(gid, collection):
+        reading_field_metadata[0] = True
+        try:
+            return original_metadata_classify(gid, collection)
+        finally:
+            reading_field_metadata[0] = False
 
     def counting_codes_get(_gid, key):
-        metadata_calls.append(key)
+        (field_metadata_calls if reading_field_metadata[0] else metadata_calls).append(key)
         return 9999.0 if key == "missingValue" else f"grid-{key}"
 
     second_zone = {**zone, "id": "PART::TEST-2"}
     producer.codes_get = counting_codes_get
+    producer.classify_parameter = counting_classify
     producer.codes_get_elements = lambda *_args, **_kwargs: [0.25]
     counted_rows = producer.valid_candidates_batch(
         998,
@@ -1807,6 +1820,8 @@ try:
     assert metadata_calls.count("md5GridSection") == 1
     assert metadata_calls.count("missingValue") == 1
     assert len(metadata_calls) == 12
+    assert field_metadata_calls == [key for key in producer._FIELD_SIGNATURE_KEYS
+                                    if key not in producer._FIELD_STATISTIC_KEYS]
     legacy_definition_signature = tuple(
         f"grid-{key}" for key in producer.GRID_DEFINITION_KEYS
     )
@@ -1842,6 +1857,9 @@ try:
 
         return lookup
 
+    # This subcase exercises the real nearest/cache helper, not the
+    # array-protocol stub retained for the batch checks on either side.
+    producer._nearest_candidates_for_message = original_nearest_for_message
     first_grid_rows = original_nearest_candidates(
         1001,
         "dkss_idw",
@@ -1860,6 +1878,7 @@ try:
     assert second_grid_rows[0]["index"] == 72
     assert len(producer.GRID_INDEX_CACHE) == 2
     producer.GRID_INDEX_CACHE.clear()
+    producer._nearest_candidates_for_message = batch_nearest_for_message
 
     # An unordered iterable can silently detach values from their requested
     # grid indexes even when its length happens to match.
@@ -1899,6 +1918,124 @@ finally:
     producer.codes_get = original_codes_get
     producer.codes_get_elements = original_get_elements
     producer.nearest_candidates = original_nearest_candidates
+    producer._nearest_candidates_for_message = original_nearest_for_message
+    producer.classify_parameter = original_metadata_classify
+    producer.GRID_INDEX_CACHE.clear()
+
+# Message-local classification/geometry must stay constant at national scale.
+# This is the existing import-safe ecCodes seam, NOT native ecCodes evidence.
+_message_saved = {name: getattr(producer, name) for name in (
+    "codes_get", "codes_get_elements", "codes_grib_find_nearest",
+    "codes_grib_nearest_new", "codes_grib_nearest_find", "codes_grib_nearest_delete",
+    "CODES_GRIB_NEAREST_SAME_GRID",
+)}
+try:
+    from collections import Counter
+    _field_keys = [key for key in producer._FIELD_SIGNATURE_KEYS
+                   if key not in producer._FIELD_STATISTIC_KEYS]
+    _grid_keys = ["md5GridSection", *producer.GRID_DEFINITION_KEYS]
+    _field = {"parameter": 82}
+    _reads, _element_reads, _nearest_opens, _nearest_closes = [], [], [], []
+    _grid = dict(zip(_grid_keys, (
+        "1" * 32, "regular_ll", 2, 2, 4, 1., 2., 2., 3., .999, .999,
+    )))
+
+    def _message_get(gid, key):
+        assert gid == 1998
+        _reads.append(key)
+        if key in _grid:
+            return _grid[key]
+        if key in {"paramId", "indicatorOfParameter"}:
+            return _field["parameter"]
+        return {"edition": 1, "scanningMode": 64, "missingValue": 9999.}.get(key, "")
+
+    def _message_elements(gid, key, indices):
+        assert gid == 1998 and key == "values"
+        _element_reads.append(tuple(indices))
+        return [float(index) for index in indices]
+
+    def _message_native(gid, latitude, longitude, *args, **kwargs):
+        assert gid == 1998
+        return [{"index": 3, "lat": 1.999, "lon": 2.999}]
+
+    producer.codes_get = _message_get
+    producer.codes_get_elements = _message_elements
+    producer.codes_grib_find_nearest = _message_native
+    producer.CODES_GRIB_NEAREST_SAME_GRID = 1
+    producer.codes_grib_nearest_new = lambda gid: _nearest_opens.append(gid) or 4242
+    producer.codes_grib_nearest_find = lambda handle, gid, lat, lon, *_: _message_native(gid, lat, lon)
+    producer.codes_grib_nearest_delete = lambda handle: _nearest_closes.append(handle)
+    _wanted_zone = {**zone, "lat": 1.5, "lon": 2.5}
+    for _batch in (producer.valid_candidates_batch, producer.nearest_valid_batch):
+        for _parameter in (82, 49, 50, 33):
+            _field["parameter"] = _parameter
+            _current = _parameter in (49, 50)
+            for _count in (1, 2, 673):
+                _wanted = [{**_wanted_zone, "id": f"PART::MESSAGE-{n}"} for n in range(_count)]
+                producer.GRID_INDEX_CACHE.clear()
+                for _pass in ("cold", "warm"):
+                    _reads.clear(); _element_reads.clear()
+                    _nearest_opens.clear(); _nearest_closes.clear()
+                    _rows = _batch(1998, "dkss_idw", _wanted)
+                    assert set(_rows) == {item["id"] for item in _wanted}
+                    assert Counter(_reads) == Counter(
+                        _grid_keys + _field_keys + ["missingValue"]
+                        + (["edition", "scanningMode"] if _current else [])
+                    ), (_batch.__name__, _parameter, _count, _pass, Counter(_reads))
+                    assert len(_element_reads) == 1
+                    assert _nearest_opens == ([1998] if not _current and _pass == "cold" else [])
+                    assert _nearest_closes == ([4242] if _nearest_opens else [])
+                    for _key in producer.GRID_INDEX_CACHE:
+                        assert (_key[0] == "current-native-grid-sampling-v1") == _current
+                    _row = _rows[_wanted[0]["id"]]
+                    _row = _row[0] if isinstance(_row, list) else _row
+                    assert _row["value"] == float(_row["index"])
+                    if not _current:
+                        assert (_row["latitude"], _row["longitude"]) == (1.999, 2.999)
+                        assert "_gridIndexIdentity" not in _row
+                    elif _batch is producer.valid_candidates_batch:
+                        assert _row["_gridCoordinateInterpretation"] == "dmi-dkss-grib1-header-endpoints-v1"
+                        assert _row["_gridIndexIdentity"] == producer.grid_index_identity_sha256_from_cache(tuple(_grid.values()))
+    # SAME numeric gid and SAME grid are reused for another field. No context
+    # survives a batch/standalone call; scalar and current entries coexist.
+    producer.GRID_INDEX_CACHE.clear()
+    _standalone_signature = tuple(_grid.values())
+    for _parameter, _namespace in ((49, True), (82, False), (50, True), (34, False)):
+        _field["parameter"] = _parameter
+        _reads.clear()
+        _key = producer.current_grid_cache_key(1998, "dkss_idw", _standalone_signature, _wanted_zone)
+        assert (_key[0] == "current-native-grid-sampling-v1") == _namespace
+        assert Counter(_reads) == Counter(_field_keys + (["edition", "scanningMode"] if _namespace else []))
+        _reads.clear()
+        producer.warm_marine_grid_cache(1998, "dkss_idw", [_wanted_zone], _standalone_signature)
+        assert Counter(_reads) == Counter(_field_keys + (["edition", "scanningMode"] if _namespace else []))
+        _reads.clear()
+        _standalone = producer.nearest_candidates(1998, "dkss_idw", _wanted_zone, signature=_standalone_signature)
+        assert Counter(_reads) == Counter(_field_keys + (["edition", "scanningMode"] if _namespace else []))
+        assert bool(_standalone[0].get("_gridCoordinateInterpretation")) == _namespace
+    assert len(producer.GRID_INDEX_CACHE) == 2
+    # An invalid next current message cannot borrow the previous geometry,
+    # even when its numeric gid and grid signature are unchanged.
+    _field["parameter"] = 49
+    producer.codes_get = lambda gid, key: 63 if key == "scanningMode" else _message_get(gid, key)
+    try:
+        producer.valid_candidates_batch(1998, "dkss_idw", [_wanted_zone])
+    except producer.DmiGridLookupError as exc:
+        assert exc.failure_code == "DKSS_HEADER_GEOMETRY_INVALID"
+    else:
+        raise AssertionError("Reused gid must validate its current message, including warm cache hits")
+    # Regional/parameter routing may legitimately select no target zones.
+    # Preserve the former empty result without looking up geometry or values;
+    # this never emits a sample, a proof, a key, or a replacement cache entry.
+    for _batch in (producer.valid_candidates_batch, producer.nearest_valid_batch):
+        _element_reads.clear(); _nearest_opens.clear(); _nearest_closes.clear()
+        _empty_cache = dict(producer.GRID_INDEX_CACHE)
+        assert _batch(1998, "dkss_idw", []) == {}
+        assert _element_reads == _nearest_opens == _nearest_closes == []
+        assert producer.GRID_INDEX_CACHE == _empty_cache
+finally:
+    for _name, _value in _message_saved.items():
+        setattr(producer, _name, _value)
     producer.GRID_INDEX_CACHE.clear()
 
 # A grid-definition digest is string metadata, not a number. Both the shared
@@ -1926,14 +2063,43 @@ try:
             5: "wind-tail-v-10m",
         }
         producer.classify_parameter = lambda gid, _collection: parameters[gid]
+        # Synthetic lookup rows must obey the SAME normal node/frame contract.
+        # They are not decoder/provider evidence. Derive both digests and the
+        # returned coordinate from one finite header, never an accept marker.
+        metadata_definition = ("regular_ll", 32, 2, 64, 1., 1.93, 1.01, 2.24, .01, .01)
+        farther_metadata_definition = ("regular_ll", 32, 2, 64, 1., 1.70, 1.01, 2.01, .01, .01)
+
+        def qualified_metadata_candidate(point, index, definition=metadata_definition):
+            assert isinstance(index, int) and not isinstance(index, bool) and 0 <= index < 64
+            latitude = float(point["latitude"])
+            longitude = float(point["longitude"])
+            section = producer.hashlib.md5(producer.json.dumps(definition,
+                separators=(",", ":")).encode("utf-8")).hexdigest()
+            signature = (section, *definition)
+            geometry = producer.dkss_grib1_header_geometry(signature, 64)
+            selected = producer.dkss_header_grid_point(geometry, index)
+            assert abs(selected["lat"] - latitude) < 1e-12
+            assert abs(selected["lon"] - longitude) < 1e-12
+            return {**point, "index": selected["index"],
+                "latitude": selected["lat"], "longitude": selected["lon"],
+                "distanceKm": producer.haversine_km(zone["lat"], zone["lon"],
+                    selected["lat"], selected["lon"]),
+                "gridDefinitionSha256": producer.grid_definition_sha256_from_signature(definition),
+                "_gridIndexIdentity": producer.grid_index_identity_sha256_from_cache(signature),
+                "_gridCoordinateInterpretation": "dmi-dkss-grib1-header-endpoints-v1"}
+
+        grid_metadata_candidate = qualified_metadata_candidate(candidate, 7)
+        expected_grid_definition = grid_metadata_candidate["gridDefinitionSha256"]
+        assert isinstance(expected_grid_definition, str) and len(expected_grid_definition) == 64
+        assert producer.candidate_node_key(grid_metadata_candidate) is not None
         producer.valid_candidates_batch = lambda _gid, _collection, wanted: {
-            item["id"]: [dict(candidate, index=7)] for item in wanted
+            item["id"]: [dict(grid_metadata_candidate)] for item in wanted
         }
         producer.nearest_valid_batch = lambda _gid, _collection, wanted: {
-            item["id"]: dict(candidate, index=7, _candidateCount=4)
+            item["id"]: dict(grid_metadata_candidate, _candidateCount=4)
             for item in wanted
         }
-        producer.nearest_candidates = lambda *_args, **_kwargs: [dict(candidate, index=7)]
+        producer.nearest_candidates = lambda *_args, **_kwargs: [dict(grid_metadata_candidate)]
         producer.should_stop_work = lambda: False
         # Native component admission now requires an original STAC asset
         # identity. Keep this grid-metadata test on the real proved path.
@@ -1958,8 +2124,8 @@ try:
             {},
         )
         grid_points = output["zones"][zone["id"]]["gridPoints"]
-        assert grid_points["current-u"]["gridDefinitionSha256"] == "a" * 64
-        assert grid_points["sea-mean-deviation"]["gridDefinitionSha256"] == "a" * 64
+        assert grid_points["current-u"]["gridDefinitionSha256"] == expected_grid_definition
+        assert grid_points["sea-mean-deviation"]["gridDefinitionSha256"] == expected_grid_definition
         assert all("_candidateCount" not in point for point in grid_points.values())
         hour = output["zones"][zone["id"]]["hourly"][valid_time]
         assert "current-u" in hour and "sea-mean-deviation" in hour
@@ -2003,7 +2169,7 @@ try:
         # must not be labelled unavailable merely because an already selected
         # DMI collection remains the closer global winner.
         losing_candidate = {
-            **candidate,
+            **grid_metadata_candidate,
             "longitude": 2.02,
             "distanceKm": 1.0,
             "index": 9,
@@ -2014,7 +2180,7 @@ try:
             valid_time,
             component="current",
             zone=zone,
-            grid_candidate=candidate,
+            grid_candidate=grid_metadata_candidate,
             capture=capture,
             spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
             verticalLayer="depthBelowSea:1",
@@ -2030,7 +2196,7 @@ try:
             12: "current-v",
         }[gid]
         producer.valid_candidates_batch = lambda _gid, _collection, wanted: {
-            item["id"]: [dict(losing_candidate)] for item in wanted
+            item["id"]: [qualified_metadata_candidate(losing_candidate, 9)] for item in wanted
         }
         losing_output = {
             "generatedAt": "2026-01-01T02:00:00Z",
@@ -2104,7 +2270,7 @@ try:
         assert unchanged_after_a["sources"]["current"] == existing_source
 
         farther_candidate = {
-            **candidate,
+            **grid_metadata_candidate,
             "longitude": 2.01,
             "distanceKm": producer.haversine_km(1.0, 2.0, 1.0, 2.01),
             "index": 31,
@@ -2116,7 +2282,7 @@ try:
             32: "current-v",
         }[gid]
         producer.valid_candidates_batch = lambda _gid, _collection, wanted: {
-            item["id"]: [dict(farther_candidate)] for item in wanted
+            item["id"]: [qualified_metadata_candidate(farther_candidate, 31, farther_metadata_definition)] for item in wanted
         }
         producer.raw_cache_source_capture = lambda *_args: {
             **capture,
@@ -3566,6 +3732,139 @@ if scenario == "header-statistics":
 before = copy.deepcopy((output, diagnostics, outcomes))
 seen, flushes = [], []
 
+if scenario == "current-only":
+    # Same actual pinned decoder, parser, read lease and COW transaction as the
+    # existing lease cases. Own generated fixtures only; never provider data.
+    current_zone = {**zone, "lat": 56.15, "lon": 8.3}
+    expected_point = [8.3, 56.15]  # midpoint of fixture endpoints, NOT ecCodes coordinates
+    snapshots, current_rows, scalar_rows = [], [], []
+
+    def own_bitmap_fixture(name, parameters, split_pair=False):
+        fixture_path = directory / name
+        assert not fixture_path.exists()
+        handle = ec.codes_grib_new_from_samples("regular_ll_sfc_grib1")
+        scalar_reference = None
+        try:
+            for key, value in (("Ni", 3), ("Nj", 3),
+                    ("latitudeOfFirstGridPointInDegrees", 56.),
+                    ("latitudeOfLastGridPointInDegrees", 56.3),
+                    ("longitudeOfFirstGridPointInDegrees", 8.),
+                    ("longitudeOfLastGridPointInDegrees", 8.6),
+                    ("iDirectionIncrementInDegrees", .299),
+                    ("jDirectionIncrementInDegrees", .149),
+                    ("scanningMode", 64), ("resolutionAndComponentFlags", 128),
+                    ("dataDate", 20261009), ("dataTime", 0), ("stepRange", "0"),
+                    ("bitmapPresent", 1)):
+                ec.codes_set(handle, key, value)
+            assert ec.codes_get(handle, "edition") == 1
+            assert ec.codes_get(handle, "Ni") == ec.codes_get(handle, "Nj") == 3
+            missing = ec.codes_get(handle, "missingValue")
+            with fixture_path.open("xb") as writer:
+                for parameter in parameters:
+                    ec.codes_set(handle, "indicatorOfParameter", parameter)
+                    center_value = {49: 0., 50: -.5, 82: 7.}[parameter]
+                    values = [missing] * 9 if split_pair else [center_value + n + 1 for n in range(9)]
+                    values[0] = missing
+                    selected_index = 5 if split_pair and parameter == 50 else 4
+                    values[selected_index] = center_value
+                    ec.codes_set_values(handle, values)
+                    bitmap = list(ec.codes_get_array(handle, "bitmap"))
+                    assert bitmap[0] == 0 and bitmap[selected_index] == 1
+                    native = ec.codes_get_elements(handle, "values", [0, selected_index])
+                    assert native[0] == missing and native[1] == center_value
+                    if parameter == 82:
+                        nearest = ec.codes_grib_find_nearest(handle, current_zone["lat"], current_zone["lon"], npoints=4)
+                        scalar_reference = min(nearest, key=lambda row: row["distance"])
+                        assert int(scalar_reference["index"]) == 4
+                        scalar_reference = {"point": [round(float(scalar_reference["lon"]), 5),
+                            round(float(scalar_reference["lat"]), 5)], "value": center_value}
+                        # Ensure this fixture actually distinguishes rounded native
+                        # scalar coordinates from the current endpoint construction.
+                        assert max(abs(a - b) for a, b in zip(scalar_reference["point"], expected_point)) > .0001
+                    writer.write(ec.codes_get_message(handle))
+        finally:
+            ec.codes_release(handle)
+        payload = fixture_path.read_bytes()
+        assert 0 < len(payload) < 1024 * 1024
+        fixture_capture = {**capture, "itemId": name,
+            "assetIdentitySha256": hashlib.sha256(name.encode()).hexdigest(),
+            "assetSizeBytes": len(payload), "contentLengthBytes": len(payload),
+            "contentSha256": hashlib.sha256(payload).hexdigest()}
+        fixture_manifest = p.load_raw_cache_manifest()
+        fixture_manifest.setdefault("assets", {})[fixture_path.name] = fixture_capture
+        p.save_raw_cache_manifest(fixture_manifest)
+        return fixture_path, payload, fixture_capture, scalar_reference
+
+    for label, parameters in (("scalar-first", (82, 49, 50)), ("current-first", (49, 50, 82))):
+        fixture_path, payload, fixture_capture, scalar_reference = own_bitmap_fixture(
+            "own-current-only-" + label + ".grib", parameters)
+        fixture_manifest_bytes = p.raw_cache_manifest_path().read_bytes()
+        stage = {"generatedAt": when, "zones": {current_zone["id"]: {
+            **p.sampling_identity(current_zone), "hourly": {}, "gridPoints": {}, "collections": {}}}}
+        stage_diagnostics, stage_outcomes = {}, {}
+        p.GRID_INDEX_CACHE.clear()
+        with p._grib_read_scope(fixture_path, "dkss_lf", when, when) as reader:
+            owned_fd = reader.fd
+            assert fcntl.fcntl(owned_fd, fcntl.F_GETLEASE) == fcntl.F_RDLCK
+            result = p.process_grib_transactionally(fixture_path, "dkss_lf", when, when,
+                [current_zone], stage, stage_diagnostics, current_part_outcomes=stage_outcomes,
+                _owned_read=reader)
+            assert result[0] == {"sea-mean-deviation", "current-u", "current-v"}
+            assert result[3] == 3 and not result[2] and stage_outcomes["complete"] is True
+            hour = stage["zones"][current_zone["id"]]["hourly"][when]
+            assert (hour["current-u"], hour["current-v"]) == (0., -.5)
+            source_current = hour["sources"]["current"]
+            record = source_current["nativeGridSampling"]
+            assert record["elementIndex"] == 4 and record["fieldSet"] == ["current-u", "current-v"]
+            assert record["coordinateInterpretation"] == "dmi-dkss-grib1-header-endpoints-v1"
+            assert record["gridPoint"] == source_current["gridPoint"] == expected_point
+            assert source_current["contentSha256"] == fixture_capture["contentSha256"]
+            assert p.complete_native_source_for_hour(source_current, "current", current_zone["id"],
+                p.sampling_identity(current_zone), when)
+            scalar = hour["sources"]["waterLevel"]
+            assert scalar["gridPoint"] == scalar_reference["point"]
+            assert hour["sea-mean-deviation"] == scalar_reference["value"]
+            assert "nativeGridSampling" not in scalar
+            keys = list(p.GRID_INDEX_CACHE)
+            assert len(keys) == 2
+            assert sum(key[0] == "current-native-grid-sampling-v1" for key in keys) == 1
+            assert sum(key[0] == "dkss_lf" for key in keys) == 1
+            current_rows.append((hour["current-u"], hour["current-v"], copy.deepcopy(record)))
+            scalar_rows.append((hour["sea-mean-deviation"], copy.deepcopy(scalar["gridPoint"])))
+        try:
+            os.fstat(owned_fd)
+        except OSError as exc:
+            assert exc.errno == errno.EBADF
+        else:
+            raise AssertionError("current-only actual decoder fd remained open")
+        assert not p._UNSETTLED_GRIB_READS
+        assert fixture_path.read_bytes() == payload
+        assert p.raw_cache_manifest_path().read_bytes() == fixture_manifest_bytes
+        snapshots.append((fixture_path, payload))
+    assert current_rows[0] == current_rows[1] and scalar_rows[0] == scalar_rows[1]
+
+    # Genuine bitmap-separated U and V cannot borrow a value from a different
+    # native element. The real parser must finish but publish no synthetic pair.
+    split_path, split_bytes, _, _ = own_bitmap_fixture("own-current-only-split.grib", (49, 50), True)
+    split_manifest_bytes = p.raw_cache_manifest_path().read_bytes()
+    split_output = {"generatedAt": when, "zones": {current_zone["id"]: {
+        **p.sampling_identity(current_zone), "hourly": {}, "gridPoints": {}, "collections": {}}}}
+    split_outcomes = {}
+    split_result = p.process_grib_transactionally(split_path, "dkss_lf", when, when,
+        [current_zone], split_output, {}, current_part_outcomes=split_outcomes)
+    assert split_result[0] == {"current-u", "current-v"} and split_result[3] == 2 and not split_result[2]
+    assert split_outcomes["complete"] is True
+    assert all(not any(field in row for field in ("current-u", "current-v"))
+        and "current" not in (row.get("sources") or {})
+        for row in split_output["zones"][current_zone["id"]]["hourly"].values())
+    assert split_path.read_bytes() == split_bytes and p.raw_cache_manifest_path().read_bytes() == split_manifest_bytes
+    assert all(file.read_bytes() == payload for file, payload in snapshots)
+    assert path.read_bytes() == original and sentinel.read_bytes() == sentinel_bytes
+    assert not p._UNSETTLED_GRIB_READS
+    print(json.dumps({"case": scenario, "actualMessages": 8, "fieldOrdersChecked": 2,
+        "actualHeaderIndex": True, "bitmapZeroPreserved": True, "scalarNamespaceUnchanged": True,
+        "differentNativeElementsRefused": True, "originalsPreserved": True}), flush=True)
+    raise SystemExit(0)
 if scenario == "header-statistics":
     # Controlled unknown-field metadata only; the existing native child still
     # owns the real reader, original capture, decoder messages, EOF and release.
@@ -3844,7 +4143,7 @@ print(json.dumps({"case": scenario, "actualMessages": 1 if scenario == "replace"
     "originalsPreserved": True, "unknownRefused": scenario != "healthy"}), flush=True)
 """
     compile(_lease_native, "<own-native-grib-lease>", "exec")
-    for _lease_case in ("healthy", "break", "replace", "foreign-pending", "header-statistics"):
+    for _lease_case in ("healthy", "break", "replace", "foreign-pending", "header-statistics", "current-only"):
         _lease_directory = tempfile.mkdtemp(prefix="rr-native-grib-lease-")
         _lease_process, _lease_pidfd, _lease_settled = None, None, False
         try:
@@ -3867,7 +4166,11 @@ print(json.dumps({"case": scenario, "actualMessages": 1 if scenario == "replace"
             _lease_settled = True
             assert _lease_process.returncode == 0, _lease_stderr.decode("utf-8", "replace")[:2000]
             _lease_receipt = json.loads(_lease_stdout.decode("utf-8"))
-            if _lease_case == "foreign-pending":
+            if _lease_case == "current-only":
+                assert _lease_receipt == {"case": _lease_case, "actualMessages": 8, "fieldOrdersChecked": 2,
+                    "actualHeaderIndex": True, "bitmapZeroPreserved": True, "scalarNamespaceUnchanged": True,
+                    "differentNativeElementsRefused": True, "originalsPreserved": True}
+            elif _lease_case == "foreign-pending":
                 assert _lease_receipt == {"case": _lease_case, "foreignSignalPending": True,
                     "preOwnership": True, "maskRetained": True, "handlerUnchanged": True,
                     "firstCauseExact": True, "noDecodeValidatorFlushCommit": True,
