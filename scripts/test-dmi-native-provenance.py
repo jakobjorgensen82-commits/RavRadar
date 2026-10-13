@@ -1764,6 +1764,7 @@ try:
         "longitude": 2.0,
         "distanceKm": 0.0,
     }]
+    batch_nearest_for_message = producer._nearest_candidates_for_message
 
     class NumpyArrayLike:
         """Exercise the documented ecCodes ndarray protocol without NumPy."""
@@ -1856,6 +1857,9 @@ try:
 
         return lookup
 
+    # This subcase exercises the real nearest/cache helper, not the
+    # array-protocol stub retained for the batch checks on either side.
+    producer._nearest_candidates_for_message = original_nearest_for_message
     first_grid_rows = original_nearest_candidates(
         1001,
         "dkss_idw",
@@ -1874,6 +1878,7 @@ try:
     assert second_grid_rows[0]["index"] == 72
     assert len(producer.GRID_INDEX_CACHE) == 2
     producer.GRID_INDEX_CACHE.clear()
+    producer._nearest_candidates_for_message = batch_nearest_for_message
 
     # An unordered iterable can silently detach values from their requested
     # grid indexes even when its length happens to match.
