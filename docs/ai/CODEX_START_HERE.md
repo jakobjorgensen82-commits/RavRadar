@@ -1,3 +1,13 @@
+## Installationskontrol med historisk kilde og nøglefrie offline prøver — 14. oktober 2026
+
+PR #596 er kildeleveret efter præcis grøn Linux- og PostgreSQL-kontrol. Den efterfølgende 003-installation stoppede før nogen ekstern skrivning: det normale installationsjob manglede historisk Git-kilde til arkivprøverne, og en offline prøve arvede en Supabase-adgangsnøgle. Alle efterfølgende SQL-, D1- og Worker-trin blev sprunget over; dette var ikke en ny vejrhentning eller et datatab.
+
+Den afgrænsede kilderettelse lader begge normale turlagerjob hente fuld Git-historik ligesom PR-kontrollen og fjerner kun SUPABASE_ACCESS_TOKEN fra miljøet for den ene offline kildekontrol. Efterfølgende godkendte produktionskald beholder deres oprindelige miljø. De gamle testassertions, kildebevisregler og alle installations-, databevarelses- og writer-kontroller består. Lokale prøver og ny præcis GitHub-kontrol kræves før en ny kontrolleret installation; ingen automatisk gentagelse følger af denne kildeforberedelse.
+
+En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload genkender kun de præcise dubletkoder KeyAlreadyExists og ResourceAlreadyExists i code/error ved de eksisterende HTTP 400/409-grænser. Gamle tekst-, fejl- og genforsøgsregler bevares. En dubletkode er ikke uploadkvittering; uændrede bytes skal fortsat genlæses og SHA-verificeres før pointer-CAS. Ingen overskrivning eller ekstra forespørgsel indføres. Den observerede Storage 400/KeyAlreadyExists og gateway 520 er ikke bevis for samme objekt eller den præcise tidligere leverandørårsag.
+
+003 og Worker er fortsat ikke installeret af det stoppede forsøg. Strøm220, SOURCE-G4, statistik og assistentvidensudvidelsen er særskilte senere leverancer. Vejrdata, ture, modelbindinger, gamle SQL-filer, scoreformel, kilder, administratorpunkter, geometri og cron ændres ikke her. De ældre afsnit nedenfor bevares som dateret historik og er kun erstattet på disse konkrete statuspunkter.
+
 # 4.0.576 – turlager og afgrænset læser efter 595, 2026-10-13
 
 Den kontrollerede genlevering af allerede gemte vejrdata sluttede med succes den 13. oktober kl. 23.10.58 dansk tid. Den offentlige pakke har reference kl. 16 UTC og omfatter 210 zoner og 673 dele; gyldige data blev bevaret uden nye providerhentninger. Dette var genleveringen på den daværende main, ikke bevis for en senere kildeændrings produktionsvirkning. PR #595 er nu lagt på main a505e6f8. Dens afgrænsede 520-genforsøg gælder kun immutable upload, og de strenge upload-/læsegrænser bevares. Den konkrete leverandørårsag er fortsat ukendt.
