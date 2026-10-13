@@ -55,6 +55,19 @@ function harness(owner = A, hydrated = true, clock = null) {
   const config = { supabaseUrl: 'https://example.invalid', supabasePublishableKey: 'synthetic-public' };
   const fetch = async (input, options) => {
     const url = new URL(input); assert.equal(url.origin, config.supabaseUrl);
+    // Activity is a separate best-effort RPC, never the held trip transport.
+    // This receipt fixture deliberately models an unavailable activity journal;
+    // successful activity/JSON ownership is covered by the existing auth target.
+    if (url.pathname === '/rest/v1/rpc/record_account_activity') {
+      assert.equal(options.method, 'POST'); assert.equal(options.body, '{}');
+      assert.equal(options.headers.apikey, config.supabasePublishableKey);
+      assert.ok(options.headers.Authorization.startsWith('Bearer '));
+      assert.ok(options.signal instanceof AbortSignal);
+      (state.activityRequests ??= []).push({ path: url.pathname, signal: options.signal });
+      return { ok: false, status: 503, json() { throw new Error('Activity error body must not be consumed'); } };
+    }
+    // Existing counters still describe only their original auth/trip transport;
+    // the new fixed RPC has its own explicitly observed counter above.
     state.requests.push(url.pathname + url.search);
     if (state.authTransport && url.pathname.startsWith('/auth/v1/')) return state.authTransport(url, options);
     if (url.pathname === '/rest/v1/profiles') return Response.json([{ id: url.searchParams.get('id')?.slice(3) || owner, role: 'user', is_active: true }]);
@@ -95,7 +108,10 @@ function harness(owner = A, hydrated = true, clock = null) {
     persist: persist ?? service.submitTripEvidenceObservation });
   return { state, storage, service, controller, auth, authLocation: authScope.location, createController: createTripEvidenceController,
     async login(next) { await auth.signOut(); state.nextOwner = next; await auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only'); },
-    finish() { const leaked = timers.size; for (const timer of timers) (clock ? clock.clear : clearTimeout)(timer); assert.equal(leaked, 0); } };
+    finish() {
+      for (const dialog of state.dialogs ?? []) dialog.close();
+      const leaked = timers.size; for (const timer of timers) (clock ? clock.clear : clearTimeout)(timer); assert.equal(leaked, 0);
+    } };
 }
 
 for (const [label, receipt, queued] of [
@@ -471,8 +487,13 @@ const deferred = () => { let resolve; const promise = new Promise(done => { reso
 
 function ui(h, form) {
   const content = { innerHTML: '', querySelector: () => null };
+  const events = new EventTarget();
   const dialog = { open: true, querySelector: () => content,
-    close() { this.open = false; }, showModal() { this.open = true; } };
+    addEventListener: (...args) => events.addEventListener(...args),
+    removeEventListener: (...args) => events.removeEventListener(...args),
+    close() { this.open = false; events.dispatchEvent(new Event('close')); },
+    showModal() { this.open = true; } };
+  (h.state.dialogs ??= []).push(dialog);
   const scope = { ...h.auth, ...h.service, ...account, formatDateTime, formatNumber, t, ...quality, ...model, crypto,
     openAccountTripReportDialog: () => form.promise };
   vm.runInNewContext(`${accountBody}\nthis.api={showAccountTripReport,showTripHistory};`, scope);
@@ -1427,6 +1448,22 @@ test('JSON deadline: default and explicit false return exact Response without bo
   }finally{h.finish();}
  }
 });
+test('receipt transport: unavailable activity owns a distinct RPC and settles its own guard',async()=>{
+ const clock=virtualDeadlineClock(),h=harness(A,true,clock);let reads=0;
+ try{
+  const original=JSON.stringify([...h.storage.values]);
+  const response={ok:true,status:200,json:async()=>{reads++;return{rows:[]};}};
+  h.state.tripLogTransport=async url=>{assert.equal(url.pathname,'/functions/v1/trip-log');return response;};
+  const actual=await h.auth.authorizedFetch('https://example.invalid/functions/v1/trip-log');
+  assert.equal(actual,response);assert.equal(reads,0);
+  assert.deepEqual(h.state.requests,['/functions/v1/trip-log']);
+  assert.equal(h.state.activityRequests.length,1);
+  assert.equal(h.state.activityRequests[0].signal.aborted,false);
+  assert.equal(clock.jobs.size,0,'The actual activity finally, not fixture timer clearing, closes its own guard');
+  assert.equal(JSON.stringify([...h.storage.values]),original);assert.equal(h.state.writes.length,0);
+ }finally{h.finish();assert.equal(clock.jobs.size,0);}
+});
+
 test('JSON deadline: non-ok response is header-only under fixed JSON opt-in',async()=>{
  const clock=virtualDeadlineClock(),h=harness(A,true,clock);let reads=0;
  try{const response={ok:false,status:503,json:async()=>{reads++;throw new Error('PRIVATE_BODY');}};h.state.tripLogResponse=response;

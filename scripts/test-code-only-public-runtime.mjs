@@ -292,12 +292,19 @@ try {
       ? `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n${pendingMigrations.map(item => ` • ${item.filename}`).join('\n')}\nFinished supabase db push.`
       : 'DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.');
     const result = spawnSync(process.execPath, ['scripts/verify-code-only-migration-plan.mjs',
-      '--require-prewrite-gate', '--migration-list', listPath, '--dry-run', dryPath,
+      '--require-prewrite-gate', '--account-assistant-prewrite-plan',
+      '--migration-list', listPath, '--dry-run', dryPath,
       '--migrations-directory', path.resolve('supabase/migrations')], { encoding: 'utf8', windowsHide: true,
       timeout: 30000, env: { SystemRoot: process.env.SystemRoot, PATH: process.env.PATH,
         TEMP: os.tmpdir(), TMP: os.tmpdir(), RAVRADAR_ASSISTANT_PREWRITE_REQUIRED: required,
         RAVRADAR_USERDATA_UPGRADE_OPT_IN: 'true', RAVRADAR_USERDATA_PREWRITE_REQUIRED: required,
-        RAVRADAR_USERDATA_PREWRITE_VERIFIED: required } });
+        RAVRADAR_USERDATA_PREWRITE_VERIFIED: required,
+        // Isolated negative CLI-plan boundary: admit the newer technical
+        // guard to reach the old userdata/latest refusal, NOT a legal workflow
+        // issuer. The actual selector rejects both opt-ins (tested below).
+        RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN: 'true',
+        RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED: 'true',
+        RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_VERIFIED: 'true' } });
     assert.equal(result.status, status, result.stderr || result.error?.message);
     if (status !== 0) assert.match(result.stderr, required === 'true'
       ? /only the exact latest required integrated migration/
@@ -838,17 +845,31 @@ const userdataStep = name => { const value = userdataSteps.find(step => step.nam
 const userdataEvaluate = (code, scope) => new (Object.getPrototypeOf(async function(){}).constructor)(...Object.keys(scope),
   code.replace(/^import[\s\S]*?;\r?\n/gm, ''))(...Object.values(scope));
 
-function userdataSelection({ optIn = false, predecessorApplied = true, assistantApplied = false, userdataApplied = false, latestVersion = '20261010130000' } = {}) {
+function userdataSelection({ optIn = false, predecessorApplied = true, assistantApplied = false, userdataApplied = false,
+  checkpointApplied = false, accountApplied = false, accountOptIn = false, latestVersion = '20261010130000' } = {}) {
   const outputs = {};
   const rows = [{ remote: predecessorApplied ? '20261005000000' : '' },
-    { remote: assistantApplied ? '20261010120000' : '' }, { remote: userdataApplied ? '20261010130000' : '' }];
+    { remote: assistantApplied ? '20261010120000' : '' }, { remote: userdataApplied ? '20261010130000' : '' },
+    { remote: checkpointApplied ? '20261012200000' : '' }, { remote: accountApplied ? '20261013210000' : '' }];
   return userdataEvaluate(userdataStep('Require originals before the pending assistant binding').code, {
     fs: { readFileSync: () => '', appendFileSync: (_file, text) => { const [key, value] = text.trim().split('='); outputs[key] = value; } },
     latest: { version: latestVersion }, userdataPolicy: TRIP_BINDING_POLICY_SOURCE_MIGRATION,
     parseSupabaseMigrationList: () => rows,
-    process: { env: { RAVRADAR_USERDATA_UPGRADE_OPT_IN: String(optIn), RUNNER_TEMP: '/synthetic', GITHUB_ENV: '/synthetic/env' } },
+    process: { env: { RAVRADAR_USERDATA_UPGRADE_OPT_IN: String(optIn),
+      RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN: String(accountOptIn),
+      RUNNER_TEMP: '/synthetic', GITHUB_ENV: '/synthetic/env' } },
   }).then(() => outputs);
 }
+userdataTest('account successor selection: simultaneous upgrade opt-ins are refused by the actual workflow', async () => {
+  const installed = { assistantApplied: true, userdataApplied: true, checkpointApplied: true,
+    latestVersion: LATEST_REQUIRED_CUTOVER_MIGRATION.version };
+  await assert.rejects(userdataSelection({ ...installed, optIn: true, accountOptIn: true }),
+    /Userdata upgrade requires installed current050000 and sole pending130000/);
+  const accountOnly = await userdataSelection({ ...installed, accountOptIn: true });
+  assert.equal(accountOnly.RAVRADAR_USERDATA_PREWRITE_REQUIRED, 'false');
+  assert.equal(accountOnly.RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED, 'true');
+  assert.equal(accountOnly.RAVRADAR_ACCOUNT_ASSISTANT_METADATA_ONLY, 'true');
+});
 userdataTest('userdata delivery: opt-in is explicit and sole130000 requires installed050000', async () => {
   await assert.rejects(userdataSelection(), /explicit.*opt-in/);
   await assert.rejects(userdataSelection({ optIn: true, predecessorApplied: false }), /installed current050000/);
@@ -868,7 +889,9 @@ userdataTest('userdata delivery: unfinished historical assistant is refused and 
   assert.equal(current.RAVRADAR_USERDATA_PREWRITE_REQUIRED, 'false');
   assert.match(userdataWorkflow, /upgrade_existing_owner_export:[\s\S]*?default: false/);
   assert.match(userdataWorkflow, /group: ravradar-weather-production-v2/);
-  assert.match(userdataWorkflow, /inputs.upgrade_existing_owner_export == true && 'ravradar-trip-storage-production'/);
+  assert.match(userdataWorkflow,
+    /concurrency:\s+(?:#[^\n]*\n\s*)?group: ravradar-trip-storage-production\s+cancel-in-progress: false/,
+    'Current rebound trip-Edge deployment must always share the existing exclusive storage lock without cancellation');
 });
 userdataTest('userdata delivery: immutable direct predecessor is checked before its normal DB readback', async () => {
   const step = userdataStep('Verify installed current050000 predecessor before userdata preparation');
@@ -897,11 +920,19 @@ userdataTest('userdata delivery: normal migration CLI rejects absent opt-in, unp
       fs.writeFileSync(list, `Local | Remote | Time (UTC)\n${fixtureMigrations.map(item => `${item.version} | ${pending.has(item.version) ? '' : item.version} | state`).join('\n')}`);
       fs.writeFileSync(dry, `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n${fixtureMigrations.filter(item => pending.has(item.version)).map(item => ` • ${item.filename}`).join('\n')}\nFinished supabase db push.`);
       const result = spawnSync(process.execPath, ['scripts/verify-code-only-migration-plan.mjs', '--require-prewrite-gate',
+        '--account-assistant-prewrite-plan',
         '--migration-list', list, '--dry-run', dry, '--migrations-directory', path.resolve('supabase/migrations')], {
         encoding: 'utf8', timeout: 30000, windowsHide: true, env: { SystemRoot: process.env.SystemRoot, PATH: process.env.PATH,
           TEMP: os.tmpdir(), TMP: os.tmpdir(), RAVRADAR_USERDATA_UPGRADE_OPT_IN: optIn,
-          RAVRADAR_USERDATA_PREWRITE_REQUIRED: 'true', RAVRADAR_USERDATA_PREWRITE_VERIFIED: verified } });
+          RAVRADAR_USERDATA_PREWRITE_REQUIRED: 'true', RAVRADAR_USERDATA_PREWRITE_VERIFIED: verified,
+          RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN: 'true',
+          RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED: 'true',
+          RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_VERIFIED: 'true' } });
       assert.equal(result.status, expected, result.stderr || result.error?.message);
+      assert.match(result.stderr, combined ? /unexpected pending migrations/
+        : optIn === 'false' ? /explicit existing-owner-export opt-in/
+        : verified === 'false' ? /completed normal original-preservation path/
+        : /only the exact latest required integrated migration/);
     }
   } finally { assert.equal(path.dirname(root), path.resolve(os.tmpdir())); fs.rmSync(root, { recursive: true, force: true }); }
 });
@@ -1003,7 +1034,14 @@ async function userdataFinalFixture({ missing = [], fail = '', versionId = '1111
   return {calls,error};
 }
 userdataTest('userdata final: already-applied130000 is read-only, exact002 and version/capability verified before publication',async()=>{
-  const selected=await userdataSelection({userdataApplied:true,latestVersion:LATEST_REQUIRED_CUTOVER_MIGRATION.version});
+  // The current no-write fixture must explicitly represent installed200000
+  // and installed21310000. Merely having old130000 cannot imply either one.
+  await assert.rejects(userdataSelection({userdataApplied:true,
+    latestVersion:LATEST_REQUIRED_CUTOVER_MIGRATION.version}), /named opt-in/);
+  const selected=await userdataSelection({assistantApplied:true,userdataApplied:true,checkpointApplied:true,accountApplied:true,
+    latestVersion:LATEST_REQUIRED_CUTOVER_MIGRATION.version});
+  assert.equal(selected.RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED,'false');
+  assert.equal(selected.RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED,'true');
   assert.equal(selected.RAVRADAR_USERDATA_PREWRITE_REQUIRED,'false');
   assert.equal(selected.RAVRADAR_USERDATA_FINAL_REQUIRED,'true');
   // Superseded old120000 scope cannot omit the actual userdata predecessor.

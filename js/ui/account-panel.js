@@ -9,6 +9,7 @@ import { accountTripBindingStatus } from "../services/calibration-eligibility.js
 import { getOwnStatisticsPreference, setOwnStatisticsPreference } from "../services/permissions-service.js?v=4.0.576";
 
 const pendingHistoryViews = new WeakMap();
+function stopHistoryView(dialog) { pendingHistoryViews.get(dialog)?.dispose(); }
 
 const pendingStatisticsViews = new WeakMap();
 function stopStatisticsView(dialog) { pendingStatisticsViews.get(dialog)?.dispose(); }
@@ -122,17 +123,37 @@ function renderHistoryRows(rows, context) {
 
 async function showTripHistory(dialog, context) {
   stopStatisticsView(dialog);
+  stopHistoryView(dialog);
   const content = dialog.querySelector('.dialog-content');
   const identity = authIdentityEpoch(), userId = currentSession()?.user?.id;
-  const view = {};
+  if (!userId) return renderAccount(dialog, context);
+  let stopped = false, unsubscribe = () => {};
+  const dispose = () => {
+    if (stopped) return;
+    stopped = true;
+    unsubscribe();
+    dialog.removeEventListener('close', dispose);
+    dialog.removeEventListener('cancel', dispose);
+    if (pendingHistoryViews.get(dialog) === view) {
+      pendingHistoryViews.delete(dialog);
+      content.innerHTML = '';
+    }
+  };
+  const view = { dispose };
   pendingHistoryViews.set(dialog, view);
+  unsubscribe = onAuthChange(() => {
+    if (authIdentityEpoch() === identity && currentSession()?.user?.id === userId) return;
+    dispose();
+    if (dialog.open) renderAccount(dialog, context);
+  });
+  dialog.addEventListener('close', dispose);
+  dialog.addEventListener('cancel', dispose);
   content.innerHTML = `<h2>${t('account.history')}</h2><p class="form-status">${t('account.historyLoading')}</p>`;
   let remoteRows = [], loadError = null;
   try { remoteRows = await getOwnTripObservations({ limit: 100 }); }
   catch (error) { loadError = error; }
   if (!dialog.open || pendingHistoryViews.get(dialog) !== view
       || authIdentityEpoch() !== identity || !userId || currentSession()?.user?.id !== userId) return;
-  pendingHistoryViews.delete(dialog);
   const rows = mergeOwnRows(remoteRows, getLocalObservations(), userId);
   const foundCount = rows.filter(rowFound).length;
   const totalMinutes = rows.reduce((sum, row) => sum + Math.max(0, Number(row.search_minutes) || 0), 0);
@@ -145,7 +166,9 @@ async function showTripHistory(dialog, context) {
     <div class="trip-log-list">${rows.length ? renderHistoryRows(rows, context) : `<p class="empty-state-inline">${t('account.noTrips')}</p>`}</div>
     ${rows.length >= 100 ? `<p class="muted">${t('account.latest100')}</p>` : ''}
     <p class="trip-log-privacy">${t('account.historyPrivacy')}</p>`;
-  content.querySelector('#tripHistoryBack')?.addEventListener('click', () => renderAccount(dialog, context));
+  content.querySelector('#tripHistoryBack')?.addEventListener('click', () => {
+    if (pendingHistoryViews.get(dialog) === view) renderAccount(dialog, context);
+  });
 }
 
 async function showAccountTripReport(dialog, context) {
@@ -177,7 +200,7 @@ async function showAccountTripReport(dialog, context) {
 
 function renderAccount(dialog, context, message = '') {
   stopStatisticsView(dialog);
-  pendingHistoryViews.delete(dialog);
+  stopHistoryView(dialog);
   const session = currentSession();
   const signedIn = Boolean(session?.access_token && session?.user?.id);
   const content = dialog.querySelector('.dialog-content');

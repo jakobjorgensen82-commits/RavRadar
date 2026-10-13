@@ -382,3 +382,145 @@ test('statistics preference: normal default ON, explicit OFF, owner-switch logou
  assert.match(sql,/revoke all on table public\.account_statistics_preferences from public, anon, authenticated/);
  assert.doesNotMatch(sql,/update public\.(profiles|observations)|delete from|insert into public\.observations/i);
 });
+
+
+// Actual account renderer -> observation/auth callers; synthetic browser and HTTP only.
+// This protects already-rendered private history, not hosted RLS or data deletion.
+test('account history: rendered and pending views follow their exact owner lifetime', async () => {
+  const accountSource = fs.readFileSync(new URL('../js/ui/account-panel.js', import.meta.url), 'utf8')
+    .replace(/^import[^\n]+\r?\n/gm, '').replace(/^export\s+/gm, '');
+  const appSource = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
+  const closeWiring = appSource.split(/\r?\n/).filter(line => line.startsWith('function enableDialogClose(dialog)'));
+  const openWiring = appSource.split(/\r?\n/).filter(line => line.startsWith('document.querySelector("#accountButton").addEventListener'));
+  assert.equal(closeWiring.length, 1); assert.equal(openWiring.length, 1);
+  const observationSource = fs.readFileSync(new URL('../js/services/observation-service.js', import.meta.url), 'utf8')
+    .replace(/^import\s[\s\S]*?;\r?\n/gm, '').replace(/^export\s+/gm, '');
+  const tick = () => new Promise(resolve => setImmediate(resolve));
+  for (const mode of ['logout', 'switch', 'same-owner-login', 'renewal', 'expired-session', 'close', 'cancel', 'back',
+    'pending-logout', 'pending-close-reopen']) {
+    const originals = new Map([
+      ['ravradar-observations-v2', '[]'], ['ravradar-observation-outbox-v1', '[]'],
+      ['own-backup-sentinel', 'unchanged'], ['own-erasure-sentinel', 'unchanged'],
+    ]);
+    const storage = new Map(originals);
+    storage.set('ravradar-auth-session', JSON.stringify(sessionFor()));
+    const held = deferred(), reached = deferred(), timers = new Set(), requests = [];
+    let loginOwner = ownerA, nodes = new Map();
+    const rows = [{ id: 'own-history-row', user_id: ownerA, observed_at: '2026-01-02T12:00:00Z',
+      zone_name: 'OWN-HISTORY-A', found: true, hunt_mode: 'beach', search_minutes: 30 }];
+    const originalRows = JSON.stringify(rows);
+    const authScope = {
+      PUBLIC_CONFIG: config, AbortController, DOMException,
+      localStorage: { getItem: key => storage.get(key) ?? null,
+        setItem: (key, value) => storage.set(key, String(value)), removeItem: key => storage.delete(key) },
+      setTimeout(fn, ms) { const id = setTimeout(() => { timers.delete(id); fn(); }, ms); timers.add(id); return id; },
+      clearTimeout(id) { clearTimeout(id); timers.delete(id); },
+      async fetch(input, options) {
+        const url = new URL(input);
+        assert.equal(url.origin, config.supabaseUrl, 'No external transport');
+        requests.push(url.pathname);
+        if (url.pathname === '/auth/v1/token') {
+          if (mode === 'expired-session' && url.searchParams.get('grant_type') === 'refresh_token')
+            return Response.json({ message: 'synthetic refresh refusal' }, { status: 401 });
+          return Response.json(sessionFor(loginOwner, 'synthetic-renewed'));
+        }
+        if (url.pathname === '/auth/v1/logout') return Response.json({});
+        if (url.pathname === '/rest/v1/rpc/record_account_activity') {
+          assert.equal(options.body, '{}'); return Response.json({}, { status: 503 });
+        }
+        assert.equal(url.pathname, '/functions/v1/trip-log');
+        assert.equal(options.method, 'POST'); assert.equal(options.body, '{"limit":100}');
+        assert.equal(options.headers.Authorization, 'Bearer synthetic-original');
+        return { ok: true, status: 200, async json() {
+          reached.resolve();
+          if (mode.startsWith('pending-')) await held.promise;
+          return { rows };
+        } };
+      },
+    };
+    vm.runInNewContext(authBody + '\nthis.api={authEnabled,authIdentityEpoch,currentSession,onAuthChange,authorizedFetch,requireFreshSession,assertAuthIdentitySettled,refreshSession,signInWithPassword,signOut}; this.listenerCount=()=>listeners.size;', authScope);
+    const auth = authScope.api;
+    const observationScope = { ...auth, PUBLIC_CONFIG: config, localStorage: authScope.localStorage };
+    vm.runInNewContext(observationSource + '\nthis.api={getOwnTripObservations,getLocalObservations};', observationScope);
+    const events = new Map();
+    const node = () => ({ isConnected: true, disabled: false, textContent: '', handlers: new Map(),
+      addEventListener(name, fn) { this.handlers.set(name, fn); } });
+    const content = { _html: '', get innerHTML() { return this._html; },
+      set innerHTML(value) {
+        this._html = value;
+        for (const n of nodes.values()) n.isConnected = false;
+        nodes = new Map([...value.matchAll(/id="([^"]+)"/g)].map(match => ['#' + match[1], node()]));
+      }, querySelector: key => nodes.get(key) ?? null };
+    const closeButton = node(), accountButton = node(); let detailsCalls = 0;
+    const dialog = { open: false, querySelector: key => key === '.dialog-close' ? closeButton : content, showModal() { this.open = true; },
+      addEventListener(name, fn) { if (!events.has(name)) events.set(name, new Set()); events.get(name).add(fn); },
+      removeEventListener(name, fn) { events.get(name)?.delete(fn); },
+      close() { this.open = false; for (const fn of [...events.get('close') ?? []]) fn(); },
+      cancel() { for (const fn of [...events.get('cancel') ?? []]) fn(); this.close(); } };
+    const ui = { ...auth, ...observationScope.api, t: key => key, accountDialog: dialog,
+      document: { querySelector: key => { assert.equal(key, '#accountButton'); return accountButton; } },
+      ensureConditionDetails: async () => { detailsCalls++; }, userDataContext: () => ({}),
+      formatDateTime: () => 'synthetic-date', formatNumber: String,
+      ravScoreModelBinding: () => ({}), RAVSCORE_CALIBRATION_ELIGIBLE: false,
+      accountTripBindingStatus: () => 'historical',
+      getOwnStatisticsPreference: async () => ({ enabled: false, source: 'stored' }),
+      setOwnStatisticsPreference: async () => { throw new Error('No preference write in history fixture'); },
+    };
+    vm.runInNewContext(accountSource + '\nthis.openAccountDialog=openAccountDialog;', ui);
+    vm.runInNewContext(closeWiring[0] + '\nenableDialogClose(accountDialog);\n' + openWiring[0], ui);
+    const openNormally = () => accountButton.handlers.get('click')();
+    try {
+      await openNormally();
+      assert.equal(detailsCalls, 1, 'The actual app account-button caller ran');
+      nodes.get('#tripHistoryLink').handlers.get('click')({ preventDefault() {} });
+      await reached.promise; await tick();
+      const pending = mode.startsWith('pending-');
+      if (!pending) assert.match(content.innerHTML, /OWN-HISTORY-A/, mode + ': actual history rendered');
+      else assert.doesNotMatch(content.innerHTML, /OWN-HISTORY-A/);
+      const before = content.innerHTML;
+      if (mode === 'renewal') {
+        await auth.refreshSession({ force: true });
+        assert.equal(auth.authIdentityEpoch(), 0);
+        assert.equal(content.innerHTML, before, 'Legitimate same-login renewal keeps the history');
+      } else if (mode === 'expired-session') {
+        await assert.rejects(auth.refreshSession({ force: true }));
+        assert.equal(auth.currentSession(), null, 'Normal failed renewal clears the actual session');
+        assert.doesNotMatch(content.innerHTML, /OWN-HISTORY-A/, 'Normal auth expiry removes already rendered history');
+        assert.match(content.innerHTML, /account.optional/);
+      } else if (mode === 'logout' || mode === 'pending-logout') {
+        await auth.signOut();
+        assert.doesNotMatch(content.innerHTML, /OWN-HISTORY-A/, 'Logout removes already visible private rows');
+        assert.match(content.innerHTML, /account.optional/);
+      } else if (mode === 'switch' || mode === 'same-owner-login') {
+        loginOwner = mode === 'switch' ? ownerB : ownerA;
+        await auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only');
+        assert.equal(auth.currentSession().user.id, loginOwner);
+        assert.equal(auth.authIdentityEpoch(), 1);
+        assert.doesNotMatch(content.innerHTML, /OWN-HISTORY-A/, 'A new login does not retain the prior view');
+        assert.match(content.innerHTML, /account.signedIn/);
+      } else if (mode === 'cancel') dialog.cancel();
+      else if (mode === 'back') nodes.get('#tripHistoryBack').handlers.get('click')();
+      else { closeButton.handlers.get('click')(); if (mode === 'pending-close-reopen') await openNormally(); }
+      if (pending) {
+        const chosen = content.innerHTML;
+        held.resolve(); await tick();
+        assert.equal(content.innerHTML, chosen, 'A late body cannot repopulate a closed or replaced view');
+      }
+      if (mode !== 'renewal') assert.doesNotMatch(content.innerHTML, /OWN-HISTORY-A/);
+      if (['close', 'cancel'].includes(mode)) assert.equal(content.innerHTML, '');
+      if (mode === 'back') assert.match(content.innerHTML, /account.signedIn/);
+      assert.equal(requests.filter(path => path === '/functions/v1/trip-log').length, 1,
+        'Identity change or close does not silently fetch a second owner history');
+      for (const [key, value] of originals) assert.equal(storage.get(key), value, 'Original private storage is unchanged');
+      assert.equal(JSON.stringify(rows), originalRows, 'Synthetic original response remains unchanged');
+    } finally {
+      held.resolve(); await tick(); dialog.close();
+      assert.equal(authScope.listenerCount(), 0, 'No owner listener survives dialog lifetime');
+      assert.equal(events.get('close')?.size ?? 0, 0, 'No history/statistics close listener retained');
+      assert.equal(events.get('cancel')?.size ?? 0, 0, 'No history/statistics cancel listener retained');
+      assert.equal(events.get('click')?.size, 1, 'Existing app backdrop-close handler is preserved');
+      const leaked = timers.size; for (const id of timers) clearTimeout(id);
+      assert.equal(leaked, 0, 'Actual auth deadlines have settled');
+    }
+  }
+});

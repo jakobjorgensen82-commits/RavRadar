@@ -17,9 +17,13 @@ assert.deepEqual(plan.remaining, declared.filter(command => command !== plan.gat
 assert.equal(plan.gate, 'node scripts/source-critical-gate.mjs');
 assert.ok(plan.preflight.includes('node scripts/build-ravscore-model-bundle.mjs --check'));
 assert.ok(plan.preflight.includes('node scripts/sync-ravscore-model-binding.mjs --check'));
-// Keep the 47 existing bounded command groups; audit regressions share the
-// existing workflow group. No check is removed and no provider is contacted.
-assert.ok(declared.length <= 47, `Kildegaten er igen blevet for bred: ${declared.length} kommandoer.`);
+// Preserve the 47-command bounded baseline plus exactly one normal current
+// account/assistant successor source check. No prior check is removed.
+const successorCheck = 'node scripts/build-account-assistant-binding-successor.mjs --check';
+assert.equal(declared.filter(command => command === successorCheck).length, 1,
+  'The actual account/assistant successor must be checked exactly once.');
+assert.ok(declared.filter(command => command !== successorCheck).length <= 47,
+  `Kildegaten er igen blevet for bred uden den præcise efterfølgerkontrol: ${declared.length} kommandoer.`);
 assert.equal(declared.filter(command => command === 'python scripts/test-copernicus-current-pilot.py').length, 1);
 assert.ok(fs.readFileSync('scripts/test-copernicus-current-pilot.py', 'utf8').includes(
   'runpy.run_path(str(ROOT / "scripts/test-copernicus-dataset-updating.py"), run_name="__main__")'),
