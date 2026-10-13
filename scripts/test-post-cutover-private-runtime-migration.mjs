@@ -763,7 +763,7 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
         baselineDigests.set(item.relativePath, sha(raw));
       }
       return { root, input, bundlePath, manifestPath, manifest, expected, expectedPath,
-        descriptorPath, restored, baselineDigests, fixture };
+        descriptorPath, restored, baselineDigests, fixture, identity: current, request, pointer };
     }
     const migrate = (scenario, label, extras = {}) => normalMigrant.migratePostCutoverPrivateRuntime({
       sourceRoot: scenario.restored, outputRoot: path.join(scenario.root, label),
@@ -780,6 +780,59 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
     const positive = [];
     for (const fixture of [rollbackFixture, warmupFixture]) {
       const scenario = await sealedScenario(fixture, `${fixture.label}-positive`);
+      // Additive SAME-T original prewrite using the existing genuine044d
+      // 673-pair fixtures. Not a new-T migrant or an accept-flag report.
+      const prewrite = await currentImport('scripts/current-grid-binding-prewrite.mjs');
+      const issued = await currentImport('scripts/check-account-assistant-issued-source.mjs');
+      const checkpointPath = path.join(scenario.root, 'original-checkpoint.json');
+      await issued.withIssuedAccountAssistantSource(async issuedRoot => {
+        const oldCheckpoint = await import(pathToFileURL(path.join(issuedRoot,
+          'scripts/ravscore-continuation-checkpoint.mjs')).href);
+        await oldCheckpoint.saveRavScoreContinuationCheckpoint({
+          sourcePath: path.join(scenario.restored, 'data/live/conditions.json'),
+          checkpointPath, repositoryRoot: issuedRoot });
+      });
+      const payload = JSON.parse(await fs.readFile(checkpointPath, 'utf8'));
+      const row = { document_key: 'ravscore-continuation-checkpoint', version: 1, payload };
+      assert.strictEqual(prewrite.assertOriginalCheckpointRow([row], scenario.identity), row);
+      const checkpointVersionRequest = async (suffix, options, operation) => {
+        assert.equal(suffix, '?document_key=eq.ravscore-continuation-checkpoint&select=document_key,version&limit=2');
+        assert.deepEqual(options, {}); assert.equal(operation, 'version read');
+        return [{ document_key: row.document_key, version: row.version }];
+      };
+      const sameTime = await gridHelper.buildCurrentGridSamplingOriginalRestoreExpectation({
+        sourceDescription: scenario.identity, targetReferenceAt: reference, now });
+      const originalsBefore = sha(await fs.readFile(checkpointPath));
+      const proofOptions = { privateRoot: temporary, bundlePath: scenario.bundlePath,
+        restoredRoot: scenario.restored, expected: sameTime, identity: scenario.identity,
+        checkpointPath, checkpointVersion: 1, request: scenario.request, checkpointVersionRequest, now };
+      const outsideCheckpoint = path.join(temporary, `${fixture.label}-outside-checkpoint.json`);
+      await fs.copyFile(checkpointPath, outsideCheckpoint, fs.constants.COPYFILE_EXCL);
+      await assert.rejects(prewrite.verifyCurrentGridPrewriteOriginals({ ...proofOptions,
+        privateRoot: scenario.root, checkpointPath: outsideCheckpoint }),
+      /Original checkpoint path must remain inside its private proof root/);
+      const sameOriginal = await prewrite.verifyCurrentGridPrewriteOriginals(proofOptions);
+      assert.equal(sameOriginal.partCount, 673); assert.equal(sameOriginal.fileCount, 10);
+      assert.equal(sameOriginal.originalBytesUnchanged, true);
+      assert.equal(sameOriginal.newGridEvidenceClaimed, false);
+      assert.equal(sha(await fs.readFile(checkpointPath)), originalsBefore);
+      assert.equal(sameOriginal.checkpointSha256, originalsBefore);
+      await assert.rejects(prewrite.assertFreshOriginalIdentities({ ...proofOptions,
+        checkpointVersion: 2 }), /Protected S version changed/);
+      const oldDatasetId = scenario.pointer.payload.current.datasetId;
+      scenario.pointer.payload.current.datasetId += '-changed';
+      await assert.rejects(prewrite.assertFreshOriginalIdentities(proofOptions), /Protected current B pointer changed/);
+      scenario.pointer.payload.current.datasetId = oldDatasetId;
+      for (const change of [value => { value.version = 0; },
+        value => { value.payload.datasetId += '-changed'; },
+        value => { value.payload.continuationStateContractSha256 = '0'.repeat(64); },
+        value => { value.payload.modelBinding.modelBundleSha256 = policy.sourceCandidateModelBinding.modelBundleSha256; },
+        value => { value.payload.candidateGRollbackCompanion.modelBinding.modelBundleSha256 = policy.sourceModelBinding.modelBundleSha256; }]) {
+        const invalid = structuredClone(row); change(invalid);
+        assert.throws(() => prewrite.assertOriginalCheckpointRow([invalid], scenario.identity));
+      }
+      assert.throws(() => prewrite.assertOriginalCheckpointRow([], scenario.identity));
+      assert.equal(sha(await fs.readFile(checkpointPath)), originalsBefore);
       const report = await migrate(scenario, 'migrated');
       assert.equal(report.transitionKind, 'CURRENT_GRID_ORIGINAL_ARCHIVE_BRIDGE');
       assert.equal(report.migratedPartCount, 673);

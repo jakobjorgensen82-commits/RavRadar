@@ -94,8 +94,10 @@ async function resolveImport(importer, specifier) {
   throw new Error('Unresolved pinned import: ' + importer + ' -> ' + clean);
 }
 
-async function main() {
-  assert.equal(process.argv.length, 2, 'No source/root/hash/options override is accepted');
+// The callback receives only the already verified, owned fixed044d view. It
+// cannot choose a source/root/binding, and it runs before guarded cleanup.
+export async function withIssuedAccountAssistantSource(useVerifiedSource) {
+  assert.equal(typeof useVerifiedSource, 'function');
   try {
     assert.equal(String(await git(['rev-parse', HEAD + '^{tree}'], 'utf8')).trim(), TREE);
   } catch {
@@ -145,6 +147,15 @@ async function main() {
     }
   }
 
+  // The historical checkpoint loader reads this fixed policy with readFileSync,
+  // not an ESM import. Preserve the exact issued blob, never a current policy.
+  const policyFile = 'scripts/lib/dmi-marine-zone-exclusions.json';
+  assert(!selected.has(policyFile), 'Pinned policy remains an explicit data dependency');
+  const policyBytes = await gitBytes(policyFile);
+  assert.equal(policyBytes.length, 416);
+  assert.equal(sha(policyBytes), 'b959dee7b87cfebe9fdc7311ffd62b835c96d5c4a263bbcff5c0485f6660ef16');
+  selected.add(policyFile);
+
   const tempParent = await fs.realpath(os.tmpdir());
   const temporary = await fs.mkdtemp(path.join(tempParent, PREFIX));
   assert.equal(path.dirname(temporary), tempParent);
@@ -173,6 +184,7 @@ async function main() {
     }
     assert.deepEqual(await fs.readFile(path.join(temporary, SQL)), original,
       'Historical builder must not modify issued migration');
+    return await useVerifiedSource(temporary);
   } finally {
     assert.equal(path.dirname(temporary), tempParent);
     assert(path.basename(temporary).startsWith(PREFIX));
@@ -180,9 +192,13 @@ async function main() {
     assert.deepEqual(identity(await fs.lstat(temporary, { bigint: true })), ownedIdentity);
     await fs.rm(temporary, { recursive: true, force: false });
   }
+}
+async function main() {
+  assert.equal(process.argv.length, 2, 'No source/root/hash/options override is accepted');
+  await withIssuedAccountAssistantSource(async () => {});
   console.log('Issued213 historical source verified at fixed044d; normal C66/I68/T12 builder --check passed; current220 admission remains separate.');
 }
-main().catch(error => {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch(error => {
   const code = ['ISSUED_SOURCE_OBJECT_UNAVAILABLE', 'ISSUED_LOCAL_213_MISMATCH']
     .includes(error?.issuedSourceCode) ? error.issuedSourceCode : 'ISSUED_SOURCE_CHECK_FAILED';
   console.error(code + '; no current-runtime admission.');

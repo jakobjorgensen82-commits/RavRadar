@@ -1,3 +1,9 @@
+## Lokal førskrivningskontrol for strømovergangen — 13. oktober 2026
+
+Den normale installationsvej har nu en særskilt, som udgangspunkt fravalgt kontrol af de autentificerede gamle B/S-originaler før præcis 220000-plan og igen umiddelbart før skrivning. Den bruger de genuine gamle byggere på uændrede filer, sammenligner alle 673 originalpar og genlæser pakkens aktuelle pointer samt checkpointets version. Den gamle checkpoint-loader må kun validere en byteidentisk kontrolkopi, ikke ommærke originalen. Den historiske 416-byte politikfil med fast kildehash bevares særskilt; aktuelle modeldata lånes ikke som gammel kilde. Windows' korte og lange stinavne sammenlignes som faktiske, linkfri filstier, mens filer uden for den private mappe fortsat afvises.
+
+Den berørte normale originalprøve består med begge 673-del-forløb, 118 offentlige timer pr. forløb og alle 12 eksisterende negative tilfælde; nye pointer-, versions-, familie- og mappegrænser afprøves samme sted. Den gamle kode-only importkontrol og 213/220-fixtureadskillelse er rettet: 29 prøver består, én Linux-specifik prøve er udtrykkeligt sprunget over på Windows. Den præcise nye Linux/native/PostgreSQL-kildekontrol afventer. Dette er lokal kildeintegration, ikke hosted restore, autentisk produktionspakke-, SQL-, ny strøm- eller offentlig effekt. Den nye private restore-destination, hosted B/S-læsning, main-merge og aktivering kræver fortsat deres konkrete tilladelser. Alle fem målområder er åbne.
+
 # 4.0.576 – faktisk konto-/assistentlevering, 13. oktober kl. 05.37 dansk tid
 
 Ejerens nyere frist er 18. oktober 2026, inden Codex-adgangen ophører. Alle fem hovedområder bevares, og ejeren har udtrykkeligt bedt om parallelle, afgrænsede delegationer. Hovedagenten ejer integration og produktionsskrivning. Dette ændrer ingen særskilt installations-, diagnose-, destinations- eller vejrhentningstilladelse; seneste private checkpoint er arbejdsplan, ikke produktionsbevis.

@@ -7,6 +7,11 @@ on:
         description: "Skriv APPLY-WEATHER-MODEL-BINDING"
         required: true
         type: string
+      upgrade_current_grid_original:
+        description: "Særskilt godkendt originalbevarelse før præcis 220000-installation"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -14,7 +19,9 @@ permissions:
   pull-requests: read
 
 # Backend binding and a normal weather run must never interleave. This
-# workflow never restores, publishes, or deploys a weather/runtime artifact.
+# workflow never publishes or deploys weather. Named current-grid opt-in
+# additionally restores unchanged PRIVATE originals to a separately approved
+# run-owned destination before SQL; it never installs them in the checkout.
 concurrency:
   group: ravradar-weather-production-v2
   queue: max
@@ -25,6 +32,8 @@ jobs:
     name: Apply exact database and assistant bindings without touching saved weather
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN: ${{ inputs.upgrade_current_grid_original }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -108,21 +117,39 @@ jobs:
           --workdir "${{ steps.migration-view.outputs.workdir }}"
           --migration-list "$RUNNER_TEMP/weather-binding-migrations-before.txt"
 
+      - name: Preserve authenticated unchanged originals for the named current-grid successor
+        if: inputs.upgrade_current_grid_original == true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND: r2
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+        run: node scripts/current-grid-binding-prewrite.mjs prepare
+
       - name: Dry-run and allow only the latest exact binding migration
         shell: bash
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_BINDING_MIGRATION_WORKDIR: ${{ steps.migration-view.outputs.workdir }}
         run: |
           set -euo pipefail
           cd "${{ steps.migration-view.outputs.workdir }}"
           supabase migration list --linked | tee "$RUNNER_TEMP/weather-binding-migrations-plan.txt"
           supabase db push --linked --dry-run --skip-vault 2>&1 | tee "$RUNNER_TEMP/weather-binding-migrations-dry-run.txt"
           cd "$GITHUB_WORKSPACE"
-          node scripts/verify-code-only-migration-plan.mjs \
-            --migration-list "$RUNNER_TEMP/weather-binding-migrations-plan.txt" \
-            --dry-run "$RUNNER_TEMP/weather-binding-migrations-dry-run.txt" \
-            --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
+          if test "$RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN" = true; then
+            node scripts/current-grid-binding-prewrite.mjs verify-plan
+          else
+            node scripts/verify-code-only-migration-plan.mjs \
+              --migration-list "$RUNNER_TEMP/weather-binding-migrations-plan.txt" \
+              --dry-run "$RUNNER_TEMP/weather-binding-migrations-dry-run.txt" \
+              --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
+          fi
 
       - name: Reconfirm main immediately before the one database write
         shell: bash
@@ -139,8 +166,14 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_BINDING_MIGRATION_WORKDIR: ${{ steps.migration-view.outputs.workdir }}
         run: |
           set -euo pipefail
+          if test "$RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN" = true; then
+            node scripts/current-grid-binding-prewrite.mjs verify-plan
+          fi
           cd "${{ steps.migration-view.outputs.workdir }}"
           supabase db push --linked --skip-vault
 

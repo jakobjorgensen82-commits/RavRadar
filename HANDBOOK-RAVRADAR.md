@@ -486,6 +486,10 @@ nedenfor er ikke aktuelle leveringskvitteringer for 566.
 
 ## 89.190 Relevante ravspørgsmål og nye strømfortolkninger
 
+### Lokal opfølgning: originaler kontrolleres gennem den normale førskrivningsvej — 2026-10-13
+
+Den kommende strømovergang har nu en særskilt, som udgangspunkt fravalgt førskrivningsvej. Den kontrollerer uændrede autentificerede B/S-originaler med den genuine gamle kilde, alle 673 originalpar og frisk pointer-/versionskontrol før den præcise 220000-plan og igen før skrivning. Den gamle loader arbejder kun på en byteidentisk kontrolkopi. En særskilt fast politikfil bevares fra originalkilden; Windows-stier kanoniseres uden at tillade links eller filer uden for den private mappe. Begge normale 673-del-forløb og de eksisterende 12 negative tilfælde består lokalt. Kode-only-kontrollen adskiller genuine 213-prøver fra den nye 220-rute; 29 prøver består, og én Linux-specifik prøve er udtrykkeligt sprunget over på Windows. Præcis ny Linux/native/PostgreSQL-kontrol, hosted originalbevis, særskilt restore-/installationsautoritet og faktisk ny generationseffekt afventer. Dette er ikke en produktionslevering.
+
 ### Lokal opfølgning: strømdata før ny hukommelse og score – 2026-10-13
 
 Status 13. oktober 2026: Den kommende strømrettelse er en afgrænset lokal kildekandidat, ikke en leveret numerisk rettelse. Der vælges ingen ny releaseversion her, og de tidligere afsnit bevares som dateret historik.
