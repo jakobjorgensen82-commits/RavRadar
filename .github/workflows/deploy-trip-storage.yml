@@ -51,6 +51,9 @@ jobs:
           fi
 
       - uses: actions/checkout@v7
+        with:
+          # Offline source fixtures archive genuine historical producer commits.
+          fetch-depth: 0
 
       - name: Require checked-out trip-storage HEAD to equal current origin/main
         shell: bash
@@ -108,7 +111,7 @@ jobs:
       - name: Validate exact source head before external writes
         id: source-gate
         if: steps.source-proof.outputs.required != 'false'
-        run: npm run validate:source
+        run: env -u SUPABASE_ACCESS_TOKEN npm run validate:source
 
       - name: Record actual source validation outcome
         id: source-record
@@ -1101,6 +1104,9 @@ jobs:
           fi
 
       - uses: actions/checkout@v7
+        with:
+          # Offline source fixtures archive genuine historical producer commits.
+          fetch-depth: 0
 
       - name: Require checked-out trip-storage HEAD to equal current origin/main
         shell: bash
@@ -1158,7 +1164,7 @@ jobs:
       - name: Validate exact source head before external writes
         id: source-gate
         if: steps.source-proof.outputs.required != 'false'
-        run: npm run validate:source
+        run: env -u SUPABASE_ACCESS_TOKEN npm run validate:source
 
       - name: Record actual source validation outcome
         id: source-record
