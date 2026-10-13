@@ -1,5 +1,7 @@
 # Lokal strømrettelse – afgrænset kildeforberedelse, 2026-10-13
 
+Den normale Linux-nativeprøve bestod på den første rettede kilde-head. Efterfølgende kildekontrol fandt gentaget metadataarbejde pr. zone. Den forberedte kilde bruger nu én frisk beskedlokal klassifikation og geometri i normale batchkald, med uændrede offentlige signatures, strøm-/scalar-adskillelse, lookup/værdier, originaler og tomt-zone-resultat. Forældede kontrolforventninger følger den gennemgåede current220-kæde og rekonstruerer hele genuine forgænger, uden at acceptere andre kilder eller ændre historisk SQL. Berørte JavaScript-mål består lokalt; ny præcis Python-/native-/PostgreSQL-kontrol afventer. Stadig ingen numerisk produktionsaktivering eller ny release.
+
 Forslaget korrigerer kun DKSS GRIB1-strømmens U/V-fortolkning og dens sammenhæng gennem native gitter, datacache, historik, ny strømhukommelse og fremtidig score. Andre felters numeriske valg og cacheadgang, kildeprioritet, scoreformel, administratorpunkter og geometri bevares. Gamle originalpakker og offentliggjorte scorer må ikke omskrives.
 
 Den samlede aktuelle kilde er endnu ikke native-/nationalt eller offentligt verificeret. Legitim bindingsfølge, autentiske originalers bevarelse og den særskilte numeriske SQL-/aktiveringsgrænse står åbne; konto-/assistenttilladelsen er ikke numerisk tilladelse. Ingen ny version eller SOURCE-G4-procesrettelse indgår. Alle fem hovedmål er fortsat åbne.

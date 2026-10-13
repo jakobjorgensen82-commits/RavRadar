@@ -1696,6 +1696,8 @@ original_find_nearest = producer.codes_grib_find_nearest
 original_codes_get = producer.codes_get
 original_get_elements = producer.codes_get_elements
 original_nearest_candidates = producer.nearest_candidates
+original_nearest_for_message = producer._nearest_candidates_for_message
+original_metadata_classify = producer.classify_parameter
 try:
     producer.GRID_INDEX_CACHE.clear()
 
@@ -1756,7 +1758,7 @@ try:
     else:
         raise AssertionError("Non-DKSS out-of-area lookup must remain fail-closed")
 
-    producer.nearest_candidates = lambda *_args, **_kwargs: [{
+    producer._nearest_candidates_for_message = lambda *_args, **_kwargs: [{
         "index": 7,
         "latitude": 1.0,
         "longitude": 2.0,
@@ -1790,13 +1792,23 @@ try:
     # Grid identity and its digest are message-local work. Adding more zones
     # must not multiply ecCodes metadata calls before a cache hit can be read.
     metadata_calls = []
+    field_metadata_calls = []
+    reading_field_metadata = [False]
+
+    def counting_classify(gid, collection):
+        reading_field_metadata[0] = True
+        try:
+            return original_metadata_classify(gid, collection)
+        finally:
+            reading_field_metadata[0] = False
 
     def counting_codes_get(_gid, key):
-        metadata_calls.append(key)
+        (field_metadata_calls if reading_field_metadata[0] else metadata_calls).append(key)
         return 9999.0 if key == "missingValue" else f"grid-{key}"
 
     second_zone = {**zone, "id": "PART::TEST-2"}
     producer.codes_get = counting_codes_get
+    producer.classify_parameter = counting_classify
     producer.codes_get_elements = lambda *_args, **_kwargs: [0.25]
     counted_rows = producer.valid_candidates_batch(
         998,
@@ -1807,6 +1819,8 @@ try:
     assert metadata_calls.count("md5GridSection") == 1
     assert metadata_calls.count("missingValue") == 1
     assert len(metadata_calls) == 12
+    assert field_metadata_calls == [key for key in producer._FIELD_SIGNATURE_KEYS
+                                    if key not in producer._FIELD_STATISTIC_KEYS]
     legacy_definition_signature = tuple(
         f"grid-{key}" for key in producer.GRID_DEFINITION_KEYS
     )
@@ -1899,6 +1913,124 @@ finally:
     producer.codes_get = original_codes_get
     producer.codes_get_elements = original_get_elements
     producer.nearest_candidates = original_nearest_candidates
+    producer._nearest_candidates_for_message = original_nearest_for_message
+    producer.classify_parameter = original_metadata_classify
+    producer.GRID_INDEX_CACHE.clear()
+
+# Message-local classification/geometry must stay constant at national scale.
+# This is the existing import-safe ecCodes seam, NOT native ecCodes evidence.
+_message_saved = {name: getattr(producer, name) for name in (
+    "codes_get", "codes_get_elements", "codes_grib_find_nearest",
+    "codes_grib_nearest_new", "codes_grib_nearest_find", "codes_grib_nearest_delete",
+    "CODES_GRIB_NEAREST_SAME_GRID",
+)}
+try:
+    from collections import Counter
+    _field_keys = [key for key in producer._FIELD_SIGNATURE_KEYS
+                   if key not in producer._FIELD_STATISTIC_KEYS]
+    _grid_keys = ["md5GridSection", *producer.GRID_DEFINITION_KEYS]
+    _field = {"parameter": 82}
+    _reads, _element_reads, _nearest_opens, _nearest_closes = [], [], [], []
+    _grid = dict(zip(_grid_keys, (
+        "1" * 32, "regular_ll", 2, 2, 4, 1., 2., 2., 3., .999, .999,
+    )))
+
+    def _message_get(gid, key):
+        assert gid == 1998
+        _reads.append(key)
+        if key in _grid:
+            return _grid[key]
+        if key in {"paramId", "indicatorOfParameter"}:
+            return _field["parameter"]
+        return {"edition": 1, "scanningMode": 64, "missingValue": 9999.}.get(key, "")
+
+    def _message_elements(gid, key, indices):
+        assert gid == 1998 and key == "values"
+        _element_reads.append(tuple(indices))
+        return [float(index) for index in indices]
+
+    def _message_native(gid, latitude, longitude, *args, **kwargs):
+        assert gid == 1998
+        return [{"index": 3, "lat": 1.999, "lon": 2.999}]
+
+    producer.codes_get = _message_get
+    producer.codes_get_elements = _message_elements
+    producer.codes_grib_find_nearest = _message_native
+    producer.CODES_GRIB_NEAREST_SAME_GRID = 1
+    producer.codes_grib_nearest_new = lambda gid: _nearest_opens.append(gid) or 4242
+    producer.codes_grib_nearest_find = lambda handle, gid, lat, lon, *_: _message_native(gid, lat, lon)
+    producer.codes_grib_nearest_delete = lambda handle: _nearest_closes.append(handle)
+    _wanted_zone = {**zone, "lat": 1.5, "lon": 2.5}
+    for _batch in (producer.valid_candidates_batch, producer.nearest_valid_batch):
+        for _parameter in (82, 49, 50, 33):
+            _field["parameter"] = _parameter
+            _current = _parameter in (49, 50)
+            for _count in (1, 2, 673):
+                _wanted = [{**_wanted_zone, "id": f"PART::MESSAGE-{n}"} for n in range(_count)]
+                producer.GRID_INDEX_CACHE.clear()
+                for _pass in ("cold", "warm"):
+                    _reads.clear(); _element_reads.clear()
+                    _nearest_opens.clear(); _nearest_closes.clear()
+                    _rows = _batch(1998, "dkss_idw", _wanted)
+                    assert set(_rows) == {item["id"] for item in _wanted}
+                    assert Counter(_reads) == Counter(
+                        _grid_keys + _field_keys + ["missingValue"]
+                        + (["edition", "scanningMode"] if _current else [])
+                    ), (_batch.__name__, _parameter, _count, _pass, Counter(_reads))
+                    assert len(_element_reads) == 1
+                    assert _nearest_opens == ([1998] if not _current and _pass == "cold" else [])
+                    assert _nearest_closes == ([4242] if _nearest_opens else [])
+                    for _key in producer.GRID_INDEX_CACHE:
+                        assert (_key[0] == "current-native-grid-sampling-v1") == _current
+                    _row = _rows[_wanted[0]["id"]]
+                    _row = _row[0] if isinstance(_row, list) else _row
+                    assert _row["value"] == float(_row["index"])
+                    if not _current:
+                        assert (_row["latitude"], _row["longitude"]) == (1.999, 2.999)
+                        assert "_gridIndexIdentity" not in _row
+                    elif _batch is producer.valid_candidates_batch:
+                        assert _row["_gridCoordinateInterpretation"] == "dmi-dkss-grib1-header-endpoints-v1"
+                        assert _row["_gridIndexIdentity"] == producer.grid_index_identity_sha256_from_cache(tuple(_grid.values()))
+    # SAME numeric gid and SAME grid are reused for another field. No context
+    # survives a batch/standalone call; scalar and current entries coexist.
+    producer.GRID_INDEX_CACHE.clear()
+    _standalone_signature = tuple(_grid.values())
+    for _parameter, _namespace in ((49, True), (82, False), (50, True), (34, False)):
+        _field["parameter"] = _parameter
+        _reads.clear()
+        _key = producer.current_grid_cache_key(1998, "dkss_idw", _standalone_signature, _wanted_zone)
+        assert (_key[0] == "current-native-grid-sampling-v1") == _namespace
+        assert Counter(_reads) == Counter(_field_keys + (["edition", "scanningMode"] if _namespace else []))
+        _reads.clear()
+        producer.warm_marine_grid_cache(1998, "dkss_idw", [_wanted_zone], _standalone_signature)
+        assert Counter(_reads) == Counter(_field_keys + (["edition", "scanningMode"] if _namespace else []))
+        _reads.clear()
+        _standalone = producer.nearest_candidates(1998, "dkss_idw", _wanted_zone, signature=_standalone_signature)
+        assert Counter(_reads) == Counter(_field_keys + (["edition", "scanningMode"] if _namespace else []))
+        assert bool(_standalone[0].get("_gridCoordinateInterpretation")) == _namespace
+    assert len(producer.GRID_INDEX_CACHE) == 2
+    # An invalid next current message cannot borrow the previous geometry,
+    # even when its numeric gid and grid signature are unchanged.
+    _field["parameter"] = 49
+    producer.codes_get = lambda gid, key: 63 if key == "scanningMode" else _message_get(gid, key)
+    try:
+        producer.valid_candidates_batch(1998, "dkss_idw", [_wanted_zone])
+    except producer.DmiGridLookupError as exc:
+        assert exc.failure_code == "DKSS_HEADER_GEOMETRY_INVALID"
+    else:
+        raise AssertionError("Reused gid must validate its current message, including warm cache hits")
+    # Regional/parameter routing may legitimately select no target zones.
+    # Preserve the former empty result without looking up geometry or values;
+    # this never emits a sample, a proof, a key, or a replacement cache entry.
+    for _batch in (producer.valid_candidates_batch, producer.nearest_valid_batch):
+        _element_reads.clear(); _nearest_opens.clear(); _nearest_closes.clear()
+        _empty_cache = dict(producer.GRID_INDEX_CACHE)
+        assert _batch(1998, "dkss_idw", []) == {}
+        assert _element_reads == _nearest_opens == _nearest_closes == []
+        assert producer.GRID_INDEX_CACHE == _empty_cache
+finally:
+    for _name, _value in _message_saved.items():
+        setattr(producer, _name, _value)
     producer.GRID_INDEX_CACHE.clear()
 
 # A grid-definition digest is string metadata, not a number. Both the shared

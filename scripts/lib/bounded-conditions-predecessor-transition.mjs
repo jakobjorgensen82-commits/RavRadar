@@ -449,7 +449,7 @@ function currentGridSamplingSourceSuccessorApplies() {
     PRIVATE_RUNTIME_REPOSITORY_ROOT, 'scripts/ravscore-continuation-checkpoint.mjs',
   ), 'utf8');
   return gridSha256(gridNormalizeSource(producer))
-    === 'adbbb23305f324aefa8cf3e4534be99f9f701fada5f7a63646182576bcfccc9c'
+    === '8ff4a5b6f50d3f2d4e177fcf8c55048051266ded1a196151d6adff9427829ce2'
     && gridSha256(gridNormalizeSource(checkpoint))
       === 'a119e9fff37bfcb7b60174bec97ae4f0a49012f5b5ac40ae57cb79ffbdf8322e';
 }

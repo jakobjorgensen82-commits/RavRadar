@@ -172,8 +172,8 @@ assert.throws(() => validateSameReferencePrivateRuntimeSuccessor({ ...publicHour
 /non-conditions private file/);
 
 const migration = await fs.readFile('scripts/migrate-post-cutover-private-runtime.mjs', 'utf8');
-assert.match(migration, /transitionKind: ownerArchiveRequired \? classifyOwnerCurrentArchiveBridge\(\{[\s\S]*?\}\) : classifyVerifiedRuntimeMigration\(\{/,
-  'the explicit owner-original branch must retain the normal strict migration classifier as its fallback');
+assert.match(migration, /transitionKind: currentGridOriginalOnly \? classifyCurrentGridOriginalArchiveBridge\(\{[\s\S]*?\}\) : ownerArchiveRequired \? classifyOwnerCurrentArchiveBridge\(\{[\s\S]*?\}\) : classifyVerifiedRuntimeMigration\(\{/,
+  'current-grid and owner-original branches must retain the normal strict migration classifier as their fallback');
 assert.match(migration,/const ownerArchiveRequired=ownerCurrentOriginalOnly[\s\S]*?OWNER_CURRENT_DOMAIN_PREDECESSOR\.modelBinding\.modelBundleSha256/,
   'The water-only metadata bridge must not recreate or relabel the earlier control archive.');
 assert.match(migration, /if \(result\.transitionKind !== 'CONTRACT_ONLY_REBIND'\)/,

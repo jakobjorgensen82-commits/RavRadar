@@ -2131,6 +2131,7 @@ for (const lagHours of [1, 2, 3]) {
       validTime: time(lagHours),
       sourceValidTime: time(0),
       holdAgeHours: lagHours,
+      expectedHold: stateOnlyCurrentHold(lagHours, 0),
     },
   };
   assert.deepEqual(integratedResolverCalls, [expectedCall],

@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import test from 'node:test';
 import { OPEN_METEO_NATIVE_NEAREST_POLICIES } from './lib/open-meteo-part-bank.mjs';
 import { applyVerifiedWaterSourceRoutingToPartHourly } from './lib/water-source-forecast-routing.mjs';
+import { assertDmiPartHourlyGridSamplingApplicable } from './lib/ravscore-production-adapters.mjs';
 import { safeWeatherComponentSummary } from './lib/weather-component-safe-summary.mjs';
 import { PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES } from './private-production-runtime-workflow.mjs';
 
@@ -33,6 +34,7 @@ test('normal PART production plans on current central identity and passes the pr
     coastalPointStateInjections: {}, ravScoreCheckpoint: { loaded: false },
     historicalWaveInputTransition: null,
     waterSourceRoutingContext, applyVerifiedWaterSourceRoutingToPartHourly,
+    assertDmiPartHourlyGridSamplingApplicable,
     RESEARCH_HISTORY_HOURS: 72, OPEN_METEO_FUTURE_HOURS: 121, OPEN_METEO_NATIVE_NEAREST_POLICIES,
     COMPONENT_COPERNICUS_BUDGET_MS: 0, COMPONENT_OPEN_METEO_BUDGET_MS: 0,
     reportWeatherBuildStage: () => {},
@@ -51,7 +53,13 @@ test('normal PART production plans on current central identity and passes the pr
     applyFeggesundOperationalWaveProxy: record => record,
     verifiedIntegratedPartHourly: (record, _bulk, id, target, inputs) => {
       assert.equal(record.localMaterialization, true); assert.equal(id, 'PART::P1');
-      assert.equal(target.zoneId, 'CURRENT'); assert.equal(inputs, verifiedInputs);
+      assert.equal(target.zoneId, 'CURRENT');
+      assert.notEqual(inputs, verifiedInputs, 'planning owns only its explicit applicability wrapper');
+      assert.deepEqual(Object.keys(inputs).sort(),
+        [...Object.keys(verifiedInputs), 'requireNativeGridSampling', 'liveCurrentPilot'].sort());
+      for (const [key, value] of Object.entries(verifiedInputs)) assert.equal(inputs[key], value);
+      assert.equal(inputs.requireNativeGridSampling, false);
+      assert.equal(inputs.liveCurrentPilot, context.liveCurrentPilot);
       return record.hourly;
     },
     prepareWeatherComponentRuntime: async options => {

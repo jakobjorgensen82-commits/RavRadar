@@ -4940,6 +4940,13 @@ def dkss_header_geometry_for_message(
         return None
     if classify_parameter(gid, collection) not in {"current-u", "current-v"}:
         return None
+    return _dkss_header_geometry_for_current(gid, collection, cache_signature)
+
+
+def _dkss_header_geometry_for_current(gid, collection, cache_signature):
+    # Internal caller has classified this SAME message, never a prior gid.
+    if collection not in {"dkss_nsbs", "dkss_idw", "dkss_ws", "dkss_lf", "dkss_lb", "dkss_if"}:
+        return None
     try:
         edition = codes_get(gid, "edition")
         if not isinstance(edition, int) or isinstance(edition, bool):
@@ -4967,15 +4974,42 @@ def grid_candidate_target(collection: str, zone: dict[str, Any]) -> int:
     return ATMOSPHERIC_GRID_CANDIDATE_TARGET
 
 
+class _GridMessageContext(NamedTuple):
+    gid: int
+    collection: str
+    signature: tuple[Any, ...]
+    geometry: dict[str, Any] | None
+    interpretation: str | None
+
+
+def _grid_message_context(gid, collection, signature=None, *, has_targets=True):
+    """Capture only this call's actual field; no retained/global gid lookup.
+
+    Public key/nearest/warm entry points never accept a context. Batch callers
+    hold this internal context only until their synchronous message work ends.
+    It is a lookup optimisation, not original/native-source authentication.
+    """
+    current = collection in MARINE_COLLECTIONS and classify_parameter(gid, collection) in {"current-u", "current-v"}
+    cache_signature = signature if signature is not None else grid_cache_signature(gid)
+    geometry = (_dkss_header_geometry_for_current(gid, collection, cache_signature)
+                if current and has_targets else None)
+    resolved_signature = (cache_signature if signature is not None or current
+                          else grid_definition_signature_from_cache(cache_signature))
+    interpretation = (("dmi-dkss-grib1-header-endpoints-v1" if geometry is not None
+                       else "eccodes-native-coordinates-v1") if current else None)
+    return _GridMessageContext(gid, collection, resolved_signature, geometry, interpretation)
+
+
+def _current_grid_cache_key(message, zone):
+    legacy = (message.collection, message.signature, zone["id"], grid_candidate_target(message.collection, zone))
+    if message.interpretation is not None:
+        return ("current-native-grid-sampling-v1", message.interpretation, *legacy)
+    return legacy
+
+
 def current_grid_cache_key(gid, collection, signature, zone):
     """Disjoint current interpretation; legacy scalar/wave/wind keys unchanged."""
-    legacy = (collection, signature, zone["id"], grid_candidate_target(collection, zone))
-    if collection in MARINE_COLLECTIONS and classify_parameter(gid, collection) in {"current-u", "current-v"}:
-        geometry = dkss_header_geometry_for_message(gid, collection, signature)
-        interpretation = ("dmi-dkss-grib1-header-endpoints-v1" if geometry is not None
-                          else "eccodes-native-coordinates-v1")
-        return ("current-native-grid-sampling-v1", interpretation, *legacy)
-    return legacy
+    return _current_grid_cache_key(_grid_message_context(gid, collection, signature), zone)
 
 
 def nearest_candidates(
@@ -4985,6 +5019,12 @@ def nearest_candidates(
     signature: tuple[Any, ...] | None = None,
     nearest_lookup: Any = None,
 ) -> list[dict[str, Any]]:
+    return _nearest_candidates_for_message(
+        _grid_message_context(gid, collection, signature), zone, nearest_lookup,
+    )
+
+
+def _nearest_candidates_for_message(message, zone, nearest_lookup=None):
     """Find flere mulige havpunkter uden at antage, at de fire nærmeste er gyldige.
 
     ecCodes returnerer højst fire punkter pr. opslag på flere grids. Derfor probes
@@ -4995,23 +5035,15 @@ def nearest_candidates(
     # Atmosfæriske grids (HARMONIE) er komplette land/hav-grids og kræver ikke
     # den dyre marine kyst-probing. Ét nearest-opslag pr. zone/grid er nok og
     # genbruges på tværs af alle forecast-tider via GRID_INDEX_CACHE.
+    gid, collection = message.gid, message.collection
     candidate_target = grid_candidate_target(collection, zone)
-    if signature is not None:
-        resolved_signature = signature
-    elif collection in MARINE_COLLECTIONS and classify_parameter(gid, collection) in {"current-u", "current-v"}:
-        resolved_signature = grid_cache_signature(gid)
-    else:
-        resolved_signature = grid_signature(gid)
-    cache_key = current_grid_cache_key(gid, collection, resolved_signature, zone)
-    coordinate_interpretation = cache_key[1] if cache_key[0] == "current-native-grid-sampling-v1" else None
+    cache_key = _current_grid_cache_key(message, zone)
+    coordinate_interpretation = message.interpretation
     cached = GRID_INDEX_CACHE.get(cache_key)
     if cached is not None:
         return cached
-    if nearest_lookup is None and collection.startswith("dkss_"):
-        geometry = dkss_header_geometry_for_message(gid, collection, grid_cache_signature(gid))
-        if geometry is not None:
-            nearest_lookup = lambda latitude, longitude: dkss_header_grid_nearest(geometry, latitude, longitude)
-            coordinate_interpretation = "dmi-dkss-grib1-header-endpoints-v1"
+    if nearest_lookup is None and message.geometry is not None:
+        nearest_lookup = lambda latitude, longitude: dkss_header_grid_nearest(message.geometry, latitude, longitude)
     if collection not in MARINE_COLLECTIONS and candidate_target == 4:
         try:
             candidates = codes_grib_find_nearest(gid, zone["lat"], zone["lon"], npoints=4)
@@ -5123,22 +5155,29 @@ def warm_marine_grid_cache(
     """Warm the existing marine probe union using its verified grid interpretation."""
     if collection not in MARINE_COLLECTIONS or not zones:
         return
+    return _warm_marine_grid_cache_for_message(_grid_message_context(gid, collection, signature), zones)
+
+
+def _warm_marine_grid_cache_for_message(message, zones):
+    gid, collection, signature = message.gid, message.collection, message.signature
+    if collection not in MARINE_COLLECTIONS or not zones:
+        return
     pending = [
         zone
         for zone in zones
-        if current_grid_cache_key(gid, collection, signature, zone) not in GRID_INDEX_CACHE
+        if _current_grid_cache_key(message, zone) not in GRID_INDEX_CACHE
     ]
     if not pending:
         return
-    geometry = dkss_header_geometry_for_message(gid, collection, signature)
+    geometry = message.geometry
     if geometry is not None:
         # Do not warm corrected DKSS entries with ecCodes' rounded latitude
         # iterator. Both ordinary batch callers then reuse this same index map.
-        pending_keys = [current_grid_cache_key(gid, collection, signature, zone) for zone in pending]
+        pending_keys = [_current_grid_cache_key(message, zone) for zone in pending]
         try:
             for zone in pending:
-                nearest_candidates(
-                    gid, collection, zone, signature=signature,
+                _nearest_candidates_for_message(
+                    message, zone,
                     nearest_lookup=lambda latitude, longitude: dkss_header_grid_nearest(geometry, latitude, longitude),
                 )
         except Exception:
@@ -5157,7 +5196,7 @@ def warm_marine_grid_cache(
     nearest_id = None
     first_lookup = True
     pending_keys = [
-        current_grid_cache_key(gid, collection, signature, zone)
+        _current_grid_cache_key(message, zone)
         for zone in pending
     ]
     try:
@@ -5182,11 +5221,9 @@ def warm_marine_grid_cache(
             return candidates
 
         for zone in pending:
-            nearest_candidates(
-                gid,
-                collection,
+            _nearest_candidates_for_message(
+                message,
                 zone,
-                signature=signature,
                 nearest_lookup=lookup,
             )
     except Exception:
@@ -5312,24 +5349,20 @@ def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]
     nærmeste *fælles* fysiske gitterpunkt.
     """
     cache_signature = grid_cache_signature(gid)
+    message = _grid_message_context(gid, collection, cache_signature, has_targets=bool(zones))
     definition_sha256 = grid_definition_sha256_from_signature(
         grid_definition_signature_from_cache(cache_signature)
     )
-    current_message = collection in MARINE_COLLECTIONS and classify_parameter(gid, collection) in {"current-u", "current-v"}
+    current_message = message.interpretation is not None
     index_identity = grid_index_identity_sha256_from_cache(cache_signature) if current_message else None
-    warm_marine_grid_cache(gid, collection, zones, cache_signature)
+    _warm_marine_grid_cache_for_message(message, zones)
     warm_atmospheric_grid_cache(gid, collection, zones, cache_signature)
     missing = safe_get(gid, "missingValue")
     candidates_by_zone: dict[str, list[dict[str, Any]]] = {}
     unique_indices: list[int] = []
     seen: set[int] = set()
     for zone in zones:
-        candidates = nearest_candidates(
-            gid,
-            collection,
-            zone,
-            signature=cache_signature,
-        )
+        candidates = _nearest_candidates_for_message(message, zone)
         candidates_by_zone[zone["id"]] = candidates
         for candidate in candidates:
             index = int(candidate["index"])
@@ -5371,22 +5404,18 @@ def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) 
     while repeated forecast steps on the same grid reuse the nearest-index map.
     """
     cache_signature = grid_cache_signature(gid)
+    message = _grid_message_context(gid, collection, cache_signature, has_targets=bool(zones))
     definition_sha256 = grid_definition_sha256_from_signature(
         grid_definition_signature_from_cache(cache_signature)
     )
-    warm_marine_grid_cache(gid, collection, zones, cache_signature)
+    _warm_marine_grid_cache_for_message(message, zones)
     warm_atmospheric_grid_cache(gid, collection, zones, cache_signature)
     missing = safe_get(gid, "missingValue")
     candidates_by_zone: dict[str, list[dict[str, Any]]] = {}
     unique_indices: list[int] = []
     seen: set[int] = set()
     for zone in zones:
-        candidates = nearest_candidates(
-            gid,
-            collection,
-            zone,
-            signature=cache_signature,
-        )
+        candidates = _nearest_candidates_for_message(message, zone)
         candidates_by_zone[zone["id"]] = candidates
         for candidate in candidates:
             index = int(candidate["index"])
