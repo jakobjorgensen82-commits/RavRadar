@@ -15,6 +15,7 @@ on:
           - existing-owner-erasure-guard
           - typed-trip-catalog-read
           - fixed-public-rate-log-read
+          - fixed-public-rate-log-read-20261013
 
 permissions:
   contents: read
@@ -976,7 +977,7 @@ jobs:
         run: node scripts/verify-cloudflare-trip-gateway.mjs
 
   read-fixed-supabase-metadata:
-    if: ${{ inputs.operation == 'typed-trip-catalog-read' || inputs.operation == 'fixed-public-rate-log-read' }}
+    if: ${{ inputs.operation == 'typed-trip-catalog-read' || inputs.operation == 'fixed-public-rate-log-read' || inputs.operation == 'fixed-public-rate-log-read-20261013' }}
     name: Bounded fixed Supabase read (no installation or repair)
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -1049,8 +1050,15 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
+      - name: Read the one fixed 13 October public rate-log interval
+        if: inputs.operation == 'fixed-public-rate-log-read-20261013'
+        timeout-minutes: 1
+        run: node scripts/read-fixed-public-rate-log-20261013.mjs
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
   reject-unknown-operation:
-    if: ${{ inputs.operation != '' && inputs.operation != 'full-install' && inputs.operation != 'existing-worker-repair' && inputs.operation != 'existing-owner-export-upgrade' && inputs.operation != 'existing-owner-erasure-guard' && inputs.operation != 'typed-trip-catalog-read' && inputs.operation != 'fixed-public-rate-log-read' }}
+    if: ${{ inputs.operation != '' && inputs.operation != 'full-install' && inputs.operation != 'existing-worker-repair' && inputs.operation != 'existing-owner-export-upgrade' && inputs.operation != 'existing-owner-erasure-guard' && inputs.operation != 'typed-trip-catalog-read' && inputs.operation != 'fixed-public-rate-log-read' && inputs.operation != 'fixed-public-rate-log-read-20261013' }}
     runs-on: ubuntu-latest
     steps:
       - run: exit 1

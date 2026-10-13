@@ -130,4 +130,45 @@ for (const removed of [
   'release:gate',
 ]) assert.ok(!sourceDeclaration.includes(removed), `${removed} hører ikke længere til i den faste kildegate.`);
 
-console.log(`Source validation: ${calls.length} direkte produktionskritiske kommandoer, samlet fejlrapport og ingen bred release-/historiksuite.`);
+// The new fixed historical read uses the same guarded job, never a write job.
+// Parse only the actual existing equality/and/or operation grammar here;
+// this is a source routing assertion, not live GitHub or log-read proof.
+const fixedOperation = 'fixed-public-rate-log-read-20261013';
+const fixedWorkflow = fs.readFileSync('.github/workflows/deploy-trip-storage.yml', 'utf8').replace(/\r\n/g, '\n');
+const fixedJobsSource = fixedWorkflow.slice(fixedWorkflow.indexOf('\njobs:\n'));
+const fixedHeaders = [...fixedJobsSource.matchAll(/^  ([a-z0-9-]+):$/gm)];
+const fixedJobs = new Map(fixedHeaders.map((row,index) => [row[1], fixedJobsSource.slice(row.index,
+  fixedHeaders[index+1]?.index ?? fixedJobsSource.length)]));
+assert.deepEqual([...fixedJobs.keys()].sort(), ['deploy-trip-storage','read-fixed-supabase-metadata','reject-unknown-operation','repair-existing-worker']);
+function operationAllows(job,operation) {
+  const expression = /^    if: \$\{\{ (.+) \}\}$/m.exec(job)?.[1];
+  assert.ok(expression, 'Every actual operation job must retain an explicit condition.');
+  return expression.split(' || ').some(disjunction => disjunction.split(' && ').every(clause => {
+    const match = /^inputs\.operation (==|!=) '([a-z0-9-]*)'$/.exec(clause);
+    assert.ok(match, 'Do not silently accept another routing grammar.');
+    return match[1] === '==' ? operation === match[2] : operation !== match[2];
+  }));
+}
+for (const [name,job] of fixedJobs) assert.equal(operationAllows(job,fixedOperation),name === 'read-fixed-supabase-metadata');
+for (const operation of ['typed-trip-catalog-read','fixed-public-rate-log-read']) {
+  assert.equal(operationAllows(fixedJobs.get('read-fixed-supabase-metadata'),operation),true);
+  assert.equal(operationAllows(fixedJobs.get('reject-unknown-operation'),operation),false);
+}
+for (const [name,job] of fixedJobs) assert.equal(operationAllows(job,'unknown-read-operation'),name === 'reject-unknown-operation');
+const fixedReadJob = fixedJobs.get('read-fixed-supabase-metadata');
+for (const marker of ['test "$GITHUB_REPOSITORY" = jakobjorgensen82-commits/RavRadar',
+  'test "$GITHUB_RUN_ATTEMPT" = 1','test "$GITHUB_REF" = refs/heads/main',
+  'node scripts/weather-source-gate.mjs check','steps.fixed_read_source.outputs.required',
+  'node scripts/check-fixed-supabase-account-read-idle.mjs']) assert.ok(fixedReadJob.includes(marker));
+const newFixedRead = 'node scripts/read-fixed-public-rate-log-20261013.mjs';
+assert.equal(fixedReadJob.split(newFixedRead).length-1,1);
+assert.ok(fixedReadJob.indexOf('Require genuinely fresh idle main') < fixedReadJob.indexOf(newFixedRead));
+assert.equal(fixedReadJob.split('node scripts/read-fixed-public-rate-log-20261012.mjs').length-1,1);
+assert.doesNotMatch(fixedReadJob,/supabase db push|functions deploy|wrangler|upload-artifact|cache\/save|SUPABASE_DB_PASSWORD|SUPABASE_SERVICE_ROLE_KEY/);
+const fixedSourceWorkflow = fs.readFileSync('.github/workflows/validate-pull-request.yml','utf8');
+const normalFixedTarget = 'node scripts/test-fixed-public-rate-log-20261013.mjs';
+assert.equal(fixedSourceWorkflow.split(normalFixedTarget).length-1,1);
+assert.ok(fixedSourceWorkflow.includes('run: npm run validate:source && '+normalFixedTarget),
+  'The required normal Source step must run the synthetic reader target only after the existing source gate succeeds.');
+
+console.log(`Source validation: ${calls.length} direkte produktionskritiske kommandoer, samlet fejlrapport og ingen bred release-/historiksuite; ny fast loglæsning bruger alene det beskyttede læsejob.`);

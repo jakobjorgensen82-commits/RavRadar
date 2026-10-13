@@ -1802,7 +1802,7 @@ try {
   globalThis.fetch=fixedRatePriorFetch;delete process.env.SUPABASE_ACCESS_TOKEN;
 }
 console.log('Fixed rate-log normal caller fixtures: exact historical GET, strict bounded results and one-shot/deadline refusals; no account log read.');
-const typedWorkflowSource=await fs.readFile('.github/workflows/deploy-trip-storage.yml','utf8');
+const typedWorkflowSource=(await fs.readFile('.github/workflows/deploy-trip-storage.yml','utf8')).replace(/\r\n/g,'\n');
 const typedReadJob=typedWorkflowSource.slice(typedWorkflowSource.indexOf('  read-fixed-supabase-metadata:'),
   typedWorkflowSource.indexOf('  reject-unknown-operation:'));
 assert.ok(typedReadJob.includes("inputs.operation == 'typed-trip-catalog-read'"));
@@ -1817,7 +1817,18 @@ assert.ok(typedReadJob.includes('node scripts/check-fixed-supabase-account-read-
 assert.ok(typedReadJob.indexOf('Require genuinely fresh idle main') <
   typedReadJob.indexOf('node scripts/read-typed-trip-catalog.mjs'));
 assert.doesNotMatch(typedReadJob,/supabase db push|apply-candidate-g|functions deploy|wrangler|upload-artifact|cache\/save|SUPABASE_DB_PASSWORD|SUPABASE_SERVICE_ROLE_KEY/);
-assert.equal((typedReadJob.match(/SUPABASE_ACCESS_TOKEN:/g)||[]).length,2);
+// Preserve both old fixed routes exactly; admit only the one reviewed third step.
+const typedCatalogReadStep="      - name: Read the one fixed typed trip catalog\n        if: inputs.operation == 'typed-trip-catalog-read'\n        timeout-minutes: 1\n        run: node scripts/read-typed-trip-catalog.mjs\n        env:\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n\n";
+const typed12OctReadStep="      - name: Read the one fixed public rate-log interval\n        if: inputs.operation == 'fixed-public-rate-log-read'\n        timeout-minutes: 1\n        run: node scripts/read-fixed-public-rate-log-20261012.mjs\n        env:\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n\n";
+const typed13OctReadStep="      - name: Read the one fixed 13 October public rate-log interval\n        if: inputs.operation == 'fixed-public-rate-log-read-20261013'\n        timeout-minutes: 1\n        run: node scripts/read-fixed-public-rate-log-20261013.mjs\n        env:\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n\n";
+for(const step of [typedCatalogReadStep,typed12OctReadStep,typed13OctReadStep]) {
+  assert.equal(typedReadJob.split(step).length,2,'each exact fixed read step must occur once');
+}
+assert.ok(typedReadJob.endsWith(typedCatalogReadStep+typed12OctReadStep+typed13OctReadStep),
+  'the two unchanged historical readers must precede the reviewed 13 October reader');
+const typedLegacyReadJob=typedReadJob.replace(typed13OctReadStep,'');
+assert.equal((typedLegacyReadJob.match(/SUPABASE_ACCESS_TOKEN:/g)||[]).length,2,
+  'remove only the exact new read step before proving the unchanged old two-token contract');
 
 // Actual fixed reader idle guard with controlled metadata transport only.
 // No account read, GitHub request, watchdog change or new runtime executor.

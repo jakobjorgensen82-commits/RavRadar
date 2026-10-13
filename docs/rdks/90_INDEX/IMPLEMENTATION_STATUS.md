@@ -1,3 +1,10 @@
+## Faktisk status efter den faste assistentaflæsning — 13. oktober 2026
+
+Den almindelige vejrhentning afsluttede faktisk gemning, upload, Pages-deploy og offentlig 210/673-kontrol kl. 17.24 dansk tid. Det er ikke fuld DMI-/genopretnings- eller numerisk strømovergangsevidens. Den separate læserkilde blev derefter sikkert leveret efter præcis kildekontrol og frisk writer-fri kontrol.
+
+Ejerens ene 13. oktober-logforespørgsel er nu forbrugt: Supabase svarede HTTP 200, men læseren afviste envelope-formatet. Det er ikke et vellykket fejlkode- eller AI-årsagsbevis. Den særskilt godkendte ene joblog er også læst og forbrugt; der udføres ingen automatisk ny backendforespørgsel eller logdownload. Den konkrete 503-årsag og fungerende ekstern AI er åbne. Ældre afsnits afventende kildelevering og ubrugt tilladelse er historik på netop disse punkter; alle øvrige grænser bevares.
+
+
 ## Lokal turlagring: afværg forsinket genindsættelse — 13. oktober 2026
 
 Den forberedte Worker kontrollerer samme databasedels slettemarkør ved indsættelse og opretter alle ti markører før fysisk sletning. En forsinket indsættelse fra den genuine gamle Worker kræver også et databaseværn; derfor er en særskilt, som udgangspunkt fravalgt 003-installationsvej forberedt. Den kontrollerer alle ti eksisterende EU-databaser, 001/002-schema, den eksisterende Worker-version, bindingskort og eksakt triggerdefinition før den første mulige ændring. Kun en manglende, navngiven INSERT-trigger må tilføjes. Den opretter ingen databaser, opdaterer ingen Worker/Edge, og udfører ingen automatisk reparation eller gentagelse.
@@ -6,6 +13,19 @@ Den normale målfil registrerede 400 prøver: 399 bestod, ingen fejlede, og én 
 
 Dette er lokal kildeintegration, ikke hosted D1-installation, udført kontosletning, fysisk dræning af gamle requests eller Auth-/backup-sletning. Kvitteringen angiver udtrykkeligt disse grænser. Automatisk inaktivitetsvarsling, login-redning, anonym statistik og backupfristen er fortsat åbne. En særskilt præcis installations-/Worker-tilladelse og den normale kildekontrol mangler. Modelbindinger, gamle SQL-filer, geometri og eksisterende ture er ikke ændret. Alle fem hovedmål er åbne.
 
+# 4.0.576 – ny fast, skrivefri assistentkontrol, 2026-10-13
+
+Kildeklargøringen er nu tilpasset den leverede main `a7741ebb41812ec7cb7076050f3537936f10d9a0`. PR #587 er leveret gennem det kontrollerede rettelsesdeploy `38391450805`, som er afsluttet med succes. Den eksisterende omkostningsrettelse, alle 69 DMI-testmetoder og deres dokumentation bevares uændret. Dette er ikke en ny DMI-generation, målt effekt ved en ny behandlingsfejl eller AI-årsagsbevis. Det tidligere 289-baserede udkast bevares separat; de ældre afsnits forberedelsesstatus er historik på det konkret leverede punkt.
+
+Den offentlige 4.0.576-levering er tidligere faktisk verificeret den 13. oktober kl. 05.37 dansk tid. Denne særskilte kildeændring er kun lokal klargøring til en historisk fejlundersøgelse, ikke en ny levering eller rettelse af AI-fejlen. De ældre afsnits afventende leveringsstatus er historik på det konkret erstattede punkt; de øvrige åbne krav består.
+
+Ejeren har givet én ny, betinget engangstilladelse til at læse afgrænsede logkategorier omkring assistentens fejl den 13. oktober kl. 10.42.03 dansk tid. Tilladelsen er ubrugt og må først anvendes efter grøn kontrol af præcis kilde og afsluttet vejrhentning. Operationen `fixed-public-rate-log-read-20261013` bruger det eksisterende beskyttede læsejob med samme repository-, main-, første-forsøg-, kildebevis- og friske writer-fri kontrol. Ingen installation, ny tjeneste, vejrhentning eller automatisk gentagelse følger af tilladelsen.
+
+Den nye læser er låst til samme projekt og rate-limit-RPC samt tidsrummet 08.41.58–08.42.09 UTC. Den returnerer kun HTTP-status og kendte PostgreSQL-/Edge-fejlkategorier, aldrig rå logindhold, spørgsmål, brugerdata eller credentials. Grænserne er fortsat én GET, ingen argumenter, ti sekunder, 32 KiB og afvisning ved otte resultatrækker. Faste private formatkategorier skelner JSON-, envelope-, række-, status- og kodefejl uden rå feltnavne eller værdier. Den gamle 12. oktober-læser og dens forbrugte tilladelser bevares; de må ikke genbruges til dette nye interval.
+
+Den ene normale syntetiske læserprøve består med 23 afgrænsede forløb og faktisk ti-sekunders kropsfrist. Dens eksakte læserbytes genbruges ved integration; den ændrede normale routingprøve består og afgrænser den nye operation til læsejobbet. GitHubs obligatoriske Source-trin skal også køre læserprøven én gang efter den eksisterende kildekontrol. Præcis CI, faktisk loglæsning, hosted-logformat og de konkrete fejlkategorier er endnu ukendte. Der er ingen observeret sikker offentlig fejlkode for requesten; 503-årsagen og fungerende ekstern AI er fortsat åbne. Tomt resultat eller formatfejl frikender ikke autentificering, rolle eller database.
+
+Vejrkode, modelbindinger, SQL-migrationer, scoreformel, gyldige originaler, kildeprioritet, administratorpunkter, geometri og den isolerede current220-kandidat ændres ikke. Alle fem hovedmål er fortsat åbne. Detaljeret privat evidens og eventuelle logkategorier bliver ikke offentlig assistentviden. Ældre daterede afsnit nedenfor bevares uændret.
 
 # 4.0.576 – forberedt driftsopfølgning: tidsforbrug ved behandlingsfejl, 2026-10-13
 

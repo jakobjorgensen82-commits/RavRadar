@@ -1,3 +1,10 @@
+## Faktisk status efter den faste assistentaflæsning — 13. oktober 2026
+
+Den almindelige vejrhentning afsluttede faktisk gemning, upload, Pages-deploy og offentlig 210/673-kontrol kl. 17.24 dansk tid. Det er ikke fuld DMI-/genopretnings- eller numerisk strømovergangsevidens. Den separate læserkilde blev derefter sikkert leveret efter præcis kildekontrol og frisk writer-fri kontrol.
+
+Ejerens ene 13. oktober-logforespørgsel er nu forbrugt: Supabase svarede HTTP 200, men læseren afviste envelope-formatet. Det er ikke et vellykket fejlkode- eller AI-årsagsbevis. Den særskilt godkendte ene joblog er også læst og forbrugt; der udføres ingen automatisk ny backendforespørgsel eller logdownload. Den konkrete 503-årsag og fungerende ekstern AI er åbne. Ældre afsnits afventende kildelevering og ubrugt tilladelse er historik på netop disse punkter; alle øvrige grænser bevares.
+
+
 ## Lokal turlagring: afværg forsinket genindsættelse — 13. oktober 2026
 
 Den forberedte Worker kontrollerer samme databasedels slettemarkør ved indsættelse og opretter alle ti markører før fysisk sletning. En forsinket indsættelse fra den genuine gamle Worker kræver også et databaseværn; derfor er en særskilt, som udgangspunkt fravalgt 003-installationsvej forberedt. Den kontrollerer alle ti eksisterende EU-databaser, 001/002-schema, den eksisterende Worker-version, bindingskort og eksakt triggerdefinition før den første mulige ændring. Kun en manglende, navngiven INSERT-trigger må tilføjes. Den opretter ingen databaser, opdaterer ingen Worker/Edge, og udfører ingen automatisk reparation eller gentagelse.
