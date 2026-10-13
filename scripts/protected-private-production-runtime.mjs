@@ -2326,9 +2326,11 @@ export function createProtectedPrivateRuntimeClients({
     );
     if (response.ok) return { created: true };
     if ([400, 409].includes(response.status)
-      && /duplicate|already exists|resource already exists/i.test(
-        String(parsed.json?.message ?? parsed.json?.error ?? parsed.text),
-      )) {
+      && ([parsed.json?.code, parsed.json?.error].some(code =>
+        code === 'KeyAlreadyExists' || code === 'ResourceAlreadyExists')
+        || /duplicate|already exists|resource already exists/i.test(
+          String(parsed.json?.message ?? parsed.json?.error ?? parsed.text),
+        ))) {
       return { created: false, alreadyExists: true };
     }
     // Only fixed diagnostic fields escape this boundary. In particular, never

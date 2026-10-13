@@ -2479,6 +2479,37 @@ try {
       assert.deepEqual(duplicate.result, { created: false, alreadyExists: true });
       assert.equal(duplicate.delays, 0);
     }
+    // Supabase's formatter emits the finite duplicate code in code/error.
+    // A duplicate disposition is not a verified readback or pointer commit.
+    for (const status of [400, 409]) {
+      for (const field of ['code', 'error']) {
+        for (const code of ['KeyAlreadyExists', 'ResourceAlreadyExists']) {
+          const duplicate = await execute([Response.json({ [field]: code }, { status })]);
+          assert.equal(duplicate.error, undefined);
+          assert.deepEqual(duplicate.result, { created: false, alreadyExists: true });
+          assert.equal(duplicate.calls, 1, 'a code-only duplicate never adds a request');
+          assert.equal(duplicate.delays, 0);
+        }
+      }
+    }
+    for (const [status, body, providerCode] of [
+      [400, { code: 'keyalreadyexists' }, 'UNKNOWN'],
+      [409, { error: ' ResourceAlreadyExists' }, 'UNKNOWN'],
+      [400, { code: 'KeyAlreadyExistsSuffix' }, 'UNKNOWN'],
+      [409, { code: ['KeyAlreadyExists'] }, 'UNKNOWN'],
+      [400, { error: { code: 'ResourceAlreadyExists' } }, 'UNKNOWN'],
+      [409, { errorCode: 'KeyAlreadyExists' }, 'MISSING'],
+      [403, { code: 'KeyAlreadyExists' }, 'KeyAlreadyExists'],
+      [422, { error: 'ResourceAlreadyExists' }, 'ResourceAlreadyExists'],
+      [400, { code: null }, 'MISSING'],
+      [409, 'KeyAlreadyExists', 'MISSING'],
+    ]) {
+      const refused = await execute([Response.json(body, { status })]);
+      check(refused.error, status, providerCode);
+      assert.equal(refused.result, undefined);
+      assert.equal(refused.calls, 1);
+      assert.equal(refused.delays, 0);
+    }
     const created = await execute([new Response('', { status: 200 })]);
     assert.equal(created.error, undefined);
     assert.deepEqual(created.result, { created: true });

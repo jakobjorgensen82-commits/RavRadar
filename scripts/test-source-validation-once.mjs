@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import {
   buildSourceValidationPlan,
   expandSourceCommands,
@@ -145,6 +146,50 @@ const fixedHeaders = [...fixedJobsSource.matchAll(/^  ([a-z0-9-]+):$/gm)];
 const fixedJobs = new Map(fixedHeaders.map((row,index) => [row[1], fixedJobsSource.slice(row.index,
   fixedHeaders[index+1]?.index ?? fixedJobsSource.length)]));
 assert.deepEqual([...fixedJobs.keys()].sort(), ['deploy-trip-storage','read-fixed-supabase-metadata','reject-unknown-operation','repair-existing-worker']);
+// A source fallback is an offline check, not permission to borrow job credentials.
+function assertOfflineTripInstallerSource(job) {
+  assert.ok(job.includes('      - uses: actions/checkout@v7\n'
+    + '        with:\n'
+    + '          # Offline source fixtures archive genuine historical producer commits.\n'
+    + '          fetch-depth: 0\n'),
+  'source fallback must retain genuine historical Git objects, not just one legacy ref');
+  assert.ok(job.includes("      - name: Validate exact source head before external writes\n"
+    + "        id: source-gate\n"
+    + "        if: steps.source-proof.outputs.required != 'false'\n"
+    + '        run: env -u SUPABASE_ACCESS_TOKEN npm run validate:source\n'),
+  'offline source child must receive no ambient Management-token key');
+  assert.ok(job.includes('      SUPABASE_ACCESS_TOKEN: ' + '$' + '{{ secrets.SUPABASE_ACCESS_TOKEN }}\n'),
+    'step-local isolation must not remove credentials needed by later approved operations');
+}
+for (const name of ['deploy-trip-storage', 'repair-existing-worker']) {
+  const job = fixedJobs.get(name);
+  assertOfflineTripInstallerSource(job);
+  assert.throws(() => assertOfflineTripInstallerSource(job.replace('          fetch-depth: 0\n', '')),
+    /genuine historical Git objects/);
+  assert.throws(() => assertOfflineTripInstallerSource(job.replace(
+    'run: env -u SUPABASE_ACCESS_TOKEN npm run validate:source', 'run: npm run validate:source')),
+  /no ambient Management-token key/);
+}
+if (process.platform === 'linux') {
+  const syntheticSourceEnv = {
+    PATH: process.env.PATH,
+    SUPABASE_ACCESS_TOKEN: 'synthetic-offline-source-token',
+  };
+  const sanitizedChild = spawnSync('env', ['-u', 'SUPABASE_ACCESS_TOKEN', process.execPath,
+    '--input-type=module', '-e',
+    "if(Object.hasOwn(process.env,'SUPABASE_ACCESS_TOKEN'))process.exit(1);"
+      + "process.stdout.write('OFFLINE_TOKEN_ABSENT\\n');"],
+  { env: syntheticSourceEnv, encoding: 'utf8', timeout: 5000 });
+  assert.equal(sanitizedChild.error, undefined, 'the actual Linux env caller must execute');
+  assert.equal(sanitizedChild.status, 0, 'the actual source child must have no token key');
+  assert.equal(sanitizedChild.stdout, 'OFFLINE_TOKEN_ABSENT\n');
+  assert.equal(sanitizedChild.stderr, '');
+  assert.equal(syntheticSourceEnv.SUPABASE_ACCESS_TOKEN, 'synthetic-offline-source-token',
+    'step-local removal must not mutate its parent environment');
+} else {
+  console.log('Linux env -u source-child token isolation: UNRUN on this platform.');
+}
+
 function operationAllows(job,operation) {
   const expression = /^    if: \$\{\{ (.+) \}\}$/m.exec(job)?.[1];
   assert.ok(expression, 'Every actual operation job must retain an explicit condition.');
