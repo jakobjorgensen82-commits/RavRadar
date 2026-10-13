@@ -481,7 +481,7 @@ async function compareAccountAssistantSuccessor({ psql, runSql, source, oldSourc
 // incoming generation is built by current normal code; old states stay old.
 async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource,
   oldFixtures, issuedFixtures, sourceDocumentAt, atHour, saveCheckpoint, root }) {
-  assert.equal(hash(source), 'f283e36f55cb69f8d8271a560a04adeb5cde1e93777b52b96677148e1d2e060b');
+  assert.equal(hash(source), '77d5a60f22ff38fce3164c87e74d089ea56c0a18647310213cde465e95e4632b');
   assert.match(source, /\bbegin;\s+set local lock_timeout = '5s';/);
   const originalNames = ['ffc', '249', 'c1ac'].flatMap(family => ['state', 'payload']
     .map(kind => 'ravradar_ravscore_checkpoint_grid_' + family + '_' + kind + '_valid'));

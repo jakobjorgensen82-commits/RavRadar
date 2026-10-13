@@ -1128,6 +1128,11 @@ const accountCasBody=checkpointSqlBody(accountCanonicalSource,'ravradar_ravscore
 assert.notEqual(accountCasBody,newCasBody);
 const currentCasBody=checkpointSqlBody(currentCanonicalSource,'ravradar_ravscore_checkpoint_cas');
 assert.notEqual(currentCasBody,accountCasBody);
+// PL/pgSQL reads ELSIF only up to a top-level THEN. Keep the SQL CASE
+// expression parenthesized, or its first internal THEN truncates the condition.
+assert.equal(currentCasBody.split("      and (case v_payload #>> '{modelBinding,modelBundleSha256}'\n").length,2);
+assert.equal(currentCasBody.split('        else false\n      end)\n    then\n').length,2);
+assert.ok(!currentCasBody.includes("      and case v_payload #>> '{modelBinding,modelBundleSha256}'"));
 assert.ok(expectedCheckpointContract.definition.includes(`-- cas-function --\n${currentCasBody}\n-- checkpoint-history-exclusion --`));
 assert.ok(!expectedCheckpointContract.definition.includes(accountCasBody));
 for(const family of ['ffc','249','c1ac'])for(const kind of ['state','payload']) {

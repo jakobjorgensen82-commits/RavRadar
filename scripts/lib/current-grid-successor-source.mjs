@@ -48,7 +48,7 @@ export async function readCurrentGridCanonicalSource({ migrationsDirectory = MIG
   const stat = await fs.lstat(filename);
   assert(stat.isFile() && !stat.isSymbolicLink(), 'Regular non-symlink current-grid migration required');
   const migration = (await fs.readFile(filename, 'utf8')).replace(/\r\n?/g, '\n');
-  assert.equal(sha(migration), 'f283e36f55cb69f8d8271a560a04adeb5cde1e93777b52b96677148e1d2e060b',
+  assert.equal(sha(migration), '77d5a60f22ff38fce3164c87e74d089ea56c0a18647310213cde465e95e4632b',
     'Immutable current-grid migration hash drifted');
   const names = [...migration.matchAll(/^create or replace function public\.([a-z0-9_]+)\(/gm)]
     .map(match => match[1]);
@@ -62,7 +62,7 @@ export async function readCurrentGridCanonicalSource({ migrationsDirectory = MIG
     + '\nrevoke all on function ' + row.signature + ' from public, anon, authenticated;').join('\n\n');
   const anchor = definition(canonicalSource, CP + 'integrated_state_valid');
   canonicalSource = once(canonicalSource, anchor, originals + '\n\n' + anchor);
-  assert.equal(sha(canonicalSource), '055868fb1991eedd5e83e84abaab727c3b188a8559afda2edb66558981fdc2b5');
+  assert.equal(sha(canonicalSource), '52da7ec58df834fb879cab25d26d94da355e8eaaf6c24ce0913199ac8181a894');
   let inverse = once(canonicalSource, originals + '\n\n', '');
   for (const name of [...REPLACEMENTS].reverse()) {
     inverse = once(inverse, definition(inverse, name), definition(predecessor, name));

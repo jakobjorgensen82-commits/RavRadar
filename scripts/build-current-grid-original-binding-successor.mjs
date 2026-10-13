@@ -265,11 +265,11 @@ export async function buildCurrentGridOriginalBindingSuccessor() {
   const originalBranch = [
     '    elsif p_target_reference > v_central_reference',
     "      and p_payload ->> 'continuationStateContractSha256' = '" + NEXT.T + "'",
-    "      and case v_payload #>> '{modelBinding,modelBundleSha256}'",
+    "      and (case v_payload #>> '{modelBinding,modelBundleSha256}'",
     ...ORIGINALS.map(family => "        when '" + family.I + "' then public."
       + CP + 'grid_' + family.label + '_payload_valid(v_payload, v_central_reference)'),
     '        else false',
-    '      end',
+    '      end)',
     '    then',
     '      -- A genuinely newer current generation; no metadata projection or same-reference waiver.',
     '      v_central_is_compatible_predecessor := false;',

@@ -1,3 +1,12 @@
+## Konkret SQL-syntaksrettelse i strømovergangen — 13. oktober 2026
+
+Den faktiske PostgreSQL-kildeprøve nåede den nye 220000-fase og afviste SQL med syntakskode 42601. Gennemgang af den normale builder og PostgreSQLs parser har fundet en konkret fejl: den nye SQL-CASE i ELSIF-betingelsen mangler parenteser. Den afgrænsede rettelse tilføjer kun disse to syntakstegn i builderen og den endnu ikke installerede migration; betingelser, rækkefølge, gamle validatorer, numerik, roller, no-loss og 55/5-sekunders grænser er uændrede.
+
+De nye definitionstekst-, migrations- og kanoniske kildehashes er beregnet fra hele de faktiske eftertekster. Begge hele kanoniske versioner inverterer til den genuine 213-forgænger; fjernelse af kun de to parenteser giver hele den gamle 220-tekst tilbage. Ingen gamle SQL-filer, originalvalidatorer eller C69/I71/T12-bindinger er ommærket. Tre additive normale assertions fastholder den præcise parsergrænse.
+
+Den normale builders skrivefri kontrol og hele det berørte readiness-mål består lokalt. Ny faktisk PostgreSQL-kontrol på den præcise kilde-head skal stadig bevise den samlede 220-kæde; dette er ikke hosted installation eller numerisk produktionseffekt. Strømbranchens tilladelse gælder fortsat kun kilde-PR og normale kontroller, ikke main-merge, SQL-installation, aktivering eller ny vejrhentning. Alle fem hovedmål er åbne.
+
+
 ## Leveret læserkilde bevaret; engangslæsning forbrugt — 13. oktober 2026
 
 Den forberedte strømbranch er forenet med den faktisk leverede main-læserkilde, så den normale kilde-PR kan køre uden dokumentationskonflikter. Begge hele kildehistorier og kontroller bevares. Den naturlige vejrhentning afsluttede faktisk gemning, upload, deploy og offentlig 210/673-kontrol kl. 17.24 dansk tid; det er ikke fuldt DMI- eller numerisk strømovergangsbevis.
