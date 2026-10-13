@@ -1803,8 +1803,12 @@ try {
 }
 console.log('Fixed rate-log normal caller fixtures: exact historical GET, strict bounded results and one-shot/deadline refusals; no account log read.');
 const typedWorkflowSource=(await fs.readFile('.github/workflows/deploy-trip-storage.yml','utf8')).replace(/\r\n/g,'\n');
-const typedReadJob=typedWorkflowSource.slice(typedWorkflowSource.indexOf('  read-fixed-supabase-metadata:'),
+const typedFullReadJob=typedWorkflowSource.slice(typedWorkflowSource.indexOf('  read-fixed-supabase-metadata:'),
   typedWorkflowSource.indexOf('  reject-unknown-operation:'));
+const typedStorageReadStep="      - name: Read the one fixed 13 October Storage upload-log interval\n        if: inputs.operation == 'fixed-storage-upload-log-read-20261013'\n        timeout-minutes: 1\n        run: node scripts/read-fixed-storage-upload-log-20261013.mjs\n        env:\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n\n";
+assert.equal(typedFullReadJob.split(typedStorageReadStep).length,2,'the new Storage read step occurs exactly once');
+assert.ok(typedFullReadJob.indexOf('Require genuinely fresh idle main') < typedFullReadJob.indexOf(typedStorageReadStep));
+const typedReadJob=typedFullReadJob.replace(typedStorageReadStep,'');
 assert.ok(typedReadJob.includes("inputs.operation == 'typed-trip-catalog-read'"));
 assert.ok(typedReadJob.includes("inputs.operation == 'fixed-public-rate-log-read'"));
 assert.ok(typedReadJob.includes('test "$GITHUB_RUN_ATTEMPT" = 1'));

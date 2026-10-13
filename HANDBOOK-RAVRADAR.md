@@ -6,6 +6,16 @@ Den lokale 4.0.576 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Den fysiske scorekontrakt er uændret. Dette er ikke installation, ny offentlig status eller bevis for den nye sammensætnings præcise kildekontrol.
 
+## 89.220 Afvist gemning skal give præcise, private kontroloplysninger
+
+**Kort fortalt:** Driftskontrollen skal kunne forklare en afvist gemning uden at udlevere private oplysninger. Den nye kilde er lokalt prøvet; faktisk fejlårsag og sikker offentlig levering afventer.
+
+En beregning og en færdig hjemmesidepakke er ikke en offentlig levering. Genoptagelsesbeviset skal være gemt og kontrolleret før aktivering. Ved en afvist upload registrerer den afgrænsede kildeforberedelse faktisk HTTP-status, en fast tilladt fejlkategori og pakkens tilbudte størrelse. Tilbudte bytes er ikke bevis for afsendelse, modtagelse eller holdbar gemning. Privat fejltekst, objektstier, headers, nøgler, brugerdata og strømværdier bliver ikke logget.
+
+En historisk fejlaflæsning er låst til den konkrete upload og et kort tidsrum, højst én skrivefri forespørgsel og faste svargrænser. Ukendt eller tomt svar betyder ikke, at fejlen er væk. Uændret kode mellem en vellykket og en fejlet kørsel afgør ikke i sig selv, om leverandøren afviste størrelse, kvote, adgang eller et eksisterende objekt.
+
+Immutable gemning, normale genforsøg, efterfølgende indholds-/readbackkontrol og atomisk aktivering bevares; større grænser, overskrivning eller en ny vejrhentning følger ikke automatisk af en diagnose. Kilden er lokalt prøvet, men faktisk leverandørårsag, præcis kildekontrol og kontrolleret offentlig genoptagelse er endnu åbne. Dette ændrer ikke strømfortolkning, modelbindinger, scoreformel eller gemt historik og bliver ikke assistentens offentlige spørgsmål/svar-viden.
+
 ## 89.219 Kontofunktioner og assistentsvar leveres som en samlet kontrolleret ændring
 
 Konto-vinduets allerede viste turhistorik følger nu den samme konto- og dialoglevetid som den ventende læsning: logout, en ny loginidentitet, udløbet session, lukning eller tilbage-navigation fjerner den gamle visning. Gyldig fornyelse af samme login bevares; et forsinket svar kan ikke vise gamle ture igen eller hente en anden kontos historik. Den snævre UI-rettelse ændrer ingen gemte ture, bindingshashes eller SQL. De 52 normale ejerskabs-/præferenceprøver, herunder ti historikforløb, består lokalt; offentlig afprøvning afventer levering.

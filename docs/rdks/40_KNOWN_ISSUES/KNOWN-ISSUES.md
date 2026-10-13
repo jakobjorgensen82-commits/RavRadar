@@ -1,3 +1,14 @@
+# 4.0.576 – afgrænset uploaddiagnostik, 2026-10-13
+
+Den almindelige vejrhentning afsluttede beregning, gemning, datakontroller og klargøring af hjemmesidepakken, men et afvist Supabase-svar ved gemning af genoptagelsesbeviset stoppede leveringen før aktivering og Pages. De allerede gyldige offentlige data bevares. En ny lokal kilderettelse bevarer nu faktisk HTTP-status, en fast tilladt fejlkode og den tilbudte pakkestørrelse ved netop dette afviste svar. Tilbudte bytes er ikke bevis for afsendelse, modtagelse eller holdbar gemning. Rå fejltekst, objektstier, headers, nøgler, brugerdata og strømværdier logges ikke.
+
+Den nye faste, skrivefri operation `fixed-storage-upload-log-read-20261013` undersøger alene uploaden af genoptagelsesbeviset den 13. oktober kl. 21.27.08–21.27.19 dansk tid. Den bruger de eksisterende repository-, main-, første-forsøg-, kildebevis- og friske writer-fri kontroller samt højst én GET, ti sekunder, 32 KiB og færre end otte resultatrækker. Historiske læsere og deres intervaller bevares. Kun registreret HTTP-status og faste fejlkategorier returneres; tomt svar eller formatfejl er ikke en frikendelse. Ejerens nye præcise tilladelse er endnu ubrugt.
+
+Den faktisk integrerede uploadrettelse består det normale lokale uploadmål og de seks eksisterende krops-/genforsøgsforløb. Eksakt GitHub-kildekontrol, faktisk hosted årsag og sikker offentlig genoptagelse er endnu ikke dokumenteret. Der ændres ikke på immutable gemning, genforsøg, duplicate-kontrol, efterfølgende SHA-/readback-/CAS-kontroller, bytegrænser, modelbindinger, scoreformel, originaler, historik, administratorpunkter eller geometri. R2, kvote, MIME og størrelsesvækst er ikke beviste årsager.
+
+Alle fem hovedmål og fristen 18. oktober består. Ejerens nyeste mål tillader nu nødvendige tilsvarende diagnoser og driftsændringer; sikkerheds-, databevarelses- og kontrollerede leveringsgrænser gælder fortsat. Der er ikke udført en ny vejrhentning, cronændring, installation eller offentlig levering som følge af denne kildeforberedelse. Den isolerede numeriske strømovergang og den samlede SOURCE-revision forbliver særskilte. Detaljeret privat driftsevidens er ikke offentlig assistentviden. Ældre daterede statusafsnit nedenfor er historik på de præcist erstattede punkter.
+
+
 # 4.0.576 – ny fast, skrivefri assistentkontrol, 2026-10-13
 
 Kildeklargøringen er nu tilpasset den leverede main `a7741ebb41812ec7cb7076050f3537936f10d9a0`. PR #587 er leveret gennem det kontrollerede rettelsesdeploy `38391450805`, som er afsluttet med succes. Den eksisterende omkostningsrettelse, alle 69 DMI-testmetoder og deres dokumentation bevares uændret. Dette er ikke en ny DMI-generation, målt effekt ved en ny behandlingsfejl eller AI-årsagsbevis. Det tidligere 289-baserede udkast bevares separat; de ældre afsnits forberedelsesstatus er historik på det konkret leverede punkt.

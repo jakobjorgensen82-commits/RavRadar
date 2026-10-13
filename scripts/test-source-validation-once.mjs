@@ -171,4 +171,19 @@ assert.equal(fixedSourceWorkflow.split(normalFixedTarget).length-1,1);
 assert.ok(fixedSourceWorkflow.includes('run: npm run validate:source && '+normalFixedTarget),
   'The required normal Source step must run the synthetic reader target only after the existing source gate succeeds.');
 
+// New Storage read is a fourth separately scoped fixed reader, never a write job.
+const storageOperation='fixed-storage-upload-log-read-20261013';
+for(const[name,job]of fixedJobs)assert.equal(operationAllows(job,storageOperation),name==='read-fixed-supabase-metadata');
+const storageReadStep="      - name: Read the one fixed 13 October Storage upload-log interval\n        if: inputs.operation == 'fixed-storage-upload-log-read-20261013'\n        timeout-minutes: 1\n        run: node scripts/read-fixed-storage-upload-log-20261013.mjs\n        env:\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n\n";
+assert.equal(fixedReadJob.split(storageReadStep).length,2);
+assert.ok(fixedReadJob.indexOf('Require genuinely fresh idle main')<fixedReadJob.indexOf(storageReadStep));
+assert.equal((fixedReadJob.match(/SUPABASE_ACCESS_TOKEN:/g)||[]).length,4);
+const storageRemovedJob=fixedReadJob.replace(storageReadStep,'');
+assert.equal((storageRemovedJob.match(/SUPABASE_ACCESS_TOKEN:/g)||[]).length,3);
+for(const oldRead of ['read-typed-trip-catalog.mjs','read-fixed-public-rate-log-20261012.mjs','read-fixed-public-rate-log-20261013.mjs'])
+  assert.equal(storageRemovedJob.split('node scripts/'+oldRead).length,2);
+assert.equal(fixedSourceWorkflow.split('node scripts/test-fixed-storage-upload-log-20261013.mjs').length,2);
+assert.ok(fixedSourceWorkflow.includes('run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs'));
+assert.doesNotMatch(fixedReadJob,/supabase db push|functions deploy|wrangler|upload-artifact|cache\/save|SUPABASE_DB_PASSWORD|SUPABASE_SERVICE_ROLE_KEY/);
+
 console.log(`Source validation: ${calls.length} direkte produktionskritiske kommandoer, samlet fejlrapport og ingen bred release-/historiksuite; ny fast loglæsning bruger alene det beskyttede læsejob.`);

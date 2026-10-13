@@ -2,8 +2,14 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.576",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-10-12",
+  "updatedAt": "2026-10-13",
   "sections": [
+    {
+      "id": "protected-upload-response-diagnostic-2026-10-13",
+      "chapter": "89.220",
+      "title": "Afvist gemning skal give præcise, private kontroloplysninger",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Driftskontrollen skal kunne forklare en afvist gemning uden at udlevere private oplysninger. Den nye kilde er lokalt prøvet; faktisk fejlårsag og sikker offentlig levering afventer.</div><p>En beregning og en færdig hjemmesidepakke er ikke en offentlig levering. Genoptagelsesbeviset skal være gemt og kontrolleret før aktivering. Ved en afvist upload registrerer den afgrænsede kildeforberedelse faktisk HTTP-status, en fast tilladt fejlkategori og pakkens tilbudte størrelse. Tilbudte bytes er ikke bevis for afsendelse, modtagelse eller holdbar gemning. Privat fejltekst, objektstier, headers, nøgler, brugerdata og strømværdier bliver ikke logget.</p><p>En historisk fejlaflæsning er låst til den konkrete upload og et kort tidsrum, højst én skrivefri forespørgsel og faste svargrænser. Ukendt eller tomt svar betyder ikke, at fejlen er væk. Uændret kode mellem en vellykket og en fejlet kørsel afgør ikke i sig selv, om leverandøren afviste størrelse, kvote, adgang eller et eksisterende objekt.</p><p>Immutable gemning, normale genforsøg, efterfølgende indholds-/readbackkontrol og atomisk aktivering bevares; større grænser, overskrivning eller en ny vejrhentning følger ikke automatisk af en diagnose. Kilden er lokalt prøvet, men faktisk leverandørårsag, præcis kildekontrol og kontrolleret offentlig genoptagelse er endnu åbne. Dette ændrer ikke strømfortolkning, modelbindinger, scoreformel eller gemt historik og bliver ikke assistentens offentlige spørgsmål/svar-viden.</p>"
+    },
     {
       "id": "account-assistant-source-successor-2026-10-13",
       "chapter": "89.219",
