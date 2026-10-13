@@ -1,3 +1,12 @@
+## Lokal turlagring: afværg forsinket genindsættelse — 13. oktober 2026
+
+Den forberedte Worker kontrollerer samme databasedels slettemarkør ved indsættelse og opretter alle ti markører før fysisk sletning. En forsinket indsættelse fra den genuine gamle Worker kræver også et databaseværn; derfor er en særskilt, som udgangspunkt fravalgt 003-installationsvej forberedt. Den kontrollerer alle ti eksisterende EU-databaser, 001/002-schema, den eksisterende Worker-version, bindingskort og eksakt triggerdefinition før den første mulige ændring. Kun en manglende, navngiven INSERT-trigger må tilføjes. Den opretter ingen databaser, opdaterer ingen Worker/Edge, og udfører ingen automatisk reparation eller gentagelse.
+
+Den normale målfil registrerede 400 prøver: 399 bestod, ingen fejlede, og én Linux-specifik prøve er udtrykkeligt udeladt på Windows. Fysiske SQLite-prøver omfatter den gamle Workers tilbageholdte indsættelse, alle ti databasekvitteringer, 15 ugyldige kvitteringer og fem stopforløb. Testens workflowfortolker følger nu GitHubs implicitte `success()` for almindelige betingelser; tidligere negative forløb bevares.
+
+Dette er lokal kildeintegration, ikke hosted D1-installation, udført kontosletning, fysisk dræning af gamle requests eller Auth-/backup-sletning. Kvitteringen angiver udtrykkeligt disse grænser. Automatisk inaktivitetsvarsling, login-redning, anonym statistik og backupfristen er fortsat åbne. En særskilt præcis installations-/Worker-tilladelse og den normale kildekontrol mangler. Modelbindinger, gamle SQL-filer, geometri og eksisterende ture er ikke ændret. Alle fem hovedmål er åbne.
+
+
 # 4.0.576 – forberedt driftsopfølgning: tidsforbrug ved behandlingsfejl, 2026-10-13
 
 Den offentlige 4.0.576-levering er faktisk afsluttet den 13. oktober kl. 05.37 dansk tid: 21310000-migrationen er installeret og genlæst, og de tre eksisterende Edge-funktioner ravradar-assistant, trip-log og submit-observation er opdateret. Databevarelseskontrollen, gemning, central publicering og Pages bestod i dette forløb. Den afgrænsede installationstilladelse er forbrugt. D1- og Worker-trin blev sprunget over og er ikke bevis for en ny installation. Ældre afsnits afventende leveringsstatus og ubrugte tilladelse er historik på disse punkter; ingen ny installation eller gentagelse følger heraf. Efter lokal integration på den leverede main-førside består den ene nye normale kalderprøve med fire kontrollerede forløb. Hele målfilens 69 prøver, præcis ny kilde-head i CI, native stop og offentlig effekt er endnu ikke verificeret.
