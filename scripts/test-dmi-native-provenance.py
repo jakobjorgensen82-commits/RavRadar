@@ -2063,14 +2063,43 @@ try:
             5: "wind-tail-v-10m",
         }
         producer.classify_parameter = lambda gid, _collection: parameters[gid]
+        # Synthetic lookup rows must obey the SAME normal node/frame contract.
+        # They are not decoder/provider evidence. Derive both digests and the
+        # returned coordinate from one finite header, never an accept marker.
+        metadata_definition = ("regular_ll", 32, 2, 64, 1., 1.93, 1.01, 2.24, .01, .01)
+        farther_metadata_definition = ("regular_ll", 32, 2, 64, 1., 1.70, 1.01, 2.01, .01, .01)
+
+        def qualified_metadata_candidate(point, index, definition=metadata_definition):
+            assert isinstance(index, int) and not isinstance(index, bool) and 0 <= index < 64
+            latitude = float(point["latitude"])
+            longitude = float(point["longitude"])
+            section = producer.hashlib.md5(producer.json.dumps(definition,
+                separators=(",", ":")).encode("utf-8")).hexdigest()
+            signature = (section, *definition)
+            geometry = producer.dkss_grib1_header_geometry(signature, 64)
+            selected = producer.dkss_header_grid_point(geometry, index)
+            assert abs(selected["lat"] - latitude) < 1e-12
+            assert abs(selected["lon"] - longitude) < 1e-12
+            return {**point, "index": selected["index"],
+                "latitude": selected["lat"], "longitude": selected["lon"],
+                "distanceKm": producer.haversine_km(zone["lat"], zone["lon"],
+                    selected["lat"], selected["lon"]),
+                "gridDefinitionSha256": producer.grid_definition_sha256_from_signature(definition),
+                "_gridIndexIdentity": producer.grid_index_identity_sha256_from_cache(signature),
+                "_gridCoordinateInterpretation": "dmi-dkss-grib1-header-endpoints-v1"}
+
+        grid_metadata_candidate = qualified_metadata_candidate(candidate, 7)
+        expected_grid_definition = grid_metadata_candidate["gridDefinitionSha256"]
+        assert isinstance(expected_grid_definition, str) and len(expected_grid_definition) == 64
+        assert producer.candidate_node_key(grid_metadata_candidate) is not None
         producer.valid_candidates_batch = lambda _gid, _collection, wanted: {
-            item["id"]: [dict(candidate, index=7)] for item in wanted
+            item["id"]: [dict(grid_metadata_candidate)] for item in wanted
         }
         producer.nearest_valid_batch = lambda _gid, _collection, wanted: {
-            item["id"]: dict(candidate, index=7, _candidateCount=4)
+            item["id"]: dict(grid_metadata_candidate, _candidateCount=4)
             for item in wanted
         }
-        producer.nearest_candidates = lambda *_args, **_kwargs: [dict(candidate, index=7)]
+        producer.nearest_candidates = lambda *_args, **_kwargs: [dict(grid_metadata_candidate)]
         producer.should_stop_work = lambda: False
         # Native component admission now requires an original STAC asset
         # identity. Keep this grid-metadata test on the real proved path.
@@ -2095,8 +2124,8 @@ try:
             {},
         )
         grid_points = output["zones"][zone["id"]]["gridPoints"]
-        assert grid_points["current-u"]["gridDefinitionSha256"] == "a" * 64
-        assert grid_points["sea-mean-deviation"]["gridDefinitionSha256"] == "a" * 64
+        assert grid_points["current-u"]["gridDefinitionSha256"] == expected_grid_definition
+        assert grid_points["sea-mean-deviation"]["gridDefinitionSha256"] == expected_grid_definition
         assert all("_candidateCount" not in point for point in grid_points.values())
         hour = output["zones"][zone["id"]]["hourly"][valid_time]
         assert "current-u" in hour and "sea-mean-deviation" in hour
@@ -2140,7 +2169,7 @@ try:
         # must not be labelled unavailable merely because an already selected
         # DMI collection remains the closer global winner.
         losing_candidate = {
-            **candidate,
+            **grid_metadata_candidate,
             "longitude": 2.02,
             "distanceKm": 1.0,
             "index": 9,
@@ -2151,7 +2180,7 @@ try:
             valid_time,
             component="current",
             zone=zone,
-            grid_candidate=candidate,
+            grid_candidate=grid_metadata_candidate,
             capture=capture,
             spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
             verticalLayer="depthBelowSea:1",
@@ -2167,7 +2196,7 @@ try:
             12: "current-v",
         }[gid]
         producer.valid_candidates_batch = lambda _gid, _collection, wanted: {
-            item["id"]: [dict(losing_candidate)] for item in wanted
+            item["id"]: [qualified_metadata_candidate(losing_candidate, 9)] for item in wanted
         }
         losing_output = {
             "generatedAt": "2026-01-01T02:00:00Z",
@@ -2241,7 +2270,7 @@ try:
         assert unchanged_after_a["sources"]["current"] == existing_source
 
         farther_candidate = {
-            **candidate,
+            **grid_metadata_candidate,
             "longitude": 2.01,
             "distanceKm": producer.haversine_km(1.0, 2.0, 1.0, 2.01),
             "index": 31,
@@ -2253,7 +2282,7 @@ try:
             32: "current-v",
         }[gid]
         producer.valid_candidates_batch = lambda _gid, _collection, wanted: {
-            item["id"]: [dict(farther_candidate)] for item in wanted
+            item["id"]: [qualified_metadata_candidate(farther_candidate, 31, farther_metadata_definition)] for item in wanted
         }
         producer.raw_cache_source_capture = lambda *_args: {
             **capture,
