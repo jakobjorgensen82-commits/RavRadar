@@ -22,8 +22,10 @@ const fixtures=[
     {topType:'STRING',keyProfile:'NOT_OBJECT',resultType:'ABSENT',errorType:'ABSENT'}],
   ['result-absent',()=>new Response(JSON.stringify({error:null}),{status:200}),'LOG_ENVELOPE_SHAPE',null,
     {topType:'OBJECT',keyProfile:'ERROR_ONLY',resultType:'ABSENT',errorType:'NULL'}],
-  ['error-absent',()=>new Response(JSON.stringify({result:[]}),{status:200}),'LOG_ENVELOPE_SHAPE',null,
+  ['error-absent',()=>new Response(JSON.stringify({result:[]}),{status:200}),'NO_MATCHING_RECORDED_EVENTS',0,
     {topType:'OBJECT',keyProfile:'RESULT_ONLY',resultType:'ARRAY',errorType:'ABSENT'}],
+  ['optional-error-recorded',()=>new Response(JSON.stringify({result:[sample]}),{status:200}),'RECORDED_CATEGORIES',1],
+  ['optional-error-row-extra',()=>new Response(JSON.stringify({result:[{...sample,PRIVATE_RAW_KEY:'PRIVATE_RAW_BODY'}]}),{status:200}),'LOG_ROW_SHAPE',null],
   ['pair-plus-extra',()=>new Response(JSON.stringify({result:[],error:null,PRIVATE_RAW_KEY:'PRIVATE_RAW_BODY'}),{status:200}),'LOG_ENVELOPE_SHAPE',null,
     {topType:'OBJECT',keyProfile:'PAIR_WITH_EXTRAS',resultType:'ARRAY',errorType:'NULL'}],
   ['other-fields',()=>new Response(JSON.stringify({data:[],PRIVATE_RAW_KEY:'PRIVATE_RAW_BODY'}),{status:200}),'LOG_ENVELOPE_SHAPE',null,
@@ -74,6 +76,7 @@ try {
     };
     const report=await module.readFixedPublicRateLog20261013();
     assert.equal(report.requestStatus,expected,label);assert.equal(report.rowCount,rowCount,label);
+    if (label === 'optional-error-recorded') assert.deepEqual(report.pairs,[sample]);
     if (diagnostic) {
       assert.equal(typeof module.fixedLogEnvelopeDiagnostic20261013,'function',
         'Shape rejection must retain only a safe structural diagnosis, never guess acceptance');

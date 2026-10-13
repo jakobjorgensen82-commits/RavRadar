@@ -1,3 +1,12 @@
+## Dokumenteret rettelse: logsvarets fejlfelt er valgfrit — 13. oktober 2026
+
+Den officielle, tokenfri Supabase OpenAPI-kontrakt gør HTTP 200-svarets `error`-felt valgfrit. Læserens tidligere krav om præcis både `result` og `error` var derfor en konkret overstramning. Den minimale rettelse tillader nu også præcis `result` alene, når den uændrede normale array-/række-/status-/fejlkodevalidering består. Manglende resultat, ekstra felter, ugyldigt eksplicit fejlfelt, delvise eller ukendte rækker og de tidligere grænser afvises fortsat.
+
+Den faktisk integrerede normale offline-målfil består 33 tilfælde, inklusive alle 23 oprindelige, et konkret udfyldt result-only-svar og afvisning af en ekstra privat rækkeegenskab. Ingen ekstern netforespørgsel eller gentagelse udføres i prøven. Hele gamle parser- og forbrugsgrænser, ni-felters rapport, sikker formdiagnose, gamle læser, workflow, SQL og modelbindinger bevares.
+
+Dette retter en dokumenteret lokal læsefejl. Den faktisk tidligere kasserede private svarform og assistentens 503-årsag er endnu ikke kendt. Begge tidligere læsetilladelser er forbrugt; enhver ny hosted loglæsning kræver en ny præcis tilladelse efter kildekontrol og writer-fri kontrol. Ingen ny produktionslæsning, installation eller vejrhentning er udført. Alle fem hovedmål er fortsat åbne.
+
+
 ## Afgrænset formdiagnose efter forbrugt assistentlæsning — 13. oktober 2026
 
 Den ene godkendte 13. oktober-logforespørgsel og den særskilte ene joblog er forbrugt. HTTP 200 blev modtaget, men det private svar bestod ikke den strenge envelope-kontrol. Supabases dokumenterede `result`/`error`-format er ikke grundlag for at acceptere et ukendt faktisk svar. Rate-limit-fejlkoden, den konkrete 503-årsag og fungerende ekstern AI er fortsat uafklarede.

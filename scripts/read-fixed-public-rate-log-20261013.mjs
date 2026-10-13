@@ -156,9 +156,13 @@ function validateResult(bytes) {
   try { envelope = JSON.parse(text); }
   catch { fail('LOG_JSON_INVALID'); }
   rememberEnvelopeDiagnostic(envelope);
-  if (!exactKeys(envelope, ['result', 'error'])) fail('LOG_ENVELOPE_SHAPE');
-  if (envelope.error !== null && typeof envelope.error !== 'string') fail('LOG_ERROR_FIELD_TYPE');
-  if (envelope.error !== null && envelope.error !== '') fail('LOG_QUERY_ERROR');
+  // The public OpenAPI AnalyticsResponse_Output does not require error.
+  // Accept only exact result-only as well; an absent error means none reported.
+  if (!exactKeys(envelope, ['result', 'error'])
+      && !exactKeys(envelope, ['result'])) fail('LOG_ENVELOPE_SHAPE');
+  const queryError = Object.hasOwn(envelope, 'error') ? envelope.error : null;
+  if (queryError !== null && typeof queryError !== 'string') fail('LOG_ERROR_FIELD_TYPE');
+  if (queryError !== null && queryError !== '') fail('LOG_QUERY_ERROR');
   if (!Array.isArray(envelope.result)) fail('LOG_RESULT_TYPE');
   if (envelope.result.length >= MAX_ROWS) fail('LOG_ROW_CAP_REACHED');
   const pairs = [],seen = new Set();
