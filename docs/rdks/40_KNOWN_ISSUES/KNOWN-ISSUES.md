@@ -1,5 +1,7 @@
 # Lokal strømrettelse – afgrænset kildeforberedelse, 2026-10-13
 
+Første kildekontrol på strømrettelsen stoppede i den historiske native-prøve, som krævede, at nye korrigerede DKSS-koordinater var identiske med ecCodes' rå koordinatarray. Limfjordsprøven påviser netop den gamle afrundingsforskel. Den normale måltest kontrollerer nu hvert valgt originalindeks, den uændrede native værdi og en uafhængig koordinatberegning fra originalheaderens grænser; den oprindelige diagnoses rå ecCodes-sammenligning og samtlige forskelsmålinger bevares. Intet produktionsfilter, decoderkrav eller toleranceniveau er lempet. Den rettede native-prøve og hele den præcise kildekontrol skal stadig bestå i Linux; dette er ikke endnu et native- eller produktionsbevis.
+
 Åbent: den nye samlede current-only-kæde mangler faktisk native-/national kontrol og offentlig eftermåling. En leveret landkontrol for pile er ikke bevis for strømdata eller score. Tidligere fejl i bredere scalar-/mixed-scope-prøver bevares som evidens og må ikke skjules ved at kalde den afgrænsede kandidat grøn.
 
 Originalkontrollen skal afvise blandede I/C/T-familier og samme-generation-erstatning med andre, ellers gyldige tal før kloning og ved relevant sidste kopikontrol. Hele aktuelle B/S skal bevares, også hvis det private kontrolarkiv allerede indeholder et ældre første originalpar.

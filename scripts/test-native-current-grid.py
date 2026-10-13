@@ -633,21 +633,60 @@ esac
                                            ('scanningMode', 64), ('dataDate', 20261009), ('dataTime', 0), ('stepRange', '120'),
                                            ('indicatorOfParameter', 49)]:
                             eccodes.codes_set(gid, key, value)
-                        eccodes.codes_set_values(gid, [.2] * (ni * nj))
+                        eccodes.codes_set_values(gid, [.2 + (index % 97) / 1000
+                                                     for index in range(ni * nj)])
                         producer.GRID_INDEX_CACHE.clear()
                         report = audit.field_report(gid, collection, eccodes, producer)
                         self.assertGreater(report['candidateChecks'], 0)
                         self.assertEqual(report['nativeValidPoints'], ni * nj)
-                        for name in ('candidateIndexMismatches', 'candidateCoordinateMismatches', 'candidateValueMismatches'):
+                        for name in ('candidateIndexMismatches', 'candidateValueMismatches'):
                             self.assertEqual(report[name], 0)
+                        # The corrected current placement must follow the ORIGINAL
+                        # header extents, not reproduce ecCodes' rounded-step LF
+                        # latitude error. Keep the diagnostic's raw native-array
+                        # comparison unchanged and check every selected index,
+                        # coordinate and decoded value with an independent oracle.
+                        native_latitudes = eccodes.codes_get_array(gid, 'latitudes')
+                        native_longitudes = eccodes.codes_get_array(gid, 'longitudes')
+                        native_values = eccodes.codes_get_array(gid, 'values')
+                        header_lat_first = float(eccodes.codes_get(gid, 'latitudeOfFirstGridPointInDegrees'))
+                        header_lat_last = float(eccodes.codes_get(gid, 'latitudeOfLastGridPointInDegrees'))
+                        header_lon_first = float(eccodes.codes_get(gid, 'longitudeOfFirstGridPointInDegrees'))
+                        header_lon_last = float(eccodes.codes_get(gid, 'longitudeOfLastGridPointInDegrees'))
+                        probes = [dict(id=f'AUDIT::{r}::{c}',
+                                       coastType='limfjord' if collection == 'dkss_lf' else 'east',
+                                       lat=first_lat + r * (last_lat-first_lat),
+                                       lon=audit.longitude(first_lon) + c * (audit.longitude(last_lon)-audit.longitude(first_lon)))
+                                  for r in (0.2, 0.5, 0.8) for c in (0.2, 0.5, 0.8)]
+                        checked = native_coordinate_differences = 0
+                        for rows in producer.valid_candidates_batch(gid, collection, probes).values():
+                            for candidate in rows:
+                                index = candidate['index']
+                                self.assertIs(type(index), int)
+                                self.assertTrue(0 <= index < ni * nj)
+                                row, column = divmod(index, ni)
+                                expected_latitude = header_lat_first + row * (header_lat_last-header_lat_first) / (nj-1)
+                                expected_longitude = audit.longitude(header_lon_first + column * ((header_lon_last-header_lon_first) % 360.) / (ni-1))
+                                self.assertAlmostEqual(candidate['latitude'], expected_latitude, places=9)
+                                self.assertAlmostEqual(audit.longitude(candidate['longitude']), expected_longitude, places=9)
+                                self.assertEqual(candidate['value'], float(native_values[index]))
+                                self.assertEqual(candidate['_gridCoordinateInterpretation'], 'dmi-dkss-grib1-header-endpoints-v1')
+                                native_coordinate_differences += (
+                                    abs(candidate['latitude'] - float(native_latitudes[index])) > 1e-9
+                                    or abs(audit.longitude(candidate['longitude']) - audit.longitude(native_longitudes[index])) > 1e-9)
+                                checked += 1
+                        self.assertEqual(checked, report['candidateChecks'])
+                        self.assertEqual(native_coordinate_differences, report['candidateCoordinateMismatches'])
                         self.assertLess(report['maximumLongitudeVsEndpointDegrees'], 1e-9)
                         if collection == 'dkss_lf':
+                            self.assertGreater(native_coordinate_differences, 0)
                             self.assertEqual(report['nativePointsOutsideDeclaredLatitudeBounds'], 64 * ni)
                             self.assertEqual(report['validPointsOutsideDeclaredLatitudeBounds'], 64 * ni)
                             self.assertGreater(report['candidatesWithLatitudeDifference'], 0)
                             self.assertGreater(report['maximumCandidateLatitudeVsEndpointDegrees'], .01)
                             self.assertAlmostEqual(report['maximumLatitudeVsEndpointDegrees'], .1296658097686375)
                         else:
+                            self.assertEqual(native_coordinate_differences, 0)
                             self.assertEqual(report['nativePointsOutsideDeclaredLatitudeBounds'], 0)
                             self.assertLess(report['maximumLatitudeVsEndpointDegrees'], 1e-9)
                     finally:
