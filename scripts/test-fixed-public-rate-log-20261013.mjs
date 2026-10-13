@@ -13,6 +13,23 @@ const fixtures=[
   ['unknown-recorded',()=>valid([{status:null,error_code:'NOT_RECORDED'},{status:503,error_code:'UNRECOGNIZED_CODE'}]),'RECORDED_CATEGORIES',2],
   ['utf8',()=>new Response(Uint8Array.from([0xff]),{status:200}),'LOG_UTF8_INVALID',null],
   ['json',()=>new Response('{PRIVATE_RAW_INVALID',{status:200}),'LOG_JSON_INVALID',null],
+
+  ['array-envelope',()=>new Response('[]',{status:200}),'LOG_ENVELOPE_SHAPE',null,
+    {topType:'ARRAY',keyProfile:'NOT_OBJECT',resultType:'ABSENT',errorType:'ABSENT'}],
+  ['null-envelope',()=>new Response('null',{status:200}),'LOG_ENVELOPE_SHAPE',null,
+    {topType:'NULL',keyProfile:'NOT_OBJECT',resultType:'ABSENT',errorType:'ABSENT'}],
+  ['string-envelope',()=>new Response(JSON.stringify('PRIVATE_RAW_BODY'),{status:200}),'LOG_ENVELOPE_SHAPE',null,
+    {topType:'STRING',keyProfile:'NOT_OBJECT',resultType:'ABSENT',errorType:'ABSENT'}],
+  ['result-absent',()=>new Response(JSON.stringify({error:null}),{status:200}),'LOG_ENVELOPE_SHAPE',null,
+    {topType:'OBJECT',keyProfile:'ERROR_ONLY',resultType:'ABSENT',errorType:'NULL'}],
+  ['error-absent',()=>new Response(JSON.stringify({result:[]}),{status:200}),'LOG_ENVELOPE_SHAPE',null,
+    {topType:'OBJECT',keyProfile:'RESULT_ONLY',resultType:'ARRAY',errorType:'ABSENT'}],
+  ['pair-plus-extra',()=>new Response(JSON.stringify({result:[],error:null,PRIVATE_RAW_KEY:'PRIVATE_RAW_BODY'}),{status:200}),'LOG_ENVELOPE_SHAPE',null,
+    {topType:'OBJECT',keyProfile:'PAIR_WITH_EXTRAS',resultType:'ARRAY',errorType:'NULL'}],
+  ['other-fields',()=>new Response(JSON.stringify({data:[],PRIVATE_RAW_KEY:'PRIVATE_RAW_BODY'}),{status:200}),'LOG_ENVELOPE_SHAPE',null,
+    {topType:'OBJECT',keyProfile:'OTHER_FIELDS_ONLY',resultType:'ABSENT',errorType:'ABSENT'}],
+  ['empty-object',()=>new Response('{}',{status:200}),'LOG_ENVELOPE_SHAPE',null,
+    {topType:'OBJECT',keyProfile:'EMPTY_OBJECT',resultType:'ABSENT',errorType:'ABSENT'}],
   ['envelope',()=>new Response(JSON.stringify({data:[],error:null,PRIVATE_RAW_KEY:'PRIVATE_RAW_BODY'}),{status:200}),'LOG_ENVELOPE_SHAPE',null],
   ['error-type',()=>new Response(JSON.stringify({result:[],error:{PRIVATE_RAW_KEY:'PRIVATE_RAW_BODY'}}),{status:200}),'LOG_ERROR_FIELD_TYPE',null],
   ['query-error',()=>new Response(JSON.stringify({result:[],error:'PRIVATE_RAW_QUERY_ERROR'}),{status:200}),'LOG_QUERY_ERROR',null],
@@ -34,7 +51,7 @@ const fixtures=[
 ];
 let totalRequests=0;
 try {
-  for(const[label,response,expected,rowCount]of fixtures) {
+  for(const[label,response,expected,rowCount,diagnostic]of fixtures) {
     const module=await import('./read-fixed-public-rate-log-20261013.mjs?offline_fixed_case='+label);
     let requests=0;
     globalThis.fetch=async(url,init)=>{
@@ -57,6 +74,18 @@ try {
     };
     const report=await module.readFixedPublicRateLog20261013();
     assert.equal(report.requestStatus,expected,label);assert.equal(report.rowCount,rowCount,label);
+    if (diagnostic) {
+      assert.equal(typeof module.fixedLogEnvelopeDiagnostic20261013,'function',
+        'Shape rejection must retain only a safe structural diagnosis, never guess acceptance');
+      const actual=module.fixedLogEnvelopeDiagnostic20261013();
+      assert.deepEqual(actual,diagnostic,label);assert.equal(Object.isFrozen(actual),true);
+      assert.doesNotMatch(JSON.stringify(actual),/PRIVATE_RAW|synthetic-fixed-reader|Bearer|subject_hash|query_text/);
+      const annotation=module.fixedLogEnvelopeAnnotation20261013();
+      assert.equal(annotation,'::error title=Fixed Supabase log envelope::code=LOG_ENVELOPE_SHAPE'
+        + ' top='+diagnostic.topType+' keys='+diagnostic.keyProfile
+        + ' result='+diagnostic.resultType+' error='+diagnostic.errorType);
+      assert.doesNotMatch(annotation,/PRIVATE_RAW|synthetic-fixed-reader|Bearer|subject_hash|query_text/);
+    }
     assert.equal(report.scope.sqlStart,'2026-10-13T08:41:58Z');
     assert.equal(report.scope.sqlEndExclusive,'2026-10-13T08:42:09Z');
     assert.equal(report.privatePayloadLogged,false);

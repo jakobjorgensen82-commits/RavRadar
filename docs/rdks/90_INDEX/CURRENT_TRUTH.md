@@ -1,3 +1,12 @@
+## Afgrænset formdiagnose efter forbrugt assistentlæsning — 13. oktober 2026
+
+Den ene godkendte 13. oktober-logforespørgsel og den særskilte ene joblog er forbrugt. HTTP 200 blev modtaget, men det private svar bestod ikke den strenge envelope-kontrol. Supabases dokumenterede `result`/`error`-format er ikke grundlag for at acceptere et ukendt faktisk svar. Rate-limit-fejlkoden, den konkrete 503-årsag og fungerende ekstern AI er fortsat uafklarede.
+
+Den lille læserrettelse bevarer alle tidligere afslag og den oprindelige ni-felters rapport. Kun fire faste strukturelle kategorier kan nu følge en formatfejl som GitHub-fejlannotation: topniveauets type, tilstedeværelse af de to kendte felter og deres typer. Faktiske feltnavne, værdier, rækker og rå logindhold opbevares eller udskrives ikke. Præcis projekt-/RPC-/tidsafgrænsning, ingen argumenter, én GET, ti sekunder, 32 KiB, otte-rækkers stopgrænse og ingen gentagelse bevares.
+
+Den faktisk integrerede normale offline-målfil består 31 tilfælde inklusive alle 23 tidligere og den reelle kropsfrist. Det er ikke hosted format- eller AI-årsagsbevis. Ny præcis kildekontrol og sikker kildelevering mangler; en eventuel ny Supabase-læsning kræver en ny særskilt engangstilladelse. Ingen ny forespørgsel, installation, vejrhentning eller ændring af bindinger, SQL og data er udført. Alle fem målområder er åbne.
+
+
 # 4.0.576 – ny fast, skrivefri assistentkontrol, 2026-10-13
 
 Kildeklargøringen er nu tilpasset den leverede main `a7741ebb41812ec7cb7076050f3537936f10d9a0`. PR #587 er leveret gennem det kontrollerede rettelsesdeploy `38391450805`, som er afsluttet med succes. Den eksisterende omkostningsrettelse, alle 69 DMI-testmetoder og deres dokumentation bevares uændret. Dette er ikke en ny DMI-generation, målt effekt ved en ny behandlingsfejl eller AI-årsagsbevis. Det tidligere 289-baserede udkast bevares separat; de ældre afsnits forberedelsesstatus er historik på det konkret leverede punkt.

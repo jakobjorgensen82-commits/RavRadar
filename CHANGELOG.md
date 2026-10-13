@@ -1,3 +1,12 @@
+## Afgrænset formdiagnose efter forbrugt assistentlæsning — 13. oktober 2026
+
+Den ene godkendte 13. oktober-logforespørgsel og den særskilte ene joblog er forbrugt. HTTP 200 blev modtaget, men det private svar bestod ikke den strenge envelope-kontrol. Supabases dokumenterede `result`/`error`-format er ikke grundlag for at acceptere et ukendt faktisk svar. Rate-limit-fejlkoden, den konkrete 503-årsag og fungerende ekstern AI er fortsat uafklarede.
+
+Den lille læserrettelse bevarer alle tidligere afslag og den oprindelige ni-felters rapport. Kun fire faste strukturelle kategorier kan nu følge en formatfejl som GitHub-fejlannotation: topniveauets type, tilstedeværelse af de to kendte felter og deres typer. Faktiske feltnavne, værdier, rækker og rå logindhold opbevares eller udskrives ikke. Præcis projekt-/RPC-/tidsafgrænsning, ingen argumenter, én GET, ti sekunder, 32 KiB, otte-rækkers stopgrænse og ingen gentagelse bevares.
+
+Den faktisk integrerede normale offline-målfil består 31 tilfælde inklusive alle 23 tidligere og den reelle kropsfrist. Det er ikke hosted format- eller AI-årsagsbevis. Ny præcis kildekontrol og sikker kildelevering mangler; en eventuel ny Supabase-læsning kræver en ny særskilt engangstilladelse. Ingen ny forespørgsel, installation, vejrhentning eller ændring af bindinger, SQL og data er udført. Alle fem målområder er åbne.
+
+
 # 4.0.576 – forberedt driftsopfølgning: tidsforbrug ved behandlingsfejl, 2026-10-13
 
 Den offentlige 4.0.576-levering er faktisk afsluttet den 13. oktober kl. 05.37 dansk tid: 21310000-migrationen er installeret og genlæst, og de tre eksisterende Edge-funktioner ravradar-assistant, trip-log og submit-observation er opdateret. Databevarelseskontrollen, gemning, central publicering og Pages bestod i dette forløb. Den afgrænsede installationstilladelse er forbrugt. D1- og Worker-trin blev sprunget over og er ikke bevis for en ny installation. Ældre afsnits afventende leveringsstatus og ubrugte tilladelse er historik på disse punkter; ingen ny installation eller gentagelse følger heraf. Efter lokal integration på den leverede main-førside består den ene nye normale kalderprøve med fire kontrollerede forløb. Hele målfilens 69 prøver, præcis ny kilde-head i CI, native stop og offentlig effekt er endnu ikke verificeret.
