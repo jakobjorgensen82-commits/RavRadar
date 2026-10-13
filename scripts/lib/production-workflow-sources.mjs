@@ -40,11 +40,13 @@ export const PRODUCTION_WORKFLOW_INTERFACES = Object.freeze({
       'DMI_API_KEY',
       'RAVRADAR_R2_ACCESS_KEY_ID',
       'RAVRADAR_R2_SECRET_ACCESS_KEY',
+      'SUPABASE_ACCESS_TOKEN',
       'SUPABASE_SERVICE_ROLE_KEY',
       'SUPABASE_URL',
       'TRIP_GATEWAY_SHARED_SECRET',
     ]),
     optionalSecrets: freezeList([
+      'SUPABASE_ACCESS_TOKEN',
       'RAVRADAR_R2_ACCOUNT_ID',
       'RAVRADAR_R2_ACCESS_KEY_ID',
       'RAVRADAR_R2_SECRET_ACCESS_KEY',
@@ -82,7 +84,9 @@ export const PRODUCTION_WORKFLOW_INTERFACES = Object.freeze({
   }),
   deploy: Object.freeze({
     jobId: 'deploy-pages',
+    optionalInputs: freezeList(['pre_activation_recovery']),
     inputs: freezeList([
+      'pre_activation_recovery',
       'active_deployment_id',
       'central_version',
       'code_only_repair',
@@ -144,4 +148,58 @@ export function concatenateProductionWorkflowSources(
       return sources[role];
     })
     .join(separator);
+}
+
+// Routing only: this neither admits original data nor authorizes installation.
+// Database prewrite and the normal artifact/activation gates remain mandatory.
+export function deferCurrentGridBindingEdges(migrationVersion) {
+  return migrationVersion === '20261013220000';
+}
+
+export async function currentGridEdgePublicationRequired(current, action) {
+  const { LATEST_REQUIRED_CUTOVER_MIGRATION } = await import('../integrated-cutover-readiness.mjs');
+  if (!deferCurrentGridBindingEdges(LATEST_REQUIRED_CUTOVER_MIGRATION.version)) return false;
+  const { isDeepStrictEqual } = await import('node:util');
+  const { ravScoreModelBinding } = await import('../../js/core/ravscore-model-contract.js');
+  const { CURRENT_GRID_SAMPLING_PREDECESSOR_POLICY: ffc,
+    CURRENT_GRID_SAMPLING_DELIVERED_575_POLICY: delivered,
+    CURRENT_GRID_SAMPLING_SELECTED_PREDECESSOR_POLICY: selected } =
+    await import('./bounded-conditions-predecessor-transition.mjs');
+  if (isDeepStrictEqual(current?.modelBinding, ravScoreModelBinding())) return false;
+  if (![ffc, delivered, selected].some(policy =>
+    isDeepStrictEqual(current?.modelBinding, policy.sourceModelBinding))) return false;
+  if (current.model !== 'integrated' || current.status !== 'INTEGRATED_ACTIVE'
+    || current.pending !== false || action !== 'integrated-historical-maintenance') {
+    throw new Error('Current-grid late Edge publication requires the normal active historical route');
+  }
+  return true;
+}
+
+// Supplemental ordering guard over the already validated artifact, not an
+// original-data validator, SQL permission, or replacement for artifact gates.
+export async function assertCurrentGridEdgeGeneration(current, manifest, targetReference) {
+  const { default: assert } = await import('node:assert/strict');
+  const { ravScoreModelBinding } = await import('../../js/core/ravscore-model-contract.js');
+  assert.equal(await currentGridEdgePublicationRequired(current, 'integrated-historical-maintenance'), true);
+  assert.deepEqual(manifest?.ravScoreModelBinding, ravScoreModelBinding());
+  const before = Date.parse(current.productionReferenceAt);
+  const after = Date.parse(manifest.productionReferenceAt);
+  assert(Number.isFinite(before) && Number.isFinite(after) && after > before,
+    'Late current-grid Edges require a strictly newer public generation');
+  assert.equal(after, Date.parse(targetReference));
+  assert.equal(typeof manifest.datasetId, 'string');
+  assert(manifest.datasetId.length > 0 && manifest.datasetId !== current.datasetId);
+}
+
+// An uploaded artifact is an ordering prerequisite, not a completed Pages deploy
+// or an activation permission. The existing seal validator owns its schema.
+export async function assertCurrentGridEdgeArtifact(current, manifest, targetReference,
+  seal, workflowIdentity, implementationIdentity) {
+  const { default: assert } = await import('node:assert/strict');
+  const { assertUploadedOperationalPagesTarget } = await import('../ravscore-operational-pages-recovery.mjs');
+  await assertCurrentGridEdgeGeneration(current, manifest, targetReference);
+  assert.deepEqual(implementationIdentity?.modelBinding, manifest.ravScoreModelBinding);
+  return assertUploadedOperationalPagesTarget({ seal, workflowIdentity, targetManifest: manifest,
+    targetModelBinding: implementationIdentity.modelBinding,
+    implementationClosureSha256: implementationIdentity.implementationClosureSha256 });
 }

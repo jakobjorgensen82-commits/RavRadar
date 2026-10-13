@@ -1,3 +1,23 @@
+## Lokal integration af levering og genoptagelse — 13. oktober 2026
+
+Den isolerede kilde indeholder nu den gennemgåede kæde, hvor en ny strømovergang først bygger, kontrollerer og fjernforsegler sit præcise Pages-mål, før de tre eksisterende serverfunktioner opdateres. Et afbrudt forløb kan fastholde samme mål gennem en versionskontrolleret overtagelse efter den tidligere runners dokumenterede afslutning. Genoptagelsen bruger et særskilt, fast attempt-navn; den må ikke forveksles med den efterfølgende normale levering eller låne et andet datasæt.
+
+Den lokale integration fandt og rettede en reel fejl i de to nye routingkaldere: de brugte den bevidst historiske bindingsmigration i stedet for den aktuelle krævede migration. Den historiske konstant, modelbindingerne og alle oprindelige kontroller bevares. Førskrivningskontrollen for autentiske B/S-originaler, plan, frisk plan og databasegenlæsning kan ikke springes over af den særskilte udsættelse af serverfunktionerne. Efter faktisk offentlig kontrol og friske central-/pointerkontroller gendannes den præcise gamle pointerkontrakt uden at omskrive eller slette de bevarede arkiver.
+
+Alle fire berørte normale mål består lokalt på den faktisk integrerede kilde: workflow/kalderorden, terminale udfald, syv arkiv-/overtagelses-/versionskonfliktprøver og den hele syntetiske offentlige 210/673-kontrol inklusive sikker afslutning og normal genlæsning. Det tidligere workflowmål var ikke kørt i den private forberedelse; Pages- og identitetsdelprøver er ikke omdøbt til samlet integrationsbevis. Den første lokale routingfejl og den efterfølgende faktiske rettelse bevares i privat evidens.
+
+Dette er fortsat isoleret, ikke aktiveret kode. Præcis kildekontrol, relevante nye destinations-/installationsrettigheder, faktisk databevarelse og offentlig ny generation mangler. Fysisk processtop, samlet fireminuttersgrænse, fuld DMI-kapacitet og de øvrige revision-/bruger-/assistentkrav er ikke dermed lukket. Ingen historisk migration, scoreformel, geometri, administratoropsætning, cron eller produktionsdata er ændret. Alle fem hovedmål er åbne.
+
+
+## SQL-skabeloner følger den præcise syntaksrettelse — 13. oktober 2026
+
+Den nye kildekontrol stoppede før PostgreSQL, fordi den kanoniske 220-definition havde de rettede CASE-parenteser, mens de to vedligeholdte installationsskabeloner endnu manglede dem. Den normale synkroniseringskilde udpeger netop `supabase/schema.sql` og sikkerhedsinstallationsskabelonen som redigerbare forbrugere; historiske migrationsfiler afvises som skrivemål.
+
+Rettelsen tilføjer kun de samme to parenteser i hver skabelon. Begge hele genererede blokke matcher derefter den normale kanoniske kilde, og en hel inverse giver præcis den gamle skabelon tilbage. Ingen separat hash skal ommærkes: metadatafunktionen og de øvrige definitioner, håndbogstekst, kontodel, roller og indhold uden for blokken bevares. Alle 58 migrationsfiler samt modelbindinger, version, administratoropsætning og geodata er uændrede.
+
+Den normale skrivefri synkronisering og det faktiske fejlede installationskontraktmål består nu lokalt uden ændrede assertions. Ny præcis GitHub-kildekontrol inklusive rigtig PostgreSQL skal stadig bestå; dette er ingen installation eller numerisk produktionseffekt. Strømrettelsen har fortsat kun kilde-PR-autoritet. Alle fem hovedmål er åbne.
+
+
 ## Konkret SQL-syntaksrettelse i strømovergangen — 13. oktober 2026
 
 Den faktiske PostgreSQL-kildeprøve nåede den nye 220000-fase og afviste SQL med syntakskode 42601. Gennemgang af den normale builder og PostgreSQLs parser har fundet en konkret fejl: den nye SQL-CASE i ELSIF-betingelsen mangler parenteser. Den afgrænsede rettelse tilføjer kun disse to syntakstegn i builderen og den endnu ikke installerede migration; betingelser, rækkefølge, gamle validatorer, numerik, roller, no-loss og 55/5-sekunders grænser er uændrede.

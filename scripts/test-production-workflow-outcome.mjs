@@ -522,3 +522,14 @@ for (const marker of [
 }
 
 console.log('Production workflow outcome tests passed.');
+
+
+for (const action of ['PRE_ACTIVATION_RESUME','COMPLETED_PRE_ACTIVATION']) {
+  const writer=action==='PRE_ACTIVATION_RESUME'?'success':'skipped';
+  const good=withPatch(base(),{proof:{recoveryAction:action},jobs:{recoverOperationalPagesTarget:writer,finalizeOperationalPagesRecovery:'success'}});
+  expectStatus(good,'DEPLOYED','PUBLIC_DEPLOYMENT_VERIFIED');
+  for(const bad of ['failure','cancelled','skipped']) {
+    assert.equal(classifyProductionWorkflowOutcome(withPatch(good,{jobs:{finalizeOperationalPagesRecovery:bad}})).status,'FAILED');
+  }
+  assert.equal(classifyProductionWorkflowOutcome(withPatch(good,{jobs:{recoverOperationalPagesTarget:writer==='success'?'skipped':'success'}})).status,'FAILED');
+}

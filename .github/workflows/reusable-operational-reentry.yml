@@ -7,6 +7,8 @@ on:
         type: boolean
         default: false
     secrets:
+      SUPABASE_ACCESS_TOKEN:
+        required: false
       SUPABASE_URL:
         required: true
       SUPABASE_SERVICE_ROLE_KEY:
@@ -17,34 +19,34 @@ on:
         value: ${{ jobs.reconcile-operational-pending.outputs.recovery_action }}
       checkpoint_disposition:
         description: "Exact recovered checkpoint_disposition"
-        value: ${{ jobs.reconcile-operational-pending.outputs.checkpoint_disposition }}
+        value: ${{ jobs.resume-pre-activation.outputs.checkpoint_disposition || jobs.reconcile-operational-pending.outputs.checkpoint_disposition }}
       checkpoint_disposition_sha256:
         description: "Exact recovered checkpoint_disposition_sha256"
-        value: ${{ jobs.reconcile-operational-pending.outputs.checkpoint_disposition_sha256 }}
+        value: ${{ jobs.resume-pre-activation.outputs.checkpoint_disposition_sha256 || jobs.reconcile-operational-pending.outputs.checkpoint_disposition_sha256 }}
       checkpoint_dataset_id:
         description: "Exact recovered checkpoint_dataset_id"
-        value: ${{ jobs.reconcile-operational-pending.outputs.checkpoint_dataset_id }}
+        value: ${{ jobs.resume-pre-activation.outputs.checkpoint_dataset_id || jobs.reconcile-operational-pending.outputs.checkpoint_dataset_id }}
       checkpoint_runtime_audit_sha256:
         description: "Exact recovered checkpoint_runtime_audit_sha256"
-        value: ${{ jobs.reconcile-operational-pending.outputs.checkpoint_runtime_audit_sha256 }}
+        value: ${{ jobs.resume-pre-activation.outputs.checkpoint_runtime_audit_sha256 || jobs.reconcile-operational-pending.outputs.checkpoint_runtime_audit_sha256 }}
       checkpoint_build_outcome:
         description: "Exact recovered checkpoint_build_outcome"
-        value: ${{ jobs.reconcile-operational-pending.outputs.checkpoint_build_outcome }}
+        value: ${{ jobs.resume-pre-activation.outputs.checkpoint_build_outcome || jobs.reconcile-operational-pending.outputs.checkpoint_build_outcome }}
       checkpoint_save_outcome:
         description: "Exact recovered checkpoint_save_outcome"
-        value: ${{ jobs.reconcile-operational-pending.outputs.checkpoint_save_outcome }}
+        value: ${{ jobs.resume-pre-activation.outputs.checkpoint_save_outcome || jobs.reconcile-operational-pending.outputs.checkpoint_save_outcome }}
       checkpoint_publish_outcome:
         description: "Exact recovered checkpoint_publish_outcome"
-        value: ${{ jobs.reconcile-operational-pending.outputs.checkpoint_publish_outcome }}
+        value: ${{ jobs.resume-pre-activation.outputs.checkpoint_publish_outcome || jobs.reconcile-operational-pending.outputs.checkpoint_publish_outcome }}
       reconcile_result:
         description: "Terminal reconcile_result"
         value: ${{ jobs.reconcile-operational-pending.result }}
       writer_result:
         description: "Terminal writer_result"
-        value: ${{ jobs.recover-operational-pages-target.result }}
+        value: ${{ jobs.reconcile-operational-pending.outputs.recovery_action == 'PRE_ACTIVATION_RESUME' && jobs.resume-pre-activation-pages.result || jobs.recover-operational-pages-target.result }}
       finalize_result:
         description: "Terminal finalize_result"
-        value: ${{ jobs.finalize-operational-pages-recovery.result }}
+        value: ${{ (jobs.reconcile-operational-pending.outputs.recovery_action == 'PRE_ACTIVATION_RESUME' || jobs.reconcile-operational-pending.outputs.recovery_action == 'COMPLETED_PRE_ACTIVATION') && jobs.complete-pre-activation.result || jobs.finalize-operational-pages-recovery.result }}
 
 permissions:
   contents: read
@@ -66,6 +68,7 @@ jobs:
     outputs:
       recovery_action: ${{ steps.reconcile.outputs.recovery_action }}
       recovery_bundle_name: ${{ steps.reconcile.outputs.recovery_bundle_name }}
+      pre_activation: ${{ steps.reconcile.outputs.pre_activation }}
       checkpoint_disposition: ${{ steps.reconcile.outputs.checkpoint_disposition }}
       checkpoint_disposition_sha256: ${{ steps.reconcile.outputs.checkpoint_disposition_sha256 }}
       checkpoint_dataset_id: ${{ steps.reconcile.outputs.checkpoint_dataset_id }}
@@ -107,6 +110,28 @@ jobs:
             "$RAVRADAR_OPERATIONAL_WORK/target-site"
           node scripts/ravscore-operational-activation.mjs read \
             --output "$RAVRADAR_OPERATIONAL_WORK/current.json"
+          node scripts/protected-operational-reentry-evidence.mjs --inspect-pre-activation \
+            --repository "$GITHUB_REPOSITORY" --output "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json"
+          echo "pre_activation=false" >> "$GITHUB_OUTPUT"
+          if test "$(jq -r '.action' "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json")" != NONE; then
+            echo "pre_activation=true" >> "$GITHUB_OUTPUT"
+            phase_run="$(jq -er '.slot.owner.runId' "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json")"
+            phase_attempt="$(jq -er '.slot.owner.runAttempt' "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json")"
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$phase_run/attempts/$phase_attempt" \
+              > "$RAVRADAR_OPERATIONAL_WORK/pre-activation-attempt.json"
+            node scripts/protected-operational-reentry-evidence.mjs --classify-pre-activation \
+              --repository "$GITHUB_REPOSITORY" --attempt "$RAVRADAR_OPERATIONAL_WORK/pre-activation-attempt.json" \
+              --output "$RAVRADAR_OPERATIONAL_WORK/pre-activation-classification.json"
+            phase_action="$(jq -er '.action' "$RAVRADAR_OPERATIONAL_WORK/pre-activation-classification.json")"
+            case "$phase_action" in
+              PRE_ACTIVATION_RESUME|COMPLETED_PRE_ACTIVATION)
+                echo "recovery_action=$phase_action" >> "$GITHUB_OUTPUT"
+                exit 0
+                ;;
+              PENDING_PRE_ACTIVATION) : ;; # Preserve the normal pending recovery below.
+              *) echo "Unknown pre-activation disposition." >&2; exit 1 ;;
+            esac
+          fi
           if [ "$(jq -r '.pending' "$RAVRADAR_OPERATIONAL_WORK/current.json")" != "true" ]; then
             echo "No durable RavScore transition requires reconciliation."
             exit 0
@@ -114,12 +139,12 @@ jobs:
           pending_head="$(jq -r '.sourceHead' "$RAVRADAR_OPERATIONAL_WORK/current.json")"
           pending_version="$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_WORK/current.json")"
           attempt_id="$(jq -r '.deploymentId' "$RAVRADAR_OPERATIONAL_WORK/current.json")"
-          if [[ ! "$attempt_id" =~ ^pages-([0-9]+)-([0-9]+)$ ]]; then
+          if [[ ! "$attempt_id" =~ ^pages-(recovery-)?([0-9]+)-([0-9]+)$ ]]; then
             echo "Pending RavScore transition lacks a recoverable Pages attempt id." >&2
             exit 1
           fi
-          attempt_run_id="${BASH_REMATCH[1]}"
-          attempt_number="${BASH_REMATCH[2]}"
+          attempt_run_id="${BASH_REMATCH[2]}"
+          attempt_number="${BASH_REMATCH[3]}"
           set +e
           node scripts/protected-operational-reentry-evidence.mjs --restore \
             --deployment-id "$attempt_id" \
@@ -181,7 +206,8 @@ jobs:
               --argjson artifactId "$artifact_id" \
               --argjson runId "$attempt_run_id" \
               --arg headSha "$pending_head" \
-              '.id == $artifactId and .name == "github-pages" and .expired == false and .workflow_run.id == $runId and .workflow_run.head_sha == $headSha' \
+              --arg artifactName "$(jq -er '.artifactName' "$artifact_seal")" \
+              '.id == $artifactId and .name == $artifactName and .expired == false and .workflow_run.id == $runId and .workflow_run.head_sha == $headSha' \
               "$RAVRADAR_OPERATIONAL_WORK/pages-artifact-rest.json" >/dev/null; then
             artifact_available=true
           fi
@@ -230,11 +256,12 @@ jobs:
             --arg headSha "$pending_head" \
             --arg attemptId "$attempt_id" \
             --argjson artifactId "$artifact_id" \
+            --arg artifactName "$(jq -er '.artifactName' "$artifact_seal")" \
             --arg artifactDigestSha256 "$artifact_digest_sha256" \
             --argjson artifactSizeBytes "$artifact_size" \
             --arg downloadedZipSha256 "$downloaded_zip_sha256" \
             --arg checkedAt "$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)" \
-            '{schemaVersion:"ravscore-operational-pages-artifact-evidence-v1",repository:$repository,runId:$runId,runAttempt:$runAttempt,headSha:$headSha,ref:"refs/heads/main",attemptId:$attemptId,artifactId:$artifactId,artifactName:"github-pages",artifactDigestSha256:$artifactDigestSha256,artifactSizeBytes:$artifactSizeBytes,downloadedZipSha256:$downloadedZipSha256,zipHashedBeforeExtraction:true,expired:false,checkedAt:$checkedAt,privatePayloadRead:false}' \
+            '{schemaVersion:"ravscore-operational-pages-artifact-evidence-v1",repository:$repository,runId:$runId,runAttempt:$runAttempt,headSha:$headSha,ref:"refs/heads/main",attemptId:$attemptId,artifactId:$artifactId,artifactName:$artifactName,artifactDigestSha256:$artifactDigestSha256,artifactSizeBytes:$artifactSizeBytes,downloadedZipSha256:$downloadedZipSha256,zipHashedBeforeExtraction:true,expired:false,checkedAt:$checkedAt,privatePayloadRead:false}' \
             > "$RAVRADAR_OPERATIONAL_WORK/artifact-evidence.json"
 
           test "$(unzip -Z1 "$RAVRADAR_OPERATIONAL_WORK/original-pages.zip" | wc -l)" -eq 1
@@ -284,7 +311,7 @@ jobs:
             > "$RAVRADAR_OPERATIONAL_WORK/attempt-jobs.json"
           deploy_step_conclusion="$(node scripts/github-pages-attempt-evidence.mjs \
             "$RAVRADAR_OPERATIONAL_WORK/attempt-jobs.json" \
-            "$attempt_run_id" "$attempt_number" "$pending_head")"
+            "$attempt_run_id" "$attempt_number" "$pending_head" "$attempt_id")"
           terminal_status="AMBIGUOUS"
           pages_request_accepted_json="null"
           deploy_step_conclusion_json="null"
@@ -568,6 +595,13 @@ jobs:
           case "$(jq -r '.status' "$RAVRADAR_OPERATIONAL_WORK/reconciled.json")" in
             CANDIDATE_G_PENDING|INTEGRATED_PENDING) exit 1 ;;
           esac
+          if test "$recovery_action" = SAFE_SOURCE_ABORT && test "$(jq -r '.action' "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json")" != NONE; then
+            node scripts/protected-operational-reentry-evidence.mjs --classify-pre-activation \
+              --repository "$GITHUB_REPOSITORY" --attempt "$RAVRADAR_OPERATIONAL_WORK/pre-activation-attempt.json" \
+              --output "$RAVRADAR_OPERATIONAL_WORK/phase-after-source-reconcile.json"
+            recovery_action="$(jq -er '.action' "$RAVRADAR_OPERATIONAL_WORK/phase-after-source-reconcile.json")"
+            test "$recovery_action" = PRE_ACTIVATION_RESUME
+          fi
           echo "recovery_action=$recovery_action" >> "$GITHUB_OUTPUT"
 
       - name: Upload only helper-proven exact-target recovery material
@@ -1116,12 +1150,273 @@ jobs:
             CANDIDATE_G_PENDING|INTEGRATED_PENDING) exit 1 ;;
           esac
 
+  resume-pre-activation:
+    name: Resume the exact terminal pre-activation target
+    needs: reconcile-operational-pending
+    if: needs.reconcile-operational-pending.outputs.recovery_action == 'PRE_ACTIVATION_RESUME'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      central_version: ${{ steps.handoff.outputs.central_version }}
+      active_deployment_id: ${{ steps.handoff.outputs.active_deployment_id }}
+      closure_sha256: ${{ steps.handoff.outputs.closure_sha256 }}
+      checkpoint_disposition: ${{ steps.handoff.outputs.checkpoint_disposition }}
+      checkpoint_disposition_sha256: ${{ steps.handoff.outputs.checkpoint_disposition_sha256 }}
+      checkpoint_dataset_id: ${{ steps.handoff.outputs.checkpoint_dataset_id }}
+      checkpoint_runtime_audit_sha256: ${{ steps.handoff.outputs.checkpoint_runtime_audit_sha256 }}
+      checkpoint_build_outcome: ${{ steps.handoff.outputs.checkpoint_build_outcome }}
+      checkpoint_save_outcome: ${{ steps.handoff.outputs.checkpoint_save_outcome }}
+      checkpoint_publish_outcome: ${{ steps.handoff.outputs.checkpoint_publish_outcome }}
+    env:
+      RAVRADAR_OPERATIONAL_WORK: /tmp/ravradar-operational-pages-recovery
+      RAVRADAR_OPERATIONAL_HANDOFF: /tmp/ravradar-operational-handoff
+      GH_TOKEN: ${{ github.token }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Claim only the exact terminal owner and restore its sealed target
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          test "$GITHUB_REF" = refs/heads/main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          mkdir -p "$RAVRADAR_OPERATIONAL_WORK/artifact-archive" "$RAVRADAR_OPERATIONAL_WORK/target-site"
+          node scripts/protected-operational-reentry-evidence.mjs --inspect-pre-activation \
+            --repository "$GITHUB_REPOSITORY" --output "$RAVRADAR_OPERATIONAL_WORK/phase.json"
+          owner_run="$(jq -er '.slot.owner.runId' "$RAVRADAR_OPERATIONAL_WORK/phase.json")"
+          owner_attempt="$(jq -er '.slot.owner.runAttempt' "$RAVRADAR_OPERATIONAL_WORK/phase.json")"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$owner_run/attempts/$owner_attempt" \
+            > "$RAVRADAR_OPERATIONAL_WORK/owner-attempt.json"
+          node scripts/protected-operational-reentry-evidence.mjs --claim-pre-activation \
+            --repository "$GITHUB_REPOSITORY" --attempt "$RAVRADAR_OPERATIONAL_WORK/owner-attempt.json" \
+            --output "$RAVRADAR_OPERATIONAL_WORK/claimed.json"
+          node scripts/protected-operational-reentry-evidence.mjs --restore-pre-activation \
+            --repository "$GITHUB_REPOSITORY" --directory "$RAVRADAR_OPERATIONAL_HANDOFF" \
+            --output "$RAVRADAR_OPERATIONAL_WORK/restored.json"
+          node scripts/seal-ravscore-public-browser-closure.mjs --root . --model integrated \
+            --output "$RAVRADAR_OPERATIONAL_WORK/integrated-public-closure.json" \
+            --identity-output "$RAVRADAR_OPERATIONAL_WORK/integrated-implementation-identity.json"
+
+      - name: Download and verify only the previously sealed exact Pages artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          seal="$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-seal.json"
+          artifact_id="$(jq -er '.artifactId' "$seal")"
+          [[ "$artifact_id" =~ ^[1-9][0-9]*$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id" \
+            > "$RAVRADAR_OPERATIONAL_WORK/artifact-rest.json"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import {normalizeArtifactDigestSha256} from './scripts/ravscore-operational-pages-recovery.mjs';
+          const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const seal=read(process.env.RAVRADAR_OPERATIONAL_HANDOFF+'/pages-artifact-seal.json');
+          const a=read(process.env.RAVRADAR_OPERATIONAL_WORK+'/artifact-rest.json');
+          assert.equal(a.id,seal.artifactId);assert.equal(a.name,seal.artifactName);assert.equal(a.expired,false);
+          assert.equal(a.workflow_run.id,seal.runId);assert.equal(a.workflow_run.head_sha,seal.headSha);
+          assert.equal(a.size_in_bytes,seal.artifactSizeBytes);
+          assert.equal(normalizeArtifactDigestSha256(a.digest),seal.artifactDigestSha256);
+          NODE
+          curl --fail --silent --show-error --location \
+            --header "Authorization: Bearer $GH_TOKEN" --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+            --output "$RAVRADAR_OPERATIONAL_WORK/original-pages.zip"
+          test "$(stat --format='%s' "$RAVRADAR_OPERATIONAL_WORK/original-pages.zip")" = "$(jq -er '.artifactSizeBytes' "$seal")"
+          test "$(sha256sum "$RAVRADAR_OPERATIONAL_WORK/original-pages.zip" | awk '{print $1}')" = "$(jq -er '.artifactDigestSha256' "$seal")"
+          test "$(unzip -Z1 "$RAVRADAR_OPERATIONAL_WORK/original-pages.zip" | wc -l)" -eq 1
+          test "$(unzip -Z1 "$RAVRADAR_OPERATIONAL_WORK/original-pages.zip")" = artifact.tar
+          unzip -q "$RAVRADAR_OPERATIONAL_WORK/original-pages.zip" -d "$RAVRADAR_OPERATIONAL_WORK/artifact-archive"
+          test -f "$RAVRADAR_OPERATIONAL_WORK/artifact-archive/artifact.tar"
+          test ! -L "$RAVRADAR_OPERATIONAL_WORK/artifact-archive/artifact.tar"
+          python3 - "$RAVRADAR_OPERATIONAL_WORK/artifact-archive/artifact.tar" <<'PY'
+          import pathlib, sys, tarfile
+          with tarfile.open(sys.argv[1], 'r:') as archive:
+              for member in archive.getmembers():
+                  path = pathlib.PurePosixPath(member.name)
+                  if path.is_absolute() or '..' in path.parts:
+                      raise SystemExit('Unsafe path in sealed Pages tar')
+                  if member.issym() or member.islnk() or member.isdev() or member.isfifo():
+                      raise SystemExit('Link or device entry in sealed Pages tar')
+          PY
+          tar --extract --file "$RAVRADAR_OPERATIONAL_WORK/artifact-archive/artifact.tar" \
+            --directory "$RAVRADAR_OPERATIONAL_WORK/target-site" --no-same-owner --no-same-permissions
+          cmp "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" "$RAVRADAR_OPERATIONAL_WORK/target-site/data/live/manifest.json"
+          # These are the actual normal closure/privacy validators, not receipt flags.
+          node scripts/seal-ravscore-public-browser-closure.mjs --root "$RAVRADAR_OPERATIONAL_WORK/target-site" --model integrated \
+            --output "$RAVRADAR_OPERATIONAL_WORK/restored-public-closure.json"
+          node scripts/audit-pages-artifact-privacy.mjs --site "$RAVRADAR_OPERATIONAL_WORK/target-site"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const work=process.env.RAVRADAR_OPERATIONAL_WORK,handoff=process.env.RAVRADAR_OPERATIONAL_HANDOFF;
+          assert.deepEqual(read(work+'/restored-public-closure.json'),read(handoff+'/target-public-closure.json'));
+          assert.deepEqual(read(work+'/integrated-public-closure.json'),read(handoff+'/target-public-closure.json'));
+          const seal=read(handoff+'/pages-artifact-seal.json'),identity=read(work+'/integrated-implementation-identity.json');
+          assert.equal(identity.implementationClosureSha256,seal.targetImplementationClosureSha256);
+          NODE
+      - uses: actions/configure-pages@v5
+      - name: Reupload the same verified Pages bytes under this recovery attempt
+        id: phase-pages-upload
+        uses: actions/upload-pages-artifact@v5
+        with:
+          name: github-pages-preactivation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.RAVRADAR_OPERATIONAL_WORK }}/target-site
+          retention-days: 14
+      - name: Seal the actual uploaded recovery artifact and advance only the owned attempt
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact_id="${{ steps.phase-pages-upload.outputs.artifact_id }}"
+          [[ "$artifact_id" =~ ^[1-9][0-9]*$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id" > "$RAVRADAR_OPERATIONAL_WORK/new-artifact-rest.json"
+          ARTIFACT_ID="$artifact_id" node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import {normalizeArtifactDigestSha256} from './scripts/ravscore-operational-pages-recovery.mjs';
+          const work=process.env.RAVRADAR_OPERATIONAL_WORK,handoff=process.env.RAVRADAR_OPERATIONAL_HANDOFF;
+          const a=JSON.parse(fs.readFileSync(work+'/new-artifact-rest.json','utf8'));
+          const old=JSON.parse(fs.readFileSync(handoff+'/pages-artifact-seal.json','utf8'));
+          const runId=Number(process.env.GITHUB_RUN_ID),runAttempt=Number(process.env.GITHUB_RUN_ATTEMPT);
+          const artifactName='github-pages-preactivation-'+runId+'-'+runAttempt;
+          assert.equal(a.id,Number(process.env.ARTIFACT_ID));
+          assert.equal(a.name,artifactName);assert.equal(a.expired,false);assert.equal(a.workflow_run.id,runId);
+          assert.equal(a.workflow_run.head_sha,process.env.GITHUB_SHA);
+          assert(Number.isSafeInteger(a.id)&&a.id>0&&Number.isSafeInteger(a.size_in_bytes)&&a.size_in_bytes>0);
+          const createdAt=new Date(a.created_at).toISOString();
+          const seal={...old,runId,runAttempt,attemptId:'pages-recovery-'+runId+'-'+runAttempt,artifactId:a.id,artifactName,
+            artifactDigestSha256:normalizeArtifactDigestSha256(a.digest),artifactSizeBytes:a.size_in_bytes,createdAt};
+          fs.writeFileSync(handoff+'/pages-artifact-seal.json',JSON.stringify(seal));
+          NODE
+          node scripts/protected-operational-reentry-evidence.mjs --publish-pre-activation \
+            --repository "$GITHUB_REPOSITORY" --deployment-id "pages-recovery-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --directory "$RAVRADAR_OPERATIONAL_HANDOFF" --output "$RAVRADAR_OPERATIONAL_WORK/resealed.json"
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        with:
+          version: 2.117.0
+      - name: Resume only the three fixed Edges while the exact target remains owned
+        timeout-minutes: 7
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          for function in trip-log submit-observation ravradar-assistant; do
+            git fetch --no-tags origin main
+            test "$GITHUB_REF" = refs/heads/main
+            test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+            test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+            node scripts/protected-operational-reentry-evidence.mjs --assert-pre-activation-owner \
+              --repository "$GITHUB_REPOSITORY" --output "$RAVRADAR_OPERATIONAL_WORK/owner-current.json"
+            target="$(jq -er '.productionReferenceAt' "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json")"
+            node scripts/check-production-target-freshness.mjs --target "$target" --maximum-age-minutes 150
+            supabase functions deploy "$function" --project-ref "$SUPABASE_PROJECT_ID"
+          done
+      - name: Produce real readiness and plan then the ordinary exact handoff
+        id: handoff
+        env:
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          RAVRADAR_REQUIRE_INTEGRATED_BINDING: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          closure="$(jq -er '.targetImplementationClosureSha256' "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-seal.json")"
+          source_closure="$(jq -er '.sourceCurrent.activeImplementationClosureSha256' "$RAVRADAR_OPERATIONAL_HANDOFF/pre-activation.json")"
+          node scripts/integrated-cutover-readiness.mjs publish \
+            --public-implementation-closure-sha256 "$closure" --output "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json"
+          node scripts/ravscore-operational-activation.mjs prepare-integrated-historical-maintenance \
+            --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json" \
+            --source-implementation-closure-sha256 "$source_closure" --requested-implementation-closure-sha256 "$closure" \
+            --output "$RAVRADAR_OPERATIONAL_WORK/plan.json"
+          node scripts/protected-operational-reentry-evidence.mjs --prepare-pre-activation-handoff \
+            --repository "$GITHUB_REPOSITORY" --directory "$RAVRADAR_OPERATIONAL_HANDOFF" \
+            --readiness "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json" --plan "$RAVRADAR_OPERATIONAL_WORK/plan.json" \
+            --output "$RAVRADAR_OPERATIONAL_WORK/prepared.json"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const p=JSON.parse(fs.readFileSync(process.env.RAVRADAR_OPERATIONAL_WORK+'/prepared.json','utf8')),h=p.handoff;
+          const rows={central_version:h.centralVersion,active_deployment_id:p.activeDeploymentId,closure_sha256:p.implementationClosureSha256};
+          for(const [key,field] of Object.entries({disposition:'checkpointDisposition',disposition_sha256:'checkpointDispositionSha256',
+            dataset_id:'checkpointDatasetId',runtime_audit_sha256:'checkpointRuntimeAuditSha256',build_outcome:'checkpointBuildOutcome',
+            save_outcome:'checkpointSaveOutcome',publish_outcome:'checkpointPublishOutcome'}))rows['checkpoint_'+key]=h[field];
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,Object.entries(rows).map(([k,v])=>k+'='+v+'\n').join(''));
+          NODE
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ravscore-operational-preactivation-handoff-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.RAVRADAR_OPERATIONAL_HANDOFF }}
+          retention-days: 14
+          if-no-files-found: error
+
+  resume-pre-activation-pages:
+    needs: [reconcile-operational-pending, resume-pre-activation]
+    if: needs.reconcile-operational-pending.outputs.recovery_action == 'PRE_ACTIVATION_RESUME' && needs.resume-pre-activation.result == 'success'
+    uses: ./.github/workflows/reusable-pages-deploy.yml
+    with:
+      active_deployment_id: ${{ needs.resume-pre-activation.outputs.active_deployment_id }}
+      central_version: ${{ needs.resume-pre-activation.outputs.central_version }}
+      code_only_repair: false
+      deployment_model: integrated
+      integrated_implementation_closure_sha256: ${{ needs.resume-pre-activation.outputs.closure_sha256 }}
+      legacy_source_required: 'false'
+      operational_action: integrated-historical-maintenance
+      source_repair_id: ''
+      exact_public_recovery: false
+      pre_activation_recovery: true
+    secrets:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+  complete-pre-activation:
+    needs: [reconcile-operational-pending, recover-operational-pages-target, finalize-operational-pages-recovery, resume-pre-activation, resume-pre-activation-pages]
+    if: >-
+      always() && !cancelled() && needs.reconcile-operational-pending.result == 'success' &&
+      needs.reconcile-operational-pending.outputs.pre_activation == 'true' &&
+      (needs.reconcile-operational-pending.outputs.recovery_action == 'COMPLETED_PRE_ACTIVATION' ||
+       needs.reconcile-operational-pending.outputs.recovery_action == 'TARGET_RECONCILE' ||
+       (needs.reconcile-operational-pending.outputs.recovery_action == 'EXACT_TARGET_REDEPLOY' && needs.finalize-operational-pages-recovery.result == 'success') ||
+       (needs.reconcile-operational-pending.outputs.recovery_action == 'PRE_ACTIVATION_RESUME' && needs.resume-pre-activation-pages.result == 'success'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Clear only a fresh normally validated publicly completed exact target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/main
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          node scripts/protected-operational-reentry-evidence.mjs --clear-pre-activation \
+            --repository "$GITHUB_REPOSITORY" \
+            --base-url "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}" \
+            --output /tmp/ravradar-pre-activation-complete.json
+
   operational-recovery-gate:
     name: Require terminal operational recovery before production
     needs:
       - reconcile-operational-pending
       - recover-operational-pages-target
       - finalize-operational-pages-recovery
+      - resume-pre-activation
+      - resume-pre-activation-pages
+      - complete-pre-activation
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
@@ -1135,6 +1430,10 @@ jobs:
           RECOVERY_ACTION: ${{ needs.reconcile-operational-pending.outputs.recovery_action }}
           EXACT_TARGET_RESULT: ${{ needs.recover-operational-pages-target.result }}
           FINALIZE_RESULT: ${{ needs.finalize-operational-pages-recovery.result }}
+          RESUME_RESULT: ${{ needs.resume-pre-activation.result }}
+          RESUME_PAGES_RESULT: ${{ needs.resume-pre-activation-pages.result }}
+          PHASE_COMPLETE_RESULT: ${{ needs.complete-pre-activation.result }}
+          HAS_PHASE: ${{ needs.reconcile-operational-pending.outputs.pre_activation }}
           GEOMETRY_ONLY: ${{ inputs.geometry_only }}
         run: |
           set -euo pipefail
@@ -1146,7 +1445,20 @@ jobs:
             exit 0
           fi
           test "$RECONCILE_RESULT" = "success"
+          if test "$HAS_PHASE" = true; then test "$PHASE_COMPLETE_RESULT" = success; fi
           case "$RECOVERY_ACTION" in
+            PRE_ACTIVATION_RESUME)
+              test "$RESUME_RESULT" = success
+              test "$RESUME_PAGES_RESULT" = success
+              test "$EXACT_TARGET_RESULT" = skipped
+              test "$FINALIZE_RESULT" = skipped
+              ;;
+            COMPLETED_PRE_ACTIVATION)
+              test "$RESUME_RESULT" = skipped
+              test "$RESUME_PAGES_RESULT" = skipped
+              test "$EXACT_TARGET_RESULT" = skipped
+              test "$FINALIZE_RESULT" = skipped
+              ;;
             EXACT_TARGET_REDEPLOY)
               test "$EXACT_TARGET_RESULT" = "success"
               test "$FINALIZE_RESULT" = "success"

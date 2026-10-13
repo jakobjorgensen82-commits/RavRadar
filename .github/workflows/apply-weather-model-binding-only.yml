@@ -79,6 +79,13 @@ jobs:
             --identity-output "$RUNNER_TEMP/integrated-implementation-identity.json"
           closure_sha256="$(jq -er '.implementationClosureSha256 | select(test("^[a-f0-9]{64}$"))' "$RUNNER_TEMP/integrated-implementation-identity.json")"
           echo "closure_sha256=$closure_sha256" >> "$GITHUB_OUTPUT"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { LATEST_REQUIRED_CUTOVER_MIGRATION } from './scripts/integrated-cutover-readiness.mjs';
+          import { deferCurrentGridBindingEdges } from './scripts/lib/production-workflow-sources.mjs';
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'defer_edges='
+            + deferCurrentGridBindingEdges(LATEST_REQUIRED_CUTOVER_MIGRATION.version) + '\n');
+          NODE
 
       - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
         with:
@@ -194,6 +201,7 @@ jobs:
           node scripts/integrated-cutover-readiness.mjs verify-db
 
       - name: Reconfirm exact main before assistant Edge deployment
+        if: steps.integrated-implementation.outputs.defer_edges != 'true'
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -204,6 +212,7 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Deploy only the exact RavRadar assistant Edge function
+        if: steps.integrated-implementation.outputs.defer_edges != 'true'
         timeout-minutes: 5
         shell: bash
         env:
@@ -223,6 +232,7 @@ jobs:
           exit 1
 
       - name: Verify exact backend and assistant readback without weather or Pages
+        if: steps.integrated-implementation.outputs.defer_edges != 'true'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

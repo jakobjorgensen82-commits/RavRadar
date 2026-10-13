@@ -178,7 +178,8 @@ function assertWorkflowIdentity(value, label) {
   if (value.ref !== 'refs/heads/main') {
     throw new Error(`${label}.ref skal være refs/heads/main.`);
   }
-  if (value.attemptId !== `pages-${value.runId}-${value.runAttempt}`) {
+  if (value.attemptId !== `pages-${value.runId}-${value.runAttempt}`
+    && value.attemptId !== `pages-recovery-${value.runId}-${value.runAttempt}`) {
     throw new Error(`${label}.attemptId matcher ikke run/attempt.`);
   }
 }
@@ -300,8 +301,11 @@ function assertArtifactSeal(seal, pending, targetManifestSha256) {
   }
   assertSameWorkflowIdentity(seal, pending, 'Artifact-sealet');
   assertPositiveSafeInteger(seal.artifactId, 'Artifact-sealet.artifactId');
-  if (seal.artifactName !== 'github-pages') {
-    throw new Error('Artifact-sealet skal pege på github-pages.');
+  const ordinary = seal.artifactName === 'github-pages' && seal.attemptId === `pages-${seal.runId}-${seal.runAttempt}`;
+  const recovery = seal.artifactName === `github-pages-preactivation-${seal.runId}-${seal.runAttempt}`
+    && seal.attemptId === `pages-recovery-${seal.runId}-${seal.runAttempt}`;
+  if (!ordinary && !recovery) {
+    throw new Error('Artifact-sealet skal pege på det faste Pages-navn for samme forsøg.');
   }
   normalizeArtifactDigestSha256(
     seal.artifactDigestSha256,
@@ -329,6 +333,29 @@ function assertArtifactSeal(seal, pending, targetManifestSha256) {
   if (seal.privatePayloadIncluded !== false) {
     throw new Error('Artifact-sealet må ikke indeholde private payloads.');
   }
+}
+
+// Validate a completed upload against a normal target before any Edge write.
+// This does not create pending activation, plan, remote durability or deploy proof.
+export function assertUploadedOperationalPagesTarget({ seal, workflowIdentity,
+  targetManifest, targetModelBinding, implementationClosureSha256 } = {}) {
+  assertExactKeys(workflowIdentity, IDENTITY_FIELDS, 'Upload-workflowidentiteten');
+  assertWorkflowIdentity(workflowIdentity, 'Upload-workflowidentiteten');
+  assertSha256(implementationClosureSha256, 'Upload-target implementation-closure');
+  assertExactModelBinding(targetModelBinding, null, 'Upload-target modelbinding');
+  assertObject(targetManifest, 'Upload-target manifest');
+  assertNonEmptyString(targetManifest.datasetId, 'Upload-target datasetId', 160);
+  assertCanonicalUtc(targetManifest.productionReferenceAt, 'Upload-target reference');
+  // Reuse the same target/seal validators without issuing a pending identity.
+  const expected = { ...workflowIdentity, datasetId: targetManifest.datasetId,
+    productionReferenceAt: targetManifest.productionReferenceAt,
+    requestedModelBinding: targetModelBinding,
+    requestedImplementationClosureSha256: implementationClosureSha256,
+    requestedPublicManifestSha256: sha256CanonicalJson(targetManifest),
+    requestedAt: new Date().toISOString() };
+  const manifestSha256 = assertTargetManifest(targetManifest, expected);
+  assertArtifactSeal(seal, expected, manifestSha256);
+  return manifestSha256;
 }
 
 function assertArtifactEvidence(evidence, seal, pending) {
