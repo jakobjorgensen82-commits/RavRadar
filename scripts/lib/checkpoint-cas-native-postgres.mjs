@@ -28,9 +28,43 @@ const signatures = ['ravradar_ravscore_checkpoint_canonical_time',
   'ravradar_ravscore_checkpoint_userdata_predecessor_projection', 'version_admin_document'];
 const hash = text => crypto.createHash('sha256').update(text).digest('hex');
 const sqlText = text => String(text).replace(/\r\n?/g, '\n');
+
+// Source-test diagnostic only. Raw stderr, SQL, JSON and values are never
+// returned or emitted; unknown state/phase remains explicitly UNKNOWN.
+const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
+  'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
+  'ACCOUNT213', 'CURRENT220', 'UNKNOWN']);
+const NATIVE_PSQL_STATES = Object.freeze({
+  '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
+  '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
+  '23514':'SQL_CHECK', '28000':'SQL_AUTHENTICATION', '40001':'SQL_CAS_CONFLICT',
+  '40P01':'SQL_DEADLOCK', '42501':'SQL_PERMISSION', '42601':'SQL_SYNTAX',
+  '42703':'SQL_UNDEFINED_COLUMN', '42804':'SQL_DATATYPE',
+  '42809':'SQL_OBJECT_TYPE', '42883':'SQL_UNDEFINED_FUNCTION',
+  '42P01':'SQL_UNDEFINED_TABLE', '53200':'SQL_MEMORY',
+  '54000':'SQL_LIMIT', '54001':'SQL_COMPLEXITY', '55P03':'SQL_LOCK',
+  '57014':'SQL_CANCELED', 'P0001':'SQL_RAISED_EXCEPTION', 'XX000':'SQL_INTERNAL',
+});
+export function nativePostgresFailureDiagnostic(phase, stderr) {
+  const safePhase = NATIVE_PSQL_PHASES.has(phase) ? phase : 'UNKNOWN';
+  // psql VERBOSITY=sqlstate prints only the actual code for ERROR/FATAL.
+  // No guessed extraction of messages, DETAIL, CONTEXT or arbitrary keys.
+  const match = typeof stderr === 'string' && Buffer.byteLength(stderr) <= 16_384
+    ? /(?:^|\n)[^\r\n]*\b(?:ERROR|FATAL):[ \t]+([A-Z0-9]{5})[ \t]*\r?(?:\n|$)/.exec(stderr) : null;
+  const sqlState = match && Object.hasOwn(NATIVE_PSQL_STATES, match[1]) ? match[1] : 'UNKNOWN';
+  return Object.freeze({ phase:safePhase, sqlState,
+    category:sqlState === 'UNKNOWN' ? 'PSQL_COMMAND_FAILURE' : NATIVE_PSQL_STATES[sqlState] });
+}
+export function nativePostgresFailureAnnotation(phase, stderr) {
+  const safe = nativePostgresFailureDiagnostic(phase, stderr);
+  return '::error title=Native PostgreSQL source command::phase=' + safe.phase
+    + ' sqlstate=' + safe.sqlState + ' category=' + safe.category;
+}
+
 const command = (file, args, { input, env, timeout = 20_000 } = {}) => new Promise(resolve => {
   const child = execFile(file, args, { env, timeout, maxBuffer: 2 * 1024 * 1024 },
-    (error, stdout) => resolve({ code: error ? (error.code ?? 'NATIVE_EXECFILE_UNKNOWN_ERROR') : 0, stdout: String(stdout ?? '') }));
+    (error, stdout, stderr) => resolve({ code: error ? (error.code ?? 'NATIVE_EXECFILE_UNKNOWN_ERROR') : 0,
+      stdout: String(stdout ?? ''), sqlState: nativePostgresFailureDiagnostic('UNKNOWN', stderr).sqlState }));
   child.stdin?.on('error', () => {}); // Outcome is owned by execFile's actual close/error callback.
   child.stdin?.end(input ?? '');
 });
@@ -600,14 +634,21 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   const env = { PATH: process.env.PATH, LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8', TZ: 'UTC',
     PGHOST: socket, PGPORT: '5432', PGDATABASE: 'postgres', PGUSER: 'rr_native_test',
     PGPASSFILE: path.join(root, 'absent-password-file'), PGSSLMODE: 'disable' };
+  let nativePhase = 'NATIVE_SETUP';
   const runSql = (input, timeout = 70_000) => command(programs.psql,
-    ['-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-h', socket, '-p', '5432', '-U', 'rr_native_test', '-d', 'postgres'],
+    ['-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-v', 'VERBOSITY=sqlstate', '-h', socket, '-p', '5432', '-U', 'rr_native_test', '-d', 'postgres'],
     { input, env, timeout });
   const psql = async (input, timeout = 70_000) => {
     const result = await command(programs.psql,
-      ['-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-h', socket, '-p', '5432', '-U', 'rr_native_test', '-d', 'postgres'],
+      ['-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-v', 'VERBOSITY=sqlstate', '-h', socket, '-p', '5432', '-U', 'rr_native_test', '-d', 'postgres'],
       { input, env, timeout });
-    if (result.code !== 0) throw new Error('NATIVE_POSTGRES_SQL_COMMAND_FAILED');
+    if (result.code !== 0) {
+      // Emit the FIRST failed normal psql call before cleanup, using ONLY the
+      // static phase/state/category projection, never raw stderr or input.
+      console.error(nativePostgresFailureAnnotation(nativePhase,
+        result.sqlState === 'UNKNOWN' ? '' : 'ERROR: ' + result.sqlState));
+      throw new Error('NATIVE_POSTGRES_SQL_COMMAND_FAILED');
+    }
     return result.stdout.trim();
   };
   let owner = null, started = false, stopped = false, cleanupAllowed = false;
@@ -701,6 +742,7 @@ grant execute on function public.native_checkpoint_attempt(boolean,bigint,jsonb)
     // Execute the ENTIRE append-only migration: registered predecessor and exact
     // installed old body, transaction, lock timeout, replacement, ACL and notify.
     // Its own precondition/permissions are not reimplemented by this fixture.
+    nativePhase = 'CAS200_MIGRATION';
     await psql(newSource);
     assert.equal(await psql("select current_setting('lock_timeout');"), '0',
       'complete migration must commit/reset its transaction-local lock timeout');
@@ -744,10 +786,12 @@ grant execute on function public.native_checkpoint_attempt(boolean,bigint,jsonb)
     Object.values(fixtures.predecessor.states).forEach(state => { state.modelBundleSha256 = fixtures.predecessor.modelBinding.modelBundleSha256; });
     fixtures.unknown = structuredClone(fixtures.predecessor); fixtures.unknown.modelBinding.modelBundleSha256 = 'e'.repeat(64);
     fixtures.invalid = structuredClone(fixtures.current); fixtures.invalid.partCount = 672;
+    nativePhase = 'BASELINE_FIXTURES';
     for (const [name,payload] of Object.entries(fixtures)) {
       const json = JSON.stringify(payload); assert.equal(json.includes('$native_fixture$'),false);
       await psql(`insert into public.native_checkpoint_payloads values('${name}',$native_fixture$${json}$native_fixture$::jsonb);`);
     }
+    nativePhase = 'BASELINE_ADMISSION';
     const checked = JSON.parse(await psql(`select jsonb_build_object('current',public.ravradar_ravscore_checkpoint_payload_valid((select payload from native_checkpoint_payloads where name='current'),'${atHour(49)}'),
       'predecessor',public.ravradar_ravscore_checkpoint_userdata_predecessor_projection((select payload from native_checkpoint_payloads where name='predecessor'),'${atHour(49)}') is not null,
       'definer',(select prosecdef from pg_proc where oid='${CAS}(bigint,timestamptz,jsonb)'::regprocedure),
@@ -774,6 +818,7 @@ grant execute on function public.native_checkpoint_attempt(boolean,bigint,jsonb)
       ['unknown-predecessor','unknown','current',1,'22023',null,1],
       ['invalid-incoming','current','invalid',1,'22023',null,1],
     ];
+    nativePhase = 'BASELINE_CAS_CASES';
     const reports=[];
     for (const [name,central,incoming,version,expectedCode,disposition,storedVersion,
       role='service_role',claimRole=role] of cases) {
@@ -799,8 +844,10 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       assert.deepEqual(withoutTiming(observations[1]),withoutTiming(observations[0]),`native old/new ${name} invariance`);
       reports.push({case:name,oldElapsedMs:observations[0].elapsedMs,newElapsedMs:observations[1].elapsedMs,sqlstate:expectedCode,disposition,storedVersion});
     }
+    nativePhase = 'ACCOUNT213';
     const accountAssistant=await compareAccountAssistantSuccessor({psql,runSql,source:accountSource,oldSource,
       oldFixtures:fixtures,currentFixtures,cases,atHour,oldCas,newCas});
+    nativePhase = 'CURRENT220';
     const currentGrid=await compareCurrentGridSuccessor({psql,runSql,source:gridSource,accountSource,
       oldFixtures:fixtures,issuedFixtures:currentFixtures,sourceDocumentAt,atHour,saveCheckpoint,root});
     return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,

@@ -1,3 +1,10 @@
+## Faktisk PostgreSQL-fejl og afgrænset fejlaflæsning — 13. oktober 2026
+
+Den præcise kildekontrol af strømbranchens seneste head bestod de normale routingprøver og nåede rigtig PostgreSQL, men et normalt `psql`-kald fejlede. Den tidligere routingfejl er altså ikke denne fejl. Den oprindelige rapport oplyste ingen SQLSTATE eller kalderfase; rodårsagen er fortsat uafklaret.
+
+Kildeprøvens normale kalder registrerer nu kun en fast fase, en tilladt SQLSTATE og en fast fejlkategori som GitHub-fejlannotation. Rå SQL, stderr, JSON og værdier udskrives ikke. SQL-filer, testinput, assertions, tidsgrænser, adgangskontrol og oprydning bevares; forventede negative kald bliver ikke til falske fejlannotationer. Den normale syntetiske checkpointprøve består lokalt, men dette er ikke PostgreSQL-bevis eller en SQL-fejlrettelse. En ny præcis normal GitHub-kontrol skal afklare næste konkrete trin. Ingen main-merge, installation, ny vejrhentning eller numerisk aktivering er udført. Alle fem hovedmål er fortsat åbne.
+
+
 ## Normal kildekontrol: historisk 213 og aktuel 220 — 13. oktober 2026
 
 Implementeret lokalt: alle 11 tidligere routingtilfælde bevares på genuine fastlåst 213-kilde, mens ni nye tilfælde udfører den samme normale kalder med faktiske aktuelle 220-eksporter. De 20 normale processkald består; ingen kunstig latest-/modeloverride anvendes. Den tidligere CI stoppede i routingfortrinnet, ikke i PostgreSQL, som endnu ikke var startet. Ny eksakt CI med rigtig Linux/PostgreSQL, autentiske produktionsoriginaler og ny generations effekt er fortsat åbne. Ingen produktionskalder, SQL-fil, modelbinding, original eller installationskontrol er ændret af denne prøverettelse. Alle fem hovedmål er fortsat åbne.
