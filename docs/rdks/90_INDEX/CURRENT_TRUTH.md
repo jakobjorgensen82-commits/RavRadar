@@ -1,3 +1,7 @@
+## Normal kildekontrol: historisk 213 og aktuel 220 — 13. oktober 2026
+
+Kildekontrollen på den forberedte strømbranch bestod source og native, men routingprøven stoppede før selve PostgreSQL-prøven. De 11 historiske tilfælde bruger nu genuine fastlåste 213-byggere og den hele uændrede normale kalder; ni særskilte tilfælde bruger den faktiske aktuelle 220-kilde. Alle 20 består lokalt. De faste kildehashes, de gamle assertions og samtlige produktions-/installationskontroller bevares; selector-success er ikke SQL-adgang eller originalbevis. Den næste eksakte Linux/PostgreSQL-kontrol afventer. Ingen main-merge, installation eller numerisk aktivering er udført; alle fem målområder er åbne.
+
 ## Lokal førskrivningskontrol for strømovergangen — 13. oktober 2026
 
 Den normale installationsvej har nu en særskilt, som udgangspunkt fravalgt kontrol af de autentificerede gamle B/S-originaler før præcis 220000-plan og igen umiddelbart før skrivning. Den bruger de genuine gamle byggere på uændrede filer, sammenligner alle 673 originalpar og genlæser pakkens aktuelle pointer samt checkpointets version. Den gamle checkpoint-loader må kun validere en byteidentisk kontrolkopi, ikke ommærke originalen. Den historiske 416-byte politikfil med fast kildehash bevares særskilt; aktuelle modeldata lånes ikke som gammel kilde. Windows' korte og lange stinavne sammenlignes som faktiske, linkfri filstier, mens filer uden for den private mappe fortsat afvises.

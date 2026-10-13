@@ -16,6 +16,10 @@ const SQL = 'supabase/migrations/20261013210000_account_assistant_original_bound
 const SQL_SHA = '80ad179bc896e9fcd62b8af103d70a2d086d3626395dd97f03e4184e52bcae5d';
 const BUILDER = 'scripts/build-account-assistant-binding-successor.mjs';
 const SCANNER = 'scripts/lib/static-module-closure.mjs';
+const ISSUED_ROUTING_FILES = Object.freeze([
+  ['scripts/integrated-cutover-readiness.mjs', '94fced18e6b5e0c94e8910285c2a59c518b28fcd9d5602e2f3211a68f9e4f2b4'],
+  ['.github/workflows/deploy-code-only-repair.yml', '6c289d39f3ddbcd07e9036e7e377444ada59c277711954d1e5b59efab68d79be'],
+]);
 const T_CONTRACT = 'scripts/lib/ravscore-continuation-implementation-contract.mjs';
 const GENERATED_C = 'scripts/rollback-assets/ravscore-model-bundle.generated.js';
 const GENERATED_I = 'js/core/ravscore-model-bundle.generated.js';
@@ -128,6 +132,7 @@ export async function withIssuedAccountAssistantSource(useVerifiedSource) {
   assert.equal(tFiles.length, 12);
   assert.equal(new Set(tFiles).size, 12);
   const pending = [...new Set([...cFiles, ...iFiles,
+    ...ISSUED_ROUTING_FILES.map(([relative]) => relative),
     GENERATED_C, GENERATED_I, BUILDER, SCANNER, T_CONTRACT, 'package.json',
     'scripts/fixtures/account-assistant-successor-inputs.json',
     'supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql',
@@ -145,6 +150,11 @@ export async function withIssuedAccountAssistantSource(useVerifiedSource) {
         pending.push(await resolveImport(relative, specifier));
       }
     }
+  }
+
+  for (const [relative, expectedSha] of ISSUED_ROUTING_FILES) {
+    assert(selected.has(relative), 'Exact issued routing source must be selected');
+    assert.equal(sha(await gitBytes(relative)), expectedSha, 'Exact issued routing source bytes');
   }
 
   // The historical checkpoint loader reads this fixed policy with readFileSync,
