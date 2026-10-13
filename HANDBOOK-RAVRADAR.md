@@ -6,6 +6,16 @@ Den lokale 4.0.576 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Den fysiske scorekontrakt er uændret. Dette er ikke installation, ny offentlig status eller bevis for den nye sammensætnings præcise kildekontrol.
 
+## 89.221 Et genforsøg er ikke en kvittering for gemning
+
+**Kort fortalt:** Et ukendt gatewaysvar må få det ene begrænsede genforsøg, som uploaderen allerede har. Succes kræver stadig faktisk gemning og genlæsning; større grænser eller overskrivning er ikke løsningen.
+
+Den afgrænsede kildekandidat tilføjer HTTP 520 til den eksisterende håndtering af midlertidige serversvar. Højst to forsøg bruger samme uændrede pakke og samme immutable destination uden overskrivning. Et fortsat afvist svar standser forløbet. Indholdshash, genlæsning, versionskontrol, atomisk aktivering og bevaring af originaler og historik ændres ikke. Den faktisk observerede gatewaykategori er ikke alene bevis for en bestemt leverandørårsag eller for, at næste forsøg lykkes. [Cloudflares forklaring af HTTP 520](https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-520/) beskriver tomme, ukendte eller uventede originsvar.
+
+Den præcise historiske loglæser bruger kun faste fejlkategorier fra Storage-logserializeren og den eksisterende afgrænsede legacy-fallback. Den læser ikke rå fejltekst, stack, objektstier, nøgler eller brugerdata. Forespørgslen har fortsat ét bestemt kort tidsrum, højst én GET og faste tids-, byte- og rækkegrænser. En tidligere læsetilladelse bliver ikke automatisk genbrugelig; en ny tilsvarende diagnose følger ejerens aktuelle autoritet og normale kontroller. De to registrerede svar kan ikke uden videre forbindes til samme objekt eller forespørgsel.
+
+**Sådan læses afsnittet:** Skeln mellem en observeret fejl, en lokalt prøvet rettelse, bestået kildekontrol og faktisk offentlig levering. Den allerede gemte vejrpakke kan kun genleveres gennem det normale kontrollerede forløb med bevis for databevarelse; en startet genlevering er ikke en færdig levering. Kandidaten ændrer ingen strømfortolkning, scoreformel, modelbinding, administratorpunkter eller geometri og indgår ikke i assistentens offentlige viden.
+
 ## 89.220 Afvist gemning skal give præcise, private kontroloplysninger
 
 **Kort fortalt:** Driftskontrollen skal kunne forklare en afvist gemning uden at udlevere private oplysninger. Den nye kilde er lokalt prøvet; faktisk fejlårsag og sikker offentlig levering afventer.

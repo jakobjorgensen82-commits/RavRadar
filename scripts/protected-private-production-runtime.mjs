@@ -2222,7 +2222,8 @@ export function createProtectedPrivateRuntimeClients({
       let response;
       try {
         response = await fetchImpl(target, options);
-        if (attempt === 1 && [429, 502, 503, 504].includes(response.status)) {
+        if (attempt === 1 && ([429, 502, 503, 504].includes(response.status)
+          || (response.status === 520 && label === 'immutable upload'))) {
           await response.body?.cancel?.().catch(() => {});
           await delayImpl(retryDelayMs);
           continue;

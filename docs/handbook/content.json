@@ -5,6 +5,12 @@
   "updatedAt": "2026-10-13",
   "sections": [
     {
+      "id": "storage-gateway-bounded-retry-2026-10-13",
+      "chapter": "89.221",
+      "title": "Et genforsøg er ikke en kvittering for gemning",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Et ukendt gatewaysvar må få det ene begrænsede genforsøg, som uploaderen allerede har. Succes kræver stadig faktisk gemning og genlæsning; større grænser eller overskrivning er ikke løsningen.</div><p>Den afgrænsede kildekandidat tilføjer HTTP 520 til den eksisterende håndtering af midlertidige serversvar. Højst to forsøg bruger samme uændrede pakke og samme immutable destination uden overskrivning. Et fortsat afvist svar standser forløbet. Indholdshash, genlæsning, versionskontrol, atomisk aktivering og bevaring af originaler og historik ændres ikke. Den faktisk observerede gatewaykategori er ikke alene bevis for en bestemt leverandørårsag eller for, at næste forsøg lykkes. <a href=\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-520/\">Cloudflares forklaring af HTTP 520</a> beskriver tomme, ukendte eller uventede originsvar.</p><p>Den præcise historiske loglæser bruger kun faste fejlkategorier fra Storage-logserializeren og den eksisterende afgrænsede legacy-fallback. Den læser ikke rå fejltekst, stack, objektstier, nøgler eller brugerdata. Forespørgslen har fortsat ét bestemt kort tidsrum, højst én GET og faste tids-, byte- og rækkegrænser. En tidligere læsetilladelse bliver ikke automatisk genbrugelig; en ny tilsvarende diagnose følger ejerens aktuelle autoritet og normale kontroller. De to registrerede svar kan ikke uden videre forbindes til samme objekt eller forespørgsel.</p><p><strong>Sådan læses afsnittet:</strong> Skeln mellem en observeret fejl, en lokalt prøvet rettelse, bestået kildekontrol og faktisk offentlig levering. Den allerede gemte vejrpakke kan kun genleveres gennem det normale kontrollerede forløb med bevis for databevarelse; en startet genlevering er ikke en færdig levering. Kandidaten ændrer ingen strømfortolkning, scoreformel, modelbinding, administratorpunkter eller geometri og indgår ikke i assistentens offentlige viden.</p>"
+    },
+    {
       "id": "protected-upload-response-diagnostic-2026-10-13",
       "chapter": "89.220",
       "title": "Afvist gemning skal give præcise, private kontroloplysninger",
