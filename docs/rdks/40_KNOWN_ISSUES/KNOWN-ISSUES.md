@@ -1,3 +1,11 @@
+# Lokal strømrettelse – afgrænset kildeforberedelse, 2026-10-13
+
+Åbent: den nye samlede current-only-kæde mangler faktisk native-/national kontrol og offentlig eftermåling. En leveret landkontrol for pile er ikke bevis for strømdata eller score. Tidligere fejl i bredere scalar-/mixed-scope-prøver bevares som evidens og må ikke skjules ved at kalde den afgrænsede kandidat grøn.
+
+Originalkontrollen skal afvise blandede I/C/T-familier og samme-generation-erstatning med andre, ellers gyldige tal før kloning og ved relevant sidste kopikontrol. Hele aktuelle B/S skal bevares, også hvis det private kontrolarkiv allerede indeholder et ældre første originalpar.
+
+Den lokale bindingsforberedelse er nu faktisk materialiseret som en særskilt append-only 220000-migration med normale C69/I71/T12-bindinger. De syv normale bindingsforbrugere er synkroniseret; alle 57 historiske SQL-filer, administratorens valg og de øvrige felter bevares. Den normale readiness-prøve, den nye migrationsbyggers kontrol og bindingssynkroniseringens positive samt negative mål består lokalt. Kildeplanen bevarer alle 47 tidligere kontroller og adskiller den uforanderlige 213-kilde fra den aktuelle 220-kilde. Dette er ikke native-/nationalt, autentisk originalpakke- eller produktionsbevis. Faktisk native-kæde, originalernes førskrivningskontrol, særskilt installationsautoritet og ny generationseffekt står åbne; konto-/assistenttilladelsen er ikke numerisk tilladelse. Ingen installation, ny version eller SOURCE-G4-aktivering er udført. Alle fem hovedmål er fortsat åbne.
+
 # 4.0.576 – samlet assistent-/kontokandidat, 2026-10-13
 
 Konto-vinduets allerede viste turhistorik følger nu den samme konto- og dialoglevetid som den ventende læsning: logout, en ny loginidentitet, udløbet session, lukning eller tilbage-navigation fjerner den gamle visning. Gyldig fornyelse af samme login bevares; et forsinket svar kan ikke vise gamle ture igen eller hente en anden kontos historik. Den snævre UI-rettelse ændrer ingen gemte ture, bindingshashes eller SQL. De 52 normale ejerskabs-/præferenceprøver, herunder ti historikforløb, består lokalt; offentlig afprøvning afventer levering.

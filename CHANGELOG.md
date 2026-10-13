@@ -1,3 +1,9 @@
+# Lokal strømrettelse – afgrænset kildeforberedelse, 2026-10-13
+
+Forslaget korrigerer kun DKSS GRIB1-strømmens U/V-fortolkning og dens sammenhæng gennem native gitter, datacache, historik, ny strømhukommelse og fremtidig score. Andre felters numeriske valg og cacheadgang, kildeprioritet, scoreformel, administratorpunkter og geometri bevares. Gamle originalpakker og offentliggjorte scorer må ikke omskrives.
+
+Den samlede aktuelle kilde er endnu ikke native-/nationalt eller offentligt verificeret. Legitim bindingsfølge, autentiske originalers bevarelse og den særskilte numeriske SQL-/aktiveringsgrænse står åbne; konto-/assistenttilladelsen er ikke numerisk tilladelse. Ingen ny version eller SOURCE-G4-procesrettelse indgår. Alle fem hovedmål er fortsat åbne.
+
 # 4.0.576 – samlet assistent-/kontokandidat, 2026-10-13
 
 Konto-vinduets allerede viste turhistorik følger nu den samme konto- og dialoglevetid som den ventende læsning: logout, en ny loginidentitet, udløbet session, lukning eller tilbage-navigation fjerner den gamle visning. Gyldig fornyelse af samme login bevares; et forsinket svar kan ikke vise gamle ture igen eller hente en anden kontos historik. Den snævre UI-rettelse ændrer ingen gemte ture, bindingshashes eller SQL. De 52 normale ejerskabs-/præferenceprøver, herunder ti historikforløb, består lokalt; offentlig afprøvning afventer levering.

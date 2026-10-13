@@ -113,12 +113,15 @@ from lib.dmi_native_provenance import (
     MARINE_COLLECTIONS,
     SPATIAL_PROVENANCE_VERSION,
     build_current_part_outcome_proof,
+    build_current_grid_sampling_outcome_receipt,
     build_retained_current_asset_proof,
     canonical_time,
     canonical_current_source_asset,
     canonical_pre_sanitize_current_identity_attestation,
     canonical_verified_part_current_attestation,
     complete_native_source_for_hour,
+    current_grid_sampling_outcome_matches,
+    inspect_native_grid_sampling,
     component_collection_allowed,
     current_attestation_authorization_from_operational_ledger,
     current_official_assets_sha256,
@@ -1946,6 +1949,139 @@ def current_pair_evidence_from_retained_proofs(
     return pair_sources, pairs
 
 
+def current_pair_sampling_evidence(
+    document: dict[str, Any],
+    trusted_pair_source_keys: set[tuple[str, str, str]],
+) -> set[tuple[str, str, str]]:
+    """Separate NEW-reuse keys; preserve the original no-loss trust set.
+
+    Inspect the actual selected rich hour, not a lossy asset projection or a
+    newly parsed loser. Existing exact source/finite/policy checks still apply.
+    Unknown metadata remains physically retained but cannot suppress new work.
+    """
+    zones = document.get("zones") if isinstance(document, dict) else None
+    if not isinstance(zones, dict):
+        return set()
+    qualified: set[tuple[str, str, str]] = set()
+    for part_id, valid_time, trusted_key in trusted_pair_source_keys:
+        zone_id = f"PART::{part_id}"
+        zone = zones.get(zone_id)
+        if not _qualified_dmi_component_present(zone_id, zone, valid_time, "current", ("current-u", "current-v")):
+            continue
+        source = zone["hourly"][valid_time]["sources"]["current"]
+        asset = canonical_current_source_asset(source)
+        if asset is None:
+            continue
+        selected_key = json.dumps(asset, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        if selected_key == trusted_key:
+            qualified.add((part_id, valid_time, selected_key))
+    return qualified
+
+
+def qualified_current_processed_valid_times(
+    original_steps: dict[str, Any], *, current_target_ids: list[str],
+    required_valid_times: set[str],
+    qualified_pair_source_keys: set[tuple[str, str, str]],
+    qualified_covered_pair_keys: set[tuple[str, str]],
+    private_support_zones: dict[str, Any] | None = None,
+    private_support_zone_ids: list[str] | None = None,
+) -> set[str]:
+    """Derive skip eligibility from ALREADY original-verified steps, read-only.
+
+    Keep original_steps intact for persistence and no-loss. Negative outcomes
+    need a new fresh-traversal receipt, including mixed positive/negative steps;
+    an empty positive set must never qualify an older negative proof vacuously.
+    Private SOURCE support is scalar evidence, not an invented current pair.
+    """
+    eligible: set[str] = set()
+    for valid_time, step in original_steps.items():
+        if not isinstance(step, dict):
+            continue
+        source = canonical_current_source_asset(step.get("sourceAsset"))
+        if source is None:
+            continue
+        if private_component_support_asset(
+            {"valid": valid_time, "privateComponentSupport": True}, required_valid_times,
+        ):
+            eligible.add(valid_time)
+            continue
+        if valid_time not in required_valid_times:
+            continue
+        outcome = step.get("currentPartOutcomeProof")
+        if not isinstance(outcome, dict):
+            continue
+        try:
+            outcome = validate_current_part_outcome_proof(
+                outcome, current_target_ids, outcome.get("targetRegistrySha256"),
+                step.get("processingSignature"), source,
+            )
+        except (TypeError, ValueError):
+            continue
+        unavailable = set(outcome.get("spatialUnavailablePartIds") or [])
+        if unavailable and not current_grid_sampling_outcome_matches(
+            step.get("currentGridSamplingOutcome"), outcome,
+        ):
+            continue
+        source_key = json.dumps(source, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        if all(
+            (part_id, valid_time, source_key) in qualified_pair_source_keys
+            or (part_id, valid_time) in qualified_covered_pair_keys
+            for part_id in set(current_target_ids) - unavailable
+        ):
+            eligible.add(valid_time)
+    return eligible
+
+
+def native_sampling_cache_ready(document: dict[str, Any], reference: datetime) -> bool:
+    """Additional fresh-shortcut qualification, NEVER old donor/auth readiness.
+
+    The normal cache-health predicates must also pass. Inspect only operational
+    originals without changing scalar SOURCE support admission, preserving all older
+    history. This neither admits a value nor upgrades an unknown original.
+    """
+    start = epoch(reference.isoformat())
+    end = start + DKSS_MAX_FORECAST_LEAD_HOURS * 3600
+    zones = document.get("zones") if isinstance(document, dict) else None
+    runs = (document.get("runs") or {}) if isinstance(document, dict) else None
+    if not isinstance(zones, dict) or not isinstance(runs, dict):
+        return False
+    for zone_id, zone in zones.items():
+        hourly = zone.get("hourly") if isinstance(zone, dict) else None
+        if not isinstance(hourly, dict):
+            return False
+        for valid_time, hour in hourly.items():
+            if not isinstance(hour, dict) or not start <= epoch(valid_time) <= end:
+                continue
+            sources = hour.get("sources") or {}
+            if not isinstance(sources, dict):
+                return False
+            for component, source in sources.items():
+                if component != "current":
+                    continue
+                if not isinstance(source, dict) or source.get("provider") != "dmi":
+                    continue
+                fields = COMPONENT_FIELD_SET.get(component)
+                if fields is None or not _qualified_dmi_component_present(zone_id, zone, valid_time, component, fields):
+                    return False
+    for collection, run in runs.items():
+        if collection not in MARINE_COLLECTIONS or not isinstance(run, dict):
+            continue
+        steps = run.get("processedSteps") or {}
+        if not isinstance(steps, dict):
+            return False
+        for valid_time, step in steps.items():
+            if not isinstance(step, dict) or not start <= epoch(valid_time) <= end:
+                continue
+            outcome = step.get("currentPartOutcomeProof") or {}
+            if not isinstance(outcome, dict):
+                return False
+            if outcome.get("spatialUnavailablePartIds") and not current_grid_sampling_outcome_matches(
+                step.get("currentGridSamplingOutcome"), outcome,
+            ):
+                return False
+    return True
+
+
 def regional_lf_missing_pair_keys(
     regional_part_ids: list[str],
     required_valid_times: set[str],
@@ -2321,6 +2457,20 @@ def _exact_validated_dmi_component_present(
     )
 
 
+def _qualified_dmi_component_present(
+    zone_id: str, zone: Any, valid_time: str, component: str, fields: tuple[str, ...],
+) -> bool:
+    """NEW work scheduling only; never replace original admission/cleanup."""
+    hourly = zone.get("hourly") if isinstance(zone, dict) else None
+    hour = hourly.get(valid_time) if isinstance(hourly, dict) else None
+    if not isinstance(hour, dict) or not isinstance(hour.get("sources"), dict):
+        return False
+    if not _exact_validated_dmi_component_present(zone_id, zone, valid_time, component, fields):
+        return False
+    return (canonical_time(hour.get("time")) == canonical_time(valid_time)
+            and inspect_native_grid_sampling(hour["sources"][component])["status"] == "coherent")
+
+
 def classify_dkss_primary_asset(
     *,
     collection: str,
@@ -2334,6 +2484,7 @@ def classify_dkss_primary_asset(
     planning_covered_pair_keys: set[tuple[str, str]] | None = None,
     required_valid_times: set[str] | None = None,
     regional_current_gap_count: int = 0,
+    require_native_grid_sampling: bool = False,
 ) -> dict[str, Any]:
     """Classify one DKSS asset as critical work or safe refresh-only work.
 
@@ -2358,6 +2509,10 @@ def classify_dkss_primary_asset(
             "missingComponentKinds": [],
         }
 
+    component_present = (
+        _qualified_dmi_component_present if require_native_grid_sampling
+        else _exact_validated_dmi_component_present
+    )
     valid_time = canonical_time(asset.get("valid"))
     canonical_run = canonical_time(model_run)
     normalized_targets = sorted({str(value or "").strip() for value in target_ids if str(value or "").strip()})
@@ -2393,7 +2548,7 @@ def classify_dkss_primary_asset(
         private_support = private_component_support_asset(asset, required_valid_times or set())
         current_native_deficit_count = 0 if private_support else sum(
             (target_id, valid_time) not in covered_pair_keys
-            or not _exact_validated_dmi_component_present(
+            or not component_present(
                 f"PART::{target_id}", cached_zones.get(f"PART::{target_id}"),
                 valid_time, "current", ("current-u", "current-v"),
             )
@@ -2434,7 +2589,7 @@ def classify_dkss_primary_asset(
             ):
                 missing_components.add(component)
         parent_current_missing_count = sum(
-            not _exact_validated_dmi_component_present(
+            not component_present(
                 zone_id, cached_zones.get(zone_id), valid_time,
                 "current", ("current-u", "current-v"),
             )
@@ -4650,6 +4805,25 @@ def grid_definition_sha256_from_signature(signature: tuple[Any, ...]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def grid_index_identity_sha256_from_cache(cache_signature: tuple[Any, ...]) -> str:
+    """Bind native indices to the full grid section, including scan order.
+
+    This private candidate identity is not the legacy public grid digest and
+    must never be copied to persisted/public grid metadata or provenance.
+    """
+    grid_definition_signature_from_cache(cache_signature)
+    if not isinstance(cache_signature[0], str) or not re.fullmatch(
+        r"[0-9a-fA-F]{32}", cache_signature[0],
+    ):
+        raise DmiGridLookupError(
+            "DMI native-index grid identity could not be verified",
+            "GRID_IDENTITY_READ_FAILED",
+        )
+    return grid_definition_sha256_from_signature((
+        "grid-native-index-order-v1", *cache_signature,
+    ))
+
+
 def grid_definition_sha256(gid: int) -> str:
     return grid_definition_sha256_from_signature(grid_signature(gid))
 
@@ -4663,6 +4837,126 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return radius * 2 * math.atan2(math.sqrt(a), math.sqrt(max(0.0, 1 - a)))
 
 
+def dkss_grib1_header_geometry(
+    cache_signature: tuple[Any, ...], scanning_mode: int,
+) -> dict[str, Any]:
+    """Interpret regular DKSS GRIB1 axes from original extents, not rounded steps.
+
+    DMI documents millidegree quantisation and extent/(point-count-1):
+    https://www.dmi.dk/friedata/dokumentation/faq
+    Latitude uses the corresponding regular-axis construction. Native values,
+    bitmap, original bytes, order-sensitive identity and indices are untouched.
+    GRIB1 Flag8 supports +/-i, +/-j and i/j-consecutive order; reserved bits are
+    not guessed. This does not authenticate old cached coordinate claims.
+    """
+    if not isinstance(cache_signature, tuple) or len(cache_signature) != 11:
+        raise ValueError("DKSS header grid identity is incomplete")
+    _, grid_type, ni, nj, points, lat_first, lon_first, lat_last, lon_last, _, _ = cache_signature
+    if not (
+        grid_type == "regular_ll"
+        and all(isinstance(value, int) and not isinstance(value, bool)
+                for value in (ni, nj, points, scanning_mode))
+        and 2 <= ni < 65535 and 2 <= nj < 65535 and points == ni * nj
+        and 0 <= scanning_mode <= 255 and scanning_mode & 31 == 0
+        and all(isinstance(value, (int, float)) and not isinstance(value, bool)
+                and math.isfinite(value) for value in (lat_first, lon_first, lat_last, lon_last))
+        and -90 <= lat_first <= 90 and -90 <= lat_last <= 90
+        and -360 <= lon_first <= 360 and -360 <= lon_last <= 360
+    ):
+        raise ValueError("DKSS regular GRIB1 header or scan order is invalid")
+    latitude_span = float(lat_last) - float(lat_first)
+    longitude_span = (
+        -((float(lon_first) - float(lon_last)) % 360.)
+        if scanning_mode & 128 else (float(lon_last) - float(lon_first)) % 360.
+    )
+    if not (
+        latitude_span != 0 and (latitude_span > 0) == bool(scanning_mode & 64)
+        and 0 < abs(longitude_span) < 180
+    ):
+        raise ValueError("DKSS regional extents conflict with original scan direction")
+    return {"ni": ni, "nj": nj, "points": points,
+            "latFirst": float(lat_first), "latLast": float(lat_last),
+            "lonFirst": float(lon_first), "lonLast": float(lon_last),
+            "latitudeStep": latitude_span / (nj - 1),
+            "longitudeStep": longitude_span / (ni - 1),
+            "jConsecutive": bool(scanning_mode & 32)}
+
+
+def dkss_header_grid_point(geometry: dict[str, Any], index: int) -> dict[str, Any]:
+    """Map the original unpacked-array index to its header-defined coordinate."""
+    if not isinstance(index, int) or isinstance(index, bool) or not 0 <= index < geometry["points"]:
+        raise ValueError("DKSS native index is outside its original grid")
+    if geometry["jConsecutive"]:
+        column, row = divmod(index, geometry["nj"])
+    else:
+        row, column = divmod(index, geometry["ni"])
+    latitude = (geometry["latLast"] if row == geometry["nj"] - 1
+                else geometry["latFirst"] + row * geometry["latitudeStep"])
+    longitude = (geometry["lonLast"] if column == geometry["ni"] - 1
+                 else geometry["lonFirst"] + column * geometry["longitudeStep"])
+    longitude = longitude % 360.
+    if longitude > 180:
+        longitude -= 360.
+    return {"index": index, "lat": latitude, "lon": longitude}
+
+
+def dkss_header_grid_nearest(
+    geometry: dict[str, Any], latitude: float, longitude: float,
+) -> list[dict[str, Any]]:
+    """Return the same four surrounding native indices, using unrounded axes.
+
+    An explicitly out-of-domain probe returns no candidates, as the existing
+    marine OutOfArea policy permits. Unknown/malformed input is a hard error,
+    never a fallback to rounded coordinates. No full-grid array is allocated.
+    """
+    if not all(isinstance(value, (int, float)) and not isinstance(value, bool)
+               and math.isfinite(value) for value in (latitude, longitude)):
+        raise ValueError("DKSS target coordinate is invalid")
+    row_position = (latitude - geometry["latFirst"]) / geometry["latitudeStep"]
+    delta = ((longitude - geometry["lonFirst"]) % 360.
+             if geometry["longitudeStep"] > 0 else -((geometry["lonFirst"] - longitude) % 360.))
+    column_position = delta / geometry["longitudeStep"]
+    # Only compensate floating arithmetic at exact endpoints, not geographic
+    # truncation or out-of-domain points. This is <1e-8 of one native grid step.
+    tolerance = 1e-8
+    if not (-tolerance <= row_position <= geometry["nj"] - 1 + tolerance
+            and -tolerance <= column_position <= geometry["ni"] - 1 + tolerance):
+        return []
+    row_position = min(max(row_position, 0.), geometry["nj"] - 1)
+    column_position = min(max(column_position, 0.), geometry["ni"] - 1)
+    row_first = min(math.floor(row_position), geometry["nj"] - 2)
+    column_first = min(math.floor(column_position), geometry["ni"] - 2)
+    return [dkss_header_grid_point(
+        geometry, column * geometry["nj"] + row if geometry["jConsecutive"]
+        else row * geometry["ni"] + column,
+    ) for row in (row_first, row_first + 1) for column in (column_first, column_first + 1)]
+
+
+def dkss_header_geometry_for_message(
+    gid: int, collection: str, cache_signature: tuple[Any, ...],
+) -> dict[str, Any] | None:
+    """Use the DMI placement rule only for actual current U/V in regular GRIB1 DKSS."""
+    if collection not in {"dkss_nsbs", "dkss_idw", "dkss_ws", "dkss_lf", "dkss_lb", "dkss_if"}:
+        return None
+    if classify_parameter(gid, collection) not in {"current-u", "current-v"}:
+        return None
+    try:
+        edition = codes_get(gid, "edition")
+        if not isinstance(edition, int) or isinstance(edition, bool):
+            raise ValueError("DKSS original GRIB edition is invalid")
+        if edition != 1:
+            return None
+        if not isinstance(cache_signature, tuple) or len(cache_signature) != 11:
+            raise ValueError("DKSS original grid identity is incomplete")
+        if cache_signature[1] != "regular_ll":
+            return None
+        return dkss_grib1_header_geometry(cache_signature, codes_get(gid, "scanningMode"))
+    except Exception as exc:
+        raise DmiGridLookupError(
+            "DKSS original header geometry could not be verified", "DKSS_HEADER_GEOMETRY_INVALID",
+        ) from exc
+
+
 def grid_candidate_target(collection: str, zone: dict[str, Any]) -> int:
     if collection in MARINE_COLLECTIONS:
         return (
@@ -4671,6 +4965,17 @@ def grid_candidate_target(collection: str, zone: dict[str, Any]) -> int:
             else GRID_CANDIDATE_TARGET
         )
     return ATMOSPHERIC_GRID_CANDIDATE_TARGET
+
+
+def current_grid_cache_key(gid, collection, signature, zone):
+    """Disjoint current interpretation; legacy scalar/wave/wind keys unchanged."""
+    legacy = (collection, signature, zone["id"], grid_candidate_target(collection, zone))
+    if collection in MARINE_COLLECTIONS and classify_parameter(gid, collection) in {"current-u", "current-v"}:
+        geometry = dkss_header_geometry_for_message(gid, collection, signature)
+        interpretation = ("dmi-dkss-grib1-header-endpoints-v1" if geometry is not None
+                          else "eccodes-native-coordinates-v1")
+        return ("current-native-grid-sampling-v1", interpretation, *legacy)
+    return legacy
 
 
 def nearest_candidates(
@@ -4691,11 +4996,22 @@ def nearest_candidates(
     # den dyre marine kyst-probing. Ét nearest-opslag pr. zone/grid er nok og
     # genbruges på tværs af alle forecast-tider via GRID_INDEX_CACHE.
     candidate_target = grid_candidate_target(collection, zone)
-    resolved_signature = signature if signature is not None else grid_signature(gid)
-    cache_key = (collection, resolved_signature, zone["id"], candidate_target)
+    if signature is not None:
+        resolved_signature = signature
+    elif collection in MARINE_COLLECTIONS and classify_parameter(gid, collection) in {"current-u", "current-v"}:
+        resolved_signature = grid_cache_signature(gid)
+    else:
+        resolved_signature = grid_signature(gid)
+    cache_key = current_grid_cache_key(gid, collection, resolved_signature, zone)
+    coordinate_interpretation = cache_key[1] if cache_key[0] == "current-native-grid-sampling-v1" else None
     cached = GRID_INDEX_CACHE.get(cache_key)
     if cached is not None:
         return cached
+    if nearest_lookup is None and collection.startswith("dkss_"):
+        geometry = dkss_header_geometry_for_message(gid, collection, grid_cache_signature(gid))
+        if geometry is not None:
+            nearest_lookup = lambda latitude, longitude: dkss_header_grid_nearest(geometry, latitude, longitude)
+            coordinate_interpretation = "dmi-dkss-grib1-header-endpoints-v1"
     if collection not in MARINE_COLLECTIONS and candidate_target == 4:
         try:
             candidates = codes_grib_find_nearest(gid, zone["lat"], zone["lon"], npoints=4)
@@ -4789,7 +5105,10 @@ def nearest_candidates(
                 continue
             prior = by_index.get(index)
             if prior is None or distance < prior["distanceKm"]:
-                by_index[index] = {"index": index, "latitude": lat, "longitude": lon, "distanceKm": distance}
+                by_index[index] = {"index": index, "latitude": lat, "longitude": lon,
+                                   "distanceKm": distance,
+                                   **({"_gridCoordinateInterpretation": coordinate_interpretation}
+                                      if cache_key[0] == "current-native-grid-sampling-v1" else {})}
     normalized = sorted(by_index.values(), key=lambda item: item["distanceKm"])[:candidate_target]
     GRID_INDEX_CACHE[cache_key] = normalized
     return normalized
@@ -4801,20 +5120,31 @@ def warm_marine_grid_cache(
     zones: list[dict[str, Any]],
     signature: tuple[Any, ...],
 ) -> None:
-    """Warm the unchanged marine probe union with one ecCodes nearest object."""
+    """Warm the existing marine probe union using its verified grid interpretation."""
     if collection not in MARINE_COLLECTIONS or not zones:
         return
     pending = [
         zone
         for zone in zones
-        if (
-            collection,
-            signature,
-            zone["id"],
-            grid_candidate_target(collection, zone),
-        ) not in GRID_INDEX_CACHE
+        if current_grid_cache_key(gid, collection, signature, zone) not in GRID_INDEX_CACHE
     ]
     if not pending:
+        return
+    geometry = dkss_header_geometry_for_message(gid, collection, signature)
+    if geometry is not None:
+        # Do not warm corrected DKSS entries with ecCodes' rounded latitude
+        # iterator. Both ordinary batch callers then reuse this same index map.
+        pending_keys = [current_grid_cache_key(gid, collection, signature, zone) for zone in pending]
+        try:
+            for zone in pending:
+                nearest_candidates(
+                    gid, collection, zone, signature=signature,
+                    nearest_lookup=lambda latitude, longitude: dkss_header_grid_nearest(geometry, latitude, longitude),
+                )
+        except Exception:
+            for key in pending_keys:
+                GRID_INDEX_CACHE.pop(key, None)
+            raise
         return
     if not (
         callable(codes_grib_nearest_new)
@@ -4827,7 +5157,7 @@ def warm_marine_grid_cache(
     nearest_id = None
     first_lookup = True
     pending_keys = [
-        (collection, signature, zone["id"], grid_candidate_target(collection, zone))
+        current_grid_cache_key(gid, collection, signature, zone)
         for zone in pending
     ]
     try:
@@ -4985,6 +5315,8 @@ def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]
     definition_sha256 = grid_definition_sha256_from_signature(
         grid_definition_signature_from_cache(cache_signature)
     )
+    current_message = collection in MARINE_COLLECTIONS and classify_parameter(gid, collection) in {"current-u", "current-v"}
+    index_identity = grid_index_identity_sha256_from_cache(cache_signature) if current_message else None
     warm_marine_grid_cache(gid, collection, zones, cache_signature)
     warm_atmospheric_grid_cache(gid, collection, zones, cache_signature)
     missing = safe_get(gid, "missingValue")
@@ -5022,6 +5354,9 @@ def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]
                 "longitude": candidate["longitude"],
                 "distanceKm": candidate["distanceKm"],
                 "gridDefinitionSha256": definition_sha256,
+                **({"_gridIndexIdentity": index_identity,
+                    "_gridCoordinateInterpretation": candidate.get("_gridCoordinateInterpretation")}
+                   if current_message else {}),
             })
         if rows:
             resolved[zone_id] = rows
@@ -6294,8 +6629,28 @@ def grid_point_metadata(
             else value
         )
         for key, value in candidate.items()
-        if key not in excluded_keys
+        if key not in excluded_keys and key not in {"_gridIndexIdentity", "_gridCoordinateInterpretation"}
     }
+
+
+def candidate_node_key(candidate: dict[str, Any]) -> tuple[str, float, float, str, int] | None:
+    """Distinguish native nodes even when decoded coordinates alias.
+
+    Equal rounded latitude/longitude is not evidence that two fields read the
+    same native element. Require both the order-sensitive grid and its index.
+    Keep the public three-part cell key unchanged for original provenance.
+    """
+    cell_key = candidate_cell_key(candidate)
+    identity = candidate.get("_gridIndexIdentity")
+    index = candidate.get("index")
+    if not (
+        cell_key is not None
+        and isinstance(identity, str)
+        and re.fullmatch(r"[0-9a-f]{64}", identity)
+        and isinstance(index, int) and not isinstance(index, bool) and index >= 0
+    ):
+        return None
+    return (*cell_key, identity, index)
 
 
 def select_common_grid_tuple(
@@ -6303,11 +6658,12 @@ def select_common_grid_tuple(
     required_parameters: tuple[str, ...],
 ) -> dict[str, dict[str, Any]] | None:
     """Select one exact grid definition/cell shared by every required field."""
-    indexed: dict[str, dict[tuple[str, float, float], dict[str, Any]]] = {}
+    key_for = candidate_node_key if required_parameters == ("current-u", "current-v") else candidate_cell_key
+    indexed: dict[str, dict[tuple[Any, ...], dict[str, Any]]] = {}
     for parameter in required_parameters:
         rows: dict[tuple[str, float, float], dict[str, Any]] = {}
         for candidate in candidates_by_parameter.get(parameter) or []:
-            key = candidate_cell_key(candidate)
+            key = key_for(candidate)
             if key is None:
                 continue
             previous = rows.get(key)
@@ -6329,6 +6685,66 @@ def select_common_grid_tuple(
     return {parameter: indexed[parameter][selected_key] for parameter in required_parameters}
 
 
+def native_grid_sampling_receipt(
+    source: dict[str, Any],
+    grid_candidate: dict[str, Any],
+    grid_tuple: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Record fresh selection evidence without relabelling retained originals.
+
+    This proves what the normal producer selected, not provider correctness or
+    historical eligibility. All component fields must have read the same native
+    element using the same coordinate interpretation. Never persist their values.
+    """
+    if not isinstance(grid_tuple, dict):
+        return None
+    fields = source["fieldSet"] + source["optionalFieldSet"]
+    selected_key = candidate_node_key(grid_candidate)
+    if selected_key is None or set(grid_tuple) != set(fields):
+        return None
+    interpretation = None
+    for field in fields:
+        row = grid_tuple[field]
+        if not isinstance(row, dict) or candidate_node_key(row) != selected_key:
+            return None
+        for key in ("latitude", "longitude", "value", "distanceKm"):
+            number = row.get(key)
+            if not (isinstance(number, (int, float)) and not isinstance(number, bool)
+                    and math.isfinite(float(number))):
+                return None
+        if not (-90 <= row["latitude"] <= 90 and -180 <= row["longitude"] <= 360
+                and row["distanceKm"] >= 0
+                and math.isclose(row["distanceKm"], source["distanceKm"], rel_tol=0, abs_tol=0.00002)):
+            return None
+        rule = row.get("_gridCoordinateInterpretation")
+        if not isinstance(rule, str) or rule not in {
+            "dmi-dkss-grib1-header-endpoints-v1", "eccodes-native-coordinates-v1",
+        }:
+            return None
+        if interpretation is not None and rule != interpretation:
+            return None
+        interpretation = rule
+    definition, latitude, longitude, index_identity, index = selected_key
+    if (source["gridDefinitionSha256"] != definition
+            or source["gridPoint"] != [longitude, latitude]
+            or grid_candidate.get("_gridCoordinateInterpretation") != interpretation):
+        return None
+    # The record stays inside the original hour/component source and the normal
+    # private container's integrity checks. A new self-hash would not prove an
+    # original was sampled correctly; it also must not invent a cross-language
+    # floating-point JSON contract. Reuse eligibility is a separate verifier.
+    return {
+        "contractId": "dmi-native-grid-sampling-v1",
+        "elementIndex": index,
+        "gridIndexIdentitySha256": index_identity,
+        "coordinateInterpretation": interpretation,
+        "gridDefinitionSha256": definition,
+        "gridPoint": list(source["gridPoint"]),
+        "fieldSet": list(source["fieldSet"]),
+        "optionalFieldSet": list(source["optionalFieldSet"]),
+    }
+
+
 def native_component_source(
     collection: str,
     model_run: str,
@@ -6340,6 +6756,7 @@ def native_component_source(
     capture: dict[str, Any] | None,
     spatial_selection: str,
     optional_field_set: tuple[str, ...] = (),
+    grid_tuple: dict[str, dict[str, Any]] | None = None,
     **extra: Any,
 ) -> dict[str, Any] | None:
     identity = sampling_identity(zone)
@@ -6398,7 +6815,7 @@ def native_component_source(
     ):
         return None
     definition, latitude, longitude = cell_key
-    return {
+    source = {
         "provider": "dmi",
         "fallback": False,
         "collection": collection,
@@ -6426,6 +6843,61 @@ def native_component_source(
         **({"itemUpdatedAt": item_updated_at} if item_updated_at else {}),
         **extra,
     }
+    if component == "current" and "nativeGridSampling" in extra:
+        return None
+    if component == "current" and grid_tuple is not None:
+        receipt = native_grid_sampling_receipt(source, grid_candidate, grid_tuple)
+        if receipt is None:
+            return None
+        source["nativeGridSampling"] = receipt
+    return source
+
+
+def _same_original_current_decoder_transition(
+    point: dict[str, Any], zone: dict[str, Any], valid_time: str,
+    fresh_source: dict[str, Any], fresh_tuple: dict[str, dict[str, Any]],
+    trusted_pair_source_keys: set[tuple[str, str, str]] | None,
+) -> bool:
+    """Admit a fresh interpretation in the NEW stage, never relabel an old row.
+
+    Only the same authenticated original bytes and official asset may cross
+    this boundary. Existing qualified winners and all ordinary source ordering
+    remain unchanged. The enclosing asset transaction owns commit/rollback.
+    """
+    identity = sampling_identity(zone)
+    zone_id = str(zone.get("id") or "")
+    hour = (point.get("hourly") or {}).get(valid_time) or {}
+    old_source = (hour.get("sources") or {}).get("current")
+    if not (
+        isinstance(point, AssetStagedZone)
+        and trusted_pair_source_keys is not None and zone_id.startswith("PART::")
+        and identity and canonical_time(hour.get("time")) == canonical_time(valid_time)
+        and isinstance(old_source, dict) and old_source.get("nativeGridSampling") is None
+        and all(isinstance(hour.get(field), (int, float))
+                and not isinstance(hour.get(field), bool) and math.isfinite(float(hour[field]))
+                for field in COMPONENT_FIELD_SET["current"])
+        and complete_native_source_for_hour(old_source, "current", zone_id, identity, valid_time)
+        and complete_native_source_for_hour(fresh_source, "current", zone_id, identity, valid_time)
+        and old_source.get("gridDefinitionSha256") == fresh_source.get("gridDefinitionSha256")
+    ):
+        return False
+    original = canonical_current_source_asset(old_source)
+    fresh_asset = canonical_current_source_asset(fresh_source)
+    if original is None or fresh_asset is None:
+        return False
+    original_key = json.dumps(original, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    if (zone_id.removeprefix("PART::"), valid_time, original_key) not in trusted_pair_source_keys:
+        return False
+    # Reacquisition may change capture time, never official identity or bytes.
+    # Keep both complete captures and the old trusted key unchanged.
+    if any(original[key] != fresh_asset[key] for key in original if key != "acquiredAt"):
+        return False
+    fresh_record = native_grid_sampling_receipt(fresh_source, fresh_tuple["current-u"], fresh_tuple)
+    return bool(
+        fresh_record is not None and fresh_record == fresh_source.get("nativeGridSampling")
+        and fresh_record["coordinateInterpretation"] == "dmi-dkss-grib1-header-endpoints-v1"
+        and inspect_native_grid_sampling(fresh_source)["status"] == "coherent"
+    )
 
 
 def prefer_marine_component_hour_candidate(
@@ -6664,8 +7136,31 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         selection_key = (family, zone["id"])
                         candidate_choice = vector_choice(first, second, layer_key, layer_rank)
                         if family == "current" and zone.get("researchCurrent"):
+                            if zone.get("regionalProxyCandidate"):
+                                regional_source = native_component_source(
+                                    collection, model_run, valid_time, component="current", zone=zone,
+                                    grid_candidate=first, grid_tuple={first_key: first, second_key: second},
+                                    capture=source_capture, spatial_selection=COMPONENT_SPATIAL_SELECTION["current"],
+                                    verticalLayer=layer_key, verticalLayerRankM=round(layer_rank, 3),
+                                    vectorSelection=CURRENT_VECTOR_SELECTION,
+                                    vectorSemanticsVersion=CURRENT_VECTOR_SEMANTICS_VERSION)
+                                if regional_source is None:
+                                    raise DmiGridLookupError("Fresh regional selection could not be verified",
+                                        "NATIVE_VECTOR_PROVENANCE_INVALID")
+                                candidate_choice["nativeSource"] = regional_source
                             research_vector_choices.setdefault(str(zone["id"]), []).append(candidate_choice)
                             continue
+                        if family == "current":
+                            source = native_component_source(
+                                collection, model_run, valid_time, component="current", zone=zone,
+                                grid_candidate=first, grid_tuple={first_key: first, second_key: second},
+                                capture=source_capture, spatial_selection=COMPONENT_SPATIAL_SELECTION["current"],
+                                verticalLayer=layer_key, verticalLayerRankM=round(layer_rank, 3),
+                                vectorSelection=CURRENT_VECTOR_SELECTION,
+                                vectorSemanticsVersion=CURRENT_VECTOR_SEMANTICS_VERSION)
+                            if source is None:
+                                raise DmiGridLookupError("Fresh native current selection could not be verified",
+                                    "NATIVE_VECTOR_PROVENANCE_INVALID")
                         previous_choice = selected_vector_choices.get(selection_key)
                         # Strøm: vælg først den nærmeste gyldige vandkolonne og
                         # derefter dens dybeste fælles U/V-lag. Vind har kun ét lag.
@@ -6722,7 +7217,11 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                                     valid_time,
                                     existing_source_key,
                                 ) in trusted_current_pair_source_keys
-                            if not prefer_current_hour_candidate(
+                            if not _same_original_current_decoder_transition(
+                                point, zone, valid_time, source,
+                                {first_key: first, second_key: second},
+                                trusted_current_pair_source_keys,
+                            ) and not prefer_current_hour_candidate(
                                 point,
                                 valid_time,
                                 collection,
@@ -6789,39 +7288,42 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                                 "verticalLayerRankM": round(layer_rank, 3),
                             }
                             point["collections"][key] = collection
-                        source_extra = {
-                            "vectorSelection": "nearest-shared-grid-cell-no-spatial-interpolation",
-                            "vectorSemanticsVersion": 1,
-                        }
-                        if family == "wind":
-                            source_extra.update({
-                                "vectorSemanticsVersion": WIND_VECTOR_VERSION,
-                                "vectorReference": "earth-relative-east-north",
-                                "vectorTransform": first["_windReference"][0],
-                            })
                         if family == "current":
-                            source_extra = {
-                                "verticalLayer": layer_key,
-                                "verticalLayerRankM": round(layer_rank, 3),
-                                "vectorSelection": CURRENT_VECTOR_SELECTION,
-                                "vectorSemanticsVersion": CURRENT_VECTOR_SEMANTICS_VERSION,
-                            }
-                        component = PARAMETER_COMPONENT[first_key]
-                        source = native_component_source(
-                            collection,
-                            model_run,
-                            valid_time,
-                            component=component,
-                            zone=zone,
-                            grid_candidate=first,
-                            capture=source_capture,
-                            spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
-                            **source_extra,
-                        )
-                        if source:
-                            hour.setdefault("sources", {})[component] = source
+                            hour.setdefault("sources", {})["current"] = source
                         else:
-                            (hour.get("sources") or {}).pop(component, None)
+                            source_extra = {
+                                "vectorSelection": "nearest-shared-grid-cell-no-spatial-interpolation",
+                                "vectorSemanticsVersion": 1,
+                            }
+                            if family == "wind":
+                                source_extra.update({
+                                    "vectorSemanticsVersion": WIND_VECTOR_VERSION,
+                                    "vectorReference": "earth-relative-east-north",
+                                    "vectorTransform": first["_windReference"][0],
+                                })
+                            if family == "current":
+                                source_extra = {
+                                    "verticalLayer": layer_key,
+                                    "verticalLayerRankM": round(layer_rank, 3),
+                                    "vectorSelection": CURRENT_VECTOR_SELECTION,
+                                    "vectorSemanticsVersion": CURRENT_VECTOR_SEMANTICS_VERSION,
+                                }
+                            component = PARAMETER_COMPONENT[first_key]
+                            source = native_component_source(
+                                collection,
+                                model_run,
+                                valid_time,
+                                component=component,
+                                zone=zone,
+                                grid_candidate=first,
+                                capture=source_capture,
+                                spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+                                **source_extra,
+                            )
+                            if source:
+                                hour.setdefault("sources", {})[component] = source
+                            else:
+                                (hour.get("sources") or {}).pop(component, None)
                     continue
 
                 if parameter in {"significant-wave-height", "mean-wave-dir", "dominant-wave-period"}:
@@ -8183,6 +8685,10 @@ def execute_private_wave_history_bootstrap(
                 RuntimeError,
                 OSError,
             ) as exc:
+                controller.observe_asset_duration(
+                    time.monotonic() - asset_processing_started,
+                    cost_family=collection,
+                )
                 if staged_asset_summary:
                     accumulate_wave_asset_coverage(
                         asset_coverage,
@@ -12127,6 +12633,7 @@ def main() -> int:
         and previous.get("zones")
         and time.time() - previous_generated < REFRESH_MINUTES * 60
         and marine_cache_healthy
+        and native_sampling_cache_ready(previous, locked_production_reference)
         and previous.get("spatialProvenanceVersion") == SPATIAL_PROVENANCE_VERSION
         and int(previous.get("privateReplayRetentionHours") or 0) >= 54
         and zone_registry_unchanged
@@ -12545,6 +13052,15 @@ def main() -> int:
             selected_official_current_assets,
         )
     )
+    # These NEW-work sets are separate from the original trust evidence used
+    # by transaction validation and no-loss. Never filter that original set.
+    qualified_current_pair_source_keys = current_pair_sampling_evidence(
+        result, actual_current_pair_source_keys,
+    )
+    qualified_covered_current_pair_keys = {
+        (part_id, valid_time)
+        for part_id, valid_time, _source_key in qualified_current_pair_source_keys
+    }
     # Two-pass same-run continuity: first prove actual owner rows against the
     # still-selected official asset. Those exact owners may then satisfy cache
     # completeness for a secondary collection whose valid outcome had no public
@@ -12579,6 +13095,12 @@ def main() -> int:
             actual_pair_source_keys=actual_current_pair_source_keys,
             covered_pair_keys=set(),
         )
+        qualified_owner_times = qualified_current_processed_valid_times(
+            owner_steps, current_target_ids=current_target_ids,
+            required_valid_times=required_current_valid_times,
+            qualified_pair_source_keys=qualified_current_pair_source_keys,
+            qualified_covered_pair_keys=set(),
+        )
         for valid_time, step in owner_steps.items():
             unavailable = set(
                 (step.get("currentPartOutcomeProof") or {}).get(
@@ -12589,6 +13111,11 @@ def main() -> int:
                 (part_id, valid_time)
                 for part_id in set(current_target_ids) - unavailable
             )
+            if valid_time in qualified_owner_times:
+                qualified_covered_current_pair_keys.update(
+                    (part_id, valid_time)
+                    for part_id in set(current_target_ids) - unavailable
+                )
 
     # Regional fallback needs this run's selected official ledger, not merely
     # the restored shadow header. Its result is advisory planning coverage only
@@ -12640,7 +13167,7 @@ def main() -> int:
                 "REGIONAL_ACQUISITION_POLICY_UNAVAILABLE"
             )
         initial_planning_current_pairs = (
-            global_current_planning_pairs | covered_current_pair_keys
+            global_current_planning_pairs | qualified_covered_current_pair_keys
         )
         acquisition_plan_diagnostics["coveredPairCount"] = len(initial_planning_current_pairs)
         acquisition_plan_diagnostics["globalMissingPairCountBeforeDmi"] = sum(
@@ -12702,10 +13229,11 @@ def main() -> int:
                     model_run=selected_run,
                     asset=asset,
                     target_ids=current_target_ids,
-                    covered_pair_keys=covered_current_pair_keys,
+                    covered_pair_keys=qualified_covered_current_pair_keys,
                     cached_zones=result.get("zones") or {},
                     active_zone_ids=active_production_zone_ids,
                     enabled=True,
+                    require_native_grid_sampling=True,
                     planning_covered_pair_keys=initial_planning_current_pairs,
                     required_valid_times=required_current_valid_times,
                     regional_current_gap_count=len(
@@ -13182,7 +13710,7 @@ def main() -> int:
             )
             priority_covered_pair_keys: set[tuple[str, str]] = set()
             if collection in MARINE_COLLECTIONS:
-                priority_covered_pair_keys = set(covered_current_pair_keys)
+                priority_covered_pair_keys = set(qualified_covered_current_pair_keys)
                 for valid_time, step in previous_steps.items():
                     source = canonical_current_source_asset(step.get("sourceAsset"))
                     if source is None:
@@ -13203,7 +13731,7 @@ def main() -> int:
                             part_id,
                             valid_time,
                             source_key,
-                        ) in actual_current_pair_source_keys:
+                        ) in qualified_current_pair_source_keys:
                             priority_covered_pair_keys.add((part_id, valid_time))
                 planning_current_pairs = (
                     global_current_planning_pairs | priority_covered_pair_keys
@@ -13258,6 +13786,7 @@ def main() -> int:
                         cached_zones=result.get("zones") or {},
                         active_zone_ids=active_production_zone_ids,
                         enabled=DKSS_PRIMARY_MODE,
+                        require_native_grid_sampling=True,
                         planning_covered_pair_keys=planning_current_pairs,
                         required_valid_times=required_current_valid_times,
                         regional_current_gap_count=len(
@@ -13343,6 +13872,17 @@ def main() -> int:
                 and set(step.get("recognizedParameters") or []) >= required_for_family
                 and int(step.get("zonesTouched") or 0) > 0
             }
+            if collection in MARINE_COLLECTIONS:
+                previously_processed.intersection_update(
+                    qualified_current_processed_valid_times(
+                        previous_steps, current_target_ids=current_target_ids,
+                        required_valid_times=required_current_valid_times,
+                        qualified_pair_source_keys=qualified_current_pair_source_keys,
+                        qualified_covered_pair_keys=qualified_covered_current_pair_keys,
+                        private_support_zones=result.get("zones") or {},
+                        private_support_zone_ids=active_production_zone_ids,
+                    )
+                )
             previously_traversed = (
                 {
                     valid for valid, step in previous_steps.items()
@@ -13399,6 +13939,7 @@ def main() -> int:
                     and set(step.get("recognizedParameters") or [])
                         >= required_for_family
                     and int(step.get("zonesTouched") or 0) > 0
+                    and (collection not in MARINE_COLLECTIONS or valid in previously_processed)
                 }
                 traversed = (
                     {
@@ -13794,6 +14335,7 @@ def main() -> int:
                         cached_zones=result.get("zones") or {},
                         active_zone_ids=active_production_zone_ids,
                         enabled=True,
+                        require_native_grid_sampling=True,
                         planning_covered_pair_keys=(
                             planning_current_pairs
                             if global_current_planning_pairs is not None else None
@@ -14376,6 +14918,10 @@ def main() -> int:
                     RuntimeError,
                     OSError,
                 ) as exc:
+                    checkpoint_controller.observe_asset_duration(
+                        time.monotonic() - asset_processing_started,
+                        cost_family=collection,
+                    )
                     if bootstrap_operational_wam and validated_wave_stage:
                         wave_asset_coverage = result["diagnostics"].setdefault(
                             "operationalWaveAssetCoverageByCollection", {}
@@ -14415,10 +14961,6 @@ def main() -> int:
                         run_info["assetsObserved"] += 1
                         recognized.update(REQUIRED_TARGETS["wave"])
                         run_info["recognizedParameters"] = sorted(recognized)
-                        checkpoint_controller.observe_asset_duration(
-                            time.monotonic() - asset_processing_started,
-                            cost_family=collection,
-                        )
                         checkpoint_controller.mark_bulk_dirty()
                         checkpoint_controller.flush_if_due(force=True)
                         progress(
@@ -14618,6 +15160,9 @@ def main() -> int:
                            or bootstrap_operational_wam else {}),
                         **({"currentPartOutcomeProof": step_part_outcome_proof}
                            if collection in MARINE_COLLECTIONS else {}),
+                        **({"currentGridSamplingOutcome":
+                            build_current_grid_sampling_outcome_receipt(step_part_outcome_proof)}
+                           if collection in MARINE_COLLECTIONS and step_complete else {}),
                         **({"regionalObservation": validated_current_stage["regionalObservation"]}
                            if "regionalObservation" in validated_current_stage else {}),
                         **({"waveTargetProof": step_wave_target_proof}
@@ -14668,7 +15213,51 @@ def main() -> int:
                             if pair_identity not in covered_current_pair_keys:
                                 native_planning_changed = True
                             covered_current_pair_keys.add(pair_identity)
-                        priority_covered_pair_keys.update(covered_current_pair_keys)
+                        # Qualify actual winners AFTER normal selection. A
+                        # successful parse may intentionally retain an old
+                        # original, which must not inherit a new record.
+                        previous_qualified_hour_pairs = {
+                            key for key in qualified_covered_current_pair_keys
+                            if key[1] == asset["valid"]
+                        }
+                        hour_trusted_keys = {
+                            key for key in actual_current_pair_source_keys
+                            if key[1] == asset["valid"]
+                        }
+                        qualified_current_pair_source_keys.difference_update({
+                            key for key in qualified_current_pair_source_keys
+                            if key[1] == asset["valid"]
+                        })
+                        qualified_current_pair_source_keys.update(
+                            current_pair_sampling_evidence(result, hour_trusted_keys)
+                        )
+                        qualified_covered_current_pair_keys.difference_update({
+                            key for key in qualified_covered_current_pair_keys
+                            if key[1] == asset["valid"]
+                        })
+                        qualified_covered_current_pair_keys.update(
+                            (part_id, valid_time)
+                            for part_id, valid_time, _key in qualified_current_pair_source_keys
+                            if valid_time == asset["valid"]
+                        )
+                        if previous_qualified_hour_pairs != {
+                            key for key in qualified_covered_current_pair_keys
+                            if key[1] == asset["valid"]
+                        }:
+                            native_planning_changed = True
+                        priority_covered_pair_keys = set(qualified_covered_current_pair_keys)
+                        newly_eligible = qualified_current_processed_valid_times(
+                            {asset["valid"]: run_info["processedSteps"][asset["valid"]]},
+                            current_target_ids=current_target_ids,
+                            required_valid_times=required_current_valid_times,
+                            qualified_pair_source_keys=qualified_current_pair_source_keys,
+                            qualified_covered_pair_keys=qualified_covered_current_pair_keys,
+                            private_support_zones=result.get("zones") or {},
+                            private_support_zone_ids=active_production_zone_ids,
+                        )
+                        if asset["valid"] not in newly_eligible:
+                            previously_processed.discard(asset["valid"])
+                        run_info["processedValidTimes"] = sorted(previously_processed, key=epoch)
                         if global_current_planning_pairs is not None:
                             planning_current_pairs = (
                                 global_current_planning_pairs | priority_covered_pair_keys
@@ -14696,7 +15285,7 @@ def main() -> int:
                                     run_info.get("regionalCoverageRebuildCount") or 0
                                 ) + 1
                             priority_covered_pair_keys.update(
-                                covered_current_pair_keys
+                                qualified_covered_current_pair_keys
                             )
                             planning_current_pairs = (
                                 global_current_planning_pairs
@@ -14733,6 +15322,7 @@ def main() -> int:
                                             active_production_zone_ids
                                         ),
                                         enabled=DKSS_PRIMARY_MODE,
+                                        require_native_grid_sampling=True,
                                         planning_covered_pair_keys=(
                                             planning_current_pairs
                                         ),

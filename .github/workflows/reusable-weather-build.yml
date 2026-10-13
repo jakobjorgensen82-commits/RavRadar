@@ -608,6 +608,37 @@ jobs:
           --output "$RUNNER_TEMP/historical-wave-predecessor-expected.json"
           --github-output "$GITHUB_OUTPUT"
 
+      # Inactive SOURCE proposal until exact original B/S and the new private
+      # successor destination/install authority have been closed and reviewed.
+      - name: Require a strictly new normal hour for current-grid source succession
+        id: current-grid-original-hour
+        if: steps.preflight.outputs.should_run == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'current-grid-sampling-original'
+        shell: bash
+        env:
+          CURRENT_GRID_ORIGINAL_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
+          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
+          QUICK_CONFIRMATION: ${{ inputs.quick_confirmation }}
+        run: |
+          set -euo pipefail
+          case "$OPERATIONAL_ACTION" in
+            integrated|integrated-historical-maintenance) ;;
+            *) echo "Current-grid succession requires the normal integrated new-hour path." >&2; exit 1 ;;
+          esac
+          test "$QUICK_CONFIRMATION" != 'true'
+          test -s "$CURRENT_GRID_ORIGINAL_EXPECTED"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { assertCurrentGridSamplingOriginalExpectation }
+            from './scripts/lib/bounded-conditions-predecessor-transition.mjs';
+          const expected = JSON.parse(fs.readFileSync(process.env.CURRENT_GRID_ORIGINAL_EXPECTED, 'utf8'));
+          assertCurrentGridSamplingOriginalExpectation(expected);
+          const target = Date.parse(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR);
+          if (!Number.isFinite(target) || target !== Date.parse(expected.targetReferenceAt)
+            || target <= Date.parse(expected.productionReferenceAt)) {
+            throw new Error('Current-grid original requires its strictly newer locked normal production hour');
+          }
+          NODE
+
       - name: Classify the exact 11Z weather recovery
         id: exact-weather-recovery
         if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
@@ -626,7 +657,7 @@ jobs:
       # private conditions carry the exact continuation states and are rebound
       # below; restoring the old checkpoint here would reject a valid donor.
       - name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint
-        if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
+        if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'
         id: ravscore-checkpoint-cache
         uses: actions/cache/restore@v6
         with:
@@ -636,7 +667,7 @@ jobs:
             ravscore-continuation-schema6-v2-
 
       - name: Restore protected atomic RavScore checkpoint when cache is absent
-        if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''
+        if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == '' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --restore
@@ -661,7 +692,7 @@ jobs:
           test "$(git -C "$donor_root" rev-parse HEAD)" = "$donor_head"
 
       - name: Materialize the exact audited predecessor reader before old-reader secret use
-        if: steps.historical-wave-predecessor.outputs.required == 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original'
+        if: steps.historical-wave-predecessor.outputs.required == 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'
         shell: bash
         env:
           EXPECTED_SOURCE_HEAD: ${{ steps.historical-wave-predecessor.outputs.source_head }}
@@ -701,7 +732,10 @@ jobs:
           restore_script="$GITHUB_WORKSPACE/scripts/protected-private-production-runtime.mjs"
           restore_repository="$GITHUB_WORKSPACE"
           restore_expected="$GITHUB_WORKSPACE/.cache/private-production-runtime-expected.json"
-          if test "$OWNER_CURRENT_ORIGINAL_REQUIRED" = "true"; then
+          if test "$CURRENT_GRID_ORIGINAL_REQUIRED" = "true"; then
+            test -s "$CURRENT_GRID_ORIGINAL_EXPECTED" || exit 1
+            restore_expected="$CURRENT_GRID_ORIGINAL_EXPECTED"
+          elif test "$OWNER_CURRENT_ORIGINAL_REQUIRED" = "true"; then
             restore_expected="$HISTORICAL_WAVE_PREDECESSOR_EXPECTED"
           elif test "$HISTORICAL_WAVE_PREDECESSOR_REQUIRED" = "true"; then
             restore_script="$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs"
@@ -747,6 +781,10 @@ jobs:
             echo "R2 private runtime restore failed; no stateless recovery is allowed."
             exit "$status"
           fi
+          if test "$CURRENT_GRID_ORIGINAL_REQUIRED" = "true"; then
+            echo "The exact current-grid original could not be restored; no reader, checkpoint or stateless replacement is permitted."
+            exit "$status"
+          fi
           if test "$EXACT_WEATHER_RECOVERY_REQUIRED" = "true"; then
             echo "The exact 11Z/15Z pair could not be verified; a stateless replacement is forbidden."
             exit "$status"
@@ -789,6 +827,8 @@ jobs:
           EXACT_WEATHER_RECOVERY_REQUIRED: ${{ steps.exact-weather-recovery.outputs.required || 'false' }}
           HISTORICAL_WAVE_PREDECESSOR_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.required || 'false' }}
           OWNER_CURRENT_ORIGINAL_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.transition_kind == 'owner-current-domain-original' }}
+          CURRENT_GRID_ORIGINAL_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.transition_kind == 'current-grid-sampling-original' }}
+          CURRENT_GRID_ORIGINAL_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
           HISTORICAL_WAVE_PREDECESSOR_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -838,6 +878,8 @@ jobs:
         env:
           HISTORICAL_WAVE_PREDECESSOR_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.required || 'false' }}
           OWNER_CURRENT_ORIGINAL_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.transition_kind == 'owner-current-domain-original' }}
+          CURRENT_GRID_ORIGINAL_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.transition_kind == 'current-grid-sampling-original' }}
+          CURRENT_GRID_ORIGINAL_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
           HISTORICAL_WAVE_PREDECESSOR_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
           EXACT_WEATHER_RECOVERY_REQUIRED: ${{ steps.exact-weather-recovery.outputs.required || 'false' }}
         run: |
@@ -845,7 +887,16 @@ jobs:
           restore_script="$GITHUB_WORKSPACE/scripts/private-production-runtime-bundle.mjs"
           restore_repository="$GITHUB_WORKSPACE"
           restore_expected="$GITHUB_WORKSPACE/.cache/private-production-runtime-expected.json"
-          if test "$OWNER_CURRENT_ORIGINAL_REQUIRED" = "true"; then
+          if test "$CURRENT_GRID_ORIGINAL_REQUIRED" = "true"; then
+            test -s "$CURRENT_GRID_ORIGINAL_EXPECTED"
+            restore_expected="$CURRENT_GRID_ORIGINAL_EXPECTED"
+            node scripts/private-runtime-second-restore-expectation.mjs \
+              --expected "$restore_expected" \
+              --source-description "$RUNNER_TEMP/private-runtime-restored-source.json" \
+              --bundle-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json" \
+              --output "$RUNNER_TEMP/private-runtime-second-restore-expected.json"
+            restore_expected="$RUNNER_TEMP/private-runtime-second-restore-expected.json"
+          elif test "$OWNER_CURRENT_ORIGINAL_REQUIRED" = "true"; then
             restore_expected="$HISTORICAL_WAVE_PREDECESSOR_EXPECTED"
             node scripts/private-runtime-second-restore-expectation.mjs \
               --expected "$restore_expected" \
@@ -903,6 +954,40 @@ jobs:
             --report "$RUNNER_TEMP/owner-current-original-migration.json"
           echo "restored_path=$migrated_root" >> "$GITHUB_OUTPUT"
 
+      - name: Preserve nationwide originals before new-hour current-grid reconstruction
+        id: current-grid-original-migration
+        if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'current-grid-sampling-original'
+        shell: bash
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+          EXPECTED_SOURCE_HEAD: ${{ steps.historical-wave-predecessor.outputs.source_head }}
+          CURRENT_GRID_ORIGINAL_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
+        run: |
+          set -euo pipefail
+          test "${{ steps.current-grid-original-hour.outcome }}" = 'success'
+          test -s "$CURRENT_GRID_ORIGINAL_EXPECTED"
+          migrated_root="$RAVRADAR_PRIVATE_RUNTIME_ROOT/current-grid-original-successor"
+          test ! -e "$migrated_root"
+          node scripts/migrate-post-cutover-private-runtime.mjs \
+            --current-grid-original \
+            --current-grid-original-expectation "$CURRENT_GRID_ORIGINAL_EXPECTED" \
+            --source "$RAVRADAR_PRIVATE_RUNTIME_RESTORE" \
+            --output "$migrated_root" \
+            --bundle-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json" \
+            --predecessor-descriptor "$RUNNER_TEMP/private-runtime-restored-source.json" \
+            --repository-root "$GITHUB_WORKSPACE" \
+            --expected-source-head "$EXPECTED_SOURCE_HEAD" \
+            --report "$RUNNER_TEMP/current-grid-original-migration.json"
+          test "$(jq -er '.transitionKind' "$RUNNER_TEMP/current-grid-original-migration.json")" = 'CURRENT_GRID_ORIGINAL_ARCHIVE_BRIDGE'
+          test -s "$migrated_root/data/live/conditions.json"
+          original_has_public_pack="$(jq -er '.files | any(.relativePath == ".cache/public-hour-delivery.pack") | tostring' "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json")"
+          case "$original_has_public_pack" in
+            true) test -s "$migrated_root/.cache/public-hour-delivery.pack" ;;
+            false) test ! -e "$migrated_root/.cache/public-hour-delivery.pack" ;;
+            *) echo "Invalid original public-hour inventory." >&2; exit 1 ;;
+          esac
+          echo "restored_path=$migrated_root" >> "$GITHUB_OUTPUT"
+
       - name: Rebind the exact bounded-conditions predecessor before installation
         id: bounded-conditions-predecessor-migration
         if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'bounded-conditions-writer'
@@ -955,10 +1040,15 @@ jobs:
           MIGRATED_RUNTIME_ROOT: ${{ steps.bounded-conditions-predecessor-migration.outputs.restored_path }}
           EXACT_WEATHER_MIGRATED_ROOT: ${{ steps.exact-weather-pair-migration.outputs.restored_path }}
           OWNER_CURRENT_MIGRATED_ROOT: ${{ steps.owner-current-original-migration.outputs.restored_path }}
+          CURRENT_GRID_MIGRATED_ROOT: ${{ steps.current-grid-original-migration.outputs.restored_path }}
         run: |
           set -euo pipefail
           restored_root="$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
-          if test "$PREDECESSOR_TRANSITION_KIND" = "owner-current-domain-original"; then
+          if test "$PREDECESSOR_TRANSITION_KIND" = "current-grid-sampling-original"; then
+            test -n "$CURRENT_GRID_MIGRATED_ROOT"
+            test "${{ steps.current-grid-original-migration.outcome }}" = 'success'
+            restored_root="$CURRENT_GRID_MIGRATED_ROOT"
+          elif test "$PREDECESSOR_TRANSITION_KIND" = "owner-current-domain-original"; then
             test -n "$OWNER_CURRENT_MIGRATED_ROOT"
             restored_root="$OWNER_CURRENT_MIGRATED_ROOT"
           elif test "$PREDECESSOR_TRANSITION_KIND" = "bounded-conditions-writer"; then

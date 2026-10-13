@@ -3,6 +3,7 @@ import {
   dmiExpectedIdentityForPart,
   eligibleBulkCurrent as verifiedBulkCurrent,
   verifiedIntegratedPartHourly,
+  assertDmiPartHourlyGridSamplingApplicable,
 } from './ravscore-production-adapters.mjs';
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
@@ -48,7 +49,7 @@ export function verifiedProtectedDmiPartHourly(
     normalizedRecord, primary, bulkId, part, componentInputs,
   );
   const originalByTime = new Map(hourly.map(row => [row.time, row]));
-  return projection.map(row => {
+  const result = projection.map(row => {
     if (row.currentProvenance?.status === 'verified' || row.currentStateOnlyHold) return row;
     const original = originalByTime.get(row.time);
     const context = originalContextForProtectedDmiCurrent(
@@ -64,4 +65,10 @@ export function verifiedProtectedDmiPartHourly(
     if (admitted?.currentProvenance?.status !== 'verified') return row;
     return { ...row, ...Object.fromEntries(CURRENT_FIELDS.map(key => [key, admitted[key]])) };
   });
+  // The secondary original context must not bypass the NEW-use gate. Keep its
+  // old authenticated admission and full-record T+3 projection unchanged.
+  if (componentInputs.requireNativeGridSampling === true) {
+    assertDmiPartHourlyGridSamplingApplicable(result, bulkId, part, componentInputs);
+  }
+  return result;
 }

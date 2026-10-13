@@ -104,6 +104,74 @@ CURRENT_SOURCE_ASSET_FIELDS = frozenset({
     "acquiredAt", "contentLengthBytes", "contentSha256",
 })
 
+_NATIVE_GRID_SAMPLING_KEYS = frozenset({
+    "contractId", "elementIndex", "gridIndexIdentitySha256", "coordinateInterpretation",
+    "gridDefinitionSha256", "gridPoint", "fieldSet", "optionalFieldSet",
+})
+
+
+def inspect_native_grid_sampling(source: Any) -> dict[str, str]:
+    """Non-mutating metadata coherence, NOT authentication or reuse permission.
+
+    Inspect the rich original hour source before any lossy asset projection.
+    Missing/null/future records stay UNKNOWN; they do not invalidate old values.
+    Existing native verifiers, cache/processed admission and cleanup are unchanged.
+    Never infer an index from coordinates or repair/relabel an original source.
+    """
+    def result(status: str, code: str) -> dict[str, str]:
+        return {"status": status, "reasonCode": code}
+
+    if not isinstance(source, dict) or "nativeGridSampling" not in source:
+        return result("unknown", "NATIVE_RECORD_ABSENT")
+    record = source["nativeGridSampling"]
+    if record is None:
+        return result("unknown", "NATIVE_RECORD_NULL")
+    if not isinstance(record, dict):
+        return result("contradictory", "NATIVE_RECORD_SHAPE")
+    contract = record.get("contractId")
+    if isinstance(contract, str) and contract and contract != "dmi-native-grid-sampling-v1":
+        return result("unknown", "NATIVE_RECORD_UNSUPPORTED")
+    if set(record) != _NATIVE_GRID_SAMPLING_KEYS or contract != "dmi-native-grid-sampling-v1":
+        return result("contradictory", "NATIVE_RECORD_SHAPE")
+    index = record["elementIndex"]
+    index_hash = record["gridIndexIdentitySha256"]
+    # JSON 7 and 7.0 have the same integral Number semantics in JavaScript.
+    # Reject bool and out-of-safe-range integers before any float conversion.
+    if not (isinstance(index, (int, float)) and not isinstance(index, bool)
+            and 0 <= index <= 9_007_199_254_740_991
+            and (not isinstance(index, float) or index.is_integer())
+            and isinstance(index_hash, str) and _SHA256.fullmatch(index_hash)):
+        return result("contradictory", "NATIVE_RECORD_INDEX")
+    interpretation = record["coordinateInterpretation"]
+    collection = source.get("collection")
+    if (interpretation not in ("dmi-dkss-grib1-header-endpoints-v1", "eccodes-native-coordinates-v1")
+            or interpretation == "dmi-dkss-grib1-header-endpoints-v1"
+            and (not isinstance(collection, str) or COLLECTION_FAMILY.get(collection) != "marine")):
+        return result("contradictory", "NATIVE_RECORD_INTERPRETATION")
+    definition = record["gridDefinitionSha256"]
+    point, source_point = record["gridPoint"], source.get("gridPoint")
+
+    def finite_point(value: Any) -> bool:
+        return (isinstance(value, list) and len(value) == 2
+                and all(isinstance(number, (int, float)) and not isinstance(number, bool)
+                        and lower <= number <= upper
+                        for number, lower, upper in zip(value, (-180, -90), (360, 90))))
+
+    if not (isinstance(definition, str) and _SHA256.fullmatch(definition)
+            and definition == source.get("gridDefinitionSha256")
+            and finite_point(point) and finite_point(source_point) and point == source_point):
+        return result("contradictory", "NATIVE_RECORD_GRID")
+    component, fields, optional = source.get("component"), source.get("fieldSet"), source.get("optionalFieldSet")
+    if not (isinstance(component, str) and isinstance(collection, str)
+            and collection in COMPONENT_COLLECTIONS.get(component, ())
+            and fields == list(COMPONENT_FIELD_SET.get(component, ()))
+            and isinstance(optional, list)
+            and record["fieldSet"] == fields and record["optionalFieldSet"] == optional
+            and (len(optional) <= 1 and all(field == "mean-wave-dir" for field in optional)
+                 if component == "wave" else optional == [])):
+        return result("contradictory", "NATIVE_RECORD_FIELDS")
+    return result("coherent", "NATIVE_RECORD_COHERENT")
+
 
 def canonical_time(value: Any) -> str | None:
     if value is None:
@@ -129,6 +197,40 @@ def _canonical_json(value: Any) -> str:
 
 def _canonical_sha256(value: Any) -> str:
     return HASH_PREFIX + hashlib.sha256(_canonical_json(value).encode("utf-8")).hexdigest()
+
+
+def build_current_grid_sampling_outcome_receipt(outcome: Any) -> dict[str, str]:
+    """Bind a NEW completed traversal to its existing immutable outcome proof.
+
+    The producer issues this sibling only after its normal fresh transaction
+    reaches a complete, validated outcome. This is not source authentication,
+    selected-row admission or evidence that an older traversal used new rules.
+    Never reconstruct it while restoring old processed steps.
+    """
+    if not isinstance(outcome, dict) or outcome.get("contractId") != CURRENT_PART_OUTCOME_CONTRACT_ID:
+        raise ValueError("Current grid sampling outcome proof is malformed")
+    # Reuse the existing verified proof hash. Do not introduce a new hash of
+    # its floating-point search metadata: normal JS roundtrips serialize 5.0
+    # as 5. The normal original verifier reconstructs that existing proof.
+    expected = outcome.get("outcomesSha256")
+    if not isinstance(expected, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", expected):
+        raise ValueError("Current grid sampling outcome proof hash is invalid")
+    return {
+        "contractId": "dmi-current-grid-sampling-outcomes-v1",
+        "samplingContractId": "dmi-native-grid-sampling-v1",
+        "samplingRuleId": "common-element-index-and-dkss-header-endpoints-v1",
+        "outcomeProofSha256": expected,
+    }
+
+
+def current_grid_sampling_outcome_matches(receipt: Any, outcome: Any) -> bool:
+    """Qualification only, AFTER the normal original-asset/outcome verifier."""
+    if not isinstance(receipt, dict):
+        return False
+    try:
+        return receipt == build_current_grid_sampling_outcome_receipt(outcome)
+    except (TypeError, ValueError):
+        return False
 
 
 def part_time_pairs_sha256(pairs: Any) -> str:
@@ -775,7 +877,7 @@ def sampling_identity(zone: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
-def complete_native_source_for_hour(
+def native_source_common_for_hour(
     source: Any,
     component: str,
     entity_id: str,
@@ -845,8 +947,26 @@ def complete_native_source_for_hour(
         and (source.get("itemCreatedAt") is None or canonical_time(source.get("itemCreatedAt")))
         and (source.get("itemUpdatedAt") is None or canonical_time(source.get("itemUpdatedAt")))
     )
-    if not common_valid:
+    return common_valid
+
+
+def complete_native_source_for_hour(
+    source: Any,
+    component: str,
+    entity_id: str,
+    entity: dict[str, Any],
+    valid_time: str,
+) -> bool:
+    """Verify one component source against one exact entity/native UTC time.
+
+    For a current gap matrix the caller must additionally require finite U and V
+    on the same row whose time equals ``valid_time``.  This function verifies the
+    complete source, entity, temporal, cell, distance, item and vector proof.
+    """
+    if not native_source_common_for_hour(source, component, entity_id, entity, valid_time):
         return False
+    collection = str(source.get("collection") or "")
+    distance = source.get("distanceKm")
     if component == "current":
         return bool(
             canonical_current_source_asset(source) is not None

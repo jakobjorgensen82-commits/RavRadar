@@ -8,6 +8,8 @@ import {
 } from '../../js/core/ravscore-candidate-g-state-pipeline.js';
 import { buildIntegratedRavScoreStateSeries, assertOwnerCurrentArchivedPredecessorState,
   assertWaterLevelOnlyPredecessorState,
+  assertCurrentGridSamplingPredecessorState,
+  assertDelivered575CurrentGridOriginalState, assertPost576CurrentGridOriginalState,
   RAVSCORE_OWNER_CURRENT_ARCHIVE_PREDECESSOR_BUNDLE_SHA256 }
   from '../../js/core/ravscore-integrated-state-pipeline.js';
 import {
@@ -294,6 +296,40 @@ export function assertWaterLevelOnlyIntegratedOriginal(state, {
 } = {}) {
   assertIntegratedContinuationShape(state,samplingContextKey,label);
   return assertWaterLevelOnlyPredecessorState(state,samplingContextKey);
+}
+
+// Original-only current-grid bridge: retain the old state and its exact binding.
+export function assertCurrentGridSamplingIntegratedOriginal(state, {
+  samplingContextKey, label = 'Current-grid-sampling technical original',
+} = {}) {
+  assertIntegratedContinuationShape(state, samplingContextKey, label);
+  return assertCurrentGridSamplingPredecessorState(state, samplingContextKey);
+}
+
+// Original archives retain their actual family; no caller-selected bundle.
+export function assertCurrentGridSamplingFamilyOriginal(state, {
+  samplingContextKey, label = 'Current-grid family technical original',
+} = {}) {
+  assertIntegratedContinuationShape(state, samplingContextKey, label);
+  switch (state.modelBundleSha256) {
+    case 'ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb':
+      return assertCurrentGridSamplingPredecessorState(state, samplingContextKey);
+    case '249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932':
+      return assertDelivered575CurrentGridOriginalState(state, samplingContextKey);
+    case 'c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5':
+      return assertPost576CurrentGridOriginalState(state, samplingContextKey);
+    default:
+      return assertArchivedOwnerCurrentIntegratedOriginal(state, { samplingContextKey, label });
+  }
+}
+
+// Selected national original generation ONLY; archived older families are not
+// admitted as its active B/S input. Full outer I/C/T binding remains mandatory.
+export function assertPost576CurrentGridIntegratedOriginal(state, {
+  samplingContextKey, label = 'Post-576 current-grid technical original',
+} = {}) {
+  assertIntegratedContinuationShape(state, samplingContextKey, label);
+  return assertPost576CurrentGridOriginalState(state, samplingContextKey);
 }
 
 export function assertIntegratedCoastalPointContinuation(

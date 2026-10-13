@@ -342,6 +342,16 @@ export function createProtectedDmiNativeCurrentInspector({ contexts = [] } = {})
       return { ok: false, code: /^DMI_NATIVE_PROOF_[A-Z_]+$/.test(error?.message ?? '')
         ? error.message : 'DMI_NATIVE_PROOF_INVALID' };
     }
+  }, inspectOriginals(selection) {
+    // Same exact projection and donor checks; return detached actual endpoints,
+    // never reconstruct another endpoint's capture from the selected top source.
+    try {
+      const proof = proveSelection(selection, readCandidates);
+      return { ok: true, nativeRows: proof.projected.nativeRows.map(clone) };
+    } catch (error) {
+      return { ok: false, code: /^DMI_NATIVE_PROOF_[A-Z_]+$/.test(error?.message ?? '')
+        ? error.message : 'DMI_NATIVE_PROOF_INVALID' };
+    }
   } });
 }
 

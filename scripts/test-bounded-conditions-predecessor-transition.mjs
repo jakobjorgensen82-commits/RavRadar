@@ -385,3 +385,93 @@ try {
 }
 
 console.log('Bounded conditions predecessor transition: exact historical and water-only originals, rejection controls and source-identity retirement passed.');
+
+// Narrow workflow SOURCE-routing assertions for the native-grid original.
+// This proves caller wiring/order only, not B/S, provider, runner or public effect.
+{
+  const gridNormalWorkflow = workflowSource.replace(/\r\n/g, '\n');
+  const gridCodeOnlyWorkflow = codeOnlyWorkflow.replace(/\r\n/g, '\n');
+  const gridStep = (source, name) => {
+    const marker = '      - name: ' + name + '\n';
+    const start = source.indexOf(marker);
+    assert.ok(start >= 0, 'Missing normal current-grid workflow step: ' + name);
+    assert.equal(source.indexOf(marker, start + marker.length), -1);
+    const end = source.slice(start + marker.length).search(/^      - (?:name:|uses:)/m);
+    return end < 0 ? source.slice(start)
+      : source.slice(start, start + marker.length + end);
+  };
+  const type = 'current-grid-sampling-original';
+  const excludedType = "steps.historical-wave-predecessor.outputs.transition_kind != '" + type + "'";
+  const hour = gridStep(gridNormalWorkflow,
+    'Require a strictly new normal hour for current-grid source succession');
+  assert.ok(hour.includes("transition_kind == '" + type + "'"));
+  assert.ok(hour.includes('assertCurrentGridSamplingOriginalExpectation(expected)'));
+  assert.ok(hour.includes('target <= Date.parse(expected.productionReferenceAt)'));
+  assert.ok(hour.includes('target !== Date.parse(expected.targetReferenceAt)'));
+  assert.ok(hour.includes('test "$QUICK_CONFIRMATION" != \'true\''));
+  for (const name of [
+    'Restore the latest atomic schema-6 and Candidate G rollback checkpoint',
+    'Restore protected atomic RavScore checkpoint when cache is absent',
+    'Materialize the exact audited predecessor reader before old-reader secret use',
+  ]) {
+    const guarded = gridStep(gridNormalWorkflow, name);
+    assert.ok(guarded.includes(excludedType), 'Current-grid must not enter old reader/checkpoint: ' + name);
+    assert.ok(guarded.includes("transition_kind != 'owner-current-domain-original'"),
+      'Existing owner original exclusion changed: ' + name);
+  }
+  const protectedRestore = gridStep(gridNormalWorkflow,
+    'Restore newest compatible private runtime from protected storage');
+  const localRestore = gridStep(gridNormalWorkflow,
+    'Verify and restore the private production runtime bundle');
+  for (const restore of [protectedRestore, localRestore]) {
+    assert.ok(restore.includes("CURRENT_GRID_ORIGINAL_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.transition_kind == 'current-grid-sampling-original' }}"));
+    assert.ok(restore.includes('CURRENT_GRID_ORIGINAL_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}'));
+    const branch = restore.slice(restore.indexOf('if test "$CURRENT_GRID_ORIGINAL_REQUIRED"'),
+      restore.indexOf('elif test "$OWNER_CURRENT_ORIGINAL_REQUIRED"'));
+    assert.ok(branch.includes('restore_expected="$CURRENT_GRID_ORIGINAL_EXPECTED"'));
+    assert.ok(!branch.includes('RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT'));
+  }
+  assert.ok(protectedRestore.includes('no reader, checkpoint or stateless replacement is permitted.'));
+  assert.ok(localRestore.includes('--source-description "$RUNNER_TEMP/private-runtime-restored-source.json"'));
+  const migrant = gridStep(gridNormalWorkflow,
+    'Preserve nationwide originals before new-hour current-grid reconstruction');
+  for (const argument of ['--current-grid-original \\',
+    '--current-grid-original-expectation "$CURRENT_GRID_ORIGINAL_EXPECTED"',
+    '--source "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"',
+    '--bundle-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json"',
+    '--predecessor-descriptor "$RUNNER_TEMP/private-runtime-restored-source.json"',
+    '--expected-source-head "$EXPECTED_SOURCE_HEAD"']) assert.ok(migrant.includes(argument));
+  assert.ok(migrant.includes("test \"${{ steps.current-grid-original-hour.outcome }}\" = 'success'"));
+  assert.ok(migrant.includes('test ! -e "$migrated_root"'));
+  assert.ok(migrant.includes('original_has_public_pack="$(jq -er'));
+  assert.ok(migrant.includes('true) test -s "$migrated_root/.cache/public-hour-delivery.pack" ;;'));
+  assert.ok(migrant.includes('false) test ! -e "$migrated_root/.cache/public-hour-delivery.pack" ;;'));
+
+  assert.ok(migrant.includes("'CURRENT_GRID_ORIGINAL_ARCHIVE_BRIDGE'"));
+  assert.ok(!migrant.includes('--predecessor-root'));
+  assert.ok(!migrant.includes('--owner-current-original'));
+  const install = gridStep(gridNormalWorkflow,
+    'Install only the allowlisted restored private runtime files');
+  assert.ok(install.includes('CURRENT_GRID_MIGRATED_ROOT: ${{ steps.current-grid-original-migration.outputs.restored_path }}'));
+  assert.ok(install.includes('restored_root="$CURRENT_GRID_MIGRATED_ROOT"'));
+  assert.ok(install.includes("test \"${{ steps.current-grid-original-migration.outcome }}\" = 'success'"));
+  assert.ok(gridNormalWorkflow.indexOf(hour) < gridNormalWorkflow.indexOf(protectedRestore));
+  assert.ok(gridNormalWorkflow.indexOf(localRestore) < gridNormalWorkflow.indexOf(migrant));
+  assert.ok(gridNormalWorkflow.indexOf(migrant) < gridNormalWorkflow.indexOf(install));
+  const rejectCodeOnly = gridStep(gridCodeOnlyWorkflow,
+    'Preserve the protected 11Z and 15Z pair for the next normal weather run');
+  assert.ok(rejectCodeOnly.includes('await buildCurrentGridSamplingOriginalRestoreExpectation'));
+  assert.ok(rejectCodeOnly.includes("'EXACT_CURRENT_GRID_SAMPLING_ORIGINAL_RESTORE_V1'"));
+  assert.ok(rejectCodeOnly.includes('code-only deployment cannot install or publish'));
+  for (const writeName of [
+    'Atomically record the exact already-public historical cutover',
+    'Apply exact dry-run-verified post-cutover binding',
+    'Try newest current-compatible private runtime',
+    'Install migrated saved private runtime atomically',
+  ]) assert.ok(gridCodeOnlyWorkflow.indexOf(rejectCodeOnly)
+    < gridCodeOnlyWorkflow.indexOf(gridStep(gridCodeOnlyWorkflow, writeName)),
+  'Current-grid code-only refusal must precede this existing write: ' + writeName);
+  assert.ok(gridCodeOnlyWorkflow.includes('MODEL_BINDING_METADATA_ONLY|OWNER_CURRENT_ORIGINAL_ARCHIVE_BRIDGE'));
+  assert.ok(!gridCodeOnlyWorkflow.includes('|CURRENT_GRID_ORIGINAL_ARCHIVE_BRIDGE'));
+  assert.ok(!gridCodeOnlyWorkflow.includes('--current-grid-original'));
+}

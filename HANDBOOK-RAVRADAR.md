@@ -480,6 +480,22 @@ nedenfor er ikke aktuelle leveringskvitteringer for 566.
 
 ## 89.190 Relevante ravspørgsmål og nye strømfortolkninger
 
+### Lokal opfølgning: strømdata før ny hukommelse og score – 2026-10-13
+
+Status 13. oktober 2026: Den kommende strømrettelse er en afgrænset lokal kildekandidat, ikke en leveret numerisk rettelse. Der vælges ingen ny releaseversion her, og de tidligere afsnit bevares som dateret historik.
+
+Kandidaten retter kun DKSS GRIB1-strømmens U/V-koordinatfortolkning og forbinder originalt inputindeks, scanningsretning og valgt native gitterpunkt. Dens gittercache har en særskilt fortolkningsidentitet. Vandstand, vandtemperatur, bølger, vind og øvrige felter beholder deres numeriske valg, cache-nøgler og adgangsregler. Kortets landmaske bruges ikke til at kassere tal eller flytte administratorpunkter.
+
+Den normale datavej kræver et kvalificeret strømpar og samme originale kilde-/gitterbevis gennem cachevalg, historik og beregning. En ukvalificeret gammel vinder må ikke blokere en legitim ny fortolkning af samme originale bytes; en kvalificeret gammel vinder, andre bytes og andre kilders prioritet bevares. Begge fulde capture-records bevares, også når en senere autentisk læsning har et andet anskaffelsestidspunkt. En URL eller gammel cachemarkør er ikke bevis for ens filindhold.
+
+Ny strømhukommelse dannes kun fra autentificerede rige originalendepunkter gennem begge normale modelbyggere. Topmetadata må ikke lånes som endpointbevis. Hele det gamle originalpar og de ikke-strømrelaterede felter bevares. Ærlig WINDOW_INCOMPLETE beholder dækning, mangler, tider og status; der opfindes ikke 48 timer eller READY. De syv zoners undtagelse gælder fortsat kun vandstand. Scoreformlen ændres ikke, men korrekt fortolkede nye strømdata kan ændre fremtidige scorer; offentliggjort scorehistorik omskrives ikke.
+
+Tre originalfamilier holdes adskilt: den historiske FFC/8d91/4115, den leverede 575-familie 249c/55fd/a543 og den planlagte 576-forgænger c1ac/2fdc/7876. Forkortelserne betegner hver sin fulde I/C/T-kildefamilie, ikke udskiftelige etiketter. Den sidste familie må først være aktiv indgang efter faktisk 576-levering og præcis autentificering af den valgte generation; de ældre er bevarede originalkontroller, ikke en fri fallback. Hele originalvalidatorer, ydre bindinger, del-/samplingidentitet og ens partider kræves. Candidate-tilstanden bærer ikke selv C/T. Arkivet er aldrig initialisering eller nyt native-kildebevis.
+
+Før kloning eller metadataændring kontrolleres conditions mod originalmanifestet på samme buffer, som JSON-indlæsningen bruger. Kopierede originalfiler og den faktiske public-hour-pakke kontrolleres mod deres forseglede beskrivelser før aflevering. Gyldige tal i en anden fil fra samme generation er ikke nok. Gamle B/S og hele pakker skal fortsat bevares; et ældre første par i kontrolarkivet erstatter ikke dette. Den pakkede førskrivningsrettelse og kontoovergangens metadata-only-kontrol bevares.
+
+Native-/national udførelse på den samlede aktuelle kilde, autentisk fuld originalbevarelse, legitim ny bindingsfølge, numerisk SQL-installation, aktivering og offentlig efterkontrol er fortsat åbne. Konto-/assistenttilladelsen omfatter ikke den numeriske overgang. Tidligere lokale delprøver og grøn almindelig vejrhentning er ikke bevis for denne endnu inaktive kandidat. Ingen nye downloads, SOURCE-G4-procesrettelser eller ændringer af kildernes prioritet, scoreformel, adminpunkter eller geometri følger. Alle fem hovedmål er stadig åbne.
+
 Assistenten må ikke kalde et relevant ravspørgsmål uvedkommende, alene fordi
 svaret mangler i dens leverede fakta. Den skal forklare usikkerhed eller bede
 om præcisering. Den må ikke opfinde egenskaber, udstyr eller vejrtal; private

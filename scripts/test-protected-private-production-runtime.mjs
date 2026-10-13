@@ -2115,6 +2115,228 @@ try {
     }
   });
 
+  await test('current-grid original receivers keep exact family, inventory and current-only bytes', async () => {
+    // Reuse the reviewed national fixture's read-only Git module namespace.
+    // These normal old factories create synthetic original archives, not
+    // relabelled current bundles, authenticated production B/S or numeric proof.
+    const { registerHooks } = await import('node:module');
+    const { execFileSync } = await import('node:child_process');
+    const { pathToFileURL, fileURLToPath } = await import('node:url');
+    const base = '9c74feaa4bdb5b93964a8a1e267b18c880223c00';
+    const query = 'current_grid_receiver_original';
+    const isOriginal = value => typeof value === 'string' && value.startsWith('file:')
+      && new URL(value).searchParams.get(query) === base;
+    const originalImport = relative => {
+      const url = pathToFileURL(path.resolve(sourceRepository, relative));
+      url.searchParams.set(query, base);
+      return import(url.href);
+    };
+    const originalBodies = new Map();
+    const hook = registerHooks({
+      resolve(specifier, context, next) {
+        if (!isOriginal(specifier)
+          && !(isOriginal(context.parentURL) && /^\.{1,2}\//.test(specifier))) return next(specifier, context);
+        const url = new URL(specifier, context.parentURL);
+        url.searchParams.set(query, base);
+        return { url: url.href, shortCircuit: true };
+      },
+      load(url, context, next) {
+        if (!isOriginal(url)) return next(url, context);
+        const relative = path.relative(sourceRepository, fileURLToPath(url)).replace(/\\/g, '/');
+        assert.match(relative, /^(?:js\/core\/|scripts\/)[A-Za-z0-9_./-]+\.(?:mjs|js)$/);
+        assert.equal(relative.split('/').includes('..'), false);
+        if (!originalBodies.has(relative)) originalBodies.set(relative,
+          execFileSync('git', ['show', `${base}:${relative}`], { cwd: sourceRepository, encoding: 'utf8' }));
+        return { format: 'module', source: originalBodies.get(relative), shortCircuit: true };
+      },
+    });
+    try {
+      const [oldBundle, oldArchive, oldI, oldC, grid, inventory] = await Promise.all([
+        originalImport('scripts/private-production-runtime-bundle.mjs'),
+        originalImport('scripts/protected-private-production-runtime.mjs'),
+        originalImport('js/core/ravscore-model-contract.js'),
+        originalImport('scripts/rollback-assets/ravscore-model-contract.js'),
+        import('./lib/bounded-conditions-predecessor-transition.mjs'),
+        import('./lib/private-weather-component-inventory.mjs'),
+      ]);
+      const policy = grid.CURRENT_GRID_SAMPLING_SELECTED_PREDECESSOR_POLICY;
+      assert.deepEqual(oldI.ravScoreModelBinding(), policy.sourceModelBinding);
+      assert.deepEqual(oldC.ravScoreModelBinding(), policy.sourceCandidateModelBinding);
+      const now = '2026-10-11T17:10:00.000Z';
+      const reference = '2026-10-11T16:00:00.000Z';
+      const generatedAt = '2026-10-11T16:05:00.000Z';
+      const extras = [[], [inventory.PRIVATE_WEATHER_COMPONENT_PACK_FILE],
+        [inventory.PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE],
+        [inventory.PRIVATE_WEATHER_COMPONENT_PACK_FILE, inventory.PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE]];
+      async function originalFixture(label, files) {
+        const specs = [];
+        const bytesByPath = new Map();
+        for (const item of files) {
+          const bytes = Buffer.from(`synthetic-original-${label}-${item.id}\n`);
+          const sourcePath = path.join(repository, `grid-${label}-${item.id}.fixture`);
+          await fs.writeFile(sourcePath, bytes, { flag: 'wx' });
+          specs.push({ ...item, sourcePath, privacyClass: 'PRIVATE_PRODUCTION_RUNTIME' });
+          bytesByPath.set(item.relativePath, bytes);
+        }
+        const bundlePath = path.join(privateRoot, `grid-original-${label}`);
+        await oldBundle.createPrivateProductionRuntimeBundle({ privateRoot, bundlePath,
+          repositoryRoot: repository, files: specs, metadata: {
+            datasetId: `rr-current-grid-${label}`, productionReferenceAt: reference, generatedAt,
+            generationId: `grid-original-${label}`, zoneCount: 210, partCount: 673,
+            modelBinding: oldI.ravScoreModelBinding(), contractHashes: clone(policy.sourceContractHashes),
+            privacyClass: 'PRIVATE_PRODUCTION_RUNTIME',
+          } });
+        const archive = await oldArchive.buildProtectedPrivateRuntimeArchive({ privateRoot,
+          bundlePath, repositoryRoot: repository, sourceHead: base, now });
+        return { bundlePath, archive, bytesByPath,
+          manifestBytes: await fs.readFile(path.join(bundlePath, 'manifest.json')) };
+      }
+      for (let i = 0; i < extras.length; i += 1) {
+        const fixture = await originalFixture(`inventory-${i}`,
+          [...inventory.PRIVATE_RUNTIME_BASE_FILES, ...extras[i]]);
+        assert.equal(fixture.archive.objects.length, 1, 'small synthetic archive has exactly one storage object');
+        // Same original envelope/manifest/payload, different storage encoding.
+        // Thus previous can really satisfy this SAME expected identity, rather
+        // than being ineligible on content/time before the no-fallback guard.
+        const previousBytes = gzipSync(gunzipSync(fixture.archive.archive), { level: 0, mtime: 0 });
+        const previousSha = crypto.createHash('sha256').update(previousBytes).digest('hex');
+        const previousObject = { index: 0, objectSha256: previousSha, objectBytes: previousBytes.length,
+          objectPath: `bundles/sha256/${previousSha}/part-000-${previousSha}.json.gz.part` };
+        const previousDescriptor = { ...clone(fixture.archive.descriptor), objectSha256: previousSha,
+          objectBytes: previousBytes.length, objectCount: 1, objects: [previousObject] };
+        assert.notEqual(previousSha, fixture.archive.descriptor.objectSha256);
+        const docs = fakeDocuments();
+        docs.setRow({ document_key: PROTECTED_PRIVATE_RUNTIME_POLICY.documentKey, version: 1,
+          payload: { schemaVersion: PROTECTED_PRIVATE_RUNTIME_POLICY.schemaVersion,
+            kind: PROTECTED_PRIVATE_RUNTIME_POLICY.pointerKind,
+            current: fixture.archive.descriptor, previous: previousDescriptor } });
+        const store = fakeStorage();
+        for (const item of fixture.archive.objects) {
+          store.objects.set(item.descriptor.objectPath, Buffer.from(item.bytes));
+        }
+        store.objects.set(previousObject.objectPath, previousBytes);
+        const source = await describeCurrentProtectedPrivateProductionRuntime({ request: docs.request });
+        const expected = await grid.buildCurrentGridSamplingOriginalRestoreExpectation({
+          sourceDescription: source, targetReferenceAt: reference, now });
+        assert.ok(expected, 'requires genuine normal-generated current-only successor; no guard mock or skip');
+        assert.strictEqual(grid.assertCurrentGridSamplingOriginalExpectation(expected), expected);
+        const pointerBefore = docs.row();
+        const objectsBefore = new Map([...store.objects].map(([key, value]) => [key, Buffer.from(value)]));
+        let pointerReads = 0;
+        let bucketReads = 0;
+        const downloads = [];
+        const request = async (suffix, options = {}) => {
+          assert.equal(options.method ?? 'GET', 'GET', 'restore must not write its pointer');
+          pointerReads += 1;
+          return docs.request(suffix, options);
+        };
+        const storage = { ...store.client,
+          ensurePrivateBucket: async options => {
+            assert.deepEqual(options, { allowCreate: false }); bucketReads += 1;
+            return store.client.ensurePrivateBucket(options);
+          },
+          download: async key => { downloads.push(key); return store.client.download(key); },
+        };
+        let attempt = 0;
+        const restore = expectation => {
+          const bundlePath = path.join(restoreRoot, `grid-${i}-restore-${attempt++}`);
+          return { bundlePath, run: () => restoreProtectedPrivateProductionRuntime({
+            privateRoot: restoreRoot, bundlePath, repositoryRoot: repository,
+            expected: expectation, now, request, storage }) };
+        };
+        async function refused(expectation, pattern, reads, buckets, objectCount) {
+          const before = [pointerReads, bucketReads, downloads.length];
+          const call = restore(expectation);
+          await assert.rejects(call.run, pattern);
+          assert.deepEqual([pointerReads, bucketReads, downloads.length],
+            [before[0] + reads, before[1] + buckets, before[2] + objectCount]);
+          await assert.rejects(fs.lstat(call.bundlePath), { code: 'ENOENT' });
+        }
+        if (i === 0) {
+          docs.setRow({ ...clone(pointerBefore), payload: { ...clone(pointerBefore.payload),
+            current: previousDescriptor, previous: null } });
+          const previousControl = restore(expected);
+          assert.equal((await previousControl.run()).restored, true,
+            'the exact alternate storage object really passes the same receiver/expectation');
+          assert.deepEqual(await fs.readFile(path.join(previousControl.bundlePath, 'manifest.json')),
+            fixture.manifestBytes);
+          docs.setRow(pointerBefore);
+          for (const invalid of [
+            { ...expected, currentGridSamplingTransition: true },
+            { ...expected, ownerCurrentDomainTransition: 'EXACT_ORIGINAL_RESTORE_V1' },
+            { ...expected, modelBinding: { ...expected.modelBinding,
+              modelBundleSha256: grid.CURRENT_GRID_SAMPLING_DELIVERED_575_POLICY.sourceModelBinding.modelBundleSha256 } },
+            { ...expected, contractHashes: { ...expected.contractHashes,
+              continuationStateContractSha256: grid.CURRENT_GRID_SAMPLING_DELIVERED_575_POLICY.sourceContractHashes.continuationStateContractSha256 } },
+          ]) await refused(invalid, /exact original expectation/, 0, 0, 0);
+          for (const field of ['sourceHead', 'datasetId', 'productionReferenceAt', 'generatedAt',
+            'bundleContentSha256', 'modelBinding', 'contractHashes']) {
+            const changed = clone(pointerBefore);
+            changed.payload.current[field] = field === 'sourceHead' ? 'b'.repeat(40)
+              : field === 'datasetId' ? 'rr-other-grid-original'
+              : field === 'productionReferenceAt' ? '2026-10-11T17:00:00.000Z'
+              : field === 'generatedAt' ? '2026-10-11T16:06:00.000Z'
+              : field === 'bundleContentSha256' ? 'f'.repeat(64)
+              : field === 'modelBinding' ? clone(grid.CURRENT_GRID_SAMPLING_DELIVERED_575_POLICY.sourceModelBinding)
+              : clone(grid.CURRENT_GRID_SAMPLING_DELIVERED_575_POLICY.sourceContractHashes);
+            docs.setRow(changed);
+            await refused(expected, { code: 'PROTECTED_PRIVATE_RUNTIME_INELIGIBLE' }, 1, 0, 0);
+          }
+          docs.setRow(pointerBefore);
+          const currentKey = fixture.archive.objects[0].descriptor.objectPath;
+          const corrupt = Buffer.from(store.objects.get(currentKey)); corrupt[0] ^= 1;
+          store.objects.set(currentKey, corrupt);
+          const beforeDownloads = downloads.length;
+          await refused(expected, { code: 'PROTECTED_PRIVATE_RUNTIME_NO_COMPATIBLE_GENERATION' }, 1, 1, 1);
+          assert.deepEqual(downloads.slice(beforeDownloads), [currentKey], 'never download previous on typed-current failure');
+          store.objects.set(currentKey, Buffer.from(objectsBefore.get(currentKey)));
+        }
+        const positive = restore(expected);
+        const result = await positive.run();
+        assert.equal(result.restored, true);
+        assert.equal(result.rollbackSelected, false);
+        assert.equal(result.productionReferenceAt, reference, 'same-reference original is not new-T recomputation');
+        const verified = await verifyPrivateProductionRuntimeBundle({ privateRoot: restoreRoot,
+          bundlePath: positive.bundlePath, repositoryRoot: repository, expected, now });
+        assert.equal(verified.fileCount, 9 + extras[i].length);
+        assert.deepEqual(verified.files.map(({ id, relativePath }) => ({ id, relativePath })),
+          [...inventory.PRIVATE_RUNTIME_BASE_FILES, ...extras[i]].sort((a, b) => a.id < b.id ? -1 : 1));
+        assert.deepEqual(await fs.readFile(path.join(positive.bundlePath, 'manifest.json')), fixture.manifestBytes);
+        for (const [relative, bytes] of fixture.bytesByPath) {
+          assert.deepEqual(await fs.readFile(path.join(positive.bundlePath, 'payload', relative)), bytes);
+          assert.deepEqual(await fs.readFile(path.join(fixture.bundlePath, 'payload', relative)), bytes);
+        }
+        if (i === 0) {
+          const copied = path.join(positive.bundlePath, 'payload', inventory.PRIVATE_RUNTIME_BASE_FILES[0].relativePath);
+          const unchanged = await fs.readFile(copied);
+          const corrupt = Buffer.from(unchanged); corrupt[0] ^= 1;
+          await fs.writeFile(copied, corrupt);
+          await assert.rejects(() => verifyPrivateProductionRuntimeBundle({ privateRoot: restoreRoot,
+            bundlePath: positive.bundlePath, repositoryRoot: repository, expected, now }), /payload integrity/);
+          await fs.writeFile(copied, unchanged);
+        }
+        assert.deepEqual(docs.row(), pointerBefore);
+        assert.deepEqual(store.objects, objectsBefore);
+        assert.deepEqual(store.removed, []);
+        assert.deepEqual(await fs.readFile(path.join(fixture.bundlePath, 'manifest.json')), fixture.manifestBytes);
+      }
+      // A self-consistent old archive is still not a complete production bundle.
+      const incomplete = await originalFixture('missing-file', inventory.PRIVATE_RUNTIME_BASE_FILES.slice(1));
+      const descriptor = incomplete.archive.descriptor;
+      const docs = fakeDocuments();
+      docs.setRow({ document_key: PROTECTED_PRIVATE_RUNTIME_POLICY.documentKey, version: 1,
+        payload: { schemaVersion: PROTECTED_PRIVATE_RUNTIME_POLICY.schemaVersion,
+          kind: PROTECTED_PRIVATE_RUNTIME_POLICY.pointerKind, current: descriptor, previous: null } });
+      const incompleteExpected = await grid.buildCurrentGridSamplingOriginalRestoreExpectation({
+        sourceDescription: await describeCurrentProtectedPrivateProductionRuntime({ request: docs.request }),
+        targetReferenceAt: reference, now });
+      assert.ok(incompleteExpected);
+      await assert.rejects(() => verifyPrivateProductionRuntimeBundle({ privateRoot,
+        bundlePath: incomplete.bundlePath, repositoryRoot: repository, expected: incompleteExpected, now }),
+      /production inventory is incompatible/);
+    } finally { hook.deregister(); }
+  });
+
   const implementation = (await fs.readFile(
     'scripts/protected-private-production-runtime.mjs',
     'utf8',

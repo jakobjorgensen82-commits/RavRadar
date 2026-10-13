@@ -13,7 +13,9 @@ import {
 } from '../js/core/ravscore-model-contract.js';
 import {
   assertOwnerCurrentOriginalExpectation,
+  assertCurrentGridSamplingOriginalExpectation,
 } from './lib/bounded-conditions-predecessor-transition.mjs';
+import { assertPrivateRuntimeInventory } from './lib/private-weather-component-inventory.mjs';
 
 export const PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY = Object.freeze({
   schemaVersion: '1.0.0',
@@ -631,10 +633,13 @@ export async function verifyPrivateProductionRuntimeBundle({
   if (!isWithin(context.realPrivateRoot, realBundle)) {
     throw new Error('Private runtime bundle escapes through a symlink');
   }
-  const original = Object.hasOwn(expected, 'ownerCurrentDomainTransition')
-    ? assertOwnerCurrentOriginalExpectation(expected) : null;
+  const currentGridOriginal = Object.hasOwn(expected, 'currentGridSamplingTransition')
+    ? assertCurrentGridSamplingOriginalExpectation(expected) : null;
+  const original = currentGridOriginal ?? (Object.hasOwn(expected, 'ownerCurrentDomainTransition')
+    ? assertOwnerCurrentOriginalExpectation(expected) : null);
   const { manifest, validated } = await readAndValidateManifest(realBundle, original);
   validateExpectations(validated, expected, original);
+  if (currentGridOriginal !== null) assertPrivateRuntimeInventory(validated.files);
   const nowMs = Date.parse(canonicalTime(now, 'Private runtime verification time'));
   if (Date.parse(validated.generatedAt)
     > nowMs + PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.maximumFutureSkewMs) {

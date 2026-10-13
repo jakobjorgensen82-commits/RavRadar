@@ -11,6 +11,85 @@ import {
 } from './ravscore-production-adapters.mjs';
 import { verifyCompactFeggesundWaveProxy } from './feggesund-wave-proxy.mjs';
 import { buildRavScoreRecoveryReplay } from './ravscore-recovery-replay.mjs';
+import { inspectDmiForecastGridSampling } from './dmi-forecast-store.mjs';
+import { createProtectedDmiNativeCurrentInspector } from './protected-dmi-native-current-proofs.mjs';
+
+// Exact invocation association, not persisted eligibility or authentication.
+// Donor documents are supplied only by the normal authenticated recovery caller.
+const decoderHistoryOriginals = new WeakMap();
+const DECODER_RULE = 'dmi-dkss-grib1-header-endpoints-v1';
+const currentProjection = row => Object.fromEntries(['time', 'currentSpeedMps',
+  'currentDirectionDeg', 'currentCoastNormalSpeedMps', 'currentProvenance']
+  .map(key => [key, row[key]]));
+const jsonEqual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+function stableDecoderCapture(source) {
+  if (!source || !['dkss_idw', 'dkss_nsbs', 'dkss_lf'].includes(source.collection)
+    || !canonicalTime(source.acquiredAt)
+    || !Number.isSafeInteger(source.contentLengthBytes) || source.contentLengthBytes <= 0
+    || !/^[a-f0-9]{64}$/.test(source.contentSha256 ?? '')
+    || !/^[a-f0-9]{64}$/.test(source.assetIdentitySha256 ?? '')
+    || typeof source.itemId !== 'string' || !source.itemId.trim()
+    || (source.assetSizeBytes != null && source.assetSizeBytes !== source.contentLengthBytes)) return null;
+  const value = { collection: source.collection, itemId: source.itemId,
+    assetIdentitySha256: source.assetIdentitySha256, assetSizeBytes: source.assetSizeBytes ?? null,
+    contentLengthBytes: source.contentLengthBytes, contentSha256: source.contentSha256 };
+  for (const key of ['modelRun', 'nativeValidTime', 'itemCreatedAt', 'itemUpdatedAt']) {
+    value[key] = canonicalTime(source[key]);
+    if (value[key] === null && (key === 'modelRun' || key === 'nativeValidTime' || source[key] != null)) return null;
+  }
+  return value;
+}
+
+function decoderOriginalPair(oldRow, freshRow, part, oldInspector, freshInspector) {
+  const oldSource = componentRevisionSource(oldRow, 'current');
+  const freshSource = componentRevisionSource(freshRow, 'current');
+  if (!oldInspector || !freshInspector
+    || !verifiedProtectedDmiComponent(oldRow, 'current', part)
+    || !verifiedProtectedDmiComponent(freshRow, 'current', part)
+    || oldSource.nativeGridSampling != null
+    || oldSource.nativeSteps.some(step => step.nativeGridSampling != null)
+    || inspectDmiForecastGridSampling(freshSource, 'current', freshRow.time,
+      dmiExpectedIdentityForPart(part)).status !== 'coherent') return null;
+  const oldProof = oldInspector.inspectOriginals({ part, row: oldRow });
+  const freshProof = freshInspector.inspectOriginals({ part, row: freshRow });
+  if (!oldProof.ok || !freshProof.ok || oldProof.nativeRows.length !== freshProof.nativeRows.length) return null;
+  for (let i = 0; i < oldProof.nativeRows.length; i++) {
+    const old = oldProof.nativeRows[i].source, fresh = freshProof.nativeRows[i].source;
+    const oldCapture = stableDecoderCapture(old), freshCapture = stableDecoderCapture(fresh);
+    if (!oldCapture || !freshCapture || !jsonEqual(oldCapture, freshCapture)
+      || old.nativeGridSampling != null
+      || old.gridDefinitionSha256 !== fresh.gridDefinitionSha256
+      || fresh.nativeGridSampling?.coordinateInterpretation !== DECODER_RULE) return null;
+  }
+  const project = row => currentProjection(buildRavScoreRecoveryReplay({
+    part, initialState: null, targetReferenceAt: new Date(Date.parse(row.time) + 3_600_000).toISOString(),
+    sourceRecords: [{ record: { point: part.waterPoint, hourly: [withoutWave(row)] } }],
+    publicHourly: [{ time: new Date(Date.parse(row.time) + 3_600_000).toISOString() }],
+  }).hourly.find(value => value.time === row.time));
+  return { old: project(oldRow), fresh: project(freshRow) };
+}
+
+// Used only after the ordinary strict rich-history admission. Reconstitute the
+// OLD current projection to prove that the preserved original state really is
+// the predecessor, not an arbitrary state excused by a new sampling marker.
+export function originalCurrentDecoderHistory(sourceRecords, hourly, part) {
+  const saved = decoderHistoryOriginals.get(sourceRecords);
+  if (!saved || !jsonEqual(saved.identity, dmiExpectedIdentityForPart(part))) return null;
+  let changed = 0;
+  const old = hourly.map(row => {
+    const association = saved.rows.get(row.time);
+    if (!association) return row;
+    if (!sourceRecords.some(source => source.record?.hourly?.includes(association.row))
+      || JSON.stringify(association.row) !== association.snapshot
+      || !jsonEqual(currentProjection(row), association.fresh)) {
+      throw new Error('RAVSCORE_CURRENT_DECODER_ORIGINAL_ASSOCIATION_CHANGED');
+    }
+    changed += 1;
+    return structuredClone(association.old);
+  });
+  return changed ? old : null;
+}
 
 function finite(value) {
   return typeof value === 'number' && Number.isFinite(value);
@@ -477,11 +556,19 @@ export function buildNewestValidRavScoreRecoverySources({
     preferredSource,
     protectedPreviousSource,
   );
+  const oldInspector = allowPreferredEqualModelRun && Array.isArray(fallbackSource.nativeCurrentContexts)
+    ? createProtectedDmiNativeCurrentInspector({ contexts: fallbackSource.nativeCurrentContexts }) : null;
+  const freshInspector = allowPreferredEqualModelRun && Array.isArray(preferredSource.nativeCurrentContexts)
+    ? createProtectedDmiNativeCurrentInspector({ contexts: preferredSource.nativeCurrentContexts }) : null;
+  const decoderPairs = new Map();
   for (const [time, fallbackRow] of fallbackByTime) {
     const preferredRow = preferredByTime.get(time);
     if (!preferredRow) continue;
+    const decoderPair = admit(fallbackRow, 'current') && admit(preferredRow, 'current')
+      ? decoderOriginalPair(fallbackRow, preferredRow, part, oldInspector, freshInspector) : null;
+    if (decoderPair) decoderPairs.set(time, decoderPair);
     decisions.set(time, {
-      current: componentPreference(fallbackRow, preferredRow, 'current', {
+      current: decoderPair ? 'preferred' : componentPreference(fallbackRow, preferredRow, 'current', {
         allowPreferredEqualModelRun,
         productionReferenceAt,
         part,
@@ -511,7 +598,7 @@ export function buildNewestValidRavScoreRecoverySources({
     })
     : [];
 
-  return [
+  const result = [
     {
       ...fallbackSource,
       record: {
@@ -527,6 +614,15 @@ export function buildNewestValidRavScoreRecoverySources({
       },
     },
   ];
+  if (decoderPairs.size) {
+    const rows = new Map();
+    for (const row of result[1].record.hourly) {
+      const pair = decoderPairs.get(canonicalTime(row.time));
+      if (pair) rows.set(row.time, { ...pair, row, snapshot: JSON.stringify(row) });
+    }
+    decoderHistoryOriginals.set(result, { identity: structuredClone(dmiExpectedIdentityForPart(part)), rows });
+  }
+  return result;
 }
 
 // Failure-only evidence. These fixed labels describe *possible* DMI overlaps

@@ -9,8 +9,10 @@ import {
   uvToTowardDirectionDeg,
   verifiedDmiForecastSource,
   verifiedDmiNativeSource,
+  assertDmiForecastGridSamplingApplicable,
 } from './dmi-forecast-store.mjs';
 import {
+  assertRegionalSelectedCurrentApplicable,
   stateOnlyCurrentRowForbiddenFields,
   stripStateOnlyCurrentRowProjection,
   eligibleLivePilotSource as verifiedLivePilotSource,
@@ -224,6 +226,25 @@ export function eligibleDmiNativeComponentSource(source, rowTime, component, exp
 export function eligibleBulkCurrent(bulkCache, bulkZone, point, source, rowTime, expectedIdentity) {
   return dmiMarineCollectionAllowedForZone(source?.collection, expectedIdentity?.parentZoneId)
     ? verifiedBulkCurrent(bulkCache, bulkZone, point, source, rowTime, expectedIdentity) : null;
+}
+
+/**
+ * Separate NEW calculation gate, applied after ordinary source/reserve choice.
+ * Never use this to sanitize an immutable original, choose a different source,
+ * or zero an old memory. Derived proxy/state-only inputs have their own lineage
+ * contracts; this gate does not attest or upgrade those contracts.
+ */
+export function assertDmiPartHourlyGridSamplingApplicable(hourly, bulkId, part,
+  { assertRoutedWaterLevelApplicable = null, liveCurrentPilot = null } = {}) {
+  const identity = dmiExpectedIdentityForPart(part, bulkId);
+  for (const row of hourly) {
+    const source = row?.currentProvenance;
+    if (assertRegionalSanitizedCurrentApplicable(row, part, liveCurrentPilot, bulkId)) continue;
+    if (source?.provider !== 'dmi' || source.status !== 'verified'
+      || !['currentUMps', 'currentVMps'].every(field => finite(row?.[field]) !== null)) continue;
+    assertDmiForecastGridSamplingApplicable(source, 'current', row.time, identity);
+  }
+  return hourly;
 }
 
 function samePoint(first, second, tolerance = 1e-7) {
@@ -537,6 +558,7 @@ function applyVerifiedPartReserves(row, part, {
  */
 export function verifiedIntegratedPartHourly(record, bulkCache, bulkId, part, componentInputs = {}) {
   const expectedDmiIdentity = dmiExpectedIdentityForPart(part, bulkId);
+  const regionalInputs = new Map();
   const sanitized = normalizeForecastHourly(record?.hourly ?? [], {
     limit: Number.MAX_SAFE_INTEGER,
   }).map(hour => {
@@ -586,6 +608,18 @@ export function verifiedIntegratedPartHourly(record, bulkCache, bulkId, part, co
         hour?.currentVMps,
       )
       : null;
+    if (proof && componentInputs.liveCurrentPilot) {
+      try {
+        if (assertRegionalSelectedCurrentApplicable(source, hour.time, part,
+          hour.currentUMps, hour.currentVMps, componentInputs.liveCurrentPilot)) {
+          regionalInputs.set(new Date(hour.time).toISOString(), source);
+        }
+      } catch (error) {
+        // Historical admission preserves original values. Only strict selected
+        // NEW use may require this extra qualification; no source reselection.
+        if (componentInputs.requireNativeGridSampling === true) throw error;
+      }
+    }
     const wind = sanitizeWind(hour, expectedDmiIdentity);
     const wave = sanitizeWave(hour, expectedDmiIdentity);
     const waterLevel = sanitizeWaterLevel(hour, expectedDmiIdentity);
@@ -657,7 +691,7 @@ export function verifiedIntegratedPartHourly(record, bulkCache, bulkId, part, co
     };
   }).map(row => applyVerifiedPartReserves(row, part, componentInputs));
   const byTime = new Map(sanitized.map(row => [row.time, row]));
-  return sanitized.map(row => {
+  const result = sanitized.map(row => {
     if (finite(row.waterLevelCm) === null) return row;
     const future = byTime.get(new Date(Date.parse(row.time) + 3 * HOUR_MS).toISOString());
     if (finite(future?.waterLevelCm) === null
@@ -667,6 +701,23 @@ export function verifiedIntegratedPartHourly(record, bulkCache, bulkId, part, co
       waterLevelTrendCm3h: round(future.waterLevelCm - row.waterLevelCm, 0),
     };
   });
+  for (const row of result) {
+      const source = regionalInputs.get(new Date(row.time).toISOString());
+      if (source) {
+        const expectedSource = { ...source, status: 'verified', sourceClass: source.sourceClass
+          ?? (source.vectorSemanticsVersion === 3 ? 'local-model-grid' : undefined) };
+        if (JSON.stringify(row.currentProvenance) !== JSON.stringify(expectedSource)) {
+          throw new Error('REGIONAL_SANITIZER_DERIVATION_MISMATCH');
+        }
+        regionalSanitizedSources.set(row.currentProvenance, { source, document: componentInputs.liveCurrentPilot,
+          sourceObject: row.currentProvenance, projection: regionalProjectionSnapshot(row),
+          part: regionalPartSnapshot(part) });
+      }
+    }
+  if (componentInputs.requireNativeGridSampling === true) {
+    assertDmiPartHourlyGridSamplingApplicable(result, bulkId, part, componentInputs);
+  }
+  return result;
 }
 
 /**
@@ -960,4 +1011,26 @@ export function buildIntegratedPartPublicProjection({
     } : null,
     ravScoreModel,
   };
+}
+
+// Module-private registrations occur ONLY after the actual normal sanitizer.
+// This is not an exported row/token registration factory.
+const regionalSanitizedSources = new WeakMap();
+const regionalPartSnapshot = part => JSON.stringify([part.partId,
+  part.zoneId, part.parentZoneId, part.sourceZoneId, part.waterPoint, part.onshoreDirectionDeg]);
+const regionalProjectionSnapshot = row => JSON.stringify([row.time, row.currentUMps,
+  row.currentVMps, row.currentSpeedMps, row.currentDirectionDeg,
+  row.currentCoastNormalSpeedMps, row.currentProvenance]);
+export function assertRegionalSanitizedCurrentApplicable(row, part, document, bulkId = 'PART::' + part?.partId) {
+  const receipt = regionalSanitizedSources.get(row?.currentProvenance);
+  if (!receipt && row?.currentProvenance?.source !== 'dmi-dkss-lf-regional-proxy') return false;
+  if (!receipt || bulkId !== 'PART::' + part?.partId || receipt.document !== document || receipt.sourceObject !== row.currentProvenance
+    || receipt.projection !== regionalProjectionSnapshot(row) || receipt.part !== regionalPartSnapshot(part)) {
+    const error = new Error('REGIONAL_SANITIZER_APPLICATION_UNVERIFIED');
+    error.code = 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED';
+    error.samplingStatus = 'regional-sanitizer-unqualified';
+    throw error;
+  }
+  return assertRegionalSelectedCurrentApplicable(receipt.source, row.time, part,
+    row.currentUMps, row.currentVMps, document);
 }

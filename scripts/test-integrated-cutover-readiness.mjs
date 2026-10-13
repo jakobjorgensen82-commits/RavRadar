@@ -37,6 +37,7 @@ import {
 import { buildBoundedCurrentTransportMemory } from '../js/core/ravscore-regime-memory.js';
 import { buildCurrentSupplyMemory } from '../js/core/ravscore-current-supply-memory.js';
 import { readAccountAssistantCanonicalSource } from './lib/account-assistant-successor-source.mjs';
+import { readCurrentGridCanonicalSource } from './lib/current-grid-successor-source.mjs';
 import { accountAssistantCatalogQuery, verifyAccountAssistantCatalogMetadata,
   verifyInstalledAccountAssistantSchema } from './verify-account-assistant-schema.mjs';
 
@@ -53,13 +54,14 @@ const EXACT_PREDECESSOR_CONTINUATION_HASH =
   '46683362ec6b69835695db375f7de976a8dd0a75b7367a27e2854b653d73e0ab';
 
 await inspectMigrationSources();
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 47,
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 48,
   'The active backend must preserve every predecessor, storage security and the exact checkpoint bridge');
 assert.equal(LATEST_RAVSCORE_BINDING_MIGRATION.version, '20260920220000');
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-4).version, '20261005000000');
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-3).version, '20261010130000');
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-2).version, '20261012200000');
-assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261013210000');
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-5).version, '20261005000000');
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-4).version, '20261010130000');
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-3).version, '20261012200000');
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-2).version, '20261013210000');
+assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261013220000');
 
 const integratedMigration = await fs.readFile(
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
@@ -382,6 +384,7 @@ const unicodeList = `
  20261010130000    │                  │ 2026-10-10 13:00:00
  20261012200000    │                  │ 2026-10-12 20:00:00
  20261013210000    │                  │ 2026-10-13 21:00:00
+ 20261013220000    │                  │ 2026-10-13 22:00:00
 `;
 assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260826', remote: '20260826' },
@@ -432,6 +435,7 @@ assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20261010130000', remote: null },
   { local: '20261012200000', remote: null },
   { local: '20261013210000', remote: null },
+  { local: '20261013220000', remote: null },
 ]);
 
 // Captured verbatim from backend readiness run 34333553305 with Supabase CLI 2.117.0.
@@ -491,6 +495,7 @@ const currentFirstInstallList = `${capturedFirstEightInstallList}
    \`20261010130000\` | \` \`    | \`2026-10-10 13:00:00\`
    \`20261012200000\` | \` \`    | \`2026-10-12 20:00:00\`
    \`20261013210000\` | \` \`    | \`2026-10-13 21:00:00\`
+   \`20261013220000\` | \` \`    | \`2026-10-13 22:00:00\`
 `;
 assert.deepEqual(parseSupabaseMigrationList(currentFirstInstallList),
   REQUIRED_CUTOVER_MIGRATIONS.map(item => ({ local: item.version, remote: null })));
@@ -640,6 +645,7 @@ await assert.rejects(
        20261010130000 | | pending
        20261012200000 | | pending
        20261013210000 | | pending
+       20261013220000 | | pending
     `,
     dryRunText: currentFirstInstallDryRun,
   }),
@@ -696,6 +702,7 @@ const appliedList = `
  20261010130000 | 20261010130000 | now
  20261012200000 | 20261012200000 | now
  20261013210000 | 20261013210000 | now
+ 20261013220000 | 20261013220000 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
@@ -768,15 +775,25 @@ try {
     '--dry-run', dryRunPath,
     '--migrations-directory', path.resolve('supabase/migrations'),
     '--require-prewrite-gate',
-    '--account-assistant-prewrite-plan',
-  ], { encoding: 'utf8', env: helperEnvironment });
+    '--current-grid-prewrite-plan', '--expected-pending-version', '20261013220000',
+  ], { encoding: 'utf8', env: { ...helperEnvironment,
+    RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN: 'true',
+    RAVRADAR_CURRENT_GRID_PREWRITE_REQUIRED: 'true',
+    RAVRADAR_CURRENT_GRID_PREWRITE_VERIFIED: 'true' } });
   assert.equal(helperRun.status, 0,
     helperRun.stderr || helperRun.stdout || helperRun.error?.message);
   assert.match(
     helperRun.stdout,
-    /exactly 20261013210000_account_assistant_original_bound_successor.sql/,
+    /exactly 20261013220000_current_grid_original_bound_successor.sql/,
     'the live code-only helper must admit exactly the current checkpoint bridge',
   );
+  // Keep the historical account negatives on an actually pending account
+  // successor, not on the distinct current-grid route.
+  await fs.writeFile(migrationListPath,
+    `Local | Remote | Time (UTC)\n${REQUIRED_CUTOVER_MIGRATIONS.map(item =>
+      `${item.version} | ${item.version < '20261013210000' ? item.version : ''} | state`).join('\n')}`);
+  await fs.writeFile(dryRunPath,
+    `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n${REQUIRED_CUTOVER_MIGRATIONS.filter(item => item.version >= '20261013210000').map(item => ` • ${item.filename}`).join('\n')}\nFinished supabase db push.`);
   const accountArgs=[
     path.resolve('scripts/verify-code-only-migration-plan.mjs'),
     '--migration-list',migrationListPath,'--dry-run',dryRunPath,
@@ -795,8 +812,45 @@ try {
     const refused=accountPlanRun(args,env);
     assert.equal(refused.status,1);assert.equal(refused.stdout,'');assert.match(refused.stderr,reason);
   }
+  const accountCombined=accountPlanRun();
+  assert.equal(accountCombined.status,1);assert.equal(accountCombined.stdout,'');
+  assert.match(accountCombined.stderr,/Pending plan changed or is already applied/,
+    'valid old account proof cannot authorize combined account/current-grid installation');
+
+  await fs.writeFile(migrationListPath,
+    `Local | Remote | Time (UTC)\n${REQUIRED_CUTOVER_MIGRATIONS.map(item =>
+      `${item.version} | ${item.version === '20261013220000' ? '' : item.version} | state`).join('\n')}`);
+  await fs.writeFile(dryRunPath,
+    `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • ${LATEST_REQUIRED_CUTOVER_MIGRATION.filename}\nFinished supabase db push.`);
+  const gridArgs=accountArgs.map(x=>x==='--account-assistant-prewrite-plan'
+    ? '--current-grid-prewrite-plan' : x==='20261013210000' ? '20261013220000' : x);
+  const gridEnvironment={...helperEnvironment,RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN:'true',
+    RAVRADAR_CURRENT_GRID_PREWRITE_REQUIRED:'true',RAVRADAR_CURRENT_GRID_PREWRITE_VERIFIED:'true'};
+  const gridPlanRun=(args=gridArgs,env=gridEnvironment)=>
+    spawnSync(process.execPath,args,{encoding:'utf8',env});
+  for(const [args,env,reason] of [
+    [gridArgs.filter(x=>!['--current-grid-prewrite-plan','--expected-pending-version','20261013220000'].includes(x)),gridEnvironment,/exact prewrite route/],
+    [gridArgs,{...gridEnvironment,RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN:'false'},/own named opt-in/],
+    [gridArgs,{...gridEnvironment,RAVRADAR_CURRENT_GRID_PREWRITE_REQUIRED:'false'},/same-original prewrite proof/],
+    [gridArgs,{...gridEnvironment,RAVRADAR_CURRENT_GRID_PREWRITE_VERIFIED:'false'},/same-original prewrite proof/],
+    [gridArgs.filter(x=>x!=='--require-prewrite-gate'),gridEnvironment,/same-original prewrite proof/],
+    [gridArgs.filter(x=>!['--expected-pending-version','20261013220000'].includes(x)),gridEnvironment,/Missing --expected-pending-version/],
+    [gridArgs.map(x=>x==='20261013220000'?'20261013210000':x),gridEnvironment,/Only the fixed current-grid/],
+    [[...gridArgs,'--account-assistant-prewrite-plan'],gridEnvironment,/routes are separate/],
+    [gridArgs,helperEnvironment,/own named opt-in/],
+  ]) {
+    const refused=gridPlanRun(args,env);
+    assert.equal(refused.status,1);assert.equal(refused.stdout,'');assert.match(refused.stderr,reason);
+  }
+  const gridOldRoute=accountPlanRun(accountArgs.filter(x=>!['--expected-pending-version','20261013210000'].includes(x)));
+  assert.equal(gridOldRoute.status,1);assert.equal(gridOldRoute.stdout,'');
+  assert.match(gridOldRoute.stderr,/exact prewrite route/,
+    'fully satisfied account flags alone must never admit pending current-grid');
   await fs.writeFile(migrationListPath,currentAppliedList);
   await fs.writeFile(dryRunPath,'DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.');
+  const gridNoop=gridPlanRun();
+  assert.equal(gridNoop.status,1);assert.equal(gridNoop.stdout,'');
+  assert.match(gridNoop.stderr,/Pending plan changed or is already applied/);
   const refusedNoop=accountPlanRun();
   assert.equal(refusedNoop.status,1);assert.equal(refusedNoop.stdout,'');
   assert.match(refusedNoop.stderr,/Pending plan changed or is already applied/);
@@ -805,9 +859,9 @@ try {
   // binding migration, even when its existing opt-in is supplied.
   await fs.writeFile(migrationListPath,
     `Local | Remote | Time (UTC)\n${REQUIRED_CUTOVER_MIGRATIONS.map((item, index) =>
-      `${item.version} | ${index < REQUIRED_CUTOVER_MIGRATIONS.length - 3 ? item.version : ''} | state`).join('\n')}`);
+      `${item.version} | ${index < REQUIRED_CUTOVER_MIGRATIONS.length - 4 ? item.version : ''} | state`).join('\n')}`);
   await fs.writeFile(dryRunPath,
-    `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n${REQUIRED_CUTOVER_MIGRATIONS.slice(-3).map(item => ` • ${item.filename}`).join('\n')}\nFinished supabase db push.`);
+    `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n${REQUIRED_CUTOVER_MIGRATIONS.slice(-4).map(item => ` • ${item.filename}`).join('\n')}\nFinished supabase db push.`);
   const refusedReplay = spawnSync(process.execPath, [
     path.resolve('scripts/verify-code-only-migration-plan.mjs'),
     '--migration-list', migrationListPath, '--dry-run', dryRunPath,
@@ -925,6 +979,7 @@ try {
  20261010130000 │ │ pending
  20261012200000 │ │ pending
  20261013210000 │ │ pending
+ 20261013220000 │ │ pending
  `;
   const hydrated = await hydrateTemporaryRemoteMigrationHistory({
     workdir: isolatedWorkdir,
@@ -985,6 +1040,7 @@ try {
  20261010130000 │ │ pending
  20261012200000 │ │ pending
  20261013210000 │ │ pending
+ 20261013220000 │ │ pending
     `,
   }), /unknown post-cutover migration 20260830/);
 } finally {
@@ -1048,7 +1104,12 @@ const expectedActiveAdmissionPolicy = await expectedTripActiveAdmissionPolicy();
 const expectedCheckpointContract = await expectedCheckpointCasContract();
 const {canonicalSource:accountCanonicalSource,accountSource:accountSchemaSource}=
   await readAccountAssistantCanonicalSource();
-assert.ok(accountCanonicalSource.includes(CHECKPOINT_CONTINUATION_HASH));
+assert.ok(accountCanonicalSource.includes('7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b'),
+  'immutable213 canonical keeps its own historical continuation');
+const {canonicalSource:currentCanonicalSource,accountSource:currentAccountSchemaSource}=
+  await readCurrentGridCanonicalSource();
+assert.equal(currentAccountSchemaSource,accountSchemaSource,'current-grid must not alter account schema');
+assert.ok(currentCanonicalSource.includes(CHECKPOINT_CONTINUATION_HASH));
 
 // The normal hashed readback takes exactly the new CAS body, never an expected
 // hash override; the other twelve immutable function bodies stay unchanged.
@@ -1065,7 +1126,18 @@ const newCasBody = checkpointSqlBody(singleProjectionMigration, 'ravradar_ravsco
 assert.notEqual(newCasBody, oldCasBody);
 const accountCasBody=checkpointSqlBody(accountCanonicalSource,'ravradar_ravscore_checkpoint_cas');
 assert.notEqual(accountCasBody,newCasBody);
-assert.ok(expectedCheckpointContract.definition.includes(`-- cas-function --\n${accountCasBody}\n-- checkpoint-history-exclusion --`));
+const currentCasBody=checkpointSqlBody(currentCanonicalSource,'ravradar_ravscore_checkpoint_cas');
+assert.notEqual(currentCasBody,accountCasBody);
+assert.ok(expectedCheckpointContract.definition.includes(`-- cas-function --\n${currentCasBody}\n-- checkpoint-history-exclusion --`));
+assert.ok(!expectedCheckpointContract.definition.includes(accountCasBody));
+for(const family of ['ffc','249','c1ac'])for(const kind of ['state','payload']) {
+  const name=`ravradar_ravscore_checkpoint_grid_${family}_${kind}_valid`;
+  const body=checkpointSqlBody(currentCanonicalSource,name);
+  assert.ok(expectedCheckpointContract.definition.includes(`-- grid-original-${family}-${kind}-validator --\n${body}`),
+    'readback must hash the complete original-family body: '+name);
+  assert.doesNotMatch(body,/RAVSCORE_CHECKPOINT_[A-Z_]+_GENERATED/,
+    'frozen original validators must not use mutable current-binding markers');
+}
 assert.ok(!expectedCheckpointContract.definition.includes(newCasBody));
 assert.ok(!expectedCheckpointContract.definition.includes(oldCasBody));
 assert.equal(expectedCheckpointContract.sha256,
@@ -1091,7 +1163,11 @@ for (const unchangedName of [
 ]) {
   assert.ok(!singleProjectionMigration.includes('create or replace function public.'+unchangedName+'('),
     'historical200000 still replaces only CAS, not '+unchangedName);
-  assert.ok(expectedCheckpointContract.definition.includes(checkpointSqlBody(accountCanonicalSource,unchangedName)));
+  assert.ok(expectedCheckpointContract.definition.includes(checkpointSqlBody(currentCanonicalSource,unchangedName)));
+  if(!['ravradar_ravscore_checkpoint_integrated_state_valid','ravradar_ravscore_checkpoint_payload_valid'].includes(unchangedName)) {
+    assert.equal(checkpointSqlBody(currentCanonicalSource,unchangedName),checkpointSqlBody(accountCanonicalSource,unchangedName),
+      'current-grid keeps the complete213 helper unchanged: '+unchangedName);
+  }
   if(!['ravradar_ravscore_checkpoint_integrated_state_valid','ravradar_ravscore_checkpoint_payload_valid',
     'ravradar_ravscore_checkpoint_predecessor_payload_valid','ravradar_ravscore_checkpoint_userdata_predecessor_projection'].includes(unchangedName)) {
     assert.equal(checkpointSqlBody(accountCanonicalSource,unchangedName),checkpointSqlBody(checkpointMigration,unchangedName),

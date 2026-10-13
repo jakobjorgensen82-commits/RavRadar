@@ -4,12 +4,15 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { exactRelativeModuleSpecifiers } from './static-module-closure.mjs';
 import { accountAssistantCatalogQuery, verifyAccountAssistantCatalogMetadata }
   from '../verify-account-assistant-schema.mjs';
 
 const OLD_MIGRATION = '20261010130000_owner_export_origin_bound_successor.sql';
 const NEW_MIGRATION = '20261012200000_checkpoint_cas_single_projection_successor.sql';
 const ACCOUNT_MIGRATION = '20261013210000_account_assistant_original_bound_successor.sql';
+const GRID_MIGRATION = '20261013220000_current_grid_original_bound_successor.sql';
 const CAS = 'public.ravradar_ravscore_checkpoint_cas';
 const KEY = 'ravscore-continuation-checkpoint';
 const signatures = ['ravradar_ravscore_checkpoint_canonical_time',
@@ -38,6 +41,164 @@ const definition = (source, name) => {
   assert.equal(source.indexOf(head, start + head.length), -1, 'ambiguous SQL function definition');
   return source.slice(start, end + 4);
 };
+
+// Historical test input, NEVER an alternative current-runtime admission root.
+// Reuse the issued-source checker's fixed Git identity/regular-blob/static-import
+// checks, but materialize only the 26 imports/T inputs plus their fixed policy JSON.
+const ISSUED_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const ISSUED_HEAD = '044d3045fecc2e70d6f35f60010921c6bd597ecc';
+const ISSUED_TREE = '4c56c3b73633bf3a5e1540e4f53e75be49f0b9da';
+const ISSUED_TARGET = 'scripts/test-protected-ravscore-continuation-checkpoint.mjs';
+const ISSUED_T = 'scripts/lib/ravscore-continuation-implementation-contract.mjs';
+const ISSUED_I = 'c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5';
+const ISSUED_C = '2fdc7426ea99382731c6f4d118eacf4fc271f505fcf121bc67c5349c62938af9';
+const ISSUED_T_SHA = '7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b';
+const GRID_I = '994da006e4c91a1fc759d5ed58b74de80a9ccaad6753274d5abb0cb07eaed399';
+const GRID_C = 'd192e060cf47fde07a1ae2faf9a8db913dbbf4e1325cbf7bf2e33c720982e8d9';
+const GRID_T = '0f6c182ab2ffa7d9d0153706277aa3f7b582327be7dda02842a9c8b995568d4a';
+
+async function issued213Factory(root) {
+  const git = args => new Promise((resolve, reject) => {
+    execFile('git', ['-C', ISSUED_ROOT, ...args],
+      { encoding: 'buffer', timeout: 30_000, maxBuffer: 32 * 1024 * 1024 },
+      (error, stdout) => error ? reject(error) : resolve(stdout));
+  });
+  assert.equal(String(await git(['rev-parse', ISSUED_HEAD + '^{tree}'])).trim(), ISSUED_TREE);
+  const regular = new Map(String(await git(['ls-tree', '-r', '-z', ISSUED_HEAD]))
+    .split('\0').filter(Boolean).map(row => {
+      const match = /^(100644|100755) blob ([a-f0-9]{40})\t(.+)$/.exec(row);
+      return match ? [match[3], match[2]] : [null, null];
+    }).filter(([name]) => name !== null));
+  const bytes = new Map();
+  const read = async relative => {
+    assert.match(relative, /^[A-Za-z0-9_./-]+$/);
+    assert.equal(path.posix.normalize(relative), relative);
+    assert(!path.posix.isAbsolute(relative) && !relative.startsWith('../'));
+    assert(regular.has(relative), 'Pinned regular non-symlink source required');
+    if (!bytes.has(relative)) bytes.set(relative, await git(['show', ISSUED_HEAD + ':' + relative]));
+    return bytes.get(relative);
+  };
+  const target = String(await read(ISSUED_TARGET));
+  assert.equal(hash(target), '420b2dc97c9de1ee9ce3cf658df5b8449454693d8ac33fa15f607144074eacdb');
+  const slice = (start, end) => {
+    assert.equal(target.split(start).length, 2); assert.equal(target.split(end).length, 2);
+    assert(target.indexOf(start) < target.indexOf(end));
+    return target.slice(target.indexOf(start), target.indexOf(end));
+  };
+  // EXACT original declarations, not a rewritten fixture or rebound new states.
+  const factory = slice('const PART_COUNT =', 'const safeShape =')
+    + slice('const samples =', 'const sourceDocument =');
+  assert.equal(hash(factory), '71ce29ec98e43bfa02017a145c4438346f1d8a1f4323526ec58e4b1081d81e36');
+  const scanner = 'scripts/lib/static-module-closure.mjs';
+  assert.equal(sqlText(await fs.readFile(path.join(ISSUED_ROOT, scanner), 'utf8')),
+    String(await read(scanner)), 'Use the actual reviewed issued static scanner');
+  const tSource = String(await read(ISSUED_T));
+  const declaration = /export const RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES = Object\.freeze\(\[\n((?:  '[A-Za-z0-9_./-]+',\n)+)\]\);/.exec(tSource);
+  assert(declaration, 'Exact historical T declaration required');
+  const tFiles = [...declaration[1].matchAll(/  '([^']+)',/g)].map(match => match[1]);
+  assert.equal(tFiles.length, 12); assert.equal(new Set(tFiles).size, 12);
+  const tRows = [];
+  for (const file of [...tFiles].sort()) tRows.push([file, hash(String(await read(file)).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n'))]);
+  assert.equal(hash(JSON.stringify(tRows)), ISSUED_T_SHA, 'All twelve original T bytes before import');
+  const imports = [
+    ['buildIntegratedRavScoreStateSeries', 'js/core/ravscore-integrated-state-pipeline.js'],
+    ['buildCandidateGDerivedStateSeries', 'js/core/ravscore-candidate-g-state-pipeline.js'],
+    ['ravScoreModelBinding', 'js/core/ravscore-model-contract.js'],
+    ['ravScoreModelBinding as candidateGRollbackModelBinding', 'scripts/rollback-assets/ravscore-model-contract.js'],
+    ['candidateGStateKey', 'scripts/lib/coastal-point-staging-contract.mjs'],
+    ['CANDIDATE_G_OPERATIONAL_ROLLBACK_ID', 'scripts/lib/ravscore-candidate-g-rollback-runtime.mjs'],
+    ['RAVSCORE_CONTINUATION_CHECKPOINT_POLICY, saveRavScoreContinuationCheckpoint', 'scripts/ravscore-continuation-checkpoint.mjs'],
+    ['ravScoreContinuationImplementationSha256', ISSUED_T],
+  ];
+  const pending = [...imports.map(([, file]) => file), 'package.json'];
+  const selected = new Set(tFiles), visited = new Set();
+  while (pending.length) {
+    const file = pending.pop(); if (visited.has(file)) continue;
+    visited.add(file); selected.add(file);
+    const source = String(await read(file));
+    if (!/\.(?:js|mjs|ts)$/.test(file)) continue;
+    for (const specifier of exactRelativeModuleSpecifiers(source, file)) {
+      const base = path.posix.normalize(path.posix.join(path.posix.dirname(file), specifier.split(/[?#]/, 1)[0]));
+      const candidates = path.posix.extname(base) ? [base] : [base, base + '.js', base + '.mjs', base + '.json', base + '/index.js'];
+      const resolved = candidates.find(candidate => regular.has(candidate));
+      assert(resolved, 'Every historical static import must resolve to its fixed regular blob');
+      pending.push(resolved);
+    }
+  }
+  const pins = [];
+  for (const file of [...selected].sort()) {
+    const buffer = await read(file); pins.push({ file, bytes: buffer.length, sha256: hash(buffer) });
+  }
+  assert.equal(pins.length, 26);
+  assert.equal(hash(JSON.stringify(pins)), 'b95874fa463885112b3e9e2fa5f9963a98c4c996486994a845139494acc248f5');
+  // The genuine loader uses readFileSync, not an ESM import. Admit this ONE
+  // immutable data dependency explicitly; never copy a directory or relax26.
+  const policyFile = 'scripts/lib/dmi-marine-zone-exclusions.json';
+  assert(!selected.has(policyFile));
+  const policyBytes = await read(policyFile);
+  assert.equal(policyBytes.length, 416);
+  assert.equal(hash(policyBytes), 'b959dee7b87cfebe9fdc7311ffd62b835c96d5c4a263bbcff5c0485f6660ef16');
+  pins.push({ file: policyFile, bytes: policyBytes.length, sha256: hash(policyBytes) });
+  pins.sort((a, b) => a.file < b.file ? -1 : a.file > b.file ? 1 : 0);
+  assert.equal(pins.length, 27);
+  assert.equal(hash(JSON.stringify(pins)), '387018040982cba1428b1b3887b476e1e6ff8fe3017b78c7a5fe2d5f6b3d1d3b');
+  for (const [file, sha] of [['js/core/ravscore-model-bundle.generated.js', ISSUED_I],
+    ['scripts/rollback-assets/ravscore-model-bundle.generated.js', ISSUED_C]]) {
+    assert.match(String(await read(file)), new RegExp("GENERATED_RAVSCORE_MODEL_BUNDLE_SHA256 = ['\"]" + sha + "['\"]"));
+  }
+  // Nothing is written/evaluated until the whole fixed closure/factory/T pins pass.
+  const directory = path.join(root, 'issued213');
+  await fs.mkdir(directory, { mode: 0o700 });
+  const canonical = await fs.realpath(directory);
+  assert.equal(path.dirname(canonical), await fs.realpath(root));
+  for (const row of pins) {
+    const destination = path.join(directory, row.file), parent = path.dirname(destination);
+    await fs.mkdir(parent, { recursive: true });
+    const relative = path.relative(canonical, await fs.realpath(parent));
+    assert(relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative)));
+    await fs.writeFile(destination, await read(row.file), { flag: 'wx', mode: 0o600 });
+    assert.equal(hash(await fs.readFile(destination)), row.sha256);
+  }
+  const moduleSource = "import crypto from 'node:crypto';\n"
+    + imports.map(([names, file]) => 'import { ' + names + ' } from '
+      + JSON.stringify(pathToFileURL(path.join(directory, file)).href) + ';').join('\n')
+    + '\n' + factory
+    + '\nexport { sourceDocumentAt, atHour, saveRavScoreContinuationCheckpoint, CURRENT_CONTINUATION_IMPLEMENTATION_SHA256, ravScoreModelBinding, candidateGRollbackModelBinding };';
+  const loaded = await import('data:text/javascript;base64,' + Buffer.from(moduleSource).toString('base64'));
+  assert.equal(loaded.ravScoreModelBinding().modelBundleSha256, ISSUED_I);
+  assert.equal(loaded.candidateGRollbackModelBinding().modelBundleSha256, ISSUED_C);
+  assert.equal(loaded.CURRENT_CONTINUATION_IMPLEMENTATION_SHA256, ISSUED_T_SHA);
+  return { ...loaded, sourceReceipt: { head: ISSUED_HEAD, tree: ISSUED_TREE, fileCount: pins.length,
+    factorySha256: hash(factory), closureSha256: hash(JSON.stringify(pins)) } };
+}
+
+// Source-only integration control; this does not run, skip, or certify PostgreSQL.
+// No caller-selected historical root, binding, factory or destination is accepted.
+export async function verifyIssuedNativeCheckpointFixture() {
+  const parent = await fs.realpath(os.tmpdir());
+  const root = await fs.mkdtemp(path.join(parent, 'rr-checkpoint-pg-'));
+  const identity = await fs.lstat(root, { bigint: true });
+  try {
+    const issued = await issued213Factory(root);
+    const sourcePath = path.join(root, 'issued-source.json'), checkpointPath = path.join(root, 'issued-checkpoint.json');
+    await fs.writeFile(sourcePath, JSON.stringify(issued.sourceDocumentAt(49, 'rr-native-sql-49')), { flag: 'wx' });
+    await issued.saveRavScoreContinuationCheckpoint({ sourcePath, checkpointPath });
+    const payload = JSON.parse(await fs.readFile(checkpointPath, 'utf8'));
+    assert.equal(payload.partCount, 673); assert.equal(Object.keys(payload.states).length, 673);
+    assert.equal(Object.keys(payload.candidateGRollbackCompanion.states).length, 673);
+    assert.equal(payload.modelBinding.modelBundleSha256, ISSUED_I);
+    assert.equal(payload.candidateGRollbackCompanion.modelBinding.modelBundleSha256, ISSUED_C);
+    assert.equal(payload.continuationStateContractSha256, ISSUED_T_SHA);
+    return { kind: 'ISSUED213_NATIVE_FIXTURE_SOURCE_ONLY', ...issued.sourceReceipt,
+      partCount: 673, normalSaver: true, sqlExecuted: false };
+  } finally {
+    const actual = await fs.lstat(root, { bigint: true });
+    assert.equal(await fs.realpath(root), root); assert.equal(path.dirname(root), parent);
+    assert(actual.isDirectory() && !actual.isSymbolicLink() && actual.ino > 0n);
+    assert.deepEqual([actual.dev, actual.ino, actual.birthtimeNs], [identity.dev, identity.ino, identity.birthtimeNs]);
+    await fs.rm(root, { recursive: true, force: false });
+  }
+}
 
 async function nativePrograms() {
   if (process.platform !== 'linux') throw new Error('NATIVE_POSTGRES_UNAVAILABLE_ON_THIS_HOST');
@@ -282,6 +443,149 @@ async function compareAccountAssistantSuccessor({ psql, runSql, source, oldSourc
     receiptDifferenceCases:receiptCases.length,installedCatalog:catalogReceipt,reports};
 }
 
+// A separate phase AFTER the unchanged historical thirteen/213 cases. The
+// incoming generation is built by current normal code; old states stay old.
+async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource,
+  oldFixtures, issuedFixtures, sourceDocumentAt, atHour, saveCheckpoint, root }) {
+  assert.equal(hash(source), 'f283e36f55cb69f8d8271a560a04adeb5cde1e93777b52b96677148e1d2e060b');
+  assert.match(source, /\bbegin;\s+set local lock_timeout = '5s';/);
+  const originalNames = ['ffc', '249', 'c1ac'].flatMap(family => ['state', 'payload']
+    .map(kind => 'ravradar_ravscore_checkpoint_grid_' + family + '_' + kind + '_valid'));
+  const migrationNames = [...source.matchAll(/^create or replace function public\.([a-z0-9_]+)\(/gm)].map(match => match[1]);
+  assert.equal(migrationNames.length, 13);
+  assert.deepEqual(migrationNames.slice(0, 6), originalNames);
+  const originals = { ffc: structuredClone(oldFixtures.predecessor),
+    '249': structuredClone(oldFixtures.current), c1ac: structuredClone(issuedFixtures.current) };
+  const originalPins = Object.fromEntries(Object.entries(originals).map(([name, payload]) => [name, hash(JSON.stringify(payload))]));
+  const put = async (name, payload) => {
+    assert.match(name, /^[a-z0-9-]+$/);
+    const json = JSON.stringify(payload); assert.equal(json.includes('$native_fixture$'), false);
+    await psql("insert into public.native_checkpoint_payloads values('" + name + "',$native_fixture$" + json + "$native_fixture$::jsonb);");
+  };
+  await psql('truncate public.native_checkpoint_payloads;');
+  for (const [name, payload] of Object.entries(originals)) await put('original-' + name, payload);
+  const bankHash = () => psql("select md5(jsonb_agg(jsonb_build_array(name,payload) order by name)::text) from public.native_checkpoint_payloads;");
+  const bankBefore = await bankHash();
+  const preserved = () => psql("select md5(jsonb_build_object('checkpoint',(select jsonb_agg(to_jsonb(d) order by document_key) from public.admin_documents d),'activity',(select jsonb_agg(to_jsonb(a) order by user_id) from public.account_activity_journal a),'preference',(select jsonb_agg(to_jsonb(s) order by user_id) from public.account_statistics_preferences s))::text);");
+  const rowsBefore = await preserved();
+  const oldBody = definition(accountSource, 'ravradar_ravscore_checkpoint_cas');
+  const body = text => text.slice(text.indexOf('as $$') + 5, text.lastIndexOf('$$;')).trim();
+  for (const [drift, restore] of [
+    ["delete from supabase_migrations.schema_migrations where version='20261013210000';",
+     "insert into supabase_migrations.schema_migrations values('20261013210000');"],
+    ['alter function ' + CAS + '(bigint,timestamptz,jsonb) security invoker;',
+     'alter function ' + CAS + '(bigint,timestamptz,jsonb) security definer;'],
+    ['alter function ' + CAS + '(bigint,timestamptz,jsonb) set search_path=public;',
+     'alter function ' + CAS + '(bigint,timestamptz,jsonb) set search_path=pg_catalog,public;'],
+    ["alter function " + CAS + "(bigint,timestamptz,jsonb) set statement_timeout='54s';",
+     "alter function " + CAS + "(bigint,timestamptz,jsonb) set statement_timeout='55s';"],
+    ['revoke execute on function ' + CAS + '(bigint,timestamptz,jsonb) from service_role;',
+     'grant execute on function ' + CAS + '(bigint,timestamptz,jsonb) to service_role;'],
+    ['grant execute on function ' + CAS + '(bigint,timestamptz,jsonb) to anon;',
+     'revoke execute on function ' + CAS + '(bigint,timestamptz,jsonb) from anon;'],
+    ['grant execute on function ' + CAS + '(bigint,timestamptz,jsonb) to authenticated;',
+     'revoke execute on function ' + CAS + '(bigint,timestamptz,jsonb) from authenticated;'],
+  ]) {
+    await psql(drift);
+    assert.notEqual((await runSql(source)).code, 0, 'whole220 BEFORE must reject actual predecessor/ACL drift');
+    assert.equal(await psql("select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in (" + originalNames.map(name => "'" + name + "'").join(',') + ');'), '0');
+    await psql(restore);
+    assert.equal(await psql("select btrim(prosrc,E' \\r\\n\\t') from pg_proc where oid='" + CAS + "(bigint,timestamptz,jsonb)'::regprocedure;"), body(oldBody));
+    assert.equal(await bankHash(), bankBefore); assert.equal(await preserved(), rowsBefore);
+  }
+  await psql(source); // Entire transaction/BEFORE/definitions/AFTER/ACL/notify/COMMIT.
+  assert.equal(await psql("select current_setting('lock_timeout');"), '0');
+  assert.equal(await bankHash(), bankBefore); assert.equal(await preserved(), rowsBefore,
+    'installing220 must not rewrite an original checkpoint, account or preference row');
+  await psql("insert into supabase_migrations.schema_migrations values('20261013220000');");
+  assert.notEqual((await runSql(source)).code, 0, 'whole220 may not replay');
+  const definitions = JSON.parse(await psql("select jsonb_object_agg(p.proname,encode(extensions.digest(convert_to(btrim(p.prosrc,E' \\r\\n\\t'),'UTF8'),'sha256'),'hex')) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in (" + migrationNames.map(name => "'" + name + "'").join(',') + ');'));
+  assert.deepEqual(definitions, Object.fromEntries(migrationNames.map(name => [name, hash(body(definition(source, name)))])),
+    'actual native bodies include all six whole original validators and seven replacements');
+  const properties = JSON.parse(await psql("select jsonb_build_object('definer',p.prosecdef,'searchPath','search_path=pg_catalog, public'=any(p.proconfig),'timeout','statement_timeout=55s'=any(p.proconfig),'service',has_function_privilege('service_role',p.oid,'execute'),'anon',has_function_privilege('anon',p.oid,'execute'),'authenticated',has_function_privilege('authenticated',p.oid,'execute')) from pg_proc p where p.oid='" + CAS + "(bigint,timestamptz,jsonb)'::regprocedure;"));
+  assert.deepEqual(properties, { definer: true, searchPath: true, timeout: true, service: true, anon: false, authenticated: false });
+  assert.equal(await psql("select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace cross join lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a where n.nspname='public' and p.proname in (" + originalNames.map(name => "'" + name + "'").join(',') + ") and a.privilege_type='EXECUTE' and (a.grantee=0 or a.grantee in (select oid from pg_roles where rolname in ('anon','authenticated')));"), '0');
+  for (const [family, payload] of Object.entries(originals)) {
+    assert.equal(await psql('select public.ravradar_ravscore_checkpoint_grid_' + family
+      + "_payload_valid((select payload from native_checkpoint_payloads where name='original-" + family + "'),'" + atHour(49) + "');"), 't',
+    'all 673 original pairs must pass their OWN unchanged whole validator: ' + family);
+    assert.equal(hash(JSON.stringify(payload)), originalPins[family]);
+  }
+  const current = {};
+  for (const [name, hour, options] of [['current',49,{}],['future',50,{}],['changed',49,{ candidateCurrentSpeedMps:0.18 }]]) {
+    const sourcePath = path.join(root, 'grid-' + name + '-source.json');
+    const checkpointPath = path.join(root, 'grid-' + name + '-checkpoint.json');
+    await fs.writeFile(sourcePath, JSON.stringify(sourceDocumentAt(hour, 'rr-native-grid-' + hour, options)), { flag: 'wx' });
+    await saveCheckpoint({ sourcePath, checkpointPath });
+    const payload = JSON.parse(await fs.readFile(checkpointPath, 'utf8'));
+    assert.equal(payload.modelBinding.modelBundleSha256, GRID_I);
+    assert.equal(payload.candidateGRollbackCompanion.modelBinding.modelBundleSha256, GRID_C);
+    assert.equal(payload.continuationStateContractSha256, GRID_T);
+    assert.equal(payload.partCount, 673); assert.equal(Object.keys(payload.states).length, 673);
+    assert.equal(Object.keys(payload.candidateGRollbackCompanion.states).length, 673);
+    current[name] = payload; await put('grid-' + name, payload);
+    assert.equal(await psql("select public.ravradar_ravscore_checkpoint_payload_valid((select payload from native_checkpoint_payloads where name='grid-" + name + "'),'" + atHour(hour) + "');"), 't');
+  }
+  const cases = [
+    ['insert',null,'grid-current',0,null,'inserted',1],
+    ['equal-stale-version','grid-current','grid-current',0,null,'unchanged',1],
+    ['same-reference-changed-state','grid-current','grid-changed',1,'23505',null,1],
+    ['regression','grid-future','grid-current',1,'22023',null,1],
+    ['wrong-version','grid-current','grid-future',0,'40001',null,1],
+    ['higher-reference','grid-current','grid-future',1,null,'updated',2],
+    ['negative-version','grid-current','grid-current',-1,'22023',null,1],
+    ['role-rejection','grid-current','grid-current',1,'42501',null,1,'service_role','anon'],
+    ['ACL-rejection','grid-current','grid-current',1,'42501',null,1,'anon','anon'],
+  ];
+  for (const [family, payload] of Object.entries(originals)) {
+    cases.push(['newer-' + family,'original-' + family,'grid-future',1,null,'updated',2],
+      ['same-reference-' + family,'original-' + family,'grid-current',1,'22023',null,1],
+      ['version-' + family,'original-' + family,'grid-future',0,'40001',null,1]);
+    const invalids = {
+      mixed: value => { Object.values(value.states)[0].modelBundleSha256 = GRID_I; },
+      candidate: value => { value.candidateGRollbackCompanion.modelBinding.modelBundleSha256 = GRID_C; },
+      continuation: value => { value.continuationStateContractSha256 = GRID_T; },
+      generation: value => { value.candidateGRollbackCompanion.generationSha256 = hash('unpaired old generation'); },
+      sampling: value => { Object.values(value.states)[0].samplingContextKey = null; },
+      missing: value => { delete value.states[Object.keys(value.states)[0]]; },
+    };
+    for (const [kind, mutate] of Object.entries(invalids)) {
+      const invalid = structuredClone(payload); mutate(invalid);
+      const name = family + '-' + kind; await put(name, invalid);
+      assert.equal(await psql('select public.ravradar_ravscore_checkpoint_grid_' + family
+        + "_payload_valid((select payload from native_checkpoint_payloads where name='" + name + "'),'" + atHour(49) + "');"), 'f');
+      cases.push([name, name, 'grid-future', 1, '22023', null, 1]);
+    }
+  }
+  const invalidIncoming = structuredClone(current.future); invalidIncoming.partCount = 672;
+  await put('grid-invalid', invalidIncoming);
+  cases.push(['invalid-incoming','original-c1ac','grid-invalid',1,'22023',null,1]);
+  const reports = [];
+  for (const [name, central, incoming, version, expectedCode, disposition, storedVersion,
+    role = 'service_role', claimRole = role] of cases) {
+    const reset = 'truncate public.admin_documents;' + (central
+      ? "insert into public.admin_documents(document_key,payload,version,updated_by) select '" + KEY
+        + "',payload,1,'00000000-0000-0000-0000-000000000001' from native_checkpoint_payloads where name='" + central + "';" : '');
+    const observed = JSON.parse(await psql(reset + " set statement_timeout='55s'; do $$ begin perform set_config('request.jwt.claim.role','"
+      + claimRole + "',false); end $$; set role " + role + '; select public.native_checkpoint_attempt(false,'
+      + version + ",(select payload from native_checkpoint_payloads where name='" + incoming + "'));"));
+    assert.equal(observed.sqlstate, expectedCode, 'native220 case ' + name);
+    assert.equal(observed.stored?.version, storedVersion);
+    if (disposition) { assert.equal(observed.result.disposition, disposition); assert.equal(observed.result.centralVersion, storedVersion); }
+    if (expectedCode || disposition === 'unchanged') {
+      const { storedPayloadMatchesIncoming, ...stored } = observed.stored;
+      assert.deepEqual(stored, observed.previous, '220 refusal/equality preserves exact original row: ' + name);
+      assert.equal(stored.ownerIsNull, false);
+    } else { assert.equal(observed.stored.ownerIsNull, true); assert.equal(observed.stored.storedPayloadMatchesIncoming, true); }
+    reports.push({ case: name, sqlstate: expectedCode, disposition, storedVersion });
+  }
+  for (const [family, payload] of Object.entries(originals)) assert.equal(hash(JSON.stringify(payload)), originalPins[family]);
+  return { kind: 'NATIVE_CURRENT_GRID_SUCCESSOR', wholeMigrationExecuted: true,
+    migrationSQLSha256: hash(source), currentPartCount: 673, originalFamilies: ['ffc','249','c1ac'],
+    beforeGuardDriftCases: 7, actualDefinitionCount: 13, timeoutSeconds: 55,
+    migrationLocalLockTimeoutSeconds: 5, accountRowsPreserved: true, reports };
+}
+
 // Called ONLY by the existing protected-checkpoint target's native-only branch.
 // Its real 673 model builders and normal checkpoint saver supply the fixtures.
 export async function runNativeCheckpointSqlComparison({ repositoryRoot,
@@ -328,6 +632,9 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
     const oldSource = sqlText(await fs.readFile(path.join(repositoryRoot, 'supabase/migrations', OLD_MIGRATION), 'utf8'));
     const newSource = sqlText(await fs.readFile(path.join(repositoryRoot, 'supabase/migrations', NEW_MIGRATION), 'utf8'));
     const accountSource = sqlText(await fs.readFile(path.join(repositoryRoot, 'supabase/migrations', ACCOUNT_MIGRATION), 'utf8'));
+    const gridSource = sqlText(await fs.readFile(path.join(repositoryRoot, 'supabase/migrations', GRID_MIGRATION), 'utf8'));
+    const issued = await issued213Factory(root);
+    assert.equal(issued.atHour(49), atHour(49));
     const oldCas = definition(oldSource, 'ravradar_ravscore_checkpoint_cas');
     const newCas = definition(newSource, 'ravradar_ravscore_checkpoint_cas');
     const aliasCas = oldCas.replace(`function ${CAS}(`, `function ${CAS}_baseline(`);
@@ -419,8 +726,8 @@ grant execute on function public.native_checkpoint_attempt(boolean,bigint,jsonb)
     }
     for (const [name, hour, options] of [['current',49,{}],['future',50,{}],['changed',49,{ candidateCurrentSpeedMps:0.18 }]]) {
       const sourcePath = path.join(root, `${name}-source.json`), checkpointPath = path.join(root, `${name}-checkpoint.json`);
-      await fs.writeFile(sourcePath, JSON.stringify(sourceDocumentAt(hour, `rr-native-sql-${hour}`, options)));
-      await saveCheckpoint({ sourcePath, checkpointPath });
+      await fs.writeFile(sourcePath, JSON.stringify(issued.sourceDocumentAt(hour, `rr-native-sql-${hour}`, options)));
+      await issued.saveRavScoreContinuationCheckpoint({ sourcePath, checkpointPath });
       fixtures[name] = JSON.parse(await fs.readFile(checkpointPath, 'utf8'));
       assert.equal(fixtures[name].partCount, 673); assert.equal(Object.keys(fixtures[name].states).length, 673);
       currentFixtures[name]=structuredClone(fixtures[name]);
@@ -494,7 +801,10 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     }
     const accountAssistant=await compareAccountAssistantSuccessor({psql,runSql,source:accountSource,oldSource,
       oldFixtures:fixtures,currentFixtures,cases,atHour,oldCas,newCas});
-    return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,postgresMajorVersion:programs.majorVersion,
+    const currentGrid=await compareCurrentGridSuccessor({psql,runSql,source:gridSource,accountSource,
+      oldFixtures:fixtures,issuedFixtures:currentFixtures,sourceDocumentAt,atHour,saveCheckpoint,root});
+    return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
+      issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,
       oldCasDefinitionSha256:hash(oldCas),newCasDefinitionSha256:hash(newCas),reports};

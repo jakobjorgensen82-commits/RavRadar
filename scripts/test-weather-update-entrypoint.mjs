@@ -125,13 +125,15 @@ test('main parser policy, public readers, serializer and record writer are prese
     'ecf1e9813312af7244be828aa667b5753f543e8d052f8fda49dc4c562255826c');
 });
 
-test('47 baseline source commands plus one successor check reach the normal checkpoint integration exactly once', async () => {
+test('47 baseline source commands plus separate issued213 and current220 checks reach normal checkpoint integration exactly once', async () => {
   const scripts = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).scripts;
   const { expandSourceCommands } = await import('./validate-source-once.mjs');
   const commands = expandSourceCommands(scripts, 'validate:source:checks');
-  const successorCheck = 'node scripts/build-account-assistant-binding-successor.mjs --check';
-  assert.equal(commands.filter(command => command === successorCheck).length, 1);
-  assert.equal(commands.filter(command => command !== successorCheck).length, 47);
+  const sourceChecks = ['node scripts/check-account-assistant-issued-source.mjs',
+    'node scripts/build-current-grid-original-binding-successor.mjs --check'];
+  for (const check of sourceChecks) assert.equal(commands.filter(command => command === check).length, 1);
+  assert.equal(commands.includes('node scripts/build-account-assistant-binding-successor.mjs --check'), false);
+  assert.equal(commands.filter(command => !sourceChecks.includes(command)).length, 47);
   const invoked = commands.flatMap(command => command.split(' '));
   assert.equal(invoked.filter(file => file === 'scripts/test-dmi-forecast-file.mjs').length, 1);
   assert.equal(invoked.filter(file => file === 'scripts/test-weather-update-entrypoint.mjs').length, 0);

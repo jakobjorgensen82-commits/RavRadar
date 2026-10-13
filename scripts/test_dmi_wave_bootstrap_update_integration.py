@@ -3556,6 +3556,140 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                     self.assertFalse(controller.sidecars_dirty)
                     self.assertEqual((result["zones"], budget, fresh), before)
 
+    def test_failed_processing_cost_is_observed_without_commit(self) -> None:
+        import ast
+        import inspect
+
+        # Preserve the actual exception handlers, including the fatal reader guard.
+        # The injected failure is a synthetic parser failure, not kernel-stop proof.
+        source = inspect.getsource(producer)
+        main = next(node for node in ast.parse(source).body
+                    if isinstance(node, ast.FunctionDef) and node.name == "main")
+        candidates = [node for node in ast.walk(main) if isinstance(node, ast.Try)
+                      and any(isinstance(child, ast.Call)
+                              and isinstance(child.func, ast.Name)
+                              and child.func.id == "process_grib_transactionally"
+                              for statement in node.body for child in ast.walk(statement))
+                      and any(isinstance(child, ast.Constant)
+                              and child.value == "asset-processing"
+                              for handler in node.handlers for child in ast.walk(handler))]
+        self.assertEqual(len(candidates), 1)
+        handlers = copy.deepcopy(candidates[0].handlers)
+        seam = ast.parse("for attempt in range(1):\n    try:\n        raise failure\n    except Exception:\n        pass\n    after_handler.append(True)\n")
+        seam.body[0].body[0].handlers = handlers
+        main_code = compile(ast.fix_missing_locations(seam), producer.__file__, "exec")
+
+        def fake_list(collection, _configuration):
+            return fake_plan(), (StacWaveAsset(
+                valid_time=utc_offset(TARGET, -1), model_run=utc_offset(TARGET, -6),
+                item_id=f"synthetic-{collection}",
+                href=f"https://example.invalid/{collection}.grib", collection=collection,
+            ),)
+
+        for caller in ("wam", "main", "main-observed-wam", "main-unproved"):
+            with self.subTest(caller=caller):
+                clock = [100.0]
+                result = {"zones": {"SYNTHETIC-OLD": {
+                    "hourly": {"original": {"unchanged": True}},
+                }}, "diagnostics": {"errors": []}}
+                fresh, budget = {"SYNTHETIC-OLD"}, {"bytes": 17}
+                before = copy.deepcopy((result["zones"], fresh, budget))
+                failure = (producer.GribReadUnproven("synthetic unproved read")
+                           if caller == "main-unproved" else ValueError("synthetic processing failure"))
+                events = []
+
+                def download(*_args, **_kwargs):
+                    clock[0] += 20.0
+                    return Path("synthetic-never-opened.grib"), False
+
+                def parse(*_args, **_kwargs):
+                    clock[0] += 120.0
+                    raise failure
+
+                with (
+                    patch.object(producer.time, "monotonic", side_effect=lambda: clock[0]),
+                    patch.object(producer, "WORK_DEADLINE", 440.0),
+                    patch.object(producer, "download_asset", side_effect=download) as downloader,
+                    patch.object(producer, "process_grib_transactionally", side_effect=parse) as parser,
+                    patch.object(producer, "list_private_wave_bootstrap_assets", side_effect=fake_list),
+                    patch.object(producer, "progress"),
+                    patch.object(producer, "write_checkpoint") as checkpoint,
+                    patch.object(producer, "safe_error_message", wraps=producer.safe_error_message) as message,
+                ):
+                    controller = producer.ProgressCheckpointController(result, fresh, budget)
+                    real_observe, real_flush = controller.observe_asset_duration, controller.flush_if_due
+
+                    def observe(seconds, *, cost_family):
+                        events.append("observe")
+                        return real_observe(seconds, cost_family=cost_family)
+
+                    def flush(*, force=False):
+                        self.assertTrue(force)
+                        self.assertEqual(controller.asset_seconds_by_family, {"wam_dw": [140.0]})
+                        self.assertFalse(controller.can_start_asset(reserve_seconds=50.0, cost_family="wam_dw"))
+                        self.assertTrue(controller.can_start_asset(reserve_seconds=50.0, cost_family="dkss_lf"))
+                        events.append("flush")
+                        return real_flush(force=force)
+
+                    with (
+                        patch.object(controller, "observe_asset_duration", side_effect=observe),
+                        patch.object(controller, "flush_if_due", side_effect=flush),
+                        patch.object(controller, "note_committed_asset", wraps=controller.note_committed_asset) as commit,
+                    ):
+                        if caller == "wam":
+                            # Real bootstrap caller; provider/parser seams are synthetic.
+                            # Its existing missing-lock terminal remains unchanged.
+                            with self.assertRaisesRegex(RuntimeError, "did not lock every selected valid hour"):
+                                producer.execute_private_wave_history_bootstrap(
+                                    result, synthetic_parts(unique=True), budget, fresh,
+                                    {"mode": MIGRATION_MODE, "targetHour": TARGET,
+                                     "productionTargetHour": TARGET}, checkpoint_controller=controller,
+                                )
+                            downloader.assert_called_once()
+                            parser.assert_called_once()
+                            self.assertEqual(events, ["observe", "flush", "flush"])
+                        else:
+                            clock[0] = 240.0
+                            asset = {"valid": TARGET}
+                            namespace = dict(vars(producer), failure=failure, result=result,
+                                checkpoint_controller=controller, collection="wam_dw",
+                                asset_processing_started=100.0, asset=asset, assets=[asset],
+                                asset_number=1, supervised_identity={"validTime": TARGET},
+                                bootstrap_operational_wam=caller == "main-observed-wam",
+                                validated_wave_stage={"acceptedCount": 0}, validated_wave_rejections={},
+                                validated_current_stage={}, bounded_primary_refresh=False,
+                                run_info={"assetsRejectedAfterTraversal": 0,
+                                          "waveObservedRejectionEventsByCode": {}, "assetsObserved": 0},
+                                recognized=set(), after_handler=[],
+                            )
+                            if caller == "main-unproved":
+                                with self.assertRaises(producer.GribReadUnproven) as caught:
+                                    exec(main_code, namespace)
+                                self.assertIs(caught.exception, failure)
+                                self.assertEqual(events, [])
+                                self.assertEqual(controller.asset_seconds_by_family, {})
+                                self.assertEqual(result["diagnostics"]["errors"], [])
+                                message.assert_not_called()
+                            else:
+                                exec(main_code, namespace)
+                                self.assertEqual(events, ["observe", "flush"])
+                            self.assertEqual(namespace["after_handler"], [])
+                            downloader.assert_not_called()
+                            parser.assert_not_called()
+                        commit.assert_not_called()
+                    if caller in ("wam", "main"):
+                        self.assertEqual(message.call_count, 2)
+                        for call in message.call_args_list:
+                            self.assertIs(call.args[0], failure)
+                        self.assertEqual(len(result["diagnostics"]["errors"]), 1)
+                    if caller != "main-unproved":
+                        self.assertEqual(controller.asset_seconds_by_family, {"wam_dw": [140.0]},
+                                         "the already observed WAM rejection must not be counted twice")
+                    self.assertEqual(controller.committed_assets_since_write, 0)
+                    self.assertEqual((result["zones"], fresh, budget), before)
+                    for call in checkpoint.call_args_list:
+                        self.assertEqual(call.args[0]["zones"], before[0])
+
     def test_strict_current_lead_limit_counts_only_one_actual_attempt(self) -> None:
         self.assertTrue(producer.strict_current_lead_attempt_available(
             "dkss_lf", "dkss_lf", 0, 1,
@@ -4895,6 +5029,190 @@ console.log(JSON.stringify({
         evidence = json.loads(completed.stdout)
         self.assertEqual(evidence["mixedRunCompleteHours"], 118)
         self.assertEqual(evidence["latestRunCompleteHours"], 120)
+
+
+class CurrentOnlyGridNamespaceTests(unittest.TestCase):
+    def test_normal_current_batches_preserve_scalar_namespace_in_both_orders(self):
+        # Actual normal warm -> nearest -> batch -> pair/source callers, using
+        # this target's existing synthetic ecCodes boundary. NOT native/lease,
+        # geographical accuracy or authentication of real original files.
+        zone = {"id": "PART::SYNTHETIC-CURRENT-ONLY", "parentZoneId": "SYNTHETIC-CURRENT-ONLY",
+                "coastType": "limfjord", "lat": 56.15, "lon": 8.3}
+        grid = dict(zip(("md5GridSection", *producer.GRID_DEFINITION_KEYS),
+            ("a" * 32, "regular_ll", 3, 3, 9, 56., 8., 56.3, 8.6, .299, .149)))
+        messages = {}
+        for name, parameter, value in (("u", 49, 0.), ("v", 50, -.5),
+                ("level", 200, 7.), ("temperature", 80, 12.),
+                ("tail-u", 33, 3.), ("tail-v", 34, 4.)):
+            messages[name] = {**grid, "edition": 1, "scanningMode": 64,
+                "indicatorOfParameter": parameter, "paramId": parameter,
+                "shortName": "", "name": "", "units": "m s**-1",
+                "missingValue": 9999., "fixtureName": name,
+                "fixtureValues": {0: value + 100., 4: value}}
+        original = copy.deepcopy(messages)
+        native_calls, element_calls = [], []
+        def get(gid, key):
+            if key not in gid: raise KeyError(key)
+            return gid[key]
+        def nearest(gid, latitude, longitude, *args, **kwargs):
+            native_calls.append(gid["fixtureName"])
+            # The old scalar interpretation deliberately has its own result;
+            # no production nearest algorithm is replaced or copied here.
+            return [{"index": 0, "lat": zone["lat"], "lon": zone["lon"]}]
+        def elements(gid, key, indices):
+            self.assertEqual(key, "values")
+            self.assertEqual(len(indices), len(set(indices)))
+            element_calls.append((gid["fixtureName"], tuple(indices)))
+            return [gid["fixtureValues"].get(index, 9999.) for index in indices]
+        def scalar_rows():
+            return {name: producer.nearest_valid_batch(messages[name], "dkss_lf", [zone])[zone["id"]]
+                    for name in ("level", "temperature")}
+        def current_rows():
+            return {parameter: producer.valid_candidates_batch(messages[name], "dkss_lf", [zone])[zone["id"]]
+                    for name, parameter in (("u", "current-u"), ("v", "current-v"))}
+        baseline_scalar = None
+        for order in ("scalar-first", "current-first"):
+            with self.subTest(order=order), patch.multiple(producer,
+                    codes_get=get, codes_get_elements=elements,
+                    codes_grib_find_nearest=nearest, codes_grib_nearest_new=None,
+                    codes_grib_nearest_find=None, codes_grib_nearest_delete=None,
+                    GRID_INDEX_CACHE={}, GRID_BATCH_WARMED=set()):
+                native_calls.clear(); element_calls.clear()
+                self.assertEqual(producer.classify_parameter(messages["u"], "dkss_lf"), "current-u")
+                self.assertEqual(producer.classify_parameter(messages["v"], "dkss_lf"), "current-v")
+                if order == "scalar-first": scalar, current = scalar_rows(), current_rows()
+                else: current, scalar = current_rows(), scalar_rows()
+                selected = producer.select_common_grid_tuple(current, ("current-u", "current-v"))
+                self.assertIsNotNone(selected)
+                for key, expected in (("current-u", 0.), ("current-v", -.5)):
+                    self.assertEqual(selected[key]["index"], 4)
+                    self.assertEqual(selected[key]["value"], expected)
+                    self.assertAlmostEqual(selected[key]["latitude"], 56.15, places=12)
+                    self.assertAlmostEqual(selected[key]["longitude"], 8.3, places=12)
+                for name in ("level", "temperature"):
+                    self.assertEqual(scalar[name]["index"], 0)
+                    self.assertEqual(scalar[name]["value"], messages[name]["fixtureValues"][0])
+                    self.assertNotIn("_gridIndexIdentity", scalar[name])
+                    self.assertNotIn("_gridCoordinateInterpretation", scalar[name])
+                if baseline_scalar is None: baseline_scalar = copy.deepcopy(scalar)
+                else: self.assertEqual(scalar, baseline_scalar)
+                self.assertEqual(scalar_rows(), baseline_scalar)
+                signature = producer.grid_cache_signature(messages["u"])
+                legacy_key = ("dkss_lf", signature, zone["id"], producer.grid_candidate_target("dkss_lf", zone))
+                current_key = ("current-native-grid-sampling-v1", "dmi-dkss-grib1-header-endpoints-v1", *legacy_key)
+                self.assertEqual(set(producer.GRID_INDEX_CACHE), {legacy_key, current_key})
+                self.assertEqual([row["index"] for row in producer.GRID_INDEX_CACHE[legacy_key]], [0])
+                self.assertTrue(all("_gridCoordinateInterpretation" not in row
+                                    for row in producer.GRID_INDEX_CACHE[legacy_key]))
+                self.assertNotIn("u", native_calls); self.assertNotIn("v", native_calls)
+                self.assertTrue(element_calls)
+                source = producer.native_component_source("dkss_lf", TARGET, TARGET,
+                    component="current", zone=zone, grid_candidate=selected["current-u"], grid_tuple=selected,
+                    capture={"itemId": "synthetic-current-only", "assetIdentitySha256": "b" * 64,
+                        "assetSizeBytes": 16, "contentLengthBytes": 16, "contentSha256": "c" * 64,
+                        "acquiredAt": TARGET},
+                    spatial_selection=producer.COMPONENT_SPATIAL_SELECTION["current"],
+                    verticalLayer="synthetic", verticalLayerRankM=0.,
+                    vectorSelection=producer.CURRENT_VECTOR_SELECTION,
+                    vectorSemanticsVersion=producer.CURRENT_VECTOR_SEMANTICS_VERSION)
+                self.assertIsNotNone(source)
+                self.assertEqual(source["nativeGridSampling"]["elementIndex"], 4)
+                self.assertEqual(source["nativeGridSampling"]["coordinateInterpretation"],
+                                 "dmi-dkss-grib1-header-endpoints-v1")
+                # The legacy non-current pair contract still accepts its
+                # original shared coordinate/cell without a new current record.
+                tail = {key: producer.valid_candidates_batch(messages[name], "dkss_lf", [zone])[zone["id"]]
+                        for name, key in (("tail-u", "wind-tail-u-10m"), ("tail-v", "wind-tail-v-10m"))}
+                self.assertIsNotNone(producer.select_common_grid_tuple(tail, ("wind-tail-u-10m", "wind-tail-v-10m")))
+                self.assertIsNone(producer.select_common_grid_tuple(
+                    {"current-u": tail["wind-tail-u-10m"], "current-v": tail["wind-tail-v-10m"]},
+                    ("current-u", "current-v")))
+                self.assertEqual(set(producer.GRID_INDEX_CACHE), {legacy_key, current_key})
+                self.assertEqual(messages, original)
+
+
+    def test_direct_current_default_uses_full_grid_signature_without_scalar_bleed(self):
+        # Direct normal nearest caller, not a copied algorithm. Its current
+        # default and legacy non-current default intentionally use different
+        # native signatures. Existing synthetic ecCodes boundary, NOT native
+        # provider geography, owned-reader lease or original authentication.
+        zone = {"id": "PART::SYNTHETIC-DIRECT-CURRENT", "parentZoneId": "SYNTHETIC-DIRECT-CURRENT",
+                "coastType": "limfjord", "lat": 56.15, "lon": 8.3}
+        grid = dict(zip(("md5GridSection", *producer.GRID_DEFINITION_KEYS),
+            ("d" * 32, "regular_ll", 3, 3, 9, 56., 8., 56.3, 8.6, .299, .149)))
+        messages = {}
+        for name, parameter, value in (("u", 49, 0.), ("v", 50, -.5),
+                ("level", 200, 7.), ("temperature", 80, 12.),
+                ("tail-u", 33, 3.), ("tail-v", 34, 4.)):
+            messages[name] = {**grid, "edition": 1, "scanningMode": 64,
+                "indicatorOfParameter": parameter, "paramId": parameter,
+                "shortName": "", "name": "", "units": "m s**-1",
+                "missingValue": 9999., "fixtureName": name,
+                "fixtureValues": {0: value + 100., 4: value}}
+        original = copy.deepcopy(messages)
+        native_calls = []
+        def get(gid, key):
+            if key not in gid: raise KeyError(key)
+            return gid[key]
+        def nearest(gid, latitude, longitude, *args, **kwargs):
+            native_calls.append(gid["fixtureName"])
+            return [{"index": 0, "lat": zone["lat"], "lon": zone["lon"]}]
+        def elements(gid, key, indices):
+            self.assertEqual(key, "values")
+            return [gid["fixtureValues"].get(index, 9999.) for index in indices]
+        scalar_baseline = None
+        for order in ("scalar-first", "current-first"):
+            with self.subTest(order=order), patch.multiple(producer,
+                    codes_get=get, codes_get_elements=elements,
+                    codes_grib_find_nearest=nearest, GRID_INDEX_CACHE={}):
+                native_calls.clear()
+                def scalar_rows():
+                    return {name: producer.nearest_candidates(messages[name], "dkss_lf", zone)
+                        for name in ("level", "temperature", "tail-u", "tail-v")}
+                def current_rows():
+                    return {name: producer.nearest_candidates(messages[name], "dkss_lf", zone)
+                        for name in ("u", "v")}
+                if order == "scalar-first": scalar, current = scalar_rows(), current_rows()
+                else: current, scalar = current_rows(), scalar_rows()
+                full_signature = producer.grid_cache_signature(messages["u"])
+                legacy_signature = producer.grid_signature(messages["level"])
+                self.assertEqual(len(full_signature), 11)
+                self.assertEqual(len(legacy_signature), 10)
+                suffix = (zone["id"], producer.grid_candidate_target("dkss_lf", zone))
+                current_key = ("current-native-grid-sampling-v1", "dmi-dkss-grib1-header-endpoints-v1",
+                    "dkss_lf", full_signature, *suffix)
+                legacy_key = ("dkss_lf", legacy_signature, *suffix)
+                self.assertEqual(set(producer.GRID_INDEX_CACHE), {legacy_key, current_key})
+                for name in ("u", "v"):
+                    self.assertEqual(current[name][0]["index"], 4)
+                    self.assertAlmostEqual(current[name][0]["latitude"], 56.15, places=12)
+                    self.assertAlmostEqual(current[name][0]["longitude"], 8.3, places=12)
+                    self.assertEqual(current[name][0]["_gridCoordinateInterpretation"],
+                        "dmi-dkss-grib1-header-endpoints-v1")
+                    self.assertIs(producer.nearest_candidates(messages[name], "dkss_lf", zone),
+                        producer.GRID_INDEX_CACHE[current_key])
+                    self.assertIs(producer.nearest_candidates(messages[name], "dkss_lf", zone,
+                        signature=full_signature), producer.GRID_INDEX_CACHE[current_key])
+                for rows in scalar.values():
+                    self.assertEqual(rows[0]["index"], 0)
+                    self.assertNotIn("_gridCoordinateInterpretation", rows[0])
+                    self.assertNotIn("_gridIndexIdentity", rows[0])
+                if scalar_baseline is None: scalar_baseline = copy.deepcopy(scalar)
+                else: self.assertEqual(scalar, scalar_baseline)
+                self.assertEqual(scalar_rows(), scalar_baseline)
+                # A direct-produced current cache is actually reused by the
+                # normal batch reader; current zero remains valid.
+                batch = producer.valid_candidates_batch(messages["u"], "dkss_lf", [zone])[zone["id"]]
+                self.assertEqual(batch[0]["index"], 4)
+                self.assertEqual(batch[0]["value"], 0.)
+                self.assertEqual(set(producer.GRID_INDEX_CACHE), {legacy_key, current_key})
+                self.assertNotIn("u", native_calls); self.assertNotIn("v", native_calls)
+                snapshot = copy.deepcopy(producer.GRID_INDEX_CACHE)
+                with self.assertRaises(producer.DmiGridLookupError):
+                    producer.nearest_candidates(messages["u"], "dkss_lf", zone,
+                        signature=legacy_signature)
+                self.assertEqual(producer.GRID_INDEX_CACHE, snapshot)
+                self.assertEqual(messages, original)
 
 
 if __name__ == "__main__":
