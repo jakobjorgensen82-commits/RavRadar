@@ -40,18 +40,23 @@ assert.match(migrationStep,
 assert.match(migrationStep, /node scripts\/migrate-post-cutover-private-runtime\.mjs[\s\S]*"\$\{migration_args\[@\]\}"/);
 
 assert.equal(TRIP_BINDING_POLICY_SOURCE_MIGRATION.version, '20261010130000');
-assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261012200000',
-  'exercise the actual checkpoint-only successor, not a simulated latest flag');
+assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261013210000',
+  'exercise the actual account/assistant successor, not a simulated latest flag');
 const userdataIndex = REQUIRED_CUTOVER_MIGRATIONS.findIndex(item =>
   item.version === TRIP_BINDING_POLICY_SOURCE_MIGRATION.version);
 assert.ok(userdataIndex > 0);
 assert.equal(REQUIRED_CUTOVER_MIGRATIONS[userdataIndex - 1].version, '20261005000000');
+const checkpointIndex = REQUIRED_CUTOVER_MIGRATIONS.findIndex(item =>
+  item.version === '20261012200000');
+assert.ok(checkpointIndex > userdataIndex);
+assert.equal(checkpointIndex + 1, REQUIRED_CUTOVER_MIGRATIONS.length - 1,
+  'the genuine 200000 predecessor must leave only the named 21310000 successor pending');
 
 const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-userdata-routing-'));
 try {
   const output = path.join(directory, 'github-env.txt');
   const migrationList = path.join(directory, 'code-only-migrations-before.txt');
-  async function runCase(appliedCount, optedIn) {
+  async function runCase(appliedCount, optedIn, accountOptedIn = false) {
     await fs.writeFile(migrationList,
       `Local | Remote | Time (UTC)\n${REQUIRED_CUTOVER_MIGRATIONS.map((item, index) =>
         `${item.version} | ${index < appliedCount ? item.version : ''} | fixture`).join('\n')}\n`);
@@ -66,22 +71,30 @@ try {
         RUNNER_TEMP: directory,
         GITHUB_ENV: output,
         RAVRADAR_USERDATA_UPGRADE_OPT_IN: optedIn ? 'true' : 'false',
+        RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN: accountOptedIn ? 'true' : 'false',
       },
     });
     assert.equal(result.error, undefined, 'the actual normal Node caller must execute');
     return { ...result, environment: await fs.readFile(output, 'utf8') };
   }
 
-  for (const appliedCount of [userdataIndex + 1, REQUIRED_CUTOVER_MIGRATIONS.length]) {
-    const result = await runCase(appliedCount, false);
+  for (const [appliedCount, accountOptedIn] of [
+    [checkpointIndex + 1, true], [REQUIRED_CUTOVER_MIGRATIONS.length, false],
+  ]) {
+    const result = await runCase(appliedCount, false, accountOptedIn);
     assert.equal(result.status, 0, result.stderr || result.stdout);
     assert.match(result.environment, /^RAVRADAR_ASSISTANT_PREWRITE_REQUIRED=false$/m);
     assert.match(result.environment, /^RAVRADAR_USERDATA_PREWRITE_REQUIRED=false$/m,
       'the checkpoint repair must not replay the existing userdata installation');
     assert.match(result.environment, /^RAVRADAR_USERDATA_FINAL_REQUIRED=true$/m,
       'the later checkpoint migration must retain installed userdata storage readback');
-    assert.match(result.environment, /^RAVRADAR_CHECKPOINT_CAS_METADATA_ONLY=true$/m,
-      'the actual successor must require metadata-only reuse, not state recomputation');
+    assert.match(result.environment, /^RAVRADAR_CHECKPOINT_CAS_METADATA_ONLY=false$/m,
+      'the account successor must not impersonate the older checkpoint-only transition');
+    assert.match(result.environment,
+      new RegExp(`^RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED=${accountOptedIn}$`, 'm'));
+    assert.match(result.environment, /^RAVRADAR_ACCOUNT_ASSISTANT_METADATA_ONLY=true$/m,
+      'the actual account successor must require metadata-only reuse, not state recomputation');
+    assert.match(result.environment, /^RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED=true$/m);
   }
 
   const missing = await runCase(userdataIndex, false);
@@ -99,7 +112,26 @@ try {
     assert.doesNotMatch(replay.environment, /RAVRADAR_USERDATA_FINAL_REQUIRED/);
     assert.doesNotMatch(replay.environment, /RAVRADAR_CHECKPOINT_CAS_METADATA_ONLY/);
   }
-  console.log('Normal code-only userdata policy routing passed: 6 actual caller cases, no SQL or provider calls.');
+  for (const appliedCount of [userdataIndex + 1, checkpointIndex + 1]) {
+    const missingAccountOptIn = await runCase(appliedCount, false);
+    assert.equal(missingAccountOptIn.status, 1);
+    assert.match(missingAccountOptIn.stderr, /Pending account\/assistant successor requires its named opt-in/);
+    assert.doesNotMatch(missingAccountOptIn.environment, /RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED/);
+    assert.doesNotMatch(missingAccountOptIn.environment, /RAVRADAR_ACCOUNT_ASSISTANT_METADATA_ONLY/);
+  }
+  for (const appliedCount of [userdataIndex + 1, REQUIRED_CUTOVER_MIGRATIONS.length]) {
+    const unsupportedAccountUpgrade = await runCase(appliedCount, false, true);
+    assert.equal(unsupportedAccountUpgrade.status, 1);
+    assert.match(unsupportedAccountUpgrade.stderr,
+      /Account\/assistant upgrade requires installed200000 and sole pending20261013210000; no replay/);
+    assert.doesNotMatch(unsupportedAccountUpgrade.environment, /RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED/);
+  }
+  const combinedOptIns = await runCase(checkpointIndex + 1, true, true);
+  assert.equal(combinedOptIns.status, 1);
+  assert.match(combinedOptIns.stderr,
+    /Userdata upgrade requires installed current050000 and sole pending130000; no intermediary or automatic replay/);
+  assert.doesNotMatch(combinedOptIns.environment, /RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED/);
+  console.log('Normal code-only userdata policy routing passed: 11 actual caller cases, no SQL or provider calls.');
 } finally {
   // Only files created by this target in its own mkdtemp directory exist here.
   await fs.rm(directory, { recursive: true, force: true });
