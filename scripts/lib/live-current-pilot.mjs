@@ -1,7 +1,13 @@
+import regionalFs from 'node:fs/promises';
+import regionalNativeFs from 'node:fs';
+import { spawn as regionalSpawn } from 'node:child_process';
+import { fileURLToPath as regionalFileURLToPath } from 'node:url';
+import { copernicusOfflineEnvironment as regionalOfflineEnvironment } from './copernicus-offline-environment.mjs';
 import crypto from 'node:crypto';
 import { dmiMarineCollectionAllowedForZone } from './dmi-marine-zone-exclusions.mjs';
 import {
   RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID,
+  canonicalRavScoreStateOnlyCurrentHold,
 } from '../../js/core/ravscore-integrated-state-pipeline.js';
 
 const COPERNICUS_SOURCES = new Set(['copernicus-baltic-nemo', 'copernicus-nws-amm15']);
@@ -1167,7 +1173,9 @@ function buildRegionalReferenceDocumentProof(document, closureProof, { revalidat
         uMps: fixedDecimal(uMps, 5),
         vMps: fixedDecimal(vMps, 5),
       });
-    if (!exactObjectFields(entry, REGIONAL_REFERENCE_FIELDS)
+    if (!exactObjectFields(entry, [...REGIONAL_REFERENCE_FIELDS,
+      ...(Object.hasOwn(entry, 'regionalNativeSource') ? ['regionalNativeSource'] : []),
+      ...(Object.hasOwn(entry, 'regionalSourceProofRef') ? ['regionalSourceProofRef'] : [])])
       || entry.referenceContractId !== REGIONAL_REFERENCE_CONTRACT_ID
       || entry.classification !== REGIONAL_NATIVE_CLASSIFICATION
       || !key || !sortKey || !expected || seen.has(key)
@@ -1752,6 +1760,7 @@ function verifiedEntry(entry, part, document, proofs = null) {
     fallback: provider === 'open-meteo',
   };
   const proof = eligibleLivePilotSource(source, part, { requireStatus: true });
+  if (proof) rememberRegionalSelectedSource(source, entry, document);
   return proof ? { entry, source, validTime, uMps, vMps, proof } : null;
 }
 
@@ -1781,6 +1790,7 @@ function verifiedRegionalReferenceEntry(entry, part, document, proofs = null) {
     fallback: false,
   };
   const spatialProof = eligibleLivePilotSource(source, part, { requireStatus: true });
+  if (spatialProof) rememberRegionalSelectedSource(source, entry, document);
   return spatialProof
     ? { entry, source, validTime, uMps, vMps, proof: spatialProof }
     : null;
@@ -1927,7 +1937,7 @@ export function latestVerifiedNativeCadenceSampleForPart(
   part,
   document,
   referenceAt,
-  { projection = 'integrated-exact' } = {},
+  { projection = 'integrated-exact', requireNativeGridSampling = false, expectedHold = null } = {},
 ) {
   if (!['integrated-exact', 'candidate-g-legacy-quantized'].includes(projection)) {
     throw new Error('Native-cadence reference projection is invalid');
@@ -1955,6 +1965,26 @@ export function latestVerifiedNativeCadenceSampleForPart(
     ? candidate
     : null;
   if (!latest) return null;
+  if (requireNativeGridSampling) {
+    assertRegionalSelectedCurrentApplicable(latest.source, latest.validTime, part,
+      latest.uMps, latest.vMps, document);
+    let canonicalExpected;
+    try { canonicalExpected = canonicalRavScoreStateOnlyCurrentHold(expectedHold); }
+    catch { throw regionalScopeError('REGIONAL_HOLD_SCOPE_MISMATCH'); }
+    const holdEntry = document.entries.find(entry => entry.partId === part.partId
+      && canonicalTime(entry.validTime) === canonicalExpected?.validTime && entry.classification === REGIONAL_HOLD_CLASSIFICATION);
+    const scope = regionalReadScopes.get(document);
+    const candidateHold = holdEntry ? verifiedEntry(holdEntry, part, document, proofs) : null;
+    const actualMarker = candidateHold ? eligibleStateOnlyCurrentHold(candidateHold.source,
+      holdEntry.validTime, part) : null;
+    if (!actualMarker || canonicalJson(canonicalRavScoreStateOnlyCurrentHold(actualMarker)) !== canonicalJson(canonicalExpected)
+      || !scope?.entries.has(holdEntry)
+      || scope.entries.get(holdEntry).originalRef !== latest.entry.regionalSourceProofRef
+      || canonicalExpected.sourceValidTime !== canonicalTime(latest.entry.validTime)
+      || ['sourceAssetSha256', 'sourceProofSha256', 'vectorCommitmentSha256',
+          'closureId', 'closureContractId', 'targetIdentityFingerprint', 'parentZoneId']
+        .some(key => expectedHold[key] !== latest.entry[key])) throw regionalScopeError('REGIONAL_HOLD_SCOPE_MISMATCH');
+  }
   const exactCurrentSpeedMps = Math.hypot(latest.uMps, latest.vMps);
   const exactCurrentDirectionDeg = ((Math.atan2(latest.uMps, latest.vMps) * 180 / Math.PI) + 360) % 360;
   const currentSpeedMps = projection === 'candidate-g-legacy-quantized'
@@ -2079,4 +2109,246 @@ export function mergeLiveCurrentPilotIntoRecord(
       },
     },
   };
+}
+
+// A read scope belongs to one captured private input document and its originals.
+const regionalReadScopes = new WeakMap();
+const regionalSelectedSources = new WeakMap();
+// Unknown closure retains only this module's own handle; no later read may
+// turn an unproved previous handle into a positive scope for the same path.
+const regionalUnclosedReads = new Map();
+const regionalReadRoot = new URL('../../', import.meta.url);
+const regionalReadPaths = ['data/live/current-pilot-history.json',
+  '.cache/current-field-shadow.json', 'data/current-regional-proxy-policy.json',
+  'data/live/coastal-parts-v2.json'];
+const regionalReadLimits = [768, 256, 768, 768].map(n => n * 1024 * 1024);
+const regionalReadMaximumReply = 32 * 1024 * 1024; // existing private manifest envelope
+function regionalScopeError(code = 'REGIONAL_ORIGINAL_SCOPE_UNQUALIFIED') {
+  const error = new Error(code);
+  error.code = 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED';
+  error.samplingStatus = 'regional-original-unqualified';
+  return error;
+}
+function regionalDeepFreeze(value) {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    for (const child of Object.values(value)) regionalDeepFreeze(child);
+    Object.freeze(value);
+  }
+  return value;
+}
+async function regionalReadFile(relative, maximum) {
+  const url = new URL(relative, regionalReadRoot);
+  if (regionalUnclosedReads.has(url.href)) throw regionalUnclosedReads.get(url.href).failure.error;
+  const parents = [];
+  const pieces = relative.split('/');
+  for (let i = 0; i < pieces.length; i++) {
+    const parentUrl = new URL(pieces.slice(0, i).join('/') + (i ? '/' : ''), regionalReadRoot);
+    const stat = await regionalFs.lstat(parentUrl);
+    if (!stat.isDirectory() || stat.isSymbolicLink()) throw regionalScopeError('REGIONAL_SCOPE_PATH');
+    parents.push({ url: parentUrl, stat });
+  }
+  const before = await regionalFs.lstat(url);
+  if (!before.isFile() || before.isSymbolicLink() || before.size < 2 || before.size > maximum) {
+    throw regionalScopeError('REGIONAL_SCOPE_FILE_SIZE');
+  }
+  const handle = await regionalFs.open(url, 'r');
+  const ownedFd = handle.fd;
+  let first = null, raw;
+  const fail = error => { first ??= { error }; };
+  try {
+    if (!Number.isInteger(ownedFd) || ownedFd < 0) throw regionalScopeError('REGIONAL_SCOPE_FD');
+    const opened = await handle.stat();
+    if (opened.dev !== before.dev || opened.ino !== before.ino || opened.size !== before.size) {
+      throw regionalScopeError('REGIONAL_SCOPE_FILE_CHANGED');
+    }
+    const chunks = [];
+    let bytes = 0;
+    const chunk = Buffer.allocUnsafe(Math.min(64 * 1024, maximum + 1));
+    for (;;) {
+      const length = Math.min(chunk.length, maximum + 1 - bytes);
+      const read = await handle.read(chunk, 0, length, null);
+      if (!Number.isInteger(read.bytesRead) || read.bytesRead < 0 || read.bytesRead > length) {
+        throw regionalScopeError('REGIONAL_SCOPE_READ');
+      }
+      if (read.bytesRead === 0) break;
+      bytes += read.bytesRead;
+      if (bytes > maximum) throw regionalScopeError('REGIONAL_SCOPE_FILE_SIZE');
+      chunks.push(Buffer.from(chunk.subarray(0, read.bytesRead)));
+    }
+    raw = Buffer.concat(chunks, bytes);
+    const after = await handle.stat();
+    const installed = await regionalFs.lstat(url);
+    if (after.size !== before.size || raw.length !== before.size
+      || after.mtimeMs !== before.mtimeMs || installed.dev !== before.dev
+      || installed.ino !== before.ino || installed.mtimeMs !== before.mtimeMs) {
+      throw regionalScopeError('REGIONAL_SCOPE_FILE_CHANGED');
+    }
+    for (const parent of parents) {
+      const installedParent = await regionalFs.lstat(parent.url);
+      if (installedParent.isSymbolicLink() || !installedParent.isDirectory()
+        || installedParent.dev !== parent.stat.dev || installedParent.ino !== parent.stat.ino) {
+        throw regionalScopeError('REGIONAL_SCOPE_PATH_CHANGED');
+      }
+    }
+  } catch (error) { fail(error); }
+  // Exactly one close attempt. A rejected close can still have closed the fd,
+  // but remains a failure. FileHandle.stat()/fd=-1 are not physical proof.
+  try { await handle.close(); } catch (error) { fail(error); }
+  let closed = false;
+  if (Number.isInteger(ownedFd) && ownedFd >= 0) {
+    try {
+      await new Promise((resolve, reject) => regionalNativeFs.fstat(ownedFd,
+        (error, stat) => error === null || error === undefined ? resolve(stat) : reject(error)));
+    } catch (error) {
+      closed = Object.getOwnPropertyDescriptor(Object(error), 'code')?.value === 'EBADF';
+      if (!closed) fail(error);
+    }
+  }
+  if (!closed) {
+    fail(regionalScopeError('REGIONAL_SCOPE_CLOSE_UNPROVED'));
+    regionalUnclosedReads.set(url.href, { handle, ownedFd, failure: first });
+  }
+  if (first !== null) throw first.error;
+  return raw;
+}
+function regionalVerifyWithOwnedChild(buffers) {
+  return new Promise((resolve, reject) => {
+    const environment = regionalOfflineEnvironment();
+    // Runner cleanup ownership only; never an input/output qualification token.
+    if (typeof process.env.RUNNER_TRACKING_ID === 'string') environment.RUNNER_TRACKING_ID = process.env.RUNNER_TRACKING_ID;
+    const child = regionalSpawn('python', ['-B', regionalFileURLToPath(
+      new URL('../build-live-current-pilot.py', import.meta.url)), '--verify-regional-read-scope'], {
+      cwd: regionalFileURLToPath(regionalReadRoot), shell: false, windowsHide: true,
+      env: environment, stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    let first = null, killed = false, inputFinished = false, outputBytes = 0;
+    const chunks = [];
+    const fail = code => {
+      first ??= regionalScopeError(code);
+      if (!killed) {
+        killed = true;
+        try { child.kill(); } catch { /* first failure retained; await actual close */ }
+      }
+    };
+    // Fixed verifier deadline. Source/build/recovery budgets remain separate.
+    const timer = setTimeout(() => fail('REGIONAL_SCOPE_DEADLINE'), 120000);
+    child.once('error', () => fail('REGIONAL_SCOPE_START'));
+    child.stdin.once('error', () => fail('REGIONAL_SCOPE_INPUT'));
+    child.stdin.once('finish', () => { inputFinished = true; });
+    child.stdout.on('data', chunk => {
+      outputBytes += chunk.length;
+      if (outputBytes > regionalReadMaximumReply) fail('REGIONAL_SCOPE_OUTPUT_LIMIT');
+      else if (!first) chunks.push(chunk);
+    });
+    child.stdout.once('error', () => fail('REGIONAL_SCOPE_OUTPUT'));
+    child.stderr.on('data', () => {}); // drain; no private text exposed or retained
+    child.stderr.once('error', () => fail('REGIONAL_SCOPE_STDERR'));
+    child.once('close', (code, signal) => {
+      clearTimeout(timer);
+      if (first) return reject(first);
+      if (code !== 0 || signal || !inputFinished) return reject(regionalScopeError('REGIONAL_SCOPE_CHILD_CLOSE'));
+      try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))); }
+      catch { reject(regionalScopeError('REGIONAL_SCOPE_REPLY')); }
+    });
+    // No concatenated copy of the four private files. Respect pipe backpressure.
+    (async () => {
+      try {
+        for (const raw of buffers) {
+          const size = Buffer.alloc(8); size.writeBigUInt64BE(BigInt(raw.length));
+          for (const bytes of [size, raw]) if (!child.stdin.write(bytes)) {
+            await new Promise((done, failed) => {
+              const cleanup = () => { child.stdin.off('drain', drained); child.stdin.off('error', error); child.stdin.off('close', closed); };
+              const drained = () => { cleanup(); done(); };
+              const error = () => { cleanup(); failed(regionalScopeError()); };
+              const closed = error;
+              child.stdin.once('drain', drained); child.stdin.once('error', error); child.stdin.once('close', closed);
+            });
+          }
+        }
+        child.stdin.end();
+      } catch { fail('REGIONAL_SCOPE_INPUT'); }
+    })();
+  });
+}
+export async function readLiveCurrentPilot(centralContract) {
+  let centralSnapshot;
+  try { centralSnapshot = canonicalJson(centralContract); } catch { /* optional scope stays unqualified */ }
+  let live;
+  try { live = await regionalReadFile(regionalReadPaths[0], regionalReadLimits[0]); }
+  catch { return null; }
+  let document;
+  try { document = JSON.parse(live); }
+  catch { return null; }
+  if (Number(document?.schemaVersion) !== 1 || document?.controlledLivePilot !== true) return null;
+  try {
+    const buffers = [live];
+    for (let i = 1; i < regionalReadPaths.length; i++) buffers.push(await regionalReadFile(regionalReadPaths[i], regionalReadLimits[i]));
+    const registry = JSON.parse(buffers[3]);
+    // Exact already built central contract, not a caller-selected path/root.
+    if (typeof centralSnapshot !== 'string' || canonicalJson(registry) !== centralSnapshot
+      || canonicalJson(centralContract) !== centralSnapshot) throw regionalScopeError('REGIONAL_SCOPE_CENTRAL_MISMATCH');
+    const reply = await regionalVerifyWithOwnedChild(buffers);
+    if (canonicalJson(centralContract) !== centralSnapshot) throw regionalScopeError('REGIONAL_SCOPE_CENTRAL_MISMATCH');
+    const hashes = buffers.map(raw => crypto.createHash('sha256').update(raw).digest('hex'));
+    if (!exactObjectFields(reply, ['schemaVersion', 'inputSha256', 'associations', 'denied', 'validationCounts'])
+      || reply.schemaVersion !== 1 || JSON.stringify(reply.inputSha256) !== JSON.stringify(hashes)
+      || !Array.isArray(reply.associations) || !Array.isArray(reply.denied)
+      || !exactObjectFields(reply.validationCounts, ['scopes', 'sources'])
+      || reply.validationCounts.scopes !== 1 || !Number.isSafeInteger(reply.validationCounts.sources)
+      || reply.validationCounts.sources < 0) throw regionalScopeError('REGIONAL_SCOPE_REPLY');
+    const entries = new Map(), seen = new Set();
+    for (const [kind, rows] of [['associations', reply.associations], ['denied', reply.denied]]) for (const row of rows) {
+      if (!Array.isArray(row) || row.length !== 3 || !['entries', 'regionalReferenceEntries'].includes(row[0])
+        || !Number.isSafeInteger(row[1]) || row[1] < 0 || !document[row[0]]?.[row[1]]
+        || seen.has(row[0] + ':' + row[1])) throw regionalScopeError('REGIONAL_SCOPE_REPLY');
+      seen.add(row[0] + ':' + row[1]);
+      if (kind === 'associations') {
+        if (!SHA256_PATTERN.test(row[2])) throw regionalScopeError('REGIONAL_SCOPE_REPLY');
+        entries.set(document[row[0]][row[1]], { field: row[0], index: row[1], originalRef: row[2] });
+      } else if (!['REGIONAL_SCOPE_UNAVAILABLE', 'REGIONAL_ORIGINAL_UNQUALIFIED'].includes(row[2])) throw regionalScopeError('REGIONAL_SCOPE_REPLY');
+    }
+    const expected = (document.entries ?? []).filter(e => e.source === REGIONAL_SOURCE).length
+      + (document.regionalReferenceEntries ?? []).length;
+    if (seen.size !== expected) throw regionalScopeError('REGIONAL_SCOPE_REPLY');
+    const expectedParts = new Map();
+    for (const [zoneId, parts] of Object.entries(registry.zones)) for (const part of parts) {
+      if (expectedParts.has(part.partId)) throw regionalScopeError('REGIONAL_SCOPE_TARGET_DUPLICATE');
+      expectedParts.set(part.partId, { zoneId, sourceZoneId: part.sourceZoneId ?? part.parentZoneId ?? zoneId,
+        waterPoint: part.waterPoint, onshoreDirectionDeg: part.onshoreDirectionDeg });
+    }
+    regionalReadScopes.set(document, { entries, expectedParts, inputSha256: hashes,
+      centralContract: regionalDeepFreeze(registry) });
+  } catch {
+    // Retain old independent nonregional closure data; no regional proof minted.
+  }
+  return regionalDeepFreeze(document);
+}
+function rememberRegionalSelectedSource(source, entry, document) {
+  if (entry?.source !== REGIONAL_SOURCE) return;
+  const scope = regionalReadScopes.get(document);
+  if (!scope?.entries.has(entry)) return;
+  regionalSelectedSources.set(source, { entry, document, snapshot: canonicalJson(source) });
+}
+export function assertRegionalSelectedCurrentApplicable(source, time, part, uMps, vMps, document) {
+  if (source?.source !== REGIONAL_SOURCE) return false;
+  const selected = regionalSelectedSources.get(source);
+  const scope = regionalReadScopes.get(document);
+  const entry = selected?.entry;
+  const association = scope?.entries.get(entry);
+  const expectedPart = scope?.expectedParts.get(part?.partId);
+  if (!scope || !association || selected.document !== document
+    || document[association.field]?.[association.index] !== entry
+    || canonicalJson(source) !== selected.snapshot
+    || entry.regionalSourceProofRef !== association.originalRef
+    || entry.classification !== REGIONAL_NATIVE_CLASSIFICATION
+    || canonicalTime(time) !== canonicalTime(entry.validTime)
+    || entry.partId !== part?.partId || entry.parentZoneId !== expectedParentZoneId(part)
+    || !expectedPart || expectedPart.zoneId !== expectedParentZoneId(part)
+    || expectedPart.sourceZoneId !== (part.sourceZoneId ?? part.parentZoneId ?? part.zoneId)
+    || JSON.stringify(expectedPart.waterPoint) !== JSON.stringify(part.waterPoint)
+    || expectedPart.onshoreDirectionDeg !== part.onshoreDirectionDeg
+    || entry.targetIdentityFingerprint !== targetIdentityFingerprint(part)
+    || uMps !== entry.uMps || vMps !== entry.vMps
+    || !eligibleLivePilotSource(source, part, { requireStatus: true })) throw regionalScopeError();
+  return true;
 }

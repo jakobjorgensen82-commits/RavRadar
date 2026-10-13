@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { REQUIRED_CUTOVER_MIGRATIONS, LATEST_REQUIRED_CUTOVER_MIGRATION,
-  TRIP_BINDING_POLICY_SOURCE_MIGRATION }
+  TRIP_BINDING_POLICY_SOURCE_MIGRATION, ACCOUNT_ASSISTANT_SOURCE_MIGRATION }
   from './integrated-cutover-readiness.mjs';
 import {
   assertPostCutoverRepairProjection,
@@ -23,7 +23,11 @@ import {
   runtimeReuseSemantics,
 } from './prepare-code-only-public-runtime.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
-import { PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
+import { PROTECTED_PRIVATE_RUNTIME_POLICY, isLatestUnpairedWeatherGeneration }
+  from './protected-private-production-runtime.mjs';
+import { buildCurrentGridSamplingOriginalRestoreExpectation,
+  CURRENT_GRID_SAMPLING_SELECTED_PREDECESSOR_POLICY }
+  from './lib/bounded-conditions-predecessor-transition.mjs';
 import {
   resolveCodeOnlyPublicSource,
   resolveFailedIntegratedMaintenancePublicSource,
@@ -584,8 +588,37 @@ for (const helperPath of [
   'scripts/lib/supabase-admin-rest.mjs',
 ]) assert.deepEqual(relativeModuleSpecifiers(fs.readFileSync(helperPath, 'utf8')), [],
   `Den kopierede kompatibilitetshjælper har fået en uklassificeret relativ import: ${helperPath}`);
-assert.deepEqual(relativeModuleSpecifiers(fs.readFileSync(
-  'scripts/lib/bounded-conditions-predecessor-transition.mjs', 'utf8')),
+const boundedCompatibilitySource = fs.readFileSync(
+  'scripts/lib/bounded-conditions-predecessor-transition.mjs', 'utf8').replace(/\r\n/g, '\n');
+// Classify the exact current-grid SOURCE reads, not a count of permitted
+// imports. The copied helper must still use the historical source tree's
+// contract/generated modules; no verifier/model module is copied or replaced.
+const currentGridReadOnlyImports = [
+  ['../../js/core/ravscore-model-contract.js',
+    "import { ravScoreModelBinding as currentGridSamplingModelBinding }\n  from '../../js/core/ravscore-model-contract.js';\n"],
+  ['../rollback-assets/ravscore-model-contract.js',
+    "import { ravScoreModelBinding as currentGridSamplingCandidateBinding }\n  from '../rollback-assets/ravscore-model-contract.js';\n"],
+  ['../../js/core/ravscore-model-bundle.generated.js',
+    "import { GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST as currentGridSamplingIntegratedManifest }\n  from '../../js/core/ravscore-model-bundle.generated.js';\n"],
+  ['../rollback-assets/ravscore-model-bundle.generated.js',
+    "import { GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST as currentGridSamplingCandidateManifest }\n  from '../rollback-assets/ravscore-model-bundle.generated.js';\n"],
+  ['../private-production-runtime-workflow.mjs',
+    "  const { privateRuntimeContractHashes } = await import('../private-production-runtime-workflow.mjs');\n"],
+];
+assert.deepEqual(relativeModuleSpecifiers(boundedCompatibilitySource), [
+  '../private-production-runtime-bundle.mjs',
+  ...currentGridReadOnlyImports.map(([specifier]) => specifier),
+].sort(), 'Every bounded-helper relative import must have its precise historical-canonicalizer or current-grid SOURCE role');
+let boundedLegacyImportSource = boundedCompatibilitySource;
+for (const [specifier, exactImport] of currentGridReadOnlyImports) {
+  assert.equal(boundedLegacyImportSource.split(exactImport).length, 2,
+    `The classified read-only SOURCE import must be exact and unique: ${specifier}`);
+  boundedLegacyImportSource = boundedLegacyImportSource.replace(exactImport, '');
+}
+// Retain the original canonicalizer-only oracle after removing ONLY those
+// five exact reviewed reads in RAM. This is not executable source or a model
+// override; any sixth new/unclassified import still fails the full list above.
+assert.deepEqual(relativeModuleSpecifiers(boundedLegacyImportSource),
 ['../private-production-runtime-bundle.mjs'],
 'the bounded helper may use only the preserved predecessor bundle canonicalizer, never replace its verifier or model');
 const predecessorPreparationStart = workflow.indexOf(
@@ -861,8 +894,17 @@ function userdataSelection({ optIn = false, predecessorApplied = true, assistant
   }).then(() => outputs);
 }
 userdataTest('account successor selection: simultaneous upgrade opt-ins are refused by the actual workflow', async () => {
+  // This is the genuine issued213 selector contract, not today's latest220
+  // installation. Its complete normal code remains fixed044d-identical.
+  assert.equal(ACCOUNT_ASSISTANT_SOURCE_MIGRATION.version, '20261013210000');
+  assert.equal(crypto.createHash('sha256').update(
+    userdataStep('Require originals before the pending assistant binding').code).digest('hex'),
+    'c5549937ace91def8128702dac30a68a9068f5483d1dffb0c540975b3f1da5c1');
+  assert.equal(crypto.createHash('sha256').update(fs.readFileSync(
+    'supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql')).digest('hex'),
+    '80ad179bc896e9fcd62b8af103d70a2d086d3626395dd97f03e4184e52bcae5d');
   const installed = { assistantApplied: true, userdataApplied: true, checkpointApplied: true,
-    latestVersion: LATEST_REQUIRED_CUTOVER_MIGRATION.version };
+    latestVersion: ACCOUNT_ASSISTANT_SOURCE_MIGRATION.version };
   await assert.rejects(userdataSelection({ ...installed, optIn: true, accountOptIn: true }),
     /Userdata upgrade requires installed current050000 and sole pending130000/);
   const accountOnly = await userdataSelection({ ...installed, accountOptIn: true });
@@ -1034,12 +1076,12 @@ async function userdataFinalFixture({ missing = [], fail = '', versionId = '1111
   return {calls,error};
 }
 userdataTest('userdata final: already-applied130000 is read-only, exact002 and version/capability verified before publication',async()=>{
-  // The current no-write fixture must explicitly represent installed200000
-  // and installed21310000. Merely having old130000 cannot imply either one.
+  // Historical issued213 no-write scope requires installed200000 and213.
+  // It must not derive this old contract from today's current-grid latest220.
   await assert.rejects(userdataSelection({userdataApplied:true,
-    latestVersion:LATEST_REQUIRED_CUTOVER_MIGRATION.version}), /named opt-in/);
+    latestVersion:ACCOUNT_ASSISTANT_SOURCE_MIGRATION.version}), /named opt-in/);
   const selected=await userdataSelection({assistantApplied:true,userdataApplied:true,checkpointApplied:true,accountApplied:true,
-    latestVersion:LATEST_REQUIRED_CUTOVER_MIGRATION.version});
+    latestVersion:ACCOUNT_ASSISTANT_SOURCE_MIGRATION.version});
   assert.equal(selected.RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED,'false');
   assert.equal(selected.RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED,'true');
   assert.equal(selected.RAVRADAR_USERDATA_PREWRITE_REQUIRED,'false');
@@ -1064,6 +1106,43 @@ for(const options of [{missing:['synthetic-shard']},{missing:null},{versionId:[]
 
 
 // Preserve bounded transfer and first-error STOP while making its exact file visible.
+userdataTest('current220 remains a separate NEW-hour route, never an issued213 selection or code-only original bridge', async () => {
+  assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261013220000');
+  const installed213 = { assistantApplied: true, userdataApplied: true,
+    checkpointApplied: true, accountApplied: true,
+    latestVersion: LATEST_REQUIRED_CUTOVER_MIGRATION.version };
+  await assert.rejects(userdataSelection({ ...installed213, accountOptIn: true }),
+    /Account\/assistant upgrade requires installed200000 and sole pending20261013210000; no replay/);
+  await assert.rejects(userdataSelection({ ...installed213, optIn: true }),
+    /Userdata upgrade requires installed current050000 and sole pending130000/);
+  const neutral = await userdataSelection(installed213);
+  assert.equal(neutral.RAVRADAR_USERDATA_PREWRITE_REQUIRED, 'false');
+  assert.equal(neutral.RAVRADAR_USERDATA_FINAL_REQUIRED, 'true');
+  assert.equal(neutral.RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED, 'false');
+  assert.equal(neutral.RAVRADAR_ACCOUNT_ASSISTANT_METADATA_ONLY, 'false');
+  assert.equal(neutral.RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED, 'false');
+  // A selector result is not install permission. Execute the actual earlier
+  // normal model route with REAL current SOURCE helpers and no model globals
+  // override. The metadata is controlled input, not authenticated private B/S.
+  const policy = CURRENT_GRID_SAMPLING_SELECTED_PREDECESSOR_POLICY;
+  const controlledOriginal = { schemaVersion: policy.sourceDescriptionSchemaVersion,
+    kind: policy.sourceDescriptionKind, sourceHead: '044d3045fecc2e70d6f35f60010921c6bd597ecc',
+    datasetId: 'rr-controlled-current220-route-210', productionReferenceAt: '2026-10-13T12:00:00.000Z',
+    generatedAt: '2026-10-13T12:05:00.000Z', bundleContentSha256: 'a'.repeat(64),
+    modelBinding: structuredClone(policy.sourceModelBinding),
+    contractHashes: structuredClone(policy.sourceContractHashes),
+    expectedZoneCount: 210, expectedPartCount: 673, privatePayloadIncluded: false };
+  const modelRoute = userdataStep('Preserve the protected 11Z and 15Z pair for the next normal weather run');
+  assert.ok(modelRoute.code);
+  await assert.rejects(userdataEvaluate(modelRoute.code, {
+    fs: { readFileSync: () => JSON.stringify(controlledOriginal) },
+    process: { env: { RUNNER_TEMP: '/synthetic' } },
+    isLatestUnpairedWeatherGeneration, buildCurrentGridSamplingOriginalRestoreExpectation,
+  }), /Current-grid source succession requires the next normal NEW-hour weather run/);
+  assert.ok(userdataWorkflow.indexOf('- name: ' + modelRoute.name)
+    < userdataWorkflow.indexOf('- name: Require originals before the pending assistant binding'));
+});
+
 const publicSnapshotStart = workflow.indexOf('- name: Download exact currently public code-only source');
 const publicSnapshotEnd = workflow.indexOf('\n      - name:', publicSnapshotStart + 1);
 const publicSnapshot = workflow.slice(publicSnapshotStart, publicSnapshotEnd);

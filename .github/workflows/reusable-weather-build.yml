@@ -62,6 +62,8 @@ on:
         required: false
       RAVRADAR_R2_SECRET_ACCESS_KEY:
         required: false
+      SUPABASE_ACCESS_TOKEN:
+        required: false
       SUPABASE_SERVICE_ROLE_KEY:
         required: true
       SUPABASE_URL:
@@ -182,6 +184,7 @@ jobs:
       RAVRADAR_LEGACY_SOURCE_ROOT: /tmp/ravradar-legacy-candidate-source
       RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT: /tmp/ravradar-historical-wave-source
       RAVRADAR_CANDIDATE_STAGE: /tmp/ravradar-candidate-g-pages
+      RAVRADAR_OPERATIONAL_SOURCE_EVIDENCE: /tmp/ravradar-operational-source-evidence
       RAVRADAR_OPERATIONAL_HANDOFF: /tmp/ravradar-operational-handoff
       RAVRADAR_PREFLIGHT_WORK: .cache/weather-preflight-work
       RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
@@ -203,7 +206,7 @@ jobs:
       release_gate_outcome: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.ravscore-integrated-runtime-audit.outputs.release_gate_outcome || steps.release-gate.outcome }}
       pages_build_outcome: ${{ steps.pages-build.outcome }}
       pages_privacy_outcome: ${{ steps.pages-privacy.outcome }}
-      pages_artifact_seal_outcome: ${{ steps.pages-artifact-seal.outcome }}
+      pages_artifact_seal_outcome: ${{ steps.current-grid-edge-route.outputs.required == 'true' && steps.current-grid-pages-artifact-seal.outcome || steps.pages-artifact-seal.outcome }}
       handoff_upload_outcome: ${{ steps.handoff-upload.outcome }}
       checkpoint_disposition: ${{ steps.checkpoint-disposition.outputs.disposition }}
       checkpoint_disposition_sha256: ${{ steps.checkpoint-disposition.outputs.disposition_sha256 }}
@@ -212,8 +215,8 @@ jobs:
       checkpoint_build_outcome: ${{ steps.checkpoint-build.outcome }}
       checkpoint_save_outcome: ${{ steps.checkpoint-save.outcome }}
       checkpoint_publish_outcome: ${{ steps.checkpoint-publish.outcome }}
-      pages_configure_outcome: ${{ steps.pages-configure.outcome }}
-      pages_upload_outcome: ${{ steps.pages-upload.outcome }}
+      pages_configure_outcome: ${{ steps.current-grid-edge-route.outputs.required == 'true' && steps.current-grid-pages-configure.outcome || steps.pages-configure.outcome }}
+      pages_upload_outcome: ${{ steps.current-grid-edge-route.outputs.required == 'true' && steps.current-grid-pages-upload.outcome || steps.pages-upload.outcome }}
       artifact_built: ${{ steps.pages-build.outputs.built }}
 
     steps:
@@ -479,6 +482,22 @@ jobs:
           echo "Reason: ${{ steps.preflight.outputs.reason }}"
           echo "Weather age: ${{ steps.preflight.outputs.age_minutes }} minutes"
 
+      - name: Select the exact current-grid late Edge publication route
+        id: current-grid-edge-route
+        if: steps.preflight.outputs.should_run == 'true'
+        shell: bash
+        env:
+          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { currentGridEdgePublicationRequired } from './scripts/lib/production-workflow-sources.mjs';
+          const current = JSON.parse(fs.readFileSync(process.env.RAVRADAR_OPERATIONAL_WORK + '/current.json', 'utf8'));
+          const required = await currentGridEdgePublicationRequired(current, process.env.OPERATIONAL_ACTION);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'required=' + required + '\n');
+          NODE
+
       - name: Preflight exact integrated trip binding before provider work
         if: steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance' || steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover')
         shell: bash
@@ -608,6 +627,37 @@ jobs:
           --output "$RUNNER_TEMP/historical-wave-predecessor-expected.json"
           --github-output "$GITHUB_OUTPUT"
 
+      # Inactive SOURCE proposal until exact original B/S and the new private
+      # successor destination/install authority have been closed and reviewed.
+      - name: Require a strictly new normal hour for current-grid source succession
+        id: current-grid-original-hour
+        if: steps.preflight.outputs.should_run == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'current-grid-sampling-original'
+        shell: bash
+        env:
+          CURRENT_GRID_ORIGINAL_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
+          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
+          QUICK_CONFIRMATION: ${{ inputs.quick_confirmation }}
+        run: |
+          set -euo pipefail
+          case "$OPERATIONAL_ACTION" in
+            integrated|integrated-historical-maintenance) ;;
+            *) echo "Current-grid succession requires the normal integrated new-hour path." >&2; exit 1 ;;
+          esac
+          test "$QUICK_CONFIRMATION" != 'true'
+          test -s "$CURRENT_GRID_ORIGINAL_EXPECTED"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { assertCurrentGridSamplingOriginalExpectation }
+            from './scripts/lib/bounded-conditions-predecessor-transition.mjs';
+          const expected = JSON.parse(fs.readFileSync(process.env.CURRENT_GRID_ORIGINAL_EXPECTED, 'utf8'));
+          assertCurrentGridSamplingOriginalExpectation(expected);
+          const target = Date.parse(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR);
+          if (!Number.isFinite(target) || target !== Date.parse(expected.targetReferenceAt)
+            || target <= Date.parse(expected.productionReferenceAt)) {
+            throw new Error('Current-grid original requires its strictly newer locked normal production hour');
+          }
+          NODE
+
       - name: Classify the exact 11Z weather recovery
         id: exact-weather-recovery
         if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
@@ -626,7 +676,7 @@ jobs:
       # private conditions carry the exact continuation states and are rebound
       # below; restoring the old checkpoint here would reject a valid donor.
       - name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint
-        if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
+        if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'
         id: ravscore-checkpoint-cache
         uses: actions/cache/restore@v6
         with:
@@ -636,7 +686,7 @@ jobs:
             ravscore-continuation-schema6-v2-
 
       - name: Restore protected atomic RavScore checkpoint when cache is absent
-        if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''
+        if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == '' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --restore
@@ -661,7 +711,7 @@ jobs:
           test "$(git -C "$donor_root" rev-parse HEAD)" = "$donor_head"
 
       - name: Materialize the exact audited predecessor reader before old-reader secret use
-        if: steps.historical-wave-predecessor.outputs.required == 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original'
+        if: steps.historical-wave-predecessor.outputs.required == 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'
         shell: bash
         env:
           EXPECTED_SOURCE_HEAD: ${{ steps.historical-wave-predecessor.outputs.source_head }}
@@ -701,7 +751,10 @@ jobs:
           restore_script="$GITHUB_WORKSPACE/scripts/protected-private-production-runtime.mjs"
           restore_repository="$GITHUB_WORKSPACE"
           restore_expected="$GITHUB_WORKSPACE/.cache/private-production-runtime-expected.json"
-          if test "$OWNER_CURRENT_ORIGINAL_REQUIRED" = "true"; then
+          if test "$CURRENT_GRID_ORIGINAL_REQUIRED" = "true"; then
+            test -s "$CURRENT_GRID_ORIGINAL_EXPECTED" || exit 1
+            restore_expected="$CURRENT_GRID_ORIGINAL_EXPECTED"
+          elif test "$OWNER_CURRENT_ORIGINAL_REQUIRED" = "true"; then
             restore_expected="$HISTORICAL_WAVE_PREDECESSOR_EXPECTED"
           elif test "$HISTORICAL_WAVE_PREDECESSOR_REQUIRED" = "true"; then
             restore_script="$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs"
@@ -747,6 +800,10 @@ jobs:
             echo "R2 private runtime restore failed; no stateless recovery is allowed."
             exit "$status"
           fi
+          if test "$CURRENT_GRID_ORIGINAL_REQUIRED" = "true"; then
+            echo "The exact current-grid original could not be restored; no reader, checkpoint or stateless replacement is permitted."
+            exit "$status"
+          fi
           if test "$EXACT_WEATHER_RECOVERY_REQUIRED" = "true"; then
             echo "The exact 11Z/15Z pair could not be verified; a stateless replacement is forbidden."
             exit "$status"
@@ -789,6 +846,8 @@ jobs:
           EXACT_WEATHER_RECOVERY_REQUIRED: ${{ steps.exact-weather-recovery.outputs.required || 'false' }}
           HISTORICAL_WAVE_PREDECESSOR_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.required || 'false' }}
           OWNER_CURRENT_ORIGINAL_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.transition_kind == 'owner-current-domain-original' }}
+          CURRENT_GRID_ORIGINAL_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.transition_kind == 'current-grid-sampling-original' }}
+          CURRENT_GRID_ORIGINAL_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
           HISTORICAL_WAVE_PREDECESSOR_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -838,6 +897,8 @@ jobs:
         env:
           HISTORICAL_WAVE_PREDECESSOR_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.required || 'false' }}
           OWNER_CURRENT_ORIGINAL_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.transition_kind == 'owner-current-domain-original' }}
+          CURRENT_GRID_ORIGINAL_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.transition_kind == 'current-grid-sampling-original' }}
+          CURRENT_GRID_ORIGINAL_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
           HISTORICAL_WAVE_PREDECESSOR_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
           EXACT_WEATHER_RECOVERY_REQUIRED: ${{ steps.exact-weather-recovery.outputs.required || 'false' }}
         run: |
@@ -845,7 +906,16 @@ jobs:
           restore_script="$GITHUB_WORKSPACE/scripts/private-production-runtime-bundle.mjs"
           restore_repository="$GITHUB_WORKSPACE"
           restore_expected="$GITHUB_WORKSPACE/.cache/private-production-runtime-expected.json"
-          if test "$OWNER_CURRENT_ORIGINAL_REQUIRED" = "true"; then
+          if test "$CURRENT_GRID_ORIGINAL_REQUIRED" = "true"; then
+            test -s "$CURRENT_GRID_ORIGINAL_EXPECTED"
+            restore_expected="$CURRENT_GRID_ORIGINAL_EXPECTED"
+            node scripts/private-runtime-second-restore-expectation.mjs \
+              --expected "$restore_expected" \
+              --source-description "$RUNNER_TEMP/private-runtime-restored-source.json" \
+              --bundle-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json" \
+              --output "$RUNNER_TEMP/private-runtime-second-restore-expected.json"
+            restore_expected="$RUNNER_TEMP/private-runtime-second-restore-expected.json"
+          elif test "$OWNER_CURRENT_ORIGINAL_REQUIRED" = "true"; then
             restore_expected="$HISTORICAL_WAVE_PREDECESSOR_EXPECTED"
             node scripts/private-runtime-second-restore-expectation.mjs \
               --expected "$restore_expected" \
@@ -903,6 +973,40 @@ jobs:
             --report "$RUNNER_TEMP/owner-current-original-migration.json"
           echo "restored_path=$migrated_root" >> "$GITHUB_OUTPUT"
 
+      - name: Preserve nationwide originals before new-hour current-grid reconstruction
+        id: current-grid-original-migration
+        if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'current-grid-sampling-original'
+        shell: bash
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+          EXPECTED_SOURCE_HEAD: ${{ steps.historical-wave-predecessor.outputs.source_head }}
+          CURRENT_GRID_ORIGINAL_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
+        run: |
+          set -euo pipefail
+          test "${{ steps.current-grid-original-hour.outcome }}" = 'success'
+          test -s "$CURRENT_GRID_ORIGINAL_EXPECTED"
+          migrated_root="$RAVRADAR_PRIVATE_RUNTIME_ROOT/current-grid-original-successor"
+          test ! -e "$migrated_root"
+          node scripts/migrate-post-cutover-private-runtime.mjs \
+            --current-grid-original \
+            --current-grid-original-expectation "$CURRENT_GRID_ORIGINAL_EXPECTED" \
+            --source "$RAVRADAR_PRIVATE_RUNTIME_RESTORE" \
+            --output "$migrated_root" \
+            --bundle-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json" \
+            --predecessor-descriptor "$RUNNER_TEMP/private-runtime-restored-source.json" \
+            --repository-root "$GITHUB_WORKSPACE" \
+            --expected-source-head "$EXPECTED_SOURCE_HEAD" \
+            --report "$RUNNER_TEMP/current-grid-original-migration.json"
+          test "$(jq -er '.transitionKind' "$RUNNER_TEMP/current-grid-original-migration.json")" = 'CURRENT_GRID_ORIGINAL_ARCHIVE_BRIDGE'
+          test -s "$migrated_root/data/live/conditions.json"
+          original_has_public_pack="$(jq -er '.files | any(.relativePath == ".cache/public-hour-delivery.pack") | tostring' "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json")"
+          case "$original_has_public_pack" in
+            true) test -s "$migrated_root/.cache/public-hour-delivery.pack" ;;
+            false) test ! -e "$migrated_root/.cache/public-hour-delivery.pack" ;;
+            *) echo "Invalid original public-hour inventory." >&2; exit 1 ;;
+          esac
+          echo "restored_path=$migrated_root" >> "$GITHUB_OUTPUT"
+
       - name: Rebind the exact bounded-conditions predecessor before installation
         id: bounded-conditions-predecessor-migration
         if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'bounded-conditions-writer'
@@ -955,10 +1059,15 @@ jobs:
           MIGRATED_RUNTIME_ROOT: ${{ steps.bounded-conditions-predecessor-migration.outputs.restored_path }}
           EXACT_WEATHER_MIGRATED_ROOT: ${{ steps.exact-weather-pair-migration.outputs.restored_path }}
           OWNER_CURRENT_MIGRATED_ROOT: ${{ steps.owner-current-original-migration.outputs.restored_path }}
+          CURRENT_GRID_MIGRATED_ROOT: ${{ steps.current-grid-original-migration.outputs.restored_path }}
         run: |
           set -euo pipefail
           restored_root="$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
-          if test "$PREDECESSOR_TRANSITION_KIND" = "owner-current-domain-original"; then
+          if test "$PREDECESSOR_TRANSITION_KIND" = "current-grid-sampling-original"; then
+            test -n "$CURRENT_GRID_MIGRATED_ROOT"
+            test "${{ steps.current-grid-original-migration.outcome }}" = 'success'
+            restored_root="$CURRENT_GRID_MIGRATED_ROOT"
+          elif test "$PREDECESSOR_TRANSITION_KIND" = "owner-current-domain-original"; then
             test -n "$OWNER_CURRENT_MIGRATED_ROOT"
             restored_root="$OWNER_CURRENT_MIGRATED_ROOT"
           elif test "$PREDECESSOR_TRANSITION_KIND" = "bounded-conditions-writer"; then
@@ -2499,7 +2608,7 @@ jobs:
 
       - name: Require exact integrated backend and Edge readiness before integrated Pages
         id: integrated-backend-readiness
-        if: steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance' || steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover')
+        if: steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance' || steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover') && steps.current-grid-edge-route.outputs.required != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -2796,7 +2905,7 @@ jobs:
             --expected-dataset-id "$dataset_id")
 
       - name: Seal integrated return, initial cutover or historical maintenance plan after backend and public gates
-        if: steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'integrated-historical-maintenance')
+        if: steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.current-grid-edge-route.outputs.required != 'true'
         shell: bash
         run: |
           action="${{ steps.operational-action.outputs.action }}"
@@ -3007,17 +3116,34 @@ jobs:
           test "$closure_status" -eq 0
           test "$privacy_status" -eq 0
 
-      - name: Seal privacy-safe operational deploy handoff
-        id: operational-handoff-seal
-        if: steps.preflight.outputs.should_run == 'true'
+      - name: Preserve the exact current-grid Pages target before remote upload
+        id: current-grid-pages-target
+        if: steps.preflight.outputs.should_run == 'true' && steps.current-grid-edge-route.outputs.required == 'true'
         shell: bash
         run: |
+          set -euo pipefail
+          test "${{ steps.weather.outcome }}" = success
+          test "${{ steps.full-validation.outcome }}" = success
+          test "${{ steps.release-gate.outcome }}" = success
+          test "${{ steps.checkpoint-disposition.outcome }}" = success
+          test "${{ steps.checkpoint-build.outcome }}" = success
+          test "${{ steps.checkpoint-save.outcome }}" = success
+          test "${{ steps.checkpoint-publish.outcome }}" = success
+          test "${{ steps.private-runtime-bundle-create.outcome }}" = success
+          test "${{ steps.private-build-stage-seal.outcome }}" = success
+          test "${{ steps.private-build-stage-upload.outcome }}" = success
+          test "${{ steps.private-runtime-publish.outcome }}" = success
+          test "${{ steps.private-runtime-anon-audit.outcome }}" = success
+          test "${{ steps.pages-build.outcome }}" = success
+          test "${{ steps.pages-privacy.outcome }}" = success
+          test "${{ steps.ravscore-integrated-runtime-audit.outputs.runtime_audit_outcome }}" = success
+          if test "${{ steps.historical-wave-predecessor.outputs.transition_kind }}" = current-grid-sampling-original; then
+            test "${{ steps.current-grid-original-hour.outcome }}" = success
+            test "${{ steps.current-grid-original-migration.outcome }}" = success
+          fi
           rm -rf "$RAVRADAR_OPERATIONAL_HANDOFF"
           mkdir -p "$RAVRADAR_OPERATIONAL_HANDOFF"
           cp _site/data/live/manifest.json "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
-          if [ -f "$RAVRADAR_OPERATIONAL_WORK/plan.json" ]; then
-            cp "$RAVRADAR_OPERATIONAL_WORK/plan.json" "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
-          fi
           if [[ "${{ steps.operational-action.outputs.action }}" == candidate-* ]]; then
             cp "$RAVRADAR_OPERATIONAL_WORK/public-audit.json" "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
             target_root="$RAVRADAR_CANDIDATE_STAGE"
@@ -3039,6 +3165,439 @@ jobs:
           cp "$target_closure" "$RAVRADAR_OPERATIONAL_HANDOFF/target-public-closure.json"
           jq '.modelBinding' "$target_identity" \
             > "$RAVRADAR_OPERATIONAL_HANDOFF/target-binding.json"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { assertCurrentGridEdgeGeneration } from './scripts/lib/production-workflow-sources.mjs';
+          const current = JSON.parse(fs.readFileSync(process.env.RAVRADAR_OPERATIONAL_WORK + '/current.json', 'utf8'));
+          const manifest = JSON.parse(fs.readFileSync(process.env.RAVRADAR_OPERATIONAL_HANDOFF + '/manifest.json', 'utf8'));
+          await assertCurrentGridEdgeGeneration(current, manifest, process.env.RAVRADAR_PRODUCTION_TARGET_HOUR);
+          NODE
+
+      - name: Current-grid pre-Edge - Configure GitHub Pages
+        id: current-grid-pages-configure
+        if: steps.preflight.outputs.should_run == 'true' && steps.current-grid-edge-route.outputs.required == 'true'
+        uses: actions/configure-pages@v6
+
+      - name: Current-grid pre-Edge - Upload GitHub Pages artifact
+        id: current-grid-pages-upload
+        if: steps.preflight.outputs.should_run == 'true' && steps.current-grid-edge-route.outputs.required == 'true'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+          retention-days: 14
+
+      - name: Current-grid pre-Edge - Resolve and seal the exact uploaded Pages artifact
+        id: current-grid-pages-artifact-seal
+        if: steps.preflight.outputs.should_run == 'true' && steps.current-grid-edge-route.outputs.required == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          artifact_id="${{ steps.current-grid-pages-upload.outputs.artifact_id }}"
+          [[ "$artifact_id" =~ ^[1-9][0-9]*$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id" \
+            > "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json"
+          jq -e \
+            --argjson artifactId "$artifact_id" \
+            --argjson runId "$GITHUB_RUN_ID" \
+            --arg headSha "$GITHUB_SHA" \
+            '.id == $artifactId and .name == "github-pages" and .expired == false and .workflow_run.id == $runId and .workflow_run.head_sha == $headSha' \
+            "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json" >/dev/null
+          artifact_digest="$(jq -er '.digest' "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json")"
+          normalized_digest="$(ARTIFACT_DIGEST="$artifact_digest" node --input-type=module -e \
+            "import { normalizeArtifactDigestSha256 } from './scripts/ravscore-operational-pages-recovery.mjs'; process.stdout.write(normalizeArtifactDigestSha256(process.env.ARTIFACT_DIGEST));")"
+          artifact_size="$(jq -er '.size_in_bytes | select(type == "number" and . > 0 and floor == .)' \
+            "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json")"
+          created_at="$(ARTIFACT_CREATED_AT="$(jq -er '.created_at' "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json")" \
+            node -e "process.stdout.write(new Date(process.env.ARTIFACT_CREATED_AT).toISOString())")"
+          target_manifest_sha256="$(TARGET_MANIFEST="$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
+            node --input-type=module -e \
+            "import fs from 'node:fs'; import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs'; process.stdout.write(sha256CanonicalJson(JSON.parse(fs.readFileSync(process.env.TARGET_MANIFEST, 'utf8'))));")"
+          target_identity="$RAVRADAR_OPERATIONAL_WORK/integrated-implementation-identity.json"
+          if [[ "${{ steps.operational-action.outputs.action }}" == candidate-* ]]; then
+            target_identity="$RAVRADAR_OPERATIONAL_WORK/candidate-implementation-identity.json"
+          fi
+          target_closure_sha256="$(jq -er '.implementationClosureSha256 | select(test("^[a-f0-9]{64}$"))' "$target_identity")"
+          jq -n \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --argjson runId "$GITHUB_RUN_ID" \
+            --argjson runAttempt "$GITHUB_RUN_ATTEMPT" \
+            --arg headSha "$GITHUB_SHA" \
+            --arg ref "$GITHUB_REF" \
+            --arg attemptId "pages-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --argjson artifactId "$artifact_id" \
+            --arg artifactDigestSha256 "$normalized_digest" \
+            --argjson artifactSizeBytes "$artifact_size" \
+            --arg targetPublicManifestSha256 "$target_manifest_sha256" \
+            --arg targetImplementationClosureSha256 "$target_closure_sha256" \
+            --slurpfile targetModelBinding "$RAVRADAR_OPERATIONAL_HANDOFF/target-binding.json" \
+            --arg createdAt "$created_at" \
+            '{schemaVersion:"ravscore-operational-pages-artifact-seal-v1",repository:$repository,runId:$runId,runAttempt:$runAttempt,headSha:$headSha,ref:$ref,attemptId:$attemptId,artifactId:$artifactId,artifactName:"github-pages",artifactDigestSha256:$artifactDigestSha256,artifactSizeBytes:$artifactSizeBytes,targetPublicManifestSha256:$targetPublicManifestSha256,targetImplementationClosureSha256:$targetImplementationClosureSha256,targetModelBinding:$targetModelBinding[0],createdAt:$createdAt,privatePayloadIncluded:false}' \
+            > "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-seal.json"
+          rm "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json"
+          if grep -R -E -i '"(waterPoint|landPoint|currentUMps|currentVMps|rawPayload|privatePayload)"' "$RAVRADAR_OPERATIONAL_HANDOFF"; then
+            echo "Operational deploy handoff contains forbidden private fields after artifact sealing." >&2
+            exit 1
+          fi
+
+      - name: Current-grid pre-activation - Observe and seal the currently public source manifest
+        if: steps.current-grid-edge-route.outputs.required == 'true'
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --location --retry 3 \
+            --header 'Cache-Control: no-cache' \
+            "$RAVRADAR_PUBLIC_BASE_URL/data/live/manifest.json?ravscore-source=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --output "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"
+          expected_schema="4"
+          if [ "false" = "true" ]; then
+            expected_schema="2"
+          fi
+          test "$(jq -r '.schemaVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json")" = "$expected_schema"
+          test "$(jq -r '.complete' "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json")" = "true"
+          source_digest="$(sha256sum "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json" | cut -d' ' -f1)"
+          if [ -n "" ]; then
+            printf '%s\n' "${{ steps.operational-model.outputs.active_deployment_id }}" \
+              > "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt"
+          else
+            printf 'public-source-%s\n' "${source_digest:0:24}" \
+              > "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt"
+          fi
+
+      - name: Current-grid pre-activation - Restore the exact sealed active source implementation
+        if: steps.current-grid-edge-route.outputs.required == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTIVE_DEPLOYMENT_ID: ${{ steps.operational-model.outputs.active_deployment_id }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          rm -rf "$RAVRADAR_OPERATIONAL_SOURCE_EVIDENCE"
+          set +e
+          node scripts/protected-operational-reentry-evidence.mjs --restore \
+            --deployment-id "$ACTIVE_DEPLOYMENT_ID" \
+            --repository "$GITHUB_REPOSITORY" \
+            --directory "$RAVRADAR_OPERATIONAL_SOURCE_EVIDENCE" \
+            --output /tmp/ravradar-protected-source-restore.json
+          durable_status=$?
+          set -e
+          if [ "$durable_status" -ne 0 ]; then
+            rm -rf "$RAVRADAR_OPERATIONAL_SOURCE_EVIDENCE"
+            source_manifest_sha256="$(SOURCE_MANIFEST="$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json" node --input-type=module -e "import fs from 'node:fs'; import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs'; process.stdout.write(sha256CanonicalJson(JSON.parse(fs.readFileSync(process.env.SOURCE_MANIFEST, 'utf8'))));")"
+            set +e
+            node scripts/protected-operational-reentry-evidence.mjs --restore \
+              --public-manifest-sha256 "$source_manifest_sha256" \
+              --repository "$GITHUB_REPOSITORY" \
+              --directory "$RAVRADAR_OPERATIONAL_SOURCE_EVIDENCE" \
+              --output /tmp/ravradar-protected-source-restore.json
+            durable_status=$?
+            set -e
+          fi
+          if [ "$durable_status" -eq 0 ]; then
+            echo "Restored the active source from durable protected evidence."
+            exit 0
+          fi
+          rm -rf "$RAVRADAR_OPERATIONAL_SOURCE_EVIDENCE"
+          echo "Durable source evidence is not available yet; using the bounded GitHub bootstrap copy."
+          source_run_id=""
+          source_attempt=""
+          source_handoff_name=""
+          if [[ "$ACTIVE_DEPLOYMENT_ID" =~ ^pages-([0-9]+)-([0-9]+)$ ]]; then
+            source_run_id="${BASH_REMATCH[1]}"
+            source_attempt="${BASH_REMATCH[2]}"
+            source_handoff_name="ravscore-operational-handoff-$source_run_id-$source_attempt"
+          elif [[ "$ACTIVE_DEPLOYMENT_ID" =~ ^pages-recovery-([0-9]+)-([0-9]+)$ ]]; then
+            source_run_id="${BASH_REMATCH[1]}"
+            source_attempt="${BASH_REMATCH[2]}"
+            source_handoff_name="ravscore-operational-recovery-handoff-$source_run_id-$source_attempt"
+          else
+            echo "Active RavScore source lacks a recoverable sealed deployment id." >&2
+            exit 1
+          fi
+          gh run download "$source_run_id" \
+            --name "$source_handoff_name" \
+            --dir "$RAVRADAR_OPERATIONAL_SOURCE_EVIDENCE"
+
+      - name: Current-grid pre-activation - Verify the complete currently public source model before begin CAS
+        if: steps.current-grid-edge-route.outputs.required == 'true'
+        shell: bash
+        run: |
+          case "integrated-historical-maintenance" in
+            candidate-execute) source_model="integrated" ;;
+            candidate-maintenance) source_model="candidate-g" ;;
+            candidate-historical-maintenance) source_model="candidate-g" ;;
+            candidate-legacy-maintenance)
+              node scripts/verify-legacy-candidate-g-source.mjs verify \
+                --base-url "$RAVRADAR_PUBLIC_BASE_URL" \
+                --source-head "$GITHUB_SHA" \
+                --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json" \
+                --attestation "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-attestation.json" \
+                --output "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
+              exit 0
+              ;;
+            integrated-return) source_model="candidate-g" ;;
+            integrated-historical-maintenance) source_model="integrated" ;;
+            integrated) source_model="integrated" ;;
+            integrated-cutover)
+              if [ "false" = "true" ]; then
+                node scripts/verify-legacy-candidate-g-source.mjs verify \
+                  --base-url "$RAVRADAR_PUBLIC_BASE_URL" \
+                  --source-head "$GITHUB_SHA" \
+                  --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json" \
+                  --attestation "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-attestation.json" \
+                  --output "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
+                exit 0
+              fi
+              source_model="candidate-g"
+              ;;
+            *) exit 1 ;;
+          esac
+          repair_args=()
+          if [ -n "" ]; then
+            node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs';
+          import { RAVSCORE_KNOWN_PUBLIC_SOURCE_REPAIR_POLICY as policy } from './scripts/lib/ravscore-known-public-source-repair.mjs';
+          const root = process.env.RAVRADAR_OPERATIONAL_SOURCE_EVIDENCE;
+          const seal = JSON.parse(fs.readFileSync(`${root}/pages-artifact-seal.json`, 'utf8'));
+          if (process.env.SOURCE_REPAIR_ID !== policy.id
+            || process.env.ACTIVE_DEPLOYMENT_ID !== policy.sourceDeploymentId
+            || sha256CanonicalJson(seal) !== policy.sourceArtifactSealSha256
+            || seal.runId !== policy.sourceRunId
+            || seal.runAttempt !== policy.sourceRunAttempt
+            || seal.headSha !== policy.sourceHead
+            || seal.attemptId !== policy.sourceDeploymentId
+            || seal.artifactId !== policy.sourceArtifactId
+            || seal.artifactDigestSha256 !== policy.sourceArtifactDigestSha256
+            || seal.targetPublicManifestSha256 !== policy.sourcePublicManifestSha256
+            || seal.targetImplementationClosureSha256
+              !== policy.sourceImplementationClosureSha256
+            || seal.privatePayloadIncluded !== false) {
+            throw new Error('Known public source repair artifact seal is not exact');
+          }
+          NODE
+            repair_args=(--known-source-repair-id "")
+          fi
+          node scripts/verify-ravscore-operational-pages-deployment.mjs \
+            --base-url "$RAVRADAR_PUBLIC_BASE_URL" \
+            --source-head "$GITHUB_SHA" \
+            --model "$source_model" \
+            --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json" \
+            --binding "$RAVRADAR_OPERATIONAL_SOURCE_EVIDENCE/target-binding.json" \
+            --contract "$RAVRADAR_OPERATIONAL_SOURCE_EVIDENCE/target-contract.js" \
+            --bundle "$RAVRADAR_OPERATIONAL_SOURCE_EVIDENCE/target-bundle.generated.js" \
+            --public-closure "$RAVRADAR_OPERATIONAL_SOURCE_EVIDENCE/target-public-closure.json" \
+            --observation-nonce "source-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            "${repair_args[@]}" \
+            --output "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
+        env:
+          SOURCE_REPAIR_ID:
+          ACTIVE_DEPLOYMENT_ID: ${{ steps.operational-model.outputs.active_deployment_id }}
+
+      - name: Current-grid pre-activation - Backfill the exact active source into durable protected evidence
+        if: steps.current-grid-edge-route.outputs.required == 'true'
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: >-
+          node scripts/protected-operational-reentry-evidence.mjs --publish
+          --directory "$RAVRADAR_OPERATIONAL_SOURCE_EVIDENCE"
+          --deployment-id "$(jq -er '.attemptId' "$RAVRADAR_OPERATIONAL_SOURCE_EVIDENCE/pages-artifact-seal.json")"
+          --repository "$GITHUB_REPOSITORY"
+          --output /tmp/ravradar-protected-source-publish.json
+
+      - name: Preserve durable incomplete current-grid publication before any Edge write
+        id: current-grid-pre-activation
+        if: steps.preflight.outputs.should_run == 'true' && steps.current-grid-edge-route.outputs.required == 'true'
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          test "${{ steps.current-grid-pages-artifact-seal.outcome }}" = success
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs';
+          const sourceCurrent = JSON.parse(fs.readFileSync(process.env.RAVRADAR_OPERATIONAL_WORK + '/current.json', 'utf8'));
+          const phase = { schemaVersion: 'ravradar-current-grid-pre-activation-v1', sourceHead: process.env.GITHUB_SHA,
+            sourceCurrent, sourceCurrentSha256: sha256CanonicalJson(sourceCurrent), checkpointOutcomes: {
+            build: '${{ steps.checkpoint-build.outcome }}', save: '${{ steps.checkpoint-save.outcome }}', publish: '${{ steps.checkpoint-publish.outcome }}' }, privatePayloadIncluded: false };
+          fs.writeFileSync(process.env.RAVRADAR_OPERATIONAL_HANDOFF + '/pre-activation.json', JSON.stringify(phase), {flag:'wx'});
+          NODE
+          node scripts/protected-operational-reentry-evidence.mjs --publish-pre-activation \
+            --directory "$RAVRADAR_OPERATIONAL_HANDOFF" --deployment-id "pages-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --repository "$GITHUB_REPOSITORY" --output "$RAVRADAR_OPERATIONAL_WORK/pre-activation-publication.json"
+          # The durable archive owns the target. Do not leak phase metadata into
+          # the later, separately validated completed handoff inventory.
+          rm "$RAVRADAR_OPERATIONAL_HANDOFF/pre-activation.json"
+
+      - name: Set up the pinned Supabase CLI for late current-grid Edges
+        if: steps.preflight.outputs.should_run == 'true' && steps.current-grid-edge-route.outputs.required == 'true'
+        uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        with:
+          version: 2.117.0
+
+      - name: Deploy the three exact current-grid Edges only after new-generation gates
+        id: current-grid-edge-publication
+        if: steps.preflight.outputs.should_run == 'true' && steps.current-grid-edge-route.outputs.required == 'true'
+        timeout-minutes: 7
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          test "${{ steps.current-grid-pre-activation.outcome }}" = success
+          test "${{ steps.current-grid-pages-target.outcome }}" = success
+          test "${{ steps.current-grid-pages-configure.outcome }}" = success
+          test "${{ steps.current-grid-pages-upload.outcome }}" = success
+          test "${{ steps.current-grid-pages-artifact-seal.outcome }}" = success
+          test "${{ steps.weather.outcome }}" = success
+          test "${{ steps.full-validation.outcome }}" = success
+          test "${{ steps.release-gate.outcome }}" = success
+          test "${{ steps.checkpoint-disposition.outcome }}" = success
+          test "${{ steps.checkpoint-build.outcome }}" = success
+          test "${{ steps.checkpoint-save.outcome }}" = success
+          test "${{ steps.checkpoint-publish.outcome }}" = success
+          test "${{ steps.private-runtime-bundle-create.outcome }}" = success
+          test "${{ steps.private-build-stage-seal.outcome }}" = success
+          test "${{ steps.private-build-stage-upload.outcome }}" = success
+          test "${{ steps.private-runtime-publish.outcome }}" = success
+          test "${{ steps.private-runtime-anon-audit.outcome }}" = success
+          test "${{ steps.pages-build.outcome }}" = success
+          test "${{ steps.pages-privacy.outcome }}" = success
+          test "${{ steps.ravscore-integrated-runtime-audit.outputs.runtime_audit_outcome }}" = success
+          if test "${{ steps.historical-wave-predecessor.outputs.transition_kind }}" = current-grid-sampling-original; then
+            test "${{ steps.current-grid-original-hour.outcome }}" = success
+            test "${{ steps.current-grid-original-migration.outcome }}" = success
+          fi
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import { assertCurrentGridEdgeArtifact } from './scripts/lib/production-workflow-sources.mjs';
+          const read = path => JSON.parse(fs.readFileSync(path, 'utf8'));
+          const handoff = process.env.RAVRADAR_OPERATIONAL_HANDOFF;
+          const work = process.env.RAVRADAR_OPERATIONAL_WORK;
+          assert.deepEqual(fs.readFileSync(handoff + '/manifest.json'), fs.readFileSync('_site/data/live/manifest.json'));
+          const workflowIdentity = { repository: process.env.GITHUB_REPOSITORY,
+            runId: Number(process.env.GITHUB_RUN_ID), runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+            headSha: process.env.GITHUB_SHA, ref: process.env.GITHUB_REF,
+            attemptId: 'pages-' + process.env.GITHUB_RUN_ID + '-' + process.env.GITHUB_RUN_ATTEMPT };
+          await assertCurrentGridEdgeArtifact(read(work + '/current.json'), read(handoff + '/manifest.json'),
+            process.env.RAVRADAR_PRODUCTION_TARGET_HOUR, read(handoff + '/pages-artifact-seal.json'),
+            workflowIdentity, read(work + '/integrated-implementation-identity.json'));
+          NODE
+          node scripts/check-production-target-freshness.mjs --target "$RAVRADAR_PRODUCTION_TARGET_HOUR" --maximum-age-minutes 150
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_REF" = refs/heads/main
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$GITHUB_SHA"
+          supabase functions deploy trip-log --project-ref "$SUPABASE_PROJECT_ID"
+          supabase functions deploy submit-observation --project-ref "$SUPABASE_PROJECT_ID"
+          supabase functions deploy ravradar-assistant --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Require exact current-grid backend and Edge readiness after late deployment
+        id: current-grid-backend-readiness
+        if: steps.preflight.outputs.should_run == 'true' && steps.current-grid-edge-route.outputs.required == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The protected readiness document is bound to the exact source
+          # head.  Normal weather runs can advance main without a backend
+          # migration; after the read-only gates pass, refresh that marker so
+          # the Pages deploy cannot reject an otherwise valid weather build as
+          # stale.  publishIntegratedCutoverReadiness performs the same exact
+          # model/backend/Edge checks before its idempotent upsert.
+          readiness_command=publish
+          node scripts/integrated-cutover-readiness.mjs "$readiness_command" \
+            --public-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}" \
+            --output "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          RAVRADAR_REQUIRE_INTEGRATED_BINDING: true
+
+      - name: Seal current-grid historical maintenance only after late Edge readiness
+        if: steps.preflight.outputs.should_run == 'true' && steps.current-grid-edge-route.outputs.required == 'true'
+        shell: bash
+        run: |
+          action="${{ steps.operational-action.outputs.action }}"
+          source_closure_sha256="${{ steps.operational-model.outputs.active_implementation_closure_sha256 }}"
+          if [ "${{ steps.operational-model.outputs.legacy_source_required }}" = "true" ]; then
+            source_closure_sha256="${{ steps.legacy-source.outputs.implementation_closure_sha256 }}"
+          fi
+          test "${#source_closure_sha256}" = "64"
+          prepare_command="prepare-integrated-return"
+          if [ "$action" = "integrated-historical-maintenance" ]; then
+            prepare_command="prepare-integrated-historical-maintenance"
+          fi
+          node scripts/ravscore-operational-activation.mjs "$prepare_command" \
+            --manifest data/live/manifest.json \
+            --audit .geometry-v2-work/ravscore-integrated-public-runtime-audit.json \
+            --source-implementation-closure-sha256 "$source_closure_sha256" \
+            --requested-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}" \
+            --output "$RAVRADAR_OPERATIONAL_WORK/plan.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          RAVRADAR_INTEGRATED_FIRST_CUTOVER_REQUESTED: ${{ inputs.ravscore_integrated_first_cutover }}
+          RAVRADAR_INTEGRATED_FIRST_CUTOVER_CONFIRMATION: ${{ inputs.ravscore_integrated_first_cutover_confirmation }}
+          RAVRADAR_INTEGRATED_RETURN_CONFIRMATION: ${{ inputs.ravscore_integrated_return_confirmation }}
+
+      - name: Seal privacy-safe operational deploy handoff
+        id: operational-handoff-seal
+        if: steps.preflight.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test "${{ steps.current-grid-edge-route.outputs.required }}" = true; then
+            cmp "_site/data/live/manifest.json" "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
+            cmp ".geometry-v2-work/ravscore-integrated-public-runtime-audit.json" "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
+            cmp ".geometry-v2-work/ravscore-continuation-checkpoint-disposition.json" "$RAVRADAR_OPERATIONAL_HANDOFF/checkpoint-disposition.json"
+            cmp ".geometry-v2-work/ravscore-integrated-public-runtime-audit.json" "$RAVRADAR_OPERATIONAL_HANDOFF/checkpoint-runtime-audit.json"
+            cmp "$GITHUB_WORKSPACE/js/core/ravscore-model-contract.js" "$RAVRADAR_OPERATIONAL_HANDOFF/target-contract.js"
+            cmp "$GITHUB_WORKSPACE/js/core/ravscore-model-bundle.generated.js" "$RAVRADAR_OPERATIONAL_HANDOFF/target-bundle.generated.js"
+            cmp "$RAVRADAR_OPERATIONAL_WORK/integrated-public-closure.json" "$RAVRADAR_OPERATIONAL_HANDOFF/target-public-closure.json"
+            cmp <(jq '.modelBinding' "$RAVRADAR_OPERATIONAL_WORK/integrated-implementation-identity.json") "$RAVRADAR_OPERATIONAL_HANDOFF/target-binding.json"
+            test -s "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-seal.json"
+            test ! -e "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
+            cp "$RAVRADAR_OPERATIONAL_WORK/plan.json" "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
+          else
+            rm -rf "$RAVRADAR_OPERATIONAL_HANDOFF"
+            mkdir -p "$RAVRADAR_OPERATIONAL_HANDOFF"
+            cp _site/data/live/manifest.json "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
+            if [ -f "$RAVRADAR_OPERATIONAL_WORK/plan.json" ]; then
+              cp "$RAVRADAR_OPERATIONAL_WORK/plan.json" "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
+            fi
+            if [[ "${{ steps.operational-action.outputs.action }}" == candidate-* ]]; then
+              cp "$RAVRADAR_OPERATIONAL_WORK/public-audit.json" "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
+              target_root="$RAVRADAR_CANDIDATE_STAGE"
+              target_closure="$RAVRADAR_OPERATIONAL_WORK/candidate-public-closure.json"
+              target_identity="$RAVRADAR_OPERATIONAL_WORK/candidate-implementation-identity.json"
+            else
+              cp .geometry-v2-work/ravscore-integrated-public-runtime-audit.json \
+                "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
+              target_root="$GITHUB_WORKSPACE"
+              target_closure="$RAVRADAR_OPERATIONAL_WORK/integrated-public-closure.json"
+              target_identity="$RAVRADAR_OPERATIONAL_WORK/integrated-implementation-identity.json"
+            fi
+            cp .geometry-v2-work/ravscore-continuation-checkpoint-disposition.json "$RAVRADAR_OPERATIONAL_HANDOFF/checkpoint-disposition.json"
+            cp .geometry-v2-work/ravscore-integrated-public-runtime-audit.json "$RAVRADAR_OPERATIONAL_HANDOFF/checkpoint-runtime-audit.json"
+            cp "$target_root/js/core/ravscore-model-contract.js" \
+              "$RAVRADAR_OPERATIONAL_HANDOFF/target-contract.js"
+            cp "$target_root/js/core/ravscore-model-bundle.generated.js" \
+              "$RAVRADAR_OPERATIONAL_HANDOFF/target-bundle.generated.js"
+            cp "$target_closure" "$RAVRADAR_OPERATIONAL_HANDOFF/target-public-closure.json"
+            jq '.modelBinding' "$target_identity" \
+              > "$RAVRADAR_OPERATIONAL_HANDOFF/target-binding.json"
+          fi
           if [ -f "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json" ]; then
             cp "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json" \
               "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-readiness.json"
@@ -3114,6 +3673,33 @@ jobs:
               ;;
           esac
           jq -n --arg action "${{ steps.operational-action.outputs.action }}" --arg sourceHead "$GITHUB_SHA" --arg centralVersion "${{ steps.operational-model.outputs.central_version }}" --arg legacySourceRequired "${{ steps.operational-model.outputs.legacy_source_required }}" --arg checkpointDisposition "$checkpoint_disposition" --arg checkpointDispositionSha256 "$checkpoint_disposition_sha256" --arg checkpointDatasetId "$checkpoint_dataset_id" --arg checkpointRuntimeAuditSha256 "$checkpoint_runtime_audit_sha256" --arg checkpointBuildOutcome "$checkpoint_build_outcome" --arg checkpointSaveOutcome "$checkpoint_save_outcome" --arg checkpointPublishOutcome "$checkpoint_publish_outcome" '{schemaVersion:"ravscore-operational-deploy-handoff-v2",action:$action,sourceHead:$sourceHead,centralVersion:($centralVersion|tonumber),legacySourceRequired:($legacySourceRequired == "true"),checkpointDisposition:$checkpointDisposition,checkpointDispositionSha256:$checkpointDispositionSha256,checkpointDatasetId:$checkpointDatasetId,checkpointRuntimeAuditSha256:$checkpointRuntimeAuditSha256,checkpointBuildOutcome:$checkpointBuildOutcome,checkpointSaveOutcome:$checkpointSaveOutcome,checkpointPublishOutcome:$checkpointPublishOutcome,privatePayloadIncluded:false}' > "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json"
+          if test "${{ steps.current-grid-edge-route.outputs.required }}" = true; then
+            node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import { assertCurrentGridEdgeArtifact } from './scripts/lib/production-workflow-sources.mjs';
+          import { assertIntegratedHistoricalMaintenancePlan } from './scripts/ravscore-operational-activation.mjs';
+          const read = path => JSON.parse(fs.readFileSync(path, 'utf8'));
+          const handoff = process.env.RAVRADAR_OPERATIONAL_HANDOFF;
+          const work = process.env.RAVRADAR_OPERATIONAL_WORK;
+          const current = read(work + '/current.json'), manifest = read(handoff + '/manifest.json');
+          const seal = read(handoff + '/pages-artifact-seal.json'), plan = read(handoff + '/plan.json');
+          const identity = { repository: process.env.GITHUB_REPOSITORY,
+            runId: Number(process.env.GITHUB_RUN_ID), runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+            headSha: process.env.GITHUB_SHA, ref: process.env.GITHUB_REF,
+            attemptId: 'pages-' + process.env.GITHUB_RUN_ID + '-' + process.env.GITHUB_RUN_ATTEMPT };
+          await assertCurrentGridEdgeArtifact(current, manifest, process.env.RAVRADAR_PRODUCTION_TARGET_HOUR,
+            seal, identity, read(work + '/integrated-implementation-identity.json'));
+          assertIntegratedHistoricalMaintenancePlan(plan, { expectedSourceHead: process.env.GITHUB_SHA,
+            expectedCentralVersion: current.centralVersion, publicManifest: manifest,
+            publicAudit: read(handoff + '/public-audit.json'), readiness: read(handoff + '/integrated-readiness.json') });
+          assert.deepEqual(plan.sourceModelBinding, current.modelBinding);
+          assert.equal(plan.sourceImplementationClosureSha256, current.activeImplementationClosureSha256);
+          assert.equal(plan.requestedImplementationClosureSha256, seal.targetImplementationClosureSha256);
+          assert.equal(plan.integratedManifestSha256, seal.targetPublicManifestSha256);
+          assert.deepEqual(plan.activeModelBinding, seal.targetModelBinding);
+          NODE
+          fi
           if grep -R -E -i '"(waterPoint|landPoint|currentUMps|currentVMps|rawPayload|privatePayload)"' "$RAVRADAR_OPERATIONAL_HANDOFF"; then
             echo "Operational deploy handoff contains forbidden private fields."
             exit 1
@@ -3136,6 +3722,12 @@ jobs:
           --check "full-validation|diagnostic|${{ steps.full-validation.outcome }}"
           --check "release-gate|diagnostic|${{ steps.release-gate.outcome }}"
           --check "integrated-backend-readiness|diagnostic|${{ steps.integrated-backend-readiness.outcome }}"
+          --check "current-grid-pages-target|safety|${{ steps.current-grid-pages-target.outcome }}"
+          --check "current-grid-pages-configure|safety|${{ steps.current-grid-pages-configure.outcome }}"
+          --check "current-grid-pages-upload|safety|${{ steps.current-grid-pages-upload.outcome }}"
+          --check "current-grid-pages-artifact-seal|safety|${{ steps.current-grid-pages-artifact-seal.outcome }}"
+          --check "current-grid-edge-publication|safety|${{ steps.current-grid-edge-publication.outcome }}"
+          --check "current-grid-backend-readiness|safety|${{ steps.current-grid-backend-readiness.outcome }}"
           --check "updated-weather-validation|diagnostic|${{ steps.updated-weather-validation.outcome }}"
           --check "trip-storage-contract|diagnostic|${{ steps.trip-storage-contract-check.outcome }}"
           --check "prewrite-target-freshness|safety|${{ steps.prewrite-target-freshness.outcome }}"
@@ -3191,12 +3783,12 @@ jobs:
 
       - name: Configure GitHub Pages
         id: pages-configure
-        if: steps.deployment-decision.outputs.should_deploy == 'true'
+        if: steps.deployment-decision.outputs.should_deploy == 'true' && steps.current-grid-edge-route.outputs.required != 'true'
         uses: actions/configure-pages@v6
 
       - name: Upload GitHub Pages artifact
         id: pages-upload
-        if: steps.deployment-decision.outputs.should_deploy == 'true'
+        if: steps.deployment-decision.outputs.should_deploy == 'true' && steps.current-grid-edge-route.outputs.required != 'true'
         uses: actions/upload-pages-artifact@v5
         with:
           path: _site
@@ -3204,7 +3796,7 @@ jobs:
 
       - name: Resolve and seal the exact uploaded Pages artifact
         id: pages-artifact-seal
-        if: steps.deployment-decision.outputs.should_deploy == 'true'
+        if: steps.deployment-decision.outputs.should_deploy == 'true' && steps.current-grid-edge-route.outputs.required != 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}

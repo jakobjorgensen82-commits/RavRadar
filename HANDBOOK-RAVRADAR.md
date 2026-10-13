@@ -2,6 +2,15 @@
 
 **Håndbogsversion:** 4.0.576
 
+## Aktuel kildebinding — 14. oktober 2026, endnu ikke installeret
+
+Den lokale current-only-kildekandidat til RavScore 4.0.576 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og `modelBundleSha256=994da006e4c91a1fc759d5ed58b74de80a9ccaad6753274d5abb0cb07eaed399` over 71 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
+Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d192e060cf47fde07a1ae2faf9a8db913dbbf4e1325cbf7bf2e33c720982e8d9` over 69 transitive filer.
+Den fysiske scorekontrakt er uændret. Kildens maskinlæsbare bindinger findes i `version.json.releaseContract.modelBindings`.
+
+Fortsat leveret 4.0.576/213 bruger I68 med `modelBundleSha256=c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5` og inaktiv C66 med `modelBundleSha256=2fdc7426ea99382731c6f4d118eacf4fc271f505fcf121bc67c5349c62938af9`. Formuleringen »Den integrerede model er offentlig« beskriver modeltypen og den allerede leverede familie; den er ikke en kvittering for installation eller offentliggørelse af I71/994. Den nye strømkomposition afventer sine normale kilde-, installations-, original- og offentlige generationskontroller. De tidligere bindingstekster og statusangivelser nedenfor er bevaret som dateret historik.
+
 Den lokale 4.0.576 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Den fysiske scorekontrakt er uændret. Dette er ikke installation, ny offentlig status eller bevis for den nye sammensætnings præcise kildekontrol.
@@ -519,6 +528,26 @@ De nye kapitler erstatter tidligere ventestatus for 565. Historiske beskrivelser
 nedenfor er ikke aktuelle leveringskvitteringer for 566.
 
 ## 89.190 Relevante ravspørgsmål og nye strømfortolkninger
+
+### Lokal opfølgning: originaler kontrolleres gennem den normale førskrivningsvej — 2026-10-13
+
+Den kommende strømovergang har nu en særskilt, som udgangspunkt fravalgt førskrivningsvej. Den kontrollerer uændrede autentificerede B/S-originaler med den genuine gamle kilde, alle 673 originalpar og frisk pointer-/versionskontrol før den præcise 220000-plan og igen før skrivning. Den gamle loader arbejder kun på en byteidentisk kontrolkopi. En særskilt fast politikfil bevares fra originalkilden; Windows-stier kanoniseres uden at tillade links eller filer uden for den private mappe. Begge normale 673-del-forløb og de eksisterende 12 negative tilfælde består lokalt. Kode-only-kontrollen adskiller genuine 213-prøver fra den nye 220-rute; 29 prøver består, og én Linux-specifik prøve er udtrykkeligt sprunget over på Windows. Præcis ny Linux/native/PostgreSQL-kontrol, hosted originalbevis, særskilt restore-/installationsautoritet og faktisk ny generationseffekt afventer. Dette er ikke en produktionslevering.
+
+### Lokal opfølgning: strømdata før ny hukommelse og score – 2026-10-13
+
+Status 13. oktober 2026: Den kommende strømrettelse er en afgrænset lokal kildekandidat, ikke en leveret numerisk rettelse. Der vælges ingen ny releaseversion her, og de tidligere afsnit bevares som dateret historik.
+
+Kandidaten retter kun DKSS GRIB1-strømmens U/V-koordinatfortolkning og forbinder originalt inputindeks, scanningsretning og valgt native gitterpunkt. Dens gittercache har en særskilt fortolkningsidentitet. Vandstand, vandtemperatur, bølger, vind og øvrige felter beholder deres numeriske valg, cache-nøgler og adgangsregler. Kortets landmaske bruges ikke til at kassere tal eller flytte administratorpunkter.
+
+Den normale datavej kræver et kvalificeret strømpar og samme originale kilde-/gitterbevis gennem cachevalg, historik og beregning. En ukvalificeret gammel vinder må ikke blokere en legitim ny fortolkning af samme originale bytes; en kvalificeret gammel vinder, andre bytes og andre kilders prioritet bevares. Begge fulde capture-records bevares, også når en senere autentisk læsning har et andet anskaffelsestidspunkt. En URL eller gammel cachemarkør er ikke bevis for ens filindhold.
+
+Ny strømhukommelse dannes kun fra autentificerede rige originalendepunkter gennem begge normale modelbyggere. Topmetadata må ikke lånes som endpointbevis. Hele det gamle originalpar og de ikke-strømrelaterede felter bevares. Ærlig WINDOW_INCOMPLETE beholder dækning, mangler, tider og status; der opfindes ikke 48 timer eller READY. De syv zoners undtagelse gælder fortsat kun vandstand. Scoreformlen ændres ikke, men korrekt fortolkede nye strømdata kan ændre fremtidige scorer; offentliggjort scorehistorik omskrives ikke.
+
+Tre originalfamilier holdes adskilt: den historiske FFC/8d91/4115, den leverede 575-familie 249c/55fd/a543 og den planlagte 576-forgænger c1ac/2fdc/7876. Forkortelserne betegner hver sin fulde I/C/T-kildefamilie, ikke udskiftelige etiketter. Den sidste familie må først være aktiv indgang efter faktisk 576-levering og præcis autentificering af den valgte generation; de ældre er bevarede originalkontroller, ikke en fri fallback. Hele originalvalidatorer, ydre bindinger, del-/samplingidentitet og ens partider kræves. Candidate-tilstanden bærer ikke selv C/T. Arkivet er aldrig initialisering eller nyt native-kildebevis.
+
+Før kloning eller metadataændring kontrolleres conditions mod originalmanifestet på samme buffer, som JSON-indlæsningen bruger. Kopierede originalfiler og den faktiske public-hour-pakke kontrolleres mod deres forseglede beskrivelser før aflevering. Gyldige tal i en anden fil fra samme generation er ikke nok. Gamle B/S og hele pakker skal fortsat bevares; et ældre første par i kontrolarkivet erstatter ikke dette. Den pakkede førskrivningsrettelse og kontoovergangens metadata-only-kontrol bevares.
+
+Native-/national udførelse på den samlede aktuelle kilde, autentisk fuld originalbevarelse, legitim ny bindingsfølge, numerisk SQL-installation, aktivering og offentlig efterkontrol er fortsat åbne. Konto-/assistenttilladelsen omfatter ikke den numeriske overgang. Tidligere lokale delprøver og grøn almindelig vejrhentning er ikke bevis for denne endnu inaktive kandidat. Ingen nye downloads, SOURCE-G4-procesrettelser eller ændringer af kildernes prioritet, scoreformel, adminpunkter eller geometri følger. Alle fem hovedmål er stadig åbne.
 
 Assistenten må ikke kalde et relevant ravspørgsmål uvedkommende, alene fordi
 svaret mangler i dens leverede fakta. Den skal forklare usikkerhed eller bede
@@ -6401,6 +6430,12 @@ Inddelingen af forespørgsler følger hele det centrale kystregister, så den ik
 Rettelsen er måltestet lokalt, men ikke endnu bevist i produktion. Den fjerner ikke den afsluttende kontrol af alle nødvendige vejrinput og aktiverer ikke i sig selv den nye scoremodel. Fuld historik er fortsat ikke et krav for at vise en prognose med gyldige direkte input.
 
 ## Beskyttet modelcheckpoint uden unødvendig dataflytning – lokal 4.0.321
+
+Aktuel current-only-kilde, 14. oktober 2026, endnu ikke installeret: Continuation-identiteten er `0f6c182ab2ffa7d9d0153706277aa3f7b582327be7dda02842a9c8b995568d4a` (`0f6c182a…`) over 12 normaliserede kildefiler, sammen med den nye I71/994- og C69/d192-kildefamilie. Den faktisk leverede 4.0.576/213-familie har fortsat continuation `7876390c…`. De ældre status- og bindingsangivelser nedenfor bevares som dateret historik.
+
+Den nye `20261013220000`-kilde kræver den eksakte installerede 21310000-forgænger. Dens nye CAS-gren accepterer kun en strengt nyere målreference og et fuldt valideret nyt checkpoint under den nye binding. Et gammelt centralt checkpoint kontrolleres separat med hele sin oprindelige FFC-, 249c- eller c1ac-families validator; det ommærkes eller projiceres ikke til den nye strømfortolkning. Dette er ikke en ny undtagelse for samme target eller tilladelse til at genbruge gammelt input som nye strømdata. Den eksisterende CAS-idempotens, versionskontrol, adgangskontrol, 55 sekunders statementfrist og 5 sekunders låsefrist bevares.
+
+Den normale førskrivningskalder kontrollerer det autentisk gendannede B-bundles fulde filinventar og det oprindelige S-checkpoint mod den historiske normale producent for alle 673 par. Originalbytes og deres bindinger bevares; den friske B-identitet og S-version skal stadig stemme før SQL. Denne originalkontrol er ikke bevis for nye gitterdata eller en gennemført installation. Gamle udstedte migrationer, kontoskema og eksisterende historik ændres ikke af den nye sparse kildeovergang. Ny strømfortolkning kræver fortsat de normale data-, original-, installations- og offentlige generationskontroller.
 
 Aktuel lokal 4.0.576-kildekandidat, ikke installeret: Den normalt beregnede continuation-identitet er 7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b (7876390c…) over 12 normaliserede kildefiler. Den faktisk installerede 200000-rettelse er forgænger; den nye 21310000-overgang kræver autentiske originaler, fuld validator, tabsfri metadataovergang og native SQL-kontrol før installation. Historik, målinger, begge modeltilstande og 55/5-sekundersfrister bevares. Dette er ikke ny offentlig checkpointbinding, genopbygget historik eller afslutning af den isolerede revision. De tidligere afsnit nedenfor er dateret historik.
 

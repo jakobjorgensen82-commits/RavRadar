@@ -18,7 +18,8 @@ import {
   ravScoreModelBinding as candidateGRollbackModelBinding,
 } from './rollback-assets/ravscore-model-contract.js';
 import { buildSupabaseAdminHeaders } from './lib/supabase-admin-rest.mjs';
-import { ACCOUNT_ASSISTANT_MIGRATION, readAccountAssistantCanonicalSource } from './lib/account-assistant-successor-source.mjs';
+import { ACCOUNT_ASSISTANT_MIGRATION } from './lib/account-assistant-successor-source.mjs';
+import { CURRENT_GRID_MIGRATION, readCurrentGridCanonicalSource } from './lib/current-grid-successor-source.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MIGRATIONS_DIRECTORY = path.join(ROOT, 'supabase', 'migrations');
@@ -276,6 +277,7 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     filename: '20261012200000_checkpoint_cas_single_projection_successor.sql',
   }),
   ACCOUNT_ASSISTANT_MIGRATION,
+  CURRENT_GRID_MIGRATION,
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
@@ -309,7 +311,7 @@ function normaliseTripBindingPolicyDefinition(value) {
 }
 
 export async function expectedTripBindingPolicy({ migrationsDirectory = MIGRATIONS_DIRECTORY } = {}) {
-  const { canonicalSource: migration } = await readAccountAssistantCanonicalSource({ migrationsDirectory });
+  const { canonicalSource: migration } = await readCurrentGridCanonicalSource({ migrationsDirectory });
   const scoreQualityMatch = migration.match(
     /create or replace function public\.ravradar_trip_v3_score_quality_allowed\([\s\S]*?\)\s*returns boolean[\s\S]*?as \$\$([\s\S]*?)\$\$;/i,
   );
@@ -344,7 +346,7 @@ export async function expectedCheckpointCasContract({
 } = {}) {
   // Exact sparse successor view includes actual200000-derived CAS; it does
   // not change the userdata130000 lifecycle or legacy returned migration ID.
-  const { canonicalSource: migration } = await readAccountAssistantCanonicalSource({ migrationsDirectory });
+  const { canonicalSource: migration } = await readCurrentGridCanonicalSource({ migrationsDirectory });
   const definitions = [
     ['public.ravradar_ravscore_checkpoint_canonical_time', 'canonical-time validator'],
     ['public.ravradar_ravscore_checkpoint_has_forbidden_key', 'forbidden-key validator'],
@@ -367,6 +369,18 @@ export async function expectedCheckpointCasContract({
       'exact userdata binding predecessor projection'],
     ['public.ravradar_ravscore_checkpoint_account_assistant_predecessor_projection',
       'exact account/assistant binding predecessor projection'],
+    ['public.ravradar_ravscore_checkpoint_grid_ffc_state_valid',
+      'whole original ffc state validator'],
+    ['public.ravradar_ravscore_checkpoint_grid_ffc_payload_valid',
+      'whole original ffc payload validator'],
+    ['public.ravradar_ravscore_checkpoint_grid_249_state_valid',
+      'whole original 249 state validator'],
+    ['public.ravradar_ravscore_checkpoint_grid_249_payload_valid',
+      'whole original 249 payload validator'],
+    ['public.ravradar_ravscore_checkpoint_grid_c1ac_state_valid',
+      'whole original c1ac state validator'],
+    ['public.ravradar_ravscore_checkpoint_grid_c1ac_payload_valid',
+      'whole original c1ac payload validator'],
   ].map(([functionName, label]) => sqlFunctionBody(
     migration,
     functionName,
@@ -385,7 +399,13 @@ export async function expectedCheckpointCasContract({
     + `\n-- owner-current-predecessor-projection --\n${definitions[10]}`
     + `\n-- water-level-predecessor-projection --\n${definitions[11]}`
     + `\n-- userdata-predecessor-projection --\n${definitions[12]}`
-    + `\n-- account-assistant-predecessor-projection --\n${definitions[13]}`;
+    + `\n-- account-assistant-predecessor-projection --\n${definitions[13]}`
+    + `\n-- grid-original-ffc-state-validator --\n${definitions[14]}`
+    + `\n-- grid-original-ffc-payload-validator --\n${definitions[15]}`
+    + `\n-- grid-original-249-state-validator --\n${definitions[16]}`
+    + `\n-- grid-original-249-payload-validator --\n${definitions[17]}`
+    + `\n-- grid-original-c1ac-state-validator --\n${definitions[18]}`
+    + `\n-- grid-original-c1ac-payload-validator --\n${definitions[19]}`;
   return Object.freeze({
     id: CHECKPOINT_CAS_CONTRACT_ID,
     sha256: sha256(definition),

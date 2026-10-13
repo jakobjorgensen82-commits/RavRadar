@@ -1,3 +1,11 @@
+## Aktuel kildekomposition efter PR #596 — 14. oktober 2026
+
+PR #596 blev faktisk merget som main 666964b0 den 14. oktober kl. 00.21.59 dansk tid efter den præcise kildekontrol med 400 beståede Linux-turlagerprøver og rigtig PostgreSQL. Den særskilte 003-kørsel 38477614445 stoppede kl. 00.35.19 dansk tid i kildekontrollen før nogen ekstern skrivning. Alle efterfølgende SQL-, D1- og Worker-trin blev sprunget over; 003 og Worker er ikke installeret af dette forsøg. Fejlen kræver korrekt historisk Git-kilde til de normale arkivprøver og et nøglefrit miljø til de offline prøver, ikke lempede assertions. Tidligere afsnits afventende PR #596-kildestatus er historik. Den senest dokumenterede offentlige genlevering af gemt vejr bevares som selvstændigt leveringsbevis.
+
+Oven på denne kilde er den særskilte current-only-komposition på 87 blade nu samlet lokalt. Den normale I71/C69-kildeberegning, de otte bindingsforbrugere og 220000-kildebyggeren består lokalt. Dette er ikke en afsluttet strømlevering: præcis samlet kildekontrol, de krævede installations-/originalkontroller og en faktisk ny offentlig generation er fortsat særskilte gates. Fortsat leveret er 4.0.576/213 med I68/c1ac og inaktiv C66/2fdc; lokal I71/994 og inaktiv C69/d192 er alene den nye kildekandidat. Den fysiske scorekontrakt og gamle udstedte SQL-filer bevares. 003-/Worker-fasen skal afsluttes og verificeres før current220 kommer på main. SOURCE-G4, statistikrevisionen og den særskilte assistentvidensudvidelse indgår ikke i denne strømkomposition.
+
+Alle tidligere afsnit nedenfor bevares som dateret beslutnings- og leveringshistorik; nye kildepins er ikke bevis for ny installation eller produktion.
+
 ## Kildeklargøring: turlager og fast assistentkontrol efter Storage-rettelsen — 13. oktober 2026
 
 Den lille kildebevis-diagnoserettelse bevarer nu discovery-kalderens faktiske afvisningskategori i stedet for den tidligere generelle missing-or-mismatched-proof. Alle eksisterende krav om gyldigt kildebevis og stop ved required=true består; der tilføjes ingen forespørgsel eller gentagelse. Den konkrete hosted afvisningsårsag er stadig ukendt. Den normale kalderprøve og alle tidligere assertions består lokalt; Windows/LF-tekst læses ens uden at ændre en produktregel. Den nye 003-kilde bevares som præcis gennemgåede LF-bytes på begge platforme. Samlet præcis GitHub-kontrol og faktiske installationer afventer stadig.
@@ -30,6 +38,79 @@ Den faktisk integrerede uploadrettelse består det normale lokale uploadmål og 
 
 Alle fem hovedmål og fristen 18. oktober består. Ejerens nyeste mål tillader nu nødvendige tilsvarende diagnoser og driftsændringer; sikkerheds-, databevarelses- og kontrollerede leveringsgrænser gælder fortsat. Der er ikke udført en ny vejrhentning, cronændring, installation eller offentlig levering som følge af denne kildeforberedelse. Den isolerede numeriske strømovergang og den samlede SOURCE-revision forbliver særskilte. Detaljeret privat driftsevidens er ikke offentlig assistentviden. Ældre daterede statusafsnit nedenfor er historik på de præcist erstattede punkter.
 
+
+## Samlet kildeforgænger for den afgrænsede strømlevering — 13. oktober 2026
+
+Den gennemgåede brugerdata-/læserkilde fra PR #591 på `49bcf267c32d384580528f3ba027062800e8de87` er nu kildeforgænger for den forberedte strøm-/publiceringskæde fra PR #592 på `c74737575e1404e98bbcef7f644684ab250e1b6c`. Begge hele kildehistorier bevares. Sammenføringen krævede kun fire dokumentfronter, inklusive alle kendt-issue-deltaer; der var ingen produktkonflikt. Dette er en kildekomposition, ikke en main-merge, installation eller ny offentlig generation.
+
+PR #588's faktisk grønne kilde på `5e1ade133de5476be624faa7d4ed53b0d2934883` bevares som præcis historisk evidens. PR #591's egen grønne head bevares særskilt. Ingen af disse beviser eller PR #592's tidligere kørsel er et alias for det nye samlede træ: én ny normal kildekontrol på den præcise samlede PR #592-head skal faktisk udføre source, native/PostgreSQL, uændret træ og kildebevis før levering.
+
+Ejeren har nu givet den særskilte tilladelse til alene de gennemgåede PR #588-/PR #592-strøm- og publiceringshandlinger gennem deres eksisterende sikkerhedskontroller. Ældre udsagn om kun kilde-PR-autoritet er historik på netop dette godkendte omfang. Autentiske B/S-originaler, tre originale I/C/T-familier, frisk pointer/version, førskrivningsplan og genlæsning samt relevante destinations- og efterdatagates må ikke springes over. Tilladelsen omfatter ikke SOURCE-G4, statistikrevisionen, vilkårlige nye destinationer eller en ny manuel vejrhentning.
+
+De særskilte 003-/eksisterende-Worker- og faste assistentloglæsningstilladelser er fortsat ubrugte ved denne klargøring. De gamle forbrugte læsninger forbliver forbrugte, og ingen automatisk gentagelse følger af sammenføringen. Driftens aktive writer skal faktisk være afsluttet, og frisk writer-fri kontrol skal bestå før main-merge eller produktionshandlinger.
+
+C69/I71/T12, alle 58 migrationsfiler i strømgrenen og de 57 genuine gamle SQL-filer fra 213-forgængeren bevares uændret. Originaler, offentliggjort scorehistorik, kilders prioritet, scoreformel, administratorpunkter, geometri og cron ændres ikke af dokumentkompositionen. Den samlede strøm-/scoreeffekt og revisions-, brugerdata-, assistent- og selvstændig-driftsmål er fortsat åbne, indtil deres faktiske normale leverings- og effektbeviser foreligger. Denne front erstatter kun de nedenstående historiske kilde-/tilladelsesudsagn på de præcist nævnte punkter; alle øvrige afslag, grænser og evidens bevares.
+
+## Lokal integration af levering og genoptagelse — 13. oktober 2026
+
+Den isolerede kilde indeholder nu den gennemgåede kæde, hvor en ny strømovergang først bygger, kontrollerer og fjernforsegler sit præcise Pages-mål, før de tre eksisterende serverfunktioner opdateres. Et afbrudt forløb kan fastholde samme mål gennem en versionskontrolleret overtagelse efter den tidligere runners dokumenterede afslutning. Genoptagelsen bruger et særskilt, fast attempt-navn; den må ikke forveksles med den efterfølgende normale levering eller låne et andet datasæt.
+
+Den lokale integration fandt og rettede en reel fejl i de to nye routingkaldere: de brugte den bevidst historiske bindingsmigration i stedet for den aktuelle krævede migration. Den historiske konstant, modelbindingerne og alle oprindelige kontroller bevares. Førskrivningskontrollen for autentiske B/S-originaler, plan, frisk plan og databasegenlæsning kan ikke springes over af den særskilte udsættelse af serverfunktionerne. Efter faktisk offentlig kontrol og friske central-/pointerkontroller gendannes den præcise gamle pointerkontrakt uden at omskrive eller slette de bevarede arkiver.
+
+Alle fire berørte normale mål består lokalt på den faktisk integrerede kilde: workflow/kalderorden, terminale udfald, syv arkiv-/overtagelses-/versionskonfliktprøver og den hele syntetiske offentlige 210/673-kontrol inklusive sikker afslutning og normal genlæsning. Det tidligere workflowmål var ikke kørt i den private forberedelse; Pages- og identitetsdelprøver er ikke omdøbt til samlet integrationsbevis. Den første lokale routingfejl og den efterfølgende faktiske rettelse bevares i privat evidens.
+
+Dette er fortsat isoleret, ikke aktiveret kode. Præcis kildekontrol, relevante nye destinations-/installationsrettigheder, faktisk databevarelse og offentlig ny generation mangler. Fysisk processtop, samlet fireminuttersgrænse, fuld DMI-kapacitet og de øvrige revision-/bruger-/assistentkrav er ikke dermed lukket. Ingen historisk migration, scoreformel, geometri, administratoropsætning, cron eller produktionsdata er ændret. Alle fem hovedmål er åbne.
+
+
+## SQL-skabeloner følger den præcise syntaksrettelse — 13. oktober 2026
+
+Den nye kildekontrol stoppede før PostgreSQL, fordi den kanoniske 220-definition havde de rettede CASE-parenteser, mens de to vedligeholdte installationsskabeloner endnu manglede dem. Den normale synkroniseringskilde udpeger netop `supabase/schema.sql` og sikkerhedsinstallationsskabelonen som redigerbare forbrugere; historiske migrationsfiler afvises som skrivemål.
+
+Rettelsen tilføjer kun de samme to parenteser i hver skabelon. Begge hele genererede blokke matcher derefter den normale kanoniske kilde, og en hel inverse giver præcis den gamle skabelon tilbage. Ingen separat hash skal ommærkes: metadatafunktionen og de øvrige definitioner, håndbogstekst, kontodel, roller og indhold uden for blokken bevares. Alle 58 migrationsfiler samt modelbindinger, version, administratoropsætning og geodata er uændrede.
+
+Den normale skrivefri synkronisering og det faktiske fejlede installationskontraktmål består nu lokalt uden ændrede assertions. Ny præcis GitHub-kildekontrol inklusive rigtig PostgreSQL skal stadig bestå; dette er ingen installation eller numerisk produktionseffekt. Strømrettelsen har fortsat kun kilde-PR-autoritet. Alle fem hovedmål er åbne.
+
+
+## Konkret SQL-syntaksrettelse i strømovergangen — 13. oktober 2026
+
+Den faktiske PostgreSQL-kildeprøve nåede den nye 220000-fase og afviste SQL med syntakskode 42601. Gennemgang af den normale builder og PostgreSQLs parser har fundet en konkret fejl: den nye SQL-CASE i ELSIF-betingelsen mangler parenteser. Den afgrænsede rettelse tilføjer kun disse to syntakstegn i builderen og den endnu ikke installerede migration; betingelser, rækkefølge, gamle validatorer, numerik, roller, no-loss og 55/5-sekunders grænser er uændrede.
+
+De nye definitionstekst-, migrations- og kanoniske kildehashes er beregnet fra hele de faktiske eftertekster. Begge hele kanoniske versioner inverterer til den genuine 213-forgænger; fjernelse af kun de to parenteser giver hele den gamle 220-tekst tilbage. Ingen gamle SQL-filer, originalvalidatorer eller C69/I71/T12-bindinger er ommærket. Tre additive normale assertions fastholder den præcise parsergrænse.
+
+Den normale builders skrivefri kontrol og hele det berørte readiness-mål består lokalt. Ny faktisk PostgreSQL-kontrol på den præcise kilde-head skal stadig bevise den samlede 220-kæde; dette er ikke hosted installation eller numerisk produktionseffekt. Strømbranchens tilladelse gælder fortsat kun kilde-PR og normale kontroller, ikke main-merge, SQL-installation, aktivering eller ny vejrhentning. Alle fem hovedmål er åbne.
+
+
+## Leveret læserkilde bevaret; engangslæsning forbrugt — 13. oktober 2026
+
+Den forberedte strømbranch er forenet med den faktisk leverede main-læserkilde, så den normale kilde-PR kan køre uden dokumentationskonflikter. Begge hele kildehistorier og kontroller bevares. Den naturlige vejrhentning afsluttede faktisk gemning, upload, deploy og offentlig 210/673-kontrol kl. 17.24 dansk tid; det er ikke fuldt DMI- eller numerisk strømovergangsbevis.
+
+Den ene godkendte 13. oktober-logforespørgsel og den særskilte ene joblog er nu forbrugt. Supabase svarede HTTP 200, men læseren afviste envelope-formatet. Faktiske rate-limit-fejlkoder og 503-årsagen er stadig ukendte; ingen automatisk ny forespørgsel eller logdownload udføres. Ældre afsnits afventende læserlevering og ubrugt tilladelse er historik på disse præcise punkter. Strømbranchens main-merge, SQL-installation og numeriske aktivering er fortsat ikke godkendt.
+
+
+## Faktisk PostgreSQL-fejl og afgrænset fejlaflæsning — 13. oktober 2026
+
+Den præcise kildekontrol af strømbranchens seneste head bestod de normale routingprøver og nåede rigtig PostgreSQL, men et normalt `psql`-kald fejlede. Den tidligere routingfejl er altså ikke denne fejl. Den oprindelige rapport oplyste ingen SQLSTATE eller kalderfase; rodårsagen er fortsat uafklaret.
+
+Kildeprøvens normale kalder registrerer nu kun en fast fase, en tilladt SQLSTATE og en fast fejlkategori som GitHub-fejlannotation. Rå SQL, stderr, JSON og værdier udskrives ikke. SQL-filer, testinput, assertions, tidsgrænser, adgangskontrol og oprydning bevares; forventede negative kald bliver ikke til falske fejlannotationer. Den normale syntetiske checkpointprøve består lokalt, men dette er ikke PostgreSQL-bevis eller en SQL-fejlrettelse. En ny præcis normal GitHub-kontrol skal afklare næste konkrete trin. Ingen main-merge, installation, ny vejrhentning eller numerisk aktivering er udført. Alle fem hovedmål er fortsat åbne.
+
+
+## Adskilte normale 213/220-routingprøver — 13. oktober 2026
+
+Den nye kildekontrol bestod source- og native-trinene, men stoppede i routingprøven før PostgreSQL blev startet. Prøven forventede den historiske 213-binding fra den aktuelle 220-kilde. Alle 11 oprindelige tilfælde udføres nu med den genuine, fastlåste 213-kilde og den uændrede normale kalder; ni særskilte tilfælde bruger den faktiske aktuelle 220-kilde. Alle 20 normale kald består lokalt. Kalderens terminale linjeskift medregnes præcist i den eksisterende helkildehash. Ingen produktionskalder, migrationsfil, modelbinding, original eller installationskontrol ændres. Ny præcis Linux/PostgreSQL-kontrol og offentlig effekt afventer fortsat.
+
+## Lokal førskrivningskontrol for strømovergangen — 13. oktober 2026
+
+Den normale installationsvej har nu en særskilt, som udgangspunkt fravalgt kontrol af de autentificerede gamle B/S-originaler før præcis 220000-plan og igen umiddelbart før skrivning. Den bruger de genuine gamle byggere på uændrede filer, sammenligner alle 673 originalpar og genlæser pakkens aktuelle pointer samt checkpointets version. Den gamle checkpoint-loader må kun validere en byteidentisk kontrolkopi, ikke ommærke originalen. Den historiske 416-byte politikfil med fast kildehash bevares særskilt; aktuelle modeldata lånes ikke som gammel kilde. Windows' korte og lange stinavne sammenlignes som faktiske, linkfri filstier, mens filer uden for den private mappe fortsat afvises.
+
+Den berørte normale originalprøve består med begge 673-del-forløb, 118 offentlige timer pr. forløb og alle 12 eksisterende negative tilfælde; nye pointer-, versions-, familie- og mappegrænser afprøves samme sted. Den gamle kode-only importkontrol og 213/220-fixtureadskillelse er rettet: 29 prøver består, én Linux-specifik prøve er udtrykkeligt sprunget over på Windows. Den præcise nye Linux/native/PostgreSQL-kildekontrol afventer. Dette er lokal kildeintegration, ikke hosted restore, autentisk produktionspakke-, SQL-, ny strøm- eller offentlig effekt. Den nye private restore-destination, hosted B/S-læsning, main-merge og aktivering kræver fortsat deres konkrete tilladelser. Alle fem målområder er åbne.
+
+# Lokal strømrettelse – afgrænset kildeforberedelse, 2026-10-13
+
+Den normale Linux-nativeprøve bestod på den første rettede kilde-head. Efterfølgende kildekontrol fandt gentaget metadataarbejde pr. zone. Den forberedte kilde bruger nu én frisk beskedlokal klassifikation og geometri i normale batchkald, med uændrede offentlige signatures, strøm-/scalar-adskillelse, lookup/værdier, originaler og tomt-zone-resultat. Forældede kontrolforventninger følger den gennemgåede current220-kæde og rekonstruerer hele genuine forgænger, uden at acceptere andre kilder eller ændre historisk SQL. Berørte JavaScript-mål består lokalt; ny præcis Python-/native-/PostgreSQL-kontrol afventer. Stadig ingen numerisk produktionsaktivering eller ny release.
+
+Forslaget korrigerer kun DKSS GRIB1-strømmens U/V-fortolkning og dens sammenhæng gennem native gitter, datacache, historik, ny strømhukommelse og fremtidig score. Andre felters numeriske valg og cacheadgang, kildeprioritet, scoreformel, administratorpunkter og geometri bevares. Gamle originalpakker og offentliggjorte scorer må ikke omskrives.
+
+Den samlede aktuelle kilde er endnu ikke native-/nationalt eller offentligt verificeret. Legitim bindingsfølge, autentiske originalers bevarelse og den særskilte numeriske SQL-/aktiveringsgrænse står åbne; konto-/assistenttilladelsen er ikke numerisk tilladelse. Ingen ny version eller SOURCE-G4-procesrettelse indgår. Alle fem hovedmål er fortsat åbne.
 
 ## Samlet kildeklargøring af turlager og fast assistentlæser — 13. oktober 2026
 

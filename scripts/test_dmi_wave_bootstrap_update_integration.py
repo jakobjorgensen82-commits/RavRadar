@@ -5031,5 +5031,189 @@ console.log(JSON.stringify({
         self.assertEqual(evidence["latestRunCompleteHours"], 120)
 
 
+class CurrentOnlyGridNamespaceTests(unittest.TestCase):
+    def test_normal_current_batches_preserve_scalar_namespace_in_both_orders(self):
+        # Actual normal warm -> nearest -> batch -> pair/source callers, using
+        # this target's existing synthetic ecCodes boundary. NOT native/lease,
+        # geographical accuracy or authentication of real original files.
+        zone = {"id": "PART::SYNTHETIC-CURRENT-ONLY", "parentZoneId": "SYNTHETIC-CURRENT-ONLY",
+                "coastType": "limfjord", "lat": 56.15, "lon": 8.3}
+        grid = dict(zip(("md5GridSection", *producer.GRID_DEFINITION_KEYS),
+            ("a" * 32, "regular_ll", 3, 3, 9, 56., 8., 56.3, 8.6, .299, .149)))
+        messages = {}
+        for name, parameter, value in (("u", 49, 0.), ("v", 50, -.5),
+                ("level", 200, 7.), ("temperature", 80, 12.),
+                ("tail-u", 33, 3.), ("tail-v", 34, 4.)):
+            messages[name] = {**grid, "edition": 1, "scanningMode": 64,
+                "indicatorOfParameter": parameter, "paramId": parameter,
+                "shortName": "", "name": "", "units": "m s**-1",
+                "missingValue": 9999., "fixtureName": name,
+                "fixtureValues": {0: value + 100., 4: value}}
+        original = copy.deepcopy(messages)
+        native_calls, element_calls = [], []
+        def get(gid, key):
+            if key not in gid: raise KeyError(key)
+            return gid[key]
+        def nearest(gid, latitude, longitude, *args, **kwargs):
+            native_calls.append(gid["fixtureName"])
+            # The old scalar interpretation deliberately has its own result;
+            # no production nearest algorithm is replaced or copied here.
+            return [{"index": 0, "lat": zone["lat"], "lon": zone["lon"]}]
+        def elements(gid, key, indices):
+            self.assertEqual(key, "values")
+            self.assertEqual(len(indices), len(set(indices)))
+            element_calls.append((gid["fixtureName"], tuple(indices)))
+            return [gid["fixtureValues"].get(index, 9999.) for index in indices]
+        def scalar_rows():
+            return {name: producer.nearest_valid_batch(messages[name], "dkss_lf", [zone])[zone["id"]]
+                    for name in ("level", "temperature")}
+        def current_rows():
+            return {parameter: producer.valid_candidates_batch(messages[name], "dkss_lf", [zone])[zone["id"]]
+                    for name, parameter in (("u", "current-u"), ("v", "current-v"))}
+        baseline_scalar = None
+        for order in ("scalar-first", "current-first"):
+            with self.subTest(order=order), patch.multiple(producer,
+                    codes_get=get, codes_get_elements=elements,
+                    codes_grib_find_nearest=nearest, codes_grib_nearest_new=None,
+                    codes_grib_nearest_find=None, codes_grib_nearest_delete=None,
+                    GRID_INDEX_CACHE={}, GRID_BATCH_WARMED=set()):
+                native_calls.clear(); element_calls.clear()
+                self.assertEqual(producer.classify_parameter(messages["u"], "dkss_lf"), "current-u")
+                self.assertEqual(producer.classify_parameter(messages["v"], "dkss_lf"), "current-v")
+                if order == "scalar-first": scalar, current = scalar_rows(), current_rows()
+                else: current, scalar = current_rows(), scalar_rows()
+                selected = producer.select_common_grid_tuple(current, ("current-u", "current-v"))
+                self.assertIsNotNone(selected)
+                for key, expected in (("current-u", 0.), ("current-v", -.5)):
+                    self.assertEqual(selected[key]["index"], 4)
+                    self.assertEqual(selected[key]["value"], expected)
+                    self.assertAlmostEqual(selected[key]["latitude"], 56.15, places=12)
+                    self.assertAlmostEqual(selected[key]["longitude"], 8.3, places=12)
+                for name in ("level", "temperature"):
+                    self.assertEqual(scalar[name]["index"], 0)
+                    self.assertEqual(scalar[name]["value"], messages[name]["fixtureValues"][0])
+                    self.assertNotIn("_gridIndexIdentity", scalar[name])
+                    self.assertNotIn("_gridCoordinateInterpretation", scalar[name])
+                if baseline_scalar is None: baseline_scalar = copy.deepcopy(scalar)
+                else: self.assertEqual(scalar, baseline_scalar)
+                self.assertEqual(scalar_rows(), baseline_scalar)
+                signature = producer.grid_cache_signature(messages["u"])
+                legacy_key = ("dkss_lf", signature, zone["id"], producer.grid_candidate_target("dkss_lf", zone))
+                current_key = ("current-native-grid-sampling-v1", "dmi-dkss-grib1-header-endpoints-v1", *legacy_key)
+                self.assertEqual(set(producer.GRID_INDEX_CACHE), {legacy_key, current_key})
+                self.assertEqual([row["index"] for row in producer.GRID_INDEX_CACHE[legacy_key]], [0])
+                self.assertTrue(all("_gridCoordinateInterpretation" not in row
+                                    for row in producer.GRID_INDEX_CACHE[legacy_key]))
+                self.assertNotIn("u", native_calls); self.assertNotIn("v", native_calls)
+                self.assertTrue(element_calls)
+                source = producer.native_component_source("dkss_lf", TARGET, TARGET,
+                    component="current", zone=zone, grid_candidate=selected["current-u"], grid_tuple=selected,
+                    capture={"itemId": "synthetic-current-only", "assetIdentitySha256": "b" * 64,
+                        "assetSizeBytes": 16, "contentLengthBytes": 16, "contentSha256": "c" * 64,
+                        "acquiredAt": TARGET},
+                    spatial_selection=producer.COMPONENT_SPATIAL_SELECTION["current"],
+                    verticalLayer="synthetic", verticalLayerRankM=0.,
+                    vectorSelection=producer.CURRENT_VECTOR_SELECTION,
+                    vectorSemanticsVersion=producer.CURRENT_VECTOR_SEMANTICS_VERSION)
+                self.assertIsNotNone(source)
+                self.assertEqual(source["nativeGridSampling"]["elementIndex"], 4)
+                self.assertEqual(source["nativeGridSampling"]["coordinateInterpretation"],
+                                 "dmi-dkss-grib1-header-endpoints-v1")
+                # The legacy non-current pair contract still accepts its
+                # original shared coordinate/cell without a new current record.
+                tail = {key: producer.valid_candidates_batch(messages[name], "dkss_lf", [zone])[zone["id"]]
+                        for name, key in (("tail-u", "wind-tail-u-10m"), ("tail-v", "wind-tail-v-10m"))}
+                self.assertIsNotNone(producer.select_common_grid_tuple(tail, ("wind-tail-u-10m", "wind-tail-v-10m")))
+                self.assertIsNone(producer.select_common_grid_tuple(
+                    {"current-u": tail["wind-tail-u-10m"], "current-v": tail["wind-tail-v-10m"]},
+                    ("current-u", "current-v")))
+                self.assertEqual(set(producer.GRID_INDEX_CACHE), {legacy_key, current_key})
+                self.assertEqual(messages, original)
+
+
+    def test_direct_current_default_uses_full_grid_signature_without_scalar_bleed(self):
+        # Direct normal nearest caller, not a copied algorithm. Its current
+        # default and legacy non-current default intentionally use different
+        # native signatures. Existing synthetic ecCodes boundary, NOT native
+        # provider geography, owned-reader lease or original authentication.
+        zone = {"id": "PART::SYNTHETIC-DIRECT-CURRENT", "parentZoneId": "SYNTHETIC-DIRECT-CURRENT",
+                "coastType": "limfjord", "lat": 56.15, "lon": 8.3}
+        grid = dict(zip(("md5GridSection", *producer.GRID_DEFINITION_KEYS),
+            ("d" * 32, "regular_ll", 3, 3, 9, 56., 8., 56.3, 8.6, .299, .149)))
+        messages = {}
+        for name, parameter, value in (("u", 49, 0.), ("v", 50, -.5),
+                ("level", 200, 7.), ("temperature", 80, 12.),
+                ("tail-u", 33, 3.), ("tail-v", 34, 4.)):
+            messages[name] = {**grid, "edition": 1, "scanningMode": 64,
+                "indicatorOfParameter": parameter, "paramId": parameter,
+                "shortName": "", "name": "", "units": "m s**-1",
+                "missingValue": 9999., "fixtureName": name,
+                "fixtureValues": {0: value + 100., 4: value}}
+        original = copy.deepcopy(messages)
+        native_calls = []
+        def get(gid, key):
+            if key not in gid: raise KeyError(key)
+            return gid[key]
+        def nearest(gid, latitude, longitude, *args, **kwargs):
+            native_calls.append(gid["fixtureName"])
+            return [{"index": 0, "lat": zone["lat"], "lon": zone["lon"]}]
+        def elements(gid, key, indices):
+            self.assertEqual(key, "values")
+            return [gid["fixtureValues"].get(index, 9999.) for index in indices]
+        scalar_baseline = None
+        for order in ("scalar-first", "current-first"):
+            with self.subTest(order=order), patch.multiple(producer,
+                    codes_get=get, codes_get_elements=elements,
+                    codes_grib_find_nearest=nearest, GRID_INDEX_CACHE={}):
+                native_calls.clear()
+                def scalar_rows():
+                    return {name: producer.nearest_candidates(messages[name], "dkss_lf", zone)
+                        for name in ("level", "temperature", "tail-u", "tail-v")}
+                def current_rows():
+                    return {name: producer.nearest_candidates(messages[name], "dkss_lf", zone)
+                        for name in ("u", "v")}
+                if order == "scalar-first": scalar, current = scalar_rows(), current_rows()
+                else: current, scalar = current_rows(), scalar_rows()
+                full_signature = producer.grid_cache_signature(messages["u"])
+                legacy_signature = producer.grid_signature(messages["level"])
+                self.assertEqual(len(full_signature), 11)
+                self.assertEqual(len(legacy_signature), 10)
+                suffix = (zone["id"], producer.grid_candidate_target("dkss_lf", zone))
+                current_key = ("current-native-grid-sampling-v1", "dmi-dkss-grib1-header-endpoints-v1",
+                    "dkss_lf", full_signature, *suffix)
+                legacy_key = ("dkss_lf", legacy_signature, *suffix)
+                self.assertEqual(set(producer.GRID_INDEX_CACHE), {legacy_key, current_key})
+                for name in ("u", "v"):
+                    self.assertEqual(current[name][0]["index"], 4)
+                    self.assertAlmostEqual(current[name][0]["latitude"], 56.15, places=12)
+                    self.assertAlmostEqual(current[name][0]["longitude"], 8.3, places=12)
+                    self.assertEqual(current[name][0]["_gridCoordinateInterpretation"],
+                        "dmi-dkss-grib1-header-endpoints-v1")
+                    self.assertIs(producer.nearest_candidates(messages[name], "dkss_lf", zone),
+                        producer.GRID_INDEX_CACHE[current_key])
+                    self.assertIs(producer.nearest_candidates(messages[name], "dkss_lf", zone,
+                        signature=full_signature), producer.GRID_INDEX_CACHE[current_key])
+                for rows in scalar.values():
+                    self.assertEqual(rows[0]["index"], 0)
+                    self.assertNotIn("_gridCoordinateInterpretation", rows[0])
+                    self.assertNotIn("_gridIndexIdentity", rows[0])
+                if scalar_baseline is None: scalar_baseline = copy.deepcopy(scalar)
+                else: self.assertEqual(scalar, scalar_baseline)
+                self.assertEqual(scalar_rows(), scalar_baseline)
+                # A direct-produced current cache is actually reused by the
+                # normal batch reader; current zero remains valid.
+                batch = producer.valid_candidates_batch(messages["u"], "dkss_lf", [zone])[zone["id"]]
+                self.assertEqual(batch[0]["index"], 4)
+                self.assertEqual(batch[0]["value"], 0.)
+                self.assertEqual(set(producer.GRID_INDEX_CACHE), {legacy_key, current_key})
+                self.assertNotIn("u", native_calls); self.assertNotIn("v", native_calls)
+                snapshot = copy.deepcopy(producer.GRID_INDEX_CACHE)
+                with self.assertRaises(producer.DmiGridLookupError):
+                    producer.nearest_candidates(messages["u"], "dkss_lf", zone,
+                        signature=legacy_signature)
+                self.assertEqual(producer.GRID_INDEX_CACHE, snapshot)
+                self.assertEqual(messages, original)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
