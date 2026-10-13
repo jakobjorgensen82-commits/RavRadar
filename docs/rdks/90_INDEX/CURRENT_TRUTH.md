@@ -1,3 +1,12 @@
+## SQL-skabeloner følger den præcise syntaksrettelse — 13. oktober 2026
+
+Den nye kildekontrol stoppede før PostgreSQL, fordi den kanoniske 220-definition havde de rettede CASE-parenteser, mens de to vedligeholdte installationsskabeloner endnu manglede dem. Den normale synkroniseringskilde udpeger netop `supabase/schema.sql` og sikkerhedsinstallationsskabelonen som redigerbare forbrugere; historiske migrationsfiler afvises som skrivemål.
+
+Rettelsen tilføjer kun de samme to parenteser i hver skabelon. Begge hele genererede blokke matcher derefter den normale kanoniske kilde, og en hel inverse giver præcis den gamle skabelon tilbage. Ingen separat hash skal ommærkes: metadatafunktionen og de øvrige definitioner, håndbogstekst, kontodel, roller og indhold uden for blokken bevares. Alle 58 migrationsfiler samt modelbindinger, version, administratoropsætning og geodata er uændrede.
+
+Den normale skrivefri synkronisering og det faktiske fejlede installationskontraktmål består nu lokalt uden ændrede assertions. Ny præcis GitHub-kildekontrol inklusive rigtig PostgreSQL skal stadig bestå; dette er ingen installation eller numerisk produktionseffekt. Strømrettelsen har fortsat kun kilde-PR-autoritet. Alle fem hovedmål er åbne.
+
+
 ## Konkret SQL-syntaksrettelse i strømovergangen — 13. oktober 2026
 
 Den faktiske PostgreSQL-kildeprøve nåede den nye 220000-fase og afviste SQL med syntakskode 42601. Gennemgang af den normale builder og PostgreSQLs parser har fundet en konkret fejl: den nye SQL-CASE i ELSIF-betingelsen mangler parenteser. Den afgrænsede rettelse tilføjer kun disse to syntakstegn i builderen og den endnu ikke installerede migration; betingelser, rækkefølge, gamle validatorer, numerik, roller, no-loss og 55/5-sekunders grænser er uændrede.

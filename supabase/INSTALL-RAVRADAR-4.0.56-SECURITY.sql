@@ -6346,12 +6346,12 @@ begin
       v_central_is_compatible_predecessor := true;
     elsif p_target_reference > v_central_reference
       and p_payload ->> 'continuationStateContractSha256' = '0f6c182ab2ffa7d9d0153706277aa3f7b582327be7dda02842a9c8b995568d4a'
-      and case v_payload #>> '{modelBinding,modelBundleSha256}'
+      and (case v_payload #>> '{modelBinding,modelBundleSha256}'
         when 'ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb' then public.ravradar_ravscore_checkpoint_grid_ffc_payload_valid(v_payload, v_central_reference)
         when '249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932' then public.ravradar_ravscore_checkpoint_grid_249_payload_valid(v_payload, v_central_reference)
         when 'c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5' then public.ravradar_ravscore_checkpoint_grid_c1ac_payload_valid(v_payload, v_central_reference)
         else false
-      end
+      end)
     then
       -- A genuinely newer current generation; no metadata projection or same-reference waiver.
       v_central_is_compatible_predecessor := false;
