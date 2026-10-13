@@ -8183,6 +8183,10 @@ def execute_private_wave_history_bootstrap(
                 RuntimeError,
                 OSError,
             ) as exc:
+                controller.observe_asset_duration(
+                    time.monotonic() - asset_processing_started,
+                    cost_family=collection,
+                )
                 if staged_asset_summary:
                     accumulate_wave_asset_coverage(
                         asset_coverage,
@@ -14376,6 +14380,10 @@ def main() -> int:
                     RuntimeError,
                     OSError,
                 ) as exc:
+                    checkpoint_controller.observe_asset_duration(
+                        time.monotonic() - asset_processing_started,
+                        cost_family=collection,
+                    )
                     if bootstrap_operational_wam and validated_wave_stage:
                         wave_asset_coverage = result["diagnostics"].setdefault(
                             "operationalWaveAssetCoverageByCollection", {}
@@ -14415,10 +14423,6 @@ def main() -> int:
                         run_info["assetsObserved"] += 1
                         recognized.update(REQUIRED_TARGETS["wave"])
                         run_info["recognizedParameters"] = sorted(recognized)
-                        checkpoint_controller.observe_asset_duration(
-                            time.monotonic() - asset_processing_started,
-                            cost_family=collection,
-                        )
                         checkpoint_controller.mark_bulk_dirty()
                         checkpoint_controller.flush_if_due(force=True)
                         progress(

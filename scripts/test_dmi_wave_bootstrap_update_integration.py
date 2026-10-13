@@ -3556,6 +3556,140 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                     self.assertFalse(controller.sidecars_dirty)
                     self.assertEqual((result["zones"], budget, fresh), before)
 
+    def test_failed_processing_cost_is_observed_without_commit(self) -> None:
+        import ast
+        import inspect
+
+        # Preserve the actual exception handlers, including the fatal reader guard.
+        # The injected failure is a synthetic parser failure, not kernel-stop proof.
+        source = inspect.getsource(producer)
+        main = next(node for node in ast.parse(source).body
+                    if isinstance(node, ast.FunctionDef) and node.name == "main")
+        candidates = [node for node in ast.walk(main) if isinstance(node, ast.Try)
+                      and any(isinstance(child, ast.Call)
+                              and isinstance(child.func, ast.Name)
+                              and child.func.id == "process_grib_transactionally"
+                              for statement in node.body for child in ast.walk(statement))
+                      and any(isinstance(child, ast.Constant)
+                              and child.value == "asset-processing"
+                              for handler in node.handlers for child in ast.walk(handler))]
+        self.assertEqual(len(candidates), 1)
+        handlers = copy.deepcopy(candidates[0].handlers)
+        seam = ast.parse("for attempt in range(1):\n    try:\n        raise failure\n    except Exception:\n        pass\n    after_handler.append(True)\n")
+        seam.body[0].body[0].handlers = handlers
+        main_code = compile(ast.fix_missing_locations(seam), producer.__file__, "exec")
+
+        def fake_list(collection, _configuration):
+            return fake_plan(), (StacWaveAsset(
+                valid_time=utc_offset(TARGET, -1), model_run=utc_offset(TARGET, -6),
+                item_id=f"synthetic-{collection}",
+                href=f"https://example.invalid/{collection}.grib", collection=collection,
+            ),)
+
+        for caller in ("wam", "main", "main-observed-wam", "main-unproved"):
+            with self.subTest(caller=caller):
+                clock = [100.0]
+                result = {"zones": {"SYNTHETIC-OLD": {
+                    "hourly": {"original": {"unchanged": True}},
+                }}, "diagnostics": {"errors": []}}
+                fresh, budget = {"SYNTHETIC-OLD"}, {"bytes": 17}
+                before = copy.deepcopy((result["zones"], fresh, budget))
+                failure = (producer.GribReadUnproven("synthetic unproved read")
+                           if caller == "main-unproved" else ValueError("synthetic processing failure"))
+                events = []
+
+                def download(*_args, **_kwargs):
+                    clock[0] += 20.0
+                    return Path("synthetic-never-opened.grib"), False
+
+                def parse(*_args, **_kwargs):
+                    clock[0] += 120.0
+                    raise failure
+
+                with (
+                    patch.object(producer.time, "monotonic", side_effect=lambda: clock[0]),
+                    patch.object(producer, "WORK_DEADLINE", 440.0),
+                    patch.object(producer, "download_asset", side_effect=download) as downloader,
+                    patch.object(producer, "process_grib_transactionally", side_effect=parse) as parser,
+                    patch.object(producer, "list_private_wave_bootstrap_assets", side_effect=fake_list),
+                    patch.object(producer, "progress"),
+                    patch.object(producer, "write_checkpoint") as checkpoint,
+                    patch.object(producer, "safe_error_message", wraps=producer.safe_error_message) as message,
+                ):
+                    controller = producer.ProgressCheckpointController(result, fresh, budget)
+                    real_observe, real_flush = controller.observe_asset_duration, controller.flush_if_due
+
+                    def observe(seconds, *, cost_family):
+                        events.append("observe")
+                        return real_observe(seconds, cost_family=cost_family)
+
+                    def flush(*, force=False):
+                        self.assertTrue(force)
+                        self.assertEqual(controller.asset_seconds_by_family, {"wam_dw": [140.0]})
+                        self.assertFalse(controller.can_start_asset(reserve_seconds=50.0, cost_family="wam_dw"))
+                        self.assertTrue(controller.can_start_asset(reserve_seconds=50.0, cost_family="dkss_lf"))
+                        events.append("flush")
+                        return real_flush(force=force)
+
+                    with (
+                        patch.object(controller, "observe_asset_duration", side_effect=observe),
+                        patch.object(controller, "flush_if_due", side_effect=flush),
+                        patch.object(controller, "note_committed_asset", wraps=controller.note_committed_asset) as commit,
+                    ):
+                        if caller == "wam":
+                            # Real bootstrap caller; provider/parser seams are synthetic.
+                            # Its existing missing-lock terminal remains unchanged.
+                            with self.assertRaisesRegex(RuntimeError, "did not lock every selected valid hour"):
+                                producer.execute_private_wave_history_bootstrap(
+                                    result, synthetic_parts(unique=True), budget, fresh,
+                                    {"mode": MIGRATION_MODE, "targetHour": TARGET,
+                                     "productionTargetHour": TARGET}, checkpoint_controller=controller,
+                                )
+                            downloader.assert_called_once()
+                            parser.assert_called_once()
+                            self.assertEqual(events, ["observe", "flush", "flush"])
+                        else:
+                            clock[0] = 240.0
+                            asset = {"valid": TARGET}
+                            namespace = dict(vars(producer), failure=failure, result=result,
+                                checkpoint_controller=controller, collection="wam_dw",
+                                asset_processing_started=100.0, asset=asset, assets=[asset],
+                                asset_number=1, supervised_identity={"validTime": TARGET},
+                                bootstrap_operational_wam=caller == "main-observed-wam",
+                                validated_wave_stage={"acceptedCount": 0}, validated_wave_rejections={},
+                                validated_current_stage={}, bounded_primary_refresh=False,
+                                run_info={"assetsRejectedAfterTraversal": 0,
+                                          "waveObservedRejectionEventsByCode": {}, "assetsObserved": 0},
+                                recognized=set(), after_handler=[],
+                            )
+                            if caller == "main-unproved":
+                                with self.assertRaises(producer.GribReadUnproven) as caught:
+                                    exec(main_code, namespace)
+                                self.assertIs(caught.exception, failure)
+                                self.assertEqual(events, [])
+                                self.assertEqual(controller.asset_seconds_by_family, {})
+                                self.assertEqual(result["diagnostics"]["errors"], [])
+                                message.assert_not_called()
+                            else:
+                                exec(main_code, namespace)
+                                self.assertEqual(events, ["observe", "flush"])
+                            self.assertEqual(namespace["after_handler"], [])
+                            downloader.assert_not_called()
+                            parser.assert_not_called()
+                        commit.assert_not_called()
+                    if caller in ("wam", "main"):
+                        self.assertEqual(message.call_count, 2)
+                        for call in message.call_args_list:
+                            self.assertIs(call.args[0], failure)
+                        self.assertEqual(len(result["diagnostics"]["errors"]), 1)
+                    if caller != "main-unproved":
+                        self.assertEqual(controller.asset_seconds_by_family, {"wam_dw": [140.0]},
+                                         "the already observed WAM rejection must not be counted twice")
+                    self.assertEqual(controller.committed_assets_since_write, 0)
+                    self.assertEqual((result["zones"], fresh, budget), before)
+                    for call in checkpoint.call_args_list:
+                        self.assertEqual(call.args[0]["zones"], before[0])
+
     def test_strict_current_lead_limit_counts_only_one_actual_attempt(self) -> None:
         self.assertTrue(producer.strict_current_lead_attempt_available(
             "dkss_lf", "dkss_lf", 0, 1,
