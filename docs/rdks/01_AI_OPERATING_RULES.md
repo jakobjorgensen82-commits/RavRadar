@@ -1,5 +1,13 @@
 # AI operating rules
 
+## Aktuel 213-kompatibel kildeopfølgning efter 595 — 13. oktober 2026
+
+590/591 må kun sammenføres som de gennemgåede turlager-/læserhunks oven på 595 med alle nyere uploadrettelser og dokumentationshistorik bevaret. Kilde-main a505e6f8 og den faktisk afsluttede genlevering af gemt vejr er forskellige beviser; ingen leverandørårsag eller ekstern AI udledes heraf. Uændret C66/I68/T12 og installeret 213 er førkontrakten, ikke en current220- eller SOURCE-G4-aktivering.
+
+Normalrækkefølgen er præcis kildekontrol og frisk writer-fri kontrol, derpå særskilt 003-schema/genlæsning på eksisterende ti D1-databaser og separat kontrolleret Worker-reparation. En current220-main må ikke indføres først og dens krævede databasebinding må ikke omgås for at udføre den ældre installationsfase. Ingen nye databaser, nøgler, planer eller gentagelse følger af sammenføringen. Den faste assistentloglæser følger egen præcis autoritet; gamle forbrugte læsninger forbliver forbrugte.
+
+Kvitteret schema eller Worker-kilde er ikke kvittering for kontosletning, backup-sletning, procesdræning eller faktisk afvist gammel indsættelse i produktion. Bevar originale ture, private ejergrænser og de åbne retention-/statistikkrav. Offentlig assistentviden må ikke få interne fejloplysninger. Hovedagenten ejer integration, installation og faktisk leveringskontrol; denne dokumentationsdelta giver ingen ny aktiveringsautoritet. De øvrige regler nedenfor består.
+
 ## Aktuel menneskelig delegation og leveringsgrænse
 
 Ejerens seneste ja tillader korrekt fortolkning til nye strømdata og ny strømhukommelse, med mulige fremtidige scoreændringer, men bevarer gamle originaler og offentliggjort historik. Aktivering kræver databevarelse, gyldig historik, korrekte bindinger og afsluttet writer; ingen nye DMI-downloads eller SQL-installation følger. Tidligere særskilte afvisninger ophæves ikke. Relevante ravspørgsmål uden faktastøtte skal få usikkerhed eller afklaring, ikke automatisk uvedkommende-afvisning; private og uvedkommende forespørgsler forbliver afgrænset.

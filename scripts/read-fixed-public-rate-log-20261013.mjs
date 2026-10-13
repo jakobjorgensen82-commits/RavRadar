@@ -112,15 +112,57 @@ function report(requestStatus, httpStatus = null, pairs = null) {
   };
 }
 
+
+// Only bounded structural enums survive a rejected response. Never retain
+// its field names, values, rows or query/error text, and do not relax parsing.
+let envelopeDiagnostic = null;
+const diagnosticType = value => value === null ? 'NULL'
+  : Array.isArray(value) ? 'ARRAY'
+  : typeof value === 'object' ? 'OBJECT'
+  : typeof value === 'string' ? 'STRING'
+  : typeof value === 'number' ? 'NUMBER'
+  : typeof value === 'boolean' ? 'BOOLEAN' : 'UNKNOWN';
+function rememberEnvelopeDiagnostic(value) {
+  const topType=diagnosticType(value);
+  let keyProfile='NOT_OBJECT', resultType='ABSENT', errorType='ABSENT';
+  if (topType === 'OBJECT') {
+    const hasResult=Object.hasOwn(value,'result'), hasError=Object.hasOwn(value,'error');
+    const extras=Object.keys(value).some(key=>key !== 'result' && key !== 'error');
+    keyProfile = hasResult && hasError ? (extras ? 'PAIR_WITH_EXTRAS' : 'EXACT_PAIR')
+      : hasResult ? (extras ? 'RESULT_WITH_EXTRAS' : 'RESULT_ONLY')
+      : hasError ? (extras ? 'ERROR_WITH_EXTRAS' : 'ERROR_ONLY')
+      : extras ? 'OTHER_FIELDS_ONLY' : 'EMPTY_OBJECT';
+    if (hasResult) resultType=diagnosticType(value.result);
+    if (hasError) errorType=diagnosticType(value.error);
+  }
+  envelopeDiagnostic=Object.freeze({topType,keyProfile,resultType,errorType});
+}
+export function fixedLogEnvelopeDiagnostic20261013() {
+  return envelopeDiagnostic;
+}
+export function fixedLogEnvelopeAnnotation20261013() {
+  const value=envelopeDiagnostic;
+  return '::error title=Fixed Supabase log envelope::code=LOG_ENVELOPE_SHAPE'
+    + ' top=' + (value?.topType ?? 'UNKNOWN')
+    + ' keys=' + (value?.keyProfile ?? 'UNKNOWN')
+    + ' result=' + (value?.resultType ?? 'UNKNOWN')
+    + ' error=' + (value?.errorType ?? 'UNKNOWN');
+}
+
 function validateResult(bytes) {
   let text,envelope;
   try { text = new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
   catch { fail('LOG_UTF8_INVALID'); }
   try { envelope = JSON.parse(text); }
   catch { fail('LOG_JSON_INVALID'); }
-  if (!exactKeys(envelope, ['result', 'error'])) fail('LOG_ENVELOPE_SHAPE');
-  if (envelope.error !== null && typeof envelope.error !== 'string') fail('LOG_ERROR_FIELD_TYPE');
-  if (envelope.error !== null && envelope.error !== '') fail('LOG_QUERY_ERROR');
+  rememberEnvelopeDiagnostic(envelope);
+  // The public OpenAPI AnalyticsResponse_Output does not require error.
+  // Accept only exact result-only as well; an absent error means none reported.
+  if (!exactKeys(envelope, ['result', 'error'])
+      && !exactKeys(envelope, ['result'])) fail('LOG_ENVELOPE_SHAPE');
+  const queryError = Object.hasOwn(envelope, 'error') ? envelope.error : null;
+  if (queryError !== null && typeof queryError !== 'string') fail('LOG_ERROR_FIELD_TYPE');
+  if (queryError !== null && queryError !== '') fail('LOG_QUERY_ERROR');
   if (!Array.isArray(envelope.result)) fail('LOG_RESULT_TYPE');
   if (envelope.result.length >= MAX_ROWS) fail('LOG_ROW_CAP_REACHED');
   const pairs = [],seen = new Set();
@@ -240,6 +282,7 @@ if (process.argv[1]
   const result = process.argv.length === 2
     ? await readFixedPublicRateLog20261013() : report('LOG_ARGUMENTS_FORBIDDEN');
   console.log(JSON.stringify(result));
+  if (result.requestStatus === 'LOG_ENVELOPE_SHAPE') console.error(fixedLogEnvelopeAnnotation20261013());
   if (!['RECORDED_CATEGORIES', 'NO_MATCHING_RECORDED_EVENTS'].includes(result.requestStatus)) {
     process.exitCode = 1;
   }

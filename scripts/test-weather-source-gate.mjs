@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
   decideSourceGate,
   discoverPullRequestSourceGate,
@@ -216,4 +217,38 @@ for (const nativeOutcome of [null,
   assert.equal((await discoverPullRequestSourceGate(env, digest, api)).required, true);
   assert.equal((await decideSourceGate(discovered.record, env, api,
     { sourceTreeSha256: digest })).required, true);
+}
+
+
+// Exercise the actual CLI decision/output block with the existing resolver
+// functions and GitHub fixtures. This is not a hosted source-proof claim.
+const normalCheckSource = (await readFile(new URL('./weather-source-gate.mjs', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+const normalCheckStart = '  let decision = await decideSourceGate(record, env, githubJson, { sourceTreeSha256 });';
+const normalCheckEnd = '\n} else {\n  throw new Error(\'Expected check, digest or record\');';
+assert.equal(normalCheckSource.split(normalCheckStart).length, 2);
+assert.equal(normalCheckSource.split(normalCheckEnd).length, 2);
+const normalCheckBody = normalCheckSource.slice(normalCheckSource.indexOf(normalCheckStart), normalCheckSource.indexOf(normalCheckEnd));
+const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+const runNormalCheck = new AsyncFunction('record', 'env', 'sourceTreeSha256', 'githubJson',
+  'decideSourceGate', 'discoverPullRequestSourceGate', 'fs', 'writeJson', 'console',
+  normalCheckBody + '\nreturn decision;');
+const fixedReadWorkflow = (await readFile(new URL('../.github/workflows/deploy-trip-storage.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+assert.ok(fixedReadWorkflow.includes('      - name: Reject missing source proof before either fixed read\n        shell: bash\n        run: test "\${{ steps.fixed_read_source.outputs.required }}" = false'));
+for (const [api, reason] of [
+  [pullApi({ artifacts: [] }), 'matching-pull-request-source-proof-not-found'],
+  [async () => { throw new Error('synthetic unavailable GitHub metadata'); }, 'pull-request-proof-discovery-unavailable'],
+]) {
+  let output = null;
+  let locatorWrites = 0;
+  const printed = [];
+  const current = { ...env, GITHUB_OUTPUT: 'synthetic-fixed-read-source-output' };
+  const decision = await runNormalCheck(null, current, digest, api,
+    decideSourceGate, discoverPullRequestSourceGate,
+    { appendFile: async (file, value) => { assert.equal(file, current.GITHUB_OUTPUT); assert.equal(output, null); output = value; } },
+    async () => { locatorWrites += 1; },
+    { log: value => { printed.push(value); } });
+  assert.deepEqual(decision, { required: true, reason });
+  assert.equal(locatorWrites, 0, 'failed discovery never writes a locator');
+  assert.equal(output, 'required=true\nreason=' + reason + '\nsource_tree_sha256=' + digest + '\n');
+  assert.deepEqual(printed, ['Source gate: required=true; reason=' + reason]);
 }

@@ -6,6 +6,20 @@ Den lokale 4.0.576 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3
 og `modelBundleSha256=c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Den fysiske scorekontrakt er uændret. Dette er ikke installation, ny offentlig status eller bevis for den nye sammensætnings præcise kildekontrol.
 
+## 89.222 En slettemarkering skal standse sene turindsættelser
+
+**Kort fortalt:** En gammel forespørgsel må ikke genindsætte ture efter en slettemarkering. Den nye kildekandidat beskytter selve indsættelsen; den er endnu ikke bevis for installeret kontosletning eller backup-sletning.
+
+Den afgrænsede turlagerkilde bruger en lokal slettemarkering i hver af de ti eksisterende databaser. Control-databasen markeres først, så nye reservationer standses, og alle lokale markeringer skal være bekræftet før oprydning. Den nye Worker indsætter kun, hvis den lokale markering mangler; et særskilt databaseværn beskytter også gamle INSERT-kald, der allerede venter. En normal slettekvittering kræver derefter, at både turrækker og registrybindinger er væk. Eksisterende gyldige ture og markeringer omskrives ikke ved installation af værnet. Ukendt resultat er ikke en slettekvittering.
+
+Dette er kildeforberedelse, ikke en udført 003-installation, Worker-opdatering eller kontosletning. Det samlede Auth-/backup-forløb, to års inaktivitet, 30 dages varsel og mulighed for at bevare kontoen ved login er fortsat åbne krav. Statistik slået til som udgangspunkt er hverken samtykke, anonymitetsbevis eller aktiveret statistik. Ingen automatisk varsling, sletning eller statistikbehandling aktiveres her.
+
+Den særskilte, faste assistentkontrol får kun en præcis rettelse af svarformatet: result alene eller result med et tomt eller null error-felt kan godkendes, hvis alle øvrige strenge kontroller består. Forespørgslen er fortsat låst til sit historiske formål og tidsrum, højst én GET, ti sekunder, 32 KiB og færre end otte rækker. Ekstra felter og ugyldige svar afvises; kun faste strukturelle kategorier kan vises ved formatfejl. Ingen rå log, private spørgsmål eller kontodata føjes til assistentviden. Dette er ikke en faktisk ny læsning eller bevis for fungerende ekstern AI.
+
+Den kontrollerede genlevering af allerede gemte vejrdata blev faktisk afsluttet den 13. oktober kl. 23.10.58 dansk tid med 210 zoner, 673 dele og reference kl. 16 UTC, uden nye providerhentninger. Den senere 595-main bevarer den afgrænsede uploadrobusthed, men den konkrete leverandørårsag er stadig ukendt. Disse leveringsbeviser må ikke overføres til den endnu uinstallerede turlagerkandidat. De ældre afsnit om afventende genlevering er historik på netop dette punkt.
+
+Den nye turlagerkilde skal først bestå sin præcise samlede kildekontrol. På den eksisterende 213-kontokontrakt følger derefter de særskilt godkendte schema-/genlæsningskontroller og den separate normale Worker-reparation med frisk writer-fri kontrol. Strømovergangen220 er en senere selvstændig fase: dens kaldere kræver allerede installeret220 og må ikke bruges til at springe den forudgående turlagerinstallation over. Ingen gammel migration, modelbinding, scorehistorik, original, administratorpunkt eller geometri ændres af denne kildekandidat.
+
 ## 89.221 Et genforsøg er ikke en kvittering for gemning
 
 **Kort fortalt:** Et ukendt gatewaysvar må få det ene begrænsede genforsøg, som uploaderen allerede har. Succes kræver stadig faktisk gemning og genlæsning; større grænser eller overskrivning er ikke løsningen.

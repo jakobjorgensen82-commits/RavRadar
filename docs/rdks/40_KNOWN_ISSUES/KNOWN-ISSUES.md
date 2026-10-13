@@ -1,3 +1,15 @@
+## Kildeklargøring: turlager og fast assistentkontrol efter Storage-rettelsen — 13. oktober 2026
+
+Den lille kildebevis-diagnoserettelse bevarer nu discovery-kalderens faktiske afvisningskategori i stedet for den tidligere generelle missing-or-mismatched-proof. Alle eksisterende krav om gyldigt kildebevis og stop ved required=true består; der tilføjes ingen forespørgsel eller gentagelse. Den konkrete hosted afvisningsårsag er stadig ukendt. Den normale kalderprøve og alle tidligere assertions består lokalt; Windows/LF-tekst læses ens uden at ændre en produktregel. Den nye 003-kilde bevares som præcis gennemgåede LF-bytes på begge platforme. Samlet præcis GitHub-kontrol og faktiske installationer afventer stadig.
+
+Denne komposition forbereder kun de allerede gennemgåede PR #590/#591 oven på Storage-kilden i PR #595. Den beholder den installerede 213-kontrakt og de genuine C66/I68/T12-kilder. 220000, statistikrevisionen, den særskilte vidensudvidelse og SOURCE-G4 er ikke del af denne leverance. Den senest dokumenterede offentlige genlevering af gemt vejr er faktisk gennemført; det er ikke bevis for fuld DMI, rettet national strømfortolkning eller afslutning af alle fem mål.
+
+Den faste Storage-læser, dens tidsrum, finite kode-/rækkegrænser, ene GET og ingen gentagelse bevares. 520-genforsøget forbliver begrænset til immutable upload og ændrer ikke sletning, bucket- eller anonym kontrol. 003-vejen kræver ti faktiske schema-kvitteringer; den udfører ikke Worker-opdatering, fysisk dræning, ejer-/Auth-sletning eller backupkontrol. Den særskilte kontrollerede Worker-reparation bevarer sine eksisterende hårde gates og maksimalt det ene afgrænsede reparationsforsøg.
+
+De to præcise tilladelser til 003/Worker og den ene faste 13. oktober-assistentaflæsning er fortsat ubrugte på dette forberedelsespunkt. Deres faktiske anvendelse kræver grøn kontrol af det samlede source-head og frisk writer-fri kontrol; tidligere forbrugte læsninger må ikke genbruges. Normal installer på current220-kilde kræver allerede installeret 220 før D1/Worker. Derfor skal denne 213-kompatible leverance lukkes før current220 lægges på main, hvis 003/Worker skal udføres først. Der indføres ingen accept af begge bindingsfamilier eller svækkelse af applied-/DB-/Edge-gates.
+
+De daterede afsnit nedenfor er bevaret tabsfrit fra begge genuine forældre. Deres historiske main-, writer- og tilladelsesstatus er alene erstattet på ovenstående konkrete punkter. Denne kildekomposition er hverken ny kildekontrol, hosted installation, logårsagsbevis eller ny offentlig levering; alle fem hovedmål er fortsat åbne.
+
 # 4.0.576 – afgrænset håndtering af gatewayfejl, 2026-10-13
 
 Den tidligere præcise uploaddiagnostik har bestået GitHubs kildekontrol og er lagt på main. Den faktisk gennemførte, snævre aflæsning registrerede HTTP 400 i lagringen og HTTP 520 i gatewayen. De to kategorier er ikke bevis for samme forespørgsel eller objekt; størrelse, kvote, MIME og den konkrete leverandørårsag er fortsat uafklarede. En genlevering fra den allerede gemte vejrpakke er startet gennem det normale kontrollerede forløb uden nye providerkald; startkvittering er ikke offentlig leveringssucces.
@@ -18,6 +30,21 @@ Den faktisk integrerede uploadrettelse består det normale lokale uploadmål og 
 
 Alle fem hovedmål og fristen 18. oktober består. Ejerens nyeste mål tillader nu nødvendige tilsvarende diagnoser og driftsændringer; sikkerheds-, databevarelses- og kontrollerede leveringsgrænser gælder fortsat. Der er ikke udført en ny vejrhentning, cronændring, installation eller offentlig levering som følge af denne kildeforberedelse. Den isolerede numeriske strømovergang og den samlede SOURCE-revision forbliver særskilte. Detaljeret privat driftsevidens er ikke offentlig assistentviden. Ældre daterede statusafsnit nedenfor er historik på de præcist erstattede punkter.
 
+
+## Faktisk status efter den faste assistentaflæsning — 13. oktober 2026
+
+Den almindelige vejrhentning afsluttede faktisk gemning, upload, Pages-deploy og offentlig 210/673-kontrol kl. 17.24 dansk tid. Det er ikke fuld DMI-/genopretnings- eller numerisk strømovergangsevidens. Den separate læserkilde blev derefter sikkert leveret efter præcis kildekontrol og frisk writer-fri kontrol.
+
+Ejerens ene 13. oktober-logforespørgsel er nu forbrugt: Supabase svarede HTTP 200, men læseren afviste envelope-formatet. Det er ikke et vellykket fejlkode- eller AI-årsagsbevis. Den særskilt godkendte ene joblog er også læst og forbrugt; der udføres ingen automatisk ny backendforespørgsel eller logdownload. Den konkrete 503-årsag og fungerende ekstern AI er åbne. Ældre afsnits afventende kildelevering og ubrugt tilladelse er historik på netop disse punkter; alle øvrige grænser bevares.
+
+
+## Lokal turlagring: afværg forsinket genindsættelse — 13. oktober 2026
+
+Den forberedte Worker kontrollerer samme databasedels slettemarkør ved indsættelse og opretter alle ti markører før fysisk sletning. En forsinket indsættelse fra den genuine gamle Worker kræver også et databaseværn; derfor er en særskilt, som udgangspunkt fravalgt 003-installationsvej forberedt. Den kontrollerer alle ti eksisterende EU-databaser, 001/002-schema, den eksisterende Worker-version, bindingskort og eksakt triggerdefinition før den første mulige ændring. Kun en manglende, navngiven INSERT-trigger må tilføjes. Den opretter ingen databaser, opdaterer ingen Worker/Edge, og udfører ingen automatisk reparation eller gentagelse.
+
+Den normale målfil registrerede 400 prøver: 399 bestod, ingen fejlede, og én Linux-specifik prøve er udtrykkeligt udeladt på Windows. Fysiske SQLite-prøver omfatter den gamle Workers tilbageholdte indsættelse, alle ti databasekvitteringer, 15 ugyldige kvitteringer og fem stopforløb. Testens workflowfortolker følger nu GitHubs implicitte `success()` for almindelige betingelser; tidligere negative forløb bevares.
+
+Dette er lokal kildeintegration, ikke hosted D1-installation, udført kontosletning, fysisk dræning af gamle requests eller Auth-/backup-sletning. Kvitteringen angiver udtrykkeligt disse grænser. Automatisk inaktivitetsvarsling, login-redning, anonym statistik og backupfristen er fortsat åbne. En særskilt præcis installations-/Worker-tilladelse og den normale kildekontrol mangler. Modelbindinger, gamle SQL-filer, geometri og eksisterende ture er ikke ændret. Alle fem hovedmål er åbne.
 
 # 4.0.576 – ny fast, skrivefri assistentkontrol, 2026-10-13
 
