@@ -227,7 +227,10 @@ async function storeTrip(env, body) {
       `insert into trip_observations (
         storage_schema_version, owner_subject, owner_kind, trip_id, client_observation_id,
         observed_at, submitted_at, payload_json, payload_sha256, source
-      ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) select ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+      where not exists (
+        select 1 from trip_owner_erasure_tombstones where owner_subject = ?
+      )
       on conflict do nothing`
     ).bind(
       record.storage_schema_version,
@@ -240,6 +243,7 @@ async function storeTrip(env, body) {
       record.payload_json,
       record.payload_sha256,
       record.source,
+      record.owner_subject,
     ).run();
     if (insert?.success !== true || !Number.isSafeInteger(insert.meta?.changes) || insert.meta.changes < 0) throw new Error('TRIP_STORAGE_INVALID');
   }
@@ -370,19 +374,42 @@ async function countTrips(env) {
   return total;
 }
 
+async function assertOwnerTripRowsAbsent(databaseList, ownerSubject) {
+  for (const database of databaseList) {
+    const query = await database.prepare(
+      'select owner_subject from trip_observations where owner_subject = ? limit 1'
+    ).bind(ownerSubject).all();
+    if (query?.success !== true || !Array.isArray(query.results) || query.results.length !== 0) {
+      throw new Error('TRIP_DELETE_INVALID');
+    }
+  }
+  const registry = await databaseList[0].prepare(
+    'select owner_subject from trip_observation_registry where owner_subject = ? limit 1'
+  ).bind(ownerSubject).all();
+  if (registry?.success !== true || !Array.isArray(registry.results) || registry.results.length !== 0) {
+    throw new Error('TRIP_DELETE_INVALID');
+  }
+}
+
 async function deleteOwnerTrips(env, body) {
   const ownerSubject = body.owner_subject;
   if (typeof ownerSubject !== 'string' || !/^(?:usr|anon)_v1_[A-Za-z0-9_-]{43}$/.test(ownerSubject)) {
     throw new Error('TRIP_OWNER_INVALID');
   }
   const databaseList = databases(env);
-  const tombstone = await databaseList[0].prepare(
-    `insert into trip_owner_erasure_tombstones (owner_subject)
-      values (?)
-      on conflict do nothing`
-  ).bind(ownerSubject).run();
-  if (tombstone?.success !== true) throw new Error('TRIP_DELETE_INVALID');
-  return purgeOwnerTrips(databaseList, ownerSubject);
+  // Control first stops new reservations; each local barrier also excludes
+  // already-reserved inserts atomically inside that shard's INSERT statement.
+  for (const database of databaseList) {
+    const tombstone = await database.prepare(
+      `insert into trip_owner_erasure_tombstones (owner_subject)
+        values (?)
+        on conflict do nothing`
+    ).bind(ownerSubject).run();
+    if (tombstone?.success !== true) throw new Error('TRIP_DELETE_INVALID');
+  }
+  const deleted = await purgeOwnerTrips(databaseList, ownerSubject);
+  await assertOwnerTripRowsAbsent(databaseList, ownerSubject);
+  return deleted;
 }
 
 export async function handleRequest(request, env) {
