@@ -61,6 +61,10 @@ try {
       assert.ok(sql.includes("'^/storage/v1/object/ravradar-private-production-runtime/operational-evidence/sha256/[0-9a-f]{64}[.]json[.]gz$'"));
       assert.match(sql,/toInt32OrZero\(log_attributes\['res.statusCode'\]\)/);
       assert.match(sql,/toInt32OrZero\(log_attributes\['response.status_code'\]\)/);
+      assert.equal(sql.split("CASE WHEN mapContains(log_attributes, 'error.errorCode')\n          AND log_attributes['error.errorCode'] != '' THEN\n        CASE WHEN log_attributes['error.errorCode'] IN ('EntityTooLarge', 'ResourceAlreadyExists', 'KeyAlreadyExists', 'InvalidMimeType', 'AccessDenied', 'InternalError', 'DatabaseTimeout', 'DatabaseError', 'SlowDown', 'InvalidJWT', 'UNAUTHORIZED_MISSING_API_KEY')\n          THEN log_attributes['error.errorCode'] ELSE 'UNKNOWN' END\n      ELSE\n      CASE WHEN NOT mapContains(log_attributes, 'error.code')\n          OR log_attributes['error.code'] = '' THEN 'MISSING'\n        WHEN log_attributes['error.code'] IN ('EntityTooLarge', 'ResourceAlreadyExists', 'KeyAlreadyExists', 'InvalidMimeType', 'AccessDenied', 'InternalError', 'DatabaseTimeout', 'DatabaseError', 'SlowDown', 'InvalidJWT', 'UNAUTHORIZED_MISSING_API_KEY')\n          THEN log_attributes['error.code'] ELSE 'UNKNOWN' END\n      END").length,2,
+        'One normalized-code branch, then the exact finite legacy fallback; unknown normalized codes remain UNKNOWN');
+      assert.equal((sql.match(/error\.errorCode/g)||[]).length,4);
+      assert.equal((sql.match(/error\.code/g)||[]).length,4,'Legacy field and finite mapping remain exact');
       assert.match(sql,/NOT mapContains\(log_attributes, 'error.code'\)/);
       assert.match(sql,/THEN 'MISSING'/);
       assert.match(sql,/ELSE 'UNKNOWN'/);

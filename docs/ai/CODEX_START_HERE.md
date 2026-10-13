@@ -1,3 +1,13 @@
+# 4.0.576 – afgrænset håndtering af gatewayfejl, 2026-10-13
+
+Den tidligere præcise uploaddiagnostik har bestået GitHubs kildekontrol og er lagt på main. Den faktisk gennemførte, snævre aflæsning registrerede HTTP 400 i lagringen og HTTP 520 i gatewayen. De to kategorier er ikke bevis for samme forespørgsel eller objekt; størrelse, kvote, MIME og den konkrete leverandørårsag er fortsat uafklarede. En genlevering fra den allerede gemte vejrpakke er startet gennem det normale kontrollerede forløb uden nye providerkald; startkvittering er ikke offentlig leveringssucces.
+
+Den nye lokale kildekandidat tilføjer kun HTTP 520 til uploaderens eksisterende begrænsede genforsøg. Der er fortsat højst to forsøg med samme uændrede indhold og uden overskrivning. Et andet afvist svar standser fortsat; efterfølgende SHA-, genlæsnings-, versions- og CAS-kontroller, private bytegrænser, originaler og historik bevares. Dette er robusthed over for et ukendt gatewaysvar, ikke bevis for en bestemt nedbrudsårsag eller permanent leverandørreparation.
+
+Den faste loglæser foretrækker den aktuelle primære Storage-logserializers faste error.errorCode og bevarer den afgrænsede legacy error.code-fallback. Ukendte værdier forbliver UNKNOWN; raw, message, stack, stier og private oplysninger læses eller vises ikke. Det samme præcise tidsrum, én GET, ti sekunder, 32 KiB og færre end otte rækker består. Første præcise engangslæsning er forbrugt; en ny tilsvarende kontrolleret diagnose følger ejerens nyeste mål, aldrig automatisk gentagelse.
+
+Kandidatens normale beskyttede runtime-mål og alle 29 loglæserprøver består lokalt; den præcise GitHub-kildekontrol afventer. Den nye 520-regel gælder kun immutable upload, ikke bucket-, slette- eller anonymitetskald. Ingen merge eller produktionsaktivering under den aktive writer. Der ændres ikke på vejrfortolkning, scoreformel, kilder, modelbindinger, adminpunkter, geometri, cron eller planer. Alle fem hovedområder er åbne med frist 18. oktober. Denne driftsviden er ikke assistentens offentlige spørgsmål/svar-viden. Ældre statusafsnit nedenfor er dateret historik på de konkret erstattede punkter.
+
 # 4.0.576 – afgrænset uploaddiagnostik, 2026-10-13
 
 Den almindelige vejrhentning afsluttede beregning, gemning, datakontroller og klargøring af hjemmesidepakken, men et afvist Supabase-svar ved gemning af genoptagelsesbeviset stoppede leveringen før aktivering og Pages. De allerede gyldige offentlige data bevares. En ny lokal kilderettelse bevarer nu faktisk HTTP-status, en fast tilladt fejlkode og den tilbudte pakkestørrelse ved netop dette afviste svar. Tilbudte bytes er ikke bevis for afsendelse, modtagelse eller holdbar gemning. Rå fejltekst, objektstier, headers, nøgler, brugerdata og strømværdier logges ikke.
