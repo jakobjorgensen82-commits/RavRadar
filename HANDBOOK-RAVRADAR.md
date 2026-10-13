@@ -1,10 +1,32 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.575
+**Håndbogsversion:** 4.0.576
 
-Den lokale 4.0.575 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
-og `modelBundleSha256=249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932` over 68 kanonisk normaliserede transitive implementeringsfiler.
+Den lokale 4.0.576 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og `modelBundleSha256=c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5` over 68 kanonisk normaliserede transitive implementeringsfiler.
 Den fysiske scorekontrakt er uændret. Dette er ikke installation, ny offentlig status eller bevis for den nye sammensætnings præcise kildekontrol.
+
+## 89.219 Kontofunktioner og assistentsvar leveres som en samlet kontrolleret ændring
+
+Konto-vinduets allerede viste turhistorik følger nu den samme konto- og dialoglevetid som den ventende læsning: logout, en ny loginidentitet, udløbet session, lukning eller tilbage-navigation fjerner den gamle visning. Gyldig fornyelse af samme login bevares; et forsinket svar kan ikke vise gamle ture igen eller hente en anden kontos historik. Den snævre UI-rettelse ændrer ingen gemte ture, bindingshashes eller SQL. De 52 normale ejerskabs-/præferenceprøver, herunder ti historikforløb, består lokalt; offentlig afprøvning afventer levering.
+
+Aktuel lokal 4.0.576-kildekandidat, endnu ikke installeret: Den normale kildeberegning giver den integrerede binding `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5` over 68 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=2fdc7426ea99382731c6f4d118eacf4fc271f505fcf121bc67c5349c62938af9` over 66 transitive filer. Den fysiske scorekontrakt er uændret. Den offentlige 4.0.575 er verificeret; disse nye kildebindinger er ikke en installations- eller leveringskvittering. Den maskinlæsbare autoritet er `version.json.releaseContract.modelBindings`; den præcise nye 21310000-overgang afventer kilde-, native SQL-, original- og leveringskontroller. Ældre afsnit nedenfor er dateret historik.
+
+4.0.575 er faktisk offentligt leveret. PR #585 og det kontrollerede rettelsesdeploy har installeret 200000-rettelsen, genlæst databasekontrakten, gemt og publiceret beregningscheckpointet, gemt den beskyttede originalpakke, opdateret assistentens serverfunktion og bestået Pages- samt 210/673-kontrollen. De tidligere daterede beskrivelser af afventende 200000-installation og offentlig 4.0.574 er erstattet på disse punkter. Rettelsesdeployet genbrugte vejrdata og beviser ikke en ny fuld DMI-generation.
+
+Ejerens ene efterfølgende almindelige manuelle vejrhentning er afsluttet med succes den 13. oktober kl. 01.15 dansk tid, og engangsordren er forbrugt. Normal cachegemning, fuld artifactkontrol, releasegate, lokal checkpointgemning, central checkpointpublicering, beskyttet originalpakke, Pages, offentlig 210/673-kontrol og terminal forsegling er faktisk udført og bestået. Det er dermed også et normalt publiceringsbevis efter checkpointrettelsen, ikke kun et rettelsesdeploy. DMI-READY og konkrete dækningsprocenter er ikke udledt af grønne trin. Ejeren har selv aktiveret cron; frisk skrivefri browserkontrol viste korrekt adresse og uændret firetimersplan. Ingen ny manuel start, genkørsel, annullering eller cronændring følger af dette afsnit.
+
+Den nye kildekandidat samler kontofunktioner og assistentrettelser. Generelle spørgsmål om høj score uden fund kræver ikke et irrelevant zonevalg. Sammensatte begynderspørgsmål kan bruge både identifikation og udstyr; den afgrænsede dagslysopfølgning følger det lokale emne. Praktiske spørgsmål, DA/DE/EN, kontoskift, logout, forsinkede svar, private og ukendte spørgsmål bevarer sikkerhedsgrænserne. De 38 tidligere fakta bevares, og ét fagligt gennemgået Raman-emne tilføjes. Teknisk utilgængelighed skelnes fra gyldig faglig usikkerhed. Ingen intern fejllog, privat tur eller rå samtale bliver offentlig assistentviden.
+
+Kontobundet aktivitet bruger kun den aktuelle autentificerede konto og serverens tid, uden historisk tilbagefyldning. Statistikpræferencen er slået til som udgangspunkt efter ejerens beslutning; eksplicit fravalg bevares. Præferencen er ikke samtykke, anonymitetsbevis eller aktiveret statistik. Anonym samlet viderebrug, to års inaktivitet, 30 dages varsel, faktisk konto-/backup-sletning og installerede normale brugerforløb er fortsat åbne krav.
+
+Assistenten er fortsat i modelbindingernes normale kildegraph. De normale byggere giver en legitim ny C66/I68/T12-identitet uden ændring af fysisk scoreformel, kildeprioritet, adminpunkter eller geometri. Append-only migrationen `20261013210000_account_assistant_original_bound_successor.sql` bevarer numeriske værdier, offentliggjort historik, autentiske originaler, alle 673 tilstande, hele validatoren og database-/låsefrister på 55/5 sekunder. Den gamle 130000- og 200000-kilde ændres eller geninstalleres ikke. Førskrivningskontrollen følger normale pakkede/udpakkede originaler og tabsfri sammenligning; gamle originaler får ikke nye beviser ved genlæsning.
+
+Ejeren har givet ny, afgrænset betinget tilladelse til præcis denne migration, de tre eksisterende funktioner ravradar-assistant, trip-log og submit-observation samt ét kontrolleret rettelsesdeploy i det eksisterende projekt og på ravradar.dk. Tilladelsen er ubrugt. Præcis kildekontrol, rigtig PostgreSQL-prøve, databevarelse og afsluttet vejrhentning skal bestå først. Ingen automatisk gentagelse, ny vejrhentning, D1-/Worker-geninstallation, nøgler eller planer. Fast metadata-genlæsning af to tabeller og fire kontofunktioner skal kontrollere RLS, profilbinding, definitioner og adgang før Edge- og offentlig levering; ingen kontorækker læses.
+
+De tidligere samlede lokale assistent-/kontoprøver genbruges. Den nye normale førskrivningsprøve består 12/12 uden springede prøver, og hele readiness-target består med kontrollerede input. Den faktisk integrerede kilde følger de gennemgåede kildepins; normal bindingsbygning samt versions-, RDKS- og browsercachekontrol består lokalt. Rigtig PostgreSQL-prøve og præcis kildekontrol i GitHub afventer; statisk gennemgang eller Windows-skip er ikke PostgreSQL-bevis. Den nye kandidat er ikke installeret eller offentligt afprøvet. Fungerende ekstern AI skal fortsat verificeres gennem den eksisterende normale brugerfunktion, uden nye tjenester.
+
+Alle fem hovedmål er fortsat åbne. Strømkoordinater/data gennem cache, historik, strømhukommelse og score; Fur og gyldige timer; syvzonernes dkss_lf-vandstandsundtagelse alene; fysisk samlet processtop, eksklusiv skrivning, holdbar gemning/upload, fireminutters fejlworker, runner-tab, original-B/S-før-T, national heljobskapacitet og selvstændig drift uden Codex lukkes ikke af denne kandidat. Den separate revision forbliver isoleret og inaktiv. Gældende sikkerheds-, tilladelses- og hårde no-loss-grænser bevares. Ældre daterede afsnit er historik; dette afsnit har forrang på de konkret erstattede punkter.
 
 ## 89.218 En delvis installation er ikke en færdig levering
 
@@ -6339,6 +6361,8 @@ Inddelingen af forespørgsler følger hele det centrale kystregister, så den ik
 Rettelsen er måltestet lokalt, men ikke endnu bevist i produktion. Den fjerner ikke den afsluttende kontrol af alle nødvendige vejrinput og aktiverer ikke i sig selv den nye scoremodel. Fuld historik er fortsat ikke et krav for at vise en prognose med gyldige direkte input.
 
 ## Beskyttet modelcheckpoint uden unødvendig dataflytning – lokal 4.0.321
+
+Aktuel lokal 4.0.576-kildekandidat, ikke installeret: Den normalt beregnede continuation-identitet er 7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b (7876390c…) over 12 normaliserede kildefiler. Den faktisk installerede 200000-rettelse er forgænger; den nye 21310000-overgang kræver autentiske originaler, fuld validator, tabsfri metadataovergang og native SQL-kontrol før installation. Historik, målinger, begge modeltilstande og 55/5-sekundersfrister bevares. Dette er ikke ny offentlig checkpointbinding, genopbygget historik eller afslutning af den isolerede revision. De tidligere afsnit nedenfor er dateret historik.
 
 Dette afsnit beskriver det historiske 4.0.321-checkpoint, hvor Candidate G endnu var offentlig. Den integrerede model er nu den offentlige model. Selve checkpointdesignet ændrede ikke RavScore-formlen; det lukkede den private recoverykædes store kapacitetsrisiko.
 

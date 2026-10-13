@@ -122,16 +122,27 @@ for (const action of ['unchanged', 'refresh', 'body-failure', 'switch', 'logout'
   values.set('ravradar-observation-outbox-v1', '[]');
   const localBefore = values.get('ravradar-observations-v2');
   let markup = '';
+  // The actual account renderer now owns close/cancel listeners. Preserve
+  // DOM node identity and detachment instead of returning a fresh node per read.
+  const nodes = new Map(), dialogEvents = new EventTarget();
   const content = {
     get innerHTML() { return markup; },
-    set innerHTML(value) { markup = value; handlers.clear(); },
+    set innerHTML(value) {
+      for (const node of nodes.values()) node.isConnected = false;
+      nodes.clear(); markup = value; handlers.clear();
+    },
     querySelector(selector) {
       if (!markup.includes(`id="${selector.slice(1)}"`)) return null;
-      return { addEventListener(name, listener) { handlers.set(`${selector}:${name}`, listener); } };
+      if (!nodes.has(selector)) nodes.set(selector, { isConnected: true,
+        addEventListener(name, listener) { handlers.set(`${selector}:${name}`, listener); } });
+      return nodes.get(selector);
     },
   };
   const dialog = { open: false, querySelector: () => content,
-    showModal() { this.open = true; }, close() { this.open = false; } };
+    addEventListener: (...args) => dialogEvents.addEventListener(...args),
+    removeEventListener: (...args) => dialogEvents.removeEventListener(...args),
+    showModal() { this.open = true; },
+    close() { this.open = false; dialogEvents.dispatchEvent(new Event('close')); } };
   const startHistory = async () => {
     openAccountDialog(dialog);
     const listener = handlers.get('#tripHistoryLink:click');
@@ -185,6 +196,7 @@ for (const action of ['unchanged', 'refresh', 'body-failure', 'switch', 'logout'
   assert.equal(values.get('ravradar-observations-v2'), localBefore, 'Rendering/rejecting a stale read must not rewrite private local rows.');
   assert.equal(values.get('ravradar-observation-outbox-v1'), '[]');
   historyCases += 1;
+  dialog.close(); // Dispose this real renderer's own listeners before the next fixture.
 }
 
 console.log(`Brugerkonto og turlog: eksisterende kontrakter og ${historyCases} faktiske dialog/body/ejerforløb består uden netværk.`);

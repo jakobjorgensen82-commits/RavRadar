@@ -1906,7 +1906,14 @@ upgradeTest('owner-upgrade preflight compatibility is explicit and never final e
 
 const source=fs.readFileSync('scripts/prepare-cloudflare-trip-storage.mjs','utf8').replaceAll('\r\n','\n');
 const cliSource=source.slice(0,source.lastIndexOf('\nif (process.argv[1]')).replace(/^import[\s\S]*?;\n/gm,'').replace(/^export /gm,'')+'\nawait main();';
-const migration=fs.readFileSync('cloudflare/trip-gateway/migrations/002_owner_export_keyset.sql');
+const migrationPath='cloudflare/trip-gateway/migrations/002_owner_export_keyset.sql';
+const originalMigration=fs.readFileSync(migrationPath);
+// The Linux CLI fixture consumes the exact committed LF payload, not Windows
+// checkout CRLF. Normalize only this synthetic input; never rewrite the file
+// or relax the normal preparer's immutable-byte guard.
+const migration=Buffer.from(originalMigration.toString('utf8').replaceAll('\r\n','\n'));
+assert.equal(createHash('sha256').update(migration).digest('hex'),
+  'a84490c7cd8a173447188cbec3c275714195f29688340cbbd35b33ff4248a4eb');
 const definitions=D1_TRIP_SCHEMA_STATEMENTS.map(sql=>{const match=/^create\s+(?:unique\s+)?(table|index)\s+if\s+not\s+exists\s+([a-z_]+)/i.exec(sql.trim());return{type:match[1],name:match[2],sql};});
 function upgradeFixture({present=[],mutate=()=>{},list=rows(),plannedMain='a'.repeat(40)}={}) {
   const stored=new Map(),events=[],installed=new Set(present),clock=1800000000000;
@@ -1945,6 +1952,7 @@ for(const present of [[],[0,3,9],Array.from({length:10},(_,i)=>i)])upgradeTest('
   assert.equal(f.installed.size,10);assert.ok(f.events.filter(e=>e.kind==='DDL').every(e=>e.sql===migration.toString()));
   const plan=JSON.parse(f.stored.get('/synthetic/plan'));assert.deepEqual(plan.bindings,bindings());assert.doesNotMatch(JSON.stringify(plan),/secret|token|author|payload|owner_subject/);
   assert.equal(f.events.some(e=>e.url?.includes('/actions/')||(e.method==='POST'&& !e.url.endsWith('/query'))),false);
+  assert.deepEqual(fs.readFileSync(migrationPath),originalMigration,'The fixture must preserve the original002 source bytes');
 });
 for(const [label,mutate]of [
   ['wrong tenth schema',({body,url})=>{if(url.pathname.endsWith('000000000009/query')&&body.result?.[0]?.results?.[0]?.sql)body.result[0].results[0].sql='create table wrong(x)';}],

@@ -12,7 +12,7 @@ export const RAV_ASSISTANT_RAVSCORE_MODEL_BINDING = Object.freeze({
   bestTimePolicyId: "score-history-water-tie-earliest-v3",
   presentationPolicyId: "score-bands-35-55-75-exceptional90-v1",
   modelContractSha256: "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-  modelBundleSha256: "249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932",
+  modelBundleSha256: "c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5",
 });
 
 export const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = "rav-assistant-public-knowledge-v1";
@@ -20,7 +20,7 @@ export const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = "rav-assistant-public-knowledge-v1
 // public knowledge document by the Edge contract test and sent with every
 // assistant response so Pages can reject a split model/knowledge deployment.
 export const RAV_ASSISTANT_KNOWLEDGE_SHA256 =
-  "9926586b1b97032e6d762c4e030c6705ba3581e647abec7e7bfbba5604412694";
+  "72d84309e5ed5e4a180fc02b2d476041fcd65a576336a949df0bd43e87774378";
 export const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
   modelId: "x-ravradar-model-id",
   modelStateVersion: "x-ravradar-model-state-version",
@@ -69,6 +69,7 @@ export const RAV_ASSISTANT_FACTS = Object.freeze([
   { id: "rules.danefae", text: "An ordinary natural amber piece is normally not danefæ, but unusual worked or archaeological amber objects may be. Do not polish them; preserve the find context and contact a local archaeological museum or the National Museum." },
   { id: "evidence.source-classes", text: "RavRadar distinguishes direct amber experiments, peer-reviewed coastal analogies, official rules and safety guidance, and named practitioner experience. These sources can complement each other but must not be presented as equally strong evidence." },
   { id: "public-context.selected-zone-only", text: "A remote assistant may explain only the small selected-zone public context supplied by RavRadar. National rankings and exact best-time calculations remain deterministic RavRadar functions and must not be invented by the model." },
+  { id: "identification.spectroscopy-limits", text: "FTIR and Raman provide useful evidence about amber chemistry and alteration. Comparing the surface and interior can reveal differences, but natural variation and heat treatment can overlap. A single spectrum does not by itself establish an exact age or an unambiguous weathering stage. Qualified assessment combines comparative spectra, other analytical methods and the specimen's geological context; spectroscopy is not categorically incapable of detecting treatment." },
 ]);
 
 export const RAV_ASSISTANT_REFUSALS = Object.freeze({
@@ -548,6 +549,10 @@ const CANONICAL_FACT_TRANSLATIONS = Object.freeze({
   "public-context.selected-zone-only": {
     "da": "En fjernassistent må kun forklare den lille offentlige kontekst for den valgte zone, som RavRadar har sendt. Landsdækkende rangeringer og præcise beregninger af bedste tidspunkt forbliver deterministiske RavRadar-funktioner og må ikke opfindes af modellen.",
     "de": "Eine Fernassistenz darf nur den kleinen von RavRadar übermittelten öffentlichen Kontext des ausgewählten Gebiets erklären. Landesweite Ranglisten und genaue Berechnungen des besten Zeitpunkts bleiben deterministische RavRadar-Funktionen und dürfen nicht vom Modell erfunden werden."
+  },
+  "identification.spectroscopy-limits": {
+    "da": "FTIR og Raman giver nyttig evidens om ravets kemi og ændringer. Sammenligning af overflade og indre kan vise forskelle, men naturlig variation og varmebehandling kan give overlappende signaler. Ét spektrum fastslår ikke i sig selv en præcis alder eller et entydigt forvitringsstadium. En faglig vurdering kombinerer sammenlignende spektre, andre analysemetoder og prøvens geologiske kontekst; spektroskopi er ikke generelt ude af stand til at påvise behandling.",
+    "de": "FTIR und Raman liefern nützliche Hinweise zur Chemie und Veränderung von Bernstein. Der Vergleich von Oberfläche und Innerem kann Unterschiede zeigen, doch natürliche Variation und Wärmebehandlung können überlappende Signale liefern. Ein einzelnes Spektrum bestimmt für sich allein weder ein genaues Alter noch ein eindeutiges Verwitterungsstadium. Eine fachliche Beurteilung verbindet Vergleichsspektren, weitere Analysemethoden und den geologischen Kontext des Stücks; Spektroskopie ist nicht grundsätzlich unfähig, Behandlungen nachzuweisen."
   }
 });
 const CANONICAL_FOCUS_REPLIES = Object.freeze({

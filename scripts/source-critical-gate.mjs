@@ -192,9 +192,16 @@ for (const forbidden of [
 }
 assert.equal(
   (codeOnlyWorkflow.match(/supabase db push --linked/g) || []).length,
-  2,
-  'Code-only-workflowet må kun have én dry-run og én apply af den afgrænsede migration.',
+  3,
+  'Code-only-workflowet må kun have den normale dry-run, den kontobundne sidste genkontrol og én apply.',
 );
+assert.equal((codeOnlyWorkflow.match(/supabase db push --linked --dry-run --skip-vault/g) || []).length, 2,
+  'De to læsninger skal være dry-run; den sidste må ikke være en ekstra skrivning.');
+assert.equal((codeOnlyWorkflow.match(/^\s*supabase db push --linked --skip-vault\s*$/gm) || []).length, 1,
+  'Der skal fortsat være præcis én database-apply.');
+assert.match(codeOnlyWorkflow,
+  /if test "\$\{RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED:-false\}" = "true"; then[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?--account-assistant-prewrite-plan --require-prewrite-gate[\s\S]*?--expected-pending-version 20261013210000[\s\S]*?fi\s+supabase db push --linked --skip-vault/,
+  'Den ekstra dry-run skal være den præcise opt-in-kontogate umiddelbart før den ene apply.');
 assert.ok(
   read('scripts/verify-code-only-migration-plan.mjs')
     .includes('LATEST_REQUIRED_CUTOVER_MIGRATION'),

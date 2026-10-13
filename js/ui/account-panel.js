@@ -1,12 +1,47 @@
-import { authEnabled, authIdentityEpoch, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.575";
-import { getLocalObservations, getOwnTripExport, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.575";
-import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.575";
-import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.575";
-import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.575";
-import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.575";
-import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.575";
+import { authEnabled, authIdentityEpoch, currentSession, onAuthChange, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.576";
+import { getLocalObservations, getOwnTripExport, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.576";
+import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.576";
+import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.576";
+import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.576";
+import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.576";
+import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.576";
+
+import { getOwnStatisticsPreference, setOwnStatisticsPreference } from "../services/permissions-service.js?v=4.0.576";
 
 const pendingHistoryViews = new WeakMap();
+function stopHistoryView(dialog) { pendingHistoryViews.get(dialog)?.dispose(); }
+
+const pendingStatisticsViews = new WeakMap();
+function stopStatisticsView(dialog) { pendingStatisticsViews.get(dialog)?.dispose(); }
+function bindStatisticsPreference(dialog, content) {
+  const input=content.querySelector('#accountStatisticsPreference');
+  const status=content.querySelector('#accountStatisticsStatus');
+  if(!input||!status)return;
+  const identity=authIdentityEpoch(),ownerId=currentSession()?.user?.id;
+  let stopped=false,unsubscribe=()=>{};
+  const current=()=>!stopped&&dialog.open&&input.isConnected
+    &&authIdentityEpoch()===identity&&ownerId&&currentSession()?.user?.id===ownerId;
+  const dispose=()=>{
+    if(stopped)return;stopped=true;unsubscribe();
+    dialog.removeEventListener('close',dispose);dialog.removeEventListener('cancel',dispose);
+    input.disabled=true;input.indeterminate=true;status.textContent='';
+    if(pendingStatisticsViews.get(dialog)?.dispose===dispose)pendingStatisticsViews.delete(dialog);
+  };
+  pendingStatisticsViews.set(dialog,{dispose});
+  unsubscribe=onAuthChange(()=>{if(authIdentityEpoch()!==identity||currentSession()?.user?.id!==ownerId)dispose();});
+  dialog.addEventListener('close',dispose);dialog.addEventListener('cancel',dispose);
+  input.disabled=true;input.indeterminate=true;status.textContent=t('account.statisticsLoading');
+  const show=value=>{input.checked=value.enabled;input.indeterminate=false;input.disabled=false;status.textContent='';};
+  const unavailable=()=>{input.disabled=true;input.indeterminate=true;status.textContent=t('account.statisticsUnavailable');};
+  input.addEventListener('change',async()=>{
+    if(!current()||input.disabled)return;
+    const requested=input.checked;input.disabled=true;status.textContent=t('account.statisticsSaving');
+    try{const value=await setOwnStatisticsPreference(requested);if(current()){show(value);status.textContent=t('account.statisticsSaved');}}
+    catch{if(current())unavailable();} // Unknown write outcome is not a confirmed ON/OFF.
+  });
+  void getOwnStatisticsPreference().then(value=>{if(current())show(value);},()=>{if(current())unavailable();});
+}
+
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>'"]/g, character => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[character]);
@@ -87,17 +122,38 @@ function renderHistoryRows(rows, context) {
 }
 
 async function showTripHistory(dialog, context) {
+  stopStatisticsView(dialog);
+  stopHistoryView(dialog);
   const content = dialog.querySelector('.dialog-content');
   const identity = authIdentityEpoch(), userId = currentSession()?.user?.id;
-  const view = {};
+  if (!userId) return renderAccount(dialog, context);
+  let stopped = false, unsubscribe = () => {};
+  const dispose = () => {
+    if (stopped) return;
+    stopped = true;
+    unsubscribe();
+    dialog.removeEventListener('close', dispose);
+    dialog.removeEventListener('cancel', dispose);
+    if (pendingHistoryViews.get(dialog) === view) {
+      pendingHistoryViews.delete(dialog);
+      content.innerHTML = '';
+    }
+  };
+  const view = { dispose };
   pendingHistoryViews.set(dialog, view);
+  unsubscribe = onAuthChange(() => {
+    if (authIdentityEpoch() === identity && currentSession()?.user?.id === userId) return;
+    dispose();
+    if (dialog.open) renderAccount(dialog, context);
+  });
+  dialog.addEventListener('close', dispose);
+  dialog.addEventListener('cancel', dispose);
   content.innerHTML = `<h2>${t('account.history')}</h2><p class="form-status">${t('account.historyLoading')}</p>`;
   let remoteRows = [], loadError = null;
   try { remoteRows = await getOwnTripObservations({ limit: 100 }); }
   catch (error) { loadError = error; }
   if (!dialog.open || pendingHistoryViews.get(dialog) !== view
       || authIdentityEpoch() !== identity || !userId || currentSession()?.user?.id !== userId) return;
-  pendingHistoryViews.delete(dialog);
   const rows = mergeOwnRows(remoteRows, getLocalObservations(), userId);
   const foundCount = rows.filter(rowFound).length;
   const totalMinutes = rows.reduce((sum, row) => sum + Math.max(0, Number(row.search_minutes) || 0), 0);
@@ -110,7 +166,9 @@ async function showTripHistory(dialog, context) {
     <div class="trip-log-list">${rows.length ? renderHistoryRows(rows, context) : `<p class="empty-state-inline">${t('account.noTrips')}</p>`}</div>
     ${rows.length >= 100 ? `<p class="muted">${t('account.latest100')}</p>` : ''}
     <p class="trip-log-privacy">${t('account.historyPrivacy')}</p>`;
-  content.querySelector('#tripHistoryBack')?.addEventListener('click', () => renderAccount(dialog, context));
+  content.querySelector('#tripHistoryBack')?.addEventListener('click', () => {
+    if (pendingHistoryViews.get(dialog) === view) renderAccount(dialog, context);
+  });
 }
 
 async function showAccountTripReport(dialog, context) {
@@ -141,7 +199,8 @@ async function showAccountTripReport(dialog, context) {
 }
 
 function renderAccount(dialog, context, message = '') {
-  pendingHistoryViews.delete(dialog);
+  stopStatisticsView(dialog);
+  stopHistoryView(dialog);
   const session = currentSession();
   const signedIn = Boolean(session?.access_token && session?.user?.id);
   const content = dialog.querySelector('.dialog-content');
@@ -155,6 +214,9 @@ function renderAccount(dialog, context, message = '') {
     <button id="tripExportButton" class="account-feature-link" type="button">${t('account.exportTrips')}</button>
     <p class="muted">${t('account.exportTripsScope')}</p>
     <p id="tripExportStatus" class="form-status" role="status" aria-live="polite"></p>
+    <label><input id="accountStatisticsPreference" type="checkbox" disabled aria-describedby="accountStatisticsExplanation accountStatisticsStatus">${t('account.statisticsPreference')}</label>
+    <p id="accountStatisticsExplanation" class="muted">${t('account.statisticsExplanation')}</p>
+    <p id="accountStatisticsStatus" class="form-status" role="status" aria-live="polite"></p>
     <p class="account-privacy-note">${t('account.privacy')}</p>
     <button id="signOutButton" class="primary-button" type="button">${t('account.logout')}</button>` : `
     <h2>${t('account.optional')}</h2>
@@ -169,6 +231,7 @@ function renderAccount(dialog, context, message = '') {
       <button name="action" value="magic" type="submit" formnovalidate>${t('account.magicSend')}</button><p id="authStatus" class="form-status" role="status"></p>
     </form>` : `<div class="notice">${t('account.disabled')}</div>`}`;
 
+  if(signedIn)bindStatisticsPreference(dialog,content);
   content.querySelector('#accountTripReportLink')?.addEventListener('click', event => { event.preventDefault(); showAccountTripReport(dialog, context); });
   content.querySelector('#tripHistoryLink')?.addEventListener('click', event => { event.preventDefault(); showTripHistory(dialog, context); });
   content.querySelector('#tripExportButton')?.addEventListener('click', async event => {

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { readAccountAssistantCanonicalSource } from './lib/account-assistant-successor-source.mjs';
 
 const sources = Object.freeze({
   migration: 'supabase/migrations/20260920220000_public_hour_pack_capacity_binding.sql',
@@ -25,18 +26,14 @@ const entries = await Promise.all(Object.entries(sources).map(async ([label, fil
   await fs.readFile(file, 'utf8'),
 ]));
 const documents = Object.fromEntries(entries);
-const checkpointMigration = await fs.readFile(
-  'supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql',
-  'utf8',
-);
+// This pinned adapter preserves every immutable 130000/200000 byte and reconstructs
+// only the exact current sparse successor; it does not replay historical SQL.
+const { canonicalSource: checkpointMigration } = await readAccountAssistantCanonicalSource();
 const stableTripMigration = await fs.readFile(
   'supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql',
   'utf8',
 );
-const currentTripMigration = await fs.readFile(
-  'supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql',
-  'utf8',
-);
+const currentTripMigration = checkpointMigration;
 const definitions = Object.fromEntries(Object.entries(documents).map(([label, source]) => [
   label,
   normalize(functionDefinition(source, label)),
@@ -57,6 +54,7 @@ const CHECKPOINT_FUNCTION_NAMES = Object.freeze([
   'public.ravradar_ravscore_checkpoint_cp_close_predecessor_projection',
   'public.ravradar_ravscore_checkpoint_owner_current_predecessor_projection',
   'public.ravradar_ravscore_checkpoint_userdata_predecessor_projection',
+  'public.ravradar_ravscore_checkpoint_account_assistant_predecessor_projection',
   'public.ravradar_ravscore_checkpoint_cas',
   'public.ravradar_ravscore_checkpoint_contract',
 ]);
@@ -176,7 +174,17 @@ for (const [label, source] of Object.entries({
     /v_projected := public\.ravradar_ravscore_checkpoint_userdata_predecessor_projection\(v_projected, p_target_reference\);\s+if v_projected is not null then return v_projected; end if;\s+return null;/,
     `${label} water-only projection must reach the separately attested userdata successor`);
   const userdataProjection = functionDefinition(source, label, 'public.ravradar_ravscore_checkpoint_userdata_predecessor_projection');
-  assert.match(userdataProjection, /if public\.ravradar_ravscore_checkpoint_payload_valid\(v_projected, p_target_reference\)\s+then return v_projected; end if;\s+return null;/);
+  assert.match(userdataProjection,
+    /v_projected := public\.ravradar_ravscore_checkpoint_account_assistant_predecessor_projection\(v_projected, p_target_reference\);\s+if v_projected is not null then return v_projected; end if;\s+return null;/,
+    `${label} userdata must reach the separately pinned account/assistant successor`);
+  const accountProjection = functionDefinition(source, label,
+    'public.ravradar_ravscore_checkpoint_account_assistant_predecessor_projection');
+  assert.match(accountProjection, /if public\.ravradar_ravscore_checkpoint_payload_valid\(v_projected, p_target_reference\)\s+then return v_projected; end if;\s+return null;/);
+  assert.match(accountProjection, /count\(\*\)[\s\S]*<> 673[\s\S]*state\.value ->> 'modelBundleSha256' is distinct from '249c7720/);
+  assert.match(accountProjection, /candidateGRollbackCompanion,modelBinding,modelBundleSha256}'\s+is distinct from '55fd7dfa/);
+  assert.match(accountProjection, /continuationStateContractSha256' is distinct from 'a5430dd2/);
+  assert.doesNotMatch(accountProjection, /\bsecurity definer\b|\b(?:insert|update|delete)\s+|\bexecute\s+|\{currentEvidence\}|\{currentSupplyIndex\}|\{transportEvidence\}/i);
+  assert.match(source, /revoke all on function public\.ravradar_ravscore_checkpoint_account_assistant_predecessor_projection\(jsonb,timestamptz\)\s+from public, anon, authenticated;/);
   assert.match(userdataProjection, /count\(\*\)[\s\S]*<> 673[\s\S]*state\.value ->> 'modelBundleSha256' is distinct from 'ffc67b30/);
   assert.match(userdataProjection, /candidateGRollbackCompanion,modelBinding,modelBundleSha256}'\s+is distinct from '8d9142b5/);
   assert.match(userdataProjection, /continuationStateContractSha256' is distinct from '4115f371/);
@@ -204,10 +212,12 @@ for (const [label, source] of Object.entries({
   assert.match(metadata,/v_validator_oids\[9\]/);
   assert.match(metadata, /userdata-predecessor-projection/);
   assert.match(metadata, /v_validator_oids\[10\]/);
+  assert.match(metadata, /account-assistant-predecessor-projection/);
+  assert.match(metadata, /v_validator_oids\[11\]/);
   assert.match(metadata, /'checkpointCasStatementTimeout55Seconds'[\s\S]*'statement_timeout=55s' = any \(p\.proconfig\)/);
   assert.match(checkpointGeneratedBlock(source, label), /set statement_timeout = '55s';/,
     `${label} installer must enforce, not merely claim, the actual existing 55s timeout`);
-  for (const variable of ['v_userdata_predecessor_payload', 'v_water_level_predecessor_payload','v_owner_current_predecessor_payload', 'v_cp_close_predecessor_payload', 'v_top20_predecessor_payload']) {
+  for (const variable of ['v_account_assistant_predecessor_payload', 'v_userdata_predecessor_payload', 'v_water_level_predecessor_payload','v_owner_current_predecessor_payload', 'v_cp_close_predecessor_payload', 'v_top20_predecessor_payload']) {
     const projectedComparison = casDefinition.slice(casDefinition.indexOf(
       `v_central_is_compatible_predecessor and ${variable} is not null then`));
     const branchEnd = projectedComparison.search(/\n    (?:else|elsif)\b/);

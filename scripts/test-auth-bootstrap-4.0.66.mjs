@@ -191,6 +191,10 @@ async function authHarness(initial, signedIn = sessionB, { holdLogout = false, h
   };
   globalThis.fetch = async (input, options) => {
     const url = new URL(input);
+    if (url.pathname === '/rest/v1/rpc/record_account_activity') {
+      assert.equal(options.method, 'POST'); assert.equal(options.body, '{}');
+      return Response.json({}, { status: 503 });
+    }
     if (url.pathname.endsWith('/token') && url.searchParams.get('grant_type') === 'refresh_token') {
       return new Promise(resolve => refreshes.push({ resolve, token: JSON.parse(options.body).refresh_token }));
     }
@@ -427,3 +431,106 @@ try {
 }
 
 console.log(`OK: Auth-timeout/admin bevares; ${cases} normale konto-submit-scenarier, ${ownerCases} session-ejerskabsforløb og 4 normale cache-kald består offline, sekundær kontrast ${contrast.toFixed(2)}:1.`);
+
+// ACCOUNT-ACTIVITY-JOURNAL normal caller regression. Same auth implementation,
+// own synthetic HTTP/storage only. SQL is inspected, never installed here.
+async function accountActivityJournalScenario(mode) {
+  const owner = '11111111-1111-4111-8111-111111111111';
+  const other = '22222222-2222-4222-8222-222222222222';
+  const sourceSession = id => ({ access_token: 'token-' + id, refresh_token: 'refresh-' + id,
+    expires_at: 9_999_999_999, user: { id } });
+  const originals = new Map([['pending-trips', 'own-pending-sentinel'],
+    ['trip-outbox', 'own-outbox-sentinel'], ['trip-backup', 'own-backup-sentinel']]);
+  const bank = new Map(originals), rpc = [], timers = new Map(), notifications = [];
+  let nextOwner = owner, nextTimer = 0, identityLookups = 0, operations = 0;
+  const scope = { PUBLIC_CONFIG: { supabaseUrl: 'https://activity.example.invalid', supabasePublishableKey: 'synthetic-key' },
+    AbortController, DOMException, URLSearchParams,
+    location: { hash: '', pathname: '/', search: '' }, history: { replaceState() {} },
+    localStorage: { getItem: k => bank.get(k) ?? null, setItem: (k,v) => bank.set(k,String(v)), removeItem: k => bank.delete(k) },
+    setTimeout(fn, ms) { const id=++nextTimer; timers.set(id,{fn,ms}); return id; }, clearTimeout: id => timers.delete(id),
+    async fetch(input, options) {
+      const url = new URL(input); assert.equal(url.origin, 'https://activity.example.invalid');
+      if (url.pathname === '/rest/v1/rpc/record_account_activity') {
+        return await new Promise((resolve,reject) => {
+          rpc.push({ options, resolve, reject });
+          options.signal.addEventListener('abort', () => reject(options.signal.reason), {once:true});
+        });
+      }
+      if (url.pathname === '/auth/v1/token') return Response.json(sourceSession(nextOwner));
+      if (url.pathname === '/auth/v1/user') { identityLookups++; return Response.json({id:nextOwner}); }
+      if (url.pathname === '/auth/v1/logout') return Response.json({});
+      assert.equal(url.pathname, '/rest/v1/profiles'); operations++;
+      return Response.json([{ id: nextOwner, role: 'member', is_active: true }], {status: mode==='rejected-use'?503:200});
+    },
+  };
+  const source = auth.replace(/^import[^\n]+\r?\n/gm, '').replace(/^export\s+/gm, '');
+  vm.runInNewContext(source + '\nthis.api={signInWithPassword,consumeAuthCallback,currentSession,authIdentityEpoch,onAuthChange,authorizedFetch,refreshSession,signOut};',scope);
+  const api=scope.api; api.onAuthChange(value=>notifications.push(value));
+  try {
+    if(mode==='callback') {
+      scope.location.hash='#access_token=token-'+owner+'&refresh_token=refresh-'+owner+'&expires_in=3600';
+      await api.consumeAuthCallback(); assert.equal(identityLookups,1);
+    } else await api.signInWithPassword('synthetic@example.invalid','synthetic-password');
+    assert.equal(rpc.length,1,'Real explicit login starts one fixed activity call without awaiting it');
+    assert.equal(api.currentSession().user.id,owner);
+    const first=rpc[0], epoch=api.authIdentityEpoch(), selected=api.currentSession();
+    const saved=bank.get('ravradar-auth-session'), changes=notifications.length;
+    assert.equal(first.options.method,'POST'); assert.equal(first.options.body,'{}');
+    assert.equal(first.options.headers.Authorization,'Bearer token-'+owner);
+    assert.equal(Object.keys(JSON.parse(first.options.body)).length,0,'No owner/time/profile/notice comes from the browser');
+    if(mode==='switch') {
+      nextOwner=other; await api.signInWithPassword('other@example.invalid','synthetic-password');
+      assert.equal(rpc.length,2); rpc[1].resolve(Response.json({recorded:true}));
+      first.resolve(Response.json({recorded:true}));
+      await new Promise(resolve=>setImmediate(resolve));
+      assert.equal(api.currentSession().user.id,other); assert.equal(api.authIdentityEpoch(),epoch+1);
+      assert.equal(notifications.length,changes+1,'Late activity acknowledgements never emit auth changes');
+    } else {
+      if(mode==='null-error') first.reject(null);
+      else if(mode==='zero-error') first.reject(0);
+      else if(mode==='http-error') first.resolve(Response.json({}, {status:503}));
+      else if(mode==='timeout') { for(const job of [...timers.values()]) job.fn(); }
+      else first.resolve(Response.json({recorded:true}));
+      await new Promise(resolve=>setImmediate(resolve));
+      assert.equal(api.currentSession(),selected); assert.equal(api.authIdentityEpoch(),epoch);
+      assert.equal(bank.get('ravradar-auth-session'),saved); assert.equal(notifications.length,changes);
+      const response=await api.authorizedFetch('https://activity.example.invalid/rest/v1/profiles');
+      assert.equal(response.status,mode==='rejected-use'?503:200,'Activity failure never blocks normal authenticated use');
+      assert.equal(operations,1); assert.equal(rpc.length,mode==='rejected-use'?1:2);
+      if(rpc[1]) { assert.equal(rpc[1].options.body,'{}'); rpc[1].resolve(Response.json({recorded:true})); }
+      await new Promise(resolve=>setImmediate(resolve));
+      const count=rpc.length;
+      await api.refreshSession({force:true}); assert.equal(rpc.length,count,'Token renewal is not explicit login/use');
+      await api.signOut(); assert.equal(rpc.length,count,'Logout does not renew retention activity');
+      assert.equal(api.currentSession(),null);
+    }
+    for(const [key,value] of originals) assert.equal(bank.get(key),value,'Pending/outbox/backups are untouched');
+  } finally {
+    for(const call of rpc) call.resolve(Response.json({recorded:true}));
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(timers.size,0,'Every own activity timeout guard is released');
+  }
+}
+for(const mode of ['ordinary','callback','switch','null-error','zero-error','http-error','timeout','rejected-use'])
+  await accountActivityJournalScenario(mode);
+// Inspect the actual combined installation source, not a private draft migration.
+const accountMigrationSql = (await fs.readFile(
+  'supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql','utf8'
+)).replace(/\r\n?/g,'\n');
+const journalStart = 'create table public.account_activity_journal (';
+const journalEnd = 'grant execute on function public.record_account_activity() to authenticated;';
+assert.equal(accountMigrationSql.split(journalStart).length,2,'Exactly one installed journal definition');
+assert.equal(accountMigrationSql.split(journalEnd).length,2,'Exactly one installed journal grant');
+const journalOffset = accountMigrationSql.indexOf(journalStart);
+const journalEndOffset = accountMigrationSql.indexOf(journalEnd,journalOffset);
+assert.ok(journalEndOffset>journalOffset,'Complete actual journal section');
+const journalSql = accountMigrationSql.slice(journalOffset,journalEndOffset+journalEnd.length);
+assert.match(journalSql,/create function public\.record_account_activity\(\)/);
+assert.match(journalSql,/own_user_id uuid := auth\.uid\(\)/);
+assert.match(journalSql,/observed_at timestamptz := clock_timestamp\(\)/);
+assert.match(journalSql,/auth\.role\(\) is distinct from 'authenticated'/);
+assert.match(journalSql,/revoke all on table public\.account_activity_journal from public, anon, authenticated/);
+assert.match(journalSql,/grant execute on function public\.record_account_activity\(\) to authenticated/);
+assert.doesNotMatch(journalSql,/insert into public\.account_activity_journal[\s\S]*?select/i,'No fabricated historical backfill');
+assert.doesNotMatch(journalSql,/\bdelete from\b|\bupdate public\.(profiles|observations)\b/i);
+console.log('PASS: 8 normal account-activity caller cases; SQL source guards only, no installation or retention eligibility proof.');

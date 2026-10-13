@@ -627,11 +627,15 @@ const casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.end
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
 assert.equal(casTimeoutSettings.at(-1).migration,
-  '20261012200000_checkpoint_cas_single_projection_successor.sql');
+  '20261013210000_account_assistant_original_bound_successor.sql');
 assert.deepEqual(casTimeoutSettings.find(item =>
   item.migration === '20261010130000_owner_export_origin_bound_successor.sql'),
   { migration: '20261010130000_owner_export_origin_bound_successor.sql', timeout: '55s' },
   'the installed userdata predecessor must retain its original scoped timeout');
+assert.deepEqual(casTimeoutSettings.find(item =>
+  item.migration === '20261012200000_checkpoint_cas_single_projection_successor.sql'),
+  { migration: '20261012200000_checkpoint_cas_single_projection_successor.sql', timeout: '55s' },
+  'the installed single-projection predecessor must retain its original scoped timeout');
 const restoredTimeoutMigration = fs.readFileSync(
   new URL('20261002094500_restore_checkpoint_cas_timeout.sql', migrationsUrl), 'utf8',
 ).replace(/\r\n?/g, '\n');

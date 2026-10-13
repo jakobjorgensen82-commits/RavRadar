@@ -1,4 +1,4 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.575";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.576";
 
 const STORAGE_KEY = "ravradar-auth-session";
 const REFRESH_MARGIN_SECONDS = 300;
@@ -91,6 +91,40 @@ async function authRequest(path, options = {}, { useAuthorization = true, timeou
   return body;
   } finally { guard.done(); }
 }
+
+// Positive observations only: this journal cannot prove absence of activity.
+// Missing/failed writes never authorize retention deletion. A future server
+// eligibility transaction still needs complete activity coverage, delivered
+// notice evidence and a fresh login/use check before the existing tombstone.
+let activityWrite = null;
+function noteAccountActivity(active, epoch = identityEpoch) {
+  if (!enabled || !active?.access_token || !active?.user?.id
+    || epoch !== identityEpoch || pendingIdentityEpoch !== null) return;
+  if (activityWrite?.epoch === epoch && activityWrite.ownerId === active.user.id) return;
+  const write = { epoch, ownerId: active.user.id };
+  activityWrite = write;
+  // Deliberately not authorizedFetch: no recursion, refresh, replay under a new
+  // owner, browser timestamp, target owner, or profile metadata in this RPC.
+  write.promise = (async () => {
+    const guard = timeoutSignal();
+    try {
+      const response = await fetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/rpc/record_account_activity`, {
+        method: 'POST', body: '{}',
+        headers: { apikey: PUBLIC_CONFIG.supabasePublishableKey,
+          Authorization: `Bearer ${active.access_token}`, 'Content-Type': 'application/json' },
+        signal: guard.signal,
+      });
+      if (response.ok) await readResponseBody(response, guard);
+      // Neither success nor a client response is a retention/erasure receipt.
+    } catch {
+      // Auth/trip use remains available. Unknown journal coverage must retain.
+    } finally {
+      guard.done();
+      if (activityWrite === write) activityWrite = null;
+    }
+  })();
+}
+
 function tokenNeedsRefresh() {
   if (!session?.access_token) return true;
   if (!session.expires_at) return false;
@@ -184,10 +218,14 @@ export async function authorizedFetch(url, options = {}, { retry401 = true, time
       assertOwner(renewed);
       return requestOnce(renewed, false);
     }
-    if (consumeJson !== true && consumeErrorText !== true) return response;
+    if (consumeJson !== true && consumeErrorText !== true) {
+      if (response.ok) noteAccountActivity(current, startingEpoch);
+      return response;
+    }
     const body = response.ok && consumeJson === true ? await readResponseBody(response, guard) : undefined;
     const errorText = !response.ok && consumeErrorText === true ? await readResponseBody(response, guard, true) : undefined;
     assertOwner(current);
+    if (response.ok) noteAccountActivity(current, startingEpoch);
     return consumeErrorText === true ? { response, body, errorText } : { response, body };
     } finally { guard.done(); }
   }
@@ -214,7 +252,9 @@ export async function signInWithPassword(email, password) {
   try {
     const next = await authRequest("/token?grant_type=password", { method: "POST", body: JSON.stringify({ email, password }) }, { useAuthorization: false });
     if (identityEpoch !== startingEpoch) throw new Error("Kontoen blev ændret. Prøv igen fra den rigtige konto.");
-    saveSession(next, startingEpoch); return session;
+    saveSession(next, startingEpoch);
+    noteAccountActivity(session, startingEpoch);
+    return session;
   } finally {
     if (pendingIdentityEpoch === startingEpoch) pendingIdentityEpoch = null;
   }
@@ -225,7 +265,11 @@ export async function signUpWithPassword(email, password) {
   try {
     const next = await authRequest("/signup", { method: "POST", body: JSON.stringify({ email, password }) }, { useAuthorization: false });
     if (identityEpoch !== startingEpoch) throw new Error("Kontoen blev ændret. Prøv igen fra den rigtige konto.");
-    if (next.access_token) saveSession(next, startingEpoch); return next;
+    if (next.access_token) {
+      saveSession(next, startingEpoch);
+      noteAccountActivity(session, startingEpoch);
+    }
+    return next;
   } finally {
     if (pendingIdentityEpoch === startingEpoch) pendingIdentityEpoch = null;
   }
@@ -252,6 +296,7 @@ export async function consumeAuthCallback() {
     saveSession({ access_token: accessToken, refresh_token: values.get("refresh_token"), expires_in: Number(values.get("expires_in") || 0), token_type: values.get("token_type") || "bearer", user: { email: values.get("email") || null } });
     history.replaceState(null, "", location.pathname + location.search);
     await hydrateSessionUser(startingEpoch).catch(() => {});
+    if (identityEpoch === startingEpoch) noteAccountActivity(session, startingEpoch);
     return session;
   } finally {
     if (pendingIdentityEpoch === startingEpoch) pendingIdentityEpoch = null;

@@ -103,7 +103,7 @@ test('pre-write metadata-only requirement uses the actual normal difference and 
 
 // The fixed admission used by the normal preserved-original gate is not a
 // caller-supplied set of interchangeable bundle identities.
-test('userdata prewrite: actual current source and exact current050000 continuation are admitted', async () => {
+test('userdata prewrite: historical fixed current050000-to130000 admission remains exact', async () => {
   const { assertUserdataPrewriteBindings } = await import('./migrate-post-cutover-private-runtime.mjs');
   const { ravScoreModelBinding } = await import('../js/core/ravscore-model-contract.js');
   const { ravScoreModelBinding: candidateBinding } = await import('./rollback-assets/ravscore-model-contract.js');
@@ -112,7 +112,10 @@ test('userdata prewrite: actual current source and exact current050000 continuat
   const identity = { modelBinding: { modelBundleSha256: 'ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb' },
     contractHashes: { continuationStateContractSha256: '4115f37178ff3d8eab540f3d9355a1275a13a9dd3a896e07f06673564e76ee51' } };
   const previousCandidate = { modelBundleSha256: '8d9142b5f7d9b5a3e5a0f3593e73df0c7ffaf3d80c036317967cb713f09197e3' };
-  const actual = [identity, previousCandidate, ravScoreModelBinding(), candidateBinding(), currentHashes];
+  const actual = [identity, previousCandidate,
+    { ...ravScoreModelBinding(), modelBundleSha256: '249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932' },
+    { ...candidateBinding(), modelBundleSha256: '55fd7dfa5ee36596c729d93225a448ea5b8f1e7142c44b8b1bda5c3d4d84c957' },
+    { ...currentHashes, continuationStateContractSha256: 'a5430dd21e3135d6efc09e22df3dd0cdcafee723f962ff1d3cb52e7765b2aaa0' }];
   assert.doesNotThrow(() => assertUserdataPrewriteBindings(...actual));
   const intermediary = structuredClone(actual);
   intermediary[0].modelBinding.modelBundleSha256 = '34a25729a3dbddc8c73870a69f7b3a6899c7f1df9829c8078782139ff4e0e839';
@@ -202,4 +205,47 @@ test('prewrite packed hourly: exact normal whole-document boundary preserves met
   corrupt.privateZoneHourly.zones['zone-209'].score.gzipSha256 = 'f'.repeat(64);
   await assert.rejects(check(originalPacked, corrupt), /PRIVATE_CONDITIONS_HOURLY_GZIP_HASH_MISMATCH/);
   assert.equal(JSON.stringify(originalPacked), originalBytes, 'Original packed source is never modified');
+});
+
+test('account assistant prewrite: genuine current source matches only its exact installed200000 successor', async () => {
+  const { assertAccountAssistantPrewriteBindings } = await import('./migrate-post-cutover-private-runtime.mjs');
+  const { ravScoreModelBinding } = await import('../js/core/ravscore-model-contract.js');
+  const { ravScoreModelBinding: candidateBinding } = await import('./rollback-assets/ravscore-model-contract.js');
+  const { privateRuntimeContractHashes } = await import('./private-production-runtime-workflow.mjs');
+  const identity = { modelBinding: { modelBundleSha256: '249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932' },
+    contractHashes: { continuationStateContractSha256: 'a5430dd21e3135d6efc09e22df3dd0cdcafee723f962ff1d3cb52e7765b2aaa0' } };
+  const previousCandidate = { modelBundleSha256: '55fd7dfa5ee36596c729d93225a448ea5b8f1e7142c44b8b1bda5c3d4d84c957' };
+  const actual = [identity, previousCandidate, ravScoreModelBinding(), candidateBinding(),
+    await privateRuntimeContractHashes({ repositoryRoot: path.resolve('.') })];
+  assert.doesNotThrow(() => assertAccountAssistantPrewriteBindings(...actual));
+  for (const [index, nested, key] of [[0,'modelBinding','modelBundleSha256'],[0,'contractHashes','continuationStateContractSha256'],
+    [1,null,'modelBundleSha256'],[2,null,'modelBundleSha256'],[3,null,'modelBundleSha256'],[4,null,'continuationStateContractSha256']]) {
+    const changed = structuredClone(actual);
+    (nested ? changed[index][nested] : changed[index])[key] = 'f'.repeat(64);
+    assert.throws(() => assertAccountAssistantPrewriteBindings(...changed), /outside its exact successor/);
+  }
+  const older = structuredClone(actual);
+  older[0].modelBinding.modelBundleSha256 = 'ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb';
+  assert.throws(() => assertAccountAssistantPrewriteBindings(...older), /outside its exact successor/);
+});
+
+test('account assistant prewrite: wrapper cannot replace authenticated originals with matching hashes', async t => {
+  const { verifyAccountAssistantPrewritePreservation } = await import('./migrate-post-cutover-private-runtime.mjs');
+  const { source, output } = await fixture(t);
+  let pointerReads = 0;
+  await assert.rejects(verifyAccountAssistantPrewritePreservation({ sourceRoot: source, outputRoot: output,
+    repositoryRoot: path.resolve('.'), predecessorDescriptorPath: path.join(source,'missing-authenticated-descriptor.json'),
+    request: async () => { pointerReads++; throw new Error('unexpected pointer request'); } }));
+  assert.equal(pointerReads, 0);
+});
+
+test('prewrite CLI: all fixed intents are mutually exclusive before client construction', async () => {
+  const { assertExclusivePrewriteIntent } = await import('./migrate-post-cutover-private-runtime.mjs');
+  const flags = ['--verify-assistant-prewrite', '--verify-userdata-prewrite', '--verify-account-assistant-prewrite'];
+  assert.doesNotThrow(() => assertExclusivePrewriteIntent([]));
+  for (const first of flags) {
+    assert.doesNotThrow(() => assertExclusivePrewriteIntent([first]));
+    for (const second of flags) assert.throws(() => assertExclusivePrewriteIntent([first,second]), /ambiguous/);
+    assert.throws(() => assertExclusivePrewriteIntent([first,'--owner-current-original']), /owner-current-original/);
+  }
 });

@@ -36,6 +36,9 @@ import {
 } from './lib/ravscore-continuation-implementation-contract.mjs';
 import { buildBoundedCurrentTransportMemory } from '../js/core/ravscore-regime-memory.js';
 import { buildCurrentSupplyMemory } from '../js/core/ravscore-current-supply-memory.js';
+import { readAccountAssistantCanonicalSource } from './lib/account-assistant-successor-source.mjs';
+import { accountAssistantCatalogQuery, verifyAccountAssistantCatalogMetadata,
+  verifyInstalledAccountAssistantSchema } from './verify-account-assistant-schema.mjs';
 
 const SOURCE_HEAD = 'a'.repeat(40);
 const PUBLIC_IMPLEMENTATION_CLOSURE_SHA256 = 'c'.repeat(64);
@@ -50,12 +53,13 @@ const EXACT_PREDECESSOR_CONTINUATION_HASH =
   '46683362ec6b69835695db375f7de976a8dd0a75b7367a27e2854b653d73e0ab';
 
 await inspectMigrationSources();
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 46,
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 47,
   'The active backend must preserve every predecessor, storage security and the exact checkpoint bridge');
 assert.equal(LATEST_RAVSCORE_BINDING_MIGRATION.version, '20260920220000');
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-3).version, '20261005000000');
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-2).version, '20261010130000');
-assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261012200000');
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-4).version, '20261005000000');
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-3).version, '20261010130000');
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-2).version, '20261012200000');
+assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261013210000');
 
 const integratedMigration = await fs.readFile(
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
@@ -143,7 +147,7 @@ for (const marker of [
   "p_state ->> 'transportMemoryStatus' is distinct from 'READY'",
   "p_state -> 'transportMemoryCoverageHours' is distinct from '48'::jsonb",
   "p_payload ->> 'continuationStateContractSha256' is distinct from",
-  CHECKPOINT_CONTINUATION_HASH,
+  'a5430dd21e3135d6efc09e22df3dd0cdcafee723f962ff1d3cb52e7765b2aaa0', // immutable575
   '082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91',
   'v_exact_predecessor_same_target_transition',
   "#- '{continuationStateContractSha256}'",
@@ -377,6 +381,7 @@ const unicodeList = `
  20261005000000    │                  │ 2026-10-05 00:00:00
  20261010130000    │                  │ 2026-10-10 13:00:00
  20261012200000    │                  │ 2026-10-12 20:00:00
+ 20261013210000    │                  │ 2026-10-13 21:00:00
 `;
 assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260826', remote: '20260826' },
@@ -426,6 +431,7 @@ assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20261005000000', remote: null },
   { local: '20261010130000', remote: null },
   { local: '20261012200000', remote: null },
+  { local: '20261013210000', remote: null },
 ]);
 
 // Captured verbatim from backend readiness run 34333553305 with Supabase CLI 2.117.0.
@@ -484,6 +490,7 @@ const currentFirstInstallList = `${capturedFirstEightInstallList}
    \`20261005000000\` | \` \`    | \`2026-10-05 00:00:00\`
    \`20261010130000\` | \` \`    | \`2026-10-10 13:00:00\`
    \`20261012200000\` | \` \`    | \`2026-10-12 20:00:00\`
+   \`20261013210000\` | \` \`    | \`2026-10-13 21:00:00\`
 `;
 assert.deepEqual(parseSupabaseMigrationList(currentFirstInstallList),
   REQUIRED_CUTOVER_MIGRATIONS.map(item => ({ local: item.version, remote: null })));
@@ -527,7 +534,17 @@ for (const malformed of [
 ]) assert.throws(() => parseSupabaseDryRunMigrationFilenames(malformed),
   /Supabase db push --dry-run/);
 
+// The explicit technical plan flag below is not installation authority.
+// A generic caller must refuse the new pending account/assistant successor.
+await assert.rejects(assertSupabaseMigrationPlan({
+  migrationListText:currentFirstInstallList,dryRunText:currentFirstInstallDryRun,
+}),/exact prewrite route/);
+await assert.rejects(assertSupabaseMigrationPlan({
+  migrationListText:currentFirstInstallList,dryRunText:currentFirstInstallDryRun,
+  allowAccountAssistantPrewritePlan:'true',
+}),/exact prewrite route/);
 const firstInstallPlan = await assertSupabaseMigrationPlan({
+    allowAccountAssistantPrewritePlan: true,
   migrationListText: currentFirstInstallList,
   dryRunText: currentFirstInstallDryRun,
 });
@@ -536,6 +553,7 @@ assert.deepEqual(firstInstallPlan.pendingVersions,
 assert.deepEqual(firstInstallPlan.alreadyAppliedVersions, []);
 
 const plan = await assertSupabaseMigrationPlan({
+    allowAccountAssistantPrewritePlan: true,
   migrationListText: unicodeList,
   dryRunText: `
 DRY RUN: migrations will *not* be pushed to the database.
@@ -552,6 +570,7 @@ assert.deepEqual(plan.alreadyAppliedVersions,
 
 await assert.rejects(
   assertSupabaseMigrationPlan({
+    allowAccountAssistantPrewritePlan: true,
     migrationListText: `${unicodeList}\n 20260823 │ │ 2026-08-23 00:00:00`,
     dryRunText: currentFirstInstallDryRun,
   }),
@@ -559,6 +578,7 @@ await assert.rejects(
 );
 await assert.rejects(
   assertSupabaseMigrationPlan({
+    allowAccountAssistantPrewritePlan: true,
     migrationListText: unicodeList,
     dryRunText: `
 DRY RUN: migrations will *not* be pushed to the database.
@@ -570,6 +590,7 @@ Remote database is up to date.
 );
 await assert.rejects(
   assertSupabaseMigrationPlan({
+    allowAccountAssistantPrewritePlan: true,
     migrationListText: `
       LOCAL | REMOTE | TIME
       20260829010000 | | pending
@@ -618,6 +639,7 @@ await assert.rejects(
        20261005000000 | | pending
        20261010130000 | | pending
        20261012200000 | | pending
+       20261013210000 | | pending
     `,
     dryRunText: currentFirstInstallDryRun,
   }),
@@ -673,6 +695,7 @@ const appliedList = `
  20261005000000 | 20261005000000 | now
  20261010130000 | 20261010130000 | now
  20261012200000 | 20261012200000 | now
+ 20261013210000 | 20261013210000 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
@@ -697,6 +720,7 @@ for (let appliedCount = 0; appliedCount <= REQUIRED_CUTOVER_MIGRATIONS.length; a
     ? `Would push these migrations:\n${pendingSuffix.map(item => ` • ${item.filename}`).join('\n')}\nFinished supabase db push.`
     : 'Remote database is up to date.'}`;
   const prefixPlan = await assertSupabaseMigrationPlan({
+    allowAccountAssistantPrewritePlan: true,
     migrationListText: prefixList,
     dryRunText: suffixDryRun,
   });
@@ -706,6 +730,7 @@ for (let appliedCount = 0; appliedCount <= REQUIRED_CUTOVER_MIGRATIONS.length; a
     `prefix ${appliedCount}: only the exact remaining suffix may be applied`);
   if (appliedCount === 14) {
     await assert.rejects(assertSupabaseMigrationPlan({
+    allowAccountAssistantPrewritePlan: true,
       migrationListText: prefixList,
       dryRunText: currentFirstInstallDryRun,
     }), /did not propose exactly the pending required migrations/,
@@ -733,6 +758,9 @@ try {
     RAVRADAR_USERDATA_UPGRADE_OPT_IN: 'true',
     RAVRADAR_USERDATA_PREWRITE_REQUIRED: 'true',
     RAVRADAR_USERDATA_PREWRITE_VERIFIED: 'true',
+    RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN: 'true',
+    RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED: 'true',
+    RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_VERIFIED: 'true',
   };
   const helperRun = spawnSync(process.execPath, [
     path.resolve('scripts/verify-code-only-migration-plan.mjs'),
@@ -740,27 +768,52 @@ try {
     '--dry-run', dryRunPath,
     '--migrations-directory', path.resolve('supabase/migrations'),
     '--require-prewrite-gate',
+    '--account-assistant-prewrite-plan',
   ], { encoding: 'utf8', env: helperEnvironment });
   assert.equal(helperRun.status, 0,
     helperRun.stderr || helperRun.stdout || helperRun.error?.message);
   assert.match(
     helperRun.stdout,
-    /exactly 20261012200000_checkpoint_cas_single_projection_successor.sql/,
+    /exactly 20261013210000_account_assistant_original_bound_successor.sql/,
     'the live code-only helper must admit exactly the current checkpoint bridge',
   );
+  const accountArgs=[
+    path.resolve('scripts/verify-code-only-migration-plan.mjs'),
+    '--migration-list',migrationListPath,'--dry-run',dryRunPath,
+    '--migrations-directory',path.resolve('supabase/migrations'),
+    '--require-prewrite-gate','--account-assistant-prewrite-plan',
+    '--expected-pending-version','20261013210000',
+  ];
+  const accountPlanRun=(args=accountArgs,env=helperEnvironment)=>
+    spawnSync(process.execPath,args,{encoding:'utf8',env});
+  for(const [args,env,reason] of [
+    [accountArgs.filter(x=>x!=='--account-assistant-prewrite-plan'),helperEnvironment,/exact prewrite route/],
+    [accountArgs,{...helperEnvironment,RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN:'false'},/named opt-in/],
+    [accountArgs,{...helperEnvironment,RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_VERIFIED:'false'},/actual same-original prewrite proof/],
+    [accountArgs.map(x=>x==='20261013210000'?'20261012200000':x),helperEnvironment,/Only the fixed account/],
+  ]) {
+    const refused=accountPlanRun(args,env);
+    assert.equal(refused.status,1);assert.equal(refused.stdout,'');assert.match(refused.stderr,reason);
+  }
+  await fs.writeFile(migrationListPath,currentAppliedList);
+  await fs.writeFile(dryRunPath,'DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.');
+  const refusedNoop=accountPlanRun();
+  assert.equal(refusedNoop.status,1);assert.equal(refusedNoop.stdout,'');
+  assert.match(refusedNoop.stderr,/Pending plan changed or is already applied/);
   // Keep exercising the previous userdata opt-in refusal through the real
   // helper. The implementation successor must not permit replaying that
   // binding migration, even when its existing opt-in is supplied.
   await fs.writeFile(migrationListPath,
     `Local | Remote | Time (UTC)\n${REQUIRED_CUTOVER_MIGRATIONS.map((item, index) =>
-      `${item.version} | ${index < REQUIRED_CUTOVER_MIGRATIONS.length - 2 ? item.version : ''} | state`).join('\n')}`);
+      `${item.version} | ${index < REQUIRED_CUTOVER_MIGRATIONS.length - 3 ? item.version : ''} | state`).join('\n')}`);
   await fs.writeFile(dryRunPath,
-    `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n${REQUIRED_CUTOVER_MIGRATIONS.slice(-2).map(item => ` • ${item.filename}`).join('\n')}\nFinished supabase db push.`);
+    `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n${REQUIRED_CUTOVER_MIGRATIONS.slice(-3).map(item => ` • ${item.filename}`).join('\n')}\nFinished supabase db push.`);
   const refusedReplay = spawnSync(process.execPath, [
     path.resolve('scripts/verify-code-only-migration-plan.mjs'),
     '--migration-list', migrationListPath, '--dry-run', dryRunPath,
     '--migrations-directory', path.resolve('supabase/migrations'),
     '--require-prewrite-gate',
+    '--account-assistant-prewrite-plan',
   ], { encoding: 'utf8', env: helperEnvironment });
   assert.equal(refusedReplay.status, 1);
   assert.match(refusedReplay.stderr, /only the exact latest required integrated migration/);
@@ -775,6 +828,7 @@ try {
       '--dry-run', dryRunPath,
       '--migrations-directory', path.resolve('supabase/migrations'),
       '--require-prewrite-gate',
+    '--account-assistant-prewrite-plan',
     ], { encoding: 'utf8', env: rejectedEnvironment });
     assert.equal(rejectedRun.status, 1,
       `pending userdata migration must reject ${optIn === undefined ? 'missing' : 'false'} opt-in`);
@@ -870,6 +924,7 @@ try {
  20261005000000 │ │ pending
  20261010130000 │ │ pending
  20261012200000 │ │ pending
+ 20261013210000 │ │ pending
  `;
   const hydrated = await hydrateTemporaryRemoteMigrationHistory({
     workdir: isolatedWorkdir,
@@ -929,6 +984,7 @@ try {
  20261005000000 │ │ pending
  20261010130000 │ │ pending
  20261012200000 │ │ pending
+ 20261013210000 │ │ pending
     `,
   }), /unknown post-cutover migration 20260830/);
 } finally {
@@ -990,6 +1046,9 @@ await assert.rejects(buildIntegratedCutoverReadiness('short', {
 const expectedPolicy = await expectedTripBindingPolicy();
 const expectedActiveAdmissionPolicy = await expectedTripActiveAdmissionPolicy();
 const expectedCheckpointContract = await expectedCheckpointCasContract();
+const {canonicalSource:accountCanonicalSource,accountSource:accountSchemaSource}=
+  await readAccountAssistantCanonicalSource();
+assert.ok(accountCanonicalSource.includes(CHECKPOINT_CONTINUATION_HASH));
 
 // The normal hashed readback takes exactly the new CAS body, never an expected
 // hash override; the other twelve immutable function bodies stay unchanged.
@@ -1004,7 +1063,10 @@ function checkpointSqlBody(source, name) {
 const oldCasBody = checkpointSqlBody(checkpointMigration, 'ravradar_ravscore_checkpoint_cas');
 const newCasBody = checkpointSqlBody(singleProjectionMigration, 'ravradar_ravscore_checkpoint_cas');
 assert.notEqual(newCasBody, oldCasBody);
-assert.ok(expectedCheckpointContract.definition.includes(`-- cas-function --\n${newCasBody}\n-- checkpoint-history-exclusion --`));
+const accountCasBody=checkpointSqlBody(accountCanonicalSource,'ravradar_ravscore_checkpoint_cas');
+assert.notEqual(accountCasBody,newCasBody);
+assert.ok(expectedCheckpointContract.definition.includes(`-- cas-function --\n${accountCasBody}\n-- checkpoint-history-exclusion --`));
+assert.ok(!expectedCheckpointContract.definition.includes(newCasBody));
 assert.ok(!expectedCheckpointContract.definition.includes(oldCasBody));
 assert.equal(expectedCheckpointContract.sha256,
   createHash('sha256').update(expectedCheckpointContract.definition).digest('hex'));
@@ -1026,7 +1088,20 @@ for (const unchangedName of [
   'version_admin_document',
   ...['userdata', 'water_level', 'owner_current', 'cp_close', 'top20']
     .map(name => `ravradar_ravscore_checkpoint_${name}_predecessor_projection`),
-]) assert.ok(expectedCheckpointContract.definition.includes(checkpointSqlBody(checkpointMigration, unchangedName)));
+]) {
+  assert.ok(!singleProjectionMigration.includes('create or replace function public.'+unchangedName+'('),
+    'historical200000 still replaces only CAS, not '+unchangedName);
+  assert.ok(expectedCheckpointContract.definition.includes(checkpointSqlBody(accountCanonicalSource,unchangedName)));
+  if(!['ravradar_ravscore_checkpoint_integrated_state_valid','ravradar_ravscore_checkpoint_payload_valid',
+    'ravradar_ravscore_checkpoint_predecessor_payload_valid','ravradar_ravscore_checkpoint_userdata_predecessor_projection'].includes(unchangedName)) {
+    assert.equal(checkpointSqlBody(accountCanonicalSource,unchangedName),checkpointSqlBody(checkpointMigration,unchangedName),
+      'current successor preserves every truly unchanged old body: '+unchangedName);
+  }
+}
+assert.equal((accountCasBody.match(/public\.ravradar_ravscore_checkpoint_account_assistant_predecessor_projection\(/g)||[]).length,1);
+for(const projection of ['userdata','water_level','owner_current','cp_close','top20']) {
+  assert.equal((accountCasBody.match(new RegExp(`public\\.ravradar_ravscore_checkpoint_${projection}_predecessor_projection\\(`,'g'))||[]).length,1);
+}
 // Source/readback routing only: these assertions are NOT native PostgreSQL,
 // equality/race/timeout or hosted publish evidence.
 assert.equal(expectedPolicy.definition, expectedPolicy.definition.trim());
@@ -1845,3 +1920,99 @@ for(const [id,at,sha] of [
   assert.ok(fixedIdleSource.includes(value)&&cadenceSource.includes(value),'same precise existing history, not a blanket queue rule');
 }
 console.log('Fixed account-reader idle guard: exact historical queues plus fresh empty attempt-1 jobs, complete bounded inventories and real five-second body deadline; controlled input only.');
+
+// New fixed account metadata reader: controlled transport, not native/hosted
+// evidence. Native branch executes this SAME query against actual catalog.
+const accountNames=['record_account_activity','get_own_statistics_preference',
+  'enable_own_statistics_preference','disable_own_statistics_preference'];
+const accountTable=(activity)=>({
+  present:true,regular:true,rls:true,forceRls:false,inheritance:false,
+  columns:(activity?[['user_id','uuid'],['first_observed_at','timestamptz'],['last_activity_at','timestamptz']]
+    :[['user_id','uuid'],['enabled','bool']]).map(([name,type],index)=>({
+      name,position:index+1,type,builtin:true,notNull:true,default:false,identity:'',generated:'',dimensions:0,
+    })),
+  droppedColumns:0,constraintCount:activity?3:2,primaryKey:1,profilesCascade:1,
+  activityOrder:activity?1:0,policyCount:0,userTriggerCount:0,unexpectedAcl:false,
+  anonAccess:false,authenticatedAccess:false,
+});
+const accountMetadata={schemaVersion:1,tables:{
+  account_activity_journal:accountTable(true),account_statistics_preferences:accountTable(false),
+},functions:Object.fromEntries(accountNames.map(name=>{
+  const head=accountSchemaSource.indexOf('create function public.'+name+'()');
+  const start=accountSchemaSource.indexOf('as $$',head)+5,end=accountSchemaSource.indexOf('\n$$;',start);
+  assert.ok(head>=0 && end>start);
+  return[name,{present:true,sameNameCount:1,kind:'f',language:'plpgsql',result:'jsonb',arguments:'',
+    variadic:false,strict:false,returnsSet:false,definer:true,volatility:'v',configuration:['search_path=""'],
+    bodySha256:createHash('sha256').update(accountSchemaSource.slice(start,end).trim()).digest('hex'),
+    publicExecute:false,unexpectedAcl:false,anonExecute:false,authenticatedExecute:true,serviceExecute:false}];
+}))};
+const accountExpected={schemaVersion:1,status:'ACCOUNT_ASSISTANT_SCHEMA_MATCH',scope:'FIXED_METADATA_ONLY',
+  tables:2,rpcs:4,rls:true,directClientTableAccess:false,serviceRpcExecuteCount:0,
+  accountRowsRead:false,statisticalProcessingProved:false,hostedOwnerFlowProved:false};
+assert.deepEqual(await verifyAccountAssistantCatalogMetadata(accountMetadata),accountExpected);
+const accountDefaultService=structuredClone(accountMetadata);
+for(const name of accountNames)accountDefaultService.functions[name].serviceExecute=true;
+assert.deepEqual(await verifyAccountAssistantCatalogMetadata(accountDefaultService),
+  {...accountExpected,serviceRpcExecuteCount:4},
+  'existing service default execute is observed, not silently represented as a client grant');
+for(const mutate of [
+  m=>{delete m.tables.account_activity_journal;},
+  m=>{m.tables.account_statistics_preferences.columns[1].type='text';},
+  m=>{m.tables.account_activity_journal.profilesCascade=0;},
+  m=>{m.tables.account_activity_journal.rls=false;},
+  m=>{m.tables.account_statistics_preferences.policyCount=1;},
+  m=>{m.tables.account_activity_journal.unexpectedAcl=true;},
+  m=>{m.tables.account_statistics_preferences.authenticatedAccess=true;},
+  m=>{m.functions.record_account_activity.bodySha256='0'.repeat(64);},
+  m=>{m.functions.record_account_activity.configuration=['search_path=public'];},
+  m=>{m.functions.get_own_statistics_preference.definer=false;},
+  m=>{m.functions.enable_own_statistics_preference.publicExecute=true;},
+  m=>{m.functions.disable_own_statistics_preference.anonExecute=true;},
+  m=>{m.functions.get_own_statistics_preference.unexpectedAcl=true;},
+  m=>{m.functions.record_account_activity.sameNameCount=2;},
+]) {
+  const copy=structuredClone(accountMetadata);mutate(copy);
+  await assert.rejects(verifyAccountAssistantCatalogMetadata(copy),/ACCOUNT_ASSISTANT_CATALOG_/);
+}
+const accountRequests=[];
+const accountReport=await verifyInstalledAccountAssistantSchema({accessToken:'synthetic-account-token',
+  fetchImpl:async(url,init)=>{
+    accountRequests.push({url,init});
+    return new Response(JSON.stringify([{metadata:accountMetadata}]),{status:201});
+  }});
+assert.deepEqual(accountReport,accountExpected);assert.equal(accountRequests.length,1);
+assert.equal(accountRequests[0].url,'https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query');
+assert.equal(accountRequests[0].init.method,'POST');assert.equal(accountRequests[0].init.redirect,'error');
+assert.equal(accountRequests[0].init.cache,'no-store');assert.equal(accountRequests[0].init.credentials,'omit');
+assert.deepEqual(JSON.parse(accountRequests[0].init.body),{query:accountAssistantCatalogQuery,read_only:true});
+assert.doesNotMatch(accountAssistantCatalogQuery,/\b(?:from|join)\s+public\.account_/i);
+assert.doesNotMatch(JSON.stringify(accountReport),/synthetic-account-token|Bearer|first_observed_at|user_id/);
+for(const response of [
+  new Response('PRIVATE-BODY-NOT-LOGGED',{status:403}),
+  new Response(new Uint8Array(32769),{status:201}),
+  new Response(JSON.stringify([{metadata:accountMetadata},{metadata:accountMetadata}]),{status:201}),
+]) {
+  let calls=0;
+  await assert.rejects(verifyInstalledAccountAssistantSchema({accessToken:'synthetic-account-token',
+    fetchImpl:async()=>{calls++;return response;}}),/ACCOUNT_ASSISTANT_CATALOG_/);
+  assert.equal(calls,1,'fixed account readback never retries');
+}
+let arbitraryAccountCalls=0;
+await assert.rejects(verifyInstalledAccountAssistantSchema({accessToken:'synthetic',
+  query:'select anything',fetchImpl:async()=>{arbitraryAccountCalls++;}}),/ACCOUNT_ASSISTANT_CATALOG_/);
+assert.equal(arbitraryAccountCalls,0);
+
+const accountCodeOnly=await fs.readFile('.github/workflows/deploy-code-only-repair.yml','utf8');
+const accountReadback=accountCodeOnly.indexOf('node scripts/verify-account-assistant-schema.mjs');
+const accountDbApply=accountCodeOnly.indexOf('          supabase db push --linked --skip-vault');
+const accountTripDeploy=accountCodeOnly.indexOf('      - name: Deploy exact rebound trip Edges without Worker or D1 replay');
+const accountAssistantDeploy=accountCodeOnly.indexOf('            if supabase functions deploy ravradar-assistant');
+assert.ok(accountDbApply>=0 && accountReadback>accountDbApply
+  && accountTripDeploy>accountReadback && accountAssistantDeploy>accountTripDeploy,
+  'fixed account catalog readback must precede all three rebound Edge deployments');
+const accountAttemptPolicy=accountCodeOnly.slice(accountCodeOnly.indexOf('          assistant_deploy_attempts=3'),
+  accountCodeOnly.indexOf('          for ((attempt = 1; attempt <= assistant_deploy_attempts; attempt++)); do'));
+assert.match(accountAttemptPolicy,/RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN/);
+assert.doesNotMatch(accountAttemptPolicy,/RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED/);
+assert.match(accountAttemptPolicy,/assistant_deploy_attempts=1/);
+console.log('Account/assistant successor: strict named prewrite plan, sparse current readback and fixed metadata caller; controlled fixtures only.');
