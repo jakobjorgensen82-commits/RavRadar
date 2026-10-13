@@ -1,3 +1,10 @@
+## Leveret læserkilde bevaret; engangslæsning forbrugt — 13. oktober 2026
+
+Den forberedte strømbranch er forenet med den faktisk leverede main-læserkilde, så den normale kilde-PR kan køre uden dokumentationskonflikter. Begge hele kildehistorier og kontroller bevares. Den naturlige vejrhentning afsluttede faktisk gemning, upload, deploy og offentlig 210/673-kontrol kl. 17.24 dansk tid; det er ikke fuldt DMI- eller numerisk strømovergangsbevis.
+
+Den ene godkendte 13. oktober-logforespørgsel og den særskilte ene joblog er nu forbrugt. Supabase svarede HTTP 200, men læseren afviste envelope-formatet. Faktiske rate-limit-fejlkoder og 503-årsagen er stadig ukendte; ingen automatisk ny forespørgsel eller logdownload udføres. Ældre afsnits afventende læserlevering og ubrugt tilladelse er historik på disse præcise punkter. Strømbranchens main-merge, SQL-installation og numeriske aktivering er fortsat ikke godkendt.
+
+
 ## Faktisk PostgreSQL-fejl og afgrænset fejlaflæsning — 13. oktober 2026
 
 Den præcise kildekontrol af strømbranchens seneste head bestod de normale routingprøver og nåede rigtig PostgreSQL, men et normalt `psql`-kald fejlede. Den tidligere routingfejl er altså ikke denne fejl. Den oprindelige rapport oplyste ingen SQLSTATE eller kalderfase; rodårsagen er fortsat uafklaret.
