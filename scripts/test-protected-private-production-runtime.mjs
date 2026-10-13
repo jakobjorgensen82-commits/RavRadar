@@ -2176,6 +2176,93 @@ try {
   assert.equal(implementation.includes('Readable.from(decodeBase64Chunks'), true,
     'restore must decode large cache files as bounded chunks');
 
+  // Controlled normal fetch: no provider, bucket mutation or private payload.
+  await test('immutable upload rejection exposes only fixed safe response fields', async () => {
+    const bytes = Buffer.from('synthetic-upload-body');
+    const objectPath = 'bundles/sha256/SYNTHETIC_PRIVATE_OBJECT';
+    const secret = 'SYNTHETIC_PRIVATE_RESPONSE_DO_NOT_LOG';
+    const execute = async responses => {
+      let calls = 0;
+      let delays = 0;
+      const client = createProtectedPrivateRuntimeClients({
+        supabaseUrl: 'https://synthetic-project.supabase.co',
+        serviceRoleKey: secret,
+        storageBackend: 'supabase',
+        delayImpl: async () => { delays += 1; },
+        fetchImpl: async (url, options) => {
+          assert.equal(url, 'https://synthetic-project.supabase.co/storage/v1/object/'
+            + PROTECTED_PRIVATE_RUNTIME_POLICY.bucketId + '/' + objectPath);
+          assert.equal(options.method, 'POST');
+          assert.equal(options.headers['x-upsert'], 'false');
+          assert.equal(options.headers['Content-Type'], PROTECTED_PRIVATE_RUNTIME_POLICY.mimeType);
+          assert.equal(options.body, bytes, 'the same immutable upload bytes must be used');
+          const value = responses[calls++];
+          assert.ok(value, 'no extra upload, readback, pointer write or cleanup request');
+          if (value instanceof Error) throw value;
+          return value;
+        },
+      });
+      let result, error;
+      try { result = await client.storage.uploadImmutable(objectPath, bytes); }
+      catch (caught) { error = caught; }
+      assert.equal(calls, responses.length);
+      return { result, error, calls, delays };
+    };
+    const check = (error, status, providerCode) => {
+      assert.equal(error?.code, 'PROTECTED_PRIVATE_RUNTIME_UPLOAD_RESPONSE');
+      assert.deepEqual(error.diagnostic, {
+        stage: 'immutable-upload-response', httpStatus: status,
+        providerCode, requestBytes: bytes.byteLength,
+      });
+      assert.equal(Object.isFrozen(error.diagnostic), true);
+      assert.equal(error.message, 'Protected private runtime immutable upload failed closed '
+        + JSON.stringify(error.diagnostic));
+      assert.doesNotMatch(error.message + JSON.stringify(error),
+        /SYNTHETIC_PRIVATE|apikey|Authorization|objectPath|responseBody|statusCode/);
+      assert.equal(Object.hasOwn(error, 'cause'), false);
+    };
+    for (const [status, body, code] of [
+      [403, { code: 'AccessDenied', message: secret, details: { path: objectPath } }, 'AccessDenied'],
+      [413, { code: 'EntityTooLarge', message: secret, statusCode: '400' }, 'EntityTooLarge'],
+      [400, { error: 'InvalidMimeType', message: secret }, 'InvalidMimeType'],
+      [401, { code: secret, error: secret, message: secret }, 'UNKNOWN'],
+      [400, { code: { value: secret }, error: 401 }, 'UNKNOWN'],
+      [400, { message: secret }, 'MISSING'],
+      [403, {}, 'MISSING'],
+    ]) {
+      const value = await execute([Response.json(body, { status })]);
+      check(value.error, status, code);
+      assert.equal(value.result, undefined);
+      assert.equal(value.delays, 0);
+    }
+    const malformed = await execute([new Response(secret, { status: 413 })]);
+    check(malformed.error, 413, 'MISSING');
+    // Existing retry count remains two; report only the response that refused
+    // this final attempt, never infer a successful or durable earlier upload.
+    const retried = await execute([
+      Response.json({ code: 'InternalError', message: secret }, { status: 503 }),
+      Response.json({ code: 'AccessDenied', message: secret }, { status: 403 }),
+    ]);
+    check(retried.error, 403, 'AccessDenied');
+    assert.equal(retried.delays, 1);
+    const transportCause = new Error(secret);
+    const transport = await execute([transportCause, transportCause]);
+    assert.equal(transport.error.message, 'Protected private runtime immutable upload could not be reached');
+    assert.equal(transport.error.cause, transportCause, 'old first-cause identity remains intact');
+    assert.equal(transport.error.diagnostic, undefined, 'no invented HTTP status without a response');
+    assert.equal(transport.delays, 1);
+    for (const status of [400, 409]) {
+      const duplicate = await execute([Response.json({ message: 'resource already exists' }, { status })]);
+      assert.equal(duplicate.error, undefined);
+      assert.deepEqual(duplicate.result, { created: false, alreadyExists: true });
+      assert.equal(duplicate.delays, 0);
+    }
+    const created = await execute([new Response('', { status: 200 })]);
+    assert.equal(created.error, undefined);
+    assert.deepEqual(created.result, { created: true });
+    assert.equal(created.delays, 0);
+  });
+
   console.log('Protected private runtime storage, retention, rollback and anonymous-denial contract passes.');
 } finally {
   await fs.rm(temp, { recursive: true, force: true });

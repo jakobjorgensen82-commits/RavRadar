@@ -90,7 +90,7 @@ jobs:
         run: python -B scripts/test-native-current-grid.py --native
 
       - name: Validate source contracts and release governance
-        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs
+        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs
 
       - name: Validate durable Copernicus current-reference baseline on artificial data only
         shell: bash

@@ -2311,7 +2311,31 @@ export function createProtectedPrivateRuntimeClients({
       )) {
       return { created: false, alreadyExists: true };
     }
-    throw new Error('Protected private runtime immutable upload failed closed');
+    // Only fixed diagnostic fields escape this boundary. In particular, never
+    // log a provider message, object path, response body, header or credential.
+    // requestBytes is the offered body size, NOT bytes sent or an upload ACK.
+    const allowedCodes = new Set([
+      'AccessDenied', 'InvalidJWT', 'ExpiredToken', 'InvalidSignature',
+      'SignatureDoesNotMatch', 'NoSuchBucket', 'NoSuchKey', 'EntityTooLarge',
+      'InvalidMimeType', 'InvalidKey', 'InvalidRequest', 'InvalidParameter',
+      'ResourceAlreadyExists', 'KeyAlreadyExists', 'ResourceLocked',
+      'DatabaseError', 'InternalError', 'S3Error', 'SlowDown',
+    ]);
+    const suppliedCodes = [parsed.json?.code, parsed.json?.error];
+    const providerCode = suppliedCodes.find(code => allowedCodes.has(code))
+      ?? (suppliedCodes.every(code => code === undefined || code === null) ? 'MISSING' : 'UNKNOWN');
+    const diagnostic = Object.freeze({
+      stage: 'immutable-upload-response',
+      httpStatus: Number.isInteger(response.status) && response.status >= 100
+        && response.status <= 599 ? response.status : null,
+      providerCode,
+      requestBytes: Buffer.isBuffer(bytes) ? bytes.byteLength : null,
+    });
+    const error = new Error('Protected private runtime immutable upload failed closed '
+      + JSON.stringify(diagnostic));
+    error.code = 'PROTECTED_PRIVATE_RUNTIME_UPLOAD_RESPONSE';
+    error.diagnostic = diagnostic;
+    throw error;
   }
   async function download(objectPath) {
     return retryableFetch(
