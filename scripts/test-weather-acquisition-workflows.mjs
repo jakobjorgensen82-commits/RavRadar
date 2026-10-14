@@ -43,8 +43,8 @@ assert.match(restore, /actions\/cache\/restore@v6/);
 assert.match(restore, /path: \.cache\/weather-private-progress\.encrypted/);
 assert.match(restore, /weather-private-progress-encrypted-v2-/);
 const shortRecoveryGate = step(normal, 'Require recovered progress before short confirmation');
-assert.match(shortRecoveryGate, /if: inputs\.quick_confirmation == true\n/,
-  'Every quick confirmation requires its requested progress, including after the one-time recovery');
+assert.ok(shortRecoveryGate.includes("        if: inputs.quick_confirmation == true || inputs.quick_progress_source != ''\n"),
+  'Every quick confirmation and explicit full-run source requires exact authenticated progress');
 assert.match(shortRecoveryGate, /\.status == "RESTORED" and \.restored == true and \.fileCount > 0/);
 assert.match(shortRecoveryGate, /test -s \.cache\/dmi-candidate-progress\.json/);
 assert.match(shortRecoveryGate, /test "\$PROGRESS_CACHE_MATCHED_KEY" = "\$expected"/);
@@ -119,6 +119,11 @@ assert.match(cp, /inputs\.quick_confirmation && '120'/);
 assert.match(om, /--runtime-seconds \$\{\{ inputs\.quick_confirmation && '120' \|\| '900' \}\}/);
 assert.match(manual, /quick_confirmation: \$\{\{ inputs\.quick_confirmation \}\}/);
 assert.match(manual, /quick_progress_source: \$\{\{ inputs\.quick_progress_source \}\}/);
+assert.match(manual, /Progress source: exact encrypted-progress run-attempt for a full or short run; protected-current is short-only/);
+const currentOriginalHour = step(normal, 'Require a strictly new normal hour for current-grid source succession');
+assert.match(currentOriginalHour, /test "\$QUICK_CONFIRMATION" != 'true'/);
+assert.match(currentOriginalHour, /target <= Date\.parse\(expected\.productionReferenceAt\)/);
+assert.match(manual, /force: true\n      extended_provider_bootstrap: false\n      quick_confirmation: \$\{\{ inputs\.quick_confirmation \}\}/);
 assert.ok(normal.indexOf(beforeDmi) < normal.indexOf(dmi));
 assert.ok(normal.indexOf(dmi) < normal.indexOf(beforeCp));
 assert.ok(normal.indexOf(beforeCp) < normal.indexOf(cp));

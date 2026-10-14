@@ -2,6 +2,10 @@
 
 Denne fil skal læses før analyse, programmering eller versionsbygning.
 
+## Aktuel kritisk afgrænsning — 14. oktober 2026
+
+PR #606 er kildeleveret, men den efterfølgende normale vejrhentning stoppede ved faktisk strømbrug før offentlig levering. Bevar den strenge strømguard. Den snævre PUBLIC-rettelse må kun prioritere en kvalificeret genfortolkning af de samme hele originalbytes for alle faktiske endepunkter; den normale zonemap er autoritet, ikke manglende zonefelter i en part-række. Historisk replay, gyldige originaler og almindelig kildeprioritet bevares. Præcist krypteret fremskridtsgenbrug i det fulde normalforløb kræver stadig faktisk GCM-restore, autentisk baseline/admission og uændrede budgetter/original-/ny-time-gates. Lokale mål er nu bestået efter faktisk afklaring af sandboxens filgrænse; Linux/Bash, præcis CI og produktion er særskilt åbne. Se håndbog 89.229 og privat checkpoint. Alle fem mål er åbne med frist 18. oktober; de eksisterende tilladelses- og writer-grænser består.
+
 ## Obligatorisk rækkefølge
 1. Læs `docs/ai/CODEX_START_HERE.md` og derefter `docs/rdks/00_READ_FIRST.md`, `01_AI_OPERATING_RULES.md`, `90_INDEX/CURRENT_TRUTH.md` og `90_INDEX/IMPLEMENTATION_STATUS.md`.
 2. Læs relevante aktive krav, beslutninger og kendte issues.

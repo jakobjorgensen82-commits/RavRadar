@@ -31,6 +31,7 @@ import {
   createDmiForecastRecord,
   dmiForecastCoverage,
   normalizeForecastHourly,
+  inspectDmiForecastGridSampling,
   interpolateWaterLevelStations,
   interpolateWaterLevelAlongCoast,
   selectDmiForecastAt
@@ -47,6 +48,7 @@ import { dmiWaveDirectionMatchesSource } from './lib/dmi-wave-tuple-proof.mjs';
 import { originalContextForProtectedDmiCurrent, verifiedProtectedDmiPartHourly } from './lib/protected-dmi-current-context.mjs';
 import { mergeProtectedLiveCurrentPilotIntoRecord,
   mergeActiveNativeLiveCurrentPilotIntoRecord } from './lib/protected-live-current-assembly.mjs';
+import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-native-current-proofs.mjs';
 import { packDmiPartContinuity, unpackDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
 import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly, packWaterSourceForecastContinuity, unpackWaterSourceForecastContinuity } from './lib/water-source-forecast-routing.mjs';
@@ -1154,6 +1156,7 @@ function bulkZoneToForecastRecord(
     startAt = generatedAt,
     expectedIdentity = null,
     materializeMissingHorizon = false,
+    currentDecoderTransition = null,
   } = {},
 ) {
   const zoneId = feature.properties?.id;
@@ -1269,7 +1272,7 @@ function bulkZoneToForecastRecord(
   const mergedDmiHourly = mergeHourlyPreferDmi(
     marineContinuousHourly,
     compatiblePrevious?.hourly ?? [],
-    { generatedAt, startAt, expectedIdentity: dmiIdentity },
+    { generatedAt, startAt, expectedIdentity: dmiIdentity, currentDecoderTransition },
   );
   const mergedHourly = FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS.includes(zoneId)
     ? mergedDmiHourly.map(hour => {
@@ -1330,18 +1333,71 @@ function bulkZoneToForecastRecord(
 // exact PART/hour when a newer, incomplete acquisition cannot. Rebuild its
 // hourly rows from its native cache, then let the normal atomic selector
 // prefer a qualified newer DMI source. Never import its scheduler cursor.
+// PUBLIC-only same-original decoder preference. It changes no original and
+// obtains every endpoint from the caller's actual admitted native documents.
+function publicCurrentDecoderTransition(part, contexts) {
+  if (!part) return null;
+  const identity = dmiExpectedIdentityForPart(part);
+  if (!identity) return null;
+  const inspector = createProtectedDmiNativeCurrentInspector({ contexts: contexts.filter(Boolean) });
+  const instant = value => typeof value === 'string' && /(?:Z|[+-]\d{2}:\d{2})$/.test(value)
+    && Number.isFinite(Date.parse(value)) ? new Date(value).toISOString() : null;
+  const capture = source => {
+    if (!source || !['dkss_idw', 'dkss_nsbs', 'dkss_lf'].includes(source.collection)
+      || !instant(source.acquiredAt)
+      || !Number.isSafeInteger(source.contentLengthBytes) || source.contentLengthBytes <= 0
+      || !/^[a-f0-9]{64}$/.test(source.contentSha256 ?? '')
+      || !/^[a-f0-9]{64}$/.test(source.assetIdentitySha256 ?? '')
+      || typeof source.itemId !== 'string' || !source.itemId.trim()
+      || (source.assetSizeBytes != null && source.assetSizeBytes !== source.contentLengthBytes)) return null;
+    const value = { collection: source.collection, itemId: source.itemId,
+      assetIdentitySha256: source.assetIdentitySha256, assetSizeBytes: source.assetSizeBytes ?? null,
+      contentLengthBytes: source.contentLengthBytes, contentSha256: source.contentSha256 };
+    for (const key of ['modelRun', 'nativeValidTime', 'itemCreatedAt', 'itemUpdatedAt']) {
+      value[key] = instant(source[key]);
+      if (value[key] === null && (key === 'modelRun' || key === 'nativeValidTime' || source[key] != null)) return null;
+    }
+    return value;
+  };
+  return (oldRow, freshRow) => {
+    const oldSource = oldRow?.sources?.current, freshSource = freshRow?.sources?.current;
+    if (oldRow?.time !== freshRow?.time
+      || !verifiedDmiForecastComponentSource(oldSource, oldRow?.time, 'current', identity)
+      || !verifiedDmiForecastComponentSource(freshSource, freshRow?.time, 'current', identity)
+      || oldSource.nativeGridSampling != null
+      || oldSource.nativeSteps.some(step => step.nativeGridSampling != null)
+      || inspectDmiForecastGridSampling(oldSource, 'current', oldRow.time, identity).status !== 'unknown'
+      || inspectDmiForecastGridSampling(freshSource, 'current', freshRow.time, identity).status !== 'coherent') return false;
+    const oldProof = inspector.inspectOriginals({ part, row: oldRow });
+    const freshProof = inspector.inspectOriginals({ part, row: freshRow });
+    if (!oldProof.ok || !freshProof.ok || oldProof.nativeRows.length !== freshProof.nativeRows.length) return false;
+    for (let index = 0; index < oldProof.nativeRows.length; index += 1) {
+      const old = oldProof.nativeRows[index].source, fresh = freshProof.nativeRows[index].source;
+      const oldCapture = capture(old), freshCapture = capture(fresh);
+      if (!oldCapture || !freshCapture || JSON.stringify(oldCapture) !== JSON.stringify(freshCapture)
+        || old.nativeGridSampling != null
+        || old.gridDefinitionSha256 !== fresh.gridDefinitionSha256
+        || fresh.nativeGridSampling?.coordinateInterpretation !== 'dmi-dkss-grib1-header-endpoints-v1') return false;
+    }
+    return true;
+  };
+}
+
 function buildPartDmiForecastWithProtectedRetention(
   feature, activeBulkCache, protectedBulkCache, generatedAt,
   { startAt, expectedIdentity, persistedHourly = [], historicalBulkCache = null,
-    protectPreviousDmi = false },
+    protectPreviousDmi = false, currentDecoderTransitionPart = null },
 ) {
+  const currentDecoderTransition = !protectPreviousDmi && currentDecoderTransitionPart
+    ? publicCurrentDecoderTransition(currentDecoderTransitionPart,
+      [activeBulkCache, protectedBulkCache, historicalBulkCache]) : null;
   const retained = protectedBulkCache
     ? bulkZoneToForecastRecord(feature, protectedBulkCache, generatedAt, null, {
       startAt, expectedIdentity, materializeMissingHorizon: true,
     })
     : null;
   const current = bulkZoneToForecastRecord(feature, activeBulkCache, generatedAt, retained, {
-    startAt, expectedIdentity, materializeMissingHorizon: true,
+    startAt, expectedIdentity, materializeMissingHorizon: true, currentDecoderTransition,
   });
   const historical = historicalBulkCache
     ? bulkZoneToForecastRecord(feature, historicalBulkCache, generatedAt, null, {
@@ -1350,7 +1406,7 @@ function buildPartDmiForecastWithProtectedRetention(
     : null;
   let previousHourly = !protectPreviousDmi && historical
     ? mergeHourlyPreferDmi(persistedHourly, historical.hourly, {
-      generatedAt, startAt, expectedIdentity,
+      generatedAt, startAt, expectedIdentity, currentDecoderTransition,
     })
     : persistedHourly;
   if (protectPreviousDmi) {
@@ -1370,7 +1426,7 @@ function buildPartDmiForecastWithProtectedRetention(
   return createDmiForecastRecord({
     zoneId: current.zoneId, point: current.point, generatedAt,
     hourly: mergeHourlyPreferDmi(current.hourly, previousHourly, {
-      generatedAt, startAt, expectedIdentity, protectPreviousDmi,
+      generatedAt, startAt, expectedIdentity, protectPreviousDmi, currentDecoderTransition,
     }),
     waterLevelInterpolation: current.waterLevelInterpolation,
     model: current.model,
@@ -2410,6 +2466,7 @@ function scoreCoastalPartsRuntime(
         generatedAt, {
         startAt: partForecastStartAt,
         expectedIdentity: partDmiIdentity,
+        currentDecoderTransitionPart: { ...part, zoneId },
         persistedHourly: initialSelection.source === 'POINT_ACTIVATION'
           ? [] : persistedDmiPartRows.get(part.partId)?.hourly ?? [],
         historicalBulkCache: initialSelection.source === 'POINT_ACTIVATION'
@@ -3295,7 +3352,7 @@ function selectAtomicComponentTuple(
   primary,
   fallback,
   component,
-  { attest = () => true, protectPreviousDmi = false } = {},
+  { attest = () => true, protectPreviousDmi = false, currentDecoderTransition = null } = {},
 ) {
   let selected = null;
   const candidates = [
@@ -3313,6 +3370,10 @@ function selectAtomicComponentTuple(
     if (!attestation) continue;
     const admitted = { ...candidate, values, attestation };
     if (!selected) { selected = admitted; continue; }
+    if (component === 'current' && !protectPreviousDmi && currentDecoderTransition) {
+      if (currentDecoderTransition(selected.row, candidate.row)) { selected = admitted; continue; }
+      if (currentDecoderTransition(candidate.row, selected.row)) continue;
+    }
     const previousSource = selected.attestation;
     const oldRun = Date.parse(previousSource?.modelRun ?? '');
     const newRun = Date.parse(attestation?.modelRun ?? '');
@@ -3386,7 +3447,7 @@ function mergeHourlyPreferDmi(
   dmiHourly = [],
   fallbackHourly = [],
   { generatedAt = null, startAt = generatedAt, expectedIdentity = null,
-    protectPreviousDmi = false } = {},
+    protectPreviousDmi = false, currentDecoderTransition = null } = {},
 ) {
   // Public records keep the exact production +0..+117 axis. Private replay
   // callers deliberately supply an earlier startAt; using generatedAt here
@@ -3441,6 +3502,7 @@ function mergeHourlyPreferDmi(
         // Only the strictly admitted DMI-to-DMI PART path can protect an old
         // winner. Legacy parent display fallback keeps its DMI-first order.
         protectPreviousDmi: Boolean(expectedIdentity && protectPreviousDmi),
+        currentDecoderTransition,
         attest: (row, candidate) => tupleSource(
           row,
           component,

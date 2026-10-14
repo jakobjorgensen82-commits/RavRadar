@@ -5,6 +5,13 @@
   "updatedAt": "2026-10-14",
   "sections": [
     {
+      "id": "public-current-same-original-exact-progress-2026-10-14",
+      "chapter": "89.229",
+      "title": "Samme strømoriginal og præcis genoptagelse",
+      "summary": "Den korrekte fortolkning må ikke tabes til den gamle; gemt fremskridt kræver faktisk genlæsning og de samme sikkerhedskontroller.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Hvis den samme originale DMI-fil fortolkes korrekt på ny, må en gammel forkert placeret kolonne ikke bagefter vinde, blot fordi den ser tættere ud. Begge originale læsninger skal kunne dokumenteres, og ny strømbrug skal fortsat have sit eget gyldige gitterbevis.</div><p>Rettelsen gælder kun det nye offentlige strømvalg, når alle faktiske originale endepunkter viser de samme filbytes og den samme officielle kilde. Et filnavn, en kildebetegnelse eller et enkelt kvalifikationsflag er ikke nok. En gammel allerede kvalificeret vinder, en anden fil eller en nyere officiel model følger den hidtidige kildeprioritet. Gemte originaler og historisk genberegning ændres ikke. Zonens tilhørsforhold følger den normale centrale zonemap; administratorpunkter og geometri redigeres ikke.</p><p>Bølgeforvalgets tidligere rettelse er kildeleveret. Den næste normale vejrhentning stoppede imidlertid ved den faktiske strømbrug før ny offentlig levering. Det er ikke bevis for fejl i DMI-originalerne. Den præcist berørte del og time samt sammenhængen med hentningens resterende lokale overspring og budgetstop er fortsat uafklaret.</p><p>En særskilt kildekandidat kan udvælge præcis det gemte krypterede fremskridt i et almindeligt fuldt forløb. Den må ikke tage en anden cache ved et uklart eller manglende match. Faktisk dekryptering, autentisk baseline, kildekontroller og alle budgetter og original-/ny-time-krav består. Et grønt gemmetrin er ikke genbrugsbevis. Forløbet bliver ikke automatisk kortere eller uden nye leverandørkald.</p><p>Den lokale normale før/efterprøve dokumenterer selektionskanten, ikke en ny offentlig prognose. Lokale continuity- og acquisitionprøver består. De samme fysiske entrypoint-/inverse-/componentflowprøver består efter korrekt eskalering med 51 beståede prøver og én udtrykkelig Linux/Bash-skip; ingen produkt- eller testregel blev ændret for at gøre Windows grøn. Præcis Linux/Bash, kildekontrol, sikker levering og en faktisk ny generation skal stadig bestå. Scoreformel, modelbindinger, kilder, originaler og historik bevares. Cron er midlertidigt pauset med uændret plan; ingen af de fem hovedopgaver er færdige.</p>"
+    },
+    {
       "id": "wave-preflight-component-use-boundary-2026-10-14",
       "chapter": "89.228",
       "title": "Bølgeforvalg skal kun kontrollere bølger",

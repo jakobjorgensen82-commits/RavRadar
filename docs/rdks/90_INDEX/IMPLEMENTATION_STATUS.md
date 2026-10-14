@@ -1,3 +1,15 @@
+## 14. oktober 2026 — kildeleveret bølgefix, faktisk strømstop og snæver genoptagelseskandidat
+
+- [x] Bestå præcis kilde-/PostgreSQL-kontrol og kildelever PR #606 som main 584e0e19; det er ikke et bevis for ny offentlig vejrlevering.
+- [x] Find faktisk første stop i det efterfølgende normale forløb: ukendt gitterbevis ved scorevejens faktiske strømbrug. Ingen ny offentlig generation blev leveret.
+- [x] Reproducer lokalt gennem normale kaldere, at en gammel tættere kolonne kan slå den kvalificerede genfortolkning af samme original; gennemfør den afgrænsede normale før/efterprøve med bevarede tidligere assertions.
+- [x] Bestå lokale continuity- og acquisitionmål samt de samme fysiske entrypoint-/inverse-/componentflowmål efter korrekt eskalering: 51 PASS, ingen fejl og én Linux/Bash-skip, uændrede bytes og ingen waiver. Den første sandboxfejl bevares særskilt.
+- [ ] Bestå den aktuelle fulde Linux/Bash- og præcise kildekontrol. Ny brug kræver stadig fuldt original-/endepunktsbevis og coherent sampling; historisk replay og originaler bevares.
+- [ ] Bestå præcis ny kildekontrol, lever sikkert og bevis faktisk GCM-restore, gemning/upload, datakontroller, deploy og ny offentlig strøm-/score-/dækningseffekt. Præcist fuldt fremskridtsgenbrug ændrer ikke budgetter, baselinekrav eller current-original-/ny-time-krav.
+- [ ] Afklar den faktisk fejlede PART/time og DMI-rapportens resterende lokale overspring/budgetstop; lokal selektionsevidens er ikke fuld DMI-årsag eller national driftsevidens.
+
+Cron er pauset med uændret plan. Alle fem hovedopgaver er åbne med frist 18. oktober. Se CURRENT_TRUTH og håndbog 89.229; detaljeret kørsels- og cacheevidens forbliver privat.
+
 ## Akut status — Feggesunds bølgeforvalg, 14. oktober 2026
 
 Lokalt gennemført: trelinjers kalderdelta, normal regression med originale121timer/354bølgepositioner og fortsat streng afvisning af ukvalificeret strøm. Hele berørte normalmål består4/4 og21/21, Feggesund-proxy og tidlig sourcegate består. Model-/bindingsfiler er uændrede. Dette er ikke eksakt GitHub-/PostgreSQL eller offentlig levering.

@@ -45,12 +45,14 @@ for (const value of [restore, bind]) {
 }
 assert.match(restore, /path: \.cache\/weather-private-progress.encrypted\s+key: weather-private-progress-encrypted-v2-/);
 assert.doesNotMatch(restore, /path:.*(?:\*|bank|components\/)/);
-assert.match(restore, /key: .*inputs\.quick_confirmation && inputs\.quick_progress_source/,
-  'Short confirmation retrieves the requested run/attempt, not whichever prefix hit is newest');
-assert.match(restore, /restore-keys: \$\{\{ !inputs\.quick_confirmation && format\([\s\S]*?\|\| '' \}\}/,
-  'A short confirmation must not silently use another run');
+assert.ok(restore.includes("          key: weather-private-progress-encrypted-v2-${{ runner.os }}-main-${{ inputs.quick_progress_source || format('{0}-{1}', github.run_id, github.run_attempt) }}"),
+  'Full and short explicit continuation retrieve the requested exact run/attempt');
+assert.ok(restore.includes("          restore-keys: ${{ !inputs.quick_confirmation && inputs.quick_progress_source == '' && format('weather-private-progress-encrypted-v2-{0}-main-', runner.os) || '' }}"),
+  'Only a full ordinary run without an explicit source may use prefix recovery');
 const validateSource = step('Validate requested short-confirmation progress source');
 assert.match(validateSource, /QUICK_PROGRESS_SOURCE.*inputs\.quick_progress_source/);
+assert.match(validateSource, /QUICK_CONFIRMATION.*inputs\.quick_confirmation/);
+assert.ok(validateSource.includes("        if: inputs.quick_confirmation == true || inputs.quick_progress_source != ''\n"));
 assert.match(validateSource, /"\$QUICK_PROGRESS_SOURCE" = protected-current \|\|/);
 assert.match(restore, /!\(inputs\.quick_confirmation && inputs\.quick_progress_source == 'protected-current'\)/);
 assert.match(validateSource, /\^\[0-9\]\+-\[1-9\]\[0-9\]\*\$/);
@@ -75,6 +77,8 @@ assert.match(donor, /if \(store\.hasPartContinuity\)/);
 assert.doesNotMatch(donor, /readFile(?:Sync)?\('data\/live\/dmi-forecast-cache\.json'/,
   'The continuity donor classifier must validate the large forecast incrementally');
 const confirmation = step('Require recovered progress before short confirmation');
+assert.ok(confirmation.includes("        if: inputs.quick_confirmation == true || inputs.quick_progress_source != ''\n"),
+  'Every explicit full-run source must pass the same exact key and authenticated recovery gate');
 assert.match(bind, /QUICK_PROTECTED_BASELINE:.*inputs\.quick_confirmation && inputs\.quick_progress_source == 'protected-current'/);
 assert.match(bind, /test "\$captured" = "true" && test "\$QUICK_PROTECTED_BASELINE" != "true"/);
 assert.ok(confirmation.indexOf('if test "$QUICK_PROGRESS_SOURCE" = protected-current; then')
@@ -339,6 +343,37 @@ const ownedRawAction = ownedRawFilePath(new URL('../.github/actions/save-owned-d
 const ownedRawSource = await fs.readFile(ownedRawAction, 'utf8');
 const ownedRawPackage = await fs.readFile(path.join(path.dirname(ownedRawAction), 'package.json'), 'utf8');
 const ownedRawLock = await fs.readFile(path.join(path.dirname(ownedRawAction), 'package-lock.json'), 'utf8');
+
+// Run the actual workflow validator body: no copied validator, no provider or cache API.
+// Non-Linux hosts retain the static contract; a skip is not actual Bash evidence.
+testOwnedRawCache('explicit progress source: actual Bash accepts exact full-run source and keeps protected-current short-only',
+  { skip: process.platform !== 'linux' ? 'Actual Bash validator requires the normal Linux source host' : false }, () => {
+    const runMatch = validateSource.match(/        run: \|\n([\s\S]*)$/);
+    assert.ok(runMatch, 'The exact normal validator body must be present');
+    const script = runMatch[1].replace(/^          /gm, '');
+    const fixtures = [
+      ['false', '123456-1', 0], ['false', '123456-2', 0],
+      ['true', '123456-1', 0], ['true', 'protected-current', 0],
+      ['false', 'protected-current', 1], ['false', '', 1], ['true', '', 1],
+    ];
+    for (const source of ['unknown', '123456', '123456-0', '123456-01',
+      '../123456-1', ' 123456-1', '123456-1 ', '123456-1\n', '123456-1\r\n',
+      '123456-1; echo SHOULD_NOT_RUN']) {
+      for (const quick of ['false', 'true']) fixtures.push([quick, source, 1]);
+    }
+    for (const [quick, source, expected] of fixtures) {
+      const result = spawnSync('/bin/bash', ['--noprofile', '--norc', '-c', script], {
+        encoding: 'utf8', timeout: 5_000, maxBuffer: 16_384,
+        env: { QUICK_CONFIRMATION: quick, QUICK_PROGRESS_SOURCE: source },
+      });
+      const label = JSON.stringify({ quick, source });
+      assert.equal(result.error, undefined, label);
+      assert.equal(result.signal, null, label);
+      assert.equal(result.status, expected, label);
+      assert.equal(result.stdout, '', label);
+      assert.equal(result.stderr, '', label);
+    }
+  });
 
 testOwnedRawCache('owned raw cache: fixed API and physically separate owner receipt', async t => {
   const apiSlot = Symbol.for('RavRadar.synthetic.ownedRawCacheApi');

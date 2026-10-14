@@ -1177,13 +1177,18 @@ jobs:
           --github-output "$GITHUB_OUTPUT"
 
       - name: Validate requested short-confirmation progress source
-        if: inputs.quick_confirmation == true
+        if: inputs.quick_confirmation == true || inputs.quick_progress_source != ''
         shell: bash
         env:
+          QUICK_CONFIRMATION: ${{ inputs.quick_confirmation }}
           QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
         run: |
           set -euo pipefail
-          [[ "$QUICK_PROGRESS_SOURCE" = protected-current || "$QUICK_PROGRESS_SOURCE" =~ ^[0-9]+-[1-9][0-9]*$ ]]
+          if test "$QUICK_CONFIRMATION" = true; then
+            [[ "$QUICK_PROGRESS_SOURCE" = protected-current || "$QUICK_PROGRESS_SOURCE" =~ ^[0-9]+-[1-9][0-9]*$ ]]
+          else
+            [[ "$QUICK_PROGRESS_SOURCE" =~ ^[0-9]+-[1-9][0-9]*$ ]]
+          fi
 
       - name: Restore encrypted private weather progress only
         id: component-progress-cache
@@ -1196,8 +1201,8 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-private-progress.encrypted
-          key: weather-private-progress-encrypted-v2-${{ runner.os }}-main-${{ inputs.quick_confirmation && inputs.quick_progress_source || format('{0}-{1}', github.run_id, github.run_attempt) }}
-          restore-keys: ${{ !inputs.quick_confirmation && format('weather-private-progress-encrypted-v2-{0}-main-', runner.os) || '' }}
+          key: weather-private-progress-encrypted-v2-${{ runner.os }}-main-${{ inputs.quick_progress_source || format('{0}-{1}', github.run_id, github.run_attempt) }}
+          restore-keys: ${{ !inputs.quick_confirmation && inputs.quick_progress_source == '' && format('weather-private-progress-encrypted-v2-{0}-main-', runner.os) || '' }}
 
       - name: Bind optional progress to the exact protected baseline
         id: component-progress-restore
@@ -1248,7 +1253,7 @@ jobs:
           # the next scheduled run begins again from protected storage.
 
       - name: Require recovered progress before short confirmation
-        if: inputs.quick_confirmation == true
+        if: inputs.quick_confirmation == true || inputs.quick_progress_source != ''
         shell: bash
         env:
           QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}

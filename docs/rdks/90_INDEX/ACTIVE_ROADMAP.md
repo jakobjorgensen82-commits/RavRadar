@@ -1,3 +1,9 @@
+## Første konkrete leverance — PUBLIC-sammeoriginal og fuld genoptagelse, 14. oktober 2026
+
+Afslut den allerede lokalt prøvede akutte kildekomposition: normal PUBLIC-sammeoriginal/zonemapsbinding og præcist krypteret fremskridtsvalg i almindeligt fuldt forløb → præcis samlet Linux-/Bash-/source-/PostgreSQL-kontrol → writerfri sikker levering → faktisk GCM-restore og komponentadmission → beregning/gemning/upload/publicering/Pages → ny offentlig generationskontrol. Originaler, historisk replay, kildeprioritet, budgetter og alle normale gates består. Lokal test eller et grønt SAVE-trin er ikke genoptagelses- eller deploybevis.
+
+Den faktisk fejlede PART/time og resterende delvise DMI-årsager undersøges ud fra reelle forløb, ikke en ny testspiral eller gættet provenance. Cron er fortsat pauset med uændret plan og genaktiveres efter verificeret normaldrift. Hold øvrige KB-/statistik-/SOURCE-kandidater særskilt og upåvirket; alle fem hovedopgaver og fristen 18. oktober består. Se håndbog 89.229 og privat checkpoint; ingen ekstra kørsel eller nye tilladelser følger af denne dokumentation.
+
 ## Første konkrete leverance — 14. oktober 2026
 
 Vejrhentningsfejlen har fuld prioritet: afgrænset Feggesund-bølgekalder → relevant normal regression og gammel sourceinverse → eksakt samlet CI → writerfri sikker merge → én almindelig genoptagelse efter gældende mål → faktisk gemning/publicering/Pages og ny generationskontrol. Genaktivér derefter cron uden ændret plan. Hold uleveret KB604 og inaktiv revision adskilt; ingen ekstra manuel kørsel, genkørsel eller blanketlempelse. Samtlige fem hovedopgaver og frist18oktober består.
