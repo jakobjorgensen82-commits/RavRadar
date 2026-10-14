@@ -1,5 +1,6 @@
 ## 14. oktober 2026 — leveret turlager, kildeleveret strøm, originalkontrol åben
 
+- PR #599's første source-head stoppede i en ordret gammel if-prefix-assertion. Testen kræver nu præcis diagnoseafgrænsningen og den bevarede Edge-afgrænsning; normal workflowprøve består lokalt. Den nye Linux/Bash-diagnoseprøve er faktisk kørt uden skip. Hele nye source-/PostgreSQL-bevis står fortsat åbent, og ingen installation er gentaget.
 - FAKTISK INSTALLERET: 003-værn og genlæsning i alle ti eksisterende D1-lagre; særskilt eksisterende Worker-opdatering og normale D1-/Edge-/Worker-genlæsninger efter PR #597.
 - KILDELEVERET: PR #598 på main a6b7915e efter præcis grøn Linux- og PostgreSQL-kontrol, inklusive den normale hele strømovergang. Det er ikke numerisk produktionslevering.
 - ÅBEN: 220-installationen stoppede før SQL i originalkontrollen. Første årsag er ukendt, fordi den gamle CLI kasserer den. Den afgrænsede faste fejlrapport og skrivefri kontrolvej kræver egen præcis kildekontrol før brug; ingen blind installationsgentagelse.

@@ -1,5 +1,7 @@
 ## 89.223 Første fejl skal bevares uden at vise private data
 
+Årsagspakkens første kildekontrol stoppede i en ældre ordret if-prefix-test. Den skal nu kræve præcis både den skrivefri diagnosebetingelse og den bevarede uafhængige Edge-betingelse. Hele den normale workflowprøve består lokalt, og Linux har faktisk kørt den nye diagnose-/Bash-prøve uden skip. Den samlede nye source-/PostgreSQL-kontrol og den skrivefri originaldiagnose mangler stadig; dette er ikke en installeret rettelse af originalafvisningen.
+
 **Kort fortalt:** Strømkilden er kontrolleret, men installationen stoppede, før databasen blev ændret. En skrivefri kontrol skal finde årsagen uden at skjule eller svække databeskyttelsen.
 
 Den 14. oktober er 003-værnet faktisk installeret og genlæst i alle ti turlagre, og den eksisterende Worker er særskilt opdateret og kontrolleret gennem normale genlæsninger. PR #598 har efterfølgende bestået præcis Linux-/PostgreSQL-kontrol og er kildeleveret. Det næste 220-forløb stoppede i kontrollen af de gemte originaler, før SQL og Edge-installation. Den generiske fejltekst viser ikke årsagen. Dette er ikke en ny vejrhentningsfejl eller et bevis for installeret korrekt strømfortolkning.

@@ -1,5 +1,7 @@
 # 14. oktober 2026 — faktisk turlagerlevering og afvist strømoriginalkontrol
 
+PR #599's første sourcekontrol stoppede kl. 02.50 dansk tid i en gammel ordret if-prefix-test, ikke i en ny installation. Diagnoseafgrænsningen og den tidligere Edge-afgrænsning kræves nu begge præcist i den normale test, som består lokalt. Linux-diagnose-/Bash-prøven er faktisk kørt uden skip; samlet source/PostgreSQL blev ikke fuldført. Ny præcis kildekontrol og den efterfølgende skrivefri originaldiagnose er fortsat påkrævet. Ingen oprindelig fejl eller produktguard omgås.
+
 003 er faktisk installeret/genlæst i alle ti eksisterende D1-lagre; den eksisterende Worker er særskilt opdateret og normalt genlæst efter PR #597. PR #598 er derefter præcist Linux-/PostgreSQL-kontrolleret og kildeleveret på main a6b7915e. 220-installationen stoppede før SQL i originalkontrollen med skjult første årsag. Ingen ny numerisk generation eller offentlig effekt er bevist. Afgrænset første-fejlrapport og særskilt skrivefri kontrol forberedes uden lempede originalgates. Cron er faktisk gemt og genlæst midlertidigt pauset med uændret tidsplan; genaktivering efter verificeret normaldrift er fortsat påkrævet. Alle fem hovedområder forbliver åbne; private kontroltal og næste handling ligger i checkpointet.
 
 # Lokal strømrettelse – afgrænset kildeforberedelse, 2026-10-13

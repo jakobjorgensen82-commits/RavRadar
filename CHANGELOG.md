@@ -1,5 +1,6 @@
 ## 4.0.576 — præcis afgrænset strømoriginaldiagnose, 14. oktober 2026
 
+- Bevar den ældre workflowprøves Edge-krav og gør dens assertion præcis for begge uafhængige diagnose-/Edge-betingelser. Den hele normale prøve består lokalt; det tidligere source-stop er ikke en installations- eller vejrhentningsfejl.
 - Genbrug faktisk gennemført 003-/Worker-installation efter PR #597 og præcis grøn Linux/PostgreSQL-kildekontrol af strømrettelsen i PR #598.
 - Følg den efterfølgende afvisning før SQL med en afgrænset rapport af første fejl og særskilt skrivefri originalkontrol. Ingen rå fejldata, nye providerhentninger, lempede originalgates eller automatisk installationsgentagelse.
 - Den numeriske overgang og nye generationers offentlige effekt er ikke installeret/verificeret af kildeændringen. Gamle originaler, offentlig historik, scoreformel, administratorpunkter og geometri bevares; cron er midlertidigt pauset med uændret plan indtil verificeret normaldrift.

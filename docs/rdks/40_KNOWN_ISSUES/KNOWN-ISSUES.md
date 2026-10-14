@@ -1,5 +1,7 @@
 ## ÅBEN — strøm220-originalkontrollen skjuler første årsag, 14. oktober 2026
 
+Den første sourcekontrol af årsagsopfølgningen stoppede i en gammel ordret forventning om if-prefix. Den lokale testrettelse kræver nu præcis den nye diagnosebetingelse og den uændrede uafhængige Edge-betingelse, uden at lempe en produktguard. Normal workflowprøve består. Ny præcis samlet source/PostgreSQL mangler; dette er ikke årsagen til den tidligere originalafvisning.
+
 Strømkilden i PR #598 er faktisk Linux-/PostgreSQL-kontrolleret og merget. Den første 220-installation stoppede før SQL i kontrollen af de gemte originaler; den generiske CLI-afvisning skjuler den udløsende fase og assertion. Årsagen er ikke bevist. En lille opfølgning skal bevare samme første fejl og rapportere kun faste fase-/kriterie-/årsagskategorier, uden rå fejltekst eller private værdier. Særskilt skrivefri kontrol må ikke kunne fortsætte til SQL, Edge eller offentlig levering. Ingen originalguard lempes og ingen automatisk gentagelse følger.
 
 003-/Worker-installationsdelene er nu faktisk gennemført og genlæst efter PR #597. De tidligere afventende statusser nedenfor er historik på disse punkter. Strømovergangen, ny generations effekt og øvrige hovedmål er fortsat åbne. Cron er midlertidigt gemt pauset med uændret tidsplan og skal genaktiveres efter verificeret normaldrift; se CURRENT_TRUTH og håndbog 89.223.
