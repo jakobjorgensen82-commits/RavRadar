@@ -1,3 +1,9 @@
+# 14. oktober 2026 — 599-kildelevering og historisk transportkant
+
+Den minimale kalderrettelse er nu faktisk lokalt RED→GREEN i hele den normale 673-dels prøve, med begge gamle rollback-/warmup-forløb, 118 offentlige timer pr. forløb, alle gamle negative tilfælde og nye nøgleordens-/S-værdi-/checksum-/B-byteafvisninger. Tidlig kildekontrol, håndbog og RDKS består. De manglende pinned Windows-afhængigheder ændres ikke; præcis ny Linux/PostgreSQL, hosted installation og offentlig ny generation kræves stadig.
+
+599 er faktisk kildeleveret som main 76cf31e4 efter præcis source/PostgreSQL, uændret træ og kildebevis. Den skrivefri originalkontrol stoppede i OLD_ISSUED_LOADER/LOAD_TARGET; alle senere SQL-/Edge-/publiceringstrin blev sprunget over. Den normale lokale 673-dels prøves genuine gamle læser har faktisk afvist en semantisk identisk nøgleomordnet kontrolfil. Næste kaldersnit kræver fuld B/S-lighed med uændret gammel producent før historisk læsning og bevarer originaler og alle gates. Ejeren accepterer nogle timers udsættelse for strømrettelsen; cron er midlertidigt pauset med uændret plan. Installation, ny offentlig effekt og alle fem mål er fortsat åbne. Se CURRENT_TRUTH og håndbog 89.224; detaljeret driftsevidens forbliver privat.
+
 # 14. oktober 2026 — faktisk turlagerlevering og afvist strømoriginalkontrol
 
 PR #599's første sourcekontrol stoppede kl. 02.50 dansk tid i en gammel ordret if-prefix-test, ikke i en ny installation. Diagnoseafgrænsningen og den tidligere Edge-afgrænsning kræves nu begge præcist i den normale test, som består lokalt. Linux-diagnose-/Bash-prøven er faktisk kørt uden skip; samlet source/PostgreSQL blev ikke fuldført. Ny præcis kildekontrol og den efterfølgende skrivefri originaldiagnose er fortsat påkrævet. Ingen oprindelig fejl eller produktguard omgås.

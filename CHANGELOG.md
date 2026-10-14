@@ -1,3 +1,9 @@
+## 4.0.576 — historisk checkpointlæsning efter databasetransport, 14. oktober 2026
+
+- Genbrug faktisk source-/PostgreSQL-verificeret 599-kilde og afgræns den skrivefri diagnoses stop til den gamle LOAD_TARGET-læser; ingen SQL-/Edge-/publiceringsskrivning.
+- Ret den normale kalder efter ægte RED→GREEN med den genuine gamle læsers nøgleordensafvisning. Kræv fuld B/S-lighed med uændret gammel producent før historisk læsning og bevar originale bytes/checksums. Hele den normale lokale 673-dels prøve består med begge rollback-/warmup-forløb, alle gamle negative tilfælde og nye ændrede S-/B-afvisninger uden skip; præcis ny GitHub-kontrol kræves stadig.
+- Prioritér faktisk installeret/genlæst strøm220 før ny vejrhentning. Ejeren accepterer nogle timers udsættelse. Ingen ændring af gammel SQL, modelbindinger, scoreformel, kilder, administratorpunkter eller geometri; offentlig ny generation og genoptaget cron afventer stadig.
+
 ## 4.0.576 — præcis afgrænset strømoriginaldiagnose, 14. oktober 2026
 
 - Bevar den ældre workflowprøves Edge-krav og gør dens assertion præcis for begge uafhængige diagnose-/Edge-betingelser. Den hele normale prøve består lokalt; det tidligere source-stop er ikke en installations- eller vejrhentningsfejl.
