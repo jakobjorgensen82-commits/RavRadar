@@ -1,3 +1,9 @@
+## Åben akut fejl — bølgeforvalg kræver ubrugt strøm, 14. oktober 2026
+
+38553389373/1/main90ae fejlede i trin110 med DMI_GRID_SAMPLING_APPLICABILITY_UNKNOWN via preflightFeggesundOperationalWaveReadiness. Bølge-only kalderen arver strict-current-flaget. PR603's scalarplan og 118-timers scoreafgrænsning er faktisk korrekte; denne særskilte kalder mangler. Ingen ny offentlig generation blev leveret. Afgrænset rettelse og normal regression forberedes; faktisk CI/levering/effekt er åbne. Cron er pauset med uændret plan.
+
+En separat skrivefri audit fandt, at den inaktive private admin-stagingvej bygger memory uden strictsampling. Automatisk aktivering er slået fra. Den er ikke årsag til denne vejrhentningsfejl og ændres ikke i det akutte fix; behold den som særskilt opfølgningspunkt uden admin-/geometri-/dataaktivering.
+
 ## ÅBEN — ubrugt strøm stopper ikke-strømplanen, 14. oktober 2026
 
 Efter faktisk installeret/genlæst 220 stoppede den normale vejrhentning før ny offentlig levering i current-grid-kontrollen inde i planen for fire ikke-strømkomponenter. Koden kræver desuden current-grid-bevis i tre private vandstandstimer uden for scorehorizonten. Den afgrænsede kalderrettelse skal lade kontrollen følge faktisk strømforbrug og bevare stringent current/recovery/reference, 121 timer til T+3, alle originaler og no-loss. DMI 429 er observeret separat; koblingen til det konkrete endpoint er ukendt. Præcis kildekontrol, sikker levering og ny offentlig effekt står åbne. Tidligere uinstalleret220-status nedenfor er dateret historik. Se håndbog 89.226.

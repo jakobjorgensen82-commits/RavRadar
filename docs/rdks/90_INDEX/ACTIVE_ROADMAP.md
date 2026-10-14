@@ -1,3 +1,7 @@
+## Første konkrete leverance — 14. oktober 2026
+
+Vejrhentningsfejlen har fuld prioritet: afgrænset Feggesund-bølgekalder → relevant normal regression og gammel sourceinverse → eksakt samlet CI → writerfri sikker merge → én almindelig genoptagelse efter gældende mål → faktisk gemning/publicering/Pages og ny generationskontrol. Genaktivér derefter cron uden ændret plan. Hold uleveret KB604 og inaktiv revision adskilt; ingen ekstra manuel kørsel, genkørsel eller blanketlempelse. Samtlige fem hovedopgaver og frist18oktober består.
+
 # Aktuelt kritisk leveringsspor — vejrberegning, 14. oktober 2026
 
 Først lukkes den faktisk observerede komponentplan-fejl efter installeret220: korrekt ikke-strømplan og 118-timers strømforbrugsgrænse med uændrede 121 scalar-/T+3-timer og alle strenge strøm-/originalkontroller. Normal reproduktion, måltests, præcis source-CI, sikker levering og faktisk ny offentlig generation kræves. Cron forbliver pauset med uændret plan indtil verificeret normaldrift. Øvrige afgrænsede spor fortsætter sikkert lokalt/ved ventetid; statistikPR601, vidensudvidelse og isoleretSOURCE aktiveres ikke som del af vejrrettelsen. Alle fem hovedmål og fristen18oktober består.

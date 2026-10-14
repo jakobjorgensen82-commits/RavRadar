@@ -1561,12 +1561,14 @@ function preflightFeggesundOperationalWaveReadiness({
       partWithZone,
       sourcesByTime,
     );
+    // This readiness ledger consumes waves only. Current qualification belongs
+    // to the actual score/replay consumers, not this independent wave preflight.
     const hourly = verifiedIntegratedPartHourly(
       operationalRecord,
       bulkCache,
       bulkId,
       partWithZone,
-      componentInputs,
+      { ...componentInputs, requireNativeGridSampling: false },
     );
     entries.push(...feggesundWaveProofEntriesForPart(
       hourly,

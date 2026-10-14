@@ -1,3 +1,7 @@
+## Akut bølgeforvalg — 14. oktober 2026
+
+Normal Feggesund-forvalidering skal kvalificere sine tre deles bølger over 118 timer uden at kræve ubrugt strøm. Faktisk valgt strøm før nye scorer, memory, native-reference og replay skal stadig bestå samplingkravet. 121 scalar-/vandstandstimer, originaler, sourceprioritet, model og centrale administratorpunkter bevares. Normal kalderregression, eksakt CI, sikker levering og ny offentlig effekt kræves; ingen af de fem hovedopgaver er afsluttet. Se håndbog89.228.
+
 # 14. oktober 2026 — strømkrav følger faktisk strømforbrug
 
 Den normale ikke-strømplan for vind, bølger, vandstand og vandtemperatur skal bevare kvalificerede felter uden at kræve et ubrugt strøm-gitterbevis. Streng ny strømbrug skal fortsat kontrolleres efter faktisk sourcevalg i alle 118 scoretimer, i recovery/hukommelse og ved native-reference. De ekstra private T+118..T+120-timer bruges alene til vandstandens sidste T+3-trends, ikke til ekstra strøm-/scorestate. Hele den originale 121-timersserie, routing, scalarvalidering og kontinuitet bevares. Ukendt strømbevis giver aldrig ny anvendelsesautoritet, proveniensopgradering eller sletning af originaler. Ingen scoreformel-, admin-, geometri-, kildeprioritets- eller SQL-ændring følger af denne afgrænsning.

@@ -1,3 +1,11 @@
+## Seneste faktiske normalforløb — 14. oktober 2026
+
+Den præcise kalderrettelse er nu lokalt integreret: kun Feggesunds bølge-only adapter får et lokalt false-flag, mens selve bølgeproofen og score-/replayinputs bevares. Hele normalwireup består4/4, hele entrypoint-/historisk-inverseprøven21/21 og den normale Feggesund-proxyprøve består uden skip. C69/d192, I71/994 og otte bindingsforbrugere er uændrede; den tidlige produktkritiske kildegate består. Præcis GitHub-kontrol og produktionseffekt mangler stadig.
+
+38553389373/1/main90ae fejlede i beregningen kl.15.01.17 dansk tid. DMI85, CP100, OM102 og currentclosure107 bestod; Feggesunds bølgeforvalg udløste DMI_GRID_SAMPLING_APPLICABILITY_UNKNOWN fra en ubrugt strøm-gitterkontrol. Krypteret gemning114/115 bestod som trin, men faktisk cacheindhold/genbrug er ikke aflæst. Fuld produktionspakke, privat CAS/publicering, Edge og Pages blev sprunget over. Den gamle offentlige generation er bevaret.
+
+Den akutte kalderrettelse er kun kildeforberedelse. Strømkrav før faktisk ny score, memory, hold og replay bevares; normal 118/T+3- og scalarplan fra603 er korrekt. Præcis CI, sikker levering og ny offentlig effekt mangler. CronOFF/19*/4UTC uændret. PR604's source14 er separat fejlet og uleveret; den er ikke denne vejrfejls årsag. Alle fem hovedområder er fortsat åbne, deadline18oktober. Se håndbog89.228 og privat checkpoint.
+
 ## Vejrhentningens komponentplan stoppede på ubrugt strøm — 14. oktober 2026
 
 PR #600 er kildeleveret på main 9fe90320. Den kontrollerede 220-installation afsluttede med faktisk bevis for bevarelse af 673 dele og 11 originalfiler samt streng database-/tur-/checkpointgenlæsning; Edge og Pages blev ikke ændret af installationen. Den efterfølgende normale vejrhentning fejlede i komponentplanen før gemning af en ny fuld produktionspakke, upload og deploy. Den gamle offentlige prognose er bevaret, og cron er pauset med uændret plan.

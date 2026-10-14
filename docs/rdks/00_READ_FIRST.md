@@ -1,3 +1,7 @@
+## Aktuel kritisk prioritet — 14. oktober 2026
+
+Den seneste normale vejrhentning fejlede i Feggesunds bølgeforvalg før offentlig levering. Ret kun det ubrugte strømkrav i dette forvalg; bevar faktisk strøm-/score-/memory-/replaykontrol og originaler. Eksakt kilde- og produktionsbevis kræves. Se CODEX_START_HERE, håndbog89.228 og nyeste private checkpoint. Alle fem hovedmål er åbne med frist18oktober.
+
 # RDKS – læs først
 
 ## Aktuel vejrfejl — 14. oktober 2026
