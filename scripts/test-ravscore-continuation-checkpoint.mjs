@@ -1239,7 +1239,9 @@ try {
       'The genuine loader sorts the raw reversed keys; structural equality is required');
     const env = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
       ['PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'LANG', 'LC_ALL'].includes(key.toUpperCase())));
-    Object.assign(env, { RAVRADAR_PRODUCTION_TARGET_HOUR: atHour(50),
+    const workflowTarget = atHour(50).replace(/\.000Z$/, 'Z');
+    assert.equal(workflowTarget.length, 20, 'Use the normal whole-hour workflow serialization first');
+    Object.assign(env, { RAVRADAR_PRODUCTION_TARGET_HOUR: workflowTarget,
       RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: 'true',
       RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: 'false' });
     const runCli = () => spawnSync(process.execPath,
@@ -1254,6 +1256,7 @@ try {
     const plan = JSON.parse(outputBytes);
     const rawSha = bytes => 'sha256:' + crypto.createHash('sha256').update(bytes).digest('hex');
     assert.deepEqual(plan.modelBinding, ravScoreModelBinding());
+    assert.equal(plan.productionReferenceAt, atHour(50), 'Workflow input becomes the strict internal hour');
     assert.equal(plan.demands.length, PART_COUNT);
     assert.equal(plan.registrySha256, rawSha(originals.get(registryPath)));
     assert.deepEqual(plan.sourceHashes, { conditions: rawSha(originals.get(conditionsPath)),
@@ -1278,6 +1281,47 @@ try {
     assert.deepEqual(await fs.readFile(outputPath), outputBytes, 'Existing demand output cannot be overwritten');
     for (const [file, bytes] of originals) assert.deepEqual(await fs.readFile(file), bytes,
       'Failed demand publication must not rewrite an original');
+    // Reuse only this owned fixture output; original inputs and source bytes stay fixed.
+    const outputIdentity = await fs.lstat(outputPath);
+    assert(outputIdentity.isFile() && !outputIdentity.isSymbolicLink());
+    await fs.unlink(outputPath);
+    env.RAVRADAR_PRODUCTION_TARGET_HOUR = atHour(50);
+    const canonicalSuccess = runCli();
+    assert.equal(canonicalSuccess.error, undefined);
+    assert.equal(canonicalSuccess.signal, null);
+    assert.equal(canonicalSuccess.status, 0, canonicalSuccess.stderr);
+    assert.equal(canonicalSuccess.stdout, success.stdout);
+    assert.deepEqual(await fs.readFile(outputPath), outputBytes,
+      'Both legitimate whole-hour env serializations must produce byte-identical plans');
+    for (const [file, bytes] of originals) assert.deepEqual(await fs.readFile(file), bytes,
+      'Canonical env rerun must not rewrite an original');
+    const invalidTargets = [
+      ['whitespace', ' ' + atHour(50), 'NONCANONICAL_TIME'],
+      ['offset', atHour(50).replace('.000Z', '+00:00'), 'NONCANONICAL_TIME'],
+      ['nonzero milliseconds', atHour(50).replace('.000Z', '.001Z'), 'NONCANONICAL_TIME'],
+      ['invalid calendar date', '2026-02-30T00:00:00Z', 'NONCANONICAL_TIME'],
+      ['missing target', undefined, 'TARGET_REQUIRED'],
+    ];
+    for (const [label, value, reason] of invalidTargets) {
+      if (value === undefined) delete env.RAVRADAR_PRODUCTION_TARGET_HOUR;
+      else env.RAVRADAR_PRODUCTION_TARGET_HOUR = value;
+      const invalid = runCli();
+      assert.equal(invalid.error, undefined, label);
+      assert.equal(invalid.signal, null, label);
+      assert.equal(invalid.status, 1, label);
+      assert.equal(invalid.stdout, '', label);
+      assert.equal(invalid.stderr.trim(), 'RAVSCORE_CURRENT_HISTORY_DEMAND_' + reason,
+        label + ' must be refused at env admission, before the existing-output guard');
+      assert.deepEqual(await fs.readFile(outputPath), outputBytes,
+        label + ' must preserve the existing demand');
+      for (const [file, bytes] of originals) assert.deepEqual(await fs.readFile(file), bytes,
+        label + ' must not rewrite an original');
+      for (const [relative, bytes] of productBytes) {
+        assert.deepEqual(await fs.readFile(path.join(fixtureRoot, relative)), bytes, label);
+        assert.deepEqual(await fs.readFile(path.join(repository, relative)), bytes, label);
+      }
+    }
+    env.RAVRADAR_PRODUCTION_TARGET_HOUR = atHour(50);
     for (const [relative, bytes] of productBytes) {
       assert.deepEqual(await fs.readFile(path.join(fixtureRoot, relative)), bytes);
       assert.deepEqual(await fs.readFile(path.join(repository, relative)), bytes);

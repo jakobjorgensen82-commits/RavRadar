@@ -40,6 +40,13 @@ function exactHour(value) {
   if (canonical !== value) refuse('NONCANONICAL_TIME');
   return canonical;
 }
+function workflowTargetHour(value) {
+  if (typeof value !== 'string' || !value) refuse('TARGET_REQUIRED');
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:00:00(?:\.000)?Z$/.test(value)) refuse('NONCANONICAL_TIME');
+  // Only the normal workflow boundary has two equivalent serializations.
+  // Authenticated states/endpoints below keep their exact-hour byte contract.
+  return exactHour(value.length === 20 ? `${value.slice(0, -1)}.000Z` : value);
+}
 
 // Acquisition/retention only. No selected state or sampling receipt is returned,
 // rewritten, upgraded or admitted here. The real two-model pipeline still owns
@@ -148,7 +155,7 @@ function environmentBoolean(name) {
 }
 async function main() {
   if (process.argv.length !== 2) refuse('ARGUMENTS_INVALID');
-  const productionReferenceAt = exactHour(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR);
+  const productionReferenceAt = workflowTargetHour(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR);
   const baselineRequired = environmentBoolean('RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE');
   const stateLessRecovery = environmentBoolean('RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED');
   const registry = await readFixed(SOURCE_PATHS.registry);

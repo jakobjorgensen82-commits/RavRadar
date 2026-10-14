@@ -1,5 +1,7 @@
 ## 4.0.576 — strømhistorik og faktisk inputbehov, 14. oktober 2026
 
+Aktuelt 15. oktober: PR610 er kildeleveret efter præcis CI inklusive Linux og PostgreSQL. Den næste genoptagelse stoppede før vejrhentning på miljøtimens Z/.000Z-format. Den normale 673-dels CLI-prøve har reproduceret fejlen og består efter en snæver miljønormalisering, inklusive fem ugyldige input og originalbevarelse. Den lille kildegate består lokalt; ny præcis CI, levering og offentlig effekt er åbne. Tilstands- og originalkrav, version, SQL, model og SOURCE-afgrænsning er uændrede. Se håndbog 89.230; ældre status nedenfor er erstattet kun på disse punkter.
+
 - Registrér den faktisk kildeleverede PUBLIC-sammeoriginal-/fulde genoptagelseskilde med præcis Linux-/PostgreSQL-evidens. Næste normale beregning stoppede i kystdelens strømhistorik før offentlig levering; kildebevis er ikke en vellykket vejrhentning.
 - Registrér lokal normal kystdelshistorik-/behovsprøve 70/70 uden skip, faktisk valgt starttilstand, historiske strømendepunkter og normal bro, ægte ledger og reservekomplement samt registry-target-/ældningsprøver. Bevar første sandboxfilfejl og manglende kørsels-signaturs fixturefejl som før-evidens.
 - Afgræns den lokalt integrerede historiske cachelæser til strøm med normal filfangst, ejet læselease og EOF. Første Linux-nativekontrol på ca827 består; historiske råfilers tilgængelighed i næste faktiske generation er fortsat ukendt og afklares ikke ved en generel source- eller guardlempelse.
