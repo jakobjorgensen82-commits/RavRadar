@@ -366,7 +366,7 @@ const rpcFailureIncludes = pattern => error => {
 
 // Pure classification of the real native caller's bounded failure output.
 // These assertions are not PostgreSQL/SQL/installation proof.
-if (!process.argv.includes('--native-postgres')) {
+if (!process.argv.includes('--native-postgres') && !process.argv.includes('--native-statistics-revision')) {
   const { nativePostgresFailureDiagnostic: diagnose,
     nativePostgresFailureAnnotation: annotate } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -392,18 +392,56 @@ if (!process.argv.includes('--native-postgres')) {
     '::error title=Native PostgreSQL source command::phase=UNKNOWN sqlstate=42501 category=SQL_PERMISSION');
   assert.equal(annotate('NATIVE_SETUP', ''),
     '::error title=Native PostgreSQL source command::phase=NATIVE_SETUP sqlstate=UNKNOWN category=PSQL_COMMAND_FAILURE');
+
+  // The same recorder is used by the actual native host before its unchanged
+  // physical cleanup. This synthetic caller proves disclosure/latching, not PG.
+  const {createNativePostgresFailureRecorder}=await import('./lib/checkpoint-cas-native-postgres.mjs');
+  const emitted=[];const recorder=createNativePostgresFailureRecorder(row=>emitted.push(row));
+  const first=new assert.AssertionError({message:'PRIVATE_MESSAGE',actual:{private:'ACTUAL'},expected:{private:'EXPECTED'}});
+  recorder.at('CURRENT220','CAS_CASES',7);recorder.observedSqlState('57014');
+  let caught;
+  try{try{throw first;}catch(error){recorder.report(error);throw error;}}
+  catch(error){caught=error;}
+  assert.equal(caught,first,'diagnostic caller rethrows the exact original error');
+  assert.deepEqual(emitted,[{kind:'NATIVE_POSTGRES_FIRST_FAILURE',phase:'CURRENT220',case:'CAS_CASES',caseIndex:7,
+    category:'ASSERTION_FAILED',errorCode:'ERR_ASSERTION',sqlState:'57014'}]);
+  recorder.at('CURRENT220','CLEANUP');recorder.observedSqlState(null);
+  assert.equal(recorder.report(new Error('LATER_CLEANUP_SECRET')),emitted[0]);assert.equal(emitted.length,1);
+  assert.doesNotMatch(JSON.stringify(emitted),/PRIVATE|ACTUAL|EXPECTED|SECRET|stack|message/);
+  for(const bad of ['PRIVATE','ERR_ASSERTION\nPRIVATE',{},null]) {
+    const rows=[];const invalid=createNativePostgresFailureRecorder(row=>rows.push(row));
+    invalid.at('CURRENT220\nPRIVATE','PRIVATE',999);
+    invalid.observedSqlState({toString(){throw new Error('SQLSTATE must not coerce private data');}});
+    invalid.report({code:bad,get message(){throw new Error('message must not be read');},get actual(){throw new Error('actual must not be read');}});
+    assert.deepEqual(rows,[{kind:'NATIVE_POSTGRES_FIRST_FAILURE',phase:'UNKNOWN',case:'UNKNOWN',caseIndex:null,
+      category:'NATIVE_FAILURE',errorCode:'UNKNOWN',sqlState:'UNKNOWN'}]);
+  }
+  const broken=createNativePostgresFailureRecorder(()=>{throw new Error('LOGGER_SECRET');});
+  broken.at('ACCOUNT213','PROJECTION');broken.observedSqlState(null);
+  assert.doesNotThrow(()=>broken.report(first));
+  assert.equal(broken.report(new Error('later')).sqlState,'NONE');
+  const getter=createNativePostgresFailureRecorder(()=>{});
+  assert.equal(getter.report({get code(){throw new Error('PRIVATE_CODE');}}).errorCode,'UNKNOWN');
+}
+
+if(process.argv.includes('--native-failure-diagnostic-only')) {
+  assert.deepEqual(process.argv.slice(2),['--native-failure-diagnostic-only']);
+  console.log('Native first-failure diagnostic: finite phase/case, SQLSTATE, exact first error and no raw data; PostgreSQL UNRUN.');
+  process.exit(0);
 }
 
 // Native PostgreSQL is a separate mandatory Linux source leaf, never a
 // MemoryCentral/Windows representation proof. Reuse these exact 673 builders
 // and the normal checkpoint saver; do not run the simulated RPC tests here.
-if (process.argv.includes('--native-postgres')) {
+if (process.argv.includes('--native-postgres') || process.argv.includes('--native-statistics-revision') || process.argv.includes('--native-assistant-knowledge')) {
   try {
     const { runNativeCheckpointSqlComparison } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
     const report = await runNativeCheckpointSqlComparison({
       repositoryRoot: path.resolve('.'), sourceDocumentAt, atHour,
       saveCheckpoint: saveRavScoreContinuationCheckpoint,
+      includeStatisticsRevision: process.argv.includes('--native-statistics-revision') || process.argv.includes('--native-assistant-knowledge'),
+      includeAssistantKnowledge: process.argv.includes('--native-assistant-knowledge'),
     });
     console.log(JSON.stringify(report));
   } catch (error) {

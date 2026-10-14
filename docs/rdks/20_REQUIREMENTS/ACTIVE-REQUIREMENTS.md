@@ -1,3 +1,23 @@
+# 14. oktober 2026 — komplet testdækning med genuine historisk kilde
+
+Historiske positive prøver skal beholde deres originale model-/SQL-/no-loss-kontrakt og genuine udstedte kilde, ikke få aktuelle KB-filer ommærket til gammel fase. Opdeling af det nye katalog skal bevare hele DA/DE/EN-unionen, alle gamle børn/øvrige blokke og eksisterende tids-/outputgrænser; direkte default må ikke miste dækning. Ukendte selectors og kombinationer afvises.
+
+De to berørte normale mål består nu lokalt. Ny præcis samlet CI/PostgreSQL, faktisk230/schema2, legitim videnslevering og offentlige bruger-/AI-prøver mangler fortsat. Alle tidligere databevarelses-, privatlivs-, checkpoint-, writer- og fem hovedmålskrav bevares; ingen ny aktivering eller produktionsautoritet følger.
+
+# 14. oktober 2026 — faktisk kildebevis og genoptagelse fra checkpoint
+
+Efter en fremtidig faktisk vejrfejl og dens rettelse skal genoptagelse fra checkpoint ske fra den dybeste autentiske, gyldigt gemte fase gennem den normale indgang og efter nødvendige kontroller; næste handling kræver fortsat eksisterende konkret autoritet og må hverken overlappe aktiv writer eller springe gates over. Fem604-sourcecases må kun lukkes med genuine fasebundne kalder-/definitionskontroller og ny samlet exact-head source/PostgreSQL, ikke gamle grønne delbeviser, modelaliases, lempede assertions eller ommærkede originaler. Historiske213/220/230 og alle numeriske data/scorer bevares.
+
+Faktisk230/schema2 skal stadig gå forud for videns577; ingen global konto-/Management-afhængighed indføres i vejrhentningen. Delvist genbrugt cache er ikke fuld kvalitet, og lokal456-viden er ikke bevis for ekstern AI eller løsning på503. Alle fem mål til18oktober er åbne. Standard ON er ikke samtykke/anonymitet; samlet statistik, varsling, retention og sletning forbliver inaktive. Disse præciseringer ændrer ikke de tidligere krav eller giver nye produktionskald.
+
+# 14. oktober 2026 — vidensudvidelse med ærlig, fasebundet levering
+
+Spørg RavRadar skal bruge den gennemgåede456-emneviden på dansk, tysk og engelsk og bevare ærlig usikkerhed, privat afgrænsning og normale brugerfunktioner. Variationsstrenge er ikke selvstændige faglige kilder. Interne relative vidensimports skal cachebindes til reel release uden omskrivning af fakta eller eksterne kildelinks. Ukendte spørgsmål og faktisk ekstern AI skal stadig afprøves gennem brugerforløbet; fast svar eller HTTP200 beviser ikke ekstern AI.
+
+Ny vidensmetadata må kun leveres efter faktisk230/schema2 og egen fysisk C/I/T-, original-, historik-, no-loss-, PostgreSQL- og writer-fri kontrol. Gamle originaler, scorer og udstedte SQL-filer bevares, og historiske kildefamilier må ikke ommærkes. Ingen Worker/D1-geninstallation, nye tjenester/nøgler/planer, fundgarantier, opdigtede vejrtal eller interne fejlfakta til brugerne. Alle fem hovedmål og fristen18oktober består.
+
+*Dateret kildeforberedelse før levering af 606; afsnittets statuspunkter er historik og erstattes af den nyere status ovenfor.*
+
 ## Akut bølgeforvalg — 14. oktober 2026
 
 Normal Feggesund-forvalidering skal kvalificere sine tre deles bølger over 118 timer uden at kræve ubrugt strøm. Faktisk valgt strøm før nye scorer, memory, native-reference og replay skal stadig bestå samplingkravet. 121 scalar-/vandstandstimer, originaler, sourceprioritet, model og centrale administratorpunkter bevares. Normal kalderregression, eksakt CI, sikker levering og ny offentlig effekt kræves; ingen af de fem hovedopgaver er afsluttet. Se håndbog89.228.
@@ -5,6 +25,16 @@ Normal Feggesund-forvalidering skal kvalificere sine tre deles bølger over 118 
 # 14. oktober 2026 — strømkrav følger faktisk strømforbrug
 
 Den normale ikke-strømplan for vind, bølger, vandstand og vandtemperatur skal bevare kvalificerede felter uden at kræve et ubrugt strøm-gitterbevis. Streng ny strømbrug skal fortsat kontrolleres efter faktisk sourcevalg i alle 118 scoretimer, i recovery/hukommelse og ved native-reference. De ekstra private T+118..T+120-timer bruges alene til vandstandens sidste T+3-trends, ikke til ekstra strøm-/scorestate. Hele den originale 121-timersserie, routing, scalarvalidering og kontinuitet bevares. Ukendt strømbevis giver aldrig ny anvendelsesautoritet, proveniensopgradering eller sletning af originaler. Ingen scoreformel-, admin-, geometri-, kildeprioritets- eller SQL-ændring følger af denne afgrænsning.
+
+# 14. oktober 2026 — eksisterende statistikvalg får atomisk serverrækkefølge
+
+Status ved sammensætningen den 14. oktober 2026 kl. 09.30: PR #600 er leveret på main 9fe90320. Det kontrollerede forløb 38527571595/1 afsluttede kl. 09.21.12 dansk tid: originalkontrollen bevarede alle 673 dele og 11 originalfiler, den fulde plan blev kontrolleret før skrivning, kun 220 blev installeret, og database-, turbindings- og checkpointgenlæsningen bestod. Edge og Pages blev sprunget over. Én normal vejrhentning 38528682729 blev kvitteret kl. 09.29.45 og kører endnu; ny offentlig strøm, strømhukommelse og score er ikke verificeret. Cron er midlertidigt pauset med uændret plan. Statistik230 er ikke installeret. Ældre udsagn nedenfor om, at 220 ikke er installeret, er dateret historik og erstattes kun på dette statuspunkt.
+
+Dette præciserer den allerede besluttede standard ON og beskyttelsen af eksplicit fravalg; der træffes ingen ny ejerbeslutning om behandling, sletning eller infrastruktur. Serverbekræftet fravær må fortsat give ON, men net-/formatfejl er ukendt. Et nyt ON skal være bundet til den aktuelle serverrevision og samme autentificerede ejer. Nyere OFF skal gøre alle ældre ON ugyldige; gamle revisionsløse ON-kald må ikke omgå kravet. OFF må gemmes konservativt uden at genaktivere historik. UI må kun bekræfte det faktiske serversvar og skal kassere forældede konto-/logoutresultater.
+
+Standardvalget er hverken samtykke, anonymitetsbevis eller aktivering af samlet statistik. Kravene om to års inaktivitet,30 dages varsel, loginbevarelse og faktisk slette-/backupbeskyttelse genbruges uændret og er fortsat særskilt inaktive. Manglende aktivitetsoplysning er ikke bevis for inaktivitet. Ingen indsamling af navne eller brug af syntetiske testture til statistik følger af denne kandidat.
+
+Levering skal bevare alle 58 tidligere SQL-filer, konto-/turoriginaler, scorehistorik og strøm220-kontrakten. Ingen global statistik-/account-gate må standse vejrhentning. Den kontrollerede pause/idle→230/schema2→nye kontoaktiver→verificeret genoptagelse og det korte gamle-klientvindue kræver eksplicit leveringsafgrænsning. Se håndbog 89.225. Alle ældre krav og den nyere strømopfølgning bevares.
 
 # 14. oktober 2026 — strømrettelse før næste almindelige vejrhentning
 

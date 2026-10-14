@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { exactStaticRelativeModuleReferences } from './lib/static-module-closure.mjs';
 import { PRODUCTION_WORKFLOW_SOURCES } from './lib/production-workflow-sources.mjs';
 import { synchronizeReleaseContractMetadata } from './sync-release-contract-metadata.mjs';
 
@@ -43,7 +44,7 @@ for(const file of ['index.html','admin.html','documentation.html','handbook.html
 // kunne topniveauet vise en ny version, mens interne imports stadig brugte en
 // gammel ?v=-parameter og dermed genbrugte et blandet modultræ fra cache.
 const browserSources=[];
-for(const root of ['.','js']){
+for(const root of ['.','js','knowledge']){
   const walk=async dir=>{
     for(const entry of await fs.readdir(dir,{withFileTypes:true})){
       if(['.git','node_modules','release'].includes(entry.name))continue;
@@ -60,7 +61,23 @@ for(const root of ['.','js']){
 }
 for(const file of [...new Set(browserSources)]){
   let text=await fs.readFile(file,'utf8');
-  text=text.replace(/([?&]v=)\d+\.\d+\.\d+/g,(_match,prefix)=>`${prefix}${version}`);
+  if(file.startsWith('knowledge/')&&file.endsWith('.js')){
+    for(const {specifier,start,end} of exactStaticRelativeModuleReferences(text,file).reverse()){
+      if(!/\.js(?:[?#]|$)/.test(specifier))continue;
+      if(text.slice(start+1,end-1)!==specifier)throw new Error(file+': escaped module specifier cannot be versioned safely');
+      const fragment=specifier.indexOf('#');
+      const base=fragment<0?specifier:specifier.slice(0,fragment);
+      const suffix=fragment<0?'':specifier.slice(fragment);
+      const query=base.indexOf('?');
+      const hasVersion=new URLSearchParams(query<0?'':base.slice(query+1)).has('v');
+      const next=(hasVersion
+        ?base.replace(/([?&]v=)[^&#]*/g,(_match,prefix)=>prefix+version)
+        :base+(query<0?'?':'&')+'v='+version)+suffix;
+      text=text.slice(0,start+1)+next+text.slice(end-1);
+    }
+  }else{
+    text=text.replace(/([?&]v=)\d+\.\d+\.\d+/g,(_match,prefix)=>`${prefix}${version}`);
+  }
   await fs.writeFile(file,text);
 }
 

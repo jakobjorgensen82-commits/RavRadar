@@ -1,3 +1,39 @@
+# 14. oktober 2026 — historisk kildefixture og komplet sprogopdeling
+
+Efter de tidligere fem604-rettelser stoppede kontrol af 138e7d77 i to yderligere normale kildeprøver. Ejerens afgrænsede løsning bevarer runtime- og modelguards: historisk 673/600 køres på genuine 584, og det nye katalog deles i tre faste localeprocesser gennem samme normale child. Parentens 30 sekunder/1 MiB, alle gamle børn og hele normalresten bevares; direkte default udfører fortsat alt.
+
+Én hel privacy-parent består med alle 456 emner på dansk, tysk og engelsk. Én efterfølgende hel migrationsprøve består med genuine historiske positive forløb, alle gamle originalnegativer og aktuel KB-afvisning. Den første A-prøve manglede én deklareret policyJSON; dens ENOENT er bevaret, og kun det genuine pinverificerede blad blev tilføjet før den godkendte nye A-prøve. En senere patchtransportafvisning før skrivning ændrer ikke disse afterbytes eller målebeviser og er bevaret særskilt; der genkøres ikke adfærd for ren transportrettelse.
+
+Ny præcis CI/PostgreSQL og offentlig levering er fortsat åbne. Dette er kun testkalder-, fixture- og dokumentationsarbejde, ikke produkt-, model-, SQL-, versions- eller geodataændring.230 og videns577 er ikke installeret; ekstern AI er ikke bevist. Alle fem mål, vejrprioriteten og kravet om genoptagelse fra autentisk gyldigt checkpoint efter rettelse/nødvendige kontroller består uden ny produktionsautoritet. Historikken nedenfor bevares.
+
+# 14. oktober 2026 — faktisk604-kildefejl og genoptagelse fra checkpoint
+
+Ejerens konkrete krav er genoptagelse fra checkpoint efter en fremtidig faktisk vejrfejl og dens rettelse: fortsæt fra den dybeste autentiske, gyldigt gemte fase gennem den normale indgang, efter nødvendige kontroller og uden overlap eller gateskip. Vejrfejlen har fortsat prioritet; upåvirket lokal assistentforberedelse må ikke overlappe produktionswriteren eller give nye log-/data-/installationskald.606 er faktisk kildeleveret på main584 efter grøn385734; den ene normale38577766010 kører. Genbrug af gemt fremgang er faktisk, men kun delvist godkendt og ikke fuld DMI-kvalitet/publicering. Den tidligere385533 er fejlet. Private cacheidentiteter og kontroltal forbliver i checkpointet.
+
+PR #604 viste fem konkrete sourcefejl. Den lokale syvbladssamling retter aktuelle kanon-/migrationsforventninger, bevarer gamle220-timeout-/definitionskrav, bruger genuine udstedt220-kilde til historiske receiverprøver og forbinder readiness med hele den præcise ordnede migrationsliste. De berørte normale mål samt C/I-kontroller og syv hele afterpins består; C73/I75/normalT og historiske SQL er uændrede. Parserfejlen i det første private prøveforslag og den efterfølgende pakkeformatfejl er bevaret som fejl, ikke omdøbt til beståede kørsler. Ingen adfærdstest er gentaget for ren formatreparation.
+
+Ny exact-head source/PostgreSQL efter præcis606-arv, faktisk230/schema2, kontrolleret videnslevering og offentlige/eksterne AI-forløb er fortsat åbne.230 og577 er ikke installeret. Alle fem hovedmål og18oktober-fristen består; ingen ny version, SQL, bindingsberegning eller produktionshandling følger af dette additive dokumentationssnit. Hele den tidligere historik nedenfor bevares.
+
+# 14. oktober 2026 — lokal 4.0.577-vidensbinding efter leveret vejr603-kilde
+
+Samtaledeltaet er indarbejdet uden ny faglig eller privat driftsviden til brugerne: ejeren kræver markant bedre Spørg RavRadar, landsdækkende strømrettelse, færdig revision/brugerdata og selvstændig drift senest18oktober samt afgrænset parallel delegation. Alle fem krav bevares åbne. Nye leverancer må ikke omgå konkrete afvisninger, databevarelse eller aktiv writer.
+
+Faktisk lokal ECE2-komposition arver main90ae/603 og statistikbba9 gennem normal ancestrymerge7ccadfe. Begge dokumentationshistorikker og486 tidligere webkapitler er bevaret. Vidensbanken indeholder456 lokale emner på dansk, tysk og engelsk; variationer er ikke ekstra faglige kilder. Normal577-formatter, ren geodata-topversion, C73→renderC→I75→renderI→normalT, én ny eksklusiv20261014140000-videnskilde og de syv normale bindingsfiler er faktisk gennemført med slutkontrol. Fire nye genuine fixed-issued220-kildeprøver og den normale produktkritiske kildegate består. Den første nye RDKS-kontrol stoppede korrekt, fordi Master Log endnu manglede577; ingen efterfølgende assistentmål blev kørt af det stoppede kald.
+
+Dette er kildebygning, ikke SQL-installation, offentlig viden eller ekstern AI. 220 er installeret.601's præcise kilde/PostgreSQL er grøn på sit egethead, men230/schema2 er ikke installeret. Ny577 kræver egen præcis samlet kilde/PostgreSQL, faktisk230 først og beskyttede original-/historik-/no-loss-/writer-fri leveringskontroller. Den særskilte normale38553389373 kører på main90ae; cron er uændret midlertidigt pauset. Ekstern AI og offentlige brugerforløb, anonym statistik/retention, den isolerede SOURCE-revision og selvstændig drift står åbne. Gamle SQL, originaler, scoreformel, administratorpunkter og geometri er bevaret.
+
+# 14. oktober 2026 — lokal statistikrevision og konkret leveringsgrænse
+
+Status ved sammensætningen den 14. oktober 2026 kl. 09.30: PR #600 er leveret på main 9fe90320. Det kontrollerede forløb 38527571595/1 afsluttede kl. 09.21.12 dansk tid: originalkontrollen bevarede alle 673 dele og 11 originalfiler, den fulde plan blev kontrolleret før skrivning, kun 220 blev installeret, og database-, turbindings- og checkpointgenlæsningen bestod. Edge og Pages blev sprunget over. Én normal vejrhentning 38528682729 blev kvitteret kl. 09.29.45 og kører endnu; ny offentlig strøm, strømhukommelse og score er ikke verificeret. Cron er midlertidigt pauset med uændret plan. Statistik230 er ikke installeret. Ældre udsagn nedenfor om, at 220 ikke er installeret, er dateret historik og erstattes kun på dette statuspunkt.
+
+Den gennemgåede statistikpakke er samlet lokalt oven på 63c2/current220 med 19 funktionelle blade inklusive den ene nye230-migration. Normalbyggerens write/check, alle 53 profil-/ejerskabsprøver og den hele normale readiness-prøve er faktisk bestået. Første readiness-fejl blev bevaret og lukket med tre afgrænsede fixturekorrektioner: schema1 før/streng schema2 efter, præcise planforudsætninger og CRLF→LF kun i de nye workflow-læsninger. Produktgates og gamle assertions blev ikke lempet.
+
+Serverrevisionen skal beskytte nyere OFF mod forsinket gammelt ON. Standard ON, autentificeret ejerskab, logout og ærlig ukendt kvittering bevares; der aktiveres ikke anonym statistik, varsling, retention eller sletning. Den samlede native PostgreSQL-kæde og hosted levering er endnu ukørte. Den globale schema2-publiceringsgate blev afvist og er ikke del af kilden; en senere pause/idle og kontrolleret code-only-installation skal håndtere det korte gamle-klientvindue uden automatisk genoptagelse efter fejl.
+
+003 og den eksisterende Worker er allerede installeret og normalt genlæst; de genbruges og skal ikke replayes for230. Strøm220/normal offentlig vejrdrift har fortsat leveringsforrang. KB456/95 følger særskilt efter 230 med legitim ny modelmetadatafølge. De58 gamle SQL-filer, C69/I71/T, source599 og den nyere89.224-strømopfølgning bevares. Ingen ny produktionsautoritet, SQL-udførelse eller fuldmålsafslutning følger af denne lokale kildekandidat.
+
+*Dateret kildeforberedelse før levering af 606; afsnittets statuspunkter er historik og erstattes af den nyere status ovenfor.*
+
 ## 2026-10-14 — normalvejret stoppede i bølgeforvalg
 
 ROOT har integreret den gennemgåede trelinjers kalderdelta efter normal RED→GREEN. Hele normalwireup4/4, entrypoint21/21, normal Feggesund-proxy, C69/I71/otte bindinger og tidlig sourcecriticalgate består. Alle originale wavevalg, 121timer/T+3, strict-current før score og hele historiske sourceinverse bevares. Samlet CI, sikker levering og ny faktisk offentlig effekt står åbne.

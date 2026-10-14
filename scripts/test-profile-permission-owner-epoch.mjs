@@ -318,12 +318,14 @@ test('statistics preference: normal default ON, explicit OFF, owner-switch logou
     if(url.pathname==='/auth/v1/token')return Response.json(sessionFor(loginOwner,'token-'+loginOwner));
     if(url.pathname==='/auth/v1/logout')return Response.json({});
     if(url.pathname==='/rest/v1/rpc/record_account_activity')return Response.json({}, {status:503});
-    assert.ok(['/rest/v1/rpc/get_own_statistics_preference','/rest/v1/rpc/enable_own_statistics_preference','/rest/v1/rpc/disable_own_statistics_preference'].includes(url.pathname));
-    assert.equal(options.method,'POST');assert.equal(options.body,'{}','Browser cannot select another owner/time or submit trip data');
+    assert.ok(['/rest/v1/rpc/get_own_statistics_preference','/rest/v1/rpc/set_own_statistics_preference'].includes(url.pathname));
+    assert.equal(options.method,'POST');
+    if(url.pathname.endsWith('/get_own_statistics_preference'))assert.equal(options.body,'{}','Browser cannot select another owner/time or submit trip data');
+    else assert.deepEqual(JSON.parse(options.body),{p_enabled:false,p_expected_revision:'0'},'Only preference and observed revision, never owner/time/trip data');
     const owner=options.headers.Authorization==='Bearer synthetic-original'?ownerA:options.headers.Authorization==='Bearer token-'+ownerB?ownerB:null;
-    assert.ok(owner);const verb=url.pathname.split('/').at(-1).split('_')[0];calls.push({owner,verb});
+    assert.ok(owner);const verb=url.pathname.endsWith('/set_own_statistics_preference')?(JSON.parse(options.body).p_enabled?'enable':'disable'):'get';calls.push({owner,verb});
     if(verb==='enable')values.set(owner,true);if(verb==='disable')values.set(owner,false);
-    const value={enabled:values.has(owner)?values.get(owner):true,source:values.has(owner)?'stored':'default'};
+    const value={enabled:values.has(owner)?values.get(owner):true,source:values.has(owner)?'stored':'default',revision:values.has(owner)?'1':'0'};
     if(mode==='http-failure')return Response.json({}, {status:503});
     if(mode==='malformed-readback')return Response.json({enabled:false,source:'default'});
     if((mode==='switch-read'&&verb==='get')||(mode==='logout-write'&&verb==='disable'))
@@ -521,6 +523,228 @@ test('account history: rendered and pending views follow their exact owner lifet
       assert.equal(events.get('click')?.size, 1, 'Existing app backdrop-close handler is preserved');
       const leaked = timers.size; for (const id of timers) clearTimeout(id);
       assert.equal(leaked, 0, 'Actual auth deadlines have settled');
+    }
+  }
+});
+
+// Atomic preference protocol through the normal auth -> permissions -> account
+// caller. Controlled RPC responses below are NOT a PostgreSQL locking/RLS proof.
+test('statistics revision: observed ON, conservative OFF and owner-bound acknowledgements', async () => {
+  const preferenceSource = body('permissions-service');
+  const accountSource = fs.readFileSync(new URL('../js/ui/account-panel.js', import.meta.url), 'utf8')
+    .replace(/^import[^\n]+\r?\n/gm, '').replace(/^export\s+/gm, '');
+  const tick = () => new Promise(resolve => setImmediate(resolve));
+  const state = new Map(), tabs = [], calls = [], held = [];
+  let replyOverride = null, holdNextWrite = false;
+  let holdNextRequest = false, unknownNextWrite = null, conflictStatus = 409;
+  const requestHeld = [];
+  const view = owner => state.has(owner) ? { ...state.get(owner) }
+    : { enabled: true, source: 'default', revision: '0' };
+  function tab(label) {
+    const originals = new Map([['pending', 'pending-'+label], ['outbox', 'outbox-'+label],
+      ['backup', 'backup-'+label], ['tombstone', 'tombstone-'+label]]);
+    const storage = new Map(originals), timers = new Set();
+    storage.set('ravradar-auth-session', JSON.stringify(sessionFor(ownerA, 'token-'+label+'-'+ownerA)));
+    let nextOwner = ownerA;
+    const authScope = { PUBLIC_CONFIG: config, AbortController, DOMException,
+      localStorage: { getItem: key => storage.get(key) ?? null,
+        setItem: (key, value) => storage.set(key, String(value)), removeItem: key => storage.delete(key) },
+      setTimeout(fn, ms) { const id = setTimeout(() => { timers.delete(id); fn(); }, ms); timers.add(id); return id; },
+      clearTimeout(id) { clearTimeout(id); timers.delete(id); },
+      async fetch(input, options) {
+        const url = new URL(input); assert.equal(url.origin, config.supabaseUrl);
+        if (url.pathname === '/auth/v1/token') return Response.json(sessionFor(nextOwner, 'token-'+label+'-'+nextOwner));
+        if (url.pathname === '/auth/v1/logout') return Response.json({});
+        if (url.pathname === '/rest/v1/rpc/record_account_activity') return Response.json({}, { status: 503 });
+        const owner = [ownerA, ownerB].find(value => options.headers.Authorization === 'Bearer token-'+label+'-'+value);
+        assert.ok(owner, 'Normal auth transport, not a caller-selected owner');
+        const operation = url.pathname.slice('/rest/v1/rpc/'.length), payload = JSON.parse(options.body);
+        assert.equal(options.method, 'POST'); calls.push({ owner, operation, payload });
+        if (operation === 'get_own_statistics_preference') {
+          assert.deepEqual(payload, {}); return Response.json(replyOverride ?? view(owner));
+        }
+        if (operation === 'enable_own_statistics_preference') {
+          assert.deepEqual(payload, {});
+          return Response.json({ code: '22023', message: 'ACCOUNT_PREFERENCE_REVISION_REQUIRED' }, { status: 400 });
+        }
+        let requested, expected;
+        if (operation === 'disable_own_statistics_preference') {
+          assert.deepEqual(payload, {}); requested = false; expected = null;
+        } else {
+          assert.equal(operation, 'set_own_statistics_preference');
+          assert.deepEqual(Object.keys(payload).sort(), ['p_enabled', 'p_expected_revision'], 'No owner/epoch/time/trip payload');
+          assert.equal(typeof payload.p_enabled, 'boolean');
+          assert.match(payload.p_expected_revision, /^(0|[1-9][0-9]*)$/);
+          requested = payload.p_enabled; expected = BigInt(payload.p_expected_revision);
+        }
+        if (holdNextRequest) {
+          holdNextRequest = false;
+          await new Promise(resolve => requestHeld.push(resolve));
+        }
+        if (unknownNextWrite === 'before') {
+          unknownNextWrite = null; throw new TypeError('synthetic transport outcome unknown');
+        }
+        const current = view(owner), revision = BigInt(current.revision);
+        if ((requested && expected !== revision) || (!requested && expected !== null && expected > revision))
+          return Response.json({ code: '40001', message: 'ACCOUNT_PREFERENCE_REVISION_CONFLICT' }, { status: conflictStatus });
+        const saved = { enabled: requested, source: 'stored', revision: String(revision + 1n) };
+        state.set(owner, saved);
+        if (unknownNextWrite === 'after') {
+          unknownNextWrite = null; throw new TypeError('synthetic acknowledgement lost');
+        }
+        const returned = replyOverride ?? saved;
+        if (holdNextWrite) {
+          holdNextWrite = false;
+          return { ok: true, status: 200, json: () => new Promise(resolve => held.push({ resolve, value: returned })) };
+        }
+        return Response.json(returned);
+      },
+    };
+    vm.runInNewContext(authBody+'\nthis.api={authIdentityEpoch,authorizedFetch,currentSession,requireFreshSession,getCurrentProfile,onAuthChange,signInWithPassword,signOut};', authScope);
+    const auth = authScope.api;
+    const permissionScope = { ...auth, PUBLIC_CONFIG: config };
+    vm.runInNewContext(preferenceSource+'\nthis.api={getOwnStatisticsPreference,setOwnStatisticsPreference};', permissionScope);
+    // Old zero-argument RPC request through the unchanged normal auth transport.
+    const legacyRequest = enabled => auth.authorizedFetch(config.supabaseUrl+'/rest/v1/rpc/'
+      +(enabled?'enable':'disable')+'_own_statistics_preference',
+      {method:'POST',headers:{'Content-Type':'application/json'},body:'{}'},
+      {consumeJson:true,expectedUserId:auth.currentSession()?.user?.id});
+    const nodes = new Map(), events = new Map();
+    const node = () => ({ checked: false, disabled: true, indeterminate: true, isConnected: true, textContent: '',
+      handlers: new Map(), addEventListener(name, fn) { this.handlers.set(name, fn); } });
+    const content = { set innerHTML(value) {
+      for (const item of nodes.values()) item.isConnected = false; nodes.clear();
+      if (value.includes('id="accountStatisticsPreference"'))
+        for (const id of ['#accountStatisticsPreference', '#accountStatisticsStatus']) nodes.set(id, node());
+    }, querySelector: selector => nodes.get(selector) ?? null };
+    const dialog = { open: false, querySelector: () => content, showModal() { this.open = true; },
+      addEventListener(name, fn) { if (!events.has(name)) events.set(name, new Set()); events.get(name).add(fn); },
+      removeEventListener(name, fn) { events.get(name)?.delete(fn); },
+      close() { this.open = false; for (const fn of [...events.get('close') ?? []]) fn(); } };
+    const ui = { ...auth, ...permissionScope.api, authEnabled: () => true, t: key => key };
+    vm.runInNewContext(accountSource+'\nthis.openAccountDialog=openAccountDialog;', ui);
+    const result = { ...permissionScope.api, auth, legacyRequest, storage, originals, timers, dialog, nodes,
+      async open() { ui.openAccountDialog(dialog); await tick(); return nodes.get('#accountStatisticsPreference'); },
+      async login(owner) { nextOwner = owner; await auth.signInWithPassword('synthetic@example.invalid', 'synthetic-only'); },
+    };
+    tabs.push(result); return result;
+  }
+  try {
+    const a = tab('A'), b = tab('B');
+    const oldA = await a.getOwnStatisticsPreference(), oldB = await b.getOwnStatisticsPreference();
+    assert.equal(oldA.enabled, true); assert.equal(oldA.revision, '0'); assert.equal(state.size, 0, 'No default backfill');
+    assert.equal(Object.isFrozen(oldA), true);
+    const off = await b.setOwnStatisticsPreference(false, oldB);
+    assert.equal(off.revision, '1'); assert.equal(off.enabled, false);
+    await assert.rejects(a.setOwnStatisticsPreference(true, oldA), /bekræftes/);
+    assert.equal(view(ownerA).enabled, false); assert.equal(view(ownerA).revision, '1', 'Stale ON cannot undo later OFF');
+    const staleOff = await a.setOwnStatisticsPreference(false, oldA);
+    assert.equal(staleOff.revision, '2', 'Repeated/stale OFF invalidates every earlier ON revision');
+    await assert.rejects(b.setOwnStatisticsPreference(true, off), /bekræftes/);
+    const fresh = await a.getOwnStatisticsPreference();
+    const enabled = await a.setOwnStatisticsPreference(true, fresh);
+    assert.equal(enabled.revision, '3'); assert.equal(enabled.enabled, true);
+    const olderOff = await b.setOwnStatisticsPreference(false, oldB);
+    assert.equal(olderOff.revision, '4'); assert.equal(olderOff.enabled, false, 'Older OFF also wins after a newer ON');
+
+    const beforeInvalid = calls.length;
+    await assert.rejects(a.setOwnStatisticsPreference(true), /hentes igen/);
+    await assert.rejects(a.setOwnStatisticsPreference(true, { ...fresh }), /hentes igen/);
+    await assert.rejects(a.setOwnStatisticsPreference(true, JSON.parse(JSON.stringify(fresh))), /hentes igen/);
+    await assert.rejects(b.setOwnStatisticsPreference(true, fresh), /hentes igen/);
+    assert.equal(calls.length, beforeInvalid, 'Missing/cloned/other-instance receipts never reach transport');
+    const oldEnable = await a.legacyRequest(true); assert.equal(oldEnable.response.ok, false);
+    assert.equal(view(ownerA).revision, '4', 'Actual old no-argument enable path is refused without mutation');
+    const oldDisable = await a.legacyRequest(false); assert.equal(oldDisable.response.ok, true);
+    assert.notEqual(Object.keys(oldDisable.body).sort().join(','), 'enabled,source', 'Old parser cannot claim a new-shape response as confirmed');
+    assert.equal(view(ownerA).enabled, false); assert.equal(view(ownerA).revision, '5', 'Legacy OFF is applied, never falsely acknowledged by its old parser');
+
+    for (const revision of [undefined, 5, '-1', '01', '', '9223372036854775808', '1\n', '1\r\n']) {
+      replyOverride = { enabled: false, source: 'stored', ...(revision === undefined ? {} : { revision }) };
+      await assert.rejects(a.getOwnStatisticsPreference(), /bekræftes/);
+    }
+    replyOverride = { enabled: true, source: 'default', revision: '1' };
+    await assert.rejects(a.getOwnStatisticsPreference(), /bekræftes/); replyOverride = null;
+    let read = await a.getOwnStatisticsPreference();
+    replyOverride = { enabled: false, source: 'stored', revision: read.revision };
+    await assert.rejects(a.setOwnStatisticsPreference(false, read), /bekræftes/, 'Unadvanced acknowledgement is never confirmed'); replyOverride = null;
+    read = await a.getOwnStatisticsPreference();
+    replyOverride = { enabled: true, source: 'stored', revision: String(BigInt(read.revision)+2n) };
+    await assert.rejects(a.setOwnStatisticsPreference(true, read), /bekræftes/, 'ON acknowledgement must be exactly observed+1'); replyOverride = null;
+
+    const staleIdentity = await a.getOwnStatisticsPreference();
+    await a.login(ownerA); const count = calls.length;
+    await assert.rejects(a.setOwnStatisticsPreference(true, staleIdentity), /Kontoen blev ændret/);
+    assert.equal(calls.length, count, 'Same owner with a new login epoch cannot reuse prior receipt');
+    const sameOwner = await a.getOwnStatisticsPreference();
+    await a.login(ownerB); const switched = calls.length;
+    await assert.rejects(a.setOwnStatisticsPreference(false, sameOwner), /Kontoen blev ændret/);
+    assert.equal(calls.length, switched); assert.equal(view(ownerB).source, 'default');
+
+    const c = tab('UI'), d = tab('otherUI');
+    const input = await c.open(), otherRead = await d.getOwnStatisticsPreference();
+    await d.setOwnStatisticsPreference(false, otherRead);
+    input.checked = true; await input.handlers.get('change')();
+    assert.equal(input.disabled, true); assert.equal(input.indeterminate, true);
+    assert.equal(c.nodes.get('#accountStatisticsStatus').textContent, 'account.statisticsUnavailable');
+    assert.equal(view(ownerA).enabled, false, 'Stale UI ON is not optimistic saved success');
+    const currentInput = await c.open(); currentInput.checked = true;
+    await currentInput.handlers.get('change')();
+    assert.equal(currentInput.checked, true); assert.equal(currentInput.disabled, false);
+    assert.equal(c.nodes.get('#accountStatisticsStatus').textContent, 'account.statisticsSaved');
+    currentInput.checked = false; holdNextWrite = true;
+    const saving = currentInput.handlers.get('change')(); await tick();
+    assert.equal(held.length, 1); assert.equal(currentInput.disabled, true);
+    await c.auth.signOut(); held[0].resolve(held[0].value); await saving;
+    assert.equal(currentInput.indeterminate, true);
+    assert.equal(c.nodes.get('#accountStatisticsStatus').textContent, '', 'Late ACK after logout is not shown as saved');
+
+    // Actual normal transport is held BEFORE the controlled server reads its
+    // revision. Another tab's newer OFF completes before stale ON is released.
+    // This is a client/RPC protocol oracle, never a PostgreSQL lock proof.
+    const racing = tab('delayedON'), cancelling = tab('newOFF');
+    const racingRead = await racing.getOwnStatisticsPreference();
+    const cancellingRead = await cancelling.getOwnStatisticsPreference();
+    conflictStatus = 400; holdNextRequest = true;
+    const delayed = racing.setOwnStatisticsPreference(true, racingRead);
+    delayed.catch(() => {}); await tick();
+    assert.equal(requestHeld.length, 1, 'ON reached the actual auth transport before OFF');
+    const newerOff = await cancelling.setOwnStatisticsPreference(false, cancellingRead);
+    assert.equal(newerOff.enabled, false);
+    assert.equal(newerOff.revision, String(BigInt(cancellingRead.revision)+1n));
+    requestHeld.shift()();
+    await assert.rejects(delayed, /bekræftes/, 'HTTP400/SQLSTATE40001 is not a saved ON');
+    assert.deepEqual(view(ownerA), JSON.parse(JSON.stringify(newerOff)));
+    conflictStatus = 409;
+
+    const unknownUi = tab('unknownOutcome');
+    for (const outcome of ['before', 'after']) {
+      const control = await unknownUi.open(), beforeState = view(ownerA);
+      const requested = !beforeState.enabled;
+      control.checked = requested; unknownNextWrite = outcome;
+      const beforeRequests = calls.length;
+      await control.handlers.get('change')();
+      assert.equal(calls.length, beforeRequests+1, 'Exactly one write; no automatic retry');
+      assert.equal(control.disabled, true); assert.equal(control.indeterminate, true);
+      assert.equal(unknownUi.nodes.get('#accountStatisticsStatus').textContent, 'account.statisticsUnavailable');
+      const actual = view(ownerA);
+      assert.equal(actual.enabled, outcome === 'after' ? requested : beforeState.enabled);
+      assert.equal(actual.revision, outcome === 'after' ? String(BigInt(beforeState.revision)+1n) : beforeState.revision);
+      await control.handlers.get('change')();
+      assert.equal(calls.length, beforeRequests+1, 'Unknown UI cannot reuse a possibly consumed revision');
+      const refreshed = await unknownUi.open();
+      assert.equal(refreshed.checked, actual.enabled); assert.equal(refreshed.indeterminate, false);
+      assert.equal(refreshed.disabled, false);
+      assert.equal(unknownUi.nodes.get('#accountStatisticsStatus').textContent, '', 'Fresh read is not a write-success claim');
+    }
+  } finally {
+    for (const release of requestHeld.splice(0)) release();
+    for (const item of held) item.resolve(item.value);
+    await tick();
+    for (const item of tabs) {
+      item.dialog.close();
+      for (const [key, value] of item.originals) assert.equal(item.storage.get(key), value, 'Private trip/outbox/backup/tombstone bytes unchanged');
+      assert.equal(item.timers.size, 0, 'Actual auth transports leave no deadline timer');
     }
   }
 });

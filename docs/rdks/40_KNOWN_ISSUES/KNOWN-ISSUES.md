@@ -1,3 +1,23 @@
+## LOKALT RETTET, LEVERING ÅBEN — to nye 604-kildeprøver, 14. oktober 2026
+
+Historisk 673/600-test mod den aktuelle KB-kilde og parentens samlede katalog-child er nu rettet som testkalder-/fixturekontrakter. Genuine 584, de gamle assertions, alle sprog/negative prøver og uændrede 30 sekunder/1 MiB pr. barn bevares. Hele normalmålene består lokalt; de tidligere fejlkvitteringer bevares.
+
+Dette lukker ikke den nye samlede exact-head CI/PostgreSQL, installation af230/videns577, offentlig brugerafprøvning eller ekstern AI. Ingen produkt-/model-/SQL-ændring, ny aktivering eller intern fejlviden til assistentens brugere følger. Alle fem mål og den separate vejrprioritet består; ældre issues er bevaret historik.
+
+## ÅBEN — samlet577-kilde og offentlig virkning efter604-fejl, 14. oktober 2026
+
+Fem konkrete604-sourcefejl er afgrænset og rettet lokalt: sidste migrationsfase, aktuelle skabeloners kanon, to historiske220-kalderfixtures og readiness-forbrugerens migrationsliste. Gamle assertions, genuine historiske kilder og strenge aktuelle guards bevares; de berørte normale prøver består. Det røde604-head er ikke blevet grønt af lokal rettelse. Ny præcis samlet source/PostgreSQL efter606-arv, faktisk230/schema2, vidensinstallation og offentlige brugerforløb mangler.
+
+Vejr606 er på main584; den ene normale38577766010 kører med faktisk delvis cacheadmission. Fuld DMI-kvalitet, ny offentlig generation og selvstændig normaldrift er ikke udledt.385533 er fejlet; efter en fremtidig faktisk vejrfejl og dens rettelse skal genoptagelse fra checkpoint følge normal indgang fra den dybeste autentiske, gyldigt gemte fase efter nødvendige kontroller, uden overlap eller gateskip. Offentlig503/ekstern AI er stadig uafklaret og må ikke kaldes løst af lokal vidensudvidelse. Alle fem mål til18oktober består. Ingen interne fejl eller private kontroltal føjes til offentlig assistentviden; gamle issues bevares som historik på de udtrykkeligt erstattede punkter.
+
+## ÅBEN — faktisk levering og brugerafprøvning af videnskandidat577, 14. oktober 2026
+
+456-emneviden, cacheversionering, ny kildebinding og syv-fil-synkronisering er faktisk samlet lokalt efter vejr603/statistikbba9. De fire fixed-issued220-mål og produktkritisk kildegate består; fuld præcis CI/PostgreSQL på den nye kandidat og offentlig levering er endnu åbne. Statistik230 er kildegrøn, men ikke installeret. Den nye metadataovergang må ikke leveres før faktisk230/schema2 og original-/historik-/no-loss-/writerkontroller.
+
+Den faktiske eksterne AI og normale offentlige opfølgninger/sammensatte spørgsmål skal fortsat verificeres. Lokal viden, mocktransport og HTTP200 er ikke AI-bevis. Sikker drift/cron og ny strøm/hukommelse/scoreeffekt af den separate almindelige vejrhentning38553389373 afventer sit eget faktiske resultat. Statistik/anonymitet/retention og den isolerede SOURCE-revision er særskilt åbne. Ingen af de fem hovedmål er færdigt; tidligere datede statuspunkter bevares som historik.
+
+*Dateret kildeforberedelse før levering af 606; afsnittets statuspunkter er historik og erstattes af den nyere status ovenfor.*
+
 ## Åben akut fejl — bølgeforvalg kræver ubrugt strøm, 14. oktober 2026
 
 38553389373/1/main90ae fejlede i trin110 med DMI_GRID_SAMPLING_APPLICABILITY_UNKNOWN via preflightFeggesundOperationalWaveReadiness. Bølge-only kalderen arver strict-current-flaget. PR603's scalarplan og 118-timers scoreafgrænsning er faktisk korrekte; denne særskilte kalder mangler. Ingen ny offentlig generation blev leveret. Afgrænset rettelse og normal regression forberedes; faktisk CI/levering/effekt er åbne. Cron er pauset med uændret plan.
@@ -7,6 +27,18 @@ En separat skrivefri audit fandt, at den inaktive private admin-stagingvej bygge
 ## ÅBEN — ubrugt strøm stopper ikke-strømplanen, 14. oktober 2026
 
 Efter faktisk installeret/genlæst 220 stoppede den normale vejrhentning før ny offentlig levering i current-grid-kontrollen inde i planen for fire ikke-strømkomponenter. Koden kræver desuden current-grid-bevis i tre private vandstandstimer uden for scorehorizonten. Den afgrænsede kalderrettelse skal lade kontrollen følge faktisk strømforbrug og bevare stringent current/recovery/reference, 121 timer til T+3, alle originaler og no-loss. DMI 429 er observeret separat; koblingen til det konkrete endpoint er ukendt. Præcis kildekontrol, sikker levering og ny offentlig effekt står åbne. Tidligere uinstalleret220-status nedenfor er dateret historik. Se håndbog 89.226.
+
+## ÅBEN — statistikrevision kræver server- og leveringsbevis, 14. oktober 2026
+
+Status ved sammensætningen den 14. oktober 2026 kl. 09.30: PR #600 er leveret på main 9fe90320. Det kontrollerede forløb 38527571595/1 afsluttede kl. 09.21.12 dansk tid: originalkontrollen bevarede alle 673 dele og 11 originalfiler, den fulde plan blev kontrolleret før skrivning, kun 220 blev installeret, og database-, turbindings- og checkpointgenlæsningen bestod. Edge og Pages blev sprunget over. Én normal vejrhentning 38528682729 blev kvitteret kl. 09.29.45 og kører endnu; ny offentlig strøm, strømhukommelse og score er ikke verificeret. Cron er midlertidigt pauset med uændret plan. Statistik230 er ikke installeret. Ældre udsagn nedenfor om, at 220 ikke er installeret, er dateret historik og erstattes kun på dette statuspunkt.
+
+Den konkrete race er afgrænset: et forsinket gammelt ON må ikke overskrive et nyere OFF. Den lokale kandidat kobler klientens observerede serverrevision og kontoejer til en atomisk serveroperation. Normalbyggeren, alle 53 profilprøver og den hele readiness-prøve består lokalt; det er ikke PostgreSQL-låsebevis eller hosted virkning. Rigtig native213→220→230, præcis samlet kildekontrol og installation/genlæsning står åbne.
+
+Overgangen er ikke helt afbrydelsesfri: mellem 230-installationen og genindlæsning af den nye klient vil gamle faners ON blive afvist. Et gammelt OFF kan være gemt, selv om den gamle klient ikke kan bekræfte det nye svarformat; brugeren må hente sin aktuelle indstilling igen. En ukendt kvittering må hverken kaldes gemt eller tolkes som ON. Risikoen skal med i den kontrollerede leveringsplan, ikke skjules ved at acceptere begge schemaer.
+
+Den foreslåede globale schema2-vejrgate blev afvist og er ikke installeret. Den må ikke genindføres som en omdøbt wrapper. Sikker levering skal i stedet afgrænses ved faktisk pause og idle, kontrolleret code-only og streng schema2 før nye kontoaktiver; det korte klientvindue skal accepteres i den konkrete leveringsautoritet. Ingen automatisk cron-genoptagelse efter ukendt/delvis fejl. SourcePR og levering følger først efter strøm220 og normal offentlig vejrdrift.
+
+Default ON gælder kun ved serverbekræftet fravær af et gemt valg; manglende eller fejlbehæftede svar er ukendte. Eksisterende false bevares. Præferencen er ikke samtykke, anonymitetsbevis eller aktiveret samlet statistik. Ingen automatisk varsling, sletning eller retention aktiveres. Private turdata og indholdet af egen eksport ændres ikke; fælles kvoter og tjenesternes tilgængelighed gælder fortsat. Kravet om to års inaktivitet,30 dages varsel og loginbevarelse består, men varseltransport, slette-/backupkæde og anonym samlet statistik er ikke aktiveret af230. Gamle issues og den nyere89.224-strømopfølgning bevares.
 
 ## ÅBEN — historisk checkpointlæsning før strøm220, 14. oktober 2026
 

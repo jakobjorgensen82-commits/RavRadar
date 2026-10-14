@@ -1,8 +1,28 @@
+## Testkaldere må ikke udgive ny kilde som historisk — 14. oktober 2026
+
+Den historiske 673/600-prøve skal bruge genuine udstedt 584-kilde og dens hele deklarerede fixtureafhængigheder; aktuelle KB-guards og originale assertions bevares. Den nye katalogopdeling skal ufravigeligt kalde DA, DE, EN og alle øvrige normale blokke. Ingen højere timeout, større buffer, miljøbaseret fravalg eller tab af negative/sikkerheds-/kvoteprøver må erstatte korrekt opdeling; direkte default kører fortsat alt.
+
+De faktiske lokale mål består, men er ikke præcis samlet CI, PostgreSQL eller offentlig effekt. Første fejl og eventuelle patchtransportfejl bevares særskilt; en RAM-inverse er ikke i sig selv bevis for faktisk integration. Ingen nye produktionskald eller ændring af kravene om genoptagelse fra gyldigt checkpoint efter rettelse og nødvendige kontroller følger heraf.
+
+## Kildeopfølgning uden faseombytning — 14. oktober 2026
+
+Ejerens krav er genoptagelse fra checkpoint efter en fremtidig faktisk vejrfejl og dens rettelse: brug den dybeste autentiske, gyldigt gemte fase gennem den normale indgang, efter nødvendige kontroller og inden for eksisterende autoritet, uden overlap eller gateskip. Det giver ingen automatisk genkørsel, ekstra log-/providerlæsning, merge eller produktionsændring under writer. Lokal, upåvirket kildeforberedelse må fortsætte uden overlap med det kritiske vejrspor.
+
+604-rettelsen skal bevare ægte213/220/230-/vidensfaser: historiske positive prøver bruger udstedt kilde og må ikke få nye modelaliases eller lempet adgang; den aktuelle readiness kræver alle præcise migrations-ID'er i rækkefølge. Lokale PASS er ikke exact-head CI, PostgreSQL, ekstern AI eller offentlig levering. Delvist godkendt cachefremskridt er ikke fuld datakvalitet. Interne fejl, cacheidentiteter og private kontroltal må ikke blive offentlig assistentviden. De øvrige regler og historikken består.
+
+*Dateret kildeforberedelse før levering af 606; afsnittets statuspunkter er historik og erstattes af den nyere status ovenfor.*
+
 ## Aktiv forbrugsafgrænsning — 14. oktober 2026
 
 Et bølgeforvalg må ikke bruge strøm-gitterkravet som generel materialiseringsgate. Den afgrænsede undtagelse gælder kun Feggesunds bølge-only kalder, ikke faktisk strøm i score, memory, native-hold eller anvendt replayhistorik. Bevar almindelig bølgevalidering, alle originaler og 118/T+3-horisonten. Ingen ny producer-/modelbinding, provenance, pruning eller rå vejrdata i logs. Samme normale genoptagelse skal selv bevise faktisk cachevalg, restore og admission; et grønt SAVE-trin er ikke genbrug.
 
 # AI operating rules
+
+## Fysisk vidensbinding efter230 — 14. oktober 2026
+
+Den nye videnskandidat skal versionsformateres og bygges i rækkefølgen faktisk C→renderC→I→renderI→normalT. Tuple, hele manifester og ny append-only migrationskilde fryses kun fra disse faktiske filer; gamle213/220/230-byggere og SQL må ikke omskrives eller bruge nye filer som gammel kilde. Den separate fixed-issued220-kontrol og ny vidensbygger kontrollerer hver sin fase. Den normale syv-fil-synkronisering og efterfølgende fysiske slutkontrol kræves før kilde-PR.
+
+Leveringen kræver faktisk installeret230/schema2 før den nye metadataovergang, bevis for oprindelige B/S og uændret numerisk historik samt alle normale writer-/plan-/SQL-/Edge-/private/public-gates. Præference-ON er ikke samtykke eller anonymitet, og viden aktiverer hverken statistik, retention eller sletning. Ingen global Management-/kontogate må tilføjes vejrhentning. Lokal eller syntetisk nativekilde er ikke PostgreSQL, ekstern AI eller offentlig effekt; private fejl må ikke føjes til offentlig assistentviden.
 
 ## Strømguardens forbrugsgrænse — 14. oktober 2026
 

@@ -14,6 +14,7 @@ import {
   assertSealedIntegratedCutoverReadiness,
   assertSupabaseMigrationPlan,
   assertSupabaseMigrationsApplied,
+  assistantKnowledgeRequiredMigrations,
   buildIntegratedCutoverReadiness,
   checkIntegratedCutoverReadiness,
   checkSealedIntegratedCutoverReadiness,
@@ -38,6 +39,8 @@ import { buildBoundedCurrentTransportMemory } from '../js/core/ravscore-regime-m
 import { buildCurrentSupplyMemory } from '../js/core/ravscore-current-supply-memory.js';
 import { readAccountAssistantCanonicalSource } from './lib/account-assistant-successor-source.mjs';
 import { readCurrentGridCanonicalSource } from './lib/current-grid-successor-source.mjs';
+import { ASSISTANT_KNOWLEDGE_BINDING, assistantKnowledgeMigration,
+  readAssistantKnowledgeCanonicalSource } from './lib/assistant-knowledge-successor-source.mjs';
 import { accountAssistantCatalogQuery, verifyAccountAssistantCatalogMetadata,
   verifyInstalledAccountAssistantSchema } from './verify-account-assistant-schema.mjs';
 
@@ -1093,7 +1096,12 @@ assert.throws(() => assertSealedIntegratedCutoverReadiness({
 }), /strictly equal|modelBundle/);
 assert.equal(readiness.assistantBinding.modelContractSha256, readiness.modelContractSha256);
 assert.equal(readiness.assistantBinding.modelBundleSha256, readiness.modelBundleSha256);
-assert.deepEqual(readiness.migrationIds, REQUIRED_CUTOVER_MIGRATIONS.map(item => item.id));
+const knowledgeRequiredMigrations = assistantKnowledgeRequiredMigrations();
+assert.deepEqual(knowledgeRequiredMigrations.slice(0, -2), REQUIRED_CUTOVER_MIGRATIONS,
+  'Historical220 required migrations remain the exact prefix, not a redefined LATEST');
+assert.equal(knowledgeRequiredMigrations.at(-2).version, '20261013230000');
+assert.deepEqual(knowledgeRequiredMigrations.at(-1), assistantKnowledgeMigration());
+assert.deepEqual(readiness.migrationIds, knowledgeRequiredMigrations.map(item => item.id));
 assert.doesNotMatch(JSON.stringify(readiness), /(?:coordinate|latitude|longitude|currentU|currentV|payloadRow)/i);
 await assert.rejects(buildIntegratedCutoverReadiness('short', {
   publicImplementationClosureSha256: PUBLIC_IMPLEMENTATION_CLOSURE_SHA256,
@@ -1109,7 +1117,15 @@ assert.ok(accountCanonicalSource.includes('7876390c0e99dc1926d57e3e5a51a0c88c8e7
 const {canonicalSource:currentCanonicalSource,accountSource:currentAccountSchemaSource}=
   await readCurrentGridCanonicalSource();
 assert.equal(currentAccountSchemaSource,accountSchemaSource,'current-grid must not alter account schema');
-assert.ok(currentCanonicalSource.includes(CHECKPOINT_CONTINUATION_HASH));
+assert.ok(currentCanonicalSource.includes('0f6c182ab2ffa7d9d0153706277aa3f7b582327be7dda02842a9c8b995568d4a'),
+  'Immutable220 canonical keeps its issued continuation, never the current KB tuple');
+const {canonicalSource:knowledgeCanonicalSource,historicalSchema1,statisticsSchema2Source}=
+  await readAssistantKnowledgeCanonicalSource();
+assert.equal(historicalSchema1,accountSchemaSource,'KB preserves genuine213 schema1 separately');
+assert.notEqual(statisticsSchema2Source,historicalSchema1,'KB initializer is explicitly schema2');
+assert.equal(CHECKPOINT_CONTINUATION_HASH,ASSISTANT_KNOWLEDGE_BINDING.T);
+assert.ok(knowledgeCanonicalSource.includes(CHECKPOINT_CONTINUATION_HASH),
+  'The normal current readback uses the physically issued KB continuation');
 
 // The normal hashed readback takes exactly the new CAS body, never an expected
 // hash override; the other twelve immutable function bodies stay unchanged.
@@ -1133,7 +1149,15 @@ assert.notEqual(currentCasBody,accountCasBody);
 assert.equal(currentCasBody.split("      and (case v_payload #>> '{modelBinding,modelBundleSha256}'\n").length,2);
 assert.equal(currentCasBody.split('        else false\n      end)\n    then\n').length,2);
 assert.ok(!currentCasBody.includes("      and case v_payload #>> '{modelBinding,modelBundleSha256}'"));
-assert.ok(expectedCheckpointContract.definition.includes(`-- cas-function --\n${currentCasBody}\n-- checkpoint-history-exclusion --`));
+const knowledgeCasBody=checkpointSqlBody(knowledgeCanonicalSource,'ravradar_ravscore_checkpoint_cas');
+assert.notEqual(knowledgeCasBody,currentCasBody,'KB is a distinct exact metadata successor');
+assert.equal(knowledgeCasBody.split("      and (case v_payload #>> '{modelBinding,modelBundleSha256}'\n").length,2);
+assert.equal(knowledgeCasBody.split('        else false\n      end)\n    then\n').length,2);
+assert.ok(!knowledgeCasBody.includes("      and case v_payload #>> '{modelBinding,modelBundleSha256}'"));
+assert.ok(expectedCheckpointContract.definition.includes(`-- cas-function --\n${knowledgeCasBody}\n-- checkpoint-history-exclusion --`));
+assert.ok(!expectedCheckpointContract.definition.includes(currentCasBody),
+  'Current KB readback must not accept the complete old220 CAS body');
+assert.ok(expectedCheckpointContract.definition.includes(`-- kb-predecessor-projection --\n${checkpointSqlBody(knowledgeCanonicalSource,'ravradar_ravscore_checkpoint_kb_predecessor_projection')}`));
 assert.ok(!expectedCheckpointContract.definition.includes(accountCasBody));
 for(const family of ['ffc','249','c1ac'])for(const kind of ['state','payload']) {
   const name=`ravradar_ravscore_checkpoint_grid_${family}_${kind}_valid`;
@@ -1168,7 +1192,15 @@ for (const unchangedName of [
 ]) {
   assert.ok(!singleProjectionMigration.includes('create or replace function public.'+unchangedName+'('),
     'historical200000 still replaces only CAS, not '+unchangedName);
-  assert.ok(expectedCheckpointContract.definition.includes(checkpointSqlBody(currentCanonicalSource,unchangedName)));
+  const knowledgeBody=checkpointSqlBody(knowledgeCanonicalSource,unchangedName);
+  const gridBody=checkpointSqlBody(currentCanonicalSource,unchangedName);
+  assert.ok(expectedCheckpointContract.definition.includes(knowledgeBody));
+  if(['ravradar_ravscore_checkpoint_integrated_state_valid','ravradar_ravscore_checkpoint_payload_valid',
+    'ravradar_ravscore_checkpoint_predecessor_payload_valid'].includes(unchangedName)) {
+    assert.notEqual(knowledgeBody,gridBody,'Exact KB metadata validator replacement: '+unchangedName);
+  } else {
+    assert.equal(knowledgeBody,gridBody,'KB must preserve the whole220 helper: '+unchangedName);
+  }
   if(!['ravradar_ravscore_checkpoint_integrated_state_valid','ravradar_ravscore_checkpoint_payload_valid'].includes(unchangedName)) {
     assert.equal(checkpointSqlBody(currentCanonicalSource,unchangedName),checkpointSqlBody(accountCanonicalSource,unchangedName),
       'current-grid keeps the complete213 helper unchanged: '+unchangedName);
@@ -2100,15 +2132,300 @@ assert.equal(arbitraryAccountCalls,0);
 
 const accountCodeOnly=await fs.readFile('.github/workflows/deploy-code-only-repair.yml','utf8');
 const accountReadback=accountCodeOnly.indexOf('node scripts/verify-account-assistant-schema.mjs');
+const accountSchema1Prewrite=accountCodeOnly.indexOf('      - name: Verify unchanged current originals and schema1 before statistics revision');
+const accountDryRun=accountCodeOnly.indexOf('      - name: Dry-run and require only the latest exact integrated migration');
 const accountDbApply=accountCodeOnly.indexOf('          supabase db push --linked --skip-vault');
+const accountPostwrite=accountCodeOnly.indexOf('      - name: Read back migration and database binding');
+const accountSchema2Readback=accountCodeOnly.indexOf('node scripts/verify-statistics-preference-revision-schema.mjs',accountPostwrite);
 const accountTripDeploy=accountCodeOnly.indexOf('      - name: Deploy exact rebound trip Edges without Worker or D1 replay');
 const accountAssistantDeploy=accountCodeOnly.indexOf('            if supabase functions deploy ravradar-assistant');
-assert.ok(accountDbApply>=0 && accountReadback>accountDbApply
-  && accountTripDeploy>accountReadback && accountAssistantDeploy>accountTripDeploy,
-  'fixed account catalog readback must precede all three rebound Edge deployments');
+assert.match(accountCodeOnly.slice(accountTripDeploy,accountAssistantDeploy),
+  /        if: env\.RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED == 'true' \|\| env\.RAVRADAR_KNOWLEDGE_EDGE_REQUIRED == 'true'\r?\n/);
+assert.ok(accountSchema1Prewrite>=0 && accountReadback>accountSchema1Prewrite
+  && accountDryRun>accountReadback && accountDbApply>accountDryRun,
+  'genuine schema1 catalog readback must remain in the before230 prewrite phase');
+assert.match(accountCodeOnly.slice(accountSchema1Prewrite,accountDryRun),
+  /        if: env\.RAVRADAR_STATISTICS_REVISION_PHASE == 'before'\r?\n/);
+assert.ok(accountPostwrite>accountDbApply && accountSchema2Readback>accountPostwrite
+  && accountTripDeploy>accountSchema2Readback && accountAssistantDeploy>accountTripDeploy,
+  'strict schema2 catalog readback after230 must precede all three rebound Edge deployments');
+const accountPostwriteBlock=accountCodeOnly.slice(accountPostwrite,
+  accountCodeOnly.indexOf('      - name: Read unchanged Candidate quality',accountPostwrite));
+assert.match(accountPostwriteBlock,/          set -euo pipefail\r?\n/);
+assert.match(accountPostwriteBlock,/            --phase installed --migration-list /);
+assert.match(accountPostwriteBlock,/^          node scripts\/verify-statistics-preference-revision-schema\.mjs\r?$/m);
+assert.doesNotMatch(accountPostwriteBlock,/verify-account-assistant-schema\.mjs|continue-on-error:|\|\|\s*true|if test[^\n]*RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN/);
+for(const edge of ['trip-log','submit-observation'])assert.ok(
+  accountCodeOnly.indexOf('          supabase functions deploy '+edge+' --project-ref',accountTripDeploy)>accountSchema2Readback
+  && accountCodeOnly.indexOf('          supabase functions deploy '+edge+' --project-ref',accountTripDeploy)<accountAssistantDeploy,
+  edge+' must remain after the strict schema2 readback');
 const accountAttemptPolicy=accountCodeOnly.slice(accountCodeOnly.indexOf('          assistant_deploy_attempts=3'),
   accountCodeOnly.indexOf('          for ((attempt = 1; attempt <= assistant_deploy_attempts; attempt++)); do'));
 assert.match(accountAttemptPolicy,/RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN/);
 assert.doesNotMatch(accountAttemptPolicy,/RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED/);
 assert.match(accountAttemptPolicy,/assistant_deploy_attempts=1/);
 console.log('Account/assistant successor: strict named prewrite plan, sparse current readback and fixed metadata caller; controlled fixtures only.');
+
+// Explicit future revision-phase fixtures; issued schema1 fixtures above remain intact.
+import {statisticsPreferenceRevisionCatalogQuery,verifyStatisticsPreferenceRevisionCatalogMetadata,
+  verifyInstalledStatisticsPreferenceRevisionSchema} from './verify-account-assistant-schema.mjs';
+{
+// New fixed account metadata reader: controlled transport, not native/hosted
+// evidence. Native branch executes this SAME query against actual catalog.
+const accountNames=['record_account_activity','get_own_statistics_preference',
+  'enable_own_statistics_preference','disable_own_statistics_preference','set_own_statistics_preference'];
+const revisedPreferenceBodies=Object.freeze({
+  "get_own_statistics_preference": "77405eb8ad047c59e9352893b91d35041c93fc7b4e4b7e52311612cbbc7b3c02",
+  "enable_own_statistics_preference": "2e51ed1903aa8e8e4de40ddccc94a6e05f4f0d34bd8bb21b4e96ed34fd19666b",
+  "disable_own_statistics_preference": "b1275e656d398f5b240990bb8a8401c3166c66121189cc205fc5c0154924c4f5",
+  "set_own_statistics_preference": "acd4d566a25d0fc251cd52bb58a8edccfb1aa7de02e4f751f69becb95a0e7bf1"
+});
+const accountTable=(activity)=>({
+  present:true,regular:true,rls:true,forceRls:false,inheritance:false,
+  columns:(activity?[['user_id','uuid'],['first_observed_at','timestamptz'],['last_activity_at','timestamptz']]
+    :[['user_id','uuid'],['enabled','bool'],['revision','int8']]).map(([name,type],index)=>({
+      name,position:index+1,type,builtin:true,notNull:true,default:!activity&&name==='revision',
+      defaultExpression:!activity&&name==='revision'?'0':null,identity:'',generated:'',dimensions:0,
+    })),
+  droppedColumns:0,constraintCount:3,primaryKey:1,profilesCascade:1,
+  activityOrder:activity?1:0,revisionNonnegative:activity?0:1,policyCount:0,userTriggerCount:0,unexpectedAcl:false,
+  anonAccess:false,authenticatedAccess:false,
+});
+const accountMetadata={schemaVersion:2,tables:{
+  account_activity_journal:accountTable(true),account_statistics_preferences:accountTable(false),
+},functions:Object.fromEntries(accountNames.map(name=>{
+  const head=accountSchemaSource.indexOf('create function public.'+name+'()');
+  const start=accountSchemaSource.indexOf('as $$',head)+5,end=accountSchemaSource.indexOf('\n$$;',start);
+  if(name!=='set_own_statistics_preference')assert.ok(head>=0 && end>start);
+  return[name,{present:true,sameNameCount:1,kind:'f',language:'plpgsql',result:'jsonb',
+    arguments:name==='set_own_statistics_preference'?'p_enabled boolean, p_expected_revision bigint':'',
+    variadic:false,strict:false,returnsSet:false,definer:true,volatility:'v',configuration:['search_path=""'],
+    bodySha256:revisedPreferenceBodies[name]??createHash('sha256').update(accountSchemaSource.slice(start,end).trim()).digest('hex'),
+    publicExecute:false,unexpectedAcl:false,anonExecute:false,authenticatedExecute:true,serviceExecute:false}];
+}))};
+const accountExpected={schemaVersion:2,status:'ACCOUNT_STATISTICS_REVISION_SCHEMA_MATCH',scope:'FIXED_METADATA_ONLY',
+  tables:2,rpcs:5,rls:true,directClientTableAccess:false,serviceRpcExecuteCount:0,
+  accountRowsRead:false,statisticalProcessingProved:false,hostedOwnerFlowProved:false};
+assert.deepEqual(await verifyStatisticsPreferenceRevisionCatalogMetadata(accountMetadata),accountExpected);
+const accountDefaultService=structuredClone(accountMetadata);
+for(const name of accountNames)accountDefaultService.functions[name].serviceExecute=true;
+assert.deepEqual(await verifyStatisticsPreferenceRevisionCatalogMetadata(accountDefaultService),
+  {...accountExpected,serviceRpcExecuteCount:5},
+  'existing service default execute is observed, not silently represented as a client grant');
+for(const mutate of [
+  m=>{delete m.tables.account_activity_journal;},
+  m=>{m.tables.account_statistics_preferences.columns[1].type='text';},
+  m=>{m.tables.account_activity_journal.profilesCascade=0;},
+  m=>{m.tables.account_activity_journal.rls=false;},
+  m=>{m.tables.account_statistics_preferences.policyCount=1;},
+  m=>{m.tables.account_activity_journal.unexpectedAcl=true;},
+  m=>{m.tables.account_statistics_preferences.authenticatedAccess=true;},
+  m=>{m.functions.record_account_activity.bodySha256='0'.repeat(64);},
+  m=>{m.functions.record_account_activity.configuration=['search_path=public'];},
+  m=>{m.functions.get_own_statistics_preference.definer=false;},
+  m=>{m.functions.enable_own_statistics_preference.publicExecute=true;},
+  m=>{m.functions.disable_own_statistics_preference.anonExecute=true;},
+  m=>{m.functions.get_own_statistics_preference.unexpectedAcl=true;},
+  m=>{m.functions.record_account_activity.sameNameCount=2;},
+  m=>{m.schemaVersion=1;},
+  m=>{delete m.functions.set_own_statistics_preference;},
+  m=>{m.tables.account_statistics_preferences.columns.pop();},
+  m=>{m.tables.account_statistics_preferences.columns[2].type='int4';},
+  m=>{m.tables.account_statistics_preferences.columns[2].notNull=false;},
+  m=>{m.tables.account_statistics_preferences.columns[2].default=false;},
+  m=>{m.tables.account_statistics_preferences.columns[2].defaultExpression='1';},
+  m=>{m.tables.account_statistics_preferences.revisionNonnegative=0;},
+  m=>{m.tables.account_statistics_preferences.revisionNonnegative=2;},
+  m=>{m.tables.account_statistics_preferences.constraintCount=4;},
+  m=>{m.tables.account_statistics_preferences.profilesCascade=0;},
+  m=>{m.tables.account_statistics_preferences.unexpectedAcl=true;},
+  m=>{m.functions.set_own_statistics_preference.sameNameCount=2;},
+  m=>{m.functions.set_own_statistics_preference.arguments='p_enabled boolean, p_expected_revision text';},
+  m=>{m.functions.set_own_statistics_preference.arguments='p_enabled boolean, p_expected_revision bigint DEFAULT NULL::bigint';},
+  m=>{m.functions.set_own_statistics_preference.bodySha256='0'.repeat(64);},
+  m=>{m.functions.set_own_statistics_preference.publicExecute=true;},
+  m=>{m.functions.set_own_statistics_preference.unexpectedAcl=true;},
+  m=>{m.functions.set_own_statistics_preference.anonExecute=true;},
+  m=>{m.functions.set_own_statistics_preference.authenticatedExecute=false;},
+  m=>{m.functions.set_own_statistics_preference.definer=false;},
+  m=>{m.functions.set_own_statistics_preference.configuration=['search_path=public'];},
+  ...['get','enable','disable'].map(verb=>m=>{m.functions[verb+'_own_statistics_preference'].bodySha256='0'.repeat(64);}),
+]) {
+  const copy=structuredClone(accountMetadata);mutate(copy);
+  await assert.rejects(verifyStatisticsPreferenceRevisionCatalogMetadata(copy),/ACCOUNT_ASSISTANT_CATALOG_/);
+}
+const accountRequests=[];
+const accountReport=await verifyInstalledStatisticsPreferenceRevisionSchema({accessToken:'synthetic-account-token',
+  fetchImpl:async(url,init)=>{
+    accountRequests.push({url,init});
+    return new Response(JSON.stringify([{metadata:accountMetadata}]),{status:201});
+  }});
+assert.deepEqual(accountReport,accountExpected);assert.equal(accountRequests.length,1);
+assert.equal(accountRequests[0].url,'https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query');
+assert.equal(accountRequests[0].init.method,'POST');assert.equal(accountRequests[0].init.redirect,'error');
+assert.equal(accountRequests[0].init.cache,'no-store');assert.equal(accountRequests[0].init.credentials,'omit');
+assert.deepEqual(JSON.parse(accountRequests[0].init.body),{query:statisticsPreferenceRevisionCatalogQuery,read_only:true});
+assert.doesNotMatch(statisticsPreferenceRevisionCatalogQuery,/\b(?:from|join)\s+public\.account_/i);
+assert.doesNotMatch(JSON.stringify(accountReport),/synthetic-account-token|Bearer|first_observed_at|user_id/);
+for(const response of [
+  new Response('PRIVATE-BODY-NOT-LOGGED',{status:403}),
+  new Response(new Uint8Array(32769),{status:201}),
+  new Response(JSON.stringify([{metadata:accountMetadata},{metadata:accountMetadata}]),{status:201}),
+]) {
+  let calls=0;
+  await assert.rejects(verifyInstalledStatisticsPreferenceRevisionSchema({accessToken:'synthetic-account-token',
+    fetchImpl:async()=>{calls++;return response;}}),/ACCOUNT_ASSISTANT_CATALOG_/);
+  assert.equal(calls,1,'fixed account readback never retries');
+}
+let arbitraryAccountCalls=0;
+await assert.rejects(verifyInstalledStatisticsPreferenceRevisionSchema({accessToken:'synthetic',
+  query:'select anything',fetchImpl:async()=>{arbitraryAccountCalls++;}}),/ACCOUNT_ASSISTANT_CATALOG_/);
+assert.equal(arbitraryAccountCalls,0);
+
+}
+
+// Named statistics revision plan. No database/transport: real source builder,
+// normal staging function and actual CLI against bounded text fixtures only.
+{
+  const {buildStatisticsPreferenceRevision,STATISTICS_REVISION_MIGRATION:revision}=
+    await import('./build-statistics-preference-revision.mjs');
+  const built=await buildStatisticsPreferenceRevision();
+  const revisionFile=path.resolve('supabase/migrations',revision.filename);
+  assert.deepEqual(await fs.readFile(revisionFile),Buffer.from(built.migration));
+  const originalMigration=await fs.readFile('supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql');
+  assert.equal(createHash('sha256').update(originalMigration).digest('hex'),
+    '80ad179bc896e9fcd62b8af103d70a2d086d3626395dd97f03e4184e52bcae5d');
+  const list=(installed=false)=>'Local | Remote | Time (UTC)\n'
+    +REQUIRED_CUTOVER_MIGRATIONS.map(row=>`${row.version} | ${row.version} | state`).join('\n')
+    +`\n${revision.version} | ${installed?revision.version:''} | state\n`;
+  const dry='DRY RUN: migrations will *not* be pushed to the database.\n'
+    +`Would push these migrations:\n • ${revision.filename}\nFinished supabase db push.`;
+  const noop='DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.';
+  const request={migrationListText:list(),dryRunText:dry};
+  await assert.rejects(assertSupabaseMigrationPlan(request),/named prewrite route/);
+  await assert.rejects(assertSupabaseMigrationPlan({...request,allowStatisticsPreferenceRevisionPlan:'true'}));
+  assert.deepEqual((await assertSupabaseMigrationPlan({...request,allowStatisticsPreferenceRevisionPlan:true})).pendingVersions,[revision.version]);
+  await assert.rejects(assertSupabaseMigrationPlan({...request,allowStatisticsPreferenceRevisionPlan:true,
+    migrationListText:list().replace('20261013210000 | 20261013210000','20261013210000 | ')}),
+    /cannot install older migrations/);
+  const owned=await fs.mkdtemp(path.join(os.tmpdir(),'rr-statistics-plan-'));
+  try {
+    const prepared=await prepareTemporarySupabaseCutoverWorkdir({workdir:owned,includeStatisticsPreferenceRevisionSource:true});
+    assert.deepEqual((await fs.readdir(prepared.migrationsDirectory)).sort(),
+      [...REQUIRED_CUTOVER_MIGRATIONS.map(row=>row.filename),revision.filename].sort());
+    for(const row of REQUIRED_CUTOVER_MIGRATIONS)assert.deepEqual(
+      await fs.readFile(path.join(prepared.migrationsDirectory,row.filename)),
+      await fs.readFile(path.resolve('supabase/migrations',row.filename)));
+    const listPath=path.join(owned,'list.txt'),dryPath=path.join(owned,'dry.txt');
+    const environment={PATH:process.env.PATH,Path:process.env.Path,SystemRoot:process.env.SystemRoot,
+      WINDIR:process.env.WINDIR,TEMP:process.env.TEMP,TMP:process.env.TMP,
+      GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',
+      RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN:'true',
+      // Synthetic plan-only fixture; production must earn this from its genuine prewrite.
+      RAVRADAR_STATISTICS_REVISION_PREWRITE_VERIFIED:'true'};
+    const installedEnvironment={...environment,RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN:'false'};
+    const invoke=(phase='before',env=environment)=>spawnSync(process.execPath,[
+      path.resolve('scripts/verify-statistics-preference-revision-plan.mjs'),'--phase',phase,
+      '--migration-list',listPath,'--dry-run',dryPath,'--migrations-directory',prepared.migrationsDirectory,
+    ],{encoding:'utf8',env});
+    await fs.writeFile(listPath,list());await fs.writeFile(dryPath,dry);
+    const beforePlan=invoke();assert.equal(beforePlan.status,0,beforePlan.stderr);
+    for(const env of [
+      {...environment,RAVRADAR_STATISTICS_REVISION_PREWRITE_VERIFIED:undefined},
+      {...environment,RAVRADAR_STATISTICS_REVISION_PREWRITE_VERIFIED:'false'},
+      {...environment,RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN:'false'},
+      {...environment,RAVRADAR_USERDATA_UPGRADE_OPT_IN:'true'},
+      {...environment,RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN:'true'},
+      {...environment,RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN:'true'},
+      {...environment,GITHUB_RUN_ATTEMPT:'2'},
+    ]) {const result=invoke('before',env);assert.equal(result.status,1);assert.equal(result.stdout,'');}
+    await fs.writeFile(listPath,list(true));await fs.writeFile(dryPath,noop);
+    assert.equal(invoke().status,1,'A consumed one-install plan must not replay as BEFORE');
+    const installedReplay=invoke('installed');
+    assert.equal(installedReplay.status,1,'Installed readback cannot retain the consumed installation opt-in');
+    assert.equal(installedReplay.stdout,'');
+    const installedPlan=invoke('installed',installedEnvironment);
+    assert.equal(installedPlan.status,0,installedPlan.stderr);
+    await fs.writeFile(listPath,list(true)+'20261014000000 | 20261014000000 | state\n');
+    assert.equal(invoke('installed',installedEnvironment).status,1,'Unknown later installation is not this exact readback phase');
+    await fs.writeFile(listPath,list().replace('20261013220000 | 20261013220000','20261013220000 | '));
+    await fs.writeFile(dryPath,dry);
+    assert.equal(invoke().status,1,'Missing220 cannot be installed alongside statistics230');
+    await fs.appendFile(path.join(prepared.migrationsDirectory,revision.filename),'-- changed source\n');
+    await assert.rejects(assertSupabaseMigrationPlan({...request,migrationsDirectory:prepared.migrationsDirectory,
+      allowStatisticsPreferenceRevisionPlan:true}),/Exact statistics revision migration source/);
+  } finally {
+    assert.equal(path.dirname(owned),path.resolve(os.tmpdir()));
+    assert.ok(path.basename(owned).startsWith('rr-statistics-plan-'));
+    await fs.rm(owned,{recursive:true,force:true});
+  }
+  console.log('Statistics revision named plan: exact220 -> singleton revision -> exact installed, no SQL executed.');
+}
+
+// Statistics230 delivery phase: exact old/new schemas are never interchangeable.
+{
+  const {selectStatisticsRevisionRoute}=await import('./verify-statistics-preference-revision-plan.mjs');
+  const env={GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',
+    RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN:'true',
+    RAVRADAR_STATISTICS_REVISION_CONFIRMATION:'DEPLOY-CODE-ONLY-REPAIR',
+    RAVRADAR_STATISTICS_REVISION_SAVED_WEATHER:'false',RAVRADAR_STATISTICS_REVISION_RECOVERY_RUN_ID:''};
+  const list=(installed=false)=>'Local | Remote | Time (UTC)\n'+REQUIRED_CUTOVER_MIGRATIONS.map(
+    ({version})=>version+' | '+version+' | fixture').join('\n')+
+    '\n20261013230000 | '+(installed?'20261013230000':'')+' | fixture\n';
+  const select=(text=list(),environment=env)=>selectStatisticsRevisionRoute({migrationListText:text,environment});
+  assert.equal(select(),'before');
+  assert.throws(()=>select(list(),{...env,RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN:'false'}),/named opt-in/);
+  assert.throws(()=>select(list(true)),/No replay/);
+  assert.equal(select(list(true),{...env,RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN:'false'}),'installed');
+  assert.throws(()=>select(list(true),{...env,RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN:'false',GITHUB_RUN_ATTEMPT:'2'}));
+  assert.throws(()=>select(list().replace('20261013220000 | 20261013220000','20261013220000 | ')),/every installed predecessor/);
+  assert.throws(()=>select(list(true)+'20261013240000 | 20261013240000 | fixture\n',
+    {...env,RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN:'false'}),/unknown later/);
+  for(const key of ['RAVRADAR_USERDATA_UPGRADE_OPT_IN','RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN','RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN'])
+    assert.throws(()=>select(list(),{...env,[key]:'true'}),/combine historical/);
+  for(const [key,value] of [['GITHUB_EVENT_NAME','schedule'],['GITHUB_REF','refs/heads/topic'],
+    ['GITHUB_RUN_ATTEMPT','2'],['RAVRADAR_STATISTICS_REVISION_CONFIRMATION','DEPLOY-SAVED-WEATHER-REPAIR'],
+    ['RAVRADAR_STATISTICS_REVISION_SAVED_WEATHER','true'],['RAVRADAR_STATISTICS_REVISION_RECOVERY_RUN_ID','123']])
+    assert.throws(()=>select(list(),{...env,[key]:value}));
+  const workflow=(await fs.readFile('.github/workflows/deploy-code-only-repair.yml','utf8')).replace(/\r\n/g,'\n');
+  assert.match(workflow,/upgrade_statistics_preference_revision:\n        description:[^\n]+\n        required: false\n        default: false\n        type: boolean/);
+  const before=workflow.indexOf('- name: Verify unchanged current originals and schema1 before statistics revision');
+  const dry=workflow.indexOf('- name: Dry-run and require only the latest exact integrated migration');
+  const apply=workflow.indexOf('- name: Apply exact dry-run-verified post-cutover binding');
+  const after=workflow.indexOf('- name: Read back migration and database binding');
+  assert(before>workflow.indexOf('- name: Require exact code-only reuse invariants')&&before<dry&&dry<apply&&apply<after);
+  const beforeBlock=workflow.slice(before,dry);
+  assert(beforeBlock.includes('steps.current-private-install.outcome }}" = "success"'));
+  assert(beforeBlock.includes('node scripts/verify-account-assistant-schema.mjs'));
+  assert(beforeBlock.includes('.scoresChanged == false')&&beforeBlock.includes('.weatherValuesChanged == false'));
+  const applyBlock=workflow.slice(apply,after);
+  assert(applyBlock.indexOf('--phase before')<applyBlock.indexOf('supabase db push --linked --skip-vault'));
+  assert(applyBlock.includes('supabase migration list --linked')&&applyBlock.includes('--dry-run --skip-vault'));
+  const afterBlock=workflow.slice(after,workflow.indexOf('- name: Read unchanged Candidate quality',after));
+  assert(afterBlock.includes('--phase installed'));
+  assert(afterBlock.includes('node scripts/verify-statistics-preference-revision-schema.mjs'));
+  assert(!afterBlock.includes('node scripts/verify-account-assistant-schema.mjs'));
+  assert(afterBlock.indexOf('verify-statistics-preference-revision-schema.mjs')>afterBlock.indexOf('--phase installed'));
+  assert(afterBlock.includes('RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN=false node scripts/verify-statistics-preference-revision-plan.mjs'));
+  assert(!/if test[^\n]*RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN/.test(afterBlock));
+  assert(workflow.includes('code-only deployment cannot install or publish its original archive bridge'));
+  const plan=await fs.readFile('scripts/verify-statistics-preference-revision-plan.mjs','utf8');
+  assert(plan.includes("assert.equal(process.env.RAVRADAR_STATISTICS_REVISION_PREWRITE_VERIFIED,'true')"));
+  assert(plan.includes("if(phase==='before')")&&plan.includes('assert.deepEqual(result.pendingVersions,[STATISTICS_REVISION_MIGRATION.version]'));
+  const noOp=await assertSupabaseMigrationPlan({migrationListText:list(true),
+    dryRunText:'DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.'});
+  assert.deepEqual(noOp.pendingVersions,[],'Ordinary default plan remains a noop after230');
+  await assert.rejects(assertSupabaseMigrationPlan({migrationListText:list(),
+    dryRunText:'DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • 20261013230000_account_statistics_revision.sql\nFinished supabase db push.'}),
+    /named prewrite route/,'Ordinary plan still refuses pending230 without its named opt-in');
+  let stageCallers=0;
+  for(const [filename,count] of [['deploy-code-only-repair.yml',1],['apply-weather-model-binding-only.yml',1],['deploy-trip-storage.yml',2]]) {
+    const text=(await fs.readFile('.github/workflows/'+filename,'utf8')).replace(/\r\n/g,'\n');
+    const calls=[...text.matchAll(/node scripts\/integrated-cutover-readiness\.mjs prepare-workdir([^\n]*(?:\n[^\n]*)?)/g)];
+    assert.equal(calls.length,count,filename+' exact normal stage-caller inventory');
+    for(const call of calls)assert(call[0].includes('--statistics-preference-revision-source'),filename+' must stage exact230 source, not a historical placeholder');
+    stageCallers+=calls.length;
+  }
+  assert.equal(stageCallers,4);
+  console.log('Statistics230 explicit before/install/noop delivery route preserves current220 and exact schema2 readback.');
+}

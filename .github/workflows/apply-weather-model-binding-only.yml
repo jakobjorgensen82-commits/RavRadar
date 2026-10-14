@@ -114,7 +114,7 @@ jobs:
             --public-implementation-closure-sha256 \
             "${{ steps.integrated-implementation.outputs.closure_sha256 }}"
           node scripts/integrated-cutover-readiness.mjs prepare-workdir \
-            --output "$migration_workdir"
+            --statistics-preference-revision-source --output "$migration_workdir"
 
       - name: Read linked migration history
         shell: bash

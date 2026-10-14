@@ -2116,6 +2116,10 @@ try {
   });
 
   await test('current-grid original receivers keep exact family, inventory and current-only bytes', async () => {
+    const currentRestore=restoreProtectedPrivateProductionRuntime;
+    const currentGrid=await import('./lib/bounded-conditions-predecessor-transition.mjs');
+    const {createIssuedCurrentGridReceiverFixture}=await import('./lib/current-grid-issued-receiver-test-fixture.mjs');
+    const issued=await createIssuedCurrentGridReceiverFixture();
     // Reuse the reviewed national fixture's read-only Git module namespace.
     // These normal old factories create synthetic original archives, not
     // relabelled current bundles, authenticated production B/S or numeric proof.
@@ -2156,9 +2160,11 @@ try {
         originalImport('scripts/protected-private-production-runtime.mjs'),
         originalImport('js/core/ravscore-model-contract.js'),
         originalImport('scripts/rollback-assets/ravscore-model-contract.js'),
-        import('./lib/bounded-conditions-predecessor-transition.mjs'),
+        Promise.resolve(issued.grid),
         import('./lib/private-weather-component-inventory.mjs'),
       ]);
+      const {describeCurrentProtectedPrivateProductionRuntime,restoreProtectedPrivateProductionRuntime}=issued.archive;
+      const {verifyPrivateProductionRuntimeBundle}=issued.bundle;
       const policy = grid.CURRENT_GRID_SAMPLING_SELECTED_PREDECESSOR_POLICY;
       assert.deepEqual(oldI.ravScoreModelBinding(), policy.sourceModelBinding);
       assert.deepEqual(oldC.ravScoreModelBinding(), policy.sourceCandidateModelBinding);
@@ -2220,6 +2226,18 @@ try {
           sourceDescription: source, targetReferenceAt: reference, now });
         assert.ok(expected, 'requires genuine normal-generated current-only successor; no guard mock or skip');
         assert.strictEqual(grid.assertCurrentGridSamplingOriginalExpectation(expected), expected);
+        if(i===0){
+          assert.equal(await currentGrid.buildCurrentGridSamplingOriginalRestoreExpectation({
+            sourceDescription:source,targetReferenceAt:reference,now}),null,
+          'KB current source cannot borrow the issued220 transition');
+          let currentPointerReads=0;
+          await assert.rejects(restoreProtectedPrivateProductionRuntime===currentRestore
+            ? Promise.reject(new Error('historical receiver was not isolated'))
+            : currentRestore({privateRoot:restoreRoot,bundlePath:path.join(restoreRoot,'kb-refused-grid'),
+              repositoryRoot:repository,expected,now,request:async()=>{currentPointerReads++;throw new Error('no current pointer read allowed');},storage:store.client}),
+          /not the exact reviewed native-grid SOURCE successor/);
+          assert.equal(currentPointerReads,0);
+        }
         const pointerBefore = docs.row();
         const objectsBefore = new Map([...store.objects].map(([key, value]) => [key, Buffer.from(value)]));
         let pointerReads = 0;
@@ -2334,7 +2352,7 @@ try {
       await assert.rejects(() => verifyPrivateProductionRuntimeBundle({ privateRoot,
         bundlePath: incomplete.bundlePath, repositoryRoot: repository, expected: incompleteExpected, now }),
       /production inventory is incompatible/);
-    } finally { hook.deregister(); }
+    } finally { hook.deregister(); await issued.close(); }
   });
 
   const implementation = (await fs.readFile(

@@ -1,23 +1,23 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.576";
-import { localRavKnowledgeAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.576";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.576";
-import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.576";
-import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.576";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.577";
+import { localRavKnowledgeAnswer, matchLocalRavKnowledge, matchWholeLocalRavKnowledge, localRavFollowupAnswer } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.577";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.577";
+import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.577";
+import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.577";
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   ravScoreModelBinding,
-} from "../core/ravscore-model-contract.js?v=4.0.576";
-import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.576";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.576";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.576";
-import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.576";
+} from "../core/ravscore-model-contract.js?v=4.0.577";
+import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.577";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.577";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.577";
+import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.577";
 
 // Compatibility name for existing source-contract tests. The implementation
 // now selects the only adapter matching the artifact's exact active binding.
 const presentIntegratedRavScoreExplanation = presentActiveRavScoreExplanation;
 const ACTIVE_RAVSCORE_MODEL_BINDING = ravScoreModelBinding();
 const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = 'rav-assistant-public-knowledge-v1';
-const RAV_ASSISTANT_KNOWLEDGE_SHA256 = '72d84309e5ed5e4a180fc02b2d476041fcd65a576336a949df0bd43e87774378';
+const RAV_ASSISTANT_KNOWLEDGE_SHA256 = '199d55b75ec907c38e1e948effe0b5555313d51994b9f13eb7ab98d295cf62e1';
 const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
   modelId:'x-ravradar-model-id',
   modelStateVersion:'x-ravradar-model-state-version',
@@ -193,13 +193,40 @@ function isGeneralHighScoreNoFindQuestion(value) {
     /^(?:hvorfor|hvordan) kan (?:scoren|ravscore) være høj,? (?:uden at (?:jeg|vi|man) finder rav|(?:selv ?om|når) (?:jeg|vi|man) ikke finder rav)[?!.]*$/iu,
     /^(?:warum|wie) kann (?:der (?:bernsteinscore|ravscore|score)|bernsteinscore|ravscore) hoch sein,? (?:obwohl (?:ich keinen bernstein finde|wir keinen bernstein finden|man keinen bernstein findet)|ohne dass (?:ich bernstein finde|wir bernstein finden|man bernstein findet))[?!.]*$/iu,
     /^(?:why|how) can (?:the (?:amberscore|ravscore|score)|amberscore|ravscore) be high,? (?:without (?:me|us) finding (?:any )?amber|even (?:if|though) (?:i|we) (?:do not|don't) find (?:any )?amber)[?!.]*$/iu,
+    /^(?:hvorfor|hvordan) kan (?:jeg|vi|man) få en høj (?:ravscore|score) og alligevel (?:komme hjem uden rav|ikke finde rav)[?!.]*$/iu,
+    /^(?:warum|wie) (?:kann (?:ich|man)|können wir) einen hohen (?:bernsteinscore|ravscore|score) (?:haben|bekommen) und trotzdem (?:ohne bernstein nach hause kommen|keinen bernstein finden)[?!.]*$/iu,
+    /^(?:why|how) can (?:i|we) (?:get|have) a high (?:amberscore|ravscore|score) (?:and|but) still (?:come home without (?:any )?amber|not find (?:any )?amber)[?!.]*$/iu,
+    /^(?:hvorfor|hvordan) kan en (?:tur|ravtur) (?:give (?:nul|ingen) ravfund|ende uden rav),? (?:selv ?om|når) (?:ravscore|scoren) er høj[?!.]*$/iu,
+    /^(?:warum|wie) kann eine (?:tour|suche) (?:ohne bernsteinfund enden|keine bernsteinfunde bringen),? obwohl (?:der )?(?:bernsteinscore|ravscore|score) hoch ist[?!.]*$/iu,
+    /^(?:why|how) can a (?:trip|search) (?:yield no amber finds|end without (?:any )?amber),? (?:even (?:when|though)|although) (?:the )?(?:amberscore|ravscore|score) is high[?!.]*$/iu,
+    /^(?:hvorfor|hvordan) kan (?:jeg|vi|man) (?:trods|på trods af) (?:en )?høj (?:ravscore|score) (?:ikke finde rav|komme hjem uden rav)[?!.]*$/iu,
+    /^(?:warum|wie) (?:kann (?:ich|man)|können wir) trotz (?:hohem (?:bernsteinscore|ravscore|score)|eines hohen (?:bernsteinscores|ravscores|scores)) (?:keinen bernstein finden|ohne bernstein nach hause kommen)[?!.]*$/iu,
+    /^(?:why|how) can (?:i|we) (?:not find (?:any )?amber|come home without (?:any )?amber) despite (?:a )?high (?:amberscore|ravscore|score)[?!.]*$/iu,
   ].some(pattern => pattern.test(text));
+}
+
+// These named-material comparisons are not answered by the general field
+// identification unit. No reviewed local unit establishes the difference;
+// preserve an explicit uncertainty instead of substituting weight/UV advice.
+function isUnsupportedAmberTypeComparison(value) {
+  const raw = String(value || '').trim();
+  if (raw.length > 600 || SECURITY_PATTERN.test(raw) || OUT_OF_SCOPE_PATTERN.test(raw)) return false;
+  const text = raw.normalize('NFKC').replace(/\s+/gu, ' ');
+  const material = '(?:su(?:cc|kc)init(?:e)?|retinit(?:e)?|gedanit(?:e)?)';
+  return [
+    'hvad er forskellen (?:på|mellem) ' + material + ' og ' + material + '(?:,? når (?:man|jeg|vi) vil identificere et ravfund)?',
+    'was ist der unterschied zwischen ' + material + ' und ' + material + '(?: (?:bei der bestimmung eines bernsteinfundes|wenn (?:ich|man) einen bernsteinfund bestimmen will))?',
+    'what is the difference between ' + material + ' and ' + material + '(?: when (?:identifying an amber find|(?:i|we) want to identify an amber find))?',
+  ].some(pattern => new RegExp('^(?:' + pattern + ')[?!.]*$', 'iu').test(text));
 }
 
 export function classifyRavQuestion(question) {
   const text = String(question || '').trim();
+  if (isUnsupportedAmberTypeComparison(text)) return 'unsupported-material-comparison';
   if (practicalSearchPlan(text)) return 'practical-search-plan';
   if (isPracticalAlongshoreQuestion(text)) return 'practical-alongshore';
+  const wholeKnowledge = matchWholeLocalRavKnowledge(text);
+  if (wholeKnowledge) return `knowledge:${wholeKnowledge.id}`;
   for (const [intent, pattern] of Object.entries(INTENT_PATTERNS)) if (pattern.test(text)) return intent;
   const knowledge = matchLocalRavKnowledge(text);
   if (knowledge) return `knowledge:${knowledge.id}`;
@@ -310,7 +337,7 @@ function equipmentAnswer(context, language) {
 // Account for each independent field question before a broad catalogue match
 // can consume its neighbours. Current authored units only; no chat history.
 // Vocabulary certifies only understood qualifications; it never supplies facts.
-const FIELD_COMPOUND_WORDS = new Set(('jeg vi mig os er en et at og på i til skal bør kan vil være helt det den de der som hvilken hvilket hvilke hvad hvor hvordan bruge bruger vælge nyttigt nyttige anbefaler anbefales har brug for du systematisk vandet vand gå med trygt ud begynder begyndere nybegynder nybegyndere lede leder søger søge kigge se finder finde rav stranden strand udstyr betyder høj lav score ravscore sikker sikkert sikre så genkender identificerer genkende identificere '
+const FIELD_COMPOUND_WORDS = new Set(('ny skelner fra sten tage unterscheiden unterscheide von steinen neu ganz mitnehmen new completely distinguish from stones bring take pack jeg vi mig os er en et at og på i til skal bør kan vil være helt det den de der som hvilken hvilket hvilke hvad hvor hvordan bruge bruger vælge nyttigt nyttige anbefaler anbefales har brug for du systematisk vandet vand gå med trygt ud begynder begyndere nybegynder nybegyndere lede leder søger søge kigge se finder finde rav stranden strand udstyr betyder høj lav score ravscore sikker sikkert sikre så genkender identificerer genkende identificere '
   + 'ich wir mich uns bin sind ein eine das die der es und am im zu auf für ist kann können soll sollte brauche brauchen benutzen wählen nützlich wo wie was welche welcher welches möchte möchten wollen anfänger finden suchen suche schauen bernstein strand ausrüstung bedeutet hoher niedriger score ravscore sicher sein gefahrlos ins wasser gehen waten erkenne erkennen '
   + 'what which where how why i we me us am are a an the it and on in into to for is can should do does want would like need use choose useful recommend beginner beginners look search find finding amber beach equipment mean means high low score ravscore sure be of safely safe go wade water identify recognise recognize').split(/\s+/u));
 
@@ -331,8 +358,8 @@ function fieldCompoundAnswer(question, language) {
     const covered = words.length > 0 && !/\d/u.test(clause)
       && words.every(word => FIELD_COMPOUND_WORDS.has(word));
     // A whole beginner statement supplies no fact and is not an unanswered request.
-    if (covered && /^(?:jeg er (?:en )?(?:nybegynder|begynder)|ich bin (?:ein )?anfänger|i am (?:a )?beginner)[.!]*$/iu.test(clause)) continue;
-    const identification = /^(?:hvordan (?:(?:genkender|identificerer) (?:jeg|vi)|kan (?:jeg|vi) (?:genkende|identificere)) rav|wie (?:erkenne ich|erkennen wir) bernstein|how (?:do|can) (?:i|we) (?:identify|recognise|recognize) amber)[?.!]*$/iu.test(clause);
+    if (covered && /^(?:jeg er (?:(?:en )?(?:nybegynder|begynder)|(?:helt )?ny)|ich bin (?:(?:ein )?anfänger|(?:ganz )?neu)|i am (?:(?:a )?beginner|(?:completely )?new))[.!]*$/iu.test(clause)) continue;
+    const identification = /^(?:hvordan (?:(?:(?:genkender|identificerer) (?:jeg|vi)|kan (?:jeg|vi) (?:genkende|identificere)) rav|skelner (?:jeg|vi) rav fra sten)|wie (?:(?:erkenne ich|erkennen wir) bernstein|(?:unterscheide ich|unterscheiden wir) bernstein von steinen)|how (?:do|can) (?:i|we) (?:(?:identify|recognise|recognize) amber|distinguish amber from stones))[?.!]*$/iu.test(clause);
     const safety = INTENT_PATTERNS.safety.test(clause);
     const certainty = !safety
       && /(?<!\p{L})(?:sikker|sikkert|sikre|sicher|sure|certain|guaranteed)(?!\p{L})/iu.test(clause)
@@ -383,15 +410,47 @@ function fieldCompoundAnswer(question, language) {
     topic:answer.length <= 900 ? topic : null };
 }
 
+// Compose independent complete authored units, never keyword fragments.
+// Unknown clauses remain explicit; no first-N selection or clipped caveats.
+function wholeKnowledgeAnswer(question, language) {
+  const raw = String(question || '').trim();
+  if (raw.length > 600) return null;
+  const whole = matchWholeLocalRavKnowledge(raw);
+  if (whole) return localRavKnowledgeAnswer(raw, language);
+  const starter = String.raw`(?:hvor|hvordan|hvad|hvilk(?:et|en|e)|kan|er|betyder|wo|wie|was|welch(?:e|es|er)|kann|bin|bedeutet|where|how|what|which|can|am|does)\b`;
+  const parts = raw.split(new RegExp(
+    String.raw`[?？]\s*(?=\p{L})|[,:.;]\s*(?:(?:og|und|and)\s+)?(?=${starter})|\s+(?:og|und|and)\s+(?=${starter})`, 'iu')).map(x => x.trim()).filter(Boolean);
+  if (parts.length < 2) return null;
+  const units = parts.map(part => ({part,topic:matchWholeLocalRavKnowledge(part)}));
+  if (!units.some(unit => unit.topic)) return null;
+  const answers = [], seen = new Set();
+  let unresolved = false;
+  for (const unit of units) {
+    if (unit.topic) {
+      if (!seen.has(unit.topic.id)) answers.push(localRavKnowledgeAnswer(unit.part, language));
+      seen.add(unit.topic.id);
+    } else if (INTENT_PATTERNS.safety.test(unit.part)) {
+      if (!seen.has('safety')) answers.push(t('assistant.local.safety', {}, language));
+      seen.add('safety');
+    } else unresolved = true;
+  }
+  if (unresolved) answers.push(t('assistant.knowledgeUncertain', {}, language));
+  const answer = answers.join('\n\n');
+  return answer.length <= 900 ? answer : t('assistant.unknown', {}, language);
+}
+
 function localAnswer(question, context, language, now = Date.now()) {
   const plan = practicalSearchPlan(question);
   if (plan) return practicalSearchPlanAnswer(plan, language);
   const intent = classifyRavQuestion(question);
+  if (intent === 'unsupported-material-comparison') return t('assistant.knowledgeUncertain', {}, language);
   if (intent === 'practical-alongshore') {
     const topic = matchLocalRavKnowledge('Kan strøm langs kysten flytte rav?');
     const answer = topic.answers[language] + '\n\n' + t('assistant.local.signs', {}, language);
     return answer.length <= 900 ? answer : t('assistant.unknown', {}, language);
   }
+  const wholeKnowledge = matchWholeLocalRavKnowledge(question);
+  if (wholeKnowledge) return localRavKnowledgeAnswer(question, language);
   const presentation = presentIntegratedRavScoreExplanation(context?.result, { language });
   if (presentation.available) {
     if (intent === 'current') return `${presentation.sections.gridCurrent}\n\n${presentation.sections.lastMile}`;
@@ -513,12 +572,18 @@ export async function askRavRadar(question, context = {}, options = {}) {
     return t('assistant.unknown', {}, language);
   }
   if (route === 'fixed-refusal') return t('assistant.refusal', {}, language);
+  // A complete authored question wins before clause decomposition. The raw
+  // privacy/out-of-scope guard above still applies to the entire message.
+  if (matchWholeLocalRavKnowledge(raw)) return localRavKnowledgeAnswer(raw, language);
   const field = fieldCompoundAnswer(raw, language);
   if (field) return field.answer;
   if (isGeneralHighScoreNoFindQuestion(question)) {
     return t('assistant.local.limitations', {}, language) + '\n\n' + t('assistant.local.availability', {}, language);
   }
   if (practicalSearchPlan(safe) && !practicalSearchPlan(question)) return t('assistant.unknown', {}, language);
+  if (raw.length > 600 && matchWholeLocalRavKnowledge(safe)) return t('assistant.unknown', {}, language);
+  const knowledgeAnswer = wholeKnowledgeAnswer(raw, language);
+  if (knowledgeAnswer) return knowledgeAnswer;
   if (route === 'local-deterministic' || options?.localOnly) {
     return localAnswer(safe, context, language, options?.now ?? Date.now());
   }
@@ -624,7 +689,8 @@ export function assistantTopicForQuestion(question) {
   const text = String(question || '').trim();
   if (SECURITY_PATTERN.test(text) || OUT_OF_SCOPE_PATTERN.test(text)) return null;
   return fieldCompoundAnswer(text, getLanguage())?.topic
-    ?? (isPracticalAlongshoreQuestion(text) ? 'alongshore' : null);
+    ?? (isPracticalAlongshoreQuestion(text) ? 'alongshore' : null)
+    ?? (matchWholeLocalRavKnowledge(text) ? `knowledge:${matchWholeLocalRavKnowledge(text).id}` : null);
 }
 
 export function assistantLocalFollowupAnswer(question, topic, language = getLanguage()) {
@@ -640,6 +706,9 @@ export function assistantLocalFollowupAnswer(question, topic, language = getLang
     if (topic !== 'field-identification-equipment') return t('assistant.unknown', {}, language);
     const answer = t('assistant.local.technique', {}, language) + '\n\n' + t('assistant.local.identification', {}, language);
     return answer.length <= 900 ? answer : t('assistant.unknown', {}, language);
+  }
+  if (typeof topic === 'string' && topic.startsWith('knowledge:')) {
+    return localRavFollowupAnswer(raw, topic.slice('knowledge:'.length), normaliseLanguage(language));
   }
   const patterns = [
     /^(?:(?:og|så) )?hvor (?:skal|kan|bør) (?:jeg|vi) (?:kigge|lede|søge)(?: efter rav)? (?:i den situation|i det tilfælde|så|der)[?.!]*$/iu,

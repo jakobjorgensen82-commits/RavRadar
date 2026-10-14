@@ -1,8 +1,22 @@
+## Seneste lokale 577-kildeprøver — 14. oktober 2026
+
+Læs den nye CODEX-front og tillægget i håndbog 89.227. To yderligere PR #604-kildeprøver er rettet og bestået lokalt: genuine historisk 673/600-kalder og hele privacy-parenten med fast DA/DE/EN-opdeling samt normalresten. Gamle kontroller, dækning og hvert barns tids-/outputgrænse bevares. Ny præcis samlet CI/PostgreSQL og offentlig levering er stadig åbne; dette ændrer ikke model, SQL, version eller produktionsautoritet. Hele den tidligere læserækkefølge består.
+
+## Aktuel sourceopfølgning577 — 14. oktober 2026
+
+Læs den nye CODEX-front og tillægget i eksisterende håndbog89.227. Fem faktiske604-sourcefejl er rettet lokalt med genuine historiske faser og uændrede bindings-/originalkrav; præcis samlet CI/PostgreSQL og offentlig levering mangler.606/main584 og den igangværende normale38577766010 er et separat vejrspor. Efter en fremtidig faktisk vejrfejl og dens rettelse skal genoptagelse fra checkpoint følge den normale indgang fra den dybeste autentiske, gyldigt gemte fase efter nødvendige kontroller, uden overlap eller gateskip.230/viden er ikke installeret; alle fem mål til18oktober består. Hele den tidligere læserækkefølge og historik bevares.
+
+*Dateret kildeforberedelse før levering af 606; afsnittets statuspunkter er historik og erstattes af den nyere status ovenfor.*
+
 ## Aktuel kritisk prioritet — 14. oktober 2026
 
 Den seneste normale vejrhentning fejlede i Feggesunds bølgeforvalg før offentlig levering. Ret kun det ubrugte strømkrav i dette forvalg; bevar faktisk strøm-/score-/memory-/replaykontrol og originaler. Eksakt kilde- og produktionsbevis kræves. Se CODEX_START_HERE, håndbog89.228 og nyeste private checkpoint. Alle fem hovedmål er åbne med frist18oktober.
 
 # RDKS – læs først
+
+## Aktuel lokal videnskandidat — 14. oktober 2026
+
+Læs først den nye CODEX-front og håndbog89.227. 4.0.577 er fysisk bygget lokalt efter vejr603/statistik230-kilden, men ikke offentligt leveret. Historiske læsere forbliver genuine; den nye vidensbinding følger faktisk installeret230/schema2 og sine egne original-, no-loss-, kilde-, PostgreSQL- og writer-fri kontroller. Den normale vejrhentning38553389373 og cron-genoptagelsen er et separat kritisk spor. Alle fem mål og de øvrige læsekrav består.
 
 ## Aktuel vejrfejl — 14. oktober 2026
 

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
+import {loadNativeAssistantKnowledgePrerequisites} from './assistant-knowledge-native-contract.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { exactRelativeModuleSpecifiers } from './static-module-closure.mjs';
 import { accountAssistantCatalogQuery, verifyAccountAssistantCatalogMetadata }
   from '../verify-account-assistant-schema.mjs';
 
@@ -33,7 +33,7 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 // returned or emitted; unknown state/phase remains explicitly UNKNOWN.
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
-  'ACCOUNT213', 'CURRENT220', 'UNKNOWN']);
+  'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'KNOWLEDGE', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -59,6 +59,34 @@ export function nativePostgresFailureAnnotation(phase, stderr) {
   const safe = nativePostgresFailureDiagnostic(phase, stderr);
   return '::error title=Native PostgreSQL source command::phase=' + safe.phase
     + ' sqlstate=' + safe.sqlState + ' category=' + safe.category;
+}
+
+
+// Source-test failure context only. Never inspect assertion message/actual/
+// expected/stack, SQL text, payloads or credentials. The first failure wins.
+export function createNativePostgresFailureRecorder(emit = value => console.error(JSON.stringify(value))) {
+  const cases = new Set(['SETUP','ISSUED213','ISSUED220','BEFORE_GUARD','MIGRATION',
+    'PROJECTION','PROPERTIES','ORIGINAL_VALIDATION','CURRENT_FIXTURE','CAS_CASES',
+    'RECEIPT_CASES','CATALOG','ACCOUNT_BEHAVIOR','ACCOUNT_RLS','ADAPTER','CLEANUP','RETURN']);
+  let phase='UNKNOWN',caseName='UNKNOWN',caseIndex=null,sqlState='UNKNOWN',first=null;
+  return Object.freeze({
+    at(nextPhase,nextCase,index=null) {
+      phase=NATIVE_PSQL_PHASES.has(nextPhase)?nextPhase:'UNKNOWN';
+      caseName=cases.has(nextCase)?nextCase:'UNKNOWN';
+      caseIndex=Number.isInteger(index)&&index>=0&&index<64?index:null;
+      sqlState='UNKNOWN';
+    },
+    observedSqlState(value) { sqlState=value===null?'NONE':typeof value==='string'&&Object.hasOwn(NATIVE_PSQL_STATES,value)?value:'UNKNOWN'; },
+    report(error) {
+      if(first!==null)return first;
+      let code;try{code=error?.code;}catch{code=null;}
+      const errorCode=['ERR_ASSERTION','ENOENT','EACCES','EPERM','ETIMEDOUT','ENOBUFS'].includes(code)?code:'UNKNOWN';
+      first=Object.freeze({kind:'NATIVE_POSTGRES_FIRST_FAILURE',phase,case:caseName,caseIndex,
+        category:errorCode==='ERR_ASSERTION'?'ASSERTION_FAILED':'NATIVE_FAILURE',errorCode,sqlState});
+      try{emit(first);}catch{/* Diagnostic failure must not replace the original failure. */}
+      return first;
+    },
+  });
 }
 
 const command = (file, args, { input, env, timeout = 20_000 } = {}) => new Promise(resolve => {
@@ -124,8 +152,12 @@ async function issued213Factory(root) {
     + slice('const samples =', 'const sourceDocument =');
   assert.equal(hash(factory), '71ce29ec98e43bfa02017a145c4438346f1d8a1f4323526ec58e4b1081d81e36');
   const scanner = 'scripts/lib/static-module-closure.mjs';
-  assert.equal(sqlText(await fs.readFile(path.join(ISSUED_ROOT, scanner), 'utf8')),
-    String(await read(scanner)), 'Use the actual reviewed issued static scanner');
+  const scannerBytes = await read(scanner);
+  assert.equal(hash(scannerBytes),
+    '675f91e7942143a78636e219e54bd7fa0ff25ddcd1998657dd215105054938b0',
+    'Exact self-contained issued044d scanner, independent of current browser tooling');
+  const issuedScanner = await import('data:text/javascript;base64,' + scannerBytes.toString('base64'));
+  assert.equal(typeof issuedScanner.exactRelativeModuleSpecifiers, 'function');
   const tSource = String(await read(ISSUED_T));
   const declaration = /export const RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES = Object\.freeze\(\[\n((?:  '[A-Za-z0-9_./-]+',\n)+)\]\);/.exec(tSource);
   assert(declaration, 'Exact historical T declaration required');
@@ -151,7 +183,7 @@ async function issued213Factory(root) {
     visited.add(file); selected.add(file);
     const source = String(await read(file));
     if (!/\.(?:js|mjs|ts)$/.test(file)) continue;
-    for (const specifier of exactRelativeModuleSpecifiers(source, file)) {
+    for (const specifier of issuedScanner.exactRelativeModuleSpecifiers(source, file)) {
       const base = path.posix.normalize(path.posix.join(path.posix.dirname(file), specifier.split(/[?#]/, 1)[0]));
       const candidates = path.posix.extname(base) ? [base] : [base, base + '.js', base + '.mjs', base + '.json', base + '/index.js'];
       const resolved = candidates.find(candidate => regular.has(candidate));
@@ -263,7 +295,8 @@ async function nativePrograms() {
 // Same native server/owner, after all thirteen old130000/200000 comparisons.
 // This is a source fixture, not an installed account or production checkpoint.
 async function compareAccountAssistantSuccessor({ psql, runSql, source, oldSource,
-  oldFixtures, currentFixtures, cases, atHour, oldCas, newCas }) {
+  oldFixtures, currentFixtures, cases, atHour, oldCas, newCas, diagnostic }) {
+  diagnostic.at('ACCOUNT213','BEFORE_GUARD');
   assert.equal(hash(source), '80ad179bc896e9fcd62b8af103d70a2d086d3626395dd97f03e4184e52bcae5d');
   await psql("insert into supabase_migrations.schema_migrations values('20261012200000');");
   const noAccountObjects = async () => assert.equal(await psql(
@@ -296,7 +329,9 @@ async function compareAccountAssistantSuccessor({ psql, runSql, source, oldSourc
   }
   // Apply the WHOLE new append-only SOURCE, including transaction, BEFORE,
   // account DDL, exact projections/functions, AFTER ACL/body guards and notify.
+  diagnostic.at('ACCOUNT213','MIGRATION');
   await psql(source);
+  diagnostic.at('ACCOUNT213','PROJECTION');
   assert.equal(await psql("select current_setting('lock_timeout');"), '0');
   await psql("insert into supabase_migrations.schema_migrations values('20261013210000');");
   assert.notEqual((await runSql(source)).code, 0, 'already-installed migration must not replay');
@@ -338,12 +373,14 @@ async function compareAccountAssistantSuccessor({ psql, runSql, source, oldSourc
   const reports=[];
   for (const [name,central,incoming,version,expectedCode,disposition,storedVersion,
     role='service_role',claimRole=role] of cases) {
+    diagnostic.at('ACCOUNT213','CAS_CASES',cases.findIndex(row=>row[0]===name));
     const reset="truncate public.admin_documents;" + (central
       ? "insert into public.admin_documents(document_key,payload,version,updated_by) select '" + KEY
         + "',payload,1,'00000000-0000-0000-0000-000000000001' from native_checkpoint_payloads where name='" + central + "';" : '');
     const observed=JSON.parse(await psql(reset + "\nset statement_timeout='55s';"
       + " do $$ begin perform set_config('request.jwt.claim.role','" + claimRole + "',false); end $$; set role " + role + ";"
       + " select public.native_checkpoint_attempt(false," + version + ",(select payload from native_checkpoint_payloads where name='" + incoming + "'));"));
+    diagnostic.observedSqlState(observed.sqlstate);
     assert.equal(observed.sqlstate,expectedCode,'new full-migration case ' + name);
     if (disposition) { assert.equal(observed.result.disposition,disposition); assert.equal(observed.result.centralVersion,storedVersion); }
     assert.equal(observed.stored?.version,storedVersion);
@@ -389,6 +426,7 @@ async function compareAccountAssistantSuccessor({ psql, runSql, source, oldSourc
     'the existing normal Candidate builder produces genuinely different history, not a metadata-only variation');
   receiptCases.push({name:'candidate-history',payload:changedHistory,valid:true,sqlstate:'23505'});
   for(const {name,payload,valid,sqlstate} of receiptCases) {
+    diagnostic.at('ACCOUNT213','RECEIPT_CASES',receiptCases.findIndex(row=>row.name===name));
     const json=JSON.stringify(payload);assert.equal(json.includes('$native_fixture$'),false);
     await psql("insert into public.native_checkpoint_payloads values('receipt-incoming',$native_fixture$"+json+"$native_fixture$::jsonb);");
     assert.equal(await psql("select public.ravradar_ravscore_checkpoint_payload_valid("
@@ -399,6 +437,7 @@ async function compareAccountAssistantSuccessor({ psql, runSql, source, oldSourc
       + "',payload,1,'00000000-0000-0000-0000-000000000001' from native_checkpoint_payloads where name='predecessor';"
       + " set statement_timeout='55s'; select set_config('request.jwt.claim.role','service_role',false); set role service_role;"
       + " select public.native_checkpoint_attempt(false,1,(select payload from native_checkpoint_payloads where name='receipt-incoming'));").then(output=>output.split('\n').at(-1)));
+    diagnostic.observedSqlState(observed.sqlstate);
     assert.equal(observed.sqlstate,sqlstate,name);
     if(sqlstate===null) {
       assert.equal(observed.result.disposition,'updated');assert.equal(observed.result.centralVersion,2);
@@ -410,6 +449,7 @@ async function compareAccountAssistantSuccessor({ psql, runSql, source, oldSourc
     }
     await psql("delete from public.native_checkpoint_payloads where name='receipt-incoming';");
   }
+  diagnostic.at('ACCOUNT213','CATALOG');
   const catalogMetadata=JSON.parse(await psql(accountAssistantCatalogQuery));
   const catalogReceipt=await verifyAccountAssistantCatalogMetadata(catalogMetadata);
   assert.equal(catalogReceipt.status,'ACCOUNT_ASSISTANT_SCHEMA_MATCH');
@@ -426,6 +466,7 @@ async function compareAccountAssistantSuccessor({ psql, runSql, source, oldSourc
   assert.deepEqual(await verifyAccountAssistantCatalogMetadata(JSON.parse(await psql(accountAssistantCatalogQuery))),
     catalogReceipt,'transactional metadata negatives restore the exact account catalog');
 
+  diagnostic.at('ACCOUNT213','ACCOUNT_BEHAVIOR');
   const ownerA='00000000-0000-0000-0000-000000000001';
   const ownerB='00000000-0000-0000-0000-000000000002';
   const missing='00000000-0000-0000-0000-000000000003';
@@ -452,6 +493,7 @@ async function compareAccountAssistantSuccessor({ psql, runSql, source, oldSourc
   assert.equal(await psql("select last_activity_at>=first_observed_at from public.account_activity_journal where user_id='" + ownerA + "';"),'t');
   assert.equal(await psql("select count(*) from public.account_activity_journal where user_id='" + ownerB + "';"),'0');
 
+  diagnostic.at('ACCOUNT213','ACCOUNT_RLS');
   // Use real SQL identities/ACL/RLS, not a mocked auth return or request payload.
   for (const uid of ['',missing]) for (const name of ['record_account_activity','get_own_statistics_preference','enable_own_statistics_preference','disable_own_statistics_preference']) {
     assert.notEqual((await runSql(accountSession(uid)+'select public.'+name+'();')).code,0);
@@ -480,7 +522,8 @@ async function compareAccountAssistantSuccessor({ psql, runSql, source, oldSourc
 // A separate phase AFTER the unchanged historical thirteen/213 cases. The
 // incoming generation is built by current normal code; old states stay old.
 async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource,
-  oldFixtures, issuedFixtures, sourceDocumentAt, atHour, saveCheckpoint, root }) {
+  oldFixtures, issuedFixtures, sourceDocumentAt, atHour, saveCheckpoint, root, diagnostic }) {
+  diagnostic.at('CURRENT220','BEFORE_GUARD');
   assert.equal(hash(source), '77d5a60f22ff38fce3164c87e74d089ea56c0a18647310213cde465e95e4632b');
   assert.match(source, /\bbegin;\s+set local lock_timeout = '5s';/);
   const originalNames = ['ffc', '249', 'c1ac'].flatMap(family => ['state', 'payload']
@@ -527,7 +570,9 @@ async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource
     assert.equal(await psql("select btrim(prosrc,E' \\r\\n\\t') from pg_proc where oid='" + CAS + "(bigint,timestamptz,jsonb)'::regprocedure;"), body(oldBody));
     assert.equal(await bankHash(), bankBefore); assert.equal(await preserved(), rowsBefore);
   }
+  diagnostic.at('CURRENT220','MIGRATION');
   await psql(source); // Entire transaction/BEFORE/definitions/AFTER/ACL/notify/COMMIT.
+  diagnostic.at('CURRENT220','PROPERTIES');
   assert.equal(await psql("select current_setting('lock_timeout');"), '0');
   assert.equal(await bankHash(), bankBefore); assert.equal(await preserved(), rowsBefore,
     'installing220 must not rewrite an original checkpoint, account or preference row');
@@ -539,12 +584,14 @@ async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource
   const properties = JSON.parse(await psql("select jsonb_build_object('definer',p.prosecdef,'searchPath','search_path=pg_catalog, public'=any(p.proconfig),'timeout','statement_timeout=55s'=any(p.proconfig),'service',has_function_privilege('service_role',p.oid,'execute'),'anon',has_function_privilege('anon',p.oid,'execute'),'authenticated',has_function_privilege('authenticated',p.oid,'execute')) from pg_proc p where p.oid='" + CAS + "(bigint,timestamptz,jsonb)'::regprocedure;"));
   assert.deepEqual(properties, { definer: true, searchPath: true, timeout: true, service: true, anon: false, authenticated: false });
   assert.equal(await psql("select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace cross join lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a where n.nspname='public' and p.proname in (" + originalNames.map(name => "'" + name + "'").join(',') + ") and a.privilege_type='EXECUTE' and (a.grantee=0 or a.grantee in (select oid from pg_roles where rolname in ('anon','authenticated')));"), '0');
+  diagnostic.at('CURRENT220','ORIGINAL_VALIDATION');
   for (const [family, payload] of Object.entries(originals)) {
     assert.equal(await psql('select public.ravradar_ravscore_checkpoint_grid_' + family
       + "_payload_valid((select payload from native_checkpoint_payloads where name='original-" + family + "'),'" + atHour(49) + "');"), 't',
     'all 673 original pairs must pass their OWN unchanged whole validator: ' + family);
     assert.equal(hash(JSON.stringify(payload)), originalPins[family]);
   }
+  diagnostic.at('CURRENT220','CURRENT_FIXTURE');
   const current = {};
   for (const [name, hour, options] of [['current',49,{}],['future',50,{}],['changed',49,{ candidateCurrentSpeedMps:0.18 }]]) {
     const sourcePath = path.join(root, 'grid-' + name + '-source.json');
@@ -597,12 +644,14 @@ async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource
   const reports = [];
   for (const [name, central, incoming, version, expectedCode, disposition, storedVersion,
     role = 'service_role', claimRole = role] of cases) {
+    diagnostic.at('CURRENT220','CAS_CASES',cases.findIndex(row=>row[0]===name));
     const reset = 'truncate public.admin_documents;' + (central
       ? "insert into public.admin_documents(document_key,payload,version,updated_by) select '" + KEY
         + "',payload,1,'00000000-0000-0000-0000-000000000001' from native_checkpoint_payloads where name='" + central + "';" : '');
     const observed = JSON.parse(await psql(reset + " set statement_timeout='55s'; do $$ begin perform set_config('request.jwt.claim.role','"
       + claimRole + "',false); end $$; set role " + role + '; select public.native_checkpoint_attempt(false,'
       + version + ",(select payload from native_checkpoint_payloads where name='" + incoming + "'));"));
+    diagnostic.observedSqlState(observed.sqlstate);
     assert.equal(observed.sqlstate, expectedCode, 'native220 case ' + name);
     assert.equal(observed.stored?.version, storedVersion);
     if (disposition) { assert.equal(observed.result.disposition, disposition); assert.equal(observed.result.centralVersion, storedVersion); }
@@ -623,7 +672,14 @@ async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource
 // Called ONLY by the existing protected-checkpoint target's native-only branch.
 // Its real 673 model builders and normal checkpoint saver supply the fixtures.
 export async function runNativeCheckpointSqlComparison({ repositoryRoot,
-  sourceDocumentAt, atHour, saveCheckpoint } = {}) {
+  sourceDocumentAt, atHour, saveCheckpoint, includeStatisticsRevision = false,
+  includeAssistantKnowledge = false } = {}) {
+  assert.equal(typeof includeStatisticsRevision,'boolean');
+  assert.equal(typeof includeAssistantKnowledge,'boolean');
+  if (includeAssistantKnowledge) assert.equal(includeStatisticsRevision,true);
+  const knowledgeConstructors={sourceDocumentAt,atHour,saveCheckpoint};
+  const knowledgePrerequisites=includeAssistantKnowledge
+    ? await loadNativeAssistantKnowledgePrerequisites() : null;
   const programs = await nativePrograms();
   assert.ok(typeof sourceDocumentAt === 'function' && typeof atHour === 'function'
     && typeof saveCheckpoint === 'function', 'normal fixture constructors are required');
@@ -635,6 +691,8 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
     PGHOST: socket, PGPORT: '5432', PGDATABASE: 'postgres', PGUSER: 'rr_native_test',
     PGPASSFILE: path.join(root, 'absent-password-file'), PGSSLMODE: 'disable' };
   let nativePhase = 'NATIVE_SETUP';
+  const diagnostic=createNativePostgresFailureRecorder();
+  diagnostic.at(nativePhase,'SETUP');
   const runSql = (input, timeout = 70_000) => command(programs.psql,
     ['-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-v', 'VERBOSITY=sqlstate', '-h', socket, '-p', '5432', '-U', 'rr_native_test', '-d', 'postgres'],
     { input, env, timeout });
@@ -647,11 +705,15 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
       // static phase/state/category projection, never raw stderr or input.
       console.error(nativePostgresFailureAnnotation(nativePhase,
         result.sqlState === 'UNKNOWN' ? '' : 'ERROR: ' + result.sqlState));
+      diagnostic.observedSqlState(result.sqlState);
       throw new Error('NATIVE_POSTGRES_SQL_COMMAND_FAILED');
     }
     return result.stdout.trim();
   };
   let owner = null, started = false, stopped = false, cleanupAllowed = false;
+  let statisticsRevisionFailure = null;
+  let knowledgeFailure = null;
+  let issued220Owner = null;
   const readOwner = async () => {
     const pid = Number((await fs.readFile(path.join(data, 'postmaster.pid'), 'utf8')).split('\n')[0]);
     assert.ok(Number.isSafeInteger(pid) && pid > 1, 'owned server PID missing');
@@ -661,6 +723,16 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
     return { pid, birth: stat.slice(stat.lastIndexOf(')') + 2).split(' ')[19] };
   };
   try {
+    if (knowledgePrerequisites) {
+      diagnostic.at(nativePhase,'ISSUED220');
+      const issued220=await knowledgePrerequisites.createIssuedCurrentGridFixture({ownedNativeRoot:root});
+      issued220Owner=issued220;
+      assert.equal(typeof issued220.sourceDocumentAt,'function');
+      assert.equal(typeof issued220.atHour,'function');
+      assert.equal(typeof issued220.saveCheckpoint,'function');
+      sourceDocumentAt=issued220.sourceDocumentAt;atHour=issued220.atHour;saveCheckpoint=issued220.saveCheckpoint;
+    }
+    diagnostic.at(nativePhase,'SETUP');
     const initialized = await command(programs.initdb,
       ['-D', data, '-U', 'rr_native_test', '--no-locale', '--encoding=UTF8', '--auth-local=trust', '--auth-host=reject'], { env });
     assert.equal(initialized.code, 0, 'existing native initdb failed');
@@ -674,7 +746,9 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
     const newSource = sqlText(await fs.readFile(path.join(repositoryRoot, 'supabase/migrations', NEW_MIGRATION), 'utf8'));
     const accountSource = sqlText(await fs.readFile(path.join(repositoryRoot, 'supabase/migrations', ACCOUNT_MIGRATION), 'utf8'));
     const gridSource = sqlText(await fs.readFile(path.join(repositoryRoot, 'supabase/migrations', GRID_MIGRATION), 'utf8'));
+    diagnostic.at(nativePhase,'ISSUED213');
     const issued = await issued213Factory(root);
+    diagnostic.at(nativePhase,'SETUP');
     assert.equal(issued.atHour(49), atHour(49));
     const oldCas = definition(oldSource, 'ravradar_ravscore_checkpoint_cas');
     const newCas = definition(newSource, 'ravradar_ravscore_checkpoint_cas');
@@ -743,6 +817,7 @@ grant execute on function public.native_checkpoint_attempt(boolean,bigint,jsonb)
     // installed old body, transaction, lock timeout, replacement, ACL and notify.
     // Its own precondition/permissions are not reimplemented by this fixture.
     nativePhase = 'CAS200_MIGRATION';
+    diagnostic.at(nativePhase,'MIGRATION');
     await psql(newSource);
     assert.equal(await psql("select current_setting('lock_timeout');"), '0',
       'complete migration must commit/reset its transaction-local lock timeout');
@@ -787,11 +862,13 @@ grant execute on function public.native_checkpoint_attempt(boolean,bigint,jsonb)
     fixtures.unknown = structuredClone(fixtures.predecessor); fixtures.unknown.modelBinding.modelBundleSha256 = 'e'.repeat(64);
     fixtures.invalid = structuredClone(fixtures.current); fixtures.invalid.partCount = 672;
     nativePhase = 'BASELINE_FIXTURES';
+    diagnostic.at(nativePhase,'CURRENT_FIXTURE');
     for (const [name,payload] of Object.entries(fixtures)) {
       const json = JSON.stringify(payload); assert.equal(json.includes('$native_fixture$'),false);
       await psql(`insert into public.native_checkpoint_payloads values('${name}',$native_fixture$${json}$native_fixture$::jsonb);`);
     }
     nativePhase = 'BASELINE_ADMISSION';
+    diagnostic.at(nativePhase,'PROPERTIES');
     const checked = JSON.parse(await psql(`select jsonb_build_object('current',public.ravradar_ravscore_checkpoint_payload_valid((select payload from native_checkpoint_payloads where name='current'),'${atHour(49)}'),
       'predecessor',public.ravradar_ravscore_checkpoint_userdata_predecessor_projection((select payload from native_checkpoint_payloads where name='predecessor'),'${atHour(49)}') is not null,
       'definer',(select prosecdef from pg_proc where oid='${CAS}(bigint,timestamptz,jsonb)'::regprocedure),
@@ -819,15 +896,18 @@ grant execute on function public.native_checkpoint_attempt(boolean,bigint,jsonb)
       ['invalid-incoming','current','invalid',1,'22023',null,1],
     ];
     nativePhase = 'BASELINE_CAS_CASES';
+    diagnostic.at(nativePhase,'CAS_CASES');
     const reports=[];
     for (const [name,central,incoming,version,expectedCode,disposition,storedVersion,
       role='service_role',claimRole=role] of cases) {
+      diagnostic.at(nativePhase,'CAS_CASES',cases.findIndex(row=>row[0]===name));
       const observations=[];
       for (const baseline of [true,false]) {
         const reset = `truncate public.admin_documents;${central ? `insert into public.admin_documents(document_key,payload,version,updated_by) select '${KEY}',payload,1,'00000000-0000-0000-0000-000000000001' from native_checkpoint_payloads where name='${central}';` : ''}`;
         const observed=JSON.parse(await psql(`${reset}
 set statement_timeout='55s'; do $$ begin perform set_config('request.jwt.claim.role','${claimRole}',false); end $$; set role ${role};
 select public.native_checkpoint_attempt(${baseline},${version},(select payload from native_checkpoint_payloads where name='${incoming}'));`));
+        diagnostic.observedSqlState(observed.sqlstate);
         if (observed.sqlstate!==expectedCode) {
           throw new Error(`NATIVE_POSTGRES_CASE_${name.replace(/-/g,'_').toUpperCase()}_SQLSTATE_${observed.sqlstate??'OK'}`);
         }
@@ -846,16 +926,51 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     }
     nativePhase = 'ACCOUNT213';
     const accountAssistant=await compareAccountAssistantSuccessor({psql,runSql,source:accountSource,oldSource,
-      oldFixtures:fixtures,currentFixtures,cases,atHour,oldCas,newCas});
+      oldFixtures:fixtures,currentFixtures,cases,atHour,oldCas,newCas,diagnostic});
     nativePhase = 'CURRENT220';
     const currentGrid=await compareCurrentGridSuccessor({psql,runSql,source:gridSource,accountSource,
-      oldFixtures:fixtures,issuedFixtures:currentFixtures,sourceDocumentAt,atHour,saveCheckpoint,root});
+      oldFixtures:fixtures,issuedFixtures:currentFixtures,sourceDocumentAt,atHour,saveCheckpoint,root,diagnostic});
+    let statisticsRevision;
+    if (includeStatisticsRevision) {
+      nativePhase = 'STATISTICS230';
+      diagnostic.at(nativePhase,'ADAPTER');
+      try {
+        const adapterUrl=new URL('./statistics-preference-revision-native-postgres.mjs',import.meta.url);
+        const adapterStat=await fs.lstat(adapterUrl);
+        assert.ok(adapterStat.isFile()&&!adapterStat.isSymbolicLink(),'fixed normal revision adapter must be a regular file');
+        assert.equal(hash(await fs.readFile(adapterUrl)),'bd763c72cf4a32b1093b7a19d324f688ae61897e9697c7cf31d33ce6b308d51a');
+        const {runNativeStatisticsRevisionProposal}=await import(adapterUrl.href);
+        statisticsRevision=await runNativeStatisticsRevisionProposal({
+          repositoryRoot,clusterDirectory:root,psqlExecutable:programs.psql,
+        });
+      } catch (error) { statisticsRevisionFailure={error}; throw error; }
+    }
+    let assistantKnowledge;
+    if (knowledgePrerequisites) {
+      nativePhase='KNOWLEDGE';
+      diagnostic.at(nativePhase,'ADAPTER');
+      try {
+        assistantKnowledge=await knowledgePrerequisites.runNativeAssistantKnowledgeSuccessor({
+          repositoryRoot,clusterDirectory:root,psqlExecutable:programs.psql,issued220:issued220Owner,
+          sourceDocumentAt:knowledgeConstructors.sourceDocumentAt,
+          atHour:knowledgeConstructors.atHour,saveCheckpoint:knowledgeConstructors.saveCheckpoint,
+        });
+      } catch (error) { knowledgeFailure={error};throw error; }
+    }
+    diagnostic.at(nativePhase,'RETURN');
     return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
+      ...(includeAssistantKnowledge?{assistantKnowledge}:{}),
+      ...(includeStatisticsRevision?{statisticsRevision}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,
       oldCasDefinitionSha256:hash(oldCas),newCasDefinitionSha256:hash(newCas),reports};
+  } catch(error) {
+    diagnostic.report(error);
+    throw error;
   } finally {
+    diagnostic.at(nativePhase,'CLEANUP');
+    try {
     if (started) {
       const current = await readOwner(); assert.deepEqual(current,owner,'native server ownership changed; preserve directory');
       const stop=await command(programs.pg_ctl,['-D',data,'-m','immediate','-w','-t','20','stop'],{env});
@@ -867,6 +982,18 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     }
     const resolved=path.resolve(root), temp=path.resolve(os.tmpdir());
     assert.ok(path.dirname(resolved)===temp && path.basename(resolved).startsWith('rr-checkpoint-pg-'));
-    if (cleanupAllowed && (!started || stopped)) await fs.rm(resolved,{recursive:true,force:false});
+    if (cleanupAllowed && (!started || stopped)) {
+      // A fixture-close is NOT the preceding physical PostgreSQL stop proof.
+      if (issued220Owner) knowledgePrerequisites.closeIssuedCurrentGridFixture(issued220Owner);
+      await fs.rm(resolved,{recursive:true,force:false});
+    }
+    } catch (cleanupError) {
+      diagnostic.report(cleanupError);
+      // Keep the first revision failure; unknown/failed stop retains the same
+      // owned directory. Never turn physical cleanup failure into success.
+      if (knowledgeFailure!==null) throw knowledgeFailure.error;
+      if (statisticsRevisionFailure!==null) throw statisticsRevisionFailure.error;
+      throw cleanupError;
+    }
   }
 }

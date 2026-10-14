@@ -1,3 +1,28 @@
+## 4.0.577 — to yderligere kildeprøver rettet lokalt, 14. oktober 2026
+
+- Brug genuine udstedt 584-kilde til den historiske 673/600-prøve; bevar alle gamle originalkontroller, den aktuelle KB-prøve og streng afvisning af forkert fase.
+- Del katalogprøven i tre faste sprogprocesser plus alle øvrige normale blokke. Hele456-dækningen og gamle negative/kontroller består; hvert barn beholder 30 sekunder/1 MiB, og direkte default kører stadig alt.
+- Den hele normale migrationsprøve og privacy-parent består lokalt. Ny samlet exact-head CI/PostgreSQL og offentlig levering er fortsat åbne.
+- Ingen ændring af produkt, C73/I75/normalT, SQL, version eller geodata.230 og videns577 er ikke installeret; lokale prøver beviser ikke ekstern AI. Tidligere afsnit bevares som dateret historik.
+
+## 4.0.577 — lokal sourceopfølgning efter PR #604, 14. oktober 2026
+
+- Ret fem konkrete sourcecases med fasepræcise forventninger og genuine historiske220-kaldere; bevar gamle assertions, historiske SQL-filer og alle aktuelle adgangs-/originalkrav.
+- Lad den normale readiness-forbruger kræve samme komplette ordnede migrationsliste som producenten. Aktuelle skabeloner følger videnskanon; historiske definitionskontroller bevares særskilt.
+- De berørte normale lokale mål og efterfølgende C-/I-kontroller består uden ændring af C73/I75/normalT. Ny samlet exact-head CI/PostgreSQL og offentlig effekt er fortsat åbne.
+- Vejr606 er kildeleveret på main584 efter grøn kontrol; den ene normale vejrhentning kører med faktisk delvis genbrug af gemt fremgang. Det er ikke fuld datakvalitet eller offentlig leveringskvittering.230 og videns577 er ikke installeret, og ekstern AI/503 er ikke afklaret. Alle fem mål består; ældre statusafsnit nedenfor er dateret historik.
+
+## 4.0.577 — Spørg RavRadar, lokal leveringskandidat, 14. oktober 2026
+
+- Saml den gennemgåede vidensudvidelse: 456 lokale emner med danske, tyske og engelske svar, kontrolleret spørgsmålstilpasning og sikker afgrænsning af ukendt, privat og uvedkommende input. Spørgsmålsvariationer er ikke nye faglige kilder.
+- Lad interne vidensimports følge den faktiske releaseversion, uden omskrivning af fakta, kommentarer eller eksterne kildelinks.
+- Byg faktisk C73, derefter I75 og den normale T-kontrakt på den arvede statistik230- og vejr603-kilde. Den nye append-only 20261014140000_assistant_knowledge_bound_successor.sql er skrevet/kontrolleret lokalt; syv eksisterende bindingsforbrugere og den fysiske slutkilde består. Gamle SQL-filer, originaler og scoreformel bevares.
+- Kontroller gammel220 gennem genuine fixed-issued Git-kilde, ikke en ommærket ny vidensbank. De fire nye normale kildeprøver består. Nativevejen kræver 213→220→230→viden og fysisk bevis for lukning; rigtig PostgreSQL af denne kandidat er endnu ukørt.
+- Den nye førskrivningskontrol tilføjer én dry-run, ikke en ekstra apply. Den normale produktkritiske kildegate kræver præcis fem dry-run-læsninger og én apply og består lokalt.
+- ÅBENT: præcis samlet CI/PostgreSQL, faktisk230-installation før vidensovergang, beskyttede original-/historik-/no-loss-kontroller, offentlig levering og repræsentativ browser-/ekstern-AI-afprøvning. Lokal viden eller HTTP200 er ikke fungerende ekstern AI. Ingen produktionsændring under den kørende vejrhentning38553389373.
+
+*Dateret kildeforberedelse før levering af 606; afsnittets statuspunkter er historik og erstattes af den nyere status ovenfor.*
+
 ## 4.0.576 — bølgeforvalg uden ubrugt strømkrav, 14. oktober 2026
 
 - Den indledende Feggesund-kontrol skal kun kvalificere bølger og må ikke kræve nyt strøm-gitterbevis før det faktiske strømvalg. Den normale score-, strømhukommelses-, native-hold- og replaykontrol bevares; de 118 scoretimer og tre ekstra vandstandstimer ændres ikke.
@@ -9,6 +34,19 @@
 - Afgræns current-grid-kravet til faktisk ny strømbrug: ikke i planen for fire scalar-/vejrfamilier og ikke i tre ekstra private T+3-vandstandstimer uden for de118scoretimer. Streng score-/recovery-/referencekontrol, alle121timer, originaler og no-loss bevares.
 - Ingen modelbinding, SQL, sourceprioritet, scoreformel, adminpunkter eller geometri ændres. Normale måltests, præcis kildekontrol og faktisk ny generation kræves stadig; cron er pauset.
 - Kræv coherent sampling for valgfri PUBLIC-genindsættelse af active-native-strøm over et allerede kvalificeret strømvalg. Hele den normale assembly-prøve består; gamle originaler, protected replay, kildeprioritet og tidligere assertions bevares. Første PR #603-kontrol viste en manglende præcis inverseadapter for de nye kalderhunks; den historiske hele sourcehash skal fortsat bestå, før ny samlet kildekontrol.
+
+## 4.0.576 — lokal statistikpræference med serverrevision, 14. oktober 2026
+
+PR #601's første kildekontrol stoppede i en forældet optælling af databasekommandoer. Statistikforløbet har to ekstra skrivefri genkontroller. Kildekontrollen kræver nu præcis fire afgrænsede dry-run-læsninger, de konkrete konto-/statistikgrene i rigtig rækkefølge og fortsat kun én apply. Den normale lokale produktkritiske kontrol består; en ny præcis GitHub-/PostgreSQL-kontrol afventer. Ingen produktionsændring.
+
+Status ved sammensætningen den 14. oktober 2026 kl. 09.30: PR #600 er leveret på main 9fe90320. Det kontrollerede forløb 38527571595/1 afsluttede kl. 09.21.12 dansk tid: originalkontrollen bevarede alle 673 dele og 11 originalfiler, den fulde plan blev kontrolleret før skrivning, kun 220 blev installeret, og database-, turbindings- og checkpointgenlæsningen bestod. Edge og Pages blev sprunget over. Én normal vejrhentning 38528682729 blev kvitteret kl. 09.29.45 og kører endnu; ny offentlig strøm, strømhukommelse og score er ikke verificeret. Cron er midlertidigt pauset med uændret plan. Statistik230 er ikke installeret. Ældre udsagn nedenfor om, at 220 ikke er installeret, er dateret historik og erstattes kun på dette statuspunkt.
+
+- Forbered atomisk serverrevision: frisk ON kan ikke overhale nyere OFF; gammelt revisionsløst ON afvises. Klient og UI bevarer kontoejer, logout og ukendt skriveudfald.
+- Saml én ny append-only230-kilde efter 220. Bevar alle 58 gamle SQL-filer, C69/I71/T, private ture/eksportindhold og hele kilde-/originalkontrollen.
+- Faktisk lokal PASS: normal230-bygger write/check,53 profil-/ejerskabsprøver og hele readiness-målet efter tre præcise testfixturekorrektioner. Rigtig samlet PostgreSQL og hosted230 er endnu ukørt.
+- Bevar standard ON uden at kalde det samtykke/anonymitet. Samlet statistik, retention, varsling og sletning aktiveres ikke.
+- Levering kræver særskilt kontrolleret pause/idle og230/schema2 før nye kontoaktiver, efter strøm220/normal offentlig vejrdrift. Gamle faner har et kort ON-afvisnings-/ukendt-OFF-kvitteringsvindue; ingen global vejrgate eller automatisk cron-genoptagelse efter fejl.
+- Genbrug allerede leveret003/Worker. Den nyere strømopfølgning89.224 og alle daterede historiske afsnit bevares; dette er ikke offentlig statistiklevering. Se håndbog 89.225.
 
 ## 4.0.576 — historisk checkpointlæsning efter databasetransport, 14. oktober 2026
 

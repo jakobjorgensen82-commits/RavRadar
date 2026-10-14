@@ -1,3 +1,17 @@
+## Aktuel sammenføring og normal vejrhentning — 14. oktober 2026
+
+606 er faktisk kildeleveret på main584 efter præcis grøn kilde-/PostgreSQL-kontrol. Den ene normale vejrhentning38577766010 arbejder videre med autentisk genbrugt fremgang; DMI-hentningstrinnet er afsluttet, men fuld datakvalitet, beregning, privat gemning/publicering, Edge, Pages og ny offentlig strøm/hukommelse/score kræver fortsat deres faktiske beviser.385533 er afsluttet med fejl, ikke en aktiv writer. Cron forbliver pauset med uændret plan, indtil normalleveringen er verificeret.
+
+De syv konkrete604-kilderettelser og den faktisk leverede606-kilde samles nu lokalt med begge dokumentationshistorikker bevaret. Ny præcis samlet kilde-/PostgreSQL-kontrol kræves.230/schema2 skal stadig installeres og genlæses før videns577; ingen SQL, Edge eller offentlig ændring under den aktive vejrhentning. Ved en fremtidig faktisk vejrfejl: ret årsagen, bestå nødvendige kontroller og genoptag gennem den normale indgang fra den dybeste autentiske, gyldigt gemte checkpointfase uden overlap eller gateskip. Alle fem mål og18oktober-fristen består. Afsnittene nedenfor er dateret førstatus på de udtrykkeligt erstattede punkter.
+
+# Aktuelle konkrete leverancer — 14. oktober 2026
+
+Følg den ene almindelige38553389373 på leveret603/main90ae gennem faktisk DMI, cache, privat gemning/upload, checkpoint, Edge, Pages og ny offentlig strøm/hukommelse/score. Genaktivér den uændrede cron først efter verificeret normallevering. Ingen produktionsændring under writer.
+
+Imens færdiggøres577-videnskildens normale måltests/dokumentation og præcise samlede kilde/PostgreSQL. Faktisk lokal C73/I75/T, ny eksklusiv kilde og syvconsumer-synkronisering består; det er ikke offentlig levering. Efter normal vejrdrift leveres først230/schema2 fra sit verificerede spor og derefter den særskilte vidensbinding med originale B/S, historik og no-loss bevaret. Browser/ekstern-AI, anonym statistik/retention, den isolerede SOURCE-revision og selvstændig drift fortsættes afgrænset parallelt; ingen af de fem mål lukkes på disse delbeviser. Frist18oktober.
+
+*Dateret kildeforberedelse før levering af 606; afsnittets statuspunkter er historik og erstattes af den nyere status ovenfor.*
+
 ## Første konkrete leverance — 14. oktober 2026
 
 Vejrhentningsfejlen har fuld prioritet: afgrænset Feggesund-bølgekalder → relevant normal regression og gammel sourceinverse → eksakt samlet CI → writerfri sikker merge → én almindelig genoptagelse efter gældende mål → faktisk gemning/publicering/Pages og ny generationskontrol. Genaktivér derefter cron uden ændret plan. Hold uleveret KB604 og inaktiv revision adskilt; ingen ekstra manuel kørsel, genkørsel eller blanketlempelse. Samtlige fem hovedopgaver og frist18oktober består.
