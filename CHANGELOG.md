@@ -1,3 +1,12 @@
+## 4.0.577 — Spørg RavRadar, lokal leveringskandidat, 14. oktober 2026
+
+- Saml den gennemgåede vidensudvidelse: 456 lokale emner med danske, tyske og engelske svar, kontrolleret spørgsmålstilpasning og sikker afgrænsning af ukendt, privat og uvedkommende input. Spørgsmålsvariationer er ikke nye faglige kilder.
+- Lad interne vidensimports følge den faktiske releaseversion, uden omskrivning af fakta, kommentarer eller eksterne kildelinks.
+- Byg faktisk C73, derefter I75 og den normale T-kontrakt på den arvede statistik230- og vejr603-kilde. Den nye append-only 20261014140000_assistant_knowledge_bound_successor.sql er skrevet/kontrolleret lokalt; syv eksisterende bindingsforbrugere og den fysiske slutkilde består. Gamle SQL-filer, originaler og scoreformel bevares.
+- Kontroller gammel220 gennem genuine fixed-issued Git-kilde, ikke en ommærket ny vidensbank. De fire nye normale kildeprøver består. Nativevejen kræver 213→220→230→viden og fysisk bevis for lukning; rigtig PostgreSQL af denne kandidat er endnu ukørt.
+- Den nye førskrivningskontrol tilføjer én dry-run, ikke en ekstra apply. Den normale produktkritiske kildegate kræver præcis fem dry-run-læsninger og én apply og består lokalt.
+- ÅBENT: præcis samlet CI/PostgreSQL, faktisk230-installation før vidensovergang, beskyttede original-/historik-/no-loss-kontroller, offentlig levering og repræsentativ browser-/ekstern-AI-afprøvning. Lokal viden eller HTTP200 er ikke fungerende ekstern AI. Ingen produktionsændring under den kørende vejrhentning38553389373.
+
 ## 4.0.576 — strømguard ved faktisk forbrug, 14. oktober 2026
 
 - Genbrug faktisk installeret/genlæst220 med bevarede originaler efter PR #600. Den næste normale vejrhentning fejlede i ikke-strømplanen før offentlig levering; gammel prognose bevares.

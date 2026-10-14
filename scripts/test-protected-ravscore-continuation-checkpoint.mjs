@@ -397,14 +397,15 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
 // Native PostgreSQL is a separate mandatory Linux source leaf, never a
 // MemoryCentral/Windows representation proof. Reuse these exact 673 builders
 // and the normal checkpoint saver; do not run the simulated RPC tests here.
-if (process.argv.includes('--native-postgres') || process.argv.includes('--native-statistics-revision')) {
+if (process.argv.includes('--native-postgres') || process.argv.includes('--native-statistics-revision') || process.argv.includes('--native-assistant-knowledge')) {
   try {
     const { runNativeCheckpointSqlComparison } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
     const report = await runNativeCheckpointSqlComparison({
       repositoryRoot: path.resolve('.'), sourceDocumentAt, atHour,
       saveCheckpoint: saveRavScoreContinuationCheckpoint,
-      includeStatisticsRevision: process.argv.includes('--native-statistics-revision'),
+      includeStatisticsRevision: process.argv.includes('--native-statistics-revision') || process.argv.includes('--native-assistant-knowledge'),
+      includeAssistantKnowledge: process.argv.includes('--native-assistant-knowledge'),
     });
     console.log(JSON.stringify(report));
   } catch (error) {

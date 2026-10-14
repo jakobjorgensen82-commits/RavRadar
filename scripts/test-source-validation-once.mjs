@@ -19,17 +19,21 @@ assert.equal(plan.gate, 'node scripts/source-critical-gate.mjs');
 assert.ok(plan.preflight.includes('node scripts/build-ravscore-model-bundle.mjs --check'));
 assert.ok(plan.preflight.includes('node scripts/sync-ravscore-model-binding.mjs --check'));
 // Preserve all 47 baseline commands, the genuine issued213 historical check,
-// exactly one current220 check and one pure prewrite-diagnostic check. Never rebuild issued213.
+// exactly one issued220 check, current KB check and pure prewrite-diagnostic check.
+// Never rebuild either historical binding against the current KB source.
 const issuedCheck = 'node scripts/check-account-assistant-issued-source.mjs';
-const successorCheck = 'node scripts/build-current-grid-original-binding-successor.mjs --check';
+const issuedGridCheck = 'node scripts/check-current-grid-issued-source.mjs';
+const successorCheck = 'node scripts/build-assistant-knowledge-binding-successor.mjs --check';
 const diagnosticCheck = 'node scripts/test-current-grid-prewrite-diagnostic.mjs';
-for (const check of [issuedCheck, successorCheck, diagnosticCheck]) {
+for (const check of [issuedCheck, issuedGridCheck, successorCheck, diagnosticCheck]) {
   assert.equal(declared.filter(command => command === check).length, 1,
     'Historical, current and pure diagnostic source must each be checked exactly once.');
 }
 assert.equal(declared.includes('node scripts/build-account-assistant-binding-successor.mjs --check'), false,
-  'The immutable issued213 builder must not be rerun against current220 source.');
-assert.ok(declared.filter(command => ![issuedCheck, successorCheck, diagnosticCheck].includes(command)).length <= 47,
+  'The immutable issued213 builder must not be rerun against current KB source.');
+assert.equal(declared.includes('node scripts/build-current-grid-original-binding-successor.mjs --check'), false,
+  'The immutable issued220 builder must run only in its fixed issued source.');
+assert.ok(declared.filter(command => ![issuedCheck, issuedGridCheck, successorCheck, diagnosticCheck].includes(command)).length <= 47,
   `Kildegaten er igen blevet for bred uden den præcise efterfølgerkontrol: ${declared.length} kommandoer.`);
 assert.equal(declared.filter(command => command === 'python scripts/test-copernicus-current-pilot.py').length, 1);
 assert.ok(fs.readFileSync('scripts/test-copernicus-current-pilot.py', 'utf8').includes(

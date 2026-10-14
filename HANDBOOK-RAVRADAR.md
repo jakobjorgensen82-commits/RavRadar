@@ -1,3 +1,15 @@
+## 89.227 Mere viden er ikke det samme som offentlig eller ekstern AI
+
+**Kort fortalt:** Den lokale4.0.577-kandidat udvider Spørg RavRadar til456 emner med svar på dansk, tysk og engelsk og forbedrer spørgsmålsforståelsen. Den er endnu ikke offentlig leveret. Normale opfølgninger og den eksterne AI skal stadig prøves på hjemmesiden.
+
+Faglige svar og spørgsmålseksempler følger den faktisk aktuelle RavRadar. Variationer af et spørgsmål er ikke ekstra faglige kilder. Ukendte, private og uvedkommende spørgsmål må ikke give opdigtede fakta, private svar eller fundgarantier. Interne fejl og driftsdiagnoser føjes ikke til brugerens vidensbank. En fast lokal forklaring eller HTTP200 er ikke bevis for fungerende ekstern AI.
+
+Vidensmodulernes interne imports får samme cacheversion som appen. Kun relative modulreferencer ændres; faglige tekster, kommentarer og eksterne kildelinks bevares. Den faktiske C73-, I75- og normale T-bygning er udført lokalt efter den arvede vejr603/statistik230-kilde. Én ny append-only20261014140000-vidensmigration er skrevet og kontrolleret som kilde, og de syv eksisterende bindingsfiler er synkroniseret med efterfølgende fysisk slutkontrol. Det er hverken SQL-installation eller en ændring af scoreformel, land-/vandpunkter eller geometri.
+
+Historiske213/220/230-faser skal fortsat kontrolleres på deres genuine kilder. Fire nye normale fixed-issued220-prøver består; den nye obligatoriske nativevej kræver hele213→220→230→viden i rigtig PostgreSQL og faktisk lukning før oprydning. Kandidatens præcise samlede kilde/PostgreSQL er endnu ikke gennemført. Statistik230 skal faktisk være installeret med schema2 før vidensmetadataovergangen. Gamle originaler, numeriske værdier og offentliggjort historik skal bevares gennem de normale B/S-, no-loss-, writer- og leveringskontroller. Eksisterende Worker/D1 genbruges.
+
+Efter faktisk levering skal generelle, sammensatte, opfølgende og ukendte spørgsmål prøves gennem normale brugerforløb på alle tre sprog, inklusive den eksisterende eksterne AI uden nye nøgler/tjenester/planer. Præference-ON er ikke samtykke eller anonymitet, og denne vidensleverance aktiverer hverken samlet statistik, retention, varsling eller sletning. Alle fem hovedmål og fristen18oktober består; lokale tests er ikke afslutning.
+
 ## 89.226 Strøm kontrolleres, når strømmen faktisk bruges
 
 **Kort fortalt:** Strømdata skal bestå den strenge gitterkontrol, før de bruges i nye scorer. De må ikke blokere en plan, der kun efterspørger vind, bølger, vandstand og temperatur, eller tre ekstra vandstandstimer uden for scoreperioden.
@@ -60,7 +72,13 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.576
+**Håndbogsversion:** 4.0.577
+
+## Aktuel videnskildebinding — 14. oktober 2026, kun lokal kilde
+
+4.0.577 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=d6707d44fea563a3aaf99e1a81975fcb738d8a0152d2f85adff36060b75d7faa` over 75 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=74883293f9a19f948773678e2e373bff77a8f79d2e09ca81f7e51f78240980a6` over 73 transitive filer. Den normale fortsættelsesbinding er `a541199142e24abf6798c736d32ae09cf623de1d58687c0ab108a35396fc6ca9`.
+
+Scoreformel, fysiske kontrakter, administratorpunkter og gamle originaler er uændrede. 220 er installeret; 230/schema2 skal faktisk installeres før denne senere vidensovergang. Dette er hverken offentlig levering, ny vejrvirkning eller bevis for fungerende ekstern AI. Maskinlæsbar autoritet er `version.json.releaseContract.modelBindings`; ældre bindingsafsnit nedenfor bevares som dateret historik.
 
 ## Aktuel kildebinding — 14. oktober 2026, endnu ikke installeret
 

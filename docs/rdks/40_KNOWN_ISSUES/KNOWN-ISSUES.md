@@ -1,3 +1,9 @@
+## ÅBEN — faktisk levering og brugerafprøvning af videnskandidat577, 14. oktober 2026
+
+456-emneviden, cacheversionering, ny kildebinding og syv-fil-synkronisering er faktisk samlet lokalt efter vejr603/statistikbba9. De fire fixed-issued220-mål og produktkritisk kildegate består; fuld præcis CI/PostgreSQL på den nye kandidat og offentlig levering er endnu åbne. Statistik230 er kildegrøn, men ikke installeret. Den nye metadataovergang må ikke leveres før faktisk230/schema2 og original-/historik-/no-loss-/writerkontroller.
+
+Den faktiske eksterne AI og normale offentlige opfølgninger/sammensatte spørgsmål skal fortsat verificeres. Lokal viden, mocktransport og HTTP200 er ikke AI-bevis. Sikker drift/cron og ny strøm/hukommelse/scoreeffekt af den separate almindelige vejrhentning38553389373 afventer sit eget faktiske resultat. Statistik/anonymitet/retention og den isolerede SOURCE-revision er særskilt åbne. Ingen af de fem hovedmål er færdigt; tidligere datede statuspunkter bevares som historik.
+
 ## ÅBEN — ubrugt strøm stopper ikke-strømplanen, 14. oktober 2026
 
 Efter faktisk installeret/genlæst 220 stoppede den normale vejrhentning før ny offentlig levering i current-grid-kontrollen inde i planen for fire ikke-strømkomponenter. Koden kræver desuden current-grid-bevis i tre private vandstandstimer uden for scorehorizonten. Den afgrænsede kalderrettelse skal lade kontrollen følge faktisk strømforbrug og bevare stringent current/recovery/reference, 121 timer til T+3, alle originaler og no-loss. DMI 429 er observeret separat; koblingen til det konkrete endpoint er ukendt. Præcis kildekontrol, sikker levering og ny offentlig effekt står åbne. Tidligere uinstalleret220-status nedenfor er dateret historik. Se håndbog 89.226.

@@ -1,3 +1,9 @@
+# Aktuelle konkrete leverancer — 14. oktober 2026
+
+Følg den ene almindelige38553389373 på leveret603/main90ae gennem faktisk DMI, cache, privat gemning/upload, checkpoint, Edge, Pages og ny offentlig strøm/hukommelse/score. Genaktivér den uændrede cron først efter verificeret normallevering. Ingen produktionsændring under writer.
+
+Imens færdiggøres577-videnskildens normale måltests/dokumentation og præcise samlede kilde/PostgreSQL. Faktisk lokal C73/I75/T, ny eksklusiv kilde og syvconsumer-synkronisering består; det er ikke offentlig levering. Efter normal vejrdrift leveres først230/schema2 fra sit verificerede spor og derefter den særskilte vidensbinding med originale B/S, historik og no-loss bevaret. Browser/ekstern-AI, anonym statistik/retention, den isolerede SOURCE-revision og selvstændig drift fortsættes afgrænset parallelt; ingen af de fem mål lukkes på disse delbeviser. Frist18oktober.
+
 # Aktuelt kritisk leveringsspor — vejrberegning, 14. oktober 2026
 
 Først lukkes den faktisk observerede komponentplan-fejl efter installeret220: korrekt ikke-strømplan og 118-timers strømforbrugsgrænse med uændrede 121 scalar-/T+3-timer og alle strenge strøm-/originalkontroller. Normal reproduktion, måltests, præcis source-CI, sikker levering og faktisk ny offentlig generation kræves. Cron forbliver pauset med uændret plan indtil verificeret normaldrift. Øvrige afgrænsede spor fortsætter sikkert lokalt/ved ventetid; statistikPR601, vidensudvidelse og isoleretSOURCE aktiveres ikke som del af vejrrettelsen. Alle fem hovedmål og fristen18oktober består.

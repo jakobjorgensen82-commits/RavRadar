@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
+import {loadNativeAssistantKnowledgePrerequisites} from './assistant-knowledge-native-contract.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { exactRelativeModuleSpecifiers } from './static-module-closure.mjs';
 import { accountAssistantCatalogQuery, verifyAccountAssistantCatalogMetadata }
   from '../verify-account-assistant-schema.mjs';
 
@@ -33,7 +33,7 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 // returned or emitted; unknown state/phase remains explicitly UNKNOWN.
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
-  'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'UNKNOWN']);
+  'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'KNOWLEDGE', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -124,8 +124,12 @@ async function issued213Factory(root) {
     + slice('const samples =', 'const sourceDocument =');
   assert.equal(hash(factory), '71ce29ec98e43bfa02017a145c4438346f1d8a1f4323526ec58e4b1081d81e36');
   const scanner = 'scripts/lib/static-module-closure.mjs';
-  assert.equal(sqlText(await fs.readFile(path.join(ISSUED_ROOT, scanner), 'utf8')),
-    String(await read(scanner)), 'Use the actual reviewed issued static scanner');
+  const scannerBytes = await read(scanner);
+  assert.equal(hash(scannerBytes),
+    '675f91e7942143a78636e219e54bd7fa0ff25ddcd1998657dd215105054938b0',
+    'Exact self-contained issued044d scanner, independent of current browser tooling');
+  const issuedScanner = await import('data:text/javascript;base64,' + scannerBytes.toString('base64'));
+  assert.equal(typeof issuedScanner.exactRelativeModuleSpecifiers, 'function');
   const tSource = String(await read(ISSUED_T));
   const declaration = /export const RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES = Object\.freeze\(\[\n((?:  '[A-Za-z0-9_./-]+',\n)+)\]\);/.exec(tSource);
   assert(declaration, 'Exact historical T declaration required');
@@ -151,7 +155,7 @@ async function issued213Factory(root) {
     visited.add(file); selected.add(file);
     const source = String(await read(file));
     if (!/\.(?:js|mjs|ts)$/.test(file)) continue;
-    for (const specifier of exactRelativeModuleSpecifiers(source, file)) {
+    for (const specifier of issuedScanner.exactRelativeModuleSpecifiers(source, file)) {
       const base = path.posix.normalize(path.posix.join(path.posix.dirname(file), specifier.split(/[?#]/, 1)[0]));
       const candidates = path.posix.extname(base) ? [base] : [base, base + '.js', base + '.mjs', base + '.json', base + '/index.js'];
       const resolved = candidates.find(candidate => regular.has(candidate));
@@ -623,8 +627,14 @@ async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource
 // Called ONLY by the existing protected-checkpoint target's native-only branch.
 // Its real 673 model builders and normal checkpoint saver supply the fixtures.
 export async function runNativeCheckpointSqlComparison({ repositoryRoot,
-  sourceDocumentAt, atHour, saveCheckpoint, includeStatisticsRevision = false } = {}) {
+  sourceDocumentAt, atHour, saveCheckpoint, includeStatisticsRevision = false,
+  includeAssistantKnowledge = false } = {}) {
   assert.equal(typeof includeStatisticsRevision,'boolean');
+  assert.equal(typeof includeAssistantKnowledge,'boolean');
+  if (includeAssistantKnowledge) assert.equal(includeStatisticsRevision,true);
+  const knowledgeConstructors={sourceDocumentAt,atHour,saveCheckpoint};
+  const knowledgePrerequisites=includeAssistantKnowledge
+    ? await loadNativeAssistantKnowledgePrerequisites() : null;
   const programs = await nativePrograms();
   assert.ok(typeof sourceDocumentAt === 'function' && typeof atHour === 'function'
     && typeof saveCheckpoint === 'function', 'normal fixture constructors are required');
@@ -654,6 +664,8 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   };
   let owner = null, started = false, stopped = false, cleanupAllowed = false;
   let statisticsRevisionFailure = null;
+  let knowledgeFailure = null;
+  let issued220Owner = null;
   const readOwner = async () => {
     const pid = Number((await fs.readFile(path.join(data, 'postmaster.pid'), 'utf8')).split('\n')[0]);
     assert.ok(Number.isSafeInteger(pid) && pid > 1, 'owned server PID missing');
@@ -663,6 +675,14 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
     return { pid, birth: stat.slice(stat.lastIndexOf(')') + 2).split(' ')[19] };
   };
   try {
+    if (knowledgePrerequisites) {
+      const issued220=await knowledgePrerequisites.createIssuedCurrentGridFixture({ownedNativeRoot:root});
+      issued220Owner=issued220;
+      assert.equal(typeof issued220.sourceDocumentAt,'function');
+      assert.equal(typeof issued220.atHour,'function');
+      assert.equal(typeof issued220.saveCheckpoint,'function');
+      sourceDocumentAt=issued220.sourceDocumentAt;atHour=issued220.atHour;saveCheckpoint=issued220.saveCheckpoint;
+    }
     const initialized = await command(programs.initdb,
       ['-D', data, '-U', 'rr_native_test', '--no-locale', '--encoding=UTF8', '--auth-local=trust', '--auth-host=reject'], { env });
     assert.equal(initialized.code, 0, 'existing native initdb failed');
@@ -866,7 +886,19 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
         });
       } catch (error) { statisticsRevisionFailure={error}; throw error; }
     }
+    let assistantKnowledge;
+    if (knowledgePrerequisites) {
+      nativePhase='KNOWLEDGE';
+      try {
+        assistantKnowledge=await knowledgePrerequisites.runNativeAssistantKnowledgeSuccessor({
+          repositoryRoot,clusterDirectory:root,psqlExecutable:programs.psql,issued220:issued220Owner,
+          sourceDocumentAt:knowledgeConstructors.sourceDocumentAt,
+          atHour:knowledgeConstructors.atHour,saveCheckpoint:knowledgeConstructors.saveCheckpoint,
+        });
+      } catch (error) { knowledgeFailure={error};throw error; }
+    }
     return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
+      ...(includeAssistantKnowledge?{assistantKnowledge}:{}),
       ...(includeStatisticsRevision?{statisticsRevision}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
@@ -885,10 +917,15 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     }
     const resolved=path.resolve(root), temp=path.resolve(os.tmpdir());
     assert.ok(path.dirname(resolved)===temp && path.basename(resolved).startsWith('rr-checkpoint-pg-'));
-    if (cleanupAllowed && (!started || stopped)) await fs.rm(resolved,{recursive:true,force:false});
+    if (cleanupAllowed && (!started || stopped)) {
+      // A fixture-close is NOT the preceding physical PostgreSQL stop proof.
+      if (issued220Owner) knowledgePrerequisites.closeIssuedCurrentGridFixture(issued220Owner);
+      await fs.rm(resolved,{recursive:true,force:false});
+    }
     } catch (cleanupError) {
       // Keep the first revision failure; unknown/failed stop retains the same
       // owned directory. Never turn physical cleanup failure into success.
+      if (knowledgeFailure!==null) throw knowledgeFailure.error;
       if (statisticsRevisionFailure!==null) throw statisticsRevisionFailure.error;
       throw cleanupError;
     }

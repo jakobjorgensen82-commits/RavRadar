@@ -1,3 +1,13 @@
+## Lokal 4.0.577 er fysisk kildebygget, ikke offentligt leveret — 14. oktober 2026
+
+Den leverede vejrrettelse603/main90ae og statistikbba9 er faktisk lokale ancestors til ECE2-videnskilden. Hele begge dokumentationshistorikker og486 hidtidige webkapitler er bevaret; INSTALLs DDL uden håndbog var identisk mod begge forældre før normal synkronisering. Ny456-emneviden med danske/tyske/engelske svar og den normale importcache-rettelse er samlet, uden privat driftsviden.
+
+Normal release577 og rene geodata-topversionsdiffs består. Faktisk C73=74883293f9a19f948773678e2e373bff77a8f79d2e09ca81f7e51f78240980a6, I75=d6707d44fea563a3aaf99e1a81975fcb738d8a0152d2f85adff36060b75d7faa og normalT=a541199142e24abf6798c736d32ae09cf623de1d58687c0ab108a35396fc6ca9 er beregnet i rigtig rækkefølge og genkontrolleret efter de syv normale consumerwrites. Den nye 20261014140000_assistant_knowledge_bound_successor.sql er eksklusivt skrevet/kontrolleret lokalt; den ændrer otte metadatafunktioner og tilføjer én privat projektion uden ændring af numeriske originaler/historik eller konto-DDL. Gammel220 kontrolleres på fast genuine Git-kilde; alle fire nye normalmål består.
+
+Denne kilde er ikke SQL-installation eller ny offentlig vejr/viden. 220 er faktisk installeret. PR601's præcise bba9-kilde/PostgreSQL er grøn, men230 er ikke installeret. Ny videnslevering kræver først faktisk230/schema2, kandidatens egen samlede CI/PostgreSQL og kontrolleret original-/historik-/no-loss-/writer-fri levering. Browserforløb og fungerende ekstern AI står åbne; HTTP200/fast svar/mock er ikke AI-bevis. SOURCE-revision, anonym samlet statistik, retention og selvstændig drift forbliver særskilte åbne mål.
+
+Den ene normale38553389373 kører separat på faktiskmain90ae; gammel offentlig prognose bevares indtil faktisk ny levering. Cron er pauset med uændret plan og genaktiveres efter verificeret normaldrift. Ingen ekstra manuel kørsel, merge eller produktionsinstallation under writer. Alle fem mål er åbne med frist18oktober; gamle statusafsnit nedenfor er historik på de præcist erstattede punkter.
+
 ## Vejrhentningens komponentplan stoppede på ubrugt strøm — 14. oktober 2026
 
 PR #600 er kildeleveret på main 9fe90320. Den kontrollerede 220-installation afsluttede med faktisk bevis for bevarelse af 673 dele og 11 originalfiler samt streng database-/tur-/checkpointgenlæsning; Edge og Pages blev ikke ændret af installationen. Den efterfølgende normale vejrhentning fejlede i komponentplanen før gemning af en ny fuld produktionspakke, upload og deploy. Den gamle offentlige prognose er bevaret, og cron er pauset med uændret plan.

@@ -1,3 +1,15 @@
+## 14. oktober 2026 — lokal videnskandidat577 efter faktisk vejr603-kilde
+
+- [x] Integrér faktisk main90ae/603 og statistikbba9 som lokale ancestors uden tab af dokumentationshistorik eller INSTALL-DDL.
+- [x] Saml456 emner med svar på dansk/tysk/engelsk og normale versionsbundne vidensimports; fakta og eksterne links bevares.
+- [x] Kør normal577-formatter med særskilt bevis for kun geodata-topversion; byg fysisk C73→I75→normalT, frys én ny append-onlyvidenskilde, skriv/kontrollér eksklusivt og synkronisér syv eksisterende consumerfiler. Slutkildens normale bindingskontroller består.
+- [x] Bestå fire nye genuine fixed-issued220-kildeprøver og den normale produktkritiske kildegate; kræv præcis fem dry-run-læsninger og én apply.
+- [ ] Bestå præcis samlet kilde/PostgreSQL på kandidatens endelige head; lokale eller syntetiske nativebeviser er ikke PostgreSQL.
+- [ ] Installér/verificér statistik230/schema2 før vidensbinding og gennemfør den kontrollerede original-/historik-/no-loss-/writer-fri offentlige levering.
+- [ ] Verificér faktisk offentlig viden, normale sammensatte/opfølgende/ukendte spørgsmål og ekstern AI på tre sprog.
+
+Den separate normale vejrhentning38553389373, cron-genoptagelse, ny strøm/hukommelse/score, den isolerede revision, anonym statistik/retention og selvstændig drift har egne åbne beviser. Alle fem hovedmål forbliver åbne, frist18oktober. Tidligere afsnit bevares som dateret historik.
+
 ## 14. oktober 2026 — 220 installeret; ikke-strømplan spærrer ny vejrgeneration
 
 - [x] Kildelever PR #600 og installér/genlæs 220 med alle 673 dele og 11 originaler bevaret.

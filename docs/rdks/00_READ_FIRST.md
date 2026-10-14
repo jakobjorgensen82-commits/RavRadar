@@ -1,5 +1,9 @@
 # RDKS – læs først
 
+## Aktuel lokal videnskandidat — 14. oktober 2026
+
+Læs først den nye CODEX-front og håndbog89.227. 4.0.577 er fysisk bygget lokalt efter vejr603/statistik230-kilden, men ikke offentligt leveret. Historiske læsere forbliver genuine; den nye vidensbinding følger faktisk installeret230/schema2 og sine egne original-, no-loss-, kilde-, PostgreSQL- og writer-fri kontroller. Den normale vejrhentning38553389373 og cron-genoptagelsen er et separat kritisk spor. Alle fem mål og de øvrige læsekrav består.
+
 ## Aktuel vejrfejl — 14. oktober 2026
 
 Læs først den nye CODEX-indgang og håndbog 89.226. 220 er faktisk installeret/genlæst, men den næste normale beregning stoppede før offentlig levering. Komponentplanen bruger ikke strøm, og private T+3-vandstandstimer er ikke ekstra scoretimer. Strømguard skal følge faktisk ny strømbrug uden at give ukendte originaler nyt bevis. Kontroller, originaler, kildeprioritet og historik bevares; lokal rettelse er ikke offentlig effekt. De øvrige læsekrav og hele historikken består.

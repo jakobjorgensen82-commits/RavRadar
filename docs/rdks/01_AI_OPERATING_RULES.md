@@ -1,5 +1,11 @@
 # AI operating rules
 
+## Fysisk vidensbinding efter230 — 14. oktober 2026
+
+Den nye videnskandidat skal versionsformateres og bygges i rækkefølgen faktisk C→renderC→I→renderI→normalT. Tuple, hele manifester og ny append-only migrationskilde fryses kun fra disse faktiske filer; gamle213/220/230-byggere og SQL må ikke omskrives eller bruge nye filer som gammel kilde. Den separate fixed-issued220-kontrol og ny vidensbygger kontrollerer hver sin fase. Den normale syv-fil-synkronisering og efterfølgende fysiske slutkontrol kræves før kilde-PR.
+
+Leveringen kræver faktisk installeret230/schema2 før den nye metadataovergang, bevis for oprindelige B/S og uændret numerisk historik samt alle normale writer-/plan-/SQL-/Edge-/private/public-gates. Præference-ON er ikke samtykke eller anonymitet, og viden aktiverer hverken statistik, retention eller sletning. Ingen global Management-/kontogate må tilføjes vejrhentning. Lokal eller syntetisk nativekilde er ikke PostgreSQL, ekstern AI eller offentlig effekt; private fejl må ikke føjes til offentlig assistentviden.
+
 ## Strømguardens forbrugsgrænse — 14. oktober 2026
 
 Planlægning af de fire ikke-strømkomponenter må ikke bruge en strømguard som adgangskrav til gyldige scalarfelter. Den tidlige scorekontrol skal kræve nyt strømbevis for præcis de samme 118 timer som den egentlige scorepipeline; 121-timersserien bevares til vandstand/T+3 og kontinuitet. Streng kontrol af valgt strøm, recovery, hukommelse og native-reference må ikke fjernes. Ukendt gitterbevis er ikke ugyldig original, men heller ikke tilladelse til ny strømbrug. Ingen kildeomvalg, nulstilling, provenanceopgradering eller historikændring følger af kalderrettelsen. Faktisk ny generationslevering kræves stadig.

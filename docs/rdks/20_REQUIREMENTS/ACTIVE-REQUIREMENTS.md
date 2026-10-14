@@ -1,3 +1,9 @@
+# 14. oktober 2026 — vidensudvidelse med ærlig, fasebundet levering
+
+Spørg RavRadar skal bruge den gennemgåede456-emneviden på dansk, tysk og engelsk og bevare ærlig usikkerhed, privat afgrænsning og normale brugerfunktioner. Variationsstrenge er ikke selvstændige faglige kilder. Interne relative vidensimports skal cachebindes til reel release uden omskrivning af fakta eller eksterne kildelinks. Ukendte spørgsmål og faktisk ekstern AI skal stadig afprøves gennem brugerforløbet; fast svar eller HTTP200 beviser ikke ekstern AI.
+
+Ny vidensmetadata må kun leveres efter faktisk230/schema2 og egen fysisk C/I/T-, original-, historik-, no-loss-, PostgreSQL- og writer-fri kontrol. Gamle originaler, scorer og udstedte SQL-filer bevares, og historiske kildefamilier må ikke ommærkes. Ingen Worker/D1-geninstallation, nye tjenester/nøgler/planer, fundgarantier, opdigtede vejrtal eller interne fejlfakta til brugerne. Alle fem hovedmål og fristen18oktober består.
+
 # 14. oktober 2026 — strømkrav følger faktisk strømforbrug
 
 Den normale ikke-strømplan for vind, bølger, vandstand og vandtemperatur skal bevare kvalificerede felter uden at kræve et ubrugt strøm-gitterbevis. Streng ny strømbrug skal fortsat kontrolleres efter faktisk sourcevalg i alle 118 scoretimer, i recovery/hukommelse og ved native-reference. De ekstra private T+118..T+120-timer bruges alene til vandstandens sidste T+3-trends, ikke til ekstra strøm-/scorestate. Hele den originale 121-timersserie, routing, scalarvalidering og kontinuitet bevares. Ukendt strømbevis giver aldrig ny anvendelsesautoritet, proveniensopgradering eller sletning af originaler. Ingen scoreformel-, admin-, geometri-, kildeprioritets- eller SQL-ændring følger af denne afgrænsning.

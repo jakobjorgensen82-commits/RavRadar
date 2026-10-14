@@ -14,6 +14,7 @@ import {
   assertSealedIntegratedCutoverReadiness,
   assertSupabaseMigrationPlan,
   assertSupabaseMigrationsApplied,
+  assistantKnowledgeRequiredMigrations,
   buildIntegratedCutoverReadiness,
   checkIntegratedCutoverReadiness,
   checkSealedIntegratedCutoverReadiness,
@@ -38,6 +39,8 @@ import { buildBoundedCurrentTransportMemory } from '../js/core/ravscore-regime-m
 import { buildCurrentSupplyMemory } from '../js/core/ravscore-current-supply-memory.js';
 import { readAccountAssistantCanonicalSource } from './lib/account-assistant-successor-source.mjs';
 import { readCurrentGridCanonicalSource } from './lib/current-grid-successor-source.mjs';
+import { ASSISTANT_KNOWLEDGE_BINDING, assistantKnowledgeMigration,
+  readAssistantKnowledgeCanonicalSource } from './lib/assistant-knowledge-successor-source.mjs';
 import { accountAssistantCatalogQuery, verifyAccountAssistantCatalogMetadata,
   verifyInstalledAccountAssistantSchema } from './verify-account-assistant-schema.mjs';
 
@@ -1093,7 +1096,12 @@ assert.throws(() => assertSealedIntegratedCutoverReadiness({
 }), /strictly equal|modelBundle/);
 assert.equal(readiness.assistantBinding.modelContractSha256, readiness.modelContractSha256);
 assert.equal(readiness.assistantBinding.modelBundleSha256, readiness.modelBundleSha256);
-assert.deepEqual(readiness.migrationIds, REQUIRED_CUTOVER_MIGRATIONS.map(item => item.id));
+const knowledgeRequiredMigrations = assistantKnowledgeRequiredMigrations();
+assert.deepEqual(knowledgeRequiredMigrations.slice(0, -2), REQUIRED_CUTOVER_MIGRATIONS,
+  'Historical220 required migrations remain the exact prefix, not a redefined LATEST');
+assert.equal(knowledgeRequiredMigrations.at(-2).version, '20261013230000');
+assert.deepEqual(knowledgeRequiredMigrations.at(-1), assistantKnowledgeMigration());
+assert.deepEqual(readiness.migrationIds, knowledgeRequiredMigrations.map(item => item.id));
 assert.doesNotMatch(JSON.stringify(readiness), /(?:coordinate|latitude|longitude|currentU|currentV|payloadRow)/i);
 await assert.rejects(buildIntegratedCutoverReadiness('short', {
   publicImplementationClosureSha256: PUBLIC_IMPLEMENTATION_CLOSURE_SHA256,
@@ -1109,7 +1117,15 @@ assert.ok(accountCanonicalSource.includes('7876390c0e99dc1926d57e3e5a51a0c88c8e7
 const {canonicalSource:currentCanonicalSource,accountSource:currentAccountSchemaSource}=
   await readCurrentGridCanonicalSource();
 assert.equal(currentAccountSchemaSource,accountSchemaSource,'current-grid must not alter account schema');
-assert.ok(currentCanonicalSource.includes(CHECKPOINT_CONTINUATION_HASH));
+assert.ok(currentCanonicalSource.includes('0f6c182ab2ffa7d9d0153706277aa3f7b582327be7dda02842a9c8b995568d4a'),
+  'Immutable220 canonical keeps its issued continuation, never the current KB tuple');
+const {canonicalSource:knowledgeCanonicalSource,historicalSchema1,statisticsSchema2Source}=
+  await readAssistantKnowledgeCanonicalSource();
+assert.equal(historicalSchema1,accountSchemaSource,'KB preserves genuine213 schema1 separately');
+assert.notEqual(statisticsSchema2Source,historicalSchema1,'KB initializer is explicitly schema2');
+assert.equal(CHECKPOINT_CONTINUATION_HASH,ASSISTANT_KNOWLEDGE_BINDING.T);
+assert.ok(knowledgeCanonicalSource.includes(CHECKPOINT_CONTINUATION_HASH),
+  'The normal current readback uses the physically issued KB continuation');
 
 // The normal hashed readback takes exactly the new CAS body, never an expected
 // hash override; the other twelve immutable function bodies stay unchanged.
@@ -1133,7 +1149,15 @@ assert.notEqual(currentCasBody,accountCasBody);
 assert.equal(currentCasBody.split("      and (case v_payload #>> '{modelBinding,modelBundleSha256}'\n").length,2);
 assert.equal(currentCasBody.split('        else false\n      end)\n    then\n').length,2);
 assert.ok(!currentCasBody.includes("      and case v_payload #>> '{modelBinding,modelBundleSha256}'"));
-assert.ok(expectedCheckpointContract.definition.includes(`-- cas-function --\n${currentCasBody}\n-- checkpoint-history-exclusion --`));
+const knowledgeCasBody=checkpointSqlBody(knowledgeCanonicalSource,'ravradar_ravscore_checkpoint_cas');
+assert.notEqual(knowledgeCasBody,currentCasBody,'KB is a distinct exact metadata successor');
+assert.equal(knowledgeCasBody.split("      and (case v_payload #>> '{modelBinding,modelBundleSha256}'\n").length,2);
+assert.equal(knowledgeCasBody.split('        else false\n      end)\n    then\n').length,2);
+assert.ok(!knowledgeCasBody.includes("      and case v_payload #>> '{modelBinding,modelBundleSha256}'"));
+assert.ok(expectedCheckpointContract.definition.includes(`-- cas-function --\n${knowledgeCasBody}\n-- checkpoint-history-exclusion --`));
+assert.ok(!expectedCheckpointContract.definition.includes(currentCasBody),
+  'Current KB readback must not accept the complete old220 CAS body');
+assert.ok(expectedCheckpointContract.definition.includes(`-- kb-predecessor-projection --\n${checkpointSqlBody(knowledgeCanonicalSource,'ravradar_ravscore_checkpoint_kb_predecessor_projection')}`));
 assert.ok(!expectedCheckpointContract.definition.includes(accountCasBody));
 for(const family of ['ffc','249','c1ac'])for(const kind of ['state','payload']) {
   const name=`ravradar_ravscore_checkpoint_grid_${family}_${kind}_valid`;
@@ -1168,7 +1192,15 @@ for (const unchangedName of [
 ]) {
   assert.ok(!singleProjectionMigration.includes('create or replace function public.'+unchangedName+'('),
     'historical200000 still replaces only CAS, not '+unchangedName);
-  assert.ok(expectedCheckpointContract.definition.includes(checkpointSqlBody(currentCanonicalSource,unchangedName)));
+  const knowledgeBody=checkpointSqlBody(knowledgeCanonicalSource,unchangedName);
+  const gridBody=checkpointSqlBody(currentCanonicalSource,unchangedName);
+  assert.ok(expectedCheckpointContract.definition.includes(knowledgeBody));
+  if(['ravradar_ravscore_checkpoint_integrated_state_valid','ravradar_ravscore_checkpoint_payload_valid',
+    'ravradar_ravscore_checkpoint_predecessor_payload_valid'].includes(unchangedName)) {
+    assert.notEqual(knowledgeBody,gridBody,'Exact KB metadata validator replacement: '+unchangedName);
+  } else {
+    assert.equal(knowledgeBody,gridBody,'KB must preserve the whole220 helper: '+unchangedName);
+  }
   if(!['ravradar_ravscore_checkpoint_integrated_state_valid','ravradar_ravscore_checkpoint_payload_valid'].includes(unchangedName)) {
     assert.equal(checkpointSqlBody(currentCanonicalSource,unchangedName),checkpointSqlBody(accountCanonicalSource,unchangedName),
       'current-grid keeps the complete213 helper unchanged: '+unchangedName);
@@ -2104,9 +2136,11 @@ const accountSchema1Prewrite=accountCodeOnly.indexOf('      - name: Verify uncha
 const accountDryRun=accountCodeOnly.indexOf('      - name: Dry-run and require only the latest exact integrated migration');
 const accountDbApply=accountCodeOnly.indexOf('          supabase db push --linked --skip-vault');
 const accountPostwrite=accountCodeOnly.indexOf('      - name: Read back migration and database binding');
-const accountSchema2Readback=accountCodeOnly.indexOf('node scripts/verify-statistics-preference-revision-schema.mjs');
+const accountSchema2Readback=accountCodeOnly.indexOf('node scripts/verify-statistics-preference-revision-schema.mjs',accountPostwrite);
 const accountTripDeploy=accountCodeOnly.indexOf('      - name: Deploy exact rebound trip Edges without Worker or D1 replay');
 const accountAssistantDeploy=accountCodeOnly.indexOf('            if supabase functions deploy ravradar-assistant');
+assert.match(accountCodeOnly.slice(accountTripDeploy,accountAssistantDeploy),
+  /        if: env\.RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED == 'true' \|\| env\.RAVRADAR_KNOWLEDGE_EDGE_REQUIRED == 'true'\r?\n/);
 assert.ok(accountSchema1Prewrite>=0 && accountReadback>accountSchema1Prewrite
   && accountDryRun>accountReadback && accountDbApply>accountDryRun,
   'genuine schema1 catalog readback must remain in the before230 prewrite phase');

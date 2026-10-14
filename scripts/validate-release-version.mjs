@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { exactStaticRelativeModuleReferences } from './lib/static-module-closure.mjs';
 import { PRODUCTION_WORKFLOW_SOURCES } from './lib/production-workflow-sources.mjs';
 import { PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY } from './private-production-runtime-workflow.mjs';
 import { synchronizeReleaseContractMetadata } from './sync-release-contract-metadata.mjs';
@@ -14,9 +15,21 @@ for(const file of files){const text=await fs.readFile(file,'utf8');if(!text.incl
 const browserSources=[];
 const walk=async dir=>{for(const entry of await fs.readdir(dir,{withFileTypes:true})){const rel=`${dir}/${entry.name}`;if(entry.isDirectory())await walk(rel);else if(/\.(?:js|html)$/.test(entry.name))browserSources.push(rel);}};
 await walk('js');
+await walk('knowledge');
 for(const file of await fs.readdir('.'))if(/\.(?:js|html)$/.test(file)&&!/^KYSTZONER-/.test(file))browserSources.push(file);
 for(const file of browserSources){
   const text=await fs.readFile(file,'utf8');
+  if(file.startsWith('knowledge/')&&file.endsWith('.js')){
+    for(const {specifier} of exactStaticRelativeModuleReferences(text,file)){
+      if(!/\.js(?:[?#]|$)/.test(specifier))continue;
+      const base=specifier.split('#',1)[0];
+      const query=base.indexOf('?');
+      const versions=new URLSearchParams(query<0?'':base.slice(query+1)).getAll('v');
+      if(versions.length!==1||versions[0]!==version)throw new Error(`${file}: statisk knowledge-import ${specifier} skal have præcis én cacheversion v=${version}.`);
+    }
+    // Knowledge facts/URLs are not browser module cache identities.
+    continue;
+  }
   const malformedCacheReference=text.match(/\$\d+\.\d+\.\d+/);
   if(malformedCacheReference){
     throw new Error(`${file} har en ugyldig browserimport ${malformedCacheReference[0]}; cacheversionen skal stå som ?v=${version}.`);
