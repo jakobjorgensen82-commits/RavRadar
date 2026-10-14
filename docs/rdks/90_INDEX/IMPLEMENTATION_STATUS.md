@@ -1,3 +1,10 @@
+## 14. oktober 2026 — leveret turlager, kildeleveret strøm, originalkontrol åben
+
+- FAKTISK INSTALLERET: 003-værn og genlæsning i alle ti eksisterende D1-lagre; særskilt eksisterende Worker-opdatering og normale D1-/Edge-/Worker-genlæsninger efter PR #597.
+- KILDELEVERET: PR #598 på main a6b7915e efter præcis grøn Linux- og PostgreSQL-kontrol, inklusive den normale hele strømovergang. Det er ikke numerisk produktionslevering.
+- ÅBEN: 220-installationen stoppede før SQL i originalkontrollen. Første årsag er ukendt, fordi den gamle CLI kasserer den. Den afgrænsede faste fejlrapport og skrivefri kontrolvej kræver egen præcis kildekontrol før brug; ingen blind installationsgentagelse.
+- Cron er faktisk midlertidigt pauset med uændret plan og skal genaktiveres efter verificeret normaldrift. Alle fem hovedområder er fortsat åbne; lokale prøver, source merge og startkvitteringer lukker dem ikke. Se CURRENT_TRUTH og håndbog 89.223; detaljer er private.
+
 ## Installationskontrol med historisk kilde og nøglefrie offline prøver — 14. oktober 2026
 
 PR #596 er kildeleveret efter præcis grøn Linux- og PostgreSQL-kontrol. Den efterfølgende 003-installation stoppede før nogen ekstern skrivning: det normale installationsjob manglede historisk Git-kilde til arkivprøverne, og en offline prøve arvede en Supabase-adgangsnøgle. Alle efterfølgende SQL-, D1- og Worker-trin blev sprunget over; dette var ikke en ny vejrhentning eller et datatab.

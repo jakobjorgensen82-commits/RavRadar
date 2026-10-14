@@ -1,3 +1,7 @@
+# 14. oktober 2026 — faktisk turlagerlevering og afvist strømoriginalkontrol
+
+003 er faktisk installeret/genlæst i alle ti eksisterende D1-lagre; den eksisterende Worker er særskilt opdateret og normalt genlæst efter PR #597. PR #598 er derefter præcist Linux-/PostgreSQL-kontrolleret og kildeleveret på main a6b7915e. 220-installationen stoppede før SQL i originalkontrollen med skjult første årsag. Ingen ny numerisk generation eller offentlig effekt er bevist. Afgrænset første-fejlrapport og særskilt skrivefri kontrol forberedes uden lempede originalgates. Cron er faktisk gemt og genlæst midlertidigt pauset med uændret tidsplan; genaktivering efter verificeret normaldrift er fortsat påkrævet. Alle fem hovedområder forbliver åbne; private kontroltal og næste handling ligger i checkpointet.
+
 # Lokal strømrettelse – afgrænset kildeforberedelse, 2026-10-13
 
 Afgrænset kildeopfølgning til DEC-0293 og ejerens godkendelse af nye strømdata/-hukommelse: native koordinatafkodning, adskilt gittercache, strømpar/genbrug, historik og begge nye strømtilstande skal følges sammen. Den leverede visningslandmaske bliver ikke en numerisk kildeafvisning. Tre autentiske originalfamilier holdes adskilt, og den allerede rettede same-read/manifest-integritetskant genbruges i den normale migrator uden at erstatte account metadataOnly eller pakket førskrivningskontrol.

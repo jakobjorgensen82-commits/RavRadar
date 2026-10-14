@@ -2,8 +2,14 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.576",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-10-13",
+  "updatedAt": "2026-10-14",
   "sections": [
+    {
+      "id": "current-grid-prewrite-first-cause-2026-10-14",
+      "chapter": "89.223",
+      "title": "Første fejl skal bevares uden at vise private data",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Strømkilden er kontrolleret, men installationen stoppede, før databasen blev ændret. En skrivefri kontrol skal finde årsagen uden at skjule eller svække databeskyttelsen.</div><p>Den 14. oktober er 003-værnet faktisk installeret og genlæst i alle ti turlagre, og den eksisterende Worker er særskilt opdateret og normalt genlæst. PR #598 har efterfølgende bestået præcis Linux-/PostgreSQL-kontrol og er kildeleveret. 220-forløbet stoppede i originalkontrollen før SQL og Edge. Den generiske fejltekst viser ikke årsagen; dette er ikke en ny vejrhentningsfejl eller installeret korrekt strømfortolkning.</p><p>Opfølgningen bruger kun faste fase-, kriterie- og årsagskategorier og bevarer den oprindelige første fejl. Rå fejldata og private værdier må ikke vises. En særskilt, som udgangspunkt fravalgt skrivefri vej skal ubetinget springe SQL, Edge og offentlig levering over. Alle originaler og manifest-/byte-/pointer-/versionskontroller bevares; gamle data må ikke få nyt kildebevis, og der følger ingen automatisk gentagelse. Ny installation kræver præcis kildekontrol og konkret årsagsafklaring, derefter faktisk ny generation og offentlig kontrol. Cron er faktisk midlertidigt gemt pauset med uændret plan og skal genaktiveres efter verificeret normaldrift. De fem hovedmål er fortsat åbne.</p>"
+    },
     {
       "id": "trip-erasure-insert-guard-and-bounded-reader-2026-10-13",
       "chapter": "89.222",

@@ -151,12 +151,13 @@ test('main parser policy, public readers, serializer and record writer are prese
     'ecf1e9813312af7244be828aa667b5753f543e8d052f8fda49dc4c562255826c');
 });
 
-test('47 baseline source commands plus separate issued213 and current220 checks reach normal checkpoint integration exactly once', async () => {
+test('47 baseline commands plus issued213, current220 and pure prewrite-diagnostic checks reach normal checkpoint integration exactly once', async () => {
   const scripts = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).scripts;
   const { expandSourceCommands } = await import('./validate-source-once.mjs');
   const commands = expandSourceCommands(scripts, 'validate:source:checks');
   const sourceChecks = ['node scripts/check-account-assistant-issued-source.mjs',
-    'node scripts/build-current-grid-original-binding-successor.mjs --check'];
+    'node scripts/build-current-grid-original-binding-successor.mjs --check',
+    'node scripts/test-current-grid-prewrite-diagnostic.mjs'];
   for (const check of sourceChecks) assert.equal(commands.filter(command => command === check).length, 1);
   assert.equal(commands.includes('node scripts/build-account-assistant-binding-successor.mjs --check'), false);
   assert.equal(commands.filter(command => !sourceChecks.includes(command)).length, 47);

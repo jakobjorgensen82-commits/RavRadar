@@ -1,3 +1,7 @@
+# 14. oktober 2026 — præcis strømoriginaldiagnose før ny installation
+
+Efter den faktisk kildekontrollerede PR #598 stoppede 220-originalkontrollen før SQL. Den første fejl skal bevares med faste fase-, kriterie- og årsagskategorier; rå fejltekst, cause, expected/actual, brugerdata og strømværdier må ikke logges. En særskilt default-false skrivefri kontrol må ubetinget udelukke efterfølgende SQL, Edge og offentlig levering. Alle oprindelige byte-, manifest-, kilde-, pointer-, versions- og no-loss-kontroller samt private destinationer består. En kontrolrapport er ikke databevarelses-, installations- eller ny generationsbevis og giver ingen automatisk gentagelse. Faktisk 003-/Worker-levering genbruges; cron skal tilbage til uændret normal plan efter verificeret drift. Se CURRENT_TRUTH og håndbog 89.223.
+
 # Lokal strømrettelse – afgrænset kildeforberedelse, 2026-10-13
 
 Ejerens godkendte nye strømfortolkning gennemføres uden at ændre scalar-, bølge- eller vindfortolkning. Native gittercachen skal adskille fortolkningerne, og genbrugt strøm kræver sit eget kvalificerede par og originale kilde-/gitterbevis. Samme oprindelige bytes må kun bruges til en ny fortolkning efter uafhængig frisk kvalifikation; gamle fulde captures, B/S og offentlig historik bevares.

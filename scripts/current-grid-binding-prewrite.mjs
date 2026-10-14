@@ -27,6 +27,8 @@ import { assertRestoredOriginalInventory,
 import { hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 import { readOwnerCurrentTransitionArchive } from './lib/ravscore-production-part-pipeline.mjs';
 import { CURRENT_GRID_MIGRATION, readCurrentGridCanonicalSource } from './lib/current-grid-successor-source.mjs';
+import { withCurrentGridPrewriteStage as prewriteStage, currentGridPrewriteGuard as prewriteGuard,
+  emitCurrentGridPrewriteRefusal } from './lib/current-grid-prewrite-diagnostic.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const execFile = promisify(execFileCallback);
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -79,58 +81,62 @@ async function json(file, maximumBytes) {
   return JSON.parse(bytes.toString('utf8'));
 }
 export function assertOriginalCheckpointRow(rows, identity) {
-  assert(Array.isArray(rows) && rows.length === 1, 'One authenticated original checkpoint required');
+  prewriteGuard('ORIGINAL_S_ROW', 'ROW_SHAPE', () => assert(Array.isArray(rows) && rows.length === 1, 'One authenticated original checkpoint required'));
   const row = rows[0];
-  assert(object(row));
-  same(Object.keys(row).sort(), ['document_key','payload','version'], 'Exact original checkpoint row');
-  assert(row.document_key === key && Number.isSafeInteger(row.version) && row.version > 0);
+  prewriteGuard('ORIGINAL_S_ROW', 'ROW_SHAPE', () => assert(object(row)));
+  prewriteGuard('ORIGINAL_S_ROW', 'ROW_KEYS', () => same(Object.keys(row).sort(), ['document_key','payload','version'], 'Exact original checkpoint row'));
+  prewriteGuard('ORIGINAL_S_ROW', 'KEY_VERSION', () => assert(row.document_key === key && Number.isSafeInteger(row.version) && row.version > 0));
   const payload = row.payload, policy = CURRENT_GRID_SAMPLING_SELECTED_PREDECESSOR_POLICY;
-  assert(object(payload), 'Whole original checkpoint payload required');
-  assert.equal(payload.datasetId, identity.datasetId);
-  assert.equal(payload.productionReferenceAt, identity.productionReferenceAt);
-  assert.equal(payload.continuationStateContractSha256, policy.sourceContractHashes.continuationStateContractSha256);
-  same(payload.modelBinding, policy.sourceModelBinding, 'Active S must be the exact selected c1ac family');
-  same(payload.candidateGRollbackCompanion?.modelBinding, policy.sourceCandidateModelBinding,
-    'Active S companion must be the exact selected 2fd family');
+  prewriteGuard('ORIGINAL_S_ROW', 'PAYLOAD_SHAPE', () => assert(object(payload), 'Whole original checkpoint payload required'));
+  prewriteGuard('ORIGINAL_S_ROW', 'DATASET', () => assert.equal(payload.datasetId, identity.datasetId));
+  prewriteGuard('ORIGINAL_S_ROW', 'REFERENCE', () => assert.equal(payload.productionReferenceAt, identity.productionReferenceAt));
+  prewriteGuard('ORIGINAL_S_ROW', 'CONTINUATION_BINDING', () => assert.equal(payload.continuationStateContractSha256, policy.sourceContractHashes.continuationStateContractSha256));
+  prewriteGuard('ORIGINAL_S_ROW', 'ACTIVE_BINDING', () => same(payload.modelBinding, policy.sourceModelBinding, 'Active S must be the exact selected c1ac family'));
+  prewriteGuard('ORIGINAL_S_ROW', 'COMPANION_BINDING', () => same(payload.candidateGRollbackCompanion?.modelBinding, policy.sourceCandidateModelBinding,
+    'Active S companion must be the exact selected 2fd family'));
   return row;
 }
 export async function assertFreshOriginalIdentities({ identity, checkpointVersion, request, checkpointVersionRequest }) {
-  const fresh = await describeCurrentProtectedPrivateProductionRuntime({ request });
-  same(fresh, identity, 'Protected current B pointer changed before SQL');
-  const rows = await checkpointVersionRequest(versionSuffix, {}, 'version read');
+  const fresh = await prewriteStage('FINAL_POINTER', 'CURRENT_B_READ', () => describeCurrentProtectedPrivateProductionRuntime({ request }));
+  prewriteGuard('FINAL_POINTER', 'CURRENT_B_MATCH', () => same(fresh, identity, 'Protected current B pointer changed before SQL'));
+  const rows = await prewriteStage('FINAL_VERSION', 'CURRENT_S_READ', () => checkpointVersionRequest(versionSuffix, {}, 'version read'));
+  prewriteGuard('FINAL_VERSION', 'CURRENT_S_MATCH', () => {
   assert(Array.isArray(rows) && rows.length === 1 && object(rows[0]));
   same(Object.keys(rows[0]).sort(), ['document_key','version'], 'Exact checkpoint version readback');
   assert.equal(rows[0].document_key, key);
   assert.equal(rows[0].version, checkpointVersion, 'Protected S version changed before SQL');
+  });
 }
 // Real normal bundle/full-file checks plus the genuine historical S producer
 // and loader. No new-T migration, family retag or caller-supplied validator.
 export async function verifyCurrentGridPrewriteOriginals({ privateRoot, bundlePath, restoredRoot,
   expected, identity, checkpointPath, checkpointVersion, request, checkpointVersionRequest, now }) {
-  assertCurrentGridSamplingOriginalExpectation(expected);
-  assert.equal(expected.targetReferenceAt, identity.productionReferenceAt,
-    'Binding-only prewrite verifies same-T originals, not a new-T migrated proxy');
-  const root = await privateDirectory(privateRoot, privateRoot);
-  const restored = await privateDirectory(root, restoredRoot);
-  const canonicalBundlePath = await privateDirectory(root, bundlePath);
+  prewriteGuard('RESTORE_EXPECTATION', 'EXACT_FAMILY', () => assertCurrentGridSamplingOriginalExpectation(expected));
+  prewriteGuard('RESTORE_EXPECTATION', 'SAME_REFERENCE', () => assert.equal(expected.targetReferenceAt, identity.productionReferenceAt,
+    'Binding-only prewrite verifies same-T originals, not a new-T migrated proxy'));
+  const root = await prewriteStage('PRIVATE_ROOT', 'OWNED_DESTINATION', () => privateDirectory(privateRoot, privateRoot));
+  const restored = await prewriteStage('PRIVATE_ROOT', 'RESTORED_DIRECTORY', () => privateDirectory(root, restoredRoot));
+  const canonicalBundlePath = await prewriteStage('PRIVATE_ROOT', 'BUNDLE_DIRECTORY', () => privateDirectory(root, bundlePath));
   // Windows may expose one directory through both long and 8.3 names. Compare
   // the existing file's physical canonical path only after rejecting links.
+  await prewriteStage('PRIVATE_ROOT', 'CHECKPOINT_PATH', async () => {
   await noLinks(path.resolve(checkpointPath));
   const canonicalCheckpointPath = await fs.realpath(checkpointPath);
   assert(inside(root, canonicalCheckpointPath), 'Original checkpoint path must remain inside its private proof root');
   assert(Number.isSafeInteger(checkpointVersion) && checkpointVersion > 0,
     'Original checkpoint version must be a positive safe integer');
-  const verified = await verifyPrivateProductionRuntimeBundle({ privateRoot: root, bundlePath: canonicalBundlePath,
-    repositoryRoot: ROOT, expected, now });
-  const manifest = await json(path.join(canonicalBundlePath, 'manifest.json'), 128 * 1024);
-  await assertRestoredOriginalInventory(restored, manifest);
+  });
+  const verified = await prewriteStage('WHOLE_ORIGINAL_ARCHIVE', 'AUTHENTIC_BUNDLE', () => verifyPrivateProductionRuntimeBundle({ privateRoot: root, bundlePath: canonicalBundlePath,
+    repositoryRoot: ROOT, expected, now }));
+  const manifest = await prewriteStage('WHOLE_ORIGINAL_ARCHIVE', 'MANIFEST', () => json(path.join(canonicalBundlePath, 'manifest.json'), 128 * 1024));
+  await prewriteStage('WHOLE_ORIGINAL_ARCHIVE', 'RESTORED_INVENTORY', () => assertRestoredOriginalInventory(restored, manifest));
   const sourcePath = path.join(restored, 'data/live/conditions.json');
-  const original = hydratePrivateConditionsHourly(await json(sourcePath, Number.MAX_SAFE_INTEGER));
-  assert.equal(original.datasetId, identity.datasetId);
-  assert.equal(original.productionReferenceAt, identity.productionReferenceAt);
-  const { activeParts } = validateCurrentGridOriginalPairGeneration(original);
-  const archived = readOwnerCurrentTransitionArchive(original.ravScoreCurrentSourceDomainTransitions,
-    activeParts, { targetReferenceAt: identity.productionReferenceAt });
+  const original = await prewriteStage('WHOLE_ORIGINAL_ARCHIVE', 'CONDITIONS', async () => hydratePrivateConditionsHourly(await json(sourcePath, Number.MAX_SAFE_INTEGER)));
+  prewriteGuard('WHOLE_ORIGINAL_ARCHIVE', 'EXACT_IDENTITY', () => assert.equal(original.datasetId, identity.datasetId));
+  prewriteGuard('WHOLE_ORIGINAL_ARCHIVE', 'EXACT_IDENTITY', () => assert.equal(original.productionReferenceAt, identity.productionReferenceAt));
+  const { activeParts } = prewriteGuard('WHOLE_ORIGINAL_ARCHIVE', 'PARTS_AND_ARCHIVE', () => validateCurrentGridOriginalPairGeneration(original));
+  const archived = prewriteGuard('WHOLE_ORIGINAL_ARCHIVE', 'PARTS_AND_ARCHIVE', () => readOwnerCurrentTransitionArchive(original.ravScoreCurrentSourceDomainTransitions,
+    activeParts, { targetReferenceAt: identity.productionReferenceAt }));
   // Normal archive validation above also retains valid earlier families. The
   // three exact grid families are counted separately, never generic aliases.
   const archiveFamilies = Object.fromEntries(['ffc','249','c1ac'].map(name => [name, 0]));
@@ -139,30 +145,30 @@ export async function verifyCurrentGridPrewriteOriginals({ privateRoot, bundlePa
       === record.originalIntegratedState.modelBundleSha256);
     if (index >= 0) archiveFamilies[['ffc','249','c1ac'][index]] += 1;
   }
-  const checkpointDigest = await digestPrivateRuntimeFile(checkpointPath);
-  const payload = await json(checkpointPath, PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_MAXIMUM_RESPONSE_BYTES);
+  const checkpointDigest = await prewriteStage('ORIGINAL_S_BYTES', 'FULL_DIGEST', () => digestPrivateRuntimeFile(checkpointPath));
+  const payload = await prewriteStage('ORIGINAL_S_BYTES', 'BOUNDED_JSON', () => json(checkpointPath, PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_MAXIMUM_RESPONSE_BYTES));
   assertOriginalCheckpointRow([{ document_key: key, version: checkpointVersion, payload }], identity);
-  await withIssuedAccountAssistantSource(async issuedRoot => {
-    const old = await import(pathToFileURL(path.join(issuedRoot, 'scripts/ravscore-continuation-checkpoint.mjs')).href);
+  await prewriteStage('OLD_ISSUED_SOURCE', 'FIXED_SOURCE_CALLBACK', () => withIssuedAccountAssistantSource(async issuedRoot => {
+    const old = await prewriteStage('OLD_ISSUED_LOADER', 'MODULE', () => import(pathToFileURL(path.join(issuedRoot, 'scripts/ravscore-continuation-checkpoint.mjs')).href));
     // Even an unexpectedly legacy S must not let the normal loader reattest
     // the preserved original file. Validate only an owned byte-exact copy.
     const validationCopy = path.join(issuedRoot, 'original-validation-checkpoint.json');
-    await fs.copyFile(checkpointPath, validationCopy, fs.constants.COPYFILE_EXCL);
-    same(await digestPrivateRuntimeFile(validationCopy), checkpointDigest, 'Exact validation-only S copy');
-    const loaded = await old.loadRavScoreContinuationCheckpointForTarget({ checkpointPath: validationCopy,
-      targetReference: identity.productionReferenceAt, repositoryRoot: issuedRoot });
-    assert.equal(loaded.loaded, true); assert.equal(loaded.partCount, 673);
-    assert.equal(loaded.continuationReattestedFromImplementationSha256, null);
-    same(await digestPrivateRuntimeFile(validationCopy), checkpointDigest,
-      'Historical validation must leave every restored original S byte untouched');
+    await prewriteStage('OLD_ISSUED_LOADER', 'EXCLUSIVE_VALIDATION_COPY', () => fs.copyFile(checkpointPath, validationCopy, fs.constants.COPYFILE_EXCL));
+    await prewriteStage('OLD_ISSUED_LOADER', 'COPY_DIGEST', async () => same(await digestPrivateRuntimeFile(validationCopy), checkpointDigest, 'Exact validation-only S copy'));
+    const loaded = await prewriteStage('OLD_ISSUED_LOADER', 'LOAD_TARGET', () => old.loadRavScoreContinuationCheckpointForTarget({ checkpointPath: validationCopy,
+      targetReference: identity.productionReferenceAt, repositoryRoot: issuedRoot }));
+    prewriteGuard('OLD_ISSUED_LOADER', 'LOADED', () => assert.equal(loaded.loaded, true)); prewriteGuard('OLD_ISSUED_LOADER', 'PART_COUNT', () => assert.equal(loaded.partCount, 673));
+    prewriteGuard('OLD_ISSUED_LOADER', 'NO_REATTEST', () => assert.equal(loaded.continuationReattestedFromImplementationSha256, null));
+    await prewriteStage('OLD_ISSUED_LOADER', 'UNCHANGED_COPY', async () => same(await digestPrivateRuntimeFile(validationCopy), checkpointDigest,
+      'Historical validation must leave every restored original S byte untouched'));
     const calculated = path.join(issuedRoot, 'same-original-checkpoint.json');
-    await old.saveRavScoreContinuationCheckpoint({ sourcePath, checkpointPath: calculated,
-      repositoryRoot: issuedRoot });
-    same(await json(calculated, PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_MAXIMUM_RESPONSE_BYTES), payload,
-      'Authenticated original S must equal the normal old producer of all 673 B pairs');
-  });
-  await assertRestoredOriginalInventory(restored, manifest);
-  same(await digestPrivateRuntimeFile(checkpointPath), checkpointDigest, 'Original S bytes changed');
+    await prewriteStage('OLD_RECOMPUTE', 'SAVE_673', () => old.saveRavScoreContinuationCheckpoint({ sourcePath, checkpointPath: calculated,
+      repositoryRoot: issuedRoot }));
+    await prewriteStage('OLD_RECOMPUTE', 'EXACT_ORIGINAL_S', async () => same(await json(calculated, PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_MAXIMUM_RESPONSE_BYTES), payload,
+      'Authenticated original S must equal the normal old producer of all 673 B pairs'));
+  }));
+  await prewriteStage('FINAL_ORIGINAL_BYTES', 'RESTORED_INVENTORY', () => assertRestoredOriginalInventory(restored, manifest));
+  await prewriteStage('FINAL_ORIGINAL_BYTES', 'UNCHANGED_S', async () => same(await digestPrivateRuntimeFile(checkpointPath), checkpointDigest, 'Original S bytes changed'));
   await assertFreshOriginalIdentities({ identity, checkpointVersion, request, checkpointVersionRequest });
   return Object.freeze({ kind: 'CURRENT_GRID_ORIGINAL_PREWRITE', sourceHead: identity.sourceHead,
     datasetId: identity.datasetId, productionReferenceAt: identity.productionReferenceAt,
@@ -186,48 +192,48 @@ async function locations(mode) {
     receipt: path.join(root, 'receipt.json') };
 }
 async function main() {
-  assert.equal(process.argv.length, 3, 'Only the fixed prepare or verify-plan operation is accepted');
-  const mode = process.argv[2]; assert(['prepare','verify-plan'].includes(mode));
-  await readCurrentGridCanonicalSource(); // Actual immutable 220 and all predecessor source guards.
-  const files = await locations(mode), clients = createProtectedPrivateRuntimeClients();
-  const request = clients.documentRequest, checkpointVersionRequest = createProtectedRavScoreCheckpointVersionRequester();
+  prewriteGuard('CLI', 'FIXED_OPERATION', () => assert.equal(process.argv.length, 3, 'Only the fixed prepare or verify-plan operation is accepted'));
+  const mode = process.argv[2]; prewriteGuard('CLI', 'FIXED_OPERATION', () => assert(['prepare','verify-plan'].includes(mode)));
+  await prewriteStage('CURRENT220_SOURCE', 'FROZEN_SOURCE', () => readCurrentGridCanonicalSource()); // Actual immutable 220 and all predecessor source guards.
+  const files = await prewriteStage('PRIVATE_ROOT', 'OWNED_DESTINATION', () => locations(mode)), clients = prewriteGuard('CLIENT_SETUP', 'EXISTING_AUTH', () => createProtectedPrivateRuntimeClients());
+  const request = clients.documentRequest, checkpointVersionRequest = prewriteGuard('CLIENT_SETUP', 'EXISTING_AUTH', () => createProtectedRavScoreCheckpointVersionRequester());
   let saved;
   if (mode === 'prepare') {
-    const identity = await describeCurrentProtectedPrivateProductionRuntime({ request });
+    const identity = await prewriteStage('CURRENT_POINTER', 'AUTHENTICATED_B_READ', () => describeCurrentProtectedPrivateProductionRuntime({ request }));
     const now = new Date().toISOString();
-    const expected = await buildCurrentGridSamplingOriginalRestoreExpectation({ sourceDescription: identity,
-      targetReferenceAt: identity.productionReferenceAt, now });
-    assert(expected, 'Only the reviewed selected original family can be restored');
-    const restored = await restoreProtectedPrivateProductionRuntime({ privateRoot: files.privateRoot,
-      bundlePath: files.bundlePath, expected, request, storage: clients.storage, now });
-    assert.equal(restored.restored, true);
-    await restorePrivateProductionRuntimeBundle({ privateRoot: files.privateRoot, bundlePath: files.bundlePath,
+    const expected = await prewriteStage('RESTORE_EXPECTATION', 'EXACT_FAMILY', () => buildCurrentGridSamplingOriginalRestoreExpectation({ sourceDescription: identity,
+      targetReferenceAt: identity.productionReferenceAt, now }));
+    prewriteGuard('RESTORE_EXPECTATION', 'EXACT_FAMILY', () => assert(expected, 'Only the reviewed selected original family can be restored'));
+    const restored = await prewriteStage('AUTHENTICATED_B_RESTORE', 'NORMAL_RESTORE', () => restoreProtectedPrivateProductionRuntime({ privateRoot: files.privateRoot,
+      bundlePath: files.bundlePath, expected, request, storage: clients.storage, now }));
+    prewriteGuard('AUTHENTICATED_B_RESTORE', 'RESTORE_DISPOSITION', () => assert.equal(restored.restored, true));
+    await prewriteStage('ORIGINAL_B_UNPACK', 'NORMAL_UNPACK', () => restorePrivateProductionRuntimeBundle({ privateRoot: files.privateRoot, bundlePath: files.bundlePath,
       outputPath: files.restoredRoot, expected, targetReferenceAt: identity.productionReferenceAt,
-      minimumReferenceAt: identity.productionReferenceAt, minimumGeneratedAt: identity.generatedAt, now });
-    const row = assertOriginalCheckpointRow(await createProtectedRavScoreCheckpointRequester()(fullSuffix, {}, 'read'), identity);
-    await fs.writeFile(files.checkpointPath, JSON.stringify(row.payload) + '\n', { flag: 'wx', mode: 0o600 });
+      minimumReferenceAt: identity.productionReferenceAt, minimumGeneratedAt: identity.generatedAt, now }));
+    const row = await prewriteStage('AUTHENTICATED_S_READ', 'WHOLE_ROW', async () => assertOriginalCheckpointRow(await createProtectedRavScoreCheckpointRequester()(fullSuffix, {}, 'read'), identity));
+    await prewriteStage('PRESERVE_ORIGINAL_S', 'EXCLUSIVE_CHECKPOINT_FILE', () => fs.writeFile(files.checkpointPath, JSON.stringify(row.payload) + '\n', { flag: 'wx', mode: 0o600 }));
     saved = { identity, expected, checkpointVersion: row.version, now };
-    await fs.writeFile(files.saved, JSON.stringify(saved) + '\n', { flag: 'wx', mode: 0o600 });
-  } else saved = await json(files.saved, 128 * 1024);
+    await prewriteStage('ORIGINAL_IDENTITIES', 'EXCLUSIVE_IDENTITY_FILE', () => fs.writeFile(files.saved, JSON.stringify(saved) + '\n', { flag: 'wx', mode: 0o600 }));
+  } else saved = await prewriteStage('ORIGINAL_IDENTITIES', 'BOUNDED_IDENTITY_FILE', () => json(files.saved, 128 * 1024));
   const receipt = await verifyCurrentGridPrewriteOriginals({ ...files, ...saved, request, checkpointVersionRequest });
-  if (mode === 'prepare') await fs.writeFile(files.receipt, JSON.stringify(receipt) + '\n', { flag: 'wx', mode: 0o600 });
+  if (mode === 'prepare') await prewriteStage('PRESERVATION_RECEIPT', 'EXCLUSIVE_FILE', () => fs.writeFile(files.receipt, JSON.stringify(receipt) + '\n', { flag: 'wx', mode: 0o600 }));
   else {
     // Receipts are only preservation comparisons. Fresh authenticated checks
     // above must run again; no JSON boolean or inherited VERIFIED env is used.
-    same(await json(files.receipt, 128 * 1024), receipt, 'Same original receipt changed');
+    await prewriteStage('PRESERVATION_RECEIPT', 'UNCHANGED', async () => same(await json(files.receipt, 128 * 1024), receipt, 'Same original receipt changed'));
     const args = [path.join(ROOT, 'scripts/verify-code-only-migration-plan.mjs'),
       '--migration-list', path.join(process.env.RUNNER_TEMP, 'weather-binding-migrations-plan.txt'),
       '--dry-run', path.join(process.env.RUNNER_TEMP, 'weather-binding-migrations-dry-run.txt'),
       '--migrations-directory', path.join(process.env.RAVRADAR_BINDING_MIGRATION_WORKDIR, 'supabase/migrations'),
       '--current-grid-prewrite-plan', '--require-prewrite-gate', '--expected-pending-version', CURRENT_GRID_MIGRATION.version];
-    await execFile(process.execPath, args, { cwd: ROOT, timeout: 30_000, maxBuffer: 128 * 1024,
+    await prewriteStage('EXACT_MIGRATION_PLAN', 'NORMAL_CLI', () => execFile(process.execPath, args, { cwd: ROOT, timeout: 30_000, maxBuffer: 128 * 1024,
       env: { ...process.env, RAVRADAR_CURRENT_GRID_PREWRITE_REQUIRED: 'true',
-        RAVRADAR_CURRENT_GRID_PREWRITE_VERIFIED: 'true' } });
+        RAVRADAR_CURRENT_GRID_PREWRITE_VERIFIED: 'true' } }));
   }
   console.log(JSON.stringify({ status: mode === 'prepare' ? 'originals-preserved' : 'same-original-exact-plan-verified',
     partCount: receipt.partCount, fileCount: receipt.fileCount, privatePayloadIncluded: false,
     newGridEvidenceClaimed: false }));
 }
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch(() => {
-  console.error('CURRENT_GRID_ORIGINAL_PREWRITE_REFUSED'); process.exitCode = 1;
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch(error => {
+  emitCurrentGridPrewriteRefusal(error); process.exitCode = 1;
 });

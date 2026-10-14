@@ -1,3 +1,11 @@
+## 89.223 Første fejl skal bevares uden at vise private data
+
+**Kort fortalt:** Strømkilden er kontrolleret, men installationen stoppede, før databasen blev ændret. En skrivefri kontrol skal finde årsagen uden at skjule eller svække databeskyttelsen.
+
+Den 14. oktober er 003-værnet faktisk installeret og genlæst i alle ti turlagre, og den eksisterende Worker er særskilt opdateret og kontrolleret gennem normale genlæsninger. PR #598 har efterfølgende bestået præcis Linux-/PostgreSQL-kontrol og er kildeleveret. Det næste 220-forløb stoppede i kontrollen af de gemte originaler, før SQL og Edge-installation. Den generiske fejltekst viser ikke årsagen. Dette er ikke en ny vejrhentningsfejl eller et bevis for installeret korrekt strømfortolkning.
+
+Opfølgningen bruger kun faste fase-, kriterie- og årsagskategorier og bevarer den oprindelige første fejl. Rå fejldata og private værdier må ikke vises. En særskilt, som udgangspunkt fravalgt skrivefri vej skal ubetinget springe SQL, Edge og offentlig levering over. Originaler, alle manifest-/byte-/pointer-/versionskontroller og scorehistorik bevares; en diagnose må ikke give gamle data nyt kildebevis eller udløse automatisk gentagelse. Før ny installation kræves præcis kildekontrol og den konkrete årsagsafklaring. Derefter kræves faktisk ny generation og offentlig kontrol. Cron er faktisk midlertidigt gemt pauset med uændret tidsplan og skal genaktiveres efter verificeret normaldrift. De fem hovedmål er fortsat åbne.
+
 ## Installationskontrol med historisk kilde og nøglefrie offline prøver — 14. oktober 2026
 
 PR #596 er kildeleveret efter præcis grøn Linux- og PostgreSQL-kontrol. Den efterfølgende 003-installation stoppede før nogen ekstern skrivning: det normale installationsjob manglede historisk Git-kilde til arkivprøverne, og en offline prøve arvede en Supabase-adgangsnøgle. Alle efterfølgende SQL-, D1- og Worker-trin blev sprunget over; dette var ikke en ny vejrhentning eller et datatab.

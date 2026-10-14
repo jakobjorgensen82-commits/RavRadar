@@ -1,3 +1,9 @@
+## 4.0.576 — præcis afgrænset strømoriginaldiagnose, 14. oktober 2026
+
+- Genbrug faktisk gennemført 003-/Worker-installation efter PR #597 og præcis grøn Linux/PostgreSQL-kildekontrol af strømrettelsen i PR #598.
+- Følg den efterfølgende afvisning før SQL med en afgrænset rapport af første fejl og særskilt skrivefri originalkontrol. Ingen rå fejldata, nye providerhentninger, lempede originalgates eller automatisk installationsgentagelse.
+- Den numeriske overgang og nye generationers offentlige effekt er ikke installeret/verificeret af kildeændringen. Gamle originaler, offentlig historik, scoreformel, administratorpunkter og geometri bevares; cron er midlertidigt pauset med uændret plan indtil verificeret normaldrift.
+
 ## Installationskontrol med historisk kilde og nøglefrie offline prøver — 14. oktober 2026
 
 PR #596 er kildeleveret efter præcis grøn Linux- og PostgreSQL-kontrol. Den efterfølgende 003-installation stoppede før nogen ekstern skrivning: det normale installationsjob manglede historisk Git-kilde til arkivprøverne, og en offline prøve arvede en Supabase-adgangsnøgle. Alle efterfølgende SQL-, D1- og Worker-trin blev sprunget over; dette var ikke en ny vejrhentning eller et datatab.
