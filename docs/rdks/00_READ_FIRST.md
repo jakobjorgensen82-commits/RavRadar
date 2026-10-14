@@ -1,3 +1,7 @@
+## Seneste lokale 577-kildeprøver — 14. oktober 2026
+
+Læs den nye CODEX-front og tillægget i håndbog 89.227. To yderligere PR #604-kildeprøver er rettet og bestået lokalt: genuine historisk 673/600-kalder og hele privacy-parenten med fast DA/DE/EN-opdeling samt normalresten. Gamle kontroller, dækning og hvert barns tids-/outputgrænse bevares. Ny præcis samlet CI/PostgreSQL og offentlig levering er stadig åbne; dette ændrer ikke model, SQL, version eller produktionsautoritet. Hele den tidligere læserækkefølge består.
+
 ## Aktuel sourceopfølgning577 — 14. oktober 2026
 
 Læs den nye CODEX-front og tillægget i eksisterende håndbog89.227. Fem faktiske604-sourcefejl er rettet lokalt med genuine historiske faser og uændrede bindings-/originalkrav; præcis samlet CI/PostgreSQL og offentlig levering mangler.606/main584 og den igangværende normale38577766010 er et separat vejrspor. Efter en fremtidig faktisk vejrfejl og dens rettelse skal genoptagelse fra checkpoint følge den normale indgang fra den dybeste autentiske, gyldigt gemte fase efter nødvendige kontroller, uden overlap eller gateskip.230/viden er ikke installeret; alle fem mål til18oktober består. Hele den tidligere læserækkefølge og historik bevares.

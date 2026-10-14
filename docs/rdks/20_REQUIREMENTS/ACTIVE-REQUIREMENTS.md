@@ -1,3 +1,9 @@
+# 14. oktober 2026 — komplet testdækning med genuine historisk kilde
+
+Historiske positive prøver skal beholde deres originale model-/SQL-/no-loss-kontrakt og genuine udstedte kilde, ikke få aktuelle KB-filer ommærket til gammel fase. Opdeling af det nye katalog skal bevare hele DA/DE/EN-unionen, alle gamle børn/øvrige blokke og eksisterende tids-/outputgrænser; direkte default må ikke miste dækning. Ukendte selectors og kombinationer afvises.
+
+De to berørte normale mål består nu lokalt. Ny præcis samlet CI/PostgreSQL, faktisk230/schema2, legitim videnslevering og offentlige bruger-/AI-prøver mangler fortsat. Alle tidligere databevarelses-, privatlivs-, checkpoint-, writer- og fem hovedmålskrav bevares; ingen ny aktivering eller produktionsautoritet følger.
+
 # 14. oktober 2026 — faktisk kildebevis og genoptagelse fra checkpoint
 
 Efter en fremtidig faktisk vejrfejl og dens rettelse skal genoptagelse fra checkpoint ske fra den dybeste autentiske, gyldigt gemte fase gennem den normale indgang og efter nødvendige kontroller; næste handling kræver fortsat eksisterende konkret autoritet og må hverken overlappe aktiv writer eller springe gates over. Fem604-sourcecases må kun lukkes med genuine fasebundne kalder-/definitionskontroller og ny samlet exact-head source/PostgreSQL, ikke gamle grønne delbeviser, modelaliases, lempede assertions eller ommærkede originaler. Historiske213/220/230 og alle numeriske data/scorer bevares.

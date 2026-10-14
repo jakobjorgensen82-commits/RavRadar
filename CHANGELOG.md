@@ -1,3 +1,10 @@
+## 4.0.577 — to yderligere kildeprøver rettet lokalt, 14. oktober 2026
+
+- Brug genuine udstedt 584-kilde til den historiske 673/600-prøve; bevar alle gamle originalkontroller, den aktuelle KB-prøve og streng afvisning af forkert fase.
+- Del katalogprøven i tre faste sprogprocesser plus alle øvrige normale blokke. Hele456-dækningen og gamle negative/kontroller består; hvert barn beholder 30 sekunder/1 MiB, og direkte default kører stadig alt.
+- Den hele normale migrationsprøve og privacy-parent består lokalt. Ny samlet exact-head CI/PostgreSQL og offentlig levering er fortsat åbne.
+- Ingen ændring af produkt, C73/I75/normalT, SQL, version eller geodata.230 og videns577 er ikke installeret; lokale prøver beviser ikke ekstern AI. Tidligere afsnit bevares som dateret historik.
+
 ## 4.0.577 — lokal sourceopfølgning efter PR #604, 14. oktober 2026
 
 - Ret fem konkrete sourcecases med fasepræcise forventninger og genuine historiske220-kaldere; bevar gamle assertions, historiske SQL-filer og alle aktuelle adgangs-/originalkrav.

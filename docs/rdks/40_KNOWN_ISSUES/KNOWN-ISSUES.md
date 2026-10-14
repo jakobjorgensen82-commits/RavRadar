@@ -1,3 +1,9 @@
+## LOKALT RETTET, LEVERING ÅBEN — to nye 604-kildeprøver, 14. oktober 2026
+
+Historisk 673/600-test mod den aktuelle KB-kilde og parentens samlede katalog-child er nu rettet som testkalder-/fixturekontrakter. Genuine 584, de gamle assertions, alle sprog/negative prøver og uændrede 30 sekunder/1 MiB pr. barn bevares. Hele normalmålene består lokalt; de tidligere fejlkvitteringer bevares.
+
+Dette lukker ikke den nye samlede exact-head CI/PostgreSQL, installation af230/videns577, offentlig brugerafprøvning eller ekstern AI. Ingen produkt-/model-/SQL-ændring, ny aktivering eller intern fejlviden til assistentens brugere følger. Alle fem mål og den separate vejrprioritet består; ældre issues er bevaret historik.
+
 ## ÅBEN — samlet577-kilde og offentlig virkning efter604-fejl, 14. oktober 2026
 
 Fem konkrete604-sourcefejl er afgrænset og rettet lokalt: sidste migrationsfase, aktuelle skabeloners kanon, to historiske220-kalderfixtures og readiness-forbrugerens migrationsliste. Gamle assertions, genuine historiske kilder og strenge aktuelle guards bevares; de berørte normale prøver består. Det røde604-head er ikke blevet grønt af lokal rettelse. Ny præcis samlet source/PostgreSQL efter606-arv, faktisk230/schema2, vidensinstallation og offentlige brugerforløb mangler.

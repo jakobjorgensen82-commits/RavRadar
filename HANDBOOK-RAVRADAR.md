@@ -10,6 +10,10 @@ Rettelsen er endnu kun en kildekandidat. Præcis kildekontrol, sikker levering o
 
 ## 89.227 Mere viden er ikke det samme som offentlig eller ekstern AI
 
+**Ny lokal kildeopfølgning, 14. oktober 2026:** To yderligere kildeprøver er rettet uden at ændre produkt eller model. Den historiske originalprøve bruger nu den ægte udstedte kilde og bevarer alle gamle beskyttelseskontroller. Den samlede katalogprøve er delt i faste danske, tyske og engelske processer plus alle øvrige normale prøver; tidsgrænser og fuld dækning bevares. Direkte normalprøve kører stadig alt.
+
+Begge berørte normale mål består lokalt. Ny samlet kilde-/PostgreSQL-kontrol, faktisk230/schema2 og offentlig videnslevering er stadig åbne. Der er ingen SQL-, versions-, geodata- eller modelændring i dette snit. Lokale prøver er ikke bevis for fungerende ekstern AI, og ingen af de fem hovedmål afsluttes herved. Resten af kapitlet bevares som dateret historik.
+
 **Kildeopfølgning 14. oktober 2026:** Den første præcise kontrol af videnskandidaten stoppede i fem kildeprøver. De lokale rettelser skelner nu mellem gamle, uændrede kildefaser og den aktuelle vidensfase; en historisk original får ikke ny adgang ved at skifte et navn eller en modelbinding. Den normale readiness kræver hele den præcise migrationsrækkefølge. Gamle kontroller og originalbeskyttelse bevares.
 
 De berørte normale mål består lokalt uden ændring af C73/I75 eller den normale T-kontrakt. Ny samlet kilde-/PostgreSQL-kontrol, faktisk230/schema2 og kontrolleret offentlig videnslevering mangler fortsat. Den separate vejrhentning har faktisk genbrugt delvist godkendt fremgang; det er ikke fuld datakvalitet eller ny offentlig levering. Ekstern AI og den observerede503 er fortsat uafklaret. Alle fem mål til18oktober består. Resten af kapitlet bevares som den daterede førstatus, ikke som en nyere leveringskvittering.

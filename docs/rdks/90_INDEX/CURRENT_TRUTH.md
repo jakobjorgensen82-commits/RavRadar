@@ -1,3 +1,11 @@
+## Lokal lukning af to nye 604-kildeårsager — 14. oktober 2026
+
+Kontrollen af 138e7d77 fandt en historisk test, som læste den aktuelle KB-model, og en samlet assistent-child, som ikke afsluttede under parentens uændrede grænse. Den afgrænsede testkalderrettelse bruger genuine 584 til historisk 673/600, bevarer den aktuelle KB-top og tilføjer streng KB-afvisning. Kataloget fordeles på tre faste sprogprocesser; normalresten og alle gamle børn bevares, hver med 30 sekunder/1 MiB. Direkte default kører stadig hele indholdet.
+
+Én hel normal migrationsprøve og én hel privacy-parent består lokalt. Historisk rollback/warmup, alle gamle negative originalkontroller, alle 456 emner på tre sprog samt de øvrige normale sikkerheds-/kvote-/header-/vidensblokke er bevaret. Den første manglende fixtureafhængighed blev rettet med ét genuine, pinverificeret policyblad; fejlkvitteringen bevares. Ingen produkt-, C73/I75/T-, SQL-, version- eller geodataændring.
+
+Ny exact-head CI/PostgreSQL og offentlig levering afventer.230/schema2 og videns577 er ikke installeret, ekstern AI/503 er ikke afklaret, og alle fem mål er åbne. Vejr og normal genoptagelse fra gyldigt checkpoint er et separat spor uden ændret autoritet. Ældre statusafsnit nedenfor bevares som historik.
+
 ## Lokal577 efter faktisk604-sourcefejl — 14. oktober 2026
 
 PR #604/head4a00c170 bestod ikke samlet source: fem konkrete cases krævede rettelse. Den lokale samling bevarer den udstedte220-timeout, kontrollerer aktuelle schema-/INSTALL-definitioner mod den aktuelle videnskanon og bevarer separate hele historiske definitionskontroller. Readiness-producent og -forbruger bruger nu den samme præcise ordnede liste gennem230 og viden. De to historiske220-kalderprøver bruger uændrede genuine c747-Gitblade i testens egen midlertidige mappe; KB-kilden afvises stadig før pointerlæsning som erstatning for220. Ingen modelalias, guardskip eller historisk SQL-omskrivning.

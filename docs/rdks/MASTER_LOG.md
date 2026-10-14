@@ -1,3 +1,11 @@
+# 14. oktober 2026 — historisk kildefixture og komplet sprogopdeling
+
+Efter de tidligere fem604-rettelser stoppede kontrol af 138e7d77 i to yderligere normale kildeprøver. Ejerens afgrænsede løsning bevarer runtime- og modelguards: historisk 673/600 køres på genuine 584, og det nye katalog deles i tre faste localeprocesser gennem samme normale child. Parentens 30 sekunder/1 MiB, alle gamle børn og hele normalresten bevares; direkte default udfører fortsat alt.
+
+Én hel privacy-parent består med alle 456 emner på dansk, tysk og engelsk. Én efterfølgende hel migrationsprøve består med genuine historiske positive forløb, alle gamle originalnegativer og aktuel KB-afvisning. Den første A-prøve manglede én deklareret policyJSON; dens ENOENT er bevaret, og kun det genuine pinverificerede blad blev tilføjet før den godkendte nye A-prøve. En senere patchtransportafvisning før skrivning ændrer ikke disse afterbytes eller målebeviser og er bevaret særskilt; der genkøres ikke adfærd for ren transportrettelse.
+
+Ny præcis CI/PostgreSQL og offentlig levering er fortsat åbne. Dette er kun testkalder-, fixture- og dokumentationsarbejde, ikke produkt-, model-, SQL-, versions- eller geodataændring.230 og videns577 er ikke installeret; ekstern AI er ikke bevist. Alle fem mål, vejrprioriteten og kravet om genoptagelse fra autentisk gyldigt checkpoint efter rettelse/nødvendige kontroller består uden ny produktionsautoritet. Historikken nedenfor bevares.
+
 # 14. oktober 2026 — faktisk604-kildefejl og genoptagelse fra checkpoint
 
 Ejerens konkrete krav er genoptagelse fra checkpoint efter en fremtidig faktisk vejrfejl og dens rettelse: fortsæt fra den dybeste autentiske, gyldigt gemte fase gennem den normale indgang, efter nødvendige kontroller og uden overlap eller gateskip. Vejrfejlen har fortsat prioritet; upåvirket lokal assistentforberedelse må ikke overlappe produktionswriteren eller give nye log-/data-/installationskald.606 er faktisk kildeleveret på main584 efter grøn385734; den ene normale38577766010 kører. Genbrug af gemt fremgang er faktisk, men kun delvist godkendt og ikke fuld DMI-kvalitet/publicering. Den tidligere385533 er fejlet. Private cacheidentiteter og kontroltal forbliver i checkpointet.

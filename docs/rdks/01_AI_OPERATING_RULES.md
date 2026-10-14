@@ -1,3 +1,9 @@
+## Testkaldere må ikke udgive ny kilde som historisk — 14. oktober 2026
+
+Den historiske 673/600-prøve skal bruge genuine udstedt 584-kilde og dens hele deklarerede fixtureafhængigheder; aktuelle KB-guards og originale assertions bevares. Den nye katalogopdeling skal ufravigeligt kalde DA, DE, EN og alle øvrige normale blokke. Ingen højere timeout, større buffer, miljøbaseret fravalg eller tab af negative/sikkerheds-/kvoteprøver må erstatte korrekt opdeling; direkte default kører fortsat alt.
+
+De faktiske lokale mål består, men er ikke præcis samlet CI, PostgreSQL eller offentlig effekt. Første fejl og eventuelle patchtransportfejl bevares særskilt; en RAM-inverse er ikke i sig selv bevis for faktisk integration. Ingen nye produktionskald eller ændring af kravene om genoptagelse fra gyldigt checkpoint efter rettelse og nødvendige kontroller følger heraf.
+
 ## Kildeopfølgning uden faseombytning — 14. oktober 2026
 
 Ejerens krav er genoptagelse fra checkpoint efter en fremtidig faktisk vejrfejl og dens rettelse: brug den dybeste autentiske, gyldigt gemte fase gennem den normale indgang, efter nødvendige kontroller og inden for eksisterende autoritet, uden overlap eller gateskip. Det giver ingen automatisk genkørsel, ekstra log-/providerlæsning, merge eller produktionsændring under writer. Lokal, upåvirket kildeforberedelse må fortsætte uden overlap med det kritiske vejrspor.

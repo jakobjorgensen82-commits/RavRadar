@@ -1,3 +1,13 @@
+## 14. oktober 2026 — to yderligere 604-prøver bestået lokalt
+
+- [x] Bevar aktuelle KB-prøver, og kør den historiske 673/600-kontrakt mod genuine 584 med alle gamle positive/negative assertions samt aktuel KB-afvisning.
+- [x] Bevar alle gamle parentbørn og 30 sekunder/1 MiB pr. barn; kræv faste DA-, DE- og EN-katalogprøver samt hele normalresten. Direkte default kører fortsat alt.
+- [x] Bestå én hel normal migrationsprøve og én hel privacy-parent; bevar første fejl og kontrolkvitteringer uden statusgenkørsler.
+- [ ] Integrér de præcise kildeblade og dokumentation, og bestå ny samlet exact-head CI/PostgreSQL.
+- [ ] Verificér230/schema2 og gennemfør legitim videnslevering samt offentlige bruger-/AI-forløb.
+
+C73/I75/normalT, alle SQL-filer, produkt, version og geodata er uændrede i dette snit. Alle fem mål består; separat vejr- og checkpointgenoptagelse må ikke overlappes eller omgå kontroller. Hele den tidligere status bevares.
+
 ## 14. oktober 2026 — afgrænset lokal opfølgning på fem604-sourcefejl
 
 - [x] Bevar de faktiske røde604-cases og ret faseforventningerne uden at ændre historiske SQL-/bindings-/originalkrav.

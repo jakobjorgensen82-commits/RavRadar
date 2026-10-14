@@ -1,3 +1,11 @@
+## Lokal 4.0.577 — to yderligere kildeprøver rettet, 14. oktober 2026
+
+Den næste præcise PR #604-kontrol på 138e7d77 stoppede i to kildeprøver. Den historiske 673/600-prøve anvender nu genuine 584-kilde i sin egen kontrollerede fixture, mens den aktuelle KB-prøve og dens strenge afvisning bevares. Hele den berørte normale migrationsprøve består lokalt, inklusive historiske positive forløb og alle gamle negative kontroller.
+
+Privacy-parenten kræver nu tre faste sprogprocesser for kataloget og én proces med alle øvrige normale blokke. Hvert barn beholder 30 sekunder og 1 MiB; direkte normaldefault kører fortsat alt. Hele parenten består lokalt uden reduceret 456-emnedækning, sprog-, privatlivs-, ukendt- eller kvotekontrol. Rettelsen ændrer alene testkaldere og deres ægte kildefixture, ikke produkt, C73/I75/normalT, version, SQL eller geodata.
+
+Ny samlet kontrol på den nye præcise commit, PostgreSQL og offentlig levering er fortsat åbne. Det røde 138-head omklassificeres ikke som grønt. Statistik230 og videns577 er ikke installeret, og faktisk ekstern AI er ikke bevist. Alle fem mål består. Den separate vejrrettelse og genoptagelse fra checkpoint følger fortsat deres egne nødvendige kontroller og writer-grænse; nedenstående daterede historik bevares.
+
 ## Opfølgning til lokal 4.0.577 — kildefaser og fortsat åben levering, 14. oktober 2026
 
 PR #604's præcise kildekontrol på 4a00c170 stoppede i fem konkrete sourcecases. De er rettet lokalt uden ændring af C73/I75/normalT, historiske SQL-filer eller runtime-admission: aktuelle skabeloner kontrolleres mod vidensfasen, gamle220-prøver bruger genuine udstedt kilde, og den normale readiness-forbruger kræver samme fulde migrationsrækkefølge som producenten. De berørte normale mål består; ny samlet exact-head CI/PostgreSQL er stadig påkrævet. Se det additive tillæg i håndbog89.227 og det private checkpoint, ikke ældre grønne delbeviser alene.
