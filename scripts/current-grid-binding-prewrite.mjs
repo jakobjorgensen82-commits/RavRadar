@@ -155,17 +155,23 @@ export async function verifyCurrentGridPrewriteOriginals({ privateRoot, bundlePa
     const validationCopy = path.join(issuedRoot, 'original-validation-checkpoint.json');
     await prewriteStage('OLD_ISSUED_LOADER', 'EXCLUSIVE_VALIDATION_COPY', () => fs.copyFile(checkpointPath, validationCopy, fs.constants.COPYFILE_EXCL));
     await prewriteStage('OLD_ISSUED_LOADER', 'COPY_DIGEST', async () => same(await digestPrivateRuntimeFile(validationCopy), checkpointDigest, 'Exact validation-only S copy'));
-    const loaded = await prewriteStage('OLD_ISSUED_LOADER', 'LOAD_TARGET', () => old.loadRavScoreContinuationCheckpointForTarget({ checkpointPath: validationCopy,
-      targetReference: identity.productionReferenceAt, repositoryRoot: issuedRoot }));
-    prewriteGuard('OLD_ISSUED_LOADER', 'LOADED', () => assert.equal(loaded.loaded, true)); prewriteGuard('OLD_ISSUED_LOADER', 'PART_COUNT', () => assert.equal(loaded.partCount, 673));
-    prewriteGuard('OLD_ISSUED_LOADER', 'NO_REATTEST', () => assert.equal(loaded.continuationReattestedFromImplementationSha256, null));
-    await prewriteStage('OLD_ISSUED_LOADER', 'UNCHANGED_COPY', async () => same(await digestPrivateRuntimeFile(validationCopy), checkpointDigest,
-      'Historical validation must leave every restored original S byte untouched'));
+    // Authenticated jsonb S preserves values, not object-key serialization order.
+    // Reproduce every original B pair with the unchanged issued producer first;
+    // full S equality is required before its raw producer bytes reach the loader.
     const calculated = path.join(issuedRoot, 'same-original-checkpoint.json');
     await prewriteStage('OLD_RECOMPUTE', 'SAVE_673', () => old.saveRavScoreContinuationCheckpoint({ sourcePath, checkpointPath: calculated,
       repositoryRoot: issuedRoot }));
+    const calculatedDigest = await prewriteStage('OLD_ISSUED_LOADER', 'COPY_DIGEST', () => digestPrivateRuntimeFile(calculated));
     await prewriteStage('OLD_RECOMPUTE', 'EXACT_ORIGINAL_S', async () => same(await json(calculated, PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_MAXIMUM_RESPONSE_BYTES), payload,
       'Authenticated original S must equal the normal old producer of all 673 B pairs'));
+    const loaded = await prewriteStage('OLD_ISSUED_LOADER', 'LOAD_TARGET', () => old.loadRavScoreContinuationCheckpointForTarget({ checkpointPath: calculated,
+      targetReference: identity.productionReferenceAt, repositoryRoot: issuedRoot }));
+    prewriteGuard('OLD_ISSUED_LOADER', 'LOADED', () => assert.equal(loaded.loaded, true)); prewriteGuard('OLD_ISSUED_LOADER', 'PART_COUNT', () => assert.equal(loaded.partCount, 673));
+    prewriteGuard('OLD_ISSUED_LOADER', 'NO_REATTEST', () => assert.equal(loaded.continuationReattestedFromImplementationSha256, null));
+    await prewriteStage('OLD_ISSUED_LOADER', 'UNCHANGED_COPY', async () => same(await digestPrivateRuntimeFile(calculated), calculatedDigest,
+      'Historical validation must leave its fully S-matched normal producer bytes untouched'));
+    await prewriteStage('OLD_ISSUED_LOADER', 'UNCHANGED_COPY', async () => same(await digestPrivateRuntimeFile(validationCopy), checkpointDigest,
+      'Historical validation must leave every restored original S byte untouched'));
   }));
   await prewriteStage('FINAL_ORIGINAL_BYTES', 'RESTORED_INVENTORY', () => assertRestoredOriginalInventory(restored, manifest));
   await prewriteStage('FINAL_ORIGINAL_BYTES', 'UNCHANGED_S', async () => same(await digestPrivateRuntimeFile(checkpointPath), checkpointDigest, 'Original S bytes changed'));

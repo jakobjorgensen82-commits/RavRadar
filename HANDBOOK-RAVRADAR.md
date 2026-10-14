@@ -1,4 +1,34 @@
+## 89.225 Et nyt fravalg skal vinde over et gammelt tilvalg
+
+Status ved sammensætningen den 14. oktober 2026 kl. 09.30: PR #600 er leveret på main 9fe90320. Det kontrollerede forløb 38527571595/1 afsluttede kl. 09.21.12 dansk tid: originalkontrollen bevarede alle 673 dele og 11 originalfiler, den fulde plan blev kontrolleret før skrivning, kun 220 blev installeret, og database-, turbindings- og checkpointgenlæsningen bestod. Edge og Pages blev sprunget over. Én normal vejrhentning 38528682729 blev kvitteret kl. 09.29.45 og kører endnu; ny offentlig strøm, strømhukommelse og score er ikke verificeret. Cron er midlertidigt pauset med uændret plan. Statistik230 er ikke installeret. Ældre udsagn nedenfor om, at 220 ikke er installeret, er dateret historik og erstattes kun på dette statuspunkt.
+
+**Kort fortalt:** En gammel fane må ikke tænde statistikpræferencen igen, efter at du har slået den fra et andet sted. Den lokale rettelse giver hvert gemt valg et nummer fra serveren. Den er endnu ikke installeret.
+
+ON kræver den aktuelle serverrevision. Et nyere OFF flytter revisionen frem og afviser derfor et forsinket ON med et gammelt nummer. OFF må bruge en ældre læsning, men ikke et opdigtet fremtidigt nummer. Det gamle ON-kald uden revision afvises. Kontoskift, logout og dialoglukning må ikke give en forkert gemt-kvittering.
+
+Standard ON bruges kun, når serveren har bekræftet, at der ikke er et gemt valg. Manglende eller ugyldigt svar betyder ukendt, ikke ON. En eksisterende fravælgelse bevares. Valget er ikke samtykke eller bevis for anonymitet; samlet statistik, toårsopbevaringens varsling og automatisk sletning aktiveres ikke her.
+
+Installationen kan give et kort overgangsvindue, indtil gamle faner genindlæses: et gammelt ON afvises, mens et gammelt OFF kan være gemt uden en forståelig kvittering i den gamle klient. Hent indstillingen igen for at få serverens bekræftelse. En ukendt kvittering må ikke vises som gemt. Private turdata og indholdet af egen eksport ændres ikke; fælles kvoter og tilgængelighed gælder fortsat.
+
+Den normale kildebygger, alle 53 lokale profil- og ejerskabsprøver samt hele den lokale readiness-prøve består. Tre præcise testfixturekorrektioner bevarer produktregler og gamle assertions. Den samlede rigtige PostgreSQL-prøve, hosted installation/genlæsning og offentlig kontoafprøvning er endnu ukørt. Lokale resultater er ikke produktionsbevis.
+
+Den særskilte levering følger efter verificeret strøm220 og normal offentlig vejrdrift: faktisk pause og ingen aktive eller ventende writers, kontrolleret code-only-installation, streng schema2-genlæsning før nye kontoaktiver og kontrolleret genoptagelse. Ingen global account-afhængighed føjes til vejrhentningen, og cron må ikke automatisk genoptages efter et delvist eller ukendt udfald. Den allerede leverede003/Worker genbruges. Gamle SQL-filer, C69/I71/T, scorehistorik og originaler bevares; ny assistentviden følger særskilt efter 230.
+
+## 89.224 Gemte originaler skal kunne kontrolleres efter databasetransport
+
+Den minimale kalderrettelse har nu faktisk bestået hele den eksisterende normale lokale 673-dels prøve efter en rød reproduktion i den gamle kalder. Begge rollback-/warmup-forløb, 118 offentlige timer pr. forløb og alle gamle negative tilfælde består uden skip. Ændret nøgleorden accepteres kun efter fuld B/S-lighed; ændrede værdier, checksums og originale bytes afvises fortsat. Tidlig kildekontrol og RDKS består. Dette er ikke endnu præcis ny Linux/PostgreSQL, hosted installation eller offentlig effekt.
+
+**Kort fortalt:** Strømrettelsens kode er kontrolleret, men databaseopdateringen stopper stadig i læsningen af det gemte scorecheckpoint. Den kontrol skal bringes på plads uden at ændre eller bortforklare de gemte data.
+
+PR #599 har faktisk bestået præcis source/PostgreSQL og er merget som main 76cf31e4. Den efterfølgende skrivefri kontrol afgrænsede stoppet til den gamle checkpointlæsers LOAD_TARGET. Alle senere SQL-, Edge- og publiceringstrin blev sprunget over; 220 er fortsat ikke installeret, og den numeriske strømrettelses effekt i nye generationer er ikke offentligt bevist.
+
+Den gamle læser er følsom over for rækkefølgen af JSON-objektets felter: den normale lokale 673-dels prøves genuine gamle læser har faktisk afvist en kontrolfil med identiske strukturerede værdier, men ændret nøgleorden. PostgreSQLs jsonb gemmer ikke denne rækkefølge. Dette kontraktfund er endnu ikke bevis for den præcise hosted indre fejl. Kaldersnittet skal bruge den genuine gamle producent fra autentisk B og kræve fuld lighed med hele autentificeret S, før den historiske læser bruges. Originalbytes, arrays, alle værdier og checksums, bindinger, pointer og versioner bevares; ingen gamle data får nyt kildebevis.
+
+Den normale vejrhentnings tidlige databasekontrol kræver den nye binding. Ejeren accepterer nogle timers udsættelse for først at få strømrettelsen på plads. Cron er midlertidigt pauset med uændret plan. Efter præcis kontrol kræves faktisk installation/genlæsning, en ny offentlig generation og kontrol af strøm, strømhukommelse og score. Statistik, assistentviden og den isolerede SOURCE-revision må ikke holde normalvejr tilbage. Ingen hovedmål er dermed færdigt.
+
 ## 89.223 Første fejl skal bevares uden at vise private data
+
+Årsagspakkens første kildekontrol stoppede i en ældre ordret if-prefix-test. Den skal nu kræve præcis både den skrivefri diagnosebetingelse og den bevarede uafhængige Edge-betingelse. Hele den normale workflowprøve består lokalt, og Linux har faktisk kørt den nye diagnose-/Bash-prøve uden skip. Den samlede nye source-/PostgreSQL-kontrol og den skrivefri originaldiagnose mangler stadig; dette er ikke en installeret rettelse af originalafvisningen.
 
 **Kort fortalt:** Strømkilden er kontrolleret, men installationen stoppede, før databasen blev ændret. En skrivefri kontrol skal finde årsagen uden at skjule eller svække databeskyttelsen.
 

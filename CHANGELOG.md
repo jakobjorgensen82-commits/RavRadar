@@ -1,5 +1,23 @@
+## 4.0.576 — lokal statistikpræference med serverrevision, 14. oktober 2026
+
+Status ved sammensætningen den 14. oktober 2026 kl. 09.30: PR #600 er leveret på main 9fe90320. Det kontrollerede forløb 38527571595/1 afsluttede kl. 09.21.12 dansk tid: originalkontrollen bevarede alle 673 dele og 11 originalfiler, den fulde plan blev kontrolleret før skrivning, kun 220 blev installeret, og database-, turbindings- og checkpointgenlæsningen bestod. Edge og Pages blev sprunget over. Én normal vejrhentning 38528682729 blev kvitteret kl. 09.29.45 og kører endnu; ny offentlig strøm, strømhukommelse og score er ikke verificeret. Cron er midlertidigt pauset med uændret plan. Statistik230 er ikke installeret. Ældre udsagn nedenfor om, at 220 ikke er installeret, er dateret historik og erstattes kun på dette statuspunkt.
+
+- Forbered atomisk serverrevision: frisk ON kan ikke overhale nyere OFF; gammelt revisionsløst ON afvises. Klient og UI bevarer kontoejer, logout og ukendt skriveudfald.
+- Saml én ny append-only230-kilde efter 220. Bevar alle 58 gamle SQL-filer, C69/I71/T, private ture/eksportindhold og hele kilde-/originalkontrollen.
+- Faktisk lokal PASS: normal230-bygger write/check,53 profil-/ejerskabsprøver og hele readiness-målet efter tre præcise testfixturekorrektioner. Rigtig samlet PostgreSQL og hosted230 er endnu ukørt.
+- Bevar standard ON uden at kalde det samtykke/anonymitet. Samlet statistik, retention, varsling og sletning aktiveres ikke.
+- Levering kræver særskilt kontrolleret pause/idle og230/schema2 før nye kontoaktiver, efter strøm220/normal offentlig vejrdrift. Gamle faner har et kort ON-afvisnings-/ukendt-OFF-kvitteringsvindue; ingen global vejrgate eller automatisk cron-genoptagelse efter fejl.
+- Genbrug allerede leveret003/Worker. Den nyere strømopfølgning89.224 og alle daterede historiske afsnit bevares; dette er ikke offentlig statistiklevering. Se håndbog 89.225.
+
+## 4.0.576 — historisk checkpointlæsning efter databasetransport, 14. oktober 2026
+
+- Genbrug faktisk source-/PostgreSQL-verificeret 599-kilde og afgræns den skrivefri diagnoses stop til den gamle LOAD_TARGET-læser; ingen SQL-/Edge-/publiceringsskrivning.
+- Ret den normale kalder efter ægte RED→GREEN med den genuine gamle læsers nøgleordensafvisning. Kræv fuld B/S-lighed med uændret gammel producent før historisk læsning og bevar originale bytes/checksums. Hele den normale lokale 673-dels prøve består med begge rollback-/warmup-forløb, alle gamle negative tilfælde og nye ændrede S-/B-afvisninger uden skip; præcis ny GitHub-kontrol kræves stadig.
+- Prioritér faktisk installeret/genlæst strøm220 før ny vejrhentning. Ejeren accepterer nogle timers udsættelse. Ingen ændring af gammel SQL, modelbindinger, scoreformel, kilder, administratorpunkter eller geometri; offentlig ny generation og genoptaget cron afventer stadig.
+
 ## 4.0.576 — præcis afgrænset strømoriginaldiagnose, 14. oktober 2026
 
+- Bevar den ældre workflowprøves Edge-krav og gør dens assertion præcis for begge uafhængige diagnose-/Edge-betingelser. Den hele normale prøve består lokalt; det tidligere source-stop er ikke en installations- eller vejrhentningsfejl.
 - Genbrug faktisk gennemført 003-/Worker-installation efter PR #597 og præcis grøn Linux/PostgreSQL-kildekontrol af strømrettelsen i PR #598.
 - Følg den efterfølgende afvisning før SQL med en afgrænset rapport af første fejl og særskilt skrivefri originalkontrol. Ingen rå fejldata, nye providerhentninger, lempede originalgates eller automatisk installationsgentagelse.
 - Den numeriske overgang og nye generationers offentlige effekt er ikke installeret/verificeret af kildeændringen. Gamle originaler, offentlig historik, scoreformel, administratorpunkter og geometri bevares; cron er midlertidigt pauset med uændret plan indtil verificeret normaldrift.

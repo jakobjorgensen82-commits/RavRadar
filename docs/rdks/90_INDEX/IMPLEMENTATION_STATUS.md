@@ -1,5 +1,30 @@
+## 14. oktober 2026 — statistik230 samlet lokalt, ikke installeret
+
+Status ved sammensætningen den 14. oktober 2026 kl. 09.30: PR #600 er leveret på main 9fe90320. Det kontrollerede forløb 38527571595/1 afsluttede kl. 09.21.12 dansk tid: originalkontrollen bevarede alle 673 dele og 11 originalfiler, den fulde plan blev kontrolleret før skrivning, kun 220 blev installeret, og database-, turbindings- og checkpointgenlæsningen bestod. Edge og Pages blev sprunget over. Én normal vejrhentning 38528682729 blev kvitteret kl. 09.29.45 og kører endnu; ny offentlig strøm, strømhukommelse og score er ikke verificeret. Cron er midlertidigt pauset med uændret plan. Statistik230 er ikke installeret. Ældre udsagn nedenfor om, at 220 ikke er installeret, er dateret historik og erstattes kun på dette statuspunkt.
+
+- LOKAL KILDE: 19 funktionelle blade med én ny append-only 230-migration; de 58 ældre SQL-filer og C69/I71/T bevares.
+- FAKTISK LOKAL PASS: normal migrationsbygger --write/--check, alle 53 profil-/ejerskabsprøver og hele readiness-målet. Tre præcise fixturekorrektioner ændrer ikke produktguards eller gamle assertions.
+- KILDEKONTRAKT: serverbundet revision, frisk ON, konservativ OFF, afvist gammelt revisionsløst ON samt fortsat kontoejer-/logout- og ukendt-svar-beskyttelse.
+- UKØRT: den samlede rigtige PostgreSQL-kæde 213→220→230, præcis GitHub-kontrol af samlingen, hosted230/schema2 og offentlig kontoafprøvning.
+- LEVERINGSRÆKKEFØLGE: efter verificeret220 og normal offentlig vejrdrift; faktisk pause/idle, særskilt code-only med schema2 før nye kontoaktiver, derefter kontrolleret genoptagelse. Ingen global account-afhængighed i vejr; ingen automatisk genoptagelse efter delvis fejl.
+- ÅBENT OVERGANGSVINDUE: gammel ON afvises; gammelt OFF kan være gemt med ukendt klientkvittering. Se håndbog 89.225; ingen accept af begge schemaer.
+- UÆNDRET: default ON er ikke samtykke eller anonymitet. Statistik, toårs-/30dages-varsling og sletning er inaktive. 003/Worker er allerede leveret og genbruges; KB456/95 følger særskilt efter 230.
+
+Hele den tidligere status bevares som dateret historik. Den nyere strømopfølgning i89.224 må ikke overskrives af denne lokale statistiksamling.
+
+## 14. oktober 2026 — 599 kildeleveret; historisk transportkant reproduceret
+
+- [x] Bestå præcis source/PostgreSQL, uændret træ og kildebevis for 599; merge samme træ som main 76cf31e4.
+- [x] Afgræns den skrivefri originalkontrol til OLD_ISSUED_LOADER/LOAD_TARGET og bevis alle senere SQL-/Edge-/publiceringstrin sprunget over.
+- [x] Påvis den genuine gamle læsers hash-afvisning af en semantisk identisk, nøgleomordnet kontrolfil i den normale lokale 673-dels prøve.
+- [x] Bestå hele den nye normale lokale prøve med kaldersnittets fulde B/S-lighed før historisk læsning og uændrede originale bytes; ægte RED→GREEN, begge rollback-/warmup-forløb og alle gamle negative tilfælde uden skip. Tidlig kildekontrol, RDKS og håndbog består; Windows' manglende pinned Python-afhængigheder kræver fortsat den præcise GitHub-kontrol.
+- [ ] Bestå præcis ny kildekontrol, installér/genlæs 220 og bevis korrekt strøm, hukommelse og score i en faktisk ny offentlig generation; genoptag cron efter verificeret overgang/drift.
+
+Ejeren accepterer nogle timers udsættelse for først at få strømrettelsen på plads. Øvrige emner må ikke forsinke normalvejret. Se CURRENT_TRUTH og håndbog 89.224; 220, fuld DMI-dækning, SOURCE-G4 og de fem hovedmål er ikke afsluttet.
+
 ## 14. oktober 2026 — leveret turlager, kildeleveret strøm, originalkontrol åben
 
+- PR #599's første source-head stoppede i en ordret gammel if-prefix-assertion. Testen kræver nu præcis diagnoseafgrænsningen og den bevarede Edge-afgrænsning; normal workflowprøve består lokalt. Den nye Linux/Bash-diagnoseprøve er faktisk kørt uden skip. Hele nye source-/PostgreSQL-bevis står fortsat åbent, og ingen installation er gentaget.
 - FAKTISK INSTALLERET: 003-værn og genlæsning i alle ti eksisterende D1-lagre; særskilt eksisterende Worker-opdatering og normale D1-/Edge-/Worker-genlæsninger efter PR #597.
 - KILDELEVERET: PR #598 på main a6b7915e efter præcis grøn Linux- og PostgreSQL-kontrol, inklusive den normale hele strømovergang. Det er ikke numerisk produktionslevering.
 - ÅBEN: 220-installationen stoppede før SQL i originalkontrollen. Første årsag er ukendt, fordi den gamle CLI kasserer den. Den afgrænsede faste fejlrapport og skrivefri kontrolvej kræver egen præcis kildekontrol før brug; ingen blind installationsgentagelse.

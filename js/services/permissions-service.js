@@ -63,8 +63,15 @@ export function hasPermission(access,key){return access?.profile?.role==='owner'
 // Own-user preference only. This never enables aggregate processing, grants
 // consent, or makes trip pseudonyms anonymous. Server-confirmed absence is ON;
 // missing/failed/malformed responses are unknown, never an implied default.
-async function ownStatisticsPreference(operation) {
+const statisticsPreferenceOwners=new WeakMap();
+function validStatisticsRevision(value){
+ return typeof value==='string'&&/^(0|[1-9][0-9]{0,18})$/.test(value)
+  &&BigInt(value)<=9223372036854775807n&&String(BigInt(value))===value;
+}
+async function ownStatisticsPreference(operation, payload={}, observedOwner=null) {
  const identity=authIdentityEpoch(),startingOwner=currentSession()?.user?.id;
+ if(observedOwner&&(observedOwner.identity!==identity||observedOwner.ownerId!==startingOwner))
+  throw new Error('Kontoen blev ændret. Prøv igen fra den rigtige konto.');
  const active=await requireFreshSession(),ownerId=startingOwner??active?.user?.id;
  const assertOwner=()=>{
   if(authIdentityEpoch()!==identity||!ownerId||currentSession()?.user?.id!==ownerId)
@@ -73,21 +80,30 @@ async function ownStatisticsPreference(operation) {
  assertOwner();
  const {response,body}=await authorizedFetch(
   `${PUBLIC_CONFIG.supabaseUrl}/rest/v1/rpc/${operation}`,
-  {method:'POST',headers:{'Content-Type':'application/json'},body:'{}'},
+  {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)},
   {consumeJson:true,expectedUserId:ownerId});
  assertOwner();
  if(!response.ok||!body||typeof body!=='object'||Array.isArray(body)
-  ||Object.keys(body).sort().join(',')!=='enabled,source'||typeof body.enabled!=='boolean'
-  ||!['default','stored'].includes(body.source)||(body.source==='default'&&body.enabled!==true))
+  ||Object.keys(body).sort().join(',')!=='enabled,revision,source'||typeof body.enabled!=='boolean'
+  ||!validStatisticsRevision(body.revision)||!['default','stored'].includes(body.source)
+  ||(body.source==='default'&&(body.enabled!==true||body.revision!=='0')))
   throw new Error('Kontovalget kunne ikke bekræftes.');
- return Object.freeze({enabled:body.enabled,source:body.source});
+ const value=Object.freeze({enabled:body.enabled,source:body.source,revision:body.revision});
+ statisticsPreferenceOwners.set(value,{identity,ownerId});
+ return value;
 }
 export async function getOwnStatisticsPreference(){
  return ownStatisticsPreference('get_own_statistics_preference');
 }
-export async function setOwnStatisticsPreference(enabled){
+export async function setOwnStatisticsPreference(enabled,observed){
  if(typeof enabled!=='boolean')throw new Error('Kontovalget er ugyldigt.');
- const value=await ownStatisticsPreference(enabled?'enable_own_statistics_preference':'disable_own_statistics_preference');
- if(value.source!=='stored'||value.enabled!==enabled)throw new Error('Kontovalget kunne ikke bekræftes.');
+ const owner=observed&&statisticsPreferenceOwners.get(observed);
+ if(!owner)throw new Error('Kontovalget skal først hentes igen.');
+ const value=await ownStatisticsPreference('set_own_statistics_preference',
+  {p_enabled:enabled,p_expected_revision:observed.revision},owner);
+ if(value.source!=='stored'||value.enabled!==enabled
+  ||BigInt(value.revision)<=BigInt(observed.revision)
+  ||(enabled&&BigInt(value.revision)!==BigInt(observed.revision)+1n))
+  throw new Error('Kontovalget kunne ikke bekræftes.');
  return value;
 }

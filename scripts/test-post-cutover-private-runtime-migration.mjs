@@ -833,6 +833,68 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
       }
       assert.throws(() => prewrite.assertOriginalCheckpointRow([], scenario.identity));
       assert.equal(sha(await fs.readFile(checkpointPath)), originalsBefore);
+      // jsonb transports may reorder object keys; values and array order are unchanged.
+      // Reproduce this documented serialization edge in the existing genuine 673 fixtures.
+      const reverseObjectKeys = value => Array.isArray(value) ? value.map(reverseObjectKeys)
+        : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).reverse()
+          .map(([name, child]) => [name, reverseObjectKeys(child)])) : value;
+      const transported = reverseObjectKeys(payload);
+      assert.equal(sameStructuredValue(transported, payload), true, 'transport preserves every structured S value');
+      const transportedPath = path.join(scenario.root, 'transport-order-checkpoint.json');
+      await fs.writeFile(transportedPath, `${JSON.stringify(transported)}\n`, { flag: 'wx' });
+      const transportedBefore = sha(await fs.readFile(transportedPath));
+      assert.notEqual(transportedBefore, originalsBefore, 'whole bytes genuinely changed only by key order');
+      await issued.withIssuedAccountAssistantSource(async issuedRoot => {
+        const oldCheckpoint = await import(pathToFileURL(path.join(issuedRoot,
+          'scripts/ravscore-continuation-checkpoint.mjs')).href);
+        await assert.rejects(oldCheckpoint.loadRavScoreContinuationCheckpointForTarget({
+          checkpointPath: transportedPath, targetReference: reference, repositoryRoot: issuedRoot }),
+        error => {
+          assert.match(error.message, /^(?:RavScore checkpoint|Candidate G rollback companion) state integrity is invalid$/);
+          return true;
+        },
+        'unchanged old loader demonstrates the key-order-sensitive storage boundary');
+      });
+      assert.equal(sha(await fs.readFile(transportedPath)), transportedBefore, 'old refusal never rewrites original transport bytes');
+      const transportOptions = { ...proofOptions, checkpointPath: transportedPath };
+      const transportReceipt = await prewrite.verifyCurrentGridPrewriteOriginals(transportOptions);
+      assert.equal(transportReceipt.partCount, 673); assert.equal(transportReceipt.fileCount, 10);
+      assert.equal(transportReceipt.originalBytesUnchanged, true);
+      assert.equal(transportReceipt.newGridEvidenceClaimed, false);
+      assert.equal(transportReceipt.checkpointSha256, transportedBefore, 'receipt names authentic S bytes, not recomputed bytes');
+      assert.equal(sha(await fs.readFile(transportedPath)), transportedBefore);
+      const diagnostic = await currentImport('scripts/lib/current-grid-prewrite-diagnostic.mjs');
+      for (const [label, mutate] of [
+        ['scalar', value => { value.states[allPartIds[0]].supplyPotential += 0.25; }],
+        ['digest', value => { value.candidateGRollbackCompanion.stateSha256 = '0'.repeat(64); }],
+      ]) {
+        const invalid = structuredClone(transported); mutate(invalid);
+        const invalidPath = path.join(scenario.root, `transport-invalid-${label}-checkpoint.json`);
+        await fs.writeFile(invalidPath, `${JSON.stringify(invalid)}\n`, { flag: 'wx' });
+        const invalidBefore = sha(await fs.readFile(invalidPath));
+        await assert.rejects(prewrite.verifyCurrentGridPrewriteOriginals({ ...proofOptions,
+          checkpointPath: invalidPath }), error => {
+          const cause = diagnostic.currentGridPrewriteRefusalDiagnostic(error);
+          assert.equal(cause.phase, 'OLD_RECOMPUTE'); assert.equal(cause.criterion, 'EXACT_ORIGINAL_S');
+          assert.equal(cause.category, 'ASSERTION'); return true;
+        }, 'semantic mismatch must refuse before loader admission');
+        assert.equal(sha(await fs.readFile(invalidPath)), invalidBefore);
+        assert.equal(sha(await fs.readFile(transportedPath)), transportedBefore);
+        assert.equal(sha(await fs.readFile(checkpointPath)), originalsBefore);
+      }
+      const conditionsPath = path.join(scenario.restored, 'data/live/conditions.json');
+      const restoredConditionsBefore = await fs.readFile(conditionsPath);
+      try {
+        await fs.appendFile(conditionsPath, '\n');
+        await assert.rejects(prewrite.verifyCurrentGridPrewriteOriginals(transportOptions), error => {
+          const cause = diagnostic.currentGridPrewriteRefusalDiagnostic(error);
+          assert.equal(cause.phase, 'WHOLE_ORIGINAL_ARCHIVE'); assert.equal(cause.criterion, 'RESTORED_INVENTORY');
+          assert.equal(cause.category, 'UNCLASSIFIED_ERROR'); return true;
+        }, 'changed restored B bytes must fail inventory, never become a recomputed S source');
+      } finally { await fs.writeFile(conditionsPath, restoredConditionsBefore); }
+      assert.deepEqual(await fs.readFile(conditionsPath), restoredConditionsBefore);
+      assert.equal(sha(await fs.readFile(transportedPath)), transportedBefore);
+      assert.equal(sha(await fs.readFile(checkpointPath)), originalsBefore);
       const report = await migrate(scenario, 'migrated');
       assert.equal(report.transitionKind, 'CURRENT_GRID_ORIGINAL_ARCHIVE_BRIDGE');
       assert.equal(report.migratedPartCount, 673);
