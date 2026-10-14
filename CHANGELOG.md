@@ -1,3 +1,10 @@
+## 4.0.576 — strømguard ved faktisk forbrug, 14. oktober 2026
+
+- Genbrug faktisk installeret/genlæst220 med bevarede originaler efter PR #600. Den næste normale vejrhentning fejlede i ikke-strømplanen før offentlig levering; gammel prognose bevares.
+- Afgræns current-grid-kravet til faktisk ny strømbrug: ikke i planen for fire scalar-/vejrfamilier og ikke i tre ekstra private T+3-vandstandstimer uden for de118scoretimer. Streng score-/recovery-/referencekontrol, alle121timer, originaler og no-loss bevares.
+- Ingen modelbinding, SQL, sourceprioritet, scoreformel, adminpunkter eller geometri ændres. Normale måltests, præcis kildekontrol og faktisk ny generation kræves stadig; cron er pauset.
+- Kræv coherent sampling for valgfri PUBLIC-genindsættelse af active-native-strøm over et allerede kvalificeret strømvalg. Hele den normale assembly-prøve består; gamle originaler, protected replay, kildeprioritet og tidligere assertions bevares. Første PR #603-kontrol viste en manglende præcis inverseadapter for de nye kalderhunks; den historiske hele sourcehash skal fortsat bestå, før ny samlet kildekontrol.
+
 ## 4.0.576 — historisk checkpointlæsning efter databasetransport, 14. oktober 2026
 
 - Genbrug faktisk source-/PostgreSQL-verificeret 599-kilde og afgræns den skrivefri diagnoses stop til den gamle LOAD_TARGET-læser; ingen SQL-/Edge-/publiceringsskrivning.

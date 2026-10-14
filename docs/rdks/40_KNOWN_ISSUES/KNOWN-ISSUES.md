@@ -1,4 +1,10 @@
+## ÅBEN — ubrugt strøm stopper ikke-strømplanen, 14. oktober 2026
+
+Efter faktisk installeret/genlæst 220 stoppede den normale vejrhentning før ny offentlig levering i current-grid-kontrollen inde i planen for fire ikke-strømkomponenter. Koden kræver desuden current-grid-bevis i tre private vandstandstimer uden for scorehorizonten. Den afgrænsede kalderrettelse skal lade kontrollen følge faktisk strømforbrug og bevare stringent current/recovery/reference, 121 timer til T+3, alle originaler og no-loss. DMI 429 er observeret separat; koblingen til det konkrete endpoint er ukendt. Præcis kildekontrol, sikker levering og ny offentlig effekt står åbne. Tidligere uinstalleret220-status nedenfor er dateret historik. Se håndbog 89.226.
+
 ## ÅBEN — historisk checkpointlæsning før strøm220, 14. oktober 2026
+
+Opfølgning til vejrfejlen ovenfor: den normale PUBLIC-assembly kan faktisk genindsætte en ellers autentisk gammel active-native-original uden nyt samplingbevis over et kvalificeret strømvalg. Den lokale rettelse kræver coherent sampling alene for den valgfrie genindsættelse; originalen og protected replay er uændrede, og manglende/ugyldig closure giver stadig strict stop. Hele assembly-målet består lokalt. Første PR #603-kildekontrol stoppede i historisk testinversion efter de to kalderhunks; den gamle sourcehash og alle runtimekontroller skal bevares ved den præcise adapterrettelse. Ny kildekontrol og produktionseffekt afventer.
 
 Den minimale kalderrettelse er faktisk lokalt RED→GREEN i hele den eksisterende normale 673-dels prøve. Den accepterer kun nøgleomordnet, fuldt S-ligt gammelt producentoutput og afviser ændrede værdier/checksums/B-bytes. Gamle negative tilfælde og begge rollback-/warmup-forløb består uden skip. Præcis ny Linux/PostgreSQL, faktisk installation og den præcise hosted indre årsag/ny generation er fortsat åbne; dette lokale resultat lukker ikke produktionsissuet.
 
