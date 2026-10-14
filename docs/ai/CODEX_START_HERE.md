@@ -12,6 +12,14 @@ Dette er ikke en offentlig levering. PR601's præcise kilde/PostgreSQL er grøn 
 
 603 er faktisk på main, og den ene normale vejrhentning38553389373 kører separat. Cron er fortsat midlertidigt pauset med uændret plan; genaktivering følger først verificeret normal levering. Ingen produktionsændring under writer, ekstra vejrhentning eller ny tjeneste/nøgle/plan følger af den lokale videnskandidat. Alle fem hovedmål er åbne med frist18oktober. Afsnit nedenfor er bevaret dateret historik på erstattede statuspunkter; driftsfejl og private fakta hører ikke til assistentens offentlige vidensbank.
 
+*Dateret kildeforberedelse før levering af 606; afsnittets statuspunkter er historik og erstattes af den nyere status ovenfor.*
+
+## Akut aktiv opgave — 14. oktober 2026: bølgeforvalg blokerer beregning
+
+Normal 38553389373/1 på main90ae er afsluttet med fejl i beregningstrin110. Den konkrete stack er verifiedIntegratedPartHourly → preflightFeggesundOperationalWaveReadiness → scoreCoastalPartsRuntime. Forvalget bruger bølger, men arver requireNativeGridSampling:true. Hele scorekaldet kræver fortsat streng sampling på faktisk valgt strøm; ingen blanketlempelse eller nye beviser til gamle originaler.
+
+DMI/CP/OM-trin blev gennemført, men der blev ikke leveret en ny prognose. Krypteret gemmetrin er ikke faktisk næste restore-bevis. Cron er fortsat pauset med uændret plan. Vejrrettelsen har første prioritet; PR604's fejlede kildekontrol og øvrige opgaver må ikke forsinke den. Næste: afgrænset normal kalderrettelse, relevant regression og historisk inverse → eksakt CI → sikker levering → én normal genoptagelse inden for målets aktuelle autoritet. Se privat checkpoint og håndbog89.228.
+
 ## Vejrhentning: strøm skal kontrolleres ved faktisk brug — 14. oktober 2026
 
 220 er faktisk installeret og strengt genlæst efter PR #600. Den efterfølgende normale vejrhentning stoppede i beregningen før upload og deploy: komponentplanen krævede strømmenes nye gitterbevis, selv om den alene planlægger vind, bølger, vandstand og temperatur. Den tidlige scorekontrol krævede desuden strømbevis i tre private T+3-støttetimer uden for de 118 scoretimer. Den afgrænsede lokale kalderrettelse holder alle strømkrav ved faktisk ny strømbrug og bevarer hele 121-timersserien til vandstand samt original-/historikbeskyttelse. Alle tre normale kaldercases, uændrede I71/C69/otte bindinger, RDKS/håndbog og tidlig kildekontrol består. Se håndbog 89.226. Fuld præcis GitHub-kontrol og ny offentlig effekt er endnu åbne; Windows' normale PR-indgang har fortsat sine kendte manglende Python-afhængigheder. Cron er pauset. Tidligere afventende 220-installationsstatus nedenfor er dateret historik, ikke aktuel installationsstatus.

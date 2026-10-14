@@ -24,6 +24,14 @@ Serverrevisionen skal beskytte nyere OFF mod forsinket gammelt ON. Standard ON, 
 
 003 og den eksisterende Worker er allerede installeret og normalt genlæst; de genbruges og skal ikke replayes for230. Strøm220/normal offentlig vejrdrift har fortsat leveringsforrang. KB456/95 følger særskilt efter 230 med legitim ny modelmetadatafølge. De58 gamle SQL-filer, C69/I71/T, source599 og den nyere89.224-strømopfølgning bevares. Ingen ny produktionsautoritet, SQL-udførelse eller fuldmålsafslutning følger af denne lokale kildekandidat.
 
+*Dateret kildeforberedelse før levering af 606; afsnittets statuspunkter er historik og erstattes af den nyere status ovenfor.*
+
+## 2026-10-14 — normalvejret stoppede i bølgeforvalg
+
+ROOT har integreret den gennemgåede trelinjers kalderdelta efter normal RED→GREEN. Hele normalwireup4/4, entrypoint21/21, normal Feggesund-proxy, C69/I71/otte bindinger og tidlig sourcecriticalgate består. Alle originale wavevalg, 121timer/T+3, strict-current før score og hele historiske sourceinverse bevares. Samlet CI, sikker levering og ny faktisk offentlig effekt står åbne.
+
+Actual38553389373/1/main90ae/build115816759814 afsluttede med første110-fejl kl.15.01.17 dansk tid. Den faste årsag er DMI_GRID_SAMPLING_APPLICABILITY_UNKNOWN fra verifiedIntegratedPartHourly i Feggesunds bølgeforvalg; det ubrugte strømkrav har ingen plads i denne wave-onlykontrol. DMI/CP/OM og krypteret gemmetrin bestod, men ny offentlig pakke/Pages og effekt blev sprunget over. Cron er pauset. Afgrænset kilde-/normal-kalderrettelse forberedes med alle egentlige strøm- og data-/modelgrænser bevaret; CI, sikker levering og ny effekt er åbne. Alle fem mål og deadline18oktober består.
+
 # 14. oktober 2026 — 599-kildelevering og historisk transportkant
 
 Den minimale kalderrettelse er nu faktisk lokalt RED→GREEN i hele den normale 673-dels prøve, med begge gamle rollback-/warmup-forløb, 118 offentlige timer pr. forløb, alle gamle negative tilfælde og nye nøgleordens-/S-værdi-/checksum-/B-byteafvisninger. Tidlig kildekontrol, håndbog og RDKS består. De manglende pinned Windows-afhængigheder ændres ikke; præcis ny Linux/PostgreSQL, hosted installation og offentlig ny generation kræves stadig.

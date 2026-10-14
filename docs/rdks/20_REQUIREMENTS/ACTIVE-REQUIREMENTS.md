@@ -10,6 +10,12 @@ Spørg RavRadar skal bruge den gennemgåede456-emneviden på dansk, tysk og enge
 
 Ny vidensmetadata må kun leveres efter faktisk230/schema2 og egen fysisk C/I/T-, original-, historik-, no-loss-, PostgreSQL- og writer-fri kontrol. Gamle originaler, scorer og udstedte SQL-filer bevares, og historiske kildefamilier må ikke ommærkes. Ingen Worker/D1-geninstallation, nye tjenester/nøgler/planer, fundgarantier, opdigtede vejrtal eller interne fejlfakta til brugerne. Alle fem hovedmål og fristen18oktober består.
 
+*Dateret kildeforberedelse før levering af 606; afsnittets statuspunkter er historik og erstattes af den nyere status ovenfor.*
+
+## Akut bølgeforvalg — 14. oktober 2026
+
+Normal Feggesund-forvalidering skal kvalificere sine tre deles bølger over 118 timer uden at kræve ubrugt strøm. Faktisk valgt strøm før nye scorer, memory, native-reference og replay skal stadig bestå samplingkravet. 121 scalar-/vandstandstimer, originaler, sourceprioritet, model og centrale administratorpunkter bevares. Normal kalderregression, eksakt CI, sikker levering og ny offentlig effekt kræves; ingen af de fem hovedopgaver er afsluttet. Se håndbog89.228.
+
 # 14. oktober 2026 — strømkrav følger faktisk strømforbrug
 
 Den normale ikke-strømplan for vind, bølger, vandstand og vandtemperatur skal bevare kvalificerede felter uden at kræve et ubrugt strøm-gitterbevis. Streng ny strømbrug skal fortsat kontrolleres efter faktisk sourcevalg i alle 118 scoretimer, i recovery/hukommelse og ved native-reference. De ekstra private T+118..T+120-timer bruges alene til vandstandens sidste T+3-trends, ikke til ekstra strøm-/scorestate. Hele den originale 121-timersserie, routing, scalarvalidering og kontinuitet bevares. Ukendt strømbevis giver aldrig ny anvendelsesautoritet, proveniensopgradering eller sletning af originaler. Ingen scoreformel-, admin-, geometri-, kildeprioritets- eller SQL-ændring følger af denne afgrænsning.

@@ -4,7 +4,8 @@
 - [x] Kontrollér aktuelle skabeloner mod KB-kanon og genuine220-kaldere mod udstedt kilde; bevar gamle assertions og negative afvisninger.
 - [x] Saml readiness-producent og -forbruger om samme fulde ordnede migrationsliste; berørte normale mål og syv hele afterpins består lokalt.
 - [x] Genkontrollér normale C-/I-bygninger efter integration; C73/I75/normalT er uændrede.
-- [ ] Arv606 præcist og bestå ny samlet exact-head source/PostgreSQL før levering. Lokale receiverprøver er ikke Linux/nativebevis.
+- [x] Arv606 lokalt med hele updater/normalwireup, begge dokumentationshistorikker, 488 webkapitler og uændrede SQL-/DDL-/modelbindinger. Normal RDKS, sikkerhed, håndbog, version og produktkritisk kildegate består på sammenføringen.
+- [ ] Bestå ny samlet exact-head source/PostgreSQL før levering. Lokale receiverprøver er ikke Linux/nativebevis.
 - [ ] Installér/verificér230 først og gennemfør videns577's normale original-/historik-/no-loss-/writer-fri levering og offentlige bruger-/AI-prøver.
 
 Separat vejrstatus:606/main584 er kildegrøn;38577766010 er den ene igangværende normale kørsel, med faktisk genbrug af delvist godkendt gemt fremgang, ikke fuld kvalitet eller publiceringsbevis.385533 er fejlet. Efter en fremtidig faktisk vejrfejl og dens rettelse kræves genoptagelse fra checkpoint via normal indgang fra den dybeste autentiske, gyldigt gemte fase efter nødvendige kontroller, uden overlap eller gateskip. Alle fem mål til18oktober er fortsat åbne; statistik, retention og ekstern AI aktiveres eller bevises ikke af denne kildeopfølgning. Tidligere status nedenfor er bevaret historik.
@@ -20,6 +21,17 @@ Separat vejrstatus:606/main584 er kildegrøn;38577766010 er den ene igangværend
 - [ ] Verificér faktisk offentlig viden, normale sammensatte/opfølgende/ukendte spørgsmål og ekstern AI på tre sprog.
 
 Den separate normale vejrhentning38553389373, cron-genoptagelse, ny strøm/hukommelse/score, den isolerede revision, anonym statistik/retention og selvstændig drift har egne åbne beviser. Alle fem hovedmål forbliver åbne, frist18oktober. Tidligere afsnit bevares som dateret historik.
+
+*Dateret kildeforberedelse før levering af 606; afsnittets statuspunkter er historik og erstattes af den nyere status ovenfor.*
+
+## Akut status — Feggesunds bølgeforvalg, 14. oktober 2026
+
+Lokalt gennemført: trelinjers kalderdelta, normal regression med originale121timer/354bølgepositioner og fortsat streng afvisning af ukvalificeret strøm. Hele berørte normalmål består4/4 og21/21, Feggesund-proxy og tidlig sourcegate består. Model-/bindingsfiler er uændrede. Dette er ikke eksakt GitHub-/PostgreSQL eller offentlig levering.
+
+- Faktisk normal38553389373/1 er terminalFAIL efter gennemførte leverandørtrin; ingen ny offentlig prognose eller deploy.
+- Konkret første årsag: wave-onlypreflight arver strict-current-flaget. Minimal kalderrettelse og relevant normal regression forberedes; faktisk score-/memory-/native-/replaykontrol består.
+- Source603's scalar- og 118-score/T+3-afgrænsninger er verificeret korrekte. Originaler, model, geometri og kildeprioritet ændres ikke af det nye fix.
+- Præcis CI, merge/levering, normal genoptagelse, faktisk restore/save/upload/deploy og ny offentlig strøm/score/coverage er åbne. CronOFF med uændret plan. Alle fem hovedmål er åbne.
 
 ## 14. oktober 2026 — 220 installeret; ikke-strømplan spærrer ny vejrgeneration
 

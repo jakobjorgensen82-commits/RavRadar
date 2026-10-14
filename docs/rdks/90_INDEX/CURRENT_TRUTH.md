@@ -2,7 +2,7 @@
 
 PR #604/head4a00c170 bestod ikke samlet source: fem konkrete cases krævede rettelse. Den lokale samling bevarer den udstedte220-timeout, kontrollerer aktuelle schema-/INSTALL-definitioner mod den aktuelle videnskanon og bevarer separate hele historiske definitionskontroller. Readiness-producent og -forbruger bruger nu den samme præcise ordnede liste gennem230 og viden. De to historiske220-kalderprøver bruger uændrede genuine c747-Gitblade i testens egen midlertidige mappe; KB-kilden afvises stadig før pointerlæsning som erstatning for220. Ingen modelalias, guardskip eller historisk SQL-omskrivning.
 
-Alle syv funktionelle afterpins er kontrolleret efter lokal integration. De berørte normale mål og faktiske normale C-/I-kontroller består; C73/I75 og hele normalT=a541199142e24abf6798c736d32ae09cf623de1d58687c0ab108a35396fc6ca9 er uændrede. Windows' lokale historiske receiverprøver er ikke Linux-extractor- eller PostgreSQL-bevis. Ny samlet exact-head source/PostgreSQL afventer, og606 skal arves præcist i videnskilden før denne kontrol.
+Alle syv funktionelle afterpins er kontrolleret efter lokal integration. De berørte normale mål og faktiske normale C-/I-kontroller består; C73/I75 og hele normalT=a541199142e24abf6798c736d32ae09cf623de1d58687c0ab108a35396fc6ca9 er uændrede. Windows' lokale historiske receiverprøver er ikke Linux-extractor- eller PostgreSQL-bevis.606 er nu præcist arvet lokalt i videnskilden; hele updater/normalwireup, begge dokumentationshistorikker, 488 webkapitler og de normale RDKS-, sikkerheds-, versions- og produktkritiske kildekontroller består. SQL-/DDL- og modelbindinger er bevaret. Ny samlet exact-head source/PostgreSQL og offentlig levering afventer fortsat.
 
 606 er faktisk på main584 efter grøn385734. Den ene normale38577766010 kører; gemt fremgang er faktisk genbrugt med delvis admission. Det er ikke fuld DMI-/kvalitetskontrol eller ny offentlig vejrlevering. Det tidligere385533-forløb er afsluttet med fejl, ikke fortsat live. Efter en fremtidig faktisk vejrfejl og dens rettelse skal genoptagelse fra checkpoint ske gennem den normale indgang fra den dybeste autentiske, gyldigt gemte fase efter nødvendige kontroller, uden overlap eller gateskip.230/schema2 og videns577 er ikke installeret. Den offentlige503 og faktisk fungerende ekstern AI er stadig uafklarede; lokal456-viden er ikke løsningen påviseligt. Alle fem mål er åbne til18oktober, og gamle afsnit bevares som dateret historik på de erstattede statuspunkter.
 
@@ -15,6 +15,16 @@ Normal release577 og rene geodata-topversionsdiffs består. Faktisk C73=74883293
 Denne kilde er ikke SQL-installation eller ny offentlig vejr/viden. 220 er faktisk installeret. PR601's præcise bba9-kilde/PostgreSQL er grøn, men230 er ikke installeret. Ny videnslevering kræver først faktisk230/schema2, kandidatens egen samlede CI/PostgreSQL og kontrolleret original-/historik-/no-loss-/writer-fri levering. Browserforløb og fungerende ekstern AI står åbne; HTTP200/fast svar/mock er ikke AI-bevis. SOURCE-revision, anonym samlet statistik, retention og selvstændig drift forbliver særskilte åbne mål.
 
 Den ene normale38553389373 kører separat på faktiskmain90ae; gammel offentlig prognose bevares indtil faktisk ny levering. Cron er pauset med uændret plan og genaktiveres efter verificeret normaldrift. Ingen ekstra manuel kørsel, merge eller produktionsinstallation under writer. Alle fem mål er åbne med frist18oktober; gamle statusafsnit nedenfor er historik på de præcist erstattede punkter.
+
+*Dateret kildeforberedelse før levering af 606; afsnittets statuspunkter er historik og erstattes af den nyere status ovenfor.*
+
+## Seneste faktiske normalforløb — 14. oktober 2026
+
+Den præcise kalderrettelse er nu lokalt integreret: kun Feggesunds bølge-only adapter får et lokalt false-flag, mens selve bølgeproofen og score-/replayinputs bevares. Hele normalwireup består4/4, hele entrypoint-/historisk-inverseprøven21/21 og den normale Feggesund-proxyprøve består uden skip. C69/d192, I71/994 og otte bindingsforbrugere er uændrede; den tidlige produktkritiske kildegate består. Præcis GitHub-kontrol og produktionseffekt mangler stadig.
+
+38553389373/1/main90ae fejlede i beregningen kl.15.01.17 dansk tid. DMI85, CP100, OM102 og currentclosure107 bestod; Feggesunds bølgeforvalg udløste DMI_GRID_SAMPLING_APPLICABILITY_UNKNOWN fra en ubrugt strøm-gitterkontrol. Krypteret gemning114/115 bestod som trin, men faktisk cacheindhold/genbrug er ikke aflæst. Fuld produktionspakke, privat CAS/publicering, Edge og Pages blev sprunget over. Den gamle offentlige generation er bevaret.
+
+Den akutte kalderrettelse er kun kildeforberedelse. Strømkrav før faktisk ny score, memory, hold og replay bevares; normal 118/T+3- og scalarplan fra603 er korrekt. Præcis CI, sikker levering og ny offentlig effekt mangler. CronOFF/19*/4UTC uændret. PR604's source14 er separat fejlet og uleveret; den er ikke denne vejrfejls årsag. Alle fem hovedområder er fortsat åbne, deadline18oktober. Se håndbog89.228 og privat checkpoint.
 
 ## Vejrhentningens komponentplan stoppede på ubrugt strøm — 14. oktober 2026
 

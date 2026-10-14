@@ -1,3 +1,13 @@
+## 89.228 Bølgeforvalg skal kun kontrollere bølger
+
+**Kort fortalt:** En indledende kontrol, der kun vurderer bølger, skal ikke kræve bevis for en strømværdi, som den ikke bruger. Før strøm indgår i en ny score eller strømhukommelse, består den separate strenge gitterkontrol.
+
+Feggesunds forvalg læser de tre kystdeles bølgetupler, gyldige kildesammenhæng og tilladte bølgeproxyer over 118 timer. Den almindelige bølge- og reservevalidering bevares. Strømdata hverken godkendes, ommærkes eller bruges som bølgebevis. Den lille kalderrettelse ændrer ikke den egentlige scorevej, replay, native-reference, kildeprioritet, geometri, punkter eller fysisk model.
+
+De tre ekstra private timer beholdes til vandstandens ændring tre timer frem; de er ikke ekstra scoretimer. Den almindelige genoptagelse kan bruge autentificeret, krypteret fremgang, hvis de faktiske originaler, baseline og indholdskontroller passer. Et grønt gemmetrin er ikke bevis for faktisk genbrug.
+
+Rettelsen er endnu kun en kildekandidat. Præcis kildekontrol, sikker levering og en faktisk ny offentlig vejrgeneration skal stadig dokumenteres. Den gamle offentlige prognose og originale data bevares. Dette lukker ikke den samlede revision eller nogen af de fem hovedopgaver.
+
 ## 89.227 Mere viden er ikke det samme som offentlig eller ekstern AI
 
 **Kildeopfølgning 14. oktober 2026:** Den første præcise kontrol af videnskandidaten stoppede i fem kildeprøver. De lokale rettelser skelner nu mellem gamle, uændrede kildefaser og den aktuelle vidensfase; en historisk original får ikke ny adgang ved at skifte et navn eller en modelbinding. Den normale readiness kræver hele den præcise migrationsrækkefølge. Gamle kontroller og originalbeskyttelse bevares.

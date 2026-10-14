@@ -4,6 +4,12 @@ Ejerens krav er genoptagelse fra checkpoint efter en fremtidig faktisk vejrfejl 
 
 604-rettelsen skal bevare ægte213/220/230-/vidensfaser: historiske positive prøver bruger udstedt kilde og må ikke få nye modelaliases eller lempet adgang; den aktuelle readiness kræver alle præcise migrations-ID'er i rækkefølge. Lokale PASS er ikke exact-head CI, PostgreSQL, ekstern AI eller offentlig levering. Delvist godkendt cachefremskridt er ikke fuld datakvalitet. Interne fejl, cacheidentiteter og private kontroltal må ikke blive offentlig assistentviden. De øvrige regler og historikken består.
 
+*Dateret kildeforberedelse før levering af 606; afsnittets statuspunkter er historik og erstattes af den nyere status ovenfor.*
+
+## Aktiv forbrugsafgrænsning — 14. oktober 2026
+
+Et bølgeforvalg må ikke bruge strøm-gitterkravet som generel materialiseringsgate. Den afgrænsede undtagelse gælder kun Feggesunds bølge-only kalder, ikke faktisk strøm i score, memory, native-hold eller anvendt replayhistorik. Bevar almindelig bølgevalidering, alle originaler og 118/T+3-horisonten. Ingen ny producer-/modelbinding, provenance, pruning eller rå vejrdata i logs. Samme normale genoptagelse skal selv bevise faktisk cachevalg, restore og admission; et grønt SAVE-trin er ikke genbrug.
+
 # AI operating rules
 
 ## Fysisk vidensbinding efter230 — 14. oktober 2026
