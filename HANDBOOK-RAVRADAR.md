@@ -1,3 +1,13 @@
+## 89.226 Strøm kontrolleres, når strømmen faktisk bruges
+
+**Kort fortalt:** Strømdata skal bestå den strenge gitterkontrol, før de bruges i nye scorer. De må ikke blokere en plan, der kun efterspørger vind, bølger, vandstand og temperatur, eller tre ekstra vandstandstimer uden for scoreperioden.
+
+220 er faktisk installeret og genlæst med originalerne bevaret efter PR #600. Den efterfølgende normale vejrhentning stoppede i ikke-strømplanen før ny offentlig levering. Den gamle offentlige prognose er bevaret, og cron er midlertidigt pauset med uændret plan. En separat DMI 429 er observeret, men dens sammenhæng med den konkrete gitterafvisning er ikke bevist.
+
+RavRadar beregner 118 offentlige scoretimer. Tre private timer yderligere bruges til at beregne vandstandens ændring tre timer frem ved slutningen af perioden. Hele den 121-timersserie skal bevares. De tre timer er ikke ekstra strøm- eller scoretimer. Strømkrav skal derfor ligge ved faktisk valgt strøm i scoretimerne, recovery, strømhukommelse og native-reference. Planen for de fire andre komponenter beholder sin egen normale kildevalidering og centrale vandstandsrouting.
+
+Ukendt gitterbevis er hverken ugyldig original eller bevis for korrekt ny strømfortolkning. Gamle originaler og offentliggjorte scorer må ikke slettes, ommærkes eller få nyt bevis. Den afgrænsede kalderrettelse ændrer ikke kildeprioritet, scoreformel, adminpunkter, geometri, modelbindinger eller SQL. Måltests, præcis kildekontrol og faktisk ny offentlig generation står stadig åbne. Ældre installationsstatus i kapitlerne nedenfor er dateret historik; ingen af de fem hovedmål er samlet færdigt.
+
 ## 89.224 Gemte originaler skal kunne kontrolleres efter databasetransport
 
 Den minimale kalderrettelse har nu faktisk bestået hele den eksisterende normale lokale 673-dels prøve efter en rød reproduktion i den gamle kalder. Begge rollback-/warmup-forløb, 118 offentlige timer pr. forløb og alle gamle negative tilfælde består uden skip. Ændret nøgleorden accepteres kun efter fuld B/S-lighed; ændrede værdier, checksums og originale bytes afvises fortsat. Tidlig kildekontrol og RDKS består. Dette er ikke endnu præcis ny Linux/PostgreSQL, hosted installation eller offentlig effekt.

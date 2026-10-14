@@ -1,5 +1,9 @@
 # AI operating rules
 
+## Strømguardens forbrugsgrænse — 14. oktober 2026
+
+Planlægning af de fire ikke-strømkomponenter må ikke bruge en strømguard som adgangskrav til gyldige scalarfelter. Den tidlige scorekontrol skal kræve nyt strømbevis for præcis de samme 118 timer som den egentlige scorepipeline; 121-timersserien bevares til vandstand/T+3 og kontinuitet. Streng kontrol af valgt strøm, recovery, hukommelse og native-reference må ikke fjernes. Ukendt gitterbevis er ikke ugyldig original, men heller ikke tilladelse til ny strømbrug. Ingen kildeomvalg, nulstilling, provenanceopgradering eller historikændring følger af kalderrettelsen. Faktisk ny generationslevering kræves stadig.
+
 ## Aktuel 213-kompatibel kildeopfølgning efter 595 — 13. oktober 2026
 
 590/591 må kun sammenføres som de gennemgåede turlager-/læserhunks oven på 595 med alle nyere uploadrettelser og dokumentationshistorik bevaret. Kilde-main a505e6f8 og den faktisk afsluttede genlevering af gemt vejr er forskellige beviser; ingen leverandørårsag eller ekstern AI udledes heraf. Uændret C66/I68/T12 og installeret 213 er førkontrakten, ikke en current220- eller SOURCE-G4-aktivering.

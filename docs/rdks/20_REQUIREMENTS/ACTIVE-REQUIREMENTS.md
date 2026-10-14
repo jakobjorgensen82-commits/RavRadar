@@ -1,3 +1,7 @@
+# 14. oktober 2026 — strømkrav følger faktisk strømforbrug
+
+Den normale ikke-strømplan for vind, bølger, vandstand og vandtemperatur skal bevare kvalificerede felter uden at kræve et ubrugt strøm-gitterbevis. Streng ny strømbrug skal fortsat kontrolleres efter faktisk sourcevalg i alle 118 scoretimer, i recovery/hukommelse og ved native-reference. De ekstra private T+118..T+120-timer bruges alene til vandstandens sidste T+3-trends, ikke til ekstra strøm-/scorestate. Hele den originale 121-timersserie, routing, scalarvalidering og kontinuitet bevares. Ukendt strømbevis giver aldrig ny anvendelsesautoritet, proveniensopgradering eller sletning af originaler. Ingen scoreformel-, admin-, geometri-, kildeprioritets- eller SQL-ændring følger af denne afgrænsning.
+
 # 14. oktober 2026 — strømrettelse før næste almindelige vejrhentning
 
 Ejeren accepterer nogle timers udsættelse for først at få den numeriske strømrettelse på plads. Den konkrete historiske JSON-transportkant skal lukkes gennem den eksisterende normale 673-dels kalder uden svækkede checksums eller ændrede originaler. Den genuine gamle producent skal bevise fuld autentificeret B/S-lighed før historisk læsning; arrays, værdier, bindinger, pointer og versioner samt alle originalbytes bevares. En genberegnet kontrolfil er aldrig et nyt originalbevis. Installeret/genlæst 220 og faktisk ny offentlig strøm-/hukommelses-/scoreeffekt kræves stadig. Øvrige emner må ikke holde normalvejret tilbage.

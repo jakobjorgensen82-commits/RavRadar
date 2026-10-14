@@ -1,5 +1,9 @@
 # RDKS – læs først
 
+## Aktuel vejrfejl — 14. oktober 2026
+
+Læs først den nye CODEX-indgang og håndbog 89.226. 220 er faktisk installeret/genlæst, men den næste normale beregning stoppede før offentlig levering. Komponentplanen bruger ikke strøm, og private T+3-vandstandstimer er ikke ekstra scoretimer. Strømguard skal følge faktisk ny strømbrug uden at give ukendte originaler nyt bevis. Kontroller, originaler, kildeprioritet og historik bevares; lokal rettelse er ikke offentlig effekt. De øvrige læsekrav og hele historikken består.
+
 ## Aktuel afgrænsning: 590/591 efter 595 — 13. oktober 2026
 
 Læs den nye front i CODEX_START_HERE og håndbog 89.222 før denne kildeopfølgning. Genleveringen af gemt vejr sluttede faktisk med succes kl. 23.10.58 dansk tid; 595 er siden kildeleveret på main a505e6f8. 590/591 samles kun som ny 213-kompatibel kildekandidat. De tidligere grønne deltræer er ikke den nye sammensætnings kildebevis.

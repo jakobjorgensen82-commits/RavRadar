@@ -2442,7 +2442,12 @@ function scoreCoastalPartsRuntime(
           part: { ...part, zoneId }, parentFeature: parent,
           hourly: verifiedHourly, ...waterSourceRoutingContext,
         }) : { hourly: verifiedHourly, diagnostic: null };
-      const hourly = assertDmiPartHourlyGridSamplingApplicable(routedWater.hourly, bulkId,
+      const hourly = routedWater.hourly;
+      // Only public current enters scoring here. Keep all T+3 scalar support
+      // rows for trend/continuity; replay and native holds have their own gates.
+      const publicCurrentStartMs = Date.parse(partForecastStartAt);
+      assertDmiPartHourlyGridSamplingApplicable(hourly.filter(hour => Date.parse(hour.time) >= publicCurrentStartMs
+        && Date.parse(hour.time) < publicCurrentStartMs + RAVSCORE_PUBLIC_FORECAST_HOURS * 3_600_000), bulkId,
         { ...part, zoneId }, { assertRoutedWaterLevelApplicable: routedWater.assertRoutedWaterLevelApplicable, liveCurrentPilot });
       if (routedWater.diagnostic) furWaterRoutingTrace = routedWater.diagnostic;
       if (componentInputs.componentSelectionHistory) {
@@ -4803,8 +4808,9 @@ if (coastalPartsContract.enabled) {
           { ...inputs, requireNativeGridSampling: false, liveCurrentPilot }),
         ...waterSourceRoutingContext,
       });
-      return assertDmiPartHourlyGridSamplingApplicable(routed.hourly, `PART::${part.partId}`, part,
-        { assertRoutedWaterLevelApplicable: routed.assertRoutedWaterLevelApplicable, liveCurrentPilot });
+      // This plan consumes only wind/wave/waterLevel/waterTemperature, not current.
+      // NEW current is assembled and strictly checked in the score caller.
+      return routed.hourly;
     },
   });
   planningRecords.clear();
