@@ -422,6 +422,87 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
   assert.equal(broken.report(new Error('later')).sqlState,'NONE');
   const getter=createNativePostgresFailureRecorder(()=>{});
   assert.equal(getter.report({get code(){throw new Error('PRIVATE_CODE');}}).errorCode,'UNKNOWN');
+
+  // Fixed source-frame projection is diagnostic only: the actual pinned adapter
+  // is NOT imported, modified, re-pinned or executed by these synthetic cases.
+  const {nativeKnowledgeAssertionSite}=await import('./lib/checkpoint-cas-native-postgres.mjs');
+  const afterUrl=new URL('./lib/assistant-knowledge-native-postgres.mjs',import.meta.url);
+  assert.equal(crypto.createHash('sha256').update(await fs.readFile(afterUrl)).digest('hex'),
+    '7e127feb294eaf2bf4c69ade3127fbe666e1e5b46a95cbfa50b37db22afc0e9a');
+  const frame=(line,column=3)=>'    at async runNativeAssistantKnowledgeSuccessor ('+afterUrl.href+':'+line+':'+column+')';
+  const sqlFailure={code:'ERR_ASSERTION',stack:'AssertionError: PRIVATE\n'+frame(53,49)+'\n'+frame(54,34)+'\n'+frame(88,2)};
+  // Accessors must remain accessors; object-spread would itself invoke them.
+  Object.defineProperties(sqlFailure,{actual:{get(){throw new Error('must not read actual');}},expected:{get(){throw new Error('must not read expected');}}});
+  assert.deepEqual(nativeKnowledgeAssertionSite(sqlFailure),{knowledgeSite:'SQL_COMMAND',knowledgeLine:53,knowledgeColumn:49,
+    knowledgeCaller:'MIGRATION_AND_ROW_PRESERVATION',knowledgeCase:'UNKNOWN'});
+  assert.deepEqual(nativeKnowledgeAssertionSite({stack:'PRIVATE\n'+frame(119),get message(){throw new Error('not a case message');}}),
+    {knowledgeSite:'WHOLE_PROJECTION_COMPARE',knowledgeLine:119,knowledgeColumn:3,knowledgeCaller:'UNKNOWN',knowledgeCase:'UNKNOWN'});
+  const cas={code:'ERR_ASSERTION',stack:'PRIVATE\n'+frame(143,3),message:'same-old'};
+  assert.equal(nativeKnowledgeAssertionSite(cas).knowledgeSite,'CAS_SQLSTATE');
+  assert.equal(nativeKnowledgeAssertionSite(cas).knowledgeCase,'SAME_OLD');
+  assert.equal(nativeKnowledgeAssertionSite({...cas,stack:'PRIVATE\n'+frame(143,45)}).knowledgeSite,'CAS_STORED_VERSION');
+  const unknown={knowledgeSite:'UNKNOWN',knowledgeLine:null,knowledgeColumn:null,knowledgeCaller:'UNKNOWN',knowledgeCase:'UNKNOWN'};
+  for(const stack of [null,{},'X'.repeat(32769),frame(119).replace('/assistant-knowledge-native-postgres.mjs','/private.mjs'),
+    frame(119).replace('file:','https:'),frame(119).replace('.mjs:', '.mjs?private:'),frame(119,0),frame(119,161),frame(999),frame(999)+'\n'+frame(119)])
+    assert.deepEqual(nativeKnowledgeAssertionSite({stack}),unknown);
+  assert.deepEqual(nativeKnowledgeAssertionSite({get stack(){throw new Error('PRIVATE_GETTER');}}),unknown);
+  assert.equal(nativeKnowledgeAssertionSite({...cas,message:'same-old\nPRIVATE'}).knowledgeCase,'UNKNOWN');
+  assert.equal(nativeKnowledgeAssertionSite({stack:frame(119)+'\n'+frame(999)}).knowledgeSite,'WHOLE_PROJECTION_COMPARE');
+  assert.equal(nativeKnowledgeAssertionSite({stack:cas.stack,get message(){throw new Error('PRIVATE_GETTER');}}).knowledgeCase,'UNKNOWN');
+  const knowledgeRows=[];const knowledgeRecorder=createNativePostgresFailureRecorder(row=>knowledgeRows.push(row));
+  knowledgeRecorder.at('KNOWLEDGE','ADAPTER');let same;
+  try{try{throw cas;}catch(error){knowledgeRecorder.report(error);throw error;}}catch(error){same=error;}
+  assert.equal(same,cas);assert.equal(knowledgeRows.length,1);assert.equal(knowledgeRows[0].knowledgeCase,'SAME_OLD');
+  knowledgeRecorder.at('KNOWLEDGE','CLEANUP');knowledgeRecorder.report(sqlFailure);assert.equal(knowledgeRows.length,1);
+  assert.doesNotMatch(JSON.stringify(knowledgeRows),/PRIVATE|file:|https:|\.mjs|stack|message|actual|expected/);
+
+  // REAL Node AssertionError/message generation, with only a synthetic fixed
+  // adapter source position. This executes no adapter SQL or PostgreSQL.
+  const {runInNewContext}=await import('node:vm');
+  const realFailure=(body,values,line)=>{
+    try {runInNewContext(body,{assert,...values},{filename:afterUrl.href,lineOffset:line-1});}
+    catch(error){assert(error instanceof assert.AssertionError);assert.equal(error.code,'ERR_ASSERTION');return error;}
+    assert.fail('synthetic assertion must fail');
+  };
+  const realCas=realFailure('assert.equal(actual,expected,name)',{actual:'NONE',expected:'P0001',name:'same-old'},143);
+  assert(realCas.message.startsWith("same-old\n\n'NONE' !== 'P0001'\n"));
+  assert.equal(nativeKnowledgeAssertionSite(realCas).knowledgeSite,'CAS_SQLSTATE');
+  assert.equal(nativeKnowledgeAssertionSite(realCas).knowledgeCase,'SAME_OLD');
+  const fixedCases={'same-old':'SAME_OLD','idempotent-before-version':'IDEMPOTENT_BEFORE_VERSION',
+    'changed-old':'CHANGED_OLD','changed-current':'CHANGED_CURRENT','wrong-version':'WRONG_VERSION',
+    newer:'NEWER',older:'OLDER',role:'ROLE',acl:'ACL',receipts:'RECEIPTS',
+    'candidate-receipt':'CANDIDATE_RECEIPT','candidate-history':'CANDIDATE_HISTORY',unpaired:'UNPAIRED','mixed-family':'MIXED_FAMILY'};
+  for(const [name,expected] of Object.entries(fixedCases)){
+    const error=realFailure('assert.equal(actual,expected,name)',{actual:0,expected:1,name},143);
+    assert.equal(nativeKnowledgeAssertionSite(error).knowledgeCase,expected);
+  }
+  for(const message of ['same-old\nPRIVATE','same-old\r\n\r\nPRIVATE','same-old\n\n','same-old\n\n\nPRIVATE',
+    'same-old\n\n\rPRIVATE','same-oldX\n\nPRIVATE','PRIVATE\n\nsame-old']){
+    assert.equal(nativeKnowledgeAssertionSite({stack:realCas.stack,message}).knowledgeCase,'UNKNOWN');
+  }
+  const simple673=Array.from({length:673},(_,id)=>({id,value:0}));
+  const changed673=structuredClone(simple673);changed673[672].value=1;
+  const projection=realFailure('assert.deepEqual(actual,expected,name)',
+    {actual:simple673,expected:changed673,name:'whole genuine673 values preserved'},119);
+  assert(projection.stack.length<=32768);
+  assert.equal(nativeKnowledgeAssertionSite(projection).knowledgeSite,'WHOLE_PROJECTION_COMPARE');
+  // An arbitrarily long foreign custom message is NOT the pinned adapter's
+  // short fixed message. Keep the existing safe diagnostic cap, not a tail alias.
+  const longProjection=realFailure('assert.deepEqual(actual,expected,name)',
+    {actual:simple673,expected:changed673,name:'P'.repeat(33000)},119);
+  assert(longProjection.stack.length>32768);
+  assert.deepEqual(nativeKnowledgeAssertionSite(longProjection),unknown);
+  const realRows=[];const realRecorder=createNativePostgresFailureRecorder(row=>realRows.push(row));
+  realRecorder.at('KNOWLEDGE','ADAPTER');let realFirstError;
+  try{try{throw realCas;}catch(error){realRecorder.report(error);throw error;}}catch(error){realFirstError=error;}
+  assert.equal(realFirstError,realCas);assert.equal(realRows.length,1);assert.equal(realRows[0].knowledgeCase,'SAME_OLD');
+  realRecorder.at('KNOWLEDGE','CLEANUP');realRecorder.report(projection);assert.equal(realRows.length,1);
+  assert.doesNotMatch(JSON.stringify(realRows),/PRIVATE|file:|https:|\.mjs|stack|message|actual|expected|NONE|P0001/);
+  console.log(JSON.stringify({kind:'NATIVE_ASSERTION_SHAPE_SYNTHETIC',realCases:14,
+    casMessageLength:realCas.message.length,casStackLength:realCas.stack.length,
+    projectionRows:673,projectionStackLength:projection.stack.length,longPrefixStackLength:longProjection.stack.length,
+    projectionSite:nativeKnowledgeAssertionSite(projection).knowledgeSite,
+    longPrefixSite:nativeKnowledgeAssertionSite(longProjection).knowledgeSite,postgresExecuted:false}));
 }
 
 if(process.argv.includes('--native-failure-diagnostic-only')) {

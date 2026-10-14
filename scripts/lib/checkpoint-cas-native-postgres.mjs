@@ -62,7 +62,86 @@ export function nativePostgresFailureAnnotation(phase, stderr) {
 }
 
 
-// Source-test failure context only. Never inspect assertion message/actual/
+
+// Diagnostic map ONLY for the unchanged, loader-pinned KB AFTER adapter:
+// SHA256 7e127feb294eaf2bf4c69ade3127fbe666e1e5b46a95cbfa50b37db22afc0e9a.
+// Line/column bounds are fixed source positions, never a source/admission override.
+const NATIVE_KNOWLEDGE_SITES=Object.freeze([
+  [28,87,'BINDING'],[29,80,'PLATFORM'],[30,43,'ISSUED_OWNER'],[31,73,'SOURCE_ROOT'],
+  [32,93,'CONSTRUCTORS'],[34,89,'CLUSTER_ROOT'],[35,61,'CLUSTER_ROOT'],[36,127,'CLUSTER_IDENTITY'],
+  [37,53,'CLUSTER_OWNER'],[39,91,'CLUSTER_PATHS'],[40,81,'PSQL_PATH'],[41,69,'PSQL_FILE'],
+  [47,146,'SERVER_OWNER'],[48,155,'SERVER_OWNER'],[50,108,'OWNER_BEFORE'],
+  [51,141,'SQL_SIGNAL'],[52,102,'OWNER_AFTER'],[53,134,'SQL_COMMAND'],[54,52,'SQL_JSON'],
+  [55,273,'SERVER_METADATA'],[56,163,'SERVER_METADATA'],[57,104,'BINARY_VERSION'],[58,102,'BINARY_VERSION'],
+  [59,60,'CANONICAL_SOURCE'],[61,94,'MIGRATION_FILE'],[62,78,'MIGRATION_PIN'],[63,115,'BEFORE_LATEST230'],
+  [64,128,'CATALOG_WRAPPER'],[65,131,'BEFORE_SCHEMA2'],[66,549,'ROWS_WRAPPER'],[67,86,'BEFORE_ROWS'],
+  [68,351,'ACCOUNTS_WRAPPER'],[69,170,'ORIGINALS_WRAPPER'],[70,73,'BEFORE_ORIGINALS'],
+  [71,163,'PROPERTIES_WRAPPER'],[72,36,'BEFORE_PROPERTIES'],
+  [82,120,'BEFORE_DRIFT_REJECTION'],[83,102,'BEFORE_DRIFT_SQLSTATE'],[84,112,'BEFORE_NO_PROJECTION'],
+  [85,102,'BEFORE_RESTORE'],[86,50,'BEFORE_SCHEMA2_RESTORE'],[88,132,'MIGRATION_AND_ROW_PRESERVATION'],
+  [89,92,'MIGRATION_RECORD'],[90,110,'REPLAY_REJECTION'],[91,117,'TIMEOUT_RESET'],[92,49,'AFTER_SCHEMA2'],
+  [94,269,'BODY_PINS_READ'],[95,122,'BODY_PINS_COMPARE'],[96,416,'CAS_ACL_READ'],[97,96,'CAS_ACL_COMPARE'],
+  [98,145,'FIXTURE_NAME'],[99,122,'FIXTURE_INSERT'],[104,70,'FIXTURE_WRITE'],[105,110,'NORMAL_CHECKPOINT_SAVE'],
+  [106,110,'FIXTURE_SOURCE_PRESERVED'],[108,100,'FIXTURE_I'],[109,91,'FIXTURE_C'],[110,100,'FIXTURE_T_PARTS'],
+  [111,136,'FIXTURE_PAIR_COUNTS'],[112,100,'FIXTURE_REFERENCE'],[114,63,'ISSUED220_FIXTURE'],
+  [115,86,'KB_CURRENT_FIXTURE'],[116,84,'KB_FUTURE_FIXTURE'],[117,114,'KB_CHANGED_FIXTURE'],
+  [118,162,'PROJECTION_READ'],[119,160,'WHOLE_PROJECTION_COMPARE'],[120,158,'CURRENT_VALID'],
+  [121,158,'CHANGED_VALID'],[122,72,'CHANGED_DIFFERENT'],[142,300,'CAS_EXECUTE'],
+  [143,102,'CAS_RESULT'],[144,132,'CAS_DISPOSITION_VERSION'],[146,162,'CAS_REFUSAL_PRESERVED'],
+  [147,120,'CAS_UPDATED_OWNER'],[150,224,'HISTORICAL_FAMILIES'],[151,162,'SOURCE_FILE_PINS'],
+  [152,95,'ACCOUNTS_ORIGINALS_PRESERVED'],[153,133,'FINAL_SCHEMA2_OWNER'],[154,142,'FINAL_ROOT_IDENTITY'],
+]);
+const NATIVE_KNOWLEDGE_WRAPPERS=new Set([50,51,52,53,54,64,66,68,69,71,99]);
+const NATIVE_KNOWLEDGE_CASES=Object.freeze({
+  'same-old':'SAME_OLD','idempotent-before-version':'IDEMPOTENT_BEFORE_VERSION',
+  'changed-old':'CHANGED_OLD','changed-current':'CHANGED_CURRENT','wrong-version':'WRONG_VERSION',
+  newer:'NEWER',older:'OLDER',role:'ROLE',acl:'ACL',receipts:'RECEIPTS',
+  'candidate-receipt':'CANDIDATE_RECEIPT','candidate-history':'CANDIDATE_HISTORY',
+  unpaired:'UNPAIRED','mixed-family':'MIXED_FAMILY',
+});
+export function nativeKnowledgeAssertionSite(error) {
+  const unknown={knowledgeSite:'UNKNOWN',knowledgeLine:null,knowledgeColumn:null,
+    knowledgeCaller:'UNKNOWN',knowledgeCase:'UNKNOWN'};
+  try {
+    const stack=error?.stack;
+    if(typeof stack!=='string'||stack.length>32768)return Object.freeze(unknown);
+    const url=new URL('./assistant-knowledge-native-postgres.mjs',import.meta.url).href;
+    const escaped=url.replace(/[.*+?^\${}()|[\]\\]/g,'\\$&');
+    const frame=new RegExp('^    at (?:async )?(?:[^()\\r\\n]{1,120} \\()?'+escaped+':([1-9][0-9]{0,3}):([1-9][0-9]{0,3})\\)?$');
+    const found=[];
+    for(const line of stack.split('\n')) {
+      const match=frame.exec(line);if(!match)continue;
+      const number=Number(match[1]),column=Number(match[2]);
+      const row=NATIVE_KNOWLEDGE_SITES.find(value=>value[0]===number&&column<=value[1]);
+      if(!row){if(!found.length)return Object.freeze(unknown);break;} // Never replace an unknown first frame with a later known one.
+      let site=row[2];
+      if(number===143)site=column<45?'CAS_SQLSTATE':'CAS_STORED_VERSION';
+      found.push({line:number,column,site});
+    }
+    if(!found.length)return Object.freeze(unknown);
+    const first=found[0];
+    const caller=found.slice(1).find(value=>!NATIVE_KNOWLEDGE_WRAPPERS.has(value.line));
+    let caseName='UNKNOWN';
+    if([143,144,146,147].includes(first.line)) {
+      try {
+        const message=error?.message;
+        if(typeof message==='string') {
+          // Node appends a generated diff after LF LF. Read only the bounded
+          // first line and its exact separator, never inspect or emit the diff.
+          const prefix=message.slice(0,64),newline=prefix.indexOf('\n');
+          const name=newline<0?prefix:prefix.slice(0,newline);
+          const separated=newline>=0&&prefix.slice(newline,newline+2)==='\n\n'
+            &&message.length>newline+2&&prefix[newline+2]!=='\n'&&prefix[newline+2]!=='\r';
+          if(Object.hasOwn(NATIVE_KNOWLEDGE_CASES,name)&&(message===name||separated))caseName=NATIVE_KNOWLEDGE_CASES[name];
+        }
+      }catch{/* No diagnostic getter may replace the original failure. */}
+    }
+    return Object.freeze({knowledgeSite:first.site,knowledgeLine:first.line,knowledgeColumn:first.column,
+      knowledgeCaller:caller?.site??'UNKNOWN',knowledgeCase:caseName});
+  } catch {return Object.freeze(unknown);}
+}
+
+// Source-test failure context only. Never emit assertion message/actual/
 // expected/stack, SQL text, payloads or credentials. The first failure wins.
 export function createNativePostgresFailureRecorder(emit = value => console.error(JSON.stringify(value))) {
   const cases = new Set(['SETUP','ISSUED213','ISSUED220','BEFORE_GUARD','MIGRATION',
@@ -82,7 +161,8 @@ export function createNativePostgresFailureRecorder(emit = value => console.erro
       let code;try{code=error?.code;}catch{code=null;}
       const errorCode=['ERR_ASSERTION','ENOENT','EACCES','EPERM','ETIMEDOUT','ENOBUFS'].includes(code)?code:'UNKNOWN';
       first=Object.freeze({kind:'NATIVE_POSTGRES_FIRST_FAILURE',phase,case:caseName,caseIndex,
-        category:errorCode==='ERR_ASSERTION'?'ASSERTION_FAILED':'NATIVE_FAILURE',errorCode,sqlState});
+        category:errorCode==='ERR_ASSERTION'?'ASSERTION_FAILED':'NATIVE_FAILURE',errorCode,sqlState,
+        ...(phase==='KNOWLEDGE'&&errorCode==='ERR_ASSERTION'?nativeKnowledgeAssertionSite(error):{})});
       try{emit(first);}catch{/* Diagnostic failure must not replace the original failure. */}
       return first;
     },
