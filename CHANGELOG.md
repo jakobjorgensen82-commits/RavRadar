@@ -1,5 +1,7 @@
 ## 4.0.576 — lokal statistikpræference med serverrevision, 14. oktober 2026
 
+PR #601's første kildekontrol stoppede i en forældet optælling af databasekommandoer. Statistikforløbet har to ekstra skrivefri genkontroller. Kildekontrollen kræver nu præcis fire afgrænsede dry-run-læsninger, de konkrete konto-/statistikgrene i rigtig rækkefølge og fortsat kun én apply. Den normale lokale produktkritiske kontrol består; en ny præcis GitHub-/PostgreSQL-kontrol afventer. Ingen produktionsændring.
+
 Status ved sammensætningen den 14. oktober 2026 kl. 09.30: PR #600 er leveret på main 9fe90320. Det kontrollerede forløb 38527571595/1 afsluttede kl. 09.21.12 dansk tid: originalkontrollen bevarede alle 673 dele og 11 originalfiler, den fulde plan blev kontrolleret før skrivning, kun 220 blev installeret, og database-, turbindings- og checkpointgenlæsningen bestod. Edge og Pages blev sprunget over. Én normal vejrhentning 38528682729 blev kvitteret kl. 09.29.45 og kører endnu; ny offentlig strøm, strømhukommelse og score er ikke verificeret. Cron er midlertidigt pauset med uændret plan. Statistik230 er ikke installeret. Ældre udsagn nedenfor om, at 220 ikke er installeret, er dateret historik og erstattes kun på dette statuspunkt.
 
 - Forbered atomisk serverrevision: frisk ON kan ikke overhale nyere OFF; gammelt revisionsløst ON afvises. Klient og UI bevarer kontoejer, logout og ukendt skriveudfald.

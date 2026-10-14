@@ -1,5 +1,9 @@
 ## 14. oktober 2026 — statistik230 samlet lokalt, ikke installeret
 
+- [x] Find første PR #601-kildefejl i den faktiske log; den gamle databasekommando-optælling dækkede ikke de to nye dry-run-læsninger.
+- [x] Bevar præcis én apply og prøv den afgrænsede fire-læsnings-/række-/opt-in-kontrol i den normale lokale produktkritiske kildegate.
+- [ ] Bestå ny præcis GitHub-/PostgreSQL-kontrol før merge og installation. Ingen produktionsændring er udført.
+
 Status ved sammensætningen den 14. oktober 2026 kl. 09.30: PR #600 er leveret på main 9fe90320. Det kontrollerede forløb 38527571595/1 afsluttede kl. 09.21.12 dansk tid: originalkontrollen bevarede alle 673 dele og 11 originalfiler, den fulde plan blev kontrolleret før skrivning, kun 220 blev installeret, og database-, turbindings- og checkpointgenlæsningen bestod. Edge og Pages blev sprunget over. Én normal vejrhentning 38528682729 blev kvitteret kl. 09.29.45 og kører endnu; ny offentlig strøm, strømhukommelse og score er ikke verificeret. Cron er midlertidigt pauset med uændret plan. Statistik230 er ikke installeret. Ældre udsagn nedenfor om, at 220 ikke er installeret, er dateret historik og erstattes kun på dette statuspunkt.
 
 - LOKAL KILDE: 19 funktionelle blade med én ny append-only 230-migration; de 58 ældre SQL-filer og C69/I71/T bevares.
