@@ -1,3 +1,13 @@
+## Aktuelt stop i den historiske checkpointlæser — 14. oktober 2026
+
+Den afgrænsede kalderrettelse består nu faktisk hele den normale lokale 673-dels prøve efter en ægte rød reproduktion i det uændrede LOAD_TARGET-kald. Begge gamle rollback-/warmup-forløb, de 118 offentlige timer pr. forløb og alle gamle negative tilfælde består uden skip. Nye nøgleordens-, S-værdi-/checksum- og B-byteprøver bevarer originalerne og afviser reelle ændringer. Tidlig kildekontrol, håndbog og RDKS består. Dette er kildeforberedelse; fuld præcis Linux/PostgreSQL, installation og ny offentlig generation afventer stadig.
+
+PR #599 er præcist source-/PostgreSQL-verificeret og merget som main 76cf31e4. Den særskilte skrivefri originalkontrol stoppede i OLD_ISSUED_LOADER/LOAD_TARGET. SQL og alle efterfølgende Edge-/publiceringstrin blev faktisk sprunget over. 220 og den nye numeriske strømfortolknings offentlige effekt er fortsat ikke installeret/verificeret.
+
+Den eksisterende normale 673-dels prøves genuine gamle læser har faktisk afvist en semantisk identisk kontrolfil, hvis JSON-objektfelter var nøgleomordnet. PostgreSQLs jsonb bevarer ikke denne rækkefølge. Den konkrete kaldersikkerhed kræver den uændrede gamle producent fra autentisk B og fuld lighed med hele autentificeret S før historisk læsning. Originalbytes, arrays, alle værdier/checksums, bindinger, pointer og versioner bevares. Dette lokale kontraktfund er ikke i sig selv bevis for den præcise hosted indre fejl. Se håndbog 89.224 og privat checkpoint.
+
+Den nye vejrkildes tidlige databasekontrol kræver den endnu uinstallerede binding; normal vejrhentning må ikke startes blindt. Ejeren accepterer nogle timers udsættelse for strømrettelsen. Cron er fortsat midlertidigt pauset med uændret plan. Øvrige emner må ikke forsinke normalvejrets sikre genoptagelse. Alle fem mål og fristen 18. oktober består; ældre afventende 599-kildestatus nedenfor er dateret historik på netop disse punkter.
+
 ## Faktisk levering og åben strømoriginalkontrol — 14. oktober 2026
 
 PR #599's første præcise sourcekontrol stoppede i en gammel literalassertion for Edge-trinenes if-prefix. Den nye skrivefri diagnosebetingelse har ikke fjernet den tidligere selvstændige Edge-afgrænsning; den ældre test skulle kræve præcis begge betingelser. Den korrigerede hele normale workflowprøve består lokalt. Den nye diagnose-/Bash-prøve har faktisk kørt i Linux uden skip, men PostgreSQL og sourcebevis blev sprunget over efter sourcefejlen. Et nyt head kræver sin egen fulde præcise kontrol. Den tidligere hosted originalafvisnings årsag er fortsat ukendt, og der er ingen ny SQL-/Edge-/vejrhentningslevering.

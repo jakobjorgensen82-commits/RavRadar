@@ -1,3 +1,15 @@
+## 89.224 Gemte originaler skal kunne kontrolleres efter databasetransport
+
+Den minimale kalderrettelse har nu faktisk bestået hele den eksisterende normale lokale 673-dels prøve efter en rød reproduktion i den gamle kalder. Begge rollback-/warmup-forløb, 118 offentlige timer pr. forløb og alle gamle negative tilfælde består uden skip. Ændret nøgleorden accepteres kun efter fuld B/S-lighed; ændrede værdier, checksums og originale bytes afvises fortsat. Tidlig kildekontrol og RDKS består. Dette er ikke endnu præcis ny Linux/PostgreSQL, hosted installation eller offentlig effekt.
+
+**Kort fortalt:** Strømrettelsens kode er kontrolleret, men databaseopdateringen stopper stadig i læsningen af det gemte scorecheckpoint. Den kontrol skal bringes på plads uden at ændre eller bortforklare de gemte data.
+
+PR #599 har faktisk bestået præcis source/PostgreSQL og er merget som main 76cf31e4. Den efterfølgende skrivefri kontrol afgrænsede stoppet til den gamle checkpointlæsers LOAD_TARGET. Alle senere SQL-, Edge- og publiceringstrin blev sprunget over; 220 er fortsat ikke installeret, og den numeriske strømrettelses effekt i nye generationer er ikke offentligt bevist.
+
+Den gamle læser er følsom over for rækkefølgen af JSON-objektets felter: den normale lokale 673-dels prøves genuine gamle læser har faktisk afvist en kontrolfil med identiske strukturerede værdier, men ændret nøgleorden. PostgreSQLs jsonb gemmer ikke denne rækkefølge. Dette kontraktfund er endnu ikke bevis for den præcise hosted indre fejl. Kaldersnittet skal bruge den genuine gamle producent fra autentisk B og kræve fuld lighed med hele autentificeret S, før den historiske læser bruges. Originalbytes, arrays, alle værdier og checksums, bindinger, pointer og versioner bevares; ingen gamle data får nyt kildebevis.
+
+Den normale vejrhentnings tidlige databasekontrol kræver den nye binding. Ejeren accepterer nogle timers udsættelse for først at få strømrettelsen på plads. Cron er midlertidigt pauset med uændret plan. Efter præcis kontrol kræves faktisk installation/genlæsning, en ny offentlig generation og kontrol af strøm, strømhukommelse og score. Statistik, assistentviden og den isolerede SOURCE-revision må ikke holde normalvejr tilbage. Ingen hovedmål er dermed færdigt.
+
 ## 89.223 Første fejl skal bevares uden at vise private data
 
 Årsagspakkens første kildekontrol stoppede i en ældre ordret if-prefix-test. Den skal nu kræve præcis både den skrivefri diagnosebetingelse og den bevarede uafhængige Edge-betingelse. Hele den normale workflowprøve består lokalt, og Linux har faktisk kørt den nye diagnose-/Bash-prøve uden skip. Den samlede nye source-/PostgreSQL-kontrol og den skrivefri originaldiagnose mangler stadig; dette er ikke en installeret rettelse af originalafvisningen.

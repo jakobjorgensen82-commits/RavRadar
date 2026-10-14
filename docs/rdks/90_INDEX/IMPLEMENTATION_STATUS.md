@@ -1,3 +1,13 @@
+## 14. oktober 2026 — 599 kildeleveret; historisk transportkant reproduceret
+
+- [x] Bestå præcis source/PostgreSQL, uændret træ og kildebevis for 599; merge samme træ som main 76cf31e4.
+- [x] Afgræns den skrivefri originalkontrol til OLD_ISSUED_LOADER/LOAD_TARGET og bevis alle senere SQL-/Edge-/publiceringstrin sprunget over.
+- [x] Påvis den genuine gamle læsers hash-afvisning af en semantisk identisk, nøgleomordnet kontrolfil i den normale lokale 673-dels prøve.
+- [x] Bestå hele den nye normale lokale prøve med kaldersnittets fulde B/S-lighed før historisk læsning og uændrede originale bytes; ægte RED→GREEN, begge rollback-/warmup-forløb og alle gamle negative tilfælde uden skip. Tidlig kildekontrol, RDKS og håndbog består; Windows' manglende pinned Python-afhængigheder kræver fortsat den præcise GitHub-kontrol.
+- [ ] Bestå præcis ny kildekontrol, installér/genlæs 220 og bevis korrekt strøm, hukommelse og score i en faktisk ny offentlig generation; genoptag cron efter verificeret overgang/drift.
+
+Ejeren accepterer nogle timers udsættelse for først at få strømrettelsen på plads. Øvrige emner må ikke forsinke normalvejret. Se CURRENT_TRUTH og håndbog 89.224; 220, fuld DMI-dækning, SOURCE-G4 og de fem hovedmål er ikke afsluttet.
+
 ## 14. oktober 2026 — leveret turlager, kildeleveret strøm, originalkontrol åben
 
 - PR #599's første source-head stoppede i en ordret gammel if-prefix-assertion. Testen kræver nu præcis diagnoseafgrænsningen og den bevarede Edge-afgrænsning; normal workflowprøve består lokalt. Den nye Linux/Bash-diagnoseprøve er faktisk kørt uden skip. Hele nye source-/PostgreSQL-bevis står fortsat åbent, og ingen installation er gentaget.

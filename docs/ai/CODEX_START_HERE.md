@@ -1,3 +1,11 @@
+## Historisk checkpointlæser og normal vejrhentning — 14. oktober 2026
+
+Den minimale kalderrettelse er nu faktisk afprøvet fra rød til grøn i hele den eksisterende normale 673-dels prøve, inklusive rollback og målt warmup, 118 offentlige timer pr. tilfælde, nøgleomordnet S, ændrede S-værdier/checksums og ændrede B-bytes. Alle gamle negative tilfælde består uden skip. Den tidlige kildekontrol og RDKS/håndbog består; fuld præcis Linux/PostgreSQL og hosted installation er endnu ikke udført på denne nye kilde. Windows' obligatoriske lokale PR-indgang stopper på de allerede dokumenterede manglende pinned Python-afhængigheder; de må ikke erstattes eller bruges til at springe GitHub-kontrollen over.
+
+PR #599 er faktisk merget som main 76cf31e4 efter præcis grøn source/PostgreSQL, uændret træ og kildebevis. Den efterfølgende skrivefri originalkontrol stoppede i OLD_ISSUED_LOADER/LOAD_TARGET; alle SQL-, Edge- og publiceringstrin blev sprunget over. 220 er derfor fortsat ikke installeret. Ejeren accepterer nogle timers udsættelse for først at få strømrettelsen på plads; cron forbliver midlertidigt pauset med uændret plan. Statistik, assistentviden og den isolerede SOURCE-revision må ikke forsinke normalvejrets sikre genoptagelse.
+
+Læs CURRENT_TRUTH og håndbog 89.224. Den normale lokale 673-dels prøves genuine gamle læser har faktisk afvist en semantisk identisk, nøgleomordnet kontrolfil. Kaldersnittet skal genberegne fra autentisk B med den uændrede gamle producent, kræve fuld S-lighed før læsningen og bevare alle originalbytes, checksums, arrays, værdier, pointer og versioner. Dette er ikke bevis for den præcise hosted indre fejl eller ny offentlig strøm-/scoreeffekt.
+
 ## Strømovergangens førskrivningsfejl — 14. oktober 2026
 
 Den første præcise kontrol af årsagspakken i PR #599 stoppede i en ældre workflowtests ordrette forventning om if-linjens begyndelse. Den nye diagnosebetingelse bevarer den uafhængige Edge-afgrænsning, men den gamle test genkendte ikke de to samlede betingelser. Testen kræver nu præcis begge betingelser; hele den normale workflowprøve består lokalt. Linux har faktisk kørt den nye diagnose-/Bash-prøve uden skip. Samlet source og PostgreSQL er ikke bestået af det stoppede head og kræves på ny præcis kilde; ingen ny installation følger af testrettelsen.

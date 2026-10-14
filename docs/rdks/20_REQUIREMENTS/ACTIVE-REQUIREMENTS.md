@@ -1,3 +1,7 @@
+# 14. oktober 2026 — strømrettelse før næste almindelige vejrhentning
+
+Ejeren accepterer nogle timers udsættelse for først at få den numeriske strømrettelse på plads. Den konkrete historiske JSON-transportkant skal lukkes gennem den eksisterende normale 673-dels kalder uden svækkede checksums eller ændrede originaler. Den genuine gamle producent skal bevise fuld autentificeret B/S-lighed før historisk læsning; arrays, værdier, bindinger, pointer og versioner samt alle originalbytes bevares. En genberegnet kontrolfil er aldrig et nyt originalbevis. Installeret/genlæst 220 og faktisk ny offentlig strøm-/hukommelses-/scoreeffekt kræves stadig. Øvrige emner må ikke holde normalvejret tilbage.
+
 # 14. oktober 2026 — præcis strømoriginaldiagnose før ny installation
 
 Efter den faktisk kildekontrollerede PR #598 stoppede 220-originalkontrollen før SQL. Den første fejl skal bevares med faste fase-, kriterie- og årsagskategorier; rå fejltekst, cause, expected/actual, brugerdata og strømværdier må ikke logges. En særskilt default-false skrivefri kontrol må ubetinget udelukke efterfølgende SQL, Edge og offentlig levering. Alle oprindelige byte-, manifest-, kilde-, pointer-, versions- og no-loss-kontroller samt private destinationer består. En kontrolrapport er ikke databevarelses-, installations- eller ny generationsbevis og giver ingen automatisk gentagelse. Faktisk 003-/Worker-levering genbruges; cron skal tilbage til uændret normal plan efter verificeret drift. Se CURRENT_TRUTH og håndbog 89.223.
