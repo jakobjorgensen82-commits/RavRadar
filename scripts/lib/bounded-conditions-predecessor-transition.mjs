@@ -392,6 +392,16 @@ const gridNormalizeSource = value => String(value).replace(/^\uFEFF/, '')
   .replace(/\r\n?/g, '\n')
   .replace(/([?&]v=)\d+\.\d+\.\d+(?=["'])/g, '$1<release-version>');
 
+const CURRENT_GRID_SAMPLING_REVIEWED_PRODUCERS = Object.freeze({
+  // Separate reviewed SOURCE implementations; original-family pins above do not change.
+  '8ff4a5b6f50d3f2d4e177fcf8c55048051266ded1a196151d6adff9427829ce2': 'native-grid-current-only',
+  '242844d0da14fc64ce8ebbf48bdab1e49450822cd193cd231667013e216b160e': 'state-bound-cached-current-history',
+});
+function currentGridSamplingReviewedProducer(source) {
+  return Object.hasOwn(CURRENT_GRID_SAMPLING_REVIEWED_PRODUCERS,
+    gridSha256(gridNormalizeSource(source)));
+}
+
 function currentGridSamplingManifestMatches(manifest, pathKey, count, header, remainder) {
   if (!isObject(manifest) || !Array.isArray(manifest.files)
     || manifest.files.length !== count) return false;
@@ -448,8 +458,7 @@ function currentGridSamplingSourceSuccessorApplies() {
   const checkpoint = fs.readFileSync(path.join(
     PRIVATE_RUNTIME_REPOSITORY_ROOT, 'scripts/ravscore-continuation-checkpoint.mjs',
   ), 'utf8');
-  return gridSha256(gridNormalizeSource(producer))
-    === '8ff4a5b6f50d3f2d4e177fcf8c55048051266ded1a196151d6adff9427829ce2'
+  return currentGridSamplingReviewedProducer(producer)
     && gridSha256(gridNormalizeSource(checkpoint))
       === 'a119e9fff37bfcb7b60174bec97ae4f0a49012f5b5ac40ae57cb79ffbdf8322e';
 }

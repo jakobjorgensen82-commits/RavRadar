@@ -504,7 +504,16 @@ with _grib_read_scope(path, collection, model_run, valid_time, _owned_read) as r
                 guarded,
                 f"{node.func.id} at line {node.lineno} is outside the exact watchdog",
             )
-        self.assertEqual(len(guarded_calls), 7)
+        # The cached-only historical CURRENT replay adds one real transaction.
+        # It is covered by the same exact watchdog requirement above, not a
+        # second decoder-entry exemption beside the unchanged None adapter.
+        self.assertEqual(len(guarded_calls), 8)
+        history_entries = [node for node in tree.body
+                           if isinstance(node, ast.FunctionDef)
+                           and node.name == "replay_cached_current_history_job"]
+        self.assertEqual(len(history_entries), 1)
+        self.assertEqual(sum(node in guarded_calls
+                             for node in ast.walk(history_entries[0])), 1)
 
     def test_asset_supervision_rejects_extra_calls_changed_adapter_and_missing_guard(self):
         source = supervisor.PRODUCER.read_text(encoding="utf-8")
