@@ -1,5 +1,9 @@
 ## 89.227 Mere viden er ikke det samme som offentlig eller ekstern AI
 
+**Kildeopfølgning 14. oktober 2026:** Den første præcise kontrol af videnskandidaten stoppede i fem kildeprøver. De lokale rettelser skelner nu mellem gamle, uændrede kildefaser og den aktuelle vidensfase; en historisk original får ikke ny adgang ved at skifte et navn eller en modelbinding. Den normale readiness kræver hele den præcise migrationsrækkefølge. Gamle kontroller og originalbeskyttelse bevares.
+
+De berørte normale mål består lokalt uden ændring af C73/I75 eller den normale T-kontrakt. Ny samlet kilde-/PostgreSQL-kontrol, faktisk230/schema2 og kontrolleret offentlig videnslevering mangler fortsat. Den separate vejrhentning har faktisk genbrugt delvist godkendt fremgang; det er ikke fuld datakvalitet eller ny offentlig levering. Ekstern AI og den observerede503 er fortsat uafklaret. Alle fem mål til18oktober består. Resten af kapitlet bevares som den daterede førstatus, ikke som en nyere leveringskvittering.
+
 **Kort fortalt:** Den lokale4.0.577-kandidat udvider Spørg RavRadar til456 emner med svar på dansk, tysk og engelsk og forbedrer spørgsmålsforståelsen. Den er endnu ikke offentlig leveret. Normale opfølgninger og den eksterne AI skal stadig prøves på hjemmesiden.
 
 Faglige svar og spørgsmålseksempler følger den faktisk aktuelle RavRadar. Variationer af et spørgsmål er ikke ekstra faglige kilder. Ukendte, private og uvedkommende spørgsmål må ikke give opdigtede fakta, private svar eller fundgarantier. Interne fejl og driftsdiagnoser føjes ikke til brugerens vidensbank. En fast lokal forklaring eller HTTP200 er ikke bevis for fungerende ekstern AI.

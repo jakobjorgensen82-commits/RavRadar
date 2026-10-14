@@ -1,3 +1,10 @@
+## 4.0.577 — lokal sourceopfølgning efter PR #604, 14. oktober 2026
+
+- Ret fem konkrete sourcecases med fasepræcise forventninger og genuine historiske220-kaldere; bevar gamle assertions, historiske SQL-filer og alle aktuelle adgangs-/originalkrav.
+- Lad den normale readiness-forbruger kræve samme komplette ordnede migrationsliste som producenten. Aktuelle skabeloner følger videnskanon; historiske definitionskontroller bevares særskilt.
+- De berørte normale lokale mål og efterfølgende C-/I-kontroller består uden ændring af C73/I75/normalT. Ny samlet exact-head CI/PostgreSQL og offentlig effekt er fortsat åbne.
+- Vejr606 er kildeleveret på main584 efter grøn kontrol; den ene normale vejrhentning kører med faktisk delvis genbrug af gemt fremgang. Det er ikke fuld datakvalitet eller offentlig leveringskvittering.230 og videns577 er ikke installeret, og ekstern AI/503 er ikke afklaret. Alle fem mål består; ældre statusafsnit nedenfor er dateret historik.
+
 ## 4.0.577 — Spørg RavRadar, lokal leveringskandidat, 14. oktober 2026
 
 - Saml den gennemgåede vidensudvidelse: 456 lokale emner med danske, tyske og engelske svar, kontrolleret spørgsmålstilpasning og sikker afgrænsning af ukendt, privat og uvedkommende input. Spørgsmålsvariationer er ikke nye faglige kilder.

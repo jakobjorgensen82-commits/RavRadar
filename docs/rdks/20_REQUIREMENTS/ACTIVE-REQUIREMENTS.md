@@ -1,3 +1,9 @@
+# 14. oktober 2026 — faktisk kildebevis og genoptagelse fra checkpoint
+
+Efter en fremtidig faktisk vejrfejl og dens rettelse skal genoptagelse fra checkpoint ske fra den dybeste autentiske, gyldigt gemte fase gennem den normale indgang og efter nødvendige kontroller; næste handling kræver fortsat eksisterende konkret autoritet og må hverken overlappe aktiv writer eller springe gates over. Fem604-sourcecases må kun lukkes med genuine fasebundne kalder-/definitionskontroller og ny samlet exact-head source/PostgreSQL, ikke gamle grønne delbeviser, modelaliases, lempede assertions eller ommærkede originaler. Historiske213/220/230 og alle numeriske data/scorer bevares.
+
+Faktisk230/schema2 skal stadig gå forud for videns577; ingen global konto-/Management-afhængighed indføres i vejrhentningen. Delvist genbrugt cache er ikke fuld kvalitet, og lokal456-viden er ikke bevis for ekstern AI eller løsning på503. Alle fem mål til18oktober er åbne. Standard ON er ikke samtykke/anonymitet; samlet statistik, varsling, retention og sletning forbliver inaktive. Disse præciseringer ændrer ikke de tidligere krav eller giver nye produktionskald.
+
 # 14. oktober 2026 — vidensudvidelse med ærlig, fasebundet levering
 
 Spørg RavRadar skal bruge den gennemgåede456-emneviden på dansk, tysk og engelsk og bevare ærlig usikkerhed, privat afgrænsning og normale brugerfunktioner. Variationsstrenge er ikke selvstændige faglige kilder. Interne relative vidensimports skal cachebindes til reel release uden omskrivning af fakta eller eksterne kildelinks. Ukendte spørgsmål og faktisk ekstern AI skal stadig afprøves gennem brugerforløbet; fast svar eller HTTP200 beviser ikke ekstern AI.

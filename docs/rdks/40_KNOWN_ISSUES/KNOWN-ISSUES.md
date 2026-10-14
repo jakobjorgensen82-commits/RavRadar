@@ -1,3 +1,9 @@
+## ÅBEN — samlet577-kilde og offentlig virkning efter604-fejl, 14. oktober 2026
+
+Fem konkrete604-sourcefejl er afgrænset og rettet lokalt: sidste migrationsfase, aktuelle skabeloners kanon, to historiske220-kalderfixtures og readiness-forbrugerens migrationsliste. Gamle assertions, genuine historiske kilder og strenge aktuelle guards bevares; de berørte normale prøver består. Det røde604-head er ikke blevet grønt af lokal rettelse. Ny præcis samlet source/PostgreSQL efter606-arv, faktisk230/schema2, vidensinstallation og offentlige brugerforløb mangler.
+
+Vejr606 er på main584; den ene normale38577766010 kører med faktisk delvis cacheadmission. Fuld DMI-kvalitet, ny offentlig generation og selvstændig normaldrift er ikke udledt.385533 er fejlet; efter en fremtidig faktisk vejrfejl og dens rettelse skal genoptagelse fra checkpoint følge normal indgang fra den dybeste autentiske, gyldigt gemte fase efter nødvendige kontroller, uden overlap eller gateskip. Offentlig503/ekstern AI er stadig uafklaret og må ikke kaldes løst af lokal vidensudvidelse. Alle fem mål til18oktober består. Ingen interne fejl eller private kontroltal føjes til offentlig assistentviden; gamle issues bevares som historik på de udtrykkeligt erstattede punkter.
+
 ## ÅBEN — faktisk levering og brugerafprøvning af videnskandidat577, 14. oktober 2026
 
 456-emneviden, cacheversionering, ny kildebinding og syv-fil-synkronisering er faktisk samlet lokalt efter vejr603/statistikbba9. De fire fixed-issued220-mål og produktkritisk kildegate består; fuld præcis CI/PostgreSQL på den nye kandidat og offentlig levering er endnu åbne. Statistik230 er kildegrøn, men ikke installeret. Den nye metadataovergang må ikke leveres før faktisk230/schema2 og original-/historik-/no-loss-/writerkontroller.

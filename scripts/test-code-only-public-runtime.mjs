@@ -1134,11 +1134,25 @@ userdataTest('current220 remains a separate NEW-hour route, never an issued213 s
     expectedZoneCount: 210, expectedPartCount: 673, privatePayloadIncluded: false };
   const modelRoute = userdataStep('Preserve the protected 11Z and 15Z pair for the next normal weather run');
   assert.ok(modelRoute.code);
+  // KB is not an issued220 runtime: its source-only transition must stay absent.
+  assert.equal(await buildCurrentGridSamplingOriginalRestoreExpectation({
+    sourceDescription:controlledOriginal,targetReferenceAt:controlledOriginal.productionReferenceAt,
+    now:'2026-10-13T12:10:00.000Z'}),null);
+  const {createIssuedCurrentGridReceiverFixture}=await import('./lib/current-grid-issued-receiver-test-fixture.mjs');
+  const issued=await createIssuedCurrentGridReceiverFixture();
+  try {
+  const historicalSteps=[...issued.workflowSource.matchAll(/      - name: ([^\n]+)\n([\s\S]*?)(?=      - (?:name:|uses:)|$)/g)];
+  const historicalStep=historicalSteps.find(match=>match[1]===modelRoute.name);assert.ok(historicalStep);
+  const historicalCode=/          node --input-type=module <<'NODE'\n([\s\S]*?)          NODE/.exec(historicalStep[2])?.[1]?.replace(/^          /gm,'');
+  assert.equal(modelRoute.code,historicalCode,'The actual normal NEW-hour guard stays whole issued220-identical');
+  const {buildCurrentGridSamplingOriginalRestoreExpectation}=issued.grid;
+  const {isLatestUnpairedWeatherGeneration}=issued.archive;
   await assert.rejects(userdataEvaluate(modelRoute.code, {
     fs: { readFileSync: () => JSON.stringify(controlledOriginal) },
     process: { env: { RUNNER_TEMP: '/synthetic' } },
     isLatestUnpairedWeatherGeneration, buildCurrentGridSamplingOriginalRestoreExpectation,
   }), /Current-grid source succession requires the next normal NEW-hour weather run/);
+  } finally {await issued.close();}
   assert.ok(userdataWorkflow.indexOf('- name: ' + modelRoute.name)
     < userdataWorkflow.indexOf('- name: Require originals before the pending assistant binding'));
 });

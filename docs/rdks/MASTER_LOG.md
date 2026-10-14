@@ -1,3 +1,11 @@
+# 14. oktober 2026 — faktisk604-kildefejl og genoptagelse fra checkpoint
+
+Ejerens konkrete krav er genoptagelse fra checkpoint efter en fremtidig faktisk vejrfejl og dens rettelse: fortsæt fra den dybeste autentiske, gyldigt gemte fase gennem den normale indgang, efter nødvendige kontroller og uden overlap eller gateskip. Vejrfejlen har fortsat prioritet; upåvirket lokal assistentforberedelse må ikke overlappe produktionswriteren eller give nye log-/data-/installationskald.606 er faktisk kildeleveret på main584 efter grøn385734; den ene normale38577766010 kører. Genbrug af gemt fremgang er faktisk, men kun delvist godkendt og ikke fuld DMI-kvalitet/publicering. Den tidligere385533 er fejlet. Private cacheidentiteter og kontroltal forbliver i checkpointet.
+
+PR #604 viste fem konkrete sourcefejl. Den lokale syvbladssamling retter aktuelle kanon-/migrationsforventninger, bevarer gamle220-timeout-/definitionskrav, bruger genuine udstedt220-kilde til historiske receiverprøver og forbinder readiness med hele den præcise ordnede migrationsliste. De berørte normale mål samt C/I-kontroller og syv hele afterpins består; C73/I75/normalT og historiske SQL er uændrede. Parserfejlen i det første private prøveforslag og den efterfølgende pakkeformatfejl er bevaret som fejl, ikke omdøbt til beståede kørsler. Ingen adfærdstest er gentaget for ren formatreparation.
+
+Ny exact-head source/PostgreSQL efter præcis606-arv, faktisk230/schema2, kontrolleret videnslevering og offentlige/eksterne AI-forløb er fortsat åbne.230 og577 er ikke installeret. Alle fem hovedmål og18oktober-fristen består; ingen ny version, SQL, bindingsberegning eller produktionshandling følger af dette additive dokumentationssnit. Hele den tidligere historik nedenfor bevares.
+
 # 14. oktober 2026 — lokal 4.0.577-vidensbinding efter leveret vejr603-kilde
 
 Samtaledeltaet er indarbejdet uden ny faglig eller privat driftsviden til brugerne: ejeren kræver markant bedre Spørg RavRadar, landsdækkende strømrettelse, færdig revision/brugerdata og selvstændig drift senest18oktober samt afgrænset parallel delegation. Alle fem krav bevares åbne. Nye leverancer må ikke omgå konkrete afvisninger, databevarelse eller aktiv writer.

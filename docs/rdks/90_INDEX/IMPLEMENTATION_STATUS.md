@@ -1,3 +1,14 @@
+## 14. oktober 2026 — afgrænset lokal opfølgning på fem604-sourcefejl
+
+- [x] Bevar de faktiske røde604-cases og ret faseforventningerne uden at ændre historiske SQL-/bindings-/originalkrav.
+- [x] Kontrollér aktuelle skabeloner mod KB-kanon og genuine220-kaldere mod udstedt kilde; bevar gamle assertions og negative afvisninger.
+- [x] Saml readiness-producent og -forbruger om samme fulde ordnede migrationsliste; berørte normale mål og syv hele afterpins består lokalt.
+- [x] Genkontrollér normale C-/I-bygninger efter integration; C73/I75/normalT er uændrede.
+- [ ] Arv606 præcist og bestå ny samlet exact-head source/PostgreSQL før levering. Lokale receiverprøver er ikke Linux/nativebevis.
+- [ ] Installér/verificér230 først og gennemfør videns577's normale original-/historik-/no-loss-/writer-fri levering og offentlige bruger-/AI-prøver.
+
+Separat vejrstatus:606/main584 er kildegrøn;38577766010 er den ene igangværende normale kørsel, med faktisk genbrug af delvist godkendt gemt fremgang, ikke fuld kvalitet eller publiceringsbevis.385533 er fejlet. Efter en fremtidig faktisk vejrfejl og dens rettelse kræves genoptagelse fra checkpoint via normal indgang fra den dybeste autentiske, gyldigt gemte fase efter nødvendige kontroller, uden overlap eller gateskip. Alle fem mål til18oktober er fortsat åbne; statistik, retention og ekstern AI aktiveres eller bevises ikke af denne kildeopfølgning. Tidligere status nedenfor er bevaret historik.
+
 ## 14. oktober 2026 — lokal videnskandidat577 efter faktisk vejr603-kilde
 
 - [x] Integrér faktisk main90ae/603 og statistikbba9 som lokale ancestors uden tab af dokumentationshistorik eller INSTALL-DDL.

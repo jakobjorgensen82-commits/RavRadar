@@ -1,3 +1,11 @@
+## Lokal577 efter faktisk604-sourcefejl — 14. oktober 2026
+
+PR #604/head4a00c170 bestod ikke samlet source: fem konkrete cases krævede rettelse. Den lokale samling bevarer den udstedte220-timeout, kontrollerer aktuelle schema-/INSTALL-definitioner mod den aktuelle videnskanon og bevarer separate hele historiske definitionskontroller. Readiness-producent og -forbruger bruger nu den samme præcise ordnede liste gennem230 og viden. De to historiske220-kalderprøver bruger uændrede genuine c747-Gitblade i testens egen midlertidige mappe; KB-kilden afvises stadig før pointerlæsning som erstatning for220. Ingen modelalias, guardskip eller historisk SQL-omskrivning.
+
+Alle syv funktionelle afterpins er kontrolleret efter lokal integration. De berørte normale mål og faktiske normale C-/I-kontroller består; C73/I75 og hele normalT=a541199142e24abf6798c736d32ae09cf623de1d58687c0ab108a35396fc6ca9 er uændrede. Windows' lokale historiske receiverprøver er ikke Linux-extractor- eller PostgreSQL-bevis. Ny samlet exact-head source/PostgreSQL afventer, og606 skal arves præcist i videnskilden før denne kontrol.
+
+606 er faktisk på main584 efter grøn385734. Den ene normale38577766010 kører; gemt fremgang er faktisk genbrugt med delvis admission. Det er ikke fuld DMI-/kvalitetskontrol eller ny offentlig vejrlevering. Det tidligere385533-forløb er afsluttet med fejl, ikke fortsat live. Efter en fremtidig faktisk vejrfejl og dens rettelse skal genoptagelse fra checkpoint ske gennem den normale indgang fra den dybeste autentiske, gyldigt gemte fase efter nødvendige kontroller, uden overlap eller gateskip.230/schema2 og videns577 er ikke installeret. Den offentlige503 og faktisk fungerende ekstern AI er stadig uafklarede; lokal456-viden er ikke løsningen påviseligt. Alle fem mål er åbne til18oktober, og gamle afsnit bevares som dateret historik på de erstattede statuspunkter.
+
 ## Lokal 4.0.577 er fysisk kildebygget, ikke offentligt leveret — 14. oktober 2026
 
 Den leverede vejrrettelse603/main90ae og statistikbba9 er faktisk lokale ancestors til ECE2-videnskilden. Hele begge dokumentationshistorikker og486 hidtidige webkapitler er bevaret; INSTALLs DDL uden håndbog var identisk mod begge forældre før normal synkronisering. Ny456-emneviden med danske/tyske/engelske svar og den normale importcache-rettelse er samlet, uden privat driftsviden.
