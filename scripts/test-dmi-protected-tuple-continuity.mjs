@@ -455,7 +455,7 @@ for (const value of decoderFreshRows) {
   value.currentUMps += 0.3;
   value.currentVMps += 0.1;
   const source = value.sources.current;
-  source.gridPoint = [8.005, 55];
+  source.gridPoint = [part.waterPoint[0] + 0.005, part.waterPoint[1]];
   source.distanceKm = 0.319;
   source.acquiredAt = time(0);
   source.nativeSteps[0].acquiredAt = source.acquiredAt;
