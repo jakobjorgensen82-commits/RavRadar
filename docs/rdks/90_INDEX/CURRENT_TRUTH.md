@@ -1,3 +1,15 @@
+## Faktisk levering og åben strømoriginalkontrol — 14. oktober 2026
+
+PR #599's første præcise sourcekontrol stoppede i en gammel literalassertion for Edge-trinenes if-prefix. Den nye skrivefri diagnosebetingelse har ikke fjernet den tidligere selvstændige Edge-afgrænsning; den ældre test skulle kræve præcis begge betingelser. Den korrigerede hele normale workflowprøve består lokalt. Den nye diagnose-/Bash-prøve har faktisk kørt i Linux uden skip, men PostgreSQL og sourcebevis blev sprunget over efter sourcefejlen. Et nyt head kræver sin egen fulde præcise kontrol. Den tidligere hosted originalafvisnings årsag er fortsat ukendt, og der er ingen ny SQL-/Edge-/vejrhentningslevering.
+
+PR #597 er kildeleveret på main ca86e157. 003 er faktisk installeret og genlæst i alle ti eksisterende D1-lagre; den eksisterende Worker er derefter opdateret og kontrolleret gennem normale D1-/Edge-/Worker-genlæsninger. Det afslutter disse installationsdele, ikke hele brugerdata-, kontosletnings-, backup- eller statistikopgaven.
+
+PR #598's præcise kildekontrol har faktisk bestået, inklusive rigtig PostgreSQL, alle 673 dele, tre genuine originalfamilier, den hele migrationskilde og 37 native strømovergangstilfælde. Kilden er merget som main a6b7915e. Den efterfølgende 220-installation stoppede i førskrivningskontrollen af originalerne; SQL og alle efterfølgende Edge-trin blev sprunget over. Den præcise årsag er ikke rapporteret af den gamle udlæser og er fortsat ukendt. Dette er hverken en ny vejrhentningsfejl, en installeret numerisk overgang eller ny offentlig strøm-/scoreeffekt.
+
+Den afgrænsede opfølgning skal bevare første fejl og rapportere kun faste fase-, kriterie- og årsagskategorier. Rå message, cause, expected/actual, brugeroplysninger og strømværdier må ikke logges. En særskilt default-false skrivefri originalkontrol skal ubetinget udelukke SQL, Edge og offentlig levering; dens udfald giver ingen automatisk installationsgentagelse. Alle oprindelige læsninger, originalvalidatorer, byte-/manifest-/pointer-/versionskontroller og private destinationer består. Ingen historiske originaler genforsegles eller får nyt kildebevis.
+
+Cron er faktisk midlertidigt pauset og genlæst med uændret firetimersplan. Den skal genaktiveres efter den rettede installations- og normale driftskædes faktiske verifikation. Den eksisterende offentlige 4.0.576/213-generation står uændret; strøm220, ny generation, SOURCE-G4, statistik230, vidensudvidelsen og samlet selvstændig drift er fortsat åbne. De ældre statusafsnit nedenfor er kun erstattet på disse konkrete punkter.
+
 ## Installationskontrol med historisk kilde og nøglefrie offline prøver — 14. oktober 2026
 
 PR #596 er kildeleveret efter præcis grøn Linux- og PostgreSQL-kontrol. Den efterfølgende 003-installation stoppede før nogen ekstern skrivning: det normale installationsjob manglede historisk Git-kilde til arkivprøverne, og en offline prøve arvede en Supabase-adgangsnøgle. Alle efterfølgende SQL-, D1- og Worker-trin blev sprunget over; dette var ikke en ny vejrhentning eller et datatab.

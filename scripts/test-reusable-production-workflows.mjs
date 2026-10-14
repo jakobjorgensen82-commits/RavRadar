@@ -736,7 +736,8 @@ console.log('Reusable production workflow interface and failure contracts passed
   for (const name of ['Reconfirm exact main before assistant Edge deployment',
     'Deploy only the exact RavRadar assistant Edge function',
     'Verify exact backend and assistant readback without weather or Pages'])
-    assert(indentedBody(binding, '      - name: ' + name).includes("if: steps.integrated-implementation.outputs.defer_edges != 'true'"));
+    assert(indentedBody(binding, '      - name: ' + name).includes("if: inputs.diagnose_current_grid_original != true && steps.integrated-implementation.outputs.defer_edges != 'true'"),
+      'Read-only diagnosis must exclude Edge while preserving the independent current-grid floor');
 
   const { assertCurrentGridEdgeArtifact } = await import('./lib/production-workflow-sources.mjs');
   const { sha256CanonicalJson } = await import('./ravscore-operational-pages-recovery.mjs');

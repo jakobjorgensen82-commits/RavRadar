@@ -1,3 +1,11 @@
+## Strømovergangens førskrivningsfejl — 14. oktober 2026
+
+Den første præcise kontrol af årsagspakken i PR #599 stoppede i en ældre workflowtests ordrette forventning om if-linjens begyndelse. Den nye diagnosebetingelse bevarer den uafhængige Edge-afgrænsning, men den gamle test genkendte ikke de to samlede betingelser. Testen kræver nu præcis begge betingelser; hele den normale workflowprøve består lokalt. Linux har faktisk kørt den nye diagnose-/Bash-prøve uden skip. Samlet source og PostgreSQL er ikke bestået af det stoppede head og kræves på ny præcis kilde; ingen ny installation følger af testrettelsen.
+
+Læs CURRENT_TRUTH's nye front og håndbog 89.223. PR #597 er nu faktisk fulgt af 003-kvittering i alle ti D1-lagre og opdatering/genlæsning af den eksisterende Worker. PR #598 har bestået præcis Linux/PostgreSQL og er kildeleveret på main a6b7915e. Strøm220-installationen stoppede derefter i originalkontrollen før SQL; alle efterfølgende database-/Edge-trin blev sprunget over. Den numeriske overgang er ikke installeret eller offentligt verificeret.
+
+Næste afgrænsede rettelse bevarer den oprindelige fejl gennem faste fase-/kriterie-/årsagskategorier, uden rå fejldata. En særskilt, som udgangspunkt fravalgt skrivefri kontrolvej må ikke kunne installere SQL, Edge eller offentlig kode. Alle oprindelige databevarelses-, bindings- og writer-kontroller består. Cron er faktisk gemt og genlæst som midlertidigt pauset; tidsplanen er uændret og skal genaktiveres efter verificeret normaldrift. Detaljer og næste handling ligger i det private checkpoint. Tidligere afventende 003-/Worker-/598-status nedenfor er dateret historik, ikke den aktuelle status.
+
 ## Installationskontrol med historisk kilde og nøglefrie offline prøver — 14. oktober 2026
 
 PR #596 er kildeleveret efter præcis grøn Linux- og PostgreSQL-kontrol. Den efterfølgende 003-installation stoppede før nogen ekstern skrivning: det normale installationsjob manglede historisk Git-kilde til arkivprøverne, og en offline prøve arvede en Supabase-adgangsnøgle. Alle efterfølgende SQL-, D1- og Worker-trin blev sprunget over; dette var ikke en ny vejrhentning eller et datatab.
