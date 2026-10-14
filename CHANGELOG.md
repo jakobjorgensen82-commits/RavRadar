@@ -1,3 +1,8 @@
+## 4.0.576 — bølgeforvalg uden ubrugt strømkrav, 14. oktober 2026
+
+- Den indledende Feggesund-kontrol skal kun kvalificere bølger og må ikke kræve nyt strøm-gitterbevis før det faktiske strømvalg. Den normale score-, strømhukommelses-, native-hold- og replaykontrol bevares; de 118 scoretimer og tre ekstra vandstandstimer ændres ikke.
+- Den sidste normale vejrhentning stoppede i netop dette forvalg før offentlig levering. Dette afsnit beskriver en kildekandidat, ikke gennemført rettelseslevering, cachegenbrug eller ny prognose. Gamle originaler, offentlig historik, kildeprioritet, scoreformel og administratorpunkter bevares. Se håndbog 89.228.
+
 ## 4.0.576 — strømguard ved faktisk forbrug, 14. oktober 2026
 
 - Genbrug faktisk installeret/genlæst220 med bevarede originaler efter PR #600. Den næste normale vejrhentning fejlede i ikke-strømplanen før offentlig levering; gammel prognose bevares.

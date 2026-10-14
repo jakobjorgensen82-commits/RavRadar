@@ -5,6 +5,13 @@
   "updatedAt": "2026-10-14",
   "sections": [
     {
+      "id": "wave-preflight-component-use-boundary-2026-10-14",
+      "chapter": "89.228",
+      "title": "Bølgeforvalg skal kun kontrollere bølger",
+      "summary": "Bølgebeviser og strømbeviser har hver deres forbrugskontrol. Den egentlige scorevej bevarer sit strenge gitterkrav.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En indledende kontrol, der kun vurderer bølger, skal ikke kræve bevis for en strømværdi, som den ikke bruger. Før strøm indgår i en ny score eller strømhukommelse, består den separate strenge gitterkontrol.</div><p>Feggesunds forvalg læser de tre kystdeles bølgetupler, kildesammenhæng og tilladte bølgeproxyer over 118 timer. Almindelig bølge- og reservevalidering bevares. Strømdata bliver hverken godkendt, ommærket eller brugt som bølgebevis. Kalderrettelsen ændrer ikke den egentlige scorevej, replay, native-reference, kildeprioritet, geometri, punkter eller fysisk model.</p><p>De tre ekstra private timer beholdes til vandstandens ændring tre timer frem; de er ikke ekstra scoretimer. Normal genoptagelse kan bruge autentificeret, krypteret fremgang, hvis de faktiske originaler, baseline og indholdskontroller passer. Et grønt gemmetrin er ikke bevis for faktisk genbrug.</p><p>Dette beskriver en kildekandidat, ikke en gennemført offentlig rettelse. Præcis kildekontrol, sikker levering og en ny offentlig generation skal stadig dokumenteres. Gamle originaler og offentlig historik bevares. Ingen af de fem hovedopgaver eller den samlede revision er afsluttet her.</p>"
+    },
+    {
       "id": "weather-current-use-boundary-2026-10-14",
       "chapter": "89.226",
       "title": "Strøm kontrolleres, når strømmen faktisk bruges",

@@ -1,3 +1,7 @@
+## Aktiv forbrugsafgrænsning — 14. oktober 2026
+
+Et bølgeforvalg må ikke bruge strøm-gitterkravet som generel materialiseringsgate. Den afgrænsede undtagelse gælder kun Feggesunds bølge-only kalder, ikke faktisk strøm i score, memory, native-hold eller anvendt replayhistorik. Bevar almindelig bølgevalidering, alle originaler og 118/T+3-horisonten. Ingen ny producer-/modelbinding, provenance, pruning eller rå vejrdata i logs. Samme normale genoptagelse skal selv bevise faktisk cachevalg, restore og admission; et grønt SAVE-trin er ikke genbrug.
+
 # AI operating rules
 
 ## Strømguardens forbrugsgrænse — 14. oktober 2026

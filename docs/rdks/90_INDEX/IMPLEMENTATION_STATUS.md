@@ -1,3 +1,12 @@
+## Akut status — Feggesunds bølgeforvalg, 14. oktober 2026
+
+Lokalt gennemført: trelinjers kalderdelta, normal regression med originale121timer/354bølgepositioner og fortsat streng afvisning af ukvalificeret strøm. Hele berørte normalmål består4/4 og21/21, Feggesund-proxy og tidlig sourcegate består. Model-/bindingsfiler er uændrede. Dette er ikke eksakt GitHub-/PostgreSQL eller offentlig levering.
+
+- Faktisk normal38553389373/1 er terminalFAIL efter gennemførte leverandørtrin; ingen ny offentlig prognose eller deploy.
+- Konkret første årsag: wave-onlypreflight arver strict-current-flaget. Minimal kalderrettelse og relevant normal regression forberedes; faktisk score-/memory-/native-/replaykontrol består.
+- Source603's scalar- og 118-score/T+3-afgrænsninger er verificeret korrekte. Originaler, model, geometri og kildeprioritet ændres ikke af det nye fix.
+- Præcis CI, merge/levering, normal genoptagelse, faktisk restore/save/upload/deploy og ny offentlig strøm/score/coverage er åbne. CronOFF med uændret plan. Alle fem hovedmål er åbne.
+
 ## 14. oktober 2026 — 220 installeret; ikke-strømplan spærrer ny vejrgeneration
 
 - [x] Kildelever PR #600 og installér/genlæs 220 med alle 673 dele og 11 originaler bevaret.
