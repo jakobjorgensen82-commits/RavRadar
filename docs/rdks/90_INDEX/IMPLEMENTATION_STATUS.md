@@ -1,3 +1,18 @@
+## 14. oktober 2026 — kildeleveret PUBLIC; kystdelens strømhistorik er fortsat åben
+
+- [x] Faktisk præcis Linux-/PostgreSQL-kontrol og kildelevering af PUBLIC-sammeoriginal samt præcist krypteret fremskridtsvalg i almindeligt fuldt normalforløb.
+- [x] Faktisk krypteret restore/admission i næste normalforløb samt gemning af nye fremskridt og serverens cachekvittering; dette er ikke næste restore eller offentlig levering.
+- [x] Første faktiske beregningsstop afgrænset til kystdelens strømhistorik; tidligere PUBLIC-stop må ikke genbruges som denne nye stack.
+- [x] Normal lokal kystdelshistorik-/behovsprøve 70 PASS, ingen fejl og ingen skip. Faktisk valgt tilstand, historiske strømendepunkter og normal bro styrer behovet; registry-target, ældning, ægte ledger og reservekomplement bevares. Første sandboxfilfejl og fixturefejl med manglende kørsels-signatur bevares særskilt.
+- [x] Integrér den gennemgåede strøm-only historiske cachelæser og native prøveblade lokalt; syntakskontrol består.
+- [ ] Kør rigtig nativekontrol gennem normal CI; syntakskontrol er ikke nativebevis.
+- [ ] Afklar den ukendte råfiltilgængelighed og bevar alle faktisk nødvendige historiske originalfiler uden falsk provenance, pruning eller blanket guardlempelse.
+- [ ] Bestå ny samlet præcis CI og sikker levering samt faktisk national kapacitet/no-loss, CAS, Pages og ny offentlig generation.
+
+I71/C69/T12, alle SQL, scoreformel, admin/geometri, sourceprioritet, budgetter og ABI er uændrede. SOURCE-kilden er recoverably parkeret/inaktiv; KB/statistik holdes. Cron er pauset med uændret plan. Alle fem hovedmål med frist 18. oktober er åbne. Se håndbog 89.230.
+
+Den gennemgåede historiske strøm-only cachelæser og dens native prøveblade er nu lokalt integreret og består syntakskontrol; rigtig nativeafprøvning er fortsat ikke kørt. Den regionale normale prøve og den nationale producentkæde består lokalt med 673 dele og 118 timer gennem CLI til JavaScript. De tilknyttede lokale Open-Meteo- og kontrolprøver består efter præcis rettelse af prøveinput-headeren for otte mål; de oprindelige fejl bevares. Det er lokale/syntetiske input, ikke bevis for providerdata, national produktionsdrift eller hård databevarelse i næste faktiske generation. Den private 72-timers-/51-timersbehovsbro mapper højst 127 rækker med højst to eksisterende 121-timersvinduer. Tre private slutstøttetimer bevares til den uændrede scalar-T+3-sanitizer; offentlige 118 timer og det normale 121-timersunderlag ændres ikke. Den normale lokale 673-dels CLIprøve består også med nøgleomordnet input og eksklusiv outputoprettelse. Linux/native CI og produktion er fortsat åbne.
+
 ## 14. oktober 2026 — kildeleveret bølgefix, faktisk strømstop og snæver genoptagelseskandidat
 
 - [x] Bestå præcis kilde-/PostgreSQL-kontrol og kildelever PR #606 som main 584e0e19; det er ikke et bevis for ny offentlig vejrlevering.

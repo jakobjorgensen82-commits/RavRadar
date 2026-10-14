@@ -1,9 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { inspectDmiForecastGridSampling } from './lib/dmi-forecast-store.mjs';
+import { assertDmiPartHourlyGridSamplingApplicable } from './lib/ravscore-production-adapters.mjs';
+import { buildNewestValidRavScoreRecoverySources,
+  originalCurrentDecoderHistory } from './lib/ravscore-recovery-source-priority.mjs';
 import { buildDmiForecastHourly } from './lib/dmi-forecast-store.mjs';
 import { buildRavScoreProductionPartSeries, ravScoreOwnerCurrentHistoryStartAt,
   retainOwnerCurrentTransitionOriginal } from './lib/ravscore-production-part-pipeline.mjs';
 import * as productionPipeline from './lib/ravscore-production-part-pipeline.mjs';
+import { planRavScoreCurrentHistoryForPart, buildRavScoreCurrentHistoryDemand }
+  from './plan-ravscore-current-history.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
 import { buildCandidateGRollbackPartScoreSeries } from './lib/ravscore-candidate-g-rollback-runtime.mjs';
 import { buildRavScorePermittedCurrentHistory } from './lib/ravscore-recovery-replay.mjs';
@@ -337,6 +344,9 @@ test('owner transition follows actual normal integrated, checkpoint and exact ac
     const legacySelection = productionPipeline.selectRavScoreProductionInitialState({ part: f.part,
       existingPart: { candidateG: { currentState: candidate } }, targetReferenceAt: at(49) });
     assert.equal(legacySelection.source, 'CANDIDATE_G_MIGRATION');
+    assert.throws(() => planRavScoreCurrentHistoryForPart({ part: f.part,
+      existingPart: { candidateG: { currentState: candidate } }, targetReferenceAt: at(49) }),
+    error => error?.code === 'RAVSCORE_CURRENT_HISTORY_DEMAND_NON_INTEGRATED_ROUTE');
     assert.throws(() => buildRavScoreProductionPartSeries({ part: f.part, zone,
       initialSelection: legacySelection, legacyCandidateGMigrationState: candidate,
       targetReferenceAt: at(49), recoverySources: [], publicHourly: [allowedHourly.at(-1)] }),
@@ -353,6 +363,42 @@ test('owner transition follows actual normal integrated, checkpoint and exact ac
           pointStateInjections: activation ? { [f.part.partId]: pair.integratedState } : {},
           targetReferenceAt: target });
         assert.equal(initialSelection.source, source);
+        const demandInputs = { part: f.part,
+          existingPart: source === 'EXISTING_INTEGRATED' ? { ravScoreModel: { currentState: integrated } } : null,
+          checkpointStates: source === 'INTEGRATED_CHECKPOINT' ? { [f.part.partId]: integrated } : {},
+          pointStateInjections: activation ? { [f.part.partId]: pair.integratedState } : {},
+          targetReferenceAt: target };
+        const demandBefore = JSON.stringify({ demandInputs, candidate, pair });
+        const demand = planRavScoreCurrentHistoryForPart(demandInputs);
+        assert.equal(demand.initialSource, initialSelection.source);
+        assert.equal(demand.initialStateAt, integrated.time);
+        assert.equal(demand.initialStateSha256,
+          `sha256:${createHash('sha256').update(JSON.stringify(integrated)).digest('hex')}`);
+        assert.equal(demand.startAt, at(-3), 'real H48 continuation needs H-3..H48 endpoint support');
+        assert.equal(demand.endAt, target, 'bridge ends at the locked target, not at the old state');
+        assert.equal(demand.samplingContextKey, ravScoreSamplingContextKey(f.part));
+        assert.deepEqual(demand.samplingPoint, f.part.waterPoint);
+        assert.equal(demand.parentZoneId, identity.parentZoneId);
+        assert.equal(demand.zoneId, zoneId);
+        assert.equal(Object.hasOwn(demand, 'state'), false);
+        assert.equal(Object.hasOwn(demand, 'gridSampling'), false);
+        if (!activation) {
+          const bridged = planRavScoreCurrentHistoryForPart({ ...demandInputs, targetReferenceAt: at(120) });
+          assert.equal(bridged.startAt, at(-3), 'no wall-clock 60h clipping at the 72h valid-state boundary');
+          assert.equal(bridged.endAt, at(120));
+          assert.equal((Date.parse(bridged.endAt) - Date.parse(bridged.startAt)) / HOUR, 123);
+          const expired = planRavScoreCurrentHistoryForPart({ ...demandInputs, targetReferenceAt: at(121) });
+          assert.equal(expired.initialSource, 'COLD_START', 'the genuine selector still expires old states');
+          assert.equal(expired.initialStateAt, null);
+          assert.equal(expired.initialStateSha256, null);
+          assert.equal(expired.startAt, at(73), 'normal cold demand is target minus 48h, not a fake state');
+        }
+        assert.throws(() => planRavScoreCurrentHistoryForPart({ ...demandInputs, targetReferenceAt: at(47) }),
+          error => error?.code === 'RAVSCORE_CURRENT_HISTORY_DEMAND_STATE_TIME_INVALID');
+        assert.throws(() => planRavScoreCurrentHistoryForPart({ ...demandInputs,
+          part: { ...f.part, waterPoint: [8.1, 55] } }));
+        assert.equal(JSON.stringify({ demandInputs, candidate, pair }), demandBefore,
+          'planning cannot mutate selected original state, companion, activation, points or bindings');
         const companion = selectCoastalPointCandidateGRollbackContinuation({ partId: f.part.partId,
           part: f.part, initialSelection, pointActivationStatePairs: pairs,
           privateCandidateGContinuation: source === 'EXISTING_INTEGRATED' ? candidate : null,
@@ -375,6 +421,68 @@ test('owner transition follows actual normal integrated, checkpoint and exact ac
       });
     }
   }
+});
+
+test('current-history demand is an exact private acquisition inventory, never a sampling receipt', () => {
+  const part = { partId: 'SYNTHETIC-DEMAND', sourceZoneId: 'DK-B05-17',
+    waterPoint: [8, 55], onshoreDirectionDeg: 90 };
+  const registry = { schemaVersion: 2, enabled: true, partCount: 1, zoneCount: 1,
+    zones: { 'DK-B01-01': [part] } };
+  const input = { registry, conditions: { zones: {} }, checkpoint: { loaded: false },
+    activationPairs: {}, productionReferenceAt: at(79),
+    registrySha256: `sha256:${'a'.repeat(64)}`,
+    sourceHashes: { conditions: null, checkpoint: null, activation: null } };
+  const before = JSON.stringify(input);
+  const demand = buildRavScoreCurrentHistoryDemand(input);
+  assert.equal(demand.kind, 'RAVSCORE_CURRENT_HISTORY_ACQUISITION_DEMAND');
+  assert.equal(demand.demands.length, 1);
+  assert.deepEqual(demand.demands[0], {
+    partId: part.partId, zoneId: 'DK-B01-01', parentZoneId: 'DK-B05-17',
+    entityId: `PART::${part.partId}`, samplingPoint: part.waterPoint,
+    samplingContextKey: ravScoreSamplingContextKey(part), initialSource: 'COLD_START',
+    initialStateAt: null, initialStateSha256: null, startAt: at(31), endAt: at(79),
+  });
+  assert.equal(JSON.stringify(input), before);
+  for (const mutation of [
+    value => { value.registry.partCount = 2; },
+    value => { value.registry.zones['DK-B01-01'].push(copy(part)); value.registry.partCount = 2; },
+    value => { value.registrySha256 = 'unbound'; },
+    value => { value.sourceHashes.unlisted = null; },
+    value => { value.productionReferenceAt = ''; },
+    value => { value.productionReferenceAt = at(79).replace('00:00.000Z', '00:30.000Z'); },
+    value => { value.stateLessRecovery = 'true'; },
+  ]) {
+    const wrong = copy(input); mutation(wrong);
+    assert.throws(() => buildRavScoreCurrentHistoryDemand(wrong));
+  }
+});
+
+test('current-history demand runs after actual activation and before DMI without changing old routes', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES, PRIVATE_RUNTIME_CONTRACT_FILES } =
+    await import('./private-production-runtime-workflow.mjs');
+  const workflow = (await readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url),
+    'utf8')).replaceAll('\r\n', '\n');
+  const name = '      - name: Plan bounded current history from the actual selected continuation\n';
+  assert.equal(workflow.split(name).length - 1, 1);
+  const start = workflow.indexOf(name);
+  const end = workflow.indexOf('      - name: Refresh DMI water-source registry\n', start);
+  const plan = workflow.slice(start, end);
+  assert.ok(workflow.indexOf('      - name: Prepare only an explicitly requested READY point activation\n') < start);
+  assert.ok(workflow.indexOf('      - name: Rebuild centrally reviewed coastal-part sampling points\n') < start);
+  assert.ok(end < workflow.indexOf('      - name: Prepare strict active DMI donor or resumable candidate\n'));
+  assert.ok(end < workflow.indexOf('      - name: Update DMI bulk model cache\n'));
+  assert.ok(plan.includes("steps.weather-source-handoff.outputs.reused != 'true'"));
+  assert.ok(plan.includes("steps.operational-action.outputs.action == 'integrated'"));
+  assert.ok(plan.includes("steps.operational-action.outputs.action == 'integrated-historical-maintenance'"));
+  assert.ok(plan.includes("steps.historical-wave-transition.outputs.required != 'true'"));
+  assert.ok(plan.includes('run: node scripts/plan-ravscore-current-history.mjs'));
+  assert.ok(plan.includes("steps.private-runtime-install.outcome == 'success'"));
+  assert.ok(plan.includes("steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true'"));
+  assert.ok(workflow.includes("DMI_BULK_CURRENT_HISTORY_DEMAND_PATH: ${{ steps.current-history-demand.outcome == 'success' && '.cache/ravscore-current-history-demand.json' || '' }}"));
+  assert.ok(PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.includes('scripts/plan-ravscore-current-history.mjs'));
+  assert.deepEqual(PRIVATE_RUNTIME_CONTRACT_FILES.fullRuntimeContractSha256,
+    ['scripts/lib/private-weather-storage-abi.json']);
 });
 
 test('private current source transition archive survives cold recovery and rejects malformed envelopes', async t => {
@@ -577,6 +685,158 @@ test('private current source transition archive survives cold recovery and rejec
       /Private current source transition archive/);
   });
   assert.equal(JSON.stringify(archive), snapshot, 'archive validation and retention are byte-neutral');
+});
+
+test('strict OWNER history uses qualified same-original decoder association without changing originals', () => {
+  // Synthetic complete native captures, not an ecCodes/provider/production proof.
+  // Construct every variant before projection and snapshots; never repair a captured donor.
+  const hash = value => createHash('sha256').update(value).digest('hex');
+  const sampling = source => ({
+    contractId: 'dmi-native-grid-sampling-v1', elementIndex: 71,
+    gridIndexIdentitySha256: hash('owner-synthetic-message-grid-index-order'),
+    coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1',
+    gridDefinitionSha256: source.gridDefinitionSha256, gridPoint: [...source.gridPoint],
+    fieldSet: [...source.fieldSet], optionalFieldSet: [...source.optionalFieldSet],
+  });
+  const withWeather = row => ({ ...row,
+    currentCoastNormalSpeedMps: row.currentUMps,
+    windSpeedMps: 8, windDirectionDeg: 270, waveHeightM: 1.2,
+    wavePeriodS: 6, waveDirectionDeg: 90, waveProvenance: { status: 'verified' },
+    waterLevelCm: 0, waterLevelTrendCm3h: 0 });
+  const ownerFailure = expectedStatus => error => {
+    assert.equal(error?.code, 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED');
+    assert.equal(error?.samplingStatus, expectedStatus);
+    assert.match(error.stack, /at currentComponent \([^\n]*ravscore-recovery-replay\.mjs:280:\d+\)/);
+    assert.match(error.stack, /at buildRavScorePermittedCurrentHistory \([^\n]*ravscore-recovery-replay\.mjs:494:\d+\)/);
+    assert.match(error.stack, /at transitionOwnerCurrentHistory \([^\n]*ravscore-production-part-pipeline\.mjs:49:\d+\)/);
+    assert.match(error.stack, /at buildRavScoreProductionPartSeries \([^\n]*ravscore-production-part-pipeline\.mjs:529:\d+\)/);
+    return true;
+  };
+  for (const zoneId of ['DK-B01-01', 'DK-B01-02', 'DK-B02-08', 'DK-B02-09',
+    'DK-B02-11', 'DK-B03-01', 'DK-B03-02']) {
+    const old = fixture({ zoneId, collection: 'dkss_nsbs', run: -12,
+      nativeHours: Array.from({ length: 50 }, (_, hour) => hour), target: 49 });
+    old.part.onshoreDirectionDeg = 90;
+    const part = old.part, zone = { id: zoneId, onshoreDirectionDeg: 90 };
+    const identity = dmiExpectedIdentityForPart(part);
+    for (const native of Object.values(old.bulk.zones[identity.entityId].hourly)) {
+      const bytes = Buffer.from('owner-synthetic-original-' + native.time);
+      const source = native.sources.current;
+      Object.assign(source, { contentLengthBytes: bytes.length, assetSizeBytes: bytes.length,
+        contentSha256: hash(bytes), assetIdentitySha256: hash('owner-synthetic-asset-' + native.time) });
+      if (native.time !== at(24)) source.nativeGridSampling = sampling(source);
+    }
+    const corrected = copy(old.bulk);
+    const correctedH24 = corrected.zones[identity.entityId].hourly[at(24)];
+    correctedH24['current-u'] += 0.3;
+    correctedH24['current-v'] += 0.1;
+    correctedH24.sources.current.nativeGridSampling = sampling(correctedH24.sources.current);
+    const project = bulk => verifiedIntegratedPartHourly({ point: part.waterPoint,
+      hourly: buildDmiForecastHourly({ generatedAt: at(0), startAt: at(0), hours: 50,
+        ocean: Object.values(bulk.zones[identity.entityId].hourly).map(row => ({
+          step: row.time, 'current-u': row['current-u'], 'current-v': row['current-v'],
+          provenance: row.sources })) }).hourly }, bulk, identity.entityId, part);
+    const oldHourly = project(old.bulk), correctedHourly = project(corrected);
+    assert.equal(oldHourly.length, 50);
+    assert.equal(inspectDmiForecastGridSampling(oldHourly[24].currentProvenance,
+      'current', at(24), identity).status, 'unknown');
+    assert.equal(inspectDmiForecastGridSampling(correctedHourly[24].currentProvenance,
+      'current', at(24), identity).status, 'coherent');
+    for (const [bulk, row] of [[old.bulk, oldHourly[24]], [corrected, correctedHourly[24]]]) {
+      assert.equal(createProtectedDmiNativeCurrentInspector({ contexts: [bulk] })
+        .inspectOriginals({ part, row }).ok, true, 'both complete synthetic native rows pass the existing original inspector');
+    }
+    const historical = oldHourly.slice(0, 49).map(withWeather);
+    const integratedResult = buildIntegratedPartScoreSeries({ part, zone, hourly: historical });
+    const candidateResult = buildCandidateGRollbackPartScoreSeries({ part, zone,
+      hourly: historical, measuredColdStart: true });
+    const integrated = integratedResult.ravScoreState.continuationState;
+    const candidate = candidateResult.candidateGState.continuationState;
+    assert.equal(integrated.time, at(48));
+    assert.equal(candidate.time, at(48));
+    assert.equal(integrated.currentMemoryReady, true);
+    assert.equal(candidate.transportMemoryReady, true);
+    const initialSelection = productionPipeline.selectRavScoreProductionInitialState({ part,
+      existingPart: { ravScoreModel: { currentState: integrated } }, targetReferenceAt: at(49) });
+    assert.equal(initialSelection.source, 'EXISTING_INTEGRATED');
+    const companion = selectCoastalPointCandidateGRollbackContinuation({ partId: part.partId,
+      part, initialSelection, pointActivationStatePairs: {},
+      privateCandidateGContinuation: candidate, checkpointCandidateGContinuation: null,
+      targetReferenceAt: at(49) });
+    assert.deepEqual(companion.state, candidate);
+    const publicHourly = [withWeather(correctedHourly[49])];
+    assertDmiPartHourlyGridSamplingApplicable(publicHourly, identity.entityId, part);
+    const preserved = { old: old.bulk, corrected, oldHourly, correctedHourly,
+      integratedResult, candidateResult, initialSelection, companion, publicHourly };
+    const snapshot = JSON.stringify(preserved);
+    const fallbackSource = { source: 'deployed-private-runtime',
+      nativeCurrentContexts: [old.bulk], record: { point: part.waterPoint, hourly: oldHourly.slice(0, 49) } };
+    const select = (bulk, rows = project(bulk), previous = fallbackSource) => {
+      const preferredSource = { source: 'progressive-private-dmi',
+        nativeCurrentContexts: [bulk], record: { point: part.waterPoint, hourly: rows } };
+      const before = JSON.stringify({ previous, preferredSource });
+      const selected = buildNewestValidRavScoreRecoverySources({ fallbackSource: previous,
+        preferredSource, protectedPreviousSource: previous,
+        productionReferenceAt: at(49), part });
+      assert.equal(JSON.stringify({ previous, preferredSource }), before,
+        'normal selection must preserve every supplied original and native context');
+      return selected;
+    };
+    const run = recoverySources => buildRavScoreProductionPartSeries({ part, zone,
+      initialSelection, previousCandidateGContinuation: companion.state,
+      targetReferenceAt: at(49), recoverySources, publicHourly, requireNativeGridSampling: true });
+
+    // Qualified PUBLIC H49 cannot qualify the allowed NSBS H24 retained in OWNER history.
+    const unknown = select(corrected, [correctedHourly[49]]);
+    assert.throws(() => run(unknown), ownerFailure('unknown'));
+    assert.equal(JSON.stringify(preserved), snapshot, 'failed strict OWNER entry leaves original scores/states/data unchanged');
+
+    const selected = select(corrected, correctedHourly);
+    const permitted = buildRavScorePermittedCurrentHistory({ part, referenceAt: at(48),
+      sourceRecords: selected, requireNativeGridSampling: true });
+    assert.equal(permitted.length, 49);
+    assert.equal(permitted[0].time, at(0));
+    assert.equal(permitted.at(-1).time, at(48));
+    assert.equal(permitted[24].currentSpeedMps, correctedHourly[24].currentSpeedMps);
+    assert.notEqual(permitted[24].currentSpeedMps, oldHourly[24].currentSpeedMps);
+    const originals = originalCurrentDecoderHistory(selected, permitted, part);
+    assert.ok(originals, 'the genuine invocation-local same-capture association must exist');
+    assert.equal(originals[24].currentSpeedMps, oldHourly[24].currentSpeedMps);
+    const result = run(selected);
+    assert.equal(result.currentSourceDomainTransition.provedCurrentHours, 49);
+    assert.equal(result.currentSourceDomainTransition.unknownCurrentHours, 0);
+    assert.deepEqual(result.currentSourceDomainTransition.originalIntegratedState, integrated);
+    assert.deepEqual(result.currentSourceDomainTransition.originalCandidateGState, candidate);
+    assert.equal(result.ravScoreState.continuationState.currentMemoryReady, true);
+    assert.equal(result.candidateGState.continuationState.transportMemoryReady, true);
+    assert.deepEqual(result.scores.map(row => row.time), [at(49)]);
+    assert.equal(JSON.stringify(preserved), snapshot, 'successful strict transition preserves original history bytes');
+
+    for (const [label, mutate, status, previous] of [
+      ['different-capture', source => { source.contentSha256 = hash('different-owner-original'); },
+        'unknown', fallbackSource],
+      ['null-native-endpoint', source => { source.nativeGridSampling = null; },
+        'unknown', fallbackSource],
+      ['contradictory-native-endpoint', source => { source.nativeGridSampling.gridPoint = [8.01, 55]; },
+        'contradictory', null],
+    ]) {
+      const changed = copy(corrected);
+      mutate(changed.zones[identity.entityId].hourly[at(24)].sources.current);
+      const changedBefore = JSON.stringify(changed);
+      const rows = project(changed);
+      if (label === 'null-native-endpoint') {
+        assert.equal(rows[24].currentProvenance.nativeSteps[0].nativeGridSampling, null);
+      }
+      if (status === 'contradictory') {
+        assert.equal(inspectDmiForecastGridSampling(rows[24].currentProvenance,
+          'current', at(24), identity).status, 'contradictory');
+      }
+      const inputs = select(changed, rows, previous);
+      assert.throws(() => run(inputs), ownerFailure(status), label);
+      assert.equal(JSON.stringify(changed), changedBefore, label + ' must remain unchanged after refusal');
+      assert.equal(JSON.stringify(preserved), snapshot, label + ' must not change protected originals');
+    }
+  }
 });
 
 test('native, interpolated and nearest-edge reproduce unchanged original forecast/source', () => {
@@ -783,4 +1043,147 @@ if (process.env.RAVRADAR_NATIVE_PROOF_BENCHMARK === '1') test('opt-in dense 673 
   console.log(JSON.stringify({ syntheticNativeInspector: { selections: complete,
     elapsedMs: Math.round(performance.now() - started), maximumRssBytes: process.resourceUsage().maxRSS * 1024,
     includesFileDecodeOrRemote: false } }));
+});
+
+test('normal private recovery maps the complete 72h bridge without widening public 121', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const store = await import('./lib/dmi-forecast-store.mjs');
+  const adapters = await import('./lib/ravscore-production-adapters.mjs');
+  const marine = await import('./lib/dmi-marine-run-seam-recovery.mjs');
+  const selection = await import('./lib/weather-component-selection.mjs');
+  const wave = await import('./lib/dmi-wave-tuple-proof.mjs');
+  const continuity = await import('./lib/water-level-continuity.mjs');
+  const protectedCurrent = await import('./lib/protected-dmi-current-context.mjs');
+  const assembly = await import('./lib/protected-live-current-assembly.mjs');
+  const feggesund = await import('./lib/feggesund-wave-proxy.mjs');
+  const recovery = await import('./lib/ravscore-recovery-replay.mjs');
+  const source = (await readFile(new URL('./update-weather.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const fixtureSource = (await readFile(new URL('./test-dmi-protected-tuple-continuity.mjs',
+    import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const slice = (text, first, next) => {
+    assert.equal(text.split(first).length - 1, 1, first + ' must be the actual unique caller');
+    const from = text.indexOf(first), until = text.indexOf(next, from);
+    assert.ok(until > from, next);
+    return text.slice(from, until);
+  };
+  const number = value => typeof value === 'number' && Number.isFinite(value) ? value : null;
+  const scope = { ...store, ...adapters, ...marine, ...selection, ...wave, ...continuity,
+    ...feggesund, createProtectedDmiNativeCurrentInspector,
+    verifiedDmiForecastComponentSource: adapters.eligibleDmiForecastComponentSource,
+    verifiedDmiNativeComponentSource: adapters.eligibleDmiNativeComponentSource,
+    verifiedBulkCurrent: adapters.eligibleBulkCurrent,
+    ravScoreNumber: number, num: number, CURRENT_VECTOR_SEMANTICS_VERSION: 3,
+    RAVSCORE_PUBLIC_FORECAST_HOURS: 118, ACCEPTED_FORECAST_HOURS: 118,
+    SHORT_DMI_WATER_GAP_HOURS: 6, WATER_LEVEL_JUMP_WARN_CM: 35,
+    RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS: recovery.RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS };
+  // Actual producer functions and the actual two recovery-callsite block.
+  // No mapper, sanitizer, selection, original inspector or pipeline is mocked.
+  const normal = Function(...Object.keys(scope),
+    slice(source, 'function zonePoint(', 'function withoutZoneCurrent(')
+    + slice(source, 'function haversineKm(', 'async function readCachedWaterStations(')
+    + slice(source, 'function dmiCollections(', 'async function dmiPosition(')
+    + slice(source, 'const ATOMIC_COMPONENT_TUPLE_KEYS', 'function componentSource(')
+    + slice(source, 'function bulkZoneToForecastRecord(', 'function verifiedFeggesundNeighborSource(')
+    + ';return { bulkZoneToForecastRecord, buildPrivateDmiRecoveryRecord, buildPartDmiForecastWithProtectedRetention };')(
+    ...Object.values(scope));
+  const part = { partId: 'SYNTHETIC-BRIDGE-PART', zoneId: 'DK-B01-01',
+    waterPoint: [8, 55], onshoreDirectionDeg: 90 };
+  const identity = dmiExpectedIdentityForPart(part), zone = { id: part.zoneId, onshoreDirectionDeg: 90 };
+  const feature = { properties: { id: identity.entityId, dataPoint: part.waterPoint } };
+  const factory = Function('part', 'identity', 'time',
+    slice(fixtureSource, 'const vectorSelection =', 'const options =')
+    + slice(fixtureSource, 'const asNative = rows =>', 'const nativeHistorical =')
+    + ';return { row, asNative };')(part, identity, at);
+  const old = factory.asNative(Array.from({ length: 127 }, (_, i) => factory.row(i - 3)));
+  const hash = value => createHash('sha256').update(value).digest('hex');
+  const sampling = value => ({ contractId: 'dmi-native-grid-sampling-v1', elementIndex: 71,
+    gridIndexIdentitySha256: hash('bridge-synthetic-grid-index-order'),
+    coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1',
+    gridDefinitionSha256: value.gridDefinitionSha256, gridPoint: [...value.gridPoint],
+    fieldSet: [...value.fieldSet], optionalFieldSet: [...value.optionalFieldSet] });
+  for (const native of Object.values(old.zones[identity.entityId].hourly)) {
+    const bytes = Buffer.from('bridge-synthetic-original-' + native.time);
+    const current = native.sources.current;
+    Object.assign(current, { contentLengthBytes: bytes.length, assetSizeBytes: bytes.length,
+      contentSha256: hash(bytes), assetIdentitySha256: hash('bridge-asset-' + native.time) });
+    if (native.time !== at(24)) current.nativeGridSampling = sampling(current);
+  }
+  const fresh = copy(old), changed = fresh.zones[identity.entityId].hourly[at(24)];
+  changed['current-u'] += 0.3;
+  changed['current-v'] += 0.1;
+  changed.sources.current.nativeGridSampling = sampling(changed.sources.current);
+  const sanitize = (record, bulk) => verifiedIntegratedPartHourly(record, bulk, identity.entityId, part);
+  const oldDefault = normal.bulkZoneToForecastRecord(feature, old, at(120), null,
+    { startAt: at(-3), expectedIdentity: identity });
+  assert.equal(oldDefault.hourly.length, 121);
+  assert.equal(oldDefault.hourly.at(-1).time, at(117), 'the unchanged default mapper shows the former private gap');
+  const oldHourly = sanitize(oldDefault, old);
+  const initialHistory = oldHourly.filter(row => row.time >= at(0) && row.time <= at(48));
+  assert.equal(initialHistory.length, 49);
+  const integrated = buildIntegratedPartScoreSeries({ part, zone, hourly: initialHistory })
+    .ravScoreState.continuationState;
+  const candidate = buildCandidateGRollbackPartScoreSeries({ part, zone,
+    hourly: initialHistory, measuredColdStart: true }).candidateGState.continuationState;
+  const initialSelection = productionPipeline.selectRavScoreProductionInitialState({ part,
+    existingPart: { ravScoreModel: { currentState: integrated } }, targetReferenceAt: at(120) });
+  assert.equal(initialSelection.source, 'EXISTING_INTEGRATED');
+  assert.equal(initialSelection.state.time, at(48));
+  const companion = selectCoastalPointCandidateGRollbackContinuation({ partId: part.partId, part,
+    initialSelection, pointActivationStatePairs: {}, privateCandidateGContinuation: candidate,
+    checkpointCandidateGContinuation: null, targetReferenceAt: at(120) });
+  assert.deepEqual(companion.state, candidate);
+  const snapshots = JSON.stringify({ old, fresh, integrated, candidate, initialSelection, companion });
+  const callScope = { ...normal, ...protectedCurrent, ...assembly,
+    verifiedIntegratedPartHourly, verifiedBulkCurrent: adapters.eligibleBulkCurrent,
+    buildNewestValidRavScoreRecoverySources,
+    ravScoreOwnerCurrentHistoryStartAt, ravScoreRecoverySourceStartAt: recovery.ravScoreRecoverySourceStartAt,
+    part, zoneId: part.zoneId, initialSelection, generatedAt: at(120), feature,
+    deployedBulkCache: old, historicalDmiBulkCache: null, bulkCache: fresh,
+    bulkId: identity.entityId, partDmiIdentity: identity, liveCurrentPilot: null, componentInputs: {},
+    persistedDmiPartRows: new Map([[part.partId, { hourly: oldDefault.hourly }]]),
+    protectedSameRunDmiRetentions: { current: { SAME_VALUES: 0, DIFFERENT_VALUES: 0 },
+      wave: { SAME_VALUES: 0, DIFFERENT_VALUES: 0 } } };
+  const actualRecovery = Function(...Object.keys(callScope),
+    slice(source, '      const replayStartAt = ravScoreOwnerCurrentHistoryStartAt(',
+      '      let productionSeries;')
+    + ';return { replayStartAt, deployedRecoverySource, progressiveRecoverySource, recoverySources };')(
+    ...Object.values(callScope));
+  assert.equal(actualRecovery.replayStartAt, at(-3));
+  for (const input of [actualRecovery.deployedRecoverySource, actualRecovery.progressiveRecoverySource]) {
+    assert.equal(input.record.hourly.length, 127, '124 private target rows plus three existing scalar support hours');
+    assert.equal(input.record.hourly.at(-1).time, at(123));
+    for (const hour of [118, 119]) {
+      const row = input.record.hourly.find(value => value.time === at(hour));
+      assert.ok(Number.isFinite(row.currentUMps), 'both former missing bridge hours use the actual mapper');
+      assert.ok(Number.isFinite(row.waterLevelTrendCm3h), 'private tail retains the ordinary T+3 counterpart');
+    }
+  }
+  assert.equal(actualRecovery.deployedRecoverySource.nativeCurrentContexts[0], old);
+  assert.equal(actualRecovery.progressiveRecoverySource.nativeCurrentContexts[0], fresh);
+  const permitted = buildRavScorePermittedCurrentHistory({ part, referenceAt: at(48),
+    sourceRecords: actualRecovery.recoverySources, requireNativeGridSampling: true });
+  const originalHistory = originalCurrentDecoderHistory(actualRecovery.recoverySources, permitted, part);
+  assert.ok(originalHistory, 'same captured originals remain associated through the actual priority caller');
+  assert.equal(originalHistory[24].currentSpeedMps, oldHourly.find(row => row.time === at(24)).currentSpeedMps);
+  const publicRecord = normal.bulkZoneToForecastRecord(feature, fresh, at(120), null,
+    { startAt: at(120), expectedIdentity: identity });
+  assert.equal(publicRecord.hourly.length, 121);
+  const publicHourly = sanitize(publicRecord, fresh).slice(0, 1);
+  const result = buildRavScoreProductionPartSeries({ part, zone, initialSelection,
+    previousCandidateGContinuation: companion.state, targetReferenceAt: at(120),
+    recoverySources: actualRecovery.recoverySources, publicHourly, requireNativeGridSampling: true });
+  for (const hour of [118, 119]) assert.equal(result.recovery.hourly.find(row => row.time === at(hour))
+    ?.currentProvenance?.status, 'verified');
+  assert.deepEqual(result.scores.map(row => row.time), [at(120)]);
+  assert.deepEqual(result.currentSourceDomainTransition.originalIntegratedState, integrated);
+  assert.deepEqual(result.currentSourceDomainTransition.originalCandidateGState, candidate);
+  assert.equal(JSON.stringify({ old, fresh, integrated, candidate, initialSelection, companion }), snapshots);
+  assert.deepEqual(normal.buildPrivateDmiRecoveryRecord(feature, fresh, at(120),
+    { startAt: at(120), expectedIdentity: identity }), publicRecord, 'ordinary 121 stays byte-equivalent');
+  for (const startAt of [at(-4), at(121), 'invalid', at(-3).replace('.000Z', 'Z')]) {
+    assert.throws(() => normal.buildPrivateDmiRecoveryRecord(feature, fresh, at(120),
+      { startAt, expectedIdentity: identity }), /DMI_PRIVATE_RECOVERY_WINDOW_INVALID/);
+  }
+  assert.equal(JSON.stringify({ old, fresh, integrated, candidate, initialSelection, companion }), snapshots,
+    'range refusals cannot mutate original donors or the two original states');
 });

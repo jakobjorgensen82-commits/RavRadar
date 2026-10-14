@@ -31,6 +31,7 @@ try:  # Support both ``lib.foo`` tests and direct ``scripts/lib`` imports.
         canonical_time,
         current_attestation_authorization_from_operational_ledger,
         current_source_asset_sha256,
+        current_new_use_partition,
         part_time_pairs_sha256,
         validate_current_operational_availability_ledger,
     )
@@ -47,6 +48,7 @@ except ImportError:  # pragma: no cover - exercised by production-style import.
         canonical_time,
         current_attestation_authorization_from_operational_ledger,
         current_source_asset_sha256,
+        current_new_use_partition,
         part_time_pairs_sha256,
         validate_current_operational_availability_ledger,
     )
@@ -353,10 +355,12 @@ def _normalize_gap_pairs(
     bound_parts: dict[str, dict[str, Any]],
     reference: datetime,
     ledger: dict[str, Any],
+    new_use_complement: list[dict[str, str]] | None = None,
 ) -> tuple[list[dict[str, str]], str]:
     if not isinstance(raw_pairs, list):
         _fail("DMI_GAP_MATRIX_INVALID")
-    complement = ledger.get("operationalComplementPairs")
+    complement = (ledger.get("operationalComplementPairs")
+                  if new_use_complement is None else new_use_complement)
     if not isinstance(complement, list):
         _fail("DMI_COMPLEMENT_INVALID")
     complement_keys: set[tuple[str, str]] = set()
@@ -1115,6 +1119,7 @@ def build_regional_current_operational_evidence(
     locked_reference: Any,
     dmi_gap_pairs: list[dict[str, Any]],
     allow_target_rebinding_as_missing: bool = False,
+    dmi_new_use_projection: dict[str, Any] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Build private dispositions and a separate privacy-safe projection.
 
@@ -1149,8 +1154,15 @@ def build_regional_current_operational_evidence(
     if not isinstance(validated_ledger, dict):
         _fail("LEDGER_ATTESTATION_INVALID")
 
+    new_use_complement = None
+    if dmi_new_use_projection is not None:
+        try:
+            _, new_use_complement = current_new_use_partition(
+                dmi_new_use_projection, ledger=validated_ledger, attestation=dmi_attestation)
+        except (KeyError, TypeError, ValueError):
+            _fail("DMI_NEW_USE_PROJECTION_INVALID")
     gaps, gaps_sha256 = _normalize_gap_pairs(
-        dmi_gap_pairs, bound_parts, reference_dt, validated_ledger
+        dmi_gap_pairs, bound_parts, reference_dt, validated_ledger, new_use_complement
     )
     shadow_header_quarantined = False
     try:

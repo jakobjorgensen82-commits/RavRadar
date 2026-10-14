@@ -2252,3 +2252,174 @@ def current_operational_ledger_ready(
 
 
 verified_native_component_source = complete_native_source_for_hour
+
+
+CURRENT_NEW_USE_CONTRACT_ID = "dmi-current-native-new-use-projection-v1"
+_CURRENT_NEW_USE_FIELDS = frozenset({
+    "schemaVersion", "contractId", "productionReferenceAt", "operationalRangeEndAt",
+    "targetCount", "targetRegistrySha256", "dmiCurrentInputSha256",
+    "dmiLedgerSha256", "dmiAttestationSha256", "originalVerifiedPairCount",
+    "eligiblePairCount", "eligiblePairsSha256", "unknownPairCount", "unknownPairs",
+    "complementPairCount", "complementPairsSha256", "projectionSha256",
+})
+
+
+def validate_current_new_use_projection(projection: Any) -> dict[str, Any]:
+    """Check the private receipt shape; this alone is NOT native authentication."""
+    fail = lambda: ValueError("DMI_CURRENT_NEW_USE_PROJECTION_INVALID")
+    if not isinstance(projection, dict) or set(projection) != _CURRENT_NEW_USE_FIELDS:
+        raise fail()
+    if (type(projection["schemaVersion"]) is not int or projection["schemaVersion"] != 1
+            or projection["contractId"] != CURRENT_NEW_USE_CONTRACT_ID):
+        raise fail()
+    start, end = _exact_hour_bounds(
+        projection["productionReferenceAt"], projection["operationalRangeEndAt"])
+    if (projection["productionReferenceAt"] != canonical_time(start)
+            or projection["operationalRangeEndAt"] != canonical_time(end)
+            or end - start != timedelta(hours=117)):
+        raise fail()
+    for key in ("targetCount", "originalVerifiedPairCount", "eligiblePairCount",
+                "unknownPairCount", "complementPairCount"):
+        if type(projection[key]) is not int or projection[key] < 0:
+            raise fail()
+    total = projection["targetCount"] * 118
+    if (projection["targetCount"] <= 0
+            or projection["eligiblePairCount"] + projection["unknownPairCount"]
+                != projection["originalVerifiedPairCount"]
+            or projection["originalVerifiedPairCount"] > total
+            or projection["eligiblePairCount"] + projection["complementPairCount"] != total):
+        raise fail()
+    for key in ("targetRegistrySha256", "dmiCurrentInputSha256", "dmiLedgerSha256",
+                "dmiAttestationSha256", "eligiblePairsSha256", "complementPairsSha256",
+                "projectionSha256"):
+        if not isinstance(projection[key], str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", projection[key]):
+            raise fail()
+    unknown = projection["unknownPairs"]
+    if not isinstance(unknown, list) or len(unknown) != projection["unknownPairCount"]:
+        raise fail()
+    identities = []
+    for row in unknown:
+        if (not isinstance(row, dict) or set(row) != {"partId", "validTime"}
+                or not isinstance(row["partId"], str) or not row["partId"].strip()
+                or row["partId"] != row["partId"].strip()
+                or row["validTime"] != canonical_time(row["validTime"])):
+            raise fail()
+        hour, _ = _exact_hour_bounds(row["validTime"], row["validTime"])
+        if not start <= hour <= end:
+            raise fail()
+        identities.append((row["validTime"], row["partId"]))
+    if identities != sorted(set(identities)):
+        raise fail()
+    if projection["projectionSha256"] != _canonical_sha256({
+            key: value for key, value in projection.items() if key != "projectionSha256"}):
+        raise fail()
+    return projection
+
+
+def current_new_use_partition(
+    projection: Any, *, ledger: dict[str, Any], attestation: dict[str, Any],
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    """Derive new-use sets from a receipt bound to the unchanged original ledger.
+
+    Normal file-owning callers must also rebuild the receipt from the actual DMI
+    document. The receipt never replaces an original attestation or asset proof.
+    """
+    projection = validate_current_new_use_projection(projection)
+    if (projection["dmiLedgerSha256"] != _canonical_sha256(ledger)
+            or projection["dmiAttestationSha256"] != _canonical_sha256(attestation)
+            or projection["targetRegistrySha256"] != ledger.get("targetRegistrySha256")
+            or projection["productionReferenceAt"] != attestation.get("rangeStartAt")
+            or projection["operationalRangeEndAt"] != attestation.get("rangeEndAt")
+            or projection["targetCount"] != attestation.get("targetCount")
+            or projection["originalVerifiedPairCount"] != attestation.get("verifiedPairCount")):
+        raise ValueError("DMI_CURRENT_NEW_USE_ORIGINAL_BINDING_INVALID")
+    key = lambda row: (row["partId"], row["validTime"])
+    original = attestation["verifiedPairs"]
+    original_keys = {key(row) for row in original}
+    unknown_keys = {key(row) for row in projection["unknownPairs"]}
+    original_complement = ledger["operationalComplementPairs"]
+    complement_keys = {key(row) for row in original_complement}
+    if not unknown_keys <= original_keys or original_keys & complement_keys:
+        raise ValueError("DMI_CURRENT_NEW_USE_PARTITION_INVALID")
+    eligible = [dict(row) for row in original if key(row) not in unknown_keys]
+    complement = sorted([*(dict(row) for row in original_complement),
+                         *(dict(row) for row in projection["unknownPairs"])],
+                        key=lambda row: (row["validTime"], row["partId"]))
+    if (len(eligible) != projection["eligiblePairCount"]
+            or len(complement) != projection["complementPairCount"]
+            or part_time_pairs_sha256(eligible) != projection["eligiblePairsSha256"]
+            or part_time_pairs_sha256(complement) != projection["complementPairsSha256"]):
+        raise ValueError("DMI_CURRENT_NEW_USE_PARTITION_INVALID")
+    return eligible, complement
+
+
+def build_current_new_use_projection(
+    *, document: dict[str, Any], targets: list[dict[str, Any]],
+    ledger: dict[str, Any], attestation: dict[str, Any],
+    dmi_input_sha256: str, production_reference_at: Any,
+    operational_range_end_at: Any, target_registry_sha256: str,
+) -> dict[str, Any]:
+    """Pure post-DMI NEW-use view; every original byte and original proof survives."""
+    allowed, retained = current_attestation_authorization_from_operational_ledger(ledger)
+    actual = canonical_verified_part_current_attestation(
+        document, targets, production_reference_at, operational_range_end_at,
+        allowed, retained)
+    if actual != attestation:
+        raise ValueError("DMI_CURRENT_NEW_USE_NATIVE_CONTEXT_INVALID")
+    validate_current_operational_availability_ledger(
+        ledger, actual, targets, production_reference_at, operational_range_end_at,
+        target_registry_sha256)
+    source_by_pair = {(row["partId"], row["validTime"]): row["source"]
+                      for row in actual["verifiedPairSources"]}
+    rich_by_pair = {}
+    for target in targets:
+        for valid_time, row in _matching_verified_part_current_rows(
+                document, target, production_reference_at, operational_range_end_at):
+            pair = (target["partId"], valid_time)
+            if pair not in source_by_pair:
+                continue
+            source = row["sources"]["current"]
+            if canonical_current_source_asset(source) != source_by_pair[pair]:
+                raise ValueError("DMI_CURRENT_NEW_USE_NATIVE_CONTEXT_INVALID")
+            if pair in rich_by_pair:
+                raise ValueError("DMI_CURRENT_NEW_USE_NATIVE_CONTEXT_INVALID")
+            rich_by_pair[pair] = source
+    if set(rich_by_pair) != set(source_by_pair):
+        raise ValueError("DMI_CURRENT_NEW_USE_NATIVE_CONTEXT_INVALID")
+    unknown, eligible = [], []
+    for pair in actual["verifiedPairs"]:
+        result = inspect_native_grid_sampling(rich_by_pair[(pair["partId"], pair["validTime"])])
+        if result["status"] == "coherent":
+            eligible.append(dict(pair))
+        elif result["status"] == "unknown":
+            unknown.append(dict(pair))
+        else:
+            # Contradictory evidence is not quietly reclassified as supplier absence.
+            raise ValueError("DMI_CURRENT_NEW_USE_GRID_CONTRADICTORY")
+    complement = sorted([*(dict(row) for row in ledger["operationalComplementPairs"]),
+                         *(dict(row) for row in unknown)],
+                        key=lambda row: (row["validTime"], row["partId"]))
+    projection = {
+        "schemaVersion": 1, "contractId": CURRENT_NEW_USE_CONTRACT_ID,
+        "productionReferenceAt": canonical_time(production_reference_at),
+        "operationalRangeEndAt": canonical_time(operational_range_end_at),
+        "targetCount": len(targets), "targetRegistrySha256": target_registry_sha256,
+        "dmiCurrentInputSha256": dmi_input_sha256,
+        "dmiLedgerSha256": _canonical_sha256(ledger),
+        "dmiAttestationSha256": _canonical_sha256(actual),
+        "originalVerifiedPairCount": actual["verifiedPairCount"],
+        "eligiblePairCount": len(eligible), "eligiblePairsSha256": part_time_pairs_sha256(eligible),
+        "unknownPairCount": len(unknown), "unknownPairs": unknown,
+        "complementPairCount": len(complement), "complementPairsSha256": part_time_pairs_sha256(complement),
+    }
+    projection["projectionSha256"] = _canonical_sha256(projection)
+    current_new_use_partition(projection, ledger=ledger, attestation=actual)
+    return projection
+
+
+def assert_current_new_use_projection(projection: Any, **inputs: Any) -> dict[str, Any]:
+    """Rebuild from the actual unchanged native context, then require exact equality."""
+    rebuilt = build_current_new_use_projection(**inputs)
+    if projection != rebuilt:
+        raise ValueError("DMI_CURRENT_NEW_USE_NATIVE_BINDING_INVALID")
+    return rebuilt

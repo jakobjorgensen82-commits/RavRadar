@@ -30,6 +30,8 @@ from lib.copernicus_current import (
 from lib.copernicus_target_identity import target_fingerprint
 from lib.dmi_native_provenance import (
     canonical_verified_part_current_attestation,
+    build_current_new_use_projection,
+    current_new_use_partition,
     current_attestation_authorization_from_operational_ledger,
     validate_current_operational_availability_ledger,
     validate_current_operational_ledger,
@@ -113,6 +115,7 @@ def build_registry(
         "waterPoint": [round(float(row["waterPoint"][0]), 7), round(float(row["waterPoint"][1]), 7)],
     } for row in all_targets]
     registry_sha256 = target_fingerprint(targets)
+    new_use_projection = None
     if full_coast:
         operational_required_pairs = [
             {"partId": target["partId"], "validTime": utc_iso(valid_time)}
@@ -147,16 +150,19 @@ def build_registry(
             hours[-1],
             registry_sha256,
         )
-        operational_required_pairs = [
-            {"partId": row["partId"], "validTime": row["validTime"]}
-            for row in ledger["operationalComplementPairs"]
-        ]
-        operational_verified_count = int(attestation["verifiedPairCount"])
+        new_use_projection = build_current_new_use_projection(
+            document=dmi, targets=targets, ledger=ledger, attestation=attestation,
+            dmi_input_sha256=dmi_sha256, production_reference_at=reference,
+            operational_range_end_at=hours[-1], target_registry_sha256=registry_sha256)
+        eligible_pairs, operational_required_pairs = current_new_use_partition(
+            new_use_projection, ledger=ledger, attestation=attestation)
+        operational_verified_count = len(eligible_pairs)
 
     challenge_plan = None
     if not full_coast:
         challenge_plan = build_challenge_plan(attestation=attestation, ledger=ledger,
-            dmi_input_sha256=dmi_sha256, production_reference_at=utc_iso(reference))
+            dmi_input_sha256=dmi_sha256, production_reference_at=utc_iso(reference),
+            new_use_projection=new_use_projection)
         operational_required_pairs.extend({"partId": row["partId"], "validTime": row["validTime"]}
                                           for row in challenge_plan["challengePairs"])
         if not challenge_plan["challengePairCount"]:
@@ -197,6 +203,7 @@ def build_registry(
         "matrixContractId": OPERATIONAL_MATRIX_CONTRACT_ID,
         "selectionMode": "manual-full-coast" if full_coast else "dmi-gaps-and-aged-challenges" if challenge_plan else "dmi-gaps-only",
         **({"agedDmiChallengePlan": challenge_plan} if challenge_plan is not None else {}),
+        **({"dmiNewUseProjection": new_use_projection} if new_use_projection is not None else {}),
         "productionReferenceAt": utc_iso(reference),
         "targetHour": utc_iso(reference),
         "rangeStartAt": utc_iso(hours[0]),

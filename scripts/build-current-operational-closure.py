@@ -126,6 +126,7 @@ def main() -> int:
         dmi_ledger=ledger,
         dmi_attestation=attestation,
         dmi_current_input_sha256=file_sha256(args.dmi),
+        dmi_document=dmi,
         copernicus_registry=registry,
         copernicus_shadow=copernicus,
         copernicus_shadow_sha256=file_sha256(args.copernicus),

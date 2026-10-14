@@ -1117,6 +1117,179 @@ try {
     checkpointPath, expectedPartCount: 3, targetReference: atHour(50),
   }), /not exact measured continuation/, 'legacy READY schema cannot disguise warmup state');
 
+
+  // Fixed-root CLI regressions. These are synthetic source/conditions fixtures,
+  // not protected-store authentication, native sampling, or provider evidence.
+  {
+    const { spawnSync } = await import('node:child_process');
+    const { pathToFileURL } = await import('node:url');
+    const { exactRelativeModuleSpecifiers } = await import('./lib/static-module-closure.mjs');
+    const { ravScoreSamplingContextKey } = await import('./lib/ravscore-sampling-context.mjs');
+    const { packPrivateConditionsHourly, hydratePrivateConditionsHourly,
+      assertPrivateConditionsHourly } = await import('./lib/private-conditions-hourly.mjs');
+    const repository = RAVSCORE_CONTINUATION_IMPLEMENTATION_REPOSITORY_ROOT;
+    const fixtureRoot = path.join(tempRoot, 'current-history-cli');
+    await fs.mkdir(fixtureRoot, { mode: 0o700 });
+    const fixtureIdentity = await fs.lstat(fixtureRoot, { bigint: true });
+    assert.equal(path.dirname(await fs.realpath(fixtureRoot)), await fs.realpath(tempRoot));
+    const productBytes = new Map();
+    const pending = ['scripts/plan-ravscore-current-history.mjs', 'package.json',
+      ...RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES,
+      // Actual non-ESM module-initialization dependencies, not copied directories.
+      'scripts/lib/dmi-marine-zone-exclusions.json',
+      'scripts/lib/copernicus-component-spatial-policy.json'];
+    while (pending.length) {
+      const relative = pending.pop();
+      if (productBytes.has(relative)) continue;
+      assert.equal(path.posix.normalize(relative), relative);
+      assert(!relative.startsWith('../') && !path.posix.isAbsolute(relative));
+      const sourceFile = path.join(repository, relative);
+      const sourceStat = await fs.lstat(sourceFile);
+      assert(sourceStat.isFile() && !sourceStat.isSymbolicLink());
+      const bytes = await fs.readFile(sourceFile);
+      productBytes.set(relative, bytes);
+      if (!/\.(?:js|mjs)$/.test(relative)) continue;
+      for (const specifier of exactRelativeModuleSpecifiers(bytes.toString('utf8'), relative)) {
+        const base = path.posix.normalize(path.posix.join(path.posix.dirname(relative),
+          specifier.split(/[?#]/, 1)[0]));
+        assert(!base.startsWith('../') && !path.posix.isAbsolute(base));
+        const candidates = path.posix.extname(base) ? [base]
+          : [base, base + '.js', base + '.mjs', base + '.json', base + '/index.js'];
+        let resolved = null;
+        for (const candidate of candidates) {
+          const stat = await fs.lstat(path.join(repository, candidate)).catch(error => {
+            if (error.code === 'ENOENT') return null;
+            throw error;
+          });
+          if (stat?.isFile() && !stat.isSymbolicLink()) { resolved = candidate; break; }
+        }
+        assert(resolved, 'Every fixed-root CLI import must resolve to an actual regular source file');
+        pending.push(resolved);
+      }
+    }
+    for (const [relative, bytes] of productBytes) {
+      const destination = path.join(fixtureRoot, relative);
+      await fs.mkdir(path.dirname(destination), { recursive: true });
+      await fs.writeFile(destination, bytes, { flag: 'wx', mode: 0o600 });
+      assert.deepEqual(await fs.readFile(destination), bytes, 'No source override in CLI fixture');
+    }
+    assert.equal(await ravScoreContinuationImplementationSha256({ repositoryRoot: fixtureRoot }),
+      await ravScoreContinuationImplementationSha256(), 'Genuine whole current T closure');
+    const fixtureCheckpoint = await import(pathToFileURL(
+      path.join(fixtureRoot, 'scripts/ravscore-continuation-checkpoint.mjs')).href);
+    const registryPath = path.join(fixtureRoot, 'data/live/coastal-parts-v2.json');
+    const conditionsPath = path.join(fixtureRoot, 'data/live/conditions.json');
+    const actualCheckpointPath = path.join(fixtureRoot,
+      '.cache/ravscore-continuation-checkpoint/checkpoint.json');
+    const outputPath = path.join(fixtureRoot, '.cache/ravscore-current-history-demand.json');
+    const checkpointSourcePath = path.join(fixtureRoot, 'checkpoint-source.json');
+    await fs.mkdir(path.dirname(registryPath), { recursive: true });
+    await fs.mkdir(path.dirname(actualCheckpointPath), { recursive: true });
+    const zoneIds = Array.from({ length: 210 }, (_, index) => 'synthetic-zone-' + index);
+    const registry = { schemaVersion: 2, enabled: true, zoneCount: 210, partCount: PART_COUNT,
+      zones: Object.fromEntries(zoneIds.map(id => [id, []])) };
+    const checkpointSource = documentFor({ datasetId: 'rr-demand-cli-synthetic',
+      productionReferenceAt: atHour(49), template: checkpointStateTemplate });
+    for (const [index, partId] of partIds.entries()) {
+      const part = { ...partFor(partId), zoneId: zoneIds[index % zoneIds.length] };
+      registry.zones[part.zoneId].push(part);
+      const record = checkpointSource.coastalParts.parts[partId];
+      record.zoneId = part.zoneId;
+      // Same normal-built numeric template as this target; bind its actual
+      // sampling context BEFORE any source/checkpoint snapshot is created.
+      record.ravScoreModel.currentState.samplingContextKey = ravScoreSamplingContextKey(part);
+    }
+    const conditions = clone(checkpointSource);
+    conditions.zones = Object.fromEntries(zoneIds.map(id => [id, {
+      forecast: { hourly: [{ time: atHour(49), currentSpeedMps: 0.12 }] },
+    }]));
+    conditions.coastalParts.modelBinding = ravScoreModelBinding();
+    conditions.coastalParts.zones = Object.fromEntries(zoneIds.map(id =>
+      [id, { hourly: [{ time: atHour(49), score: null }] }]));
+    // This genuine private baseline has a separate authoritative checkpoint;
+    // no synthetic checkpoint-return object or loader replacement is supplied.
+    for (const record of Object.values(conditions.coastalParts.parts)) delete record.ravScoreModel;
+    const packed = packPrivateConditionsHourly(conditions);
+    assert.equal(assertPrivateConditionsHourly(packed), true);
+    assert.deepEqual(hydratePrivateConditionsHourly(packed), conditions);
+    for (const [file, value] of [[checkpointSourcePath, checkpointSource],
+      [registryPath, registry], [conditionsPath, packed]]) {
+      await fs.writeFile(file, JSON.stringify(value) + '\n', { flag: 'wx', mode: 0o600 });
+    }
+    const savedCliCheckpoint = await fixtureCheckpoint.saveRavScoreContinuationCheckpoint({
+      sourcePath: checkpointSourcePath, checkpointPath: actualCheckpointPath,
+    });
+    assert.equal(savedCliCheckpoint.partCount, PART_COUNT);
+    const checkpointDocument = JSON.parse(await fs.readFile(actualCheckpointPath, 'utf8'));
+    const unchangedStateSha = checkpointDocument.stateSha256;
+    const unchangedGenerationSha = checkpointDocument.generationSha256;
+    checkpointDocument.states = Object.fromEntries(Object.entries(checkpointDocument.states).reverse());
+    // Only raw key order changes in this synthetic authenticated-format file.
+    await fs.writeFile(actualCheckpointPath, JSON.stringify(checkpointDocument) + '\n');
+    const originals = new Map(await Promise.all([checkpointSourcePath, registryPath,
+      conditionsPath, actualCheckpointPath].map(async file => [file, await fs.readFile(file)])));
+    const loadedCliCheckpoint = await fixtureCheckpoint.loadRavScoreContinuationCheckpointForTarget({
+      checkpointPath: actualCheckpointPath, targetReference: atHour(50),
+    });
+    assert.equal(loadedCliCheckpoint.continuationAvailable, true);
+    assert.equal(loadedCliCheckpoint.generationSha256, unchangedGenerationSha);
+    assert.equal(checkpointDocument.stateSha256, unchangedStateSha);
+    assert.deepEqual(loadedCliCheckpoint.states, checkpointDocument.states);
+    assert.notEqual(JSON.stringify(loadedCliCheckpoint.states), JSON.stringify(checkpointDocument.states),
+      'The genuine loader sorts the raw reversed keys; structural equality is required');
+    const env = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
+      ['PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'LANG', 'LC_ALL'].includes(key.toUpperCase())));
+    Object.assign(env, { RAVRADAR_PRODUCTION_TARGET_HOUR: atHour(50),
+      RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: 'true',
+      RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: 'false' });
+    const runCli = () => spawnSync(process.execPath,
+      [path.join(fixtureRoot, 'scripts/plan-ravscore-current-history.mjs')], {
+        cwd: fixtureRoot, env, encoding: 'utf8', timeout: 30_000, maxBuffer: 1024 * 1024,
+      });
+    const success = runCli();
+    assert.equal(success.error, undefined);
+    assert.equal(success.signal, null);
+    assert.equal(success.status, 0, success.stderr);
+    const outputBytes = await fs.readFile(outputPath);
+    const plan = JSON.parse(outputBytes);
+    const rawSha = bytes => 'sha256:' + crypto.createHash('sha256').update(bytes).digest('hex');
+    assert.deepEqual(plan.modelBinding, ravScoreModelBinding());
+    assert.equal(plan.demands.length, PART_COUNT);
+    assert.equal(plan.registrySha256, rawSha(originals.get(registryPath)));
+    assert.deepEqual(plan.sourceHashes, { conditions: rawSha(originals.get(conditionsPath)),
+      checkpoint: rawSha(originals.get(actualCheckpointPath)), activation: null });
+    for (const row of plan.demands) {
+      assert.equal(row.initialSource, 'INTEGRATED_CHECKPOINT');
+      assert.equal(row.initialStateAt, atHour(49));
+      assert.equal(row.initialStateSha256, rawSha(JSON.stringify(loadedCliCheckpoint.states[row.partId])));
+      assert.equal(row.startAt, atHour(-2));
+      assert.equal(row.endAt, atHour(50));
+    }
+    for (const [file, bytes] of originals) assert.deepEqual(await fs.readFile(file), bytes);
+    console.log('Current-history fixed-root CLI accepts genuine key-reordered checkpoint.');
+
+    // A second normal invocation must hit the real wx guard, not a mock.
+    const occupied = runCli();
+    assert.equal(occupied.error, undefined);
+    assert.equal(occupied.signal, null);
+    assert.equal(occupied.status, 1);
+    assert.equal(occupied.stderr.trim(), 'EEXIST');
+    assert.equal(occupied.stdout, '');
+    assert.deepEqual(await fs.readFile(outputPath), outputBytes, 'Existing demand output cannot be overwritten');
+    for (const [file, bytes] of originals) assert.deepEqual(await fs.readFile(file), bytes,
+      'Failed demand publication must not rewrite an original');
+    for (const [relative, bytes] of productBytes) {
+      assert.deepEqual(await fs.readFile(path.join(fixtureRoot, relative)), bytes);
+      assert.deepEqual(await fs.readFile(path.join(repository, relative)), bytes);
+    }
+    const finishedIdentity = await fs.lstat(fixtureRoot, { bigint: true });
+    assert(finishedIdentity.isDirectory() && !finishedIdentity.isSymbolicLink());
+    assert.equal(finishedIdentity.dev, fixtureIdentity.dev);
+    assert.equal(finishedIdentity.ino, fixtureIdentity.ino);
+    assert.equal(path.dirname(await fs.realpath(fixtureRoot)), await fs.realpath(tempRoot));
+    console.log('Current-history fixed-root CLI rejects existing output without original mutation.');
+  }
+
   console.log('Schema-6 RavScore continuation checkpoint contract passes.');
 } finally {
   await fs.rm(tempRoot, { recursive: true, force: true });

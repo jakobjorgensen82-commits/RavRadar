@@ -21,7 +21,7 @@ import { preferQualifiedDmiComponentSource } from './lib/weather-component-selec
 import { repairWaterLevelContinuity } from './lib/water-level-continuity.mjs';
 import { dmiWaveDirectionMatchesSource } from './lib/dmi-wave-tuple-proof.mjs';
 import { buildNewestValidRavScoreRecoverySources } from './lib/ravscore-recovery-source-priority.mjs';
-import { buildRavScoreRecoveryReplay, ravScoreRecoverySourceStartAt } from './lib/ravscore-recovery-replay.mjs';
+import { buildRavScoreRecoveryReplay, ravScoreRecoverySourceStartAt, RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS } from './lib/ravscore-recovery-replay.mjs';
 import { originalContextForProtectedDmiCurrent, verifiedProtectedDmiPartHourly }
   from './lib/protected-dmi-current-context.mjs';
 
@@ -298,6 +298,7 @@ const runPublicPartProjection = Function(
   'mergeProtectedLiveCurrentPilotIntoRecord', 'mergeActiveNativeLiveCurrentPilotIntoRecord', 'verifiedIntegratedPartHourly',
   'originalContextForProtectedDmiCurrent', 'verifiedProtectedDmiPartHourly',
   'buildNewestValidRavScoreRecoverySources',
+  'RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS',
   'FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID', 'FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS',
   'buildFeggesundWaveProxy', 'fixturePart', 'fixtureIdentity', 'productionAt',
   `const CURRENT_VECTOR_SEMANTICS_VERSION = 3;
@@ -343,6 +344,7 @@ const runPublicPartProjection = Function(
   mergeProtectedLiveCurrentPilotIntoRecord, mergeActiveNativeLiveCurrentPilotIntoRecord, verifiedIntegratedPartHourly,
   originalContextForProtectedDmiCurrent, verifiedProtectedDmiPartHourly,
   buildNewestValidRavScoreRecoverySources,
+  RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS,
   FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID, FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS,
   buildFeggesundWaveProxy, part, identity, time(0));
 const asNative = rows => {

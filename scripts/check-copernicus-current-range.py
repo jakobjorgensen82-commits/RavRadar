@@ -30,6 +30,12 @@ from lib.copernicus_current_source_stage import (
 )
 from lib.copernicus_current_donor_bank import DEFAULT_DONOR_BANK, load_copernicus_donor_bank, projected_donor_shadow
 from lib.copernicus_target_identity import target_fingerprint
+from lib.dmi_bulk_storage import read_dmi_bulk_document
+from lib.dmi_native_provenance import (
+    assert_current_new_use_projection,
+    canonical_verified_part_current_attestation,
+    current_attestation_authorization_from_operational_ledger,
+)
 
 
 DEFAULT_SHADOW = Path(".cache/copernicus-current-shadow.json")
@@ -153,6 +159,18 @@ def inspect(
     if target_fingerprint(targets) != registry["targetRegistrySha256"]:
         raise RuntimeError("Central target registry no longer matches the sealed gap matrix")
     target_identities = {row["partId"]: row for row in targets}
+    new_use_projection = registry.get("dmiNewUseProjection")
+    if new_use_projection is not None:
+        dmi = read_dmi_bulk_document(dmi_path)
+        ledger = (dmi.get("diagnostics") or {}).get("currentOperationalLedger")
+        allowed, retained = current_attestation_authorization_from_operational_ledger(ledger)
+        attestation = canonical_verified_part_current_attestation(
+            dmi, targets, reference, registry["operationalRangeEndAt"], allowed, retained)
+        assert_current_new_use_projection(new_use_projection,
+            document=dmi, targets=targets, ledger=ledger, attestation=attestation,
+            dmi_input_sha256=registry["dmiCurrentInputSha256"], production_reference_at=reference,
+            operational_range_end_at=registry["operationalRangeEndAt"],
+            target_registry_sha256=registry["targetRegistrySha256"])
     def bank_requires_projection(*, invalid: bool = False) -> dict[str, Any]:
         return {
             "cachePresent": bool(shadow_path.exists()),

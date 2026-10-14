@@ -1,3 +1,12 @@
+## 4.0.576 — strømhistorik og faktisk inputbehov, 14. oktober 2026
+
+- Registrér den faktisk kildeleverede PUBLIC-sammeoriginal-/fulde genoptagelseskilde med præcis Linux-/PostgreSQL-evidens. Næste normale beregning stoppede i kystdelens strømhistorik før offentlig levering; kildebevis er ikke en vellykket vejrhentning.
+- Registrér lokal normal kystdelshistorik-/behovsprøve 70/70 uden skip, faktisk valgt starttilstand, historiske strømendepunkter og normal bro, ægte ledger og reservekomplement samt registry-target-/ældningsprøver. Bevar første sandboxfilfejl og manglende kørsels-signaturs fixturefejl som før-evidens.
+- Afgræns den lokalt integrerede historiske cachelæser til strøm med normal filfangst, ejet læselease og EOF. Rigtig nativekontrol er åben; historiske råfilers tilgængelighed er ukendt og afklares ikke ved en generel source- eller guardlempelse.
+- Ny samlet CI/merge, national kapacitet/no-loss, CAS, Pages og faktisk ny generationseffekt står åbne. I71/C69/T12, SQL, scoreformel, admin/geometri, kildeprioritet, budgetter og ABI bevares. Ingen versionsbump. Se håndbog 89.230.
+
+Den gennemgåede historiske strøm-only cachelæser og dens native prøveblade er nu lokalt integreret og består syntakskontrol; rigtig nativeafprøvning er fortsat ikke kørt. Den regionale normale prøve og den nationale producentkæde består lokalt med 673 dele og 118 timer gennem CLI til JavaScript. De tilknyttede lokale Open-Meteo- og kontrolprøver består efter præcis rettelse af prøveinput-headeren for otte mål; de oprindelige fejl bevares. Det er lokale/syntetiske input, ikke bevis for providerdata, national produktionsdrift eller hård databevarelse i næste faktiske generation. Den private 72-timers-/51-timersbehovsbro mapper højst 127 rækker med højst to eksisterende 121-timersvinduer. Tre private slutstøttetimer bevares til den uændrede scalar-T+3-sanitizer; offentlige 118 timer og det normale 121-timersunderlag ændres ikke. Den normale lokale 673-dels CLIprøve består også med nøgleomordnet input og eksklusiv outputoprettelse. Linux/native CI og produktion er fortsat åbne.
+
 ## 4.0.576 — samme strømoriginal og præcis fuld genoptagelse, 14. oktober 2026
 
 - Registrér faktisk kildeleveret PR #606 og det efterfølgende stop ved ny strømbrug før offentlig levering. Bølgefixets kildebevis er ikke en vellykket vejrhentning.
