@@ -2,6 +2,10 @@
 
 **Kort fortalt:** Historikbehov følger den faktisk valgte tilstand; gemte originaler, kvalificeret ny brug og faktisk genoptagelse er forskellige beviser.
 
+Aktuelt 15. oktober: PR610 bestod præcis source-, Linux-native- og PostgreSQL-kontrol i CI 38647877031/1 på head 8221321 og er merget som f9e3546. Den efterfølgende præcise genoptagelse 38649906156/1 stoppede kl. 00.56.33 dansk tid i historikplanlægningen før alle vejrhentningstrin. Autentificerede fremskridt blev genlæst, men der blev ikke gemt nye fremskridt eller leveret fuld pakke, CAS, Pages eller ny offentlig prognose.
+
+Årsagen er den normale miljøvariabels gyldige hele UTC-time uden millisekunder over for planlæggerens krav om .000Z, ikke en påvist privat data- eller tilstandsfejl. Den snævre rettelse accepterer kun præcis Z eller .000Z ved denne miljøgrænse; private tilstande, endepunkter, hashes og originalkontroller forbliver strenge. Den normale 673-dels CLI-prøve har reproduceret fejlen og består efter rettelsen: begge gyldige tidsformater giver byteidentiske planer, fem ugyldige input afvises før skrivning, og eksisterende output, originaler og alle kildeafhængigheder bevares. Den lille produktkritiske kildegate består lokalt. Ny præcis CI og offentlig effekt er åbne; version, SQL, model og de inaktive SOURCE-/fase67-grænser ændres ikke. Ældre status nedenfor er historik på netop disse punkter.
+
 Den korrekte strømfortolkning skal følges hele vejen til den historik, som en ny beregning bruger. En tidligere kildeleveret rettelse af det offentlige strømvalg afslutter derfor ikke en ny vejrhentning, der senere stopper under genopbygning af strømhistorik.
 
 Strømhistorikkens behov udledes af den faktisk valgte gemte tilstand: 48 timers historik med tre timers historisk strømendepunktsstøtte og den eksisterende højst 72-timersbro. Denne 48+3-støtte er ikke vandstandens fremadrettede T+3. Vandstandens særskilte 121-timersserie og dens fremadrettede T+3 bevares uændret. Et fast antal timer regnet fra væguret kan ikke erstatte strømmenes faktiske behov.

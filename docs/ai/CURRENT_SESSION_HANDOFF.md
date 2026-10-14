@@ -1,5 +1,7 @@
 ## Aktuel kritisk handoff — strømhistorik før ny offentlig levering, 14. oktober 2026
 
+Aktuelt 15. oktober: PR610 er kildeleveret efter præcis CI inklusive Linux og PostgreSQL. Den næste genoptagelse stoppede før vejrhentning på miljøtimens Z/.000Z-format. Den normale 673-dels CLI-prøve har reproduceret fejlen og består efter en snæver miljønormalisering, inklusive fem ugyldige input og originalbevarelse. Den lille kildegate består lokalt; ny præcis CI, levering og offentlig effekt er åbne. Tilstands- og originalkrav, version, SQL, model og SOURCE-afgrænsning er uændrede. Se håndbog 89.230; ældre status nedenfor er erstattet kun på disse punkter.
+
 PUBLIC-sammeoriginal og præcist fuldt fremskridtsvalg er faktisk Linux-/PostgreSQL-kontrolleret og kildeleveret. Den efterfølgende normale vejrhentning fejlede i kystdelens strømhistorik, ikke den tidligere PUBLIC-kalder. Krypteret restore/admission og gemning med cachekvittering blev faktisk gennemført, men ingen ny offentlig generation, CAS eller Pages blev leveret.
 
 Lokal normal kystdelshistorik-/behovsprøve består 70/70 uden skip. Behov fra faktisk valgt starttilstand med historiske strømendepunkter og normal bro, ægte ledger, reservekomplement, registry-target og ældning er afprøvet. Første sandboxfilfejl og den manglende kørsels-signaturs fixturefejl er bevaret; ingen waiver. Den historiske strøm-only cached filfangst/ejede lease/EOF-kilde har nu første faktisk beståede Linux-nativekontrol på ca827; samlet source og PostgreSQL er fortsat åbne.

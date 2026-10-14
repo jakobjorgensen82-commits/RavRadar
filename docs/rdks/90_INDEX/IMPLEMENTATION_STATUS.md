@@ -1,5 +1,7 @@
 ## 14. oktober 2026 — kildeleveret PUBLIC; kystdelens strømhistorik er fortsat åben
 
+Aktuelt 15. oktober: PR610 er kildeleveret efter præcis CI inklusive Linux og PostgreSQL. Den næste genoptagelse stoppede før vejrhentning på miljøtimens Z/.000Z-format. Den normale 673-dels CLI-prøve har reproduceret fejlen og består efter en snæver miljønormalisering, inklusive fem ugyldige input og originalbevarelse. Den lille kildegate består lokalt; ny præcis CI, levering og offentlig effekt er åbne. Tilstands- og originalkrav, version, SQL, model og SOURCE-afgrænsning er uændrede. Se håndbog 89.230; ældre status nedenfor er erstattet kun på disse punkter.
+
 - [x] Faktisk præcis Linux-/PostgreSQL-kontrol og kildelevering af PUBLIC-sammeoriginal samt præcist krypteret fremskridtsvalg i almindeligt fuldt normalforløb.
 - [x] Faktisk krypteret restore/admission i næste normalforløb samt gemning af nye fremskridt og serverens cachekvittering; dette er ikke næste restore eller offentlig levering.
 - [x] Første faktiske beregningsstop afgrænset til kystdelens strømhistorik; tidligere PUBLIC-stop må ikke genbruges som denne nye stack.

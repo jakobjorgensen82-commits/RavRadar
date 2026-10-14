@@ -1,5 +1,7 @@
 ## Akut aktiv opgave — kystdelens strømhistorik før ny generation, 14. oktober 2026
 
+Aktuelt 15. oktober: PR610 er kildeleveret efter præcis CI inklusive Linux og PostgreSQL. Den næste genoptagelse stoppede før vejrhentning på miljøtimens Z/.000Z-format. Den normale 673-dels CLI-prøve har reproduceret fejlen og består efter en snæver miljønormalisering, inklusive fem ugyldige input og originalbevarelse. Den lille kildegate består lokalt; ny præcis CI, levering og offentlig effekt er åbne. Tilstands- og originalkrav, version, SQL, model og SOURCE-afgrænsning er uændrede. Se håndbog 89.230; ældre status nedenfor er erstattet kun på disse punkter.
+
 PUBLIC-sammeoriginal og præcist krypteret genbrug i det fulde normalforløb er faktisk kildeleveret med præcis Linux-/PostgreSQL-kontrol. Den næste normale beregning stoppede i kystdelens strømhistorik før ny offentlig levering. Cachegenbrug blev faktisk gennemført og nye krypterede fremskridt gemt; den gemmekvittering er ikke bevis for næste kørsels GCM-restore eller gyldig historisk dækning.
 
 Den normale lokale kystdelshistorik-/behovsprøve består 70/70 uden skip. Behovet skal følge den ægte valgte starttilstand, historiske strømendepunkter og normal bro; en wallclock-plan må ikke forkorte dette. Ikke-kvalificeret ny strømbrug skal give det korrekte reservekomplement uden at forøge kildeledgerens dækning eller slette originaler. Registry-target- og ældningsprøver består; den første sandboxfilfejl og den manglende kørsels-signaturs fixturefejl bevares som faktisk før-evidens.
