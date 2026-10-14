@@ -97,6 +97,20 @@ const run = (input, part, live, referenceAt, overrides = {}) => {
   return { actual, canonical };
 };
 
+// Synthetic qualification uses the existing normal-wireup sampling fixture.
+// Only PUBLIC positive fixtures receive it; legacy replay fixtures stay legacy.
+const coherentPublicFixtureRow = value => {
+  const row = structuredClone(value);
+  const current = row.sources.current;
+  const sampling = { contractId: 'dmi-native-grid-sampling-v1', elementIndex: 0,
+    gridIndexIdentitySha256: 'c'.repeat(64), coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1',
+    gridDefinitionSha256: current.gridDefinitionSha256, gridPoint: [...current.gridPoint],
+    fieldSet: [...current.fieldSet], optionalFieldSet: [...current.optionalFieldSet] };
+  current.nativeGridSampling = sampling;
+  current.nativeSteps[0].nativeGridSampling = structuredClone(sampling);
+  return row;
+};
+
 const cpPart = { ...cp.part, onshoreDirectionDeg: 90 };
 const primary = direct(cpPart, cp.REFERENCE_AT);
 const oldPath = pilot.mergeLiveCurrentPilotIntoRecord({ hourly: [primary.row] }, cpPart, cp.live,
@@ -107,7 +121,7 @@ assert.equal(adapters.verifiedIntegratedPartHourly(oldPath, primary.bulk,
 
 // Actual producer calls: PUBLIC requires an exact active native row while
 // replay retains its existing original-context admission.
-const active = fixture.asNative([fixture.row(0)]);
+const active = fixture.asNative([coherentPublicFixtureRow(fixture.row(0))]);
 const activeBefore = structuredClone(active);
 const publicLive = cp.buildOperationalLive([cp.copernicusEntry]);
 const liveBefore = structuredClone(publicLive);
@@ -200,7 +214,7 @@ const newerCp = boundCp(Date.parse(cp.REFERENCE_AT) - 6 * hour);
 // Exercise the normal PUBLIC wrapper with the same actual projection and
 // sealed reserves. The raw source is never repaired to make an assertion pass.
 const runActive = (input, live = cp.live, change = () => {}) => {
-  const native = fixture.asNative([input.row]);
+  const native = fixture.asNative([coherentPublicFixtureRow(input.row)]);
   const raw = Object.values(native.zones[fixture.identity.entityId].hourly)[0];
   const activeBulk = { ...input.bulk, zones: {
     [input.identity.entityId]: { ...input.identity, hourly: { [raw.time]: raw } },
@@ -331,3 +345,73 @@ assert.match(producer, /const record = mergeActiveNativeLiveCurrentPilotIntoReco
 assert.match(producer, /activeBulk: bulkCache, bulkId, productionReferenceAt: generatedAt/);
 assert.match(producer, /const verifiedHourly = verifiedIntegratedPartHourly\(\s*record, bulkCache, bulkId,/);
 console.log('Current assembly passed: actual PUBLIC/native artifact, two replay callers, exact-row negatives, 96h, OM and regional holds.');
+
+// One normal PUBLIC eligibility contract, distinct from original/replay admission.
+{
+  const input = direct(cpPart, cp.REFERENCE_AT, 12);
+  const live = boundCp(Date.parse(cp.REFERENCE_AT) - 6 * hour);
+  const make = value => {
+    const native = fixture.asNative([value]);
+    const raw = Object.values(native.zones[fixture.identity.entityId].hourly)[0];
+    const activeBulk = { ...input.bulk, zones: {
+      [input.identity.entityId]: { ...input.identity, hourly: { [raw.time]: raw } },
+    } };
+    const projected = projectExactDmiNativeCurrentToForecast(raw, cp.REFERENCE_AT);
+    assert.ok(projected);
+    const original = { ...value, currentUMps: projected.currentUMps,
+      currentVMps: projected.currentVMps,
+      sources: { ...value.sources, current: projected.source } };
+    return { record: { point: cpPart.waterPoint, hourly: [original] }, activeBulk };
+  };
+  const legacy = make(input.row);
+  const options = { activeBulk: legacy.activeBulk, bulkId: input.identity.entityId,
+    productionReferenceAt: cp.REFERENCE_AT };
+  const originalBytes = JSON.stringify({ legacy, live });
+  const strict = (record, activeBulk, candidate = live) => {
+    const rows = adapters.verifiedIntegratedPartHourly(record, activeBulk,
+      input.identity.entityId, cpPart);
+    adapters.assertDmiPartHourlyGridSamplingApplicable(rows, input.identity.entityId,
+      cpPart, { liveCurrentPilot: candidate });
+    return rows;
+  };
+  const unknown = error => error?.code === 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED'
+    && error?.samplingStatus === 'unknown';
+  const ordinary = pilot.mergeLiveCurrentPilotIntoRecord(legacy.record, cpPart, live);
+  assert.equal(strict(ordinary, legacy.activeBulk)[0].currentProvenance.provider, 'copernicus',
+    'the pre-existing closure candidate is independently qualified before retention');
+  const actual = mergeActiveNativeLiveCurrentPilotIntoRecord(legacy.record, cpPart, live, options);
+  assert.equal(actual.hourly[0].currentProvenance.provider, 'copernicus',
+    'PUBLIC must not reinstate unknown legacy current over an independently qualified closure');
+  assert.deepEqual(actual, ordinary, 'declined optional retention leaves the complete closure result identical');
+  assert.equal(strict(actual, legacy.activeBulk)[0].currentProvenance.provider, 'copernicus');
+  assert.deepEqual(otherFields(actual.hourly[0]), otherFields(ordinary.hourly[0]));
+  const replay = mergeProtectedLiveCurrentPilotIntoRecord(legacy.record, cpPart, live,
+    { currentContexts: [legacy.activeBulk], bulkId: input.identity.entityId,
+      productionReferenceAt: cp.REFERENCE_AT });
+  assert.equal(adapters.verifiedIntegratedPartHourly(replay, legacy.activeBulk,
+    input.identity.entityId, cpPart)[0].currentProvenance.provider, 'dmi',
+    'legacy protected replay retains its original admission and source priority');
+  assert.throws(() => strict(replay, legacy.activeBulk), unknown,
+    'historical admission alone never grants NEW-use qualification');
+  for (const candidate of [null, { ...live, operationalClosure: null },
+    { ...live, entries: live.entries.map(entry => ({ ...entry,
+      recordProjectionSha256: `sha256:${'0'.repeat(64)}` })) }]) {
+    const before = JSON.stringify(candidate);
+    const result = mergeActiveNativeLiveCurrentPilotIntoRecord(legacy.record, cpPart, candidate, options);
+    assert.deepEqual(result, pilot.mergeLiveCurrentPilotIntoRecord(legacy.record, cpPart, candidate));
+    assert.throws(() => strict(result, legacy.activeBulk, candidate), unknown,
+      'missing or malformed closure cannot bypass the unchanged strict gate');
+    assert.equal(JSON.stringify(candidate), before);
+  }
+  const coherent = make(coherentPublicFixtureRow(input.row));
+  const coherentBytes = JSON.stringify(coherent);
+  const retained = mergeActiveNativeLiveCurrentPilotIntoRecord(coherent.record, cpPart, live,
+    { ...options, activeBulk: coherent.activeBulk });
+  assert.equal(strict(retained, coherent.activeBulk)[0].currentProvenance.provider, 'dmi',
+    'exact coherent primary still wins under the existing source-priority rule');
+  assert.equal(retained.model.completeness.protectedDmiCurrentRetentionHours, 1);
+  assert.deepEqual(otherFields(retained.hourly[0]), otherFields(ordinary.hourly[0]));
+  assert.equal(JSON.stringify(coherent), coherentBytes);
+  assert.equal(JSON.stringify({ legacy, live }), originalBytes,
+    'original bytes, other weather families and closure remain untouched');
+}

@@ -8,6 +8,8 @@ RavRadar beregner 118 offentlige scoretimer. Tre private timer yderligere bruges
 
 Ukendt gitterbevis er hverken ugyldig original eller bevis for korrekt ny strømfortolkning. Gamle originaler og offentliggjorte scorer må ikke slettes, ommærkes eller få nyt bevis. Den afgrænsede kalderrettelse ændrer ikke kildeprioritet, scoreformel, adminpunkter, geometri, modelbindinger eller SQL. Måltests, præcis kildekontrol og faktisk ny offentlig generation står stadig åbne. Ældre installationsstatus i kapitlerne nedenfor er dateret historik; ingen af de fem hovedmål er samlet færdigt.
 
+Et korrekt kvalificeret strømvalg må heller ikke bagefter overskrives af en gammel original, som mangler det nye samplingbevis. PUBLIC-genindsættelsen kræver derfor sin egen coherent kvalifikation ud over samme aktive native-række. Den gamle original bevares til historisk kontrol, og den beskyttede replayvej er uændret. Et manglende eller ugyldigt nyt strømvalg bliver ikke godkendt af denne rettelse. Den normale hele assembly-prøve består lokalt; offentlig effekt og ny samlet kildekontrol afventer.
+
 ## 89.224 Gemte originaler skal kunne kontrolleres efter databasetransport
 
 Den minimale kalderrettelse har nu faktisk bestået hele den eksisterende normale lokale 673-dels prøve efter en rød reproduktion i den gamle kalder. Begge rollback-/warmup-forløb, 118 offentlige timer pr. forløb og alle gamle negative tilfælde består uden skip. Ændret nøgleorden accepteres kun efter fuld B/S-lighed; ændrede værdier, checksums og originale bytes afvises fortsat. Tidlig kildekontrol og RDKS består. Dette er ikke endnu præcis ny Linux/PostgreSQL, hosted installation eller offentlig effekt.

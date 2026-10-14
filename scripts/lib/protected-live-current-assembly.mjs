@@ -1,4 +1,5 @@
 import { isDeepStrictEqual } from 'node:util';
+import { inspectDmiForecastGridSampling } from './dmi-forecast-store.mjs';
 import {
   mergeLiveCurrentPilotIntoRecord,
   eligibleStateOnlyCurrentHold as verifiedStateOnlyCurrentHold,
@@ -80,6 +81,11 @@ function mergeAdmittedCurrent(
       || primary.currentProvenance.provider !== 'dmi'
       || primary.currentProvenance.vectorSemanticsVersion !== 3) return candidate;
     if (activeNative) {
+      // Optional PUBLIC retention must itself qualify for NEW current use.
+      // Keep the already selected closure unchanged; never catch a strict
+      // applicability failure to choose another source or alter an original.
+      if (inspectDmiForecastGridSampling(primary.currentProvenance, 'current',
+        original.time, dmiExpectedIdentityForPart(part, bulkId)).status !== 'coherent') return candidate;
       const exact = exactDmiCurrentProjection({
         bulkZone: activeNative.bulk?.zones?.[bulkId], part,
         selectedTime: original.time,
