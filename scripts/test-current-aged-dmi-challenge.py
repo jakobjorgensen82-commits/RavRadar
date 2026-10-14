@@ -1,7 +1,8 @@
 """Small offline 1-PART integration: response -> plan -> closure -> JS projection.
 
-Native DMI admission/empty regional policy are trusted fixture boundaries; all
-reserve admission, planning, source stage, closure and projection code is real.
+Synthetic native acquisition/outcome receipts and the empty regional policy are
+trusted fixture inputs. Actual native/retained admission, ledger, new-use plan,
+reserve admission, source stage, closure and projection code is real.
 No 673-PART weather fixture, providers, credentials or production writes.
 """
 import copy
@@ -9,6 +10,8 @@ import importlib.util
 import json
 import subprocess
 import tempfile
+import sys
+import types
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
@@ -29,6 +32,20 @@ def load(name, filename):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+# The pure producer fixture never decodes a GRIB or contacts a provider.
+# Keep only that unused external dependency at a fail-on-call boundary.
+def forbidden_provider(*args, **kwargs):
+    raise AssertionError("SYNTHETIC_PROVIDER_FORBIDDEN")
+
+eccodes = types.ModuleType("eccodes")
+eccodes.OutOfAreaError = type("OutOfAreaError", (Exception,), {})
+for name in ("codes_get", "codes_get_array", "codes_get_elements",
+             "codes_grib_find_nearest", "codes_grib_new_from_file", "codes_release"):
+    setattr(eccodes, name, forbidden_provider)
+sys.modules["eccodes"] = eccodes
+producer = load("challenge_dmi_producer", "update-dmi-bulk.py")
+producer.STAC_SESSION.request = forbidden_provider
+producer.DOWNLOAD_SESSION.request = forbidden_provider
 registry_builder = load("challenge_registry", "build-copernicus-target-registry.py")
 live_builder = load("challenge_live", "build-live-current-pilot.py")
 runner = load("challenge_runner", "run-copernicus-current-pilot.py")
@@ -68,26 +85,99 @@ with tempfile.TemporaryDirectory(prefix="ravradar-current-model-reference-") as 
     assert rows[0]["modelReference"]["payloadSha256"] == payload_hash
     assert rows[0]["modelReference"]["modelRun"] == iso(REFERENCE - timedelta(hours=6))
 
-def run_fixture(*, dmi_age=96, with_model_reference=True, cp_age=6):
-    sources = []
+def native_fixture(dmi_age):
+    """Use real producer/retained proofs, including the native 120 h lead limit.
+
+    Only the reference pair uses the requested aged run. The other 117 pairs
+    come from a fresh run, so a 96 h age does not imply impossible 213 h leads.
+    Every original synthetic asset/outcome passes the real native verifier.
+    """
+    target_sha = producer.target_fingerprint([TARGET])
+    part_ids = [TARGET["partId"]]
+    signature = producer.current_marine_processing_signature("synthetic-aged")
+    hourly, retained_proofs = {}, []
     for offset in range(118):
         valid = iso(REFERENCE + timedelta(hours=offset))
-        source = {"collection": "dkss_nsbs", "modelRun": iso(REFERENCE - timedelta(hours=dmi_age)),
-            "validTime": valid, "itemId": f"synthetic-{offset}", "assetIdentitySha256": H.removeprefix("sha256:"),
-            "assetSizeBytes": 10, "contentLengthBytes": 10, "contentSha256": H.removeprefix("sha256:"),
-            "acquiredAt": REFERENCE_TEXT}
-        sources.append({"partId": TARGET["partId"], "validTime": valid, "source": source})
-    attestation = {"verifiedPairs": [{"partId": row["partId"], "validTime": row["validTime"]} for row in sources],
-                   "verifiedPairSources": sources, "verifiedPairCount": 118}
-    ledger = {"operationalComplementPairs": []}
+        run = REFERENCE - timedelta(hours=dmi_age) if offset == 0 else REFERENCE
+        model_run = iso(run)
+        source = {
+            "provider": "dmi", "fallback": False, "collection": "dkss_nsbs",
+            "collectionFamily": "marine", "component": "current",
+            "componentKind": "ocean-current-vector",
+            "fieldSet": ["current-u", "current-v"], "optionalFieldSet": [],
+            "modelRun": model_run, "nativeValidTime": valid,
+            "leadTimeHours": (REFERENCE + timedelta(hours=offset) - run).total_seconds() / 3600,
+            "entityId": f"PART::{TARGET['partId']}",
+            "parentZoneId": TARGET["parentZoneId"], "entityType": "coastal-part",
+            "samplingContext": "coastal-part-water-point",
+            "samplingPoint": list(TARGET["waterPoint"]), "gridPoint": list(TARGET["waterPoint"]),
+            "gridDefinitionSha256": "a" * 64, "distanceKm": 0.0,
+            "spatialSemanticsVersion": 1,
+            "spatialSelection": "nearest-shared-grid-cell-no-spatial-interpolation",
+            "itemId": f"synthetic-aged-{offset}-{model_run}",
+            "assetIdentitySha256": H.removeprefix("sha256:"),
+            "assetSizeBytes": 10, "contentLengthBytes": 10,
+            "contentSha256": H.removeprefix("sha256:"), "acquiredAt": REFERENCE_TEXT,
+            "itemCreatedAt": model_run, "itemUpdatedAt": None,
+            "verticalLayer": "depthbelowsea:5", "verticalLayerRankM": 5.0,
+            "vectorSelection": "nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer",
+            "vectorSemanticsVersion": 3,
+            "nativeGridSampling": {
+                "contractId": "dmi-native-grid-sampling-v1", "elementIndex": 0,
+                "gridIndexIdentitySha256": "9" * 64,
+                "coordinateInterpretation": "dmi-dkss-grib1-header-endpoints-v1",
+                "gridDefinitionSha256": "a" * 64, "gridPoint": list(TARGET["waterPoint"]),
+                "fieldSet": ["current-u", "current-v"], "optionalFieldSet": [],
+            },
+        }
+        hourly[valid] = {"time": valid, "current-u": .01, "current-v": .02,
+                         "sources": {"current": source}}
+        outcome = producer.build_current_part_outcome_proof(
+            [], part_ids, target_sha, signature, source)
+        retained_proofs.append(producer.build_retained_current_asset_proof(
+            source, signature, outcome, part_ids, part_ids, target_sha))
+    document = {
+        "schemaVersion": 2, "generatedAt": REFERENCE_TEXT,
+        "zoneRegistrySignature": "synthetic-aged",
+        "zones": {f"PART::{TARGET['partId']}": {
+            "samplingPoint": list(TARGET["waterPoint"]), "hourly": hourly, "gridPoints": {}}},
+        "runs": {"dkss_nsbs": {
+            "referenceTime": REFERENCE_TEXT,
+            "parserVersion": producer.PARSER_VERSION,
+            "parameterMapVersion": producer.PARAMETER_MAP_VERSION,
+            "gridLookupVersion": producer.GRID_LOOKUP_VERSION,
+            "processingSignature": signature, "processedSteps": {},
+        }}, "collectionState": {}, "diagnostics": {},
+    }
+    ledger = producer.build_current_operational_ledger(
+        document, [TARGET], REFERENCE, {}, retained_proofs)
+    document["diagnostics"]["currentOperationalLedger"] = ledger
+    allowed, retained = producer.current_attestation_authorization_from_operational_ledger(ledger)
+    attestation = producer.current_operational_attestation(
+        document, [TARGET], REFERENCE, allowed, retained)
+    producer.validate_current_operational_availability_ledger(
+        ledger, attestation, [TARGET], REFERENCE, REFERENCE + timedelta(hours=117), target_sha)
+    assert attestation["verifiedPairCount"] == 118
+    assert ledger["operationalComplementPairs"] == []
+    return document, ledger, attestation
+
+
+def run_fixture(*, dmi_age=96, with_model_reference=True, cp_age=6, native_grid_qualified=True):
+    dmi, ledger, attestation = native_fixture(dmi_age)
     original_ledger = copy.deepcopy(ledger)
-    with patch.object(registry_builder, "current_attestation_authorization_from_operational_ledger", return_value=(None, None)), \
-         patch.object(registry_builder, "canonical_verified_part_current_attestation", return_value=attestation), \
-         patch.object(registry_builder, "validate_current_operational_availability_ledger", return_value=ledger), \
-         patch.object(registry_builder, "has_verified_local_dmi", return_value=True):
-        registry = registry_builder.build_registry([TARGET], {"diagnostics": {"currentOperationalLedger": ledger}}, REFERENCE, H, full_coast=False)
+    if not native_grid_qualified:
+        dmi["zones"][f"PART::{TARGET['partId']}"]["hourly"][REFERENCE_TEXT]["sources"]["current"].pop("nativeGridSampling")
+    original_dmi = copy.deepcopy(dmi)
+    dmi_input_sha256 = canonical_sha256(dmi)
+    registry = registry_builder.build_registry(
+        [TARGET], dmi, REFERENCE, dmi_input_sha256, full_coast=False)
     validate_target_registry(registry)
-    assert registry["operationalDmiVerifiedPairCount"] == 118
+    assert registry["operationalDmiVerifiedPairCount"] == 118 - int(not native_grid_qualified)
+    assert registry["dmiNewUseProjection"]["originalVerifiedPairCount"] == 118
+    assert registry["dmiNewUseProjection"]["unknownPairCount"] == int(not native_grid_qualified)
+    if not native_grid_qualified:
+        assert registry.get("agedDmiChallengePlan") is None
+        assert registry["operationalRequiredPairs"] == [{"partId": TARGET["partId"], "validTime": REFERENCE_TEXT}]
     acquisition = make_acquisition(source="copernicus-baltic-nemo", acquisition_at=REFERENCE,
         request_start_at=REFERENCE, request_end_at=REFERENCE, targets=[TARGET], native_valid_times=[REFERENCE],
         subset_sha256=H, record_count=1)
@@ -109,23 +199,25 @@ def run_fixture(*, dmi_age=96, with_model_reference=True, cp_age=6):
         copernicus_source_stage_sha256=canonical_sha256(stage) if stage else None,
         copernicus_bounded_progress_accepted=stage is not None, regional_evidence_sha256=canonical_sha256(REGIONAL))
     with patch.object(closure, "EXPECTED_TARGET_COUNT", 1), patch.object(closure, "EXPECTED_TOTAL_PAIR_COUNT", 118), \
-         patch.object(closure, "validate_current_operational_availability_ledger", return_value=ledger), \
          patch.object(closure, "build_regional_current_operational_evidence", return_value={"privateProof": REGIONAL}):
         result = closure.build_current_operational_closure(targets=[TARGET], dmi_ledger=ledger, dmi_attestation=attestation,
-            dmi_current_input_sha256=H, copernicus_registry=registry, copernicus_shadow=shadow, copernicus_shadow_sha256=H,
+            dmi_current_input_sha256=dmi_input_sha256, copernicus_registry=registry, copernicus_shadow=shadow, copernicus_shadow_sha256=H,
             copernicus_source_stage=stage, regional_shadow={}, regional_policy={"parts": []}, open_meteo_fallback=om,
-            locked_reference=REFERENCE_TEXT)
+            locked_reference=REFERENCE_TEXT, dmi_document=dmi)
     assert ledger == original_ledger
+    assert dmi == original_dmi
     private, safe = result["privateProof"], result["safeProjection"]
     assert private["missingPairCount"] == 0 and private["assignedPairCount"] == 118
     assignments = [row for row in private["assignments"] if row["classification"].startswith("COPERNICUS_")]
     entries, _, _ = live_builder.copernicus_entries(shadow, {TARGET["partId"]: TARGET}, assignments, private)
-    expected = int(dmi_age >= 96 and with_model_reference and cp_age < dmi_age)
+    expected = int(not native_grid_qualified or dmi_age >= 96 and with_model_reference and cp_age < dmi_age)
     assert len(entries) == expected
     assert private["dmiVerifiedPairCount"] == 118 - expected
     if challenge:
         assert safe["agedDmiSelection"]["replacedPairCount"] == expected
-        assert safe["agedDmiSelection"]["retainedPairCount"] == 118 - expected
+        assert safe["agedDmiSelection"]["rawDmiVerifiedPairCount"] == 118
+        assert safe["agedDmiSelection"]["challengedPairCount"] == 1
+        assert safe["agedDmiSelection"]["retainedPairCount"] == 1 - expected
     # JS's national cardinality contract is exercised with aggregate synthetic
     # metadata, not a national raw-weather fixture. One exact entry is selected.
     safe.update(targetCount=673, totalPairCount=673 * 118)
@@ -145,7 +237,8 @@ const original={hourly:[{time:document.operationalClosure.productionReferenceAt,
 const result=mergeLiveCurrentPilotIntoRecord(original,part,document,{primaryCurrentVerified:()=>true});
 assert.equal(result.hourly[0].currentUMps,expected?.2:.01);
 if(expected){assert.ok(verifiedLivePilotSource(result.hourly[0].currentProvenance,part));
- const altered=structuredClone(result.hourly[0].currentProvenance); altered.modelReference.modelRun='2026-09-18T00:00:00Z';
+ const altered=structuredClone(result.hourly[0].currentProvenance);
+ altered.modelReference={...(altered.modelReference??{}),modelRun:'2026-09-18T00:00:00Z'};
  assert.equal(verifiedLivePilotSource(altered,part),null);}
 """
     subprocess.run(["node", "--input-type=module", "-e", script], input=json.dumps({"document": document, "part": TARGET, "expected": expected}),
@@ -158,4 +251,7 @@ run_fixture(dmi_age=95)
 run_fixture(dmi_age=1)
 run_fixture(cp_age=96)
 run_fixture(cp_age=100)
+# UNKNOWN is an ordinary new-use gap even at >=96 h, not a protected aged
+# challenge. A valid normal CP original closes it without a model-age override.
+run_fixture(dmi_age=96, with_model_reference=False, native_grid_qualified=False)
 print("Current age challenge: response-bound CP selection, unchanged raw ledger, preserved DMI on unknown age, and Python-to-JS projection passed.")

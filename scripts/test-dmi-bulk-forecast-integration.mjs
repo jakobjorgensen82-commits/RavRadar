@@ -256,8 +256,11 @@ const replayFromSavedHourly = protectedAssembly(protectedFeature,
 assert.deepEqual(physicalValues(replayFromSavedHourly.hourly[0]), physicalValues(protectedHour),
   'history reconstruction preserves actual saved hourly tuples absent from the native baseline');
 assert.match(integratedRuntime,
-  /const deployedDmiRecord = buildPartDmiForecastWithProtectedRetention\([\s\S]*?persistedHourly: persistedDmiPartRows\.get\(part\.partId\)/,
+  /const deployedDmiRecord = buildPrivateDmiRecoveryRecord\([\s\S]*?persistedHourly: persistedDmiPartRows\.get\(part\.partId\)\?\.hourly \?\? \[\],\s*historicalBulkCache: historicalDmiBulkCache,\s*protectPreviousDmi: true,/,
   'replay and forecast must use the same protected persisted continuity chain');
+assert.match(protectedRetentionSource,
+  /const record = protectPreviousDmi\s*\? buildPartDmiForecastWithProtectedRetention\(feature, bulkCache, null, generatedAt, \{\s*startAt: windowStart, expectedIdentity, persistedHourly, historicalBulkCache,\s*protectPreviousDmi: true,\s*\}\)/,
+  'the private recovery wrapper must delegate every protected window to the actual protected mapper with saved hourly and historical continuity');
 assert.match(integratedRuntime, /protectedPreviousSource: deployedRecoverySource/,
   'only the authenticated protected assembly explicitly owns previous-winner precedence');
 const hourlyDomainValidated = mergeHourlyPreferDmiForTest([

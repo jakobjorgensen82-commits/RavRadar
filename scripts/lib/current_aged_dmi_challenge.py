@@ -8,12 +8,21 @@ CONTRACT_ID = "current-aged-dmi-response-bound-challenge-v1"
 
 
 def build_challenge_plan(*, attestation: dict, ledger: dict, dmi_input_sha256: str,
-                         production_reference_at: str) -> dict:
+                         production_reference_at: str, new_use_projection: dict | None = None) -> dict:
     from .copernicus_current import canonical_sha256
-    from .dmi_native_provenance import current_source_asset_sha256
+    from .dmi_native_provenance import current_source_asset_sha256, current_new_use_partition
     reference = exact_hour(production_reference_at)
+    eligible_keys = None
+    if new_use_projection is not None:
+        eligible, _ = current_new_use_partition(new_use_projection, ledger=ledger, attestation=attestation)
+        if (new_use_projection["dmiCurrentInputSha256"] != dmi_input_sha256
+                or new_use_projection["productionReferenceAt"] != production_reference_at):
+            raise ValueError("CURRENT_CHALLENGE_NEW_USE_BINDING_INVALID")
+        eligible_keys = {(row["partId"], row["validTime"]) for row in eligible}
     pairs = []
     for row in attestation["verifiedPairSources"]:
+        if eligible_keys is not None and (row["partId"], row["validTime"]) not in eligible_keys:
+            continue
         source = row["source"]
         if reference - exact_hour(source["modelRun"]) < timedelta(hours=96):
             continue
@@ -24,7 +33,7 @@ def build_challenge_plan(*, attestation: dict, ledger: dict, dmi_input_sha256: s
     value = {"contractId": CONTRACT_ID, "productionReferenceAt": production_reference_at,
              "dmiCurrentInputSha256": dmi_input_sha256, "dmiLedgerSha256": canonical_sha256(ledger),
              "dmiAttestationSha256": canonical_sha256(attestation),
-             "rawDmiVerifiedPairCount": len(attestation["verifiedPairSources"]),
+             "rawDmiVerifiedPairCount": len(eligible_keys) if eligible_keys is not None else len(attestation["verifiedPairSources"]),
              "challengePairCount": len(pairs), "challengePairs": pairs}
     value["planSha256"] = canonical_sha256(value)
     return validate_challenge_plan(value)

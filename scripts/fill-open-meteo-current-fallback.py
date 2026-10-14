@@ -37,6 +37,7 @@ from lib.current_field_shadow import load_document as load_regional_shadow
 from lib.current_operational_closure import build_regional_residual_plan
 from lib.dmi_native_provenance import (
     canonical_verified_part_current_attestation,
+    assert_current_new_use_projection,
     current_attestation_authorization_from_operational_ledger,
 )
 from lib.open_meteo_current_fallback import (
@@ -492,6 +493,13 @@ def residual_plan(*, targets: list[dict[str, Any]], dmi: dict[str, Any],
         allowed_assets,
         allowed_retained_pair_sources,
     )
+    new_use_projection = registry.get("dmiNewUseProjection")
+    if new_use_projection is not None:
+        assert_current_new_use_projection(new_use_projection,
+            document=dmi, targets=targets, ledger=ledger, attestation=attestation,
+            dmi_input_sha256=registry["dmiCurrentInputSha256"], production_reference_at=reference,
+            operational_range_end_at=registry["operationalRangeEndAt"],
+            target_registry_sha256=registry["targetRegistrySha256"])
     _, copernicus_residual, _ = select_source_order_admissible_records(
         registry["operationalRequiredPairs"],
         list(cache.get("acquisitions") or []),
@@ -524,6 +532,7 @@ def residual_plan(*, targets: list[dict[str, Any]], dmi: dict[str, Any],
             dmi_ledger=ledger,
             dmi_attestation=attestation,
             locked_reference=reference,
+            dmi_new_use_projection=new_use_projection,
         )
     except (KeyError, TypeError, ValueError, RuntimeError) as error:
         raise RuntimeError(residual_plan_error_code(error)) from None

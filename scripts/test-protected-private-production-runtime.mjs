@@ -2122,6 +2122,48 @@ try {
     const { registerHooks } = await import('node:module');
     const { execFileSync } = await import('node:child_process');
     const { pathToFileURL, fileURLToPath } = await import('node:url');
+    // Whole reviewed producer succession, not a relabelled original family.
+    const producerPath = 'scripts/update-dmi-bulk.py';
+    const beforeCommit = 'ebf322b8bb4d188fc59f8da8380543b879be4ca8';
+    const afterCommit = 'ca8273d58fb37a567ae22c955f0a530c78449bd0';
+    const sourceAt = commit => execFileSync('git', ['show', `${commit}:${producerPath}`],
+      { cwd: sourceRepository, encoding: 'utf8' });
+    const oldProducer = sourceAt(beforeCommit), reviewedProducer = sourceAt(afterCommit);
+    const currentProducer = (await fs.readFile(path.join(sourceRepository, producerPath), 'utf8'))
+      .replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+    const digest = value => crypto.createHash('sha256').update(value).digest('hex');
+    assert.equal(digest(oldProducer), '8ff4a5b6f50d3f2d4e177fcf8c55048051266ded1a196151d6adff9427829ce2');
+    assert.equal(digest(reviewedProducer), '242844d0da14fc64ce8ebbf48bdab1e49450822cd193cd231667013e216b160e');
+    assert.equal(currentProducer, reviewedProducer, 'the fixture must exercise the actual reviewed producer');
+    const delta = execFileSync('git', ['diff', '--no-ext-diff', '--no-textconv', '--unified=3',
+      beforeCommit, afterCommit, '--', producerPath], { cwd: sourceRepository, encoding: 'utf8' });
+    assert.equal(delta.includes('\\ No newline at end of file'), false);
+    const pieces = delta.split(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@[^\n]*\n/m);
+    assert.ok(pieces.length > 1 && (pieces.length - 1) % 3 === 0);
+    const restored = reviewedProducer.split('\n');
+    for (let index = pieces.length - 3; index >= 1; index -= 3) {
+      const offset = Number(pieces[index]) - 1;
+      const count = pieces[index + 1] === undefined ? 1 : Number(pieces[index + 1]);
+      const lines = pieces[index + 2].split('\n');
+      const afterLines = lines.filter(line => /^[ +]/.test(line)).map(line => line.slice(1));
+      const beforeLines = lines.filter(line => /^[ -]/.test(line)).map(line => line.slice(1));
+      assert.equal(afterLines.length, count);
+      assert.deepEqual(restored.slice(offset, offset + count), afterLines);
+      restored.splice(offset, count, ...beforeLines);
+    }
+    assert.equal(restored.join('\n'), oldProducer, 'whole inverse must recover the unchanged EBF producer');
+    const admissionSource = await fs.readFile(path.join(sourceRepository,
+      'scripts/lib/bounded-conditions-predecessor-transition.mjs'), 'utf8');
+    const admissionStart = admissionSource.indexOf('const gridSha256 =');
+    const admissionEnd = admissionSource.indexOf('function currentGridSamplingManifestMatches(', admissionStart);
+    assert.ok(admissionStart >= 0 && admissionEnd > admissionStart);
+    const admits = Function('crypto', admissionSource.slice(admissionStart, admissionEnd)
+      + '; return currentGridSamplingReviewedProducer;')(crypto);
+    assert.equal(admits(oldProducer), true);
+    assert.equal(admits(reviewedProducer), true);
+    for (const changed of [oldProducer + '# changed\n', reviewedProducer + '# changed\n', '']) {
+      assert.equal(admits(changed), false, 'unknown or changed producer bytes must not gain SOURCE admission');
+    }
     const base = '9c74feaa4bdb5b93964a8a1e267b18c880223c00';
     const query = 'current_grid_receiver_original';
     const isOriginal = value => typeof value === 'string' && value.startsWith('file:')

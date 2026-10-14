@@ -44,6 +44,7 @@ const PRIVATE_RUNTIME_SOURCE_FILES = Object.freeze({
     'js/core/ravscore-model-contract.js',
     'scripts/update-dmi-bulk.py',
     'scripts/plan-dmi-recovery.py',
+    'scripts/plan-ravscore-current-history.mjs',
     'scripts/lib/dmi_adaptive_recovery.py',
     'scripts/run-dmi-bulk-supervised.py',
     'scripts/lib/weather-acquisition-writer.mjs',

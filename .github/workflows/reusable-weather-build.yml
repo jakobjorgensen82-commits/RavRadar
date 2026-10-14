@@ -1675,6 +1675,14 @@ jobs:
         if: steps.preflight.outputs.should_run == 'true'
         run: node scripts/build-public-coastal-parts-v2.mjs
 
+      - name: Plan bounded current history from the actual selected continuation
+        id: current-history-demand
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.historical-wave-transition.outputs.required != 'true'
+        run: node scripts/plan-ravscore-current-history.mjs
+        env:
+          RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ steps.private-runtime-install.outcome == 'success' && 'true' || 'false' }}
+          RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
+
       - name: Refresh DMI water-source registry
         if: steps.preflight.outputs.should_run == 'true'
         run: node scripts/update-water-source-registry.mjs
@@ -1817,6 +1825,7 @@ jobs:
           DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false
           DMI_BULK_DKSS_PRIMARY_MODE: true
           DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH: .cache/weather-current-acquisition-plan.json
+          DMI_BULK_CURRENT_HISTORY_DEMAND_PATH: ${{ steps.current-history-demand.outcome == 'success' && '.cache/ravscore-current-history-demand.json' || '' }}
           DMI_BULK_ADAPTIVE_RECOVERY: ${{ inputs.quick_confirmation != true && steps.dmi-recovery-budget.outputs.extended == 'true' }}
           DMI_BULK_RECOVERY_BEFORE_COUNTS: ${{ steps.dmi-recovery-budget.outputs.missing_pair_counts_json }}
           DMI_BULK_HOURS: 118

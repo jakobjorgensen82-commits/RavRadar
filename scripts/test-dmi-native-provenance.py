@@ -3732,7 +3732,7 @@ if scenario == "header-statistics":
 before = copy.deepcopy((output, diagnostics, outcomes))
 seen, flushes = [], []
 
-if scenario == "current-only":
+if scenario in {"current-only", "cached-current-history"}:
     # Same actual pinned decoder, parser, read lease and COW transaction as the
     # existing lease cases. Own generated fixtures only; never provider data.
     current_zone = {**zone, "lat": 56.15, "lon": 8.3}
@@ -3794,6 +3794,246 @@ if scenario == "current-only":
         fixture_manifest.setdefault("assets", {})[fixture_path.name] = fixture_capture
         p.save_raw_cache_manifest(fixture_manifest)
         return fixture_path, payload, fixture_capture, scalar_reference
+
+
+    if scenario == "cached-current-history":
+        import contextlib, io
+        fixture_path, payload, _, _ = own_bitmap_fixture(
+            "own-current-history.grib", (49, 50, 82))
+        href = "https://owned-fixture.invalid/current-history.grib"
+        raw_path = p.cached_asset_path(href)
+        with raw_path.open("xb") as writer:
+            writer.write(payload)
+        p.register_raw_cache_asset(
+            raw_path, href, "dkss_lf", when, when,
+            item_id="own-current-history", acquired_at=when,
+            expected_size=len(payload), content_sha256=hashlib.sha256(payload).hexdigest(),
+        )
+        immutable_manifest = p.raw_cache_manifest_path().read_bytes()
+        history_zones = [current_zone, {**current_zone, "id": "PART::SYNTHETIC-2"}]
+        target = p.canonical_time(p.datetime.fromisoformat(when.replace("Z", "+00:00"))
+            + p.timedelta(hours=79))
+        initial_state = p.canonical_time(p.datetime.fromisoformat(target.replace("Z", "+00:00"))
+            - p.timedelta(hours=28))
+        rows = [{
+            "partId": z["id"].removeprefix("PART::"), "zoneId": "SYNTHETIC",
+            "parentZoneId": z["parentZoneId"], "entityId": z["id"],
+            "samplingPoint": [z["lon"], z["lat"]], "samplingContextKey": "sha256:" + "1" * 64,
+            "initialSource": "EXISTING_INTEGRATED", "initialStateAt": initial_state,
+            "initialStateSha256": "sha256:" + "2" * 64, "startAt": when, "endAt": target,
+        } for z in history_zones]
+        demands = p.current_history_demands(rows, history_zones, target)
+        assert len(demands) == 2 and all(d["startAt"] == when for d in demands.values())
+        wrong_activation = copy.deepcopy(rows)
+        wrong_activation[0]["initialSource"] = "POINT_ACTIVATION"
+        try:
+            p.current_history_demands(wrong_activation, history_zones, target)
+        except ValueError as error:
+            assert str(error) == "DMI_CURRENT_HISTORY_DEMAND_INVALID"
+        else:
+            raise AssertionError("activation prior to the locked target was admitted")
+
+        # Build genuine OLD-format provenance from actual ecCodes coordinates,
+        # not by stripping a new receipt or inventing captured byte metadata.
+        old_fields = {}
+        with p._grib_read_scope(raw_path, "dkss_lf", when, when) as original_reader:
+            original_capture = dict(original_reader.capture)
+            while True:
+                gid = ec.codes_grib_new_from_file(original_reader.handle)
+                if gid is None:
+                    original_reader.check()
+                    break
+                try:
+                    parameter = p.classify_parameter(gid, "dkss_lf")
+                    nearest = min(ec.codes_grib_find_nearest(
+                        gid, current_zone["lat"], current_zone["lon"], npoints=4),
+                        key=lambda value: value["distance"])
+                    assert int(nearest["index"]) == 4
+                    lat, lon = float(nearest["lat"]), float(nearest["lon"])
+                    old_fields[parameter] = (
+                        float(ec.codes_get_elements(gid, "values", [4])[0]),
+                        {"latitude": lat, "longitude": lon,
+                         "distanceKm": p.haversine_km(current_zone["lat"], current_zone["lon"], lat, lon),
+                         "gridDefinitionSha256": p.grid_definition_sha256(gid)},
+                        p.vector_vertical_layer("current", p.safe_get(gid, "typeOfLevel"), p.safe_get(gid, "level")),
+                    )
+                finally:
+                    ec.codes_release(gid)
+        assert set(old_fields) == {"current-u", "current-v", "sea-mean-deviation"}
+        assert old_fields["current-u"][1:] == old_fields["current-v"][1:]
+        registry = p.sampling_registry_signature()
+        document = {"schemaVersion": 2, "generatedAt": when, "zoneRegistrySignature": registry,
+            "currentVectorSemanticsVersion": p.CURRENT_VECTOR_SEMANTICS_VERSION,
+            "currentVectorSelection": p.CURRENT_VECTOR_SELECTION,
+            "currentMaxDistanceKm": p.CURRENT_MAX_DISTANCE_KM, "timeStrideHours": 3,
+            "zones": {}}
+        for z in history_zones:
+            candidate, layer = old_fields["current-u"][1:]
+            native = p.native_component_source("dkss_lf", when, when,
+                component="current", zone=z, grid_candidate=candidate, capture=original_capture,
+                spatial_selection=p.COMPONENT_SPATIAL_SELECTION["current"],
+                vectorSelection=p.CURRENT_VECTOR_SELECTION,
+                vectorSemanticsVersion=p.CURRENT_VECTOR_SEMANTICS_VERSION,
+                verticalLayer=layer[0], verticalLayerRankM=layer[1])
+            water = p.native_component_source("dkss_lf", when, when,
+                component="waterLevel", zone=z, grid_candidate=old_fields["sea-mean-deviation"][1],
+                capture=original_capture, spatial_selection=p.COMPONENT_SPATIAL_SELECTION["waterLevel"])
+            assert native is not None and water is not None and "nativeGridSampling" not in native
+            document["zones"][z["id"]] = {**p.sampling_identity(z), "gridPoints": {}, "collections": {},
+                "hourly": {when: {"time": when,
+                    "current-u": old_fields["current-u"][0], "current-v": old_fields["current-v"][0],
+                    "sea-mean-deviation": old_fields["sea-mean-deviation"][0],
+                    "sources": {"current": native, "waterLevel": water}}}}
+        original_document = copy.deepcopy(document)
+        originals = p.capture_current_history_originals(document, demands, registry)
+        immutable_originals = copy.deepcopy(originals)
+        plan = p.plan_cached_current_history(demands, originals, p.load_raw_cache_manifest())
+        assert len(originals) == 2 and len(plan["jobs"]) == 1
+        assert not plan["unavailable"]
+        empty = p.plan_cached_current_history({}, [], {"assets": {}})
+        assert not empty["jobs"] and not empty["originalsByKey"]
+        working = copy.deepcopy(document)
+        working["diagnostics"] = {}
+        original_decode = p.codes_grib_new_from_file
+        original_transition = p._same_original_current_decoder_transition
+        original_write = p.write_checkpoint
+        decoded, transition_results, flush_calls = [], [], []
+
+        def forbidden_checkpoint(*args, **kwargs):
+            raise AssertionError("this bounded fixture must not write a production checkpoint")
+
+        def observe_decode(handle):
+            assert fcntl.fcntl(handle.fileno(), fcntl.F_GETLEASE) == fcntl.F_RDLCK
+            value = original_decode(handle)
+            decoded.append((handle.fileno(), value is None))
+            return value
+
+        def observe_transition(*args, **kwargs):
+            value = original_transition(*args, **kwargs)
+            transition_results.append(value)
+            return value
+
+        p.codes_grib_new_from_file = observe_decode
+        p._same_original_current_decoder_transition = observe_transition
+        p.write_checkpoint = forbidden_checkpoint
+        controller = p.ProgressCheckpointController(working, set(), {"bytes": 0})
+        normal_flush = controller.flush_if_due
+
+        def observe_flush(*args, **kwargs):
+            for fd in {item[0] for item in decoded}:
+                try:
+                    os.fstat(fd)
+                except OSError as error:
+                    assert error.errno == errno.EBADF
+                else:
+                    raise AssertionError("checkpoint preceded actual owned-reader close")
+            flush_calls.append(True)
+            return normal_flush(*args, **kwargs)
+
+        controller.flush_if_due = observe_flush
+        options = {"processing_signature": p.current_marine_processing_signature(registry),
+            "reserve_seconds": 0, "supervisor_skipped_assets": set()}
+        with contextlib.redirect_stdout(io.StringIO()) as reported:
+            summary = p.replay_cached_current_history(plan, working, controller, **options)
+        assert "DMI_ASSET_PROCESSING_START=" in reported.getvalue()
+        assert "DMI_ASSET_PROCESSING_END=" in reported.getvalue()
+        assert summary["rawAssetCount"] == summary["traversedAssetCount"] == 1
+        assert summary["qualifiedPartCount"] == 2 and summary["changedAssetCount"] == 1
+        assert len(decoded) == 4 and decoded[-1][1] and len({item[0] for item in decoded}) == 1
+        assert transition_results == [True, True] and flush_calls == [True]
+        assert controller.committed_assets_since_write == 1 and controller.bulk_dirty
+        for z in history_zones:
+            hour = working["zones"][z["id"]]["hourly"][when]
+            old = original_document["zones"][z["id"]]["hourly"][when]
+            assert hour["sea-mean-deviation"] == old["sea-mean-deviation"]
+            assert hour["sources"]["waterLevel"] == old["sources"]["waterLevel"]
+            assert p.inspect_native_grid_sampling(hour["sources"]["current"])["status"] == "coherent"
+            assert hour["sources"]["current"]["gridDefinitionSha256"] == old["sources"]["current"]["gridDefinitionSha256"]
+            assert hour["sources"]["current"]["contentSha256"] == hashlib.sha256(payload).hexdigest()
+            assert hour["sources"]["current"]["gridPoint"] == expected_point
+        retained = copy.deepcopy(working)
+        p.clean_and_summarize(retained, set(), {"bytes": 0}, current_history_requests=demands)
+        assert all(when in retained["zones"][z["id"]]["hourly"] for z in history_zones)
+        assert document == original_document and originals == immutable_originals
+
+        # The same real helper must refuse a mismatched full capture without
+        # decoding, flushing, committing or modifying any previous working row.
+        refused = copy.deepcopy(original_document)
+        refused["diagnostics"] = {}
+        refused_before = copy.deepcopy(refused)
+        refused_controller = p.ProgressCheckpointController(refused, set(), {"bytes": 0})
+        refused_controller.flush_if_due = lambda **kwargs: (_ for _ in ()).throw(
+            AssertionError("failed history reached checkpoint flush"))
+        mismatch = copy.deepcopy(plan["jobs"][0])
+        mismatch["capture"]["contentSha256"] = "0" * 64
+        decoded.clear()
+        with contextlib.redirect_stdout(io.StringIO()):
+            outcome = p.replay_cached_current_history_job(
+                mismatch, plan, refused, refused_controller, **options)
+        assert outcome == {"status": "UNAVAILABLE", "reason": "RAW_CAPTURE_MISMATCH"}
+        assert not decoded and not refused_controller.bulk_dirty and refused == refused_before
+        missing = copy.deepcopy(plan["jobs"][0])
+        missing["path"] = directory / "never-created-history.grib"
+        with contextlib.redirect_stdout(io.StringIO()):
+            outcome = p.replay_cached_current_history_job(
+                missing, plan, refused, refused_controller, **options)
+        assert outcome == {"status": "UNAVAILABLE", "reason": "RAW_CAPTURE_UNAVAILABLE"}
+
+        # Actual decoder EOF is reached first; the original failure then occurs
+        # before the normal transaction can commit. No kernel/EOF success fake.
+        eof_failure = RuntimeError("own failure after actual decoder EOF")
+        def fail_after_eof(handle):
+            value = observe_decode(handle)
+            if value is None:
+                raise eof_failure
+            return value
+        p.codes_grib_new_from_file = fail_after_eof
+        with contextlib.redirect_stdout(io.StringIO()):
+            try:
+                p.replay_cached_current_history_job(
+                    plan["jobs"][0], plan, refused, refused_controller, **options)
+            except RuntimeError as error:
+                assert error is eof_failure
+            else:
+                raise AssertionError("EOF failure reached history commit")
+        assert decoded[-1][1] and refused == refused_before and not refused_controller.bulk_dirty
+        assert not p._UNSETTLED_GRIB_READS
+
+        # Real lease break, last in this child. Keep unknown ownership retained
+        # until the outer parent's existing pidfd/reap proof permits cleanup.
+        def break_owned_lease(handle):
+            value = original_decode(handle)
+            if value is not None:
+                try:
+                    fd = os.open(raw_path, os.O_WRONLY | os.O_NONBLOCK)
+                except BlockingIOError:
+                    pass
+                else:
+                    os.close(fd)
+                    raise AssertionError("kernel admitted a writer while history held its read lease")
+            return value
+        p.codes_grib_new_from_file = break_owned_lease
+        with contextlib.redirect_stdout(io.StringIO()):
+            try:
+                p.replay_cached_current_history_job(
+                    plan["jobs"][0], plan, refused, refused_controller, **options)
+            except p.GribReadUnproven:
+                assert p._UNSETTLED_GRIB_READS
+                held = p._UNSETTLED_GRIB_READS[-1]
+                assert held.retained and not held.close_attempted
+                assert held.handle.fileno() == held.fd
+            else:
+                raise AssertionError("unknown lease break admitted history")
+        assert refused == refused_before and not refused_controller.bulk_dirty
+        assert raw_path.read_bytes() == payload and fixture_path.read_bytes() == payload
+        assert p.raw_cache_manifest_path().read_bytes() == immutable_manifest
+        assert document == original_document and originals == immutable_originals
+        assert path.read_bytes() == original and sentinel.read_bytes() == sentinel_bytes
+        print(json.dumps({"case": scenario, "cachedAssetsDecoded": 1, "qualifiedParts": 2,
+            "sameOwnedReadEOF": True, "originalsAndScalarsPreserved": True,
+            "demandedRetention": True, "captureAndMissingRefused": True,
+            "lateEOFRollback": True, "actualLeaseBreakRetained": True}), flush=True)
+        raise SystemExit(0)
 
     for label, parameters in (("scalar-first", (82, 49, 50)), ("current-first", (49, 50, 82))):
         fixture_path, payload, fixture_capture, scalar_reference = own_bitmap_fixture(
@@ -4143,7 +4383,7 @@ print(json.dumps({"case": scenario, "actualMessages": 1 if scenario == "replace"
     "originalsPreserved": True, "unknownRefused": scenario != "healthy"}), flush=True)
 """
     compile(_lease_native, "<own-native-grib-lease>", "exec")
-    for _lease_case in ("healthy", "break", "replace", "foreign-pending", "header-statistics", "current-only"):
+    for _lease_case in ("healthy", "break", "replace", "foreign-pending", "header-statistics", "current-only", "cached-current-history"):
         _lease_directory = tempfile.mkdtemp(prefix="rr-native-grib-lease-")
         _lease_process, _lease_pidfd, _lease_settled = None, None, False
         try:
@@ -4166,7 +4406,13 @@ print(json.dumps({"case": scenario, "actualMessages": 1 if scenario == "replace"
             _lease_settled = True
             assert _lease_process.returncode == 0, _lease_stderr.decode("utf-8", "replace")[:2000]
             _lease_receipt = json.loads(_lease_stdout.decode("utf-8"))
-            if _lease_case == "current-only":
+            if _lease_case == "cached-current-history":
+                assert _lease_receipt == {"case": _lease_case,
+                    "cachedAssetsDecoded": 1, "qualifiedParts": 2,
+                    "sameOwnedReadEOF": True, "originalsAndScalarsPreserved": True,
+                    "demandedRetention": True, "captureAndMissingRefused": True,
+                    "lateEOFRollback": True, "actualLeaseBreakRetained": True}
+            elif _lease_case == "current-only":
                 assert _lease_receipt == {"case": _lease_case, "actualMessages": 8, "fieldOrdersChecked": 2,
                     "actualHeaderIndex": True, "bitmapZeroPreserved": True, "scalarNamespaceUnchanged": True,
                     "differentNativeElementsRefused": True, "originalsPreserved": True}

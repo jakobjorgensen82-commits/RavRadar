@@ -99,6 +99,13 @@ def source(
         "samplingPoint": target["waterPoint"],
         "gridPoint": target["waterPoint"],
         "gridDefinitionSha256": "a" * 64,
+        "nativeGridSampling": {
+            "contractId": "dmi-native-grid-sampling-v1", "elementIndex": 0,
+            "gridIndexIdentitySha256": "9" * 64,
+            "coordinateInterpretation": "dmi-dkss-grib1-header-endpoints-v1",
+            "gridDefinitionSha256": "a" * 64, "gridPoint": list(target["waterPoint"]),
+            "fieldSet": ["current-u", "current-v"], "optionalFieldSet": [],
+        },
         "distanceKm": 0.0,
         "spatialSemanticsVersion": 1,
         "spatialSelection": "nearest-shared-grid-cell-no-spatial-interpolation",
@@ -1069,4 +1076,89 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     assert refused_strict_full_coast.returncode != 0
     assert "cannot be combined" in refused_strict_full_coast.stdout
 
-print("OK: Copernicus targets only the exact attested official-DKSS complement.")
+
+# Genuine original ledger -> normal registry CLI -> NEW-use plan. The existing
+# fixture's native receipt is explicit synthetic input; removal does not change
+# any original asset, outcome, original attestation or source-priority rule.
+saved_model_run = MODEL_RUN
+try:
+    for native_age in (3, 96):
+        MODEL_RUN = utc(REFERENCE - timedelta(hours=native_age))
+        with tempfile.TemporaryDirectory(prefix="ravradar-current-new-use-") as raw:
+            folder = Path(raw)
+            parts = [{"partId": "new-use", "sourceZoneId": "Z1",
+                      "name": "New use", "waterPoint": [9.0, 57.0]}]
+            targets = [{"partId": "new-use", "parentZoneId": "Z1",
+                        "name": "New use", "waterPoint": [9.0, 57.0]}]
+            next_hour = utc(REFERENCE + timedelta(hours=1))
+            native_hours = {AT, next_hour}
+            upstream_absent = set(producer.operational_current_valid_times(REFERENCE)) - native_hours
+            original = dmi_document(targets, upstream_absent=upstream_absent,
+                                    verified_hours=native_hours)
+            original_attestation = availability_attestation(original, targets)
+            original_ledger = copy.deepcopy(original["diagnostics"]["currentOperationalLedger"])
+            document = copy.deepcopy(original)
+            document["zones"]["PART::new-use"]["hourly"][AT]["sources"]["current"].pop("nativeGridSampling")
+            assert document["diagnostics"]["currentOperationalLedger"] == original_ledger
+            assert availability_attestation(document, targets) == original_attestation
+            assert original_attestation["verifiedPairCount"] == 2
+            assert len(original_ledger["operationalComplementPairs"]) == 116
+            write(folder / "targets.json", {"partCount": 1, "zones": {"Z1": parts}})
+            write(folder / "dmi.json", document)
+            original_bytes = (folder / "dmi.json").read_bytes()
+            result = run(folder)
+            assert result.returncode == 0, result.stdout + result.stderr
+            assert (folder / "dmi.json").read_bytes() == original_bytes
+            registry = json.loads((folder / "selected.json").read_text(encoding="utf-8"))
+            validate_target_registry(registry)
+            projection = registry["dmiNewUseProjection"]
+            assert projection["originalVerifiedPairCount"] == 2
+            assert projection["eligiblePairCount"] == 1
+            assert projection["unknownPairs"] == [{"partId": "new-use", "validTime": AT}]
+            assert projection["complementPairCount"] == 117
+            assert registry["operationalDmiVerifiedPairCount"] == 1
+            required = {(row["partId"], row["validTime"]) for row in registry["operationalRequiredPairs"]}
+            assert ("new-use", AT) in required
+            challenge = registry.get("agedDmiChallengePlan")
+            if native_age == 96:
+                assert challenge["rawDmiVerifiedPairCount"] == 1
+                assert [(row["partId"], row["validTime"]) for row in challenge["challengePairs"]] == [("new-use", next_hour)]
+                assert registry["operationalRequiredPairCount"] == 118
+            else:
+                assert challenge is None
+                assert registry["operationalRequiredPairCount"] == 117
+
+            # A structural shape/hash is not permission to reclassify the
+            # unknown original as usable. Rebuild against the actual document.
+            from lib.dmi_native_provenance import assert_current_new_use_projection
+            from lib.copernicus_current import canonical_sha256
+            forged = copy.deepcopy(projection)
+            forged.update(eligiblePairCount=2, unknownPairCount=0, unknownPairs=[],
+                          complementPairCount=116,
+                          eligiblePairsSha256=part_time_pairs_sha256(original_attestation["verifiedPairs"]),
+                          complementPairsSha256=part_time_pairs_sha256(original_ledger["operationalComplementPairs"]))
+            forged["projectionSha256"] = canonical_sha256({key: value for key, value in forged.items()
+                                                         if key != "projectionSha256"})
+            try:
+                assert_current_new_use_projection(forged,
+                    document=document, targets=targets, ledger=original_ledger,
+                    attestation=original_attestation, dmi_input_sha256=projection["dmiCurrentInputSha256"],
+                    production_reference_at=AT, operational_range_end_at=utc(REFERENCE + timedelta(hours=117)),
+                    target_registry_sha256=producer.target_fingerprint(targets))
+            except ValueError as error:
+                assert str(error) == "DMI_CURRENT_NEW_USE_NATIVE_BINDING_INVALID"
+            else:
+                raise AssertionError("Forged new-use eligibility was accepted")
+
+            contradictory = copy.deepcopy(document)
+            contradictory["zones"]["PART::new-use"]["hourly"][AT]["sources"]["current"]["nativeGridSampling"] = {}
+            write(folder / "dmi.json", contradictory)
+            bad_bytes = (folder / "dmi.json").read_bytes()
+            refused = run(folder)
+            assert refused.returncode != 0
+            assert "DMI_CURRENT_NEW_USE_GRID_CONTRADICTORY" in refused.stdout + refused.stderr
+            assert (folder / "dmi.json").read_bytes() == bad_bytes
+finally:
+    MODEL_RUN = saved_model_run
+
+print("OK: Copernicus preserves original DMI truth and uses the exact native NEW-use complement.")

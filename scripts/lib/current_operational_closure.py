@@ -34,6 +34,8 @@ from .copernicus_target_identity import target_fingerprint
 from .dmi_native_provenance import (
     canonical_time,
     current_source_asset_sha256,
+    assert_current_new_use_projection,
+    current_new_use_partition,
     validate_current_operational_availability_ledger,
 )
 from .regional_current_operational import (
@@ -557,6 +559,7 @@ def build_regional_residual_plan(
     dmi_ledger: dict[str, Any],
     dmi_attestation: dict[str, Any],
     locked_reference: str,
+    dmi_new_use_projection: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Apply regional DMI only to its allowlist and return the exact final residual."""
     residual = _canonical_pair_rows(residual_pairs, "SUPPLEMENTAL_RESIDUAL_INVALID")
@@ -580,6 +583,7 @@ def build_regional_residual_plan(
             locked_reference=locked_reference,
             dmi_gap_pairs=regional_candidates,
             allow_target_rebinding_as_missing=True,
+            dmi_new_use_projection=dmi_new_use_projection,
         )
     except RegionalCurrentOperationalError as error:
         _fail("REGIONAL_EVIDENCE_INVALID", cause_code=error.code)
@@ -1105,6 +1109,7 @@ def build_current_operational_closure(
     regional_policy: dict[str, Any],
     open_meteo_fallback: dict[str, Any],
     locked_reference: Any,
+    dmi_document: dict[str, Any] | None = None,
 ) -> dict[str, dict[str, Any]]:
     reference_text, reference = _exact_hour(locked_reference, "LOCKED_REFERENCE_INVALID")
     end_text = (reference + timedelta(hours=OPERATIONAL_END_OFFSET_HOURS)).strftime(
@@ -1139,9 +1144,25 @@ def build_current_operational_closure(
         or registry.get("targetCount") != EXPECTED_TARGET_COUNT
     ):
         _fail("COPERNICUS_REGISTRY_BINDING_INVALID")
-    complement = _canonical_pair_rows(
-        ledger.get("operationalComplementPairs"), "DMI_COMPLEMENT_INVALID"
-    )
+    new_use_projection = registry.get("dmiNewUseProjection")
+    eligible_keys = None
+    if new_use_projection is not None:
+        if not isinstance(dmi_document, dict):
+            _fail("DMI_NEW_USE_NATIVE_CONTEXT_REQUIRED")
+        try:
+            assert_current_new_use_projection(new_use_projection,
+                document=dmi_document, targets=targets, ledger=ledger, attestation=dmi_attestation,
+                dmi_input_sha256=dmi_current_input_sha256, production_reference_at=reference_text,
+                operational_range_end_at=end_text, target_registry_sha256=target_sha256)
+            eligible, complement = current_new_use_partition(
+                new_use_projection, ledger=ledger, attestation=dmi_attestation)
+        except (KeyError, TypeError, ValueError):
+            _fail("DMI_NEW_USE_PROJECTION_INVALID")
+        eligible_keys = {(row["partId"], row["validTime"]) for row in eligible}
+    else:
+        complement = _canonical_pair_rows(
+            ledger.get("operationalComplementPairs"), "DMI_COMPLEMENT_INVALID"
+        )
     required = _canonical_pair_rows(
         registry.get("operationalRequiredPairs"), "COPERNICUS_REQUIRED_MATRIX_INVALID"
     )
@@ -1152,7 +1173,8 @@ def build_current_operational_closure(
     challenge_plan = registry.get("agedDmiChallengePlan")
     challenges = challenge_pairs(challenge_plan)
     if challenge_plan is not None and challenge_plan != build_challenge_plan(attestation=dmi_attestation,
-            ledger=ledger, dmi_input_sha256=dmi_current_input_sha256, production_reference_at=reference_text):
+            ledger=ledger, dmi_input_sha256=dmi_current_input_sha256, production_reference_at=reference_text,
+            new_use_projection=new_use_projection):
         _fail("DMI_CHALLENGE_INPUT_BINDING_INVALID")
     expected_required = sorted([*complement, *({"partId": key[0], "validTime": key[1]} for key in challenges)],
                                key=lambda row: (row["validTime"], row["partId"]))
@@ -1166,6 +1188,9 @@ def build_current_operational_closure(
         _fail("COPERNICUS_ADVISORY_REQUIRED_MATRIX_INVALID")
 
     dmi_assignments = _dmi_assignments(dmi_attestation)
+    if eligible_keys is not None:
+        dmi_assignments = [row for row in dmi_assignments
+                           if (row["partId"], row["validTime"]) in eligible_keys]
     matrix = _matrix_keys(set(target_by_id), reference)
     dmi_keys = {(row["partId"], row["validTime"]) for row in dmi_assignments}
     complement_keys = {(row["partId"], row["validTime"]) for row in complement}
@@ -1222,6 +1247,7 @@ def build_current_operational_closure(
         dmi_ledger=ledger,
         dmi_attestation=dmi_attestation,
         locked_reference=reference_text,
+        dmi_new_use_projection=new_use_projection,
     )
     regional_private = residual_plan["regionalPrivate"]
     regional_assignments = residual_plan["regionalAssignments"]

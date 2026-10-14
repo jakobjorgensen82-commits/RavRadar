@@ -138,6 +138,7 @@ import {
 } from './lib/ravscore-operational-state-readiness.mjs';
 import {
   RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES,
+  RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS,
   buildRavScoreRecoveryReplay,
   ravScoreRecoverySourceStartAt,
 } from './lib/ravscore-recovery-replay.mjs';
@@ -1433,6 +1434,49 @@ function buildPartDmiForecastWithProtectedRetention(
   });
 }
 
+// Private recovery keeps the existing 121-row mapper and all of its admission
+// rules. Only the normal state-72h + history-51h bridge may need a second
+// window. Three final scalar support rows preserve the ordinary T+3 sanitizer;
+// they never extend replay or the public score/state horizon.
+function buildPrivateDmiRecoveryRecord(
+  feature, bulkCache, generatedAt,
+  { startAt, expectedIdentity, persistedHourly = [], historicalBulkCache = null,
+    protectPreviousDmi = false },
+) {
+  const startMs = Date.parse(startAt), endMs = Date.parse(generatedAt);
+  const span = (endMs - startMs) / 3_600_000;
+  if (!Number.isSafeInteger(span) || span < 0
+    || span > RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS + 51
+    || startMs % 3_600_000 !== 0 || endMs % 3_600_000 !== 0
+    || new Date(startMs).toISOString() !== startAt
+    || new Date(endMs).toISOString() !== generatedAt) {
+    throw new Error('DMI_PRIVATE_RECOVERY_WINDOW_INVALID');
+  }
+  const requiredHours = Math.max(DMI_FORECAST_HOURS, span + 1 + 3);
+  let first = null;
+  const hourly = [];
+  for (let offset = 0; offset < requiredHours; offset += DMI_FORECAST_HOURS) {
+    const windowStart = new Date(startMs + offset * 3_600_000).toISOString();
+    const record = protectPreviousDmi
+      ? buildPartDmiForecastWithProtectedRetention(feature, bulkCache, null, generatedAt, {
+        startAt: windowStart, expectedIdentity, persistedHourly, historicalBulkCache,
+        protectPreviousDmi: true,
+      })
+      : bulkZoneToForecastRecord(feature, bulkCache, generatedAt, null, {
+        startAt: windowStart, expectedIdentity,
+      });
+    if (!record) continue;
+    if (first === null) first = record;
+    const from = startMs + offset * 3_600_000;
+    const until = startMs + Math.min(requiredHours, offset + DMI_FORECAST_HOURS) * 3_600_000;
+    hourly.push(...record.hourly.filter(row => Date.parse(row.time) >= from
+      && Date.parse(row.time) < until));
+  }
+  if (first === null) return null;
+  return { ...first, hourly, validFrom: hourly[0].time,
+    validUntil: hourly.at(-1).time, horizonHours: hourly.length };
+}
+
 function verifiedFeggesundNeighborSource(hour, expectedIdentity) {
   const source = verifiedDmiForecastComponentSource(
     hour?.sources?.wave,
@@ -2595,10 +2639,9 @@ function scoreCoastalPartsRuntime(
       if (initialSelection.source !== 'POINT_ACTIVATION'
         && (deployedBulkCache || historicalDmiBulkCache
           || persistedDmiPartRows.has(part.partId))) {
-        const deployedDmiRecord = buildPartDmiForecastWithProtectedRetention(
+        const deployedDmiRecord = buildPrivateDmiRecoveryRecord(
           feature,
           deployedBulkCache,
-          null,
           generatedAt,
           {
             startAt: replayStartAt, expectedIdentity: partDmiIdentity,
@@ -2639,11 +2682,10 @@ function scoreCoastalPartsRuntime(
           };
         }
       }
-      const progressiveDmiRecord = bulkZoneToForecastRecord(
+      const progressiveDmiRecord = buildPrivateDmiRecoveryRecord(
         feature,
         bulkCache,
         generatedAt,
-        null,
         { startAt: replayStartAt, expectedIdentity: partDmiIdentity },
       );
       let progressiveRecoverySource = null;

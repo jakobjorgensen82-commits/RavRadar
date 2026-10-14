@@ -13,6 +13,21 @@ const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 // Invert only the reviewed current-grid delta, with exact whole 044d identity.
 // This is an oracle adapter, not runtime admission or current-data proof.
 function inverseCurrentGridIntegration(source) {
+  // Invert ONLY the reviewed bounded private-recovery bridge before the
+  // existing PUBLIC/role/current-grid inverses and their immutable oracles.
+  const privateRecoveryHunks = [
+    ["  RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES,\n  RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS,\n  buildRavScoreRecoveryReplay,\n", "  RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES,\n  buildRavScoreRecoveryReplay,\n"],
+    ["// Private recovery keeps the existing 121-row mapper and all of its admission\n// rules. Only the normal state-72h + history-51h bridge may need a second\n// window. Three final scalar support rows preserve the ordinary T+3 sanitizer;\n// they never extend replay or the public score/state horizon.\nfunction buildPrivateDmiRecoveryRecord(\n  feature, bulkCache, generatedAt,\n  { startAt, expectedIdentity, persistedHourly = [], historicalBulkCache = null,\n    protectPreviousDmi = false },\n) {\n  const startMs = Date.parse(startAt), endMs = Date.parse(generatedAt);\n  const span = (endMs - startMs) / 3_600_000;\n  if (!Number.isSafeInteger(span) || span < 0\n    || span > RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS + 51\n    || startMs % 3_600_000 !== 0 || endMs % 3_600_000 !== 0\n    || new Date(startMs).toISOString() !== startAt\n    || new Date(endMs).toISOString() !== generatedAt) {\n    throw new Error('DMI_PRIVATE_RECOVERY_WINDOW_INVALID');\n  }\n  const requiredHours = Math.max(DMI_FORECAST_HOURS, span + 1 + 3);\n  let first = null;\n  const hourly = [];\n  for (let offset = 0; offset < requiredHours; offset += DMI_FORECAST_HOURS) {\n    const windowStart = new Date(startMs + offset * 3_600_000).toISOString();\n    const record = protectPreviousDmi\n      ? buildPartDmiForecastWithProtectedRetention(feature, bulkCache, null, generatedAt, {\n        startAt: windowStart, expectedIdentity, persistedHourly, historicalBulkCache,\n        protectPreviousDmi: true,\n      })\n      : bulkZoneToForecastRecord(feature, bulkCache, generatedAt, null, {\n        startAt: windowStart, expectedIdentity,\n      });\n    if (!record) continue;\n    if (first === null) first = record;\n    const from = startMs + offset * 3_600_000;\n    const until = startMs + Math.min(requiredHours, offset + DMI_FORECAST_HOURS) * 3_600_000;\n    hourly.push(...record.hourly.filter(row => Date.parse(row.time) >= from\n      && Date.parse(row.time) < until));\n  }\n  if (first === null) return null;\n  return { ...first, hourly, validFrom: hourly[0].time,\n    validUntil: hourly.at(-1).time, horizonHours: hourly.length };\n}\n\nfunction verifiedFeggesundNeighborSource(hour, expectedIdentity) {", "function verifiedFeggesundNeighborSource(hour, expectedIdentity) {"],
+    ["        const deployedDmiRecord = buildPrivateDmiRecoveryRecord(\n          feature,\n          deployedBulkCache,\n          generatedAt,\n", "        const deployedDmiRecord = buildPartDmiForecastWithProtectedRetention(\n          feature,\n          deployedBulkCache,\n          null,\n          generatedAt,\n"],
+    ["      const progressiveDmiRecord = buildPrivateDmiRecoveryRecord(\n        feature,\n        bulkCache,\n        generatedAt,\n        { startAt: replayStartAt, expectedIdentity: partDmiIdentity },\n", "      const progressiveDmiRecord = bulkZoneToForecastRecord(\n        feature,\n        bulkCache,\n        generatedAt,\n        null,\n        { startAt: replayStartAt, expectedIdentity: partDmiIdentity },\n"],
+  ];
+  for (const [after, before] of privateRecoveryHunks) {
+    assert.equal(source.split(after).length, 2,
+      'each exact private recovery bridge delta must occur once');
+    source = source.replace(after, () => before);
+  }
+  assert.equal(digest(source), 'd51e45eda06cb1a9511c597f0309669ca4c7ca7f84f560c91d35dc9060cfc440',
+    'whole private recovery inverse must match genuine ebf before the PUBLIC inverse');
   // Invert only the reviewed PUBLIC same-original decoder preference first.
   const publicDecoderHunks = [
   [

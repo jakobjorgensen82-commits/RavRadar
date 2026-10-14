@@ -10112,6 +10112,495 @@ def persist_regional_shadow_before_recovery(
         deferred_recovery_checkpoint.clear()
 
 
+def _current_history_json(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
+
+
+def current_history_demands(rows, zones, locked_reference):
+    """Validate the selector's bounded request; this is not source admission."""
+    by_id = {str(zone["id"]): zone for zone in zones if zone.get("coastalPart")}
+    reference = canonical_time(locked_reference)
+    demands = {}
+    if not isinstance(rows, list) or reference is None:
+        raise ValueError("DMI_CURRENT_HISTORY_DEMAND_INVALID")
+    for row in rows:
+        zone_id = "PART::" + str(row.get("partId") or "") if isinstance(row, dict) else ""
+        zone = by_id.get(zone_id)
+        identity = sampling_identity(zone) if zone is not None else None
+        start = canonical_time(row.get("startAt")) if isinstance(row, dict) else None
+        end = canonical_time(row.get("endAt")) if isinstance(row, dict) else None
+        initial = canonical_time(row.get("initialStateAt")) if isinstance(row, dict) else None
+        source = row.get("initialSource") if isinstance(row, dict) else None
+        cold = source == "COLD_START" and row.get("initialStateAt") is None
+        state_window = (
+            source in {"EXISTING_INTEGRATED", "INTEGRATED_CHECKPOINT", "POINT_ACTIVATION"}
+            and initial is not None and 0 <= epoch(end) - epoch(initial) <= 72 * 3600
+            and epoch(start) == epoch(initial) - 51 * 3600
+        )
+        point = row.get("samplingPoint") if isinstance(row, dict) else None
+        if not (
+            isinstance(row, dict) and set(row) == {
+                "partId", "zoneId", "parentZoneId", "entityId", "samplingPoint",
+                "samplingContextKey", "initialSource", "initialStateAt",
+                "initialStateSha256", "startAt", "endAt",
+            }
+            and re.fullmatch(r"sha256:[0-9a-f]{64}", str(row["samplingContextKey"]))
+            and (
+                (cold and row["initialStateSha256"] is None)
+                or (state_window and re.fullmatch(
+                    r"sha256:[0-9a-f]{64}", str(row["initialStateSha256"])))
+            )
+            and identity and zone_id not in demands and start
+            and end == reference
+            and ((cold and epoch(start) == epoch(end) - 48 * 3600) or state_window)
+            and all(epoch(value) % 3600 == 0 for value in (start, end))
+            and (initial is None or epoch(initial) % 3600 == 0)
+            and (source != "POINT_ACTIVATION" or initial == end)
+            and row.get("entityId") == zone_id
+            and row.get("parentZoneId") == identity["parentZoneId"]
+            and isinstance(point, list) and len(point) == 2
+            and all(isinstance(value, (int, float)) and not isinstance(value, bool)
+                and math.isfinite(value) for value in point)
+            and same_sampling_point(point, identity["samplingPoint"])
+        ):
+            raise ValueError("DMI_CURRENT_HISTORY_DEMAND_INVALID")
+        demands[zone_id] = {
+            "zone": copy.deepcopy(zone), "identity": identity,
+            "startAt": start, "endAt": end, "initialStateAt": initial,
+        }
+    return demands
+
+
+def capture_current_history_originals(document, demands, registry_signature):
+    """Detach actual native contexts/whole rows before ordinary sanitation.
+
+    No ledger, processed-step flag or raw-manifest entry authorizes a row here.
+    The caller supplies the actual normally restored active/published documents.
+    """
+    captured = []
+    if not isinstance(document, dict) or document.get("zoneRegistrySignature") != registry_signature:
+        return captured
+    if not (
+        document.get("currentVectorSemanticsVersion") == CURRENT_VECTOR_SEMANTICS_VERSION
+        and document.get("currentVectorSelection") == CURRENT_VECTOR_SELECTION
+        and ("generatedAt" not in document or canonical_time(document["generatedAt"]))
+        and ("timeStrideHours" not in document or (
+            isinstance(document["timeStrideHours"], (int, float))
+            and not isinstance(document["timeStrideHours"], bool)
+            and 0 < document["timeStrideHours"] <= 24
+        ))
+        and isinstance(document.get("currentMaxDistanceKm", CURRENT_MAX_DISTANCE_KM), (int, float))
+        and not isinstance(document.get("currentMaxDistanceKm", CURRENT_MAX_DISTANCE_KM), bool)
+        and math.isfinite(document.get("currentMaxDistanceKm", CURRENT_MAX_DISTANCE_KM))
+    ):
+        return captured
+    original_zones = document.get("zones")
+    if not isinstance(original_zones, dict):
+        return captured
+    for zone_id, demand in demands.items():
+        original_zone = original_zones.get(zone_id)
+        if not isinstance(original_zone, dict):
+            continue
+        identity = demand["identity"]
+        # Require every actual persisted identity field; never fill from target.
+        if any(
+            not same_sampling_point(original_zone.get(key), value) if key == "samplingPoint"
+            else original_zone.get(key) != value for key, value in identity.items()
+        ):
+            continue
+        hourly = original_zone.get("hourly")
+        if not isinstance(hourly, dict):
+            continue
+        for valid, row in hourly.items():
+            if not (
+                canonical_time(valid) == valid and isinstance(row, dict)
+                and canonical_time(row.get("time")) == valid
+                and epoch(demand["startAt"]) <= epoch(valid) <= epoch(demand["endAt"])
+                and all(isinstance(row.get(key), (int, float))
+                    and not isinstance(row.get(key), bool) and math.isfinite(row[key])
+                    for key in COMPONENT_FIELD_SET["current"])
+            ):
+                continue
+            source = (row.get("sources") or {}).get("current")
+            if not (
+                isinstance(source, dict)
+                and not any(key in source for key in
+                    ("nativeSteps", "nativeValidTimes", "temporalResolution", "forecastAgeHours"))
+                and complete_native_source_for_hour(source, "current", zone_id, original_zone, valid)
+                and dmi_marine_collection_allowed_for_zone(
+                    source["collection"], identity["parentZoneId"], "current")
+                and source["vectorSelection"] == document["currentVectorSelection"]
+                and source["distanceKm"] <= document.get("currentMaxDistanceKm", CURRENT_MAX_DISTANCE_KM)
+            ):
+                continue
+            captured.append(copy.deepcopy({
+                "zoneId": zone_id, "time": valid,
+                "header": {key: document[key] for key in (
+                    "currentVectorSemanticsVersion", "currentVectorSelection",
+                    "currentMaxDistanceKm", "timeStrideHours", "generatedAt",
+                ) if key in document},
+                "identity": {key: original_zone[key] for key in identity},
+                "row": row, "capture": canonical_current_source_asset(source),
+            }))
+    return captured
+
+
+def plan_cached_current_history(demands, originals, manifest):
+    """Pure bounded original/capture join. Does not open, download or mutate."""
+    originals_by_key, jobs, unavailable = {}, {}, []
+    if not demands:
+        return {"demands": {}, "originalsByKey": {}, "jobs": [], "unavailable": [], "derivedByKey": {}}
+    assets = manifest.get("assets") if isinstance(manifest, dict) else None
+    if not isinstance(assets, dict):
+        assets = {}
+    raw_by_capture = {}
+    for name, asset in assets.items():
+        if not isinstance(name, str) or not isinstance(asset, dict):
+            continue
+        href = asset.get("canonicalHref")
+        capture = canonical_current_source_asset(asset)
+        if not isinstance(href, str) or not href or capture is None:
+            continue
+        path = cached_asset_path(href)
+        if (name != path.name or pathlib.Path(name).name != name
+            or asset_identity_sha256(href) != capture["assetIdentitySha256"]):
+            continue
+        raw_by_capture.setdefault(_current_history_json(capture), []).append((path, asset))
+    for original in originals:
+        zone_id, valid = original["zoneId"], original["time"]
+        capture = original["capture"]
+        source_key = _current_history_json(capture)
+        key = (zone_id.removeprefix("PART::"), valid, source_key)
+        source = original["row"]["sources"]["current"]
+        existing = originals_by_key.setdefault(key, [])
+        duplicate = False
+        for other in existing:
+            same = all(other["row"].get(field) == original["row"].get(field)
+                for field in COMPONENT_FIELD_SET["current"]) and (
+                    other["row"]["sources"]["current"] == source)
+            duplicate = duplicate or same
+            if not same and source.get("nativeGridSampling") is None and (
+                other["row"]["sources"]["current"].get("nativeGridSampling") is None
+            ):
+                raise ValueError("DMI_CURRENT_HISTORY_ORIGINAL_CONFLICT")
+        if duplicate:
+            continue
+        existing.append(original)
+        if source.get("nativeGridSampling") is not None:
+            continue  # Retain this original; never relabel or decode its receipt.
+        matches = raw_by_capture.get(source_key, [])
+        if len(matches) != 1:
+            unavailable.append({"reason": "RAW_CAPTURE_UNAVAILABLE", "partId": key[0], "time": valid})
+            continue
+        path, asset = matches[0]
+        job_key = (str(path), source_key)
+        job = jobs.setdefault(job_key, {"path": path, "capture": capture, "asset": copy.deepcopy(asset), "originals": {}})
+        job["originals"][zone_id] = original
+    return {
+        "demands": demands, "originalsByKey": originals_by_key,
+        "jobs": sorted(jobs.values(), key=lambda job: (
+            job["capture"]["validTime"], job["capture"]["modelRun"],
+            COLLECTION_ORDER.index(job["capture"]["collection"]), str(job["path"]),
+        )),
+        "unavailable": unavailable, "derivedByKey": {},
+    }
+
+
+def read_current_history_demands(part_doc, part_bytes, coastal_part_targets, zones, reference):
+    configured = os.getenv("DMI_BULK_CURRENT_HISTORY_DEMAND_PATH", "").strip()
+    if not configured:
+        return {}
+    expected_path = ROOT / ".cache/ravscore-current-history-demand.json"
+    path = pathlib.Path(configured)
+    if not path.is_absolute():
+        path = ROOT / path
+    if path.absolute() != expected_path.absolute() or not stat.S_ISREG(path.lstat().st_mode):
+        raise ValueError("DMI_CURRENT_HISTORY_DEMAND_PATH_INVALID")
+
+    def unique_fields(pairs):
+        document = {}
+        for key, value in pairs:
+            if key in document:
+                raise ValueError("DMI_CURRENT_HISTORY_DEMAND_DUPLICATE_FIELD")
+            document[key] = value
+        return document
+
+    document = json.loads(path.read_text("utf-8"), object_pairs_hook=unique_fields)
+    if not (
+        isinstance(document, dict) and set(document) == {
+            "schemaVersion", "kind", "productionReferenceAt", "modelBinding",
+            "registrySha256", "sourceHashes", "demands",
+        }
+        and type(document["schemaVersion"]) is int and document["schemaVersion"] == 1
+        and document["kind"] == "RAVSCORE_CURRENT_HISTORY_ACQUISITION_DEMAND"
+        and canonical_time(document["productionReferenceAt"]) == canonical_time(reference)
+        and isinstance(document["modelBinding"], dict)
+        and document["registrySha256"] == "sha256:" + hashlib.sha256(part_bytes).hexdigest()
+        and isinstance(document["demands"], list)
+        and len(coastal_part_targets) > 0
+        and len(document["demands"]) in (0, len(coastal_part_targets))
+    ):
+        raise ValueError("DMI_CURRENT_HISTORY_DEMAND_INVALID")
+    # Model binding is context from the normal JS builder, never Python value
+    # admission. Exact actual input bytes, registry and original-native proofs
+    # remain independent requirements.
+    source_paths = {
+        "conditions": ROOT / "data/live/conditions.json",
+        "checkpoint": ROOT / ".cache/ravscore-continuation-checkpoint/checkpoint.json",
+        "activation": ROOT / ".cache/coastal-point-staging/activation-state-injection.json",
+    }
+    if not isinstance(document["sourceHashes"], dict) or set(document["sourceHashes"]) != set(source_paths):
+        raise ValueError("DMI_CURRENT_HISTORY_DEMAND_INPUT_MISMATCH")
+    for key, source_path in source_paths.items():
+        try:
+            actual = "sha256:" + file_content_sha256(source_path)
+        except FileNotFoundError:
+            actual = None
+        if document["sourceHashes"][key] != actual:
+            raise ValueError("DMI_CURRENT_HISTORY_DEMAND_INPUT_MISMATCH")
+    if not document["demands"]:
+        return {}  # Explicit stateless/no-demand plan; grants no source admission.
+    owner_by_part = {}
+    targets_from_read_bytes = []
+    for zone_id, parts in part_doc["zones"].items():
+        for part in (parts if isinstance(parts, list) else [parts]):
+            part_id = str(part.get("partId") or "")
+            if not part_id or part_id in owner_by_part:
+                raise ValueError("DMI_CURRENT_HISTORY_DEMAND_TARGET_INVALID")
+            owner_by_part[part_id] = zone_id
+            targets_from_read_bytes.append({
+                "partId": part_id, "parentZoneId": str(part.get("sourceZoneId") or zone_id),
+                "waterPoint": part.get("waterPoint"),
+            })
+    if target_fingerprint(targets_from_read_bytes) != target_fingerprint(coastal_part_targets):
+        raise ValueError("DMI_CURRENT_HISTORY_DEMAND_TARGET_INVALID")
+    demands = current_history_demands(document["demands"], zones, reference)
+    expected = {"PART::" + target["partId"] for target in coastal_part_targets}
+    if set(demands) != expected or any(
+        row.get("zoneId") != owner_by_part.get(row.get("partId")) for row in document["demands"]
+    ):
+        raise ValueError("DMI_CURRENT_HISTORY_DEMAND_TARGET_INVALID")
+    return demands
+
+
+
+def _current_history_without_current(zone):
+    value = copy.deepcopy(zone)
+    for key in ("gridPoints", "collections"):
+        for field in COMPONENT_FIELD_SET["current"]:
+            (value.get(key) or {}).pop(field, None)
+    for valid, hour in list((value.get("hourly") or {}).items()):
+        for field in COMPONENT_FIELD_SET["current"]:
+            hour.pop(field, None)
+        sources = hour.get("sources")
+        if isinstance(sources, dict):
+            sources.pop("current", None)
+            if not sources:
+                hour.pop("sources", None)
+        if set(hour) <= {"time"}:
+            value["hourly"].pop(valid, None)
+    return value
+
+
+def replay_cached_current_history_job(job, plan, result, controller, *,
+                                      processing_signature, reserve_seconds,
+                                      supervisor_skipped_assets):
+    """One cached-only CURRENT transaction, never operational-ledger admission."""
+    capture, path = job["capture"], job["path"]
+    collection, run, valid = capture["collection"], capture["modelRun"], capture["validTime"]
+    raw = job["asset"]
+    identity = supervised_asset_identity(collection, run, {
+        "href": raw["canonicalHref"], "id": capture["itemId"], "valid": valid,
+        "size": capture["assetSizeBytes"], "itemCreatedAt": capture["itemCreatedAt"],
+        "itemUpdatedAt": capture["itemUpdatedAt"],
+    })
+    if supervised_asset_identity_key(identity) in supervisor_skipped_assets:
+        return {"status": "UNAVAILABLE", "reason": "SUPERVISED_ASSET_PREVIOUSLY_STOPPED"}
+    if not controller.can_start_asset(reserve_seconds=reserve_seconds, cost_family=collection):
+        return {"status": "DEFERRED", "reason": "RUNTIME_BUDGET_REACHED"}
+    try:
+        metadata = path.lstat()
+    except FileNotFoundError:
+        return {"status": "UNAVAILABLE", "reason": "RAW_CAPTURE_UNAVAILABLE"}
+    if not stat.S_ISREG(metadata.st_mode):
+        return {"status": "UNAVAILABLE", "reason": "RAW_CAPTURE_UNAVAILABLE"}
+    zones = [plan["demands"][key]["zone"] for key in sorted(job["originals"])]
+    target_ids = [zone["id"].removeprefix("PART::") for zone in zones]
+    target_sha = target_fingerprint([{
+        "partId": zone["id"].removeprefix("PART::"), "parentZoneId": zone["parentZoneId"],
+        "waterPoint": [zone["lon"], zone["lat"]],
+    } for zone in zones])
+    if not target_ids:
+        raise ValueError("DMI_CURRENT_HISTORY_EMPTY_TARGET")
+    before = {zone["id"]: copy.deepcopy(result["zones"][zone["id"]]) for zone in zones}
+    def current_tuple(row):
+        if not isinstance(row, dict):
+            return None
+        return (row.get("current-u"), row.get("current-v"), (row.get("sources") or {}).get("current"))
+
+    for zone_id, point in before.items():
+        row = (point.get("hourly") or {}).get(valid)
+        if not isinstance(row, dict) or not any(field in row for field in COMPONENT_FIELD_SET["current"]):
+            continue
+        existing_capture = canonical_current_source_asset((row.get("sources") or {}).get("current"))
+        key = (zone_id.removeprefix("PART::"), valid, _current_history_json(existing_capture))
+        bound = plan["originalsByKey"].get(key)
+        if not bound or current_tuple(row) not in (
+            *(current_tuple(item["row"]) for item in bound), plan["derivedByKey"].get(key),
+        ):
+            raise ValueError("DMI_CURRENT_HISTORY_WINNER_UNBOUND")
+    seeded = set()
+    qualified = set()
+    trusted = set(plan["originalsByKey"])
+    started = time.monotonic()
+    capture_matched = False
+
+    def prepare(stage, _private):
+        for zone_id, original in job["originals"].items():
+            point = stage["zones"][zone_id]
+            row = point["hourly"].get(valid)
+            if row is not None and any(key in row for key in COMPONENT_FIELD_SET["current"]):
+                continue
+            row = point["hourly"].setdefault(valid, {"time": valid})
+            for key in COMPONENT_FIELD_SET["current"]:
+                row[key] = original["row"][key]
+            row.setdefault("sources", {})["current"] = copy.deepcopy(original["row"]["sources"]["current"])
+            seeded.add(zone_id)
+
+    def validate(stage, _private, outcome, part_outcomes):
+        if not (
+            not outcome[2] and outcome[3] > 0
+            and set(outcome[0]) == set(COMPONENT_FIELD_SET["current"])
+            and isinstance(part_outcomes, dict) and part_outcomes.get("complete") is True
+            and part_outcomes.get("targetPartIds") == target_ids
+        ):
+            return False
+        proof = build_current_part_outcome_proof(
+            part_outcomes.get("spatialUnavailablePartIds"), target_ids,
+            target_sha, processing_signature, capture,
+        )
+        available = set(target_ids) - set(proof["spatialUnavailablePartIds"])
+        for zone in zones:
+            zone_id = zone["id"]
+            point = stage["zones"][zone_id]
+            original = job["originals"][zone_id]
+            row = (point.get("hourly") or {}).get(valid)
+            source = (row.get("sources") or {}).get("current") if isinstance(row, dict) else None
+            fresh = bool(
+                isinstance(source, dict) and canonical_time(row.get("time")) == valid
+                and (zone_id in seeded or current_tuple(row) != current_tuple(before[zone_id]["hourly"].get(valid)))
+                and complete_native_source_for_hour(source, "current", zone_id, point, valid)
+                and all(isinstance(row.get(key), (int, float)) and not isinstance(row.get(key), bool)
+                    and math.isfinite(row[key]) for key in COMPONENT_FIELD_SET["current"])
+                and canonical_current_source_asset(source) == capture
+                and source.get("gridDefinitionSha256")
+                    == original["row"]["sources"]["current"].get("gridDefinitionSha256")
+                and inspect_native_grid_sampling(source)["status"] == "coherent"
+                and (source.get("nativeGridSampling") or {}).get("coordinateInterpretation")
+                    == "dmi-dkss-grib1-header-endpoints-v1"
+            )
+            if fresh:
+                if zone_id.removeprefix("PART::") not in available:
+                    return False
+                qualified.add(zone_id)
+            else:
+                old_row = before[zone_id]["hourly"].get(valid)
+                if zone_id in seeded:
+                    # A seed is private parser input, not newly admitted history.
+                    if old_row is None:
+                        point["hourly"].pop(valid, None)
+                    else:
+                        point["hourly"][valid] = copy.deepcopy(old_row)
+                    row = point["hourly"].get(valid)
+                if row != old_row:
+                    return False
+                old_source = (row.get("sources") or {}).get("current") if isinstance(row, dict) else None
+                old_capture = canonical_current_source_asset(old_source)
+                key = (zone_id.removeprefix("PART::"), valid, _current_history_json(old_capture))
+                bound = plan["originalsByKey"].get(key)
+                if row is not None and any(field in row for field in COMPONENT_FIELD_SET["current"]):
+                    if not (
+                        bound and complete_native_source_for_hour(old_source, "current", zone_id, point, valid)
+                        and current_tuple(row) in (
+                            *(current_tuple(item["row"]) for item in bound), plan["derivedByKey"].get(key),
+                        )
+                    ):
+                        return False
+                elif zone_id.removeprefix("PART::") in available:
+                    return False
+            # The normal COW type creates this empty legacy metadata slot.
+            # Restore actual absence; never discard a nonempty scalar choice.
+            if "marineSelection" not in before[zone_id] and point.get("marineSelection") == {}:
+                point.pop("marineSelection", None)
+            if _current_history_without_current(point) != _current_history_without_current(before[zone_id]):
+                return False
+            # All other native times and non-current metadata remain exact.
+            if {key: value for key, value in point["hourly"].items() if key != valid} != {
+                key: value for key, value in before[zone_id]["hourly"].items() if key != valid
+            }:
+                return False
+        return True
+
+    try:
+        with supervised_asset_operation(identity):
+            with _grib_read_scope(path, collection, run, valid) as reader:
+                actual = canonical_current_source_asset({
+                    "collection": collection, "modelRun": run, "validTime": valid,
+                    **(reader.capture or {}),
+                })
+                capture_matched = actual == capture
+                if capture_matched:
+                    outcome = process_grib_transactionally(
+                        path, collection, run, valid, zones, result, result["diagnostics"],
+                        current_part_outcomes={}, allowed_parameters=set(COMPONENT_FIELD_SET["current"]),
+                        prepare_stage=prepare, current_stage_validator=validate,
+                        trusted_current_pair_source_keys=trusted, _owned_read=reader,
+                        validation_error="DMI_CURRENT_HISTORY_STAGE_INVALID",
+                    )
+    except BaseException:
+        controller.observe_asset_duration(time.monotonic() - started, cost_family=collection)
+        raise
+    if not capture_matched:
+        controller.observe_asset_duration(time.monotonic() - started, cost_family=collection)
+        return {"status": "UNAVAILABLE", "reason": "RAW_CAPTURE_MISMATCH"}
+    if outcome[2]:
+        controller.observe_asset_duration(time.monotonic() - started, cost_family=collection)
+        return {"status": "DEFERRED", "reason": "RUNTIME_BUDGET_REACHED"}
+    for zone_id in qualified:
+        key = (zone_id.removeprefix("PART::"), valid, _current_history_json(capture))
+        plan["derivedByKey"][key] = copy.deepcopy(current_tuple(result["zones"][zone_id]["hourly"][valid]))
+    changed = any(result["zones"][key] != before[key] for key in before)
+    if changed:
+        controller.note_committed_asset(seconds=time.monotonic() - started, cost_family=collection)
+    else:
+        controller.observe_asset_duration(time.monotonic() - started, cost_family=collection)
+    return {"status": "TRAVERSED", "qualifiedPartCount": len(qualified), "changed": changed}
+
+
+def replay_cached_current_history(plan, result, controller, *, processing_signature,
+                                  reserve_seconds, supervisor_skipped_assets):
+    summary = {"nativeOriginalCount": sum(map(len, plan["originalsByKey"].values())),
+               "rawAssetCount": len(plan["jobs"]), "rawUnavailableOriginalCount": len(plan["unavailable"]),
+               "traversedAssetCount": 0, "qualifiedPartCount": 0, "changedAssetCount": 0,
+               "deferredAssetCount": 0, "unavailableAssetCount": 0}
+    for index, job in enumerate(plan["jobs"]):
+        outcome = replay_cached_current_history_job(
+            job, plan, result, controller, processing_signature=processing_signature,
+            reserve_seconds=reserve_seconds, supervisor_skipped_assets=supervisor_skipped_assets,
+        )
+        if outcome["status"] == "DEFERRED":
+            summary["deferredAssetCount"] = len(plan["jobs"]) - index
+            break
+        if outcome["status"] == "UNAVAILABLE":
+            summary["unavailableAssetCount"] += 1
+            continue
+        summary["traversedAssetCount"] += 1
+        summary["qualifiedPartCount"] += outcome["qualifiedPartCount"]
+        summary["changedAssetCount"] += int(outcome["changed"])
+    return summary
+
+
+
 def load_previous(
     expected_signature: str,
     *,
@@ -10120,6 +10609,8 @@ def load_previous(
     retained_current_asset_proofs: list[dict[str, Any]] | None = None,
     regional_source_proof_candidates: list[dict[str, Any]] | None = None,
     deferred_recovery_checkpoint: dict[str, bool] | None = None,
+    current_history_requests: dict[str, Any] | None = None,
+    current_history_originals: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     output_document = load_bulk_document(OUTPUT_PATH)
     fallback_document = load_bulk_document(DEPLOYED_FALLBACK_PATH)
@@ -10156,6 +10647,10 @@ def load_previous(
                 or not document.get("zones")
             ):
                 continue
+            if current_history_requests and current_history_originals is not None:
+                current_history_originals.extend(capture_current_history_originals(
+                    document, current_history_requests, expected_signature,
+                ))
             try:
                 original_regional_proofs: list[dict[str, Any]] = []
                 document_proofs = (
@@ -11747,7 +12242,8 @@ def sanitize_component_provenance(zone_id: str, zone: dict[str, Any]) -> list[st
     return removed
 
 
-def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget: dict[str, int]) -> None:
+def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget: dict[str, int], *,
+                        current_history_requests: dict[str, Any] | None = None) -> None:
     cutoff = time.time() - PRIVATE_REPLAY_RETENTION_HOURS * 3600
     if PRIVATE_WAVE_BOOTSTRAP_RETENTION_START_EPOCH is not None:
         # The one-time migration bridge may begin before the normal rolling
@@ -11770,6 +12266,25 @@ def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget
             if cutoff <= epoch(valid) <= horizon:
                 wind_from_uv(hour)
                 cleaned[valid] = hour
+            elif current_history_requests and zone_id in current_history_requests:
+                demand = current_history_requests[zone_id]
+                source = (hour.get("sources") or {}).get("current")
+                if (
+                    epoch(demand["startAt"]) <= epoch(valid) <= epoch(demand["endAt"])
+                    and canonical_time(hour.get("time")) == canonical_time(valid)
+                    and complete_native_source_for_hour(source, "current", zone_id, zone, valid)
+                    and dmi_marine_collection_allowed_for_zone(
+                        source["collection"], zone["parentZoneId"], "current")
+                    and all(isinstance(hour.get(key), (int, float))
+                        and not isinstance(hour.get(key), bool) and math.isfinite(hour[key])
+                        for key in COMPONENT_FIELD_SET["current"])
+                ):
+                    # Only demanded native CURRENT survives the normal cutoff.
+                    # This is derived working output, never a rewrite of originals.
+                    cleaned[valid] = copy.deepcopy({
+                        "time": hour["time"], "current-u": hour["current-u"],
+                        "current-v": hour["current-v"], "sources": {"current": source},
+                    })
         zone["hourly"] = dict(sorted(cleaned.items(), key=lambda row: epoch(row[0])))
         current_rows = []
         for valid, hour in zone["hourly"].items():
@@ -12540,10 +13055,21 @@ def main() -> int:
     current_zone_registry_signature = sampling_registry_signature()
     zones_geo = json.loads(ZONES_PATH.read_text("utf-8"))
     part_doc: dict[str, Any] = {"zones": {}}
+    part_bytes = b""
     if COASTAL_PART_POINTS_PATH.exists():
-        part_doc = json.loads(COASTAL_PART_POINTS_PATH.read_text("utf-8"))
+        part_bytes = COASTAL_PART_POINTS_PATH.read_bytes()
+        part_doc = json.loads(part_bytes.decode("utf-8"))
     coastal_part_targets = load_coastal_part_targets(COASTAL_PART_POINTS_PATH)
     locked_production_reference = production_reference_hour()
+    active_operational_zones = build_operational_zone_config(
+        zones_geo,
+        coastal_part_targets,
+    )
+    current_history_requests = read_current_history_demands(
+        part_doc, part_bytes, coastal_part_targets, active_operational_zones,
+        locked_production_reference,
+    )
+    current_history_originals: list[dict[str, Any]] = []
     retained_current_asset_proofs: list[dict[str, Any]] = []
     regional_source_proof_candidates: list[dict[str, Any]] = []
     deferred_recovery_checkpoint: dict[str, bool] = {}
@@ -12554,6 +13080,12 @@ def main() -> int:
         retained_current_asset_proofs=retained_current_asset_proofs,
         regional_source_proof_candidates=regional_source_proof_candidates,
         deferred_recovery_checkpoint=deferred_recovery_checkpoint,
+        current_history_requests=current_history_requests,
+        current_history_originals=current_history_originals,
+    )
+    current_history_plan = plan_cached_current_history(
+        current_history_requests, current_history_originals,
+        load_raw_cache_manifest() if current_history_requests else {},
     )
     zone_coast_types = {
         str((feature.get("properties") or {}).get("id")): (feature.get("properties") or {}).get("coastType") or "east"
@@ -12602,10 +13134,6 @@ def main() -> int:
         previous,
         coastal_part_targets,
         locked_production_reference,
-    )
-    active_operational_zones = build_operational_zone_config(
-        zones_geo,
-        coastal_part_targets,
     )
     active_wind_zones = {
         str(zone.get("id")): (previous.get("zones") or {}).get(
@@ -12663,6 +13191,7 @@ def main() -> int:
         and time.time() - previous_generated < REFRESH_MINUTES * 60
         and marine_cache_healthy
         and native_sampling_cache_ready(previous, locked_production_reference)
+        and not current_history_plan["jobs"]
         and previous.get("spatialProvenanceVersion") == SPATIAL_PROVENANCE_VERSION
         and int(previous.get("privateReplayRetentionHours") or 0) >= 54
         and zone_registry_unchanged
@@ -12869,7 +13398,9 @@ def main() -> int:
     # checkpoints. This prevents stale provenance or mismatched vectors from
     # influencing a later candidate while avoiding a full-cache rescan after
     # every single hourly asset.
-    clean_and_summarize(result, set(), budget)
+    clean_and_summarize(
+        result, set(), budget, current_history_requests=current_history_requests,
+    )
     retained_current_asset_proofs = (
         _select_retained_current_asset_proofs_for_document(
             result,
@@ -13360,6 +13891,17 @@ def main() -> int:
         flush_private_progress_sidecars,
         seal_current_operational_progress,
     )
+    if current_history_requests and not FINALIZE_ONLY:
+        result["diagnostics"]["cachedCurrentHistory"] = replay_cached_current_history(
+            current_history_plan, result, checkpoint_controller,
+            processing_signature=current_marine_processing_signature(
+                current_zone_registry_signature),
+            reserve_seconds=(
+                float(schedule_coverage.get("criticalWamRuntimeReserveSeconds") or 0.0)
+                + float(schedule_coverage.get("strictCurrentRuntimeReserveSeconds") or 0.0)
+            ),
+            supervisor_skipped_assets=supervisor_skipped_assets,
+        )
     if wave_bootstrap_configuration is not None:
         try:
             bootstrap_locked_hours = execute_private_wave_history_bootstrap(
@@ -15992,7 +16534,9 @@ def main() -> int:
     if coastal_point_stage_targets:
         prune_coastal_point_stage_hours(coastal_point_stage, generated)
         save_coastal_point_stage(COASTAL_POINT_STAGE_PATH, coastal_point_stage)
-    clean_and_summarize(result, fresh_zone_ids, budget)
+    clean_and_summarize(
+        result, fresh_zone_ids, budget, current_history_requests=current_history_requests,
+    )
     current_operational_ledger = build_current_operational_ledger(
         result,
         coastal_part_targets,

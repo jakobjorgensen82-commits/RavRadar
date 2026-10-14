@@ -23,6 +23,7 @@ except ModuleNotFoundError:  # Credential-free cache checks use only stdlib path
 
 from .copernicus_target_identity import target_fingerprint as geometry_fingerprint
 from .current_model_reference import validate_model_reference
+from .dmi_native_provenance import validate_current_new_use_projection
 from .current_aged_dmi_challenge import challenge_pairs, eligible_challenge_record, validate_challenge_plan
 
 
@@ -994,13 +995,17 @@ def validate_target_registry(document: Any) -> dict[str, Any]:
     if schema_version == 2 and not isinstance(schema_version, bool):
         return _validate_legacy_target_registry(document)
     challenge = document.get("agedDmiChallengePlan") if isinstance(document, dict) else None
+    new_use = document.get("dmiNewUseProjection") if isinstance(document, dict) else None
+    if new_use is not None:
+        validate_current_new_use_projection(new_use)
     challenge_count = 0
     if challenge is not None:
         validate_challenge_plan(challenge)
         challenge_count = challenge["challengePairCount"]
     registry = _require_exact_fields(
         document,
-        OPERATIONAL_TARGET_REGISTRY_FIELDS | ({"agedDmiChallengePlan"} if challenge is not None else set()),
+        OPERATIONAL_TARGET_REGISTRY_FIELDS | ({"agedDmiChallengePlan"} if challenge is not None else set())
+        | ({"dmiNewUseProjection"} if new_use is not None else set()),
         "Copernicus operational target registry",
     )
     if (
@@ -1146,6 +1151,23 @@ def validate_target_registry(document: Any) -> dict[str, Any]:
     )
     if not set(challenge_pairs(challenge)).issubset({(row["partId"], row["validTime"]) for row in operational_pairs}):
         raise ValueError("Copernicus challenge pairs outside operational plan")
+    if new_use is not None:
+        challenges = set(challenge_pairs(challenge))
+        gap_pairs = [row for row in operational_pairs
+                     if (row["partId"], row["validTime"]) not in challenges]
+        gap_keys = {(row["partId"], row["validTime"]) for row in gap_pairs}
+        unknown = {(row["partId"], row["validTime"]) for row in new_use["unknownPairs"]}
+        if (registry["selectionMode"] == "manual-full-coast"
+                or new_use["productionReferenceAt"] != registry["productionReferenceAt"]
+                or new_use["operationalRangeEndAt"] != registry["operationalRangeEndAt"]
+                or new_use["targetCount"] != registry["targetCount"]
+                or new_use["targetRegistrySha256"] != registry["targetRegistrySha256"]
+                or new_use["dmiCurrentInputSha256"] != registry["dmiCurrentInputSha256"]
+                or new_use["eligiblePairCount"] != registry["operationalDmiVerifiedPairCount"]
+                or new_use["complementPairCount"] != len(gap_pairs)
+                or new_use["complementPairsSha256"] != required_pairs_sha256(gap_pairs)
+                or not unknown <= gap_keys or unknown & challenges):
+            raise ValueError("Copernicus DMI new-use projection binding mismatch")
     operational_ids = {str(row["partId"]) for row in operational_pairs}
     advisory_ids = {str(row["partId"]) for row in advisory_pairs}
     if registry.get("operationalPartCount") != len(operational_ids):

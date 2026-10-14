@@ -2077,4 +2077,128 @@ runtime_rejected(
     "OPEN_METEO_TARGET_POINT_INVALID",
 )
 
+
+# Actual UNKNOWN-native -> normal CP stage -> normal regional/OM residual.
+# No native-admission, projection, source-order or regional helper is mocked.
+from lib.copernicus_current import empty_shadow, file_sha256
+from lib.copernicus_current_source_stage import build_source_stage_progress
+from lib.current_field_shadow import empty_document as empty_regional_document
+
+def _new_use_native_fixture(reference):
+    """One genuine retained original at age 96 h; its grid receipt is UNKNOWN.
+
+    Reuse only the existing gated regional fixture's targets/policy and producer.
+    Its main/test functions are not invoked. Synthetic acquisition/outcome inputs
+    are trusted fixture boundaries, never real GRIB/provider evidence.
+    """
+    fixture_root = Path(__file__).resolve().parents[1]
+    regional_fixture = runpy.run_path(str(fixture_root / "scripts/test-regional-current-operational.py"))
+    native_producer = regional_fixture["producer"]
+    registry_builder = regional_fixture["registry_builder"]
+    bundle = regional_fixture["fixture"]()
+    native_targets = bundle["targets"]
+    target = native_targets[0]
+    at = reference.isoformat().replace("+00:00", "Z")
+    run_at = (reference - timedelta(hours=96)).isoformat().replace("+00:00", "Z")
+    part_ids = [row["partId"] for row in native_targets]
+    target_sha = native_producer.target_fingerprint(native_targets)
+    signature = native_producer.current_marine_processing_signature("new-use-caller-fixture")
+
+    def forbidden_external(*_args, **_kwargs):
+        raise AssertionError("NEW_USE_FIXTURE_EXTERNAL_CALL_FORBIDDEN")
+
+    native_producer.STAC_SESSION.request = forbidden_external
+    native_producer.DOWNLOAD_SESSION.request = forbidden_external
+    for name in ("codes_get", "codes_get_array", "codes_get_elements",
+                 "codes_grib_find_nearest", "codes_grib_new_from_file", "codes_release"):
+        setattr(native_producer, name, forbidden_external)
+    source = {
+        "provider": "dmi", "fallback": False, "collection": "dkss_nsbs",
+        "collectionFamily": "marine", "component": "current",
+        "componentKind": "ocean-current-vector",
+        "fieldSet": ["current-u", "current-v"], "optionalFieldSet": [],
+        "modelRun": run_at, "nativeValidTime": at, "leadTimeHours": 96,
+        "entityId": f"PART::{target['partId']}", "parentZoneId": target["parentZoneId"],
+        "entityType": "coastal-part", "samplingContext": "coastal-part-water-point",
+        "samplingPoint": list(target["waterPoint"]), "gridPoint": list(target["waterPoint"]),
+        "gridDefinitionSha256": "a" * 64, "distanceKm": 0.0,
+        "spatialSemanticsVersion": 1,
+        "spatialSelection": "nearest-shared-grid-cell-no-spatial-interpolation",
+        "itemId": "synthetic-new-use-original", "assetIdentitySha256": "b" * 64,
+        "assetSizeBytes": 10, "contentLengthBytes": 10, "contentSha256": "c" * 64,
+        "acquiredAt": at, "itemCreatedAt": run_at, "itemUpdatedAt": None,
+        "verticalLayer": "depthbelowsea:5", "verticalLayerRankM": 5.0,
+        "vectorSelection": "nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer",
+        "vectorSemanticsVersion": 3,
+    }
+    assert native_producer.inspect_native_grid_sampling(source)["status"] == "unknown"
+    outcome = native_producer.build_current_part_outcome_proof(
+        part_ids[1:], part_ids, target_sha, signature, source)
+    retained = native_producer.build_retained_current_asset_proof(
+        source, signature, outcome, [target["partId"]], part_ids, target_sha)
+    native = {
+        "schemaVersion": 2, "generatedAt": at, "zoneRegistrySignature": "new-use-caller-fixture",
+        "zones": {f"PART::{target['partId']}": {
+            "samplingPoint": list(target["waterPoint"]), "gridPoints": {},
+            "hourly": {at: {"time": at, "current-u": .01, "current-v": .02,
+                             "sources": {"current": source}}}}},
+        "runs": {"dkss_nsbs": {
+            "referenceTime": run_at, "parserVersion": native_producer.PARSER_VERSION,
+            "parameterMapVersion": native_producer.PARAMETER_MAP_VERSION,
+            "gridLookupVersion": native_producer.GRID_LOOKUP_VERSION,
+            "processingSignature": signature, "processedSteps": {}}},
+        "collectionState": {}, "diagnostics": {},
+    }
+    for empty_target in native_targets[1:]:
+        native["zones"][f"PART::{empty_target['partId']}"] = {
+            "samplingPoint": list(empty_target["waterPoint"]),
+            "gridPoints": {}, "hourly": {},
+        }
+    ledger = native_producer.build_current_operational_ledger(
+        native, native_targets, reference, {}, [retained])
+    native["diagnostics"]["currentOperationalLedger"] = ledger
+    allowed, retained_sources = native_producer.current_attestation_authorization_from_operational_ledger(ledger)
+    attestation = native_producer.current_operational_attestation(
+        native, native_targets, reference, allowed, retained_sources)
+    native_producer.validate_current_operational_availability_ledger(
+        ledger, attestation, native_targets, reference, reference + timedelta(hours=117), target_sha)
+    unknown_pair = {"partId": target["partId"], "validTime": at}
+    assert attestation["verifiedPairs"] == [unknown_pair]
+    assert unknown_pair not in ledger["operationalComplementPairs"]
+    assert len(ledger["operationalComplementPairs"]) == 8 * 118 - 1
+    return native, native_targets, bundle["policy"], registry_builder, unknown_pair
+
+with tempfile.TemporaryDirectory(prefix="ravradar-new-use-om-") as raw_new_use:
+    new_use_dir = Path(raw_new_use)
+    native, native_targets, native_policy, registry_builder, unknown_pair = _new_use_native_fixture(REFERENCE)
+    dmi_path, cp_path = new_use_dir / "dmi.json", new_use_dir / "copernicus.json"
+    cp = empty_shadow(REFERENCE)
+    dmi_path.write_text(json.dumps(native), encoding="utf-8")
+    cp_path.write_text(json.dumps(cp), encoding="utf-8")
+    original_inputs = {path: path.read_bytes() for path in (dmi_path, cp_path)}
+    original_native = copy.deepcopy(native)
+    matrix = registry_builder.build_registry(
+        native_targets, native, REFERENCE, file_sha256(dmi_path), full_coast=False)
+    assert matrix["dmiNewUseProjection"]["originalVerifiedPairCount"] == 1
+    assert matrix["dmiNewUseProjection"]["eligiblePairCount"] == 0
+    assert matrix["dmiNewUseProjection"]["unknownPairs"] == [unknown_pair]
+    assert matrix.get("agedDmiChallengePlan") is None
+    stage = build_source_stage_progress(
+        registry=matrix, shadow=cp,
+        target_identities={row["partId"]: row for row in native_targets},
+        shadow_sha256=file_sha256(cp_path), attempts=[], updated_at=REFERENCE)
+    assert stage["status"] == "IN_PROGRESS" and stage["missingPairCount"] == 8 * 118
+    immutable_context = copy.deepcopy((matrix, stage, native_policy))
+    actual_plan = cli["residual_plan"](
+        targets=native_targets, dmi=native, registry=matrix, copernicus=cp,
+        source_stage=stage, regional=empty_regional_document(), policy=native_policy,
+        reference=iso(REFERENCE), copernicus_path=cp_path, dmi_path=dmi_path)
+    assert actual_plan["requiredPairs"] == matrix["operationalRequiredPairs"]
+    assert len(actual_plan["requiredPairs"]) == 8 * 118
+    assert unknown_pair in actual_plan["requiredPairs"]
+    assert actual_plan["boundedProgressAccepted"] is True
+    assert native == original_native
+    assert (matrix, stage, native_policy) == immutable_context
+    assert all(path.read_bytes() == before for path, before in original_inputs.items())
+
 print("OK: Open-Meteo current fallback is exact-residual, physical-scope bound and private.")
