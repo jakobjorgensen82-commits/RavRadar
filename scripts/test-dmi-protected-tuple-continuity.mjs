@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
+import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-native-current-proofs.mjs';
 import {
   createDmiForecastRecord, DMI_FORECAST_HOURS, normalizeForecastHourly,
+  inspectDmiForecastGridSampling,
 } from './lib/dmi-forecast-store.mjs';
 import {
-  dmiExpectedIdentityForPart, verifiedDmiForecastComponentSource,
+  dmiExpectedIdentityForPart, assertDmiPartHourlyGridSamplingApplicable, verifiedDmiForecastComponentSource,
   verifiedDmiNativeComponentSource, verifiedBulkCurrent, verifiedIntegratedPartHourly,
 } from './lib/ravscore-production-adapters.mjs';
 import { buildDmiMarineComponentwiseHourly, recoverDmiMarineRunSeamHours }
@@ -286,6 +289,8 @@ const replayStart = producer.indexOf('      let deployedRecoverySource = null;',
 const replayEnd = producer.indexOf('      let productionSeries;', replayStart);
 assert.ok(replayStart > scorerStart && replayEnd > replayStart);
 const runPublicPartProjection = Function(
+  'inspectDmiForecastGridSampling', 'createProtectedDmiNativeCurrentInspector',
+  'dmiExpectedIdentityForPart',
   'createDmiForecastRecord', 'DMI_FORECAST_HOURS', 'verifiedDmiNativeComponentSource',
   'verifiedDmiForecastComponentSource', 'verifiedBulkCurrent',
   'buildDmiMarineComponentwiseHourly', 'recoverDmiMarineRunSeamHours',
@@ -303,9 +308,11 @@ const runPublicPartProjection = Function(
    ${extract('function dmiCollections(', 'async function dmiPosition(')}
    ${extract('function bulkZoneToForecastRecord(', 'function verifiedFeggesundNeighborSource(')}
    ${extract('function applyFeggesundOperationalWaveProxy(', 'function missingFeggesundWaveHour(')}
-   return function ({active, deployed = null, historical = null, persisted = [], pointActivated = false, replay = false, pilot = null}) {
-     const part = fixturePart;
-     const zoneId = part.parentZoneId;
+   return function ({active, deployed = null, historical = null, persisted = [], pointActivated = false, replay = false, pilot = null, partWithoutZoneIdentity = false}) {
+     const [zoneId, zoneParts] = Object.entries({[fixturePart.parentZoneId]: [fixturePart]})[0];
+     const part = partWithoutZoneIdentity
+       ? Object.fromEntries(Object.entries(zoneParts[0]).filter(([key]) =>
+         !['zoneId', 'parentZoneId', 'sourceZoneId'].includes(key))) : zoneParts[0];
      const bulkId = fixtureIdentity.entityId;
      const feature = {type: 'Feature', geometry: {type: 'Point', coordinates: part.waterPoint},
        properties: {id: bulkId, coastType: 'east', dataPoint: part.waterPoint}};
@@ -328,7 +335,8 @@ const runPublicPartProjection = Function(
      ${producer.slice(publicStart, publicEnd)}
      return {dmiRecord, record, verifiedHourly};
    };`,
-)(createDmiForecastRecord, DMI_FORECAST_HOURS, verifiedDmiNativeComponentSource,
+)(inspectDmiForecastGridSampling, createProtectedDmiNativeCurrentInspector,
+  dmiExpectedIdentityForPart, createDmiForecastRecord, DMI_FORECAST_HOURS, verifiedDmiNativeComponentSource,
   verifiedDmiForecastComponentSource, verifiedBulkCurrent,
   buildDmiMarineComponentwiseHourly, recoverDmiMarineRunSeamHours,
   mergeHourlyPreferDmi, mergeLiveCurrentPilotIntoRecord,
@@ -431,4 +439,93 @@ const withoutOriginalContext = runPublicPartProjection({active: noPartContext,
   deployed: noPartContext, persisted: [original], replay: true});
 assert.equal(withoutOriginalContext.deployedRecoverySource.record.hourly[0].currentUMps, null,
   'saved values never manufacture their missing original current context');
+// The existing normal native-to-hourly and PUBLIC caller must not resurrect
+// a closer legacy column after a qualified reinterpretation of the SAME bytes.
+// Synthetic native originals are supplied in full; no sampler/inspector is mocked.
+const decoderHash = value => crypto.createHash('sha256').update(value).digest('hex');
+const decoderOldRows = [row(0), row(3)];
+for (const value of decoderOldRows) {
+  const bytes = Buffer.from(`synthetic-dkss-original-${value.time}`);
+  Object.assign(value.sources.current, { contentLengthBytes: bytes.length,
+    assetSizeBytes: bytes.length, contentSha256: decoderHash(bytes),
+    assetIdentitySha256: decoderHash(`synthetic-dkss-asset-${value.time}`) });
+}
+const decoderFreshRows = structuredClone(decoderOldRows);
+for (const value of decoderFreshRows) {
+  value.currentUMps += 0.3;
+  value.currentVMps += 0.1;
+  const source = value.sources.current;
+  source.gridPoint = [part.waterPoint[0] + 0.005, part.waterPoint[1]];
+  source.distanceKm = 0.319;
+  source.acquiredAt = time(0);
+  source.nativeSteps[0].acquiredAt = source.acquiredAt;
+  source.nativeSteps[0].assetIdentitySha256 = source.assetIdentitySha256;
+  source.nativeGridSampling = { contractId: 'dmi-native-grid-sampling-v1', elementIndex: 71,
+    gridIndexIdentitySha256: decoderHash('synthetic-dkss-message-grid-index-order'),
+    coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1',
+    gridDefinitionSha256: source.gridDefinitionSha256, gridPoint: [...source.gridPoint],
+    fieldSet: [...source.fieldSet], optionalFieldSet: [...source.optionalFieldSet] };
+  source.nativeSteps[0].nativeGridSampling = structuredClone(source.nativeGridSampling);
+  source.nativeSteps[0].gridPoint = [...source.gridPoint];
+  source.nativeSteps[0].distanceKm = source.distanceKm;
+}
+const decoderOldBulk = asNative(decoderOldRows), decoderFreshBulk = asNative(decoderFreshRows);
+// asNative removes hourly lineage exactly as before; the original capture
+// fields remain on each independent native endpoint, not copied from H0.
+const decoderInputs = { active: decoderFreshBulk, deployed: decoderOldBulk,
+  historical: decoderOldBulk, persisted: runPublicPartProjection({active: decoderOldBulk}).dmiRecord.hourly };
+const decoderBefore = structuredClone(decoderInputs);
+const decoderFreshOnly = runPublicPartProjection({ active: decoderFreshBulk });
+const decoderResult = runPublicPartProjection(decoderInputs);
+const assertDecoderNewUse = result => assertDmiPartHourlyGridSamplingApplicable(
+  result.verifiedHourly.filter(value => value.time >= time(0) && value.time < time(118)),
+  identity.entityId, part);
+assertDecoderNewUse(decoderResult);
+for (const offset of [0, 1, 3]) {
+  const actual = decoderResult.verifiedHourly.find(value => value.time === time(offset));
+  const fresh = decoderFreshOnly.verifiedHourly.find(value => value.time === time(offset));
+  assert.deepEqual(values(actual, 'current'), values(fresh, 'current'),
+    'the real PUBLIC chain selects the farther corrected interpretation of the same whole originals');
+  assert.equal(inspectDmiForecastGridSampling(actual.sources.current,
+    'current', actual.time, identity).status, 'coherent');
+}
+assert.equal(decoderResult.dmiRecord.hourly.length, 121, 'the private T+3 horizon is not pruned');
+const decoderUnknown = error => error.code === 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED'
+  && error.samplingStatus === 'unknown';
+for (const mutate of [
+  input => { input.active.zones[identity.entityId].hourly[time(3)].sources.current.contentSha256 = decoderHash('different-original-bytes'); },
+  input => { input.active.zones[identity.entityId].hourly[time(3)].sources.current.itemId += '-different'; },
+  input => { input.active.zones[identity.entityId].hourly[time(3)].sources.current.itemUpdatedAt = time(-11).replace(':00:00.000Z', ':01:00.000Z'); },
+  input => { input.deployed = null; input.historical = null; },
+]) {
+  const changed = structuredClone(decoderInputs);
+  mutate(changed);
+  assert.throws(() => assertDecoderNewUse(runPublicPartProjection(changed)), decoderUnknown,
+    'different bytes/endpoints/precise revisions or missing native originals cannot borrow a transition');
+}
+const decoderQualifiedOld = structuredClone(decoderInputs);
+for (const donor of [decoderQualifiedOld.deployed, decoderQualifiedOld.historical]) {
+  for (const native of Object.values(donor.zones[identity.entityId].hourly)) {
+    const source = native.sources.current;
+    source.nativeGridSampling = { ...decoderFreshRows[0].sources.current.nativeGridSampling,
+      elementIndex: 0, gridPoint: [...source.gridPoint] };
+  }
+}
+decoderQualifiedOld.persisted = runPublicPartProjection({active: decoderQualifiedOld.deployed}).dmiRecord.hourly;
+const decoderKeepQualified = runPublicPartProjection(decoderQualifiedOld);
+assertDecoderNewUse(decoderKeepQualified);
+assert.deepEqual(values(decoderKeepQualified.verifiedHourly[0], 'current'),
+  values(runPublicPartProjection({active: decoderOldBulk}).verifiedHourly[0], 'current'),
+  'an independently qualified closer original keeps ordinary same-run priority');
+const decoderMapOwnedPart = runPublicPartProjection({...decoderInputs, partWithoutZoneIdentity: true});
+assertDecoderNewUse(decoderMapOwnedPart);
+assert.deepEqual(values(decoderMapOwnedPart.verifiedHourly[0], 'current'),
+  values(decoderFreshOnly.verifiedHourly[0], 'current'),
+  'the normal zone-map authority qualifies a part row without embedded zone identity');
+const decoderReplay = runPublicPartProjection({...decoderInputs, replay: true});
+assert.deepEqual(values(decoderReplay.deployedRecoverySource.record.hourly[0], 'current'),
+  values(runPublicPartProjection({...decoderInputs, active: decoderOldBulk}).dmiRecord.hourly[0], 'current'),
+  'historical replay keeps its saved original winner; the PUBLIC option is not forwarded');
+assert.deepEqual(decoderInputs, decoderBefore, 'all native originals, persisted rows and captures remain byte-equivalent');
+
 console.log('Protected five-family tuple continuity passed with real DMI validators and production sanitizer');

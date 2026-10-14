@@ -9,7 +9,7 @@ on:
         type: boolean
         default: false
       quick_progress_source:
-        description: 'Short recovery source: protected-current or an exact encrypted-progress run-attempt, e.g. 123456-1'
+        description: 'Progress source: exact encrypted-progress run-attempt for a full or short run; protected-current is short-only'
         required: false
         type: string
         default: ''

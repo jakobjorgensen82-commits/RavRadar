@@ -1,3 +1,9 @@
+## Akut aktiv opgave — faktisk strømbrug og præcis fuld genoptagelse, 14. oktober 2026
+
+PR #606 bestod præcis source/PostgreSQL og er kildeleveret; den næste normale vejrhentning stoppede i beregningens faktisk valgte strøm før ny offentlig levering. Bølgeforvalget er ikke denne nye stopsituation. Den reproducerede PUBLIC-kant kan genvælge en gammel tættere kolonne efter kvalificeret genfortolkning af samme original. Bevar hele originale endepunkter/captures, zonemapsbinding, historisk replay, kildeprioritet og strictsampling ved ny brug. Den faktisk fejlede PART/time og øvrige delvise DMI-udfald er stadig ukendte.
+
+Den lokale normale continuity- og acquisitionprøve består. Eskaleret fysisk entrypoint-/inverse-/componentflowkontrol består også; den samme første sandboxkørsel er bevaret som fejlbevis og blev ikke lempet med kodeændringer. Linux/Bash, præcis samlet source/PostgreSQL og offentlig effekt står åbne. Næste: de to snævre kildekandidater, PUBLIC-sammeoriginal og hardexact krypteret fremskridtsvalg i fuldt normalforløb, gennem faktisk kontrol og sikker levering efter gældende autoritet. Et cache-save er ikke restore; ordinary resume er ikke quick eller garanteret providerfrit. Cron forbliver pauset med uændret plan til verificeret normaldrift. Se håndbog 89.229; de ældre fronter nedenfor er kun erstattet på disse konkrete punkter.
+
 ## Akut aktiv opgave — 14. oktober 2026: bølgeforvalg blokerer beregning
 
 Normal 38553389373/1 på main90ae er afsluttet med fejl i beregningstrin110. Den konkrete stack er verifiedIntegratedPartHourly → preflightFeggesundOperationalWaveReadiness → scoreCoastalPartsRuntime. Forvalget bruger bølger, men arver requireNativeGridSampling:true. Hele scorekaldet kræver fortsat streng sampling på faktisk valgt strøm; ingen blanketlempelse eller nye beviser til gamle originaler.

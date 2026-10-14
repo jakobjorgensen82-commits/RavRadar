@@ -1,3 +1,7 @@
+## Aktuel kritisk prioritet — faktisk strømvalg, 14. oktober 2026
+
+Læs CODEX_START_HERE, CURRENT_TRUTH og håndbog 89.229 før næste levering. Efter kildeleveret bølgefix stoppede den normale beregning ved faktisk strømbrug; ingen ny prognose blev leveret. PUBLIC-sammeoriginal-rettelsen og præcist fuldt fremskridtsgenbrug har lokale normale målbeviser, men kræver stadig præcis Linux-/kildekontrol, sikker levering og faktisk ny generation. Ukendte originale samplingregistre må ikke ommærkes, slettes eller generelt godkendes. Den konkret fejlede PART/time og den samlede DMI-årsag er åbne. Alle fem hovedmål og frist 18. oktober samt tidligere læse-/sikkerheds-/tilladelseskrav består.
+
 ## Aktuel kritisk prioritet — 14. oktober 2026
 
 Den seneste normale vejrhentning fejlede i Feggesunds bølgeforvalg før offentlig levering. Ret kun det ubrugte strømkrav i dette forvalg; bevar faktisk strøm-/score-/memory-/replaykontrol og originaler. Eksakt kilde- og produktionsbevis kræves. Se CODEX_START_HERE, håndbog89.228 og nyeste private checkpoint. Alle fem hovedmål er åbne med frist18oktober.

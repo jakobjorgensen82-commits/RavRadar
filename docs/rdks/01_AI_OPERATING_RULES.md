@@ -1,3 +1,9 @@
+## Aktiv sammeoriginal- og genoptagelsesgrænse — 14. oktober 2026
+
+Den snævre PUBLIC-præference kræver faktisk native-projektion fra de tilladte originaldokumenter for hvert endepunkt og samme hele captured bytes/officielle kilde. Kun helt ukendt gammel sampling til helt kvalificeret korrigeret headerfortolkning kan krydse denne grænse. Coherent alene, samme asset-id eller caller-flag giver ingen originalautoritet. Normale zone-map inputs, kvalificerede gamle vindere, øvrig kildeprioritet, replay og alle originale bytes bevares. Ingen gitter-, scoreformel-, model-, admin- eller geometrirettelse indføres her.
+
+Præcist gemt fremskridt i et fuldt normalforløb kræver exact key uden prefixfallback samt faktisk GCM-læsning, autentisk baseline og normal admission. Budgetter og current-original-/ny-time-krav består; quick_confirmation er ikke aktiveret af denne vej. Lokale tests må ikke kaldes Linux-, fuld DMI- eller produktionsevidens. Den afklarede sandbox-EPERM krævede korrekt eskaleret fysisk målprøve, ikke en produktregel eller testwaiver. Præcis CI, faktisk offentlig effekt og resterende delårsager er åbne.
+
 ## Aktiv forbrugsafgrænsning — 14. oktober 2026
 
 Et bølgeforvalg må ikke bruge strøm-gitterkravet som generel materialiseringsgate. Den afgrænsede undtagelse gælder kun Feggesunds bølge-only kalder, ikke faktisk strøm i score, memory, native-hold eller anvendt replayhistorik. Bevar almindelig bølgevalidering, alle originaler og 118/T+3-horisonten. Ingen ny producer-/modelbinding, provenance, pruning eller rå vejrdata i logs. Samme normale genoptagelse skal selv bevise faktisk cachevalg, restore og admission; et grønt SAVE-trin er ikke genbrug.

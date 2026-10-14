@@ -13,6 +13,71 @@ const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 // Invert only the reviewed current-grid delta, with exact whole 044d identity.
 // This is an oracle adapter, not runtime admission or current-data proof.
 function inverseCurrentGridIntegration(source) {
+  // Invert only the reviewed PUBLIC same-original decoder preference first.
+  const publicDecoderHunks = [
+  [
+    "        protectPreviousDmi: Boolean(expectedIdentity && protectPreviousDmi),\n        currentDecoderTransition,\n",
+    "        protectPreviousDmi: Boolean(expectedIdentity && protectPreviousDmi),\n"
+  ],
+  [
+    "    protectPreviousDmi = false, currentDecoderTransition = null } = {},\n) {\n  // Public records keep the exact production +0..+117 axis. Private replay\n",
+    "    protectPreviousDmi = false } = {},\n) {\n  // Public records keep the exact production +0..+117 axis. Private replay\n"
+  ],
+  [
+    "    if (component === 'current' && !protectPreviousDmi && currentDecoderTransition) {\n      if (currentDecoderTransition(selected.row, candidate.row)) { selected = admitted; continue; }\n      if (currentDecoderTransition(candidate.row, selected.row)) continue;\n    }\n    const previousSource = selected.attestation;\n",
+    "    const previousSource = selected.attestation;\n"
+  ],
+  [
+    "  { attest = () => true, protectPreviousDmi = false, currentDecoderTransition = null } = {},\n",
+    "  { attest = () => true, protectPreviousDmi = false } = {},\n"
+  ],
+  [
+    "        expectedIdentity: partDmiIdentity,\n        currentDecoderTransitionPart: { ...part, zoneId },\n        persistedHourly: initialSelection.source === 'POINT_ACTIVATION'\n",
+    "        expectedIdentity: partDmiIdentity,\n        persistedHourly: initialSelection.source === 'POINT_ACTIVATION'\n"
+  ],
+  [
+    "      generatedAt, startAt, expectedIdentity, protectPreviousDmi, currentDecoderTransition,\n",
+    "      generatedAt, startAt, expectedIdentity, protectPreviousDmi,\n"
+  ],
+  [
+    "    ? mergeHourlyPreferDmi(persistedHourly, historical.hourly, {\n      generatedAt, startAt, expectedIdentity, currentDecoderTransition,\n",
+    "    ? mergeHourlyPreferDmi(persistedHourly, historical.hourly, {\n      generatedAt, startAt, expectedIdentity,\n"
+  ],
+  [
+    "  const current = bulkZoneToForecastRecord(feature, activeBulkCache, generatedAt, retained, {\n    startAt, expectedIdentity, materializeMissingHorizon: true, currentDecoderTransition,\n",
+    "  const current = bulkZoneToForecastRecord(feature, activeBulkCache, generatedAt, retained, {\n    startAt, expectedIdentity, materializeMissingHorizon: true,\n"
+  ],
+  [
+    "    protectPreviousDmi = false, currentDecoderTransitionPart = null },\n) {\n  const currentDecoderTransition = !protectPreviousDmi && currentDecoderTransitionPart\n    ? publicCurrentDecoderTransition(currentDecoderTransitionPart,\n      [activeBulkCache, protectedBulkCache, historicalBulkCache]) : null;\n  const retained = protectedBulkCache\n",
+    "    protectPreviousDmi = false },\n) {\n  const retained = protectedBulkCache\n"
+  ],
+  [
+    "// PUBLIC-only same-original decoder preference. It changes no original and\n// obtains every endpoint from the caller's actual admitted native documents.\nfunction publicCurrentDecoderTransition(part, contexts) {\n  if (!part) return null;\n  const identity = dmiExpectedIdentityForPart(part);\n  if (!identity) return null;\n  const inspector = createProtectedDmiNativeCurrentInspector({ contexts: contexts.filter(Boolean) });\n  const instant = value => typeof value === 'string' && /(?:Z|[+-]\\d{2}:\\d{2})$/.test(value)\n    && Number.isFinite(Date.parse(value)) ? new Date(value).toISOString() : null;\n  const capture = source => {\n    if (!source || !['dkss_idw', 'dkss_nsbs', 'dkss_lf'].includes(source.collection)\n      || !instant(source.acquiredAt)\n      || !Number.isSafeInteger(source.contentLengthBytes) || source.contentLengthBytes <= 0\n      || !/^[a-f0-9]{64}$/.test(source.contentSha256 ?? '')\n      || !/^[a-f0-9]{64}$/.test(source.assetIdentitySha256 ?? '')\n      || typeof source.itemId !== 'string' || !source.itemId.trim()\n      || (source.assetSizeBytes != null && source.assetSizeBytes !== source.contentLengthBytes)) return null;\n    const value = { collection: source.collection, itemId: source.itemId,\n      assetIdentitySha256: source.assetIdentitySha256, assetSizeBytes: source.assetSizeBytes ?? null,\n      contentLengthBytes: source.contentLengthBytes, contentSha256: source.contentSha256 };\n    for (const key of ['modelRun', 'nativeValidTime', 'itemCreatedAt', 'itemUpdatedAt']) {\n      value[key] = instant(source[key]);\n      if (value[key] === null && (key === 'modelRun' || key === 'nativeValidTime' || source[key] != null)) return null;\n    }\n    return value;\n  };\n  return (oldRow, freshRow) => {\n    const oldSource = oldRow?.sources?.current, freshSource = freshRow?.sources?.current;\n    if (oldRow?.time !== freshRow?.time\n      || !verifiedDmiForecastComponentSource(oldSource, oldRow?.time, 'current', identity)\n      || !verifiedDmiForecastComponentSource(freshSource, freshRow?.time, 'current', identity)\n      || oldSource.nativeGridSampling != null\n      || oldSource.nativeSteps.some(step => step.nativeGridSampling != null)\n      || inspectDmiForecastGridSampling(oldSource, 'current', oldRow.time, identity).status !== 'unknown'\n      || inspectDmiForecastGridSampling(freshSource, 'current', freshRow.time, identity).status !== 'coherent') return false;\n    const oldProof = inspector.inspectOriginals({ part, row: oldRow });\n    const freshProof = inspector.inspectOriginals({ part, row: freshRow });\n    if (!oldProof.ok || !freshProof.ok || oldProof.nativeRows.length !== freshProof.nativeRows.length) return false;\n    for (let index = 0; index < oldProof.nativeRows.length; index += 1) {\n      const old = oldProof.nativeRows[index].source, fresh = freshProof.nativeRows[index].source;\n      const oldCapture = capture(old), freshCapture = capture(fresh);\n      if (!oldCapture || !freshCapture || JSON.stringify(oldCapture) !== JSON.stringify(freshCapture)\n        || old.nativeGridSampling != null\n        || old.gridDefinitionSha256 !== fresh.gridDefinitionSha256\n        || fresh.nativeGridSampling?.coordinateInterpretation !== 'dmi-dkss-grib1-header-endpoints-v1') return false;\n    }\n    return true;\n  };\n}\n\nfunction buildPartDmiForecastWithProtectedRetention(\n",
+    "function buildPartDmiForecastWithProtectedRetention(\n"
+  ],
+  [
+    "    { generatedAt, startAt, expectedIdentity: dmiIdentity, currentDecoderTransition },\n",
+    "    { generatedAt, startAt, expectedIdentity: dmiIdentity },\n"
+  ],
+  [
+    "    materializeMissingHorizon = false,\n    currentDecoderTransition = null,\n",
+    "    materializeMissingHorizon = false,\n"
+  ],
+  [
+    "import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-native-current-proofs.mjs';\nimport { packDmiPartContinuity, unpackDmiPartContinuity } from './lib/dmi-part-continuity.mjs';\n",
+    "import { packDmiPartContinuity, unpackDmiPartContinuity } from './lib/dmi-part-continuity.mjs';\n"
+  ],
+  [
+    "  normalizeForecastHourly,\n  inspectDmiForecastGridSampling,\n",
+    "  normalizeForecastHourly,\n"
+  ]
+];
+  for (const [after, before] of publicDecoderHunks) {
+    assert.equal(source.split(after).length, 2, 'each exact PUBLIC decoder delta must occur once');
+    source = source.replace(after, before);
+  }
+  assert.equal(digest(source), 'b3b1a43b1913d7f75307f8c422e045b86eacdcf22bef954c7ad77574d49a401b',
+    'whole PUBLIC decoder inverse must match genuine 584 before every existing inverse');
   // First invert ONLY the two reviewed role boundaries from PR603. The
   // historical current-grid inverse and its whole 044d oracle stay unchanged.
   const roleHunks = [

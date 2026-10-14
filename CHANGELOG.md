@@ -1,3 +1,10 @@
+## 4.0.576 — samme strømoriginal og præcis fuld genoptagelse, 14. oktober 2026
+
+- Registrér faktisk kildeleveret PR #606 og det efterfølgende stop ved ny strømbrug før offentlig levering. Bølgefixets kildebevis er ikke en vellykket vejrhentning.
+- Forbered en snæver PUBLIC-præference for den kvalificerede genfortolkning af de samme originale filbytes, dokumenteret for hvert faktisk native endepunkt. En gammel tættere kolonne må ikke genindsættes over netop denne rettelse. Almindelig kildeprioritet, kvalificerede originaler, historisk replay og strenge nybrugskontroller bevares.
+- Forbered exact fremskridtsvalg i det normale fulde forløb med uændret kryptering, baseline/admission, budgetter og original-/ny-time-krav; ingen prefixfallback, forkortet kørsel eller løfte om providerfrihed.
+- Lokal før/efterevidens findes for selektionskanten. Continuity og acquisition består; den samme eskalerede fysiske entrypoint-/inverse-/componentflowprøve består med 51 PASS og én udtrykkelig Linux/Bash-skip uden ændrede bytes. Præcis Linux/Bash, kildekontrol, levering og ny offentlig effekt er fortsat åbne. Den faktisk fejlede PART/time og DMI's resterende deludfald er ikke forklaret af denne kildekandidat. Se håndbog 89.229.
+
 ## 4.0.576 — bølgeforvalg uden ubrugt strømkrav, 14. oktober 2026
 
 - Den indledende Feggesund-kontrol skal kun kvalificere bølger og må ikke kræve nyt strøm-gitterbevis før det faktiske strømvalg. Den normale score-, strømhukommelses-, native-hold- og replaykontrol bevares; de 118 scoretimer og tre ekstra vandstandstimer ændres ikke.
