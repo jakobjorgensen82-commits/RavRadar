@@ -5,7 +5,12 @@ import vm from 'node:vm';
 import test from 'node:test';
 import { OPEN_METEO_NATIVE_NEAREST_POLICIES } from './lib/open-meteo-part-bank.mjs';
 import { applyVerifiedWaterSourceRoutingToPartHourly } from './lib/water-source-forecast-routing.mjs';
-import { assertDmiPartHourlyGridSamplingApplicable } from './lib/ravscore-production-adapters.mjs';
+import { assertDmiPartHourlyGridSamplingApplicable, verifiedIntegratedPartHourly,
+  verifiedBulkCurrent, dmiExpectedIdentityForPart } from './lib/ravscore-production-adapters.mjs';
+import crypto from 'node:crypto';
+import { mergeActiveNativeLiveCurrentPilotIntoRecord } from './lib/protected-live-current-assembly.mjs';
+import { copernicusLiveRecordProjectionSha256 } from './lib/live-current-pilot.mjs';
+import { buildWeatherComponentNeeds } from './lib/weather-component-needs.mjs';
 import { safeWeatherComponentSummary } from './lib/weather-component-safe-summary.mjs';
 import { PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES } from './private-production-runtime-workflow.mjs';
 
@@ -113,4 +118,140 @@ test('durable selected-input marker precedes provenance, public shards and compa
   assert.match(source,/previousRoutingDiagnostic: previous\?\.furWaterRoutingDiagnostic \?\? null/);
   assert.match(source,/diagnosticReferenceAt: generatedAt/);
   assert.ok(PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.includes('scripts/lib/fur-water-routing-diagnostic.mjs'));
+});
+
+test('scalar planning and public current scoring use their own exact applicability horizons', async () => {
+  // Existing complete synthetic originals/closure; no new provenance labels.
+  const fixtureSlice = (file, from, until) => {
+    const text = fs.readFileSync(new URL(file, import.meta.url), 'utf8');
+    const first = text.indexOf(from), last = text.indexOf(until, first);
+    assert.ok(first >= 0 && last > first, `existing fixture boundary ${file}`);
+    return text.slice(first, last);
+  };
+  const closure = Function('crypto', 'copernicusLiveRecordProjectionSha256',
+    fixtureSlice('./test-current-operational-live-adapter.mjs',
+      'const canonicalJson =', 'const regionalReferenceSeed =')
+      + '; return { live, part: copPart, reference: REFERENCE };')(
+    crypto, copernicusLiveRecordProjectionSha256);
+  const selectedPart = { ...closure.part, onshoreDirectionDeg: 90 };
+  const at = new Date(closure.reference).toISOString();
+  const time = offset => new Date(Date.parse(at) + offset * 3600000).toISOString();
+  const identity = dmiExpectedIdentityForPart(selectedPart);
+  const original = Function('part', 'identity', 'time',
+    fixtureSlice('./test-dmi-protected-tuple-continuity.mjs',
+      'const vectorSelection =', 'const options =') + '; return { row, bulk };')(
+    selectedPart, identity, time);
+  const record = { point: selectedPart.waterPoint,
+    hourly: Array.from({ length: 121 }, (_, i) => original.row(i)) };
+  const sanitize = value => verifiedIntegratedPartHourly(value, original.bulk,
+    identity.entityId, selectedPart, { requireNativeGridSampling: false });
+  const originalBytes = JSON.stringify({ record, bulk: original.bulk, live: closure.live });
+  const scalarFields = ['windSpeedMps', 'windDirectionDeg', 'waveHeightM', 'wavePeriodS',
+    'waveDirectionDeg', 'waterLevelCm', 'waterLevelTrendCm3h', 'waterTemperatureC'];
+  const scalarView = rows => rows.map(row => Object.fromEntries(
+    ['time', ...scalarFields].map(key => [key, row[key]])));
+  const routing = { sources: [], index: new Map(), routing: {}, haversineKm: () => 0 };
+  const planningEnd = source.indexOf('\nconst coastalPartScoreBuild =', start);
+  const scoreStart = source.indexOf('      const operationalDmiRecord = applyFeggesundOperationalWaveProxy(');
+  const scoreEnd = source.indexOf('\n      if (routedWater.diagnostic)', scoreStart);
+  assert.ok(planningEnd > start && scoreStart >= 0 && scoreEnd > scoreStart);
+  const common = { path, generatedAt: at, liveCurrentPilot: null,
+    applyVerifiedWaterSourceRoutingToPartHourly, assertDmiPartHourlyGridSamplingApplicable,
+    verifiedIntegratedPartHourly, verifiedBulkCurrent, dmiExpectedIdentityForPart,
+    mergeActiveNativeLiveCurrentPilotIntoRecord,
+    applyFeggesundOperationalWaveProxy: value => value,
+    waterSourceRoutingContext: routing };
+  const runScore = (input, live = null) => vm.runInNewContext(
+    `(() => { ${source.slice(scoreStart, scoreEnd)}; return hourly; })()`, {
+      ...common, liveCurrentPilot: live, dmiRecord: input, part: selectedPart,
+      zoneId: selectedPart.zoneId, bulkCache: original.bulk, bulkId: identity.entityId,
+      partDmiIdentity: identity, feggesundSourcesByTime: new Map(), componentInputs: {},
+      parent: { properties: { id: selectedPart.zoneId } }, partForecastStartAt: at,
+      RAVSCORE_PUBLIC_FORECAST_HOURS: 118,
+    });
+  const runPlan = async input => {
+    let planned;
+    const context = vm.createContext({ ...common,
+      output: { weatherEngine: {} }, console: { log() {} }, safeWeatherComponentSummary,
+      coastalPartsContract: { enabled: true, zones: { [selectedPart.zoneId]: [selectedPart] } },
+      features: [{ properties: { id: selectedPart.zoneId } }], nextDmiForecastStore: {},
+      dmiBulkCache: original.bulk, deployedDmiBulkCache: null, historicalDmiBulkCache: null,
+      persistedDmiPartRows: new Map(), coastalPointStateInjections: {},
+      RESEARCH_HISTORY_HOURS: 72, OPEN_METEO_FUTURE_HOURS: 121,
+      OPEN_METEO_NATIVE_NEAREST_POLICIES, COMPONENT_COPERNICUS_BUDGET_MS: 0,
+      COMPONENT_OPEN_METEO_BUDGET_MS: 0, reportWeatherBuildStage() {},
+      feggesundNeighborSourcesByTime: () => new Map(),
+      localPartRuntimeProperties: (_parent, _part, id) => ({ id }),
+      buildPartDmiForecastWithProtectedRetention: () => input,
+      prepareWeatherComponentRuntime: async options => {
+        const hourly = options.readVerifiedHourly(options.parts[0], {});
+        const needs = buildWeatherComponentNeeds({ parts: options.parts,
+          productionReferenceAt: at, readVerifiedHourly: () => hourly });
+        planned = { hourly, needs };
+        return { inputs: {}, summary: {} };
+      },
+    });
+    await vm.runInContext(`(async () => { ${source.slice(start, planningEnd)} })()`, context);
+    return planned;
+  };
+  const plan = await runPlan(record);
+  assert.equal(plan.hourly.length, 121);
+  assert.deepEqual(scalarView(plan.hourly), scalarView(sanitize(record)));
+  for (const [component, coverage] of Object.entries(plan.needs.summary)) {
+    assert.notEqual(component, 'current');
+    assert.equal(coverage.valid, 118);
+    assert.equal(coverage.missing, 0);
+  }
+  assert.equal(plan.needs.summary.waterLevel.trendMissing, 0,
+    'all last public T+3 trends retain their actual private support');
+  assert.equal(plan.needs.needs.length, 0);
+  const waterOnly = structuredClone(record);
+  for (const row of waterOnly.hourly) {
+    for (const key of ['currentUMps', 'currentVMps', 'windSpeedMps', 'windDirectionDeg',
+      'waveHeightM', 'wavePeriodS', 'waveDirectionDeg', 'waterTemperatureC']) delete row[key];
+    for (const component of ['current', 'wind', 'wave', 'waterTemperature']) delete row.sources[component];
+  }
+  const waterPlan = await runPlan(waterOnly);
+  assert.equal(waterPlan.needs.summary.waterLevel.valid, 118);
+  assert.equal(waterPlan.needs.summary.waterLevel.trendMissing, 0);
+  assert.equal(waterPlan.needs.summary.wind.missing, 118);
+  const unknown = error => error.code === 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED'
+    && error.samplingStatus === 'unknown';
+  assert.throws(() => runScore(record), unknown, 'unknown public current still stops scoring');
+  const first = { ...record, hourly: record.hourly.slice(0, 1) };
+  assert.equal(runScore(first, closure.live)[0].currentProvenance.provider, 'copernicus',
+    'actual scoring assembles an independently qualified closure before its strict gate');
+  for (const live of [{ ...closure.live, operationalClosure: null },
+    { ...closure.live, entries: closure.live.entries.map(entry => entry.partId === selectedPart.partId
+      ? { ...entry, recordProjectionSha256: `sha256:${'0'.repeat(64)}` } : entry) }]) {
+    assert.throws(() => runScore(first, live), unknown);
+  }
+  const corrected = structuredClone(record);
+  for (const row of corrected.hourly.slice(0, 118)) {
+    const current = row.sources.current;
+    const sampling = { contractId: 'dmi-native-grid-sampling-v1', elementIndex: 0,
+      gridIndexIdentitySha256: 'c'.repeat(64), coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1',
+      gridDefinitionSha256: current.gridDefinitionSha256, gridPoint: [...current.gridPoint],
+      fieldSet: [...current.fieldSet], optionalFieldSet: [...current.optionalFieldSet] };
+    current.nativeGridSampling = sampling;
+    current.nativeSteps[0].nativeGridSampling = structuredClone(sampling);
+  }
+  const scored = runScore(corrected);
+  assert.equal(scored.length, 121, 'scope the gate, never truncate scalar/continuity output');
+  assert.deepEqual(scalarView(scored), scalarView(plan.hourly));
+  for (let index = 0; index < 121; index++) {
+    assert.deepEqual(scored[index].sources, corrected.hourly[index].sources);
+  }
+  for (const index of [0, 117]) {
+    const missing = structuredClone(corrected);
+    delete missing.hourly[index].sources.current.nativeGridSampling;
+    delete missing.hourly[index].sources.current.nativeSteps[0].nativeGridSampling;
+    assert.throws(() => runScore(missing), unknown, `public H${index} remains fail-closed`);
+  }
+  const contradictory = structuredClone(corrected);
+  contradictory.hourly[117].sources.current.nativeGridSampling.elementIndex += 1;
+  assert.throws(() => runScore(contradictory), error =>
+    error.code === 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED' && error.samplingStatus === 'contradictory');
+  assert.equal(JSON.stringify({ record, bulk: original.bulk, live: closure.live }), originalBytes,
+    'original payloads, historical source fields and closure are never repaired or mutated');
 });

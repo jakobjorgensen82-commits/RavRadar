@@ -1,3 +1,7 @@
+# Aktuelt kritisk leveringsspor — vejrberegning, 14. oktober 2026
+
+Først lukkes den faktisk observerede komponentplan-fejl efter installeret220: korrekt ikke-strømplan og 118-timers strømforbrugsgrænse med uændrede 121 scalar-/T+3-timer og alle strenge strøm-/originalkontroller. Normal reproduktion, måltests, præcis source-CI, sikker levering og faktisk ny offentlig generation kræves. Cron forbliver pauset med uændret plan indtil verificeret normaldrift. Øvrige afgrænsede spor fortsætter sikkert lokalt/ved ventetid; statistikPR601, vidensudvidelse og isoleretSOURCE aktiveres ikke som del af vejrrettelsen. Alle fem hovedmål og fristen18oktober består.
+
 # Aktuelt leveringsspor – lokal 4.0.558, 2026-10-10
 
 Før den særskilte Workerrettelse faktisk installeres, færdiggøres det valgte existing-worker-repair-forløb på eksisterende normale kald. PR #547's præcise source-kontrol er bestået, men installation er ikke udført. Det afgrænsede forløb må kun læse skemaer og eksisterende shardbindinger; ingen SQL, migration, Edge-kode eller nye secrets. Den installerede trafikførende Worker-version og faktisk D1-retur skal kontrolleres, ikke blot et grønt CLI-trin.

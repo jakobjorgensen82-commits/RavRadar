@@ -1,3 +1,14 @@
+## 14. oktober 2026 — 220 installeret; ikke-strømplan spærrer ny vejrgeneration
+
+- [x] Kildelever PR #600 og installér/genlæs 220 med alle 673 dele og 11 originaler bevaret.
+- [x] Find faktisk første beregningsfejl i den efterfølgende normale vejrhentning: ukendt strøm-gitterbevis i ikke-strømplanen. Ingen ny offentlig levering.
+- [x] Ret planens forbrugsgrænse og tidlig scorekontrol for præcis 118 scoretimer; normal lokal kalderprøve består med alle tre cases, 121 bevarede timer og fortsat afvisning af ukvalificeret scorebærende strøm.
+- [x] Reproducer og ret genindsættelse af ukvalificeret active-native-original over et allerede kvalificeret strømvalg; normal hel assembly-prøve består, gammel replay og alle tidligere assertions bevares.
+- [x] Tilpas den præcise historiske inverseadapter efter PR #603's første source-stop uden at ændre gammel sourcehash eller runtimekontrol; hele normaltarget består 21/21 og kalderprøven 3/3 uden skip.
+- [ ] Bestå normal reproduktion/måltests og præcis ny kildekontrol, lever sikkert og verificér faktisk ny generation, strøm/hukommelse/score og normal cron.
+
+Statistik, assistentviden, den isolerede revision og selvstændig drift er stadig særskilt åbne. Lokale tests og installation alene er ikke afslutning.
+
 ## 14. oktober 2026 — statistik230 samlet lokalt, ikke installeret
 
 - [x] Find første PR #601-kildefejl i den faktiske log; den gamle databasekommando-optælling dækkede ikke de to nye dry-run-læsninger.

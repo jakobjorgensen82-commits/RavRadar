@@ -1,3 +1,15 @@
+## 89.226 Strøm kontrolleres, når strømmen faktisk bruges
+
+**Kort fortalt:** Strømdata skal bestå den strenge gitterkontrol, før de bruges i nye scorer. De må ikke blokere en plan, der kun efterspørger vind, bølger, vandstand og temperatur, eller tre ekstra vandstandstimer uden for scoreperioden.
+
+220 er faktisk installeret og genlæst med originalerne bevaret efter PR #600. Den efterfølgende normale vejrhentning stoppede i ikke-strømplanen før ny offentlig levering. Den gamle offentlige prognose er bevaret, og cron er midlertidigt pauset med uændret plan. En separat DMI 429 er observeret, men dens sammenhæng med den konkrete gitterafvisning er ikke bevist.
+
+RavRadar beregner 118 offentlige scoretimer. Tre private timer yderligere bruges til at beregne vandstandens ændring tre timer frem ved slutningen af perioden. Hele den 121-timersserie skal bevares. De tre timer er ikke ekstra strøm- eller scoretimer. Strømkrav skal derfor ligge ved faktisk valgt strøm i scoretimerne, recovery, strømhukommelse og native-reference. Planen for de fire andre komponenter beholder sin egen normale kildevalidering og centrale vandstandsrouting.
+
+Ukendt gitterbevis er hverken ugyldig original eller bevis for korrekt ny strømfortolkning. Gamle originaler og offentliggjorte scorer må ikke slettes, ommærkes eller få nyt bevis. Den afgrænsede kalderrettelse ændrer ikke kildeprioritet, scoreformel, adminpunkter, geometri, modelbindinger eller SQL. Måltests, præcis kildekontrol og faktisk ny offentlig generation står stadig åbne. Ældre installationsstatus i kapitlerne nedenfor er dateret historik; ingen af de fem hovedmål er samlet færdigt.
+
+Et korrekt kvalificeret strømvalg må heller ikke bagefter overskrives af en gammel original, som mangler det nye samplingbevis. PUBLIC-genindsættelsen kræver derfor sin egen coherent kvalifikation ud over samme aktive native-række. Den gamle original bevares til historisk kontrol, og den beskyttede replayvej er uændret. Et manglende eller ugyldigt nyt strømvalg bliver ikke godkendt af denne rettelse. Den normale hele assembly-prøve består lokalt; offentlig effekt og ny samlet kildekontrol afventer.
+
 ## 89.225 Et nyt fravalg skal vinde over et gammelt tilvalg
 
 Status ved sammensætningen den 14. oktober 2026 kl. 09.30: PR #600 er leveret på main 9fe90320. Det kontrollerede forløb 38527571595/1 afsluttede kl. 09.21.12 dansk tid: originalkontrollen bevarede alle 673 dele og 11 originalfiler, den fulde plan blev kontrolleret før skrivning, kun 220 blev installeret, og database-, turbindings- og checkpointgenlæsningen bestod. Edge og Pages blev sprunget over. Én normal vejrhentning 38528682729 blev kvitteret kl. 09.29.45 og kører endnu; ny offentlig strøm, strømhukommelse og score er ikke verificeret. Cron er midlertidigt pauset med uændret plan. Statistik230 er ikke installeret. Ældre udsagn nedenfor om, at 220 ikke er installeret, er dateret historik og erstattes kun på dette statuspunkt.
