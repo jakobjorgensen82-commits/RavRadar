@@ -18,25 +18,25 @@ function bindStatisticsPreference(dialog, content) {
   const status=content.querySelector('#accountStatisticsStatus');
   if(!input||!status)return;
   const identity=authIdentityEpoch(),ownerId=currentSession()?.user?.id;
-  let stopped=false,unsubscribe=()=>{};
+  let stopped=false,unsubscribe=()=>{},observed=null;
   const current=()=>!stopped&&dialog.open&&input.isConnected
     &&authIdentityEpoch()===identity&&ownerId&&currentSession()?.user?.id===ownerId;
   const dispose=()=>{
     if(stopped)return;stopped=true;unsubscribe();
     dialog.removeEventListener('close',dispose);dialog.removeEventListener('cancel',dispose);
-    input.disabled=true;input.indeterminate=true;status.textContent='';
+    observed=null;input.disabled=true;input.indeterminate=true;status.textContent='';
     if(pendingStatisticsViews.get(dialog)?.dispose===dispose)pendingStatisticsViews.delete(dialog);
   };
   pendingStatisticsViews.set(dialog,{dispose});
   unsubscribe=onAuthChange(()=>{if(authIdentityEpoch()!==identity||currentSession()?.user?.id!==ownerId)dispose();});
   dialog.addEventListener('close',dispose);dialog.addEventListener('cancel',dispose);
   input.disabled=true;input.indeterminate=true;status.textContent=t('account.statisticsLoading');
-  const show=value=>{input.checked=value.enabled;input.indeterminate=false;input.disabled=false;status.textContent='';};
-  const unavailable=()=>{input.disabled=true;input.indeterminate=true;status.textContent=t('account.statisticsUnavailable');};
+  const show=value=>{observed=value;input.checked=value.enabled;input.indeterminate=false;input.disabled=false;status.textContent='';};
+  const unavailable=()=>{observed=null;input.disabled=true;input.indeterminate=true;status.textContent=t('account.statisticsUnavailable');};
   input.addEventListener('change',async()=>{
     if(!current()||input.disabled)return;
     const requested=input.checked;input.disabled=true;status.textContent=t('account.statisticsSaving');
-    try{const value=await setOwnStatisticsPreference(requested);if(current()){show(value);status.textContent=t('account.statisticsSaved');}}
+    try{const value=await setOwnStatisticsPreference(requested,observed);if(current()){show(value);status.textContent=t('account.statisticsSaved');}}
     catch{if(current())unavailable();} // Unknown write outcome is not a confirmed ON/OFF.
   });
   void getOwnStatisticsPreference().then(value=>{if(current())show(value);},()=>{if(current())unavailable();});

@@ -49,3 +49,5 @@ cloudflare/trip-gateway/worker-legacy-erasure.test-fixture.js text eol=lf
 cloudflare/trip-gateway/migrations/003_owner_erasure_insert_guard.sql text eol=lf
 # The current-grid successor builder verifies exact, immutable LF source bytes.
 supabase/migrations/20261013220000_current_grid_original_bound_successor.sql text eol=lf
+# The named statistics revision builder binds exact LF migration bytes.
+supabase/migrations/20261013230000_account_statistics_revision.sql text eol=lf

@@ -366,7 +366,7 @@ const rpcFailureIncludes = pattern => error => {
 
 // Pure classification of the real native caller's bounded failure output.
 // These assertions are not PostgreSQL/SQL/installation proof.
-if (!process.argv.includes('--native-postgres')) {
+if (!process.argv.includes('--native-postgres') && !process.argv.includes('--native-statistics-revision')) {
   const { nativePostgresFailureDiagnostic: diagnose,
     nativePostgresFailureAnnotation: annotate } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -397,13 +397,14 @@ if (!process.argv.includes('--native-postgres')) {
 // Native PostgreSQL is a separate mandatory Linux source leaf, never a
 // MemoryCentral/Windows representation proof. Reuse these exact 673 builders
 // and the normal checkpoint saver; do not run the simulated RPC tests here.
-if (process.argv.includes('--native-postgres')) {
+if (process.argv.includes('--native-postgres') || process.argv.includes('--native-statistics-revision')) {
   try {
     const { runNativeCheckpointSqlComparison } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
     const report = await runNativeCheckpointSqlComparison({
       repositoryRoot: path.resolve('.'), sourceDocumentAt, atHour,
       saveCheckpoint: saveRavScoreContinuationCheckpoint,
+      includeStatisticsRevision: process.argv.includes('--native-statistics-revision'),
     });
     console.log(JSON.stringify(report));
   } catch (error) {

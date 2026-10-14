@@ -192,16 +192,19 @@ for (const forbidden of [
 }
 assert.equal(
   (codeOnlyWorkflow.match(/supabase db push --linked/g) || []).length,
-  3,
-  'Code-only-workflowet må kun have den normale dry-run, den kontobundne sidste genkontrol og én apply.',
+  5,
+  'Code-only-workflowet må kun have de fire præcist afgrænsede dry-run-læsninger og én apply.',
 );
-assert.equal((codeOnlyWorkflow.match(/supabase db push --linked --dry-run --skip-vault/g) || []).length, 2,
-  'De to læsninger skal være dry-run; den sidste må ikke være en ekstra skrivning.');
+assert.equal((codeOnlyWorkflow.match(/supabase db push --linked --dry-run --skip-vault/g) || []).length, 4,
+  'Normal plan, kontogenkontrol, statistikgenkontrol og installeret statistikplan skal være dry-run, ikke skrivninger.');
 assert.equal((codeOnlyWorkflow.match(/^\s*supabase db push --linked --skip-vault\s*$/gm) || []).length, 1,
   'Der skal fortsat være præcis én database-apply.');
 assert.match(codeOnlyWorkflow,
-  /if test "\$\{RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED:-false\}" = "true"; then[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?--account-assistant-prewrite-plan --require-prewrite-gate[\s\S]*?--expected-pending-version 20261013210000[\s\S]*?fi\s+supabase db push --linked --skip-vault/,
-  'Den ekstra dry-run skal være den præcise opt-in-kontogate umiddelbart før den ene apply.');
+  /if test "\$\{RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED:-false\}" = "true"; then[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?--account-assistant-prewrite-plan --require-prewrite-gate[\s\S]*?--expected-pending-version 20261013210000[\s\S]*?fi\s+if test "\$\{RAVRADAR_STATISTICS_REVISION_PHASE:-\}" = "before"; then[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?verify-statistics-preference-revision-plan\.mjs[\s\S]*?--phase before[\s\S]*?fi\s+supabase db push --linked --skip-vault/,
+  'Den præcise opt-in-kontogate og særskilte statistik-before-gate skal stå i den gennemgåede rækkefølge før den ene apply.');
+assert.match(codeOnlyWorkflow,
+  /\(cd "\$\{\{ steps\.migration-view\.outputs\.workdir \}\}" && supabase db push --linked --dry-run --skip-vault\)[\s\S]*?RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN=false node scripts\/verify-statistics-preference-revision-plan\.mjs[\s\S]*?--phase installed[\s\S]*?node scripts\/verify-statistics-preference-revision-schema\.mjs/,
+  'Den fjerde dry-run skal bevise installeret statistik med opt-in false og efterfølgende schema-genlæsning.');
 assert.ok(
   read('scripts/verify-code-only-migration-plan.mjs')
     .includes('LATEST_REQUIRED_CUTOVER_MIGRATION'),

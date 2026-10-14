@@ -1,3 +1,21 @@
+## 14. oktober 2026 — statistik230 samlet lokalt, ikke installeret
+
+- [x] Find første PR #601-kildefejl i den faktiske log; den gamle databasekommando-optælling dækkede ikke de to nye dry-run-læsninger.
+- [x] Bevar præcis én apply og prøv den afgrænsede fire-læsnings-/række-/opt-in-kontrol i den normale lokale produktkritiske kildegate.
+- [ ] Bestå ny præcis GitHub-/PostgreSQL-kontrol før merge og installation. Ingen produktionsændring er udført.
+
+Status ved sammensætningen den 14. oktober 2026 kl. 09.30: PR #600 er leveret på main 9fe90320. Det kontrollerede forløb 38527571595/1 afsluttede kl. 09.21.12 dansk tid: originalkontrollen bevarede alle 673 dele og 11 originalfiler, den fulde plan blev kontrolleret før skrivning, kun 220 blev installeret, og database-, turbindings- og checkpointgenlæsningen bestod. Edge og Pages blev sprunget over. Én normal vejrhentning 38528682729 blev kvitteret kl. 09.29.45 og kører endnu; ny offentlig strøm, strømhukommelse og score er ikke verificeret. Cron er midlertidigt pauset med uændret plan. Statistik230 er ikke installeret. Ældre udsagn nedenfor om, at 220 ikke er installeret, er dateret historik og erstattes kun på dette statuspunkt.
+
+- LOKAL KILDE: 19 funktionelle blade med én ny append-only 230-migration; de 58 ældre SQL-filer og C69/I71/T bevares.
+- FAKTISK LOKAL PASS: normal migrationsbygger --write/--check, alle 53 profil-/ejerskabsprøver og hele readiness-målet. Tre præcise fixturekorrektioner ændrer ikke produktguards eller gamle assertions.
+- KILDEKONTRAKT: serverbundet revision, frisk ON, konservativ OFF, afvist gammelt revisionsløst ON samt fortsat kontoejer-/logout- og ukendt-svar-beskyttelse.
+- UKØRT: den samlede rigtige PostgreSQL-kæde 213→220→230, præcis GitHub-kontrol af samlingen, hosted230/schema2 og offentlig kontoafprøvning.
+- LEVERINGSRÆKKEFØLGE: efter verificeret220 og normal offentlig vejrdrift; faktisk pause/idle, særskilt code-only med schema2 før nye kontoaktiver, derefter kontrolleret genoptagelse. Ingen global account-afhængighed i vejr; ingen automatisk genoptagelse efter delvis fejl.
+- ÅBENT OVERGANGSVINDUE: gammel ON afvises; gammelt OFF kan være gemt med ukendt klientkvittering. Se håndbog 89.225; ingen accept af begge schemaer.
+- UÆNDRET: default ON er ikke samtykke eller anonymitet. Statistik, toårs-/30dages-varsling og sletning er inaktive. 003/Worker er allerede leveret og genbruges; KB456/95 følger særskilt efter 230.
+
+Hele den tidligere status bevares som dateret historik. Den nyere strømopfølgning i89.224 må ikke overskrives af denne lokale statistiksamling.
+
 ## 14. oktober 2026 — 599 kildeleveret; historisk transportkant reproduceret
 
 - [x] Bestå præcis source/PostgreSQL, uændret træ og kildebevis for 599; merge samme træ som main 76cf31e4.
