@@ -1,3 +1,7 @@
+## Åben leveringsgrænse — statistikpræference, 15. oktober 2026
+
+Den lokale revision/CAS-rettelse adresserer forsinket ON efter nyere OFF, men serverlevering og det samlede offentlige kontoforløb er endnu ikke verificeret. Ukendt kvittering skal fortsat vises som ukendt, ikke gemt. Overgangen fra gamle klienter kræver den kontrollerede installationsrækkefølge; den må ikke løses med en klient-only spærring eller ved at acceptere begge skemafaser.
+
 ## ÅBEN akut fejl — kystdelens strømhistorik før offentlig levering, 14. oktober 2026
 
 Aktuelt 15. oktober: PR610 er kildeleveret efter præcis CI inklusive Linux og PostgreSQL. Den næste genoptagelse stoppede før vejrhentning på miljøtimens Z/.000Z-format. Den normale 673-dels CLI-prøve har reproduceret fejlen og består efter en snæver miljønormalisering, inklusive fem ugyldige input og originalbevarelse. Den lille kildegate består lokalt; ny præcis CI, levering og offentlig effekt er åbne. Tilstands- og originalkrav, version, SQL, model og SOURCE-afgrænsning er uændrede. Se håndbog 89.230; ældre status nedenfor er erstattet kun på disse punkter.

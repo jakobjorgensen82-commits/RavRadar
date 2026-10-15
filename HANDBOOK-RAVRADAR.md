@@ -86,7 +86,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.576
+**Håndbogsversion:** 4.0.577
 
 ## Aktuel kildebinding — 14. oktober 2026, endnu ikke installeret
 
@@ -136,6 +136,12 @@ En historisk fejlaflæsning er låst til den konkrete upload og et kort tidsrum,
 Immutable gemning, normale genforsøg, efterfølgende indholds-/readbackkontrol og atomisk aktivering bevares; større grænser, overskrivning eller en ny vejrhentning følger ikke automatisk af en diagnose. Kilden er lokalt prøvet, men faktisk leverandørårsag, præcis kildekontrol og kontrolleret offentlig genoptagelse er endnu åbne. Dette ændrer ikke strømfortolkning, modelbindinger, scoreformel eller gemt historik og bliver ikke assistentens offentlige spørgsmål/svar-viden.
 
 ## 89.219 Kontofunktioner og assistentsvar leveres som en samlet kontrolleret ændring
+
+**Ny læsevejledning, 15. oktober 2026:** Offentlig 4.0.576 og den lokale statistik4.0.577-kandidat skal holdes adskilt. Den ældre beskrivelse nedenfor bevares som dateret historik; assistent578 er en separat, tilbageholdt leverance.
+
+Når præferencerettelsen er leveret, kan et forsinket ON fra en gammel fane ikke overskrive et nyere OFF. Serveren kontrollerer konto og revision under lås, mens login-/logout-adskillelsen forhindrer gamle svar i at bekræfte en anden kontos valg. Kun et kendt serverresultat vises som gemt; ved ukendt udfald forbliver status ukendt.
+
+Default ON bevares, men er ikke samtykke eller et løfte om anonymitet. Kandidaten aktiverer ikke samlet statistik, opbevaringsvarsler eller sletning. Installation og offentlig afprøvning er endnu ikke dokumenteret.
 
 Konto-vinduets allerede viste turhistorik følger nu den samme konto- og dialoglevetid som den ventende læsning: logout, en ny loginidentitet, udløbet session, lukning eller tilbage-navigation fjerner den gamle visning. Gyldig fornyelse af samme login bevares; et forsinket svar kan ikke vise gamle ture igen eller hente en anden kontos historik. Den snævre UI-rettelse ændrer ingen gemte ture, bindingshashes eller SQL. De 52 normale ejerskabs-/præferenceprøver, herunder ti historikforløb, består lokalt; offentlig afprøvning afventer levering.
 

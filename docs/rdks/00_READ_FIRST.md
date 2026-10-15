@@ -1,3 +1,7 @@
+## Aktuel læsevejledning — statistikpræference 4.0.577, 15. oktober 2026
+
+Læs CURRENT_TRUTH, IMPLEMENTATION_STATUS og den nye læsevejledning i håndbog 89.219 for den lokale præferencekandidat. Offentlig 4.0.576, lokal statistik577 og tilbageholdt assistent578 er tre forskellige leveringsfaser. Bevar de eksisterende vejr-, original- og installationsgrænser; tidligere fronter nedenfor er historik.
+
 ## Aktuel kritisk læserækkefølge — strømhistorik, 14. oktober 2026
 
 Aktuelt 15. oktober: PR610 er kildeleveret efter præcis CI inklusive Linux og PostgreSQL. Den næste genoptagelse stoppede før vejrhentning på miljøtimens Z/.000Z-format. Den normale 673-dels CLI-prøve har reproduceret fejlen og består efter en snæver miljønormalisering, inklusive fem ugyldige input og originalbevarelse. Den lille kildegate består lokalt; ny præcis CI, levering og offentlig effekt er åbne. Tilstands- og originalkrav, version, SQL, model og SOURCE-afgrænsning er uændrede. Se håndbog 89.230; ældre status nedenfor er erstattet kun på disse punkter.

@@ -1,3 +1,7 @@
+## 2026-10-15 — separat lokal statistikpræference 4.0.577
+
+Den bevarede assistent578 er adskilt fra statistikpræferencens lokale levering efter offentlig576. Kandidaten beskytter nyere OFF gennem kontobundet serverrevision og lås; UI bekræfter kun et kendt serverresultat i samme login-epoch. Default ON består uden aktivering af anonym statistik eller retention. Lokale mål, præcis CI/nativekontrol og installation registreres særskilt efter faktisk evidens.
+
 ## 2026-10-14 — faktisk stop i kystdelens strømhistorik og afgrænset historisk behovsrettelse
 
 Aktuelt 15. oktober: PR610 er kildeleveret efter præcis CI inklusive Linux og PostgreSQL. Den næste genoptagelse stoppede før vejrhentning på miljøtimens Z/.000Z-format. Den normale 673-dels CLI-prøve har reproduceret fejlen og består efter en snæver miljønormalisering, inklusive fem ugyldige input og originalbevarelse. Den lille kildegate består lokalt; ny præcis CI, levering og offentlig effekt er åbne. Tilstands- og originalkrav, version, SQL, model og SOURCE-afgrænsning er uændrede. Se håndbog 89.230; ældre status nedenfor er erstattet kun på disse punkter.

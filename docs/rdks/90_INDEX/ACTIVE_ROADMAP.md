@@ -1,3 +1,7 @@
+## Næste lokale statistikleverance — 15. oktober 2026
+
+Afslut statistik577-kilden og dens målrettede kontroller → præcis source/native220→230-kontrol → særskilt godkendt installation med før-/efter-readback → faktisk kontoforløb. Ingen global vejrafhængighed til kontoens metadata indføres. Assistent578 følger separat; checkpoint-PARTIAL og AI-logspørgsmålet forbliver særskilt uafklarede. Alle fem mål frem mod 18. oktober er åbne.
+
 ## Første konkrete leverance — faktisk strømhistorik før normaldrift, 14. oktober 2026
 
 Aktuelt 15. oktober: PR610 er kildeleveret efter præcis CI inklusive Linux og PostgreSQL. Den næste genoptagelse stoppede før vejrhentning på miljøtimens Z/.000Z-format. Den normale 673-dels CLI-prøve har reproduceret fejlen og består efter en snæver miljønormalisering, inklusive fem ugyldige input og originalbevarelse. Den lille kildegate består lokalt; ny præcis CI, levering og offentlig effekt er åbne. Tilstands- og originalkrav, version, SQL, model og SOURCE-afgrænsning er uændrede. Se håndbog 89.230; ældre status nedenfor er erstattet kun på disse punkter.

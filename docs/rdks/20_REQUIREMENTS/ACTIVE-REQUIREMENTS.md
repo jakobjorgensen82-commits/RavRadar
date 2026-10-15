@@ -1,3 +1,7 @@
+## Aktivt krav — kontobundet statistikpræference, 15. oktober 2026
+
+Bevar default ON, men behandl det ikke som samtykke eller dokumenteret anonymitet. Forsinket ON må ikke overskrive nyere OFF; en ældre OFF-anmodning håndteres konservativt på serveren. UI må kun bekræfte det faktiske serverresultat for den aktuelle konto. Ændringen aktiverer hverken statistikbehandling, retention, varsling eller sletning.
+
 ## Aktivt krav — strømhistorikkens faktiske inputbehov, 14. oktober 2026
 
 Aktuelt 15. oktober: PR610 er kildeleveret efter præcis CI inklusive Linux og PostgreSQL. Den næste genoptagelse stoppede før vejrhentning på miljøtimens Z/.000Z-format. Den normale 673-dels CLI-prøve har reproduceret fejlen og består efter en snæver miljønormalisering, inklusive fem ugyldige input og originalbevarelse. Den lille kildegate består lokalt; ny præcis CI, levering og offentlig effekt er åbne. Tilstands- og originalkrav, version, SQL, model og SOURCE-afgrænsning er uændrede. Se håndbog 89.230; ældre status nedenfor er erstattet kun på disse punkter.

@@ -1,3 +1,7 @@
+## Præferencens samtidighedsgrænse — 15. oktober 2026
+
+ON kræver en observeret serverrevision for den samme konto; et nyere OFF skal invalidere tidligere ON. Serverlås og revision er afgørende, ikke klientens rækkefølge. Login-/logout-epoch skal afvise forsinkede svar fra en tidligere identitet. Ukendt skriveudfald må hverken bekræftes som gemt eller automatisk gentages som ON.
+
 ## Aktiv historik- og databevarelsesgrænse — 14. oktober 2026
 
 Aktuelt 15. oktober: PR610 er kildeleveret efter præcis CI inklusive Linux og PostgreSQL. Den næste genoptagelse stoppede før vejrhentning på miljøtimens Z/.000Z-format. Den normale 673-dels CLI-prøve har reproduceret fejlen og består efter en snæver miljønormalisering, inklusive fem ugyldige input og originalbevarelse. Den lille kildegate består lokalt; ny præcis CI, levering og offentlig effekt er åbne. Tilstands- og originalkrav, version, SQL, model og SOURCE-afgrænsning er uændrede. Se håndbog 89.230; ældre status nedenfor er erstattet kun på disse punkter.

@@ -154,7 +154,7 @@ jobs:
       - name: Prepare an isolated exact cutover migration view
         run: >-
           node scripts/integrated-cutover-readiness.mjs prepare-workdir
-          --output "${{ steps.integrated_cutover.outputs.workdir }}"
+          --statistics-preference-revision-source --output "${{ steps.integrated_cutover.outputs.workdir }}"
 
       - name: Read linked migration history without changing the database
         shell: bash
@@ -1211,7 +1211,7 @@ jobs:
           RAVRADAR_EXPECTED_SOURCE_HEAD: ${{ github.sha }}
         run: |
           set -euo pipefail
-          node scripts/integrated-cutover-readiness.mjs prepare-workdir --output "${{ steps.integrated_cutover.outputs.workdir }}"
+          node scripts/integrated-cutover-readiness.mjs prepare-workdir --statistics-preference-revision-source --output "${{ steps.integrated_cutover.outputs.workdir }}"
           (
             cd "${{ steps.integrated_cutover.outputs.workdir }}"
             supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
