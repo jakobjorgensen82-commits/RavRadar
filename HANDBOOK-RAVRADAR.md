@@ -2,6 +2,8 @@
 
 **Kort fortalt:** 4.0.578 er en lokal svarrettelse, ikke bevis for ny offentlig viden eller fungerende ekstern AI.
 
+Opfølgning 15. oktober: Statistikrettelsen er kildeleveret som PR #613, men migration 230 er ikke installeret. Den første kontrol af den samlede assistentkilde #614 fandt én forældet testforventning om 1414 i den normale genoptagelsesprøve. Den aktuelle forventning følger nu den direkte 1503-rute, mens den gamle 1414-rute afvises eksplicit og alle tidligere negativforløb bevares. Hele det berørte mål består lokalt 7/7 uden skip. Ingen produktkontrol eller modelbinding er lempet; ny præcis samlet kilde-/PostgreSQL-kontrol og faktisk installation/offentlig effekt mangler fortsat.
+
 Den lokale 4.0.578-kandidat retter to svargrænser. Et spørgsmål om sikker færdsel i vand eller UV-sikkerhed skal ikke ende som generel vejledning om en ravlygte. Et helt definitionsspørgsmål om succinit må besvares med definitionen; et tilføjet fysikspørgsmål må ikke forsvinde i samme match.
 
 De almindelige faglige svar, dansk, tysk og engelsk samt privatlivs- og sikkerhedsgrænser bevares. Et lokalt svar er ikke en vurdering af, om det er sikkert at gå i vandet på et bestemt sted, og RavScore er ikke en sikkerhedsgaranti. Ukendte spørgsmål skal fortsat behandles ærligt.

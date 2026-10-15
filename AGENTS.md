@@ -2,6 +2,10 @@
 
 Denne fil skal læses før analyse, programmering eller versionsbygning.
 
+## Kildekontrol-opfølgning 4.0.578 — 15. oktober 2026
+
+PR #613 er faktisk merget på main 213942 efter præcis kilde-, Linux-native- og PostgreSQL-kontrol; statistikmigrationen 230 er endnu ikke installeret. Assistentrettelsen #614 er en afsluttet kildecommit på 5ed52a, ikke en åben merge med 11 uløste konflikter. Den første præcise CI 38673111924/1 fejlede i én normal genoptagelsesprøve: den forventede arkiv 1414, mens den aktuelle direkte rute korrekt kræver 1503. Testens aktuelle forventning følger nu response-kontrakten; 1414 er bevaret som eksplicit afvist historisk rute, og alle tidligere negativforløb er bevaret. Hele det berørte normale mål består lokalt 7/7 uden skip. Ingen produktguard, SQL, originaler eller C/I/T-bindinger er ændret. Ny præcis samlet CI inklusive PostgreSQL og efterfølgende installation/offentlig effekt er fortsat åbne. Alle fem mål og fristen 18. oktober består; PARTIAL og den præcise AI-log afventer fortsat hver sit svar.
+
 ## Nyeste kilde-/leveringsstatus — 15. oktober 2026
 
 PR610 og PR612 er faktisk kildeleveret på vejr-main 6b3e; den tidligere beskrivelse af UTC-normalisering som kun lokal er historik. Ny offentlig vejrvirkning og checkpoint-only/PARTIAL er ikke derved bevist eller godkendt. PARTIAL-spørgsmålet er fortsat ubesvaret.
