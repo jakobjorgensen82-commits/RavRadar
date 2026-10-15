@@ -484,7 +484,9 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
       return { format: 'module', source: oldBodies.get(relative), shortCircuit: true };
     },
   });
-  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-current-grid-migrant-case-'));
+  // Normal readers canonicalize private roots; use that same spelling for the
+  // fixed old-module namespace (Windows temp may begin with an 8.3 alias).
+  const temporary = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'rr-current-grid-migrant-case-')));
   try {
     const [normalMigrant, gridHelper, bundle, protectedRuntime, prepare, secondRestore,
       workflow, pack, hourly, currentI, currentC, currentPublic,
@@ -1099,6 +1101,11 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
         }
         await fs.copyFile(path.join(repositoryRoot, 'package.json'), path.join(currentSourceRoot, 'package.json'));
         await fs.mkdir(path.join(currentSourceRoot, '.cache/dmi-grib'), { recursive: true });
+        // The normal migrant deliberately requires its module's actual source
+        // root. Execute the byte-identical copied graph from that same root;
+        // never pass an alternate root to a migrant imported elsewhere.
+        const isolatedSavedInputAudit = await import(pathToFileURL(path.join(currentSourceRoot,
+          'scripts/audit-saved-weather-inputs.mjs')).href);
         const oldSourceFiles = new Set(['scripts/protected-private-production-runtime.mjs',
           'scripts/private-production-runtime-workflow.mjs', 'js/core/ravscore-model-contract.js',
           'scripts/lib/private-weather-storage-abi.json', ...Object.values(oldWorkflow.PRIVATE_RUNTIME_CONTRACT_FILES).flat()]);
@@ -1107,11 +1114,15 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
           await fs.mkdir(path.dirname(destination), { recursive: true });
           await fs.writeFile(destination, execFileSync('git', ['show', `${base}:${relative}`], { cwd: repositoryRoot }), { flag: 'wx' });
         }
-        // Only the already pinned archived namespace is forwarded. Filesystem
-        // contract hashes still read the exact original bytes copied above.
+        // Only this fixed archive directory is forwarded to its pinned Git
+        // namespace, including the normal reader's query-free lazy imports.
+        // Filesystem contract hashes still read the original bytes above.
         const prepareHook = registerHooks({ resolve(specifier, context, next) {
-          if (typeof specifier === 'string' && specifier.startsWith(pathToFileURL(oldSourceRoot).href + '/')
-            && new URL(specifier).searchParams.get('savedInput') === base) {
+          if (typeof specifier === 'string' && specifier.startsWith(pathToFileURL(oldSourceRoot).href + '/')) {
+            const query = [...new URL(specifier).searchParams];
+            assert.ok(query.length === 0 || query.length === 1
+              && query[0][0] === 'savedInput' && query[0][1] === base,
+            'only the fixed original reader namespace may be forwarded');
             const relative = path.relative(oldSourceRoot, fileURLToPath(specifier));
             const url = pathToFileURL(path.join(repositoryRoot, relative));
             url.searchParams.set(oldQuery, base);
@@ -1119,6 +1130,11 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
           }
           return next(specifier, context);
         } });
+        // Supply the same explicit runner-temp boundary as hosted execution,
+        // narrowed to this owned fixture. This also avoids the host's Windows
+        // os.tmpdir() alias differing from the normal reader's realpath.
+        const previousPrepareRunnerTemp = process.env.RUNNER_TEMP;
+        process.env.RUNNER_TEMP = temporary;
         try {
           const archive = await oldProtected.buildProtectedPrivateRuntimeArchive({ privateRoot: scenario.root,
             bundlePath: scenario.bundlePath, repositoryRoot: oldSourceRoot, sourceHead: base, now });
@@ -1149,7 +1165,7 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
             assert.ok(entry, 'only the exact synthetic original archive can be downloaded');
             return new Response(Buffer.from(entry.bytes));
           };
-          const prepareReport = await savedInputAudit.prepareAuthenticatedSavedDmiOriginalRestore({
+          const prepareReport = await isolatedSavedInputAudit.prepareAuthenticatedSavedDmiOriginalRestore({
             privateRoot: preparePrivate, descriptorPath: sourcePath, predecessorRoot: oldSourceRoot,
             progressFile: progressPath, progressSource: originalPrepare.SAVED_DMI_ORIGINAL_PROGRESS,
             progressCacheKey: originalPrepare.SAVED_DMI_ORIGINAL_PROGRESS_KEY,
@@ -1173,7 +1189,11 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
           assert.deepEqual((await fs.readdir(preparePrivate)).sort(), ['current-source.json', 'progress.encrypted']);
           console.log(JSON.stringify({ kind: 'GENUINE_673_SAVED_ORIGINAL_PREPARATION', status: 'PASS',
             parts: 673, originalCount: 1, actualProviderDataMeasured: false, rawVectorsIncluded: false }));
-        } finally { prepareHook.deregister(); }
+        } finally {
+          prepareHook.deregister();
+          if (previousPrepareRunnerTemp === undefined) delete process.env.RUNNER_TEMP;
+          else process.env.RUNNER_TEMP = previousPrepareRunnerTemp;
+        }
       }
       await assert.rejects(progressCache.withAuthenticatedWeatherProgress({ ...auditOptions,
         encryptionKey: Buffer.alloc(32, 64).toString('base64') }, async () => { authenticatedCalls++; }),
