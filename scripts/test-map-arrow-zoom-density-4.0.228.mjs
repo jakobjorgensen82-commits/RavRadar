@@ -160,12 +160,13 @@ need(overviewLayer.counts().wind===1&&overviewLayer.counts().current===1,'Det re
 need(closeLayer.counts().wind===2&&closeLayer.counts().current===2,'Det renderede indzoomede lag skal vise flere fysisk adskilte DMI-pile.');
 
 const updateWeather=await fs.readFile('scripts/update-weather.mjs','utf8');
+const sharedDmiRecord=await fs.readFile('scripts/lib/private-dmi-recovery-record.mjs','utf8');
 const productionAdapters=await fs.readFile('scripts/lib/ravscore-production-adapters.mjs','utf8');
 const app=await fs.readFile('app.js','utf8');
 need(updateWeather.includes('selectLatestLocalScoreRowAtOrBefore(hourly, generatedAt)')&&updateWeather.includes('row.scores.find(candidate => Date.parse(candidate.time) === Date.parse(currentReferenceAt))')&&/flowPointsFromForecastRecord\(\s*row\.record,\s*row\.waterPoint,\s*score\?\.time \?\? generatedAt,\s*row,/s.test(updateWeather),'Produktionsbygningen låser ikke score og pile til zonens samme faktiske time og delidentitet.');
 need(productionAdapters.includes('export function verifiedBulkCurrent')&&productionAdapters.includes('samePoint(source?.samplingPoint, expectedSamplingPoint)')&&productionAdapters.includes('source?.verticalLayer'),'Scorebygningen accepterer strøm uden hver times dokumenterede vandkolonne og dybdelag.');
-need(updateWeather.includes('function withOnlyVerifiedCurrent')&&updateWeather.includes('const qualifiedRecord = newerDmiRecord(record, null, {')&&updateWeather.includes('const safeRecord = withOnlyVerifiedCurrent(qualifiedRecord, point);'),'Gamle prognosecacher skal både kildekvalificeres og kontrollere strømmens vandkolonne før score eller pil.');
-const directDmiBlock=updateWeather.slice(updateWeather.indexOf('async function fromDmi('),updateWeather.indexOf('function mergeHourlyPreferDmi('));
+need(sharedDmiRecord.includes('function withOnlyVerifiedCurrent')&&updateWeather.includes("from './lib/private-dmi-recovery-record.mjs'")&&updateWeather.includes('const qualifiedRecord = newerDmiRecord(record, null, {')&&updateWeather.includes('const safeRecord = withOnlyVerifiedCurrent(qualifiedRecord, point);'),'Gamle prognosecacher skal både kildekvalificeres og kontrollere strømmens vandkolonne før score eller pil.');
+const directDmiBlock=updateWeather.slice(updateWeather.indexOf('async function fromDmi('),updateWeather.indexOf('// Shared recovery record: selection'));
 need(directDmiBlock.includes("['sea-mean-deviation', 'water-temperature']")&&!directDmiBlock.includes("['sea-mean-deviation', 'current-u'"),'Direkte ForecastEDR må ikke levere strøm uden dokumenteret fælles vandkolonne og dybdelag.');
 need(directDmiBlock.includes('withoutCurrent(createDmiForecastRecord('),'Direkte ForecastEDR-strøm lukkes ikke fail-closed før scoring.');
 need(app.includes('()=>state.conditions.coastalParts||null')&&app.includes('state.flowArrows?.refresh?.()'),'Pilelaget opdateres ikke med den fulde detaljepakke.');

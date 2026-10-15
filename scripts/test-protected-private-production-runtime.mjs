@@ -2129,13 +2129,61 @@ try {
     const sourceAt = commit => execFileSync('git', ['show', `${commit}:${producerPath}`],
       { cwd: sourceRepository, encoding: 'utf8' });
     const oldProducer = sourceAt(beforeCommit), reviewedProducer = sourceAt(afterCommit);
+    const previousProducer = sourceAt('78697847aa66ac62648f4b7ada1c482e5dea7e7d');
     const currentProducer = (await fs.readFile(path.join(sourceRepository, producerPath), 'utf8'))
       .replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
     const digest = value => crypto.createHash('sha256').update(value).digest('hex');
     assert.equal(digest(oldProducer), '8ff4a5b6f50d3f2d4e177fcf8c55048051266ded1a196151d6adff9427829ce2');
     assert.equal(digest(reviewedProducer), '242844d0da14fc64ce8ebbf48bdab1e49450822cd193cd231667013e216b160e');
-    assert.equal(digest(currentProducer), 'ec7fde66daeab835b6a852d47ed98b14fd289dc462a6b0d0d46318ffc2b4b6b8',
-      'the fixture must exercise the exact reviewed bounded original-restore successor');
+    assert.equal(digest(previousProducer), 'ec7fde66daeab835b6a852d47ed98b14fd289dc462a6b0d0d46318ffc2b4b6b8');
+    assert.equal(digest(currentProducer), '4d32d7314d8c2bc2c6592de9baa6a06732ac43a79892afc455d4b39e1eeec3ae',
+      'the fixture must exercise the exact fixed-stage original-restore successor');
+    let scopeProducer = currentProducer;
+    const undoObserved = (after, before, count = 1) => {
+      assert.equal(scopeProducer.split(after).length, count + 1);
+      scopeProducer = scopeProducer.split(after).join(before);
+    };
+    undoObserved('                _exact_original_refuse("METADATA_UNAVAILABLE" if metadata_path is not None else "ASSET_UNAVAILABLE")',
+      '                _exact_original_refuse("UNAVAILABLE")');
+    undoObserved('    "METADATA_UNAVAILABLE", "ASSET_UNAVAILABLE",\n', '');
+    assert.equal(digest(scopeProducer), '438cffd7673d4087564258d97b33746363020af0e04b4fbe7629f0f77a5255df',
+      'whole failure-stage inverse must recover every byte of the reviewed observed-original successor');
+    undoObserved('def _exact_raw_state(*, observed_names=None):', 'def _exact_raw_state():');
+    undoObserved('        if observed_names is not None:\n            observed_names.add(entry.name)\n', '');
+    undoObserved('def read_exact_original_restore_plan(*, observed_names=None):', 'def read_exact_original_restore_plan():');
+    undoObserved('    _exact_raw_state(observed_names=observed_names)\n', '    _exact_raw_state()\n', 2);
+    undoObserved('def _reuse_exact_original_file(capture, *, work_deadline, observed_names=None):',
+      'def _reuse_exact_original_file(capture, *, work_deadline):');
+    undoObserved('    observed_names = set() if observed_names is None else observed_names\n', '', 2);
+    undoObserved('    manifest, _ = _exact_raw_state(observed_names=observed_names)\n', '    manifest, _ = _exact_raw_state()\n');
+    undoObserved('    local_names = {name for name in observed_names if name.startswith(prefix)}',
+      '    local_names = {entry.name for entry in RAW_DIR.iterdir() if entry.name.startswith(prefix)}');
+    undoObserved('def restore_exact_original_assets(originals, *, report=None, observed_names=None):',
+      'def restore_exact_original_assets(originals, *, report=None):');
+    undoObserved('_reuse_exact_original_file(capture, work_deadline=WORK_DEADLINE, observed_names=observed_names)',
+      '_reuse_exact_original_file(capture, work_deadline=WORK_DEADLINE)');
+    undoObserved('        observed_names = set()\n        plan = read_exact_original_restore_plan(observed_names=observed_names)\n'
+      + '        restore_exact_original_assets(plan["originals"], report=report, observed_names=observed_names)',
+    '        plan = read_exact_original_restore_plan()\n        restore_exact_original_assets(plan["originals"], report=report)');
+    assert.equal(digest(scopeProducer), '2baae40108bb084f950ec5474fa1c01c0289cc7e83072f44df5fe64726acff2c',
+      'whole observation inverse must recover every byte of the reviewed fixed-scope successor');
+    const scopedSuccessor = "            or (binding[\"progressSource\"], binding[\"progressCacheKey\"], binding[\"targetReferenceAt\"]) not in (\n                (\"38692413809-1\", \"weather-private-progress-encrypted-v2-Linux-main-38692413809-1\", \"2026-10-14T18:00:00.000Z\"),\n                (\"38768040429-1\", \"weather-private-progress-encrypted-v2-Linux-main-38768040429-1\", \"2026-10-15T16:00:00.000Z\"))\n";
+    const priorScope = "            or binding[\"progressSource\"] != \"38692413809-1\"\n            or binding[\"progressCacheKey\"] != \"weather-private-progress-encrypted-v2-Linux-main-38692413809-1\"\n            or binding[\"targetReferenceAt\"] != \"2026-10-14T18:00:00.000Z\"\n";
+    assert.equal(scopeProducer.split(scopedSuccessor).length, 2);
+    const localFirstProducer = scopeProducer.replace(scopedSuccessor, () => priorScope);
+    assert.equal(digest(localFirstProducer), '3058225fb5ea65e647d8e9ffa90e2c9eed1a8f836cefa6a21efa283a2e13525f',
+      'whole scope inverse must retain every byte of the reviewed local-first original-restore source');
+    const localStart = localFirstProducer.indexOf('def _reuse_exact_original_file(');
+    const localEnd = localFirstProducer.indexOf('def restore_exact_original_assets(', localStart);
+    assert.ok(localStart >= 0 && localEnd > localStart);
+    assert.equal(localFirstProducer.split('def _reuse_exact_original_file(').length, 2);
+    const localCall = '            if _reuse_exact_original_file(capture, work_deadline=WORK_DEADLINE):\n'
+      + '                report["reusedAssetCount"] += 1\n'
+      + '                continue\n';
+    assert.equal(localFirstProducer.split(localCall).length, 2);
+    assert.equal((localFirstProducer.slice(0, localStart) + localFirstProducer.slice(localEnd))
+      .replace(localCall, ''), previousProducer,
+    'whole local-first inverse must recover every byte of the unchanged issued original-restore producer');
     const delta = execFileSync('git', ['diff', '--no-ext-diff', '--no-textconv', '--unified=3',
       beforeCommit, afterCommit, '--', producerPath], { cwd: sourceRepository, encoding: 'utf8' });
     assert.equal(delta.includes('\\ No newline at end of file'), false);
@@ -2180,9 +2228,10 @@ try {
       + '; return currentGridSamplingReviewedProducer;')(crypto);
     assert.equal(admits(oldProducer), true);
     assert.equal(admits(reviewedProducer), true);
+    assert.equal(admits(previousProducer), true);
     assert.equal(admits(currentProducer), true);
     for (const changed of [oldProducer + '# changed\n', reviewedProducer + '# changed\n',
-      currentProducer + '# changed\n', '']) {
+      previousProducer + '# changed\n', currentProducer + '# changed\n', '']) {
       assert.equal(admits(changed), false, 'unknown or changed producer bytes must not gain SOURCE admission');
     }
     const base = '9c74feaa4bdb5b93964a8a1e267b18c880223c00';

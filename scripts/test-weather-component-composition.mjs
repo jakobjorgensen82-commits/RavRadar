@@ -216,12 +216,13 @@ test('same-run revision requires comparable official timestamps for every change
   ), true, 'an official revision can update the same STAC item and asset URL');
 });
 
-// Evaluate only the actual pure merge functions, never the executable producer
-// (which performs network and filesystem work at module top level).
+// Evaluate the actual shared pure merge bodies at the existing isolated
+// attestation test seam, never the executable acquisition entrypoint.
 const producerSource = fs.readFileSync(new URL('./update-weather.mjs', import.meta.url), 'utf8');
-const mergeSource = producerSource.slice(
-  producerSource.indexOf('const ATOMIC_COMPONENT_TUPLE_KEYS ='),
-  producerSource.indexOf('\nfunction componentSource('),
+const sharedRecordSource = fs.readFileSync(new URL('./lib/private-dmi-recovery-record.mjs', import.meta.url), 'utf8');
+const mergeSource = sharedRecordSource.slice(
+  sharedRecordSource.indexOf('const ATOMIC_COMPONENT_TUPLE_KEYS ='),
+  sharedRecordSource.indexOf('// END normal-record selection'),
 );
 assert.ok(mergeSource.startsWith('const ATOMIC_COMPONENT_TUPLE_KEYS ='));
 const mergeContext = vm.createContext({

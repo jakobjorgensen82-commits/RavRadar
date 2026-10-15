@@ -401,6 +401,10 @@ const CURRENT_GRID_SAMPLING_REVIEWED_PRODUCERS = Object.freeze({
   '365b9fc4956ea9cc498fe4923e2c095c5297f38722e809747877abba3a5792f0': 'same-original-cached-current-reacquisition',
   'cb4047c4c554c8051e60173df591366a186615ac4a3ffb676be8d27f14ed7c19': 'bounded-exact-original-restore',
   'ec7fde66daeab835b6a852d47ed98b14fd289dc462a6b0d0d46318ffc2b4b6b8': 'bounded-exact-original-capture-inventory',
+  '3058225fb5ea65e647d8e9ffa90e2c9eed1a8f836cefa6a21efa283a2e13525f': 'verified-local-first-exact-original-reuse',
+  '2baae40108bb084f950ec5474fa1c01c0289cc7e83072f44df5fe64726acff2c': 'two-fixed-checkpoint-exact-original-scopes',
+  '438cffd7673d4087564258d97b33746363020af0e04b4fbe7629f0f77a5255df': 'invocation-observed-exact-original-reuse',
+  '4d32d7314d8c2bc2c6592de9baa6a06732ac43a79892afc455d4b39e1eeec3ae': 'fixed-stage-exact-original-unavailability',
 });
 function currentGridSamplingReviewedProducer(source) {
   return Object.hasOwn(CURRENT_GRID_SAMPLING_REVIEWED_PRODUCERS,

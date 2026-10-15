@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Private original metadata only. No provider, source selection, replay or score.
+// Read-only normal dependency selection; no provider, production replay or score.
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -12,11 +12,23 @@ import { dmiExpectedIdentityForPart, verifiedDmiNativeComponentSource, verifiedB
   from './lib/ravscore-production-adapters.mjs';
 import { dmiMarineCollectionAllowedForZone } from './lib/dmi-marine-zone-exclusions.mjs';
 import { assertRavScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import { buildPrivateDmiRecoveryRecord } from './lib/private-dmi-recovery-record.mjs';
+import { buildNewestValidRavScoreRecoverySources } from './lib/ravscore-recovery-source-priority.mjs';
+import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-native-current-proofs.mjs';
+import { verifiedProtectedDmiPartHourly } from './lib/protected-dmi-current-context.mjs';
+import { verifiedIntegratedPartHourly } from './lib/ravscore-production-adapters.mjs';
+import { inspectDmiForecastGridSampling, inspectDmiNativeGridSampling } from './lib/dmi-forecast-store.mjs';
 
 export const SAVED_DMI_ORIGINAL_PLAN_PATH = '.cache/dmi-grib/.original-recovery-plan.json';
 export const SAVED_DMI_ORIGINAL_PROGRESS = '38692413809-1';
 export const SAVED_DMI_ORIGINAL_PROGRESS_KEY = `weather-private-progress-encrypted-v2-Linux-main-${SAVED_DMI_ORIGINAL_PROGRESS}`;
 export const SAVED_DMI_ORIGINAL_TARGET = '2026-10-14T18:00:00.000Z';
+export const SAVED_DMI_ORIGINAL_SCOPES = Object.freeze([
+  Object.freeze({ progressSource: SAVED_DMI_ORIGINAL_PROGRESS, progressCacheKey: SAVED_DMI_ORIGINAL_PROGRESS_KEY,
+    progressBaselineTargetHour: SAVED_DMI_ORIGINAL_TARGET }),
+  Object.freeze({ progressSource: '38768040429-1', progressCacheKey: 'weather-private-progress-encrypted-v2-Linux-main-38768040429-1',
+    progressBaselineTargetHour: '2026-10-15T16:00:00.000Z' }),
+]);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 export const savedOriginalCanonicalJson = value => JSON.stringify(value, (_key, item) =>
@@ -25,7 +37,8 @@ export const savedOriginalCanonicalJson = value => JSON.stringify(value, (_key, 
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const safeFailureCodes = new Set(['SCOPE_INVALID', 'HISTORY_DEMAND_UNAVAILABLE', 'DEMAND_INVALID',
   'DONOR_INVALID', 'ORIGINAL_SOURCE_INVALID', 'CAPTURE_INCOMPLETE', 'PLAN_BOUND', 'BINDING_INVALID',
-  'CAPTURE_INVALID', 'PLAN_PATH_INVALID', 'PLAN_INVALID', 'ARGUMENTS_INVALID']
+  'CAPTURE_INVALID', 'PLAN_PATH_INVALID', 'PLAN_INVALID', 'ARGUMENTS_INVALID',
+  'SELECTED_ENDPOINT_UNAVAILABLE', 'SELECTED_CURRENT_INVALID', 'HOLD_SUPPORT_UNAVAILABLE', 'INPUTS_UNAVAILABLE']
   .map(code => `SAVED_DMI_ORIGINAL_${code}`));
 const refuse = code => { const error = new Error(`SAVED_DMI_ORIGINAL_${code}`);
   error.originalPlanCode = `SAVED_DMI_ORIGINAL_${code}`; throw error; };
@@ -40,13 +53,14 @@ export function savedDmiOriginalPreparationFailureCode(error) {
 
 export function assertSavedDmiOriginalRestoreScope({ progressSource, progressCacheKey,
   progressBaselineTargetHour, executionHead } = {}) {
-  if (progressSource !== SAVED_DMI_ORIGINAL_PROGRESS || progressCacheKey !== SAVED_DMI_ORIGINAL_PROGRESS_KEY
-    || progressBaselineTargetHour !== SAVED_DMI_ORIGINAL_TARGET
+  if (!SAVED_DMI_ORIGINAL_SCOPES.some(scope => scope.progressSource === progressSource
+    && scope.progressCacheKey === progressCacheKey && scope.progressBaselineTargetHour === progressBaselineTargetHour)
     || !/^[a-f0-9]{40}$/.test(executionHead ?? '')) refuse('SCOPE_INVALID');
 }
 
 // The same pure normal selector/time planner; never cold/week fallback.
-export function savedDmiOriginalHistoryDemand({ conditions, parts } = {}) {
+export function savedDmiOriginalHistoryDemand({ conditions, parts, targetReferenceAt = SAVED_DMI_ORIGINAL_TARGET } = {}) {
+  if (!SAVED_DMI_ORIGINAL_SCOPES.some(scope => scope.progressBaselineTargetHour === targetReferenceAt)) refuse('SCOPE_INVALID');
   if (!boundedParts(parts) || !object(conditions?.coastalParts?.parts)) refuse('HISTORY_DEMAND_UNAVAILABLE');
   try { assertRavScoreModelBinding(conditions.coastalParts.modelBinding); }
   catch { refuse('HISTORY_DEMAND_UNAVAILABLE'); }
@@ -54,12 +68,113 @@ export function savedDmiOriginalHistoryDemand({ conditions, parts } = {}) {
   for (const part of parts.values()) {
     let demand;
     try { demand = planRavScoreCurrentHistoryForPart({ part,
-      existingPart: conditions.coastalParts.parts[part.partId], targetReferenceAt: SAVED_DMI_ORIGINAL_TARGET }); }
+      existingPart: conditions.coastalParts.parts[part.partId], targetReferenceAt }); }
     catch { refuse('HISTORY_DEMAND_UNAVAILABLE'); }
     if (demand.initialSource !== 'EXISTING_INTEGRATED' || demand.initialStateAt === null) refuse('HISTORY_DEMAND_UNAVAILABLE');
     demands.push(demand);
   }
   return demands.sort((a, b) => a.partId < b.partId ? -1 : a.partId > b.partId ? 1 : 0);
+}
+
+// The actual private normal caller, not the PUBLIC-only decoder preference or
+// an independent union of every native donor. Inputs remain detached originals.
+export function collectSelectedSavedDmiOriginalCaptures({ protectedBulk, progressCandidate = null,
+  persistedHourlyByPart = new Map(), parts, demands,
+  targetReferenceAt = SAVED_DMI_ORIGINAL_TARGET } = {}) {
+  if (!boundedParts(parts) || !object(protectedBulk?.zones) || progressCandidate !== null && !object(progressCandidate?.zones)
+    || !(persistedHourlyByPart instanceof Map) || !Array.isArray(demands) || demands.length !== parts.size
+    || new Set(demands.map(row => row.partId)).size !== parts.size) refuse('INPUTS_UNAVAILABLE');
+  if (!SAVED_DMI_ORIGINAL_SCOPES.some(scope => scope.progressBaselineTargetHour === targetReferenceAt)) refuse('SCOPE_INVALID');
+  const originals = new Map(), targetMs = Date.parse(targetReferenceAt);
+  for (const demand of demands) {
+    const part = parts.get(demand.partId), expected = dmiExpectedIdentityForPart(part);
+    const from = Date.parse(demand.startAt);
+    if (!part || !expected || demand.endAt !== targetReferenceAt || demand.initialSource !== 'EXISTING_INTEGRATED'
+      || !Number.isFinite(from) || from !== Date.parse(demand.initialStateAt) - 51 * 3_600_000
+      || targetMs < from || targetMs - from > 123 * 3_600_000) refuse('DEMAND_INVALID');
+    const persistedHourly = persistedHourlyByPart.get(part.partId)?.hourly ?? [];
+    if (!Array.isArray(persistedHourly)) refuse('INPUTS_UNAVAILABLE');
+    const containsRequiredHold = rows => rows.some(row => {
+      const provenance = row.currentProvenance ?? row.sources?.current;
+      const collection = row.currentStateOnlyHold?.collection ?? provenance?.collection;
+      return Date.parse(row.time) >= from && Date.parse(row.time) <= targetMs
+        && (!collection || dmiMarineCollectionAllowedForZone(collection, expected.parentZoneId))
+        && (row.currentStateOnlyHold != null || provenance?.stateOnly === true
+          || provenance?.status === 'verified-derived-state-only'
+          || provenance?.classification === 'REGIONAL_DMI_DERIVED_HOLD');
+    });
+    if (containsRequiredHold(persistedHourly)) refuse('HOLD_SUPPORT_UNAVAILABLE');
+    const feature = { properties: { id: expected.entityId, dataPoint: part.waterPoint } };
+    const records = [], sanitizedCurrentLosses = new Set();
+    for (const [document, previous] of [[protectedBulk, true], [progressCandidate, false]]) {
+      if (document === null) { records.push(null); continue; }
+      if (Object.hasOwn(document.zones, expected.entityId)) {
+        const zone = document.zones[expected.entityId];
+        if (!object(zone) || !object(zone.hourly) || Object.keys(zone.hourly).length > 10_000) refuse('DONOR_INVALID');
+      }
+      const record = buildPrivateDmiRecoveryRecord(feature, document, targetReferenceAt,
+        { startAt: demand.startAt, expectedIdentity: expected,
+          ...(previous ? { persistedHourly, protectPreviousDmi: true } : {}) });
+      if (!record) { records.push(null); continue; }
+      // No authenticated pilot is supplied in this original-only operation.
+      // Never silently erase a required hold and call the result zero demand.
+      if (containsRequiredHold(record.hourly)) refuse('HOLD_SUPPORT_UNAVAILABLE');
+      const hourly = previous
+        ? verifiedProtectedDmiPartHourly(record, [document], expected.entityId, part, { requireNativeGridSampling: false })
+        : verifiedIntegratedPartHourly(record, document, expected.entityId, part, { requireNativeGridSampling: false });
+      const sanitizedByTime = new Map(hourly.map(row => [row.time, row]));
+      for (const row of record.hourly) {
+        const provenance = row.currentProvenance ?? row.sources?.current, sanitized = sanitizedByTime.get(row.time);
+        const time = Date.parse(row.time);
+        if (time >= from && time <= targetMs
+          && Number.isFinite(row.currentUMps) && Number.isFinite(row.currentVMps)
+          && provenance?.provider === 'dmi'
+          && dmiMarineCollectionAllowedForZone(provenance?.collection, expected.parentZoneId)
+          && (!Number.isFinite(sanitized?.currentUMps) || !Number.isFinite(sanitized?.currentVMps))) {
+          sanitizedCurrentLosses.add(time);
+        }
+      }
+      records.push({ source: previous ? 'deployed-private-runtime' : 'progressive-private-dmi',
+        nativeCurrentContexts: [document], record: { ...record, hourly } });
+    }
+    const selected = buildNewestValidRavScoreRecoverySources({ fallbackSource: records[0], preferredSource: records[1],
+      protectedPreviousSource: records[0], productionReferenceAt: targetReferenceAt, part });
+    const verifiedSelectedTimes = new Set();
+    for (const source of selected) {
+      const inspector = createProtectedDmiNativeCurrentInspector({ contexts: source.nativeCurrentContexts ?? [] });
+      for (const row of source.record?.hourly ?? []) {
+        const time = Date.parse(row.time);
+        if (time < from || time > targetMs || !Number.isFinite(row.currentUMps) || !Number.isFinite(row.currentVMps)) continue;
+        const provenance = row.currentProvenance?.status === 'verified' ? row.currentProvenance : row.sources?.current;
+        if (provenance?.provider !== 'dmi') continue; // No DMI original is inferred from another provider's selected row.
+        if (!['dkss_lf', 'dkss_nsbs', 'dkss_idw'].includes(provenance.collection)) refuse('SELECTED_CURRENT_INVALID');
+        if (!dmiMarineCollectionAllowedForZone(provenance?.collection, expected.parentZoneId)) continue;
+        const proof = inspector.inspectOriginals({ part, row });
+        if (!proof.ok) refuse('SELECTED_ENDPOINT_UNAVAILABLE');
+        const sampling = inspectDmiForecastGridSampling(provenance, 'current', row.time, expected).status;
+        if (!['unknown', 'coherent'].includes(sampling)) refuse('SELECTED_CURRENT_INVALID');
+        for (const native of proof.nativeRows) {
+          const nativeMs = Date.parse(native.time), endpoint = native.source;
+          if (!Number.isFinite(nativeMs) || nativeMs < from - 3 * 3_600_000
+            || nativeMs > targetMs + 3 * 3_600_000) refuse('DEMAND_INVALID');
+          const status = inspectDmiNativeGridSampling(endpoint).status;
+          if (status === 'coherent') continue;
+          if (status !== 'unknown' || endpoint.nativeGridSampling != null) refuse('SELECTED_CURRENT_INVALID');
+          const capture = canonicalSavedDmiOriginalCapture(endpoint);
+          if (!capture) refuse('CAPTURE_INCOMPLETE');
+          originals.set(savedOriginalCanonicalJson(capture), capture);
+          if (originals.size > 4096) refuse('PLAN_BOUND');
+        }
+        verifiedSelectedTimes.add(time);
+      }
+    }
+    // A rejected donor is not a restore dependency when the normal priority
+    // actually selected a same-hour replacement whose own native endpoints
+    // passed every check above. Otherwise sanitizer loss must never become
+    // apparent zero demand. This is not an independent donor union/admission.
+    if ([...sanitizedCurrentLosses].some(time => !verifiedSelectedTimes.has(time))) refuse('SELECTED_ENDPOINT_UNAVAILABLE');
+  }
+  return [...originals].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([, capture]) => capture);
 }
 
 // One already authenticated donor at a time; original shape/context checking
@@ -99,9 +214,10 @@ export function collectSavedDmiOriginalCaptures({ document, parts, demands } = {
 }
 
 export function buildSavedDmiOriginalRestorePlan({ captures, source, demands, executionHead,
+  progressSource = SAVED_DMI_ORIGINAL_PROGRESS, progressCacheKey = SAVED_DMI_ORIGINAL_PROGRESS_KEY,
+  targetReferenceAt = SAVED_DMI_ORIGINAL_TARGET,
   nonce = crypto.randomBytes(16).toString('hex') } = {}) {
-  assertSavedDmiOriginalRestoreScope({ progressSource: SAVED_DMI_ORIGINAL_PROGRESS,
-    progressCacheKey: SAVED_DMI_ORIGINAL_PROGRESS_KEY, progressBaselineTargetHour: SAVED_DMI_ORIGINAL_TARGET, executionHead });
+  assertSavedDmiOriginalRestoreScope({ progressSource, progressCacheKey, progressBaselineTargetHour: targetReferenceAt, executionHead });
   if (!Array.isArray(captures) || captures.length > 5 * 4096 || !Array.isArray(demands) || !demands.length
     || !object(source?.modelBinding) || !/^[a-f0-9]{40}$/.test(source.sourceHead ?? '')
     || !/^[a-f0-9]{64}$/.test(source.bundleContentSha256 ?? '') || !/^[a-f0-9]{32}$/.test(nonce)
@@ -116,11 +232,11 @@ export function buildSavedDmiOriginalRestorePlan({ captures, source, demands, ex
     if (!capture || savedOriginalCanonicalJson(capture) !== savedOriginalCanonicalJson(item)) refuse('CAPTURE_INVALID');
     unique.set(savedOriginalCanonicalJson(capture), capture);
   }
-  if (unique.size < 1 || unique.size > 4096) refuse('PLAN_BOUND');
+  if (unique.size > 4096 || demands.some(row => row.endAt !== targetReferenceAt)) refuse('PLAN_BOUND');
   const originals = [...unique].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([, value]) => value);
   return { schemaVersion: 1, contractId: 'dmi-exact-original-restore-v1', binding: {
-    progressSource: SAVED_DMI_ORIGINAL_PROGRESS, progressCacheKey: SAVED_DMI_ORIGINAL_PROGRESS_KEY,
-    targetReferenceAt: SAVED_DMI_ORIGINAL_TARGET, sourceHead: source.sourceHead, executionHead,
+    progressSource, progressCacheKey,
+    targetReferenceAt, sourceHead: source.sourceHead, executionHead,
     protectedBundleSha256: source.bundleContentSha256, protectedDatasetId: source.datasetId,
     protectedProductionReferenceAt: source.productionReferenceAt, protectedGeneratedAt: source.generatedAt,
     modelBindingSha256: sha(savedOriginalCanonicalJson(source.modelBinding)),
@@ -130,6 +246,16 @@ export function buildSavedDmiOriginalRestorePlan({ captures, source, demands, ex
 }
 
 export async function writeSavedDmiOriginalRestorePlan({ repositoryRoot = ROOT, plan } = {}) {
+  if (!object(plan) || plan.contractId !== 'dmi-exact-original-restore-v1' || !Array.isArray(plan.originals)) refuse('PLAN_INVALID');
+  if (plan.originals.length === 0) {
+    const existing = await fs.lstat(path.resolve(repositoryRoot, SAVED_DMI_ORIGINAL_PLAN_PATH))
+      .catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+    if (existing) refuse('PLAN_PATH_INVALID');
+    return { schemaVersion: 1, kind: 'SAVED_DMI_ORIGINAL_RESTORE_PREPARATION',
+      status: 'NO_ORIGINAL_RESTORE_REQUIRED', originalCount: 0, planBytes: 0, planSha256: '',
+      privatePayloadIncluded: false, providerRequestsPerformed: false, remoteWrites: false,
+      semanticUnionPerformed: false, replayPerformed: false, scoreBuilt: false, sourceAdmissionPerformed: false };
+  }
   const requested = path.resolve(repositoryRoot), rootStat = await fs.lstat(requested);
   if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) refuse('PLAN_PATH_INVALID');
   const root = await fs.realpath(requested);
@@ -165,7 +291,7 @@ async function runPreparationCli() {
     }
     const report = await prepareAuthenticatedSavedDmiOriginalRestore(options);
     if (process.env.GITHUB_OUTPUT) await fs.appendFile(process.env.GITHUB_OUTPUT,
-      `plan_sha256=${report.planSha256}\noriginal_count=${report.originalCount}\nplan_bytes=${report.planBytes}\n`);
+      `preparation_status=${report.status}\nplan_sha256=${report.planSha256}\noriginal_count=${report.originalCount}\nplan_bytes=${report.planBytes}\n`);
     console.log(JSON.stringify(report));
   } catch (error) {
     console.error(savedDmiOriginalPreparationFailureCode(error)); process.exitCode = 1;

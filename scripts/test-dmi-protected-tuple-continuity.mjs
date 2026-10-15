@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
+import { mergeHourlyPreferDmi, bulkZoneToForecastRecord,
+  buildPartDmiForecastWithProtectedRetention, buildPrivateDmiRecoveryRecord }
+  from './lib/private-dmi-recovery-record.mjs';
 import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-native-current-proofs.mjs';
 import {
   createDmiForecastRecord, DMI_FORECAST_HOURS, normalizeForecastHourly,
@@ -25,23 +28,9 @@ import { buildRavScoreRecoveryReplay, ravScoreRecoverySourceStartAt, RAVSCORE_RE
 import { originalContextForProtectedDmiCurrent, verifiedProtectedDmiPartHourly }
   from './lib/protected-dmi-current-context.mjs';
 
-// Load the producer's real selection boundary without executing acquisition.
-// In particular, neither provenance admission nor the downstream sanitizer is
-// stubbed: a superficially valid source must survive both real contracts.
+// Import the producer's actual shared selection boundary without acquisition.
+// Neither provenance admission nor the downstream sanitizer is stubbed.
 const producer = fs.readFileSync('scripts/update-weather.mjs', 'utf8');
-const start = producer.indexOf('const ATOMIC_COMPONENT_TUPLE_KEYS');
-const end = producer.indexOf('function componentSource(', start);
-assert.ok(start >= 0 && end > start, 'the real producer selection boundary must exist');
-const mergeHourlyPreferDmi = Function(
-  'ravScoreNumber', 'normalizeForecastHourly', 'verifiedDmiForecastComponentSource',
-  'dmiWaveDirectionMatchesSource', 'repairWaterLevelContinuity',
-  'SHORT_DMI_WATER_GAP_HOURS', 'WATER_LEVEL_JUMP_WARN_CM',
-  'ACCEPTED_FORECAST_HOURS', 'DMI_FORECAST_HOURS', 'preferQualifiedDmiComponentSource',
-  `${producer.slice(start, end)}; return mergeHourlyPreferDmi;`,
-)(value => typeof value === 'number' && Number.isFinite(value) ? value : null,
-  normalizeForecastHourly, verifiedDmiForecastComponentSource,
-  dmiWaveDirectionMatchesSource, repairWaterLevelContinuity,
-  2, 25, 118, DMI_FORECAST_HOURS, preferQualifiedDmiComponentSource);
 
 const HOUR = 3_600_000;
 const epoch = Date.parse('2026-09-01T00:00:00.000Z');
@@ -295,6 +284,7 @@ const runPublicPartProjection = Function(
   'verifiedDmiForecastComponentSource', 'verifiedBulkCurrent',
   'buildDmiMarineComponentwiseHourly', 'recoverDmiMarineRunSeamHours',
   'mergeHourlyPreferDmi', 'mergeLiveCurrentPilotIntoRecord',
+  'bulkZoneToForecastRecord', 'buildPartDmiForecastWithProtectedRetention', 'buildPrivateDmiRecoveryRecord',
   'mergeProtectedLiveCurrentPilotIntoRecord', 'mergeActiveNativeLiveCurrentPilotIntoRecord', 'verifiedIntegratedPartHourly',
   'originalContextForProtectedDmiCurrent', 'verifiedProtectedDmiPartHourly',
   'buildNewestValidRavScoreRecoverySources',
@@ -304,10 +294,6 @@ const runPublicPartProjection = Function(
   `const CURRENT_VECTOR_SEMANTICS_VERSION = 3;
    const ravScoreNumber = value => typeof value === 'number' && Number.isFinite(value) ? value : null;
    const num = ravScoreNumber;
-   ${extract('function zonePoint(', 'function withoutZoneCurrent(')}
-   ${extract('function haversineKm(', 'async function readCachedWaterStations(')}
-   ${extract('function dmiCollections(', 'async function dmiPosition(')}
-   ${extract('function bulkZoneToForecastRecord(', 'function verifiedFeggesundNeighborSource(')}
    ${extract('function applyFeggesundOperationalWaveProxy(', 'function missingFeggesundWaveHour(')}
    return function ({active, deployed = null, historical = null, persisted = [], pointActivated = false, replay = false, pilot = null, partWithoutZoneIdentity = false}) {
      const [zoneId, zoneParts] = Object.entries({[fixturePart.parentZoneId]: [fixturePart]})[0];
@@ -341,6 +327,7 @@ const runPublicPartProjection = Function(
   verifiedDmiForecastComponentSource, verifiedBulkCurrent,
   buildDmiMarineComponentwiseHourly, recoverDmiMarineRunSeamHours,
   mergeHourlyPreferDmi, mergeLiveCurrentPilotIntoRecord,
+  bulkZoneToForecastRecord, buildPartDmiForecastWithProtectedRetention, buildPrivateDmiRecoveryRecord,
   mergeProtectedLiveCurrentPilotIntoRecord, mergeActiveNativeLiveCurrentPilotIntoRecord, verifiedIntegratedPartHourly,
   originalContextForProtectedDmiCurrent, verifiedProtectedDmiPartHourly,
   buildNewestValidRavScoreRecoverySources,

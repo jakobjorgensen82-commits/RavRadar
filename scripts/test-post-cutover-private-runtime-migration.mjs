@@ -711,6 +711,24 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
       zones: { [restoreIdentity.entityId]: { ...restoreIdentity, hourly: {
         [reference]: { time: reference, 'current-u': 0.1, 'current-v': 0.2, sources: { current: nativeSource } },
       } } } };
+    // The full preparation now consumes the actual persisted PART continuity,
+    // not merely the old audit's file inventory. Build it from THIS existing
+    // native document and these same 673 parts before sealing any B/S bytes.
+    // The normal producer materializes missing hours without inventing current.
+    const normalRecovery = await currentImport('scripts/lib/private-dmi-recovery-record.mjs');
+    const continuity = await currentImport('scripts/lib/dmi-part-continuity.mjs');
+    const persistedRecords = new Map(allPartIds.map(partId => {
+      const part = parts[partId], identity = adapters.dmiExpectedIdentityForPart(part);
+      const record = normalRecovery.buildPrivateDmiRecoveryRecord(
+        { properties: { id: identity.entityId, dataPoint: part.waterPoint } }, nativeOriginalDocument, reference,
+        { startAt: reference, expectedIdentity: identity, protectPreviousDmi: true });
+      assert.equal(record.hourly.length, 121);
+      assert.equal(record.hourly.some(row => Number.isFinite(row.currentUMps)
+        && Number.isFinite(row.currentVMps)), partId === restorePart.partId);
+      return [partId, record];
+    }));
+    const nativeForecastDocument = { zones: {}, partContinuity: await continuity.packDmiPartContinuity(
+      persistedRecords, allPartIds.map(partId => parts[partId]), reference) };
     async function sealedScenario(fixture, label) {
       const root = path.join(temporary, label);
       const input = path.join(root, 'input');
@@ -721,7 +739,8 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
         if (item.id === 'full-conditions') {
           await normalMigrant.atomicWriteJson(file, hourly.packPrivateConditionsHourly(fixture.conditions));
         } else await fs.writeFile(file, `${JSON.stringify(item.id === 'dmi-bulk-cache'
-          ? nativeOriginalDocument : { controlledOnly: true, id: item.id })}\n`, { flag: 'wx' });
+          ? nativeOriginalDocument : item.id === 'dmi-forecast-cache'
+            ? nativeForecastDocument : { controlledOnly: true, id: item.id })}\n`, { flag: 'wx' });
       }
       await fs.mkdir(path.join(input, '.cache'), { recursive: true });
       await fs.copyFile(fixture.packPath, path.join(input, packFile));

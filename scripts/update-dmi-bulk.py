@@ -4075,7 +4075,7 @@ def _exact_original_response(url, *, metadata_path=None):
                 _exact_official_https(url, metadata_path=metadata_path)
                 continue
             if response.status_code in (404, 410):
-                _exact_original_refuse("UNAVAILABLE")
+                _exact_original_refuse("METADATA_UNAVAILABLE" if metadata_path is not None else "ASSET_UNAVAILABLE")
             if response.status_code != 200:
                 _exact_original_refuse("HTTP_REJECTED")
             yield response
@@ -4114,7 +4114,7 @@ def resolve_exact_original_item(expected_capture, *, work_deadline):
     return identity
 
 
-def _exact_raw_state():
+def _exact_raw_state(*, observed_names=None):
     """No fallback-to-empty manifest and no eviction of any existing raw input."""
     if _UNSETTLED_ASSET_DOWNLOADS or _UNSETTLED_GRIB_READS:
         raise AssetDownloadCleanupUnproven("DMI exact original previous ownership is unsettled")
@@ -4129,6 +4129,8 @@ def _exact_raw_state():
         info = entry.lstat()
         if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
             _exact_original_refuse("RAW_ENTRY_REJECTED")
+        if observed_names is not None:
+            observed_names.add(entry.name)
         used += info.st_size
     manifest = raw_cache_manifest_path()
     if manifest.with_suffix(".json.tmp").exists():
@@ -4209,12 +4211,12 @@ def _exact_unique_fields(pairs):
     return document
 
 
-def read_exact_original_restore_plan():
+def read_exact_original_restore_plan(*, observed_names=None):
     """A fixed private file plus caller-held byte witness, not bearer authority."""
     expected_sha = os.getenv("DMI_EXACT_ORIGINAL_PLAN_SHA256", "")
     if not re.fullmatch(r"[0-9a-f]{64}", expected_sha):
         _exact_original_refuse("PLAN_REJECTED")
-    _exact_raw_state()
+    _exact_raw_state(observed_names=observed_names)
     path = ROOT / ".cache/dmi-grib/.original-recovery-plan.json"
     original = path.lstat()
     if (not stat.S_ISREG(original.st_mode) or original.st_nlink != 1
@@ -4242,9 +4244,9 @@ def read_exact_original_restore_plan():
             "progressSource", "progressCacheKey", "targetReferenceAt", "sourceHead", "executionHead",
             "protectedBundleSha256", "protectedDatasetId", "protectedProductionReferenceAt",
             "protectedGeneratedAt", "modelBindingSha256", "historyDemandSha256", "originalsSha256", "nonce"}
-            or binding["progressSource"] != "38692413809-1"
-            or binding["progressCacheKey"] != "weather-private-progress-encrypted-v2-Linux-main-38692413809-1"
-            or binding["targetReferenceAt"] != "2026-10-14T18:00:00.000Z"
+            or (binding["progressSource"], binding["progressCacheKey"], binding["targetReferenceAt"]) not in (
+                ("38692413809-1", "weather-private-progress-encrypted-v2-Linux-main-38692413809-1", "2026-10-14T18:00:00.000Z"),
+                ("38768040429-1", "weather-private-progress-encrypted-v2-Linux-main-38768040429-1", "2026-10-15T16:00:00.000Z"))
             or not all(isinstance(binding[key], str) and re.fullmatch(r"[0-9a-f]{40}", binding[key])
                        for key in ("sourceHead", "executionHead"))
             or binding["executionHead"] != os.getenv("GITHUB_SHA")
@@ -4271,7 +4273,58 @@ def read_exact_original_restore_plan():
     return plan
 
 
-def restore_exact_original_assets(originals, *, report=None):
+def _reuse_exact_original_file(capture, *, work_deadline, observed_names=None):
+    """Local proof precedes STAC availability; no download on this branch."""
+    observed_names = set() if observed_names is None else observed_names
+    manifest, _ = _exact_raw_state(observed_names=observed_names)
+    prefix = capture["assetIdentitySha256"][:24] + "."
+    local_names = {name for name in observed_names if name.startswith(prefix)}
+    matches = []
+    for name, row in manifest["assets"].items():
+        if not isinstance(row, dict):
+            if isinstance(name, str) and name.startswith(prefix):
+                _exact_original_refuse("COLLISION")
+            continue
+        href = row.get("canonicalHref")
+        if (row.get("assetIdentitySha256") != capture["assetIdentitySha256"]
+                and asset_identity_sha256(href) != capture["assetIdentitySha256"]
+                and not (isinstance(name, str) and name.startswith(prefix))):
+            continue
+        if not _exact_same_capture(row, capture):
+            _exact_original_refuse("COLLISION")
+        _exact_official_https(href)
+        path = cached_asset_path(href)
+        if (href != href.split("?", 1)[0].split("#", 1)[0]
+                or asset_identity_sha256(href) != capture["assetIdentitySha256"]
+                or name != path.name or pathlib.Path(name).name != name):
+            _exact_original_refuse("COLLISION")
+        matches.append((path, href))
+    if len(matches) > 1 or local_names - {path.name for path, _ in matches}:
+        _exact_original_refuse("COLLISION")
+    if not matches:
+        return False
+    path, href = matches[0]
+    try:
+        info = path.lstat()
+    except FileNotFoundError:
+        if path.name in local_names:
+            raise  # Observed locally, then vanished: never turn that race into transport.
+        return False  # Actual absence, not a failed or unproved local read.
+    if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+        _exact_original_refuse("RAW_ENTRY_REJECTED")
+    identity = supervised_asset_identity(capture["collection"], capture["modelRun"], {
+        "valid": capture["validTime"], "id": capture["itemId"], "href": href,
+        "size": capture["assetSizeBytes"], "itemCreatedAt": capture["itemCreatedAt"],
+        "itemUpdatedAt": capture["itemUpdatedAt"],
+    })
+    with supervised_asset_operation(identity):
+        # A vanished/changed file or unproved EOF/close must propagate. Calling
+        # download_asset here could turn a TOCTOU disappearance into transport.
+        _verify_exact_original_file(path, capture, work_deadline=work_deadline, require_capture=True)
+    return True
+
+
+def restore_exact_original_assets(originals, *, report=None, observed_names=None):
     """Only exact historical originals. No main, latest, replay, pruning or score."""
     if report is None:
         report = {}
@@ -4293,13 +4346,17 @@ def restore_exact_original_assets(originals, *, report=None):
         if per_collection[name] > MAX_ASSETS_PER_COLLECTION:
             _exact_original_refuse("ASSET_BOUND")
     report.update(originalCount=len(originals), uniqueAssetCount=len(assets))
-    _exact_raw_state()
+    observed_names = set() if observed_names is None else observed_names
+    _exact_raw_state(observed_names=observed_names)
     if CACHE_ONLY or FINALIZE_ONLY:
         _exact_original_refuse("NETWORK_DISABLED")
     budget = {"bytes": 0}
     try:
         for key in sorted(assets):
             capture = assets[key]
+            if _reuse_exact_original_file(capture, work_deadline=WORK_DEADLINE, observed_names=observed_names):
+                report["reusedAssetCount"] += 1
+                continue
             identity = resolve_exact_original_item(capture, work_deadline=WORK_DEADLINE)
             supervised_identity = supervised_asset_identity(capture["collection"], capture["modelRun"], {
                 "valid": identity["validTime"], "id": identity["itemId"], "href": identity["href"],
@@ -4328,8 +4385,9 @@ def exact_original_restore_main():
     try:
         if sys.argv[1:] != ["--restore-exact-originals"]:
             _exact_original_refuse("PLAN_REJECTED")
-        plan = read_exact_original_restore_plan()
-        restore_exact_original_assets(plan["originals"], report=report)
+        observed_names = set()
+        plan = read_exact_original_restore_plan(observed_names=observed_names)
+        restore_exact_original_assets(plan["originals"], report=report, observed_names=observed_names)
     except Exception as exc:
         # Only this private exception's fixed constructor codes, never URLs,
         # request text, item ids, OS paths, decoder diagnostics or credentials.
@@ -4351,6 +4409,7 @@ def exact_original_restore_main():
 
 _EXACT_ORIGINAL_FAILURE_CODES = frozenset("DMI_EXACT_ORIGINAL_" + code for code in (
     "CAPTURE_INVALID", "URL_REJECTED", "NETWORK_DISABLED", "REDIRECT_REJECTED", "UNAVAILABLE",
+    "METADATA_UNAVAILABLE", "ASSET_UNAVAILABLE",
     "HTTP_REJECTED", "STAC_ROOT_REJECTED", "METADATA_BOUND", "METADATA_INVALID", "REVISION_MISMATCH",
     "RAW_DIRECTORY_REJECTED", "RAW_ENTRY_REJECTED", "MANIFEST_REJECTED", "HEADER_BOUND", "HEADER_MISMATCH",
     "CONTENT_MISMATCH", "COLLISION", "CACHE_BUDGET", "DOWNLOAD_BUDGET", "LENGTH_MISMATCH", "PLAN_REJECTED",

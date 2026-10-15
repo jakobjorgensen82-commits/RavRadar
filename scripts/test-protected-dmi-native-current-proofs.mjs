@@ -1047,6 +1047,7 @@ if (process.env.RAVRADAR_NATIVE_PROOF_BENCHMARK === '1') test('opt-in dense 673 
 
 test('normal private recovery maps the complete 72h bridge without widening public 121', async () => {
   const { readFile } = await import('node:fs/promises');
+  const normal = await import('./lib/private-dmi-recovery-record.mjs');
   const store = await import('./lib/dmi-forecast-store.mjs');
   const adapters = await import('./lib/ravscore-production-adapters.mjs');
   const marine = await import('./lib/dmi-marine-run-seam-recovery.mjs');
@@ -1078,14 +1079,8 @@ test('normal private recovery maps the complete 72h bridge without widening publ
     RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS: recovery.RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS };
   // Actual producer functions and the actual two recovery-callsite block.
   // No mapper, sanitizer, selection, original inspector or pipeline is mocked.
-  const normal = Function(...Object.keys(scope),
-    slice(source, 'function zonePoint(', 'function withoutZoneCurrent(')
-    + slice(source, 'function haversineKm(', 'async function readCachedWaterStations(')
-    + slice(source, 'function dmiCollections(', 'async function dmiPosition(')
-    + slice(source, 'const ATOMIC_COMPONENT_TUPLE_KEYS', 'function componentSource(')
-    + slice(source, 'function bulkZoneToForecastRecord(', 'function verifiedFeggesundNeighborSource(')
-    + ';return { bulkZoneToForecastRecord, buildPrivateDmiRecoveryRecord, buildPartDmiForecastWithProtectedRetention };')(
-    ...Object.values(scope));
+  // The exact normal mapper is now import-safe; the orchestration callsite
+  // below is still extracted from the real executable without running IO.
   const part = { partId: 'SYNTHETIC-BRIDGE-PART', zoneId: 'DK-B01-01',
     waterPoint: [8, 55], onshoreDirectionDeg: 90 };
   const identity = dmiExpectedIdentityForPart(part), zone = { id: part.zoneId, onshoreDirectionDeg: 90 };

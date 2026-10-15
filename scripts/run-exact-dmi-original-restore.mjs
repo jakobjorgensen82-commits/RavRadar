@@ -16,10 +16,15 @@ const PLAN = path.join(ROOT, '.cache/dmi-grib/.original-recovery-plan.json');
 const SUPERVISOR = path.join(ROOT, 'scripts/run-dmi-bulk-supervised.py');
 const SHA256 = /^[a-f0-9]{64}$/;
 const HEAD = /^[a-f0-9]{40}$/;
+const EXACT_RESTORE_SCOPES = Object.freeze([
+  ['38692413809-1', 'weather-private-progress-encrypted-v2-Linux-main-38692413809-1', '2026-10-14T18:00:00.000Z'],
+  ['38768040429-1', 'weather-private-progress-encrypted-v2-Linux-main-38768040429-1', '2026-10-15T16:00:00.000Z'],
+]);
 // Exact producer constructor/catch codes only. Never forward an arbitrary
 // uppercase library message just because it resembles an operational code.
 const PYTHON_DMI_EXACT_ORIGINAL_CODES = new Set(['UNCLASSIFIED', ...[
   'CAPTURE_INVALID', 'URL_REJECTED', 'NETWORK_DISABLED', 'REDIRECT_REJECTED', 'UNAVAILABLE',
+  'METADATA_UNAVAILABLE', 'ASSET_UNAVAILABLE',
   'HTTP_REJECTED', 'STAC_ROOT_REJECTED', 'METADATA_BOUND', 'METADATA_INVALID', 'REVISION_MISMATCH',
   'RAW_DIRECTORY_REJECTED', 'RAW_ENTRY_REJECTED', 'MANIFEST_REJECTED', 'HEADER_BOUND', 'HEADER_MISMATCH',
   'CONTENT_MISMATCH', 'COLLISION', 'CACHE_BUDGET', 'DOWNLOAD_BUDGET', 'LENGTH_MISMATCH', 'PLAN_REJECTED',
@@ -58,9 +63,8 @@ export function validateExactDmiOriginalRestorePlan(bytes, environment) {
     'sourceHead', 'executionHead', 'protectedBundleSha256', 'protectedDatasetId',
     'protectedProductionReferenceAt', 'protectedGeneratedAt', 'modelBindingSha256',
     'historyDemandSha256', 'originalsSha256', 'nonce'])
-    || b.progressSource !== '38692413809-1'
-    || b.progressCacheKey !== 'weather-private-progress-encrypted-v2-Linux-main-38692413809-1'
-    || b.targetReferenceAt !== '2026-10-14T18:00:00.000Z'
+    || !EXACT_RESTORE_SCOPES.some(([source, key, target]) =>
+      b.progressSource === source && b.progressCacheKey === key && b.targetReferenceAt === target)
     || !HEAD.test(b.sourceHead) || b.executionHead !== environment.GITHUB_SHA
     || !['protectedBundleSha256', 'modelBindingSha256', 'historyDemandSha256', 'originalsSha256']
       .every(key => typeof b[key] === 'string' && SHA256.test(b[key]))
@@ -71,6 +75,24 @@ export function validateExactDmiOriginalRestorePlan(bytes, environment) {
       typeof b[key] === 'string' && Number.isFinite(Date.parse(b[key]))
       && new Date(b[key]).toISOString() === b[key])) fail('DMI_EXACT_ORIGINAL_PLAN_REJECTED');
   return { planSha256: sha(bytes), originalCount: plan.originals.length };
+}
+
+// A zero-demand preparation is not a restore receipt or cache-write authority.
+// Validate its complete fixed tuple before any path read, writer or child.
+export function validateExactDmiOriginalRestorePreparation(environment) {
+  const status = environment?.DMI_EXACT_ORIGINAL_PREPARATION_STATUS;
+  const count = environment?.DMI_EXACT_ORIGINAL_COUNT;
+  const bytes = environment?.DMI_EXACT_ORIGINAL_PLAN_BYTES;
+  const digest = environment?.DMI_EXACT_ORIGINAL_PLAN_SHA256;
+  // Preserve the original positive coordinator API for existing direct callers.
+  if (status === undefined && count === undefined && bytes === undefined) return 'ORIGINAL_PLAN_PREPARED';
+  if (status === 'NO_ORIGINAL_RESTORE_REQUIRED' && count === '0' && bytes === '0' && digest === '') return status;
+  if (status !== 'ORIGINAL_PLAN_PREPARED' || !/^[1-9][0-9]{0,3}$/.test(count ?? '')
+    || Number(count) > 4096 || !/^[1-9][0-9]{0,7}$/.test(bytes ?? '')
+    || Number(bytes) > 16 * 1024 * 1024 || !SHA256.test(digest ?? '')) {
+    fail('DMI_EXACT_ORIGINAL_PREPARATION_REJECTED');
+  }
+  return status;
 }
 
 async function readFixedPlan() {
@@ -156,6 +178,11 @@ function validateClosure(text, exit) {
 
 export async function runExactDmiOriginalRestore() {
   if (arguments.length !== 0 || process.argv.slice(2).length !== 0) fail('DMI_EXACT_ORIGINAL_RESTORE_ARGUMENTS_INVALID');
+  if (validateExactDmiOriginalRestorePreparation(process.env) === 'NO_ORIGINAL_RESTORE_REQUIRED') {
+    return { schemaVersion: 1, contractId: 'dmi-exact-original-restore-result-v1',
+      status: 'NO_ORIGINAL_RESTORE_REQUIRED', originalCount: 0, restorePerformed: false,
+      writerClaimAcquired: false, remoteWrites: false, cacheSaved: false };
+  }
   let lease, child, physicallyClosed = false, firstFailure = null, interrupted = false, result;
   const interrupt = () => { interrupted = true; try { child?.kill('SIGTERM'); } catch {} };
   process.on('SIGTERM', interrupt); process.on('SIGINT', interrupt);
@@ -215,7 +242,8 @@ export async function runExactDmiOriginalRestore() {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const result = await runExactDmiOriginalRestore();
-    if (process.env.GITHUB_OUTPUT) await fs.appendFile(process.env.GITHUB_OUTPUT, 'originals_restored=true\n');
+    if (process.env.GITHUB_OUTPUT) await fs.appendFile(process.env.GITHUB_OUTPUT,
+      `originals_restored=${result.status === 'RESTORED'}\n`);
     console.log(JSON.stringify(result));
   }
   catch (error) {

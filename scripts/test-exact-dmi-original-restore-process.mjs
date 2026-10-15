@@ -6,7 +6,8 @@ import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
-import { validateExactDmiOriginalRestorePlan } from './run-exact-dmi-original-restore.mjs';
+import { validateExactDmiOriginalRestorePlan, validateExactDmiOriginalRestorePreparation }
+  from './run-exact-dmi-original-restore.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
@@ -40,6 +41,53 @@ test('exact restore process: old source head remains separate from new execution
   assert.deepEqual(validateExactDmiOriginalRestorePlan(bytes, environment(bytes)), {
     originalCount: 1, planSha256: sha(bytes),
   });
+});
+
+test('exact restore process accepts only the two paired known checkpoint scopes', () => {
+  const latest = fixturePlan();
+  Object.assign(latest.binding, { progressSource: '38768040429-1',
+    progressCacheKey: 'weather-private-progress-encrypted-v2-Linux-main-38768040429-1',
+    targetReferenceAt: '2026-10-15T16:00:00.000Z' });
+  for (const plan of [fixturePlan(), latest]) {
+    const bytes = bytesOf(plan);
+    assert.equal(validateExactDmiOriginalRestorePlan(bytes, environment(bytes)).originalCount, 1);
+  }
+  for (const [key, value] of [['progressSource', '38692413809-1'],
+    ['progressCacheKey', 'weather-private-progress-encrypted-v2-Linux-main-38692413809-1'],
+    ['targetReferenceAt', '2026-10-14T18:00:00.000Z'],
+    ['progressSource', '38768040429-2'], ['targetReferenceAt', '2026-10-15T17:00:00.000Z']]) {
+    const plan = structuredClone(latest); plan.binding[key] = value;
+    const bytes = bytesOf(plan);
+    assert.throws(() => validateExactDmiOriginalRestorePlan(bytes, environment(bytes)),
+      { code: 'DMI_EXACT_ORIGINAL_PLAN_REJECTED' });
+  }
+});
+
+const noOriginals = { DMI_EXACT_ORIGINAL_PREPARATION_STATUS: 'NO_ORIGINAL_RESTORE_REQUIRED',
+  DMI_EXACT_ORIGINAL_COUNT: '0', DMI_EXACT_ORIGINAL_PLAN_BYTES: '0', DMI_EXACT_ORIGINAL_PLAN_SHA256: '' };
+test('exact restore no-op is a complete strict tuple, never an empty plan or restore receipt', () => {
+  assert.equal(validateExactDmiOriginalRestorePreparation(noOriginals), 'NO_ORIGINAL_RESTORE_REQUIRED');
+  assert.equal(validateExactDmiOriginalRestorePreparation({}), 'ORIGINAL_PLAN_PREPARED');
+  for (const changed of [{ DMI_EXACT_ORIGINAL_COUNT: '1' }, { DMI_EXACT_ORIGINAL_PLAN_BYTES: '1' },
+    { DMI_EXACT_ORIGINAL_PLAN_SHA256: 'a'.repeat(64) }, { DMI_EXACT_ORIGINAL_PREPARATION_STATUS: 'RESTORED' },
+    { DMI_EXACT_ORIGINAL_COUNT: undefined }]) {
+    assert.throws(() => validateExactDmiOriginalRestorePreparation({ ...noOriginals, ...changed }),
+      { code: 'DMI_EXACT_ORIGINAL_PREPARATION_REJECTED' });
+  }
+  assert.equal(validateExactDmiOriginalRestorePreparation({
+    DMI_EXACT_ORIGINAL_PREPARATION_STATUS: 'ORIGINAL_PLAN_PREPARED', DMI_EXACT_ORIGINAL_COUNT: '1',
+    DMI_EXACT_ORIGINAL_PLAN_BYTES: '2048', DMI_EXACT_ORIGINAL_PLAN_SHA256: 'a'.repeat(64),
+  }), 'ORIGINAL_PLAN_PREPARED');
+  const env = { ...process.env, ...noOriginals };
+  delete env.GITHUB_OUTPUT;
+  const result = spawnSync(process.execPath, [path.join(ROOT, 'scripts/run-exact-dmi-original-restore.mjs')],
+    { encoding: 'utf8', timeout: 10_000, env });
+  assert.equal(result.error, undefined); assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stderr, '');
+  assert.deepEqual(JSON.parse(result.stdout), { schemaVersion: 1,
+    contractId: 'dmi-exact-original-restore-result-v1', status: 'NO_ORIGINAL_RESTORE_REQUIRED',
+    originalCount: 0, restorePerformed: false, writerClaimAcquired: false, remoteWrites: false, cacheSaved: false });
+  assert.equal(result.stdout.includes('RESTORED'), false);
 });
 
 for (const [name, mutate] of [
@@ -90,7 +138,9 @@ async function privateFixture(mode) {
   const report = { schemaVersion: 1, contractId: 'dmi-exact-original-restore-result-v1',
     status: rejected ? 'REJECTED' : 'RESTORED',
     code: mode === 'rejected-unknown' ? 'UNKNOWN_MUST_NOT_LEAK' : mode === 'rejected-unclassified'
-      ? 'UNCLASSIFIED' : rejected ? 'DMI_EXACT_ORIGINAL_UNAVAILABLE' : 'EXACT_ORIGINALS_RESTORED',
+      ? 'UNCLASSIFIED' : mode === 'rejected-metadata' ? 'DMI_EXACT_ORIGINAL_METADATA_UNAVAILABLE'
+        : mode === 'rejected-asset' ? 'DMI_EXACT_ORIGINAL_ASSET_UNAVAILABLE'
+          : rejected ? 'DMI_EXACT_ORIGINAL_UNAVAILABLE' : 'EXACT_ORIGINALS_RESTORED',
     originalCount: 1, uniqueAssetCount: 1, downloadedAssetCount: 1, reusedAssetCount: 0,
     downloadedBytes: 8, pruningPerformed: false, replayPerformed: false, scorePerformed: false };
   const source = `import json,os,pathlib,signal,sys,time\n`
@@ -152,13 +202,15 @@ native('exact restore native: actual fixed supervisor/producer closes before pla
   } finally { await removeFixture(f); }
 });
 
-for (const mode of ['rejected', 'rejected-unclassified', 'rejected-unknown', 'unproved', 'raw-output']) native(`exact restore native: ${mode} is not a SAVE receipt`, async () => {
+for (const mode of ['rejected', 'rejected-metadata', 'rejected-asset', 'rejected-unclassified', 'rejected-unknown', 'unproved', 'raw-output']) native(`exact restore native: ${mode} is not a SAVE receipt`, async () => {
   const f = await privateFixture(mode);
   try {
     const result = await runFixture(f);
     assert.equal(result.signal, null); assert.equal(result.code, 1);
     assert.equal(result.stdout, ''); assert.equal(result.stderr.includes('PRIVATE_MUST_NOT_LEAK'), false);
     if (mode === 'rejected') assert.equal(result.stderr.trim(), 'DMI_EXACT_ORIGINAL_UNAVAILABLE');
+    if (mode === 'rejected-metadata') assert.equal(result.stderr.trim(), 'DMI_EXACT_ORIGINAL_METADATA_UNAVAILABLE');
+    if (mode === 'rejected-asset') assert.equal(result.stderr.trim(), 'DMI_EXACT_ORIGINAL_ASSET_UNAVAILABLE');
     if (mode === 'rejected-unclassified') assert.equal(result.stderr.trim(), 'UNCLASSIFIED');
     if (mode === 'rejected-unknown') {
       assert.equal(result.stderr.trim(), 'DMI_EXACT_ORIGINAL_RESTORE_OUTPUT_INVALID');
@@ -166,7 +218,7 @@ for (const mode of ['rejected', 'rejected-unclassified', 'rejected-unknown', 'un
     }
     assert.equal(await fs.readFile(path.join(f.root, '.cache/github-output'), 'utf8'), '');
     assert.equal(await exists(path.join(f.root, '.cache/weather-acquisition-writer.claim')),
-      !['rejected', 'rejected-unclassified'].includes(mode));
+      !['rejected', 'rejected-metadata', 'rejected-asset', 'rejected-unclassified'].includes(mode));
     assert.equal(await exists(path.join(f.root, '.cache/dmi-grib/.original-recovery-plan.json')), true);
     assert.equal(await fs.readFile(path.join(f.root, '.cache/original-BS'), 'utf8'), 'unchanged synthetic original\n');
   } finally { await removeFixture(f); }

@@ -10,6 +10,35 @@ const producerPath = new URL('./update-weather.mjs', import.meta.url);
 const sourceText = async file => (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 
+// Test-only inverse of the reviewed pure-function relocation. Reconstitute the
+// complete genuine updater before every existing immutable historical oracle;
+// this never changes runtime admission, source priority or capture provenance.
+async function inverseSharedRecoveryRecordExtraction(source, sharedSource = null) {
+  sharedSource ??= await sourceText(new URL('./lib/private-dmi-recovery-record.mjs', import.meta.url));
+  assert.equal(digest(sharedSource),
+    'a2855aeb1826f198b874dc7060a9293f177af3a9ecb8eeb956520af16fc3958e',
+    'the complete reviewed shared module must remain exact, including imports');
+  const sharedImport = "import {\n  ACCEPTED_FORECAST_HOURS,\n  SHORT_DMI_WATER_GAP_HOURS,\n  WATER_LEVEL_JUMP_WARN_CM,\n  CURRENT_VECTOR_SEMANTICS_VERSION,\n  num,\n  ravScoreNumber,\n  zonePoint,\n  samePoint,\n  withoutCurrent,\n  withOnlyVerifiedCurrent,\n  haversineKm,\n  dmiCollections,\n  bulkZoneToForecastRecord,\n  publicCurrentDecoderTransition,\n  buildPartDmiForecastWithProtectedRetention,\n  buildPrivateDmiRecoveryRecord,\n  verifiedFeggesundNeighborSource,\n  atomicComponentTupleValues,\n  selectAtomicComponentTuple,\n  exactPublicForecastTimes,\n  materializeExactPublicWeatherHorizon,\n  mergeHourlyPreferDmi,\n} from './lib/private-dmi-recovery-record.mjs';\n";
+  assert.equal(source.split(sharedImport).length, 2, 'normal producer must import the exact shared API once');
+  source = source.replace(sharedImport, '');
+  for (const label of ["constants","vector","numbers","points","distance","records","collections","selection"]) {
+    const first = '// BEGIN normal-record ' + label + '\n';
+    const next = '// END normal-record ' + label + '\n';
+    assert.equal(sharedSource.split(first).length, 2);
+    assert.equal(sharedSource.split(next).length, 2);
+    const from = sharedSource.indexOf(first) + first.length;
+    const until = sharedSource.indexOf(next, from);
+    assert.ok(until > from);
+    const placeholder = '// Shared recovery record: ' + label;
+    assert.equal(source.split(placeholder).length, 2, 'each relocated normal body must have one exact original location');
+    source = source.replace(placeholder, () => sharedSource.slice(from, until).trimEnd());
+  }
+  assert.equal(digest(source),
+    'b9aabf3a02e7daad10b67fb214a70055d1a01f78c12aa3aa9338d5f0f3c8197b',
+    'relocation inverse must restore the complete genuine pre-extraction updater');
+  return source;
+}
+
 // Invert only the reviewed current-grid delta, with exact whole 044d identity.
 // This is an oracle adapter, not runtime admission or current-data proof.
 function inverseCurrentGridIntegration(source) {
@@ -203,7 +232,8 @@ function inverseLegacyTransportSettlement(source) {
 // not the isolated 519 restored SOURCE/session API. This checks the actual
 // DMI queue body only; it is not SOURCE, original-B/S, history or whole-job proof.
 test('main updater is byte-identical outside the checkpoint import and normal queue refusal', async () => {
-  const source = inverseLegacyTransportSettlement(inverseCurrentGridIntegration(await sourceText(producerPath)));
+  const source = inverseLegacyTransportSettlement(inverseCurrentGridIntegration(
+    await inverseSharedRecoveryRecordExtraction(await sourceText(producerPath))));
   const currentImport = "import { readDmiForecastFile, writeDmiForecastFileAtomic, isDmiForecastCheckpointStopUnproved } from './lib/dmi-forecast-file.mjs';";
   const baselineImport = "import { readDmiForecastFile, writeDmiForecastFileAtomic } from './lib/dmi-forecast-file.mjs';";
   const refusal = "    // A live/uncertain checkpoint is not a provider miss. Preserve the actual\n    // writer refusal before any later zone, component, history or public write.\n    if (isDmiForecastCheckpointStopUnproved(error)) throw error;\n";
@@ -211,6 +241,30 @@ test('main updater is byte-identical outside the checkpoint import and normal qu
   assert.equal(source.split(refusal).length, 2);
   assert.equal(digest(source.replace(currentImport, baselineImport).replace(refusal, '')),
     'd6f2a49d1099eb2f3d024f54375af8e989d6636e7a0a0b47f0d9b75965fd0bff');
+});
+
+test('shared normal DMI recovery module is import-safe, outside I71, and byte-exactly relocatable', async t => {
+  const source = await sourceText(producerPath);
+  const shared = await sourceText(new URL('./lib/private-dmi-recovery-record.mjs', import.meta.url));
+  t.mock.method(globalThis, 'fetch', () => { assert.fail('NETWORK_FORBIDDEN'); });
+  const normal = await import('./lib/private-dmi-recovery-record.mjs');
+  for (const name of ['bulkZoneToForecastRecord', 'buildPartDmiForecastWithProtectedRetention',
+    'buildPrivateDmiRecoveryRecord', 'mergeHourlyPreferDmi']) assert.equal(typeof normal[name], 'function');
+  assert.doesNotMatch(shared, /from ['"]node:|\b(?:process\.|fetch\(|await\s)/);
+  assert.doesNotMatch(shared, /from ['"].*update-weather/);
+  const { GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST: manifest } =
+    await import('../js/core/ravscore-model-bundle.generated.js');
+  for (const file of ['scripts/update-weather.mjs', 'scripts/lib/private-dmi-recovery-record.mjs']) {
+    assert.equal(manifest.files.some(entry => entry.path === file), false,
+      'normal orchestration extraction must not enter the unchanged model closure');
+  }
+  await inverseSharedRecoveryRecordExtraction(source, shared);
+  await assert.rejects(inverseSharedRecoveryRecordExtraction(source,
+    shared.replace('const SHORT_DMI_WATER_GAP_HOURS = 6;', 'const SHORT_DMI_WATER_GAP_HOURS = 7;')),
+    /complete reviewed shared module/);
+  await assert.rejects(inverseSharedRecoveryRecordExtraction(
+    source.replace('// Shared recovery record: records', '// Shared recovery record: records-mutated'), shared),
+    /complete genuine pre-extraction updater/);
 });
 
 test('main parser policy, public readers, serializer and record writer are preserved by mechanical extraction', async () => {

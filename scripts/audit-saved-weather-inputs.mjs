@@ -351,7 +351,7 @@ function originalParts(conditions) {
 }
 async function bulk(file) { if (!file) return null; try { return await readDmiBulkDocument(file); } catch { fail('BULK_CONTEXT_INVALID'); } }
 
-async function visitSavedPartCurrents(index, parts, inspectRow = () => {}) {
+async function visitSavedPartCurrents(index, parts, inspectRow = () => {}, inspectPart = null) {
   const counts = { entries: 0, rows: 0, finiteCurrentPairs: 0, geometryMismatchEntries: 0 };
   if (!index?.continuity) return { status: 'NOT_PRESENT', counts };
   const meta = index.continuity.metadata;
@@ -371,6 +371,7 @@ async function visitSavedPartCurrents(index, parts, inspectRow = () => {}) {
         compressedBytes: entry.compressedBytes, entries: [entry] }, [part], meta.productionReferenceAt);
       rawBytes += entry.rawBytes; compressedBytes += entry.compressedBytes; counts.entries++;
       if (!decoded.has(entry.partId)) { counts.geometryMismatchEntries++; continue; }
+      if (inspectPart) await inspectPart(decoded.get(entry.partId), part);
       for (const row of decoded.get(entry.partId).hourly) {
         counts.rows++;
         if (!Number.isFinite(row.currentUMps) || !Number.isFinite(row.currentVMps)) continue;
@@ -379,7 +380,10 @@ async function visitSavedPartCurrents(index, parts, inspectRow = () => {}) {
       }
     }
     if (rawBytes !== meta.rawBytes || compressedBytes !== meta.compressedBytes) fail('CONTINUITY_INSPECTION_FAILED');
-  } catch { fail('CONTINUITY_INSPECTION_FAILED'); }
+  } catch (error) {
+    if (error?.originalPlanCode) throw error;
+    fail('CONTINUITY_INSPECTION_FAILED');
+  }
   return { status: 'MEASURED', rawBytes, compressedBytes, counts };
 }
 
@@ -1016,7 +1020,10 @@ export async function prepareAuthenticatedSavedDmiOriginalRestore({ privateRoot,
       bundlePath, descriptorPath, repositoryRoot: ctx.repository, progressBaselineTargetHour }));
     if (baseline.normalProgressBaselineUsed !== true) fail('PROGRESS_BASELINE_RECONSTRUCTION_REJECTED');
     const conditions = await readJson(path.join(baseline.repositoryRoot, 'data/live/conditions.json'), 535_822_312);
-    const demands = prepare.savedDmiOriginalHistoryDemand({ conditions, parts });
+    const demands = prepare.savedDmiOriginalHistoryDemand({ conditions, parts, targetReferenceAt: progressBaselineTargetHour });
+    const protectedBulk = await bulk(path.join(payloadRoot, 'data/live/dmi-bulk-cache.json'));
+    const savedForecastIndex = await forecastIndex(await noSymlinks(ctx.root,
+      path.join(baseline.repositoryRoot, 'data/live/dmi-forecast-cache.json')));
     const basePath = path.join(work, 'progress-base.json');
     const captured = await weatherComponentProgressCache({ mode: 'capture-base', repositoryRoot: baseline.repositoryRoot,
       basePath, repository, protectedBundleSha256: source.bundleContentSha256 });
@@ -1026,22 +1033,33 @@ export async function prepareAuthenticatedSavedDmiOriginalRestore({ privateRoot,
     const captures = await withoutSavedAuditSecrets(() => withAuthenticatedWeatherProgress({
       repositoryRoot: baseline.repositoryRoot, basePath, repository, encryptionKey, masterSecret, pythonExecutable,
     }, async ({ files }) => {
-      const donors = [path.join(payloadRoot, 'data/live/dmi-bulk-cache.json'),
-        ...[PRIVATE_WEATHER_COMPONENT_FILES.dmiActive, PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate]
-          .map(relative => componentFiles.find(file => file.relativePath === relative)?.sourcePath),
-        ...[PRIVATE_WEATHER_COMPONENT_FILES.dmiActive, PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate]
-          .map(relative => files.find(file => file.relativePath === relative)?.sourcePath)];
-      const originals = [];
-      for (const file of donors) {
-        if (!file) continue;
-        const document = await bulk(file);
-        originals.push(...prepare.collectSavedDmiOriginalCaptures({ document, parts, demands }));
+      const candidateFile = files.find(file => file.relativePath === PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate)?.sourcePath;
+      if (progressSource === '38768040429-1' && (!candidateFile
+        || files.some(file => file.relativePath === PRIVATE_WEATHER_COMPONENT_FILES.dmiActive))) {
+        const error = new Error('SAVED_DMI_ORIGINAL_INPUTS_UNAVAILABLE');
+        error.originalPlanCode = error.message; throw error;
       }
-      return originals;
+      const progressCandidate = await bulk(candidateFile), originals = new Map();
+      const demandByPart = new Map(demands.map(value => [value.partId, value]));
+      const collectPart = (record, part) => {
+        for (const capture of prepare.collectSelectedSavedDmiOriginalCaptures({ protectedBulk, progressCandidate,
+          persistedHourlyByPart: new Map([[part.partId, record]]), parts: new Map([[part.partId, part]]),
+          demands: [demandByPart.get(part.partId)], targetReferenceAt: progressBaselineTargetHour })) {
+          originals.set(prepare.savedOriginalCanonicalJson(capture), capture);
+          if (originals.size > 4096) {
+            const error = new Error('SAVED_DMI_ORIGINAL_PLAN_BOUND'); error.originalPlanCode = error.message; throw error;
+          }
+        }
+      };
+      const visited = await visitSavedPartCurrents(savedForecastIndex, parts, () => {}, collectPart);
+      if (visited.status !== 'MEASURED' || visited.counts.entries !== parts.size
+        || visited.counts.geometryMismatchEntries !== 0) fail('CONTINUITY_INSPECTION_FAILED');
+      return [...originals].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([, capture]) => capture);
     }));
     if (componentInvocation !== null && !privateWeatherPackJsonReadsClosed(componentInvocation)) fail('BASELINE_COMPONENT_PACK_REJECTED');
     if (!same(await oldProtected.describeCurrentProtectedPrivateProductionRuntime(clients), source)) fail('CURRENT_GENERATION_CHANGED');
-    const plan = prepare.buildSavedDmiOriginalRestorePlan({ captures, source, demands, executionHead });
+    const plan = prepare.buildSavedDmiOriginalRestorePlan({ captures, source, demands, executionHead,
+      progressSource, progressCacheKey, targetReferenceAt: progressBaselineTargetHour });
     // All authenticated local readers have closed before the only durable
     // output is created. No restored payload or successor is installed.
     await fs.rm(work, { recursive: true, force: true }); work = null;

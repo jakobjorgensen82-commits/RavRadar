@@ -66,10 +66,10 @@ const componentwise = ocean => buildDmiMarineComponentwiseHourly({
   ocean, generatedAt, hours: 5, sourceCadenceMinutes: 180,
   expectedIdentity: identity,
 }).hourly;
-const producerSource = fs.readFileSync('scripts/update-weather.mjs', 'utf8');
+const producerSource = fs.readFileSync('scripts/lib/private-dmi-recovery-record.mjs', 'utf8');
 const hourlyMergeSource = producerSource.slice(
   producerSource.indexOf('const ATOMIC_COMPONENT_TUPLE_KEYS'),
-  producerSource.indexOf('function componentSource('),
+  producerSource.indexOf('// END normal-record selection'),
 );
 const mergeVerifiedHourly = Function('ravScoreNumber', 'normalizeForecastHourly',
   'verifiedDmiForecastComponentSource', 'repairWaterLevelContinuity',

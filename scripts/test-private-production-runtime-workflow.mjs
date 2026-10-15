@@ -248,6 +248,8 @@ try {
   assert.ok(Object.values(hashes).every(value => /^[a-f0-9]{64}$/.test(value)));
   assert.deepEqual(PRIVATE_RUNTIME_CONTRACT_FILES.fullRuntimeContractSha256,
     ['scripts/lib/private-weather-storage-abi.json']);
+  assert.ok(PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.includes('scripts/lib/private-dmi-recovery-record.mjs'),
+    'the actual shared normal DMI record implementation must remain in the reviewed producer inventory');
 
   for (const [contract, relativePaths] of Object.entries(PRIVATE_RUNTIME_CONTRACT_FILES)) {
     for (const relativePath of relativePaths) {

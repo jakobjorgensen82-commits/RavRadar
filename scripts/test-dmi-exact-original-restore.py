@@ -115,6 +115,14 @@ class ExactOriginalTests(unittest.TestCase):
             item_id=expected["itemId"], item_created_at=expected["itemCreatedAt"], item_updated_at=expected["itemUpdatedAt"],
             expected_capture=expected, work_deadline=time.monotonic() + 20)
 
+    def local_original(self, expected=None, body=BODY):
+        expected = expected or capture(body)
+        target = producer.cached_asset_path(HREF)
+        target.write_bytes(body)
+        self.manifest.write_text(json.dumps({"schemaVersion": 2, "assets": {
+            target.name: {**expected, "canonicalHref": HREF}}}), encoding="utf-8")
+        return target
+
     def make_plan(self, originals=None):
         originals = originals if originals is not None else [capture()]
         originals = sorted(originals, key=producer._exact_original_json)
@@ -212,13 +220,23 @@ class ExactOriginalTests(unittest.TestCase):
             self.assertFalse(call.kwargs["allow_redirects"])
 
     def test_missing_metadata_invalid_json_and_bound_stop_without_fallback(self):
-        for response, code in ((Response(status=404), "UNAVAILABLE"), (Response(status=410), "UNAVAILABLE"),
+        for response, code in ((Response(status=404), "METADATA_UNAVAILABLE"), (Response(status=410), "METADATA_UNAVAILABLE"),
                                (Response(b"not-json"), "METADATA_INVALID"),
                                (Response(b"x" * (2 * 1024 * 1024 + 1)), "METADATA_BOUND")):
             producer.STAC_SESSION.get.side_effect = [response]
             with self.subTest(code=code), self.expect_refusal(code):
                 producer.resolve_exact_original_item(capture(), work_deadline=None)
         producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+    def test_missing_asset_is_distinct_from_missing_metadata_without_exposing_url(self):
+        for status in (404, 410):
+            response = Response(status=status)
+            producer.DOWNLOAD_SESSION.get.side_effect = [response]
+            with self.subTest(status=status), self.expect_refusal("ASSET_UNAVAILABLE"):
+                with producer._exact_original_response(HREF):
+                    self.fail("unavailable asset was accepted")
+            self.assertTrue(response.closed)
+        producer.STAC_SESSION.get.assert_not_called()
 
     def test_fixed_plan_hash_execution_and_old_source_are_distinct(self):
         plan = self.make_plan()
@@ -233,6 +251,26 @@ class ExactOriginalTests(unittest.TestCase):
             with self.subTest(key=key), self.expect_refusal("PLAN_REJECTED"):
                 self.read_plan(changed)
         producer.STAC_SESSION.get.assert_not_called()
+
+    def test_only_two_paired_checkpoint_scopes_are_allowed(self):
+        old = self.make_plan()
+        latest = copy.deepcopy(old)
+        latest["binding"].update(progressSource="38768040429-1",
+            progressCacheKey="weather-private-progress-encrypted-v2-Linux-main-38768040429-1",
+            targetReferenceAt="2026-10-15T16:00:00.000Z")
+        for plan in (old, latest):
+            self.assertEqual(self.read_plan(plan), plan)
+        for key, value in (("progressSource", "38692413809-1"),
+                           ("progressCacheKey", "weather-private-progress-encrypted-v2-Linux-main-38692413809-1"),
+                           ("targetReferenceAt", "2026-10-14T18:00:00.000Z"),
+                           ("progressSource", "38768040429-2"),
+                           ("targetReferenceAt", "2026-10-15T17:00:00.000Z")):
+            changed = copy.deepcopy(latest)
+            changed["binding"][key] = value
+            with self.subTest(key=key), self.expect_refusal("PLAN_REJECTED"):
+                self.read_plan(changed)
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
 
     def test_bad_plan_shape_and_extra_capture_fields_fail_before_network(self):
         for original in ({**capture(), "url": HREF}, {**capture(), "values": [1, 2]}):
@@ -304,6 +342,129 @@ class ExactOriginalTests(unittest.TestCase):
                 self.download()
         self.assertEqual((target.read_bytes(), self.manifest.read_bytes()), before)
         producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+    def test_restore_reuses_verified_local_original_before_retired_item_lookup(self):
+        expected = capture()
+        before_capture = copy.deepcopy(expected)
+        target = self.local_original(expected)
+        before = target.read_bytes(), self.manifest.read_bytes()
+        producer.STAC_SESSION.get.side_effect = [Response(status=404)]
+
+        def portable_verification(path, wanted, *, work_deadline, require_capture=False):
+            # Portable control-flow proof only; --native below uses the real
+            # owned reader, ecCodes headers, EOF, release and physical close.
+            self.assertEqual(path, target)
+            self.assertTrue(require_capture)
+            self.assertEqual(len(path.read_bytes()), wanted["contentLengthBytes"])
+            self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), wanted["contentSha256"])
+            self.assertTrue(producer._exact_same_capture(
+                json.loads(self.manifest.read_text())["assets"][target.name], wanted))
+
+        with patch.object(producer, "_verify_exact_original_file", side_effect=portable_verification) as verify, \
+             patch.object(producer, "supervised_asset_operation", wraps=producer.supervised_asset_operation) as supervise, \
+             patch.object(producer, "download_asset", side_effect=AssertionError("local reuse must not download")):
+            report = producer.restore_exact_original_assets([expected, expected])
+        verify.assert_called_once()
+        supervise.assert_called_once()
+        self.assertEqual((report["uniqueAssetCount"], report["reusedAssetCount"],
+                          report["downloadedAssetCount"], report["downloadedBytes"]), (1, 1, 0, 0))
+        self.assertEqual(report["status"], "RESTORED")
+        self.assertEqual(expected, before_capture)
+        self.assertEqual((target.read_bytes(), self.manifest.read_bytes()), before)
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+    def test_local_verification_failure_or_toctou_loss_never_falls_back_to_stac(self):
+        expected = capture()
+        failures = [producer.GribReadUnproven("owned refusal"),
+                    producer.ExactOriginalRestoreRejected("DMI_EXACT_ORIGINAL_CONTENT_MISMATCH"),
+                    producer.ExactOriginalRestoreRejected("DMI_EXACT_ORIGINAL_HEADER_MISMATCH"),
+                    FileNotFoundError("file vanished after the local preflight")]
+        for error in failures:
+            target = self.local_original(expected)
+            before = target.read_bytes(), self.manifest.read_bytes()
+            with self.subTest(kind=type(error).__name__), \
+                 patch.object(producer, "_verify_exact_original_file", side_effect=error) as verify, \
+                 patch.object(producer, "download_asset", side_effect=AssertionError("no local fallback")):
+                with self.assertRaises(type(error)) as raised:
+                    producer.restore_exact_original_assets([expected])
+                self.assertIs(raised.exception, error)
+                verify.assert_called_once()
+            self.assertEqual((target.read_bytes(), self.manifest.read_bytes()), before)
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+    def test_unknown_local_capture_and_legacy_name_are_not_upgraded_or_downloaded(self):
+        expected = capture()
+        target = self.local_original(expected)
+        good = {**expected, "canonicalHref": HREF}
+        rows = [{}, {target.name: {**good, "contentSha256": "f" * 64}},
+                {target.name: {key: value for key, value in good.items() if key != "itemId"}},
+                {"legacy-original.grib": good},
+                {target.name: {**good, "canonicalHref": HREF + "?token=not-canonical"}}]
+        for assets in rows:
+            self.manifest.write_text(json.dumps({"schemaVersion": 2, "assets": assets}), encoding="utf-8")
+            before = target.read_bytes(), self.manifest.read_bytes()
+            with self.subTest(fields=list(assets)), self.expect_refusal("COLLISION"):
+                producer.restore_exact_original_assets([expected])
+            self.assertEqual((target.read_bytes(), self.manifest.read_bytes()), before)
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+    def test_only_initial_local_absence_may_resolve_the_exact_retired_item(self):
+        expected = capture()
+        target = self.local_original(expected)
+        target.unlink()  # A complete manifest alone is not a physical original.
+        before = self.manifest.read_bytes()
+        producer.STAC_SESSION.get.side_effect = [Response(status=410)]
+        with patch.object(producer, "_verify_exact_original_file", side_effect=AssertionError("no local file")):
+            with self.expect_refusal("METADATA_UNAVAILABLE"):
+                producer.restore_exact_original_assets([expected])
+        producer.STAC_SESSION.get.assert_called_once()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+        self.assertEqual(self.manifest.read_bytes(), before)
+        self.assertFalse(target.exists())
+
+    def test_file_seen_in_inventory_then_lost_at_local_preflight_never_resolves_stac(self):
+        target = self.local_original()
+        real_lstat, reads = Path.lstat, 0
+
+        def lstat(path, *args, **kwargs):
+            nonlocal reads
+            if path == target:
+                reads += 1
+                # Both full inventories observed the file. The selected local
+                # path then disappears before the owned verifier can open it.
+                if reads == 3:
+                    raise FileNotFoundError("lost after inventory")
+            return real_lstat(path, *args, **kwargs)
+
+        with patch.object(Path, "lstat", lstat), self.assertRaises(FileNotFoundError):
+            producer.restore_exact_original_assets([capture()])
+        self.assertEqual(reads, 3)
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+    def test_loss_immediately_after_first_or_local_inventory_return_never_resolves_stac(self):
+        for lost_after in (1, 2):
+            target = self.local_original()
+            original_state, reads = producer._exact_raw_state, 0
+            before = self.manifest.read_bytes()
+
+            def state(*args, **kwargs):
+                nonlocal reads
+                result = original_state(*args, **kwargs)
+                reads += 1
+                if reads == lost_after:
+                    target.unlink()  # Precisely after successful lstat/inventory return.
+                return result
+
+            with self.subTest(lost_after=lost_after), patch.object(producer, "_exact_raw_state", side_effect=state):
+                with self.assertRaises(FileNotFoundError):
+                    producer.restore_exact_original_assets([capture()])
+            self.assertEqual(self.manifest.read_bytes(), before)
+            producer.STAC_SESSION.get.assert_not_called()
+            producer.DOWNLOAD_SESSION.get.assert_not_called()
 
     def test_download_and_cache_budgets_stop_before_transport_without_pruning(self):
         original = self.raw / "other.grib"
@@ -425,6 +586,45 @@ if NATIVE:
                 self.download(capture(body))
             self.assertFalse(producer.cached_asset_path(HREF).exists())
             self.assertEqual(json.loads(self.manifest.read_text())["assets"], {})
+
+        def test_native_owned_local_reuse_checks_every_header_and_eof_without_stac(self):
+            body = self.generated_grib()
+            expected = capture(body)
+            original = copy.deepcopy(expected)
+            target = self.local_original(expected, body)
+            before = target.read_bytes(), self.manifest.read_bytes()
+            producer.STAC_SESSION.get.side_effect = [Response(status=404)]
+            with patch.object(producer, "WORK_DEADLINE", time.monotonic() + 30), \
+                 patch.object(producer, "codes_grib_new_from_file", wraps=producer.codes_grib_new_from_file) as messages, \
+                 patch.object(producer, "codes_get_array", side_effect=AssertionError("numeric read forbidden")), \
+                 patch.object(producer, "codes_get_elements", side_effect=AssertionError("numeric read forbidden")), \
+                 patch.object(producer, "process_grib", side_effect=AssertionError("normal process forbidden")), \
+                 patch.object(producer, "download_asset", side_effect=AssertionError("local reuse must not download")):
+                report = producer.restore_exact_original_assets([expected])
+            self.assertEqual(messages.call_count, 3, "two actual GRIB messages followed by actual EOF")
+            self.assertEqual((report["reusedAssetCount"], report["downloadedAssetCount"], report["downloadedBytes"]), (1, 0, 0))
+            self.assertEqual((target.read_bytes(), self.manifest.read_bytes()), before)
+            self.assertEqual(expected, original)
+            self.assertEqual(producer._UNSETTLED_GRIB_READS, [])
+            producer.STAC_SESSION.get.assert_not_called()
+            producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+        def test_native_local_wrong_header_or_bytes_never_falls_back_or_changes_original(self):
+            for wrong_time in (True, False):
+                body = self.generated_grib(wrong_time=wrong_time)
+                expected = capture(body)
+                target = self.local_original(expected, body)
+                if not wrong_time:
+                    target.write_bytes(body[:-1] + bytes([body[-1] ^ 1]))
+                before = target.read_bytes(), self.manifest.read_bytes()
+                with self.subTest(wrong_time=wrong_time), \
+                     patch.object(producer, "WORK_DEADLINE", time.monotonic() + 30), \
+                     self.expect_refusal("HEADER_MISMATCH" if wrong_time else "CONTENT_MISMATCH"):
+                    producer.restore_exact_original_assets([expected])
+                self.assertEqual((target.read_bytes(), self.manifest.read_bytes()), before)
+                self.assertEqual(producer._UNSETTLED_GRIB_READS, [])
+            producer.STAC_SESSION.get.assert_not_called()
+            producer.DOWNLOAD_SESSION.get.assert_not_called()
 
 
 if __name__ == "__main__":
