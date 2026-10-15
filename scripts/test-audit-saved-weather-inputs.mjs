@@ -7,7 +7,8 @@ import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { auditSavedWeatherInputs, createReadOnlySavedWeatherClients,
   measureSavedCurrentContexts, measureSavedNativeProofAvailability, withoutSavedAuditSecrets,
-  indexSavedRawManifest, measureSavedRawCaptureMatches, savedAuditProgressAuthenticationCode } from './audit-saved-weather-inputs.mjs';
+  indexSavedRawManifest, measureSavedRawCaptureMatches, inspectSavedRawFileInventory,
+  savedAuditProgressAuthenticationCode } from './audit-saved-weather-inputs.mjs';
 import { createPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
 import { buildProtectedPrivateRuntimeArchive, PROTECTED_PRIVATE_RUNTIME_POLICY as policy } from './protected-private-production-runtime.mjs';
 import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_FILES } from './lib/private-weather-component-inventory.mjs';
@@ -366,7 +367,7 @@ async function fixture(t, { corrupt = false, changedAt = Infinity, wrongContract
   assert.equal(described.status, 'SOURCE_DESCRIBED', JSON.stringify(described));
   return { options: { mode: 'audit', privateRoot, descriptorPath, predecessorRoot, progressFile, progressSource,
     progressCacheKey, repository, encryptionKey, outputPath: path.join(privateRoot, 'audit.json'), ...credentials, fetchImpl },
-  calls, folder, source, privateRoot, built, saved, conditions, nativeData };
+  calls, folder, source, progressRoot, privateRoot, built, saved, conditions, nativeData };
 }
 
 test('real synthetic archive + exact progress are authenticated and measured, not merged or built', async t => {
@@ -656,6 +657,122 @@ function syntheticRawManifest(native) {
   })) };
 }
 
+async function rejectRawFileOpens(t, directory, inspect) {
+  const root = await fs.realpath(directory);
+  const originalOpen = fs.open, originalRead = fs.readFile;
+  let attempts = 0;
+  const guard = original => async (file, ...args) => {
+    if (typeof file === 'string') {
+      const relative = path.relative(root, path.resolve(file));
+      if (relative && relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative)
+        && path.basename(file) !== 'asset-manifest.json') {
+        attempts++;
+        throw new Error('secret-error-canary: RAW file must never be opened');
+      }
+    }
+    return original(file, ...args);
+  };
+  const hooks = [t.mock.method(fs, 'open', guard(originalOpen)), t.mock.method(fs, 'readFile', guard(originalRead))];
+  try { return await inspect(); }
+  finally {
+    for (const hook of hooks.reverse()) hook.mock.restore();
+    assert.equal(attempts, 0, 'Filename/size inspection must never open a RAW file.');
+  }
+}
+
+test('RAW file inventory distinguishes manifested and unmanifested prefix candidates without opening bytes', async t => {
+  const folder = await temp(t), raw = path.join(folder, '.cache/dmi-grib');
+  await fs.mkdir(raw, { recursive: true });
+  const part = { partId: 'coastal-part-sensitive', zoneId: 'zone-sensitive', waterPoint: [8, 55] };
+  const f = nativeFixture(part, undefined, true), parts = new Map([[part.partId, part]]);
+  const document = f.donor(f.native), manifest = syntheticRawManifest(f.native);
+  const first = Object.keys(manifest.assets)[0], source = f.native[0].sources.current;
+  const bytes = Buffer.alloc(source.contentLengthBytes, 31);
+  await fs.writeFile(path.join(raw, first), bytes);
+  await fs.writeFile(path.join(raw, `${source.assetIdentitySha256.slice(0, 24)}.grib.tmp`), bytes);
+  await fs.writeFile(path.join(raw, 'asset-manifest.json'), JSON.stringify(manifest));
+  const before = JSON.stringify({ document, manifest });
+  await rejectRawFileOpens(t, raw, async () => {
+    const inventory = await inspectSavedRawFileInventory(folder);
+    assert.equal(inventory.status, 'MEASURED');
+    assert.equal(inventory.fileCandidates, 1);
+    assert.equal(inventory.otherRegularFiles, 2, 'A double suffix is not a normal cached_asset_path filename.');
+    const index = indexSavedRawManifest(manifest);
+    const measured = measureSavedRawCaptureMatches(document, parts, index, inventory);
+    assert.deepEqual(measured.counts, measureSavedRawCaptureMatches(document, parts, index).counts);
+    assert.deepEqual(measured.filePresence.manifestAssetIdentityPresent,
+      { potentialFileCandidates: 1, missing: 1, ambiguous: 0, sizeMismatch: 0 });
+    assert.deepEqual(measured.filePresence.unmanifestedFilenameCandidates,
+      { potentialFileCandidates: 0, missing: 0, ambiguous: 0, sizeMismatch: 0 });
+    const absent = structuredClone(manifest); delete absent.assets[first];
+    const unmanifested = measureSavedRawCaptureMatches(document, parts, indexSavedRawManifest(absent), inventory);
+    assert.equal(unmanifested.counts.assetIdentityAbsentRows, 1);
+    assert.deepEqual(unmanifested.filePresence.unmanifestedFilenameCandidates,
+      { potentialFileCandidates: 1, missing: 0, ambiguous: 0, sizeMismatch: 0 });
+    const unavailable = measureSavedRawCaptureMatches(document, parts, indexSavedRawManifest(null), inventory);
+    assert.deepEqual(unavailable.filePresence.manifestUnavailable,
+      { potentialFileCandidates: 1, missing: 1, ambiguous: 0, sizeMismatch: 0 });
+    assert.equal(unavailable.counts.unclassifiedRows, 2);
+    for (const result of [measured, unmanifested, unavailable]) safeReport(result, folder);
+  });
+  assert.equal(JSON.stringify({ document, manifest }), before);
+});
+
+test('RAW inventory missing, collision and size mismatch remain metadata categories rather than admission', async t => {
+  const folder = await temp(t), raw = path.join(folder, '.cache/dmi-grib');
+  const part = { partId: 'coastal-part-sensitive', zoneId: 'zone-sensitive', waterPoint: [8, 55] };
+  const f = nativeFixture(part, undefined, true), parts = new Map([[part.partId, part]]);
+  const document = f.donor(f.native), index = indexSavedRawManifest(syntheticRawManifest(f.native));
+  const missing = await inspectSavedRawFileInventory(folder);
+  assert.equal(missing.status, 'MISSING');
+  assert.deepEqual(measureSavedRawCaptureMatches(document, parts, index, missing).filePresence.manifestAssetIdentityPresent,
+    { potentialFileCandidates: 0, missing: 2, ambiguous: 0, sizeMismatch: 0 });
+  await fs.mkdir(raw, { recursive: true });
+  const source = f.native[0].sources.current, prefix = source.assetIdentitySha256.slice(0, 24);
+  await fs.writeFile(path.join(raw, `${prefix}.grib`), Buffer.alloc(source.contentLengthBytes - 1));
+  await rejectRawFileOpens(t, raw, async () => {
+    const measured = measureSavedRawCaptureMatches(document, parts, index, await inspectSavedRawFileInventory(folder));
+    assert.deepEqual(measured.filePresence.manifestAssetIdentityPresent,
+      { potentialFileCandidates: 0, missing: 1, ambiguous: 0, sizeMismatch: 1 });
+    assert.equal(measured.counts.exactCaptureMatchRows, 2, 'Physical metadata cannot rewrite manifest-match counts.');
+  });
+  await fs.writeFile(path.join(raw, `${prefix}.bin`), Buffer.alloc(source.contentLengthBytes));
+  await rejectRawFileOpens(t, raw, async () => {
+    const measured = measureSavedRawCaptureMatches(document, parts, index, await inspectSavedRawFileInventory(folder));
+    assert.deepEqual(measured.filePresence.manifestAssetIdentityPresent,
+      { potentialFileCandidates: 0, missing: 1, ambiguous: 1, sizeMismatch: 0 },
+    'Two suffix candidates remain ambiguous even when only one has the captured size.');
+    safeReport(measured, folder);
+  });
+});
+
+test('RAW file inventory fails closed on symlinks, nonregular entries and unknown lstat outcomes', async t => {
+  const folder = await temp(t), raw = path.join(folder, '.cache/dmi-grib');
+  await fs.mkdir(raw, { recursive: true });
+  const target = path.join(folder, 'outside-target'); await fs.mkdir(target);
+  const name = `${'a'.repeat(24)}.grib`, file = path.join(raw, name);
+  await fs.symlink(target, file, process.platform === 'win32' ? 'junction' : 'dir');
+  await rejectRawFileOpens(t, raw, async () => {
+    await assert.rejects(inspectSavedRawFileInventory(folder), error => error.auditCode === 'RAW_FILE_INVENTORY_REJECTED');
+  });
+  await fs.unlink(file);
+  await fs.mkdir(file);
+  await assert.rejects(inspectSavedRawFileInventory(folder), error => error.auditCode === 'RAW_FILE_INVENTORY_REJECTED');
+  await fs.rmdir(file);
+  await fs.writeFile(file, Buffer.alloc(3));
+  const originalLstat = fs.lstat;
+  const hook = t.mock.method(fs, 'lstat', async (candidate, ...args) => {
+    if (path.basename(String(candidate)) === name) throw new Error('secret-error-canary: unknown physical file outcome');
+    return originalLstat(candidate, ...args);
+  });
+  try {
+    await assert.rejects(inspectSavedRawFileInventory(folder), error => {
+      assert.equal(error.auditCode, 'RAW_FILE_INVENTORY_REJECTED');
+      assert.equal(error.message, 'RAW_FILE_INVENTORY_REJECTED'); return true;
+    });
+  } finally { hook.mock.restore(); }
+});
+
 test('RAW manifest counts distinguish exact, acquisition-only and revision/content absence without RAW reads', () => {
   const part = { partId: 'coastal-part-sensitive', zoneId: 'zone-sensitive', waterPoint: [8, 55] };
   const f = nativeFixture(part, undefined, true), parts = new Map([[part.partId, part]]);
@@ -760,6 +877,8 @@ test('RAW manifest option uses the normal authenticated donor loop, leaves origi
   assert.deepEqual(Object.fromEntries(Object.entries(raw.donors).map(([key, row]) => [key, row.counts?.exactCaptureMatchRows])),
     { baselineBulk: 0, baselineActive: 1, baselineCandidate: 2, progressActive: 1, progressCandidate: 2 });
   assert.equal(raw.rawFilesOpened, false); assert.equal(raw.rawBytesVerified, false); assert.equal(raw.sourceAdmissionPerformed, false);
+  assert.equal(Object.hasOwn(raw, 'inventoryMetadataInspected'), false, 'File metadata inspection remains default OFF.');
+  assert.ok(Object.values(raw.donors).every(donor => !Object.hasOwn(donor, 'filePresence')));
   assert.equal(report.exactProgressAuthenticated, true);
   assert.equal(report.semanticUnionPerformed, false);
   // Only a manifest exists: even stat/open of a supposed GRIB cannot be needed.
@@ -771,6 +890,39 @@ test('RAW manifest option uses the normal authenticated donor loop, leaves origi
   assert.equal(Object.hasOwn(ordinary.nativeProofAvailability, 'rawManifestCaptureCounts'), false);
   assert.deepEqual(ordinary.nativeProofAvailability, Object.fromEntries(Object.entries(report.nativeProofAvailability)
     .filter(([key]) => key !== 'rawManifestCaptureCounts')));
+  const rawDirectory = path.join(localRepository, '.cache/dmi-grib');
+  const candidate = Object.keys(syntheticRawManifest(f.nativeData.native).assets)[0];
+  await fs.writeFile(path.join(rawDirectory, candidate), Buffer.alloc(f.nativeData.native[0].sources.current.contentLengthBytes, 31));
+  // Reuse the actual normal donor loop and its authenticated fixture files.
+  // The separate fixed-source scope test below requires the real old-family
+  // baseline route; this small current-family fixture cannot impersonate it.
+  const withPresence = await rejectRawFileOpens(t, rawDirectory, async () => measureSavedNativeProofAvailability({
+    baselineIndex: await inspectDmiForecastFile(path.join(f.source, 'data/live/dmi-forecast-cache.json')),
+    progressIndex: await inspectDmiForecastFile(path.join(f.progressRoot, 'data/live/dmi-forecast-cache.json')),
+    parts: new Map(Object.entries(f.conditions.coastalParts.parts).map(([partId, part]) => [partId, { ...part, partId }])),
+    donorFiles: { baselineBulk: path.join(f.source, 'data/live/dmi-bulk-cache.json'),
+      baselineActive: path.join(f.source, PRIVATE_WEATHER_COMPONENT_FILES.dmiActive),
+      baselineCandidate: path.join(f.source, PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate),
+      progressActive: path.join(f.progressRoot, PRIVATE_WEATHER_COMPONENT_FILES.dmiActive),
+      progressCandidate: path.join(f.progressRoot, PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate) },
+    rawManifest: indexSavedRawManifest(syntheticRawManifest(f.nativeData.native)),
+    rawFileInventory: await inspectSavedRawFileInventory(localRepository),
+  }));
+  const presence = withPresence.rawManifestCaptureCounts;
+  assert.equal(presence.inventoryMetadataInspected, true);
+  assert.equal(presence.fileInventoryStatus, 'MEASURED');
+  assert.equal(presence.fileInventoryCandidates, 1);
+  assert.equal(presence.otherRegularInventoryFiles, 1);
+  assert.equal(presence.rawFilesOpened, false); assert.equal(presence.rawBytesVerified, false); assert.equal(presence.sourceAdmissionPerformed, false);
+  assert.deepEqual(presence.counts, raw.counts);
+  for (const [key, donor] of Object.entries(raw.donors)) {
+    assert.deepEqual(presence.donors[key].counts, donor.counts);
+  }
+  assert.deepEqual(presence.donors.progressCandidate.filePresence.manifestAssetIdentityPresent,
+    { potentialFileCandidates: 1, missing: 1, ambiguous: 0, sizeMismatch: 0 });
+  assert.deepEqual(Object.fromEntries(Object.entries(withPresence)
+    .filter(([key]) => key !== 'rawManifestCaptureCounts')), ordinary.nativeProofAvailability);
+  for (const [file, bytes] of originals) assert.deepEqual(await fs.readFile(file), bytes);
   for (const options of [{ includeRawManifest: 'true', rawCacheKey },
     { includeRawManifest: true, rawCacheKey: rawCacheKey + '-other' },
     { includeRawManifest: false, rawCacheKey }]) {
@@ -779,13 +931,54 @@ test('RAW manifest option uses the normal authenticated donor loop, leaves origi
     assert.equal(result.status, 'AUDIT_FAILED_CLOSED');
     assert.ok(['MODE_INVALID', 'RAW_CACHE_IDENTITY_INVALID'].includes(result.code));
   }
-  for (const value of [report, ordinary]) safeReport(value, f.privateRoot);
+  for (const value of [report, ordinary, withPresence]) safeReport(value, f.privateRoot);
+});
+
+test('fixed older RAW source, file-presence opt-in and target guards reject invalid input before transport', async t => {
+  const f = await fixture(t), calls = f.calls.length;
+  const fixed = { includeRawManifest: true, rawManifestSource: '38577766010-1',
+    rawCacheKey: 'dmi-grib-v4-Linux-2026-W42-38577766010-1', progressSource: '38692413809-1',
+    progressCacheKey: 'weather-private-progress-encrypted-v2-Linux-main-38692413809-1',
+    progressBaselineTargetHour: '2026-10-14T18:00:00.000Z' };
+  const sameRunKey = `dmi-grib-v4-Linux-2026-W40-${progressSource}`;
+  const cases = [
+    [{ ...fixed, rawManifestSource: '38577766010-2' }, 'RAW_CACHE_IDENTITY_INVALID'],
+    [{ ...fixed, rawManifestSource: 38577766010 }, 'RAW_CACHE_IDENTITY_INVALID'],
+    [{ ...fixed, rawCacheKey: 'dmi-grib-v4-Linux-2026-W43-38577766010-1' }, 'RAW_CACHE_IDENTITY_INVALID'],
+    [{ ...fixed, rawCacheKey: sameRunKey }, 'RAW_CACHE_IDENTITY_INVALID'],
+    [{ ...fixed, rawManifestSource: null }, 'RAW_CACHE_IDENTITY_INVALID'],
+    [{ ...fixed, includeRawManifest: false }, 'RAW_CACHE_IDENTITY_INVALID'],
+    [{ ...fixed, mode: 'describe' }, 'MODE_INVALID'],
+    [{ includeRawFilePresence: true }, 'MODE_INVALID'],
+    [{ includeRawManifest: true, rawCacheKey: sameRunKey, includeRawFilePresence: true }, 'MODE_INVALID'],
+    [{ includeRawFilePresence: 'true', ...fixed }, 'MODE_INVALID'],
+    [{ ...fixed, progressSource }, 'RAW_CACHE_IDENTITY_INVALID'],
+    [{ ...fixed, progressCacheKey: `weather-private-progress-encrypted-v2-Linux-main-${fixed.rawManifestSource}` }, 'RAW_CACHE_IDENTITY_INVALID'],
+    [{ ...fixed, progressBaselineTargetHour: null }, 'RAW_CACHE_IDENTITY_INVALID'],
+    [{ ...fixed, progressBaselineTargetHour: '2026-09-29T17:00:00Z' }, 'PROGRESS_BASELINE_TARGET_INVALID'],
+    [{ ...fixed, progressBaselineTargetHour: f.conditions.productionReferenceAt }, 'RAW_CACHE_IDENTITY_INVALID'],
+  ];
+  for (const [i, [options, code]] of cases.entries()) {
+    const result = await auditSavedWeatherInputs({ ...f.options, ...options,
+      outputPath: path.join(f.privateRoot, `invalid-raw-source-${i}.json`) });
+    assert.equal(result.status, 'AUDIT_FAILED_CLOSED'); assert.equal(result.code, code, JSON.stringify(result));
+    assert.equal(f.calls.length, calls, 'Invalid RAW source/options/target cannot reach protected transport.');
+    safeReport(result, f.privateRoot);
+  }
+  const validScope = await auditSavedWeatherInputs({ ...f.options, ...fixed, includeRawFilePresence: true,
+    outputPath: path.join(f.privateRoot, 'valid-fixed-scope-wrong-original-family.json') });
+  assert.equal(validScope.status, 'AUDIT_FAILED_CLOSED');
+  assert.equal(validScope.phase, 'PROGRESS_BASELINE_RECONSTRUCTION');
+  assert.equal(validScope.code, 'PROGRESS_BASELINE_RECONSTRUCTION_REJECTED');
+  assert.ok(f.calls.length > calls, 'The exact allowed scope reaches authenticated restore but cannot bypass original-family admission.');
+  assert.equal(validScope.normalProgressBaselineUsed, false);
+  safeReport(validScope, f.privateRoot);
 });
 
 test('RAW manifest CLI rejects malformed boolean before any credential or input read', () => {
-  for (const value of ['1', 'TRUE', 'yes']) {
+  for (const flag of ['--include-raw-manifest', '--include-raw-file-presence']) for (const value of ['1', 'TRUE', 'yes']) {
     const result = spawnSync(process.execPath, ['scripts/audit-saved-weather-inputs.mjs', 'audit',
-      '--include-raw-manifest', value], { cwd: repositoryRoot, encoding: 'utf8' });
+      flag, value], { cwd: repositoryRoot, encoding: 'utf8' });
     assert.equal(result.status, 1); assert.equal(result.stdout, '');
     assert.equal(result.stderr.trim(), 'SAVED_WEATHER_INPUT_AUDIT_FAILED_CLOSED');
   }

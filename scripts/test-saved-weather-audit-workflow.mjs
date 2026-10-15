@@ -122,11 +122,12 @@ test('audit isolates exact archived reader and exposes only the fixed safe repor
 });
 
 
-test('optional RAW manifest audit is default-off and exact same-run cache only, never a provider or admission route', () => {
+test('optional RAW manifest audit defaults to exact same-run cache, never a provider or admission route', () => {
   assert.match(text, /include_raw_manifest:\n[\s\S]*?required: false\n        default: false\n        type: boolean/);
   assert.match(text, /raw_manifest_cache_key:\n[\s\S]*?required: false\n        default: ""\n        type: string/);
   assert.match(text, /RAW_MANIFEST_CACHE_KEY: \$\{\{ inputs\.raw_manifest_cache_key \}\}/);
   assert.match(text, /if test "\$INCLUDE_RAW_MANIFEST" = true; then/);
+  assert.match(text, /if test -z "\$RAW_MANIFEST_SOURCE"; then\n\s+\[\[ "\$RAW_MANIFEST_CACHE_KEY"/);
   assert.ok(text.includes('^dmi-grib-v4-Linux-[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])-${SOURCE_RUN_ID}-${SOURCE_RUN_ATTEMPT}$'));
   assert.match(text, /gh api --method GET "repos\/\$GITHUB_REPOSITORY\/actions\/caches"/);
   for (const guard of ['.total_count == 1', '(.actions_caches | length) == 1',
@@ -151,6 +152,47 @@ test('optional RAW manifest audit is default-off and exact same-run cache only, 
   assert.match(text, /RAW_MANIFEST_ARGS: \$\{\{ inputs\.include_raw_manifest && format\('--raw-cache-key \{0\}', steps\.authority\.outputs\.raw_cache_key\) \|\| '' \}\}/);
   assert.equal((text.match(/git\/ref\/heads\/main/g) ?? []).length, 2);
   assert.doesNotMatch(text, /restore-keys:|actions\/cache\/save|update-dmi-bulk\.py|build-current-operational-closure/);
+});
+
+test('older RAW source is one explicit fixed read scope and cannot relabel authenticated progress', () => {
+  assert.match(text, /raw_manifest_source:\n[\s\S]*?required: false\n        default: ""\n        type: string/);
+  assert.match(text, /RAW_MANIFEST_SOURCE: \$\{\{ inputs\.raw_manifest_source \}\}/);
+  assert.match(text, /test "\$RAW_MANIFEST_SOURCE" = 38577766010-1/);
+  assert.match(text, /test "\$RAW_MANIFEST_CACHE_KEY" = dmi-grib-v4-Linux-2026-W42-38577766010-1/);
+  const scope = text.split('if test -n "$RAW_MANIFEST_SOURCE"; then')[1].split('\n          fi')[0];
+  assert.ok(scope.includes('test "$SOURCE_RUN_ID" = 38692413809'));
+  assert.ok(scope.includes('test "$SOURCE_RUN_ATTEMPT" = 1'));
+  assert.ok(scope.includes('test "$PROGRESS_BASELINE_TARGET_HOUR" = 2026-10-14T18:00:00.000Z'));
+  for (const guard of [
+    'actions/runs/38577766010/attempts/1', '.id == 38577766010 and .run_attempt == 1',
+    '.head_sha == "584e0e19530ce14f8d4f15c20ea3fbee9dd63e7e"',
+    'git merge-base --is-ancestor 584e0e19530ce14f8d4f15c20ea3fbee9dd63e7e "$GITHUB_SHA"',
+    '.actions_caches[0].id == 8945631595', '.actions_caches[0].size_in_bytes == 2614349607',
+  ]) assert.ok(text.includes(guard), guard);
+  const older = text.split('gh api "repos/$GITHUB_REPOSITORY/actions/runs/38577766010/attempts/1"')[1]
+    .split('gh api --method GET "repos/$GITHUB_REPOSITORY/actions/caches"')[0];
+  for (const guard of ['.repository.full_name == $repo', '.head_repository.full_name == $repo',
+    '.head_branch == "main"', '.event == "workflow_dispatch"', '.status == "completed"',
+    '.path == ".github/workflows/run-current-weather-once.yml"']) assert.ok(older.includes(guard), guard);
+  assert.ok(text.indexOf('test "$RAW_MANIFEST_SOURCE" = 38577766010-1') < text.indexOf(gh('secrets.SUPABASE_URL')));
+  assert.match(text, /PROGRESS_SOURCE: \$\{\{ inputs\.progress_source_run_id \}\}-\$\{\{ inputs\.progress_source_attempt \}\}/);
+  assert.match(text, /PROGRESS_CACHE_KEY: \$\{\{ steps\.authority\.outputs\.cache_key \}\}/);
+  assert.match(text, /RAW_SOURCE_ARGS: \$\{\{ inputs\.raw_manifest_source != '' && format\('--raw-manifest-source \{0\}', inputs\.raw_manifest_source\) \|\| '' \}\}/);
+  assert.ok(text.includes('${RAW_SOURCE_ARGS}'));
+  assert.doesNotMatch(text, /restore-keys:|actions\/cache\/save|update-dmi-bulk\.py|sha256sum/);
+  assert.equal((text.match(/^      [a-z_]+:\n        description:/gm) ?? []).length, 9, 'seven original inputs and two bounded default-off inputs');
+});
+
+test('RAW file presence is separate default-off metadata inventory, not numeric inspection', () => {
+  assert.match(text, /include_raw_file_presence:\n[\s\S]*?required: false\n        default: false\n        type: boolean/);
+  assert.match(text, /INCLUDE_RAW_FILE_PRESENCE: \$\{\{ inputs\.include_raw_file_presence \}\}/);
+  assert.match(text, /if test "\$INCLUDE_RAW_FILE_PRESENCE" = true; then\n\s+test "\$INCLUDE_RAW_MANIFEST" = true/);
+  assert.match(text, /if test "\$INCLUDE_RAW_FILE_PRESENCE" = true; then\n\s+test "\$INCLUDE_RAW_MANIFEST" = true\n\s+test "\$RAW_MANIFEST_SOURCE" = 38577766010-1/);
+  assert.ok(text.indexOf('if test "$INCLUDE_RAW_FILE_PRESENCE" = true; then') < text.indexOf(gh('secrets.SUPABASE_URL')));
+  assert.match(text, /--include-raw-file-presence "\$INCLUDE_RAW_FILE_PRESENCE"/);
+  assert.match(text, /path: \.cache\/dmi-grib\n/);
+  assert.equal((text.match(/uses: actions\/cache\/restore@v6/g) ?? []).length, 2, 'one progress and one exact RAW restore only');
+  assert.equal((text.match(/uses: actions\/upload-artifact@/g) ?? []).length, 1);
 });
 
 test('normal progress baseline reconstruction is explicit, default-off, exact-hour and audit-only', () => {
