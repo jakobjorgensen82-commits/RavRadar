@@ -7,7 +7,7 @@ import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { auditSavedWeatherInputs, createReadOnlySavedWeatherClients,
   measureSavedCurrentContexts, measureSavedNativeProofAvailability, withoutSavedAuditSecrets,
-  indexSavedRawManifest, measureSavedRawCaptureMatches } from './audit-saved-weather-inputs.mjs';
+  indexSavedRawManifest, measureSavedRawCaptureMatches, savedAuditProgressAuthenticationCode } from './audit-saved-weather-inputs.mjs';
 import { createPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
 import { buildProtectedPrivateRuntimeArchive, PROTECTED_PRIVATE_RUNTIME_POLICY as policy } from './protected-private-production-runtime.mjs';
 import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_FILES } from './lib/private-weather-component-inventory.mjs';
@@ -33,6 +33,18 @@ const encryptionKey = Buffer.alloc(32, 52).toString('base64');
 const repository = 'owner/synthetic';
 const progressSource = '123456-1';
 const progressCacheKey = `weather-private-progress-encrypted-v2-Linux-main-${progressSource}`;
+test('progress diagnostics expose only exact enumerated crypto and normal unpacker codes', () => {
+  assert.equal(savedAuditProgressAuthenticationCode({ progressCode: 'BASELINE_MISMATCH', message: 'secret-error-canary' }), 'BASELINE_MISMATCH');
+  for (const code of ['WEATHER_PACK_CP_INVENTORY_UNAVAILABLE', 'WEATHER_PACK_OM_BANK_HASH_INVALID',
+    'WEATHER_PACK_REFERENCE_INVENTORY_MISMATCH', 'WEATHER_PACK_JSON_CLOSE_UNPROVED']) {
+    assert.equal(savedAuditProgressAuthenticationCode(new Error(code)), code);
+    assert.equal(savedAuditProgressAuthenticationCode(new Error(`${code}: secret-error-canary`)), 'UNCLASSIFIED');
+  }
+  for (const error of [null, undefined, new Error('secret-error-canary'),
+    { progressCode: 'secret-error-canary', message: 'private path and diagnostic payload' }]) {
+    assert.equal(savedAuditProgressAuthenticationCode(error), 'UNCLASSIFIED');
+  }
+});
 async function temp(t) {
   const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-saved-input-test-'));
   t.after(() => fs.rm(folder, { recursive: true, force: true }));
@@ -365,6 +377,7 @@ test('real synthetic archive + exact progress are authenticated and measured, no
   assert.equal(report.protectedGenerationReadbackVerified, true);
   assert.equal(report.exactArchivedSourceContractsVerified, true);
   assert.equal(report.exactProgressAuthenticated, true);
+  assert.equal(report.normalProgressBaselineUsed, false, 'The default audit retains its original baseline.');
   assert.equal(report.semanticUnionPerformed, false); assert.equal(report.cacheBuilt, false);
   assert.equal(report.futureContextPersistenceProved, false); assert.equal(report.publicDeploymentProved, false);
   for (const key of ['objectBytes', 'objectCount', 'largestObjectBytes', 'envelopeBytes', 'rawPayloadBytes']) {
@@ -489,6 +502,45 @@ for (const [name, mutation, code] of [
   const report = await auditSavedWeatherInputs(options);
   assert.equal(report.status, 'AUDIT_FAILED_CLOSED'); assert.equal(report.code, code, JSON.stringify(report));
   assert.equal(report.exactProgressAuthenticated, false);
+  assert.equal(report.normalProgressBaselineUsed, false);
+  if (mutation.wrongBaseline) assert.equal(report.progressAuthenticationCode, 'BASELINE_MISMATCH');
+  if (mutation.cipherTamper) assert.equal(report.progressAuthenticationCode, 'SNAPSHOT_AUTHENTICATION_FAILED');
+  assert.equal((await fs.readdir(privateRoot)).some(name => name.startsWith('saved-input-audit-')), false);
+  safeReport(report, privateRoot);
+});
+
+test('explicit progress baseline target is canonical, newer and rejected before remote reads when invalid', async t => {
+  const { options, calls, privateRoot, conditions } = await fixture(t);
+  const originalCalls = calls.length;
+  const reference = conditions.productionReferenceAt;
+  for (const [i, value] of ['', 123, '2026-09-29T17:00:00Z', '2026-09-29T17:01:00.000Z',
+    '2026-02-30T17:00:00.000Z', '2026-09-29T17:00:00.000+00:00', reference,
+    '2026-09-29T15:00:00.000Z'].entries()) {
+    const report = await auditSavedWeatherInputs({ ...options, progressBaselineTargetHour: value,
+      outputPath: path.join(privateRoot, `invalid-target-${i}.json`) });
+    assert.equal(report.status, 'AUDIT_FAILED_CLOSED');
+    assert.equal(report.code, 'PROGRESS_BASELINE_TARGET_INVALID');
+    assert.equal(report.normalProgressBaselineUsed, false);
+    assert.equal(calls.length, originalCalls, 'Invalid target must be rejected before pointer/archive transport.');
+    safeReport(report, privateRoot);
+  }
+  const described = await auditSavedWeatherInputs({ ...options, mode: 'describe',
+    progressBaselineTargetHour: '2026-09-29T17:00:00.000Z',
+    outputPath: path.join(privateRoot, 'describe-with-baseline.json') });
+  assert.equal(described.code, 'MODE_INVALID');
+  assert.equal(calls.length, originalCalls);
+});
+
+test('explicit normal baseline cannot borrow the original transition for another model family', async t => {
+  const { options, privateRoot, source } = await fixture(t);
+  const conditionsPath = path.join(source, 'data/live/conditions.json');
+  const before = await fs.readFile(conditionsPath);
+  const report = await auditSavedWeatherInputs({ ...options,
+    progressBaselineTargetHour: '2026-09-29T17:00:00.000Z' });
+  assert.equal(report.status, 'AUDIT_FAILED_CLOSED');
+  assert.equal(report.code, 'PROGRESS_BASELINE_RECONSTRUCTION_REJECTED');
+  assert.equal(report.normalProgressBaselineUsed, false);
+  assert.deepEqual(await fs.readFile(conditionsPath), before);
   assert.equal((await fs.readdir(privateRoot)).some(name => name.startsWith('saved-input-audit-')), false);
   safeReport(report, privateRoot);
 });
@@ -955,6 +1007,7 @@ test('main audit pack JSON lifetime / ' + location + ' / ' + fault, { timeout: 3
     } else {
       assert.equal(report.status, 'AUDIT_FAILED_CLOSED');
       assert.equal(report.code, location === 'baseline' ? 'BASELINE_COMPONENT_PACK_REJECTED' : 'PROGRESS_AUTHENTICATION_REJECTED');
+      if (location === 'progress') assert.equal(report.progressAuthenticationCode, 'WEATHER_PACK_JSON_CLOSE_UNPROVED');
       assert.equal(stageExists, true); assert.equal(removals.filter(kind => kind === location).length, 0);
     }
   } finally {

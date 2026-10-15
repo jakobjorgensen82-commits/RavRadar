@@ -514,6 +514,8 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
       oldImport('scripts/private-production-runtime-bundle.mjs'),
     ]);
     const policy = gridHelper.CURRENT_GRID_SAMPLING_SELECTED_PREDECESSOR_POLICY;
+    const savedInputAudit = await currentImport('scripts/audit-saved-weather-inputs.mjs');
+    const progressCache = await currentImport('scripts/weather-component-progress-cache.mjs');
     const ib = oldI.ravScoreModelBinding();
     const cb = oldC.ravScoreModelBinding();
     assert.deepEqual(ib, policy.sourceModelBinding);
@@ -977,6 +979,81 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
           withoutTechnicalHashes(originalHours.get(fixture.label + ':' + time)));
         assert.deepEqual(document.delivery.modelBinding, currentI.ravScoreModelBinding());
       }
+      // Use this actual normal 673-pair migrant, not a separately fabricated
+      // national audit document. Progress is bound to its installed successor
+      // bytes while the protected archive retains its authentic old bytes.
+      const progressRepository = 'owner/controlled-normal-migrant';
+      const progressCredentials = fixture.label === 'rollback'
+        ? { encryptionKey: null, masterSecret: 'controlled-normal-master-secret-never-a-real-credential' }
+        : { encryptionKey: Buffer.alloc(32, 63).toString('base64'), masterSecret: null };
+      const migratedRoot = path.join(scenario.root, 'migrated');
+      const progressBase = path.join(scenario.root, 'normal-saved-progress-base.json');
+      const cacheOptions = { repository: progressRepository, ...progressCredentials,
+        protectedBundleSha256: scenario.manifest.bundleContentSha256 };
+      assert.equal((await progressCache.weatherComponentProgressCache({ ...cacheOptions, mode: 'capture-base',
+        repositoryRoot: migratedRoot, basePath: progressBase })).captured, true);
+      const savedBase = JSON.parse(await fs.readFile(progressBase, 'utf8'));
+      const migratedConditionsBytes = await fs.readFile(path.join(migratedRoot, 'data/live/conditions.json'));
+      assert.equal(savedBase.baselineSha256, sha(migratedConditionsBytes));
+      assert.notEqual(savedBase.baselineSha256, scenario.baselineDigests.get('data/live/conditions.json'));
+      const savedProgress = await progressCache.weatherComponentProgressCache({ ...cacheOptions, mode: 'save',
+        repositoryRoot: migratedRoot, basePath: progressBase });
+      assert.equal(savedProgress.saved, true, JSON.stringify(savedProgress));
+      const cipher = await fs.readFile(path.join(migratedRoot, progressCache.WEATHER_PROGRESS_CIPHER_PATH));
+      const originalAuditRoot = path.join(scenario.root, 'old-audit-binder');
+      await fs.mkdir(path.join(originalAuditRoot, 'data/live'), { recursive: true });
+      await fs.mkdir(path.join(originalAuditRoot, '.cache'));
+      await fs.copyFile(path.join(scenario.bundlePath, 'payload/data/live/conditions.json'),
+        path.join(originalAuditRoot, 'data/live/conditions.json'), fs.constants.COPYFILE_EXCL);
+      await fs.writeFile(path.join(originalAuditRoot, progressCache.WEATHER_PROGRESS_CIPHER_PATH), cipher, { flag: 'wx' });
+      const originalBase = path.join(scenario.root, 'original-audit-base.json');
+      assert.equal((await progressCache.weatherComponentProgressCache({ ...cacheOptions, mode: 'capture-base',
+        repositoryRoot: originalAuditRoot, basePath: originalBase })).captured, true);
+      let authenticatedCalls = 0;
+      await assert.rejects(progressCache.withAuthenticatedWeatherProgress({ repositoryRoot: originalAuditRoot,
+        basePath: originalBase, repository: progressRepository, ...progressCredentials }, async () => { authenticatedCalls++; }),
+      error => error.progressCode === 'BASELINE_MISMATCH');
+      assert.equal(authenticatedCalls, 0, 'Old archive conditions cannot bind progress saved after the normal migration.');
+      const defaultBaseline = await savedInputAudit.prepareSavedAuditProgressBaseline({ privateRoot: scenario.root,
+        bundlePath: scenario.bundlePath, descriptorPath: path.join(scenario.root, 'current-description.json'), repositoryRoot });
+      assert.equal(defaultBaseline.normalProgressBaselineUsed, false);
+      assert.equal(await fs.realpath(defaultBaseline.repositoryRoot), await fs.realpath(path.join(scenario.bundlePath, 'payload')));
+      const originalDescriptorPath = path.join(scenario.root, 'current-description.json');
+      const originalDescriptorBytes = await fs.readFile(originalDescriptorPath);
+      const originalManifestBytes = await fs.readFile(scenario.manifestPath);
+      const baselineOptions = { privateRoot: scenario.root,
+        bundlePath: scenario.bundlePath, descriptorPath: path.join(scenario.root, 'current-description.json'), repositoryRoot,
+        progressBaselineTargetHour: targetReferenceAt };
+      const normalBaseline = await savedInputAudit.prepareSavedAuditProgressBaseline(baselineOptions);
+      assert.equal(normalBaseline.normalProgressBaselineUsed, true);
+      assert.equal(path.basename(normalBaseline.repositoryRoot), 'normal-progress-baseline');
+      assert.deepEqual(await fs.readFile(path.join(normalBaseline.repositoryRoot, 'data/live/conditions.json')), migratedConditionsBytes,
+        'The audit helper must reproduce the exact normal baseline bytes, not relabel the old digest.');
+      await assert.rejects(savedInputAudit.prepareSavedAuditProgressBaseline(baselineOptions),
+        error => error.auditCode === 'OUTPUT_ALREADY_EXISTS');
+      assert.deepEqual(await fs.readFile(originalDescriptorPath), originalDescriptorBytes);
+      assert.deepEqual(await fs.readFile(scenario.manifestPath), originalManifestBytes,
+        'The original authenticated manifest must not be rebound for the progress binder.');
+      const normalBase = path.join(scenario.root, 'reconstructed-audit-base.json');
+      assert.equal((await progressCache.weatherComponentProgressCache({ ...cacheOptions, mode: 'capture-base',
+        repositoryRoot: normalBaseline.repositoryRoot, basePath: normalBase })).captured, true);
+      assert.deepEqual(JSON.parse(await fs.readFile(normalBase, 'utf8')), savedBase);
+      await fs.writeFile(path.join(normalBaseline.repositoryRoot, progressCache.WEATHER_PROGRESS_CIPHER_PATH), cipher, { flag: 'wx' });
+      const auditOptions = { repositoryRoot: normalBaseline.repositoryRoot, basePath: normalBase,
+        repository: progressRepository, ...progressCredentials };
+      const inspected = await progressCache.withAuthenticatedWeatherProgress(auditOptions, async input => {
+        authenticatedCalls++;
+        assert.equal(input.baselineSha256, savedBase.baselineSha256);
+        assert.equal(input.protectedBundleContentSha256, scenario.manifest.bundleContentSha256);
+        assert.ok(input.files.length > 0);
+        for (const file of input.files) assert.equal(sha(await fs.readFile(file.sourcePath)), file.sha256);
+        return true;
+      });
+      assert.equal(inspected, true); assert.equal(authenticatedCalls, 1);
+      await assert.rejects(progressCache.withAuthenticatedWeatherProgress({ ...auditOptions,
+        encryptionKey: Buffer.alloc(32, 64).toString('base64') }, async () => { authenticatedCalls++; }),
+      error => error.progressCode === 'SNAPSHOT_AUTHENTICATION_FAILED');
+      assert.equal(authenticatedCalls, 1, 'A reconstructed baseline never bypasses actual GCM authentication.');
       for (const item of inventory) {
         const originalRaw = await fs.readFile(path.join(scenario.restored, item.relativePath));
         assert.equal(sha(originalRaw), scenario.baselineDigests.get(item.relativePath));
