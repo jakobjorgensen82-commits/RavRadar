@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs/promises';
+import { runInNewContext } from 'node:vm';
 import {
   CANDIDATE_G_STATE_MODEL_ID,
   CANDIDATE_G_STATE_PROFILE_ID,
@@ -831,10 +832,21 @@ const aggregateResolverStep = workflowStep(
 );
 const dmiBulkStep = workflowStep('Update DMI bulk model cache');
 const firstCutoverGuard = "steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'";
-assert.ok(
-  dmiBulkStep.block.includes('continue-on-error: true'),
-  'the DMI producer must yield control after a real failure so bounded side-cache progress can be saved before the cutover gate fails closed',
+const dmiFailureContinuation = dmiBulkStep.block.match(
+  /^\s*continue-on-error: \$\{\{ (inputs\.checkpoint_only != true) \}\}\s*$/m,
+)?.[1];
+assert.equal(
+  dmiFailureContinuation,
+  'inputs.checkpoint_only != true',
+  'normal DMI failures must yield to bounded side-cache saving, but checkpoint-only replay/save failures must stop',
 );
+for (const checkpointOnly of [false, true]) {
+  assert.equal(
+    runInNewContext(dmiFailureContinuation, { inputs: { checkpoint_only: checkpointOnly } }),
+    !checkpointOnly,
+    `DMI failure continuation must preserve the ${checkpointOnly ? 'checkpoint-only hard stop' : 'normal bounded fallback'} route`,
+  );
+}
 assert.ok(
   centralApplyStep.start < activeRegistryStep.start
     && activeRegistryStep.start < legacyHydrateStep.start

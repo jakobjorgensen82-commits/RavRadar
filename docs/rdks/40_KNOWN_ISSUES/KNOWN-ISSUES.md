@@ -1,3 +1,9 @@
+## Godkendt checkpoint-genoptagelse — 15. oktober 2026
+
+Ejeren har nu konkret godkendt, at korrekt færdiggemt, men delvis DMI i checkpoint-only kan fortsætte med checkpointets gemte reservekilder. Kun denne mode får PARTIAL efter fuld gemning; ready=false, kildeledger, originaler og tidligere aktive DMI-data bevares. Udskudt eller utilgængelig nødvendig historik, replay-/gemmefejl og bootstrapkonflikt stopper fortsat. Der hentes ikke nyt vejr, og alle efterfølgende beregnings-, databevarelses- og deploykontroller består.
+
+Kilden er lokalt sammenført med main615 og bevarer dens faktisk Linux-verificerede processtoprettelse samt begge dokumentationshistorikker. De målrettede routing-, workflow- og originalmodtagerprøver består; Windows-provenanceprøven passerede de nye terminalprøver, men stoppede senere på den eksisterende native-læsegrænse. Ny præcis samlet Linux/source/PostgreSQL-kontrol og faktisk genoptagelse/offentlig effekt er endnu åbne. Vejrfloor220 bevares; 230/assistentinstallation og SOURCE19 aktiveres ikke. Alle fem mål til 18. oktober består. Ældre afventende tilladelses- og leveringsudsagn nedenfor er historik på disse konkrete punkter.
+
 ## Separat SAVE-kildekandidat — 15. oktober 2026
 
 Den normale cachegemning skal også stoppe sine egne underprocesser, hvis den styrende action-proces forsvinder brat. Den afgrænsede kandidat overvåger den allerede verificerede forælder gennem et kernel-håndtag og bevarer fysisk gruppeafslutning, første fejl, originalfiler og privat skrivelås. Den nye normale Linux-prøve dækker action-SIGKILL, ikke ødelæggelse af hele runneren. Lokale syntakskontroller er ikke native-, upload- eller produktionsbevis.
@@ -9,6 +15,8 @@ Dette er et selvstændigt kildespor fra faktisk main 213942 efter PR613, ikke ko
 Den lokale revision/CAS-rettelse adresserer forsinket ON efter nyere OFF, men serverlevering og det samlede offentlige kontoforløb er endnu ikke verificeret. Ukendt kvittering skal fortsat vises som ukendt, ikke gemt. Overgangen fra gamle klienter kræver den kontrollerede installationsrækkefølge; den må ikke løses med en klient-only spærring eller ved at acceptere begge skemafaser.
 
 ## ÅBEN akut fejl — kystdelens strømhistorik før offentlig levering, 14. oktober 2026
+
+Aktuelt 15. oktober — genoptagelse fra checkpoint: PR612 er merget på main6b3e0262 efter grøn source-, Linux- og PostgreSQL-kontrol, uden ny vejrhentning eller offentlig generation. Den lokale checkpoint-only-mode låser oprindelig target og lukker providerindgange; standardforløbet er uændret. Lokale prøver og åbne Linux/native/source/PG-/produktionsgrænser er præciseret i håndbog 89.230 og er ikke leveringsbevis. Alle fem mål er åbne med frist 18. oktober; SOURCE19, KB og statistik forbliver inaktive. Ældre status nedenfor bevares som historik.
 
 Aktuelt 15. oktober: PR610 er kildeleveret efter præcis CI inklusive Linux og PostgreSQL. Den næste genoptagelse stoppede før vejrhentning på miljøtimens Z/.000Z-format. Den normale 673-dels CLI-prøve har reproduceret fejlen og består efter en snæver miljønormalisering, inklusive fem ugyldige input og originalbevarelse. Den lille kildegate består lokalt; ny præcis CI, levering og offentlig effekt er åbne. Tilstands- og originalkrav, version, SQL, model og SOURCE-afgrænsning er uændrede. Se håndbog 89.230; ældre status nedenfor er erstattet kun på disse punkter.
 

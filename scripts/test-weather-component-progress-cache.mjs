@@ -322,6 +322,234 @@ async function fixture(t) {
   return { folder, source, target, sourceBase, targetBase, call, saveAndTransfer, assertTargetOriginal };
 }
 
+test('original-target recovery uses the authenticated producer ledger through the normal encrypted CLI', async t => {
+  const hour = 3_600_000;
+  const clockHour = Math.floor(Date.now() / hour) * hour;
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-progress-original-target-'));
+  t.after(async () => {
+    assert.equal(path.dirname(path.resolve(root)), path.resolve(os.tmpdir()));
+    assert.ok(path.basename(root).startsWith('rr-progress-original-target-'));
+    await fs.rm(root, { recursive: true, force: true });
+  });
+  const environment = Object.fromEntries(Object.entries(process.env).filter(([name]) =>
+    ['PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'TMPDIR', 'COMSPEC', 'PATHEXT',
+      'LANG', 'LC_ALL', 'LC_CTYPE', 'TZ', 'LD_LIBRARY_PATH', 'DYLD_LIBRARY_PATH'].includes(name.toUpperCase())));
+  const python = process.env.PYTHON ?? 'python';
+  Object.assign(environment, { PYTHON: python, PYTHONUTF8: '1', GITHUB_REPOSITORY: repository,
+    WEATHER_PROGRESS_ENCRYPTION_KEY: encryptionKey });
+  const fixtures = {};
+  for (const [name, offset] of [['stale', -5], ['future', 2], ['expired', -118]]) {
+    const directory = path.join(root, `ledger-${name}`);
+    await fs.mkdir(directory);
+    const referenceAt = new Date(clockHour + offset * hour).toISOString();
+    const prepared = await execFileAsync(python, [
+      '-B', path.resolve('scripts/test-copernicus-target-registry-4.0.244.py'),
+      '--prepare-progress-target-fixture', directory, referenceAt.replace('.000Z', 'Z'),
+    ], { env: environment, windowsHide: true, timeout: 30_000, maxBuffer: 1024 * 1024 });
+    assert.equal(prepared.stderr, '');
+    const candidate = await fs.readFile(path.join(directory, 'dmi.json'));
+    const registry = await fs.readFile(path.join(directory, 'targets.json'));
+    assert.equal(JSON.parse(candidate).diagnostics.currentOperationalLedger.productionReferenceAt,
+      referenceAt.replace('.000Z', 'Z'));
+    fixtures[name] = { referenceAt, candidate, registry };
+  }
+
+  // Capture the complete owned tree, not merely a mocked install counter.
+  async function snapshot(directory) {
+    const rows = [];
+    async function visit(current) {
+      for (const name of (await fs.readdir(current)).sort()) {
+        const file = path.join(current, name);
+        const info = await fs.lstat(file);
+        assert.equal(info.isSymbolicLink(), false);
+        if (info.isDirectory()) await visit(file);
+        else {
+          assert.equal(info.isFile(), true);
+          rows.push([path.relative(directory, file), (await fs.readFile(file)).toString('base64')]);
+        }
+      }
+    }
+    await visit(directory);
+    return rows;
+  }
+  let sequence = 0;
+  async function prepareCase(spec) {
+    const generation = fixtures[spec.generation ?? 'stale'];
+    const folder = path.join(root, `case-${++sequence}`);
+    const source = path.join(folder, 'source'), target = path.join(folder, 'target');
+    await fs.mkdir(source, { recursive: true });
+    await fs.mkdir(target);
+    const sourceBase = path.join(folder, 'source-base.json'), targetBase = path.join(folder, 'target-base.json');
+    const baselineAt = new Date(Date.parse(generation.referenceAt) + (spec.beforeBaseline ? 1 : -1) * hour).toISOString();
+    const conditionsText = JSON.stringify({ ...JSON.parse(baseline), productionReferenceAt: baselineAt }) + '\n';
+    const waterSource = { sourceKey: 'tidewater:ORIGINAL-TARGET', stationId: 'ORIGINAL-TARGET',
+      sourceType: 'forecast-point', point: [11, 56] };
+    const native = { generatedAt: generation.referenceAt, timeStrideHours: 3, zones: {
+      [ `SOURCE::${waterSource.sourceKey}` ]: { hourly: Object.fromEntries(Array.from({ length: 41 }, (_, index) => {
+        const time = new Date(Date.parse(generation.referenceAt) + index * 3 * hour).toISOString();
+        return [time, dmiWaterSourceFixture(waterSource, time, index, generation.referenceAt)];
+      })) },
+    } };
+    const originals = buildWaterSourceForecastIndex([waterSource], native, generation.referenceAt);
+    const sparse = structuredClone(originals);
+    sparse.get(waterSource.sourceKey).hourly.splice(100, 1);
+    const forecast = { schemaVersion: 2, generatedAt: generation.referenceAt,
+      runtime: { nextZoneCursor: 0 }, zones: { Z: { zoneId: 'Z', point: [10, 56], hourly: [] } },
+      waterSourceContinuity: await packWaterSourceForecastContinuity(sparse, generation.referenceAt) };
+    for (const directory of [source, target]) {
+      await write(directory, 'data/live/conditions.json', conditionsText);
+      await write(directory, 'data/live/coastal-parts-v2.json', generation.registry);
+      await write(directory, 'data/zones.geojson', { type: 'FeatureCollection', features: [
+        { type: 'Feature', properties: { id: 'Z', dataPoint: [10, 56] } },
+      ] });
+      await write(directory, 'data/live/dmi-forecast-cache.json', forecast);
+      await write(directory, files.selectedComponents, { previousSelected: true });
+      await write(directory, files.fallbackCursor, { previous: true });
+    }
+    await buildPrivateWeatherComponentPack({ repositoryRoot: target, outputRoot: target,
+      conditions: JSON.parse(conditionsText), pythonExecutable: python });
+    const cli = path.resolve('scripts/weather-component-progress-cache.mjs');
+    let calls = 0;
+    async function invoke(mode, directory, base, extra = [], hint = generation.referenceAt) {
+      const reportFile = path.join(folder, `report-${++calls}.json`);
+      let result, exitCode = 0;
+      try {
+        result = await execFileAsync(process.execPath, [
+          cli, mode, '--root', directory, '--base', base, '--report', reportFile, ...extra,
+        ], { env: { ...environment, RAVRADAR_PRODUCTION_TARGET_HOUR: hint },
+          windowsHide: true, timeout: 180_000, maxBuffer: 1024 * 1024 });
+      } catch (error) {
+        assert.equal(Number.isInteger(error.code), true, 'A process/timeout failure is not a semantic rejection.');
+        exitCode = error.code;
+        result = error;
+      }
+      const reportText = await fs.readFile(reportFile, 'utf8').catch(error => {
+        if (error.code === 'ENOENT') return null;
+        throw error;
+      });
+      const report = reportText === null ? null : JSON.parse(reportText);
+      if (report !== null) assert.deepEqual(JSON.parse(result.stdout), report);
+      return { exitCode, report, stderr: result.stderr };
+    }
+    for (const [directory, base] of [[source, sourceBase], [target, targetBase]]) {
+      const captured = await invoke('capture-base', directory, base,
+        ['--protected-bundle-sha256', protectedBundleSha256]);
+      assert.equal(captured.exitCode, 0);
+      assert.equal(captured.report.captured, true);
+    }
+    const candidate = JSON.parse(generation.candidate);
+    spec.mutateCandidate?.(candidate);
+    if (!spec.missingCandidate) await write(source, files.dmiCandidate,
+      spec.mutateCandidate ? JSON.stringify(candidate) + '\n' : generation.candidate);
+    await write(source, 'data/live/dmi-forecast-cache.json', { ...forecast,
+      waterSourceContinuity: await packWaterSourceForecastContinuity(originals, generation.referenceAt) });
+    const saved = await invoke('save', source, sourceBase);
+    assert.equal(saved.exitCode, 0);
+    assert.equal(saved.report.status, 'SAVED');
+    assert.equal(saved.report.saved, true);
+    assert.equal(saved.report.privatePayloadIncluded, false);
+    await fs.copyFile(path.join(source, WEATHER_PROGRESS_CIPHER_PATH), path.join(target, WEATHER_PROGRESS_CIPHER_PATH));
+    if (spec.registryMismatch) {
+      const registry = JSON.parse(generation.registry);
+      registry.zones.Z1[0].waterPoint[0] += 0.1;
+      await write(target, 'data/live/coastal-parts-v2.json', registry);
+    }
+    if (spec.missingRegistry) await fs.unlink(path.join(target, 'data/live/coastal-parts-v2.json'));
+    if (spec.badCipher) {
+      const cipher = await fs.readFile(path.join(target, WEATHER_PROGRESS_CIPHER_PATH));
+      cipher[cipher.length - 1] ^= 1;
+      await fs.writeFile(path.join(target, WEATHER_PROGRESS_CIPHER_PATH), cipher);
+    }
+    const sourceBefore = await snapshot(source), targetBefore = await snapshot(target);
+    const sourceBaseBefore = await fs.readFile(sourceBase), targetBaseBefore = await fs.readFile(targetBase);
+    return { target, targetBase, generation, originals, waterSource, targetBefore,
+      restore: (extra, hint) => invoke(spec.mode ?? 'restore', target, targetBase, extra, hint),
+      async assertOriginals() {
+        assert.deepEqual(await snapshot(source), sourceBefore, 'Authenticated source bytes remain original.');
+        assert.deepEqual(await fs.readFile(sourceBase), sourceBaseBefore);
+        assert.deepEqual(await fs.readFile(targetBase), targetBaseBefore, 'Captured protection baseline is never rewritten.');
+        for (const [relative, bytes] of targetBefore) {
+          if (relative.replaceAll('\\', '/') === 'data/live/dmi-forecast-cache.json') continue;
+          assert.equal((await fs.readFile(path.join(target, relative))).toString('base64'), bytes,
+            'Original conditions, registry, geometry, ciphertext and protected component pack remain exact.');
+        }
+      },
+    };
+  }
+
+  let selectedDigest = null;
+  const cases = [
+    { name: 'stale-but-valid milliseconds UTC', success: true },
+    { name: 'same stale-but-valid seconds UTC', success: true, seconds: true },
+    { name: 'explicit false keeps default restore', success: true, flag: 'false' },
+    { name: 'missing authenticated candidate', missingCandidate: true, code: 'ORIGINAL_TARGET_CANDIDATE_REQUIRED' },
+    { name: 'missing ledger', mutateCandidate: d => { delete d.diagnostics.currentOperationalLedger; },
+      code: 'ORIGINAL_TARGET_LEDGER_REQUIRED' },
+    { name: 'changed registry', registryMismatch: true, code: 'ORIGINAL_TARGET_LEDGER_REJECTED' },
+    { name: 'missing registry', missingRegistry: true, code: 'PROGRESS_UNAVAILABLE' },
+    { name: 'contradictory attestation', mutateCandidate: d => { d.diagnostics.currentOperationalLedger.attestation.verifiedPairCount++; },
+      code: 'ORIGINAL_TARGET_LEDGER_REJECTED' },
+    { name: 'different explicit target', hint: new Date(clockHour - 4 * hour).toISOString(),
+      code: 'ORIGINAL_TARGET_REFERENCE_MISMATCH' },
+    { name: 'missing explicit target', hint: '', code: 'ORIGINAL_TARGET_REFERENCE_MISMATCH' },
+    { name: 'non-hour explicit target', hint: new Date(clockHour - 5 * hour + 60_000).toISOString(),
+      code: 'ORIGINAL_TARGET_REFERENCE_MISMATCH' },
+    { name: 'future authenticated target', generation: 'future', code: 'ORIGINAL_TARGET_TIME_REJECTED' },
+    { name: 'expired authenticated target', generation: 'expired', code: 'ORIGINAL_TARGET_TIME_REJECTED' },
+    { name: 'target before protected baseline', beforeBaseline: true, code: 'ORIGINAL_TARGET_BEFORE_BASELINE' },
+    { name: 'GCM authentication precedes ledger selection', badCipher: true, code: 'SNAPSHOT_AUTHENTICATION_FAILED' },
+    { name: 'CLI boolean is case sensitive', args: ['--resume-original-target', 'TRUE'], parser: true },
+    { name: 'CLI requires a boolean value', args: ['--resume-original-target'], parser: true },
+    { name: 'CLI refuses duplicate option', args: ['--resume-original-target', 'true', '--resume-original-target', 'true'], parser: true },
+    { name: 'CLI refuses original-target mode on save', mode: 'save', parser: true },
+  ];
+  for (const spec of cases) await t.test(spec.name, async () => {
+    const f = await prepareCase(spec);
+    const hint = spec.hint ?? (spec.seconds ? f.generation.referenceAt.replace('.000Z', 'Z') : f.generation.referenceAt);
+    const result = await f.restore(spec.args ?? ['--resume-original-target', spec.flag ?? 'true'], hint);
+    await f.assertOriginals();
+    if (spec.success) {
+      assert.equal(result.exitCode, 0);
+      assert.equal(result.stderr, '');
+      assert.equal(result.report.status, 'RESTORED');
+      assert.equal(result.report.restored, true);
+      assert.equal(result.report.fileCount, 4);
+      assert.equal(result.report.productionAuthority, false);
+      assert.equal(result.report.privatePayloadIncluded, false);
+      assert.equal(result.report.dmiProgress.forecast.status, 'MERGED');
+      assert.equal(result.report.dmiProgress.forecast.recoveredComponents, 1);
+      assert.equal(assertUsableDmiProgressRecovery(result.report.dmiProgress, { allowAbsent: false }), true);
+      assert.deepEqual(await fs.readFile(path.join(f.target, files.dmiCandidate)), f.generation.candidate);
+      const restored = await readDmiForecastFile(path.join(f.target, 'data/live/dmi-forecast-cache.json'));
+      const continuity = await unpackWaterSourceForecastContinuity(restored.waterSourceContinuity, f.generation.referenceAt);
+      assert.deepEqual(continuity.get(f.waterSource.sourceKey).hourly, f.originals.get(f.waterSource.sourceKey).hourly);
+      if (spec.flag === 'false') {
+        assert.equal(Object.hasOwn(result.report, 'restoredProductionReferenceAt'), false);
+        assert.equal(Object.hasOwn(result.report, 'restoredOriginalTargetSha256'), false);
+      } else {
+        assert.equal(result.report.restoredProductionReferenceAt, fixtures.stale.referenceAt);
+        assert.match(result.report.restoredOriginalTargetSha256, /^[0-9a-f]{64}$/);
+        if (selectedDigest === null) selectedDigest = result.report.restoredOriginalTargetSha256;
+        else assert.equal(result.report.restoredOriginalTargetSha256, selectedDigest,
+          'The two UTC spellings select the same authenticated original target and whole-input digest.');
+      }
+    } else {
+      assert.equal(result.exitCode, 1);
+      assert.deepEqual(await snapshot(f.target), f.targetBefore, 'Rejection must occur before any working-file installation.');
+      if (spec.parser) {
+        assert.equal(result.report, null);
+        assert.equal(result.stderr.trim(), 'WEATHER_PROGRESS_CACHE_REPORT_UNAVAILABLE');
+      } else {
+        assert.equal(result.report.status, 'CACHE_MISS');
+        assert.equal(result.report.code, spec.code);
+        assert.equal(result.report.restored, false);
+        assert.equal(Object.hasOwn(result.report, 'restoredProductionReferenceAt'), false);
+        assert.equal(Object.hasOwn(result.report, 'restoredOriginalTargetSha256'), false);
+      }
+    }
+  });
+});
+
 test('encrypted roundtrip changes component files only and never caches plaintext or rewrites the production pack', async t => {
   const f = await fixture(t);
   await write(f.source, '.cache/weather-component-inputs.pack', 'protected-marker-pack-must-not-change');
@@ -2292,6 +2520,9 @@ test('main exact pack invocation keeps uncertain and healthy concurrent lifetime
   const selectedPath = await fs.realpath(path.join(first.source, files.openMeteoBank));
   const originalOpen = fs.open;
   let handle, fd, identity, close, closes = 0, observationFailure;
+  let enterClose, releaseClose, uncertain;
+  const closeEntered = new Promise(resolve => { enterClose = resolve; });
+  const closeGate = new Promise(resolve => { releaseClose = resolve; });
   const hook = t.mock.method(fs, 'open', async (file, flags, ...args) => {
     const selected = !handle && flags === 'r' && new Error().stack.includes('at readSmallJson (')
       && typeof file === 'string' && await fs.realpath(file) === selectedPath;
@@ -2301,19 +2532,26 @@ test('main exact pack invocation keeps uncertain and healthy concurrent lifetime
       try {
         identity = native.fstatSync(fd); const stat = await fs.stat(selectedPath);
         assert.equal(identity.dev, stat.dev); assert.equal(identity.ino, stat.ino);
-        opened.close = async () => { closes++; };
+        opened.close = async () => { closes++; enterClose(); await closeGate; };
       } catch (error) { observationFailure = { error }; throw error; }
     }
     return opened;
   });
   try {
-    const uncertain = buildPrivateWeatherComponentPack({ repositoryRoot: first.source, conditions: {} });
+    uncertain = buildPrivateWeatherComponentPack({ repositoryRoot: first.source, conditions: {} });
+    // Keep the genuinely uncertain JSON reader owned and pending while the
+    // healthy invocation runs. Starting both earlier races their unrelated
+    // streamed-file close probes against OS descriptor reuse.
+    await Promise.race([closeEntered, uncertain]);
+    assert.ok(handle);
     const healthy = buildPrivateWeatherComponentPack({ repositoryRoot: second.source, conditions: {} });
     const copied = healthy.then(result => result);
     assert.equal(privateWeatherPackJsonReadsClosed(uncertain), false, 'Pending is never stopped evidence.');
     assert.equal(privateWeatherPackJsonReadsClosed(healthy), false);
     for (const absent of [undefined, null, {}, [], Promise.resolve(), copied]) assert.equal(privateWeatherPackJsonReadsClosed(absent), false);
-    const results = await Promise.allSettled([uncertain, healthy, copied]);
+    const healthyResults = await Promise.allSettled([healthy, copied]);
+    releaseClose();
+    const results = [...await Promise.allSettled([uncertain]), ...healthyResults];
     if (observationFailure) throw observationFailure.error;
     assert.equal(results[0].status, 'rejected'); assert.equal(results[0].reason.message, 'WEATHER_PACK_JSON_CLOSE_UNPROVED');
     assert.equal(results[1].status, 'fulfilled'); assert.equal(results[2].status, 'fulfilled');
@@ -2326,6 +2564,8 @@ test('main exact pack invocation keeps uncertain and healthy concurrent lifetime
     t.diagnostic(JSON.stringify({ exactHealthy: true, uncertainRemainsFalse: true, copiedRemainsFalse: true,
       unknownPendingFalse: true, ownFdStillOpen: true, closes, ownerClaim: 'none' }));
   } finally {
+    releaseClose();
+    if (uncertain) await Promise.allSettled([uncertain]);
     hook.mock.restore();
     if (handle) {
       await close();

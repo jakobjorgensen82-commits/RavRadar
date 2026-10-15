@@ -12,7 +12,21 @@ Denne separate kildekandidat starter fra main 213942 og ændrer ikke model, scor
 
 ## 89.230 Strømhistorik skal have de faktisk nødvendige originaler
 
+Aktuelt 15. oktober — godkendt PARTIAL-fortsættelse: Kun checkpoint-only må efter fuld fysisk gemning fortsætte med korrekt delvis DMI og de allerede gemte reservekilder. Det giver status partial og DMI_CACHE_ONLY_PARTIAL, aldrig falsk READY eller ny kildetid. Den gemte ready=false-ledger og den aktive DMI-fil bevares. Nødvendig historik, der er udskudt eller utilgængelig, replayfejl, fejl i gemning og konflikt med bootstrap stopper fortsat, før fortsættelse kan kvitteres. Nye providerindgange forbliver lukkede.
+
+Den lokale kilde er sammenført med main615 uden ændring af model, scoreformel, SQL eller originaler. SAVE-rettelsens faktiske Linux-bevis genbruges kun for dens uændrede blade. Routing-, workflow- og originalmodtagerprøver består lokalt; provenance nåede de nye terminal-/gemmefejlsprøver og standsede derefter på Windows' eksisterende native-læsegrænse. Den samlede kandidat mangler stadig præcis Linux/source/PostgreSQL-kontrol og faktisk genoptagelse, beregning, gemning, upload og deploy. Alle efterfølgende gates og220-floor bevares. Version577 følger allerede leveret main; der er ikke oprettet en ny model-/SQL-overgang. Ældre lokale576- og afventende tilladelsesudsagn nedenfor er dateret historik på disse punkter.
+
 **Kort fortalt:** Historikbehov følger den faktisk valgte tilstand; gemte originaler, kvalificeret ny brug og faktisk genoptagelse er forskellige beviser.
+
+Aktuelt 15. oktober — genoptagelse fra checkpoint: PR612 bestod præcis source-, Linux- og PostgreSQL-kontrol på 096-kilden og er merget som main6b3e0262/treec99. Det er kildelevering, ikke en ny vejrhentning eller offentlig generation. Den efterfølgende checkpoint-only-mode er kun lokal; standardforløbet er uændret.
+
+Den lokale mode låser checkpointets oprindelige mål-time fra start. Fuld GCM-autentifikation og det normale DMI-kildeledger skal bekræfte samme time og registry før union eller installation. DMI genbruger kun gemt historik gennem uændret filfangst, ejet læselease, fuld EOF og ledgerkontrol; providerindgangene er lukkede. Originale B/S-pakker, scorehistorik, databevarelse, streng ny-time-kontrol og alle efterfølgende gates bevares. Delvise gemte input er ikke bevis for komplette råfiler eller gennemførlig beregning.
+
+Tidskontrollen er uændret: 90 minutter er en foretrukken alder, ikke en hård udløbsgrænse. STALE_TARGET_VALID kan gælde til mål-timen plus 117 timer, mens udløbne og ugyldige fremtidige mål afvises. Det gør ikke gamle input friske og erstatter ikke proveniens, dækning eller efterkontroller.
+
+Lokalt består 20 krypterede save/restore-CLI-prøver uden skip og 30 supervisorprøver. Den nye supervisor-routingprøve er syntetisk AST-kontrol, ikke fuld main-kørsel. Workflowkontrollerne består med to Windows-Bash-skip. Den fulde nativefil nåede de nye guardprøver, men stoppede senere ved den eksisterende Windows-grænse READ_LEASE_UNSUPPORTED; dette er ikke native-PASS for den nye mode.
+
+Ny modes Linux/native/source/PG-kontrol, faktisk produktionsgenbrug, råfilkomplethed og offentlig effekt er åbne. Efter en faktisk fejl skal rettelse og nødvendige gates være opfyldt før genoptagelse fra den dybeste autentiske, gyldige gemte fase gennem normal indgang; ingen automatisk overlap eller gateskip. Alle fem mål med frist 18. oktober er åbne. SOURCE19, KB og statistik er inaktive og tilbageholdt; version 4.0.576, SQL, model og den bevarede historik ændres ikke. Ældre status nedenfor er dateret historik på netop disse punkter.
 
 Aktuelt 15. oktober: PR610 bestod præcis source-, Linux-native- og PostgreSQL-kontrol i CI 38647877031/1 på head 8221321 og er merget som f9e3546. Den efterfølgende præcise genoptagelse 38649906156/1 stoppede kl. 00.56.33 dansk tid i historikplanlægningen før alle vejrhentningstrin. Autentificerede fremskridt blev genlæst, men der blev ikke gemt nye fremskridt eller leveret fuld pakke, CAS, Pages eller ny offentlig prognose.
 

@@ -1,6 +1,7 @@
 """Producer/verifier parity for native DMI component provenance."""
 from __future__ import annotations
 
+import ast
 import copy
 import importlib.util
 import json
@@ -765,6 +766,280 @@ assert older_retained_source is not None
 older_continuity, older_ledger = assert_retained_availability(
     older_retained_source
 )
+
+# Cache-only continuation retains the actual incomplete ledger; it does not
+# turn missing acquisition into official absence or READY.
+cache_only_document = copy.deepcopy(older_continuity)
+cache_only_saved_ledger = copy.deepcopy(older_ledger)
+cache_only_document["diagnostics"]["currentOperationalLedger"] = copy.deepcopy(
+    cache_only_saved_ledger
+)
+cache_only_original = copy.deepcopy(cache_only_document)
+cache_only_actual = producer.revalidate_cache_only_current_ledger(
+    cache_only_document, targets, reference, "test-registry",
+    cache_only_saved_ledger,
+)
+assert cache_only_actual == cache_only_saved_ledger["attestation"]
+assert cache_only_document == cache_only_original
+assert cache_only_saved_ledger == older_ledger
+assert cache_only_saved_ledger["ready"] is False
+assert not producer.current_operational_cache_ready(
+    cache_only_document, targets, reference,
+)
+cache_only_mismatch = copy.deepcopy(cache_only_document)
+cache_only_mismatch["zones"]["PART::TEST"]["hourly"][valid_time][
+    "sources"]["current"]["contentSha256"] = "e" * 64
+cache_only_forged = copy.deepcopy(cache_only_document)
+cache_only_forged_ledger = {**cache_only_saved_ledger, "ready": True, "failureCodes": []}
+cache_only_forged["diagnostics"]["currentOperationalLedger"] = cache_only_forged_ledger
+for cache_only_case_index, (bad_document, bad_targets, bad_reference, bad_signature, bad_ledger) in enumerate((
+    (cache_only_document, targets, reference + timedelta(hours=1),
+     "test-registry", cache_only_saved_ledger),
+    (cache_only_document, targets, reference, "other-registry", cache_only_saved_ledger),
+    (cache_only_document, [{**target, "waterPoint": [2.1, 1.0]}],
+     reference, "test-registry", cache_only_saved_ledger),
+    (cache_only_document, targets, reference, "test-registry", None),
+    (cache_only_document, targets, reference, "test-registry",
+     {**cache_only_saved_ledger, "ready": True, "failureCodes": []}),
+    (cache_only_mismatch, targets, reference, "test-registry", cache_only_saved_ledger),
+    (cache_only_forged, targets, reference, "test-registry", cache_only_forged_ledger),
+)):
+    before_bad_document = copy.deepcopy(bad_document)
+    before_bad_ledger = copy.deepcopy(bad_ledger)
+    try:
+        producer.revalidate_cache_only_current_ledger(
+            bad_document, bad_targets, bad_reference, bad_signature, bad_ledger,
+        )
+    except (TypeError, ValueError):
+        pass
+    else:
+        raise AssertionError(f"Cache-only must retain exact ledger/source/reference gates: case {cache_only_case_index}")
+    assert bad_document == before_bad_document
+    assert bad_ledger == before_bad_ledger
+
+# The same normal controller must refuse changed current evidence before write.
+cache_only_writes = []
+cache_only_writer = producer.write_checkpoint
+try:
+    producer.write_checkpoint = lambda *args: cache_only_writes.append(args)
+    cache_only_controller = producer.ProgressCheckpointController(
+        cache_only_mismatch, set(), {"bytes": 0}, None,
+        lambda: producer.revalidate_cache_only_current_ledger(
+            cache_only_mismatch, targets, reference, "test-registry",
+            cache_only_saved_ledger,
+        ),
+    )
+    cache_only_controller.bulk_dirty = True
+    try:
+        cache_only_controller.flush_if_due(force=True)
+    except (TypeError, ValueError):
+        pass
+    else:
+        raise AssertionError("Changed cached evidence must refuse the checkpoint")
+    assert cache_only_controller.bulk_dirty
+    assert cache_only_writes == []
+finally:
+    producer.write_checkpoint = cache_only_writer
+assert cache_only_document == cache_only_original
+assert older_ledger == cache_only_saved_ledger
+
+# Both actual HTTP entrances refuse before query work, session calls or mkdir.
+cache_only_network_state = (
+    producer.CACHE_ONLY, producer.STAC_SESSION, producer.DOWNLOAD_SESSION, producer.RAW_DIR,
+)
+cache_only_network_calls = []
+def forbidden_cache_only_http(*args, **kwargs):
+    cache_only_network_calls.append((args, kwargs))
+    raise AssertionError("cache-only reached HTTP")
+class CacheOnlyForbiddenQuery:
+    def __iter__(self):
+        raise AssertionError("cache-only evaluated query before refusal")
+try:
+    producer.CACHE_ONLY = True
+    producer.STAC_SESSION = types.SimpleNamespace(get=forbidden_cache_only_http)
+    producer.DOWNLOAD_SESSION = types.SimpleNamespace(get=forbidden_cache_only_http)
+    with tempfile.TemporaryDirectory(prefix="ravradar-cache-only-") as directory:
+        producer.RAW_DIR = Path(directory) / "must-remain-absent"
+        cache_only_download_budget = {"bytes": 0}
+        for operation in (
+            lambda: producer.request_json(
+                "https://cache-only.invalid/metadata", CacheOnlyForbiddenQuery(),
+            ),
+            lambda: producer.download_asset(
+                "https://cache-only.invalid/asset.grib", 1, cache_only_download_budget,
+            ),
+        ):
+            try:
+                operation()
+            except RuntimeError as error:
+                assert str(error) == "DMI_CACHE_ONLY_NETWORK_DISABLED"
+            else:
+                raise AssertionError("Cache-only HTTP entrance did not refuse")
+            assert not producer.RAW_DIR.exists()
+            assert list(Path(directory).iterdir()) == []
+            assert cache_only_download_budget == {"bytes": 0}
+            assert cache_only_network_calls == []
+        # The default-false path still uses the ordinary metadata caller.
+        producer.CACHE_ONLY = False
+        cache_only_response = types.SimpleNamespace(
+            raise_for_status=lambda: None, json=lambda: {"normal": True},
+        )
+        def synthetic_normal_metadata(*args, **kwargs):
+            cache_only_network_calls.append((args, kwargs))
+            return cache_only_response
+        producer.STAC_SESSION = types.SimpleNamespace(get=synthetic_normal_metadata)
+        assert producer.request_json(
+            "https://cache-only.invalid/metadata", {"fixture": 1},
+        ) == {"normal": True}
+        assert cache_only_network_calls == [
+            (("https://cache-only.invalid/metadata",),
+             {"params": {"fixture": 1}, "timeout": producer.REQUEST_TIMEOUT}),
+        ]
+        assert not producer.RAW_DIR.exists()
+finally:
+    (producer.CACHE_ONLY, producer.STAC_SESSION,
+     producer.DOWNLOAD_SESSION, producer.RAW_DIR) = cache_only_network_state
+
+
+# Exercise the actual main entry, before any paths/logs/acquisition are touched.
+cache_only_mode, cache_only_finalize = producer.CACHE_ONLY, producer.FINALIZE_ONLY
+cache_only_inventory = producer.raw_cache_inventory
+cache_only_bootstrap_keys = (
+    "DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE",
+    "DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR",
+    "RAVRADAR_PRODUCTION_TARGET_HOUR",
+)
+cache_only_bootstrap_environment = {
+    key: os.environ.get(key) for key in cache_only_bootstrap_keys
+}
+try:
+    producer.CACHE_ONLY = True
+    producer.FINALIZE_ONLY = True
+    def forbidden_cache_only_inventory():
+        raise AssertionError("conflicting mode entered main I/O")
+    producer.raw_cache_inventory = forbidden_cache_only_inventory
+    try:
+        producer.main()
+    except ValueError as error:
+        assert str(error) == "DMI_CACHE_ONLY_FINALIZE_CONFLICT"
+    else:
+        raise AssertionError("Cache-only cannot become finalize-only")
+    producer.FINALIZE_ONLY = False
+    os.environ.update({
+        "DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE": producer.WAVE_BOOTSTRAP_COLD_START_MODE,
+        "DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR": valid_time,
+        "RAVRADAR_PRODUCTION_TARGET_HOUR": valid_time,
+    })
+    try:
+        producer.main()
+    except ValueError as error:
+        assert str(error) == "DMI_CACHE_ONLY_BOOTSTRAP_CONFLICT"
+    else:
+        raise AssertionError("Cache-only cannot bypass a required bootstrap")
+finally:
+    producer.CACHE_ONLY, producer.FINALIZE_ONLY = cache_only_mode, cache_only_finalize
+    producer.raw_cache_inventory = cache_only_inventory
+    for key, value in cache_only_bootstrap_environment.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
+
+
+# Execute the actual main terminal with a genuine incomplete ledger and the
+# normal physical finalized writer. This is terminal proof, not native replay.
+cache_only_terminal_tree = ast.parse(
+    (ROOT / "scripts/update-dmi-bulk.py").read_text(encoding="utf-8")
+)
+cache_only_terminal_main = next(
+    node for node in cache_only_terminal_tree.body
+    if isinstance(node, ast.FunctionDef) and node.name == "main"
+)
+cache_only_terminal_start = next(
+    index for index, node in enumerate(cache_only_terminal_main.body)
+    if isinstance(node, ast.Assign)
+    and any(isinstance(target_node, ast.Name) and target_node.id == "diag"
+            for target_node in node.targets)
+)
+cache_only_terminal_main.name = "_cache_only_terminal"
+cache_only_terminal_main.body = cache_only_terminal_main.body[cache_only_terminal_start:]
+cache_only_terminal_paths = {
+    name: getattr(producer, name) for name in (
+        "OUTPUT_PATH", "PROMOTION_PATH", "RAW_DIR", "CACHE_AUDIT_PATH",
+        "DIAGNOSTICS_JSON_PATH", "DIAGNOSTICS_TEXT_PATH",
+    )
+}
+try:
+    with tempfile.TemporaryDirectory(prefix="ravradar-cache-only-terminal-") as directory:
+        owned = Path(directory)
+        for name, filename in (
+            ("OUTPUT_PATH", "candidate.json"), ("PROMOTION_PATH", "active.json"),
+            ("RAW_DIR", "raw"), ("CACHE_AUDIT_PATH", "audit.json"),
+            ("DIAGNOSTICS_JSON_PATH", "ocean.json"),
+            ("DIAGNOSTICS_TEXT_PATH", "ocean.txt"),
+        ):
+            setattr(producer, name, owned / filename)
+        producer.PROMOTION_PATH.write_bytes(b"owned active must remain unchanged")
+        before_active = producer.PROMOTION_PATH.read_bytes()
+        terminal_document = copy.deepcopy(cache_only_original)
+        terminal_document["sourceUpdatedAt"] = valid_time
+        terminal_document["diagnostics"].update({
+            "collectionsSucceeded": [], "collectionsPartial": [],
+            "collectionsAttempted": [], "zeroProgressCollections": [], "errors": [],
+        })
+        assert producer.revalidate_cache_only_current_ledger(
+            terminal_document, targets, reference, "test-registry", cache_only_saved_ledger,
+        ) == cache_only_saved_ledger["attestation"]
+        terminal_events = []
+        def observe_cache_only_terminal(*args, **kwargs):
+            persisted = producer.load_bulk_document(producer.OUTPUT_PATH)
+            assert persisted["refreshStatus"] == "partial"
+            assert persisted["diagnostics"]["currentOperationalLedger"] == cache_only_saved_ledger
+            assert persisted["sourceUpdatedAt"] == valid_time
+            assert persisted["diagnostics"]["collectionsSucceeded"] == []
+            assert producer.PROMOTION_PATH.read_bytes() == before_active
+            terminal_events.append((args, kwargs))
+        terminal_context = {
+            **vars(producer), "CACHE_ONLY": True, "result": terminal_document,
+            "strict_current_anchor_available": False,
+            "wave_bootstrap_configuration": None, "bootstrap_operational_complete": False,
+            "generated": "2026-01-01T04:00:00Z", "fresh_zone_ids": set(),
+            "budget": {"bytes": 0}, "scheduled": [],
+            "cache_before": producer.raw_cache_inventory(),
+            "prune_raw_cache": forbidden_cache_only_http,
+            "write_github_outputs": observe_cache_only_terminal,
+            "write_step_summary": lambda *args: None, "print": lambda *args, **kwargs: None,
+        }
+        exec(compile(ast.Module(body=[cache_only_terminal_main], type_ignores=[]),
+                     str(ROOT / "scripts/update-dmi-bulk.py"), "exec"), terminal_context)
+        assert terminal_context["_cache_only_terminal"]() == 0
+        assert len(terminal_events) == 1
+        assert terminal_events[0][0][:3] == ("partial", 0, 0)
+        assert terminal_events[0][1]["terminal_code"] == "DMI_CACHE_ONLY_PARTIAL"
+        assert terminal_events[0][1]["strict_current_anchor_ready"] is False
+        assert terminal_document["diagnostics"]["currentOperationalLedger"]["ready"] is False
+        assert terminal_document["diagnostics"]["currentOperationalLedger"] == older_ledger
+        assert producer.PROMOTION_PATH.read_bytes() == before_active
+        before_saved = producer.OUTPUT_PATH.read_bytes()
+        save_failure = OSError("owned finalized save failure")
+        def fail_cache_only_finalized_save(*args):
+            raise save_failure
+        terminal_context["write_finalized_cache"] = fail_cache_only_finalized_save
+        terminal_events.clear()
+        try:
+            terminal_context["_cache_only_terminal"]()
+        except OSError as caught:
+            assert caught is save_failure
+        else:
+            raise AssertionError("Failed finalized save became successful PARTIAL")
+        assert terminal_events == []
+        assert producer.OUTPUT_PATH.read_bytes() == before_saved
+        assert producer.PROMOTION_PATH.read_bytes() == before_active
+finally:
+    for name, value in cache_only_terminal_paths.items():
+        setattr(producer, name, value)
+assert older_ledger == cache_only_saved_ledger
+
 
 # Proof donors may aggregate one exact asset over different part subsets. The
 # selector must union those candidate authorizations and then derive the final
@@ -3079,6 +3354,17 @@ assert tail_ledger["failureCodes"] == []
 assert tail_ledger["attestation"]["verifiedPairCount"] == 114
 assert tail_ledger["upstreamAbsencePairCount"] == 4
 assert tail_ledger["operationalComplementPairCount"] == 4
+cache_only_ready_document = copy.deepcopy(tail_ledger_document)
+cache_only_ready_document.setdefault("diagnostics", {})[
+    "currentOperationalLedger"] = copy.deepcopy(tail_ledger)
+cache_only_ready_original = copy.deepcopy(cache_only_ready_document)
+assert producer.revalidate_cache_only_current_ledger(
+    cache_only_ready_document, targets, tail_reference, "test-registry", tail_ledger,
+) == tail_ledger["attestation"]
+assert producer.current_operational_cache_ready(
+    cache_only_ready_document, targets, tail_reference,
+)
+assert cache_only_ready_document == cache_only_ready_original
 tail_sealed_result = producer.build_current_operational_ledger_result(
     tail_ledger_document, targets, tail_reference, tail_official_catalogs,
 )

@@ -13,6 +13,11 @@ on:
         required: false
         type: string
         default: ''
+      checkpoint_target_hour:
+        description: 'Resume only stored weather at its original UTC hour; authenticated checkpoint must confirm this hint'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -51,7 +56,7 @@ jobs:
       contents: read
       actions: read
     outputs:
-      target_hour: ${{ steps.cache-state.outputs.target_hour }}
+      target_hour: ${{ steps.checkpoint-target.outputs.target_hour || steps.cache-state.outputs.target_hour }}
     steps:
       - uses: actions/checkout@v7
 
@@ -67,14 +72,34 @@ jobs:
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
+      - name: Lock the requested original checkpoint hour without provider work
+        id: checkpoint-target
+        if: inputs.checkpoint_target_hour != ''
+        shell: bash
+        env:
+          CHECKPOINT_TARGET_HOUR: ${{ inputs.checkpoint_target_hour }}
+          QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
+          QUICK_CONFIRMATION: ${{ inputs.quick_confirmation }}
+        run: |
+          set -euo pipefail
+          test "$QUICK_CONFIRMATION" = false
+          [[ "$QUICK_PROGRESS_SOURCE" =~ ^[1-9][0-9]*-[1-9][0-9]*$ ]]
+          [[ "$CHECKPOINT_TARGET_HOUR" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00Z$ ]]
+          node scripts/check-production-target-freshness.mjs \
+            --target "$CHECKPOINT_TARGET_HOUR" --maximum-age-minutes 90
+          # This is a request, not data authority. The exact encrypted progress
+          # must authenticate and confirm the same ledger hour before use.
+          printf 'target_hour=%s\n' "$CHECKPOINT_TARGET_HOUR" >> "$GITHUB_OUTPUT"
+
       - name: Lock the canonical UTC production hour
         id: cache-state
+        if: inputs.checkpoint_target_hour == ''
         run: python3 scripts/check-copernicus-current-hour.py --invalid-cache-is-absent --github-output "$GITHUB_OUTPUT"
 
       - name: Require one canonical target hour
         shell: bash
         env:
-          TARGET_HOUR: ${{ steps.cache-state.outputs.target_hour }}
+          TARGET_HOUR: ${{ steps.checkpoint-target.outputs.target_hour || steps.cache-state.outputs.target_hour }}
         run: |
           set -euo pipefail
           [[ "$TARGET_HOUR" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00Z$ ]]
@@ -93,6 +118,7 @@ jobs:
       extended_provider_bootstrap: false
       quick_confirmation: ${{ inputs.quick_confirmation }}
       quick_progress_source: ${{ inputs.quick_progress_source }}
+      checkpoint_only: ${{ inputs.checkpoint_target_hour != '' }}
       produce_weather_handoff: false
       produce_weather_handoff_confirmation: ''
       ravscore_candidate_g_rollback_mode: ''
