@@ -4,6 +4,8 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { assertSavedDmiOriginalRestoreScope, savedDmiOriginalHistoryDemand, savedDmiOriginalPreparationFailureCode,
   collectSavedDmiOriginalCaptures, buildSavedDmiOriginalRestorePlan,
   writeSavedDmiOriginalRestorePlan, savedOriginalCanonicalJson, SAVED_DMI_ORIGINAL_TARGET as target,
@@ -18,6 +20,68 @@ const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const at = offset => new Date(Date.parse(target) + offset * 3_600_000).toISOString();
 const executionHead = 'e'.repeat(40);
 const scope = { progressSource, progressCacheKey, progressBaselineTargetHour: target, executionHead };
+
+// Exercise the actual entrypoint, not an already-evaluated function import:
+// CLI top-level await previously deadlocked its audit -> self-import cycle.
+const cliPath = fileURLToPath(new URL('./prepare-saved-dmi-original-restore.mjs', import.meta.url));
+const cliNetworkGuard = 'data:text/javascript,' + encodeURIComponent(`
+  import http from 'node:http';
+  import https from 'node:https';
+  import { syncBuiltinESMExports } from 'node:module';
+  const forbidden = () => { process.stderr.write('PREPARE_CLI_FORBIDDEN_NETWORK\\n'); process.exit(97); };
+  globalThis.fetch = forbidden;
+  http.request = http.get = https.request = https.get = forbidden;
+  syncBuiltinESMExports();
+`);
+const cliScopeArguments = [
+  ['--progress-source', progressSource, 'other-1'],
+  ['--progress-cache-key', progressCacheKey, progressCacheKey + '-prefix'],
+  ['--progress-baseline-target-hour', target, at(1)],
+];
+function assertActualCliRejection(args, expectedCode, { head = executionHead, label = expectedCode } = {}) {
+  // Do not inherit provider/storage credentials, NODE_OPTIONS or GitHub output
+  // paths. Windows needs its OS/temp/path variables for Node's native runtime.
+  const allowed = new Set(['PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'TMPDIR', 'COMSPEC', 'PATHEXT']);
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => allowed.has(key.toUpperCase())));
+  if (head !== null) env.GITHUB_SHA = head;
+  const child = spawnSync(process.execPath, ['--import', cliNetworkGuard, cliPath, ...args], {
+    cwd: path.dirname(path.dirname(cliPath)), env, encoding: 'utf8',
+    timeout: 10_000, killSignal: 'SIGKILL', maxBuffer: 64 * 1024, windowsHide: true,
+  });
+  assert.equal(child.error, undefined, `${label}: child failed or exceeded its 10s deadline`);
+  assert.equal(child.signal, null, `${label}: child must terminate normally`);
+  assert.notEqual(child.status, 13, `${label}: no unsettled top-level await`);
+  assert.equal(child.status, 1, `${label}: fail closed`);
+  assert.equal(child.stdout, '', `${label}: no report or private payload`);
+  assert.equal(child.stderr.trim(), expectedCode, `${label}: only the fixed safe rejection code`);
+}
+
+test('actual prepare CLI rejects every missing/invalid scope without exit 13, hanging or HTTP', () => {
+  const code = 'SAVED_DMI_ORIGINAL_SCOPE_INVALID';
+  assertActualCliRejection(['prepare'], code, { label: 'missing scope' });
+  for (let index = 0; index < cliScopeArguments.length; index++) {
+    const flag = cliScopeArguments[index][0];
+    assertActualCliRejection(['prepare', ...cliScopeArguments.filter((_, i) => i !== index)
+      .flatMap(([name, value]) => [name, value])], code, { label: `missing ${flag}` });
+    assertActualCliRejection(['prepare', ...cliScopeArguments
+      .flatMap(([name, value, invalid], i) => [name, i === index ? invalid : value])], code,
+    { label: `invalid ${flag}` });
+  }
+  const args = ['prepare', ...cliScopeArguments.flatMap(([name, value]) => [name, value])];
+  assertActualCliRejection(args, code, { head: null, label: 'missing execution head' });
+  assertActualCliRejection(args, code, { head: 'not-a-head', label: 'invalid execution head' });
+});
+
+test('actual prepare CLI with valid scope reaches filesystem rejection before credentials or HTTP', async () => {
+  const missingRoot = path.join(os.tmpdir(), `rr-original-cli-absent-${process.pid}-${crypto.randomUUID()}`);
+  await assert.rejects(fs.lstat(missingRoot), { code: 'ENOENT' });
+  const args = ['prepare', ...cliScopeArguments.flatMap(([name, value]) => [name, value])];
+  assertActualCliRejection([...args, '--private-root', missingRoot],
+    'SAVED_DMI_ORIGINAL_PREPARATION_REFUSED', { label: 'absent private root keeps ENOENT private' });
+  assertActualCliRejection([...args, '--private-root', fileURLToPath(import.meta.url)],
+    'PRIVATE_ROOT_INVALID', { label: 'existing non-directory private root' });
+  await assert.rejects(fs.lstat(missingRoot), { code: 'ENOENT' });
+});
 
 test('prepare CLI retains only enumerated original, audit and GCM codes; unknown errors stay generic', () => {
   const select = savedDmiOriginalPreparationFailureCode;
