@@ -151,7 +151,7 @@ export async function writeSavedDmiOriginalRestorePlan({ repositoryRoot = ROOT, 
     semanticUnionPerformed: false, replayPerformed: false, scoreBuilt: false, sourceAdmissionPerformed: false };
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+async function runPreparationCli() {
   try {
     const argv = process.argv.slice(2), options = { executionHead: process.env.GITHUB_SHA };
     if (argv.shift() !== 'prepare') refuse('ARGUMENTS_INVALID');
@@ -170,4 +170,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   } catch (error) {
     console.error(savedDmiOriginalPreparationFailureCode(error)); process.exitCode = 1;
   }
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  // The authenticated reader imports this module's pure planning functions.
+  // Finish module evaluation before it awaits that import; a top-level await
+  // here would make the actual CLI wait on its own unfinished evaluation.
+  void runPreparationCli();
 }
