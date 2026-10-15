@@ -1,3 +1,11 @@
+## 15. oktober — faktisk manifestkontrol og én godkendt ældre cache
+
+PR619 har faktisk bestået præcis Linux-, source- og PostgreSQL-kontrol og er merget. Den korrigerede skrivefri audit gennemførte normal baselinegenskabelse, fuld autentifikation og manifestoptælling. De ukvalificerede gamle strømoriginalers identiteter matcher ikke den undersøgte fortegnelse; forskellen i acquiredAt forklarer derfor ikke det aktuelle produktionsstop. Manglende manifestidentitet er ikke bevis for fysisk fravær, ugyldige DMI-data eller fejl i deres værdier. Den gennemførte audittilladelse er forbrugt.
+
+Ejeren har særskilt godkendt præcis én anden, allerede gemt ældre RAW-cache sammen med det samme checkpoint. Den afgrænsede kilde til denne kontrol bevarer checkpointets egen identitet og vælger kun den ene faste ældre kilde gennem et eksplicit, som udgangspunkt tomt valg. Filtilstedeværelse er et separat default-OFF lstat-inventar: et 24-tegns filnavn og en størrelse er kun en mulig filkandidat, aldrig indholds-, sampling- eller admissionsbevis. Ingen RAW-fil åbnes, hashes eller afkodes. Næsten identisk nyere cache genhentes ikke.
+
+Streng kontrol ved faktisk ny strømbrug, gamle originaler, historiske scorer, kildeprioritet, budgetter, SQL, admin/geometri og alle efterfølgende gates bevares. Lokal gennemgang fandt ikke en ændret identitetsalgoritme eller en dokumenteret OWNER-historikfejl, der tillader at fjerne kontrollen. Den ene nye providerfri produktionsgenoptagelse er fortsat ubrugt og må ikke sendes uændret på den afkræftede hypotese. Præcis kildekontrol, den nye godkendte aflæsning, en faktisk årsagsrettelse og ny offentlig generation er åbne. Alle fem mål og fristen 18. oktober består; 230/assistent og SOURCE19 forbliver tilbageholdt. Se håndbog 89.230 og privat checkpoint. Ældre afventende status er kun historik på disse konkret afsluttede punkter.
+
 ## 15. oktober — kildeleveret samme-originalrettelse og afvist checkpoint-diagnose
 
 PR618 har faktisk bestået præcis Linux-, source- og PostgreSQL-kontrol og er merget. Det er kildelevering, ikke en ny offentlig vejrgeneration. Den ene skrivefri audit gendannede de præcise gemte pakker, men stoppede ved PROGRESS_AUTHENTICATION_REJECTED før manifest-/strømoptællingen. Dens engangstilladelse er forbrugt; ingen automatisk gentagelse.

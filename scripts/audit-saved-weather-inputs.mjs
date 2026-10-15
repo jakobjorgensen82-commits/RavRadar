@@ -50,7 +50,7 @@ const safeCode = new Set(['MODE_INVALID', 'PRIVATE_ROOT_INVALID', 'PRIVATE_PATH_
   'PROGRESS_AUTHENTICATION_REJECTED', 'FORECAST_INSPECTION_FAILED', 'ORIGINAL_GEOMETRY_INVALID',
   'BULK_CONTEXT_INVALID', 'CONTINUITY_INSPECTION_FAILED', 'AUDIT_COUNTER_INVALID', 'OUTPUT_ALREADY_EXISTS',
   'PRIVATE_TEMP_CLEANUP_FAILED', 'BASELINE_COMPONENT_PACK_REJECTED', 'NATIVE_PROOF_INSPECTION_FAILED',
-  'RAW_MANIFEST_BOUND', 'RAW_CACHE_IDENTITY_INVALID', 'PROGRESS_BASELINE_TARGET_INVALID',
+  'RAW_MANIFEST_BOUND', 'RAW_CACHE_IDENTITY_INVALID', 'RAW_FILE_INVENTORY_REJECTED', 'PROGRESS_BASELINE_TARGET_INVALID',
   'PROGRESS_BASELINE_RECONSTRUCTION_REJECTED']);
 const safeProgressAuthenticationCodes = new Set(['SIZE_BUDGET_INVALID', 'REPOSITORY_INVALID', 'ROOT_INVALID',
   'BASE_INVALID', 'ENCRYPTION_KEY_UNAVAILABLE', 'ENCRYPTION_KEY_INVALID', 'BASELINE_MISMATCH',
@@ -390,6 +390,12 @@ export async function measureSavedCurrentContexts(index, parts, baselineContext,
 const RAW_MANIFEST = '.cache/dmi-grib/asset-manifest.json';
 const RAW_MANIFEST_MAX_BYTES = 16 * 1024 * 1024;
 const RAW_MARINE_COLLECTIONS = new Set(['dkss_idw', 'dkss_nsbs', 'dkss_lf']);
+const FIXED_RAW_MANIFEST_SOURCE = '38577766010-1';
+const FIXED_RAW_MANIFEST_CACHE_KEY = `dmi-grib-v4-Linux-2026-W42-${FIXED_RAW_MANIFEST_SOURCE}`;
+const FIXED_RAW_PROGRESS_SOURCE = '38692413809-1';
+const FIXED_RAW_PROGRESS_CACHE_KEY = `weather-private-progress-encrypted-v2-Linux-main-${FIXED_RAW_PROGRESS_SOURCE}`;
+const FIXED_RAW_PROGRESS_BASELINE_TARGET = '2026-10-14T18:00:00.000Z';
+const RAW_INVENTORY_MAX_FILES = 200_000;
 const rawSha = value => crypto.createHash('sha256').update(value).digest('hex');
 
 // Python canonical_time keeps six fractional digits, not JavaScript's three.
@@ -481,11 +487,54 @@ async function savedRawManifest(repositoryRoot) {
   return indexSavedRawManifest(document);
 }
 
-export function measureSavedRawCaptureMatches(document, parts, index) {
+// Filename/size metadata only. A 24-hex prefix is deliberately weaker than
+// the full captured asset identity and can never qualify content or new use.
+export async function inspectSavedRawFileInventory(repositoryRoot) {
+  try {
+    const root = await fs.realpath(repositoryRoot);
+    const requested = path.join(root, path.posix.dirname(RAW_MANIFEST));
+    let directory;
+    try { directory = await noSymlinks(root, requested); }
+    catch (error) {
+      if (error.code === 'ENOENT') return { status: 'MISSING', byPrefix: new Map(), fileCandidates: 0, otherRegularFiles: 0 };
+      throw error;
+    }
+    const before = await fs.lstat(directory);
+    if (!before.isDirectory() || before.isSymbolicLink()) fail('RAW_FILE_INVENTORY_REJECTED');
+    const names = await fs.readdir(directory);
+    if (names.length > RAW_INVENTORY_MAX_FILES) fail('RAW_FILE_INVENTORY_REJECTED');
+    const byPrefix = new Map();
+    let fileCandidates = 0, otherRegularFiles = 0;
+    for (const name of names) {
+      if (path.basename(name) !== name || /[\\/\0]/.test(name)) fail('RAW_FILE_INVENTORY_REJECTED');
+      // The producer emits hash[:24] + Path(canonicalHref).suffix, or
+      // '.grib' when suffix is empty. The suffix contains exactly one dot.
+      const match = /^([a-f0-9]{24})(\.[^./\\?#\0]+)$/.exec(name);
+      const stat = await fs.lstat(path.join(directory, name));
+      if (stat.isSymbolicLink() || !stat.isFile() || !integer(stat.size)) fail('RAW_FILE_INVENTORY_REJECTED');
+      if (!match) { otherRegularFiles++; continue; }
+      const candidates = byPrefix.get(match[1]) ?? [];
+      candidates.push(stat.size);
+      byPrefix.set(match[1], candidates);
+      fileCandidates++;
+    }
+    await noSymlinks(root, directory);
+    const after = await fs.lstat(directory);
+    if (!after.isDirectory() || after.isSymbolicLink() || after.dev !== before.dev || after.ino !== before.ino
+      || after.mtimeMs !== before.mtimeMs) fail('RAW_FILE_INVENTORY_REJECTED');
+    return { status: 'MEASURED', byPrefix, fileCandidates, otherRegularFiles };
+  } catch { fail('RAW_FILE_INVENTORY_REJECTED'); }
+}
+
+const rawFileCandidateCounts = () => ({ potentialFileCandidates: 0, missing: 0, ambiguous: 0, sizeMismatch: 0 });
+
+export function measureSavedRawCaptureMatches(document, parts, index, rawFileInventory = null) {
   const counts = { nativeCurrentRows: 0, rejectedNativeRows: 0,
     excludedByCurrentPolicyRows: 0, samplingReceiptPresentRows: 0, invalidCaptureRows: 0,
     exactCaptureMatchRows: 0, ambiguousExactCaptureRows: 0, acquiredAtOnlyMismatchRows: 0,
     assetIdentityAbsentRows: 0, otherRevisionOrContentMismatchRows: 0, unclassifiedRows: 0 };
+  const filePresence = rawFileInventory ? { manifestAssetIdentityPresent: rawFileCandidateCounts(),
+    unmanifestedFilenameCandidates: rawFileCandidateCounts(), manifestUnavailable: rawFileCandidateCounts() } : null;
   for (const part of parts.values()) {
     const expected = dmiExpectedIdentityForPart(part), zone = document?.zones?.[expected?.entityId];
     if (!object(zone?.hourly)) continue;
@@ -506,6 +555,16 @@ export function measureSavedRawCaptureMatches(document, parts, index) {
       if (source.nativeGridSampling != null) { counts.samplingReceiptPresentRows++; continue; }
       const capture = rawCapture(source);
       if (!capture) { counts.invalidCaptureRows++; continue; }
+      if (filePresence) {
+        const group = index.status !== 'MEASURED' ? filePresence.manifestUnavailable
+          : index.assets.has(capture.assetIdentitySha256) ? filePresence.manifestAssetIdentityPresent
+          : filePresence.unmanifestedFilenameCandidates;
+        const candidates = rawFileInventory.byPrefix.get(capture.assetIdentitySha256.slice(0, 24)) ?? [];
+        if (candidates.length === 0) group.missing++;
+        else if (candidates.length > 1) group.ambiguous++;
+        else if (candidates[0] !== capture.contentLengthBytes) group.sizeMismatch++;
+        else group.potentialFileCandidates++;
+      }
       if (index.status !== 'MEASURED') { counts.unclassifiedRows++; continue; }
       const exact = index.exact.get(stable(capture)) ?? 0;
       if (exact === 1) counts.exactCaptureMatchRows++;
@@ -515,7 +574,7 @@ export function measureSavedRawCaptureMatches(document, parts, index) {
       else counts.otherRevisionOrContentMismatchRows++;
     }
   }
-  return { status: index.status, counts };
+  return { status: index.status, counts, ...(filePresence ? { filePresence } : {}) };
 }
 
 const NATIVE_DONORS = Object.freeze(['baselineBulk', 'baselineActive', 'baselineCandidate',
@@ -537,9 +596,12 @@ const nativeRejections = () => Object.fromEntries([...new Set(Object.values(NATI
 // retained between passes. A complete proof in one donor is not a semantic
 // union, an artifactgate pass, or proof that a future generation saves it.
 export async function measureSavedNativeProofAvailability({ baselineIndex, progressIndex,
-  parts, donorFiles, rawManifest = null } = {}) {
+  parts, donorFiles, rawManifest = null, rawFileInventory = null } = {}) {
   if (!(parts instanceof Map) || parts.size < 1 || parts.size > 673 || !object(donorFiles)
-    || Object.keys(donorFiles).some(key => !NATIVE_DONORS.includes(key))) fail('NATIVE_PROOF_INSPECTION_FAILED');
+    || Object.keys(donorFiles).some(key => !NATIVE_DONORS.includes(key))
+    || rawFileInventory !== null && (rawManifest === null || !object(rawFileInventory)
+      || !(rawFileInventory.byPrefix instanceof Map) || !['MEASURED', 'MISSING'].includes(rawFileInventory.status)
+      || !integer(rawFileInventory.fileCandidates) || !integer(rawFileInventory.otherRegularFiles))) fail('NATIVE_PROOF_INSPECTION_FAILED');
   const snapshots = Object.entries({ baseline: baselineIndex, progress: progressIndex }).map(([name, index]) => ({
     name, index, masks: new Map(), counts: null, donorProofs: Object.fromEntries(NATIVE_DONORS.map(label => [label,
       { status: donorFiles[label] ? 'PRESENT' : 'NOT_PRESENT', completeProofPairs: 0,
@@ -553,7 +615,7 @@ export async function measureSavedNativeProofAvailability({ baselineIndex, progr
   }
   async function inspectDonor(file, donorNumber, label) {
     const document = await bulk(file);
-    if (rawDonors) rawDonors[label] = measureSavedRawCaptureMatches(document, parts, rawManifest);
+    if (rawDonors) rawDonors[label] = measureSavedRawCaptureMatches(document, parts, rawManifest, rawFileInventory);
     const inspector = createProtectedDmiNativeCurrentInspector({ contexts: [document] });
     for (const snapshot of snapshots) {
       let finiteDmiCurrentSelections = 0;
@@ -614,7 +676,10 @@ export async function measureSavedNativeProofAvailability({ baselineIndex, progr
     artifactGatePassed: false, ...result,
     ...(rawManifest ? { rawManifestCaptureCounts: { status: rawManifest.status,
       counts: rawManifest.counts, donors: rawDonors, rawFilesOpened: false,
-      rawBytesVerified: false, sourceAdmissionPerformed: false } } : {}) };
+      rawBytesVerified: false, sourceAdmissionPerformed: false,
+      ...(rawFileInventory ? { inventoryMetadataInspected: true, fileInventoryStatus: rawFileInventory.status,
+        fileInventoryCandidates: rawFileInventory.fileCandidates,
+        otherRegularInventoryFiles: rawFileInventory.otherRegularFiles } : {}) } } : {}) };
 }
 
 function baseReport(status) {
@@ -682,7 +747,8 @@ export async function prepareSavedAuditProgressBaseline({ privateRoot, workRoot 
 
 export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPath, predecessorRoot,
   progressFile, progressSource, progressCacheKey, outputPath, repositoryRoot = REPOSITORY,
-  includeRawManifest = false, rawCacheKey = null, progressBaselineTargetHour = null,
+  includeRawManifest = false, rawCacheKey = null, rawManifestSource = null,
+  includeRawFilePresence = false, progressBaselineTargetHour = null,
   repository = process.env.GITHUB_REPOSITORY, pythonExecutable = process.env.PYTHON ?? 'python',
   encryptionKey = process.env.WEATHER_PROGRESS_ENCRYPTION_KEY,
   masterSecret = process.env.WEATHER_PROGRESS_MASTER_SECRET,
@@ -693,11 +759,18 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
   let normalProgressBaselineUsed = false;
   try {
     if (!['describe', 'audit'].includes(mode) || typeof includeRawManifest !== 'boolean'
-      || mode !== 'audit' && (includeRawManifest || progressBaselineTargetHour !== null)) fail('MODE_INVALID');
+      || typeof includeRawFilePresence !== 'boolean' || includeRawFilePresence && !includeRawManifest
+      || includeRawFilePresence && rawManifestSource !== FIXED_RAW_MANIFEST_SOURCE
+      || mode !== 'audit' && (includeRawManifest || rawManifestSource !== null || progressBaselineTargetHour !== null)) fail('MODE_INVALID');
     validateProgressBaselineTargetHour(progressBaselineTargetHour);
     if (includeRawManifest ? typeof rawCacheKey !== 'string'
       || !/^dmi-grib-v4-Linux-\d{4}-W(?:0[1-9]|[1-4]\d|5[0-3])-\d+-[1-9]\d*$/.test(rawCacheKey)
-      || !rawCacheKey.endsWith(`-${progressSource}`) : rawCacheKey !== null) fail('RAW_CACHE_IDENTITY_INVALID');
+      || (rawManifestSource === null ? !rawCacheKey.endsWith(`-${progressSource}`)
+        : rawManifestSource !== FIXED_RAW_MANIFEST_SOURCE || rawCacheKey !== FIXED_RAW_MANIFEST_CACHE_KEY)
+      : rawCacheKey !== null || rawManifestSource !== null) fail('RAW_CACHE_IDENTITY_INVALID');
+    if (rawManifestSource !== null && (progressSource !== FIXED_RAW_PROGRESS_SOURCE
+      || progressCacheKey !== FIXED_RAW_PROGRESS_CACHE_KEY
+      || progressBaselineTargetHour !== FIXED_RAW_PROGRESS_BASELINE_TARGET)) fail('RAW_CACHE_IDENTITY_INVALID');
     const ctx = await context(privateRoot, repositoryRoot);
     // Windows may spell the same verified temp root with its 8.3 alias. Map
     // only lexical children of that already checked root, then inspect every
@@ -813,7 +886,9 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
           progress: await measureSavedCurrentContexts(progressIndex, parts, baselineBulk, progressBulk) };
       })();
       const rawManifest = includeRawManifest ? await savedRawManifest(ctx.repository) : null;
-      const nativeProofAvailability = await measureSavedNativeProofAvailability({ baselineIndex, progressIndex, parts, donorFiles, rawManifest });
+      const rawFileInventory = includeRawFilePresence ? await inspectSavedRawFileInventory(ctx.repository) : null;
+      const nativeProofAvailability = await measureSavedNativeProofAvailability({ baselineIndex, progressIndex, parts,
+        donorFiles, rawManifest, rawFileInventory });
       return { progress: { encryptedBytes: capacity.encryptedBytes, compressedBytes: capacity.compressedBytes,
         rawPackBytes: capacity.rawPackBytes, fileCount: capacity.fileCount, files: fileMetrics(files, progressFiles) },
       forecasts: { baseline: forecastMetrics(baselineIndex), progress: forecastMetrics(progressIndex) },
@@ -864,12 +939,14 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       '--progress-file': 'progressFile', '--progress-source': 'progressSource', '--progress-cache-key': 'progressCacheKey',
       '--output': 'outputPath', '--python': 'pythonExecutable',
       '--include-raw-manifest': 'includeRawManifest', '--raw-cache-key': 'rawCacheKey',
+      '--raw-manifest-source': 'rawManifestSource', '--include-raw-file-presence': 'includeRawFilePresence',
       '--progress-baseline-target-hour': 'progressBaselineTargetHour' };
     while (args.length) { const key = args.shift(), value = args.shift();
       if (!names[key] || !value || value.startsWith('--') || Object.hasOwn(options, names[key])) fail('MODE_INVALID'); options[names[key]] = value; }
-    if (Object.hasOwn(options, 'includeRawManifest')) {
-      if (!['true', 'false'].includes(options.includeRawManifest)) fail('MODE_INVALID');
-      options.includeRawManifest = options.includeRawManifest === 'true';
+    for (const key of ['includeRawManifest', 'includeRawFilePresence']) {
+      if (!Object.hasOwn(options, key)) continue;
+      if (!['true', 'false'].includes(options[key])) fail('MODE_INVALID');
+      options[key] = options[key] === 'true';
     }
     const report = await auditSavedWeatherInputs(options);
     console.log(JSON.stringify(report));
