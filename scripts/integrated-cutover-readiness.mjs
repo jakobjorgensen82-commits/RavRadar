@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import {constants as fsConstants} from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PUBLIC_CONFIG } from '../config.js';
@@ -19,7 +20,10 @@ import {
 } from './rollback-assets/ravscore-model-contract.js';
 import { buildSupabaseAdminHeaders } from './lib/supabase-admin-rest.mjs';
 import { ACCOUNT_ASSISTANT_MIGRATION } from './lib/account-assistant-successor-source.mjs';
-import { CURRENT_GRID_MIGRATION, readCurrentGridCanonicalSource } from './lib/current-grid-successor-source.mjs';
+import { CURRENT_GRID_MIGRATION } from './lib/current-grid-successor-source.mjs';
+import { readAssistantKnowledgeCanonicalSource, assistantKnowledgeMigration } from './lib/assistant-knowledge-successor-source.mjs';
+import {readAssistantResponseCanonicalSource,requireAssistantResponseBinding,
+  ASSISTANT_RESPONSE_MIGRATION} from './lib/assistant-response-successor-source.mjs';
 import {STATISTICS_REVISION_MIGRATION,STATISTICS_REVISION_PREDECESSOR,buildStatisticsPreferenceRevision}
   from './build-statistics-preference-revision.mjs';
 
@@ -293,7 +297,85 @@ export const CHECKPOINT_NATIVE_HOLD_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260923140000');
 export const CHECKPOINT_COMPANION_ID_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260923160000');
+// Historical current220/230 planners keep this exact predecessor contract.
 export const LATEST_REQUIRED_CUTOVER_MIGRATION = REQUIRED_CUTOVER_MIGRATIONS.at(-1);
+
+// Historical REQUIRED/LATEST220 remain the explicit old planner contract.
+// Current published readiness and normal CLI staging use this separate fixed phase.
+export function assistantKnowledgeRequiredMigrations(){
+  return Object.freeze([...REQUIRED_CUTOVER_MIGRATIONS,STATISTICS_REVISION_MIGRATION,
+    assistantKnowledgeMigration()]);
+}
+
+export function assertAssistantKnowledgeMigrationsApplied(migrationListText){
+  const rows=parseSupabaseMigrationList(migrationListText);
+  const local=uniqueVersions(rows,'local'),remote=uniqueVersions(rows,'remote');
+  const required=assistantKnowledgeRequiredMigrations();
+  for(const {version} of required){assert(local.has(version));assert(remote.has(version));}
+  assert.deepEqual([...local].filter(version=>!remote.has(version)),[]);
+  assert.equal([...remote].sort().at(-1),required.at(-1).version);
+  return Object.freeze({appliedVersions:required.map(row=>row.version)});
+}
+
+// Keep the old exported library constructor for genuine historical tests/callers.
+// All normal CLI prepare-workdir invocations move together to this fixed wrapper.
+export async function prepareAssistantKnowledgeCutoverWorkdir({workdir}={}){
+  const descriptor=assistantKnowledgeMigration();
+  await readAssistantKnowledgeCanonicalSource({migrationsDirectory:MIGRATIONS_DIRECTORY});
+  const prepared=await prepareTemporarySupabaseCutoverWorkdir({workdir,
+    includeStatisticsPreferenceRevisionSource:true});
+  await fs.copyFile(path.join(MIGRATIONS_DIRECTORY,descriptor.filename),
+    path.join(prepared.migrationsDirectory,descriptor.filename),fsConstants.COPYFILE_EXCL);
+  await readAssistantKnowledgeCanonicalSource({migrationsDirectory:prepared.migrationsDirectory});
+  return prepared;
+}
+
+export async function hydrateAssistantKnowledgeRemoteMigrationHistory(options){
+  const directory=path.join(assertTemporaryCutoverWorkdir(options.workdir),'supabase','migrations');
+  await readAssistantKnowledgeCanonicalSource({migrationsDirectory:directory});
+  const rows=parseSupabaseMigrationList(options.migrationListText);
+  const local=uniqueVersions(rows,'local');
+  for(const {version} of assistantKnowledgeRequiredMigrations())assert(local.has(version));
+  return hydrateTemporaryRemoteMigrationHistory(options);
+}
+
+// Fixed new phase. Historical KB functions remain genuine and separate.
+export function assistantResponseRequiredMigrations(){
+  requireAssistantResponseBinding();
+  return Object.freeze([...REQUIRED_CUTOVER_MIGRATIONS,STATISTICS_REVISION_MIGRATION,ASSISTANT_RESPONSE_MIGRATION]);
+}
+export function assertAssistantResponseMigrationsApplied(migrationListText){
+  const rows=parseSupabaseMigrationList(migrationListText);
+  const local=uniqueVersions(rows,'local'),remote=uniqueVersions(rows,'remote');
+  const required=assistantResponseRequiredMigrations();
+  assert(!local.has('20261014140000'),'Archived1414 must not be staged for installation');
+  assert(!remote.has('20261014140000'),'Direct response requires remote1414 absent');
+  for(const {version} of required){assert(local.has(version));assert(remote.has(version));}
+  assert.deepEqual([...local].filter(version=>!remote.has(version)),[]);
+  assert.equal([...remote].sort().at(-1),ASSISTANT_RESPONSE_MIGRATION.version);
+  return Object.freeze({appliedVersions:required.map(row=>row.version)});
+}
+export async function prepareAssistantResponseCutoverWorkdir({workdir}={}){
+  await readAssistantResponseCanonicalSource({migrationsDirectory:MIGRATIONS_DIRECTORY});
+  const prepared=await prepareTemporarySupabaseCutoverWorkdir({workdir,
+    includeStatisticsPreferenceRevisionSource:true});
+  assert(!(await fs.readdir(prepared.migrationsDirectory)).includes('20261014140000_assistant_knowledge_bound_successor.sql'),
+    'The direct response view must omit exactly archived1414 without an applied placeholder');
+  await fs.copyFile(path.join(MIGRATIONS_DIRECTORY,ASSISTANT_RESPONSE_MIGRATION.filename),
+    path.join(prepared.migrationsDirectory,ASSISTANT_RESPONSE_MIGRATION.filename),fsConstants.COPYFILE_EXCL);
+  await readAssistantResponseCanonicalSource({migrationsDirectory:prepared.migrationsDirectory});
+  return prepared;
+}
+export async function hydrateAssistantResponseRemoteMigrationHistory(options){
+  const directory=path.join(assertTemporaryCutoverWorkdir(options.workdir),'supabase','migrations');
+  await readAssistantResponseCanonicalSource({migrationsDirectory:directory});
+  const rows=parseSupabaseMigrationList(options.migrationListText);
+  const local=uniqueVersions(rows,'local'),remote=uniqueVersions(rows,'remote');
+  assert(!local.has('20261014140000'),'Archived1414 must not be staged for installation');
+  assert(!remote.has('20261014140000'),'Direct response requires remote1414 absent');
+  for(const {version} of assistantResponseRequiredMigrations())assert(local.has(version));
+  return hydrateTemporaryRemoteMigrationHistory(options);
+}
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({
   modelId: 'x-ravradar-model-id',
@@ -313,7 +395,7 @@ function normaliseTripBindingPolicyDefinition(value) {
 }
 
 export async function expectedTripBindingPolicy({ migrationsDirectory = MIGRATIONS_DIRECTORY } = {}) {
-  const { canonicalSource: migration } = await readCurrentGridCanonicalSource({ migrationsDirectory });
+  const { canonicalSource: migration } = await readAssistantResponseCanonicalSource({ migrationsDirectory });
   const scoreQualityMatch = migration.match(
     /create or replace function public\.ravradar_trip_v3_score_quality_allowed\([\s\S]*?\)\s*returns boolean[\s\S]*?as \$\$([\s\S]*?)\$\$;/i,
   );
@@ -348,7 +430,7 @@ export async function expectedCheckpointCasContract({
 } = {}) {
   // Exact sparse successor view includes actual200000-derived CAS; it does
   // not change the userdata130000 lifecycle or legacy returned migration ID.
-  const { canonicalSource: migration } = await readCurrentGridCanonicalSource({ migrationsDirectory });
+  const { canonicalSource: migration } = await readAssistantResponseCanonicalSource({ migrationsDirectory });
   const definitions = [
     ['public.ravradar_ravscore_checkpoint_canonical_time', 'canonical-time validator'],
     ['public.ravradar_ravscore_checkpoint_has_forbidden_key', 'forbidden-key validator'],
@@ -383,6 +465,8 @@ export async function expectedCheckpointCasContract({
       'whole original c1ac state validator'],
     ['public.ravradar_ravscore_checkpoint_grid_c1ac_payload_valid',
       'whole original c1ac payload validator'],
+    ['public.ravradar_ravscore_checkpoint_rsp_predecessor_projection',
+      'exact same-reference assistant response metadata projection'],
   ].map(([functionName, label]) => sqlFunctionBody(
     migration,
     functionName,
@@ -407,7 +491,8 @@ export async function expectedCheckpointCasContract({
     + `\n-- grid-original-249-state-validator --\n${definitions[16]}`
     + `\n-- grid-original-249-payload-validator --\n${definitions[17]}`
     + `\n-- grid-original-c1ac-state-validator --\n${definitions[18]}`
-    + `\n-- grid-original-c1ac-payload-validator --\n${definitions[19]}`;
+    + `\n-- grid-original-c1ac-payload-validator --\n${definitions[19]}`
+    + `\n-- response-predecessor-projection --\n${definitions[20]}`;
   return Object.freeze({
     id: CHECKPOINT_CAS_CONTRACT_ID,
     sha256: sha256(definition),
@@ -513,7 +598,7 @@ export async function buildIntegratedCutoverReadiness(sourceHeadInput, {
     modelContractSha256: modelBinding.modelContractSha256,
     modelBundleSha256: modelBinding.modelBundleSha256,
     publicImplementationClosureSha256,
-    migrationIds: Object.freeze(REQUIRED_CUTOVER_MIGRATIONS.map(item => item.id)),
+    migrationIds: Object.freeze(assistantResponseRequiredMigrations().map(item => item.id)),
     tripSchemaVersion: 3,
     tripBindingPolicyId: tripBindingPolicy.id,
     tripBindingPolicySha256: tripBindingPolicy.sha256,
@@ -768,8 +853,23 @@ export async function assertSupabaseMigrationPlan({
   migrationsDirectory = MIGRATIONS_DIRECTORY,
   allowAccountAssistantPrewritePlan = false,
   allowStatisticsPreferenceRevisionPlan = false,
+  allowAssistantKnowledgePlan = false,
+  allowAssistantResponsePlan = false,
 } = {}) {
   assert.equal(typeof allowStatisticsPreferenceRevisionPlan,'boolean');
+  assert.equal(typeof allowAssistantKnowledgePlan,'boolean');
+  assert.equal(typeof allowAssistantResponsePlan,'boolean');
+  if (allowAssistantResponsePlan) {
+    assert.equal(allowAssistantKnowledgePlan,false);
+    assert.equal(allowStatisticsPreferenceRevisionPlan,false);
+    assert.equal(allowAccountAssistantPrewritePlan,false);
+    await readAssistantResponseCanonicalSource({migrationsDirectory});
+  }
+  if (allowAssistantKnowledgePlan) {
+    assert.equal(allowStatisticsPreferenceRevisionPlan,false);
+    assert.equal(allowAccountAssistantPrewritePlan,false);
+    await readAssistantKnowledgeCanonicalSource({migrationsDirectory});
+  }
   await inspectMigrationSources({ migrationsDirectory });
   if (allowStatisticsPreferenceRevisionPlan) {
     assert.equal(allowAccountAssistantPrewritePlan,false,'Statistics revision is a separate sole prewrite route');
@@ -778,7 +878,9 @@ export async function assertSupabaseMigrationPlan({
   const rows = parseSupabaseMigrationList(migrationListText);
   const local = uniqueVersions(rows, 'local');
   const remote = uniqueVersions(rows, 'remote');
-  const plannedMigrations=allowStatisticsPreferenceRevisionPlan
+  const plannedMigrations=allowAssistantResponsePlan ? assistantResponseRequiredMigrations()
+    : allowAssistantKnowledgePlan ? assistantKnowledgeRequiredMigrations()
+    : allowStatisticsPreferenceRevisionPlan
     ? [...REQUIRED_CUTOVER_MIGRATIONS,STATISTICS_REVISION_MIGRATION] : REQUIRED_CUTOVER_MIGRATIONS;
   const requiredVersions = new Set(plannedMigrations.map(item => item.version));
 
@@ -787,6 +889,22 @@ export async function assertSupabaseMigrationPlan({
   }
 
   const pending = [...local].filter(version => !remote.has(version));
+  if (allowAssistantResponsePlan) {
+    const descriptor=ASSISTANT_RESPONSE_MIGRATION;
+    for(const {version} of plannedMigrations) assert(local.has(version));
+    for(const {version} of plannedMigrations.slice(0,-1)) assert(remote.has(version));
+    assert(!local.has('20261014140000'),'Archived1414 must not be staged for installation');
+    assert(!remote.has('20261014140000'),'Direct response requires remote1414 absent');
+    assert.equal([...remote].sort().at(-1),remote.has(descriptor.version)?descriptor.version:STATISTICS_REVISION_MIGRATION.version);
+    assert.deepEqual(pending,remote.has(descriptor.version)?[]:[descriptor.version]);
+  }
+  if (allowAssistantKnowledgePlan) {
+    const descriptor=assistantKnowledgeMigration();
+    for (const {version} of plannedMigrations) assert(local.has(version));
+    for (const {version} of plannedMigrations.slice(0,-1)) assert(remote.has(version));
+    assert.equal([...remote].sort().at(-1),remote.has(descriptor.version)?descriptor.version:STATISTICS_REVISION_MIGRATION.version);
+    assert.deepEqual(pending,remote.has(descriptor.version)?[]:[descriptor.version]);
+  }
   if (pending.includes(STATISTICS_REVISION_MIGRATION.version)) {
     assert.equal(allowStatisticsPreferenceRevisionPlan,true,'Pending statistics revision requires its named prewrite route');
   }
@@ -1292,7 +1410,7 @@ export function assertSealedIntegratedCutoverReadiness(value) {
   assert.equal(value.modelContractSha256, value.modelBinding.modelContractSha256);
   assert.equal(value.modelBundleSha256, value.modelBinding.modelBundleSha256);
   assert.match(String(value.publicImplementationClosureSha256 ?? ''), SHA256_PATTERN);
-  assert.deepEqual(value.migrationIds, REQUIRED_CUTOVER_MIGRATIONS.map(item => item.id));
+  assert.deepEqual(value.migrationIds, assistantResponseRequiredMigrations().map(item => item.id));
   assert.equal(value.tripSchemaVersion, 3);
   assert.equal(value.tripBindingPolicyId, TRIP_BINDING_POLICY_ID);
   assert.match(String(value.tripBindingPolicySha256 ?? ''), SHA256_PATTERN);
@@ -1435,6 +1553,7 @@ async function runCli() {
   if (command === 'assert-source') {
     const sourceHead = sourceHeadFromEnvironment();
     await inspectMigrationSources();
+    await readAssistantResponseCanonicalSource();
     const expected = await buildIntegratedCutoverReadiness(sourceHead, {
       publicImplementationClosureSha256:
         argumentValue('--public-implementation-closure-sha256'),
@@ -1443,15 +1562,15 @@ async function runCli() {
     return;
   }
   if (command === 'prepare-workdir') {
-    const prepared = await prepareTemporarySupabaseCutoverWorkdir({ workdir: argumentValue('--output'),
-      includeStatisticsPreferenceRevisionSource:process.argv.includes('--statistics-preference-revision-source') });
-    console.log(`Temporary Supabase cutover view prepared with ${REQUIRED_CUTOVER_MIGRATIONS.length} exact source migrations.`);
+    // The legacy flag can no longer select an incomplete active-source view.
+    const prepared = await prepareAssistantResponseCutoverWorkdir({ workdir: argumentValue('--output') });
+    console.log(`Temporary Supabase cutover view prepared with ${assistantResponseRequiredMigrations().length} exact source migrations.`);
     assert.ok(prepared.migrationsDirectory);
     return;
   }
   if (command === 'hydrate-history') {
     const migrationListText = await fs.readFile(argumentValue('--migration-list'), 'utf8');
-    const result = await hydrateTemporaryRemoteMigrationHistory({
+    const result = await hydrateAssistantResponseRemoteMigrationHistory({
       workdir: argumentValue('--workdir'),
       migrationListText,
     });
@@ -1468,7 +1587,7 @@ async function runCli() {
   }
   if (command === 'applied') {
     const migrationListText = await fs.readFile(argumentValue('--migration-list'), 'utf8');
-    const result = assertSupabaseMigrationsApplied(migrationListText);
+    const result = assertAssistantResponseMigrationsApplied(migrationListText);
     console.log(`Supabase migration metadata readback is complete: ${result.appliedVersions.join(', ')}.`);
     return;
   }

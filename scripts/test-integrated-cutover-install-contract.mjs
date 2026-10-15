@@ -2,6 +2,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { readAccountAssistantCanonicalSource } from './lib/account-assistant-successor-source.mjs';
 import { readCurrentGridCanonicalSource } from './lib/current-grid-successor-source.mjs';
+import { readAssistantKnowledgeCanonicalSource, KB_REPLACEMENTS, KB_PROJECTION }
+  from './lib/assistant-knowledge-successor-source.mjs';
+import {readAssistantResponseCanonicalSource,RESPONSE_REPLACEMENTS,RESPONSE_PROJECTION}
+  from './lib/assistant-response-successor-source.mjs';
 
 const sources = Object.freeze({
   migration: 'supabase/migrations/20260920220000_public_hour_pack_capacity_binding.sql',
@@ -32,7 +36,11 @@ const documents = Object.fromEntries(entries);
 const { canonicalSource: predecessorCheckpointMigration } = await readAccountAssistantCanonicalSource();
 // Normal 220 adapter validates immutable 213 bytes and the WHOLE inverse of its
 // six original validators/seven replacements; historical SQL is not retagged.
-const { canonicalSource: checkpointMigration } = await readCurrentGridCanonicalSource();
+const { canonicalSource: issued220CheckpointMigration } = await readCurrentGridCanonicalSource();
+// Mutable schema/INSTALL follow the genuine current KB canonical reader.
+// Issued213/220 remain separate immutable historical comparison phases.
+const { canonicalSource: issuedKnowledgeCheckpointMigration } = await readAssistantKnowledgeCanonicalSource();
+const { canonicalSource: checkpointMigration } = await readAssistantResponseCanonicalSource();
 const stableTripMigration = await fs.readFile(
   'supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql',
   'utf8',
@@ -71,11 +79,26 @@ const changedCurrentFunctions = new Set([
   'public.ravradar_ravscore_checkpoint_contract',
 ]);
 for (const name of CHECKPOINT_FUNCTION_NAMES.filter(name => !changedCurrentFunctions.has(name))) {
-  assert.equal(functionDefinition(checkpointMigration, '220 canonical', name),
+  assert.equal(functionDefinition(issued220CheckpointMigration, '220 canonical', name),
     functionDefinition(predecessorCheckpointMigration, '213 canonical', name),
     name + ' must retain its whole historical 213 definition');
 }
-for (const functionName of [...CHECKPOINT_FUNCTION_NAMES, ...GRID_ORIGINAL_FUNCTION_NAMES]) {
+for (const name of [...CHECKPOINT_FUNCTION_NAMES, ...GRID_ORIGINAL_FUNCTION_NAMES]) {
+  if (KB_REPLACEMENTS.includes(name.slice('public.'.length))) continue;
+  assert.equal(functionDefinition(issuedKnowledgeCheckpointMigration, 'KB canonical', name),
+    functionDefinition(issued220CheckpointMigration, '220 canonical', name),
+    name + ' must retain its whole issued220 definition');
+}
+for (const name of [...CHECKPOINT_FUNCTION_NAMES, ...GRID_ORIGINAL_FUNCTION_NAMES]) {
+  if (RESPONSE_REPLACEMENTS.includes(name.slice('public.'.length))) continue;
+  assert.equal(functionDefinition(checkpointMigration, 'response canonical', name),
+    functionDefinition(issued220CheckpointMigration, 'issued220 canonical', name),
+    name+' must retain its whole issued220 definition');
+}
+assert.ok(!checkpointMigration.includes('create or replace function public.'+KB_PROJECTION+'('),
+  'The direct current canonical must not install the archived1414 projection');
+for (const functionName of [...CHECKPOINT_FUNCTION_NAMES, ...GRID_ORIGINAL_FUNCTION_NAMES,
+  'public.' + RESPONSE_PROJECTION]) {
   const canonicalDefinition = normalize(functionDefinition(
     checkpointMigration,
     'checkpoint migration',

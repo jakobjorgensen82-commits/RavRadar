@@ -219,6 +219,51 @@ for (const nativeOutcome of [null,
     { sourceTreeSha256: digest })).required, true);
 }
 
+// Run the unchanged real PostgreSQL leaf before the long source matrix, not
+// instead of it. Failed/skipped native work still forbids the final proof.
+const nativeFirstWorkflow = (await readFile(new URL(
+  '../.github/workflows/validate-pull-request.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+const nativeFirstBlock = `      - name: ${nativeSqlStep}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Use only PostgreSQL binaries already present in the normal runner.
+          # No package/runtime install, network, cloud database or skip fallback.
+          node scripts/test-code-only-userdata-policy-routing.mjs
+          node scripts/test-protected-ravscore-continuation-checkpoint.mjs --native-assistant-response
+
+`;
+function assertNativeBeforeSourceMatrix(workflow) {
+  assert.equal(workflow.split(nativeFirstBlock).length, 2,
+    'The exact unconditional native commands must run once');
+  const order = [
+    'name: Install source-gate dependencies',
+    'name: Restore Node22 for existing source validation',
+    'name: Validate bounded native current diagnosis on artificial data only',
+    `name: ${nativeSqlStep}`,
+    'name: Validate source contracts and release governance',
+    'name: Require validated source tree to remain unchanged',
+    'name: Upload tree-content source validation proof',
+  ].map(marker => workflow.indexOf(marker));
+  assert.ok(order.every((position, index) => position >= 0
+    && (index === 0 || position > order[index - 1])),
+  'Native must fail early without omitting source, tree or proof gates');
+}
+assertNativeBeforeSourceMatrix(nativeFirstWorkflow);
+const withoutNativeFirst = nativeFirstWorkflow.replace(nativeFirstBlock, '');
+for (const invalid of [
+  withoutNativeFirst,
+  nativeFirstWorkflow + nativeFirstBlock,
+  withoutNativeFirst.replace('      - name: Require validated source tree to remain unchanged',
+    nativeFirstBlock + '      - name: Require validated source tree to remain unchanged'),
+  withoutNativeFirst.replace('      - name: Restore Node22 for existing source validation',
+    nativeFirstBlock + '      - name: Restore Node22 for existing source validation'),
+  nativeFirstWorkflow.replace(nativeFirstBlock,
+    nativeFirstBlock.replace('        shell: bash', '        if: false\n        shell: bash')),
+  nativeFirstWorkflow.replace(nativeFirstBlock,
+    nativeFirstBlock.replace('        shell: bash', '        continue-on-error: true\n        shell: bash')),
+]) assert.throws(() => assertNativeBeforeSourceMatrix(invalid));
+
 
 // Exercise the actual CLI decision/output block with the existing resolver
 // functions and GitHub fixtures. This is not a hosted source-proof claim.

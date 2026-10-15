@@ -51,3 +51,8 @@ cloudflare/trip-gateway/migrations/003_owner_erasure_insert_guard.sql text eol=l
 supabase/migrations/20261013220000_current_grid_original_bound_successor.sql text eol=lf
 # The named statistics revision builder binds exact LF migration bytes.
 supabase/migrations/20261013230000_account_statistics_revision.sql text eol=lf
+# Native KB prerequisites are pinned as exact reviewed LF source bytes.
+scripts/lib/current-grid-issued-native-fixture.mjs text eol=lf
+scripts/lib/assistant-knowledge-native-postgres.mjs text eol=lf
+# The knowledge successor is issued once as exact immutable LF SQL source.
+supabase/migrations/20261014140000_assistant_knowledge_bound_successor.sql text eol=lf

@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import crypto from 'node:crypto';
+import {requireAssistantKnowledgeBinding} from './lib/assistant-knowledge-successor-source.mjs';
+import {requireAssistantResponseBinding} from './lib/assistant-response-successor-source.mjs';
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import path from 'node:path';
@@ -1151,9 +1153,48 @@ export function assertAccountAssistantPrewriteBindings(identity, previousCandida
   }
 }
 
-// Resolve only the three fixed CLI intents before constructing any client.
+// A separate intent for the measured KB successor, never a historical grant.
+export function assertAssistantKnowledgePrewriteBindings(identity, previousCandidate, currentIntegrated, currentCandidate, currentContractHashes) {
+  const binding=requireAssistantKnowledgeBinding();
+  if (identity.modelBinding.modelBundleSha256 !== '994da006e4c91a1fc759d5ed58b74de80a9ccaad6753274d5abb0cb07eaed399'
+    || previousCandidate.modelBundleSha256 !== 'd192e060cf47fde07a1ae2faf9a8db913dbbf4e1325cbf7bf2e33c720982e8d9'
+    || identity.contractHashes.continuationStateContractSha256 !== '0f6c182ab2ffa7d9d0153706277aa3f7b582327be7dda02842a9c8b995568d4a'
+    || currentIntegrated.modelBundleSha256 !== binding.I
+    || currentCandidate.modelBundleSha256 !== binding.C
+    || currentContractHashes.continuationStateContractSha256 !== binding.T) {
+    throw new Error('Knowledge pre-write proof is outside its exact successor');
+  }
+}
+
+export async function verifyAssistantKnowledgePrewritePreservation(options = {}) {
+  requireAssistantKnowledgeBinding();
+  return verifyBindingPrewritePreservation(options, 'assistant-knowledge');
+}
+
+// Distinct response successor; the issued KB intent above stays unchanged.
+export function assertAssistantResponsePrewriteBindings(identity, previousCandidate,
+  currentIntegrated, currentCandidate, currentContractHashes) {
+  const before={I:'994da006e4c91a1fc759d5ed58b74de80a9ccaad6753274d5abb0cb07eaed399',
+    C:'d192e060cf47fde07a1ae2faf9a8db913dbbf4e1325cbf7bf2e33c720982e8d9',
+    T:'0f6c182ab2ffa7d9d0153706277aa3f7b582327be7dda02842a9c8b995568d4a'};
+  const after=requireAssistantResponseBinding();
+  if (identity.modelBinding.modelBundleSha256!==before.I
+    || previousCandidate.modelBundleSha256!==before.C
+    || identity.contractHashes.continuationStateContractSha256!==before.T
+    || currentIntegrated.modelBundleSha256!==after.I
+    || currentCandidate.modelBundleSha256!==after.C
+    || currentContractHashes.continuationStateContractSha256!==after.T) {
+    throw new Error('Assistant response pre-write proof is outside its exact successor');
+  }
+}
+export async function verifyAssistantResponsePrewritePreservation(options={}) {
+  requireAssistantResponseBinding();
+  return verifyBindingPrewritePreservation(options,'assistant-response');
+}
+
+// Resolve all fixed CLI intents before constructing any client.
 export function assertExclusivePrewriteIntent(argv) {
-  const flags = ['--verify-assistant-prewrite', '--verify-userdata-prewrite', '--verify-account-assistant-prewrite'];
+  const flags = ['--verify-assistant-prewrite', '--verify-userdata-prewrite', '--verify-account-assistant-prewrite', '--verify-assistant-knowledge-prewrite', '--verify-assistant-response-prewrite'];
   const selected = argv.filter(value => flags.includes(value));
   if (selected.length > 1) throw new Error('Pre-write intent is ambiguous');
   if (selected.length && argv.includes('--current-grid-original')) {
@@ -1201,7 +1242,13 @@ async function verifyBindingPrewritePreservation({ sourceRoot, outputRoot,
   const report = await readJson(reportPath, 'Same normal migration result');
   const currentIntegrated = ravScoreModelBinding();
   const currentCandidate = candidateModelBinding();
-  if (intent === 'account-assistant') {
+  if (intent === 'assistant-response') {
+    assertAssistantResponsePrewriteBindings(identity, modules.candidate.ravScoreModelBinding(),
+      currentIntegrated, currentCandidate, await privateRuntimeContractHashes({ repositoryRoot: repository }));
+  } else if (intent === 'assistant-knowledge') {
+    assertAssistantKnowledgePrewriteBindings(identity, modules.candidate.ravScoreModelBinding(),
+      currentIntegrated, currentCandidate, await privateRuntimeContractHashes({ repositoryRoot: repository }));
+  } else if (intent === 'account-assistant') {
     assertAccountAssistantPrewriteBindings(identity, modules.candidate.ravScoreModelBinding(),
       currentIntegrated, currentCandidate, await privateRuntimeContractHashes({ repositoryRoot: repository }));
   } else if (intent === 'userdata') {
@@ -1978,6 +2025,8 @@ async function main() {
     throw new Error('Prepared current-grid expectation requires its original-only mode');
   }
   assertExclusivePrewriteIntent(argv);
+  if (argv.includes('--verify-assistant-knowledge-prewrite')) requireAssistantKnowledgeBinding();
+  if (argv.includes('--verify-assistant-response-prewrite')) requireAssistantResponseBinding();
   const options = {
     sourceRoot: argument(argv, '--source'),
     outputRoot: argument(argv, '--output'),
@@ -1995,6 +2044,18 @@ async function main() {
     expectedSourceHead: argument(argv, '--expected-source-head'),
     reportPath: argument(argv, '--report'),
   };
+  if (argv.includes('--verify-assistant-response-prewrite')) {
+    const { documentRequest } = createProtectedPrivateRuntimeClients({ storageBackend: 'supabase' });
+    await verifyAssistantResponsePrewritePreservation({ ...options, request: documentRequest });
+    console.log('Assistant response original preservation reverified before binding installation.');
+    return;
+  }
+  if (argv.includes('--verify-assistant-knowledge-prewrite')) {
+    const { documentRequest } = createProtectedPrivateRuntimeClients({ storageBackend: 'supabase' });
+    await verifyAssistantKnowledgePrewritePreservation({ ...options, request: documentRequest });
+    console.log('Knowledge original preservation reverified before binding installation.');
+    return;
+  }
   if (argv.includes('--verify-account-assistant-prewrite')) {
     const { documentRequest } = createProtectedPrivateRuntimeClients({ storageBackend: 'supabase' });
     await verifyAccountAssistantPrewritePreservation({ ...options, request: documentRequest });

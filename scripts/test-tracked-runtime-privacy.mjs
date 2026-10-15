@@ -43,6 +43,17 @@ assert.throws(
 
 console.log('Tracked data/live privacy allowlist passes.');
 
+const assistantRoundtrip='scripts/test-rav-assistant-main-edge-roundtrip.mjs';
+const fixedAssistantInvocations=Object.freeze([
+  ['--source-catalog456-da'],['--source-catalog456-de'],['--source-catalog456-en'],
+  ['--source-default-without-catalog456'],
+]);
+const catalogueReceipts=[];
+const finiteChildFailure=result=>({
+  errorCode:result.error==null?null:['ETIMEDOUT','ENOBUFS','ENOENT','EACCES','EPERM'].includes(result.error.code)?result.error.code:'OTHER',
+  signal:result.signal==null?null:['SIGTERM','SIGKILL','SIGABRT','SIGSEGV','SIGINT'].includes(result.signal)?result.signal:'OTHER',
+});
+
 // Keep the bounded source group while checking the actual public-facing
 // private-data queue and assistant guards in isolated, network-free processes.
 for (const script of [
@@ -60,7 +71,27 @@ for (const script of [
   'scripts/test-trip-evidence-storage-interruption.mjs',
   'scripts/test-trip-storage-edge-transient-retry.mjs',
 ]) {
-  const result = spawnSync(process.execPath, [script], { cwd: process.cwd(), encoding: 'utf8', timeout: 30_000, maxBuffer: 1024 * 1024 });
-  assert.equal(result.status, 0, `${script} failed:\n${result.stdout}\n${result.stderr}`);
-  process.stdout.write(result.stdout);
+  const invocations=script===assistantRoundtrip?fixedAssistantInvocations:[[]];
+  for(const args of invocations){
+    const result = spawnSync(process.execPath, [script,...args], { cwd: process.cwd(), encoding: 'utf8', timeout: 30_000, maxBuffer: 1024 * 1024 });
+    assert.equal(result.status, 0, `${script} ${args.join(' ')} failed ${JSON.stringify(finiteChildFailure(result))}:\n${result.stdout}\n${result.stderr}`);
+    process.stdout.write(result.stdout);
+    if(args[0]?.startsWith('--source-catalog456-')){
+      const rows=String(result.stdout).split('\n').filter(line=>line.startsWith('{')).map(line=>JSON.parse(line))
+        .filter(row=>row.contract==='whole456 current app/service/local follow-up plus unchanged39 Edge');
+      assert.equal(rows.length,1);catalogueReceipts.push(rows[0]);
+    }
+  }
 }
+assert.deepEqual(catalogueReceipts.map(row=>row.selectedLocales),[['da'],['de'],['en']]);
+for(const row of catalogueReceipts){
+  assert.equal(row.status,'PASS');assert.equal(row.authoredUnits,456);assert.equal(row.locales,1);
+  assert.equal(row.authoredPositive,456);assert.equal(row.paraphrases,456);assert.equal(row.followups,456);
+  assert.equal(row.unknownNegative,456);assert.equal(row.privateNegative,912);assert.equal(row.controlledEdge,1);assert.equal(row.realNetwork,0);
+}
+for(const args of [['--source-catalog456-fr'],['--unknown-roundtrip-flag'],['--source-catalog456-da','--source-catalog456-de']]){
+  const result=spawnSync(process.execPath,[assistantRoundtrip,...args],{cwd:process.cwd(),encoding:'utf8',timeout:30_000,maxBuffer:1024*1024});
+  assert.equal(result.status,1,JSON.stringify(finiteChildFailure(result)));
+  assert.match(result.stderr,/Unknown assistant roundtrip test flag or locale/);assert.equal(result.stdout,'');
+}
+console.log('Assistant source partitions: all456 x DA/DE/EN plus every non-catalogue default block; unsupported test flags refused.');

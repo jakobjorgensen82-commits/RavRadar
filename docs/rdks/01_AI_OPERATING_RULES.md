@@ -1,3 +1,15 @@
+## Aktiv 578-afgrænsning — 15. oktober 2026
+
+Sikkerhedsbetydningen i hele spørgsmålet går før generel lygtevejledning. Et helt succinitdefinitionsmatch giver ikke svarautoritet til tilføjede fysikled. Sprog, privatliv, ukendte spørgsmål og read-only-adfærd består; interne driftsfejl og private diagnoser må ikke indgå i den offentlige vidensbank.
+
+Versionssynkronisering og fixed14140000-checkerens fire cases er ikke i sig selv ny bindings- eller produktionsverifikation. C→I→T er nu særskilt fysisk bygget gennem normale builders; 15030000 er lokalt genereret gennem normal CLI --write/--check, og --issued-kildemålet består. PostgreSQL/native, præcis CI, installation og offentlig effekt er fortsat åbne. Gamle SQL-filer og originaler må ikke ommærkes. Den afviste ti minutters loglæsning giver ingen alternativ læsevej; det præcise 15-sekunders spørgsmål og det separate PARTIAL-spørgsmål er ubesvarede. Ingen ny aktivering eller writer-overlap følger. Alle fem mål er åbne til 18. oktober; se håndbog 89.231. Faste regler og historik bevares.
+
+## Aktuel lokal 4.0.578-sammenføring — 15. oktober 2026
+
+Den lokale assistent-/statistikkilde og versionssynkroniseringen til 4.0.578 sammenføres nu med vejr-main 6b3e/PR610–612. Begge siders dokumentationshistorik og de nyere vejrrettelser bevares. PR610 og PR612 er kildeleveret; ældre udsagn nedenfor om afventende kildelevering er dateret historik. Det er ikke bevis for en ny offentlig vejrgeneration eller for levering af assistent, statistik eller ekstern AI.
+
+Denne konfliktløsning afslutter ikke Git-merge, nye C/I/T-bindinger, efterfølgermigration, præcis samlet kilde-/PostgreSQL-kontrol eller installation. Den faste 14140000-kilde og de gamle SQL-filer må ikke ommærkes. PARTIAL-spørgsmålet og spørgsmålet om den snævre loglæsning er hver for sig ubesvarede. Alle fem mål er åbne med frist 18. oktober 2026; originaler, historik, writer-, sikkerheds- og tilladelsesgrænser består. De to bevarede blokke nedenfor er kildehistorik, ikke nye produktionskvitteringer.
+
 ## Præferencens samtidighedsgrænse — 15. oktober 2026
 
 ON kræver en observeret serverrevision for den samme konto; et nyere OFF skal invalidere tidligere ON. Serverlås og revision er afgørende, ikke klientens rækkefølge. Login-/logout-epoch skal afvise forsinkede svar fra en tidligere identitet. Ukendt skriveudfald må hverken bekræftes som gemt eller automatisk gentages som ON.
@@ -12,17 +24,40 @@ Historisk ny fortolkning kræver faktisk filfangst, ejet læselease og fuldt gen
 
 Den historiske strøm-only cachelæser har nu sin første faktisk beståede Linux-nativekontrol på PR610-head ca8273d58fb37 i CI 38644100696/1. Den normale native-wrapper og alle syv obligatoriske native-underprøver er gennemført, herunder ejet læselease, procesafslutning, EOF, tilbagerulning og historisk genbrug. Den regionale normale prøve og den nationale producentkæde består lokalt med 673 dele og 118 timer gennem CLI til JavaScript. De tilknyttede lokale Open-Meteo- og kontrolprøver består efter præcis rettelse af prøveinput-headeren for otte mål; de oprindelige fejl bevares. Det er lokale/syntetiske input, ikke bevis for providerdata, national produktionsdrift eller hård databevarelse i næste faktiske generation. Den private 72-timers-/51-timersbehovsbro mapper højst 127 rækker med højst to eksisterende 121-timersvinduer. Tre private slutstøttetimer bevares til den uændrede scalar-T+3-sanitizer; offentlige 118 timer og det normale 121-timersunderlag ændres ikke. Den normale lokale 673-dels CLIprøve består også med nøgleomordnet input og eksklusiv outputoprettelse. Status 15. oktober: Den samlede source-kontrol i samme CI fejlede i fem kontroller; De efterfølgende trin 15–19, herunder PostgreSQL-kontrollen, blev derfor ikke kørt. De afgrænsede lokale kildekompatibilitetsrettelser bevarer ægte gamle kildepins, updaterens fulde historiske kildeinverse og alle gamle model-/SQL-/ABI-grænser. Den normale updater-indgangsprøve består lokalt 21/21 uden skip; første værtsfejl er bevaret, og ingen produktguard er lempet. Ny samlet CI på det rettede præcise head, PostgreSQL, sourceproof og sikker offentlig levering er fortsat åbne; det første native-PASS er ikke samlet CI- eller produktionsbevis.
 
+## Aktuel lokal sammenføringsstatus — 15. oktober 2026
+
+Denne sammenføring af den lokale 4.0.577-kilde (8da) og EBF er hverken ny kildekontrol, installation eller offentlig levering. Model- og SQL-metadata er ikke ommærket; nye bundne kildeændringer kræver en legitim efterfølger før levering. Den separate vejr-main 6b3e/PR612 er kildeleveret, men genoptagelse uden nye vejrhentninger afventer præcis PARTIAL-godkendelse. Alle fem mål er fortsat åbne med frist 18. oktober 2026. Eksisterende writer-, sikkerheds-, databevarelses- og tilladelsesgrænser består. De daterede blokke nedenfor er bevaret historik, ikke nye produktionspåstande.
+
 ## Aktiv sammeoriginal- og genoptagelsesgrænse — 14. oktober 2026
 
 Den snævre PUBLIC-præference kræver faktisk native-projektion fra de tilladte originaldokumenter for hvert endepunkt og samme hele captured bytes/officielle kilde. Kun helt ukendt gammel sampling til helt kvalificeret korrigeret headerfortolkning kan krydse denne grænse. Coherent alene, samme asset-id eller caller-flag giver ingen originalautoritet. Normale zone-map inputs, kvalificerede gamle vindere, øvrig kildeprioritet, replay og alle originale bytes bevares. Ingen gitter-, scoreformel-, model-, admin- eller geometrirettelse indføres her.
 
 Præcist gemt fremskridt i et fuldt normalforløb kræver exact key uden prefixfallback samt faktisk GCM-læsning, autentisk baseline og normal admission. Budgetter og current-original-/ny-time-krav består; quick_confirmation er ikke aktiveret af denne vej. Lokale tests må ikke kaldes Linux-, fuld DMI- eller produktionsevidens. Den afklarede sandbox-EPERM krævede korrekt eskaleret fysisk målprøve, ikke en produktregel eller testwaiver. Præcis CI, faktisk offentlig effekt og resterende delårsager er åbne.
+## Testkaldere må ikke udgive ny kilde som historisk — 14. oktober 2026
+
+Den historiske 673/600-prøve skal bruge genuine udstedt 584-kilde og dens hele deklarerede fixtureafhængigheder; aktuelle KB-guards og originale assertions bevares. Den nye katalogopdeling skal ufravigeligt kalde DA, DE, EN og alle øvrige normale blokke. Ingen højere timeout, større buffer, miljøbaseret fravalg eller tab af negative/sikkerheds-/kvoteprøver må erstatte korrekt opdeling; direkte default kører fortsat alt.
+
+De faktiske lokale mål består, men er ikke præcis samlet CI, PostgreSQL eller offentlig effekt. Første fejl og eventuelle patchtransportfejl bevares særskilt; en RAM-inverse er ikke i sig selv bevis for faktisk integration. Ingen nye produktionskald eller ændring af kravene om genoptagelse fra gyldigt checkpoint efter rettelse og nødvendige kontroller følger heraf.
+
+## Kildeopfølgning uden faseombytning — 14. oktober 2026
+
+Ejerens krav er genoptagelse fra checkpoint efter en fremtidig faktisk vejrfejl og dens rettelse: brug den dybeste autentiske, gyldigt gemte fase gennem den normale indgang, efter nødvendige kontroller og inden for eksisterende autoritet, uden overlap eller gateskip. Det giver ingen automatisk genkørsel, ekstra log-/providerlæsning, merge eller produktionsændring under writer. Lokal, upåvirket kildeforberedelse må fortsætte uden overlap med det kritiske vejrspor.
+
+604-rettelsen skal bevare ægte213/220/230-/vidensfaser: historiske positive prøver bruger udstedt kilde og må ikke få nye modelaliases eller lempet adgang; den aktuelle readiness kræver alle præcise migrations-ID'er i rækkefølge. Lokale PASS er ikke exact-head CI, PostgreSQL, ekstern AI eller offentlig levering. Delvist godkendt cachefremskridt er ikke fuld datakvalitet. Interne fejl, cacheidentiteter og private kontroltal må ikke blive offentlig assistentviden. De øvrige regler og historikken består.
+
+*Dateret kildeforberedelse før levering af 606; afsnittets statuspunkter er historik og erstattes af den nyere status ovenfor.*
 
 ## Aktiv forbrugsafgrænsning — 14. oktober 2026
 
 Et bølgeforvalg må ikke bruge strøm-gitterkravet som generel materialiseringsgate. Den afgrænsede undtagelse gælder kun Feggesunds bølge-only kalder, ikke faktisk strøm i score, memory, native-hold eller anvendt replayhistorik. Bevar almindelig bølgevalidering, alle originaler og 118/T+3-horisonten. Ingen ny producer-/modelbinding, provenance, pruning eller rå vejrdata i logs. Samme normale genoptagelse skal selv bevise faktisk cachevalg, restore og admission; et grønt SAVE-trin er ikke genbrug.
 
 # AI operating rules
+
+## Fysisk vidensbinding efter230 — 14. oktober 2026
+
+Den nye videnskandidat skal versionsformateres og bygges i rækkefølgen faktisk C→renderC→I→renderI→normalT. Tuple, hele manifester og ny append-only migrationskilde fryses kun fra disse faktiske filer; gamle213/220/230-byggere og SQL må ikke omskrives eller bruge nye filer som gammel kilde. Den separate fixed-issued220-kontrol og ny vidensbygger kontrollerer hver sin fase. Den normale syv-fil-synkronisering og efterfølgende fysiske slutkontrol kræves før kilde-PR.
+
+Leveringen kræver faktisk installeret230/schema2 før den nye metadataovergang, bevis for oprindelige B/S og uændret numerisk historik samt alle normale writer-/plan-/SQL-/Edge-/private/public-gates. Præference-ON er ikke samtykke eller anonymitet, og viden aktiverer hverken statistik, retention eller sletning. Ingen global Management-/kontogate må tilføjes vejrhentning. Lokal eller syntetisk nativekilde er ikke PostgreSQL, ekstern AI eller offentlig effekt; private fejl må ikke føjes til offentlig assistentviden.
 
 ## Strømguardens forbrugsgrænse — 14. oktober 2026
 

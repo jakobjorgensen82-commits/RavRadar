@@ -44,7 +44,7 @@ import { RAVSCORE_KNOWN_PUBLIC_SOURCE_REPAIR_POLICY as SOURCE_REPAIR } from
   './lib/ravscore-known-public-source-repair.mjs';
 import { createSupabaseAdminRequester } from './lib/supabase-admin-rest.mjs';
 import {
-  REQUIRED_CUTOVER_MIGRATIONS,
+  assistantResponseRequiredMigrations,
   TRIP_ACTIVE_ADMISSION_POLICY_ID,
   TRIP_BINDING_POLICY_ID,
   checkIntegratedCutoverReadiness,
@@ -1127,7 +1127,7 @@ function assertIntegratedReadiness(readiness, sourceHead) {
     || readiness.tripActiveAdmissionPolicySha256
       !== EXPECTED_TRIP_ACTIVE_ADMISSION_POLICY.sha256
     || JSON.stringify(readiness.migrationIds) !== JSON.stringify(
-      REQUIRED_CUTOVER_MIGRATIONS.map(item => item.id))
+      assistantResponseRequiredMigrations().map(item => item.id))
     || !exactKeys(readiness.assistantBinding, [
       'modelId', 'stateSchemaVersion', 'modelContractSha256', 'modelBundleSha256',
       'knowledgeSchema', 'knowledgeSha256',

@@ -19,24 +19,68 @@ assert.equal(plan.gate, 'node scripts/source-critical-gate.mjs');
 assert.ok(plan.preflight.includes('node scripts/build-ravscore-model-bundle.mjs --check'));
 assert.ok(plan.preflight.includes('node scripts/sync-ravscore-model-binding.mjs --check'));
 // Preserve all 47 baseline commands, the genuine issued213 historical check,
-// exactly one current220 check and one pure prewrite-diagnostic check. Never rebuild issued213.
+// exactly one issued220 check, current KB check and pure prewrite-diagnostic check.
+// Never rebuild either historical binding against the current KB source.
 const issuedCheck = 'node scripts/check-account-assistant-issued-source.mjs';
-const successorCheck = 'node scripts/build-current-grid-original-binding-successor.mjs --check';
+const issuedGridCheck = 'node scripts/check-current-grid-issued-source.mjs';
+const issuedKnowledgeCheck = 'node scripts/check-assistant-knowledge-issued-source.mjs';
+const successorCheck = 'node scripts/build-assistant-response-binding-successor.mjs --check';
 const diagnosticCheck = 'node scripts/test-current-grid-prewrite-diagnostic.mjs';
-for (const check of [issuedCheck, successorCheck, diagnosticCheck]) {
+for (const check of [issuedCheck, issuedGridCheck, issuedKnowledgeCheck, successorCheck, diagnosticCheck]) {
   assert.equal(declared.filter(command => command === check).length, 1,
     'Historical, current and pure diagnostic source must each be checked exactly once.');
 }
 assert.equal(declared.includes('node scripts/build-account-assistant-binding-successor.mjs --check'), false,
-  'The immutable issued213 builder must not be rerun against current220 source.');
-assert.ok(declared.filter(command => ![issuedCheck, successorCheck, diagnosticCheck].includes(command)).length <= 47,
+  'The immutable issued213 builder must not be rerun against current KB source.');
+assert.equal(declared.includes('node scripts/build-current-grid-original-binding-successor.mjs --check'), false,
+  'The immutable issued220 builder must run only in its fixed issued source.');
+assert.equal(declared.includes('node scripts/build-assistant-knowledge-binding-successor.mjs --check'), false,
+  'The immutable issued1414 builder must run only in its fixed issued source.');
+assert.ok(declared.filter(command => ![issuedCheck, issuedGridCheck, issuedKnowledgeCheck, successorCheck, diagnosticCheck].includes(command)).length <= 47,
   `Kildegaten er igen blevet for bred uden den præcise efterfølgerkontrol: ${declared.length} kommandoer.`);
 assert.equal(declared.filter(command => command === 'python scripts/test-copernicus-current-pilot.py').length, 1);
 assert.ok(fs.readFileSync('scripts/test-copernicus-current-pilot.py', 'utf8').includes(
   'runpy.run_path(str(ROOT / "scripts/test-copernicus-dataset-updating.py"), run_name="__main__")'),
   'The existing Copernicus source group must execute the actual subset/checkpoint regression suite.');
 const pythonContractGroup = fs.readFileSync('scripts/test-current-operational-python-contracts.mjs', 'utf8');
-const publicPrivacyGroup = fs.readFileSync('scripts/test-tracked-runtime-privacy.mjs', 'utf8');
+const publicPrivacyGroup = fs.readFileSync('scripts/test-tracked-runtime-privacy.mjs', 'utf8').replaceAll('\r\n', '\n');
+
+// Count executable child-family slots, not the one fixed assistant-path alias.
+// The assistant family still occurs once in the original list; its four fixed
+// processes collectively retain every catalogue locale and all default blocks.
+function privacyScheduleWithoutAssistantAlias(source) {
+  const alias = "const assistantRoundtrip='scripts/test-rav-assistant-main-edge-roundtrip.mjs';\n";
+  assert.equal(source.split(alias).length - 1, 1, 'Exactly one fixed assistant alias declaration.');
+  const partitions = "const fixedAssistantInvocations=Object.freeze([\n"
+    + "  ['--source-catalog456-da'],['--source-catalog456-de'],['--source-catalog456-en'],\n"
+    + "  ['--source-default-without-catalog456'],\n]);";
+  assert.equal(source.split(partitions).length - 1, 1,
+    'Assistant source coverage requires DA, DE, EN and all non-catalogue default blocks exactly once.');
+  const families = [...source.matchAll(/^for \(const script of \[\n([\s\S]*?)^\]\) \{$/gm)];
+  assert.equal(families.length, 1, 'Exactly one existing privacy child-family loop.');
+  assert.equal(families[0][1].split("'scripts/test-rav-assistant-main-edge-roundtrip.mjs'").length - 1, 1,
+    'The assistant partitions must use the original single privacy-family slot.');
+  const invocation = '  const invocations=script===assistantRoundtrip?fixedAssistantInvocations:[[]];\n'
+    + '  for(const args of invocations){\n'
+    + "    const result = spawnSync(process.execPath, [script,...args], { cwd: process.cwd(), encoding: 'utf8', timeout: 30_000, maxBuffer: 1024 * 1024 });";
+  assert.equal(source.split(invocation).length - 1, 1,
+    'All existing families retain the actual bounded caller; only the assistant uses four fixed partitions.');
+  return source.replace(alias, '');
+}
+const publicPrivacySchedule = privacyScheduleWithoutAssistantAlias(publicPrivacyGroup);
+for (const flag of ['--source-catalog456-da', '--source-catalog456-de', '--source-catalog456-en',
+  '--source-default-without-catalog456']) {
+  assert.throws(() => privacyScheduleWithoutAssistantAlias(publicPrivacyGroup.replace(flag, '--missing-partition')),
+    /Assistant source coverage/);
+}
+assert.throws(() => privacyScheduleWithoutAssistantAlias(publicPrivacyGroup.replace(
+  "['--source-catalog456-de']", "['--source-catalog456-da']")), /Assistant source coverage/);
+assert.throws(() => privacyScheduleWithoutAssistantAlias(publicPrivacyGroup.replace(
+  'script===assistantRoundtrip?fixedAssistantInvocations:[[]]', '[[]]')), /actual bounded caller/);
+assert.throws(() => privacyScheduleWithoutAssistantAlias(publicPrivacyGroup.replace(
+  'timeout: 30_000, maxBuffer: 1024 * 1024', 'timeout: 60_000, maxBuffer: 1024 * 1024')), /actual bounded caller/);
+assert.throws(() => privacyScheduleWithoutAssistantAlias(publicPrivacyGroup.replace(
+  'maxBuffer: 1024 * 1024', 'maxBuffer: 2 * 1024 * 1024')), /actual bounded caller/);
 for (const file of [
   'scripts/test-observation-production-mapping.mjs',
   'scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
@@ -51,7 +95,7 @@ for (const file of [
   'scripts/test-trip-evidence-upload-receipt.mjs',
   'scripts/test-trip-evidence-storage-interruption.mjs',
   'scripts/test-trip-storage-edge-transient-retry.mjs',
-]) assert.equal(publicPrivacyGroup.split(`'${file}'`).length - 1, 1,
+]) assert.equal(publicPrivacySchedule.split(`'${file}'`).length - 1, 1,
   `The existing source privacy group must execute ${file} exactly once.`);
 assert.equal((pythonContractGroup.match(/'test-dmi-bulk-supervised\.py'/g) || []).length, 1,
   'The existing Python source group must execute the DMI supervisor regression exactly once.');

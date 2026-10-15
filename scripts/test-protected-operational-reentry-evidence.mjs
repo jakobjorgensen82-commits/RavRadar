@@ -478,9 +478,20 @@ test('pre-activation terminal takeover retains the same target through runner lo
     await publishProtectedPreActivationTarget({...common,directory:restored,deploymentId:secondOwner.attemptId});
     const published=clone(server.row());
     const readiness=await buildIntegratedCutoverReadiness(sourceHead,{publicImplementationClosureSha256:target.seal.targetImplementationClosureSha256});
-    const plan=activation.prepareIntegratedHistoricalMaintenance({currentRow:central,currentProfileRow:profileRow,sourceHead,
-      publicManifest:target.manifest,publicAudit:audit,readiness,sourceImplementationClosureSha256:source.seal.targetImplementationClosureSha256,
+    // The normal current readiness must carry every exact issued phase in order;
+    // neither an old220/1414 list nor missing230/1503, duplication or extra IDs is admitted.
+    const {assistantResponseRequiredMigrations,assistantKnowledgeRequiredMigrations}=await import('./integrated-cutover-readiness.mjs');
+    const requiredIds=assistantResponseRequiredMigrations().map(item=>item.id);
+    const historicalKnowledgeIds=assistantKnowledgeRequiredMigrations().map(item=>item.id);
+    assert.deepEqual(readiness.migrationIds,requiredIds);
+    const prepare=observed=>activation.prepareIntegratedHistoricalMaintenance({currentRow:central,currentProfileRow:profileRow,sourceHead,
+      publicManifest:target.manifest,publicAudit:audit,readiness:observed,sourceImplementationClosureSha256:source.seal.targetImplementationClosureSha256,
       requestedImplementationClosureSha256:target.seal.targetImplementationClosureSha256,eventName:'schedule',ref:'refs/heads/main',githubSha:sourceHead});
+    for(const ids of [historicalKnowledgeIds,requiredIds.slice(0,-2),requiredIds.filter(id=>!id.startsWith('20261013230000_')),
+      requiredIds.slice(0,-1),[...requiredIds,requiredIds.at(-1)],[...requiredIds,'20990101000000_extra'],
+      [...requiredIds.slice(0,-2),requiredIds.at(-1),requiredIds.at(-2)]])
+      assert.throws(()=>prepare({...readiness,migrationIds:ids}),{message:'Integrated return lacks exact backend/Edge cutover readiness'});
+    const plan=prepare(readiness);
     await assert.rejects(prepareProtectedPreActivationHandoff({...common,directory:restored,owner:secondOwner,readiness:{},plan}));
     await assert.rejects(prepareProtectedPreActivationHandoff({...common,directory:restored,owner:secondOwner,readiness,plan:{...plan,centralExpectedVersion:0}}));
     assert.deepEqual(server.row(),published);await assert.rejects(fs.stat(path.join(restored,'handoff.json')),{code:'ENOENT'});
