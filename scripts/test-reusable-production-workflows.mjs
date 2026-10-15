@@ -627,7 +627,15 @@ const casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.end
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
 assert.equal(casTimeoutSettings.at(-1).migration,
-  '20261013220000_current_grid_original_bound_successor.sql');
+  '20261015030000_assistant_response_bound_successor.sql');
+assert.deepEqual(casTimeoutSettings.find(item =>
+  item.migration === '20261014140000_assistant_knowledge_bound_successor.sql'),
+  { migration: '20261014140000_assistant_knowledge_bound_successor.sql', timeout: '55s' },
+  'The issued knowledge predecessor retains its exact scoped timeout');
+assert.deepEqual(casTimeoutSettings.find(item =>
+  item.migration === '20261013220000_current_grid_original_bound_successor.sql'),
+  { migration: '20261013220000_current_grid_original_bound_successor.sql', timeout: '55s' },
+  'the issued current-grid predecessor retains its exact scoped timeout');
 assert.deepEqual(casTimeoutSettings.find(item =>
   item.migration === '20261013210000_account_assistant_original_bound_successor.sql'),
   { migration: '20261013210000_account_assistant_original_bound_successor.sql', timeout: '55s' },

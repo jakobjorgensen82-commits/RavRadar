@@ -14,6 +14,9 @@ import {
   assertSealedIntegratedCutoverReadiness,
   assertSupabaseMigrationPlan,
   assertSupabaseMigrationsApplied,
+  assistantKnowledgeRequiredMigrations,
+  assistantResponseRequiredMigrations,
+  prepareAssistantResponseCutoverWorkdir,
   buildIntegratedCutoverReadiness,
   checkIntegratedCutoverReadiness,
   checkSealedIntegratedCutoverReadiness,
@@ -38,6 +41,12 @@ import { buildBoundedCurrentTransportMemory } from '../js/core/ravscore-regime-m
 import { buildCurrentSupplyMemory } from '../js/core/ravscore-current-supply-memory.js';
 import { readAccountAssistantCanonicalSource } from './lib/account-assistant-successor-source.mjs';
 import { readCurrentGridCanonicalSource } from './lib/current-grid-successor-source.mjs';
+import { ASSISTANT_KNOWLEDGE_BINDING, assistantKnowledgeMigration,
+  readAssistantKnowledgeCanonicalSource } from './lib/assistant-knowledge-successor-source.mjs';
+import {readAssistantResponseCanonicalSource,requireAssistantResponseBinding,ASSISTANT_RESPONSE_MIGRATION}
+  from './lib/assistant-response-successor-source.mjs';
+import {selectAssistantResponseRoute,verifyAssistantResponsePlan}
+  from './verify-assistant-response-migration-plan.mjs';
 import { accountAssistantCatalogQuery, verifyAccountAssistantCatalogMetadata,
   verifyInstalledAccountAssistantSchema } from './verify-account-assistant-schema.mjs';
 
@@ -1093,7 +1102,19 @@ assert.throws(() => assertSealedIntegratedCutoverReadiness({
 }), /strictly equal|modelBundle/);
 assert.equal(readiness.assistantBinding.modelContractSha256, readiness.modelContractSha256);
 assert.equal(readiness.assistantBinding.modelBundleSha256, readiness.modelBundleSha256);
-assert.deepEqual(readiness.migrationIds, REQUIRED_CUTOVER_MIGRATIONS.map(item => item.id));
+const knowledgeRequiredMigrations = assistantKnowledgeRequiredMigrations();
+assert.deepEqual(knowledgeRequiredMigrations.slice(0, -2), REQUIRED_CUTOVER_MIGRATIONS,
+  'Historical220 required migrations remain the exact prefix, not a redefined LATEST');
+assert.equal(knowledgeRequiredMigrations.at(-2).version, '20261013230000');
+assert.deepEqual(knowledgeRequiredMigrations.at(-1), assistantKnowledgeMigration());
+const responseRequiredMigrations=assistantResponseRequiredMigrations();
+assert.deepEqual(responseRequiredMigrations.slice(0,-1),
+  [...REQUIRED_CUTOVER_MIGRATIONS,knowledgeRequiredMigrations.at(-2)],
+  'Direct response requires the exact issued220 plus statistics230 prefix');
+assert.ok(!responseRequiredMigrations.some(row=>row.version===assistantKnowledgeMigration().version),
+  'Archived1414 must never become an active direct-response migration');
+assert.deepEqual(responseRequiredMigrations.at(-1),ASSISTANT_RESPONSE_MIGRATION);
+assert.deepEqual(readiness.migrationIds,responseRequiredMigrations.map(item=>item.id));
 assert.doesNotMatch(JSON.stringify(readiness), /(?:coordinate|latitude|longitude|currentU|currentV|payloadRow)/i);
 await assert.rejects(buildIntegratedCutoverReadiness('short', {
   publicImplementationClosureSha256: PUBLIC_IMPLEMENTATION_CLOSURE_SHA256,
@@ -1109,7 +1130,21 @@ assert.ok(accountCanonicalSource.includes('7876390c0e99dc1926d57e3e5a51a0c88c8e7
 const {canonicalSource:currentCanonicalSource,accountSource:currentAccountSchemaSource}=
   await readCurrentGridCanonicalSource();
 assert.equal(currentAccountSchemaSource,accountSchemaSource,'current-grid must not alter account schema');
-assert.ok(currentCanonicalSource.includes(CHECKPOINT_CONTINUATION_HASH));
+assert.ok(currentCanonicalSource.includes('0f6c182ab2ffa7d9d0153706277aa3f7b582327be7dda02842a9c8b995568d4a'),
+  'Immutable220 canonical keeps its issued continuation, never the current KB tuple');
+const {canonicalSource:knowledgeCanonicalSource,historicalSchema1,statisticsSchema2Source}=
+  await readAssistantKnowledgeCanonicalSource();
+assert.equal(historicalSchema1,accountSchemaSource,'KB preserves genuine213 schema1 separately');
+assert.notEqual(statisticsSchema2Source,historicalSchema1,'KB initializer is explicitly schema2');
+assert.equal(ASSISTANT_KNOWLEDGE_BINDING.T,'a541199142e24abf6798c736d32ae09cf623de1d58687c0ab108a35396fc6ca9');
+assert.ok(knowledgeCanonicalSource.includes(ASSISTANT_KNOWLEDGE_BINDING.T),
+  'Issued1414 retains its genuine continuation');
+const {canonicalSource:responseCanonicalSource,statisticsSchema2Source:responseSchema2Source}=
+  await readAssistantResponseCanonicalSource();
+assert.equal(responseSchema2Source,statisticsSchema2Source,'Response preserves exact schema2');
+assert.equal(CHECKPOINT_CONTINUATION_HASH,requireAssistantResponseBinding().T);
+assert.ok(responseCanonicalSource.includes(CHECKPOINT_CONTINUATION_HASH),
+  'Current readback uses the physically issued response continuation');
 
 // The normal hashed readback takes exactly the new CAS body, never an expected
 // hash override; the other twelve immutable function bodies stay unchanged.
@@ -1133,7 +1168,24 @@ assert.notEqual(currentCasBody,accountCasBody);
 assert.equal(currentCasBody.split("      and (case v_payload #>> '{modelBinding,modelBundleSha256}'\n").length,2);
 assert.equal(currentCasBody.split('        else false\n      end)\n    then\n').length,2);
 assert.ok(!currentCasBody.includes("      and case v_payload #>> '{modelBinding,modelBundleSha256}'"));
-assert.ok(expectedCheckpointContract.definition.includes(`-- cas-function --\n${currentCasBody}\n-- checkpoint-history-exclusion --`));
+const knowledgeCasBody=checkpointSqlBody(knowledgeCanonicalSource,'ravradar_ravscore_checkpoint_cas');
+assert.notEqual(knowledgeCasBody,currentCasBody,'KB is a distinct exact metadata successor');
+assert.equal(knowledgeCasBody.split("      and (case v_payload #>> '{modelBinding,modelBundleSha256}'\n").length,2);
+assert.equal(knowledgeCasBody.split('        else false\n      end)\n    then\n').length,2);
+assert.ok(!knowledgeCasBody.includes("      and case v_payload #>> '{modelBinding,modelBundleSha256}'"));
+const responseCasBody=checkpointSqlBody(responseCanonicalSource,'ravradar_ravscore_checkpoint_cas');
+assert.notEqual(responseCasBody,knowledgeCasBody,'Response is a distinct exact metadata successor');
+assert.equal(responseCasBody.split("      and (case v_payload #>> '{modelBinding,modelBundleSha256}'\n").length,2);
+assert.equal(responseCasBody.split('        else false\n      end)\n    then\n').length,2);
+assert.ok(!responseCasBody.includes("      and case v_payload #>> '{modelBinding,modelBundleSha256}'"));
+assert.ok(expectedCheckpointContract.definition.includes(`-- cas-function --\n${responseCasBody}\n-- checkpoint-history-exclusion --`));
+assert.ok(!expectedCheckpointContract.definition.includes(knowledgeCasBody),
+  'Current response readback refuses the complete old1414 CAS body');
+assert.ok(!expectedCheckpointContract.definition.includes(currentCasBody),
+  'Current KB readback must not accept the complete old220 CAS body');
+assert.ok(!expectedCheckpointContract.definition.includes('-- kb-predecessor-projection --'),
+  'Direct current readback must not admit the archived1414 projection');
+assert.ok(expectedCheckpointContract.definition.includes(`-- response-predecessor-projection --\n${checkpointSqlBody(responseCanonicalSource,'ravradar_ravscore_checkpoint_rsp_predecessor_projection')}`));
 assert.ok(!expectedCheckpointContract.definition.includes(accountCasBody));
 for(const family of ['ffc','249','c1ac'])for(const kind of ['state','payload']) {
   const name=`ravradar_ravscore_checkpoint_grid_${family}_${kind}_valid`;
@@ -1168,7 +1220,19 @@ for (const unchangedName of [
 ]) {
   assert.ok(!singleProjectionMigration.includes('create or replace function public.'+unchangedName+'('),
     'historical200000 still replaces only CAS, not '+unchangedName);
-  assert.ok(expectedCheckpointContract.definition.includes(checkpointSqlBody(currentCanonicalSource,unchangedName)));
+  const knowledgeBody=checkpointSqlBody(knowledgeCanonicalSource,unchangedName);
+  const gridBody=checkpointSqlBody(currentCanonicalSource,unchangedName);
+  const responseBody=checkpointSqlBody(responseCanonicalSource,unchangedName);
+  assert.ok(expectedCheckpointContract.definition.includes(responseBody),
+    'Current readback must hash the whole actual response helper: '+unchangedName);
+  if(['ravradar_ravscore_checkpoint_integrated_state_valid','ravradar_ravscore_checkpoint_payload_valid',
+    'ravradar_ravscore_checkpoint_predecessor_payload_valid'].includes(unchangedName)) {
+    assert.notEqual(responseBody,gridBody,'Exact response metadata validator replacement: '+unchangedName);
+    assert.notEqual(knowledgeBody,gridBody,'Exact KB metadata validator replacement: '+unchangedName);
+  } else {
+    assert.equal(responseBody,gridBody,'Response must preserve the whole220 helper: '+unchangedName);
+    assert.equal(knowledgeBody,gridBody,'KB must preserve the whole220 helper: '+unchangedName);
+  }
   if(!['ravradar_ravscore_checkpoint_integrated_state_valid','ravradar_ravscore_checkpoint_payload_valid'].includes(unchangedName)) {
     assert.equal(checkpointSqlBody(currentCanonicalSource,unchangedName),checkpointSqlBody(accountCanonicalSource,unchangedName),
       'current-grid keeps the complete213 helper unchanged: '+unchangedName);
@@ -2104,9 +2168,11 @@ const accountSchema1Prewrite=accountCodeOnly.indexOf('      - name: Verify uncha
 const accountDryRun=accountCodeOnly.indexOf('      - name: Dry-run and require only the latest exact integrated migration');
 const accountDbApply=accountCodeOnly.indexOf('          supabase db push --linked --skip-vault');
 const accountPostwrite=accountCodeOnly.indexOf('      - name: Read back migration and database binding');
-const accountSchema2Readback=accountCodeOnly.indexOf('node scripts/verify-statistics-preference-revision-schema.mjs');
+const accountSchema2Readback=accountCodeOnly.indexOf('node scripts/verify-statistics-preference-revision-schema.mjs',accountPostwrite);
 const accountTripDeploy=accountCodeOnly.indexOf('      - name: Deploy exact rebound trip Edges without Worker or D1 replay');
 const accountAssistantDeploy=accountCodeOnly.indexOf('            if supabase functions deploy ravradar-assistant');
+assert.match(accountCodeOnly.slice(accountTripDeploy,accountAssistantDeploy),
+  /        if: env\.RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED == 'true' \|\| env\.RAVRADAR_RESPONSE_EDGE_REQUIRED == 'true'\r?\n/);
 assert.ok(accountSchema1Prewrite>=0 && accountReadback>accountSchema1Prewrite
   && accountDryRun>accountReadback && accountDbApply>accountDryRun,
   'genuine schema1 catalog readback must remain in the before230 prewrite phase');
@@ -2394,4 +2460,48 @@ assert.equal(arbitraryAccountCalls,0);
   }
   assert.equal(stageCallers,4);
   console.log('Statistics230 explicit before/install/noop delivery route preserves current220 and exact schema2 readback.');
+}
+
+// Direct current response, separate from the genuine archived1414 phase.
+{
+  const descriptor=ASSISTANT_RESPONSE_MIGRATION;
+  const required=assistantResponseRequiredMigrations();
+  const list=(installed=false,missing=null)=>' Local | Remote | Time (UTC)\n'+required.map(row=>
+    ' '+row.version+' | '+((row.version!==descriptor.version||installed)&&row.version!==missing?row.version:'')+' | ').join('\n');
+  const dry='DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • '+descriptor.filename+'\nFinished supabase db push.';
+  const noOp='DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.';
+  const environment={GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',
+    RAVRADAR_RESPONSE_UPGRADE_OPT_IN:'true',RAVRADAR_RESPONSE_CONFIRMATION:'DEPLOY-CODE-ONLY-REPAIR',
+    RAVRADAR_RESPONSE_SAVED_WEATHER:'false',RAVRADAR_RESPONSE_RECOVERY_RUN_ID:'',
+    RAVRADAR_RESPONSE_PREWRITE_VERIFIED:'true',RAVRADAR_USERDATA_UPGRADE_OPT_IN:'false',
+    RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN:'false',RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN:'false',
+    RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN:'false',RAVRADAR_KNOWLEDGE_UPGRADE_OPT_IN:'false'};
+  const owned=await fs.mkdtemp(path.join(os.tmpdir(),'rr-response-plan-'));
+  try {
+    const prepared=await prepareAssistantResponseCutoverWorkdir({workdir:owned});
+    assert.deepEqual((await fs.readdir(prepared.migrationsDirectory)).sort(),required.map(row=>row.filename).sort());
+    assert.ok(!(await fs.readdir(prepared.migrationsDirectory)).includes(assistantKnowledgeMigration().filename));
+    for(const row of required)assert.deepEqual(
+      await fs.readFile(path.join(prepared.migrationsDirectory,row.filename)),
+      await fs.readFile(path.resolve('supabase/migrations',row.filename)));
+    const request={phase:'before',migrationListText:list(),dryRunText:dry,
+      migrationsDirectory:prepared.migrationsDirectory,environment};
+    assert.equal(selectAssistantResponseRoute(request),'before');
+    assert.deepEqual((await verifyAssistantResponsePlan(request)).pendingVersions,[descriptor.version]);
+    await assert.rejects(verifyAssistantResponsePlan({...request,environment:{...environment,RAVRADAR_RESPONSE_PREWRITE_VERIFIED:'false'}}));
+    assert.throws(()=>selectAssistantResponseRoute({...request,migrationListText:list(false,'20261013230000')}));
+    await assert.rejects(verifyAssistantResponsePlan({...request,migrationListText:list(false,'20261013230000')}));
+    for(const archived of ['\n 20261014140000 | | ','\n 20261014140000 | 20261014140000 | '])
+      assert.throws(()=>selectAssistantResponseRoute({...request,migrationListText:list()+archived}));
+    await assert.rejects(verifyAssistantResponsePlan({...request,migrationListText:list()+'\n 20261016000000 | | '}));
+    assert.throws(()=>selectAssistantResponseRoute({...request,environment:{...environment,RAVRADAR_KNOWLEDGE_UPGRADE_OPT_IN:'true'}}));
+    assert.throws(()=>selectAssistantResponseRoute({...request,environment:{...environment,RAVRADAR_RESPONSE_UPGRADE_OPT_IN:'false'}}));
+    assert.throws(()=>selectAssistantResponseRoute({...request,migrationListText:list(true)}));
+    await assert.rejects(verifyAssistantResponsePlan({...request,dryRunText:dry.replace(descriptor.filename,'20261015030000_unexpected.sql')}));
+    const installed={...request,phase:'installed',migrationListText:list(true),dryRunText:noOp,
+      environment:{...environment,RAVRADAR_RESPONSE_UPGRADE_OPT_IN:'false'}};
+    assert.equal(selectAssistantResponseRoute(installed),'installed');
+    assert.deepEqual((await verifyAssistantResponsePlan(installed)).pendingVersions,[]);
+    assert.throws(()=>selectAssistantResponseRoute({...installed,migrationListText:list(true)+'\n 20261016000000 | 20261016000000 | '}));
+  } finally { await fs.rm(owned,{recursive:true,force:false}); }
 }

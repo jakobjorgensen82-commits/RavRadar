@@ -1,3 +1,15 @@
+## Næste lokale kildeleverance — 4.0.578, 15. oktober 2026
+
+Bevar svarrettelserne, normal 578-versionering og alle nyere PR610/612-vejrblade. Afslut den ufærdige sammenføring uden tab af gamle afsnit, originaler eller historiske SQL-filer. Den normale fysiske C→I→T-bygning er gennemført. 15030000 er lokalt genereret med bestået normal --write/--check og --issued-kildemål samt de tre normale lokale readiness-/installations-/privat-runtime-mål. Næste er separat 230-kildelevering på genuine I71 før 578, afsluttet Git-merge og præcis samlet CI/PostgreSQL/native; 230 er endnu ikke dokumenteret installeret. Fixed14140000-checkerens fire cases er kun historisk kildebevis.
+
+Kontrolleret levering og offentlige DA/DE/EN-, sikkerheds-, opfølgnings- og eksterne AI-forløb er særskilt åbne. Den snævre loglæsning og PARTIAL afventer hver sit svar. Ingen ny vejr-, videns- eller statistiklevering påstås. Alle fem mål er åbne til 18. oktober; vejrprioritet og writer-grænser består. Se håndbog 89.231; ældre planer bevares som historik.
+
+## Aktuel lokal 4.0.578-sammenføring — 15. oktober 2026
+
+Den lokale assistent-/statistikkilde og versionssynkroniseringen til 4.0.578 sammenføres nu med vejr-main 6b3e/PR610–612. Begge siders dokumentationshistorik og de nyere vejrrettelser bevares. PR610 og PR612 er kildeleveret; ældre udsagn nedenfor om afventende kildelevering er dateret historik. Det er ikke bevis for en ny offentlig vejrgeneration eller for levering af assistent, statistik eller ekstern AI.
+
+Denne konfliktløsning afslutter ikke Git-merge, nye C/I/T-bindinger, efterfølgermigration, præcis samlet kilde-/PostgreSQL-kontrol eller installation. Den faste 14140000-kilde og de gamle SQL-filer må ikke ommærkes. PARTIAL-spørgsmålet og spørgsmålet om den snævre loglæsning er hver for sig ubesvarede. Alle fem mål er åbne med frist 18. oktober 2026; originaler, historik, writer-, sikkerheds- og tilladelsesgrænser består. De to bevarede blokke nedenfor er kildehistorik, ikke nye produktionskvitteringer.
+
 ## Næste lokale statistikleverance — 15. oktober 2026
 
 Afslut statistik577-kilden og dens målrettede kontroller → præcis source/native220→230-kontrol → særskilt godkendt installation med før-/efter-readback → faktisk kontoforløb. Ingen global vejrafhængighed til kontoens metadata indføres. Assistent578 følger separat; checkpoint-PARTIAL og AI-logspørgsmålet forbliver særskilt uafklarede. Alle fem mål frem mod 18. oktober er åbne.
@@ -12,11 +24,28 @@ Den tidligere PUBLIC-/genoptagelseskilde er faktisk kontrolleret og kildeleveret
 
 Den historiske strøm-only cachelæser har nu sin første faktisk beståede Linux-nativekontrol på PR610-head ca8273d58fb37 i CI 38644100696/1. Den normale native-wrapper og alle syv obligatoriske native-underprøver er gennemført, herunder ejet læselease, procesafslutning, EOF, tilbagerulning og historisk genbrug. Den regionale normale prøve og den nationale producentkæde består lokalt med 673 dele og 118 timer gennem CLI til JavaScript. De tilknyttede lokale Open-Meteo- og kontrolprøver består efter præcis rettelse af prøveinput-headeren for otte mål; de oprindelige fejl bevares. Det er lokale/syntetiske input, ikke bevis for providerdata, national produktionsdrift eller hård databevarelse i næste faktiske generation. Den private 72-timers-/51-timersbehovsbro mapper højst 127 rækker med højst to eksisterende 121-timersvinduer. Tre private slutstøttetimer bevares til den uændrede scalar-T+3-sanitizer; offentlige 118 timer og det normale 121-timersunderlag ændres ikke. Den normale lokale 673-dels CLIprøve består også med nøgleomordnet input og eksklusiv outputoprettelse. Status 15. oktober: Den samlede source-kontrol i samme CI fejlede i fem kontroller; De efterfølgende trin 15–19, herunder PostgreSQL-kontrollen, blev derfor ikke kørt. De afgrænsede lokale kildekompatibilitetsrettelser bevarer ægte gamle kildepins, updaterens fulde historiske kildeinverse og alle gamle model-/SQL-/ABI-grænser. Den normale updater-indgangsprøve består lokalt 21/21 uden skip; første værtsfejl er bevaret, og ingen produktguard er lempet. Ny samlet CI på det rettede præcise head, PostgreSQL, sourceproof og sikker offentlig levering er fortsat åbne; det første native-PASS er ikke samlet CI- eller produktionsbevis.
 
+## Aktuel lokal sammenføringsstatus — 15. oktober 2026
+
+Denne sammenføring af den lokale 4.0.577-kilde (8da) og EBF er hverken ny kildekontrol, installation eller offentlig levering. Model- og SQL-metadata er ikke ommærket; nye bundne kildeændringer kræver en legitim efterfølger før levering. Den separate vejr-main 6b3e/PR612 er kildeleveret, men genoptagelse uden nye vejrhentninger afventer præcis PARTIAL-godkendelse. Alle fem mål er fortsat åbne med frist 18. oktober 2026. Eksisterende writer-, sikkerheds-, databevarelses- og tilladelsesgrænser består. De daterede blokke nedenfor er bevaret historik, ikke nye produktionspåstande.
+
 ## Første konkrete leverance — PUBLIC-sammeoriginal og fuld genoptagelse, 14. oktober 2026
 
 Afslut den allerede lokalt prøvede akutte kildekomposition: normal PUBLIC-sammeoriginal/zonemapsbinding og præcist krypteret fremskridtsvalg i almindeligt fuldt forløb → præcis samlet Linux-/Bash-/source-/PostgreSQL-kontrol → writerfri sikker levering → faktisk GCM-restore og komponentadmission → beregning/gemning/upload/publicering/Pages → ny offentlig generationskontrol. Originaler, historisk replay, kildeprioritet, budgetter og alle normale gates består. Lokal test eller et grønt SAVE-trin er ikke genoptagelses- eller deploybevis.
 
 Den faktisk fejlede PART/time og resterende delvise DMI-årsager undersøges ud fra reelle forløb, ikke en ny testspiral eller gættet provenance. Cron er fortsat pauset med uændret plan og genaktiveres efter verificeret normaldrift. Hold øvrige KB-/statistik-/SOURCE-kandidater særskilt og upåvirket; alle fem hovedopgaver og fristen 18. oktober består. Se håndbog 89.229 og privat checkpoint; ingen ekstra kørsel eller nye tilladelser følger af denne dokumentation.
+## Aktuel sammenføring og normal vejrhentning — 14. oktober 2026
+
+606 er faktisk kildeleveret på main584 efter præcis grøn kilde-/PostgreSQL-kontrol. Den ene normale vejrhentning38577766010 arbejder videre med autentisk genbrugt fremgang; DMI-hentningstrinnet er afsluttet, men fuld datakvalitet, beregning, privat gemning/publicering, Edge, Pages og ny offentlig strøm/hukommelse/score kræver fortsat deres faktiske beviser.385533 er afsluttet med fejl, ikke en aktiv writer. Cron forbliver pauset med uændret plan, indtil normalleveringen er verificeret.
+
+De syv konkrete604-kilderettelser og den faktisk leverede606-kilde samles nu lokalt med begge dokumentationshistorikker bevaret. Ny præcis samlet kilde-/PostgreSQL-kontrol kræves.230/schema2 skal stadig installeres og genlæses før videns577; ingen SQL, Edge eller offentlig ændring under den aktive vejrhentning. Ved en fremtidig faktisk vejrfejl: ret årsagen, bestå nødvendige kontroller og genoptag gennem den normale indgang fra den dybeste autentiske, gyldigt gemte checkpointfase uden overlap eller gateskip. Alle fem mål og18oktober-fristen består. Afsnittene nedenfor er dateret førstatus på de udtrykkeligt erstattede punkter.
+
+# Aktuelle konkrete leverancer — 14. oktober 2026
+
+Følg den ene almindelige38553389373 på leveret603/main90ae gennem faktisk DMI, cache, privat gemning/upload, checkpoint, Edge, Pages og ny offentlig strøm/hukommelse/score. Genaktivér den uændrede cron først efter verificeret normallevering. Ingen produktionsændring under writer.
+
+Imens færdiggøres577-videnskildens normale måltests/dokumentation og præcise samlede kilde/PostgreSQL. Faktisk lokal C73/I75/T, ny eksklusiv kilde og syvconsumer-synkronisering består; det er ikke offentlig levering. Efter normal vejrdrift leveres først230/schema2 fra sit verificerede spor og derefter den særskilte vidensbinding med originale B/S, historik og no-loss bevaret. Browser/ekstern-AI, anonym statistik/retention, den isolerede SOURCE-revision og selvstændig drift fortsættes afgrænset parallelt; ingen af de fem mål lukkes på disse delbeviser. Frist18oktober.
+
+*Dateret kildeforberedelse før levering af 606; afsnittets statuspunkter er historik og erstattes af den nyere status ovenfor.*
 
 ## Første konkrete leverance — 14. oktober 2026
 

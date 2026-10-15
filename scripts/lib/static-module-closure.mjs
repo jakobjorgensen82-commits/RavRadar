@@ -2,7 +2,7 @@ function tokens(source) {
   const result = [];
   const text = String(source);
   let index = 0;
-  const push = (type, value = null) => result.push(Object.freeze({ type, value }));
+  const push = (type, value = null, range = {}) => result.push(Object.freeze({ type, value, ...range }));
 
   const scanCode = stopAtTemplateExpressionEnd => {
     let nestedBraceDepth = 0;
@@ -60,6 +60,7 @@ function tokens(source) {
       }
       if (char === '"' || char === "'") {
         const quote = char;
+        const start = index;
         let value = '';
         index += 1;
         let closed = false;
@@ -77,7 +78,7 @@ function tokens(source) {
           index += 1;
         }
         if (!closed) throw new Error('Unterminated string in module closure');
-        push('string', value);
+        push('string', value, { start, end: index });
         continue;
       }
       if (char === '`') {
@@ -138,11 +139,16 @@ function statementEnd(items, start) {
   return items.length;
 }
 
-export function exactRelativeModuleSpecifiers(source, label = 'module') {
+function relativeModuleReferences(source, label, staticOnly) {
   let items;
   try { items = tokens(source); }
   catch (error) { throw new Error(`${label}: ${error.message}`); }
-  const values = new Set();
+  const values = [];
+  const add = token => {
+    if (token.value.startsWith('./') || token.value.startsWith('../')) {
+      values.push(Object.freeze({ specifier: token.value, start: token.start, end: token.end }));
+    }
+  };
   for (let index = 0; index < items.length; index += 1) {
     const token = items[index];
     if (token.type !== 'id' || !['import', 'export'].includes(token.value)) continue;
@@ -154,15 +160,13 @@ export function exactRelativeModuleSpecifiers(source, label = 'module') {
       if (specifier?.type !== 'string' || close?.value !== ')') {
         throw new Error(`${label} contains a non-literal or unparsed dynamic import`);
       }
-      if (specifier.value.startsWith('./') || specifier.value.startsWith('../')) {
-        values.add(specifier.value);
-      }
+      if (!staticOnly) add(specifier);
       index += 3;
       continue;
     }
     const end = statementEnd(items, index + 1);
     if (token.value === 'import' && next?.type === 'string') {
-      if (next.value.startsWith('./') || next.value.startsWith('../')) values.add(next.value);
+      add(next);
       index += 1;
       continue;
     }
@@ -175,12 +179,19 @@ export function exactRelativeModuleSpecifiers(source, label = 'module') {
       if (specifier?.type !== 'string') {
         throw new Error(`${label} contains an unparsed static module specifier`);
       }
-      if (specifier.value.startsWith('./') || specifier.value.startsWith('../')) {
-        values.add(specifier.value);
-      }
+      add(specifier);
     } else if (token.value === 'import') {
       throw new Error(`${label} contains an unparsed import expression`);
     }
   }
-  return [...values];
+  return values;
+}
+
+export function exactRelativeModuleSpecifiers(source, label = 'module') {
+  return [...new Set(relativeModuleReferences(source, label, false).map(row => row.specifier))];
+}
+
+// String-literal ranges include their quotes; never ranges in comments or facts.
+export function exactStaticRelativeModuleReferences(source, label = 'module') {
+  return relativeModuleReferences(source, label, true);
 }

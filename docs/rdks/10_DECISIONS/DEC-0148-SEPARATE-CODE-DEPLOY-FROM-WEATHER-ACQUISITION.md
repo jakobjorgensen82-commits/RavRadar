@@ -33,3 +33,9 @@ Efter cutover findes en gemt privat integreret runtime og et offentligt, allered
 - Vejrrettelser installeres først og bevises derefter i den næste normale vejrkørsel.
 - Den senest gyldige offentlige tilstand forbliver synlig, indtil en ny atomisk vejrproduktion er fuldført.
 - Kode-only betyder ikke kontrolfrit: konkret dataintegritet, private data, modelbinding, artifact og deploy forbliver beskyttet.
+
+## Teknisk præcisering 15. oktober 2026 — lokal 578-kildeforberedelse
+
+I denne lokale efterfølger er et aldrig installeret 14140000-led ikke en nødvendig produktionsmellemstation. Den valgte nye 15030000-rute skal i stedet bevise den genuine 220-bindingsfase og faktisk installeret 230/schema2, kræve remote 14140000 fraværende og alene 15030000 pending. DEC-0227 gælder uændret: alle 60 gamle SQL-filer, fixed1414 og anvendt remote historik bevares; intet gammelt led omskrives, ommærkes eller erklæres installeret. Den lokale 1503-kandidat er nu omgenereret under egne strenge førpins og består normal CLI write/check samt issued-kildemålet; det er ikke genbygning af historisk SQL eller bevis for installation.
+
+Dette er et lokalt kodevalg efter denne beslutnings punkt 2, 3, 6 og 10, ikke installationsautoritet eller en lempelse af førfase-, original-, no-loss-, writer-, kilde-/native-/CI-, readiness- og publiceringskontroller. 230 er endnu ikke dokumenteret installeret. Den konkrete kontrollerede installation kræver fortsat særskilt afklaring; ukendt eller anden førfase må ikke udløse en alternativ rute.

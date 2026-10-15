@@ -2,6 +2,12 @@
 
 Denne fil skal læses før analyse, programmering eller versionsbygning.
 
+## Nyeste kilde-/leveringsstatus — 15. oktober 2026
+
+PR610 og PR612 er faktisk kildeleveret på vejr-main 6b3e; den tidligere beskrivelse af UTC-normalisering som kun lokal er historik. Ny offentlig vejrvirkning og checkpoint-only/PARTIAL er ikke derved bevist eller godkendt. PARTIAL-spørgsmålet er fortsat ubesvaret.
+
+Lokal 4.0.578 bevarer de nyere vejrblade og forbereder assistentsvarefterfølgeren. C→I→T er nu særskilt fysisk bygget gennem normale builders; versionssynkronisering og fixed14140000-kontrol er ikke dette bevis. 15030000 er lokalt genereret gennem normal CLI --write/--check, og --issued-kildemålet består. PostgreSQL/native, præcis CI, installation og offentlig effekt er fortsat åbne. Alle fem mål er åbne til 18. oktober; se håndbog 89.231 og nyeste statusfronter. Dette statusprefix ændrer ingen faste arbejds-, model-, sikkerheds-, writer- eller tilladelsesregler.
+
 ## Lokal statistikpræference 4.0.577 — 15. oktober 2026
 
 Denne kildekandidat følger efter offentlig 4.0.576 og før den særskilt bevarede assistent578. Beskyt nyere OFF mod forsinket ON gennem serverens kontobundne revision; ukendt skriveudfald må ikke vises som gemt. Se håndbog 89.219. Lokal kilde er ikke installation, anonym statistik eller aktiveret retention.

@@ -109,7 +109,7 @@ jobs:
           # Use only PostgreSQL binaries already present in the normal runner.
           # No package/runtime install, network, cloud database or skip fallback.
           node scripts/test-code-only-userdata-policy-routing.mjs
-          node scripts/test-protected-ravscore-continuation-checkpoint.mjs --native-statistics-revision
+          node scripts/test-protected-ravscore-continuation-checkpoint.mjs --native-assistant-response
 
       - name: Require validated source tree to remain unchanged
         shell: bash

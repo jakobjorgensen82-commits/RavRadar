@@ -1,13 +1,26 @@
 import fs from 'node:fs/promises';
+import { exactStaticRelativeModuleReferences } from './lib/static-module-closure.mjs';
 import path from 'node:path';
 const version=JSON.parse(await fs.readFile('package.json','utf8')).version;
 const roots=['bootstrap.js','app.js','admin.html','index.html','documentation.html','handbook.html','supabase-setup.html'];
 const jsFiles=[];
 async function walk(dir){for(const entry of await fs.readdir(dir,{withFileTypes:true})){const rel=path.join(dir,entry.name);if(entry.isDirectory())await walk(rel);else if(entry.name.endsWith('.js'))jsFiles.push(rel.replaceAll('\\','/'));}}
 await walk('js');
+await walk('knowledge');
 const failures=[];
 for(const file of [...roots,...jsFiles]){
   const text=await fs.readFile(file,'utf8');
+  if(file.startsWith('knowledge/')&&file.endsWith('.js')){
+    for(const {specifier} of exactStaticRelativeModuleReferences(text,file)){
+      if(!/\.js(?:[?#]|$)/.test(specifier))continue;
+      const base=specifier.split('#',1)[0];
+      const query=base.indexOf('?');
+      const versions=new URLSearchParams(query<0?'':base.slice(query+1)).getAll('v');
+      if(versions.length!==1||versions[0]!==version)failures.push(`${file}: statisk knowledge-import ${specifier} skal have præcis én cacheversion v=${version}`);
+    }
+    // Knowledge facts/URLs are not browser module cache identities.
+    continue;
+  }
   for(const match of text.matchAll(/\$\d+\.\d+\.\d+/g))failures.push(`${file}: ugyldig browsercachemarkør ${match[0]}`);
   for(const match of text.matchAll(/[?&]v=(\d+\.\d+\.\d+)/g))if(match[1]!==version)failures.push(`${file}: ${match[0]} (forventede ${version})`);
   if(file==='app.js')for(const match of text.matchAll(/\b\d+\.\d+\.\d+\b/g))if(match[0]!==version)failures.push(`${file}: forældet runtimeversion ${match[0]} (forventede ${version})`);
