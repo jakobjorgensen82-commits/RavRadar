@@ -503,6 +503,79 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
     projectionRows:673,projectionStackLength:projection.stack.length,longPrefixStackLength:longProjection.stack.length,
     projectionSite:nativeKnowledgeAssertionSite(projection).knowledgeSite,
     longPrefixSite:nativeKnowledgeAssertionSite(longProjection).knowledgeSite,postgresExecuted:false}));
+
+  // RESPONSE-only location projection uses the real unchanged pinned adapter,
+  // never imports it or executes SQL. UNKNOWN first frames must stay UNKNOWN.
+  const {nativeResponseAssertionSite}=await import('./lib/checkpoint-cas-native-postgres.mjs');
+  const responseUrl=new URL('./lib/assistant-response-native-postgres.mjs',import.meta.url);
+  const responseSource=await fs.readFile(responseUrl,'utf8');
+  assert.equal(crypto.createHash('sha256').update(responseSource).digest('hex'),
+    '42406ea58fcc5336c4800c352ac3673e6fdb76a265efd9b485296f1fc721aec4');
+  const responseFrame=(line,column=3)=>'    at async runNativeAssistantResponseSuccessor ('+responseUrl.href+':'+line+':'+column+')';
+  const responseUnknown={responseSite:'UNKNOWN',responseLine:null,responseColumn:null,
+    responseCaller:'UNKNOWN',responseCase:'UNKNOWN'};
+  const responseSql={code:'ERR_ASSERTION',stack:'AssertionError: PRIVATE\n'+responseFrame(54,49)+'\n'+responseFrame(55,34)+'\n'+responseFrame(91,2)};
+  Object.defineProperties(responseSql,{actual:{get(){throw new Error('PRIVATE_ACTUAL');}},expected:{get(){throw new Error('PRIVATE_EXPECTED');}}});
+  assert.deepEqual(nativeResponseAssertionSite(responseSql),{responseSite:'SQL_COMMAND',responseLine:54,responseColumn:49,
+    responseCaller:'MIGRATION_AND_ROW_PRESERVATION',responseCase:'UNKNOWN'});
+  for(const [line,site] of [[85,'BEFORE_DRIFT_REJECTION'],[98,'BODY_PINS_COMPARE'],
+    [122,'WHOLE_PROJECTION_COMPARE'],[153,'HISTORICAL_FAMILIES'],[157,'FINAL_ROOT_IDENTITY']]) {
+    assert.equal(nativeResponseAssertionSite({stack:responseFrame(line)}).responseSite,site);
+    const lastColumn=responseSource.split('\n')[line-1].length;
+    assert.equal(nativeResponseAssertionSite({stack:responseFrame(line,lastColumn)}).responseSite,site);
+    assert.deepEqual(nativeResponseAssertionSite({stack:responseFrame(line,lastColumn+1)+'\n'+responseFrame(122)}),responseUnknown);
+  }
+  for(const stack of [null,{},'X'.repeat(32769),responseFrame(122).replace('/assistant-response-native-postgres.mjs','/private.mjs'),
+    responseFrame(122).replace('file:','https:'),responseFrame(122).replace('.mjs:', '.mjs?private:'),
+    responseFrame(122).replace('.mjs:', '.mjs#private:'),responseFrame(122,0),responseFrame(999),
+    responseFrame(999)+'\n'+responseFrame(122),
+    responseFrame(122).replace('file:','https:')+'\n'+responseFrame(122),
+    '    at unknown (node:internal/test_runner/test:1:1)\n'+responseFrame(122)]) {
+    assert.deepEqual(nativeResponseAssertionSite({stack}),responseUnknown);
+  }
+  assert.deepEqual(nativeResponseAssertionSite({get stack(){throw new Error('PRIVATE_GETTER');}}),responseUnknown);
+  assert.equal(nativeResponseAssertionSite({stack:responseFrame(122)+'\n'+responseFrame(999)+'\n'+responseFrame(91)}).responseCaller,'UNKNOWN');
+  const responseCas={code:'ERR_ASSERTION',stack:'PRIVATE\n'+responseFrame(146,3),message:'same-old'};
+  assert.equal(nativeResponseAssertionSite(responseCas).responseSite,'CAS_SQLSTATE');
+  assert.equal(nativeResponseAssertionSite(responseCas).responseCase,'SAME_OLD');
+  assert.equal(nativeResponseAssertionSite({...responseCas,stack:responseFrame(146,45)}).responseSite,'CAS_STORED_VERSION');
+  assert.equal(nativeResponseAssertionSite({stack:responseCas.stack,get message(){throw new Error('PRIVATE_GETTER');}}).responseCase,'UNKNOWN');
+  for(const message of ['same-old\nPRIVATE','same-old\r\n\r\nPRIVATE','same-old\n\n','same-old\n\n\nPRIVATE',
+    'same-old\n\n\rPRIVATE','same-oldX\n\nPRIVATE','PRIVATE\n\nsame-old']) {
+    assert.equal(nativeResponseAssertionSite({...responseCas,message}).responseCase,'UNKNOWN');
+  }
+  const responseRealFailure=(source,values,line)=>{
+    try {runInNewContext(source,{assert,...values},{filename:responseUrl.href,lineOffset:line-1});}
+    catch(error){assert(error instanceof assert.AssertionError);assert.equal(error.code,'ERR_ASSERTION');return error;}
+    assert.fail('synthetic response assertion must fail');
+  };
+  for(const [name,expected] of Object.entries(fixedCases)) {
+    const error=responseRealFailure('assert.equal(actual,expected,name)',{actual:'NONE',expected:'P0001',name},146);
+    assert.equal(nativeResponseAssertionSite(error).responseSite,'CAS_SQLSTATE');
+    assert.equal(nativeResponseAssertionSite(error).responseCase,expected);
+  }
+  const responseProjection=responseRealFailure('assert.deepEqual(actual,expected,name)',
+    {actual:simple673,expected:changed673,name:'whole genuine673 values preserved'},122);
+  assert.equal(nativeResponseAssertionSite(responseProjection).responseSite,'WHOLE_PROJECTION_COMPARE');
+  const responseLong=responseRealFailure('assert.deepEqual(actual,expected,name)',
+    {actual:simple673,expected:changed673,name:'P'.repeat(33000)},122);
+  assert.deepEqual(nativeResponseAssertionSite(responseLong),responseUnknown);
+  const responseRows=[],responseRecorder=createNativePostgresFailureRecorder(row=>responseRows.push(row));
+  responseRecorder.at('RESPONSE','ADAPTER');let responseFirst;
+  try{try{throw responseCas;}catch(error){responseRecorder.report(error);throw error;}}catch(error){responseFirst=error;}
+  assert.equal(responseFirst,responseCas);assert.equal(responseRows.length,1);
+  assert.equal(responseRows[0].responseSite,'CAS_SQLSTATE');assert.equal(responseRows[0].responseCase,'SAME_OLD');
+  responseRecorder.at('RESPONSE','CLEANUP');responseRecorder.report(responseSql);assert.equal(responseRows.length,1);
+  assert.doesNotMatch(JSON.stringify(responseRows),/PRIVATE|file:|https:|\.mjs|stack|message|actual|expected|NONE|P0001/);
+  const otherPhase=[],otherRecorder=createNativePostgresFailureRecorder(row=>otherPhase.push(row));
+  otherRecorder.at('CURRENT220','ADAPTER');otherRecorder.report(responseCas);
+  assert.equal(Object.keys(otherPhase[0]).some(key=>key.startsWith('response')),false);
+  const otherCode=[],otherCodeRecorder=createNativePostgresFailureRecorder(row=>otherCode.push(row));
+  otherCodeRecorder.at('RESPONSE','ADAPTER');otherCodeRecorder.report({code:'ENOENT',stack:responseCas.stack});
+  assert.equal(Object.keys(otherCode[0]).some(key=>key.startsWith('response')),false);
+  console.log(JSON.stringify({kind:'NATIVE_RESPONSE_ASSERTION_SHAPE_SYNTHETIC',realCases:14,
+    projectionRows:673,pinnedAdapterUnchanged:true,firstFailurePreserved:true,postgresExecuted:false}));
+
 }
 
 if(process.argv.includes('--native-failure-diagnostic-only')) {

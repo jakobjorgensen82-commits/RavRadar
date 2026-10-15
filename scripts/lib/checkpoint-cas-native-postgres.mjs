@@ -143,6 +143,140 @@ export function nativeKnowledgeAssertionSite(error) {
   } catch {return Object.freeze(unknown);}
 }
 
+// Diagnostic map ONLY for the unchanged, loader-pinned RESPONSE AFTER adapter:
+// SHA256 42406ea58fcc5336c4800c352ac3673e6fdb76a265efd9b485296f1fc721aec4.
+// This is a finite source location, never admission or a raw stack/message.
+const NATIVE_RESPONSE_SITES=Object.freeze([
+  [29,85,'BINDING'],
+  [30,79,'PLATFORM'],
+  [31,43,'ISSUED_OWNER'],
+  [32,73,'SOURCE_ROOT'],
+  [33,93,'CONSTRUCTORS'],
+  [35,89,'CLUSTER_ROOT'],
+  [36,61,'CLUSTER_ROOT'],
+  [37,127,'CLUSTER_IDENTITY'],
+  [38,53,'CLUSTER_OWNER'],
+  [40,91,'CLUSTER_PATHS'],
+  [41,81,'PSQL_PATH'],
+  [42,69,'PSQL_FILE'],
+  [48,146,'SERVER_OWNER'],
+  [49,155,'SERVER_OWNER'],
+  [51,108,'OWNER_BEFORE'],
+  [52,141,'SQL_SIGNAL'],
+  [53,102,'OWNER_AFTER'],
+  [54,133,'SQL_COMMAND'],
+  [55,52,'SQL_JSON'],
+  [57,163,'SERVER_METADATA'],
+  [58,104,'BINARY_VERSION'],
+  [59,102,'BINARY_VERSION'],
+  [60,59,'CANONICAL_SOURCE'],
+  [62,94,'MIGRATION_FILE'],
+  [63,77,'MIGRATION_PIN'],
+  [64,115,'BEFORE_LATEST230'],
+  [65,128,'CATALOG_WRAPPER'],
+  [66,131,'BEFORE_SCHEMA2'],
+  [67,549,'ROWS_WRAPPER'],
+  [68,86,'BEFORE_ROWS'],
+  [69,351,'ACCOUNTS_WRAPPER'],
+  [70,171,'ORIGINALS_WRAPPER'],
+  [71,73,'BEFORE_ORIGINALS'],
+  [72,163,'PROPERTIES_WRAPPER'],
+  [73,36,'BEFORE_PROPERTIES'],
+  [85,120,'BEFORE_DRIFT_REJECTION'],
+  [86,102,'BEFORE_DRIFT_SQLSTATE'],
+  [87,118,'BEFORE_NO_PROJECTION'],
+  [88,102,'BEFORE_RESTORE'],
+  [89,50,'BEFORE_SCHEMA2_RESTORE'],
+  [91,138,'MIGRATION_AND_ROW_PRESERVATION'],
+  [92,92,'MIGRATION_RECORD'],
+  [93,110,'REPLAY_REJECTION'],
+  [94,117,'TIMEOUT_RESET'],
+  [95,49,'AFTER_SCHEMA2'],
+  [97,269,'BODY_PINS_READ'],
+  [98,122,'BODY_PINS_COMPARE'],
+  [99,416,'CAS_ACL_READ'],
+  [100,96,'CAS_ACL_COMPARE'],
+  [101,147,'FIXTURE_NAME'],
+  [102,124,'FIXTURE_INSERT'],
+  [107,70,'FIXTURE_WRITE'],
+  [108,110,'NORMAL_CHECKPOINT_SAVE'],
+  [109,110,'FIXTURE_SOURCE_PRESERVED'],
+  [111,100,'FIXTURE_I'],
+  [112,91,'FIXTURE_C'],
+  [113,100,'FIXTURE_T_PARTS'],
+  [114,136,'FIXTURE_PAIR_COUNTS'],
+  [115,100,'FIXTURE_REFERENCE'],
+  [117,64,'ISSUED220_FIXTURE'],
+  [118,87,'RESPONSE_CURRENT_FIXTURE'],
+  [119,85,'RESPONSE_FUTURE_FIXTURE'],
+  [120,115,'RESPONSE_CHANGED_FIXTURE'],
+  [121,169,'PROJECTION_READ'],
+  [122,160,'WHOLE_PROJECTION_COMPARE'],
+  [123,159,'CURRENT_VALID'],
+  [124,159,'CHANGED_VALID'],
+  [125,72,'CHANGED_DIFFERENT'],
+  [145,300,'CAS_EXECUTE'],
+  [146,102,'CAS_RESULT'],
+  [147,132,'CAS_DISPOSITION_VERSION'],
+  [149,162,'CAS_REFUSAL_PRESERVED'],
+  [150,120,'CAS_UPDATED_OWNER'],
+  [153,224,'HISTORICAL_FAMILIES'],
+  [154,162,'SOURCE_FILE_PINS'],
+  [155,95,'ACCOUNTS_ORIGINALS_PRESERVED'],
+  [156,133,'FINAL_SCHEMA2_OWNER'],
+  [157,142,'FINAL_ROOT_IDENTITY'],
+]);
+const NATIVE_RESPONSE_WRAPPERS=new Set([48,49,51,52,53,54,55,65,67,69,70,72,102]);
+const NATIVE_RESPONSE_CASES=Object.freeze({
+  'same-old':'SAME_OLD','idempotent-before-version':'IDEMPOTENT_BEFORE_VERSION',
+  'changed-old':'CHANGED_OLD','changed-current':'CHANGED_CURRENT','wrong-version':'WRONG_VERSION',
+  newer:'NEWER',older:'OLDER',role:'ROLE',acl:'ACL',receipts:'RECEIPTS',
+  'candidate-receipt':'CANDIDATE_RECEIPT','candidate-history':'CANDIDATE_HISTORY',
+  unpaired:'UNPAIRED','mixed-family':'MIXED_FAMILY',
+});
+export function nativeResponseAssertionSite(error) {
+  const unknown={responseSite:'UNKNOWN',responseLine:null,responseColumn:null,
+    responseCaller:'UNKNOWN',responseCase:'UNKNOWN'};
+  try {
+    const stack=error?.stack;
+    if(typeof stack!=='string'||stack.length>32768)return Object.freeze(unknown);
+    const url=new URL('./assistant-response-native-postgres.mjs',import.meta.url).href;
+    const escaped=url.replace(/[.*+?^\${}()|[\]\\]/g,'\\$&');
+    const frame=new RegExp('^    at (?:async )?(?:[^()\\r\\n]{1,120} \\()?'+escaped+':([1-9][0-9]{0,3}):([1-9][0-9]{0,3})\\)?$');
+    const found=[];
+    for(const line of stack.split('\n')) {
+      if(!line.startsWith('    at '))continue;
+      const match=frame.exec(line);
+      // An unknown FIRST frame is final; never promote a later known frame.
+      if(!match){if(!found.length)return Object.freeze(unknown);break;}
+      const number=Number(match[1]),column=Number(match[2]);
+      const row=NATIVE_RESPONSE_SITES.find(value=>value[0]===number&&column<=value[1]);
+      if(!row){if(!found.length)return Object.freeze(unknown);break;}
+      let site=row[2];
+      if(number===146)site=column<45?'CAS_SQLSTATE':'CAS_STORED_VERSION';
+      found.push({line:number,column,site});
+    }
+    if(!found.length)return Object.freeze(unknown);
+    const first=found[0];
+    const caller=found.slice(1).find(value=>!NATIVE_RESPONSE_WRAPPERS.has(value.line));
+    let caseName='UNKNOWN';
+    if(first.line===146) {
+      try {
+        const message=error?.message;
+        if(typeof message==='string') {
+          const prefix=message.slice(0,64),newline=prefix.indexOf('\n');
+          const name=newline<0?prefix:prefix.slice(0,newline);
+          const separated=newline>=0&&prefix.slice(newline,newline+2)==='\n\n'
+            &&message.length>newline+2&&prefix[newline+2]!=='\n'&&prefix[newline+2]!=='\r';
+          if(Object.hasOwn(NATIVE_RESPONSE_CASES,name)&&(message===name||separated))caseName=NATIVE_RESPONSE_CASES[name];
+        }
+      }catch{/* A diagnostic getter cannot replace the original error. */}
+    }
+    return Object.freeze({responseSite:first.site,responseLine:first.line,responseColumn:first.column,
+      responseCaller:caller?.site??'UNKNOWN',responseCase:caseName});
+  } catch {return Object.freeze(unknown);}
+}
+
 // Source-test failure context only. Never emit assertion message/actual/
 // expected/stack, SQL text, payloads or credentials. The first failure wins.
 export function createNativePostgresFailureRecorder(emit = value => console.error(JSON.stringify(value))) {
@@ -164,7 +298,8 @@ export function createNativePostgresFailureRecorder(emit = value => console.erro
       const errorCode=['ERR_ASSERTION','ENOENT','EACCES','EPERM','ETIMEDOUT','ENOBUFS'].includes(code)?code:'UNKNOWN';
       first=Object.freeze({kind:'NATIVE_POSTGRES_FIRST_FAILURE',phase,case:caseName,caseIndex,
         category:errorCode==='ERR_ASSERTION'?'ASSERTION_FAILED':'NATIVE_FAILURE',errorCode,sqlState,
-        ...(phase==='KNOWLEDGE'&&errorCode==='ERR_ASSERTION'?nativeKnowledgeAssertionSite(error):{})});
+        ...(phase==='KNOWLEDGE'&&errorCode==='ERR_ASSERTION'?nativeKnowledgeAssertionSite(error):{}),
+        ...(phase==='RESPONSE'&&errorCode==='ERR_ASSERTION'?nativeResponseAssertionSite(error):{})});
       try{emit(first);}catch{/* Diagnostic failure must not replace the original failure. */}
       return first;
     },

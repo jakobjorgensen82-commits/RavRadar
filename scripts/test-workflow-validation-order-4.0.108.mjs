@@ -228,6 +228,7 @@ for (const workflowName of sourceGateWorkflowNames) {
         'name: Validate isolated acquisition ownership and raw-save cohort',
         'name: Restore Node22 for existing source validation',
         'name: Validate bounded native current diagnosis on artificial data only',
+        'name: Validate native PostgreSQL checkpoint CAS on artificial data only',
       ], 'Only the exact ordered PR source-only steps may intervene; no unknown step');
       assert.doesNotMatch(intervening, /^\s+(?:if|continue-on-error):/m,
         'The PR ownership/native prefix must run unconditionally and fail closed');
@@ -366,6 +367,7 @@ const prGateOrder = [
   'name: Validate isolated acquisition ownership and raw-save cohort',
   'name: Restore Node22 for existing source validation',
   'name: Validate bounded native current diagnosis on artificial data only',
+  'name: Validate native PostgreSQL checkpoint CAS on artificial data only',
   'name: Validate source contracts and release governance',
   'name: Require validated source tree to remain unchanged',
   'name: Upload tree-content source validation proof',

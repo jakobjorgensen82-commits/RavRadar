@@ -2,6 +2,8 @@
 
 **Kort fortalt:** 4.0.578 er en lokal svarrettelse, ikke bevis for ny offentlig viden eller fungerende ekstern AI.
 
+Næste kontrol den 15. oktober bestod source-, checkpoint- og kapacitetsprøver, men fejlede i den rigtige PostgreSQL-prøves RESPONSE-fase uden et konkret assertionssted i loggen. Den nye afgrænsede fejlangivelse viser kun faste kildesteder; selve databaseårsagen er stadig åben. Den uændrede databaseprøve køres fremover før den lange source-matrix, mens alle øvrige kontroller og slutbeviset bevares. SQL, adapter og C/I/T er uændrede. 614/1503 må ikke leveres før en autentisk kompatibel I71-vejrgeneration og faktisk installeret 230; den aktuelt aflæste private originalpakke er stadig I68. Dette er lokal kildeforberedelse, ikke installation, vejrhentning eller offentlig effekt.
+
 Opfølgning 15. oktober: Statistikrettelsen er kildeleveret som PR #613, men migration 230 er ikke installeret. Den første kontrol af den samlede assistentkilde #614 fandt én forældet testforventning om 1414 i den normale genoptagelsesprøve. Den aktuelle forventning følger nu den direkte 1503-rute, mens den gamle 1414-rute afvises eksplicit og alle tidligere negativforløb bevares. Hele det berørte mål består lokalt 7/7 uden skip. Ingen produktkontrol eller modelbinding er lempet; ny præcis samlet kilde-/PostgreSQL-kontrol og faktisk installation/offentlig effekt mangler fortsat.
 
 Den lokale 4.0.578-kandidat retter to svargrænser. Et spørgsmål om sikker færdsel i vand eller UV-sikkerhed skal ikke ende som generel vejledning om en ravlygte. Et helt definitionsspørgsmål om succinit må besvares med definitionen; et tilføjet fysikspørgsmål må ikke forsvinde i samme match.
