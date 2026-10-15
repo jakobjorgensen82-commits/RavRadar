@@ -1,12 +1,12 @@
-import { authEnabled, authIdentityEpoch, currentSession, onAuthChange, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.576";
-import { getLocalObservations, getOwnTripExport, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.576";
-import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.576";
-import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.576";
-import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.576";
-import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.576";
-import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.576";
+import { authEnabled, authIdentityEpoch, currentSession, onAuthChange, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.577";
+import { getLocalObservations, getOwnTripExport, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.577";
+import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.577";
+import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.577";
+import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.577";
+import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.577";
+import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.577";
 
-import { getOwnStatisticsPreference, setOwnStatisticsPreference } from "../services/permissions-service.js?v=4.0.576";
+import { getOwnStatisticsPreference, setOwnStatisticsPreference } from "../services/permissions-service.js?v=4.0.577";
 
 const pendingHistoryViews = new WeakMap();
 function stopHistoryView(dialog) { pendingHistoryViews.get(dialog)?.dispose(); }
@@ -18,25 +18,25 @@ function bindStatisticsPreference(dialog, content) {
   const status=content.querySelector('#accountStatisticsStatus');
   if(!input||!status)return;
   const identity=authIdentityEpoch(),ownerId=currentSession()?.user?.id;
-  let stopped=false,unsubscribe=()=>{};
+  let stopped=false,unsubscribe=()=>{},observed=null;
   const current=()=>!stopped&&dialog.open&&input.isConnected
     &&authIdentityEpoch()===identity&&ownerId&&currentSession()?.user?.id===ownerId;
   const dispose=()=>{
     if(stopped)return;stopped=true;unsubscribe();
     dialog.removeEventListener('close',dispose);dialog.removeEventListener('cancel',dispose);
-    input.disabled=true;input.indeterminate=true;status.textContent='';
+    observed=null;input.disabled=true;input.indeterminate=true;status.textContent='';
     if(pendingStatisticsViews.get(dialog)?.dispose===dispose)pendingStatisticsViews.delete(dialog);
   };
   pendingStatisticsViews.set(dialog,{dispose});
   unsubscribe=onAuthChange(()=>{if(authIdentityEpoch()!==identity||currentSession()?.user?.id!==ownerId)dispose();});
   dialog.addEventListener('close',dispose);dialog.addEventListener('cancel',dispose);
   input.disabled=true;input.indeterminate=true;status.textContent=t('account.statisticsLoading');
-  const show=value=>{input.checked=value.enabled;input.indeterminate=false;input.disabled=false;status.textContent='';};
-  const unavailable=()=>{input.disabled=true;input.indeterminate=true;status.textContent=t('account.statisticsUnavailable');};
+  const show=value=>{observed=value;input.checked=value.enabled;input.indeterminate=false;input.disabled=false;status.textContent='';};
+  const unavailable=()=>{observed=null;input.disabled=true;input.indeterminate=true;status.textContent=t('account.statisticsUnavailable');};
   input.addEventListener('change',async()=>{
     if(!current()||input.disabled)return;
     const requested=input.checked;input.disabled=true;status.textContent=t('account.statisticsSaving');
-    try{const value=await setOwnStatisticsPreference(requested);if(current()){show(value);status.textContent=t('account.statisticsSaved');}}
+    try{const value=await setOwnStatisticsPreference(requested,observed);if(current()){show(value);status.textContent=t('account.statisticsSaved');}}
     catch{if(current())unavailable();} // Unknown write outcome is not a confirmed ON/OFF.
   });
   void getOwnStatisticsPreference().then(value=>{if(current())show(value);},()=>{if(current())unavailable();});

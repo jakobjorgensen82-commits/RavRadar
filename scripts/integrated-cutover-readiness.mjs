@@ -20,6 +20,8 @@ import {
 import { buildSupabaseAdminHeaders } from './lib/supabase-admin-rest.mjs';
 import { ACCOUNT_ASSISTANT_MIGRATION } from './lib/account-assistant-successor-source.mjs';
 import { CURRENT_GRID_MIGRATION, readCurrentGridCanonicalSource } from './lib/current-grid-successor-source.mjs';
+import {STATISTICS_REVISION_MIGRATION,STATISTICS_REVISION_PREDECESSOR,buildStatisticsPreferenceRevision}
+  from './build-statistics-preference-revision.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MIGRATIONS_DIRECTORY = path.join(ROOT, 'supabase', 'migrations');
@@ -566,7 +568,9 @@ function assertTemporaryCutoverWorkdir(value) {
   return workdir;
 }
 
-export async function prepareTemporarySupabaseCutoverWorkdir({ workdir: inputWorkdir } = {}) {
+export async function prepareTemporarySupabaseCutoverWorkdir({ workdir: inputWorkdir, includeStatisticsPreferenceRevisionSource = false } = {}) {
+  assert.equal(typeof includeStatisticsPreferenceRevisionSource,'boolean');
+  if (includeStatisticsPreferenceRevisionSource) await assertStatisticsPreferenceRevisionSource(MIGRATIONS_DIRECTORY);
   const workdir = assertTemporaryCutoverWorkdir(inputWorkdir);
   await inspectMigrationSources();
   await fs.mkdir(workdir, { recursive: true });
@@ -582,6 +586,9 @@ export async function prepareTemporarySupabaseCutoverWorkdir({ workdir: inputWor
       path.join(migrationsDirectory, migration.filename),
     );
   }
+  if (includeStatisticsPreferenceRevisionSource) await fs.copyFile(
+    path.join(MIGRATIONS_DIRECTORY,STATISTICS_REVISION_MIGRATION.filename),
+    path.join(migrationsDirectory,STATISTICS_REVISION_MIGRATION.filename));
   return Object.freeze({ workdir, migrationsDirectory });
 }
 
@@ -748,23 +755,47 @@ function uniqueVersions(rows, field) {
   return new Set(values);
 }
 
+async function assertStatisticsPreferenceRevisionSource(migrationsDirectory) {
+  const output=await buildStatisticsPreferenceRevision({migrationsDirectory});
+  const file=path.join(migrationsDirectory,STATISTICS_REVISION_MIGRATION.filename);
+  const stat=await fs.lstat(file);assert.ok(stat.isFile()&&!stat.isSymbolicLink());
+  assert.deepEqual(await fs.readFile(file),Buffer.from(output.migration),'Exact statistics revision migration source required');
+}
+
 export async function assertSupabaseMigrationPlan({
   migrationListText,
   dryRunText,
   migrationsDirectory = MIGRATIONS_DIRECTORY,
   allowAccountAssistantPrewritePlan = false,
+  allowStatisticsPreferenceRevisionPlan = false,
 } = {}) {
+  assert.equal(typeof allowStatisticsPreferenceRevisionPlan,'boolean');
   await inspectMigrationSources({ migrationsDirectory });
+  if (allowStatisticsPreferenceRevisionPlan) {
+    assert.equal(allowAccountAssistantPrewritePlan,false,'Statistics revision is a separate sole prewrite route');
+    await assertStatisticsPreferenceRevisionSource(migrationsDirectory);
+  }
   const rows = parseSupabaseMigrationList(migrationListText);
   const local = uniqueVersions(rows, 'local');
   const remote = uniqueVersions(rows, 'remote');
-  const requiredVersions = new Set(REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
+  const plannedMigrations=allowStatisticsPreferenceRevisionPlan
+    ? [...REQUIRED_CUTOVER_MIGRATIONS,STATISTICS_REVISION_MIGRATION] : REQUIRED_CUTOVER_MIGRATIONS;
+  const requiredVersions = new Set(plannedMigrations.map(item => item.version));
 
   for (const migration of REQUIRED_CUTOVER_MIGRATIONS) {
     assert.ok(local.has(migration.version), `Supabase CLI did not see required local migration ${migration.filename}`);
   }
 
   const pending = [...local].filter(version => !remote.has(version));
+  if (pending.includes(STATISTICS_REVISION_MIGRATION.version)) {
+    assert.equal(allowStatisticsPreferenceRevisionPlan,true,'Pending statistics revision requires its named prewrite route');
+  }
+  if (allowStatisticsPreferenceRevisionPlan) {
+    assert.ok(local.has(STATISTICS_REVISION_MIGRATION.version));
+    for (const migration of REQUIRED_CUTOVER_MIGRATIONS) assert.ok(remote.has(migration.version),'Statistics revision cannot install older migrations');
+    assert.ok(remote.has(STATISTICS_REVISION_PREDECESSOR));
+    assert.deepEqual(pending,remote.has(STATISTICS_REVISION_MIGRATION.version)?[]:[STATISTICS_REVISION_MIGRATION.version]);
+  }
   if (pending.includes(ACCOUNT_ASSISTANT_MIGRATION.version)) {
     assert.equal(allowAccountAssistantPrewritePlan, true,
       'Pending account/assistant successor requires its exact prewrite route');
@@ -780,7 +811,7 @@ export async function assertSupabaseMigrationPlan({
   }
 
   const dryRunFilenames = parseSupabaseDryRunMigrationFilenames(dryRunText);
-  const expectedPendingFilenames = REQUIRED_CUTOVER_MIGRATIONS
+  const expectedPendingFilenames = plannedMigrations
     .filter(migration => pending.includes(migration.version))
     .map(migration => migration.filename);
   assert.deepEqual(dryRunFilenames, expectedPendingFilenames,
@@ -1412,7 +1443,8 @@ async function runCli() {
     return;
   }
   if (command === 'prepare-workdir') {
-    const prepared = await prepareTemporarySupabaseCutoverWorkdir({ workdir: argumentValue('--output') });
+    const prepared = await prepareTemporarySupabaseCutoverWorkdir({ workdir: argumentValue('--output'),
+      includeStatisticsPreferenceRevisionSource:process.argv.includes('--statistics-preference-revision-source') });
     console.log(`Temporary Supabase cutover view prepared with ${REQUIRED_CUTOVER_MIGRATIONS.length} exact source migrations.`);
     assert.ok(prepared.migrationsDirectory);
     return;
