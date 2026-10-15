@@ -8,6 +8,7 @@ cache key, token or owner capability is transferred here.
 import json
 import os
 from pathlib import Path
+import select
 import signal
 import subprocess
 import sys
@@ -23,7 +24,7 @@ def main():
     ciphertext = sys.argv[1:] == ['--upload-encrypted-progress']
     if (sys.platform != 'linux' or (len(sys.argv) != 1 and not distribution and not ciphertext)
             or signal.getsignal(signal.SIGCHLD) != signal.SIG_DFL
-            or not all(hasattr(os, name) for name in ('waitid', 'WNOWAIT', 'WEXITED', 'WNOHANG'))):
+            or not all(hasattr(os, name) for name in ('waitid', 'WNOWAIT', 'WEXITED', 'WNOHANG', 'pidfd_open'))):
         raise RuntimeError('DMI_RAW_SAVE_PLATFORM_REFUSED')
     # Use the actual action's executable, not PATH, a caller executable argument
     # or an assumed runner installation directory.
@@ -54,10 +55,25 @@ def main():
     child = None
     reaped = False
     first_failure = None
+    parent_fd = None
+    parent_poll = None
 
     def interrupt(signum, _frame):
         nonlocal pending
         pending = pending or signum
+
+    def require_parent_live():
+        # Observe only the already verified actual parent. No pathname, JSON
+        # PID, elapsed lease or reparenting can transfer its ownership.
+        if os.getppid() != parent_pid:
+            raise RuntimeError('DMI_RAW_SAVE_PARENT_LOST')
+        events = parent_poll.poll(0)
+        if events:
+            if any(fd != parent_fd or flags != select.POLLIN for fd, flags in events):
+                raise RuntimeError('DMI_RAW_SAVE_PARENT_UNPROVED')
+            raise RuntimeError('DMI_RAW_SAVE_PARENT_LOST')
+        if os.getppid() != parent_pid:
+            raise RuntimeError('DMI_RAW_SAVE_PARENT_LOST')
 
     def signal_owned_group(signum):
         if reaped:
@@ -68,8 +84,13 @@ def main():
         os.killpg(child.pid, signum)
 
     def close_group():
-        nonlocal reaped
+        nonlocal reaped, first_failure
         while True:
+            if first_failure is None:
+                try:
+                    require_parent_live()
+                except BaseException as error:
+                    first_failure = error
             if not reaped:
                 observed = os.waitid(os.P_PID, child.pid, os.WEXITED | os.WNOHANG | os.WNOWAIT)
                 if pending or first_failure or observed is not None:
@@ -87,6 +108,11 @@ def main():
             time.sleep(0.01)
 
     try:
+        parent_fd = os.pidfd_open(parent_pid, 0)
+        parent_poll = select.poll()
+        parent_poll.register(parent_fd, select.POLLIN)
+        # Close the open/parent-exit race before creating any worker.
+        require_parent_live()
         for signum in (signal.SIGTERM, signal.SIGINT):
             previous.append((signum, signal.signal(signum, interrupt)))
         if pending:
@@ -98,17 +124,36 @@ def main():
                                  stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                                  stderr=subprocess.DEVNULL, pass_fds=(3,))
         close_group()
+        if first_failure is not None:
+            raise first_failure
+        require_parent_live()
     except BaseException as error:
-        first_failure = error
+        if first_failure is None:
+            first_failure = error
         if child is not None:
             try:
                 close_group()
             except BaseException:
                 _retained_children.append(child)
-        raise
+        raise first_failure
     finally:
         for signum, handler in reversed(previous):
             signal.signal(signum, handler)
+        if parent_fd is not None:
+            try:
+                os.close(parent_fd)
+                try:
+                    os.fstat(parent_fd)
+                except OSError as error:
+                    if error.errno != 9:
+                        raise
+                else:
+                    raise RuntimeError('DMI_RAW_SAVE_PARENT_FD_NOT_CLOSED')
+            except BaseException:
+                # Never replace the first owner/worker/closure failure.
+                # A normal close failure still refuses before the fd3 ABI.
+                if first_failure is None:
+                    raise
     # Normal exit can report a failed worker as closed, not as a successful SAVE.
     # Parent still requires the independent exact typed v2 IPC and its own lease.
     os.close(3)

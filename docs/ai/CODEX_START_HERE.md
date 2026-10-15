@@ -1,3 +1,9 @@
+## Separat SAVE-kildekandidat — 15. oktober 2026
+
+Den normale cachegemning skal også stoppe sine egne underprocesser, hvis den styrende action-proces forsvinder brat. Den afgrænsede kandidat overvåger den allerede verificerede forælder gennem et kernel-håndtag og bevarer fysisk gruppeafslutning, første fejl, originalfiler og privat skrivelås. Den nye normale Linux-prøve dækker action-SIGKILL, ikke ødelæggelse af hele runneren. Lokale syntakskontroller er ikke native-, upload- eller produktionsbevis.
+
+Dette er et selvstændigt kildespor fra faktisk main 213942 efter PR613, ikke kopiering eller aktivering af den isolerede SOURCE19-revision. Produktbladet er særskilt registreret som producentkilde, men indgår ikke i den faktiske gemmekontrakt: den bruger den uændrede storage-ABI. Den normale beregning bekræfter uændrede fullRuntime-, publicProjection- og continuationState-kontrakthashes. Der kræves derfor ingen ny model-/SQL-/lagringsovergang for denne procesrettelse; gamle originaler og kontraktbeviser må ikke ommærkes. Model-/scorebindinger, SQL, fd3-kommunikation, kildeprioritet, administratorpunkter og budgetter bevares. Normal præcis kilde-/Linux-kontrol, sikker levering og faktisk effekt er åbne. Checkpoint-PARTIAL, 230/614-installation, fuld revision og alle fem mål til 18. oktober er fortsat særskilte åbne krav. Se håndbog 89.232.
+
 ## Aktuel lokal leverance — statistikpræference 4.0.577, 15. oktober 2026
 
 Afslut den afgrænsede 230-præferencekandidat på den eksisterende 220-modelbinding før assistent578. PR610 og PR612 er kildeleveret; checkpoint-PARTIAL og AI-loglæsning afventer fortsat deres særskilte svar. Denne kildeklargøring udfører ingen installation. Alle fem mål frem mod 18. oktober er åbne; ældre status nedenfor er dateret historik.

@@ -1,3 +1,15 @@
+## 89.232 Cachegemning ved brat tab af den styrende proces
+
+**Kort fortalt:** En afbrudt gemning skal stoppe sine egne underprocesser og bevare originaler og skrivelås; den må ikke vises som gemt.
+
+Hvis den proces, der styrer en cachegemning, forsvinder brat, kan underprocesser ellers fortsætte. Kildekandidaten overvåger den allerede kontrollerede forælder gennem et kernel-håndtag, både før opstart af arbejderen og gennem hele den fysiske lukning. Tab eller ukendt ejerstatus udløser stop af den ejede procesgruppe. Ingen anden proces overtager ejerskabet alene på grund af et procesnummer, en fil eller forløbet tid.
+
+Første fejl, de oprindelige råfiler og den private skrivelås bevares. En tilbageværende lås er hverken bevis for en levende kørsel eller tilladelse til automatisk at fjerne den. Kohortens kvittering handler kun om fysisk lukning; faktisk modtagelse hos cacheleverandøren kræver stadig sin egen gemmekvittering. Den eksisterende private kommunikation og tidsgrænser ændres ikke.
+
+Den additive normale Linux-prøve bruger den rigtige action, arbejder og underproces med egne syntetiske input. Den lukker kun den faktiske styrende proces brat og kræver, at produktet stopper underprocesserne før testoprydning. En død underproces holdes tilbage indtil genlæsning og faktisk reap, så gruppens fravær ikke antages for tidligt. Originalfil og samme lås skal være bevaret, og der må ikke stå gemt. Det er en prøve af tab af én styrende proces, ikke dokumentation for ødelæggelse af hele runneren, varig leverandørgemning eller alle samtidige skrivere.
+
+Denne separate kildekandidat starter fra main 213942 og ændrer ikke model, scoreformel, SQL, kildeprioritet eller administratorens geometri. Gemmekohorten står i producentens særskilte kildefortegnelse, men ikke i den faktiske lagringskontrakt. Den normale kontraktberegning bekræfter, at storage-ABI og fullRuntime-, publicProjection- og continuationState-hashes er uændrede. Denne procesrettelse kræver derfor ingen ny model-, SQL- eller lagringsovergang, og gamle originaler og beviser bevares uden ommærkning. Den isolerede SOURCE19-revision forbliver inaktiv. Lokale syntakskontroller er ikke Linux-/nativebevis. Præcis kildekontrol, sikker levering og faktisk produktionseffekt samt revisionens fulde fireminutters-, runner-, original-B/S-før-T- og kapacitetskrav er fortsat åbne. Alle fem hovedmål og fristen 18. oktober består.
+
 ## 89.230 Strømhistorik skal have de faktisk nødvendige originaler
 
 **Kort fortalt:** Historikbehov følger den faktisk valgte tilstand; gemte originaler, kvalificeret ny brug og faktisk genoptagelse er forskellige beviser.
