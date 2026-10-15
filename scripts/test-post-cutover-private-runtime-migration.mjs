@@ -1166,7 +1166,8 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
           assert.equal(plan.binding.targetReferenceAt, targetReferenceAt);
           assert.deepEqual(plan.originals, [savedInputAudit.canonicalSavedDmiOriginalCapture(nativeSource)]);
           assert.doesNotMatch(JSON.stringify(plan), /current-u|current-v|samplingPoint|gridPoint|https:/);
-          assert.equal(pointerReads, 3, 'source is unchanged before/after restore and after authenticated readers close');
+          assert.equal(pointerReads, 4,
+            'three explicit source readbacks plus the unchanged archived restore pointer read must all occur');
           assert.deepEqual(await fs.readFile(sourcePath), beforeDescriptor);
           assert.deepEqual(await fs.readFile(progressPath), beforeCipher);
           assert.deepEqual((await fs.readdir(preparePrivate)).sort(), ['current-source.json', 'progress.encrypted']);
