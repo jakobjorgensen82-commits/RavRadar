@@ -2134,7 +2134,7 @@ try {
     const digest = value => crypto.createHash('sha256').update(value).digest('hex');
     assert.equal(digest(oldProducer), '8ff4a5b6f50d3f2d4e177fcf8c55048051266ded1a196151d6adff9427829ce2');
     assert.equal(digest(reviewedProducer), '242844d0da14fc64ce8ebbf48bdab1e49450822cd193cd231667013e216b160e');
-    assert.equal(digest(currentProducer), 'cb4047c4c554c8051e60173df591366a186615ac4a3ffb676be8d27f14ed7c19',
+    assert.equal(digest(currentProducer), 'ec7fde66daeab835b6a852d47ed98b14fd289dc462a6b0d0d46318ffc2b4b6b8',
       'the fixture must exercise the exact reviewed bounded original-restore successor');
     const delta = execFileSync('git', ['diff', '--no-ext-diff', '--no-textconv', '--unified=3',
       beforeCommit, afterCommit, '--', producerPath], { cwd: sourceRepository, encoding: 'utf8' });

@@ -400,6 +400,7 @@ const CURRENT_GRID_SAMPLING_REVIEWED_PRODUCERS = Object.freeze({
   '3bb772a32861e911e790e47791a8a454750654b233d0b46d30a6be8515fcb96f': 'original-target-cache-only-finalized-partial',
   '365b9fc4956ea9cc498fe4923e2c095c5297f38722e809747877abba3a5792f0': 'same-original-cached-current-reacquisition',
   'cb4047c4c554c8051e60173df591366a186615ac4a3ffb676be8d27f14ed7c19': 'bounded-exact-original-restore',
+  'ec7fde66daeab835b6a852d47ed98b14fd289dc462a6b0d0d46318ffc2b4b6b8': 'bounded-exact-original-capture-inventory',
 });
 function currentGridSamplingReviewedProducer(source) {
   return Object.hasOwn(CURRENT_GRID_SAMPLING_REVIEWED_PRODUCERS,

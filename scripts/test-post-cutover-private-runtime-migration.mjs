@@ -1120,7 +1120,7 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
           return next(specifier, context);
         } });
         try {
-          const archive = await oldProtected.buildProtectedPrivateRuntimeArchive({ privateRoot: temporary,
+          const archive = await oldProtected.buildProtectedPrivateRuntimeArchive({ privateRoot: scenario.root,
             bundlePath: scenario.bundlePath, repositoryRoot: oldSourceRoot, sourceHead: base, now });
           const pointerPolicy = protectedRuntime.PROTECTED_PRIVATE_RUNTIME_POLICY;
           const pointer = { document_key: pointerPolicy.documentKey, version: 1, payload: {

@@ -243,6 +243,32 @@ class ExactOriginalTests(unittest.TestCase):
             self.read_plan(plan)
         producer.STAC_SESSION.get.assert_not_called()
 
+    def test_capture_count_is_not_the_physical_asset_budget(self):
+        # Several genuine capture timestamps can describe the same exact bytes.
+        # The normal per-collection limit still applies to ONE physical asset,
+        # not to its independently preserved original capture descriptions.
+        count = len(producer.MARINE_COLLECTIONS) + 1
+        originals = [{**capture(), "acquiredAt": f"2026-10-14T01:00:{second:02d}Z"}
+                     for second in range(count)]
+        plan = self.make_plan(originals)
+        identity = producer.canonical_stac_item_identity(item())
+        with patch.object(producer, "MAX_ASSETS_PER_COLLECTION", 1):
+            self.assertEqual(self.read_plan(plan), plan)
+            with patch.object(producer, "resolve_exact_original_item", return_value=identity) as resolve, \
+                 patch.object(producer, "download_asset", return_value=(self.raw / "synthetic", False)) as download, \
+                 redirect_stdout(io.StringIO()):
+                report = producer.restore_exact_original_assets(plan["originals"])
+            self.assertEqual(report["originalCount"], count)
+            self.assertEqual(report["uniqueAssetCount"], 1)
+            self.assertEqual(report["downloadedAssetCount"], 1)
+            resolve.assert_called_once()
+            download.assert_called_once()
+            second_asset = {**capture(), "itemId": "other-original", "assetIdentitySha256": "f" * 64}
+            with self.expect_refusal("ASSET_BOUND"):
+                producer.restore_exact_original_assets([capture(), second_asset])
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
     def test_malformed_manifest_never_falls_back_to_empty_or_loses_existing_bytes(self):
         self.manifest.write_bytes(b"broken manifest preserved\n")
         with self.expect_refusal("MANIFEST_REJECTED"):

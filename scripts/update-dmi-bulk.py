@@ -4257,7 +4257,10 @@ def read_exact_original_restore_plan():
             or not isinstance(binding["nonce"], str) or not re.fullmatch(r"[0-9a-f]{32}", binding["nonce"])):
         _exact_original_refuse("PLAN_REJECTED")
     originals = plan["originals"]
-    if (not isinstance(originals, list) or len(originals) > len(MARINE_COLLECTIONS) * MAX_ASSETS_PER_COLLECTION
+    # Preserve independent captures of identical bytes. The preparation and
+    # coordinator share this metadata bound; actual unique files are still
+    # limited per collection below, before any provider request.
+    if (not isinstance(originals, list) or not 1 <= len(originals) <= 4096
             or hashlib.sha256(_exact_original_json(originals).encode("utf-8")).hexdigest() != binding["originalsSha256"]):
         _exact_original_refuse("PLAN_REJECTED")
     serialized = [_exact_original_json(value) for value in originals]

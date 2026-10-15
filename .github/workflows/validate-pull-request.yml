@@ -86,8 +86,10 @@ jobs:
       # En ra PR-checkout har med vilje ikke Supabase-hemmeligheder og kan
       # derfor ikke hydrere den centrale admin-sandhed, som fuld produktion
       # kraever. De kildebaserede gates her maa aldrig bygge eller deploye.
+      # Exact-original tests are part of this mandatory native/source proof,
+      # not an expansion of the ordinary weather source-check command budget.
       - name: Validate bounded native current diagnosis on artificial data only
-        run: python -B scripts/test-native-current-grid.py --native && python -B scripts/test-dmi-exact-original-restore.py --native
+        run: npm run test:exact-dmi-original-restore && python -B scripts/test-native-current-grid.py --native && python -B scripts/test-dmi-exact-original-restore.py --native
 
       - name: Validate source contracts and release governance
         run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs
