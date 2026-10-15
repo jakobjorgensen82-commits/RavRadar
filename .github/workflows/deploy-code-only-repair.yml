@@ -17,6 +17,11 @@ on:
         required: false
         default: false
         type: boolean
+      upgrade_statistics_preference_revision:
+        description: "Installer kun den eksakte statistikpræference-revision efter verificeret current220"
+        required: false
+        default: false
+        type: boolean
       publish_newest_saved_weather:
         description: "Fortsæt den nyeste centralt gemte og allerede validerede vejrpakke uden providerkald"
         required: false
@@ -62,6 +67,7 @@ jobs:
           RECOVER_PUBLIC_RUN_ATTEMPT: ${{ inputs.recover_public_run_attempt }}
           UPGRADE_EXISTING_OWNER_EXPORT: ${{ inputs.upgrade_existing_owner_export }}
           UPGRADE_ACCOUNT_ASSISTANT: ${{ inputs.upgrade_account_assistant }}
+          UPGRADE_STATISTICS_REVISION: ${{ inputs.upgrade_statistics_preference_revision }}
         run: |
           set -euo pipefail
           test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
@@ -73,6 +79,14 @@ jobs:
           fi
           if test "$UPGRADE_ACCOUNT_ASSISTANT" = "true"; then
             test "$UPGRADE_EXISTING_OWNER_EXPORT" != "true"
+            test "$CONFIRMATION" = "DEPLOY-CODE-ONLY-REPAIR"
+            test "$SAVED_WEATHER" != "true"
+            test -z "$RECOVER_PUBLIC_RUN_ID"
+          fi
+          if test "$UPGRADE_STATISTICS_REVISION" = "true"; then
+            test "$UPGRADE_EXISTING_OWNER_EXPORT" != "true"
+            test "$UPGRADE_ACCOUNT_ASSISTANT" != "true"
+            test "$GITHUB_RUN_ATTEMPT" = "1"
             test "$CONFIRMATION" = "DEPLOY-CODE-ONLY-REPAIR"
             test "$SAVED_WEATHER" != "true"
             test -z "$RECOVER_PUBLIC_RUN_ID"
@@ -146,6 +160,10 @@ jobs:
       RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
       RAVRADAR_USERDATA_UPGRADE_OPT_IN: ${{ inputs.upgrade_existing_owner_export == true && 'true' || 'false' }}
       RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN: ${{ inputs.upgrade_account_assistant == true && 'true' || 'false' }}
+      RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN: ${{ inputs.upgrade_statistics_preference_revision == true && 'true' || 'false' }}
+      RAVRADAR_STATISTICS_REVISION_CONFIRMATION: ${{ inputs.confirmation }}
+      RAVRADAR_STATISTICS_REVISION_SAVED_WEATHER: ${{ inputs.publish_newest_saved_weather }}
+      RAVRADAR_STATISTICS_REVISION_RECOVERY_RUN_ID: ${{ inputs.recover_public_run_id }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -460,7 +478,7 @@ jobs:
             --public-implementation-closure-sha256 \
             "${{ steps.integrated-implementation.outputs.closure_sha256 }}"
           node scripts/integrated-cutover-readiness.mjs prepare-workdir \
-            --output "$migration_workdir"
+            --statistics-preference-revision-source --output "$migration_workdir"
 
       - name: Read linked migration history without changing Supabase
         if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
@@ -516,6 +534,12 @@ jobs:
           fs.appendFileSync(process.env.GITHUB_ENV, `RAVRADAR_ACCOUNT_ASSISTANT_METADATA_ONLY=${accountCurrent}\n`);
           fs.appendFileSync(process.env.GITHUB_ENV, `RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED=${accountCurrent}\n`);
           NODE
+
+      - name: Select the exact statistics revision phase without fallback
+        if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        run: >-
+          node scripts/verify-statistics-preference-revision-plan.mjs --select
+          --migration-list "$RUNNER_TEMP/code-only-migrations-before.txt"
 
       - name: Hydrate only already-applied migration identities
         if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
@@ -997,6 +1021,19 @@ jobs:
             --report .geometry-v2-work/post-cutover-private-runtime-migration.json
           echo "RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_VERIFIED=true" >> "$GITHUB_ENV"
 
+      - name: Verify unchanged current originals and schema1 before statistics revision
+        if: env.RAVRADAR_STATISTICS_REVISION_PHASE == 'before'
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          test "${{ steps.current-private-install.outcome }}" = "success"
+          test "${{ steps.migrated-private-install.outcome }}" != "success"
+          jq -e '.mode == "code-only-reuse" and .providerRequestsPerformed == false and .weatherValuesChanged == false and .scoresChanged == false and .geometryChanged == false and .privatePayloadIncluded == false and .zoneCount == 210 and .coastalPartCount == 673' .geometry-v2-work/code-only-public-runtime-reuse.json
+          node scripts/verify-account-assistant-schema.mjs
+          echo "RAVRADAR_STATISTICS_REVISION_PREWRITE_VERIFIED=true" >> "$GITHUB_ENV"
+
       - name: Dry-run and require only the latest exact integrated migration
         if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
         shell: bash
@@ -1013,12 +1050,21 @@ jobs:
           if test "${RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED:-false}" = "true"; then
             account_plan_args+=(--account-assistant-prewrite-plan --expected-pending-version 20261013210000)
           fi
-          node scripts/verify-code-only-migration-plan.mjs \
-            "${account_plan_args[@]}" \
-            --require-prewrite-gate \
-            --migration-list "$RUNNER_TEMP/code-only-migrations-plan.txt" \
-            --dry-run "$RUNNER_TEMP/code-only-migrations-dry-run.txt" \
-            --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
+          if test "${RAVRADAR_STATISTICS_REVISION_PHASE:-}" = "before" \
+              || test "${RAVRADAR_STATISTICS_REVISION_PHASE:-}" = "installed"; then
+            node scripts/verify-statistics-preference-revision-plan.mjs \
+              --phase "$RAVRADAR_STATISTICS_REVISION_PHASE" \
+              --migration-list "$RUNNER_TEMP/code-only-migrations-plan.txt" \
+              --dry-run "$RUNNER_TEMP/code-only-migrations-dry-run.txt" \
+              --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
+          else
+            node scripts/verify-code-only-migration-plan.mjs \
+              "${account_plan_args[@]}" \
+              --require-prewrite-gate \
+              --migration-list "$RUNNER_TEMP/code-only-migrations-plan.txt" \
+              --dry-run "$RUNNER_TEMP/code-only-migrations-dry-run.txt" \
+              --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
+          fi
 
       - name: Reconfirm current main before the database binding write
         if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
@@ -1050,6 +1096,14 @@ jobs:
               --dry-run "$RUNNER_TEMP/code-only-account-final-dry-run.txt" \
               --migrations-directory "$PWD/supabase/migrations"
           fi
+          if test "${RAVRADAR_STATISTICS_REVISION_PHASE:-}" = "before"; then
+            supabase migration list --linked | tee "$RUNNER_TEMP/code-only-statistics-final-plan.txt"
+            supabase db push --linked --dry-run --skip-vault 2>&1 | tee "$RUNNER_TEMP/code-only-statistics-final-dry-run.txt"
+            node "$GITHUB_WORKSPACE/scripts/verify-statistics-preference-revision-plan.mjs" \
+              --phase before --migration-list "$RUNNER_TEMP/code-only-statistics-final-plan.txt" \
+              --dry-run "$RUNNER_TEMP/code-only-statistics-final-dry-run.txt" \
+              --migrations-directory "$PWD/supabase/migrations"
+          fi
           supabase db push --linked --skip-vault
 
       - name: Read back migration and database binding
@@ -1068,9 +1122,12 @@ jobs:
           node scripts/integrated-cutover-readiness.mjs applied \
             --migration-list "$RUNNER_TEMP/code-only-migrations-applied.txt"
           node scripts/integrated-cutover-readiness.mjs verify-db
-          if test "${RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED:-false}" = "true"; then
-            node scripts/verify-account-assistant-schema.mjs
-          fi
+          (cd "${{ steps.migration-view.outputs.workdir }}" && supabase db push --linked --dry-run --skip-vault) 2>&1 | tee "$RUNNER_TEMP/code-only-statistics-installed-dry-run.txt"
+          RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN=false node scripts/verify-statistics-preference-revision-plan.mjs \
+            --phase installed --migration-list "$RUNNER_TEMP/code-only-migrations-applied.txt" \
+            --dry-run "$RUNNER_TEMP/code-only-statistics-installed-dry-run.txt" \
+            --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
+          node scripts/verify-statistics-preference-revision-schema.mjs
 
       - name: Read unchanged Candidate quality before owner-export upgrade
         if: env.RAVRADAR_USERDATA_PREWRITE_REQUIRED == 'true'

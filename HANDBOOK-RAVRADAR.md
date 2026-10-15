@@ -1,4 +1,20 @@
+## 89.232 Cachegemning ved brat tab af den styrende proces
+
+**Kort fortalt:** En afbrudt gemning skal stoppe sine egne underprocesser og bevare originaler og skrivelås; den må ikke vises som gemt.
+
+Hvis den proces, der styrer en cachegemning, forsvinder brat, kan underprocesser ellers fortsætte. Kildekandidaten overvåger den allerede kontrollerede forælder gennem et kernel-håndtag, både før opstart af arbejderen og gennem hele den fysiske lukning. Tab eller ukendt ejerstatus udløser stop af den ejede procesgruppe. Ingen anden proces overtager ejerskabet alene på grund af et procesnummer, en fil eller forløbet tid.
+
+Første fejl, de oprindelige råfiler og den private skrivelås bevares. En tilbageværende lås er hverken bevis for en levende kørsel eller tilladelse til automatisk at fjerne den. Kohortens kvittering handler kun om fysisk lukning; faktisk modtagelse hos cacheleverandøren kræver stadig sin egen gemmekvittering. Den eksisterende private kommunikation og tidsgrænser ændres ikke.
+
+Den additive normale Linux-prøve bruger den rigtige action, arbejder og underproces med egne syntetiske input. Den lukker kun den faktiske styrende proces brat og kræver, at produktet stopper underprocesserne før testoprydning. En død underproces holdes tilbage indtil genlæsning og faktisk reap, så gruppens fravær ikke antages for tidligt. Originalfil og samme lås skal være bevaret, og der må ikke stå gemt. Det er en prøve af tab af én styrende proces, ikke dokumentation for ødelæggelse af hele runneren, varig leverandørgemning eller alle samtidige skrivere.
+
+Denne separate kildekandidat starter fra main 213942 og ændrer ikke model, scoreformel, SQL, kildeprioritet eller administratorens geometri. Gemmekohorten står i producentens særskilte kildefortegnelse, men ikke i den faktiske lagringskontrakt. Den normale kontraktberegning bekræfter, at storage-ABI og fullRuntime-, publicProjection- og continuationState-hashes er uændrede. Denne procesrettelse kræver derfor ingen ny model-, SQL- eller lagringsovergang, og gamle originaler og beviser bevares uden ommærkning. Den isolerede SOURCE19-revision forbliver inaktiv. Lokale syntakskontroller er ikke Linux-/nativebevis. Præcis kildekontrol, sikker levering og faktisk produktionseffekt samt revisionens fulde fireminutters-, runner-, original-B/S-før-T- og kapacitetskrav er fortsat åbne. Alle fem hovedmål og fristen 18. oktober består.
+
 ## 89.230 Strømhistorik skal have de faktisk nødvendige originaler
+
+Aktuelt 15. oktober — godkendt PARTIAL-fortsættelse: Kun checkpoint-only må efter fuld fysisk gemning fortsætte med korrekt delvis DMI og de allerede gemte reservekilder. Det giver status partial og DMI_CACHE_ONLY_PARTIAL, aldrig falsk READY eller ny kildetid. Den gemte ready=false-ledger og den aktive DMI-fil bevares. Nødvendig historik, der er udskudt eller utilgængelig, replayfejl, fejl i gemning og konflikt med bootstrap stopper fortsat, før fortsættelse kan kvitteres. Nye providerindgange forbliver lukkede.
+
+Den lokale kilde er sammenført med main615 uden ændring af model, scoreformel, SQL eller originaler. SAVE-rettelsens faktiske Linux-bevis genbruges kun for dens uændrede blade. Routing-, workflow- og originalmodtagerprøver består lokalt; provenance nåede de nye terminal-/gemmefejlsprøver og standsede derefter på Windows' eksisterende native-læsegrænse. Den samlede kandidat mangler stadig præcis Linux/source/PostgreSQL-kontrol og faktisk genoptagelse, beregning, gemning, upload og deploy. Alle efterfølgende gates og220-floor bevares. Version577 følger allerede leveret main; der er ikke oprettet en ny model-/SQL-overgang. Ældre lokale576- og afventende tilladelsesudsagn nedenfor er dateret historik på disse punkter.
 
 **Kort fortalt:** Historikbehov følger den faktisk valgte tilstand; gemte originaler, kvalificeret ny brug og faktisk genoptagelse er forskellige beviser.
 
@@ -96,7 +112,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.576
+**Håndbogsversion:** 4.0.577
 
 ## Aktuel kildebinding — 14. oktober 2026, endnu ikke installeret
 
@@ -146,6 +162,12 @@ En historisk fejlaflæsning er låst til den konkrete upload og et kort tidsrum,
 Immutable gemning, normale genforsøg, efterfølgende indholds-/readbackkontrol og atomisk aktivering bevares; større grænser, overskrivning eller en ny vejrhentning følger ikke automatisk af en diagnose. Kilden er lokalt prøvet, men faktisk leverandørårsag, præcis kildekontrol og kontrolleret offentlig genoptagelse er endnu åbne. Dette ændrer ikke strømfortolkning, modelbindinger, scoreformel eller gemt historik og bliver ikke assistentens offentlige spørgsmål/svar-viden.
 
 ## 89.219 Kontofunktioner og assistentsvar leveres som en samlet kontrolleret ændring
+
+**Ny læsevejledning, 15. oktober 2026:** Offentlig 4.0.576 og den lokale statistik4.0.577-kandidat skal holdes adskilt. Den ældre beskrivelse nedenfor bevares som dateret historik; assistent578 er en separat, tilbageholdt leverance.
+
+Når præferencerettelsen er leveret, kan et forsinket ON fra en gammel fane ikke overskrive et nyere OFF. Serveren kontrollerer konto og revision under lås, mens login-/logout-adskillelsen forhindrer gamle svar i at bekræfte en anden kontos valg. Kun et kendt serverresultat vises som gemt; ved ukendt udfald forbliver status ukendt.
+
+Default ON bevares, men er ikke samtykke eller et løfte om anonymitet. Kandidaten aktiverer ikke samlet statistik, opbevaringsvarsler eller sletning. Installation og offentlig afprøvning er endnu ikke dokumenteret.
 
 Konto-vinduets allerede viste turhistorik følger nu den samme konto- og dialoglevetid som den ventende læsning: logout, en ny loginidentitet, udløbet session, lukning eller tilbage-navigation fjerner den gamle visning. Gyldig fornyelse af samme login bevares; et forsinket svar kan ikke vise gamle ture igen eller hente en anden kontos historik. Den snævre UI-rettelse ændrer ingen gemte ture, bindingshashes eller SQL. De 52 normale ejerskabs-/præferenceprøver, herunder ti historikforløb, består lokalt; offentlig afprøvning afventer levering.
 

@@ -33,7 +33,7 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 // returned or emitted; unknown state/phase remains explicitly UNKNOWN.
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
-  'ACCOUNT213', 'CURRENT220', 'UNKNOWN']);
+  'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -623,7 +623,8 @@ async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource
 // Called ONLY by the existing protected-checkpoint target's native-only branch.
 // Its real 673 model builders and normal checkpoint saver supply the fixtures.
 export async function runNativeCheckpointSqlComparison({ repositoryRoot,
-  sourceDocumentAt, atHour, saveCheckpoint } = {}) {
+  sourceDocumentAt, atHour, saveCheckpoint, includeStatisticsRevision = false } = {}) {
+  assert.equal(typeof includeStatisticsRevision,'boolean');
   const programs = await nativePrograms();
   assert.ok(typeof sourceDocumentAt === 'function' && typeof atHour === 'function'
     && typeof saveCheckpoint === 'function', 'normal fixture constructors are required');
@@ -652,6 +653,7 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
     return result.stdout.trim();
   };
   let owner = null, started = false, stopped = false, cleanupAllowed = false;
+  let statisticsRevisionFailure = null;
   const readOwner = async () => {
     const pid = Number((await fs.readFile(path.join(data, 'postmaster.pid'), 'utf8')).split('\n')[0]);
     assert.ok(Number.isSafeInteger(pid) && pid > 1, 'owned server PID missing');
@@ -850,12 +852,28 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     nativePhase = 'CURRENT220';
     const currentGrid=await compareCurrentGridSuccessor({psql,runSql,source:gridSource,accountSource,
       oldFixtures:fixtures,issuedFixtures:currentFixtures,sourceDocumentAt,atHour,saveCheckpoint,root});
+    let statisticsRevision;
+    if (includeStatisticsRevision) {
+      nativePhase = 'STATISTICS230';
+      try {
+        const adapterUrl=new URL('./statistics-preference-revision-native-postgres.mjs',import.meta.url);
+        const adapterStat=await fs.lstat(adapterUrl);
+        assert.ok(adapterStat.isFile()&&!adapterStat.isSymbolicLink(),'fixed normal revision adapter must be a regular file');
+        assert.equal(hash(await fs.readFile(adapterUrl)),'bd763c72cf4a32b1093b7a19d324f688ae61897e9697c7cf31d33ce6b308d51a');
+        const {runNativeStatisticsRevisionProposal}=await import(adapterUrl.href);
+        statisticsRevision=await runNativeStatisticsRevisionProposal({
+          repositoryRoot,clusterDirectory:root,psqlExecutable:programs.psql,
+        });
+      } catch (error) { statisticsRevisionFailure={error}; throw error; }
+    }
     return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
+      ...(includeStatisticsRevision?{statisticsRevision}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,
       oldCasDefinitionSha256:hash(oldCas),newCasDefinitionSha256:hash(newCas),reports};
   } finally {
+    try {
     if (started) {
       const current = await readOwner(); assert.deepEqual(current,owner,'native server ownership changed; preserve directory');
       const stop=await command(programs.pg_ctl,['-D',data,'-m','immediate','-w','-t','20','stop'],{env});
@@ -868,5 +886,11 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     const resolved=path.resolve(root), temp=path.resolve(os.tmpdir());
     assert.ok(path.dirname(resolved)===temp && path.basename(resolved).startsWith('rr-checkpoint-pg-'));
     if (cleanupAllowed && (!started || stopped)) await fs.rm(resolved,{recursive:true,force:false});
+    } catch (cleanupError) {
+      // Keep the first revision failure; unknown/failed stop retains the same
+      // owned directory. Never turn physical cleanup failure into success.
+      if (statisticsRevisionFailure!==null) throw statisticsRevisionFailure.error;
+      throw cleanupError;
+    }
   }
 }
