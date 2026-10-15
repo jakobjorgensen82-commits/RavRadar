@@ -1,0 +1,262 @@
+name: Recover only authenticated missing historical DMI originals
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Skriv RESTORE-EXACT-DMI-ORIGINALS"
+        required: true
+        type: string
+      expected_main_head:
+        description: "Eksakt main-commit med faktisk grøn kildekontrol"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+# This is the one approved repair of saved originals, not a weather update.
+# No source-selected command, newer forecast, calculation, SQL or deploy.
+concurrency:
+  group: ravradar-weather-production-v2
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    name: Restore exact historical bytes and save the additive owned RAW cache
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Require the approved exact source and completed saved attempt
+        id: authority
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+          EXPECTED_MAIN_HEAD: ${{ inputs.expected_main_head }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$CONFIRMATION" = RESTORE-EXACT-DMI-ORIGINALS
+          [[ "$EXPECTED_MAIN_HEAD" =~ ^[a-f0-9]{40}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_MAIN_HEAD"
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/38692413809/attempts/1" \
+            > "$RUNNER_TEMP/saved-input-source-run.json"
+          jq -e --arg repo "$GITHUB_REPOSITORY" '
+            .id == 38692413809 and .run_attempt == 1
+            and .repository.full_name == $repo and .head_repository.full_name == $repo
+            and .head_branch == "main" and .event == "workflow_dispatch"
+            and .path == ".github/workflows/run-current-weather-once.yml"
+            and .status == "completed" and (.head_sha | test("^[a-f0-9]{40}$"))
+          ' "$RUNNER_TEMP/saved-input-source-run.json" >/dev/null
+          source_head="$(jq -er '.head_sha' "$RUNNER_TEMP/saved-input-source-run.json")"
+          git merge-base --is-ancestor "$source_head" "$GITHUB_SHA"
+          gh api --method GET "repos/$GITHUB_REPOSITORY/actions/caches" \
+            -f key=dmi-grib-v4-Linux-2026-W42-38692413809-1 \
+            -f ref=refs/heads/main -f per_page=100 \
+            > "$RUNNER_TEMP/saved-input-raw-cache-metadata.json"
+          jq -e '
+            .total_count == 1 and (.actions_caches | length) == 1
+            and .actions_caches[0].key == "dmi-grib-v4-Linux-2026-W42-38692413809-1"
+            and .actions_caches[0].ref == "refs/heads/main"
+            and .actions_caches[0].version == "9d434ae81d3120176028232ea936fc3f9dc0ed030022ff6d98bec91aa9cf117a"
+            and (.actions_caches[0].size_in_bytes | type == "number" and . > 0)
+          ' "$RUNNER_TEMP/saved-input-raw-cache-metadata.json" >/dev/null
+          echo "generation=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Verify live exact-content source validation
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Require existing live green source proof before protected reads
+        shell: bash
+        env:
+          SOURCE_REQUIRED: ${{ steps.source-proof.outputs.required }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE_REQUIRED" = false
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install the existing normal reader dependencies
+        run: >-
+          python -m pip install --disable-pip-version-check
+          -r requirements-dmi.txt -r requirements-geometry.txt -r requirements-copernicus.txt
+
+      - name: Restore only the approved encrypted checkpoint
+        id: progress
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/weather-private-progress.encrypted
+          key: weather-private-progress-encrypted-v2-Linux-main-38692413809-1
+          fail-on-cache-miss: true
+
+      - name: Require exact checkpoint hit and privately retain its original bytes
+        shell: bash
+        env:
+          MATCHED_KEY: ${{ steps.progress.outputs.cache-matched-key }}
+          CACHE_HIT: ${{ steps.progress.outputs.cache-hit }}
+        run: |
+          set -euo pipefail
+          test "$CACHE_HIT" = true
+          test "$MATCHED_KEY" = weather-private-progress-encrypted-v2-Linux-main-38692413809-1
+          test -s .cache/weather-private-progress.encrypted
+          test ! -L .cache/weather-private-progress.encrypted
+          mkdir "$RUNNER_TEMP/ravradar-saved-input-audit"
+          install -m 0600 .cache/weather-private-progress.encrypted \
+            "$RUNNER_TEMP/ravradar-saved-input-audit/progress.encrypted"
+
+      - name: Restore the same checkpoint's existing RAW cache without fallback
+        id: raw-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/dmi-grib
+          key: dmi-grib-v4-Linux-2026-W42-38692413809-1
+          fail-on-cache-miss: true
+
+      - name: Require the exact existing RAW cache before additive recovery
+        shell: bash
+        env:
+          MATCHED_KEY: ${{ steps.raw-cache.outputs.cache-matched-key }}
+          CACHE_HIT: ${{ steps.raw-cache.outputs.cache-hit }}
+        run: |
+          set -euo pipefail
+          test "$CACHE_HIT" = true
+          test "$MATCHED_KEY" = dmi-grib-v4-Linux-2026-W42-38692413809-1
+          test -d .cache/dmi-grib
+          test ! -L .cache
+          test ! -L .cache/dmi-grib
+          test ! -L .cache/dmi-grib/asset-manifest.json
+
+      - name: Read the current protected source identity without remote writes
+        run: >-
+          node scripts/audit-saved-weather-inputs.mjs describe
+          --private-root "$RUNNER_TEMP/ravradar-saved-input-audit"
+          --descriptor "$RUNNER_TEMP/ravradar-saved-input-audit/current-source.json"
+          --output "$RUNNER_TEMP/ravradar-saved-input-audit/describe-safe.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Materialize the exact original producer without executing it
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          producer_head="$(jq -er '.sourceHead' "$RUNNER_TEMP/ravradar-saved-input-audit/current-source.json")"
+          [[ "$producer_head" =~ ^[a-f0-9]{40}$ ]]
+          git merge-base --is-ancestor "$producer_head" "$GITHUB_SHA"
+          mkdir "$RUNNER_TEMP/ravradar-saved-input-predecessor"
+          git archive "$producer_head" | tar -x -C "$RUNNER_TEMP/ravradar-saved-input-predecessor"
+
+      - name: Authenticate the checkpoint and prepare only demanded exact originals
+        id: plan
+        run: >-
+          node scripts/prepare-saved-dmi-original-restore.mjs prepare
+          --private-root "$RUNNER_TEMP/ravradar-saved-input-audit"
+          --descriptor "$RUNNER_TEMP/ravradar-saved-input-audit/current-source.json"
+          --predecessor-root "$RUNNER_TEMP/ravradar-saved-input-predecessor"
+          --progress-file "$RUNNER_TEMP/ravradar-saved-input-audit/progress.encrypted"
+          --progress-source 38692413809-1
+          --progress-cache-key weather-private-progress-encrypted-v2-Linux-main-38692413809-1
+          --progress-baseline-target-hour 2026-10-14T18:00:00.000Z
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+          WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Select the normal owned cache API runtime
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Prepare the locked cache API through its existing owned cohort
+        id: cache-api
+        run: node "$GITHUB_WORKSPACE/.github/actions/save-owned-dmi-grib/index.cjs" --prepare-distribution
+
+      - name: Restore Node22 for the fixed recovery coordinator
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Recover exact originals without weather calculation or pruning
+        id: originals
+        run: node scripts/run-exact-dmi-original-restore.mjs
+        env:
+          DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
+          DMI_EXACT_ORIGINAL_PLAN_SHA256: ${{ steps.plan.outputs.plan_sha256 }}
+          DMI_BULK_MAX_DOWNLOAD_MB: 2048
+          DMI_BULK_RAW_CACHE_MAX_MB: 4096
+          DMI_BULK_MAX_RUNTIME_SECONDS: 780
+          DMI_BULK_FINALIZE_RESERVE_SECONDS: 180
+          DMI_BULK_REQUEST_TIMEOUT_SECONDS: 90
+
+      - name: Reconfirm the protected source before the sole cache SAVE
+        run: >-
+          node scripts/audit-saved-weather-inputs.mjs describe
+          --private-root "$RUNNER_TEMP/ravradar-saved-input-audit"
+          --descriptor "$RUNNER_TEMP/ravradar-saved-input-audit/current-source-before-save.json"
+          --output "$RUNNER_TEMP/ravradar-saved-input-audit/describe-before-save-safe.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Require unchanged source, exact main and physically closed recovery
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ORIGINALS_RESTORED: ${{ steps.originals.outputs.originals_restored }}
+          CACHE_API_READY: ${{ steps.cache-api.outputs.distribution_ready }}
+        run: |
+          set -euo pipefail
+          test "$ORIGINALS_RESTORED" = true
+          test "$CACHE_API_READY" = true
+          test "$GITHUB_REF" = refs/heads/main
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          cmp --silent "$RUNNER_TEMP/ravradar-saved-input-audit/current-source.json" \
+            "$RUNNER_TEMP/ravradar-saved-input-audit/current-source-before-save.json"
+          test ! -e .cache/weather-acquisition-writer.claim
+          test ! -L .cache/weather-acquisition-writer.claim
+          test ! -e .cache/dmi-grib/.original-recovery-plan.json
+          test ! -L .cache/dmi-grib/.original-recovery-plan.json
+
+      - name: Save only through the normal physically owned cache API
+        id: save
+        uses: ./.github/actions/save-owned-dmi-grib
+        with:
+          path: .cache/dmi-grib
+          key: dmi-grib-v4-${{ runner.os }}-${{ steps.authority.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Require actual finalized SAVE, not a green skipped step
+        shell: bash
+        env:
+          SAVED: ${{ steps.save.outputs.saved }}
+        run: |
+          set -euo pipefail
+          test "$SAVED" = true

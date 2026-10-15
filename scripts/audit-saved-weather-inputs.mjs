@@ -74,6 +74,17 @@ export function savedAuditProgressAuthenticationCode(error) {
   return safeProgressPackCodes.has(error?.message) ? error.message : 'UNCLASSIFIED';
 }
 
+// The separate preparation CLI may retain only the audit's existing fixed
+// categories and the normal GCM/pack selector, never an arbitrary error string.
+export function savedAuditOriginalPreparationFailureCode(error) {
+  try {
+    if (safeCode.has(error?.auditCode)) return error.auditCode;
+    const progressCode = savedAuditProgressAuthenticationCode(error);
+    if (progressCode !== 'UNCLASSIFIED') return progressCode;
+  } catch { /* Unknown/accessor-backed errors have no reporting authority. */ }
+  return 'SAVED_DMI_ORIGINAL_PREPARATION_REFUSED';
+}
+
 function validateProgressBaselineTargetHour(value, source = null) {
   if (value === null) return;
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/.test(value)
@@ -438,6 +449,9 @@ function rawCapture(source) {
     || source.itemUpdatedAt != null && !value.itemUpdatedAt) return null;
   return value;
 }
+// Exact metadata projection shared only with the separately invoked original
+// restore planner. Exporting it adds no audit mode, transport or write ability.
+export { rawCapture as canonicalSavedDmiOriginalCapture };
 const withoutAcquiredAt = capture => Object.fromEntries(Object.entries(capture).filter(([key]) => key !== 'acquiredAt'));
 
 export function indexSavedRawManifest(document) {
@@ -929,6 +943,114 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     if (work && (baselinePackInvocation === null || privateWeatherPackJsonReadsClosed(baselinePackInvocation))
       && path.dirname(work) === await fs.realpath(privateRoot).catch(() => null)
       && path.basename(work).startsWith('saved-input-audit-')) await fs.rm(work, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+// Explicit preparation operation, separate from the read-only audit modes.
+// It reuses the exact archived-reader / normal baseline / GCM boundaries, but
+// only a fixed private capture plan may leave the authenticated reader scope.
+// No caller-supplied executor, transport, report hook or alternate output path.
+export async function prepareAuthenticatedSavedDmiOriginalRestore({ privateRoot, descriptorPath, predecessorRoot,
+  progressFile, progressSource, progressCacheKey, progressBaselineTargetHour, executionHead = process.env.GITHUB_SHA,
+  repositoryRoot = REPOSITORY, repository = process.env.GITHUB_REPOSITORY,
+  pythonExecutable = process.env.PYTHON ?? 'python', encryptionKey = process.env.WEATHER_PROGRESS_ENCRYPTION_KEY,
+  masterSecret = process.env.WEATHER_PROGRESS_MASTER_SECRET, ...credentials } = {}) {
+  const prepare = await import('./prepare-saved-dmi-original-restore.mjs');
+  prepare.assertSavedDmiOriginalRestoreScope({ progressSource, progressCacheKey, progressBaselineTargetHour, executionHead });
+  const ctx = await context(privateRoot, repositoryRoot);
+  let work = null, componentInvocation = null;
+  try {
+    const resolvePrivate = value => typeof value === 'string' && inside(path.resolve(privateRoot), path.resolve(value))
+      ? path.join(ctx.root, path.relative(path.resolve(privateRoot), path.resolve(value))) : value;
+    descriptorPath = resolvePrivate(descriptorPath);
+    progressFile = resolvePrivate(progressFile);
+    const source = identity(await readJson(await noSymlinks(ctx.root, descriptorPath)));
+    validateProgressBaselineTargetHour(progressBaselineTargetHour, source);
+    if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? '')) fail('PROGRESS_IDENTITY_INVALID');
+    const cipher = await noSymlinks(ctx.root, progressFile), cipherStat = await fs.lstat(cipher);
+    if (!cipherStat.isFile() || cipherStat.size < 1 || cipherStat.size > WEATHER_PROGRESS_MAX_CIPHER_BYTES) fail('PROGRESS_IDENTITY_INVALID');
+    const requested = path.resolve(predecessorRoot), stat = await fs.lstat(requested), predecessor = await fs.realpath(requested);
+    if (!stat.isDirectory() || stat.isSymbolicLink() || inside(ctx.root, predecessor) || inside(predecessor, ctx.root)
+      || inside(ctx.repository, predecessor) || inside(predecessor, ctx.repository)) fail('PREDECESSOR_ROOT_INVALID');
+    const temp = [path.resolve(os.tmpdir()), ...(process.env.RUNNER_TEMP ? [path.resolve(process.env.RUNNER_TEMP)] : [])]
+      .find(value => inside(value, requested));
+    if (!temp) fail('PREDECESSOR_ROOT_INVALID');
+    await noSymlinks(temp, requested);
+    const oldImport = async relative => import(`${pathToFileURL(await noSymlinks(predecessor, path.join(predecessor, relative))).href}?savedInput=${source.sourceHead}`);
+    const [oldProtected, oldWorkflow, oldBinding] = await Promise.all([
+      oldImport('scripts/protected-private-production-runtime.mjs'), oldImport('scripts/private-production-runtime-workflow.mjs'),
+      oldImport('js/core/ravscore-model-contract.js')]);
+    if (!same(oldBinding.ravScoreModelBinding(), source.modelBinding)
+      || !same(await oldWorkflow.privateRuntimeContractHashes({ repositoryRoot: predecessor }), source.contractHashes)) fail('PREDECESSOR_CONTRACT_MISMATCH');
+    // Exactly the audit's closed GET/HEAD facade, never provider credentials.
+    const clients = createReadOnlySavedWeatherClients(credentials);
+    if (!same(await oldProtected.describeCurrentProtectedPrivateProductionRuntime(clients), source)) fail('CURRENT_GENERATION_CHANGED');
+    work = await fs.mkdtemp(path.join(ctx.root, 'saved-input-original-plan-'));
+    const bundlePath = path.join(work, 'bundle');
+    const restored = await withoutSavedAuditSecrets(() => oldProtected.restoreProtectedPrivateProductionRuntime({ ...clients,
+      privateRoot: work, bundlePath, repositoryRoot: predecessor,
+      expected: { modelBinding: source.modelBinding, contractHashes: source.contractHashes,
+        datasetId: source.datasetId, productionReferenceAt: source.productionReferenceAt, generatedAt: source.generatedAt,
+        targetReferenceAt: source.productionReferenceAt, minimumReferenceAt: source.productionReferenceAt, minimumGeneratedAt: source.generatedAt },
+    }));
+    if (restored.restored !== true || restored.rollbackSelected !== false
+      || restored.bundleContentSha256 !== source.bundleContentSha256) fail('EXACT_CURRENT_NOT_RESTORED');
+    if (!same(await oldProtected.describeCurrentProtectedPrivateProductionRuntime(clients), source)) fail('CURRENT_GENERATION_CHANGED');
+    const manifest = await readJson(path.join(bundlePath, 'manifest.json'));
+    if (manifest.bundleContentSha256 !== source.bundleContentSha256) fail('BUNDLE_IDENTITY_MISMATCH');
+    const payloadRoot = path.join(bundlePath, 'payload');
+    // Same bounded archive measurement also releases the facade's retained
+    // compressed buffers before any national donor document is opened.
+    await clients.archiveMetrics();
+    const originalConditions = await readJson(path.join(payloadRoot, 'data/live/conditions.json'), 535_822_312);
+    const parts = originalParts(originalConditions);
+    let componentFiles = [];
+    const packed = manifest.files.some(file => file.relativePath === PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath);
+    if (privateWeatherComponentMarker(originalConditions) && !packed) fail('BASELINE_COMPONENT_PACK_REJECTED');
+    if (packed) componentFiles = await withoutSavedAuditSecrets(() => {
+      componentInvocation = unpackPrivateWeatherComponentPack({ restoredRoot: payloadRoot,
+        outputRoot: path.join(work, 'baseline-components'), conditions: originalConditions, pythonExecutable });
+      return componentInvocation;
+    });
+    const baseline = await withoutSavedAuditSecrets(() => prepareSavedAuditProgressBaseline({ privateRoot: ctx.root, workRoot: work,
+      bundlePath, descriptorPath, repositoryRoot: ctx.repository, progressBaselineTargetHour }));
+    if (baseline.normalProgressBaselineUsed !== true) fail('PROGRESS_BASELINE_RECONSTRUCTION_REJECTED');
+    const conditions = await readJson(path.join(baseline.repositoryRoot, 'data/live/conditions.json'), 535_822_312);
+    const demands = prepare.savedDmiOriginalHistoryDemand({ conditions, parts });
+    const basePath = path.join(work, 'progress-base.json');
+    const captured = await weatherComponentProgressCache({ mode: 'capture-base', repositoryRoot: baseline.repositoryRoot,
+      basePath, repository, protectedBundleSha256: source.bundleContentSha256 });
+    if (captured.captured !== true) fail('PROGRESS_BINDING_FAILED');
+    await fs.mkdir(path.dirname(path.join(baseline.repositoryRoot, WEATHER_PROGRESS_CIPHER_PATH)), { recursive: true, mode: 0o700 });
+    await fs.copyFile(cipher, path.join(baseline.repositoryRoot, WEATHER_PROGRESS_CIPHER_PATH), fs.constants.COPYFILE_EXCL);
+    const captures = await withoutSavedAuditSecrets(() => withAuthenticatedWeatherProgress({
+      repositoryRoot: baseline.repositoryRoot, basePath, repository, encryptionKey, masterSecret, pythonExecutable,
+    }, async ({ files }) => {
+      const donors = [path.join(payloadRoot, 'data/live/dmi-bulk-cache.json'),
+        ...[PRIVATE_WEATHER_COMPONENT_FILES.dmiActive, PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate]
+          .map(relative => componentFiles.find(file => file.relativePath === relative)?.sourcePath),
+        ...[PRIVATE_WEATHER_COMPONENT_FILES.dmiActive, PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate]
+          .map(relative => files.find(file => file.relativePath === relative)?.sourcePath)];
+      const originals = [];
+      for (const file of donors) {
+        if (!file) continue;
+        const document = await bulk(file);
+        originals.push(...prepare.collectSavedDmiOriginalCaptures({ document, parts, demands }));
+      }
+      return originals;
+    }));
+    if (componentInvocation !== null && !privateWeatherPackJsonReadsClosed(componentInvocation)) fail('BASELINE_COMPONENT_PACK_REJECTED');
+    if (!same(await oldProtected.describeCurrentProtectedPrivateProductionRuntime(clients), source)) fail('CURRENT_GENERATION_CHANGED');
+    const plan = prepare.buildSavedDmiOriginalRestorePlan({ captures, source, demands, executionHead });
+    // All authenticated local readers have closed before the only durable
+    // output is created. No restored payload or successor is installed.
+    await fs.rm(work, { recursive: true, force: true }); work = null;
+    return await prepare.writeSavedDmiOriginalRestorePlan({ repositoryRoot: ctx.repository, plan });
+  } finally {
+    if (work && (componentInvocation === null || privateWeatherPackJsonReadsClosed(componentInvocation))
+      && path.dirname(work) === ctx.root && path.basename(work).startsWith('saved-input-original-plan-')) {
+      await fs.rm(work, { recursive: true, force: true }).catch(() => {});
+    }
   }
 }
 

@@ -1,3 +1,17 @@
+## 89.233 Afgrænset genopretning af historiske DMI-originaler
+
+**Kort fortalt:** En mislykket vejrhentning skal afprøves fra et gyldigt gemt checkpoint efter rettelse. En ny almindelig vejrhentning er ikke en løsning på et uændret historikstop.
+
+De to nye normale kørsler den 15. oktober stoppede før deploy ved brug af gammel strøm i OWNER-historikken. Den tidligere afgrænsede ældre RAW-audit er gennemført uden mulige filer for de undersøgte identiteter. Det er ikke bevis for ugyldige DMI-data eller fravær i alle arkiver.
+
+Den godkendte genopretning er en særskilt manuel indgang. Den bruger det præcist aftalte autentificerede checkpoint og den normale tilstandsbaserede historikplan, ikke en ubegrænset uge eller nye aktuelle prognoser. Kun de manglende historiske originaler må hentes. Hver fil skal passe med allerede gemt fuld SHA-256, størrelse, officiel item-revision, modelkørsel og gyldig tid. Nye downloadtidspunkter registreres ærligt; gamle originaler og scorer ommærkes ikke.
+
+Den eksisterende RAW-cache gendannes præcist før additiv genopretning. Kollision, utilgængelighed, afvigende indhold, overskredet eksisterende budget eller ukendt procesafslutning stopper forløbet. Ingen pruning, almindelig vejrhentning, beregning, SQL eller deploy indgår. Først efter faktisk fysisk afslutning, fjernelse af operationens egen verificerede private plan og frigivet skrivelås må den eksisterende ejede cachegemning udføres. En grønt markeret eller sprunget gemning er ikke gemmebevis.
+
+Derpå følger den særskilt godkendte providerfri genoptagelse gennem den normale indgang. Ejerens nye ordre kræver, at nye allerede gemte kørsler inddrages ved valget af det dybeste gyldige checkpoint; de gamle bindings- og originalkrav må ikke springes over. Streng strømfortolkning, historik, no-loss, B/S-før-T, holdbar gemning/upload og alle offentlige og deploy-kontroller består.
+
+Status: lokal kilde og målrettede delprøver, ikke sikker installation eller ny offentlig generation. Den eksisterende modelbinding er uændret. Præcis Linux/native/source/PostgreSQL, faktisk originaltilgængelighed, cachegemning/genbrug og offentlig effekt er åbne. Cron er deaktiveret af ejeren med tidsplanen bevaret og derefter kontrolleret i browseren. Blind rollback og en ny nødpolicy er ikke aktiveret. Alle fem mål og fristen 18. oktober består; øvrige leverancer holdes tilbage.
+
 ## 89.232 Cachegemning ved brat tab af den styrende proces
 
 **Kort fortalt:** En afbrudt gemning skal stoppe sine egne underprocesser og bevare originaler og skrivelås; den må ikke vises som gemt.

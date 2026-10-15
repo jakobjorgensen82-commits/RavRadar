@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+import math
 import os
 from pathlib import Path
 import queue
@@ -176,6 +177,7 @@ def run_supervised(
     command: list[str], environment: dict[str, str], *, watchdog_seconds: float,
     popen: Callable = subprocess.Popen, clock: Callable[[], float] = time.monotonic,
     log: Callable[[str], None] = lambda line: print(line, end="", flush=True),
+    total_deadline: float | None = None,
 ) -> SupervisedResult:
     reader: threading.Thread | None = None
     logger: threading.Thread | None = None
@@ -204,6 +206,18 @@ def run_supervised(
         if pending_signal is not None:
             raise SystemExit(128 + pending_signal)
 
+    def check_total_deadline() -> None:
+        # Default None preserves the normal asset-watchdog/finalizer contract.
+        # The one-off restore cannot wait forever before/after an asset marker
+        # or after EOF while the retained producer still owns its group.
+        if total_deadline is not None and (
+            isinstance(total_deadline, bool)
+            or not isinstance(total_deadline, (int, float))
+            or not math.isfinite(total_deadline)
+            or clock() >= total_deadline
+        ):
+            raise RuntimeError("DMI_SUPERVISOR_TOTAL_DEADLINE")
+
     def retain_failure(failure: BaseException) -> BaseException:
         nonlocal first_failure
         # Only capture the exception under this lock; no logging, I/O or stop.
@@ -218,19 +232,23 @@ def run_supervised(
         if failure is not None:
             raise failure
 
-    def join_output_threads() -> None:
+    def join_output_threads(*, cleanup: bool = False) -> None:
         nonlocal teardown_deadline
         if teardown_deadline is None:
             teardown_deadline = time.monotonic() + 2.0
         for thread in (reader, logger):
             if thread is not None and thread.ident is not None:
-                thread.join(timeout=max(0.0, teardown_deadline - time.monotonic()))
+                remaining = teardown_deadline - time.monotonic()
+                if total_deadline is not None and not cleanup:
+                    remaining = min(remaining, total_deadline - clock())
+                thread.join(timeout=max(0.0, remaining))
 
     try:
         for signum in (signal.SIGTERM, signal.SIGINT):
             previous_handlers.append((signum, signal.getsignal(signum)))
             signal.signal(signum, request_stop)
         check_interruption()
+        check_total_deadline()
         _require_owned_group_wait()
         process = popen(
             command, cwd=ROOT, env=environment, stdout=subprocess.PIPE,
@@ -239,6 +257,7 @@ def run_supervised(
         )
         process = _OwnedProcess(process)
         check_interruption()
+        check_total_deadline()
         # Guard setup after retaining Popen too: even an output-reader start
         # failure must not abandon the already live writer.
         events: queue.Queue[tuple[str, str | None]] = queue.Queue()
@@ -276,6 +295,7 @@ def run_supervised(
         while True:
             check_output_failure()
             check_interruption()
+            check_total_deadline()
             if os.name == "posix":
                 # Even continuous descendant output cannot hide leader exit.
                 process.poll()
@@ -327,14 +347,18 @@ def run_supervised(
         while True:
             check_output_failure()
             check_interruption()
+            check_total_deadline()
             try:
-                returncode = int(process.wait(timeout=0.25))
+                remaining = (0.25 if total_deadline is None
+                             else min(0.25, max(0.0, total_deadline - clock())))
+                returncode = int(process.wait(timeout=remaining))
                 break
             except subprocess.TimeoutExpired:
                 pass
         join_output_threads()
         check_output_failure()
         check_interruption()
+        check_total_deadline()
         if reader.is_alive():
             raise RuntimeError("DMI_SUPERVISOR_OUTPUT_READER_STOP_UNPROVED")
         if logger.is_alive():
@@ -357,7 +381,7 @@ def run_supervised(
             pass
         try:
             if process is not None and process.poll() is not None:
-                join_output_threads()
+                join_output_threads(cleanup=True)
                 if ((reader is None or not reader.is_alive())
                         and (logger is None or not logger.is_alive())
                         and process.stdout is not None):
@@ -488,8 +512,82 @@ def finalize_checkpoint(
                 raise restore_failure
 
 
+def restore_exact_originals(environment: dict[str, str]) -> int:
+    """One fixed acquisition, never normal-main, quarantine or finalization.
+
+    Only a completed run_supervised return proves physical owned-group absence
+    and finished output consumers. An exception emits no closure receipt, even
+    when best-effort stop happened to finish: callers must retain their claim.
+    """
+    if sys.platform != "linux":
+        raise RuntimeError("DMI_EXACT_ORIGINAL_RESTORE_PLATFORM_REFUSED")
+    runtime = bounded_seconds(environment, "DMI_BULK_MAX_RUNTIME_SECONDS", 780, 60, 3600)
+    asset_timeout = bounded_seconds(environment, "DMI_BULK_ASSET_PROCESSING_TIMEOUT_SECONDS",
+        bounded_seconds(environment, "DMI_BULK_HARMONIE_ASSET_TIMEOUT_SECONDS", 180, 60, 600),
+        60, 600)
+    output: list[str] = []
+    output_bytes = 0
+
+    def collect(line: str) -> None:
+        nonlocal output_bytes
+        # The actual normal asset watchdog still sees these strict markers.
+        # They stay inside this private process pipe, never in the receipt.
+        if (parse_asset_marker(line, ASSET_START_MARKER) is not None
+                or parse_asset_marker(line, ASSET_END_MARKER) is not None):
+            return
+        output_bytes += len(line.encode("utf-8"))
+        if output_bytes > 4096:
+            raise RuntimeError("DMI_EXACT_ORIGINAL_RESTORE_OUTPUT_INVALID")
+        output.append(line)
+
+    result = run_supervised(
+        [sys.executable, "-B", "-u", str(PRODUCER), "--restore-exact-originals"],
+        environment,
+        watchdog_seconds=min(runtime, asset_timeout),
+        total_deadline=time.monotonic() + runtime,
+        log=collect,
+    )
+    if result.watchdog_timed_out:
+        raise RuntimeError("DMI_EXACT_ORIGINAL_RESTORE_WATCHDOG_REFUSED")
+    try:
+        report = json.loads("".join(output))
+    except (TypeError, ValueError):
+        raise RuntimeError("DMI_EXACT_ORIGINAL_RESTORE_OUTPUT_INVALID") from None
+    fields = {"schemaVersion", "contractId", "status", "code", "originalCount",
+              "uniqueAssetCount", "downloadedAssetCount", "reusedAssetCount",
+              "downloadedBytes", "pruningPerformed", "replayPerformed", "scorePerformed"}
+    counts = {"originalCount", "uniqueAssetCount", "downloadedAssetCount",
+              "reusedAssetCount", "downloadedBytes"}
+    if (not isinstance(report, dict) or set(report) != fields
+            or type(report["schemaVersion"]) is not int or report["schemaVersion"] != 1
+            or report["contractId"] != "dmi-exact-original-restore-result-v1"
+            or report["status"] not in {"RESTORED", "REJECTED"}
+            or not isinstance(report["code"], str)
+            or not re.fullmatch(r"[A-Z][A-Z0-9_]{2,95}", report["code"])
+            or any(type(report[field]) is not int or report[field] < 0 for field in counts)
+            or any(report[field] is not False for field in
+                   ("pruningPerformed", "replayPerformed", "scorePerformed"))
+            or (report["status"] == "RESTORED" and (
+                report["code"] != "EXACT_ORIGINALS_RESTORED"
+                or report["originalCount"] < 1 or report["uniqueAssetCount"] < 1
+                or report["uniqueAssetCount"] != report["downloadedAssetCount"] + report["reusedAssetCount"]))
+            or result.returncode != (0 if report["status"] == "RESTORED" else 2)):
+        raise RuntimeError("DMI_EXACT_ORIGINAL_RESTORE_OUTPUT_INVALID")
+    print(json.dumps({"schemaVersion": 1,
+                      "kind": "DMI_EXACT_ORIGINAL_RESTORE_COHORT_CLOSED",
+                      "contractId": "dmi-exact-original-restore-supervisor-v1",
+                      "workerExitCode": result.returncode,
+                      "physicalGroupClosed": True, "outputClosed": True,
+                      "result": report}, separators=(",", ":")), flush=True)
+    return result.returncode
+
+
 def main() -> int:
     environment = dict(os.environ)
+    if "--restore-exact-originals" in sys.argv[1:]:
+        if sys.argv[1:] != ["--restore-exact-originals"]:
+            raise RuntimeError("DMI_EXACT_ORIGINAL_RESTORE_ARGUMENTS_INVALID")
+        return restore_exact_originals(environment)
     timeout = bounded_seconds(
         environment,
         "DMI_BULK_ASSET_PROCESSING_TIMEOUT_SECONDS",
