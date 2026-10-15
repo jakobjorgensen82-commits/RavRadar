@@ -2,6 +2,7 @@
 // Stage A only: authenticated saved bytes and original-context availability.
 // No provider, semantic union, score/cache build, promotion or remote writes.
 import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import { Readable, Writable } from 'node:stream';
@@ -19,6 +20,8 @@ import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 import { unpackDmiPartContinuity, assertDmiPartContinuityTotalSize } from './lib/dmi-part-continuity.mjs';
 import { originalContextForProtectedDmiCurrent } from './lib/protected-dmi-current-context.mjs';
 import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-native-current-proofs.mjs';
+import { dmiExpectedIdentityForPart, verifiedDmiNativeComponentSource,
+  eligibleDmiNativeComponentSource, verifiedBulkCurrent } from './lib/ravscore-production-adapters.mjs';
 import { unpackPrivateWeatherComponentPack, privateWeatherPackJsonReadsClosed } from './lib/private-weather-component-pack.mjs';
 import { safeWeatherComponentSummary } from './lib/weather-component-safe-summary.mjs';
 import { weatherComponentProgressCache, withAuthenticatedWeatherProgress,
@@ -44,7 +47,8 @@ const safeCode = new Set(['MODE_INVALID', 'PRIVATE_ROOT_INVALID', 'PRIVATE_PATH_
   'ARCHIVE_MEASUREMENT_INVALID', 'PROGRESS_IDENTITY_INVALID', 'PROGRESS_BINDING_FAILED',
   'PROGRESS_AUTHENTICATION_REJECTED', 'FORECAST_INSPECTION_FAILED', 'ORIGINAL_GEOMETRY_INVALID',
   'BULK_CONTEXT_INVALID', 'CONTINUITY_INSPECTION_FAILED', 'AUDIT_COUNTER_INVALID', 'OUTPUT_ALREADY_EXISTS',
-  'PRIVATE_TEMP_CLEANUP_FAILED', 'BASELINE_COMPONENT_PACK_REJECTED', 'NATIVE_PROOF_INSPECTION_FAILED']);
+  'PRIVATE_TEMP_CLEANUP_FAILED', 'BASELINE_COMPONENT_PACK_REJECTED', 'NATIVE_PROOF_INSPECTION_FAILED',
+  'RAW_MANIFEST_BOUND', 'RAW_CACHE_IDENTITY_INVALID']);
 
 function identity(value) {
   const keys = 'bundleContentSha256,contractHashes,datasetId,expectedPartCount,expectedZoneCount,generatedAt,kind,modelBinding,privatePayloadIncluded,productionReferenceAt,schemaVersion,sourceHead';
@@ -352,6 +356,137 @@ export async function measureSavedCurrentContexts(index, parts, baselineContext,
   return { ...measured, counts: { ...measured.counts, ...counts } };
 }
 
+const RAW_MANIFEST = '.cache/dmi-grib/asset-manifest.json';
+const RAW_MANIFEST_MAX_BYTES = 16 * 1024 * 1024;
+const RAW_MARINE_COLLECTIONS = new Set(['dkss_idw', 'dkss_nsbs', 'dkss_lf']);
+const rawSha = value => crypto.createHash('sha256').update(value).digest('hex');
+
+// Python canonical_time keeps six fractional digits, not JavaScript's three.
+// Cover the producer's ISO wire spellings, rejecting unsupported forms rather
+// than coalescing distinct microsecond captures. No timestamp is reissued.
+function rawCaptureTime(value) {
+  if (typeof value !== 'string') return null;
+  const match = /^(\d{4}-\d\d-\d\d)[T ](\d\d:\d\d:\d\d)(?:\.(\d{1,9}))?(Z|[+-]\d\d:\d\d)$/.exec(value);
+  if (!match) return null;
+  const local = Date.parse(match[1] + 'T' + match[2] + '.000Z');
+  if (!Number.isFinite(local) || new Date(local).toISOString().slice(0, 19) !== match[1] + 'T' + match[2]) return null;
+  const zone = match[4], hours = zone === 'Z' ? 0 : Number(zone.slice(1, 3));
+  const minutes = zone === 'Z' ? 0 : Number(zone.slice(4, 6));
+  if (hours > 23 || minutes > 59) return null;
+  const offset = (hours * 60 + minutes) * 60_000 * (zone[0] === '-' ? -1 : 1);
+  const utc = new Date(local - offset).toISOString();
+  if (!/^\d{4}-/.test(utc)) return null;
+  const fraction = (match[3] ?? '').padEnd(6, '0').slice(0, 6);
+  return utc.slice(0, 19) + (fraction === '000000' ? '' : '.' + fraction) + 'Z';
+}
+
+// Exactly the eleven identity fields in Python canonical_current_source_asset.
+// This diagnostic projection is neither native proof nor RAW-byte verification.
+function rawCapture(source) {
+  if (!object(source) || typeof source.collection !== 'string' || typeof source.itemId !== 'string') return null;
+  const collection = source.collection.trim(), itemId = source.itemId.trim();
+  const value = { collection, modelRun: rawCaptureTime(source.modelRun),
+    validTime: rawCaptureTime(source.validTime ?? source.nativeValidTime), itemId,
+    assetIdentitySha256: source.assetIdentitySha256, assetSizeBytes: source.assetSizeBytes ?? null,
+    acquiredAt: rawCaptureTime(source.acquiredAt), contentLengthBytes: source.contentLengthBytes,
+    contentSha256: source.contentSha256, itemCreatedAt: rawCaptureTime(source.itemCreatedAt),
+    itemUpdatedAt: rawCaptureTime(source.itemUpdatedAt) };
+  if (!RAW_MARINE_COLLECTIONS.has(collection) || !itemId || !value.modelRun || !value.validTime
+    || !/^[a-f0-9]{64}$/.test(value.assetIdentitySha256 ?? '')
+    || !Number.isSafeInteger(value.contentLengthBytes) || value.contentLengthBytes <= 0
+    || !/^[a-f0-9]{64}$/.test(value.contentSha256 ?? '') || !value.acquiredAt
+    || value.assetSizeBytes !== null && (!Number.isSafeInteger(value.assetSizeBytes)
+      || value.assetSizeBytes <= 0 || value.assetSizeBytes !== value.contentLengthBytes)
+    || source.itemCreatedAt != null && !value.itemCreatedAt
+    || source.itemUpdatedAt != null && !value.itemUpdatedAt) return null;
+  return value;
+}
+const withoutAcquiredAt = capture => Object.fromEntries(Object.entries(capture).filter(([key]) => key !== 'acquiredAt'));
+
+export function indexSavedRawManifest(document) {
+  const counts = { manifestRows: 0, validMarineRows: 0, otherCollectionRows: 0, invalidRows: 0 };
+  const index = { status: 'MALFORMED', counts, exact: new Map(), withoutAcquired: new Map(), assets: new Set() };
+  if (!object(document) || document.schemaVersion !== 2 || !object(document.assets)) return index;
+  const rows = Object.entries(document.assets);
+  if (rows.length > 200_000) fail('RAW_MANIFEST_BOUND');
+  index.status = 'MEASURED';
+  for (const [name, asset] of rows) {
+    counts.manifestRows++;
+    if (object(asset) && typeof asset.collection === 'string' && !RAW_MARINE_COLLECTIONS.has(asset.collection.trim())) {
+      counts.otherCollectionRows++; continue;
+    }
+    const capture = rawCapture(asset), href = asset?.canonicalHref;
+    if (!capture || typeof href !== 'string' || !href || href.length > 8192) { counts.invalidRows++; continue; }
+    const canonicalHref = href.split('?')[0].split('#')[0];
+    const suffix = path.posix.extname(canonicalHref);
+    const expectedName = rawSha(canonicalHref).slice(0, 24) + (suffix && suffix !== '.' ? suffix : '.grib');
+    if (name !== expectedName || path.posix.basename(name) !== name || name.includes('\\')
+      || rawSha(href.trim().split('?')[0].split('#')[0]) !== capture.assetIdentitySha256) {
+      counts.invalidRows++; continue;
+    }
+    counts.validMarineRows++;
+    const exact = stable(capture), relaxed = stable(withoutAcquiredAt(capture));
+    index.exact.set(exact, (index.exact.get(exact) ?? 0) + 1);
+    index.withoutAcquired.set(relaxed, (index.withoutAcquired.get(relaxed) ?? 0) + 1);
+    index.assets.add(capture.assetIdentitySha256);
+  }
+  return index;
+}
+
+async function savedRawManifest(repositoryRoot) {
+  const file = path.join(repositoryRoot, RAW_MANIFEST);
+  let checked;
+  try { checked = await noSymlinks(repositoryRoot, file); }
+  catch (error) {
+    if (error.code === 'ENOENT') return { ...indexSavedRawManifest(null), status: 'MISSING' };
+    throw error;
+  }
+  const stat = await fs.lstat(checked);
+  if (!stat.isFile() || stat.size < 2 || stat.size > RAW_MANIFEST_MAX_BYTES) fail('RAW_MANIFEST_BOUND');
+  // No RAW file path is opened or hashed. The cache is not provenance authority.
+  let document;
+  try { document = JSON.parse(await fs.readFile(checked, 'utf8')); }
+  catch { return indexSavedRawManifest(null); }
+  return indexSavedRawManifest(document);
+}
+
+export function measureSavedRawCaptureMatches(document, parts, index) {
+  const counts = { nativeCurrentRows: 0, rejectedNativeRows: 0,
+    excludedByCurrentPolicyRows: 0, samplingReceiptPresentRows: 0, invalidCaptureRows: 0,
+    exactCaptureMatchRows: 0, ambiguousExactCaptureRows: 0, acquiredAtOnlyMismatchRows: 0,
+    assetIdentityAbsentRows: 0, otherRevisionOrContentMismatchRows: 0, unclassifiedRows: 0 };
+  for (const part of parts.values()) {
+    const expected = dmiExpectedIdentityForPart(part), zone = document?.zones?.[expected?.entityId];
+    if (!object(zone?.hourly)) continue;
+    if (Object.keys(zone.hourly).length > 10_000) fail('RAW_MANIFEST_BOUND');
+    for (const row of Object.values(zone.hourly)) {
+      if (!Number.isFinite(row?.['current-u']) || !Number.isFinite(row?.['current-v'])) continue;
+      const source = row.sources?.current;
+      counts.nativeCurrentRows++;
+      if (!object(source) || ['nativeSteps', 'nativeValidTimes', 'temporalResolution', 'forecastAgeHours'].some(key => Object.hasOwn(source, key))
+        || !verifiedDmiNativeComponentSource(source, row.time, 'current', expected)
+        || !verifiedBulkCurrent(document, zone, part.waterPoint, source, row.time, expected)) {
+        counts.rejectedNativeRows++; continue;
+      }
+      if (!eligibleDmiNativeComponentSource(source, row.time, 'current', expected)) {
+        counts.excludedByCurrentPolicyRows++; continue;
+      }
+      // Receipt presence is the planner's skip rule, not a coherence assertion.
+      if (source.nativeGridSampling != null) { counts.samplingReceiptPresentRows++; continue; }
+      const capture = rawCapture(source);
+      if (!capture) { counts.invalidCaptureRows++; continue; }
+      if (index.status !== 'MEASURED') { counts.unclassifiedRows++; continue; }
+      const exact = index.exact.get(stable(capture)) ?? 0;
+      if (exact === 1) counts.exactCaptureMatchRows++;
+      else if (exact > 1) counts.ambiguousExactCaptureRows++;
+      else if (index.withoutAcquired.has(stable(withoutAcquiredAt(capture)))) counts.acquiredAtOnlyMismatchRows++;
+      else if (!index.assets.has(capture.assetIdentitySha256)) counts.assetIdentityAbsentRows++;
+      else counts.otherRevisionOrContentMismatchRows++;
+    }
+  }
+  return { status: index.status, counts };
+}
+
 const NATIVE_DONORS = Object.freeze(['baselineBulk', 'baselineActive', 'baselineCandidate',
   'progressActive', 'progressCandidate']);
 const NATIVE_REJECTIONS = Object.freeze({
@@ -371,13 +506,14 @@ const nativeRejections = () => Object.fromEntries([...new Set(Object.values(NATI
 // retained between passes. A complete proof in one donor is not a semantic
 // union, an artifactgate pass, or proof that a future generation saves it.
 export async function measureSavedNativeProofAvailability({ baselineIndex, progressIndex,
-  parts, donorFiles } = {}) {
+  parts, donorFiles, rawManifest = null } = {}) {
   if (!(parts instanceof Map) || parts.size < 1 || parts.size > 673 || !object(donorFiles)
     || Object.keys(donorFiles).some(key => !NATIVE_DONORS.includes(key))) fail('NATIVE_PROOF_INSPECTION_FAILED');
   const snapshots = Object.entries({ baseline: baselineIndex, progress: progressIndex }).map(([name, index]) => ({
     name, index, masks: new Map(), counts: null, donorProofs: Object.fromEntries(NATIVE_DONORS.map(label => [label,
       { status: donorFiles[label] ? 'PRESENT' : 'NOT_PRESENT', completeProofPairs: 0,
         unprovedPairs: 0, rejections: nativeRejections() }])) }));
+  const rawDonors = rawManifest ? Object.fromEntries(NATIVE_DONORS.map(label => [label, { status: 'NOT_PRESENT' }])) : null;
   for (const [donorNumber, label] of NATIVE_DONORS.entries()) {
     if (!donorFiles[label]) continue;
     // Loading the next donor only happens after the preceding inspector and
@@ -386,6 +522,7 @@ export async function measureSavedNativeProofAvailability({ baselineIndex, progr
   }
   async function inspectDonor(file, donorNumber, label) {
     const document = await bulk(file);
+    if (rawDonors) rawDonors[label] = measureSavedRawCaptureMatches(document, parts, rawManifest);
     const inspector = createProtectedDmiNativeCurrentInspector({ contexts: [document] });
     for (const snapshot of snapshots) {
       let finiteDmiCurrentSelections = 0;
@@ -443,7 +580,10 @@ export async function measureSavedNativeProofAvailability({ baselineIndex, progr
   return { geometryScope: 'AUTHENTICATED_BASELINE_PARTS_ONLY',
     selectionScope: 'PERSISTED_PART_CURRENT_CONTINUITY', registeredParts: parts.size,
     crossDonorCombinationChecked: false, nativeRowsSynthesized: false,
-    artifactGatePassed: false, ...result };
+    artifactGatePassed: false, ...result,
+    ...(rawManifest ? { rawManifestCaptureCounts: { status: rawManifest.status,
+      counts: rawManifest.counts, donors: rawDonors, rawFilesOpened: false,
+      rawBytesVerified: false, sourceAdmissionPerformed: false } } : {}) };
 }
 
 function baseReport(status) {
@@ -470,6 +610,7 @@ export async function withoutSavedAuditSecrets(inspect) {
 
 export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPath, predecessorRoot,
   progressFile, progressSource, progressCacheKey, outputPath, repositoryRoot = REPOSITORY,
+  includeRawManifest = false, rawCacheKey = null,
   repository = process.env.GITHUB_REPOSITORY, pythonExecutable = process.env.PYTHON ?? 'python',
   encryptionKey = process.env.WEATHER_PROGRESS_ENCRYPTION_KEY,
   masterSecret = process.env.WEATHER_PROGRESS_MASTER_SECRET,
@@ -478,7 +619,11 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
   let work = null, safeOutput = null, phase = 'SETUP';
   let baselinePackInvocation = null;
   try {
-    if (!['describe', 'audit'].includes(mode)) fail('MODE_INVALID');
+    if (!['describe', 'audit'].includes(mode) || typeof includeRawManifest !== 'boolean'
+      || mode !== 'audit' && includeRawManifest) fail('MODE_INVALID');
+    if (includeRawManifest ? typeof rawCacheKey !== 'string'
+      || !/^dmi-grib-v4-Linux-\d{4}-W(?:0[1-9]|[1-4]\d|5[0-3])-\d+-[1-9]\d*$/.test(rawCacheKey)
+      || !rawCacheKey.endsWith(`-${progressSource}`) : rawCacheKey !== null) fail('RAW_CACHE_IDENTITY_INVALID');
     const ctx = await context(privateRoot, repositoryRoot);
     // Windows may spell the same verified temp root with its 8.3 alias. Map
     // only lexical children of that already checked root, then inspect every
@@ -584,7 +729,8 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
           baseline: await measureSavedCurrentContexts(baselineIndex, parts, baselineBulk, progressBulk),
           progress: await measureSavedCurrentContexts(progressIndex, parts, baselineBulk, progressBulk) };
       })();
-      const nativeProofAvailability = await measureSavedNativeProofAvailability({ baselineIndex, progressIndex, parts, donorFiles });
+      const rawManifest = includeRawManifest ? await savedRawManifest(ctx.repository) : null;
+      const nativeProofAvailability = await measureSavedNativeProofAvailability({ baselineIndex, progressIndex, parts, donorFiles, rawManifest });
       return { progress: { encryptedBytes: capacity.encryptedBytes, compressedBytes: capacity.compressedBytes,
         rawPackBytes: capacity.rawPackBytes, fileCount: capacity.fileCount, files: fileMetrics(files, progressFiles) },
       forecasts: { baseline: forecastMetrics(baselineIndex), progress: forecastMetrics(progressIndex) },
@@ -629,9 +775,14 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     const args = process.argv.slice(2), options = { mode: args.shift() };
     const names = { '--private-root': 'privateRoot', '--descriptor': 'descriptorPath', '--predecessor-root': 'predecessorRoot',
       '--progress-file': 'progressFile', '--progress-source': 'progressSource', '--progress-cache-key': 'progressCacheKey',
-      '--output': 'outputPath', '--python': 'pythonExecutable' };
+      '--output': 'outputPath', '--python': 'pythonExecutable',
+      '--include-raw-manifest': 'includeRawManifest', '--raw-cache-key': 'rawCacheKey' };
     while (args.length) { const key = args.shift(), value = args.shift();
       if (!names[key] || !value || value.startsWith('--') || Object.hasOwn(options, names[key])) fail('MODE_INVALID'); options[names[key]] = value; }
+    if (Object.hasOwn(options, 'includeRawManifest')) {
+      if (!['true', 'false'].includes(options.includeRawManifest)) fail('MODE_INVALID');
+      options.includeRawManifest = options.includeRawManifest === 'true';
+    }
     const report = await auditSavedWeatherInputs(options);
     console.log(JSON.stringify(report));
     if (report.status === 'AUDIT_FAILED_CLOSED') process.exitCode = 1;

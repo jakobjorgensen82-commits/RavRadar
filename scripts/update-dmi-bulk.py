@@ -10270,7 +10270,11 @@ def plan_cached_current_history(demands, originals, manifest):
         if (name != path.name or pathlib.Path(name).name != name
             or asset_identity_sha256(href) != capture["assetIdentitySha256"]):
             continue
-        raw_by_capture.setdefault(_current_history_json(capture), []).append((path, asset))
+        # Reacquisition may change its timestamp, never the official revision
+        # or measured bytes. Keep complete old captures in originalsByKey.
+        raw_key = _current_history_json({key: value for key, value in capture.items()
+                                         if key != "acquiredAt"})
+        raw_by_capture.setdefault(raw_key, []).append((path, asset))
     for original in originals:
         zone_id, valid = original["zoneId"], original["time"]
         capture = original["capture"]
@@ -10293,13 +10297,19 @@ def plan_cached_current_history(demands, originals, manifest):
         existing.append(original)
         if source.get("nativeGridSampling") is not None:
             continue  # Retain this original; never relabel or decode its receipt.
-        matches = raw_by_capture.get(source_key, [])
+        raw_key = _current_history_json({key: value for key, value in capture.items()
+                                         if key != "acquiredAt"})
+        matches = raw_by_capture.get(raw_key, [])
         if len(matches) != 1:
             unavailable.append({"reason": "RAW_CAPTURE_UNAVAILABLE", "partId": key[0], "time": valid})
             continue
         path, asset = matches[0]
         job_key = (str(path), source_key)
-        job = jobs.setdefault(job_key, {"path": path, "capture": capture, "asset": copy.deepcopy(asset), "originals": {}})
+        # The owned reader and new outcome proof must use the actual complete
+        # RAW capture, not an old acquisition timestamp copied onto new input.
+        job = jobs.setdefault(job_key, {"path": path,
+            "capture": canonical_current_source_asset(asset),
+            "asset": copy.deepcopy(asset), "originals": {}})
         job["originals"][zone_id] = original
     return {
         "demands": demands, "originalsByKey": originals_by_key,
@@ -10450,9 +10460,10 @@ def replay_cached_current_history_job(job, plan, result, controller, *,
         existing_capture = canonical_current_source_asset((row.get("sources") or {}).get("current"))
         key = (zone_id.removeprefix("PART::"), valid, _current_history_json(existing_capture))
         bound = plan["originalsByKey"].get(key)
-        if not bound or current_tuple(row) not in (
-            *(current_tuple(item["row"]) for item in bound), plan["derivedByKey"].get(key),
-        ):
+        original_matches = bool(bound) and current_tuple(row) in (
+            current_tuple(item["row"]) for item in bound)
+        derived = plan["derivedByKey"].get(key)
+        if not original_matches and (derived is None or current_tuple(row) != derived):
             raise ValueError("DMI_CURRENT_HISTORY_WINNER_UNBOUND")
     seeded = set()
     qualified = set()
@@ -10525,10 +10536,11 @@ def replay_cached_current_history_job(job, plan, result, controller, *,
                 bound = plan["originalsByKey"].get(key)
                 if row is not None and any(field in row for field in COMPONENT_FIELD_SET["current"]):
                     if not (
-                        bound and complete_native_source_for_hour(old_source, "current", zone_id, point, valid)
-                        and current_tuple(row) in (
-                            *(current_tuple(item["row"]) for item in bound), plan["derivedByKey"].get(key),
-                        )
+                        complete_native_source_for_hour(old_source, "current", zone_id, point, valid)
+                        and ((bound and current_tuple(row) in (
+                            current_tuple(item["row"]) for item in bound))
+                            or (plan["derivedByKey"].get(key) is not None
+                                and current_tuple(row) == plan["derivedByKey"][key]))
                     ):
                         return False
                 elif zone_id.removeprefix("PART::") in available:

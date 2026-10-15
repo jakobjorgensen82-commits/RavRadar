@@ -2134,7 +2134,7 @@ try {
     const digest = value => crypto.createHash('sha256').update(value).digest('hex');
     assert.equal(digest(oldProducer), '8ff4a5b6f50d3f2d4e177fcf8c55048051266ded1a196151d6adff9427829ce2');
     assert.equal(digest(reviewedProducer), '242844d0da14fc64ce8ebbf48bdab1e49450822cd193cd231667013e216b160e');
-    assert.equal(digest(currentProducer), '3bb772a32861e911e790e47791a8a454750654b233d0b46d30a6be8515fcb96f',
+    assert.equal(digest(currentProducer), '365b9fc4956ea9cc498fe4923e2c095c5297f38722e809747877abba3a5792f0',
       'the fixture must exercise the exact reviewed cache-only successor');
     const delta = execFileSync('git', ['diff', '--no-ext-diff', '--no-textconv', '--unified=3',
       beforeCommit, afterCommit, '--', producerPath], { cwd: sourceRepository, encoding: 'utf8' });
