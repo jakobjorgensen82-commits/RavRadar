@@ -1,3 +1,12 @@
+## 15. oktober — kildeleveret samme-originalrettelse og afvist checkpoint-diagnose
+
+PR618 har faktisk bestået præcis Linux-, source- og PostgreSQL-kontrol og er merget. Det er kildelevering, ikke en ny offentlig vejrgeneration. Den ene skrivefri audit gendannede de præcise gemte pakker, men stoppede ved PROGRESS_AUTHENTICATION_REJECTED før manifest-/strømoptællingen. Dens engangstilladelse er forbrugt; ingen automatisk gentagelse.
+
+Koden og den normale 673-dels migrationsprøve beviser forskellen mellem gammel og korrekt genskabt baseline. Den afgrænsede lokale auditrettelse er eksplicit og default-OFF og genbruger den normale, typesikre overgang i en ny privat midlertidig mappe. Originaler, målinger, historiske scorer, GCM og byteeksakt baselinekontrol bevares; forkert nøgle afvises fortsat. Den normale audit består 47 prøver og tre målrettede diagnoseprøver. De sidst additive original-/gentaget-outputassertions afventer præcis CI, ikke en ny stor lokal gentagelse. Den indre hosted årsag og faktisk manifestmatch er fortsat ubekræftede. Ejeren har nu givet det nye ja til præcis én gentagelse af samme gemte pakker efter rettelse og bestået kontrol; den er endnu ikke startet.
+
+Den ene nye providerfri produktionsgenoptagelse er fortsat ubrugt. Ingen ny providerhentning, SQL, 230/assistent, SOURCE19 eller cronændring følger af denne auditrettelse. Ny beregning, holdbar gemning, upload, Pages og offentlig effekt skal bevises særskilt; alle fem mål og fristen 18. oktober består. Se håndbog 89.230 og privat checkpoint. Tidligere status nedenfor er historik på de konkret afsluttede punkter.
+
+
 # RavRadar – bindende arbejdsinstruks
 
 Denne fil skal læses før analyse, programmering eller versionsbygning.

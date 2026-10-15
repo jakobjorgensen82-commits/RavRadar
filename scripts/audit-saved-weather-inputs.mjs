@@ -26,6 +26,8 @@ import { unpackPrivateWeatherComponentPack, privateWeatherPackJsonReadsClosed } 
 import { safeWeatherComponentSummary } from './lib/weather-component-safe-summary.mjs';
 import { weatherComponentProgressCache, withAuthenticatedWeatherProgress,
   WEATHER_PROGRESS_CIPHER_PATH, WEATHER_PROGRESS_MAX_CIPHER_BYTES } from './weather-component-progress-cache.mjs';
+import { buildCurrentGridSamplingOriginalRestoreExpectation } from './lib/bounded-conditions-predecessor-transition.mjs';
+import { migratePostCutoverPrivateRuntime } from './migrate-post-cutover-private-runtime.mjs';
 
 const REPOSITORY = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const policy = protectedApi.PROTECTED_PRIVATE_RUNTIME_POLICY;
@@ -48,7 +50,36 @@ const safeCode = new Set(['MODE_INVALID', 'PRIVATE_ROOT_INVALID', 'PRIVATE_PATH_
   'PROGRESS_AUTHENTICATION_REJECTED', 'FORECAST_INSPECTION_FAILED', 'ORIGINAL_GEOMETRY_INVALID',
   'BULK_CONTEXT_INVALID', 'CONTINUITY_INSPECTION_FAILED', 'AUDIT_COUNTER_INVALID', 'OUTPUT_ALREADY_EXISTS',
   'PRIVATE_TEMP_CLEANUP_FAILED', 'BASELINE_COMPONENT_PACK_REJECTED', 'NATIVE_PROOF_INSPECTION_FAILED',
-  'RAW_MANIFEST_BOUND', 'RAW_CACHE_IDENTITY_INVALID']);
+  'RAW_MANIFEST_BOUND', 'RAW_CACHE_IDENTITY_INVALID', 'PROGRESS_BASELINE_TARGET_INVALID',
+  'PROGRESS_BASELINE_RECONSTRUCTION_REJECTED']);
+const safeProgressAuthenticationCodes = new Set(['SIZE_BUDGET_INVALID', 'REPOSITORY_INVALID', 'ROOT_INVALID',
+  'BASE_INVALID', 'ENCRYPTION_KEY_UNAVAILABLE', 'ENCRYPTION_KEY_INVALID', 'BASELINE_MISMATCH',
+  'PATH_INVALID', 'SYMLINK_REJECTED', 'FILE_INVALID', 'SNAPSHOT_ABSENT', 'SNAPSHOT_INVALID',
+  'SNAPSHOT_SCOPE_MISMATCH', 'SNAPSHOT_AUTHENTICATION_FAILED', 'SIZE_LIMIT', 'TEMPORARY_CLEANUP_FAILED']);
+const safeProgressPackCodes = new Set(['WEATHER_PACK_PATH_NOT_ALLOWLISTED', 'WEATHER_PACK_SYMLINK_REJECTED',
+  'WEATHER_PACK_FILE_SIZE_INVALID', 'WEATHER_PACK_STREAM_CLOSE_UNPROVED', 'WEATHER_PACK_JSON_SIZE_INVALID',
+  'WEATHER_PACK_JSON_INVALID', 'WEATHER_PACK_JSON_CLOSE_UNPROVED', 'WEATHER_PACK_CP_INVENTORY_TIMEOUT',
+  'WEATHER_PACK_CP_INVENTORY_UNAVAILABLE', 'WEATHER_PACK_CP_ORIGINALS_INVALID', 'WEATHER_PACK_CP_INVENTORY_INVALID',
+  'WEATHER_PACK_OM_BANK_HASH_INVALID', 'WEATHER_PACK_REQUIRED_INPUT_MISSING_OR_CHANGED',
+  'WEATHER_PACK_CP_PROGRESS_WITHOUT_BANK', 'WEATHER_PACK_CP_REFERENCE_INVALID', 'WEATHER_PACK_CP_ORIGINAL_CHANGED',
+  'WEATHER_PACK_SIZE_LIMIT', 'WEATHER_PACK_TRUNCATED', 'WEATHER_PACK_FORMAT_INVALID',
+  'WEATHER_PACK_MANIFEST_SIZE_INVALID', 'WEATHER_PACK_MANIFEST_INVALID', 'WEATHER_PACK_ENTRY_INVALID',
+  'WEATHER_PACK_SIZE_INVALID', 'WEATHER_PACK_OUTPUT_CLOSE_UNPROVED', 'WEATHER_PACK_ENTRY_HASH_INVALID',
+  'WEATHER_PACK_REFERENCE_INVENTORY_MISMATCH', 'WEATHER_PACK_ARCHIVE_CLOSE_UNPROVED']);
+
+export function savedAuditProgressAuthenticationCode(error) {
+  if (safeProgressAuthenticationCodes.has(error?.progressCode)) return error.progressCode;
+  // The normal unpacker emits fixed codes as Error.message. Only an entire,
+  // explicitly enumerated code may cross this boundary, never raw error text.
+  return safeProgressPackCodes.has(error?.message) ? error.message : 'UNCLASSIFIED';
+}
+
+function validateProgressBaselineTargetHour(value, source = null) {
+  if (value === null) return;
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/.test(value)
+    || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString() !== value
+    || source !== null && Date.parse(value) <= Date.parse(source.productionReferenceAt)) fail('PROGRESS_BASELINE_TARGET_INVALID');
+}
 
 function identity(value) {
   const keys = 'bundleContentSha256,contractHashes,datasetId,expectedPartCount,expectedZoneCount,generatedAt,kind,modelBinding,privatePayloadIncluded,productionReferenceAt,schemaVersion,sourceHead';
@@ -589,7 +620,7 @@ export async function measureSavedNativeProofAvailability({ baselineIndex, progr
 function baseReport(status) {
   return { schemaVersion: 1, kind: 'SAVED_WEATHER_INPUT_AUDIT', status,
     protectedGenerationReadbackVerified: false, exactArchivedSourceContractsVerified: false,
-    exactProgressAuthenticated: false, providerRequestsPerformed: false, remoteWrites: false,
+    exactProgressAuthenticated: false, normalProgressBaselineUsed: false, providerRequestsPerformed: false, remoteWrites: false,
     semanticUnionPerformed: false, replayPerformed: false, cacheBuilt: false,
     futureContextPersistenceProved: false, publicDeploymentProved: false, privatePayloadIncluded: false };
 }
@@ -608,9 +639,50 @@ export async function withoutSavedAuditSecrets(inspect) {
   }
 }
 
+// Reconstruct only the normal acquisition binder in separate private scratch.
+// Inspection still reads the original authenticated archive, never this successor.
+export async function prepareSavedAuditProgressBaseline({ privateRoot, workRoot = privateRoot, bundlePath, descriptorPath,
+  repositoryRoot = REPOSITORY, progressBaselineTargetHour = null } = {}) {
+  validateProgressBaselineTargetHour(progressBaselineTargetHour);
+  const ctx = await context(privateRoot, repositoryRoot);
+  const resolvePrivate = value => typeof value === 'string' && inside(path.resolve(privateRoot), path.resolve(value))
+    ? path.join(ctx.root, path.relative(path.resolve(privateRoot), path.resolve(value))) : value;
+  workRoot = resolvePrivate(workRoot);
+  bundlePath = resolvePrivate(bundlePath);
+  descriptorPath = resolvePrivate(descriptorPath);
+  const workingRoot = path.resolve(workRoot) === ctx.root ? ctx.root : await noSymlinks(ctx.root, workRoot);
+  if (!(await fs.lstat(workingRoot)).isDirectory()) fail('PRIVATE_ROOT_INVALID');
+  const checkedBundle = await noSymlinks(ctx.root, bundlePath);
+  const payloadRoot = await noSymlinks(ctx.root, path.join(checkedBundle, 'payload'));
+  if (progressBaselineTargetHour === null) return { repositoryRoot: payloadRoot, normalProgressBaselineUsed: false };
+  const source = identity(await readJson(await noSymlinks(ctx.root, descriptorPath)));
+  validateProgressBaselineTargetHour(progressBaselineTargetHour, source);
+  const expected = await buildCurrentGridSamplingOriginalRestoreExpectation({
+    sourceDescription: source, targetReferenceAt: progressBaselineTargetHour,
+  });
+  if (expected === null) fail('PROGRESS_BASELINE_RECONSTRUCTION_REJECTED');
+  const outputRoot = await newOutput(ctx.root, path.join(workingRoot, 'normal-progress-baseline'));
+  const targetDescriptor = await newOutput(ctx.root, path.join(workingRoot, 'normal-progress-baseline-source.json'));
+  const reportPath = await newOutput(ctx.root, path.join(workingRoot, 'normal-progress-baseline-report.json'));
+  // The exact current generation has already been restored and read back.
+  // The normal migrant consumes its target descriptor; preserve every other
+  // authenticated field and keep the original descriptor and payload untouched.
+  await fs.writeFile(targetDescriptor, `${JSON.stringify({ ...source, kind: policy.targetSourceKind })}\n`,
+    { flag: 'wx', mode: 0o600 });
+  const report = await migratePostCutoverPrivateRuntime({ sourceRoot: payloadRoot, outputRoot,
+    bundleManifestPath: await noSymlinks(ctx.root, path.join(checkedBundle, 'manifest.json')),
+    predecessorDescriptorPath: targetDescriptor, predecessorRoot: null, repositoryRoot: ctx.repository,
+    expectedSourceHead: source.sourceHead, reportPath, currentGridOriginalOnly: true,
+    currentGridOriginalExpectation: expected,
+  });
+  if (report.transitionKind !== 'CURRENT_GRID_ORIGINAL_ARCHIVE_BRIDGE'
+    || report.measurementsChanged !== false || report.candidateStatesChanged !== false) fail('PROGRESS_BASELINE_RECONSTRUCTION_REJECTED');
+  return { repositoryRoot: outputRoot, normalProgressBaselineUsed: true };
+}
+
 export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPath, predecessorRoot,
   progressFile, progressSource, progressCacheKey, outputPath, repositoryRoot = REPOSITORY,
-  includeRawManifest = false, rawCacheKey = null,
+  includeRawManifest = false, rawCacheKey = null, progressBaselineTargetHour = null,
   repository = process.env.GITHUB_REPOSITORY, pythonExecutable = process.env.PYTHON ?? 'python',
   encryptionKey = process.env.WEATHER_PROGRESS_ENCRYPTION_KEY,
   masterSecret = process.env.WEATHER_PROGRESS_MASTER_SECRET,
@@ -618,9 +690,11 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
 } = {}) {
   let work = null, safeOutput = null, phase = 'SETUP';
   let baselinePackInvocation = null;
+  let normalProgressBaselineUsed = false;
   try {
     if (!['describe', 'audit'].includes(mode) || typeof includeRawManifest !== 'boolean'
-      || mode !== 'audit' && includeRawManifest) fail('MODE_INVALID');
+      || mode !== 'audit' && (includeRawManifest || progressBaselineTargetHour !== null)) fail('MODE_INVALID');
+    validateProgressBaselineTargetHour(progressBaselineTargetHour);
     if (includeRawManifest ? typeof rawCacheKey !== 'string'
       || !/^dmi-grib-v4-Linux-\d{4}-W(?:0[1-9]|[1-4]\d|5[0-3])-\d+-[1-9]\d*$/.test(rawCacheKey)
       || !rawCacheKey.endsWith(`-${progressSource}`) : rawCacheKey !== null) fail('RAW_CACHE_IDENTITY_INVALID');
@@ -647,6 +721,8 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     }
     phase = 'SOURCE_VALIDATION';
     const source = identity(await readJson(await noSymlinks(ctx.root, descriptorPath)));
+    // Reject malformed, same-hour and older targets before any remote read.
+    validateProgressBaselineTargetHour(progressBaselineTargetHour, source);
     if (!/^\d+-[1-9]\d*$/.test(progressSource ?? '') || progressCacheKey !== `weather-private-progress-encrypted-v2-Linux-main-${progressSource}`
       || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? '')) fail('PROGRESS_IDENTITY_INVALID');
     const cipher = await noSymlinks(ctx.root, progressFile);
@@ -701,14 +777,21 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
         return baselinePackInvocation;
       });
     } catch { fail('BASELINE_COMPONENT_PACK_REJECTED'); }
+    if (progressBaselineTargetHour !== null) phase = 'PROGRESS_BASELINE_RECONSTRUCTION';
+    const progressBaseline = progressBaselineTargetHour === null
+      ? { repositoryRoot: payloadRoot, normalProgressBaselineUsed: false }
+      : await withoutSavedAuditSecrets(() => prepareSavedAuditProgressBaseline({ privateRoot: ctx.root, workRoot: work, bundlePath,
+        descriptorPath, repositoryRoot: ctx.repository, progressBaselineTargetHour }));
+    normalProgressBaselineUsed = progressBaseline.normalProgressBaselineUsed;
+    const progressBaselineRoot = progressBaseline.repositoryRoot;
     const basePath = path.join(work, 'progress-base.json');
-    const captured = await weatherComponentProgressCache({ mode: 'capture-base', repositoryRoot: payloadRoot,
+    const captured = await weatherComponentProgressCache({ mode: 'capture-base', repositoryRoot: progressBaselineRoot,
       basePath, repository, protectedBundleSha256: source.bundleContentSha256 });
     if (captured.captured !== true) fail('PROGRESS_BINDING_FAILED');
-    await fs.mkdir(path.dirname(path.join(payloadRoot, WEATHER_PROGRESS_CIPHER_PATH)), { recursive: true, mode: 0o700 });
-    await fs.copyFile(cipher, path.join(payloadRoot, WEATHER_PROGRESS_CIPHER_PATH), fs.constants.COPYFILE_EXCL);
+    await fs.mkdir(path.dirname(path.join(progressBaselineRoot, WEATHER_PROGRESS_CIPHER_PATH)), { recursive: true, mode: 0o700 });
+    await fs.copyFile(cipher, path.join(progressBaselineRoot, WEATHER_PROGRESS_CIPHER_PATH), fs.constants.COPYFILE_EXCL);
     phase = 'PROGRESS_AUTHENTICATION';
-    const measured = await withoutSavedAuditSecrets(() => withAuthenticatedWeatherProgress({ repositoryRoot: payloadRoot, basePath,
+    const measured = await withoutSavedAuditSecrets(() => withAuthenticatedWeatherProgress({ repositoryRoot: progressBaselineRoot, basePath,
       repository, encryptionKey, masterSecret, pythonExecutable }, async ({ files, capacity }) => {
       if (Object.values(capacity).some(value => !integer(value))) fail('AUDIT_COUNTER_INVALID');
       phase = 'SAVED_INPUT_INSPECTION';
@@ -740,6 +823,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     if (!same(await oldProtected.describeCurrentProtectedPrivateProductionRuntime(clients), source)) fail('CURRENT_GENERATION_CHANGED');
     const report = { ...baseReport('AUDIT_COMPLETED'), protectedGenerationReadbackVerified: true,
       exactArchivedSourceContractsVerified: true, exactProgressAuthenticated: true,
+      normalProgressBaselineUsed,
       capacity: { protected: { ...archive, files: protectedFiles,
         rawPayloadBytes: protectedFiles.bytes + (await fs.stat(path.join(bundlePath, 'manifest.json'))).size }, progress: measured.progress,
       limits: { archiveBytes: policy.maximumArchiveAggregateBytes, envelopeBytes: policy.maximumEnvelopeBytes,
@@ -759,8 +843,11 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     return report;
   } catch (error) {
     const code = safeCode.has(error?.auditCode) ? error.auditCode
-      : phase === 'PROGRESS_AUTHENTICATION' ? 'PROGRESS_AUTHENTICATION_REJECTED' : 'AUDIT_FAILED_CLOSED';
-    const report = { ...baseReport('AUDIT_FAILED_CLOSED'), phase, code };
+      : phase === 'PROGRESS_AUTHENTICATION' ? 'PROGRESS_AUTHENTICATION_REJECTED'
+      : phase === 'PROGRESS_BASELINE_RECONSTRUCTION' ? 'PROGRESS_BASELINE_RECONSTRUCTION_REJECTED' : 'AUDIT_FAILED_CLOSED';
+    const report = { ...baseReport('AUDIT_FAILED_CLOSED'), normalProgressBaselineUsed, phase, code,
+      ...(phase === 'PROGRESS_AUTHENTICATION' ? { progressAuthenticationCode:
+        savedAuditProgressAuthenticationCode(error) } : {}) };
     if (safeOutput) await fs.writeFile(safeOutput, `${JSON.stringify(report)}\n`, { flag: 'wx', mode: 0o600 }).catch(() => {});
     return report;
   } finally {
@@ -776,7 +863,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     const names = { '--private-root': 'privateRoot', '--descriptor': 'descriptorPath', '--predecessor-root': 'predecessorRoot',
       '--progress-file': 'progressFile', '--progress-source': 'progressSource', '--progress-cache-key': 'progressCacheKey',
       '--output': 'outputPath', '--python': 'pythonExecutable',
-      '--include-raw-manifest': 'includeRawManifest', '--raw-cache-key': 'rawCacheKey' };
+      '--include-raw-manifest': 'includeRawManifest', '--raw-cache-key': 'rawCacheKey',
+      '--progress-baseline-target-hour': 'progressBaselineTargetHour' };
     while (args.length) { const key = args.shift(), value = args.shift();
       if (!names[key] || !value || value.startsWith('--') || Object.hasOwn(options, names[key])) fail('MODE_INVALID'); options[names[key]] = value; }
     if (Object.hasOwn(options, 'includeRawManifest')) {

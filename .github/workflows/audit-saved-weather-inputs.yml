@@ -30,6 +30,11 @@ on:
         required: false
         default: ""
         type: string
+      progress_baseline_target_hour:
+        description: "Kun særskilt godkendt normal metadataovergang: checkpointets oprindelige UTC-time"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -66,6 +71,7 @@ jobs:
           SOURCE_RUN_ATTEMPT: ${{ inputs.progress_source_attempt }}
           INCLUDE_RAW_MANIFEST: ${{ inputs.include_raw_manifest }}
           RAW_MANIFEST_CACHE_KEY: ${{ inputs.raw_manifest_cache_key }}
+          PROGRESS_BASELINE_TARGET_HOUR: ${{ inputs.progress_baseline_target_hour }}
         run: |
           set -euo pipefail
           test "$GITHUB_EVENT_NAME" = workflow_dispatch
@@ -74,6 +80,9 @@ jobs:
           [[ "$EXPECTED_MAIN_HEAD" =~ ^[a-f0-9]{40}$ ]]
           [[ "$SOURCE_RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]]
           [[ "$SOURCE_RUN_ATTEMPT" =~ ^[1-9][0-9]{0,3}$ ]]
+          if test -n "$PROGRESS_BASELINE_TARGET_HOUR"; then
+            [[ "$PROGRESS_BASELINE_TARGET_HOUR" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00\.000Z$ ]]
+          fi
           test "$GITHUB_SHA" = "$EXPECTED_MAIN_HEAD"
           test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
@@ -220,6 +229,7 @@ jobs:
           --progress-cache-key "$PROGRESS_CACHE_KEY"
           --include-raw-manifest "$INCLUDE_RAW_MANIFEST"
           ${RAW_MANIFEST_ARGS}
+          ${PROGRESS_BASELINE_ARGS}
           --output "$RUNNER_TEMP/ravradar-saved-input-audit/summary-safe.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -232,6 +242,7 @@ jobs:
           PROGRESS_CACHE_KEY: ${{ steps.authority.outputs.cache_key }}
           INCLUDE_RAW_MANIFEST: ${{ inputs.include_raw_manifest }}
           RAW_MANIFEST_ARGS: ${{ inputs.include_raw_manifest && format('--raw-cache-key {0}', steps.authority.outputs.raw_cache_key) || '' }}
+          PROGRESS_BASELINE_ARGS: ${{ inputs.progress_baseline_target_hour != '' && format('--progress-baseline-target-hour {0}', inputs.progress_baseline_target_hour) || '' }}
 
       - name: Upload only the fixed-schema payload-free aggregate report
         if: always() && (steps.input-audit.outcome == 'success' || steps.input-audit.outcome == 'failure')

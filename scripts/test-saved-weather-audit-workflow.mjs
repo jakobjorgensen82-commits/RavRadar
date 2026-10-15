@@ -152,3 +152,15 @@ test('optional RAW manifest audit is default-off and exact same-run cache only, 
   assert.equal((text.match(/git\/ref\/heads\/main/g) ?? []).length, 2);
   assert.doesNotMatch(text, /restore-keys:|actions\/cache\/save|update-dmi-bulk\.py|build-current-operational-closure/);
 });
+
+test('normal progress baseline reconstruction is explicit, default-off, exact-hour and audit-only', () => {
+  assert.match(text, /progress_baseline_target_hour:\n[\s\S]*?required: false\n        default: ""\n        type: string/);
+  assert.match(text, /PROGRESS_BASELINE_TARGET_HOUR: \$\{\{ inputs\.progress_baseline_target_hour \}\}/);
+  assert.match(text, /if test -n "\$PROGRESS_BASELINE_TARGET_HOUR"; then/);
+  assert.ok(text.includes('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00\\.000Z$'));
+  assert.ok(text.indexOf('if test -n "$PROGRESS_BASELINE_TARGET_HOUR"; then') < text.indexOf(gh('secrets.SUPABASE_URL')));
+  assert.ok(text.includes('${PROGRESS_BASELINE_ARGS}'));
+  assert.match(text, /PROGRESS_BASELINE_ARGS: \$\{\{ inputs\.progress_baseline_target_hour != '' && format\('--progress-baseline-target-hour \{0\}', inputs\.progress_baseline_target_hour\) \|\| '' \}\}/);
+  assert.doesNotMatch(text, /(?:contents|actions|pull-requests|pages|id-token): write|actions\/cache\/save|gh workflow run|--publish/);
+  assert.equal((text.match(/uses: actions\/upload-artifact@/g) ?? []).length, 1);
+});
