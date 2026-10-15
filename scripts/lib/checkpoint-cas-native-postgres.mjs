@@ -31,6 +31,54 @@ const signatures = ['ravradar_ravscore_checkpoint_canonical_time',
 const hash = text => crypto.createHash('sha256').update(text).digest('hex');
 const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 
+// The native setup installs selected genuine130 definitions, not the whole
+// migration. Carry their exact issued ACL statements too: CREATE OR REPLACE
+// otherwise preserves the fixture's default PUBLIC EXECUTE privilege.
+export function nativeIssued130HelperAcl(oldSource) {
+  assert.equal(typeof oldSource, 'string', 'NATIVE_ISSUED130_HELPER_ACL_SOURCE');
+  const source = sqlText(oldSource);
+  const targets = new Map([
+    ['ravradar_trip_v3_binding_allowed', 'text,jsonb,boolean,text,text,text,text'],
+    ['ravradar_ravscore_checkpoint_canonical_time', 'text'],
+    ['ravradar_ravscore_checkpoint_has_forbidden_key', 'jsonb'],
+    ['ravradar_ravscore_checkpoint_integrated_state_valid', 'jsonb,text'],
+    ['ravradar_ravscore_checkpoint_candidate_state_valid', 'jsonb,text'],
+    ['ravradar_ravscore_checkpoint_payload_valid', 'jsonb,timestamptz'],
+    ['ravradar_ravscore_checkpoint_predecessor_payload_valid', 'jsonb,timestamptz,text'],
+    ['ravradar_ravscore_checkpoint_top20_predecessor_projection', 'jsonb,timestamptz'],
+    ['ravradar_ravscore_checkpoint_cp_close_predecessor_projection', 'jsonb,timestamptz'],
+    ['ravradar_ravscore_checkpoint_owner_current_predecessor_projection', 'jsonb,timestamptz'],
+    ['ravradar_ravscore_checkpoint_water_level_predecessor_projection', 'jsonb,timestamptz'],
+    ['ravradar_ravscore_checkpoint_userdata_predecessor_projection', 'jsonb,timestamptz'],
+    ['ravradar_ravscore_checkpoint_integrated_state_reason', 'jsonb,text'],
+    ['ravradar_ravscore_checkpoint_payload_reason', 'jsonb,timestamptz'],
+    ['ravradar_ravscore_checkpoint_contract', ''],
+  ]);
+  const serviceGrants = new Set([
+    'ravradar_trip_v3_binding_allowed', 'ravradar_ravscore_checkpoint_contract',
+  ]);
+  const expected = new Set();
+  for (const [name, args] of targets) {
+    expected.add('revoke all on function public.' + name + '(' + args + ') from public, anon, authenticated;');
+    if (serviceGrants.has(name)) expected.add('grant execute on function public.' + name + '(' + args + ') to service_role;');
+  }
+  const seen = new Set(), statements = [];
+  for (const match of source.matchAll(/^(?:revoke|grant)\b[^;]*;/gm)) {
+    const statement = match[0];
+    const name = /\bon function public\.([a-z0-9_]+)\s*\(/.exec(statement)?.[1];
+    if (!targets.has(name)) continue;
+    const canonical = statement.replace(/\s+/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').trim();
+    assert(expected.has(canonical), 'NATIVE_ISSUED130_HELPER_ACL_UNEXPECTED');
+    assert(!seen.has(canonical), 'NATIVE_ISSUED130_HELPER_ACL_DUPLICATE');
+    seen.add(canonical);
+    statements.push(statement);
+  }
+  assert.equal(seen.size, expected.size, 'NATIVE_ISSUED130_HELPER_ACL_MISSING');
+  assert.equal(hash(source), '55f01dd535553ad5df708ec70de8d58d177299f3348d18a2355a188bfb4f8cb6',
+    'NATIVE_ISSUED130_HELPER_ACL_SOURCE_PIN');
+  return statements.join('\n');
+}
+
 // Source-test diagnostic only. Raw stderr, SQL, JSON and values are never
 // returned or emitted; unknown state/phase remains explicitly UNKNOWN.
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
@@ -1013,6 +1061,7 @@ grant execute on function public.ravradar_trip_v3_calibration_truth_allowed(text
   to service_role;
 ${['ravradar_ravscore_checkpoint_integrated_state_reason','ravradar_ravscore_checkpoint_payload_reason',
   'ravradar_trip_v3_binding_allowed','ravradar_ravscore_checkpoint_contract'].map(name => definition(oldSource,name)).join('\n')}
+${nativeIssued130HelperAcl(oldSource)}
 create trigger native_checkpoint_version before update on public.admin_documents
 for each row execute function public.version_admin_document();
 ${aliasCas}\n${oldCas}

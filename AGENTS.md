@@ -4,6 +4,8 @@ Denne fil skal læses før analyse, programmering eller versionsbygning.
 
 ## Aktuel leveringsgrænse — 15. oktober 2026
 
+Ny konkret native-fiksturfejl: 15 gamle hjælpefunktioner indlæses uden migration 130s oprindelige REVOKE og to service_role-GRANT. Det giver forkert offentlig adgang i selve prøvegrundlaget og strider mod første 1503-førguard. Kun den genuine prøveopsætning rettes; produktions-SQL, rettigheder, fastlåst adapter og C/I/T må ikke ændres for dette. Ny rigtig PostgreSQL-kontrol kræves; kildeafklaringen er ikke faktisk installation eller offentlig effekt.
+
 PR614s anden præcise CI bestod source/checkpoint/kapacitet, men fejlede i faktisk PostgreSQL/RESPONSE uden konkret assertionssted. Ny afgrænset kildestedsdiagnostik og tidligere placering af den uændrede native-prøve er lokal kilde, ikke rettet databaseårsag eller samlet grønt CI. Alle kontroller, SQL, fastlåst adapter og C/I/T bevares. Hold 614/1503 tilbage, indtil normal checkpoint-genoptagelse har leveret autentisk kompatibel I71 og 230 faktisk er installeret; den aktuelt aflæste private pakke er stadig I68. De præcise PARTIAL- og AI-logspørgsmål er separate og ubesvarede. Alle fem mål og fristen 18. oktober består; ingen nye produktionshandlinger følger af dette prefix.
 
 ## Kildekontrol-opfølgning 4.0.578 — 15. oktober 2026

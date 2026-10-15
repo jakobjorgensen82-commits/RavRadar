@@ -393,6 +393,41 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
   assert.equal(annotate('NATIVE_SETUP', ''),
     '::error title=Native PostgreSQL source command::phase=NATIVE_SETUP sqlstate=UNKNOWN category=PSQL_COMMAND_FAILURE');
 
+  // Read the frozen genuine130 source, not a hand-written substitute. These
+  // source/ACL assertions execute neither SQL nor a PostgreSQL cluster.
+  const {nativeIssued130HelperAcl}=await import('./lib/checkpoint-cas-native-postgres.mjs');
+  const issued130Url=new URL('../supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql',import.meta.url);
+  const issued130Bytes=await fs.readFile(issued130Url);
+  assert.equal(crypto.createHash('sha256').update(issued130Bytes).digest('hex'),
+    '55f01dd535553ad5df708ec70de8d58d177299f3348d18a2355a188bfb4f8cb6');
+  const issued130=issued130Bytes.toString('utf8');
+  const helperAcl=nativeIssued130HelperAcl(issued130);
+  assert.equal(crypto.createHash('sha256').update(helperAcl).digest('hex'),
+    '5955c8667fa7b87a8683a673121730c526035ebd32662c0fb923dbdca4e576c3',
+    'All seventeen complete ACL statements are exact excerpts of the issued source');
+  assert.equal([...helperAcl.matchAll(/^revoke all on function /gm)].length,15);
+  assert.equal([...helperAcl.matchAll(/^grant execute on function /gm)].length,2);
+  assert.deepEqual([...helperAcl.matchAll(/^grant execute on function public\.([a-z0-9_]+)/gm)].map(match=>match[1]),
+    ['ravradar_trip_v3_binding_allowed','ravradar_ravscore_checkpoint_contract']);
+  assert.doesNotMatch(helperAcl,/version_admin_document|calibration_truth_allowed|checkpoint_cas\(/,
+    'The existing trigger/default, calibration and CAS ACL blocks remain separate');
+  const firstRevoke=/^revoke\b[^;]*;/m.exec(helperAcl)[0];
+  const invalidAclSources=[
+    ['missing',issued130.replace(firstRevoke,'')],
+    ['duplicate',issued130+'\n'+firstRevoke+'\n'],
+    ['wrong-target',issued130.replace(firstRevoke,firstRevoke.replace('ravradar_trip_v3_binding_allowed','version_admin_document'))],
+    ['permission-drift',issued130.replace(firstRevoke,firstRevoke.replace('from public, anon, authenticated;','from anon, authenticated;'))],
+    ['unknown-grant',issued130+'\ngrant execute on function public.ravradar_trip_v3_binding_allowed(text,jsonb,boolean,text,text,text,text) to anon;\n'],
+    ['foreign-acl',issued130+'\nrevoke all on function public.version_admin_document() from public;\n'],
+  ];
+  for(const [name,source] of invalidAclSources) {
+    assert.notEqual(source,issued130);
+    assert.throws(()=>nativeIssued130HelperAcl(source),/NATIVE_ISSUED130_HELPER_ACL_/,name);
+  }
+  assert.deepEqual(await fs.readFile(issued130Url),issued130Bytes,'The genuine issued130 bytes are never rewritten');
+  console.log(JSON.stringify({kind:'NATIVE_ISSUED130_HELPER_ACL_SYNTHETIC',helpers:15,
+    revokes:15,serviceGrants:2,rejectedSources:invalidAclSources.length,postgresExecuted:false}));
+
   // The same recorder is used by the actual native host before its unchanged
   // physical cleanup. This synthetic caller proves disclosure/latching, not PG.
   const {createNativePostgresFailureRecorder}=await import('./lib/checkpoint-cas-native-postgres.mjs');
