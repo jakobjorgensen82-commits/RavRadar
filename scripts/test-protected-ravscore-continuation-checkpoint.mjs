@@ -539,13 +539,14 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
     projectionSite:nativeKnowledgeAssertionSite(projection).knowledgeSite,
     longPrefixSite:nativeKnowledgeAssertionSite(longProjection).knowledgeSite,postgresExecuted:false}));
 
-  // RESPONSE-only location projection uses the real unchanged pinned adapter,
-  // never imports it or executes SQL. UNKNOWN first frames must stay UNKNOWN.
+  // RESPONSE-only location projection reads the exact currently pinned adapter.
+  // pinnedAdapterUnchanged means this diagnostic does not write it; not historical byte identity.
+  // It never imports it or executes SQL. UNKNOWN first frames must stay UNKNOWN.
   const {nativeResponseAssertionSite}=await import('./lib/checkpoint-cas-native-postgres.mjs');
   const responseUrl=new URL('./lib/assistant-response-native-postgres.mjs',import.meta.url);
   const responseSource=await fs.readFile(responseUrl,'utf8');
   assert.equal(crypto.createHash('sha256').update(responseSource).digest('hex'),
-    '42406ea58fcc5336c4800c352ac3673e6fdb76a265efd9b485296f1fc721aec4');
+    '47e3df77ca35a54571c2b9e5a506367d0a2e3c20e831024657bfa408f785cabe');
   const responseFrame=(line,column=3)=>'    at async runNativeAssistantResponseSuccessor ('+responseUrl.href+':'+line+':'+column+')';
   const responseUnknown={responseSite:'UNKNOWN',responseLine:null,responseColumn:null,
     responseCaller:'UNKNOWN',responseCase:'UNKNOWN'};
@@ -553,7 +554,7 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
   Object.defineProperties(responseSql,{actual:{get(){throw new Error('PRIVATE_ACTUAL');}},expected:{get(){throw new Error('PRIVATE_EXPECTED');}}});
   assert.deepEqual(nativeResponseAssertionSite(responseSql),{responseSite:'SQL_COMMAND',responseLine:54,responseColumn:49,
     responseCaller:'MIGRATION_AND_ROW_PRESERVATION',responseCase:'UNKNOWN'});
-  for(const [line,site] of [[85,'BEFORE_DRIFT_REJECTION'],[98,'BODY_PINS_COMPARE'],
+  for(const [line,site] of [[85,'BEFORE_DRIFT_REJECTION'],[98,'BODY_PINS_COMPARE'],[121,'PROJECTION_READ'],
     [122,'WHOLE_PROJECTION_COMPARE'],[153,'HISTORICAL_FAMILIES'],[157,'FINAL_ROOT_IDENTITY']]) {
     assert.equal(nativeResponseAssertionSite({stack:responseFrame(line)}).responseSite,site);
     const lastColumn=responseSource.split('\n')[line-1].length;

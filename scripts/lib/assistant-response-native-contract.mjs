@@ -6,7 +6,7 @@ import {requireAssistantResponseBinding,ASSISTANT_RESPONSE_SOURCE_PINS}
   from './assistant-response-successor-source.mjs';
 const NATIVE_RESPONSE_MODULE_PINS=Object.freeze({
   issued220:'5d51bb4c835c9e45d4ee5fbe4495597c5495b2bdabd4fef94d727d1fb2cd6b3d',
-  after:'42406ea58fcc5336c4800c352ac3673e6fdb76a265efd9b485296f1fc721aec4',
+  after:'47e3df77ca35a54571c2b9e5a506367d0a2e3c20e831024657bfa408f785cabe',
 });
 export async function loadNativeAssistantResponsePrerequisites(){
   requireAssistantResponseBinding();

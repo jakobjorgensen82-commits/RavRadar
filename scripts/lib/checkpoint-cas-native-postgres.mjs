@@ -191,8 +191,8 @@ export function nativeKnowledgeAssertionSite(error) {
   } catch {return Object.freeze(unknown);}
 }
 
-// Diagnostic map ONLY for the unchanged, loader-pinned RESPONSE AFTER adapter:
-// SHA256 42406ea58fcc5336c4800c352ac3673e6fdb76a265efd9b485296f1fc721aec4.
+// Diagnostic map ONLY for the exact loader-pinned RESPONSE AFTER adapter:
+// SHA256 47e3df77ca35a54571c2b9e5a506367d0a2e3c20e831024657bfa408f785cabe.
 // This is a finite source location, never admission or a raw stack/message.
 const NATIVE_RESPONSE_SITES=Object.freeze([
   [29,85,'BINDING'],
@@ -258,8 +258,8 @@ const NATIVE_RESPONSE_SITES=Object.freeze([
   [118,87,'RESPONSE_CURRENT_FIXTURE'],
   [119,85,'RESPONSE_FUTURE_FIXTURE'],
   [120,115,'RESPONSE_CHANGED_FIXTURE'],
-  [121,169,'PROJECTION_READ'],
-  [122,160,'WHOLE_PROJECTION_COMPARE'],
+  [121,586,'PROJECTION_READ'],
+  [122,149,'WHOLE_PROJECTION_COMPARE'],
   [123,159,'CURRENT_VALID'],
   [124,159,'CHANGED_VALID'],
   [125,72,'CHANGED_DIFFERENT'],

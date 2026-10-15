@@ -118,8 +118,8 @@ export async function runNativeAssistantResponseSuccessor({repositoryRoot,cluste
  const current=await make('rsp-current',49,{}, {sourceDocumentAt,saveCheckpoint},next);
  const future=await make('rsp-future',50,{}, {sourceDocumentAt,saveCheckpoint},next);
  const changed=await make('rsp-changed',49,{candidateCurrentSpeedMps:0.18},{sourceDocumentAt,saveCheckpoint},next);
- const projected=await json("select public."+RESPONSE_PROJECTION+"((select payload from native_checkpoint_payloads where name='rsp-issued-current'),'"+atHour(49)+"');");
- assert.deepEqual(withoutReceipts(projected),withoutReceipts(current),'Whole genuine issued220 to normal KB673 output; only existing three receipt exclusions');
+ const projected=await json("with projected as materialized (select public."+RESPONSE_PROJECTION+"((select payload from native_checkpoint_payloads where name='rsp-issued-current'),'"+atHour(49)+"') as payload) select jsonb_build_object('nonNull',p.payload is not null,'wholeEqual',(((p.payload - 'generationSha256' - 'stateSha256') #- '{candidateGRollbackCompanion,generationSha256}') = ((e.payload - 'generationSha256' - 'stateSha256') #- '{candidateGRollbackCompanion,generationSha256}'))) from projected p cross join public.native_checkpoint_payloads e where e.name='rsp-current';");
+ assert.deepEqual(projected,{nonNull:true,wholeEqual:true},'Whole genuine issued220 to normal KB673 output; only existing three receipt exclusions');
  assert.equal(await sql("select public."+CP+"payload_valid((select payload from native_checkpoint_payloads where name='rsp-current'),'"+atHour(49)+"');"),'t');
  assert.equal(await sql("select public."+CP+"payload_valid((select payload from native_checkpoint_payloads where name='rsp-changed'),'"+atHour(49)+"');"),'t');
  assert.notDeepEqual(withoutReceipts(changed),withoutReceipts(current));
