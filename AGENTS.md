@@ -1,3 +1,10 @@
+## 15. oktober — afgrænset genopretning af historiske DMI-originaler
+
+De to nye normale vejrhentninger stoppede før deploy ved ny brug af gammel strøm i OWNER-historikken. Den gennemførte ældre RAW-audit fandt heller ingen mulige filer for de undersøgte manglende identiteter; det er ikke bevis for ugyldige DMI-data eller fravær i alle arkiver. Den godkendte næste vej er en særskilt, manuel genopretning fra det allerede autentificerede checkpoint: kun nødvendige historiske originaler, fuld kontrolsum, størrelse, officiel revision og model-/tidshoveder, additiv normal RAW-cache og fysisk afsluttet skrivning før normal ejet SAVE. Ingen nyere vejrdata, beregning, pruning, SQL eller deploy i genopretningen. Se håndbog 89.233.
+
+Kilden er lokal, ikke installeret eller produktionsverificeret. Nye målprøver og uændret modelbinding er delbeviser; præcis Linux/native/source/PostgreSQL, faktisk originaltilgængelighed, cache-SAVE/genbrug og efterfølgende checkpoint-beregning/upload/Pages/offentlig effekt er åbne. Ejeren har igen godkendt levering efter kontrollerne og checkpoint-afprøvning med hensyn til nye gemte kørsler. Cron er deaktiveret af ejeren og faktisk kontrolleret i browseren; tidsplanen er uændret. Ingen blind tilbagerulning eller nødpolicy er aktiveret. Alle fem mål og fristen 18. oktober består; øvrige leverancer holdes tilbage. Ældre afventningsstatus nedenfor er historik på de konkret gennemførte trin.
+
+
 ## 15. oktober — faktisk manifestkontrol og én godkendt ældre cache
 
 PR619 har faktisk bestået præcis Linux-, source- og PostgreSQL-kontrol og er merget. Den korrigerede skrivefri audit gennemførte normal baselinegenskabelse, fuld autentifikation og manifestoptælling. De ukvalificerede gamle strømoriginalers identiteter matcher ikke den undersøgte fortegnelse; forskellen i acquiredAt forklarer derfor ikke det aktuelle produktionsstop. Manglende manifestidentitet er ikke bevis for fysisk fravær, ugyldige DMI-data eller fejl i deres værdier. Den gennemførte audittilladelse er forbrugt.

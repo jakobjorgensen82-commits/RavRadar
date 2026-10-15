@@ -621,7 +621,14 @@ with _grib_read_scope(path, collection, model_run, valid_time, _owned_read) as r
         # The cached-only historical CURRENT replay adds one real transaction.
         # It is covered by the same exact watchdog requirement above, not a
         # second decoder-entry exemption beside the unchanged None adapter.
-        self.assertEqual(len(guarded_calls), 8)
+        self.assertEqual(len(guarded_calls), 9)
+        restore_entries = [node for node in tree.body
+                           if isinstance(node, ast.FunctionDef)
+                           and node.name == "restore_exact_original_assets"]
+        self.assertEqual(len(restore_entries), 1)
+        self.assertEqual(sum(node in guarded_calls
+                             for node in ast.walk(restore_entries[0])), 1,
+                         "the fixed restore adds exactly one genuinely guarded download")
         history_entries = [node for node in tree.body
                            if isinstance(node, ast.FunctionDef)
                            and node.name == "replay_cached_current_history_job"]

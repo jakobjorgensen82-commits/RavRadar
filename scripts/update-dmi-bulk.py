@@ -25,7 +25,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from types import MappingProxyType
 from typing import Any, Iterable, NamedTuple
-from urllib.parse import urljoin, urlparse
+from urllib.parse import quote, urljoin, urlparse
 
 _marine_zone_exclusion_policy = json.loads(
     (pathlib.Path(__file__).resolve().parent / "lib/dmi-marine-zone-exclusions.json").read_text("utf-8")
@@ -4004,6 +4004,358 @@ def asset_download_work_deadline(work_deadline: float | None):
         raise failure[0].with_traceback(failure[1])
 
 
+# Exact-original restore is an explicit transport-only entry, never normal main.
+class ExactOriginalRestoreRejected(RuntimeError):
+    pass
+
+
+def _exact_original_refuse(code):
+    raise ExactOriginalRestoreRejected("DMI_EXACT_ORIGINAL_" + code)
+
+
+def _exact_capture(value):
+    capture = canonical_current_source_asset(value)
+    if (capture is None or not isinstance(value, dict)
+            or set(value) != set(capture)
+            or any(not isinstance(value[key], str) or value[key] != value[key].strip() for key in (
+                "collection", "itemId", "modelRun", "validTime", "acquiredAt", "assetIdentitySha256", "contentSha256"))
+            or any(value[key] is not None and not isinstance(value[key], str) for key in ("itemCreatedAt", "itemUpdatedAt"))
+            or any(ord(char) < 33 or ord(char) == 127 for char in capture["itemId"])
+            or capture["itemId"] in (".", "..") or len(capture["itemId"]) > 1024):
+        _exact_original_refuse("CAPTURE_INVALID")
+    if any(epoch(capture[key]) % 3600 != 0 for key in ("modelRun", "validTime")):
+        _exact_original_refuse("CAPTURE_INVALID")
+    return capture
+
+
+def _exact_same_capture(actual, expected):
+    # The normal owned reader's capture omits its separately checked binding.
+    actual = canonical_current_source_asset({
+        "collection": expected["collection"], "modelRun": expected["modelRun"], "validTime": expected["validTime"],
+        **dict(actual),
+    }) if actual is not None else None
+    return actual is not None and all(
+        actual[key] == value for key, value in expected.items() if key != "acquiredAt"
+    )
+
+
+def _exact_official_https(url, *, metadata_path=None):
+    if (not isinstance(url, str) or len(url) > 8192 or "\\" in url
+            or any(ord(char) < 33 or ord(char) == 127 for char in url)):
+        _exact_original_refuse("URL_REJECTED")
+    try:
+        parts = urlparse(url)
+        valid = (parts.scheme == "https" and parts.hostname == "opendataapi.dmi.dk"
+                 and parts.port in (None, 443) and parts.username is None
+                 and parts.password is None and not parts.fragment and parts.path
+                 and (metadata_path is None or (
+                     parts.path == metadata_path and not parts.query and not parts.params)))
+    except ValueError:
+        valid = False
+    if not valid:
+        _exact_original_refuse("URL_REJECTED")
+    return url
+
+
+@contextmanager
+def _exact_original_response(url, *, metadata_path=None):
+    """Only the fixed official HTTPS origin; no automatic credential redirects."""
+    if CACHE_ONLY:
+        _exact_original_refuse("NETWORK_DISABLED")
+    session = STAC_SESSION if metadata_path is not None else DOWNLOAD_SESSION
+    for hop in range(4):
+        _exact_official_https(url, metadata_path=metadata_path)
+        params = {"api-key": API_KEY} if metadata_path is not None and API_KEY else None
+        with session.get(url, params=params, stream=True, timeout=REQUEST_TIMEOUT,
+                         allow_redirects=False) as response:
+            if response.status_code in (301, 302, 303, 307, 308):
+                if hop == 3 or not response.headers.get("location"):
+                    _exact_original_refuse("REDIRECT_REJECTED")
+                url = urljoin(url, response.headers["location"])
+                _exact_official_https(url, metadata_path=metadata_path)
+                continue
+            if response.status_code in (404, 410):
+                _exact_original_refuse("UNAVAILABLE")
+            if response.status_code != 200:
+                _exact_original_refuse("HTTP_REJECTED")
+            yield response
+            return
+    _exact_original_refuse("REDIRECT_REJECTED")
+
+
+def resolve_exact_original_item(expected_capture, *, work_deadline):
+    """Resolve one authenticated original item, never list/select a newer item."""
+    expected = _exact_capture(expected_capture)
+    if STAC_ROOT != "https://opendataapi.dmi.dk/v1/forecastdata":
+        _exact_original_refuse("STAC_ROOT_REJECTED")
+    item_path = ("/v1/forecastdata/collections/" + expected["collection"]
+                 + "/items/" + quote(expected["itemId"], safe=""))
+    with asset_download_work_deadline(work_deadline):
+        with _exact_original_response("https://opendataapi.dmi.dk" + item_path,
+                                      metadata_path=item_path) as response:
+            body = bytearray()
+            for chunk in response.iter_content(65536):
+                if chunk:
+                    body.extend(chunk)
+                if len(body) > 2 * 1024 * 1024:
+                    _exact_original_refuse("METADATA_BOUND")
+            try:
+                item = json.loads(body, object_pairs_hook=_exact_unique_fields)
+            except (ValueError, UnicodeError, ExactOriginalRestoreRejected):
+                _exact_original_refuse("METADATA_INVALID")
+    identity = canonical_stac_item_identity(item)
+    if (identity is None or item.get("collection") != expected["collection"]
+            or any(identity[key] != expected[key] for key in (
+                "itemId", "modelRun", "validTime", "itemCreatedAt", "itemUpdatedAt"))
+            or identity["size"] != expected["assetSizeBytes"]
+            or asset_identity_sha256(identity["href"]) != expected["assetIdentitySha256"]):
+        _exact_original_refuse("REVISION_MISMATCH")
+    _exact_official_https(identity["href"])
+    return identity
+
+
+def _exact_raw_state():
+    """No fallback-to-empty manifest and no eviction of any existing raw input."""
+    if _UNSETTLED_ASSET_DOWNLOADS or _UNSETTLED_GRIB_READS:
+        raise AssetDownloadCleanupUnproven("DMI exact original previous ownership is unsettled")
+    for directory in (ROOT, ROOT / ".cache", RAW_DIR):
+        info = directory.lstat()
+        if not stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode):
+            _exact_original_refuse("RAW_DIRECTORY_REJECTED")
+    if RAW_DIR.absolute() != (ROOT / ".cache/dmi-grib").absolute():
+        _exact_original_refuse("RAW_DIRECTORY_REJECTED")
+    used = 0
+    for entry in RAW_DIR.iterdir():
+        info = entry.lstat()
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+            _exact_original_refuse("RAW_ENTRY_REJECTED")
+        used += info.st_size
+    manifest = raw_cache_manifest_path()
+    if manifest.with_suffix(".json.tmp").exists():
+        _exact_original_refuse("MANIFEST_REJECTED")
+    try:
+        document = json.loads(manifest.read_text("utf-8"))
+    except (ValueError, OSError):
+        _exact_original_refuse("MANIFEST_REJECTED")
+    if (not isinstance(document, dict)
+            or document.get("schemaVersion") != RAW_CACHE_MANIFEST_SCHEMA_VERSION
+            or not isinstance(document.get("assets"), dict)):
+        _exact_original_refuse("MANIFEST_REJECTED")
+    return document, used
+
+
+def _exact_original_headers(reader, capture):
+    """Read every message's time headers, no arrays/values/projection/score."""
+    run = datetime.fromisoformat(capture["modelRun"].replace("Z", "+00:00"))
+    valid = datetime.fromisoformat(capture["validTime"].replace("Z", "+00:00"))
+    wanted = (int(run.strftime("%Y%m%d")), int(run.strftime("%H%M")),
+              int(valid.strftime("%Y%m%d")), int(valid.strftime("%H%M")))
+    messages = 0
+    reader.handle.seek(0)
+    while True:
+        reader.check()
+        try:
+            gid = codes_grib_new_from_file(reader.handle)
+        except Exception:
+            _exact_original_refuse("HEADER_REJECTED")
+        if gid is None:
+            break
+        messages += 1
+        failure = None
+        try:
+            if messages > 4096:
+                _exact_original_refuse("HEADER_BOUND")
+            actual = tuple(safe_get(gid, key) for key in (
+                "dataDate", "dataTime", "validityDate", "validityTime"))
+            if safe_get(gid, "edition") not in (1, 2) or actual != wanted:
+                _exact_original_refuse("HEADER_MISMATCH")
+            reader.check()
+        except BaseException as exc:
+            failure = exc
+            raise
+        finally:
+            try:
+                codes_release(gid)
+            except BaseException as exc:
+                reader.native_handles.append(gid)
+                reader.broken = True
+                raise GribReadUnproven("DMI_GRIB_READ_NATIVE_RELEASE_UNPROVED") from (failure or exc)
+    if messages == 0 or reader.handle.tell() != capture["contentLengthBytes"]:
+        _exact_original_refuse("HEADER_MISMATCH")
+    reader.check()
+
+
+def _verify_exact_original_file(path, capture, *, work_deadline, require_capture=False):
+    with asset_download_work_deadline(work_deadline):
+        with _grib_read_scope(path, capture["collection"], capture["modelRun"], capture["validTime"]) as reader:
+            size, digest = reader.measure()
+            if size != capture["contentLengthBytes"] or digest != capture["contentSha256"]:
+                _exact_original_refuse("CONTENT_MISMATCH")
+            if require_capture and not _exact_same_capture(reader.capture, capture):
+                _exact_original_refuse("COLLISION")
+            _exact_original_headers(reader, capture)
+
+
+def _exact_original_json(value):
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
+
+
+def _exact_unique_fields(pairs):
+    document = {}
+    for key, value in pairs:
+        if key in document:
+            _exact_original_refuse("PLAN_REJECTED")
+        document[key] = value
+    return document
+
+
+def read_exact_original_restore_plan():
+    """A fixed private file plus caller-held byte witness, not bearer authority."""
+    expected_sha = os.getenv("DMI_EXACT_ORIGINAL_PLAN_SHA256", "")
+    if not re.fullmatch(r"[0-9a-f]{64}", expected_sha):
+        _exact_original_refuse("PLAN_REJECTED")
+    _exact_raw_state()
+    path = ROOT / ".cache/dmi-grib/.original-recovery-plan.json"
+    original = path.lstat()
+    if (not stat.S_ISREG(original.st_mode) or original.st_nlink != 1
+            or not 0 < original.st_size <= 16 * 1024 * 1024):
+        _exact_original_refuse("PLAN_REJECTED")
+    with os.fdopen(os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)), "rb") as handle:
+        if _OwnedGribRead._identity(os.fstat(handle.fileno())) != _OwnedGribRead._identity(original):
+            _exact_original_refuse("PLAN_REJECTED")
+        body = handle.read(16 * 1024 * 1024 + 1)
+        if (_OwnedGribRead._identity(os.fstat(handle.fileno())) != _OwnedGribRead._identity(original)
+                or _OwnedGribRead._identity(path.lstat()) != _OwnedGribRead._identity(original)):
+            _exact_original_refuse("PLAN_REJECTED")
+    if len(body) != original.st_size or hashlib.sha256(body).hexdigest() != expected_sha:
+        _exact_original_refuse("PLAN_REJECTED")
+    try:
+        plan = json.loads(body, object_pairs_hook=_exact_unique_fields)
+    except (ValueError, UnicodeError):
+        _exact_original_refuse("PLAN_REJECTED")
+    if (not isinstance(plan, dict) or set(plan) != {"schemaVersion", "contractId", "binding", "originals"}
+            or type(plan["schemaVersion"]) is not int or plan["schemaVersion"] != 1
+            or plan["contractId"] != "dmi-exact-original-restore-v1"):
+        _exact_original_refuse("PLAN_REJECTED")
+    binding = plan["binding"]
+    if (not isinstance(binding, dict) or set(binding) != {
+            "progressSource", "progressCacheKey", "targetReferenceAt", "sourceHead", "executionHead",
+            "protectedBundleSha256", "protectedDatasetId", "protectedProductionReferenceAt",
+            "protectedGeneratedAt", "modelBindingSha256", "historyDemandSha256", "originalsSha256", "nonce"}
+            or binding["progressSource"] != "38692413809-1"
+            or binding["progressCacheKey"] != "weather-private-progress-encrypted-v2-Linux-main-38692413809-1"
+            or binding["targetReferenceAt"] != "2026-10-14T18:00:00.000Z"
+            or not all(isinstance(binding[key], str) and re.fullmatch(r"[0-9a-f]{40}", binding[key])
+                       for key in ("sourceHead", "executionHead"))
+            or binding["executionHead"] != os.getenv("GITHUB_SHA")
+            or not all(isinstance(binding[key], str) and re.fullmatch(r"[0-9a-f]{64}", binding[key]) for key in (
+                "protectedBundleSha256", "modelBindingSha256", "historyDemandSha256", "originalsSha256"))
+            or not isinstance(binding["protectedDatasetId"], str)
+            or not re.fullmatch(r"rr-[a-zA-Z0-9._-]{1,180}", binding["protectedDatasetId"])
+            or not all(isinstance(binding[key], str) and canonical_time(binding[key]) for key in (
+                "protectedProductionReferenceAt", "protectedGeneratedAt"))
+            or not isinstance(binding["nonce"], str) or not re.fullmatch(r"[0-9a-f]{32}", binding["nonce"])):
+        _exact_original_refuse("PLAN_REJECTED")
+    originals = plan["originals"]
+    if (not isinstance(originals, list) or len(originals) > len(MARINE_COLLECTIONS) * MAX_ASSETS_PER_COLLECTION
+            or hashlib.sha256(_exact_original_json(originals).encode("utf-8")).hexdigest() != binding["originalsSha256"]):
+        _exact_original_refuse("PLAN_REJECTED")
+    serialized = [_exact_original_json(value) for value in originals]
+    if serialized != sorted(set(serialized)):
+        _exact_original_refuse("PLAN_REJECTED")
+    for value in originals:
+        _exact_capture(value)
+    return plan
+
+
+def restore_exact_original_assets(originals, *, report=None):
+    """Only exact historical originals. No main, latest, replay, pruning or score."""
+    if report is None:
+        report = {}
+    report.update(schemaVersion=1, contractId="dmi-exact-original-restore-result-v1",
+                  status="REJECTED", code="UNCLASSIFIED", originalCount=0, uniqueAssetCount=0,
+                  downloadedAssetCount=0, reusedAssetCount=0, downloadedBytes=0,
+                  pruningPerformed=False, replayPerformed=False, scorePerformed=False)
+    if not isinstance(originals, list):
+        _exact_original_refuse("PLAN_REJECTED")
+    assets = {}
+    per_collection = {}
+    for value in originals:
+        capture = _exact_capture(value)
+        key = _exact_original_json({key: value for key, value in capture.items() if key != "acquiredAt"})
+        assets.setdefault(key, capture)
+    for capture in assets.values():
+        name = capture["collection"]
+        per_collection[name] = per_collection.get(name, 0) + 1
+        if per_collection[name] > MAX_ASSETS_PER_COLLECTION:
+            _exact_original_refuse("ASSET_BOUND")
+    report.update(originalCount=len(originals), uniqueAssetCount=len(assets))
+    _exact_raw_state()
+    if CACHE_ONLY or FINALIZE_ONLY:
+        _exact_original_refuse("NETWORK_DISABLED")
+    budget = {"bytes": 0}
+    try:
+        for key in sorted(assets):
+            capture = assets[key]
+            identity = resolve_exact_original_item(capture, work_deadline=WORK_DEADLINE)
+            supervised_identity = supervised_asset_identity(capture["collection"], capture["modelRun"], {
+                "valid": identity["validTime"], "id": identity["itemId"], "href": identity["href"],
+                "size": identity["size"], "itemCreatedAt": identity["itemCreatedAt"],
+                "itemUpdatedAt": identity["itemUpdatedAt"],
+            })
+            with supervised_asset_operation(supervised_identity):
+                _, reused = download_asset(
+                    identity["href"], identity["size"], budget,
+                    collection=capture["collection"], model_run=capture["modelRun"], valid_time=capture["validTime"],
+                    item_id=capture["itemId"], item_created_at=capture["itemCreatedAt"],
+                    item_updated_at=capture["itemUpdatedAt"], work_deadline=WORK_DEADLINE, expected_capture=capture,
+                )
+            report["reusedAssetCount" if reused else "downloadedAssetCount"] += 1
+    finally:
+        report["downloadedBytes"] = budget["bytes"]
+    report.update(status="RESTORED", code="EXACT_ORIGINALS_RESTORED")
+    return report
+
+
+def exact_original_restore_main():
+    report = {"schemaVersion": 1, "contractId": "dmi-exact-original-restore-result-v1",
+              "status": "REJECTED", "code": "UNCLASSIFIED", "originalCount": 0,
+              "uniqueAssetCount": 0, "downloadedAssetCount": 0, "reusedAssetCount": 0,
+              "downloadedBytes": 0, "pruningPerformed": False, "replayPerformed": False, "scorePerformed": False}
+    try:
+        if sys.argv[1:] != ["--restore-exact-originals"]:
+            _exact_original_refuse("PLAN_REJECTED")
+        plan = read_exact_original_restore_plan()
+        restore_exact_original_assets(plan["originals"], report=report)
+    except Exception as exc:
+        # Only this private exception's fixed constructor codes, never URLs,
+        # request text, item ids, OS paths, decoder diagnostics or credentials.
+        if type(exc) is ExactOriginalRestoreRejected and str(exc) in _EXACT_ORIGINAL_FAILURE_CODES:
+            report["code"] = str(exc)
+        elif isinstance(exc, AssetDownloadRuntimeBudget):
+            report["code"] = "DMI_EXACT_ORIGINAL_RUNTIME_BUDGET"
+        elif isinstance(exc, AssetDownloadCleanupUnproven):
+            report["code"] = "DMI_EXACT_ORIGINAL_CLEANUP_UNPROVED"
+        elif isinstance(exc, requests.RequestException):
+            report["code"] = "DMI_EXACT_ORIGINAL_TRANSPORT_FAILED"
+        elif isinstance(exc, OSError):
+            report["code"] = "DMI_EXACT_ORIGINAL_IO_REJECTED"
+        print(json.dumps(report, separators=(",", ":")), flush=True)
+        return 2
+    print(json.dumps(report, separators=(",", ":")), flush=True)
+    return 0
+
+
+_EXACT_ORIGINAL_FAILURE_CODES = frozenset("DMI_EXACT_ORIGINAL_" + code for code in (
+    "CAPTURE_INVALID", "URL_REJECTED", "NETWORK_DISABLED", "REDIRECT_REJECTED", "UNAVAILABLE",
+    "HTTP_REJECTED", "STAC_ROOT_REJECTED", "METADATA_BOUND", "METADATA_INVALID", "REVISION_MISMATCH",
+    "RAW_DIRECTORY_REJECTED", "RAW_ENTRY_REJECTED", "MANIFEST_REJECTED", "HEADER_BOUND", "HEADER_MISMATCH",
+    "CONTENT_MISMATCH", "COLLISION", "CACHE_BUDGET", "DOWNLOAD_BUDGET", "LENGTH_MISMATCH", "PLAN_REJECTED",
+    "ASSET_BOUND", "HEADER_REJECTED", "MANIFEST_CHANGED", "TRANSPORT_FAILED",
+))
+# End exact-original restore helpers; normal download defaults remain unchanged.
+
+
 def download_asset(
     href: str,
     expected_size: int | None,
@@ -4016,6 +4368,7 @@ def download_asset(
     item_created_at: str | None = None,
     item_updated_at: str | None = None,
     work_deadline: float | None = None,
+    expected_capture: dict[str, Any] | None = None,
 ) -> tuple[pathlib.Path, bool]:
     if CACHE_ONLY:
         raise RuntimeError("DMI_CACHE_ONLY_NETWORK_DISABLED")
@@ -4027,6 +4380,27 @@ def download_asset(
     ):
         raise RuntimeError("DMI bulk asset has an invalid declared size")
     path = cached_asset_path(href)
+    exact = _exact_capture(expected_capture) if expected_capture is not None else None
+    if exact is not None:
+        _exact_official_https(href)
+        if (asset_identity_sha256(href) != exact["assetIdentitySha256"]
+                or (collection, canonical_time(model_run), canonical_time(valid_time), item_id,
+                    canonical_time(item_created_at), canonical_time(item_updated_at), expected_size)
+                != tuple(exact[key] for key in ("collection", "modelRun", "validTime", "itemId",
+                    "itemCreatedAt", "itemUpdatedAt", "assetSizeBytes"))):
+            _exact_original_refuse("REVISION_MISMATCH")
+        manifest, used = _exact_raw_state()
+        previous = manifest["assets"].get(path.name)
+        if previous is not None and (not _exact_same_capture(previous, exact)
+                or previous.get("canonicalHref") != href.split("?", 1)[0].split("#", 1)[0]):
+            _exact_original_refuse("COLLISION")
+        if path.exists() or path.is_symlink():
+            _verify_exact_original_file(path, exact, work_deadline=work_deadline, require_capture=True)
+            return path, True
+        if used + exact["contentLengthBytes"] > RAW_CACHE_MAX_BYTES:
+            _exact_original_refuse("CACHE_BUDGET")
+        if budget["bytes"] + exact["contentLengthBytes"] > MAX_DOWNLOAD_BYTES:
+            _exact_original_refuse("DOWNLOAD_BUDGET")
     cached_size = path.stat().st_size if path.exists() else 0
     if cached_size > 0:
         capture = (
@@ -4061,15 +4435,23 @@ def download_asset(
     content_digest = hashlib.sha256()
     try:
         with asset_download_work_deadline(work_deadline):
-            response_context = DOWNLOAD_SESSION.get(href, stream=True, timeout=REQUEST_TIMEOUT)
+            response_context = (_exact_original_response(href) if exact is not None
+                                else DOWNLOAD_SESSION.get(href, stream=True, timeout=REQUEST_TIMEOUT))
             response = response_context.__enter__()
             response.raise_for_status()
             try:
                 content_length = int(response.headers.get("content-length", "0") or 0)
             except (TypeError, ValueError):
+                if exact is not None:
+                    _exact_original_refuse("LENGTH_MISMATCH")
                 raise RuntimeError("DMI bulk asset has an invalid Content-Length") from None
             if content_length < 0:
+                if exact is not None:
+                    _exact_original_refuse("LENGTH_MISMATCH")
                 raise RuntimeError("DMI bulk asset has an invalid Content-Length")
+            if exact is not None and (content_length != exact["contentLengthBytes"]
+                    or response.headers.get("content-encoding", "identity").lower() != "identity"):
+                _exact_original_refuse("LENGTH_MISMATCH")
             if expected_size is not None and content_length and content_length != expected_size:
                 raise RuntimeError("DMI bulk asset length conflicts with STAC metadata")
             if budget["bytes"] + content_length > MAX_DOWNLOAD_BYTES:
@@ -4082,9 +4464,16 @@ def download_asset(
                     continue
                 budget["bytes"] += len(chunk)
                 if budget["bytes"] > MAX_DOWNLOAD_BYTES:
+                    if exact is not None:
+                        _exact_original_refuse("DOWNLOAD_BUDGET")
                     raise RuntimeError("DMI bulk download budget exceeded during asset download")
+                if exact is not None and tmp.tell() + len(chunk) > exact["contentLengthBytes"]:
+                    _exact_original_refuse("LENGTH_MISMATCH")
                 content_digest.update(chunk)
                 tmp.write(chunk)
+            if exact is not None:
+                tmp.flush()
+                os.fsync(tmp.fileno())
     except BaseException as exc:
         failure = (exc, exc.__traceback__)
     finally:
@@ -4116,9 +4505,15 @@ def download_asset(
                 or (content_length and actual_size != content_length)
                 or (expected_size is not None and actual_size != expected_size)
             ):
+                if exact is not None:
+                    _exact_original_refuse("LENGTH_MISMATCH")
                 raise RuntimeError("DMI bulk asset download is incomplete")
             if work_deadline is not None and time.monotonic() >= work_deadline:
                 raise AssetDownloadRuntimeBudget("DMI asset download runtime budget reached")
+            if exact is not None:
+                if actual_size != exact["contentLengthBytes"] or content_digest.hexdigest() != exact["contentSha256"]:
+                    _exact_original_refuse("CONTENT_MISMATCH")
+                _verify_exact_original_file(tmp_path, exact, work_deadline=work_deadline)
         except BaseException as exc:
             failure = (exc, exc.__traceback__)
     if failure is not None:
@@ -4129,10 +4524,28 @@ def download_asset(
                 _UNSETTLED_ASSET_DOWNLOADS.append((tmp_path, failure))
                 raise AssetDownloadCleanupUnproven("DMI asset temporary cleanup is unproved") from failure[0]
         if isinstance(failure[0], requests.RequestException):
+            if exact is not None:
+                _exact_original_refuse("TRANSPORT_FAILED")
             raise RuntimeError("DMI bulk asset request failed") from None
         raise failure[0].with_traceback(failure[1])
-    tmp_path.replace(path)
+    if exact is not None:
+        # link is atomic no-clobber. An occupied destination is never replaced,
+        # including a filename-prefix collision that appears after preflight.
+        try:
+            os.link(tmp_path, path, follow_symlinks=False)
+        except FileExistsError:
+            tmp_path.unlink()
+            _exact_original_refuse("COLLISION")
+        except BaseException:
+            tmp_path.unlink()
+            raise
+        tmp_path.unlink()
+        _verify_exact_original_file(path, exact, work_deadline=work_deadline)
+    else:
+        tmp_path.replace(path)
     acquired_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    if exact is not None and _exact_raw_state()[0] != manifest:
+        _exact_original_refuse("MANIFEST_CHANGED")
     register_raw_cache_asset(
         path, href, collection, model_run, valid_time,
         item_id=item_id, item_created_at=item_created_at, item_updated_at=item_updated_at,
@@ -4140,6 +4553,8 @@ def download_asset(
         expected_size=expected_size,
         content_sha256=content_digest.hexdigest(),
     )
+    if exact is not None:
+        _verify_exact_original_file(path, exact, work_deadline=work_deadline, require_capture=True)
     return path, False
 
 
@@ -16792,6 +17207,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if "--restore-exact-originals" in sys.argv[1:]:
+        raise SystemExit(exact_original_restore_main())
     try:
         raise SystemExit(main())
     except Exception as exc:

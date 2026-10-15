@@ -5,6 +5,13 @@
   "updatedAt": "2026-10-15",
   "sections": [
     {
+      "id": "exact-historical-original-restore-2026-10-15",
+      "chapter": "89.233",
+      "title": "Afgrænset genopretning af historiske DMI-originaler",
+      "summary": "Efter rettelse bruges et gyldigt checkpoint; manglende historiske originaler må kun genoprettes med præcise indholds- og ejerskabsbeviser.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Efter rettelse afprøves genoptagelse fra et gyldigt gemt checkpoint, ikke en ny almindelig vejrhentning på en uændret fejl.</div><p>De to nye normale kørsler den 15. oktober stoppede før deploy ved brug af gammel strøm i OWNER-historikken. Den tidligere afgrænsede ældre RAW-audit er gennemført uden mulige filer for de undersøgte identiteter. Det er ikke bevis for ugyldige DMI-data eller fravær i alle arkiver.</p><p>Den godkendte genopretning er en særskilt manuel indgang med det præcist aftalte autentificerede checkpoint og den normale tilstandsbaserede historikplan. Den må kun hente manglende historiske originaler, ikke nye aktuelle prognoser eller en ubegrænset uge. Fuld gemt SHA-256, størrelse, officiel item-revision, modelkørsel og gyldig tid skal passe. Et faktisk nyt downloadtidspunkt registreres ærligt; gamle originaler og scorer ommærkes ikke.</p><p>Den eksisterende RAW-cache gendannes præcist før additiv genopretning. Kollision, utilgængelighed, afvigende indhold, eksisterende budgetgrænse eller ukendt procesafslutning stopper forløbet. Ingen pruning, beregning, SQL eller deploy følger med. Først efter faktisk fysisk afslutning, fjernelse af netop operationens verificerede private plan og frigivet skrivelås må den normale ejede cachegemning udføres. Grønne eller springede trin er ikke faktisk gemmebevis.</p><p>Den særskilt godkendte providerfri genoptagelse følger bagefter gennem normal indgang. Nye allerede gemte kørsler skal indgå i valget af det dybeste gyldige checkpoint. Original- og bindingskrav, streng strømfortolkning, historik, no-loss, original-B/S-før-T, holdbar gemning/upload og alle offentlige og deploy-kontroller bevares.</p><p>Status: lokal kilde og målrettede delprøver, ikke installation eller ny offentlig generation. Modelbindingen er uændret. Præcis Linux/native/source/PostgreSQL, faktisk originaltilgængelighed, cachegemning/genbrug og offentlig effekt er åbne. Cron er deaktiveret af ejeren og kontrolleret i browseren med tidsplanen bevaret. Blind rollback og en ny nødpolicy er ikke aktiveret. Alle fem mål og fristen 18. oktober består; øvrige leverancer holdes tilbage.</p>"
+    },
+    {
       "id": "cache-save-action-owner-loss-2026-10-15",
       "chapter": "89.232",
       "title": "Cachegemning ved brat tab af den styrende proces",

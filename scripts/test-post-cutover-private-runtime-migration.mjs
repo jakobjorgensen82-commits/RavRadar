@@ -526,10 +526,12 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
       'd192e060cf47fde07a1ae2faf9a8db913dbbf4e1325cbf7bf2e33c720982e8d9');
     assert.equal((await workflow.privateRuntimeContractHashes()).continuationStateContractSha256,
       '0f6c182ab2ffa7d9d0153706277aa3f7b582327be7dda02842a9c8b995568d4a');
-    const reference = '2026-10-11T16:00:00.000Z';
-    const generatedAt = '2026-10-11T16:05:00.000Z';
-    const targetReferenceAt = '2026-10-11T17:00:00.000Z';
-    const now = '2026-10-11T17:10:00.000Z';
+    // Construct this SAME normal fixture at the fixed recovery target from
+    // the outset. No captured time, original state or saved bytes are retagged.
+    const reference = '2026-10-14T17:00:00.000Z';
+    const generatedAt = '2026-10-14T17:05:00.000Z';
+    const targetReferenceAt = '2026-10-14T18:00:00.000Z';
+    const now = '2026-10-14T18:10:00.000Z';
     const datasetId = 'rr-current-grid-national-migrant-controlled';
     const excluded = ['DK-B01-01', 'DK-B01-02', 'DK-B02-08', 'DK-B02-09',
       'DK-B02-11', 'DK-B03-01', 'DK-B03-02'];
@@ -583,7 +585,7 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
         candidateParts[partId] = { ...part,
           ravScoreModel: { ...cb, currentState: pair.candidate, modes: {} } };
         if (index === 0 && zoneIndex < 8) {
-          const olderReference = '2026-10-11T15:00:00.000Z';
+          const olderReference = '2026-10-14T16:00:00.000Z';
           const older = generatedPair(part, olderReference, 49, 0.09);
           const record = { schemaVersion: 1, parentZoneId: zoneId, partId,
             referenceAt: olderReference, originalIntegratedState: older.integrated,
@@ -669,7 +671,7 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
         originalHours.set(label + ':' + time, document);
       }
       const startupNationalForecast = { schemaVersion: 2, modelBinding: ib,
-        dates: ['2026-10-11'], modes: { waders: [{ date: '2026-10-11', rows:
+        dates: ['2026-10-14'], modes: { waders: [{ date: '2026-10-14', rows:
           Array.from({ length: 20 }, (_, i) => ({ zoneId: zoneIds[i], name: `Controlled ${i}`,
             score: 70 - i, bestTime: reference })) }], beach: [] } };
       const packPath = path.join(owned, packFile);
@@ -685,6 +687,28 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
     }
     const rollbackFixture = await withPublicPack(baseline, 'rollback');
     const warmupFixture = await withPublicPack(warmup, 'warmup');
+    // One small native capture in the existing B, constructed before sealing.
+    // It exercises metadata planning, not actual GRIB or new national weather.
+    const restorePart = parts[allPartIds[0]];
+    const adapters = await currentImport('scripts/lib/ravscore-production-adapters.mjs');
+    const restoreIdentity = adapters.dmiExpectedIdentityForPart(restorePart);
+    const nativeBytes = Buffer.from('controlled-original-capture-never-provider-bytes');
+    const nativeRun = new Date(Date.parse(reference) - 12 * 3_600_000).toISOString();
+    const nativeSource = { provider: 'dmi', fallback: false, collection: 'dkss_nsbs', collectionFamily: 'marine',
+      component: 'current', componentKind: 'ocean-current-vector', fieldSet: ['current-u', 'current-v'], optionalFieldSet: [],
+      ...restoreIdentity, modelRun: nativeRun, nativeValidTime: reference, leadTimeHours: 12,
+      itemId: 'controlled-original-item', assetIdentitySha256: sha('controlled-original-asset'),
+      acquiredAt: generatedAt, contentLengthBytes: nativeBytes.length, assetSizeBytes: nativeBytes.length,
+      contentSha256: sha(nativeBytes), itemCreatedAt: nativeRun, itemUpdatedAt: nativeRun,
+      spatialSelection: 'nearest-shared-grid-cell-no-spatial-interpolation', spatialSemanticsVersion: 1,
+      vectorSemanticsVersion: 3, vectorSelection: 'nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer',
+      verticalLayer: 'depth:1', verticalLayerRankM: 1, gridPoint: [...restorePart.waterPoint],
+      gridDefinitionSha256: 'b'.repeat(64), distanceKm: 0 };
+    const nativeOriginalDocument = { generatedAt, currentVectorSemanticsVersion: 3,
+      currentVectorSelection: nativeSource.vectorSelection, currentMaxDistanceKm: 5, timeStrideHours: 3,
+      zones: { [restoreIdentity.entityId]: { ...restoreIdentity, hourly: {
+        [reference]: { time: reference, 'current-u': 0.1, 'current-v': 0.2, sources: { current: nativeSource } },
+      } } } };
     async function sealedScenario(fixture, label) {
       const root = path.join(temporary, label);
       const input = path.join(root, 'input');
@@ -694,7 +718,8 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
         await fs.mkdir(path.dirname(file), { recursive: true });
         if (item.id === 'full-conditions') {
           await normalMigrant.atomicWriteJson(file, hourly.packPrivateConditionsHourly(fixture.conditions));
-        } else await fs.writeFile(file, `${JSON.stringify({ controlledOnly: true, id: item.id })}\n`, { flag: 'wx' });
+        } else await fs.writeFile(file, `${JSON.stringify(item.id === 'dmi-bulk-cache'
+          ? nativeOriginalDocument : { controlledOnly: true, id: item.id })}\n`, { flag: 'wx' });
       }
       await fs.mkdir(path.join(input, '.cache'), { recursive: true });
       await fs.copyFile(fixture.packPath, path.join(input, packFile));
@@ -1050,6 +1075,105 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
         return true;
       });
       assert.equal(inspected, true); assert.equal(authenticatedCalls, 1);
+      if (fixture.label === 'rollback') {
+        // Exercise the NEW preparation orchestration once using this already
+        // generated 673-pair B/S and its real normal-baseline GCM snapshot.
+        // Only source files are copied; there is no second national fixture.
+        const originalPrepare = await currentImport('scripts/prepare-saved-dmi-original-restore.mjs');
+        const oldProtected = await oldImport('scripts/protected-private-production-runtime.mjs');
+        const oldWorkflow = await oldImport('scripts/private-production-runtime-workflow.mjs');
+        const oldSourceRoot = path.join(temporary, 'prepare-original-source');
+        const currentSourceRoot = path.join(temporary, 'prepare-current-source');
+        const preparePrivate = path.join(scenario.root, 'full-prepare-auth');
+        await fs.mkdir(preparePrivate);
+        await fs.mkdir(oldSourceRoot);
+        await fs.mkdir(currentSourceRoot);
+        for (const folder of ['js', 'scripts', 'data']) {
+          await fs.cp(path.join(repositoryRoot, folder), path.join(currentSourceRoot, folder), {
+            recursive: true, filter: source => {
+              const relative = path.relative(repositoryRoot, source).replace(/\\/g, '/');
+              return !relative.startsWith('data/live') && !/(?:^|\/)test-[^/]+$/.test(relative)
+                && !/\.(?:geojson|zip|grib|nc)$/.test(relative);
+            },
+          });
+        }
+        await fs.copyFile(path.join(repositoryRoot, 'package.json'), path.join(currentSourceRoot, 'package.json'));
+        await fs.mkdir(path.join(currentSourceRoot, '.cache/dmi-grib'), { recursive: true });
+        const oldSourceFiles = new Set(['scripts/protected-private-production-runtime.mjs',
+          'scripts/private-production-runtime-workflow.mjs', 'js/core/ravscore-model-contract.js',
+          'scripts/lib/private-weather-storage-abi.json', ...Object.values(oldWorkflow.PRIVATE_RUNTIME_CONTRACT_FILES).flat()]);
+        for (const relative of oldSourceFiles) {
+          const destination = path.join(oldSourceRoot, relative);
+          await fs.mkdir(path.dirname(destination), { recursive: true });
+          await fs.writeFile(destination, execFileSync('git', ['show', `${base}:${relative}`], { cwd: repositoryRoot }), { flag: 'wx' });
+        }
+        // Only the already pinned archived namespace is forwarded. Filesystem
+        // contract hashes still read the exact original bytes copied above.
+        const prepareHook = registerHooks({ resolve(specifier, context, next) {
+          if (typeof specifier === 'string' && specifier.startsWith(pathToFileURL(oldSourceRoot).href + '/')
+            && new URL(specifier).searchParams.get('savedInput') === base) {
+            const relative = path.relative(oldSourceRoot, fileURLToPath(specifier));
+            const url = pathToFileURL(path.join(repositoryRoot, relative));
+            url.searchParams.set(oldQuery, base);
+            return { url: url.href, shortCircuit: true };
+          }
+          return next(specifier, context);
+        } });
+        try {
+          const archive = await oldProtected.buildProtectedPrivateRuntimeArchive({ privateRoot: temporary,
+            bundlePath: scenario.bundlePath, repositoryRoot: oldSourceRoot, sourceHead: base, now });
+          const pointerPolicy = protectedRuntime.PROTECTED_PRIVATE_RUNTIME_POLICY;
+          const pointer = { document_key: pointerPolicy.documentKey, version: 1, payload: {
+            schemaVersion: pointerPolicy.schemaVersion, kind: pointerPolicy.pointerKind,
+            current: archive.descriptor, previous: null } };
+          const preparedDescriptor = await oldProtected.describeCurrentProtectedPrivateProductionRuntime({ request: async () => [pointer] });
+          assert.deepEqual(preparedDescriptor, scenario.identity);
+          const sourcePath = path.join(preparePrivate, 'current-source.json');
+          const progressPath = path.join(preparePrivate, 'progress.encrypted');
+          await fs.writeFile(sourcePath, `${JSON.stringify(preparedDescriptor)}\n`, { flag: 'wx' });
+          await fs.writeFile(progressPath, cipher, { flag: 'wx' });
+          const beforeDescriptor = await fs.readFile(sourcePath), beforeCipher = await fs.readFile(progressPath);
+          const creds = { supabaseUrl: 'https://storage.example.test', serviceRoleKey: 'synthetic-original-restore-key',
+            accountId: 'a'.repeat(32), accessKeyId: 'synthetic-access', secretAccessKey: 'synthetic-secret' };
+          let pointerReads = 0;
+          const fetchImpl = async (url, options) => {
+            const target = new URL(url);
+            assert.ok(['GET', 'HEAD'].includes(options.method));
+            assert.equal(options.redirect, 'error');
+            if (target.origin === creds.supabaseUrl && target.pathname === '/rest/v1/admin_documents') {
+              pointerReads++; return Response.json([pointer]);
+            }
+            assert.equal(target.origin, `https://${creds.accountId}.eu.r2.cloudflarestorage.com`);
+            if (target.pathname === `/${pointerPolicy.bucketId}` && options.method === 'HEAD') return new Response(null);
+            const entry = archive.objects.find(value => target.pathname === `/${pointerPolicy.bucketId}/${value.descriptor.objectPath}`);
+            assert.ok(entry, 'only the exact synthetic original archive can be downloaded');
+            return new Response(Buffer.from(entry.bytes));
+          };
+          const prepareReport = await savedInputAudit.prepareAuthenticatedSavedDmiOriginalRestore({
+            privateRoot: preparePrivate, descriptorPath: sourcePath, predecessorRoot: oldSourceRoot,
+            progressFile: progressPath, progressSource: originalPrepare.SAVED_DMI_ORIGINAL_PROGRESS,
+            progressCacheKey: originalPrepare.SAVED_DMI_ORIGINAL_PROGRESS_KEY,
+            progressBaselineTargetHour: targetReferenceAt, executionHead: 'e'.repeat(40),
+            repositoryRoot: currentSourceRoot, repository: progressRepository, ...progressCredentials, ...creds, fetchImpl });
+          assert.equal(prepareReport.status, 'ORIGINAL_PLAN_PREPARED');
+          assert.equal(prepareReport.originalCount, 1, 'only the single relevant original capture, never all week history');
+          const planBytes = await fs.readFile(path.join(currentSourceRoot, originalPrepare.SAVED_DMI_ORIGINAL_PLAN_PATH));
+          const plan = JSON.parse(planBytes);
+          assert.equal(prepareReport.planSha256, sha(planBytes));
+          assert.equal(plan.binding.sourceHead, base);
+          assert.equal(plan.binding.executionHead, 'e'.repeat(40));
+          assert.equal(plan.binding.protectedBundleSha256, scenario.manifest.bundleContentSha256);
+          assert.equal(plan.binding.targetReferenceAt, targetReferenceAt);
+          assert.deepEqual(plan.originals, [savedInputAudit.canonicalSavedDmiOriginalCapture(nativeSource)]);
+          assert.doesNotMatch(JSON.stringify(plan), /current-u|current-v|samplingPoint|gridPoint|https:/);
+          assert.equal(pointerReads, 3, 'source is unchanged before/after restore and after authenticated readers close');
+          assert.deepEqual(await fs.readFile(sourcePath), beforeDescriptor);
+          assert.deepEqual(await fs.readFile(progressPath), beforeCipher);
+          assert.deepEqual((await fs.readdir(preparePrivate)).sort(), ['current-source.json', 'progress.encrypted']);
+          console.log(JSON.stringify({ kind: 'GENUINE_673_SAVED_ORIGINAL_PREPARATION', status: 'PASS',
+            parts: 673, originalCount: 1, actualProviderDataMeasured: false, rawVectorsIncluded: false }));
+        } finally { prepareHook.deregister(); }
+      }
       await assert.rejects(progressCache.withAuthenticatedWeatherProgress({ ...auditOptions,
         encryptionKey: Buffer.alloc(32, 64).toString('base64') }, async () => { authenticatedCalls++; }),
       error => error.progressCode === 'SNAPSHOT_AUTHENTICATION_FAILED');
