@@ -20,6 +20,16 @@ on:
         required: true
         default: "1"
         type: string
+      include_raw_manifest:
+        description: "Tæl kun manifest-captures fra en præcis RAW-cache; ingen GRIB-analyse"
+        required: false
+        default: false
+        type: boolean
+      raw_manifest_cache_key:
+        description: "Eksakt dmi-grib-v4-Linux-YYYY-Www-run-attempt; kun ved manifestdiagnose"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -54,6 +64,8 @@ jobs:
           EXPECTED_MAIN_HEAD: ${{ inputs.expected_main_head }}
           SOURCE_RUN_ID: ${{ inputs.progress_source_run_id }}
           SOURCE_RUN_ATTEMPT: ${{ inputs.progress_source_attempt }}
+          INCLUDE_RAW_MANIFEST: ${{ inputs.include_raw_manifest }}
+          RAW_MANIFEST_CACHE_KEY: ${{ inputs.raw_manifest_cache_key }}
         run: |
           set -euo pipefail
           test "$GITHUB_EVENT_NAME" = workflow_dispatch
@@ -78,6 +90,22 @@ jobs:
           source_head="$(jq -er '.head_sha' "$RUNNER_TEMP/saved-input-source-run.json")"
           git merge-base --is-ancestor "$source_head" "$GITHUB_SHA"
           echo "cache_key=weather-private-progress-encrypted-v2-Linux-main-$SOURCE_RUN_ID-$SOURCE_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+          if test "$INCLUDE_RAW_MANIFEST" = true; then
+            [[ "$RAW_MANIFEST_CACHE_KEY" =~ ^dmi-grib-v4-Linux-[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])-${SOURCE_RUN_ID}-${SOURCE_RUN_ATTEMPT}$ ]]
+            gh api --method GET "repos/$GITHUB_REPOSITORY/actions/caches" \
+              -f key="$RAW_MANIFEST_CACHE_KEY" -f ref=refs/heads/main -f per_page=100 \
+              > "$RUNNER_TEMP/saved-input-raw-cache-metadata.json"
+            jq -e --arg key "$RAW_MANIFEST_CACHE_KEY" '
+              .total_count == 1 and (.actions_caches | length) == 1
+              and .actions_caches[0].key == $key
+              and .actions_caches[0].ref == "refs/heads/main"
+              and .actions_caches[0].version == "9d434ae81d3120176028232ea936fc3f9dc0ed030022ff6d98bec91aa9cf117a"
+              and (.actions_caches[0].size_in_bytes | type == "number" and . > 0)
+            ' "$RUNNER_TEMP/saved-input-raw-cache-metadata.json" >/dev/null
+            echo "raw_cache_key=$RAW_MANIFEST_CACHE_KEY" >> "$GITHUB_OUTPUT"
+          else
+            test -z "$RAW_MANIFEST_CACHE_KEY"
+          fi
 
       - uses: actions/setup-node@v7
         with:
@@ -130,6 +158,33 @@ jobs:
           install -m 0600 .cache/weather-private-progress.encrypted \
             "$RUNNER_TEMP/ravradar-saved-input-audit/progress.encrypted"
 
+      # The existing producer cache is an indivisible archive. Restore that exact
+      # path/version, but the audit opens only asset-manifest.json, never GRIB.
+      - name: Optionally restore the exact same-run RAW cache for manifest counts
+        if: inputs.include_raw_manifest == true
+        id: raw-manifest
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/dmi-grib
+          key: ${{ steps.authority.outputs.raw_cache_key }}
+          fail-on-cache-miss: true
+
+      - name: Require the exact RAW cache before optional manifest inspection
+        if: inputs.include_raw_manifest == true
+        shell: bash
+        env:
+          EXACT_KEY: ${{ steps.authority.outputs.raw_cache_key }}
+          MATCHED_KEY: ${{ steps.raw-manifest.outputs.cache-matched-key }}
+          CACHE_HIT: ${{ steps.raw-manifest.outputs.cache-hit }}
+        run: |
+          set -euo pipefail
+          test "$CACHE_HIT" = true
+          test "$MATCHED_KEY" = "$EXACT_KEY"
+          test -d .cache/dmi-grib
+          test ! -L .cache
+          test ! -L .cache/dmi-grib
+          test ! -L .cache/dmi-grib/asset-manifest.json
+
       - name: Read the current protected source identity without storage writes
         run: >-
           node scripts/audit-saved-weather-inputs.mjs describe
@@ -163,6 +218,8 @@ jobs:
           --progress-file "$RUNNER_TEMP/ravradar-saved-input-audit/progress.encrypted"
           --progress-source "$PROGRESS_SOURCE"
           --progress-cache-key "$PROGRESS_CACHE_KEY"
+          --include-raw-manifest "$INCLUDE_RAW_MANIFEST"
+          ${RAW_MANIFEST_ARGS}
           --output "$RUNNER_TEMP/ravradar-saved-input-audit/summary-safe.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -173,6 +230,8 @@ jobs:
           WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           PROGRESS_SOURCE: ${{ inputs.progress_source_run_id }}-${{ inputs.progress_source_attempt }}
           PROGRESS_CACHE_KEY: ${{ steps.authority.outputs.cache_key }}
+          INCLUDE_RAW_MANIFEST: ${{ inputs.include_raw_manifest }}
+          RAW_MANIFEST_ARGS: ${{ inputs.include_raw_manifest && format('--raw-cache-key {0}', steps.authority.outputs.raw_cache_key) || '' }}
 
       - name: Upload only the fixed-schema payload-free aggregate report
         if: always() && (steps.input-audit.outcome == 'success' || steps.input-audit.outcome == 'failure')

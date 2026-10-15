@@ -6,7 +6,8 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { auditSavedWeatherInputs, createReadOnlySavedWeatherClients,
-  measureSavedCurrentContexts, measureSavedNativeProofAvailability, withoutSavedAuditSecrets } from './audit-saved-weather-inputs.mjs';
+  measureSavedCurrentContexts, measureSavedNativeProofAvailability, withoutSavedAuditSecrets,
+  indexSavedRawManifest, measureSavedRawCaptureMatches } from './audit-saved-weather-inputs.mjs';
 import { createPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
 import { buildProtectedPrivateRuntimeArchive, PROTECTED_PRIVATE_RUNTIME_POLICY as policy } from './protected-private-production-runtime.mjs';
 import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_FILES } from './lib/private-weather-component-inventory.mjs';
@@ -14,7 +15,7 @@ import { buildPrivateWeatherComponentPack } from './lib/private-weather-componen
 import { weatherComponentProgressCache, WEATHER_PROGRESS_CIPHER_PATH } from './weather-component-progress-cache.mjs';
 import { inspectDmiForecastFile } from './lib/dmi-forecast-file.mjs';
 import { packDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
-import { DMI_FORECAST_HOURS, buildDmiForecastHourly } from './lib/dmi-forecast-store.mjs';
+import { DMI_FORECAST_HOURS, buildDmiForecastHourly, inspectDmiNativeGridSampling } from './lib/dmi-forecast-store.mjs';
 import { dmiExpectedIdentityForPart } from './lib/ravscore-production-adapters.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { buildCurrentSupplyMemory } from '../js/core/ravscore-current-supply-memory.js';
@@ -49,7 +50,7 @@ function safeReport(report, privateRoot) {
     'currentUMps', 'samplingPoint', 'waterPoint', privateRoot]) assert.equal(json.includes(forbidden), false, forbidden);
 }
 
-function nativeFixture(part, reference = '2026-09-29T16:00:00.000Z') {
+function nativeFixture(part, reference = '2026-09-29T16:00:00.000Z', rawCaptures = false) {
   const identity = dmiExpectedIdentityForPart(part), epoch = Date.parse(reference);
   // Persisted Python DMI output does not use JavaScript's .000Z spelling.
   // The audit must consume these exact strings, not rewrite the fixture.
@@ -64,6 +65,9 @@ function nativeFixture(part, reference = '2026-09-29T16:00:00.000Z') {
       nativeValidTime: at(hour), leadTimeHours: hour + 12, acquiredAt: at(-1), itemUpdatedAt: at(-11),
       optionalFieldSet: [], samplingPoint: [...part.waterPoint], gridPoint: [...part.waterPoint],
       gridDefinitionSha256: 'b'.repeat(64), distanceKm: 0, spatialSemanticsVersion: 1 };
+    if (rawCaptures) Object.assign(source, { assetIdentitySha256: crypto.createHash('sha256')
+      .update(`https://synthetic.invalid/native-${hour}.grib`).digest('hex'),
+    contentLengthBytes: 1234, contentSha256: 'c'.repeat(64), assetSizeBytes: 1234, itemCreatedAt: at(-12) });
     return { time: at(hour), 'current-u': 0.1 + hour / 10, 'current-v': 0.2 + hour / 10, sources: { current: source } };
   });
   const header = { currentVectorSemanticsVersion: 3, currentVectorSelection: vectorSelection,
@@ -245,7 +249,7 @@ test('offline subprocess scope removes secrets and restores them even after fail
 
 async function fixture(t, { corrupt = false, changedAt = Infinity, wrongContracts = false,
   wrongBaseline = false, cipherTamper = false, forecastAbsent = false,
-  nativeProofs = false, baselinePackTamper = false, packReaderBank = null } = {}) {
+  nativeProofs = false, baselinePackTamper = false, packReaderBank = null, rawCaptures = false } = {}) {
   const folder = await temp(t);
   const source = path.join(folder, 'source'), privateRoot = path.join(folder, 'private'),
     buildRoot = path.join(folder, 'build'), predecessorRoot = path.join(folder, 'old-reader'), progressRoot = path.join(folder, 'progress');
@@ -269,7 +273,7 @@ async function fixture(t, { corrupt = false, changedAt = Infinity, wrongContract
   let nativeData;
   if (nativeProofs) {
     const parts = Object.entries(conditions.coastalParts.parts).map(([partId, part]) => ({ partId, ...part }));
-    nativeData = nativeFixture(parts[0], conditions.productionReferenceAt);
+    nativeData = nativeFixture(parts[0], conditions.productionReferenceAt, rawCaptures);
     await saveContinuity(source, 'data/live/dmi-forecast-cache.json', parts, nativeData.hourly, nativeData.reference);
     await saveContinuity(progressRoot, 'data/live/dmi-forecast-cache.json', parts, nativeData.hourly, nativeData.reference);
     await write(source, 'data/live/dmi-bulk-cache.json', nativeData.donor([]));
@@ -350,7 +354,7 @@ async function fixture(t, { corrupt = false, changedAt = Infinity, wrongContract
   assert.equal(described.status, 'SOURCE_DESCRIBED', JSON.stringify(described));
   return { options: { mode: 'audit', privateRoot, descriptorPath, predecessorRoot, progressFile, progressSource,
     progressCacheKey, repository, encryptionKey, outputPath: path.join(privateRoot, 'audit.json'), ...credentials, fetchImpl },
-  calls, folder, source, privateRoot, built, saved, conditions };
+  calls, folder, source, privateRoot, built, saved, conditions, nativeData };
 }
 
 test('real synthetic archive + exact progress are authenticated and measured, not merged or built', async t => {
@@ -587,6 +591,151 @@ test('saved original-current-context availability detects loss at the prospectiv
     await write(folder, 'damaged.json', { zones: {}, partContinuity: damaged });
     const invalid = await inspectDmiForecastFile(path.join(folder, 'damaged.json'));
     await assert.rejects(measureSavedCurrentContexts(invalid, parts, baseline, baseline), /CONTINUITY_INSPECTION_FAILED/);
+  }
+});
+
+
+function syntheticRawManifest(native) {
+  return { schemaVersion: 2, assets: Object.fromEntries(native.map((row, i) => {
+    const canonicalHref = `https://synthetic.invalid/native-${i * 3}.grib`;
+    const source = row.sources.current;
+    const name = crypto.createHash('sha256').update(canonicalHref).digest('hex').slice(0, 24) + '.grib';
+    return [name, { ...source, validTime: source.nativeValidTime, canonicalHref }];
+  })) };
+}
+
+test('RAW manifest counts distinguish exact, acquisition-only and revision/content absence without RAW reads', () => {
+  const part = { partId: 'coastal-part-sensitive', zoneId: 'zone-sensitive', waterPoint: [8, 55] };
+  const f = nativeFixture(part, undefined, true), parts = new Map([[part.partId, part]]);
+  const document = f.donor(f.native), manifest = syntheticRawManifest(f.native);
+  const before = JSON.stringify({ document, manifest });
+  const measure = value => measureSavedRawCaptureMatches(document, parts, indexSavedRawManifest(value));
+  const positive = measure(manifest);
+  assert.equal(positive.counts.nativeCurrentRows, 2);
+  assert.equal(positive.counts.exactCaptureMatchRows, 2);
+  assert.equal(positive.counts.rejectedNativeRows, 0);
+  assert.equal(positive.counts.invalidCaptureRows, 0);
+  const first = Object.keys(manifest.assets)[0];
+  for (const [key, value, category] of [
+    ['acquiredAt', '2026-09-29T15:00:00.000001Z', 'acquiredAtOnlyMismatchRows'],
+    ['contentSha256', 'd'.repeat(64), 'otherRevisionOrContentMismatchRows'],
+    ['itemUpdatedAt', '2026-09-29T05:00:00.000001Z', 'otherRevisionOrContentMismatchRows'],
+    ['itemId', 'different-private-item', 'otherRevisionOrContentMismatchRows'],
+  ]) {
+    const changed = structuredClone(manifest); changed.assets[first][key] = value;
+    const result = measure(changed);
+    assert.equal(result.counts[category], 1, key);
+    assert.equal(result.counts.exactCaptureMatchRows, 1, key);
+    safeReport(result, 'secret-error-canary');
+  }
+  const absent = structuredClone(manifest); delete absent.assets[first];
+  assert.equal(measure(absent).counts.assetIdentityAbsentRows, 1);
+  for (const mutation of [
+    row => { row.assetIdentitySha256 = 'f'.repeat(64); },
+    row => { row.contentLengthBytes = true; },
+    row => { row.assetSizeBytes++; },
+    row => { row.itemCreatedAt = 'not-a-time'; },
+    row => { row.acquiredAt = '2026-02-30T00:00:00Z'; },
+    row => { row.canonicalHref = 'https://synthetic.invalid/different.grib'; },
+  ]) {
+    const bad = structuredClone(manifest); mutation(bad.assets[first]);
+    const index = indexSavedRawManifest(bad);
+    assert.equal(index.counts.invalidRows, 1);
+    assert.equal(measureSavedRawCaptureMatches(document, parts, index).counts.exactCaptureMatchRows, 1);
+  }
+  for (const malformed of [null, [], { schemaVersion: 1, assets: {} }, { schemaVersion: 2, assets: [] }]) {
+    const result = measure(malformed);
+    assert.equal(result.status, 'MALFORMED'); assert.equal(result.counts.unclassifiedRows, 2);
+    assert.equal(result.counts.assetIdentityAbsentRows, 0, 'malformed is not evidence of absence');
+  }
+  const equiv = structuredClone(manifest);
+  equiv.assets[first].acquiredAt = '2026-09-29T17:00:00.000000+02:00';
+  assert.equal(measure(equiv).counts.exactCaptureMatchRows, 2, 'Python UTC and six-digit canonical spelling');
+  const derived = structuredClone(document);
+  Object.values(derived.zones)[0].hourly[f.native[0].time].sources.current.nativeSteps = [];
+  assert.equal(measureSavedRawCaptureMatches(derived, parts, indexSavedRawManifest(manifest)).counts.rejectedNativeRows, 1);
+  assert.equal(JSON.stringify({ document, manifest }), before);
+  safeReport(positive, 'secret-error-canary');
+});
+
+test('RAW manifest receipt presence and current policy exclusions never become RAW repair needs', () => {
+  const part = { partId: 'coastal-part-sensitive', zoneId: 'DK-B01-02', waterPoint: [8, 55] };
+  const f = nativeFixture(part, undefined, true), parts = new Map([[part.partId, part]]);
+  const native = structuredClone(f.native);
+  // Deliberately contradictory metadata: presence is not a qualification claim.
+  native[0].sources.current.nativeGridSampling = false;
+  const document = f.donor(native), manifest = syntheticRawManifest(native);
+  const first = Object.keys(manifest.assets)[0];
+  manifest.assets[first].acquiredAt = '2026-09-29T15:00:00.000001Z';
+  const before = JSON.stringify({ document, manifest });
+  const measured = measureSavedRawCaptureMatches(document, parts, indexSavedRawManifest(manifest));
+  assert.equal(inspectDmiNativeGridSampling(native[0].sources.current).status, 'contradictory');
+  assert.equal(measured.counts.samplingReceiptPresentRows, 1);
+  assert.equal(measured.counts.exactCaptureMatchRows, 1);
+  assert.equal(measured.counts.acquiredAtOnlyMismatchRows, 0);
+  assert.equal(measured.counts.excludedByCurrentPolicyRows, 0);
+  assert.equal(JSON.stringify({ document, manifest }), before);
+  const lfNative = structuredClone(f.native);
+  lfNative[0].sources.current.collection = 'dkss_lf';
+  const lfDocument = f.donor(lfNative), lfManifest = syntheticRawManifest(lfNative);
+  const lfBefore = JSON.stringify({ lfDocument, lfManifest });
+  const excluded = measureSavedRawCaptureMatches(lfDocument, parts, indexSavedRawManifest(lfManifest));
+  assert.equal(excluded.counts.rejectedNativeRows, 0, 'genuine normal original verifier still accepts the synthetic LF row');
+  assert.equal(excluded.counts.excludedByCurrentPolicyRows, 1, 'normal owner collection policy excludes LF current');
+  assert.equal(excluded.counts.exactCaptureMatchRows, 1, 'eligible IDW row remains counted');
+  assert.equal(JSON.stringify({ lfDocument, lfManifest }), lfBefore);
+  for (const result of [measured, excluded]) {
+    const { nativeCurrentRows, ...categories } = result.counts;
+    assert.equal(Object.values(categories).reduce((total, value) => total + value, 0), nativeCurrentRows);
+    safeReport(result, 'secret-error-canary');
+  }
+});
+
+test('RAW manifest option uses the normal authenticated donor loop, leaves originals intact and remains default off', async t => {
+  const f = await fixture(t, { nativeProofs: true, rawCaptures: true });
+  const localRepository = path.join(f.folder, 'diagnostic-repository');
+  await fs.mkdir(localRepository);
+  await write(localRepository, '.cache/dmi-grib/asset-manifest.json', syntheticRawManifest(f.nativeData.native));
+  const rawCacheKey = `dmi-grib-v4-Linux-2026-W40-${progressSource}`;
+  const originals = new Map();
+  for (const file of [f.options.progressFile, path.join(f.source, 'data/live/conditions.json'),
+    path.join(localRepository, '.cache/dmi-grib/asset-manifest.json')]) originals.set(file, await fs.readFile(file));
+  const report = await auditSavedWeatherInputs({ ...f.options, repositoryRoot: localRepository, includeRawManifest: true, rawCacheKey });
+  assert.equal(report.status, 'AUDIT_COMPLETED', JSON.stringify(report));
+  const raw = report.nativeProofAvailability.rawManifestCaptureCounts;
+  assert.equal(raw.status, 'MEASURED');
+  assert.equal(raw.counts.validMarineRows, 2);
+  assert.deepEqual(Object.fromEntries(Object.entries(raw.donors).map(([key, row]) => [key, row.counts?.exactCaptureMatchRows])),
+    { baselineBulk: 0, baselineActive: 1, baselineCandidate: 2, progressActive: 1, progressCandidate: 2 });
+  assert.equal(raw.rawFilesOpened, false); assert.equal(raw.rawBytesVerified, false); assert.equal(raw.sourceAdmissionPerformed, false);
+  assert.equal(report.exactProgressAuthenticated, true);
+  assert.equal(report.semanticUnionPerformed, false);
+  // Only a manifest exists: even stat/open of a supposed GRIB cannot be needed.
+  assert.deepEqual(await fs.readdir(path.join(localRepository, '.cache/dmi-grib')), ['asset-manifest.json']);
+  for (const [file, bytes] of originals) assert.deepEqual(await fs.readFile(file), bytes);
+  const ordinary = await auditSavedWeatherInputs({ ...f.options, repositoryRoot: localRepository,
+    outputPath: path.join(f.privateRoot, 'default-report.json') });
+  assert.equal(ordinary.status, 'AUDIT_COMPLETED');
+  assert.equal(Object.hasOwn(ordinary.nativeProofAvailability, 'rawManifestCaptureCounts'), false);
+  assert.deepEqual(ordinary.nativeProofAvailability, Object.fromEntries(Object.entries(report.nativeProofAvailability)
+    .filter(([key]) => key !== 'rawManifestCaptureCounts')));
+  for (const options of [{ includeRawManifest: 'true', rawCacheKey },
+    { includeRawManifest: true, rawCacheKey: rawCacheKey + '-other' },
+    { includeRawManifest: false, rawCacheKey }]) {
+    const result = await auditSavedWeatherInputs({ ...f.options, ...options,
+      outputPath: path.join(f.privateRoot, 'must-not-be-written.json') });
+    assert.equal(result.status, 'AUDIT_FAILED_CLOSED');
+    assert.ok(['MODE_INVALID', 'RAW_CACHE_IDENTITY_INVALID'].includes(result.code));
+  }
+  for (const value of [report, ordinary]) safeReport(value, f.privateRoot);
+});
+
+test('RAW manifest CLI rejects malformed boolean before any credential or input read', () => {
+  for (const value of ['1', 'TRUE', 'yes']) {
+    const result = spawnSync(process.execPath, ['scripts/audit-saved-weather-inputs.mjs', 'audit',
+      '--include-raw-manifest', value], { cwd: repositoryRoot, encoding: 'utf8' });
+    assert.equal(result.status, 1); assert.equal(result.stdout, '');
+    assert.equal(result.stderr.trim(), 'SAVED_WEATHER_INPUT_AUDIT_FAILED_CLOSED');
   }
 });
 

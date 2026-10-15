@@ -83,6 +83,72 @@ entity = sampling_identity(zone)
 assert entity is not None
 assert complete_native_source_for_hour(source, "current", zone["id"], entity, valid_time)
 
+
+def check_cached_current_history_capture_join():
+    """Pure normal planner regression; no RAW, lease, decoder or I/O claim."""
+    href = "https://owned-fixture.invalid/capture-join.grib"
+    original_source = copy.deepcopy(source)
+    original_source["assetIdentitySha256"] = producer.asset_identity_sha256(href)
+    original = {"zoneId": zone["id"], "time": producer.canonical_time(valid_time),
+        "capture": producer.canonical_current_source_asset(original_source),
+        "row": {"time": producer.canonical_time(valid_time), "current-u": .1, "current-v": -.2,
+                "sources": {"current": original_source}}}
+    originals = [original]
+    before = copy.deepcopy(originals)
+    # The pure planner consumes a validated demand map, not an admission flag.
+    reference_at = producer.canonical_time(valid_time)
+    start_at = producer.canonical_time(datetime.fromisoformat(
+        reference_at.replace("Z", "+00:00")) - timedelta(hours=48))
+    demands = producer.current_history_demands([{
+        "partId": "TEST", "zoneId": zone["parentZoneId"],
+        "parentZoneId": zone["parentZoneId"], "entityId": zone["id"],
+        "samplingPoint": [zone["lon"], zone["lat"]],
+        "samplingContextKey": "sha256:" + "1" * 64,
+        "initialSource": "COLD_START", "initialStateAt": None,
+        "initialStateSha256": None, "startAt": start_at, "endAt": reference_at,
+    }], [zone], reference_at)
+    name = producer.cached_asset_path(href).name
+    asset = {**original["capture"], "canonicalHref": href}
+    manifest = {"schemaVersion": 2, "assets": {name: asset}}
+    exact = producer.plan_cached_current_history(demands, originals, manifest)
+    assert len(exact["jobs"]) == 1 and not exact["unavailable"]
+    reacquired_manifest = copy.deepcopy(manifest)
+    reacquired_manifest["assets"][name]["acquiredAt"] = reference_at
+    replay = producer.plan_cached_current_history(demands, originals, reacquired_manifest)
+    assert len(replay["jobs"]) == 1, "SAME_ORIGINAL_BYTES_REJECTED_ONLY_BY_ACQUIRED_AT"
+    assert not replay["unavailable"]
+    assert replay["jobs"][0]["capture"] == producer.canonical_current_source_asset(
+        reacquired_manifest["assets"][name])
+    assert replay["originalsByKey"] == exact["originalsByKey"]
+    for changes in (
+        {"itemId": "different-official-item"},
+        {"itemCreatedAt": reference_at}, {"itemUpdatedAt": reference_at},
+        {"modelRun": start_at}, {"contentSha256": "0" * 64},
+        {"assetIdentitySha256": "0" * 64},
+        {"assetSizeBytes": 1025, "contentLengthBytes": 1025},
+        {"assetSizeBytes": None}, {"acquiredAt": "invalid"},
+    ):
+        invalid = copy.deepcopy(reacquired_manifest)
+        invalid["assets"][name].update(changes)
+        rejected = producer.plan_cached_current_history(demands, originals, invalid)
+        assert not rejected["jobs"] and len(rejected["unavailable"]) == 1
+        assert rejected["originalsByKey"] == exact["originalsByKey"]
+    conflicting = copy.deepcopy(original)
+    conflicting["row"]["current-u"] += .125
+    try:
+        producer.plan_cached_current_history(demands, [*originals, conflicting], reacquired_manifest)
+    except ValueError as error:
+        assert str(error) == "DMI_CURRENT_HISTORY_ORIGINAL_CONFLICT"
+    else:
+        raise AssertionError("ambiguous old originals reached cached replay")
+    assert originals == before
+
+
+check_cached_current_history_capture_join()
+if sys.argv[1:] == ["--cached-current-history-plan-only"]:
+    print("Cached-current-history capture join passed: exact/reacquired/9 negatives/original conflict; native UNRUN")
+    raise SystemExit(0)
+
 target = {
     "partId": "TEST",
     "parentZoneId": "ZONE-TEST",
@@ -4178,6 +4244,73 @@ if scenario in {"current-only", "cached-current-history"}:
         assert not plan["unavailable"]
         empty = p.plan_cached_current_history({}, [], {"assets": {}})
         assert not empty["jobs"] and not empty["originalsByKey"]
+
+        # Same own bytes/official revision, captured again at another valid
+        # acquisition time. Keep the old original and its full capture exact.
+        exact_plan = plan
+        original_manifest = p.load_raw_cache_manifest()
+        reacquired_at = p.canonical_time(
+            p.datetime.fromisoformat(when.replace("Z", "+00:00"))
+            + p.timedelta(minutes=1))
+        reacquired_manifest = copy.deepcopy(original_manifest)
+        reacquired_manifest["assets"][raw_path.name]["acquiredAt"] = reacquired_at
+        old_asset = p.canonical_current_source_asset(originals[0]["capture"])
+        new_asset = p.canonical_current_source_asset(
+            reacquired_manifest["assets"][raw_path.name])
+        assert old_asset["acquiredAt"] != new_asset["acquiredAt"]
+        assert {key: value for key, value in old_asset.items() if key != "acquiredAt"} == {
+            key: value for key, value in new_asset.items() if key != "acquiredAt"}
+        reacquired_plan = p.plan_cached_current_history(
+            demands, originals, reacquired_manifest)
+        assert len(reacquired_plan["jobs"]) == 1, "same exact original bytes must survive reacquisition"
+        assert not reacquired_plan["unavailable"]
+        assert reacquired_plan["jobs"][0]["capture"] == new_asset
+        assert reacquired_plan["originalsByKey"] == plan["originalsByKey"]
+        assert originals == immutable_originals
+
+        # No other official identity, revision, declared size or byte hash may
+        # inherit this exception. Each input is only a detached manifest copy.
+        for changes in (
+            {"itemId": "different-official-item"},
+            {"itemCreatedAt": reacquired_at},
+            {"itemUpdatedAt": reacquired_at},
+            {"modelRun": p.canonical_time(p.datetime.fromisoformat(
+                when.replace("Z", "+00:00")) - p.timedelta(hours=1))},
+            {"contentSha256": "0" * 64},
+            {"assetIdentitySha256": "0" * 64},
+            {"contentLengthBytes": len(payload) + 1, "assetSizeBytes": len(payload) + 1},
+            {"assetSizeBytes": None},
+            {"acquiredAt": "invalid"},
+        ):
+            invalid_manifest = copy.deepcopy(reacquired_manifest)
+            invalid_manifest["assets"][raw_path.name].update(changes)
+            invalid_plan = p.plan_cached_current_history(
+                demands, originals, invalid_manifest)
+            assert not invalid_plan["jobs"]
+            assert len(invalid_plan["unavailable"]) == len(originals)
+            assert invalid_plan["originalsByKey"] == plan["originalsByKey"]
+        # The genuine original-conflict seam must never choose one ambiguous
+        # legacy tuple under the same complete capture. No href/hash is faked.
+        conflicting_original = copy.deepcopy(originals[0])
+        conflicting_original["row"]["current-u"] += .125
+        try:
+            p.plan_cached_current_history(
+                demands, [*originals, conflicting_original], reacquired_manifest)
+        except ValueError as error:
+            assert str(error) == "DMI_CURRENT_HISTORY_ORIGINAL_CONFLICT"
+        else:
+            raise AssertionError("ambiguous old originals reached cached replay")
+        assert originals == immutable_originals
+        assert p.raw_cache_manifest_path().read_bytes() == immutable_manifest
+        # Publish the second synthetic capture through normal registration.
+        # The actual owned reader must measure these unchanged fixture bytes.
+        p.register_raw_cache_asset(
+            raw_path, href, "dkss_lf", when, when,
+            item_id="own-current-history", acquired_at=reacquired_at,
+            expected_size=len(payload), content_sha256=hashlib.sha256(payload).hexdigest())
+        plan = p.plan_cached_current_history(demands, originals, p.load_raw_cache_manifest())
+        assert len(plan["jobs"]) == 1 and not plan["unavailable"]
+        assert plan["jobs"][0]["capture"] == new_asset
         working = copy.deepcopy(document)
         working["diagnostics"] = {}
         original_decode = p.codes_grib_new_from_file
@@ -4236,11 +4369,53 @@ if scenario in {"current-only", "cached-current-history"}:
             assert p.inspect_native_grid_sampling(hour["sources"]["current"])["status"] == "coherent"
             assert hour["sources"]["current"]["gridDefinitionSha256"] == old["sources"]["current"]["gridDefinitionSha256"]
             assert hour["sources"]["current"]["contentSha256"] == hashlib.sha256(payload).hexdigest()
+            assert hour["sources"]["current"]["acquiredAt"] == reacquired_at
+            assert old["sources"]["current"]["acquiredAt"] == old_asset["acquiredAt"]
             assert hour["sources"]["current"]["gridPoint"] == expected_point
         retained = copy.deepcopy(working)
         p.clean_and_summarize(retained, set(), {"bytes": 0}, current_history_requests=demands)
         assert all(when in retained["zones"][z["id"]]["hourly"] for z in history_zones)
         assert document == original_document and originals == immutable_originals
+
+        # Repeat the actual owned RAW job against its own committed capture.
+        # This new acquisition is deliberately absent from originalsByKey;
+        # only the exact tuple already qualified by this plan can authorize it.
+        for z in history_zones:
+            committed_hour = working["zones"][z["id"]]["hourly"][when]
+            committed_source = committed_hour["sources"]["current"]
+            committed_capture = p.canonical_current_source_asset(committed_source)
+            committed_key = (z["id"].removeprefix("PART::"), when,
+                             p._current_history_json(committed_capture))
+            assert committed_key not in plan["originalsByKey"]
+            assert plan["derivedByKey"][committed_key] == (
+                committed_hour["current-u"], committed_hour["current-v"], committed_source)
+        before_repeat = copy.deepcopy(working)
+        committed_assets_before_repeat = controller.committed_assets_since_write
+        decoded.clear()
+        with contextlib.redirect_stdout(io.StringIO()):
+            repeated = p.replay_cached_current_history_job(
+                plan["jobs"][0], plan, working, controller, **options)
+        assert repeated == {"status": "TRAVERSED", "qualifiedPartCount": 0, "changed": False}
+        assert len(decoded) == 4 and decoded[-1][1] and len({item[0] for item in decoded}) == 1
+        for fd in {item[0] for item in decoded}:
+            try:
+                os.fstat(fd)
+            except OSError as error:
+                assert error.errno == errno.EBADF
+            else:
+                raise AssertionError("repeated RAW job retained its owned reader")
+        assert controller.committed_assets_since_write == committed_assets_before_repeat
+        # Parser observation counters may advance on a real second traversal;
+        # every data row and all non-diagnostic state must remain exact.
+        assert {key: value for key, value in working.items() if key != "diagnostics"} == {
+            key: value for key, value in before_repeat.items() if key != "diagnostics"}
+        assert document == original_document and originals == immutable_originals
+
+        # All owned reads are now closed. Restore the exact first manifest and
+        # plan before the unchanged original mismatch/EOF/lease-break cases.
+        p.save_raw_cache_manifest(original_manifest)
+        assert p.raw_cache_manifest_path().read_bytes() == immutable_manifest
+        plan = exact_plan
 
         # The same real helper must refuse a mismatched full capture without
         # decoding, flushing, committing or modifying any previous working row.
@@ -4318,6 +4493,9 @@ if scenario in {"current-only", "cached-current-history"}:
         print(json.dumps({"case": scenario, "cachedAssetsDecoded": 1, "qualifiedParts": 2,
             "sameOwnedReadEOF": True, "originalsAndScalarsPreserved": True,
             "demandedRetention": True, "captureAndMissingRefused": True,
+            "sameBytesDifferentAcquisition": True, "nonAcquisitionDifferencesRefused": True,
+            "conflictingOriginalsRefused": True,
+            "committedCaptureReplay": True,
             "lateEOFRollback": True, "actualLeaseBreakRetained": True}), flush=True)
         raise SystemExit(0)
 
@@ -4697,6 +4875,9 @@ print(json.dumps({"case": scenario, "actualMessages": 1 if scenario == "replace"
                     "cachedAssetsDecoded": 1, "qualifiedParts": 2,
                     "sameOwnedReadEOF": True, "originalsAndScalarsPreserved": True,
                     "demandedRetention": True, "captureAndMissingRefused": True,
+                    "sameBytesDifferentAcquisition": True, "nonAcquisitionDifferencesRefused": True,
+                    "conflictingOriginalsRefused": True,
+                    "committedCaptureReplay": True,
                     "lateEOFRollback": True, "actualLeaseBreakRetained": True}
             elif _lease_case == "current-only":
                 assert _lease_receipt == {"case": _lease_case, "actualMessages": 8, "fieldOrdersChecked": 2,
