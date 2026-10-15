@@ -1,3 +1,9 @@
+## Lokal integration af faktisk leveret SAVE-rettelse — 15. oktober 2026
+
+PR615 er faktisk merget på main df6bce0 efter præcis CI 38681725537/1 med Linux/Node24, PostgreSQL, uændret kildetræ og sourceproof. Begge SAVE-blade indgår her uændret, så en senere assistentlevering ikke ruller processtoprettelsen tilbage. C/I/T, alle udstedte SQL-filer, originaler og den uændrede storage-ABI bevares. Begge dokumentationshistorikker og alle håndbogsobjekter bevares; ældre udsagn nedenfor om afventende 615-kildekontrol er historik.
+
+Denne lokale sammenføring er ikke ny samlet CI, 614/1503-installation, offentlig effekt eller checkpoint-genoptagelse. 614/1503 holdes fortsat tilbage indtil autentisk I71-generation og faktisk 230; SOURCE19 er inaktiv. PARTIAL og den præcise AI-log har hver sin ubesvarede godkendelse. Alle fem mål til 18. oktober er åbne.
+
 ## Præcis databasekontrol 4.0.578 — 15. oktober 2026
 
 Seneste præcise prøve passerede nu den positive 1503-migration, de oprindelige ACL-kontroller og opbygningen af alle fire genuine 673-dels-fiksturer. Den stoppede derefter i SQL-kaldet, som udlæser hele projektionen. Kildegennemgangen viser en konkret transportfejl: evidensarrayerne alene kræver mindst 3.165.792 bytes, mens svargrænsen er 2 MiB. Loggen registrerede ikke den underliggende execFile-fejlkode; bufferoverskridelse er derfor ikke særskilt målt som denne kørsels årsag.
@@ -40,6 +46,13 @@ Logspørgsmålet og PARTIAL er separat ubesvarede. Ingen ny vejr-, videns- eller
 Den lokale assistent-/statistikkilde og versionssynkroniseringen til 4.0.578 sammenføres nu med vejr-main 6b3e/PR610–612. Begge siders dokumentationshistorik og de nyere vejrrettelser bevares. PR610 og PR612 er kildeleveret; ældre udsagn nedenfor om afventende kildelevering er dateret historik. Det er ikke bevis for en ny offentlig vejrgeneration eller for levering af assistent, statistik eller ekstern AI.
 
 Denne konfliktløsning afslutter ikke Git-merge, nye C/I/T-bindinger, efterfølgermigration, præcis samlet kilde-/PostgreSQL-kontrol eller installation. Den faste 14140000-kilde og de gamle SQL-filer må ikke ommærkes. PARTIAL-spørgsmålet og spørgsmålet om den snævre loglæsning er hver for sig ubesvarede. Alle fem mål er åbne med frist 18. oktober 2026; originaler, historik, writer-, sikkerheds- og tilladelsesgrænser består. De to bevarede blokke nedenfor er kildehistorik, ikke nye produktionskvitteringer.
+
+## Separat SAVE-kildekandidat — 15. oktober 2026
+
+Den normale cachegemning skal også stoppe sine egne underprocesser, hvis den styrende action-proces forsvinder brat. Den afgrænsede kandidat overvåger den allerede verificerede forælder gennem et kernel-håndtag og bevarer fysisk gruppeafslutning, første fejl, originalfiler og privat skrivelås. Den nye normale Linux-prøve dækker action-SIGKILL, ikke ødelæggelse af hele runneren. Lokale syntakskontroller er ikke native-, upload- eller produktionsbevis.
+
+Dette er et selvstændigt kildespor fra faktisk main 213942 efter PR613, ikke kopiering eller aktivering af den isolerede SOURCE19-revision. Produktbladet er særskilt registreret som producentkilde, men indgår ikke i den faktiske gemmekontrakt: den bruger den uændrede storage-ABI. Den normale beregning bekræfter uændrede fullRuntime-, publicProjection- og continuationState-kontrakthashes. Der kræves derfor ingen ny model-/SQL-/lagringsovergang for denne procesrettelse; gamle originaler og kontraktbeviser må ikke ommærkes. Model-/scorebindinger, SQL, fd3-kommunikation, kildeprioritet, administratorpunkter og budgetter bevares. Normal præcis kilde-/Linux-kontrol, sikker levering og faktisk effekt er åbne. Checkpoint-PARTIAL, 230/614-installation, fuld revision og alle fem mål til 18. oktober er fortsat særskilte åbne krav. Se håndbog 89.232.
+
 
 ## Lokal kandidat — statistikpræference 4.0.577, 15. oktober 2026
 

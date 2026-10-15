@@ -1,3 +1,4 @@
+
 ## 89.231 Sikkerheds- og definitionssvar før offentlig levering
 
 **Kort fortalt:** 4.0.578 er en lokal svarrettelse, ikke bevis for ny offentlig viden eller fungerende ekstern AI.
@@ -21,6 +22,23 @@ De almindelige faglige svar, dansk, tysk og engelsk samt privatlivs- og sikkerhe
 Den normale versionssynkronisering til 4.0.578 er udført. Den faste kontrol af den tidligere 14140000-kilde har fire beståede cases; den udsteder ikke nye modelbindinger. C, I og T er nu fysisk bygget gennem de normale builders. Den lokale 15030000-rute forberedes direkte fra den genuine 220-binding efter faktisk 230/schema2, uden installation af det uinstallerede 1414-mellemhop. 230 er endnu ikke dokumenteret installeret. Den nye rute skal bevise præcis førfase, fravær af remote 14140000 og alene 15030000 som pending. Den direkte RAM-rendering, normal CLI --write/--check og --issued-kildemålet er faktisk bestået. De tre lokale normale mål består: readiness, installationskontrakt og privat-runtime-udvidelse (13 prøver, ingen skip). PostgreSQL/native, præcis samlet CI, installation og offentlig levering er stadig åbne. 230 skal kildeleveres særskilt på genuine I71 før 578. Fixed1414 og alle 60 gamle SQL-filer, originale data, historik, scoreformel og administratorens geodataindhold bevares.
 
 Dette er ikke en ny offentlig vejr-, videns- eller statistiklevering. Fungerende ekstern AI og de normale offentlige brugerforløb er stadig åbne; faste svar eller en lokal prøve er ikke bevis herfor. Interne driftsdiagnoser hører ikke til assistentens offentlige vidensbank. Statistikbehandling, retention, varsling og sletning aktiveres ikke. Alle fem hovedmål er åbne med frist 18. oktober 2026; ældre kapitler bevares som dateret historik.
+
+## 89.232 Cachegemning ved brat tab af den styrende proces
+
+PR615 er faktisk merget på main df6bce0 efter præcis CI 38681725537/1 med Linux/Node24, PostgreSQL, uændret kildetræ og sourceproof. Begge SAVE-blade indgår her uændret, så en senere assistentlevering ikke ruller processtoprettelsen tilbage. C/I/T, alle udstedte SQL-filer, originaler og den uændrede storage-ABI bevares. Begge dokumentationshistorikker og alle håndbogsobjekter bevares; ældre udsagn nedenfor om afventende 615-kildekontrol er historik.
+
+Denne lokale sammenføring er ikke ny samlet CI, 614/1503-installation, offentlig effekt eller checkpoint-genoptagelse. 614/1503 holdes fortsat tilbage indtil autentisk I71-generation og faktisk 230; SOURCE19 er inaktiv. PARTIAL og den præcise AI-log har hver sin ubesvarede godkendelse. Alle fem mål til 18. oktober er åbne.
+
+**Kort fortalt:** En afbrudt gemning skal stoppe sine egne underprocesser og bevare originaler og skrivelås; den må ikke vises som gemt.
+
+Hvis den proces, der styrer en cachegemning, forsvinder brat, kan underprocesser ellers fortsætte. Kildekandidaten overvåger den allerede kontrollerede forælder gennem et kernel-håndtag, både før opstart af arbejderen og gennem hele den fysiske lukning. Tab eller ukendt ejerstatus udløser stop af den ejede procesgruppe. Ingen anden proces overtager ejerskabet alene på grund af et procesnummer, en fil eller forløbet tid.
+
+Første fejl, de oprindelige råfiler og den private skrivelås bevares. En tilbageværende lås er hverken bevis for en levende kørsel eller tilladelse til automatisk at fjerne den. Kohortens kvittering handler kun om fysisk lukning; faktisk modtagelse hos cacheleverandøren kræver stadig sin egen gemmekvittering. Den eksisterende private kommunikation og tidsgrænser ændres ikke.
+
+Den additive normale Linux-prøve bruger den rigtige action, arbejder og underproces med egne syntetiske input. Den lukker kun den faktiske styrende proces brat og kræver, at produktet stopper underprocesserne før testoprydning. En død underproces holdes tilbage indtil genlæsning og faktisk reap, så gruppens fravær ikke antages for tidligt. Originalfil og samme lås skal være bevaret, og der må ikke stå gemt. Det er en prøve af tab af én styrende proces, ikke dokumentation for ødelæggelse af hele runneren, varig leverandørgemning eller alle samtidige skrivere.
+
+Denne separate kildekandidat starter fra main 213942 og ændrer ikke model, scoreformel, SQL, kildeprioritet eller administratorens geometri. Gemmekohorten står i producentens særskilte kildefortegnelse, men ikke i den faktiske lagringskontrakt. Den normale kontraktberegning bekræfter, at storage-ABI og fullRuntime-, publicProjection- og continuationState-hashes er uændrede. Denne procesrettelse kræver derfor ingen ny model-, SQL- eller lagringsovergang, og gamle originaler og beviser bevares uden ommærkning. Den isolerede SOURCE19-revision forbliver inaktiv. Lokale syntakskontroller er ikke Linux-/nativebevis. Præcis kildekontrol, sikker levering og faktisk produktionseffekt samt revisionens fulde fireminutters-, runner-, original-B/S-før-T- og kapacitetskrav er fortsat åbne. Alle fem hovedmål og fristen 18. oktober består.
+
 
 ## 89.230 Strømhistorik skal have de faktisk nødvendige originaler
 

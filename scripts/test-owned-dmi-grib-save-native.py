@@ -9,7 +9,8 @@ interceptor is used. CI must supply an actual Node24 executable with
 --node24-path; missing Linux/Node24/tools is failure, never a passing skip.
 The distribution cases run the actual runtime npm against only the fixed own
 offline cache; a missing warm cache is a prerequisite failure, never a skip.
-None proves hosted durability, runner loss or all-writer exclusion.
+The owner-SIGKILL case covers action-process loss only, not runner destruction.
+None proves hosted durability, full runner loss or all-writer exclusion.
 """
 from __future__ import annotations
 
@@ -393,7 +394,10 @@ class OwnedRawSaveNative(unittest.TestCase):
     def test_local_action_dot_script_spelling_uses_same_fixed_cohort_before_saved(self):
         self.actual_chain(interrupt=False, dot_script=True)
 
-    def actual_chain(self, *, interrupt, dot_script=False):
+    def test_action_sigkill_stops_owned_group_without_releasing_claim(self):
+        self.actual_chain(interrupt=False, owner_loss=True)
+
+    def actual_chain(self, *, interrupt, dot_script=False, owner_loss=False):
         self.assertEqual(sys.platform, 'linux', 'NATIVE_LINUX_REQUIRED; not a skip')
         for name in ('pidfd_open', 'waitid', 'P_PIDFD', 'WNOWAIT'):
             self.assertTrue(hasattr(os, name), f'NATIVE_LINUX_REQUIRED:{name}')
@@ -442,7 +446,7 @@ class OwnedRawSaveNative(unittest.TestCase):
                 'version': '6.1.0', 'type': 'module', 'exports': {'import': './index.mjs'}}), encoding='utf-8')
             (package / 'index.mjs').write_text(SYNTHETIC_CACHE, encoding='utf-8')
             (package / 'descendant.cjs').write_text(SYNTHETIC_DESCENDANT, encoding='utf-8')
-            if interrupt:
+            if interrupt or owner_loss:
                 (root / 'with-descendant').write_bytes(b'own synthetic descendant\n')
             output = root / 'action-output'
             output.write_bytes(b'')
@@ -485,6 +489,67 @@ class OwnedRawSaveNative(unittest.TestCase):
             self.assertEqual(small(claim), b'')
             self.assertEqual(small(output), b'')
             self.assertEqual(small(root / 'synthetic-api-call'), b'.')
+            if owner_loss:
+                wait_until(lambda: (root / 'descendant-ready').exists()
+                           and (root / 'descendant-heartbeat').exists())
+                descendant = json.loads(small(root / 'descendant-ready'))
+                fds['descendant'] = retain_pidfd(descendant['pid'])
+                self.assertEqual(identity(descendant['pid']), descendant)
+                self.assertEqual(descendant['ppid'], worker['pid'])
+                self.assertEqual((descendant['pgid'], descendant['sid']),
+                                 (worker['pid'], worker['pid']))
+                heartbeat = root / 'descendant-heartbeat'
+                before_term = heartbeat.stat().st_size
+                signal.pidfd_send_signal(fds['descendant'], signal.SIGTERM)
+                wait_until(lambda: heartbeat.stat().st_size > before_term)
+                self.assertFalse(exited(fds['descendant']), 'fixture did not actually ignore TERM')
+                # Kill only the actual action. Product, not test cleanup, must
+                # stop its worker/descendant after this owner-process loss.
+                signal.pidfd_send_signal(fds['action'], signal.SIGKILL)
+                self.assertEqual(parent.wait(timeout=1.0), -signal.SIGKILL)
+                self.assertTrue(exited(fds['action']))
+                self.assertTrue(exited(fds['descendant'], 1.0), 'product left descendant live')
+                observed = None
+                while observed is None:
+                    try:
+                        observed = os.waitid(os.P_PIDFD, fds['descendant'],
+                            os.WEXITED | os.WNOHANG | os.WNOWAIT)
+                    except ChildProcessError:
+                        pass
+                    if observed is None:
+                        time.sleep(0.01)
+                self.assertEqual(observed.si_pid, descendant['pid'])
+                self.assertEqual(observed.si_code, os.CLD_KILLED)
+                self.assertEqual(observed.si_status, signal.SIGKILL)
+                stopped_bytes = heartbeat.stat().st_size
+                time.sleep(0.05)
+                self.assertEqual(heartbeat.stat().st_size, stopped_bytes)
+                self.assertTrue(exited(fds['worker'], 1.0))
+                self.assertFalse(exited(fds['cohort']), 'cohort exited while owned group still exists')
+                self.assertEqual(small(output), b'', 'owner loss cannot publish SAVE')
+                self.assertEqual((claim.stat().st_dev, claim.stat().st_ino),
+                                 (original_claim.st_dev, original_claim.st_ino))
+                self.assertEqual(small(claim), b'')
+                os.killpg(worker['pid'], 0)
+                reaped = os.waitid(os.P_PIDFD, fds['descendant'], os.WEXITED | os.WNOHANG)
+                self.assertEqual(reaped.si_pid, descendant['pid'])
+                self.assertTrue(exited(fds['cohort'], 1.0), 'cohort did not finish after group absence')
+                terminal = os.waitid(os.P_PIDFD, fds['cohort'],
+                    os.WEXITED | os.WNOHANG | os.WNOWAIT)
+                self.assertEqual(terminal.si_pid, cohort['pid'])
+                self.assertEqual(terminal.si_code, os.CLD_EXITED)
+                self.assertNotEqual(terminal.si_status, 0, 'unknown owner cannot emit a successful closure')
+                with self.assertRaises(ProcessLookupError):
+                    os.killpg(worker['pid'], 0)
+                self.assertEqual((claim.stat().st_dev, claim.stat().st_ino),
+                                 (original_claim.st_dev, original_claim.st_ino))
+                self.assertEqual(small(claim), b'', 'dead owner claim must not be adopted/released')
+                self.assertEqual(small(output), b'')
+                self.assertEqual(small(root / 'synthetic-api-call'), b'.')
+                self.assertEqual(raw.read_bytes(), b'synthetic raw original\n')
+                self.assertFalse((root / 'finish-api').exists())
+                self.assertEqual(heartbeat.stat().st_size, stopped_bytes)
+                return
             if interrupt:
                 wait_until(lambda: (root / 'descendant-ready').exists()
                            and (root / 'descendant-heartbeat').exists())
