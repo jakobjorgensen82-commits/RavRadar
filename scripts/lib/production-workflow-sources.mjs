@@ -21,6 +21,7 @@ export const PRODUCTION_WORKFLOW_INTERFACES = Object.freeze({
       'extended_provider_bootstrap',
       'quick_confirmation',
       'quick_progress_source',
+      'checkpoint_only',
       'produce_weather_handoff',
       'produce_weather_handoff_confirmation',
       'ravscore_candidate_g_rollback_mode',
@@ -31,7 +32,7 @@ export const PRODUCTION_WORKFLOW_INTERFACES = Object.freeze({
       'ravscore_integrated_return',
       'ravscore_integrated_return_confirmation',
     ]),
-    optionalInputs: freezeList(['quick_confirmation', 'quick_progress_source']),
+    optionalInputs: freezeList(['quick_confirmation', 'quick_progress_source', 'checkpoint_only']),
     secrets: freezeList([
       'RAVRADAR_R2_ACCOUNT_ID',
       'CLOUDFLARE_TRIP_GATEWAY_URL',

@@ -10,6 +10,7 @@ import { PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES } from './private-production-runt
 for (const file of ['scripts/lib/verified-protected-progress-components.mjs',
   'scripts/lib/verified-dmi-progress-inputs.mjs', 'scripts/lib/private-weather-progress-files.mjs',
   'scripts/lib/dmi_adaptive_recovery.py',
+  'scripts/lib/copernicus-offline-environment.mjs',
   'scripts/lib/verified-open-meteo-generation-union.mjs', 'scripts/lib/open-meteo-usable-part-bank.mjs']) {
   assert.ok(PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.includes(file),
     'The operational recovery helpers must remain in the producer inventory');
@@ -374,6 +375,89 @@ testOwnedRawCache('explicit progress source: actual Bash accepts exact full-run 
       assert.equal(result.stderr, '', label);
     }
   });
+
+testOwnedRawCache('checkpoint-only request: actual Bash locks an original hour but never acquires weather',
+  { skip: process.platform !== 'linux' ? 'Actual Bash validator requires the normal Linux source host' : false }, async () => {
+    const caller = (await fs.readFile('.github/workflows/run-current-weather-once.yml', 'utf8')).replaceAll('\r\n', '\n');
+    const block = caller.split(/(?=^      - (?:name:|uses:))/m).find(value =>
+      value.startsWith('      - name: Lock the requested original checkpoint hour without provider work\n'));
+    assert.ok(block);
+    const body = block.match(/        run: \|\n([\s\S]*)$/);
+    assert.ok(body);
+    const script = body[1].replace(/^          /gm, '');
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-checkpoint-hour-request-'));
+    const clockHour = Math.floor(Date.now() / 3_600_000) * 3_600_000;
+    const at = offset => new Date(clockHour + offset * 3_600_000).toISOString().replace('.000Z', 'Z');
+    const fixtures = [
+      ['false', '38612563932-1', at(-5), 0],
+      ['false', '38612563932-1', at(0), 0],
+      ['true', '38612563932-1', at(-5), 1],
+      ['false', 'protected-current', at(-5), 1],
+      ['false', '', at(-5), 1],
+      ['false', '38612563932-0', at(-5), 1],
+      ['false', '38612563932-1', at(-118), 1],
+      ['false', '38612563932-1', at(2), 1],
+      ['false', '38612563932-1', '2026-02-30T18:00:00Z', 1],
+      ['false', '38612563932-1', at(-5) + '; echo MUST_NOT_RUN', 1],
+    ];
+    try {
+      for (const [index, [quick, source, target, expected]] of fixtures.entries()) {
+        const output = path.join(directory, `output-${index}.txt`);
+        await fs.writeFile(output, '', { flag: 'wx' });
+        const result = spawnSync('/bin/bash', ['--noprofile', '--norc', '-c', script], {
+          encoding: 'utf8', timeout: 10_000, maxBuffer: 16_384,
+          env: { PATH: path.dirname(process.execPath) + path.delimiter + process.env.PATH,
+            QUICK_CONFIRMATION: quick, QUICK_PROGRESS_SOURCE: source,
+            CHECKPOINT_TARGET_HOUR: target, GITHUB_OUTPUT: output },
+        });
+        assert.equal(result.error, undefined, `request fixture ${index}`);
+        assert.equal(result.signal, null, `request fixture ${index}`);
+        assert.equal(result.status, expected, `request fixture ${index}`);
+        assert.equal(await fs.readFile(output, 'utf8'), expected === 0 ? `target_hour=${target}\n` : '');
+        assert.equal(result.stdout.includes('MUST_NOT_RUN'), false);
+      }
+    } finally {
+      assert.equal(path.dirname(path.resolve(directory)), path.resolve(os.tmpdir()));
+      assert.ok(path.basename(directory).startsWith('rr-checkpoint-hour-request-'));
+      await fs.rm(directory, { recursive: true, force: true });
+    }
+  });
+
+testOwnedRawCache('checkpoint-only original-hour gate executes the actual post-authentication workflow body', async () => {
+  const block = step('Require the authenticated original hour before provider-free continuation');
+  const body = block.match(/node --input-type=module <<'NODE'\n([\s\S]*?)\n          NODE/);
+  assert.ok(body);
+  const script = body[1].replace(/^ {10}/gm, '');
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-checkpoint-hour-report-'));
+  const target = new Date(Math.floor(Date.now() / 3_600_000) * 3_600_000 - 5 * 3_600_000).toISOString();
+  const correct = { status: 'RESTORED', restored: true, restoredProductionReferenceAt: target };
+  const fixtures = [
+    [correct, 0],
+    [{ ...correct, restoredProductionReferenceAt: target.replace('.000Z', 'Z') }, 0],
+    [{ ...correct, restored: false }, 1],
+    [{ ...correct, status: 'CACHE_MISS' }, 1],
+    [{ ...correct, restoredProductionReferenceAt: undefined }, 1],
+    [{ ...correct, restoredProductionReferenceAt: new Date(Date.parse(target) + 3_600_000).toISOString() }, 1],
+    [{ ...correct, restoredProductionReferenceAt: 'invalid' }, 1],
+  ];
+  try {
+    for (const [index, [report, expected]] of fixtures.entries()) {
+      await fs.writeFile(path.join(directory, 'weather-progress-restore-report.json'), JSON.stringify(report));
+      const result = spawnSync(process.execPath, ['--input-type=module'], {
+        input: script, encoding: 'utf8', timeout: 10_000, maxBuffer: 16_384,
+        env: { RUNNER_TEMP: directory, RAVRADAR_PRODUCTION_TARGET_HOUR: target },
+      });
+      assert.equal(result.error, undefined, `report fixture ${index}`);
+      assert.equal(result.signal, null, `report fixture ${index}`);
+      assert.equal(result.status, expected, `report fixture ${index}`);
+      assert.equal(result.stdout, '');
+    }
+  } finally {
+    assert.equal(path.dirname(path.resolve(directory)), path.resolve(os.tmpdir()));
+    assert.ok(path.basename(directory).startsWith('rr-checkpoint-hour-report-'));
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
 
 testOwnedRawCache('owned raw cache: fixed API and physically separate owner receipt', async t => {
   const apiSlot = Symbol.for('RavRadar.synthetic.ownedRawCacheApi');

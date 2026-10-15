@@ -310,6 +310,52 @@ def run(folder: Path, *extra: str) -> subprocess.CompletedProcess[str]:
     ], cwd=ROOT, capture_output=True, text=True, check=False)
 
 
+# Additive preparation mode for the normal encrypted-progress CLI target.
+# This is the existing synthetic ledger factory, not native GRIB evidence.
+# No argument means the complete original target below still runs unchanged.
+if len(sys.argv) > 1:
+    if len(sys.argv) != 4 or sys.argv[1] != "--prepare-progress-target-fixture":
+        raise ValueError("Invalid progress fixture arguments")
+    folder = Path(sys.argv[2]).absolute()
+    owner = folder.parent
+    if (
+        folder.name not in {"ledger-stale", "ledger-future", "ledger-expired"}
+        or not folder.is_dir() or folder.is_symlink()
+        or not owner.is_dir() or owner.is_symlink()
+        or not owner.name.startswith("rr-progress-original-target-")
+        or owner.parent.resolve() != Path(tempfile.gettempdir()).resolve()
+    ):
+        raise ValueError("Progress fixture must use its existing owned temporary directory")
+    REFERENCE = datetime.strptime(sys.argv[3], "%Y-%m-%dT%H:00:00Z").replace(tzinfo=timezone.utc)
+    if utc(REFERENCE) != sys.argv[3]:
+        raise ValueError("Progress fixture reference must be an exact UTC hour")
+    AT = utc(REFERENCE)
+    MODEL_RUN = utc(REFERENCE - timedelta(hours=3))
+    STALE_MODEL_RUN = utc(REFERENCE - timedelta(hours=6))
+    def deny_fixture_network(event, _arguments):
+        if event in {"socket.connect", "socket.getaddrinfo"}:
+            raise AssertionError("The progress fixture cannot contact a provider")
+    sys.addaudithook(deny_fixture_network)
+    parts = [{"partId": "dmi-ok", "sourceZoneId": "Z1",
+              "name": "Synthetic DMI", "waterPoint": [9.0, 57.0]}]
+    targets = [{"partId": row["partId"], "parentZoneId": row["sourceZoneId"],
+                "name": row["name"], "waterPoint": row["waterPoint"]} for row in parts]
+    document = dmi_document(targets)
+    attestation = availability_attestation(document, targets)
+    validate_current_operational_ledger(
+        document["diagnostics"]["currentOperationalLedger"], attestation, targets,
+        REFERENCE, REFERENCE + timedelta(hours=117), producer.target_fingerprint(targets),
+    )
+    assert attestation["verifiedPairCount"] == 118
+    for name, value in (
+        ("targets.json", {"partCount": 1, "zones": {"Z1": parts}}),
+        ("dmi.json", document),
+    ):
+        with (folder / name).open("x", encoding="utf-8", newline="\n") as handle:
+            handle.write(json.dumps(value) + "\n")
+    raise SystemExit(0)
+
+
 with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     folder = Path(raw)
     parts = [{

@@ -9,8 +9,12 @@ import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createGzip, createGunzip } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
+import { spawn } from 'node:child_process';
+import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
+import { copernicusOfflineEnvironment } from './lib/copernicus-offline-environment.mjs';
+import { classifyProductionTargetFreshness } from './check-production-target-freshness.mjs';
 import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack, privateWeatherPackJsonReadsClosed } from './lib/private-weather-component-pack.mjs';
-import { PRIVATE_WEATHER_COMPONENT_PACK_FILE } from './lib/private-weather-component-inventory.mjs';
+import { PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE } from './lib/private-weather-component-inventory.mjs';
 import { mergeVerifiedProtectedProgressComponents, protectedProgressUnionFailureCode, protectedProgressPackJsonReadsClosed } from './lib/verified-protected-progress-components.mjs';
 
 export const WEATHER_PROGRESS_CIPHER_PATH = '.cache/weather-private-progress.encrypted';
@@ -279,6 +283,120 @@ export async function installComponents(root, files, { renameImpl = fs.rename, r
   }
 }
 
+async function originalProgressInputSha256(file) {
+  const hash = crypto.createHash('sha256');
+  let bytes = 0;
+  for await (const chunk of createReadStream(file)) {
+    bytes += chunk.length;
+    if (bytes > MAX_PACK_BYTES) fail('ORIGINAL_TARGET_INPUT_TOO_LARGE');
+    hash.update(chunk);
+  }
+  return hash.digest('hex');
+}
+
+function originalProgressFreshness(report) {
+  try {
+    return classifyProductionTargetFreshness({
+      target: report.productionReferenceAt,
+      operationalRangeEnd: report.operationalRangeEndAt,
+      maximumAgeMinutes: 90,
+    });
+  } catch { fail('ORIGINAL_TARGET_TIME_REJECTED'); }
+}
+
+async function assertOriginalProgressInputs(selection) {
+  if (await originalProgressInputSha256(selection.candidatePath) !== selection.report.dmiCandidateSha256
+    || await originalProgressInputSha256(selection.registryPath) !== selection.report.coastalPartsSha256
+    || await conditionsDigest(selection.root) !== selection.report.baselineSha256) {
+    fail('ORIGINAL_TARGET_INPUT_CHANGED');
+  }
+  originalProgressFreshness(selection.report);
+}
+
+async function selectOriginalProgressTarget({ root, files, verifiedRoot, temporaryDirectory, baselineSha256,
+  productionReferenceAt,
+  pythonExecutable = process.env.PYTHON ?? 'python' }) {
+  const candidates = files.filter(file => file.relativePath === PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate);
+  if (candidates.length !== 1) fail('ORIGINAL_TARGET_CANDIDATE_REQUIRED');
+  const candidate = candidates[0];
+  const candidatePath = await checkedPath(verifiedRoot, PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate);
+  if (candidate.sourcePath !== candidatePath
+    || await originalProgressInputSha256(candidatePath) !== candidate.sha256) {
+    fail('ORIGINAL_TARGET_INPUT_CHANGED');
+  }
+  const registryPath = await checkedPath(root, 'data/live/coastal-parts-v2.json');
+  const coastalPartsSha256 = await originalProgressInputSha256(registryPath);
+  // Use the normal bounded decoder, including dictionary validation. Python
+  // independently expands and validates the same authenticated whole file.
+  const document = await readDmiBulkDocument(candidatePath, { expandSources: false });
+  const ledger = document?.diagnostics?.currentOperationalLedger;
+  const exactHour = value => typeof value === 'string'
+    && /^\d{4}-\d{2}-\d{2}T\d{2}:00:00(?:\.000)?Z$/.test(value)
+    && Number.isFinite(Date.parse(value))
+    && new Date(value).toISOString().replace('.000Z', 'Z') === value.replace('.000Z', 'Z');
+  if (!exactHour(ledger?.productionReferenceAt) || !exactHour(ledger?.operationalRangeEndAt)
+    || !/^sha256:[0-9a-f]{64}$/.test(ledger?.targetRegistrySha256 ?? '')) {
+    fail('ORIGINAL_TARGET_LEDGER_REQUIRED');
+  }
+  if (!exactHour(productionReferenceAt)
+    || Date.parse(productionReferenceAt) !== Date.parse(ledger.productionReferenceAt)) {
+    fail('ORIGINAL_TARGET_REFERENCE_MISMATCH');
+  }
+  const baselinePath = await checkedPath(root, CONDITIONS_PATH);
+  const baselineConditions = JSON.parse(await fs.readFile(baselinePath, 'utf8'));
+  if (!exactHour(baselineConditions?.productionReferenceAt)
+    || Date.parse(ledger.productionReferenceAt) < Date.parse(baselineConditions.productionReferenceAt)) {
+    fail('ORIGINAL_TARGET_BEFORE_BASELINE');
+  }
+  const report = {
+    schemaVersion: 1, kind: 'AUTHENTICATED_DMI_PROGRESS_ORIGINAL_TARGET',
+    productionReferenceAt: new Date(ledger.productionReferenceAt).toISOString(),
+    operationalRangeEndAt: new Date(ledger.operationalRangeEndAt).toISOString(),
+    baselineSha256, dmiCandidateSha256: candidate.sha256, coastalPartsSha256,
+    targetRegistrySha256: ledger.targetRegistrySha256,
+    productionAuthority: false, privatePayloadIncluded: false,
+  };
+  originalProgressFreshness(report);
+  // Normal registry CLI re-derives the actual attestation and verifies the
+  // complete availability ledger against current central targets. Never pass
+  // --full-coast or substitute a caller's boolean/JSON validation result.
+  await new Promise((resolve, reject) => {
+    const child = spawn(pythonExecutable, [
+      fileURLToPath(new URL('./build-copernicus-target-registry.py', import.meta.url)),
+      '--targets', registryPath, '--dmi', candidatePath,
+      '--at', report.productionReferenceAt,
+      '--output', path.join(temporaryDirectory, 'original-target-registry.json'),
+    ], { windowsHide: true, stdio: 'ignore', env: copernicusOfflineEnvironment() });
+    let fault = null, closed = false, stopRequested = false;
+    const stop = code => {
+      if (closed) return;
+      fault ??= code;
+      clearTimeout(timer);
+      if (!stopRequested) {
+        stopRequested = true;
+        try { if (child.pid) child.kill('SIGKILL'); } catch { /* Await close. */ }
+      }
+    };
+    const timer = setTimeout(() => stop('ORIGINAL_TARGET_VALIDATION_TIMEOUT'), 180_000);
+    child.once('error', () => stop('ORIGINAL_TARGET_VALIDATOR_UNAVAILABLE'));
+    child.once('close', (code, signal) => {
+      closed = true;
+      clearTimeout(timer);
+      if (fault || code !== 0 || signal !== null) {
+        const error = new Error('ORIGINAL_TARGET_LEDGER_REJECTED');
+        error.progressCode = fault ?? 'ORIGINAL_TARGET_LEDGER_REJECTED';
+        reject(error);
+      } else resolve();
+    });
+  });
+  // The owned stage stays alive until the real child close event. No new
+  // registry/ledger replaces an original, and nothing has been installed.
+  const selection = { report, candidatePath, registryPath, root };
+  await assertOriginalProgressInputs(selection);
+  report.selectionSha256 = crypto.createHash('sha256').update(JSON.stringify(report)).digest('hex');
+  return selection;
+}
+
 export async function weatherComponentProgressCache({
   mode, repositoryRoot = process.cwd(), basePath,
   protectedBundleSha256,
@@ -286,6 +404,7 @@ export async function weatherComponentProgressCache({
   encryptionKey = process.env.WEATHER_PROGRESS_ENCRYPTION_KEY,
   masterSecret = process.env.WEATHER_PROGRESS_MASTER_SECRET,
   productionReferenceAt = process.env.RAVRADAR_PRODUCTION_TARGET_HOUR,
+  resumeOriginalTarget = false,
   pythonExecutable, renameImpl, rollbackRenameImpl,
   maximumEncryptedBytes = MAX_CIPHER_BYTES,
 } = {}) {
@@ -296,6 +415,7 @@ export async function weatherComponentProgressCache({
   let restoreInstalled = false;
   try {
     if (!['capture-base', 'save', 'restore'].includes(mode)) fail('MODE_INVALID');
+    if (typeof resumeOriginalTarget !== 'boolean' || (resumeOriginalTarget && mode !== 'restore')) fail('ARGUMENT_INVALID');
     repoIdentity(repository);
     const root = await rootPath(repositoryRoot);
     if (typeof basePath !== 'string' || !basePath) fail('BASE_INVALID');
@@ -406,6 +526,11 @@ export async function weatherComponentProgressCache({
     const files = await packInvocation;
     // Reconfirm after the potentially slower CP-original validation.
     if (await conditionsDigest(root) !== base.baselineSha256) fail('BASELINE_MISMATCH');
+    const originalTarget = resumeOriginalTarget ? await selectOriginalProgressTarget({
+      root, files, verifiedRoot: path.join(temporary.folder, 'verified'),
+      temporaryDirectory: temporary.folder, baselineSha256: base.baselineSha256,
+      productionReferenceAt, pythonExecutable,
+    }) : null;
     let reconciled;
     try {
       unionInvocation = mergeVerifiedProtectedProgressComponents({
@@ -420,6 +545,7 @@ export async function weatherComponentProgressCache({
       });
     }
     if (await conditionsDigest(root) !== base.baselineSha256) fail('BASELINE_MISMATCH');
+    if (originalTarget) await assertOriginalProgressInputs(originalTarget);
     await installComponents(root, reconciled.files, { renameImpl, rollbackRenameImpl });
     restoreInstalled = true;
     // Installation has changed working inputs. Finish baseline verification
@@ -435,6 +561,10 @@ export async function weatherComponentProgressCache({
       protectedCopernicusBankMerged: reconciled.copernicusMerged,
       protectedCurrentDonorBanksMerged: reconciled.currentDonorMerged,
       dmiProgress: reconciled.dmiProgress,
+      ...(originalTarget ? {
+        restoredProductionReferenceAt: originalTarget.report.productionReferenceAt,
+        restoredOriginalTargetSha256: originalTarget.report.selectionSha256,
+      } : {}),
     });
   } catch (error) {
     const code = error?.progressCode
@@ -461,18 +591,22 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     const values = {};
     while (args.length) {
       const key = args.shift();
-      if (!['--root', '--base', '--report', '--protected-bundle-sha256'].includes(key) || !args.length || values[key]) fail('ARGUMENT_INVALID');
+      if (!['--root', '--base', '--report', '--protected-bundle-sha256', '--resume-original-target'].includes(key) || !args.length || values[key]) fail('ARGUMENT_INVALID');
       values[key] = args.shift();
     }
     if (!values['--base'] || !values['--report']) fail('ARGUMENT_INVALID');
     if (mode !== 'capture-base' && values['--protected-bundle-sha256']) fail('ARGUMENT_INVALID');
+    if (Object.hasOwn(values, '--resume-original-target')
+      && (mode !== 'restore' || !['true', 'false'].includes(values['--resume-original-target']))) fail('ARGUMENT_INVALID');
+    const resumeOriginalTarget = values['--resume-original-target'] === 'true';
     const result = await weatherComponentProgressCache({ mode, repositoryRoot: values['--root'], basePath: values['--base'],
-      protectedBundleSha256: values['--protected-bundle-sha256'] });
+      protectedBundleSha256: values['--protected-bundle-sha256'], resumeOriginalTarget });
     await fs.writeFile(path.resolve(values['--report']), `${JSON.stringify(result, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
     console.log(JSON.stringify(result));
     // Ordinary misses never fail a deployment. A failed rollback requires
     // reinstalling the protected baseline before weather files are consumed.
     if (result.requiresProtectedRestore) process.exitCode = 2;
+    else if (resumeOriginalTarget && result.restored !== true) process.exitCode = 1;
   } catch {
     console.error('WEATHER_PROGRESS_CACHE_REPORT_UNAVAILABLE');
     process.exitCode = 1;

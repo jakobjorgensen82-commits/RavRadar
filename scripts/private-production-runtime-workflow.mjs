@@ -74,6 +74,7 @@ const PRIVATE_RUNTIME_SOURCE_FILES = Object.freeze({
     'scripts/protected-private-production-runtime.mjs',
     'scripts/lib/r2-private-runtime-storage.mjs',
     'scripts/weather-component-progress-cache.mjs',
+    'scripts/lib/copernicus-offline-environment.mjs',
     'scripts/lib/verified-protected-progress-components.mjs',
     'scripts/lib/verified-dmi-progress-inputs.mjs',
     'scripts/lib/dmi-forecast-file.mjs',

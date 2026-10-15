@@ -4,6 +4,8 @@ Denne fil skal læses før analyse, programmering eller versionsbygning.
 
 ## Aktuel kritisk grænse — strømhistorik og genoptagelse, 14. oktober 2026
 
+Aktuelt 15. oktober — genoptagelse fra checkpoint: PR612 er merget på main6b3e0262 efter grøn source-, Linux- og PostgreSQL-kontrol, uden ny vejrhentning eller offentlig generation. Den lokale checkpoint-only-mode låser oprindelig target og lukker providerindgange; standardforløbet er uændret. Lokale prøver og åbne Linux/native/source/PG-/produktionsgrænser er præciseret i håndbog 89.230 og er ikke leveringsbevis. Alle fem mål er åbne med frist 18. oktober; SOURCE19, KB og statistik forbliver inaktive. Ældre status nedenfor bevares som historik.
+
 Aktuelt 15. oktober: PR610 er kildeleveret efter præcis CI inklusive Linux og PostgreSQL. Den næste genoptagelse stoppede før vejrhentning på miljøtimens Z/.000Z-format. Den normale 673-dels CLI-prøve har reproduceret fejlen og består efter en snæver miljønormalisering, inklusive fem ugyldige input og originalbevarelse. Den lille kildegate består lokalt; ny præcis CI, levering og offentlig effekt er åbne. Tilstands- og originalkrav, version, SQL, model og SOURCE-afgrænsning er uændrede. Se håndbog 89.230; ældre status nedenfor er erstattet kun på disse punkter.
 
 Den tidligere PUBLIC-sammeoriginalrettelse og præcise fulde fremskridtsvalg er kildeleveret efter faktisk Linux-/PostgreSQL-kontrol. Den efterfølgende normale vejrhentning stoppede imidlertid i kystdelens strømhistorik, før nogen ny offentlig generation blev leveret. Det nye stop er ikke den tidligere PUBLIC-kalder. Streng kontrol ved faktisk ny strømbrug består; tilgængeligheden af de nødvendige historiske råfiler er endnu ukendt.

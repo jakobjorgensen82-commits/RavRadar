@@ -417,6 +417,120 @@ class SupervisorTests(unittest.TestCase):
         self.assertIn('elif not replay_targets:', source)
         self.assertIn('and not FINALIZE_ONLY\n        and not FORCE_REFRESH', source)
 
+    def test_cache_only_main_keeps_replay_but_never_enters_acquisition(self):
+        tree = ast.parse(supervisor.PRODUCER.read_text(encoding="utf-8"))
+        main = next(node for node in tree.body
+                    if isinstance(node, ast.FunctionDef) and node.name == "main")
+
+        def calls(node, name):
+            return any(isinstance(child, ast.Call)
+                       and isinstance(child.func, ast.Name)
+                       and child.func.id == name for child in ast.walk(node))
+
+        def assigned(node, name):
+            return isinstance(node, ast.Assign) and any(
+                isinstance(target, ast.Name) and target.id == name
+                for target in node.targets
+            )
+
+        forbidden = Mock(side_effect=AssertionError("cache-only acquisition/prune"))
+        history_summary = {
+            "nativeOriginalCount": 1, "rawAssetCount": 0,
+            "rawUnavailableOriginalCount": 1, "traversedAssetCount": 0,
+            "qualifiedPartCount": 0, "changedAssetCount": 0,
+            "deferredAssetCount": 0, "unavailableAssetCount": 0,
+        }
+        replay = Mock(return_value=history_summary)
+        context = {
+            "CACHE_ONLY": True, "FINALIZE_ONLY": False,
+            "wave_bootstrap_configuration": {"present": True},
+            "result": {"diagnostics": {}}, "replay_targets": [{"present": True}],
+            "current_history_requests": {"present": True},
+            "current_history_plan": object(), "checkpoint_controller": object(),
+            "current_zone_registry_signature": "test-registry",
+            "schedule_coverage": {"criticalWamRuntimeReserveSeconds": 30,
+                                  "strictCurrentRuntimeReserveSeconds": 45},
+            "current_marine_processing_signature": lambda value: value,
+            "supervisor_skipped_assets": set(),
+            "replay_cached_current_history": replay,
+            "list_latest_assets": forbidden, "download": forbidden,
+            "execute_private_wave_history_bootstrap": forbidden,
+            "replay_current_field_shadow_from_cache": forbidden,
+            "prune_raw_cache": forbidden, "operational_collection_turns": forbidden,
+        }
+        nodes = [
+            node for node in main.body
+            if isinstance(node, (ast.For, ast.If, ast.Assign)) and (
+                calls(node, "list_latest_assets")
+                or calls(node, "execute_private_wave_history_bootstrap")
+                or calls(node, "replay_current_field_shadow_from_cache")
+                or calls(node, "replay_cached_current_history")
+                or assigned(node, "collection_turns")
+                or assigned(node, "prune_stats")
+            )
+        ]
+        self.assertEqual(len(nodes), 7, "all actual main acquisition/retention branches")
+        nonlocal_names = {
+            name for node in nodes for child in ast.walk(node)
+            if isinstance(child, ast.Nonlocal) for name in child.names
+        }
+        self.assertEqual(nonlocal_names, {
+            "wave_active_evidence", "wave_pending_touched",
+            "wave_phase_promotion_count", "wave_collection_promotion_count",
+            "wave_last_promotion_decision", "wave_phase_deferred_quality_promotion",
+            "wave_phase_terminal_promotion_evaluated", "regional_input_changed",
+        })
+        # These bindings belong to main. Their acquisition-only bodies remain
+        # present but must never execute in this cache-only routing fixture.
+        inputs = {**context, **{name: None for name in nonlocal_names}}
+        returned = ast.Return(value=ast.Dict(
+            keys=[ast.Constant(value="collection_turns"), ast.Constant(value="prune_stats")],
+            values=[ast.Name(id="collection_turns", ctx=ast.Load()),
+                    ast.Name(id="prune_stats", ctx=ast.Load())],
+        ))
+        scoped = ast.FunctionDef(
+            name="_cache_only_main_route",
+            args=ast.arguments(
+                posonlyargs=[], args=[ast.arg(arg=name) for name in inputs],
+                vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[],
+            ),
+            body=[*nodes, ast.copy_location(returned, main.body[-1])],
+            decorator_list=[], returns=None, type_comment=None, type_params=[],
+        )
+        fixture = ast.fix_missing_locations(ast.Module(
+            body=[ast.copy_location(scoped, main)], type_ignores=[],
+        ))
+        exec(compile(fixture, str(supervisor.PRODUCER), "exec"), context)
+        context.update(context["_cache_only_main_route"](**inputs))
+        forbidden.assert_not_called()
+        replay.assert_called_once_with(
+            context["current_history_plan"], context["result"],
+            context["checkpoint_controller"], processing_signature="test-registry",
+            reserve_seconds=75.0, supervisor_skipped_assets=set(),
+        )
+        self.assertEqual(context["collection_turns"], [])
+        self.assertEqual(context["prune_stats"], {"removedFiles": 0, "removedBytes": 0})
+        self.assertEqual(context["result"]["diagnostics"]["currentFieldShadowCachedReplay"],
+                         {"attempted": False, "reason": "cache-only-no-shadow-bootstrap",
+                          "assetsCompleted": 0, "samplesWritten": 0,
+                          "bootstrapDownloads": 0, "bootstrapDownloadedBytes": 0})
+        for count, code in (
+            ("deferredAssetCount", "DMI_CACHE_ONLY_REPLAY_DEFERRED"),
+            ("unavailableAssetCount", "DMI_CACHE_ONLY_REPLAY_UNAVAILABLE"),
+        ):
+            replay.return_value = {**history_summary, count: 1}
+            with self.assertRaisesRegex(RuntimeError, code):
+                context["_cache_only_main_route"](**inputs)
+        replay_failure = RuntimeError("owned replay EOF failure")
+        replay.side_effect = replay_failure
+        try:
+            context["_cache_only_main_route"](**inputs)
+        except RuntimeError as caught:
+            self.assertIs(caught, replay_failure)
+        else:
+            self.fail("cache-only swallowed the original replay failure")
+        forbidden.assert_not_called()
+
     def test_every_asset_download_and_transactional_parse_is_exactly_supervised(self):
         tree = ast.parse(supervisor.PRODUCER.read_text(encoding="utf-8"))
         self.assert_exact_asset_supervision(tree)

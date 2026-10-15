@@ -296,6 +296,7 @@ STARTED = time.monotonic()
 FINALIZE_RESERVE_SECONDS = max(60, int(os.getenv("DMI_BULK_FINALIZE_RESERVE_SECONDS", "180")))
 WORK_DEADLINE = STARTED + max(60, MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS)
 FINALIZE_ONLY = os.getenv("DMI_BULK_FINALIZE_ONLY", "").strip().lower() == "true"
+CACHE_ONLY = os.getenv("DMI_BULK_CACHE_ONLY", "").strip().lower() == "true"
 FINALIZE_REASON = os.getenv("DMI_BULK_FINALIZE_REASON", "").strip()
 ONEOFF_CONTINUATION_PROTOCOL = (
     os.getenv("DMI_BULK_ONEOFF_CONTINUATION_PROTOCOL", "").strip() == "1"
@@ -648,6 +649,8 @@ def operational_current_stage_failure_code(
 
 
 def request_json(url: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+    if CACHE_ONLY:
+        raise RuntimeError("DMI_CACHE_ONLY_NETWORK_DISABLED")
     query = dict(params or {})
     if API_KEY and url.startswith(STAC_ROOT):
         query.setdefault("api-key", API_KEY)
@@ -4014,6 +4017,8 @@ def download_asset(
     item_updated_at: str | None = None,
     work_deadline: float | None = None,
 ) -> tuple[pathlib.Path, bool]:
+    if CACHE_ONLY:
+        raise RuntimeError("DMI_CACHE_ONLY_NETWORK_DISABLED")
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     if expected_size is not None and (
         isinstance(expected_size, bool)
@@ -10611,8 +10616,20 @@ def load_previous(
     deferred_recovery_checkpoint: dict[str, bool] | None = None,
     current_history_requests: dict[str, Any] | None = None,
     current_history_originals: list[dict[str, Any]] | None = None,
+    cache_only_ledger: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     output_document = load_bulk_document(OUTPUT_PATH)
+    if cache_only_ledger is not None:
+        if coastal_part_targets is None or production_reference is None:
+            raise ValueError("DMI_CACHE_ONLY_REFERENCE_REQUIRED")
+        saved_diagnostics = output_document.get("diagnostics")
+        saved_ledger = (saved_diagnostics.get("currentOperationalLedger")
+                        if isinstance(saved_diagnostics, dict) else None)
+        revalidate_cache_only_current_ledger(
+            output_document, coastal_part_targets, production_reference,
+            expected_signature, saved_ledger,
+        )
+        cache_only_ledger.update(copy.deepcopy(saved_ledger))
     fallback_document = load_bulk_document(DEPLOYED_FALLBACK_PATH)
     # The active DMI donor and the last published private weather are distinct.
     # An encrypted candidate snapshot may supersede active, but it must not
@@ -11992,6 +12009,46 @@ def seal_current_operational_checkpoint(
     )
 
 
+def revalidate_cache_only_current_ledger(
+    document: dict[str, Any],
+    targets: list[dict[str, Any]],
+    reference: datetime,
+    expected_signature: str,
+    saved_ledger: Any,
+) -> dict[str, Any]:
+    """Recompute saved-ledger evidence without a new catalogue or admission."""
+    if not reusable_cache_document_shape(document):
+        raise ValueError("DMI_CACHE_ONLY_DOCUMENT_INVALID")
+    if document.get("zoneRegistrySignature") != expected_signature:
+        raise ValueError("DMI_CACHE_ONLY_REGISTRY_MISMATCH")
+    if (
+        not isinstance(saved_ledger, dict)
+        or saved_ledger.get("productionReferenceAt") != canonical_time(reference)
+    ):
+        raise ValueError("DMI_CACHE_ONLY_LEDGER_REFERENCE_MISMATCH")
+    present = (document.get("diagnostics") or {}).get("currentOperationalLedger")
+    if present is not None and present != saved_ledger:
+        raise ValueError("DMI_CACHE_ONLY_LEDGER_CHANGED")
+    allowed, retained = current_attestation_authorization_from_operational_ledger(
+        saved_ledger
+    )
+    attestation = current_operational_attestation(
+        document, targets, reference, allowed, retained,
+    )
+    validate_current_operational_availability_ledger(
+        saved_ledger, attestation, targets, reference,
+        reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS),
+        target_fingerprint(targets),
+    )
+    if saved_ledger.get("ready") is True and not current_operational_ledger_ready(
+        saved_ledger, attestation, targets, reference,
+        reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS),
+        target_fingerprint(targets),
+    ):
+        raise ValueError("DMI_CACHE_ONLY_FALSE_READY")
+    return sanitized_current_attestation(attestation)
+
+
 def current_operational_cache_ready(
     document: dict[str, Any],
     targets: list[dict[str, Any]],
@@ -13043,8 +13100,12 @@ def write_failure_summary(error: Exception) -> None:
 
 def main() -> int:
     global PRIVATE_WAVE_BOOTSTRAP_RETENTION_START_EPOCH
+    if CACHE_ONLY and FINALIZE_ONLY:
+        raise ValueError("DMI_CACHE_ONLY_FINALIZE_CONFLICT")
     supervisor_skipped_assets = supervised_skipped_asset_identities()
     wave_bootstrap_configuration = private_wave_bootstrap_configuration()
+    if CACHE_ONLY and wave_bootstrap_configuration is not None:
+        raise ValueError("DMI_CACHE_ONLY_BOOTSTRAP_CONFLICT")
     if wave_bootstrap_configuration is not None:
         PRIVATE_WAVE_BOOTSTRAP_RETENTION_START_EPOCH = (
             epoch(wave_bootstrap_configuration["requiredHours"][0])
@@ -13073,6 +13134,7 @@ def main() -> int:
     retained_current_asset_proofs: list[dict[str, Any]] = []
     regional_source_proof_candidates: list[dict[str, Any]] = []
     deferred_recovery_checkpoint: dict[str, bool] = {}
+    cache_only_ledger: dict[str, Any] | None = {} if CACHE_ONLY else None
     previous = load_previous(
         current_zone_registry_signature,
         coastal_part_targets=coastal_part_targets,
@@ -13082,7 +13144,13 @@ def main() -> int:
         deferred_recovery_checkpoint=deferred_recovery_checkpoint,
         current_history_requests=current_history_requests,
         current_history_originals=current_history_originals,
+        cache_only_ledger=cache_only_ledger,
     )
+    if CACHE_ONLY:
+        revalidate_cache_only_current_ledger(
+            previous, coastal_part_targets, locked_production_reference,
+            current_zone_registry_signature, cache_only_ledger,
+        )
     current_history_plan = plan_cached_current_history(
         current_history_requests, current_history_originals,
         load_raw_cache_manifest() if current_history_requests else {},
@@ -13186,6 +13254,7 @@ def main() -> int:
         wave_bootstrap_configuration is None
         and not FINALIZE_ONLY
         and not FORCE_REFRESH
+        and not CACHE_ONLY
         and previous_generated
         and previous.get("zones")
         and time.time() - previous_generated < REFRESH_MINUTES * 60
@@ -13487,6 +13556,9 @@ def main() -> int:
     if FINALIZE_ONLY:
         scheduled = []
         schedule_coverage["supervisedFinalizeOnly"] = True
+    if CACHE_ONLY:
+        scheduled = []
+        schedule_coverage["cacheOnly"] = True
     result["diagnostics"]["scheduledCollections"] = scheduled
     result["diagnostics"]["scheduleCoverageBeforeRun"] = schedule_coverage
 
@@ -13517,7 +13589,9 @@ def main() -> int:
         for zone_id in active_production_zone_ids
     )
     result["diagnostics"]["currentAcquisitionPlan"] = acquisition_plan_diagnostics
-    for collection in sorted(MARINE_COLLECTIONS, key=COLLECTION_ORDER.index):
+    for collection in ([] if CACHE_ONLY else sorted(
+        MARINE_COLLECTIONS, key=COLLECTION_ORDER.index,
+    )):
         try:
             previous_run = (previous.get("runs") or {}).get(collection) or {}
             collection_minimum_valid_time = canonical_time(
@@ -13876,6 +13950,16 @@ def main() -> int:
 
     def seal_current_operational_progress() -> None:
         """Bind every persisted bulk checkpoint to its exact usable DMI rows."""
+        if CACHE_ONLY:
+            attestation = revalidate_cache_only_current_ledger(
+                result, coastal_part_targets, locked_production_reference,
+                current_zone_registry_signature, cache_only_ledger,
+            )
+            result["diagnostics"]["currentOperationalLedger"] = copy.deepcopy(
+                cache_only_ledger
+            )
+            result["diagnostics"]["currentOperationalAttestation"] = attestation
+            return
         seal_current_operational_checkpoint(
             result,
             coastal_part_targets,
@@ -13891,6 +13975,8 @@ def main() -> int:
         flush_private_progress_sidecars,
         seal_current_operational_progress,
     )
+    if CACHE_ONLY:
+        seal_current_operational_progress()
     if current_history_requests and not FINALIZE_ONLY:
         result["diagnostics"]["cachedCurrentHistory"] = replay_cached_current_history(
             current_history_plan, result, checkpoint_controller,
@@ -13902,7 +13988,13 @@ def main() -> int:
             ),
             supervisor_skipped_assets=supervisor_skipped_assets,
         )
-    if wave_bootstrap_configuration is not None:
+        if CACHE_ONLY:
+            history_outcome = result["diagnostics"]["cachedCurrentHistory"]
+            if history_outcome["deferredAssetCount"]:
+                raise RuntimeError("DMI_CACHE_ONLY_REPLAY_DEFERRED")
+            if history_outcome["unavailableAssetCount"]:
+                raise RuntimeError("DMI_CACHE_ONLY_REPLAY_UNAVAILABLE")
+    if wave_bootstrap_configuration is not None and not CACHE_ONLY:
         try:
             bootstrap_locked_hours = execute_private_wave_history_bootstrap(
                 result,
@@ -14008,7 +14100,7 @@ def main() -> int:
         int(schedule_coverage.get("strictCurrentLeadAttemptLimit") or 0),
     )
 
-    collection_turns = operational_collection_turns(
+    collection_turns = [] if CACHE_ONLY else operational_collection_turns(
         scheduled, schedule_coverage, result.get("collectionState") or {},
         primary_mode=DKSS_PRIMARY_MODE,
     )
@@ -16487,6 +16579,15 @@ def main() -> int:
             "bootstrapDownloads": 0,
             "bootstrapDownloadedBytes": 0,
         }
+    elif CACHE_ONLY:
+        result["diagnostics"]["currentFieldShadowCachedReplay"] = {
+            "attempted": False,
+            "reason": "cache-only-no-shadow-bootstrap",
+            "assetsCompleted": 0,
+            "samplesWritten": 0,
+            "bootstrapDownloads": 0,
+            "bootstrapDownloadedBytes": 0,
+        }
     elif not replay_targets:
         result["diagnostics"]["currentFieldShadowCachedReplay"] = {
             "attempted": False,
@@ -16537,17 +16638,21 @@ def main() -> int:
     clean_and_summarize(
         result, fresh_zone_ids, budget, current_history_requests=current_history_requests,
     )
-    current_operational_ledger = build_current_operational_ledger(
-        result,
-        coastal_part_targets,
-        locked_production_reference,
-        prefetched_marine,
-        retained_current_asset_proofs,
-    )
-    result["diagnostics"]["currentOperationalLedger"] = current_operational_ledger
-    result["diagnostics"]["currentOperationalAttestation"] = (
-        current_operational_ledger["attestation"]
-    )
+    if CACHE_ONLY:
+        seal_current_operational_progress()
+        current_operational_ledger = result["diagnostics"]["currentOperationalLedger"]
+    else:
+        current_operational_ledger = build_current_operational_ledger(
+            result,
+            coastal_part_targets,
+            locked_production_reference,
+            prefetched_marine,
+            retained_current_asset_proofs,
+        )
+        result["diagnostics"]["currentOperationalLedger"] = current_operational_ledger
+        result["diagnostics"]["currentOperationalAttestation"] = (
+            current_operational_ledger["attestation"]
+        )
     strict_current_anchor_available = current_operational_cache_ready(
         result,
         coastal_part_targets,
@@ -16620,11 +16725,14 @@ def main() -> int:
         wave_bootstrap_configuration is not None,
         bootstrap_complete,
     )
-    if not producer_success_is_blocked and (
+    if not CACHE_ONLY and not producer_success_is_blocked and (
         fresh_successes or fresh_partials or bootstrap_complete
     ):
         result["sourceUpdatedAt"] = generated
-    if producer_success_is_blocked:
+    cache_only_partial = CACHE_ONLY and not strict_current_anchor_available
+    if cache_only_partial:
+        result["refreshStatus"] = "partial"
+    elif producer_success_is_blocked:
         result["refreshStatus"] = "failed"
     else:
         result["refreshStatus"] = "ok" if strict_current_anchor_available else (
@@ -16632,7 +16740,10 @@ def main() -> int:
             or result["diagnostics"]["zeroProgressCollections"] else "failed"
         )
 
-    prune_stats = prune_raw_cache()
+    prune_stats = (
+        {"removedFiles": 0, "removedBytes": 0}
+        if CACHE_ONLY else prune_raw_cache()
+    )
     cache_after = raw_cache_inventory()
     write_cache_audit(cache_before, cache_after, prune_stats["removedFiles"], prune_stats["removedBytes"])
     result["diagnostics"]["rawCache"] = {"before": cache_before, "after": cache_after, **prune_stats, "maxBytes": RAW_CACHE_MAX_BYTES}
@@ -16644,7 +16755,7 @@ def main() -> int:
     )
     summary = {**diag, "refreshStatus": result["refreshStatus"], "sourceUpdatedAt": result.get("sourceUpdatedAt"),
                "preservedPreviousZones": max(0, len(result["zones"]) - len(fresh_zone_ids))}
-    terminal_code = producer_terminal_code(
+    terminal_code = "DMI_CACHE_ONLY_PARTIAL" if cache_only_partial else producer_terminal_code(
         strict_current_anchor_available=strict_current_anchor_available,
         wave_bootstrap_requested=wave_bootstrap_configuration is not None,
         bootstrap_complete=bootstrap_complete,
@@ -16660,6 +16771,8 @@ def main() -> int:
     )
     write_step_summary(result, scheduled, diag, budget, fresh_successes, fresh_partials)
     print(json.dumps(summary, ensure_ascii=False))
+    if cache_only_partial:
+        return 0
     return producer_process_exit_code(
         producer_success_is_blocked=producer_success_is_blocked,
         producer_productive=producer_productive,

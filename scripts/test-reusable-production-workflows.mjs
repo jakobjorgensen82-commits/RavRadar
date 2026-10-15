@@ -222,6 +222,8 @@ assert.match(buildCaller, /^      quick_confirmation: false$/m,
   'Automated production must not inherit manual short supplier budgets');
 assert.match(buildCaller, /^      quick_progress_source: ''$/m,
   'Automated production has no one-off progress source');
+assert.match(buildCaller, /^      checkpoint_only: false$/m,
+  'Automated production does not inherit a manual provider-free continuation');
 assertExactKeys(directKeys(indentedBody(buildCaller, '    secrets:'), 6), buildContract.secrets, 'build caller secrets');
 for (const secret of buildContract.secrets) {
   assert.equal(

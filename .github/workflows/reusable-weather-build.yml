@@ -20,6 +20,10 @@ on:
         required: false
         type: string
         default: ''
+      checkpoint_only:
+        required: false
+        type: boolean
+        default: false
       produce_weather_handoff:
         required: true
         type: boolean
@@ -1176,6 +1180,28 @@ jobs:
           --output "$RUNNER_TEMP/historical-wave-input-transition.json"
           --github-output "$GITHUB_OUTPUT"
 
+      - name: Validate provider-free checkpoint continuation request
+        if: inputs.checkpoint_only == true
+        shell: bash
+        env:
+          QUICK_CONFIRMATION: ${{ inputs.quick_confirmation }}
+          QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
+          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
+        run: |
+          set -euo pipefail
+          test "$QUICK_CONFIRMATION" = false
+          [[ "$QUICK_PROGRESS_SOURCE" =~ ^[1-9][0-9]*-[1-9][0-9]*$ ]]
+          case "$OPERATIONAL_ACTION" in
+            integrated|integrated-historical-maintenance) ;;
+            *) echo 'CHECKPOINT_ONLY_NORMAL_INTEGRATED_ACTION_REQUIRED' >&2; exit 1 ;;
+          esac
+          test "${{ steps.private-runtime-install.outcome }}" = success
+          test "${{ steps.private-runtime-state.outputs.available }}" = true
+          test "${{ steps.historical-wave-transition.outputs.required }}" != true
+          test "${{ steps.weather-source-handoff.outputs.reused }}" != true
+          test "${{ inputs.extended_provider_bootstrap }}" != true
+          test "${{ inputs.produce_weather_handoff }}" != true
+
       - name: Validate requested short-confirmation progress source
         if: inputs.quick_confirmation == true || inputs.quick_progress_source != ''
         shell: bash
@@ -1211,6 +1237,7 @@ jobs:
         env:
           WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           QUICK_PROTECTED_BASELINE: ${{ inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current' }}
+          CHECKPOINT_ONLY: ${{ inputs.checkpoint_only }}
         run: |
           set -euo pipefail
           protected_bundle_sha256="$(node --input-type=module -e '
@@ -1227,9 +1254,13 @@ jobs:
           captured="$(jq -r '.captured == true' "$RUNNER_TEMP/weather-progress-base-report.json")"
           echo "captured=$captured" >> "$GITHUB_OUTPUT"
           if test "$captured" = "true" && test "$QUICK_PROTECTED_BASELINE" != "true"; then
+            restore_arguments=()
+            if test "$CHECKPOINT_ONLY" = true; then
+              restore_arguments=(--resume-original-target true)
+            fi
             node scripts/weather-component-progress-cache.mjs restore \
               --root "$GITHUB_WORKSPACE" --base "$RUNNER_TEMP/weather-progress-base.json" \
-              --report "$RUNNER_TEMP/weather-progress-restore-report.json"
+              --report "$RUNNER_TEMP/weather-progress-restore-report.json" "${restore_arguments[@]}"
             # A successful outer restore must also have usable DMI input.
             # Ordinary non-mutating misses keep the protected baseline.
             node --input-type=module <<'NODE'
@@ -1446,6 +1477,24 @@ jobs:
           assertUsableDmiProgressRecovery(report.dmiProgress, { allowAbsent: true });
           NODE
           test -s .cache/dmi-candidate-progress.json
+
+      - name: Require the authenticated original hour before provider-free continuation
+        if: inputs.checkpoint_only == true
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+          const report = JSON.parse(await fs.readFile(
+            path.join(process.env.RUNNER_TEMP, 'weather-progress-restore-report.json'), 'utf8'));
+          if (report.status !== 'RESTORED' || report.restored !== true
+            || typeof report.restoredProductionReferenceAt !== 'string'
+            || new Date(report.restoredProductionReferenceAt).toISOString()
+              !== new Date(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR).toISOString()) {
+            throw new Error('CHECKPOINT_ONLY_AUTHENTICATED_ORIGINAL_HOUR_REQUIRED');
+          }
+          NODE
 
       - name: Reapply exact verified weather sources after private runtime installation
         if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused == 'true'
@@ -1684,7 +1733,7 @@ jobs:
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
 
       - name: Refresh DMI water-source registry
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && inputs.checkpoint_only != true
         run: node scripts/update-water-source-registry.mjs
         env:
           WEATHER_USER_AGENT: "RavRadar water-source registry (${{ github.server_url }}/${{ github.repository }})"
@@ -1732,7 +1781,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .cache data/live "$RUNNER_TEMP/dmi-active-proof"
-          if test "${{ steps.dmi-active-restore.outputs.available }}" = "true"; then
+          if test "${{ inputs.checkpoint_only }}" = true; then
+            test -s .cache/dmi-candidate-progress.json
+            source_kind=candidate
+            source_path=.cache/dmi-candidate-progress.json
+          elif test "${{ steps.dmi-active-restore.outputs.available }}" = "true"; then
             source_kind=active
             source_path=.cache/dmi-active-complete.json
           elif test -s .cache/dmi-candidate-progress.json; then
@@ -1815,13 +1868,14 @@ jobs:
       - name: Update DMI bulk model cache
         if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         id: dmi-bulk
-        continue-on-error: true
+        continue-on-error: ${{ inputs.checkpoint_only != true }}
         timeout-minutes: ${{ inputs.quick_confirmation && 24 || (inputs.extended_provider_bootstrap || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true') && 70 || 55 }}
         run: python -u scripts/run-dmi-bulk-supervised.py
         env:
           DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json
           DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json
           DMI_BULK_PREFER_OUTPUT_CACHE: true
+          DMI_BULK_CACHE_ONLY: ${{ inputs.checkpoint_only }}
           DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false
           DMI_BULK_DKSS_PRIMARY_MODE: true
           DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH: .cache/weather-current-acquisition-plan.json
@@ -2035,12 +2089,12 @@ jobs:
           fi
 
       - name: Install targeted Copernicus dependencies
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true
         continue-on-error: true
         run: python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
 
       - name: Verify targeted Copernicus credentials
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true
         continue-on-error: true
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
@@ -2053,7 +2107,7 @@ jobs:
 
       - name: Fill only exact-hour DMI gaps from Copernicus
         id: copernicus-fill
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true
         continue-on-error: true
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
@@ -2095,6 +2149,7 @@ jobs:
           --timeout-seconds 30
           --runtime-seconds ${{ inputs.quick_confirmation && '120' || '900' }}
           --critical-only
+          ${{ inputs.checkpoint_only && '--reuse-only' || '' }}
 
       - name: Preserve safe weather acquisition diagnostics before terminal gates
         if: always() && steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != ''
@@ -2192,6 +2247,7 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=8192
           RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ steps.private-runtime-install.outcome == 'success' && 'true' || 'false' }}
           DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json
+          RAVRADAR_WEATHER_CACHE_ONLY: ${{ inputs.checkpoint_only }}
           DMI_MAX_RETRIES: 0
           DMI_REQUEST_GAP_MS: 12000
           DMI_REQUEST_CONCURRENCY: 1
@@ -2250,7 +2306,7 @@ jobs:
           NODE
 
       - name: Reclaim a bounded Copernicus quality slice for the next normal run
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.weather.outcome == 'success' && inputs.quick_confirmation != true
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.weather.outcome == 'success' && inputs.quick_confirmation != true && inputs.checkpoint_only != true
         id: copernicus-next-run-refresh
         continue-on-error: true
         timeout-minutes: 7

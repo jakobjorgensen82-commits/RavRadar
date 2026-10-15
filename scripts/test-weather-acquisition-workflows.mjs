@@ -198,4 +198,51 @@ assert.throws(() => assertCacheOnlyBeforeFetch(weatherRuntime
   + '\nasync function syntheticOutside() { const response = await fetch(url); }\n'),
   'A sole fetch outside fetchJson must fail the static contract');
 
+// Explicit checkpoint continuation is a real normal build, not a fabricated
+// provider handoff. Its untrusted hour hint is confirmed by authenticated input.
+assert.match(manual, /checkpoint_target_hour:\s+description: '[^']+'\s+required: false\s+type: string\s+default: ''/);
+assert.match(normal, /checkpoint_only:\s+required: false\s+type: boolean\s+default: false/);
+assert.match(orchestrator, /^      checkpoint_only: false$/m,
+  'Automated production must keep ordinary acquisition by default');
+assert.ok(manual.includes("      checkpoint_only: ${{ inputs.checkpoint_target_hour != '' }}"));
+const originalHour = step(manual, 'Lock the requested original checkpoint hour without provider work');
+assert.ok(originalHour.includes("if: inputs.checkpoint_target_hour != ''"));
+assert.match(originalHour, /test "\$QUICK_CONFIRMATION" = false/);
+assert.match(originalHour, /\[\[ "\$QUICK_PROGRESS_SOURCE" =~ \^\[1-9\]\[0-9\]\*-\[1-9\]\[0-9\]\*\$ \]\]/);
+assert.match(originalHour, /check-production-target-freshness\.mjs/);
+assert.doesNotMatch(originalHour, /DMI_API_KEY|fetch\(|curl |requests\./);
+const offlineRequest = step(normal, 'Validate provider-free checkpoint continuation request');
+const offlineHour = step(normal, 'Require the authenticated original hour before provider-free continuation');
+assert.match(offlineRequest, /if: inputs\.checkpoint_only == true/);
+assert.match(offlineRequest, /test "\$QUICK_CONFIRMATION" = false/);
+assert.match(offlineRequest, /steps\.private-runtime-install\.outcome.*success/);
+assert.match(offlineRequest, /steps\.private-runtime-state\.outputs\.available.*true/);
+assert.match(offlineRequest, /integrated\|integrated-historical-maintenance/);
+assert.match(offlineHour, /report\.status !== 'RESTORED' \|\| report\.restored !== true/);
+assert.match(offlineHour, /report\.restoredProductionReferenceAt/);
+assert.match(offlineHour, /process\.env\.RAVRADAR_PRODUCTION_TARGET_HOUR/);
+assert.ok(normal.indexOf(offlineRequest) < normal.indexOf(restore));
+assert.ok(normal.indexOf(shortRecoveryGate) < normal.indexOf(offlineHour));
+assert.ok(normal.indexOf(offlineHour) < normal.indexOf(dmi));
+const progressBind = step(normal, 'Bind optional progress to the exact protected baseline');
+assert.match(progressBind, /restore_arguments=\(\)/);
+assert.match(progressBind, /restore_arguments=\(--resume-original-target true\)/);
+assert.match(progressBind, /--report "\$RUNNER_TEMP\/weather-progress-restore-report\.json" "\$\{restore_arguments\[@\]\}"/);
+const generationPrepare = step(normal, 'Prepare strict active DMI donor or resumable candidate');
+assert.ok(generationPrepare.indexOf('inputs.checkpoint_only')
+  < generationPrepare.indexOf('steps.dmi-active-restore.outputs.available'),
+  'Explicit continuation may not replace its authenticated candidate with an older active donor');
+assert.match(dmi, /DMI_BULK_CACHE_ONLY: \$\{\{ inputs\.checkpoint_only \}\}/);
+assert.match(dmi, /continue-on-error: \$\{\{ inputs\.checkpoint_only != true \}\}/);
+for (const providerStep of [cp, cpQuality,
+  step(normal, 'Refresh DMI water-source registry'),
+  step(normal, 'Install targeted Copernicus dependencies'),
+  step(normal, 'Verify targeted Copernicus credentials')]) {
+  assert.match(providerStep, /inputs\.checkpoint_only != true/);
+}
+assert.ok(om.includes("${{ inputs.checkpoint_only && '--reuse-only' || '' }}"));
+assert.match(weather, /RAVRADAR_WEATHER_CACHE_ONLY: \$\{\{ inputs\.checkpoint_only \}\}/);
+assert.doesNotMatch(offlineRequest + offlineHour, /DMI_HANDOFF_VERIFIED|strict_active_ready=true|reused=true/,
+  'A checkpoint request must not invent a successful producer or handoff');
+
 console.log('OK: DMI-first acquisition, one encrypted private progress path, safe diagnostics and retired plaintext entrances.');
