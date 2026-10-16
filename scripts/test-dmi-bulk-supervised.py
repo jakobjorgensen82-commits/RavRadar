@@ -593,6 +593,28 @@ with _grib_read_scope(path, collection, model_run, valid_time, _owned_read) as r
                          [ast.dump(item) for item in expected_scope.items])
         self.assertIn(decoder_calls[0], tuple(ast.walk(read_scope)))
 
+        # Local reuse opens the same owned original reader without calling
+        # download_asset. Its sole verifier must therefore have its own exact
+        # watchdog, including the real capture and required capture check.
+        local_entries = [node for node in tree.body
+                         if isinstance(node, ast.FunctionDef)
+                         and node.name == "_reuse_exact_original_file"]
+        self.assertEqual(len(local_entries), 1)
+        local_verifiers = [node for node in ast.walk(local_entries[0])
+                           if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                           and node.func.id == "_verify_exact_original_file"]
+        self.assertEqual(len(local_verifiers), 1)
+        expected_local_watchdog = ast.parse("""
+with supervised_asset_operation(identity):
+    _verify_exact_original_file(path, capture, work_deadline=work_deadline, require_capture=True)
+""").body[0]
+        local_watchdogs = [node for node in local_entries[0].body
+                           if isinstance(node, ast.With)
+                           and local_verifiers[0] in tuple(ast.walk(node))]
+        self.assertEqual(len(local_watchdogs), 1)
+        self.assertEqual(ast.dump(local_watchdogs[0]), ast.dump(expected_local_watchdog),
+                         "the sole local verifier must retain its exact watchdog and captured-original inputs")
+
         guarded_calls = []
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
@@ -638,9 +660,23 @@ with _grib_read_scope(path, collection, model_run, valid_time, _owned_read) as r
 
     def test_asset_supervision_rejects_extra_calls_changed_adapter_and_missing_guard(self):
         source = supervisor.PRODUCER.read_text(encoding="utf-8")
-        for mutation in ("extra-call", "adapter-guard", "adapter-argument",
-                         "adapter-keyword", "adapter-return", "callback-reader",
-                         "missing-watchdog"):
+
+        def watchdogs(tree):
+            return [node for node in ast.walk(tree)
+                    if isinstance(node, ast.With) and any(
+                        isinstance(item.context_expr, ast.Call)
+                        and isinstance(item.context_expr.func, ast.Name)
+                        and item.context_expr.func.id == "supervised_asset_operation"
+                        for item in node.items)]
+
+        watchdog_count = len(watchdogs(ast.parse(source)))
+        self.assertEqual(watchdog_count, 10, "all nine existing watchdogs and the local verifier remain")
+        mutations = ("extra-call", "adapter-guard", "adapter-argument",
+                     "adapter-keyword", "adapter-return", "callback-reader",
+                     "local-verifier-missing", "local-verifier-extra", "local-verifier-capture",
+                     "local-verifier-deadline", "local-capture-required-false",
+                     "local-capture-required-missing", "local-watchdog-identity")
+        for mutation in (*mutations, *(f"missing-watchdog-{index}" for index in range(watchdog_count))):
             with self.subTest(mutation=mutation):
                 tree = ast.parse(source)
                 decoder = next(node for node in tree.body
@@ -662,13 +698,35 @@ with _grib_read_scope(path, collection, model_run, valid_time, _owned_read) as r
                                     and node.func.id == "process_grib")
                     next(keyword for keyword in callback.keywords
                          if keyword.arg == "_owned_read").value = ast.Constant(value=None)
+                elif mutation.startswith("local-"):
+                    local = next(node for node in tree.body
+                                 if isinstance(node, ast.FunctionDef)
+                                 and node.name == "_reuse_exact_original_file")
+                    verifier = next(node for node in ast.walk(local)
+                                    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                                    and node.func.id == "_verify_exact_original_file")
+                    if mutation == "local-verifier-missing":
+                        verifier.func.id = "unproved_local_verifier"
+                    elif mutation == "local-verifier-extra":
+                        local.body.append(ast.parse(
+                            "_verify_exact_original_file(path, capture, work_deadline=work_deadline, require_capture=True)"
+                        ).body[0])
+                    elif mutation == "local-verifier-capture":
+                        verifier.args[1] = ast.Name(id="other_capture", ctx=ast.Load())
+                    elif mutation == "local-verifier-deadline":
+                        next(keyword for keyword in verifier.keywords
+                             if keyword.arg == "work_deadline").value = ast.Constant(value=None)
+                    elif mutation == "local-capture-required-false":
+                        next(keyword for keyword in verifier.keywords
+                             if keyword.arg == "require_capture").value = ast.Constant(value=False)
+                    elif mutation == "local-capture-required-missing":
+                        verifier.keywords = [keyword for keyword in verifier.keywords
+                                             if keyword.arg != "require_capture"]
+                    else:
+                        watchdogs(local)[0].items[0].context_expr.args[0] = ast.Name(
+                            id="other_identity", ctx=ast.Load())
                 else:
-                    watchdog = next(node for node in ast.walk(tree)
-                                    if isinstance(node, ast.With) and any(
-                                        isinstance(item.context_expr, ast.Call)
-                                        and isinstance(item.context_expr.func, ast.Name)
-                                        and item.context_expr.func.id == "supervised_asset_operation"
-                                        for item in node.items))
+                    watchdog = watchdogs(tree)[int(mutation.rsplit("-", 1)[1])]
                     parent = next(node for node in ast.walk(tree)
                                   if watchdog in tuple(ast.iter_child_nodes(node)))
                     body = next(value for _name, value in ast.iter_fields(parent)

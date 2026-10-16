@@ -5,7 +5,7 @@ import test from 'node:test';
 
 const source = fs.readFileSync(new URL('./update-weather.mjs', import.meta.url), 'utf8');
 const start = source.indexOf('function retainOnlyDmiWaterLevel(');
-const end = source.indexOf('\nfunction haversineKm(', start);
+const end = source.indexOf('\n// Shared recovery record: distance', start);
 assert.ok(start >= 0 && end > start);
 const context = vm.createContext({});
 vm.runInContext(`${source.slice(start, end)}\nglobalThis.clean = retainOnlyDmiZoneWaterLevel;`, context);

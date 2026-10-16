@@ -11,6 +11,9 @@ import * as level from './lib/water-level-continuity.mjs';
 import * as waveProof from './lib/dmi-wave-tuple-proof.mjs';
 import * as recovery from './lib/ravscore-recovery-replay.mjs';
 import * as contexts from './lib/protected-dmi-current-context.mjs';
+import { mergeHourlyPreferDmi, bulkZoneToForecastRecord,
+  buildPartDmiForecastWithProtectedRetention, buildPrivateDmiRecoveryRecord }
+  from './lib/private-dmi-recovery-record.mjs';
 import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-native-current-proofs.mjs';
 import { buildNewestValidRavScoreRecoverySources } from './lib/ravscore-recovery-source-priority.mjs';
 import { mergeProtectedLiveCurrentPilotIntoRecord,
@@ -25,6 +28,8 @@ import { buildOperationalCurrentEntryIndex, verifyCoastalPartCurrentProjection }
 // closure, admission, score or spatial-proof implementation is stubbed here.
 const environment = { assert, fs, crypto, ...store, ...adapters, ...seams,
   ...pilot, ...waveProxy, ...selection, ...level, ...waveProof, ...recovery,
+  mergeHourlyPreferDmi, bulkZoneToForecastRecord,
+  buildPartDmiForecastWithProtectedRetention, buildPrivateDmiRecoveryRecord,
   ...contexts, createProtectedDmiNativeCurrentInspector, mergeProtectedLiveCurrentPilotIntoRecord,
   mergeActiveNativeLiveCurrentPilotIntoRecord, buildNewestValidRavScoreRecoverySources };
 const evaluate = (script, result) => Function(...Object.keys(environment),

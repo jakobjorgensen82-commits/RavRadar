@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import test from 'node:test';
+import * as normalDmiRecord from './lib/private-dmi-recovery-record.mjs';
 import { OPEN_METEO_NATIVE_NEAREST_POLICIES } from './lib/open-meteo-part-bank.mjs';
 import { applyVerifiedWaterSourceRoutingToPartHourly } from './lib/water-source-forecast-routing.mjs';
 import { assertDmiPartHourlyGridSamplingApplicable, verifiedIntegratedPartHourly,
@@ -285,6 +286,7 @@ test('Feggesund wave-only preflight retains original 3x118 wave choices without 
   };
   const number = value => typeof value === 'number' && Number.isFinite(value) ? value : null;
   const dependencyScope = {
+    ...normalDmiRecord,
     createDmiForecastRecord, DMI_FORECAST_HOURS, normalizeForecastHourly,
     verifiedDmiNativeComponentSource, verifiedDmiForecastComponentSource,
     verifiedBulkCurrent, verifiedIntegratedPartHourly, dmiExpectedIdentityForPart,
@@ -301,11 +303,7 @@ test('Feggesund wave-only preflight retains original 3x118 wave choices without 
     WATER_LEVEL_JUMP_WARN_CM: 35,
   };
   const normal = Function(...Object.keys(dependencyScope),
-    `${extract('function zonePoint(', 'function withoutZoneCurrent(')}
-     ${extract('function haversineKm(', 'async function readCachedWaterStations(')}
-     ${extract('function dmiCollections(', 'async function dmiPosition(')}
-     ${extract('const ATOMIC_COMPONENT_TUPLE_KEYS', 'function componentSource(')}
-     ${extract('function bulkZoneToForecastRecord(', 'function mergeBulkCacheIntoForecastStore(')}
+    `${extract('function feggesundNeighborSourcesByTime(', 'function mergeBulkCacheIntoForecastStore(')}
      return { buildPartDmiForecastWithProtectedRetention, applyFeggesundOperationalWaveProxy,
        preflightFeggesundOperationalWaveReadiness, verifiedFeggesundNeighborSource };`)(
     ...Object.values(dependencyScope));

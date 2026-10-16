@@ -56,6 +56,7 @@ const PRIVATE_RUNTIME_SOURCE_FILES = Object.freeze({
     '.github/actions/save-owned-dmi-grib/package.json',
     '.github/actions/save-owned-dmi-grib/package-lock.json',
     'scripts/update-weather.mjs',
+    'scripts/lib/private-dmi-recovery-record.mjs',
     'scripts/enrich-current-provenance.mjs',
     'scripts/check-weather-update.py',
     'scripts/build-copernicus-target-registry.py',

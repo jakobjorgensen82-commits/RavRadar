@@ -1,3 +1,17 @@
+## 89.234 Lokale originaler først og fælles normal udvælgelse
+
+**Kort fortalt:** En eksisterende original skal prøves sikkert, før dens tilgængelighed hos DMI undersøges. Genopretningen skal bruge samme udvælgelseslogik som den normale vejrhentning.
+
+PR624 er kildeleveret efter præcis Linux/native/source/PostgreSQL-kontrol. Den efterfølgende genopretning passerede CLI-opstart og autentificeret forberedelse, men stoppede på en utilgængelig historisk original før cachegemning. En ny skrivefri audit af det nyere checkpoint er gennemført med normal baseline og fuld autentifikation. Fravær i den undersøgte fortegnelse er ikke bevis for fysisk fravær i alle arkiver eller ugyldige DMI-data.
+
+Den lokale rettelse prøver først en fuldt identificeret original gennem den normale ejede læser med fuld kontrolsum, størrelse, capture, alle model-/tidshoveder, EOF og fysisk lukning. Kun faktisk oprindeligt fravær må føre videre til opslag af den præcise historiske DMI-revision. En kollision, ændret fil, ukendt capture eller fil, der forsvinder efter første filkontrol eller under læsning, må ikke blive et skjult netværksforsøg. Gamle originaler og fortegnelser bevares uændret ved genbrug. Faste fejlkoder skelner mellem et utilgængeligt opslag hos DMI og en utilgængelig originalfil uden at vise private adresser eller rå fejltekst.
+
+Ejeren har særskilt godkendt en bytebevarende udskillelse af de eksisterende rene record-, retention- og mergefunktioner til ét importsikkert fællesmodul. Normal vejrhentning bruger de samme funktioner uden ændrede kaldere eller prioritet. En hel kildeinverse og målprøver kontrollerer den uændrede normale adfærd. Genopretningens filbehov skal følge den faktisk valgte private tilstand, bevarede timeforløb, normale private udvælgelse og fuldt beviste native endepunkter. PUBLIC alene eller en proofmarkør er ikke nok. En manglende bracket må ikke få kopieret topkildens kontrolsum; den skal have sin egen autentiske capture. Også historisk støtte og faktiske native referencer til hold skal bevares. Nul nødvendige originaler er ikke en udført download eller gemning.
+
+DMI oplyser, at modelkørsler startet for mere end 48 timer siden udgår fra forecast-API'et. Det er hverken en ventetid, en grænse for prognosens fremtid eller en udløbsdato for allerede gemte gyldige originaler. RavScores 48 timers strømhukommelse er en særskilt beregningsregel. En utilgængelig nødvendig original må ikke erstattes med opdigtet provenance eller en nulstilling.
+
+Status: lokal kilde og målbevis; præcis samlet kildekontrol, Linux-nativekontrol, faktisk originaltilgængelighed, ejet cachegemning/genbrug, normal checkpoint-beregning, upload, deploy og offentlig virkning er fortsat åbne. Model, scoreformel, kildeprioritet, administratorpunkter, geometri, budgetter, historiske scorer og no-loss bevares. Ingen SQL eller isoleret revision aktiveres af denne kildeændring. Ejeren har stående forhåndsgodkendt nødvendige handlinger i det aftalte arbejde uden gentagne rutinespørgsmål; konkrete sikkerhedsgrænser består. Cron er deaktiveret med uændret tidsplan indtil verificeret genopretning. Alle fem mål og fristen 18. oktober består. Tidligere afventning af CLI-opstart er erstattet; øvrig dateret historik bevares.
+
 ## 89.233 Afgrænset genopretning af historiske DMI-originaler
 
 **Kort fortalt:** En mislykket vejrhentning skal afprøves fra et gyldigt gemt checkpoint efter rettelse. En ny almindelig vejrhentning er ikke en løsning på et uændret historikstop.

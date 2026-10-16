@@ -5,6 +5,7 @@ import { preferQualifiedDmiComponentSource } from './lib/weather-component-selec
 import { dmiWaveDirectionMatchesSource } from './lib/dmi-wave-tuple-proof.mjs';
 
 const source = fs.readFileSync('scripts/update-weather.mjs', 'utf8');
+const sharedRecordSource = fs.readFileSync('scripts/lib/private-dmi-recovery-record.mjs', 'utf8');
 const forecastRead = source.slice(source.indexOf('async function readDmiForecastStore('),
   source.indexOf('async function readDmiForecastStore(') + 500);
 assert.match(forecastRead, /await readDmiForecastFile\(DMI_FORECAST_STORE_PATH\)/,
@@ -27,13 +28,13 @@ assert.ok(readySummary > source.indexOf('output.weatherEngine.componentFallback 
   'the safe acquisition summary is emitted before any later score/replay failure');
 const productionAdapter = fs.readFileSync('scripts/lib/ravscore-production-adapters.mjs', 'utf8');
 const openMeteoPartBank = fs.readFileSync('scripts/lib/open-meteo-part-bank.mjs', 'utf8');
-const bulkConverter = source.slice(
-  source.indexOf('function bulkZoneToForecastRecord('),
-  source.indexOf('function mergeBulkCacheIntoForecastStore('),
+const bulkConverter = sharedRecordSource.slice(
+  sharedRecordSource.indexOf('function bulkZoneToForecastRecord('),
+  sharedRecordSource.indexOf('// END normal-record records'),
 );
-const protectedRetentionSource = source.slice(
-  source.indexOf('function buildPartDmiForecastWithProtectedRetention('),
-  source.indexOf('function verifiedFeggesundNeighborSource('),
+const protectedRetentionSource = sharedRecordSource.slice(
+  sharedRecordSource.indexOf('function buildPartDmiForecastWithProtectedRetention('),
+  sharedRecordSource.indexOf('function verifiedFeggesundNeighborSource('),
 );
 const protectedRetentionCalls = [];
 const buildWithProtectedRetention = Function('bulkZoneToForecastRecord',
@@ -64,19 +65,19 @@ assert.match(bulkConverter, /recoverDmiMarineRunSeamHours\(\{[\s\S]*?hourly: bui
   'normal and one-off bulk conversion must run the same bounded marine seam repair');
 const integratedRuntime = source.slice(
   source.indexOf('function scoreCoastalPartsRuntime('),
-  source.indexOf('function dmiCollections('),
+  source.indexOf('// Shared recovery record: collections'),
 );
-const hourlyMerge = source.slice(
-  source.indexOf('const ATOMIC_COMPONENT_TUPLE_KEYS'),
-  source.indexOf('function componentSource('),
+const hourlyMerge = sharedRecordSource.slice(
+  sharedRecordSource.indexOf('const ATOMIC_COMPONENT_TUPLE_KEYS'),
+  sharedRecordSource.indexOf('// END normal-record selection'),
 );
 const fallbackMerge = source.slice(
   source.indexOf('function mergeDmiWithFallback('),
   source.indexOf('function componentForecastHorizonHours('),
 );
-const tupleSelectorSource = source.slice(
-  source.indexOf('const ATOMIC_COMPONENT_TUPLE_KEYS'),
-  source.indexOf('function mergeHourlyPreferDmi('),
+const tupleSelectorSource = sharedRecordSource.slice(
+  sharedRecordSource.indexOf('const ATOMIC_COMPONENT_TUPLE_KEYS'),
+  sharedRecordSource.indexOf('function mergeHourlyPreferDmi('),
 );
 const { selectAtomicComponentTuple } = Function(
   'ravScoreNumber',
@@ -84,8 +85,8 @@ const { selectAtomicComponentTuple } = Function(
   `${tupleSelectorSource}; return { selectAtomicComponentTuple };`,
 )(value => typeof value === 'number' && Number.isFinite(value) ? value : null,
   preferQualifiedDmiComponentSource);
-const atomicMergeSource = source.slice(
-  source.indexOf('const ATOMIC_COMPONENT_TUPLE_KEYS'),
+const atomicMergeSource = hourlyMerge + source.slice(
+  source.indexOf('function componentSource('),
   source.indexOf('function componentForecastHorizonHours('),
 );
 const {
@@ -415,7 +416,7 @@ assert.doesNotMatch(source, /resolveZone\(feature, generatedAt, previous, dmiFor
   'regression: gammel forecaststore må ikke overskrive frisk bulkcache');
 assert.match(source, /conversionLossZones/);
 assert.match(source, /bulkMarineCandidateZones/);
-assert.match(source, /bulkCacheGeneratedAt/);
+assert.match(sharedRecordSource, /bulkCacheGeneratedAt/);
 
 const bulk = fs.readFileSync('scripts/update-dmi-bulk.py', 'utf8');
 const nativeProvenance = fs.readFileSync('scripts/lib/dmi_native_provenance.py', 'utf8');
@@ -429,7 +430,7 @@ assert.match(bulk, /33: "wind-tail-u-10m"/,
   'DKSS GRIB parameter 33 skal materialiseres som en separat vindhale');
 assert.match(bulk, /34: "wind-tail-v-10m"/,
   'DKSS GRIB parameter 34 skal materialiseres som en separat vindhale');
-assert.match(source, /buildDmiMarineComponentwiseHourly\(\{\s*wind, windTail, waves, ocean, generatedAt, startAt,[\s\S]*?expectedIdentity: dmiIdentity,/,
+assert.match(sharedRecordSource, /buildDmiMarineComponentwiseHourly\(\{\s*wind, windTail, waves, ocean, generatedAt, startAt,[\s\S]*?expectedIdentity: dmiIdentity,/,
   'bulk-konverteringen skal sende HARMONIE og DKSS som adskilte vindserier med eksakt DMI-identitet');
 assert.match(bulkConverter, /const waveHeight = ravScoreNumber\(row\['significant-wave-height'\]\);[\s\S]*?const wavePeriod = ravScoreNumber\(row\['dominant-wave-period'\]\);[\s\S]*?if \(!waveSource \|\| waveHeight === null \|\| wavePeriod === null\) return null;/,
   'bulk-konverteringen skal bevare den verificerede Hs+periode-mobiliseringstuple uden at kræve retning');
@@ -447,14 +448,14 @@ assert.match(productionAdapter, /haversineKm\(expectedSamplingPoint, gridPoint\)
   'den faktiske koordinatafstand skal efterkontrolleres uafhængigt af cachemetadata');
 assert.match(source, /const qualifiedRecord = newerDmiRecord\(record, null,[\s\S]*?const safeRecord = withOnlyVerifiedCurrent\(qualifiedRecord, point\)/,
   'en gammel forecastcache skal kontrollere alle komponenter og bevare det særskilte vandkolonne-/lagbevis');
-const directDmi = source.slice(source.indexOf('async function fromDmi('), source.indexOf('function mergeHourlyPreferDmi('));
+const directDmi = source.slice(source.indexOf('async function fromDmi('), source.indexOf('// Shared recovery record: selection'));
 assert.doesNotMatch(directDmi, /\['sea-mean-deviation', 'current-u'/,
   'ForecastEDR-positionstjenesten må ikke levere strøm uden fælles vandkolonne- og lagbevis');
 assert.match(directDmi, /withoutCurrent\(createDmiForecastRecord\(/,
   'ForecastEDR-resultatet skal lukkes fail-closed for strøm før scoring');
 assert.match(hourlyMerge, /row\?\.sources\?\.\[component\][\s\S]*?wave: selectedWave\?\.attestation/,
   'den endelige merge skal føre den valgte bølgetuples egen verificerede proveniens videre');
-assert.equal((source.match(/materializeMissingHorizon: true/g) ?? []).length, 3,
+assert.equal((sharedRecordSource.match(/materializeMissingHorizon: true/g) ?? []).length, 3,
   'the shared protected-record builder materializes the active, deployed and historical DMI horizons');
 assert.match(integratedRuntime, /preflightFeggesundOperationalWaveReadiness\([\s\S]*?const nearestIndex/,
   'Feggesund readiness must be checked before the main scoring loop');

@@ -7,10 +7,10 @@ import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { assertSavedDmiOriginalRestoreScope, savedDmiOriginalHistoryDemand, savedDmiOriginalPreparationFailureCode,
-  collectSavedDmiOriginalCaptures, buildSavedDmiOriginalRestorePlan,
+  collectSavedDmiOriginalCaptures, collectSelectedSavedDmiOriginalCaptures, buildSavedDmiOriginalRestorePlan,
   writeSavedDmiOriginalRestorePlan, savedOriginalCanonicalJson, SAVED_DMI_ORIGINAL_TARGET as target,
   SAVED_DMI_ORIGINAL_PROGRESS as progressSource, SAVED_DMI_ORIGINAL_PROGRESS_KEY as progressCacheKey,
-  SAVED_DMI_ORIGINAL_PLAN_PATH } from './prepare-saved-dmi-original-restore.mjs';
+  SAVED_DMI_ORIGINAL_PLAN_PATH, SAVED_DMI_ORIGINAL_SCOPES } from './prepare-saved-dmi-original-restore.mjs';
 import { prepareAuthenticatedSavedDmiOriginalRestore } from './audit-saved-weather-inputs.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
 import { dmiExpectedIdentityForPart } from './lib/ravscore-production-adapters.mjs';
@@ -138,6 +138,34 @@ test('exact source/target/execution scope rejects before credentials, filesystem
   }
 });
 
+test('only the two exact checkpoint-target pairs are accepted and bound without mixed scopes', () => {
+  const f = fixture();
+  for (const allowed of SAVED_DMI_ORIGINAL_SCOPES) {
+    assert.doesNotThrow(() => assertSavedDmiOriginalRestoreScope({ ...allowed, executionHead }));
+    const demands = savedDmiOriginalHistoryDemand({ ...f, targetReferenceAt: allowed.progressBaselineTargetHour });
+    const plan = buildSavedDmiOriginalRestorePlan({ ...f, captures: [], demands, executionHead,
+      progressSource: allowed.progressSource, progressCacheKey: allowed.progressCacheKey,
+      targetReferenceAt: allowed.progressBaselineTargetHour });
+    assert.equal(plan.binding.progressSource, allowed.progressSource);
+    assert.equal(plan.binding.progressCacheKey, allowed.progressCacheKey);
+    assert.equal(plan.binding.targetReferenceAt, allowed.progressBaselineTargetHour);
+  }
+  assert.throws(() => assertSavedDmiOriginalRestoreScope({ ...SAVED_DMI_ORIGINAL_SCOPES[0], executionHead,
+    progressBaselineTargetHour: SAVED_DMI_ORIGINAL_SCOPES[1].progressBaselineTargetHour }), /SCOPE_INVALID/);
+  assert.throws(() => savedDmiOriginalHistoryDemand({ ...f, targetReferenceAt: at(1) }), /SCOPE_INVALID/);
+});
+
+test('zero selected original demand reports a no-op without any plan or cache directory', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-original-noop-test-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const f = fixture(), plan = buildSavedDmiOriginalRestorePlan({ ...f, captures: [], executionHead });
+  const report = await writeSavedDmiOriginalRestorePlan({ repositoryRoot: root, plan });
+  assert.equal(report.status, 'NO_ORIGINAL_RESTORE_REQUIRED');
+  assert.equal(report.originalCount, 0); assert.equal(report.planBytes, 0); assert.equal(report.planSha256, '');
+  assert.deepEqual(await fs.readdir(root), []);
+  assert.equal(report.providerRequestsPerformed, false);
+});
+
 test('history is actual selected state plus 51h support; unavailable state never becomes cold/week fallback', () => {
   const f = fixture(), before = JSON.stringify(f.conditions);
   assert.equal(f.demands[0].initialStateAt, at(-2));
@@ -168,6 +196,20 @@ test('only bounded unknown native originals and allowed collections enter a byte
   const changedPoint = structuredClone(f.document);
   changedPoint.zones[f.identity.entityId].hourly[at(-2)].sources.current.samplingPoint = [8.1, 55];
   assert.throws(() => collectSavedDmiOriginalCaptures({ ...f, document: changedPoint }), /ORIGINAL_SOURCE_INVALID/);
+});
+
+test('normal-selected planner rejects an array hourly donor before it can become zero demand', () => {
+  const f = fixture(), bad = structuredClone(f.document);
+  bad.zones[f.identity.entityId].hourly = [];
+  assert.throws(() => collectSelectedSavedDmiOriginalCaptures({ ...f, protectedBulk: bad,
+    progressCandidate: f.document }), /SAVED_DMI_ORIGINAL_DONOR_INVALID/);
+});
+
+test('normal-selected planner retains the 10000-row donor bound before no-op classification', () => {
+  const f = fixture(), bad = structuredClone(f.document);
+  bad.zones[f.identity.entityId].hourly = Object.fromEntries(Array.from({ length: 10_001 }, (_, i) => [String(i), {}]));
+  assert.throws(() => collectSelectedSavedDmiOriginalCaptures({ ...f, protectedBulk: f.document,
+    progressCandidate: bad }), /SAVED_DMI_ORIGINAL_DONOR_INVALID/);
 });
 
 test('plan deduplicates complete captures, binds old producer separately from execution, and hashes exact metadata', () => {
@@ -213,9 +255,148 @@ test('auth orchestration retains exact archived reader, normal baseline, GCM, fi
   const body = source.split('export async function prepareAuthenticatedSavedDmiOriginalRestore(')[1].split('\nif (process.argv[1]')[0];
   for (const call of ['createReadOnlySavedWeatherClients(credentials)', 'prepareSavedAuditProgressBaseline(',
     'withAuthenticatedWeatherProgress(', 'privateWeatherPackJsonReadsClosed(componentInvocation)',
-    'prepare.savedDmiOriginalHistoryDemand(', 'prepare.collectSavedDmiOriginalCaptures(']) assert.ok(body.includes(call), call);
+    'prepare.savedDmiOriginalHistoryDemand(', 'prepare.collectSelectedSavedDmiOriginalCaptures(']) assert.ok(body.includes(call), call);
   assert.equal((body.match(/oldProtected.describeCurrentProtectedPrivateProductionRuntime\(clients\)/g) ?? []).length, 3);
   assert.ok(body.lastIndexOf('describeCurrentProtectedPrivateProductionRuntime(clients)') < body.indexOf('prepare.writeSavedDmiOriginalRestorePlan('));
   assert.ok(body.indexOf('await fs.rm(work,') < body.indexOf('prepare.writeSavedDmiOriginalRestorePlan('));
+  assert.ok(body.includes('forecastIndex(await noSymlinks(ctx.root,'));
+  assert.ok(body.includes('visitSavedPartCurrents(savedForecastIndex, parts, () => {}, collectPart)'));
+  assert.doesNotMatch(body, /const donors =|originals\.push\(\.\.\.prepare\.collectSavedDmiOriginalCaptures/);
   assert.doesNotMatch(body, /buildRavScoreRecoveryReplay|buildRavScoreProductionPartSeries|uploadImmutable|removeExact|update-weather|fetch\(/);
+});
+
+test('normal selected qualified same-original successor is not a missing-original restore dependency', async () => {
+  // Import the exact shared normal producer, never its acquisition entrypoint.
+  const normal = await import('./lib/private-dmi-recovery-record.mjs');
+  const store = await import('./lib/dmi-forecast-store.mjs');
+  const adapters = await import('./lib/ravscore-production-adapters.mjs');
+  const recovery = await import('./lib/ravscore-recovery-replay.mjs');
+  const priority = await import('./lib/ravscore-recovery-source-priority.mjs');
+  const { createProtectedDmiNativeCurrentInspector } = await import('./lib/protected-dmi-native-current-proofs.mjs');
+
+  // Complete synthetic native captures, not GRIB/decoder/provider proof. The
+  // NORMAL original inspector and strict sampling admission must accept the
+  // supplied native contexts; an opaque marker is not used as admission.
+  const f = fixture(), old = structuredClone(f.document);
+  old.zones[f.identity.entityId].hourly = {};
+  const sample = f.native.find(row => row.time === at(-2));
+  const sampling = value => ({ contractId: 'dmi-native-grid-sampling-v1', elementIndex: 71,
+    gridIndexIdentitySha256: sha('selected-plan-synthetic-grid-index-order'),
+    coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1',
+    gridDefinitionSha256: value.gridDefinitionSha256, gridPoint: [...value.gridPoint],
+    fieldSet: [...value.fieldSet], optionalFieldSet: [...value.optionalFieldSet] });
+  for (let offset = -54; offset <= 3; offset += 3) {
+    const row = structuredClone(sample), native = row.sources.current;
+    row.time = native.nativeValidTime = at(offset);
+    native.leadTimeHours = 100 + offset;
+    native.itemId = `synthetic-selected-original-${offset}`;
+    native.assetIdentitySha256 = sha(`selected-asset-${offset}`);
+    native.contentSha256 = sha(`selected-content-${offset}`);
+    old.zones[f.identity.entityId].hourly[row.time] = row;
+  }
+  const fresh = structuredClone(old);
+  for (const row of Object.values(fresh.zones[f.identity.entityId].hourly)) {
+    row.sources.current.nativeGridSampling = sampling(row.sources.current);
+  }
+  const replaced = fresh.zones[f.identity.entityId].hourly[at(-27)];
+  replaced['current-u'] += 0.3;
+  replaced['current-v'] += 0.1;
+  replaced.sources.current.nativeGridSampling = sampling(replaced.sources.current);
+  const snapshots = JSON.stringify({ old, fresh });
+  const feature = { properties: { id: f.identity.entityId, dataPoint: f.part.waterPoint } };
+  const project = (document, protectPreviousDmi) => {
+    const record = normal.buildPrivateDmiRecoveryRecord(feature, document, target,
+      { startAt: f.demands[0].startAt, expectedIdentity: f.identity, protectPreviousDmi });
+    assert.ok(record, 'the actual normal private record exists');
+    return { ...record, hourly: adapters.verifiedIntegratedPartHourly(record, document, f.identity.entityId, f.part,
+      { requireNativeGridSampling: false }) };
+  };
+  const previous = { source: 'deployed-private-runtime', nativeCurrentContexts: [old], record: project(old, true) };
+  const progressive = { source: 'progressive-private-dmi', nativeCurrentContexts: [fresh], record: project(fresh, false) };
+  const oldHour = previous.record.hourly.find(row => row.time === at(-26));
+  const freshHour = progressive.record.hourly.find(row => row.time === at(-26));
+  assert.equal(store.inspectDmiForecastGridSampling(oldHour.currentProvenance, 'current', oldHour.time, f.identity).status, 'unknown');
+  assert.equal(store.inspectDmiForecastGridSampling(freshHour.currentProvenance, 'current', freshHour.time, f.identity).status, 'coherent');
+  for (const [document, row] of [[old, oldHour], [fresh, freshHour]]) {
+    const proof = createProtectedDmiNativeCurrentInspector({ contexts: [document] }).inspectOriginals({ part: f.part, row });
+    assert.equal(proof.ok, true, 'each selected endpoint has its actual full native original');
+    assert.equal(proof.nativeRows.length, 2, 'the non-native OWNER hour requires both actual native brackets');
+  }
+  const selected = priority.buildNewestValidRavScoreRecoverySources({ fallbackSource: previous,
+    preferredSource: progressive, protectedPreviousSource: previous, productionReferenceAt: target, part: f.part });
+  const permitted = recovery.buildRavScorePermittedCurrentHistory({ part: f.part, referenceAt: at(-2),
+    sourceRecords: selected, requireNativeGridSampling: true });
+  assert.equal(permitted.length, 49, 'the actual OWNER window is fully supplied');
+  assert.equal(permitted[24].time, at(-26));
+  assert.equal(permitted[24].currentSpeedMps, freshHour.currentSpeedMps, 'normal same-original decoder priority selected the successor');
+  assert.notEqual(permitted[24].currentSpeedMps, oldHour.currentSpeedMps);
+  const associatedOld = priority.originalCurrentDecoderHistory(selected, permitted, f.part);
+  assert.ok(associatedOld, 'normal invocation-local original association, not a persisted proof flag');
+  assert.equal(associatedOld[24].currentSpeedMps, oldHour.currentSpeedMps);
+  assert.equal(JSON.stringify({ old, fresh }), snapshots, 'normal selection preserved both whole original documents');
+
+  // A coherent marker alone is insufficient: an unrelated capture at the
+  // same hour/run must not remove the protected old dependency. Let the real
+  // priority retain its previous winner and the strict OWNER reader reject it.
+  const alternate = structuredClone(fresh);
+  alternate.zones[f.identity.entityId].hourly[at(-27)].sources.current.contentSha256 = sha('unrelated-original-bytes');
+  const alternateSource = { source: 'progressive-private-dmi', nativeCurrentContexts: [alternate], record: project(alternate, false) };
+  const alternateHour = alternateSource.record.hourly.find(row => row.time === at(-26));
+  assert.equal(store.inspectDmiForecastGridSampling(alternateHour.currentProvenance,
+    'current', alternateHour.time, f.identity).status, 'coherent');
+  assert.equal(createProtectedDmiNativeCurrentInspector({ contexts: [alternate] })
+    .inspectOriginals({ part: f.part, row: alternateHour }).ok, true);
+  const notSuperseded = priority.buildNewestValidRavScoreRecoverySources({ fallbackSource: previous,
+    preferredSource: alternateSource, protectedPreviousSource: previous, productionReferenceAt: target, part: f.part });
+  assert.throws(() => recovery.buildRavScorePermittedCurrentHistory({ part: f.part, referenceAt: at(-2),
+    sourceRecords: notSuperseded, requireNativeGridSampling: true }), error => {
+    assert.equal(error.code, 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED');
+    assert.equal(error.samplingStatus, 'unknown');
+    return true;
+  });
+
+  const captures = collectSelectedSavedDmiOriginalCaptures({ ...f, protectedBulk: old, progressCandidate: fresh });
+  const plan = buildSavedDmiOriginalRestorePlan({ ...f, captures, executionHead });
+  assert.equal(plan.originals.some(value => value.assetIdentitySha256 === replaced.sources.current.assetIdentitySha256), false,
+    'restore must not depend on an obsolete capture already superseded by its selected, fully qualified same-original successor');
+  const requiredOld = collectSelectedSavedDmiOriginalCaptures({ ...f, protectedBulk: old, progressCandidate: alternate });
+  assert.ok(requiredOld.some(value => value.assetIdentitySha256 === replaced.sources.current.assetIdentitySha256),
+    'an unrelated coherent successor does not remove the protected dependency');
+  const missing = structuredClone(old);
+  delete missing.zones[f.identity.entityId].hourly[at(-27)];
+  assert.throws(() => collectSelectedSavedDmiOriginalCaptures({ ...f, protectedBulk: missing,
+    progressCandidate: alternate, persistedHourlyByPart: new Map([[f.part.partId, previous.record]]) }),
+  /SELECTED_ENDPOINT_UNAVAILABLE/, 'missing original bracket is not silently omitted or reconstructed from the top source');
+  const held = structuredClone(previous.record);
+  held.hourly.find(row => row.time === at(-2)).currentStateOnlyHold = { sourceValidTime: at(-3) };
+  assert.throws(() => collectSelectedSavedDmiOriginalCaptures({ ...f, protectedBulk: old, progressCandidate: fresh,
+    persistedHourlyByPart: new Map([[f.part.partId, held]]) }), /HOLD_SUPPORT_UNAVAILABLE/);
+
+  // The ordinary adapter can discard a historical top-level context while
+  // preserving its persisted finite rows until normal source selection. Do
+  // not demand the rejected donor when the actual selected successor supplies
+  // every same-hour current with its own complete, qualified native context.
+  const rejectedContext = structuredClone(old);
+  rejectedContext.currentVectorSelection = 'historical-context-not-admitted';
+  const rawRejected = normal.buildPrivateDmiRecoveryRecord(feature, rejectedContext, target,
+    { startAt: f.demands[0].startAt, expectedIdentity: f.identity,
+      persistedHourly: previous.record.hourly, protectPreviousDmi: true });
+  const finiteCurrentCount = rows => rows.filter(row => Number.isFinite(row.currentUMps)
+    && Number.isFinite(row.currentVMps)).length;
+  assert.equal(finiteCurrentCount(rawRejected.hourly), 58);
+  const { verifiedProtectedDmiPartHourly } = await import('./lib/protected-dmi-current-context.mjs');
+  const sanitizedRejected = { source: previous.source, nativeCurrentContexts: [rejectedContext],
+    record: { ...rawRejected, hourly: verifiedProtectedDmiPartHourly(rawRejected, [rejectedContext],
+      f.identity.entityId, f.part, { requireNativeGridSampling: false }) } };
+  assert.equal(finiteCurrentCount(sanitizedRejected.record.hourly), 0);
+  const selectedReplacement = priority.buildNewestValidRavScoreRecoverySources({ fallbackSource: sanitizedRejected,
+    preferredSource: progressive, protectedPreviousSource: sanitizedRejected, productionReferenceAt: target, part: f.part });
+  assert.equal(recovery.buildRavScorePermittedCurrentHistory({ part: f.part, referenceAt: at(-2),
+    sourceRecords: selectedReplacement, requireNativeGridSampling: true }).length, 49);
+  assert.deepEqual(collectSelectedSavedDmiOriginalCaptures({ ...f, protectedBulk: rejectedContext, progressCandidate: fresh,
+    persistedHourlyByPart: new Map([[f.part.partId, previous.record]]) }), [],
+  'normal qualified selected replacements cover sanitizer losses without demanding the rejected donor');
+  assert.throws(() => collectSelectedSavedDmiOriginalCaptures({ ...f, protectedBulk: rejectedContext,
+    persistedHourlyByPart: new Map([[f.part.partId, previous.record]]) }), /SELECTED_ENDPOINT_UNAVAILABLE/,
+  'sanitizer losses without a selected, native-verifiable same-hour replacement cannot become a no-op');
 });
