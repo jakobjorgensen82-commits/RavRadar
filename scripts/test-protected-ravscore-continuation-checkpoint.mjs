@@ -43,6 +43,12 @@ const PART_COUNT = RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.expectedPartCount;
 const START = Date.parse('2026-08-01T00:00:00.000Z');
 const atHour = hour => new Date(START + hour * 3_600_000).toISOString();
 const clone = value => JSON.parse(JSON.stringify(value));
+const reorderObjectMembers = value => Array.isArray(value)
+  ? value.map(reorderObjectMembers)
+  : value !== null && typeof value === 'object'
+    ? Object.fromEntries(Object.entries(value).reverse()
+      .map(([key, child]) => [key, reorderObjectMembers(child)]))
+    : value;
 const contextFor = partId => `sha256:${crypto.createHash('sha256').update(partId).digest('hex')}`;
 const sha256 = value => crypto.createHash('sha256')
   .update(JSON.stringify(value))
@@ -677,6 +683,31 @@ try {
   );
 
   const predecessor = RAVSCORE_CONTINUATION_COMPATIBLE_PREDECESSORS[0];
+  const reorderedCheckpoint = reorderObjectMembers(checkpoint);
+  assert.deepEqual(reorderedCheckpoint, checkpoint,
+    'Transport may reorder object members, never values or array elements');
+  assert.notEqual(JSON.stringify(reorderedCheckpoint), JSON.stringify(checkpoint));
+  const reorderedCentral = memoryCentral(rowFor(reorderedCheckpoint, 3));
+  const reorderedTarget = checkpointPathFor('reordered-restore-root');
+  const restoredReordered = await restoreProtectedRavScoreContinuationCheckpoint({
+    checkpointPath: reorderedTarget,
+    targetReference: atHour(50),
+    request: reorderedCentral.restoreRequest,
+  });
+  assert.equal(restoredReordered.restored, true);
+  assert.equal(restoredReordered.objectMemberOrderRestored, true);
+  const reorderedSaved = JSON.parse(await fs.readFile(reorderedTarget, 'utf8'));
+  assert.deepEqual(reorderedSaved, checkpoint);
+  assert.equal(reorderedSaved.stateSha256, checkpoint.stateSha256);
+  assert.equal(reorderedSaved.generationSha256, checkpoint.generationSha256);
+  const reorderedEquivalent = await restoreProtectedRavScoreContinuationCheckpoint({
+    checkpointPath: reorderedTarget,
+    targetReference: atHour(50),
+    request: reorderedCentral.restoreRequest,
+  });
+  assert.equal(reorderedEquivalent.reason, 'protected-checkpoint-equivalent');
+  assert.equal(reorderedEquivalent.objectMemberOrderRestored, true);
+
   const protectedPredecessorCheckpoint = checkpointWithImplementation(
     checkpoint,
     predecessor.implementationSha256,
