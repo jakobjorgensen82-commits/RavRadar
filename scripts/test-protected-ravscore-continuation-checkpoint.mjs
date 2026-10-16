@@ -395,6 +395,33 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
     '::error title=Native PostgreSQL source command::phase=NATIVE_SETUP sqlstate=UNKNOWN category=PSQL_COMMAND_FAILURE');
 }
 
+// Run the actual native SQL-prefix assertion before any historical PG phase.
+// Whole issued-source hashing separately protects the CAS 55-second timeout.
+if (process.argv.includes('--native-sampling-identity') || process.argv.includes('--native-identity-source-only')) {
+  const { runInNewContext } = await import('node:vm');
+  const { nativeIdentityMigration, nativeIdentitySourceSha256, assertNativeIdentityOutputFrozen } =
+    await import('./lib/native-sampling-identity-successor-source.mjs');
+  const nativeSource = (await fs.readFile('scripts/lib/native-identity-checkpoint-postgres.mjs', 'utf8')).replace(/\r\n?/g, '\n');
+  const assertions = nativeSource.match(/^    assert\.match\(sql, \/.*\/\);$/gm) ?? [];
+  assert.equal(assertions.length, 1, 'Use the one actual native migration-prefix assertion');
+  const checkPrefix = sql => runInNewContext(assertions[0], { assert, sql }, { timeout: 1_000 });
+  const sql = (await fs.readFile(path.join('supabase/migrations', nativeIdentityMigration().filename), 'utf8')).replace(/\r\n?/g, '\n');
+  const checkIssuedBytes = value => assert.equal(nativeIdentitySourceSha256(value), assertNativeIdentityOutputFrozen().migrationSha256);
+  checkIssuedBytes(sql);
+  checkPrefix(sql);
+  for (const [before, after] of [["set local lock_timeout = '5s';", "set local lock_timeout = '4s';"], ['begin;\n\n', '']]) {
+    assert.equal(sql.split(before).length, 2);
+    assert.throws(() => checkPrefix(sql.replace(before, after)), { code: 'ERR_ASSERTION' });
+  }
+  const timeout = "set statement_timeout = '55s';";
+  assert.equal(sql.split(timeout).length, 2);
+  assert.throws(() => checkIssuedBytes(sql.replace(timeout, "set statement_timeout = '54s';")), { code: 'ERR_ASSERTION' });
+  assert.deepEqual([...nativeSource.matchAll(/(?:let )?phase = '(SOURCE_[A-Z]+)'/g)].map(match => match[1]),
+    ['SOURCE_PREDECESSOR', 'SOURCE_CANONICAL', 'SOURCE_CONTRACTS', 'SOURCE_MIGRATION', 'SOURCE_HISTORY']);
+  console.log(JSON.stringify({ kind: 'NATIVE_IDENTITY_MIGRATION_SOURCE_ASSERTIONS',
+    actualPrefix: true, frozenSql: true, negativeCases: 3, sourcePhases: 5, sqlExecuted: false }));
+}
+
 // Source-only control of genuine fixed37 constructors and CURRENT constructors.
 // This never starts PostgreSQL, runs SQL or certifies the new migration.
 if (process.argv.includes('--native-identity-source-only')) {

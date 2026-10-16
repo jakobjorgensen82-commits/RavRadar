@@ -107,18 +107,22 @@ export function nativeIdentityHistoricalCatalogSetup(oldSource) {
 // still-live, TCP-disabled cluster. No fake executor run counts as SQL proof.
 export async function compareNativeSamplingIdentitySuccessor({ psql, runSql, root,
   sourceDocumentAt, atHour, saveCheckpoint, oldSource }) {
-  let phase = 'SOURCE';
+  let phase = 'SOURCE_PREDECESSOR';
   try {
     const before = await readNativeIdentityPredecessorSource();
+    phase = 'SOURCE_CANONICAL';
     const after = await readNativeIdentityCanonicalSource();
+    phase = 'SOURCE_CONTRACTS';
     const expected = await nativeSamplingIdentityExpectedDatabaseContracts();
+    phase = 'SOURCE_MIGRATION';
     const migration = nativeIdentityMigration();
     const migrationPath = path.join(ROOT, 'supabase/migrations', migration.filename);
     const sql = (await fs.readFile(migrationPath, 'utf8')).replace(/\r\n?/g, '\n');
     const archiveNames = (await fs.readdir(path.dirname(migrationPath))).filter(name => name.endsWith('.sql')).sort();
     const archivePins = await Promise.all(archiveNames.map(async name =>
       [name, sha(await fs.readFile(path.join(path.dirname(migrationPath), name)))]));
-    assert.match(sql, /begin;\nset local lock_timeout = '5s';/);
+    assert.match(sql, /begin;\n\nset local lock_timeout = '5s';/);
+    phase = 'SOURCE_HISTORY';
     assert.equal(await psql('select max(version) from supabase_migrations.schema_migrations;'), BEFORE.statisticsVersion);
     phase = 'HISTORICAL_CATALOG';
     await psql(nativeIdentityHistoricalCatalogSetup(oldSource));
