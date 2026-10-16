@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
+await import('./test-completed-private-runtime-admission.mjs');
 import fs from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { nativeIdentityMigration } from './lib/native-sampling-identity-successor-source.mjs';
@@ -25,7 +27,7 @@ const sources = Object.freeze(
   Object.fromEntries(
     Object.entries(rawSources).map(([role, sourceText]) => [
       role,
-      sourceText.replace(/\r\n/g, '\n'),
+      inverseCompletedRuntimeWorkflow(sourceText.replace(/\r\n/g, '\n'), role),
     ]),
   ),
 );
@@ -127,9 +129,9 @@ function assertCheckpointEpochInterface(actualBuild, actualManual) {
       'Actual default/fresh/reentry routing must preserve its separate archive and RAW sources');
   }
 }
-const checkpointEpochManual = fs.readFileSync(
+const checkpointEpochManual = inverseCompletedRuntimeWorkflow(fs.readFileSync(
   new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8',
-).replaceAll('\r\n', '\n');
+).replaceAll('\r\n', '\n'), 'once');
 assertCheckpointEpochInterface(build, checkpointEpochManual);
 for (const changed of [
   build.replace(checkpointEpochDeclarations, ''),

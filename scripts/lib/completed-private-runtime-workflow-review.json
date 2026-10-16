@@ -1,0 +1,535 @@
+{
+  "schemaVersion": 1,
+  "beforeSourceHead": "89aec730d17348a95d753f3e2de73aaf5fb0d0f1",
+  "inverseReview": {
+    "build": {
+      "path": ".github/workflows/reusable-weather-build.yml",
+      "actualSha256": "061c8eaababf8e718e30c98faee1f789850536d8b28fe11e4071b71d27b45af4",
+      "legacySha256": "649f832d33e9efb1f2569c840b26818c23e39ffd98e7cf7b75de82afc3e62e6b",
+      "edits": [
+        [
+          202756,
+          "rove the whole recreated B manifest and installed originals are unchanged\n        if: inputs.completed_private_runtime == true\n        run: node scripts/completed-private-runtime-admission.mjs before-publish\n        env:\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n\n      - name: P",
+          ""
+        ],
+        [
+          193575,
+          "Refuse completed-runtime target or calibration mismatch before any new S or B publication\n        id: completed-runtime-target\n        if: inputs.completed_private_runtime == true\n        shell: bash\n        run: |\n          set -euo pipefail\n          test \"${{ steps.completed-runtime-admission.outcome }}\" = success\n          test \"${{ steps.ravscore-integrated-runtime-audit.outputs.runtime_audit_outcome }}\" = success\n          node scripts/ravscore-operational-activation.mjs validate-completed-runtime-target \\\n            --completed-source \"$RUNNER_TEMP/completed-runtime-active-source.json\" \\\n            --manifest data/live/manifest.json \\\n            --audit .geometry-v2-work/ravscore-integrated-public-runtime-audit.json \\\n            --source-head \"$GITHUB_SHA\"\n          node scripts/completed-private-runtime-admission.mjs target\n        env:\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n\n      - name: ",
+          ""
+        ],
+        [
+          82715,
+          "Require the separate completed B request and actual restored originals\n        if: inputs.completed_private_runtime == true\n        shell: bash\n        run: |\n          set -euo pipefail\n          test \"${{ steps.preflight.outputs.should_run }}\" = true\n          test \"${{ steps.private-runtime-install.outcome }}\" = success\n          test \"${{ steps.private-runtime-state.outputs.available }}\" = true\n          case \"${{ steps.operational-action.outputs.action }}\" in\n            integrated|integrated-historical-maintenance) ;;\n            *) exit 1 ;;\n          esac\n          node scripts/completed-private-runtime-admission.mjs request\n        env:\n          CHECKPOINT_TARGET_HOUR: ''\n          QUICK_CONFIRMATION: ${{ inputs.quick_confirmation }}\n          QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}\n          EPOCH_BOOTSTRAP: ${{ inputs.weather_state_epoch_bootstrap }}\n          EPOCH_REENTRY: ${{ inputs.weather_state_epoch_checkpoint_reentry }}\n          NATIVE_IDENTITY_RECOVERY: ${{ inputs.native_sampling_identity_original_recovery }}\n          EXTENDED_PROVIDER_BOOTSTRAP: ${{ inputs.extended_provider_bootstrap }}\n          PRODUCE_HANDOFF: ${{ inputs.produce_weather_handoff }}\n\n      - name: Read actual operational and profile rows for completed B admission\n        if: inputs.completed_private_runtime == true\n        run: node scripts/ravscore-operational-activation.mjs completed-runtime-source --current-source \"$RAVRADAR_OPERATIONAL_WORK/current.json\" --output \"$RUNNER_TEMP/completed-runtime-active-source.json\"\n        env:\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n\n      - name: Restore the actual newest protected checkpoint for completed B admission\n        if: inputs.completed_private_runtime == true\n        run: node scripts/protected-ravscore-continuation-checkpoint.mjs --restore --target-reference \"$RAVRADAR_PRODUCTION_TARGET_HOUR\"\n        env:\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n\n      - name: Admit only the exact authenticated completed B and matching central S\n        id: completed-runtime-admission\n        if: inputs.completed_private_runtime == true\n        run: node scripts/completed-private-runtime-admission.mjs admit\n        env:\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n\n      - name: ",
+          ""
+        ],
+        [
+          161463,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          163173,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          164344,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          179879,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          188045,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          190090,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          190579,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          191167,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          191949,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          192427,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          193282,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          194838,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          195397,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          196180,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          196794,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          197280,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          197695,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          198717,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          206605,
+          "(steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          215133,
+          "inputs.completed_private_runtime && steps.completed-runtime-target.outcome || ",
+          ""
+        ],
+        [
+          237190,
+          "inputs.completed_private_runtime && steps.completed-runtime-target.outcome || ",
+          ""
+        ],
+        [
+          72769,
+          "inputs.completed_private_runtime != true && (steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-state.outputs.available == 'true')",
+          "steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-state.outputs.available == 'true'"
+        ],
+        [
+          77089,
+          "completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-install.outcome == 'success')",
+          "weather_state_epoch_bootstrap != true && steps.private-runtime-install.outcome == 'success'"
+        ],
+        [
+          78268,
+          "inputs.completed_private_runtime != true && (steps.dmi-part-continuity-donor.outputs.required == 'true')",
+          "steps.dmi-part-continuity-donor.outputs.required == 'true'"
+        ],
+        [
+          79604,
+          "inputs.completed_private_runtime != true && (steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-install.outcome == 'success')",
+          "steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-install.outcome == 'success'"
+        ],
+        [
+          84741,
+          "completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current')",
+          "native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current'"
+        ],
+        [
+          85790,
+          "inputs.completed_private_runtime != true && (github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true')",
+          "github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true'"
+        ],
+        [
+          91255,
+          "completed_private_runtime != true && (inputs.quick_confirmation == true || inputs.quick_progress_source != '')",
+          "quick_confirmation == true || inputs.quick_progress_source != ''"
+        ],
+        [
+          103741,
+          "ompleted_private_runtime != true && (inputs.checkpoint_only == true)",
+          "heckpoint_only == true"
+        ],
+        [
+          104699,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused == 'true')",
+          "steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused == 'true'"
+        ],
+        [
+          105537,
+          "inputs.completed_private_runtime != true && (steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-install.outcome == 'success')",
+          "steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-install.outcome == 'success'"
+        ],
+        [
+          112567,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')",
+          "steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          116842,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')",
+          "steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          117083,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')",
+          "steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          117340,
+          "inputs.completed_private_runtime != true && (always() && steps.dmi-cache-api-node24.outcome == 'success')",
+          "always() && steps.dmi-cache-api-node24.outcome == 'success'"
+        ],
+        [
+          117581,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && hashFiles('data/live/dmi-bulk-cache.json') != '')",
+          "steps.preflight.outputs.should_run == 'true' && hashFiles('data/live/dmi-bulk-cache.json') != ''"
+        ],
+        [
+          118164,
+          "completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true')",
+          "weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          118396,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')",
+          "steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          118630,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.historical-wave-transition.outputs.required != 'true')",
+          "steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.historical-wave-transition.outputs.required != 'true'"
+        ],
+        [
+          120102,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && inputs.checkpoint_only != true)",
+          "steps.preflight.outputs.should_run == 'true' && inputs.checkpoint_only != true"
+        ],
+        [
+          120429,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')",
+          "steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          120619,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')",
+          "steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          120778,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')",
+          "steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          120993,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')",
+          "steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'"
+        ],
+        [
+          122059,
+          "completed_private_runtime != true && (inputs.weather_state_epoch_checkpoint_reentry == true)",
+          "weather_state_epoch_checkpoint_reentry == true"
+        ],
+        [
+          122535,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')",
+          "steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'"
+        ],
+        [
+          122985,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')",
+          "steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'"
+        ],
+        [
+          126990,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.checkpoint_only == true && steps.current-history-demand.outcome == 'success' && steps.dmi-generation-prepare.outcome == 'success')",
+          "steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.checkpoint_only == true && steps.current-history-demand.outcome == 'success' && steps.dmi-generation-prepare.outcome == 'success'"
+        ],
+        [
+          127464,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')",
+          "steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'"
+        ],
+        [
+          128334,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')",
+          "steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'"
+        ],
+        [
+          128986,
+          "completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap == true && steps.preflight.outputs.should_run == 'true')",
+          "weather_state_epoch_bootstrap == true && steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          129188,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')",
+          "steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'"
+        ],
+        [
+          134901,
+          "completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome == 'success')",
+          "weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome == 'success'"
+        ],
+        [
+          135235,
+          "inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped')",
+          "always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped'"
+        ],
+        [
+          135847,
+          "inputs.completed_private_runtime != true && (always() && steps.dmi-progress-write-authority.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-cache-api-prepare.outcome == 'success' && steps.dmi-cache-api-prepare.outputs.distribution_ready == 'true')",
+          "always() && steps.dmi-progress-write-authority.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-cache-api-prepare.outcome == 'success' && steps.dmi-cache-api-prepare.outputs.distribution_ready == 'true'"
+        ],
+        [
+          136511,
+          "inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true')",
+          "always() && steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          138496,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true')",
+          "steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true'"
+        ],
+        [
+          139481,
+          "inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && ((steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outcome == 'success') || steps.historical-wave-transition.outputs.required == 'true')",
+          "always() && steps.preflight.outputs.should_run == 'true' && ((steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outcome == 'success') || steps.historical-wave-transition.outputs.required == 'true'"
+        ],
+        [
+          141370,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && always()",
+          "steps.preflight.outputs.should_run == 'true' && always("
+        ],
+        [
+          142538,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')",
+          "steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          142965,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')",
+          "steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          143519,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')",
+          "steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          144274,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_reusable != 'true')",
+          "steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_reusable != 'true'"
+        ],
+        [
+          144633,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')",
+          "steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'"
+        ],
+        [
+          145328,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true)",
+          "steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true"
+        ],
+        [
+          145728,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true)",
+          "steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true"
+        ],
+        [
+          146554,
+          "completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap == true && steps.preflight.outputs.should_run == 'true')",
+          "weather_state_epoch_bootstrap == true && steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          146809,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true)",
+          "steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true"
+        ],
+        [
+          148026,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')",
+          "steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          148712,
+          "completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap == true && steps.preflight.outputs.should_run == 'true')",
+          "weather_state_epoch_bootstrap == true && steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          148980,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')",
+          "steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'"
+        ],
+        [
+          149587,
+          "inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != '')",
+          "always() && steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != ''"
+        ],
+        [
+          150402,
+          "inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && (steps.weather-source-handoff.outputs.reused == 'true' || steps.open-meteo-fill.outcome != 'skipped')",
+          "always() && steps.preflight.outputs.should_run == 'true' && (steps.weather-source-handoff.outputs.reused == 'true' || steps.open-meteo-fill.outcome != 'skipped'"
+        ],
+        [
+          151662,
+          "inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && ((steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') || steps.historical-wave-transition.outputs.required == 'true')",
+          "always() && steps.preflight.outputs.should_run == 'true' && ((steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') || steps.historical-wave-transition.outputs.required == 'true'"
+        ],
+        [
+          152284,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')",
+          "steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          152653,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')",
+          "steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          152972,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused == 'true')",
+          "steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused == 'true'"
+        ],
+        [
+          153427,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')",
+          "steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          153690,
+          "completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap == true && steps.preflight.outputs.should_run == 'true')",
+          "weather_state_epoch_bootstrap == true && steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          153897,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')",
+          "steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          158704,
+          "inputs.completed_private_runtime != true && (steps.weather.outcome == 'success')",
+          "steps.weather.outcome == 'success'"
+        ],
+        [
+          160263,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.weather.outcome == 'success' && inputs.quick_confirmation != true && inputs.checkpoint_only != true)",
+          "steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.weather.outcome == 'success' && inputs.quick_confirmation != true && inputs.checkpoint_only != true"
+        ],
+        [
+          161388,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.weather.outcome == 'success')",
+          "steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.weather.outcome == 'success'"
+        ],
+        [
+          162342,
+          "inputs.completed_private_runtime != true && (always() && github.ref == 'refs/heads/main' && steps.preflight.outputs.should_run == 'true' && steps.component-progress-restore.outcome == 'success' && steps.component-progress-restore.outputs.captured == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure')",
+          "always() && github.ref == 'refs/heads/main' && steps.preflight.outputs.should_run == 'true' && steps.component-progress-restore.outcome == 'success' && steps.component-progress-restore.outputs.captured == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure'"
+        ],
+        [
+          163287,
+          "inputs.completed_private_runtime != true && (always() && steps.component-progress-seal.outcome == 'success' && steps.component-progress-seal.outputs.saved == 'true')",
+          "always() && steps.component-progress-seal.outcome == 'success' && steps.component-progress-seal.outputs.saved == 'true'"
+        ],
+        [
+          163776,
+          "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')",
+          "steps.preflight.outputs.should_run == 'true'"
+        ],
+        [
+          186966,
+          "completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run')",
+          "weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'"
+        ],
+        [
+          29713,
+          "OMPLETED_PRIVATE_RUNTIME:-false}\" = true; then\n            echo \"should_run=true\" >> \"$GITHUB_OUTPUT\"\n            echo \"dmi_changed=false\" >> \"$GITHUB_OUTPUT\"\n            echo \"reason=completed-private-runtime\" >> \"$GITHUB_OUTPUT\"\n            echo \"age_minutes=unknown\" >> \"$GITHUB_OUTPUT\"\n            exit 0\n          fi\n          if test \"${C",
+          ""
+        ],
+        [
+          14211,
+          "        with:\n          fetch-depth: ${{ inputs.completed_private_runtime && '0' || '1' }}\n",
+          ""
+        ],
+        [
+          9500,
+          "      COMPLETED_PRIVATE_RUNTIME: ${{ inputs.completed_private_runtime }}\n      COMPLETED_PRIVATE_RUNTIME_PIN: ${{ inputs.completed_private_runtime_pin }}\n",
+          ""
+        ],
+        [
+          11849,
+          "      completed_runtime_outcome: ${{ steps.completed-runtime-target.outcome }}\n",
+          ""
+        ],
+        [
+          4932,
+          "completed_runtime_outcome:\n        description: \"Actual completed-runtime target admission; never fresh weather success\"\n        value: ${{ jobs.build-and-prepare.outputs.completed_runtime_outcome }}\n      ",
+          ""
+        ],
+        [
+          94,
+          "completed_private_runtime:\n        required: false\n        type: boolean\n        default: false\n      completed_private_runtime_pin:\n        required: false\n        type: string\n        default: ''\n      ",
+          ""
+        ]
+      ]
+    },
+    "once": {
+      "path": ".github/workflows/run-current-weather-once.yml",
+      "actualSha256": "6f656e559219da67b042a79d161510db2573385cef7ce6d1d793437d23800ace",
+      "legacySha256": "35c95da08399c252372ed3ea6feaa190edd9a6dc3632572a2e83d360fa18fd44",
+      "edits": [
+        [
+          47896,
+          "          COMPLETED_PRIVATE_RUNTIME: ${{ inputs.completed_private_runtime }}\n          COMPLETED_RUNTIME_OUTCOME: ${{ needs.build-and-prepare.outputs.completed_runtime_outcome }}\n",
+          ""
+        ],
+        [
+          43060,
+          "      completed_private_runtime: ${{ inputs.completed_private_runtime }}\n      completed_private_runtime_pin: ${{ needs.current-main-target.outputs.completed_private_runtime_pin }}\n",
+          ""
+        ],
+        [
+          9948,
+          " && inputs.completed_private_runtime != true",
+          ""
+        ],
+        [
+          4097,
+          "uses: actions/setup-node@v7\n        if: inputs.completed_private_runtime == true\n        with:\n          node-version: 22\n\n      - name: Pin the actual newest completed private generation before target selection\n        id: completed-target\n        if: inputs.completed_private_runtime == true\n        run: node scripts/completed-private-runtime-admission.mjs pin\n        env:\n          COMPLETED_PRIVATE_RUNTIME: 'true'\n          QUICK_CONFIRMATION: ${{ inputs.quick_confirmation }}\n          QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}\n          CHECKPOINT_TARGET_HOUR: ${{ inputs.checkpoint_target_hour }}\n          CHECKPOINT_ONLY: 'false'\n          EPOCH_BOOTSTRAP: ${{ inputs.weather_state_epoch_bootstrap }}\n          EPOCH_REENTRY: ${{ inputs.weather_state_epoch_checkpoint_reentry }}\n          NATIVE_IDENTITY_RECOVERY: ${{ inputs.native_sampling_identity_original_recovery }}\n          EXTENDED_PROVIDER_BOOTSTRAP: 'false'\n          PRODUCE_HANDOFF: 'false'\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n\n      - ",
+          ""
+        ],
+        [
+          9064,
+          "ompleted-target.outputs.target_hour || steps.c",
+          ""
+        ],
+        [
+          3276,
+          "ompleted-target.outputs.target_hour || steps.checkpoint-target.outputs.target_hour || steps.cache-state.outputs.target_hour }}\n      completed_private_runtime_pin: ${{ steps.completed-target.outputs.completed_private_runtime_pin",
+          "heckpoint-target.outputs.target_hour || steps.cache-state.outputs.target_hour"
+        ],
+        [
+          84,
+          "completed_private_runtime:\n        description: 'Reuse the exact newest authenticated completed private generation without providers or scoring'\n        required: false\n        type: boolean\n        default: false\n      ",
+          ""
+        ]
+      ]
+    }
+  }
+}

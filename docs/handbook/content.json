@@ -5,6 +5,20 @@
   "updatedAt": "2026-10-16",
   "sections": [
     {
+      "id": "completed-protected-runtime-delivery-2026-10-16",
+      "chapter": "89.248",
+      "title": "Fortsæt leveringen af et allerede færdigt datasæt",
+      "summary": "En fejl sent i leveringen skal kunne rettes uden at hente vejret eller beregne det hele igen. Genbrug kræver samlet kontrol af identitet, indhold og gemt beregningstilstand.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En færdig pakke må kun genbruges, når dens identitet, indhold og gemte beregningstilstand er kontrolleret samlet.</div><p>Den særlige genoptagelse er slået fra som udgangspunkt. Den beholder pakkens oprindelige dato og datasæt-id; gamle data må ikke præsenteres som nyhentede. Leverandørhentning og beregning springes over og tæller ikke som gennemført. Alle almindelige kontroller af databevarelse, sikker gemning, adgang, serverfunktioner og offentlig levering skal stadig bestå.</p><p>Den seneste beregningstilstand skal passe præcist til pakken. En anden gyldig tilstand er ikke god nok. Den centralt valgte model og dens faktiske tilladelse til opvarmning skal også kontrolleres. Manglende eller ændrede oplysninger må ikke gættes.</p><div class=\"callout\"><strong>Åbent:</strong> Lokale normale prøver består, men faktisk offentlig genopretning er endnu ikke bevist. En almindelig vejrhentning skal derefter kunne fortsætte fra de nye gemte data, før tidsplanen genaktiveres.</div>"
+    },
+    {
+      "id": "weather-cold-replay-provenance-cohort-2026-10-16",
+      "chapter": "89.247",
+      "title": "Samme opstart kan have forskellig lokal historikdækning",
+      "summary": "Manglende historiktimer skal være ærligt ukendte. Samme nye opstart kræver samme verificerede proveniens, ikke identisk lokal dækning.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> To kystdele kan tilhøre samme nye historikforløb, selv om den ene har alle 48 timer, og den anden mangler én.</div><p>Hver dels faktiske opstart, kilde, tidspunkt og regnskab skal efterprøves. Mærkningen af fuld eller delvis historik bevares. Gammel, fortsat eller migreret tilstand må ikke blandes ind som ny opstart; ukendte timer bliver ikke nul eller gyldige målinger.</p><p>En afgrænset kontrolrettelse er lokalt reproduceret og prøvet med normale tilstandsbyggere. Scoreformel, vejrværdier, administratorpunkter og modelbinding ændres ikke. Den færdigberegnede pakke skal genbruges med sin oprindelige identitet gennem alle normale databevarelses-, gemme- og leveringskontroller.</p><div class=\"callout\"><strong>Åbent:</strong> Ny offentlig levering og efterfølgende almindelig vejrhentning er endnu ikke verificeret.</div>"
+    },
+    {
       "id": "weather-state-epoch-retained-scalar-inputs-2026-10-16",
       "chapter": "89.246",
       "title": "Bevar gyldige vejrfelter særskilt fra den gamle strømtilstand",
