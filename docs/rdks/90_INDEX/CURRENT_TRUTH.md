@@ -1,3 +1,9 @@
+## 16. oktober — SOURCE635: forbigående procesforsvinding under prøveobservation
+
+Femte kildekontrol 38917857971 stoppede før H70/H71 på ProcessLookupError/ESRCH under læsning af andre processers /proc-oplysninger. Begge prøveobservatører accepterer nu kun ENOENT/ESRCH for en proces, som forsvinder under selve søgningen. Rettigheden til den fastholdte egen proces, fysisk lukning, stop, H-beviser og oprydning ændres ikke; adgangsfejl, I/O-fejl og andre undtagelser skal fortsat slå prøven fejl.
+
+Kun tre prøvefiler samt disse dokumentationsfronter ændres. Den normale måltest omfatter de fire faktiske observatørfragmenter og 32 syntetiske udfald; det er ikke en Linux-/proc-, H70/H71-, SDK- eller produktionsprøve. Linux-kildekontrollen skal fortsat bestå. Produktkode, kernel, 311-path-kontrol, workflow, model og SQL er uændrede. SOURCE19 forbliver INAKTIV og må ikke forsinke den særskilte vejrrettelse i PR638 på 01dc. Ingen offentlig levering eller ny vejrhentning følger heraf. Version 4.0.578 og alle fem mål til 18. oktober er fortsat åbne. Tidligere dokumentation bevares nedenfor.
+
 ## 16. oktober — SOURCE635: to forskellige fejl i prøveforudsætningerne
 
 Fjerde SOURCE635-kildekontrol 38910324610 stoppede igen før H70/H71. H70 manglede den friske prøvemappes private .cache; H71 manglede den dynamisk kaldte Python-wrapper og fik derfor intet JSON-lukningsbevis. Wrapperen stod i producentlisten, men ikke i prøvernes lagringskontraktliste: CONTRACT_FILES.fullRuntime er med vilje kun storage-ABI. Begge årsager er forskellige fra den tidligere CJS-afhængighedsfejl.

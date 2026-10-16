@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import ctypes
+import errno
 import hashlib
 import importlib.util
 import json
@@ -69,7 +70,9 @@ def descendants(parent):
         pid = todo.pop()
         try:
             children = Path(f'/proc/{pid}/task/{pid}/children').read_text('ascii').split()
-        except FileNotFoundError:
+        except (FileNotFoundError, ProcessLookupError) as error:
+            if error.errno not in (errno.ENOENT, errno.ESRCH):
+                raise
             continue
         for text in children:
             child = int(text)
@@ -512,7 +515,12 @@ class SourceActualSUnionNative(unittest.TestCase):
                 self.assertLess(time.monotonic(), end, 'ACTUAL_H71_ACTION_OBSERVER_DEADLINE')
                 for pid in descendants(process.pid):
                     try:
-                        args = process_args(pid)
+                        try:
+                            args = process_args(pid)
+                        except ProcessLookupError as error:
+                            if error.errno != errno.ESRCH:
+                                raise
+                            continue
                         if os.fsencode(root / 'scripts/run-copernicus-weather-components.py') in args:
                             if b'--storage-inventory' in args:
                                 h70_seen = True

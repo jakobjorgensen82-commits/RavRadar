@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import ctypes
+import errno
 import hashlib
 import importlib.util
 import json
@@ -74,7 +75,9 @@ def descendants(parent):
         pid = todo.pop()
         try:
             children = Path(f'/proc/{pid}/task/{pid}/children').read_text('ascii').split()
-        except FileNotFoundError:
+        except (FileNotFoundError, ProcessLookupError) as error:
+            if error.errno not in (errno.ENOENT, errno.ESRCH):
+                raise
             continue
         for text in children:
             child = int(text)
@@ -507,7 +510,9 @@ class SourceOriginalCpInstallNative(unittest.TestCase):
                 for pid in descendants(process.pid):
                     try:
                         args = Path(f'/proc/{pid}/cmdline').read_bytes().split(b'\0')[:-1]
-                    except FileNotFoundError:
+                    except (FileNotFoundError, ProcessLookupError) as error:
+                        if error.errno not in (errno.ENOENT, errno.ESRCH):
+                            raise
                         continue
                     for relative, label in program_labels.items():
                         if os.fsencode(root / relative) in args:

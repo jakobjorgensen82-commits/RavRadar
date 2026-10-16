@@ -207,6 +207,27 @@ export async function testSource19FixtureWriterCachePrerequisite(fixtureSource =
   }
 }
 
+export async function testSource19ProcDiscoveryRaces() {
+  const { spawnSync } = await import('node:child_process');
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const documents = {};
+  for (const name of ['scripts/test-source19-cp-install-native.py', 'scripts/test-source19-union-native.py'])
+    documents[name] = await fs.readFile(path.join(root, name), 'utf8');
+  const probe = spawnSync(process.env.PYTHON || 'python', ['-I', '-B', '-c', "import ast, copy, errno, json, sys\ndocuments = json.loads(sys.stdin.read())\ncases = 0\nfor name, source in documents.items():\n    tree = ast.parse(source, filename=name)\n    descendants = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'descendants')\n    loops = [node for node in ast.walk(tree) if isinstance(node, ast.For)\n             and isinstance(node.iter, ast.Call) and isinstance(node.iter.func, ast.Name)\n             and node.iter.func.id == 'descendants']\n    assert len(loops) == 1\n    observer_try = loops[0].body[0]\n    assert isinstance(observer_try, ast.Try)\n    first = copy.deepcopy(observer_try.body[0])\n    # Keep the actual cmdline read and its actual nested/outer handlers, but do\n    # not execute any later pidfd, parent, stop, H, descriptor or installer code.\n    probe_try = ast.Try(body=[first], handlers=copy.deepcopy(observer_try.handlers), orelse=[], finalbody=[])\n    loop = ast.For(target=ast.Name(id='pid', ctx=ast.Store()),\n                   iter=ast.List(elts=[ast.Constant(value=12345)], ctx=ast.Load()),\n                   body=[probe_try, ast.Return(value=ast.Name(id='args', ctx=ast.Load()))], orelse=[])\n    probe = ast.FunctionDef(name='probe_cmdline',\n        args=ast.arguments(posonlyargs=[], args=[], kwonlyargs=[], kw_defaults=[], defaults=[]),\n        body=[loop, ast.Return(value=ast.Constant(value=None))], decorator_list=[])\n    process_args = [copy.deepcopy(node) for node in ast.walk(tree)\n                    if isinstance(node, ast.FunctionDef) and node.name == 'process_args']\n    unit = ast.fix_missing_locations(ast.Module(\n        body=[copy.deepcopy(descendants), *process_args, probe], type_ignores=[]))\n    selected_error = None\n    class FakePath:\n        def __init__(self, value): self.value = value\n        def read_text(self, *unused, **kwargs):\n            if self.value == '/proc/12345/task/12345/children': return '12346'\n            assert self.value == '/proc/12346/task/12346/children'\n            if selected_error is not None: raise selected_error\n            return ''\n        def read_bytes(self):\n            assert self.value == '/proc/12345/cmdline'\n            if selected_error is not None: raise selected_error\n            return b'node\\0'\n    namespace = {'Path': FakePath, 'errno': errno}\n    exec(compile(unit, '<actual-fixture-proc-fragments>', 'exec'), namespace)\n    for operation, expected in [(lambda: namespace['descendants'](12345), [12346]),\n                                (namespace['probe_cmdline'], [b'node'])]:\n        selected_error = None\n        assert operation() == expected\n        cases += 1\n        for error in [FileNotFoundError(errno.ENOENT, 'synthetic ended PID'),\n                      ProcessLookupError(errno.ESRCH, 'synthetic ended PID')]:\n            selected_error = error\n            assert operation() == ([12346] if isinstance(expected[0], int) else None)\n            cases += 1\n        for error in [PermissionError(errno.EACCES, 'synthetic refusal'),\n                      OSError(errno.EPERM, 'synthetic refusal'),\n                      OSError(errno.EIO, 'synthetic I/O failure'),\n                      ProcessLookupError(errno.EINVAL, 'not an ESRCH'),\n                      RuntimeError('synthetic non-filesystem failure')]:\n            selected_error = error\n            try: operation()\n            except BaseException as actual: assert actual is error\n            else: raise AssertionError('NONTRANSIENT_PROC_FAILURE_WAS_SWALLOWED')\n            cases += 1\nprint(json.dumps({'status': 'SOURCE19_PROC_SNAPSHOT_PREREQUISITE_PASS',\n                  'cases': cases, 'actualFixtureFragments': True,\n                  'realProcAccess': False, 'nativeH70': 'UNRUN',\n                  'nativeH71': 'UNRUN', 'sourceAdmission': False}))\n"], {
+    input: JSON.stringify(documents), encoding: 'utf8', timeout: 10_000, maxBuffer: 16_384,
+    env: { PATH: process.env.PATH, ...(process.env.SYSTEMROOT ? { SYSTEMROOT: process.env.SYSTEMROOT } : {}) },
+  });
+  assert.equal(probe.error, undefined); assert.equal(probe.signal, null);
+  assert.equal(probe.status, 0, probe.stderr);
+  assert.equal(probe.stderr, '');
+  assert.deepEqual(JSON.parse(probe.stdout), {
+    status: 'SOURCE19_PROC_SNAPSHOT_PREREQUISITE_PASS', cases: 32,
+    actualFixtureFragments: true, realProcAccess: false,
+    nativeH70: 'UNRUN', nativeH71: 'UNRUN', sourceAdmission: false,
+  });
+  return { status: 'SOURCE19_PROC_SNAPSHOT_PREREQUISITE_PASS', cases: 32, nativeActual: 'UNRUN' };
+}
+
 export async function testSource19NativeCiWorkflow(input=null) {
   const workflow=(input??await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
   const historical=projectSource19NativeCiWorkflow(workflow);
@@ -261,6 +282,7 @@ export async function testSource19NativeCiWorkflow(input=null) {
   assert.ok(historical.indexOf('Validate native PostgreSQL checkpoint CAS on artificial data only')<historical.indexOf('Validate source contracts and release governance'));
   await assertSource19FixtureCjsClosure();
   await testSource19FixtureWriterCachePrerequisite();
+  await testSource19ProcDiscoveryRaces();
   return {status:'SOURCE19_NATIVE_CI_CONTRACT_PASS',scopePaths:SOURCE19_NATIVE_SCOPE_PATHS.length,cases:7,nativeActual:'UNRUN'};
 }
 
