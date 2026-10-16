@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import { spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -500,7 +501,10 @@ const historicalUpdater = runInNewContext(
 assert.equal(digest(historicalUpdater),
   '62bbe6eb4325dcba05afb922028150a9bdf7c45f2ebd7a7e975d85f3941d6288');
 const bulkUpdater = await fs.readFile(new URL('./update-dmi-bulk.py', import.meta.url), 'utf8');
-const productionWorkflows = await readProductionWorkflowSources();
+const productionWorkflows = Object.freeze(Object.fromEntries(
+  Object.entries(await readProductionWorkflowSources()).map(([role, source]) =>
+    [role, inverseCompletedRuntimeWorkflow(source.replaceAll('\r\n', '\n'), role)]),
+));
 const productionPartPipeline = await fs.readFile(
   new URL('./lib/ravscore-production-part-pipeline.mjs', import.meta.url),
   'utf8',

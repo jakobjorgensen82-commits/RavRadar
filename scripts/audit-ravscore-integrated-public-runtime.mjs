@@ -1582,6 +1582,19 @@ export function auditIntegratedRavScorePublicRuntime(full, {
         'VERIFIED_PRIVATE_48H_COLD_REPLAY',
         'BOUNDED_PRIVATE_PARTIAL_HISTORY_COLD_REPLAY',
       ].includes(model?.initialStateSource);
+    // Completeness is a truthful per-part fact, not a different initialization cohort.
+    // Qualify the exact local label/accounting before sharing a provenance key.
+    const coldReplayCohort = coldReplayTransition
+      && exactColdReplayStateInitialization(model)
+      && state.lineage.targetReferenceAt === full.productionReferenceAt
+      ? canonicalPublicRuntimeJson({
+        transition: 'COLD_REPLAY',
+        recoveryId: state.lineage.recoveryId,
+        source: state.lineage.source,
+        targetReferenceAt: state.lineage.targetReferenceAt,
+        expectedCausalPositionCount: state.lineage.expectedCausalPositionCount,
+      })
+      : null;
     collector.add([migratedTransition, continuedTransition, coldReplayTransition]
       .filter(Boolean).length === 1, 'PART_STATE_TRANSITION_AMBIGUOUS');
     if (migratedTransition) {
@@ -1598,8 +1611,8 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       'PART_CONTINUATION_METADATA_INVALID');
     } else if (coldReplayTransition) {
       coldReplayStateCount += 1;
-      initialStateSources.add(model.initialStateSource);
-      collector.add(model?.migrationId === null,
+      initialStateSources.add(coldReplayCohort ?? model.initialStateSource);
+      collector.add(model?.migrationId === null && coldReplayCohort !== null,
         'PART_COLD_REPLAY_METADATA_INVALID');
     }
 
@@ -1698,7 +1711,7 @@ export function auditIntegratedRavScorePublicRuntime(full, {
     collector.add(migrationLineage !== coldReplayLineage,
       'STATE_LINEAGE_MISSING_OR_AMBIGUOUS');
     if (migrationLineage) lineageSources.add('CANDIDATE_G_MIGRATION');
-    if (coldReplayLineage) lineageSources.add(model?.initialStateSource);
+    if (coldReplayLineage) lineageSources.add(coldReplayCohort ?? model?.initialStateSource);
     if (migratedTransition) {
       collector.add(migrationLineage, 'STATE_MIGRATION_LINEAGE_MISSING');
     }

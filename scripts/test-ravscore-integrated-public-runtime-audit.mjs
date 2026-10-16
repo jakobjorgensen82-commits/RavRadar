@@ -435,6 +435,7 @@ function syntheticFull({
   currentDirectMissing = false,
   directMissing = false,
   includeFeggesund = false,
+  coldSeriesByPart = null,
 }) {
   assert.equal(partCounts.length, zoneCount);
   if (includeFeggesund) assert.equal(partCounts.at(-1), 3);
@@ -506,9 +507,10 @@ function syntheticFull({
           },
         },
       };
+      const localColdSeries = transition === 'cold' ? coldSeriesByPart?.get(partId) : null;
       const runtime = partRuntime(part, transition, {
-        series: zoneSelectedSeries,
-        row: zoneRuntimeRow,
+        series: localColdSeries ?? zoneSelectedSeries,
+        row: localColdSeries?.rows.at(-1) ?? zoneRuntimeRow,
         scoreProfile,
         scoreWeather,
       });
@@ -790,6 +792,89 @@ function audit(full, package_, expectedZoneCount, expectedPartCount) {
   });
 }
 
+function assertColdReplayProvenanceCohort() {
+  const partialSeries = buildIntegratedRavScoreStateSeries(
+    baseSamples.slice(-49).map(sample => sample.time === time(-48)
+      ? { ...sample, waveDirectionDeg: null } : sample),
+    {
+      samplingContextKey: 'sha256:' + '0'.repeat(64), onshoreDirectionDeg: 90,
+      coldReplayBootstrap: {
+        ...exactColdReplayProof, completeCausalPositionCount: 47,
+        boundedUnknownPositionCount: 1,
+        historyTransition: RAVSCORE_RECOVERY_POLICY.unknownHistoryTransition,
+      },
+    },
+  );
+  assert.equal(coldBaseSeries.initialStateSource, 'VERIFIED_PRIVATE_48H_COLD_REPLAY');
+  assert.equal(partialSeries.initialStateSource, 'BOUNDED_PRIVATE_PARTIAL_HISTORY_COLD_REPLAY');
+  assert.equal(coldBaseSeries.continuationState.lineage.completeCausalPositionCount, 48);
+  assert.equal(partialSeries.continuationState.lineage.completeCausalPositionCount, 47);
+  assert.equal(partialSeries.continuationState.lineage.boundedUnknownPositionCount, 1);
+  const build = entries => syntheticFull({ zoneCount: 2, partCounts: [1, 1],
+    transition: 'cold', coldSeriesByPart: new Map(entries) });
+  const inspect = full => {
+    const before = compactJson(full), report = audit(full, publicPackage(full), 2, 2);
+    assert.equal(compactJson(full), before, 'Audit must not mutate state, labels or numerical data');
+    return report;
+  };
+  for (const [label, entries] of [
+    ['both-full', []],
+    ['both-partial', [['synthetic-part-1', partialSeries], ['synthetic-part-2', partialSeries]]],
+    ['same-cold-provenance-different-completeness', [['synthetic-part-2', partialSeries]]],
+  ]) {
+    const full = build(entries), report = inspect(full);
+    assert.deepEqual(report.errors, [], label);
+    assert.equal(report.status, 'passed');
+    assert.equal(report.continuation.coldReplayStateCount, 2);
+    assert.equal(report.continuation.migratedStateCount, 0);
+    assert.equal(report.continuation.continuedStateCount, 0);
+    assert.equal(report.coverage.stateReplayCount, 2);
+    assert.equal(report.coverage.reconstructedModeCount, 4);
+  }
+  const bothMixedErrors = ['MIXED_STATE_LINEAGE_COHORT', 'MIXED_STATE_TRANSITION_COHORT'];
+  const mutations = [
+    ['other-target', full => { full.coastalParts.parts['synthetic-part-2'].ravScoreModel.currentState.lineage.targetReferenceAt = time(-1); }, bothMixedErrors],
+    ['all-same-wrong-target', full => { for (const part of Object.values(full.coastalParts.parts)) part.ravScoreModel.currentState.lineage.targetReferenceAt = time(-1); }, ['PART_COLD_REPLAY_METADATA_INVALID']],
+    ['false-full-label', full => { full.coastalParts.parts['synthetic-part-2'].ravScoreModel.initialStateSource = 'VERIFIED_PRIVATE_48H_COLD_REPLAY'; }, ['PART_COLD_REPLAY_METADATA_INVALID']],
+    ['false-partial-label', full => { full.coastalParts.parts['synthetic-part-1'].ravScoreModel.initialStateSource = 'BOUNDED_PRIVATE_PARTIAL_HISTORY_COLD_REPLAY'; }, ['PART_COLD_REPLAY_METADATA_INVALID']],
+    ['unknown-label', full => { full.coastalParts.parts['synthetic-part-2'].ravScoreModel.initialStateSource = 'UNKNOWN_COLD_REPLAY'; }, ['PART_STATE_TRANSITION_AMBIGUOUS']],
+    ['missing-label', full => { full.coastalParts.parts['synthetic-part-2'].ravScoreModel.initialStateSource = 'MISSING'; }, ['PART_STATE_TRANSITION_AMBIGUOUS']],
+    ['empty-label', full => { full.coastalParts.parts['synthetic-part-2'].ravScoreModel.initialStateSource = 'EMPTY'; }, ['PART_STATE_TRANSITION_AMBIGUOUS']],
+    ['other-recovery', full => { full.coastalParts.parts['synthetic-part-2'].ravScoreModel.currentState.lineage.recoveryId = 'forged-recovery'; }, ['STATE_LINEAGE_MISSING_OR_AMBIGUOUS', 'STATE_REPLAY_FAILED']],
+    ['other-source', full => { full.coastalParts.parts['synthetic-part-2'].ravScoreModel.currentState.lineage.source = 'forged-source'; }, ['STATE_LINEAGE_MISSING_OR_AMBIGUOUS', 'STATE_REPLAY_FAILED']],
+    ['other-expected-count', full => { full.coastalParts.parts['synthetic-part-2'].ravScoreModel.currentState.lineage.expectedCausalPositionCount = 47; }, ['STATE_LINEAGE_MISSING_OR_AMBIGUOUS', 'STATE_REPLAY_FAILED']],
+    ['mixed-continuation', full => {
+      const model = full.coastalParts.parts['synthetic-part-2'].ravScoreModel;
+      const continued = buildIntegratedRavScoreStateSeries([], {
+        initialState: model.currentState, samplingContextKey: model.currentState.samplingContextKey,
+      });
+      assert.equal(continued.initialStateAccepted, true);
+      assert.deepEqual(continued.continuationState, model.currentState);
+      model.initialStateAccepted = continued.initialStateAccepted;
+      model.initialStateSource = continued.initialStateSource;
+    }, bothMixedErrors],
+    ['mixed-migration', full => {
+      const part = full.coastalParts.parts['synthetic-part-2'], model = part.ravScoreModel;
+      model.migrationApplied = true; model.migrationId = RAVSCORE_MIGRATION_ID;
+      model.initialStateSource = 'CANDIDATE_G_SCHEMA2_MIGRATION';
+      model.currentState.lineage = readyState({ ...part, partId: 'synthetic-part-2' }, 'continuation').lineage;
+    }, bothMixedErrors],
+  ];
+  for (const [label, mutate, required] of mutations) {
+    const full = build([['synthetic-part-2', partialSeries]]); mutate(full);
+    const report = inspect(full); assert.equal(report.status, 'failed', label);
+    for (const code of required) assert(report.errors.includes(code), label + ': ' + code);
+  }
+  assert.throws(() => buildIntegratedRavScoreStateSeries(baseSamples.slice(-49), {
+    samplingContextKey: 'sha256:' + '0'.repeat(64), onshoreDirectionDeg: 90,
+    coldReplayBootstrap: { ...exactColdReplayProof, completeCausalPositionCount: 47,
+      boundedUnknownPositionCount: 1, historyTransition: RAVSCORE_RECOVERY_POLICY.unknownHistoryTransition },
+  }), /causal-position proof is invalid/, 'A false partial proof cannot replace complete real rows');
+  console.log(JSON.stringify({ status: 'PASS', contract: 'same cold provenance; truthful local48/0 and47/1',
+    positive: 3, negative: mutations.length + 1, originalLabelsPreserved: true,
+    numericalAndLineageInputsUnchanged: true, actualAuditorAndStateBuilders: true, realNetwork: 0 }));
+}
+assertColdReplayProvenanceCohort();
 let national = syntheticFull({
   zoneCount: 210,
   partCounts: Array.from({ length: 210 }, (_, index) => index < 43 ? 4 : 3),

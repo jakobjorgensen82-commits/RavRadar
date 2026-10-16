@@ -1,3 +1,21 @@
+## 89.248 Fortsæt leveringen af et allerede færdigt datasæt
+
+**Kort fortalt:** En fejl sent i leveringen skal kunne rettes uden at hente vejret eller beregne det hele igen. Den færdige pakke må kun genbruges, når dens identitet, indhold og gemte beregningstilstand er kontrolleret samlet.
+
+Den særlige genoptagelse er slået fra som udgangspunkt. Den beholder pakkens oprindelige dato og datasæt-id; gamle data må ikke præsenteres som nyhentede. Leverandørhentning og beregning springes over og tæller ikke som gennemført. Alle almindelige kontroller af databevarelse, sikker gemning, adgang, serverfunktioner og offentlig levering skal stadig bestå.
+
+Tilstanden, der beskriver den seneste beregning, skal passe præcist til pakken. En anden gyldig tilstand er ikke god nok. Også den centralt valgte model og dens faktiske tilladelse til opvarmning skal kontrolleres; manglende eller ændrede oplysninger må ikke gættes.
+
+De lokale normale prøver består, men faktisk offentlig genopretning er endnu ikke bevist. Derefter skal en almindelig vejrhentning kunne fortsætte fra de nye gemte data, før den normale tidsplan genaktiveres.
+
+## 89.247 Samme opstart kan have forskellig lokal historikdækning
+
+**Kort fortalt:** Manglende historiktimer skal være ærligt ukendte. To kystdele kan tilhøre samme nye historikforløb, selv om den ene har alle 48 timer, og den anden mangler én.
+
+Kontrollen skal efterprøve hver dels faktiske opstart, kilde, tidspunkt og regnskab, før delene kan behandles som samme forløb. Mærkningen af fuld eller delvis historik bevares. Det er ikke tilladelse til at blande gammel, fortsat eller migreret tilstand med en ny opstart, og ukendte timer bliver ikke nul eller gyldige målinger.
+
+En afgrænset kontrolrettelse er lokalt reproduceret og prøvet med normale tilstandsbyggere. Scoreformel, vejrværdier, administratorpunkter og modelbinding ændres ikke. Den færdigberegnede pakke skal genbruges med sin oprindelige identitet, og gemning, databevarelse, serverfunktioner, Pages og offentlig kontrol skal fortsat bestå. Den nye offentlige levering og efterfølgende almindelige vejrhentning er endnu ikke verificeret.
+
 ## 89.246 Bevar gyldige vejrfelter særskilt fra den gamle strømtilstand
 
 **Kort fortalt:** Den nye strøm- og scorehistorik må ikke miste gyldige andre vejrfelter på vejen fra plan til beregning. En afgrænset bro skal bevare dem gennem de normale kontroller uden at genindføre gammel strøm.

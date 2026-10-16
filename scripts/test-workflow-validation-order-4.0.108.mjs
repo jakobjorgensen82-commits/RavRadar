@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { exactPagesAttemptStep } from './github-pages-attempt-evidence.mjs';
@@ -12,7 +13,7 @@ import {
 const workflowDirectory = '.github/workflows';
 const productionWorkflowSources = await readProductionWorkflowSources();
 const productionWorkflows = Object.freeze(Object.fromEntries(
-  Object.entries(productionWorkflowSources).map(([role, source]) => [role, source.replace(/\r\n/g, '\n')]),
+  Object.entries(productionWorkflowSources).map(([role, source]) => [role, inverseCompletedRuntimeWorkflow(source.replace(/\r\n/g, '\n'), role)]),
 ));
 const {
   orchestrator: orchestratorWorkflow,
@@ -136,10 +137,10 @@ for (const workflowName of [
 }
 assert.doesNotMatch(r2MigrationWorkflow, /pages: write|id-token: write|deploy-pages|--publish/,
   'The copy-only R2 migration must not deploy or change the pointer');
-const manualCurrentWeatherWorkflow = fs.readFileSync(
+const manualCurrentWeatherWorkflow = inverseCompletedRuntimeWorkflow(fs.readFileSync(
   `${workflowDirectory}/run-current-weather-once.yml`,
   'utf8',
-).replace(/\r\n/g, '\n');
+).replace(/\r\n/g, '\n'), 'once');
 for (const marker of [
   '  workflow_dispatch:',
   'group: ravradar-weather-production-v2',

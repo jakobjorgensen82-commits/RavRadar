@@ -42,8 +42,18 @@ function evaluate(source, environment, result) {
 }
 
 async function actualFixture(readSource = file => fs.readFile(file, 'utf8')) {
-  const source = (await readSource(path.join(ROOT, 'scripts/test-weather-state-epoch-input-view.mjs')))
+  const reviewedSource = (await readSource(path.join(ROOT, 'scripts/test-weather-state-epoch-input-view.mjs')))
     .replace(/\r\n/g, '\n');
+  // Only the reviewed test's workflow reader changed. Prove its complete new
+  // identity, then invert precisely that adapter before the unchanged fixture
+  // pin and real archive/caller seams below. No fixture or guard is re-pinned.
+  assert.equal(hash(reviewedSource), '0b2a7546988c480bd26d6b926eed98c29b6817ce65633d778995a7f02b8f5d93');
+  const source = reviewedSource
+    .replace("import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';\n", '')
+    .replace(
+      "const workflow = inverseCompletedRuntimeWorkflow((await fs.readFile(path.join(ROOT, '.github/workflows/reusable-weather-build.yml'), 'utf8')).replaceAll('\\r\\n', '\\n'), 'build');",
+      "const workflow = (await fs.readFile(path.join(ROOT, '.github/workflows/reusable-weather-build.yml'), 'utf8')).replaceAll('\\r\\n', '\\n');",
+    );
   // New exact fixture identity after its additive checkpoint case and optional
   // dynamic target time. The default OLD archive inputs/validators remain
   // unchanged; this source pin is not reused native or production evidence.

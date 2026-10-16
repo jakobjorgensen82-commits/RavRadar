@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -8,9 +9,9 @@ import { runInNewContext } from 'node:vm';
 
 // Workflow contract and an isolated shell guard. Never reads private data or calls a provider.
 const read = file => fs.readFileSync(file, 'utf8').replaceAll('\r\n', '\n');
-const normal = read('.github/workflows/reusable-weather-build.yml');
+const normal = inverseCompletedRuntimeWorkflow(read('.github/workflows/reusable-weather-build.yml'), 'build');
 const orchestrator = read('.github/workflows/update-and-deploy.yml');
-const manual = read('.github/workflows/run-current-weather-once.yml');
+const manual = inverseCompletedRuntimeWorkflow(read('.github/workflows/run-current-weather-once.yml'), 'once');
 const watchdog = read('.github/workflows/preserve-copernicus-current-shadow.yml');
 const retiredOneoff = read('.github/workflows/validate-copernicus-current-pilot.yml');
 assert.match(normal, /quick_confirmation:\s+required: false\s+type: boolean\s+default: false/);

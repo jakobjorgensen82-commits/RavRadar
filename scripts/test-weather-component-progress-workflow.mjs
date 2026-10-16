@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -16,8 +17,8 @@ for (const file of ['scripts/lib/verified-protected-progress-components.mjs',
     'The operational recovery helpers must remain in the producer inventory');
 }
 
-const workflow = (await fs.readFile('.github/workflows/reusable-weather-build.yml', 'utf8'))
-  .replace(/\r\n/g, '\n');
+const workflow = inverseCompletedRuntimeWorkflow((await fs.readFile('.github/workflows/reusable-weather-build.yml', 'utf8'))
+  .replace(/\r\n/g, '\n'), 'build');
 const step = name => {
   const start = workflow.indexOf(`      - name: ${name}\n`);
   assert.ok(start >= 0, `missing ${name}`);
@@ -330,7 +331,7 @@ assert.match(cipherAction, /cache\.saveCache\(\[CIPHER_PATH\], input\.key, undef
 assert.ok(cipherAction.indexOf('if (firstFailure !== null) throw firstFailure.value;')
   < cipherAction.indexOf("'uploaded=true\\n'"), 'Upload output follows closure and actual claim release');
 for (const file of ['update-and-deploy', 'run-current-weather-once']) {
-  const caller = await fs.readFile(`.github/workflows/${file}.yml`, 'utf8');
+  const caller = inverseCompletedRuntimeWorkflow((await fs.readFile(`.github/workflows/${file}.yml`, 'utf8')).replaceAll('\r\n', '\n'), file === 'run-current-weather-once' ? 'once' : 'orchestrator');
   assert.doesNotMatch(caller, /WEATHER_PROGRESS_ENCRYPTION_KEY/);
 }
 console.log('Encrypted private weather progress: shared normal caller order, trusted restore, ciphertext-only save and failure recovery passed.');
@@ -383,7 +384,7 @@ testOwnedRawCache('explicit progress source: actual Bash accepts exact full-run 
 
 testOwnedRawCache('checkpoint-only request: actual Bash locks an original hour but never acquires weather',
   { skip: process.platform !== 'linux' ? 'Actual Bash validator requires the normal Linux source host' : false }, async () => {
-    const caller = (await fs.readFile('.github/workflows/run-current-weather-once.yml', 'utf8')).replaceAll('\r\n', '\n');
+    const caller = inverseCompletedRuntimeWorkflow((await fs.readFile('.github/workflows/run-current-weather-once.yml', 'utf8')).replaceAll('\r\n', '\n'), 'once');
     const block = caller.split(/(?=^      - (?:name:|uses:))/m).find(value =>
       value.startsWith('      - name: Lock the requested original checkpoint hour without provider work\n'));
     assert.ok(block);

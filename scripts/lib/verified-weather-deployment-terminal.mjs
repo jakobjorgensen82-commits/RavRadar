@@ -18,10 +18,14 @@ function normalized(value) {
  * remains mandatory.
  */
 export function classifyVerifiedWeatherDeployment(input = {}) {
+  const completed = input.completedPrivateRuntime === true || input.completedPrivateRuntime === 'true';
+  if (completed && normalized(input.weatherOutcome) !== 'skipped') return Object.freeze({
+    status: 'FAILED', reasonCode: 'COMPLETED_RUNTIME_WEATHER_WAS_NOT_SKIPPED',
+    failedBoundary: 'weatherOutcome', diagnosticFindings: false });
   const requiredSuccess = [
     'targetOutcome',
     'buildOutcome',
-    'weatherOutcome',
+    completed ? 'completedRuntimeOutcome' : 'weatherOutcome',
     'pagesBuildOutcome',
     'pagesPrivacyOutcome',
     'pagesArtifactSealOutcome',
@@ -91,6 +95,8 @@ function cliInput(env) {
     buildOutcome: env.BUILD_RESULT,
     shouldDeploy: env.SHOULD_DEPLOY,
     weatherOutcome: env.WEATHER_OUTCOME,
+    completedPrivateRuntime: env.COMPLETED_PRIVATE_RUNTIME,
+    completedRuntimeOutcome: env.COMPLETED_RUNTIME_OUTCOME,
     fullValidationOutcome: env.FULL_VALIDATION_OUTCOME,
     releaseGateOutcome: env.RELEASE_GATE_OUTCOME,
     pagesBuildOutcome: env.PAGES_BUILD_OUTCOME,

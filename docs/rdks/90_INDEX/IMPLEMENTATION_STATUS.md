@@ -1,3 +1,41 @@
+## 17. oktober — oprindeligt fixturebevis bevaret efter testlæserrettelsen
+
+PR642s anden præcise kontrol bestod faktisk native DMI og PostgreSQL, men to tilfælde i den normale epoch-kalderprøve fejlede på samme oversete afhængighed: prøven kontrollerer hele inputvisningstestens kildefingeraftryk. Den første testlæserrettelse havde ændret denne fil. De tidligere fejlede workflowassertions bestod nu; samlet CI var fortsat rød, og de senere trin blev sprunget over. Ingen ny produktionsvejrhentning fejlede i denne kontrol.
+
+Kun den afhængige testlæser tilpasses nu. Den beviser først hele den gennemgåede nye testfil og inverterer derefter præcis dens import og workflowlæser. Det oprindelige hele fixturefingeraftryk, alle gamle assertions, ægte arkiv-/kalderforløb og afvisning af anden kildedrift bevares. Begge normale mål består faktisk lokalt uden skip på 60,329 sekunder, inklusive 673 deles valgte opstart. En søgning efter begge relevante kildepins og kalderfilens afhængigheder fandt ingen yderligere låst læser, der skal ændres.
+
+Dette er en testopfølgning, ikke en ændring af produkt, data, kildeprioritet, sikkerhedskrav, SQL, bindinger eller håndbogens produktbeskrivelse. Ny samlet kontrol på det nye eksakte head kræves før merge og den afgrænsede genoptagelse af den færdige private generation. Ingen ny offentlig generation er leveret her; cron er fortsat pauset, og alle fem mål til 18. oktober er åbne.
+
+## 16. oktober — PR642: præcise workflowlæsere før ny samlet kontrol
+
+PR642s første kildekontrol bestod faktisk native DMI og PostgreSQL, men fejlede i to gamle workflowassertions: epochens gemme-/gendannelsesprøve og den normale RavScore-generator. Den nye, som udgangspunkt frakoblede rutes præfiks gjorde deres gamle tekstlæsning forkert. Kun disse testlæsere føres gennem den eksisterende hashbundne helfil-inverse; alle oprindelige assertions bevares.
+
+En fremadrettet gennemgang af den endnu ikke nåede DMI-kapacitetskontrol fandt samme konkrete fejl i dens WAM- og RAW-gemmekontroller. Begge bruger nu samme præcise inverse, uden ændring af de gamle krav, produktkode eller CI-listen. Generator, ægte lokal epoch-gemning/gendannelse og de to berørte kapacitetsprøver består målrettet. Det lokale Windows-runtime krævede geninstallation af Requests; fuld native ecCodes er fortsat GitHub-bevis, ikke et lokalt PASS.
+
+Ny samlet kontrol på det nye eksakte head kræves før merge. Ingen ny vejrhentning, SQL-installation, Pages-levering eller offentlig effekt er udført af denne testopfølgning. Cron er pauset; alle fem mål til 18. oktober er fortsat åbne. Version, bindingskontrakter og håndbogens produktbeskrivelse er uændrede.
+
+## 16. oktober — genbrug færdig privat generation gennem hele efterkæden
+
+Den nye, som udgangspunkt frakoblede rute optager kun den aktuelt autentificerede færdige private pakke og dens sammenhørende gemte beregningstilstand. Den låser pointer/version, oprindeligt datasæt-id, genereringstid, target, model-/lagerkontrakter, filinventar og producentens faktiske Git-forfædre. Normal genberegning af den gemte tilstand skal være identisk med den centralt gemte. Originaler og historiske scorer bevares.
+
+Leverandører, progressgendannelse, punktaktivering og selve vejrberegningen springes fysisk over. Vejrtrinnet bliver derfor ikke succes; den særlige optagelse har sit eget faktiske udfald. Den normale efterkæde skal stadig gennemføre proveniens, offentlig genopbygning, hård no-loss, streng runtimekontrol, produktions-/releasekontroller, gemning/genlæsning, privat adgangskontrol, præcis Pages-forsegling, holdbar føraktivering, tre serverfunktioner, readiness og offentlig levering. En byteidentisk privat samme-time-publicering er genbrug, ikke en ny gemning. Ukendt eller ændret central kilde, kalibreringsflag eller profil afvises før publicering; målt opvarmning kræver den faktiske allerede tilladte centrale tilstand.
+
+Den normale lokale målprøve har nu faktisk kaldt både optagelse og efterkontrol med normalt bygget tilstand for 673 dele og normalt gemt checkpoint. Et andet gyldigt checkpoint afvises. Normale operational-prøver afviser ændret kilde/profil, forkert eller ukendt kalibrering, uacceptabel opvarmning og streng auditfejl. Disse lokale beviser er ikke præcis samlet CI eller produktionseffekt.
+
+Version 4.0.578/offentlig 4.0.577, installeret databasebinding og de fem åbne mål til 18. oktober er uændrede. Ingen ny epoch-start, leverandørhentning eller SQL-installation følger heraf. Cron forbliver pauset; SOURCE19 og øvrige tilbageholdte kandidater aktiveres ikke. Efter faktisk første offentlig genopretning kræves en almindelig efterfølger fra de gemte nye data før cron. Se håndbog 89.248 og privat checkpoint; tidligere daterede tekster bevares som historik.
+
+## 16. oktober — historikdækning er ikke en anden opstart
+
+PR640 er kildeleveret efter præcis samlet GitHub-kontrol. Den efterfølgende providerfri genoptagelse gennemførte faktisk beregningen, den videnskabelige strøm-/gitterkontrol, offentlig genopbygning, hård databevarelse og produktions-/releasekontroller. Nyt atomisk checkpoint og ny privat beregningspakke blev faktisk publiceret og genlæst; originalarkivet bevares. Kørslen stoppede senere før Pages-upload og de tre serverfunktioner, fordi den strenge strømlevering kræver en grøn historikkontrol.
+
+Den konkrete kontrolfejl er reproduceret med den normale tilstandsbygger: to dele med samme ægte nye opstart, men henholdsvis 48/0 og 47/1 komplette/ukendte historiktimer, blev talt som forskellige cohorts. Rettelsen bruger kun en fælles proveniensidentitet efter fuld kontrol af den enkelte dels sandfærdige mærkning, regnskab, recovery, kilde og eksakte aktuelle target. Begge nationale enkelt-cohort-værn bevares. Ukendt, falsk, forskudt, migreret eller fortsat historik må ikke blandes ind som ny opstart. Ingen data, oprindelige mærkninger, scoreformel eller model-/SQL-binding ændres.
+
+Tre positive og 13 negative måltilfælde samt hele den eksisterende nationale 210/673-audittest består i samme private normale kildekomposition uden netkald. ROOT har gennemgået og materialiseret de to eksakte kildefiler. Fuld kildeinverse, normal modelberegning, otte bindingsforbrugere, RDKS, sikkerhed, håndbog og den lille produktkritiske gate består; C69/I71/T12 og udstedte SQL-filer er uændrede. Den første lokale gateaflæsning ramte Windows' Python-alias; samme gate består med den allerede installerede runtime, uden produktændring. Dette er ikke præcis CI eller ny offentlig effekt.
+
+Den fremadrettede leveringsgennemgang fandt, at almindelig genberegning ved samme time ville skabe et nyt datasæt-id og ramme den hårde private samme-time-kontrol. Den generiske kode-only-rute mangler desuden strømovergangens obligatoriske Pages-/føraktiverings-/serverrækkefølge. Derfor forberedes en afgrænset adgang for den allerede gemte nye pakke til den eksisterende fulde efterkæde; identitet, numerik, originaler og alle reelle guards skal bevares. Ingen ny epoch-start eller leverandørhentning følger af forberedelsen. Målt opvarmning kræver fortsat faktisk central accept; et ukendt kalibreringsflag må ikke gættes.
+
+Pages, ny offentlig generation og en faktisk almindelig efterfølger er fortsat åbne. Cron er pauset med bevaret tidsplan; SOURCE19 og øvrige tilbageholdte kandidater aktiveres ikke. Version 4.0.578/offentlig 4.0.577 og alle fem åbne mål med frist 18. oktober er uændrede. Se håndbog 89.247. Ældre status er kun erstattet på de her dokumenterede faktiske trin.
+
 ## 16. oktober — bevar gyldige øvrige vejrfelter uden at genindføre gammel strøm
 
 En fremadrettet gennemgang har fundet et konkret kalderhul i den nye historiks beregning: komponentplanen kan kvalificere gyldige gemte vind-, bølge-, vandstands- og vandtemperaturdata, som derefter ikke følger med til selve scorerens input. Den nye historiks isolation af gammel strøm, hukommelse, replay og donorer er korrekt og skal bevares. Fundet er kildebevist; det er ikke et påvist tab i den stoppede produktionskørsel 389312.
