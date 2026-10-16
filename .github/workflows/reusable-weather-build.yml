@@ -2095,7 +2095,7 @@ jobs:
 
       - name: Bind causal OLD current reconstruction to the materialized saved inputs
         id: legacy-current-requests
-        if: steps.preflight.outputs.should_run == 'true' && inputs.checkpoint_only == true && steps.current-history-demand.outcome == 'success' && steps.dmi-generation-prepare.outcome == 'success'
+        if: steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.checkpoint_only == true && steps.current-history-demand.outcome == 'success' && steps.dmi-generation-prepare.outcome == 'success'
         run: node scripts/plan-dmi-legacy-current-originals.mjs
 
       - name: Choose DMI budget from retained five-component PART coverage
