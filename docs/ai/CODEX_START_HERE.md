@@ -1,3 +1,9 @@
+## 16. oktober — fast runner og afgrænset assistentkontrol (4.0.578)
+
+Vejrleveringskædens 22 udvalgte runnerfelter er lokalt fastlagt til Ubuntu 24.04 uden versionsløft eller ændrede guards. Dette forhindrer det annoncerede automatiske OS-major-skift fra 19. oktober, ikke løbende pakkeopdateringer. Se CURRENT_TRUTH og håndbog 89.239; præcis CI og offentlig virkning er endnu ikke verificeret.
+
+Samme lokale kildeleverance sammensætter den allerede gennemgåede PR630-konsollæser med runnerfastlåsningen. Læseren er en særskilt, fast og skrivefri driftskontrol med normal main-, kilde- og writer-afgrænsning; den ændrer hverken offentlig assistentfunktion, viden eller vejrfunktion. De 34 tidligere beståede offlineforløb genbruges på læserens uændrede kode. PR632 er faktisk merget, og den efterfølgende epoch-kørsel er startet; udfald og ny offentlig generation er endnu ikke verificeret. Faktisk logaflæsning, AI-årsagsbevis og præcis CI for denne sammensætning er fortsat åbne. Se håndbog 89.216; runnergrænsen står i 89.239.
+
 ## 16. oktober — arkiv og database gennemført; ældre kalderrute skal holdes adskilt
 
 Den præcise PR629-kildekontrol, inklusive faktisk PostgreSQL, består. Første engangskørsel har faktisk arkiveret og genlæst de gamle B/S-originaler og seks offentlige filer samt installeret og genlæst den uændrede 230-overgang og den nye native-identitetsbinding. Den efterfølgende autentificerede NEW-arbejdsbaseline bestod også. Disse trin er nu produktionsbeviser og erstatter de ældre afventningsudsagn alene på disse punkter.

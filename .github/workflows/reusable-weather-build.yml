@@ -183,7 +183,7 @@ permissions:
 
 jobs:
   build-and-prepare:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Normalrun skal kunne rumme DMI, 25 min Copernicus, 80 min cache og
     # efterfølgende gates/deployforberedelse inden næste 4-timersstart.
     timeout-minutes: ${{ inputs.weather_state_epoch_bootstrap && 360 || inputs.extended_provider_bootstrap && 240 || 230 }}

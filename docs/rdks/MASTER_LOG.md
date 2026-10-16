@@ -1,3 +1,13 @@
+## 16. oktober — fast runner og afgrænset assistentkontrol (4.0.578)
+
+Præcis 22 runnerfelter i ni vejr-, genopretnings-, Pages-, overvågnings- og kildekontrolworkflows er lokalt fastlagt til `ubuntu-24.04`. Fratrukket den særskilte gennemgåede PR630-læserdelta er alle øvrige workflowbytes, herunder epoch-adskillelsen fra PR632, den tidlige PostgreSQL-kontrol, budgetter og sikkerhedskrav, bevaret. Versionen er fortsat 4.0.578.
+
+Samme lokale kildeleverance sammensætter den allerede gennemgåede PR630-konsollæser med runnerfastlåsningen. Læseren er en særskilt, fast og skrivefri driftskontrol med normal main-, kilde- og writer-afgrænsning; den ændrer hverken offentlig assistentfunktion, viden eller vejrfunktion. De 34 tidligere beståede offlineforløb genbruges på læserens uændrede kode. PR632 er faktisk merget, og den efterfølgende epoch-kørsel er startet; udfald og ny offentlig generation er endnu ikke verificeret. Faktisk logaflæsning, AI-årsagsbevis og præcis CI for denne sammensætning er fortsat åbne. Se håndbog 89.216; runnergrænsen står i 89.239. Sammensætningens normale workflow- og source-once-integrationsmål består lokalt; Linux-kalderen er fortsat uprøvet på Windows.
+
+GitHub har annonceret automatisk OS-skift for `ubuntu-latest` fra 19. oktober 2026, efter arbejdsfristen 18. oktober ([officiel runnerplan](https://github.com/actions/runner-images/issues/14748)). Fastlåsningen forhindrer dette OS-major-skift, men fryser ikke pakkeopdateringer eller garanterer kapacitet.
+
+De normale reusable-workflow-, Pages/genopretnings- og watchdogmål består lokalt; watchdog har 11 prøver uden skip. Hele workflowinventar-/rækkefølgemålet består nu også sammen med syv normale epoch-prøver uden skip. De gamle testforventninger er afstemt præcist med den allerede eksisterende workflowkilde; exactset-, WRITE-/READ-, credential-, identitets- og deployguards bevares. De tidligere teststop var ikke forårsaget af runnerfelterne. RDKS, sikkerhed og håndbog består lokalt. Præcis CI, Linux/native og offentlig virkning af runnerændringen er fortsat åbne. Denne lokale kildekomposition udfører ingen vejrkørsel eller produktionsændring.
+
 ## 16. oktober — arkiv og database gennemført; ældre kalderrute skal holdes adskilt
 
 Den præcise PR629-kildekontrol, inklusive faktisk PostgreSQL, består. Første engangskørsel har faktisk arkiveret og genlæst de gamle B/S-originaler og seks offentlige filer samt installeret og genlæst den uændrede 230-overgang og den nye native-identitetsbinding. Den efterfølgende autentificerede NEW-arbejdsbaseline bestod også. Disse trin er nu produktionsbeviser og erstatter de ældre afventningsudsagn alene på disse punkter.

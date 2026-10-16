@@ -1,3 +1,13 @@
+## 16. oktober — fast runner og afgrænset assistentkontrol (4.0.578)
+
+Præcis 22 runnerfelter i ni vejr-, genopretnings-, Pages-, overvågnings- og kildekontrolworkflows er lokalt fastlagt til `ubuntu-24.04`. Fratrukket den særskilte gennemgåede PR630-læserdelta er alle øvrige workflowbytes, herunder epoch-adskillelsen fra PR632, den tidlige PostgreSQL-kontrol, budgetter og sikkerhedskrav, bevaret. Versionen er fortsat 4.0.578.
+
+Samme lokale kildeleverance sammensætter den allerede gennemgåede PR630-konsollæser med runnerfastlåsningen. Læseren er en særskilt, fast og skrivefri driftskontrol med normal main-, kilde- og writer-afgrænsning; den ændrer hverken offentlig assistentfunktion, viden eller vejrfunktion. De 34 tidligere beståede offlineforløb genbruges på læserens uændrede kode. PR632 er faktisk merget, og den efterfølgende epoch-kørsel er startet; udfald og ny offentlig generation er endnu ikke verificeret. Faktisk logaflæsning, AI-årsagsbevis og præcis CI for denne sammensætning er fortsat åbne. Se håndbog 89.216; runnergrænsen står i 89.239. Sammensætningens normale workflow- og source-once-integrationsmål består lokalt; Linux-kalderen er fortsat uprøvet på Windows.
+
+GitHub har annonceret automatisk OS-skift for `ubuntu-latest` fra 19. oktober 2026, efter arbejdsfristen 18. oktober ([officiel runnerplan](https://github.com/actions/runner-images/issues/14748)). Fastlåsningen forhindrer dette OS-major-skift, men fryser ikke pakkeopdateringer eller garanterer kapacitet.
+
+De normale reusable-workflow-, Pages/genopretnings- og watchdogmål består lokalt; watchdog har 11 prøver uden skip. Hele workflowinventar-/rækkefølgemålet består nu også sammen med syv normale epoch-prøver uden skip. De gamle testforventninger er afstemt præcist med den allerede eksisterende workflowkilde; exactset-, WRITE-/READ-, credential-, identitets- og deployguards bevares. De tidligere teststop var ikke forårsaget af runnerfelterne. RDKS, sikkerhed og håndbog består lokalt. Præcis CI, Linux/native og offentlig virkning af runnerændringen er fortsat åbne. Denne lokale kildekomposition udfører ingen vejrkørsel eller produktionsændring.
+
 ## 16. oktober — arkiv og database gennemført; ældre kalderrute skal holdes adskilt
 
 Den præcise PR629-kildekontrol, inklusive faktisk PostgreSQL, består. Første engangskørsel har faktisk arkiveret og genlæst de gamle B/S-originaler og seks offentlige filer samt installeret og genlæst den uændrede 230-overgang og den nye native-identitetsbinding. Den efterfølgende autentificerede NEW-arbejdsbaseline bestod også. Disse trin er nu produktionsbeviser og erstatter de ældre afventningsudsagn alene på disse punkter.
@@ -330,6 +340,16 @@ Den aktuelle produktions-main er fortsat `9179c261613cfadacd3da344dbdb4336d3f1f2
 Ejeren har givet to særskilte nye, endnu ubrugte engangstilladelser: det afgrænsede 003-værn i de ti eksisterende D1-databaser med den ene eksisterende Worker-opdatering gennem det kontrollerede reparationsforløb, og den præcist fastlåste skrivefri assistentloglæsning. De må først anvendes efter relevant grøn kildekontrol og faktisk writer-fri kontrol og må ikke lånes til andre handlinger. De tidligere forbrugte Supabase-/jobloglæsninger forbliver forbrugte; ingen automatisk gentagelse tillades.
 
 Denne front erstatter alene de nedenstående historiske udsagn om manglende kildekontrol og de nu givne, nye tilladelser. Hosted 003-installation, faktisk Worker-opdatering, præcis 503-årsag og fungerende ekstern AI er stadig åbne indtil de relevante normale handlinger og deres faktiske resultater foreligger. 003-schemaets kvitteringer er ikke fysisk dræning, kontosletning eller Auth-/backup-sletning. Alle fem hovedmål er fortsat åbne.
+
+## Lokal fast konsollæser til assistentens kvotekontrol — 16. oktober 2026
+
+Den nye operation `fixed-public-rate-console-read-20261015` er lokalt integreret som en særskilt skrivefri kontrol, ikke som en ændring af assistentens runtime eller viden. Den følger konsolkilden `function_logs` og kræver både den faste markør `PUBLIC_RATE_LIMIT_RPC_REJECTED` ved tekstens begyndelse og ruten `ravradar-assistant`. Den låste SQL-periode er 15. oktober kl. 00.38.45–00.39.00 UTC, med eksklusiv sluttid; API-omslutningen er kl. 00.38–00.39 UTC. Databasen må kun returnere den faste markør samt tilladt HTTP-status og en af fem eksisterende fejlkoder eller `UNKNOWN`, aldrig rå logtekst eller request-id.
+
+Én GET, ti sekunders samlet HTTP-/kropsfrist, 32 KiB, afvisning ved otte rækker, ingen argumenter og ingen gentagelse bevares. Samme første-forsøg-, præcis main-, kildebevis- og friske writer-fri kontroller gælder; installations- og reparationsveje er uændrede. De gamle læsere og intervaller bevares. PR629's tidlige PostgreSQL-kontrol står uændret før Source-trinnet, hvor den nye måltest er tilføjet.
+
+Den faktiske integrerede måltest består med 34 offlineforløb, 34 kontrollerede GET-kald og nul netværkskald. Kun måltestens to workflowlæsninger normaliserer CRLF til LF; ingen assertion lempes. Dette er ikke native ClickHouse-udførelse, hosted logformat, en gennemført Supabase-læsning, 503-årsagsbevis eller fungerende ekstern AI. Tomt resultat og ukendt format beviser ikke, at en hændelse mangler; rapporten angiver altid `recordedEventAbsenceProved=false`. Præcis CI og sikker kildelevering står åbne. Ingen version, modelbinding, SQL, vejrdata eller produktion ændres af denne lokale kontrolkilde.
+
+De to eksisterende normale kilde-/readinessprøver er desuden reproduceret med den nye femte læser. Først beviser de den præcise nye læserblok og dens routing, skrivefrihed og idle-rækkefølge; kun denne eksakte blok fjernes derefter fra den historiske prøvevisning. Alle gamle fire-/tre-/tolæserassertions bevares. Begge normale mål består lokalt efter hver sin påviste integrationsfejl. Linux-kalderen `env -u` er fortsat ikke udført på Windows; den præcise CI skal bevise den.
 
 ## Dokumenteret rettelse: logsvarets fejlfelt er valgfrit — 13. oktober 2026
 

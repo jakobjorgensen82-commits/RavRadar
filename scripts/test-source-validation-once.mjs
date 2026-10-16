@@ -238,7 +238,18 @@ for (const operation of ['typed-trip-catalog-read','fixed-public-rate-log-read']
   assert.equal(operationAllows(fixedJobs.get('reject-unknown-operation'),operation),false);
 }
 for (const [name,job] of fixedJobs) assert.equal(operationAllows(job,'unknown-read-operation'),name === 'reject-unknown-operation');
-const fixedReadJob = fixedJobs.get('read-fixed-supabase-metadata');
+const actualFixedReadJob = fixedJobs.get('read-fixed-supabase-metadata');
+const consoleOperation = 'fixed-public-rate-console-read-20261015';
+for (const [name, job] of fixedJobs) assert.equal(operationAllows(job, consoleOperation),
+  name === 'read-fixed-supabase-metadata');
+const consoleReadStep = "      - name: Read the one fixed 15 October public rate console-log interval\n        if: inputs.operation == 'fixed-public-rate-console-read-20261015'\n        timeout-minutes: 1\n        run: node scripts/read-fixed-public-rate-console-log-20261015.mjs\n        env:\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n\n";
+assert.equal(actualFixedReadJob.split(consoleReadStep).length, 2,
+  'the separately tested console route must occur exactly once before historical projection');
+assert.ok(actualFixedReadJob.indexOf('Require genuinely fresh idle main')
+  < actualFixedReadJob.indexOf(consoleReadStep));
+assert.doesNotMatch(actualFixedReadJob, /supabase db push|functions deploy|wrangler|upload-artifact|cache\/save|SUPABASE_DB_PASSWORD|SUPABASE_SERVICE_ROLE_KEY/);
+// Remove only this exact additive step; preserve every historical assertion.
+const fixedReadJob = actualFixedReadJob.replace(consoleReadStep, '');
 for (const marker of ['test "$GITHUB_REPOSITORY" = jakobjorgensen82-commits/RavRadar',
   'test "$GITHUB_RUN_ATTEMPT" = 1','test "$GITHUB_REF" = refs/heads/main',
   'node scripts/weather-source-gate.mjs check','steps.fixed_read_source.outputs.required',

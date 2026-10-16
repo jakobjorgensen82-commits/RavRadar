@@ -59,7 +59,7 @@ permissions:
 jobs:
   deploy-pages:
     name: ${{ inputs.pre_activation_recovery && 'Deploy exact pre-activation Pages artifact' || 'Deploy prepared Pages artifact' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     permissions:
       contents: read

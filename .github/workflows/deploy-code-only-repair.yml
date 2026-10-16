@@ -55,7 +55,7 @@ concurrency:
 jobs:
   validate-authority:
     name: Validate manual authority before any recovery writes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - name: Require the exact dispatch purpose on main
@@ -125,7 +125,7 @@ jobs:
       group: ravradar-trip-storage-production
       cancel-in-progress: false
     name: Reuse exact runtime and build code-only artifact
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     outputs:
       active_deployment_id: ${{ steps.public-source.outputs.deployment_id }}

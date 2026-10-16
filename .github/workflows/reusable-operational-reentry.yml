@@ -60,7 +60,7 @@ jobs:
   reconcile-operational-pending:
     name: Reconcile any durable RavScore transition before production
     if: github.ref == 'refs/heads/main' && inputs.geometry_only != true
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     permissions:
       contents: read
@@ -617,7 +617,7 @@ jobs:
     name: Redeploy only a helper-proven exact sealed Pages target
     needs: reconcile-operational-pending
     if: needs.reconcile-operational-pending.result == 'success' && needs.reconcile-operational-pending.outputs.recovery_action == 'EXACT_TARGET_REDEPLOY'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
@@ -945,7 +945,7 @@ jobs:
       - reconcile-operational-pending
       - recover-operational-pages-target
     if: needs.reconcile-operational-pending.result == 'success' && needs.reconcile-operational-pending.outputs.recovery_action == 'EXACT_TARGET_REDEPLOY' && needs.recover-operational-pages-target.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -1154,7 +1154,7 @@ jobs:
     name: Resume the exact terminal pre-activation target
     needs: reconcile-operational-pending
     if: needs.reconcile-operational-pending.outputs.recovery_action == 'PRE_ACTIVATION_RESUME'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     outputs:
       central_version: ${{ steps.handoff.outputs.central_version }}
@@ -1386,7 +1386,7 @@ jobs:
        needs.reconcile-operational-pending.outputs.recovery_action == 'TARGET_RECONCILE' ||
        (needs.reconcile-operational-pending.outputs.recovery_action == 'EXACT_TARGET_REDEPLOY' && needs.finalize-operational-pages-recovery.result == 'success') ||
        (needs.reconcile-operational-pending.outputs.recovery_action == 'PRE_ACTIVATION_RESUME' && needs.resume-pre-activation-pages.result == 'success'))
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v7
@@ -1418,7 +1418,7 @@ jobs:
       - resume-pre-activation-pages
       - complete-pre-activation
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     permissions:
       contents: read

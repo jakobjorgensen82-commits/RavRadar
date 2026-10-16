@@ -60,7 +60,7 @@ jobs:
   current-main-target:
     needs: operational-recovery-gate
     name: Lock one normal run to exact current main and UTC hour
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -153,7 +153,7 @@ jobs:
     name: Authenticate originals and install only the two exact recovery phases
     needs: current-main-target
     if: ${{ !cancelled() && needs.current-main-target.result == 'success' && inputs.native_sampling_identity_original_recovery == true }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -432,7 +432,7 @@ jobs:
     name: Archive authentic originals before the one-off fresh epoch
     needs: current-main-target
     if: ${{ !cancelled() && needs.current-main-target.result == 'success' && inputs.weather_state_epoch_bootstrap == true }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # First archive + serial install only; bounded, not a performance guarantee.
     timeout-minutes: 120
     permissions:
@@ -817,7 +817,7 @@ jobs:
     name: Require a verified current-weather deployment
     needs: [current-main-target, native-identity-prewrite, state-epoch-prewrite, build-and-prepare, deploy-pages]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -878,7 +878,7 @@ jobs:
       github.ref == 'refs/heads/main' &&
       github.actor == 'github-actions[bot]' &&
       needs.terminal-outcome.result == 'failure'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     permissions:
       actions: write

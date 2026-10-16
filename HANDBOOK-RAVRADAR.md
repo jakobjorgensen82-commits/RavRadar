@@ -8,6 +8,8 @@ Efter baseline forsøgte den gamle 11Z-genopretningsklassifikation at læse en m
 
 Ingen leverandørhentning, ny scoregemning, upload eller Pages-levering blev gennemført efter dette stop. Kildekontrol, første nye generation og en almindelig efterfølger med genlæsning af den faktisk gemte nye tilstand er fortsat åbne. Et nyt forsøg skal genlæse allerede installerede databasetrin, ikke gentage et ukendt udfald. Cron forbliver pauset med samme tidsplan indtil verificeret genopretning. Version 4.0.578 er endnu ikke offentlig 4.0.577; SOURCE19 forbliver isoleret og inaktiv.
 
+Driftsmiljøet er særskilt fastlagt til Ubuntu 24.04 i 22 udvalgte job på tværs af ni workflows. GitHub har annonceret automatisk OS-skift for ubuntu-latest fra 19. oktober 2026; fastlåsningen forhindrer dette OS-major-skift, men ikke løbende pakkeopdateringer og garanterer ikke jobkapacitet. Alle andre workflowbetingelser, budgetter og kontroller bevares, herunder adskillelsen af den nye start fra de gamle genopretningsruter. Ændringen er lokal kildeklargøring på 4.0.578, ikke bevis for Linux/native, ny vejrkørsel eller offentlig levering.
+
 ## 89.238 Bevaret arkiv og ny fremadrettet historik
 
 **Kort fortalt:** Den gamle generation skal bevares verificeret, mens en særskilt ny strøm- og scorehistorik opbygges af korrekt fortolkede data. Den nye start er ikke udført i produktionen.
@@ -365,6 +367,10 @@ Det godkendte brugerdataforløb forsøger assistentens opdatering højst én gan
 
 
 ## 89.216 Kontrollæserne skal forstå databankens normale formater
+
+**Lokal kontrolkilde, 16. oktober 2026:** En særskilt fast konsollæser følger nu assistentens kvotefejlmarkør i `function_logs`, ikke HTTP-invokationsloggen. Den er låst til assistentruten og 15. oktober kl. 00.38.45–00.39.00 UTC, svarende til kl. 02.38.45–02.39.00 dansk tid. Kun den faste markør, tilladt HTTP-status og fem eksisterende fejlkoder eller `UNKNOWN` må returneres. Rå logtekst, request-id og brugeroplysninger vises ikke.
+
+Læsningen bevarer én GET, ti sekunders HTTP-/kropsfrist, 32 KiB, stop ved otte resultatrækker, ingen gentagelse og de normale kilde-, main- og writer-kontroller. Gamle læsere og installationer ændres ikke. Den integrerede måltest består med 34 offlineforløb og nul rigtige netværkskald. Den lokale tekstformatprøve er ikke native ClickHouse eller bevis for det faktisk hostede konsolformat. En tom eller ukendt kategori beviser ikke, at ingen fejl er registreret. Præcis CI, faktisk aflæsning og årsagsafklaring mangler fortsat; denne kildeændring løser ikke i sig selv assistentens fejl og tilføjer ingen intern diagnose til dens offentlige viden.
 
 Loglæseren og kataloglæseren får hver en lille formatrettelse. Den ene accepterer de to sikre PostgreSQL-kategorier, som den faste forespørgsel allerede selv kan danne. Den anden kan læse den normale funktionsdefinition uden et afsluttende SQL-input-semikolon. Samme dollar-tag, hele funktionskroppen, konfiguration og slutanker kontrolleres stadig; efterfølgende SQL og ændrede eller manglende beviser godkendes ikke.
 
