@@ -405,10 +405,46 @@ const CURRENT_GRID_SAMPLING_REVIEWED_PRODUCERS = Object.freeze({
   '2baae40108bb084f950ec5474fa1c01c0289cc7e83072f44df5fe64726acff2c': 'two-fixed-checkpoint-exact-original-scopes',
   '438cffd7673d4087564258d97b33746363020af0e04b4fbe7629f0f77a5255df': 'invocation-observed-exact-original-reuse',
   '4d32d7314d8c2bc2c6592de9baa6a06732ac43a79892afc455d4b39e1eeec3ae': 'fixed-stage-exact-original-unavailability',
+  '47652a732030bb89eb8b333db3a4b348f8801b3a78c46931a0439872a382b864': 'own-native-original-reconstruction-before-checkpoint-history',
+});
+const CURRENT_GRID_SAMPLING_NATIVE_ORIGINAL_PRODUCER =
+  '47652a732030bb89eb8b333db3a4b348f8801b3a78c46931a0439872a382b864';
+const CURRENT_GRID_SAMPLING_NATIVE_ORIGINAL_HELPERS = Object.freeze({
+  'scripts/lib/dmi_legacy_current_originals.py':
+    '45408d5c11f08831915730026cb21919e366bbe08466b49fe5aba43c45e1a5b6',
+  'scripts/lib/dmi_legacy_current_recovery.py':
+    '1278df57624f8ce48f4c6c945018783bfac0cf36604e39f799542915dd969830',
+  'scripts/lib/dmi-legacy-current-originals.mjs':
+    'ed6911f01de22ca81e49b97afe49a124c1f7ac94b0628a6c553d1955ab07d08f',
+  'scripts/lib/saved-dmi-original-capture.mjs':
+    'b46ba3c64599e0b18c808fe6b027dca4e55a9c5e6aaf095681ca0374808a6921',
+  'scripts/lib/saved-dmi-original-dependencies.mjs':
+    'b1425855dcc2b9d6eb0e2748a1375f85460987ae54e02f66f12bfd17fe76eb24',
+  'scripts/plan-dmi-legacy-current-originals.mjs':
+    'bab6a8710126366dc14bf5f68dbb4df7c9e437c1aa95f78e609eba4fc27bbe80',
+  'scripts/plan-ravscore-current-history.mjs':
+    '5d8c8acb9b8797abd30e57d858af7b59c2077d4ebe8efb92b70e0de3af5fe397',
+  'scripts/update-weather.mjs':
+    '62bbe6eb4325dcba05afb922028150a9bdf7c45f2ebd7a7e975d85f3941d6288',
+  'scripts/prepare-saved-dmi-original-restore.mjs':
+    '564920d445cbd8d28b51cf7ddc0d2c0fd859fe3a6144f6306b76956bb11341a0',
 });
 function currentGridSamplingReviewedProducer(source) {
-  return Object.hasOwn(CURRENT_GRID_SAMPLING_REVIEWED_PRODUCERS,
-    gridSha256(gridNormalizeSource(source)));
+  const digest = gridSha256(gridNormalizeSource(source));
+  if (!Object.hasOwn(CURRENT_GRID_SAMPLING_REVIEWED_PRODUCERS, digest)) return false;
+  // The new decoder is a separate OLD-original producer. Admit this successor
+  // only with its exact reviewed dependency/caller chain; never reinterpret older family pins
+  // or accept an independently changed helper through the unchanged entry file.
+  if (digest !== CURRENT_GRID_SAMPLING_NATIVE_ORIGINAL_PRODUCER) return true;
+  try {
+    return Object.entries(CURRENT_GRID_SAMPLING_NATIVE_ORIGINAL_HELPERS).every(([file, expected]) =>
+      gridSha256(gridNormalizeSource(fs.readFileSync(path.join(
+        PRIVATE_RUNTIME_REPOSITORY_ROOT, file,
+      ), 'utf8'))) === expected);
+  } catch (error) {
+    if (error?.code === 'ENOENT' || error?.code === 'ENOTDIR') return false;
+    throw error;
+  }
 }
 
 function currentGridSamplingManifestMatches(manifest, pathKey, count, header, remainder) {
