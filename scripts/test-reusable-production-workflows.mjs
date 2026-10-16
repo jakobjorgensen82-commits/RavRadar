@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
+import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
+await import('./test-completed-private-runtime-admission.mjs');
 import fs from 'node:fs';
+import { runInNewContext } from 'node:vm';
 import { nativeIdentityMigration } from './lib/native-sampling-identity-successor-source.mjs';
 
 // The same exact source proof must wait for every relevant SOURCE native job.
@@ -27,7 +30,7 @@ const sources = Object.freeze(
   Object.fromEntries(
     Object.entries(rawSources).map(([role, sourceText]) => [
       role,
-      sourceText.replace(/\r\n/g, '\n'),
+      inverseCompletedRuntimeWorkflow(sourceText.replace(/\r\n/g, '\n'), role),
     ]),
   ),
 );
@@ -61,6 +64,106 @@ function directKeys(block, indent) {
 function assertExactKeys(actual, expected, label) {
   assert.deepEqual(actual, [...expected], label + ' exact ordered keys');
   assert.equal(new Set(actual).size, actual.length, label + ' duplicate keys');
+}
+
+const checkpointEpochDeclarations = [
+  '      weather_state_epoch_checkpoint_reentry:',
+  '        required: false',
+  '        type: boolean',
+  '        default: false',
+  '      weather_state_epoch_raw_cache_key:',
+  '        required: false',
+  '        type: string',
+  "        default: ''",
+  '',
+].join('\n');
+const checkpointEpochInputs = ['weather_state_epoch_checkpoint_reentry', 'weather_state_epoch_raw_cache_key'];
+function inverseCheckpointEpochDeclarations(call) {
+  assert.equal(call.split(checkpointEpochDeclarations).length, 2,
+    'Invert only the two reviewed optional checkpoint declarations, exactly once');
+  return call.replace(checkpointEpochDeclarations, '');
+}
+function assertCheckpointEpochInterface(actualBuild, actualManual) {
+  const call = indentedBody(actualBuild, '  workflow_call:');
+  const legacy = PRODUCTION_WORKFLOW_INTERFACES.build.inputs;
+  const archiveIndex = legacy.indexOf('weather_state_epoch_archive_key');
+  assert.equal(archiveIndex, 7, 'The old interface anchor must remain exact');
+  assertExactKeys(directKeys(indentedBody(call, '    inputs:'), 6),
+    [...legacy.slice(0, archiveIndex), ...checkpointEpochInputs, ...legacy.slice(archiveIndex)],
+    'actual checkpoint build call inputs');
+  assertExactKeys(directKeys(indentedBody(inverseCheckpointEpochDeclarations(call), '    inputs:'), 6),
+    legacy, 'unchanged historical build interface');
+  const manualInputs = indentedBody(actualManual, '  workflow_dispatch:');
+  for (const [name, type, value] of [
+    ['weather_state_epoch_checkpoint_reentry', 'boolean', 'false'],
+    ['weather_state_epoch_raw_cache_key', 'string', "''"],
+    ['weather_state_epoch_archive_key', 'string', "''"],
+    ['weather_state_epoch_archive_catalog_sha256', 'string', "''"],
+  ]) {
+    const input = indentedBody(manualInputs, '      ' + name + ':');
+    assert.match(input, /^        required: false$/m);
+    assert.ok(input.includes('        type: ' + type + '\n'));
+    assert.ok(input.includes('        default: ' + value));
+  }
+  const actualWith = indentedBody(jobBlock(actualManual, 'build-and-prepare'), '    with:');
+  const fields = ['extended_provider_bootstrap', 'weather_state_epoch_bootstrap',
+    'weather_state_epoch_checkpoint_reentry', 'weather_state_epoch_raw_cache_key',
+    'weather_state_epoch_archive_key', 'weather_state_epoch_archive_catalog_sha256'];
+  const expressions = fields.map(field => {
+    const lines = [...actualWith.matchAll(new RegExp('^      ' + field + ': (.+)$', 'gm'))];
+    assert.equal(lines.length, 1, 'Exactly one actual manual field: ' + field);
+    const expression = lines[0][1].match(/^\$\{\{ (.+) \}\}$/)?.[1];
+    assert.ok(expression, 'An actual caller expression is required: ' + field);
+    return expression.replaceAll('needs.state-epoch-prewrite.', 'needs["state-epoch-prewrite"].');
+  });
+  for (const [bootstrap, reentry] of [[false, false], [true, false], [false, true]]) {
+    const inputs = { weather_state_epoch_bootstrap: bootstrap,
+      weather_state_epoch_checkpoint_reentry: reentry,
+      weather_state_epoch_raw_cache_key: reentry ? 'synthetic-exact-raw' : '',
+      weather_state_epoch_archive_key: reentry ? 'synthetic-saved-archive' : '',
+      weather_state_epoch_archive_catalog_sha256: reentry ? 'synthetic-saved-catalog' : '' };
+    const outputs = { archive_key: bootstrap ? 'synthetic-prewrite-archive' : '',
+      archive_catalog_sha256: bootstrap ? 'synthetic-prewrite-catalog' : '' };
+    const context = { inputs, needs: { 'state-epoch-prewrite': { outputs } } };
+    assert.deepEqual(expressions.map(expression => runInNewContext(expression, context)),
+      [bootstrap, bootstrap || reentry, reentry, inputs.weather_state_epoch_raw_cache_key,
+        reentry ? inputs.weather_state_epoch_archive_key : outputs.archive_key,
+        reentry ? inputs.weather_state_epoch_archive_catalog_sha256 : outputs.archive_catalog_sha256],
+      'Actual default/fresh/reentry routing must preserve its separate archive and RAW sources');
+  }
+}
+const checkpointEpochManual = inverseCompletedRuntimeWorkflow(fs.readFileSync(
+  new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8',
+).replaceAll('\r\n', '\n'), 'once');
+assertCheckpointEpochInterface(build, checkpointEpochManual);
+for (const changed of [
+  build.replace(checkpointEpochDeclarations, ''),
+  build.replace(checkpointEpochDeclarations, checkpointEpochDeclarations
+    .replace('        required: false', '        required: true')),
+  build.replace(checkpointEpochDeclarations, checkpointEpochDeclarations
+    .replace('        default: false', '        default: true')),
+  build.replace(checkpointEpochDeclarations, checkpointEpochDeclarations
+    + '      unreviewed_checkpoint_input:\n        required: false\n        type: boolean\n        default: false\n'),
+]) {
+  assert.notEqual(changed, build);
+  assert.throws(() => assertCheckpointEpochInterface(changed, checkpointEpochManual));
+}
+for (const [before, after] of [
+  ['extended_provider_bootstrap: ' + gh('inputs.weather_state_epoch_bootstrap == true'),
+    'extended_provider_bootstrap: ' + gh('true')],
+  ['weather_state_epoch_bootstrap: ' + gh('inputs.weather_state_epoch_bootstrap == true || inputs.weather_state_epoch_checkpoint_reentry == true'),
+    'weather_state_epoch_bootstrap: ' + gh('false')],
+  ['weather_state_epoch_checkpoint_reentry: ' + gh('inputs.weather_state_epoch_checkpoint_reentry'),
+    'weather_state_epoch_checkpoint_reentry: ' + gh('true')],
+  ['weather_state_epoch_raw_cache_key: ' + gh('inputs.weather_state_epoch_raw_cache_key'),
+    'weather_state_epoch_raw_cache_key: ' + gh("''")],
+  ['inputs.weather_state_epoch_archive_key || needs.state-epoch-prewrite.outputs.archive_key',
+    'inputs.weather_state_epoch_archive_catalog_sha256 || needs.state-epoch-prewrite.outputs.archive_key'],
+  ['inputs.weather_state_epoch_archive_catalog_sha256 || needs.state-epoch-prewrite.outputs.archive_catalog_sha256',
+    'inputs.weather_state_epoch_archive_key || needs.state-epoch-prewrite.outputs.archive_catalog_sha256'],
+]) {
+  assert.equal(checkpointEpochManual.split(before).length, 2, 'Mutate exactly one actual caller expression');
+  assert.throws(() => assertCheckpointEpochInterface(build, checkpointEpochManual.replace(before, after)));
 }
 
 function referencedNames(sourceText, namespace) {
@@ -115,7 +218,8 @@ assert.equal(PRODUCTION_WORKFLOW_INTERFACES.build.outputs.length, 28, 'exact 28 
 assert.equal(PRODUCTION_WORKFLOW_INTERFACES.deploy.outputs.length, 3, 'exact 3 deploy outputs');
 
 for (const [role, sourceText, contract] of contracts) {
-  const call = indentedBody(sourceText, '  workflow_call:');
+  const actualCall = indentedBody(sourceText, '  workflow_call:');
+  const call = role === 'build' ? inverseCheckpointEpochDeclarations(actualCall) : actualCall;
   assertExactKeys(directKeys(indentedBody(call, '    inputs:'), 6), contract.inputs, role + ' call inputs');
   assertExactKeys(directKeys(indentedBody(call, '    secrets:'), 6), contract.secrets, role + ' call secrets');
   assertExactKeys(directKeys(indentedBody(call, '    outputs:'), 6), contract.outputs, role + ' call outputs');
@@ -146,7 +250,7 @@ for (const [role, sourceText, contract] of contracts) {
   }
   assert.deepEqual(
     referencedNames(sourceText, 'inputs'),
-    [...contract.inputs].sort(),
+    [...contract.inputs, ...(role === 'build' ? checkpointEpochInputs : [])].sort(),
     role + ' input references equal declared interface',
   );
   assert.deepEqual(

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { projectSource19NativeCiWorkflow } from './test-source19-native-ci-workflow.mjs';
+import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { exactPagesAttemptStep } from './github-pages-attempt-evidence.mjs';
@@ -13,7 +14,7 @@ import {
 const workflowDirectory = '.github/workflows';
 const productionWorkflowSources = await readProductionWorkflowSources();
 const productionWorkflows = Object.freeze(Object.fromEntries(
-  Object.entries(productionWorkflowSources).map(([role, source]) => [role, source.replace(/\r\n/g, '\n')]),
+  Object.entries(productionWorkflowSources).map(([role, source]) => [role, inverseCompletedRuntimeWorkflow(source.replace(/\r\n/g, '\n'), role)]),
 ));
 const {
   orchestrator: orchestratorWorkflow,
@@ -137,10 +138,10 @@ for (const workflowName of [
 }
 assert.doesNotMatch(r2MigrationWorkflow, /pages: write|id-token: write|deploy-pages|--publish/,
   'The copy-only R2 migration must not deploy or change the pointer');
-const manualCurrentWeatherWorkflow = fs.readFileSync(
+const manualCurrentWeatherWorkflow = inverseCompletedRuntimeWorkflow(fs.readFileSync(
   `${workflowDirectory}/run-current-weather-once.yml`,
   'utf8',
-).replace(/\r\n/g, '\n');
+).replace(/\r\n/g, '\n'), 'once');
 for (const marker of [
   '  workflow_dispatch:',
   'group: ravradar-weather-production-v2',
@@ -1790,7 +1791,7 @@ for (const marker of [
   'DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json',
   'DMI_BULK_PREFER_OUTPUT_CACHE: true',
   'DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false',
-  "DMI_BULK_DEPLOYED_FALLBACK_PATH: ${{ inputs.weather_state_epoch_bootstrap && format('{0}/ravradar-weather-state-epoch-{1}-{2}/empty-dmi-candidate.json', runner.temp, github.run_id, github.run_attempt) || '.cache/dmi-active-complete.json' }}",
+  "DMI_BULK_DEPLOYED_FALLBACK_PATH: ${{ inputs.weather_state_epoch_checkpoint_reentry && '.cache/dmi-candidate-progress.json' || inputs.weather_state_epoch_bootstrap && format('{0}/ravradar-weather-state-epoch-{1}-{2}/empty-dmi-candidate.json', runner.temp, github.run_id, github.run_attempt) || '.cache/dmi-active-complete.json' }}",
 ]) assert.ok(currentDmiProducer.includes(marker), `Normal DMI-producent mangler ${marker}`);
 const dmiContinueExpression = currentDmiProducer.match(/^        continue-on-error: \$\{\{ (.+) \}\}$/m)?.[1];
 assert.equal(dmiContinueExpression, 'inputs.checkpoint_only != true');

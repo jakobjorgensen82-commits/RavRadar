@@ -16,6 +16,8 @@ import {
   LEGACY_CANDIDATE_G_VERIFICATION_SCHEMA,
 } from './verify-legacy-candidate-g-source.mjs';
 import {
+  completedRuntimeOperationalSource,
+  assertCompletedRuntimeOperationalObservation,
   assertCandidateActivationPlan,
   assertCandidateRefreshPlan,
   assertHistoricalCandidateRefreshPlan,
@@ -804,6 +806,30 @@ const historicalIntegratedResolved = resolveOperationalRavScoreModel(
   { profileRow: historicalIntegratedSourceProfileRow },
 );
 assert.equal(operationalResolvedBindingCurrent(historicalIntegratedResolved), false);
+const completedSource = completedRuntimeOperationalSource(historicalIntegratedSourceRow, historicalIntegratedSourceProfileRow);
+assert.equal(completedSource.calibrationEligible, false);
+assert.equal(completedSource.sourceRows.operationalVersion, historicalIntegratedSourceRow.version);
+const completedObservation = { initialResolved: { ...historicalIntegratedResolved, bindingCurrent: false },
+  expectedSource: completedSource, publicManifest: manifest(integratedModelBinding(), 'rr-completed-target', '2026-08-29T13:45:00.000Z'),
+  publicAudit: integratedWarmupAudit, sourceHead };
+assert.doesNotThrow(() => assertCompletedRuntimeOperationalObservation(historicalIntegratedSourceRow,
+  historicalIntegratedSourceProfileRow, completedObservation));
+for (const changedRow of [
+  { ...historicalIntegratedSourceRow, version: historicalIntegratedSourceRow.version + 1 },
+  { ...historicalIntegratedSourceRow, payload: { ...historicalIntegratedSourceRow.payload, calibrationEligible: true } },
+  { ...historicalIntegratedSourceRow, payload: { ...historicalIntegratedSourceRow.payload, calibrationEligible: undefined } },
+]) assert.throws(() => assertCompletedRuntimeOperationalObservation(changedRow,
+  historicalIntegratedSourceProfileRow, completedObservation));
+assert.throws(() => assertCompletedRuntimeOperationalObservation(historicalIntegratedSourceRow,
+  { ...historicalIntegratedSourceProfileRow, version: historicalIntegratedSourceProfileRow.version + 1 }, completedObservation));
+assert.throws(() => assertCompletedRuntimeOperationalObservation(historicalIntegratedSourceRow,
+  { ...historicalIntegratedSourceProfileRow, payload: { ...historicalIntegratedSourceProfileRow.payload, unreviewed: true } }, completedObservation));
+const readySourceRow = { ...historicalIntegratedSourceRow, payload: { ...historicalIntegratedSourceRow.payload, calibrationEligible: true } };
+assert.throws(() => assertCompletedRuntimeOperationalObservation(readySourceRow, historicalIntegratedSourceProfileRow,
+  { publicManifest: completedObservation.publicManifest, publicAudit: integratedWarmupAudit, sourceHead }), /requires a READY/);
+assert.throws(() => assertCompletedRuntimeOperationalObservation(historicalIntegratedSourceRow, historicalIntegratedSourceProfileRow,
+  { publicManifest: completedObservation.publicManifest, publicAudit: { ...integratedWarmupAudit, status: 'failed',
+    errors: ['STATE_REPLAY_FAILED'], errorCounts: { STATE_REPLAY_FAILED: 673 } }, sourceHead }), /passed full public runtime audit/);
 
 const integratedH3 = manifest(integratedModelBinding(),
   'rr-20260829134500-210', '2026-08-29T13:45:00.000Z');

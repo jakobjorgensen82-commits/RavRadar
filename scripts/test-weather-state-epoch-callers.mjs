@@ -42,19 +42,29 @@ function evaluate(source, environment, result) {
 }
 
 async function actualFixture(readSource = file => fs.readFile(file, 'utf8')) {
-  const source = (await readSource(path.join(ROOT, 'scripts/test-weather-state-epoch-input-view.mjs')))
+  const reviewedSource = (await readSource(path.join(ROOT, 'scripts/test-weather-state-epoch-input-view.mjs')))
     .replace(/\r\n/g, '\n');
-  // New exact fixture identity after its additive optional component-pack
-  // case. The original default OLD archive validators/assertions remain;
-  // this source pin is not reused native or production evidence.
-  assert.equal(hash(source), 'ebf1a6ebd6bef165cbbad789a1b9293a0c5ee702aa3b3ac2051cb742c0f05da4');
+  // Only the reviewed test's workflow reader changed. Prove its complete new
+  // identity, then invert precisely that adapter before the unchanged fixture
+  // pin and real archive/caller seams below. No fixture or guard is re-pinned.
+  assert.equal(hash(reviewedSource), '0b2a7546988c480bd26d6b926eed98c29b6817ce65633d778995a7f02b8f5d93');
+  const source = reviewedSource
+    .replace("import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';\n", '')
+    .replace(
+      "const workflow = inverseCompletedRuntimeWorkflow((await fs.readFile(path.join(ROOT, '.github/workflows/reusable-weather-build.yml'), 'utf8')).replaceAll('\\r\\n', '\\n'), 'build');",
+      "const workflow = (await fs.readFile(path.join(ROOT, '.github/workflows/reusable-weather-build.yml'), 'utf8')).replaceAll('\\r\\n', '\\n');",
+    );
+  // New exact fixture identity after its additive checkpoint case and optional
+  // dynamic target time. The default OLD archive inputs/validators remain
+  // unchanged; this source pin is not reused native or production evidence.
+  assert.equal(hash(source), '4f0f04dfb9de43fdf45b828620164294b5e109d19eaa1b54c9dfac8f523aeb64');
   // Exact existing controlled fixture, not a second fixture bank or a mocked
   // archive assertion. Its genuine fixed044d OLD validators and real archive
   // capture/SAVE/readback/local-rehydrate run unchanged, including negatives.
   const helpers = section(source, 'async function syntheticNewFactory(', '// Controlled storage exercises')
-    + section(source, 'async function archivedOldView(root, componentFixture = null)', "test('a JSON archive marker");
+    + section(source, 'async function archivedOldView(root, componentFixture = null, targetAt = null)', "test('a JSON archive marker");
   return evaluate(helpers, { assert, crypto, fs, nativeFs, os, path, pathToFileURL,
-    ROOT, hash, HOUR_MS, time, vectorSelection, withIssuedAccountAssistantSource, OLD,
+    ROOT, hash, HOUR_MS, base, time, vectorSelection, withIssuedAccountAssistantSource, OLD,
     ...epoch, ...archive, dmiExpectedIdentityForPart, inspectDmiForecastGridSampling, ravScoreModelBinding },
   '({ownedTemporary,exclusiveJson,archivedOldView,syntheticNewFactory})');
 }

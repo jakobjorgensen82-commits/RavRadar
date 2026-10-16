@@ -1,12 +1,17 @@
 import assert from 'node:assert/strict';
+import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import test from 'node:test';
 import { runInNewContext } from 'node:vm';
 
-// Static workflow contract only. Never reads private data or calls a provider.
+// Workflow contract and an isolated shell guard. Never reads private data or calls a provider.
 const read = file => fs.readFileSync(file, 'utf8').replaceAll('\r\n', '\n');
-const normal = read('.github/workflows/reusable-weather-build.yml');
+const normal = inverseCompletedRuntimeWorkflow(read('.github/workflows/reusable-weather-build.yml'), 'build');
 const orchestrator = read('.github/workflows/update-and-deploy.yml');
-const manual = read('.github/workflows/run-current-weather-once.yml');
+const manual = inverseCompletedRuntimeWorkflow(read('.github/workflows/run-current-weather-once.yml'), 'once');
 const watchdog = read('.github/workflows/preserve-copernicus-current-shadow.yml');
 const retiredOneoff = read('.github/workflows/validate-copernicus-current-pilot.yml');
 assert.match(normal, /quick_confirmation:\s+required: false\s+type: boolean\s+default: false/);
@@ -19,6 +24,77 @@ function step(source, name) {
   assert.equal(found.length, 1, `Exactly one step: ${name}`);
   return found[0];
 }
+
+function epochCheckpointPreflightGuard(source) {
+  const preflight = step(source, 'Decide whether weather needs updating before private runtime download');
+  const run = preflight.match(/        run: \|\n([\s\S]*)$/)?.[1]?.replace(/^          /gm, '');
+  assert.ok(run, 'The actual normal preflight shell must exist');
+  const state = run.indexOf('state=.cache/weather-preflight-state/state.json\n');
+  assert.ok(state > 0, 'The normal preflight state read must remain after the guard');
+  const guard = run.slice(0, state);
+  assert.match(guard, /^set -uo pipefail\nif test "\$\{CHECKPOINT_ONLY:-false\}" = true && test "\$\{RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY:-false\}" = true; then\n/,
+    'Only the conjunction of both explicit epoch checkpoint flags may bypass model probes');
+  assert.match(guard, /  echo "should_run=true" >> "\$GITHUB_OUTPUT"\n  echo "dmi_changed=false" >> "\$GITHUB_OUTPUT"\n  echo "reason=epoch-checkpoint-reentry" >> "\$GITHUB_OUTPUT"\n  echo "age_minutes=unknown" >> "\$GITHUB_OUTPUT"\n  exit 0\nfi\n$/);
+  assert.doesNotMatch(guard, /python|curl|fetch|materialize-preflight/,
+    'The checkpoint preflight guard may not reach state materialization or providers');
+  return guard;
+}
+const checkpointPreflightGuard = epochCheckpointPreflightGuard(normal);
+const checkpointPreflightYaml = checkpointPreflightGuard.replace(/^set -uo pipefail\n/, '')
+  .split('\n').slice(0, -1).map(line => '          ' + line).join('\n') + '\n';
+assert.equal(normal.split(checkpointPreflightYaml).length, 2, 'The inverse must remove exactly the actual YAML guard');
+assert.throws(() => epochCheckpointPreflightGuard(normal.replace(checkpointPreflightYaml, '')),
+  'The original unguarded preflight must fail the checkpoint contract');
+for (const clause of [
+  'test "${CHECKPOINT_ONLY:-false}" = true && ',
+  ' && test "${RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY:-false}" = true',
+]) {
+  assert.equal(normal.split(clause).length, 2, 'Each guard mutation must change exactly one actual clause');
+  assert.throws(() => epochCheckpointPreflightGuard(normal.replace(clause, '')),
+    'Neither checkpoint flag alone may bypass the normal preflight');
+}
+const guardShell = process.platform === 'linux' ? 'bash' : process.env.RAVRADAR_POSIX_TEST_SHELL;
+test('epoch checkpoint preflight: actual shell uses an owned output file and requires both flags',
+  { skip: !guardShell && 'Linux Bash or an explicitly selected local POSIX test shell is required' }, () => {
+    const parent = fs.realpathSync(tmpdir());
+    const own = fs.mkdtempSync(path.join(parent, 'rr-epoch-preflight-'));
+    const identity = fs.lstatSync(own, { bigint: true });
+    let index = 0;
+    try {
+    for (const checkpoint of [undefined, 'false', 'true', 'TRUE', '1']) {
+      for (const reentry of [undefined, 'false', 'true', 'TRUE', '1']) {
+        const output = path.join(own, `output-${index++}.txt`);
+        const env = { PATH: process.env.PATH, GITHUB_OUTPUT: output };
+        if (checkpoint !== undefined) env.CHECKPOINT_ONLY = checkpoint;
+        if (reentry !== undefined) env.RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY = reentry;
+        // Linux always executes the exact Bash body. A local POSIX shell can
+        // exercise the identical if-body, but is not Linux/Bash evidence.
+        const body = process.platform === 'linux' ? checkpointPreflightGuard
+          : checkpointPreflightGuard.replace(/^set -uo pipefail\n/, 'set -u\n');
+        const args = process.platform === 'linux' ? ['--noprofile', '--norc', '-c'] : ['-c'];
+        const result = spawnSync(guardShell, [...args,
+          body + 'printf "NORMAL_PREFLIGHT_FALLTHROUGH\\n"\n'],
+        { env, encoding: 'utf8', timeout: 5000, maxBuffer: 16_384 });
+        const label = JSON.stringify({ checkpoint, reentry });
+        assert.equal(result.error, undefined, label);
+        assert.equal(result.signal, null, label);
+        assert.equal(result.status, 0, `${label}\n${result.stderr}`);
+        assert.equal(result.stderr, '', label);
+        const selected = checkpoint === 'true' && reentry === 'true';
+        assert.equal(result.stdout, selected ? '' : 'NORMAL_PREFLIGHT_FALLTHROUGH\n', label);
+        assert.equal(fs.existsSync(output), selected, label);
+        if (selected) assert.equal(fs.readFileSync(output, 'utf8'),
+          'should_run=true\ndmi_changed=false\nreason=epoch-checkpoint-reentry\nage_minutes=unknown\n', label);
+      }
+    }
+    } finally {
+      const current = fs.lstatSync(own, { bigint: true });
+      assert.equal(fs.realpathSync(own), own); assert.equal(path.dirname(own), parent);
+      assert.equal(current.dev, identity.dev); assert.equal(current.ino, identity.ino);
+      assert.ok(current.isDirectory() && !current.isSymbolicLink());
+      fs.rmSync(own, { recursive: true, force: false });
+    }
+  });
 
 const privatePlaintextPrefixes = [
   'coastal-point-staging-v1-',
@@ -127,10 +203,12 @@ assert.match(currentOriginalHour, /target <= Date\.parse\(expected\.productionRe
 // Invert only the reviewed epoch interface for the unchanged adjacency oracle;
 // separately evaluate actual default/epoch routing, not synthetic admission.
 const epochBuildInterface = [
-  '      extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true }}',
-  '      weather_state_epoch_bootstrap: ${{ inputs.weather_state_epoch_bootstrap }}',
-  '      weather_state_epoch_archive_key: ${{ needs.state-epoch-prewrite.outputs.archive_key }}',
-  '      weather_state_epoch_archive_catalog_sha256: ${{ needs.state-epoch-prewrite.outputs.archive_catalog_sha256 }}',
+  "      extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true }}",
+  "      weather_state_epoch_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true || inputs.weather_state_epoch_checkpoint_reentry == true }}",
+  "      weather_state_epoch_checkpoint_reentry: ${{ inputs.weather_state_epoch_checkpoint_reentry }}",
+  "      weather_state_epoch_raw_cache_key: ${{ inputs.weather_state_epoch_raw_cache_key }}",
+  "      weather_state_epoch_archive_key: ${{ inputs.weather_state_epoch_checkpoint_reentry && inputs.weather_state_epoch_archive_key || needs.state-epoch-prewrite.outputs.archive_key }}",
+  "      weather_state_epoch_archive_catalog_sha256: ${{ inputs.weather_state_epoch_checkpoint_reentry && inputs.weather_state_epoch_archive_catalog_sha256 || needs.state-epoch-prewrite.outputs.archive_catalog_sha256 }}",
 ].join('\n');
 assert.equal(manual.split(epochBuildInterface).length, 2);
 const ordinaryManual = manual.replace(epochBuildInterface, '      extended_provider_bootstrap: false');
@@ -160,7 +238,7 @@ function assertManualEpochInterface(source) {
         needs: { 'state-epoch-prewrite': { outputs } },
       };
       assert.equal(evaluate('extended_provider_bootstrap', context), enabled === true);
-      assert.equal(evaluate('weather_state_epoch_bootstrap', context), enabled);
+      assert.equal(evaluate('weather_state_epoch_bootstrap', context), enabled === true);
       assert.equal(evaluate('weather_state_epoch_archive_key', context), outputs.archive_key);
       assert.equal(evaluate('weather_state_epoch_archive_catalog_sha256', context), outputs.archive_catalog_sha256);
       assert.equal(evaluate('quick_confirmation', context), quick);
@@ -168,10 +246,25 @@ function assertManualEpochInterface(source) {
   }
 }
 assertManualEpochInterface(manual);
+{
+  const build = manual.slice(manual.indexOf('\n  build-and-prepare:\n'));
+  const context = { inputs: { weather_state_epoch_bootstrap:false, weather_state_epoch_checkpoint_reentry:true,
+    weather_state_epoch_archive_key:'saved-archive', weather_state_epoch_archive_catalog_sha256:'saved-catalog',
+    weather_state_epoch_raw_cache_key:'saved-raw' }, needs: { 'state-epoch-prewrite': { outputs:{} } } };
+  const expected = { extended_provider_bootstrap:false, weather_state_epoch_bootstrap:true,
+    weather_state_epoch_checkpoint_reentry:true, weather_state_epoch_archive_key:'saved-archive',
+    weather_state_epoch_archive_catalog_sha256:'saved-catalog', weather_state_epoch_raw_cache_key:'saved-raw' };
+  for (const [field,value] of Object.entries(expected)) {
+    const expression = build.match(new RegExp('^      '+field+': \\$\\{\\{ (.+) \\}\\}$','m'))?.[1];
+    assert(expression, field);
+    assert.equal(runInNewContext(expression.replaceAll('needs.state-epoch-prewrite.','needs["state-epoch-prewrite"].'),context),value);
+  }
+}
+
 for (const [from, to] of [
   ['extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true }}',
     'extended_provider_bootstrap: ${{ true }}'],
-  ['weather_state_epoch_bootstrap: ${{ inputs.weather_state_epoch_bootstrap }}',
+  ['weather_state_epoch_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true || inputs.weather_state_epoch_checkpoint_reentry == true }}',
     'weather_state_epoch_bootstrap: ${{ false }}'],
   ['needs.state-epoch-prewrite.outputs.archive_key', 'needs.state-epoch-prewrite.outputs.archive_catalog_sha256'],
   ['needs.state-epoch-prewrite.outputs.archive_catalog_sha256', 'needs.state-epoch-prewrite.outputs.archive_key'],

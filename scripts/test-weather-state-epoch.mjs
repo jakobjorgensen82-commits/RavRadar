@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -96,7 +97,53 @@ test('serialized context or caller-supplied originals cannot replace installed a
 });
 
 test('fixed normal source callers keep archive before SQL and fresh-only installation', async () => {
-  const text = await fs.readFile('scripts/weather-state-epoch.mjs', 'utf8');
+  const fullText = (await fs.readFile('scripts/weather-state-epoch.mjs', 'utf8')).replace(/\r\n/g, '\n');
+  const marker = 'export async function restoreInstalledWeatherStateEpochCheckpoint() {';
+  const nextMarker = '\nexport async function loadInstalledWeatherStateEpochInputView(options) {';
+  function projectFreshOnly(source) {
+    // Remove exactly the separately reviewed reentry caller, not a generic
+    // restore pattern. Keep every old fresh-only assertion below unchanged.
+    assert.equal(source.split(marker).length, 2, 'EXACT_ONE_REENTRY_CALLER_REQUIRED');
+    const start = source.indexOf(marker), end = source.indexOf(nextMarker, start);
+    assert(end > start, 'EXACT_REENTRY_END_REQUIRED');
+    const route = source.slice(start, end);
+    assert.equal(crypto.createHash('sha256').update(route).digest('hex'),
+      '3d8e52fd4bbe256400a91806a288987d9d0c36f996f709d0c20af86724724d70',
+      'REVIEWED_OPAQUE_VIEW_REENTRY_CALLER_CHANGED');
+    assert(route.includes('  assertWeatherStateEpochCheckpointRequest();\n'
+      + '  const context = await installedContext();'));
+    assert(route.includes('  const view = await loadInstalledWeatherStateEpochInputView({ registry, targetReferenceAt: context.targetReferenceAt });\n'
+      + "  const report = await weatherComponentProgressCache({ mode: 'restore', repositoryRoot: ROOT,"));
+    assert(route.includes('productionReferenceAt: context.targetReferenceAt, resumeOriginalTarget: true,\n'
+      + '    stateEpochInputView: view, epochOriginalRoot: context.restoredRoot });'));
+    assert(route.includes("requireCode(report.status === 'RESTORED' && report.restored === true\n"
+      + "    && report.restoredProductionReferenceAt === context.targetReferenceAt, 'CHECKPOINT_RESTORE_REQUIRED');\n"
+      + '  await loadInstalledWeatherStateEpochInputView({ registry, targetReferenceAt: context.targetReferenceAt });'));
+    const fresh = source.slice(0, start) + source.slice(end);
+    assert(!fresh.includes('resumeOriginalTarget: true'), 'REENTRY_MUST_NOT_LEAK_TO_FRESH_CALLERS');
+    assert(!fresh.includes("mode: 'restore'"), 'RESTORE_MUST_NOT_LEAK_TO_FRESH_CALLERS');
+    return fresh;
+  }
+  const routeStart = fullText.indexOf(marker), routeEnd = fullText.indexOf(nextMarker, routeStart);
+  const reviewedRoute = fullText.slice(routeStart, routeEnd);
+  for (const [before, after] of [
+    ['  assertWeatherStateEpochCheckpointRequest();\n', ''],
+    ['const context = await installedContext();', 'const context = callerContext;'],
+    ['const view = await loadInstalledWeatherStateEpochInputView({ registry, targetReferenceAt: context.targetReferenceAt });', 'const view = {};'],
+    ['resumeOriginalTarget: true', 'resumeOriginalTarget: false'],
+    ['stateEpochInputView: view', 'stateEpochInputView: null'],
+    ['epochOriginalRoot: context.restoredRoot', 'epochOriginalRoot: ROOT'],
+    ['report.restoredProductionReferenceAt === context.targetReferenceAt', 'true'],
+  ]) {
+    assert(reviewedRoute.includes(before));
+    const mutatedRoute = reviewedRoute.replace(before, after);
+    assert.notEqual(mutatedRoute, reviewedRoute);
+    assert.throws(() => projectFreshOnly(fullText.replace(reviewedRoute, mutatedRoute)));
+  }
+  assert.throws(() => projectFreshOnly(fullText + '\n' + reviewedRoute), 'DUPLICATE_REENTRY_REFUSED');
+  assert.throws(() => projectFreshOnly(fullText + '\nweatherComponentProgressCache({ resumeOriginalTarget: true });\n'));
+  assert.throws(() => projectFreshOnly(fullText + "\nweatherComponentProgressCache({ mode: 'restore' });\n"));
+  const text = projectFreshOnly(fullText);
   assert(text.includes('old.prewrite.verifyCurrentGridPrewriteOriginals'));
   assert(text.includes('old.runtime.restoreProtectedPrivateProductionRuntime'));
   assert(text.includes('No fallback from exact archive B copies to remote B'));

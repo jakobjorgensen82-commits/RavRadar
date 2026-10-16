@@ -44,6 +44,14 @@ NODE22 = None
 FIXTURE_IDENTITY = {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_CP_INSTALL_H70_FINAL_PR634_FRESH_FIXTURE","compositionId":"19f6a6a2d12f9f80740675a0ba3fc178456571b7dcc7f6737919f4bd628d38b1","sourceBase":"d0cdbec4b8ea0f36e4abdd3801401aa748989266","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","unionH71":"OUTSIDE_H70_TARGET_SEPARATE_NATIVE_CALLER_REQUIRED","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT"}
 CASES = ('normal-install', 'replace-bank', 'replace-root', 'lose-supervisor')
 FIXTURE_IDENTITY['syntheticAdminInput'] = 'EXPLICIT_OWN_EMPTY_DOCUMENTS'
+
+# Explicit test-only successor; the original fixture and default remain frozen.
+def select_fixture_composition(value):
+    if value == 'original-d0':
+        return Path('scripts/test-source19-cp-install-native-fixture.mjs'), {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_CP_INSTALL_H70_FINAL_PR634_FRESH_FIXTURE","compositionId":"19f6a6a2d12f9f80740675a0ba3fc178456571b7dcc7f6737919f4bd628d38b1","sourceBase":"d0cdbec4b8ea0f36e4abdd3801401aa748989266","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","unionH71":"OUTSIDE_H70_TARGET_SEPARATE_NATIVE_CALLER_REQUIRED","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT","syntheticAdminInput":"EXPLICIT_OWN_EMPTY_DOCUMENTS"}
+    if value == 'integrated-d504':
+        return Path('scripts/test-source19-cp-install-native-d504-fixture.mjs'), {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_CP_INSTALL_H70_FINAL_PR634_FRESH_FIXTURE_D504_SUCCESSOR","compositionId":"81ba8b9a448f5d475d019d5ce6c44dbd9fa3ee8bebeb9e4e4d816de2395f4dfa","sourceBase":"d5045bda33c4959c920ab71e79ca948f80857ece","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","unionH71":"OUTSIDE_H70_TARGET_SEPARATE_NATIVE_CALLER_REQUIRED","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT","syntheticAdminInput":"EXPLICIT_OWN_EMPTY_DOCUMENTS","sourceParent":"dbb16b65e4626aa55c3ab06f7f61ac4b60fb4c60","frozenFixturePath":"scripts/test-source19-cp-install-native-fixture.mjs","frozenFixtureSha256":"c8555c9901b36be7d26fff415ffa3014e7104b6336a9f502379d2965b481179a","successorCompositionId":"81ba8b9a448f5d475d019d5ce6c44dbd9fa3ee8bebeb9e4e4d816de2395f4dfa"}
+    raise ValueError('SOURCE19_NATIVE_COMPOSITION_INVALID')
 CASE = None
 
 
@@ -702,7 +710,9 @@ if __name__ == '__main__':
     parser.add_argument('--node24-path', required=True)
     parser.add_argument('--node22-path', required=True)
     parser.add_argument('--case', choices=CASES, required=True)
+    parser.add_argument('--composition', choices=('original-d0', 'integrated-d504'), default='original-d0')
     args, remaining = parser.parse_known_args()
+    FIXTURE, FIXTURE_IDENTITY = select_fixture_composition(args.composition)
     NODE = Path(args.node24_path).resolve(strict=True)
     NODE22 = Path(args.node22_path).resolve(strict=True)
     CASE = args.case

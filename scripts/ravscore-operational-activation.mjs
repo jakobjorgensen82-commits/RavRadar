@@ -4494,6 +4494,39 @@ export function operationalPendingReconciliationTransition({
   });
 }
 
+export function completedRuntimeOperationalSource(currentRow, currentProfileRow) {
+  const resolved = resolveOperationalRavScoreModel(currentRow, { profileRow: currentProfileRow });
+  if (resolved.model !== 'integrated' || resolved.pending
+    || resolved.status !== 'INTEGRATED_ACTIVE'
+    || typeof currentRow?.payload?.calibrationEligible !== 'boolean'
+    || !Number.isSafeInteger(Number(currentRow?.version)) || Number(currentRow.version) < 1
+    || !Number.isSafeInteger(Number(currentProfileRow?.version)) || Number(currentProfileRow.version) < 1) {
+    throw new Error('COMPLETED_RUNTIME_ACTIVE_SOURCE_REQUIRED');
+  }
+  return Object.freeze({ ...resolved, calibrationEligible: currentRow.payload.calibrationEligible,
+    sourceRows: Object.freeze({ operationalVersion: Number(currentRow.version),
+      operationalPayloadSha256: sha256(currentRow.payload), profileVersion: Number(currentProfileRow.version),
+      profilePayloadSha256: sha256(currentProfileRow.payload) }) });
+}
+
+export function assertCompletedRuntimeOperationalObservation(currentRow, currentProfileRow, {
+  initialResolved = null, expectedSource = null, publicManifest = null, publicAudit = null, sourceHead,
+} = {}) {
+  const source = completedRuntimeOperationalSource(currentRow, currentProfileRow);
+  if (initialResolved !== null) {
+    const { calibrationEligible, sourceRows, ...resolved } = source;
+    if (sha256(initialResolved) !== sha256({ ...resolved, bindingCurrent: operationalResolvedBindingCurrent(resolved) })) {
+      throw new Error('COMPLETED_RUNTIME_INITIAL_SOURCE_CHANGED');
+    }
+  }
+  if (expectedSource !== null && sha256(expectedSource) !== sha256(source)) {
+    throw new Error('COMPLETED_RUNTIME_ACTIVE_SOURCE_CHANGED');
+  }
+  if (publicManifest !== null || publicAudit !== null) assertIntegratedPublicEvidence(publicManifest, publicAudit, {
+    sourceHead, allowMeasuredWarmup: currentRow.payload.calibrationEligible === false, allowDiagnosticFindings: false });
+  return source;
+}
+
 async function atomicWriteJson(file, value) {
   const destination = path.resolve(file);
   await fs.mkdir(path.dirname(destination), { recursive:true });
@@ -4745,6 +4778,18 @@ async function main() {
     });
     if (options.output) await atomicWriteJson(options.output, readOutput);
     console.log(`Operational RavScore state read: ${resolved.status} version ${resolved.centralVersion}.`);
+    return;
+  }
+  if (options.command === 'completed-runtime-source'
+    || options.command === 'validate-completed-runtime-target') {
+    const capture = options.command === 'completed-runtime-source';
+    const source = assertCompletedRuntimeOperationalObservation(currentRow, currentProfileRow, capture
+      ? { initialResolved: await readJsonOption(options, 'current-source', 'First operational observation') }
+      : { expectedSource: await readJsonOption(options, 'completed-source', 'Completed runtime source rows'),
+        publicManifest: await readJsonOption(options, 'manifest', 'Completed runtime public manifest'),
+        publicAudit: await readJsonOption(options, 'audit', 'Completed runtime strict audit'), sourceHead: options['source-head'] });
+    if (options.output) await atomicWriteJson(options.output, source);
+    console.log('COMPLETED_RUNTIME_OPERATIONAL_SOURCE_VERIFIED');
     return;
   }
   if (options.command === 'classify-pending') {

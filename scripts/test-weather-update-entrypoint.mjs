@@ -10,11 +10,37 @@ const producerPath = new URL('./update-weather.mjs', import.meta.url);
 const sourceText = async file => (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 
-// Invert only the separately reviewed archived-epoch orchestration before the
+// Invert only the separately reviewed tuple import and archived-epoch orchestration before the
 // older exact-source oracles. The complete genuine 903307 updater remains the
 // immutable baseline; the actual epoch caller has its own normal-path tests.
 function inverseWeatherStateEpochIntegration(source) {
+  // Only the four reviewed scalar-orchestration hunks are removed before
+  // every unchanged historical whole-source oracle below.
+  const scalarHunks = [
+    [
+      "// The once-only epoch may retain independently verified scalar weather, never\n// OLD current or replay state. This pure adapter keeps the ordinary component\n// selector, exact PART identity and T+3 support; originals stay untouched.\nfunction weatherStateEpochScalarHourly(record, partId, componentInputs,\n  { generatedAt, startAt, expectedIdentity }) {\n  const scalar = componentInputs.weatherStateEpochScalarPartRecords?.get(partId);\n  if (!scalar) return record.hourly;\n  return mergeHourlyPreferDmi(record.hourly, withoutCurrent(scalar).hourly,\n    { generatedAt, startAt, expectedIdentity });\n}\n\nfunction preflightFeggesundOperationalWaveReadiness({",
+      "function preflightFeggesundOperationalWaveReadiness({"
+    ],
+    [
+      "    if (componentInputs.weatherStateEpochScalarPartRecords) {\n      dmiRecord.hourly = weatherStateEpochScalarHourly(dmiRecord, part.partId,\n        componentInputs, { generatedAt, startAt: forecastStartAt, expectedIdentity });\n    }\n    const operationalRecord = applyFeggesundOperationalWaveProxy(\n      dmiRecord,",
+      "    const operationalRecord = applyFeggesundOperationalWaveProxy(\n      dmiRecord,"
+    ],
+    [
+      "      if (componentInputs.weatherStateEpochScalarPartRecords) {\n        dmiRecord.hourly = weatherStateEpochScalarHourly(dmiRecord, part.partId,\n          componentInputs, { generatedAt, startAt: partForecastStartAt,\n            expectedIdentity: partDmiIdentity });\n      }\n      selectedDmiPartRecords.set(part.partId, dmiRecord);\n      const operationalDmiRecord = applyFeggesundOperationalWaveProxy(",
+      "      selectedDmiPartRecords.set(part.partId, dmiRecord);\n      const operationalDmiRecord = applyFeggesundOperationalWaveProxy("
+    ],
+    [
+      "  if (stateEpochView !== null) {\n    weatherComponents.inputs.weatherStateEpochScalarPartRecords = new Map(\n      [...planningRecords].map(([partId, record]) => {\n        const scalar = withoutCurrent(record);\n        for (const hour of scalar.hourly) {\n          delete hour.currentStateOnlyHold;\n          delete hour.currentCoastNormalSpeedMps;\n        }\n        return [partId, scalar];\n      }),\n    );\n  }\n  planningRecords.clear();\n  output.weatherEngine.componentFallback = weatherComponents.summary;",
+      "  planningRecords.clear();\n  output.weatherEngine.componentFallback = weatherComponents.summary;"
+    ]
+  ];
+  for (const [after, before] of scalarHunks) {
+    assert.equal(source.split(after).length, 2, 'each exact reviewed epoch scalar hunk must occur once');
+    source = source.replace(after, () => before);
+  }
   const hunks = [
+    ['  verifiedFeggesundNeighborSource,\n  ATOMIC_COMPONENT_TUPLE_KEYS,\n  atomicComponentTupleValues,\n',
+      '  verifiedFeggesundNeighborSource,\n  atomicComponentTupleValues,\n'],
     ["import { assertWeatherStateEpochInputViewForTarget }\n"
       + "  from './lib/weather-state-epoch-input-view.mjs';\n", ''],
     ['  previousCurrentSourceDomainTransitions = null,\n  stateEpochView = null,\n) {\n'
@@ -137,6 +163,12 @@ function inverseLegacyCurrentOriginalDonorIntegration(source) {
 async function inverseSharedRecoveryRecordExtraction(source, sharedSource = null) {
   source = inverseLegacyCurrentOriginalDonorIntegration(source);
   sharedSource ??= await sourceText(new URL('./lib/private-dmi-recovery-record.mjs', import.meta.url));
+  // Undo only the reviewed export paired with the real updater import above.
+  // Keep every immutable historical whole-source hash and body assertion.
+  const tupleExport = '  verifiedFeggesundNeighborSource,\n  ATOMIC_COMPONENT_TUPLE_KEYS,\n  atomicComponentTupleValues,\n';
+  assert.equal(sharedSource.split(tupleExport).length, 2, 'each exact reviewed tuple export must occur once');
+  sharedSource = sharedSource.replace(tupleExport,
+    '  verifiedFeggesundNeighborSource,\n  atomicComponentTupleValues,\n');
   assert.equal(digest(sharedSource),
     'a2855aeb1826f198b874dc7060a9293f177af3a9ecb8eeb956520af16fc3958e',
     'the complete reviewed shared module must remain exact, including imports');
@@ -362,6 +394,8 @@ test('reviewed epoch orchestration has an exact whole-source inverse to genuine 
     '    checkpointStates = {};')), /each exact reviewed epoch hunk/);
   assert.throws(() => inverseWeatherStateEpochIntegration(source + '// unreviewed drift\n'),
     /complete genuine 903307 updater/);
+  assert.throws(() => inverseWeatherStateEpochIntegration(source.replace(
+    '  ATOMIC_COMPONENT_TUPLE_KEYS,\n', '  UNREVIEWED_TUPLE_KEYS,\n')), /each exact reviewed epoch hunk/);
 });
 
 test('main updater is byte-identical outside the checkpoint import and normal queue refusal', async () => {
@@ -433,6 +467,7 @@ test('shared normal DMI recovery module is import-safe, outside I71, and byte-ex
   const shared = await sourceText(new URL('./lib/private-dmi-recovery-record.mjs', import.meta.url));
   t.mock.method(globalThis, 'fetch', () => { assert.fail('NETWORK_FORBIDDEN'); });
   const normal = await import('./lib/private-dmi-recovery-record.mjs');
+  assert.equal(typeof normal.ATOMIC_COMPONENT_TUPLE_KEYS, 'object');
   for (const name of ['bulkZoneToForecastRecord', 'buildPartDmiForecastWithProtectedRetention',
     'buildPrivateDmiRecoveryRecord', 'mergeHourlyPreferDmi']) assert.equal(typeof normal[name], 'function');
   assert.doesNotMatch(shared, /from ['"]node:|\b(?:process\.|fetch\(|await\s)/);
@@ -444,6 +479,9 @@ test('shared normal DMI recovery module is import-safe, outside I71, and byte-ex
       'normal orchestration extraction must not enter the unchanged model closure');
   }
   await inverseSharedRecoveryRecordExtraction(source, shared);
+  await assert.rejects(inverseSharedRecoveryRecordExtraction(source,
+    shared.replace('  ATOMIC_COMPONENT_TUPLE_KEYS,\n', '  UNREVIEWED_TUPLE_KEYS,\n')),
+    /each exact reviewed tuple export/);
   await assert.rejects(inverseSharedRecoveryRecordExtraction(source,
     shared.replace('const SHORT_DMI_WATER_GAP_HOURS = 6;', 'const SHORT_DMI_WATER_GAP_HOURS = 7;')),
     /complete reviewed shared module/);
@@ -720,4 +758,17 @@ test('actual normal checkpoint chain retains its first failure and permits only 
       assert.deepEqual(await fs.readdir(folder), ['forecast.json']);
     }
   });
+});
+
+test('epoch scalar inverse rejects changed numeric/source routing before all immutable old oracles', async () => {
+  const actual = await sourceText(producerPath);
+  for (const [before, after] of [
+    ['withoutCurrent(scalar).hourly', 'scalar.hourly'],
+    ['if (componentInputs.weatherStateEpochScalarPartRecords)', 'if (true)'],
+    ['delete hour.currentStateOnlyHold;', 'hour.currentStateOnlyHold = null;'],
+    ['startAt: partForecastStartAt,\n            expectedIdentity: partDmiIdentity', 'startAt: partForecastStartAt,\n            expectedIdentity: null'],
+  ]) {
+    assert(actual.includes(before), 'Mutation must change the actual reviewed scalar route');
+    assert.throws(() => inverseWeatherStateEpochIntegration(actual.replace(before, after)), /exact reviewed epoch scalar hunk/);
+  }
 });

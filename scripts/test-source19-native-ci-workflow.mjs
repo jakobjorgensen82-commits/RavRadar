@@ -9,12 +9,84 @@ const NATIVE_JOBS_SHA256='2f096305b2a08b0b0445867f4295a05ba420539c1e23d63525e382
 const EXACT_SCOPE_SHA256='30098a23e2f70074559b05aa7618d6fec89e4ce9bd5f160260b0c6b1c609b4d3';
 const DEPENDENCY_GUARD="    needs: [source-native-scope, source-native]\n    if: always() && needs.source-native-scope.result == 'success' && ((needs.source-native-scope.outputs.required == 'true' && needs.source-native.result == 'success') || (needs.source-native-scope.outputs.required == 'false' && needs.source-native.result == 'skipped'))\n";
 
+
+// Successor admission is test-only. Frozen original bytes/27 pins remain original.
+const source19SuccessorFixtures = [
+  {
+    "old": "scripts/test-source19-cp-install-native-fixture.mjs",
+    "next": "scripts/test-source19-cp-install-native-d504-fixture.mjs",
+    "oldSha": "c8555c9901b36be7d26fff415ffa3014e7104b6336a9f502379d2965b481179a",
+    "nextSha": "83642a2aead446a85eddc98c791d53e2331963082aa6e7c567beb94a6893169a",
+    "guard": "  const frozenFixture = path.join(ROOT, fixtureIdentity.frozenFixturePath);\n  const frozenStat = await fs.lstat(frozenFixture);\n  assert.ok(frozenStat.isFile() && !frozenStat.isSymbolicLink() && frozenStat.nlink === 1, 'FROZEN_FIXTURE_REGULAR_SOURCE_REQUIRED');\n  assert.equal(digest(lf(await fs.readFile(frozenFixture, 'utf8'))), fixtureIdentity.frozenFixtureSha256, 'FROZEN_FIXTURE_BYTES_CHANGED');\n"
+  },
+  {
+    "old": "scripts/test-source19-union-native-fixture.mjs",
+    "next": "scripts/test-source19-union-native-d504-fixture.mjs",
+    "oldSha": "a47a5ef9042c08da572c2e7c82bc8165cff9afe547975c4a7268c1fb2d7b6787",
+    "nextSha": "071b18ba7763a31452d00c4a1d4855b28e08227e48151a41c7ce67d9656775f6",
+    "guard": "  const frozenFixture = path.join(ROOT, fixtureIdentity.frozenFixturePath);\n  const frozenStat = await fs.lstat(frozenFixture);\n  assert.ok(frozenStat.isFile() && !frozenStat.isSymbolicLink() && frozenStat.nlink === 1, 'FROZEN_FIXTURE_REGULAR_SOURCE_REQUIRED');\n  assert.equal(digest(lf(await fs.readFile(frozenFixture, 'utf8'))), fixtureIdentity.frozenFixtureSha256, 'FROZEN_FIXTURE_BYTES_CHANGED');\n"
+  }
+];
+function projectSource19SuccessorNativeJobs(actual) {
+  if (sha(actual) === NATIVE_JOBS_SHA256) return actual;
+  assert.equal(sha(actual), 'b7414f8784e43f2c7c5560c73558d2b3cabcc8e9a35e24a3752323bacbfaaef4', 'SOURCE19_D504_EXACT_SUCCESSOR_JOBS');
+  let legacy = actual;
+  for (const target of ['scripts/test-source19-cp-install-native.py', 'scripts/test-source19-union-native.py']) {
+    const original = '              python -I -B ' + target + ' --node22-path "$SOURCE_NODE22_PATH" --node24-path "$SOURCE_NODE24_PATH" --case "$SOURCE_NATIVE_CASE"';
+    assert.equal(legacy.split(original + ' --composition integrated-d504').length, 2);
+    legacy = legacy.replace(original + ' --composition integrated-d504', original);
+  }
+  assert.equal(sha(legacy), NATIVE_JOBS_SHA256, 'Entire original seven jobs must survive');
+  return legacy;
+}
+function projectSource19SuccessorNativeScope(actual) {
+  if (sha(JSON.stringify(actual)) === EXACT_SCOPE_SHA256) return actual;
+  assert.equal(sha(JSON.stringify(actual)), 'ac7b7639544f0507be3951b794383b6b70caf00894aa98e5bf6fe36f9dfe185d', 'SOURCE19_D504_EXACT_SUCCESSOR_SCOPE');
+  const legacy = actual.filter(file => !source19SuccessorFixtures.some(row => row.next === file));
+  assert.equal(actual.length - legacy.length, 2);
+  assert.equal(sha(JSON.stringify(legacy)), EXACT_SCOPE_SHA256, 'Entire original311 scope must survive');
+  return legacy;
+}
+async function assertSource19SuccessorComposition() {
+  const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const object = (text, name) => {
+    const match = text.match(new RegExp('const ' + name + '=Object\\.freeze\\((\\{[\\s\\S]*?\\})\\);'));
+    assert.ok(match); return { literal: match[0], value: JSON.parse(match[1]) };
+  };
+  for (const row of source19SuccessorFixtures) {
+    const before = (await fs.readFile(path.join(sourceRoot, row.old), 'utf8')).replaceAll('\r\n', '\n');
+    const after = (await fs.readFile(path.join(sourceRoot, row.next), 'utf8')).replaceAll('\r\n', '\n');
+    assert.equal(sha(before), row.oldSha, 'Frozen original fixture');
+    assert.equal(sha(after), row.nextSha, 'Exact separately reviewed successor fixture');
+    const oldIdentity = object(before, 'fixtureIdentity'), newIdentity = object(after, 'fixtureIdentity');
+    const oldPins = object(before, 'fixtureProductPins'), newPins = object(after, 'fixtureProductPins');
+    assert.deepEqual(Object.keys(newPins.value), Object.keys(oldPins.value));
+    assert.equal(Object.keys(newPins.value).length, 27);
+    const changed = Object.keys(newPins.value).filter(file => newPins.value[file] !== oldPins.value[file]);
+    assert.deepEqual(changed, ['scripts/test-weather-component-progress-workflow.mjs', 'scripts/weather-component-progress-cache.mjs']);
+    assert.equal(Object.keys(newPins.value).length - changed.length, 25);
+    assert.equal(newIdentity.value.sourceBase, 'd5045bda33c4959c920ab71e79ca948f80857ece');
+    assert.equal(newIdentity.value.sourceParent, 'dbb16b65e4626aa55c3ab06f7f61ac4b60fb4c60');
+    assert.equal(newIdentity.value.successorCompositionId, '81ba8b9a448f5d475d019d5ce6c44dbd9fa3ee8bebeb9e4e4d816de2395f4dfa');
+    assert.equal(newIdentity.value.evidence, 'LINUX_UNRUN_NO_ADMISSION');
+    for (const [file, expected] of Object.entries(newPins.value)) {
+      assert.equal(sha((await fs.readFile(path.join(sourceRoot, file), 'utf8')).replaceAll('\r\n', '\n')), expected, 'Actual successor product source');
+    }
+    let inverse = after.replace(newIdentity.literal, oldIdentity.literal).replace(newPins.literal, oldPins.literal);
+    assert.equal(inverse.split(row.guard).length, 2); inverse = inverse.replace(row.guard, '');
+    inverse = inverse.replace("    '" + row.next + "',\n    '" + row.old + "',\n", "    '" + row.old + "',\n")
+      .replace("      && file !== '" + row.next + "') continue;", "      && file !== '" + row.old + "') continue;");
+    assert.equal(inverse, before, 'Whole frozen factory/setup/preparation remains unchanged');
+    assert.equal(source19NativeCiRequired([row.next]), true);
+  }
+}
+
 export function projectSource19NativeCiWorkflow(input) {
   const source=input.replaceAll('\r\n','\n');
   assert.equal(source.split('\njobs:\n').length,2,'SOURCE19_NATIVE_CI_JOBS_REQUIRED');
   const jobsAt=source.indexOf('\njobs:\n')+'\njobs:\n'.length;
   const validateAt=source.indexOf('  validate:\n',jobsAt);assert.ok(validateAt>jobsAt);
-  const nativeJobs=source.slice(jobsAt,validateAt);
+  const nativeJobs=projectSource19SuccessorNativeJobs(source.slice(jobsAt,validateAt));
   assert.equal(sha(nativeJobs),NATIVE_JOBS_SHA256,'SOURCE19_NATIVE_CI_EXACT_JOB_CONTRACT');
   const validate=source.slice(validateAt);
   assert.equal(validate.split(DEPENDENCY_GUARD).length,2,'SOURCE19_NATIVE_CI_HARD_SOURCE_DEPENDENCY');
@@ -48,7 +120,7 @@ async function assertSource19FixtureCjsClosure() {
   assert.ok(actionSource.includes("child = spawn('python3', ['-B', path.join(ROOT, '" + wrapper + "'),"),
     'The fixture must include the actual fixed Python child, not a substitute');
   for (const fixture of ['scripts/test-source19-cp-install-native-fixture.mjs',
-    'scripts/test-source19-union-native-fixture.mjs']) {
+    'scripts/test-source19-union-native-fixture.mjs', ...source19SuccessorFixtures.map(row => row.next)]) {
     const fixtureSource = (await fs.readFile(path.join(root, fixture), 'utf8')).replaceAll('\r\n', '\n');
     // CONTRACT_FILES.fullRuntime is the storage ABI, not PRODUCER_SOURCE_FILES.
     // Dynamic subprocess paths therefore need explicit synthetic seed assets.
@@ -273,7 +345,7 @@ export async function testSource19NativeCiWorkflow(input=null) {
   assert.ok(native.indexOf('id: native-node22')<native.indexOf('Run one fixed native case'));
   assert.equal(native.split('--node22-path "$SOURCE_NODE22_PATH" --node24-path "$SOURCE_NODE24_PATH"').length,3);
   assert.doesNotMatch(native,/--node24-path "\$\(command -v node\)"/);
-  assert.equal(sha(JSON.stringify(SOURCE19_NATIVE_SCOPE_PATHS)),EXACT_SCOPE_SHA256,'SOURCE19_NATIVE_CI_CLOSED_SCOPE_CHANGED');
+  assert.equal(sha(JSON.stringify(projectSource19SuccessorNativeScope(SOURCE19_NATIVE_SCOPE_PATHS))),EXACT_SCOPE_SHA256,'SOURCE19_NATIVE_CI_CLOSED_SCOPE_CHANGED');
   assert.equal(new Set(SOURCE19_NATIVE_SCOPE_PATHS).size,SOURCE19_NATIVE_SCOPE_PATHS.length);
   for(const file of SOURCE19_NATIVE_SCOPE_PATHS)assert.equal(source19NativeCiRequired([file]),true,file);
   assert.deepEqual(SOURCE19_NATIVE_SCOPE_DIRECTORIES,[
@@ -293,7 +365,9 @@ export async function testSource19NativeCiWorkflow(input=null) {
     }
   assert.equal(source19NativeValidationAllowed('success','false','skipped'),true);
   assert.equal(source19NativeValidationAllowed('success','false','success'),false,'A skipped unrelated matrix is not native PASS');
+  assert.equal(native.split('--composition integrated-d504').length,3);
   const mutations=[
+    workflow.replace('--composition integrated-d504','--composition unreviewed'),
     workflow.replace('id: native-node22','id: absent-node22'),
     workflow.replace('--node22-path "$SOURCE_NODE22_PATH"','--node22-path "$SOURCE_NODE24_PATH"'),
     workflow.replace('Restore Node22 for normal SOURCE prelude programs','Restore unknown runtime'),
@@ -310,6 +384,7 @@ export async function testSource19NativeCiWorkflow(input=null) {
   assert.throws(()=>projectSource19NativeCiWorkflow(historical),'The old source-only workflow cannot claim this native CI contract');
   assert.ok(historical.includes('Validate native PostgreSQL checkpoint CAS on artificial data only'));
   assert.ok(historical.indexOf('Validate native PostgreSQL checkpoint CAS on artificial data only')<historical.indexOf('Validate source contracts and release governance'));
+  await assertSource19SuccessorComposition();
   await assertSource19FixtureCjsClosure();
   await testSource19FixtureWriterCachePrerequisite();
   await testSource19ProcDiscoveryRaces();

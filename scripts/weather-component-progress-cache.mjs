@@ -7,6 +7,7 @@ import { ReadStream as SourceProgressReadStream, WriteStream as SourceProgressWr
 import { createReadStream, createWriteStream, constants as sourceProgressFsConstants } from 'node:fs';
 import { fstat as sourceWorkingFstat } from 'node:fs';
 import { types as sourceWorkingTypes } from 'node:util';
+import { fstat, constants as fsConstants } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Transform } from 'node:stream';
@@ -1558,6 +1559,68 @@ async function selectOriginalProgressTarget({ root, files, verifiedRoot, tempora
   return selection;
 }
 
+const retainedEpochOriginalReaders = new Set();
+async function epochActiveAbsent(root) {
+  if (await checkedPath(root, PRIVATE_WEATHER_COMPONENT_FILES.dmiActive, { optional: true })) fail('EPOCH_ACTIVE_DESTINATION_EXISTS');
+}
+async function epochProgressView(view, root, productionReferenceAt) {
+  const { assertWeatherStateEpochInputViewForTarget } = await import('./lib/weather-state-epoch-input-view.mjs');
+  const file = await checkedPath(root, 'data/live/coastal-parts-v2.json', { maximum: 32 * 1024 * 1024 });
+  return assertWeatherStateEpochInputViewForTarget(view, {
+    registry: JSON.parse(await fs.readFile(file, 'utf8')), targetReferenceAt: new Date(productionReferenceAt).toISOString() });
+}
+async function epochProgressFiles({ view, root, productionReferenceAt, originalRoot, files }) {
+  const verified = await epochProgressView(view, root, productionReferenceAt);
+  await epochActiveAbsent(root);
+  const proof = verified.facts.originalFileDigests.find(row => row.relativePath === PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath);
+  if (!proof || !Number.isSafeInteger(proof.bytes) || proof.bytes < 1 || proof.bytes > MAX_PACK_BYTES
+    || !SHA.test(proof.sha256)) fail('EPOCH_ORIGINAL_PACK_REQUIRED');
+  const original = await rootPath(originalRoot);
+  const file = await checkedPath(original, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath);
+  const named = await fs.lstat(file);
+  const handle = await fs.open(file, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW ?? 0)), fd = handle.fd;
+  let first = null, descriptor;
+  try {
+    const start = await handle.stat();
+    if (!start.isFile() || start.nlink !== 1 || start.size !== proof.bytes) fail('EPOCH_ORIGINAL_PACK_CHANGED');
+    for (const key of ['dev','ino','mode','nlink','size','mtimeMs','ctimeMs'])
+      if (start[key] !== named[key]) fail('EPOCH_ORIGINAL_PACK_CHANGED');
+    const magic = Buffer.from('RR-WEATHER-COMPONENT-PACK-1\n');
+    const prefix = await readExactly(handle, magic.length + 4, 0);
+    if (!prefix.subarray(0, magic.length).equals(magic)) fail('EPOCH_ORIGINAL_PACK_CHANGED');
+    const length = prefix.readUInt32BE(magic.length);
+    if (length < 2 || length > 32 * 1024 * 1024 || magic.length + 4 + length > proof.bytes) fail('EPOCH_ORIGINAL_PACK_CHANGED');
+    const manifest = JSON.parse((await readExactly(handle, length, prefix.length)).toString('utf8'));
+    if (manifest.kind !== 'PRIVATE_WEATHER_COMPONENT_PACK' || manifest.schemaVersion !== 1 || !Array.isArray(manifest.files)) fail('EPOCH_ORIGINAL_PACK_CHANGED');
+    const rows = manifest.files.filter(row => row.relativePath === PRIVATE_WEATHER_COMPONENT_FILES.dmiActive);
+    if (rows.length > 1) fail('EPOCH_ORIGINAL_PACK_CHANGED');
+    descriptor = rows[0] ?? null;
+    if (descriptor && (!Number.isSafeInteger(descriptor.bytes) || descriptor.bytes < 1 || !SHA.test(descriptor.sha256))) fail('EPOCH_ORIGINAL_PACK_CHANGED');
+    const hash = crypto.createHash('sha256');
+    for (let position = 0; position < proof.bytes;) {
+      const chunk = await readExactly(handle, Math.min(64 * 1024, proof.bytes - position), position);
+      position += chunk.length; hash.update(chunk);
+    }
+    if (hash.digest('hex') !== proof.sha256) fail('EPOCH_ORIGINAL_PACK_CHANGED');
+    if ((await handle.read(Buffer.alloc(1), 0, 1, proof.bytes)).bytesRead !== 0) fail('EPOCH_ORIGINAL_PACK_CHANGED');
+    for (const current of [await handle.stat(), await fs.lstat(file)])
+      for (const key of ['dev','ino','mode','nlink','size','mtimeMs','ctimeMs'])
+        if (current[key] !== start[key]) fail('EPOCH_ORIGINAL_PACK_CHANGED');
+  } catch (error) { first = { error }; }
+  try { await handle.close(); } catch (error) { first ??= { error }; }
+  const probe = await new Promise(resolve => fstat(fd, error => resolve(error)));
+  if (probe?.code !== 'EBADF') {
+    retainedEpochOriginalReaders.add(handle);
+    first ??= { error: Object.assign(new Error('EPOCH_ORIGINAL_PACK_CLOSE_UNPROVED'), { progressCode:'EPOCH_ORIGINAL_PACK_CLOSE_UNPROVED' }) };
+  }
+  if (first !== null) throw first.error;
+  await epochProgressView(view, root, productionReferenceAt);
+  for (const row of files) if (row.relativePath === PRIVATE_WEATHER_COMPONENT_FILES.dmiActive
+    && (descriptor === null || row.bytes !== descriptor.bytes || row.sha256 !== descriptor.sha256))
+    fail('EPOCH_ACTIVE_PROGRESS_REQUIRES_SEPARATE_ADMISSION');
+  return files.filter(row => row.relativePath !== PRIVATE_WEATHER_COMPONENT_FILES.dmiActive);
+}
+
 export async function weatherComponentProgressCache({
   mode, repositoryRoot = process.cwd(), basePath,
   protectedBundleSha256,
@@ -1566,6 +1629,7 @@ export async function weatherComponentProgressCache({
   masterSecret = process.env.WEATHER_PROGRESS_MASTER_SECRET,
   productionReferenceAt = process.env.RAVRADAR_PRODUCTION_TARGET_HOUR,
   resumeOriginalTarget = false,
+  stateEpochInputView = null, epochOriginalRoot = null,
   pythonExecutable, renameImpl, rollbackRenameImpl,
   maximumEncryptedBytes = MAX_CIPHER_BYTES,
 } = {}) {
@@ -1577,6 +1641,12 @@ export async function weatherComponentProgressCache({
   try {
     if (!['capture-base', 'save', 'restore'].includes(mode)) fail('MODE_INVALID');
     if (typeof resumeOriginalTarget !== 'boolean' || (resumeOriginalTarget && mode !== 'restore')) fail('ARGUMENT_INVALID');
+    if (stateEpochInputView !== null) {
+      if (mode !== 'restore' || !resumeOriginalTarget || typeof epochOriginalRoot !== 'string') fail('ARGUMENT_INVALID');
+      const { assertWeatherStateEpochInputView } = await import('./lib/weather-state-epoch-input-view.mjs');
+      const view = assertWeatherStateEpochInputView(stateEpochInputView);
+      if (view.targetReferenceAt !== new Date(productionReferenceAt).toISOString()) fail('ORIGINAL_TARGET_MISMATCH');
+    } else if (epochOriginalRoot !== null) fail('ARGUMENT_INVALID');
     repoIdentity(repository);
     const root = await rootPath(repositoryRoot);
     if (typeof basePath !== 'string' || !basePath) fail('BASE_INVALID');
@@ -1684,7 +1754,9 @@ export async function weatherComponentProgressCache({
     packInvocation = unpackPrivateWeatherComponentPack({ restoredRoot: temporary.folder,
       outputRoot: path.join(temporary.folder, 'verified'), conditions: {}, pythonExecutable,
       includeOperationalProgress: true });
-    const files = await packInvocation;
+    const authenticatedFiles = await packInvocation;
+    const files = stateEpochInputView === null ? authenticatedFiles : await epochProgressFiles({
+      view: stateEpochInputView, root, productionReferenceAt, originalRoot: epochOriginalRoot, files: authenticatedFiles });
     // Reconfirm after the potentially slower CP-original validation.
     if (await conditionsDigest(root) !== base.baselineSha256) fail('BASELINE_MISMATCH');
     const originalTarget = resumeOriginalTarget ? await selectOriginalProgressTarget({
@@ -1692,6 +1764,7 @@ export async function weatherComponentProgressCache({
       temporaryDirectory: temporary.folder, baselineSha256: base.baselineSha256,
       productionReferenceAt, pythonExecutable,
     }) : null;
+    if (stateEpochInputView !== null) await epochActiveAbsent(root);
     let reconciled;
     try {
       unionInvocation = mergeVerifiedProtectedProgressComponents({
@@ -1707,8 +1780,13 @@ export async function weatherComponentProgressCache({
     }
     if (await conditionsDigest(root) !== base.baselineSha256) fail('BASELINE_MISMATCH');
     if (originalTarget) await assertOriginalProgressInputs(originalTarget);
+    if (stateEpochInputView !== null) {
+      await epochProgressView(stateEpochInputView, root, productionReferenceAt);
+      await epochActiveAbsent(root);
+    }
     await installComponents(root, reconciled.files, { renameImpl, rollbackRenameImpl });
     restoreInstalled = true;
+    if (stateEpochInputView !== null) await epochActiveAbsent(root);
     // Installation has changed working inputs. Finish baseline verification
     // and cleanup before success; a late failure is no untouched cache miss.
     if (await conditionsDigest(root) !== base.baselineSha256) fail('BASELINE_MISMATCH');

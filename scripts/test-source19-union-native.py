@@ -41,6 +41,14 @@ CASES = ('native-union-install', 'replace-union-root', 'lose-union-supervisor')
 CASE = None
 FIXTURE_IDENTITY['syntheticAdminInput'] = 'EXPLICIT_OWN_EMPTY_DOCUMENTS'
 
+# Explicit test-only successor; the original fixture and default remain frozen.
+def select_fixture_composition(value):
+    if value == 'original-d0':
+        return Path('scripts/test-source19-union-native-fixture.mjs'), {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_ACTUAL_S_ONLY_CP_ORIGINAL_H71_NATIVE_CALLER","sourceBase":"d0cdbec4b8ea0f36e4abdd3801401aa748989266","parentProductIdentity":"19f6a6a2d12f9f80740675a0ba3fc178456571b7dcc7f6737919f4bd628d38b1","progressOnlySuccessorSha256":"f7d294b7d484e9d0c7b9c0d827e093dc92b658ac1f827844e80f8e61d06f6066","productIdentity":"b3ce3af7716408a33a453337106f4090d5c64933ef3f791b7fb948f95b928968","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","scope":"ACTUAL_ACTION_NORMAL_PRELUDE_B_INSTALL_AUTHENTICATED_S_PACK_H71_NATIVE_MERGED_WORKING_INSTALL","finalizer":"UNRUN_NORMAL_SAVE_TRANSPORT_AND_VALID_FULL_RUNTIME_MISSING","cpOriginalPortSha256":"e32a3a6038502fe0a384ccdde71c385f476dde283c65c110e2f8d51afd1f9c17","newSOnlyCpOriginals":"REQUIRED_REAL_OBJECT_AND_RECEIPT","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT","syntheticAdminInput":"EXPLICIT_OWN_EMPTY_DOCUMENTS"}
+    if value == 'integrated-d504':
+        return Path('scripts/test-source19-union-native-d504-fixture.mjs'), {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_ACTUAL_S_ONLY_CP_ORIGINAL_H71_NATIVE_CALLER_D504_SUCCESSOR","sourceBase":"d5045bda33c4959c920ab71e79ca948f80857ece","parentProductIdentity":"81ba8b9a448f5d475d019d5ce6c44dbd9fa3ee8bebeb9e4e4d816de2395f4dfa","progressOnlySuccessorSha256":"e6faf23edfba043177e4de2ae7ca69677b600f11dbefb4543265e131b72a549d","productIdentity":"4acdf731c966311b3985a63a7e29da147b5c8fe17abc9e8f101391921e8951ed","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","scope":"ACTUAL_ACTION_NORMAL_PRELUDE_B_INSTALL_AUTHENTICATED_S_PACK_H71_NATIVE_MERGED_WORKING_INSTALL","finalizer":"UNRUN_NORMAL_SAVE_TRANSPORT_AND_VALID_FULL_RUNTIME_MISSING","cpOriginalPortSha256":"e32a3a6038502fe0a384ccdde71c385f476dde283c65c110e2f8d51afd1f9c17","newSOnlyCpOriginals":"REQUIRED_REAL_OBJECT_AND_RECEIPT","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT","syntheticAdminInput":"EXPLICIT_OWN_EMPTY_DOCUMENTS","sourceParent":"dbb16b65e4626aa55c3ab06f7f61ac4b60fb4c60","frozenFixturePath":"scripts/test-source19-union-native-fixture.mjs","frozenFixtureSha256":"a47a5ef9042c08da572c2e7c82bc8165cff9afe547975c4a7268c1fb2d7b6787","successorCompositionId":"81ba8b9a448f5d475d019d5ce6c44dbd9fa3ee8bebeb9e4e4d816de2395f4dfa"}
+    raise ValueError('SOURCE19_NATIVE_COMPOSITION_INVALID')
+
 
 def sha(body):
     return hashlib.sha256(body).hexdigest()
@@ -701,7 +709,9 @@ if __name__ == '__main__':
     parser.add_argument('--node24-path', required=True)
     parser.add_argument('--node22-path', required=True)
     parser.add_argument('--case', choices=CASES, required=True)
+    parser.add_argument('--composition', choices=('original-d0', 'integrated-d504'), default='original-d0')
     args, remaining = parser.parse_known_args()
+    FIXTURE, FIXTURE_IDENTITY = select_fixture_composition(args.composition)
     NODE = Path(args.node24_path).resolve(strict=True)
     NODE22 = Path(args.node22_path).resolve(strict=True)
     CASE = args.case

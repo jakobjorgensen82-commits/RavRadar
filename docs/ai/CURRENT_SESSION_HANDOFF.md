@@ -1,3 +1,15 @@
+## 16. oktober — genbrug færdig privat generation gennem hele efterkæden
+
+Den afgrænsede, default-frakoblede optagelse af den faktisk færdige nye private generation er lokalt prøvet gennem normal B/S-optagelse, normal gemning, fuld filidentitet og faktiske Git-forfædre. Et andet gyldigt checkpoint samt ændret central kilde/profil, kalibrering, uacceptabel opvarmning og streng auditfejl afvises. Den særlige rute springer leverandører og vejrberegning over, men skal bestå hele den eksisterende efterkæde. Skipped vejr er ikke succes, og identisk samme-time-genbrug er ikke ny publicering.
+
+Præcis samlet CI, sikker kildelevering, faktisk Pages/tre serverfunktioner/offentlig effekt og den almindelige efterfølger er fortsat åbne. Ingen ny epoch-start, SQL eller leverandørhentning. Originaler, identitet, numerik og bindinger bevares. Cron forbliver pauset; alle fem mål til 18. oktober og version 4.0.578/offentlig 4.0.577 er uændrede. Se CURRENT_TRUTH, håndbog 89.248 og det private checkpoint.
+
+## 16. oktober — gemt ny beregning, konkret auditrettelse og sikker sidste levering
+
+Aktuel prioritet er offentlig genopretning, ikke endnu en vejrhentning eller epoch-start. Efter PR640 har den providerfri kørsel faktisk gennemført beregning, strøm-/gitterkontrol, hård no-loss, produktions-/releasekontrol og central publicering af nyt checkpoint og ny privat pakke. Den stoppede før Pages og serverfunktioner på den strenge auditrute. Den konkrete auditrettelse skelner en fælles ægte opstart fra lokal 48/0- eller 47/1-dækning; normal national 210/673-test, nye tre positive/13 negative, uændret modelbinding og lille produktkritisk gate består. Præcis samlet CI og offentlig effekt mangler.
+
+Næste sikre trin er en afgrænset genoptagelse fra den allerede gemte nye pakke gennem den eksisterende efterkæde. Bevar datasæt-id, oprindelig time, numerik, gamle originaler, samme-time-værn og føraktivering/serverrækkefølge. Et ukendt centralt kalibreringsflag må ikke gættes. Almindelig genberegning ved samme time og generisk kode-only uden strømovergangens rækkefølge er ikke sikre genveje. Installeret 230 og native0600 må ikke geninstalleres. Cron forbliver pauset, SOURCE19/assistentkandidater inaktive. Alle fem mål er åbne med frist 18. oktober; offentlig version er fortsat 4.0.577, kilde 4.0.578. Se CURRENT_TRUTH, håndbog 89.247 og det seneste private checkpoint for eksakt kørsel, pakkeidentiteter og næste trin. Ældre daterede afventningsudsagn er kun historik på de konkret gennemførte punkter.
+
 ## 15. oktober — faktisk CLI-opstart i checkpoint-genopretningen
 
 PR623 har bestået præcis Linux-, native-, source- og PostgreSQL-kontrol og er merget. Det er kildelevering, ikke en ny offentlig vejrgeneration. Det ene godkendte genopretningsforsøg gendannede de gemte cacher, men stoppede i selve programopstarten før DMI-originalhentning og cachegemning. En ventecirkel mellem CLI-modulets top-level await og den autentificerede læsers import af samme moduls planfunktioner er faktisk reproduceret uden driftsnøgler eller netværk.

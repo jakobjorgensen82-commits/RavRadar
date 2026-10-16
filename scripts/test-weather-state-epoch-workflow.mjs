@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs/promises';
 import nativeFs, { fstatSync } from 'node:fs';
 import os from 'node:os';
@@ -8,8 +9,8 @@ import test from 'node:test';
 import { isLatestUnpairedWeatherGeneration } from './protected-private-production-runtime.mjs';
 import { inspectDmiForecastFile } from './lib/dmi-forecast-file.mjs';
 
-const wrapper = (await fs.readFile('.github/workflows/run-current-weather-once.yml', 'utf8')).replaceAll('\r\n', '\n');
-const build = (await fs.readFile('.github/workflows/reusable-weather-build.yml', 'utf8')).replaceAll('\r\n', '\n');
+const wrapper = inverseCompletedRuntimeWorkflow((await fs.readFile('.github/workflows/run-current-weather-once.yml', 'utf8')).replaceAll('\r\n', '\n'), 'once');
+const build = inverseCompletedRuntimeWorkflow((await fs.readFile('.github/workflows/reusable-weather-build.yml', 'utf8')).replaceAll('\r\n', '\n'), 'build');
 function block(text, header) {
   const at = text.indexOf(header + '\n'); assert(at >= 0, header);
   const indent = header.match(/^ */)[0].length;
@@ -264,4 +265,83 @@ test('actual inline public writer preserves first error and refuses a physically
       for (const handle of handles) if (handle.fd !== -1) await handle.close();
     }
   } finally { for (const file of owned) await fs.unlink(file); await fs.rmdir(root); }
+});
+
+test('epoch never plans OLD current expectations; historic checkpoint keeps the exact normal route and collision guard', async () => {
+  const name = 'Bind causal OLD current reconstruction to the materialized saved inputs';
+  const selected = (text, context) => {
+    const body = step(text, name);
+    assert.match(body, /^        id: legacy-current-requests$/m);
+    assert.match(body, /^        run: node scripts\/plan-dmi-legacy-current-originals\.mjs$/m);
+    const condition = /^        if: (.+)$/m.exec(body)?.[1];
+    assert(condition, 'Retain the actual explicit legacy selector');
+    return Boolean(expression(condition, context));
+  };
+  const context = (flags = {}) => ({ inputs: { ...defaults, weather_state_epoch_checkpoint_reentry: false, ...flags }, steps: {
+    preflight: { outputs: { should_run: 'true' } },
+    'current-history-demand': { outcome: 'success' },
+    'dmi-generation-prepare': { outcome: 'success' },
+  } });
+  const cases = [
+    ['default', context(), false],
+    ['historic checkpoint', context({ checkpoint_only: true }), true],
+    ['fresh epoch', context({ checkpoint_only: true, weather_state_epoch_bootstrap: true }), false],
+    ['internal reentry', context({ checkpoint_only: true, weather_state_epoch_bootstrap: true, weather_state_epoch_checkpoint_reentry: true }), false],
+    ['direct reentry is also excluded', context({ checkpoint_only: true, weather_state_epoch_checkpoint_reentry: true }), false],
+    ['native historical checkpoint unchanged', context({ checkpoint_only: true, native_sampling_identity_original_recovery: true }), true],
+  ];
+  const absent = context({ checkpoint_only: true });
+  delete absent.inputs.weather_state_epoch_bootstrap; delete absent.inputs.weather_state_epoch_checkpoint_reentry;
+  cases.push(['omitted epoch flags', absent, true]);
+  for (const [id, field] of [['preflight', 'outputs'], ['current-history-demand', 'outcome'], ['dmi-generation-prepare', 'outcome']]) {
+    for (const outcome of field === 'outputs' ? ['false', ''] : ['failure', 'skipped', '']) {
+      const denied = context({ checkpoint_only: true });
+      if (field === 'outputs') denied.steps[id].outputs.should_run = outcome;
+      else denied.steps[id].outcome = outcome;
+      cases.push([id + ':' + outcome, denied, false]);
+    }
+  }
+  const check = text => { for (const [label, value, expected] of cases) assert.equal(selected(text, value), expected, label); };
+  check(build);
+  for (const clause of ["inputs.weather_state_epoch_bootstrap != true && ",
+    "inputs.weather_state_epoch_checkpoint_reentry != true && ", "inputs.checkpoint_only == true && ",
+    "steps.preflight.outputs.should_run == 'true' && ", "steps.current-history-demand.outcome == 'success' && "]) {
+    assert(step(build, name).includes(clause), 'Mutation must target a present selector clause');
+    const body = step(build, name);
+    const mutant = build.replace(body, body.replace(clause, ''));
+    assert.throws(() => check(mutant), undefined, 'Truth matrix rejects omission of ' + clause);
+  }
+  const prep = " && steps.dmi-generation-prepare.outcome == 'success'";
+  assert(step(build, name).includes(prep));
+  const original = step(build, name);
+  assert.throws(() => check(build.replace(original, original.replace(prep, ''))), undefined, 'Preparation success cannot be waived');
+
+  const wrapperFlag = /^      weather_state_epoch_bootstrap: (.+)$/m.exec(wrapper)?.[1];
+  assert(wrapperFlag, 'Test the actual dispatch-to-reusable mapping');
+  assert.equal(expression(wrapperFlag, { inputs: { weather_state_epoch_bootstrap: false, weather_state_epoch_checkpoint_reentry: true } }), true);
+  const env = field => {
+    const matches = [...build.matchAll(new RegExp('^          ' + field + ': (.+)$', 'gm'))];
+    assert.equal(matches.length, 1, 'Use the unique actual downstream environment expression: ' + field);
+    return matches[0][1];
+  };
+  const fields = ['DMI_BULK_LEGACY_CURRENT_ORIGINAL_REQUEST_PATH', 'DMI_BULK_LEGACY_CURRENT_ORIGINAL_REQUEST_SHA256', 'RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION'];
+  const values = ['.cache/dmi-legacy-current-original-requests.json', 'synthetic-request-sha256', '{"synthetic":"expectation"}'];
+  for (const [label, value, expected] of cases) {
+    const ran = selected(build, value);
+    const actual = { steps: { 'legacy-current-requests': { outcome: ran ? 'success' : 'skipped',
+      outputs: { requests_sha256: ran ? values[1] : '', expectation_json: ran ? values[2] : '' } } } };
+    assert.deepEqual(fields.map(field => expression(env(field), actual)), expected ? values : ['', '', ''], label);
+  }
+
+  // Execute the exact pre-JSON collision guard, not the expensive whole weather
+  // producer. A non-null sentinel tests only its null check, not epoch admission.
+  const updater = (await fs.readFile('scripts/update-weather.mjs', 'utf8')).replaceAll('\r\n', '\n');
+  const guard = /if \(process\.env\.RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION\) \{\n  if \(stateEpochView !== null\) throw new Error\('WEATHER_STATE_EPOCH_TRANSITION_COLLISION'\);\n/.exec(updater)?.[0];
+  assert(guard, 'The existing exact collision rejection must remain before JSON parsing');
+  const execute = (expectation, stateEpochView) => vm.runInNewContext(guard + '}', {
+    process: { env: { RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION: expectation } }, stateEpochView,
+  });
+  assert.throws(() => execute('deliberately-not-JSON', {}), /WEATHER_STATE_EPOCH_TRANSITION_COLLISION/);
+  assert.doesNotThrow(() => execute('', {}));
+  assert.doesNotThrow(() => execute('synthetic historic expectation', null));
 });

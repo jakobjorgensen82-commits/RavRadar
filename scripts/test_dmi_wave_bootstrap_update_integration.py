@@ -29,6 +29,21 @@ SCRIPTS = ROOT / "scripts"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
+def ordinary_workflow_oracle() -> str:
+    # Same exact whole-file inverse as the JavaScript workflow tests; every
+    # original assertion remains intact. New-route tests inspect actual bytes.
+    return subprocess.check_output(
+        [
+            "node", "--input-type=module", "-e",
+            "import fs from 'node:fs';"
+            "import { inverseCompletedRuntimeWorkflow } from './scripts/lib/completed-private-runtime-workflow-review.mjs';"
+            "process.stdout.write(inverseCompletedRuntimeWorkflow(fs.readFileSync('.github/workflows/reusable-weather-build.yml', 'utf8').replaceAll('\\r\\n', '\\n'), 'build'));",
+        ],
+        cwd=ROOT,
+        text=True,
+    )
+
+
 eccodes = types.ModuleType("eccodes")
 eccodes.OutOfAreaError = type("OutOfAreaError", (Exception,), {})
 for name in (
@@ -4513,9 +4528,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         )
 
     def test_partial_dmi_inspects_wam_then_blocks_only_after_provider_progress(self) -> None:
-        workflow = (
-            ROOT / ".github" / "workflows" / "reusable-weather-build.yml"
-        ).read_text("utf-8")
+        workflow = ordinary_workflow_oracle()
         gate_start = workflow.index(
             "- name: Inspect operational WAM handoff before state initialization"
         )
@@ -4690,9 +4703,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             end = source.index("\n      - name:", start + 1)
             return start, source[start:end]
 
-        workflow = (
-            ROOT / ".github" / "workflows" / "reusable-weather-build.yml"
-        ).read_text("utf-8")
+        workflow = ordinary_workflow_oracle()
         _, point = workflow_step(
             workflow,
             "Advance private point-candidate readiness without public score impact",
@@ -4790,8 +4801,23 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             line.strip() for line in dmi.splitlines()
             if line.strip().startswith("DMI_BULK_DEPLOYED_FALLBACK_PATH:")
         ]
+        # Pin the new route before applying its exact inverse. The original
+        # ordinary/fresh-epoch oracle and its mutations below remain unchanged.
+        reentry_prefix = (
+            "inputs.weather_state_epoch_checkpoint_reentry "
+            "&& '.cache/dmi-candidate-progress.json' || "
+        )
+        reentry_fallback = epoch_fallback.replace("$" + "{{ ", "$" + "{{ " + reentry_prefix, 1)
+        self.assertEqual(actual_fallback, [reentry_fallback])
+        actual_reentry_fallback = actual_fallback[0]
+        self.assertEqual(dmi.count(reentry_fallback), 1)
+        epoch_dmi = dmi.replace(reentry_fallback, epoch_fallback)
+        actual_fallback = [
+            line.strip() for line in epoch_dmi.splitlines()
+            if line.strip().startswith("DMI_BULK_DEPLOYED_FALLBACK_PATH:")
+        ]
         self.assertEqual(actual_fallback, [epoch_fallback])
-        ordinary_dmi = dmi.replace(epoch_fallback, old_fallback)
+        ordinary_dmi = epoch_dmi.replace(epoch_fallback, old_fallback)
         for marker in (
             "DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json",
             "DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json",
@@ -4841,6 +4867,46 @@ for (const [from, to] of [
             cwd=ROOT, capture_output=True, text=True, timeout=30,
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
+
+        # Separately execute the actual, unprojected expression. Reentry must
+        # win even when both flags are true; missing/false preserve old routes.
+        reentry_script = r"""
+import assert from 'node:assert/strict';
+import { runInNewContext } from 'node:vm';
+const actual = process.argv[1];
+function assertReentryRouting(line) {
+  const expression = line.match(/^DMI_BULK_DEPLOYED_FALLBACK_PATH: \$\{\{ (.+) \}\}$/)?.[1];
+  assert.ok(expression, 'exact reentry fallback expression');
+  for (const reentry of [undefined, false, true]) {
+    for (const epoch of [undefined, false, true]) {
+      const result = runInNewContext(expression, {
+        inputs: { weather_state_epoch_checkpoint_reentry: reentry, weather_state_epoch_bootstrap: epoch },
+        runner: { temp: '/synthetic-owned-temp' }, github: { run_id: '123', run_attempt: '1' },
+        format: (pattern, ...values) => pattern.replace(/\{(\d+)\}/g, (_, i) => values[Number(i)]),
+      });
+      assert.equal(result, reentry === true ? '.cache/dmi-candidate-progress.json'
+        : epoch === true ? '/synthetic-owned-temp/ravradar-weather-state-epoch-123-1/empty-dmi-candidate.json'
+        : '.cache/dmi-active-complete.json');
+    }
+  }
+}
+assertReentryRouting(actual);
+for (const [from, to] of [
+  ['inputs.weather_state_epoch_checkpoint_reentry &&', 'true &&'],
+  ['inputs.weather_state_epoch_checkpoint_reentry &&', 'false &&'],
+  ["&& '.cache/dmi-candidate-progress.json' ||", "&& '.cache/dmi-active-complete.json' ||"],
+  ['inputs.weather_state_epoch_bootstrap &&', 'true &&'],
+  ["|| '.cache/dmi-active-complete.json'", "|| '.cache/dmi-candidate-progress.json'"],
+]) {
+  assert.equal(actual.split(from).length, 2, 'mutation changes the actual expression once');
+  assert.throws(() => assertReentryRouting(actual.replace(from, to)));
+}
+"""
+        reentry_completed = subprocess.run(
+            [node, "--input-type=module", "-e", reentry_script, actual_reentry_fallback],
+            cwd=ROOT, capture_output=True, text=True, timeout=30,
+        )
+        self.assertEqual(reentry_completed.returncode, 0, reentry_completed.stderr)
 
         terminal = normal[normal_names[3]][1]
         self.assertIn('test "$code" = "DMI_READY"', terminal)
