@@ -615,6 +615,62 @@ with supervised_asset_operation(identity):
         self.assertEqual(ast.dump(local_watchdogs[0]), ast.dump(expected_local_watchdog),
                          "the sole local verifier must retain its exact watchdog and captured-original inputs")
 
+        # OLD native reconstruction is a separate real decoder, not another
+        # exemption through the process_grib library adapter. Inventory its
+        # only actual call and bind both its reader and watchdog to this job.
+        legacy_entries = [node for node in tree.body
+                          if isinstance(node, ast.FunctionDef)
+                          and node.name == "reconstruct_legacy_current_originals"]
+        self.assertEqual(len(legacy_entries), 1)
+        legacy_calls = [node for node in ast.walk(tree)
+                        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                        and node.func.id == "decode_legacy_current_originals"]
+        self.assertEqual(len(legacy_calls), 1)
+        self.assertIn(legacy_calls[0], tuple(ast.walk(legacy_entries[0])))
+        expected_legacy_callback = ast.parse(
+            "decode_legacy_current_originals(reader, list(own_requests.values()), operations=operations)",
+            mode="eval",
+        ).body
+        self.assertEqual(ast.dump(legacy_calls[0]), ast.dump(expected_legacy_callback),
+                         "OLD decoding must receive the actual owned reader and this job's requests/operations")
+        legacy_ancestors = []
+        ancestor = parents.get(legacy_calls[0])
+        while ancestor is not None and ancestor is not legacy_entries[0]:
+            if isinstance(ancestor, ast.With):
+                legacy_ancestors.append(ancestor)
+            ancestor = parents.get(ancestor)
+        self.assertIs(ancestor, legacy_entries[0])
+        self.assertEqual(len(legacy_ancestors), 2)
+        legacy_read, legacy_watchdog = legacy_ancestors
+        expected_legacy_read = ast.parse("""
+with _grib_read_scope(job["path"], capture["collection"], capture["modelRun"], capture["validTime"]) as reader:
+    pass
+""").body[0]
+        expected_legacy_watchdog = ast.parse("""
+with supervised_asset_operation(identity):
+    pass
+""").body[0]
+        self.assertEqual([ast.dump(item) for item in legacy_read.items],
+                         [ast.dump(item) for item in expected_legacy_read.items])
+        self.assertEqual([ast.dump(item) for item in legacy_watchdog.items],
+                         [ast.dump(item) for item in expected_legacy_watchdog.items])
+        self.assertIs(parents[legacy_read], legacy_watchdog,
+                      "the OLD owned read itself must be inside its own exact watchdog")
+        legacy_identity_assignments = [node for node in ast.walk(legacy_entries[0])
+                                       if isinstance(node, ast.Assign)
+                                       and any(isinstance(target, ast.Name) and target.id == "identity"
+                                               for target in node.targets)]
+        self.assertEqual(len(legacy_identity_assignments), 1)
+        expected_legacy_identity = ast.parse("""
+identity = supervised_asset_identity(capture["collection"], capture["modelRun"], {
+    "href": asset["canonicalHref"], "id": capture["itemId"], "valid": capture["validTime"],
+    "size": capture["assetSizeBytes"], "itemCreatedAt": capture["itemCreatedAt"],
+    "itemUpdatedAt": capture["itemUpdatedAt"],
+})
+""").body[0]
+        self.assertEqual(ast.dump(legacy_identity_assignments[0]), ast.dump(expected_legacy_identity),
+                         "the OLD watchdog identity must describe this exact captured original")
+
         guarded_calls = []
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
@@ -670,12 +726,15 @@ with supervised_asset_operation(identity):
                         for item in node.items)]
 
         watchdog_count = len(watchdogs(ast.parse(source)))
-        self.assertEqual(watchdog_count, 10, "all nine existing watchdogs and the local verifier remain")
+        self.assertEqual(watchdog_count, 11,
+                         "nine download/process watchdogs, the exact local verifier, and the separately owned OLD decoder remain")
         mutations = ("extra-call", "adapter-guard", "adapter-argument",
                      "adapter-keyword", "adapter-return", "callback-reader",
                      "local-verifier-missing", "local-verifier-extra", "local-verifier-capture",
                      "local-verifier-deadline", "local-capture-required-false",
-                     "local-capture-required-missing", "local-watchdog-identity")
+                     "local-capture-required-missing", "local-watchdog-identity",
+                     "legacy-extra-call", "legacy-reader", "legacy-read-binding",
+                     "legacy-watchdog-identity", "legacy-identity-input", "legacy-operations")
         for mutation in (*mutations, *(f"missing-watchdog-{index}" for index in range(watchdog_count))):
             with self.subTest(mutation=mutation):
                 tree = ast.parse(source)
@@ -698,6 +757,39 @@ with supervised_asset_operation(identity):
                                     and node.func.id == "process_grib")
                     next(keyword for keyword in callback.keywords
                          if keyword.arg == "_owned_read").value = ast.Constant(value=None)
+                elif mutation.startswith("legacy-"):
+                    legacy = next(node for node in tree.body
+                                  if isinstance(node, ast.FunctionDef)
+                                  and node.name == "reconstruct_legacy_current_originals")
+                    callback = next(node for node in ast.walk(legacy)
+                                    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                                    and node.func.id == "decode_legacy_current_originals")
+                    if mutation == "legacy-extra-call":
+                        tree.body.append(ast.parse(
+                            "decode_legacy_current_originals(reader, list(own_requests.values()), operations=operations)"
+                        ).body[0])
+                    elif mutation == "legacy-reader":
+                        callback.args[0] = ast.Name(id="other_reader", ctx=ast.Load())
+                    elif mutation == "legacy-read-binding":
+                        owned = next(node for node in ast.walk(legacy)
+                                     if isinstance(node, ast.With) and any(
+                                         isinstance(item.context_expr, ast.Call)
+                                         and isinstance(item.context_expr.func, ast.Name)
+                                         and item.context_expr.func.id == "_grib_read_scope"
+                                         for item in node.items))
+                        owned.items[0].context_expr.args[0] = ast.Name(id="other_path", ctx=ast.Load())
+                    elif mutation == "legacy-watchdog-identity":
+                        watchdogs(legacy)[0].items[0].context_expr.args[0] = ast.Name(
+                            id="other_identity", ctx=ast.Load())
+                    elif mutation == "legacy-identity-input":
+                        identity = next(node for node in ast.walk(legacy)
+                                        if isinstance(node, ast.Assign) and any(
+                                            isinstance(target, ast.Name) and target.id == "identity"
+                                            for target in node.targets))
+                        identity.value.args[0] = ast.Name(id="other_collection", ctx=ast.Load())
+                    else:
+                        next(keyword for keyword in callback.keywords
+                             if keyword.arg == "operations").value = ast.Name(id="other_operations", ctx=ast.Load())
                 elif mutation.startswith("local-"):
                     local = next(node for node in tree.body
                                  if isinstance(node, ast.FunctionDef)
