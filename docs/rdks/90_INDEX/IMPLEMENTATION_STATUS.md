@@ -1,3 +1,11 @@
+## 16. oktober — PR642: præcise workflowlæsere før ny samlet kontrol
+
+PR642s første kildekontrol bestod faktisk native DMI og PostgreSQL, men fejlede i to gamle workflowassertions: epochens gemme-/gendannelsesprøve og den normale RavScore-generator. Den nye, som udgangspunkt frakoblede rutes præfiks gjorde deres gamle tekstlæsning forkert. Kun disse testlæsere føres gennem den eksisterende hashbundne helfil-inverse; alle oprindelige assertions bevares.
+
+En fremadrettet gennemgang af den endnu ikke nåede DMI-kapacitetskontrol fandt samme konkrete fejl i dens WAM- og RAW-gemmekontroller. Begge bruger nu samme præcise inverse, uden ændring af de gamle krav, produktkode eller CI-listen. Generator, ægte lokal epoch-gemning/gendannelse og de to berørte kapacitetsprøver består målrettet. Det lokale Windows-runtime krævede geninstallation af Requests; fuld native ecCodes er fortsat GitHub-bevis, ikke et lokalt PASS.
+
+Ny samlet kontrol på det nye eksakte head kræves før merge. Ingen ny vejrhentning, SQL-installation, Pages-levering eller offentlig effekt er udført af denne testopfølgning. Cron er pauset; alle fem mål til 18. oktober er fortsat åbne. Version, bindingskontrakter og håndbogens produktbeskrivelse er uændrede.
+
 ## 16. oktober — genbrug færdig privat generation gennem hele efterkæden
 
 Den nye, som udgangspunkt frakoblede rute optager kun den aktuelt autentificerede færdige private pakke og dens sammenhørende gemte beregningstilstand. Den låser pointer/version, oprindeligt datasæt-id, genereringstid, target, model-/lagerkontrakter, filinventar og producentens faktiske Git-forfædre. Normal genberegning af den gemte tilstand skal være identisk med den centralt gemte. Originaler og historiske scorer bevares.

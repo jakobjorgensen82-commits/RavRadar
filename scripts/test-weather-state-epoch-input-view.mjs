@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import nativeFs from 'node:fs';
@@ -424,7 +425,7 @@ test('epoch active persistence: genuine archive-bound install, normal SAVE and o
   assert.deepEqual(await fs.readFile(path.join(promoted, component.dmiActive)), readyBytes);
   assert.deepEqual(await fs.readFile(path.join(promoted, component.dmiCandidate)), readyBytes);
   assert.notDeepEqual(readyBytes, oldActive);
-  const workflow = (await fs.readFile(path.join(ROOT, '.github/workflows/reusable-weather-build.yml'), 'utf8')).replaceAll('\r\n', '\n');
+  const workflow = inverseCompletedRuntimeWorkflow((await fs.readFile(path.join(ROOT, '.github/workflows/reusable-weather-build.yml'), 'utf8')).replaceAll('\r\n', '\n'), 'build');
   assert(workflow.includes('elif test "${{ steps.dmi-active-restore.outputs.available }}" = "true"; then\n            source_kind=active'));
   assert(workflow.includes("if: steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true'"));
   for (const [name, candidateView] of [['forged', { ...view }], ['promised', Promise.resolve(view)]]) {

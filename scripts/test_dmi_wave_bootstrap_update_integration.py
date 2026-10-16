@@ -29,6 +29,21 @@ SCRIPTS = ROOT / "scripts"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
+def ordinary_workflow_oracle() -> str:
+    # Same exact whole-file inverse as the JavaScript workflow tests; every
+    # original assertion remains intact. New-route tests inspect actual bytes.
+    return subprocess.check_output(
+        [
+            "node", "--input-type=module", "-e",
+            "import fs from 'node:fs';"
+            "import { inverseCompletedRuntimeWorkflow } from './scripts/lib/completed-private-runtime-workflow-review.mjs';"
+            "process.stdout.write(inverseCompletedRuntimeWorkflow(fs.readFileSync('.github/workflows/reusable-weather-build.yml', 'utf8').replaceAll('\\r\\n', '\\n'), 'build'));",
+        ],
+        cwd=ROOT,
+        text=True,
+    )
+
+
 eccodes = types.ModuleType("eccodes")
 eccodes.OutOfAreaError = type("OutOfAreaError", (Exception,), {})
 for name in (
@@ -4513,9 +4528,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         )
 
     def test_partial_dmi_inspects_wam_then_blocks_only_after_provider_progress(self) -> None:
-        workflow = (
-            ROOT / ".github" / "workflows" / "reusable-weather-build.yml"
-        ).read_text("utf-8")
+        workflow = ordinary_workflow_oracle()
         gate_start = workflow.index(
             "- name: Inspect operational WAM handoff before state initialization"
         )
@@ -4690,9 +4703,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             end = source.index("\n      - name:", start + 1)
             return start, source[start:end]
 
-        workflow = (
-            ROOT / ".github" / "workflows" / "reusable-weather-build.yml"
-        ).read_text("utf-8")
+        workflow = ordinary_workflow_oracle()
         _, point = workflow_step(
             workflow,
             "Advance private point-candidate readiness without public score impact",
