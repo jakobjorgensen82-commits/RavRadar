@@ -91,6 +91,19 @@ jobs:
       - name: Validate bounded native current diagnosis on artificial data only
         run: npm run test:exact-dmi-original-restore && python -B scripts/test-native-current-grid.py --native && python -B scripts/test-dmi-exact-original-restore.py --native
 
+      # Diagnose the short native SQL boundary before the long source matrix.
+      # All the same gates must succeed; only their execution order changes.
+      - name: Validate native PostgreSQL checkpoint CAS on artificial data only
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Use only PostgreSQL binaries already present in the normal runner.
+          # No package/runtime install, network, cloud database or skip fallback.
+          node scripts/test-code-only-userdata-policy-routing.mjs
+          # Includes the unchanged 213 -> 220 -> 230 phases in the SAME owned
+          # cluster, then executes the actual native-identity SQL and CAS cases.
+          node scripts/test-protected-ravscore-continuation-checkpoint.mjs --native-statistics-revision --native-sampling-identity
+
       - name: Validate source contracts and release governance
         run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs
 
@@ -103,15 +116,6 @@ jobs:
 
       - name: Validate download-inclusive DMI capacity on artificial data only
         run: python -B scripts/test_dmi_wave_bootstrap_update_integration.py
-
-      - name: Validate native PostgreSQL checkpoint CAS on artificial data only
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Use only PostgreSQL binaries already present in the normal runner.
-          # No package/runtime install, network, cloud database or skip fallback.
-          node scripts/test-code-only-userdata-policy-routing.mjs
-          node scripts/test-protected-ravscore-continuation-checkpoint.mjs --native-statistics-revision
 
       - name: Require validated source tree to remain unchanged
         shell: bash

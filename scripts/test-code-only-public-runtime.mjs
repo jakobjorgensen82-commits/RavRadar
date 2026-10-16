@@ -5,6 +5,9 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { execFileSync } from 'node:child_process';
+import { withFrozenI71Source } from './check-native-identity-frozen-i71-source.mjs';
 import { REQUIRED_CUTOVER_MIGRATIONS, LATEST_REQUIRED_CUTOVER_MIGRATION,
   TRIP_BINDING_POLICY_SOURCE_MIGRATION, ACCOUNT_ASSISTANT_SOURCE_MIGRATION }
   from './integrated-cutover-readiness.mjs';
@@ -281,6 +284,32 @@ assert.ok(workflow.includes('Assistant successor cannot recover a historical cut
 assert.ok(workflow.includes('migration_args+=(--metadata-only)'));
 assert.ok(workflow.includes('--verify-assistant-prewrite'));
 assert.ok(workflow.includes('--require-prewrite-gate'));
+async function withFrozenCodeOnlyPlan(run) {
+return withFrozenI71Source(async frozenRoot => {
+const { REQUIRED_CUTOVER_MIGRATIONS, TRIP_BINDING_POLICY_SOURCE_MIGRATION }
+  = await import(pathToFileURL(path.join(frozenRoot, 'scripts/integrated-cutover-readiness.mjs')).href);
+// Keep the historical CLI's source bytes intact. Only its exact entry URL is
+// loaded from the fixed Git blob; its relative imports use the verified snapshot.
+const fixedCli = execFileSync('git', ['show',
+  '37e657867ff0f8c31f8e8489e5c9a1cf235192f9:scripts/verify-code-only-migration-plan.mjs'],
+{ encoding: 'utf8', windowsHide: true });
+assert.equal(crypto.createHash('sha256').update(fixedCli).digest('hex'),
+  'f33e7f723ffe970bd6bbff5085ec65110d18953f5e7fb78b2609be2e5b57cc45');
+const fixedCliPath = path.join(frozenRoot, 'scripts/verify-code-only-migration-plan.mjs');
+const fixedCliUrl = pathToFileURL(fixedCliPath).href;
+const fixedCliLoader = `import { registerHooks } from 'node:module';
+const url=${JSON.stringify(fixedCliUrl)}, source=${JSON.stringify(fixedCli)};
+registerHooks({ resolve(specifier, context, next) {
+  return specifier===url ? {url,shortCircuit:true} : next(specifier,context);
+}, load(candidate,context,next) {
+  return candidate===url ? {format:'module',source,shortCircuit:true} : next(candidate,context);
+} }); await import(url);`;
+return run({ frozenRoot, REQUIRED_CUTOVER_MIGRATIONS, TRIP_BINDING_POLICY_SOURCE_MIGRATION,
+  fixedCliPath, fixedCliLoader });
+});
+}
+await withFrozenCodeOnlyPlan(async ({ frozenRoot, REQUIRED_CUTOVER_MIGRATIONS,
+  TRIP_BINDING_POLICY_SOURCE_MIGRATION, fixedCliPath, fixedCliLoader }) => {
 const originalGateRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rr-code-only-original-gate-'));
 try {
   const listPath = path.join(originalGateRoot, 'list.txt');
@@ -295,10 +324,10 @@ try {
     fs.writeFileSync(dryPath, pending
       ? `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n${pendingMigrations.map(item => ` • ${item.filename}`).join('\n')}\nFinished supabase db push.`
       : 'DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.');
-    const result = spawnSync(process.execPath, ['scripts/verify-code-only-migration-plan.mjs',
+    const result = spawnSync(process.execPath, ['--input-type=module', '--eval', fixedCliLoader, '--', fixedCliPath,
       '--require-prewrite-gate', '--account-assistant-prewrite-plan',
       '--migration-list', listPath, '--dry-run', dryPath,
-      '--migrations-directory', path.resolve('supabase/migrations')], { encoding: 'utf8', windowsHide: true,
+      '--migrations-directory', path.join(frozenRoot, 'supabase/migrations')], { encoding: 'utf8', windowsHide: true,
       timeout: 30000, env: { SystemRoot: process.env.SystemRoot, PATH: process.env.PATH,
         TEMP: os.tmpdir(), TMP: os.tmpdir(), RAVRADAR_ASSISTANT_PREWRITE_REQUIRED: required,
         RAVRADAR_USERDATA_UPGRADE_OPT_IN: 'true', RAVRADAR_USERDATA_PREWRITE_REQUIRED: required,
@@ -318,6 +347,38 @@ try {
   assert.equal(path.dirname(originalGateRoot), path.resolve(os.tmpdir()));
   assert.ok(path.basename(originalGateRoot).startsWith('rr-code-only-original-gate-'));
   fs.rmSync(originalGateRoot, { recursive: true, force: true });
+}
+});
+// The current normal caller must refuse a pending new binding regardless of
+// historical prewrite booleans. Fully installed current metadata remains a no-op.
+const nativeGateRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rr-code-only-native-gate-'));
+try {
+  for (const [pending, verified] of [[true, 'false'], [true, 'true'], [false, 'false']]) {
+    const listPath = path.join(nativeGateRoot, 'list.txt');
+    const dryPath = path.join(nativeGateRoot, 'dry.txt');
+    fs.writeFileSync(listPath, `Local | Remote | Time (UTC)\n${REQUIRED_CUTOVER_MIGRATIONS.map(item =>
+      `${item.version} | ${pending && item === LATEST_REQUIRED_CUTOVER_MIGRATION ? '' : item.version} | state`).join('\n')}`);
+    fs.writeFileSync(dryPath, pending
+      ? `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • ${LATEST_REQUIRED_CUTOVER_MIGRATION.filename}\nFinished supabase db push.`
+      : 'DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.');
+    const result = spawnSync(process.execPath, ['scripts/verify-code-only-migration-plan.mjs',
+      '--require-prewrite-gate', '--account-assistant-prewrite-plan',
+      '--migration-list', listPath, '--dry-run', dryPath,
+      '--migrations-directory', path.resolve('supabase/migrations')], {
+      encoding: 'utf8', windowsHide: true, timeout: 30000,
+      env: { SystemRoot: process.env.SystemRoot, PATH: process.env.PATH, TEMP: os.tmpdir(), TMP: os.tmpdir(),
+        RAVRADAR_ASSISTANT_PREWRITE_REQUIRED: verified, RAVRADAR_USERDATA_UPGRADE_OPT_IN: 'true',
+        RAVRADAR_USERDATA_PREWRITE_REQUIRED: verified, RAVRADAR_USERDATA_PREWRITE_VERIFIED: verified,
+        RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN: 'true',
+        RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED: 'true',
+        RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_VERIFIED: 'true' } });
+    assert.equal(result.status, pending ? 1 : 0, result.stderr || result.error?.message);
+    if (pending) assert.match(result.stderr, /NATIVE_SAMPLING_IDENTITY_RECOVERY_ROUTE_REQUIRED/);
+  }
+} finally {
+  assert.equal(path.dirname(nativeGateRoot), path.resolve(os.tmpdir()));
+  assert.ok(path.basename(nativeGateRoot).startsWith('rr-code-only-native-gate-'));
+  fs.rmSync(nativeGateRoot, { recursive: true, force: true });
 }
 for (const marker of [
   'workflow_dispatch:',
@@ -936,8 +997,10 @@ userdataTest('userdata delivery: unfinished historical assistant is refused and 
     'Current rebound trip-Edge deployment must always share the existing exclusive storage lock without cancellation');
 });
 userdataTest('userdata delivery: immutable direct predecessor is checked before its normal DB readback', async () => {
+  await withFrozenI71Source(async frozenRoot => {
   const step = userdataStep('Verify installed current050000 predecessor before userdata preparation');
-  const original = fs.readFileSync('supabase/migrations/20261005000000_owner_water_level_only_binding.sql');
+  const original = fs.readFileSync(path.join(frozenRoot,
+    'supabase/migrations/20261005000000_owner_water_level_only_binding.sql'));
   const verify = (version, bytes) => userdataEvaluate(step.code, {
     assert, createHash: crypto.createHash, fs: { readFileSync: () => bytes }, latest: { version },
   });
@@ -947,8 +1010,11 @@ userdataTest('userdata delivery: immutable direct predecessor is checked before 
   await assert.rejects(verify('20261005000000', Buffer.concat([original, Buffer.from('\n')])), /remain immutable/);
   assert.match(step.text, /cd "\$RAVRADAR_PREDECESSOR_SOURCE_ROOT"/);
   assert.ok(step.text.indexOf('must remain immutable') < step.text.indexOf('node scripts/integrated-cutover-readiness.mjs verify-db'));
+  });
 });
-userdataTest('userdata delivery: normal migration CLI rejects absent opt-in, unproved originals and combined pending', () => {
+userdataTest('userdata delivery: normal migration CLI rejects absent opt-in, unproved originals and combined pending', async () => {
+  await withFrozenCodeOnlyPlan(async ({ frozenRoot, REQUIRED_CUTOVER_MIGRATIONS,
+    TRIP_BINDING_POLICY_SOURCE_MIGRATION, fixedCliPath, fixedCliLoader }) => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'rr-userdata-plan-'));
   try {
     const list = path.join(root, 'list.txt'), dry = path.join(root, 'dry.txt');
@@ -961,9 +1027,9 @@ userdataTest('userdata delivery: normal migration CLI rejects absent opt-in, unp
         .sort((a, b) => a.version.localeCompare(b.version));
       fs.writeFileSync(list, `Local | Remote | Time (UTC)\n${fixtureMigrations.map(item => `${item.version} | ${pending.has(item.version) ? '' : item.version} | state`).join('\n')}`);
       fs.writeFileSync(dry, `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n${fixtureMigrations.filter(item => pending.has(item.version)).map(item => ` • ${item.filename}`).join('\n')}\nFinished supabase db push.`);
-      const result = spawnSync(process.execPath, ['scripts/verify-code-only-migration-plan.mjs', '--require-prewrite-gate',
+      const result = spawnSync(process.execPath, ['--input-type=module', '--eval', fixedCliLoader, '--', fixedCliPath, '--require-prewrite-gate',
         '--account-assistant-prewrite-plan',
-        '--migration-list', list, '--dry-run', dry, '--migrations-directory', path.resolve('supabase/migrations')], {
+        '--migration-list', list, '--dry-run', dry, '--migrations-directory', path.join(frozenRoot, 'supabase/migrations')], {
         encoding: 'utf8', timeout: 30000, windowsHide: true, env: { SystemRoot: process.env.SystemRoot, PATH: process.env.PATH,
           TEMP: os.tmpdir(), TMP: os.tmpdir(), RAVRADAR_USERDATA_UPGRADE_OPT_IN: optIn,
           RAVRADAR_USERDATA_PREWRITE_REQUIRED: 'true', RAVRADAR_USERDATA_PREWRITE_VERIFIED: verified,
@@ -977,6 +1043,7 @@ userdataTest('userdata delivery: normal migration CLI rejects absent opt-in, unp
         : /only the exact latest required integrated migration/);
     }
   } finally { assert.equal(path.dirname(root), path.resolve(os.tmpdir())); fs.rmSync(root, { recursive: true, force: true }); }
+  });
 });
 
 // Execute the actual workflow's inline programs; only child processes and clocks
@@ -1107,6 +1174,11 @@ for(const options of [{missing:['synthetic-shard']},{missing:null},{versionId:[]
 
 // Preserve bounded transfer and first-error STOP while making its exact file visible.
 userdataTest('current220 remains a separate NEW-hour route, never an issued213 selection or code-only original bridge', async () => {
+  await withFrozenI71Source(async frozenRoot => {
+  const { LATEST_REQUIRED_CUTOVER_MIGRATION } = await import(pathToFileURL(path.join(frozenRoot,
+    'scripts/integrated-cutover-readiness.mjs')).href);
+  const { buildCurrentGridSamplingOriginalRestoreExpectation } = await import(pathToFileURL(path.join(frozenRoot,
+    'scripts/lib/bounded-conditions-predecessor-transition.mjs')).href);
   assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261013220000');
   const installed213 = { assistantApplied: true, userdataApplied: true,
     checkpointApplied: true, accountApplied: true,
@@ -1141,6 +1213,7 @@ userdataTest('current220 remains a separate NEW-hour route, never an issued213 s
   }), /Current-grid source succession requires the next normal NEW-hour weather run/);
   assert.ok(userdataWorkflow.indexOf('- name: ' + modelRoute.name)
     < userdataWorkflow.indexOf('- name: Require originals before the pending assistant binding'));
+  });
 });
 
 const publicSnapshotStart = workflow.indexOf('- name: Download exact currently public code-only source');

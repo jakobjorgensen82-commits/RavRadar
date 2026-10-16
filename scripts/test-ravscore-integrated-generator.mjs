@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import { runInNewContext } from 'node:vm';
 import {
@@ -482,7 +483,22 @@ assert.throws(() => buildIntegratedPartScoreSeries({
 }), /incompatible model metadata/,
 'an incompatible parameter-contract state must fail closed instead of remigrating');
 
-const updater = await fs.readFile(new URL('./update-weather.mjs', import.meta.url), 'utf8');
+const updater = (await fs.readFile(new URL('./update-weather.mjs', import.meta.url), 'utf8'))
+  .replaceAll('\r\n', '\n');
+// Reuse only the existing pure inverse, not the entrypoint target's top-level tests.
+// Its whole-source SHA keeps these historical assertions bound to genuine 903307.
+const entrypointOracle = (await fs.readFile(
+  new URL('./test-weather-update-entrypoint.mjs', import.meta.url), 'utf8',
+)).replaceAll('\r\n', '\n');
+const inverseStart = entrypointOracle.indexOf('function inverseWeatherStateEpochIntegration(source) {');
+const inverseEnd = entrypointOracle.indexOf('\n// Test-only inverse of the NEW explicit OLD-original donor integration.', inverseStart);
+assert.ok(inverseStart >= 0 && inverseEnd > inverseStart);
+const digest = value => crypto.createHash('sha256').update(value).digest('hex');
+const historicalUpdater = runInNewContext(
+  `(${entrypointOracle.slice(inverseStart, inverseEnd).trim()})`, { assert, digest },
+)(updater);
+assert.equal(digest(historicalUpdater),
+  '62bbe6eb4325dcba05afb922028150a9bdf7c45f2ebd7a7e975d85f3941d6288');
 const bulkUpdater = await fs.readFile(new URL('./update-dmi-bulk.py', import.meta.url), 'utf8');
 const productionWorkflows = await readProductionWorkflowSources();
 const productionPartPipeline = await fs.readFile(
@@ -908,17 +924,17 @@ assert.match(
   'the public profile may become ready through only the existing transition proof or one exact national cold replay',
 );
 assert.match(
-  updater,
+  historicalUpdater,
   /candidateGBootstrapMode:\s*RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE/,
   'update-weather must pass the effective workflow mode into initial-state selection',
 );
 assert.match(
-  updater,
+  historicalUpdater,
   /candidateGSourceValidated:\s*RAVSCORE_EFFECTIVE_FIRST_CUTOVER_SOURCE_VALIDATED/,
   'update-weather must pass the mode-bound source attestation into initial-state selection',
 );
 assert.match(
-  updater,
+  historicalUpdater,
   /initialSelection\.source === 'COLD_START'[\s\S]*?genuineColdStart,[\s\S]*?integratedStateLessRecovery,[\s\S]*?\.includes\(RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE\)[\s\S]*?candidateGRollbackMeasuredColdStart = true/,
   'both attested cold-start modes must rebuild Candidate G rollback state from measured history',
 );
@@ -938,10 +954,67 @@ assert.match(
   'the measured warmup root must remain minimal and validate every bounded continuation before reuse',
 );
 assert.match(
-  updater,
+  historicalUpdater,
   /const previousPrivateCandidateGRuntime = historicalWaveInputTransition[\s\S]*?\? null[\s\S]*?: selectPreviousPrivateCandidateGRuntime\(previous\);[\s\S]*?previousPrivateCandidateGRuntime,/,
   'update-weather must route exactly the validated private root into Candidate G continuation except for the measured one-time cold transition',
 );
+
+// Source-routing checks only; genuine opaque-view admission has its own normal target.
+function assertEpochCalculationRouting(source) {
+  const selection = source.match(/^  const calculationBootstrapMode = [\s\S]*?^    \? stateEpochView\.candidateGSourceValidated : [^\n]+;\n/m)?.[0];
+  const fields = source.match(/^          candidateGBootstrapMode: [^\n]+,\n          candidateGSourceValidated: [^\n]+,\n/m)?.[0];
+  assert.ok(selection && fields, 'exact local calculation selectors must exist');
+  assert.match(source,
+    /initialSelection\.source === 'COLD_START'[\s\S]*?genuineColdStart,[\s\S]*?integratedStateLessRecovery,[\s\S]*?\.includes\(calculationBootstrapMode\)[\s\S]*?candidateGRollbackMeasuredColdStart = true/);
+  const authenticatedView = source.indexOf('    assertWeatherStateEpochInputViewForTarget(stateEpochView,');
+  assert.ok(authenticatedView >= 0 && authenticatedView < source.indexOf(selection),
+    'the real typed-view assertion must precede epoch routing');
+  for (const validated of [false, true]) {
+    for (const stateEpochView of [null, {
+      candidateGBootstrapMode: 'synthetic-distinct-epoch-mode', candidateGSourceValidated: validated,
+    }]) {
+      const actual = runInNewContext(selection + '\nJSON.stringify({' + fields + '})', {
+        stateEpochView,
+        RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE: 'synthetic-ordinary-mode',
+        RAVSCORE_EFFECTIVE_FIRST_CUTOVER_SOURCE_VALIDATED: !validated,
+      });
+      assert.deepEqual(JSON.parse(actual), {
+        candidateGBootstrapMode: stateEpochView?.candidateGBootstrapMode ?? 'synthetic-ordinary-mode',
+        candidateGSourceValidated: stateEpochView?.candidateGSourceValidated ?? !validated,
+      });
+    }
+  }
+  const privateSelection = source.match(/^if \(stateEpochView !== null && historicalWaveInputTransition !== null\) \{[\s\S]*?^  : selectPreviousPrivateCandidateGRuntime\(previous\);\n/m)?.[0];
+  assert.ok(privateSelection, 'exact collision/private-root selection must exist');
+  for (const stateEpochView of [null, {}]) {
+    for (const historicalWaveInputTransition of [null, {}]) {
+      let calls = 0;
+      const evaluate = () => runInNewContext(privateSelection + '\npreviousPrivateCandidateGRuntime', {
+        stateEpochView, historicalWaveInputTransition, previous: {},
+        selectPreviousPrivateCandidateGRuntime: () => { calls++; return 'validated-ordinary-root'; },
+      });
+      if (stateEpochView !== null && historicalWaveInputTransition !== null) {
+        assert.throws(evaluate, /WEATHER_STATE_EPOCH_TRANSITION_COLLISION/);
+      } else {
+        assert.equal(evaluate(), stateEpochView !== null || historicalWaveInputTransition !== null
+          ? null : 'validated-ordinary-root');
+      }
+      assert.equal(calls, stateEpochView === null && historicalWaveInputTransition === null ? 1 : 0);
+    }
+  }
+}
+assertEpochCalculationRouting(updater);
+for (const [from, to] of [
+  ['? stateEpochView.candidateGBootstrapMode :', '? RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE :'],
+  ['? stateEpochView.candidateGSourceValidated :', '? true :'],
+  ['candidateGBootstrapMode: calculationBootstrapMode,', 'candidateGBootstrapMode: RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE,'],
+  ['].includes(calculationBootstrapMode)', '].includes(RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE)'],
+  ['const previousPrivateCandidateGRuntime = stateEpochView !== null || historicalWaveInputTransition',
+    'const previousPrivateCandidateGRuntime = historicalWaveInputTransition'],
+]) {
+  assert.equal(updater.split(from).length, 2, 'each routing mutation must change one actual source site');
+  assert.throws(() => assertEpochCalculationRouting(updater.replace(from, to)));
+}
 
 assert.ok(
   dmiBulkStep.block.includes(
@@ -1107,6 +1180,30 @@ assert.ok(
   !productionWorkflows.build.includes('name: Inspect isolated DMI candidate progress for normal maintenance'),
   'normal maintenance must not derive native-run pinning from partial-ledger readiness',
 );
+function assertEpochFallbackRouting(block) {
+  const line = block.match(/^          DMI_BULK_DEPLOYED_FALLBACK_PATH: (\$\{\{ (.+) \}\})$/m);
+  assert.ok(line, 'exact deployed-fallback expression must exist');
+  for (const enabled of [undefined, false, true]) {
+    const result = runInNewContext(line[2], {
+      inputs: { weather_state_epoch_bootstrap: enabled },
+      runner: { temp: '/synthetic-owned-temp' }, github: { run_id: '123', run_attempt: '1' },
+      format: (pattern, ...values) => pattern.replace(/\{(\d+)\}/g, (_, i) => values[Number(i)]),
+    });
+    assert.equal(result, enabled === true
+      ? '/synthetic-owned-temp/ravradar-weather-state-epoch-123-1/empty-dmi-candidate.json'
+      : '.cache/dmi-active-complete.json');
+  }
+  // Preserve the original marker oracle on the evaluated ordinary/default branch.
+  return block.replace(line[1], '.cache/dmi-active-complete.json');
+}
+const ordinaryDmiBulkBlock = assertEpochFallbackRouting(dmiBulkStep.block);
+for (const [from, to] of [
+  ['inputs.weather_state_epoch_bootstrap && format(', 'true && format('],
+  ['empty-dmi-candidate.json', 'dmi-active-complete.json'],
+]) {
+  assert.ok(dmiBulkStep.block.includes(from));
+  assert.throws(() => assertEpochFallbackRouting(dmiBulkStep.block.replace(from, to)));
+}
 for (const marker of [
   'DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json',
   'DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json',
@@ -1115,7 +1212,7 @@ for (const marker of [
   'DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json',
 ]) {
   assert.ok(
-    dmiBulkStep.block.includes(marker),
+    ordinaryDmiBulkBlock.includes(marker),
     `normal candidate producer contract marker: ${marker}`,
   );
 }

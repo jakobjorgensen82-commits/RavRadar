@@ -172,6 +172,53 @@ export function dmiExpectedIdentityForPart(part, bulkId = `PART::${part?.partId 
   };
 }
 
+/** Exact normal Python round(coordinate, 7), including binary halfway ties.
+ * This is a wire-identity formatter only, never a change to central geometry.
+ * Decode the input binary64 exactly before rounding the rational to an even
+ * scaled integer. Coordinate bounds keep that integer exactly representable.
+ */
+export function pythonRoundDmiSamplingCoordinate(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || Math.abs(value) > 180) return null;
+  if (value === 0) return value;
+  const view = new DataView(new ArrayBuffer(8));
+  view.setFloat64(0, value);
+  const bits = view.getBigUint64(0), negative = (bits >> 63n) !== 0n;
+  const exponent = Number((bits >> 52n) & 0x7ffn), fraction = bits & ((1n << 52n) - 1n);
+  const significand = exponent === 0 ? fraction : (1n << 52n) | fraction;
+  const shift = exponent === 0 ? -1074 : exponent - 1023 - 52;
+  let numerator = significand * 10_000_000n, rounded;
+  if (shift >= 0) rounded = numerator << BigInt(shift);
+  else {
+    const denominator = 1n << BigInt(-shift);
+    rounded = numerator / denominator;
+    const twiceRemainder = (numerator % denominator) * 2n;
+    if (twiceRemainder > denominator || twiceRemainder === denominator && (rounded & 1n)) rounded += 1n;
+  }
+  const result = Number(rounded) / 10_000_000;
+  return negative ? -result : result;
+}
+
+const DMI_ORIGINAL_IDENTITY_STRINGS = ['entityId', 'parentZoneId', 'entityType', 'samplingContext'];
+const DMI_ORIGINAL_IDENTITY_KEYS = [...DMI_ORIGINAL_IDENTITY_STRINGS, 'samplingPoint'].sort().join(',');
+const exactIdentityPoint = value => Array.isArray(value) && value.length === 2
+  && value.every(item => typeof item === 'number' && Number.isFinite(item))
+  && Math.abs(value[0]) <= 180 && Math.abs(value[1]) <= 90;
+
+/** Relate two DIFFERENT authorities without rewriting either:
+ * central full-precision identity and the verbatim normal original wire one.
+ * Accept only the prior exact case or the producer's exact Python seven-place
+ * point, never an arbitrary point inside the old verifier's tolerance.
+ */
+export function dmiOriginalWireIdentityMatchesCentralIdentity(original, central) {
+  if (![original, central].every(value => value && typeof value === 'object' && !Array.isArray(value)
+    && Object.keys(value).sort().join(',') === DMI_ORIGINAL_IDENTITY_KEYS
+    && exactIdentityPoint(value.samplingPoint))
+    || DMI_ORIGINAL_IDENTITY_STRINGS.some(key => typeof central[key] !== 'string' || !central[key]
+      || typeof original[key] !== 'string' || original[key] !== central[key])) return false;
+  return original.samplingPoint.every((value, index) => value === central.samplingPoint[index])
+    || original.samplingPoint.every((value, index) => value === pythonRoundDmiSamplingCoordinate(central.samplingPoint[index]));
+}
+
 /**
  * Exact DMI forecast-time proof shared by target scoring and private replay.
  * Every native endpoint, collection, component, acquisition and spatial field

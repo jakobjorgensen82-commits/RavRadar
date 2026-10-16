@@ -2,6 +2,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { readAccountAssistantCanonicalSource } from './lib/account-assistant-successor-source.mjs';
 import { readCurrentGridCanonicalSource } from './lib/current-grid-successor-source.mjs';
+import { readNativeIdentityCanonicalSource, NATIVE_IDENTITY_ORIGINAL_NAMES,
+  NATIVE_IDENTITY_REPLACEMENTS } from './lib/native-sampling-identity-successor-source.mjs';
+import { withFrozenI71Source } from './check-native-identity-frozen-i71-source.mjs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const sources = Object.freeze({
   migration: 'supabase/migrations/20260920220000_public_hour_pack_capacity_binding.sql',
@@ -32,7 +37,14 @@ const documents = Object.fromEntries(entries);
 const { canonicalSource: predecessorCheckpointMigration } = await readAccountAssistantCanonicalSource();
 // Normal 220 adapter validates immutable 213 bytes and the WHOLE inverse of its
 // six original validators/seven replacements; historical SQL is not retagged.
-const { canonicalSource: checkpointMigration } = await readCurrentGridCanonicalSource();
+const { canonicalSource: oldGridCheckpointMigration } = await readCurrentGridCanonicalSource();
+await withFrozenI71Source(async historicalRoot => {
+  const oldReader = await import(pathToFileURL(path.join(historicalRoot,
+    'scripts/lib/current-grid-successor-source.mjs')).href);
+  assert.equal((await oldReader.readCurrentGridCanonicalSource()).canonicalSource,
+    oldGridCheckpointMigration, 'Immutable220 must retain its genuine frozen37 normal interpretation');
+});
+const { canonicalSource: checkpointMigration } = await readNativeIdentityCanonicalSource();
 const stableTripMigration = await fs.readFile(
   'supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql',
   'utf8',
@@ -71,11 +83,19 @@ const changedCurrentFunctions = new Set([
   'public.ravradar_ravscore_checkpoint_contract',
 ]);
 for (const name of CHECKPOINT_FUNCTION_NAMES.filter(name => !changedCurrentFunctions.has(name))) {
-  assert.equal(functionDefinition(checkpointMigration, '220 canonical', name),
+  assert.equal(functionDefinition(oldGridCheckpointMigration, '220 canonical', name),
     functionDefinition(predecessorCheckpointMigration, '213 canonical', name),
     name + ' must retain its whole historical 213 definition');
 }
-for (const functionName of [...CHECKPOINT_FUNCTION_NAMES, ...GRID_ORIGINAL_FUNCTION_NAMES]) {
+// The new sparse successor may replace only its seven exact bodies and add its
+// two original validators; every historical family/projection remains identical.
+for (const name of [...CHECKPOINT_FUNCTION_NAMES, ...GRID_ORIGINAL_FUNCTION_NAMES]
+  .filter(name => !NATIVE_IDENTITY_REPLACEMENTS.includes(name.slice('public.'.length)))) {
+  assert.equal(functionDefinition(checkpointMigration, 'native-identity canonical', name),
+    functionDefinition(oldGridCheckpointMigration, 'immutable220 canonical', name));
+}
+for (const functionName of [...CHECKPOINT_FUNCTION_NAMES, ...GRID_ORIGINAL_FUNCTION_NAMES,
+  ...NATIVE_IDENTITY_ORIGINAL_NAMES.map(name => 'public.' + name)]) {
   const canonicalDefinition = normalize(functionDefinition(
     checkpointMigration,
     'checkpoint migration',
@@ -109,6 +129,7 @@ assert.match(checkpointBlock,
   'checkpoint installation must keep the high-frequency checkpoint out of admin document history');
 
 for (const [label, source] of Object.entries({
+  immutable220: oldGridCheckpointMigration,
   migration: checkpointMigration,
   schema: documents.schema,
   installer: documents.installer,
@@ -155,7 +176,8 @@ for (const [label, source] of Object.entries({
   assert.match(source,
     /revoke all on function public\.ravradar_ravscore_checkpoint_top20_predecessor_projection\(jsonb,timestamptz\)\s+from public, anon, authenticated;/,
     `${label} must not expose predecessor projection to public clients`);
-  for (const functionName of GRID_ORIGINAL_FUNCTION_NAMES) {
+  for (const functionName of [...GRID_ORIGINAL_FUNCTION_NAMES,
+    ...(label === 'immutable220' ? [] : NATIVE_IDENTITY_ORIGINAL_NAMES.map(name => 'public.' + name))]) {
     const original = functionDefinition(source, label, functionName);
     assert.match(normalize(original), /language plpgsql stable set search_path = pg_catalog, public/i);
     assert.doesNotMatch(original, /\bsecurity definer\b|\b(?:insert|update|delete)\s+|\bexecute\s+/i);

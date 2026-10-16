@@ -10,10 +10,12 @@ import path from 'node:path';
 import { TextDecoder } from 'node:util';
 import { assertRavScoreModelBinding } from '../../js/core/ravscore-model-contract.js';
 import { canonicalSavedDmiOriginalCapture } from './saved-dmi-original-capture.mjs';
-import { dmiExpectedIdentityForPart, verifiedDmiNativeComponentSource,
+import { dmiExpectedIdentityForPart, dmiOriginalWireIdentityMatchesCentralIdentity, verifiedDmiNativeComponentSource,
   verifiedBulkCurrent } from './ravscore-production-adapters.mjs';
 import { createProtectedDmiNativeCurrentInspector,
+  bindProtectedDmiNativeCurrentOriginalScopes,
   PROTECTED_DMI_NATIVE_PROOF_LIMITS as LIMIT } from './protected-dmi-native-current-proofs.mjs';
+import { sameNativeIdentity, inspectDmiNativeGridSampling } from './dmi-forecast-store.mjs';
 
 export const DMI_LEGACY_CURRENT_ORIGINAL_REQUEST_PATH = '.cache/dmi-legacy-current-original-requests.json';
 export const DMI_LEGACY_CURRENT_ORIGINAL_PATH = '.cache/dmi-legacy-current-originals.json';
@@ -89,7 +91,8 @@ function processingEvidence(evidence, collection) {
 function validateRequests(requests, parts, expected) {
   const fields = ['schemaVersion', 'kind', 'productionReferenceAt', 'modelBinding', 'historyDemandSha256',
     'registrySha256', 'sourceHashes', 'sourcePaths', 'documentContexts', 'projectionWitnesses', 'reconstructionRequests'];
-  if (!keys(requests, fields) || requests.schemaVersion !== 1
+  const version2 = requests?.schemaVersion === 2;
+  if (!keys(requests, [...fields, ...(version2 ? ['existingNativeOriginals'] : [])]) || ![1, 2].includes(requests.schemaVersion)
     || requests.kind !== 'DMI_LEGACY_CURRENT_ORIGINAL_RECONSTRUCTION_REQUESTS'
     || !hour(requests.productionReferenceAt) || !plain(expected)) fail('REQUESTS_INVALID');
   try { assertRavScoreModelBinding(requests.modelBinding); assertRavScoreModelBinding(expected.modelBinding); }
@@ -116,7 +119,8 @@ function validateRequests(requests, parts, expected) {
     const zones = new Map();
     for (const selected of context.zones) {
       if (!keys(selected, ['partId', 'zone']) || zones.has(selected.partId)
-        || !byPart.has(selected.partId) || !equal(selected.zone, byPart.get(selected.partId).identity)) fail('CONTEXT_ZONE_INVALID');
+        || !byPart.has(selected.partId)
+        || !dmiOriginalWireIdentityMatchesCentralIdentity(selected.zone, byPart.get(selected.partId).identity)) fail('CONTEXT_ZONE_INVALID');
       zones.set(selected.partId, selected.zone);
     }
     contexts.set(context.documentRole, { ...context, zones });
@@ -139,7 +143,7 @@ function validateRequests(requests, parts, expected) {
     witnesses.set(witness.witnessId, witness);
   }
   const semantics = new Set(), witnessReferences = new Set(), usedContexts = new Set();
-  const requestsByWitness = new Map(), partByEntity = new Map();
+  const requestsByWitness = new Map(), existingByWitness = new Map(), existing = new Map(), partByEntity = new Map();
   for (const request of requests.reconstructionRequests) {
     if (!keys(request, ['requestId', 'partId', 'entityId', 'documentRole', 'nativeValidTime',
       'reconstructionRequest', 'processingEvidence', 'projectionWitnessRefs'])
@@ -180,10 +184,59 @@ function validateRequests(requests, parts, expected) {
     native.set(request.requestId, request); usedContexts.add(request.documentRole);
     partByEntity.set(request.entityId, selected);
   }
+  if (version2) {
+    if (!Array.isArray(requests.existingNativeOriginals) || !requests.existingNativeOriginals.length
+      || requests.existingNativeOriginals.length + native.size > PRIVATE_REQUEST_COUNTS.nativeRows) fail('REQUEST_BOUND');
+    let bytes = 4096;
+    for (const records of [requests.documentContexts, requests.projectionWitnesses,
+      requests.reconstructionRequests, requests.existingNativeOriginals]) for (const value of records) {
+      // A document-context inventories up to 673 individually checked zones;
+      // it is not one 32KB native record. Keep the real total file bound.
+      bytes += Buffer.byteLength(canonical(value)) + 2;
+      if (bytes > 192 * 1024 * 1024) fail('REQUEST_BOUND');
+    }
+    for (const original of requests.existingNativeOriginals) {
+      if (!keys(original, ['originalId', 'partId', 'documentRole', 'documentSha256', 'contextSha256',
+        'rowPath', 'row', 'projectionWitnessRefs']) || !SHA.test(original.originalId ?? '')
+        || existing.has(original.originalId) || !Array.isArray(original.projectionWitnessRefs)
+        || !original.projectionWitnessRefs.length || original.projectionWitnessRefs.length > 127
+        || new Set(original.projectionWitnessRefs).size !== original.projectionWitnessRefs.length) fail('EXISTING_ORIGINAL_INVALID');
+      const fields = Object.fromEntries(Object.entries(original).filter(([key]) => !['originalId', 'projectionWitnessRefs'].includes(key)));
+      if (hash(fields) !== original.originalId) fail('EXISTING_ORIGINAL_ID_MISMATCH');
+      const selected = byPart.get(original.partId), context = contextFor(original.documentRole, original.partId);
+      const row = original.row, source = row?.sources?.current, p = original.rowPath;
+      if (!selected || original.documentSha256 !== requests.sourceHashes[original.documentRole]
+        || original.contextSha256 !== hash({ header: context.header, zone: context.zones.get(original.partId) })
+        || !Array.isArray(p) || p.length !== 4 || p[0] !== 'zones' || p[1] !== selected.identity.entityId
+        || p[2] !== 'hourly' || !hour(p[3])
+        || !keys(row, ['time', 'current-u', 'current-v', 'sources']) || !keys(row.sources, ['current'])
+        || !hour(row.time) || Date.parse(row.time) !== Date.parse(p[3]) || !finite(row['current-u']) || !finite(row['current-v'])
+        || DERIVED.some(key => Object.hasOwn(source ?? {}, key))
+        || !verifiedDmiNativeComponentSource(source, row.time, 'current', selected.identity)
+        || !verifiedBulkCurrent(context.header, context.zones.get(original.partId), selected.part.waterPoint,
+          source, row.time, selected.identity) || !canonicalSavedDmiOriginalCapture(source)
+        || source.nativeGridSampling != null && inspectDmiNativeGridSampling(source).status !== 'coherent') fail('EXISTING_ORIGINAL_INVALID');
+      const semantic = encoded({ documentRole: original.documentRole, partId: original.partId, source });
+      if (semantics.has(semantic)) fail('REQUEST_DUPLICATE'); semantics.add(semantic);
+      for (const ref of original.projectionWitnessRefs) {
+        const witness = witnesses.get(ref), forecast = witness?.row.sources.current;
+        if (!witness || witness.partId !== original.partId || witness.documentRole !== original.documentRole
+          || !sameNativeIdentity(source, forecast, 'current')
+          || !forecast.nativeSteps.some(step => Object.entries(step).every(([key, value]) => key === 'nativeValidTime'
+            ? Date.parse(source[key]) === Date.parse(value) : equal(source[key], value)))) fail('WITNESS_REFERENCE_INVALID');
+        witnessReferences.add(ref);
+        const list = existingByWitness.get(ref) ?? []; list.push(original); existingByWitness.set(ref, list);
+      }
+      existing.set(original.originalId, original); usedContexts.add(original.documentRole);
+      partByEntity.set(selected.identity.entityId, selected);
+    }
+    if ([...witnesses.keys()].some(key => !requestsByWitness.get(key)?.length)) fail('UNREFERENCED_REQUEST_EVIDENCE');
+  }
   if (witnessReferences.size !== witnesses.size || contexts.size !== usedContexts.size) fail('UNREFERENCED_REQUEST_EVIDENCE');
   const ordered = ROLES.filter(role => usedContexts.has(role)).map(role => contexts.get(role));
   if (ordered.some(context => !equal(contract(context.header), contract(ordered[0].header)))) fail('CONTEXT_CONTRACT_COLLISION');
-  return { byPart, contexts, witnesses, native, requestsByWitness, partByEntity, header: ordered[0]?.header ?? null };
+  return { byPart, contexts, witnesses, native, existing, requestsByWitness, existingByWitness,
+    partByEntity, header: ordered[0]?.header ?? null };
 }
 
 export function verifyDmiLegacyCurrentOriginalReconstruction({ requests, requestsSha256,
@@ -203,7 +256,8 @@ export function verifyDmiLegacyCurrentOriginalReconstruction({ requests, request
   for (const [entityId, zone] of Object.entries(document.zones)) {
     const selected = index.partByEntity.get(entityId);
     if (!selected || !keys(zone, [...Object.keys(selected.identity), 'hourly'])
-      || !equal(Object.fromEntries(Object.keys(selected.identity).map(key => [key, zone[key]])), selected.identity)
+      || !dmiOriginalWireIdentityMatchesCentralIdentity(Object.fromEntries(Object.keys(selected.identity)
+        .map(key => [key, zone[key]])), selected.identity)
       || !plain(zone.hourly) || Object.keys(zone.hourly).length > LIMIT.donorRowsPerPart) fail('DOCUMENT_ZONE_INVALID');
     for (const [requestId, row] of Object.entries(zone.hourly)) {
       const actual = index.native.get(requestId);
@@ -211,11 +265,61 @@ export function verifyDmiLegacyCurrentOriginalReconstruction({ requests, request
         || !keys(row, ['time', 'current-u', 'current-v', 'sources']) || !keys(row.sources, ['current'])
         || !finite(row['current-u']) || !finite(row['current-v'])
         || row.time !== actual.reconstructionRequest.expectedSource.nativeValidTime
-        || !equal(row.sources.current, actual.reconstructionRequest.expectedSource)) fail('DOCUMENT_ROW_INVALID');
+        || !equal(row.sources.current, actual.reconstructionRequest.expectedSource)
+        || !equal(Object.fromEntries(Object.keys(selected.identity).map(key => [key, zone[key]])),
+          index.contexts.get(actual.documentRole)?.zones.get(actual.partId))) fail('DOCUMENT_ROW_INVALID');
       seen.add(requestId);
     }
   }
   if (seen.size !== index.native.size) fail('NATIVE_ROWS_MISSING');
+  if (requests.schemaVersion === 2) {
+    const roleDocuments = new Map(), scopes = new Map();
+    const append = (role, partId, id, row) => {
+      const context = index.contexts.get(role), identity = context.zones.get(partId);
+      const roleDocument = roleDocuments.get(role) ?? { ...context.header, zones: {} };
+      const zone = roleDocument.zones[identity.entityId] ?? { ...identity, hourly: {} };
+      if (Object.hasOwn(zone.hourly, id)) fail('DOCUMENT_ROW_INVALID');
+      zone.hourly[id] = row; roleDocument.zones[identity.entityId] = zone; roleDocuments.set(role, roleDocument);
+    };
+    for (const zone of Object.values(document.zones)) for (const [id, row] of Object.entries(zone.hourly)) {
+      const request = index.native.get(id); append(request.documentRole, request.partId, id, row);
+    }
+    for (const original of index.existing.values()) append(original.documentRole, original.partId, original.originalId, original.row);
+    const inspectors = new Map([...roleDocuments].map(([role, value]) => [role,
+      createProtectedDmiNativeCurrentInspector({ contexts: [value] })]));
+    const used = new Set(), retainedUsed = new Set();
+    for (const witness of [...index.witnesses.values()].sort((a, b) => a.documentRole.localeCompare(b.documentRole)
+      || a.partId.localeCompare(b.partId) || a.row.time.localeCompare(b.row.time))) {
+      const selection = { part: index.byPart.get(witness.partId).part, row: witness.row };
+      const original = inspectors.get(witness.documentRole).inspectOriginals(selection);
+      if (!original.ok) fail('PROJECTION_REJECTED');
+      for (const request of index.requestsByWitness.get(witness.witnessId) ?? []) {
+        if (!original.nativeRows.some(row => equal(row.source, request.reconstructionRequest.expectedSource)
+          && row.time === request.reconstructionRequest.expectedSource.nativeValidTime)) fail('NATIVE_REFERENCE_UNUSED');
+        used.add(request.requestId);
+      }
+      for (const retained of index.existingByWitness.get(witness.witnessId) ?? []) {
+        if (!original.nativeRows.some(row => row.time === retained.row.time && equal(row.source, retained.row.sources.current)
+          && row.uMps === retained.row['current-u'] && row.vMps === retained.row['current-v'])) fail('NATIVE_REFERENCE_UNUSED');
+        retainedUsed.add(retained.originalId);
+      }
+      const scope = scopes.get(witness.documentRole) ?? { document: roleDocuments.get(witness.documentRole), selections: [] };
+      scope.selections.push(selection); scopes.set(witness.documentRole, scope);
+    }
+    if (used.size !== index.native.size || retainedUsed.size !== index.existing.size) fail('NATIVE_REFERENCE_UNUSED');
+    // Only a mapper container. Native proof is role-scoped and reprojected by
+    // the normal kernel; these globally mapped rows never form proof donors.
+    const donor = { ...index.header, zones: {} };
+    for (const roleDocument of roleDocuments.values()) for (const [id, zone] of Object.entries(roleDocument.zones)) {
+      const target = donor.zones[id] ?? { ...Object.fromEntries(Object.keys(zone).filter(key => key !== 'hourly')
+        .map(key => [key, zone[key]])), hourly: {} };
+      for (const [key, row] of Object.entries(zone.hourly)) {
+        if (Object.hasOwn(target.hourly, key)) fail('DOCUMENT_ROW_INVALID'); target.hourly[key] = row;
+      }
+      donor.zones[id] = target;
+    }
+    return bindProtectedDmiNativeCurrentOriginalScopes(donor, [...scopes.values()]);
+  }
   const inspector = createProtectedDmiNativeCurrentInspector({ contexts: [document] }), used = new Set();
   for (const witness of index.witnesses.values()) {
     const original = inspector.inspectOriginals({ part: index.byPart.get(witness.partId).part, row: witness.row });

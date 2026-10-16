@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { nativeIdentityMigration } from './lib/native-sampling-identity-successor-source.mjs';
 
 // Keep the payload-free operational control report inside this existing cheap
 // workflow command so the source gate does not grow another process.
@@ -629,7 +630,11 @@ const casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.end
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
 assert.equal(casTimeoutSettings.at(-1).migration,
-  '20261013220000_current_grid_original_bound_successor.sql');
+  nativeIdentityMigration().filename);
+assert.deepEqual(casTimeoutSettings.find(item =>
+  item.migration === '20261013220000_current_grid_original_bound_successor.sql'),
+  { migration: '20261013220000_current_grid_original_bound_successor.sql', timeout: '55s' },
+  'the immutable current-grid predecessor retains its original scoped timeout');
 assert.deepEqual(casTimeoutSettings.find(item =>
   item.migration === '20261013210000_account_assistant_original_bound_successor.sql'),
   { migration: '20261013210000_account_assistant_original_bound_successor.sql', timeout: '55s' },
@@ -681,7 +686,7 @@ console.log('Reusable production workflow interface and failure contracts passed
   const { LATEST_RAVSCORE_BINDING_MIGRATION, LATEST_REQUIRED_CUTOVER_MIGRATION } =
     await import('./integrated-cutover-readiness.mjs');
   assert.equal(LATEST_RAVSCORE_BINDING_MIGRATION.version, '20260920220000');
-  assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261013220000');
+  assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, nativeIdentityMigration().version);
   assert.equal(deferCurrentGridBindingEdges(LATEST_RAVSCORE_BINDING_MIGRATION.version), false);
   assert.equal(deferCurrentGridBindingEdges(LATEST_REQUIRED_CUTOVER_MIGRATION.version), true);
   const active = binding => ({ model: 'integrated', status: 'INTEGRATED_ACTIVE',
@@ -696,8 +701,8 @@ console.log('Reusable production workflow interface and failure contracts passed
   }
   assert.equal(await currentGridEdgePublicationRequired(active(ravScoreModelBinding()), 'integrated'), false);
   const foreign = active({ ...selected.sourceModelBinding, profileId: 'other' });
-  assert.equal(await currentGridEdgePublicationRequired(foreign, 'integrated-historical-maintenance'), false,
-    'a bundle-only match must not defer the existing readiness gate');
+  await assert.rejects(currentGridEdgePublicationRequired(foreign, 'integrated-historical-maintenance'),
+    /unknown public original binding/, 'a bundle-only match cannot authorize the native successor route');
   const oldGeneration = { ...active(selected.sourceModelBinding),
     datasetId: 'old', productionReferenceAt: '2026-10-13T00:00:00.000Z' };
   const nextGeneration = { schemaVersion: 4, complete: true, zoneCount: 210, coastalPartCount: 673,

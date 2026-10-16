@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { runInNewContext } from 'node:vm';
 
 // Static workflow contract only. Never reads private data or calls a provider.
 const read = file => fs.readFileSync(file, 'utf8').replaceAll('\r\n', '\n');
@@ -123,7 +124,61 @@ assert.match(manual, /Progress source: exact encrypted-progress run-attempt for 
 const currentOriginalHour = step(normal, 'Require a strictly new normal hour for current-grid source succession');
 assert.match(currentOriginalHour, /test "\$QUICK_CONFIRMATION" != 'true'/);
 assert.match(currentOriginalHour, /target <= Date\.parse\(expected\.productionReferenceAt\)/);
-assert.match(manual, /force: true\n      extended_provider_bootstrap: false\n      quick_confirmation: \$\{\{ inputs\.quick_confirmation \}\}/);
+// Invert only the reviewed epoch interface for the unchanged adjacency oracle;
+// separately evaluate actual default/epoch routing, not synthetic admission.
+const epochBuildInterface = [
+  '      extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true }}',
+  '      weather_state_epoch_bootstrap: ${{ inputs.weather_state_epoch_bootstrap }}',
+  '      weather_state_epoch_archive_key: ${{ needs.state-epoch-prewrite.outputs.archive_key }}',
+  '      weather_state_epoch_archive_catalog_sha256: ${{ needs.state-epoch-prewrite.outputs.archive_catalog_sha256 }}',
+].join('\n');
+assert.equal(manual.split(epochBuildInterface).length, 2);
+const ordinaryManual = manual.replace(epochBuildInterface, '      extended_provider_bootstrap: false');
+assert.match(ordinaryManual, /force: true\n      extended_provider_bootstrap: false\n      quick_confirmation: \$\{\{ inputs\.quick_confirmation \}\}/);
+function assertManualEpochInterface(source) {
+  assert.match(source,
+    /weather_state_epoch_bootstrap:\n        description: '[^']+'\n        required: false\n        type: boolean\n        default: false\n/);
+  const start = source.indexOf('\n  build-and-prepare:\n');
+  assert.ok(start >= 0, 'normal reusable-build caller must exist');
+  const build = source.slice(start);
+  const evaluate = (field, context) => {
+    const lines = build.match(new RegExp('^      ' + field + ': (.+)$', 'gm')) ?? [];
+    assert.equal(lines.length, 1, 'exactly one actual caller field: ' + field);
+    const expression = lines[0].match(/: \$\{\{ (.+) \}\}$/)?.[1];
+    assert.ok(expression, 'actual caller expression: ' + field);
+    return runInNewContext(expression.replaceAll(
+      'needs.state-epoch-prewrite.', 'needs["state-epoch-prewrite"].',
+    ), context);
+  };
+  for (const enabled of [undefined, false, true]) {
+    for (const quick of [false, true]) {
+      const outputs = enabled === true
+        ? { archive_key: 'synthetic-archive', archive_catalog_sha256: 'synthetic-catalog' }
+        : { archive_key: '', archive_catalog_sha256: '' };
+      const context = {
+        inputs: { weather_state_epoch_bootstrap: enabled, quick_confirmation: quick },
+        needs: { 'state-epoch-prewrite': { outputs } },
+      };
+      assert.equal(evaluate('extended_provider_bootstrap', context), enabled === true);
+      assert.equal(evaluate('weather_state_epoch_bootstrap', context), enabled);
+      assert.equal(evaluate('weather_state_epoch_archive_key', context), outputs.archive_key);
+      assert.equal(evaluate('weather_state_epoch_archive_catalog_sha256', context), outputs.archive_catalog_sha256);
+      assert.equal(evaluate('quick_confirmation', context), quick);
+    }
+  }
+}
+assertManualEpochInterface(manual);
+for (const [from, to] of [
+  ['extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true }}',
+    'extended_provider_bootstrap: ${{ true }}'],
+  ['weather_state_epoch_bootstrap: ${{ inputs.weather_state_epoch_bootstrap }}',
+    'weather_state_epoch_bootstrap: ${{ false }}'],
+  ['needs.state-epoch-prewrite.outputs.archive_key', 'needs.state-epoch-prewrite.outputs.archive_catalog_sha256'],
+  ['needs.state-epoch-prewrite.outputs.archive_catalog_sha256', 'needs.state-epoch-prewrite.outputs.archive_key'],
+]) {
+  assert.equal(manual.split(from).length, 2, 'each interface mutation must change one actual caller');
+  assert.throws(() => assertManualEpochInterface(manual.replace(from, to)));
+}
 assert.ok(normal.indexOf(beforeDmi) < normal.indexOf(dmi));
 assert.ok(normal.indexOf(dmi) < normal.indexOf(beforeCp));
 assert.ok(normal.indexOf(beforeCp) < normal.indexOf(cp));

@@ -52,7 +52,7 @@ test('normal PART production plans on current central identity and passes the pr
     persistedDmiPartRows: new Map(), historicalDmiBulkCache: {}, activeParts: [part],
     deployedDmiBulkCache: {}, liveCurrentPilot: {}, previous: {}, previousPrivateCandidateGRuntime: null,
     coastalPointStateInjections: {}, ravScoreCheckpoint: { loaded: false },
-    historicalWaveInputTransition: null,
+    historicalWaveInputTransition: null, stateEpochView: null,
     waterSourceRoutingContext, applyVerifiedWaterSourceRoutingToPartHourly,
     assertDmiPartHourlyGridSamplingApplicable,
     RESEARCH_HISTORY_HOURS: 72, OPEN_METEO_FUTURE_HOURS: 121, OPEN_METEO_NATIVE_NEAREST_POLICIES,
@@ -98,6 +98,7 @@ test('normal PART production plans on current central identity and passes the pr
       assert.equal(planned, true); assert.equal(args[12], verifiedInputs);
       assert.equal(args[14], waterSourceRoutingContext);
       assert.equal(args[15], context.persistedDmiPartRows);
+      assert.equal(args[18], null, 'ordinary weather does not request a new epoch');
       assert.equal(args[16], context.historicalDmiBulkCache);
       scored = true; return { completeLocalBuild: true };
     },

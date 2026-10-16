@@ -6,6 +6,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { withIssuedAccountAssistantSource } from './check-account-assistant-issued-source.mjs';
+import { withFrozenI71Source } from './check-native-identity-frozen-i71-source.mjs';
 import {
   ACCOUNT_ASSISTANT_SOURCE_MIGRATION,
   LATEST_REQUIRED_CUTOVER_MIGRATION,
@@ -170,9 +171,14 @@ try {
 });
 
 
-// Today's real readiness is not the issued213 installation contract. Run the
-// same unchanged normal heredoc against the current physical source instead of
-// overriding latest/model exports or treating selector flags as SQL admission.
+// Preserve the complete current220 partition against genuine fixed37 exports
+// and child cwd. No old latest/model export is redefined in the current source.
+let historicalRequiredVersions;
+await withFrozenI71Source(async repositoryRoot => {
+  const { ACCOUNT_ASSISTANT_SOURCE_MIGRATION, LATEST_REQUIRED_CUTOVER_MIGRATION,
+    REQUIRED_CUTOVER_MIGRATIONS, TRIP_BINDING_POLICY_SOURCE_MIGRATION } = await import(
+      pathToFileURL(path.join(repositoryRoot, 'scripts/integrated-cutover-readiness.mjs')).href);
+  historicalRequiredVersions = REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version);
 assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261013220000');
 assert.equal(ACCOUNT_ASSISTANT_SOURCE_MIGRATION.version, '20261013210000');
 const currentAccountIndex = REQUIRED_CUTOVER_MIGRATIONS.findIndex(item =>
@@ -251,4 +257,67 @@ try {
 } finally {
   // Only this normal target's own mkdtemp files are removed.
   await fs.rm(currentDirectory, { recursive: true, force: true });
+}
+
+});
+
+// The same unchanged selector runs on the actual NEW physical source. Its
+// neutral flags neither install SQL nor authenticate an original/checkpoint.
+assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261016060000');
+assert.deepEqual(REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version), [
+  ...historicalRequiredVersions, '20261013230000', '20261016060000',
+]);
+assert.deepEqual(REQUIRED_CUTOVER_MIGRATIONS.slice(-5).map(item => item.version),
+  ['20261012200000', '20261013210000', '20261013220000', '20261013230000', '20261016060000']);
+const newDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-native-identity-routing-'));
+try {
+  const output = path.join(newDirectory, 'github-env.txt');
+  const migrationList = path.join(newDirectory, 'code-only-migrations-before.txt');
+  async function runNewCase(lastInstalled, optedIn = false, accountOptedIn = false) {
+    assert.ok(REQUIRED_CUTOVER_MIGRATIONS.some(item => item.version === lastInstalled));
+    await fs.writeFile(migrationList,
+      'Local | Remote | Time (UTC)\n' + REQUIRED_CUTOVER_MIGRATIONS.map(item =>
+        item.version + ' | ' + (item.version <= lastInstalled ? item.version : '') + ' | fixture',
+      ).join('\n') + '\n');
+    await fs.writeFile(output, '');
+    const result = spawnSync(process.execPath, ['--input-type=module', '-e', source], {
+      cwd: repositoryRoot, encoding: 'utf8', timeout: 10_000,
+      env: {
+        ...(process.env.PATH ? { PATH: process.env.PATH } : {}),
+        ...(process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}),
+        RUNNER_TEMP: newDirectory, GITHUB_ENV: output,
+        RAVRADAR_USERDATA_UPGRADE_OPT_IN: optedIn ? 'true' : 'false',
+        RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN: accountOptedIn ? 'true' : 'false',
+      },
+    });
+    assert.equal(result.error, undefined, 'the actual NEW-source Node caller must execute');
+    return { ...result, environment: await fs.readFile(output, 'utf8') };
+  }
+  for (const installed of ['20261013220000', '20261013230000', '20261016060000']) {
+    const neutral = await runNewCase(installed);
+    assert.equal(neutral.status, 0, neutral.stderr || neutral.stdout);
+    for (const name of ['ASSISTANT_PREWRITE_REQUIRED', 'USERDATA_PREWRITE_REQUIRED',
+      'CHECKPOINT_CAS_METADATA_ONLY', 'ACCOUNT_ASSISTANT_PREWRITE_REQUIRED',
+      'ACCOUNT_ASSISTANT_METADATA_ONLY', 'ACCOUNT_ASSISTANT_FINAL_REQUIRED']) {
+      assert.match(neutral.environment, new RegExp('^RAVRADAR_' + name + '=false$', 'm'));
+    }
+    assert.match(neutral.environment, /^RAVRADAR_USERDATA_FINAL_REQUIRED=true$/m);
+    assert.doesNotMatch(neutral.environment, /CURRENT_GRID|STATISTICS_REVISION|NATIVE_IDENTITY|EPOCH|VERIFIED|APPROVED/,
+      'this neutral selector cannot emit any later phase installation/original-admission receipt');
+  }
+  for (const [userdata, account, message] of [
+    [true, false, /Userdata upgrade requires installed current050000 and sole pending130000; no intermediary or automatic replay/],
+    [false, true, /Account\/assistant upgrade requires installed200000 and sole pending20261013210000; no replay/],
+    [true, true, /Userdata upgrade requires installed current050000 and sole pending130000; no intermediary or automatic replay/],
+  ]) {
+    const refused = await runNewCase('20261013230000', userdata, account);
+    assert.equal(refused.status, 1);
+    assert.match(refused.stderr, message);
+    assert.doesNotMatch(refused.environment, /^RAVRADAR_.*(?:PREWRITE_REQUIRED|METADATA_ONLY)=true$/m);
+    assert.doesNotMatch(refused.environment, /CURRENT_GRID|STATISTICS_REVISION|NATIVE_IDENTITY|EPOCH|VERIFIED|APPROVED/);
+  }
+  console.log('Native-identity normal routing passed: 6 actual current-source caller cases; no SQL/original admission or provider calls.');
+} finally {
+  // Only this target's own migration-list and environment files exist here.
+  await fs.rm(newDirectory, { recursive: true, force: true });
 }

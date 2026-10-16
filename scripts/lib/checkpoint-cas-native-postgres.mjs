@@ -33,7 +33,7 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 // returned or emitted; unknown state/phase remains explicitly UNKNOWN.
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
-  'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'UNKNOWN']);
+  'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'NATIVE_IDENTITY0600', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -478,7 +478,7 @@ async function compareAccountAssistantSuccessor({ psql, runSql, source, oldSourc
 }
 
 // A separate phase AFTER the unchanged historical thirteen/213 cases. The
-// incoming generation is built by current normal code; old states stay old.
+// incoming generation is built by genuine fixed37 normal code; old states stay old.
 async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource,
   oldFixtures, issuedFixtures, sourceDocumentAt, atHour, saveCheckpoint, root }) {
   assert.equal(hash(source), '77d5a60f22ff38fce3164c87e74d089ea56c0a18647310213cde465e95e4632b');
@@ -623,8 +623,11 @@ async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource
 // Called ONLY by the existing protected-checkpoint target's native-only branch.
 // Its real 673 model builders and normal checkpoint saver supply the fixtures.
 export async function runNativeCheckpointSqlComparison({ repositoryRoot,
-  sourceDocumentAt, atHour, saveCheckpoint, includeStatisticsRevision = false } = {}) {
+  sourceDocumentAt, atHour, saveCheckpoint, includeStatisticsRevision = false,
+  includeNativeIdentity = false } = {}) {
   assert.equal(typeof includeStatisticsRevision,'boolean');
+  assert.equal(typeof includeNativeIdentity,'boolean');
+  assert(!includeNativeIdentity || includeStatisticsRevision, 'NEW requires the unchanged statistics230 phase');
   const programs = await nativePrograms();
   assert.ok(typeof sourceDocumentAt === 'function' && typeof atHour === 'function'
     && typeof saveCheckpoint === 'function', 'normal fixture constructors are required');
@@ -850,8 +853,14 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     const accountAssistant=await compareAccountAssistantSuccessor({psql,runSql,source:accountSource,oldSource,
       oldFixtures:fixtures,currentFixtures,cases,atHour,oldCas,newCas});
     nativePhase = 'CURRENT220';
-    const currentGrid=await compareCurrentGridSuccessor({psql,runSql,source:gridSource,accountSource,
-      oldFixtures:fixtures,issuedFixtures:currentFixtures,sourceDocumentAt,atHour,saveCheckpoint,root});
+    const {withNativeI71CheckpointFactory,compareNativeSamplingIdentitySuccessor}=
+      await import('./native-identity-checkpoint-postgres.mjs');
+    const currentGrid=await withNativeI71CheckpointFactory(async old=>{
+      assert.equal(old.atHour(49),atHour(49));
+      return compareCurrentGridSuccessor({psql,runSql,source:gridSource,accountSource,
+        oldFixtures:fixtures,issuedFixtures:currentFixtures,sourceDocumentAt:old.sourceDocumentAt,
+        atHour:old.atHour,saveCheckpoint:old.saveRavScoreContinuationCheckpoint,root});
+    });
     let statisticsRevision;
     if (includeStatisticsRevision) {
       nativePhase = 'STATISTICS230';
@@ -866,8 +875,17 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
         });
       } catch (error) { statisticsRevisionFailure={error}; throw error; }
     }
+    let nativeIdentity;
+    if (includeNativeIdentity) {
+      nativePhase = 'NATIVE_IDENTITY0600';
+      try {
+        nativeIdentity=await compareNativeSamplingIdentitySuccessor({psql,runSql,root,
+          sourceDocumentAt,atHour,saveCheckpoint,oldSource});
+      } catch (error) { statisticsRevisionFailure={error}; throw error; }
+    }
     return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
       ...(includeStatisticsRevision?{statisticsRevision}:{}),
+      ...(includeNativeIdentity?{nativeIdentity}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,

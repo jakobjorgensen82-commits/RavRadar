@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
+import { NATIVE_IDENTITY_BINDING_REVIEW } from './native-sampling-identity-successor-source.mjs';
 
 export const PRODUCTION_WORKFLOW_SOURCES = Object.freeze({
   orchestrator: '.github/workflows/update-and-deploy.yml',
@@ -22,6 +23,10 @@ export const PRODUCTION_WORKFLOW_INTERFACES = Object.freeze({
       'quick_confirmation',
       'quick_progress_source',
       'checkpoint_only',
+      'weather_state_epoch_bootstrap',
+      'weather_state_epoch_archive_key',
+      'weather_state_epoch_archive_catalog_sha256',
+      'native_sampling_identity_original_recovery',
       'produce_weather_handoff',
       'produce_weather_handoff_confirmation',
       'ravscore_candidate_g_rollback_mode',
@@ -32,7 +37,9 @@ export const PRODUCTION_WORKFLOW_INTERFACES = Object.freeze({
       'ravscore_integrated_return',
       'ravscore_integrated_return_confirmation',
     ]),
-    optionalInputs: freezeList(['quick_confirmation', 'quick_progress_source', 'checkpoint_only']),
+    optionalInputs: freezeList(['quick_confirmation', 'quick_progress_source', 'checkpoint_only',
+      'native_sampling_identity_original_recovery', 'weather_state_epoch_bootstrap',
+      'weather_state_epoch_archive_key', 'weather_state_epoch_archive_catalog_sha256']),
     secrets: freezeList([
       'RAVRADAR_R2_ACCOUNT_ID',
       'CLOUDFLARE_TRIP_GATEWAY_URL',
@@ -154,11 +161,34 @@ export function concatenateProductionWorkflowSources(
 // Routing only: this neither admits original data nor authorizes installation.
 // Database prewrite and the normal artifact/activation gates remain mandatory.
 export function deferCurrentGridBindingEdges(migrationVersion) {
-  return migrationVersion === '20261013220000';
+  return migrationVersion === '20261013220000'
+    || typeof migrationVersion === 'string' && /^\d{14}$/.test(migrationVersion)
+      && migrationVersion === NATIVE_IDENTITY_BINDING_REVIEW.migrationVersion;
 }
 
 export async function currentGridEdgePublicationRequired(current, action) {
   const { LATEST_REQUIRED_CUTOVER_MIGRATION } = await import('../integrated-cutover-readiness.mjs');
+  const native = await import('./native-sampling-identity-successor-source.mjs');
+  if (LATEST_REQUIRED_CUTOVER_MIGRATION.version === native.nativeIdentityMigration().version) {
+    const { isDeepStrictEqual } = await import('node:util');
+    const { ravScoreModelBinding } = await import('../../js/core/ravscore-model-contract.js');
+    const binding = ravScoreModelBinding();
+    if (binding.modelBundleSha256 !== native.assertNativeIdentityBindingsFrozen().integrated)
+      throw new Error('Native-identity Edge route requires its actual issued current binding');
+    if (isDeepStrictEqual(current?.modelBinding, binding)) return false;
+    const { CURRENT_GRID_SAMPLING_PREDECESSOR_POLICY: ffc,
+      CURRENT_GRID_SAMPLING_DELIVERED_575_POLICY: delivered,
+      CURRENT_GRID_SAMPLING_SELECTED_PREDECESSOR_POLICY: selected } =
+      await import('./bounded-conditions-predecessor-transition.mjs');
+    const originalI71 = { ...binding, modelBundleSha256: native.NATIVE_IDENTITY_PREDECESSOR.integrated };
+    if (![ffc.sourceModelBinding, delivered.sourceModelBinding, selected.sourceModelBinding, originalI71]
+      .some(original => isDeepStrictEqual(current?.modelBinding, original)))
+      throw new Error('Native-identity Edge route has an unknown public original binding');
+    if (current.model !== 'integrated' || current.status !== 'INTEGRATED_ACTIVE'
+      || current.pending !== false || action !== 'integrated-historical-maintenance')
+      throw new Error('Native-identity late Edge publication requires the normal active historical route');
+    return true;
+  }
   if (!deferCurrentGridBindingEdges(LATEST_REQUIRED_CUTOVER_MIGRATION.version)) return false;
   const { isDeepStrictEqual } = await import('node:util');
   const { ravScoreModelBinding } = await import('../../js/core/ravscore-model-contract.js');

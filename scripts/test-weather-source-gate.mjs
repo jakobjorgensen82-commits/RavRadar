@@ -207,6 +207,38 @@ console.log('Source gate reuses only live-verified, SHA-256-identical PR or exac
 // Outer success, absence, pending or SKIP cannot substitute for its real run.
 const nativeSqlStep = 'Validate native PostgreSQL checkpoint CAS on artificial data only';
 assert.ok(PULL_REQUEST_SOURCE_STEPS.includes(nativeSqlStep));
+// Exercise the cheap native database boundary before the long source matrix.
+// This is ordering only: every original gate stays mandatory before proof.
+const prValidation = (await readFile(new URL('../.github/workflows/validate-pull-request.yml', import.meta.url), 'utf8'))
+  .replaceAll('\r\n', '\n');
+function assertNativeSqlEarly(source) {
+  const names = [
+    'Require exact pull-request source head',
+    'Build deterministic source-tree content identity',
+    'Restore Node22 for existing source validation',
+    'Validate bounded native current diagnosis on artificial data only',
+    nativeSqlStep,
+    'Validate source contracts and release governance',
+    'Validate durable Copernicus current-reference baseline on artificial data only',
+    'Validate download-inclusive DMI capacity on artificial data only',
+    'Require validated source tree to remain unchanged',
+    'Upload tree-content source validation proof',
+  ];
+  let previous = -1;
+  for (const name of names) {
+    const marker = '      - name: ' + name + '\n';
+    assert.equal(source.split(marker).length, 2, 'one actual mandatory gate: ' + name);
+    const position = source.indexOf(marker);
+    assert.ok(position > previous, 'native SQL must precede the long source matrix without moving proof earlier');
+    previous = position;
+    const block = source.slice(position).split('\n      - ').at(0);
+    assert.doesNotMatch(block, /^\s+(?:if|continue-on-error):/m, 'mandatory gates cannot be skipped or softened');
+  }
+}
+assertNativeSqlEarly(prValidation);
+assert.throws(() => assertNativeSqlEarly(prValidation.replace('      - name: ' + nativeSqlStep + '\n', '      - name: missing-native-sql\n')));
+assert.throws(() => assertNativeSqlEarly(prValidation.replace('      - name: ' + nativeSqlStep + '\n',
+  '      - name: ' + nativeSqlStep + '\n        continue-on-error: true\n')));
 for (const nativeOutcome of [null,
   { status: 'completed', conclusion: 'skipped' },
   { status: 'completed', conclusion: 'failure' },

@@ -82,8 +82,11 @@ assert.ok(confirmation.includes("        if: inputs.quick_confirmation == true |
   'Every explicit full-run source must pass the same exact key and authenticated recovery gate');
 assert.match(bind, /QUICK_PROTECTED_BASELINE:.*inputs\.quick_confirmation && inputs\.quick_progress_source == 'protected-current'/);
 assert.match(bind, /test "\$captured" = "true" && test "\$QUICK_PROTECTED_BASELINE" != "true"/);
+const encryptedReportAssignment = 'report="${RAVRADAR_NATIVE_IDENTITY_OLD_GCM_REPORT:-$RUNNER_TEMP/weather-progress-restore-report.json}"';
+assert.ok(confirmation.includes(encryptedReportAssignment),
+  'Identity recovery must use the authenticated OLD report, while ordinary recovery retains its normal report');
 assert.ok(confirmation.indexOf('if test "$QUICK_PROGRESS_SOURCE" = protected-current; then')
-  < confirmation.indexOf('report="$RUNNER_TEMP/weather-progress-restore-report.json"'));
+  < confirmation.indexOf(encryptedReportAssignment));
 assert.match(confirmation, /test "\$\{\{ steps\.private-runtime-install\.outcome \}\}" = success/);
 assert.match(confirmation, /test "\$\{\{ steps\.private-runtime-state\.outputs\.available \}\}" = true/);
 assert.match(confirmation, /test "\$\{\{ steps\.component-progress-restore\.outputs\.captured \}\}" = true/);
@@ -102,7 +105,7 @@ assert.match(confirmation,
   /import \{ assertUsableDmiProgressRecovery \} from '\.\/scripts\/lib\/verified-dmi-progress-inputs\.mjs'/);
 assert.match(confirmation, /assertUsableDmiProgressRecovery\(report\.dmiProgress, \{ allowAbsent: true \}\)/,
   'A short confirmation permits an omitted legacy forecast or valid no-change, but rejects failed forecast admission');
-const encryptedConfirmation = confirmation.slice(confirmation.indexOf('report="$RUNNER_TEMP/weather-progress-restore-report.json"'));
+const encryptedConfirmation = confirmation.slice(confirmation.indexOf(encryptedReportAssignment));
 assert.ok(encryptedConfirmation.indexOf('assertUsableDmiProgressRecovery(report.dmiProgress')
   < encryptedConfirmation.indexOf('test -s .cache/dmi-candidate-progress.json'));
 assert.doesNotMatch(confirmation, /continue-on-error|\|\| true/,

@@ -125,6 +125,8 @@ import {
   selectCoastalPointCandidateGRollbackContinuation,
 } from './lib/coastal-point-staging-contract.mjs';
 import { loadRavScoreContinuationCheckpointForTarget } from './ravscore-continuation-checkpoint.mjs';
+import { assertWeatherStateEpochInputViewForTarget }
+  from './lib/weather-state-epoch-input-view.mjs';
 import {
   RAVSCORE_CURRENT_VECTOR_SEMANTICS_VERSION,
   RAVSCORE_LOCAL_MARGIN_POINTS,
@@ -1872,7 +1874,32 @@ function scoreCoastalPartsRuntime(
   persistedDmiPartRows = new Map(),
   historicalDmiBulkCache = null,
   previousCurrentSourceDomainTransitions = null,
+  stateEpochView = null,
 ) {
+  // A separately authenticated, archived epoch omits OLD numerical state only
+  // for this first calculation. The full original weather baseline remains
+  // untouched in the caller and in the normal no-loss/persistence chain.
+  // A flag or serialized PASS marker cannot authorize this input selection.
+  if (stateEpochView !== null) {
+    assertWeatherStateEpochInputViewForTarget(stateEpochView,
+      { registry: contract, targetReferenceAt: generatedAt });
+    previousCoastalParts = stateEpochView.scoringPreviousCoastalParts;
+    previousCandidateGRollbackRuntime = stateEpochView.scoringCandidateRuntime;
+    pointStateInjections = {};
+    checkpointStates = stateEpochView.checkpointStates;
+    checkpointCandidateGRollbackStates = stateEpochView.checkpointCandidateGRollbackStates;
+    deployedBulkCache = stateEpochView.scoringDeployedBulkCache;
+    historicalDmiBulkCache = stateEpochView.scoringHistoricalDmiBulkCache;
+    persistedDmiPartRows = stateEpochView.scoringPersistedDmiPartRows;
+    previousCurrentSourceDomainTransitions = null;
+    if (historicalWaveInputTransition !== null) {
+      throw new Error('WEATHER_STATE_EPOCH_TRANSITION_COLLISION');
+    }
+  }
+  const calculationBootstrapMode = stateEpochView !== null
+    ? stateEpochView.candidateGBootstrapMode : RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE;
+  const calculationSourceValidated = stateEpochView !== null
+    ? stateEpochView.candidateGSourceValidated : RAVSCORE_EFFECTIVE_FIRST_CUTOVER_SOURCE_VALIDATED;
   // This NEW calculation, including its actual protected/progressive replay
   // inputs, may not borrow corrected lookup proof from a newly parsed loser.
   // Original readers/admission stay unchanged; unsupported originals are kept.
@@ -2032,8 +2059,8 @@ function scoreCoastalPartsRuntime(
           existingPart,
           checkpointStates,
           targetReferenceAt: generatedAt,
-          candidateGBootstrapMode: RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE,
-          candidateGSourceValidated: RAVSCORE_EFFECTIVE_FIRST_CUTOVER_SOURCE_VALIDATED,
+          candidateGBootstrapMode: calculationBootstrapMode,
+          candidateGSourceValidated: calculationSourceValidated,
         });
       let previousCandidateGContinuation =
         forcedHistoricalWaveInitialization?.previousCandidateGContinuation ?? null;
@@ -2057,7 +2084,7 @@ function scoreCoastalPartsRuntime(
         && [
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.genuineColdStart,
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.integratedStateLessRecovery,
-        ].includes(RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE)
+        ].includes(calculationBootstrapMode)
       ) {
         candidateGRollbackMeasuredColdStart = true;
       } else if (!forceHistoricalWaveMeasuredColdReplay) {
@@ -3674,7 +3701,6 @@ const coastalPartsContract = await buildPublicCoastalParts();
 if (coastalPartsContract.enabled && (coastalPartsContract.partCount < 1 || coastalPartsContract.zoneCount < 1)) throw new Error('Den aktive nationale kystdelskontrakt er ikke komplet');
 const coastCorridors = buildCoastCorridors(features);
 const previous = await readPrevious();
-const coastalPointStateInjections = await readCoastalPointStateInjections();
 const dmiForecastStore = await readDmiForecastStore();
 const dmiBulkCache = await readDmiBulkCache();
 const deployedDmiBulkCache = await readDmiBulkCache(DEPLOYED_DMI_BULK_CACHE_PATH);
@@ -3687,9 +3713,21 @@ if (process.env.DMI_PART_CONTINUITY_DONOR_PATH && !historicalDmiBulkCache) {
 const liveCurrentPilot = await readLiveCurrentPilot(coastalPartsContract);
 const buildGeneratedAt = new Date().toISOString();
 const generatedAt = resolveProductionReferenceTime(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR, new Date(buildGeneratedAt));
+if (!['true', 'false'].includes(process.env.RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP ?? 'false')) {
+  throw new Error('WEATHER_STATE_EPOCH_MODE_INVALID');
+}
+const stateEpochView = process.env.RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP === 'true'
+  ? await (await import('./weather-state-epoch.mjs')).loadInstalledWeatherStateEpochInputView({
+    targetReferenceAt: generatedAt, registry: coastalPartsContract,
+  }) : null;
+// Pending/previous point staging remains archived and is not promoted into a
+// deliberately new numerical epoch. Ordinary point activation is unchanged.
+const coastalPointStateInjections = stateEpochView !== null ? {}
+  : await readCoastalPointStateInjections();
 const activeParts = Object.entries(coastalPartsContract.zones ?? {}).flatMap(([zoneId, zoneParts]) =>
   zoneParts.map(part => ({ ...part, zoneId })));
 if (process.env.RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION) {
+  if (stateEpochView !== null) throw new Error('WEATHER_STATE_EPOCH_TRANSITION_COLLISION');
   const expectedLegacy = JSON.parse(process.env.RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION);
   assertRavScoreModelBinding(expectedLegacy.modelBinding, 'Legacy current reconstruction binding');
   const unchangedFileSha256 = async file => `sha256:${crypto.createHash('sha256')
@@ -3713,7 +3751,12 @@ if (process.env.RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION) {
 const persistedDmiPartRows = await unpackDmiPartContinuity(
   dmiForecastStore.partContinuity, activeParts, generatedAt,
 );
-const ravScoreCheckpoint = await loadRavScoreContinuationCheckpointForTarget({
+// The archived OLD checkpoint is preserved but never reattested/selected as
+// NEW state. Ordinary followers have no epoch flag and load their real NEW S.
+const ravScoreCheckpoint = stateEpochView !== null ? {
+  loaded: false, continuationAvailable: false, states: stateEpochView.checkpointStates,
+  candidateGRollbackStates: stateEpochView.checkpointCandidateGRollbackStates,
+} : await loadRavScoreContinuationCheckpointForTarget({
   checkpointPath: RAVSCORE_CONTINUATION_CHECKPOINT_PATH,
   targetReference: generatedAt,
 });
@@ -4169,7 +4212,10 @@ const historicalWaveInputTransition = await loadHistoricalWaveInputTransition({
   targetReferenceAt: generatedAt,
   currentBinding: ravScoreModelBinding(),
 });
-const previousPrivateCandidateGRuntime = historicalWaveInputTransition
+if (stateEpochView !== null && historicalWaveInputTransition !== null) {
+  throw new Error('WEATHER_STATE_EPOCH_TRANSITION_COLLISION');
+}
+const previousPrivateCandidateGRuntime = stateEpochView !== null || historicalWaveInputTransition
   ? null
   : selectPreviousPrivateCandidateGRuntime(previous);
 const waterSourceRoutingContext = {
@@ -4256,6 +4302,7 @@ const coastalPartScoreBuild = coastalPartsContract.enabled
     persistedDmiPartRows,
     historicalDmiBulkCache,
     previous?.ravScoreCurrentSourceDomainTransitions ?? null,
+    stateEpochView,
   )
   : null;
 if (coastalPartScoreBuild) {
