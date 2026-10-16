@@ -69,8 +69,10 @@ assert.doesNotMatch(bind, /EXACT_WEATHER_RECOVERY_REQUIRED/,
 assert.match(bind, /report\.status === 'RESTORED' && report\.restored === true/);
 assert.match(bind, /assertUsableDmiProgressRecovery\(report\.dmiProgress, \{ allowAbsent: true \}\)/,
   'Normal full runs must also reject a restored snapshot whose DMI forecast was rejected');
-assert.ok(bind.indexOf('weather-component-progress-cache.mjs restore')
-  < bind.indexOf('assertUsableDmiProgressRecovery(report.dmiProgress'));
+const ordinaryRestore = bind.indexOf('weather-component-progress-cache.mjs restore');
+const ordinaryRecoveryGate = bind.indexOf('assertUsableDmiProgressRecovery(report.dmiProgress', ordinaryRestore);
+assert.ok(ordinaryRestore >= 0 && ordinaryRecoveryGate > ordinaryRestore,
+  'The ordinary restore must precede its own usable-DMI assertion, independently of epoch reentry');
 const donor = step('Classify one-time DMI PART continuity donor');
 assert.match(donor, /import \{ inspectDmiForecastFile \} from '\.\/scripts\/lib\/dmi-forecast-file\.mjs'/);
 assert.match(donor, /await inspectDmiForecastFile\('data\/live\/dmi-forecast-cache\.json'\)/);

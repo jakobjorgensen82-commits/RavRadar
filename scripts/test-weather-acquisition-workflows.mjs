@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
 import { runInNewContext } from 'node:vm';
 
@@ -50,25 +52,46 @@ for (const clause of [
   assert.throws(() => epochCheckpointPreflightGuard(normal.replace(clause, '')),
     'Neither checkpoint flag alone may bypass the normal preflight');
 }
-test('epoch checkpoint preflight: actual Bash guard skips probes only with both flags',
-  { skip: process.platform !== 'linux' && 'Actual Bash execution requires the Linux source check' }, () => {
+const guardShell = process.platform === 'linux' ? 'bash' : process.env.RAVRADAR_POSIX_TEST_SHELL;
+test('epoch checkpoint preflight: actual shell uses an owned output file and requires both flags',
+  { skip: !guardShell && 'Linux Bash or an explicitly selected local POSIX test shell is required' }, () => {
+    const parent = fs.realpathSync(tmpdir());
+    const own = fs.mkdtempSync(path.join(parent, 'rr-epoch-preflight-'));
+    const identity = fs.lstatSync(own, { bigint: true });
+    let index = 0;
+    try {
     for (const checkpoint of [undefined, 'false', 'true', 'TRUE', '1']) {
       for (const reentry of [undefined, 'false', 'true', 'TRUE', '1']) {
-        const env = { PATH: process.env.PATH, GITHUB_OUTPUT: '/dev/stdout' };
+        const output = path.join(own, `output-${index++}.txt`);
+        const env = { PATH: process.env.PATH, GITHUB_OUTPUT: output };
         if (checkpoint !== undefined) env.CHECKPOINT_ONLY = checkpoint;
         if (reentry !== undefined) env.RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY = reentry;
-        const result = spawnSync('bash', ['--noprofile', '--norc', '-c',
-          checkpointPreflightGuard + 'printf "NORMAL_PREFLIGHT_FALLTHROUGH\\n"\n'],
+        // Linux always executes the exact Bash body. A local POSIX shell can
+        // exercise the identical if-body, but is not Linux/Bash evidence.
+        const body = process.platform === 'linux' ? checkpointPreflightGuard
+          : checkpointPreflightGuard.replace(/^set -uo pipefail\n/, 'set -u\n');
+        const args = process.platform === 'linux' ? ['--noprofile', '--norc', '-c'] : ['-c'];
+        const result = spawnSync(guardShell, [...args,
+          body + 'printf "NORMAL_PREFLIGHT_FALLTHROUGH\\n"\n'],
         { env, encoding: 'utf8', timeout: 5000, maxBuffer: 16_384 });
         const label = JSON.stringify({ checkpoint, reentry });
         assert.equal(result.error, undefined, label);
         assert.equal(result.signal, null, label);
         assert.equal(result.status, 0, `${label}\n${result.stderr}`);
         assert.equal(result.stderr, '', label);
-        assert.equal(result.stdout, checkpoint === 'true' && reentry === 'true'
-          ? 'should_run=true\ndmi_changed=false\nreason=epoch-checkpoint-reentry\nage_minutes=unknown\n'
-          : 'NORMAL_PREFLIGHT_FALLTHROUGH\n', label);
+        const selected = checkpoint === 'true' && reentry === 'true';
+        assert.equal(result.stdout, selected ? '' : 'NORMAL_PREFLIGHT_FALLTHROUGH\n', label);
+        assert.equal(fs.existsSync(output), selected, label);
+        if (selected) assert.equal(fs.readFileSync(output, 'utf8'),
+          'should_run=true\ndmi_changed=false\nreason=epoch-checkpoint-reentry\nage_minutes=unknown\n', label);
       }
+    }
+    } finally {
+      const current = fs.lstatSync(own, { bigint: true });
+      assert.equal(fs.realpathSync(own), own); assert.equal(path.dirname(own), parent);
+      assert.equal(current.dev, identity.dev); assert.equal(current.ino, identity.ino);
+      assert.ok(current.isDirectory() && !current.isSymbolicLink());
+      fs.rmSync(own, { recursive: true, force: false });
     }
   });
 
