@@ -1,3 +1,13 @@
+## 16. oktober — egne originalfiler og kausal genafkodning
+
+PR626-kontrollen og den autentificerede skrivefri kontrol af normalt valgte strømendepunkter er faktisk gennemført. De rapporterede stop skyldes manglende native endepunkter, ikke påviste ugyldige DMI-tal. Første stop pr. kystdel er fortsat en delvis timegennemgang, ikke en frifindelse af alle øvrige timer.
+
+Den nye lokale plan bruger kun metadata til at finde en entydig, komplet filidentitet i samme autentificerede dokument. Filmetadata kan være registreret ved egen eller en anden kystdel; strømværdier må aldrig lånes fra andre dele. Manglende egne native tal genskabes kun fra egne eksakte RAW-bytes med den fastlagte tidligere afkodningskontekst, fuld præcision, fuld gennemlæsning og bevist fysisk lukning. Korrigeret ny afkodning holdes separat. Uændrede prognosevidner skal stadig bestå normal projektion; OWNER og hård no-loss bevares. Metadata eller en plan er ikke et originalbevis.
+
+Højst tre timers støtte i hver ende gælder kun egne nødvendige native timepar, ikke en længere scorehorisont eller generel opbevaring. Originale B/S og historiske scorer ændres ikke. Lokale normale målprøver er delbeviser, ikke Linux/native/fuld CI, faktisk originalgendannelse, cachegemning/genbrug, upload, deploy eller offentlig levering. Disse trin, en fungerende ny generation og senere cron-genaktivering er åbne; tidsplanen er uændret.
+
+Version 4.0.577, I71/C69/T12, storage-ABI, SQL, model, scoreformel, kildeprioritet, admin/geometri og budgetter er uændrede. SOURCE19, den bevarede assistentkandidat og statistikaktivering forbliver inaktive. Alle fem mål er fortsat åbne med frist 18. oktober. Stående autoritet dækker nødvendigt rutinearbejde i det godkendte forløb; konkrete afvisninger og sikkerhedsgrænser ophæves ikke. Tidligere status om afventende PR626-kontrol og årsagsaflæsning er erstattet alene på de gennemførte trin. Se håndbog 89.236 og privat checkpoint.
+
 ## 16. oktober — kildeleveret originalrettelse og valgt-endepunktskontrol
 
 PR625 er faktisk kildeleveret efter præcis Linux/native/source/PostgreSQL-kontrol. Genopretningen gendannede checkpoint og RAW-cache, men stoppede i valgt-endepunktsforberedelsen før DMI-kald, cachegemning, beregning og deploy. Kildegrønt er ikke offentlig genopretning.

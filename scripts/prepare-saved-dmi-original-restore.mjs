@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { canonicalSavedDmiOriginalCapture, prepareAuthenticatedSavedDmiOriginalRestore,
+import { prepareAuthenticatedSavedDmiOriginalRestore,
   savedAuditOriginalPreparationFailureCode }
   from './audit-saved-weather-inputs.mjs';
 import { planRavScoreCurrentHistoryForPart } from './plan-ravscore-current-history.mjs';
@@ -18,6 +18,10 @@ import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-na
 import { verifiedProtectedDmiPartHourly } from './lib/protected-dmi-current-context.mjs';
 import { verifiedIntegratedPartHourly } from './lib/ravscore-production-adapters.mjs';
 import { inspectDmiForecastGridSampling, inspectDmiNativeGridSampling } from './lib/dmi-forecast-store.mjs';
+import { canonicalSavedDmiOriginalCapture } from './lib/saved-dmi-original-capture.mjs';
+import { createSavedDmiOriginalDependencyDiscovery, assertSavedDmiOriginalDependencyDiscoveryInputs,
+  resolveSavedDmiOriginalDependencyCaptures } from './lib/saved-dmi-original-dependencies.mjs';
+export { createSavedDmiOriginalDependencyDiscovery } from './lib/saved-dmi-original-dependencies.mjs';
 
 export const SAVED_DMI_ORIGINAL_PLAN_PATH = '.cache/dmi-grib/.original-recovery-plan.json';
 export const SAVED_DMI_ORIGINAL_PROGRESS = '38692413809-1';
@@ -95,12 +99,14 @@ function target48hDiagnosticRelation(time, target) {
 // The observer is private to this module. It receives fixed metadata only and
 // never changes the ordinary fail-fast guards, source selection or originals.
 function collectSelectedSavedDmiOriginalCapturesMeasured({ protectedBulk, progressCandidate = null,
-  persistedHourlyByPart = new Map(), parts, demands,
+  persistedHourlyByPart = new Map(), parts, demands, dependencyDiscovery = null,
   targetReferenceAt = SAVED_DMI_ORIGINAL_TARGET } = {}, observeFailure = null) {
   if (!boundedParts(parts) || !object(protectedBulk?.zones) || progressCandidate !== null && !object(progressCandidate?.zones)
     || !(persistedHourlyByPart instanceof Map) || !Array.isArray(demands) || demands.length !== parts.size
     || new Set(demands.map(row => row.partId)).size !== parts.size) refuse('INPUTS_UNAVAILABLE');
   if (!SAVED_DMI_ORIGINAL_SCOPES.some(scope => scope.progressBaselineTargetHour === targetReferenceAt)) refuse('SCOPE_INVALID');
+  const discovery = dependencyDiscovery ?? createSavedDmiOriginalDependencyDiscovery({ protectedBulk, progressCandidate });
+  assertSavedDmiOriginalDependencyDiscoveryInputs(discovery, { protectedBulk, progressCandidate });
   const originals = new Map(), targetMs = Date.parse(targetReferenceAt);
   for (const demand of demands) {
     const part = parts.get(demand.partId), expected = dmiExpectedIdentityForPart(part);
@@ -166,13 +172,30 @@ function collectSelectedSavedDmiOriginalCapturesMeasured({ protectedBulk, progre
         if (!['dkss_lf', 'dkss_nsbs', 'dkss_idw'].includes(provenance.collection)) refuse('SELECTED_CURRENT_INVALID');
         if (!dmiMarineCollectionAllowedForZone(provenance?.collection, expected.parentZoneId)) continue;
         const proof = inspector.inspectOriginals({ part, row });
-        if (!proof.ok && observeFailure) observeFailure({ branch: 'INSPECT_ORIGINALS_REJECTED',
+        const dependencies = !proof.ok && proof.code === 'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING'
+          ? resolveSavedDmiOriginalDependencyCaptures(discovery, { protectedBulk, progressCandidate,
+            document: source.nativeCurrentContexts[0], part, row,
+            ownHourly: source.source === 'deployed-private-runtime' ? persistedHourly : [] }) : null;
+        if (!proof.ok && !dependencies && observeFailure) observeFailure({ branch: 'INSPECT_ORIGINALS_REJECTED',
           reasonCode: PREFLIGHT_PROOF_CODES.has(proof.code) ? proof.code : 'DMI_NATIVE_PROOF_INVALID',
           target48hRelation: target48hDiagnosticRelation(row.time, targetReferenceAt) });
-        if (!proof.ok) refuse('SELECTED_ENDPOINT_UNAVAILABLE');
+        if (!proof.ok && !dependencies) refuse('SELECTED_ENDPOINT_UNAVAILABLE');
         const sampling = inspectDmiForecastGridSampling(provenance, 'current', row.time, expected).status;
         if (!['unknown', 'coherent'].includes(sampling)) refuse('SELECTED_CURRENT_INVALID');
-        for (const native of proof.nativeRows) {
+        if (dependencies) {
+          const inspected = inspectDmiForecastGridSampling(provenance, 'current', row.time, expected);
+          if (inspected.unknownNativeCount !== provenance.nativeSteps.filter(step => step.nativeGridSampling == null).length) refuse('SELECTED_CURRENT_INVALID');
+          for (let index = 0; index < provenance.nativeSteps.length; index++) {
+            const step = provenance.nativeSteps[index], nativeMs = Date.parse(step.nativeValidTime);
+            if (!Number.isFinite(nativeMs) || nativeMs < from - 3 * 3_600_000
+              || nativeMs > targetMs + 3 * 3_600_000) refuse('DEMAND_INVALID');
+            if (step.nativeGridSampling != null) continue;
+            const capture = dependencies[index];
+            originals.set(savedOriginalCanonicalJson(capture), capture);
+            if (originals.size > 4096) refuse('PLAN_BOUND');
+          }
+        }
+        for (const native of proof.nativeRows ?? []) {
           const nativeMs = Date.parse(native.time), endpoint = native.source;
           if (!Number.isFinite(nativeMs) || nativeMs < from - 3 * 3_600_000
             || nativeMs > targetMs + 3 * 3_600_000) refuse('DEMAND_INVALID');

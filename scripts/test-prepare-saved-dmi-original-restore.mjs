@@ -261,6 +261,9 @@ test('auth orchestration retains exact archived reader, normal baseline, GCM, fi
   assert.ok(body.indexOf('await fs.rm(work,') < body.indexOf('prepare.writeSavedDmiOriginalRestorePlan('));
   assert.ok(body.includes('forecastIndex(await noSymlinks(ctx.root,'));
   assert.ok(body.includes('visitSavedPartCurrents(savedForecastIndex, parts, () => {}, collectPart)'));
+  assert.ok(body.indexOf('prepare.createSavedDmiOriginalDependencyDiscovery({ protectedBulk, progressCandidate })')
+    < body.indexOf('const collectPart ='), 'one document-bound metadata index precedes the national PART visitor');
+  assert.ok(body.includes('targetReferenceAt: progressBaselineTargetHour, dependencyDiscovery'));
   assert.doesNotMatch(body, /const donors =|originals\.push\(\.\.\.prepare\.collectSavedDmiOriginalCaptures/);
   assert.doesNotMatch(body, /buildRavScoreRecoveryReplay|buildRavScoreProductionPartSeries|uploadImmutable|removeExact|update-weather|fetch\(/);
 });
@@ -364,9 +367,101 @@ test('normal selected qualified same-original successor is not a missing-origina
     'an unrelated coherent successor does not remove the protected dependency');
   const missing = structuredClone(old);
   delete missing.zones[f.identity.entityId].hourly[at(-27)];
+  const missingRecord = structuredClone(previous.record);
+  missingRecord.hourly = missingRecord.hourly.filter(row => row.time !== at(-27));
+  const otherPart = { ...f.part, partId: 'SYNTHETIC-METADATA-ONLY', waterPoint: [8.01, 55] };
+  const otherIdentity = adapters.dmiExpectedIdentityForPart(otherPart);
+  const otherRow = structuredClone(old.zones[f.identity.entityId].hourly[at(-27)]);
+  Object.assign(otherRow.sources.current, otherIdentity, { gridPoint: [...otherPart.waterPoint], distanceKm: 0 });
+  otherRow['current-u'] = 91; otherRow['current-v'] = -73;
+  const metadataOnly = structuredClone(missing);
+  metadataOnly.zones[otherIdentity.entityId] = { ...otherIdentity, hourly: { [otherRow.time]: otherRow } };
+  const unselectedMetadata = structuredClone(otherRow);
+  unselectedMetadata.time = unselectedMetadata.sources.current.nativeValidTime = at(2);
+  Object.assign(unselectedMetadata.sources.current, { leadTimeHours: 102, itemId: 'synthetic-unselected-metadata',
+    assetIdentitySha256: sha('unselected-metadata-asset'), contentSha256: sha('unselected-metadata-content') });
+  metadataOnly.zones[otherIdentity.entityId].hourly[at(2)] = unselectedMetadata;
+  const metadataInput = document => ({ ...f, protectedBulk: document,
+    persistedHourlyByPart: new Map([[f.part.partId, missingRecord]]) });
+  const metadataSnapshot = JSON.stringify(metadataOnly);
+  const discovered = collectSelectedSavedDmiOriginalCaptures(metadataInput(metadataOnly));
+  const { canonicalSavedDmiOriginalCapture } = await import('./audit-saved-weather-inputs.mjs');
+  const wanted = canonicalSavedDmiOriginalCapture(old.zones[f.identity.entityId].hourly[at(-27)].sources.current);
+  assert.ok(discovered.some(value => savedOriginalCanonicalJson(value) === savedOriginalCanonicalJson(wanted)),
+    'the actual selected missing endpoint has one complete authentic same-document metadata capture');
+  assert.equal(discovered.some(value => value.assetIdentitySha256 === unselectedMetadata.sources.current.assetIdentitySha256), false,
+    'an unselected foreign metadata capture is not an independent donor-union dependency');
+  assert.doesNotMatch(JSON.stringify(discovered), /current-u|current-v|currentUMps|currentVMps|gridPoint|samplingPoint/);
+  assert.equal(JSON.stringify(metadataOnly), metadataSnapshot, 'foreign numeric values and every original remain untouched');
+  assert.equal(createProtectedDmiNativeCurrentInspector({ contexts: [metadataOnly] })
+    .inspectOriginals({ part: f.part, row: oldHour }).code, 'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING',
+  'dependency discovery cannot supply the missing own numeric original or qualify the foreign PART');
+  const ownMetadata = collectSelectedSavedDmiOriginalCaptures({ ...f, protectedBulk: missing,
+    persistedHourlyByPart: new Map([[f.part.partId, previous.record]]) });
+  assert.ok(ownMetadata.some(value => savedOriginalCanonicalJson(value) === savedOriginalCanonicalJson(wanted)),
+  'an own exact-native-time forecast preserves legitimate capture metadata, not raw numeric precision');
+  assert.deepEqual(discovered, ownMetadata, 'different discovery paths resolve the same exact selected original dependencies');
+  const { createSavedDmiOriginalDependencyDiscovery } = await import('./prepare-saved-dmi-original-restore.mjs');
+  const dependencyDiscovery = createSavedDmiOriginalDependencyDiscovery({ protectedBulk: metadataOnly });
+  assert.ok(Object.isFrozen(dependencyDiscovery));
+  assert.deepEqual(collectSelectedSavedDmiOriginalCaptures({ ...metadataInput(metadataOnly), dependencyDiscovery }), discovered);
+  assert.deepEqual(collectSelectedSavedDmiOriginalCaptures({ ...metadataInput(metadataOnly), dependencyDiscovery }), discovered,
+    'one invocation-local handle safely reuses its own unchanged document index');
+  assert.throws(() => collectSelectedSavedDmiOriginalCaptures({ ...metadataInput(metadataOnly),
+    dependencyDiscovery: { kind: dependencyDiscovery.kind, resolve: () => [wanted] } }), /INPUTS_UNAVAILABLE/,
+  'a label/function cannot inject capture authority');
+  assert.throws(() => collectSelectedSavedDmiOriginalCaptures({ ...metadataInput(structuredClone(metadataOnly)),
+    dependencyDiscovery }), /INPUTS_UNAVAILABLE/, 'a genuine handle cannot be transferred to different document objects');
+  const dependencyRecord = normal.buildPrivateDmiRecoveryRecord(feature, metadataOnly, target,
+    { startAt: f.demands[0].startAt, expectedIdentity: f.identity, protectPreviousDmi: true,
+      persistedHourly: missingRecord.hourly });
+  const dependencySource = { source: 'deployed-private-runtime', nativeCurrentContexts: [metadataOnly],
+    record: { ...dependencyRecord, hourly: adapters.verifiedIntegratedPartHourly(dependencyRecord,
+      metadataOnly, f.identity.entityId, f.part, { requireNativeGridSampling: false }) } };
+  const dependencySelected = priority.buildNewestValidRavScoreRecoverySources({ fallbackSource: dependencySource,
+    protectedPreviousSource: dependencySource, productionReferenceAt: target, part: f.part });
+  assert.throws(() => recovery.buildRavScorePermittedCurrentHistory({ part: f.part, referenceAt: at(-2),
+    sourceRecords: dependencySelected, requireNativeGridSampling: true }), error => {
+    assert.equal(error.code, 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED'); return true;
+  }, 'a successful original dependency plan does not bypass the unchanged strict OWNER reader');
+  const equivalentClock = structuredClone(metadataOnly);
+  equivalentClock.zones[otherIdentity.entityId].hourly[at(-27)].sources.current.acquiredAt = at(-1).replace('.000Z', 'Z');
+  assert.deepEqual(collectSelectedSavedDmiOriginalCaptures(metadataInput(equivalentClock)), discovered,
+    'the normal canonical capture helper accepts equivalent wire spelling, not a different microsecond');
+  const conflict = structuredClone(metadataOnly);
+  const conflictPart = { ...otherPart, partId: 'SYNTHETIC-METADATA-CONFLICT' };
+  const conflictIdentity = adapters.dmiExpectedIdentityForPart(conflictPart);
+  const conflictingRow = structuredClone(otherRow);
+  Object.assign(conflictingRow.sources.current, conflictIdentity, { contentSha256: sha('conflicting-metadata-bytes') });
+  conflict.zones[conflictIdentity.entityId] = { ...conflictIdentity, hourly: { [conflictingRow.time]: conflictingRow } };
+  assert.throws(() => collectSelectedSavedDmiOriginalCaptures(metadataInput(conflict)), /SELECTED_ENDPOINT_UNAVAILABLE/,
+    'a matching endpoint identity with conflicting complete captures is not resolved by donor order');
+  for (const change of [{ contentSha256: undefined }, { contentLengthBytes: undefined },
+    { acquiredAt: at(-1).replace('.000Z', '.000001Z') }, { itemCreatedAt: undefined },
+    { itemUpdatedAt: at(-98) }, { itemId: 'another-item' }, { assetIdentitySha256: sha('another-asset') }]) {
+    const invalid = structuredClone(metadataOnly);
+    Object.assign(invalid.zones[otherIdentity.entityId].hourly[at(-27)].sources.current, change);
+    assert.throws(() => collectSelectedSavedDmiOriginalCaptures(metadataInput(invalid)), /SELECTED_ENDPOINT_UNAVAILABLE/,
+      'capture completeness, exact microseconds and every stored endpoint identity field remain mandatory');
+  }
+  assert.throws(() => collectSelectedSavedDmiOriginalCaptures({ ...metadataInput(missing),
+    progressCandidate: metadataOnly }), /SELECTED_ENDPOINT_UNAVAILABLE/,
+  'another authenticated document cannot donate metadata to the selected protected source');
+  const conflictingNative = structuredClone(old);
+  const duplicateNative = structuredClone(conflictingNative.zones[f.identity.entityId].hourly[at(-27)]);
+  duplicateNative['current-u'] += 0.1;
+  conflictingNative.zones[f.identity.entityId].hourly['duplicate-original-time'] = duplicateNative;
+  assert.throws(() => collectSelectedSavedDmiOriginalCaptures({ ...f, protectedBulk: conflictingNative,
+    persistedHourlyByPart: new Map([[f.part.partId, previous.record]]) }), /SELECTED_ENDPOINT_UNAVAILABLE/,
+  'an actual native numeric conflict cannot fall through to metadata discovery');
+  const mismatchedProjection = structuredClone(previous.record);
+  mismatchedProjection.hourly.find(row => row.time === at(-26)).currentUMps += 0.02;
+  assert.throws(() => collectSelectedSavedDmiOriginalCaptures({ ...f, protectedBulk: old,
+    persistedHourlyByPart: new Map([[f.part.partId, mismatchedProjection]]) }), /SELECTED_ENDPOINT_UNAVAILABLE/,
+  'an actual projection mismatch cannot fall through to metadata discovery');
   assert.throws(() => collectSelectedSavedDmiOriginalCaptures({ ...f, protectedBulk: missing,
-    progressCandidate: alternate, persistedHourlyByPart: new Map([[f.part.partId, previous.record]]) }),
-  /SELECTED_ENDPOINT_UNAVAILABLE/, 'missing original bracket is not silently omitted or reconstructed from the top source');
+    progressCandidate: alternate, persistedHourlyByPart: new Map([[f.part.partId, missingRecord]]) }),
+  /SELECTED_ENDPOINT_UNAVAILABLE/, 'missing original bracket without full metadata is not reconstructed from a neighbouring interpolated top source');
   const held = structuredClone(previous.record);
   held.hourly.find(row => row.time === at(-2)).currentStateOnlyHold = { sourceValidTime: at(-3) };
   assert.throws(() => collectSelectedSavedDmiOriginalCaptures({ ...f, protectedBulk: old, progressCandidate: fresh,
@@ -403,7 +498,7 @@ test('normal selected qualified same-original successor is not a missing-origina
   const preflight = (await import('./prepare-saved-dmi-original-restore.mjs')).inspectSelectedSavedDmiOriginalCaptures;
   assert.equal(typeof preflight, 'function', 'selected preflight uses the same normal collector');
   const originalInput = { ...f, protectedBulk: missing, progressCandidate: alternate,
-    persistedHourlyByPart: new Map([[f.part.partId, previous.record]]) };
+    persistedHourlyByPart: new Map([[f.part.partId, missingRecord]]) };
   const rejected = preflight(originalInput);
   assert.equal(rejected.status, 'PARTIAL');
   assert.equal(rejected.inspectionScope, 'FIRST_FAILURE_PER_PART');
@@ -432,7 +527,7 @@ test('normal selected qualified same-original successor is not a missing-origina
   const { inspectDmiForecastFile } = await import('./lib/dmi-forecast-file.mjs');
   const { measureSelectedSavedDmiOriginalPreflight } = await import('./audit-saved-weather-inputs.mjs');
   const file = path.join(directory, 'forecast.json');
-  const byTime = new Map(previous.record.hourly.map(row => [row.time, row]));
+  const byTime = new Map(missingRecord.hourly.map(row => [row.time, row]));
   const continuity = { zoneId: `PART::${f.part.partId}`, point: f.part.waterPoint,
     hourly: Array.from({ length: 121 }, (_, i) => byTime.get(at(-57 + i)) ?? { time: at(-57 + i), sources: {} }) };
   await fs.writeFile(file, JSON.stringify({ zones: {}, partContinuity: await packDmiPartContinuity(

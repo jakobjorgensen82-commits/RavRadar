@@ -1834,6 +1834,11 @@ jobs:
             echo "::notice title=DMI candidate resumed::The protected DMI cache is preserved as resumable work; it is not classified as READY before the DMI producer repairs and verifies it."
           fi
 
+      - name: Bind causal OLD current reconstruction to the materialized saved inputs
+        id: legacy-current-requests
+        if: steps.preflight.outputs.should_run == 'true' && inputs.checkpoint_only == true && steps.current-history-demand.outcome == 'success' && steps.dmi-generation-prepare.outcome == 'success'
+        run: node scripts/plan-dmi-legacy-current-originals.mjs
+
       - name: Choose DMI budget from retained five-component PART coverage
         id: dmi-recovery-budget
         if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
@@ -1880,6 +1885,8 @@ jobs:
           DMI_BULK_DKSS_PRIMARY_MODE: true
           DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH: .cache/weather-current-acquisition-plan.json
           DMI_BULK_CURRENT_HISTORY_DEMAND_PATH: ${{ steps.current-history-demand.outcome == 'success' && '.cache/ravscore-current-history-demand.json' || '' }}
+          DMI_BULK_LEGACY_CURRENT_ORIGINAL_REQUEST_PATH: ${{ steps.legacy-current-requests.outcome == 'success' && '.cache/dmi-legacy-current-original-requests.json' || '' }}
+          DMI_BULK_LEGACY_CURRENT_ORIGINAL_REQUEST_SHA256: ${{ steps.legacy-current-requests.outputs.requests_sha256 }}
           DMI_BULK_ADAPTIVE_RECOVERY: ${{ inputs.quick_confirmation != true && steps.dmi-recovery-budget.outputs.extended == 'true' }}
           DMI_BULK_RECOVERY_BEFORE_COUNTS: ${{ steps.dmi-recovery-budget.outputs.missing_pair_counts_json }}
           DMI_BULK_HOURS: 118
@@ -2240,6 +2247,7 @@ jobs:
         run: npm run update:weather
         env:
           DMI_PART_CONTINUITY_DONOR_PATH: ${{ steps.restored-dmi-part-continuity-donor.outputs.path }}
+          RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION: ${{ steps.legacy-current-requests.outputs.expectation_json }}
           # The integrated score/runtime builder retains the DMI-first public
           # hour series and its rollback state while sealing the cache. The
           # default Node/V8 ceiling is too small for this bounded production

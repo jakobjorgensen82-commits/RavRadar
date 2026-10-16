@@ -17,6 +17,7 @@ import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_FILES,
   privateWeatherComponentMarker } from './lib/private-weather-component-inventory.mjs';
 import { inspectDmiForecastFile, readDmiForecastRecord } from './lib/dmi-forecast-file.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
+import { canonicalSavedDmiOriginalCapture as rawCapture } from './lib/saved-dmi-original-capture.mjs';
 import { unpackDmiPartContinuity, assertDmiPartContinuityTotalSize } from './lib/dmi-part-continuity.mjs';
 import { originalContextForProtectedDmiCurrent } from './lib/protected-dmi-current-context.mjs';
 import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-native-current-proofs.mjs';
@@ -29,7 +30,8 @@ import { weatherComponentProgressCache, withAuthenticatedWeatherProgress,
 import { buildCurrentGridSamplingOriginalRestoreExpectation } from './lib/bounded-conditions-predecessor-transition.mjs';
 import { migratePostCutoverPrivateRuntime } from './migrate-post-cutover-private-runtime.mjs';
 import { SAVED_DMI_ORIGINAL_SCOPES, savedDmiOriginalHistoryDemand,
-  inspectSelectedSavedDmiOriginalCaptures } from './prepare-saved-dmi-original-restore.mjs';
+  inspectSelectedSavedDmiOriginalCaptures, createSavedDmiOriginalDependencyDiscovery }
+  from './prepare-saved-dmi-original-restore.mjs';
 
 const REPOSITORY = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const policy = protectedApi.PROTECTED_PRIVATE_RUNTIME_POLICY;
@@ -415,46 +417,6 @@ const FIXED_RAW_PROGRESS_BASELINE_TARGET = '2026-10-14T18:00:00.000Z';
 const RAW_INVENTORY_MAX_FILES = 200_000;
 const rawSha = value => crypto.createHash('sha256').update(value).digest('hex');
 
-// Python canonical_time keeps six fractional digits, not JavaScript's three.
-// Cover the producer's ISO wire spellings, rejecting unsupported forms rather
-// than coalescing distinct microsecond captures. No timestamp is reissued.
-function rawCaptureTime(value) {
-  if (typeof value !== 'string') return null;
-  const match = /^(\d{4}-\d\d-\d\d)[T ](\d\d:\d\d:\d\d)(?:\.(\d{1,9}))?(Z|[+-]\d\d:\d\d)$/.exec(value);
-  if (!match) return null;
-  const local = Date.parse(match[1] + 'T' + match[2] + '.000Z');
-  if (!Number.isFinite(local) || new Date(local).toISOString().slice(0, 19) !== match[1] + 'T' + match[2]) return null;
-  const zone = match[4], hours = zone === 'Z' ? 0 : Number(zone.slice(1, 3));
-  const minutes = zone === 'Z' ? 0 : Number(zone.slice(4, 6));
-  if (hours > 23 || minutes > 59) return null;
-  const offset = (hours * 60 + minutes) * 60_000 * (zone[0] === '-' ? -1 : 1);
-  const utc = new Date(local - offset).toISOString();
-  if (!/^\d{4}-/.test(utc)) return null;
-  const fraction = (match[3] ?? '').padEnd(6, '0').slice(0, 6);
-  return utc.slice(0, 19) + (fraction === '000000' ? '' : '.' + fraction) + 'Z';
-}
-
-// Exactly the eleven identity fields in Python canonical_current_source_asset.
-// This diagnostic projection is neither native proof nor RAW-byte verification.
-function rawCapture(source) {
-  if (!object(source) || typeof source.collection !== 'string' || typeof source.itemId !== 'string') return null;
-  const collection = source.collection.trim(), itemId = source.itemId.trim();
-  const value = { collection, modelRun: rawCaptureTime(source.modelRun),
-    validTime: rawCaptureTime(source.validTime ?? source.nativeValidTime), itemId,
-    assetIdentitySha256: source.assetIdentitySha256, assetSizeBytes: source.assetSizeBytes ?? null,
-    acquiredAt: rawCaptureTime(source.acquiredAt), contentLengthBytes: source.contentLengthBytes,
-    contentSha256: source.contentSha256, itemCreatedAt: rawCaptureTime(source.itemCreatedAt),
-    itemUpdatedAt: rawCaptureTime(source.itemUpdatedAt) };
-  if (!RAW_MARINE_COLLECTIONS.has(collection) || !itemId || !value.modelRun || !value.validTime
-    || !/^[a-f0-9]{64}$/.test(value.assetIdentitySha256 ?? '')
-    || !Number.isSafeInteger(value.contentLengthBytes) || value.contentLengthBytes <= 0
-    || !/^[a-f0-9]{64}$/.test(value.contentSha256 ?? '') || !value.acquiredAt
-    || value.assetSizeBytes !== null && (!Number.isSafeInteger(value.assetSizeBytes)
-      || value.assetSizeBytes <= 0 || value.assetSizeBytes !== value.contentLengthBytes)
-    || source.itemCreatedAt != null && !value.itemCreatedAt
-    || source.itemUpdatedAt != null && !value.itemUpdatedAt) return null;
-  return value;
-}
 // Exact metadata projection shared only with the separately invoked original
 // restore planner. Exporting it adds no audit mode, transport or write ability.
 export { rawCapture as canonicalSavedDmiOriginalCapture };
@@ -721,10 +683,11 @@ export async function measureSelectedSavedDmiOriginalPreflight({ baselineIndex, 
   result.codeCounts = { SAVED_DMI_ORIGINAL_SELECTED_ENDPOINT_UNAVAILABLE: 0, SAVED_DMI_ORIGINAL_HOLD_SUPPORT_UNAVAILABLE: 0 };
   result.timeRelationCounts = { WITHIN_TARGET_48H: 0, BEFORE_TARGET_48H: 0, AFTER_TARGET: 0, UNAVAILABLE: 0 };
   const byPart = new Map(demands.map(row => [row.partId, row]));
+  const dependencyDiscovery = createSavedDmiOriginalDependencyDiscovery({ protectedBulk, progressCandidate });
   const visited = await visitSavedPartCurrents(baselineIndex, parts, () => {}, (record, part) => {
     const measured = inspectSelectedSavedDmiOriginalCaptures({ protectedBulk, progressCandidate,
       persistedHourlyByPart: new Map([[part.partId, record]]), parts: new Map([[part.partId, part]]),
-      demands: [byPart.get(part.partId)], targetReferenceAt });
+      demands: [byPart.get(part.partId)], targetReferenceAt, dependencyDiscovery });
     result.partsVisited++;
     if (measured.status === 'MEASURED') { result.partsPassingCollector++; return; }
     const failure = measured.firstFailure;
@@ -1100,10 +1063,11 @@ export async function prepareAuthenticatedSavedDmiOriginalRestore({ privateRoot,
       }
       const progressCandidate = await bulk(candidateFile), originals = new Map();
       const demandByPart = new Map(demands.map(value => [value.partId, value]));
+      const dependencyDiscovery = prepare.createSavedDmiOriginalDependencyDiscovery({ protectedBulk, progressCandidate });
       const collectPart = (record, part) => {
         for (const capture of prepare.collectSelectedSavedDmiOriginalCaptures({ protectedBulk, progressCandidate,
           persistedHourlyByPart: new Map([[part.partId, record]]), parts: new Map([[part.partId, part]]),
-          demands: [demandByPart.get(part.partId)], targetReferenceAt: progressBaselineTargetHour })) {
+          demands: [demandByPart.get(part.partId)], targetReferenceAt: progressBaselineTargetHour, dependencyDiscovery })) {
           originals.set(prepare.savedOriginalCanonicalJson(capture), capture);
           if (originals.size > 4096) {
             const error = new Error('SAVED_DMI_ORIGINAL_PLAN_BOUND'); error.originalPlanCode = error.message; throw error;

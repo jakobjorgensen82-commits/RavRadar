@@ -11,6 +11,7 @@ import { buildRavScoreProductionPartSeries, ravScoreOwnerCurrentHistoryStartAt,
 import * as productionPipeline from './lib/ravscore-production-part-pipeline.mjs';
 import { planRavScoreCurrentHistoryForPart, buildRavScoreCurrentHistoryDemand }
   from './plan-ravscore-current-history.mjs';
+import * as currentHistoryPlanner from './plan-ravscore-current-history.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
 import { buildCandidateGRollbackPartScoreSeries } from './lib/ravscore-candidate-g-rollback-runtime.mjs';
 import { buildRavScorePermittedCurrentHistory } from './lib/ravscore-recovery-replay.mjs';
@@ -455,6 +456,307 @@ test('current-history demand is an exact private acquisition inventory, never a 
     const wrong = copy(input); mutation(wrong);
     assert.throws(() => buildRavScoreCurrentHistoryDemand(wrong));
   }
+});
+
+test('normal legacy-original requests discover selected own endpoints without creating numeric OLD proof', async () => {
+  const f = fixture({ nativeHours: Array.from({ length: 20 }, (_, i) => -54 + i * 3), target: 1, run: -60 });
+  const missingHour = -51, witnessHour = -50;
+  f.part.onshoreDirectionDeg = 90;
+  const identity = dmiExpectedIdentityForPart(f.part), own = f.bulk.zones[identity.entityId];
+  const signature = `parser:20|params:4|grid:9|eccodes-api:2.48.0|eccodes-binding:2.48.0|zones:${'d'.repeat(16)}`;
+  for (const native of Object.values(own.hourly)) Object.assign(native.sources.current,
+    { contentLengthBytes: 1234, assetSizeBytes: 1234 });
+  const ocean = Object.values(own.hourly).map(row => ({ step: row.time,
+    'current-u': row['current-u'], 'current-v': row['current-v'], provenance: row.sources }));
+  const persisted = buildDmiForecastHourly({ ocean, generatedAt: at(0), startAt: at(-54), hours: 121 });
+  const missing = own.hourly[at(missingHour)]; delete own.hourly[at(missingHour)];
+  // An interpolated OWN forecast remains, but no own exact-native-time row can
+  // provide the missing capture. Another PART contributes METADATA ONLY.
+  persisted.hourly = persisted.hourly.map(row => row.time === at(missingHour)
+    ? { ...row, currentUMps: null, currentVMps: null, sources: {} } : row);
+  const other = fixture({ partId: 'SYNTHETIC-METADATA', nativeHours: [missingHour], target: missingHour, run: -60 });
+  other.part.waterPoint = [8.01, 55];
+  const otherId = dmiExpectedIdentityForPart(other.part).entityId;
+  const foreign = other.bulk.zones[otherId];
+  foreign.samplingPoint = [...other.part.waterPoint];
+  Object.assign(foreign.hourly[at(missingHour)].sources.current, copy(missing.sources.current),
+    dmiExpectedIdentityForPart(other.part), { gridPoint: [...other.part.waterPoint] });
+  foreign.hourly[at(missingHour)]['current-u'] = 91; foreign.hourly[at(missingHour)]['current-v'] = -73;
+  f.bulk.zones[otherId] = foreign;
+  f.bulk.runs = { dkss_idw: { referenceTime: at(-60), parserVersion: 20,
+    parameterMapVersion: 4, gridLookupVersion: 9, processingSignature: signature, processedSteps: {} } };
+  for (const native of [...Object.values(own.hourly), missing]) {
+    const source = native.sources.current;
+    f.bulk.runs.dkss_idw.processedSteps[native.time] = { complete: true, parserVersion: 20,
+      processingSignature: signature, recognizedParameters: ['current-u', 'current-v'], zonesTouched: 1,
+      sourceAsset: { ...source, validTime: source.nativeValidTime } };
+  }
+  const registry = { schemaVersion: 2, enabled: true, partCount: 1, zoneCount: 1,
+    zones: { [f.part.zoneId]: [{ ...f.part }] } };
+  const { ravScoreModelBinding } = await import('../js/core/ravscore-model-contract.js');
+  const state = buildIntegratedPartScoreSeries({ part: f.part,
+    zone: { id: f.part.zoneId, onshoreDirectionDeg: 90 }, hourly: [{ time: at(0) }] }).ravScoreState.continuationState;
+  const conditions = { zones: {}, coastalParts: { modelBinding: ravScoreModelBinding(), parts: {
+    [f.part.partId]: { ...f.part, ravScoreModel: { currentState: state } } } } };
+  const demand = buildRavScoreCurrentHistoryDemand({ registry, conditions,
+    checkpoint: { loaded: false }, productionReferenceAt: at(1), registrySha256: `sha256:${'a'.repeat(64)}`,
+    sourceHashes: { conditions: null, checkpoint: null, activation: null } });
+  const input = { registry, historyDemand: demand, historyDemandSha256: `sha256:${'b'.repeat(64)}`,
+    zones: { features: [{ properties: { id: f.part.zoneId, coastType: 'east' } }] },
+    protectedBulk: f.bulk, progressCandidate: null, progressRole: null,
+    persistedHourlyByPart: new Map([[f.part.partId, persisted]]),
+    sourceHashes: { zones: `sha256:${'c'.repeat(64)}`, deployedBulk: `sha256:${'d'.repeat(64)}`,
+      forecast: `sha256:${'e'.repeat(64)}`, candidate: null, active: null } };
+  const before = JSON.stringify({ registry, demand, bulk: f.bulk, persisted });
+  assert.equal(demand.demands[0].startAt, at(-51), 'actual existing initial state retains older-than-target48h demand');
+  const selected = persisted.hourly.find(row => row.time === at(witnessHour));
+  assert.equal(createProtectedDmiNativeCurrentInspector({ contexts: [f.bulk] })
+    .inspectOriginals({ part: f.part, row: selected }).code, 'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING');
+  const plan = currentHistoryPlanner.buildRavScoreLegacyCurrentOriginalRequests(input);
+  assert.equal(plan.kind, 'DMI_LEGACY_CURRENT_ORIGINAL_RECONSTRUCTION_REQUESTS');
+  assert.ok(plan.reconstructionRequests.some(value => value.nativeValidTime === at(missingHour)));
+  assert.ok(plan.reconstructionRequests.every(value => value.entityId === identity.entityId));
+  assert.ok(plan.reconstructionRequests.every(value => value.reconstructionRequest.zone.lon === 8
+    && value.reconstructionRequest.zone.lat === 55
+    && value.reconstructionRequest.expectedSource.gridPoint.every((coordinate, index) => coordinate === f.part.waterPoint[index])));
+  assert.ok(plan.reconstructionRequests.every(value => !Object.hasOwn(value.reconstructionRequest, 'currentUMps')
+    && !Object.hasOwn(value.reconstructionRequest.expectedSource, 'nativeGridSampling')));
+  assert.deepEqual(plan.projectionWitnesses.find(value => value.row.time === at(witnessHour)).row,
+    { time: selected.time, currentUMps: selected.currentUMps, currentVMps: selected.currentVMps,
+      sources: { current: selected.sources.current } });
+  assert.ok(plan.reconstructionRequests.every(value => value.projectionWitnessRefs.length > 0));
+  assert.equal(createProtectedDmiNativeCurrentInspector({ contexts: [f.bulk] })
+    .inspectOriginals({ part: f.part, row: selected }).code, 'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING',
+  'metadata discovery is NOT successful native numeric admission');
+  assert.equal(JSON.stringify({ registry, demand, bulk: f.bulk, persisted }), before);
+  // Null is an authentic UNKNOWN marker, not a sampling receipt. Build its
+  // actual normal forecast shape; preserve the verbatim top AND step nulls.
+  const nullOcean = copy(ocean);
+  for (const native of nullOcean) native.provenance.current.nativeGridSampling = null;
+  const nullPersisted = buildDmiForecastHourly({ ocean: nullOcean, generatedAt: at(0), startAt: at(-54), hours: 121 });
+  nullPersisted.hourly = nullPersisted.hourly.map(row => row.time === at(missingHour)
+    ? { ...row, currentUMps: null, currentVMps: null, sources: {} } : row);
+  const nullSelected = nullPersisted.hourly.find(row => row.time === at(witnessHour));
+  const nullComplete = copy(f.bulk);
+  nullComplete.zones[identity.entityId].hourly = Object.fromEntries(nullOcean.map(native => [native.step,
+    { time: native.step, 'current-u': native['current-u'], 'current-v': native['current-v'], sources: native.provenance }]));
+  assert.equal(inspectDmiForecastGridSampling(nullSelected.sources.current, 'current', nullSelected.time, identity).status, 'unknown');
+  assert.equal(createProtectedDmiNativeCurrentInspector({ contexts: [nullComplete] })
+    .inspectOriginals({ part: f.part, row: nullSelected }).ok, true);
+  const absentComplete = copy(nullComplete);
+  for (const native of Object.values(absentComplete.zones[identity.entityId].hourly)) delete native.sources.current.nativeGridSampling;
+  assert.equal(createProtectedDmiNativeCurrentInspector({ contexts: [absentComplete] })
+    .inspectOriginals({ part: f.part, row: nullSelected }).code, 'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING',
+  'stripping an original null from OLD context is NOT exact original projection');
+  const nullBulk = copy(nullComplete); delete nullBulk.zones[identity.entityId].hourly[at(missingHour)];
+  const nullInput = { ...input, protectedBulk: nullBulk,
+    persistedHourlyByPart: new Map([[f.part.partId, nullPersisted]]) };
+  const nullPlan = currentHistoryPlanner.buildRavScoreLegacyCurrentOriginalRequests(nullInput);
+  const nullWitness = nullPlan.projectionWitnesses.find(value => value.row.time === at(witnessHour));
+  assert.deepEqual(nullWitness.row.sources.current, nullSelected.sources.current, 'original null witness is never rewritten');
+  assert.equal(nullWitness.row.sources.current.nativeGridSampling, null);
+  assert.ok(nullWitness.row.sources.current.nativeSteps.every(step => step.nativeGridSampling === null));
+  assert.ok(nullPlan.reconstructionRequests.every(value => Object.hasOwn(value.reconstructionRequest.expectedSource, 'nativeGridSampling')
+    && value.reconstructionRequest.expectedSource.nativeGridSampling === null),
+  'causal OWN OLD expectations preserve their actual step null shape, not a nonnull sampling receipt');
+  for (const receipt of [{}, { contractId: 'dmi-native-grid-sampling-v1', elementIndex: 71,
+    gridIndexIdentitySha256: 'e'.repeat(64), coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1',
+    gridDefinitionSha256: nullSelected.sources.current.gridDefinitionSha256,
+    gridPoint: [...nullSelected.sources.current.gridPoint], fieldSet: ['current-u', 'current-v'], optionalFieldSet: [] }]) {
+    const invalidPersisted = copy(nullPersisted), selected = invalidPersisted.hourly.find(row => row.time === at(witnessHour));
+    selected.sources.current.nativeGridSampling = copy(receipt);
+    for (const step of selected.sources.current.nativeSteps) step.nativeGridSampling = copy(receipt);
+    assert.throws(() => currentHistoryPlanner.buildRavScoreLegacyCurrentOriginalRequests({ ...nullInput,
+      persistedHourlyByPart: new Map([[f.part.partId, invalidPersisted]]) }), 'nonnull/partial receipts never become OLD expectations');
+  }
+  for (const mutate of [
+    value => { delete value.protectedBulk.zones[otherId]; },
+    value => { value.protectedBulk.zones[otherId].hourly[at(missingHour)].sources.current.contentSha256 = 'f'.repeat(64); },
+    value => { delete value.protectedBulk.runs; },
+    value => { value.protectedBulk.runs.dkss_idw.processingSignature = signature.replace('parser:20', 'parser:21'); },
+    value => { value.protectedBulk.runs.dkss_idw.processedSteps[at(missingHour)].sourceAsset.acquiredAt = at(-2); },
+    value => { value.protectedBulk.zones[identity.entityId].hourly = []; },
+    value => { value.progressRole = 'unlisted'; },
+  ]) {
+    const changed = { ...input, protectedBulk: copy(input.protectedBulk), progressCandidate: null };
+    mutate(changed);
+    assert.throws(() => currentHistoryPlanner.buildRavScoreLegacyCurrentOriginalRequests(changed));
+  }
+  // Exercise the actual fixed-path CLI on unchanged source bytes. No repository
+  // originals, provider credentials, network, decoder or native runtime is used.
+  const fs = await import('node:fs/promises'), path = await import('node:path');
+  const os = await import('node:os'), { fileURLToPath } = await import('node:url');
+  const { spawnSync } = await import('node:child_process');
+  const { packDmiPartContinuity } = await import('./lib/dmi-part-continuity.mjs');
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-legacy-original-plan-'));
+  const repository = fileURLToPath(new URL('../', import.meta.url));
+  const fixed = currentHistoryPlanner.RAVSCORE_LEGACY_CURRENT_ORIGINAL_SOURCE_PATHS;
+  const write = async (relative, value) => {
+    const destination = path.join(temporary, relative);
+    await fs.mkdir(path.dirname(destination), { recursive: true });
+    const bytes = Buffer.isBuffer(value) ? value : Buffer.from(JSON.stringify(value));
+    await fs.writeFile(destination, bytes, { flag: 'wx', mode: 0o600 });
+    return `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
+  };
+  try {
+    // Copy bounded SOURCE ONLY, unchanged. The actual protected reader contains
+    // archived dynamic loaders; do not rewrite/execute those loaders just to
+    // discover a fixture closure. No data/, .cache, credentials or tests copied.
+    let sourceFiles = 0, sourceBytes = 0;
+    const copySources = async relative => {
+      for (const entry of await fs.readdir(path.join(repository, relative), { withFileTypes: true })) {
+        const next = path.posix.join(relative, entry.name);
+        if (entry.isDirectory()) { await copySources(next); continue; }
+        if (!entry.isFile() || !/\.(?:m?js|json)$/.test(entry.name) || entry.name.startsWith('test')) continue;
+        const bytes = await fs.readFile(path.join(repository, next));
+        sourceFiles++; sourceBytes += bytes.length;
+        assert(sourceFiles <= 2048 && sourceBytes <= 32 * 1024 * 1024);
+        await write(next, bytes);
+      }
+    };
+    await copySources('scripts'); await copySources('js');
+    await write('package.json', await fs.readFile(path.join(repository, 'package.json')));
+    const registrySha256 = await write('data/live/coastal-parts-v2.json', registry);
+    await write(fixed.zones, input.zones); await write(fixed.deployedBulk, f.bulk);
+    const continuity = await packDmiPartContinuity(new Map([[f.part.partId,
+      { ...persisted, point: f.part.waterPoint, zoneId: identity.entityId }]]), [f.part], at(-54));
+    await write(fixed.forecast, { zones: {}, partContinuity: continuity });
+    const conditionsSha256 = await write('data/live/conditions.json', conditions);
+    const cliDemand = { ...copy(demand), registrySha256,
+      sourceHashes: { ...demand.sourceHashes, conditions: conditionsSha256 } };
+    await write(currentHistoryPlanner.RAVSCORE_CURRENT_HISTORY_DEMAND_PATH, cliDemand);
+    const allowed = new Set(['PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'TMPDIR', 'COMSPEC', 'PATHEXT']);
+    const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => allowed.has(key.toUpperCase())));
+    env.RAVRADAR_PRODUCTION_TARGET_HOUR = at(1);
+    env.GITHUB_OUTPUT = path.join(temporary, 'github-output');
+    const guard = 'data:text/javascript,' + encodeURIComponent(`
+      import http from 'node:http'; import https from 'node:https';
+      import {syncBuiltinESMExports} from 'node:module';
+      const forbidden=()=>{process.stderr.write('FORBIDDEN_NETWORK\\n');process.exit(97)};
+      globalThis.fetch=forbidden;http.get=http.request=https.get=https.request=forbidden;syncBuiltinESMExports();`);
+    const run = (preload = null) => spawnSync(process.execPath, ['--import', guard,
+      ...(preload ? ['--import', 'data:text/javascript,' + encodeURIComponent(preload)] : []),
+      path.join(temporary, 'scripts/plan-dmi-legacy-current-originals.mjs')],
+    { cwd: temporary, env, encoding: 'utf8', timeout: 15_000, maxBuffer: 64 * 1024, windowsHide: true });
+    const result = run();
+    assert.equal(result.error, undefined); assert.equal(result.signal, null);
+    assert.equal(result.status, 0, result.stderr); assert.equal(result.stderr, '');
+    const report = JSON.parse(result.stdout), file = path.join(temporary,
+      currentHistoryPlanner.RAVSCORE_LEGACY_CURRENT_ORIGINAL_REQUEST_PATH);
+    const saved = await fs.readFile(file), savedPlan = JSON.parse(saved);
+    assert.equal(report.requestCount, savedPlan.reconstructionRequests.length);
+    assert.equal(report.requestsSha256, `sha256:${createHash('sha256').update(saved).digest('hex')}`);
+    const output = Object.fromEntries((await fs.readFile(env.GITHUB_OUTPUT, 'utf8')).trim().split('\n')
+      .map(line => [line.slice(0, line.indexOf('=')), line.slice(line.indexOf('=') + 1)]));
+    assert.equal(output.requests_sha256, report.requestsSha256);
+    assert.deepEqual(JSON.parse(output.expectation_json), { productionReferenceAt: savedPlan.productionReferenceAt,
+      modelBinding: savedPlan.modelBinding, historyDemandSha256: savedPlan.historyDemandSha256,
+      registrySha256: savedPlan.registrySha256, sourceHashes: savedPlan.sourceHashes,
+      requestsSha256: report.requestsSha256 });
+    assert.ok(savedPlan.reconstructionRequests.some(value => value.nativeValidTime === at(missingHour)));
+    assert.deepEqual(savedPlan.projectionWitnesses.find(value => value.row.time === at(witnessHour)).row,
+      plan.projectionWitnesses.find(value => value.row.time === at(witnessHour)).row);
+    assert.equal(run().status, 1, 'existing private request file is never overwritten');
+    assert.deepEqual(await fs.readFile(file), saved);
+    assert.deepEqual(JSON.parse(await fs.readFile(path.join(temporary,
+      currentHistoryPlanner.RAVSCORE_CURRENT_HISTORY_DEMAND_PATH))), cliDemand, 'original demand is unchanged');
+    await fs.rename(file, file + '.preserved');
+    env.GITHUB_OUTPUT = path.join(temporary, 'github-output-noop');
+    const noClose = run(`import fs from 'node:fs/promises';
+      const open=fs.open;fs.open=async(...args)=>{const h=await open(...args);
+        if(String(args[0]).endsWith('dmi-legacy-current-original-requests.json')
+          && (args[1]&fs.constants.O_WRONLY)) h.close=async()=>{};return h;};`);
+    assert.equal(noClose.status, 1); assert.equal(noClose.stdout, '');
+    assert.equal(noClose.stderr.trim(), 'RAVSCORE_CURRENT_HISTORY_DEMAND_LEGACY_WRITER_CLOSE_UNPROVED');
+    await assert.rejects(fs.lstat(env.GITHUB_OUTPUT), { code: 'ENOENT' });
+    assert.deepEqual(await fs.readFile(file + '.preserved'), saved, 'first request original remains intact');
+    await fs.rename(file, file + '.unclosed');
+    env.GITHUB_OUTPUT = path.join(temporary, 'github-output-write-failed');
+    const writeFailed = run(`import fs from 'node:fs/promises';
+      const open=fs.open;fs.open=async(...args)=>{const h=await open(...args);
+        if(String(args[0]).endsWith('dmi-legacy-current-original-requests.json')
+          && (args[1]&fs.constants.O_WRONLY)) {const close=h.close.bind(h);
+          h.writeFile=async()=>{throw Object.assign(new Error('write failed'),{code:'SYNTHETIC_WRITE_FIRST'})};
+          h.close=async()=>{await close();throw Object.assign(new Error('close failed'),{code:'SYNTHETIC_CLOSE_SECOND'})};
+        }return h;};`);
+    assert.equal(writeFailed.status, 1); assert.equal(writeFailed.stdout, '');
+    assert.equal(writeFailed.stderr.trim(), 'SYNTHETIC_WRITE_FIRST', 'physical close error preserves first write cause');
+    await assert.rejects(fs.lstat(env.GITHUB_OUTPUT), { code: 'ENOENT' });
+  } finally {
+    assert.equal(path.dirname(await fs.realpath(temporary)), await fs.realpath(os.tmpdir()));
+    assert(path.basename(temporary).startsWith('rr-legacy-original-plan-'));
+    await fs.rm(temporary, { recursive: true });
+  }
+});
+
+test('OLD null shape follows exact normal projection and never promotes a receipt', () => {
+  const f = fixture(), identity = dmiExpectedIdentityForPart(f.part);
+  const native = document => Object.values(document.zones[identity.entityId].hourly);
+  const project = document => buildDmiForecastHourly({ ocean: native(document).map(row => ({ step: row.time,
+    'current-u': row['current-u'], 'current-v': row['current-v'], provenance: row.sources })),
+  generatedAt: at(0), startAt: at(1), hours: 1 }).hourly[0];
+  const inspect = (document, row) => createProtectedDmiNativeCurrentInspector({ contexts: [document] })
+    .inspectOriginals({ part: f.part, row });
+  const topOnly = copy(f.row); topOnly.sources.current.nativeGridSampling = null;
+  assert.equal(inspectDmiForecastGridSampling(topOnly.sources.current, 'current', topOnly.time, identity).status, 'unknown');
+  assert.equal(inspect(f.bulk, topOnly).code, 'DMI_NATIVE_PROOF_PROJECTION_MISMATCH');
+  const selectedNull = copy(f.bulk); native(selectedNull)[0].sources.current.nativeGridSampling = null;
+  const selectedProjection = project(selectedNull);
+  assert.equal(selectedProjection.sources.current.nativeGridSampling, null);
+  assert.equal(selectedProjection.sources.current.nativeSteps[0].nativeGridSampling, null,
+    'actual normal top-null always also emits its selected native step null');
+  assert.equal(inspect(selectedNull, topOnly).code, 'DMI_NATIVE_PROOF_PROJECTION_MISMATCH');
+  assert.equal(inspect(selectedNull, selectedProjection).ok, true);
+  const selectedStepOnly = copy(selectedProjection); delete selectedStepOnly.sources.current.nativeGridSampling;
+  assert.equal(inspectDmiForecastGridSampling(selectedStepOnly.sources.current, 'current', selectedStepOnly.time, identity).status, 'unknown');
+  assert.equal(inspect(selectedNull, selectedStepOnly).code, 'DMI_NATIVE_PROOF_PROJECTION_MISMATCH',
+    'selected-step null cannot silently synthesize a missing original top null');
+  const nonselectedNull = copy(f.bulk); native(nonselectedNull)[1].sources.current.nativeGridSampling = null;
+  const stepOnly = project(nonselectedNull);
+  assert.equal(Object.hasOwn(stepOnly.sources.current, 'nativeGridSampling'), false);
+  assert.equal(stepOnly.sources.current.nativeSteps[1].nativeGridSampling, null);
+  assert.equal(inspect(nonselectedNull, stepOnly).ok, true, 'actual nonselected own-step null is losslessly projectable');
+  assert.equal(inspect(f.bulk, stepOnly).code, 'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING');
+  const bothNull = copy(f.bulk);
+  for (const row of native(bothNull)) row.sources.current.nativeGridSampling = null;
+  const bothProjection = project(bothNull);
+  assert.equal(bothProjection.sources.current.nativeGridSampling, null);
+  assert.ok(bothProjection.sources.current.nativeSteps.every(step => step.nativeGridSampling === null));
+  assert.equal(inspect(bothNull, bothProjection).ok, true);
+  assert.equal(inspect(f.bulk, bothProjection).code, 'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING');
+  const partial = copy(f.bulk); native(partial)[1].sources.current.nativeGridSampling = {};
+  const partialProjection = project(partial);
+  assert.equal(inspectDmiForecastGridSampling(partialProjection.sources.current, 'current', partialProjection.time, identity).status,
+    'contradictory', 'a nonnull partial record never becomes an OLD null expectation');
+});
+
+test('original metadata index is lazy and verifies native rows once across 673 selected calls', async () => {
+  const { createSavedDmiOriginalDependencyDiscovery, resolveSavedDmiOriginalDependencyCaptures } =
+    await import('./lib/saved-dmi-original-dependencies.mjs');
+  const f = fixture();
+  let nativeVerifierReads = 0;
+  for (const zone of Object.values(f.bulk.zones)) for (const native of Object.values(zone.hourly)) {
+    native.sources.current.contentLengthBytes = 1234;
+    Object.defineProperty(native.sources.current, 'provider', { enumerable: true,
+      get() { nativeVerifierReads++; return 'dmi'; } });
+  }
+  const discovery = createSavedDmiOriginalDependencyDiscovery({ protectedBulk: f.bulk });
+  assert.equal(nativeVerifierReads, 0, 'constructor does not eagerly scan a national document');
+  const ownHourly = [];
+  const resolve = () => resolveSavedDmiOriginalDependencyCaptures(discovery,
+    { protectedBulk: f.bulk, document: f.bulk, part: f.part, row: f.row, ownHourly });
+  assert.equal(resolve().length, 2);
+  const detached = resolve(); detached[0].contentSha256 = 'f'.repeat(64);
+  assert.notEqual(resolve()[0].contentSha256, detached[0].contentSha256, 'returned captures cannot poison the sealed invocation cache');
+  const once = nativeVerifierReads;
+  assert.ok(once > 0 && once < 32);
+  for (let index = 1; index < 673; index++) assert.equal(resolve().length, 2);
+  assert.equal(nativeVerifierReads, once, 'same asset never revalidates every native donor per selected endpoint');
+  const excessive = copy(f.bulk), zone = copy(Object.values(excessive.zones)[0]);
+  for (let index = 0; index < 674; index++) excessive.zones[`PART::BOUNDED-${index}`] = zone;
+  const bounded = createSavedDmiOriginalDependencyDiscovery({ protectedBulk: excessive });
+  assert.throws(() => resolveSavedDmiOriginalDependencyCaptures(bounded,
+    { protectedBulk: excessive, document: excessive, part: f.part, row: f.row }), /DONOR_INVALID/);
 });
 
 test('current-history demand runs after actual activation and before DMI without changing old routes', async () => {
@@ -1181,4 +1483,364 @@ test('normal private recovery maps the complete 72h bridge without widening publ
   }
   assert.equal(JSON.stringify({ old, fresh, integrated, candidate, initialSelection, companion }), snapshots,
     'range refusals cannot mutate original donors or the two original states');
+});
+
+// Reconstruction verifies actual OLD native values; forecast tuples below are
+// unchanged projection witnesses, never an inverse source for native numbers.
+const legacyOriginalCanonical = value => JSON.stringify(value, (_key, item) =>
+  item !== null && typeof item === 'object' && !Array.isArray(item)
+    ? Object.fromEntries(Object.keys(item).sort().map(key => [key, item[key]])) : item);
+const legacyOriginalHash = value => 'sha256:' + createHash('sha256')
+  .update(legacyOriginalCanonical(value)).digest('hex');
+async function legacyOriginalFixture({ twoRoles = false, nativeHours = [0, 3],
+  target = 1, everyNativeWitness = false, productionReferenceAt = at(4), zoneId = 'DK-B05-17', nativeNull = false } = {}) {
+  const { ravScoreModelBinding } = await import('../js/core/ravscore-model-contract.js');
+  const { canonicalSavedDmiOriginalCapture } = await import('./lib/saved-dmi-original-capture.mjs');
+  const roles = twoRoles ? ['deployedBulk', 'candidate'] : ['deployedBulk'];
+  const originals = roles.map((documentRole, index) => {
+    const value = fixture({ partId: 'LEGACY-RECONSTRUCTION', zoneId,
+      collection: index ? 'dkss_nsbs' : 'dkss_idw', run: -12 + index * 6, nativeHours, target });
+    value.bulk.generatedAt = at(index);
+    for (const raw of Object.values(Object.values(value.bulk.zones)[0].hourly)) {
+      const bytes = Buffer.from('synthetic-independent-capture-' + documentRole + raw.time);
+      Object.assign(raw.sources.current, { assetSizeBytes: bytes.length,
+        contentLengthBytes: bytes.length,
+        contentSha256: createHash('sha256').update(bytes).digest('hex') });
+      if (nativeNull) raw.sources.current.nativeGridSampling = null;
+    }
+    value.row = buildDmiForecastHourly({ generatedAt: at(0), startAt: at(target), hours: 1,
+      ocean: Object.values(Object.values(value.bulk.zones)[0].hourly).map(raw => ({
+        step: raw.time, 'current-u': raw['current-u'], 'current-v': raw['current-v'], provenance: raw.sources,
+      })) }).hourly[0];
+    return { ...value, documentRole };
+  });
+  const part = originals[0].part, identity = dmiExpectedIdentityForPart(part);
+  const context = value => ({ documentRole: value.documentRole,
+    header: Object.fromEntries(['generatedAt', 'currentVectorSemanticsVersion',
+      'currentVectorSelection', 'currentMaxDistanceKm', 'timeStrideHours']
+      .filter(key => Object.hasOwn(value.bulk, key)).map(key => [key, value.bulk[key]])),
+    zones: [{ partId: part.partId, zone: identity }] });
+  const witnesses = originals.flatMap(value => (everyNativeWitness ? nativeHours.map(hour =>
+    buildDmiForecastHourly({ generatedAt: at(0), startAt: at(hour), hours: 1,
+      ocean: Object.values(Object.values(value.bulk.zones)[0].hourly).map(raw => ({
+        step: raw.time, 'current-u': raw['current-u'], 'current-v': raw['current-v'], provenance: raw.sources,
+      })) }).hourly[0]) : [value.row]).map(selected => {
+    const row = { time: selected.time, currentUMps: selected.currentUMps,
+      currentVMps: selected.currentVMps, sources: { current: copy(selected.sources.current) } };
+    const fields = { partId: part.partId, documentRole: value.documentRole, row };
+    return { witnessId: legacyOriginalHash(fields), ...fields,
+      sourceSha256: legacyOriginalHash(row.sources.current),
+      tupleSha256: legacyOriginalHash([row.currentUMps, row.currentVMps]) };
+  }));
+  const reconstructionRequests = [], rows = {};
+  for (const [index, value] of originals.entries()) {
+    for (const raw of Object.values(value.bulk.zones[identity.entityId].hourly)) {
+      const inner = { zone: { id: identity.entityId, lat: part.waterPoint[1],
+        lon: part.waterPoint[0], coastType: 'limfjord' }, expectedSource: copy(raw.sources.current),
+        capture: canonicalSavedDmiOriginalCapture(raw.sources.current),
+        processingSignature: 'parser:20|params:4|grid:9|eccodes-api:2.48.2|eccodes-binding:2.48.0|zones:' + 'a'.repeat(16) };
+      const fields = { partId: part.partId, entityId: identity.entityId,
+        documentRole: value.documentRole, nativeValidTime: raw.time,
+        reconstructionRequest: inner, processingEvidence: { kind: 'RUN_PROCESSED_STEP',
+          path: ['runs', raw.sources.current.collection, 'processedSteps', raw.time],
+          sha256: legacyOriginalHash({ capture: inner.capture, processingSignature: inner.processingSignature }) } };
+      const requestId = legacyOriginalHash(fields);
+      const refs = witnesses.filter(witness => witness.documentRole === value.documentRole
+        && witness.row.sources.current.nativeSteps.some(step => step.itemId === raw.sources.current.itemId
+          && step.assetIdentitySha256 === raw.sources.current.assetIdentitySha256
+          && Date.parse(step.nativeValidTime) === Date.parse(raw.time))).map(witness => witness.witnessId);
+      reconstructionRequests.push({ requestId, ...fields, projectionWitnessRefs: refs });
+      rows[requestId] = copy(raw);
+    }
+  }
+  const requests = { schemaVersion: 1, kind: 'DMI_LEGACY_CURRENT_ORIGINAL_RECONSTRUCTION_REQUESTS',
+    productionReferenceAt, modelBinding: { ...ravScoreModelBinding() },
+    historyDemandSha256: 'sha256:' + 'd'.repeat(64), registrySha256: 'sha256:' + 'e'.repeat(64),
+    sourceHashes: { zones: 'sha256:' + '1'.repeat(64), deployedBulk: 'sha256:' + '2'.repeat(64),
+      forecast: 'sha256:' + '3'.repeat(64), candidate: twoRoles ? 'sha256:' + '4'.repeat(64) : null, active: null },
+    sourcePaths: { zones: 'data/zones.geojson', deployedBulk: '.cache/deployed-dmi-bulk-cache.json',
+      forecast: 'data/live/dmi-forecast-cache.json', candidate: '.cache/dmi-candidate-progress.json', active: '.cache/dmi-active-complete.json' },
+    documentContexts: originals.map(context), projectionWitnesses: witnesses, reconstructionRequests };
+  const requestBytes = Buffer.from(JSON.stringify(requests) + '\n');
+  const requestsSha256 = 'sha256:' + createHash('sha256').update(requestBytes).digest('hex');
+  const document = { ...context(originals[0]).header,
+    zones: { [identity.entityId]: { ...identity, hourly: rows } } };
+  const reconstruction = { schemaVersion: 1, kind: 'DMI_LEGACY_CURRENT_ORIGINAL_RECONSTRUCTION', requestsSha256, document };
+  const expected = Object.fromEntries(['productionReferenceAt', 'modelBinding', 'historyDemandSha256',
+    'registrySha256', 'sourceHashes'].map(key => [key, copy(requests[key])]));
+  expected.requestsSha256 = requestsSha256;
+  return { requests, requestsSha256, reconstruction, parts: [part], expected, requestBytes, originals };
+}
+
+test('legacy current reconstruction preserves the own UNKNOWN null shape without a sampling receipt', async () => {
+  const { verifyDmiLegacyCurrentOriginalReconstruction } = await import('./lib/dmi-legacy-current-originals.mjs');
+  const f = await legacyOriginalFixture({ nativeNull: true });
+  const before = JSON.stringify(f);
+  for (const request of f.requests.reconstructionRequests) {
+    assert.ok(Object.hasOwn(request.reconstructionRequest.expectedSource, 'nativeGridSampling'));
+    assert.equal(request.reconstructionRequest.expectedSource.nativeGridSampling, null);
+  }
+  assert.equal(verifyDmiLegacyCurrentOriginalReconstruction(f), f.reconstruction.document);
+  assert.equal(JSON.stringify(f), before, 'verification must not normalise any original null marker');
+  const changed = copy(f.reconstruction);
+  delete Object.values(Object.values(changed.document.zones)[0].hourly)[0].sources.current.nativeGridSampling;
+  assert.throws(() => verifyDmiLegacyCurrentOriginalReconstruction({ ...f, reconstruction: changed }),
+    /DMI_LEGACY_CURRENT_DOCUMENT_ROW_INVALID/, 'absence cannot replace this own original null');
+});
+
+test('legacy current reconstruction preserves complete native originals and exact old projection', async () => {
+  const { verifyDmiLegacyCurrentOriginalReconstruction } = await import('./lib/dmi-legacy-current-originals.mjs');
+  const f = await legacyOriginalFixture();
+  const before = JSON.stringify(f);
+  assert.equal(verifyDmiLegacyCurrentOriginalReconstruction(f), f.reconstruction.document);
+  assert.equal(JSON.stringify(f), before, 'verification cannot rewrite a source, number or witness');
+  for (const mutate of [
+    value => { Object.values(Object.values(value.reconstruction.document.zones)[0].hourly)[0]['current-u'] += 0.001; },
+    value => { Object.values(Object.values(value.reconstruction.document.zones)[0].hourly)[0].sources.current.nativeGridSampling = {}; },
+    value => { Object.values(Object.values(value.reconstruction.document.zones)[0].hourly)[0]['sea-mean-deviation'] = 0; },
+    value => { Object.values(Object.values(value.reconstruction.document.zones)[0].hourly)[0]['current-v'] = '0.2'; },
+    value => { value.reconstruction.document.zones.EXTRA = copy(Object.values(value.reconstruction.document.zones)[0]); },
+    value => { delete Object.values(value.reconstruction.document.zones)[0].hourly[value.requests.reconstructionRequests[0].requestId]; },
+    value => { value.requests.reconstructionRequests.push(copy(value.requests.reconstructionRequests[0])); },
+    value => { value.requests.projectionWitnesses[0].row.currentUMps += 0.000001; },
+    value => { value.expected.registrySha256 = 'sha256:' + 'f'.repeat(64); },
+    value => { value.expected.sourceHashes.candidate = 'sha256:' + 'f'.repeat(64); },
+    value => { value.parts[0].waterPoint[0] += 0.01; },
+    value => { value.reconstruction.requestsSha256 = 'sha256:' + 'f'.repeat(64); },
+  ]) {
+    const invalid = copy(f); mutate(invalid);
+    assert.throws(() => verifyDmiLegacyCurrentOriginalReconstruction(invalid), /DMI_LEGACY_CURRENT_/);
+  }
+});
+
+test('legacy current reconstruction retains two captures at the same PART hour through normal mapper', async () => {
+  const { verifyDmiLegacyCurrentOriginalReconstruction } = await import('./lib/dmi-legacy-current-originals.mjs');
+  const { bulkZoneToForecastRecord } = await import('./lib/private-dmi-recovery-record.mjs');
+  const f = await legacyOriginalFixture({ twoRoles: true }), part = f.parts[0];
+  const donor = verifyDmiLegacyCurrentOriginalReconstruction(f), identity = dmiExpectedIdentityForPart(part);
+  assert.equal(Object.keys(donor.zones[identity.entityId].hourly).length, 4);
+  const inspector = createProtectedDmiNativeCurrentInspector({ contexts: [donor] });
+  for (const witness of f.requests.projectionWitnesses) assert.equal(inspector.inspectOriginals({ part, row: witness.row }).ok, true);
+  const mapped = bulkZoneToForecastRecord({ properties: { id: identity.entityId, dataPoint: part.waterPoint } },
+    donor, at(0), null, { startAt: at(1), expectedIdentity: identity, materializeMissingHorizon: true });
+  assert.equal(mapped.hourly[0].time, at(1));
+  assert.equal(mapped.hourly[0].currentUMps, null,
+    'Known isolated-mapper limitation: last-before/first-after can be different model series; not fabricated coverage');
+  assert.equal(Object.keys(donor.zones[identity.entityId].hourly).length, 4, 'normal mapper does not erase an alternate original');
+  const wrong = copy(f); wrong.requests.documentContexts[1].header.timeStrideHours = 6;
+  assert.throws(() => verifyDmiLegacyCurrentOriginalReconstruction(wrong), /DMI_LEGACY_CURRENT_CONTEXT_CONTRACT_COLLISION/);
+});
+
+test('legacy current fixed reader is bounded, readonly and refuses orphan or stale output', async () => {
+  const { readDmiLegacyCurrentOriginals } = await import('./lib/dmi-legacy-current-originals.mjs');
+  const fs = await import('node:fs/promises'), os = await import('node:os'), path = await import('node:path');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-legacy-current-verifier-'));
+  const requestPath = path.join(root, '.cache/dmi-legacy-current-original-requests.json');
+  const outputPath = path.join(root, '.cache/dmi-legacy-current-originals.json');
+  const f = await legacyOriginalFixture(), options = { repositoryRoot: root, parts: f.parts, expected: f.expected };
+  try {
+    await fs.mkdir(path.dirname(requestPath));
+    assert.equal(await readDmiLegacyCurrentOriginals({ ...options, required: false }), null);
+    await assert.rejects(readDmiLegacyCurrentOriginals({ ...options, required: true }), /DMI_LEGACY_CURRENT_REQUESTS_REQUIRED/);
+    await fs.writeFile(outputPath, JSON.stringify(f.reconstruction));
+    await assert.rejects(readDmiLegacyCurrentOriginals({ ...options, required: false }), /DMI_LEGACY_CURRENT_OUTPUT_WITHOUT_REQUESTS/);
+    await fs.writeFile(requestPath, f.requestBytes);
+    assert.deepEqual(await readDmiLegacyCurrentOriginals({ ...options, required: true }), f.reconstruction.document);
+    assert.deepEqual(await fs.readFile(requestPath), f.requestBytes);
+    assert.equal(await fs.readFile(outputPath, 'utf8'), JSON.stringify(f.reconstruction));
+    await fs.appendFile(requestPath, ' ');
+    await assert.rejects(readDmiLegacyCurrentOriginals({ ...options, required: true }), /DMI_LEGACY_CURRENT_REQUESTS_HASH_MISMATCH/);
+    await fs.writeFile(requestPath, f.requestBytes);
+    await fs.writeFile(outputPath, JSON.stringify(f.reconstruction).replace('{', '{"schemaVersion":1,'));
+    await assert.rejects(readDmiLegacyCurrentOriginals({ ...options, required: true }), /DMI_LEGACY_CURRENT_DUPLICATE_KEY/);
+    const empty = copy(f.requests);
+    empty.documentContexts = []; empty.projectionWitnesses = []; empty.reconstructionRequests = [];
+    const emptyBytes = Buffer.from(JSON.stringify(empty) + '\n');
+    const emptyExpected = { ...f.expected,
+      requestsSha256: 'sha256:' + createHash('sha256').update(emptyBytes).digest('hex') };
+    await fs.writeFile(requestPath, emptyBytes); await fs.unlink(outputPath);
+    assert.equal(await readDmiLegacyCurrentOriginals({ ...options, expected: emptyExpected, required: true }), null,
+      'an empty request set is explicitly NO OP, never successful decoding');
+    await fs.writeFile(outputPath, JSON.stringify(f.reconstruction));
+    await assert.rejects(readDmiLegacyCurrentOriginals({ ...options, expected: emptyExpected, required: true }),
+      /DMI_LEGACY_CURRENT_EMPTY_REQUESTS_NOT_DECODED/);
+    await fs.writeFile(requestPath, f.requestBytes);
+    await fs.link(requestPath, path.join(root, 'own-linked-request.json'));
+    await assert.rejects(readDmiLegacyCurrentOriginals({ ...options, required: true }), /DMI_LEGACY_CURRENT_INVALID_FILE/);
+  } finally { await fs.rm(root, { recursive: true, force: true }); }
+});
+
+test('legacy current normal recovery caller preserves both OLD series and proves strict OWNER transition', async () => {
+  const { verifyDmiLegacyCurrentOriginalReconstruction } = await import('./lib/dmi-legacy-current-originals.mjs');
+  const { buildPartDmiForecastWithProtectedRetention, buildPrivateDmiRecoveryRecord } =
+    await import('./lib/private-dmi-recovery-record.mjs');
+  const { verifiedProtectedDmiPartHourly } = await import('./lib/protected-dmi-current-context.mjs');
+  const f = await legacyOriginalFixture({ twoRoles: true,
+    nativeHours: Array.from({ length: 50 }, (_, i) => i), target: 49,
+    everyNativeWitness: true, productionReferenceAt: at(49), zoneId: 'DK-B01-02' });
+  const part = f.parts[0]; part.onshoreDirectionDeg = 90;
+  const identity = dmiExpectedIdentityForPart(part), zone = { id: part.zoneId, onshoreDirectionDeg: 90 };
+  const donor = verifyDmiLegacyCurrentOriginalReconstruction(f);
+  const feature = { properties: { id: identity.entityId, dataPoint: part.waterPoint } };
+  const project = bulk => verifiedIntegratedPartHourly({ point: part.waterPoint,
+    hourly: buildDmiForecastHourly({ generatedAt: at(0), startAt: at(0), hours: 50,
+      ocean: Object.values(bulk.zones[identity.entityId].hourly).map(row => ({ step: row.time,
+        'current-u': row['current-u'], 'current-v': row['current-v'], provenance: row.sources })) }).hourly },
+    bulk, identity.entityId, part);
+  const byRole = f.originals.map(value => project(value.bulk));
+  const oldHourly = Array.from({ length: 50 }, (_, i) => copy(byRole[i < 25 ? 0 : 1][i]));
+  const fresh = { ...copy(f.originals[0].bulk), zones: { [identity.entityId]: { ...identity, hourly: {} } } };
+  for (let i = 0; i < 50; i++) {
+    const raw = copy(f.originals[i < 25 ? 0 : 1].bulk.zones[identity.entityId].hourly[at(i)]);
+    raw['current-u'] += 0.3; raw['current-v'] += 0.1;
+    raw.sources.current.nativeGridSampling = { contractId: 'dmi-native-grid-sampling-v1',
+      elementIndex: 71, gridIndexIdentitySha256: '5'.repeat(64),
+      coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1',
+      gridDefinitionSha256: raw.sources.current.gridDefinitionSha256,
+      gridPoint: [...raw.sources.current.gridPoint], fieldSet: [...raw.sources.current.fieldSet], optionalFieldSet: [] };
+    fresh.zones[identity.entityId].hourly[raw.time] = raw;
+  }
+  const correctedHourly = project(fresh);
+  const weather = row => ({ ...row, currentCoastNormalSpeedMps: row.currentCoastNormalSpeedMps ?? row.currentUMps,
+    windSpeedMps: 8, windDirectionDeg: 270, waveHeightM: 1.2, wavePeriodS: 6,
+    waveDirectionDeg: 90, waveProvenance: { status: 'verified' }, waterLevelCm: 0, waterLevelTrendCm3h: 0 });
+  // Reproduce the OLD normal replay projection, not a hand-set coast-normal
+  // approximation. The original state must match this actual numeric path.
+  const historical = buildRavScorePermittedCurrentHistory({ part, referenceAt: at(48),
+    sourceRecords: [{ source: 'deployed-private-runtime', record: { point: part.waterPoint, hourly: oldHourly } }],
+    requireNativeGridSampling: false }).map(weather);
+  const integrated = buildIntegratedPartScoreSeries({ part, zone, hourly: historical }).ravScoreState.continuationState;
+  const candidate = buildCandidateGRollbackPartScoreSeries({ part, zone,
+    hourly: historical, measuredColdStart: true }).candidateGState.continuationState;
+  const initialSelection = productionPipeline.selectRavScoreProductionInitialState({ part,
+    existingPart: { ravScoreModel: { currentState: integrated } }, targetReferenceAt: at(49) });
+  const companion = selectCoastalPointCandidateGRollbackContinuation({ partId: part.partId, part,
+    initialSelection, pointActivationStatePairs: {}, privateCandidateGContinuation: candidate,
+    checkpointCandidateGContinuation: null, targetReferenceAt: at(49) });
+  const before = JSON.stringify({ f, donor, fresh, oldHourly, integrated, candidate });
+  const publicRecord = buildPartDmiForecastWithProtectedRetention(feature, fresh, null, at(49), {
+    startAt: at(0), expectedIdentity: identity, persistedHourly: oldHourly,
+    historicalBulkCache: donor, currentDecoderTransitionPart: part });
+  assert.equal(publicRecord.hourly[24].currentUMps, correctedHourly[24].currentUMps);
+  assert.equal(publicRecord.hourly[25].currentUMps, correctedHourly[25].currentUMps);
+  const deployed = buildPrivateDmiRecoveryRecord(feature, null, at(49), {
+    startAt: at(0), expectedIdentity: identity, persistedHourly: oldHourly,
+    historicalBulkCache: donor, protectPreviousDmi: true });
+  for (let i = 0; i < 49; i++) assert.deepEqual(deployed.hourly[i].sources.current, oldHourly[i].sources.current,
+    'actual protected-replay caller retains its selected OLD model at ' + i);
+  const progressive = buildPrivateDmiRecoveryRecord(feature, fresh, at(49), {
+    startAt: at(0), expectedIdentity: identity });
+  const fallbackSource = { source: 'deployed-private-runtime', nativeCurrentContexts: [donor],
+    record: { ...deployed, hourly: verifiedProtectedDmiPartHourly(deployed, [donor], identity.entityId,
+      part, { requireNativeGridSampling: false }) } };
+  const preferredSource = { source: 'progressive-private-dmi', nativeCurrentContexts: [fresh],
+    record: { ...progressive, hourly: verifiedIntegratedPartHourly(progressive, fresh,
+      identity.entityId, part, { requireNativeGridSampling: false }) } };
+  const recoverySources = buildNewestValidRavScoreRecoverySources({ fallbackSource, preferredSource,
+    protectedPreviousSource: fallbackSource, productionReferenceAt: at(49), part });
+  const result = buildRavScoreProductionPartSeries({ part, zone, initialSelection,
+    previousCandidateGContinuation: companion.state, targetReferenceAt: at(49),
+    recoverySources, publicHourly: [weather(correctedHourly[49])], requireNativeGridSampling: true });
+  assert.equal(result.currentSourceDomainTransition.provedCurrentHours, 49);
+  assert.equal(result.currentSourceDomainTransition.unknownCurrentHours, 0);
+  assert.deepEqual(result.currentSourceDomainTransition.originalIntegratedState, integrated);
+  assert.deepEqual(result.currentSourceDomainTransition.originalCandidateGState, candidate);
+  assert.equal(JSON.stringify({ f, donor, fresh, oldHourly, integrated, candidate }), before);
+});
+
+test('legacy current fixed reader proves native fd closure and preserves the first raw failure', async () => {
+  const fs = await import('node:fs/promises'), native = await import('node:fs');
+  const os = await import('node:os'), path = await import('node:path');
+  const text = await fs.readFile(new URL('./lib/dmi-legacy-current-originals.mjs', import.meta.url), 'utf8');
+  const first = 'async function closeOwnedLegacyCurrentReader(row, primary) {';
+  const next = '\nasync function readFixed(root, relative) {';
+  assert.equal(text.split(first).length - 1, 1); assert.equal(text.split(next).length - 1, 1);
+  const helper = text.slice(text.indexOf(first), text.indexOf(next, text.indexOf(first)));
+  const retained = new Map();
+  const close = new Function('fstatSync', 'uncertainReaders', 'fail', helper + ';return closeOwnedLegacyCurrentReader;')(
+    native.fstatSync, retained, code => { throw new Error('DMI_LEGACY_CURRENT_' + code); });
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-legacy-close-'));
+  const file = path.join(root, 'own.txt'); await fs.writeFile(file, 'synthetic');
+  try {
+    for (const mode of ['normal', 'noop', 'close-then-throw']) {
+      const handle = await fs.open(file, 'r'), actualClose = handle.close.bind(handle);
+      const row = { handle, fd: handle.fd, closeAttempted: false, closed: false };
+      retained.set(handle, row);
+      const firstFailure = new Error('SYNTHETIC_FIRST_FAILURE');
+      if (mode === 'noop') handle.close = async () => {};
+      if (mode === 'close-then-throw') handle.close = async () => { await actualClose(); throw new Error('SYNTHETIC_LATE_CLOSE'); };
+      try {
+        const failure = await close(row, mode === 'normal' ? null : firstFailure);
+        assert.equal(failure, mode === 'normal' ? null : firstFailure);
+        assert.equal(row.closed, mode !== 'noop');
+        assert.equal(retained.has(handle), mode === 'noop');
+        if (mode === 'noop') assert.doesNotThrow(() => native.fstatSync(row.fd));
+        else assert.throws(() => native.fstatSync(row.fd), error => error.code === 'EBADF');
+        await assert.rejects(close(row, failure), /DMI_LEGACY_CURRENT_CLOSE_REPEATED/);
+      } finally { if (mode === 'noop') await actualClose(); retained.delete(handle); }
+    }
+  } finally { await fs.rm(root, { recursive: true, force: true }); }
+});
+
+test('legacy current private request counts allow 124 target hours but do not widen PUBLIC_121', async () => {
+  const { verifyDmiLegacyCurrentOriginalReconstruction } = await import('./lib/dmi-legacy-current-originals.mjs');
+  const f = await legacyOriginalFixture();
+  assert.equal(PROTECTED_DMI_NATIVE_PROOF_LIMITS.hoursPerPart, 121);
+  assert.equal(PROTECTED_DMI_NATIVE_PROOF_LIMITS.selections, 673 * 121);
+  assert.equal(PROTECTED_DMI_NATIVE_PROOF_LIMITS.nativeRows, 2 * 673 * 121);
+  // Sparse synthetic invalid records distinguish the count boundary from real
+  // row admission without constructing or claiming a national decoded donor.
+  const witnesses = count => ({ ...f, requests: { ...f.requests,
+    projectionWitnesses: Array(count).fill(null) } });
+  assert.throws(() => verifyDmiLegacyCurrentOriginalReconstruction(witnesses(673 * 124)),
+    /DMI_LEGACY_CURRENT_WITNESS_INVALID/);
+  assert.throws(() => verifyDmiLegacyCurrentOriginalReconstruction(witnesses(673 * 124 + 1)),
+    /DMI_LEGACY_CURRENT_REQUEST_BOUND/);
+  const natives = count => ({ ...f, requests: { ...f.requests,
+    reconstructionRequests: Array(count).fill(null) } });
+  assert.throws(() => verifyDmiLegacyCurrentOriginalReconstruction(natives(2 * 673 * 124)),
+    /DMI_LEGACY_CURRENT_REQUEST_INVALID/);
+  assert.throws(() => verifyDmiLegacyCurrentOriginalReconstruction(natives(2 * 673 * 124 + 1)),
+    /DMI_LEGACY_CURRENT_REQUEST_BOUND/);
+});
+
+test('legacy current request CLI proves hash-reader native closure before publishing', async () => {
+  const fs = await import('node:fs/promises'), native = await import('node:fs');
+  const os = await import('node:os'), path = await import('node:path');
+  const text = await fs.readFile(new URL('./plan-dmi-legacy-current-originals.mjs', import.meta.url), 'utf8');
+  const first = 'async function closeOwnedLegacyHashReader(row, primary) {';
+  const next = '\nasync function hashLegacyFixedFile(relative, optional = false) {';
+  assert.equal(text.split(first).length - 1, 1); assert.equal(text.split(next).length - 1, 1);
+  const helper = text.slice(text.indexOf(first), text.indexOf(next, text.indexOf(first)));
+  const retained = new Map();
+  const close = new Function('fstatSync', 'ownedLegacyHashReaders', 'refuse',
+    helper + ';return closeOwnedLegacyHashReader;')(native.fstatSync, retained,
+    code => { throw new Error('RAVSCORE_CURRENT_HISTORY_DEMAND_' + code); });
+  assert.match(text, /await closeOwnedLegacyHashReader\(reader, primary\)/,
+    'normal file hashing must await the physically checked close helper');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-legacy-request-close-'));
+  const file = path.join(root, 'own.txt'); await fs.writeFile(file, 'synthetic');
+  try {
+    for (const mode of ['normal', 'noop', 'read-error-and-noop', 'close-then-error']) {
+      const handle = await fs.open(file, 'r'), actualClose = handle.close.bind(handle);
+      const row = { handle, fd: handle.fd, closeAttempted: false, closed: false };
+      const firstFailure = mode === 'read-error-and-noop' ? new Error('SYNTHETIC_FIRST_READ_FAILURE') : null;
+      const closeFailure = new Error('SYNTHETIC_CLOSE_FAILURE');
+      retained.set(handle, row);
+      if (mode.includes('noop')) handle.close = async () => {};
+      if (mode === 'close-then-error') handle.close = async () => { await actualClose(); throw closeFailure; };
+      try {
+        const failure = await close(row, firstFailure);
+        const physicallyClosed = mode === 'normal' || mode === 'close-then-error';
+        assert.equal(row.closed, physicallyClosed);
+        assert.equal(retained.has(handle), !physicallyClosed);
+        if (firstFailure) assert.equal(failure, firstFailure, 'exact first read failure survives uncertain close');
+        else if (mode === 'noop') assert.match(failure.message, /LEGACY_HASH_READER_CLOSE_UNPROVED/);
+        else assert.equal(failure, mode === 'normal' ? null : closeFailure);
+        if (physicallyClosed) assert.throws(() => native.fstatSync(row.fd), error => error.code === 'EBADF');
+        else assert.doesNotThrow(() => native.fstatSync(row.fd));
+        await assert.rejects(close(row, failure), /LEGACY_HASH_READER_CLOSE_REPEATED/);
+      } finally { if (mode.includes('noop')) await actualClose(); retained.delete(handle); }
+    }
+  } finally { await fs.rm(root, { recursive: true, force: true }); }
 });
