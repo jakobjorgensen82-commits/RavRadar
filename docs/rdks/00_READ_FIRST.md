@@ -1,3 +1,11 @@
+## 16. oktober — kildeleveret originalrettelse og valgt-endepunktskontrol
+
+PR625 er faktisk kildeleveret efter præcis Linux/native/source/PostgreSQL-kontrol. Genopretningen gendannede checkpoint og RAW-cache, men stoppede i valgt-endepunktsforberedelsen før DMI-kald, cachegemning, beregning og deploy. Kildegrønt er ikke offentlig genopretning.
+
+Det samme faste stop dækker to forskellige steder: afvist original-endepunktsbevis eller sanitizertab uden bevist valgt erstatning. Den lokale default-OFF skrivefri kontrol følger den samme normale private udvælgelse og rapporterer første stop pr. kystdel med faste årsager. Den må ikke fremstille en delvis gennemgang som fuld dækning. Den er begrænset til de to allerede navngivne checkpoints, kræver normal autentifikation og afviser RAW-restore, providerkald, planfil, SAVE og scorebygning. Enkel target-48h-inddeling er kun diagnostik; initialtilstand, replay, egne brackets og holdstøtte må ikke ignoreres.
+
+Ny præcis kildekontrol, faktisk årsagsaflæsning og en helkæderettelse er åbne. Originaler, strømkontrol, no-loss, I71, C69, T12, SQL, kildeprioritet, admin/geometri og budgetter bevares. Ingen isoleret revision eller øvrig produktionslevering aktiveres. Cron forbliver deaktiveret med uændret tidsplan. Alle fem mål og fristen 18. oktober består. Se håndbog 89.235 og privat checkpoint; tidligere lokalstatus om PR625 er erstattet alene på de faktisk gennemførte kildetrin.
+
 ## 16. oktober — lokale originaler først og fælles normal udvælgelse
 
 PR624 er kildeleveret efter præcis Linux/native/source/PostgreSQL-kontrol. Den efterfølgende genopretning passerede faktisk CLI-opstart og autentificeret forberedelse, men stoppede på utilgængelig historisk original før cachegemning. Det er ikke bevis for ugyldige DMI-data eller en ny offentlig generation. Den nye skrivefri audit af det nyere gemte checkpoint er gennemført med normal baseline og fuld autentifikation; manifestfravær er fortsat ikke bevis for fysisk fravær i alle arkiver.

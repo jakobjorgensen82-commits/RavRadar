@@ -265,7 +265,7 @@ test('auth orchestration retains exact archived reader, normal baseline, GCM, fi
   assert.doesNotMatch(body, /buildRavScoreRecoveryReplay|buildRavScoreProductionPartSeries|uploadImmutable|removeExact|update-weather|fetch\(/);
 });
 
-test('normal selected qualified same-original successor is not a missing-original restore dependency', async () => {
+test('normal selected qualified same-original successor is not a missing-original restore dependency', async t => {
   // Import the exact shared normal producer, never its acquisition entrypoint.
   const normal = await import('./lib/private-dmi-recovery-record.mjs');
   const store = await import('./lib/dmi-forecast-store.mjs');
@@ -399,4 +399,55 @@ test('normal selected qualified same-original successor is not a missing-origina
   assert.throws(() => collectSelectedSavedDmiOriginalCaptures({ ...f, protectedBulk: rejectedContext,
     persistedHourlyByPart: new Map([[f.part.partId, previous.record]]) }), /SELECTED_ENDPOINT_UNAVAILABLE/,
   'sanitizer losses without a selected, native-verifiable same-hour replacement cannot become a no-op');
+
+  const preflight = (await import('./prepare-saved-dmi-original-restore.mjs')).inspectSelectedSavedDmiOriginalCaptures;
+  assert.equal(typeof preflight, 'function', 'selected preflight uses the same normal collector');
+  const originalInput = { ...f, protectedBulk: missing, progressCandidate: alternate,
+    persistedHourlyByPart: new Map([[f.part.partId, previous.record]]) };
+  const rejected = preflight(originalInput);
+  assert.equal(rejected.status, 'PARTIAL');
+  assert.equal(rejected.inspectionScope, 'FIRST_FAILURE_PER_PART');
+  assert.equal(rejected.firstFailure.branch, 'INSPECT_ORIGINALS_REJECTED');
+  assert.equal(rejected.firstFailure.reasonCode, 'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING');
+  assert.equal(rejected.firstFailure.code, 'SAVED_DMI_ORIGINAL_SELECTED_ENDPOINT_UNAVAILABLE');
+  const loss = preflight({ ...f, protectedBulk: rejectedContext,
+    persistedHourlyByPart: new Map([[f.part.partId, previous.record]]) });
+  assert.equal(loss.firstFailure.branch, 'SANITIZER_LOSS_UNCOVERED');
+  assert.equal(loss.firstFailure.reasonCode, 'SANITIZER_CURRENT_LOSS_UNCOVERED');
+  assert.equal(loss.firstFailure.target48hRelation, 'BEFORE_TARGET_48H');
+  const hold = preflight({ ...f, protectedBulk: old, progressCandidate: fresh,
+    persistedHourlyByPart: new Map([[f.part.partId, held]]) });
+  assert.equal(hold.firstFailure.branch, 'HOLD_SUPPORT_UNAVAILABLE');
+  assert.equal(hold.firstFailure.target48hRelation, 'UNAVAILABLE');
+  assert.deepEqual(preflight({ ...f, protectedBulk: old, progressCandidate: fresh }), {
+    status: 'MEASURED', inspectionScope: 'FIRST_FAILURE_PER_PART', firstFailure: null });
+  assert.throws(() => preflight({ ...f, protectedBulk: { zones: { [f.identity.entityId]: { hourly: [] } } } }), /DONOR_INVALID/);
+  // The diagnostic never weakens the real preparation failures above.
+  assert.throws(() => collectSelectedSavedDmiOriginalCaptures(originalInput), /SELECTED_ENDPOINT_UNAVAILABLE/);
+  assert.equal(JSON.stringify({ old, fresh }), snapshots, 'inspection does not rewrite either original');
+
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-selected-preflight-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const { packDmiPartContinuity } = await import('./lib/dmi-part-continuity.mjs');
+  const { inspectDmiForecastFile } = await import('./lib/dmi-forecast-file.mjs');
+  const { measureSelectedSavedDmiOriginalPreflight } = await import('./audit-saved-weather-inputs.mjs');
+  const file = path.join(directory, 'forecast.json');
+  const byTime = new Map(previous.record.hourly.map(row => [row.time, row]));
+  const continuity = { zoneId: `PART::${f.part.partId}`, point: f.part.waterPoint,
+    hourly: Array.from({ length: 121 }, (_, i) => byTime.get(at(-57 + i)) ?? { time: at(-57 + i), sources: {} }) };
+  await fs.writeFile(file, JSON.stringify({ zones: {}, partContinuity: await packDmiPartContinuity(
+    new Map([[f.part.partId, continuity]]), [f.part], at(-57)) }));
+  const index = await inspectDmiForecastFile(file);
+  const measured = await measureSelectedSavedDmiOriginalPreflight({ ...originalInput,
+    baselineIndex: index, targetReferenceAt: target });
+  assert.equal(measured.status, 'PARTIAL');
+  assert.equal(measured.partsVisited, 1); assert.equal(measured.partsExpected, 1);
+  assert.equal(measured.firstFailureCounts.INSPECT_ORIGINALS_REJECTED, 1);
+  assert.equal(measured.reasonCounts.DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING, 1);
+  assert.equal(measured.timeRelationKind, 'TARGET_48H_DIAGNOSTIC_RELATION');
+  assert.equal(measured.fullSelectedCoverageProved, false);
+  assert.equal(measured.originalFilesAvailableProved, false);
+  assert.equal(measured.artifactGatePassed, false);
+  assert.equal(measured.rawFilesOpened, false);
+  assert.doesNotMatch(JSON.stringify(measured), /SYNTHETIC|partId|currentUMps|currentVMps|itemId|Sha256|samplingPoint|nativeRows/);
 });

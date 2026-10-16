@@ -28,6 +28,8 @@ import { weatherComponentProgressCache, withAuthenticatedWeatherProgress,
   WEATHER_PROGRESS_CIPHER_PATH, WEATHER_PROGRESS_MAX_CIPHER_BYTES } from './weather-component-progress-cache.mjs';
 import { buildCurrentGridSamplingOriginalRestoreExpectation } from './lib/bounded-conditions-predecessor-transition.mjs';
 import { migratePostCutoverPrivateRuntime } from './migrate-post-cutover-private-runtime.mjs';
+import { SAVED_DMI_ORIGINAL_SCOPES, savedDmiOriginalHistoryDemand,
+  inspectSelectedSavedDmiOriginalCaptures } from './prepare-saved-dmi-original-restore.mjs';
 
 const REPOSITORY = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const policy = protectedApi.PROTECTED_PRIVATE_RUNTIME_POLICY;
@@ -700,6 +702,45 @@ export async function measureSavedNativeProofAvailability({ baselineIndex, progr
         otherRegularInventoryFiles: rawFileInventory.otherRegularFiles } : {}) } } : {}) };
 }
 
+// Only the normal selected collector is observed. No native union, restore
+// plan or admission is built, and each failed part stops at its FIRST failure.
+export async function measureSelectedSavedDmiOriginalPreflight({ baselineIndex, parts, demands,
+  protectedBulk, progressCandidate = null, targetReferenceAt } = {}) {
+  if (!(parts instanceof Map) || parts.size < 1 || parts.size > 673
+    || !Array.isArray(demands) || demands.length !== parts.size
+    || new Set(demands.map(row => row.partId)).size !== parts.size) fail('NATIVE_PROOF_INSPECTION_FAILED');
+  const result = { status: 'UNAVAILABLE', inspectionScope: 'FIRST_FAILURE_PER_PART',
+    selectionScope: 'NORMAL_PRIVATE_SELECTED_SOURCES', timeRelationKind: 'TARGET_48H_DIAGNOSTIC_RELATION',
+    partsExpected: parts.size, partsVisited: 0, partsPassingCollector: 0, partsFirstFailure: 0,
+    fullSelectedCoverageProved: false, originalFilesAvailableProved: false, artifactGatePassed: false,
+    rawFilesOpened: false, firstFailureCounts: null, reasonCounts: null, codeCounts: null, timeRelationCounts: null };
+  if (!baselineIndex?.continuity) return result;
+  result.firstFailureCounts = { INSPECT_ORIGINALS_REJECTED: 0, SANITIZER_LOSS_UNCOVERED: 0, HOLD_SUPPORT_UNAVAILABLE: 0 };
+  result.reasonCounts = Object.fromEntries([...Object.keys(NATIVE_REJECTIONS), 'DMI_NATIVE_PROOF_INVALID',
+    'SANITIZER_CURRENT_LOSS_UNCOVERED', 'HOLD_SUPPORT_UNAVAILABLE'].map(code => [code, 0]));
+  result.codeCounts = { SAVED_DMI_ORIGINAL_SELECTED_ENDPOINT_UNAVAILABLE: 0, SAVED_DMI_ORIGINAL_HOLD_SUPPORT_UNAVAILABLE: 0 };
+  result.timeRelationCounts = { WITHIN_TARGET_48H: 0, BEFORE_TARGET_48H: 0, AFTER_TARGET: 0, UNAVAILABLE: 0 };
+  const byPart = new Map(demands.map(row => [row.partId, row]));
+  const visited = await visitSavedPartCurrents(baselineIndex, parts, () => {}, (record, part) => {
+    const measured = inspectSelectedSavedDmiOriginalCaptures({ protectedBulk, progressCandidate,
+      persistedHourlyByPart: new Map([[part.partId, record]]), parts: new Map([[part.partId, part]]),
+      demands: [byPart.get(part.partId)], targetReferenceAt });
+    result.partsVisited++;
+    if (measured.status === 'MEASURED') { result.partsPassingCollector++; return; }
+    const failure = measured.firstFailure;
+    if (measured.status !== 'PARTIAL' || !object(failure)
+      || !Object.hasOwn(result.firstFailureCounts, failure.branch) || !Object.hasOwn(result.reasonCounts, failure.reasonCode)
+      || !Object.hasOwn(result.codeCounts, failure.code) || !Object.hasOwn(result.timeRelationCounts, failure.target48hRelation)) fail('NATIVE_PROOF_INSPECTION_FAILED');
+    result.partsFirstFailure++;
+    result.firstFailureCounts[failure.branch]++; result.reasonCounts[failure.reasonCode]++;
+    result.codeCounts[failure.code]++; result.timeRelationCounts[failure.target48hRelation]++;
+  });
+  if (visited.status !== 'MEASURED' || visited.counts.entries !== parts.size
+    || visited.counts.geometryMismatchEntries !== 0 || result.partsVisited !== parts.size) fail('CONTINUITY_INSPECTION_FAILED');
+  result.status = result.partsFirstFailure ? 'PARTIAL' : 'MEASURED';
+  return result;
+}
+
 function baseReport(status) {
   return { schemaVersion: 1, kind: 'SAVED_WEATHER_INPUT_AUDIT', status,
     protectedGenerationReadbackVerified: false, exactArchivedSourceContractsVerified: false,
@@ -766,7 +807,7 @@ export async function prepareSavedAuditProgressBaseline({ privateRoot, workRoot 
 export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPath, predecessorRoot,
   progressFile, progressSource, progressCacheKey, outputPath, repositoryRoot = REPOSITORY,
   includeRawManifest = false, rawCacheKey = null, rawManifestSource = null,
-  includeRawFilePresence = false, progressBaselineTargetHour = null,
+  includeRawFilePresence = false, progressBaselineTargetHour = null, includeSelectedCurrentPreflight = false,
   repository = process.env.GITHUB_REPOSITORY, pythonExecutable = process.env.PYTHON ?? 'python',
   encryptionKey = process.env.WEATHER_PROGRESS_ENCRYPTION_KEY,
   masterSecret = process.env.WEATHER_PROGRESS_MASTER_SECRET,
@@ -777,9 +818,14 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
   let normalProgressBaselineUsed = false;
   try {
     if (!['describe', 'audit'].includes(mode) || typeof includeRawManifest !== 'boolean'
+      || typeof includeSelectedCurrentPreflight !== 'boolean'
       || typeof includeRawFilePresence !== 'boolean' || includeRawFilePresence && !includeRawManifest
       || includeRawFilePresence && rawManifestSource !== FIXED_RAW_MANIFEST_SOURCE
       || mode !== 'audit' && (includeRawManifest || rawManifestSource !== null || progressBaselineTargetHour !== null)) fail('MODE_INVALID');
+    if (includeSelectedCurrentPreflight && (mode !== 'audit' || includeRawManifest || includeRawFilePresence
+      || rawCacheKey !== null || rawManifestSource !== null || !SAVED_DMI_ORIGINAL_SCOPES.some(scope =>
+        scope.progressSource === progressSource && scope.progressCacheKey === progressCacheKey
+        && scope.progressBaselineTargetHour === progressBaselineTargetHour))) fail('MODE_INVALID');
     validateProgressBaselineTargetHour(progressBaselineTargetHour);
     if (includeRawManifest ? typeof rawCacheKey !== 'string'
       || !/^dmi-grib-v4-Linux-\d{4}-W(?:0[1-9]|[1-4]\d|5[0-3])-\d+-[1-9]\d*$/.test(rawCacheKey)
@@ -907,10 +953,22 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
       const rawFileInventory = includeRawFilePresence ? await inspectSavedRawFileInventory(ctx.repository) : null;
       const nativeProofAvailability = await measureSavedNativeProofAvailability({ baselineIndex, progressIndex, parts,
         donorFiles, rawManifest, rawFileInventory });
+      let selectedCurrentPreflight;
+      if (includeSelectedCurrentPreflight) {
+        if (!normalProgressBaselineUsed) fail('PROGRESS_BASELINE_RECONSTRUCTION_REJECTED');
+        if (progressSource === '38768040429-1' && (!donorFiles.progressCandidate || donorFiles.progressActive)) fail('NATIVE_PROOF_INSPECTION_FAILED');
+        const normalConditions = await readJson(path.join(progressBaselineRoot, 'data/live/conditions.json'), 535_822_312);
+        const demands = savedDmiOriginalHistoryDemand({ conditions: normalConditions, parts,
+          targetReferenceAt: progressBaselineTargetHour });
+        const selectedIndex = await forecastIndex(path.join(progressBaselineRoot, 'data/live/dmi-forecast-cache.json'));
+        selectedCurrentPreflight = await measureSelectedSavedDmiOriginalPreflight({ baselineIndex: selectedIndex, parts, demands,
+          protectedBulk: await bulk(donorFiles.baselineBulk), progressCandidate: await bulk(donorFiles.progressCandidate),
+          targetReferenceAt: progressBaselineTargetHour });
+      }
       return { progress: { encryptedBytes: capacity.encryptedBytes, compressedBytes: capacity.compressedBytes,
         rawPackBytes: capacity.rawPackBytes, fileCount: capacity.fileCount, files: fileMetrics(files, progressFiles) },
       forecasts: { baseline: forecastMetrics(baselineIndex), progress: forecastMetrics(progressIndex) },
-      originalContext, nativeProofAvailability };
+      originalContext, nativeProofAvailability, ...(selectedCurrentPreflight ? { selectedCurrentPreflight } : {}) };
     }));
     phase = 'FINAL_READBACK';
     if (!same(await oldProtected.describeCurrentProtectedPrivateProductionRuntime(clients), source)) fail('CURRENT_GENERATION_CHANGED');
@@ -924,6 +982,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
         progressCipherBytes: WEATHER_PROGRESS_MAX_CIPHER_BYTES, progressPackBytes: 768 * 1024 * 1024 } },
       forecasts: measured.forecasts, originalContext: measured.originalContext,
       nativeProofAvailability: measured.nativeProofAvailability,
+      ...(measured.selectedCurrentPreflight ? { selectedCurrentPreflight: measured.selectedCurrentPreflight } : {}),
       // This summary belongs to the protected, previously built baseline.
       // Acquisition progress does not contain a newly built conditions file.
       protectedBaselineComponentFallback: safeWeatherComponentSummary(conditions.weatherEngine?.componentFallback),
@@ -1080,10 +1139,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       '--output': 'outputPath', '--python': 'pythonExecutable',
       '--include-raw-manifest': 'includeRawManifest', '--raw-cache-key': 'rawCacheKey',
       '--raw-manifest-source': 'rawManifestSource', '--include-raw-file-presence': 'includeRawFilePresence',
+      '--include-selected-current-preflight': 'includeSelectedCurrentPreflight',
       '--progress-baseline-target-hour': 'progressBaselineTargetHour' };
     while (args.length) { const key = args.shift(), value = args.shift();
       if (!names[key] || !value || value.startsWith('--') || Object.hasOwn(options, names[key])) fail('MODE_INVALID'); options[names[key]] = value; }
-    for (const key of ['includeRawManifest', 'includeRawFilePresence']) {
+    for (const key of ['includeRawManifest', 'includeRawFilePresence', 'includeSelectedCurrentPreflight']) {
       if (!Object.hasOwn(options, key)) continue;
       if (!['true', 'false'].includes(options[key])) fail('MODE_INVALID');
       options[key] = options[key] === 'true';

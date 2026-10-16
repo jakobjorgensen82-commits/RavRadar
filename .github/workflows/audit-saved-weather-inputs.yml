@@ -45,6 +45,11 @@ on:
         required: false
         default: false
         type: boolean
+      include_selected_current_preflight:
+        description: "Skrivefri optælling af den normale originalforberedelses første stop pr. kystdel; ingen RAW"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -84,6 +89,7 @@ jobs:
           PROGRESS_BASELINE_TARGET_HOUR: ${{ inputs.progress_baseline_target_hour }}
           RAW_MANIFEST_SOURCE: ${{ inputs.raw_manifest_source }}
           INCLUDE_RAW_FILE_PRESENCE: ${{ inputs.include_raw_file_presence }}
+          INCLUDE_SELECTED_CURRENT_PREFLIGHT: ${{ inputs.include_selected_current_preflight }}
         run: |
           set -euo pipefail
           test "$GITHUB_EVENT_NAME" = workflow_dispatch
@@ -94,6 +100,17 @@ jobs:
           [[ "$SOURCE_RUN_ATTEMPT" =~ ^[1-9][0-9]{0,3}$ ]]
           [[ "$INCLUDE_RAW_MANIFEST" == true || "$INCLUDE_RAW_MANIFEST" == false ]]
           [[ "$INCLUDE_RAW_FILE_PRESENCE" == true || "$INCLUDE_RAW_FILE_PRESENCE" == false ]]
+          [[ "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" == true || "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" == false ]]
+          if test "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" = true; then
+            test "$INCLUDE_RAW_MANIFEST" = false
+            test "$INCLUDE_RAW_FILE_PRESENCE" = false
+            test -z "$RAW_MANIFEST_SOURCE"
+            test -z "$RAW_MANIFEST_CACHE_KEY"
+            case "$SOURCE_RUN_ID-$SOURCE_RUN_ATTEMPT:$PROGRESS_BASELINE_TARGET_HOUR" in
+              38692413809-1:2026-10-14T18:00:00.000Z|38768040429-1:2026-10-15T16:00:00.000Z) ;;
+              *) exit 1 ;;
+            esac
+          fi
           if test -n "$RAW_MANIFEST_SOURCE"; then
             test "$INCLUDE_RAW_MANIFEST" = true
             test "$RAW_MANIFEST_SOURCE" = 38577766010-1
@@ -275,6 +292,7 @@ jobs:
           --progress-cache-key "$PROGRESS_CACHE_KEY"
           --include-raw-manifest "$INCLUDE_RAW_MANIFEST"
           --include-raw-file-presence "$INCLUDE_RAW_FILE_PRESENCE"
+          --include-selected-current-preflight "$INCLUDE_SELECTED_CURRENT_PREFLIGHT"
           ${RAW_MANIFEST_ARGS}
           ${RAW_SOURCE_ARGS}
           ${PROGRESS_BASELINE_ARGS}
@@ -290,6 +308,7 @@ jobs:
           PROGRESS_CACHE_KEY: ${{ steps.authority.outputs.cache_key }}
           INCLUDE_RAW_MANIFEST: ${{ inputs.include_raw_manifest }}
           INCLUDE_RAW_FILE_PRESENCE: ${{ inputs.include_raw_file_presence }}
+          INCLUDE_SELECTED_CURRENT_PREFLIGHT: ${{ inputs.include_selected_current_preflight }}
           RAW_MANIFEST_ARGS: ${{ inputs.include_raw_manifest && format('--raw-cache-key {0}', steps.authority.outputs.raw_cache_key) || '' }}
           RAW_SOURCE_ARGS: ${{ inputs.raw_manifest_source != '' && format('--raw-manifest-source {0}', inputs.raw_manifest_source) || '' }}
           PROGRESS_BASELINE_ARGS: ${{ inputs.progress_baseline_target_hour != '' && format('--progress-baseline-target-hour {0}', inputs.progress_baseline_target_hour) || '' }}

@@ -1,3 +1,17 @@
+## 89.235 Præcis kontrol af valgte strømendepunkter
+
+**Kort fortalt:** En genopretning skal skelne manglende originalbevis fra tab i udvælgelsen, før en ny rettelse vælges.
+
+Kilderettelsen med lokal genbrug og fælles normal udvælgelse er leveret efter de faktiske kilde-, Linux- og databaseprøver. Den efterfølgende genopretning gendannede gemte pakker, men stoppede før DMI-kald, originalgendannelse og cachegemning. Der er endnu ingen ny offentlig vejrgeneration fra dette forløb.
+
+En fælles fejlkode dækker både et afvist original-endepunktsbevis og et tab i sanitizeren, hvor den normale udvælgelse ikke leverer en bevist erstatning. En lille, som udgangspunkt slukket, skrivefri kontrol skelner de to steder gennem de samme normale kaldere. Den bruger autentificeret baseline, krypteret checkpoint og kystdelens bevarede historik.
+
+Kontrollen viser kun faste årsager og antal. Første fejl pr. kystdel er en delvis gennemgang, ikke bevis for, at resten af timerne er gyldige. En simpel sammenligning med target minus 48 timer er kun diagnostik. Den må ikke frigive data, der er nødvendige for initialtilstand, replay, egne native brackets eller en faktisk holdreference.
+
+Der gendannes ingen RAW-cache i denne kontrol, hentes intet nyt vejr og skrives ingen genopretningsplan, score, cache eller produktion. Normal originalforberedelse og alle efterfølgende numeriske strøm-, databevarelses- og deploykontroller stopper fortsat ved uafklaret bevis. Kun de to på forhånd navngivne gemte checkpoints er omfattet.
+
+Den nye kontrol er lokal kilde, ikke en løsning på manglende originaler eller fungerende produktion. Faktisk årsag, samlet kildekontrol, helkæderettelse, gemning, upload, deploy og offentlig kontrol er åbne. Modelbindinger, gamle originaler og scorer, kildeprioritet, administratorpunkter og geometri ændres ikke. Cron genaktiveres først efter verificeret genopretning. Alle fem arbejdsområder og fristen 18. oktober består.
+
 ## 89.234 Lokale originaler først og fælles normal udvælgelse
 
 **Kort fortalt:** En eksisterende original skal prøves sikkert, før dens tilgængelighed hos DMI undersøges. Genopretningen skal bruge samme udvælgelseslogik som den normale vejrhentning.

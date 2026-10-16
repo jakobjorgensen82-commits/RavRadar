@@ -5,6 +5,13 @@
   "updatedAt": "2026-10-16",
   "sections": [
     {
+      "id": "selected-native-preflight-2026-10-16",
+      "chapter": "89.235",
+      "title": "Præcis kontrol af valgte strømendepunkter",
+      "summary": "En genopretning skal skelne manglende originalbevis fra tab i udvælgelsen, før en ny rettelse vælges.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En genopretning skal skelne manglende originalbevis fra tab i udvælgelsen, før en ny rettelse vælges.</div><p>Kilderettelsen med lokal genbrug og fælles normal udvælgelse er leveret efter de faktiske kilde-, Linux- og databaseprøver. Den efterfølgende genopretning gendannede gemte pakker, men stoppede før DMI-kald, originalgendannelse og cachegemning. Der er endnu ingen ny offentlig vejrgeneration fra dette forløb.</p><p>En fælles fejlkode dækker både et afvist original-endepunktsbevis og et tab i sanitizeren, hvor den normale udvælgelse ikke leverer en bevist erstatning. En lille, som udgangspunkt slukket, skrivefri kontrol skelner de to steder gennem de samme normale kaldere. Den bruger autentificeret baseline, krypteret checkpoint og kystdelens bevarede historik.</p><p>Kontrollen viser kun faste årsager og antal. Første fejl pr. kystdel er en delvis gennemgang, ikke bevis for, at resten af timerne er gyldige. En simpel sammenligning med target minus 48 timer er kun diagnostik. Den må ikke frigive data, der er nødvendige for initialtilstand, replay, egne native brackets eller en faktisk holdreference.</p><p>Der gendannes ingen RAW-cache i denne kontrol, hentes intet nyt vejr og skrives ingen genopretningsplan, score, cache eller produktion. Normal originalforberedelse og alle efterfølgende numeriske strøm-, databevarelses- og deploykontroller stopper fortsat ved uafklaret bevis. Kun de to på forhånd navngivne gemte checkpoints er omfattet.</p><p>Den nye kontrol er lokal kilde, ikke en løsning på manglende originaler eller fungerende produktion. Faktisk årsag, samlet kildekontrol, helkæderettelse, gemning, upload, deploy og offentlig kontrol er åbne. Modelbindinger, gamle originaler og scorer, kildeprioritet, administratorpunkter og geometri ændres ikke. Cron genaktiveres først efter verificeret genopretning. Alle fem arbejdsområder og fristen 18. oktober består.</p>"
+    },
+    {
       "id": "local-first-selected-originals-2026-10-16",
       "chapter": "89.234",
       "title": "Lokale originaler først og fælles normal udvælgelse",
