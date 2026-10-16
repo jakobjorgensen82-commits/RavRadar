@@ -1986,8 +1986,14 @@ try {
 }
 console.log('Fixed rate-log normal caller fixtures: exact historical GET, strict bounded results and one-shot/deadline refusals; no account log read.');
 const typedWorkflowSource=(await fs.readFile('.github/workflows/deploy-trip-storage.yml','utf8')).replace(/\r\n/g,'\n');
-const typedFullReadJob=typedWorkflowSource.slice(typedWorkflowSource.indexOf('  read-fixed-supabase-metadata:'),
+const typedActualReadJob=typedWorkflowSource.slice(typedWorkflowSource.indexOf('  read-fixed-supabase-metadata:'),
   typedWorkflowSource.indexOf('  reject-unknown-operation:'));
+const typedConsoleReadStep="      - name: Read the one fixed 15 October public rate console-log interval\n        if: inputs.operation == 'fixed-public-rate-console-read-20261015'\n        timeout-minutes: 1\n        run: node scripts/read-fixed-public-rate-console-log-20261015.mjs\n        env:\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n\n";
+assert.equal(typedActualReadJob.split(typedConsoleReadStep).length,2,
+  'prove the exact additive console step before preserving the old four-reader contract');
+assert.ok(typedActualReadJob.indexOf('Require genuinely fresh idle main')<typedActualReadJob.indexOf(typedConsoleReadStep));
+assert.doesNotMatch(typedActualReadJob,/supabase db push|apply-candidate-g|functions deploy|wrangler|upload-artifact|cache\/save|SUPABASE_DB_PASSWORD|SUPABASE_SERVICE_ROLE_KEY/);
+const typedFullReadJob=typedActualReadJob.replace(typedConsoleReadStep,'');
 const typedStorageReadStep="      - name: Read the one fixed 13 October Storage upload-log interval\n        if: inputs.operation == 'fixed-storage-upload-log-read-20261013'\n        timeout-minutes: 1\n        run: node scripts/read-fixed-storage-upload-log-20261013.mjs\n        env:\n          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n\n";
 assert.equal(typedFullReadJob.split(typedStorageReadStep).length,2,'the new Storage read step occurs exactly once');
 assert.ok(typedFullReadJob.indexOf('Require genuinely fresh idle main') < typedFullReadJob.indexOf(typedStorageReadStep));

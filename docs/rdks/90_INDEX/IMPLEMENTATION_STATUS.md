@@ -328,6 +328,14 @@ Ejeren har givet to særskilte nye, endnu ubrugte engangstilladelser: det afgræ
 
 Denne front erstatter alene de nedenstående historiske udsagn om manglende kildekontrol og de nu givne, nye tilladelser. Hosted 003-installation, faktisk Worker-opdatering, præcis 503-årsag og fungerende ekstern AI er stadig åbne indtil de relevante normale handlinger og deres faktiske resultater foreligger. 003-schemaets kvitteringer er ikke fysisk dræning, kontosletning eller Auth-/backup-sletning. Alle fem hovedmål er fortsat åbne.
 
+## Lokal fast konsollæser til assistentens kvotekontrol — 16. oktober 2026
+
+Den særskilte 15. oktober-konsollæser og dens additive workflowrute er integreret lokalt efter PR629. Den gamle 13. oktober-læser og dens mål er byteuændrede; den nyere tidlige PostgreSQL-rækkefølge bevares. Ny normal måltest: 34 offlineforløb, 34 kontrollerede GET-kald, nul rigtige netværkskald og ingen gentagelser. Måltestens to workflowstrenge normaliserer kun Windows-linjeskift før de uændrede assertions.
+
+Operationen `fixed-public-rate-console-read-20261015` er låst til `function_logs`, den faste konsolmarkør, assistentruten og intervallet 15. oktober kl. 00.38.45–00.39.00 UTC. Kun markør, tilladt status og faste fejlkoder eller `UNKNOWN` returneres; rå tekst, request-id og brugerdata må ikke følge med. Én GET, ti sekunder, 32 KiB, stop ved otte rækker og de normale main-/kilde-/writer-kontroller består. Native ClickHouse, faktisk hosted format, Supabase-aflæsning, præcis CI, levering og den konkrete AI-fejlårsag er endnu ikke bevist. Tomt eller ukendt resultat er ikke frifindelse. Ingen runtime-, versions-, bindings-, SQL- eller produktionsændring er udført; interne diagnoser bliver ikke offentlig assistentviden.
+
+De eksisterende normale kilde-/readinessmål havde to konkrete firelæserforventninger, som den femte additive læser gjorde røde. Nu kontrolleres først den præcise nye blok og dens routing, skrivefrihed og idle-rækkefølge; derefter fjernes kun den eksakte blok før alle uændrede historiske fire-/tre-/tolæserassertions. Begge hele normale mål består lokalt. Ingen produktguard er ændret; Linux `env -u` kræver fortsat den præcise CI.
+
 ## Dokumenteret rettelse: logsvarets fejlfelt er valgfrit — 13. oktober 2026
 
 Den officielle, tokenfri Supabase OpenAPI-kontrakt gør HTTP 200-svarets `error`-felt valgfrit. Læserens tidligere krav om præcis både `result` og `error` var derfor en konkret overstramning. Den minimale rettelse tillader nu også præcis `result` alene, når den uændrede normale array-/række-/status-/fejlkodevalidering består. Manglende resultat, ekstra felter, ugyldigt eksplicit fejlfelt, delvise eller ukendte rækker og de tidligere grænser afvises fortsat.

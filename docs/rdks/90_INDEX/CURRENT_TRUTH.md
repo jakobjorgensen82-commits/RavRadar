@@ -323,6 +323,16 @@ Ejeren har givet to særskilte nye, endnu ubrugte engangstilladelser: det afgræ
 
 Denne front erstatter alene de nedenstående historiske udsagn om manglende kildekontrol og de nu givne, nye tilladelser. Hosted 003-installation, faktisk Worker-opdatering, præcis 503-årsag og fungerende ekstern AI er stadig åbne indtil de relevante normale handlinger og deres faktiske resultater foreligger. 003-schemaets kvitteringer er ikke fysisk dræning, kontosletning eller Auth-/backup-sletning. Alle fem hovedmål er fortsat åbne.
 
+## Lokal fast konsollæser til assistentens kvotekontrol — 16. oktober 2026
+
+Den nye operation `fixed-public-rate-console-read-20261015` er lokalt integreret som en særskilt skrivefri kontrol, ikke som en ændring af assistentens runtime eller viden. Den følger konsolkilden `function_logs` og kræver både den faste markør `PUBLIC_RATE_LIMIT_RPC_REJECTED` ved tekstens begyndelse og ruten `ravradar-assistant`. Den låste SQL-periode er 15. oktober kl. 00.38.45–00.39.00 UTC, med eksklusiv sluttid; API-omslutningen er kl. 00.38–00.39 UTC. Databasen må kun returnere den faste markør samt tilladt HTTP-status og en af fem eksisterende fejlkoder eller `UNKNOWN`, aldrig rå logtekst eller request-id.
+
+Én GET, ti sekunders samlet HTTP-/kropsfrist, 32 KiB, afvisning ved otte rækker, ingen argumenter og ingen gentagelse bevares. Samme første-forsøg-, præcis main-, kildebevis- og friske writer-fri kontroller gælder; installations- og reparationsveje er uændrede. De gamle læsere og intervaller bevares. PR629's tidlige PostgreSQL-kontrol står uændret før Source-trinnet, hvor den nye måltest er tilføjet.
+
+Den faktiske integrerede måltest består med 34 offlineforløb, 34 kontrollerede GET-kald og nul netværkskald. Kun måltestens to workflowlæsninger normaliserer CRLF til LF; ingen assertion lempes. Dette er ikke native ClickHouse-udførelse, hosted logformat, en gennemført Supabase-læsning, 503-årsagsbevis eller fungerende ekstern AI. Tomt resultat og ukendt format beviser ikke, at en hændelse mangler; rapporten angiver altid `recordedEventAbsenceProved=false`. Præcis CI og sikker kildelevering står åbne. Ingen version, modelbinding, SQL, vejrdata eller produktion ændres af denne lokale kontrolkilde.
+
+De to eksisterende normale kilde-/readinessprøver er desuden reproduceret med den nye femte læser. Først beviser de den præcise nye læserblok og dens routing, skrivefrihed og idle-rækkefølge; kun denne eksakte blok fjernes derefter fra den historiske prøvevisning. Alle gamle fire-/tre-/tolæserassertions bevares. Begge normale mål består lokalt efter hver sin påviste integrationsfejl. Linux-kalderen `env -u` er fortsat ikke udført på Windows; den præcise CI skal bevise den.
+
 ## Dokumenteret rettelse: logsvarets fejlfelt er valgfrit — 13. oktober 2026
 
 Den officielle, tokenfri Supabase OpenAPI-kontrakt gør HTTP 200-svarets `error`-felt valgfrit. Læserens tidligere krav om præcis både `result` og `error` var derfor en konkret overstramning. Den minimale rettelse tillader nu også præcis `result` alene, når den uændrede normale array-/række-/status-/fejlkodevalidering består. Manglende resultat, ekstra felter, ugyldigt eksplicit fejlfelt, delvise eller ukendte rækker og de tidligere grænser afvises fortsat.
