@@ -1786,6 +1786,38 @@ export async function migratePostCutoverPrivateRuntime({
   currentGridOriginalExpectation = null,
   metadataOnly = false,
 } = {}) {
+  return migratePrivateRuntimeCore({ sourceRoot, outputRoot, bundleManifestPath,
+    predecessorDescriptorPath, predecessorRoot, repositoryRoot, expectedSourceHead,
+    reportPath, ownerCurrentOriginalOnly, currentGridOriginalOnly,
+    currentGridOriginalExpectation, metadataOnly });
+}
+
+const ownedI71WorkingContexts = new WeakMap();
+const ownedI71WorkingFailurePhases = new WeakMap();
+export function ownedI71WorkingFailurePhase(error) {
+  return error && typeof error === 'object' ? ownedI71WorkingFailurePhases.get(error) ?? null : null;
+}
+async function ownedI71WorkingStage(phase, operation) {
+  try { return await operation(); }
+  catch (error) {
+    if (error && typeof error === 'object' && !ownedI71WorkingFailurePhases.has(error)) {
+      ownedI71WorkingFailurePhases.set(error, phase);
+    }
+    throw error;
+  }
+}
+async function migratePrivateRuntimeCore({
+  sourceRoot, outputRoot, bundleManifestPath, predecessorDescriptorPath, predecessorRoot,
+  repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'),
+  expectedSourceHead, reportPath, ownerCurrentOriginalOnly = false,
+  currentGridOriginalOnly = false, currentGridOriginalExpectation = null,
+  metadataOnly = false, ownedI71WorkingContext = null,
+} = {}) {
+  const owned = ownedI71WorkingContext === null ? null : ownedI71WorkingContexts.get(ownedI71WorkingContext);
+  if (ownedI71WorkingContext !== null && (!owned || !metadataOnly
+    || currentGridOriginalOnly || ownerCurrentOriginalOnly || currentGridOriginalExpectation !== null)) {
+    throw new Error('Owned I71 working migration requires its actual sealed metadata-only context');
+  }
   if (currentGridOriginalOnly && metadataOnly
     || ownerCurrentOriginalOnly && currentGridOriginalOnly
     || !currentGridOriginalOnly && currentGridOriginalExpectation !== null) {
@@ -1794,11 +1826,16 @@ export async function migratePostCutoverPrivateRuntime({
   if (!SOURCE_HEAD.test(String(expectedSourceHead ?? ''))) {
     throw new Error('Post-cutover migration requires an exact predecessor source head');
   }
-  const predecessorIdentity = validatePredecessorIdentity(
+  const predecessorIdentity = owned ? owned.identity : validatePredecessorIdentity(
     await readJson(predecessorDescriptorPath, 'Current private runtime source identity'),
     expectedSourceHead,
   );
   const repository = await fs.realpath(path.resolve(repositoryRoot));
+  if (owned && (repository !== owned.repository || path.resolve(sourceRoot) !== owned.sourceRoot
+    || path.resolve(bundleManifestPath) !== owned.bundleManifestPath
+    || path.resolve(predecessorRoot) !== owned.predecessorRoot || expectedSourceHead !== owned.identity.sourceHead)) {
+    throw new Error('Owned I71 working paths do not match the actual fixed-source writer');
+  }
   if (currentGridOriginalOnly) {
     assertCurrentGridOriginalMigrationIdentity(predecessorIdentity, currentGridOriginalExpectation);
     const actualRepository = await fs.realpath(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'));
@@ -1929,7 +1966,9 @@ export async function migratePostCutoverPrivateRuntime({
 
   const report = {
     schemaVersion: 2,
-    kind: 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_REBIND',
+    kind: owned ? 'RAVRADAR_OWNED_I71_NATIVE_IDENTITY_WORKING_REBIND' : 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_REBIND',
+    ...(owned ? { admission: 'NO_ADMISSION', protectedSourceClaimed: false,
+      sourceKind: 'RAVRADAR_NATIVE_IDENTITY_OWNED_I71_WORKING_SOURCE' } : {}),
     transitionKind: migrationResult.transitionKind,
     predecessorSourceHead: predecessorIdentity.sourceHead,
     datasetId: predecessorIdentity.datasetId,
@@ -1964,6 +2003,137 @@ export async function migratePostCutoverPrivateRuntime({
     recomputedModeCount: migrationResult.recomputedModeCount,
     recomputedZoneCount: migrationResult.recomputedZoneCount,
   };
+}
+
+// LOCAL metadata utility only. Paths identify owned input bytes, not protected
+// authority. The production recovery caller must independently prove original
+// B/S and old GCM before using this output; this API never grants admission.
+export async function migrateOwnedI71NativeIdentityWorkingRuntime(options) {
+  if (!isPlainObject(options)
+    || Object.keys(options).sort().join(',') !== 'outputRoot,privateRoot,reportPath,sourceRoot') {
+    throw new Error('Owned I71 utility accepts only four local working paths; NO_ADMISSION');
+  }
+  const { repository, privateRoot, sourceRoot, outputRoot, reportPath } = await ownedI71WorkingStage('LOCATIONS', async () => {
+    const repository = await fs.realpath(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'));
+    const directory = async requested => {
+      const absolute = path.resolve(requested), stat = await fs.lstat(absolute);
+      if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('Owned I71 paths require regular directories');
+      const real = await fs.realpath(absolute), relative = path.relative(repository, real);
+      if (!relative || (!relative.startsWith('..' + path.sep) && relative !== '..')) {
+        throw new Error('Owned I71 paths must remain outside the repository');
+      }
+      return real;
+    };
+    const absent = async file => {
+      try { await fs.lstat(file); return false; }
+      catch (error) { if (error?.code === 'ENOENT') return true; throw error; }
+    };
+    const privateRoot = await directory(options.privateRoot), sourceRoot = await directory(options.sourceRoot);
+    const outputRoot = path.resolve(options.outputRoot), reportPath = path.resolve(options.reportPath);
+    const within = child => {
+      const relative = path.relative(privateRoot, child);
+      return relative && relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative);
+    };
+    if (!within(sourceRoot) || !within(outputRoot) || !within(reportPath)
+      || !await absent(outputRoot) || !await absent(reportPath)) {
+      throw new Error('Owned I71 source/output/report must remain exclusively inside the private root');
+    }
+    for (const existing of [sourceRoot, path.dirname(outputRoot), path.dirname(reportPath)]) {
+      let current = privateRoot;
+      for (const segment of path.relative(privateRoot, existing).split(path.sep).filter(Boolean)) {
+        current = path.join(current, segment);
+        if ((await fs.lstat(current)).isSymbolicLink()) throw new Error('Owned I71 working paths must not traverse symlinks');
+      }
+    }
+    return { repository, privateRoot, sourceRoot, outputRoot, reportPath };
+  });
+  const { withFrozenI71Source } = await ownedI71WorkingStage('SOURCE', () => import('./check-native-identity-frozen-i71-source.mjs'));
+  return ownedI71WorkingStage('SOURCE', () => withFrozenI71Source(async frozenRoot => ownedI71WorkingStage('OWNED_BUNDLE', async () => {
+    const load = relative => ownedI71WorkingStage('SOURCE', () => import(pathToFileURL(path.join(frozenRoot, relative)).href));
+    const [oldWorkflow, oldBundle, oldModel, oldCandidate] = await Promise.all([
+      load('scripts/private-production-runtime-workflow.mjs'), load('scripts/private-production-runtime-bundle.mjs'),
+      load('js/core/ravscore-model-contract.js'), load('scripts/rollback-assets/ravscore-model-contract.js'),
+    ]);
+    const oldIntegrated = oldModel.ravScoreModelBinding(), oldCandidateBinding = oldCandidate.ravScoreModelBinding();
+    if (oldIntegrated.modelBundleSha256 !== '994da006e4c91a1fc759d5ed58b74de80a9ccaad6753274d5abb0cb07eaed399'
+      || oldCandidateBinding.modelBundleSha256 !== 'd192e060cf47fde07a1ae2faf9a8db913dbbf4e1325cbf7bf2e33c720982e8d9') {
+      throw new Error('Owned working source is not the genuine fixed I71/C69 implementation');
+    }
+    assertBindingUpgrade(oldIntegrated, ravScoreModelBinding(), 'Owned I71 integrated successor');
+    assertBindingUpgrade(oldCandidateBinding, candidateModelBinding(), 'Owned I71 Candidate successor');
+    const conditions = hydratePrivateConditionsHourly(await readJson(path.join(sourceRoot, 'data/live/conditions.json'), 'Owned I71 conditions'));
+    oldModel.assertRavScoreModelBinding(conditions.coastalParts?.modelBinding, 'Owned I71 original working binding');
+    if (!DATASET_ID.test(String(conditions.datasetId ?? '')) || Object.keys(conditions.zones ?? {}).length !== 210
+      || Object.keys(conditions.coastalParts?.parts ?? {}).length !== 673) {
+      throw new Error('Owned I71 working source lacks its real whole210/673 generation');
+    }
+    const contractHashes = await ownedI71WorkingStage('SOURCE', () => oldWorkflow.privateRuntimeContractHashes({ repositoryRoot: frozenRoot }));
+    if (contractHashes.continuationStateContractSha256 !== '0f6c182ab2ffa7d9d0153706277aa3f7b582327be7dda02842a9c8b995568d4a') {
+      throw new Error('Owned working source lacks genuine frozen I71/T12');
+    }
+    const descriptors = [...oldWorkflow.PRIVATE_RUNTIME_FILES];
+    for (const optional of [PRIVATE_WEATHER_COMPONENT_PACK_FILE, PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE]) {
+      if (await fs.lstat(path.join(sourceRoot, optional.relativePath)).catch(error => {
+        if (error?.code === 'ENOENT') return null; throw error;
+      })) descriptors.push(optional);
+    }
+    assertPrivateRuntimeInventory(descriptors);
+    const files = [];
+    for (const descriptor of descriptors) {
+      let current = sourceRoot;
+      for (const segment of descriptor.relativePath.split('/')) {
+        current = path.join(current, segment);
+        if ((await fs.lstat(current)).isSymbolicLink()) throw new Error('Owned working inventory traverses a symlink');
+      }
+      if (!(await fs.lstat(current)).isFile()) throw new Error('Owned I71 working payload must be a regular file');
+      files.push({ ...descriptor, sourcePath: current, privacyClass: PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.privacyClass });
+    }
+    const bundlePath = path.join(privateRoot, 'owned-i71-working-bundle');
+    const created = await oldBundle.createPrivateProductionRuntimeBundle({ privateRoot, bundlePath,
+      repositoryRoot: frozenRoot, metadata: {
+        datasetId: conditions.datasetId, generationId: conditions.datasetId,
+        productionReferenceAt: conditions.productionReferenceAt, generatedAt: conditions.generatedAt,
+        zoneCount: 210, partCount: 673, modelBinding: oldIntegrated, contractHashes,
+        privacyClass: PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.privacyClass,
+      }, files });
+    if (created.created !== true) throw new Error('Actual owned I71 bundle writer did not complete');
+    const bundleManifestPath = path.join(bundlePath, 'manifest.json');
+    const manifest = await readJson(bundleManifestPath, 'Actual owned I71 manifest');
+    const expected = { modelBinding: oldIntegrated, contractHashes,
+      datasetId: conditions.datasetId, productionReferenceAt: conditions.productionReferenceAt,
+      bundleContentSha256: created.bundleContentSha256 };
+    await oldBundle.verifyPrivateProductionRuntimeBundle({ privateRoot, bundlePath, repositoryRoot: frozenRoot, expected });
+    const payloadRoot = path.join(bundlePath, 'payload');
+    await assertRestoredOriginalInventory(payloadRoot, manifest);
+    const context = Object.freeze({});
+    const identity = Object.freeze({ schemaVersion: '1.0.0',
+      kind: 'RAVRADAR_NATIVE_IDENTITY_OWNED_I71_WORKING_SOURCE',
+      sourceHead: '37e657867ff0f8c31f8e8489e5c9a1cf235192f9',
+      datasetId: manifest.datasetId, productionReferenceAt: manifest.productionReferenceAt,
+      generatedAt: manifest.generatedAt, bundleContentSha256: created.bundleContentSha256,
+      modelBinding: oldIntegrated, contractHashes, expectedZoneCount: 210, expectedPartCount: 673,
+      privatePayloadIncluded: false });
+    ownedI71WorkingContexts.set(context, { identity, repository, sourceRoot: payloadRoot,
+      bundleManifestPath, predecessorRoot: frozenRoot });
+    try {
+      let report;
+      try {
+        report = await migratePrivateRuntimeCore({ sourceRoot: payloadRoot, outputRoot,
+          bundleManifestPath, predecessorRoot: frozenRoot, repositoryRoot: repository,
+          expectedSourceHead: identity.sourceHead, reportPath, metadataOnly: true,
+          ownedI71WorkingContext: context });
+      } catch (error) {
+        if (error && typeof error === 'object') ownedI71WorkingFailurePhases.set(error, 'NEW_METADATA');
+        throw error;
+      }
+      await assertRestoredOriginalInventory(payloadRoot, manifest);
+      await oldBundle.verifyPrivateProductionRuntimeBundle({ privateRoot, bundlePath, repositoryRoot: frozenRoot, expected });
+      if (report.admission !== 'NO_ADMISSION' || report.protectedSourceClaimed !== false) {
+        throw new Error('Owned local migration must never imply protected or numeric admission');
+      }
+      return { ...report, ownedBundlePath: bundlePath, workingRoot: outputRoot };
+    } finally { ownedI71WorkingContexts.delete(context); }
+  })));
 }
 
 function argument(argv, name) {

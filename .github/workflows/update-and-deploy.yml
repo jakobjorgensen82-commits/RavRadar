@@ -404,6 +404,7 @@ jobs:
       quick_confirmation: false
       quick_progress_source: ''
       checkpoint_only: false
+      native_sampling_identity_original_recovery: false
       produce_weather_handoff: ${{ needs.validate-dispatch.outputs.produce_weather_handoff == 'true' }}
       produce_weather_handoff_confirmation: ${{ needs.validate-dispatch.outputs.produce_weather_handoff_confirmation }}
       ravscore_candidate_g_rollback_mode: ${{ needs.validate-dispatch.outputs.ravscore_candidate_g_rollback_mode }}

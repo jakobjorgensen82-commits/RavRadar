@@ -19,7 +19,9 @@ import {
 } from './rollback-assets/ravscore-model-contract.js';
 import { buildSupabaseAdminHeaders } from './lib/supabase-admin-rest.mjs';
 import { ACCOUNT_ASSISTANT_MIGRATION } from './lib/account-assistant-successor-source.mjs';
-import { CURRENT_GRID_MIGRATION, readCurrentGridCanonicalSource } from './lib/current-grid-successor-source.mjs';
+import { CURRENT_GRID_MIGRATION } from './lib/current-grid-successor-source.mjs';
+import { nativeIdentityMigration, readNativeIdentityCanonicalSource }
+  from './lib/native-sampling-identity-successor-source.mjs';
 import {STATISTICS_REVISION_MIGRATION,STATISTICS_REVISION_PREDECESSOR,buildStatisticsPreferenceRevision}
   from './build-statistics-preference-revision.mjs';
 
@@ -280,6 +282,8 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
   }),
   ACCOUNT_ASSISTANT_MIGRATION,
   CURRENT_GRID_MIGRATION,
+  STATISTICS_REVISION_MIGRATION,
+  nativeIdentityMigration(),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
@@ -313,7 +317,7 @@ function normaliseTripBindingPolicyDefinition(value) {
 }
 
 export async function expectedTripBindingPolicy({ migrationsDirectory = MIGRATIONS_DIRECTORY } = {}) {
-  const { canonicalSource: migration } = await readCurrentGridCanonicalSource({ migrationsDirectory });
+  const { canonicalSource: migration } = await readNativeIdentityCanonicalSource({ migrationsDirectory });
   const scoreQualityMatch = migration.match(
     /create or replace function public\.ravradar_trip_v3_score_quality_allowed\([\s\S]*?\)\s*returns boolean[\s\S]*?as \$\$([\s\S]*?)\$\$;/i,
   );
@@ -346,9 +350,9 @@ function sqlFunctionBody(source, functionName, label) {
 export async function expectedCheckpointCasContract({
   migrationsDirectory = MIGRATIONS_DIRECTORY,
 } = {}) {
-  // Exact sparse successor view includes actual200000-derived CAS; it does
-  // not change the userdata130000 lifecycle or legacy returned migration ID.
-  const { canonicalSource: migration } = await readCurrentGridCanonicalSource({ migrationsDirectory });
+  // Exact reviewed successor, including independent fixed-I71 originals.
+  // Historical220/230 bytes and the legacy returned migration ID stay intact.
+  const { canonicalSource: migration } = await readNativeIdentityCanonicalSource({ migrationsDirectory });
   const definitions = [
     ['public.ravradar_ravscore_checkpoint_canonical_time', 'canonical-time validator'],
     ['public.ravradar_ravscore_checkpoint_has_forbidden_key', 'forbidden-key validator'],
@@ -383,6 +387,10 @@ export async function expectedCheckpointCasContract({
       'whole original c1ac state validator'],
     ['public.ravradar_ravscore_checkpoint_grid_c1ac_payload_valid',
       'whole original c1ac payload validator'],
+    ['public.ravradar_ravscore_checkpoint_native_identity_i71_state_valid',
+      'whole original I71 state validator'],
+    ['public.ravradar_ravscore_checkpoint_native_identity_i71_payload_valid',
+      'whole original I71 payload validator'],
   ].map(([functionName, label]) => sqlFunctionBody(
     migration,
     functionName,
@@ -407,7 +415,9 @@ export async function expectedCheckpointCasContract({
     + `\n-- grid-original-249-state-validator --\n${definitions[16]}`
     + `\n-- grid-original-249-payload-validator --\n${definitions[17]}`
     + `\n-- grid-original-c1ac-state-validator --\n${definitions[18]}`
-    + `\n-- grid-original-c1ac-payload-validator --\n${definitions[19]}`;
+    + `\n-- grid-original-c1ac-payload-validator --\n${definitions[19]}`
+    + `\n-- native-identity-i71-state-validator --\n${definitions[20]}`
+    + `\n-- native-identity-i71-payload-validator --\n${definitions[21]}`;
   return Object.freeze({
     id: CHECKPOINT_CAS_CONTRACT_ID,
     sha256: sha256(definition),
@@ -586,9 +596,8 @@ export async function prepareTemporarySupabaseCutoverWorkdir({ workdir: inputWor
       path.join(migrationsDirectory, migration.filename),
     );
   }
-  if (includeStatisticsPreferenceRevisionSource) await fs.copyFile(
-    path.join(MIGRATIONS_DIRECTORY,STATISTICS_REVISION_MIGRATION.filename),
-    path.join(migrationsDirectory,STATISTICS_REVISION_MIGRATION.filename));
+  // Statistics230 is now a required historical source and was copied above.
+  // Its explicit legacy option still verifies the immutable source, not a grant.
   return Object.freeze({ workdir, migrationsDirectory });
 }
 
@@ -778,8 +787,11 @@ export async function assertSupabaseMigrationPlan({
   const rows = parseSupabaseMigrationList(migrationListText);
   const local = uniqueVersions(rows, 'local');
   const remote = uniqueVersions(rows, 'remote');
-  const plannedMigrations=allowStatisticsPreferenceRevisionPlan
-    ? [...REQUIRED_CUTOVER_MIGRATIONS,STATISTICS_REVISION_MIGRATION] : REQUIRED_CUTOVER_MIGRATIONS;
+  // A normal/code-only installer may observe an already-installed successor,
+  // never acquire its separate original-preserving recovery write authority.
+  assert.ok(remote.has(nativeIdentityMigration().version),
+    'NATIVE_SAMPLING_IDENTITY_RECOVERY_ROUTE_REQUIRED');
+  const plannedMigrations = REQUIRED_CUTOVER_MIGRATIONS;
   const requiredVersions = new Set(plannedMigrations.map(item => item.version));
 
   for (const migration of REQUIRED_CUTOVER_MIGRATIONS) {

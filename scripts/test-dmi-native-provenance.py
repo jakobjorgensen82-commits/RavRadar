@@ -24,6 +24,37 @@ from lib.dmi_native_provenance import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def check_original_wire_identity():
+    from lib.dmi_legacy_current_recovery import original_wire_identity_matches_zone
+    central = {"id": "PART::WIRE", "parentZoneId": "PARENT", "coastalPart": True,
+        "lon": 8.00000004, "lat": 55.00000004}
+    wire = sampling_identity(central)
+    exact = {**wire, "samplingPoint": [central["lon"], central["lat"]]}
+    before = copy.deepcopy((central, wire, exact))
+    assert original_wire_identity_matches_zone(wire, central)
+    assert original_wire_identity_matches_zone(exact, central)
+    for name in ("entityId", "parentZoneId", "entityType", "samplingContext"):
+        wrong = copy.deepcopy(wire); wrong[name] += "-other"
+        assert not original_wire_identity_matches_zone(wrong, central)
+    for point in ([8.00000001, 55], ["8", 55], [True, 55], [8, 91], [181, 55],
+                  [8, float("nan")], [8, 55, 0], (8, 55), [8.00000004, 55]):
+        assert not original_wire_identity_matches_zone({**wire, "samplingPoint": point}, central)
+    assert not original_wire_identity_matches_zone({**wire, "extra": True}, central)
+    assert not original_wire_identity_matches_zone(wire, {**central, "parentZoneId": True})
+    assert not original_wire_identity_matches_zone(wire, {**central, "id": 7})
+    assert (central, wire, exact) == before
+    for number in (1 / 256, 3 / 256, -1 / 256, -3 / 256, -0.0):
+        own = {**central, "lon": number, "lat": number}
+        assert original_wire_identity_matches_zone(sampling_identity(own), own)
+
+
+check_original_wire_identity()
+if sys.argv[1:] == ["--original-wire-identity-only"]:
+    print("Original wire identity partition passed: exact/full versus Python-seven-place, strict identities/types/ranges, no mutation")
+    raise SystemExit(0)
+
 # The parity test exercises provenance construction only; an import-safe ecCodes
 # stub keeps it independent of the platform GRIB DLL.
 eccodes = types.ModuleType("eccodes")
@@ -392,10 +423,12 @@ def check_legacy_current_recovery_normal_callers():
     import contextlib
     import hashlib
     from unittest.mock import patch
-    from lib.dmi_legacy_current_recovery import REQUEST_PATH, OUTPUT_PATH, SOURCE_PATHS
+    from lib.dmi_legacy_current_recovery import REQUEST_PATH, OUTPUT_PATH, SOURCE_PATHS, _js_digest
 
     when = producer.canonical_time("2026-10-09T00:00:00Z")
-    own_zone = {**zone, "lat": 56.15, "lon": 8.3}
+    # Actual normal producer preserves these full central coordinates for
+    # sampling while its original identity/source stores Python-round-seven.
+    own_zone = {**zone, "lat": 56.15000004, "lon": 8.30000004}
     registry = "0123456789abcdef"
     signature = f"parser:20|params:4|grid:9|eccodes-api:2.48.2|eccodes-binding:2.48.0|zones:{registry}"
     payload = b"controlled normal OLD recovery input"
@@ -481,6 +514,99 @@ def check_legacy_current_recovery_normal_callers():
             # fixture to satisfy an incompatible parser would hide the defect.
             bound = producer.read_legacy_current_original_requests(part_bytes, [own_zone], when)
             assert len(bound["requests"]) == 1 and bound["requestsSha256"] == digest(request_path.read_bytes())
+            # Schema2's existing NEW bracket is read from the SAME measured
+            # own source document. It is never decoded by the OLD helper.
+            mixed_at = producer.canonical_time(datetime.fromisoformat(when.replace("Z", "+00:00")) + timedelta(hours=1))
+            new_at = producer.canonical_time(datetime.fromisoformat(when.replace("Z", "+00:00")) + timedelta(hours=3))
+            existing_source = producer.native_component_source("dkss_lf", when, new_at, component="current",
+                zone=own_zone, grid_candidate=candidate, capture={**captured, "itemId": "controlled-existing-new",
+                    "assetIdentitySha256": "9" * 64}, spatial_selection=producer.COMPONENT_SPATIAL_SELECTION["current"],
+                verticalLayer="depthbelowsea:1", verticalLayerRankM=1.,
+                vectorSelection=CURRENT_VECTOR_SELECTION, vectorSemanticsVersion=3)
+            assert existing_source is not None
+            existing_source["nativeGridSampling"] = {"contractId": "dmi-native-grid-sampling-v1", "elementIndex": 4,
+                "gridIndexIdentitySha256": "8" * 64, "coordinateInterpretation": "dmi-dkss-grib1-header-endpoints-v1",
+                "gridDefinitionSha256": existing_source["gridDefinitionSha256"], "gridPoint": existing_source["gridPoint"],
+                "fieldSet": ["current-u", "current-v"], "optionalFieldSet": []}
+            existing_row = {"time": new_at, "current-u": .223456789012345, "current-v": -.776543210987654,
+                "sources": {"current": existing_source}}
+            mixed_source_document = copy.deepcopy(document)
+            mixed_source_document["zones"][own_zone["id"]]["hourly"][new_at] = copy.deepcopy(existing_row)
+            mixed_demand = copy.deepcopy(demand); mixed_demand["productionReferenceAt"] = mixed_at
+            mixed_demand["demands"][0].update(endAt=mixed_at, startAt=producer.canonical_time(
+                datetime.fromisoformat(mixed_at.replace("Z", "+00:00")) - timedelta(hours=48)))
+            assert len(producer.current_history_demands(mixed_demand["demands"], [own_zone], mixed_at)) == 1
+            mixed_envelope = copy.deepcopy(envelope)
+            mixed_envelope.update(schemaVersion=2, productionReferenceAt=mixed_at,
+                historyDemandSha256=digest(encode(mixed_demand)))
+            mixed_envelope["sourceHashes"]["deployedBulk"] = digest(encode(mixed_source_document))
+            own_step = {key: copy.deepcopy(existing_source[key]) for key in (
+                "itemId", "assetIdentitySha256", "nativeValidTime", "leadTimeHours", "acquiredAt", "optionalFieldSet",
+                "nativeGridSampling", "gridPoint", "distanceKm", "itemCreatedAt") if key in existing_source}
+            mixed_witness = mixed_envelope["projectionWitnesses"][0]["row"]
+            mixed_witness["time"] = mixed_at
+            mixed_witness["sources"]["current"].update(nativeSteps=[copy.deepcopy(step), own_step],
+                nativeValidTimes=[when, new_at], temporalResolution="interpolated", leadTimeHours=1., forecastAgeHours=0.)
+            mixed_envelope["existingNativeOriginals"] = [{"originalId": "sha256:" + "7" * 64,
+                "partId": "TEST", "documentRole": "deployedBulk",
+                "documentSha256": mixed_envelope["sourceHashes"]["deployedBulk"], "contextSha256": "sha256:" + "8" * 64,
+                "rowPath": ["zones", own_zone["id"], "hourly", new_at], "row": copy.deepcopy(existing_row),
+                "projectionWitnessRefs": [witness_id]}]
+            original = mixed_envelope["existingNativeOriginals"][0]
+            original["contextSha256"] = _js_digest({"header": header, "zone": identity})
+            def reissue_original_id(value):
+                original = value["existingNativeOriginals"][0]
+                original["originalId"] = _js_digest({key: item for key, item in original.items()
+                    if key not in ("originalId", "projectionWitnessRefs")})
+            reissue_original_id(mixed_envelope)
+            def read_mixed_inputs(value):
+                write(SOURCE_PATHS["deployedBulk"], encode(mixed_source_document))
+                write(".cache/ravscore-current-history-demand.json", encode(mixed_demand))
+                request_path.write_bytes(encode(value))
+                with patch.dict(os.environ, {"DMI_BULK_LEGACY_CURRENT_ORIGINAL_REQUEST_SHA256": digest(request_path.read_bytes())}):
+                    return producer.read_legacy_current_original_requests(part_bytes, [own_zone], mixed_at)
+            mixed_bound = read_mixed_inputs(mixed_envelope)
+            assert len(mixed_bound["requests"]) == 1 and len(mixed_bound["existingNativeOriginals"]) == 1
+            assert mixed_bound["existingNativeOriginals"][0]["row"] == existing_row
+            hash_failures = []
+            for field in ("originalId", "contextSha256"):
+                wrong = copy.deepcopy(mixed_envelope)
+                wrong["existingNativeOriginals"][0][field] = "sha256:" + "a" * 64
+                try:
+                    read_mixed_inputs(wrong)
+                except ValueError as error:
+                    assert str(error) == "DMI_LEGACY_CURRENT_EXISTING_ORIGINAL_ID_MISMATCH", str(error)
+                else:
+                    hash_failures.append(field)
+            assert not hash_failures, "Prewrite accepted changed own descriptor hashes: " + repr(hash_failures)
+            wrong_context = copy.deepcopy(mixed_envelope)
+            wrong_context["existingNativeOriginals"][0]["contextSha256"] = "sha256:" + "a" * 64
+            reissue_original_id(wrong_context)
+            try:
+                read_mixed_inputs(wrong_context)
+            except ValueError as error:
+                assert str(error) == "DMI_LEGACY_CURRENT_EXISTING_ORIGINAL_ID_MISMATCH", str(error)
+            else:
+                raise AssertionError("A reissued originalId hid the wrong measured own context digest")
+            for change, code in (
+                (lambda value: value["existingNativeOriginals"][0]["row"].update({"current-u": 99.}), "EXISTING_ORIGINAL_CHANGED"),
+                (lambda value: value["existingNativeOriginals"][0]["row"]["sources"]["current"].update(itemId="forged"), "EXISTING_ORIGINAL_CHANGED"),
+                (lambda value: value["documentContexts"][0]["header"].update(currentVectorSelection="forged"), "REQUEST_CONTEXT_INVALID"),
+                (lambda value: value["existingNativeOriginals"][0]["rowPath"].__setitem__(1, "PART::FOREIGN"), "EXISTING_ORIGINAL_INVALID"),
+                (lambda value: value["existingNativeOriginals"][0].update(documentRole="candidate"), "EXISTING_ORIGINAL_INVALID"),
+                (lambda value: value["existingNativeOriginals"][0].update(documentSha256="sha256:" + "f" * 64), "EXISTING_ORIGINAL_INVALID"),
+            ):
+                wrong = copy.deepcopy(mixed_envelope); change(wrong)
+                reissue_original_id(wrong)
+                try:
+                    read_mixed_inputs(wrong)
+                except ValueError as error:
+                    assert str(error) == "DMI_LEGACY_CURRENT_" + code, str(error)
+                else:
+                    raise AssertionError("reauthorized request SHA bypassed actual same-document native validation")
+            write(SOURCE_PATHS["deployedBulk"], fixed["deployedBulk"])
+            write(".cache/ravscore-current-history-demand.json", encode(demand))
+            request_path.write_bytes(encode(envelope))
             # A genuine capture/processing locator outside the exact collector
             # support window may not authorize unrelated materialization.
             outside = producer.canonical_time(datetime.fromisoformat(when.replace("Z", "+00:00")) + timedelta(hours=4))
@@ -624,6 +750,29 @@ def check_legacy_current_recovery_normal_callers():
                 planned = producer.plan_cached_current_history(demands, originals, manifest)
                 assert len(planned["jobs"]) == 1 and not planned["unavailable"]
                 assert list(planned["originalsByKey"].values()) == [[originals[0]]]
+                mixed_bound = read_mixed_inputs(mixed_envelope)
+                mixed_durations = []
+                class MixedController(Controller):
+                    def observe_asset_duration(self, duration, **kwargs):
+                        assert duration >= 0; mixed_durations.append(kwargs)
+                read_count = len(readers)
+                mixed_originals = producer.reconstruct_legacy_current_originals(mixed_bound, MixedController(), **options)
+                assert len(readers) == read_count + 1 and readers[-1].physically_closed
+                assert len(mixed_durations) == 1, "Only the actual missing OLD file is decoded"
+                assert len(mixed_originals) == 2
+                retained_new = next(row for row in mixed_originals if row["time"] == new_at)
+                assert retained_new["row"] == existing_row and retained_new["row"]["sources"]["current"] == existing_source
+                sidecar = json.loads(output_path.read_bytes())
+                assert sidecar["requestsSha256"] == mixed_bound["requestsSha256"]
+                assert len(sidecar["document"]["zones"][own_zone["id"]]["hourly"]) == 1
+                assert "nativeGridSampling" not in next(iter(sidecar["document"]["zones"][own_zone["id"]]["hourly"].values()))["sources"]["current"]
+                mixed_plan = producer.plan_cached_current_history({own_zone["id"]: mixed_demand["demands"][0]},
+                    mixed_originals, manifest)
+                assert len(mixed_plan["originalsByKey"]) == 2 and len(mixed_plan["jobs"]) == 1 and not mixed_plan["unavailable"]
+                output_path.unlink()
+                write(SOURCE_PATHS["deployedBulk"], fixed["deployedBulk"])
+                write(".cache/ravscore-current-history-demand.json", encode(demand))
+                request_path.write_bytes(encode(envelope))
                 # One authentic own endpoint can be needed by both document
                 # roles: decode once, preserve both contexts without guessing.
                 shared = copy.deepcopy(bound)

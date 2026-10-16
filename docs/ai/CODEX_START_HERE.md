@@ -1,3 +1,17 @@
+## 16. oktober — lokal 4.0.578: native originaler og sikker arbejdsbaseline
+
+De to normale årsager er nu lokalt rettet og frosset: sammenligningen af administratorens fulde punkt med Pythons tekniske punkt afrundet til syv decimaler samt blandingen af et eksisterende eget nyt native endepunkt og et manglende gammelt endepunkt. Kun det hele fulde punkt eller det hele punkt efter Pythons eksakte afrundingsregel accepteres. Egne eksisterende originaler og deres samplingbeviser bevares; kun faktisk manglende gamle endepunkter genafkodes. Dokument, rolle og kystdel må ikke blandes, og normal projektion, fuld præcision, filkontrol og fysisk lukning kræves fortsat. Ingen nærhedstolerance, nye DMI-tal eller omskrivning af administratorpunkter indføres.
+
+Lokal version 4.0.578 er faktisk udstedt med C69 2786145, I71 aa1e364 og T12 15f0eb samt den nye append-only migration 20261016060000_native_sampling_identity_original_bound_successor.sql. Filantallene er uændrede; identiteterne er nye. Bindingen og SQL-kilden er ikke installeret. Gamle 220/230-SQL, deres pins, originale B/S og offentliggjorte historiske scorer bevares byteuændret.
+
+Den typesikre lokale overgang autentificerer den gamle I71-baseline med dens ægte gamle kode og opretter en særskilt ny arbejdsbaseline. Den normale prøve omfatter alle 673 kystdele og viser kun metadataovergang med nul genberegnede zoner, nul genberegnede modelvarianter og nul reparerede fortsættelser. Fem tilstande for kystpunkternes klargøring bevares gennem gamle og nye normale validatorer i en separat arbejdskopi; afventende administratorændringer udføres ikke. Disse beviser er ikke ny numerisk kildeadgang eller faktisk gendannelse fra cloud.
+
+Den særskilte installationsrute kræver rækkefølgen installeret 220, uændret 230 og derpå den nye binding med selvstændig genlæsning efter hvert trin. Ukendt udfald må ikke gentages blindt. Den almindelige readiness- og kodeopdateringsrute må kun se den nye binding som allerede installeret, aldrig bruge gamle tilladelser til at installere den. Gammel krypteret fremgang, originale data og den nye arbejdsbaseline holdes adskilt gennem den normale checkpointvej.
+
+Målrettede lokale prøver af originalidentitet, blandede endepunkter, afrundingsparitet, databevarelse, arbejdsbaseline, installation og historiske/aktuelle readiness-kontrakter består. Den nye præcise samlede CI, Linux/native, PostgreSQL, faktisk SQL-installation, checkpoint-genoptagelse, cachegemning/genbrug, upload, deploy og offentlig effekt er fortsat åbne. Scoreformel, kildeprioritet, administratoropsætning, geometri, storage-ABI, tidsbudgetter og hård no-loss er uændrede.
+
+Offentlig version er fortsat 4.0.577. Cron er deaktiveret med tidsplanen bevaret og må først genaktiveres efter verificeret levering. SOURCE19, samlet statistikaktivering og den separate assistentkandidat aktiveres ikke. Alle fem mål er åbne med frist 18. oktober. Stående autoritet dækker nødvendigt aftalt rutinearbejde uden gentagne spørgsmål; konkrete afvisninger og sikkerhedsgrænser består. Tidligere afventningsstatus er erstattet alene på de faktisk gennemførte lokale trin. Se håndbog 89.237.
+
 ## 16. oktober — egne originalfiler og kausal genafkodning
 
 PR626-kontrollen og den autentificerede skrivefri kontrol af normalt valgte strømendepunkter er faktisk gennemført. De rapporterede stop skyldes manglende native endepunkter, ikke påviste ugyldige DMI-tal. Første stop pr. kystdel er fortsat en delvis timegennemgang, ikke en frifindelse af alle øvrige timer.

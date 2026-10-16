@@ -6,6 +6,8 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { withFrozenI71Source } from './check-native-identity-frozen-i71-source.mjs';
 import {
   ASSISTANT_BINDING_HEADERS,
   LATEST_RAVSCORE_BINDING_MIGRATION,
@@ -38,8 +40,12 @@ import { buildBoundedCurrentTransportMemory } from '../js/core/ravscore-regime-m
 import { buildCurrentSupplyMemory } from '../js/core/ravscore-current-supply-memory.js';
 import { readAccountAssistantCanonicalSource } from './lib/account-assistant-successor-source.mjs';
 import { readCurrentGridCanonicalSource } from './lib/current-grid-successor-source.mjs';
+import { readNativeIdentityCanonicalSource, nativeIdentityMigration, NATIVE_IDENTITY_PREDECESSOR,
+  NATIVE_IDENTITY_ORIGINAL_NAMES } from './lib/native-sampling-identity-successor-source.mjs';
 import { accountAssistantCatalogQuery, verifyAccountAssistantCatalogMetadata,
   verifyInstalledAccountAssistantSchema } from './verify-account-assistant-schema.mjs';
+import { statisticsPreferenceRevisionCatalogQuery, verifyStatisticsPreferenceRevisionCatalogMetadata,
+  verifyInstalledStatisticsPreferenceRevisionSchema } from './verify-account-assistant-schema.mjs';
 
 const SOURCE_HEAD = 'a'.repeat(40);
 const PUBLIC_IMPLEMENTATION_CLOSURE_SHA256 = 'c'.repeat(64);
@@ -53,15 +59,39 @@ const CHECKPOINT_CONTINUATION_HASH =
 const EXACT_PREDECESSOR_CONTINUATION_HASH =
   '46683362ec6b69835695db375f7de976a8dd0a75b7367a27e2854b653d73e0ab';
 
+await withFrozenI71Source(async historicalRoot => {
+const historical = await import(pathToFileURL(path.join(historicalRoot, 'scripts/integrated-cutover-readiness.mjs')).href);
+// These two pure plan CLIs are genuine immutable fixed37 source leaves, not
+// rewritten wrappers or a current reader with historical hashes substituted.
+const historicalCliFiles = [];
+try {
+  for (const [relative, expected] of [
+    ['scripts/verify-code-only-migration-plan.mjs', 'f33e7f723ffe970bd6bbff5085ec65110d18953f5e7fb78b2609be2e5b57cc45'],
+    ['scripts/verify-statistics-preference-revision-plan.mjs', '35747b919bd7fa50c4fa4721262148f7c2cf37e0057ccaca422c9cc727878012'],
+  ]) {
+    const blob = spawnSync('git', ['show', '37e657867ff0f8c31f8e8489e5c9a1cf235192f9:' + relative]);
+    assert.equal(blob.status, 0, blob.stderr?.toString());
+    assert.equal(createHash('sha256').update(blob.stdout).digest('hex'), expected);
+    const file = path.join(historicalRoot, relative);
+    await fs.writeFile(file, blob.stdout, { flag: 'wx', mode: 0o600 });
+    historicalCliFiles.push({ file, bytes: blob.stdout });
+  }
+
 await inspectMigrationSources();
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 48,
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 50,
   'The active backend must preserve every predecessor, storage security and the exact checkpoint bridge');
 assert.equal(LATEST_RAVSCORE_BINDING_MIGRATION.version, '20260920220000');
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-5).version, '20261005000000');
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-4).version, '20261010130000');
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-3).version, '20261012200000');
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-2).version, '20261013210000');
-assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261013220000');
+assert.deepEqual(REQUIRED_CUTOVER_MIGRATIONS.slice(0, 48), historical.REQUIRED_CUTOVER_MIGRATIONS,
+  'The genuine historical48 inventory remains an exact prefix, not a retagged current list');
+assert.deepEqual(REQUIRED_CUTOVER_MIGRATIONS.slice(-3).map(row => row.version),
+  ['20261013220000', '20261013230000', nativeIdentityMigration().version]);
+assert.deepEqual(LATEST_REQUIRED_CUTOVER_MIGRATION, nativeIdentityMigration());
+assert.equal(historical.REQUIRED_CUTOVER_MIGRATIONS.length, 48);
+assert.equal(historical.REQUIRED_CUTOVER_MIGRATIONS.at(-5).version, '20261005000000');
+assert.equal(historical.REQUIRED_CUTOVER_MIGRATIONS.at(-4).version, '20261010130000');
+assert.equal(historical.REQUIRED_CUTOVER_MIGRATIONS.at(-3).version, '20261012200000');
+assert.equal(historical.REQUIRED_CUTOVER_MIGRATIONS.at(-2).version, '20261013210000');
+assert.equal(historical.LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261013220000');
 
 const integratedMigration = await fs.readFile(
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
@@ -333,6 +363,14 @@ assert.equal((workflow.match(/integrated-cutover-readiness\.mjs publish/g) || []
 assert.equal((workflow.match(/git fetch --no-tags --depth=1 origin \+refs\/heads\/main:refs\/remotes\/origin\/main/g) || []).length, 3,
   'backend cutover must verify main after checkout, before its first write and before final readiness');
 
+// Every captured48/first-install/220 assertion below executes the genuine
+// frozen reader and immutable migrations. NEW normal admission is tested below.
+{
+const { REQUIRED_CUTOVER_MIGRATIONS, LATEST_REQUIRED_CUTOVER_MIGRATION,
+  parseSupabaseMigrationList, parseSupabaseDryRunMigrationFilenames,
+  assertSupabaseMigrationPlan, assertSupabaseMigrationsApplied,
+  inspectMigrationSources, prepareTemporarySupabaseCutoverWorkdir,
+  hydrateTemporaryRemoteMigrationHistory } = historical;
 const unicodeList = `
        LOCAL       │      REMOTE      │ TIME (UTC)
 ───────────────────┼──────────────────┼──────────────────────
@@ -770,10 +808,10 @@ try {
     RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_VERIFIED: 'true',
   };
   const helperRun = spawnSync(process.execPath, [
-    path.resolve('scripts/verify-code-only-migration-plan.mjs'),
+    path.join(historicalRoot, 'scripts/verify-code-only-migration-plan.mjs'),
     '--migration-list', migrationListPath,
     '--dry-run', dryRunPath,
-    '--migrations-directory', path.resolve('supabase/migrations'),
+    '--migrations-directory', path.join(historicalRoot, 'supabase/migrations'),
     '--require-prewrite-gate',
     '--current-grid-prewrite-plan', '--expected-pending-version', '20261013220000',
   ], { encoding: 'utf8', env: { ...helperEnvironment,
@@ -795,9 +833,9 @@ try {
   await fs.writeFile(dryRunPath,
     `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n${REQUIRED_CUTOVER_MIGRATIONS.filter(item => item.version >= '20261013210000').map(item => ` • ${item.filename}`).join('\n')}\nFinished supabase db push.`);
   const accountArgs=[
-    path.resolve('scripts/verify-code-only-migration-plan.mjs'),
+    path.join(historicalRoot, 'scripts/verify-code-only-migration-plan.mjs'),
     '--migration-list',migrationListPath,'--dry-run',dryRunPath,
-    '--migrations-directory',path.resolve('supabase/migrations'),
+    '--migrations-directory',path.join(historicalRoot, 'supabase/migrations'),
     '--require-prewrite-gate','--account-assistant-prewrite-plan',
     '--expected-pending-version','20261013210000',
   ];
@@ -863,9 +901,9 @@ try {
   await fs.writeFile(dryRunPath,
     `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n${REQUIRED_CUTOVER_MIGRATIONS.slice(-4).map(item => ` • ${item.filename}`).join('\n')}\nFinished supabase db push.`);
   const refusedReplay = spawnSync(process.execPath, [
-    path.resolve('scripts/verify-code-only-migration-plan.mjs'),
+    path.join(historicalRoot, 'scripts/verify-code-only-migration-plan.mjs'),
     '--migration-list', migrationListPath, '--dry-run', dryRunPath,
-    '--migrations-directory', path.resolve('supabase/migrations'),
+    '--migrations-directory', path.join(historicalRoot, 'supabase/migrations'),
     '--require-prewrite-gate',
     '--account-assistant-prewrite-plan',
   ], { encoding: 'utf8', env: helperEnvironment });
@@ -877,10 +915,10 @@ try {
     delete rejectedEnvironment.RAVRADAR_USERDATA_UPGRADE_OPT_IN;
     if (optIn !== undefined) rejectedEnvironment.RAVRADAR_USERDATA_UPGRADE_OPT_IN = optIn;
     const rejectedRun = spawnSync(process.execPath, [
-      path.resolve('scripts/verify-code-only-migration-plan.mjs'),
+      path.join(historicalRoot, 'scripts/verify-code-only-migration-plan.mjs'),
       '--migration-list', migrationListPath,
       '--dry-run', dryRunPath,
-      '--migrations-directory', path.resolve('supabase/migrations'),
+      '--migrations-directory', path.join(historicalRoot, 'supabase/migrations'),
       '--require-prewrite-gate',
     '--account-assistant-prewrite-plan',
     ], { encoding: 'utf8', env: rejectedEnvironment });
@@ -1047,6 +1085,59 @@ try {
   await fs.rm(isolatedWorkdir, { recursive: true, force: true });
 }
 
+}
+
+// Today's normal installer is installed-only: neither the old first-install
+// flags nor a dry-run/noop can issue the native-identity recovery transition.
+const normalList = absent => 'Local | Remote | Time (UTC)\n' + REQUIRED_CUTOVER_MIGRATIONS
+  .map(row => `${row.version} | ${absent.includes(row.version) ? '' : row.version} | state`).join('\n');
+const normalNoop = 'DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.';
+assert.deepEqual((await assertSupabaseMigrationPlan({ migrationListText: normalList([]),
+  dryRunText: normalNoop })).pendingVersions, []);
+assertSupabaseMigrationsApplied(normalList([]));
+for (const absent of [[nativeIdentityMigration().version],
+  ['20261013230000', nativeIdentityMigration().version]]) {
+  for (const allowAccountAssistantPrewritePlan of [false, true]) {
+    await assert.rejects(assertSupabaseMigrationPlan({ migrationListText: normalList(absent),
+      dryRunText: normalNoop, allowAccountAssistantPrewritePlan }),
+    /NATIVE_SAMPLING_IDENTITY_RECOVERY_ROUTE_REQUIRED/);
+  }
+  assert.throws(() => assertSupabaseMigrationsApplied(normalList(absent)));
+}
+const normalWorkdir = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-current-cutover-workdir-'));
+try {
+  const prepared = await prepareTemporarySupabaseCutoverWorkdir({ workdir: normalWorkdir,
+    includeStatisticsPreferenceRevisionSource: true });
+  assert.deepEqual((await fs.readdir(prepared.migrationsDirectory)).sort(),
+    REQUIRED_CUTOVER_MIGRATIONS.map(row => row.filename).sort());
+  for (const row of REQUIRED_CUTOVER_MIGRATIONS) assert.deepEqual(
+    await fs.readFile(path.join(prepared.migrationsDirectory, row.filename)),
+    await fs.readFile(path.resolve('supabase/migrations', row.filename)));
+  const listPath = path.join(normalWorkdir, 'normal-list.txt');
+  const dryPath = path.join(normalWorkdir, 'normal-dry.txt');
+  await fs.writeFile(listPath, normalList([]));
+  await fs.writeFile(dryPath, normalNoop);
+  const invoke = (args = [], env = process.env) => spawnSync(process.execPath, [
+    path.resolve('scripts/verify-code-only-migration-plan.mjs'),
+    '--migration-list', listPath, '--dry-run', dryPath,
+    '--migrations-directory', prepared.migrationsDirectory, ...args,
+  ], { encoding: 'utf8', env });
+  const alreadyInstalled = invoke();
+  assert.equal(alreadyInstalled.status, 0, alreadyInstalled.stderr);
+  await fs.writeFile(listPath, normalList([nativeIdentityMigration().version]));
+  const oldGrant = invoke(['--current-grid-prewrite-plan', '--require-prewrite-gate',
+    '--expected-pending-version', '20261013220000'], { ...process.env,
+    RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN: 'true', RAVRADAR_CURRENT_GRID_PREWRITE_REQUIRED: 'true',
+    RAVRADAR_CURRENT_GRID_PREWRITE_VERIFIED: 'true' });
+  assert.equal(oldGrant.status, 1);
+  assert.equal(oldGrant.stdout, '');
+  assert.match(oldGrant.stderr, /NATIVE_SAMPLING_IDENTITY_RECOVERY_ROUTE_REQUIRED/);
+} finally {
+  assert.equal(path.dirname(normalWorkdir), path.resolve(os.tmpdir()));
+  assert(path.basename(normalWorkdir).startsWith('ravradar-current-cutover-workdir-'));
+  await fs.rm(normalWorkdir, { recursive: true, force: true });
+}
+
 const readiness = await buildIntegratedCutoverReadiness(SOURCE_HEAD, {
   publicImplementationClosureSha256: PUBLIC_IMPLEMENTATION_CLOSURE_SHA256,
 });
@@ -1107,9 +1198,15 @@ const {canonicalSource:accountCanonicalSource,accountSource:accountSchemaSource}
 assert.ok(accountCanonicalSource.includes('7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b'),
   'immutable213 canonical keeps its own historical continuation');
 const {canonicalSource:currentCanonicalSource,accountSource:currentAccountSchemaSource}=
-  await readCurrentGridCanonicalSource();
+  await readNativeIdentityCanonicalSource();
 assert.equal(currentAccountSchemaSource,accountSchemaSource,'current-grid must not alter account schema');
 assert.ok(currentCanonicalSource.includes(CHECKPOINT_CONTINUATION_HASH));
+const frozenGridSource = await import(pathToFileURL(path.join(historicalRoot,
+  'scripts/lib/current-grid-successor-source.mjs')).href);
+const { canonicalSource: oldGridCanonicalSource } = await frozenGridSource.readCurrentGridCanonicalSource();
+assert.equal(oldGridCanonicalSource, (await readCurrentGridCanonicalSource()).canonicalSource);
+assert(oldGridCanonicalSource.includes(NATIVE_IDENTITY_PREDECESSOR.continuation));
+assert(!oldGridCanonicalSource.includes(CHECKPOINT_CONTINUATION_HASH));
 
 // The normal hashed readback takes exactly the new CAS body, never an expected
 // hash override; the other twelve immutable function bodies stay unchanged.
@@ -1142,6 +1239,11 @@ for(const family of ['ffc','249','c1ac'])for(const kind of ['state','payload']) 
     'readback must hash the complete original-family body: '+name);
   assert.doesNotMatch(body,/RAVSCORE_CHECKPOINT_[A-Z_]+_GENERATED/,
     'frozen original validators must not use mutable current-binding markers');
+}
+assert.equal((expectedCheckpointContract.definition.match(/\n-- [^\n]+ --\n/g) || []).length, 21,
+  'The normal checkpoint digest must join exactly22 definitions');
+for (const name of NATIVE_IDENTITY_ORIGINAL_NAMES) {
+  assert(expectedCheckpointContract.definition.includes(checkpointSqlBody(currentCanonicalSource, name)));
 }
 assert.ok(!expectedCheckpointContract.definition.includes(newCasBody));
 assert.ok(!expectedCheckpointContract.definition.includes(oldCasBody));
@@ -2133,8 +2235,6 @@ assert.match(accountAttemptPolicy,/assistant_deploy_attempts=1/);
 console.log('Account/assistant successor: strict named prewrite plan, sparse current readback and fixed metadata caller; controlled fixtures only.');
 
 // Explicit future revision-phase fixtures; issued schema1 fixtures above remain intact.
-import {statisticsPreferenceRevisionCatalogQuery,verifyStatisticsPreferenceRevisionCatalogMetadata,
-  verifyInstalledStatisticsPreferenceRevisionSchema} from './verify-account-assistant-schema.mjs';
 {
 // New fixed account metadata reader: controlled transport, not native/hosted
 // evidence. Native branch executes this SAME query against actual catalog.
@@ -2253,8 +2353,10 @@ assert.equal(arbitraryAccountCalls,0);
 // Named statistics revision plan. No database/transport: real source builder,
 // normal staging function and actual CLI against bounded text fixtures only.
 {
+  const { REQUIRED_CUTOVER_MIGRATIONS, assertSupabaseMigrationPlan,
+    prepareTemporarySupabaseCutoverWorkdir } = historical;
   const {buildStatisticsPreferenceRevision,STATISTICS_REVISION_MIGRATION:revision}=
-    await import('./build-statistics-preference-revision.mjs');
+    await import(pathToFileURL(path.join(historicalRoot, 'scripts/build-statistics-preference-revision.mjs')).href);
   const built=await buildStatisticsPreferenceRevision();
   const revisionFile=path.resolve('supabase/migrations',revision.filename);
   assert.deepEqual(await fs.readFile(revisionFile),Buffer.from(built.migration));
@@ -2281,7 +2383,8 @@ assert.equal(arbitraryAccountCalls,0);
       [...REQUIRED_CUTOVER_MIGRATIONS.map(row=>row.filename),revision.filename].sort());
     for(const row of REQUIRED_CUTOVER_MIGRATIONS)assert.deepEqual(
       await fs.readFile(path.join(prepared.migrationsDirectory,row.filename)),
-      await fs.readFile(path.resolve('supabase/migrations',row.filename)));
+      await fs.readFile(path.join(historicalRoot,'supabase/migrations',row.filename)),
+      'Historical staging preserves genuine fixed37 SQL bytes, not Windows checkout line endings');
     const listPath=path.join(owned,'list.txt'),dryPath=path.join(owned,'dry.txt');
     const environment={PATH:process.env.PATH,Path:process.env.Path,SystemRoot:process.env.SystemRoot,
       WINDIR:process.env.WINDIR,TEMP:process.env.TEMP,TMP:process.env.TMP,
@@ -2291,7 +2394,7 @@ assert.equal(arbitraryAccountCalls,0);
       RAVRADAR_STATISTICS_REVISION_PREWRITE_VERIFIED:'true'};
     const installedEnvironment={...environment,RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN:'false'};
     const invoke=(phase='before',env=environment)=>spawnSync(process.execPath,[
-      path.resolve('scripts/verify-statistics-preference-revision-plan.mjs'),'--phase',phase,
+      path.join(historicalRoot, 'scripts/verify-statistics-preference-revision-plan.mjs'),'--phase',phase,
       '--migration-list',listPath,'--dry-run',dryPath,'--migrations-directory',prepared.migrationsDirectory,
     ],{encoding:'utf8',env});
     await fs.writeFile(listPath,list());await fs.writeFile(dryPath,dry);
@@ -2330,7 +2433,9 @@ assert.equal(arbitraryAccountCalls,0);
 
 // Statistics230 delivery phase: exact old/new schemas are never interchangeable.
 {
-  const {selectStatisticsRevisionRoute}=await import('./verify-statistics-preference-revision-plan.mjs');
+  const { REQUIRED_CUTOVER_MIGRATIONS, assertSupabaseMigrationPlan } = historical;
+  const {selectStatisticsRevisionRoute}=await import(pathToFileURL(path.join(historicalRoot,
+    'scripts/verify-statistics-preference-revision-plan.mjs')).href);
   const env={GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',
     RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN:'true',
     RAVRADAR_STATISTICS_REVISION_CONFIRMATION:'DEPLOY-CODE-ONLY-REPAIR',
@@ -2375,7 +2480,7 @@ assert.equal(arbitraryAccountCalls,0);
   assert(afterBlock.includes('RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN=false node scripts/verify-statistics-preference-revision-plan.mjs'));
   assert(!/if test[^\n]*RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN/.test(afterBlock));
   assert(workflow.includes('code-only deployment cannot install or publish its original archive bridge'));
-  const plan=await fs.readFile('scripts/verify-statistics-preference-revision-plan.mjs','utf8');
+  const plan=await fs.readFile(path.join(historicalRoot,'scripts/verify-statistics-preference-revision-plan.mjs'),'utf8');
   assert(plan.includes("assert.equal(process.env.RAVRADAR_STATISTICS_REVISION_PREWRITE_VERIFIED,'true')"));
   assert(plan.includes("if(phase==='before')")&&plan.includes('assert.deepEqual(result.pendingVersions,[STATISTICS_REVISION_MIGRATION.version]'));
   const noOp=await assertSupabaseMigrationPlan({migrationListText:list(true),
@@ -2395,3 +2500,13 @@ assert.equal(arbitraryAccountCalls,0);
   assert.equal(stageCallers,4);
   console.log('Statistics230 explicit before/install/noop delivery route preserves current220 and exact schema2 readback.');
 }
+
+} finally {
+  for (const { file, bytes } of historicalCliFiles.reverse()) {
+    const stat = await fs.lstat(file);
+    assert(stat.isFile() && !stat.isSymbolicLink() && stat.nlink === 1);
+    assert.deepEqual(await fs.readFile(file), bytes, 'Historical test-only CLI changed before owned cleanup');
+    await fs.unlink(file);
+  }
+}
+});

@@ -11028,6 +11028,15 @@ def reconstruct_legacy_current_originals(bound, controller, *, registry_signatur
     if any(numeric_header(contexts[role]["header"]) != numeric_header(header) for role in roles):
         raise ValueError("DMI_LEGACY_CURRENT_CONTEXT_CONFLICT")
     document, originals = {**header, "zones": {}}, []
+    # These are exact own native rows rechecked against their full measured
+    # prewrite source document, not forecast-derived or OLD-decoder output.
+    # They feed the SAME normal NEW replay planner; the OLD sidecar stays OLD.
+    for original in bound.get("existingNativeOriginals", []):
+        role, part_id, row = original["documentRole"], original["partId"], original["row"]
+        originals.append({"zoneId": row["sources"]["current"]["entityId"],
+            "time": canonical_time(row["time"]), "header": copy.deepcopy(contexts[role]["header"]),
+            "identity": copy.deepcopy(contexts[role]["zones"][part_id]), "row": copy.deepcopy(row),
+            "capture": canonical_current_source_asset(row["sources"]["current"])})
     for job in jobs:
         capture, asset = job["capture"], job["asset"]
         identity = supervised_asset_identity(capture["collection"], capture["modelRun"], {

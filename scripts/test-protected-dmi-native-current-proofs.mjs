@@ -22,6 +22,7 @@ import { RAVSCORE_MEASURED_COLD_ROLLBACK_DISPOSITION } from './lib/ravscore-reco
 import { dmiExpectedIdentityForPart, verifiedBulkCurrent, eligibleBulkCurrent,
   eligibleDmiForecastComponentSource, eligibleDmiNativeComponentSource,
   verifiedIntegratedPartHourly } from './lib/ravscore-production-adapters.mjs';
+import * as productionAdapters from './lib/ravscore-production-adapters.mjs';
 import { PROTECTED_DMI_NATIVE_PROOF_LIMITS, buildProtectedDmiNativeCurrentProofs,
   createProtectedDmiNativeCurrentInspector, validateProtectedDmiNativeCurrentProofs,
   verifyProtectedDmiNativeCurrentProof } from './lib/protected-dmi-native-current-proofs.mjs';
@@ -73,6 +74,107 @@ function fixture({ partId = 'SYNTHETIC-PART', nativeHours = [0, 3], target = 1, 
 }
 const bankFor = fixture => buildProtectedDmiNativeCurrentProofs({ selections: [fixture], contexts: [fixture.bulk] });
 const inspect = (fixture, contexts = [fixture.bulk]) => createProtectedDmiNativeCurrentInspector({ contexts }).inspect(fixture);
+
+test('normal original-wire identity uses exact Python round seven with measured IEEE parity', async () => {
+  const round = productionAdapters.pythonRoundDmiSamplingCoordinate;
+  const matches = productionAdapters.dmiOriginalWireIdentityMatchesCentralIdentity;
+  assert.equal(typeof round, 'function'); assert.equal(typeof matches, 'function');
+  const bits = value => { const view = new DataView(new ArrayBuffer(8)); view.setFloat64(0, value); return view.getBigUint64(0); };
+  const number = value => { const view = new DataView(new ArrayBuffer(8)); view.setBigUint64(0, value); return view.getFloat64(0); };
+  const next = (value, up) => value === 0 ? (up ? Number.MIN_VALUE : -Number.MIN_VALUE)
+    : number(bits(value) + ((value > 0) === up ? 1n : -1n));
+  const seeds = [0, -0, Number.MIN_VALUE, -Number.MIN_VALUE, 1 / 256, 3 / 256,
+    -1 / 256, -3 / 256, 1.23456785, -1.23456785, 8.00000004, -8.00000004,
+    55.00000004, -55.00000004, 89.99999995, -89.99999995, 180, -180];
+  const values = [...new Set(seeds.flatMap(value => [value, next(value, false), next(value, true)]))]
+    .filter(value => Math.abs(value) <= 180);
+  values.push(-0); // Set deliberately coalesces signed zeros; parity must not.
+  const encoded = values.map(value => bits(value).toString(16).padStart(16, '0'));
+  const { spawnSync } = await import('node:child_process');
+  const python = spawnSync(process.env.PYTHON ?? (process.platform === 'win32' ? 'python' : 'python3'), ['-c',
+    'import json,struct,sys; print(json.dumps([struct.pack(">d",round(struct.unpack(">d",bytes.fromhex(h))[0],7)).hex() for h in json.load(sys.stdin)]))'],
+  { input: JSON.stringify(encoded), encoding: 'utf8', timeout: 20_000 });
+  assert.equal(python.status, 0, 'Actual Python round parity is required, not a skipped native dependency');
+  const expected = JSON.parse(python.stdout);
+  assert.deepEqual(values.map(value => bits(round(value)).toString(16).padStart(16, '0')), expected);
+  assert.equal(round(1 / 256), 0.0039062, 'exact halfway, even lower integer');
+  assert.equal(round(3 / 256), 0.0117188, 'exact halfway, even upper integer');
+  assert.ok(Object.is(round(-Number.MIN_VALUE), -0));
+  const central = dmiExpectedIdentityForPart({ partId: 'WIRE', zoneId: 'PARENT', waterPoint: [8.00000004, 55.00000004] });
+  const original = { ...central, samplingPoint: [8, 55] }, bytes = JSON.stringify({ original, central });
+  assert.equal(matches(original, central), true); assert.equal(matches(central, central), true);
+  for (const mutate of [value => { value.entityId += '-other'; }, value => { value.parentZoneId += '-other'; },
+    value => { value.entityType = 'parent-zone'; }, value => { value.samplingContext += '-other'; },
+    value => { value.samplingPoint[0] += 1e-8; }, value => { value.samplingPoint[0] = '8'; },
+    value => { value.samplingPoint = [central.samplingPoint[0], 55]; },
+    value => { value.samplingPoint.push(0); }, value => { value.samplingPoint[1] = 91; },
+    value => { value.samplingPoint[0] = Infinity; }, value => { value.extra = true; }]) {
+    const wrong = copy(original); mutate(wrong); assert.equal(matches(wrong, central), false);
+  }
+  assert.equal(matches({ ...original, samplingPoint: [181, 55] }, { ...central, samplingPoint: [181, 55] }), false);
+  const tie = { ...central, samplingPoint: [1 / 256, -3 / 256] };
+  assert.equal(matches({ ...original, samplingPoint: [0.0039062, -0.0117188] }, tie), true);
+  assert.equal(matches({ ...original, samplingPoint: [0.0039063, -0.0117188] }, tie), false);
+  assert.equal(JSON.stringify({ original, central }), bytes);
+  console.log(`Measured exact JS/Python sampling-coordinate parity: ${values.length} IEEE cases`);
+  const jsonSeeds = [0, -0, 1e20, 1e21, 1e-6, 1e-7, Number.MAX_VALUE, Number.MIN_VALUE,
+    1000000000000000100, 1 / 256, 3 / 256, 1.0000000000000001e23];
+  const jsonValues = jsonSeeds.flatMap(value => [value, -value, next(value, false), next(value, true)])
+    .filter(Number.isFinite);
+  // Fixed deterministic binary64 patterns include subnormals, large integers,
+  // fractional vectors and rounding-boundary neighbors, not just display text.
+  let state = 0x123456789abcdef0n;
+  for (let i = 0; i < 256; i++) {
+    state ^= state << 13n; state ^= state >> 7n; state ^= state << 17n; state = BigInt.asUintN(64, state);
+    const value = number(state); if (Number.isFinite(value)) jsonValues.push(value);
+  }
+  const jsonParity = spawnSync(process.env.PYTHON ?? (process.platform === 'win32' ? 'python' : 'python3'), ['-c',
+    'import json,struct,sys; sys.path.insert(0,"scripts"); from lib.dmi_legacy_current_recovery import _js_canonical; print(json.dumps([_js_canonical(struct.unpack(">d",bytes.fromhex(h))[0]) for h in json.load(sys.stdin)]))'],
+  { input: JSON.stringify(jsonValues.map(value => bits(value).toString(16).padStart(16, '0'))), encoding: 'utf8', timeout: 20_000 });
+  assert.equal(jsonParity.status, 0, jsonParity.stderr);
+  assert.deepEqual(JSON.parse(jsonParity.stdout), jsonValues.map(value => JSON.stringify(value)));
+  const unicode = { '\u{10000}': '\ud800', '\uffff': '\ud83d\ude00', nested: [0, -0, 1e-7, 1e20] };
+  const canonicalUnicode = '{' + Object.keys(unicode).sort().map(key => JSON.stringify(key) + ':' + JSON.stringify(unicode[key])).join(',') + '}';
+  const unicodeParity = spawnSync(process.env.PYTHON ?? (process.platform === 'win32' ? 'python' : 'python3'), ['-c',
+    'import json,sys; sys.path.insert(0,"scripts"); from lib.dmi_legacy_current_recovery import _js_canonical; print(json.dumps(_js_canonical(json.loads(sys.stdin.buffer.read().decode("utf-8")))))'],
+  { input: JSON.stringify(unicode), encoding: 'utf8', timeout: 20_000 });
+  assert.equal(unicodeParity.status, 0, unicodeParity.stderr);
+  assert.equal(JSON.parse(unicodeParity.stdout), canonicalUnicode);
+  console.log(`Measured exact Python/Node v2 canonical-number parity: ${jsonValues.length} IEEE cases plus UTF-16 sorting/strings`);
+});
+
+test('normal original-wire context keeps both actual endpoints and full admin precision through inspector bank and planner', () => {
+  for (const collection of ['dkss_lf', 'dkss_nsbs']) {
+    const f = fixture({ collection });
+    f.part.onshoreDirectionDeg = 90;
+    f.part.waterPoint = [8.00000004, 55.00000004];
+    const identity = dmiExpectedIdentityForPart(f.part), own = f.bulk.zones[identity.entityId];
+    const before = JSON.stringify(f);
+    assert.equal(Object.keys(own.hourly).length, 2);
+    for (const native of Object.values(own.hourly)) assert.ok(verifiedBulkCurrent(f.bulk, own,
+      f.part.waterPoint, native.sources.current, native.time, identity));
+    const actual = createProtectedDmiNativeCurrentInspector({ contexts: [f.bulk] }).inspectOriginals(f);
+    assert.equal(actual.ok, true, actual.code);
+    assert.equal(actual.nativeRows.length, 2);
+    assert.deepEqual(actual.nativeRows[0].source.samplingPoint, [8, 55]);
+    assert.deepEqual(f.part.waterPoint, [8.00000004, 55.00000004]);
+    const bank = bankFor(f); assert.equal(verifyProtectedDmiNativeCurrentProof(bank, f).ok, true);
+    const registry = { schemaVersion: 2, enabled: true, partCount: 1, zoneCount: 1,
+      zones: { [f.part.zoneId]: [{ ...f.part }] } };
+    const historyDemand = buildRavScoreCurrentHistoryDemand({ registry, conditions: { zones: {} },
+      checkpoint: { loaded: false }, productionReferenceAt: at(1), registrySha256: `sha256:${'a'.repeat(64)}`,
+      sourceHashes: { conditions: null, checkpoint: null, activation: null } });
+    const plan = currentHistoryPlanner.buildRavScoreLegacyCurrentOriginalRequests({ registry, historyDemand,
+      historyDemandSha256: `sha256:${'b'.repeat(64)}`, zones: { features: [] }, protectedBulk: f.bulk,
+      persistedHourlyByPart: new Map([[f.part.partId, { hourly: [f.row] }]]),
+      sourceHashes: { zones: `sha256:${'c'.repeat(64)}`, deployedBulk: `sha256:${'d'.repeat(64)}`,
+        forecast: `sha256:${'e'.repeat(64)}`, candidate: null, active: null } });
+    assert.equal(plan.reconstructionRequests.length, 0, 'TWO genuine native originals need no RAW reconstruction');
+    assert.equal(JSON.stringify(f), before, 'No original/admin point or numeric data may be rewritten');
+    const changed = copy(f); changed.bulk.zones[identity.entityId].samplingPoint[0] += 1e-8;
+    assert.equal(createProtectedDmiNativeCurrentInspector({ contexts: [changed.bulk] }).inspectOriginals(changed).ok, false);
+  }
+});
 
 test('owner-excluded LF stays authentic but cannot enter new or retained score input', () => {
   for (const [zoneId, collection, allowed] of [
@@ -581,6 +683,112 @@ test('normal legacy-original requests discover selected own endpoints without cr
     const changed = { ...input, protectedBulk: copy(input.protectedBulk), progressCandidate: null };
     mutate(changed);
     assert.throws(() => currentHistoryPlanner.buildRavScoreLegacyCurrentOriginalRequests(changed));
+  }
+  // Actual normal mixed OLD/NEW source, not a receipt pasted over a forecast.
+  // The missing OLD bracket is causal-decoded; its own existing NEW sibling
+  // must remain an exact full-precision, same-document original.
+  const { verifyDmiLegacyCurrentOriginalReconstruction } = await import('./lib/dmi-legacy-current-originals.mjs');
+  for (const collection of ['dkss_lf', 'dkss_nsbs']) {
+    const mixedBulk = copy(f.bulk), mixedOcean = copy(ocean);
+    for (const zone of Object.values(mixedBulk.zones)) for (const raw of Object.values(zone.hourly)) raw.sources.current.collection = collection;
+    for (const raw of mixedOcean) raw.provenance.current.collection = collection;
+    mixedBulk.runs = { [collection]: copy(f.bulk.runs.dkss_idw) };
+    for (const raw of Object.values(mixedBulk.runs[collection].processedSteps)) raw.sourceAsset.collection = collection;
+    const retained = mixedOcean.find(raw => raw.step === at(-48)), source = retained.provenance.current;
+    source.nativeGridSampling = { contractId: 'dmi-native-grid-sampling-v1', elementIndex: 71,
+      gridIndexIdentitySha256: 'e'.repeat(64), coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1',
+      gridDefinitionSha256: source.gridDefinitionSha256, gridPoint: [...source.gridPoint],
+      fieldSet: [...source.fieldSet], optionalFieldSet: [] };
+    mixedBulk.zones[identity.entityId].hourly[at(-48)].sources.current = copy(source);
+    const mixedPersisted = buildDmiForecastHourly({ ocean: mixedOcean, generatedAt: at(0), startAt: at(-54), hours: 121 });
+    mixedPersisted.hourly = mixedPersisted.hourly.map(row => row.time === at(missingHour)
+      ? { ...row, currentUMps: null, currentVMps: null, sources: {} } : row);
+    const mixedInput = { ...input, protectedBulk: mixedBulk,
+      persistedHourlyByPart: new Map([[f.part.partId, mixedPersisted]]) };
+    const unchanged = JSON.stringify({ mixedBulk, mixedPersisted });
+    const mixedPlan = currentHistoryPlanner.buildRavScoreLegacyCurrentOriginalRequests(mixedInput);
+    assert.equal(mixedPlan.schemaVersion, 2);
+    assert.equal(mixedPlan.reconstructionRequests.length, 1, 'Never OLD-decode the actual NEW sibling');
+    assert.equal(mixedPlan.existingNativeOriginals.length, 1);
+    const ownNew = mixedPlan.existingNativeOriginals[0];
+    assert.deepEqual(ownNew.row.sources.current.nativeGridSampling, source.nativeGridSampling);
+    assert.equal(ownNew.row['current-u'], retained['current-u']);
+    assert.equal(ownNew.documentSha256, mixedInput.sourceHashes.deployedBulk);
+    assert.deepEqual(ownNew.rowPath, ['zones', identity.entityId, 'hourly', at(-48)]);
+    const requestsSha256 = legacyOriginalHash(mixedPlan);
+    const expected = { productionReferenceAt: mixedPlan.productionReferenceAt, modelBinding: mixedPlan.modelBinding,
+      historyDemandSha256: mixedPlan.historyDemandSha256, registrySha256: mixedPlan.registrySha256,
+      sourceHashes: mixedPlan.sourceHashes, requestsSha256 };
+    const rows = {};
+    for (const request of mixedPlan.reconstructionRequests) {
+      const ownOld = mixedOcean.find(raw => raw.step === request.nativeValidTime);
+      rows[request.requestId] = { time: request.nativeValidTime, 'current-u': ownOld['current-u'],
+        'current-v': ownOld['current-v'], sources: { current: copy(request.reconstructionRequest.expectedSource) } };
+    }
+    const context = mixedPlan.documentContexts[0];
+    const reconstruction = { schemaVersion: 1, kind: 'DMI_LEGACY_CURRENT_ORIGINAL_RECONSTRUCTION', requestsSha256,
+      document: { ...context.header, zones: { [identity.entityId]: { ...context.zones[0].zone, hourly: rows } } } };
+    const verified = verifyDmiLegacyCurrentOriginalReconstruction({ requests: mixedPlan, requestsSha256,
+      reconstruction, parts: [f.part], expected });
+    const witness = mixedPlan.projectionWitnesses.find(value => value.row.time === at(-50));
+    assert.ok(witness);
+    const selection = { part: f.part, row: witness.row };
+    assert.equal(createProtectedDmiNativeCurrentInspector({ contexts: [verified] }).inspectOriginals(selection).ok, true);
+    const bank = buildProtectedDmiNativeCurrentProofs({ selections: [selection], contexts: [verified] });
+    assert.equal(verifyProtectedDmiNativeCurrentProof(JSON.parse(JSON.stringify(bank)), selection).ok, true,
+      'Actual normal bank serialization must retain all native/context/projection data');
+    assert.equal(createProtectedDmiNativeCurrentInspector({ contexts: [JSON.parse(JSON.stringify(verified))] })
+      .inspectOriginals(selection).code, 'DMI_NATIVE_PROOF_SCOPED_ORIGINAL_CONTEXT_UNAVAILABLE',
+    'A copied mapper container is not a replacement for actual scoped native/context data');
+    const invented = { ...witness.row, currentUMps: witness.row.currentUMps + 1e-8 };
+    assert.equal(createProtectedDmiNativeCurrentInspector({ contexts: [verified] })
+      .inspectOriginals({ part: f.part, row: invented }).code, 'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING',
+    'No PASS flag may qualify a new source/tuple selection');
+    const { buildPrivateDmiRecoveryRecord } = await import('./lib/private-dmi-recovery-record.mjs');
+    const recovered = buildPrivateDmiRecoveryRecord({ properties: { id: identity.entityId, dataPoint: f.part.waterPoint } },
+      mixedBulk, at(1), { startAt: demand.demands[0].startAt, expectedIdentity: identity,
+        persistedHourly: mixedPersisted.hourly, historicalBulkCache: verified, protectPreviousDmi: true });
+    const normalRow = recovered.hourly.find(row => row.time === witness.row.time);
+    assert.equal(createProtectedDmiNativeCurrentInspector({ contexts: [mixedBulk, verified] })
+      .inspectOriginals({ part: f.part, row: normalRow }).ok, true, 'Actual normal historical mapper retains a role-scoped proof');
+    const oldHourly = verifiedIntegratedPartHourly({ hourly: [normalRow] }, verified, identity.entityId, f.part);
+    const stillUnknown = error => error.code === 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED' && error.samplingStatus === 'unknown';
+    assert.throws(() => assertDmiPartHourlyGridSamplingApplicable(oldHourly, identity.entityId, f.part), stillUnknown,
+      'Authentic mixed OLD proof does not authorize new PUBLIC calculation');
+    assert.throws(() => buildRavScorePermittedCurrentHistory({ part: f.part, referenceAt: normalRow.time,
+      sourceRecords: [{ record: { point: f.part.waterPoint, hourly: oldHourly }, nativeCurrentContexts: [verified] }],
+      requireNativeGridSampling: true }), stillUnknown, 'Strict OWNER new-use guard remains independent');
+    const conflicting = copy(mixedBulk);
+    conflicting.zones[identity.entityId].hourly[at(-48)]['current-u'] += 0.01;
+    assert.equal(createProtectedDmiNativeCurrentInspector({ contexts: [verified, conflicting] })
+      .inspectOriginals(selection).code, 'DMI_NATIVE_PROOF_NATIVE_CONFLICT');
+    const missingNew = copy(mixedBulk); delete missingNew.zones[identity.entityId].hourly[at(-48)];
+    assert.throws(() => currentHistoryPlanner.buildRavScoreLegacyCurrentOriginalRequests({ ...mixedInput,
+      protectedBulk: missingNew }), /LEGACY_NEW_ENDPOINT_UNAVAILABLE/);
+    for (const mutate of [
+      value => { value.existingNativeOriginals[0].row['current-u'] += 0.01; },
+      value => { value.existingNativeOriginals[0].row.sources.current.gridPoint[0] += 0.01; },
+      value => { value.existingNativeOriginals[0].row.sources.current.nativeGridSampling.elementIndex = -1; },
+      value => { value.existingNativeOriginals[0].rowPath[1] = 'PART::FOREIGN'; },
+      value => { value.existingNativeOriginals[0].documentSha256 = `sha256:${'f'.repeat(64)}`; },
+      value => { value.documentContexts[0].header.currentVectorSelection = 'forged'; },
+      value => {
+        value.sourceHashes.candidate = `sha256:${'f'.repeat(64)}`;
+        value.documentContexts.push({ ...copy(value.documentContexts[0]), documentRole: 'candidate' });
+        value.existingNativeOriginals[0].documentRole = 'candidate';
+        value.existingNativeOriginals[0].documentSha256 = value.sourceHashes.candidate;
+      },
+    ]) {
+      const wrong = copy(mixedPlan); mutate(wrong);
+      for (const original of wrong.existingNativeOriginals) original.originalId = legacyOriginalHash(Object.fromEntries(
+        Object.entries(original).filter(([key]) => !['originalId', 'projectionWitnessRefs'].includes(key))));
+      const changedSha = legacyOriginalHash(wrong);
+      assert.throws(() => verifyDmiLegacyCurrentOriginalReconstruction({ requests: wrong, requestsSha256: changedSha,
+        reconstruction: { ...reconstruction, requestsSha256: changedSha }, parts: [f.part],
+        expected: { ...expected, sourceHashes: wrong.sourceHashes, requestsSha256: changedSha } }), /DMI_LEGACY_CURRENT_/,
+      'Even reissued descriptor hashes cannot qualify wrong tuple/source/header/path/role');
+    }
+    assert.equal(JSON.stringify({ mixedBulk, mixedPersisted }), unchanged);
   }
   // Exercise the actual fixed-path CLI on unchanged source bytes. No repository
   // originals, provider credentials, network, decoder or native runtime is used.
@@ -1493,13 +1701,14 @@ const legacyOriginalCanonical = value => JSON.stringify(value, (_key, item) =>
 const legacyOriginalHash = value => 'sha256:' + createHash('sha256')
   .update(legacyOriginalCanonical(value)).digest('hex');
 async function legacyOriginalFixture({ twoRoles = false, nativeHours = [0, 3],
-  target = 1, everyNativeWitness = false, productionReferenceAt = at(4), zoneId = 'DK-B05-17', nativeNull = false } = {}) {
+  target = 1, everyNativeWitness = false, productionReferenceAt = at(4), zoneId = 'DK-B05-17', nativeNull = false,
+  collection = 'dkss_idw', adminWaterPoint = null } = {}) {
   const { ravScoreModelBinding } = await import('../js/core/ravscore-model-contract.js');
   const { canonicalSavedDmiOriginalCapture } = await import('./lib/saved-dmi-original-capture.mjs');
   const roles = twoRoles ? ['deployedBulk', 'candidate'] : ['deployedBulk'];
   const originals = roles.map((documentRole, index) => {
     const value = fixture({ partId: 'LEGACY-RECONSTRUCTION', zoneId,
-      collection: index ? 'dkss_nsbs' : 'dkss_idw', run: -12 + index * 6, nativeHours, target });
+      collection: index ? 'dkss_nsbs' : collection, run: -12 + index * 6, nativeHours, target });
     value.bulk.generatedAt = at(index);
     for (const raw of Object.values(Object.values(value.bulk.zones)[0].hourly)) {
       const bytes = Buffer.from('synthetic-independent-capture-' + documentRole + raw.time);
@@ -1514,12 +1723,15 @@ async function legacyOriginalFixture({ twoRoles = false, nativeHours = [0, 3],
       })) }).hourly[0];
     return { ...value, documentRole };
   });
-  const part = originals[0].part, identity = dmiExpectedIdentityForPart(part);
+  const part = originals[0].part;
+  if (adminWaterPoint) part.waterPoint = [...adminWaterPoint];
+  const identity = dmiExpectedIdentityForPart(part);
   const context = value => ({ documentRole: value.documentRole,
     header: Object.fromEntries(['generatedAt', 'currentVectorSemanticsVersion',
       'currentVectorSelection', 'currentMaxDistanceKm', 'timeStrideHours']
       .filter(key => Object.hasOwn(value.bulk, key)).map(key => [key, value.bulk[key]])),
-    zones: [{ partId: part.partId, zone: identity }] });
+    zones: [{ partId: part.partId, zone: Object.fromEntries(Object.keys(identity)
+      .map(key => [key, copy(value.bulk.zones[identity.entityId][key])])) }] });
   const witnesses = originals.flatMap(value => (everyNativeWitness ? nativeHours.map(hour =>
     buildDmiForecastHourly({ generatedAt: at(0), startAt: at(hour), hours: 1,
       ocean: Object.values(Object.values(value.bulk.zones)[0].hourly).map(raw => ({
@@ -1564,13 +1776,30 @@ async function legacyOriginalFixture({ twoRoles = false, nativeHours = [0, 3],
   const requestBytes = Buffer.from(JSON.stringify(requests) + '\n');
   const requestsSha256 = 'sha256:' + createHash('sha256').update(requestBytes).digest('hex');
   const document = { ...context(originals[0]).header,
-    zones: { [identity.entityId]: { ...identity, hourly: rows } } };
+    zones: { [identity.entityId]: { ...context(originals[0]).zones[0].zone, hourly: rows } } };
   const reconstruction = { schemaVersion: 1, kind: 'DMI_LEGACY_CURRENT_ORIGINAL_RECONSTRUCTION', requestsSha256, document };
   const expected = Object.fromEntries(['productionReferenceAt', 'modelBinding', 'historyDemandSha256',
     'registrySha256', 'sourceHashes'].map(key => [key, copy(requests[key])]));
   expected.requestsSha256 = requestsSha256;
   return { requests, requestsSha256, reconstruction, parts: [part], expected, requestBytes, originals };
 }
+
+test('normal original-wire reconstruction receiver preserves verbatim wire context and full admin point', async () => {
+  const { verifyDmiLegacyCurrentOriginalReconstruction } = await import('./lib/dmi-legacy-current-originals.mjs');
+  for (const collection of ['dkss_lf', 'dkss_nsbs']) {
+    const f = await legacyOriginalFixture({ collection, adminWaterPoint: [8.00000004, 55.00000004] });
+    const before = JSON.stringify(f);
+    const donor = verifyDmiLegacyCurrentOriginalReconstruction(f);
+    assert.equal(donor, f.reconstruction.document);
+    assert.deepEqual(Object.values(donor.zones)[0].samplingPoint, [8, 55]);
+    assert.deepEqual(f.parts[0].waterPoint, [8.00000004, 55.00000004]);
+    assert.equal(JSON.stringify(f), before);
+    const wrong = copy(f.reconstruction);
+    Object.values(wrong.document.zones)[0].samplingPoint = [...f.parts[0].waterPoint];
+    assert.throws(() => verifyDmiLegacyCurrentOriginalReconstruction({ ...f, reconstruction: wrong }),
+      /DMI_LEGACY_CURRENT_DOCUMENT_ROW_INVALID/, 'An admissible full point may not replace the actual wire context');
+  }
+});
 
 test('legacy current reconstruction preserves the own UNKNOWN null shape without a sampling receipt', async () => {
   const { verifyDmiLegacyCurrentOriginalReconstruction } = await import('./lib/dmi-legacy-current-originals.mjs');

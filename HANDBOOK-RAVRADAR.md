@@ -1,3 +1,25 @@
+## 89.237 Gyldige strømoriginaler og sikker arbejdsbaseline
+
+**Kort fortalt:** Begge fejl i originalernes punktidentitet og blandede endepunkter er rettet lokalt. Version 4.0.578 er udstedt, men endnu ikke installeret eller offentliggjort.
+
+Et teknisk punkt gemt med syv decimaler blev sammenlignet med administratorens fulde punkt. Derfor kunne egne gyldige strømoriginaler se ud til at mangle. Rettelsen accepterer kun det hele fulde punkt eller det hele punkt efter Pythons præcise afrundingsregel. Den indfører ingen nærhedstolerance, flytter ingen punkter og ændrer ikke administratorens geometri.
+
+Den anden fejl opstod, når et eget strømendepunkt allerede fandtes med bevis for den nye afkodning, mens det andet gamle endepunkt manglede. Det eksisterende endepunkt og dets bevis bevares nu. Kun det manglende gamle endepunkt må genskabes fra egne præcise originalfiler med den fastlagte tidligere afkodning. Dokument, rolle og kystdel holdes adskilt. Afrundede prognosetal må ikke regnes baglæns til opdigtede originaler.
+
+Den normale kontrol kræver fortsat fuld numerisk præcision, præcis filidentitet, kontrol af model og tid, fuld gennemlæsning og bevist fysisk lukning. Den skal kunne genskabe de uændrede prognosevidner fra de egne endepunkter. Lokale prøver dækker begge fejl, korrekt afrunding mellem JavaScript og Python samt afvisning af forkerte værdier, kilder, roller og dokumenter.
+
+Den lokale version 4.0.578 har fået nye præcise bindinger til kandidatmodellen, den integrerede model og fortsættelseskontrakten. Antallene er fortsat C69, I71 og T12, men identiteterne er nye. Én ny selvstændig databaseopdatering følger rettelsen. De tidligere 220- og 230-opdateringer, deres faste kildebeviser, de oprindelige vejr- og scorepakker samt offentliggjort scorehistorik ændres ikke.
+
+Den gemte private pakke skal først kontrolleres med sin ægte gamle kode. Derefter oprettes en særskilt ny arbejdsbaseline. En normal lokal prøve omfatter alle 673 kystdele og viser kun ændrede bindingsmetadata: nul genberegnede zoner, nul genberegnede modelvarianter og nul reparerede fortsættelser. Originalerne bevares. Prøven er ikke bevis for faktisk gendannelse fra cloud eller ny adgang til at bruge strømdata.
+
+Kystpunkternes fem eksisterende klargøringstilstande bevares og kontrolleres med både gamle og nye normale validatorer i en separat arbejdskopi. Tal, tidspunkter og punkter bevares. Afventende administratorændringer bliver ikke udført som del af overgangen.
+
+Den kontrollerede databasevej skal gå fra installeret 220 gennem uændret 230 til den nye binding. Hvert trin skal genlæses og bekræftes. Ukendt udfald må ikke udløse en blind gentagelse. Den almindelige kodeopdatering må kun genbruge en allerede installeret ny binding; gamle tilladelser giver ikke adgang til den nye overgang. Samlet statistik aktiveres ikke af dette.
+
+Lokale målprøver af databevarelse, installation, normal arbejdsbaseline og gamle samt aktuelle readiness-kontrakter består. Den nye samlede kildekontrol i GitHub, Linux/native-prøver, PostgreSQL og faktisk installation er stadig åbne. Derefter skal samme normale genoptagelse fra checkpoint bevise beregning, holdbar cachegemning og genbrug, upload, deploy og offentlig virkning. En grøn lokal prøve er ikke en færdig genopretning.
+
+Offentlig version er fortsat 4.0.577. Cron er deaktiveret med tidsplanen bevaret og genaktiveres først efter verificeret levering. SOURCE19, den separate assistentkandidat og samlet statistikaktivering forbliver inaktive. Alle fem arbejdsområder er åbne med frist 18. oktober. Scoreformel, kildeprioritet, administratoropsætning, geometri, lagerkontrakt, tidsbudgetter og hård databevarelse er uændrede. Stående autoritet dækker aftalt rutinearbejde uden gentagne spørgsmål; konkrete afvisninger og sikkerhedsgrænser består.
+
 ## 89.236 Egne strømoriginaler fra præcise råfiler
 
 **Kort fortalt:** Manglende native endepunkter skal genskabes fra egne identificerede originalfiler, ikke fra afrundede prognosetal eller andre kystdele.
@@ -188,9 +210,19 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.577
+**Håndbogsversion:** 4.0.578
 
-## Aktuel kildebinding — 14. oktober 2026, endnu ikke installeret
+## Aktuel lokal kildebinding — 16. oktober 2026, 4.0.578 ikke installeret
+
+LOKAL kildeblok — 16. oktober 2026, RavScore 4.0.578: udstedt, ikke installeret eller offentliggjort.
+
+Den lokale kildekandidat til RavScore 4.0.578 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=aa1e364bf6a0962725b6633fdc3487c6e626d51373302d7135023547a93c9855` over 71 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=2786145f7fc812cd658cab3a69927db625c2b8ffb3be81256acedd12288f4010` over 69 transitive filer.
+
+Den lokale fortsættelseskontrakt er `15f0eb6748cf0a4f1c9d8971e43efc6823ec7d70c85984e6619e07db277702f1` (`15f0eb67…`) over 12 normaliserede kildefiler. Autoriteten er `version.json.releaseContract.modelBindings` og den normale fortsættelseskontrakt. Den nye selvstændige migration `20261016060000_native_sampling_identity_original_bound_successor.sql` er udstedt, men ikke installeret. Gamle 220/230-migrationer og deres bindinger bevares.
+
+Den integrerede model er offentlig som modeltype og allerede leveret familie under 4.0.577. Det er ikke bevis for offentlig 4.0.578 eller den lokale nye I71/C69/T12-familie. Den fysiske scorekontrakt, formler, kildeprioritet og administratorpunkter er uændrede. Samlet præcis kildekontrol, Linux/native, PostgreSQL, sikker installation og faktisk ny offentlig generation er fortsat åbne.
+
+## Historisk kildebinding — 14. oktober 2026, dengang ikke installeret
 
 Den lokale current-only-kildekandidat til RavScore 4.0.576 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=994da006e4c91a1fc759d5ed58b74de80a9ccaad6753274d5abb0cb07eaed399` over 71 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
@@ -6624,6 +6656,18 @@ Inddelingen af forespørgsler følger hele det centrale kystregister, så den ik
 Rettelsen er måltestet lokalt, men ikke endnu bevist i produktion. Den fjerner ikke den afsluttende kontrol af alle nødvendige vejrinput og aktiverer ikke i sig selv den nye scoremodel. Fuld historik er fortsat ikke et krav for at vise en prognose med gyldige direkte input.
 
 ## Beskyttet modelcheckpoint uden unødvendig dataflytning – lokal 4.0.321
+
+### Lokal kildeblok — 16. oktober 2026, 4.0.578 ikke installeret
+
+LOKAL kildeblok — 16. oktober 2026, RavScore 4.0.578: ny checkpointbinding udstedt, ikke installeret.
+
+Den lokale fortsættelseskontrakt er `15f0eb6748cf0a4f1c9d8971e43efc6823ec7d70c85984e6619e07db277702f1` (`15f0eb67…`) over 12 normaliserede kildefiler. Den hører sammen med I71 `aa1e364bf6a0962725b6633fdc3487c6e626d51373302d7135023547a93c9855` og inaktiv C69 `2786145f7fc812cd658cab3a69927db625c2b8ffb3be81256acedd12288f4010`. Det er nye kildeidentiteter, ikke nye fysiske scoreformler eller en offentlig leveringskvittering.
+
+Den nye append-only 20261016060000-kilde kræver installeret 220, derefter uændret 230 og særskilt genlæsning før den nye binding. Det gamle checkpoint og den gamle krypterede fremgang valideres med deres autentiske gamle kode; den særskilte nye arbejdsbaseline giver ikke i sig selv adgang til nye strømdata. De normale 22 checkpointdefinitioner, originale B/S, målinger, historik, roller, tidsgrænser og krav om strengt nyere mål bevares. Den normale kodeopdatering må kun genbruge en allerede installeret ny binding.
+
+Den integrerede model er den offentlige modeltype under fortsat offentlig version 4.0.577. Den lokale 4.0.578 og dens nye checkpointbinding er ikke installeret eller offentligt leveret. Faktisk restore, SQL-installation, gemning, genbrug, upload, deploy og offentlig kontrol mangler stadig. SOURCE19, den separate assistentkandidat og samlet statistikaktivering forbliver inaktive.
+
+### Historisk kildeblok — 14. oktober 2026 og tidligere
 
 Aktuel current-only-kilde, 14. oktober 2026, endnu ikke installeret: Continuation-identiteten er `0f6c182ab2ffa7d9d0153706277aa3f7b582327be7dda02842a9c8b995568d4a` (`0f6c182a…`) over 12 normaliserede kildefiler, sammen med den nye I71/994- og C69/d192-kildefamilie. Den faktisk leverede 4.0.576/213-familie har fortsat continuation `7876390c…`. De ældre status- og bindingsangivelser nedenfor bevares som dateret historik.
 

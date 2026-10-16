@@ -18,6 +18,11 @@ on:
         required: false
         type: string
         default: ''
+      native_sampling_identity_original_recovery:
+        description: 'Use only the fixed authenticated I71 checkpoint and append-only native-identity recovery route'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -91,6 +96,25 @@ jobs:
           # must authenticate and confirm the same ledger hour before use.
           printf 'target_hour=%s\n' "$CHECKPOINT_TARGET_HOUR" >> "$GITHUB_OUTPUT"
 
+      - name: Require the fixed native-identity recovery scope before continuation
+        if: inputs.native_sampling_identity_original_recovery == true
+        shell: bash
+        env:
+          QUICK_CONFIRMATION: ${{ inputs.quick_confirmation }}
+          QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
+          CHECKPOINT_TARGET_HOUR: ${{ inputs.checkpoint_target_hour }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { assertNativeIdentityRecoveryFrozen } from './scripts/lib/native-sampling-identity-successor-source.mjs';
+          import { NATIVE_IDENTITY_ORIGINAL_PROGRESS } from './scripts/native-sampling-identity-recovery-prewrite.mjs';
+          assertNativeIdentityRecoveryFrozen();
+          assert.equal(process.env.QUICK_CONFIRMATION, 'false');
+          assert.equal(process.env.QUICK_PROGRESS_SOURCE, NATIVE_IDENTITY_ORIGINAL_PROGRESS.source);
+          assert.equal(process.env.CHECKPOINT_TARGET_HOUR, NATIVE_IDENTITY_ORIGINAL_PROGRESS.target.replace('.000Z', 'Z'));
+          NODE
+
       - name: Lock the canonical UTC production hour
         id: cache-state
         if: inputs.checkpoint_target_hour == ''
@@ -104,9 +128,292 @@ jobs:
           set -euo pipefail
           [[ "$TARGET_HOUR" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00Z$ ]]
 
+  native-identity-prewrite:
+    name: Authenticate originals and install only the two exact recovery phases
+    needs: current-main-target
+    if: ${{ !cancelled() && needs.current-main-target.result == 'success' && inputs.native_sampling_identity_original_recovery == true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    env:
+      RAVRADAR_NATIVE_IDENTITY_RECOVERY_OPT_IN: 'true'
+      RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ needs.current-main-target.outputs.target_hour }}
+      QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
+      QUICK_CONFIRMATION: ${{ inputs.quick_confirmation }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Require fixed scope, frozen sources and current main before private work
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$GITHUB_SHA"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { assertNativeIdentityRecoveryFrozen } from './scripts/lib/native-sampling-identity-successor-source.mjs';
+          import { NATIVE_IDENTITY_ORIGINAL_PROGRESS } from './scripts/native-sampling-identity-recovery-prewrite.mjs';
+          assertNativeIdentityRecoveryFrozen();
+          assert.equal(process.env.QUICK_CONFIRMATION, 'false');
+          assert.equal(process.env.QUICK_PROGRESS_SOURCE, NATIVE_IDENTITY_ORIGINAL_PROGRESS.source);
+          assert.equal(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR, NATIVE_IDENTITY_ORIGINAL_PROGRESS.target.replace('.000Z', 'Z'));
+          NODE
+
+      - name: Reuse exact successful pull-request source proof before any database write
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Require existing exact source proof without a duplicate gate
+        shell: bash
+        run: test "${{ steps.source-proof.outputs.required }}" = false
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-copernicus.txt
+
+      - name: Install normal offline component verification and geometry tools
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
+          python -m pip install --disable-pip-version-check "shapely>=2.0,<3" "pyproj>=3.6,<4"
+
+      - name: Build constrained natural zone coastlines
+        run: python scripts/refine-coastlines-constrained-4.0.48.py
+
+      - name: Sync centrally saved admin configuration
+        run: python scripts/sync-admin-config.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Apply centrally approved zone geometry and deletions
+        run: python scripts/apply-central-zone-reviews.py
+
+      - name: Materialize the authoritative active coastal-part registry
+        run: node scripts/build-public-coastal-parts-v2.mjs
+
+      - name: Restore only the fixed authenticated progress ciphertext
+        id: original-progress
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/weather-private-progress.encrypted
+          key: weather-private-progress-encrypted-v2-Linux-main-38768040429-1
+          fail-on-cache-miss: true
+
+      - name: Require actual exact cipher cache match
+        shell: bash
+        env:
+          MATCHED_KEY: ${{ steps.original-progress.outputs.cache-matched-key }}
+        run: |
+          set -euo pipefail
+          test "$MATCHED_KEY" = weather-private-progress-encrypted-v2-Linux-main-38768040429-1
+          test -f .cache/weather-private-progress.encrypted
+          test ! -L .cache/weather-private-progress.encrypted
+
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        with:
+          version: 2.117.0
+
+      - name: Prepare genuine frozen230 and exact new-binding migration views
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs/promises';
+          import { constants } from 'node:fs';
+          import path from 'node:path';
+          import { pathToFileURL } from 'node:url';
+          import { withFrozenI71Source } from './scripts/check-native-identity-frozen-i71-source.mjs';
+          import { assertNativeIdentityRecoveryFrozen, nativeIdentityMigration, readNativeIdentityCanonicalSource,
+            nativeIdentitySourceSha256, NATIVE_IDENTITY_OUTPUT_REVIEW } from './scripts/lib/native-sampling-identity-successor-source.mjs';
+          assertNativeIdentityRecoveryFrozen();
+          await readNativeIdentityCanonicalSource();
+          const parent = await fs.realpath(process.env.RUNNER_TEMP);
+          const source = path.resolve('supabase/migrations', nativeIdentityMigration().filename);
+          const bytes = await fs.readFile(source);
+          assert.equal(nativeIdentitySourceSha256(bytes), NATIVE_IDENTITY_OUTPUT_REVIEW.migrationSha256);
+          await withFrozenI71Source(async frozen => {
+            const normal = await import(pathToFileURL(path.join(frozen, 'scripts/integrated-cutover-readiness.mjs')).href);
+            for (const name of ['native-identity-230-view', 'native-identity-binding-view']) {
+              const workdir = path.join(parent, name);
+              await assert.rejects(fs.lstat(workdir), { code: 'ENOENT' });
+              await normal.prepareTemporarySupabaseCutoverWorkdir({ workdir, includeStatisticsPreferenceRevisionSource: true });
+            }
+          });
+          const destination = path.join(parent, 'native-identity-binding-view/supabase/migrations', nativeIdentityMigration().filename);
+          await fs.copyFile(source, destination, constants.COPYFILE_EXCL);
+          assert.deepEqual(await fs.readFile(source), bytes);
+          assert.deepEqual(await fs.readFile(destination), bytes);
+          NODE
+
+      - name: Authenticate originals and serially verify sole230 then sole native-identity SQL
+        shell: bash
+        env:
+          NATIVE_IDENTITY_PROGRESS_CACHE_MATCHED_KEY: ${{ steps.original-progress.outputs.cache-matched-key }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND: ${{ vars.RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND || 'supabase' }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          test -n "$SUPABASE_DB_PASSWORD"
+          view230="$RUNNER_TEMP/native-identity-230-view"
+          viewbinding="$RUNNER_TEMP/native-identity-binding-view"
+          list="$RUNNER_TEMP/native-identity-migrations-list.txt"
+          dryrun="$RUNNER_TEMP/native-identity-migrations-dry-run.txt"
+          cli_report="$RUNNER_TEMP/native-identity-stage-report.json"
+          # No raw CLI/database error or private authenticated document reaches logs.
+          # A failed write is UNKNOWN and stops; never retry or continue to the next phase.
+          db() {
+            if supabase "$@" > "$RUNNER_TEMP/native-identity-db-command.txt" 2>&1; then
+              return 0
+            else
+              status=$?
+              # Keep the original complete output private and report only
+              # fixed operational categories, exit status and SQLSTATE.
+              DB_EXIT_STATUS="$status" DB_ACTION="$1" node --input-type=module <<'NODE'
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+          const text = await fs.readFile(path.join(process.env.RUNNER_TEMP, 'native-identity-db-command.txt'), 'utf8');
+          const states = [...new Set([...text.matchAll(/\bSQLSTATE[ :=(]*([A-Z0-9]{5})\b/g)].map(match => match[1]))];
+          const fixed = [...new Set([...text.matchAll(/\b(?:NATIVE_IDENTITY_[A-Z_]+|NATIVE_SAMPLING_IDENTITY_[A-Z_]+)\b/g)].map(match => match[0]))];
+          console.error(JSON.stringify({kind:'NATIVE_IDENTITY_DATABASE_FAILURE',
+            action:['link','migration','db'].includes(process.env.DB_ACTION)?process.env.DB_ACTION:'UNKNOWN',
+            exitStatus:Number(process.env.DB_EXIT_STATUS),sqlStates:states.slice(0,4),codes:fixed.slice(0,4)}));
+          NODE
+              echo 'NATIVE_IDENTITY_DATABASE_COMMAND_FAILED_OR_OUTCOME_UNKNOWN_DO_NOT_RETRY' >&2
+              return 1
+            fi
+          }
+          history() {
+            (cd "$1" && db migration list --linked)
+            cp "$RUNNER_TEMP/native-identity-db-command.txt" "$list"
+          }
+          plan() {
+            (cd "$1" && db db push --linked --dry-run --skip-vault)
+            cp "$RUNNER_TEMP/native-identity-db-command.txt" "$dryrun"
+          }
+          hydrate_view() {
+            VIEW_PHASE="$1" env -u SUPABASE_DB_PASSWORD node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+          import { pathToFileURL } from 'node:url';
+          import { withFrozenI71Source } from './scripts/check-native-identity-frozen-i71-source.mjs';
+          import { nativeIdentityMigration, readNativeIdentityCanonicalSource, nativeIdentitySourceSha256,
+            NATIVE_IDENTITY_OUTPUT_REVIEW } from './scripts/lib/native-sampling-identity-successor-source.mjs';
+          const phase = process.env.VIEW_PHASE;
+          assert(['230', 'binding'].includes(phase));
+          const parent = await fs.realpath(process.env.RUNNER_TEMP);
+          const workdir = path.join(parent, 'native-identity-' + phase + '-view');
+          const migrationListText = await fs.readFile(path.join(parent, 'native-identity-migrations-list.txt'), 'utf8');
+          await withFrozenI71Source(async frozen => {
+            const normal = await import(pathToFileURL(path.join(frozen, 'scripts/integrated-cutover-readiness.mjs')).href);
+            await normal.hydrateTemporaryRemoteMigrationHistory({ workdir, migrationListText });
+            for (const filename of [...normal.REQUIRED_CUTOVER_MIGRATIONS.map(row => row.filename),
+              '20261013230000_account_statistics_revision.sql']) {
+              assert.deepEqual(await fs.readFile(path.join(workdir, 'supabase/migrations', filename)),
+                await fs.readFile(path.join(frozen, 'supabase/migrations', filename)));
+            }
+          });
+          const next = path.join(workdir, 'supabase/migrations', nativeIdentityMigration().filename);
+          if (phase === '230') await assert.rejects(fs.lstat(next), { code: 'ENOENT' });
+          else {
+            await readNativeIdentityCanonicalSource();
+            assert.equal(nativeIdentitySourceSha256(await fs.readFile(next)), NATIVE_IDENTITY_OUTPUT_REVIEW.migrationSha256);
+          }
+          NODE
+          }
+          stage() {
+            # DB password is solely for the linked installer, never the original reader.
+            env -u SUPABASE_DB_PASSWORD node scripts/native-sampling-identity-recovery-prewrite.mjs "$1" > "$cli_report"
+            STAGE="$1" env -u SUPABASE_DB_PASSWORD node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+          const report = JSON.parse(await fs.readFile(path.join(process.env.RUNNER_TEMP, 'native-identity-stage-report.json'), 'utf8'));
+          assert.equal(report.status, 'NATIVE_IDENTITY_RECOVERY_PREWRITE_PASSED');
+          assert.equal(report.stage, process.env.STAGE);
+          assert.equal(report.partCount, 673);
+          assert.equal(report.originalBytesUnchanged, true);
+          assert.equal(report.oldI71ProgressAuthenticated, true);
+          assert.equal(report.installationPerformed, false);
+          assert.equal(report.numericAdmissionClaimed, false);
+          assert.equal(report.privatePayloadIncluded, false);
+          assert(['before-230', 'before-binding', 'after-binding'].includes(report.databasePhase));
+          console.log(report.databasePhase);
+          NODE
+          }
+          exact_main() {
+            git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+            test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+            test "$(git rev-parse origin/main^{commit})" = "$GITHUB_SHA"
+          }
+          (cd "$viewbinding" && db link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD")
+          history "$viewbinding"
+          hydrate_view binding
+          history "$viewbinding"
+          phase="$(stage prepare)"
+          case "$phase" in before-230|before-binding|after-binding) ;; *) exit 1 ;; esac
+          if test "$phase" = before-230; then
+            (cd "$view230" && db link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD")
+            history "$view230"
+            hydrate_view 230
+            history "$view230"
+            plan "$view230"
+            stage verify-230-plan
+            exact_main
+            (cd "$view230" && db db push --linked --skip-vault)
+            history "$view230"
+            plan "$view230"
+            stage verify-230-installed
+          fi
+          if test "$phase" != after-binding; then
+            history "$viewbinding"
+            hydrate_view binding
+            history "$viewbinding"
+            plan "$viewbinding"
+            stage verify-binding-plan
+            exact_main
+            (cd "$viewbinding" && db db push --linked --skip-vault)
+          fi
+          history "$viewbinding"
+          plan "$viewbinding"
+          stage verify-binding-installed
+          echo 'NATIVE_IDENTITY_TWO_PHASE_INSTALL_AND_READBACK_COMPLETE_NO_PUBLICATION'
+
   build-and-prepare:
     name: Build and prepare weather production through reusable workflow
-    needs: current-main-target
+    needs: [current-main-target, native-identity-prewrite]
+    if: >-
+      !cancelled() && needs.current-main-target.result == 'success' &&
+      ((inputs.native_sampling_identity_original_recovery == true && needs.native-identity-prewrite.result == 'success') ||
+       (inputs.native_sampling_identity_original_recovery != true && needs.native-identity-prewrite.result == 'skipped'))
     permissions:
       contents: read
       actions: read
@@ -119,6 +426,7 @@ jobs:
       quick_confirmation: ${{ inputs.quick_confirmation }}
       quick_progress_source: ${{ inputs.quick_progress_source }}
       checkpoint_only: ${{ inputs.checkpoint_target_hour != '' }}
+      native_sampling_identity_original_recovery: ${{ inputs.native_sampling_identity_original_recovery }}
       produce_weather_handoff: false
       produce_weather_handoff_confirmation: ''
       ravscore_candidate_g_rollback_mode: ''
@@ -167,7 +475,7 @@ jobs:
 
   terminal-outcome:
     name: Require a verified current-weather deployment
-    needs: [current-main-target, build-and-prepare, deploy-pages]
+    needs: [current-main-target, native-identity-prewrite, build-and-prepare, deploy-pages]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -180,6 +488,8 @@ jobs:
         shell: bash
         env:
           TARGET_RESULT: ${{ needs.current-main-target.result }}
+          NATIVE_IDENTITY_REQUESTED: ${{ inputs.native_sampling_identity_original_recovery }}
+          NATIVE_IDENTITY_PREWRITE_RESULT: ${{ needs.native-identity-prewrite.result }}
           BUILD_RESULT: ${{ needs.build-and-prepare.result }}
           SHOULD_DEPLOY: ${{ needs.build-and-prepare.outputs.should_deploy }}
           WEATHER_OUTCOME: ${{ needs.build-and-prepare.outputs.weather_outcome }}
@@ -205,6 +515,11 @@ jobs:
             echo "- Artifact: $ARTIFACT_BUILT / $PAGES_BUILD_OUTCOME / $PAGES_PRIVACY_OUTCOME / $PAGES_ARTIFACT_SEAL_OUTCOME"
             echo "- Pages: $DEPLOY_RESULT / $DEPLOYMENT_OUTCOME / $PUBLIC_VERIFICATION_OUTCOME / verified=$DEPLOYED_VERIFIED"
           } >> "$GITHUB_STEP_SUMMARY"
+          if test "$NATIVE_IDENTITY_REQUESTED" = true; then
+            test "$NATIVE_IDENTITY_PREWRITE_RESULT" = success
+          else
+            test "$NATIVE_IDENTITY_PREWRITE_RESULT" = skipped
+          fi
           node scripts/lib/verified-weather-deployment-terminal.mjs
 
   notify-owner-failure:

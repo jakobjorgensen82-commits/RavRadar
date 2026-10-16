@@ -366,7 +366,8 @@ const rpcFailureIncludes = pattern => error => {
 
 // Pure classification of the real native caller's bounded failure output.
 // These assertions are not PostgreSQL/SQL/installation proof.
-if (!process.argv.includes('--native-postgres') && !process.argv.includes('--native-statistics-revision')) {
+if (!process.argv.includes('--native-postgres') && !process.argv.includes('--native-statistics-revision')
+    && !process.argv.includes('--native-sampling-identity')) {
   const { nativePostgresFailureDiagnostic: diagnose,
     nativePostgresFailureAnnotation: annotate } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -394,17 +395,82 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
     '::error title=Native PostgreSQL source command::phase=NATIVE_SETUP sqlstate=UNKNOWN category=PSQL_COMMAND_FAILURE');
 }
 
+// Source-only control of genuine fixed37 constructors and CURRENT constructors.
+// This never starts PostgreSQL, runs SQL or certifies the new migration.
+if (process.argv.includes('--native-identity-source-only')) {
+  assert.deepEqual(process.argv.slice(2), ['--native-identity-source-only']);
+  const { withNativeI71CheckpointFactory, nativeIdentityHistoricalCatalogSetup } =
+    await import('./lib/native-identity-checkpoint-postgres.mjs');
+  const { NATIVE_IDENTITY_PREDECESSOR: before, NATIVE_IDENTITY_BINDING_REVIEW: after,
+    readNativeIdentityCanonicalSource, readNativeIdentityPredecessorSource } =
+    await import('./lib/native-sampling-identity-successor-source.mjs');
+  const { nativeSamplingIdentityExpectedDatabaseContracts } =
+    await import('./native-sampling-identity-successor-readiness.mjs');
+  const oldSql = (await fs.readFile('supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql', 'utf8')).replace(/\r\n?/g, '\n');
+  const catalog = nativeIdentityHistoricalCatalogSetup(oldSql);
+  assert.equal((catalog.match(/^revoke all on function/gm) ?? []).length, 15);
+  assert.equal((catalog.match(/^grant execute on function/gm) ?? []).length, 2);
+  assert.equal((catalog.match(/^create policy/gm) ?? []).length, 2);
+  assert.throws(() => nativeIdentityHistoricalCatalogSetup(oldSql.replace('from public, anon, authenticated;', 'from public, anon;')));
+  assert.throws(() => nativeIdentityHistoricalCatalogSetup(oldSql + '\n'));
+  const canonical = await readNativeIdentityCanonicalSource();
+  const predecessor = await readNativeIdentityPredecessorSource();
+  const expected = await nativeSamplingIdentityExpectedDatabaseContracts();
+  assert.equal(expected.checkpoint.sha256.length, 64); assert.equal(expected.trip.sha256.length, 64);
+  assert(canonical.canonicalSource.includes('native_identity_i71_payload_valid'));
+  assert(!predecessor.canonicalSource.includes('native_identity_i71_payload_valid'));
+  const fixtureRoot = await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()), 'rr-native-identity-source-'));
+  const own = await fs.lstat(fixtureRoot, { bigint: true });
+  const ownedFiles = [];
+  try {
+    await withNativeI71CheckpointFactory(async old => {
+      for (const [prefix, factory, saver, tuple] of [
+        ['old', old.sourceDocumentAt, old.saveRavScoreContinuationCheckpoint, before],
+        ['new', sourceDocumentAt, saveRavScoreContinuationCheckpoint, after],
+      ]) {
+        const sourcePath = path.join(fixtureRoot, prefix + '.source.json');
+        const checkpointPath = path.join(fixtureRoot, prefix + '.checkpoint.json');
+        ownedFiles.push(sourcePath, checkpointPath);
+        await fs.writeFile(sourcePath, JSON.stringify(factory(49, 'rr-native-identity-49')), { flag: 'wx' });
+        const original = await fs.readFile(sourcePath);
+        await saver({ sourcePath, checkpointPath });
+        assert.deepEqual(await fs.readFile(sourcePath), original);
+        const payload = JSON.parse(await fs.readFile(checkpointPath, 'utf8'));
+        assert.equal(payload.partCount, 673); assert.equal(Object.keys(payload.states).length, 673);
+        assert.equal(Object.keys(payload.candidateGRollbackCompanion.states).length, 673);
+        assert.equal(payload.modelBinding.modelBundleSha256, tuple.integrated);
+        assert.equal(payload.candidateGRollbackCompanion.modelBinding.modelBundleSha256, tuple.candidate);
+        assert.equal(payload.continuationStateContractSha256, tuple.continuation);
+      }
+    });
+  } finally {
+    const actual = await fs.lstat(fixtureRoot, { bigint: true });
+    assert.equal(await fs.realpath(fixtureRoot), fixtureRoot);
+    assert.deepEqual([actual.dev, actual.ino, actual.birthtimeNs], [own.dev, own.ino, own.birthtimeNs]);
+    assert.deepEqual((await fs.readdir(fixtureRoot)).sort(), ownedFiles.map(file => path.basename(file)).sort());
+    for (const file of ownedFiles) { const stat = await fs.lstat(file); assert(stat.isFile() && !stat.isSymbolicLink()); await fs.unlink(file); }
+    await fs.rmdir(fixtureRoot);
+  }
+  console.log(JSON.stringify({ kind: 'NATIVE_IDENTITY_SOURCE_FIXTURES', oldPartCount: 673,
+    newPartCount: 673, genuineFixed37: true, normalSavers: true, oldSqlPreserved: true,
+    sourceUnchanged: true, ownedCleanup: true, sqlExecuted: false, nativePostgres: 'UNRUN' }));
+  process.exit(0);
+}
+
 // Native PostgreSQL is a separate mandatory Linux source leaf, never a
 // MemoryCentral/Windows representation proof. Reuse these exact 673 builders
 // and the normal checkpoint saver; do not run the simulated RPC tests here.
-if (process.argv.includes('--native-postgres') || process.argv.includes('--native-statistics-revision')) {
+if (process.argv.includes('--native-postgres') || process.argv.includes('--native-statistics-revision')
+    || process.argv.includes('--native-sampling-identity')) {
   try {
     const { runNativeCheckpointSqlComparison } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
     const report = await runNativeCheckpointSqlComparison({
       repositoryRoot: path.resolve('.'), sourceDocumentAt, atHour,
       saveCheckpoint: saveRavScoreContinuationCheckpoint,
-      includeStatisticsRevision: process.argv.includes('--native-statistics-revision'),
+      includeStatisticsRevision: process.argv.includes('--native-statistics-revision')
+        || process.argv.includes('--native-sampling-identity'),
+      includeNativeIdentity: process.argv.includes('--native-sampling-identity'),
     });
     console.log(JSON.stringify(report));
   } catch (error) {

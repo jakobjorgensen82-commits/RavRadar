@@ -10,7 +10,7 @@ import { selectRavScoreProductionInitialState, ravScoreOwnerCurrentHistoryStartA
 import { ravScoreRecoverySourceStartAt, RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS,
   RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES } from './lib/ravscore-recovery-replay.mjs';
 import { ravScoreSamplingContextKey } from './lib/ravscore-sampling-context.mjs';
-import { dmiExpectedIdentityForPart, verifiedDmiForecastComponentSource,
+import { dmiExpectedIdentityForPart, dmiOriginalWireIdentityMatchesCentralIdentity, verifiedDmiForecastComponentSource,
   verifiedDmiNativeComponentSource, verifiedIntegratedPartHourly, verifiedBulkCurrent }
   from './lib/ravscore-production-adapters.mjs';
 import { assertCoastalPointActivationStateInjection } from './lib/coastal-point-staging-contract.mjs';
@@ -231,7 +231,9 @@ function expectedLegacyNativeSource(source, step, capture, expected) {
   }
   if (capture.assetSizeBytes !== null) endpoint.assetSizeBytes = capture.assetSizeBytes;
   else if (Object.hasOwn(endpoint, 'assetSizeBytes')) endpoint.assetSizeBytes = null;
-  if (source.nativeGridSampling != null || step.nativeGridSampling != null) refuse('LEGACY_CONTEXT_UNAVAILABLE');
+  // The selected top marker belongs to its own endpoint, not this bracket.
+  // Missing NEW data cannot be reconstructed by the frozen OLD decoder.
+  if (step.nativeGridSampling != null) refuse('LEGACY_NEW_ENDPOINT_UNAVAILABLE');
   // UNKNOWN null belongs only to this actual own step. A selected top marker
   // never supplies another endpoint's shape, and the witness stays verbatim.
   if (Object.hasOwn(step, 'nativeGridSampling') && step.nativeGridSampling === null) endpoint.nativeGridSampling = null;
@@ -295,7 +297,7 @@ export function buildRavScoreLegacyCurrentOriginalRequests({ registry, zones, hi
     || [...persistedHourlyByPart.keys()].some(id => !parts.has(id))) refuse('REGISTRY_INVENTORY_MISMATCH');
   const discovery = dependencyDiscovery ?? createSavedDmiOriginalDependencyDiscovery({ protectedBulk, progressCandidate });
   assertSavedDmiOriginalDependencyDiscoveryInputs(discovery, { protectedBulk, progressCandidate });
-  const witnesses = new Map(), requests = new Map(), contexts = new Map(), processing = new Map();
+  const witnesses = new Map(), requests = new Map(), existingOriginals = new Map(), contexts = new Map(), processing = new Map();
   let planBytes = 4096;
   const charge = value => { planBytes += Buffer.byteLength(canonical(value)) + 2;
     if (planBytes > 192 * 1024 * 1024) refuse('LEGACY_PLAN_BOUND'); };
@@ -358,10 +360,12 @@ export function buildRavScoreLegacyCurrentOriginalRequests({ registry, zones, hi
         const captures = resolveSavedDmiOriginalDependencyCaptures(discovery, { protectedBulk, progressCandidate,
           document, part, row, ownHourly: role === 'deployedBulk' ? persisted : [] });
         if (!captures) refuse('LEGACY_CAPTURE_UNAVAILABLE');
+        const endpoints = inspector.inspectEndpointOriginals({ part, row });
+        if (!endpoints.ok || endpoints.endpoints.length !== source.nativeSteps.length) refuse('LEGACY_SELECTED_ENDPOINT_UNAVAILABLE');
         const originalZone = document.zones[expected.entityId];
         const originalIdentity = originalZone && Object.fromEntries(IDENTITY_FIELDS
           .filter(key => Object.hasOwn(originalZone, key)).map(key => [key, structuredClone(originalZone[key])]));
-        if (!isDeepStrictEqual(originalIdentity, expected)
+        if (!dmiOriginalWireIdentityMatchesCentralIdentity(originalIdentity, expected)
           || !verifiedBulkCurrent(document, originalZone, part.waterPoint, source, row.time, expected)) refuse('LEGACY_CONTEXT_UNAVAILABLE');
         const context = contexts.get(role) ?? { documentRole: role, header: Object.fromEntries(ORIGINAL_HEADER_FIELDS
           .filter(key => Object.hasOwn(document, key)).map(key => [key, structuredClone(document[key])])), zones: [] };
@@ -375,13 +379,40 @@ export function buildRavScoreLegacyCurrentOriginalRequests({ registry, zones, hi
             tupleSha256: canonicalHash([row.currentUMps, row.currentVMps]) };
           charge(value); witnesses.set(witnessId, value);
         }
-        if (!processing.has(document)) processing.set(document, legacyProcessingIndex(document));
         const parent = zones.features.find(feature => feature?.properties?.id === expected.parentZoneId);
         const zone = { id: expected.entityId, lon: expected.samplingPoint[0], lat: expected.samplingPoint[1],
           coastType: parent?.properties?.coastType || 'east', coastalPart: true, parentZoneId: expected.parentZoneId };
         for (const [index, step] of source.nativeSteps.entries()) {
           const nativeMs = Date.parse(step.nativeValidTime);
           if (!Number.isFinite(nativeMs) || nativeMs < from - 3 * HOUR || nativeMs > until + 3 * HOUR) refuse('LEGACY_DEMAND_INVALID');
+          const existingEndpoint = endpoints.endpoints[index];
+          if (existingEndpoint) {
+            const native = existingEndpoint.native;
+            const matchesRaw = raw => raw?.time === native.time
+              && raw['current-u'] === native.uMps && raw['current-v'] === native.vMps
+              && canonical(raw.sources?.current) === canonical(native.source);
+            // Normal producer keys equal their verbatim row time: O(1), not
+            // a fresh own-hour scan for every interpolated witness. Preserve
+            // older alternative key spellings through the bounded fallback.
+            const entry = matchesRaw(originalZone.hourly[native.time]) ? [native.time, originalZone.hourly[native.time]]
+              : Object.entries(originalZone.hourly).find(([, raw]) => matchesRaw(raw));
+            if (!entry) refuse('LEGACY_EXISTING_ORIGINAL_UNAVAILABLE');
+            const fields = { partId: part.partId, documentRole: role, documentSha256: sourceHashes[role],
+              contextSha256: canonicalHash({ header: context.header, zone: originalIdentity }),
+              rowPath: ['zones', expected.entityId, 'hourly', entry[0]],
+              row: { time: native.time, 'current-u': native.uMps, 'current-v': native.vMps,
+                sources: { current: structuredClone(native.source) } } };
+            const originalId = canonicalHash(fields), retained = existingOriginals.get(originalId);
+            if (retained) {
+              if (!retained.projectionWitnessRefs.includes(witnessId)) { charge(witnessId); retained.projectionWitnessRefs.push(witnessId); }
+            } else {
+              const value = { originalId, ...fields, projectionWitnessRefs: [witnessId] };
+              charge(value); existingOriginals.set(originalId, value);
+            }
+            if (requests.size + existingOriginals.size > 2 * 673 * 124 || witnesses.size > 673 * 124) refuse('LEGACY_PLAN_BOUND');
+            continue;
+          }
+          if (!processing.has(document)) processing.set(document, legacyProcessingIndex(document));
           const capture = captures[index];
           const evidence = (processing.get(document).get(canonical(capture)) ?? [])
             .filter(value => value.partIds === null || value.partIds.includes(part.partId));
@@ -398,19 +429,21 @@ export function buildRavScoreLegacyCurrentOriginalRequests({ registry, zones, hi
             const value = { requestId, ...request, projectionWitnessRefs: [witnessId] };
             charge(value); requests.set(requestId, value);
           }
-          if (requests.size > 2 * 673 * 124 || witnesses.size > 673 * 124) refuse('LEGACY_PLAN_BOUND');
+          if (requests.size + existingOriginals.size > 2 * 673 * 124 || witnesses.size > 673 * 124) refuse('LEGACY_PLAN_BOUND');
         }
         selectedTimes.add(time);
       }
     }
     if ([...losses].some(time => !selectedTimes.has(time))) refuse('LEGACY_SELECTED_ENDPOINT_UNAVAILABLE');
   }
-  return { schemaVersion: 1, kind: 'DMI_LEGACY_CURRENT_ORIGINAL_RECONSTRUCTION_REQUESTS',
+  return { schemaVersion: existingOriginals.size ? 2 : 1, kind: 'DMI_LEGACY_CURRENT_ORIGINAL_RECONSTRUCTION_REQUESTS',
     productionReferenceAt: target, modelBinding: { ...historyDemand.modelBinding }, historyDemandSha256,
     registrySha256: historyDemand.registrySha256, sourceHashes: { ...sourceHashes },
     sourcePaths: { ...RAVSCORE_LEGACY_CURRENT_ORIGINAL_SOURCE_PATHS },
     documentContexts: [...contexts.values()].sort((a, b) => a.documentRole.localeCompare(b.documentRole)),
     projectionWitnesses: [...witnesses.values()].sort((a, b) => a.witnessId.localeCompare(b.witnessId)),
+    ...(existingOriginals.size ? { existingNativeOriginals: [...existingOriginals.values()]
+      .sort((a, b) => a.originalId.localeCompare(b.originalId)) } : {}),
     reconstructionRequests: [...requests.values()].sort((a, b) => a.requestId.localeCompare(b.requestId)) };
 }
 

@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readCurrentGridCanonicalSource } from './lib/current-grid-successor-source.mjs';
+import { nativeIdentityMigration, readNativeIdentityCanonicalSource }
+  from './lib/native-sampling-identity-successor-source.mjs';
 import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
@@ -29,7 +30,7 @@ const SQL_BINDING_PATHS = Object.freeze([
   'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
 ]);
 const CHECKPOINT_METADATA_CAS_MIGRATION_PATH =
-  'supabase/migrations/20261013220000_current_grid_original_bound_successor.sql';
+  'supabase/migrations/' + nativeIdentityMigration().filename;
 const CHECKPOINT_METADATA_CAS_MARKER = 'RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED';
 const CHECKPOINT_METADATA_CAS_INNER_MARKERS = Object.freeze([
   'RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED',
@@ -285,7 +286,7 @@ export async function synchronizeRavScoreModelBinding({ write = false, root = RO
 
   // Sparse immutable successor is reconstructed only as a pinned READ view.
   const { canonicalSource: checkpointMigration, accountSource } =
-    await readCurrentGridCanonicalSource({ migrationsDirectory: path.join(root, 'supabase/migrations') });
+    await readNativeIdentityCanonicalSource({ migrationsDirectory: path.join(root, 'supabase/migrations') });
   const checkpointBlock = checkpointMetadataCasBlock(
     checkpointMigration,
     binding,

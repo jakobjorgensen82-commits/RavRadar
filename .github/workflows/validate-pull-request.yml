@@ -111,7 +111,9 @@ jobs:
           # Use only PostgreSQL binaries already present in the normal runner.
           # No package/runtime install, network, cloud database or skip fallback.
           node scripts/test-code-only-userdata-policy-routing.mjs
-          node scripts/test-protected-ravscore-continuation-checkpoint.mjs --native-statistics-revision
+          # Includes the unchanged 213 -> 220 -> 230 phases in the SAME owned
+          # cluster, then executes the actual native-identity SQL and CAS cases.
+          node scripts/test-protected-ravscore-continuation-checkpoint.mjs --native-statistics-revision --native-sampling-identity
 
       - name: Require validated source tree to remain unchanged
         shell: bash

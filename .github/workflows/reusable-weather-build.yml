@@ -24,6 +24,10 @@ on:
         required: false
         type: boolean
         default: false
+      native_sampling_identity_original_recovery:
+        required: false
+        type: boolean
+        default: false
       produce_weather_handoff:
         required: true
         type: boolean
@@ -242,6 +246,32 @@ jobs:
         with:
           node-version: 22
 
+      - name: Require the fixed native-identity recovery scope before any recovery work
+        if: inputs.native_sampling_identity_original_recovery == true
+        shell: bash
+        env:
+          QUICK_CONFIRMATION: ${{ inputs.quick_confirmation }}
+          QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
+          CHECKPOINT_ONLY: ${{ inputs.checkpoint_only }}
+          PRODUCE_HANDOFF: ${{ inputs.produce_weather_handoff }}
+          EXTENDED_BOOTSTRAP: ${{ inputs.extended_provider_bootstrap }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { assertNativeIdentityRecoveryFrozen } from './scripts/lib/native-sampling-identity-successor-source.mjs';
+          import { NATIVE_IDENTITY_ORIGINAL_PROGRESS } from './scripts/native-sampling-identity-recovery-prewrite.mjs';
+          assertNativeIdentityRecoveryFrozen();
+          assert.equal(process.env.GITHUB_EVENT_NAME, 'workflow_dispatch');
+          assert.equal(process.env.GITHUB_REF, 'refs/heads/main');
+          assert.equal(process.env.QUICK_CONFIRMATION, 'false');
+          assert.equal(process.env.CHECKPOINT_ONLY, 'true');
+          assert.equal(process.env.PRODUCE_HANDOFF, 'false');
+          assert.equal(process.env.EXTENDED_BOOTSTRAP, 'false');
+          assert.equal(process.env.QUICK_PROGRESS_SOURCE, NATIVE_IDENTITY_ORIGINAL_PROGRESS.source);
+          assert.equal(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR, NATIVE_IDENTITY_ORIGINAL_PROGRESS.target.replace('.000Z', 'Z'));
+          NODE
+
       - name: Read exact centrally active operational RavScore
         id: operational-model
         shell: bash
@@ -452,7 +482,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.577 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.578 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -532,6 +562,63 @@ jobs:
       - name: Materialize the authoritative active coastal-part registry
         if: steps.preflight.outputs.should_run == 'true'
         run: node scripts/build-public-coastal-parts-v2.mjs
+
+      - name: Materialize the exact historical source objects for native identity continuation
+        if: steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery == true
+        shell: bash
+        run: |
+          set -euo pipefail
+          for original_head in 37e657867ff0f8c31f8e8489e5c9a1cf235192f9 044d3045fecc2e70d6f35f60010921c6bd597ecc; do
+            if ! git cat-file -e "${original_head}^{commit}"; then
+              git fetch --no-tags --depth=1 origin "$original_head"
+            fi
+            test "$(git rev-parse "${original_head}^{commit}")" = "$original_head"
+          done
+
+      - name: Restore the exact original cipher for native identity continuation
+        id: native-identity-progress-cache
+        if: steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery == true
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/weather-private-progress.encrypted
+          key: weather-private-progress-encrypted-v2-Linux-main-38768040429-1
+          fail-on-cache-miss: true
+
+      - name: Authenticate originals and install the native identity working continuation
+        id: native-identity-runtime-install
+        if: steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery == true
+        shell: bash
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+          RAVRADAR_NATIVE_IDENTITY_RECOVERY_OPT_IN: 'true'
+          NATIVE_IDENTITY_PROGRESS_CACHE_MATCHED_KEY: ${{ steps.native-identity-progress-cache.outputs.cache-matched-key }}
+          QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
+          QUICK_CONFIRMATION: ${{ inputs.quick_confirmation }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          test "${{ steps.native-identity-progress-cache.outcome }}" = success
+          node scripts/install-native-identity-checkpoint-runtime.mjs install
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+          import { verifyInstalledNativeIdentityCheckpointRuntime }
+            from './scripts/install-native-identity-checkpoint-runtime.mjs';
+          const result = await verifyInstalledNativeIdentityCheckpointRuntime();
+          // These remain original/private paths; the ordinary target bundle
+          // destination below is deliberately NOT pointed at original B.
+          await fs.appendFile(process.env.GITHUB_ENV,
+            'RAVRADAR_NATIVE_IDENTITY_RECOVERY_OPT_IN=true\n'
+            + 'NATIVE_IDENTITY_PROGRESS_CACHE_MATCHED_KEY=' + process.env.NATIVE_IDENTITY_PROGRESS_CACHE_MATCHED_KEY + '\n'
+            + 'RAVRADAR_NATIVE_IDENTITY_OLD_GCM_REPORT=' + result.oldGcmReportPath + '\n'
+            + 'RAVRADAR_NATIVE_IDENTITY_ORIGINAL_BUNDLE=' + result.originalBundlePath + '\n');
+          NODE
 
       - name: Resolve exact verified weather source producer run
         id: weather-source-handoff-resolve
@@ -623,7 +710,7 @@ jobs:
 
       - name: Prepare exact old-reader restore for the measured wave transition
         id: historical-wave-predecessor
-        if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
+        if: steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
         run: >-
           node scripts/prepare-historical-wave-predecessor-restore.mjs
           --source-description "$RUNNER_TEMP/private-runtime-current-source.json"
@@ -680,7 +767,7 @@ jobs:
       # private conditions carry the exact continuation states and are rebound
       # below; restoring the old checkpoint here would reject a valid donor.
       - name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint
-        if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'
+        if: steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'
         id: ravscore-checkpoint-cache
         uses: actions/cache/restore@v6
         with:
@@ -690,7 +777,7 @@ jobs:
             ravscore-continuation-schema6-v2-
 
       - name: Restore protected atomic RavScore checkpoint when cache is absent
-        if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == '' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'
+        if: steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == '' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --restore
@@ -747,7 +834,7 @@ jobs:
           fi
 
       - name: Restore newest compatible private runtime from protected storage
-        if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
+        if: steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
         shell: bash
         run: |
           set -uo pipefail
@@ -861,6 +948,12 @@ jobs:
         id: private-runtime-state
         shell: bash
         run: |
+          if test "${{ inputs.native_sampling_identity_original_recovery }}" = true; then
+            test "${{ steps.native-identity-runtime-install.outcome }}" = success
+            node scripts/install-native-identity-checkpoint-runtime.mjs verify
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if test -f "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json"; then
             echo "available=true" >> "$GITHUB_OUTPUT"
             echo "A private production runtime bundle is available."
@@ -879,7 +972,7 @@ jobs:
           fi
 
       - name: Describe the exact restored private generation
-        if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && steps.private-runtime-state.outputs.available == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -896,7 +989,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Verify and restore the private production runtime bundle
-        if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && steps.private-runtime-state.outputs.available == 'true'
         shell: bash
         env:
           HISTORICAL_WAVE_PREDECESSOR_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.required || 'false' }}
@@ -1066,6 +1159,11 @@ jobs:
           CURRENT_GRID_MIGRATED_ROOT: ${{ steps.current-grid-original-migration.outputs.restored_path }}
         run: |
           set -euo pipefail
+          if test "${{ inputs.native_sampling_identity_original_recovery }}" = true; then
+            test "${{ steps.native-identity-runtime-install.outcome }}" = success
+            node scripts/install-native-identity-checkpoint-runtime.mjs verify
+            exit 0
+          fi
           restored_root="$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
           if test "$PREDECESSOR_TRANSITION_KIND" = "current-grid-sampling-original"; then
             test -n "$CURRENT_GRID_MIGRATED_ROOT"
@@ -1098,7 +1196,7 @@ jobs:
           import { inspectDmiForecastFile } from './scripts/lib/dmi-forecast-file.mjs';
           const store = await inspectDmiForecastFile('data/live/dmi-forecast-cache.json');
           const manifest = JSON.parse(fs.readFileSync(
-            process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE + '/manifest.json', 'utf8'));
+            (process.env.RAVRADAR_NATIVE_IDENTITY_ORIGINAL_BUNDLE || process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE) + '/manifest.json', 'utf8'));
           if (store.hasPartContinuity) {
             fs.appendFileSync(process.env.GITHUB_OUTPUT, 'required=false\n');
           } else if (manifest.productionReferenceAt === '2026-09-27T02:00:00.000Z') {
@@ -1223,7 +1321,7 @@ jobs:
         # conditions bytes and bundle hash. This also permits the exact 11Z
         # recovery to resume its own progress after a later no-loss stop;
         # a snapshot from the 15Z anchor is rejected by the binder below.
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current')
+        if: inputs.native_sampling_identity_original_recovery != true && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current')
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-private-progress.encrypted
@@ -1240,6 +1338,14 @@ jobs:
           CHECKPOINT_ONLY: ${{ inputs.checkpoint_only }}
         run: |
           set -euo pipefail
+          if test "${{ inputs.native_sampling_identity_original_recovery }}" = true; then
+            test "${{ steps.native-identity-runtime-install.outcome }}" = success
+            node scripts/install-native-identity-checkpoint-runtime.mjs verify
+            # This is a real NEW installed-workspace capture. The only
+            # RESTORED report remains the genuine OLD-I71 GCM report.
+            echo "captured=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           protected_bundle_sha256="$(node --input-type=module -e '
             import fs from "node:fs/promises";
             import path from "node:path";
@@ -1288,7 +1394,8 @@ jobs:
         shell: bash
         env:
           QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
-          PROGRESS_CACHE_MATCHED_KEY: ${{ steps.component-progress-cache.outputs.cache-matched-key }}
+          PROGRESS_CACHE_MATCHED_KEY: ${{ inputs.native_sampling_identity_original_recovery == true && steps.native-identity-progress-cache.outputs.cache-matched-key || steps.component-progress-cache.outputs.cache-matched-key }}
+          PROGRESS_CACHE_OUTCOME: ${{ inputs.native_sampling_identity_original_recovery == true && steps.native-identity-progress-cache.outcome || steps.component-progress-cache.outcome }}
         run: |
           set -euo pipefail
           if test "$QUICK_PROGRESS_SOURCE" = protected-current; then
@@ -1456,11 +1563,11 @@ jobs:
             echo "The current protected DMI input is resumed; producer READY is still required."
             exit 0
           fi
-          report="$RUNNER_TEMP/weather-progress-restore-report.json"
+          report="${RAVRADAR_NATIVE_IDENTITY_OLD_GCM_REPORT:-$RUNNER_TEMP/weather-progress-restore-report.json}"
           [[ "$QUICK_PROGRESS_SOURCE" =~ ^[0-9]+-[1-9][0-9]*$ ]]
           expected="weather-private-progress-encrypted-v2-${RUNNER_OS}-main-${QUICK_PROGRESS_SOURCE}"
           test "$PROGRESS_CACHE_MATCHED_KEY" = "$expected"
-          test "${{ steps.component-progress-cache.outcome }}" = success
+          test "$PROGRESS_CACHE_OUTCOME" = success
           test "${{ steps.component-progress-restore.outcome }}" = success
           test -s "$report"
           jq -e '.status == "RESTORED" and .restored == true and .fileCount > 0' "$report" >/dev/null
@@ -1473,7 +1580,8 @@ jobs:
           import path from 'node:path';
           import { assertUsableDmiProgressRecovery } from './scripts/lib/verified-dmi-progress-inputs.mjs';
           const report = JSON.parse(await fs.readFile(
-            path.join(process.env.RUNNER_TEMP, 'weather-progress-restore-report.json'), 'utf8'));
+            process.env.RAVRADAR_NATIVE_IDENTITY_OLD_GCM_REPORT
+              || path.join(process.env.RUNNER_TEMP, 'weather-progress-restore-report.json'), 'utf8'));
           assertUsableDmiProgressRecovery(report.dmiProgress, { allowAbsent: true });
           NODE
           test -s .cache/dmi-candidate-progress.json
@@ -1487,7 +1595,8 @@ jobs:
           import fs from 'node:fs/promises';
           import path from 'node:path';
           const report = JSON.parse(await fs.readFile(
-            path.join(process.env.RUNNER_TEMP, 'weather-progress-restore-report.json'), 'utf8'));
+            process.env.RAVRADAR_NATIVE_IDENTITY_OLD_GCM_REPORT
+              || path.join(process.env.RUNNER_TEMP, 'weather-progress-restore-report.json'), 'utf8'));
           if (report.status !== 'RESTORED' || report.restored !== true
             || typeof report.restoredProductionReferenceAt !== 'string'
             || new Date(report.restoredProductionReferenceAt).toISOString()
@@ -1562,7 +1671,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.577 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.578 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -1587,7 +1696,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.577 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.578 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -1660,6 +1769,12 @@ jobs:
           git fetch --no-tags --depth=1 origin "$legacy_source_head"
           test "$(git rev-parse FETCH_HEAD^{commit})" = "$legacy_source_head"
           test "$(git rev-parse "${legacy_source_head}^{tree}")" = "$legacy_source_tree"
+          for original_head in 37e657867ff0f8c31f8e8489e5c9a1cf235192f9 044d3045fecc2e70d6f35f60010921c6bd597ecc; do
+            if ! git cat-file -e "${original_head}^{commit}"; then
+              git fetch --no-tags --depth=1 origin "$original_head"
+            fi
+            test "$(git rev-parse "${original_head}^{commit}")" = "$original_head"
+          done
 
       - name: Install source-gate dependencies
         if: steps.preflight.outputs.should_run == 'true' && steps.source-proof.outputs.required != 'false'
@@ -1913,7 +2028,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.577 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.578 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -2278,7 +2393,7 @@ jobs:
           RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: ${{ inputs.quick_confirmation && '60000' || '90000' }}
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.577 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.578 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Report counts for each weather component after central cache
@@ -3215,7 +3330,12 @@ jobs:
           test "${{ steps.pages-build.outcome }}" = success
           test "${{ steps.pages-privacy.outcome }}" = success
           test "${{ steps.ravscore-integrated-runtime-audit.outputs.runtime_audit_outcome }}" = success
-          if test "${{ steps.historical-wave-predecessor.outputs.transition_kind }}" = current-grid-sampling-original; then
+          if test "${{ inputs.native_sampling_identity_original_recovery }}" = true; then
+            test "${{ steps.native-identity-runtime-install.outcome }}" = success
+            test "${{ steps.private-runtime-install.outcome }}" = success
+            test "${{ steps.component-progress-restore.outcome }}" = success
+            test "${{ steps.component-progress-restore.outputs.captured }}" = true
+          elif test "${{ steps.historical-wave-predecessor.outputs.transition_kind }}" = current-grid-sampling-original; then
             test "${{ steps.current-grid-original-hour.outcome }}" = success
             test "${{ steps.current-grid-original-migration.outcome }}" = success
           fi
