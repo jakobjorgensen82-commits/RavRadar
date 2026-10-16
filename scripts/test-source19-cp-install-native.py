@@ -420,6 +420,8 @@ class SourceOriginalCpInstallNative(unittest.TestCase):
     def actual_case(self, own, seed, fixtures, protocol, cert, key, helper, mode):
         root = own / mode
         shutil.copytree(seed, root)
+        # The normal writer requires an existing private cache, never a prebuilt claim.
+        (root / '.cache').mkdir()
         action = root / ENTRY
         self.assertEqual(action.read_bytes(), (ROOT / ENTRY).read_bytes(), 'ACTUAL_ACTION_BYTES_CHANGED')
         self.assertFalse(FIXED.exists() or FIXED.is_symlink(), 'FIXED_PRIVATE_ROOT_EXISTS')

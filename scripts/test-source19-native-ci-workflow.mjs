@@ -36,6 +36,7 @@ function actualConditionAllows(scopeResult,required,nativeResult) {
 async function assertSource19FixtureCjsClosure() {
   const { createRequire } = await import('node:module');
   const { tmpdir } = await import('node:os');
+  const { spawnSync } = await import('node:child_process');
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const action = '.github/actions/save-owned-dmi-grib/index.cjs';
   const writer = 'scripts/lib/weather-acquisition-writer.mjs';
@@ -43,9 +44,18 @@ async function assertSource19FixtureCjsClosure() {
   const actualRequires = [...actionSource.matchAll(/\brequire(?:\.resolve)?\s*\(\s*(['"])(\.[^'"]+)\1\s*\)/g)]
     .map(match => match[2]);
   assert.ok(actualRequires.length > 0, 'exercise actual local CJS requires, not a synthetic writer import');
+  const wrapper = 'scripts/run-owned-dmi-grib-save.py';
+  assert.ok(actionSource.includes("child = spawn('python3', ['-B', path.join(ROOT, '" + wrapper + "'),"),
+    'The fixture must include the actual fixed Python child, not a substitute');
   for (const fixture of ['scripts/test-source19-cp-install-native-fixture.mjs',
     'scripts/test-source19-union-native-fixture.mjs']) {
     const fixtureSource = (await fs.readFile(path.join(root, fixture), 'utf8')).replaceAll('\r\n', '\n');
+    // CONTRACT_FILES.fullRuntime is the storage ABI, not PRODUCER_SOURCE_FILES.
+    // Dynamic subprocess paths therefore need explicit synthetic seed assets.
+    const explicitSeed = fixtureSource.match(/const names = new Set\(\[([\s\S]*?)\]\);/)?.[1];
+    assert.ok(explicitSeed, 'The actual unique fixture seed list must exist');
+    assert.equal((explicitSeed.match(/'scripts\/run-owned-dmi-grib-save\.py'/g) ?? []).length, 1,
+      'The actual fixture must explicitly seed its normal Python wrapper');
     const scans = fixtureSource.split('\n').filter(line =>
       line.trimStart().startsWith('for (const match of source.matchAll(/(?:from'));
     assert.equal(scans.length, 1, 'use the actual unique normal seed scanner');
@@ -57,7 +67,7 @@ async function assertSource19FixtureCjsClosure() {
     const parent = await fs.realpath(tmpdir());
     const seed = await fs.mkdtemp(path.join(parent, 'rr-s19-cjs-'));
     const born = await fs.lstat(seed, { bigint: true });
-    const visited = new Set(), pending = [action];
+    const visited = new Set(), pending = [action, wrapper];
     try {
       while (pending.length) {
         const relative = pending.pop();
@@ -76,6 +86,22 @@ async function assertSource19FixtureCjsClosure() {
           pending.push(dependency);
         }
       }
+      const seededWrapper = path.join(seed, wrapper);
+      const wrapperStat = await fs.lstat(seededWrapper);
+      assert.ok(wrapperStat.isFile() && !wrapperStat.isSymbolicLink());
+      assert.equal(wrapperStat.nlink, 1);
+      assert.deepEqual(await fs.readFile(seededWrapper), await fs.readFile(path.join(root, wrapper)),
+        'The real fixed wrapper must physically exist with its unchanged bytes');
+      const rejected = spawnSync(process.env.PYTHON || 'python',
+        ['-B', seededWrapper, '--prepare-distribution'], {
+          env: { PATH: process.env.PATH, ...(process.env.SYSTEMROOT ? { SYSTEMROOT: process.env.SYSTEMROOT } : {}),
+            PYTHONDONTWRITEBYTECODE: '1', PYTHONNOUSERSITE: '1' },
+          encoding: 'utf8', timeout: 10_000, maxBuffer: 16_384,
+        });
+      assert.equal(rejected.error, undefined); assert.equal(rejected.signal, null);
+      assert.equal(rejected.status, 1); assert.equal(rejected.stdout, '');
+      assert.equal(rejected.stderr.replaceAll('\r\n', '\n'), 'DMI_RAW_SAVE_COHORT_REFUSED\n',
+        'A direct unowned wrapper must parse/import and refuse before workers; never an H receipt');
       const localRequire = createRequire(path.join(seed, action));
       for (const specifier of actualRequires) {
         // A genuine fresh-seed require.resolve fails on the old ESM-only scan.
@@ -96,6 +122,87 @@ async function assertSource19FixtureCjsClosure() {
       assert.equal(current.dev, born.dev); assert.equal(current.ino, born.ino);
       assert.equal(current.mode, born.mode);
       await fs.rm(seed, { recursive: true, force: false });
+    }
+  }
+}
+
+
+// Exercise the actual fresh-checkout prefix and the action's unchanged writer.
+// This is only the file/lease prerequisite, never SOURCE or H admission.
+export async function testSource19FixtureWriterCachePrerequisite(fixtureSource = null) {
+  const { createRequire } = await import('node:module');
+  const { spawnSync } = await import('node:child_process');
+  const { tmpdir } = await import('node:os');
+  const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const fixture = (fixtureSource ?? await fs.readFile(path.join(sourceRoot,
+    'scripts/test-source19-cp-install-native.py'), 'utf8')).replaceAll('\r\n', '\n');
+  const method = '    def actual_case(self, own, seed, fixtures, protocol, cert, key, helper, mode):\n';
+  assert.equal(fixture.split(method).length, 2);
+  const prefix = fixture.split(method)[1].split('        action = root / ENTRY\n')[0];
+  const before = '        root = own / mode\n        shutil.copytree(seed, root)\n';
+  const after = before + '        # The normal writer requires an existing private cache, never a prebuilt claim.\n'
+    + "        (root / '.cache').mkdir()\n";
+  assert.ok(prefix === before || prefix === after, 'exercise only the exact reviewed fixture root prefix');
+  const parent = await fs.realpath(tmpdir());
+  const own = await fs.mkdtemp(path.join(parent, 'rr-s19-lease-'));
+  const born = await fs.lstat(own, { bigint: true });
+  const seed = path.join(own, 'seed'); await fs.mkdir(seed);
+  const action = '.github/actions/save-owned-dmi-grib/index.cjs';
+  const writer = 'scripts/lib/weather-acquisition-writer.mjs';
+  let settled = true;
+  try {
+    for (const relative of [action, writer]) {
+      const destination = path.join(seed, relative);
+      await fs.mkdir(path.dirname(destination), { recursive: true });
+      await fs.writeFile(destination, await fs.readFile(path.join(sourceRoot, relative)), { flag: 'wx' });
+    }
+    const python = process.env.PYTHON || 'python';
+    const prepare = mode => spawnSync(python, ['-I', '-B', '-c',
+      'from pathlib import Path\nimport shutil,sys\nown=Path(sys.argv[1]);seed=Path(sys.argv[2]);mode=sys.argv[3]\nif True:\n' + prefix,
+      own, seed, mode], { encoding: 'utf8', timeout: 10_000 });
+    const prepared = prepare('copied-checkout');
+    assert.equal(prepared.status, 0, 'the actual normal fixture checkout prefix must complete');
+    const root = path.join(own, 'copied-checkout');
+    const cache = path.join(root, '.cache'), claim = path.join(cache, 'weather-acquisition-writer.claim');
+    const requires = [...(await fs.readFile(path.join(root, action), 'utf8'))
+      .matchAll(/\brequire(?:\.resolve)?\s*\(\s*(['"])(\.[^'"]+)\1\s*\)/g)].map(match => match[2]);
+    assert.deepEqual(requires, ['../../../scripts/lib/weather-acquisition-writer.mjs']);
+    const actual = createRequire(path.join(root, action))(requires[0]);
+    settled = false;
+    let owner;
+    try { owner = await actual.acquireWeatherAcquisitionWriter(); }
+    catch (error) {
+      // The genuine old fixture fails before opening a claim. Do not grant
+      // cleanup for an unknown or partly acquired writer failure.
+      if (error?.code === 'ENOENT'
+        && await fs.lstat(cache).then(() => false, failure => failure?.code === 'ENOENT')) settled = true;
+      throw error;
+    }
+    await actual.assertWeatherAcquisitionWriter(owner);
+    const cacheIdentity = await fs.lstat(cache, { bigint: true });
+    assert.ok(cacheIdentity.isDirectory() && !cacheIdentity.isSymbolicLink());
+    const claimIdentity = await fs.lstat(claim, { bigint: true });
+    assert.ok(claimIdentity.isFile() && !claimIdentity.isSymbolicLink());
+    assert.equal(claimIdentity.size, 0n); assert.equal(claimIdentity.nlink, 1n);
+    await actual.releaseWeatherAcquisitionWriter(owner); settled = true;
+    await assert.rejects(fs.lstat(claim), error => error?.code === 'ENOENT');
+    const cacheAfter = await fs.lstat(cache, { bigint: true });
+    assert.equal(cacheAfter.dev, cacheIdentity.dev); assert.equal(cacheAfter.ino, cacheIdentity.ino);
+    // A seed containing a cache must not silently be adopted as this fixture's
+    // newly created empty directory; no writer claim is preconstructed.
+    await fs.mkdir(path.join(seed, '.cache'));
+    const rejected = prepare('preexisting-cache');
+    assert.notEqual(rejected.status, 0);
+    assert.match(rejected.stderr, /FileExistsError/);
+    await assert.rejects(fs.lstat(path.join(own, 'preexisting-cache', '.cache',
+      'weather-acquisition-writer.claim')), error => error?.code === 'ENOENT');
+    return { status: 'SOURCE19_FIXTURE_WRITER_PREREQUISITE_PASS', sourceAdmission: false, h70Actual: 'UNRUN' };
+  } finally {
+    if (settled) {
+      const current = await fs.lstat(own, { bigint: true });
+      assert.equal(await fs.realpath(own), own); assert.equal(path.dirname(own), parent);
+      assert.equal(current.dev, born.dev); assert.equal(current.ino, born.ino); assert.equal(current.mode, born.mode);
+      await fs.rm(own, { recursive: true, force: false });
     }
   }
 }
@@ -153,6 +260,7 @@ export async function testSource19NativeCiWorkflow(input=null) {
   assert.ok(historical.includes('Validate native PostgreSQL checkpoint CAS on artificial data only'));
   assert.ok(historical.indexOf('Validate native PostgreSQL checkpoint CAS on artificial data only')<historical.indexOf('Validate source contracts and release governance'));
   await assertSource19FixtureCjsClosure();
+  await testSource19FixtureWriterCachePrerequisite();
   return {status:'SOURCE19_NATIVE_CI_CONTRACT_PASS',scopePaths:SOURCE19_NATIVE_SCOPE_PATHS.length,cases:7,nativeActual:'UNRUN'};
 }
 

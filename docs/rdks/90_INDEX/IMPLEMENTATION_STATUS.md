@@ -1,3 +1,11 @@
+## 16. oktober — SOURCE635: to forskellige fejl i prøveforudsætningerne
+
+Fjerde SOURCE635-kildekontrol 38910324610 stoppede igen før H70/H71. H70 manglede den friske prøvemappes private .cache; H71 manglede den dynamisk kaldte Python-wrapper og fik derfor intet JSON-lukningsbevis. Wrapperen stod i producentlisten, men ikke i prøvernes lagringskontraktliste: CONTRACT_FILES.fullRuntime er med vilje kun storage-ABI. Begge årsager er forskellige fra den tidligere CJS-afhængighedsfejl.
+
+Den lokale sammenføring ændrer kun fire prøvefiler: eksklusiv tom .cache i H70, den ene uændrede wrapper eksplicit i begge seedlister og de eksisterende normale prøver af faktisk writer samt fysisk wrapper. Produkt, kernel, workflow-YAML, 311-path-kontrol, model, SQL og sikkerhedskrav bevares. De allerede beståede lokale rød/grøn-prøver på cirka 0,7 sekund og 412 millisekunder genbruges; de er ikke nye native-kørsler. Første værtsfejl fra Windows-pythonaliaset er bevaret.
+
+Linux H70/H71, faktisk SDK-slutgemning, fuld slutfrigivelse og ny native-kildekontrol er fortsat UAFPRØVET. SOURCE19 er INAKTIV og særskilt fra vejrgendannelsen i PR638 på ca109 og dens særskilte kildekontrol. Ingen ny aktivering eller offentlig levering følger heraf. Version 4.0.578, håndbog 89.241 og alle fem åbne mål til 18. oktober er uændrede; tidligere dokumentation bevares nedenfor.
+
 ## 16. oktober — SOURCE635: rettet prøveklargøring, nativeforløb fortsat åbne
 
 16. oktober, opfølgning på prøvekopiernes afhængigheder: Tredje SOURCE635-kildekontrol stoppede før H70/H71, fordi de to friske prøvekopier manglede writer-modulet. Begge afhængighedslæsere følger nu også konkrete require/require.resolve-kald. Kun tre testfiler ændres; CI-fortegnelsens 311 paths, workflow-YAML, kernel-/produktpins og normale sikkerhedskrav bevares. Den lille normale prøve reproducerer MODULE_NOT_FOUND og består derefter med faktisk require.resolve/require og fire writer-exports i begge friske kopier. Det er alene støtte til prøveklargøringen, ikke H70/H71-, native-, samlet CI- eller produktionsbevis. SOURCE19 forbliver inaktiv; version 4.0.578 og alle fem åbne mål til 18. oktober er uændrede. Tidligere opfølgninger bevares som historik. Se håndbog 89.241.

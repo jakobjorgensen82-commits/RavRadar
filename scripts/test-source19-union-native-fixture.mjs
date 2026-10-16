@@ -181,6 +181,7 @@ async function inventory() {
     '.github/actions/save-owned-dmi-grib/index.cjs',
     '.github/actions/save-owned-dmi-grib/package.json',
     '.github/actions/save-owned-dmi-grib/package-lock.json',
+    'scripts/run-owned-dmi-grib-save.py',
     'scripts/test-source19-union-native-fixture.mjs',
     'scripts/test-source19-union-native-data.py',
     'scripts/test-protected-private-production-runtime.mjs',
