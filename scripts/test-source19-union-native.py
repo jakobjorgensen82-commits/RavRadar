@@ -216,7 +216,7 @@ class ProtocolFixture:
             # The exact producer name comes from the existing normal source-gate
             # constructor, never a test-selected phase or deadline.
             from datetime import datetime, timezone
-            started = datetime.fromtimestamp(time.time() - 600, timezone.utc).isoformat().replace('+00:00', 'Z')
+            started = datetime.fromtimestamp(time.time() - 600, timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
             request.reply(200, {'total_count': 1, 'jobs': [{'id': 300, 'run_id': 200,
                 'head_sha': data['head'], 'name': data['sourceJobName'], 'status': 'in_progress',
                 'conclusion': None, 'completed_at': None, 'runner_id': 400,
@@ -641,12 +641,19 @@ class SourceActualSUnionNative(unittest.TestCase):
                 'sourceAdmission': False, 'finalizer': 'UNRUN', 'fullPublication': 'UNRUN', 'realUpstreamNetwork': 0}))
         except BaseException as error:
             case_failure = error
+            diagnostics = []
+            try:
+                with (root / 'stderr').open('rb') as stream:
+                    diagnostics = [dict(stage=stage.decode('ascii'), reason=reason.decode('ascii'))
+                        for stage, reason in re.findall(rb'DMI_RAW_SAVE_DIAGNOSTIC stage=([A-Z_]{1,80}) reason=([A-Z0-9_]{1,120})', stream.read(16384))]
+            except OSError:
+                pass  # A missing diagnostic must not replace the actual failure.
             with transport.lock:
                 refusal = transport.failures[0] if transport.failures else None
                 route = transport.calls[-1] if transport.calls else None
             print(json.dumps({'source19UnionNativeCase': mode, 'status': 'FAIL', 'h71Observed': observed is not None,
                 'h70Observed': h70_seen, 'nativeCpObserved': cp_merge_seen, 'workingInstallObserved': install_observed,
-                'transportRefusal': refusal, 'lastFixtureRoute': route, 'sourceAdmission': False, 'realUpstreamNetwork': 0}))
+                'transportRefusal': refusal, 'lastFixtureRoute': route, 'actionDiagnostics': diagnostics, 'sourceAdmission': False, 'realUpstreamNetwork': 0}))
             raise
         finally:
             failure = None
