@@ -14,6 +14,30 @@ const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 // older exact-source oracles. The complete genuine 903307 updater remains the
 // immutable baseline; the actual epoch caller has its own normal-path tests.
 function inverseWeatherStateEpochIntegration(source) {
+  // Only the four reviewed scalar-orchestration hunks are removed before
+  // every unchanged historical whole-source oracle below.
+  const scalarHunks = [
+    [
+      "// The once-only epoch may retain independently verified scalar weather, never\n// OLD current or replay state. This pure adapter keeps the ordinary component\n// selector, exact PART identity and T+3 support; originals stay untouched.\nfunction weatherStateEpochScalarHourly(record, partId, componentInputs,\n  { generatedAt, startAt, expectedIdentity }) {\n  const scalar = componentInputs.weatherStateEpochScalarPartRecords?.get(partId);\n  if (!scalar) return record.hourly;\n  return mergeHourlyPreferDmi(record.hourly, withoutCurrent(scalar).hourly,\n    { generatedAt, startAt, expectedIdentity });\n}\n\nfunction preflightFeggesundOperationalWaveReadiness({",
+      "function preflightFeggesundOperationalWaveReadiness({"
+    ],
+    [
+      "    if (componentInputs.weatherStateEpochScalarPartRecords) {\n      dmiRecord.hourly = weatherStateEpochScalarHourly(dmiRecord, part.partId,\n        componentInputs, { generatedAt, startAt: forecastStartAt, expectedIdentity });\n    }\n    const operationalRecord = applyFeggesundOperationalWaveProxy(\n      dmiRecord,",
+      "    const operationalRecord = applyFeggesundOperationalWaveProxy(\n      dmiRecord,"
+    ],
+    [
+      "      if (componentInputs.weatherStateEpochScalarPartRecords) {\n        dmiRecord.hourly = weatherStateEpochScalarHourly(dmiRecord, part.partId,\n          componentInputs, { generatedAt, startAt: partForecastStartAt,\n            expectedIdentity: partDmiIdentity });\n      }\n      selectedDmiPartRecords.set(part.partId, dmiRecord);\n      const operationalDmiRecord = applyFeggesundOperationalWaveProxy(",
+      "      selectedDmiPartRecords.set(part.partId, dmiRecord);\n      const operationalDmiRecord = applyFeggesundOperationalWaveProxy("
+    ],
+    [
+      "  if (stateEpochView !== null) {\n    weatherComponents.inputs.weatherStateEpochScalarPartRecords = new Map(\n      [...planningRecords].map(([partId, record]) => {\n        const scalar = withoutCurrent(record);\n        for (const hour of scalar.hourly) {\n          delete hour.currentStateOnlyHold;\n          delete hour.currentCoastNormalSpeedMps;\n        }\n        return [partId, scalar];\n      }),\n    );\n  }\n  planningRecords.clear();\n  output.weatherEngine.componentFallback = weatherComponents.summary;",
+      "  planningRecords.clear();\n  output.weatherEngine.componentFallback = weatherComponents.summary;"
+    ]
+  ];
+  for (const [after, before] of scalarHunks) {
+    assert.equal(source.split(after).length, 2, 'each exact reviewed epoch scalar hunk must occur once');
+    source = source.replace(after, () => before);
+  }
   const hunks = [
     ['  verifiedFeggesundNeighborSource,\n  ATOMIC_COMPONENT_TUPLE_KEYS,\n  atomicComponentTupleValues,\n',
       '  verifiedFeggesundNeighborSource,\n  atomicComponentTupleValues,\n'],
@@ -734,4 +758,17 @@ test('actual normal checkpoint chain retains its first failure and permits only 
       assert.deepEqual(await fs.readdir(folder), ['forecast.json']);
     }
   });
+});
+
+test('epoch scalar inverse rejects changed numeric/source routing before all immutable old oracles', async () => {
+  const actual = await sourceText(producerPath);
+  for (const [before, after] of [
+    ['withoutCurrent(scalar).hourly', 'scalar.hourly'],
+    ['if (componentInputs.weatherStateEpochScalarPartRecords)', 'if (true)'],
+    ['delete hour.currentStateOnlyHold;', 'hour.currentStateOnlyHold = null;'],
+    ['startAt: partForecastStartAt,\n            expectedIdentity: partDmiIdentity', 'startAt: partForecastStartAt,\n            expectedIdentity: null'],
+  ]) {
+    assert(actual.includes(before), 'Mutation must change the actual reviewed scalar route');
+    assert.throws(() => inverseWeatherStateEpochIntegration(actual.replace(before, after)), /exact reviewed epoch scalar hunk/);
+  }
 });

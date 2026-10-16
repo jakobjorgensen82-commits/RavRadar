@@ -192,7 +192,7 @@ test('scalar planning and public current scoring use their own exact applicabili
       coastalPartsContract: { enabled: true, zones: { [selectedPart.zoneId]: [selectedPart] } },
       features: [{ properties: { id: selectedPart.zoneId } }], nextDmiForecastStore: {},
       dmiBulkCache: original.bulk, deployedDmiBulkCache: null, historicalDmiBulkCache: null,
-      persistedDmiPartRows: new Map(), coastalPointStateInjections: {},
+      persistedDmiPartRows: new Map(), coastalPointStateInjections: {}, stateEpochView: null,
       RESEARCH_HISTORY_HOURS: 72, OPEN_METEO_FUTURE_HOURS: 121,
       OPEN_METEO_NATIVE_NEAREST_POLICIES, COMPONENT_COPERNICUS_BUDGET_MS: 0,
       COMPONENT_OPEN_METEO_BUDGET_MS: 0, reportWeatherBuildStage() {},
@@ -400,4 +400,135 @@ test('Feggesund wave-only preflight retains original 3x118 wave choices without 
     'the wave-only wrapper must not mutate shared scoring inputs');
   assert.equal(JSON.stringify({ active, deployed, historical, sources: [...sourcesByTime] }), originalBytes,
     'all original cache bytes and neighbor proofs remain unchanged');
+});
+
+test('epoch scalar bridge reaches actual score/preflight/proxy and packed121 rows without OLD current', async () => {
+  const fixtureText = fs.readFileSync(new URL('./test-dmi-protected-tuple-continuity.mjs', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
+  const fixture = fixtureText.slice(fixtureText.indexOf('const vectorSelection ='), fixtureText.indexOf('const options ='));
+  assert.equal(crypto.createHash('sha256').update(fixture).digest('hex'), '599011b47d8f8f4fea8fc41293e0306a3c6b1209ab217ace9f16e89126105c31');
+  const at = '2026-09-01T00:00:00.000Z', time = h => new Date(Date.parse(at) + h * 3_600_000).toISOString();
+  const selectedPart = { partId: 'EPOCH-SCALAR-PART', zoneId: 'EPOCH-SCALAR-ZONE', parentZoneId: 'EPOCH-SCALAR-ZONE', waterPoint: [8, 55] };
+  const identity = dmiExpectedIdentityForPart(selectedPart);
+  const factory = Function('part', 'identity', 'time', fixture + '; return {row, bulk};')(selectedPart, identity, time);
+  const oldRecord = {zoneId: identity.entityId, point: selectedPart.waterPoint,
+    hourly: Array.from({length: DMI_FORECAST_HOURS}, (_, h) => ({...factory.row(h),
+      currentUMps: 999, currentVMps: 998, currentStateOnlyHold: {OLD: true}, currentCoastNormalSpeedMps: 997}))};
+  const fresh = {zoneId: identity.entityId, point: selectedPart.waterPoint,
+    hourly: Array.from({length: DMI_FORECAST_HOURS}, (_, h) => ({time: time(h), currentUMps: 0.4, currentVMps: 0.3,
+      sources: {current: factory.row(h, -6, -5).sources.current}}))};
+  const originals = JSON.stringify({oldRecord, fresh});
+  const clearAt = source.indexOf('  planningRecords.clear();', start);
+  const setup = source.slice(source.lastIndexOf('\n  });', clearAt) + '\n  });'.length, clearAt + '  planningRecords.clear();'.length);
+  assert.ok(clearAt > start && setup.includes('planningRecords.clear();'));
+  const makeInputs = (record = oldRecord, epoch = true) => {
+    const planningRecords = new Map([[selectedPart.partId, record]]), weatherComponents = {inputs: {}};
+    // This source-boundary seam starts AFTER genuine archive/view admission.
+    // A sentinel here exercises only route selection, not a fake epoch brand.
+    Function('stateEpochView', 'planningRecords', 'weatherComponents', 'withoutCurrent', setup)(
+      epoch ? {} : null, planningRecords, weatherComponents, normalDmiRecord.withoutCurrent);
+    assert.equal(planningRecords.size, 0, 'the ordinary bounded planning map is still released');
+    return weatherComponents.inputs;
+  };
+  const helperStart = source.indexOf('function weatherStateEpochScalarHourly(');
+  const helper = helperStart < 0 ? '' : source.slice(helperStart, source.indexOf('\nfunction preflightFeggesundOperationalWaveReadiness(', helperStart));
+  const proxyStart = source.indexOf('function applyFeggesundOperationalWaveProxy(');
+  const proxy = source.slice(proxyStart, source.indexOf('function missingFeggesundWaveHour(', proxyStart));
+  const scorer = source.indexOf('function scoreCoastalPartsRuntime(');
+  const scoreStart = source.indexOf('      if (!dmiRecord)', scorer);
+  const scoreBody = source.slice(scoreStart, source.indexOf('      const record = mergeActiveNativeLiveCurrentPilotIntoRecord(', scoreStart));
+  const preflight = source.indexOf('function preflightFeggesundOperationalWaveReadiness(');
+  const preStart = source.indexOf('    if (!dmiRecord)', preflight);
+  const preBody = source.slice(preStart, source.indexOf('    // This readiness ledger consumes waves only.', preStart));
+  const run = (body, result, record, inputs, part = selectedPart, neighbors = new Map()) => Function(
+    'mergeHourlyPreferDmi', 'withoutCurrent', 'buildFeggesundWaveProxy', 'FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID',
+    'ravScoreNumber', 'dmiRecord', 'componentInputs', 'part', 'generatedAt', 'sourcesByTime',
+    'feggesundSourcesByTime', 'partForecastStartAt', 'forecastStartAt', 'expectedIdentity', 'partDmiIdentity',
+    'partWithZone', 'zoneId', 'selectedDmiPartRecords', helper + proxy + body + '\nreturn ' + result + ';')(
+      normalDmiRecord.mergeHourlyPreferDmi, normalDmiRecord.withoutCurrent, buildFeggesundWaveProxy,
+      FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID, value => typeof value === 'number' && Number.isFinite(value) ? value : null,
+      structuredClone(record), inputs, part, at, neighbors, neighbors, at, at, dmiExpectedIdentityForPart(part),
+      dmiExpectedIdentityForPart(part), part, part.zoneId, new Map());
+  const score = (record, inputs, part = selectedPart, neighbors = new Map()) => run(scoreBody,
+    '({record: operationalDmiRecord, selected: selectedDmiPartRecords})', record, inputs, part, neighbors);
+  const pre = (record, inputs, part = selectedPart, neighbors = new Map()) => run(preBody,
+    'operationalRecord', record, inputs, part, neighbors);
+  const inputs = makeInputs(), projected = score(fresh, inputs);
+  const scalarValues = row => [row.windSpeedMps, row.waveHeightM, row.waterLevelCm, row.waterTemperatureC];
+  assert.deepEqual(scalarValues(projected.record.hourly[0]), [5, 1, 12, 14],
+    'all four genuine retained scalar tuples must survive the actual scorer input boundary');
+  assert.equal(inputs.weatherStateEpochScalarPartRecords instanceof Map, true);
+  const scalar = inputs.weatherStateEpochScalarPartRecords.get(selectedPart.partId);
+  for (const row of scalar.hourly) {
+    for (const key of ['currentUMps', 'currentVMps', 'currentSpeedMps', 'currentDirectionDeg',
+      'currentProvenance', 'currentStateOnlyHold', 'currentCoastNormalSpeedMps']) assert.equal(Object.hasOwn(row, key), false, key);
+    assert.equal(Object.hasOwn(row.sources, 'current'), false);
+  }
+  const selected = projected.selected.get(selectedPart.partId);
+  assert.deepEqual(selected.hourly, projected.record.hourly, 'the bridged RAW selection reaches actual selectedMap before the normal proxy');
+  assert.deepEqual(pre(fresh, inputs).hourly, projected.record.hourly, 'preflight and scoring consume the same scalar selection');
+  for (const row of selected.hourly) {
+    assert.equal(row.currentUMps, 0.4); assert.equal(row.currentVMps, 0.3);
+    assert.equal(row.currentStateOnlyHold, undefined); assert.equal(row.currentCoastNormalSpeedMps, undefined);
+  }
+  for (const field of ['wind', 'wave', 'waterLevel', 'waterTemperature'])
+    assert.deepEqual(selected.hourly[0].sources[field], oldRecord.hourly[0].sources[field], 'verbatim scalar provenance ' + field);
+  const noCurrent = structuredClone(fresh);
+  for (const row of noCurrent.hourly) { delete row.currentUMps; delete row.currentVMps; delete row.sources.current; }
+  const noCurrentResult = score(noCurrent, inputs).record;
+  assert.equal(noCurrentResult.hourly[0].currentUMps, null); assert.equal(noCurrentResult.hourly[0].currentVMps, null);
+  assert.equal(noCurrentResult.hourly[0].sources.current.provider, 'missing', 'OLD current never fills an absent NEW vector');
+  assert.deepEqual(scalarValues(noCurrentResult.hourly[0]), [5, 1, 12, 14]);
+  const ordinary = makeInputs(oldRecord, false);
+  assert.equal(ordinary.weatherStateEpochScalarPartRecords, undefined);
+  assert.deepEqual(score(fresh, ordinary).record.hourly, fresh.hourly, 'non-epoch behavior remains byte-equivalent');
+  for (const mutation of ['identity', 'provenance']) {
+    const invalid = structuredClone(oldRecord);
+    for (const row of invalid.hourly) for (const field of ['wind', 'wave', 'waterLevel', 'waterTemperature']) {
+      if (mutation === 'identity') row.sources[field].entityId = 'PART::OTHER';
+      else row.sources[field].assetIdentitySha256 = 'not-a-hash';
+    }
+    assert.deepEqual(scalarValues(score(fresh, makeInputs(invalid)).record.hourly[0]), [null, null, null, null], mutation);
+  }
+  const newest = structuredClone(fresh);
+  for (let h = 0; h < newest.hourly.length; h++) {
+    const row = factory.row(h, -6, -5, 1);
+    Object.assign(newest.hourly[h], {windSpeedMps: row.windSpeedMps, windDirectionDeg: row.windDirectionDeg});
+    newest.hourly[h].sources.wind = row.sources.wind;
+  }
+  assert.equal(score(newest, inputs).record.hourly[0].windSpeedMps, 6, 'normal genuinely newer qualified primary still wins');
+  const continuity = await import('./lib/dmi-part-continuity.mjs');
+  const pack = await continuity.packDmiPartContinuity(projected.selected, [selectedPart], at);
+  const restored = await continuity.unpackDmiPartContinuity(pack, [selectedPart], time(1));
+  assert.equal(restored.get(selectedPart.partId).hourly.length, 121);
+  assert.deepEqual(restored.get(selectedPart.partId).hourly, selected.hourly, 'actual normal pack/restore retains the bridged RAW record');
+  assert.deepEqual(scalarValues(restored.get(selectedPart.partId).hourly[120]), [5, 1, 12, 14], 'the private final T+3 support is preserved');
+  const clean = verifiedIntegratedPartHourly(projected.record, factory.bulk, identity.entityId, selectedPart,
+    {requireNativeGridSampling: false});
+  assert.deepEqual(scalarValues(clean[0]), [5, 1, 12, 14]);
+  assert.equal(clean[117].waterLevelTrendCm3h, 0, 'the normal final-public T+3 sanitizer still sees its scalar support');
+  const proxyPart = {...selectedPart, zoneId: FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID, parentZoneId: FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID};
+  const proxyFresh = structuredClone(fresh);
+  for (const row of proxyFresh.hourly) {
+    for (const src of Object.values(row.sources)) src.parentZoneId = proxyPart.zoneId;
+  }
+  const waveMissing = structuredClone(oldRecord);
+  for (const row of waveMissing.hourly) {
+    delete row.waveHeightM; delete row.wavePeriodS; delete row.waveDirectionDeg; delete row.sources.wave;
+    for (const src of Object.values(row.sources)) src.parentZoneId = proxyPart.zoneId;
+  }
+  const neighbors = new Map([[at, FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS.map((parentZoneId, i) => ({
+    parentZoneId, validTime: at, provider: 'dmi', collection: 'wam_dw', component: 'wave', fallback: false,
+    modelRun: time(-12), waveHeightM: 1.2, wavePeriodS: 7, waveDirectionDeg: 265, evidenceSha256: String(i + 1).repeat(64),
+  }))]]);
+  const proxied = score(proxyFresh, makeInputs(waveMissing), proxyPart, neighbors);
+  const preProxy = pre(proxyFresh, makeInputs(waveMissing), proxyPart, neighbors);
+  assert.deepEqual(preProxy.hourly, proxied.record.hourly, 'actual normal Feggesund proxy has identical scalar preflight/scoring inputs');
+  assert.equal(proxied.record.hourly[0].waveInputSource, undefined, 'normal proxy proof remains in sources.wave until normal sanitizer');
+  assert.equal(proxied.record.hourly[0].sources.wave.sourceClass, 'owner-approved-neighbor-wave-proxy');
+  const proxyClean = verifiedIntegratedPartHourly(proxied.record, null, identity.entityId, proxyPart,
+    {requireNativeGridSampling: false});
+  assert.equal(proxyClean[0].waveInputSource, 'FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION');
+  assert.equal(proxyClean[0].waveHeightM, 1.2, 'the unchanged normal compact proxy proof passes the actual sanitizer');
+  assert.equal(proxied.selected.get(selectedPart.partId).hourly[0].waveHeightM, null, 'persistence retains RAW selected input, not derived proxy');
+  assert.equal(JSON.stringify({oldRecord, fresh}), originals, 'archive/NEW input records stay unchanged');
 });

@@ -1183,6 +1183,17 @@ function feggesundWaveProofEntriesForPart(
   });
 }
 
+// The once-only epoch may retain independently verified scalar weather, never
+// OLD current or replay state. This pure adapter keeps the ordinary component
+// selector, exact PART identity and T+3 support; originals stay untouched.
+function weatherStateEpochScalarHourly(record, partId, componentInputs,
+  { generatedAt, startAt, expectedIdentity }) {
+  const scalar = componentInputs.weatherStateEpochScalarPartRecords?.get(partId);
+  if (!scalar) return record.hourly;
+  return mergeHourlyPreferDmi(record.hourly, withoutCurrent(scalar).hourly,
+    { generatedAt, startAt, expectedIdentity });
+}
+
 function preflightFeggesundOperationalWaveReadiness({
   contract,
   parentById,
@@ -1235,6 +1246,10 @@ function preflightFeggesundOperationalWaveReadiness({
     );
     if (!dmiRecord) {
       throw new Error('FEGGESUND_WAVE_MATERIALIZATION_INVARIANT');
+    }
+    if (componentInputs.weatherStateEpochScalarPartRecords) {
+      dmiRecord.hourly = weatherStateEpochScalarHourly(dmiRecord, part.partId,
+        componentInputs, { generatedAt, startAt: forecastStartAt, expectedIdentity });
     }
     const operationalRecord = applyFeggesundOperationalWaveProxy(
       dmiRecord,
@@ -2123,6 +2138,11 @@ function scoreCoastalPartsRuntime(
       });
       if (!dmiRecord) {
         throw new Error('COASTAL_PART_HORIZON_MATERIALIZATION_INVARIANT');
+      }
+      if (componentInputs.weatherStateEpochScalarPartRecords) {
+        dmiRecord.hourly = weatherStateEpochScalarHourly(dmiRecord, part.partId,
+          componentInputs, { generatedAt, startAt: partForecastStartAt,
+            expectedIdentity: partDmiIdentity });
       }
       selectedDmiPartRecords.set(part.partId, dmiRecord);
       const operationalDmiRecord = applyFeggesundOperationalWaveProxy(
@@ -4272,6 +4292,18 @@ if (coastalPartsContract.enabled) {
       return routed.hourly;
     },
   });
+  if (stateEpochView !== null) {
+    weatherComponents.inputs.weatherStateEpochScalarPartRecords = new Map(
+      [...planningRecords].map(([partId, record]) => {
+        const scalar = withoutCurrent(record);
+        for (const hour of scalar.hourly) {
+          delete hour.currentStateOnlyHold;
+          delete hour.currentCoastNormalSpeedMps;
+        }
+        return [partId, scalar];
+      }),
+    );
+  }
   planningRecords.clear();
   output.weatherEngine.componentFallback = weatherComponents.summary;
   // Acquisition evidence must survive a later score/replay failure. This
