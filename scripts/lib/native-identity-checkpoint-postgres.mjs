@@ -124,23 +124,33 @@ export async function compareNativeSamplingIdentitySuccessor({ psql, runSql, roo
     assert.match(sql, /begin;\n\nset local lock_timeout = '5s';/);
     phase = 'SOURCE_HISTORY';
     assert.equal(await psql('select max(version) from supabase_migrations.schema_migrations;'), BEFORE.statisticsVersion);
-    phase = 'HISTORICAL_CATALOG';
+    phase = 'HISTORICAL_CATALOG_SETUP';
     await psql(nativeIdentityHistoricalCatalogSetup(oldSource));
     const preservedSql = "select md5(jsonb_build_object('checkpoint',(select jsonb_agg(to_jsonb(t) order by document_key) from public.admin_documents t),"
       + "'history',(select jsonb_agg(to_jsonb(t)) from public.admin_document_versions t),"
       + "'activity',(select jsonb_agg(to_jsonb(t) order by user_id) from public.account_activity_journal t),"
       + "'preference',(select jsonb_agg(to_jsonb(t) order by user_id) from public.account_statistics_preferences t),"
       + "'bank',(select jsonb_agg(to_jsonb(t) order by name) from public.native_checkpoint_payloads t))::text);";
+    phase = 'HISTORICAL_CATALOG_PRESERVED_ROWS';
     const preserved = await psql(preservedSql);
     const originalRowsSql = "select md5(jsonb_agg(jsonb_build_array(name,payload) order by name)::text) from public.native_checkpoint_payloads where name in ('original-ffc','original-249','original-c1ac','grid-current','grid-future','grid-changed');";
+    phase = 'HISTORICAL_CATALOG_ORIGINAL_ROWS';
     const originalRowsBefore = await psql(originalRowsSql);
     const accountRowsSql = "select md5(jsonb_build_object('activity',(select jsonb_agg(to_jsonb(t) order by user_id) from public.account_activity_journal t),'preference',(select jsonb_agg(to_jsonb(t) order by user_id) from public.account_statistics_preferences t))::text);";
+    phase = 'HISTORICAL_CATALOG_ACCOUNT_ROWS';
     const accountRowsBefore = await psql(accountRowsSql);
     const allNames = [...before.canonicalSource.matchAll(/^create or replace function public\.([a-z0-9_]+)\(/gm)].map(row => row[1]);
     const catalogSql = names => "select jsonb_object_agg(p.proname,jsonb_build_object('oid',p.oid,'definer',p.prosecdef,'volatility',p.provolatile,'config',p.proconfig,'acl',p.proacl,'body',encode(extensions.digest(convert_to(btrim(p.prosrc,E' \\r\\n\\t'),'UTF8'),'sha256'),'hex'))) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in (" + names.map(name => "'" + name + "'").join(',') + ');';
+    phase = 'HISTORICAL_CATALOG_READ';
     const catalogBefore = JSON.parse(await psql(catalogSql(allNames)));
+    phase = 'HISTORICAL_CATALOG_FUNCTION_SET';
     assert.deepEqual(Object.keys(catalogBefore).sort(), [...allNames].sort());
-    for (const name of allNames) assert.equal(catalogBefore[name].body, sha(body(definition(before.canonicalSource, name))));
+    for (const name of allNames) {
+      // Names come only from the hash-verified public SQL source, never rows or
+      // private values. Preserve the first exact failed function without a stack.
+      phase = 'HISTORICAL_CATALOG_BODY_' + name.toUpperCase();
+      assert.equal(catalogBefore[name].body, sha(body(definition(before.canonicalSource, name))));
+    }
     const guards = [
       ["delete from supabase_migrations.schema_migrations where version='20261013230000';", "insert into supabase_migrations.schema_migrations values('20261013230000');"],
       ["insert into supabase_migrations.schema_migrations values('20990101000000');", "delete from supabase_migrations.schema_migrations where version='20990101000000';"],

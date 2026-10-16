@@ -418,6 +418,11 @@ if (process.argv.includes('--native-sampling-identity') || process.argv.includes
   assert.throws(() => checkIssuedBytes(sql.replace(timeout, "set statement_timeout = '54s';")), { code: 'ERR_ASSERTION' });
   assert.deepEqual([...nativeSource.matchAll(/(?:let )?phase = '(SOURCE_[A-Z]+)'/g)].map(match => match[1]),
     ['SOURCE_PREDECESSOR', 'SOURCE_CANONICAL', 'SOURCE_CONTRACTS', 'SOURCE_MIGRATION', 'SOURCE_HISTORY']);
+  assert.deepEqual([...nativeSource.matchAll(/phase = '(HISTORICAL_CATALOG_[A-Z_]+)';/g)].map(match => match[1]),
+    ['HISTORICAL_CATALOG_SETUP', 'HISTORICAL_CATALOG_PRESERVED_ROWS',
+      'HISTORICAL_CATALOG_ORIGINAL_ROWS', 'HISTORICAL_CATALOG_ACCOUNT_ROWS',
+      'HISTORICAL_CATALOG_READ', 'HISTORICAL_CATALOG_FUNCTION_SET']);
+  assert(nativeSource.includes("phase = 'HISTORICAL_CATALOG_BODY_' + name.toUpperCase();"));
   console.log(JSON.stringify({ kind: 'NATIVE_IDENTITY_MIGRATION_SOURCE_ASSERTIONS',
     actualPrefix: true, frozenSql: true, negativeCases: 3, sourcePhases: 5, sqlExecuted: false }));
 }
