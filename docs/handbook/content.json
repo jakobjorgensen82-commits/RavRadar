@@ -2,8 +2,15 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.578",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-10-16",
+  "updatedAt": "2026-10-17",
   "sections": [
+    {
+      "id": "protected-checkpoint-jsonb-member-order-2026-10-17",
+      "chapter": "89.249",
+      "title": "Gendannelse skal bevare indhold og oprindelige kontrolsummer",
+      "summary": "Databasen kan ændre objekters feltrækkefølge uden at ændre indholdet. Sikker gendannelse skal bevare alle værdier, listernes rækkefølge og de oprindelige kontrolsummer.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Et objekts felter kan blive lagret i en anden rækkefølge. En sikker gendannelse må hverken ændre indholdet eller udstede nye kontrolsummer.</div><p>PR642 er kildeleveret efter bestået samlet kontrol. Den efterfølgende genoptagelse gendannede den færdige private pakke, men stoppede ved kontrollen af dens gemte beregningstilstand, før leverandører, scoring og offentlig levering. En normal prøve med 673 dele reproducerede samme integritetsfejl ved alene at ændre objekters feltrækkefølge. Værdier, listernes rækkefølge og oprindelige kontrolsummer var uændrede. PostgreSQL beskriver, at <a href=\"https://www.postgresql.org/docs/current/datatype-json.html\">JSONB ikke bevarer objekters feltrækkefølge</a>. Det er endnu ikke særskilt bevist som ændringen i den faktiske fjernlagrede tilstand.</p><p>Den lokale transportrettelse forsøger altid den normale kontrol først. Kun ved de to præcise integritetsfejl for tilstand eller ledsagertilstand må kendte indlejrede felter sættes tilbage i producentens rækkefølge. Hele indholdet skal fortsat være strukturelt identisk, og den normale kontrol skal derefter godkende de oprindelige kontrolsummer. Ukendte felter må ikke fjernes, lister må ikke omordnes, og værdier må ikke repareres. Ved samme tidspunkt skal hele den validerede tilstand være ens, uanset objekters feltrækkefølge.</p><p>Hele den normale beskyttede backup-/restore-prøve bestod lokalt uden udeladte tilfælde med den nye regression, som faktisk fejlede før rettelsen. Den sidste udvidelse med ekstra kontroludsagn og et samme-tidspunkt-forløb afventer den endelige samlede kildekontrol. En ny PostgreSQL-prøve skal læse faktisk lagrede data og gendanne dem både til en tom destination og igen ved samme tidspunkt; den er endnu ikke kørt lokalt på Windows. Syntakskontrol er ikke bevis for denne rundtur. Den lille produktkritiske kildegate, tre transport-/diagnostikmål, modelkontrollen og otte bindingskontroller består. Scoremodel, beregningskerne, databasebindinger og gemte originaler ændres ikke.</p><div class=\"callout\"><strong>Åbent:</strong> Faktisk PostgreSQL-rundtur, ny samlet kontrol på den præcise kilde og vellykket genoptagelse i drift er endnu ikke bevist. Alle normale leveringskontroller og derefter en almindelig efterfølger skal verificeres før genaktivering af tidsplanen. Alle fem mål til 18. oktober er åbne; version 4.0.578 og offentlig version 4.0.577 er uændrede.</div>"
+    },
     {
       "id": "completed-protected-runtime-delivery-2026-10-16",
       "chapter": "89.248",

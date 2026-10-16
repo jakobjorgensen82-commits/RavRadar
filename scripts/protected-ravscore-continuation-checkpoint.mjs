@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
 import {
   buildSupabaseAdminHeaders,
   isRetryableStatementTimeout,
@@ -14,6 +15,8 @@ import {
   loadRavScoreContinuationCheckpointForTarget,
   RAVSCORE_CONTINUATION_CHECKPOINT_POLICY,
 } from './ravscore-continuation-checkpoint.mjs';
+import { CANDIDATE_G_CONTINUATION_FIELDS }
+  from './lib/ravscore-candidate-g-rollback-runtime.mjs';
 
 export const PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY =
   'ravscore-continuation-checkpoint';
@@ -118,20 +121,60 @@ async function assertNoSymlinkComponents(resolvedPath) {
 }
 
 function checkpointsAreEquivalent(left, right) {
-  const fields = [
-    'schemaVersion',
-    'status',
-    'datasetId',
-    'productionReferenceAt',
-    'continuationStateContractSha256',
-    'generationSha256',
-    'partCount',
-    'stateSha256',
-  ];
-  return fields.every(field => left?.[field] === right?.[field])
-    && JSON.stringify(left?.modelBinding) === JSON.stringify(right?.modelBinding)
-    && JSON.stringify(left?.candidateGRollbackCompanion)
-      === JSON.stringify(right?.candidateGRollbackCompanion);
+  // Both payloads have passed the normal complete checkpoint validator.
+  // JSONB may reorder object members; every field/value and array order must
+  // nevertheless be identical, including the original integrity digests.
+  return isDeepStrictEqual(left, right);
+}
+
+function originalMemberOrder(value, fields) {
+  if (!isPlainObject(value)) return value;
+  // Never add a missing member or discard an unexpected one. The normal
+  // sealed validator remains responsible for exact field sets and values.
+  const keys = [...fields.filter(key => Object.hasOwn(value, key)),
+    ...Object.keys(value).filter(key => !fields.includes(key))];
+  return Object.fromEntries(keys.map(key => [key, value[key]]));
+}
+
+function checkpointBeforeJsonbObjectOrdering(payload) {
+  const result = structuredClone(payload);
+  for (const state of Object.values(result.states ?? {})) {
+    if (!isPlainObject(state)) continue;
+    state.currentNativeHoldAuthorization = originalMemberOrder(
+      state.currentNativeHoldAuthorization, ['sourceClass', 'source', 'collection', 'distanceKm']);
+    if (isPlainObject(state.historyBounds)) {
+      const bounds = originalMemberOrder(state.historyBounds,
+        ['schemaVersion', 'current', 'waveMobilisation', 'lastMile']);
+      bounds.current = originalMemberOrder(bounds.current, ['lowerPotential', 'upperPotential']);
+      bounds.waveMobilisation = originalMemberOrder(bounds.waveMobilisation,
+        ['lowerPotential', 'upperPotential', 'lastUnknownAt', 'conservativeResetAt']);
+      if (isPlainObject(bounds.lastMile)) {
+        bounds.lastMile = originalMemberOrder(bounds.lastMile,
+          ['minimumFactorTrack', 'maximumFactorTrack', 'lastUnknownAt', 'conservativeResetAt']);
+        for (const key of ['minimumFactorTrack', 'maximumFactorTrack'])
+          bounds.lastMile[key] = originalMemberOrder(bounds.lastMile[key],
+            ['activityMoment', 'normalMoment']);
+      }
+      state.historyBounds = bounds;
+    }
+    state.waveApproachState = originalMemberOrder(state.waveApproachState,
+      ['schemaVersion', 'policyId', 'time', 'waveReferenceAt', 'waveActivityMoment',
+        'waveNormalMoment', 'waveTangentMoment', 'latestWaveEnergyWeight',
+        'latestWaveNormalAlignment', 'latestWaveTangentAlignment', 'readiness', 'status']);
+  }
+  if (isPlainObject(result.candidateGRollbackCompanion?.states)) {
+    result.candidateGRollbackCompanion.states = Object.fromEntries(
+      Object.entries(result.candidateGRollbackCompanion.states).map(([partId, state]) => {
+        const ordered = originalMemberOrder(state, CANDIDATE_G_CONTINUATION_FIELDS);
+        if (isPlainObject(ordered) && Array.isArray(ordered.transportEvidence))
+          ordered.transportEvidence = ordered.transportEvidence.map(item =>
+            originalMemberOrder(item, ['time', 'strength']));
+        return [partId, ordered];
+      }));
+  }
+  if (!isDeepStrictEqual(result, payload))
+    throw new Error('Protected checkpoint object-order reconstruction changed content');
+  return result;
 }
 
 async function invokeProtectedRequest(request, suffix, options, operation) {
@@ -1017,11 +1060,26 @@ export async function restoreProtectedRavScoreContinuationCheckpoint({
   );
   try {
     await fs.writeFile(temporary, `${JSON.stringify(row.payload)}\n`, { mode: 0o600 });
-    const loaded = await loadRavScoreContinuationCheckpointForTarget({
+    const load = () => loadRavScoreContinuationCheckpointForTarget({
       checkpointPath: temporary,
       targetReference,
       expectedPartCount: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.expectedPartCount,
     });
+    let loaded;
+    let objectMemberOrderRestored = false;
+    try { loaded = await load(); }
+    catch (error) {
+      if (!['RavScore checkpoint state integrity is invalid',
+        'Candidate G rollback companion state integrity is invalid'].includes(error.message)) throw error;
+      // PostgreSQL JSONB does not retain object member order. Reconstruct only
+      // the original normal producers' nested member order, then require the
+      // UNCHANGED original state/companion/generation SHA-256 values to verify.
+      // No new hash, metadata reattestation, state repair or value change.
+      const ordered = checkpointBeforeJsonbObjectOrdering(row.payload);
+      await fs.writeFile(temporary, `${JSON.stringify(ordered)}\n`, { mode: 0o600 });
+      loaded = await load();
+      objectMemberOrderRestored = true;
+    }
     if (!loaded.loaded) {
       throw new Error('Protected RavScore checkpoint restore produced no checkpoint');
     }
@@ -1057,6 +1115,7 @@ export async function restoreProtectedRavScoreContinuationCheckpoint({
           targetUnchanged: true,
           ...safeMetadata(local),
           payloadLogged: false,
+          objectMemberOrderRestored,
         };
       }
       if (localMs === remoteMs) {
@@ -1073,6 +1132,7 @@ export async function restoreProtectedRavScoreContinuationCheckpoint({
           targetUnchanged: true,
           ...safeMetadata(local),
           payloadLogged: false,
+          objectMemberOrderRestored,
         };
       }
     }
@@ -1085,6 +1145,7 @@ export async function restoreProtectedRavScoreContinuationCheckpoint({
       documentKey: PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY,
       ...safeMetadata(loaded),
       payloadLogged: false,
+      objectMemberOrderRestored,
     };
   } catch (error) {
     await fs.rm(temporary, { force: true }).catch(() => {});

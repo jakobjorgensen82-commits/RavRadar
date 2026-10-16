@@ -17,6 +17,10 @@ import { nativeSamplingIdentityExpectedDatabaseContracts } from '../native-sampl
 import { statisticsPreferenceRevisionCatalogQuery, verifyStatisticsPreferenceRevisionCatalogMetadata }
   from '../verify-account-assistant-schema.mjs';
 import { LATEST_RAVSCORE_BINDING_MIGRATION } from '../integrated-cutover-readiness.mjs';
+import { restoreProtectedRavScoreContinuationCheckpoint }
+  from '../protected-ravscore-continuation-checkpoint.mjs';
+import { RAVSCORE_CONTINUATION_CHECKPOINT_POLICY }
+  from '../ravscore-continuation-checkpoint.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const HEAD = '37e657867ff0f8c31f8e8489e5c9a1cf235192f9';
@@ -227,6 +231,42 @@ export async function compareNativeSamplingIdentitySuccessor({ psql, runSql, roo
       current[name] = payload; await put('identity-' + name, payload);
       assert.equal(await psql("select public." + CP + "payload_valid((select payload from native_checkpoint_payloads where name='identity-" + name + "'),'" + atHour(hour) + "');"), 't');
     }
+    phase = 'NORMAL_PROTECTED_JSONB_ROUNDTRIP';
+    const storedPayloadSql = "select payload::text from public.native_checkpoint_payloads where name='identity-same'";
+    const storedBytes = Number(await psql('select octet_length(convert_to(payload::text,\'UTF8\'))'
+      + " from public.native_checkpoint_payloads where name='identity-same';"));
+    assert(Number.isSafeInteger(storedBytes) && storedBytes > 0
+      && storedBytes <= RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumSerializedBytes);
+    const chunks = [];
+    // Read the REAL JSONB result in bounded chunks, below the owning host's
+    // unchanged 2 MiB psql output bound. Never emit a payload or change SQL rows.
+    for (let offset = 1; offset <= storedBytes; offset += 256 * 1024) {
+      const encoded = await psql("select encode(substring(convert_to(value,'UTF8') from "
+        + offset + " for 262144),'base64') from (" + storedPayloadSql + ') as saved(value);');
+      chunks.push(Buffer.from(encoded.replace(/\s/g, ''), 'base64'));
+    }
+    const storedText = Buffer.concat(chunks);
+    assert.equal(storedText.length, storedBytes);
+    const roundTripped = JSON.parse(storedText.toString('utf8'));
+    assert.deepEqual(roundTripped, current.same);
+    assert.notEqual(JSON.stringify(roundTripped), JSON.stringify(current.same),
+      'The real database must actually exercise reordered object members');
+    const restoredPath = path.join(root, 'jsonb-roundtrip/.cache/ravscore-continuation-checkpoint/checkpoint.json');
+    const request = async () => [{ document_key: KEY, payload: roundTripped, version: 1 }];
+    const restored = await restoreProtectedRavScoreContinuationCheckpoint({
+      checkpointPath: restoredPath, targetReference: atHour(49), request,
+    });
+    assert.equal(restored.restored, true);
+    assert.equal(restored.objectMemberOrderRestored, true);
+    const restoredBytes = await fs.readFile(restoredPath);
+    assert.deepEqual(JSON.parse(restoredBytes), current.same,
+      'Normal restore must retain ALL original values and integrity receipts after real JSONB');
+    const equivalent = await restoreProtectedRavScoreContinuationCheckpoint({
+      checkpointPath: restoredPath, targetReference: atHour(49), request,
+    });
+    assert.equal(equivalent.reason, 'protected-checkpoint-equivalent');
+    assert.equal(equivalent.objectMemberOrderRestored, true);
+    assert.deepEqual(await fs.readFile(restoredPath), restoredBytes);
     const cases = [];
     for (const [family, central, validator] of [
       ['i71', 'grid-current', NATIVE_IDENTITY_ORIGINAL_NAMES[1]],
@@ -286,6 +326,7 @@ export async function compareNativeSamplingIdentitySuccessor({ psql, runSql, roo
       historyBefore: BEFORE.statisticsVersion, migrationVersion: migration.version,
       partCount: 673, originalFamilies: ['ffc', '249', 'c1ac', 'i71'], beforeGuardCases: guards.length,
       exactCheckpointContract: true, exactTripContract: true, schema2Catalog: true,
+      normalProtectedJsonbRoundtrip: true, originalIntegrityReceiptsPreserved: true,
       timeoutSeconds: 55, migrationLocalLockTimeoutSeconds: 5, archivesUnchanged: archivePins.length, reports };
   } catch (error) {
     console.error(JSON.stringify({ kind: 'NATIVE_IDENTITY_FIRST_FAILURE', phase,
