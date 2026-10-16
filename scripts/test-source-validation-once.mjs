@@ -18,18 +18,38 @@ assert.deepEqual(plan.remaining, declared.filter(command => command !== plan.gat
 assert.equal(plan.gate, 'node scripts/source-critical-gate.mjs');
 assert.ok(plan.preflight.includes('node scripts/build-ravscore-model-bundle.mjs --check'));
 assert.ok(plan.preflight.includes('node scripts/sync-ravscore-model-binding.mjs --check'));
-// Preserve all 47 baseline commands, the genuine issued213 historical check,
-// exactly one current220 check and one pure prewrite-diagnostic check. Never rebuild issued213.
+// Preserve all 47 baseline commands and the genuine issued213 historical check.
+// Issued220 is checked by its genuine frozen source, never rebuilt against NEW.
+// The exact NEW builder and bounded native group are separate required checks.
 const issuedCheck = 'node scripts/check-account-assistant-issued-source.mjs';
-const successorCheck = 'node scripts/build-current-grid-original-binding-successor.mjs --check';
+const frozenCurrentCheck = 'node scripts/check-native-identity-frozen-i71-source.mjs';
+const successorCheck = 'node scripts/build-native-sampling-identity-original-binding-successor.mjs --check';
 const diagnosticCheck = 'node scripts/test-current-grid-prewrite-diagnostic.mjs';
-for (const check of [issuedCheck, successorCheck, diagnosticCheck]) {
+const nativeFrozenCheck = 'node scripts/test-native-identity-frozen-i71-source.mjs';
+const nativeTargets = [
+  'scripts/test-native-sampling-identity-successor.mjs',
+  'scripts/test-native-identity-normal-readiness.mjs',
+  'scripts/test-native-identity-normal-routing.mjs',
+  'scripts/test-owned-i71-native-identity-working.mjs',
+  'scripts/test-native-identity-staging-working-copy.mjs',
+  'scripts/test-native-identity-installed-migration-metadata.mjs',
+  'scripts/test-native-identity-checkpoint-runtime.mjs',
+  'scripts/test-native-identity-workflow.mjs',
+];
+const nativeCheck = 'node --test --test-concurrency 2 ' + nativeTargets.join(' ');
+assert.equal(scripts['test:native-identity-successor'], nativeFrozenCheck + ' && ' + nativeCheck,
+  'All eight native targets and explicit concurrency2 must remain in the same normal group.');
+const successorChecks = [issuedCheck, frozenCurrentCheck, successorCheck, diagnosticCheck,
+  nativeFrozenCheck, nativeCheck];
+for (const check of successorChecks) {
   assert.equal(declared.filter(command => command === check).length, 1,
-    'Historical, current and pure diagnostic source must each be checked exactly once.');
+    'Issued, genuine OLD, NEW, native and pure diagnostic source must each be checked exactly once.');
 }
 assert.equal(declared.includes('node scripts/build-account-assistant-binding-successor.mjs --check'), false,
   'The immutable issued213 builder must not be rerun against current220 source.');
-assert.ok(declared.filter(command => ![issuedCheck, successorCheck, diagnosticCheck].includes(command)).length <= 47,
+assert.equal(declared.includes('node scripts/build-current-grid-original-binding-successor.mjs --check'), false,
+  'The immutable issued220 builder must run only inside its genuine frozen source, not against NEW.');
+assert.ok(declared.filter(command => !successorChecks.includes(command)).length <= 47,
   `Kildegaten er igen blevet for bred uden den præcise efterfølgerkontrol: ${declared.length} kommandoer.`);
 assert.equal(declared.filter(command => command === 'python scripts/test-copernicus-current-pilot.py').length, 1);
 assert.ok(fs.readFileSync('scripts/test-copernicus-current-pilot.py', 'utf8').includes(
@@ -98,6 +118,8 @@ for (const changes of [
   { 'validate:source:checks': 'npm run missing' },
   { 'validate:source:checks': 'npm run validate:source:checks' },
   { 'validate:source:checks': 'echo ok || true && npm run source:critical-gate' },
+  { 'test:native-identity-successor': scripts['test:native-identity-successor']
+    .replace('--test-concurrency 2', '--test-concurrency=2') },
 ]) assert.throws(() => buildSourceValidationPlan({ ...scripts, ...changes }));
 
 const calls = [];
