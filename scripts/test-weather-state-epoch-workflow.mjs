@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import { fstatSync } from 'node:fs';
+import nativeFs, { fstatSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import vm from 'node:vm';
 import test from 'node:test';
+import { isLatestUnpairedWeatherGeneration } from './protected-private-production-runtime.mjs';
+import { inspectDmiForecastFile } from './lib/dmi-forecast-file.mjs';
 
 const wrapper = (await fs.readFile('.github/workflows/run-current-weather-once.yml', 'utf8')).replaceAll('\r\n', '\n');
 const build = (await fs.readFile('.github/workflows/reusable-weather-build.yml', 'utf8')).replaceAll('\r\n', '\n');
@@ -24,6 +26,122 @@ function expression(value, context) {
 }
 const defaults = { weather_state_epoch_bootstrap: false, native_sampling_identity_original_recovery: false,
   extended_provider_bootstrap: false, quick_confirmation: false, checkpoint_only: false, quick_progress_source: '' };
+
+function legacyContext(inputs = defaults) {
+  return { inputs, steps: {
+    preflight: { outputs: { should_run: 'true' } },
+    'operational-action': { outputs: { action: 'integrated' } },
+    'operational-model': { outputs: { legacy_source_required: 'false' } },
+    'state-epoch-runtime-install': { outcome: 'success' },
+    'private-runtime-state': { outputs: { available: 'true' } },
+    'private-runtime-install': { outcome: 'success' },
+    'exact-weather-recovery': { outputs: { required: '' } },
+    'historical-wave-predecessor': { outputs: { required: '', transition_kind: '' } },
+    'dmi-part-continuity-donor': { outputs: { required: '' } },
+  } };
+}
+function selectedStep(name, context) {
+  const body = step(build, name), condition = /^        if: (.+)$/m.exec(body)?.[1];
+  assert(condition, 'The actual step must retain its explicit selector: ' + name);
+  return Boolean(expression(condition, context));
+}
+async function runActualLegacyInline(name, context, root) {
+  if (!selectedStep(name, context)) return 'SKIPPED';
+  const body = step(build, name);
+  const match = /node --input-type=module <<'NODE'\n([\s\S]*?)\n          NODE/.exec(body);
+  assert(match, 'Execute the complete actual inline Node body: ' + name);
+  let executable = match[1].replace(/^          /gm, '');
+  const imports = name === 'Classify the exact 11Z weather recovery'
+    ? "import fs from 'node:fs';\nimport { isLatestUnpairedWeatherGeneration } from './scripts/protected-private-production-runtime.mjs';\n"
+    : "import fs from 'node:fs';\nimport { inspectDmiForecastFile } from './scripts/lib/dmi-forecast-file.mjs';\n";
+  assert(executable.startsWith(imports), 'Only the exact existing imports are supplied by the normal modules');
+  executable = executable.slice(imports.length);
+  await vm.runInNewContext('(async () => {\n' + executable + '\n})()', {
+    fs: nativeFs, isLatestUnpairedWeatherGeneration,
+    inspectDmiForecastFile: relative => {
+      assert.equal(relative, 'data/live/dmi-forecast-cache.json');
+      return inspectDmiForecastFile(path.join(root, relative)); // Genuine bounded inspector, only its test-owned path is rooted.
+    },
+    process: { env: { RUNNER_TEMP: root, GITHUB_OUTPUT: path.join(root, 'output'),
+      RAVRADAR_WEATHER_STATE_EPOCH_ORIGINAL_BUNDLE: path.join(root, 'original-bundle') } },
+  });
+  return 'EXECUTED';
+}
+
+test('epoch skips the actual exact11Z classifier with absent legacy metadata; ordinary/default/native keep it', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-epoch-legacy-11z-'));
+  t.after(async () => { assert.equal(path.dirname(root), path.resolve(os.tmpdir()));
+    assert(path.basename(root).startsWith('rr-epoch-legacy-11z-')); await fs.rm(root, { recursive: true, force: true }); });
+  const output = path.join(root, 'output'), source = path.join(root, 'private-runtime-current-source.json');
+  await fs.writeFile(output, '', { flag: 'wx' });
+  await assert.rejects(fs.lstat(source), error => error.code === 'ENOENT');
+  const name = 'Classify the exact 11Z weather recovery';
+  const epoch = legacyContext({ ...defaults, weather_state_epoch_bootstrap: true });
+  // SUCCESS mirrors the actual normal installer path; it is not an archive or
+  // NEW-binding receipt. Existing caller tests separately prove that authority.
+  assert.equal(epoch.steps['state-epoch-runtime-install'].outcome, 'success');
+  assert.equal(await runActualLegacyInline(name, epoch, root), 'SKIPPED');
+  assert.equal(await fs.readFile(output, 'utf8'), '');
+  assert.equal(epoch.steps['exact-weather-recovery'].outputs.required, '');
+  const absent = { ...defaults }; delete absent.weather_state_epoch_bootstrap;
+  for (const inputs of [defaults, absent, { ...defaults, native_sampling_identity_original_recovery: true }]) {
+    const ordinary = legacyContext(inputs);
+    assert.equal(selectedStep(name, ordinary), true);
+    await assert.rejects(runActualLegacyInline(name, ordinary, root), error => error.code === 'ENOENT'
+      && path.resolve(error.path) === source, 'The ordinary classifier must still refuse genuinely missing metadata');
+  }
+  await fs.writeFile(source, JSON.stringify({ datasetId: 'synthetic-not-the-fixed-11z-predecessor' }), { flag: 'wx' });
+  assert.equal(await runActualLegacyInline(name, legacyContext(), root), 'EXECUTED');
+  assert.equal(await fs.readFile(output, 'utf8'), 'required=false\n');
+  const idle = legacyContext(); idle.steps.preflight.outputs.should_run = 'false';
+  assert.equal(selectedStep(name, idle), false);
+  const cutover = legacyContext(); cutover.steps['operational-action'].outputs.action = 'integrated-cutover';
+  cutover.steps['operational-model'].outputs.legacy_source_required = 'true';
+  assert.equal(selectedStep(name, cutover), false, 'Keep the original cutover exclusion');
+  for (const downstream of ['Materialize exact archived readers for the 11Z and 15Z weather pair',
+    'Preserve the paired 15Z public no-loss anchor without installing it']) {
+    assert.equal(selectedStep(downstream, epoch), false, 'Skipped classifier leaves no legacy recovery output');
+  }
+});
+
+test('epoch skips the actual one-time PART donor; ordinary/default/native retain strict old-manifest branches', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-epoch-legacy-part-donor-'));
+  t.after(async () => { assert.equal(path.dirname(root), path.resolve(os.tmpdir()));
+    assert(path.basename(root).startsWith('rr-epoch-legacy-part-donor-')); await fs.rm(root, { recursive: true, force: true }); });
+  await fs.mkdir(path.join(root, 'data/live'), { recursive: true });
+  await fs.mkdir(path.join(root, 'original-bundle'));
+  const output = path.join(root, 'output'), forecast = path.join(root, 'data/live/dmi-forecast-cache.json');
+  const manifest = path.join(root, 'original-bundle/manifest.json');
+  await fs.writeFile(output, '', { flag: 'wx' });
+  await fs.writeFile(forecast, '{"zones":{}}', { flag: 'wx' });
+  await fs.writeFile(manifest, JSON.stringify({ productionReferenceAt: '2026-10-16T10:00:00.000Z' }), { flag: 'wx' });
+  assert.equal((await inspectDmiForecastFile(forecast)).hasPartContinuity, false);
+  const name = 'Classify one-time DMI PART continuity donor';
+  const epoch = legacyContext({ ...defaults, weather_state_epoch_bootstrap: true });
+  assert.equal(epoch.steps['private-runtime-install'].outcome, 'success', 'The actual epoch verify/exit0 reaches this selector');
+  assert.equal(await runActualLegacyInline(name, epoch, root), 'SKIPPED');
+  assert.equal(await fs.readFile(output, 'utf8'), '');
+  assert.equal(epoch.steps['dmi-part-continuity-donor'].outputs.required, '');
+  assert.equal(selectedStep('Restore exact previous native DMI donor without older score state', epoch), false);
+  const absent = { ...defaults }; delete absent.weather_state_epoch_bootstrap;
+  for (const inputs of [defaults, absent, { ...defaults, native_sampling_identity_original_recovery: true }]) {
+    const ordinary = legacyContext(inputs);
+    assert.equal(selectedStep(name, ordinary), true);
+    await assert.rejects(runActualLegacyInline(name, ordinary, root), /Unrecognized predecessor without DMI PART continuity/);
+  }
+  await fs.writeFile(manifest, JSON.stringify({ productionReferenceAt: '2026-09-27T02:00:00.000Z' }));
+  assert.equal(await runActualLegacyInline(name, legacyContext(), root), 'EXECUTED');
+  assert.equal(await fs.readFile(output, 'utf8'), 'required=true\n', 'The exact historic donor route is preserved');
+  await fs.writeFile(output, '');
+  await fs.writeFile(forecast, '{"zones":{},"partContinuity":{"entries":[]}}');
+  await fs.writeFile(manifest, JSON.stringify({ productionReferenceAt: '2026-10-16T10:00:00.000Z' }));
+  assert.equal(await runActualLegacyInline(name, legacyContext(), root), 'EXECUTED');
+  assert.equal(await fs.readFile(output, 'utf8'), 'required=false\n', 'Existing normal PART continuity still needs no donor');
+  for (const outcome of ['failure', 'skipped']) {
+    const refused = legacyContext(); refused.steps['private-runtime-install'].outcome = outcome;
+    assert.equal(selectedStep(name, refused), false);
+  }
+});
 
 test('default/manual/epoch dependency outcomes are evaluated, not accepted from a skipped prewrite', () => {
   assert.match(wrapper, /weather_state_epoch_bootstrap:[\s\S]*?type: boolean\n        default: false/);

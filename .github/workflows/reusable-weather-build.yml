@@ -805,7 +805,7 @@ jobs:
 
       - name: Classify the exact 11Z weather recovery
         id: exact-weather-recovery
-        if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
+        if: steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
         shell: bash
         run: |
           set -euo pipefail
@@ -1263,7 +1263,7 @@ jobs:
       # DMI generation, without installing any older score or cache state.
       - name: Classify one-time DMI PART continuity donor
         id: dmi-part-continuity-donor
-        if: steps.private-runtime-install.outcome == 'success'
+        if: inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-install.outcome == 'success'
         shell: bash
         run: |
           set -euo pipefail

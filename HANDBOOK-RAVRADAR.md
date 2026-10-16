@@ -1,3 +1,13 @@
+## 89.239 Den nye start må ikke falde tilbage i en gammel genopretningsrute
+
+**Kort fortalt:** Gammelt arkiv, databaseovergang og den nye arbejdsbaseline er faktisk verificeret. En efterfølgende ældre kalderkontrol stoppede forsøget før nye vejrdata og deploy.
+
+Første engangskørsel bevarede og genlæste de autentificerede B/S-originaler og seks offentliggjorte filer før installation. Den uændrede 230-overgang og den nye native-identitetsbinding blev derefter installeret og genlæst hver for sig. Den næste arbejdsbaseline blev også autentificeret med den særskilte nye-start-visning. Dette erstatter de tidligere afventningsudsagn kun for disse faktisk gennemførte trin.
+
+Efter baseline forsøgte den gamle 11Z-genopretningsklassifikation at læse en midlertidig metadatafil, som den nye rute ikke skal oprette. Den samme gennemgang fandt også den gamle engangs-DMI-PART-donor som forkert krav til den nye start. Kun disse to ældre specialruter udelukkes lokalt ved det eksplicitte epoch-flag. Faktiske inlinekroppe reproducerer begge fejl mod den ægte før-YAML; hele det berørte mål består derefter med syv prøver uden skip, inklusive ordinary/default/native og gamle donor-/afvisningsgrene. Normale NEW-baseline-, gemme-, no-loss-, Edge- og Pages-kontroller bevares. Den skrivefri gennemgang af hele kalderen fandt ikke flere konkrete fil-/legacy-rutehuller; den er ikke et produktionsbevis.
+
+Ingen leverandørhentning, ny scoregemning, upload eller Pages-levering blev gennemført efter dette stop. Kildekontrol, første nye generation og en almindelig efterfølger med genlæsning af den faktisk gemte nye tilstand er fortsat åbne. Et nyt forsøg skal genlæse allerede installerede databasetrin, ikke gentage et ukendt udfald. Cron forbliver pauset med samme tidsplan indtil verificeret genopretning. Version 4.0.578 er endnu ikke offentlig 4.0.577; SOURCE19 forbliver isoleret og inaktiv.
+
 ## 89.238 Bevaret arkiv og ny fremadrettet historik
 
 **Kort fortalt:** Den gamle generation skal bevares verificeret, mens en særskilt ny strøm- og scorehistorik opbygges af korrekt fortolkede data. Den nye start er ikke udført i produktionen.

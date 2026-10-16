@@ -5,6 +5,13 @@
   "updatedAt": "2026-10-16",
   "sections": [
     {
+      "id": "weather-state-epoch-legacy-caller-isolation-2026-10-16",
+      "chapter": "89.239",
+      "title": "Den nye start må ikke falde tilbage i en gammel genopretningsrute",
+      "summary": "Gammelt arkiv, databaseovergang og ny arbejdsbaseline er verificeret. En ældre kalderkontrol stoppede forsøget før nye vejrdata og deploy.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Gammelt arkiv, databaseovergang og den nye arbejdsbaseline er faktisk verificeret. En efterfølgende ældre kalderkontrol stoppede forsøget før nye vejrdata og deploy.</div><p>Første engangskørsel bevarede og genlæste de autentificerede B/S-originaler og seks offentliggjorte filer før installation. Den uændrede 230-overgang og den nye native-identitetsbinding blev derefter installeret og genlæst hver for sig. Den næste arbejdsbaseline blev også autentificeret med den særskilte nye-start-visning. De ældre afventningsudsagn er erstattet kun for disse faktisk gennemførte trin.</p><p>Efter baseline forsøgte den gamle 11Z-genopretningsklassifikation at læse en midlertidig metadatafil, som den nye rute ikke skal oprette. Gennemgangen fandt også den gamle engangs-DMI-PART-donor som forkert krav til den nye start. Kun disse to ældre specialruter udelukkes lokalt ved det eksplicitte epoch-flag. Faktiske inlinekroppe reproducerer begge fejl mod den ægte før-YAML; hele det berørte mål består derefter med syv prøver uden skip, inklusive ordinary/default/native og gamle donor-/afvisningsgrene. Normale NEW-baseline-, gemme-, no-loss-, Edge- og Pages-kontroller bevares. Den skrivefri gennemgang fandt ikke flere konkrete fil-/legacy-rutehuller; den er ikke et produktionsbevis.</p><p>Ingen leverandørhentning, ny scoregemning, upload eller Pages-levering fulgte efter stoppet. Kildekontrol, første nye generation og en almindelig efterfølger med faktisk gemning og genlæsning er fortsat åbne. Allerede installerede databasetrin skal genlæses; ukendt udfald må ikke gentages blindt. Cron er pauset med uændret tidsplan. Version 4.0.578 er endnu ikke offentlig 4.0.577, og SOURCE19 forbliver isoleret og inaktiv.</p>"
+    },
+    {
       "id": "archived-new-weather-state-epoch-2026-10-16",
       "chapter": "89.238",
       "title": "Bevaret arkiv og ny fremadrettet historik",
