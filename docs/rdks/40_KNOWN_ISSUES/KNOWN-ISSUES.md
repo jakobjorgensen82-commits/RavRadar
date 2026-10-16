@@ -1,3 +1,11 @@
+## 16. oktober — SOURCE635: egen diagnostikmappe i prøveforudsætningen
+
+Sjette kildekontrol 38920544582 viste INPUT/UNKNOWN før H70/H71; den præcise indre nativefejl er fortsat ukendt. Den bevarede lokale rød/grøn-prøve reproducerer særskilt manglende data/diagnostics ved den uændrede normale geometriskrivers AUDIT.write_text. Dette konkrete prøvefund må ikke ommærke den tidligere ukendte nativeårsag.
+
+Begge friske prøvekopier opretter nu deres egen tomme diagnostikmappe eksklusivt, uden exist_ok. Det eksisterende normale workflowmål består på de rettede filer: hele det uændrede geometriprogram på egne små syntetiske input, to positive forløb og to afvisninger af allerede optaget mappe samt den eksisterende faktiske writerprøve. Hele tre-fils frem- og tilbageføringen og alle pakkepins er verificeret; de øvrige assertions, 311-path-kontrol og produktkode bevares.
+
+Det er lokal prøveklargøring, ikke Linux-, H70/H71-, SDK-, samlet kilde- eller produktionsbevis. Disse kontroller og fuld slutfrigivelse er fortsat åbne; SOURCE19 forbliver INAKTIV. Version 4.0.578, model, SQL, geodata og offentlig levering ændres ikke. Tidligere dokumentation bevares nedenfor.
+
 ## 16. oktober — SOURCE635: forbigående procesforsvinding under prøveobservation
 
 Femte kildekontrol 38917857971 stoppede før H70/H71 på ProcessLookupError/ESRCH under læsning af andre processers /proc-oplysninger. Begge prøveobservatører accepterer nu kun ENOENT/ESRCH for en proces, som forsvinder under selve søgningen. Rettigheden til den fastholdte egen proces, fysisk lukning, stop, H-beviser og oprydning ændres ikke; adgangsfejl, I/O-fejl og andre undtagelser skal fortsat slå prøven fejl.

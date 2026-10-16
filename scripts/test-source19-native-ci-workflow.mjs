@@ -142,11 +142,14 @@ export async function testSource19FixtureWriterCachePrerequisite(fixtureSource =
   const before = '        root = own / mode\n        shutil.copytree(seed, root)\n';
   const after = before + '        # The normal writer requires an existing private cache, never a prebuilt claim.\n'
     + "        (root / '.cache').mkdir()\n";
-  assert.ok(prefix === before || prefix === after, 'exercise only the exact reviewed fixture root prefix');
+  const diagnostics = after + "        # Own empty output namespace required by the unchanged normal geometry prelude.\n"
+    + "        (root / 'data' / 'diagnostics').mkdir()\n";
+  assert.ok(prefix === before || prefix === after || prefix === diagnostics, 'exercise only the exact reviewed fixture root prefix');
   const parent = await fs.realpath(tmpdir());
   const own = await fs.mkdtemp(path.join(parent, 'rr-s19-lease-'));
   const born = await fs.lstat(own, { bigint: true });
   const seed = path.join(own, 'seed'); await fs.mkdir(seed);
+  await fs.mkdir(path.join(seed, 'data'));
   const action = '.github/actions/save-owned-dmi-grib/index.cjs';
   const writer = 'scripts/lib/weather-acquisition-writer.mjs';
   let settled = true;
@@ -228,6 +231,33 @@ export async function testSource19ProcDiscoveryRaces() {
   return { status: 'SOURCE19_PROC_SNAPSHOT_PREREQUISITE_PASS', cases: 32, nativeActual: 'UNRUN' };
 }
 
+// Run only the real fixture root prefix and unchanged normal geometry program
+// on tiny synthetic geometry. This is not an H/parent/closure/SOURCE receipt.
+export async function testSource19FixtureDiagnosticsPrerequisite(fixtureSources = null) {
+  const { spawnSync } = await import('node:child_process');
+  const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const fixturePaths = ['scripts/test-source19-cp-install-native.py', 'scripts/test-source19-union-native.py'];
+  const documents = fixtureSources ?? await Promise.all(fixturePaths.map(async file => ({
+    path: file, text: (await fs.readFile(path.join(sourceRoot, file), 'utf8')).replaceAll('\r\n', '\n'),
+  })));
+  assert.deepEqual(documents.map(row => row.path), fixturePaths);
+  const geometry = (await fs.readFile(path.join(sourceRoot,
+    'scripts/refine-coastlines-constrained-4.0.48.py'), 'utf8')).replaceAll('\r\n', '\n');
+  const probe = spawnSync(process.env.PYTHON || 'python', ['-B', '-c', "import json, pathlib, shutil, sys, tempfile\npacket=json.load(sys.stdin)\ngeometry=packet['geometry']\nassert \"AUDIT=ROOT/'data/diagnostics/constrained-coastline-4.0.48.json'\" in geometry\nassert \"AUDIT.write_text(\" in geometry\ncases=0\nwith tempfile.TemporaryDirectory(prefix='rr-s19-geometry-prerequisite-') as temporary:\n    own=pathlib.Path(temporary).resolve()\n    seed=own/'seed'\n    snapshots=seed/'data/geometry-snapshots'\n    snapshots.mkdir(parents=True)\n    minimal=json.dumps({'type':'FeatureCollection','features':[],'version':'synthetic-only'})\n    for name in ('zones-4.0.44.geojson','zones-4.0.47-generated.geojson'):\n        (snapshots/name).write_text(minimal,encoding='utf-8')\n    (seed/'data/zones.geojson').write_text(minimal,encoding='utf-8')\n    for index,document in enumerate(packet['fixtures']):\n        marker='    def actual_case(self, own, seed, fixtures, protocol, cert, key, helper, mode):\\n'\n        assert document['text'].count(marker)==1\n        prefix=document['text'].split(marker)[1].split('        action = root / ENTRY\\n')[0]\n        assert prefix.startswith('        root = own / mode\\n        shutil.copytree(seed, root)\\n')\n        mode='normal-'+str(index)\n        namespace={'own':own,'seed':seed,'mode':mode,'shutil':shutil}\n        exec(compile('if True:\\n'+prefix,'<actual-fixture-root-prefix>','exec'),namespace)\n        root=namespace['root']\n        assert root.parent==own and root.name==mode\n        # Entire unchanged normal geometry program, not a rewritten write seam.\n        exec(compile(geometry,'<actual-normal-geometry>','exec'),{'__name__':'__main__','__file__':str(root/'scripts/refine-coastlines-constrained-4.0.48.py')})\n        diagnostic=root/'data/diagnostics/constrained-coastline-4.0.48.json'\n        assert json.loads(diagnostic.read_text())['refinedZones']==0\n        assert diagnostic.is_file() and not diagnostic.is_symlink()\n        assert json.loads((root/'data/zones.geojson').read_text())['features']==[]\n        assert json.loads((root/'data/geometry-snapshots/zones-4.0.48.geojson').read_text())['features']==[]\n        cases+=1\n        # A copied pre-existing directory is not silently adopted as fixture-owned.\n        (seed/'data/diagnostics').mkdir()\n        namespace={'own':own,'seed':seed,'mode':'preexisting-'+str(index),'shutil':shutil}\n        try:\n            exec(compile('if True:\\n'+prefix,'<actual-fixture-root-prefix>','exec'),namespace)\n        except FileExistsError:\n            pass\n        else:\n            raise AssertionError('PREEXISTING_DIAGNOSTICS_DIRECTORY_ADOPTED')\n        assert not (namespace['root']/'data/diagnostics/constrained-coastline-4.0.48.json').exists()\n        (seed/'data/diagnostics').rmdir()\n        cases+=1\nprint(json.dumps({'status':'SOURCE19_GEOMETRY_DIRECTORY_PREREQUISITE_PASS','cases':cases,'actualGeometryProgram':True,'syntheticEmptyGeometry':True,'nativeH70':'UNRUN','nativeH71':'UNRUN','sourceAdmission':False}))\n"], {
+    input: JSON.stringify({ fixtures: documents, geometry }), encoding: 'utf8', timeout: 20_000, maxBuffer: 16_384,
+    env: { PATH: process.env.PATH, ...(process.env.SYSTEMROOT ? { SYSTEMROOT: process.env.SYSTEMROOT } : {}),
+      PYTHONDONTWRITEBYTECODE: '1', PYTHONNOUSERSITE: '1' },
+  });
+  assert.equal(probe.error, undefined); assert.equal(probe.signal, null);
+  assert.equal(probe.status, 0, probe.stderr);
+  assert.equal(probe.stderr, '');
+  const report = JSON.parse(probe.stdout.trim().split('\n').at(-1));
+  assert.deepEqual(report, { status: 'SOURCE19_GEOMETRY_DIRECTORY_PREREQUISITE_PASS', cases: 4,
+    actualGeometryProgram: true, syntheticEmptyGeometry: true,
+    nativeH70: 'UNRUN', nativeH71: 'UNRUN', sourceAdmission: false });
+  return report;
+}
+
 export async function testSource19NativeCiWorkflow(input=null) {
   const workflow=(input??await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
   const historical=projectSource19NativeCiWorkflow(workflow);
@@ -283,6 +313,7 @@ export async function testSource19NativeCiWorkflow(input=null) {
   await assertSource19FixtureCjsClosure();
   await testSource19FixtureWriterCachePrerequisite();
   await testSource19ProcDiscoveryRaces();
+  await testSource19FixtureDiagnosticsPrerequisite();
   return {status:'SOURCE19_NATIVE_CI_CONTRACT_PASS',scopePaths:SOURCE19_NATIVE_SCOPE_PATHS.length,cases:7,nativeActual:'UNRUN'};
 }
 

@@ -425,6 +425,8 @@ class SourceOriginalCpInstallNative(unittest.TestCase):
         shutil.copytree(seed, root)
         # The normal writer requires an existing private cache, never a prebuilt claim.
         (root / '.cache').mkdir()
+        # Own empty output namespace required by the unchanged normal geometry prelude.
+        (root / 'data' / 'diagnostics').mkdir()
         action = root / ENTRY
         self.assertEqual(action.read_bytes(), (ROOT / ENTRY).read_bytes(), 'ACTUAL_ACTION_BYTES_CHANGED')
         self.assertFalse(FIXED.exists() or FIXED.is_symlink(), 'FIXED_PRIVATE_ROOT_EXISTS')
