@@ -331,6 +331,8 @@ Den nye operation `fixed-public-rate-console-read-20261015` er lokalt integreret
 
 Den faktiske integrerede måltest består med 34 offlineforløb, 34 kontrollerede GET-kald og nul netværkskald. Kun måltestens to workflowlæsninger normaliserer CRLF til LF; ingen assertion lempes. Dette er ikke native ClickHouse-udførelse, hosted logformat, en gennemført Supabase-læsning, 503-årsagsbevis eller fungerende ekstern AI. Tomt resultat og ukendt format beviser ikke, at en hændelse mangler; rapporten angiver altid `recordedEventAbsenceProved=false`. Præcis CI og sikker kildelevering står åbne. Ingen version, modelbinding, SQL, vejrdata eller produktion ændres af denne lokale kontrolkilde.
 
+De to eksisterende normale kilde-/readinessprøver er desuden reproduceret med den nye femte læser. Først beviser de den præcise nye læserblok og dens routing, skrivefrihed og idle-rækkefølge; kun denne eksakte blok fjernes derefter fra den historiske prøvevisning. Alle gamle fire-/tre-/tolæserassertions bevares. Begge normale mål består lokalt efter hver sin påviste integrationsfejl. Linux-kalderen `env -u` er fortsat ikke udført på Windows; den præcise CI skal bevise den.
+
 ## Dokumenteret rettelse: logsvarets fejlfelt er valgfrit — 13. oktober 2026
 
 Den officielle, tokenfri Supabase OpenAPI-kontrakt gør HTTP 200-svarets `error`-felt valgfrit. Læserens tidligere krav om præcis både `result` og `error` var derfor en konkret overstramning. Den minimale rettelse tillader nu også præcis `result` alene, når den uændrede normale array-/række-/status-/fejlkodevalidering består. Manglende resultat, ekstra felter, ugyldigt eksplicit fejlfelt, delvise eller ukendte rækker og de tidligere grænser afvises fortsat.
