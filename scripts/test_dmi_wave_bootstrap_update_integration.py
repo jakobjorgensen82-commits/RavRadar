@@ -4778,6 +4778,20 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         )
 
         dmi = normal[normal_names[2]][1]
+        # Invert only the exact reviewed epoch expression for the old ordinary
+        # marker oracle. The retired one-off assertions below stay unchanged.
+        old_fallback = "DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json"
+        epoch_fallback = (
+            "DMI_BULK_DEPLOYED_FALLBACK_PATH: ${{ inputs.weather_state_epoch_bootstrap "
+            "&& format('{0}/ravradar-weather-state-epoch-{1}-{2}/empty-dmi-candidate.json', "
+            "runner.temp, github.run_id, github.run_attempt) || '.cache/dmi-active-complete.json' }}"
+        )
+        actual_fallback = [
+            line.strip() for line in dmi.splitlines()
+            if line.strip().startswith("DMI_BULK_DEPLOYED_FALLBACK_PATH:")
+        ]
+        self.assertEqual(actual_fallback, [epoch_fallback])
+        ordinary_dmi = dmi.replace(epoch_fallback, old_fallback)
         for marker in (
             "DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json",
             "DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json",
@@ -4785,7 +4799,48 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             "DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false",
             "DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json",
         ):
-            self.assertIn(marker, dmi)
+            self.assertIn(marker, ordinary_dmi)
+
+        # Evaluate the actual GitHub expression, not a Python translation or an
+        # admission mock. Missing/false retain ordinary fallback; epoch is empty.
+        node = shutil.which("node")
+        bundled_node = Path(sys.executable).resolve().parents[1] / "node" / "bin" / "node.exe"
+        if not node and bundled_node.is_file():
+            node = str(bundled_node)
+        self.assertIsNotNone(node, "Node.js is required for the actual workflow routing contract")
+        script = r"""
+import assert from 'node:assert/strict';
+import { runInNewContext } from 'node:vm';
+const actual = process.argv[1];
+function assertRouting(line) {
+  const expression = line.match(/^DMI_BULK_DEPLOYED_FALLBACK_PATH: \$\{\{ (.+) \}\}$/)?.[1];
+  assert.ok(expression, 'exact fallback expression');
+  for (const enabled of [undefined, false, true]) {
+    const result = runInNewContext(expression, {
+      inputs: { weather_state_epoch_bootstrap: enabled },
+      runner: { temp: '/synthetic-owned-temp' }, github: { run_id: '123', run_attempt: '1' },
+      format: (pattern, ...values) => pattern.replace(/\{(\d+)\}/g, (_, i) => values[Number(i)]),
+    });
+    assert.equal(result, enabled === true
+      ? '/synthetic-owned-temp/ravradar-weather-state-epoch-123-1/empty-dmi-candidate.json'
+      : '.cache/dmi-active-complete.json');
+  }
+}
+assertRouting(actual);
+for (const [from, to] of [
+  ['inputs.weather_state_epoch_bootstrap &&', 'true &&'],
+  ['empty-dmi-candidate.json', 'dmi-active-complete.json'],
+  ["|| '.cache/dmi-active-complete.json'", "|| '.cache/dmi-candidate-progress.json'"],
+]) {
+  assert.equal(actual.split(from).length, 2, 'mutation changes the actual expression once');
+  assert.throws(() => assertRouting(actual.replace(from, to)));
+}
+"""
+        completed = subprocess.run(
+            [node, "--input-type=module", "-e", script, actual_fallback[0]],
+            cwd=ROOT, capture_output=True, text=True, timeout=30,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
 
         terminal = normal[normal_names[3]][1]
         self.assertIn('test "$code" = "DMI_READY"', terminal)
