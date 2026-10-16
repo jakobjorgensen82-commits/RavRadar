@@ -16,6 +16,7 @@ import {
 import { nativeSamplingIdentityExpectedDatabaseContracts } from '../native-sampling-identity-successor-readiness.mjs';
 import { statisticsPreferenceRevisionCatalogQuery, verifyStatisticsPreferenceRevisionCatalogMetadata }
   from '../verify-account-assistant-schema.mjs';
+import { LATEST_RAVSCORE_BINDING_MIGRATION } from '../integrated-cutover-readiness.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const HEAD = '37e657867ff0f8c31f8e8489e5c9a1cf235192f9';
@@ -140,7 +141,9 @@ export async function compareNativeSamplingIdentitySuccessor({ psql, runSql, roo
     phase = 'HISTORICAL_CATALOG_ACCOUNT_ROWS';
     const accountRowsBefore = await psql(accountRowsSql);
     const allNames = [...before.canonicalSource.matchAll(/^create or replace function public\.([a-z0-9_]+)\(/gm)].map(row => row[1]);
-    const catalogSql = names => "select jsonb_object_agg(p.proname,jsonb_build_object('oid',p.oid,'definer',p.prosecdef,'volatility',p.provolatile,'config',p.proconfig,'acl',p.proacl,'body',encode(extensions.digest(convert_to(btrim(p.prosrc,E' \\r\\n\\t'),'UTF8'),'sha256'),'hex'))) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in (" + names.map(name => "'" + name + "'").join(',') + ');';
+    // PostgreSQL stores identifiers as `name` (normally 63 bytes). Resolve the
+    // exact issued names through that type, but retain their FULL source keys.
+    const catalogSql = names => "select jsonb_object_agg(requested.source_name,jsonb_build_object('oid',p.oid,'definer',p.prosecdef,'volatility',p.provolatile,'config',p.proconfig,'acl',p.proacl,'body',encode(extensions.digest(convert_to(btrim(p.prosrc,E' \\r\\n\\t'),'UTF8'),'sha256'),'hex'))) from pg_proc p join pg_namespace n on n.oid=p.pronamespace join (values " + names.map(name => "('" + name + "')").join(',') + ") as requested(source_name) on p.proname=requested.source_name::pg_catalog.name where n.nspname='public';";
     phase = 'HISTORICAL_CATALOG_READ';
     const catalogBefore = JSON.parse(await psql(catalogSql(allNames)));
     phase = 'HISTORICAL_CATALOG_FUNCTION_SET';
@@ -173,6 +176,7 @@ export async function compareNativeSamplingIdentitySuccessor({ psql, runSql, roo
     assert.equal(await psql("select current_setting('lock_timeout');"), '0');
     assert.equal(await psql(preservedSql), preserved, 'NEW install must preserve every original row and account');
     await psql("insert into supabase_migrations.schema_migrations values('" + migration.version + "');");
+    assert.equal(await psql('select max(version) from supabase_migrations.schema_migrations;'), migration.version);
     assert.notEqual((await runSql(sql)).code, 0, 'Installed NEW migration must not replay');
     phase = 'CONTRACT';
     const catalogAfter = JSON.parse(await psql(catalogSql([...allNames, ...NATIVE_IDENTITY_ORIGINAL_NAMES])));
@@ -188,7 +192,8 @@ export async function compareNativeSamplingIdentitySuccessor({ psql, runSql, roo
     }
     for (const name of NATIVE_IDENTITY_ORIGINAL_NAMES) assert.equal(catalogAfter[name].body, sha(body(definition(after.canonicalSource, name))));
     const contract = JSON.parse(await psql("set request.jwt.claim.role='service_role'; set role service_role; select public.ravradar_ravscore_checkpoint_contract();"));
-    assert.equal(contract.schemaVersion, 'ravscore-checkpoint-db-v1'); assert.equal(contract.appliedMigrationVersion, migration.version);
+    assert.equal(contract.schemaVersion, 'ravscore-checkpoint-db-v1');
+    assert.equal(contract.appliedMigrationVersion, LATEST_RAVSCORE_BINDING_MIGRATION.version);
     assert.deepEqual(contract.checkpointContract, { id: expected.checkpoint.id, definition: expected.checkpoint.definition });
     assert.deepEqual(contract.checks, Object.fromEntries([
       'checkpointContractDefinitionPresent', 'checkpointCanonicalTimeHelperStableSecurityInvoker',

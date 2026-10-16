@@ -423,8 +423,37 @@ if (process.argv.includes('--native-sampling-identity') || process.argv.includes
       'HISTORICAL_CATALOG_ORIGINAL_ROWS', 'HISTORICAL_CATALOG_ACCOUNT_ROWS',
       'HISTORICAL_CATALOG_READ', 'HISTORICAL_CATALOG_FUNCTION_SET']);
   assert(nativeSource.includes("phase = 'HISTORICAL_CATALOG_BODY_' + name.toUpperCase();"));
+  const catalogDeclarations = nativeSource.match(/^    const catalogSql = names => .*;$/gm) ?? [];
+  assert.equal(catalogDeclarations.length, 1, 'Exercise the actual native catalog query');
+  const catalogSql = runInNewContext(catalogDeclarations[0] + '\ncatalogSql;', {}, { timeout: 1_000 });
+  const longNames = ['ravradar_ravscore_checkpoint_owner_current_predecessor_projection',
+    'ravradar_ravscore_checkpoint_account_assistant_predecessor_projection'];
+  assert.deepEqual(longNames.map(name => Buffer.byteLength(name)), [65, 69]);
+  const checkCatalogNames = query => {
+    assert(query.startsWith('select jsonb_object_agg(requested.source_name,'));
+    assert(query.includes('join (values ' + longNames.map(name => "('" + name + "')").join(',')
+      + ') as requested(source_name) on p.proname=requested.source_name::pg_catalog.name'));
+    assert(query.endsWith("where n.nspname='public';"));
+  };
+  const catalogQuery = catalogSql(longNames);
+  checkCatalogNames(catalogQuery);
+  assert.throws(() => checkCatalogNames(catalogQuery.replace('jsonb_object_agg(requested.source_name,', 'jsonb_object_agg(p.proname,')));
+  assert.throws(() => checkCatalogNames(catalogQuery.replace('::pg_catalog.name', '::text')));
+  const { LATEST_RAVSCORE_BINDING_MIGRATION } = await import('./integrated-cutover-readiness.mjs');
+  const contractVersionAssertions = nativeSource.match(/assert\.equal\(contract\.appliedMigrationVersion, [^)]+\);/g) ?? [];
+  assert.equal(contractVersionAssertions.length, 1, 'Exercise the actual native contract-version assertion');
+  const checkContractVersion = version => runInNewContext(contractVersionAssertions[0], {
+    assert, contract: { appliedMigrationVersion: version }, migration: nativeIdentityMigration(),
+    LATEST_RAVSCORE_BINDING_MIGRATION,
+  }, { timeout: 1_000 });
+  const baseVersion = LATEST_RAVSCORE_BINDING_MIGRATION.version;
+  assert(sql.includes("where m.version::text = '" + nativeIdentityMigration().version + "'\n    ) then '" + baseVersion + "' else null end,"));
+  checkContractVersion(baseVersion);
+  assert.throws(() => checkContractVersion(nativeIdentityMigration().version), { code: 'ERR_ASSERTION' });
+  assert.throws(() => checkContractVersion(null), { code: 'ERR_ASSERTION' });
   console.log(JSON.stringify({ kind: 'NATIVE_IDENTITY_MIGRATION_SOURCE_ASSERTIONS',
-    actualPrefix: true, frozenSql: true, negativeCases: 3, sourcePhases: 5, sqlExecuted: false }));
+    actualPrefix: true, frozenSql: true, negativeCases: 7, sourcePhases: 5,
+    exactLongCatalogNames: true, normalBaseContractVersion: true, sqlExecuted: false }));
 }
 
 // Source-only control of genuine fixed37 constructors and CURRENT constructors.
