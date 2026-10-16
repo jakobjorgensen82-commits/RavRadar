@@ -28,6 +28,14 @@ on:
         required: false
         type: boolean
         default: false
+      weather_state_epoch_checkpoint_reentry:
+        required: false
+        type: boolean
+        default: false
+      weather_state_epoch_raw_cache_key:
+        required: false
+        type: string
+        default: ''
       weather_state_epoch_archive_key:
         required: false
         type: string
@@ -183,7 +191,7 @@ permissions:
 
 jobs:
   build-and-prepare:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Normalrun skal kunne rumme DMI, 25 min Copernicus, 80 min cache og
     # efterfølgende gates/deployforberedelse inden næste 4-timersstart.
     timeout-minutes: ${{ inputs.weather_state_epoch_bootstrap && 360 || inputs.extended_provider_bootstrap && 240 || 230 }}
@@ -197,6 +205,12 @@ jobs:
       # Copernicus target list is derived from fresh DMI for this exact hour.
       RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ inputs.production_target_hour }}
       RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP: ${{ inputs.weather_state_epoch_bootstrap }}
+      RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY: ${{ inputs.weather_state_epoch_checkpoint_reentry }}
+      RAVRADAR_WEATHER_STATE_EPOCH_RAW_CACHE_KEY: ${{ inputs.weather_state_epoch_raw_cache_key }}
+      QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
+      QUICK_CONFIRMATION: ${{ inputs.quick_confirmation }}
+      CHECKPOINT_ONLY: ${{ inputs.checkpoint_only }}
+      CHECKPOINT_TARGET_HOUR: ${{ inputs.checkpoint_only && inputs.production_target_hour || '' }}
       RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID: ${{ inputs.weather_state_epoch_archive_key }}
       RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_CATALOG_SHA256: ${{ inputs.weather_state_epoch_archive_catalog_sha256 }}
       RAVRADAR_PRIVATE_RUNTIME_ROOT: /tmp/ravradar-private-production-runtime
@@ -271,7 +285,7 @@ jobs:
           node-version: 22
 
       - name: Require the one-off epoch interface without changing its already locked target
-        if: inputs.weather_state_epoch_bootstrap == true
+        if: inputs.weather_state_epoch_bootstrap == true || inputs.weather_state_epoch_checkpoint_reentry == true
         shell: bash
         env:
           QUICK_CONFIRMATION: ${{ inputs.quick_confirmation }}
@@ -527,6 +541,13 @@ jobs:
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
           set -uo pipefail
+          if test "${CHECKPOINT_ONLY:-false}" = true && test "${RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY:-false}" = true; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            echo "dmi_changed=false" >> "$GITHUB_OUTPUT"
+            echo "reason=epoch-checkpoint-reentry" >> "$GITHUB_OUTPUT"
+            echo "age_minutes=unknown" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           state=.cache/weather-preflight-state/state.json
           input_root="$RAVRADAR_PREFLIGHT_WORK/input"
           if test -n "$PREFLIGHT_CACHE_KEY" && test "$PUBLIC_MANIFEST_AVAILABLE" = "true" && test -f "$state"; then
@@ -1397,7 +1418,7 @@ jobs:
         # conditions bytes and bundle hash. This also permits the exact 11Z
         # recovery to resume its own progress after a later no-loss stop;
         # a snapshot from the 15Z anchor is rejected by the binder below.
-        if: inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current')
+        if: inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current')
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-private-progress.encrypted
@@ -1423,6 +1444,18 @@ jobs:
             test "${{ steps.state-epoch-runtime-install.outcome }}" = success
             node scripts/weather-state-epoch.mjs verify
             echo "captured=true" >> "$GITHUB_OUTPUT"
+            if test "${{ inputs.weather_state_epoch_checkpoint_reentry }}" = true; then
+              node --input-type=module <<'NODE_EPOCH_RESTORE'
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+          import { restoreInstalledWeatherStateEpochCheckpoint } from './scripts/weather-state-epoch.mjs';
+          import { assertUsableDmiProgressRecovery } from './scripts/lib/verified-dmi-progress-inputs.mjs';
+          const report = await restoreInstalledWeatherStateEpochCheckpoint();
+          assertUsableDmiProgressRecovery(report.dmiProgress, { allowAbsent: true });
+          await fs.writeFile(path.join(process.env.RUNNER_TEMP, 'weather-progress-restore-report.json'),
+            JSON.stringify(report) + '\n', { flag: 'wx', mode: 0o600 });
+          NODE_EPOCH_RESTORE
+            fi
             exit 0
           fi
           if test "${{ inputs.native_sampling_identity_original_recovery }}" = true; then
@@ -1964,11 +1997,23 @@ jobs:
         id: dmi-grib-cache-restore
         with:
           path: .cache/dmi-grib
-          key: dmi-grib-v4-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ inputs.weather_state_epoch_checkpoint_reentry && inputs.weather_state_epoch_raw_cache_key || format('dmi-grib-v4-{0}-{1}-{2}-{3}', runner.os, steps.dmi-cache-generation.outputs.generation, github.run_id, github.run_attempt) }}
           restore-keys: |
-            dmi-grib-v4-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-
-            dmi-grib-v4-${{ runner.os }}-
-            dmi-grib-v3-${{ runner.os }}-
+            ${{ !inputs.weather_state_epoch_checkpoint_reentry && format('dmi-grib-v4-{0}-{1}-', runner.os, steps.dmi-cache-generation.outputs.generation) || '' }}
+            ${{ !inputs.weather_state_epoch_checkpoint_reentry && format('dmi-grib-v4-{0}-', runner.os) || '' }}
+            ${{ !inputs.weather_state_epoch_checkpoint_reentry && format('dmi-grib-v3-{0}-', runner.os) || '' }}
+          fail-on-cache-miss: ${{ inputs.weather_state_epoch_checkpoint_reentry }}
+
+      - name: Require exact same-producer RAW cache for epoch checkpoint reuse
+        if: inputs.weather_state_epoch_checkpoint_reentry == true
+        shell: bash
+        env:
+          MATCHED_RAW_KEY: ${{ steps.dmi-grib-cache-restore.outputs.cache-matched-key }}
+        run: |
+          set -euo pipefail
+          test "$MATCHED_RAW_KEY" = "$RAVRADAR_WEATHER_STATE_EPOCH_RAW_CACHE_KEY"
+          test -d .cache/dmi-grib
+          test ! -L .cache/dmi-grib
 
       - name: Select encrypted active DMI generation when available
         id: dmi-active-restore
@@ -1988,7 +2033,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .cache data/live "$RUNNER_TEMP/dmi-active-proof"
-          if test "${{ inputs.weather_state_epoch_bootstrap }}" = true; then
+          if test "${{ inputs.weather_state_epoch_bootstrap }}" = true && test "${{ inputs.weather_state_epoch_checkpoint_reentry }}" != true; then
             test "${{ steps.state-epoch-runtime-install.outcome }}" = success
             source_kind=empty
             source_path="$RUNNER_TEMP/ravradar-weather-state-epoch-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT/empty-dmi-candidate.json"
@@ -2123,7 +2168,7 @@ jobs:
           DMI_BULK_COMPLETE_HORIZON_HOURS: 96
           DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed == 'true' || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') }}
           DMI_BULK_RAW_DIR: .cache/dmi-grib
-          DMI_BULK_DEPLOYED_FALLBACK_PATH: ${{ inputs.weather_state_epoch_bootstrap && format('{0}/ravradar-weather-state-epoch-{1}-{2}/empty-dmi-candidate.json', runner.temp, github.run_id, github.run_attempt) || '.cache/dmi-active-complete.json' }}
+          DMI_BULK_DEPLOYED_FALLBACK_PATH: ${{ inputs.weather_state_epoch_checkpoint_reentry && '.cache/dmi-candidate-progress.json' || inputs.weather_state_epoch_bootstrap && format('{0}/ravradar-weather-state-epoch-{1}-{2}/empty-dmi-candidate.json', runner.temp, github.run_id, github.run_attempt) || '.cache/dmi-active-complete.json' }}
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{ (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode) || (steps.historical-wave-transition.outputs.required == 'true' && steps.historical-wave-transition.outputs.mode) || 'none' }}
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR: ${{ (steps.historical-wave-transition.outputs.required == 'true' && steps.historical-wave-transition.outputs.target_hour) || steps.ravscore-wave-bootstrap-target.outputs.target_hour || env.RAVRADAR_PRODUCTION_TARGET_HOUR }}
           COASTAL_POINT_STAGE_PATH: ${{ inputs.weather_state_epoch_bootstrap && format('{0}/ravradar-weather-state-epoch-{1}-{2}/acquisition-point-stage.json', runner.temp, github.run_id, github.run_attempt) || '.cache/coastal-point-staging/dmi.json' }}

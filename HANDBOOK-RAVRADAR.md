@@ -1,3 +1,35 @@
+## 89.244 Genoptag den nye historik fra dens gemte checkpoint uden nye providerkald
+
+**Kort fortalt:** En særskilt, som udgangspunkt frakoblet rute er lokalt kildeklargjort til autentificeret genbrug af den nye starts gemte input. Det er ikke en ny vejrhentning eller bevis for offentlig levering.
+
+Der forberedes en særskilt, som udgangspunkt frakoblet genoptagelse af et eksakt epoch-checkpoint uden nye providerkald eller SQL-installation. Samme autentiske gamle B/S-arkiv og den allerede installerede nye databasekontrakt skal genlæses skrivefrit, før en særskilt ny arbejdsbaseline, den ægte inputvisning, baselinecapture og GCM-gendannelse bindes til checkpointets oprindelige target og aktuelle registry. Cipher og RAW skal komme fra den eksakt valgte kilde.
+
+Kun den arkividentiske gamle aktive arbejdskopi må isoleres; originaler og cipher bevares. En aktiv progresskopi kræver særskilt optagelse, og en ukendt anden aktiv kopi afvises. Almindelige standardruter, historik, kildeprioritet, budgetter og efterkontroller bevares. Den samlede normale lokale prøve består på 106,911 sekunder uden skip med syntetisk arkiv for 673 dele, normal ledger og GCM-gemning/genoptagelse gennem den normale Python-kalder ved oprindeligt target. Negative tilfælde, 180 minutters efterbehandlingsreserve og afsluttende prøver af seks faktiske filbeskrivere indgår; den friske rutes budget er uændret.
+
+Lokale prøver og fjerncachemetadata er ikke faktisk GCM-gendannelse, ny B/S, Pages eller offentlig levering. Præcis CI, hosted readiness og kontrolleret genoptagelse udestår. Version 4.0.578 og offentlig 4.0.577 er uændrede; cron er pauset, og alle fem mål er åbne med frist 18. oktober. Se håndbog 89.244; tidligere dateret tekst bevares som historik.
+
+## 89.243 Manglende modulforbindelse stoppede vejrberegningen
+
+**Kort fortalt:** En lokal eksport/import-rettelse forbinder den faktiske beregning med dens fælles konstant. Gemte fremskridt er ikke det samme som en ny offentlig generation.
+
+Vejrkørslen stoppede 16. oktober kl. 14.41.44 dansk tid i beregningens trin 125, fordi ATOMIC_COMPONENT_TUPLE_KEYS efter moduludtræk ikke blev eksporteret og importeret af den faktiske ESM-kalder. Den lokale rettelse er alene disse to forbindelser. En ny normal ESM-regression reproducerer ReferenceError på d0 og består på rettelsen; hele det berørte mål består på 0,45 sekunder, og de 23 tidligere beståede sammensætningsprøver genbruges. Model, numerik, score, geometri og SQL er uændrede.
+
+DMI var delvis; CP og OM var gennemført før stoppet. Krypteret fremgang er gemt lokalt og registreret i fjerncachen, men er endnu ikke GCM-autentificeret ved restore. Ingen ny B/S, Pages eller offentlig generation blev leveret. Præcis CI, sikker kildelevering og produktionsvirkning udestår. Providerfri genoptagelse er en separat forberedelse, ikke del af denne rettelse. Cron er pauset; offentlig generation er fortsat fra 13. oktober/version 4.0.577. Alle fem mål er åbne til 18. oktober.
+
+Version 4.0.578 er uændret. Tidligere daterede afsnit bevares som historik; øvrige leverings- og sikkerhedskrav består.
+
+## 89.240 Gammel aktiv DMI-cache holdes ude af den nye start
+
+**Kort fortalt:** Den nye start skal holde den gamle aktive DMI-cache ude af beregningens arbejdskopi, mens arkivet og originale vejrdata bevares.
+
+En normal kalder kunne geninstallere den arkiverede aktive DMI-cache. Hvis der ikke kom en ny klar kandidat, kunne denne gamle arbejdskopi følge med videre. Det er en dokumenteret mulighed i kilden, ikke en påvist fejl i den igangværende vejrhentning eller i DMI’s værdier.
+
+Rettelsen virker kun med den ægte arkivbundne inputvisning. Hele den udpakkede pakke kontrolleres med størrelse og kontrolsum fra samme faktisk læste filbeskrivelse. Kun den gamle aktive arbejdskopi udelades, og dens destination skal være fraværende før og efter installationen. Ingen gammel fil flyttes eller slettes. Originale B/S-pakker, RAW-cache og alle øvrige filer bevares; almindelig installation uden inputvisningen er uændret.
+
+Én normal prøve gik fra reproduceret fejl til bestået på 76,9 sekunder uden skip. Den aktuelle vejrhentning er i DMI-fasen; første nye gemning og offentlige levering samt en almindelig efterfølger er endnu ikke afprøvet. Rettelsen kan ikke bagudrettet reparere en allerede gemt ny pakke. En faktisk READY-kandidat, dens forfremmelse og den strenge aktive kopi skal derfor verificeres, før genbrug kaldes korrekt.
+
+PR633s præcise samlede kildekontrol er bestået, inklusive PostgreSQL. Den nye cacheisolationsrettelse har endnu ikke sin egen præcise kildekontrol. Version er fortsat 4.0.578, offentlig version 4.0.577. Cron er pauset med bevaret tidsplan. Alle fem mål er åbne med frist 18. oktober; SOURCE19 aktiveres ikke.
+
 ## 89.239 Den nye start må ikke falde tilbage i en gammel genopretningsrute
 
 **Kort fortalt:** Gammelt arkiv, databaseovergang og den nye arbejdsbaseline er faktisk verificeret. En efterfølgende ældre kalderkontrol stoppede forsøget før nye vejrdata og deploy.
@@ -7,6 +39,8 @@ Første engangskørsel bevarede og genlæste de autentificerede B/S-originaler o
 Efter baseline forsøgte den gamle 11Z-genopretningsklassifikation at læse en midlertidig metadatafil, som den nye rute ikke skal oprette. Den samme gennemgang fandt også den gamle engangs-DMI-PART-donor som forkert krav til den nye start. Kun disse to ældre specialruter udelukkes lokalt ved det eksplicitte epoch-flag. Faktiske inlinekroppe reproducerer begge fejl mod den ægte før-YAML; hele det berørte mål består derefter med syv prøver uden skip, inklusive ordinary/default/native og gamle donor-/afvisningsgrene. Normale NEW-baseline-, gemme-, no-loss-, Edge- og Pages-kontroller bevares. Den skrivefri gennemgang af hele kalderen fandt ikke flere konkrete fil-/legacy-rutehuller; den er ikke et produktionsbevis.
 
 Ingen leverandørhentning, ny scoregemning, upload eller Pages-levering blev gennemført efter dette stop. Kildekontrol, første nye generation og en almindelig efterfølger med genlæsning af den faktisk gemte nye tilstand er fortsat åbne. Et nyt forsøg skal genlæse allerede installerede databasetrin, ikke gentage et ukendt udfald. Cron forbliver pauset med samme tidsplan indtil verificeret genopretning. Version 4.0.578 er endnu ikke offentlig 4.0.577; SOURCE19 forbliver isoleret og inaktiv.
+
+Driftsmiljøet er særskilt fastlagt til Ubuntu 24.04 i 22 udvalgte job på tværs af ni workflows. GitHub har annonceret automatisk OS-skift for ubuntu-latest fra 19. oktober 2026; fastlåsningen forhindrer dette OS-major-skift, men ikke løbende pakkeopdateringer og garanterer ikke jobkapacitet. Alle andre workflowbetingelser, budgetter og kontroller bevares, herunder adskillelsen af den nye start fra de gamle genopretningsruter. Ændringen er lokal kildeklargøring på 4.0.578, ikke bevis for Linux/native, ny vejrkørsel eller offentlig levering.
 
 ## 89.238 Bevaret arkiv og ny fremadrettet historik
 
@@ -365,6 +399,10 @@ Det godkendte brugerdataforløb forsøger assistentens opdatering højst én gan
 
 
 ## 89.216 Kontrollæserne skal forstå databankens normale formater
+
+**Lokal kontrolkilde, 16. oktober 2026:** En særskilt fast konsollæser følger nu assistentens kvotefejlmarkør i `function_logs`, ikke HTTP-invokationsloggen. Den er låst til assistentruten og 15. oktober kl. 00.38.45–00.39.00 UTC, svarende til kl. 02.38.45–02.39.00 dansk tid. Kun den faste markør, tilladt HTTP-status og fem eksisterende fejlkoder eller `UNKNOWN` må returneres. Rå logtekst, request-id og brugeroplysninger vises ikke.
+
+Læsningen bevarer én GET, ti sekunders HTTP-/kropsfrist, 32 KiB, stop ved otte resultatrækker, ingen gentagelse og de normale kilde-, main- og writer-kontroller. Gamle læsere og installationer ændres ikke. Den integrerede måltest består med 34 offlineforløb og nul rigtige netværkskald. Den lokale tekstformatprøve er ikke native ClickHouse eller bevis for det faktisk hostede konsolformat. En tom eller ukendt kategori beviser ikke, at ingen fejl er registreret. Præcis CI, faktisk aflæsning og årsagsafklaring mangler fortsat; denne kildeændring løser ikke i sig selv assistentens fejl og tilføjer ingen intern diagnose til dens offentlige viden.
 
 Loglæseren og kataloglæseren får hver en lille formatrettelse. Den ene accepterer de to sikre PostgreSQL-kategorier, som den faste forespørgsel allerede selv kan danne. Den anden kan læse den normale funktionsdefinition uden et afsluttende SQL-input-semikolon. Samme dollar-tag, hele funktionskroppen, konfiguration og slutanker kontrolleres stadig; efterfølgende SQL og ændrede eller manglende beviser godkendes ikke.
 

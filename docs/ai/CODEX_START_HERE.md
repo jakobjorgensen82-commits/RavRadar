@@ -1,3 +1,33 @@
+## 16. oktober — særskilt providerfri epoch-checkpoint-genoptagelse (4.0.578)
+
+Der forberedes en særskilt, som udgangspunkt frakoblet genoptagelse af et eksakt epoch-checkpoint uden nye providerkald eller SQL-installation. Samme autentiske gamle B/S-arkiv og den allerede installerede nye databasekontrakt skal genlæses skrivefrit, før en særskilt ny arbejdsbaseline, den ægte inputvisning, baselinecapture og GCM-gendannelse bindes til checkpointets oprindelige target og aktuelle registry. Cipher og RAW skal komme fra den eksakt valgte kilde.
+
+Kun den arkividentiske gamle aktive arbejdskopi må isoleres; originaler og cipher bevares. En aktiv progresskopi kræver særskilt optagelse, og en ukendt anden aktiv kopi afvises. Almindelige standardruter, historik, kildeprioritet, budgetter og efterkontroller bevares. Den samlede normale lokale prøve består på 106,911 sekunder uden skip med syntetisk arkiv for 673 dele, normal ledger og GCM-gemning/genoptagelse gennem den normale Python-kalder ved oprindeligt target. Negative tilfælde, 180 minutters efterbehandlingsreserve og afsluttende prøver af seks faktiske filbeskrivere indgår; den friske rutes budget er uændret.
+
+Lokale prøver og fjerncachemetadata er ikke faktisk GCM-gendannelse, ny B/S, Pages eller offentlig levering. Præcis CI, hosted readiness og kontrolleret genoptagelse udestår. Version 4.0.578 og offentlig 4.0.577 er uændrede; cron er pauset, og alle fem mål er åbne med frist 18. oktober. Se håndbog 89.244; tidligere dateret tekst bevares som historik.
+
+## 16. oktober — rettet manglende ESM-forbindelse i vejrberegningen (4.0.578)
+
+Vejrkørslen stoppede 16. oktober kl. 14.41.44 dansk tid i beregningens trin 125, fordi ATOMIC_COMPONENT_TUPLE_KEYS efter moduludtræk ikke blev eksporteret og importeret af den faktiske ESM-kalder. Den lokale rettelse er alene disse to forbindelser. En ny normal ESM-regression reproducerer ReferenceError på d0 og består på rettelsen; hele det berørte mål består på 0,45 sekunder, og de 23 tidligere beståede sammensætningsprøver genbruges. Model, numerik, score, geometri og SQL er uændrede.
+
+DMI var delvis; CP og OM var gennemført før stoppet. Krypteret fremgang er gemt lokalt og registreret i fjerncachen, men er endnu ikke GCM-autentificeret ved restore. Ingen ny B/S, Pages eller offentlig generation blev leveret. Præcis CI, sikker kildelevering og produktionsvirkning udestår. Providerfri genoptagelse er en separat forberedelse, ikke del af denne rettelse. Cron er pauset; offentlig generation er fortsat fra 13. oktober/version 4.0.577. Alle fem mål er åbne til 18. oktober.
+
+Version 4.0.578 er uændret. Se håndbog 89.243. De tidligere daterede tekster bevares som historik; denne rettelse ændrer ikke øvrige leverings- eller sikkerhedskrav.
+
+## 16. oktober — isoleret gammel aktiv DMI-cache ved ny start
+
+Den normale kalder havde et betinget hul: den arkiverede aktive DMI-cache kunne blive installeret som arbejdskopi, selv om den nye start ellers holdt gammel strømtilstand adskilt. Det er kildebevist, ikke påvist som fejl i den igangværende vejrhentning. Rettelsen kræver den ægte, uigennemsigtige arkivbundne inputvisning og hele pakkens kontrolsum fra samme faktisk læste filbeskrivelse. Kun den gamle aktive arbejdskopi udelades; dens destination skal være fraværende. Intet flyttes eller slettes. Originale B/S, RAW, alle øvrige filer og normal adfærd uden denne inputvisning bevares.
+
+Én normal prøve reproducerede fejlen og består efter rettelsen på 76,9 sekunder uden skip. Første nye gemning, offentlig levering og almindelige efterfølger er ikke afprøvet. En fremadrettet rettelse reparerer ikke en allerede gemt ny B-pakke: faktisk READY, forfremmet kandidat og den strenge aktive kopi skal kontrolleres før normal genbrug. Den aktuelle vejrhentning er i DMI-fasen. PR633s præcise samlede kildekontrol er faktisk bestået, inklusive PostgreSQL. Den nye cacheisolationsrettelse ovenpå PR633 har endnu ikke sin egen præcise kildekontrol.
+
+Version 4.0.578 og offentlig 4.0.577 er uændrede. Cron er pauset; SOURCE19 aktiveres ikke. Alle fem mål er åbne med frist 18. oktober. Se håndbog 89.240; tidligere dateret tekst bevares som historik.
+
+## 16. oktober — fast runner og afgrænset assistentkontrol (4.0.578)
+
+Vejrleveringskædens 22 udvalgte runnerfelter er lokalt fastlagt til Ubuntu 24.04 uden versionsløft eller ændrede guards. Dette forhindrer det annoncerede automatiske OS-major-skift fra 19. oktober, ikke løbende pakkeopdateringer. Se CURRENT_TRUTH og håndbog 89.239; præcis CI og offentlig virkning er endnu ikke verificeret.
+
+Samme lokale kildeleverance sammensætter den allerede gennemgåede PR630-konsollæser med runnerfastlåsningen. Læseren er en særskilt, fast og skrivefri driftskontrol med normal main-, kilde- og writer-afgrænsning; den ændrer hverken offentlig assistentfunktion, viden eller vejrfunktion. De 34 tidligere beståede offlineforløb genbruges på læserens uændrede kode. PR632 er faktisk merget, og den efterfølgende epoch-kørsel er startet; udfald og ny offentlig generation er endnu ikke verificeret. Faktisk logaflæsning, AI-årsagsbevis og præcis CI for denne sammensætning er fortsat åbne. Se håndbog 89.216; runnergrænsen står i 89.239.
+
 ## 16. oktober — arkiv og database gennemført; ældre kalderrute skal holdes adskilt
 
 Den præcise PR629-kildekontrol, inklusive faktisk PostgreSQL, består. Første engangskørsel har faktisk arkiveret og genlæst de gamle B/S-originaler og seks offentlige filer samt installeret og genlæst den uændrede 230-overgang og den nye native-identitetsbinding. Den efterfølgende autentificerede NEW-arbejdsbaseline bestod også. Disse trin er nu produktionsbeviser og erstatter de ældre afventningsudsagn alene på disse punkter.

@@ -13,7 +13,7 @@ concurrency:
 jobs:
   validate:
     name: Source validation and release gate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
@@ -105,7 +105,7 @@ jobs:
           node scripts/test-protected-ravscore-continuation-checkpoint.mjs --native-statistics-revision --native-sampling-identity
 
       - name: Validate source contracts and release governance
-        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs
+        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs
 
       - name: Validate durable Copernicus current-reference baseline on artificial data only
         shell: bash

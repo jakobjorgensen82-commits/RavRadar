@@ -1,3 +1,59 @@
+## 16. oktober — PR638: sidste kapacitetsprøves præcise genoptagelsesrute
+
+Kontrol 38919405521 på 01dc bestod faktisk PostgreSQL, hele kildekontrollen og Copernicus-prøven. Den sidste DMI-kapacitetsprøve kørte alle 71 tilfælde: 70 bestod, mens ét gammelt workflow-orakel forventede fallback-udtrykket fra før den særskilte checkpoint-genoptagelse. Hele fejlloggen er bevaret privat før udvalg. Det er en kildeprøvefejl, ikke en ny fejlet vejrhentning.
+
+Opfølgningen udvider alene den normale prøve til den eksakte gennemgåede genoptagelsesrute og bevarer det gamle standard-/fresh-epoch-orakel, kandidatadskillelsen, faktisk udtryksevaluering og mutationsnegativer. Produktkode, kildeprioritet, budgetter, SQL, model og sikkerhedskrav ændres ikke. Hele den berørte normale prøve består faktisk lokalt uden skip på 0,672 sekund, og RDKS består; ny samlet kontrol på det præcise head kræves fortsat. Ingen levering eller genoptagelse er udført. Cron er pauset. Alle fem mål til 18. oktober forbliver åbne; tidligere dokumentation bevares nedenfor.
+
+## 16. oktober — PR638: fire konkrete kontrolprøver rettet
+
+Den præcise kildekontrol på ca109 fejlede i fire kontrolkommandoer, ikke i en ny vejrhentning. Tre prøver forventede den gamle grænse: fresh-only-forbuddet mod original-target-restore, den første i stedet for den normale branches DMI-assertion og de tidligere 19 workflow-inputs. De gamle orakler bevares gennem præcis projektion eller korrekt brancherækkefølge; den nye genoptagelsesgrænse har særskilte præcise kontroller og mutationsnegativer. Den fjerde prøves Linux-output gik forkert til /dev/stdout; den bruger nu sin egen fysiske outputfil som GitHub. Linux kører fortsat faktisk Bash, mens den eksplicit valgte lokale POSIX-shell ikke kaldes Linux-bevis.
+
+Alle fire berørte mål består lokalt; den normale progressprøves to eksisterende Linux-Bash-tilfælde er fortsat Windows-skippet. Langt tidligere beståede prøver gentages ikke lokalt uden grund. Ingen produktbytes, scoreformel, kildeprioritet, data, SQL, version eller håndbog ændres af denne testopfølgning. Ny præcis samlet CI, genoptagelse og offentlig effekt udestår; alle fem mål er åbne. Det fulde første fejlloggrundlag er bevaret privat.
+
+## 16. oktober — providerfri forhåndskontrol ved epoch-genoptagelse
+
+Den særskilte epoch-checkpoint-rute kunne betinget spørge DMI om modelmetadata i den lette forhåndskontrol, før den senere lukkede leverandørindgange. Ruten skal nu vælge beregning direkte, når både checkpoint-only og epoch-checkpoint-reentry er slået til. Den må ikke materialisere preflight-state eller kalde den normale DMI-probe. Almindelige kørsler, budgetter, originale data, kildeprioritet, scoreformel og alle efterdatagates bevares. Det normale mål består lokalt i sine statiske assertions; den udtrukne POSIX-guard består desuden 25 flagkombinationer i den eksisterende lokale shell. Faktisk Bash-kørsel er åbent Linux-bevis, ikke et lokalt PASS. Normal workflowrækkefølge og RDKS består. Præcis samlet CI og faktisk genoptagelse/offentlig effekt udestår; dette er ikke en ny påvist produktionsfejl eller en leveret vejrgeneration.
+
+## 16. oktober — PR637: manglende historisk testinverse
+
+PR637s præcise kildekontrol fejlede i fem mål. Den fælles årsag er en manglende kontroladapter: updaterens nye ATOMIC_COMPONENT_TUPLE_KEYS-import og shared-modulets tilsvarende eksport indgik ikke i testens historiske whole-inverse; integrated-generator bruger samme inverse. Rettelsen afgrænses til denne testadapter med alle gamle hele kildehashes og assertions bevaret. De gennemgåede produktbytes ændres ikke.
+
+De fire berørte normale indgangsmål og den normale RavScore-generatortest består nu lokalt uden skip; den første CI-fejl bevares som RED-evidens. En ny præcis CI kræves før levering. Fundet frikender ikke produktionsdata og er ikke bevis for GCM-genoptagelse, ny B/S eller offentlig levering. Version 4.0.578, model og SQL er uændrede; håndbog 89.243/89.244 og tidligere historik bevares. Alle fem mål er fortsat åbne til 18. oktober.
+
+## 16. oktober — særskilt providerfri epoch-checkpoint-genoptagelse (4.0.578)
+
+Der forberedes en særskilt, som udgangspunkt frakoblet genoptagelse af et eksakt epoch-checkpoint uden nye providerkald eller SQL-installation. Samme autentiske gamle B/S-arkiv og den allerede installerede nye databasekontrakt skal genlæses skrivefrit, før en særskilt ny arbejdsbaseline, den ægte inputvisning, baselinecapture og GCM-gendannelse bindes til checkpointets oprindelige target og aktuelle registry. Cipher og RAW skal komme fra den eksakt valgte kilde.
+
+Kun den arkividentiske gamle aktive arbejdskopi må isoleres; originaler og cipher bevares. En aktiv progresskopi kræver særskilt optagelse, og en ukendt anden aktiv kopi afvises. Almindelige standardruter, historik, kildeprioritet, budgetter og efterkontroller bevares. Den samlede normale lokale prøve består på 106,911 sekunder uden skip med syntetisk arkiv for 673 dele, normal ledger og GCM-gemning/genoptagelse gennem den normale Python-kalder ved oprindeligt target. Negative tilfælde, 180 minutters efterbehandlingsreserve og afsluttende prøver af seks faktiske filbeskrivere indgår; den friske rutes budget er uændret.
+
+Lokale prøver og fjerncachemetadata er ikke faktisk GCM-gendannelse, ny B/S, Pages eller offentlig levering. Præcis CI, hosted readiness og kontrolleret genoptagelse udestår. Version 4.0.578 og offentlig 4.0.577 er uændrede; cron er pauset, og alle fem mål er åbne med frist 18. oktober. Se håndbog 89.244; tidligere dateret tekst bevares som historik.
+
+## 16. oktober — rettet manglende ESM-forbindelse i vejrberegningen (4.0.578)
+
+Vejrkørslen stoppede 16. oktober kl. 14.41.44 dansk tid i beregningens trin 125, fordi ATOMIC_COMPONENT_TUPLE_KEYS efter moduludtræk ikke blev eksporteret og importeret af den faktiske ESM-kalder. Den lokale rettelse er alene disse to forbindelser. En ny normal ESM-regression reproducerer ReferenceError på d0 og består på rettelsen; hele det berørte mål består på 0,45 sekunder, og de 23 tidligere beståede sammensætningsprøver genbruges. Model, numerik, score, geometri og SQL er uændrede.
+
+DMI var delvis; CP og OM var gennemført før stoppet. Krypteret fremgang er gemt lokalt og registreret i fjerncachen, men er endnu ikke GCM-autentificeret ved restore. Ingen ny B/S, Pages eller offentlig generation blev leveret. Præcis CI, sikker kildelevering og produktionsvirkning udestår. Providerfri genoptagelse er en separat forberedelse, ikke del af denne rettelse. Cron er pauset; offentlig generation er fortsat fra 13. oktober/version 4.0.577. Alle fem mål er åbne til 18. oktober.
+
+Version 4.0.578 er uændret. Se håndbog 89.243. De tidligere daterede tekster bevares som historik; denne rettelse ændrer ikke øvrige leverings- eller sikkerhedskrav.
+
+## 16. oktober — isoleret gammel aktiv DMI-cache ved ny start
+
+Den normale kalder havde et betinget hul: den arkiverede aktive DMI-cache kunne blive installeret som arbejdskopi, selv om den nye start ellers holdt gammel strømtilstand adskilt. Det er kildebevist, ikke påvist som fejl i den igangværende vejrhentning. Rettelsen kræver den ægte, uigennemsigtige arkivbundne inputvisning og hele pakkens kontrolsum fra samme faktisk læste filbeskrivelse. Kun den gamle aktive arbejdskopi udelades; dens destination skal være fraværende. Intet flyttes eller slettes. Originale B/S, RAW, alle øvrige filer og normal adfærd uden denne inputvisning bevares.
+
+Én normal prøve reproducerede fejlen og består efter rettelsen på 76,9 sekunder uden skip. Første nye gemning, offentlig levering og almindelige efterfølger er ikke afprøvet. En fremadrettet rettelse reparerer ikke en allerede gemt ny B-pakke: faktisk READY, forfremmet kandidat og den strenge aktive kopi skal kontrolleres før normal genbrug. Den aktuelle vejrhentning er i DMI-fasen. PR633s præcise samlede kildekontrol er faktisk bestået, inklusive PostgreSQL. Den nye cacheisolationsrettelse ovenpå PR633 har endnu ikke sin egen præcise kildekontrol.
+
+Version 4.0.578 og offentlig 4.0.577 er uændrede. Cron er pauset; SOURCE19 aktiveres ikke. Alle fem mål er åbne med frist 18. oktober. Se håndbog 89.240; tidligere dateret tekst bevares som historik.
+
+## 16. oktober — fast runner og afgrænset assistentkontrol (4.0.578)
+
+Præcis 22 runnerfelter i ni vejr-, genopretnings-, Pages-, overvågnings- og kildekontrolworkflows er lokalt fastlagt til `ubuntu-24.04`. Fratrukket den særskilte gennemgåede PR630-læserdelta er alle øvrige workflowbytes, herunder epoch-adskillelsen fra PR632, den tidlige PostgreSQL-kontrol, budgetter og sikkerhedskrav, bevaret. Versionen er fortsat 4.0.578.
+
+Samme lokale kildeleverance sammensætter den allerede gennemgåede PR630-konsollæser med runnerfastlåsningen. Læseren er en særskilt, fast og skrivefri driftskontrol med normal main-, kilde- og writer-afgrænsning; den ændrer hverken offentlig assistentfunktion, viden eller vejrfunktion. De 34 tidligere beståede offlineforløb genbruges på læserens uændrede kode. PR632 er faktisk merget, og den efterfølgende epoch-kørsel er startet; udfald og ny offentlig generation er endnu ikke verificeret. Faktisk logaflæsning, AI-årsagsbevis og præcis CI for denne sammensætning er fortsat åbne. Se håndbog 89.216; runnergrænsen står i 89.239. Sammensætningens normale workflow- og source-once-integrationsmål består lokalt; Linux-kalderen er fortsat uprøvet på Windows.
+
+GitHub har annonceret automatisk OS-skift for `ubuntu-latest` fra 19. oktober 2026, efter arbejdsfristen 18. oktober ([officiel runnerplan](https://github.com/actions/runner-images/issues/14748)). Fastlåsningen forhindrer dette OS-major-skift, men fryser ikke pakkeopdateringer eller garanterer kapacitet.
+
+De normale reusable-workflow-, Pages/genopretnings- og watchdogmål består lokalt; watchdog har 11 prøver uden skip. Hele workflowinventar-/rækkefølgemålet består nu også sammen med syv normale epoch-prøver uden skip. De gamle testforventninger er afstemt præcist med den allerede eksisterende workflowkilde; exactset-, WRITE-/READ-, credential-, identitets- og deployguards bevares. De tidligere teststop var ikke forårsaget af runnerfelterne. RDKS, sikkerhed og håndbog består lokalt. Præcis CI, Linux/native og offentlig virkning af runnerændringen er fortsat åbne. Denne lokale kildekomposition udfører ingen vejrkørsel eller produktionsændring.
+
 ## 16. oktober — arkiv og database gennemført; ældre kalderrute skal holdes adskilt
 
 Den præcise PR629-kildekontrol, inklusive faktisk PostgreSQL, består. Første engangskørsel har faktisk arkiveret og genlæst de gamle B/S-originaler og seks offentlige filer samt installeret og genlæst den uændrede 230-overgang og den nye native-identitetsbinding. Den efterfølgende autentificerede NEW-arbejdsbaseline bestod også. Disse trin er nu produktionsbeviser og erstatter de ældre afventningsudsagn alene på disse punkter.
@@ -330,6 +386,16 @@ Den aktuelle produktions-main er fortsat `9179c261613cfadacd3da344dbdb4336d3f1f2
 Ejeren har givet to særskilte nye, endnu ubrugte engangstilladelser: det afgrænsede 003-værn i de ti eksisterende D1-databaser med den ene eksisterende Worker-opdatering gennem det kontrollerede reparationsforløb, og den præcist fastlåste skrivefri assistentloglæsning. De må først anvendes efter relevant grøn kildekontrol og faktisk writer-fri kontrol og må ikke lånes til andre handlinger. De tidligere forbrugte Supabase-/jobloglæsninger forbliver forbrugte; ingen automatisk gentagelse tillades.
 
 Denne front erstatter alene de nedenstående historiske udsagn om manglende kildekontrol og de nu givne, nye tilladelser. Hosted 003-installation, faktisk Worker-opdatering, præcis 503-årsag og fungerende ekstern AI er stadig åbne indtil de relevante normale handlinger og deres faktiske resultater foreligger. 003-schemaets kvitteringer er ikke fysisk dræning, kontosletning eller Auth-/backup-sletning. Alle fem hovedmål er fortsat åbne.
+
+## Lokal fast konsollæser til assistentens kvotekontrol — 16. oktober 2026
+
+Den nye operation `fixed-public-rate-console-read-20261015` er lokalt integreret som en særskilt skrivefri kontrol, ikke som en ændring af assistentens runtime eller viden. Den følger konsolkilden `function_logs` og kræver både den faste markør `PUBLIC_RATE_LIMIT_RPC_REJECTED` ved tekstens begyndelse og ruten `ravradar-assistant`. Den låste SQL-periode er 15. oktober kl. 00.38.45–00.39.00 UTC, med eksklusiv sluttid; API-omslutningen er kl. 00.38–00.39 UTC. Databasen må kun returnere den faste markør samt tilladt HTTP-status og en af fem eksisterende fejlkoder eller `UNKNOWN`, aldrig rå logtekst eller request-id.
+
+Én GET, ti sekunders samlet HTTP-/kropsfrist, 32 KiB, afvisning ved otte rækker, ingen argumenter og ingen gentagelse bevares. Samme første-forsøg-, præcis main-, kildebevis- og friske writer-fri kontroller gælder; installations- og reparationsveje er uændrede. De gamle læsere og intervaller bevares. PR629's tidlige PostgreSQL-kontrol står uændret før Source-trinnet, hvor den nye måltest er tilføjet.
+
+Den faktiske integrerede måltest består med 34 offlineforløb, 34 kontrollerede GET-kald og nul netværkskald. Kun måltestens to workflowlæsninger normaliserer CRLF til LF; ingen assertion lempes. Dette er ikke native ClickHouse-udførelse, hosted logformat, en gennemført Supabase-læsning, 503-årsagsbevis eller fungerende ekstern AI. Tomt resultat og ukendt format beviser ikke, at en hændelse mangler; rapporten angiver altid `recordedEventAbsenceProved=false`. Præcis CI og sikker kildelevering står åbne. Ingen version, modelbinding, SQL, vejrdata eller produktion ændres af denne lokale kontrolkilde.
+
+De to eksisterende normale kilde-/readinessprøver er desuden reproduceret med den nye femte læser. Først beviser de den præcise nye læserblok og dens routing, skrivefrihed og idle-rækkefølge; kun denne eksakte blok fjernes derefter fra den historiske prøvevisning. Alle gamle fire-/tre-/tolæserassertions bevares. Begge normale mål består lokalt efter hver sin påviste integrationsfejl. Linux-kalderen `env -u` er fortsat ikke udført på Windows; den præcise CI skal bevise den.
 
 ## Dokumenteret rettelse: logsvarets fejlfelt er valgfrit — 13. oktober 2026
 

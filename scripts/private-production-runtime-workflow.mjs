@@ -24,7 +24,7 @@ import {
   RAVSCORE_CONTINUATION_CHECKPOINT_POLICY,
 } from './ravscore-continuation-checkpoint.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
-import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE,
+import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE, PRIVATE_WEATHER_COMPONENT_FILES,
   PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
   assertPrivateRuntimeInventory, privateWeatherComponentMarker } from './lib/private-weather-component-inventory.mjs';
 import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack, privateWeatherPackJsonReadsClosed } from './lib/private-weather-component-pack.mjs';
@@ -1532,6 +1532,7 @@ export async function installRestoredPrivateRuntime({
   repositoryRoot = PRIVATE_RUNTIME_REPOSITORY_ROOT,
   renameImpl = fs.rename,
   removeImpl = fs.rm,
+  stateEpochInputView = null,
 } = {}) {
   const requestedSourceRoot = path.resolve(restoredRoot);
   const requestedRepository = path.resolve(repositoryRoot);
@@ -1567,11 +1568,28 @@ export async function installRestoredPrivateRuntime({
       conditions,
     });
   }
+  // Omit only the archived active NUMERICAL working copy during epoch install.
+  // Original pack/B/S and all other weather files remain; never move/unlink it.
+  const assertEpochActiveAbsent = async () => {
+    if (stateEpochInputView === null) return;
+    const { assertWeatherStateEpochInputView } = await import('./lib/weather-state-epoch-input-view.mjs');
+    assertWeatherStateEpochInputView(stateEpochInputView);
+    if (!hasExtension) throw new Error('WEATHER_STATE_EPOCH_ORIGINAL_PACK_REQUIRED');
+    const destination = path.resolve(repository, PRIVATE_WEATHER_COMPONENT_FILES.dmiActive);
+    await assertNoSymlinkComponents(repository, destination, 'Epoch active install path');
+    const present = await fs.lstat(destination).catch(error => {
+      if (error?.code === 'ENOENT') return null;
+      throw error;
+    });
+    if (present) throw new Error('WEATHER_STATE_EPOCH_ACTIVE_DESTINATION_EXISTS');
+  };
+  await assertEpochActiveAbsent();
   const componentStage = hasExtension ? `${sourceRoot}.weather-components-${crypto.randomUUID()}` : null;
   let componentFiles = [];
   let componentInvocation = null;
   if (hasExtension) {
-    componentInvocation = unpackPrivateWeatherComponentPack({ restoredRoot: sourceRoot, outputRoot: componentStage, conditions });
+    componentInvocation = unpackPrivateWeatherComponentPack({ restoredRoot: sourceRoot, outputRoot: componentStage, conditions,
+      ...(stateEpochInputView === null ? {} : { stateEpochInputView }) });
     try { componentFiles = await componentInvocation; }
     catch (error) {
       // Cleanup must not replace the original unpack/integrity failure.
@@ -1582,12 +1600,15 @@ export async function installRestoredPrivateRuntime({
     }
   }
 
+  const installedComponentFiles = stateEpochInputView === null ? componentFiles
+    : componentFiles.filter(row => row.relativePath !== PRIVATE_WEATHER_COMPONENT_FILES.dmiActive);
   const transactionId = `${process.pid}-${crypto.randomBytes(6).toString('hex')}`;
   const staged = [];
   let mutationStarted = false;
   let installFailed = false;
   try {
-    for (const descriptor of [...descriptors, ...componentFiles]) {
+    await assertEpochActiveAbsent();
+    for (const descriptor of [...descriptors, ...installedComponentFiles]) {
       const source = descriptor.sourcePath ?? path.resolve(sourceRoot, descriptor.relativePath);
       const destination = path.resolve(repository, descriptor.relativePath);
       if (!(inside(sourceRoot, source) || componentStage && inside(componentStage, source)) || !inside(repository, destination)) {
@@ -1614,6 +1635,7 @@ export async function installRestoredPrivateRuntime({
         installed: false,
       });
     }
+    await assertEpochActiveAbsent();
     mutationStarted = true;
     for (const row of staged) {
       if (row.destinationExisted) {
@@ -1623,6 +1645,7 @@ export async function installRestoredPrivateRuntime({
       await renameImpl(row.temporary, row.destination);
       row.installed = true;
     }
+    await assertEpochActiveAbsent();
     await Promise.all(staged.map(row => removeImpl(row.previous, { force: true }).catch(() => {})));
   } catch (error) {
     installFailed = true;
@@ -1658,7 +1681,11 @@ export async function installRestoredPrivateRuntime({
   }
   return {
     installed: true,
-    fileCount: descriptors.length + componentFiles.length,
+    fileCount: descriptors.length + installedComponentFiles.length,
+    ...(stateEpochInputView === null ? {} : {
+      stateEpochActiveOmitted: componentFiles.length !== installedComponentFiles.length,
+      stateEpochViewSha256: stateEpochInputView.viewSha256,
+    }),
     privateDataLogged: false,
   };
 }

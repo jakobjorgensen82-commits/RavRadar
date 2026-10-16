@@ -92,7 +92,7 @@ concurrency:
 jobs:
   validate-dispatch:
     name: Validate mutually exclusive manual operation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     outputs:
       force: ${{ steps.validated-dispatch.outputs.force || steps.dispatch-defaults.outputs.force }}
@@ -277,7 +277,7 @@ jobs:
     name: Check timed current-hour readiness
     needs: operational-recovery-gate
     if: ${{ !cancelled() && needs.operational-recovery-gate.result == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -319,7 +319,7 @@ jobs:
     name: Check exact-head D1 trip-storage readiness
     needs: current-hour-readiness
     if: ${{ !cancelled() && needs.current-hour-readiness.result == 'success' && needs.current-hour-readiness.outputs.ready == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -1094,7 +1094,7 @@ jobs:
       - geometry-v2-pilot
       - deploy-pages
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read

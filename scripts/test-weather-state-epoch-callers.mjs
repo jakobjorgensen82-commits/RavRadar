@@ -44,14 +44,17 @@ function evaluate(source, environment, result) {
 async function actualFixture(readSource = file => fs.readFile(file, 'utf8')) {
   const source = (await readSource(path.join(ROOT, 'scripts/test-weather-state-epoch-input-view.mjs')))
     .replace(/\r\n/g, '\n');
-  assert.equal(hash(source), '34ead6c11007d3ffd65903360097a299348a42ba2062cd778ba5467d71694484');
+  // New exact fixture identity after its additive checkpoint case and optional
+  // dynamic target time. The default OLD archive inputs/validators remain
+  // unchanged; this source pin is not reused native or production evidence.
+  assert.equal(hash(source), '4f0f04dfb9de43fdf45b828620164294b5e109d19eaa1b54c9dfac8f523aeb64');
   // Exact existing controlled fixture, not a second fixture bank or a mocked
   // archive assertion. Its genuine fixed044d OLD validators and real archive
   // capture/SAVE/readback/local-rehydrate run unchanged, including negatives.
   const helpers = section(source, 'async function syntheticNewFactory(', '// Controlled storage exercises')
-    + section(source, 'async function archivedOldView(root)', "test('a JSON archive marker");
+    + section(source, 'async function archivedOldView(root, componentFixture = null, targetAt = null)', "test('a JSON archive marker");
   return evaluate(helpers, { assert, crypto, fs, nativeFs, os, path, pathToFileURL,
-    ROOT, hash, HOUR_MS, time, vectorSelection, withIssuedAccountAssistantSource, OLD,
+    ROOT, hash, HOUR_MS, base, time, vectorSelection, withIssuedAccountAssistantSource, OLD,
     ...epoch, ...archive, dmiExpectedIdentityForPart, inspectDmiForecastGridSampling, ravScoreModelBinding },
   '({ownedTemporary,exclusiveJson,archivedOldView,syntheticNewFactory})');
 }

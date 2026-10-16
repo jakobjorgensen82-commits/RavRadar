@@ -23,6 +23,26 @@ on:
         required: false
         type: boolean
         default: false
+      weather_state_epoch_checkpoint_reentry:
+        description: 'Resume an exact archived epoch checkpoint without providers or SQL installation'
+        required: false
+        type: boolean
+        default: false
+      weather_state_epoch_archive_key:
+        description: 'Exact previously saved epoch archive ID; checkpoint reentry only'
+        required: false
+        type: string
+        default: ''
+      weather_state_epoch_archive_catalog_sha256:
+        description: 'Exact saved epoch archive catalog SHA256; checkpoint reentry only'
+        required: false
+        type: string
+        default: ''
+      weather_state_epoch_raw_cache_key:
+        description: 'Exact saved RAW cache key from the same checkpoint producer; reentry only'
+        required: false
+        type: string
+        default: ''
       native_sampling_identity_original_recovery:
         description: 'Use only the fixed authenticated I71 checkpoint and append-only native-identity recovery route'
         required: false
@@ -60,7 +80,7 @@ jobs:
   current-main-target:
     needs: operational-recovery-gate
     name: Lock one normal run to exact current main and UTC hour
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -81,6 +101,39 @@ jobs:
           test "$GITHUB_REF" = "refs/heads/main"
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Require the explicit provider-free epoch checkpoint request
+        if: inputs.weather_state_epoch_checkpoint_reentry == true
+        shell: bash
+        env:
+          RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP: 'true'
+          RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY: 'true'
+          QUICK_CONFIRMATION: ${{ inputs.quick_confirmation }}
+          QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
+          CHECKPOINT_ONLY: 'true'
+          CHECKPOINT_TARGET_HOUR: ${{ inputs.checkpoint_target_hour }}
+          RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ inputs.checkpoint_target_hour }}
+          NATIVE_IDENTITY_RECOVERY: ${{ inputs.native_sampling_identity_original_recovery }}
+          RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID: ${{ inputs.weather_state_epoch_archive_key }}
+          RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_CATALOG_SHA256: ${{ inputs.weather_state_epoch_archive_catalog_sha256 }}
+          RAVRADAR_WEATHER_STATE_EPOCH_RAW_CACHE_KEY: ${{ inputs.weather_state_epoch_raw_cache_key }}
+        run: |
+          set -euo pipefail
+          test "${{ inputs.weather_state_epoch_bootstrap }}" = false
+          node scripts/weather-state-epoch-budget.mjs checkpoint-request
+
+      - name: Reject unused epoch continuation locators
+        if: inputs.weather_state_epoch_checkpoint_reentry != true
+        shell: bash
+        env:
+          ARCHIVE_ID: ${{ inputs.weather_state_epoch_archive_key }}
+          ARCHIVE_CATALOG: ${{ inputs.weather_state_epoch_archive_catalog_sha256 }}
+          RAW_CACHE_KEY: ${{ inputs.weather_state_epoch_raw_cache_key }}
+        run: |
+          set -euo pipefail
+          test -z "$ARCHIVE_ID"
+          test -z "$ARCHIVE_CATALOG"
+          test -z "$RAW_CACHE_KEY"
 
       - name: Reject mixed epoch and continuation modes before target selection
         if: inputs.weather_state_epoch_bootstrap == true
@@ -153,7 +206,7 @@ jobs:
     name: Authenticate originals and install only the two exact recovery phases
     needs: current-main-target
     if: ${{ !cancelled() && needs.current-main-target.result == 'success' && inputs.native_sampling_identity_original_recovery == true }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -432,7 +485,7 @@ jobs:
     name: Archive authentic originals before the one-off fresh epoch
     needs: current-main-target
     if: ${{ !cancelled() && needs.current-main-target.result == 'success' && inputs.weather_state_epoch_bootstrap == true }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # First archive + serial install only; bounded, not a performance guarantee.
     timeout-minutes: 120
     permissions:
@@ -760,9 +813,11 @@ jobs:
       production_target_hour: ${{ needs.current-main-target.outputs.target_hour }}
       force: true
       extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true }}
-      weather_state_epoch_bootstrap: ${{ inputs.weather_state_epoch_bootstrap }}
-      weather_state_epoch_archive_key: ${{ needs.state-epoch-prewrite.outputs.archive_key }}
-      weather_state_epoch_archive_catalog_sha256: ${{ needs.state-epoch-prewrite.outputs.archive_catalog_sha256 }}
+      weather_state_epoch_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true || inputs.weather_state_epoch_checkpoint_reentry == true }}
+      weather_state_epoch_checkpoint_reentry: ${{ inputs.weather_state_epoch_checkpoint_reentry }}
+      weather_state_epoch_raw_cache_key: ${{ inputs.weather_state_epoch_raw_cache_key }}
+      weather_state_epoch_archive_key: ${{ inputs.weather_state_epoch_checkpoint_reentry && inputs.weather_state_epoch_archive_key || needs.state-epoch-prewrite.outputs.archive_key }}
+      weather_state_epoch_archive_catalog_sha256: ${{ inputs.weather_state_epoch_checkpoint_reentry && inputs.weather_state_epoch_archive_catalog_sha256 || needs.state-epoch-prewrite.outputs.archive_catalog_sha256 }}
       quick_confirmation: ${{ inputs.quick_confirmation }}
       quick_progress_source: ${{ inputs.quick_progress_source }}
       checkpoint_only: ${{ inputs.checkpoint_target_hour != '' }}
@@ -817,7 +872,7 @@ jobs:
     name: Require a verified current-weather deployment
     needs: [current-main-target, native-identity-prewrite, state-epoch-prewrite, build-and-prepare, deploy-pages]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -878,7 +933,7 @@ jobs:
       github.ref == 'refs/heads/main' &&
       github.actor == 'github-actions[bot]' &&
       needs.terminal-outcome.result == 'failure'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     permissions:
       actions: write

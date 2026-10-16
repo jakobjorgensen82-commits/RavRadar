@@ -458,8 +458,26 @@ async function unpackPackWithJsonReadLifetime({
   conditions,
   pythonExecutable,
   includeOperationalProgress = null,
+  stateEpochInputView = null,
 } = {}, readState) {
+  // The opaque archive-authenticated epoch view binds this optional install
+  // to the ORIGINAL pack. A JSON digest or flag is never an authority.
+  let epochPack = null;
+  if (stateEpochInputView !== null) {
+    const { assertWeatherStateEpochInputView } = await import('./weather-state-epoch-input-view.mjs');
+    const view = assertWeatherStateEpochInputView(stateEpochInputView);
+    epochPack = view.facts.originalFileDigests.find(row =>
+      row.relativePath === PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath);
+    if (!epochPack || !Number.isSafeInteger(epochPack.bytes) || epochPack.bytes < 1
+      || epochPack.bytes > MAX_PACK_BYTES || !/^[a-f0-9]{64}$/.test(epochPack.sha256)
+      || !same(privateWeatherComponentMarker(conditions),
+        privateWeatherComponentMarker(view.weatherContinuityBaseline))) {
+      fail('WEATHER_PACK_EPOCH_ORIGINAL_REQUIRED');
+    }
+  }
   const source = await checkedFile(restoredRoot, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath);
+  if (epochPack && source.bytes !== epochPack.bytes) fail('WEATHER_PACK_EPOCH_ORIGINAL_CHANGED');
+  const epochDigest = epochPack ? crypto.createHash('sha256') : null;
   const output = path.resolve(outputRoot);
   const handle = await fs.open(source.absolute, 'r');
   let inputFd;
@@ -474,6 +492,7 @@ async function unpackPackWithJsonReadLifetime({
       offset += result.bytesRead;
       position += result.bytesRead;
     }
+    epochDigest?.update(buffer);
     return buffer;
   };
   try {
@@ -540,6 +559,9 @@ async function unpackPackWithJsonReadLifetime({
       readState,
     });
     if (!same(actual, manifest)) fail('WEATHER_PACK_REFERENCE_INVENTORY_MISMATCH');
+    if (epochPack && (position !== epochPack.bytes || epochDigest.digest('hex') !== epochPack.sha256)) {
+      fail('WEATHER_PACK_EPOCH_ORIGINAL_CHANGED');
+    }
     return manifest.files.map(file => ({ ...file, sourcePath: path.join(output, file.relativePath) }));
   } catch (error) {
     unpackFailed = true;

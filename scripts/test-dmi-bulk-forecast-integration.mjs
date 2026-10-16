@@ -534,4 +534,111 @@ assert.doesNotMatch(bulk, /result\["zones"\]\s*=\s*\{[^\n]*if v\.get\("hourly"\)
 assert.match(bulk, /merge_previous\(result, previous, active_output_ids\)/,
   'stale bulkposter uden for den aktuelle registrering må ikke genindføres fra tidligere cache');
 
+
+// Exercise the producer's real ESM bindings, separately from the older combined-source probes.
+// Never paste the module-private tuple map into the updater's lexical scope: that hid a
+// production ReferenceError after the shared-record extraction.
+async function verifyActualWeatherComponentBindings(updaterSource) {
+  const updater = updaterSource.replaceAll('\r\n', '\n');
+  const importEnd = "} from './lib/private-dmi-recovery-record.mjs';\n";
+  const importEndAt = updater.indexOf(importEnd);
+  assert.ok(updater.startsWith('import {\n') && importEndAt > 0,
+    'use the actual first producer ESM import block, not a hand-built binding list');
+  const actualImport = updater.slice(0, importEndAt + importEnd.length);
+  const moduleUrl = new URL('./lib/private-dmi-recovery-record.mjs', import.meta.url);
+  const resolvedImport = actualImport.replace(
+    "from './lib/private-dmi-recovery-record.mjs'",
+    'from ' + JSON.stringify(moduleUrl.href),
+  );
+  assert.notEqual(resolvedImport, actualImport, 'only the relative module specifier is resolved');
+  function actualFunction(name, nextName) {
+    const start = updater.indexOf('function ' + name + '(');
+    const end = updater.indexOf('function ' + nextName + '(', start);
+    assert.ok(start > importEndAt && end > start, 'the complete actual function must exist: ' + name);
+    assert.equal(updater.indexOf('function ' + name + '(', start + 1), -1,
+      'the actual producer function must be unambiguous: ' + name);
+    return updater.slice(start, end);
+  }
+  const actualModule = resolvedImport
+    + actualFunction('componentSource', 'componentHasValue')
+    + actualFunction('componentRowHasValue', 'sourceForComponent')
+    + actualFunction('mergeDmiWithFallback', 'componentForecastHorizonHours')
+    + '\nexport { componentRowHasValue, mergeDmiWithFallback };\n';
+  const realBindings = await import('data:text/javascript;base64,'
+    + Buffer.from(actualModule).toString('base64'));
+  const completeRows = {
+    wind: { windSpeedMps: 4, windDirectionDeg: 90 },
+    wave: { waveHeightM: 1, wavePeriodS: 6, waveDirectionDeg: 180 },
+    current: { currentSpeedMps: 0.5, currentDirectionDeg: 45 },
+    waterLevel: { waterLevelCm: 0 },
+    waterTemperature: { waterTemperatureC: 0 },
+  };
+  const { ATOMIC_COMPONENT_TUPLE_KEYS: actualMap } = await import(moduleUrl.href);
+  // Call first: the genuine old import must fail here with ReferenceError, rather
+  // than being rescued by the old test's concatenated module-private declaration.
+  assert.equal(realBindings.componentRowHasValue(completeRows.wind, 'wind'), true);
+  assert.deepEqual(actualMap, {
+    wind: ['windSpeedMps', 'windDirectionDeg'],
+    wave: ['waveHeightM', 'wavePeriodS', 'waveDirectionDeg'],
+    current: ['currentSpeedMps', 'currentDirectionDeg'],
+    waterLevel: ['waterLevelCm'],
+    waterTemperature: ['waterTemperatureC'],
+  }, 'the producer imports the actual central tuple map');
+  assert.equal(Object.isFrozen(actualMap), true);
+  for (const [component, row] of Object.entries(completeRows)) {
+    assert.equal(Object.isFrozen(actualMap[component]), true);
+    assert.equal(realBindings.componentRowHasValue(row, component), true, component + ': complete');
+    assert.equal(realBindings.componentRowHasValue({}, component), false, component + ': absent');
+    assert.equal(realBindings.componentRowHasValue(null, component), false, component + ': null');
+    for (const key of actualMap[component]) {
+      assert.equal(realBindings.componentRowHasValue({ ...row, [key]: null }, component), false,
+        component + ': no partial tuple for ' + key);
+      assert.equal(realBindings.componentRowHasValue({ ...row, [key]: true }, component), false,
+        component + ': no boolean tuple value for ' + key);
+    }
+  }
+  assert.equal(realBindings.componentRowHasValue({ waveHeightM: 0, wavePeriodS: 0,
+    waveDirectionDeg: null }, 'wave'), true, 'the existing zero-wave rule remains unchanged');
+  assert.equal(realBindings.componentRowHasValue({ currentUMps: 0.3, currentVMps: 0.4 }, 'current'),
+    true, 'a complete actual vector is evaluated by the normal imported tuple helper');
+  assert.equal(realBindings.componentRowHasValue({ currentUMps: 0.3, currentVMps: null,
+    currentSpeedMps: 0.5, currentDirectionDeg: 45 }, 'current'), false,
+  'a partial raw vector cannot be rescued by derived fields');
+  assert.equal(realBindings.componentRowHasValue({}, 'unknown'), false);
+  assert.equal(realBindings.componentRowHasValue({ waterTemperatureC: 9 }, 'unknown'), true,
+    'preserve the existing non-atomic branch rather than silently changing its policy');
+
+  const generatedAt = '2026-10-16T12:00:00.000Z';
+  const primary = { provider: 'dmi', generatedAt, current: {
+    windSpeedMps: 4, windDirectionDeg: 90, waveHeightM: 1,
+    currentUMps: 0.3, currentVMps: null, currentSpeedMps: 99, currentDirectionDeg: 99,
+  } };
+  const fallback = { provider: 'fallback', generatedAt, current: {
+    windSpeedMps: 8, windDirectionDeg: 270,
+    waveHeightM: 2, wavePeriodS: 7, waveDirectionDeg: 200,
+    currentUMps: 0.3, currentVMps: 0.4,
+    waterLevelCm: 20, waterLevelTrendCm3h: 3, waterTemperatureC: 8,
+  } };
+  const before = JSON.stringify({ primary, fallback });
+  const merged = realBindings.mergeDmiWithFallback(primary, fallback, generatedAt);
+  assert.equal(merged.current.windSpeedMps, 4);
+  assert.equal(merged.sources.wind.provider, 'dmi');
+  assert.deepEqual([merged.current.waveHeightM, merged.current.wavePeriodS,
+    merged.current.waveDirectionDeg], [2, 7, 200], 'fallback wave is one complete tuple');
+  assert.equal(merged.sources.wave.provider, 'fallback');
+  assert.deepEqual([merged.current.currentUMps, merged.current.currentVMps,
+    merged.current.currentSpeedMps, merged.current.currentDirectionDeg], [0.3, 0.4, 0.5, 37],
+  'actual merge retains the selected complete raw vector and derives its fields together');
+  assert.equal(merged.sources.current.provider, 'fallback');
+  assert.equal(merged.current.waterLevelCm, null, 'the normal no-fallback water-level rule stays hard');
+  assert.equal(merged.current.waterLevelTrendCm3h, null);
+  assert.equal(merged.sources.waterLevel.provider, 'missing');
+  assert.equal(merged.current.waterTemperatureC, 8);
+  assert.equal(merged.sources.waterTemperature.provider, 'fallback');
+  assert.equal(JSON.stringify({ primary, fallback }), before, 'this pure caller does not mutate its inputs');
+  assert.equal(realBindings.mergeDmiWithFallback(primary, null, generatedAt), primary);
+}
+
+await verifyActualWeatherComponentBindings(source);
+
 console.log('DMI bulk → forecast integration regression test passed.');

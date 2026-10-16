@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import vm from 'node:vm';
+import { exactPagesAttemptStep } from './github-pages-attempt-evidence.mjs';
 import './test-weather-source-gate.mjs';
+import './test-weather-state-epoch-workflow.mjs';
 import {
   PRODUCTION_WORKFLOW_SOURCES,
   readProductionWorkflowSources,
@@ -86,7 +89,7 @@ productionWorkflowNames.add('run-current-weather-once.yml');
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'audit-native-current-grid.yml', 'audit-saved-weather-inputs.yml', 'audit-sealed-current-source.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'notify-weather-failure.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'recover-sealed-weather-36396834072.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml', 'watch-missed-weather-schedule.yml'];
+const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'audit-native-current-grid.yml', 'audit-saved-weather-inputs.yml', 'audit-sealed-current-source.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'notify-weather-failure.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'recover-saved-dmi-originals.yml', 'recover-sealed-weather-36396834072.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml', 'watch-missed-weather-schedule.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
@@ -145,7 +148,7 @@ for (const marker of [
   'test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"',
   'uses: ./.github/workflows/reusable-weather-build.yml',
   'force: true',
-  'extended_provider_bootstrap: false',
+  'extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true }}',
   'uses: ./.github/workflows/reusable-pages-deploy.yml',
   'node scripts/lib/verified-weather-deployment-terminal.mjs',
   'PAGES_ARTIFACT_SEAL_OUTCOME:',
@@ -154,6 +157,13 @@ for (const marker of [
   manualCurrentWeatherWorkflow.includes(marker),
   `Den afgrænsede normale vejrindgang mangler ${marker}.`,
 );
+const epochProviderExpression = manualCurrentWeatherWorkflow.match(/^      extended_provider_bootstrap: \$\{\{ (.+) \}\}$/m)?.[1];
+assert.equal(epochProviderExpression, 'inputs.weather_state_epoch_bootstrap == true');
+for (const [inputs, expected] of [[{}, false], [{ weather_state_epoch_bootstrap: false }, false],
+  [{ weather_state_epoch_bootstrap: true }, true]]) {
+  assert.equal(vm.runInNewContext(epochProviderExpression, { inputs }), expected,
+    'Only the explicit epoch request may select the existing extended provider budget.');
+}
 for (const forbidden of [
   '  schedule:',
   'update-and-deploy.yml/dispatches',
@@ -228,6 +238,7 @@ for (const workflowName of sourceGateWorkflowNames) {
         'name: Validate isolated acquisition ownership and raw-save cohort',
         'name: Restore Node22 for existing source validation',
         'name: Validate bounded native current diagnosis on artificial data only',
+        'name: Validate native PostgreSQL checkpoint CAS on artificial data only',
       ], 'Only the exact ordered PR source-only steps may intervene; no unknown step');
       assert.doesNotMatch(intervening, /^\s+(?:if|continue-on-error):/m,
         'The PR ownership/native prefix must run unconditionally and fail closed');
@@ -366,6 +377,7 @@ const prGateOrder = [
   'name: Validate isolated acquisition ownership and raw-save cohort',
   'name: Restore Node22 for existing source validation',
   'name: Validate bounded native current diagnosis on artificial data only',
+  'name: Validate native PostgreSQL checkpoint CAS on artificial data only',
   'name: Validate source contracts and release governance',
   'name: Require validated source tree to remain unchanged',
   'name: Upload tree-content source validation proof',
@@ -1772,13 +1784,19 @@ for (const marker of [
 const currentDmiProducer = text.slice(positions.dmiBulk, positions.dmiGribSave);
 for (const marker of [
   'id: dmi-bulk',
-  'continue-on-error: true',
+  'continue-on-error: ${{ inputs.checkpoint_only != true }}',
   'DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json',
   'DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json',
   'DMI_BULK_PREFER_OUTPUT_CACHE: true',
   'DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false',
-  'DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json',
+  "DMI_BULK_DEPLOYED_FALLBACK_PATH: ${{ inputs.weather_state_epoch_checkpoint_reentry && '.cache/dmi-candidate-progress.json' || inputs.weather_state_epoch_bootstrap && format('{0}/ravradar-weather-state-epoch-{1}-{2}/empty-dmi-candidate.json', runner.temp, github.run_id, github.run_attempt) || '.cache/dmi-active-complete.json' }}",
 ]) assert.ok(currentDmiProducer.includes(marker), `Normal DMI-producent mangler ${marker}`);
+const dmiContinueExpression = currentDmiProducer.match(/^        continue-on-error: \$\{\{ (.+) \}\}$/m)?.[1];
+assert.equal(dmiContinueExpression, 'inputs.checkpoint_only != true');
+for (const [checkpointOnly, expected] of [[false, true], [true, false]]) {
+  assert.equal(vm.runInNewContext(dmiContinueExpression, { inputs: { checkpoint_only: checkpointOnly } }), expected,
+    'Ordinary DMI preserves progress after failure; checkpoint-only DMI must fail closed.');
+}
 const currentDmiRestore = text.slice(positions.dmiActiveRestore, positions.dmiActiveMaterialize);
 for (const marker of [
   'id: dmi-active-restore',
@@ -2110,8 +2128,8 @@ function assertTripStorageSourceValidation(workflow) {
   assert.ok(jobsStart >= 0, 'Turlager-workflowet skal have en eksplicit jobs-sektion.');
   const headers = [...workflow.slice(jobsStart).matchAll(/^  ([A-Za-z_][A-Za-z0-9_-]*):[ \t]*$/gm)];
   assert.deepEqual(headers.map((match) => match[1]).sort(),
-    ['deploy-trip-storage', 'reject-unknown-operation', 'repair-existing-worker'],
-    'Turlager-workflowet må kun have de to kendte WRITE-jobs og det afvisende job.');
+    ['deploy-trip-storage', 'read-fixed-supabase-metadata', 'reject-unknown-operation', 'repair-existing-worker'],
+    'Turlager-workflowet må kun have de to kendte WRITE-jobs, den faste READ-only-læser og det afvisende job.');
   const jobs = new Map(headers.map((match, index) => [match[1], workflow.slice(
     jobsStart + match.index, index + 1 < headers.length ? jobsStart + headers[index + 1].index : workflow.length,
   )]));
@@ -2119,12 +2137,23 @@ function assertTripStorageSourceValidation(workflow) {
   assert.equal(workflow.split(fetchCommand).length - 1, 2,
     'Præcis de to kendte WRITE-jobs må hver hente én pinned sourcecommit.');
   assert.match(jobs.get('reject-unknown-operation'), /^      - run: exit 1$/m);
+  const fixedReadJob = jobs.get('read-fixed-supabase-metadata');
+  assert.doesNotMatch(fixedReadJob, /SUPABASE_DB_PASSWORD|db push|functions deploy|wrangler|pages: write|upload-artifact/);
+  for (const marker of ['test "$GITHUB_RUN_ATTEMPT" = 1',
+    'test "${{ steps.fixed_read_source.outputs.required }}" = false',
+    'node scripts/check-fixed-supabase-account-read-idle.mjs',
+    'run: node scripts/read-typed-trip-catalog.mjs',
+    'run: node scripts/read-fixed-public-rate-log-20261012.mjs',
+    'run: node scripts/read-fixed-public-rate-log-20261013.mjs',
+    'run: node scripts/read-fixed-storage-upload-log-20261013.mjs']) {
+    assert.ok(fixedReadJob.includes(marker), `Den faste READ-only-læser mangler ${marker}`);
+  }
   for (const jobName of ['deploy-trip-storage', 'repair-existing-worker']) {
     const job = jobs.get(jobName);
     const proofName = 'name: Verify exact-content source validation with GitHub';
     const proofCommand = 'run: node scripts/weather-source-gate.mjs check';
     const gateName = 'name: Validate exact source head before external writes';
-    const gateCommand = 'run: npm run validate:source';
+    const gateCommand = 'run: env -u SUPABASE_ACCESS_TOKEN npm run validate:source';
     for (const marker of [proofName, proofCommand, fetchCommand, gateName, gateCommand]) {
       assert.equal(job.split(marker).length - 1, 1, `${jobName} skal have præcis én ${marker}`);
     }
@@ -2152,11 +2181,15 @@ function assertTripStorageSourceValidation(workflow) {
   return jobs;
 }
 const tripSourceJobs = assertTripStorageSourceValidation(tripStorageDeployment);
+assert.throws(() => assertTripStorageSourceValidation(tripStorageDeployment.replace(
+  tripSourceJobs.get('read-fixed-supabase-metadata'),
+  tripSourceJobs.get('read-fixed-supabase-metadata') + '\n      - run: supabase db push\n',
+)), undefined, 'Den faste metadata-læser må ikke udvides med en SQL-write.');
 for (const jobName of ['deploy-trip-storage', 'repair-existing-worker']) {
   const job = tripSourceJobs.get(jobName);
   const fetchCommand = 'git fetch --no-tags --depth=1 origin "$legacy_source_head"';
   const proofCommand = 'run: node scripts/weather-source-gate.mjs check';
-  const gateCommand = 'run: npm run validate:source';
+  const gateCommand = 'run: env -u SUPABASE_ACCESS_TOKEN npm run validate:source';
   const mutateJob = (changed) => tripStorageDeployment.replace(job, changed);
   assert.throws(() => assertTripStorageSourceValidation(mutateJob(job.replace(fetchCommand, `${fetchCommand}\n          ${fetchCommand}`))),
     undefined, `${jobName}: en ekstra fetch skal afvises.`);
@@ -2199,9 +2232,35 @@ if (JSON.stringify(supabasePatConsumers) !== JSON.stringify([
   'apply-weather-model-binding-only.yml',
   'deploy-code-only-repair.yml',
   'deploy-trip-storage.yml',
+  'reusable-operational-reentry.yml',
+  'reusable-weather-build.yml',
+  'run-current-weather-once.yml',
+  'update-and-deploy.yml',
 ])) {
-  throw new Error(`Supabase-PAT må kun bruges af de tre manuelt aktiverede database-deployments, ikke af normal drift eller overvågning: ${supabasePatConsumers.join(', ') || '(ingen)'}`);
+  throw new Error(`Supabase-PAT må kun findes i de faste database-, originalinstallations- og Edge-kaldere: ${supabasePatConsumers.join(', ') || '(ingen)'}`);
 }
+// Current scoped consumers supersede the old three-workflow inventory; this
+// does not grant PAT to ordinary acquisition steps or monitoring workflows.
+const buildPatSteps = buildWorkflow.split('\n      - ').slice(1)
+  .filter(block => /^          SUPABASE_ACCESS_TOKEN:/m.test(block));
+assert.deepEqual(buildPatSteps.map(block => block.split('\n')[0]), [
+  'name: Authenticate originals and install the native identity working continuation',
+  'name: Authenticate the epoch archive and install only its verified NEW working baseline',
+  'name: Deploy the three exact current-grid Edges only after new-generation gates',
+]);
+for (const [index, condition] of [
+  "inputs.native_sampling_identity_original_recovery == true",
+  "inputs.weather_state_epoch_bootstrap == true",
+  "steps.current-grid-edge-route.outputs.required == 'true'",
+].entries()) {
+  assert.equal(buildPatSteps[index].match(/^        if: (.+)$/m)?.[1],
+    "steps.preflight.outputs.should_run == 'true' && " + condition);
+  assert.doesNotMatch(buildPatSteps[index], /continue-on-error:|SUPABASE_DB_PASSWORD/);
+}
+assert.deepEqual(recoveryWorkflow.split('\n      - ').slice(1)
+  .filter(block => /^          SUPABASE_ACCESS_TOKEN:/m.test(block))
+  .map(block => block.split('\n')[0]),
+['name: Resume only the three fixed Edges while the exact target remains owned']);
 if (tripStorageDeployment.includes('storage_mode:')
   || tripStorageDeployment.includes('inputs.storage_mode')
   || tripStorageDeployment.includes('kontrolleret Supabase-rollback')) {
@@ -2665,7 +2724,7 @@ for (const marker of [
   'path: .cache/ravscore-continuation-checkpoint',
   'ravscore-continuation-schema6-v2-',
   "if: steps.preflight.outputs.should_run == 'true'",
-  "if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''",
+  "if: steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == '' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'",
   'node scripts/protected-ravscore-continuation-checkpoint.mjs',
   '--restore',
   '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
@@ -2840,8 +2899,9 @@ for (const forbidden of [
 ]) {
   assert.ok(!publicAuditBlock.includes(forbidden), `First-cutover må ikke gentage den brede kontrol: ${forbidden}`);
 }
-assert.ok(buildWorkflow.includes('timeout-minutes: ${{ inputs.extended_provider_bootstrap && 240 || 230 }}'),
-  'Normal vejrkørsel skal rumme leverandører, central cache og efterfølgende kontroller; providerbootstrap har fortsat sit særskilte loft');
+const expectedBuildTimeoutContract = '${{ inputs.weather_state_epoch_bootstrap && 360 || inputs.extended_provider_bootstrap && 240 || 230 }}';
+assert.ok(buildWorkflow.includes('timeout-minutes: ' + expectedBuildTimeoutContract),
+  'Normal/extended beholder 230/240 minutter; kun den særskilte epoch har 360 minutter og sin målte reserve');
 assert.equal((buildWorkflow.match(/\.rollback\.activationReady \| select\(type == "boolean"\) \| tostring/g) || []).length, 2,
   'Begge boolske rollbackudtræk skal acceptere både true og false uden at acceptere forkert type');
 for (const marker of [
@@ -2997,11 +3057,20 @@ if (!(candidateRefreshBegin >= 0 && candidateRefreshBegin < pagesDeploy
 }
 const candidateRefreshBeginBlock = deployWorkflow.slice(candidateRefreshBegin,
   deployWorkflow.indexOf('\n      - name:', candidateRefreshBegin + 1));
+const deploymentIdExpression = "inputs.pre_activation_recovery && format('pages-recovery-{0}-{1}', github.run_id, github.run_attempt) || format('pages-{0}-{1}', github.run_id, github.run_attempt)";
+const deploymentIdMarker = '--deployment-id "${{ ' + deploymentIdExpression + ' }}"';
+for (const [inputs, expected] of [[{}, 'pages-123-1'], [{ pre_activation_recovery: false }, 'pages-123-1'],
+  [{ pre_activation_recovery: true }, 'pages-recovery-123-1']]) {
+  assert.equal(vm.runInNewContext(deploymentIdExpression, {
+    inputs, github: { run_id: 123, run_attempt: 1 },
+    format: (template, ...values) => template.replace(/\{(\d+)\}/g, (_match, index) => String(values[index])),
+  }), expected, 'Ordinary deployment identity is unchanged; only owned pre-activation recovery has its separate namespace.');
+}
 for (const marker of [
   'ravscore-operational-activation.mjs refresh-begin',
   '--source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"',
   '--source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"',
-  '--deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"',
+  deploymentIdMarker,
 ]) {
   if (!candidateRefreshBeginBlock.includes(marker)) throw new Error(`Candidate G refresh-begin mangler ${marker}`);
 }
@@ -3018,7 +3087,7 @@ for (const marker of [
   '--source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"',
   '--source-attestation "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-attestation.json"',
   '--source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"',
-  '--deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"',
+  deploymentIdMarker,
 ]) {
   if (!legacyRefreshBeginBlock.includes(marker)) throw new Error(`Legacy Candidate G refresh-begin mangler ${marker}`);
 }
@@ -3027,7 +3096,7 @@ const legacyRefreshCompleteBlock = deployWorkflow.slice(legacyRefreshComplete,
 for (const marker of [
   'ravscore-operational-activation.mjs legacy-refresh-complete',
   '--verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json"',
-  '--deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"',
+  deploymentIdMarker,
 ]) {
   if (!legacyRefreshCompleteBlock.includes(marker)) throw new Error(`Legacy Candidate G refresh-complete mangler ${marker}`);
 }
@@ -3415,12 +3484,26 @@ for (const marker of [
   'Number(job.run_id) === Number(runId)',
   'Number(job.run_attempt) === Number(runAttempt)',
   'job.head_sha === headSha',
-  "job.name === 'Deploy prepared Pages artifact'",
-  "job.name?.endsWith(' / Deploy prepared Pages artifact')",
+  "const jobName = recovery ? 'Deploy exact pre-activation Pages artifact' : 'Deploy prepared Pages artifact'",
+  "job.name === jobName",
+  "job.name?.endsWith(' / ' + jobName)",
   'selected.length !== 1',
   "step.name === 'Deploy to GitHub Pages'",
   'steps.length !== 1',
 ]) assert.ok(pagesAttemptEvidence.includes(marker), `Exact-run Pages-evidens mangler ${marker}`);
+for (const [attemptId, name, otherName] of [
+  ['pages-123-1', 'Deploy prepared Pages artifact', 'Deploy exact pre-activation Pages artifact'],
+  ['pages-recovery-123-1', 'Deploy exact pre-activation Pages artifact', 'Deploy prepared Pages artifact'],
+]) {
+  const identity = { runId: 123, runAttempt: 1, headSha: 'a'.repeat(40), attemptId };
+  const job = { run_id: 123, run_attempt: 1, head_sha: identity.headSha, name,
+    steps: [{ name: 'Deploy to GitHub Pages', conclusion: 'success' }] };
+  assert.equal(exactPagesAttemptStep([job], identity), 'success');
+  for (const changed of [{ name: otherName }, { run_id: 124 }, { run_attempt: 2 }, { head_sha: 'b'.repeat(40) }])
+    assert.throws(() => exactPagesAttemptStep([{ ...job, ...changed }], identity));
+  assert.throws(() => exactPagesAttemptStep([job, job], identity));
+  assert.throws(() => exactPagesAttemptStep([job], { ...identity, attemptId: 'unknown-123-1' }));
+}
 for (const marker of [
   'if [ "$(jq -r \'.requestedModel\' "$RAVRADAR_OPERATIONAL_WORK/current.json")" = "integrated" ]; then',
   'completion_args+=(--plan "$RAVRADAR_OPERATIONAL_WORK/handoff/plan.json")',
@@ -3959,7 +4042,6 @@ if (continuityPosition < buildWorkflow.indexOf('name: Rebuild deterministic publ
   throw new Error('Public valid-to-missing continuity must run before private publication and Pages.');
 }
 const buildTimeoutContract = buildSection.match(/^    timeout-minutes: (.+)$/m)?.[1];
-const expectedBuildTimeoutContract = '${{ inputs.extended_provider_bootstrap && 240 || 230 }}';
 const buildTimeoutMinutes = buildTimeoutContract === expectedBuildTimeoutContract
   ? 230 : Number(buildTimeoutContract);
 const dmiBulkEnd = buildWorkflow.indexOf('\n      - name:', positions.dmiBulk + 1);
@@ -4144,8 +4226,9 @@ for (const marker of [
   'checkpoint_build_outcome: ${{ steps.checkpoint-build.outcome }}',
   'checkpoint_save_outcome: ${{ steps.checkpoint-save.outcome }}',
   'checkpoint_publish_outcome: ${{ steps.checkpoint-publish.outcome }}',
-  'pages_configure_outcome: ${{ steps.pages-configure.outcome }}',
-  'pages_upload_outcome: ${{ steps.pages-upload.outcome }}',
+  "pages_configure_outcome: ${{ steps.current-grid-edge-route.outputs.required == 'true' && steps.current-grid-pages-configure.outcome || steps.pages-configure.outcome }}",
+  "pages_upload_outcome: ${{ steps.current-grid-edge-route.outputs.required == 'true' && steps.current-grid-pages-upload.outcome || steps.pages-upload.outcome }}",
+  "pages_artifact_seal_outcome: ${{ steps.current-grid-edge-route.outputs.required == 'true' && steps.current-grid-pages-artifact-seal.outcome || steps.pages-artifact-seal.outcome }}",
   'artifact_built: ${{ steps.pages-build.outputs.built }}',
   'id: full-validation',
   'id: release-gate',
