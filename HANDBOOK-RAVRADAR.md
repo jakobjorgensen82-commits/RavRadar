@@ -1,3 +1,13 @@
+## 89.243 Manglende modulforbindelse stoppede vejrberegningen
+
+**Kort fortalt:** En lokal eksport/import-rettelse forbinder den faktiske beregning med dens fælles konstant. Gemte fremskridt er ikke det samme som en ny offentlig generation.
+
+Vejrkørslen stoppede 16. oktober kl. 14.41.44 dansk tid i beregningens trin 125, fordi ATOMIC_COMPONENT_TUPLE_KEYS efter moduludtræk ikke blev eksporteret og importeret af den faktiske ESM-kalder. Den lokale rettelse er alene disse to forbindelser. En ny normal ESM-regression reproducerer ReferenceError på d0 og består på rettelsen; hele det berørte mål består på 0,45 sekunder, og de 23 tidligere beståede sammensætningsprøver genbruges. Model, numerik, score, geometri og SQL er uændrede.
+
+DMI var delvis; CP og OM var gennemført før stoppet. Krypteret fremgang er gemt lokalt og registreret i fjerncachen, men er endnu ikke GCM-autentificeret ved restore. Ingen ny B/S, Pages eller offentlig generation blev leveret. Præcis CI, sikker kildelevering og produktionsvirkning udestår. Providerfri genoptagelse er en separat forberedelse, ikke del af denne rettelse. Cron er pauset; offentlig generation er fortsat fra 13. oktober/version 4.0.577. Alle fem mål er åbne til 18. oktober.
+
+Version 4.0.578 er uændret. Tidligere daterede afsnit bevares som historik; øvrige leverings- og sikkerhedskrav består.
+
 ## 89.240 Gammel aktiv DMI-cache holdes ude af den nye start
 
 **Kort fortalt:** Den nye start skal holde den gamle aktive DMI-cache ude af beregningens arbejdskopi, mens arkivet og originale vejrdata bevares.

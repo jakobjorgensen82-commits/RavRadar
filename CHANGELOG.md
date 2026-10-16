@@ -1,3 +1,11 @@
+## 16. oktober — rettet manglende ESM-forbindelse i vejrberegningen (4.0.578)
+
+Vejrkørslen stoppede 16. oktober kl. 14.41.44 dansk tid i beregningens trin 125, fordi ATOMIC_COMPONENT_TUPLE_KEYS efter moduludtræk ikke blev eksporteret og importeret af den faktiske ESM-kalder. Den lokale rettelse er alene disse to forbindelser. En ny normal ESM-regression reproducerer ReferenceError på d0 og består på rettelsen; hele det berørte mål består på 0,45 sekunder, og de 23 tidligere beståede sammensætningsprøver genbruges. Model, numerik, score, geometri og SQL er uændrede.
+
+DMI var delvis; CP og OM var gennemført før stoppet. Krypteret fremgang er gemt lokalt og registreret i fjerncachen, men er endnu ikke GCM-autentificeret ved restore. Ingen ny B/S, Pages eller offentlig generation blev leveret. Præcis CI, sikker kildelevering og produktionsvirkning udestår. Providerfri genoptagelse er en separat forberedelse, ikke del af denne rettelse. Cron er pauset; offentlig generation er fortsat fra 13. oktober/version 4.0.577. Alle fem mål er åbne til 18. oktober.
+
+Version 4.0.578 er uændret. Se håndbog 89.243. De tidligere daterede tekster bevares som historik; denne rettelse ændrer ikke øvrige leverings- eller sikkerhedskrav.
+
 ## 16. oktober — isoleret gammel aktiv DMI-cache ved ny start
 
 Den normale kalder havde et betinget hul: den arkiverede aktive DMI-cache kunne blive installeret som arbejdskopi, selv om den nye start ellers holdt gammel strømtilstand adskilt. Det er kildebevist, ikke påvist som fejl i den igangværende vejrhentning. Rettelsen kræver den ægte, uigennemsigtige arkivbundne inputvisning og hele pakkens kontrolsum fra samme faktisk læste filbeskrivelse. Kun den gamle aktive arbejdskopi udelades; dens destination skal være fraværende. Intet flyttes eller slettes. Originale B/S, RAW, alle øvrige filer og normal adfærd uden denne inputvisning bevares.
