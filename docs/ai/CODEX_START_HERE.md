@@ -1,3 +1,11 @@
+## 16. oktober — isoleret gammel aktiv DMI-cache ved ny start
+
+Den normale kalder havde et betinget hul: den arkiverede aktive DMI-cache kunne blive installeret som arbejdskopi, selv om den nye start ellers holdt gammel strømtilstand adskilt. Det er kildebevist, ikke påvist som fejl i den igangværende vejrhentning. Rettelsen kræver den ægte, uigennemsigtige arkivbundne inputvisning og hele pakkens kontrolsum fra samme faktisk læste filbeskrivelse. Kun den gamle aktive arbejdskopi udelades; dens destination skal være fraværende. Intet flyttes eller slettes. Originale B/S, RAW, alle øvrige filer og normal adfærd uden denne inputvisning bevares.
+
+Én normal prøve reproducerede fejlen og består efter rettelsen på 76,9 sekunder uden skip. Første nye gemning, offentlig levering og almindelige efterfølger er ikke afprøvet. En fremadrettet rettelse reparerer ikke en allerede gemt ny B-pakke: faktisk READY, forfremmet kandidat og den strenge aktive kopi skal kontrolleres før normal genbrug. Den aktuelle vejrhentning er i DMI-fasen. PR633s præcise samlede kildekontrol er faktisk bestået, inklusive PostgreSQL. Den nye cacheisolationsrettelse ovenpå PR633 har endnu ikke sin egen præcise kildekontrol.
+
+Version 4.0.578 og offentlig 4.0.577 er uændrede. Cron er pauset; SOURCE19 aktiveres ikke. Alle fem mål er åbne med frist 18. oktober. Se håndbog 89.240; tidligere dateret tekst bevares som historik.
+
 ## 16. oktober — fast runner og afgrænset assistentkontrol (4.0.578)
 
 Vejrleveringskædens 22 udvalgte runnerfelter er lokalt fastlagt til Ubuntu 24.04 uden versionsløft eller ændrede guards. Dette forhindrer det annoncerede automatiske OS-major-skift fra 19. oktober, ikke løbende pakkeopdateringer. Se CURRENT_TRUTH og håndbog 89.239; præcis CI og offentlig virkning er endnu ikke verificeret.

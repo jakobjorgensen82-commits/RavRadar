@@ -403,14 +403,15 @@ async function installEpoch(old, clients, files, original) {
   const staging = await phase('STAGING', () => rebindNativeIdentityStagingWorkingCopy({ sourceRoot: baseline.repositoryRoot,
     outputRoot: stagingRoot, privateRoot: files.root, adminRoot: ROOT }));
   assert.equal(staging.admission, 'NO_ADMISSION'); assert.equal(staging.originalsUnchanged, true);
-  const installed = await phase('NORMAL_INSTALL', () => installRestoredPrivateRuntime({ restoredRoot: workingRoot, repositoryRoot: ROOT }));
+  const registry = await json(path.join(ROOT, 'data/live/coastal-parts-v2.json'), 32 * 1024 * 1024);
+  const view = await createWeatherStateEpochInputView({ archive, registry, targetReferenceAt: files.targetReferenceAt });
+  const installed = await phase('NORMAL_INSTALL', () => installRestoredPrivateRuntime({
+    restoredRoot: workingRoot, repositoryRoot: ROOT, stateEpochInputView: view }));
   assert.equal(installed.installed, true); await phase('STAGING', () => installComponents(ROOT, staging.files));
   for (const row of staging.files) same(await measured(path.join(ROOT, row.relativePath), row.bytes), { bytes: row.bytes, sha256: row.sha256 });
   const capture = await phase('CAPTURE_BASE', () => weatherComponentProgressCache({ mode: 'capture-base', repositoryRoot: ROOT,
     basePath: files.baselinePath, protectedBundleSha256: original.identity.bundleContentSha256 }));
   assert.equal(capture.captured, true);
-  const registry = await json(path.join(ROOT, 'data/live/coastal-parts-v2.json'), 32 * 1024 * 1024);
-  const view = await createWeatherStateEpochInputView({ archive, registry, targetReferenceAt: files.targetReferenceAt });
   const catalogBytes = await measured(path.join(files.archiveRoot, 'catalog.json.gz'), 1024 * 1024, true);
   const { gunzipSync } = await import('node:zlib');
   const catalog = JSON.parse(gunzipSync(catalogBytes.data, { maxOutputLength: 1024 * 1024 }).toString('utf8'));

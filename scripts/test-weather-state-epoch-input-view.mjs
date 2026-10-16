@@ -63,9 +63,9 @@ async function syntheticNewFactory(readSource = file => fs.readFile(file, 'utf8'
     });
   };
 }
-async function ownedTemporary(t) {
+async function ownedTemporary(t, prefix = 'rr-weather-epoch-input-') {
   const parent = await fs.realpath(os.tmpdir());
-  const root = await fs.mkdtemp(path.join(parent, 'rr-weather-epoch-input-'));
+  const root = await fs.mkdtemp(path.join(parent, prefix));
   const identity = await fs.lstat(root, { bigint: true });
   t.after(async () => {
     assert.equal(path.dirname(await fs.realpath(root)), parent);
@@ -101,7 +101,7 @@ async function exclusiveJson(file, value) {
 // The callback uses the genuine fixed044d OLD producer and normal state/S
 // validators, not a caller-provided boolean, current-state retag or fake brand.
 // This is not a claim of authentic production B/S or remote archive delivery.
-async function archivedOldView(root) {
+async function archivedOldView(root, componentFixture = null) {
   return withIssuedAccountAssistantSource(async oldRoot => {
     const load = relative => import(pathToFileURL(path.join(oldRoot, relative)).href);
     const [pipeline, candidatePipeline, staging, integrated, candidate, checkpoint, candidateRuntime] = await Promise.all([
@@ -147,6 +147,7 @@ async function archivedOldView(root) {
       datasetId: conditions.datasetId, productionReferenceAt: reference, publicWeatherUnchanged: true,
       sourceDetailsSha256: hash(detailsBytes), modelBinding: ib };
     conditions.publicHourDelivery = marker;
+    if (componentFixture) conditions.weatherComponentInputs = componentFixture.marker;
     const oldSource = path.join(root, 'original-conditions.json'), oldCheckpoint = path.join(root, 'original-S.json');
     await exclusiveJson(oldSource, conditions);
     await checkpoint.saveRavScoreContinuationCheckpoint({ sourcePath: oldSource, checkpointPath: oldCheckpoint });
@@ -154,7 +155,13 @@ async function archivedOldView(root) {
     const originalFileDigests = [{ relativePath: 'data/live/conditions.json', bytes: (await fs.stat(oldSource)).size,
       sha256: hash(await fs.readFile(oldSource)) }, { relativePath: '.cache/public-hour-delivery.pack',
       bytes: packBytes.length, sha256: hash(packBytes) }];
-    const raw = Buffer.from(JSON.stringify({ conditions, publicPackBase64: packBytes.toString('base64'), originalFileDigests }));
+    const componentBytes = componentFixture ? await fs.readFile(componentFixture.descriptor.sourcePath) : null;
+    if (componentBytes) originalFileDigests.push({
+      relativePath: '.cache/weather-component-inputs.pack',
+      bytes: componentBytes.length, sha256: hash(componentBytes),
+    });
+    const raw = Buffer.from(JSON.stringify({ conditions, publicPackBase64: packBytes.toString('base64'), originalFileDigests,
+      ...(componentBytes ? { componentPackBase64: componentBytes.toString('base64') } : {}) }));
     const object = { index: 0, objectPath: `bundles/sha256/${hash(raw)}/part-000-${hash(raw)}.json.gz.part`,
       objectBytes: raw.length, objectSha256: hash(raw) };
     const description = { kind: OLD.sourceDescriptionKind, schemaVersion: OLD.sourceDescriptionSchemaVersion,
@@ -186,6 +193,10 @@ async function archivedOldView(root) {
       const parsed = JSON.parse(bytes);
       assert.deepEqual(parsed.conditions, conditions);
       assert.deepEqual(Buffer.from(parsed.publicPackBase64, 'base64'), packBytes);
+      if (componentBytes) {
+        assert.deepEqual(Buffer.from(parsed.componentPackBase64, 'base64'), componentBytes);
+        assert.deepEqual(await fs.readFile(componentFixture.descriptor.sourcePath), componentBytes);
+      }
       const source = archivedFiles?.find(row => row.relativePath === 'original-S.json')?.sourcePath ?? oldCheckpoint;
       const loaded = await checkpoint.loadRavScoreContinuationCheckpointForTarget({ checkpointPath: source, targetReference: time(10) });
       assert.equal(loaded.loaded, true); assert.equal(loaded.partCount, 673);
@@ -298,6 +309,151 @@ test('normal synthetic NEW source pins accept Git LF and checkout CRLF only, ret
     }), { code: 'ERR_ASSERTION' }, 'A lone CR is not a permitted checkout line ending');
   }
 });
+
+test('epoch active persistence: genuine archive-bound install, normal SAVE and ordinary restore', async t => {
+  const { buildPrivateWeatherComponentPack } = await import('./lib/private-weather-component-pack.mjs');
+  const { installRestoredPrivateRuntime, buildPrivateRuntimeCreateSpec, PRIVATE_RUNTIME_CONTRACT_FILES } =
+    await import('./private-production-runtime-workflow.mjs');
+  const { PRIVATE_RUNTIME_BASE_FILES: baseFiles, PRIVATE_WEATHER_COMPONENT_FILES: component,
+    PRIVATE_WEATHER_COMPONENT_PACK_FILE: packFile } = await import('./lib/private-weather-component-inventory.mjs');
+  const { execFile } = await import('node:child_process'), { promisify } = await import('node:util');
+  const exec = promisify(execFile), root = await ownedTemporary(t, 'rr-progress-original-target-');
+  async function write(folder, relative, bytes) {
+    const file = path.join(folder, relative);
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    await fs.writeFile(file, bytes, { flag: 'wx', mode: 0o600 });
+  }
+  const exists = file => fs.lstat(file).then(() => true, error => {
+    if (error.code === 'ENOENT') return false; throw error;
+  });
+  const bytes = value => Buffer.from(JSON.stringify(value) + '\n');
+  const oldActive = bytes({ syntheticNumericOriginal: 'OLD-ACTIVE', currentU: 0.04, scalar: 8 });
+  const oldCandidate = bytes({ syntheticNumericOriginal: 'OLD-CANDIDATE', currentU: 0.03, scalar: 9 });
+  const selection = bytes({ preservedScalarSelection: true });
+  const marker = { schemaVersion: 1, kind: 'PRIVATE_WEATHER_COMPONENT_INPUTS',
+    sourceSelectionApplied: true, openMeteoBankSha256: null, copernicusBankSha256: null,
+    selectedComponentsSha256: hash(selection) };
+  const packSource = path.join(root, 'pack-source'); await fs.mkdir(packSource);
+  await write(packSource, component.selectedComponents, selection);
+  await write(packSource, component.dmiActive, oldActive);
+  await write(packSource, component.dmiCandidate, oldCandidate);
+  const descriptor = await buildPrivateWeatherComponentPack({ repositoryRoot: packSource,
+    conditions: { weatherComponentInputs: marker } });
+  const originalPackBytes = await fs.readFile(descriptor.sourcePath);
+  const { view } = await archivedOldView(root, { descriptor, marker });
+  // Normal persistence fixture, NOT production/private-state admission. Full
+  // OLD673/S are genuinely validated by archivedOldView. Fresh metadata here is
+  // synthetic, matching the existing normal create-spec test's scope.
+  const runtime = { datasetId: 'rr-synthetic-epoch-persistence', productionReferenceAt: time(10),
+    generatedAt: time(10), weatherComponentInputs: marker,
+    zones: Object.fromEntries(Array.from({ length: 210 }, (_, i) => ['ZONE-' + i, { scalar: 8 }])),
+    coastalParts: { modelBinding: ravScoreModelBinding(),
+      parts: Object.fromEntries(Array.from({ length: 673 }, (_, i) => ['PART-' + i, {}])) } };
+  const source = path.join(root, 'restored-runtime'); await fs.mkdir(source);
+  const baseBytes = new Map();
+  for (const row of baseFiles) {
+    const value = bytes(row.id === 'full-conditions' ? runtime : { originalWeather: row.id, scalar: 8 });
+    await write(source, row.relativePath, value); baseBytes.set(row.relativePath, value);
+  }
+  await write(source, packFile.relativePath, originalPackBytes);
+  const defaultRoot = path.join(root, 'normal-before'); await fs.mkdir(defaultRoot);
+  const ordinary = await installRestoredPrivateRuntime({ restoredRoot: source, repositoryRoot: defaultRoot });
+  assert.equal(Object.hasOwn(ordinary, 'stateEpochActiveOmitted'), false);
+  assert.deepEqual(await fs.readFile(path.join(defaultRoot, component.dmiActive)), oldActive,
+    'Normal installer without an epoch view restores OLD-active: the actual counterexample');
+  const epoch = path.join(root, 'epoch'); await fs.mkdir(epoch);
+  const installed = await installRestoredPrivateRuntime({ restoredRoot: source, repositoryRoot: epoch,
+    stateEpochInputView: view });
+  assert.equal(await exists(path.join(epoch, component.dmiActive)), false,
+    'Epoch must not persist OLD-active into the next normal B/SAVE');
+  assert.equal(installed.stateEpochActiveOmitted, true);
+  assert.equal(installed.stateEpochViewSha256, view.viewSha256);
+  for (const [relative, raw] of baseBytes) assert.deepEqual(await fs.readFile(path.join(epoch, relative)), raw);
+  assert.deepEqual(await fs.readFile(path.join(epoch, component.dmiCandidate)), oldCandidate);
+  assert.deepEqual(await fs.readFile(path.join(epoch, component.selectedComponents)), selection);
+  assert.deepEqual(await fs.readFile(descriptor.sourcePath), originalPackBytes);
+  // Actual create-spec packs files for B/SAVE. Its documented artificial
+  // contract-hasher inputs are never production source or model admission.
+  for (const file of new Set(Object.values(PRIVATE_RUNTIME_CONTRACT_FILES).flat())) {
+    await write(epoch, file, file === 'scripts/lib/private-weather-storage-abi.json'
+      ? await fs.readFile(path.join(ROOT, file)) : 'synthetic contract bytes\n');
+  }
+  const partial = bytes({ zones: {}, freshEpochCandidate: true });
+  await fs.writeFile(path.join(epoch, component.dmiCandidate), partial);
+  async function saveAndFollow(name) {
+    const spec = await buildPrivateRuntimeCreateSpec({ repositoryRoot: epoch, dmiBulkPath: component.dmiCandidate });
+    const restored = path.join(root, name + '-B'), follower = path.join(root, name + '-ordinary');
+    await fs.mkdir(restored); await fs.mkdir(follower);
+    for (const row of spec.files) await write(restored, row.relativePath, await fs.readFile(row.sourcePath));
+    await installRestoredPrivateRuntime({ restoredRoot: restored, repositoryRoot: follower });
+    return follower;
+  }
+  const noPromotion = await saveAndFollow('unpromoted');
+  assert.equal(await exists(path.join(noPromotion, component.dmiActive)), false);
+  assert.deepEqual(await fs.readFile(path.join(noPromotion, component.dmiCandidate)), partial);
+  assert.deepEqual(await fs.readFile(path.join(noPromotion, 'data/live/dmi-bulk-cache.json')), partial);
+  assert.deepEqual(await fs.readFile(path.join(noPromotion, 'data/live/dmi-forecast-cache.json')),
+    baseBytes.get('data/live/dmi-forecast-cache.json'));
+  // Genuine normal synthetic producer/ledger fixture; no invented READY flag.
+  // This proves offline ledger/CLI persistence, NOT native GRIB/provider data.
+  const prepared = path.join(root, 'ledger-stale'); await fs.mkdir(prepared);
+  const python = process.env.PYTHON ?? 'python';
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
+    ['PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'TMPDIR', 'COMSPEC', 'PATHEXT',
+      'LANG', 'LC_ALL', 'LC_CTYPE', 'TZ'].includes(key.toUpperCase())));
+  Object.assign(env, { PYTHONUTF8: '1', PYTHON: python });
+  const childOptions = { env, windowsHide: true, timeout: 30_000, maxBuffer: 1024 * 1024 };
+  await exec(python, ['-B', path.join(ROOT, 'scripts/test-copernicus-target-registry-4.0.244.py'),
+    '--prepare-progress-target-fixture', prepared, time(10).replace('.000Z', 'Z')], childOptions);
+  const ready = await exec(python, ['-B', path.join(ROOT, 'scripts/check-dmi-bulk-operational-ready.py'),
+    '--cache', path.join(prepared, 'dmi.json')], childOptions);
+  assert.equal(ready.stdout.trim(), time(10).replace('.000Z', 'Z'));
+  await exec(python, ['-B', path.join(ROOT, 'scripts/build-copernicus-target-registry.py'),
+    '--require-strict-dmi-ledger', '--targets', path.join(prepared, 'targets.json'),
+    '--dmi', path.join(prepared, 'dmi.json'), '--output', path.join(prepared, 'strict.json'),
+    '--at', time(10)], childOptions);
+  const readyBytes = await fs.readFile(path.join(prepared, 'dmi.json'));
+  await fs.writeFile(path.join(epoch, component.dmiCandidate), readyBytes);
+  // Same strict snapshot copy, AFTER both normal validators. No claim that the
+  // synthetic fixture ran a provider's promotion; the workflow still requires it.
+  await fs.copyFile(path.join(prepared, 'dmi.json'), path.join(epoch, component.dmiActive), fs.constants.COPYFILE_EXCL);
+  const promoted = await saveAndFollow('ready-snapshot');
+  assert.deepEqual(await fs.readFile(path.join(promoted, component.dmiActive)), readyBytes);
+  assert.deepEqual(await fs.readFile(path.join(promoted, component.dmiCandidate)), readyBytes);
+  assert.notDeepEqual(readyBytes, oldActive);
+  const workflow = (await fs.readFile(path.join(ROOT, '.github/workflows/reusable-weather-build.yml'), 'utf8')).replaceAll('\r\n', '\n');
+  assert(workflow.includes('elif test "${{ steps.dmi-active-restore.outputs.available }}" = "true"; then\n            source_kind=active'));
+  assert(workflow.includes("if: steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true'"));
+  for (const [name, candidateView] of [['forged', { ...view }], ['promised', Promise.resolve(view)]]) {
+    const destination = path.join(root, name); await fs.mkdir(destination);
+    await assert.rejects(installRestoredPrivateRuntime({ restoredRoot: source, repositoryRoot: destination,
+      stateEpochInputView: candidateView }), /UNVERIFIED_VIEW/);
+    assert.deepEqual(await fs.readdir(destination), []);
+  }
+  for (const variant of ['existing', 'pack-missing', 'valid-different-pack']) {
+    const destination = path.join(root, variant), altered = path.join(root, variant + '-source');
+    await fs.mkdir(destination); await fs.mkdir(altered);
+    for (const [relative, raw] of baseBytes) await write(altered, relative, raw);
+    if (variant !== 'pack-missing') await write(altered, packFile.relativePath, originalPackBytes);
+    if (variant === 'existing') await write(destination, component.dmiActive, oldActive);
+    if (variant === 'valid-different-pack') {
+      const second = path.join(root, 'different-pack-source'); await fs.mkdir(second);
+      await write(second, component.selectedComponents, selection);
+      await write(second, component.dmiActive, bytes({ otherOriginal: true }));
+      await buildPrivateWeatherComponentPack({ repositoryRoot: second, conditions: { weatherComponentInputs: marker } });
+      await fs.copyFile(path.join(second, packFile.relativePath), path.join(altered, packFile.relativePath));
+    }
+    await assert.rejects(installRestoredPrivateRuntime({ restoredRoot: altered, repositoryRoot: destination,
+      stateEpochInputView: view }), variant === 'existing' ? /ACTIVE_DESTINATION_EXISTS/
+        : variant === 'pack-missing' ? /inputs pack is missing/ : /EPOCH_ORIGINAL_CHANGED/);
+    if (variant === 'existing') assert.deepEqual(await fs.readFile(path.join(destination, component.dmiActive)), oldActive);
+    assert.equal(await exists(path.join(destination, 'data/live/conditions.json')), false);
+  }
+  assert.deepEqual(await fs.readFile(descriptor.sourcePath), originalPackBytes);
+  assert.deepEqual(await fs.readFile(path.join(source, packFile.relativePath)), originalPackBytes);
+  for (const [relative, raw] of baseBytes) assert.deepEqual(await fs.readFile(path.join(source, relative)), raw);
+});
+
 
 test('normal strict NEW673 cold warmup saves and loads, then673 ordinary followers continue without a cold flag', async t => {
   const root = await ownedTemporary(t), { view, registry } = await archivedOldView(root);

@@ -1,3 +1,15 @@
+## 89.240 Gammel aktiv DMI-cache holdes ude af den nye start
+
+**Kort fortalt:** Den nye start skal holde den gamle aktive DMI-cache ude af beregningens arbejdskopi, mens arkivet og originale vejrdata bevares.
+
+En normal kalder kunne geninstallere den arkiverede aktive DMI-cache. Hvis der ikke kom en ny klar kandidat, kunne denne gamle arbejdskopi følge med videre. Det er en dokumenteret mulighed i kilden, ikke en påvist fejl i den igangværende vejrhentning eller i DMI’s værdier.
+
+Rettelsen virker kun med den ægte arkivbundne inputvisning. Hele den udpakkede pakke kontrolleres med størrelse og kontrolsum fra samme faktisk læste filbeskrivelse. Kun den gamle aktive arbejdskopi udelades, og dens destination skal være fraværende før og efter installationen. Ingen gammel fil flyttes eller slettes. Originale B/S-pakker, RAW-cache og alle øvrige filer bevares; almindelig installation uden inputvisningen er uændret.
+
+Én normal prøve gik fra reproduceret fejl til bestået på 76,9 sekunder uden skip. Den aktuelle vejrhentning er i DMI-fasen; første nye gemning og offentlige levering samt en almindelig efterfølger er endnu ikke afprøvet. Rettelsen kan ikke bagudrettet reparere en allerede gemt ny pakke. En faktisk READY-kandidat, dens forfremmelse og den strenge aktive kopi skal derfor verificeres, før genbrug kaldes korrekt.
+
+PR633s præcise samlede kildekontrol er bestået, inklusive PostgreSQL. Den nye cacheisolationsrettelse har endnu ikke sin egen præcise kildekontrol. Version er fortsat 4.0.578, offentlig version 4.0.577. Cron er pauset med bevaret tidsplan. Alle fem mål er åbne med frist 18. oktober; SOURCE19 aktiveres ikke.
+
 ## 89.239 Den nye start må ikke falde tilbage i en gammel genopretningsrute
 
 **Kort fortalt:** Gammelt arkiv, databaseovergang og den nye arbejdsbaseline er faktisk verificeret. En efterfølgende ældre kalderkontrol stoppede forsøget før nye vejrdata og deploy.
