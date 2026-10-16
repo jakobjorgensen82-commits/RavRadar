@@ -1,3 +1,9 @@
+## 16. oktober — PR638: sidste kapacitetsprøves præcise genoptagelsesrute
+
+Kontrol 38919405521 på 01dc bestod faktisk PostgreSQL, hele kildekontrollen og Copernicus-prøven. Den sidste DMI-kapacitetsprøve kørte alle 71 tilfælde: 70 bestod, mens ét gammelt workflow-orakel forventede fallback-udtrykket fra før den særskilte checkpoint-genoptagelse. Hele fejlloggen er bevaret privat før udvalg. Det er en kildeprøvefejl, ikke en ny fejlet vejrhentning.
+
+Opfølgningen udvider alene den normale prøve til den eksakte gennemgåede genoptagelsesrute og bevarer det gamle standard-/fresh-epoch-orakel, kandidatadskillelsen, faktisk udtryksevaluering og mutationsnegativer. Produktkode, kildeprioritet, budgetter, SQL, model og sikkerhedskrav ændres ikke. Hele den berørte normale prøve består faktisk lokalt uden skip på 0,672 sekund, og RDKS består; ny samlet kontrol på det præcise head kræves fortsat. Ingen levering eller genoptagelse er udført. Cron er pauset. Alle fem mål til 18. oktober forbliver åbne; tidligere dokumentation bevares nedenfor.
+
 ## 16. oktober — PR638: fire konkrete kontrolprøver rettet
 
 Den præcise kildekontrol på ca109 fejlede i fire kontrolkommandoer, ikke i en ny vejrhentning. Tre prøver forventede den gamle grænse: fresh-only-forbuddet mod original-target-restore, den første i stedet for den normale branches DMI-assertion og de tidligere 19 workflow-inputs. De gamle orakler bevares gennem præcis projektion eller korrekt brancherækkefølge; den nye genoptagelsesgrænse har særskilte præcise kontroller og mutationsnegativer. Den fjerde prøves Linux-output gik forkert til /dev/stdout; den bruger nu sin egen fysiske outputfil som GitHub. Linux kører fortsat faktisk Bash, mens den eksplicit valgte lokale POSIX-shell ikke kaldes Linux-bevis.
