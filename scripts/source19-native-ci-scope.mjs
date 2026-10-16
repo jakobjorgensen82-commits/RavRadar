@@ -246,6 +246,7 @@ export const SOURCE19_NATIVE_SCOPE_PATHS=Object.freeze([
   "scripts/test-source19-union-native-data.py",
   "scripts/test-source19-union-native-fixture.mjs",
   "scripts/test-source19-union-native.py",
+  "scripts/test-helpers/dmi-water-source-fixture.mjs",
   "scripts/test-weather-component-progress-workflow.mjs",
   "scripts/test-workflow-validation-order-4.0.108.mjs",
   "scripts/update-dmi-bulk.py",

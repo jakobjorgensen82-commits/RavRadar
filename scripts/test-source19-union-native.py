@@ -38,6 +38,7 @@ NODE22 = None
 FIXTURE_IDENTITY = {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_ACTUAL_S_ONLY_CP_ORIGINAL_H71_NATIVE_CALLER","sourceBase":"d0cdbec4b8ea0f36e4abdd3801401aa748989266","parentProductIdentity":"19f6a6a2d12f9f80740675a0ba3fc178456571b7dcc7f6737919f4bd628d38b1","progressOnlySuccessorSha256":"f7d294b7d484e9d0c7b9c0d827e093dc92b658ac1f827844e80f8e61d06f6066","productIdentity":"b3ce3af7716408a33a453337106f4090d5c64933ef3f791b7fb948f95b928968","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","scope":"ACTUAL_ACTION_NORMAL_PRELUDE_B_INSTALL_AUTHENTICATED_S_PACK_H71_NATIVE_MERGED_WORKING_INSTALL","finalizer":"UNRUN_NORMAL_SAVE_TRANSPORT_AND_VALID_FULL_RUNTIME_MISSING","cpOriginalPortSha256":"e32a3a6038502fe0a384ccdde71c385f476dde283c65c110e2f8d51afd1f9c17","newSOnlyCpOriginals":"REQUIRED_REAL_OBJECT_AND_RECEIPT","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT"}
 CASES = ('native-union-install', 'replace-union-root', 'lose-union-supervisor')
 CASE = None
+FIXTURE_IDENTITY['syntheticAdminInput'] = 'EXPLICIT_OWN_EMPTY_DOCUMENTS'
 
 
 def sha(body):
@@ -342,8 +343,14 @@ class SourceActualSUnionNative(unittest.TestCase):
             prep_env = clean_environment()
             prep_env['PATH'] = str(NODE.parent) + os.pathsep + prep_env.get('PATH', '')
             prep_env['PYTHON'] = sys.executable
-            subprocess.run([str(NODE), str(seed / FIXTURE), '--prepare', str(fixtures), target, sys.executable],
-                cwd=seed, env=prep_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120, check=True)
+            try:
+                subprocess.run([str(NODE), str(seed / FIXTURE), '--prepare', str(fixtures), target, sys.executable],
+                    cwd=seed, env=prep_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120, check=True)
+            except subprocess.CalledProcessError as error:
+                # This preparer has only explicit synthetic data and the clean
+                # environment above; keep its bounded first-cause diagnostic.
+                error.add_note('SYNTHETIC_FIXTURE_PREPARATION_STDERR\n' + error.stderr[:8192].decode('utf-8', errors='replace'))
+                raise
             protocol = strict_json(fixtures / 'protocol.json')
             self.assertEqual(protocol['fixtureIdentity'], FIXTURE_IDENTITY, 'PREPARED_FIXTURE_IDENTITY_CHANGED')
             self.assertEqual(protocol['head'], head)

@@ -32,7 +32,8 @@ const fixtureIdentity=Object.freeze({
   "finalizer": "UNRUN_NORMAL_SAVE_TRANSPORT_AND_VALID_FULL_RUNTIME_MISSING",
   "cpOriginalPortSha256": "e32a3a6038502fe0a384ccdde71c385f476dde283c65c110e2f8d51afd1f9c17",
   "newSOnlyCpOriginals": "REQUIRED_REAL_OBJECT_AND_RECEIPT",
-  "syntheticProviderInput": "EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT"
+  "syntheticProviderInput": "EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT",
+  "syntheticAdminInput": "EXPLICIT_OWN_EMPTY_DOCUMENTS"
 });
 const fixtureProductPins=Object.freeze({
   ".github/actions/save-owned-dmi-grib/index.cjs": "008ba0937c85546f73c6713a63b27bab948a44c20ea57e70910ab921eb56ace1",
@@ -77,6 +78,11 @@ const factoryPins = Object.freeze({
   central: '685e83586553d9fb9c78b2e60d8e7ec6dc188c0e4d23e30cf619b9f6e4fec08d',
   rpc: 'e2629990fd209c1cca3e4d9b792965474010aa906166e6dd08774c201a0a9cfa',
 });
+const syntheticAdminDocuments = Object.freeze({
+  'direction-reviews': { schemaVersion: 1, zones: {} },
+  rules: { schemaVersion: 1, rules: [] },
+  'coastline-overrides': { overrides: {}, partOwnership: {}, disabledParts: {} },
+});
 async function write(root, relative, value) {
   const file = path.join(root, relative);
   assert.ok(file.startsWith(root + path.sep));
@@ -90,9 +96,11 @@ const unionFixtureKey=Buffer.alloc(32,109).toString('base64');
 const unionReference=target=>new Date(Date.parse(target)-3600000).toISOString();
 async function prepareSource19UnionNativeData(output,target,python) {
   const {build}=await import('../scripts/build-public-coastal-parts-v2.mjs');
+  await write(output,'synthetic-direction-reviews.json',syntheticAdminDocuments['direction-reviews']);
+  await write(output,'synthetic-coastline-overrides.json',syntheticAdminDocuments['coastline-overrides']);
   const registry=await build({source:path.join(ROOT,'data/geometry-v2/active-national-coastal-parts'),
-    output:path.join(output,'union-central-parts.json'),overrides:path.join(ROOT,'data/admin/coastline-overrides.json'),
-    directionReviews:path.join(ROOT,'data/admin/direction-reviews.json'),zonesFile:path.join(ROOT,'data/zones.geojson')});
+    output:path.join(output,'union-central-parts.json'),overrides:path.join(output,'synthetic-coastline-overrides.json'),
+    directionReviews:path.join(output,'synthetic-direction-reviews.json'),zonesFile:path.join(ROOT,'data/zones.geojson')});
   const part=Object.entries(registry.zones).flatMap(([parentZoneId,rows])=>rows.map(row=>({...row,parentZoneId})))
     .find(row=>row.waterPoint[0]>=7.5&&row.waterPoint[0]<=10.5&&row.waterPoint[1]>=55.5&&row.waterPoint[1]<=58);
   assert.ok(part,'NORMAL_CENTRAL_NWS_FIXTURE_POINT_MISSING');
@@ -183,6 +191,7 @@ async function inventory() {
     'scripts/run-copernicus-weather-components.py',
     'scripts/lib/copernicus_component_process.py',
     'scripts/lib/copernicus-component-spatial-policy.json',
+    'scripts/lib/dmi-marine-zone-exclusions.json',
     'scripts/refine-coastlines-constrained-4.0.48.py',
     'scripts/sync-admin-config.py', 'scripts/apply-central-zone-reviews.py',
     'scripts/build-public-coastal-parts-v2.mjs',
@@ -209,7 +218,7 @@ async function inventory() {
     visited.add(file);
     if (!/\.(?:mjs|js|cjs|py)$/.test(file)) continue;
     if (file.startsWith('scripts/test-') && !file.endsWith('.py')
-      && file !== 'scripts/test-source19-cp-install-native-fixture.mjs') continue;
+      && file !== 'scripts/test-source19-union-native-fixture.mjs') continue;
     const source = await fs.readFile(path.join(ROOT, file), 'utf8');
     if (file.endsWith('.py')) {
       const modules = new Set();
@@ -341,11 +350,11 @@ async function prepare(output, target, python) {
     }
     const admin = structuredClone(centralRows.centralRows);
     const adminMap = { 'water-level-station-routing': 'data/water-level-station-routing.json',
-      'direction-reviews': 'data/admin/direction-reviews.json', 'rules': 'data/admin/admin-rules.json',
-      'coastline-overrides': 'data/admin/coastline-overrides.json',
       'coastal-parts-v2-activation': 'data/geometry-v2/active-national-coastal-parts/manifest.json' };
     for (const [document_key, file] of Object.entries(adminMap)) admin.push({ document_key, version: 1,
       updated_at: target, payload: JSON.parse(await fs.readFile(path.join(ROOT, file), 'utf8')) });
+    for (const [document_key, payload] of Object.entries(syntheticAdminDocuments)) admin.push({
+      document_key, version: 1, updated_at: target, payload: structuredClone(payload) });
     admin.push({ document_key: 'dmi-water-stations', version: 1, updated_at: target,
       payload: { schemaVersion: 1, generatedAt: target, stations: [] } });
     for (const row of admin) row.updated_at ??= target;

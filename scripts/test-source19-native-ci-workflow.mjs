@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {SOURCE19_NATIVE_SCOPE_PATHS,SOURCE19_NATIVE_SCOPE_DIRECTORIES,source19NativeCiRequired,source19NativeValidationAllowed} from './source19-native-ci-scope.mjs';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const NATIVE_JOBS_SHA256='2f096305b2a08b0b0445867f4295a05ba420539c1e23d63525e38274fe3f7b9d';
-const EXACT_SCOPE_SHA256='6d92eba322401da3ecbc09c10a732d42fb7e7ce0d9b6dba9318f71768a16bccd';
+const EXACT_SCOPE_SHA256='30098a23e2f70074559b05aa7618d6fec89e4ce9bd5f160260b0c6b1c609b4d3';
 const DEPENDENCY_GUARD="    needs: [source-native-scope, source-native]\n    if: always() && needs.source-native-scope.result == 'success' && ((needs.source-native-scope.outputs.required == 'true' && needs.source-native.result == 'success') || (needs.source-native-scope.outputs.required == 'false' && needs.source-native.result == 'skipped'))\n";
 
 export function projectSource19NativeCiWorkflow(input) {
