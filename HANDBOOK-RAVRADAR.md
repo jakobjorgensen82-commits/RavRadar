@@ -356,6 +356,10 @@ Det godkendte brugerdataforløb forsøger assistentens opdatering højst én gan
 
 ## 89.216 Kontrollæserne skal forstå databankens normale formater
 
+**Lokal kontrolkilde, 16. oktober 2026:** En særskilt fast konsollæser følger nu assistentens kvotefejlmarkør i `function_logs`, ikke HTTP-invokationsloggen. Den er låst til assistentruten og 15. oktober kl. 00.38.45–00.39.00 UTC, svarende til kl. 02.38.45–02.39.00 dansk tid. Kun den faste markør, tilladt HTTP-status og fem eksisterende fejlkoder eller `UNKNOWN` må returneres. Rå logtekst, request-id og brugeroplysninger vises ikke.
+
+Læsningen bevarer én GET, ti sekunders HTTP-/kropsfrist, 32 KiB, stop ved otte resultatrækker, ingen gentagelse og de normale kilde-, main- og writer-kontroller. Gamle læsere og installationer ændres ikke. Den integrerede måltest består med 34 offlineforløb og nul rigtige netværkskald. Den lokale tekstformatprøve er ikke native ClickHouse eller bevis for det faktisk hostede konsolformat. En tom eller ukendt kategori beviser ikke, at ingen fejl er registreret. Præcis CI, faktisk aflæsning og årsagsafklaring mangler fortsat; denne kildeændring løser ikke i sig selv assistentens fejl og tilføjer ingen intern diagnose til dens offentlige viden.
+
 Loglæseren og kataloglæseren får hver en lille formatrettelse. Den ene accepterer de to sikre PostgreSQL-kategorier, som den faste forespørgsel allerede selv kan danne. Den anden kan læse den normale funktionsdefinition uden et afsluttende SQL-input-semikolon. Samme dollar-tag, hele funktionskroppen, konfiguration og slutanker kontrolleres stadig; efterfølgende SQL og ændrede eller manglende beviser godkendes ikke.
 
 Begge fejl er reproduceret før rettelsen. Efter den består hele den eksisterende normale måltest, også de nye negative forløb. Forespørgsler, frister, størrelsesgrænser, adgang, privatliv og engangsregler er uændrede. Katalograpporten kræver fortsat gennemgang og beviser ikke fuld adgangskontrol eller installation.
