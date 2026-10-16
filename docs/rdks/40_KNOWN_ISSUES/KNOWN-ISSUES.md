@@ -1,3 +1,7 @@
+## 16. oktober — SOURCE635: rettet prøveklargøring, nativeforløb fortsat åbne
+
+16. oktober, opfølgning på prøvekopiernes afhængigheder: Tredje SOURCE635-kildekontrol stoppede før H70/H71, fordi de to friske prøvekopier manglede writer-modulet. Begge afhængighedslæsere følger nu også konkrete require/require.resolve-kald. Kun tre testfiler ændres; CI-fortegnelsens 311 paths, workflow-YAML, kernel-/produktpins og normale sikkerhedskrav bevares. Den lille normale prøve reproducerer MODULE_NOT_FOUND og består derefter med faktisk require.resolve/require og fire writer-exports i begge friske kopier. Det er alene støtte til prøveklargøringen, ikke H70/H71-, native-, samlet CI- eller produktionsbevis. SOURCE19 forbliver inaktiv; version 4.0.578 og alle fem åbne mål til 18. oktober er uændrede. Tidligere opfølgninger bevares som historik. Se håndbog 89.241.
+
 ## 16. oktober — fast runner og afgrænset assistentkontrol (4.0.578)
 
 Det annoncerede automatiske OS-major-skift fra 19. oktober er imødegået i den lokale kilde med 22 faste runnerfelter. Løbende pakkeændringer og jobkapacitet er ikke fastfrosset. De gamle workflowtestforventninger er afstemt med den eksisterende kilde uden at svække exactset-, WRITE-/READ-, credential- eller deploykontroller; hele målet og syv normale epoch-prøver består nu. Epoch-betingelsen og øvrige produktguards er uændrede. Præcis CI/Linux/native og offentlig effekt er åbne.

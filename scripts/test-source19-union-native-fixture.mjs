@@ -241,7 +241,7 @@ async function inventory() {
       assert.ok(names.size <= 900, 'FIXTURE_SOURCE_INVENTORY_BOUND');
       continue;
     }
-    for (const match of source.matchAll(/(?:from\s*|import\s*\(\s*)['"]([^'"]+)['"]/g)) {
+    for (const match of source.matchAll(/(?:from\s*|(?:import|require(?:\.resolve)?)\s*\(\s*)['"]([^'"]+)['"]/g)) {
       const specifier = match[1].split('?')[0];
       if (!specifier.startsWith('.')) continue;
       const relative = path.relative(ROOT, path.resolve(ROOT, path.dirname(file), specifier)).split(path.sep).join('/');

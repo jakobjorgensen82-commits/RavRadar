@@ -32,6 +32,74 @@ function actualConditionAllows(scopeResult,required,nativeResult) {
   return Function('return ('+expression+');')();
 }
 
+
+async function assertSource19FixtureCjsClosure() {
+  const { createRequire } = await import('node:module');
+  const { tmpdir } = await import('node:os');
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const action = '.github/actions/save-owned-dmi-grib/index.cjs';
+  const writer = 'scripts/lib/weather-acquisition-writer.mjs';
+  const actionSource = await fs.readFile(path.join(root, action), 'utf8');
+  const actualRequires = [...actionSource.matchAll(/\brequire(?:\.resolve)?\s*\(\s*(['"])(\.[^'"]+)\1\s*\)/g)]
+    .map(match => match[2]);
+  assert.ok(actualRequires.length > 0, 'exercise actual local CJS requires, not a synthetic writer import');
+  for (const fixture of ['scripts/test-source19-cp-install-native-fixture.mjs',
+    'scripts/test-source19-union-native-fixture.mjs']) {
+    const fixtureSource = (await fs.readFile(path.join(root, fixture), 'utf8')).replaceAll('\r\n', '\n');
+    const scans = fixtureSource.split('\n').filter(line =>
+      line.trimStart().startsWith('for (const match of source.matchAll(/(?:from'));
+    assert.equal(scans.length, 1, 'use the actual unique normal seed scanner');
+    const literal = scans[0].slice(scans[0].indexOf('matchAll(') + 'matchAll('.length,
+      scans[0].lastIndexOf(')) {'));
+    const slash = literal.lastIndexOf('/');
+    assert.ok(literal.startsWith('/') && slash > 0);
+    const scanner = new RegExp(literal.slice(1, slash), literal.slice(slash + 1));
+    const parent = await fs.realpath(tmpdir());
+    const seed = await fs.mkdtemp(path.join(parent, 'rr-s19-cjs-'));
+    const born = await fs.lstat(seed, { bigint: true });
+    const visited = new Set(), pending = [action];
+    try {
+      while (pending.length) {
+        const relative = pending.pop();
+        if (visited.has(relative)) continue;
+        visited.add(relative);
+        assert.ok(visited.size <= 64, 'the actual local CJS/import closure remains bounded');
+        const bytes = await fs.readFile(path.join(root, relative));
+        const target = path.join(seed, relative);
+        await fs.mkdir(path.dirname(target), { recursive: true });
+        await fs.writeFile(target, bytes, { flag: 'wx', mode: 0o600 });
+        for (const match of bytes.toString('utf8').matchAll(scanner)) {
+          const specifier = match[1].split('?')[0];
+          if (!specifier.startsWith('.')) continue;
+          const dependency = path.posix.normalize(path.posix.join(path.posix.dirname(relative), specifier));
+          assert.ok(!dependency.startsWith('../') && !path.posix.isAbsolute(dependency));
+          pending.push(dependency);
+        }
+      }
+      const localRequire = createRequire(path.join(seed, action));
+      for (const specifier of actualRequires) {
+        // A genuine fresh-seed require.resolve fails on the old ESM-only scan.
+        const resolved = localRequire.resolve(specifier);
+        assert.ok(resolved.startsWith(seed + path.sep));
+        const actual = localRequire(specifier);
+        if (resolved === path.join(seed, writer)) {
+          for (const name of ['acquireWeatherAcquisitionWriter', 'assertWeatherAcquisitionWriter',
+            'retainWeatherAcquisitionWriter', 'releaseWeatherAcquisitionWriter'])
+            assert.equal(typeof actual[name], 'function', 'load the actual normal writer export: ' + name);
+        }
+      }
+      assert.ok(visited.has(writer), 'both actual seed scanners retain the writer dependency');
+    } finally {
+      const current = await fs.lstat(seed, { bigint: true });
+      assert.equal(await fs.realpath(seed), seed);
+      assert.equal(path.dirname(seed), parent);
+      assert.equal(current.dev, born.dev); assert.equal(current.ino, born.ino);
+      assert.equal(current.mode, born.mode);
+      await fs.rm(seed, { recursive: true, force: false });
+    }
+  }
+}
+
 export async function testSource19NativeCiWorkflow(input=null) {
   const workflow=(input??await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
   const historical=projectSource19NativeCiWorkflow(workflow);
@@ -84,6 +152,7 @@ export async function testSource19NativeCiWorkflow(input=null) {
   assert.throws(()=>projectSource19NativeCiWorkflow(historical),'The old source-only workflow cannot claim this native CI contract');
   assert.ok(historical.includes('Validate native PostgreSQL checkpoint CAS on artificial data only'));
   assert.ok(historical.indexOf('Validate native PostgreSQL checkpoint CAS on artificial data only')<historical.indexOf('Validate source contracts and release governance'));
+  await assertSource19FixtureCjsClosure();
   return {status:'SOURCE19_NATIVE_CI_CONTRACT_PASS',scopePaths:SOURCE19_NATIVE_SCOPE_PATHS.length,cases:7,nativeActual:'UNRUN'};
 }
 
