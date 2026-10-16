@@ -20,6 +20,7 @@ import { createWeatherStateEpochCaptureStorage, saveWeatherStateEpochArchive,
   materializeWeatherStateEpochArchive, rehydrateLocalWeatherStateEpochArchive,
   assertVerifiedWeatherStateEpochArchive, WEATHER_STATE_EPOCH_PUBLIC_FILES }
   from './lib/weather-state-epoch-archive.mjs';
+import { assertWeatherStateEpochCheckpointRequest } from './weather-state-epoch-budget.mjs';
 import { createWeatherStateEpochInputView } from './lib/weather-state-epoch-input-view.mjs';
 import { migrateOwnedI71NativeIdentityWorkingRuntime } from './migrate-post-cutover-private-runtime.mjs';
 import { rebindNativeIdentityStagingWorkingCopy } from './lib/native-identity-staging-working-copy.mjs';
@@ -38,7 +39,7 @@ const PHASES = new Set(['SOURCE', 'LOCATIONS', 'ORIGINALS', 'PUBLIC', 'ARCHIVE',
 const CODES = new Set(['ARGUMENTS_INVALID', 'EPOCH_NOT_ENABLED', 'TARGET_INVALID', 'TARGET_START_TOO_OLD',
   'TARGET_FROM_FUTURE', 'TARGET_NOT_NEWER', 'SOURCE_HEAD_MISMATCH', 'OLD_GENERATION_REQUIRED',
   'ORIGINAL_POINTER_CHANGED', 'ORIGINAL_CHECKPOINT_CHANGED', 'PUBLIC_MANIFEST_CHANGED', 'ARCHIVE_REQUIRED',
-  'WORKING_CHANGED', 'REGISTRY_CHANGED', 'STAGING_CHANGED', 'CONTEXT_INVALID', 'VIEW_CHANGED', 'PUBLIC_READ_FAILED']);
+  'CHECKPOINT_RESTORE_REQUIRED', 'WORKING_CHANGED', 'REGISTRY_CHANGED', 'STAGING_CHANGED', 'CONTEXT_INVALID', 'VIEW_CHANGED', 'PUBLIC_READ_FAILED']);
 const ARCHIVE_CODES = new Set(['ANONYMOUS_ACCESS', 'ARCHIVE_ID_COLLISION', 'CAPTURE_CLOSED', 'CAPTURE_INCOMPLETE',
   'CAPTURE_INVALID', 'CAPTURE_CHANGED', 'CAPTURE_READBACK', 'CATALOG_CHANGED', 'CATALOG_CHUNK_INVALID',
   'CATALOG_DIGEST_MISMATCH', 'CATALOG_FILE_INVALID', 'CATALOG_IDENTITY_MISMATCH', 'CATALOG_INVALID',
@@ -154,9 +155,13 @@ export function weatherStateEpochEnvironment(environment = process.env) {
   for (const name of ['GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT']) assert(/^[1-9][0-9]*$/.test(environment[name] ?? ''));
   assert(/^[a-f0-9]{40}$/.test(environment.GITHUB_SHA ?? ''));
   assert.notEqual(environment.RAVRADAR_NATIVE_IDENTITY_RECOVERY_OPT_IN, 'true');
-  assert.notEqual(environment.QUICK_CONFIRMATION, 'true'); assert(!environment.QUICK_PROGRESS_SOURCE);
-  assert(!environment.CHECKPOINT_TARGET_HOUR); assert.notEqual(environment.CHECKPOINT_ONLY, 'true');
-  assert.notEqual(environment.RAVRADAR_WEATHER_CACHE_ONLY, 'true');
+  if (environment.RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY === 'true') {
+    assertWeatherStateEpochCheckpointRequest(environment);
+  } else {
+    assert.notEqual(environment.QUICK_CONFIRMATION, 'true'); assert(!environment.QUICK_PROGRESS_SOURCE);
+    assert(!environment.CHECKPOINT_TARGET_HOUR); assert.notEqual(environment.CHECKPOINT_ONLY, 'true');
+    assert.notEqual(environment.RAVRADAR_WEATHER_CACHE_ONLY, 'true');
+  }
   const targetReferenceAt = target(environment.RAVRADAR_PRODUCTION_TARGET_HOUR);
   return Object.freeze({ runId: environment.GITHUB_RUN_ID, attempt: environment.GITHUB_RUN_ATTEMPT,
     sourceHead: environment.GITHUB_SHA, targetReferenceAt });
@@ -315,6 +320,10 @@ async function output(values) {
 export { output as writeWeatherStateEpochOutputs };
 export async function runWeatherStateEpoch(stage) {
   requireCode(arguments.length === 1 && WEATHER_STATE_EPOCH_STAGES.includes(stage), 'ARGUMENTS_INVALID');
+  if (process.env.RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY === 'true') {
+    assertWeatherStateEpochCheckpointRequest();
+    requireCode(stage === 'install' || stage === 'verify', 'ARGUMENTS_INVALID');
+  }
   await phase('SOURCE', source);
   if (stage === 'verify') {
     const context = await installedContext();
@@ -457,6 +466,37 @@ async function installedContext() {
   assert.equal(context.bundlePath, files.bundlePath); assert.equal(context.restoredRoot, files.restoredRoot);
   assert(SHA.test(context.archiveId) && SHA.test(context.archiveCatalogSha256)); return context;
 }
+export async function restoreInstalledWeatherStateEpochCheckpoint() {
+  assertWeatherStateEpochCheckpointRequest();
+  const context = await installedContext();
+  const registry = await json(path.join(ROOT, 'data/live/coastal-parts-v2.json'), 32 * 1024 * 1024);
+  const view = await loadInstalledWeatherStateEpochInputView({ registry, targetReferenceAt: context.targetReferenceAt });
+  const report = await weatherComponentProgressCache({ mode: 'restore', repositoryRoot: ROOT,
+    basePath: path.join(process.env.RUNNER_TEMP, 'weather-progress-base.json'),
+    productionReferenceAt: context.targetReferenceAt, resumeOriginalTarget: true,
+    stateEpochInputView: view, epochOriginalRoot: context.restoredRoot });
+  if (report.status !== 'RESTORED' || report.restored !== true) {
+    const safeCodes = new Set(['BASELINE_MISMATCH','SNAPSHOT_ABSENT','SNAPSHOT_INVALID',
+      'SNAPSHOT_SCOPE_MISMATCH','SNAPSHOT_AUTHENTICATION_FAILED','PROGRESS_UNAVAILABLE',
+      'BASE_UNAVAILABLE','ROLLBACK_FAILED','INSTALL_REJECTED','PROTECTED_PROGRESS_UNION_FAILED',
+      'TEMPORARY_CLEANUP_FAILED','ORIGINAL_TARGET_CANDIDATE_REQUIRED','ORIGINAL_TARGET_LEDGER_REQUIRED',
+      'ORIGINAL_TARGET_REFERENCE_MISMATCH','ORIGINAL_TARGET_BEFORE_BASELINE','ORIGINAL_TARGET_INPUT_CHANGED',
+      'ORIGINAL_TARGET_TIME_REJECTED','ORIGINAL_TARGET_INPUT_TOO_LARGE','ORIGINAL_TARGET_LEDGER_REJECTED',
+      'ORIGINAL_TARGET_VALIDATION_TIMEOUT','ORIGINAL_TARGET_VALIDATOR_UNAVAILABLE',
+      'EPOCH_ORIGINAL_PACK_REQUIRED','EPOCH_ORIGINAL_PACK_CHANGED','EPOCH_ORIGINAL_PACK_CLOSE_UNPROVED',
+      'EPOCH_ACTIVE_DESTINATION_EXISTS','EPOCH_ACTIVE_PROGRESS_REQUIRES_SEPARATE_ADMISSION']);
+    const { protectedProgressUnionFailureCode } = await import('./lib/verified-protected-progress-components.mjs');
+    console.error(JSON.stringify({ kind: 'WEATHER_STATE_EPOCH_CHECKPOINT_PROGRESS_REFUSAL',
+      status: ['CACHE_MISS','RESTORE_REPAIR_REQUIRED'].includes(report.status) ? report.status : 'UNKNOWN',
+      code: safeCodes.has(report.code) ? report.code : 'UNKNOWN',
+      unionFailureCode: protectedProgressUnionFailureCode({ message: report.unionFailureCode }) }));
+  }
+  requireCode(report.status === 'RESTORED' && report.restored === true
+    && report.restoredProductionReferenceAt === context.targetReferenceAt, 'CHECKPOINT_RESTORE_REQUIRED');
+  await loadInstalledWeatherStateEpochInputView({ registry, targetReferenceAt: context.targetReferenceAt });
+  return report;
+}
+
 export async function loadInstalledWeatherStateEpochInputView(options) {
   requireCode(arguments.length === 1 && options && Object.keys(options).sort().join(',') === 'registry,targetReferenceAt', 'ARGUMENTS_INVALID');
   const context = await installedContext();

@@ -127,10 +127,12 @@ assert.match(currentOriginalHour, /target <= Date\.parse\(expected\.productionRe
 // Invert only the reviewed epoch interface for the unchanged adjacency oracle;
 // separately evaluate actual default/epoch routing, not synthetic admission.
 const epochBuildInterface = [
-  '      extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true }}',
-  '      weather_state_epoch_bootstrap: ${{ inputs.weather_state_epoch_bootstrap }}',
-  '      weather_state_epoch_archive_key: ${{ needs.state-epoch-prewrite.outputs.archive_key }}',
-  '      weather_state_epoch_archive_catalog_sha256: ${{ needs.state-epoch-prewrite.outputs.archive_catalog_sha256 }}',
+  "      extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true }}",
+  "      weather_state_epoch_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true || inputs.weather_state_epoch_checkpoint_reentry == true }}",
+  "      weather_state_epoch_checkpoint_reentry: ${{ inputs.weather_state_epoch_checkpoint_reentry }}",
+  "      weather_state_epoch_raw_cache_key: ${{ inputs.weather_state_epoch_raw_cache_key }}",
+  "      weather_state_epoch_archive_key: ${{ inputs.weather_state_epoch_checkpoint_reentry && inputs.weather_state_epoch_archive_key || needs.state-epoch-prewrite.outputs.archive_key }}",
+  "      weather_state_epoch_archive_catalog_sha256: ${{ inputs.weather_state_epoch_checkpoint_reentry && inputs.weather_state_epoch_archive_catalog_sha256 || needs.state-epoch-prewrite.outputs.archive_catalog_sha256 }}",
 ].join('\n');
 assert.equal(manual.split(epochBuildInterface).length, 2);
 const ordinaryManual = manual.replace(epochBuildInterface, '      extended_provider_bootstrap: false');
@@ -160,7 +162,7 @@ function assertManualEpochInterface(source) {
         needs: { 'state-epoch-prewrite': { outputs } },
       };
       assert.equal(evaluate('extended_provider_bootstrap', context), enabled === true);
-      assert.equal(evaluate('weather_state_epoch_bootstrap', context), enabled);
+      assert.equal(evaluate('weather_state_epoch_bootstrap', context), enabled === true);
       assert.equal(evaluate('weather_state_epoch_archive_key', context), outputs.archive_key);
       assert.equal(evaluate('weather_state_epoch_archive_catalog_sha256', context), outputs.archive_catalog_sha256);
       assert.equal(evaluate('quick_confirmation', context), quick);
@@ -168,10 +170,25 @@ function assertManualEpochInterface(source) {
   }
 }
 assertManualEpochInterface(manual);
+{
+  const build = manual.slice(manual.indexOf('\n  build-and-prepare:\n'));
+  const context = { inputs: { weather_state_epoch_bootstrap:false, weather_state_epoch_checkpoint_reentry:true,
+    weather_state_epoch_archive_key:'saved-archive', weather_state_epoch_archive_catalog_sha256:'saved-catalog',
+    weather_state_epoch_raw_cache_key:'saved-raw' }, needs: { 'state-epoch-prewrite': { outputs:{} } } };
+  const expected = { extended_provider_bootstrap:false, weather_state_epoch_bootstrap:true,
+    weather_state_epoch_checkpoint_reentry:true, weather_state_epoch_archive_key:'saved-archive',
+    weather_state_epoch_archive_catalog_sha256:'saved-catalog', weather_state_epoch_raw_cache_key:'saved-raw' };
+  for (const [field,value] of Object.entries(expected)) {
+    const expression = build.match(new RegExp('^      '+field+': \\$\\{\\{ (.+) \\}\\}$','m'))?.[1];
+    assert(expression, field);
+    assert.equal(runInNewContext(expression.replaceAll('needs.state-epoch-prewrite.','needs["state-epoch-prewrite"].'),context),value);
+  }
+}
+
 for (const [from, to] of [
   ['extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true }}',
     'extended_provider_bootstrap: ${{ true }}'],
-  ['weather_state_epoch_bootstrap: ${{ inputs.weather_state_epoch_bootstrap }}',
+  ['weather_state_epoch_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true || inputs.weather_state_epoch_checkpoint_reentry == true }}',
     'weather_state_epoch_bootstrap: ${{ false }}'],
   ['needs.state-epoch-prewrite.outputs.archive_key', 'needs.state-epoch-prewrite.outputs.archive_catalog_sha256'],
   ['needs.state-epoch-prewrite.outputs.archive_catalog_sha256', 'needs.state-epoch-prewrite.outputs.archive_key'],

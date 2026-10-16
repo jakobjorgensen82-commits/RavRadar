@@ -1,3 +1,13 @@
+## 89.244 Genoptag den nye historik fra dens gemte checkpoint uden nye providerkald
+
+**Kort fortalt:** En særskilt, som udgangspunkt frakoblet rute er lokalt kildeklargjort til autentificeret genbrug af den nye starts gemte input. Det er ikke en ny vejrhentning eller bevis for offentlig levering.
+
+Der forberedes en særskilt, som udgangspunkt frakoblet genoptagelse af et eksakt epoch-checkpoint uden nye providerkald eller SQL-installation. Samme autentiske gamle B/S-arkiv og den allerede installerede nye databasekontrakt skal genlæses skrivefrit, før en særskilt ny arbejdsbaseline, den ægte inputvisning, baselinecapture og GCM-gendannelse bindes til checkpointets oprindelige target og aktuelle registry. Cipher og RAW skal komme fra den eksakt valgte kilde.
+
+Kun den arkividentiske gamle aktive arbejdskopi må isoleres; originaler og cipher bevares. En aktiv progresskopi kræver særskilt optagelse, og en ukendt anden aktiv kopi afvises. Almindelige standardruter, historik, kildeprioritet, budgetter og efterkontroller bevares. Den samlede normale lokale prøve består på 106,911 sekunder uden skip med syntetisk arkiv for 673 dele, normal ledger og GCM-gemning/genoptagelse gennem den normale Python-kalder ved oprindeligt target. Negative tilfælde, 180 minutters efterbehandlingsreserve og afsluttende prøver af seks faktiske filbeskrivere indgår; den friske rutes budget er uændret.
+
+Lokale prøver og fjerncachemetadata er ikke faktisk GCM-gendannelse, ny B/S, Pages eller offentlig levering. Præcis CI, hosted readiness og kontrolleret genoptagelse udestår. Version 4.0.578 og offentlig 4.0.577 er uændrede; cron er pauset, og alle fem mål er åbne med frist 18. oktober. Se håndbog 89.244; tidligere dateret tekst bevares som historik.
+
 ## 89.243 Manglende modulforbindelse stoppede vejrberegningen
 
 **Kort fortalt:** En lokal eksport/import-rettelse forbinder den faktiske beregning med dens fælles konstant. Gemte fremskridt er ikke det samme som en ny offentlig generation.

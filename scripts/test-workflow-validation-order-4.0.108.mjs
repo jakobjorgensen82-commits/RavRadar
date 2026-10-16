@@ -1789,7 +1789,7 @@ for (const marker of [
   'DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json',
   'DMI_BULK_PREFER_OUTPUT_CACHE: true',
   'DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false',
-  "DMI_BULK_DEPLOYED_FALLBACK_PATH: ${{ inputs.weather_state_epoch_bootstrap && format('{0}/ravradar-weather-state-epoch-{1}-{2}/empty-dmi-candidate.json', runner.temp, github.run_id, github.run_attempt) || '.cache/dmi-active-complete.json' }}",
+  "DMI_BULK_DEPLOYED_FALLBACK_PATH: ${{ inputs.weather_state_epoch_checkpoint_reentry && '.cache/dmi-candidate-progress.json' || inputs.weather_state_epoch_bootstrap && format('{0}/ravradar-weather-state-epoch-{1}-{2}/empty-dmi-candidate.json', runner.temp, github.run_id, github.run_attempt) || '.cache/dmi-active-complete.json' }}",
 ]) assert.ok(currentDmiProducer.includes(marker), `Normal DMI-producent mangler ${marker}`);
 const dmiContinueExpression = currentDmiProducer.match(/^        continue-on-error: \$\{\{ (.+) \}\}$/m)?.[1];
 assert.equal(dmiContinueExpression, 'inputs.checkpoint_only != true');

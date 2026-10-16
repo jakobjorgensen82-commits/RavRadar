@@ -314,7 +314,7 @@ def run(folder: Path, *extra: str) -> subprocess.CompletedProcess[str]:
 # This is the existing synthetic ledger factory, not native GRIB evidence.
 # No argument means the complete original target below still runs unchanged.
 if len(sys.argv) > 1:
-    if len(sys.argv) != 4 or sys.argv[1] != "--prepare-progress-target-fixture":
+    if len(sys.argv) not in (4, 5) or sys.argv[1] != "--prepare-progress-target-fixture":
         raise ValueError("Invalid progress fixture arguments")
     folder = Path(sys.argv[2]).absolute()
     owner = folder.parent
@@ -340,15 +340,32 @@ if len(sys.argv) > 1:
               "name": "Synthetic DMI", "waterPoint": [9.0, 57.0]}]
     targets = [{"partId": row["partId"], "parentZoneId": row["sourceZoneId"],
                 "name": row["name"], "waterPoint": row["waterPoint"]} for row in parts]
-    document = dmi_document(targets)
+    registry = {"partCount": 1, "zones": {"Z1": parts}}
+    if len(sys.argv) == 5:
+        # Additive genuine epoch-registry fixture. The normal no-argument and
+        # existing one-target modes are byte/behaviour unchanged.
+        registry_path = Path(sys.argv[4]).absolute()
+        if registry_path != owner / "epoch-registry.json" or registry_path.is_symlink():
+            raise ValueError("Epoch fixture registry must be its exact owned input")
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+        if registry.get("zoneCount") != 210 or registry.get("partCount") != 673 or len(registry.get("zones", {})) != 210:
+            raise ValueError("Epoch fixture requires its genuine synthetic210/673 registry")
+        from lib.copernicus_current import load_targets
+        targets = load_targets(registry_path)
+        native_hours = {AT, utc(REFERENCE + timedelta(hours=117))}
+        document = dmi_document(targets,
+            upstream_absent=set(producer.operational_current_valid_times(REFERENCE)) - native_hours,
+            verified_hours=native_hours)
+    else:
+        document = dmi_document(targets)
     attestation = availability_attestation(document, targets)
     validate_current_operational_ledger(
         document["diagnostics"]["currentOperationalLedger"], attestation, targets,
         REFERENCE, REFERENCE + timedelta(hours=117), producer.target_fingerprint(targets),
     )
-    assert attestation["verifiedPairCount"] == 118
+    assert attestation["verifiedPairCount"] == (1346 if len(sys.argv) == 5 else 118)
     for name, value in (
-        ("targets.json", {"partCount": 1, "zones": {"Z1": parts}}),
+        ("targets.json", registry),
         ("dmi.json", document),
     ):
         with (folder / name).open("x", encoding="utf-8", newline="\n") as handle:

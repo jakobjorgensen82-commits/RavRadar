@@ -1,3 +1,11 @@
+## 16. oktober — særskilt providerfri epoch-checkpoint-genoptagelse (4.0.578)
+
+Der forberedes en særskilt, som udgangspunkt frakoblet genoptagelse af et eksakt epoch-checkpoint uden nye providerkald eller SQL-installation. Samme autentiske gamle B/S-arkiv og den allerede installerede nye databasekontrakt skal genlæses skrivefrit, før en særskilt ny arbejdsbaseline, den ægte inputvisning, baselinecapture og GCM-gendannelse bindes til checkpointets oprindelige target og aktuelle registry. Cipher og RAW skal komme fra den eksakt valgte kilde.
+
+Kun den arkividentiske gamle aktive arbejdskopi må isoleres; originaler og cipher bevares. En aktiv progresskopi kræver særskilt optagelse, og en ukendt anden aktiv kopi afvises. Almindelige standardruter, historik, kildeprioritet, budgetter og efterkontroller bevares. Den samlede normale lokale prøve består på 106,911 sekunder uden skip med syntetisk arkiv for 673 dele, normal ledger og GCM-gemning/genoptagelse gennem den normale Python-kalder ved oprindeligt target. Negative tilfælde, 180 minutters efterbehandlingsreserve og afsluttende prøver af seks faktiske filbeskrivere indgår; den friske rutes budget er uændret.
+
+Lokale prøver og fjerncachemetadata er ikke faktisk GCM-gendannelse, ny B/S, Pages eller offentlig levering. Præcis CI, hosted readiness og kontrolleret genoptagelse udestår. Version 4.0.578 og offentlig 4.0.577 er uændrede; cron er pauset, og alle fem mål er åbne med frist 18. oktober. Se håndbog 89.244; tidligere dateret tekst bevares som historik.
+
 ## 16. oktober — rettet manglende ESM-forbindelse i vejrberegningen (4.0.578)
 
 Vejrkørslen stoppede 16. oktober kl. 14.41.44 dansk tid i beregningens trin 125, fordi ATOMIC_COMPONENT_TUPLE_KEYS efter moduludtræk ikke blev eksporteret og importeret af den faktiske ESM-kalder. Den lokale rettelse er alene disse to forbindelser. En ny normal ESM-regression reproducerer ReferenceError på d0 og består på rettelsen; hele det berørte mål består på 0,45 sekunder, og de 23 tidligere beståede sammensætningsprøver genbruges. Model, numerik, score, geometri og SQL er uændrede.
