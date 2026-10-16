@@ -10,11 +10,13 @@ const producerPath = new URL('./update-weather.mjs', import.meta.url);
 const sourceText = async file => (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 
-// Invert only the separately reviewed archived-epoch orchestration before the
+// Invert only the separately reviewed tuple import and archived-epoch orchestration before the
 // older exact-source oracles. The complete genuine 903307 updater remains the
 // immutable baseline; the actual epoch caller has its own normal-path tests.
 function inverseWeatherStateEpochIntegration(source) {
   const hunks = [
+    ['  verifiedFeggesundNeighborSource,\n  ATOMIC_COMPONENT_TUPLE_KEYS,\n  atomicComponentTupleValues,\n',
+      '  verifiedFeggesundNeighborSource,\n  atomicComponentTupleValues,\n'],
     ["import { assertWeatherStateEpochInputViewForTarget }\n"
       + "  from './lib/weather-state-epoch-input-view.mjs';\n", ''],
     ['  previousCurrentSourceDomainTransitions = null,\n  stateEpochView = null,\n) {\n'
@@ -137,6 +139,12 @@ function inverseLegacyCurrentOriginalDonorIntegration(source) {
 async function inverseSharedRecoveryRecordExtraction(source, sharedSource = null) {
   source = inverseLegacyCurrentOriginalDonorIntegration(source);
   sharedSource ??= await sourceText(new URL('./lib/private-dmi-recovery-record.mjs', import.meta.url));
+  // Undo only the reviewed export paired with the real updater import above.
+  // Keep every immutable historical whole-source hash and body assertion.
+  const tupleExport = '  verifiedFeggesundNeighborSource,\n  ATOMIC_COMPONENT_TUPLE_KEYS,\n  atomicComponentTupleValues,\n';
+  assert.equal(sharedSource.split(tupleExport).length, 2, 'each exact reviewed tuple export must occur once');
+  sharedSource = sharedSource.replace(tupleExport,
+    '  verifiedFeggesundNeighborSource,\n  atomicComponentTupleValues,\n');
   assert.equal(digest(sharedSource),
     'a2855aeb1826f198b874dc7060a9293f177af3a9ecb8eeb956520af16fc3958e',
     'the complete reviewed shared module must remain exact, including imports');
@@ -362,6 +370,8 @@ test('reviewed epoch orchestration has an exact whole-source inverse to genuine 
     '    checkpointStates = {};')), /each exact reviewed epoch hunk/);
   assert.throws(() => inverseWeatherStateEpochIntegration(source + '// unreviewed drift\n'),
     /complete genuine 903307 updater/);
+  assert.throws(() => inverseWeatherStateEpochIntegration(source.replace(
+    '  ATOMIC_COMPONENT_TUPLE_KEYS,\n', '  UNREVIEWED_TUPLE_KEYS,\n')), /each exact reviewed epoch hunk/);
 });
 
 test('main updater is byte-identical outside the checkpoint import and normal queue refusal', async () => {
@@ -433,6 +443,7 @@ test('shared normal DMI recovery module is import-safe, outside I71, and byte-ex
   const shared = await sourceText(new URL('./lib/private-dmi-recovery-record.mjs', import.meta.url));
   t.mock.method(globalThis, 'fetch', () => { assert.fail('NETWORK_FORBIDDEN'); });
   const normal = await import('./lib/private-dmi-recovery-record.mjs');
+  assert.equal(typeof normal.ATOMIC_COMPONENT_TUPLE_KEYS, 'object');
   for (const name of ['bulkZoneToForecastRecord', 'buildPartDmiForecastWithProtectedRetention',
     'buildPrivateDmiRecoveryRecord', 'mergeHourlyPreferDmi']) assert.equal(typeof normal[name], 'function');
   assert.doesNotMatch(shared, /from ['"]node:|\b(?:process\.|fetch\(|await\s)/);
@@ -444,6 +455,9 @@ test('shared normal DMI recovery module is import-safe, outside I71, and byte-ex
       'normal orchestration extraction must not enter the unchanged model closure');
   }
   await inverseSharedRecoveryRecordExtraction(source, shared);
+  await assert.rejects(inverseSharedRecoveryRecordExtraction(source,
+    shared.replace('  ATOMIC_COMPONENT_TUPLE_KEYS,\n', '  UNREVIEWED_TUPLE_KEYS,\n')),
+    /each exact reviewed tuple export/);
   await assert.rejects(inverseSharedRecoveryRecordExtraction(source,
     shared.replace('const SHORT_DMI_WATER_GAP_HOURS = 6;', 'const SHORT_DMI_WATER_GAP_HOURS = 7;')),
     /complete reviewed shared module/);

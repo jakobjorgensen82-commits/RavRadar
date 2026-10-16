@@ -1,3 +1,9 @@
+## 16. oktober — PR637: manglende historisk testinverse
+
+PR637s præcise kildekontrol fejlede i fem mål. Den fælles årsag er en manglende kontroladapter: updaterens nye ATOMIC_COMPONENT_TUPLE_KEYS-import og shared-modulets tilsvarende eksport indgik ikke i testens historiske whole-inverse; integrated-generator bruger samme inverse. Rettelsen afgrænses til denne testadapter med alle gamle hele kildehashes og assertions bevaret. De gennemgåede produktbytes ændres ikke.
+
+De fire berørte normale indgangsmål og den normale RavScore-generatortest består nu lokalt uden skip; den første CI-fejl bevares som RED-evidens. En ny præcis CI kræves før levering. Fundet frikender ikke produktionsdata og er ikke bevis for GCM-genoptagelse, ny B/S eller offentlig levering. Version 4.0.578, model og SQL er uændrede; håndbog 89.243/89.244 og tidligere historik bevares. Alle fem mål er fortsat åbne til 18. oktober.
+
 ## 16. oktober — fast runner og afgrænset assistentkontrol (4.0.578)
 
 Det annoncerede automatiske OS-major-skift fra 19. oktober er imødegået i den lokale kilde med 22 faste runnerfelter. Løbende pakkeændringer og jobkapacitet er ikke fastfrosset. De gamle workflowtestforventninger er afstemt med den eksisterende kilde uden at svække exactset-, WRITE-/READ-, credential- eller deploykontroller; hele målet og syv normale epoch-prøver består nu. Epoch-betingelsen og øvrige produktguards er uændrede. Præcis CI/Linux/native og offentlig effekt er åbne.
