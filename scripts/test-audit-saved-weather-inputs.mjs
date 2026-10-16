@@ -984,6 +984,60 @@ test('RAW manifest CLI rejects malformed boolean before any credential or input 
   }
 });
 
+test('selected preflight defaults OFF and rejects mixed or undeclared scopes before transport', async t => {
+  const f = await fixture(t), before = f.calls.length;
+  const fixed = { progressSource: '38692413809-1',
+    progressCacheKey: 'weather-private-progress-encrypted-v2-Linux-main-38692413809-1',
+    progressBaselineTargetHour: '2026-10-14T18:00:00.000Z', includeSelectedCurrentPreflight: true };
+  const newer = { ...fixed, progressSource: '38768040429-1',
+    progressCacheKey: 'weather-private-progress-encrypted-v2-Linux-main-38768040429-1',
+    progressBaselineTargetHour: '2026-10-15T16:00:00.000Z' };
+  for (const mutation of [
+    { includeSelectedCurrentPreflight: 'true' },
+    { includeSelectedCurrentPreflight: true },
+    { ...fixed, mode: 'describe' }, { ...fixed, includeRawManifest: true },
+    { ...fixed, includeRawFilePresence: true }, { ...fixed, rawManifestSource: '38577766010-1' },
+    { ...fixed, rawCacheKey: 'dmi-grib-v4-Linux-2026-W42-38692413809-1' },
+    { ...fixed, progressBaselineTargetHour: newer.progressBaselineTargetHour },
+    { ...newer, progressCacheKey: fixed.progressCacheKey },
+    { ...fixed, progressSource: '38692413809-2' },
+  ]) {
+    const report = await auditSavedWeatherInputs({ ...f.options, ...mutation });
+    assert.equal(report.status, 'AUDIT_FAILED_CLOSED'); assert.equal(report.code, 'MODE_INVALID');
+    assert.equal(f.calls.length, before); assert.equal(Object.hasOwn(report, 'selectedCurrentPreflight'), false);
+    safeReport(report, f.privateRoot);
+  }
+  const ordinary = await auditSavedWeatherInputs(f.options);
+  const explicitFalse = await auditSavedWeatherInputs({ ...f.options, includeSelectedCurrentPreflight: false,
+    outputPath: path.join(f.privateRoot, 'explicit-false.json') });
+  assert.equal(ordinary.status, 'AUDIT_COMPLETED'); assert.equal(explicitFalse.status, 'AUDIT_COMPLETED');
+  assert.equal(Object.hasOwn(ordinary, 'selectedCurrentPreflight'), false);
+  assert.equal(Object.hasOwn(explicitFalse, 'selectedCurrentPreflight'), false);
+  const withoutResources = ({ resources, ...report }) => report;
+  assert.deepEqual(withoutResources(explicitFalse), withoutResources(ordinary));
+});
+
+test('selected preflight actual CLI accepts exact true/false and rejects invalid booleans without exit13 or network', () => {
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
+    new Set(['PATH','SYSTEMROOT','WINDIR','TEMP','TMP','TMPDIR','COMSPEC','PATHEXT']).has(key.toUpperCase())));
+  const guard = 'data:text/javascript,' + encodeURIComponent(`globalThis.fetch=()=>{process.exit(97);};`);
+  const run = args => spawnSync(process.execPath, ['--import', guard, 'scripts/audit-saved-weather-inputs.mjs', 'audit',
+    ...args], { cwd: repositoryRoot, env, encoding: 'utf8', timeout: 10_000, maxBuffer: 64 * 1024, windowsHide: true });
+  for (const value of ['true','false']) {
+    const args = ['--include-selected-current-preflight', value, '--private-root', fileURLToPath(import.meta.url)];
+    if (value === 'true') args.push('--progress-source', '38692413809-1', '--progress-cache-key',
+      'weather-private-progress-encrypted-v2-Linux-main-38692413809-1', '--progress-baseline-target-hour', '2026-10-14T18:00:00.000Z');
+    const result = run(args);
+    assert.equal(result.error, undefined); assert.equal(result.signal, null); assert.equal(result.status, 1);
+    assert.equal(result.stderr, ''); assert.equal(JSON.parse(result.stdout).code, 'PRIVATE_ROOT_INVALID');
+  }
+  for (const value of ['1','TRUE','yes']) {
+    const result = run(['--include-selected-current-preflight', value]);
+    assert.equal(result.status, 1); assert.equal(result.stdout, '');
+    assert.equal(result.stderr.trim(), 'SAVED_WEATHER_INPUT_AUDIT_FAILED_CLOSED');
+  }
+});
+
 test('audit source has no production entrypoint or publication calls', async () => {
   const source = await fs.readFile(new URL('./audit-saved-weather-inputs.mjs', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /import\s*\(?\s*['"][^'"]*update-weather/);

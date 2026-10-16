@@ -1208,6 +1208,38 @@ console.log('Post-cutover private runtime rebind: exact current predecessor, mod
           assert.deepEqual((await fs.readdir(preparePrivate)).sort(), ['current-source.json', 'progress.encrypted']);
           console.log(JSON.stringify({ kind: 'GENUINE_673_SAVED_ORIGINAL_PREPARATION', status: 'PASS',
             parts: 673, originalCount: 1, actualProviderDataMeasured: false, rawVectorsIncluded: false }));
+          // Reuse this same genuine encrypted archive and normal baseline to
+          // exercise the opt-in through its actual API/GCM/readback caller.
+          // A pure collector or CLI argument rejection alone is not this proof.
+          const preflightPath = path.join(preparePrivate, 'selected-preflight-safe.json');
+          const preflightReport = await isolatedSavedInputAudit.auditSavedWeatherInputs({ mode: 'audit',
+            privateRoot: preparePrivate, descriptorPath: sourcePath, predecessorRoot: oldSourceRoot,
+            progressFile: progressPath, progressSource: originalPrepare.SAVED_DMI_ORIGINAL_PROGRESS,
+            progressCacheKey: originalPrepare.SAVED_DMI_ORIGINAL_PROGRESS_KEY,
+            progressBaselineTargetHour: targetReferenceAt, includeSelectedCurrentPreflight: true,
+            outputPath: preflightPath, repositoryRoot: currentSourceRoot, repository: progressRepository,
+            ...progressCredentials, ...creds, fetchImpl });
+          assert.equal(preflightReport.status, 'AUDIT_COMPLETED');
+          assert.equal(preflightReport.normalProgressBaselineUsed, true);
+          assert.equal(preflightReport.exactProgressAuthenticated, true);
+          assert.equal(preflightReport.protectedGenerationReadbackVerified, true);
+          const measured = preflightReport.selectedCurrentPreflight;
+          assert.equal(measured.status, 'MEASURED');
+          assert.equal(measured.inspectionScope, 'FIRST_FAILURE_PER_PART');
+          assert.equal(measured.partsVisited, 673); assert.equal(measured.partsExpected, 673);
+          assert.equal(measured.partsPassingCollector, 673); assert.equal(measured.partsFirstFailure, 0);
+          for (const key of ['fullSelectedCoverageProved', 'originalFilesAvailableProved', 'artifactGatePassed', 'rawFilesOpened'])
+            assert.equal(measured[key], false, key);
+          assert.equal(pointerReads, 8, 'the diagnostic also performs all four real pointer readbacks');
+          assert.deepEqual(JSON.parse(await fs.readFile(preflightPath, 'utf8')), preflightReport);
+          assert.deepEqual(await fs.readFile(sourcePath), beforeDescriptor);
+          assert.deepEqual(await fs.readFile(progressPath), beforeCipher);
+          assert.deepEqual(await fs.readFile(path.join(currentSourceRoot, originalPrepare.SAVED_DMI_ORIGINAL_PLAN_PATH)), planBytes,
+            'read-only selected preflight neither overwrites nor removes the existing original plan');
+          assert.deepEqual((await fs.readdir(preparePrivate)).sort(),
+            ['current-source.json', 'progress.encrypted', 'selected-preflight-safe.json']);
+          console.log(JSON.stringify({ kind: 'GENUINE_673_SELECTED_CURRENT_PREFLIGHT', status: 'PASS',
+            parts: 673, actualProviderDataMeasured: false, originalPlanUnchanged: true, rawFilesOpened: false }));
         } finally {
           prepareHook.deregister();
           if (previousPrepareRunnerTemp === undefined) delete process.env.RUNNER_TEMP;

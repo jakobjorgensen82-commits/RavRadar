@@ -180,7 +180,7 @@ test('older RAW source is one explicit fixed read scope and cannot relabel authe
   assert.match(text, /RAW_SOURCE_ARGS: \$\{\{ inputs\.raw_manifest_source != '' && format\('--raw-manifest-source \{0\}', inputs\.raw_manifest_source\) \|\| '' \}\}/);
   assert.ok(text.includes('${RAW_SOURCE_ARGS}'));
   assert.doesNotMatch(text, /restore-keys:|actions\/cache\/save|update-dmi-bulk\.py|sha256sum/);
-  assert.equal((text.match(/^      [a-z_]+:\n        description:/gm) ?? []).length, 9, 'seven original inputs and two bounded default-off inputs');
+  assert.equal((text.match(/^      [a-z_]+:\n        description:/gm) ?? []).length, 10, 'all nine previous inputs plus one bounded default-off selected preflight');
 });
 
 test('RAW file presence is separate default-off metadata inventory, not numeric inspection', () => {
@@ -205,4 +205,26 @@ test('normal progress baseline reconstruction is explicit, default-off, exact-ho
   assert.match(text, /PROGRESS_BASELINE_ARGS: \$\{\{ inputs\.progress_baseline_target_hour != '' && format\('--progress-baseline-target-hour \{0\}', inputs\.progress_baseline_target_hour\) \|\| '' \}\}/);
   assert.doesNotMatch(text, /(?:contents|actions|pull-requests|pages|id-token): write|actions\/cache\/save|gh workflow run|--publish/);
   assert.equal((text.match(/uses: actions\/upload-artifact@/g) ?? []).length, 1);
+});
+
+test('selected-current preflight is default-off, exact saved scope and never restores RAW', () => {
+  assert.match(text, /include_selected_current_preflight:\n[\s\S]*?required: false\n        default: false\n        type: boolean/);
+  assert.equal((text.match(/INCLUDE_SELECTED_CURRENT_PREFLIGHT: \$\{\{ inputs\.include_selected_current_preflight \}\}/g) ?? []).length, 2);
+  assert.ok(text.includes('[[ "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" == true || "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" == false ]]'));
+  const scope = text.split('if test "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" = true; then')[1]?.split('\n          fi')[0];
+  assert.ok(scope, 'one explicit pre-secret gate');
+  for (const guard of [
+    'test "$INCLUDE_RAW_MANIFEST" = false',
+    'test "$INCLUDE_RAW_FILE_PRESENCE" = false',
+    'test -z "$RAW_MANIFEST_SOURCE"',
+    'test -z "$RAW_MANIFEST_CACHE_KEY"',
+    'case "$SOURCE_RUN_ID-$SOURCE_RUN_ATTEMPT:$PROGRESS_BASELINE_TARGET_HOUR" in',
+    '38692413809-1:2026-10-14T18:00:00.000Z|38768040429-1:2026-10-15T16:00:00.000Z) ;;',
+    '*) exit 1 ;;',
+  ]) assert.ok(scope.includes(guard), guard);
+  assert.ok(text.indexOf('if test "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" = true; then') < text.indexOf(gh('secrets.SUPABASE_URL')));
+  assert.match(text, /--include-selected-current-preflight "\$INCLUDE_SELECTED_CURRENT_PREFLIGHT"/);
+  assert.equal((text.match(/uses: actions\/cache\/restore@v6/g) ?? []).length, 2, 'no added cache restore');
+  assert.equal((text.match(/uses: actions\/upload-artifact@/g) ?? []).length, 1, 'same bounded report only');
+  assert.doesNotMatch(text, /(?:contents|actions|pull-requests|pages|id-token): write|actions\/cache\/save|run-exact-dmi-original-restore|update-dmi-bulk\.py|secrets\.DMI_API_KEY/);
 });

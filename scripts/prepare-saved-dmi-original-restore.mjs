@@ -78,9 +78,25 @@ export function savedDmiOriginalHistoryDemand({ conditions, parts, targetReferen
 
 // The actual private normal caller, not the PUBLIC-only decoder preference or
 // an independent union of every native donor. Inputs remain detached originals.
-export function collectSelectedSavedDmiOriginalCaptures({ protectedBulk, progressCandidate = null,
+export function collectSelectedSavedDmiOriginalCaptures(options = {}) {
+  return collectSelectedSavedDmiOriginalCapturesMeasured(options);
+}
+
+const PREFLIGHT_PROOF_CODES = new Set(['DMI_NATIVE_PROOF_SELECTION_INVALID',
+  'DMI_NATIVE_PROOF_NATIVE_ENDPOINT_MISSING', 'DMI_NATIVE_PROOF_NATIVE_CONFLICT',
+  'DMI_NATIVE_PROOF_PROJECTION_MISMATCH', 'DMI_NATIVE_PROOF_ENDPOINT_MISMATCH',
+  'DMI_NATIVE_PROOF_CONTEXT_INVALID', 'DMI_NATIVE_PROOF_CONTEXT_CONFLICT', 'DMI_NATIVE_PROOF_DONOR_BOUND']);
+function target48hDiagnosticRelation(time, target) {
+  const age = (Date.parse(target) - (typeof time === 'number' ? time : Date.parse(time))) / 3_600_000;
+  return !Number.isFinite(age) ? 'UNAVAILABLE' : age < 0 ? 'AFTER_TARGET'
+    : age <= 48 ? 'WITHIN_TARGET_48H' : 'BEFORE_TARGET_48H';
+}
+
+// The observer is private to this module. It receives fixed metadata only and
+// never changes the ordinary fail-fast guards, source selection or originals.
+function collectSelectedSavedDmiOriginalCapturesMeasured({ protectedBulk, progressCandidate = null,
   persistedHourlyByPart = new Map(), parts, demands,
-  targetReferenceAt = SAVED_DMI_ORIGINAL_TARGET } = {}) {
+  targetReferenceAt = SAVED_DMI_ORIGINAL_TARGET } = {}, observeFailure = null) {
   if (!boundedParts(parts) || !object(protectedBulk?.zones) || progressCandidate !== null && !object(progressCandidate?.zones)
     || !(persistedHourlyByPart instanceof Map) || !Array.isArray(demands) || demands.length !== parts.size
     || new Set(demands.map(row => row.partId)).size !== parts.size) refuse('INPUTS_UNAVAILABLE');
@@ -150,6 +166,9 @@ export function collectSelectedSavedDmiOriginalCaptures({ protectedBulk, progres
         if (!['dkss_lf', 'dkss_nsbs', 'dkss_idw'].includes(provenance.collection)) refuse('SELECTED_CURRENT_INVALID');
         if (!dmiMarineCollectionAllowedForZone(provenance?.collection, expected.parentZoneId)) continue;
         const proof = inspector.inspectOriginals({ part, row });
+        if (!proof.ok && observeFailure) observeFailure({ branch: 'INSPECT_ORIGINALS_REJECTED',
+          reasonCode: PREFLIGHT_PROOF_CODES.has(proof.code) ? proof.code : 'DMI_NATIVE_PROOF_INVALID',
+          target48hRelation: target48hDiagnosticRelation(row.time, targetReferenceAt) });
         if (!proof.ok) refuse('SELECTED_ENDPOINT_UNAVAILABLE');
         const sampling = inspectDmiForecastGridSampling(provenance, 'current', row.time, expected).status;
         if (!['unknown', 'coherent'].includes(sampling)) refuse('SELECTED_CURRENT_INVALID');
@@ -172,9 +191,33 @@ export function collectSelectedSavedDmiOriginalCaptures({ protectedBulk, progres
     // actually selected a same-hour replacement whose own native endpoints
     // passed every check above. Otherwise sanitizer loss must never become
     // apparent zero demand. This is not an independent donor union/admission.
+    if (observeFailure) {
+      const first = [...sanitizedCurrentLosses].filter(time => !verifiedSelectedTimes.has(time)).sort((a, b) => a - b)[0];
+      if (first !== undefined) observeFailure({ branch: 'SANITIZER_LOSS_UNCOVERED',
+        reasonCode: 'SANITIZER_CURRENT_LOSS_UNCOVERED',
+        target48hRelation: target48hDiagnosticRelation(first, targetReferenceAt) });
+    }
     if ([...sanitizedCurrentLosses].some(time => !verifiedSelectedTimes.has(time))) refuse('SELECTED_ENDPOINT_UNAVAILABLE');
   }
   return [...originals].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([, capture]) => capture);
+}
+
+// Read-only FIRST failure for ONE actual part. A stopped collector cannot
+// establish complete row coverage or release the original preparation guard.
+export function inspectSelectedSavedDmiOriginalCaptures(options = {}) {
+  if (!(options.parts instanceof Map) || options.parts.size !== 1) refuse('INPUTS_UNAVAILABLE');
+  let firstFailure = null;
+  try {
+    collectSelectedSavedDmiOriginalCapturesMeasured(options, failure => { firstFailure ??= failure; });
+    return { status: 'MEASURED', inspectionScope: 'FIRST_FAILURE_PER_PART', firstFailure: null };
+  } catch (error) {
+    if (error?.originalPlanCode === 'SAVED_DMI_ORIGINAL_HOLD_SUPPORT_UNAVAILABLE') {
+      firstFailure = { branch: 'HOLD_SUPPORT_UNAVAILABLE', reasonCode: 'HOLD_SUPPORT_UNAVAILABLE',
+        target48hRelation: 'UNAVAILABLE' };
+    } else if (error?.originalPlanCode !== 'SAVED_DMI_ORIGINAL_SELECTED_ENDPOINT_UNAVAILABLE' || !firstFailure) throw error;
+    return { status: 'PARTIAL', inspectionScope: 'FIRST_FAILURE_PER_PART',
+      firstFailure: { ...firstFailure, code: error.originalPlanCode } };
+  }
 }
 
 // One already authenticated donor at a time; original shape/context checking
