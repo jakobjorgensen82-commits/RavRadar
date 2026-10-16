@@ -10,6 +10,83 @@ const producerPath = new URL('./update-weather.mjs', import.meta.url);
 const sourceText = async file => (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 
+// Invert only the separately reviewed archived-epoch orchestration before the
+// older exact-source oracles. The complete genuine 903307 updater remains the
+// immutable baseline; the actual epoch caller has its own normal-path tests.
+function inverseWeatherStateEpochIntegration(source) {
+  const hunks = [
+    ["import { assertWeatherStateEpochInputViewForTarget }\n"
+      + "  from './lib/weather-state-epoch-input-view.mjs';\n", ''],
+    ['  previousCurrentSourceDomainTransitions = null,\n  stateEpochView = null,\n) {\n'
+      + '  // A separately authenticated, archived epoch omits OLD numerical state only\n'
+      + '  // for this first calculation. The full original weather baseline remains\n'
+      + '  // untouched in the caller and in the normal no-loss/persistence chain.\n'
+      + '  // A flag or serialized PASS marker cannot authorize this input selection.\n'
+      + '  if (stateEpochView !== null) {\n'
+      + '    assertWeatherStateEpochInputViewForTarget(stateEpochView,\n'
+      + '      { registry: contract, targetReferenceAt: generatedAt });\n'
+      + '    previousCoastalParts = stateEpochView.scoringPreviousCoastalParts;\n'
+      + '    previousCandidateGRollbackRuntime = stateEpochView.scoringCandidateRuntime;\n'
+      + '    pointStateInjections = {};\n'
+      + '    checkpointStates = stateEpochView.checkpointStates;\n'
+      + '    checkpointCandidateGRollbackStates = stateEpochView.checkpointCandidateGRollbackStates;\n'
+      + '    deployedBulkCache = stateEpochView.scoringDeployedBulkCache;\n'
+      + '    historicalDmiBulkCache = stateEpochView.scoringHistoricalDmiBulkCache;\n'
+      + '    persistedDmiPartRows = stateEpochView.scoringPersistedDmiPartRows;\n'
+      + '    previousCurrentSourceDomainTransitions = null;\n'
+      + '    if (historicalWaveInputTransition !== null) {\n'
+      + "      throw new Error('WEATHER_STATE_EPOCH_TRANSITION_COLLISION');\n"
+      + '    }\n  }\n'
+      + '  const calculationBootstrapMode = stateEpochView !== null\n'
+      + '    ? stateEpochView.candidateGBootstrapMode : RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE;\n'
+      + '  const calculationSourceValidated = stateEpochView !== null\n'
+      + '    ? stateEpochView.candidateGSourceValidated : RAVSCORE_EFFECTIVE_FIRST_CUTOVER_SOURCE_VALIDATED;\n',
+    '  previousCurrentSourceDomainTransitions = null,\n) {\n'],
+    ['          candidateGBootstrapMode: calculationBootstrapMode,\n'
+      + '          candidateGSourceValidated: calculationSourceValidated,\n',
+    '          candidateGBootstrapMode: RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE,\n'
+      + '          candidateGSourceValidated: RAVSCORE_EFFECTIVE_FIRST_CUTOVER_SOURCE_VALIDATED,\n'],
+    ['        ].includes(calculationBootstrapMode)\n',
+      '        ].includes(RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE)\n'],
+    ['const previous = await readPrevious();\nconst dmiForecastStore = await readDmiForecastStore();\n',
+      'const previous = await readPrevious();\n'
+      + 'const coastalPointStateInjections = await readCoastalPointStateInjections();\n'
+      + 'const dmiForecastStore = await readDmiForecastStore();\n'],
+    ["if (!['true', 'false'].includes(process.env.RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP ?? 'false')) {\n"
+      + "  throw new Error('WEATHER_STATE_EPOCH_MODE_INVALID');\n}\n"
+      + "const stateEpochView = process.env.RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP === 'true'\n"
+      + "  ? await (await import('./weather-state-epoch.mjs')).loadInstalledWeatherStateEpochInputView({\n"
+      + '    targetReferenceAt: generatedAt, registry: coastalPartsContract,\n  }) : null;\n'
+      + '// Pending/previous point staging remains archived and is not promoted into a\n'
+      + '// deliberately new numerical epoch. Ordinary point activation is unchanged.\n'
+      + 'const coastalPointStateInjections = stateEpochView !== null ? {}\n'
+      + '  : await readCoastalPointStateInjections();\n', ''],
+    ["if (process.env.RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION) {\n"
+      + "  if (stateEpochView !== null) throw new Error('WEATHER_STATE_EPOCH_TRANSITION_COLLISION');\n",
+    "if (process.env.RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION) {\n"],
+    ['// The archived OLD checkpoint is preserved but never reattested/selected as\n'
+      + '// NEW state. Ordinary followers have no epoch flag and load their real NEW S.\n'
+      + 'const ravScoreCheckpoint = stateEpochView !== null ? {\n'
+      + '  loaded: false, continuationAvailable: false, states: stateEpochView.checkpointStates,\n'
+      + '  candidateGRollbackStates: stateEpochView.checkpointCandidateGRollbackStates,\n'
+      + '} : await loadRavScoreContinuationCheckpointForTarget({\n',
+    'const ravScoreCheckpoint = await loadRavScoreContinuationCheckpointForTarget({\n'],
+    ['if (stateEpochView !== null && historicalWaveInputTransition !== null) {\n'
+      + "  throw new Error('WEATHER_STATE_EPOCH_TRANSITION_COLLISION');\n}\n"
+      + 'const previousPrivateCandidateGRuntime = stateEpochView !== null || historicalWaveInputTransition\n',
+    'const previousPrivateCandidateGRuntime = historicalWaveInputTransition\n'],
+    ['    previous?.ravScoreCurrentSourceDomainTransitions ?? null,\n    stateEpochView,\n',
+      '    previous?.ravScoreCurrentSourceDomainTransitions ?? null,\n'],
+  ];
+  for (const [after, before] of hunks) {
+    assert.equal(source.split(after).length, 2, 'each exact reviewed epoch hunk must occur once');
+    source = source.replace(after, () => before);
+  }
+  assert.equal(digest(source), '62bbe6eb4325dcba05afb922028150a9bdf7c45f2ebd7a7e975d85f3941d6288',
+    'epoch inverse must restore the complete genuine 903307 updater');
+  return source;
+}
+
 // Test-only inverse of the NEW explicit OLD-original donor integration. Remove
 // only these exact reviewed hunks before the older relocation inverse below;
 // none of the genuine historical whole-source or module hashes is updated.
@@ -276,9 +353,20 @@ function inverseLegacyTransportSettlement(source) {
 // Main 42eb83053cbcc878e51faac73e803846ee54234b has a top-level updater,
 // not the isolated 519 restored SOURCE/session API. This checks the actual
 // DMI queue body only; it is not SOURCE, original-B/S, history or whole-job proof.
+test('reviewed epoch orchestration has an exact whole-source inverse to genuine 903307', async () => {
+  const source = await sourceText(producerPath);
+  const baseline = inverseWeatherStateEpochIntegration(source);
+  assert.equal(Buffer.byteLength(baseline), 224231);
+  assert.throws(() => inverseWeatherStateEpochIntegration(source.replace(
+    '    checkpointStates = stateEpochView.checkpointStates;',
+    '    checkpointStates = {};')), /each exact reviewed epoch hunk/);
+  assert.throws(() => inverseWeatherStateEpochIntegration(source + '// unreviewed drift\n'),
+    /complete genuine 903307 updater/);
+});
+
 test('main updater is byte-identical outside the checkpoint import and normal queue refusal', async () => {
   const source = inverseLegacyTransportSettlement(inverseCurrentGridIntegration(
-    await inverseSharedRecoveryRecordExtraction(await sourceText(producerPath))));
+    await inverseSharedRecoveryRecordExtraction(inverseWeatherStateEpochIntegration(await sourceText(producerPath)))));
   const currentImport = "import { readDmiForecastFile, writeDmiForecastFileAtomic, isDmiForecastCheckpointStopUnproved } from './lib/dmi-forecast-file.mjs';";
   const baselineImport = "import { readDmiForecastFile, writeDmiForecastFileAtomic } from './lib/dmi-forecast-file.mjs';";
   const refusal = "    // A live/uncertain checkpoint is not a provider miss. Preserve the actual\n    // writer refusal before any later zone, component, history or public write.\n    if (isDmiForecastCheckpointStopUnproved(error)) throw error;\n";
@@ -289,7 +377,7 @@ test('main updater is byte-identical outside the checkpoint import and normal qu
 });
 
 test('new OLD-original donor wiring is explicit, source-bound, no-op when absent, and collision-safe', async () => {
-  const source = await sourceText(producerPath);
+  const source = inverseWeatherStateEpochIntegration(await sourceText(producerPath));
   assert.equal(source.split(legacyCurrentOriginalDonorBlock).length, 2);
   const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
   const execute = new AsyncFunction('process', 'crypto', 'fs', 'generatedAt',
@@ -341,7 +429,7 @@ test('new OLD-original donor wiring is explicit, source-bound, no-op when absent
 });
 
 test('shared normal DMI recovery module is import-safe, outside I71, and byte-exactly relocatable', async t => {
-  const source = await sourceText(producerPath);
+  const source = inverseWeatherStateEpochIntegration(await sourceText(producerPath));
   const shared = await sourceText(new URL('./lib/private-dmi-recovery-record.mjs', import.meta.url));
   t.mock.method(globalThis, 'fetch', () => { assert.fail('NETWORK_FORBIDDEN'); });
   const normal = await import('./lib/private-dmi-recovery-record.mjs');
@@ -394,15 +482,30 @@ test('main parser policy, public readers, serializer and record writer are prese
     'ecf1e9813312af7244be828aa667b5753f543e8d052f8fda49dc4c562255826c');
 });
 
-test('47 baseline commands plus issued213, current220 and pure prewrite-diagnostic checks reach normal checkpoint integration exactly once', async () => {
+test('47 baseline commands plus genuine OLD, NEW native, epoch and pure diagnostic checks reach normal checkpoint integration exactly once', async () => {
   const scripts = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).scripts;
   const { expandSourceCommands } = await import('./validate-source-once.mjs');
   const commands = expandSourceCommands(scripts, 'validate:source:checks');
+  const nativeCheck = 'node --test --test-concurrency 2 ' + [
+    'scripts/test-native-sampling-identity-successor.mjs',
+    'scripts/test-native-identity-normal-readiness.mjs',
+    'scripts/test-native-identity-normal-routing.mjs',
+    'scripts/test-owned-i71-native-identity-working.mjs',
+    'scripts/test-native-identity-staging-working-copy.mjs',
+    'scripts/test-native-identity-installed-migration-metadata.mjs',
+    'scripts/test-native-identity-checkpoint-runtime.mjs',
+    'scripts/test-native-identity-workflow.mjs',
+  ].join(' ');
   const sourceChecks = ['node scripts/check-account-assistant-issued-source.mjs',
-    'node scripts/build-current-grid-original-binding-successor.mjs --check',
-    'node scripts/test-current-grid-prewrite-diagnostic.mjs'];
+    'node scripts/check-native-identity-frozen-i71-source.mjs',
+    'node scripts/build-native-sampling-identity-original-binding-successor.mjs --check',
+    'node scripts/test-current-grid-prewrite-diagnostic.mjs',
+    'node scripts/test-native-identity-frozen-i71-source.mjs', nativeCheck,
+    scripts['test:weather-state-epoch']];
   for (const check of sourceChecks) assert.equal(commands.filter(command => command === check).length, 1);
   assert.equal(commands.includes('node scripts/build-account-assistant-binding-successor.mjs --check'), false);
+  assert.equal(commands.includes('node scripts/build-current-grid-original-binding-successor.mjs --check'), false,
+    'Issued220 must be checked only with its genuine frozen source, not rebuilt against NEW.');
   assert.equal(commands.filter(command => !sourceChecks.includes(command)).length, 47);
   const invoked = commands.flatMap(command => command.split(' '));
   assert.equal(invoked.filter(file => file === 'scripts/test-dmi-forecast-file.mjs').length, 1);

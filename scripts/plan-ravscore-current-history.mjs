@@ -468,6 +468,7 @@ async function main() {
   const productionReferenceAt = workflowTargetHour(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR);
   const baselineRequired = environmentBoolean('RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE');
   const stateLessRecovery = environmentBoolean('RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED');
+  const epochRequested = environmentBoolean('RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP');
   const registry = await readFixed(SOURCE_PATHS.registry);
   const baseline = await readFixed(SOURCE_PATHS.conditions, !baselineRequired);
   const conditions = baseline?.json ?? { zones: {} };
@@ -477,30 +478,42 @@ async function main() {
   // The compact part states are not inside the compressed zone-hour arrays.
   // Validate the existing lossless pack without materializing another hour copy.
   assertPrivateConditionsHourly(conditions);
+  const epochView = epochRequested
+    ? await (await import('./weather-state-epoch.mjs')).loadInstalledWeatherStateEpochInputView({
+      targetReferenceAt: productionReferenceAt, registry: registry.json,
+    }) : null;
   const activation = await readFixed(SOURCE_PATHS.activation, true);
-  const activationPairs = activation ? assertCoastalPointActivationStateInjection(activation.json) : {};
+  const activationPairs = epochView !== null ? {}
+    : activation ? assertCoastalPointActivationStateInjection(activation.json) : {};
   // This is the SAME normal cache validator/compatible-reattest operation used
   // by Weather. It may update only its usual cache checkpoint, never B/S.
-  const checkpoint = await loadRavScoreContinuationCheckpointForTarget({
+  const checkpoint = epochView !== null ? {
+    loaded: false, continuationAvailable: false, states: epochView.checkpointStates,
+    candidateGRollbackStates: epochView.checkpointCandidateGRollbackStates,
+  } : await loadRavScoreContinuationCheckpointForTarget({
     checkpointPath: path.join(ROOT, SOURCE_PATHS.checkpoint),
     targetReference: productionReferenceAt, repositoryRoot: ROOT,
   });
   const checkpointFile = await readFixed(SOURCE_PATHS.checkpoint, true);
-  if (checkpoint.loaded !== Boolean(checkpointFile)
+  if (epochView === null && (checkpoint.loaded !== Boolean(checkpointFile)
     || (checkpoint.loaded && (checkpointFile.json.generationSha256 !== checkpoint.generationSha256
       || checkpointFile.json.productionReferenceAt !== checkpoint.checkpointAt
       || (checkpoint.continuationAvailable
-        && !isDeepStrictEqual(checkpointFile.json.states, checkpoint.states))))) {
+        && !isDeepStrictEqual(checkpointFile.json.states, checkpoint.states)))))) {
     refuse('CHECKPOINT_CHANGED');
   }
   // The hash describes post-validation/normal-reattest cache bytes, not a new
   // authentication token. The returned genuine states determine demand only.
   const demand = buildRavScoreCurrentHistoryDemand({
-    registry: registry.json, conditions, checkpoint, activationPairs, productionReferenceAt,
+    registry: registry.json, conditions: epochView?.plannerConditions ?? conditions,
+    checkpoint, activationPairs, productionReferenceAt,
     registrySha256: registry.sha256,
     sourceHashes: { conditions: baseline?.sha256 ?? null,
       checkpoint: checkpointFile?.sha256 ?? null, activation: activation?.sha256 ?? null },
-    stateLessRecovery,
+    // These hashes still describe the actual preserved input artifacts, not
+    // fabricated empty files. Selection is separately authorized by the real
+    // archived input view; acquisition grants no numeric source admission.
+    stateLessRecovery: epochView?.stateLessRecovery ?? stateLessRecovery,
   });
   // Existing private .cache only; no directory creation, original rewrite,
   // provider operation, public artifact, checkpoint save or state promotion.

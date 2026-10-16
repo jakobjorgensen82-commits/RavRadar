@@ -32,7 +32,7 @@ test('actual native workflow conditions preserve default-off restore and exact S
   for(const enabled of [false,true]) for(const shouldRun of ['false','true'])
     for(const privateInstall of ['failure','success']) for(const reused of ['false','true'])
       for(const quick of [false,true]) for(const source of ['',NATIVE_IDENTITY_ORIGINAL_PROGRESS.source]) {
-        const context={inputs:{native_sampling_identity_original_recovery:enabled,quick_confirmation:quick,quick_progress_source:source},
+        const context={inputs:{weather_state_epoch_bootstrap:false,native_sampling_identity_original_recovery:enabled,quick_confirmation:quick,quick_progress_source:source},
           steps:{preflight:{outputs:{should_run:shouldRun}},'private-runtime-install':{outcome:privateInstall},
             'weather-source-handoff':{outputs:{reused}}},github:{ref:'refs/heads/main',event_name:'workflow_dispatch'}};
         assert.equal(evaluate(newRestore,context),enabled&&shouldRun==='true');
@@ -42,7 +42,7 @@ test('actual native workflow conditions preserve default-off restore and exact S
       }
   assert.equal(cases,64);
   const job=manual.slice(manual.indexOf('  build-and-prepare:'),manual.indexOf('  deploy-pages:'));
-  assert(job.includes('needs: [current-main-target, native-identity-prewrite]'));
+  assert(job.includes('needs: [current-main-target, native-identity-prewrite, state-epoch-prewrite]'));
   const start=job.indexOf('    if: >-\n'),end=job.indexOf('\n    ',start+13);
   const expression=job.slice(start+'    if: >-\n'.length,end).trim().replace(/\n\s*/g,' ');
   // Consume all continuation lines of this particular folded scalar.
@@ -50,8 +50,8 @@ test('actual native workflow conditions preserve default-off restore and exact S
   const actual=folded[1].trim().replace(/\n\s*/g,' '); assert(actual.includes(expression));
   for(const enabled of [false,true]) for(const result of ['success','failure','cancelled','skipped'])
     for(const target of ['success','failure']) for(const cancelled of [false,true]) {
-      const context={inputs:{native_sampling_identity_original_recovery:enabled},needs:{'current-main-target':{result:target},
-        'native-identity-prewrite':{result}},cancelled};
+      const context={inputs:{weather_state_epoch_bootstrap:false,native_sampling_identity_original_recovery:enabled},needs:{'current-main-target':{result:target},
+        'state-epoch-prewrite':{result:'skipped'},'native-identity-prewrite':{result}},cancelled};
       assert.equal(evaluate(actual,context),!cancelled&&target==='success'&&result===(enabled?'success':'skipped'));
     }
   assert(manual.includes('group: ravradar-weather-production-v2\n  queue: max\n  cancel-in-progress: false'));

@@ -2116,12 +2116,22 @@ try {
   });
 
   await test('current-grid original receivers keep exact family, inventory and current-only bytes', async () => {
+    const { withFrozenI71Source } = await import('./check-native-identity-frozen-i71-source.mjs');
+    const actualGrid = await import('./lib/bounded-conditions-predecessor-transition.mjs');
+    await withFrozenI71Source(async sourceRepository => {
+    // This is the issued220 receiver phase, not admission of today's new binding.
+    const frozenHead = '37e657867ff0f8c31f8e8489e5c9a1cf235192f9';
     // Reuse the reviewed national fixture's read-only Git module namespace.
     // These normal old factories create synthetic original archives, not
     // relabelled current bundles, authenticated production B/S or numeric proof.
     const { registerHooks } = await import('node:module');
     const { execFileSync } = await import('node:child_process');
     const { pathToFileURL, fileURLToPath } = await import('node:url');
+    const frozenImport = relative => import(pathToFileURL(path.join(sourceRepository, relative)).href);
+    const { restoreProtectedPrivateProductionRuntime, describeCurrentProtectedPrivateProductionRuntime }
+      = await frozenImport('scripts/protected-private-production-runtime.mjs');
+    const { verifyPrivateProductionRuntimeBundle }
+      = await frozenImport('scripts/private-production-runtime-bundle.mjs');
     // Whole reviewed producer succession, not a relabelled original family.
     const producerPath = 'scripts/update-dmi-bulk.py';
     const beforeCommit = 'ebf322b8bb4d188fc59f8da8380543b879be4ca8';
@@ -2143,7 +2153,7 @@ try {
     assert.equal(digest(currentProducer), '47652a732030bb89eb8b333db3a4b348f8801b3a78c46931a0439872a382b864',
       'the fixture also exercises the actual causal OLD-to-NEW original-recovery producer');
     const causalDelta = execFileSync('git', ['diff', '--no-ext-diff', '--no-textconv', '--unified=3',
-      fixedStageCommit, '--', producerPath], { cwd: sourceRepository, encoding: 'utf8' });
+      fixedStageCommit, frozenHead, '--', producerPath], { cwd: sourceRepository, encoding: 'utf8' });
     assert.equal(causalDelta.includes('\\ No newline at end of file'), false);
     const causalPieces = causalDelta.split(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@[^\n]*\n/m);
     assert.ok(causalPieces.length > 1 && (causalPieces.length - 1) % 3 === 0);
@@ -2224,7 +2234,7 @@ try {
     }
     assert.equal(restored.join('\n'), oldProducer, 'whole inverse must recover the unchanged EBF producer');
     const successorDelta = execFileSync('git', ['diff', '--no-ext-diff', '--no-textconv', '--unified=3',
-      afterCommit, '--', producerPath], { cwd: sourceRepository, encoding: 'utf8' });
+      afterCommit, frozenHead, '--', producerPath], { cwd: sourceRepository, encoding: 'utf8' });
     assert.equal(successorDelta.includes('\\ No newline at end of file'), false);
     const successorPieces = successorDelta.split(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@[^\n]*\n/m);
     assert.ok(successorPieces.length > 1 && (successorPieces.length - 1) % 3 === 0);
@@ -2341,8 +2351,8 @@ try {
         originalImport('scripts/protected-private-production-runtime.mjs'),
         originalImport('js/core/ravscore-model-contract.js'),
         originalImport('scripts/rollback-assets/ravscore-model-contract.js'),
-        import('./lib/bounded-conditions-predecessor-transition.mjs'),
-        import('./lib/private-weather-component-inventory.mjs'),
+        frozenImport('scripts/lib/bounded-conditions-predecessor-transition.mjs'),
+        frozenImport('scripts/lib/private-weather-component-inventory.mjs'),
       ]);
       const policy = grid.CURRENT_GRID_SAMPLING_SELECTED_PREDECESSOR_POLICY;
       assert.deepEqual(oldI.ravScoreModelBinding(), policy.sourceModelBinding);
@@ -2405,6 +2415,11 @@ try {
           sourceDescription: source, targetReferenceAt: reference, now });
         assert.ok(expected, 'requires genuine normal-generated current-only successor; no guard mock or skip');
         assert.strictEqual(grid.assertCurrentGridSamplingOriginalExpectation(expected), expected);
+        assert.equal(await actualGrid.buildCurrentGridSamplingOriginalRestoreExpectation({
+          sourceDescription: source, targetReferenceAt: reference, now }), null,
+        'the current native-identity binding must not borrow the issued220 receiver');
+        assert.throws(() => actualGrid.assertCurrentGridSamplingOriginalExpectation(expected),
+          /not the exact reviewed native-grid SOURCE successor/);
         const pointerBefore = docs.row();
         const objectsBefore = new Map([...store.objects].map(([key, value]) => [key, Buffer.from(value)]));
         let pointerReads = 0;
@@ -2520,6 +2535,7 @@ try {
         bundlePath: incomplete.bundlePath, repositoryRoot: repository, expected: incompleteExpected, now }),
       /production inventory is incompatible/);
     } finally { hook.deregister(); }
+    });
   });
 
   const implementation = (await fs.readFile(

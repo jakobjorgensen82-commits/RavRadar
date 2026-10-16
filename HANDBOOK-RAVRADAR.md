@@ -1,3 +1,17 @@
+## 89.238 Bevaret arkiv og ny fremadrettet historik
+
+**Kort fortalt:** Den gamle generation skal bevares verificeret, mens en særskilt ny strøm- og scorehistorik opbygges af korrekt fortolkede data. Den nye start er ikke udført i produktionen.
+
+Ejeren har valgt denne vej frem for at gøre fremtidig drift afhængig af en numerisk bro til den tidligere strømfortolkning. De originale vejr- og scorepakker samt den faktisk offentlige generation skal først gemmes som et selvstændigt privat arkiv med uændrede bytes, autentifikation og genlæsning. Rullende opbevaring af seneste og forrige generation er ikke tilstrækkeligt. Gamle offentliggjorte scorer forbliver historiske data, ikke nye beregningsinput.
+
+Første nye beregning får en særskilt typesikret inputvisning uden gammel scorehukommelse, gamle aktiveringstilstande eller gamle numeriske strøm-donorer. De oprindelige vejrdata bevares særskilt til databevarelseskontrollen. Alle nye strømværdier skal stadig bestå de normale kontroller af native gitter, originalidentitet, proveniens og faktisk kildevalg. Manglende målte timer er ukendte; opvarmning må ikke kaldes fuld historik eller kunstigt READY.
+
+Engangskørslen forberedes med en samlet grænse på 360 minutter og en målt efterbehandlingsreserve på 180 minutter. Fasekontroller skal sikre tid til beregning, fulde kontroller, gemning og upload; Pages-deploy har sit særskilte efterfølgende job. Almindelige kørsler beholder deres normale 230 minutter og budgetter. Fejlworkerens fire minutter og krav om fysisk afsluttede processer bevares. Ekstra tid kan ikke frembringe DMI-timer, som ikke er tilgængelige.
+
+Lokale prøver viser arkivgemning/genlæsning og alle 673 kystdele gennem ny opvarmning, normal checkpointgemning/genlæsning og en almindelig efterfølger uden nyt startflag. Dette er ikke bevis for fungerende cloudarkiv, installeret SQL, offentlig levering eller heljobskapacitet hos leverandørerne. Normal kalderintegration og den præcise samlede kilde-, Linux- og PostgreSQL-kontrol skal bestå, før en første faktisk ny generation kan verificeres gennem holdbar gemning, upload, deploy og offentlig kontrol.
+
+Derefter skal en almindelig vejrhentning bruge den faktisk gemte nye tilstand uden nulstilling eller Codex-redning. Cron genaktiveres først efter verificeret genopretning, med uændret tidsplan. Lokal version er 4.0.578, offentlig version 4.0.577. Ingen produktionsstart er udført. SOURCE19 og øvrige tilbageholdte leverancer forbliver særskilte. Alle fem arbejdsområder er åbne med frist 18. oktober.
+
 ## 89.237 Gyldige strømoriginaler og sikker arbejdsbaseline
 
 **Kort fortalt:** Begge fejl i originalernes punktidentitet og blandede endepunkter er rettet lokalt. Version 4.0.578 er udstedt, men endnu ikke installeret eller offentliggjort.

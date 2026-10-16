@@ -37,10 +37,20 @@ const nativeTargets = [
   'scripts/test-native-identity-workflow.mjs',
 ];
 const nativeCheck = 'node --test --test-concurrency 2 ' + nativeTargets.join(' ');
+const epochTargets = [
+  'scripts/test-weather-state-epoch-archive.mjs',
+  'scripts/test-weather-state-epoch-input-view.mjs',
+  'scripts/test-weather-state-epoch-callers.mjs',
+  'scripts/test-weather-state-epoch.mjs',
+  'scripts/test-weather-state-epoch-budget.mjs',
+  'scripts/test-weather-state-epoch-workflow.mjs',
+];
+const epochCheck = 'node --test --test-concurrency 2 ' + epochTargets.join(' ');
+assert.equal(scripts['test:weather-state-epoch'], epochCheck);
 assert.equal(scripts['test:native-identity-successor'], nativeFrozenCheck + ' && ' + nativeCheck,
   'All eight native targets and explicit concurrency2 must remain in the same normal group.');
 const successorChecks = [issuedCheck, frozenCurrentCheck, successorCheck, diagnosticCheck,
-  nativeFrozenCheck, nativeCheck];
+  nativeFrozenCheck, nativeCheck, epochCheck];
 for (const check of successorChecks) {
   assert.equal(declared.filter(command => command === check).length, 1,
     'Issued, genuine OLD, NEW, native and pure diagnostic source must each be checked exactly once.');
