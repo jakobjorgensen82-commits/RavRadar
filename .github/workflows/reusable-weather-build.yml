@@ -541,6 +541,13 @@ jobs:
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
           set -uo pipefail
+          if test "${CHECKPOINT_ONLY:-false}" = true && test "${RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY:-false}" = true; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            echo "dmi_changed=false" >> "$GITHUB_OUTPUT"
+            echo "reason=epoch-checkpoint-reentry" >> "$GITHUB_OUTPUT"
+            echo "age_minutes=unknown" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           state=.cache/weather-preflight-state/state.json
           input_root="$RAVRADAR_PREFLIGHT_WORK/input"
           if test -n "$PREFLIGHT_CACHE_KEY" && test "$PUBLIC_MANIFEST_AVAILABLE" = "true" && test -f "$state"; then

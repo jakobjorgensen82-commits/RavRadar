@@ -1,3 +1,7 @@
+## 16. oktober — providerfri forhåndskontrol ved epoch-genoptagelse
+
+Den særskilte epoch-checkpoint-rute kunne betinget spørge DMI om modelmetadata i den lette forhåndskontrol, før den senere lukkede leverandørindgange. Ruten skal nu vælge beregning direkte, når både checkpoint-only og epoch-checkpoint-reentry er slået til. Den må ikke materialisere preflight-state eller kalde den normale DMI-probe. Almindelige kørsler, budgetter, originale data, kildeprioritet, scoreformel og alle efterdatagates bevares. Det normale mål består lokalt i sine statiske assertions; den udtrukne POSIX-guard består desuden 25 flagkombinationer i den eksisterende lokale shell. Faktisk Bash-kørsel er åbent Linux-bevis, ikke et lokalt PASS. Normal workflowrækkefølge og RDKS består. Præcis samlet CI og faktisk genoptagelse/offentlig effekt udestår; dette er ikke en ny påvist produktionsfejl eller en leveret vejrgeneration.
+
 ## 16. oktober — PR637: manglende historisk testinverse
 
 PR637s præcise kildekontrol fejlede i fem mål. Den fælles årsag er en manglende kontroladapter: updaterens nye ATOMIC_COMPONENT_TUPLE_KEYS-import og shared-modulets tilsvarende eksport indgik ikke i testens historiske whole-inverse; integrated-generator bruger samme inverse. Rettelsen afgrænses til denne testadapter med alle gamle hele kildehashes og assertions bevaret. De gennemgåede produktbytes ændres ikke.

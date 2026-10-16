@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import test from 'node:test';
 import { runInNewContext } from 'node:vm';
 
-// Static workflow contract only. Never reads private data or calls a provider.
+// Workflow contract and an isolated shell guard. Never reads private data or calls a provider.
 const read = file => fs.readFileSync(file, 'utf8').replaceAll('\r\n', '\n');
 const normal = read('.github/workflows/reusable-weather-build.yml');
 const orchestrator = read('.github/workflows/update-and-deploy.yml');
@@ -19,6 +21,56 @@ function step(source, name) {
   assert.equal(found.length, 1, `Exactly one step: ${name}`);
   return found[0];
 }
+
+function epochCheckpointPreflightGuard(source) {
+  const preflight = step(source, 'Decide whether weather needs updating before private runtime download');
+  const run = preflight.match(/        run: \|\n([\s\S]*)$/)?.[1]?.replace(/^          /gm, '');
+  assert.ok(run, 'The actual normal preflight shell must exist');
+  const state = run.indexOf('state=.cache/weather-preflight-state/state.json\n');
+  assert.ok(state > 0, 'The normal preflight state read must remain after the guard');
+  const guard = run.slice(0, state);
+  assert.match(guard, /^set -uo pipefail\nif test "\$\{CHECKPOINT_ONLY:-false\}" = true && test "\$\{RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY:-false\}" = true; then\n/,
+    'Only the conjunction of both explicit epoch checkpoint flags may bypass model probes');
+  assert.match(guard, /  echo "should_run=true" >> "\$GITHUB_OUTPUT"\n  echo "dmi_changed=false" >> "\$GITHUB_OUTPUT"\n  echo "reason=epoch-checkpoint-reentry" >> "\$GITHUB_OUTPUT"\n  echo "age_minutes=unknown" >> "\$GITHUB_OUTPUT"\n  exit 0\nfi\n$/);
+  assert.doesNotMatch(guard, /python|curl|fetch|materialize-preflight/,
+    'The checkpoint preflight guard may not reach state materialization or providers');
+  return guard;
+}
+const checkpointPreflightGuard = epochCheckpointPreflightGuard(normal);
+const checkpointPreflightYaml = checkpointPreflightGuard.replace(/^set -uo pipefail\n/, '')
+  .split('\n').slice(0, -1).map(line => '          ' + line).join('\n') + '\n';
+assert.equal(normal.split(checkpointPreflightYaml).length, 2, 'The inverse must remove exactly the actual YAML guard');
+assert.throws(() => epochCheckpointPreflightGuard(normal.replace(checkpointPreflightYaml, '')),
+  'The original unguarded preflight must fail the checkpoint contract');
+for (const clause of [
+  'test "${CHECKPOINT_ONLY:-false}" = true && ',
+  ' && test "${RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY:-false}" = true',
+]) {
+  assert.equal(normal.split(clause).length, 2, 'Each guard mutation must change exactly one actual clause');
+  assert.throws(() => epochCheckpointPreflightGuard(normal.replace(clause, '')),
+    'Neither checkpoint flag alone may bypass the normal preflight');
+}
+test('epoch checkpoint preflight: actual Bash guard skips probes only with both flags',
+  { skip: process.platform !== 'linux' && 'Actual Bash execution requires the Linux source check' }, () => {
+    for (const checkpoint of [undefined, 'false', 'true', 'TRUE', '1']) {
+      for (const reentry of [undefined, 'false', 'true', 'TRUE', '1']) {
+        const env = { PATH: process.env.PATH, GITHUB_OUTPUT: '/dev/stdout' };
+        if (checkpoint !== undefined) env.CHECKPOINT_ONLY = checkpoint;
+        if (reentry !== undefined) env.RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY = reentry;
+        const result = spawnSync('bash', ['--noprofile', '--norc', '-c',
+          checkpointPreflightGuard + 'printf "NORMAL_PREFLIGHT_FALLTHROUGH\\n"\n'],
+        { env, encoding: 'utf8', timeout: 5000, maxBuffer: 16_384 });
+        const label = JSON.stringify({ checkpoint, reentry });
+        assert.equal(result.error, undefined, label);
+        assert.equal(result.signal, null, label);
+        assert.equal(result.status, 0, `${label}\n${result.stderr}`);
+        assert.equal(result.stderr, '', label);
+        assert.equal(result.stdout, checkpoint === 'true' && reentry === 'true'
+          ? 'should_run=true\ndmi_changed=false\nreason=epoch-checkpoint-reentry\nage_minutes=unknown\n'
+          : 'NORMAL_PREFLIGHT_FALLTHROUGH\n', label);
+      }
+    }
+  });
 
 const privatePlaintextPrefixes = [
   'coastal-point-staging-v1-',
