@@ -33,21 +33,22 @@ const base = Date.parse('2026-08-29T00:00:00.000Z');
 const time = hour => new Date(base + hour * HOUR_MS).toISOString();
 const vectorSelection = 'nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer';
 
-async function syntheticNewFactory() {
+async function syntheticNewFactory(readSource = file => fs.readFile(file, 'utf8')) {
   // Reuse the existing actual normal synthetic weather/capture shape rather
-  // than copy a fixture bank or replace any production validator.
-  const source = await fs.readFile(path.join(ROOT, 'scripts/test-ravscore-recovery-replay.mjs'), 'utf8');
+  // than copy a fixture bank or replace any production validator. Source pins
+  // bind exact Git/LF text; Windows checkout CRLF is the only normalization.
+  const source = (await readSource(path.join(ROOT, 'scripts/test-ravscore-recovery-replay.mjs'))).replace(/\r\n/g, '\n');
   const start = 'const dmiContracts = {', end = 'function withoutCurrent(row) {';
   assert.equal(source.split(start).length, 2); assert.equal(source.split(end).length, 2);
   const factory = source.slice(source.indexOf(start), source.indexOf(end));
-  assert.equal(hash(factory), '7de8bf6808231719933e85a4a52e7bde8de6a46f8fe204357369b65bdf4f3b53');
+  assert.equal(hash(factory), '5156520eebeed36b729fb332d56eb885fe7543cb12b9ddb40b31e9946efef97f');
   const weather = new Function('part', 'time', 'HOUR_MS', 'vectorSelection', 'sha', factory + '\nreturn weather;');
-  const samplingSource = await fs.readFile(path.join(ROOT, 'scripts/test-protected-dmi-native-current-proofs.mjs'), 'utf8');
+  const samplingSource = (await readSource(path.join(ROOT, 'scripts/test-protected-dmi-native-current-proofs.mjs'))).replace(/\r\n/g, '\n');
   const samplingStart = '  const sampling = source => ({', samplingEnd = '\n  const withWeather = row =>';
   assert.equal(samplingSource.split(samplingStart).length, 2);
   assert.equal(samplingSource.split(samplingEnd).length, 2);
   const samplingFactory = samplingSource.slice(samplingSource.indexOf(samplingStart), samplingSource.indexOf(samplingEnd));
-  assert.equal(hash(samplingFactory), '2f7666d6fa4eb5aaadf3e88970c36e3d8c7f68b3619645284ec5ba6b51e1935b');
+  assert.equal(hash(samplingFactory), '2d81802ce221adfe65bcb1db37c8c0071cd2ab0c089478ebe2629081cbde48fa');
   const sampling = new Function('hash', samplingFactory + '\nreturn sampling;')(hash);
   return part => {
     const oldFactory = weather(part, time, HOUR_MS, vectorSelection, hash);
@@ -273,6 +274,29 @@ test('a JSON archive marker or a serialized view cannot omit actual old initiali
     /WEATHER_STATE_EPOCH_UNVERIFIED_VIEW/);
   assert.throws(() => assertWeatherStateEpochInputViewForTarget({}, { registry: {}, targetReferenceAt: time(10) }),
     /WEATHER_STATE_EPOCH_UNVERIFIED_VIEW/);
+});
+
+test('normal synthetic NEW source pins accept Git LF and checkout CRLF only, retaining mutation refusals', async () => {
+  const readLF = async file => (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
+  const part = { partId: 'SYNTHETIC-RECOVERY-PART', parentZoneId: 'SYNTHETIC-RECOVERY-ZONE',
+    zoneId: 'SYNTHETIC-RECOVERY-ZONE', waterPoint: [8, 55], onshoreDirectionDeg: 90 };
+  const lf = (await syntheticNewFactory(readLF))(part);
+  const crlf = (await syntheticNewFactory(async file => (await readLF(file)).replace(/\n/g, '\r\n')))(part);
+  assert.deepEqual(crlf, lf);
+  assert.equal(lf.length, 12);
+  for (const [basename, boundary] of [
+    ['test-ravscore-recovery-replay.mjs', 'const dmiContracts = {'],
+    ['test-protected-dmi-native-current-proofs.mjs', '  const sampling = source => ({'],
+  ]) {
+    await assert.rejects(syntheticNewFactory(async file => {
+      const source = await readLF(file);
+      return path.basename(file) === basename ? source.replace(boundary, boundary + ' ') : source;
+    }), { code: 'ERR_ASSERTION' }, 'A non-line-ending source change must retain the exact hash refusal');
+    await assert.rejects(syntheticNewFactory(async file => {
+      const source = await readLF(file);
+      return path.basename(file) === basename ? source.replace(boundary + '\n', boundary + '\r') : source;
+    }), { code: 'ERR_ASSERTION' }, 'A lone CR is not a permitted checkout line ending');
+  }
 });
 
 test('normal strict NEW673 cold warmup saves and loads, then673 ordinary followers continue without a cold flag', async t => {

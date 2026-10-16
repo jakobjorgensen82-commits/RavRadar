@@ -41,13 +41,14 @@ function evaluate(source, environment, result) {
   return Function(...Object.keys(environment), "'use strict';\n" + source + '\nreturn ' + result + ';')(...Object.values(environment));
 }
 
-async function actualFixture() {
-  const source = await fs.readFile(path.join(ROOT, 'scripts/test-weather-state-epoch-input-view.mjs'), 'utf8');
-  assert.equal(hash(source), 'b11c1425683a2ccbfcf0f0629412bbe14307a26cfb69dcfab22a60a5d6efe845');
+async function actualFixture(readSource = file => fs.readFile(file, 'utf8')) {
+  const source = (await readSource(path.join(ROOT, 'scripts/test-weather-state-epoch-input-view.mjs')))
+    .replace(/\r\n/g, '\n');
+  assert.equal(hash(source), '34ead6c11007d3ffd65903360097a299348a42ba2062cd778ba5467d71694484');
   // Exact existing controlled fixture, not a second fixture bank or a mocked
   // archive assertion. Its genuine fixed044d OLD validators and real archive
   // capture/SAVE/readback/local-rehydrate run unchanged, including negatives.
-  const helpers = section(source, 'async function syntheticNewFactory()', '// Controlled storage exercises')
+  const helpers = section(source, 'async function syntheticNewFactory(', '// Controlled storage exercises')
     + section(source, 'async function archivedOldView(root)', "test('a JSON archive marker");
   return evaluate(helpers, { assert, crypto, fs, nativeFs, os, path, pathToFileURL,
     ROOT, hash, HOUR_MS, time, vectorSelection, withIssuedAccountAssistantSource, OLD,
@@ -93,6 +94,20 @@ async function actualCallerSeams() {
   assert.match(planner, /const epochRequested = environmentBoolean\('RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP'\)/);
   return { prepare, initialize, demand };
 }
+
+test('shared genuine fixture source pin is Git LF canonical and rejects all non-line-ending drift', async () => {
+  const readLF = async file => (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
+  for (const readSource of [readLF, async file => (await readLF(file)).replace(/\n/g, '\r\n')]) {
+    const fixture = await actualFixture(readSource);
+    for (const name of ['ownedTemporary', 'exclusiveJson', 'archivedOldView', 'syntheticNewFactory']) {
+      assert.equal(typeof fixture[name], 'function');
+    }
+  }
+  await assert.rejects(actualFixture(async file => (await readLF(file)) + '// fixture drift\n'),
+    { code: 'ERR_ASSERTION' });
+  await assert.rejects(actualFixture(async file => (await readLF(file)).replace('\n', '\r')),
+    { code: 'ERR_ASSERTION' }, 'A lone CR is not normalized away');
+});
 
 test('bounded real caller seams: archived view selects673 COLD demands and strict NEW initialization; not full updater or delivery', async t => {
   const fixtures = await actualFixture(), root = await fixtures.ownedTemporary(t);
