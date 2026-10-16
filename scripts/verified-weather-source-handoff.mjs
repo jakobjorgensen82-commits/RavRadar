@@ -2,6 +2,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync as sourceHandoffExecFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 export const HANDOFF_KIND = 'RAVRADAR_VERIFIED_WEATHER_SOURCE_HANDOFF';
@@ -200,7 +201,7 @@ export function validateSafeClosure(closure) {
   return { reference, end, sourceCounts };
 }
 
-function cacheKey({ runnerOs, sourceHeadSha, runId, runAttempt }) {
+export function cacheKey({ runnerOs, sourceHeadSha, runId, runAttempt }) {
   if (typeof runnerOs !== 'string' || !/^[A-Za-z0-9._-]{1,32}$/.test(runnerOs)) fail('HANDOFF_RUNNER_OS_INVALID');
   return `weather-source-handoff-v2-${runnerOs}-${sourceHeadSha}-${runId}-${runAttempt}`;
 }
@@ -489,7 +490,7 @@ export function assertCacheInventory(cacheRoot) {
   }
 }
 
-export function installWeatherSourceHandoff({
+export function inspectWeatherSourceHandoff({
   root = process.cwd(), cacheRoot, artifactAttestationPath, resolvedMetadataPath,
   expectedRepository, expectedHeadSha, expectedRunId, runnerOs,
   now = new Date().toISOString(), githubOutput, githubEnv,
@@ -526,6 +527,18 @@ export function installWeatherSourceHandoff({
     || !SHA256.test(resolved.artifactDigest ?? '')) fail('HANDOFF_RESOLVED_METADATA_INVALID');
   const nowInstant = canonicalInstant(now, 'HANDOFF_TIME_INVALID');
   if (nowInstant.getTime() > exactUtcHour(attestation.expiresAt).getTime()) fail('HANDOFF_EXPIRED');
+  return { attestation, resolvedRoot, isolatedCacheRoot };
+}
+
+export function installWeatherSourceHandoff({
+  root = process.cwd(), cacheRoot, artifactAttestationPath, resolvedMetadataPath,
+  expectedRepository, expectedHeadSha, expectedRunId, runnerOs,
+  now = new Date().toISOString(), githubOutput, githubEnv,
+}) {
+  const { attestation, resolvedRoot, isolatedCacheRoot } = inspectWeatherSourceHandoff({
+    root, cacheRoot, artifactAttestationPath, resolvedMetadataPath,
+    expectedRepository, expectedHeadSha, expectedRunId, runnerOs, now,
+  });
   const staged = [];
   const backups = [];
   const installed = [];
@@ -566,11 +579,67 @@ export function installWeatherSourceHandoff({
     ['reused', 'true'],
     ['target_hour', attestation.productionReferenceAt],
     ['closure_id', attestation.closureId],
+    ['attestation_sha256', attestation.attestationSha256],
   ]);
   writeGithubLines(githubEnv, [
     ['RAVRADAR_PRODUCTION_TARGET_HOUR', attestation.productionReferenceAt],
   ]);
   return attestation;
+}
+
+const retainedSourceHandoffArtifactReads = new Set();
+export function extractWeatherSourceHandoffArtifact(outputDirectory) {
+  const directory = path.resolve(outputDirectory);
+  const root = fs.lstatSync(directory);
+  if (!root.isDirectory() || root.isSymbolicLink() || fs.realpathSync(directory) !== directory) fail('HANDOFF_ARTIFACT_ROOT_INVALID');
+  const metadata = readJsonFile(path.join(directory, 'resolved.json'), 256 * 1024, 'HANDOFF_RESOLVED_METADATA_INVALID').value;
+  const filename = path.join(directory, 'producer-artifact.zip');
+  const row = { fd: null, first: null, closed: false };
+  retainedSourceHandoffArtifactReads.add(row);
+  try {
+    row.fd = fs.openSync(filename, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+    row.stat = fs.fstatSync(row.fd, { bigint: true });
+    if (!row.stat.isFile() || row.stat.nlink !== 1n || row.stat.size < 1n || row.stat.size > BigInt(MAX_ARTIFACT_BYTES)) fail('HANDOFF_ARTIFACT_SIZE_INVALID');
+    const read = () => {
+      const bytes = Buffer.alloc(Number(row.stat.size)); let offset = 0;
+      while (offset < bytes.length) {
+        const count = fs.readSync(row.fd, bytes, offset, bytes.length - offset, offset);
+        if (!count) fail('HANDOFF_ARTIFACT_CHANGED');
+        offset += count;
+      }
+      if (fs.readSync(row.fd, Buffer.alloc(1), 0, 1, bytes.length)) fail('HANDOFF_ARTIFACT_CHANGED');
+      return bytes;
+    };
+    const bytes = read();
+    if (bytes.length !== metadata.artifactSizeBytes || bytesSha256(bytes) !== metadata.artifactDigest
+      || metadata.artifactDigest !== metadata.downloadedZipSha256) fail('HANDOFF_ARTIFACT_DIGEST_INVALID');
+    // Decode the EXACT already hashed buffer, not a second pathname/fd read.
+    // The fixed stdlib child belongs to H's actual cohort; it has no free path,
+    // callback or program input, and writes no extracted file itself.
+    const unpack = 'import io,sys,zipfile\n'
+      + 'with zipfile.ZipFile(io.BytesIO(sys.stdin.buffer.read())) as z:\n'
+      + ' rows=z.infolist()\n'
+      + " if len(rows)!=1 or rows[0].filename!='attestation.json' or rows[0].is_dir() or rows[0].file_size>262144: raise RuntimeError('HANDOFF_ARTIFACT_INVENTORY_INVALID')\n"
+      + ' sys.stdout.buffer.write(z.read(rows[0]))\n';
+    const attestation = sourceHandoffExecFile('python3', ['-I', '-B', '-c', unpack],
+      { input: bytes, maxBuffer: 256 * 1024 });
+    if (!read().equals(bytes)) fail('HANDOFF_ARTIFACT_CHANGED');
+    const actual = fs.fstatSync(row.fd, { bigint: true }), named = fs.lstatSync(filename, { bigint: true });
+    if (!named.isFile() || named.isSymbolicLink() || ['dev', 'ino', 'size', 'mode', 'mtimeNs', 'ctimeNs']
+      .some(key => actual[key] !== row.stat[key] || named[key] !== row.stat[key])) fail('HANDOFF_ARTIFACT_CHANGED');
+    const output = path.join(directory, 'artifact');
+    fs.mkdirSync(output, { mode: 0o700 });
+    fs.writeFileSync(path.join(output, 'attestation.json'), attestation, { flag: 'wx', mode: 0o600 });
+  } catch (error) { row.first = [error]; }
+  if (row.fd !== null) {
+    try { fs.closeSync(row.fd); }
+    catch (error) { row.first ??= [error]; }
+    try { fs.fstatSync(row.fd); }
+    catch (error) { if (error?.code === 'EBADF') row.closed = true; else row.first ??= [error]; }
+    if (!row.closed) row.first ??= [new Error('HANDOFF_ARTIFACT_CLOSE_UNPROVED')];
+  }
+  if (row.first !== null) throw row.first[0];
+  retainedSourceHandoffArtifactReads.delete(row);
 }
 
 export function verifyRebuiltClosure({ attestationPath, closurePath }) {
@@ -655,6 +724,19 @@ async function main() {
       .filter(Boolean);
     validateArtifactInventoryEntries(entries);
     console.log('Verified weather source handoff artifact inventory is exact.');
+    return;
+  }
+  if (command === 'extract-artifact') {
+    extractWeatherSourceHandoffArtifact(args['output-dir']);
+    return;
+  }
+  if (command === 'inspect') {
+    const { attestation } = inspectWeatherSourceHandoff({ root: args.root, cacheRoot: args['cache-root'],
+      artifactAttestationPath: args['artifact-attestation'], resolvedMetadataPath: args.resolved,
+      expectedRepository: args.repository, expectedHeadSha: args['expected-head'],
+      expectedRunId: args['run-id'], runnerOs: args['runner-os'] });
+    writeGithubLines(args['github-output'], [['target_hour', attestation.productionReferenceAt],
+      ['closure_id', attestation.closureId], ['attestation_sha256', attestation.attestationSha256]]);
     return;
   }
   if (command === 'install') {

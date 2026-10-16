@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { nativeIdentityMigration } from './lib/native-sampling-identity-successor-source.mjs';
 
+// The same exact source proof must wait for every relevant SOURCE native job.
+await (await import('./test-source19-native-ci-workflow.mjs')).testSource19NativeCiWorkflow();
+
 // Keep the payload-free operational control report inside this existing cheap
 // workflow command so the source gate does not grow another process.
 await import('./test-weather-operational-control-summary.mjs');

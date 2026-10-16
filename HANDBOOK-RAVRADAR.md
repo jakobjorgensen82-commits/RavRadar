@@ -1,3 +1,17 @@
+## 89.241 Procesrevision klar som kildekandidat, ikke som aktiveret drift
+
+**Kort fortalt:** Procesrevisionen er samlet til én præcis kildekontrol, men skal stadig bestå syv faktiske Linuxprøver og hele den holdbare driftskæde før aktivering.
+
+Den isolerede SOURCE19-revision er samlet som en kildekandidat med 37 afgrænsede filer. Originalinstallation, Copernicus-kontrol og genbrug af krypteret fremgang skal følge den samme faktiske ejer. Ukendt procesophør, ulukkede filer eller manglende kvittering for holdbar gemning må ikke frigive ejeren. En afsluttet programventen eller en grøn statusmarkør er ikke i sig selv bevis for fysisk lukning.
+
+Den normale nye-starts cacheisolering er bevaret: arkivbundet inputvisning, hele pakkens kontrolsum fra samme faktisk læste fil, udeladelse af kun den gamle aktive arbejdskopi og krav om fraværende destination. Normal installation uden den særskilte inputvisning er uændret. Originale B/S, RAW, gamle scorer og administratorpunkter ændres ikke.
+
+Syv lukkede prøveforløb skal køres i syv friske Linuxjobs på samme præcise kildehoved. Den almindelige kildekontrol med PostgreSQL bevares. En relevant nativefejl, et ukendt udfald eller et sprunget relevant job blokerer kildebeviset; en irrelevant, sprunget prøve er ikke en bestået nativeprøve. Kun den faktiske afgrænsede kilde- og inputfortegnelse udløser disse ekstra jobs, ikke vilkårlige nye brugerfladefiler.
+
+Lokale syntaks- og kontraktprøver samt hele byteinverser består. Den endelige 37-fils sammenligning med de normale fortegnelser viser uændret C69, I71, T12, lagringskontrakt og offentlig projektion. Det er ikke modelgenopbygning, Linuxbevis, produktionsinstallation eller ny offentlig effekt. PR634s separate kildekontrol er bestået, men kan ikke erstatte SOURCE-kandidatens egne kontroller.
+
+Alle syv Linuxforløb og samlet frigivelse efter holdbar gemning og fysisk lukning er endnu uprøvet. Nationale heljob, fejlforløb, faktisk genlæsning, upload, deploy og selvstændig drift skal stadig dokumenteres. SOURCE19 er inaktiv, og kildegrønt aktiverer ikke revisionen. Lokal version er 4.0.578; den hidtil dokumenterede offentlige version er 4.0.577. Cron er pauset med bevaret tidsplan; alle fem mål og fristen 18. oktober består.
+
 ## 89.240 Gammel aktiv DMI-cache holdes ude af den nye start
 
 **Kort fortalt:** Den nye start skal holde den gamle aktive DMI-cache ude af beregningens arbejdskopi, mens arkivet og originale vejrdata bevares.

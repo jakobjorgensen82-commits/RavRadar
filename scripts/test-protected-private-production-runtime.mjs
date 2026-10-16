@@ -8,6 +8,7 @@ import { runInNewContext } from 'node:vm';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import {
+  PRIVATE_RUNTIME_REPOSITORY_ROOT,
   canonicalPrivateRuntimeJson,
   createPrivateProductionRuntimeBundle,
   privateRuntimeBundleContentSha256,
@@ -49,6 +50,7 @@ import {
   validateSameReferencePrivateRuntimeSuccessor,
   validateProtectedPrivateRuntimePointer,
 } from './protected-private-production-runtime.mjs';
+import { SOURCE_GATE_PRODUCERS } from './lib/weather-source-gate.mjs';
 import { OWNER_CURRENT_DOMAIN_PREDECESSOR }
   from './lib/bounded-conditions-predecessor-transition.mjs';
 
@@ -2819,3 +2821,1459 @@ try {
 } finally {
   await fs.rm(temp, { recursive: true, force: true });
 }
+
+await test('SOURCE normal progress: genuine installed packed B survives absent S without false restore', async () => {
+  const { registerHooks } = await import('node:module');
+  const { execFileSync } = await import('node:child_process');
+  const { fileURLToPath } = await import('node:url');
+  const moduleUrl = new URL('./protected-private-production-runtime.mjs', import.meta.url);
+  const repositoryUrl = new URL('../', import.meta.url).href;
+  const query = 'source-owner-test=' + crypto.randomUUID();
+  // Fresh, actual ESM module graph. Only test observation exports are appended;
+  // imports, module initialization, issuer and all validators execute unchanged.
+  const observation = registerHooks({
+    resolve(specifier, context, next) {
+      const result = next(specifier, context);
+      if (result.url.startsWith(repositoryUrl) && /\.(?:mjs|js)$/.test(new URL(result.url).pathname)) {
+        const url = new URL(result.url); url.search = query;
+        return { ...result, url: url.href };
+      }
+      return result;
+    },
+    load(url, context, next) {
+      const result = next(url, context);
+      if (url.startsWith(moduleUrl.href + '?')) return { ...result, source: String(result.source)
+        + '\nexport { captureSourceDeadlineProcess, issuePrivateSourceJobDeadline, restoreSourceOriginals, sourceOriginalResultOwners, retainedSourceOriginalOwners, runSourceNormalDeployedBulkCopy };\n' };
+      if (new URL(url).protocol === 'file:' && new URL(url).pathname.endsWith('/weather-component-progress-cache.mjs')) {
+        return { ...result, source: String(result.source) + '\nexport { retainedSourceProgressOwners, sourceProgressPipeline, ownSourceProgressHandle, inspectOwnedSourceProgress };\n'
+        + (String(result.source).includes('async function closeSourceProgressOwnerFileStreams(')
+          ? '\nexport { closeSourceProgressOwnerFileStreams };\n' : '') };
+      }
+      return result;
+    },
+  });
+  const hooks = await import(moduleUrl.href + '?' + query);
+  const workflow = await import(new URL('./private-production-runtime-workflow.mjs?' + query, import.meta.url));
+  const progress = await import(new URL('./weather-component-progress-cache.mjs?' + query, import.meta.url));
+  const bundleModule = await import(new URL('./private-production-runtime-bundle.mjs?' + query, import.meta.url));
+  const { PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE } =
+    await import(new URL('./lib/private-weather-component-inventory.mjs?' + query, import.meta.url));
+  const { buildOpenMeteoPartRequest, readOpenMeteoPartResponse, mergeOpenMeteoPartBank, OPEN_METEO_NATIVE_NEAREST_POLICIES } =
+    await import(new URL('./lib/open-meteo-part-bank.mjs?' + query, import.meta.url));
+  const { openMeteoO1280NearestGridPoint } = await import(new URL('./lib/open-meteo-o1280-grid.mjs?' + query, import.meta.url));
+  const head = execFileSync('git', ['rev-parse', 'HEAD^{commit}'], { cwd: PRIVATE_RUNTIME_REPOSITORY_ROOT, encoding: 'utf8' }).trim();
+  const environment = { GITHUB_ACTIONS: 'true', GITHUB_REPOSITORY: 'fixture/repo',
+    GITHUB_RUN_ID: '200', GITHUB_RUN_ATTEMPT: '2', GITHUB_SHA: head, GITHUB_REF: 'refs/heads/main',
+    RUNNER_NAME: 'source-materializer-fixture', RUNNER_OS: 'Linux', RUNNER_TRACKING_ID: 'synthetic-marker',
+    RAVRADAR_SOURCE_EXTENDED_PROVIDER_BOOTSTRAP: 'false', WEATHER_PROGRESS_ENCRYPTION_KEY: Buffer.alloc(32, 73).toString('base64') };
+  const priorEnvironment = new Map(Object.keys(environment).map(key => [key, process.env[key]]));
+  Object.assign(process.env, environment);
+  // One coherent synthetic wall/monotonic relationship for this handoff test.
+  // Real Windows clock drift was separately rejected by the unchanged A2 guard;
+  // this fixture is not actual hosted clock/deadline evidence and never resets.
+  const realNow = Date.now, wallStart = Date.now(), monoStart = performance.now();
+  Date.now = () => wallStart + Math.floor(performance.now() - monoStart);
+  const sample = () => { const monoBefore = performance.now(), wall = Date.now(), monoAfter = performance.now(); return { monoBefore, wall, monoAfter }; };
+  async function holder() {
+    const identity = hooks.captureSourceDeadlineProcess();
+    const run = { id: 200, run_attempt: 2, head_sha: head, head_branch: 'main',
+      path: '.github/workflows/update-and-deploy.yml', status: 'in_progress', conclusion: null,
+      event: 'schedule', repository: { full_name: 'fixture/repo' }, head_repository: { full_name: 'fixture/repo' } };
+    let calls = 0;
+    const issued = await hooks.issuePrivateSourceJobDeadline(identity, { async readJsonWithTiming(route) {
+      const before = sample(); calls++;
+      assert.equal(route, '/repos/fixture/repo/actions/runs/200/attempts/2' + (calls === 2 ? '/jobs?per_page=100' : ''));
+      const json = calls === 1 ? run : { total_count: 1, jobs: [{ id: 300, run_id: 200, head_sha: head,
+        name: SOURCE_GATE_PRODUCERS[run.path].gates[0].job, status: 'in_progress', conclusion: null,
+        completed_at: null, runner_id: 400, runner_name: environment.RUNNER_NAME,
+        started_at: new Date(before.wall - 600000).toISOString() }] };
+      return { before, after: sample(), serverDate: new Date(before.wall).toUTCString(), hasNextPage: false, json };
+    } });
+    assert.equal(calls, 2); return issued;
+  }
+  const targetText = (await fs.readFile(new URL('./test-protected-private-production-runtime.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const first = targetText.indexOf('const clone = value =>'), end = targetText.indexOf('\ntry {\n  await fs.mkdir(repository', first);
+  const setupEnd = targetText.indexOf('\n  const baselineContracts =', end);
+  assert.ok(first > 0 && end > first && setupEnd > end);
+  const fixtureContext = { fs, os, path, crypto, process, Buffer, PRIVATE_RUNTIME_FILES, PRIVATE_RUNTIME_CONTRACT_FILES,
+    ravScoreModelBinding, buildPrivateRuntimeCreateSpec: workflow.buildPrivateRuntimeCreateSpec,
+    buildPrivateRuntimeExpectation: workflow.buildPrivateRuntimeExpectation,
+    createPrivateProductionRuntimeBundle: bundleModule.createPrivateProductionRuntimeBundle };
+  // Reuse ONLY the existing synthetic data/store factory, not extracted product
+  // bodies. RAM-source reads keep the fixture tied to the selected source bytes.
+  const setup = targetText.slice(end + '\ntry {'.length, setupEnd)
+    .replace('await fs.copyFile(source, destination);', 'await fs.writeFile(destination, await fs.readFile(source));');
+  const fixture = await Function(...Object.keys(fixtureContext), 'return (async()=>{\n'
+    + targetText.slice(first, end) + setup
+    + '\nreturn { temp, repository, privateRoot, restoreRoot, createGeneration, fakeDocuments, fakeStorage }; })()')(...Object.values(fixtureContext));
+  const { repository, privateRoot, restoreRoot, createGeneration, fakeDocuments, fakeStorage } = fixture;
+  const write = async (root, relative, value) => { const file = path.join(root, relative); await fs.mkdir(path.dirname(file), { recursive: true }); await fs.writeFile(file, typeof value === 'string' ? value : JSON.stringify(value)); };
+  const digest = value => crypto.createHash('sha256').update(value).digest('hex');
+  const documents = fakeDocuments(), storage = fakeStorage();
+  let reads = 0, expected, injectFailure = false, injected = 0;
+  const realLstat = fs.lstat;
+  async function restore(label) {
+    const issued = await holder();
+    const bundlePath = path.join(restoreRoot, label);
+    const result = await hooks.restoreSourceOriginals(issued, 'single', { privateRoot: restoreRoot, bundlePath,
+      repositoryRoot: repository, expected, now: '2026-08-29T11:05:00.000Z', storage: storage.client,
+      request: async (...args) => { reads++; return documents.request(...args); } });
+    const outputPath = path.join(restoreRoot, label + '-materialized');
+    await bundleModule.restorePrivateProductionRuntimeBundle({ privateRoot: restoreRoot, bundlePath, outputPath,
+      repositoryRoot: repository, expected, targetReferenceAt: expected.targetReferenceAt,
+      minimumReferenceAt: expected.minimumReferenceAt, minimumGeneratedAt: expected.minimumGeneratedAt,
+      now: '2026-08-29T11:05:00.000Z' });
+    return { issued, result, outputPath, state: hooks.sourceOriginalResultOwners.get(result) };
+  }
+  try {
+    const reference = '2026-08-29T10:00:00.000Z';
+    const part = { partId: 'TEST', zoneId: 'ZONE', waterPoint: [10, 56] };
+    const spatialPolicies = OPEN_METEO_NATIVE_NEAREST_POLICIES;
+    const gridPoint = openMeteoO1280NearestGridPoint(part.waterPoint);
+    const responseText = JSON.stringify({ longitude: gridPoint[0], latitude: gridPoint[1], utc_offset_seconds: 0,
+      hourly: { time: [reference], wind_speed_10m: [4], wind_direction_10m: [90] }, hourly_units: { wind_speed_10m: 'm/s', wind_direction_10m: '°' } });
+    const admission = readOpenMeteoPartResponse({ request: buildOpenMeteoPartRequest(part, { component: 'wind', productionReferenceAt: reference,
+      spatialPolicy: spatialPolicies.wind }), responseText, acquiredAt: reference }, { part, spatialPolicies });
+    const bank = mergeOpenMeteoPartBank(null, [admission], { parts: [part], spatialPolicies, retentionStartAt: reference, retentionEndAt: reference });
+    const ledger = '{"synthetic":"original selected donor"}\n';
+    const marker = { schemaVersion: 1, kind: 'PRIVATE_WEATHER_COMPONENT_INPUTS', sourceSelectionApplied: true,
+      openMeteoBankSha256: bank.bankSha256, copernicusBankSha256: null, selectedComponentsSha256: digest(ledger) };
+    await write(repository, PRIVATE_WEATHER_COMPONENT_FILES.openMeteoBank, bank);
+    await write(repository, PRIVATE_WEATHER_COMPONENT_FILES.selectedComponents, ledger);
+    await write(repository, PRIVATE_WEATHER_COMPONENT_FILES.fallbackCursor, { kind: 'WEATHER_COMPONENT_FALLBACK_CURSOR', schemaVersion: 1, openMeteoLastAttemptedPartId: 'TEST' });
+    const generation = await createGeneration(0, { metadataOverride: { weatherComponentInputs: marker } }); expected = generation.expected;
+    const emptyHolder = await holder();
+    const emptyResult = await hooks.restoreSourceOriginals(emptyHolder, 'single', { privateRoot: restoreRoot,
+      bundlePath: path.join(restoreRoot, 'absent'), repositoryRoot: repository, expected,
+      now: '2026-08-29T11:05:00.000Z', storage: storage.client, request: documents.request });
+    assert.equal(emptyResult.restored, false);
+    assert.deepEqual(await progress.installSourceOriginalProgress(emptyHolder, emptyResult),
+      { progressInspected: false, reason: 'protected-original-absent' });
+    assert.equal(hooks.sourceOriginalResultOwners.get(emptyResult).workingGeneration, undefined);
+    await hooks.publishProtectedPrivateProductionRuntime({ privateRoot, bundlePath: generation.bundlePath,
+      repositoryRoot: repository, expected, now: '2026-08-29T11:05:00.000Z', sourceHead: head,
+      request: documents.request, storage: storage.client });
+    const owned = await restore('baseline-without-s');
+    const originalRows = [...owned.state.bundles[0].rows.values()].map(row => ({
+      row, path: row.path, stat: row.stat, sha256: row.sha256, fd: row.handle.fd,
+    }));
+    await assert.rejects(workflow.installSourceOriginalPrivateRuntime({}, owned.result,
+      { restoredRoot: owned.outputPath, repositoryRoot: repository }), /DEADLINE_NOT_ISSUED/);
+    const installed = await workflow.installSourceOriginalPrivateRuntime(owned.issued, owned.result,
+      { restoredRoot: owned.outputPath, repositoryRoot: repository });
+    assert.equal(installed.installed, true);
+    assert.equal(installed.fileCount, 13);
+    assert.equal(owned.state.preparedInstall.completed, true);
+    assert.ok(owned.state.preparedInstall.packInvocation instanceof Promise);
+    assert.equal((await owned.state.preparedInstall.packInvocation).length, 3);
+    const before = owned.state.workingReaders.map(row => ({
+      row, path: row.path, stat: row.stat, sha256: row.sha256, fd: row.handle.fd,
+    }));
+    const binding = owned.state.progressBinding;
+    assert.equal(owned.state.workingGeneration, undefined);
+    await assert.rejects(fs.lstat(path.join(repository, progress.WEATHER_PROGRESS_CIPHER_PATH)),
+      error => error.code === 'ENOENT');
+    const readsBeforeProgress = reads;
+    // The real normal C caller authenticates absence, then invokes P's guarded
+    // B-working admission. No prelude state, result flag or owner is fabricated.
+    const actual = await progress.installSourceOriginalProgress(owned.issued, owned.result);
+    assert.deepEqual(actual, { progressInspected: false, status: 'CACHE_MISS',
+      code: 'SNAPSHOT_ABSENT', applied: false, workingUnchanged: true });
+    const cacheOwner = [...progress.retainedSourceProgressOwners].at(-1);
+    assert.equal(cacheOwner.holder, owned.issued);
+    assert.equal(cacheOwner.miss, actual);
+    assert.equal(cacheOwner.result, null);
+    assert.equal(cacheOwner.unionInvocation, null);
+    assert.equal(cacheOwner.temporary, null);
+    assert.equal(cacheOwner.packInvocation, null);
+    assert.equal(cacheOwner.streams.length, 0);
+    assert.equal(reads, readsBeforeProgress, 'no second moving B pointer');
+    assert.equal(owned.state.workingOperation.kind, 'baseline-working-read');
+    assert.equal(owned.state.workingOperation.actual, actual);
+    assert.equal(owned.state.workingOperation.input, cacheOwner);
+    assert.equal(owned.state.workingOperation.completed, true);
+    assert.equal(owned.state.activeOperation, null);
+    assert.equal(owned.state.workingGeneration.inputKind, 'installed-protected-baseline');
+    assert.equal(owned.state.workingGeneration.originalBinding, binding);
+    assert.equal(owned.state.progressBinding, binding);
+    assert.deepEqual(owned.state.workingGeneration.rows, before.map(item => item.row));
+    assert.equal(owned.state.workingGeneration.rows.length, 13);
+    await hooks.assertSourceOriginalProgress(owned.issued);
+    for (const old of [...originalRows, ...before]) {
+      assert.equal(old.row.path, old.path);
+      assert.equal(old.row.stat, old.stat);
+      assert.equal(old.row.sha256, old.sha256);
+      assert.equal(old.row.handle.fd, old.fd);
+      const held = await old.row.handle.stat({ bigint: true });
+      assert.equal(held.dev, old.stat.dev);
+      assert.equal(held.ino, old.stat.ino);
+      assert.equal(digest(await fs.readFile(old.path)), old.sha256);
+    }
+    await assert.rejects(fs.lstat(path.join(repository, progress.WEATHER_PROGRESS_CIPHER_PATH)),
+      error => error.code === 'ENOENT');
+    assert.equal(Object.hasOwn(actual, 'saved'), false);
+    assert.equal(Object.hasOwn(actual, 'sourceComplete'), false);
+    assert.equal(Object.hasOwn(actual, 'workingInstalled'), false);
+    assert.equal(Object.hasOwn(owned.state, 'dmiOperation'), false);
+
+    // Actual P -> S copy from the genuine installed B/missing-S admission above.
+    // No producer/prelude/completed flags are manufactured by this fixture.
+    await hooks.runSourceNormalDeployedBulkCopy(owned.issued);
+    const deployedCopy = owned.state.normalDeployedCopy;
+    assert.equal(deployedCopy.completed, true);
+    assert.equal(owned.state.activeOperation, null);
+    const canonicalRepository = owned.state.context.repository;
+    assert.equal(await fs.realpath(repository), canonicalRepository);
+    assert.equal(deployedCopy.row.path, path.join(canonicalRepository, '.cache/deployed-dmi-bulk-cache.json'));
+    const sCopyOwners = [...progress.retainedSourceProgressOwners].filter(owner =>
+      owner.holder === owned.issued && owner.writers?.some(writer => writer.path === deployedCopy.row.path));
+    assert.equal(sCopyOwners.length, 1, 'observe the actual S owner that performed the copy');
+    assert.equal(sCopyOwners[0].writers.length, 1);
+    assert.equal(sCopyOwners[0].writers[0].closed, true, 'actual writer EBADF was proved');
+    assert.deepEqual(sCopyOwners[0].handles, [], 'S must never open a redundant readonly handle');
+    const completion = progress.sourceNormalDeployedCopyCompletion(owned.issued);
+    assert.deepEqual(Object.keys(completion).sort(), ['bytes', 'closed', 'input', 'sha256']);
+    assert.equal(Object.hasOwn(completion, 'row'), false, 'S completion is writer-only');
+    const pCopyReaders = owned.state.operationReaders.filter(row => row.path === deployedCopy.row.path);
+    assert.deepEqual(pCopyReaders, [deployedCopy.row], 'P owns exactly the one actual readback reader');
+    assert.ok(deployedCopy.row.handle.fd >= 0);
+    const heldCopy = await deployedCopy.row.handle.stat({ bigint: true });
+    assert.equal(heldCopy.isFile(), true);
+    assert.equal(heldCopy.dev, deployedCopy.row.stat.dev);
+    assert.equal(heldCopy.ino, deployedCopy.row.stat.ino);
+    assert.equal(deployedCopy.row.sha256, before.find(item => item.row.path === path.join(canonicalRepository, 'data/live/dmi-bulk-cache.json')).sha256);
+    assert.deepEqual(await fs.readFile(deployedCopy.row.path),
+      await fs.readFile(path.join(repository, 'data/live/dmi-bulk-cache.json')));
+    await hooks.assertSourceOriginalProgress(owned.issued);
+    for (const old of [...originalRows, ...before]) {
+      assert.equal(old.row.path, old.path); assert.equal(old.row.stat, old.stat);
+      assert.equal(old.row.sha256, old.sha256); assert.equal(old.row.handle.fd, old.fd);
+    }
+    // Only actual internal S calls and genuine owners minted by the existing
+    // B/S fixture. No producer/T/hosted ACK or final SOURCE release is invented.
+    const streamFs = await import('node:fs');
+    assert.equal(cacheOwner.root, canonicalRepository);
+    const streamDirectory = path.join(canonicalRepository, '.cache/source19-owned-stream-test');
+    await fs.mkdir(streamDirectory, { recursive: false });
+    const streamInput = path.join(streamDirectory, 'input.bin');
+    const streamBody = Buffer.from('synthetic-owned-stream-not-weather\n');
+    await fs.writeFile(streamInput, streamBody);
+    const ordinaryOutput = path.join(streamDirectory, 'normal.bin');
+    await progress.sourceProgressPipeline(cacheOwner, streamFs.createReadStream(streamInput),
+      streamFs.createWriteStream(ordinaryOutput, { flags: 'wx', mode: 0o600 }));
+    assert.deepEqual(await fs.readFile(ordinaryOutput), streamBody);
+    assert.equal(progress.retainedSourceProgressOwners.has(cacheOwner), true);
+    const closeMiss = await progress.inspectOwnedSourceProgress({ repositoryRoot: canonicalRepository }, owned.issued);
+    const closeOwner = [...progress.retainedSourceProgressOwners].find(owner => owner.miss === closeMiss);
+    assert.ok(closeOwner && closeOwner.holder === owned.issued);
+    assert.deepEqual(closeOwner.streams, []);
+    // A real fs stream's close callback may return success WITHOUT closing its
+    // real descriptor. The OLD pipeline Promise accepts that; the new gate must
+    // reject while the actual FD and genuine owner remain retained.
+    const noOpOutput = path.join(streamDirectory, 'close-noop.bin');
+    let noOpFd = null, closeCalls = 0;
+    const noOpWriter = streamFs.createWriteStream(noOpOutput, { flags: 'wx', mode: 0o600,
+      fs: { ...streamFs, close(fd, callback) { closeCalls++; callback(null); } } });
+    noOpWriter.once('open', fd => { noOpFd = fd; });
+    try {
+      await assert.rejects(progress.sourceProgressPipeline(closeOwner,
+        streamFs.createReadStream(streamInput), noOpWriter), /SOURCE_PROGRESS_STREAM_CLOSE_UNPROVED/);
+      assert.equal(closeCalls, 1);
+      assert.equal(streamFs.fstatSync(noOpFd).isFile(), true, 'no-op callback did not physically close');
+      assert.equal(progress.retainedSourceProgressOwners.has(closeOwner), true);
+      const first = closeOwner.failure[0];
+      await assert.rejects(progress.closeSourceProgressOwnerFileStreams(closeOwner), error => error === first);
+      assert.equal(closeCalls, 1, 'uncertain close must never be retried');
+    } finally {
+      // Test-owned cleanup only after physical retention measurements; never a
+      // production release or retry through the stream's injected close method.
+      if (noOpFd !== null) {
+        try { streamFs.fstatSync(noOpFd); streamFs.closeSync(noOpFd); }
+        catch (error) { if (error?.code !== 'EBADF') throw error; }
+      }
+    }
+    const borrowed = await progress.ownSourceProgressHandle(cacheOwner, streamInput,
+      { bytes: streamBody.length, sha256: digest(streamBody) });
+    const borrowedFd = borrowed.handle.fd;
+    const borrowedStream = borrowed.handle.createReadStream({ autoClose: false });
+    await progress.sourceProgressPipeline(cacheOwner, borrowedStream,
+      streamFs.createWriteStream(path.join(streamDirectory, 'borrowed.bin'), { flags: 'wx', mode: 0o600 }));
+    await progress.closeSourceProgressOwnerFileStreams(cacheOwner);
+    assert.equal(borrowedStream.autoClose, false);
+    assert.equal(borrowedStream.destroyed, false);
+    assert.equal(borrowed.handle.fd, borrowedFd);
+    assert.equal(streamFs.fstatSync(borrowedFd).isFile(), true, 'borrowed reader remains with its real owner');
+    const originalLstat = fs.lstat;
+    fs.lstat = async (file, ...args) => { if (file === streamInput) throw null; return originalLstat(file, ...args); };
+    try { await assert.rejects(progress.closeSourceProgressOwnerFileStreams(cacheOwner), error => error === null); }
+    finally { fs.lstat = originalLstat; }
+    assert.deepEqual(cacheOwner.failure, [null]);
+    await assert.rejects(progress.closeSourceProgressOwnerFileStreams(cacheOwner), error => error === null);
+    assert.equal(streamFs.fstatSync(borrowedFd).isFile(), true);
+    assert.equal(progress.retainedSourceProgressOwners.has(cacheOwner), true);
+    assert.equal(owned.state.activeOperation, null);
+    assert.equal(owned.state.artifact, undefined);
+    console.log(JSON.stringify({ sourceProgressPhysicalStreams: 'PASS', ownStreamsClosed: true,
+      closeNoopRefused: true, closeCalls, borrowedReaderRetained: true, firstRawNullRetained: true,
+      sourceComplete: false, realNetwork: 0 }));
+    console.log(JSON.stringify({ normalPackedBaselineMiss: 'PASS', installedFiles: 13,
+      sameOriginalAndWorkingHandles: true, originalPinsUnchanged: true,
+      missRemainsMiss: true, missingBRefused: true, producerEntered: false, realNetwork: 0 }));
+  } finally {
+    injectFailure = false; fs.lstat = realLstat;
+    // Test-owned cleanup only after retention measurements; not SOURCE release.
+    for (const owner of progress.retainedSourceProgressOwners) {
+      for (const row of owner.handles) if (row.handle.fd >= 0) await row.handle.close();
+      if (owner.temporary) await owner.temporary.cleanup();
+    }
+    for (const owner of hooks.retainedSourceOriginalOwners) {
+      const rows = new Set([...owner.bundles.flatMap(bundle => [...bundle.rows.values()]), ...(owner.operationReaders ?? []), ...(owner.workingReaders ?? [])]);
+      for (const row of rows) if (row.handle.fd >= 0) await row.handle.close();
+    }
+    for (const [key, value] of priorEnvironment) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+    Date.now = realNow;
+    observation.deregister();
+    await fs.rm(fixture.temp, { recursive: true, force: true });
+  }
+});
+
+await test('SOURCE normal progress: final raw null retains genuine B and unfinished baseline admission', async () => {
+  const { registerHooks } = await import('node:module');
+  const { execFileSync } = await import('node:child_process');
+  const { fileURLToPath } = await import('node:url');
+  const moduleUrl = new URL('./protected-private-production-runtime.mjs', import.meta.url);
+  const repositoryUrl = new URL('../', import.meta.url).href;
+  const query = 'source-owner-test=' + crypto.randomUUID();
+  // Fresh, actual ESM module graph. Only test observation exports are appended;
+  // imports, module initialization, issuer and all validators execute unchanged.
+  const observation = registerHooks({
+    resolve(specifier, context, next) {
+      const result = next(specifier, context);
+      if (result.url.startsWith(repositoryUrl) && /\.(?:mjs|js)$/.test(new URL(result.url).pathname)) {
+        const url = new URL(result.url); url.search = query;
+        return { ...result, url: url.href };
+      }
+      return result;
+    },
+    load(url, context, next) {
+      const result = next(url, context);
+      if (url.startsWith(moduleUrl.href + '?')) return { ...result, source: String(result.source)
+        + '\nexport { captureSourceDeadlineProcess, issuePrivateSourceJobDeadline, restoreSourceOriginals, sourceOriginalResultOwners, retainedSourceOriginalOwners, runSourceNormalDeployedBulkCopy };\n' };
+      if (new URL(url).protocol === 'file:' && new URL(url).pathname.endsWith('/weather-component-progress-cache.mjs')) {
+        return { ...result, source: String(result.source) + '\nexport { retainedSourceProgressOwners };\n' };
+      }
+      return result;
+    },
+  });
+  const hooks = await import(moduleUrl.href + '?' + query);
+  const workflow = await import(new URL('./private-production-runtime-workflow.mjs?' + query, import.meta.url));
+  const progress = await import(new URL('./weather-component-progress-cache.mjs?' + query, import.meta.url));
+  const bundleModule = await import(new URL('./private-production-runtime-bundle.mjs?' + query, import.meta.url));
+  const { PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE } =
+    await import(new URL('./lib/private-weather-component-inventory.mjs?' + query, import.meta.url));
+  const { buildOpenMeteoPartRequest, readOpenMeteoPartResponse, mergeOpenMeteoPartBank, OPEN_METEO_NATIVE_NEAREST_POLICIES } =
+    await import(new URL('./lib/open-meteo-part-bank.mjs?' + query, import.meta.url));
+  const { openMeteoO1280NearestGridPoint } = await import(new URL('./lib/open-meteo-o1280-grid.mjs?' + query, import.meta.url));
+  const head = execFileSync('git', ['rev-parse', 'HEAD^{commit}'], { cwd: PRIVATE_RUNTIME_REPOSITORY_ROOT, encoding: 'utf8' }).trim();
+  const environment = { GITHUB_ACTIONS: 'true', GITHUB_REPOSITORY: 'fixture/repo',
+    GITHUB_RUN_ID: '200', GITHUB_RUN_ATTEMPT: '2', GITHUB_SHA: head, GITHUB_REF: 'refs/heads/main',
+    RUNNER_NAME: 'source-materializer-fixture', RUNNER_OS: 'Linux', RUNNER_TRACKING_ID: 'synthetic-marker',
+    RAVRADAR_SOURCE_EXTENDED_PROVIDER_BOOTSTRAP: 'false', WEATHER_PROGRESS_ENCRYPTION_KEY: Buffer.alloc(32, 73).toString('base64') };
+  const priorEnvironment = new Map(Object.keys(environment).map(key => [key, process.env[key]]));
+  Object.assign(process.env, environment);
+  // One coherent synthetic wall/monotonic relationship for this handoff test.
+  // Real Windows clock drift was separately rejected by the unchanged A2 guard;
+  // this fixture is not actual hosted clock/deadline evidence and never resets.
+  const realNow = Date.now, wallStart = Date.now(), monoStart = performance.now();
+  Date.now = () => wallStart + Math.floor(performance.now() - monoStart);
+  const sample = () => { const monoBefore = performance.now(), wall = Date.now(), monoAfter = performance.now(); return { monoBefore, wall, monoAfter }; };
+  async function holder() {
+    const identity = hooks.captureSourceDeadlineProcess();
+    const run = { id: 200, run_attempt: 2, head_sha: head, head_branch: 'main',
+      path: '.github/workflows/update-and-deploy.yml', status: 'in_progress', conclusion: null,
+      event: 'schedule', repository: { full_name: 'fixture/repo' }, head_repository: { full_name: 'fixture/repo' } };
+    let calls = 0;
+    const issued = await hooks.issuePrivateSourceJobDeadline(identity, { async readJsonWithTiming(route) {
+      const before = sample(); calls++;
+      assert.equal(route, '/repos/fixture/repo/actions/runs/200/attempts/2' + (calls === 2 ? '/jobs?per_page=100' : ''));
+      const json = calls === 1 ? run : { total_count: 1, jobs: [{ id: 300, run_id: 200, head_sha: head,
+        name: SOURCE_GATE_PRODUCERS[run.path].gates[0].job, status: 'in_progress', conclusion: null,
+        completed_at: null, runner_id: 400, runner_name: environment.RUNNER_NAME,
+        started_at: new Date(before.wall - 600000).toISOString() }] };
+      return { before, after: sample(), serverDate: new Date(before.wall).toUTCString(), hasNextPage: false, json };
+    } });
+    assert.equal(calls, 2); return issued;
+  }
+  const targetText = (await fs.readFile(new URL('./test-protected-private-production-runtime.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const first = targetText.indexOf('const clone = value =>'), end = targetText.indexOf('\ntry {\n  await fs.mkdir(repository', first);
+  const setupEnd = targetText.indexOf('\n  const baselineContracts =', end);
+  assert.ok(first > 0 && end > first && setupEnd > end);
+  const fixtureContext = { fs, os, path, crypto, process, Buffer, PRIVATE_RUNTIME_FILES, PRIVATE_RUNTIME_CONTRACT_FILES,
+    ravScoreModelBinding, buildPrivateRuntimeCreateSpec: workflow.buildPrivateRuntimeCreateSpec,
+    buildPrivateRuntimeExpectation: workflow.buildPrivateRuntimeExpectation,
+    createPrivateProductionRuntimeBundle: bundleModule.createPrivateProductionRuntimeBundle };
+  // Reuse ONLY the existing synthetic data/store factory, not extracted product
+  // bodies. RAM-source reads keep the fixture tied to the selected source bytes.
+  const setup = targetText.slice(end + '\ntry {'.length, setupEnd)
+    .replace('await fs.copyFile(source, destination);', 'await fs.writeFile(destination, await fs.readFile(source));');
+  const fixture = await Function(...Object.keys(fixtureContext), 'return (async()=>{\n'
+    + targetText.slice(first, end) + setup
+    + '\nreturn { temp, repository, privateRoot, restoreRoot, createGeneration, fakeDocuments, fakeStorage }; })()')(...Object.values(fixtureContext));
+  const { repository, privateRoot, restoreRoot, createGeneration, fakeDocuments, fakeStorage } = fixture;
+  const write = async (root, relative, value) => { const file = path.join(root, relative); await fs.mkdir(path.dirname(file), { recursive: true }); await fs.writeFile(file, typeof value === 'string' ? value : JSON.stringify(value)); };
+  const digest = value => crypto.createHash('sha256').update(value).digest('hex');
+  const documents = fakeDocuments(), storage = fakeStorage();
+  let reads = 0, expected, injectFailure = false, injected = 0;
+  const realLstat = fs.lstat;
+  async function restore(label) {
+    const issued = await holder();
+    const bundlePath = path.join(restoreRoot, label);
+    const result = await hooks.restoreSourceOriginals(issued, 'single', { privateRoot: restoreRoot, bundlePath,
+      repositoryRoot: repository, expected, now: '2026-08-29T11:05:00.000Z', storage: storage.client,
+      request: async (...args) => { reads++; return documents.request(...args); } });
+    const outputPath = path.join(restoreRoot, label + '-materialized');
+    await bundleModule.restorePrivateProductionRuntimeBundle({ privateRoot: restoreRoot, bundlePath, outputPath,
+      repositoryRoot: repository, expected, targetReferenceAt: expected.targetReferenceAt,
+      minimumReferenceAt: expected.minimumReferenceAt, minimumGeneratedAt: expected.minimumGeneratedAt,
+      now: '2026-08-29T11:05:00.000Z' });
+    return { issued, result, outputPath, state: hooks.sourceOriginalResultOwners.get(result) };
+  }
+  try {
+    const reference = '2026-08-29T10:00:00.000Z';
+    const part = { partId: 'TEST', zoneId: 'ZONE', waterPoint: [10, 56] };
+    const spatialPolicies = OPEN_METEO_NATIVE_NEAREST_POLICIES;
+    const gridPoint = openMeteoO1280NearestGridPoint(part.waterPoint);
+    const responseText = JSON.stringify({ longitude: gridPoint[0], latitude: gridPoint[1], utc_offset_seconds: 0,
+      hourly: { time: [reference], wind_speed_10m: [4], wind_direction_10m: [90] }, hourly_units: { wind_speed_10m: 'm/s', wind_direction_10m: '°' } });
+    const admission = readOpenMeteoPartResponse({ request: buildOpenMeteoPartRequest(part, { component: 'wind', productionReferenceAt: reference,
+      spatialPolicy: spatialPolicies.wind }), responseText, acquiredAt: reference }, { part, spatialPolicies });
+    const bank = mergeOpenMeteoPartBank(null, [admission], { parts: [part], spatialPolicies, retentionStartAt: reference, retentionEndAt: reference });
+    const ledger = '{"synthetic":"original selected donor"}\n';
+    const marker = { schemaVersion: 1, kind: 'PRIVATE_WEATHER_COMPONENT_INPUTS', sourceSelectionApplied: true,
+      openMeteoBankSha256: bank.bankSha256, copernicusBankSha256: null, selectedComponentsSha256: digest(ledger) };
+    await write(repository, PRIVATE_WEATHER_COMPONENT_FILES.openMeteoBank, bank);
+    await write(repository, PRIVATE_WEATHER_COMPONENT_FILES.selectedComponents, ledger);
+    await write(repository, PRIVATE_WEATHER_COMPONENT_FILES.fallbackCursor, { kind: 'WEATHER_COMPONENT_FALLBACK_CURSOR', schemaVersion: 1, openMeteoLastAttemptedPartId: 'TEST' });
+    const generation = await createGeneration(0, { metadataOverride: { weatherComponentInputs: marker } }); expected = generation.expected;
+    await hooks.publishProtectedPrivateProductionRuntime({ privateRoot, bundlePath: generation.bundlePath,
+      repositoryRoot: repository, expected, now: '2026-08-29T11:05:00.000Z', sourceHead: head,
+      request: documents.request, storage: storage.client });
+    const owned = await restore('baseline-late-miss-failure');
+    const installed = await workflow.installSourceOriginalPrivateRuntime(owned.issued, owned.result,
+      { restoredRoot: owned.outputPath, repositoryRoot: repository });
+    assert.equal(installed.installed, true);
+    assert.equal(installed.fileCount, 13);
+    const original = [...owned.state.bundles[0].rows.values()];
+    const working = [...owned.state.workingReaders];
+    const before = [...original, ...working].map(row => ({ row, path: row.path, stat: row.stat,
+      sha256: row.sha256, fd: row.handle.fd, bytes: row.bytes }));
+    const binding = owned.state.progressBinding;
+    const cipherPath = path.join(repository, progress.WEATHER_PROGRESS_CIPHER_PATH);
+    await assert.rejects(realLstat(cipherPath), error => error.code === 'ENOENT');
+    let observedInput = null;
+    fs.lstat = async function (...args) {
+      const input = owned.state.workingOperation?.input;
+      // Actual same-owner C input + fixed normal path are phase evidence.
+      // Do NOT filter on admission fields: assertions below must detect eager
+      // completed/generation publication or premature active-operation release.
+      if (injectFailure && !injected && input?.holder === owned.issued
+        && input.miss === owned.state.workingOperation.actual
+        && input.miss?.code === 'SNAPSHOT_ABSENT'
+        && String(args[0]) === path.join(input.root, progress.WEATHER_PROGRESS_CIPHER_PATH)) {
+        observedInput = input;
+        injected++;
+        throw null;
+      }
+      return Reflect.apply(realLstat, this, args);
+    };
+    injectFailure = true;
+    let caught = null, returned = false;
+    try { await progress.installSourceOriginalProgress(owned.issued, owned.result); returned = true; }
+    catch (error) { caught = [error]; }
+    injectFailure = false;
+    assert.equal(injected, 1, 'actual final missing-S recheck reached');
+    assert.equal(returned, false);
+    assert.deepEqual(caught, [null], 'preserve raw falsy first cause');
+    assert.equal(observedInput.holder, owned.issued);
+    assert.equal(owned.state.workingOperation.input, observedInput);
+    assert.equal(owned.state.workingOperation.kind, 'baseline-working-read');
+    assert.equal(owned.state.workingOperation.completed, false);
+    assert.notEqual(owned.state.activeOperation, null);
+    assert.equal(owned.state.workingGeneration, undefined);
+    assert.equal(owned.state.phase, 'RETAINED');
+    assert.deepEqual(owned.state.firstFailure, [null]);
+    assert.deepEqual(observedInput.failure, [null]);
+    assert.equal(observedInput.result, null);
+    assert.equal(observedInput.unionInvocation, null);
+    assert.equal(observedInput.temporary, null);
+    assert.equal(observedInput.packInvocation, null);
+    assert.equal(observedInput.streams.length, 0);
+    assert.equal(owned.state.progressBinding, binding);
+    assert.deepEqual(owned.state.workingReaders, working);
+    let subsequent = null;
+    try { await hooks.assertSourceOriginalProgress(owned.issued); }
+    catch (error) { subsequent = [error]; }
+    assert.deepEqual(subsequent, [null], 'retained owner must not admit a later caller');
+    for (const old of before) {
+      assert.equal(old.row.path, old.path);
+      assert.equal(old.row.stat, old.stat);
+      assert.equal(old.row.sha256, old.sha256);
+      assert.equal(old.row.bytes, old.bytes);
+      assert.equal(old.row.handle.fd, old.fd);
+      const held = await old.row.handle.stat({ bigint: true });
+      assert.equal(held.dev, old.stat.dev);
+      assert.equal(held.ino, old.stat.ino);
+      assert.equal(digest(await fs.readFile(old.path)), old.sha256);
+    }
+    await assert.rejects(realLstat(cipherPath), error => error.code === 'ENOENT');
+    assert.equal(Object.hasOwn(owned.state, 'dmiOperation'), false);
+    console.log(JSON.stringify({ normalBaselineLateNull: 'PASS', installedFiles: 13,
+      injectedAtActualFinalMissRecheck: 1, firstRawCauseNull: true,
+      retainedOriginalAndWorkingHandles: true, activeUnfinishedOperation: true,
+      publishedWorkingGeneration: false, producerEntered: false, realNetwork: 0 }));
+  } finally {
+    injectFailure = false; fs.lstat = realLstat;
+    // Test-owned cleanup only after retention measurements; not SOURCE release.
+    for (const owner of progress.retainedSourceProgressOwners) {
+      for (const row of owner.handles) if (row.handle.fd >= 0) await row.handle.close();
+      if (owner.temporary) await owner.temporary.cleanup();
+    }
+    for (const owner of hooks.retainedSourceOriginalOwners) {
+      const rows = new Set([...owner.bundles.flatMap(bundle => [...bundle.rows.values()]), ...(owner.operationReaders ?? []), ...(owner.workingReaders ?? [])]);
+      for (const row of rows) if (row.handle.fd >= 0) await row.handle.close();
+    }
+    for (const [key, value] of priorEnvironment) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+    Date.now = realNow;
+    observation.deregister();
+    await fs.rm(fixture.temp, { recursive: true, force: true });
+  }
+});
+
+async function sourceNormalCurrentFixture() {
+  const { ravScoreModelBinding: integratedModelBinding } = await import('../js/core/ravscore-model-contract.js');
+  const { ravScoreModelBinding: candidateModelBinding } = await import('./rollback-assets/ravscore-model-contract.js');
+  const { CANDIDATE_G_OPERATIONAL_ROLLBACK_ID } = await import('./lib/ravscore-candidate-g-rollback-runtime.mjs');
+  const { buildIntegratedCutoverReadiness } = await import('./integrated-cutover-readiness.mjs');
+  const { candidateGOperationalProfileDocument, operationalActivationTransition,
+    operationalIntegratedReturnTransition, prepareIntegratedOperationalReturn,
+    RAVSCORE_INTEGRATED_RETURN_POLICY, RAVSCORE_OPERATIONAL_ACTIVATION_DOCUMENT_KEY,
+    RAVSCORE_PROFILE_SELECTION_DOCUMENT_KEY, resolveOperationalRavScoreModel,
+    operationalResolvedBindingCurrent } = await import('./ravscore-operational-activation.mjs');
+const canonical = value => Array.isArray(value)
+  ? value.map(canonical)
+  : value && typeof value === 'object'
+    ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])]))
+    : value;
+
+const sha256 = value => crypto.createHash('sha256')
+  .update(typeof value === 'string' ? value : JSON.stringify(canonical(value)))
+  .digest('hex');
+
+const sourceHead = 'a'.repeat(40);
+
+const now = '2026-08-29T13:00:00.000Z';
+
+const defaultImplementationClosureSha256 = 'a'.repeat(64);
+
+const integratedProfile = JSON.parse(await fs.readFile(
+  new URL('../data/admin/ravscore-profile-selection.json', import.meta.url), 'utf8'));
+
+const integratedProfileRow = Object.freeze({ version: 7, payload: integratedProfile });
+
+const candidateProfile = candidateGOperationalProfileDocument(integratedProfile);
+
+const candidateProfileRow = Object.freeze({ version: 8, payload: candidateProfile });
+
+const readiness = await buildIntegratedCutoverReadiness(sourceHead, {
+  publicImplementationClosureSha256: defaultImplementationClosureSha256,
+});
+
+function manifest(binding, datasetId, productionReferenceAt) {
+  return Object.freeze({
+    schemaVersion: 4,
+    datasetId,
+    productionReferenceAt,
+    complete: true,
+    zoneCount: 210,
+    coastalPartCount: 673,
+    ravScoreModelBinding: structuredClone(binding),
+  });
+}
+
+function verification(model, binding, publicManifest, head = sourceHead) {
+  return Object.freeze({
+    schemaVersion: 'ravscore-operational-pages-verification-v1',
+    status: 'passed',
+    sourceHead: head,
+    datasetId: publicManifest.datasetId,
+    productionReferenceAt: publicManifest.productionReferenceAt,
+    model,
+    modelBinding: structuredClone(binding),
+    implementationClosureSha256: defaultImplementationClosureSha256,
+    publicManifestSha256: sha256(publicManifest),
+    zoneCount: 210,
+    coastalPartCount: 673,
+    privatePayloadRead: false,
+  });
+}
+
+function integratedAudit(binding = integratedModelBinding(), {
+  rollbackStatus = 'READY',
+  allCurrentScoresFullHistory = true,
+  currentUnavailableModeCount = 0,
+} = {}) {
+  const rollbackActivationReady = rollbackStatus === 'READY';
+  const currentFullHistoryModeCount = allCurrentScoresFullHistory ? 420 : 0;
+  const currentHistoryIncompleteModeCount = allCurrentScoresFullHistory
+    ? 0
+    : 420 - currentUnavailableModeCount;
+  return Object.freeze({
+    schemaVersion: 1,
+    status: 'passed',
+    model: Object.freeze({
+      modelId: binding.modelId,
+      stateSchemaVersion: binding.stateSchemaVersion,
+      modelContractSha256: binding.modelContractSha256,
+      modelBundleSha256: binding.modelBundleSha256,
+    }),
+    coverage: Object.freeze({
+      expectedZoneCount: 210,
+      zoneCount: 210,
+      expectedPartCount: 673,
+      partCount: 673,
+    }),
+    history: Object.freeze({
+      allCurrentScoresFullHistory,
+      currentFullHistoryModeCount,
+      currentHistoryIncompleteModeCount,
+      currentUnavailableModeCount,
+    }),
+    rollback: Object.freeze({
+      status: rollbackStatus,
+      activationReady: rollbackActivationReady,
+      descriptorValid: true,
+      generationReferenceBound: true,
+      runtimePartCount: 673,
+      readyPartCount: rollbackActivationReady ? 673 : 0,
+      reconstructedFromIntegratedState: false,
+    }),
+    payload: Object.freeze({
+      privacyContractPassed: true,
+      publicStateOrEvidenceIncluded: false,
+      publicRawVectorIncluded: false,
+      publicUnapprovedCoordinateIncluded: false,
+      publicShadowIncluded: false,
+    }),
+    errors: Object.freeze([]),
+    errorCounts: Object.freeze({}),
+  });
+}
+
+function candidatePlan({
+  mode = 'execute',
+  centralExpectedVersion,
+  sourceBinding,
+  datasetId,
+  productionReferenceAt,
+  salt,
+  sourceImplementationClosureSha256 = defaultImplementationClosureSha256,
+  requestedImplementationClosureSha256 = defaultImplementationClosureSha256,
+  targetBinding = candidateModelBinding(),
+  targetProfile = candidateProfile,
+}) {
+  const activation = {
+    schemaVersion: '1.0.0',
+    kind: 'RAVSCORE_CANDIDATE_G_OPERATIONAL_ROLLBACK_PLAN',
+    mode,
+    sourceHead,
+    datasetId,
+    productionReferenceAt,
+    privateBundleContentSha256: salt.repeat(64),
+    sourceImplementationClosureSha256,
+    requestedImplementationClosureSha256,
+    centralExpectedVersion,
+    sourceModelBinding: structuredClone(sourceBinding),
+    activeModelBinding: structuredClone(targetBinding),
+    candidateTargetProfileSha256: sha256(targetProfile),
+    rollbackId: CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
+    automaticActivationAllowed: false,
+    schedulerActivationAllowed: false,
+    calibrationEligible: false,
+  };
+  const planBody = {
+    ...activation,
+    candidateTargetProfile: structuredClone(targetProfile),
+  };
+  return Object.freeze({
+    ...planBody,
+    planSha256: sha256(planBody),
+    candidateFullSha256: String.fromCharCode(salt.charCodeAt(0) + 1).repeat(64),
+    privatePayloadLogged: false,
+  });
+}
+
+const integratedH0 = manifest(integratedModelBinding(),
+  'rr-20260829110000-210', '2026-08-29T11:00:00.000Z');
+
+const candidateH0 = manifest(candidateModelBinding(),
+  'rr-20260829120000-210', '2026-08-29T12:00:00.000Z');
+
+const integratedH0Verification = verification('integrated', integratedModelBinding(), integratedH0);
+
+const candidateH0Verification = verification('candidate-g', candidateModelBinding(), candidateH0);
+
+const rollbackPlan = candidatePlan({
+  centralExpectedVersion: 0,
+  sourceBinding: integratedModelBinding(),
+  datasetId: candidateH0.datasetId,
+  productionReferenceAt: candidateH0.productionReferenceAt,
+  salt: '1',
+});
+
+const rollbackBegin = operationalActivationTransition({
+  action: 'begin',
+  currentRow: null,
+  currentProfileRow: integratedProfileRow,
+  expectedVersion: 0,
+  plan: rollbackPlan,
+  sourceManifest: integratedH0,
+  sourceVerification: integratedH0Verification,
+  requestedManifest: candidateH0,
+  sourceDeploymentId: 'pages-integrated-h0',
+  deploymentId: 'run-rollback-h1',
+  now,
+});
+
+const rollbackPendingRow = Object.freeze({ version: 1, payload: rollbackBegin.document });
+
+const rollbackComplete = operationalActivationTransition({
+  action: 'complete',
+  currentRow: rollbackPendingRow,
+  expectedVersion: 1,
+  plan: rollbackPlan,
+  publicManifest: candidateH0,
+  publicVerification: candidateH0Verification,
+  deploymentId: 'pages-candidate-h0',
+  now: '2026-08-29T13:01:00.000Z',
+});
+
+const candidateActiveRow = Object.freeze({ version: 2, payload: rollbackComplete.document });
+
+const integratedH1 = manifest(integratedModelBinding(),
+  'rr-20260829130000-210', '2026-08-29T13:00:00.000Z');
+
+const integratedH1Audit = integratedAudit();
+
+const integratedH1Verification = verification('integrated', integratedModelBinding(), integratedH1);
+
+const returnPlan = prepareIntegratedOperationalReturn({
+  currentRow: candidateActiveRow,
+  currentProfileRow: candidateProfileRow,
+  sourceHead,
+  publicManifest: integratedH1,
+  publicAudit: integratedH1Audit,
+  readiness,
+  sourceImplementationClosureSha256: defaultImplementationClosureSha256,
+  requestedImplementationClosureSha256: defaultImplementationClosureSha256,
+  eventName: RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName,
+  ref: RAVSCORE_INTEGRATED_RETURN_POLICY.mainRef,
+  githubSha: sourceHead,
+  confirmation: RAVSCORE_INTEGRATED_RETURN_POLICY.confirmation,
+});
+
+const returnBegin = operationalIntegratedReturnTransition({
+  action: 'return-begin',
+  currentRow: candidateActiveRow,
+  currentProfileRow: candidateProfileRow,
+  expectedVersion: 2,
+  plan: returnPlan,
+  readiness,
+  publicManifest: integratedH1,
+  publicAudit: integratedH1Audit,
+  sourceManifest: candidateH0,
+  sourceVerification: candidateH0Verification,
+  sourceDeploymentId: 'ignored-current-row-wins',
+  deploymentId: 'run-integrated-return-h1',
+});
+
+const returnPendingRow = Object.freeze({ version: 3, payload: returnBegin.document });
+
+const returnComplete = operationalIntegratedReturnTransition({
+  action: 'return-complete',
+  currentRow: returnPendingRow,
+  expectedVersion: 3,
+  plan: returnPlan,
+  readiness,
+  publicManifest: integratedH1,
+  publicAudit: integratedH1Audit,
+  publicVerification: integratedH1Verification,
+  deploymentId: 'pages-integrated-h1',
+});
+
+const integratedActiveRow = Object.freeze({ version: 4, payload: returnComplete.document });
+
+// The complete normal rollback/return constructors above produce this row.
+// These are synthetic transport inputs, never hosted activation evidence.
+assert.deepEqual(returnComplete.centralTargetProfile, integratedProfile);
+const resolved = resolveOperationalRavScoreModel(integratedActiveRow,
+  { profileRow: integratedProfileRow, allowPending: true });
+assert.equal(resolved.model, 'integrated');
+assert.equal(operationalResolvedBindingCurrent(resolved), true);
+const centralRows = Object.freeze([
+  Object.freeze({ document_key: RAVSCORE_OPERATIONAL_ACTIVATION_DOCUMENT_KEY,
+    ...integratedActiveRow }),
+  Object.freeze({ document_key: RAVSCORE_PROFILE_SELECTION_DOCUMENT_KEY,
+    ...integratedProfileRow }),
+]);
+return { centralRows, integratedProfile, readiness };
+}
+
+await test('SOURCE normal route uses genuine current central factory and its issued deadline', async () => {
+  const { registerHooks } = await import('node:module');
+  const { execFileSync } = await import('node:child_process');
+  const { fileURLToPath } = await import('node:url');
+  const moduleUrl = new URL('./protected-private-production-runtime.mjs', import.meta.url);
+  const repositoryUrl = new URL('../', import.meta.url).href;
+  const query = 'source-normal-route-test=' + crypto.randomUUID();
+  const observation = registerHooks({
+    resolve(specifier, context, next) {
+      const result = next(specifier, context);
+      if (result.url.startsWith(repositoryUrl) && /\.(?:mjs|js)$/.test(new URL(result.url).pathname)) {
+        const url = new URL(result.url); url.search = query;
+        return { ...result, url: url.href };
+      }
+      return result;
+    },
+    load(url, context, next) {
+      const result = next(url, context);
+      if (url.startsWith(moduleUrl.href + '?')) return { ...result, source: String(result.source)
+        + '\nexport { captureSourceDeadlineProcess, issuePrivateSourceJobDeadline, readSourceOperationalRoute, sourceJobDeadlineBrands };\n' };
+      return result;
+    },
+  });
+  const normal = await import(moduleUrl.href + '?' + query);
+  const metadata = await import(new URL('./weather-source-gate.mjs?' + query, import.meta.url));
+  const source = await sourceNormalCurrentFixture();
+  const head = execFileSync('git', ['rev-parse', 'HEAD^{commit}'], {
+    cwd: PRIVATE_RUNTIME_REPOSITORY_ROOT, encoding: 'utf8',
+  }).trim();
+  const environment = {
+    GITHUB_ACTIONS: 'true', GITHUB_REPOSITORY: 'fixture/repo', GITHUB_RUN_ID: '200',
+    GITHUB_RUN_ATTEMPT: '2', GITHUB_SHA: head, GITHUB_REF: 'refs/heads/main',
+    RUNNER_NAME: 'source-normal-route-fixture', RUNNER_OS: 'Linux',
+    RUNNER_TRACKING_ID: 'synthetic-metadata-only', RAVRADAR_SOURCE_EXTENDED_PROVIDER_BOOTSTRAP: 'false',
+    GITHUB_TOKEN: 'synthetic-source-token', SUPABASE_URL: 'https://fixture.invalid',
+    SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_synthetic_source_fixture',
+  };
+  const requestKeys = ['INPUT_PRODUCE_WEATHER_HANDOFF', 'INPUT_PRODUCE_WEATHER_HANDOFF_CONFIRMATION',
+    'INPUT_RAVSCORE_INTEGRATED_WEATHER_HANDOFF_RUN_ID', 'INPUT_RAVSCORE_CANDIDATE_G_ROLLBACK_MODE',
+    'INPUT_RAVSCORE_CANDIDATE_G_ROLLBACK_CONFIRMATION', 'INPUT_RAVSCORE_INTEGRATED_FIRST_CUTOVER',
+    'INPUT_RAVSCORE_INTEGRATED_FIRST_CUTOVER_CONFIRMATION', 'INPUT_RAVSCORE_INTEGRATED_RETURN',
+    'INPUT_RAVSCORE_INTEGRATED_RETURN_CONFIRMATION', 'INPUT_QUICK_CONFIRMATION', 'INPUT_QUICK_PROGRESS_SOURCE'];
+  const prior = new Map([...Object.keys(environment), ...requestKeys].map(key => [key, process.env[key]]));
+  for (const key of requestKeys) delete process.env[key];
+  Object.assign(process.env, environment);
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  let centralRows = source.centralRows;
+  globalThis.fetch = async (request, options) => {
+    const url = String(request); requests.push(url);
+    assert.equal(options.redirect === undefined || options.redirect === 'error', true);
+    let value;
+    if (url === 'https://api.github.com/repos/fixture/repo/actions/runs/200/attempts/2') {
+      assert.equal(options.headers.Authorization, 'Bearer synthetic-source-token');
+      value = { id: 200, run_attempt: 2, head_sha: head, head_branch: 'main',
+        path: '.github/workflows/update-and-deploy.yml', status: 'in_progress', conclusion: null,
+        event: 'schedule', repository: { full_name: 'fixture/repo' }, head_repository: { full_name: 'fixture/repo' } };
+    } else if (url === 'https://api.github.com/repos/fixture/repo/actions/runs/200/attempts/2/jobs?per_page=100') {
+      value = { total_count: 1, jobs: [{ id: 300, run_id: 200, head_sha: head,
+        name: SOURCE_GATE_PRODUCERS['.github/workflows/update-and-deploy.yml'].gates[0].job,
+        status: 'in_progress', conclusion: null, completed_at: null, runner_id: 400,
+        runner_name: environment.RUNNER_NAME, started_at: new Date(Date.now() - 600000).toISOString() }] };
+    } else {
+      assert.equal(url, 'https://fixture.invalid/rest/v1/admin_documents?select=document_key,payload,version&document_key=in.(ravscore-operational-model-activation,ravscore-profile-selection)');
+      assert.equal(options.method ?? 'GET', 'GET');
+      assert.equal(options.headers.apikey, environment.SUPABASE_SERVICE_ROLE_KEY);
+      value = centralRows;
+    }
+    return new Response(JSON.stringify(value), { status: 200, headers: { date: new Date().toUTCString() } });
+  };
+  const issue = async () => normal.issuePrivateSourceJobDeadline(
+    normal.captureSourceDeadlineProcess(), metadata.createWeatherGithubMetadataClient());
+  try {
+    // Use the normal timed transport and the private real issuer, not a caller
+    // deadline or completed flag. Clocks are untouched; clock refusal is FAIL.
+    const holder = await issue();
+    const state = normal.sourceJobDeadlineBrands.get(holder);
+    const issuedCutoff = state.deadline;
+    const route = await normal.readSourceOperationalRoute(holder);
+    assert.equal(route.action, 'integrated');
+    assert.equal(route.bindingCurrent, true);
+    assert.equal(route.resolved.model, 'integrated');
+    assert.deepEqual(route.operationalRow, source.centralRows[0]);
+    assert.deepEqual(route.profileRow, source.centralRows[1]);
+    assert.strictEqual(state.normalRoute, route);
+    assert.ok(state.deadline <= issuedCutoff, 'same issued deadline must not renew');
+    assert.equal(state.originalOwner, undefined, 'route does not fabricate B');
+    assert.equal(state.normalPrelude, undefined, 'route is not a completed prelude');
+    assert.equal(requests.length, 3, 'two timed metadata reads and one atomic central GET');
+    await assert.rejects(normal.readSourceOperationalRoute(holder), /SOURCE_NORMAL_ROUTE_ALREADY_SELECTED/);
+    assert.equal(requests.length, 3, 'reused holder refuses before another central read');
+    const invalid = await issue();
+    centralRows = structuredClone(source.centralRows);
+    centralRows[1].payload.modelBundleSha256 = '0'.repeat(64);
+    await assert.rejects(normal.readSourceOperationalRoute(invalid));
+    const invalidState = normal.sourceJobDeadlineBrands.get(invalid);
+    assert.equal(invalidState.normalRoute, undefined);
+    assert.equal(invalidState.originalOwner, undefined);
+    assert.equal(invalidState.normalPrelude, undefined);
+  } finally {
+    globalThis.fetch = originalFetch;
+    for (const [key, value] of prior) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+    observation.deregister();
+  }
+});
+
+await test('SOURCE artifact binding checks actual normal bundle bytes without issuing completion', async () => {
+  const { registerHooks } = await import('node:module');
+  const moduleUrl = new URL('./protected-private-production-runtime.mjs', import.meta.url);
+  const query = 'source-artifact-binding=' + crypto.randomUUID();
+  const observation = registerHooks({
+    load(url, context, next) {
+      const result = next(url, context);
+      if (url === moduleUrl.href + '?' + query) return { ...result,
+        source: String(result.source) + '\nexport { assertSourceNormalArtifactBinding };\n' };
+      return result;
+    },
+  });
+  const normal = await import(moduleUrl.href + '?' + query);
+  // Reuse the whole existing normal synthetic bundle factory. Its deliberately
+  // minimal conditions are NOT Weather/provider/state/physical-stop evidence.
+  const target = (await fs.readFile(new URL('./test-protected-private-production-runtime.mjs',
+    import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const first = target.indexOf('const clone = value =>');
+  const setupStart = target.indexOf('\ntry {\n  await fs.mkdir(repository', first);
+  const setupEnd = target.indexOf('\n  const baselineContracts =', setupStart);
+  assert.ok(first > 0 && setupStart > first && setupEnd > setupStart);
+  const context = { fs, os, path, crypto, process, Buffer, PRIVATE_RUNTIME_FILES,
+    PRIVATE_RUNTIME_CONTRACT_FILES, ravScoreModelBinding, buildPrivateRuntimeCreateSpec,
+    buildPrivateRuntimeExpectation, createPrivateProductionRuntimeBundle };
+  const setup = target.slice(setupStart + '\ntry {'.length, setupEnd)
+    .replace('await fs.copyFile(source, destination);', 'await fs.writeFile(destination, await fs.readFile(source));');
+  const fixture = await Function(...Object.keys(context), 'return (async()=>{\n'
+    + target.slice(first, setupStart) + setup
+    + '\nreturn { temp, repository, privateRoot, createGeneration }; })()')(...Object.values(context));
+  const handles = [];
+  const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+  const inputRows = async spec => {
+    const rows = new Map();
+    for (const file of spec.files) {
+      const handle = await fs.open(file.sourcePath, 'r'); handles.push(handle);
+      const stat = await handle.stat({ bigint: true });
+      const bytes = await handle.readFile();
+      rows.set(file.relativePath, { handle, stat, bytes: bytes.length,
+        sha256: hash(bytes), original: bytes });
+    }
+    return rows;
+  };
+  const unchanged = async rows => {
+    for (const row of rows.values()) {
+      assert.equal((await row.handle.stat({ bigint: true })).ino, row.stat.ino);
+      const buffer = Buffer.alloc(row.bytes);
+      const { bytesRead } = await row.handle.read(buffer, 0, buffer.length, 0);
+      assert.equal(bytesRead, row.bytes);
+      assert.deepEqual(buffer, row.original);
+    }
+  };
+  try {
+    const original = await fixture.createGeneration(0);
+    const originalManifest = await fs.readFile(path.join(original.bundlePath, 'manifest.json'));
+    const spec = await buildPrivateRuntimeCreateSpec({ repositoryRoot: fixture.repository });
+    const rows = await inputRows(spec);
+    const nextPath = path.join(fixture.privateRoot, 'source-artifact-binding-next');
+    await createPrivateProductionRuntimeBundle({ privateRoot: fixture.privateRoot,
+      bundlePath: nextPath, repositoryRoot: fixture.repository, ...spec });
+    const verified = await verifyPrivateProductionRuntimeBundle({ privateRoot: fixture.privateRoot,
+      bundlePath: nextPath, repositoryRoot: fixture.repository, expected: original.expected,
+      now: '2026-08-29T11:05:00.000Z' });
+    assert.equal(normal.assertSourceNormalArtifactBinding(spec, rows, verified), undefined);
+    // No state/owner/operation can be issued by the comparison's return value.
+    assert.equal(Object.hasOwn(verified, 'sourceComplete'), false);
+    assert.equal(Object.hasOwn(verified, 'workingOperation'), false);
+    await unchanged(rows);
+    for (const key of ['generationId', 'datasetId', 'generatedAt', 'productionReferenceAt']) {
+      const changed = structuredClone(verified); changed[key] += '-changed';
+      assert.throws(() => normal.assertSourceNormalArtifactBinding(spec, rows, changed),
+        /ARTIFACT_BUNDLE_CHANGED/);
+    }
+    const missing = structuredClone(verified); missing.files.pop();
+    assert.throws(() => normal.assertSourceNormalArtifactBinding(spec, rows, missing), /ARTIFACT_BUNDLE_CHANGED/);
+    const duplicate = structuredClone(verified); duplicate.files[1] = { ...duplicate.files[0] };
+    assert.throws(() => normal.assertSourceNormalArtifactBinding(spec, rows, duplicate), /ARTIFACT_INPUT_BYTES_CHANGED/);
+    const wrongId = structuredClone(verified); wrongId.files[0].id = 'different-fixed-id';
+    assert.throws(() => normal.assertSourceNormalArtifactBinding(spec, rows, wrongId), /ARTIFACT_INPUT_BYTES_CHANGED/);
+    const wrongPrivacy = structuredClone(verified); wrongPrivacy.files[0].privacyClass = 'PUBLIC';
+    assert.throws(() => normal.assertSourceNormalArtifactBinding(spec, rows, wrongPrivacy), /ARTIFACT_INPUT_BYTES_CHANGED/);
+    // A second genuinely built and normally verified bundle may be internally
+    // valid yet differ from the retained input. Never treat verify:true as the
+    // same-input proof. Atomic replacement preserves the old actual fd bytes.
+    const changedFile = spec.files.find(file => file.id === 'dmi-bulk-cache');
+    assert.ok(changedFile);
+    const replacement = changedFile.sourcePath + '.source-artifact-test';
+    await fs.writeFile(replacement, 'different synthetic input\n', { flag: 'wx' });
+    let changedFiles = spec.files;
+    if (process.platform === 'linux') {
+      // Genuine Linux atomic replacement with the ORIGINAL fd still open.
+      // Windows does not acquire a false pass by closing that fd first.
+      await fs.rename(replacement, changedFile.sourcePath);
+      assert.notEqual((await fs.lstat(changedFile.sourcePath, { bigint: true })).ino,
+        rows.get(changedFile.relativePath).stat.ino);
+    } else {
+      // Portable byte-binding negative: copy genuinely DIFFERENT input bytes
+      // through the unchanged normal bundle producer. This is not atomic proof.
+      changedFiles = spec.files.map(file => file === changedFile
+        ? { ...file, sourcePath: replacement } : file);
+    }
+    const changedPath = path.join(fixture.privateRoot, 'source-artifact-binding-changed');
+    await createPrivateProductionRuntimeBundle({ privateRoot: fixture.privateRoot,
+      bundlePath: changedPath, repositoryRoot: fixture.repository, ...spec, files: changedFiles });
+    const changed = await verifyPrivateProductionRuntimeBundle({ privateRoot: fixture.privateRoot,
+      bundlePath: changedPath, repositoryRoot: fixture.repository, expected: original.expected,
+      now: '2026-08-29T11:05:00.000Z' });
+    assert.equal(changed.verified, true);
+    assert.throws(() => normal.assertSourceNormalArtifactBinding(spec, rows, changed), /ARTIFACT_INPUT_BYTES_CHANGED/);
+    await unchanged(rows);
+    assert.deepEqual(await fs.readFile(path.join(original.bundlePath, 'manifest.json')), originalManifest);
+    const oldVerified = await verifyPrivateProductionRuntimeBundle({ privateRoot: fixture.privateRoot,
+      bundlePath: original.bundlePath, repositoryRoot: fixture.repository, expected: original.expected,
+      now: '2026-08-29T11:05:00.000Z' });
+    assert.equal(oldVerified.verified, true);
+  } finally {
+    for (const handle of handles) if (handle.fd >= 0) await handle.close();
+    observation.deregister();
+    // Only this factory's own files, after all synchronous/local consumers and
+    // actual readers have closed. This is not SOURCE/native owner cleanup.
+    assert.ok(fixture.temp.startsWith(path.join(os.tmpdir(), 'ravradar-protected-private-runtime-')));
+    await fs.rm(fixture.temp, { recursive: true, force: true });
+  }
+});
+
+await test('SOURCE fixed successor keeps genuine B paths and same-owner handles', {
+  skip: process.platform !== 'linux' ? 'fixed Linux successor destination; not a Windows proof' : false,
+}, async () => {
+  const { registerHooks } = await import('node:module');
+  const { execFileSync } = await import('node:child_process');
+  const moduleUrl = new URL('./protected-private-production-runtime.mjs', import.meta.url);
+  const repositoryUrl = new URL('../', import.meta.url).href;
+  const query = 'source-fixed-successor-test=' + crypto.randomUUID();
+  const observation = registerHooks({
+    resolve(specifier, context, next) {
+      const result = next(specifier, context);
+      if (result.url.startsWith(repositoryUrl) && /\.(?:mjs|js)$/.test(new URL(result.url).pathname)) {
+        const url = new URL(result.url); url.search = query;
+        return { ...result, url: url.href };
+      }
+      return result;
+    },
+    load(url, context, next) {
+      const result = next(url, context);
+      if (url.startsWith(moduleUrl.href + '?')) return { ...result, source: String(result.source)
+        + '\nexport { captureSourceDeadlineProcess, issuePrivateSourceJobDeadline, readSourceOperationalRoute, sourceNormalArtifactBundlePath, restoreSourceOriginals, sourceOriginalResultOwners, retainedSourceOriginalOwners };\n' };
+      if (new URL(url).protocol === 'file:' && new URL(url).pathname.endsWith('/weather-component-progress-cache.mjs')) {
+        return { ...result, source: String(result.source) + '\nexport { retainedSourceProgressOwners };\n' };
+      }
+      return result;
+    },
+  });
+  const hooks = await import(moduleUrl.href + '?' + query);
+  const workflow = await import(new URL('./private-production-runtime-workflow.mjs?' + query, import.meta.url));
+  const progress = await import(new URL('./weather-component-progress-cache.mjs?' + query, import.meta.url));
+  const bundle = await import(new URL('./private-production-runtime-bundle.mjs?' + query, import.meta.url));
+  const metadata = await import(new URL('./weather-source-gate.mjs?' + query, import.meta.url));
+  const central = await sourceNormalCurrentFixture();
+  const head = execFileSync('git', ['rev-parse', 'HEAD^{commit}'], {
+    cwd: PRIVATE_RUNTIME_REPOSITORY_ROOT, encoding: 'utf8',
+  }).trim();
+  const environment = {
+    GITHUB_ACTIONS: 'true', GITHUB_REPOSITORY: 'fixture/repo', GITHUB_RUN_ID: '200',
+    GITHUB_RUN_ATTEMPT: '2', GITHUB_SHA: head, GITHUB_REF: 'refs/heads/main',
+    RUNNER_NAME: 'source-fixed-successor-fixture', RUNNER_OS: 'Linux',
+    RUNNER_TRACKING_ID: 'synthetic-metadata-only', RAVRADAR_SOURCE_EXTENDED_PROVIDER_BOOTSTRAP: 'false',
+    GITHUB_TOKEN: 'synthetic-source-token', SUPABASE_URL: 'https://fixture.invalid',
+    SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_synthetic_source_fixture',
+    WEATHER_PROGRESS_ENCRYPTION_KEY: Buffer.alloc(32, 73).toString('base64'),
+  };
+  const requestKeys = ['INPUT_PRODUCE_WEATHER_HANDOFF', 'INPUT_PRODUCE_WEATHER_HANDOFF_CONFIRMATION',
+    'INPUT_RAVSCORE_INTEGRATED_WEATHER_HANDOFF_RUN_ID', 'INPUT_RAVSCORE_CANDIDATE_G_ROLLBACK_MODE',
+    'INPUT_RAVSCORE_CANDIDATE_G_ROLLBACK_CONFIRMATION', 'INPUT_RAVSCORE_INTEGRATED_FIRST_CUTOVER',
+    'INPUT_RAVSCORE_INTEGRATED_FIRST_CUTOVER_CONFIRMATION', 'INPUT_RAVSCORE_INTEGRATED_RETURN',
+    'INPUT_RAVSCORE_INTEGRATED_RETURN_CONFIRMATION', 'INPUT_QUICK_CONFIRMATION', 'INPUT_QUICK_PROGRESS_SOURCE'];
+  const prior = new Map([...Object.keys(environment), ...requestKeys].map(key => [key, process.env[key]]));
+  for (const key of requestKeys) delete process.env[key];
+  Object.assign(process.env, environment);
+  const originalFetch = globalThis.fetch;
+  let metadataReads = 0;
+  globalThis.fetch = async (request, options) => {
+    const url = String(request); let value;
+    assert.equal(options.redirect === undefined || options.redirect === 'error', true);
+    if (url === 'https://api.github.com/repos/fixture/repo/actions/runs/200/attempts/2') {
+      assert.equal(options.headers.Authorization, 'Bearer synthetic-source-token'); metadataReads++;
+      value = { id: 200, run_attempt: 2, head_sha: head, head_branch: 'main',
+        path: '.github/workflows/update-and-deploy.yml', status: 'in_progress', conclusion: null,
+        event: 'schedule', repository: { full_name: 'fixture/repo' }, head_repository: { full_name: 'fixture/repo' } };
+    } else if (url === 'https://api.github.com/repos/fixture/repo/actions/runs/200/attempts/2/jobs?per_page=100') {
+      metadataReads++;
+      value = { total_count: 1, jobs: [{ id: 300, run_id: 200, head_sha: head,
+        name: SOURCE_GATE_PRODUCERS['.github/workflows/update-and-deploy.yml'].gates[0].job,
+        status: 'in_progress', conclusion: null, completed_at: null, runner_id: 400,
+        runner_name: environment.RUNNER_NAME, started_at: new Date(Date.now() - 600000).toISOString() }] };
+    } else {
+      assert.equal(url, 'https://fixture.invalid/rest/v1/admin_documents?select=document_key,payload,version&document_key=in.(ravscore-operational-model-activation,ravscore-profile-selection)');
+      assert.equal(options.method ?? 'GET', 'GET');
+      assert.equal(options.headers.apikey, environment.SUPABASE_SERVICE_ROLE_KEY);
+      value = central.centralRows;
+    }
+    return new Response(JSON.stringify(value), { status: 200, headers: { date: new Date().toUTCString() } });
+  };
+  const fixedRoot = '/tmp/ravradar-private-production-runtime';
+  let fixedStat = null, fixture = null, firstFailure = null;
+  const digest = value => crypto.createHash('sha256').update(value).digest('hex');
+  try {
+    // Exclusive fixture acquisition, NEVER adoption/removal of an existing root.
+    await fs.mkdir(fixedRoot);
+    fixedStat = await fs.lstat(fixedRoot, { bigint: true });
+    assert.equal(fixedStat.isDirectory() && !fixedStat.isSymbolicLink(), true);
+    const target = (await fs.readFile(new URL('./test-protected-private-production-runtime.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+    const first = target.indexOf('const clone = value =>'), end = target.indexOf('\ntry {\n  await fs.mkdir(repository', first);
+    const setupEnd = target.indexOf('\n  const baselineContracts =', end);
+    assert.ok(first > 0 && end > first && setupEnd > end);
+    const context = { fs, os, path, crypto, process, Buffer, PRIVATE_RUNTIME_FILES, PRIVATE_RUNTIME_CONTRACT_FILES,
+      ravScoreModelBinding, buildPrivateRuntimeCreateSpec: workflow.buildPrivateRuntimeCreateSpec,
+      buildPrivateRuntimeExpectation: workflow.buildPrivateRuntimeExpectation,
+      createPrivateProductionRuntimeBundle: bundle.createPrivateProductionRuntimeBundle };
+    const setup = target.slice(end + '\ntry {'.length, setupEnd)
+      .replace('await fs.copyFile(source, destination);', 'await fs.writeFile(destination, await fs.readFile(source));');
+    fixture = await Function(...Object.keys(context), 'return (async()=>{\n' + target.slice(first, end) + setup
+      + '\nreturn { temp, repository, privateRoot, createGeneration, fakeDocuments, fakeStorage }; })()')(...Object.values(context));
+    const generation = await fixture.createGeneration(0);
+    const documents = fixture.fakeDocuments(), storage = fixture.fakeStorage();
+    await hooks.publishProtectedPrivateProductionRuntime({ privateRoot: fixture.privateRoot, bundlePath: generation.bundlePath,
+      repositoryRoot: fixture.repository, expected: generation.expected, now: '2026-08-29T11:05:00.000Z', sourceHead: head,
+      request: documents.request, storage: storage.client });
+    const holder = await hooks.issuePrivateSourceJobDeadline(hooks.captureSourceDeadlineProcess(),
+      metadata.createWeatherGithubMetadataClient());
+    assert.equal(metadataReads, 2, 'normal timed transport; no clock/deadline replacement');
+    assert.equal((await hooks.readSourceOperationalRoute(holder)).action, 'integrated');
+    const originalPath = path.join(fixedRoot, 'bundle'), restoredPath = path.join(fixedRoot, 'restored');
+    const original = await hooks.restoreSourceOriginals(holder, 'single', {
+      privateRoot: fixedRoot, bundlePath: originalPath, repositoryRoot: fixture.repository,
+      expected: generation.expected, now: '2026-08-29T11:05:00.000Z', request: documents.request, storage: storage.client });
+    const owner = hooks.sourceOriginalResultOwners.get(original);
+    assert.ok(owner && owner.holder === holder);
+    await bundle.restorePrivateProductionRuntimeBundle({ privateRoot: fixedRoot, bundlePath: originalPath,
+      outputPath: restoredPath, repositoryRoot: fixture.repository, expected: generation.expected,
+      targetReferenceAt: generation.expected.targetReferenceAt, minimumReferenceAt: generation.expected.minimumReferenceAt,
+      minimumGeneratedAt: generation.expected.minimumGeneratedAt, now: '2026-08-29T11:05:00.000Z' });
+    assert.equal((await workflow.installSourceOriginalPrivateRuntime(holder, original, {
+      restoredRoot: restoredPath, repositoryRoot: fixture.repository })).installed, true);
+    const miss = await progress.installSourceOriginalProgress(holder, original);
+    assert.equal(miss.status, 'CACHE_MISS'); assert.equal(miss.code, 'SNAPSHOT_ABSENT');
+    await hooks.assertSourceOriginalProgress(holder);
+    const originalDescriptor = structuredClone(owner.bundles[0].descriptor);
+    const originalManifest = await fs.readFile(path.join(originalPath, 'manifest.json'));
+    const originalDirectory = await fs.lstat(originalPath, { bigint: true });
+    const pinned = [...owner.bundles[0].rows.values()].map(row => ({ row, path: row.path,
+      stat: row.stat, sha256: row.sha256, fd: row.handle.fd }));
+    assert.throws(() => hooks.sourceNormalArtifactBundlePath({}), /DEADLINE_NOT_ISSUED/);
+    const successor = hooks.sourceNormalArtifactBundlePath(holder);
+    assert.equal(successor, '/tmp/ravradar-private-production-runtime/bundle-source-successor');
+    assert.notEqual(successor, originalPath);
+    await assert.rejects(fs.lstat(successor), { code: 'ENOENT' });
+    // Real normal spec/create/verify with the same live B owner. This is NOT
+    // a fabricated DMI/tail operation, H-close receipt or SOURCE completion.
+    const spec = await workflow.buildPrivateRuntimeCreateSpec({ repositoryRoot: fixture.repository });
+    await bundle.createPrivateProductionRuntimeBundle({ privateRoot: fixedRoot, bundlePath: successor,
+      repositoryRoot: fixture.repository, ...spec });
+    const verified = await bundle.verifyPrivateProductionRuntimeBundle({ privateRoot: fixedRoot,
+      bundlePath: successor, repositoryRoot: fixture.repository, expected: generation.expected,
+      now: '2026-08-29T11:05:00.000Z' });
+    assert.equal(verified.fileCount, spec.files.length);
+    await assert.rejects(() => bundle.createPrivateProductionRuntimeBundle({ privateRoot: fixedRoot,
+      bundlePath: successor, repositoryRoot: fixture.repository, ...spec }), /already exists/);
+    await hooks.assertSourceOriginalProgress(holder);
+    assert.deepEqual(owner.bundles[0].descriptor, originalDescriptor);
+    assert.equal(owner.bundles[0].selected.finalBundle, originalPath);
+    assert.deepEqual(await fs.readFile(path.join(originalPath, 'manifest.json')), originalManifest);
+    const currentDirectory = await fs.lstat(originalPath, { bigint: true });
+    assert.equal(currentDirectory.dev, originalDirectory.dev); assert.equal(currentDirectory.ino, originalDirectory.ino);
+    for (const old of pinned) {
+      assert.equal(old.row.path, old.path); assert.equal(old.row.stat, old.stat);
+      assert.equal(old.row.sha256, old.sha256); assert.equal(old.row.handle.fd, old.fd);
+      const held = await old.row.handle.stat({ bigint: true });
+      assert.equal(held.dev, old.stat.dev); assert.equal(held.ino, old.stat.ino);
+      assert.equal(digest(await fs.readFile(old.path)), old.sha256);
+    }
+    assert.equal(owner.activeOperation, null); assert.equal(owner.dmiOperation, undefined);
+    assert.equal(Object.hasOwn(verified, 'sourceComplete'), false);
+    assert.equal(Object.hasOwn(verified, 'uploaded'), false);
+    assert.equal(owner.artifact, undefined, 'normal bundle verification is not SOURCE artifact admission');
+  } catch (error) { firstFailure = [error]; }
+  finally {
+    globalThis.fetch = originalFetch;
+    for (const [key, value] of prior) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+    observation.deregister();
+    try {
+      // Only test-owned resources, after all measurements. Never SOURCE release.
+      for (const owner of progress.retainedSourceProgressOwners) {
+        for (const row of owner.handles) if (row.handle.fd >= 0) await row.handle.close();
+        if (owner.temporary) await owner.temporary.cleanup();
+      }
+      for (const owner of hooks.retainedSourceOriginalOwners) {
+        const rows = new Set([...owner.bundles.flatMap(item => [...item.rows.values()]),
+          ...(owner.operationReaders ?? []), ...(owner.workingReaders ?? [])]);
+        for (const row of rows) if (row.handle.fd >= 0) await row.handle.close();
+      }
+      if (fixedStat !== null) {
+        const current = await fs.lstat(fixedRoot, { bigint: true });
+        assert.equal(current.dev, fixedStat.dev); assert.equal(current.ino, fixedStat.ino);
+        assert.equal(current.isDirectory() && !current.isSymbolicLink(), true);
+        await fs.rm(fixedRoot, { recursive: true });
+      }
+      if (fixture) await fs.rm(fixture.temp, { recursive: true });
+    } catch (cleanup) { if (firstFailure === null) firstFailure = [cleanup]; }
+  }
+  if (firstFailure !== null) throw firstFailure[0];
+});
+
+await test('SOURCE disposition writer: physical close before normal artifact continuation', async () => {
+  const { registerHooks } = await import('node:module');
+  const { fstatSync } = await import('node:fs');
+  const moduleUrl = new URL('./protected-private-production-runtime.mjs', import.meta.url);
+  const observation = registerHooks({
+    load(url, context, next) {
+      const result = next(url, context);
+      if (url === moduleUrl.href) return { ...result, source: String(result.source)
+        + '\nexport { writeSourceArtifactDispositionFile };\n' };
+      return result;
+    },
+  });
+  const normal = await import(moduleUrl.href);
+  const parent = await fs.realpath(os.tmpdir());
+  const temp = await fs.mkdtemp(path.join(parent, 'ravradar-source-disposition-'));
+  const contents = '{"synthetic":"disposition-only"}\n';
+  const rows = [];
+  const failures = [];
+  const observed = [];
+  try {
+    for (const mode of ['close-noop', 'normal-close', 'write-null', 'sync-error', 'close-error']) {
+      const filename = path.join(temp, mode + '.json');
+      const handle = await fs.open(filename, 'wx', 0o600);
+      const writer = { handle, fd: handle.fd, closed: false };
+      const original = { close: handle.close.bind(handle), writeFile: handle.writeFile.bind(handle), sync: handle.sync.bind(handle) };
+      rows.push({ filename, writer, original });
+      const first = mode === 'write-null' ? null : Object.freeze({ synthetic: mode });
+      let closeCalls = 0, nextConsumer = false, caught = null;
+      handle.close = async () => {
+        closeCalls++;
+        if (mode === 'close-noop') return;
+        if (mode === 'close-error') throw first;
+        return original.close();
+      };
+      if (mode === 'write-null') handle.writeFile = async () => { throw first; };
+      if (mode === 'sync-error') handle.sync = async () => { throw first; };
+      // This is the actual internal writer used by the normal disposition
+      // caller. No B/P/S ownership, producer completion or T is fabricated.
+      try { await normal.writeSourceArtifactDispositionFile(writer, contents); nextConsumer = true; }
+      catch (error) { caught = [error]; }
+      let physicallyClosed = false;
+      try { fstatSync(writer.fd); }
+      catch (error) { assert.equal(error.code, 'EBADF'); physicallyClosed = true; }
+      try {
+        if (mode === 'normal-close') {
+          assert.equal(caught, null); assert.equal(nextConsumer, true);
+          assert.equal(writer.closed, true); assert.equal(physicallyClosed, true);
+          assert.equal(closeCalls, 1);
+        } else {
+          assert.ok(caught, mode + ' must refuse before the next artifact consumer');
+          assert.equal(nextConsumer, false); assert.equal(writer.closed, false);
+          assert.equal(physicallyClosed, false, 'unknown close retains the actual descriptor');
+          if (mode === 'close-noop') {
+            assert.equal(caught[0].message, 'SOURCE_ORIGINAL_ARTIFACT_DISPOSITION_CLOSE_UNPROVED');
+            assert.equal(closeCalls, 1);
+          } else {
+            assert.equal(caught[0], first, 'preserve the exact first raw exception');
+            assert.equal(closeCalls, mode === 'close-error' ? 1 : 0,
+              'failed write/sync must not acquire a new cleanup/retry path');
+          }
+        }
+        assert.equal(await fs.readFile(filename, 'utf8'), mode === 'write-null' ? '' : contents);
+      } catch (error) { failures.push(error); }
+      observed.push({ mode, closeCalls, physicallyClosed, nextConsumer, retained: !physicallyClosed });
+    }
+  } finally {
+    // Test-owned cleanup only, after measuring retained failure descriptors.
+    // The production helper neither deletes files nor retries close.
+    for (const { filename, writer, original } of rows) {
+      if (writer.handle.fd >= 0) {
+        const ownedFd = writer.handle.fd;
+        await original.close();
+        assert.throws(() => fstatSync(ownedFd), error => error.code === 'EBADF');
+      }
+      await fs.unlink(filename);
+    }
+    assert.deepEqual(await fs.readdir(temp), []);
+    assert.equal(path.dirname(temp), parent);
+    await fs.rmdir(temp);
+    observation.deregister();
+  }
+  console.log(JSON.stringify({ dispositionWriterCases: observed, cases: observed.length,
+    ownedCleanup: true, realNetwork: 0, fullSourceJob: false, nativeLinux: false }));
+  if (failures.length) throw failures[0];
+});
+
+await test('SOURCE private final owner: exact init operands, real file closure and genuine non-admission', async () => {
+  const { registerHooks } = await import('node:module');
+  const { execFileSync } = await import('node:child_process');
+  const { fstatSync } = await import('node:fs');
+  const source = (await fs.readFile(new URL('./protected-private-production-runtime.mjs', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const start = source.indexOf('async function beginSourceNormalProducerSession(holder) {');
+  const end = source.indexOf('\nasync function runSourceDmiCohort(', start);
+  const constructor = source.slice(start, end);
+  assert.ok(start > 0 && end > start);
+  // SOURCE-ONLY: these are the actual sole constructor and actual downstream
+  // exact-null operands. No Linux producer/admission is simulated on Windows.
+  assert.match(constructor, /firstNormalFailure: null, finalSaveFailure: null/);
+  assert.equal((source.match(/sourceDmiCohorts\.set\(operation, state\)/g) ?? []).length, 1);
+  for (const name of ['stageSourceNormalArtifact', 'publishSourceNormalArtifact']) {
+    const at = source.indexOf('async function ' + name + '(');
+    const next = source.indexOf('\nasync function ', at + 1);
+    const body = source.slice(at, next);
+    assert.match(body, /state\.firstNormalFailure !== null/);
+    assert.match(body, /state\.finalSaveFailure !== null/);
+  }
+  assert.match(source, /await publishSourceNormalArtifact\(holder, operation\);\n  return finalizeSourceNormalOwner\(holder, operation\);/);
+  const moduleUrl = new URL('./protected-private-production-runtime.mjs', import.meta.url);
+  const repositoryUrl = new URL('../', import.meta.url).href;
+  const query = 'source-final-owner-test=' + crypto.randomUUID();
+  const observation = registerHooks({
+    resolve(specifier, context, next) {
+      const result = next(specifier, context);
+      if (result.url.startsWith(repositoryUrl) && /\.(?:mjs|js)$/.test(new URL(result.url).pathname)) {
+        const url = new URL(result.url); url.search = query; return { ...result, url: url.href };
+      }
+      return result;
+    },
+    load(url, context, next) {
+      const result = next(url, context);
+      if (url.startsWith(moduleUrl.href + '?')) return { ...result, source: String(result.source)
+        + '\nexport { captureSourceDeadlineProcess, issuePrivateSourceJobDeadline, restoreSourceOriginals, sourceOriginalResultOwners, retainedSourceOriginalOwners, finalizeSourceNormalOwner, sourceFinalDistinctReaderRows, closeSourceFinalReader, sourceFinalOwnedCatalog, removeSourceFinalOwnedCatalog };\n' };
+      return result;
+    },
+  });
+  const hooks = await import(moduleUrl.href + '?' + query);
+  const head = execFileSync('git', ['rev-parse', 'HEAD^{commit}'], { cwd: PRIVATE_RUNTIME_REPOSITORY_ROOT, encoding: 'utf8' }).trim();
+  const environment = { GITHUB_ACTIONS: 'true', GITHUB_REPOSITORY: 'fixture/repo',
+    GITHUB_RUN_ID: '200', GITHUB_RUN_ATTEMPT: '2', GITHUB_SHA: head, GITHUB_REF: 'refs/heads/main',
+    RUNNER_NAME: 'source-final-owner-fixture', RUNNER_OS: 'Linux', RUNNER_TRACKING_ID: 'synthetic-marker',
+    RAVRADAR_SOURCE_EXTENDED_PROVIDER_BOOTSTRAP: 'false' };
+  const prior = new Map(Object.keys(environment).map(key => [key, process.env[key]]));
+  Object.assign(process.env, environment);
+  const realNow = Date.now, wallStart = Date.now(), monoStart = performance.now();
+  Date.now = () => wallStart + Math.floor(performance.now() - monoStart);
+  const sample = () => { const monoBefore = performance.now(), wall = Date.now(), monoAfter = performance.now(); return { monoBefore, wall, monoAfter }; };
+  async function holder() {
+    const identity = hooks.captureSourceDeadlineProcess(); let calls = 0;
+    const run = { id: 200, run_attempt: 2, head_sha: head, head_branch: 'main', path: '.github/workflows/update-and-deploy.yml',
+      status: 'in_progress', conclusion: null, event: 'schedule', repository: { full_name: 'fixture/repo' }, head_repository: { full_name: 'fixture/repo' } };
+    const value = await hooks.issuePrivateSourceJobDeadline(identity, { async readJsonWithTiming(route) {
+      const before = sample(); calls++;
+      assert.equal(route, '/repos/fixture/repo/actions/runs/200/attempts/2' + (calls === 2 ? '/jobs?per_page=100' : ''));
+      const json = calls === 1 ? run : { total_count: 1, jobs: [{ id: 300, run_id: 200, head_sha: head,
+        name: SOURCE_GATE_PRODUCERS[run.path].gates[0].job, status: 'in_progress', conclusion: null, completed_at: null,
+        runner_id: 400, runner_name: environment.RUNNER_NAME, started_at: new Date(before.wall - 600000).toISOString() }] };
+      return { before, after: sample(), serverDate: new Date(before.wall).toUTCString(), hasNextPage: false, json };
+    } });
+    assert.equal(calls, 2); return value;
+  }
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-source19-final-owner-kernel-'));
+  const root = await fs.realpath(temporary), opened = [];
+  const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+  async function row(name) {
+    const file = path.join(root, name), body = Buffer.from('synthetic-owner-close-only\n');
+    await fs.writeFile(file, body, { flag: 'wx', mode: 0o600 });
+    const handle = await fs.open(file, 'r'); opened.push(handle);
+    return { handle, path: file, stat: await handle.stat({ bigint: true }), bytes: body.length, sha256: digest(body) };
+  }
+  const journal = () => ({ fd: null, closeAttempted: false, closed: false, firstFailure: null });
+  const storage = Object.fromEntries(['ensurePrivateBucket', 'uploadImmutable', 'download', 'removeExact', 'anonymousStatus']
+    .map(key => [key, async () => { throw new Error('UNEXPECTED_STORAGE'); }]));
+  const options = request => ({ privateRoot: root, bundlePath: path.join(root, 'absent-b'), repositoryRoot: PRIVATE_RUNTIME_REPOSITORY_ROOT,
+    expected: {}, now: '2026-10-16T12:00:00.000Z', storage, request });
+  try {
+    const first = await row('one.bin'), fd = first.handle.fd;
+    const distinct = hooks.sourceFinalDistinctReaderRows([first, { ...first }]);
+    assert.deepEqual(distinct, [first], 'dedup by the actual FileHandle, never a numeric fd');
+    assert.throws(() => hooks.sourceFinalDistinctReaderRows([first, { ...first, sha256: '0'.repeat(64) }]), /FINAL_READER_IDENTITY_CONFLICT/);
+    const firstJournal = journal(); await hooks.closeSourceFinalReader(first, firstJournal);
+    assert.equal(firstJournal.closed, true); assert.throws(() => fstatSync(fd), error => error.code === 'EBADF');
+    await assert.rejects(hooks.closeSourceFinalReader(first, firstJournal), /FINAL_READER_CLOSE_REUSED/);
+    const noOp = await row('noop.bin'), noOpClose = noOp.handle.close.bind(noOp.handle); let noOpCalls = 0;
+    noOp.handle.close = async () => { noOpCalls++; }; const noOpJournal = journal();
+    try {
+      await assert.rejects(hooks.closeSourceFinalReader(noOp, noOpJournal), /FINAL_READER_CLOSE_UNPROVED/);
+      assert.equal(noOpCalls, 1); assert.equal(fstatSync(noOp.handle.fd).isFile(), true);
+      const original = noOpJournal.firstFailure[0];
+      await assert.rejects(hooks.closeSourceFinalReader(noOp, noOpJournal), error => error === original);
+      assert.equal(noOpCalls, 1);
+    } finally { noOp.handle.close = noOpClose; await noOpClose(); }
+    const raw = await row('null.bin'), rawClose = raw.handle.close.bind(raw.handle); let rawCalls = 0;
+    raw.handle.close = async () => { rawCalls++; await rawClose(); throw null; };
+    const rawJournal = journal();
+    await assert.rejects(hooks.closeSourceFinalReader(raw, rawJournal), error => error === null);
+    assert.equal(rawJournal.closed, true); assert.deepEqual(rawJournal.firstFailure, [null]);
+    await assert.rejects(hooks.closeSourceFinalReader(raw, rawJournal), error => error === null);
+    assert.equal(rawCalls, 1);
+    const cleanupRoot = path.join(root, 'catalog'); await fs.mkdir(cleanupRoot);
+    const known = path.join(cleanupRoot, 'inventory.json'); await fs.writeFile(known, '{}\n', { flag: 'wx' });
+    const knownRow = { path: known, stat: await fs.lstat(known, { bigint: true }), bytes: 3, sha256: digest('{}\n') };
+    const born = await fs.lstat(cleanupRoot, { bigint: true });
+    await fs.writeFile(path.join(cleanupRoot, 'unknown'), 'not-owned\n', { flag: 'wx' });
+    await assert.rejects(hooks.sourceFinalOwnedCatalog(cleanupRoot, born, [knownRow]), /FINAL_CLEANUP_UNKNOWN_ENTRY/);
+    assert.equal((await fs.readdir(cleanupRoot)).length, 2);
+    await fs.unlink(path.join(cleanupRoot, 'unknown'));
+    const catalog = await hooks.sourceFinalOwnedCatalog(cleanupRoot, born, [knownRow]);
+    await hooks.removeSourceFinalOwnedCatalog(catalog); assert.equal(catalog.completed, true);
+    await assert.rejects(fs.lstat(cleanupRoot), error => error.code === 'ENOENT');
+    const issued = await holder(); let reads = 0;
+    const absent = await hooks.restoreSourceOriginals(issued, 'single', options(async () => { reads++; return []; }));
+    assert.equal(absent.restored, false); assert.equal(reads, 1);
+    const owner = hooks.sourceOriginalResultOwners.get(absent);
+    await assert.rejects(hooks.finalizeSourceNormalOwner(issued, absent), /DMI_WORKING_OPERATION_REQUIRED/);
+    const original = owner.firstFailure[0];
+    assert.equal(owner.phase, 'RETAINED'); assert.equal(owner.finalOwnerRelease.phase, 'RETAINED');
+    assert.equal(hooks.retainedSourceOriginalOwners.has(owner), true);
+    assert.deepEqual(owner.finalOwnerRelease.closedReaders, []);
+    await assert.rejects(hooks.finalizeSourceNormalOwner(issued, absent), error => error === original);
+    const rawHolder = await holder();
+    // The normal pointer client intentionally wraps request errors. Inject the
+    // raw local first error before that wrapper, in actual storage validation.
+    const rawStorage = Object.defineProperty({ ...storage }, 'ensurePrivateBucket', { get() { throw null; } });
+    await assert.rejects(hooks.restoreSourceOriginals(rawHolder, 'single',
+      { ...options(async () => { throw new Error('UNEXPECTED_POINTER'); }), storage: rawStorage }), error => error === null);
+    const rawOwner = [...hooks.retainedSourceOriginalOwners].find(value => value.holder === rawHolder);
+    assert.deepEqual(rawOwner.firstFailure, [null]);
+    await assert.rejects(hooks.finalizeSourceNormalOwner(rawHolder, absent), error => error === null);
+    assert.equal(hooks.retainedSourceOriginalOwners.has(rawOwner), true);
+    console.log(JSON.stringify({ finalOwnerKernel: 'PASS', exactConstructorNullGate: 'SOURCE_ONLY_PASS',
+      actualFileHandleDedup: true, physicalEBADF: true, noOpCloseRetained: true, firstRawNullRetained: true,
+      exactCatalogOnly: true, genuineMissingBRetained: true, fabricatedHolder: false, fabricatedHostedAck: false,
+      completedPublication: 'UNRUN', cpKernelEchild: 'UNRUN', sourceAdmission: false, realNetwork: 0 }));
+  } finally {
+    for (const handle of opened) if (handle.fd >= 0) await handle.close();
+    for (const [key, value] of prior) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+    Date.now = realNow; observation.deregister();
+    assert.equal(path.dirname(root), await fs.realpath(os.tmpdir()));
+    assert.match(path.basename(root), /^rr-source19-final-owner-kernel-/);
+    await fs.rm(root, { recursive: true, force: false }); // Fixture-only own temporary root.
+  }
+});

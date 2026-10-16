@@ -345,8 +345,39 @@ const { fileURLToPath: ownedRawFilePath } = await import('node:url');
 const ownedRawRequire = createOwnedRawRequire(import.meta.url);
 const ownedRawAction = ownedRawFilePath(new URL('../.github/actions/save-owned-dmi-grib/index.cjs', import.meta.url));
 const ownedRawSource = await fs.readFile(ownedRawAction, 'utf8');
-const ownedRawPackage = await fs.readFile(path.join(path.dirname(ownedRawAction), 'package.json'), 'utf8');
-const ownedRawLock = await fs.readFile(path.join(path.dirname(ownedRawAction), 'package-lock.json'), 'utf8');
+const ownedRawCurrentPackage = await fs.readFile(path.join(path.dirname(ownedRawAction), 'package.json'), 'utf8');
+const ownedRawCurrentLock = await fs.readFile(path.join(path.dirname(ownedRawAction), 'package-lock.json'), 'utf8');
+// Historical fixtures retain the exact old distribution; a successor is not
+// relabelled old. The complete projected bytes must equal BOTH historical pins.
+function ownedRawLegacyDistribution(packageText, lockText) {
+  packageText = packageText.replaceAll('\r\n', '\n'); lockText = lockText.replaceAll('\r\n', '\n');
+  const sha = text => crypto.createHash('sha256').update(text).digest('hex');
+  const oldPackage = '111ef6137410cce15e90ddfea3fbbb70b04285a2e0c1fc04cb221c04cc3b61d8';
+  const oldLock = '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5';
+  if (sha(packageText) !== oldPackage || sha(lockText) !== oldLock) {
+    assert.equal(sha(packageText), '27ec4c37add8a4fb54de05e6ceb797b42c95ff15dd84526b4aa326f64c073d99');
+    assert.equal(sha(lockText), '920ad50fc3b7084879c1257d5b11e0e3ce52367b42f05871ffc68f8a66f66c47');
+    const lock = JSON.parse(lockText), keep = new Set(), queue = ['node_modules/@actions/cache'];
+    while (queue.length) {
+      const key = queue.pop(); if (keep.has(key)) continue; keep.add(key);
+      const row = lock.packages[key]; assert.ok(row);
+      for (const name of Object.keys({ ...row.dependencies, ...row.optionalDependencies, ...row.peerDependencies })) {
+        const parts = key.split('/node_modules/'); let resolved;
+        while (parts.length) { const candidate = parts.join('/node_modules/') + '/node_modules/' + name;
+          if (lock.packages[candidate]) { resolved = candidate; break; } parts.pop(); }
+        resolved ||= lock.packages['node_modules/' + name] && 'node_modules/' + name;
+        if (resolved) queue.push(resolved);
+      }
+    }
+    assert.equal(keep.size, 49);
+    for (const key of Object.keys(lock.packages)) if (key && !keep.has(key)) delete lock.packages[key];
+    delete lock.packages[''].dependencies['@actions/artifact']; lockText = JSON.stringify(lock, null, 2) + '\n';
+    packageText = packageText.replace(', "@actions/artifact": "6.3.1"', '');
+  }
+  assert.equal(sha(packageText), oldPackage); assert.equal(sha(lockText), oldLock);
+  return { packageText, lockText };
+}
+const { packageText: ownedRawPackage, lockText: ownedRawLock } = ownedRawLegacyDistribution(ownedRawCurrentPackage, ownedRawCurrentLock);
 
 // Run the actual workflow validator body: no copied validator, no provider or cache API.
 // Non-Linux hosts retain the static contract; a skip is not actual Bash evidence.
@@ -989,5 +1020,603 @@ testOwnedRawCache('owned distribution npm configuration: distinct empty sources 
       assert.throws(() => configs.removeAfterInstallerClose(), /CONFIG_CLEANUP_UNPROVED/);
       for (const p of f.configs) assert.equal(rawFs.existsSync(p), true);
     } finally { await f.dispose(); }
+  });
+});
+
+// Additive worker-transport proof only. The full action and unchanged lock guard
+// execute; SDK/publisher result transport, procfs and descriptors are synthetic.
+// This does NOT install artifact6.3.1, validate a new lock, run full publishers,
+// authenticate A2/H, or prove Linux close/drain, hosted finalization or SOURCE.
+testOwnedRawCache('SOURCE publication workers: fixed normal factories, ordered ACK and first failure', async t => {
+  const slot = Symbol.for('RavRadar.synthetic.sourcePublication');
+  const root = path.posix.resolve('/synthetic/checkout');
+  const action = path.posix.join(root, '.github/actions/save-owned-dmi-grib');
+  const filename = path.posix.join(action, 'index.cjs');
+  const checkpointUrl = ownedRawRequire('node:url').pathToFileURL(root + '/scripts/protected-ravscore-continuation-checkpoint.mjs').href;
+  const privateUrl = ownedRawRequire('node:url').pathToFileURL(root + '/scripts/protected-private-production-runtime.mjs').href;
+  const texts = await Promise.all([
+    'scripts/protected-ravscore-continuation-checkpoint.mjs',
+    'scripts/protected-private-production-runtime.mjs',
+    'scripts/lib/supabase-admin-rest.mjs',
+    'scripts/ravscore-continuation-checkpoint.mjs',
+    'scripts/private-production-runtime-bundle.mjs',
+  ].map(file => fs.readFile(file, 'utf8').then(s => s.replaceAll('\r\n', '\n'))));
+  const [cpSource, privateSource, adminSource, stateSource, bundleSource] = texts;
+  const between = (source, start, end) => {
+    assert.equal(source.split(start).length - 1, 1, start);
+    const begin = source.indexOf(start), finish = source.indexOf(end, begin + start.length);
+    assert.ok(finish > begin, end); return source.slice(begin, finish);
+  };
+  const policy = (source, name) => between(source,
+    `export const ${name} = Object.freeze({`, '\n});') + '\n});\n';
+  // Whole actual factory bodies and actual policy/default helpers, not hand-
+  // written factories. Only the transport and full-publisher result are doubles.
+  const factorySource = [adminSource,
+    policy(stateSource, 'RAVSCORE_CONTINUATION_CHECKPOINT_POLICY'),
+    policy(bundleSource, 'PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY'),
+    policy(privateSource, 'PROTECTED_PRIVATE_RUNTIME_POLICY'),
+    between(cpSource, 'export const PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY', '\nconst isPlainObject'),
+    between(cpSource, 'const isPlainObject', '\nfunction safeMetadata'),
+    between(cpSource, 'const parseRemoteJson', '\n// Counts only public contract states.'),
+    between(cpSource, 'async function readResponseTextBounded', '\nexport function createProtectedRavScoreCheckpointRequester'),
+    between(cpSource, 'export function createProtectedRavScoreCheckpointVersionRequester', '\nfunction validateCheckpointRpcMetadata'),
+    between(privateSource, 'function safeSupabaseUrl', '\nfunction parseArguments'),
+    'globalThis.actualFactories={createProtectedRavScoreCheckpointVersionRequester,'
+      + 'createProtectedRavScoreCheckpointRpcRequester,createProtectedRavScoreCheckpointDiagnosticRequester,'
+      + 'createProtectedPrivateRuntimeClients};',
+  ].join('\n').replace(/^export /gm, '');
+  const loader = registerOwnedRawHooks({ resolve(specifier, context, nextResolve) {
+    let body;
+    if (specifier === '@actions/artifact') body = 'export class DefaultArtifactClient {'
+      + 'uploadArtifact(...a){return globalThis[s].upload(...a)}'
+      + 'getArtifact(...a){return globalThis[s].readback(...a)}}';
+    if (specifier === checkpointUrl) body = [
+      'createProtectedRavScoreCheckpointVersionRequester', 'createProtectedRavScoreCheckpointRpcRequester',
+      'createProtectedRavScoreCheckpointDiagnosticRequester',
+    ].map(name => `export const ${name}=(...a)=>globalThis[s].factory('${name}',a);`).join('')
+      + 'export const publishProtectedRavScoreContinuationCheckpoint=(o)=>globalThis[s].checkpoint(o);';
+    if (specifier === privateUrl) body = 'export const createProtectedPrivateRuntimeClients=(...a)=>'
+      + 'globalThis[s].factory("createProtectedPrivateRuntimeClients",a);'
+      + 'export const publishProtectedPrivateProductionRuntime=(o)=>globalThis[s].privatePublish(o);'
+      + 'export const PROTECTED_PRIVATE_RUNTIME_POLICY=globalThis[s].policy;'
+      + 'export const auditProtectedPrivateRuntimeAnonymousDenial=(o)=>globalThis[s].audit(o);';
+    if (body === undefined) return nextResolve(specifier, context);
+    return { shortCircuit: true, url: 'data:text/javascript,' + encodeURIComponent(
+      'const s=Symbol.for("RavRadar.synthetic.sourcePublication");' + body) };
+  } });
+  const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; });
+    return { promise, resolve, reject }; };
+  const tick = () => new Promise(resolve => setImmediate(resolve));
+  function fixture(options = {}) {
+    const events = [], outputs = [], fetches = [], factoryReturns = new Map();
+    const upload = deferred(), readback = deferred(), checkpoint = deferred(), privatePublish = deferred();
+    const payload = Buffer.from('SYNTHETIC SEALED BYTES\n');
+    const sha = crypto.createHash('sha256').update(payload).digest('hex');
+    const zip = 'a'.repeat(64), name = 'ravradar-private-build-stage-42-1';
+    const temporary = '/synthetic/tmp', directory = temporary + '/ravradar-private-build-stage';
+    const sealed = directory + '/sealed.bin', output = '/proc/12345/fd/9';
+    const target = '2026-10-14T10:00:00.000Z';
+    const env = { INPUT_OPERATION: 'source', RUNNER_OS: 'Linux', GITHUB_RUN_ID: '42',
+      GITHUB_RUN_ATTEMPT: '1', GITHUB_REF: 'refs/heads/main', GITHUB_SERVER_URL: 'https://github.com',
+      GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_SHA: '1'.repeat(40), GITHUB_REPOSITORY: 'synthetic/repo',
+      GITHUB_OUTPUT: output, RUNNER_TEMP: temporary, RAVRADAR_PRODUCTION_TARGET_HOUR: target,
+      SUPABASE_URL: 'https://synthetic.invalid', SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_SYNTHETIC',
+      RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND: 'supabase' };
+    const processFixture = { platform: 'linux', versions: { node: '24.19.0' }, ppid: 12345, env,
+      argv: ['node', filename], stderr: { write() { throw Error('UNEXPECTED_DIAGNOSTIC'); } } };
+    const opened = new Set(); let mutated = false;
+    const stat = (kind, inode, nlink = 1n) => ({ dev: 3n, ino: inode, mode: kind === 'dir' ? 16832n : 33152n,
+      nlink, size: BigInt(payload.length), mtimeNs: 7n, ctimeNs: mutated ? 9n : 7n,
+      isFile: () => kind === 'file', isDirectory: () => kind === 'dir', isSymbolicLink: () => false });
+    const fsFixture = {
+      constants: ownedRawRequire('node:fs').constants,
+      readFileSync(file) {
+        if (file === '/proc/12345/cmdline') return Buffer.from('python3\0-I\0-B\0'
+          + root + '/scripts/lib/copernicus_component_process.py\0--source-normal-program-cohort\0');
+        if (file === action + '/package.json') return ownedRawCurrentPackage + (options.changedPackage ? ' ' : '');
+        if (file === action + '/package-lock.json') return ownedRawCurrentLock + (options.changedLock ? ' ' : '');
+        if (file === action + '/node_modules/@actions/artifact/package.json') return '{"version":"6.3.1"}';
+        if (file === root + '/.cache/private-production-runtime-expected.json') return '{"syntheticExpected":1}';
+        throw Error('UNEXPECTED_READ:' + file);
+      },
+      realpathSync: file => file,
+      lstatSync(file) {
+        if (file === sealed) return stat('file', 20n);
+        assert.ok([root, temporary, directory].includes(file)); return stat('dir', BigInt(file.length));
+      },
+      openSync(file, flags) {
+        assert.ok([sealed, output].includes(file)); const fd = file === sealed ? 14 : 15;
+        assert.equal(flags, file === sealed ? this.constants.O_RDONLY | this.constants.O_NOFOLLOW
+          : this.constants.O_WRONLY | this.constants.O_APPEND);
+        assert.equal(opened.has(fd), false); opened.add(fd); events.push('open:' + fd); return fd;
+      },
+      fstatSync(fd) {
+        if (!opened.has(fd)) { events.push('closed:' + fd); throw Object.assign(new Error('SYNTHETIC_EBADF'), { code: 'EBADF' }); }
+        return stat('file', fd === 14 ? 20n : 30n, fd === 15 ? 0n : 1n);
+      },
+      readSync(fd, buffer, offset, length, position) {
+        assert.equal(fd, 14); assert.ok(opened.has(fd));
+        const n = Math.max(0, Math.min(length, payload.length - position));
+        payload.copy(buffer, offset, position, position + n); return n;
+      },
+      closeSync(fd) {
+        events.push('close:' + fd); assert.ok(opened.has(fd));
+        if (options.closeFailure === fd) throw Error('SYNTHETIC_SECONDARY_CLOSE');
+        if (options.noopClose !== fd) opened.delete(fd);
+      },
+      writeFileSync(fd, text) {
+        assert.equal(fd, 15); assert.ok(opened.has(fd)); events.push('output');
+        if (Object.hasOwn(options, 'writeFailure')) throw options.writeFailure;
+        outputs.push(text);
+      },
+    };
+    const normalContext = vmOwnedRawCache.createContext({ Buffer, URL, console, setTimeout,
+      process: { env }, fetch: async (url, request) => {
+        fetches.push({ url, request });
+        assert.ok(url.startsWith('https://synthetic.invalid/'));
+        assert.equal(request.headers.apikey, 'sb_secret_SYNTHETIC');
+        assert.equal(request.headers.Authorization, undefined);
+        const body = url.includes('?document_key=eq.ravscore-private-production-runtime-pointer&')
+          ? [{ document_key: 'ravscore-private-production-runtime-pointer', version: priv.centralVersion,
+            payload: { current: { productionReferenceAt: priv.productionReferenceAt,
+              bundleContentSha256: priv.bundleContentSha256, objectSha256: priv.objectSha256, objectCount: priv.objectCount } } }]
+          : url.includes('/storage/v1/bucket/')
+          ? { id: 'ravradar-private-production-runtime', name: 'ravradar-private-production-runtime',
+            public: false, file_size_limit: 50 * 1024 * 1024, allowed_mime_types: ['application/gzip'] } : [];
+        return { ok: true, status: 200, text: async () => JSON.stringify(body) };
+      } });
+    new vmOwnedRawCache.Script(factorySource).runInContext(normalContext);
+    const module = { exports: {} };
+    const require = name => name === 'node:fs' ? fsFixture
+      : name === 'node:path' ? path.posix
+      : name === 'node:module' ? { findPackageJSON: () => action + '/node_modules/@actions/artifact/package.json' }
+      : name === 'node:child_process' ? { spawn() { throw Error('UNEXPECTED_CHILD'); } }
+      : ownedRawRequire(name);
+    const context = vmOwnedRawCache.createContext({ require, module, exports: module.exports,
+      __dirname: action, __filename: filename, process: processFixture, Buffer, URL, console });
+    new vmOwnedRawCache.Script(ownedRawSource, { filename,
+      importModuleDynamically: vmOwnedRawCache.constants.USE_MAIN_CONTEXT_DEFAULT_LOADER }).runInContext(context);
+    const api = vmOwnedRawCache.runInContext('({runSourceArtifactUpload,runSourceCheckpointPublish,'
+      + 'runSourcePrivatePublish,retainedSourcePublicationWorkers})', context);
+    globalThis[slot] = {
+      policy: vmOwnedRawCache.runInContext('PROTECTED_PRIVATE_RUNTIME_POLICY', normalContext),
+      async audit({ request, storage }) {
+        assert.equal(storage, factoryReturns.get('createProtectedPrivateRuntimeClients').storage);
+        await request('?document_key=eq.ravscore-private-production-runtime-pointer&select=document_key,payload,version&limit=2', {}, 'read');
+        return { anonymousReadDenied: true, objectCount: 1, statusClasses: ['4xx'], privatePayloadLogged: false };
+      },
+      upload(...args) { events.push('upload'); assert.equal(args.length, 4); assert.equal(args[0], name);
+        assert.deepEqual(Array.from(args[1]), [sealed]); assert.equal(args[2], directory);
+        assert.deepEqual(JSON.parse(JSON.stringify(args[3])), { retentionDays: 1, compressionLevel: 0 });
+        return upload.promise; },
+      readback(...args) { events.push('readback'); assert.deepEqual(args, [name]); return readback.promise; },
+      factory(name, args) { events.push(name); assert.equal(args.length, 0);
+        const value = normalContext.actualFactories[name](); factoryReturns.set(name, value); return value; },
+      async checkpoint(args) {
+        events.push('checkpoint'); assert.equal(args.targetReference, target);
+        for (const [field, suffix] of [['request', 'Version'], ['rpcRequest', 'Rpc'], ['diagnosticRequest', 'Diagnostic']]) {
+          assert.equal(args[field], factoryReturns.get('createProtectedRavScoreCheckpoint' + suffix + 'Requester'));
+        }
+        await args.request('?document_key=eq.ravscore-continuation-checkpoint&select=document_key,version&limit=2');
+        await assert.rejects(args.request('?different'), /non-metadata/);
+        await assert.rejects(args.rpcRequest(null), /body is invalid/);
+        await assert.rejects(args.diagnosticRequest(null, target), /unavailable/);
+        return checkpoint.promise;
+      },
+      async privatePublish(args) {
+        events.push('private'); const clients = factoryReturns.get('createProtectedPrivateRuntimeClients');
+        assert.equal(args.request, clients.documentRequest); assert.equal(args.storage, clients.storage);
+        assert.equal(args.privateRoot, '/tmp/ravradar-private-production-runtime');
+        assert.equal(args.bundlePath, '/tmp/ravradar-private-production-runtime/bundle-source-successor');
+        assert.equal(args.repositoryRoot, root); assert.equal(args.sourceHead, env.GITHUB_SHA);
+        assert.deepEqual(JSON.parse(JSON.stringify(args.expected)), { syntheticExpected: 1 });
+        assert.equal(Object.hasOwn(args, 'sameReferenceMigrationEvidence'), false);
+        await clients.storage.ensurePrivateBucket({ allowCreate: false });
+        await clients.documentRequest('?document_key=eq.synthetic&select=version');
+        return privatePublish.promise;
+      },
+    };
+    const cp = { published: true, reason: 'protected-checkpoint-updated', centralVersion: 3,
+      checkpointAt: target, targetReferenceAt: target, continuationAvailable: true, partCount: 673,
+      payloadLogged: false, preexistingHistoricalVersionsPreserved: true, newHistoricalVersionsRetained: false,
+      modelBundleSha256: 'b'.repeat(64), modelContractSha256: 'c'.repeat(64), continuationStateContractSha256: 'd'.repeat(64) };
+    const priv = { published: true, reason: 'protected-private-runtime-updated', centralVersion: 4,
+      productionReferenceAt: target, privatePayloadLogged: false, rollbackAvailable: true,
+      bundleContentSha256: 'e'.repeat(64), objectSha256: 'f'.repeat(64), objectCount: 1,
+      retentionCleanupComplete: true, retentionCleanupFailureCount: 0 };
+    return { ...api, events, outputs, fetches, opened, upload, readback, checkpoint, privatePublish, cp, priv,
+      uploaded: { id: 17, size: 123, digest: zip },
+      remote: { artifact: { id: 17, name, size: 123, digest: 'sha256:' + zip } },
+      sha, zip, mutate() { mutated = true; } };
+  }
+  try {
+    await t.test('existing exact package/lock guard executes; proposed dependency is NOT qualified', async () => {
+      for (const option of ['changedPackage', 'changedLock']) {
+        const f = fixture({ [option]: true });
+        await assert.rejects(f.runSourceArtifactUpload(), /DMI_RAW_DISTRIBUTION_LOCK_REFUSED/);
+        assert.deepEqual(f.events, []); assert.deepEqual(f.outputs, []);
+      }
+    });
+    await t.test('upload awaits finalize then exact readback, closes input then private output', async () => {
+      const f = fixture(); let settled = false; const result = f.runSourceArtifactUpload();
+      result.then(() => { settled = true; }, () => { settled = true; }); await tick();
+      assert.equal(settled, false); assert.deepEqual(f.events, ['open:14', 'upload']);
+      f.upload.resolve(f.uploaded); await tick();
+      assert.equal(settled, false); assert.deepEqual(f.outputs, []);
+      assert.deepEqual(f.events, ['open:14', 'upload', 'readback']);
+      f.readback.resolve(f.remote); await result;
+      assert.deepEqual(f.events, ['open:14', 'upload', 'readback', 'close:14', 'closed:14', 'open:15', 'output', 'close:15', 'closed:15']);
+      assert.match(f.outputs[0], new RegExp('archive_sha=' + f.zip + '\\n'));
+      assert.match(f.outputs[0], new RegExp('sealed_sha=' + f.sha + '\\n'));
+      assert.notEqual(f.sha, f.zip); assert.equal(f.retainedSourcePublicationWorkers.size, 0);
+    });
+    await t.test('wrong metadata, bare digest and changed sealed identity never yield ACK', async () => {
+      for (const kind of ['id', 'name', 'digest', 'unsafe-id', 'sealed']) {
+        const f = fixture(); const result = f.runSourceArtifactUpload();
+        const rejected = assert.rejects(result, /SOURCE_(ARTIFACT|PUBLICATION)_/);
+        await tick(); f.upload.resolve(kind === 'unsafe-id' ? { ...f.uploaded, id: Number.MAX_SAFE_INTEGER + 1 } : f.uploaded);
+        await tick();
+        if (kind === 'sealed') f.mutate();
+        const remote = { ...f.remote.artifact };
+        if (kind === 'id') remote.id = 18;
+        if (kind === 'name') remote.name += '-different';
+        if (kind === 'digest') remote.digest = f.zip;
+        f.readback.resolve({ artifact: remote }); await rejected;
+        assert.deepEqual(f.outputs, []); assert.equal(f.events.filter(e => e === 'upload').length, 1);
+        assert.ok(f.retainedSourcePublicationWorkers.size > 0);
+      }
+    });
+    await t.test('raw null survives secondary input close failure; no-op close never succeeds', async () => {
+      const f = fixture({ closeFailure: 14 }); const result = f.runSourceArtifactUpload();
+      const rejected = assert.rejects(result, e => e === null); await tick(); f.upload.reject(null); await rejected;
+      assert.deepEqual(f.outputs, []); assert.ok(f.opened.has(14));
+      assert.ok([...f.retainedSourcePublicationWorkers].some(row => row.first?.value === null));
+      const g = fixture({ noopClose: 14 }); const work = g.runSourceArtifactUpload();
+      const failed = assert.rejects(work, /CLOSE_UNPROVED/); await tick();
+      g.upload.resolve(g.uploaded); g.readback.resolve(g.remote); await failed;
+      assert.deepEqual(g.outputs, []); assert.ok(g.opened.has(14));
+    });
+    await t.test('checkpoint uses all actual normal factories and emits only after returned ACK', async () => {
+      const f = fixture(); const result = f.runSourceCheckpointPublish(); await tick();
+      assert.deepEqual(f.events, ['createProtectedRavScoreCheckpointVersionRequester',
+        'createProtectedRavScoreCheckpointRpcRequester', 'createProtectedRavScoreCheckpointDiagnosticRequester', 'checkpoint']);
+      assert.deepEqual(f.outputs, []); assert.equal(f.fetches.length, 1);
+      f.checkpoint.resolve(f.cp); await result;
+      assert.match(f.outputs[0], /checkpoint_version=3\n/);
+      assert.deepEqual(f.events.slice(-4), ['open:15', 'output', 'close:15', 'closed:15']);
+      assert.equal(f.retainedSourcePublicationWorkers.size, 0);
+    });
+    await t.test('private publisher gets real normal clients and fixed successor, not original B', async () => {
+      const f = fixture(); const result = f.runSourcePrivatePublish(); await tick();
+      assert.deepEqual(f.events, ['createProtectedPrivateRuntimeClients', 'private']);
+      assert.equal(f.fetches.length, 2); assert.deepEqual(f.outputs, []);
+      f.privatePublish.resolve({ ...f.priv, retentionCleanupComplete: false, retentionCleanupFailureCount: 1 });
+      await result; assert.match(f.outputs[0], /private_retention_failures=1\n/);
+      assert.deepEqual(f.events.slice(-4), ['open:15', 'output', 'close:15', 'closed:15']);
+      assert.equal(f.retainedSourcePublicationWorkers.size, 0);
+    });
+    await t.test('publisher null and malformed ACK retain first failure without output', async () => {
+      for (const mode of ['checkpoint', 'private']) for (const kind of ['null', 'bad']) {
+        const f = fixture(); const result = mode === 'checkpoint' ? f.runSourceCheckpointPublish() : f.runSourcePrivatePublish();
+        const failed = assert.rejects(result, kind === 'null' ? e => e === null : /PUBLISH_UNPROVED/);
+        await tick(); const pending = mode === 'checkpoint' ? f.checkpoint : f.privatePublish;
+        if (kind === 'null') pending.reject(null);
+        else pending.resolve(mode === 'checkpoint' ? { ...f.cp, partCount: 672 } : { ...f.priv, privatePayloadLogged: true });
+        await failed; assert.deepEqual(f.outputs, []); assert.ok(f.retainedSourcePublicationWorkers.size > 0);
+      }
+    });
+    await t.test('output write null survives close failure and retained descriptor is not released', async () => {
+      const f = fixture({ writeFailure: null, closeFailure: 15 });
+      const result = f.runSourceCheckpointPublish(); const failed = assert.rejects(result, e => e === null);
+      await tick(); f.checkpoint.resolve(f.cp); await failed;
+      assert.deepEqual(f.outputs, []); assert.ok(f.opened.has(15));
+      assert.ok([...f.retainedSourcePublicationWorkers].some(row => row.fd === 15 && row.first?.value === null));
+    });
+  } finally { loader.deregister(); delete globalThis[slot]; }
+});
+
+// Full normal action + genuine pointer validators/audit/client factory; remote
+// publication return, HTTP and procfs/fds are synthetic, not hosted/kernel proof.
+testOwnedRawCache('SOURCE private publication requires same-generation anonymous denial before ACK', async t => {
+  const slot = Symbol.for('RavRadar.synthetic.sourcePublicationPrivacy');
+  const root = '/synthetic/checkout', directory = root + '/.github/actions/save-owned-dmi-grib';
+  const filename = directory + '/index.cjs';
+  const privateUrl = ownedRawRequire('node:url').pathToFileURL(root + '/scripts/protected-private-production-runtime.mjs').href;
+  const paths = ['scripts/protected-private-production-runtime.mjs',
+    'scripts/private-production-runtime-bundle.mjs', 'scripts/lib/supabase-admin-rest.mjs',
+    'js/core/ravscore-model-contract.js', 'js/core/ravscore-model-bundle.generated.js'];
+  const [p, b, admin, contract, generated] = await Promise.all(paths.map(file =>
+    fs.readFile(file, 'utf8').then(text => text.replaceAll('\r\n', '\n'))));
+  const between = (source, start, end) => {
+    assert.equal(source.split(start).length - 1, 1, start);
+    const begin = source.indexOf(start), finish = source.indexOf(end, begin + start.length);
+    assert.ok(finish > begin, end); return source.slice(begin, finish);
+  };
+  const policy = source => between(source,
+    'export const PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY = Object.freeze({', '\n});') + '\n});\n';
+  const modelImport = "import {\n  GENERATED_RAVSCORE_MODEL_BUNDLE_SHA256,\n  GENERATED_RAVSCORE_MODEL_CONTRACT_SHA256,\n} from './ravscore-model-bundle.generated.js';\n";
+  assert.equal(contract.split(modelImport).length - 1, 1);
+  const normalSource = [generated, contract.replace(modelImport, ''), admin, policy(b),
+    between(p, 'export const PROTECTED_PRIVATE_RUNTIME_POLICY', '\nconst LEGACY_ARCHIVE_KEYS'),
+    between(p, 'const SHA256_PATTERN', '\nfunction assertObjectSetPolicy'),
+    between(p, 'function assertObjectSetPolicy', '\nfunction effectiveEnvelopeByteLimit'),
+    between(p, 'function exactKeys', '\nfunction safeArchivePath'),
+    between(b, 'function canonicalValue', '\nconst sha256Buffer'),
+    between(p, 'function canonicalBindingShape', '\nasync function validateArchiveEnvelope'),
+    between(p, 'async function invokeDocumentRequest', '\nfunction assertStorage'),
+    between(p, 'function assertStorage', '\nasync function verifyStoredObject'),
+    between(p, 'function descriptorObjects', '\nfunction referencedObjectPaths'),
+    between(p, 'export async function auditProtectedPrivateRuntimeAnonymousDenial', '\nfunction safeSupabaseUrl'),
+    between(p, 'function safeSupabaseUrl', '\nfunction parseArguments'),
+    'globalThis.normal={createProtectedPrivateRuntimeClients,auditProtectedPrivateRuntimeAnonymousDenial,'
+      + 'PROTECTED_PRIVATE_RUNTIME_POLICY,PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY,ravScoreModelBinding};',
+  ].join('\n').replace(/^export /gm, '');
+  const loader = registerOwnedRawHooks({ resolve(specifier, context, nextResolve) {
+    if (specifier !== privateUrl) return nextResolve(specifier, context);
+    return { shortCircuit: true, url: 'data:text/javascript,' + encodeURIComponent(
+      'const s=Symbol.for("RavRadar.synthetic.sourcePublicationPrivacy");'
+      + 'export const PROTECTED_PRIVATE_RUNTIME_POLICY=globalThis[s].policy;'
+      + 'export const createProtectedPrivateRuntimeClients=(...a)=>globalThis[s].clients(a);'
+      + 'export const publishProtectedPrivateProductionRuntime=(o)=>globalThis[s].publish(o);'
+      + 'export const auditProtectedPrivateRuntimeAnonymousDenial=(o)=>globalThis[s].audit(o);') };
+  } });
+  const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; });
+    return { promise, resolve, reject }; };
+  const tick = () => new Promise(resolve => setImmediate(resolve));
+  function fixture(options = {}) {
+    const events = [], outputs = [], opened = new Set();
+    const published = deferred(), anonymous = deferred();
+    const target = '2026-10-14T10:00:00.000Z', head = '1'.repeat(40);
+    const env = { INPUT_OPERATION: 'source', RUNNER_OS: 'Linux', GITHUB_RUN_ID: '42', GITHUB_RUN_ATTEMPT: '1',
+      GITHUB_REF: 'refs/heads/main', GITHUB_SERVER_URL: 'https://github.com', GITHUB_EVENT_NAME: 'workflow_dispatch',
+      GITHUB_SHA: head, GITHUB_REPOSITORY: 'synthetic/repo', GITHUB_OUTPUT: '/proc/12345/fd/9',
+      RAVRADAR_PRODUCTION_TARGET_HOUR: target, SUPABASE_URL: 'https://synthetic.invalid',
+      SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_SYNTHETIC', RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND: 'supabase' };
+    let pointer, clients;
+    const normalContext = vmOwnedRawCache.createContext({ Buffer, URL, console, crypto, setTimeout,
+      process: { env }, fetch: async (url, request) => {
+        if (url.includes('/rest/v1/admin_documents?')) {
+          events.push('pointer'); assert.equal(request.method ?? 'GET', 'GET');
+          assert.equal(request.headers.apikey, 'sb_secret_SYNTHETIC');
+          assert.equal(request.headers.Authorization, undefined);
+          if (Object.hasOwn(options, 'pointerFailure')) throw options.pointerFailure;
+          return { ok: true, status: 200, text: async () => JSON.stringify([pointer]) };
+        }
+        assert.ok(url.startsWith('https://synthetic.invalid/storage/v1/object/authenticated/'));
+        events.push('anonymous'); assert.equal(request?.method ?? 'GET', 'GET');
+        assert.equal(request?.headers?.apikey, undefined); assert.equal(request?.headers?.Authorization, undefined);
+        const status = await anonymous.promise; return { ok: status === 200, status };
+      } });
+    new vmOwnedRawCache.Script(normalSource).runInContext(normalContext);
+    const normal = normalContext.normal, policy = normal.PROTECTED_PRIVATE_RUNTIME_POLICY;
+    const ack = { published: true, reason: 'protected-private-runtime-updated', centralVersion: 4,
+      productionReferenceAt: target, privatePayloadLogged: false, rollbackAvailable: false,
+      bundleContentSha256: 'e'.repeat(64), objectSha256: 'f'.repeat(64), objectCount: 1,
+      retentionCleanupComplete: true, retentionCleanupFailureCount: 0 };
+    const partSha = 'a'.repeat(64);
+    pointer = { document_key: policy.documentKey, version: ack.centralVersion, payload: {
+      schemaVersion: policy.schemaVersion, kind: policy.pointerKind, previous: null, current: {
+        schemaVersion: policy.schemaVersion, kind: policy.descriptorKind, privacyClass: policy.privacyClass,
+        bucketId: policy.bucketId, objectSha256: ack.objectSha256, objectBytes: 17, objectCount: 1,
+        objects: [{ index: 0, objectPath: `bundles/sha256/${ack.objectSha256}/part-000-${partSha}.json.gz.part`,
+          objectSha256: partSha, objectBytes: 17 }], bundleContentSha256: ack.bundleContentSha256,
+        datasetId: 'rr-synthetic-private-audit', productionReferenceAt: target, generatedAt: target,
+        sourceHead: head, modelBinding: normal.ravScoreModelBinding(),
+        contractHashes: Object.fromEntries(normal.PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.requiredContractHashKeys
+          .map(key => [key, 'b'.repeat(64)])),
+      } } };
+    options.changePointer?.(pointer);
+    const fsFixture = {
+      constants: ownedRawRequire('node:fs').constants,
+      readFileSync(file) {
+        if (file === '/proc/12345/cmdline') return Buffer.from('python3\0-I\0-B\0' + root
+          + '/scripts/lib/copernicus_component_process.py\0--source-normal-program-cohort\0');
+        if (file === root + '/.cache/private-production-runtime-expected.json') return '{"syntheticExpected":1}';
+        throw Error('UNEXPECTED_READ:' + file);
+      },
+      openSync(file, flags) { assert.equal(file, env.GITHUB_OUTPUT);
+        assert.equal(flags, this.constants.O_WRONLY | this.constants.O_APPEND);
+        assert.equal(opened.size, 0); opened.add(15); events.push('open'); return 15; },
+      fstatSync(fd) { assert.equal(fd, 15);
+        if (!opened.has(fd)) { events.push('ebadf'); throw Object.assign(Error('SYNTHETIC_EBADF'), { code: 'EBADF' }); }
+        return { isFile: () => true, nlink: 0n }; },
+      writeFileSync(fd, text) { assert.ok(opened.has(fd)); events.push('output');
+        if (Object.hasOwn(options, 'writeFailure')) throw options.writeFailure; outputs.push(text); },
+      closeSync(fd) { assert.ok(opened.has(fd)); events.push('close');
+        if (options.closeFailure) throw Error('SYNTHETIC_CLOSE'); opened.delete(fd); },
+    };
+    const module = { exports: {} };
+    const require = name => name === 'node:fs' ? fsFixture : name === 'node:path' ? path.posix
+      : name === 'node:child_process' ? { spawn() { throw Error('UNEXPECTED_CHILD'); } } : ownedRawRequire(name);
+    const context = vmOwnedRawCache.createContext({ require, module, exports: module.exports,
+      __dirname: directory, __filename: filename, Buffer, URL, console,
+      process: { platform: 'linux', versions: { node: '24.19.0' }, ppid: 12345, env, argv: ['node', filename] } });
+    new vmOwnedRawCache.Script(ownedRawSource, { filename,
+      importModuleDynamically: vmOwnedRawCache.constants.USE_MAIN_CONTEXT_DEFAULT_LOADER }).runInContext(context);
+    const api = vmOwnedRawCache.runInContext('({runSourcePrivatePublish,retainedSourcePublicationWorkers})', context);
+    globalThis[slot] = { policy, clients(args) { assert.deepEqual(args, []); events.push('clients');
+      clients = normal.createProtectedPrivateRuntimeClients(); return clients; },
+      publish(args) { events.push('publish'); assert.equal(args.request, clients.documentRequest);
+        assert.equal(args.storage, clients.storage); assert.equal(args.sourceHead, head);
+        assert.equal(args.bundlePath, '/tmp/ravradar-private-production-runtime/bundle-source-successor');
+        return published.promise; },
+      async audit(args) { events.push('audit'); assert.equal(args.storage, clients.storage);
+        assert.notEqual(args.request, clients.documentRequest);
+        if (Object.hasOwn(options, 'auditFailure')) throw options.auditFailure;
+        return normal.auditProtectedPrivateRuntimeAnonymousDenial(args); },
+    };
+    return { ...api, published, anonymous, ack, events, outputs, opened, pointer };
+  }
+  try {
+    await t.test('actual normal audit waits after publication and precedes closed typed ACK', async () => {
+      const f = fixture(); let settled = false;
+      const result = f.runSourcePrivatePublish(); result.then(() => { settled = true; }, () => { settled = true; });
+      await tick(); assert.deepEqual(f.events, ['clients', 'publish']); assert.equal(settled, false);
+      f.published.resolve(f.ack); await tick();
+      assert.deepEqual(f.events, ['clients', 'publish', 'audit', 'pointer', 'anonymous']);
+      assert.equal(settled, false); assert.deepEqual(f.outputs, []);
+      f.anonymous.resolve(403); await result;
+      assert.deepEqual(f.events.slice(-4), ['open', 'output', 'close', 'ebadf']);
+      assert.match(f.outputs[0], /private_anonymous_denied=true\n/);
+      assert.equal(f.retainedSourcePublicationWorkers.size, 0);
+    });
+    await t.test('different publisher identity is refused before any anonymous probe or ACK', async () => {
+      for (const field of ['version', 'productionReferenceAt', 'bundleContentSha256', 'objectSha256', 'objectCount']) {
+        const f = fixture({ changePointer(row) {
+          if (field === 'version') row.version++;
+          else if (field === 'objectCount') row.payload.current[field]++;
+          else if (field === 'productionReferenceAt') row.payload.current[field] = '2026-10-14T11:00:00.000Z';
+          else row.payload.current[field] = '0'.repeat(64);
+        } });
+        const result = f.runSourcePrivatePublish(); const failed = assert.rejects(result, /AUDIT_GENERATION_UNPROVED/);
+        f.published.resolve(f.ack); await failed;
+        assert.equal(f.events.includes('anonymous'), false); assert.deepEqual(f.outputs, []);
+        assert.ok(f.retainedSourcePublicationWorkers.size > 0);
+      }
+    });
+    await t.test('unchanged full normal pointer validator rejects malformed object paths', async () => {
+      const f = fixture({ changePointer(row) { row.payload.current.objects[0].objectPath += '-different'; } });
+      const result = f.runSourcePrivatePublish(); const failed = assert.rejects(result, /part descriptor is invalid/);
+      f.published.resolve(f.ack); await failed;
+      assert.equal(f.events.includes('anonymous'), false); assert.deepEqual(f.outputs, []);
+    });
+    await t.test('public or unknown status and raw null never become a privacy ACK', async () => {
+      for (const status of [200, 520]) {
+        const f = fixture(); const result = f.runSourcePrivatePublish();
+        const failed = assert.rejects(result, /anonymously readable/);
+        f.published.resolve(f.ack); await tick();
+        f.anonymous.resolve(status);
+        await failed; assert.deepEqual(f.outputs, []); assert.ok(f.retainedSourcePublicationWorkers.size > 0);
+      }
+      const f = fixture({ auditFailure: null }); const result = f.runSourcePrivatePublish();
+      const failed = assert.rejects(result, error => error === null); f.published.resolve(f.ack); await failed;
+      assert.deepEqual(f.outputs, []);
+      assert.ok([...f.retainedSourcePublicationWorkers].some(row => row.first?.value === null));
+    });
+    await t.test('audit denial still cannot release an unclosed output or replace first null', async () => {
+      const f = fixture({ writeFailure: null, closeFailure: true });
+      const result = f.runSourcePrivatePublish(); const failed = assert.rejects(result, error => error === null);
+      f.published.resolve(f.ack); await tick(); f.anonymous.resolve(403); await failed;
+      assert.deepEqual(f.outputs, []); assert.ok(f.opened.has(15));
+      assert.ok([...f.retainedSourcePublicationWorkers].some(row => row.fd === 15 && row.first?.value === null));
+    });
+  } finally { loader.deregister(); delete globalThis[slot]; }
+});
+
+// Actual complete action/gates and normal owned-distribution parent are used.
+// Child/cohort/lease/fs transport is synthetic, never Linux/SDK finalization.
+testOwnedRawCache('distribution successor: exact V36 plus unchanged legacy and normal parent ACK', async t => {
+  const root = '/synthetic/checkout', action = root + '/.github/actions/save-owned-dmi-grib';
+  const legacySha = '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5';
+  const successorSha = '920ad50fc3b7084879c1257d5b11e0e3ce52367b42f05871ffc68f8a66f66c47';
+  function runtime(packageText, lockText, options = {}) {
+    const events = [], outputs = [], lease = Object.freeze({ syntheticLease: true });
+    let child, startedResolve; const started = new Promise(resolve => { startedResolve = resolve; });
+    const files = { packageText, lockText };
+    const processFixture = new OwnedRawEmitter(); Object.assign(processFixture, {
+      platform: 'linux', versions: { node: '24.19.0' }, ppid: 12345, argv: ['node', action + '/index.cjs'],
+      env: { GITHUB_REF: 'refs/heads/main', GITHUB_EVENT_NAME: 'workflow_dispatch', RUNNER_OS: 'Linux',
+        GITHUB_SERVER_URL: 'https://github.com', GITHUB_OUTPUT: '/synthetic/output' },
+    });
+    const owner = {
+      async acquireWeatherAcquisitionWriter() { events.push('acquire'); return lease; },
+      async assertWeatherAcquisitionWriter(value) { assert.equal(value, lease); events.push('assert'); },
+      async releaseWeatherAcquisitionWriter(value) { assert.equal(value, lease); events.push('release'); },
+      retainWeatherAcquisitionWriter(value) { assert.equal(value, lease); events.push('retain'); },
+    };
+    const module = { exports: {} };
+    const require = name => {
+      if (name === 'node:fs') return {
+        readFileSync(file) {
+          if (Object.hasOwn(options, 'readError')) throw options.readError;
+          if (file === action + '/package.json') return files.packageText;
+          if (file === action + '/package-lock.json') return files.lockText;
+          throw Error('UNEXPECTED_READ:' + file);
+        },
+        appendFileSync(file, text) { assert.equal(file, '/synthetic/output'); outputs.push(text); },
+      };
+      if (name === '../../../scripts/lib/weather-acquisition-writer.mjs') return owner;
+      if (name === 'node:child_process') return { spawn(command, args, settings) {
+        assert.equal(command, 'python3'); assert.deepEqual(Array.from(args), ['-B', root + '/scripts/run-owned-dmi-grib-save.py', '--prepare-distribution']);
+        assert.equal(settings.cwd, root); assert.equal(settings.env, processFixture.env);
+        assert.equal(settings.shell, false); assert.deepEqual(Array.from(settings.stdio), ['ignore', 'pipe', 'pipe', 'pipe']);
+        child = new OwnedRawEmitter(); child.stdout = new OwnedRawPipe(); child.stderr = new OwnedRawPipe();
+        child.stdio = [null, child.stdout, child.stderr, new OwnedRawPipe()]; events.push('spawn'); startedResolve(); return child;
+      } };
+      if (name === 'node:path') return path.posix;
+      return ownedRawRequire(name);
+    };
+    const context = vmOwnedRawCache.createContext({ require, module, exports: module.exports, process: processFixture,
+      __dirname: action, __filename: action + '/index.cjs', Buffer, URL, console });
+    new vmOwnedRawCache.Script(ownedRawSource, { filename: action + '/index.cjs' }).runInContext(context);
+    const invoke = expression => new vmOwnedRawCache.Script(expression).runInContext(context);
+    async function close(receipt, { unknown = false } = {}) {
+      const ends = [child.stdout, child.stderr, child.stdio[3]].map(pipe => ownedRawOnce(pipe, 'end'));
+      child.stdout.end(unknown ? '' : JSON.stringify({ schemaVersion: 1, kind: 'DMI_RAW_SAVE_COHORT_CLOSED', workerExitCode: 0, interrupted: false }));
+      child.stderr.end(); child.stdio[3].end(JSON.stringify(receipt)); await Promise.all(ends); child.emit('close', 0, null);
+    }
+    const dispose = () => { for (const stream of child?.stdio || []) stream?.destroy(); };
+    return { invoke, ...module.exports, files, started, close, dispose, events, outputs };
+  }
+  const ready = lockSha256 => ({ schemaVersion: 1, kind: 'DMI_RAW_DISTRIBUTION_READY', apiVersion: '6.1.0', lockSha256 });
+  await t.test('legacy gate remains legacy; successor is separately exact and preserves all49 literal entries', () => {
+    const old = runtime(ownedRawPackage, ownedRawLock), next = runtime(ownedRawCurrentPackage, ownedRawCurrentLock);
+    assert.equal(old.invoke('assertDistributionLock()'), action);
+    assert.equal(old.invoke('assertAdmittedDistributionLock().lockSha256'), legacySha);
+    assert.throws(() => old.invoke('assertArtifactDistributionSuccessor()'), /DMI_RAW_DISTRIBUTION_LOCK_REFUSED/);
+    assert.throws(() => next.invoke('assertDistributionLock()'), /DMI_RAW_DISTRIBUTION_LOCK_REFUSED/);
+    assert.equal(next.invoke('assertArtifactDistributionSuccessor()'), action);
+    assert.equal(next.invoke('assertAdmittedDistributionLock().lockSha256'), successorSha);
+    const before = JSON.parse(ownedRawLock), after = JSON.parse(ownedRawCurrentLock);
+    assert.equal(Object.keys(before.packages).length - 1, 49); assert.equal(Object.keys(after.packages).length - 1, 259);
+    for (const key of Object.keys(before.packages).filter(Boolean)) {
+      assert.deepEqual(after.packages[key], before.packages[key]);
+      const raw = '    ' + JSON.stringify(key) + ': ' + JSON.stringify(before.packages[key], null, 2).replaceAll('\n', '\n    ');
+      assert.ok(ownedRawLock.includes(raw)); assert.ok(ownedRawCurrentLock.replaceAll('\r\n', '\n').includes(raw));
+    }
+  });
+  await t.test('old/new row changes, unrelated insertion, mixed pairs and altered bytes all refuse before child', async () => {
+    const altered = [];
+    for (const key of ['node_modules/@actions/cache', 'node_modules/@actions/artifact']) {
+      const lock = JSON.parse(ownedRawCurrentLock); lock.packages[key].integrity = 'sha512-changed'; altered.push(JSON.stringify(lock, null, 2) + '\n');
+    }
+    const extra = JSON.parse(ownedRawCurrentLock); extra.packages['node_modules/unrelated'] = { version: '1.0.0' }; altered.push(JSON.stringify(extra, null, 2) + '\n');
+    altered.push(ownedRawCurrentLock + ' ');
+    for (const [pkg, lock] of [...altered.map(lock => [ownedRawCurrentPackage, lock]),
+      [ownedRawPackage, ownedRawCurrentLock], [ownedRawCurrentPackage, ownedRawLock],
+      [ownedRawCurrentPackage + ' ', ownedRawCurrentLock]]) {
+      const value = runtime(pkg, lock);
+      await assert.rejects(value.runOwnedDistribution(), /DMI_RAW_DISTRIBUTION_LOCK_REFUSED/);
+      assert.equal(value.events.includes('spawn'), false); assert.deepEqual(value.outputs, []);
+    }
+  });
+  await t.test('first raw null is not retried through legacy fallback', async () => {
+    const value = runtime(ownedRawCurrentPackage, ownedRawCurrentLock, { readError: null });
+    let returned = false, caught = Symbol('not caught'); try { await value.runOwnedDistribution(); returned = true; } catch (error) { caught = error; }
+    assert.equal(returned, false); assert.equal(caught, null); assert.equal(value.events.includes('spawn'), false); assert.deepEqual(value.outputs, []);
+  });
+  await t.test('normal parent accepts exact same distribution only after close and release', async () => {
+    for (const [pkg, lock, expected] of [[ownedRawPackage, ownedRawLock, legacySha], [ownedRawCurrentPackage, ownedRawCurrentLock, successorSha]]) {
+      const value = runtime(pkg, lock); try {
+        const operation = value.runOwnedDistribution(); await value.started;
+        assert.deepEqual(value.outputs, []); assert.equal(value.events.includes('release'), false);
+        await value.close(ready(expected)); const result = await operation;
+        assert.equal(result.distributionReady, true); assert.equal(Object.hasOwn(result, 'saved'), false);
+        assert.deepEqual(value.outputs, ['distribution_ready=true\n']); assert.equal(value.events.includes('release'), true);
+      } finally { value.dispose(); }
+    }
+  });
+  await t.test('cross-family ACK, in-flight family replacement and unknown closure emit no success', async () => {
+    for (const variant of ['cross-family', 'replacement', 'unknown-closure']) {
+      const value = runtime(ownedRawCurrentPackage, ownedRawCurrentLock); try {
+        const operation = value.runOwnedDistribution(); const rejected = assert.rejects(operation, variant === 'unknown-closure' ? /DMI_RAW_SAVE_RECEIPT_INVALID/ : /DMI_RAW_DISTRIBUTION_NOT_READY/);
+        await value.started;
+        if (variant === 'replacement') { value.files.packageText = ownedRawPackage; value.files.lockText = ownedRawLock; }
+        await value.close(ready(variant === 'cross-family' ? legacySha : successorSha), { unknown: variant === 'unknown-closure' });
+        await rejected; assert.deepEqual(value.outputs, []);
+        assert.equal(value.events.includes('retain'), variant === 'unknown-closure');
+        assert.equal(value.events.includes('release'), variant !== 'unknown-closure');
+      } finally { value.dispose(); }
+    }
   });
 });

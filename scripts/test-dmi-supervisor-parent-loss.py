@@ -765,5 +765,300 @@ raise RuntimeError("OWN_FIXTURE_MISSING_FATAL_RESULT")
                 signal.signal(signal.SIGALRM, old_handler)
 
 
+
+# SOURCE cutoff companions. The two copied modules are exact proposal bytes.
+# The parent wire issuer and producer are disclosed offline fixtures, NOT A2
+# issuance, SOURCE completion, national runtime or runner-loss evidence.
+_SOURCE_CUTOFF_MODULES = {
+    "scripts/run-dmi-bulk-supervised.py": "f1535c40de770f398da014908c1c42e50c985d06f744d2bf9976b4f2a5929fee",
+    "scripts/lib/copernicus_component_process.py": "7d9d9bfbd113b491766578694f6d41bc6d90614bf3ab3b89492ef0da8c9fd71d",
+}
+# Historical bindings above are immutable evidence, not proof for this successor.
+# The three actual Linux cases/assertions below are unchanged; this new exact source identity is UNRUN.
+_SOURCE_CUTOFF_CURRENT_MODULES = {
+    'scripts/run-dmi-bulk-supervised.py': '3572b4e8dde5a12c290999ef2b64d2c0d059a8e72a410e65270f96b318f8e877',
+    'scripts/lib/copernicus_component_process.py': 'aa832d73a46efd23c8466fb685fe034ad25acac44e26fcacf7fb26dca7e22e07'
+}
+
+_SOURCE_CUTOFF_NODE = r"""
+const fs = require('node:fs'), path = require('node:path');
+const {spawn} = require('node:child_process');
+const {performance} = require('node:perf_hooks');
+function publish(name,value) { const target=path.join(root,name); fs.writeFileSync(target+'.new',JSON.stringify(value)); fs.renameSync(target+'.new',target); }
+if (![22,24].includes(Number(process.versions.node.split('.')[0]))) throw Error('NODE_VERSION');
+const [python, root, mode] = process.argv.slice(1);
+const nonce = Buffer.from(Array.from({length:32},(_,n)=>n)), head = 'a'.repeat(40);
+const issued = performance.now() + (mode === 'late' ? 3000 : 600000);
+const child = spawn(python, ['-I','-B',path.join(root,'scripts/lib/copernicus_component_process.py'),
+  '--source-dmi-cohort'], {cwd:root, env:process.env, stdio:['ignore','ignore','ignore','pipe']});
+publish('launcher.json',{pid:process.pid, guardian:child.pid});
+const control = child.stdio[3];
+let state = 'anchor', pending = Buffer.alloc(0), receipt = {mode, issued, frames:[]}, failure = null;
+function refuse(error) { if (failure === null) failure = String(error?.code || 'FIXTURE_PROTOCOL'); control.destroy(); }
+control.on('error', refuse); child.on('error', refuse);
+control.on('data', bytes => {
+  try {
+    pending = Buffer.concat([pending,bytes]);
+    if (pending.length > 56 + 48 + 48 + 4096) throw Error('BOUND');
+    if (state === 'anchor' && pending.length >= 56) {
+      const anchor = pending.subarray(0,56); pending = pending.subarray(56);
+      const pAfter = performance.now();
+      if (!anchor.subarray(0,40).equals(Buffer.concat([Buffer.from('RRSCG4A1'),nonce]))
+          || anchor.readUInt32BE(40)!==child.pid || anchor.readUInt32BE(44)!==process.pid) throw Error('IDENTITY');
+      const delta = Math.floor(issued) - Math.ceil(pAfter);
+      if (!Number.isSafeInteger(delta) || delta <= 0) throw Error('LATE');
+      const cutoff = anchor.readBigUInt64BE(48) + BigInt(delta)*1000000n;
+      const frame = Buffer.alloc(56); frame.write('RRSCG4D1'); nonce.copy(frame,8);
+      frame.writeBigUInt64BE(cutoff,40); frame.writeBigUInt64BE(cutoff,48);
+      Object.assign(receipt,{pAfter,anchor:String(anchor.readBigUInt64BE(48)),cutoff:String(cutoff)});
+      receipt.frames.push('anchor'); state='bound'; control.write(frame);
+    }
+    if (state === 'bound' && pending.length >= 48) {
+      const bound = pending.subarray(0,48); pending = pending.subarray(48);
+      if (!bound.subarray(0,40).equals(Buffer.concat([Buffer.from('RRSCG4B1'),nonce]))
+          || String(bound.readBigUInt64BE(40))!==receipt.cutoff) throw Error('BOUND');
+      receipt.frames.push('bound'); state='end';
+      publish('bound.json',receipt);
+    }
+    if (state === 'end' && pending.length >= 48) {
+      const length = pending.readUInt32BE(44);
+      if (length < 2 || length > 4096) throw Error('END_LENGTH');
+      if (pending.length < 48 + length) return;
+      const end=pending.subarray(0,48+length);pending=pending.subarray(48+length);
+      if (!end.subarray(0,40).equals(Buffer.concat([Buffer.from('RRSCG4E1'),nonce]))) throw Error('END');
+      const output=JSON.parse(end.subarray(48).toString('utf8'));
+      if (JSON.stringify(Object.keys(output).sort()) !== JSON.stringify(
+          ['kind','outputBytes','outputSha256','outputs','schemaVersion'])
+          || output.schemaVersion!==1 || output.kind!=='SOURCE_DMI_PHASE_CLOSED'
+          || !Number.isSafeInteger(output.outputBytes) || output.outputBytes<0 || output.outputBytes>131072
+          || !/^[0-9a-f]{64}$/.test(output.outputSha256)
+          || !output.outputs || Array.isArray(output.outputs) || typeof output.outputs!=='object'
+          || Object.keys(output.outputs).some(k=>!['status','terminal_code','strict_current_anchor_ready','candidate_promoted'].includes(k))
+          || Object.values(output.outputs).some(v=>typeof v!=='string'||v.length>256)) throw Error('END_OUTPUT');
+      receipt.output=output;receipt.frames.push('end');receipt.result=end.readInt32BE(40);state='done';
+    }
+  } catch(error) { refuse(error); }
+});
+const challenge=Buffer.alloc(80);challenge.write('RRSCG4C1');nonce.copy(challenge,8);
+challenge.writeUInt32BE(process.pid,40);challenge.writeBigUInt64BE(17n,44);
+challenge.writeBigUInt64BE(1n,52);Buffer.from(head,'hex').copy(challenge,60);
+control.write(challenge);
+child.on('close',(code,signal)=>{
+  Object.assign(receipt,{code,signal,state,failure,remainingBytes:pending.length});
+  publish('terminal.json',receipt);control.destroy();
+});
+"""
+_SOURCE_CUTOFF_PRODUCER = r"""
+import json, os, pathlib, sys, time
+def forbid(event, args):
+    if event.startswith('socket.'):
+        raise RuntimeError('OWN_FIXTURE_NETWORK_FORBIDDEN')
+sys.addaudithook(forbid)
+root=pathlib.Path(__file__).resolve().parents[1]
+stat=pathlib.Path('/proc/self/stat').read_text().rsplit(')',1)[1].split()
+identity={'pid':os.getpid(),'ppid':int(stat[1]),'pgid':int(stat[2]),
+          'sid':int(stat[3]),'start':int(stat[19]),
+          'finalizer':os.environ.get('DMI_BULK_FINALIZE_ONLY')=='true',
+          'at':time.monotonic_ns()}
+(root/'producer.json.new').write_text(json.dumps(identity),encoding='ascii')
+(root/'producer.json.new').rename(root/'producer.json')
+while not (root/'release-producer').exists():
+    time.sleep(.005)
+"""
+
+class SourceGuardianCutoffNative(unittest.TestCase):
+    def test_fixed_source_guardian_runs_normal_producer_under_actual_peer_control(self):
+        self.assert_source_cutoff("healthy")
+
+    def test_fixed_source_guardian_late_finalizer_does_not_reset_issued_cutoff(self):
+        self.assert_source_cutoff("late")
+
+    def test_source_supervisor_refuses_non_guardian_peer_before_producer(self):
+        self.assert_source_cutoff("invalid")
+
+    def assert_source_cutoff(self, mode):
+        import hashlib
+        import socket
+        import struct
+        self.assertEqual(sys.platform, "linux", "native Linux capability is required, not PASS by skip")
+        self.assertEqual(sys.version_info[:2], (3, 12))
+        self.assertTrue(hasattr(os, "pidfd_open") and hasattr(signal, "pidfd_send_signal"))
+        self.assertIs(signal.getsignal(signal.SIGCHLD), signal.SIG_DFL)
+        self.assertEqual(signal.getitimer(signal.ITIMER_REAL), (0.0, 0.0))
+        require_no_children()
+        node = shutil.which("node")
+        self.assertIsNotNone(node)
+        # Own native fixture only. The normal source target owns its temporary
+        # root and retained pidfds; no provider or production B is loaded.
+        root = Path(tempfile.mkdtemp(prefix="rr-source-cutoff-"))
+        temporary_parent = root.parent
+        original = b"immutable own synthetic B/S before SOURCE cutoff\n"
+        paths = {}
+        process, channels, descriptors, primary = None, [], [], None
+        libc = ctypes.CDLL(None, use_errno=True)
+        previous = ctypes.c_int()
+        self.assertEqual(libc.prctl(37, ctypes.byref(previous), 0, 0, 0), 0)
+        self.assertEqual(libc.prctl(36, 1, 0, 0, 0), 0)  # Fixture cleanup only.
+        old_alarm = signal.getsignal(signal.SIGALRM)
+
+        def alarm(*_):
+            raise AssertionError("OWN_SOURCE_CUTOFF_BODY_WATCHDOG")
+
+        def own_pid(pid, parent, expected_script=None, allow_exited=False):
+            fd = os.pidfd_open(pid, 0)
+            index = len(descriptors)
+            descriptors.append((pid, fd, None))
+            identity = process_identity(pid)
+            if allow_exited:
+                # Direct Popen child may already be a zombie: WNOWAIT proves
+                # this exact pidfd belongs to us without reaping it early.
+                os.waitid(os.P_PIDFD, fd, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+                info = read_small(Path(f"/proc/self/fdinfo/{fd}")).decode("ascii")
+                self.assertIn(f"Pid:\t{pid}\n", info)
+            else:
+                assert_pidfd_identity(fd, pid)
+            self.assertEqual(identity["ppid"], parent)
+            if expected_script is not None:
+                argv = Path(f"/proc/{pid}/cmdline").read_bytes().split(b"\0")
+                self.assertIn(os.fsencode(expected_script), argv)
+            self.assertEqual(process_identity(pid), identity)
+            descriptors[index] = (pid, fd, identity)
+            return fd, identity
+
+        def await_json(name):
+            while not (root/name).exists():
+                self.assertIsNone(process.poll(), "fixture controller exited before observation")
+                time.sleep(.005)
+            return json.loads(read_small(root/name))
+
+        try:
+            signal.signal(signal.SIGALRM, alarm)
+            signal.setitimer(signal.ITIMER_REAL, BODY_SECONDS)
+            (root/"original-BS").write_bytes(original)
+            for relative, expected in _SOURCE_CUTOFF_CURRENT_MODULES.items():
+                raw = (ROOT/relative).read_bytes()
+                self.assertEqual(hashlib.sha256(raw.replace(b"\r\n",b"\n")).hexdigest(), expected)
+                destination = root/relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes(raw)
+                paths[relative] = raw
+            (root/"scripts/update-dmi-bulk.py").write_text(_SOURCE_CUTOFF_PRODUCER, encoding="utf-8")
+            env = {k:v for k,v in os.environ.items()
+                   if k.upper() in {"PATH","LD_LIBRARY_PATH","LANG","LC_ALL","TMPDIR",
+                                    "SYSTEMROOT","WINDIR","TEMP","TMP","RUNNER_TRACKING_ID"}}
+            env.update(GITHUB_RUN_ID="17",GITHUB_RUN_ATTEMPT="1",GITHUB_SHA="a"*40)
+            if mode == "invalid":
+                sender, receiver = socket.socketpair()
+                channels.extend([sender,receiver])
+                # Well-formed full frame, but actual peer is this test, not fixed guardian.
+                sender.sendall(struct.pack(">8sIQQQ20s",b"RRSDG401",os.getpid(),17,1,
+                                           time.monotonic_ns()+3_000_000_000,bytes.fromhex("a"*40)))
+                sender.shutdown(socket.SHUT_WR)
+                process = subprocess.Popen([sys.executable,"-u",str(root/"scripts/run-dmi-bulk-supervised.py"),
+                    "--source-dmi-issued-cutoff"],cwd=root,env=env,stdin=receiver,
+                    stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                fd, _ = own_pid(process.pid,os.getpid(),allow_exited=True)
+                self.assertNotEqual(process.wait(timeout=2),0)
+                self.assertTrue(exited(fd))
+                self.assertFalse((root/"producer.json").exists())
+                self.assertFalse((root/"release-producer").exists())
+            else:
+                process = subprocess.Popen([node,"-e",_SOURCE_CUTOFF_NODE,sys.executable,str(root),mode],
+                    cwd=root,env=env,stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                own_pid(process.pid,os.getpid())
+                launch = await_json("launcher.json")
+                self.assertEqual(launch["pid"],process.pid)
+                guardian_fd, guardian_id = own_pid(launch["guardian"],process.pid,
+                    root/"scripts/lib/copernicus_component_process.py")
+                bound = await_json("bound.json")
+                self.assertEqual(bound["frames"],["anchor","bound"])
+                self.assertGreater(int(bound["cutoff"]),int(bound["anchor"]))
+                record = await_json("producer.json")
+                supervisor_pid = record["ppid"]
+                supervisor_fd, _ = own_pid(supervisor_pid,launch["guardian"],
+                    root/"scripts/run-dmi-bulk-supervised.py")
+                producer_fd, actual = own_pid(record["pid"],supervisor_pid,
+                    root/"scripts/update-dmi-bulk.py")
+                self.assertEqual({k:record[k] for k in actual},actual)
+                self.assertEqual(record["pgid"],record["pid"])
+                self.assertEqual(record["sid"],record["pid"])
+                self.assertEqual(record["finalizer"],mode=="late")
+                self.assertLess(record["at"],int(bound["cutoff"]))
+                if mode == "healthy":
+                    (root/"release-producer").write_text("own fixture release",encoding="ascii")
+                # First observation of physical producer exit is BEFORE any fixture signal/reap.
+                while not exited(producer_fd):
+                    time.sleep(.005)
+                self.assertEqual((root/"original-BS").read_bytes(),original)
+                terminal = await_json("terminal.json")
+                self.assertEqual(terminal["remainingBytes"],0)
+                self.assertIsNone(terminal["failure"])
+                self.assertEqual(process.wait(timeout=1),0)
+                self.assertTrue(exited(guardian_fd))
+                self.assertTrue(exited(supervisor_fd))
+                if mode == "healthy":
+                    self.assertEqual(terminal["code"],0)
+                    self.assertEqual(terminal["frames"],["anchor","bound","end"])
+                    self.assertEqual(terminal["result"],0)
+                    self.assertEqual(terminal["output"]["kind"],"SOURCE_DMI_PHASE_CLOSED")
+                    self.assertEqual(terminal["output"]["schemaVersion"],1)
+                    with self.assertRaises(ProcessLookupError):
+                        os.killpg(record["pid"],0)  # Observation only, no stale signal.
+                else:
+                    self.assertEqual(terminal["code"],77)
+                    self.assertEqual(terminal["frames"],["anchor","bound"])
+                    self.assertNotIn("result",terminal)
+                    self.assertFalse((root/"release-producer").exists())
+                    self.assertLess(time.monotonic_ns()-int(bound["cutoff"]),2_000_000_000,
+                                    "420 seconds must not restart at late finalizer entry")
+                    # No group-absence/SAVE claim here: adopted zombies are only
+                    # disposed by the fixture AFTER the measured refusal/exit.
+            self.assertEqual((root/"original-BS").read_bytes(),original)
+            for relative, raw in paths.items():
+                self.assertEqual((root/relative).read_bytes(),raw)
+        except BaseException as error:
+            primary=error
+            raise
+        finally:
+            try:
+                signal.setitimer(signal.ITIMER_REAL,CLEANUP_SECONDS)
+                # Disposition of precisely observed actual own children, not a
+                # PID read from a file alone and never a post-reap group signal.
+                for pid,fd,identity in reversed(descriptors):
+                    if not exited(fd):
+                        self.assertIsNotNone(identity, "unknown owned pidfd retained without signal")
+                        self.assertEqual(process_identity(pid),identity)
+                        assert_pidfd_identity(fd,pid)
+                        signal.pidfd_send_signal(fd,signal.SIGKILL)
+                    self.assertTrue(exited(fd,1))
+                if process is not None:
+                    process.wait(timeout=1)
+                for pid,fd,identity in reversed(descriptors):
+                    try:
+                        os.waitid(os.P_PIDFD,fd,os.WEXITED|os.WNOHANG)
+                    except ChildProcessError:
+                        pass
+                require_no_children()
+                for stream in channels:
+                    stream.close()
+                for _,fd,_ in descriptors:
+                    os.close(fd)
+                    with self.assertRaises(OSError) as closed:
+                        os.fstat(fd)
+                    self.assertEqual(closed.exception.errno,errno.EBADF)
+                self.assertEqual(libc.prctl(36,previous.value,0,0,0),0)
+                self.assertEqual(root.parent,temporary_parent)
+                self.assertTrue(root.name.startswith("rr-source-cutoff-"))
+                shutil.rmtree(root)
+            except BaseException as cleanup:
+                if primary is None:
+                    raise
+                primary.add_note("OWN_SOURCE_CUTOFF_CLEANUP_UNPROVED; own resources retained")
+            finally:
+                signal.setitimer(signal.ITIMER_REAL,0)
+                signal.signal(signal.SIGALRM,old_alarm)
+
+
+
 if __name__ == "__main__":
     unittest.main()

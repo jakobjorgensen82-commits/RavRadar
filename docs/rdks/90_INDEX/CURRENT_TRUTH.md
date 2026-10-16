@@ -1,3 +1,11 @@
+## 16. oktober — procesrevision samlet til præcis kildekontrol
+
+SOURCE19 er nu samlet som én afgrænset kildekandidat med 37 produkt-, mål- og kildekontrolfiler. Den bevarer den normale nye-starts cacheisolering, originaler og alle tidligere kildegrænser. PR634s særskilte præcise kildekontrol er faktisk bestået; det er ikke SOURCE-kandidatens kontrol eller en aktivering af revisionen.
+
+Kandidaten kræver samme faktiske procesejer gennem originalinstallation, native genbrug, fysisk lukning og senere holdbar gemning. Syv selvstændige Linuxprøver skal køre på det samme præcise kildehoved. Fejl, ukendt udfald eller spring over en relevant nativeprøve må ikke give et grønt kildebevis. Den almindelige kildekontrol, herunder PostgreSQL, bevares uændret.
+
+Lokal syntaks, afgrænsede kontraktprøver og hele byteinverser består. Den endelige kildefortegnelse viser uændret C69/I71/T12, lagringskontrakt og offentlig projektion; model, scoreformel, SQL, kilder og administratorgeometri ændres ikke. Linuxprøverne og den samlede kæde frem til holdbar gemning, fysisk frigivelse, upload og deploy er fortsat åbne. SOURCE19 forbliver inaktiv. Version 4.0.578 og den hidtil dokumenterede offentlige 4.0.577 er uændrede; cron er pauset. Alle fem mål er åbne med frist 18. oktober. Se håndbog 89.241; tidligere dateret tekst bevares som historik.
+
 ## 16. oktober — isoleret gammel aktiv DMI-cache ved ny start
 
 Den normale kalder havde et betinget hul: den arkiverede aktive DMI-cache kunne blive installeret som arbejdskopi, selv om den nye start ellers holdt gammel strømtilstand adskilt. Det er kildebevist, ikke påvist som fejl i den igangværende vejrhentning. Rettelsen kræver den ægte, uigennemsigtige arkivbundne inputvisning og hele pakkens kontrolsum fra samme faktisk læste filbeskrivelse. Kun den gamle aktive arbejdskopi udelades; dens destination skal være fraværende. Intet flyttes eller slettes. Originale B/S, RAW, alle øvrige filer og normal adfærd uden denne inputvisning bevares.

@@ -182,6 +182,298 @@ def stop_fixed_npm_observation(pid, fd, node24, npm_cli, expected_identity):
         time.sleep(0.001)
 
 
+class SourceNormalCheckpointSelection(unittest.TestCase):
+    """Actual fixed H command selector only; not a cohort/hosted proof."""
+
+    @staticmethod
+    def program(phase, checkpoint=True, **changes):
+        from lib.copernicus_component_process import _source_normal_program
+        options = {'target': '2026-10-16T10:00:00.000Z', 'quick': False,
+                   'extended': False, 'checkpointOnly': checkpoint, **changes}
+        return _source_normal_program(ROOT, phase, options, '/proc/self/fd/99')
+
+    def test_checkpoint_refuses_both_provider_commands(self):
+        for phase in (7, 13):
+            with self.subTest(phase=phase):
+                with self.assertRaisesRegex(RuntimeError, '^SOURCE_CHECKPOINT_PROVIDER_FORBIDDEN$'):
+                    self.program(phase)
+
+    def test_checkpoint_open_meteo_is_reuse_only(self):
+        command, _environment = self.program(9)
+        self.assertIn('--reuse-only', command)
+        normal, _environment = self.program(9, checkpoint=False)
+        self.assertNotIn('--reuse-only', normal)
+
+    def test_checkpoint_flags_are_explicit_for_generation(self):
+        for selected in (False, True):
+            command, environment = self.program(42, checkpoint=selected)
+            self.assertEqual(command[-1], '--source-normal-generation-prepare')
+            self.assertEqual(environment['DMI_BULK_CACHE_ONLY'], str(selected).lower())
+        for changes in ({'quick': True}, {'extended': True}):
+            with self.assertRaisesRegex(RuntimeError, '^SOURCE_CHECKPOINT_REQUEST_INVALID$'):
+                self.program(42, **changes)
+
+    def test_original_target_has_only_fixed_inherited_capabilities(self):
+        command, _environment = self.program(68)
+        self.assertEqual(command[2:], [str(ROOT / 'scripts/build-copernicus-target-registry.py'),
+            '--targets', '/proc/self/fd/5', '--dmi', '/proc/self/fd/6/original-target-dmi-input.json',
+            '--at', '2026-10-16T10:00:00.000Z',
+            '--output', '/proc/self/fd/6/original-target-registry.json'])
+        with self.assertRaisesRegex(RuntimeError, '^SOURCE_ORIGINAL_TARGET_MODE_REQUIRED$'):
+            self.program(68, checkpoint=False)
+
+    def test_history_plan_uses_the_existing_normal_planner(self):
+        import shutil
+        command, environment = self.program(67)
+        self.assertEqual(command, [shutil.which('node'), str(ROOT / 'scripts/plan-ravscore-current-history.mjs')])
+        self.assertEqual(environment['RAVRADAR_PRODUCTION_TARGET_HOUR'], '2026-10-16T10:00:00.000Z')
+
+
+
+
+class SourceLegacyCurrentTypedOutputs(unittest.TestCase):
+    """Actual H parser and normal fixed command; not full P/S/H/native proof."""
+    @staticmethod
+    def expectation():
+        sha = 'sha256:' + 'a' * 64
+        keys = ('modelId', 'stateSchemaVersion', 'variantId', 'profileId',
+            'componentSchemaId', 'explanationSchemaId', 'rankingPolicyId',
+            'bestTimePolicyId', 'presentationPolicyId')
+        binding = {key: 'x' * 254 for key in keys}
+        binding.update(modelContractSha256='a' * 64, modelBundleSha256='b' * 64)
+        return {'productionReferenceAt': '2026-10-16T10:00:00.000Z', 'modelBinding': binding,
+            'historyDemandSha256': sha, 'registrySha256': sha,
+            'sourceHashes': {key: sha for key in ('zones', 'deployedBulk', 'forecast', 'candidate', 'active')},
+            'requestsSha256': sha}
+
+    @staticmethod
+    def report(value):
+        return ('requests_sha256=' + value['requestsSha256'] + '\nexpectation_json='
+            + json.dumps(value, ensure_ascii=False, separators=(',', ':')) + '\n').encode('utf-8')
+
+    def test_h69_typed_two_lines_have_symbolic_3435_byte_maximum(self):
+        from lib.copernicus_component_process import _source_normal_outputs
+        value = self.expectation()
+        encoded = json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+        # All valid compact issuer strings are bounded by ENCODED length, so
+        # controls/quotes/backslashes/Unicode cannot evade this maximum.
+        self.assertEqual(len(encoded), 3435)
+        self.assertLessEqual(len(encoded), 4096)
+        self.assertEqual(_source_normal_outputs(self.report(value), 69, value['productionReferenceAt']),
+            {'requests_sha256': value['requestsSha256']})
+        for escaped in ('\0' * 42, '\\' * 127, '"' * 127, '\u00e6' * 127):
+            changed = self.expectation()
+            changed['modelBinding']['profileId'] = escaped
+            self.assertEqual(_source_normal_outputs(self.report(changed), 69, value['productionReferenceAt']),
+                {'requests_sha256': value['requestsSha256']})
+        changed = self.expectation()
+        changed['modelBinding']['profileId'] = '\0' * 43
+        with self.assertRaisesRegex(RuntimeError, 'SOURCE_LEGACY_BINDING_METADATA_INVALID'):
+            _source_normal_outputs(self.report(changed), 69, value['productionReferenceAt'])
+
+    def test_h69_rejects_missing_duplicate_extra_wrong_target_and_other_phases_stay_256(self):
+        from lib.copernicus_component_process import _source_normal_outputs
+        value = self.expectation()
+        for report in (b'', self.report(value).split(b'\n', 1)[0] + b'\n',
+                self.report(value) + b'unknown=x\n', self.report(value) * 2):
+            with self.subTest(report_bytes=len(report)):
+                with self.assertRaises((RuntimeError, ValueError)):
+                    _source_normal_outputs(report, 69, value['productionReferenceAt'])
+        with self.assertRaisesRegex(RuntimeError, 'SOURCE_LEGACY_TARGET_CHANGED'):
+            _source_normal_outputs(self.report(value), 69, '2026-10-16T11:00:00.000Z')
+        with self.assertRaisesRegex(RuntimeError, 'SOURCE_NORMAL_OUTPUT_INVALID'):
+            _source_normal_outputs(('target_hour=' + 'x' * 257 + '\n').encode(), 5)
+        self.assertEqual(_source_normal_outputs(b'unknown=x\n', 5), {})
+        # A normal long expectation is consumed ONLY in phase69, not widened
+        # into a generic selected workflow/environment output.
+        self.assertEqual(set(_source_normal_outputs(self.report(value), 69,
+            value['productionReferenceAt'])), {'requests_sha256'})
+
+    def test_h69_selects_unchanged_normal_request_cli_and_rejects_fresh_mode(self):
+        import shutil
+        from lib.copernicus_component_process import _source_normal_program
+        options = {'target': '2026-10-16T10:00:00.000Z', 'quick': False,
+            'extended': False, 'checkpointOnly': True}
+        command, environment = _source_normal_program(ROOT, 69, options, '/proc/self/fd/99')
+        self.assertEqual(command, [shutil.which('node'), str(ROOT / 'scripts/plan-dmi-legacy-current-originals.mjs')])
+        self.assertEqual(environment['RAVRADAR_PRODUCTION_TARGET_HOUR'], options['target'])
+        with self.assertRaisesRegex(RuntimeError, 'SOURCE_CHECKPOINT_ORIGINAL_MODE_REQUIRED'):
+            _source_normal_program(ROOT, 69, {**options, 'checkpointOnly': False}, '/proc/self/fd/99')
+
+
+class SourceNormalOriginalTargetRegularInput(unittest.TestCase):
+    """Actual H helper -> unchanged registry CLI, not full P/S/H/hosted proof."""
+
+    def test_normal_registry_accepts_own_exact_regular_copy_and_keeps_originals(self):
+        self.actual_registry('normal')
+
+    def test_regular_input_refuses_preexisting_leaf_symlink_and_uncertain_copy(self):
+        for mode in ('exists', 'symlink', 'short-write', 'truncated-copy',
+                     'close-noop', 'first-read-and-close-noop', 'control-eof', 'deadline'):
+            with self.subTest(mode=mode):
+                self.actual_registry(mode)
+
+    def actual_registry(self, mode):
+        self.assertEqual(sys.platform, 'linux', 'NATIVE_LINUX_REQUIRED; never a passing skip')
+        self.assertEqual(sys.version_info[:2], (3, 12), 'ACTUAL_CPYTHON312_REQUIRED')
+        import hashlib
+        import socket
+        # Reuse the existing bounded synthetic operational-ledger factory. Its
+        # explicit preparation mode does not execute the registry test suite.
+        root = Path(tempfile.mkdtemp(prefix='rr-progress-original-target-'))
+        complete = False
+        control = peer = None
+        source = targets = directory = None
+        try:
+            folder = root / 'ledger-stale'
+            folder.mkdir()
+            prepared = subprocess.run([sys.executable, '-B',
+                str(ROOT / 'scripts/test-copernicus-target-registry-4.0.244.py'),
+                '--prepare-progress-target-fixture', str(folder), '2026-10-16T10:00:00Z'],
+                cwd=ROOT, env=runtime_environment(), stdin=subprocess.DEVNULL,
+                capture_output=True, timeout=BODY_SECONDS, check=False)
+            self.assertEqual(prepared.returncode, 0, 'NORMAL_LEDGER_FIXTURE_REQUIRED')
+            scratch = folder / 'owned'
+            scratch.mkdir(mode=0o700)
+            originals = {name: (folder / name).read_bytes() for name in ('dmi.json', 'targets.json')}
+            control, peer = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
+            source = os.open(folder / 'dmi.json', os.O_RDONLY | os.O_NOFOLLOW)
+            targets = os.open(folder / 'targets.json', os.O_RDONLY | os.O_NOFOLLOW)
+            directory = os.open(scratch, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            if mode == 'control-eof':
+                peer.close()
+            result = subprocess.run([sys.executable, '-I', '-B', '-c', r'''
+import errno, hashlib, json, os, subprocess, sys, time
+from pathlib import Path
+root, mode = Path(sys.argv[1]), sys.argv[2]
+sys.path.insert(0, str(root / 'scripts'))
+from lib import copernicus_component_process as H
+# Remap genuine owned descriptors only in this separate test process.
+spares = [os.dup(int(value)) for value in sys.argv[3:]]
+for expected, spare in zip((3, 4, 5, 6), spares):
+    os.dup2(spare, expected)
+for spare in spares:
+    if spare not in (3, 4, 5, 6):
+        os.close(spare)
+rows, first = [], RuntimeError('SYNTHETIC_FIRST_READ')
+close, pread, write = os.close, os.pread, os.write
+stop_ns = time.monotonic_ns() + 8_000_000_000
+if mode == 'deadline':
+    stop_ns = time.monotonic_ns() - 1
+leaf = '/proc/self/fd/6/original-target-dmi-input.json'
+if mode == 'exists':
+    with open(leaf, 'x') as handle:
+        handle.write('existing-own-test-leaf')
+if mode == 'symlink':
+    os.symlink('/proc/self/fd/4', leaf)
+if mode in ('close-noop', 'first-read-and-close-noop'):
+    def controlled_close(fd):
+        if rows and fd == rows[0]['fd']:
+            return
+        close(fd)
+    os.close = controlled_close
+if mode == 'first-read-and-close-noop':
+    def controlled_read(fd, count, position):
+        if fd == 4:
+            raise first
+        return pread(fd, count, position)
+    os.pread = controlled_read
+if mode == 'short-write':
+    os.write = lambda fd, data: 0
+if mode == 'truncated-copy':
+    def truncated(fd, count, position):
+        if rows and fd == rows[0]['fd'] and count > 1:
+            return b''
+        return pread(fd, count, position)
+    os.pread = truncated
+try:
+    # The unchanged normal gate must continue rejecting a direct fd symlink.
+    from lib.dmi_bulk_storage import read_dmi_bulk_document
+    try:
+        read_dmi_bulk_document('/proc/self/fd/4')
+    except ValueError as error:
+        assert str(error) == 'DMI bulk input is not a bounded regular file'
+    else:
+        raise AssertionError('NORMAL_REGULARFILE_GATE_WAS_WEAKENED')
+    try:
+        copied = H._source_materialize_original_target_dmi_input(stop_ns, rows)
+    except BaseException as error:
+        if mode == 'normal':
+            raise
+        if mode == 'first-read-and-close-noop':
+            assert error is first
+        elif mode in ('exists', 'symlink'):
+            assert type(error) is FileExistsError
+        else:
+            expected = {'short-write': 'SOURCE_ORIGINAL_TARGET_COPY_SHORT_WRITE',
+                'truncated-copy': 'SOURCE_ORIGINAL_TARGET_COPY_TRUNCATED',
+                'close-noop': 'SOURCE_ORIGINAL_TARGET_COPY_CLOSE_UNPROVED',
+                'control-eof': 'SOURCE_COHORT_CONTROL_EOF',
+                'deadline': 'SOURCE_COHORT_CLOCK_EXPIRED_OR_INVALID'}[mode]
+            assert str(error) == expected
+        if 'close-noop' in mode:
+            assert rows and not rows[0]['closed'] and rows[0]['close_attempted']
+            os.fstat(rows[0]['fd'])  # Real no-op close is still a live descriptor.
+        print(json.dumps({'refused': True, 'normalCliRun': False}))
+    else:
+        assert mode == 'normal'
+        assert len(rows) == 2 and rows[0]['closed'] and not copied['closed']
+        try:
+            os.fstat(rows[0]['fd'])
+        except OSError as error:
+            # A later read-only open may reuse the same numeric fd. The helper
+            # proved EBADF BEFORE reopening; do not treat reuse as lost closure.
+            assert error.errno == errno.EBADF
+        command, environment = H._source_normal_program(root, 68,
+            {'target': '2026-10-16T10:00:00.000Z', 'quick': False,
+             'extended': False, 'checkpointOnly': True}, '/proc/self/fd/99')
+        remaining = (stop_ns - time.monotonic_ns()) / 1_000_000_000
+        assert remaining > 0
+        actual = subprocess.run(command, cwd=root, env=environment, pass_fds=(4, 5, 6),
+            stdin=subprocess.DEVNULL, capture_output=True, timeout=remaining, check=False)
+        assert actual.returncode == 0, 'ACTUAL_NORMAL_REGISTRY_FAILED'
+        H._source_assert_original_target_dmi_input(copied, stop_ns)
+        selected = json.loads(Path('/proc/self/fd/6/original-target-registry.json').read_text())
+        assert selected['sourcePartCount'] == 1 and selected['matrixHourCount'] == 166
+        assert selected['operationalDmiVerifiedPairCount'] == 118
+        assert selected['dmiCurrentInputSha256'] == 'sha256:' + copied['sha256']
+        assert H._source_close_original_target_copy(copied, None) is None and copied['closed']
+        print(json.dumps({'refused': False, 'normalCliRun': True,
+            'dmiSha256': copied['sha256'], 'ownReadersClosed': True}))
+finally:
+    # Only this test process restores its fault functions. Product unknown paths
+    # retain their exact rows and never retry close or unlink the own copy.
+    os.close, os.pread, os.write = close, pread, write
+    for row in rows:
+        if not row['closed']:
+            close(row['fd'])
+''', str(ROOT), mode, str(control.fileno()), str(source), str(targets), str(directory)],
+                cwd=ROOT, env=runtime_environment(),
+                pass_fds=(control.fileno(), source, targets, directory),
+                stdin=subprocess.DEVNULL, capture_output=True, timeout=BODY_SECONDS + CLEANUP_SECONDS,
+                check=False)
+            self.assertEqual(result.returncode, 0, 'ACTUAL_H_REGISTRY_SEAM_FAILED:' + mode)
+            report = json.loads(result.stdout)
+            self.assertEqual(report['normalCliRun'], mode == 'normal')
+            if mode == 'normal':
+                self.assertEqual(report['dmiSha256'], hashlib.sha256(originals['dmi.json']).hexdigest())
+                self.assertTrue(report['ownReadersClosed'])
+            for name, value in originals.items():
+                self.assertEqual((folder / name).read_bytes(), value, 'synthetic original changed')
+            complete = True
+        finally:
+            for descriptor in (source, targets, directory):
+                if descriptor is not None:
+                    os.close(descriptor)
+            if control is not None:
+                control.close()
+            if peer is not None:
+                peer.close()
+            if complete:
+                shutil.rmtree(root)
+            # Failed/unknown fixture cessation retains its exact private files.
+
+
 class OwnedProcExitObservation(unittest.TestCase):
     def test_fixed_npm_title_accepts_only_runtime_and_both_actual_cli_phases(self):
         node24 = Path('/own/runtime/bin/node')
@@ -654,6 +946,84 @@ class OwnedRawSaveNative(unittest.TestCase):
                 signal.signal(signal.SIGALRM, old_alarm)
 
 
+
+def fixed_distribution_fixture_bytes(*, successor):
+    """Own fixture inputs, not product admission or an accept-both oracle.
+
+    The checkout MUST contain exact V36. Legacy cases reconstruct and hash the
+    complete original package/lock; successor cases keep the exact V36 bytes.
+    No installed SDK, original repository file or source module is changed.
+    """
+    import hashlib
+    action = ROOT / ENTRY.parent
+    actual = {}
+    for name in ('package.json', 'package-lock.json'):
+        source = action / name
+        if source.is_symlink() or not stat.S_ISREG(source.lstat().st_mode):
+            raise AssertionError('FIXED_DISTRIBUTION_REGULAR_SOURCE_REQUIRED')
+        actual[name] = source.read_bytes().replace(b'\r\n', b'\n')
+    def sha(value):
+        return hashlib.sha256(value).hexdigest()
+    if (sha(actual['package.json']) !=
+            '27ec4c37add8a4fb54de05e6ceb797b42c95ff15dd84526b4aa326f64c073d99'
+            or sha(actual['package-lock.json']) !=
+            '920ad50fc3b7084879c1257d5b11e0e3ce52367b42f05871ffc68f8a66f66c47'):
+        raise AssertionError('EXACT_V36_DISTRIBUTION_PREREQUISITE')
+    lock = json.loads(actual['package-lock.json'])
+    def encoded(value):
+        return (json.dumps(value, ensure_ascii=False, indent=2) + '\n').encode('utf-8')
+    if encoded(lock) != actual['package-lock.json']:
+        raise AssertionError('EXACT_NPM_LOCK_ENCODING_REQUIRED')
+    def resolve(key, name):
+        while True:
+            candidate = (key + '/' if key else '') + 'node_modules/' + name
+            if candidate in lock['packages']:
+                return candidate
+            if not key:
+                return None
+            key = key.rsplit('/node_modules/', 1)[0] if '/node_modules/' in key else ''
+    def closure(first):
+        seen, pending = set(), [first]
+        while pending:
+            key = pending.pop()
+            if key in seen:
+                continue
+            seen.add(key)
+            row = lock['packages'][key]
+            for kind in ('dependencies', 'optionalDependencies', 'peerDependencies'):
+                for name in row.get(kind, {}):
+                    selected = resolve(key, name)
+                    if selected is not None:
+                        pending.append(selected)
+                    elif (kind != 'optionalDependencies'
+                          and not row.get('peerDependenciesMeta', {}).get(name, {}).get('optional')):
+                        raise AssertionError('LOCK_DEPENDENCY_MISSING')
+        return seen
+    legacy = closure('node_modules/@actions/cache')
+    artifact = closure('node_modules/@actions/artifact')
+    added = set(lock['packages']) - {''} - legacy
+    if (len(legacy) != 49 or len(added) != 210 or not added <= artifact
+            or lock['packages']['node_modules/@actions/artifact']['version'] != '6.3.1'):
+        raise AssertionError('EXACT_LEGACY49_ARTIFACT210_REQUIRED')
+    for key in added:
+        del lock['packages'][key]
+    del lock['packages']['']['dependencies']['@actions/artifact']
+    old_lock = encoded(lock)
+    old_package = actual['package.json'].replace(b', "@actions/artifact": "6.3.1"', b'')
+    if (sha(old_package) != '111ef6137410cce15e90ddfea3fbbb70b04285a2e0c1fc04cb221c04cc3b61d8'
+            or sha(old_lock) != '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5'):
+        raise AssertionError('WHOLE_HISTORICAL_DISTRIBUTION_NOT_REPRODUCED')
+    for key in legacy:
+        literal = ('    ' + json.dumps(key) + ': '
+                   + json.dumps(lock['packages'][key], ensure_ascii=False, indent=2).replace('\n', '\n    ')).encode('utf-8')
+        if literal not in old_lock or literal not in actual['package-lock.json']:
+            raise AssertionError('LEGACY_ROW_LITERAL_CHANGED')
+    if successor is True:
+        return actual
+    if successor is not False:
+        raise AssertionError('FIXED_FIXTURE_CASE_REQUIRED')
+    return {'package.json': old_package, 'package-lock.json': old_lock}
+
 class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
     def test_official_sdk_archive_finalize_17_closes_cohort_before_saved(self):
         self.official_chain(finalize_ok=True)
@@ -667,7 +1037,19 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
     def test_official_sdk_fixed_cipher_http_200_false_never_uploads(self):
         self.official_chain(finalize_ok=False, ciphertext=True)
 
-    def official_chain(self, *, finalize_ok, ciphertext=False):
+    def test_successor_sdk_archive_finalize_closes_cohort_before_saved(self):
+        self.official_chain(finalize_ok=True, successor=True)
+
+    def test_successor_sdk_finalize_false_never_saves(self):
+        self.official_chain(finalize_ok=False, successor=True)
+
+    def test_successor_sdk_cipher_finalize_closes_before_uploaded(self):
+        self.official_chain(finalize_ok=True, ciphertext=True, successor=True)
+
+    def test_successor_sdk_cipher_finalize_false_never_uploads(self):
+        self.official_chain(finalize_ok=False, ciphertext=True, successor=True)
+
+    def official_chain(self, *, finalize_ok, ciphertext=False, successor=False):
         import hashlib
         from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -677,6 +1059,7 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
         self.assertTrue(hasattr(signal, 'pidfd_send_signal'))
         self.assertEqual(signal.getsignal(signal.SIGCHLD), signal.SIG_DFL)
         no_children()
+        distribution = fixed_distribution_fixture_bytes(successor=successor)
         tar = shutil.which('tar')
         self.assertIsNotNone(tar, 'Actual tar/codec required; no substitute')
         libc = ctypes.CDLL(None, use_errno=True)
@@ -861,15 +1244,20 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
         try:
             for relative in (ENTRY, COHORT, CLAIM_MODULE, ENTRY.parent / 'package.json',
                              ENTRY.parent / 'package-lock.json'):
-                source = (ROOT / relative).read_bytes()
+                source = (distribution[relative.name] if relative.parent == ENTRY.parent
+                          and relative.name in distribution else (ROOT / relative).read_bytes())
                 destination = root / relative
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 destination.write_bytes(source)
                 self.assertEqual(destination.read_bytes(), source)
             action = ROOT / ENTRY.parent
-            lock_bytes = (action / 'package-lock.json').read_bytes().replace(b'\r\n', b'\n')
-            self.assertEqual(hashlib.sha256(lock_bytes).hexdigest(),
-                '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5')
+            lock_bytes = (root / ENTRY.parent / 'package-lock.json').read_bytes()
+            if successor:
+                self.assertEqual(hashlib.sha256(lock_bytes).hexdigest(),
+                    '920ad50fc3b7084879c1257d5b11e0e3ce52367b42f05871ffc68f8a66f66c47')
+            else:
+                self.assertEqual(hashlib.sha256(lock_bytes).hexdigest(),
+                    '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5')
             dependency = (action / 'node_modules').resolve(strict=True)
             package = dependency / '@actions/cache'
             self.assertEqual(json.loads((package / 'package.json').read_bytes())['version'], '6.1.0')
@@ -986,7 +1374,13 @@ class OwnedRawDistributionNative(unittest.TestCase):
     def test_empty_owned_offline_cache_refuses_without_ready_or_saved(self):
         self.distribution_chain(warm=False)
 
-    def distribution_chain(self, *, warm):
+    def test_successor_warm_offline_cache_prepares_after_physical_close(self):
+        self.distribution_chain(warm=True, successor=True)
+
+    def test_successor_empty_offline_cache_refuses_without_ready_or_saved(self):
+        self.distribution_chain(warm=False, successor=True)
+
+    def distribution_chain(self, *, warm, successor=False):
         import hashlib
 
         self.assertEqual(sys.platform, 'linux', 'NATIVE_LINUX_REQUIRED; not a skip')
@@ -996,9 +1390,14 @@ class OwnedRawDistributionNative(unittest.TestCase):
         self.assertEqual(signal.getsignal(signal.SIGCHLD), signal.SIG_DFL)
         no_children()
         action_source = ROOT / ENTRY.parent
-        lock_bytes = (action_source / 'package-lock.json').read_bytes()
-        self.assertEqual(hashlib.sha256(lock_bytes.replace(b'\r\n', b'\n')).hexdigest(),
-                         '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5')
+        distribution = fixed_distribution_fixture_bytes(successor=successor)
+        lock_bytes = distribution['package-lock.json']
+        if successor:
+            self.assertEqual(hashlib.sha256(lock_bytes).hexdigest(),
+                             '920ad50fc3b7084879c1257d5b11e0e3ce52367b42f05871ffc68f8a66f66c47')
+        else:
+            self.assertEqual(hashlib.sha256(lock_bytes.replace(b'\r\n', b'\n')).hexdigest(),
+                             '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5')
         official = action_source / 'node_modules/@actions/cache'
         self.assertEqual(json.loads((official / 'package.json').read_text())['version'], '6.1.0')
         self.assertEqual(hashlib.sha256((official / 'lib/cache.js').read_bytes()).hexdigest(),
@@ -1101,8 +1500,13 @@ class OwnedRawDistributionNative(unittest.TestCase):
                              ENTRY.parent / 'package-lock.json'):
                 destination = root / relative
                 destination.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(ROOT / relative, destination)
-                self.assertEqual(destination.read_bytes(), (ROOT / relative).read_bytes())
+                if relative.parent == ENTRY.parent and relative.name in distribution:
+                    with destination.open('xb') as handle:
+                        handle.write(distribution[relative.name])
+                    self.assertEqual(destination.read_bytes(), distribution[relative.name])
+                else:
+                    shutil.copyfile(ROOT / relative, destination)
+                    self.assertEqual(destination.read_bytes(), (ROOT / relative).read_bytes())
             action = root / ENTRY.parent
             own_cache = action / '.npm-cache'
             own_cache.mkdir()
@@ -1226,6 +1630,11 @@ class OwnedRawDistributionNative(unittest.TestCase):
                 self.assertEqual(metadata['exports']['.']['import'], './lib/cache.js')
                 self.assertEqual((installed / 'lib/cache.js').read_bytes(), (official / 'lib/cache.js').read_bytes())
                 self.assertFalse((installed / 'lib/cache.js').is_symlink())
+                artifact = action / 'node_modules/@actions/artifact'
+                if successor:
+                    self.assertEqual(json.loads((artifact / 'package.json').read_bytes())['version'], '6.3.1')
+                else:
+                    self.assertFalse(artifact.exists(), 'Legacy npm ci must still install only its old49 graph')
             else:
                 # A generic setup failure is not the negative npm-cache proof.
                 debug_logs = list((own_cache / '_logs').glob('*-debug-0.log'))
@@ -1279,6 +1688,98 @@ class OwnedRawDistributionNative(unittest.TestCase):
                 signal.setitimer(signal.ITIMER_REAL, 0)
                 signal.signal(signal.SIGALRM, old_alarm)
 
+
+
+class SourceCpInventoryFixedSelection(unittest.TestCase):
+    def test_inventory_phase70_is_fixed_offline_fd_only_and_not_a_generic_command(self):
+        from lib.copernicus_component_process import _source_normal_program
+        root = Path(__file__).resolve().parents[1]
+        options = {'target': '2026-10-16T10:00:00.000Z', 'quick': False,
+                   'extended': False, 'checkpointOnly': True}
+        command, environment = _source_normal_program(root, 70, options, '/unused-output')
+        self.assertEqual(command, [sys.executable, '-B',
+            str(root / 'scripts/run-copernicus-weather-components.py'),
+            '--bank', f'/proc/{os.getpid()}/fd/4',
+            '--cache-directory', f'/proc/{os.getpid()}/fd/5',
+            '--storage-inventory', f'/proc/{os.getpid()}/fd/6/inventory.json'])
+        for key in ('command', 'bank', 'cacheDirectory', 'outputDirectory', 'deadline'):
+            with self.subTest(key=key), self.assertRaises(RuntimeError):
+                _source_normal_program(root, 70, {**options, key: '/foreign'}, '/unused-output')
+
+    def test_inventory_report_row_is_retained_before_failure_and_physically_closed_before_ack(self):
+        import errno
+        import inspect
+        import json
+        import tempfile
+        import textwrap
+        from unittest import mock
+        from lib.copernicus_component_process import _run_source_normal_program_cohort
+        source = inspect.getsource(_run_source_normal_program_cohort)
+        start = source.index('                if phase == 70 and result == 0:')
+        stop = source.index('                if phase == 16 and result == 0:', start)
+        inventory = source[start:stop]
+        self.assertLess(inventory.index("report_row = {'fd': descriptor"),
+                        inventory.index('actual = os.fstat(descriptor)'))
+        self.assertLess(inventory.index("report_row = {'fd': descriptor"),
+                        inventory.index("inventory = json.loads("))
+        first = source.index('        for row in (output_row, executable_row, report_row, *target_rows, *target_copy_rows):')
+        last = source.index('        try:\n            if primary is None:\n                owner.leave()', first)
+        cleanup = textwrap.dedent(source[first:last])
+        self.assertLess(last, source.index("_source_write_exact(3, b'RRSPG4E1'"))
+        self.assertLess(source.index('        if primary is not None:', last),
+                        source.index("_source_write_exact(3, b'RRSPG4E1'"))
+        # Mechanical execution of the actual normal close edge with real own
+        # descriptors. This is NOT a Linux cohort/ECHILD or full-H proof.
+        with tempfile.TemporaryDirectory(prefix='rr-cp-inventory-close-') as own:
+            for mode in ('fstat', 'read', 'json', 'close-noop'):
+                with self.subTest(mode=mode):
+                    file = Path(own) / (mode + '.json')
+                    file.write_bytes(b'{"synthetic":"owned-report-only"}')
+                    fd = os.open(file, os.O_RDONLY)
+                    row = {'fd': fd, 'stream': None, 'stat': os.fstat(fd),
+                           'close_attempted': False, 'closed': False}
+                    try:
+                        primary = None
+                        try:
+                            if mode == 'fstat':
+                                failure = OSError(errno.EIO, 'SYNTHETIC_FIRST_FSTAT')
+                                with mock.patch.object(os, 'fstat', side_effect=failure):
+                                    os.fstat(fd)
+                            elif mode == 'read':
+                                os.read(fd, -1)
+                            else:
+                                json.loads('not-json')
+                        except BaseException as error:
+                            primary = error
+                        self.assertIsInstance(primary, BaseException)
+                        env = {'os': os, 'errno': errno, 'primary': primary,
+                               'output_row': None, 'executable_row': None,
+                               'report_row': row, 'target_rows': [], 'target_copy_rows': []}
+                        if mode == 'close-noop':
+                            close = os.close
+                            with mock.patch.object(os, 'close', side_effect=lambda value:
+                                                   None if value == fd else close(value)):
+                                exec(compile(cleanup, '<actual-normal-H-report-close>', 'exec'), env)
+                            self.assertFalse(row['closed'])
+                            self.assertGreaterEqual(os.fstat(fd).st_size, 1)
+                        else:
+                            exec(compile(cleanup, '<actual-normal-H-report-close>', 'exec'), env)
+                            self.assertTrue(row['closed'])
+                            with self.assertRaises(OSError) as closed:
+                                os.fstat(fd)
+                            self.assertEqual(closed.exception.errno, errno.EBADF)
+                        self.assertTrue(row['close_attempted'])
+                        self.assertIs(env['primary'], primary, 'first failure survives cleanup/no-op close')
+                    finally:
+                        try:
+                            os.fstat(fd)
+                        except OSError as error:
+                            self.assertEqual(error.errno, errno.EBADF)
+                        else:
+                            os.close(fd)
+                            with self.assertRaises(OSError) as closed:
+                                os.fstat(fd)
+                            self.assertEqual(closed.exception.errno, errno.EBADF)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

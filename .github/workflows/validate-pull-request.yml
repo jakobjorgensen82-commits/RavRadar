@@ -11,7 +11,130 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  source-native-scope:
+    name: Determine exact SOURCE native fixture scope
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    outputs:
+      required: ${{ steps.scope.outputs.required }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Classify only exact SOURCE fixture and normal runtime inputs
+        id: scope
+        run: node scripts/source19-native-ci-scope.mjs
+        env:
+          SOURCE19_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SOURCE19_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+
+  source-native:
+    name: SOURCE native ${{ matrix.family }} / ${{ matrix.case }}
+    needs: source-native-scope
+    if: needs.source-native-scope.outputs.required == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - family: h70
+            case: normal-install
+          - family: h70
+            case: replace-bank
+          - family: h70
+            case: replace-root
+          - family: h70
+            case: lose-supervisor
+          - family: h71
+            case: native-union-install
+          - family: h71
+            case: replace-union-root
+          - family: h71
+            case: lose-union-supervisor
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Require exact native fixture pull-request head
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test ! -e /tmp/ravradar-private-production-runtime
+          test ! -L /tmp/ravradar-private-production-runtime
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install only existing SOURCE native fixture requirements
+        run: >-
+          python -m pip install --disable-pip-version-check
+          -r requirements-dmi.txt
+          -r requirements-geometry.txt
+          -r requirements-copernicus.txt
+      - name: Install locked native action dependencies without scripts
+        working-directory: .github/actions/save-owned-dmi-grib
+        env:
+          npm_config_cache: ${{ github.workspace }}/.github/actions/save-owned-dmi-grib/.npm-cache
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Retain verified Node24 path for the isolated action
+        id: native-node24
+        shell: bash
+        run: |
+          set -euo pipefail
+          executable="$(node -p 'require("node:fs").realpathSync(process.execPath)')"
+          case "$executable" in /*) ;; *) exit 1 ;; esac
+          test -x "$executable"
+          test "$("$executable" -p 'process.versions.node.split(".")[0]')" = 24
+          printf 'path=%s\n' "$executable" >> "$GITHUB_OUTPUT"
+      - name: Restore Node22 for normal SOURCE prelude programs
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Retain verified Node22 path for the normal prelude
+        id: native-node22
+        shell: bash
+        run: |
+          set -euo pipefail
+          executable="$(node -p 'require("node:fs").realpathSync(process.execPath)')"
+          case "$executable" in /*) ;; *) exit 1 ;; esac
+          test -x "$executable"
+          test "$("$executable" -p 'process.versions.node.split(".")[0]')" = 22
+          printf 'path=%s\n' "$executable" >> "$GITHUB_OUTPUT"
+      - name: Run one fixed native case in its fresh disposable Linux job
+        shell: bash
+        env:
+          SOURCE_NATIVE_FAMILY: ${{ matrix.family }}
+          SOURCE_NATIVE_CASE: ${{ matrix.case }}
+          SOURCE_NODE22_PATH: ${{ steps.native-node22.outputs.path }}
+          SOURCE_NODE24_PATH: ${{ steps.native-node24.outputs.path }}
+        run: |
+          set -euo pipefail
+          case "$SOURCE_NATIVE_FAMILY/$SOURCE_NATIVE_CASE" in
+            h70/normal-install|h70/replace-bank|h70/replace-root|h70/lose-supervisor)
+              python -I -B scripts/test-source19-cp-install-native.py --node22-path "$SOURCE_NODE22_PATH" --node24-path "$SOURCE_NODE24_PATH" --case "$SOURCE_NATIVE_CASE"
+              ;;
+            h71/native-union-install|h71/replace-union-root|h71/lose-union-supervisor)
+              python -I -B scripts/test-source19-union-native.py --node22-path "$SOURCE_NODE22_PATH" --node24-path "$SOURCE_NODE24_PATH" --case "$SOURCE_NATIVE_CASE"
+              ;;
+            *) exit 1 ;;
+          esac
+
   validate:
+    needs: [source-native-scope, source-native]
+    if: always() && needs.source-native-scope.result == 'success' && ((needs.source-native-scope.outputs.required == 'true' && needs.source-native.result == 'success') || (needs.source-native-scope.outputs.required == 'false' && needs.source-native.result == 'skipped'))
     name: Source validation and release gate
     runs-on: ubuntu-24.04
     timeout-minutes: 45

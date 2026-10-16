@@ -71,7 +71,8 @@ import { CURRENT_GRID_SAMPLING_SELECTED_PREDECESSOR_POLICY as CURRENT_GRID_SAMPL
   from './lib/bounded-conditions-predecessor-transition.mjs';
 import { PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY, privateRuntimeBundleContentSha256 }
   from './private-production-runtime-bundle.mjs';
-import { createProtectedPrivateRuntimeClients, describeTargetProtectedPrivateProductionRuntime }
+import { createProtectedPrivateRuntimeClients, describeTargetProtectedPrivateProductionRuntime,
+  beginSourceOriginalMigration, finishSourceOriginalMigration, retainSourceOriginalProgressFailure }
   from './protected-private-production-runtime.mjs';
 
 assertRuntimeBindingRegistry();
@@ -1772,6 +1773,16 @@ async function validateAndMigrateConditions({
   };
 }
 
+const sourceMigrationCompletions = new WeakMap();
+export function sourceOriginalMigrationCompletion(operation, actual) {
+  if (sourceMigrationCompletions.get(operation) !== actual) throw new Error('SOURCE_ORIGINAL_MIGRATION_COMPLETION_REQUIRED');
+  return actual;
+}
+export async function migrateSourceOriginalPrivateRuntime(holder, result, options) {
+  const operation = await beginSourceOriginalMigration(holder, result, options);
+  try { return await migratePrivateRuntimeCore(options, { holder, operation }); }
+  catch (error) { throw retainSourceOriginalProgressFailure(holder, error); }
+}
 export async function migratePostCutoverPrivateRuntime({
   sourceRoot,
   outputRoot,
@@ -1812,7 +1823,10 @@ async function migratePrivateRuntimeCore({
   expectedSourceHead, reportPath, ownerCurrentOriginalOnly = false,
   currentGridOriginalOnly = false, currentGridOriginalExpectation = null,
   metadataOnly = false, ownedI71WorkingContext = null,
-} = {}) {
+} = {}, sourceOriginal = null) {
+  if (sourceOriginal !== null && ownedI71WorkingContext !== null) {
+    throw new Error('SOURCE original migration cannot borrow an owned I71 working context');
+  }
   const owned = ownedI71WorkingContext === null ? null : ownedI71WorkingContexts.get(ownedI71WorkingContext);
   if (ownedI71WorkingContext !== null && (!owned || !metadataOnly
     || currentGridOriginalOnly || ownerCurrentOriginalOnly || currentGridOriginalExpectation !== null)) {
@@ -1997,6 +2011,14 @@ async function migratePrivateRuntimeCore({
     privatePayloadIncluded: false,
   };
   await atomicWriteJson(reportPath, report);
+  if (sourceOriginal) {
+    const actual = Object.freeze({ source, output, migrationResult,
+      conditionsDigest: Object.freeze({ ...migratedConditionsDigest }),
+      publicHourDigest: migrationResult.publicHourDeliveryRebound ? Object.freeze({
+        bytes: report.migratedPublicHourPackBytes, sha256: report.migratedPublicHourPackSha256 }) : null });
+    sourceMigrationCompletions.set(sourceOriginal.operation, actual);
+    await finishSourceOriginalMigration(sourceOriginal.holder, sourceOriginal.operation, actual);
+  }
   return {
     ...report,
     repairedContinuationCount: migrationResult.repairedContinuationCount,
