@@ -1,3 +1,11 @@
+## 17. oktober — oprindeligt fixturebevis bevaret efter testlæserrettelsen
+
+PR642s anden præcise kontrol bestod faktisk native DMI og PostgreSQL, men to tilfælde i den normale epoch-kalderprøve fejlede på samme oversete afhængighed: prøven kontrollerer hele inputvisningstestens kildefingeraftryk. Den første testlæserrettelse havde ændret denne fil. De tidligere fejlede workflowassertions bestod nu; samlet CI var fortsat rød, og de senere trin blev sprunget over. Ingen ny produktionsvejrhentning fejlede i denne kontrol.
+
+Kun den afhængige testlæser tilpasses nu. Den beviser først hele den gennemgåede nye testfil og inverterer derefter præcis dens import og workflowlæser. Det oprindelige hele fixturefingeraftryk, alle gamle assertions, ægte arkiv-/kalderforløb og afvisning af anden kildedrift bevares. Begge normale mål består faktisk lokalt uden skip på 60,329 sekunder, inklusive 673 deles valgte opstart. En søgning efter begge relevante kildepins og kalderfilens afhængigheder fandt ingen yderligere låst læser, der skal ændres.
+
+Dette er en testopfølgning, ikke en ændring af produkt, data, kildeprioritet, sikkerhedskrav, SQL, bindinger eller håndbogens produktbeskrivelse. Ny samlet kontrol på det nye eksakte head kræves før merge og den afgrænsede genoptagelse af den færdige private generation. Ingen ny offentlig generation er leveret her; cron er fortsat pauset, og alle fem mål til 18. oktober er åbne.
+
 ## 16. oktober — PR642: præcise workflowlæsere før ny samlet kontrol
 
 PR642s første kildekontrol bestod faktisk native DMI og PostgreSQL, men fejlede i to gamle workflowassertions: epochens gemme-/gendannelsesprøve og den normale RavScore-generator. Den nye, som udgangspunkt frakoblede rutes præfiks gjorde deres gamle tekstlæsning forkert. Kun disse testlæsere føres gennem den eksisterende hashbundne helfil-inverse; alle oprindelige assertions bevares.
