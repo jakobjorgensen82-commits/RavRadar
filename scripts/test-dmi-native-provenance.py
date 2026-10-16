@@ -149,6 +149,600 @@ if sys.argv[1:] == ["--cached-current-history-plan-only"]:
     print("Cached-current-history capture join passed: exact/reacquired/9 negatives/original conflict; native UNRUN")
     raise SystemExit(0)
 
+
+def check_current_history_native_bracket_boundaries():
+    """Normal capture/clean callers; demanded CURRENT only, not blanket retention."""
+    from unittest.mock import patch
+    now = datetime(2026, 10, 16, 12, tzinfo=timezone.utc)
+    at = lambda offset: (now + timedelta(hours=offset)).isoformat().replace("+00:00", "Z")
+    requests = producer.current_history_demands([{
+        "partId": "TEST", "zoneId": zone["parentZoneId"],
+        "parentZoneId": zone["parentZoneId"], "entityId": zone["id"],
+        "samplingPoint": [zone["lon"], zone["lat"]], "samplingContextKey": "sha256:" + "1" * 64,
+        "initialSource": "EXISTING_INTEGRATED", "initialStateAt": at(-10),
+        "initialStateSha256": "sha256:" + "2" * 64, "startAt": at(-61), "endAt": at(0),
+    }], [zone], at(0))
+    registry = "0123456789abcdef"
+    def native(offset):
+        return producer.native_component_source("dkss_lf", at(-72), at(offset),
+            component="current", zone=zone, grid_candidate=candidate,
+            capture={**capture, "acquiredAt": at(-70)},
+            spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+            verticalLayer="depthbelowsea:1", verticalLayerRankM=1.,
+            vectorSelection=CURRENT_VECTOR_SELECTION, vectorSemanticsVersion=3)
+    rows = {at(offset): {"time": at(offset), "current-u": .123456789,
+        "current-v": -.234567891, "sea-mean-deviation": .5,
+        "sources": {"current": native(offset)}} for offset in (-65, -64, -62, -61, -59, 3, 4)}
+    doc = {"schemaVersion": 2, "generatedAt": at(0), "zoneRegistrySignature": registry,
+        "currentVectorSemanticsVersion": 3, "currentVectorSelection": CURRENT_VECTOR_SELECTION,
+        "currentMaxDistanceKm": 5., "timeStrideHours": 3, "diagnostics": {},
+        "zones": {zone["id"]: {**sampling_identity(zone), "gridPoints": {}, "collections": {}, "hourly": rows}}}
+    original = copy.deepcopy(doc)
+    captured = producer.capture_current_history_originals(doc, requests, registry)
+    assert {item["time"] for item in captured} == {at(x) for x in (-64, -62, -61, -59, 3)}, "DEMANDED_NATIVE_BRACKET_CAPTURE_DROPPED"
+    working = copy.deepcopy(doc)
+    with patch.object(producer.time, "time", return_value=now.timestamp()), \
+            patch.object(producer, "PRIVATE_REPLAY_RETENTION_HOURS", 60):
+        producer.clean_and_summarize(working, set(), {"bytes": 0}, current_history_requests=requests)
+    kept = working["zones"][zone["id"]]["hourly"]
+    assert at(-64) in kept and at(-62) in kept and at(-65) not in kept, "DEMANDED_NATIVE_BRACKET_CLEAN_DROPPED"
+    for time_key in (at(-64), at(-62), at(-61)):
+        assert kept[time_key] == {key: copy.deepcopy(rows[time_key][key]) for key in ("time", "current-u", "current-v", "sources")}
+        assert "sea-mean-deviation" not in kept[time_key]
+    for kind in ("wrong-part", "excluded", "invalid", "non-current"):
+        bad = copy.deepcopy(doc)
+        point = bad["zones"][zone["id"]]
+        point["hourly"] = {at(-62): copy.deepcopy(rows[at(-62)])}
+        row = point["hourly"][at(-62)]
+        if kind == "wrong-part":
+            row["sources"]["current"]["entityId"] = "PART::OTHER"
+        elif kind == "excluded":
+            point["parentZoneId"] = "DK-B01-01"
+            row["sources"]["current"]["parentZoneId"] = "DK-B01-01"
+            scoped = copy.deepcopy(requests);scoped[zone["id"]]["identity"]["parentZoneId"] = "DK-B01-01"
+        elif kind == "invalid":
+            row["sources"]["current"].pop("contentSha256")
+        else:
+            for field in ("current-u", "current-v"):
+                row.pop(field)
+            row["sources"].pop("current")
+        scoped = scoped if kind == "excluded" else requests
+        assert not producer.capture_current_history_originals(bad, scoped, registry), kind
+        with patch.object(producer.time, "time", return_value=now.timestamp()), \
+                patch.object(producer, "PRIVATE_REPLAY_RETENTION_HOURS", 60):
+            producer.clean_and_summarize(bad, set(), {"bytes": 0}, current_history_requests=scoped)
+        assert at(-62) not in bad["zones"][zone["id"]]["hourly"], kind
+    assert doc == original
+
+
+check_current_history_native_bracket_boundaries()
+if sys.argv[1:] == ["--current-history-bracket-boundaries-only"]:
+    print("Normal demanded native bracket capture/clean passed: fixed +/-3h, own CURRENT/identity/exclusion/invalid/noncurrent negatives; originals unchanged")
+    raise SystemExit(0)
+
+
+def check_legacy_current_original_decoder():
+    """Controlled operations only; not a native ecCodes/lease/production proof."""
+    import hashlib
+    import io
+    from lib.dmi_legacy_current_originals import decode_legacy_current_originals
+
+    when = "2026-10-09T00:00:00Z"
+    own_zone = {**zone, "lat": 56.15, "lon": 8.3}
+    old_point = {"latitude": 56.149, "longitude": 8.299,
+        "distanceKm": producer.haversine_km(56.15, 8.3, 56.149, 8.299)}
+    grid = ("regular_ll", 3, 3, 9, 56., 8., 56.3, 8.6, .299, .149)
+    old_point["gridDefinitionSha256"] = producer.grid_definition_sha256_from_signature(grid)
+    payload = b"controlled two-field input"
+    own_capture = {**capture, "acquiredAt": when, "contentLengthBytes": len(payload),
+        "assetSizeBytes": len(payload), "contentSha256": hashlib.sha256(payload).hexdigest()}
+    own_source = producer.native_component_source("dkss_lf", when, when,
+        component="current", zone=own_zone, grid_candidate=old_point, capture=own_capture,
+        spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+        verticalLayer="depthbelowsea:1", verticalLayerRankM=1.,
+        vectorSelection=CURRENT_VECTOR_SELECTION, vectorSemanticsVersion=3)
+    assert own_source is not None and "nativeGridSampling" not in own_source
+    signature = "parser:20|params:4|grid:9|eccodes-api:2.48.2|eccodes-binding:2.48.0|zones:0123456789abcdef"
+    request = {"zone": own_zone, "expectedSource": own_source,
+        "capture": producer.canonical_current_source_asset(own_source), "processingSignature": signature}
+    originals = copy.deepcopy(request)
+    values = {"current-u": .123456789012345, "current-v": -.876543210987654}
+    header = dict(zip(producer.GRID_DEFINITION_KEYS, grid))
+    header.update(md5GridSection="a" * 32, edition=1, scanningMode=64,
+        dataDate=20261009, dataTime=0, validityDate=20261009, validityTime=0,
+        typeOfLevel="depthBelowSea", level=1, missingValue=9999.)
+    messages = [{**header, "parameter": field} for field in values]
+
+    class Reader:
+        def __init__(self):
+            self.binding = ("dkss_lf", when, when)
+            self.capture = copy.deepcopy(own_capture)
+            self.handle = io.BytesIO(payload)
+            self.checks = 0
+            self.eof = False
+        def check(self):
+            self.checks += 1
+
+    def run(requests=None, *, rows=None, capture_change=None, callbacks=None):
+        reader = Reader()
+        if capture_change:
+            reader.capture.update(capture_change)
+        iterator = iter(copy.deepcopy(messages if rows is None else rows))
+        released = []
+        def next_message(handle):
+            assert handle is reader.handle
+            item = next(iterator, None)
+            if item is None:
+                handle.seek(len(payload));reader.eof = True
+            return item
+        def nearest(_gid, _lat, _lon, *args, **kwargs):
+            return [{"index": 4, "lat": old_point["latitude"], "lon": old_point["longitude"]}]
+        ops = {"new_message": next_message,
+            "release_message": lambda gid, first: released.append((gid["parameter"], first)),
+            "get": lambda gid, key: gid[key],
+            "get_elements": lambda gid, key, indices: [values[gid["parameter"]] for _ in indices],
+            "find_nearest": nearest, "nearest_new": None, "nearest_find": None,
+            "nearest_delete": None, "same_grid": None,
+            "out_of_area_error": eccodes.OutOfAreaError,
+            "classify_parameter": lambda gid, collection: gid["parameter"],
+            "candidate_target": producer.grid_candidate_target,
+            "stop_requested": lambda: False, "processing_signature": signature}
+        ops.update(callbacks or {})
+        result = decode_legacy_current_originals(reader,
+            copy.deepcopy([request] if requests is None else requests), operations=ops)
+        assert reader.eof and reader.checks > 4 and len(released) == len(messages if rows is None else rows)
+        return result
+
+    decoded = run()
+    assert len(decoded) == 1 and decoded[0]["zoneId"] == own_zone["id"]
+    row = decoded[0]["row"]
+    assert row["current-u"] == values["current-u"] and row["current-v"] == values["current-v"]
+    assert row["current-u"] != round(row["current-u"], 5)
+    assert row["sources"]["current"] == own_source and "nativeGridSampling" not in row["sources"]["current"]
+    assert request == originals
+    geometry = producer.dkss_grib1_header_geometry(("a" * 32, *grid), 64)
+    new_point = producer.dkss_header_grid_point(geometry, 4)
+    assert [new_point["lon"], new_point["lat"]] != own_source["gridPoint"], "OLD/NEW mismatch fixture collapsed"
+    assert run(capture_change={"acquiredAt": "2026-10-09T01:00:00Z"}) == decoded
+    null_request = copy.deepcopy(request)
+    null_request["expectedSource"]["nativeGridSampling"] = None
+    null_before = copy.deepcopy(null_request)
+    null_decoded = run([null_request])
+    assert null_decoded[0]["row"]["sources"]["current"] == null_request["expectedSource"]
+    assert null_decoded[0]["row"]["sources"]["current"]["nativeGridSampling"] is None
+    assert all(null_decoded[0]["row"][field] == values[field] for field in values)
+    assert null_request == null_before
+
+    def rejected(callback, code):
+        try:
+            callback()
+        except ValueError as error:
+            assert str(error) == "DMI_LEGACY_CURRENT_" + code, str(error)
+        else:
+            raise AssertionError("legacy decoder accepted " + code)
+    wrong_part = copy.deepcopy(request);wrong_part["zone"]["id"] = "PART::OTHER"
+    rejected(lambda: run([wrong_part]), "REQUEST_INVALID")
+    wrong_point = copy.deepcopy(request);wrong_point["expectedSource"]["gridPoint"][0] += .0001
+    rejected(lambda: run([wrong_point]), "SOURCE_PROJECTION_MISMATCH")
+    wrong_layer = copy.deepcopy(request);wrong_layer["expectedSource"]["verticalLayer"] = "depthbelowsea:2"
+    rejected(lambda: run([wrong_layer]), "SOURCE_PROJECTION_MISMATCH")
+    new_receipt = copy.deepcopy(request);new_receipt["expectedSource"]["nativeGridSampling"] = {}
+    rejected(lambda: run([new_receipt]), "REQUEST_INVALID")
+    partial_receipt = copy.deepcopy(request);partial_receipt["expectedSource"]["nativeGridSampling"] = {"schemaVersion": 1}
+    rejected(lambda: run([partial_receipt]), "REQUEST_INVALID")
+    wrong_header = copy.deepcopy(messages);wrong_header[-1]["validityTime"] = 100
+    rejected(lambda: run(rows=wrong_header), "HEADER_MISMATCH")
+    rejected(lambda: run(capture_change={"contentSha256": "0" * 64}), "CAPTURE_MISMATCH")
+    rejected(lambda: run(rows=messages[:1]), "NATIVE_TUPLE_UNAVAILABLE")
+    rejected(lambda: run(callbacks={"get_elements": lambda *args: {1.}}), "VALUES_INVALID")
+    rejected(lambda: run(callbacks={"stop_requested": lambda: True}), "DEFERRED")
+    unknown_decoder = copy.deepcopy(request);unknown_decoder["processingSignature"] = signature.replace("parser:20", "parser:21")
+    rejected(lambda: run([unknown_decoder]), "PROCESSING_CONTEXT_UNKNOWN")
+    # The supported low-level ecCodes nearest route must have the SAME result.
+    nearest_ids, flags, deleted = [], [], []
+    assert run(callbacks={"nearest_new": lambda gid: nearest_ids.append(gid) or 12,
+        "nearest_find": lambda ident, gid, lat, lon, flag, lsm, npoints:
+            flags.append(flag) or [{"index": 4, "lat": old_point["latitude"], "lon": old_point["longitude"]}],
+        "nearest_delete": lambda ident: deleted.append(ident), "same_grid": 1}) == decoded
+    assert nearest_ids and deleted == [12] and flags[0] == 0 and set(flags[1:]) == {1}
+    resource_failures = []
+    lookup_failure = RuntimeError("controlled original nearest failure")
+    delete_failure = RuntimeError("controlled native nearest release failure")
+    def fail_lookup(*args):
+        raise lookup_failure
+    def fail_delete(*args):
+        raise delete_failure
+    try:
+        run(callbacks={"nearest_new": lambda gid: 12, "nearest_find": fail_lookup,
+            "nearest_delete": fail_delete, "same_grid": 1})
+    except BaseException as error:
+        if error is not delete_failure or error.__cause__ is not lookup_failure:
+            resource_failures.append("NEAREST_DELETE_LOST_FIRST_CAUSE")
+    else:
+        resource_failures.append("NEAREST_FAILURE_ACCEPTED")
+    high_level_fallback = []
+    def unexpected_high(*args, **kwargs):
+        high_level_fallback.append(True)
+        return [{"index": 4, "lat": old_point["latitude"], "lon": old_point["longitude"]}]
+    try:
+        run(callbacks={"nearest_new": lambda gid: None, "nearest_find": fail_lookup,
+            "nearest_delete": fail_delete, "same_grid": 1, "find_nearest": unexpected_high})
+    except ValueError as error:
+        if str(error) != "DMI_LEGACY_CURRENT_NEAREST_HANDLE_UNAVAILABLE":
+            resource_failures.append("NONE_HANDLE_WRONG_FAILURE")
+    else:
+        resource_failures.append("NONE_HANDLE_FELL_BACK")
+    if high_level_fallback:
+        resource_failures.append("NONE_HANDLE_CALLED_HIGH_LEVEL")
+    assert not resource_failures, resource_failures
+
+
+check_legacy_current_original_decoder()
+if sys.argv[1:] == ["--legacy-current-originals-only"]:
+    print("Legacy OLD decoder controlled partition passed: own PART/capture/header/layer/fullprecision/OLD-vs-NEW; native ecCodes+lease UNRUN")
+    raise SystemExit(0)
+
+
+def check_legacy_current_recovery_normal_callers():
+    """Real request reader/planners/decoder caller with controlled native ownership.
+
+    The small on-disk source/capture fixture proves caller contracts, not an
+    authenticated production generation, JavaScript projection or Linux lease.
+    """
+    import contextlib
+    import hashlib
+    from unittest.mock import patch
+    from lib.dmi_legacy_current_recovery import REQUEST_PATH, OUTPUT_PATH, SOURCE_PATHS
+
+    when = producer.canonical_time("2026-10-09T00:00:00Z")
+    own_zone = {**zone, "lat": 56.15, "lon": 8.3}
+    registry = "0123456789abcdef"
+    signature = f"parser:20|params:4|grid:9|eccodes-api:2.48.2|eccodes-binding:2.48.0|zones:{registry}"
+    payload = b"controlled normal OLD recovery input"
+    href = "https://owned-fixture.invalid/normal-legacy-recovery.grib"
+    digest = lambda value: "sha256:" + hashlib.sha256(value).hexdigest()
+    encode = lambda value: (json.dumps(value, separators=(",", ":"), ensure_ascii=False) + "\n").encode()
+    grid = ("regular_ll", 3, 3, 9, 56., 8., 56.3, 8.6, .299, .149)
+    candidate = {"latitude": 56.149, "longitude": 8.299,
+        "distanceKm": producer.haversine_km(own_zone["lat"], own_zone["lon"], 56.149, 8.299),
+        "gridDefinitionSha256": producer.grid_definition_sha256_from_signature(grid)}
+    captured = {**capture, "itemId": "controlled-normal-legacy",
+        "assetIdentitySha256": producer.asset_identity_sha256(href), "acquiredAt": when,
+        "contentLengthBytes": len(payload), "assetSizeBytes": len(payload),
+        "contentSha256": hashlib.sha256(payload).hexdigest()}
+    native = producer.native_component_source("dkss_lf", when, when, component="current",
+        zone=own_zone, grid_candidate=candidate, capture=captured,
+        spatial_selection=producer.COMPONENT_SPATIAL_SELECTION["current"],
+        verticalLayer="depthbelowsea:1", verticalLayerRankM=1.,
+        vectorSelection=CURRENT_VECTOR_SELECTION, vectorSemanticsVersion=3)
+    assert native is not None
+    canonical_capture = producer.canonical_current_source_asset(native)
+    identity = sampling_identity(own_zone)
+    header = {"generatedAt": when, "currentVectorSemanticsVersion": 3,
+        "currentVectorSelection": CURRENT_VECTOR_SELECTION, "currentMaxDistanceKm": 5,
+        "timeStrideHours": 3}
+    processing = {"complete": True, "parserVersion": 20, "processingSignature": signature,
+        "recognizedParameters": ["current-u", "current-v"], "zonesTouched": 1,
+        "sourceAsset": canonical_capture}
+    document = {**header, "zones": {own_zone["id"]: {**identity, "hourly": {}}},
+        "runs": {"dkss_lf": {"referenceTime": when, "parserVersion": 20,
+            "parameterMapVersion": 4, "gridLookupVersion": 9, "processingSignature": signature,
+            "processedSteps": {when: processing}}}}
+    step = {key: copy.deepcopy(native[key]) for key in ("itemId", "assetIdentitySha256",
+        "nativeValidTime", "leadTimeHours", "acquiredAt", "optionalFieldSet")}
+    step.update({key: copy.deepcopy(native[key]) for key in ("itemCreatedAt", "itemUpdatedAt") if key in native})
+    forecast_source = {**copy.deepcopy(native), "nativeSteps": [step]}
+    witness_id, request_id = "sha256:" + "1" * 64, "sha256:" + "2" * 64
+    witness = {"witnessId": witness_id, "partId": "TEST", "documentRole": "deployedBulk",
+        "row": {"time": when, "currentUMps": .123456789012345, "currentVMps": -.876543210987654,
+            "sources": {"current": forecast_source}},
+        "sourceSha256": "sha256:" + "3" * 64, "tupleSha256": "sha256:" + "4" * 64}
+    request = {"requestId": request_id, "partId": "TEST", "entityId": own_zone["id"],
+        "documentRole": "deployedBulk", "nativeValidTime": when,
+        "reconstructionRequest": {"zone": own_zone, "expectedSource": native,
+            "capture": canonical_capture, "processingSignature": signature},
+        "processingEvidence": {"kind": "RUN_PROCESSED_STEP",
+            "path": ["runs", "dkss_lf", "processedSteps", when], "sha256": "sha256:" + "5" * 64},
+        "projectionWitnessRefs": [witness_id]}
+    start_at = producer.canonical_time(datetime.fromisoformat(when.replace("Z", "+00:00")) - timedelta(hours=48))
+    demand_row = {"partId": "TEST", "zoneId": own_zone["parentZoneId"],
+        "parentZoneId": own_zone["parentZoneId"], "entityId": own_zone["id"],
+        "samplingPoint": [own_zone["lon"], own_zone["lat"]], "samplingContextKey": "sha256:" + "6" * 64,
+        "initialSource": "COLD_START", "initialStateAt": None, "initialStateSha256": None,
+        "startAt": start_at, "endAt": when}
+    assert len(producer.current_history_demands([demand_row], [own_zone], when)) == 1
+    demand = {"productionReferenceAt": when, "modelBinding": {"controlled": "not-production-proof"},
+        "demands": [demand_row]}
+    part_bytes = b'{"zones":{"ZONE-TEST":[]}}\n'
+    with tempfile.TemporaryDirectory(prefix="ravradar-legacy-normal-") as directory:
+        local = Path(directory)
+        def write(relative, data):
+            path = local / relative; path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data); return path
+        fixed = {"zones": b'{"features":[]}\n', "deployedBulk": encode(document),
+            "forecast": b'{"zones":{}}\n', "candidate": None, "active": None}
+        for role, data in fixed.items():
+            if data is not None:
+                write(SOURCE_PATHS[role], data)
+        write(".cache/ravscore-current-history-demand.json", encode(demand))
+        envelope = {"schemaVersion": 1, "kind": "DMI_LEGACY_CURRENT_ORIGINAL_RECONSTRUCTION_REQUESTS",
+            "productionReferenceAt": when, "modelBinding": demand["modelBinding"],
+            "historyDemandSha256": digest(encode(demand)), "registrySha256": digest(part_bytes),
+            "sourceHashes": {key: digest(value) if value is not None else None for key, value in fixed.items()},
+            "sourcePaths": SOURCE_PATHS,
+            "documentContexts": [{"documentRole": "deployedBulk", "header": header,
+                "zones": [{"partId": "TEST", "zone": identity}]}],
+            "projectionWitnesses": [witness], "reconstructionRequests": [request]}
+        request_path = write(REQUEST_PATH, encode(envelope))
+        with patch.object(producer, "ROOT", local), patch.object(producer, "RAW_DIR", local / ".cache/dmi-grib"), \
+                patch.dict(os.environ, {"DMI_BULK_LEGACY_CURRENT_ORIGINAL_REQUEST_PATH": REQUEST_PATH,
+                    "DMI_BULK_LEGACY_CURRENT_ORIGINAL_REQUEST_SHA256": digest(request_path.read_bytes())}):
+            # The normal JS stage includes sourcePaths. Removing it in this
+            # fixture to satisfy an incompatible parser would hide the defect.
+            bound = producer.read_legacy_current_original_requests(part_bytes, [own_zone], when)
+            assert len(bound["requests"]) == 1 and bound["requestsSha256"] == digest(request_path.read_bytes())
+            # A genuine capture/processing locator outside the exact collector
+            # support window may not authorize unrelated materialization.
+            outside = producer.canonical_time(datetime.fromisoformat(when.replace("Z", "+00:00")) + timedelta(hours=4))
+            outside_plan, outside_doc = copy.deepcopy(envelope), copy.deepcopy(document)
+            outside_request = outside_plan["reconstructionRequests"][0]
+            outside_request["nativeValidTime"] = outside
+            outside_native = outside_request["reconstructionRequest"]["expectedSource"]
+            outside_native.update(nativeValidTime=outside, leadTimeHours=4.)
+            outside_capture = producer.canonical_current_source_asset(outside_native)
+            outside_request["reconstructionRequest"]["capture"] = outside_capture
+            outside_request["processingEvidence"]["path"][-1] = outside
+            outside_witness = outside_plan["projectionWitnesses"][0]["row"]
+            outside_witness["time"] = outside
+            outside_witness["sources"]["current"] = {**copy.deepcopy(outside_native),
+                "nativeSteps": [{**copy.deepcopy(step), "nativeValidTime": outside, "leadTimeHours": 4.}]}
+            outside_doc["runs"]["dkss_lf"]["processedSteps"][outside] = {**copy.deepcopy(processing),
+                "sourceAsset": outside_capture}
+            write(SOURCE_PATHS["deployedBulk"], encode(outside_doc))
+            outside_plan["sourceHashes"]["deployedBulk"] = digest(encode(outside_doc))
+            request_path.write_bytes(encode(outside_plan))
+            with patch.dict(os.environ, {"DMI_BULK_LEGACY_CURRENT_ORIGINAL_REQUEST_SHA256": digest(request_path.read_bytes())}):
+                try:
+                    producer.read_legacy_current_original_requests(part_bytes, [own_zone], when)
+                except ValueError as error:
+                    assert str(error) == "DMI_LEGACY_CURRENT_REQUEST_OUTSIDE_DEMAND", str(error)
+                else:
+                    raise AssertionError("OUTSIDE_DEMAND_NATIVE_CAPTURE_ACCEPTED")
+            write(SOURCE_PATHS["deployedBulk"], encode(document))
+            request_path.write_bytes(encode(envelope))
+            def rejected_request(changed, code):
+                request_path.write_bytes(encode(changed))
+                try:
+                    with patch.dict(os.environ, {"DMI_BULK_LEGACY_CURRENT_ORIGINAL_REQUEST_SHA256": digest(request_path.read_bytes())}):
+                        producer.read_legacy_current_original_requests(part_bytes, [own_zone], when)
+                except ValueError as error:
+                    assert str(error) == "DMI_LEGACY_CURRENT_" + code, str(error)
+                else:
+                    raise AssertionError("normal request reader accepted " + code)
+                finally:
+                    request_path.write_bytes(encode(envelope))
+            wrong = copy.deepcopy(envelope); wrong["sourcePaths"]["forecast"] = ".cache/not-the-normal-forecast.json"
+            rejected_request(wrong, "REQUEST_ENVELOPE_INVALID")
+            wrong = copy.deepcopy(envelope); wrong["modelBinding"] = {"controlled": "other-model"}
+            rejected_request(wrong, "REQUEST_ENVELOPE_INVALID")
+            wrong = copy.deepcopy(envelope); wrong["reconstructionRequests"][0]["reconstructionRequest"]["processingSignature"] = signature.replace("parser:20", "parser:21")
+            rejected_request(wrong, "PROCESSING_CONTEXT_UNKNOWN")
+            wrong = copy.deepcopy(envelope); wrong["projectionWitnesses"][0]["partId"] = "OTHER"
+            rejected_request(wrong, "WITNESS_INVALID")
+            # Null belongs to the endpoint that actually recorded it. A top
+            # marker must not silently become another endpoint's marker.
+            null_envelope = copy.deepcopy(envelope)
+            null_envelope["reconstructionRequests"][0]["reconstructionRequest"]["expectedSource"]["nativeGridSampling"] = None
+            null_witness_source = null_envelope["projectionWitnesses"][0]["row"]["sources"]["current"]
+            null_witness_source["nativeGridSampling"] = None
+            null_witness_source["nativeSteps"][0]["nativeGridSampling"] = None
+            wrong = copy.deepcopy(null_envelope)
+            del wrong["projectionWitnesses"][0]["row"]["sources"]["current"]["nativeSteps"][0]["nativeGridSampling"]
+            rejected_request(wrong, "WITNESS_INVALID")
+            wrong = copy.deepcopy(null_envelope)
+            del wrong["reconstructionRequests"][0]["reconstructionRequest"]["expectedSource"]["nativeGridSampling"]
+            rejected_request(wrong, "WITNESS_INVALID")
+            with patch.dict(os.environ, {"DMI_BULK_LEGACY_CURRENT_ORIGINAL_REQUEST_SHA256": "sha256:" + "0" * 64}):
+                try:
+                    producer.read_legacy_current_original_requests(part_bytes, [own_zone], when)
+                except ValueError as error:
+                    assert str(error) == "DMI_LEGACY_CURRENT_REQUEST_CHANGED"
+                else:
+                    raise AssertionError("request-stage SHA handshake was ignored")
+            raw_path = producer.cached_asset_path(href); raw_path.parent.mkdir(parents=True, exist_ok=True)
+            raw_path.write_bytes(payload)
+            manifest = {"assets": {raw_path.name: {**canonical_capture, "canonicalHref": href}}}
+            assert len(producer.plan_legacy_current_original_jobs(bound, manifest)) == 1
+            inputs_before = {role: (local / SOURCE_PATHS[role]).read_bytes()
+                for role, data in fixed.items() if data is not None}
+            readers, events = [], []
+            class Controller:
+                def can_start_asset(self, **kwargs):
+                    events.append(("budget", kwargs)); return True
+                def observe_asset_duration(self, duration, **kwargs):
+                    assert duration >= 0; events.append(("duration", kwargs))
+            class Reader:
+                def __init__(self, *, close_failure=False):
+                    self.binding = ("dkss_lf", when, when); self.capture = copy.deepcopy(canonical_capture)
+                    self.handle = raw_path.open("rb"); self.active = True; self.retained = False
+                    self.physically_closed = False; self.native_handles = []; self.close_failure = close_failure
+                    readers.append(self)
+                def check(self):
+                    assert self.active and not self.retained
+                def measure(self):
+                    data = self.handle.read(); self.handle.seek(0)
+                    return len(data), hashlib.sha256(data).hexdigest()
+                def _retain(self, error):
+                    self.retained = True; producer._UNSETTLED_GRIB_READS.append(self)
+                def _refuse(self, code, cause=None):
+                    raise producer.GribReadUnproven(code) from cause
+                def __enter__(self):
+                    return self
+                def __exit__(self, kind, failure, traceback):
+                    self.handle.close(); self.active = False
+                    events.append(("closed", failure))
+                    if self.close_failure:
+                        self._retain(RuntimeError("controlled close unproved"))
+                        raise producer.GribReadUnproven("CONTROLLED_CLOSE_UNPROVED") from failure
+                    self.physically_closed = True
+                    return False
+            fields = {"current-u": witness["row"]["currentUMps"], "current-v": witness["row"]["currentVMps"]}
+            message_header = dict(zip(producer.GRID_DEFINITION_KEYS, grid))
+            message_header.update(md5GridSection="a" * 32, edition=1, dataDate=20261009, dataTime=0,
+                validityDate=20261009, validityTime=0, typeOfLevel="depthBelowSea", level=1, missingValue=9999.)
+            messages = [{**message_header, "parameter": field} for field in fields]
+            def new_message(handle):
+                position = handle.tell()
+                if position >= len(messages):
+                    handle.seek(len(payload)); return None
+                handle.seek(position + 1); return messages[position]
+            def nearest(*args, **kwargs):
+                return [{"index": 4, "lat": candidate["latitude"], "lon": candidate["longitude"]}]
+            options = {"registry_signature": registry, "reserve_seconds": 0, "supervisor_skipped_assets": set()}
+            with contextlib.ExitStack() as stack:
+                replacements = {"load_raw_cache_manifest": lambda: manifest,
+                    "_grib_read_scope": lambda *args: Reader(), "_UNSETTLED_GRIB_READS": [],
+                    "codes_grib_new_from_file": new_message, "codes_get": lambda gid, key: gid[key],
+                    "codes_release": lambda gid: events.append(("released", gid["parameter"])),
+                    "codes_get_elements": lambda gid, key, indices: [fields[gid["parameter"]] for _ in indices],
+                    "codes_grib_find_nearest": nearest, "codes_grib_nearest_new": None,
+                    "codes_grib_nearest_find": None, "codes_grib_nearest_delete": None,
+                    "classify_parameter": lambda gid, collection: gid["parameter"],
+                    "should_stop_work": lambda: False, "progress": lambda *args: None,
+                    "ECCODES_API_VERSION": "2.48.2", "ECCODES_BINDING_VERSION": "2.48.0"}
+                for key, value in replacements.items():
+                    stack.enter_context(patch.object(producer, key, value))
+                originals = producer.reconstruct_legacy_current_originals(bound, Controller(), **options)
+                assert len(originals) == 1 and readers[-1].physically_closed and not producer._UNSETTLED_GRIB_READS
+                assert originals[0]["row"]["current-u"] == fields["current-u"]
+                assert originals[0]["row"]["sources"]["current"] == native
+                output_path = local / OUTPUT_PATH
+                assert json.loads(output_path.read_bytes())["requestsSha256"] == bound["requestsSha256"]
+                output_path.unlink()
+                # Derived OLD tuples join the actual existing NEW replay plan.
+                demands = {own_zone["id"]: {"startAt": when, "endAt": when}}
+                planned = producer.plan_cached_current_history(demands, originals, manifest)
+                assert len(planned["jobs"]) == 1 and not planned["unavailable"]
+                assert list(planned["originalsByKey"].values()) == [[originals[0]]]
+                # One authentic own endpoint can be needed by both document
+                # roles: decode once, preserve both contexts without guessing.
+                shared = copy.deepcopy(bound)
+                shared["contexts"]["candidate"] = copy.deepcopy(shared["contexts"]["deployedBulk"])
+                second = copy.deepcopy(shared["requests"][0]); second["documentRole"] = "candidate"
+                second["requestId"] = "sha256:" + "7" * 64; shared["requests"].append(second)
+                previous_reads = len(readers)
+                shared_originals = producer.reconstruct_legacy_current_originals(shared, Controller(), **options)
+                assert len(readers) == previous_reads + 1 and len(shared_originals) == 2
+                assert shared_originals[0] == shared_originals[1]
+                output_path.unlink()
+                # Actual disagreement for the same own endpoint must fail
+                # before acquisition, even if the shared request is well formed.
+                conflict = copy.deepcopy(shared)
+                conflict["requests"][1]["reconstructionRequest"]["expectedSource"]["distanceKm"] += .001
+                try:
+                    producer.reconstruct_legacy_current_originals(conflict, Controller(), **options)
+                except ValueError as error:
+                    assert str(error) == "DMI_LEGACY_CURRENT_NATIVE_CONFLICT"
+                else:
+                    raise AssertionError("conflicting same-PART reconstruction requests were merged")
+                assert not output_path.exists() and len(readers) == previous_reads + 1
+                # First job can finish and populate only a private in-memory
+                # candidate. A second job's wrong owned capture must prevent
+                # publication of that partial candidate as well.
+                later_href = next(f"https://owned-fixture.invalid/late-{index}.grib" for index in range(100)
+                    if str(producer.cached_asset_path(f"https://owned-fixture.invalid/late-{index}.grib")) > str(raw_path))
+                later_path = producer.cached_asset_path(later_href); later_path.write_bytes(payload)
+                partial = copy.deepcopy(bound); later_request = copy.deepcopy(partial["requests"][0])
+                later_request["requestId"] = "sha256:" + "8" * 64
+                later_source = later_request["reconstructionRequest"]["expectedSource"]
+                later_source.update(itemId="controlled-later-original", assetIdentitySha256=producer.asset_identity_sha256(later_href))
+                later_capture = producer.canonical_current_source_asset(later_source)
+                later_request["reconstructionRequest"]["capture"] = later_capture
+                partial["requests"].append(later_request)
+                later_manifest = copy.deepcopy(manifest)
+                later_manifest["assets"][later_path.name] = {**later_capture, "canonicalHref": later_href}
+                read_start = len(readers)
+                with patch.object(producer, "load_raw_cache_manifest", lambda: later_manifest):
+                    try:
+                        producer.reconstruct_legacy_current_originals(partial, Controller(), **options)
+                    except ValueError as error:
+                        assert str(error) == "DMI_LEGACY_CURRENT_RAW_CAPTURE_MISMATCH"
+                    else:
+                        raise AssertionError("partial earlier job escaped after a later owned capture failed")
+                assert len(readers) == read_start + 2 and all(reader.physically_closed for reader in readers[-2:])
+                assert not output_path.exists() and later_path.read_bytes() == payload
+                # A late value failure after the complete header traversal
+                # drains its message and closes the input, but publishes none.
+                lookup_error = RuntimeError("controlled own values lookup failed")
+                def broken_values(*args):
+                    raise lookup_error
+                release_start = sum(event[0] == "released" for event in events)
+                with patch.object(producer, "codes_get_elements", broken_values):
+                    try:
+                        producer.reconstruct_legacy_current_originals(bound, Controller(), **options)
+                    except RuntimeError as error:
+                        assert error is lookup_error
+                    else:
+                        raise AssertionError("partial native traversal published an OLD context")
+                assert readers[-1].physically_closed and not output_path.exists()
+                assert sum(event[0] == "released" for event in events) - release_start == 3
+                # Normal caller must retain the actual nearest object and the
+                # first lookup cause when native nearest cleanup also fails.
+                cleanup_error = RuntimeError("controlled nearest release failed")
+                def broken_nearest(*args):
+                    raise lookup_error
+                def broken_nearest_delete(*args):
+                    raise cleanup_error
+                with patch.object(producer, "codes_grib_nearest_new", lambda gid: 12), \
+                        patch.object(producer, "codes_grib_nearest_find", broken_nearest), \
+                        patch.object(producer, "codes_grib_nearest_delete", broken_nearest_delete), \
+                        patch.object(producer, "CODES_GRIB_NEAREST_SAME_GRID", 1):
+                    try:
+                        producer.reconstruct_legacy_current_originals(bound, Controller(), **options)
+                    except producer.GribReadUnproven as error:
+                        assert str(error) == "DMI_GRIB_NEAREST_RELEASE_UNPROVED" and error.__cause__ is lookup_error
+                    else:
+                        raise AssertionError("unsettled nearest object published an OLD context")
+                assert readers[-1].retained and readers[-1].unsettled_legacy_nearest == 12
+                assert producer._UNSETTLED_GRIB_READS and not output_path.exists()
+                producer._UNSETTLED_GRIB_READS.clear()
+                # Physical-close uncertainty must stop before any sidecar.
+                with patch.object(producer, "_grib_read_scope", lambda *args: Reader(close_failure=True)):
+                    try:
+                        producer.reconstruct_legacy_current_originals(bound, Controller(), **options)
+                    except producer.GribReadUnproven as error:
+                        assert str(error) == "CONTROLLED_CLOSE_UNPROVED"
+                    else:
+                        raise AssertionError("unproved RAW close published an OLD context")
+                assert not output_path.exists() and producer._UNSETTLED_GRIB_READS
+                producer._UNSETTLED_GRIB_READS.clear()
+                assert sum(event[0] == "duration" for event in events) == 7
+                # Read the literal-null own-step request through the actual
+                # fixed-file/SHA/parser caller, then decode without removing or
+                # inventing a marker. Both request and witness stay exact.
+                request_path.write_bytes(encode(null_envelope))
+                null_request_bytes = request_path.read_bytes()
+                with patch.dict(os.environ, {"DMI_BULK_LEGACY_CURRENT_ORIGINAL_REQUEST_SHA256": digest(null_request_bytes)}):
+                    null_bound = producer.read_legacy_current_original_requests(part_bytes, [own_zone], when)
+                null_requests_before = copy.deepcopy(null_bound["requests"])
+                null_originals = producer.reconstruct_legacy_current_originals(null_bound, Controller(), **options)
+                assert len(null_originals) == 1 and null_originals[0]["row"]["sources"]["current"] == null_requests_before[0]["reconstructionRequest"]["expectedSource"]
+                assert null_originals[0]["row"]["sources"]["current"]["nativeGridSampling"] is None
+                assert all(null_originals[0]["row"][field] == value for field, value in fields.items())
+                assert null_bound["requests"] == null_requests_before and request_path.read_bytes() == null_request_bytes
+                assert json.loads(null_request_bytes)["projectionWitnesses"] == null_envelope["projectionWitnesses"]
+                assert readers[-1].physically_closed and not producer._UNSETTLED_GRIB_READS
+                output_path.unlink()
+                request_path.write_bytes(encode(envelope))
+            assert {role: (local / SOURCE_PATHS[role]).read_bytes() for role in inputs_before} == inputs_before
+            assert raw_path.read_bytes() == payload and request_path.read_bytes() == encode(envelope)
+
+
+check_legacy_current_recovery_normal_callers()
+if sys.argv[1:] == ["--legacy-current-recovery-callers-only"]:
+    print("Legacy normal callers passed with controlled ownership: fixed-file parser/sourcePaths/capture plan/full decoder/close refusal/NEW plan; native lease and JS projection UNRUN")
+    raise SystemExit(0)
+
 target = {
     "partId": "TEST",
     "parentZoneId": "ZONE-TEST",
@@ -4237,6 +4831,90 @@ if scenario in {"current-only", "cached-current-history"}:
                     "sea-mean-deviation": old_fields["sea-mean-deviation"][0],
                     "sources": {"current": native, "waterLevel": water}}}}
         original_document = copy.deepcopy(document)
+        # Recreate OLD native values from the SAME owned RAW bytes. This runs
+        # the new helper, not an archived producer or a NEW receipt stripped off.
+        from lib.dmi_legacy_current_originals import decode_legacy_current_originals
+        # This actual OLD decoder has its own fixed20/4/9 algorithm identity;
+        # never label it with a later normal NEW parser/grid signature.
+        legacy_signature = (f"parser:20|params:4|grid:9|eccodes-api:{p.ECCODES_API_VERSION}"
+            f"|eccodes-binding:{p.ECCODES_BINDING_VERSION}|zones:{registry}")
+        legacy_requests = [{"zone": copy.deepcopy(z),
+            "expectedSource": copy.deepcopy(document["zones"][z["id"]]["hourly"][when]["sources"]["current"]),
+            "capture": p.canonical_current_source_asset(document["zones"][z["id"]]["hourly"][when]["sources"]["current"]),
+            "processingSignature": legacy_signature} for z in history_zones]
+        with p._grib_read_scope(raw_path, "dkss_lf", when, when) as legacy_reader:
+            p._exact_original_headers(legacy_reader, legacy_requests[0]["capture"])
+            def release_legacy_message(gid, first):
+                try:
+                    ec.codes_release(gid)
+                except BaseException as release_error:
+                    legacy_reader.native_handles.append(gid)
+                    legacy_reader._retain(release_error)
+                    legacy_reader._refuse("DMI_GRIB_NATIVE_RELEASE_UNPROVED",
+                        first if first is not None else release_error)
+            legacy_ops = {"new_message": ec.codes_grib_new_from_file,
+                "release_message": release_legacy_message, "get": ec.codes_get,
+                "get_elements": ec.codes_get_elements, "find_nearest": ec.codes_grib_find_nearest,
+                "nearest_new": p.codes_grib_nearest_new, "nearest_find": p.codes_grib_nearest_find,
+                "nearest_delete": p.codes_grib_nearest_delete, "same_grid": p.CODES_GRIB_NEAREST_SAME_GRID,
+                "out_of_area_error": ec.OutOfAreaError, "classify_parameter": p.classify_parameter,
+                "candidate_target": p.grid_candidate_target, "stop_requested": p.should_stop_work,
+                "processing_signature": legacy_signature}
+            reconstructed_old = decode_legacy_current_originals(legacy_reader, legacy_requests, operations=legacy_ops)
+            assert legacy_reader.handle.tell() == len(payload)
+        assert legacy_reader.physically_closed and not p._UNSETTLED_GRIB_READS
+        for item in reconstructed_old:
+            expected_row = document["zones"][item["zoneId"]]["hourly"][when]
+            assert item["row"] == {"time": when, "current-u": expected_row["current-u"],
+                "current-v": expected_row["current-v"], "sources": {"current": expected_row["sources"]["current"]}}
+            assert "nativeGridSampling" not in item["row"]["sources"]["current"]
+        assert document == original_document
+        assert raw_path.read_bytes() == payload and p.raw_cache_manifest_path().read_bytes() == immutable_manifest
+        # Exercise the actual normal producer caller too, not merely its pure
+        # helper. Only the destination ROOT and a transparent scope observer
+        # change; real owned leases/ecCodes/EOF/close remain in charge.
+        legacy_header = {key: document[key] for key in ("currentVectorSemanticsVersion",
+            "currentVectorSelection", "currentMaxDistanceKm", "timeStrideHours", "generatedAt")}
+        bound_legacy = {"requestsSha256": "sha256:" + hashlib.sha256(b"own native caller requests").hexdigest(),
+            "contexts": {"deployedBulk": {"header": legacy_header, "zones": {
+                z["id"].removeprefix("PART::"): p.sampling_identity(z) for z in history_zones}}},
+            "requests": [{"requestId": "sha256:" + hashlib.sha256(z["id"].encode()).hexdigest(),
+                "entityId": z["id"], "partId": z["id"].removeprefix("PART::"),
+                "documentRole": "deployedBulk", "reconstructionRequest": request}
+                for z, request in zip(history_zones, legacy_requests)]}
+        native_legacy_readers = []
+        saved_root, saved_scope = p.ROOT, p._grib_read_scope
+        @contextlib.contextmanager
+        def observed_legacy_scope(*args, **kwargs):
+            with saved_scope(*args, **kwargs) as owned:
+                native_legacy_readers.append(owned)
+                yield owned
+        try:
+            p.ROOT, p._grib_read_scope = directory, observed_legacy_scope
+            (directory / ".cache").mkdir(exist_ok=True)
+            legacy_controller = p.ProgressCheckpointController(copy.deepcopy(document), set(), {"bytes": 0})
+            with contextlib.redirect_stdout(io.StringIO()):
+                native_legacy_originals = p.reconstruct_legacy_current_originals(bound_legacy,
+                    legacy_controller, registry_signature=registry, reserve_seconds=0,
+                    supervisor_skipped_assets=set())
+            assert len(native_legacy_originals) == 2 and len(native_legacy_readers) == 1
+            assert native_legacy_readers[0].physically_closed and not p._UNSETTLED_GRIB_READS
+            try:
+                os.fstat(native_legacy_readers[0].fd)
+            except OSError as error:
+                assert error.errno == errno.EBADF
+            else:
+                raise AssertionError("normal OLD caller returned before physical RAW close")
+            native_sidecar = directory / p.LEGACY_CURRENT_OUTPUT_PATH
+            assert json.loads(native_sidecar.read_bytes())["requestsSha256"] == bound_legacy["requestsSha256"]
+            native_sidecar.unlink()
+        finally:
+            p.ROOT, p._grib_read_scope = saved_root, saved_scope
+        native_legacy_plan = p.plan_cached_current_history(demands, native_legacy_originals, p.load_raw_cache_manifest())
+        assert len(native_legacy_plan["jobs"]) == 1 and not native_legacy_plan["unavailable"]
+        assert len(native_legacy_plan["originalsByKey"]) == 2
+        assert document == original_document and raw_path.read_bytes() == payload
+        assert p.raw_cache_manifest_path().read_bytes() == immutable_manifest
         originals = p.capture_current_history_originals(document, demands, registry)
         immutable_originals = copy.deepcopy(originals)
         plan = p.plan_cached_current_history(demands, originals, p.load_raw_cache_manifest())
@@ -4491,6 +5169,8 @@ if scenario in {"current-only", "cached-current-history"}:
         assert document == original_document and originals == immutable_originals
         assert path.read_bytes() == original and sentinel.read_bytes() == sentinel_bytes
         print(json.dumps({"case": scenario, "cachedAssetsDecoded": 1, "qualifiedParts": 2,
+            "legacyOldNativeReconstruction": True,
+            "legacyNormalOwnedCaller": True,
             "sameOwnedReadEOF": True, "originalsAndScalarsPreserved": True,
             "demandedRetention": True, "captureAndMissingRefused": True,
             "sameBytesDifferentAcquisition": True, "nonAcquisitionDifferencesRefused": True,
@@ -4872,6 +5552,8 @@ print(json.dumps({"case": scenario, "actualMessages": 1 if scenario == "replace"
             _lease_receipt = json.loads(_lease_stdout.decode("utf-8"))
             if _lease_case == "cached-current-history":
                 assert _lease_receipt == {"case": _lease_case,
+                    "legacyOldNativeReconstruction": True,
+                    "legacyNormalOwnedCaller": True,
                     "cachedAssetsDecoded": 1, "qualifiedParts": 2,
                     "sameOwnedReadEOF": True, "originalsAndScalarsPreserved": True,
                     "demandedRetention": True, "captureAndMissingRefused": True,

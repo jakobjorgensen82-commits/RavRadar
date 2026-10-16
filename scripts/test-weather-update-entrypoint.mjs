@@ -10,10 +10,55 @@ const producerPath = new URL('./update-weather.mjs', import.meta.url);
 const sourceText = async file => (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 
+// Test-only inverse of the NEW explicit OLD-original donor integration. Remove
+// only these exact reviewed hunks before the older relocation inverse below;
+// none of the genuine historical whole-source or module hashes is updated.
+const legacyCurrentOriginalDonorBlock = [
+  "if (process.env.RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION) {",
+  "  const expectedLegacy = JSON.parse(process.env.RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION);",
+  "  assertRavScoreModelBinding(expectedLegacy.modelBinding, 'Legacy current reconstruction binding');",
+  "  const unchangedFileSha256 = async file => `sha256:${crypto.createHash('sha256')",
+  "    .update(await fs.readFile(file)).digest('hex')}`;",
+  "  // The separate pre-producer handshake, never a hash self-derived from the",
+  "  // new donor. Candidate/active legitimately changed during DMI, whereas the",
+  "  // original registry, deployed donor and persisted forecast must not have.",
+  "  if (expectedLegacy.productionReferenceAt !== generatedAt",
+  "    || expectedLegacy.historyDemandSha256 !== await unchangedFileSha256('.cache/ravscore-current-history-demand.json')",
+  "    || expectedLegacy.registrySha256 !== await unchangedFileSha256('data/live/coastal-parts-v2.json')",
+  "    || expectedLegacy.sourceHashes?.zones !== await unchangedFileSha256('data/zones.geojson')",
+  "    || expectedLegacy.sourceHashes?.deployedBulk !== await unchangedFileSha256(DEPLOYED_DMI_BULK_CACHE_PATH)",
+  "    || expectedLegacy.sourceHashes?.forecast !== await unchangedFileSha256('data/live/dmi-forecast-cache.json')) {",
+  "    throw new Error('DMI_LEGACY_CURRENT_EXPECTED_INPUT_MISMATCH');",
+  "  }",
+  "  const reconstructed = await readDmiLegacyCurrentOriginals({ repositoryRoot: process.cwd(),",
+  "    parts: activeParts, expected: expectedLegacy, required: true });",
+  "  if (reconstructed && historicalDmiBulkCache) throw new Error('DMI_LEGACY_CURRENT_DONOR_COLLISION');",
+  "  if (reconstructed) historicalDmiBulkCache = reconstructed;",
+  "}",
+  '',
+].join('\n');
+function inverseLegacyCurrentOriginalDonorIntegration(source) {
+  const hunks = [
+    ["  RAVSCORE_PUBLIC_FORECAST_HOURS,\n  assertRavScoreModelBinding,\n  ravScoreModelBinding,\n",
+      "  RAVSCORE_PUBLIC_FORECAST_HOURS,\n  ravScoreModelBinding,\n"],
+    ["import { readDmiLegacyCurrentOriginals } from './lib/dmi-legacy-current-originals.mjs';\n", ''],
+    ['let historicalDmiBulkCache = process.env.DMI_PART_CONTINUITY_DONOR_PATH\n',
+      'const historicalDmiBulkCache = process.env.DMI_PART_CONTINUITY_DONOR_PATH\n'],
+    [legacyCurrentOriginalDonorBlock, ''],
+  ];
+  for (const [after, before] of hunks) {
+    assert.equal(source.split(after).length, 2,
+      'each exact new OLD-original donor integration hunk must occur once');
+    source = source.replace(after, () => before);
+  }
+  return source;
+}
+
 // Test-only inverse of the reviewed pure-function relocation. Reconstitute the
 // complete genuine updater before every existing immutable historical oracle;
 // this never changes runtime admission, source priority or capture provenance.
 async function inverseSharedRecoveryRecordExtraction(source, sharedSource = null) {
+  source = inverseLegacyCurrentOriginalDonorIntegration(source);
   sharedSource ??= await sourceText(new URL('./lib/private-dmi-recovery-record.mjs', import.meta.url));
   assert.equal(digest(sharedSource),
     'a2855aeb1826f198b874dc7060a9293f177af3a9ecb8eeb956520af16fc3958e',
@@ -241,6 +286,58 @@ test('main updater is byte-identical outside the checkpoint import and normal qu
   assert.equal(source.split(refusal).length, 2);
   assert.equal(digest(source.replace(currentImport, baselineImport).replace(refusal, '')),
     'd6f2a49d1099eb2f3d024f54375af8e989d6636e7a0a0b47f0d9b75965fd0bff');
+});
+
+test('new OLD-original donor wiring is explicit, source-bound, no-op when absent, and collision-safe', async () => {
+  const source = await sourceText(producerPath);
+  assert.equal(source.split(legacyCurrentOriginalDonorBlock).length, 2);
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const execute = new AsyncFunction('process', 'crypto', 'fs', 'generatedAt',
+    'DEPLOYED_DMI_BULK_CACHE_PATH', 'activeParts', 'historicalDmiBulkCache',
+    'assertRavScoreModelBinding', 'readDmiLegacyCurrentOriginals',
+    legacyCurrentOriginalDonorBlock + 'return historicalDmiBulkCache;');
+  const files = new Map([
+    ['.cache/ravscore-current-history-demand.json', Buffer.from('demand')],
+    ['data/live/coastal-parts-v2.json', Buffer.from('registry')],
+    ['data/zones.geojson', Buffer.from('zones')],
+    ['.cache/deployed-dmi-bulk-cache.json', Buffer.from('original-bulk')],
+    ['data/live/dmi-forecast-cache.json', Buffer.from('original-forecast')],
+  ]);
+  const generatedAt = '2026-10-16T10:00:00.000Z', modelBinding = { exact: 'fixture' };
+  const expected = { productionReferenceAt: generatedAt, modelBinding,
+    historyDemandSha256: `sha256:${digest(files.get('.cache/ravscore-current-history-demand.json'))}`,
+    registrySha256: `sha256:${digest(files.get('data/live/coastal-parts-v2.json'))}`,
+    sourceHashes: Object.fromEntries([['zones', 'data/zones.geojson'],
+      ['deployedBulk', '.cache/deployed-dmi-bulk-cache.json'],
+      ['forecast', 'data/live/dmi-forecast-cache.json']]
+      .map(([role, file]) => [role, `sha256:${digest(files.get(file))}`])),
+    requestsSha256: `sha256:${'a'.repeat(64)}` };
+  const part = { partId: 'fixture' }, donor = { zones: { genuine: 'fixture-only' } };
+  const reads = [], calls = [];
+  let reconstructed = donor;
+  const run = (value, oldDonor = null) => execute({ env: value ? {
+    RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION: JSON.stringify(value) } : {}, cwd: () => '/fixture' },
+  crypto, { readFile: async file => { reads.push(file); assert.ok(files.has(file)); return files.get(file); } },
+  generatedAt, '.cache/deployed-dmi-bulk-cache.json', [part], oldDonor,
+  binding => assert.deepEqual(binding, modelBinding), async args => { calls.push(args); return reconstructed; });
+  assert.equal(await run(null), null);
+  assert.deepEqual(reads, []); assert.deepEqual(calls, []);
+  assert.equal(await run(expected), donor);
+  assert.deepEqual(reads, [...files.keys()]);
+  assert.deepEqual(calls, [{ repositoryRoot: '/fixture', parts: [part], expected, required: true }]);
+  await assert.rejects(run({ ...expected, productionReferenceAt: '2026-10-16T11:00:00.000Z' }),
+    /DMI_LEGACY_CURRENT_EXPECTED_INPUT_MISMATCH/);
+  assert.equal(calls.length, 1, 'invalid immutable input must fail before reading a new donor');
+  const originalForecast = files.get('data/live/dmi-forecast-cache.json');
+  files.set('data/live/dmi-forecast-cache.json', Buffer.from('changed-original'));
+  await assert.rejects(run(expected), /DMI_LEGACY_CURRENT_EXPECTED_INPUT_MISMATCH/);
+  files.set('data/live/dmi-forecast-cache.json', originalForecast);
+  await assert.rejects(run(expected, { existing: true }), /DMI_LEGACY_CURRENT_DONOR_COLLISION/);
+  reconstructed = null;
+  const existing = { existing: true };
+  assert.equal(await run(expected, existing), existing, 'empty requests preserve an existing historical donor');
+  assert.throws(() => inverseLegacyCurrentOriginalDonorIntegration(
+    source.replace('required: true });', 'required: false });')), /exact new OLD-original/);
 });
 
 test('shared normal DMI recovery module is import-safe, outside I71, and byte-exactly relocatable', async t => {

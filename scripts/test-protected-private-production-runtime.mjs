@@ -2126,19 +2126,41 @@ try {
     const producerPath = 'scripts/update-dmi-bulk.py';
     const beforeCommit = 'ebf322b8bb4d188fc59f8da8380543b879be4ca8';
     const afterCommit = 'ca8273d58fb37a567ae22c955f0a530c78449bd0';
+    const fixedStageCommit = '564864050e6d4d148d593e3a5cff5c9fb1f0bf66';
     const sourceAt = commit => execFileSync('git', ['show', `${commit}:${producerPath}`],
       { cwd: sourceRepository, encoding: 'utf8' });
     const oldProducer = sourceAt(beforeCommit), reviewedProducer = sourceAt(afterCommit);
     const previousProducer = sourceAt('78697847aa66ac62648f4b7ada1c482e5dea7e7d');
+    const fixedStageProducer = sourceAt(fixedStageCommit);
     const currentProducer = (await fs.readFile(path.join(sourceRepository, producerPath), 'utf8'))
       .replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
     const digest = value => crypto.createHash('sha256').update(value).digest('hex');
     assert.equal(digest(oldProducer), '8ff4a5b6f50d3f2d4e177fcf8c55048051266ded1a196151d6adff9427829ce2');
     assert.equal(digest(reviewedProducer), '242844d0da14fc64ce8ebbf48bdab1e49450822cd193cd231667013e216b160e');
     assert.equal(digest(previousProducer), 'ec7fde66daeab835b6a852d47ed98b14fd289dc462a6b0d0d46318ffc2b4b6b8');
-    assert.equal(digest(currentProducer), '4d32d7314d8c2bc2c6592de9baa6a06732ac43a79892afc455d4b39e1eeec3ae',
-      'the fixture must exercise the exact fixed-stage original-restore successor');
-    let scopeProducer = currentProducer;
+    assert.equal(digest(fixedStageProducer), '4d32d7314d8c2bc2c6592de9baa6a06732ac43a79892afc455d4b39e1eeec3ae',
+      'the historical fixed-stage original-restore successor must remain byte-exact');
+    assert.equal(digest(currentProducer), '47652a732030bb89eb8b333db3a4b348f8801b3a78c46931a0439872a382b864',
+      'the fixture also exercises the actual causal OLD-to-NEW original-recovery producer');
+    const causalDelta = execFileSync('git', ['diff', '--no-ext-diff', '--no-textconv', '--unified=3',
+      fixedStageCommit, '--', producerPath], { cwd: sourceRepository, encoding: 'utf8' });
+    assert.equal(causalDelta.includes('\\ No newline at end of file'), false);
+    const causalPieces = causalDelta.split(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@[^\n]*\n/m);
+    assert.ok(causalPieces.length > 1 && (causalPieces.length - 1) % 3 === 0);
+    const causalRestored = currentProducer.split('\n');
+    for (let index = causalPieces.length - 3; index >= 1; index -= 3) {
+      const offset = Number(causalPieces[index]) - 1;
+      const count = causalPieces[index + 1] === undefined ? 1 : Number(causalPieces[index + 1]);
+      const lines = causalPieces[index + 2].split('\n');
+      const afterLines = lines.filter(line => /^[ +]/.test(line)).map(line => line.slice(1));
+      const beforeLines = lines.filter(line => /^[ -]/.test(line)).map(line => line.slice(1));
+      assert.equal(afterLines.length, count);
+      assert.deepEqual(causalRestored.slice(offset, offset + count), afterLines);
+      causalRestored.splice(offset, count, ...beforeLines);
+    }
+    assert.equal(causalRestored.join('\n'), fixedStageProducer,
+      'whole causal OLD-to-NEW inverse must recover every byte of the unchanged fixed-stage producer');
+    let scopeProducer = fixedStageProducer;
     const undoObserved = (after, before, count = 1) => {
       assert.equal(scopeProducer.split(after).length, count + 1);
       scopeProducer = scopeProducer.split(after).join(before);
@@ -2224,14 +2246,65 @@ try {
     const admissionStart = admissionSource.indexOf('const gridSha256 =');
     const admissionEnd = admissionSource.indexOf('function currentGridSamplingManifestMatches(', admissionStart);
     assert.ok(admissionStart >= 0 && admissionEnd > admissionStart);
-    const admits = Function('crypto', admissionSource.slice(admissionStart, admissionEnd)
-      + '; return currentGridSamplingReviewedProducer;')(crypto);
+    const actualFs = (await import('node:fs')).default;
+    const createAdmitter = filesystem => Function('crypto', 'fs', 'path', 'PRIVATE_RUNTIME_REPOSITORY_ROOT',
+      admissionSource.slice(admissionStart, admissionEnd)
+      + '; return currentGridSamplingReviewedProducer;')(crypto, filesystem, path, sourceRepository);
+    const admits = createAdmitter(actualFs);
     assert.equal(admits(oldProducer), true);
     assert.equal(admits(reviewedProducer), true);
     assert.equal(admits(previousProducer), true);
+    assert.equal(admits(fixedStageProducer), true);
     assert.equal(admits(currentProducer), true);
+    const reviewedHelpers = [
+      'scripts/lib/dmi_legacy_current_originals.py',
+      'scripts/lib/dmi_legacy_current_recovery.py',
+      'scripts/lib/dmi-legacy-current-originals.mjs',
+      'scripts/lib/saved-dmi-original-capture.mjs',
+      'scripts/lib/saved-dmi-original-dependencies.mjs',
+      'scripts/plan-dmi-legacy-current-originals.mjs',
+      'scripts/plan-ravscore-current-history.mjs',
+      'scripts/update-weather.mjs',
+      'scripts/prepare-saved-dmi-original-restore.mjs',
+    ];
+    const actualHelperPaths = Function('crypto', admissionSource.slice(admissionStart, admissionEnd)
+      + '; return Object.keys(CURRENT_GRID_SAMPLING_NATIVE_ORIGINAL_HELPERS);')(crypto);
+    assert.deepEqual(actualHelperPaths, reviewedHelpers,
+      'the causal producer requires the whole exact reviewed decoder/planner/caller chain');
+    const withoutHelpers = createAdmitter({ readFileSync() {
+      assert.fail('historical producer admission must not read newer reconstruction helpers');
+    } });
+    for (const historical of [oldProducer, reviewedProducer, previousProducer, fixedStageProducer]) {
+      assert.equal(withoutHelpers(historical), true);
+    }
+    for (const relative of reviewedHelpers) {
+      const helperPath = path.join(sourceRepository, relative);
+      let changedReads = 0;
+      const changedHelper = createAdmitter({ readFileSync(file, encoding) {
+        const original = actualFs.readFileSync(file, encoding);
+        if (file !== helperPath) return original;
+        changedReads++;
+        return original + '\n# changed reviewed dependency\n';
+      } });
+      assert.equal(changedHelper(currentProducer), false, `${relative}: changed helper must refuse admission`);
+      assert.equal(changedReads, 1, `${relative}: the actual gate must read the changed helper`);
+      let missingReads = 0;
+      const missingHelper = createAdmitter({ readFileSync(file, encoding) {
+        if (file !== helperPath) return actualFs.readFileSync(file, encoding);
+        missingReads++;
+        throw Object.assign(new Error('synthetic missing reviewed dependency'), { code: 'ENOENT' });
+      } });
+      assert.equal(missingHelper(currentProducer), false, `${relative}: missing helper must refuse admission`);
+      assert.equal(missingReads, 1, `${relative}: the actual gate must read the missing helper`);
+    }
+    assert.equal(createAdmitter({ readFileSync() {
+      throw Object.assign(new Error('synthetic missing directory'), { code: 'ENOTDIR' });
+    } })(currentProducer), false);
+    const deniedHelperRead = Object.assign(new Error('synthetic denied helper read'), { code: 'EACCES' });
+    assert.throws(() => createAdmitter({ readFileSync() { throw deniedHelperRead; } })(currentProducer),
+      error => error === deniedHelperRead, 'unexpected helper I/O failures must preserve their exact cause');
     for (const changed of [oldProducer + '# changed\n', reviewedProducer + '# changed\n',
-      previousProducer + '# changed\n', currentProducer + '# changed\n', '']) {
+      previousProducer + '# changed\n', fixedStageProducer + '# changed\n', currentProducer + '# changed\n', '']) {
       assert.equal(admits(changed), false, 'unknown or changed producer bytes must not gain SOURCE admission');
     }
     const base = '9c74feaa4bdb5b93964a8a1e267b18c880223c00';

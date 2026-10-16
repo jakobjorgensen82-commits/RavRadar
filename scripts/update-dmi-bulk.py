@@ -82,6 +82,13 @@ from lib.regional_source_proofs import (
 from lib.dmi_current_processing_compatibility import (
     retained_current_processing_signature_compatible,
 )
+from lib.dmi_legacy_current_originals import decode_legacy_current_originals
+from lib.dmi_legacy_current_recovery import (
+    REQUEST_PATH as LEGACY_CURRENT_REQUEST_PATH,
+    OUTPUT_PATH as LEGACY_CURRENT_OUTPUT_PATH,
+    SOURCE_PATHS as LEGACY_CURRENT_SOURCE_PATHS,
+    validate_requests as validate_legacy_current_requests,
+)
 from lib.dmi_bulk_storage import (
     read_dmi_bulk_document,
     write_dmi_bulk_document,
@@ -10697,7 +10704,8 @@ def capture_current_history_originals(document, demands, registry_signature):
             if not (
                 canonical_time(valid) == valid and isinstance(row, dict)
                 and canonical_time(row.get("time")) == valid
-                and epoch(demand["startAt"]) <= epoch(valid) <= epoch(demand["endAt"])
+                and epoch(demand["startAt"]) - 3 * 3600 <= epoch(valid)
+                    <= epoch(demand["endAt"]) + 3 * 3600
                 and all(isinstance(row.get(key), (int, float))
                     and not isinstance(row.get(key), bool) and math.isfinite(row[key])
                     for key in COMPONENT_FIELD_SET["current"])
@@ -10892,6 +10900,236 @@ def _current_history_without_current(zone):
         if set(hour) <= {"time"}:
             value["hourly"].pop(valid, None)
     return value
+
+
+def _legacy_current_fixed_bytes(relative, *, optional=False, maximum=535_822_312):
+    path = ROOT / relative
+    try:
+        metadata = path.lstat()
+    except FileNotFoundError:
+        if optional:
+            return None
+        raise ValueError("DMI_LEGACY_CURRENT_INPUT_UNAVAILABLE")
+    if not stat.S_ISREG(metadata.st_mode) or not 0 < metadata.st_size <= maximum:
+        raise ValueError("DMI_LEGACY_CURRENT_INPUT_INVALID")
+    # No arbitrary path, symlink, mutable read or borrowed JSON descriptor.
+    for parent in path.parents:
+        if parent == ROOT:
+            break
+        if parent.is_symlink():
+            raise ValueError("DMI_LEGACY_CURRENT_INPUT_INVALID")
+    identity = _OwnedGribRead._identity(metadata)
+    with path.open("rb") as handle:
+        descriptor = os.fstat(handle.fileno())
+        # Windows lstat ctime is creation time whereas descriptor ctime may be
+        # change time. Compare each clock within its own domain; never drop
+        # either before/after check or weaken the Linux RAW read-lease guard.
+        cross_identity = lambda value: (value.st_dev, value.st_ino, value.st_mode,
+            value.st_size, value.st_mtime_ns)
+        if (cross_identity(descriptor) != cross_identity(metadata)
+                or os.name != "nt" and _OwnedGribRead._identity(descriptor) != identity):
+            raise ValueError("DMI_LEGACY_CURRENT_INPUT_CHANGED")
+        fd = handle.fileno()
+        data = handle.read(maximum + 1)
+        if (len(data) != metadata.st_size
+                or _OwnedGribRead._identity(os.fstat(fd)) != _OwnedGribRead._identity(descriptor)
+                or _OwnedGribRead._identity(path.lstat()) != identity):
+            raise ValueError("DMI_LEGACY_CURRENT_INPUT_CHANGED")
+    try:
+        os.fstat(fd)
+    except OSError as error:
+        if error.errno != 9:
+            raise ValueError("DMI_LEGACY_CURRENT_INPUT_CLOSE_UNPROVED") from error
+    else:
+        raise ValueError("DMI_LEGACY_CURRENT_INPUT_CLOSE_UNPROVED")
+    return data
+
+
+def read_legacy_current_original_requests(part_bytes, zones, reference):
+    configured = os.getenv("DMI_BULK_LEGACY_CURRENT_ORIGINAL_REQUEST_PATH", "").strip()
+    if not configured:
+        return None
+    path = pathlib.Path(configured)
+    if not path.is_absolute():
+        path = ROOT / path
+    if path.absolute() != (ROOT / LEGACY_CURRENT_REQUEST_PATH).absolute():
+        raise ValueError("DMI_LEGACY_CURRENT_REQUEST_PATH_INVALID")
+    raw = _legacy_current_fixed_bytes(LEGACY_CURRENT_REQUEST_PATH, maximum=192 * 1024 * 1024)
+    expected_sha256 = os.getenv("DMI_BULK_LEGACY_CURRENT_ORIGINAL_REQUEST_SHA256", "")
+    if not re.fullmatch(r"sha256:[a-f0-9]{64}", expected_sha256) or expected_sha256 != "sha256:" + hashlib.sha256(raw).hexdigest():
+        raise ValueError("DMI_LEGACY_CURRENT_REQUEST_CHANGED")
+    demand_raw = _legacy_current_fixed_bytes(".cache/ravscore-current-history-demand.json", maximum=1024 * 1024)
+    document = json.loads(raw, object_pairs_hook=_exact_unique_fields)
+    demand = json.loads(demand_raw, object_pairs_hook=_exact_unique_fields)
+    documents, hashes = {}, {}
+    for role, relative in LEGACY_CURRENT_SOURCE_PATHS.items():
+        source = _legacy_current_fixed_bytes(relative, optional=role in {"candidate", "active"})
+        hashes[role] = "sha256:" + hashlib.sha256(source).hexdigest() if source is not None else None
+        if role in {"deployedBulk", "candidate", "active"} and source is not None:
+            documents[role] = read_dmi_bulk_document(ROOT / relative)
+            if "sha256:" + file_content_sha256(ROOT / relative) != hashes[role]:
+                raise ValueError("DMI_LEGACY_CURRENT_INPUT_CHANGED")
+    bound = validate_legacy_current_requests(document, demand_document=demand,
+        demand_sha256="sha256:" + hashlib.sha256(demand_raw).hexdigest(),
+        registry_sha256="sha256:" + hashlib.sha256(part_bytes).hexdigest(),
+        source_hashes=hashes, documents=documents, zones=zones, reference=reference)
+    bound["requestsSha256"] = "sha256:" + hashlib.sha256(raw).hexdigest()
+    return bound
+
+
+def plan_legacy_current_original_jobs(bound, manifest):
+    """Exact file identities only; no placeholder values or native admission."""
+    by_capture, jobs = {}, {}
+    for name, asset in (manifest.get("assets") or {}).items():
+        if not isinstance(name, str) or not isinstance(asset, dict):
+            continue
+        capture, href = canonical_current_source_asset(asset), asset.get("canonicalHref")
+        if capture is None or not isinstance(href, str) or not href:
+            continue
+        path = cached_asset_path(href)
+        if name != path.name or asset_identity_sha256(href) != capture["assetIdentitySha256"]:
+            continue
+        key = _current_history_json({key: value for key, value in capture.items() if key != "acquiredAt"})
+        by_capture.setdefault(key, []).append((path, asset, capture))
+    for request in bound["requests"]:
+        original = request["reconstructionRequest"]["capture"]
+        key = _current_history_json({key: value for key, value in original.items() if key != "acquiredAt"})
+        matches = by_capture.get(key, [])
+        if len(matches) != 1:
+            raise ValueError("DMI_LEGACY_CURRENT_RAW_CAPTURE_UNAVAILABLE")
+        path, asset, capture = matches[0]
+        job = jobs.setdefault((str(path), _current_history_json(original)),
+            {"path": path, "asset": asset, "capture": capture, "requests": []})
+        job["requests"].append(request)
+        if len(jobs) > 4096 or len(job["requests"]) > 2 * 673 * 127:
+            raise ValueError("DMI_LEGACY_CURRENT_REQUEST_BOUND")
+    return [jobs[key] for key in sorted(jobs)]
+
+
+def reconstruct_legacy_current_originals(bound, controller, *, registry_signature,
+                                       reserve_seconds, supervisor_skipped_assets):
+    """Causal OLD data, separate from NEW; publish only after every lease closes."""
+    if bound is None or not bound["requests"]:
+        return []
+    output_path = ROOT / LEGACY_CURRENT_OUTPUT_PATH
+    if output_path.exists() or output_path.is_symlink():
+        raise ValueError("DMI_LEGACY_CURRENT_OUTPUT_EXISTS")
+    jobs = plan_legacy_current_original_jobs(bound, load_raw_cache_manifest())
+    legacy_runtime_signature = (
+        f"parser:20|params:4|grid:9|eccodes-api:{ECCODES_API_VERSION}"
+        f"|eccodes-binding:{ECCODES_BINDING_VERSION}|zones:{registry_signature}"
+    )
+    used_roles = {request["documentRole"] for request in bound["requests"]}
+    roles = [role for role in ("deployedBulk", "candidate", "active") if role in used_roles]
+    contexts = bound["contexts"]
+    header = copy.deepcopy(contexts[roles[0]]["header"])
+    numeric_header = lambda value: {key: value[key] for key in (
+        "currentVectorSemanticsVersion", "currentVectorSelection", "currentMaxDistanceKm", "timeStrideHours") if key in value}
+    if any(numeric_header(contexts[role]["header"]) != numeric_header(header) for role in roles):
+        raise ValueError("DMI_LEGACY_CURRENT_CONTEXT_CONFLICT")
+    document, originals = {**header, "zones": {}}, []
+    for job in jobs:
+        capture, asset = job["capture"], job["asset"]
+        identity = supervised_asset_identity(capture["collection"], capture["modelRun"], {
+            "href": asset["canonicalHref"], "id": capture["itemId"], "valid": capture["validTime"],
+            "size": capture["assetSizeBytes"], "itemCreatedAt": capture["itemCreatedAt"],
+            "itemUpdatedAt": capture["itemUpdatedAt"],
+        })
+        if supervised_asset_identity_key(identity) in supervisor_skipped_assets:
+            raise ValueError("DMI_LEGACY_CURRENT_PREVIOUSLY_STOPPED")
+        if not controller.can_start_asset(reserve_seconds=reserve_seconds, cost_family=capture["collection"]):
+            raise ValueError("DMI_LEGACY_CURRENT_DEFERRED")
+        started, rows = time.monotonic(), None
+        own_requests = {}
+        for request in job["requests"]:
+            reconstruction = request["reconstructionRequest"]
+            previous_request = own_requests.get(request["entityId"])
+            if previous_request is not None and any(previous_request[key] != reconstruction[key]
+                    for key in ("zone", "expectedSource", "capture")):
+                raise ValueError("DMI_LEGACY_CURRENT_NATIVE_CONFLICT")
+            if not retained_current_processing_signature_compatible(
+                    reconstruction["processingSignature"], legacy_runtime_signature):
+                raise ValueError("DMI_LEGACY_CURRENT_PROCESSING_CONTEXT_UNKNOWN")
+            own_requests.setdefault(request["entityId"], reconstruction)
+        if len(own_requests) > 673:
+            raise ValueError("DMI_LEGACY_CURRENT_REQUEST_BOUND")
+        try:
+            with supervised_asset_operation(identity):
+                with _grib_read_scope(job["path"], capture["collection"], capture["modelRun"], capture["validTime"]) as reader:
+                    size, content_sha256 = reader.measure()
+                    observed = canonical_current_source_asset({"collection": capture["collection"],
+                        "modelRun": capture["modelRun"], "validTime": capture["validTime"], **(reader.capture or {})})
+                    if (size != capture["contentLengthBytes"] or content_sha256 != capture["contentSha256"]
+                            or observed != capture):
+                        raise ValueError("DMI_LEGACY_CURRENT_RAW_CAPTURE_MISMATCH")
+                    _exact_original_headers(reader, capture)
+                    def release_message(gid, first_error):
+                        try:
+                            codes_release(gid)
+                        except BaseException as error:
+                            reader.native_handles.append(gid)
+                            reader._retain(error)
+                            reader._refuse("DMI_GRIB_NATIVE_RELEASE_UNPROVED", first_error or error)
+                    def release_nearest(nearest):
+                        try:
+                            codes_grib_nearest_delete(nearest)
+                        except BaseException as error:
+                            # Distinct nearest inventory; never send its id to codes_release.
+                            reader.unsettled_legacy_nearest = nearest
+                            reader._retain(error)
+                            reader._refuse("DMI_GRIB_NEAREST_RELEASE_UNPROVED", error)
+                    operations = {
+                        "new_message": codes_grib_new_from_file, "release_message": release_message,
+                        "get": lambda gid, key: safe_get(gid, key) if key in {"missingValue", "typeOfLevel", "level"} else codes_get(gid, key),
+                        "get_elements": codes_get_elements, "find_nearest": codes_grib_find_nearest,
+                        "nearest_new": codes_grib_nearest_new, "nearest_find": codes_grib_nearest_find,
+                        "nearest_delete": release_nearest if callable(codes_grib_nearest_delete) else None,
+                        "same_grid": CODES_GRIB_NEAREST_SAME_GRID, "out_of_area_error": OutOfAreaError,
+                        "classify_parameter": classify_parameter, "candidate_target": grid_candidate_target,
+                        "stop_requested": should_stop_work, "processing_signature": legacy_runtime_signature,
+                    }
+                    rows = decode_legacy_current_originals(reader, list(own_requests.values()), operations=operations)
+                if not reader.physically_closed or reader.retained or _UNSETTLED_GRIB_READS:
+                    raise GribReadUnproven("DMI_LEGACY_CURRENT_CLOSE_UNPROVED")
+            # Nothing can escape a reader whose close/lease cleanup is unknown.
+            if len(rows) != len(own_requests):
+                raise ValueError("DMI_LEGACY_CURRENT_REQUEST_INCOMPLETE")
+            rows_by_zone = {row["zoneId"]: row for row in rows}
+            if set(rows_by_zone) != set(own_requests):
+                raise ValueError("DMI_LEGACY_CURRENT_REQUEST_INCOMPLETE")
+            for request in job["requests"]:
+                entry = rows_by_zone[request["entityId"]]
+                role, part_id = request["documentRole"], request["partId"]
+                zone_identity = contexts[role]["zones"][part_id]
+                zone = document["zones"].setdefault(entry["zoneId"], {**copy.deepcopy(zone_identity), "hourly": {}})
+                if any(zone.get(key) != value for key, value in zone_identity.items()):
+                    raise ValueError("DMI_LEGACY_CURRENT_CONTEXT_CONFLICT")
+                zone["hourly"][request["requestId"]] = entry["row"]
+                originals.append({"zoneId": entry["zoneId"], "time": canonical_time(entry["row"]["time"]),
+                    "header": copy.deepcopy(contexts[role]["header"]), "identity": copy.deepcopy(zone_identity),
+                    "row": copy.deepcopy(entry["row"]), "capture": copy.deepcopy(request["reconstructionRequest"]["capture"])})
+        finally:
+            controller.observe_asset_duration(time.monotonic() - started, cost_family=capture["collection"])
+    if _UNSETTLED_GRIB_READS or should_stop_work():
+        raise GribReadUnproven("DMI_LEGACY_CURRENT_PUBLICATION_UNPROVED")
+    envelope = {"schemaVersion": 1, "kind": "DMI_LEGACY_CURRENT_ORIGINAL_RECONSTRUCTION",
+        "requestsSha256": bound["requestsSha256"], "document": document}
+    # Existing private .cache; exclusive create, durable bytes, physical close.
+    # It is not an original B/S, persistent score, public file or new receipt.
+    with output_path.open("x", encoding="utf-8") as handle:
+        output_fd = handle.fileno()
+        json.dump(envelope, handle, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+        handle.write("\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    try:
+        os.fstat(output_fd)
+    except OSError as error:
+        if error.errno != 9:
+            raise GribReadUnproven("DMI_LEGACY_CURRENT_OUTPUT_CLOSE_UNPROVED") from error
+    else:
+        raise GribReadUnproven("DMI_LEGACY_CURRENT_OUTPUT_CLOSE_UNPROVED")
+    return originals
 
 
 def replay_cached_current_history_job(job, plan, result, controller, *,
@@ -12816,7 +13054,8 @@ def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget
                 demand = current_history_requests[zone_id]
                 source = (hour.get("sources") or {}).get("current")
                 if (
-                    epoch(demand["startAt"]) <= epoch(valid) <= epoch(demand["endAt"])
+                    epoch(demand["startAt"]) - 3 * 3600 <= epoch(valid)
+                        <= epoch(demand["endAt"]) + 3 * 3600
                     and canonical_time(hour.get("time")) == canonical_time(valid)
                     and complete_native_source_for_hour(source, "current", zone_id, zone, valid)
                     and dmi_marine_collection_allowed_for_zone(
@@ -12825,7 +13064,9 @@ def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget
                         and not isinstance(hour.get(key), bool) and math.isfinite(hour[key])
                         for key in COMPONENT_FIELD_SET["current"])
                 ):
-                    # Only demanded native CURRENT survives the normal cutoff.
+                    # Own native brackets may straddle the demanded hourly
+                    # range by the existing three-hour native support bound.
+                    # No other component or unrelated hour gains retention.
                     # This is derived working output, never a rewrite of originals.
                     cleaned[valid] = copy.deepcopy({
                         "time": hour["time"], "current-u": hour["current-u"],
@@ -13619,6 +13860,9 @@ def main() -> int:
         part_doc, part_bytes, coastal_part_targets, active_operational_zones,
         locked_production_reference,
     )
+    legacy_current_requests = read_legacy_current_original_requests(
+        part_bytes, active_operational_zones, locked_production_reference,
+    )
     current_history_originals: list[dict[str, Any]] = []
     retained_current_asset_proofs: list[dict[str, Any]] = []
     regional_source_proof_candidates: list[dict[str, Any]] = []
@@ -13750,6 +13994,7 @@ def main() -> int:
         and marine_cache_healthy
         and native_sampling_cache_ready(previous, locked_production_reference)
         and not current_history_plan["jobs"]
+        and not (legacy_current_requests and legacy_current_requests["requests"])
         and previous.get("spatialProvenanceVersion") == SPATIAL_PROVENANCE_VERSION
         and int(previous.get("privateReplayRetentionHours") or 0) >= 54
         and zone_registry_unchanged
@@ -14466,6 +14711,18 @@ def main() -> int:
     )
     if CACHE_ONLY:
         seal_current_operational_progress()
+    if legacy_current_requests and legacy_current_requests["requests"] and not FINALIZE_ONLY:
+        current_history_originals.extend(reconstruct_legacy_current_originals(
+            legacy_current_requests, checkpoint_controller,
+            registry_signature=current_zone_registry_signature,
+            reserve_seconds=(
+                float(schedule_coverage.get("criticalWamRuntimeReserveSeconds") or 0.0)
+                + float(schedule_coverage.get("strictCurrentRuntimeReserveSeconds") or 0.0)
+            ), supervisor_skipped_assets=supervisor_skipped_assets,
+        ))
+        current_history_plan = plan_cached_current_history(
+            current_history_requests, current_history_originals, load_raw_cache_manifest(),
+        )
     if current_history_requests and not FINALIZE_ONLY:
         result["diagnostics"]["cachedCurrentHistory"] = replay_cached_current_history(
             current_history_plan, result, checkpoint_controller,

@@ -1,3 +1,23 @@
+## 89.236 Egne strømoriginaler fra præcise råfiler
+
+**Kort fortalt:** Manglende native endepunkter skal genskabes fra egne identificerede originalfiler, ikke fra afrundede prognosetal eller andre kystdele.
+
+PR626-kontrollen og den autentificerede skrivefri kontrol af de normalt valgte strømendepunkter er gennemført. De rapporterede stop gjaldt manglende native endepunkter, ikke påviste ugyldige DMI-tal. Kontrollen rapporterer første stop pr. kystdel og er derfor ikke en fuld frifindelse af alle øvrige timer.
+
+Den nye lokale plan for nødvendige originalfiler bruger kun metadata. Den kan finde en entydig, komplet filidentitet i samme autentificerede dokument, også når filens metadata er registreret ved en anden kystdel. Det giver ikke adgang til at bruge den anden dels strømværdier. Ukendt eller modstridende filidentitet skal stadig stoppe forløbet; metadata er ikke et native originalbevis.
+
+En ny gennemgået producent var ikke optaget i den historiske originalmodtagers præcise producentliste og blev derfor sikkert afvist. Det er en reel bindingsfejl i produktet, ikke kun en forældet prøve. Den lokale rettelse optager kun denne eksakte producent og kræver ni faste kildehashes for de seks nye originalmoduler, den normale historikplanlægger, vejropdatereren og genopretningsforberedelsen. Manglende eller ændrede moduler og ukendte byteudgaver afvises fortsat. Gamle familie- og producentbindinger samt hele den tidligere referencefil bevares.
+
+Egne manglende native tal skal genskabes fra de egne eksakte RAW-bytes med den fastlagte tidligere afkodningskontekst. Filernes fulde kontrolsum, størrelse, officielle revision, model og tid skal passe. Afkodningen bevarer fuld numerisk præcision og kræver fuld gennemlæsning samt bevist fysisk lukning af den ejede læser, før et separat kandidatdokument kan blive tilgængeligt. Afrundede prognosetal må ikke regnes baglæns til opdigtede originaler.
+
+Den korrigerede nye afkodning holdes adskilt fra den tidligere fortolkning. Den normale kontrol skal stadig kunne genskabe alle uændrede prognosevidner fra de egne native endepunkter og godkende faktisk ny strømbrug i OWNER-forløbet. Kildeetiketter eller en ny plan erstatter ikke denne kontrol. Hård no-loss, originale B/S og offentliggjort scorehistorik bevares uændret.
+
+Egne gyldige native støttetimer inden for behovsvinduet med højst tre timer i hver ende bevares til de eksisterende timepar. Det er hverken ekstra scoretimer, en længere scorehorisont, generel opbevaring eller tilladelse til at udfylde timer uden gyldige data.
+
+De afgrænsede prøver af plan, kaldere, databevarelse og sikre stop er delbeviser. Hverken lokale eller native delprøver erstatter samlet præcis kildekontrol eller bevis for faktisk originalgendannelse, cachegemning og genbrug. Normal checkpoint-beregning, holdbar upload, deploy, offentlig virkning og senere genaktivering af cron skal fortsat verificeres. Cron er deaktiveret med tidsplanen bevaret.
+
+Version 4.0.577, I71/C69/T12, storage-ABI, SQL, model, scoreformel, kildeprioritet, administratoropsætning, geometri og budgetter er uændrede. SOURCE19, den bevarede assistentkandidat og statistikaktivering forbliver inaktive. Alle fem arbejdsområder er fortsat åbne med frist 18. oktober. Stående autoritet dækker nødvendigt rutinearbejde i det aftalte forløb; konkrete afvisninger og sikkerhedsgrænser består. Tidligere afventning af PR626-kontrol og årsagsaflæsning er erstattet alene på de gennemførte trin.
+
 ## 89.235 Præcis kontrol af valgte strømendepunkter
 
 **Kort fortalt:** En genopretning skal skelne manglende originalbevis fra tab i udvælgelsen, før en ny rettelse vælges.

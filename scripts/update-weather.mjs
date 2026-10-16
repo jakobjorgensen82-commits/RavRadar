@@ -40,6 +40,7 @@ import {
 import {
   RAVSCORE_CURRENT_SUPPLY_POLICY,
   RAVSCORE_PUBLIC_FORECAST_HOURS,
+  assertRavScoreModelBinding,
   ravScoreModelBinding,
 } from '../js/core/ravscore-model-contract.js';
 import {
@@ -73,6 +74,7 @@ import { originalContextForProtectedDmiCurrent, verifiedProtectedDmiPartHourly }
 import { mergeProtectedLiveCurrentPilotIntoRecord,
   mergeActiveNativeLiveCurrentPilotIntoRecord } from './lib/protected-live-current-assembly.mjs';
 import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-native-current-proofs.mjs';
+import { readDmiLegacyCurrentOriginals } from './lib/dmi-legacy-current-originals.mjs';
 import { packDmiPartContinuity, unpackDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
 import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly, packWaterSourceForecastContinuity, unpackWaterSourceForecastContinuity } from './lib/water-source-forecast-routing.mjs';
@@ -3676,7 +3678,7 @@ const coastalPointStateInjections = await readCoastalPointStateInjections();
 const dmiForecastStore = await readDmiForecastStore();
 const dmiBulkCache = await readDmiBulkCache();
 const deployedDmiBulkCache = await readDmiBulkCache(DEPLOYED_DMI_BULK_CACHE_PATH);
-const historicalDmiBulkCache = process.env.DMI_PART_CONTINUITY_DONOR_PATH
+let historicalDmiBulkCache = process.env.DMI_PART_CONTINUITY_DONOR_PATH
   ? await readDmiBulkCache(process.env.DMI_PART_CONTINUITY_DONOR_PATH)
   : null;
 if (process.env.DMI_PART_CONTINUITY_DONOR_PATH && !historicalDmiBulkCache) {
@@ -3687,6 +3689,27 @@ const buildGeneratedAt = new Date().toISOString();
 const generatedAt = resolveProductionReferenceTime(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR, new Date(buildGeneratedAt));
 const activeParts = Object.entries(coastalPartsContract.zones ?? {}).flatMap(([zoneId, zoneParts]) =>
   zoneParts.map(part => ({ ...part, zoneId })));
+if (process.env.RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION) {
+  const expectedLegacy = JSON.parse(process.env.RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION);
+  assertRavScoreModelBinding(expectedLegacy.modelBinding, 'Legacy current reconstruction binding');
+  const unchangedFileSha256 = async file => `sha256:${crypto.createHash('sha256')
+    .update(await fs.readFile(file)).digest('hex')}`;
+  // The separate pre-producer handshake, never a hash self-derived from the
+  // new donor. Candidate/active legitimately changed during DMI, whereas the
+  // original registry, deployed donor and persisted forecast must not have.
+  if (expectedLegacy.productionReferenceAt !== generatedAt
+    || expectedLegacy.historyDemandSha256 !== await unchangedFileSha256('.cache/ravscore-current-history-demand.json')
+    || expectedLegacy.registrySha256 !== await unchangedFileSha256('data/live/coastal-parts-v2.json')
+    || expectedLegacy.sourceHashes?.zones !== await unchangedFileSha256('data/zones.geojson')
+    || expectedLegacy.sourceHashes?.deployedBulk !== await unchangedFileSha256(DEPLOYED_DMI_BULK_CACHE_PATH)
+    || expectedLegacy.sourceHashes?.forecast !== await unchangedFileSha256('data/live/dmi-forecast-cache.json')) {
+    throw new Error('DMI_LEGACY_CURRENT_EXPECTED_INPUT_MISMATCH');
+  }
+  const reconstructed = await readDmiLegacyCurrentOriginals({ repositoryRoot: process.cwd(),
+    parts: activeParts, expected: expectedLegacy, required: true });
+  if (reconstructed && historicalDmiBulkCache) throw new Error('DMI_LEGACY_CURRENT_DONOR_COLLISION');
+  if (reconstructed) historicalDmiBulkCache = reconstructed;
+}
 const persistedDmiPartRows = await unpackDmiPartContinuity(
   dmiForecastStore.partContinuity, activeParts, generatedAt,
 );
