@@ -1,5 +1,7 @@
 ## 17. oktober 2026 — gentag ikke engangsovergangen ved almindelig videreberegning
 
+Følg også den faktiske workflowkalders miljø helt ind i den normale produktfunktion. En syntetisk transport kan selv give URL og adgang, som den virkelige almindelige kalder har gjort tomme. Kontroller både standardflags og de eksisterende afgrænsninger; reparer forbindelsen frem for at opfinde endnu en autorisationsvej.
+
 Prøv den faktiske normale kalder, også når nettet erstattes af et syntetisk transportled. En bred testrequester kan fejlagtigt acceptere både payload- og versionsforespørgsler, selv om de normale læsere med vilje har hver sin snævre kontrakt. Nye normale writes skal også være fysisk udelukket fra eksisterende tørkørsler; en korrekt datakontrol giver ikke tørkørslen skriveautoritet.
 
 Den fortsatte historikgennemgang bekræfter også DEC-0140's og DEC-0254's driftslæring: alle selvstændige kildefejl skal indsamles i én kontrol, og gemning er ikke genbrug før faktisk genlæsning. De fem efterfølgende testfejl skal reproduceres på GitHubs samme Node-version før næste samlede runde; to motorers forskellige syntetiske bølgemomenter er ikke grundlag for at omskrive produktdata eller udskifte en produktionsoriginals kontrolsum.

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
-import { inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication } from './lib/completed-private-runtime-workflow-review.mjs';
+import { inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials } from './lib/completed-private-runtime-workflow-review.mjs';
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
 const read = async relative => (await fs.readFile(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
 const actualBuild = inversePairedPrivateRuntimePublication(await read('../.github/workflows/reusable-weather-build.yml'), 'build');
@@ -90,4 +90,82 @@ test('ordinary checkout rejects depth regression, missing or duplicate block and
   // The old conditional is still accepted only as the unchanged historical
   // oracle, not as the new ordinary checkout configuration.
   assert.equal(sha(inverseCompletedRuntimeWorkflow(mutations[1], 'build')), legacySha);
+});
+
+// Test-only evaluation of the two existing GH expression shapes, never real
+// credentials or a runtime caller/authority API. Unknown expressions refuse.
+function weatherCredentialBlock(source) {
+  const marker='      - name: Update central weather cache\n';
+  assert.equal(source.split(marker).length,2);
+  const start=source.indexOf(marker),end=source.indexOf('\n      - name: ',start+marker.length);
+  assert(end>start);return {start,end,text:source.slice(start,end)};
+}
+function assertOriginWeatherCredentials(source) {
+  const {text}=weatherCredentialBlock(source);
+  assert(text.includes("        if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')\n"));
+  assert(text.includes('        run: npm run update:weather\n'));
+  const fields=Object.fromEntries(['SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY',
+    'RAVRADAR_R2_ACCOUNT_ID','RAVRADAR_R2_ACCESS_KEY_ID','RAVRADAR_R2_SECRET_ACCESS_KEY'].map(key=>{
+    const rows=[...text.matchAll(new RegExp('^          '+key+': (.+)$','gm'))];
+    assert.equal(rows.length,1,'Exactly one weather env '+key);return [key,rows[0][1]];
+  }));
+  const secrets={SUPABASE_URL:'https://origin-credentials-test.invalid',
+    SUPABASE_SERVICE_ROLE_KEY:'SYNTHETIC_TEST_ONLY_NO_PRIVILEGE',
+    RAVRADAR_R2_ACCOUNT_ID:'SYNTHETIC_R2_ACCOUNT',RAVRADAR_R2_ACCESS_KEY_ID:'SYNTHETIC_R2_ACCESS',
+    RAVRADAR_R2_SECRET_ACCESS_KEY:'SYNTHETIC_R2_NO_PRIVILEGE'};
+  const evaluate=(expression,inputs)=>{
+    const m=/^\$\{\{ (inputs\.weather_state_epoch_bootstrap && )?secrets\.([A-Z0-9_]+)( \|\| '')? \}\}$/.exec(expression);
+    assert(m&&Object.hasOwn(secrets,m[2]),'Only existing explicit secret expression shapes');
+    assert.equal(Boolean(m[1]),Boolean(m[3]),'Conditional expression must retain exact empty fallback');
+    return m[1]&&!inputs.weather_state_epoch_bootstrap?'':secrets[m[2]];
+  };
+  for(const inputs of [
+    {weather_state_epoch_bootstrap:false,quick_confirmation:false,checkpoint_only:false},
+    {weather_state_epoch_bootstrap:false,quick_confirmation:true,checkpoint_only:false},
+    {weather_state_epoch_bootstrap:false,quick_confirmation:false,checkpoint_only:true},
+    {weather_state_epoch_bootstrap:false,native_sampling_identity_original_recovery:true},
+    {weather_state_epoch_bootstrap:true,quick_confirmation:false,checkpoint_only:false},
+  ]) {
+    for(const key of ['SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY'])
+      assert.equal(evaluate(fields[key],inputs),secrets[key],
+        'Every actually executed eager-origin weather mode needs normal Supabase reads: '+key);
+    for(const key of ['RAVRADAR_R2_ACCOUNT_ID','RAVRADAR_R2_ACCESS_KEY_ID','RAVRADAR_R2_SECRET_ACCESS_KEY'])
+      assert.equal(evaluate(fields[key],inputs),inputs.weather_state_epoch_bootstrap?secrets[key]:'',
+        'R2 must remain epoch-only: '+key);
+  }
+  assert.equal(fields.SUPABASE_URL,'${{ secrets.SUPABASE_URL }}');
+  assert.equal(fields.SUPABASE_SERVICE_ROLE_KEY,'${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}');
+}
+test('normal eager-origin weather receives existing Supabase reads in ordinary quick checkpoint and epoch modes',async()=>{
+  const source=await read('../.github/workflows/reusable-weather-build.yml');
+  assertOriginWeatherCredentials(source);
+  const old=inverseOriginWeatherReadCredentials(source,'build');
+  assert.equal(sha(old),'fff327a65cf0a441f33da2e70e144802d11d5bcb8c0b8d570219f23a84970f11');
+  assert.equal(inverseOriginWeatherReadCredentials(old,'build'),old);
+  assert.equal(inversePairedPrivateRuntimePublication(source,'build'),actualBuild);
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(source,'build')),legacySha);
+  assert.equal(inverseOriginWeatherReadCredentials(source,'once'),source);
+  assert.throws(()=>inverseCompletedRuntimeWorkflow(source,'once'));
+});
+test('weather credential scope refuses conditional missing duplicate wrong-key R2 and gate mutations',async()=>{
+  const source=await read('../.github/workflows/reusable-weather-build.yml');
+  assertOriginWeatherCredentials(source);
+  const mutate=(from,to)=>{const block=weatherCredentialBlock(source);
+    assert.equal(block.text.split(from).length,2);
+    return source.slice(0,block.start)+block.text.replace(from,to)+source.slice(block.end);};
+  const mutations=[
+    mutate('SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',"SUPABASE_URL: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_URL || '' }}"),
+    mutate('SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',"SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}"),
+    mutate('          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n',''),
+    mutate('          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n',''),
+    mutate('          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n','          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n'),
+    mutate('SUPABASE_URL: ${{ secrets.SUPABASE_URL }}','SUPABASE_URL: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}'),
+    mutate("RAVRADAR_R2_ACCESS_KEY_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}",'RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}'),
+    mutate("inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')","steps.preflight.outputs.should_run == 'true'"),
+  ];
+  for(const changed of mutations){
+    assert.notEqual(changed,source);assert.throws(()=>assertOriginWeatherCredentials(changed));
+    assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,'build'));
+  }
+  assert.throws(()=>inverseCompletedRuntimeWorkflow(source+'\n# UNREVIEWED CREDENTIAL DRIFT\n','build'));
 });

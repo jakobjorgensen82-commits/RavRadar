@@ -1,5 +1,7 @@
 ## 17. oktober — 4.0.581: normal fortsættelse og genoptagelse af delvis gemning
 
+Fremadrettet kontrol af den faktiske almindelige kalder fandt en ekstra integrationsfejl: vejropdatererens nye autentificerede B/S-læser kræver de eksisterende Supabase-adgangsoplysninger, men workflowets vejrtrin gav tomme værdier uden epoch-opstart. De to eksisterende felter skal også forsynes ved almindelig kørsel; R2-felternes epoch-afgrænsning bevares. Den normale workflow-regression skal kontrollere denne forbindelse, ikke blot syntetikkens egen transport. Ingen nye nøgler, origin-genvej, model-/SQL-ændring eller lempet datakontrol følger med. Levering afventer den samlede rettede kandidats præcise kontrol og faktisk produktion.
+
 Tredje præcise kildekontrol på 85fe6f7 gennemførte den native PostgreSQL-fase med installation, genlæsning, JSONB-rundtur, CAS- og rettighedsprøver. Hele kildekontrollen var stadig rød på fem testfejl i fire kommandogrupper; de senere baseline-, kapacitets- og trækontroller blev ikke kørt. Det er ikke produktionsinstallation eller offentlig levering.
 
 De fem testrettelser bevarer hele historiske orakler: faktiske deklarationsafhængigheder i to VM-prøver, præcis helkildebundet stackprojektion i to fejlprøver og to eksakte syntetiske B/S-referencepar for Node 22/24. Ukendt hovedversion afvises; produktnumerik ændres ikke. Den normale syntetiske 673-dels kæde med tre efterfølgere samt de berørte 8 og 18 normale tilfælde er faktisk bestået på GitHubs Node 22.23.3.
