@@ -52,7 +52,7 @@ on:
         type: boolean
 
       include_current_window_diagnostic:
-        description: "Kun 39005745097-1 / 17. oktober kl. 05 UTC: uændret normal beregning i privat, providerfri analyse-scratch; aldrig deploy"
+        description: "Kun390057/05Z eller390663/20Z: normal beregning i privat scratch;390663 kræver ægte read-only B/S-origin; aldrig vejr/deploy"
         required: false
         default: false
         type: boolean
@@ -111,8 +111,12 @@ jobs:
           [[ "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" == true || "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" == false ]]
           [[ "$INCLUDE_CURRENT_WINDOW_DIAGNOSTIC" == true || "$INCLUDE_CURRENT_WINDOW_DIAGNOSTIC" == false ]]
           if test "$INCLUDE_CURRENT_WINDOW_DIAGNOSTIC" = true; then
+            if test "$SOURCE_RUN_ID-$SOURCE_RUN_ATTEMPT" = 39066350748-1; then
+              test "$PROGRESS_BASELINE_TARGET_HOUR" = 2026-10-17T20:00:00.000Z
+            else
             test "$SOURCE_RUN_ID-$SOURCE_RUN_ATTEMPT" = 39005745097-1
             test "$PROGRESS_BASELINE_TARGET_HOUR" = 2026-10-17T05:00:00.000Z
+            fi
             test "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" = false
             test "$INCLUDE_RAW_MANIFEST" = false
             test "$INCLUDE_RAW_FILE_PRESENCE" = false
@@ -307,9 +311,17 @@ jobs:
         run: |
           set -euo pipefail
           root="$RUNNER_TEMP/ravradar-saved-input-audit"
-          mkdir "$root/current-window-source" "$root/current-window-logs"
+          mkdir "$root/current-window-logs"
           test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
-          git archive "$GITHUB_SHA" | tar -x -C "$root/current-window-source"
+          if test "${{ inputs.progress_source_run_id }}-${{ inputs.progress_source_attempt }}" = 39066350748-1; then
+            # Existing local Git objects only; no remote fetch or invented
+            # producer. Origin's unchanged ancestry/whole-blob checks run later.
+            git clone --shared --no-checkout "$GITHUB_WORKSPACE" "$root/current-window-source"
+            git -C "$root/current-window-source" -c core.autocrlf=false checkout --detach "$GITHUB_SHA"
+          else
+            mkdir "$root/current-window-source"
+            git archive "$GITHUB_SHA" | tar -x -C "$root/current-window-source"
+          fi
           cd "$root/current-window-source"
           if ! (python scripts/refine-coastlines-constrained-4.0.48.py &&
             python scripts/sync-admin-config.py &&

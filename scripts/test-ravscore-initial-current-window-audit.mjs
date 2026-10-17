@@ -47,7 +47,7 @@ function diagnose(options){
  return value;
 }
 test('diagnostic source delta preserves every genuine historical updater oracle',async()=>{
- const updater=(await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replace(/\r\n/g,'\n');
+ let updater=(await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replace(/\r\n/g,'\n');
  const oracle=(await fs.readFile(path.join(ROOT,'scripts/test-weather-update-entrypoint.mjs'),'utf8')).replace(/\r\n/g,'\n');
  const begin=oracle.indexOf('function inverseWeatherStateEpochIntegration(source) {');
  const end=oracle.indexOf('\n// Test-only inverse of the NEW explicit OLD-original donor integration.',begin);
@@ -55,6 +55,9 @@ test('diagnostic source delta preserves every genuine historical updater oracle'
  const dependencyBegin=oracle.indexOf('const establishedNativeCurrentUpdaterHunks = [');
  assert(dependencyBegin>=0&&dependencyBegin<begin);
  const dependencies=oracle.slice(dependencyBegin,begin),epochInverse=oracle.slice(begin,end).trim();
+ // The old mutation oracles run on their genuine full608b input. Their exact
+ // strings must not silently become no-ops inside a newer diagnostic wrapper.
+ updater=new Function('assert',dependencies+'\nreturn inverseSavedCurrentReplayUpdater;')(assert)(updater);
  const inverse=new Function('assert','digest',dependencies+epochInverse+'\nreturn inverseWeatherStateEpochIntegration;')(assert,hash);
  const positiveOrigin=new Function('assert',dependencies+'\nreturn {inverse:inverseEstablishedNativeCurrentUpdater,hunks:establishedNativeCurrentUpdaterHunks};')(assert);
  assert.equal(hash(inverse(updater)),'62bbe6eb4325dcba05afb922028150a9bdf7c45f2ebd7a7e975d85f3941d6288');

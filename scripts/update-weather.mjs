@@ -161,6 +161,7 @@ import {
   buildEstablishedNativeCurrentOriginAttestation,
 } from './lib/established-native-current-origin.mjs';
 import { summarizeRavScoreInitialCurrentWindow } from './lib/ravscore-initial-current-window-audit.mjs';
+import { summarizeSavedCurrentReplayGridFailure } from './lib/saved-current-replay-grid-audit.mjs';
 import {
   buildNewestValidRavScoreRecoverySources,
   summarizeIsolatedRavScoreWaveReplayConflicts,
@@ -1948,6 +1949,9 @@ function scoreCoastalPartsRuntime(
     throw new Error('Coastal-point activation-state injection contains a non-active part');
   }
   const expectedByZone = new Map();
+  const savedCurrentReplayDiagnostic = process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'
+    ? { firstError: null, observedParts: 0, gridUnknownParts: 0 } : null;
+  try {
   const partRows = [];
   // Actual normal results stay private and retain their pipeline WeakMap
   // identity. The finalizer checks their exact H0 pairs against output.
@@ -2370,6 +2374,7 @@ function scoreCoastalPartsRuntime(
       });
       let productionSeries;
       try {
+        if (savedCurrentReplayDiagnostic) savedCurrentReplayDiagnostic.observedParts++;
         productionSeries = buildRavScoreProductionPartSeries({
           establishedNativeCurrentOrigin,
           requireNativeGridSampling: true,
@@ -2405,6 +2410,23 @@ function scoreCoastalPartsRuntime(
             ),
         });
       } catch (error) {
+        if (process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'
+          && error?.code === 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED' && error.samplingStatus === 'unknown') {
+          // Observation only of this ACTUAL normal call. Preserve first error,
+          // every source/guard, the whole old H0 pair and all numeric output.
+          try {
+            console.error('RAVSCORE_SAVED_CURRENT_REPLAY_AUDIT ' + JSON.stringify(summarizeSavedCurrentReplayGridFailure({
+              error, part: { ...part, zoneId }, initialSelection, targetReferenceAt: generatedAt,
+              recoverySources, establishedNativeCurrentOrigin,
+            })));
+          } catch { console.error('RAVSCORE_SAVED_CURRENT_REPLAY_AUDIT_UNAVAILABLE'); }
+          savedCurrentReplayDiagnostic.firstError ??= error;
+          savedCurrentReplayDiagnostic.gridUnknownParts++;
+          // Continue only this private diagnosis to the next normally built
+          // PART input. There is no fabricated result, state or retry. The
+          // SAME first error is rethrown before any output/finalizer below.
+          continue;
+        }
         if (error?.code === 'RAVSCORE_INITIAL_CURRENT_NEW_USE_NOT_READY') {
           // Diagnostic only: unchanged normal reconstruction and original throw.
           // No private values, points, source identities or timestamps leave it.
@@ -2700,6 +2722,8 @@ function scoreCoastalPartsRuntime(
     }
   }
 
+  if (savedCurrentReplayDiagnostic?.firstError) throw savedCurrentReplayDiagnostic.firstError;
+
   // Aggregate fixed component labels only; never log a private part, hour,
   // value or source identity when an unproved same-run refresh is retained.
   console.log(`RAVSCORE_PROTECTED_SAME_RUN_DMI_RETAINED ${JSON.stringify(protectedSameRunDmiRetentions)}`);
@@ -2837,6 +2861,22 @@ function scoreCoastalPartsRuntime(
       ? null
       : buildPrivateCandidateGWarmupRuntime(candidateGRollbackRuntime),
   };
+  } catch (error) {
+    if (savedCurrentReplayDiagnostic?.firstError) {
+      console.error('RAVSCORE_SAVED_CURRENT_REPLAY_COLLECTION ' + JSON.stringify({
+        schemaVersion: 1, kind: 'SAVED_CURRENT_REPLAY_COLLECTION',
+        observedParts: savedCurrentReplayDiagnostic.observedParts,
+        gridUnknownParts: savedCurrentReplayDiagnostic.gridUnknownParts,
+        anotherGuardStoppedCollection: error !== savedCurrentReplayDiagnostic.firstError,
+        scope: 'NORMAL_CALLS_REACHED_BEFORE_FIRST_OTHER_STOP',
+        allPartsReached: savedCurrentReplayDiagnostic.observedParts === Number(contract?.partCount),
+        allRowsActuallyConsumed: false, minimalNecessaryOriginalsProved: false,
+        continuationIssued: false, publicationInvoked: false, productionAuthority: false,
+      }));
+      throw savedCurrentReplayDiagnostic.firstError;
+    }
+    throw error;
+  }
 }
 
 // Shared recovery record: collections
@@ -4350,6 +4390,8 @@ if (coastalPartsContract.enabled) {
 const establishedNativeCurrentOrigin = coastalPartsContract.enabled
   ? await readEstablishedNativeCurrentOrigin(coastalPartsContract)
   : null;
+if (process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'
+  && establishedNativeCurrentOrigin === null) throw new Error('SAVED_CURRENT_REPLAY_ORIGIN_REQUIRED');
 const coastalPartScoreBuild = coastalPartsContract.enabled
   ? scoreCoastalPartsRuntime(
     coastalPartsContract,

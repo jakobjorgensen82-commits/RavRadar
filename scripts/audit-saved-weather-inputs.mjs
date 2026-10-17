@@ -849,11 +849,18 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
   let normalProgressBaselineUsed = false;
   try {
     if (typeof includeCurrentWindowDiagnostic !== 'boolean') fail('MODE_INVALID');
+    const currentReplayDiagnostic = includeCurrentWindowDiagnostic && progressSource === '39066350748-1';
+    if (currentReplayDiagnostic && (mode !== 'audit' || includeRawManifest || includeRawFilePresence
+      || includeSelectedCurrentPreflight || rawCacheKey !== null || rawManifestSource !== null
+      || progressCacheKey !== 'weather-private-progress-encrypted-v2-Linux-main-39066350748-1'
+      || progressBaselineTargetHour !== '2026-10-17T20:00:00.000Z')) fail('MODE_INVALID');
+    if (!currentReplayDiagnostic) {
     if (includeCurrentWindowDiagnostic && (mode !== 'audit' || includeRawManifest || includeRawFilePresence
       || includeSelectedCurrentPreflight || rawCacheKey !== null || rawManifestSource !== null
       || progressSource !== '39005745097-1'
       || progressCacheKey !== 'weather-private-progress-encrypted-v2-Linux-main-39005745097-1'
       || progressBaselineTargetHour !== '2026-10-17T05:00:00.000Z')) fail('MODE_INVALID');
+    }
     if (!['describe', 'audit'].includes(mode) || typeof includeRawManifest !== 'boolean'
       || typeof includeSelectedCurrentPreflight !== 'boolean'
       || typeof includeRawFilePresence !== 'boolean' || includeRawFilePresence && !includeRawManifest
@@ -958,7 +965,10 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     // pass the audit's cipher-bearing working payload to the strict B installer.
     const progressBaseline = includeCurrentWindowDiagnostic
       ? await withoutSavedAuditSecrets(async () => {
-        const { prepareSavedCurrentWindowScratch } = await import('./saved-current-window-scratch.mjs');
+        const { prepareSavedCurrentWindowScratch, prepareSavedCurrentReplayScratch } = await import('./saved-current-window-scratch.mjs');
+        if (currentReplayDiagnostic) return prepareSavedCurrentReplayScratch({
+          scratchRoot: await noSymlinks(ctx.root, path.join(ctx.root, 'current-window-source')),
+          logRoot: await noSymlinks(ctx.root, path.join(ctx.root, 'current-window-logs')), payloadRoot, source });
         return prepareSavedCurrentWindowScratch({
           scratchRoot: await noSymlinks(ctx.root, path.join(ctx.root, 'current-window-source')),
           logRoot: await noSymlinks(ctx.root, path.join(ctx.root, 'current-window-logs')), payloadRoot, source });
@@ -1026,15 +1036,19 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     if (includeCurrentWindowDiagnostic) {
       phase = 'CURRENT_WINDOW_PRIVATE_SCRATCH';
       try {
-        const { runSavedCurrentWindowScratch } = await import('./saved-current-window-scratch.mjs');
+        const { runSavedCurrentWindowScratch, runSavedCurrentReplayScratch } = await import('./saved-current-window-scratch.mjs');
         const scratchRoot = await noSymlinks(ctx.root, path.join(ctx.root, 'current-window-source'));
         const logRoot = await noSymlinks(ctx.root, path.join(ctx.root, 'current-window-logs'));
-        currentWindowScratch = await withoutSavedAuditSecrets(() => runSavedCurrentWindowScratch({
-          scratchRoot, logRoot, basePath, source, repository, masterSecret, encryptionKey, pythonExecutable }));
+        currentWindowScratch = currentReplayDiagnostic
+          ? await runSavedCurrentReplayScratch({ scratchRoot, logRoot, basePath, source, repository,
+            masterSecret, encryptionKey, pythonExecutable, privateRoot: work, bundlePath })
+          : await withoutSavedAuditSecrets(() => runSavedCurrentWindowScratch({
+            scratchRoot, logRoot, basePath, source, repository, masterSecret, encryptionKey, pythonExecutable }));
       } catch (error) {
         const known = new Set(['SAVED_CURRENT_WINDOW_INPUT_CHANGED', 'SAVED_CURRENT_WINDOW_BASELINE_PAIR_REQUIRED',
           'SAVED_CURRENT_WINDOW_PROGRESS_REJECTED', 'SAVED_CURRENT_WINDOW_PROCESS_TIMEOUT',
           'SAVED_CURRENT_WINDOW_PROCESS_UNAVAILABLE', 'SAVED_CURRENT_WINDOW_LOG_BOUND', 'SAVED_CURRENT_WINDOW_SCRATCH_INVALID']);
+        known.add('SAVED_CURRENT_REPLAY_ORIGIN_INPUTS_REQUIRED');
         currentWindowScratch = { status: 'UNAVAILABLE', firstErrorCode: known.has(error?.scratchCode) ? error.scratchCode : 'UNCLASSIFIED',
           providerRequestsPerformed: false, remoteWrites: false, publicationInvoked: false, productionAuthority: false, privatePayloadIncluded: false };
       }

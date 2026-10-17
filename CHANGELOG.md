@@ -1,3 +1,11 @@
+## 4.0.581 — 2026-10-18 — særskilt lokal checkpoint-diagnose
+
+Efterfølgerprøvens testinput bevarer dens ægte hele 140000-updater gennem præcis diagnostic-inverse. Alle gamle pins og øvrige assertions er uændrede; ny afgrænset målcase består, mens normal fuld 673-kæde fortsat kræves i CI. Lille produktkritisk kildegate består; ingen ny lokal fuldsuite eller produktændring følger af dette testlæserfund.
+
+Faktisk ROOT-kontrol på de sammenførte filer: tre normale mål 46/46, audit 55/55, workflow 10/10 og uændret model-/otte forbrugerbindinger består. Ingen fejl eller skip i disse lokale mål; Linux, normal produktionsauth og faktisk diagnose er fortsat åbne.
+
+Den eksisterende saved-input-audit får en fast, som udgangspunkt inaktiv 390663/20Z-diagnose gennem ægte Git-scratch og normale B/GCM/registry/origin-/delkald. Kun faste normale B/S-GETs tillades; første UNKNOWN-fejl bevares og genkastes før output/finalizer. Rapporten begrænser sig til kandidatoptælling og faktisk nåede dele, uden at påstå replayforbrug eller minimal gendannelsesplan. Gamle scopes, kilder, SQL, modelbindinger og originaler bevares. Det er ikke en vejrhentningsrettelse, installation eller offentlig levering; præcis kildekontrol og faktisk diagnose er åbne. Mobilrettelsen holdes særskilt.
+
 ## 4.0.581 — 2026-10-18 — UI-build på uændret releaseversion
 
 ### Mobilens dagslabels og eksisterende browsercachevej

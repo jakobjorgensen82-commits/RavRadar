@@ -10,6 +10,21 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { normalCpFollowerInputs } from './lib/established-native-current-origin-cp-fixture.mjs';
 import { normalBAndSTransports } from './lib/established-native-current-origin-test-transports.mjs';
 
+// TEST INPUT ONLY. Keep the genuine whole140000 updater and every historical
+// product pin below; remove only the separately reviewed diagnostic delta.
+function normalOriginUpdaterTestInput(source, oracle) {
+  const expected = '608b795d382d96fed7435ffd9437f589f8771ea742ec65f75053d25059b9d25d';
+  if (sha(source) === expected) return source;
+  const begin = oracle.indexOf('const savedCurrentReplayUpdaterHunks = [');
+  const end = oracle.indexOf('function inverseEstablishedNativeCurrentUpdater(source) {', begin);
+  assert(begin >= 0 && end > begin, 'The exact diagnostic test-input inverse must exist.');
+  const inverse = new Function('assert', oracle.slice(begin, end)
+    + '\nreturn inverseSavedCurrentReplayUpdater;')(assert);
+  const restored = inverse(source);
+  assert.equal(sha(restored), expected, 'The whole genuine140000 updater must remain unchanged.');
+  return restored;
+}
+
 const P0 = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BASE = 'd7b31aa3c706e2f657fe5de99c56434f3cff260d';
 const TREE = '9d05b060dba9015233a368c63438a3dfd9b9b45d';
@@ -174,7 +189,10 @@ try {
 ].map(([relative, expected]) => [relative, path.join(P0, relative), expected]);
   const composition = [];
   for (const [relative, file, expected] of productFiles) {
-    const raw = Buffer.from((await fs.readFile(file, 'utf8')).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n')); if (expected) assert.equal(sha(raw), expected);
+    let text = (await fs.readFile(file, 'utf8')).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+    if (relative === 'scripts/update-weather.mjs') text = normalOriginUpdaterTestInput(text,
+      (await fs.readFile(path.join(P0, 'scripts/test-weather-update-entrypoint.mjs'), 'utf8')).replace(/\r\n?/g, '\n'));
+    const raw = Buffer.from(text); if (expected) assert.equal(sha(raw), expected);
     await write(HOST, relative, raw); composition.push({ path: relative, productSha256: sha(raw), bytes: raw.length });
   }
   // These are synthetic NORMAL cold-start goldens, not production originals.

@@ -1,3 +1,11 @@
+## 18. oktober — checkpoint-diagnose for det aktuelle normale stop
+
+Et fremadrettet fund i efterfølgerprøvens gamle hele updater-pin er lukket alene i testinput: eksakt diagnostic-inverse før uændret 608b og de otte gamle pins. Hele øvrige kildeinverse består; én ny normal målcase består uden en ny lokal 673-kørsel. Den fulde kæde afventer fortsat præcis CI. Lille produktkritisk kildegate består med 123 browserfiler; produkt og normale historiske orakler er uændrede.
+
+ROOT har faktisk gennemført tre normale mål med 46/46, det ændrede auditmål med 55/55 og workflowmålet med 10/10, uden fejl eller skip. Normal model- og otte forbrugerbindingskontroller består med uændret I91. Det erstatter kun lokal afventning; præcis Linux/source-CI og faktisk produktionspakke/auth er stadig åbne.
+
+Den særskilte lokale kandidat til den eksisterende saved-input-audit bruger det eksakte 390663/20Z-checkpoint i en ægte privat Git-scratch. Normal B/baseline/GCM/registry/origin og alle delkald bevares; kun faste B/S-GETs tillades i Node, mens Python er credentialfri. Første UNKNOWN-fejl bevares og genkastes før output/finalizer efter den afgrænsede observation af normale delkald. Tællinger er priority-kandidater, ikke forbrugs- eller minimalitetsbevis. Ingen RAW, ny vejrhentning, SQL, modelbinding, publicering eller aktivering. Gamle scopes, hele kildeinverser og 62 SQL bevares. Præcis kilde-CI, faktisk B/S-/GCM-diagnose og en fungerende ny offentlig generation er fortsat åbne. Mobil-PR655 leveres separat; dens igangværende kildekontrol ændres ikke af denne branch.
+
 ## 18. oktober — UI-build 4.0.581: gennemført lokalt og fortsat åbent
 
 Første præcise PR655-kontrol bestod native PostgreSQL, men sluttede rød i én kildekommandogruppe på en gammel auth-cacheadresse. En anden gammel adresse blev fundet skrivefrit i cold-start-prøven inden deploy. De to testlæsere følger nu de præcise gennemgåede adresser og beviser fortsat normal worker-hentning, genbrug og bevarelse af alle gamle cacheposter; de øvrige auth-, opstarts- og maskekontroller er uændrede. Begge normale mål og den tidligere fejlede samlede privacy-gruppe består lokalt. Gruppens ene eksisterende Windows-skip må ikke udlægges som gennemført Linux-prøve. Ny præcis samlet CI, sikker levering og offentlig effekt er fortsat åbne; produktkoden ændres ikke igen.
