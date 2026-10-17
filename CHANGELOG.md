@@ -1,3 +1,9 @@
+## 17. oktober — 4.0.580: kildekontrollens tidsloft, ikke vejrbudgettet
+
+Den anden PR648-kontrol på 229d119 blev afbrudt efter cirka 45 minutters jobtid med fortsat bestået prøveaktivitet. Den native PostgreSQL-prøve og de nye normale tidsskyder-, panel- og generationsprøver var bestået; den samlede kildegate og dens afsluttende trin var ikke færdige. Tidslinjen stemmer med jobbets eksisterende loft på 45 minutter, men de tilgængelige metadata beviser ikke alene afbrydelsens aktør. En ufuldstændig kontrol er ikke grøn eller en påvist fejl i vejrhentningen.
+
+Kun PR-jobbets loft hæves til 60 minutter, og den tilsvarende normale forventning følger med. Alle kommandoer, gates, native prøver, samtidighedsregler og vejr-/providerbudgetter bevares. Den nye præcise head skal bestå den normale samlede GitHub-kontrol. Offentlig 4.0.579 er faktisk leveret med genbrug af det gemte datasæt; den nye almindelige vejrhentning er endnu ikke verificeret færdig. 4.0.580 er ikke offentligt leveret. SOURCE19, assistentens næste overgang og statistik aktiveres ikke; alle fem mål til 18. oktober er åbne. Ældre daterede pending-udsagn nedenfor er historik.
+
 ## 4.0.580 – kortets tidsskyder (lokal kildekandidat, 17. oktober 2026)
 
 ### Opfølgning efter første præcise kildekontrol

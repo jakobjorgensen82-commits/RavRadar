@@ -1,5 +1,7 @@
 ## 89.251 Kortet kan vises for en valgt prognosetime
 
+**Kildekontrol 17. oktober:** Den anden kontrol blev afbrudt omkring jobbets 45-minuttersloft med fortsat bestået aktivitet. Kun PR-jobbets loft og den normale tilsvarende forventning hæves til 60 minutter; ingen tests eller vejrfrister fjernes. Den samlede nye kontrol og offentlig 580-effekt mangler fortsat. Offentlig 579 er leveret med genbrugte data; den nye almindelige vejrhentning er ikke færdigverificeret. Ældre pending-udsagn herunder er dateret historik.
+
 **Kort fortalt:** Tidsskyderen ændrer det tidspunkt, du ser på kortet og i den åbne zone. Den ændrer ikke vejret, RavScore eller det aktuelle tidspunkt for resten af appen.
 
 Kontrollen ligger i fuld bredde under kortet og over forklaringen. Den viser hele ugedagen, dato og klokkeslæt efter dansk tidszone på dansk, tysk eller engelsk. Brug Nu, en time tilbage eller frem, dagsmærker, tastatur eller berøring. Du kan kun vælge de eksakte timer, der faktisk er tilbage i det gyldige datasæts 118-timershorisont. Udløbne datoer forlænges ikke.
