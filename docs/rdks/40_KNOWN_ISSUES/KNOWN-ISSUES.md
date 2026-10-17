@@ -1,3 +1,11 @@
+## 17. oktober — SOURCE19: observermålinger uden længere frist eller aktivering
+
+Den præcise kildekontrol 38994924874 på 4c223 bestod fire H70-cases og to H71-afvisninger. Den positive H71-case nåede faktisk H70, H71 og native CP, men stoppede ved observerens uændrede 150-sekunders frist før bevist working-install. Den almindelige kildekontrol blev sprunget over; faktisk SDK-import efter testrettelsen er derfor stadig UNRUN. Hele run-logarkivet og første relevante joblog er bevaret privat. Tidligere syv native-PASS på 76d21 ommærkes ikke til dette head.
+
+Kun den eksisterende prøveobserver får faste fasetider, processtatus, samlede og seneste CPU-/I/O-deltaer samt en afgrænset journaloptælling. Den følger samme procesidentitet og registrerer parent-skift; journalen er udtrykkeligt en uforseglet observation, aldrig ACK, ejer- eller installationsbevis. Ingen rå processargumenter, paths, journalrækker eller child-payload udskrives. Efter faktisk outer-ECHILD forsøges den eksisterende strenge hele stderr-capture igen; efterfølgende stopdiagnostik er ikke automatisk den primære årsag.
+
+150/180-sekunders grænser, alle gamle assertions, produktguards, 27 produktpins og ni frosne fixtures bevares. Lokale målprøver kontrollerer målinger, identitetsskift, fejl og payloadfrihed. Windows kan afvise stabil stderr-capture på grund af forskellige ctime-visninger; den gamle test og guard er uændrede, og afvisningen registreres ærligt som UNPROVEN. Det er ikke ny Linux-native- eller samlet kildeevidens. Ny præcis normal CI skal afgøre forløbet; SOURCE19 forbliver inaktiv, og main, model, SQL-installation, providere og produktion ændres ikke. Ældre status nedenfor bevares som dateret historik.
+
 ## 17. oktober — SOURCE19: syv nativecases bestået, samlet kildekontrol fortsat rød
 
 CI 38993322357 på præcis 76d21 bestod faktisk alle fire H70- og tre H71-cases. Det beviser deres isolerede nativegrænser, ikke finalizer, holdbar SAVE, offentlig levering eller aktivering. Den efterfølgende almindelige kildekontrol fejlede i den gamle cache-only-distributionsprøve; de senere kildegates blev ikke kørt. Hele første joblog er bevaret privat.

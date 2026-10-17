@@ -1,5 +1,13 @@
 ## 89.250 En fejl skal kunne forklares uden at røbe private data
 
+### 17. oktober: observeren måler uden at give mere tid
+
+På præcis 4c223 bestod fire H70-prøver og to H71-afvisninger. Den positive H71-prøve nåede H70, H71 og native CP, men fristen på 150 sekunder udløb før bevist installation. Den almindelige kildekontrol blev korrekt sprunget over. De tidligere syv beståede nativeprøver på 76d21 er særskilt historik; de beviser ikke dette head.
+
+Prøvens observer måler nu faste fasetider, procesidentitet, parent-skift, CPU-/I/O-forbrug og kendte journal-events. Journalen er kun et uforseglet øjebliksbillede, ikke en kvittering. Efter faktisk stop af alle egne børn kan den eksisterende strenge kontrol læse hele den private fejllog igen. Stopfejl efter oprydning er ikke i sig selv den oprindelige årsag. Ingen rå private oplysninger udskrives.
+
+Tidsgrænser, gamle assertions, produktkontroller og prøveoriginaler ændres ikke. De lokale målinger er ikke et Linuxbevis; Windows kan fortsat afvise stabil logindlæsning på grund af forskellige tidsstempelvisninger. Ny normal CI og faktisk SDK-import er åbne. SOURCE19 er inaktiv, og produktionen ændres ikke.
+
 ### 17. oktober: syv nativeprøver er bestået, men samlet kildekontrol er rød
 
 Alle fire H70- og tre H71-prøver er faktisk bestået på præcis 76d21. Den efterfølgende almindelige kildekontrol fejlede: den gamle importtest kendte kun den tidligere cache-pakke, ikke den allerede indførte artifact-pakke. Senere kildekontroller blev ikke kørt. De beståede nativegrænser er ikke bevis for holdbar gemning, offentlig levering eller aktivering.

@@ -760,6 +760,122 @@ export async function assertSource19ContinuityComposition() {
 }
 // END exact V4 composition.
 
+export async function testSource19ObserverTelemetry() {
+  const {spawnSync}=await import('node:child_process');
+  const source=await fs.readFile('scripts/test-source19-union-native.py','utf8');
+  const probe=spawnSync(process.env.PYTHON||'python',['-I','-B','-c',String.raw`
+import ast,json,os,pathlib,re,stat,subprocess,sys,tempfile,types
+source=sys.stdin.read(); tree=ast.parse(source)
+names={'source19_observer_proc','source19_observer_journal','Source19ObserverTelemetry','source19_post_echild_failure','capture_source19_before_h_failure','classify_source19_before_h_stderr'}
+nodes=[node for node in tree.body if isinstance(node,(ast.FunctionDef,ast.ClassDef)) and node.name in names]
+assert len(nodes)==6
+ns={'os':os,'stat':stat,'Path':pathlib.Path,'json':json,'re':re,'sha':__import__('hashlib').sha256,
+    'ROOT':pathlib.Path.cwd(),'ENTRY':pathlib.Path('.github/actions/save-owned-dmi-grib/index.cjs')}
+ns['sha']=lambda value:__import__('hashlib').sha256(value).hexdigest()
+clock=[0.0];ns['time']=types.SimpleNamespace(monotonic=lambda:clock[0])
+exec(compile(ast.Module(body=nodes,type_ignores=[]),'<actual-observer-telemetry>','exec'),ns)
+def proc(cpu=10,start=1000,parent=9,state='R'):
+    fields=['0']*20
+    for index,value in [(0,state),(1,parent),(11,cpu),(12,5),(19,start)]:fields[index]=str(value)
+    return ('123 (private-CANARY) '+' '.join(fields)).encode()
+io=lambda read,write:('read_bytes: '+str(read)+'\nwrite_bytes: '+str(write)+'\nprivate-CANARY: 9\n').encode()
+parse=ns['source19_observer_proc']; journal=ns['source19_observer_journal']
+assert parse(proc(),io(1,2))=={'parent':9,'cpu':15,'start':1000,'state':'RUNNING','read':1,'write':2}
+for raw,data in [(b'private-CANARY',b''),(proc(-1),b''),(proc(),io(-1,2)),(proc(),b'read_bytes: 1\nread_bytes: 2\n'),('bad',b'')]:assert parse(raw,data) is None
+assert parse(proc(state='private-CANARY'),b'')['state']=='UNKNOWN'
+events=[{'schemaVersion':1,'actor':'python','pid':123,'event':'child-start'},
+ {'schemaVersion':1,'actor':'python','pid':123,'event':'child-complete'},
+ {'schemaVersion':1,'actor':'node','pid':12,'event':'worker-complete'}]
+raw=b''.join((json.dumps(row)+'\n').encode() for row in events)
+assert journal(raw)['events']=={'child-start':1,'child-complete':1,'worker-complete':1}
+for changed in [{**events[0],'private-CANARY':'private-value'},{**events[0],'actor':'unknown'},
+                {**events[0],'schemaVersion':True},{**events[0],'pid':True}]:
+    value=journal((json.dumps(changed)+'\n').encode());assert value['malformedRows']==1 and not any(value['events'].values())
+assert journal(raw+b'{"private-CANARY":')['partialTail'] is True
+assert journal(b'not-json\n')['malformedRows']==1
+assert journal('private-CANARY')=={'status':'UNKNOWN'}
+current={'raw':proc(),'io':io(1,2),'missing':False}
+class ProcPath:
+    def __init__(self,value):self.value=str(value)
+    def __truediv__(self,other):return ProcPath(self.value+'/'+str(other))
+    def read_bytes(self):
+        if current['missing']:raise FileNotFoundError()
+        assert self.value in ('/proc/123/stat','/proc/123/io')
+        return current['raw' if self.value.endswith('/stat') else 'io']
+ns['Path']=ProcPath;ns['os']=types.SimpleNamespace(sysconf=lambda name:100)
+trace=ns['Source19ObserverTelemetry'](0.0);trace.register('ACTION',123);trace.register('private-CANARY',123)
+clock[0]=1;current.update(raw=proc(110),io=io(4097,8194));trace.sample()
+clock[0]=2;current.update(raw=proc(210),io=io(8193,16386));trace.event('H71_SEEN');trace.event('private-CANARY')
+value=trace.snapshot(None);actual=value['processes']['ACTION']
+assert actual['cpuMs']==2000 and actual['readBytesDelta']==8192 and actual['writeBytesDelta']==16384
+assert actual['recentWindowMs']==2000 and actual['recentCpuMs']==2000
+assert value['eventsMs']=={'H71_SEEN':2000} and value['sourceAdmission'] is False
+current['raw']=proc(310,parent=10);clock[0]=3;assert trace.snapshot(None)['processes']['ACTION']['status']=='PARENT_CHANGED'
+current['raw']=proc(410,start=2000);clock[0]=4;value=trace.snapshot(None)
+assert value['processes']['ACTION']['status']=='IDENTITY_CHANGED' and value['processes']['ACTION']['cpuMs'] is None
+current['missing']=True;clock[0]=5;assert trace.snapshot(None)['processes']['ACTION']['status']=='IDENTITY_CHANGED'
+assert trace.snapshot(None)['processes']['ACTION']['parentChangedSeen'] is True
+assert 'CANARY' not in json.dumps(value) and '"pid":' not in json.dumps(value) and '"parent":' not in json.dumps(value)
+def unavailable(name):raise OSError('private-CANARY')
+ns['os']=types.SimpleNamespace(sysconf=unavailable)
+assert trace.snapshot(None)=={'status':'UNKNOWN','sourceAdmission':False}
+ns['Path']=pathlib.Path;ns['os']=os
+with tempfile.TemporaryDirectory(prefix='rr-s19-observer-post-drain-') as own:
+    root=pathlib.Path(own);pending={'capture':'PENDING_CHILD_STOP','sourceAdmission':False}
+    raw=b'private-CANARY\n'+b'x'*32768+b'\nError [ERR_MODULE_NOT_FOUND]: private-CANARY\n'
+    # Genuine closed synthetic writer, matching the real after-drain boundary.
+    writer="import os,sys\nf=open(sys.argv[1],'xb');f.write(sys.stdin.buffer.read());f.flush();os.fsync(f.fileno());f.close()"
+    subprocess.run([sys.executable,'-I','-B','-c',writer,str(root/'stderr')],input=raw,check=True,
+        env={key:os.environ[key] for key in ('PATH','Path','SystemRoot','TEMP','TMP') if key in os.environ},timeout=10)
+    post=ns['source19_post_echild_failure']
+    for drained in (False,1,None):assert post(root,drained,True,pending)['capture']=='ECHILD_UNPROVEN'
+    assert not (root/'source19-before-h-child-failure.json').exists()
+    assert post(root,True,False,pending)['child']['capture']=='PENDING_CHILD_STOP'
+    named=(root/'stderr').lstat()
+    with (root/'stderr').open('rb') as stream:opened=os.fstat(stream.fileno())
+    keys=('st_dev','st_ino','st_mode','st_nlink','st_size','st_mtime_ns','st_ctime_ns')
+    different=[key for key in keys if getattr(named,key)!=getattr(opened,key)]
+    # Python 3.12 Windows exposes unequal deprecated ctime views. The unchanged
+    # Linux stable-read guard MUST refuse that local fixture, not fake success.
+    expected='UNPROVEN_RETAINED' if os.name=='nt' and different==['st_ctime_ns'] else 'COMPLETE_STABLE'
+    result=post(root,True,True,pending)
+    assert result['timing']=='AFTER_CLEANUP_NOT_PRIMARY_CAUSE' and result['child']['capture']==expected, result
+    assert (root/'stderr').read_bytes()==raw
+    if expected=='COMPLETE_STABLE':
+        assert result['child']['stderrBytes']==len(raw) and result['child']['fixedFailures'][0]['code']=='ERR_MODULE_NOT_FOUND'
+    else:assert not (root/'source19-before-h-child-failure.json').exists()
+    assert 'CANARY' not in json.dumps(result)
+    # Actual read-only journal function over owned files; Linux O_NOFOLLOW and
+    # pread semantics are NOT claimed by this Windows-capable filesystem seam.
+    facade=types.SimpleNamespace(**vars(os));facade.O_NOFOLLOW=getattr(os,'O_NOFOLLOW',0);facade.O_NONBLOCK=getattr(os,'O_NONBLOCK',0)
+    def pread(fd,count,offset):os.lseek(fd,offset,os.SEEK_SET);return os.read(fd,count)
+    facade.pread=getattr(os,'pread',pread);ns['os']=facade
+    union=root/'union';union.mkdir();(union/'union-birth.jsonl').write_bytes(raw_events:=b''.join((json.dumps(row)+'\n').encode() for row in events)+b'{"private-CANARY":')
+    actual_trace=ns['Source19ObserverTelemetry'](clock[0]);actual_trace.bind_union(union)
+    seen=actual_trace.journal(union);assert seen['status']=='UNSEALED_SNAPSHOT' and seen['partialTail'] is True
+    assert seen['events']=={'child-start':1,'child-complete':1,'worker-complete':1} and 'CANARY' not in json.dumps(seen)
+    original_pread=facade.pread
+    def growing(fd,count,offset):
+        data=original_pread(fd,count,offset)
+        with (union/'union-birth.jsonl').open('ab') as append:append.write(b'0}\n')
+        return data
+    facade.pread=growing;assert actual_trace.journal(union)['changedWhileRead'] is True
+    facade.pread=original_pread
+    held=root/'held';assert union.parent==root and held.parent==root;union.rename(held);union.mkdir()
+    assert actual_trace.journal(union)=={'status':'ROOT_CHANGED'}
+    ns['os']=os
+assert source.index('owner.drain(); drained = True; owner.leave()') < source.index('post_echild = source19_post_echild_failure(')
+assert "end = observer_started + 150" in source and "helper._LinuxSubsetOwner(time.monotonic() + 180)" in source
+assert "self.assertLess(time.monotonic(), end, 'ACTUAL_H71_ACTION_OBSERVER_DEADLINE')" in source
+print(json.dumps({'status':'SOURCE19_OBSERVER_TELEMETRY_TARGET_PASS','actualFunctions':True,'payloadCanariesAbsent':True,
+ 'cpuAndIoDeltas':True,'changedIdentityAndParentCovered':True,'partialAndForgedJournalCovered':True,
+ 'postECHILDGuardAndWholeStderrCovered':True,'postECHILDStableCapture':expected,
+ 'budgetsUnchanged':True,'nativeExecution':'UNRUN','sourceAdmission':False}))
+`],{input:source,encoding:'utf8',timeout:30000,maxBuffer:1024*1024,windowsHide:true});
+  assert.equal(probe.status,0,probe.stderr);
+  return JSON.parse(probe.stdout);
+}
+
 export async function testSource19NativeCiWorkflow(input=null) {
   const workflow=(input??await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
   const historical=projectSource19NativeCiWorkflow(workflow);
@@ -820,6 +936,7 @@ export async function testSource19NativeCiWorkflow(input=null) {
   await testSource19ProcDiscoveryRaces();
   await testSource19FixtureDiagnosticsPrerequisite();
   await testSource19BeforeHFailureDiagnostics();
+  await testSource19ObserverTelemetry();
   await testSource19FixedProductDiagnostics();
   await assertSource19FixedDiagnosticComposition();
   await assertSource19RestoreBoundsComposition();

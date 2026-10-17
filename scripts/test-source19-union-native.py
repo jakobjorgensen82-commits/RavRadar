@@ -149,6 +149,176 @@ def capture_source19_before_h_failure(root, action_exited):
 
 # END TEST-ONLY before-H diagnostics.
 
+# TEST-ONLY observer telemetry. No owner, ACK, deadline or outcome authority.
+def source19_observer_proc(raw, io):
+    if type(raw) is not bytes or type(io) is not bytes or max(len(raw), len(io)) > 16384:
+        return None
+    try:
+        fields = raw.rsplit(b')', 1)[1].split()
+        parent, user, system, start = (int(fields[index]) for index in (1, 11, 12, 19))
+        if min(parent, user, system, start) < 0 or max(parent, user + system, start) >= 2 ** 63:
+            return None
+        counters = {}
+        for line in io.splitlines():
+            key, separator, value = line.partition(b':')
+            if separator and key in (b'read_bytes', b'write_bytes'):
+                number = int(value)
+                if number < 0 or number >= 2 ** 63 or key in counters:
+                    return None
+                counters[key] = number
+        return {'parent': parent, 'cpu': user + system, 'start': start,
+            'state': {b'R': 'RUNNING', b'S': 'SLEEPING', b'D': 'IO_WAIT', b'T': 'STOPPED',
+                b't': 'STOPPED', b'Z': 'ZOMBIE', b'I': 'IDLE'}.get(fields[0], 'UNKNOWN'),
+            'read': counters.get(b'read_bytes'), 'write': counters.get(b'write_bytes')}
+    except (ValueError, IndexError):
+        return None
+
+
+def source19_observer_journal(raw):
+    if type(raw) is not bytes or len(raw) > 65536:
+        return {'status': 'UNKNOWN'}
+    result = {'events': dict.fromkeys(('child-start', 'child-complete', 'worker-complete'), 0),
+        'otherRows': 0, 'malformedRows': 0, 'partialTail': bool(raw and not raw.endswith(b'\n'))}
+    for line in raw.split(b'\n')[:-1]:
+        try:
+            row = json.loads(line)
+            event = row.get('event') if type(row) is dict else None
+            if event not in result['events']:
+                result['otherRows'] += 1
+                continue
+            if (set(row) != {'schemaVersion', 'actor', 'pid', 'event'} or type(row['schemaVersion']) is not int or row['schemaVersion'] != 1
+                    or type(row['pid']) is not int or row['pid'] < 1
+                    or row['actor'] != ('node' if event == 'worker-complete' else 'python')):
+                raise ValueError('OBSERVATION_NOT_A_JOURNAL_PROOF')
+            result['events'][event] += 1
+        except (ValueError, TypeError, RecursionError):
+            result['malformedRows'] += 1
+    return result
+
+
+class Source19ObserverTelemetry:
+    ROLES = ('ACTION', 'SUPERVISOR', 'WORKER', 'CP_1', 'CP_2', 'CP_3', 'CP_4')
+    EVENTS = ('H70_SEEN', 'H71_SEEN', 'NATIVE_CP_SEEN', 'RESULT_NONEMPTY', 'WORKING_INSTALL_SEEN', 'FAILURE')
+
+    def __init__(self, started):
+        self.started, self.next_sample, self.cost = started, started, 0.0
+        self.events, self.roles, self.union_identity = {}, {}, None
+
+    def event(self, name):
+        if name in self.EVENTS and name not in self.events:
+            self.events[name] = round(max(0, time.monotonic() - self.started) * 1000, 3)
+
+    def register(self, role, pid):
+        if role in self.ROLES and type(pid) is int and pid > 0 and role not in self.roles:
+            self.roles[role] = {'pid': pid, 'first': None, 'last': None, 'samples': 0, 'history': [], 'status': 'UNKNOWN', 'parentChangedSeen': False}
+            self.sample(True)
+
+    def cp(self, pid):
+        if not any(row['pid'] == pid for row in self.roles.values()):
+            for role in self.ROLES[3:]:
+                if role not in self.roles:
+                    self.register(role, pid)
+                    break
+
+    def sample(self, force=False):
+        now = time.monotonic()
+        if not force and now < self.next_sample:
+            return
+        self.next_sample = now + 1.0
+        for row in self.roles.values():
+            if row['status'] == 'IDENTITY_CHANGED':
+                continue
+            try:
+                root = Path('/proc') / str(row['pid'])
+                value = source19_observer_proc((root / 'stat').read_bytes(), (root / 'io').read_bytes())
+                if value is None:
+                    row['status'] = 'UNKNOWN'
+                elif row['first'] is not None and value['start'] != row['first']['start']:
+                    row['status'] = 'IDENTITY_CHANGED'
+                else:
+                    row['first'] = row['first'] or value
+                    row['last'], row['samples'] = value, row['samples'] + 1
+                    row['history'] = (row['history'] + [(now, value)])[-4:]
+                    row['lastSeenMs'] = round(max(0, now - self.started) * 1000, 3)
+                    row['status'] = 'PARENT_CHANGED' if value['parent'] != row['first']['parent'] else 'SAME_IDENTITY'
+                    row['parentChangedSeen'] |= row['status'] == 'PARENT_CHANGED'
+            except Exception:
+                row['status'] = 'NOT_PRESENT_OR_UNREADABLE'
+        self.cost += time.monotonic() - now
+
+    def bind_union(self, directory):
+        try:
+            value = directory.lstat()
+            if stat.S_ISDIR(value.st_mode) and not directory.is_symlink():
+                self.union_identity = (value.st_dev, value.st_ino)
+        except OSError:
+            pass
+
+    def journal(self, directory):
+        try:
+            if directory is None or self.union_identity is None:
+                return {'status': 'NOT_OBSERVED'}
+            named = directory.lstat()
+            if directory.is_symlink() or (named.st_dev, named.st_ino) != self.union_identity:
+                return {'status': 'ROOT_CHANGED'}
+            fd = os.open(directory / 'union-birth.jsonl', os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+            try:
+                before = os.fstat(fd)
+                if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+                    return {'status': 'UNKNOWN'}
+                offset = max(0, before.st_size - 65536)
+                raw = os.pread(fd, min(before.st_size, 65536), offset)
+                result = source19_observer_journal(raw.partition(b'\n')[2] if offset else raw)
+                after = os.fstat(fd)
+                result.update({'status': 'UNSEALED_SNAPSHOT', 'bytes': before.st_size, 'tailOnly': bool(offset),
+                    'changedWhileRead': (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns)})
+                return result
+            finally:
+                os.close(fd)
+        except Exception:
+            return {'status': 'UNKNOWN_RETAINED'}
+
+    def snapshot(self, directory):
+        try:
+            return self._snapshot(directory)
+        except Exception:
+            return {'status': 'UNKNOWN', 'sourceAdmission': False}
+
+    def _snapshot(self, directory):
+        self.sample(True)
+        ticks = os.sysconf('SC_CLK_TCK')
+        processes = {}
+        for role, row in self.roles.items():
+            first, last = row['first'], row['last']
+            valid = first is not None and last is not None and row['status'] != 'IDENTITY_CHANGED'
+            delta = lambda key: last[key] - first[key] if valid and first[key] is not None and last[key] is not None and last[key] >= first[key] else None
+            cpu = delta('cpu')
+            history = row['history']
+            recent = history[0][1] if valid and history else None
+            recent_delta = lambda key: last[key] - recent[key] if recent is not None and last[key] is not None and recent[key] is not None and last[key] >= recent[key] else None
+            recent_cpu = recent_delta('cpu')
+            processes[role] = {'status': row['status'], 'samples': row['samples'], 'state': last['state'] if valid else 'UNKNOWN',
+                'parentChangedSeen': row['parentChangedSeen'],
+                'lastSeenMs': row.get('lastSeenMs'), 'cpuMs': round(cpu * 1000 / ticks, 3) if cpu is not None and ticks > 0 else None,
+                'readBytesDelta': delta('read'), 'writeBytesDelta': delta('write'),
+                'recentWindowMs': round((history[-1][0] - history[0][0]) * 1000, 3) if recent is not None else None,
+                'recentCpuMs': round(recent_cpu * 1000 / ticks, 3) if recent_cpu is not None and ticks > 0 else None,
+                'recentReadBytesDelta': recent_delta('read'), 'recentWriteBytesDelta': recent_delta('write')}
+        return {'status': 'OBSERVATION_ONLY', 'elapsedMs': round((time.monotonic() - self.started) * 1000, 3),
+            'eventsMs': dict(self.events), 'processes': processes, 'journal': self.journal(directory),
+            'samplingCostMs': round(self.cost * 1000, 3), 'sourceAdmission': False}
+
+
+def source19_post_echild_failure(root, drained, action_exited, before):
+    if drained is not True:
+        return {'capture': 'ECHILD_UNPROVEN', 'sourceAdmission': False}
+    if type(before) is not dict or before.get('capture') != 'PENDING_CHILD_STOP':
+        return {'capture': 'PRE_STOP_CAPTURE_ALREADY_RETAINED', 'sourceAdmission': False}
+    return {'timing': 'AFTER_CLEANUP_NOT_PRIMARY_CAUSE', 'sourceAdmission': False,
+        'child': capture_source19_before_h_failure(root, action_exited)}
+# END TEST-ONLY observer telemetry.
+
+
 def strict_json(path, maximum=8 * 1024 * 1024):
     info = path.lstat()
     if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or not 2 <= info.st_size <= maximum:
@@ -595,6 +765,7 @@ class SourceActualSUnionNative(unittest.TestCase):
         h70_seen = False; cp_merge_seen = False; install_observed = False
         union_root = None; baseline = None; completed_report = None
         first_working = None; last_programs = set()
+        observer = None; observer_report = None; before_h = None; drained = False
         def process_args(pid):
             return Path(f'/proc/{pid}/cmdline').read_bytes().split(b'\0')[:-1]
         def parent_of(pid):
@@ -622,9 +793,13 @@ class SourceActualSUnionNative(unittest.TestCase):
                 stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1])
             action_fd = os.pidfd_open(process.pid); retained.append(action_fd)
             self.assertEqual(process_args(process.pid), [os.fsencode(NODE), os.fsencode(action)])
-            end = time.monotonic() + 150
+            observer_started = time.monotonic()
+            end = observer_started + 150
+            observer = Source19ObserverTelemetry(observer_started)
+            observer.register('ACTION', process.pid)
             while process.poll() is None:
                 self.assertLess(time.monotonic(), end, 'ACTUAL_H71_ACTION_OBSERVER_DEADLINE')
+                observer.sample()
                 for pid in descendants(process.pid):
                     try:
                         try:
@@ -636,10 +811,13 @@ class SourceActualSUnionNative(unittest.TestCase):
                         if os.fsencode(root / 'scripts/run-copernicus-weather-components.py') in args:
                             if b'--storage-inventory' in args:
                                 h70_seen = True
+                                observer.event('H70_SEEN')
                             if b'--merge-generations' in args and b'--source-union-born-journal' in args:
                                 self.assertIsNotNone(observed, 'NATIVE_UNION_WITHOUT_OBSERVED_H71')
                                 self.assertEqual(parent_of(pid), observed['worker'], 'NATIVE_CP_NOT_CHILD_OF_ACTUAL_UNION_WORKER')
                                 cp_merge_seen = True
+                                observer.event('NATIVE_CP_SEEN')
+                                observer.cp(pid)
                         for name in ('run-dmi-bulk-supervised.py', 'fetch-open-meteo-components.mjs', 'run-copernicus-weather-components.py'):
                             if any(value.endswith(os.fsencode('/' + name)) for value in args):
                                 last_programs.add(name)
@@ -662,6 +840,10 @@ class SourceActualSUnionNative(unittest.TestCase):
                         self.assertEqual(capsule['target'], protocol['target'])
                         self.assertEqual(capsule['productionReferenceAt'], descriptor['reference'])
                         observed = {'worker': pid, 'h': h_pid, 'workerFd': worker_fd, 'hFd': h_fd}
+                        observer.event('H71_SEEN')
+                        observer.register('SUPERVISOR', h_pid)
+                        observer.register('WORKER', pid)
+                        observer.bind_union(union_root)
                         baseline = self.original_destinations(root, protocol)
                         self.assertTrue(h70_seen, 'REAL_B_INSTALL_H70_PREREQUISITE_NOT_OBSERVED')
                         for row in protocol['originals']:
@@ -694,6 +876,7 @@ class SourceActualSUnionNative(unittest.TestCase):
                 if observed is not None and mode == 'native-union-install':
                     report_path = union_root / 'union-result.json'
                     if report_path.exists() and report_path.stat().st_size:
+                        observer.event('RESULT_NONEMPTY')
                         try:
                             report = strict_json(report_path, 32 * 1024 * 1024)
                         except (json.JSONDecodeError, AssertionError):
@@ -728,11 +911,15 @@ class SourceActualSUnionNative(unittest.TestCase):
                                         (original['bytes'], original['sha256']))
                                 self.assertFalse(Path(f"/proc/{observed['h']}").exists(), 'H_STILL_LIVE_WHILE_OUTPUTS_INSTALLED')
                                 completed_report = report; install_observed = True
+                                observer.event('WORKING_INSTALL_SEEN')
+                                observer_report = observer.snapshot(union_root)
                                 # Stop only our actual action after the measured
                                 # working boundary, before optional providers.
                                 signal.pidfd_send_signal(action_fd, signal.SIGSTOP)
                                 break
                 time.sleep(0.001)
+            if observer_report is None:
+                observer_report = observer.snapshot(union_root)
             self.assertIsNotNone(observed, 'ACTUAL_H71_CALL_NOT_REACHED; prerequisite failure is not PASS')
             if mode == 'native-union-install':
                 self.assertTrue(install_observed, 'ACTUAL_GCM_PACK_H71_NATIVE_MERGED_INSTALL_NOT_COMPLETED')
@@ -761,6 +948,9 @@ class SourceActualSUnionNative(unittest.TestCase):
                 'sourceAdmission': False, 'finalizer': 'UNRUN', 'fullPublication': 'UNRUN', 'realUpstreamNetwork': 0}))
         except BaseException as error:
             case_failure = error
+            if observer is not None:
+                observer.event('FAILURE')
+                observer_report = observer.snapshot(union_root)
             before_h = capture_source19_before_h_failure(root, process is not None and process.poll() is not None)
             diagnostics = []
             try:
@@ -781,11 +971,15 @@ class SourceActualSUnionNative(unittest.TestCase):
             failure = None
             try:
                 owner.deadline = min(owner.deadline, time.monotonic() + 8)
-                owner.drain(); owner.leave()
+                owner.drain(); drained = True; owner.leave()
                 if process is not None:
                     process.wait(timeout=1)
             except BaseException as error:
                 failure = error
+            post_echild = source19_post_echild_failure(root, drained,
+                process is not None and process.poll() is not None, before_h) if case_failure is not None else None
+            print(json.dumps({'source19UnionObserver': observer_report or {'status': 'NOT_STARTED', 'sourceAdmission': False},
+                'outerECHILDObserved': drained, 'postECHILDFailure': post_echild, 'sourceAdmission': False}))
             for descriptor_fd in retained:
                 try:
                     os.close(descriptor_fd)
