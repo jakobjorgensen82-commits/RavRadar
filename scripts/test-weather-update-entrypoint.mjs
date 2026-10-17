@@ -55,7 +55,46 @@ const establishedNativeCurrentUpdaterHunks = [
     "after": "if (establishedNativeCurrentOrigin !== null) {\n  // Reissue explicitly from ALL actual successful normal part results and\n  // the final projected H0 pairs. Never copy/spread an old attestation or use\n  // the terminal forecast continuation in place of the current target pair.\n  output.privateEstablishedNativeCurrentOrigin =\n    await buildEstablishedNativeCurrentOriginAttestation(establishedNativeCurrentOrigin, {\n      centralContract: coastalPartsContract,\n      conditions: output,\n      partResults: coastalPartScoreBuild?.establishedNativeCurrentPartResults,\n    });\n}\n// Byg først de offentlige, begrænsede timefiler fra den komplette beregning i\n"
   }
 ];
+// Exact diagnostic-only inverse before the unchanged historical callers.
+const savedCurrentReplayUpdaterHunks = [
+  {
+    "before": "  buildEstablishedNativeCurrentOriginAttestation,\n} from './lib/established-native-current-origin.mjs';\nimport { summarizeRavScoreInitialCurrentWindow } from './lib/ravscore-initial-current-window-audit.mjs';\nimport {\n  buildNewestValidRavScoreRecoverySources,\n  summarizeIsolatedRavScoreWaveReplayConflicts,\n",
+    "after": "  buildEstablishedNativeCurrentOriginAttestation,\n} from './lib/established-native-current-origin.mjs';\nimport { summarizeRavScoreInitialCurrentWindow } from './lib/ravscore-initial-current-window-audit.mjs';\nimport { summarizeSavedCurrentReplayGridFailure } from './lib/saved-current-replay-grid-audit.mjs';\nimport {\n  buildNewestValidRavScoreRecoverySources,\n  summarizeIsolatedRavScoreWaveReplayConflicts,\n"
+  },
+  {
+    "before": "    throw new Error('Coastal-point activation-state injection contains a non-active part');\n  }\n  const expectedByZone = new Map();\n  const partRows = [];\n  // Actual normal results stay private and retain their pipeline WeakMap\n  // identity. The finalizer checks their exact H0 pairs against output.\n",
+    "after": "    throw new Error('Coastal-point activation-state injection contains a non-active part');\n  }\n  const expectedByZone = new Map();\n  const savedCurrentReplayDiagnostic = process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'\n    ? { firstError: null, observedParts: 0, gridUnknownParts: 0 } : null;\n  try {\n  const partRows = [];\n  // Actual normal results stay private and retain their pipeline WeakMap\n  // identity. The finalizer checks their exact H0 pairs against output.\n"
+  },
+  {
+    "before": "      });\n      let productionSeries;\n      try {\n        productionSeries = buildRavScoreProductionPartSeries({\n          establishedNativeCurrentOrigin,\n          requireNativeGridSampling: true,\n",
+    "after": "      });\n      let productionSeries;\n      try {\n        if (savedCurrentReplayDiagnostic) savedCurrentReplayDiagnostic.observedParts++;\n        productionSeries = buildRavScoreProductionPartSeries({\n          establishedNativeCurrentOrigin,\n          requireNativeGridSampling: true,\n"
+  },
+  {
+    "before": "            ),\n        });\n      } catch (error) {\n        if (error?.code === 'RAVSCORE_INITIAL_CURRENT_NEW_USE_NOT_READY') {\n          // Diagnostic only: unchanged normal reconstruction and original throw.\n          // No private values, points, source identities or timestamps leave it.\n",
+    "after": "            ),\n        });\n      } catch (error) {\n        if (process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'\n          && error?.code === 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED' && error.samplingStatus === 'unknown') {\n          // Observation only of this ACTUAL normal call. Preserve first error,\n          // every source/guard, the whole old H0 pair and all numeric output.\n          try {\n            console.error('RAVSCORE_SAVED_CURRENT_REPLAY_AUDIT ' + JSON.stringify(summarizeSavedCurrentReplayGridFailure({\n              error, part: { ...part, zoneId }, initialSelection, targetReferenceAt: generatedAt,\n              recoverySources, establishedNativeCurrentOrigin,\n            })));\n          } catch { console.error('RAVSCORE_SAVED_CURRENT_REPLAY_AUDIT_UNAVAILABLE'); }\n          savedCurrentReplayDiagnostic.firstError ??= error;\n          savedCurrentReplayDiagnostic.gridUnknownParts++;\n          // Continue only this private diagnosis to the next normally built\n          // PART input. There is no fabricated result, state or retry. The\n          // SAME first error is rethrown before any output/finalizer below.\n          continue;\n        }\n        if (error?.code === 'RAVSCORE_INITIAL_CURRENT_NEW_USE_NOT_READY') {\n          // Diagnostic only: unchanged normal reconstruction and original throw.\n          // No private values, points, source identities or timestamps leave it.\n"
+  },
+  {
+    "before": "    }\n  }\n\n  // Aggregate fixed component labels only; never log a private part, hour,\n  // value or source identity when an unproved same-run refresh is retained.\n  console.log(`RAVSCORE_PROTECTED_SAME_RUN_DMI_RETAINED ${JSON.stringify(protectedSameRunDmiRetentions)}`);\n",
+    "after": "    }\n  }\n\n  if (savedCurrentReplayDiagnostic?.firstError) throw savedCurrentReplayDiagnostic.firstError;\n\n  // Aggregate fixed component labels only; never log a private part, hour,\n  // value or source identity when an unproved same-run refresh is retained.\n  console.log(`RAVSCORE_PROTECTED_SAME_RUN_DMI_RETAINED ${JSON.stringify(protectedSameRunDmiRetentions)}`);\n"
+  },
+  {
+    "before": "      ? null\n      : buildPrivateCandidateGWarmupRuntime(candidateGRollbackRuntime),\n  };\n}\n\n// Shared recovery record: collections\n",
+    "after": "      ? null\n      : buildPrivateCandidateGWarmupRuntime(candidateGRollbackRuntime),\n  };\n  } catch (error) {\n    if (savedCurrentReplayDiagnostic?.firstError) {\n      console.error('RAVSCORE_SAVED_CURRENT_REPLAY_COLLECTION ' + JSON.stringify({\n        schemaVersion: 1, kind: 'SAVED_CURRENT_REPLAY_COLLECTION',\n        observedParts: savedCurrentReplayDiagnostic.observedParts,\n        gridUnknownParts: savedCurrentReplayDiagnostic.gridUnknownParts,\n        anotherGuardStoppedCollection: error !== savedCurrentReplayDiagnostic.firstError,\n        scope: 'NORMAL_CALLS_REACHED_BEFORE_FIRST_OTHER_STOP',\n        allPartsReached: savedCurrentReplayDiagnostic.observedParts === Number(contract?.partCount),\n        allRowsActuallyConsumed: false, minimalNecessaryOriginalsProved: false,\n        continuationIssued: false, publicationInvoked: false, productionAuthority: false,\n      }));\n      throw savedCurrentReplayDiagnostic.firstError;\n    }\n    throw error;\n  }\n}\n\n// Shared recovery record: collections\n"
+  },
+  {
+    "before": "const establishedNativeCurrentOrigin = coastalPartsContract.enabled\n  ? await readEstablishedNativeCurrentOrigin(coastalPartsContract)\n  : null;\nconst coastalPartScoreBuild = coastalPartsContract.enabled\n  ? scoreCoastalPartsRuntime(\n    coastalPartsContract,\n",
+    "after": "const establishedNativeCurrentOrigin = coastalPartsContract.enabled\n  ? await readEstablishedNativeCurrentOrigin(coastalPartsContract)\n  : null;\nif (process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'\n  && establishedNativeCurrentOrigin === null) throw new Error('SAVED_CURRENT_REPLAY_ORIGIN_REQUIRED');\nconst coastalPartScoreBuild = coastalPartsContract.enabled\n  ? scoreCoastalPartsRuntime(\n    coastalPartsContract,\n"
+  }
+];
+function inverseSavedCurrentReplayUpdater(source) {
+  for (const hunk of [...savedCurrentReplayUpdaterHunks].reverse()) {
+    assert.equal(source.split(hunk.after).length, 2, 'each exact replay diagnostic hunk must occur once; exact reviewed positive-origin hunk context required');
+    source = source.replace(hunk.after, () => hunk.before);
+  }
+  return source;
+}
 function inverseEstablishedNativeCurrentUpdater(source) {
+  if (source.includes('RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC')) source = inverseSavedCurrentReplayUpdater(source);
   for (const hunk of [...establishedNativeCurrentUpdaterHunks].reverse()) {
     assert.equal(source.split(hunk.after).length, 2,
       'each exact reviewed positive-origin hunk must occur once');
@@ -448,7 +487,7 @@ function inverseLegacyTransportSettlement(source) {
 // not the isolated 519 restored SOURCE/session API. This checks the actual
 // DMI queue body only; it is not SOURCE, original-B/S, history or whole-job proof.
 test('positive native-origin caller preserves exact historical updater and refuses every missing hunk', async () => {
-  const source = await sourceText(producerPath);
+  const source = inverseSavedCurrentReplayUpdater(await sourceText(producerPath));
   assert.equal(digest(source), '608b795d382d96fed7435ffd9437f589f8771ea742ec65f75053d25059b9d25d');
   assert.equal(digest(inverseEstablishedNativeCurrentUpdater(source)),
     'c360d7c6370b6ff4078ce94e306478bd3f5e38fdda90d4006f3e4329c976458c');
@@ -888,4 +927,32 @@ test('epoch scalar inverse rejects changed numeric/source routing before all imm
     assert(actual.includes(before), 'Mutation must change the actual reviewed scalar route');
     assert.throws(() => inverseWeatherStateEpochIntegration(actual.replace(before, after)), /exact reviewed epoch scalar hunk/);
   }
+});
+// New caller admission is separate; no historical whole-source assertion is retagged.
+test('390663 replay diagnostic has an exact whole updater inverse and refuses all missing diagnostic hunks', async () => {
+  const actual = await sourceText(producerPath);
+  assert.equal(digest(actual), 'a748c0fbc5e266ffbe69c21a8ff6953c05b6cee1c5245d798de82e2307002025');
+  assert.equal(digest(inverseSavedCurrentReplayUpdater(actual)), '608b795d382d96fed7435ffd9437f589f8771ea742ec65f75053d25059b9d25d');
+  for (const hunk of savedCurrentReplayUpdaterHunks) {
+    assert.throws(() => inverseSavedCurrentReplayUpdater(actual.replace(hunk.after, () => hunk.before)),
+      /each exact replay diagnostic hunk/);
+  }
+});
+
+test('normal follower input keeps its whole140000 updater pin without repeating the673 chain', async () => {
+  const follower = await sourceText(new URL('./test-established-native-current-origin-followers.mjs', import.meta.url));
+  const begin = follower.indexOf('function normalOriginUpdaterTestInput(source, oracle) {');
+  const end = follower.indexOf('\nconst P0 =', begin);
+  assert(begin >= 0 && end > begin);
+  const normalInput = new Function('assert', 'sha', follower.slice(begin, end)
+    + '\nreturn normalOriginUpdaterTestInput;')(assert, digest);
+  const actual = await sourceText(producerPath);
+  const oracle = await sourceText(new URL('./test-weather-update-entrypoint.mjs', import.meta.url));
+  assert.equal(digest(actual), 'a748c0fbc5e266ffbe69c21a8ff6953c05b6cee1c5245d798de82e2307002025');
+  const old = normalInput(actual, oracle);
+  assert.equal(old, inverseSavedCurrentReplayUpdater(actual));
+  assert.equal(normalInput(old, oracle), old);
+  assert.throws(() => normalInput(actual + '// unreviewed drift\n', oracle), /whole genuine140000/);
+  for (const hunk of savedCurrentReplayUpdaterHunks)
+    assert.throws(() => normalInput(actual.replace(hunk.after, () => hunk.before), oracle), /each exact replay diagnostic hunk/);
 });
