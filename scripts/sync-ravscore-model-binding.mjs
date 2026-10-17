@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { currentMemoryWarmupMigration, readCurrentMemoryWarmupCanonicalSource }
-  from './lib/current-memory-warmup-successor-source.mjs';
+import { establishedNativeCurrentOriginMigration, readEstablishedNativeCurrentOriginCanonicalSource }
+  from './lib/established-native-current-origin-successor-source.mjs';
 import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
@@ -30,7 +31,7 @@ const SQL_BINDING_PATHS = Object.freeze([
   'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
 ]);
 const CHECKPOINT_METADATA_CAS_MIGRATION_PATH =
-  'supabase/migrations/' + currentMemoryWarmupMigration().filename;
+  'supabase/migrations/' + establishedNativeCurrentOriginMigration().filename;
 const CHECKPOINT_METADATA_CAS_MARKER = 'RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED';
 const CHECKPOINT_METADATA_CAS_INNER_MARKERS = Object.freeze([
   'RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED',
@@ -111,12 +112,30 @@ function assertJsonBindingBlock(block, binding, assertion, label) {
 export function checkpointMetadataCasBlock(source, binding, candidateBinding, continuationHash) {
   const label = `${CHECKPOINT_METADATA_CAS_MIGRATION_PATH} checkpoint metadata CAS`;
   const outer = exactGeneratedBlock(source, CHECKPOINT_METADATA_CAS_MARKER, label);
+  // Frozen0200 aliases deliberately preserve their ORIGINAL generated-marker
+  // comments too. Validate both complete immutable definitions before removing
+  // them from this current-binding-only inspection view. The returned SQL still
+  // contains every original byte; no alias is rebound, hidden or rewritten.
+  let currentView=source;
+  const originalAliases=[
+    ['public.ravradar_ravscore_checkpoint_cmw0200_state_valid','7841b008be46efc651c3c416ded60145fa2265954a39020a50974b353ac3feb0'],
+    ['public.ravradar_ravscore_checkpoint_cmw0200_payload_valid','225de0e8252fa5ab814432a0ce0424ecc663d2552062f2b341b7cbab8054dbaa'],
+  ];
+  if(originalAliases.some(([name])=>source.includes('function '+name+'('))){
+    for(const [name,pin]of originalAliases){
+      const original=exactFunctionDefinition(currentView,name,label+' frozen0200 original');
+      assert.equal(crypto.createHash('sha256').update(original.text).digest('hex'),pin,
+        'Whole original0200 alias changed');
+      currentView=currentView.slice(0,original.start)+currentView.slice(original.end);
+    }
+  }
+  const validationOuter=exactGeneratedBlock(currentView,CHECKPOINT_METADATA_CAS_MARKER,label);
   const innerBlocks = Object.fromEntries(CHECKPOINT_METADATA_CAS_INNER_MARKERS.map(marker => [
     marker,
-    exactGeneratedBlock(source, marker, `${label} ${marker}`),
+    exactGeneratedBlock(currentView, marker, `${label} ${marker}`),
   ]));
   for (const [marker, block] of Object.entries(innerBlocks)) {
-    if (block.start <= outer.start || block.end >= outer.end) {
+    if (block.start <= validationOuter.start || block.end >= validationOuter.end) {
       throw new Error(`${label}: ${marker} is not strictly contained by the outer generated block`);
     }
   }
@@ -124,7 +143,7 @@ export function checkpointMetadataCasBlock(source, binding, candidateBinding, co
   const expectedMarkerNames = [CHECKPOINT_METADATA_CAS_MARKER, ...CHECKPOINT_METADATA_CAS_INNER_MARKERS]
     .flatMap(marker => [`${marker}_BEGIN`, `${marker}_END`])
     .sort();
-  const actualMarkerNames = [...source.matchAll(
+  const actualMarkerNames = [...currentView.matchAll(
     /^[\t ]*-- (RAVSCORE_CHECKPOINT_[A-Z0-9_]+_GENERATED_(?:BEGIN|END))[\t ]*$/gm,
   )].map(match => match[1]).sort();
   assert.deepEqual(
@@ -286,7 +305,7 @@ export async function synchronizeRavScoreModelBinding({ write = false, root = RO
 
   // Sparse immutable successor is reconstructed only as a pinned READ view.
   const { canonicalSource: checkpointMigration, statisticsSchema2Source: accountSource } =
-    await readCurrentMemoryWarmupCanonicalSource({ migrationsDirectory: path.join(root, 'supabase/migrations') });
+    await readEstablishedNativeCurrentOriginCanonicalSource({ migrationsDirectory: path.join(root, 'supabase/migrations') });
   const checkpointBlock = checkpointMetadataCasBlock(
     checkpointMigration,
     binding,

@@ -1,3 +1,13 @@
+## 89.252 Gemte strømtilstande skal fortsættes, ikke genstartes
+
+Den lokale kildekandidat til RavScore 4.0.581 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=038d9b0cdc50d36dd10f207c6f33e909ddedbdacb28c89adbca12121cb2c7f5f` over 91 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=5cc38c658bf14513a029a62de8f5f9e98259630755bdd84bccbc5fb2c1797858` over 92 transitive filer. T12 er `047db5f9c91b555eb47b886d200061456c9cbec450732743265f0f1739114447`. Det er en kildekandidat, ikke installeret eller offentlig binding. De historiske fysiske scorekontrakter er uændrede.
+
+En almindelig vejropdatering skal bevare sin autentisk gemte strømtilstand og derefter behandle nye timer. En engangsovergang mellem kodefortolkninger må ikke gentages som genberegning af allerede gemt historik, når leverandørernes tidsvindue flytter sig.
+
+Den lokale 4.0.581-kandidat binder den faktiske H0-opstart og den tabsfri metadataovergang til en privat oprindelse. Kun validerede, uændrede delkontekster får normal fremadrettet fortsættelse; ukendte tilstande, ændrede punkter og kopier får ingen ny adgang. Manglende timer er fortsat manglende. Kildeprioritet, scoreformel og administratorens punkter ændres ikke.
+
+En lokal syntetisk 673-dels kæde med tre efterfølgere har bestået normal gemning og genlæsning. Dette er ikke bevis for installeret rettelse eller nye offentlige vejrdata. Præcis GitHub-/PostgreSQL-kontrol, sikker levering og faktisk almindelig produktionseffekt mangler. Offentlig 4.0.579 er senest verificeret med genbrugte data fra 16. oktober kl. 12 dansk tid. Cron er senest verificeret slået fra. Ældre daterede statusafsnit bevares som historik.
+
 ## 89.251 Kortet kan vises for en valgt prognosetime
 
 **Nyere lokal kildestatus 17. oktober:** Den seneste præcise kildekontrol bestod PostgreSQL, men fejlede i én af 58 normale kommandogrupper ved pakkens B/S-rundtur. Observationen viste en anden gyldig, ikke-almindelig filtype efter lukning; det beviser hverken en konkret mappe eller en læk. Den tidlige isolerede prøve genfandt ikke fejlen. De senere baseline-, kapacitets- og trækontroller blev ikke kørt, og der kom intet leveringsartifact.
@@ -366,7 +376,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.580
+**Håndbogsversion:** 4.0.581
 
 ## Aktuel lokal kildebinding — 17. oktober 2026, 4.0.579 ikke installeret
 

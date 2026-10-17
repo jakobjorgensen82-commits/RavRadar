@@ -14,7 +14,58 @@ const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 // Invert only the separately reviewed tuple import and archived-epoch orchestration before the
 // older exact-source oracles. The complete genuine 903307 updater remains the
 // immutable baseline; the actual epoch caller has its own normal-path tests.
+// Additive exact inverse of the reviewed positive-origin CALLER integration.
+// This is test source preservation, never an origin/native issuer. All older
+// whole-source hashes and their mutation refusals below remain unchanged.
+const establishedNativeCurrentUpdaterHunks = [
+  {
+    "before": "import { summarizeRavScoreInitialCurrentWindow } from './lib/ravscore-initial-current-window-audit.mjs';",
+    "after": "import {\n  readEstablishedNativeCurrentOrigin,\n  buildEstablishedNativeCurrentOriginAttestation,\n} from './lib/established-native-current-origin.mjs';\nimport { summarizeRavScoreInitialCurrentWindow } from './lib/ravscore-initial-current-window-audit.mjs';"
+  },
+  {
+    "before": "  stateEpochView = null,\n) {",
+    "after": "  stateEpochView = null,\n  establishedNativeCurrentOrigin = null,\n) {"
+  },
+  {
+    "before": "  const partRows = [];\n  const selectedDmiPartRecords = new Map();",
+    "after": "  const partRows = [];\n  // Actual normal results stay private and retain their pipeline WeakMap\n  // identity. The finalizer checks their exact H0 pairs against output.\n  const establishedNativeCurrentPartResults = new Map();\n  const selectedDmiPartRecords = new Map();"
+  },
+  {
+    "before": "        productionSeries = buildRavScoreProductionPartSeries({\n          requireNativeGridSampling: true,",
+    "after": "        productionSeries = buildRavScoreProductionPartSeries({\n          establishedNativeCurrentOrigin,\n          requireNativeGridSampling: true,"
+  },
+  {
+    "before": "        throw error;\n      }\n      const {\n        recovery,",
+    "after": "        throw error;\n      }\n      if (establishedNativeCurrentOrigin !== null) {\n        if (establishedNativeCurrentPartResults.has(part.partId)) {\n          throw new Error('RAVSCORE_ESTABLISHED_NATIVE_CURRENT_RESULT_DUPLICATE');\n        }\n        establishedNativeCurrentPartResults.set(part.partId, productionSeries);\n      }\n      const {\n        recovery,"
+  },
+  {
+    "before": "    selectedDmiPartRecords,\n    currentSourceDomainTransitions,",
+    "after": "    selectedDmiPartRecords,\n    establishedNativeCurrentPartResults,\n    currentSourceDomainTransitions,"
+  },
+  {
+    "before": "const coastalPartScoreBuild = coastalPartsContract.enabled\n",
+    "after": "// Authenticate the installed immutable B/S and its working H0 pair before\n// scoring. This never derives origin from a caller flag, model hash or new\n// provider record, and does not rewrite the old conditions/GCM baseline.\nconst establishedNativeCurrentOrigin = coastalPartsContract.enabled\n  ? await readEstablishedNativeCurrentOrigin(coastalPartsContract)\n  : null;\nconst coastalPartScoreBuild = coastalPartsContract.enabled\n"
+  },
+  {
+    "before": "    previous?.ravScoreCurrentSourceDomainTransitions ?? null,\n    stateEpochView,\n",
+    "after": "    previous?.ravScoreCurrentSourceDomainTransitions ?? null,\n    stateEpochView,\n    establishedNativeCurrentOrigin,\n"
+  },
+  {
+    "before": "// Byg først de offentlige, begrænsede timefiler fra den komplette beregning i\n",
+    "after": "if (establishedNativeCurrentOrigin !== null) {\n  // Reissue explicitly from ALL actual successful normal part results and\n  // the final projected H0 pairs. Never copy/spread an old attestation or use\n  // the terminal forecast continuation in place of the current target pair.\n  output.privateEstablishedNativeCurrentOrigin =\n    await buildEstablishedNativeCurrentOriginAttestation(establishedNativeCurrentOrigin, {\n      centralContract: coastalPartsContract,\n      conditions: output,\n      partResults: coastalPartScoreBuild?.establishedNativeCurrentPartResults,\n    });\n}\n// Byg først de offentlige, begrænsede timefiler fra den komplette beregning i\n"
+  }
+];
+function inverseEstablishedNativeCurrentUpdater(source) {
+  for (const hunk of [...establishedNativeCurrentUpdaterHunks].reverse()) {
+    assert.equal(source.split(hunk.after).length, 2,
+      'each exact reviewed positive-origin hunk must occur once');
+    source = source.replace(hunk.after, () => hunk.before);
+  }
+  return source;
+}
+
 function inverseWeatherStateEpochIntegration(source) {
+  source = inverseEstablishedNativeCurrentUpdater(source);
   // Remove only the diagnostic import/catch before every genuine historical oracle.
   // This issues no new product hash and preserves the original guard and throw.
   for (const diagnosticHunk of [
@@ -396,6 +447,17 @@ function inverseLegacyTransportSettlement(source) {
 // Main 42eb83053cbcc878e51faac73e803846ee54234b has a top-level updater,
 // not the isolated 519 restored SOURCE/session API. This checks the actual
 // DMI queue body only; it is not SOURCE, original-B/S, history or whole-job proof.
+test('positive native-origin caller preserves exact historical updater and refuses every missing hunk', async () => {
+  const source = await sourceText(producerPath);
+  assert.equal(digest(source), '608b795d382d96fed7435ffd9437f589f8771ea742ec65f75053d25059b9d25d');
+  assert.equal(digest(inverseEstablishedNativeCurrentUpdater(source)),
+    'c360d7c6370b6ff4078ce94e306478bd3f5e38fdda90d4006f3e4329c976458c');
+  for (const hunk of establishedNativeCurrentUpdaterHunks) {
+    assert.throws(() => inverseEstablishedNativeCurrentUpdater(
+      source.replace(hunk.after, () => hunk.before)), /each exact reviewed positive-origin hunk/);
+  }
+});
+
 test('reviewed epoch orchestration has an exact whole-source inverse to genuine 903307', async () => {
   const source = await sourceText(producerPath);
   const baseline = inverseWeatherStateEpochIntegration(source);
@@ -578,7 +640,10 @@ test('current frozen routes and warmup checks reach normal checkpoint integratio
     'node scripts/check-account-assistant-issued-source.mjs',
     'node scripts/check-native-identity-frozen-i71-source.mjs',
     'node scripts/test-current-grid-prewrite-diagnostic.mjs',
-    'node scripts/build-current-memory-warmup-successor.mjs --check',
+    'node scripts/run-frozen-current-memory-warmup-source-targets.mjs builder',
+    'node scripts/build-established-native-current-origin-successor.mjs --check',
+    'node --test scripts/test-model-source-imports.mjs scripts/test-established-native-current-origin-successor.mjs scripts/test-established-native-current-origin-postgres-source.mjs scripts/test-code-only-public-coastal-registry-stage.mjs',
+    'node scripts/test-established-native-current-origin-followers.mjs',
     'node scripts/run-frozen-native0600-source-targets.mjs native',
     'node scripts/run-frozen-native0600-source-targets.mjs epoch',
     'node scripts/run-frozen-native0600-source-targets.mjs install',
@@ -588,7 +653,16 @@ test('current frozen routes and warmup checks reach normal checkpoint integratio
     'Every current or genuine historical route must run exactly once.');
   assert.equal(commands.includes('node scripts/build-native-sampling-identity-original-binding-successor.mjs --check'), false,
     'The issued native0600 builder is checked only against its genuine immutable source.');
+  assert.equal(commands.includes('node scripts/build-current-memory-warmup-successor.mjs --check'), false,
+    'The issued0200 builder is checked only through its genuine frozen source, never current origin source.');
   const invoked = commands.flatMap(command => command.split(' '));
+  for(const file of ['scripts/test-model-source-imports.mjs',
+    'scripts/test-established-native-current-origin-successor.mjs',
+    'scripts/test-established-native-current-origin-postgres-source.mjs',
+    'scripts/test-code-only-public-coastal-registry-stage.mjs',
+    'scripts/test-established-native-current-origin-followers.mjs'])
+    assert.equal(invoked.filter(value => value === file).length, 1,
+      'Every actual origin source/current/follower target must occur exactly once.');
   assert.equal(invoked.filter(file => file === 'scripts/test-dmi-forecast-file.mjs').length, 1);
   assert.equal(invoked.filter(file => file === 'scripts/test-weather-update-entrypoint.mjs').length, 0);
   const grouped = await sourceText(new URL('./test-dmi-forecast-file.mjs', import.meta.url));

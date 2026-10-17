@@ -1,3 +1,6 @@
+import { isDeepStrictEqual } from 'node:util';
+import { assertEstablishedNativeCurrentOriginForPart }
+  from './established-native-current-origin.mjs';
 import {
   buildCandidateGRollbackPartScoreSeries,
   assertCandidateGRollbackContinuation,
@@ -454,6 +457,67 @@ export function selectRavScoreProductionInitialState(options = {}) {
   return selectRavScoreInitialState(options);
 }
 
+// The producer alone records successful strict production results. This is not
+// an origin issuer: the fixed origin reader/finalizer still authenticates the
+// handle and the national registry. No JSON, clone or caller receipt can enter
+// this WeakMap. Only the exact H0 score pair is retained, never forecast T+117.
+const establishedNativeCurrentProductionResults = new WeakMap();
+
+function establishedProductionContext(part) {
+  return {
+    partId: part?.partId,
+    parentZoneId: part?.zoneId ?? part?.parentZoneId ?? part?.sourceZoneId,
+    samplingContextKey: ravScoreSamplingContextKey(part),
+    onshoreDirectionDeg: part?.onshoreDirectionDeg,
+  };
+}
+
+function establishedProductionFailure() {
+  const error = new Error('RAVSCORE_ESTABLISHED_NATIVE_CURRENT_RESULT_INVALID');
+  error.code = 'RAVSCORE_ESTABLISHED_NATIVE_CURRENT_RESULT_INVALID';
+  throw error;
+}
+
+function exactEstablishedProductionH0(result, part, targetReferenceAt) {
+  const targetMs = Date.parse(targetReferenceAt);
+  if (typeof targetReferenceAt !== 'string' || !Number.isFinite(targetMs)
+    || targetMs % 3_600_000 !== 0
+    || new Date(targetMs).toISOString() !== targetReferenceAt
+    || !Array.isArray(result?.scores) || !Array.isArray(result?.candidateGRollbackScores)) {
+    establishedProductionFailure();
+  }
+  const integratedRows = result.scores.filter(row => row?.time === targetReferenceAt);
+  const candidateRows = result.candidateGRollbackScores.filter(row => row?.time === targetReferenceAt);
+  if (integratedRows.length !== 1 || candidateRows.length !== 1) establishedProductionFailure();
+  const integrated = integratedRows[0]?.ravScoreModel?.continuationState;
+  const candidate = candidateRows[0]?.candidateG?.continuationState;
+  if (!integrated || !candidate || integrated.time !== targetReferenceAt
+    || candidate.time !== targetReferenceAt) establishedProductionFailure();
+  assertIntegratedCoastalPointContinuation(integrated, {
+    samplingContextKey: ravScoreSamplingContextKey(part),
+  });
+  assertCandidateGRollbackContinuation(candidate, part);
+  return { integrated, candidate };
+}
+
+// Assert-only collector seam for the fixed national origin finalizer. The
+// returned states are detached data, not a new origin handle or native grant.
+export function assertEstablishedNativeCurrentProductionResult(result, {
+  originHandle, part, targetReferenceAt,
+} = {}) {
+  const record = result && typeof result === 'object'
+    ? establishedNativeCurrentProductionResults.get(result) : null;
+  if (!record || !originHandle || record.originHandle !== originHandle
+    || record.targetReferenceAt !== targetReferenceAt
+    || !isDeepStrictEqual(record.context, establishedProductionContext(part))) {
+    establishedProductionFailure();
+  }
+  const pair = exactEstablishedProductionH0(result, part, targetReferenceAt);
+  if (!isDeepStrictEqual(pair, record.pair)) establishedProductionFailure();
+  return { integrated: structuredClone(pair.integrated),
+    candidate: structuredClone(pair.candidate) };
+}
+
 /**
  * One atomic per-part production path. It replays only verified bridge rows,
  * exposes scores only from the target hour, evaluates the integrated model,
@@ -478,6 +542,7 @@ export function buildRavScoreProductionPartSeries({
   requireNativeGridSampling = false,
   assertRoutedWaterLevelApplicable = null,
   liveCurrentPilot = null,
+  establishedNativeCurrentOrigin = null,
 } = {}) {
   if (!part || !zone || !initialSelection
     || typeof initialSelection.source !== 'string'
@@ -526,11 +591,39 @@ export function buildRavScoreProductionPartSeries({
     error.code = 'RAVSCORE_CURRENT_SOURCE_DOMAIN_LEGACY_UNSUPPORTED';
     throw error;
   }
-  let currentTransition = transitionOwnerCurrentHistory({ part, initialSelection,
-    previousCandidateGContinuation, recoverySources, requireNativeGridSampling, liveCurrentPilot });
-  if (requireNativeGridSampling && currentTransition === null) currentTransition = transitionNewInitialCurrentApplication({
-    part, zone, initialSelection, previousCandidateGContinuation,
-    recoverySources, liveCurrentPilot, nativeCadenceHoldHours });
+  if (establishedNativeCurrentOrigin !== null
+    && (typeof establishedNativeCurrentOrigin !== 'object'
+      || Array.isArray(establishedNativeCurrentOrigin) || requireNativeGridSampling !== true)) {
+    establishedProductionFailure();
+  }
+  const establishedContext = establishedNativeCurrentOrigin === null
+    ? null : establishedProductionContext(part);
+  let establishedInitialPair = null;
+  if (establishedNativeCurrentOrigin !== null
+    && ['EXISTING_INTEGRATED', 'INTEGRATED_CHECKPOINT'].includes(initialSelection.source)) {
+    // Exact pair/context qualification comes from the authenticated fixed B/S
+    // origin reader, including clean owner-domain and corrected-grid origin.
+    // A model hash, lineage label or equality of compact evidence is not proof.
+    assertEstablishedNativeCurrentOriginForPart(establishedNativeCurrentOrigin, {
+      part, integrated: initialSelection.state, candidate: previousCandidateGContinuation,
+    });
+    establishedInitialPair = { integrated: structuredClone(initialSelection.state),
+      candidate: structuredClone(previousCandidateGContinuation) };
+  }
+  const normallyReestablished = establishedNativeCurrentOrigin !== null
+    && (initialSelection.source === 'POINT_ACTIVATION'
+      || (initialSelection.source === 'COLD_START' && initialSelection.state === null
+        && measuredColdStartAttested));
+  let currentTransition = null;
+  if (establishedInitialPair === null) {
+    // All unqualified/legacy, point-activation and cold paths retain their
+    // complete pre-existing transitions and strict native admission below.
+    currentTransition = transitionOwnerCurrentHistory({ part, initialSelection,
+      previousCandidateGContinuation, recoverySources, requireNativeGridSampling, liveCurrentPilot });
+    if (requireNativeGridSampling && currentTransition === null) currentTransition = transitionNewInitialCurrentApplication({
+      part, zone, initialSelection, previousCandidateGContinuation,
+      recoverySources, liveCurrentPilot, nativeCadenceHoldHours });
+  }
   if (currentTransition) {
     initialSelection = { ...initialSelection, state: currentTransition.integratedState };
     previousCandidateGContinuation = currentTransition.candidateGState;
@@ -642,7 +735,7 @@ export function buildRavScoreProductionPartSeries({
     || scores.some((score, index) => score.time !== candidateGRollbackScores[index]?.time)) {
     throw new Error('Integrated and Candidate G rollback forecast times diverged');
   }
-  return {
+  const result = {
     recovery,
     ravScoreState,
     scores,
@@ -650,4 +743,21 @@ export function buildRavScoreProductionPartSeries({
     candidateGRollbackScores,
     currentSourceDomainTransition: currentTransition?.privateRecord ?? null,
   };
+  if (establishedInitialPair !== null || normallyReestablished) {
+    if (!isDeepStrictEqual(establishedContext, establishedProductionContext(part))
+      || (establishedInitialPair !== null
+        && !isDeepStrictEqual(establishedInitialPair, {
+          integrated: initialSelection.state, candidate: previousCandidateGContinuation,
+        }))) establishedProductionFailure();
+    // Point/cold results are branded only AFTER the entire unchanged strict
+    // route succeeds. Their global origin/registry authority remains the
+    // fixed finalizer's responsibility; they never bypass either OLD rebuild.
+    establishedNativeCurrentProductionResults.set(result, {
+      originHandle: establishedNativeCurrentOrigin,
+      context: structuredClone(establishedContext),
+      targetReferenceAt,
+      pair: structuredClone(exactEstablishedProductionH0(result, part, targetReferenceAt)),
+    });
+  }
+  return result;
 }

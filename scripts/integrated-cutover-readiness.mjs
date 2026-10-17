@@ -25,6 +25,9 @@ import { nativeIdentityMigration, readNativeIdentityCanonicalSource }
 import {currentMemoryWarmupMigration,requireCurrentMemoryWarmupOutput,readCurrentMemoryWarmupCanonicalSource,
   assertCurrentMemoryWarmupArchivesAbsent,CURRENT_MEMORY_WARMUP_PROJECTION}
   from './lib/current-memory-warmup-successor-source.mjs';
+import {establishedNativeCurrentOriginMigration,requireEstablishedNativeCurrentOriginOutput,
+  readEstablishedNativeCurrentOriginCanonicalSource,ESTABLISHED_NATIVE_CURRENT_ORIGIN_PROJECTION}
+  from './lib/established-native-current-origin-successor-source.mjs';
 import {STATISTICS_REVISION_MIGRATION,STATISTICS_REVISION_PREDECESSOR,buildStatisticsPreferenceRevision}
   from './build-statistics-preference-revision.mjs';
 
@@ -291,14 +294,28 @@ export const NATIVE0600_REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
 
 // Frozen installed native0600 is a historical source phase, never current.
 // The current phase is fixed only after actual C -> I -> T and SQL issuance.
-export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
+export const CURRENT_MEMORY_WARMUP_REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
   ...NATIVE0600_REQUIRED_CUTOVER_MIGRATIONS, currentMemoryWarmupMigration(),
 ]);
+export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
+  ...CURRENT_MEMORY_WARMUP_REQUIRED_CUTOVER_MIGRATIONS, establishedNativeCurrentOriginMigration(),
+]);
 function migrationsForSourcePhase(sourcePhase) {
-  assert(['native0600','current-memory-warmup'].includes(sourcePhase));
+  assert(['native0600','current-memory-warmup','established-native-current-origin'].includes(sourcePhase));
   if (sourcePhase === 'native0600') return NATIVE0600_REQUIRED_CUTOVER_MIGRATIONS;
+  if (sourcePhase === 'established-native-current-origin') {
+    requireEstablishedNativeCurrentOriginOutput(); return REQUIRED_CUTOVER_MIGRATIONS;
+  }
   requireCurrentMemoryWarmupOutput();
-  return REQUIRED_CUTOVER_MIGRATIONS;
+  return CURRENT_MEMORY_WARMUP_REQUIRED_CUTOVER_MIGRATIONS;
+}
+function canonicalForSourcePhase(sourcePhase,migrationsDirectory) {
+  migrationsForSourcePhase(sourcePhase); // Unknown phases fail before filesystem access.
+  if(sourcePhase==='established-native-current-origin')
+    return readEstablishedNativeCurrentOriginCanonicalSource({migrationsDirectory});
+  return sourcePhase==='current-memory-warmup'
+    ? readCurrentMemoryWarmupCanonicalSource({migrationsDirectory})
+    : readNativeIdentityCanonicalSource({migrationsDirectory});
 }
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
@@ -321,7 +338,7 @@ export function currentMemoryWarmupRequiredMigrations(){
   assert.equal(NATIVE0600_REQUIRED_CUTOVER_MIGRATIONS.length,50);
   assert.equal(NATIVE0600_REQUIRED_CUTOVER_MIGRATIONS.at(-1).version,'20261016060000');
   assert.equal(NATIVE0600_REQUIRED_CUTOVER_MIGRATIONS.filter(m=>m.version==='20261013230000').length,1);
-  return REQUIRED_CUTOVER_MIGRATIONS;
+  return CURRENT_MEMORY_WARMUP_REQUIRED_CUTOVER_MIGRATIONS;
 }
 function currentMemoryWarmupRows(migrationListText){
   const required=currentMemoryWarmupRequiredMigrations(); // guard FIRST
@@ -348,7 +365,7 @@ export async function assertCurrentMemoryWarmupMigrationPlan({migrationListText,
   requireCurrentMemoryWarmupOutput(); // before fs, SQL parser or any caller input
   const {required,local,remote}=currentMemoryWarmupRows(migrationListText);
   await readCurrentMemoryWarmupCanonicalSource({migrationsDirectory});
-  await inspectMigrationSources({migrationsDirectory});
+  await inspectMigrationSources({migrationsDirectory,sourcePhase:'current-memory-warmup'});
   const next=required.at(-1),pending=[...local].filter(v=>!remote.has(v));
   assert.deepEqual(pending,remote.has(next.version)?[]:[next.version],'Sole pending new phase only');
   assert.deepEqual(parseSupabaseDryRunMigrationFilenames(dryRunText),pending.length?[next.filename]:[]);
@@ -357,7 +374,8 @@ export async function assertCurrentMemoryWarmupMigrationPlan({migrationListText,
 export async function prepareCurrentMemoryWarmupCutoverWorkdir({workdir}={}){
   requireCurrentMemoryWarmupOutput();
   await readCurrentMemoryWarmupCanonicalSource();
-  const prepared=await prepareTemporarySupabaseCutoverWorkdir({workdir,includeStatisticsPreferenceRevisionSource:true});
+  const prepared=await prepareTemporarySupabaseCutoverWorkdir({workdir,includeStatisticsPreferenceRevisionSource:true,
+    sourcePhase:'current-memory-warmup'});
   const staged=await fs.readdir(prepared.migrationsDirectory);
   assert(staged.includes('20261013230000_account_statistics_revision.sql'));
   assert(staged.includes('20261016060000_native_sampling_identity_original_bound_successor.sql'));
@@ -372,7 +390,64 @@ export async function hydrateCurrentMemoryWarmupRemoteMigrationHistory(options){
   const directory=path.join(assertTemporaryCutoverWorkdir(options.workdir),'supabase','migrations');
   currentMemoryWarmupRows(options.migrationListText);
   await readCurrentMemoryWarmupCanonicalSource({migrationsDirectory:directory});
-  return hydrateTemporaryRemoteMigrationHistory(options);
+  return hydrateTemporaryRemoteMigrationHistory({...options,sourcePhase:'current-memory-warmup'});
+}
+
+// The positive-origin phase is a separate sole-pending transition. These
+// checks only select/verify sources; they never install SQL or mint origin.
+export function establishedNativeCurrentOriginRequiredMigrations(){
+  requireEstablishedNativeCurrentOriginOutput();
+  assert.equal(CURRENT_MEMORY_WARMUP_REQUIRED_CUTOVER_MIGRATIONS.length,51);
+  assert.equal(CURRENT_MEMORY_WARMUP_REQUIRED_CUTOVER_MIGRATIONS.at(-1).version,'20261017020000');
+  assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length,52);return REQUIRED_CUTOVER_MIGRATIONS;
+}
+function establishedNativeCurrentOriginRows(migrationListText){
+  const required=establishedNativeCurrentOriginRequiredMigrations();
+  const rows=parseSupabaseMigrationList(migrationListText);
+  const local=uniqueVersions(rows,'local'),remote=uniqueVersions(rows,'remote');
+  assertCurrentMemoryWarmupArchivesAbsent(local,remote);
+  const allowed=new Set(required.map(row=>row.version)),next=required.at(-1);
+  for(const {version}of required){assert(local.has(version),'Missing exact origin source');
+    if(version!==next.version)assert(remote.has(version),'Missing genuine installed predecessor');}
+  for(const versions of [local,remote])for(const version of versions)
+    assert(allowed.has(version)||migrationChronologicalKey(version)<migrationChronologicalKey(required[0].version),
+      'Unknown post-cutover origin migration');
+  const latest=[...remote].sort((a,b)=>migrationChronologicalKey(a)<migrationChronologicalKey(b)?-1:1).at(-1);
+  assert.equal(latest,remote.has(next.version)?next.version:'20261017020000');
+  return {required,local,remote};
+}
+export function assertEstablishedNativeCurrentOriginMigrationsApplied(migrationListText){
+  const {required,local,remote}=establishedNativeCurrentOriginRows(migrationListText);
+  assert(remote.has(required.at(-1).version),'Origin requires its installed exact source');
+  assert.deepEqual([...local].filter(version=>!remote.has(version)),[]);
+  return Object.freeze({appliedVersions:Object.freeze(required.map(row=>row.version))});
+}
+export async function assertEstablishedNativeCurrentOriginMigrationPlan({migrationListText,dryRunText,migrationsDirectory=MIGRATIONS_DIRECTORY}={}){
+  requireEstablishedNativeCurrentOriginOutput();
+  const {required,local,remote}=establishedNativeCurrentOriginRows(migrationListText);
+  await readEstablishedNativeCurrentOriginCanonicalSource({migrationsDirectory});
+  await inspectMigrationSources({migrationsDirectory,sourcePhase:'established-native-current-origin'});
+  const next=required.at(-1),pending=[...local].filter(version=>!remote.has(version));
+  assert.deepEqual(pending,remote.has(next.version)?[]:[next.version],'Only the exact new origin phase may be pending');
+  assert.deepEqual(parseSupabaseDryRunMigrationFilenames(dryRunText),pending.length?[next.filename]:[]);
+  return Object.freeze({pendingVersions:Object.freeze(pending),
+    alreadyAppliedVersions:Object.freeze(required.filter(row=>remote.has(row.version)).map(row=>row.version))});
+}
+export async function prepareEstablishedNativeCurrentOriginCutoverWorkdir({workdir}={}){
+  requireEstablishedNativeCurrentOriginOutput();await readEstablishedNativeCurrentOriginCanonicalSource();
+  const prepared=await prepareTemporarySupabaseCutoverWorkdir({workdir,includeStatisticsPreferenceRevisionSource:true,
+    sourcePhase:'established-native-current-origin'});
+  const staged=await fs.readdir(prepared.migrationsDirectory);
+  for(const version of ['20261014140000','20261015030000','20261016030000'])
+    assert(!staged.some(filename=>filename.startsWith(version+'_')));
+  await readEstablishedNativeCurrentOriginCanonicalSource({migrationsDirectory:prepared.migrationsDirectory});return prepared;
+}
+export async function hydrateEstablishedNativeCurrentOriginRemoteMigrationHistory(options){
+  requireEstablishedNativeCurrentOriginOutput();
+  const directory=path.join(assertTemporaryCutoverWorkdir(options.workdir),'supabase','migrations');
+  establishedNativeCurrentOriginRows(options.migrationListText);
+  await readEstablishedNativeCurrentOriginCanonicalSource({migrationsDirectory:directory});
+  return hydrateTemporaryRemoteMigrationHistory({...options,sourcePhase:'established-native-current-origin'});
 }
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({
@@ -392,10 +467,15 @@ function normaliseTripBindingPolicyDefinition(value) {
   return String(value ?? '').replace(/\r\n?/g, '\n').trim();
 }
 
-export async function expectedTripBindingPolicy({ migrationsDirectory = MIGRATIONS_DIRECTORY, sourcePhase = 'current-memory-warmup' } = {}) {
-  assert(['native0600','current-memory-warmup'].includes(sourcePhase));
-  const { canonicalSource: migration } = await (sourcePhase === 'current-memory-warmup'
-    ? readCurrentMemoryWarmupCanonicalSource({migrationsDirectory}) : readNativeIdentityCanonicalSource({migrationsDirectory}));
+export async function expectedTripBindingPolicy({ migrationsDirectory = MIGRATIONS_DIRECTORY, sourcePhase = 'established-native-current-origin' } = {}) {
+  const { canonicalSource: migration } = await canonicalForSourcePhase(sourcePhase,migrationsDirectory);
+  return tripBindingPolicyFromCanonicalSource(migration);
+}
+
+// Pure renderer shared by the fixed source issuer and normal readback. A
+// caller-provided string is data only; it cannot install/admit a source.
+export function tripBindingPolicyFromCanonicalSource(migration) {
+  assert.equal(typeof migration,'string');
   const scoreQualityMatch = migration.match(
     /create or replace function public\.ravradar_trip_v3_score_quality_allowed\([\s\S]*?\)\s*returns boolean[\s\S]*?as \$\$([\s\S]*?)\$\$;/i,
   );
@@ -426,13 +506,17 @@ function sqlFunctionBody(source, functionName, label) {
 }
 
 export async function expectedCheckpointCasContract({
-  migrationsDirectory = MIGRATIONS_DIRECTORY, sourcePhase = 'current-memory-warmup',
+  migrationsDirectory = MIGRATIONS_DIRECTORY, sourcePhase = 'established-native-current-origin',
 } = {}) {
-  assert(['native0600','current-memory-warmup'].includes(sourcePhase));
   // Exact reviewed successor, including independent fixed-I71 originals.
   // Historical220/230 bytes and the legacy returned migration ID stay intact.
-  const { canonicalSource: migration } = await (sourcePhase === 'current-memory-warmup'
-    ? readCurrentMemoryWarmupCanonicalSource({migrationsDirectory}) : readNativeIdentityCanonicalSource({migrationsDirectory}));
+  const { canonicalSource: migration } = await canonicalForSourcePhase(sourcePhase,migrationsDirectory);
+  return checkpointCasContractFromCanonicalSource(migration,{sourcePhase});
+}
+
+export function checkpointCasContractFromCanonicalSource(migration,{sourcePhase='established-native-current-origin'}={}) {
+  assert.equal(typeof migration,'string');
+  assert(['native0600','current-memory-warmup','established-native-current-origin'].includes(sourcePhase));
   const definitions = [
     ['public.ravradar_ravscore_checkpoint_canonical_time', 'canonical-time validator'],
     ['public.ravradar_ravscore_checkpoint_has_forbidden_key', 'forbidden-key validator'],
@@ -471,7 +555,12 @@ export async function expectedCheckpointCasContract({
       'whole original I71 state validator'],
     ['public.ravradar_ravscore_checkpoint_native_identity_i71_payload_valid',
       'whole original I71 payload validator'],
-    ...(sourcePhase === 'current-memory-warmup' ? [['public.'+CURRENT_MEMORY_WARMUP_PROJECTION,'exact assistant after0600 projection']] : []),
+    ...(sourcePhase !== 'native0600' ? [['public.'+CURRENT_MEMORY_WARMUP_PROJECTION,'exact assistant after0600 projection']] : []),
+    ...(sourcePhase === 'established-native-current-origin' ? [
+      ['public.ravradar_ravscore_checkpoint_cmw0200_state_valid','whole original0200 state validator'],
+      ['public.ravradar_ravscore_checkpoint_cmw0200_payload_valid','whole original0200 payload validator'],
+      ['public.'+ESTABLISHED_NATIVE_CURRENT_ORIGIN_PROJECTION,'exact authentic seed metadata projection'],
+    ] : []),
   ].map(([functionName, label]) => sqlFunctionBody(
     migration,
     functionName,
@@ -499,9 +588,14 @@ export async function expectedCheckpointCasContract({
     + `\n-- grid-original-c1ac-payload-validator --\n${definitions[19]}`
     + `\n-- native-identity-i71-state-validator --\n${definitions[20]}`
     + `\n-- native-identity-i71-payload-validator --\n${definitions[21]}`;
-  if(sourcePhase === 'current-memory-warmup'){assert.equal(definitions.length,23);
+  if(sourcePhase !== 'native0600'){assert.equal(definitions.length,sourcePhase==='current-memory-warmup'?23:26);
     definition += `\n-- current-memory-warmup-predecessor-projection --\n${definitions[22]}`;}
   else assert.equal(definitions.length,22);
+  if(sourcePhase === 'established-native-current-origin'){
+    definition += `\n-- cmw0200-original-state-validator --\n${definitions[23]}`
+      + `\n-- cmw0200-original-payload-validator --\n${definitions[24]}`
+      + `\n-- established-native-current-origin-projection --\n${definitions[25]}`;
+  }
   return Object.freeze({
     id: CHECKPOINT_CAS_CONTRACT_ID,
     sha256: sha256(definition),
@@ -620,7 +714,7 @@ export async function buildIntegratedCutoverReadiness(sourceHeadInput, {
   });
 }
 
-export async function inspectMigrationSources({ migrationsDirectory = MIGRATIONS_DIRECTORY, sourcePhase = 'current-memory-warmup' } = {}) {
+export async function inspectMigrationSources({ migrationsDirectory = MIGRATIONS_DIRECTORY, sourcePhase = 'established-native-current-origin' } = {}) {
   const requiredMigrations = migrationsForSourcePhase(sourcePhase);
   const filenames = (await fs.readdir(migrationsDirectory))
     .filter(filename => filename.endsWith('.sql'))
@@ -663,7 +757,7 @@ function assertTemporaryCutoverWorkdir(value) {
   return workdir;
 }
 
-export async function prepareTemporarySupabaseCutoverWorkdir({ workdir: inputWorkdir, includeStatisticsPreferenceRevisionSource = false, sourcePhase = 'current-memory-warmup' } = {}) {
+export async function prepareTemporarySupabaseCutoverWorkdir({ workdir: inputWorkdir, includeStatisticsPreferenceRevisionSource = false, sourcePhase = 'established-native-current-origin' } = {}) {
   const requiredMigrations = migrationsForSourcePhase(sourcePhase);
   assert.equal(typeof includeStatisticsPreferenceRevisionSource,'boolean');
   if (includeStatisticsPreferenceRevisionSource) await assertStatisticsPreferenceRevisionSource(MIGRATIONS_DIRECTORY);
@@ -814,7 +908,7 @@ export function parseSupabaseDryRunMigrationFilenames(value) {
 
 export async function hydrateTemporaryRemoteMigrationHistory({
   workdir: inputWorkdir,
-  migrationListText, sourcePhase = 'current-memory-warmup',
+  migrationListText, sourcePhase = 'established-native-current-origin',
 } = {}) {
   const requiredMigrations = migrationsForSourcePhase(sourcePhase);
   const workdir = assertTemporaryCutoverWorkdir(inputWorkdir);
@@ -865,7 +959,7 @@ export async function assertSupabaseMigrationPlan({
   allowAccountAssistantPrewritePlan = false,
   allowStatisticsPreferenceRevisionPlan = false,
 } = {}) {
-  requireCurrentMemoryWarmupOutput(); // Normal current may never install the new phase.
+  requireEstablishedNativeCurrentOriginOutput(); // Normal current may observe, never install, the new phase.
   assert.equal(typeof allowStatisticsPreferenceRevisionPlan,'boolean');
   await inspectMigrationSources({ migrationsDirectory });
   if (allowStatisticsPreferenceRevisionPlan) {
@@ -881,7 +975,9 @@ export async function assertSupabaseMigrationPlan({
     'NATIVE_SAMPLING_IDENTITY_RECOVERY_ROUTE_REQUIRED');
   assert.ok(remote.has(currentMemoryWarmupMigration().version),
     'CURRENT_MEMORY_WARMUP_PREWRITE_ROUTE_REQUIRED');
-  assertCurrentMemoryWarmupMigrationsApplied(migrationListText);
+  assert.ok(remote.has(establishedNativeCurrentOriginMigration().version),
+    'ESTABLISHED_NATIVE_CURRENT_ORIGIN_PREWRITE_ROUTE_REQUIRED');
+  assertEstablishedNativeCurrentOriginMigrationsApplied(migrationListText);
   const plannedMigrations = REQUIRED_CUTOVER_MIGRATIONS;
   const requiredVersions = new Set(plannedMigrations.map(item => item.version));
 
@@ -1113,10 +1209,11 @@ export async function verifyIntegratedDatabaseReadback({
   modelBinding = null,
   candidateModelBinding = null,
   tripBindingPolicy = null,
-  tripActiveAdmissionPolicy = null, sourcePhase = 'current-memory-warmup',
+  tripActiveAdmissionPolicy = null, sourcePhase = 'established-native-current-origin',
 } = {}) {
-  assert(['native0600','current-memory-warmup'].includes(sourcePhase));
+  assert(['native0600','current-memory-warmup','established-native-current-origin'].includes(sourcePhase));
   if(sourcePhase === 'current-memory-warmup')requireCurrentMemoryWarmupOutput();
+  if(sourcePhase === 'established-native-current-origin')requireEstablishedNativeCurrentOriginOutput();
   assert.ok(typeof fetchImpl === 'function', 'fetch is required');
   assert.ok(url && serviceRoleKey, 'Supabase URL and service role are required for database readback');
   const binding = modelBinding ?? ravScoreModelBinding();

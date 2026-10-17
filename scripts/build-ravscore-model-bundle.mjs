@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RAVSCORE_MODEL_CONTRACT } from '../js/core/ravscore-model-contract.js';
-import { exactRelativeModuleSpecifiers } from './lib/static-module-closure.mjs';
+import { modelSourceRelativeModuleSpecifiers } from './lib/model-source-imports.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const GENERATED_PATH = 'js/core/ravscore-model-bundle.generated.js';
@@ -103,7 +103,7 @@ export async function computeRavScoreModelBundle({
     const normalized = normalizedSource(raw);
     visited.add(relative);
     sources.set(relative, normalized);
-    for (const specifier of exactRelativeModuleSpecifiers(raw, relative)) {
+    for (const specifier of modelSourceRelativeModuleSpecifiers(raw, relative)) {
       const dependency = await resolveRelativeImport(normalizedRoot, relative, specifier);
       if (dependency !== GENERATED_PATH && !visited.has(dependency)) pending.push(dependency);
     }

@@ -1,3 +1,9 @@
+## 17. oktober 2026 — 4.0.581, lokal kandidat efter historikgennemgang
+
+Den konkrete almindelige fortsættelsesfejl er sporet til gentaget engangsanalyse af allerede gemt H0 fra et flyttet kildevindue. Løsningen bevarer positivt autentificeret gemt I/G og bruger den eksisterende fremadrettede beregning. Stor ny originaljournal og ny historiknulstilling er ikke P0-forudsætninger.
+
+En normal lokal 673-dels kæde gennem tre efterfølgere har faktisk bestået gemning og genlæsning. Ny kilde-/databasebinding og kontrolleret metadataovergang er lokale kandidater; præcis CI/PostgreSQL, installation og offentlig effekt er åbne. Offentlig 579 med genbrugte data fra 16. oktober kl. 12 dansk tid og pauset cron er seneste verificerede drift. Alle fem mål er åbne; se håndbog 89.252 og privat checkpoint.
+
 ## 17. oktober — 4.0.580: fysisk lukning og en anden gyldig filtype
 
 Den seneste præcise kildekontrol bestod PostgreSQL, men fejlede i én af 58 normale kommandogrupper ved pakkens B/S-rundtur. Observationen viste en anden gyldig, ikke-almindelig filtype efter lukning; det beviser hverken en konkret mappe eller en læk. Den tidlige isolerede prøve genfandt ikke fejlen. De senere baseline-, kapacitets- og trækontroller blev ikke kørt, og der kom intet leveringsartifact.

@@ -1,3 +1,9 @@
+## Tillæg 17. oktober 2026 — lokal 4.0.581, engangsovergang er ikke almindelig fortsættelse
+
+Den historiske cache-/kontinuitetslæring anvendes på den aktuelle P0: En engangskontrol af strømfortolkning må ikke genberegne autentisk gemt H0 fra senere flyttede leverandørvinduer ved hver almindelig efterfølger. Den eksisterende normale fortsætter anvender kun timer efter den gemte tilstand. Den afgrænsede lokale løsning kræver en positiv, privat autentificeret oprindelseskæde og eksakte I/G-par samt kontekst; den er ikke en generel undtagelse fra no-loss, kildeafgrænsning eller native bevis.
+
+Den store nye originaljournal er fravalgt som nødvendig P0-forudsætning. Gamle originaler, udstedte migrationer og offentliggjorte scorer bevares. Lokal 673-dels gemning/genlæsning gennem tre efterfølgere er bestået, men præcis CI/PostgreSQL, installation og almindelig offentlig effekt er stadig åbne. Ingen ny historiknulstilling eller produktionsaktivering følger af dette tillæg.
+
 # DEC-0254 – Ingen normal vejrhentning uden bevaret produktionscache
 
 ## Tillæg 2026-09-27 – 4.0.504: pakkeplads må følge fuldere vejrdata

@@ -1,3 +1,9 @@
+## 17. oktober 2026 — gentag ikke engangsovergangen ved almindelig videreberegning
+
+Sammenhold nye stop med DEC-0073, DEC-0140/0145/0148 og DEC-0254 før en ny mekanisme bygges. I den aktuelle P0 var et flyttet 48-timers kildevindue symptomet; den systemiske fejl var gentagen rekonstruktion af autentisk gemt H0 ved almindelige efterfølgere. Den eksisterende normale replay behandler allerede kun senere timer. Positivt autentificeret oprindelse og uændret delkontekst skal bevises; gamle eller ukendte tilstande må ikke få en generel genvej.
+
+Følg før levering også afbrydelseskanterne og de næste kaldere: samme-time rapportens reelle filkontrolsum, offentligt kortregister før kontekstprøve, installeret database uden geninstallation og uændret offentlig projektionskontrakt. Lokal kædeprøve er ikke en faktisk produktionsefterfølger. Den store originaljournal er fravalgt som P0-forudsætning, ikke blot udskudt som obligatorisk næste lag. Alle produktionskrav er fortsat åbne.
+
 # AI Lessons Learned – RavRadar
 
 Dette dokument samler tværgående læring, som skal påvirke fremtidige tekniske beslutninger. Historiske detaljer findes i RDKS/chatarkivet; her står de generelle arbejdsregler.

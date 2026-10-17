@@ -410,6 +410,18 @@ await expectRejected('renamed private state payload without value disclosure', a
   assert.fail('renamed private state payload was accepted');
 }, /private state field/);
 
+// The compact origin is private even without raw vectors/state keys.
+for(const [name,document] of [
+  ['origin attestation at top level',{privateEstablishedNativeCurrentOrigin:{schemaVersion:1,kind:'PRIVATE_ESTABLISHED_NATIVE_CURRENT_ORIGIN',currentPairSha256:'a'.repeat(64)}}],
+  ['nested origin attestation',{safe:{rows:[{privateEstablishedNativeCurrentOrigin:{schemaVersion:1,kind:'PRIVATE_ESTABLISHED_NATIVE_CURRENT_ORIGIN',currentPairSha256:'a'.repeat(64)}}]}}],
+  ['case-insensitive origin attestation',{PRIVATEESTABLISHEDNATIVECURRENTORIGIN:{schemaVersion:1,kind:'PRIVATE_ESTABLISHED_NATIVE_CURRENT_ORIGIN',currentPairSha256:'a'.repeat(64)}}],
+]) {
+  await expectRejected(name,async root=>{
+    const directory=path.join(root,'assets');await fs.mkdir(directory);
+    await fs.writeFile(path.join(directory,'opaque-origin.json'),jsonText(document));
+  },/private state field/);
+}
+
 await expectRejected('private conditions path', async root => {
   const file = path.join(root, 'data', 'live', 'manifest.json');
   const manifest = JSON.parse(await fs.readFile(file, 'utf8'));

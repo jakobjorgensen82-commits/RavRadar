@@ -1,3 +1,7 @@
+## 17. oktober 2026 — lokal 4.0.581, historisk læring anvendt på almindelig fortsættelse
+
+Gentaget engangsanalyse af gemt strømtilstand er adskilt fra normal fremadrettet replay i en lokal kandidat. Normal 673-dels B/S-kæde gennem tre efterfølgere består syntetisk; ny præcis kildekontrol, databaseprøve, installation og produktionseffekt mangler. Ingen ny historiknulstilling. Se MASTER_LOG og håndbog 89.252.
+
 # 4.0.576 – forberedt driftsopfølgning: tidsforbrug ved behandlingsfejl, 2026-10-13
 
 Den offentlige 4.0.576-levering er faktisk afsluttet den 13. oktober kl. 05.37 dansk tid: 21310000-migrationen er installeret og genlæst, og de tre eksisterende Edge-funktioner ravradar-assistant, trip-log og submit-observation er opdateret. Databevarelseskontrollen, gemning, central publicering og Pages bestod i dette forløb. Den afgrænsede installationstilladelse er forbrugt. D1- og Worker-trin blev sprunget over og er ikke bevis for en ny installation. Ældre afsnits afventende leveringsstatus og ubrugte tilladelse er historik på disse punkter; ingen ny installation eller gentagelse følger heraf. Efter lokal integration på den leverede main-førside består den ene nye normale kalderprøve med fire kontrollerede forløb. Hele målfilens 69 prøver, præcis ny kilde-head i CI, native stop og offentlig effekt er endnu ikke verificeret.

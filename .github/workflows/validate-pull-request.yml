@@ -115,7 +115,7 @@ jobs:
           node scripts/run-frozen-native0600-source-targets.mjs policy
           # Includes the unchanged 213 -> 220 -> 230 phases in the SAME owned
           # cluster, then executes the actual native-identity SQL and CAS cases.
-          node scripts/test-protected-ravscore-continuation-checkpoint.mjs --native-statistics-revision --native-sampling-identity --current-memory-warmup
+          node scripts/test-protected-ravscore-continuation-checkpoint.mjs --native-statistics-revision --native-sampling-identity --current-memory-warmup --established-native-current-origin
 
       - name: Validate source contracts and release governance
         run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs

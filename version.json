@@ -1,10 +1,10 @@
 {
-  "version": "4.0.580",
-  "releasedAt": "2026-10-17T04:14:15.705Z",
-  "minimumSupportedVersion": "4.0.580",
+  "version": "4.0.581",
+  "releasedAt": "2026-10-17T13:41:55.697Z",
+  "minimumSupportedVersion": "4.0.581",
   "releaseContract": {
     "schemaVersion": "ravradar-release-contract-v1",
-    "releaseVersion": "4.0.580",
+    "releaseVersion": "4.0.581",
     "modelBindings": {
       "integrated": {
         "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
@@ -17,7 +17,7 @@
         "bestTimePolicyId": "score-history-water-tie-earliest-v3",
         "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
         "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-        "modelBundleSha256": "84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3"
+        "modelBundleSha256": "038d9b0cdc50d36dd10f207c6f33e909ddedbdacb28c89adbca12121cb2c7f5f"
       },
       "candidateGRollback": {
         "modelId": "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3",
@@ -30,7 +30,7 @@
         "bestTimePolicyId": "score-water-tie-earliest-v2",
         "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
         "modelContractSha256": "c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8",
-        "modelBundleSha256": "76a86277db106621e7f0952d0789f9038a4bf9cfe7993b88de5c9a49bf25b4b8"
+        "modelBundleSha256": "5cc38c658bf14513a029a62de8f5f9e98259630755bdd84bccbc5fb2c1797858"
       }
     },
     "publicManifestAuthority": {
