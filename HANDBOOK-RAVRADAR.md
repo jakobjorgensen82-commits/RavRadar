@@ -1,5 +1,7 @@
 ## 89.250 Almindelig strømopvarmning med manglende historiktimer
 
+Den seneste samlede kildeprøve fandt to fejl i selve prøvekalderne. De gamle kommandoforventninger skal bruge deres faktiske historiske kilde, mens den nye leveringsvej kontrolleres særskilt. Den historiske testvært manglede også én fast workflowfil, som den uændrede normale prøve læser. Filen følger nu med uændret. Begge kommandoforløb og hele det normale readiness-mål består lokalt uden at ændre produkt, gamle kontroludsagn eller databasebindinger. Ny samlet kontrol og faktisk levering er stadig påkrævet.
+
 En ny strømhistorik bliver gradvis opbygget. De normale producenter kan beskrive flere forskellige former for ufuldstændighed. En ekstra kontrol må ikke afvise en ellers fuldt valideret tilstand, alene fordi dens ærlige status ikke hedder præcis det samme som en anden ufuldstændig tilstand. Rettelsen kræver stadig udtrykkeligt ikke-klar tilstand og alle normale kontroller af historik, kilde, tidsvindue og sammenhørende tilstande. Ukendte timer forbliver ukendte og bliver ikke nul eller gyldige strømdata.
 
 En beskyttet genoptagelse leverede faktisk offentlig version 4.0.578. Dens første almindelige efterfølger stoppede senere i denne ekstra kontrol, før ny slutpakke og offentlig levering. Den lokale 4.0.579-rettelse består den målrettede normale prøve med 17 tilfælde. En normal overgang for 673 dele bevarer de gamle originaler og værdier ved både samme og nyere referencetime. Den nye databasekilde er normalt genereret og kontrolleret; installation er endnu ikke udført.

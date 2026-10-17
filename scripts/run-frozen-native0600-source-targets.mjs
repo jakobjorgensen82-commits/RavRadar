@@ -39,6 +39,7 @@ export async function withFrozenNative0600TestSource(group,useVerifiedSource){
     'supabase/schema.sql','supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql','knowledge/rav-assistant-public-v1.json',
     'data/admin/ravscore-profile-selection.json','data/live/coastal-parts-v2.json','version.json',
     '.github/workflows/deploy-code-only-repair.yml','.github/workflows/run-current-weather-once.yml',
+    '.github/workflows/apply-weather-model-binding-only.yml',
     '.github/workflows/reusable-weather-build.yml','.github/workflows/update-and-deploy.yml',
     '.github/workflows/reusable-pages-deploy.yml','.github/workflows/reusable-operational-reentry.yml'];
   const readiness=(await read('scripts/integrated-cutover-readiness.mjs')).toString('utf8');

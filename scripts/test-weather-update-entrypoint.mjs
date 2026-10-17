@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { writeDmiForecastFileAtomic, isDmiForecastCheckpointStopUnproved } from './lib/dmi-forecast-file.mjs';
+import { withFrozenNative0600TestSource } from './run-frozen-native0600-source-targets.mjs';
 
 const producerPath = new URL('./update-weather.mjs', import.meta.url);
 const sourceText = async file => (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
@@ -521,7 +522,14 @@ test('main parser policy, public readers, serializer and record writer are prese
 });
 
 test('47 baseline commands plus genuine OLD, NEW native, epoch and pure diagnostic checks reach normal checkpoint integration exactly once', async () => {
-  const scripts = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).scripts;
+  // These historical command literals belong to their genuine native0600
+  // package. Keep every original assertion on that actual immutable source;
+  // the current normal caller is checked separately below, not retagged OLD.
+  const frozen = await withFrozenNative0600TestSource('native', async sourceRoot =>
+    JSON.parse(await fs.readFile(path.join(sourceRoot, 'package.json'), 'utf8')).scripts);
+  assert.equal(frozen.head, '60d999a68136c43acb4d3664bbd66eed47283bb2');
+  assert.equal(frozen.tree, 'ead5743dd9098035b0de5f748de2009460506971');
+  const scripts = frozen.result;
   const { expandSourceCommands } = await import('./validate-source-once.mjs');
   const commands = expandSourceCommands(scripts, 'validate:source:checks');
   const nativeCheck = 'node --test --test-concurrency 2 ' + [
@@ -545,6 +553,31 @@ test('47 baseline commands plus genuine OLD, NEW native, epoch and pure diagnost
   assert.equal(commands.includes('node scripts/build-current-grid-original-binding-successor.mjs --check'), false,
     'Issued220 must be checked only with its genuine frozen source, not rebuilt against NEW.');
   assert.equal(commands.filter(command => !sourceChecks.includes(command)).length, 47);
+  const invoked = commands.flatMap(command => command.split(' '));
+  assert.equal(invoked.filter(file => file === 'scripts/test-dmi-forecast-file.mjs').length, 1);
+  assert.equal(invoked.filter(file => file === 'scripts/test-weather-update-entrypoint.mjs').length, 0);
+  const grouped = await sourceText(new URL('./test-dmi-forecast-file.mjs', import.meta.url));
+  assert.equal(grouped.split("await import('./test-weather-update-entrypoint.mjs');").length, 2);
+});
+
+test('current frozen routes and warmup checks reach normal checkpoint integration exactly once', async () => {
+  const scripts = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).scripts;
+  const { expandSourceCommands } = await import('./validate-source-once.mjs');
+  const commands = expandSourceCommands(scripts, 'validate:source:checks');
+  for (const check of [
+    'node scripts/check-account-assistant-issued-source.mjs',
+    'node scripts/check-native-identity-frozen-i71-source.mjs',
+    'node scripts/test-current-grid-prewrite-diagnostic.mjs',
+    'node scripts/build-current-memory-warmup-successor.mjs --check',
+    'node scripts/run-frozen-native0600-source-targets.mjs native',
+    'node scripts/run-frozen-native0600-source-targets.mjs epoch',
+    'node scripts/run-frozen-native0600-source-targets.mjs install',
+    'node scripts/run-frozen-native0600-source-targets.mjs readiness',
+    ...expandSourceCommands(scripts, 'test:current-memory-warmup'),
+  ]) assert.equal(commands.filter(command => command === check).length, 1,
+    'Every current or genuine historical route must run exactly once.');
+  assert.equal(commands.includes('node scripts/build-native-sampling-identity-original-binding-successor.mjs --check'), false,
+    'The issued native0600 builder is checked only against its genuine immutable source.');
   const invoked = commands.flatMap(command => command.split(' '));
   assert.equal(invoked.filter(file => file === 'scripts/test-dmi-forecast-file.mjs').length, 1);
   assert.equal(invoked.filter(file => file === 'scripts/test-weather-update-entrypoint.mjs').length, 0);
