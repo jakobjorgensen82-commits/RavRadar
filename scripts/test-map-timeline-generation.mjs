@@ -85,5 +85,39 @@ assert.equal(detailReads,0);commitContext.handleMapForecastCommit({isNow:true});
 commitContext.state.selectedZone=null;commitContext.handleMapForecastCommit({isNow:true});assert.equal(detailReads,1);
 commitContext.coreViewReady=false;const priorPaints=callbackPaints;commitContext.handleMapForecastCommit({isNow:true});assert.equal(callbackPaints,priorPaints);
 assert.match(app,/onCommit:handleMapForecastCommit/);cases++;
+// Reuse the existing full-URL UI cache identity, without a model/version bump.
+// An installed worker already caches these old581 URLs. Every changed asset
+// in the HTML -> bootstrap -> app -> renderer chain must miss that old cache.
+const html=read('index.html'),bootstrap=read('bootstrap.js'),sw=read('service-worker.js');
+const root='https://ravradar.invalid/';
+const cssUrl=html.match(/href="(style\.css\?[^\"]+)"/)?.[1];
+const bootstrapUrl=html.match(/src="(bootstrap\.js\?[^\"]+)"/)?.[1];
+const appUrl=bootstrap.match(/import\("([^\"]*app\.js\?[^\"]+)"\)/)?.[1];
+const rendererUrl=app.match(/from '([^']*map-timeline\.js\?[^']+)'/)?.[1];
+const version=JSON.parse(read('package.json')).version;
+const oldKeys=new Map([
+ `style.css?v=${version}&ui=account-20261006`,
+ `bootstrap.js?v=${version}&copy=footer-20261005&ui=account-20261006`,
+ `app.js?v=${version}&copy=footer-20261005&ui=account-20261006`,
+ `js/ui/map-timeline.js?v=${version}`,
+].map(key=>[new URL(key,root).href,{old:true}]));
+const fetched=[];
+const cacheContext={CACHE:'synthetic-installed581',caches:{open:async()=>({
+ match:async request=>oldKeys.get(request),put:(request,response)=>oldKeys.set(request,response),
+})},fetch:async request=>{fetched.push(request);return{ok:true,clone:()=>({fresh:true})};}};
+vm.createContext(cacheContext);
+vm.runInContext(fragment(sw,'async function cacheFirst(request)','async function staleWhileRevalidate(request)'),cacheContext);
+for(const value of [cssUrl,bootstrapUrl,appUrl,rendererUrl]){
+ assert.ok(value,'Changed UI asset must have an explicit URL');
+ const url=new URL(value,root);
+ assert.equal(url.searchParams.get('v'),version);
+ assert.match(url.searchParams.get('ui')??'',/timeline.*20261018/);
+ assert.equal(oldKeys.has(url.href),false,'A changed asset must not reuse an installed581 response');
+ await cacheContext.cacheFirst(url.href);
+ assert.equal(oldKeys.get(url.href).fresh,true);
+}
+assert.equal(fetched.length,4,'The actual worker cacheFirst fetches every changed UI asset exactly once');
+assert.match(sw,/event\.request\.mode==='navigate'.*networkFirst\(event\.request\)/);cases++;
+
 globalThis.fetch=savedFetch;
 console.log(JSON.stringify({status:'PASS_MAP_TIMELINE_NORMAL_GENERATION_AND_LIFECYCLE',cases,normalAppCallers:true,normalRenderZones:true,networkCalls:0}));

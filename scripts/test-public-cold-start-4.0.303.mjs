@@ -52,13 +52,14 @@ const index = await fs.readFile(new URL('../index.html', import.meta.url), 'utf8
 const bootstrap = await fs.readFile(new URL('../bootstrap.js', import.meta.url), 'utf8');
 const releaseVersion = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).version;
 const previousCopySuffix = `?v=${releaseVersion}&copy=footer-20261005`;
-const suffix = `${previousCopySuffix}&ui=account-20261006`;
+const previousUiSuffix = `${previousCopySuffix}&ui=account-20261006`;
+const suffix = `${previousCopySuffix}&ui=account-timeline-20261018`;
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 
 // Exercise the existing worker with earlier same-version assets in cache.
-// The account UI update must bypass both the version-only and footer-only
-// copies without deleting either or refetching its own newly cached asset.
+// The mobile UI update must bypass version-only, footer-only and earlier
+// account UI copies without deleting any or refetching its own cached asset.
 const handlers = new Map();
 const origin = 'https://ravradar.test';
 const cached = new Map([
@@ -66,6 +67,8 @@ const cached = new Map([
   [`${origin}/app.js?v=${releaseVersion}`, new Response('old-app')],
   [`${origin}/bootstrap.js${previousCopySuffix}`, new Response('footer-bootstrap')],
   [`${origin}/app.js${previousCopySuffix}`, new Response('footer-app')],
+  [`${origin}/bootstrap.js${previousUiSuffix}`, new Response('account-bootstrap')],
+  [`${origin}/app.js${previousUiSuffix}`, new Response('account-app')],
 ]);
 const fetched = [];
 vm.runInNewContext(worker, {
@@ -87,6 +90,8 @@ for (const file of ['bootstrap.js', 'app.js']) {
     file === 'bootstrap.js' ? 'old-bootstrap' : 'old-app');
   assert.equal(await cached.get(`${origin}/${file}${previousCopySuffix}`).clone().text(),
     file === 'bootstrap.js' ? 'footer-bootstrap' : 'footer-app');
+  assert.equal(await cached.get(`${origin}/${file}${previousUiSuffix}`).clone().text(),
+    file === 'bootstrap.js' ? 'account-bootstrap' : 'account-app');
   handlers.get('fetch')({request,respondWith:value => {response=value;}});
   assert.equal(await (await response).text(), `new:${request.url}`,
     'The exact new UI asset must be reusable from its own cache key.');

@@ -1,7 +1,7 @@
 import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.581";
 import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, refreshPublicRuntimeGeneration, mapForecastTimeline, loadMapForecastHour } from "./js/services/data-service.js?v=4.0.581";
 import { createMapForecastController, exactMapZoneScore, mapCoastalPartsForDisplay } from './js/services/map-forecast-view.js?v=4.0.581';
-import { bindMapTimeline, mapTimelineDate } from './js/ui/map-timeline.js?v=4.0.581';
+import { bindMapTimeline, mapTimelineDate } from './js/ui/map-timeline.js?v=4.0.581&ui=timeline-days-20261018';
 import { submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.581";
 import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.581";
 import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.581";

@@ -133,7 +133,7 @@ try{
   // Actual UI event wiring with a minimal owned DOM, plus a bounded scheduler
   // and deferred network seam. Real keyboard/touch/browser paint are ROOT gates.
   class Element{
-    constructor(){this.attributes={};this.dataset={};this.listeners=new Map();this.children=[];this.hidden=false;this.textContent='';this.value='0';}
+    constructor(){this.style={};this.attributes={};this.dataset={};this.listeners=new Map();this.children=[];this.hidden=false;this.textContent='';this.value='0';}
     setAttribute(key,value){this.attributes[key]=String(value);}
     addEventListener(key,listener){this.listeners.set(key,listener);}
     append(node){this.children.push(node);}replaceChildren(){this.children=[];}
@@ -186,6 +186,39 @@ try{
   assert.match(app,/function assistantContext\(\).*currentDisplayFor\(zone\)/);
   assert.match(app,/conditions:state\.conditions,zones:state\.zones/);
   assert.doesNotMatch(app,/state\.conditions\s*=\s*(?:frame|mapForecast|mapConditions)/);cases++;
+  // The actual day renderer must keep every calendar day on one bounded row.
+  // Pixel rectangles below are layout arithmetic, not a browser/font-paint claim.
+  for(const language of ['da','de','en'])for(const count of [4,5,6])for(const viewport of [320,375,390,414]){
+    const starts={4:'2026-10-18T03:00:00.000Z',5:'2026-10-18T21:00:00.000Z',6:'2026-10-18T21:00:00.000Z'};
+    const lengths={4:78,5:76,6:118},start=Date.parse(starts[count]);
+    const times=Array.from({length:lengths[count]},(_,i)=>new Date(start+i*3600000).toISOString());
+    globalThis.localStorage={getItem:()=>language};
+    const ticks=mapTimelineDayTicks(times,language);assert.equal(ticks.length,count);
+    const geometries=ticks.map(tick=>({left:(tick.centre-tick.width/2)*(viewport-20),right:(tick.centre+tick.width/2)*(viewport-20)}));
+    assert.ok(geometries[0].left>=-1e-9);assert.ok(geometries.at(-1).right<=viewport-20+1e-9);
+    for(let i=1;i<ticks.length;i++)assert.ok(geometries[i].left>=geometries[i-1].right-1e-9,'No day label rectangles overlap');
+    const dayController=createMapForecastController({loadHour:async time=>({generation:'days',time,conditions:{}})});
+    const dayHost=new Element(),dayUi=bindMapTimeline(dayHost,dayController);
+    dayController.configure({generation:'days',times,live:{time:times[0],conditions:{}}});
+    const children=dayHost.querySelector('[data-map-time-days]').children;
+    const buttons=children.filter(node=>node.type==='button'),boundaries=children.filter(node=>node.className==='map-timeline-day-boundary');
+    assert.equal(buttons.length,count);assert.equal(boundaries.length,count-1);
+    for(let i=0;i<count;i++){
+      assert.equal(buttons[i].textContent,ticks[i].weekday+'\n'+ticks[i].date);
+      assert.equal(buttons[i].attributes['aria-label'],ticks[i].label);
+      assert.equal(parseFloat(buttons[i].style.left),ticks[i].centre*100);
+      assert.equal(parseFloat(buttons[i].style.width),ticks[i].width*100);
+      buttons[i].dispatch('click');assert.equal(dayController.snapshot().requestedTime,times[ticks[i].index]);
+      if(i)assert.equal(parseFloat(boundaries[i-1].style.left),ticks[i].index/(times.length-1)*100,'Boundary is the real midnight hour, not equal spacing');
+    }
+    assert.ok(ticks.some((tick,i)=>Math.abs(tick.centre-(i+.5)/count)>.001),'Partial days do not use a fake equal-time axis');
+    dayUi.destroy();dayController.destroy();cases++;
+  }
+  globalThis.localStorage={getItem:()=> 'da'};
+  for(const times of [[],['2026-10-18T12:00:00.000Z']]){
+    const ticks=mapTimelineDayTicks(times,'da');assert.equal(ticks.length,times.length);
+    if(ticks.length)assert.equal(ticks[0].centre,.5);
+  }
   console.log(JSON.stringify({status:'PASS_MAP_TIMELINE_LOCAL_ONLY',cases,zones:210,parts:673,scrubEvents:250,
     preloadRequests:0,networkCalls:0,browserPaintMeasured:false,hosted:false}));
 }finally{
