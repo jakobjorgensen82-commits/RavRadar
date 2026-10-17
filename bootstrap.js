@@ -1,11 +1,11 @@
 performance.mark?.('ravradar:bootstrap-start');
-import { initializeUserDataSafety } from "./js/services/storage-safety.js?v=4.0.580";
-import { initialiseI18n } from "./js/i18n.js?v=4.0.580";
-import "./js/ui/ranking-copy.js?v=4.0.580";
-import "./js/ui/score-prognosis-copy.js?v=4.0.580";
-import "./js/ui/site-search-copy.js?v=4.0.580";
-import "./js/ui/map-tab-copy.js?v=4.0.580";
-import "./js/ui/map-timeline-copy.js?v=4.0.580";
+import { initializeUserDataSafety } from "./js/services/storage-safety.js?v=4.0.581";
+import { initialiseI18n } from "./js/i18n.js?v=4.0.581";
+import "./js/ui/ranking-copy.js?v=4.0.581";
+import "./js/ui/score-prognosis-copy.js?v=4.0.581";
+import "./js/ui/site-search-copy.js?v=4.0.581";
+import "./js/ui/map-tab-copy.js?v=4.0.581";
+import "./js/ui/map-timeline-copy.js?v=4.0.581";
 
 let appImported = false;
 addEventListener('pageshow', event => {
@@ -18,9 +18,9 @@ addEventListener('pageshow', event => {
 initialiseI18n();
 await initializeUserDataSafety();
 performance.mark?.('ravradar:storage-ready');
-await import("./app.js?v=4.0.580&copy=footer-20261005&ui=account-20261006");
+await import("./app.js?v=4.0.581&copy=footer-20261005&ui=account-20261006");
 appImported = true;
 performance.mark?.('ravradar:app-imported');
-void import("./js/services/visit-counter.js?v=4.0.580")
+void import("./js/services/visit-counter.js?v=4.0.581")
   .then(({ schedulePublicPageView }) => schedulePublicPageView())
   .catch(() => {});

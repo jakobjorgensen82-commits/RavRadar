@@ -1,3 +1,4 @@
+import './test-reconcile-private-runtime-checkpoint.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -6,7 +7,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { spawnSync, execFileSync } from 'node:child_process';
 import { runInNewContext } from 'node:vm';
-import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
+import { inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication } from './lib/completed-private-runtime-workflow-review.mjs';
 import { assertCompletedPrivateRuntimeRequest, assertCompletedPrivateRuntimeIdentity,
   assertCompletedRuntimePublicIdentity, assertCompletedRuntimeProducerAncestry, completedRuntimeFailureCode,
   readCompletedPrivateRuntimePin, admitCompletedPrivateRuntime, verifyCompletedPrivateRuntime } from './completed-private-runtime-admission.mjs';
@@ -31,7 +32,7 @@ import { buildPrivatePublicHourDeliveryPack, compactPrivateConditionsForPersiste
 import { observeOwnedPackCloseProbes } from './lib/owned-pack-close-probe.mjs';
 
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
-const build = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+const build = inversePairedPrivateRuntimePublication((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
 const once = (await fs.readFile(new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
 const legacy = inverseCompletedRuntimeWorkflow(build, 'build');
 const legacyOnce = inverseCompletedRuntimeWorkflow(once, 'once');
@@ -94,7 +95,10 @@ export function assertCompletedRuntimeWorkflow(actualBuild, actualOnce) {
     .includes('validate-completed-runtime-target'));
   assert(step(actualBuild, 'Prove the whole recreated B manifest and installed originals are unchanged')
     .includes('completed-private-runtime-admission.mjs before-publish'));
-  assert(actualBuild.includes('fetch-depth: ${{ inputs.completed_private_runtime && \'0\' || \'1\' }}'));
+  const historicalCheckout = inverseOrdinaryFullHistoryCheckout(actualBuild, 'build');
+  assert(historicalCheckout.includes('fetch-depth: ${{ inputs.completed_private_runtime && \'0\' || \'1\' }}'));
+  assert.equal(actualBuild.split("      - uses: actions/checkout@v7\n        with:\n          fetch-depth: 0\n").length, 2, 'One full-history checkout on the current ordinary route');
+  assert.equal(actualBuild.includes("          fetch-depth: ${{ inputs.completed_private_runtime && '0' || '1' }}"), false, 'The old conditional depth remains historical only');
 }
 
 test('completed route is genuinely RED on the old normal workflow and keeps every historical byte', () => {

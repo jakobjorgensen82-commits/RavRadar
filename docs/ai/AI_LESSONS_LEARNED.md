@@ -1,3 +1,17 @@
+## 17. oktober 2026 — gentag ikke engangsovergangen ved almindelig videreberegning
+
+Følg også den faktiske workflowkalders miljø helt ind i den normale produktfunktion. En syntetisk transport kan selv give URL og adgang, som den virkelige almindelige kalder har gjort tomme. Kontroller både standardflags og de eksisterende afgrænsninger; reparer forbindelsen frem for at opfinde endnu en autorisationsvej.
+
+Prøv den faktiske normale kalder, også når nettet erstattes af et syntetisk transportled. En bred testrequester kan fejlagtigt acceptere både payload- og versionsforespørgsler, selv om de normale læsere med vilje har hver sin snævre kontrakt. Nye normale writes skal også være fysisk udelukket fra eksisterende tørkørsler; en korrekt datakontrol giver ikke tørkørslen skriveautoritet.
+
+Den fortsatte historikgennemgang bekræfter også DEC-0140's og DEC-0254's driftslæring: alle selvstændige kildefejl skal indsamles i én kontrol, og gemning er ikke genbrug før faktisk genlæsning. De fem efterfølgende testfejl skal reproduceres på GitHubs samme Node-version før næste samlede runde; to motorers forskellige syntetiske bølgemomenter er ikke grundlag for at omskrive produktdata eller udskifte en produktionsoriginals kontrolsum.
+
+Den normale gemmer består af to centrale commits, ikke én atomisk handling. Afbrydelse mellem tilstand og vejrpakke skal vurderes sammen med den næste almindelige læser, ikke kun med engangsinstallationen. En ny streng oprindelseslæser må ikke leveres som selvstændig drift, mens en kendt delvis commit kan blokere alle efterfølgere uden en dokumenteret normal genopretning. Byt ikke blot rækkefølgen: den modsatte afbrydelseskant skal også lukkes med autentisk pakke, normal afledning, monotont CAS og frisk genlæsning. Ingen gammel-tilstands-fallback eller rekonstrueret H0 må skjule mismatch.
+
+Sammenhold nye stop med DEC-0073, DEC-0140/0145/0148 og DEC-0254 før en ny mekanisme bygges. I den aktuelle P0 var et flyttet 48-timers kildevindue symptomet; den systemiske fejl var gentagen rekonstruktion af autentisk gemt H0 ved almindelige efterfølgere. Den eksisterende normale replay behandler allerede kun senere timer. Positivt autentificeret oprindelse og uændret delkontekst skal bevises; gamle eller ukendte tilstande må ikke få en generel genvej.
+
+Følg før levering også afbrydelseskanterne og de næste kaldere: samme-time rapportens reelle filkontrolsum, offentligt kortregister før kontekstprøve, installeret database uden geninstallation og uændret offentlig projektionskontrakt. Lokal kædeprøve er ikke en faktisk produktionsefterfølger. Den store originaljournal er fravalgt som P0-forudsætning, ikke blot udskudt som obligatorisk næste lag. Alle produktionskrav er fortsat åbne.
+
 # AI Lessons Learned – RavRadar
 
 Dette dokument samler tværgående læring, som skal påvirke fremtidige tekniske beslutninger. Historiske detaljer findes i RDKS/chatarkivet; her står de generelle arbejdsregler.

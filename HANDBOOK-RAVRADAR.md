@@ -1,3 +1,27 @@
+## 89.252 Gemte strømtilstande skal fortsættes, ikke genstartes
+
+Den faktiske almindelige workflowkalder skal give den nye autentificerede pakkelæser dens eksisterende databaseadgang. En lokal syntetisk transport beviser ikke denne forbindelse. Kun de to eksisterende Supabase-miljøfelter forsynes også uden epoch-opstart; R2-afgrænsning, kontroller, model og gamle originaler bevares. Ny samlet kildekontrol og faktisk almindelig produktion mangler stadig.
+
+**Ny lokal genoptagelse 17. oktober:** Vejrpakken og beregningstilstanden er to særskilte gemninger. Den lokale kandidat gemmer nu pakken først. Ved en afbrydelse kan næste almindelige integrerede kørsel færdiggøre en ældre eller manglende beregningstilstand fra den autentificerede aktuelle pakke og bevise resultatet med fuld genlæsning. Det genberegner ikke gammel historik og kræver ingen ny scoreformel, SQL eller pakkehentning. Et allerede identisk par skrives ikke igen; modsat generationsskævhed eller ændret kilde stopper stadig. Kort-/checkpoint-/completed-/epoch-/nativeforløb og vedligeholdelse bruger ikke den nye genoptagelse.
+
+De lokale normale afbrydelsesudfald, den målrettet rettede undercase og ROOTs faktisk afviste B-upload med bevaret helt par er dokumenteret. Den fulde røde prøvekørsel bevares som rød; der påstås ikke samlet ny grøn kontrol. Gamle tværfamilieovergange er heller ikke bevist automatisk genoprettelige. Præcis samlet CI, installation og faktisk offentlig almindelig generation med efterfølger er fortsat nødvendige. De tidligere daterede kontrolbeskrivelser nedenfor er historik.
+
+**Nyere kontrol og læring 17. oktober:** Tredje præcise kildekontrol bestod den rigtige PostgreSQL-fase, men den samlede kontrol var rød på fem testfejl i fire kommandogrupper. Kun testernes manglende deklarationsafhængigheder, præcise stacklinjer og to versionsbundne syntetiske kontrolsummer tilpasses; produktets beregninger og sikkerhedskrav bevares. Den normale prøve med 673 dele og tre efterfølgere samt de øvrige berørte 8 og 18 tilfælde består nu på GitHubs Node 22.23.3. Dette er endnu ikke ny samlet CI, installation eller offentlig effekt.
+
+Gemning af beregningstilstanden og vejrpakken er to særskilte trin. Den almindelige vej gemmer tilstanden først; afbrydelse mellem dem kan efter den nye oprindelseskontrol give et uens generationspar. Den normale genopretning af denne kant er endnu ikke dokumenteret og skal lukkes før levering. Gamle tilstande må ikke vælges som en udokumenteret genvej. Den oprindelige historikfejl og denne fremadrettede risiko er to forskellige forhold. Cron er senest læst som inaktiv; offentlig 579 og alle fem åbne mål er uændrede. Tidligere daterede kontrolbeskrivelser nedenfor er historik.
+
+**Seneste kildekontrol 17. oktober:** Anden præcise kildekontrol på 76b7dd9 standser med en assertion i den samme kunstige selectorfase, ikke i en ny vejrhentning eller produktionsinstallation. Den uafhængige kodegennemgang påviser, at testens invoker-kalder mangler adgang til sin særskilt oprettede CAS-kopi. Kun testkopien får den normale service-role-rettighed; direkte native rettighedskontrol og alle anonyme afslag bevares. De fire uafhængige tilfælde afprøves før første assertionsfejl genkastes, med faste fejlkoder og uændret oprydning. Den normale lokale firetilfældeprøve består, inklusive afslag ved manglende rettighed og separator; dette er ikke native PostgreSQL-bevis. Migrationsfil, C/I/T og produktion er uændrede. Ny præcis samlet CI og faktisk levering er fortsat påkrævet.
+
+**Kildekontrol 17. oktober:** Den første præcise prøve nåede gennem den egentlige migrationsinstallation og genlæsning i den isolerede database, men stoppede derefter i testens ekstra SQL-klargøring. Den manglende kommandoseparator rettes uden ændring af migrationsfil eller datakontroller. Almindelig kørsel skal også hente den nødvendige Git-historik gennem det eksisterende checkout, så en senere kodeændring ikke skjuler den autentiske gemte pakkes oprindelse. Lokale målprøver erstatter ikke ny samlet CI, installation eller offentlig effekt; produktionen er uændret.
+
+Den lokale kildekandidat til RavScore 4.0.581 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=038d9b0cdc50d36dd10f207c6f33e909ddedbdacb28c89adbca12121cb2c7f5f` over 91 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=5cc38c658bf14513a029a62de8f5f9e98259630755bdd84bccbc5fb2c1797858` over 92 transitive filer. T12 er `047db5f9c91b555eb47b886d200061456c9cbec450732743265f0f1739114447`. Det er en kildekandidat, ikke installeret eller offentlig binding. De historiske fysiske scorekontrakter er uændrede.
+
+En almindelig vejropdatering skal bevare sin autentisk gemte strømtilstand og derefter behandle nye timer. En engangsovergang mellem kodefortolkninger må ikke gentages som genberegning af allerede gemt historik, når leverandørernes tidsvindue flytter sig.
+
+Den lokale 4.0.581-kandidat binder den faktiske H0-opstart og den tabsfri metadataovergang til en privat oprindelse. Kun validerede, uændrede delkontekster får normal fremadrettet fortsættelse; ukendte tilstande, ændrede punkter og kopier får ingen ny adgang. Manglende timer er fortsat manglende. Kildeprioritet, scoreformel og administratorens punkter ændres ikke.
+
+En lokal syntetisk 673-dels kæde med tre efterfølgere har bestået normal gemning og genlæsning. Dette er ikke bevis for installeret rettelse eller nye offentlige vejrdata. Præcis GitHub-/PostgreSQL-kontrol, sikker levering og faktisk almindelig produktionseffekt mangler. Offentlig 4.0.579 er senest verificeret med genbrugte data fra 16. oktober kl. 12 dansk tid. Cron er senest verificeret slået fra. Ældre daterede statusafsnit bevares som historik.
+
 ## 89.251 Kortet kan vises for en valgt prognosetime
 
 **Nyere lokal kildestatus 17. oktober:** Den seneste præcise kildekontrol bestod PostgreSQL, men fejlede i én af 58 normale kommandogrupper ved pakkens B/S-rundtur. Observationen viste en anden gyldig, ikke-almindelig filtype efter lukning; det beviser hverken en konkret mappe eller en læk. Den tidlige isolerede prøve genfandt ikke fejlen. De senere baseline-, kapacitets- og trækontroller blev ikke kørt, og der kom intet leveringsartifact.
@@ -366,7 +390,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.580
+**Håndbogsversion:** 4.0.581
 
 ## Aktuel lokal kildebinding — 17. oktober 2026, 4.0.579 ikke installeret
 

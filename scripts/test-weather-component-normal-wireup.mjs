@@ -41,7 +41,7 @@ const part = { partId: 'P1', waterPoint: [10, 56], sourceZoneId: 'OLD' };
 const verifiedInputs = Object.freeze({ fromPrivateAuthority: true });
 
 test('normal PART production plans on current central identity and passes the prepared indexes into scoring', async () => {
-  let planned = false, scored = false;
+  let planned = false, scored = false, originRead = false;
   const safeLogs = [];
   const output = { weatherEngine: {} };
   const waterSourceRoutingContext = { sources: [], index: new Map(), routing: {}, haversineKm: () => 0 };
@@ -53,6 +53,12 @@ test('normal PART production plans on current central identity and passes the pr
     deployedDmiBulkCache: {}, liveCurrentPilot: {}, previous: {}, previousPrivateCandidateGRuntime: null,
     coastalPointStateInjections: {}, ravScoreCheckpoint: { loaded: false },
     historicalWaveInputTransition: null, stateEpochView: null,
+    readEstablishedNativeCurrentOrigin: async contract => {
+      assert.equal(planned, true, 'fixed origin read follows prepared normal inputs');
+      assert.equal(contract, context.coastalPartsContract);
+      originRead = true;
+      return null; // This legacy orchestration fixture claims no origin/native authority.
+    },
     waterSourceRoutingContext, applyVerifiedWaterSourceRoutingToPartHourly,
     assertDmiPartHourlyGridSamplingApplicable,
     RESEARCH_HISTORY_HOURS: 72, OPEN_METEO_FUTURE_HOURS: 121, OPEN_METEO_NATIVE_NEAREST_POLICIES,
@@ -96,6 +102,8 @@ test('normal PART production plans on current central identity and passes the pr
       assert.equal(safeLogs.length, 1, 'supplier evidence is emitted before replay can fail');
       assert.equal(safeLogs[0].kind, 'weather-component-coverage');
       assert.equal(planned, true); assert.equal(args[12], verifiedInputs);
+      assert.equal(originRead, true, 'fixed origin read must finish before scoring');
+      assert.equal(args[19], null, 'unqualified fixture retains the full old pipeline path');
       assert.equal(args[14], waterSourceRoutingContext);
       assert.equal(args[15], context.persistedDmiPartRows);
       assert.equal(args[18], null, 'ordinary weather does not request a new epoch');
@@ -186,10 +194,17 @@ test('scalar planning and public current scoring use their own exact applicabili
       RAVSCORE_PUBLIC_FORECAST_HOURS: 118,
     });
   const runPlan = async input => {
-    let planned;
+    let planned, originRead = false;
     const context = vm.createContext({ ...common,
       output: { weatherEngine: {} }, console: { log() {} }, safeWeatherComponentSummary,
       coastalPartsContract: { enabled: true, zones: { [selectedPart.zoneId]: [selectedPart] } },
+      readEstablishedNativeCurrentOrigin: async contract => {
+        assert.ok(planned, 'fixed origin read follows actual scalar planning');
+        assert.equal(contract, context.coastalPartsContract);
+        assert.equal(originRead, false, 'one fixed origin read per normal planning pass');
+        originRead = true;
+        return null; // Legacy scalar fixture has no authenticated origin handle.
+      },
       features: [{ properties: { id: selectedPart.zoneId } }], nextDmiForecastStore: {},
       dmiBulkCache: original.bulk, deployedDmiBulkCache: null, historicalDmiBulkCache: null,
       persistedDmiPartRows: new Map(), coastalPointStateInjections: {}, stateEpochView: null,
@@ -208,6 +223,7 @@ test('scalar planning and public current scoring use their own exact applicabili
       },
     });
     await vm.runInContext(`(async () => { ${source.slice(start, planningEnd)} })()`, context);
+    assert.equal(originRead, true, 'normal planning excerpt completed its fixed origin read');
     return planned;
   };
   const plan = await runPlan(record);

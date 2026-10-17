@@ -156,6 +156,10 @@ import {
   retainOwnerCurrentTransitionOriginal,
   selectRavScoreProductionInitialState,
 } from './lib/ravscore-production-part-pipeline.mjs';
+import {
+  readEstablishedNativeCurrentOrigin,
+  buildEstablishedNativeCurrentOriginAttestation,
+} from './lib/established-native-current-origin.mjs';
 import { summarizeRavScoreInitialCurrentWindow } from './lib/ravscore-initial-current-window-audit.mjs';
 import {
   buildNewestValidRavScoreRecoverySources,
@@ -1892,6 +1896,7 @@ function scoreCoastalPartsRuntime(
   historicalDmiBulkCache = null,
   previousCurrentSourceDomainTransitions = null,
   stateEpochView = null,
+  establishedNativeCurrentOrigin = null,
 ) {
   // A separately authenticated, archived epoch omits OLD numerical state only
   // for this first calculation. The full original weather baseline remains
@@ -1944,6 +1949,9 @@ function scoreCoastalPartsRuntime(
   }
   const expectedByZone = new Map();
   const partRows = [];
+  // Actual normal results stay private and retain their pipeline WeakMap
+  // identity. The finalizer checks their exact H0 pairs against output.
+  const establishedNativeCurrentPartResults = new Map();
   const selectedDmiPartRecords = new Map();
   const currentSourceDomainTransitions = {};
   let furWaterRoutingTrace = null;
@@ -2363,6 +2371,7 @@ function scoreCoastalPartsRuntime(
       let productionSeries;
       try {
         productionSeries = buildRavScoreProductionPartSeries({
+          establishedNativeCurrentOrigin,
           requireNativeGridSampling: true,
           liveCurrentPilot,
           assertRoutedWaterLevelApplicable: routedWater.assertRoutedWaterLevelApplicable,
@@ -2472,6 +2481,12 @@ function scoreCoastalPartsRuntime(
           }
         }
         throw error;
+      }
+      if (establishedNativeCurrentOrigin !== null) {
+        if (establishedNativeCurrentPartResults.has(part.partId)) {
+          throw new Error('RAVSCORE_ESTABLISHED_NATIVE_CURRENT_RESULT_DUPLICATE');
+        }
+        establishedNativeCurrentPartResults.set(part.partId, productionSeries);
       }
       const {
         recovery,
@@ -2802,6 +2817,7 @@ function scoreCoastalPartsRuntime(
   return {
     integratedRuntime,
     selectedDmiPartRecords,
+    establishedNativeCurrentPartResults,
     currentSourceDomainTransitions,
     furWaterRoutingTrace,
     weatherSourceAge,
@@ -4328,6 +4344,12 @@ if (coastalPartsContract.enabled) {
     remainingNeedCount: weatherComponents.summary?.remainingNeedCount ?? null,
   });
 }
+// Authenticate the installed immutable B/S and its working H0 pair before
+// scoring. This never derives origin from a caller flag, model hash or new
+// provider record, and does not rewrite the old conditions/GCM baseline.
+const establishedNativeCurrentOrigin = coastalPartsContract.enabled
+  ? await readEstablishedNativeCurrentOrigin(coastalPartsContract)
+  : null;
 const coastalPartScoreBuild = coastalPartsContract.enabled
   ? scoreCoastalPartsRuntime(
     coastalPartsContract,
@@ -4351,6 +4373,7 @@ const coastalPartScoreBuild = coastalPartsContract.enabled
     historicalDmiBulkCache,
     previous?.ravScoreCurrentSourceDomainTransitions ?? null,
     stateEpochView,
+    establishedNativeCurrentOrigin,
   )
   : null;
 if (coastalPartScoreBuild) {
@@ -4433,6 +4456,17 @@ if (currentProvenanceEnrichment.skipped) {
 }
 await writeDmiForecastStoreCheckpoint();
 console.log(`Berigede strømproveniens før forsegling: ${currentProvenanceEnrichment.zones} zoner, ${currentProvenanceEnrichment.verifiedHours} verificerede timer og ${currentProvenanceEnrichment.unverifiedHours} ikke-verificerbare timer.`);
+if (establishedNativeCurrentOrigin !== null) {
+  // Reissue explicitly from ALL actual successful normal part results and
+  // the final projected H0 pairs. Never copy/spread an old attestation or use
+  // the terminal forecast continuation in place of the current target pair.
+  output.privateEstablishedNativeCurrentOrigin =
+    await buildEstablishedNativeCurrentOriginAttestation(establishedNativeCurrentOrigin, {
+      centralContract: coastalPartsContract,
+      conditions: output,
+      partResults: coastalPartScoreBuild?.establishedNativeCurrentPartResults,
+    });
+}
 // Byg først de offentlige, begrænsede timefiler fra den komplette beregning i
 // hukommelsen. Gem derefter en komprimeret og hashbundet genstartspakke og fjern
 // de 673 x 118 afledte timer fra den monolitiske private conditions-fil. Den

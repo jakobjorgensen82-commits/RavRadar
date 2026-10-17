@@ -1,3 +1,9 @@
+## 17. oktober — 4.0.581: afgrænset testklargøring og almindelig Git-historik
+
+Første præcise kildekontrol på 7b467bb stoppede i den ekstra, kunstige SQL-selectorprøve med syntaksfejl. Kontrolflowet havde da passeret den egentlige nye migration, genlæsning, normal JSONB-rundtur og de forudgående CAS-tilfælde i den isolerede database. Samlet PostgreSQL- og kildekontrol er derfor stadig rød; bevaringsslutkontrol, senere kildeplan, kapacitet og trækontrol blev ikke kørt. Produktionsdatabasen, offentlig 579 og cron er uændrede.
+
+Testens kataloglæste funktionsdefinition mangler et afsluttende semikolon før næste rettighedskommando. Kun denne separator og dens normale regression rettes; migrationsfil, C/I/T, gamle originaler og alle produktkontroller bevares. En fremadrettet kontrol har desuden påvist, at en senere almindelig kildeændring kan skjule en autentisk pakkeforgængers Git-historik i et kort checkout. Den eksisterende checkout får fuld historik, som kode-only og kildekontrol allerede bruger. Det ændrer ingen leverandørregel, tidsgrænse, scheduler, proveniens- eller kildekontrol; hele gamle testorakler bevares gennem en præcis inverse. De syv normale inverseprøver og den direkte normale kildeprøve består lokalt. Ny præcis samlet CI, sikker installation og faktisk almindelig ny generation med efterfølger kræves fortsat. Alle fem mål er åbne, og SOURCE samt øvrige tilbageholdte leverancer forbliver inaktive.
+
 ## 17. oktober — 4.0.580: fysisk lukning og en anden gyldig filtype
 
 Den seneste præcise kildekontrol bestod PostgreSQL, men fejlede i én af 58 normale kommandogrupper ved pakkens B/S-rundtur. Observationen viste en anden gyldig, ikke-almindelig filtype efter lukning; det beviser hverken en konkret mappe eller en læk. Den tidlige isolerede prøve genfandt ikke fejlen. De senere baseline-, kapacitets- og trækontroller blev ikke kørt, og der kom intet leveringsartifact.

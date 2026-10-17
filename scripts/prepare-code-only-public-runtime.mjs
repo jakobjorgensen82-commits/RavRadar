@@ -309,6 +309,43 @@ function assertByteCount(text, expected, label) {
   }
 }
 
+// Data staging ONLY. This is the already validated current PUBLIC snapshot,
+// not a new admin-backend read, origin grant or private B inventory member.
+// The caller's expected identity only rejects a wrong snapshot; actual B/S
+// authentication and all 673 seed sampling checks remain the fixed reader's job.
+export async function stageCodeOnlyPublicCoastalRegistry({ repositoryRoot, snapshotRoot, expectedIdentity } = {}) {
+  const { repository, snapshot } = await assertSeparateRegularDirectory(repositoryRoot, snapshotRoot);
+  const manifestSource = await readJson(path.join(snapshot, CODE_ONLY_SNAPSHOT_FILES.manifest), 'Live public manifest', 1024 * 1024);
+  const manifest = manifestSource.value;
+  if (manifest.schemaVersion !== 4 || manifest.complete !== true
+      || manifest.zoneCount !== 210 || manifest.coastalPartCount !== 673) {
+    throw new Error('Live code-only source is not a complete 210/673 schema-4 artifact');
+  }
+  if (typeof expectedIdentity?.datasetId !== 'string' || !expectedIdentity.datasetId
+      || typeof expectedIdentity?.productionReferenceAt !== 'string'
+      || !Number.isFinite(Date.parse(expectedIdentity.productionReferenceAt))
+      || manifest.datasetId !== expectedIdentity.datasetId
+      || manifest.productionReferenceAt !== expectedIdentity.productionReferenceAt) {
+    throw new Error('Public registry snapshot does not match the authenticated private source identity');
+  }
+  const coastalPartsSource = await readJson(path.join(snapshot, CODE_ONLY_SNAPSHOT_FILES.coastalParts),
+    'Live public coastal-part registry', 16 * 1024 * 1024);
+  assertDigest(coastalPartsSource.text, manifest.coastalPartsSha256, 'Live public coastal-part registry');
+  assertByteCount(coastalPartsSource.text, manifest.coastalPartsBytes, 'Live public coastal-part registry');
+  assertCodeOnlyModelBinding(manifest.ravScoreModelBinding, ravScoreModelBinding());
+  if (coastalPartsSource.value?.zoneCount !== manifest.zoneCount
+      || coastalPartsSource.value?.partCount !== manifest.coastalPartCount) {
+    throw new Error('Live coastal-part registry does not match the public manifest');
+  }
+  // Exact same source bytes and same normal atomic writer as later reuse.
+  await atomicWrite(path.join(repository, 'data/live/coastal-parts-v2.json'), coastalPartsSource.text);
+  return Object.freeze({ kind: 'CODE_ONLY_CURRENT_PUBLIC_COASTAL_REGISTRY_STAGED',
+    datasetId: manifest.datasetId, productionReferenceAt: manifest.productionReferenceAt,
+    bytes: manifest.coastalPartsBytes, sha256: manifest.coastalPartsSha256,
+    zoneCount: 210, partCount: 673, freshAdminBackendRead: false, originAdmission: false,
+    providerRequestsPerformed: false, privatePayloadIncluded: false });
+}
+
 export async function prepareCodeOnlyPublicRuntime({
   repositoryRoot,
   snapshotRoot,
@@ -516,6 +553,20 @@ function hasFlag(argv, name) {
 
 async function main() {
   const argv = process.argv.slice(2);
+  if (argv[0] === '--stage-public-coastal-registry-only') {
+    if (argv.length !== 5 || argv[1] !== '--repository-root' || argv[3] !== '--snapshot-root'
+        || typeof process.env.RAVRADAR_OPERATIONAL_WORK !== 'string'
+        || !path.isAbsolute(process.env.RAVRADAR_OPERATIONAL_WORK)) {
+      throw new Error('Code-only registry staging requires the exact normal workflow paths');
+    }
+    const expected = await readJson(path.join(process.env.RAVRADAR_OPERATIONAL_WORK, 'target-private-runtime-source.json'),
+      'Authenticated private source description', 128 * 1024);
+    const result = await stageCodeOnlyPublicCoastalRegistry({
+      repositoryRoot: argv[2], snapshotRoot: argv[4], expectedIdentity: expected.value,
+    });
+    console.log(JSON.stringify(result));
+    return;
+  }
   const report = await prepareCodeOnlyPublicRuntime({
     repositoryRoot: argument(argv, '--repository-root'),
     snapshotRoot: argument(argv, '--snapshot-root'),

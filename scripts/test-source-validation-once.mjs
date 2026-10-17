@@ -93,7 +93,10 @@ assert.ok(hostSource.includes('await exec(process.execPath,argv,{cwd:sourceRoot,
 const host = group => 'node scripts/run-frozen-native0600-source-targets.mjs ' + group;
 assert.equal(scripts['test:native-identity-successor'], host('native'));
 assert.equal(scripts['test:weather-state-epoch'], host('epoch'));
-const currentBuilder = 'node scripts/build-current-memory-warmup-successor.mjs --check';
+const currentBuilder = 'node scripts/run-frozen-current-memory-warmup-source-targets.mjs builder';
+const originBuilder = 'node scripts/build-established-native-current-origin-successor.mjs --check';
+const originFollowers = 'node scripts/test-established-native-current-origin-followers.mjs';
+const originTargets = 'node --test scripts/test-model-source-imports.mjs scripts/test-established-native-current-origin-successor.mjs scripts/test-established-native-current-origin-postgres-source.mjs scripts/test-code-only-public-coastal-registry-stage.mjs';
 const warmupTargets = ['scripts/test-current-memory-warmup-successor.mjs',
   'scripts/test-current-memory-warmup-current-consumers.mjs',
   'scripts/test-current-memory-warmup-postgres-source.mjs',
@@ -114,7 +117,7 @@ assert.equal(declared.filter(command => command === currentIntegratedTargets).le
 assert.equal(currentIntegratedTargets.replace(' ' + currentWindowAuditTarget, ''), priorIntegratedTargets);
 const replaced = new Map([
   [priorIntegratedTargets, [currentIntegratedTargets]],
-  [successorCheck, [currentBuilder]],
+  [successorCheck, [currentBuilder, originBuilder, originTargets, originFollowers]],
   [nativeFrozenCheck, [host('native'), ...warmupChecks]],
   [nativeCheck, []], // The same eight targets now execute in the genuine host.
   [epochCheck, [host('epoch')]],
@@ -135,7 +138,7 @@ assert.deepEqual(declared.slice(mapTimelineAt, mapTimelineAt + 3),
 assert.deepEqual(declared.filter(command => !mapTimelineChecks.includes(command)),
   historicalDeclared.flatMap(command => replaced.get(command) ?? [command]),
   'Preserve every baseline command, order and duplicate count except the six exact historical routes and three separate warmup checks.');
-for (const check of [issuedCheck, frozenCurrentCheck, diagnosticCheck, currentBuilder,
+for (const check of [issuedCheck, frozenCurrentCheck, diagnosticCheck, currentBuilder, originBuilder, originTargets, originFollowers,
   host('native'), host('epoch'), host('install'), host('readiness'), ...warmupChecks])
   assert.equal(declared.filter(command => command === check).length, 1,
     'Every genuine historical route and current warmup builder/target must execute exactly once.');

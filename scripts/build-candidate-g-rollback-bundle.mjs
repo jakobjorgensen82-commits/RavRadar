@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RAVSCORE_MODEL_CONTRACT } from './rollback-assets/ravscore-model-contract.js';
-import { exactRelativeModuleSpecifiers } from './lib/static-module-closure.mjs';
+import { modelSourceRelativeModuleSpecifiers } from './lib/model-source-imports.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const GENERATED_PATH = 'scripts/rollback-assets/ravscore-model-bundle.generated.js';
@@ -95,7 +95,7 @@ export async function computeCandidateGRollbackBundle({
       ? sourceOverrides.get(relative)
       : await fs.readFile(absolute, 'utf8'));
     sources.set(relative, source);
-    for (const specifier of exactRelativeModuleSpecifiers(source, relative)) {
+    for (const specifier of modelSourceRelativeModuleSpecifiers(source, relative)) {
       const imported = await resolveImport(root, relative, specifier);
       if (!sources.has(imported) && !excluded.has(imported)) pending.push(imported);
     }
