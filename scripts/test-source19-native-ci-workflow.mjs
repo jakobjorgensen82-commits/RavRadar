@@ -28,6 +28,7 @@ const source19SuccessorFixtures = [
   }
 ];
 function projectSource19SuccessorNativeJobs(actual) {
+  actual = projectSource19FixedDiagnosticJobs(actual);
   if (sha(actual) === NATIVE_JOBS_SHA256) return actual;
   assert.equal(sha(actual), 'b7414f8784e43f2c7c5560c73558d2b3cabcc8e9a35e24a3752323bacbfaaef4', 'SOURCE19_D504_EXACT_SUCCESSOR_JOBS');
   let legacy = actual;
@@ -40,6 +41,7 @@ function projectSource19SuccessorNativeJobs(actual) {
   return legacy;
 }
 function projectSource19SuccessorNativeScope(actual) {
+  actual = projectSource19FixedDiagnosticScope(actual);
   if (sha(JSON.stringify(actual)) === EXACT_SCOPE_SHA256) return actual;
   assert.equal(sha(JSON.stringify(actual)), 'ac7b7639544f0507be3951b794383b6b70caf00894aa98e5bf6fe36f9dfe185d', 'SOURCE19_D504_EXACT_SUCCESSOR_SCOPE');
   const legacy = actual.filter(file => !source19SuccessorFixtures.some(row => row.next === file));
@@ -70,7 +72,7 @@ async function assertSource19SuccessorComposition() {
     assert.equal(newIdentity.value.successorCompositionId, '81ba8b9a448f5d475d019d5ce6c44dbd9fa3ee8bebeb9e4e4d816de2395f4dfa');
     assert.equal(newIdentity.value.evidence, 'LINUX_UNRUN_NO_ADMISSION');
     for (const [file, expected] of Object.entries(newPins.value)) {
-      assert.equal(sha((await fs.readFile(path.join(sourceRoot, file), 'utf8')).replaceAll('\r\n', '\n')), expected, 'Actual successor product source');
+      assert.equal(sha(projectSource19FixedDiagnosticProduct(file, (await fs.readFile(path.join(sourceRoot, file), 'utf8')).replaceAll('\r\n', '\n'))), expected, 'Actual successor product source');
     }
     let inverse = after.replace(newIdentity.literal, oldIdentity.literal).replace(newPins.literal, oldPins.literal);
     assert.equal(inverse.split(row.guard).length, 2); inverse = inverse.replace(row.guard, '');
@@ -330,6 +332,232 @@ export async function testSource19FixtureDiagnosticsPrerequisite(fixtureSources 
   return report;
 }
 
+// TEST-ONLY closed diagnostic regression; no native execution or failure relabelling.
+export async function testSource19BeforeHFailureDiagnostics(documents = null) {
+  const {spawnSync} = await import('node:child_process');
+  const root = process.cwd();
+  const names = ['scripts/test-source19-cp-install-native.py', 'scripts/test-source19-union-native.py'];
+  documents ??= await Promise.all(names.map(async name => ({name, text: await fs.readFile(path.join(root, name), 'utf8')})));
+  assert.deepEqual(documents.map(row => row.name), names);
+  const probe = spawnSync(process.env.PYTHON || 'python', ['-I', '-B', '-c', "import ast,hashlib,json,os,pathlib,re,stat,sys,tempfile\ndocuments=json.load(sys.stdin)\nunits=[]\nfor d in documents:\n    tree=ast.parse(d['text'])\n    nodes=[n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name in ('classify_source19_before_h_stderr','capture_source19_before_h_failure')]\n    assert len(nodes)==2\n    units.append(ast.dump(ast.Module(body=nodes,type_ignores=[])))\n    assert \"and first is None:\" in d['text']\n    assert d['text'].count(\"before_h = capture_source19_before_h_failure(root, process is not None and process.poll() is not None)\")==1\n    for marker in ('CHECKPOINT_PROTECTED_READ','PRIVATE_POINTER_READ','PRIVATE_BUCKET_READ','PRIVATE_B_OBJECT_DOWNLOAD'):\n        assert d['text'].count(\"append('\"+marker+\"')\")==1\nassert units[0]==units[1]\ntree=ast.parse(documents[0]['text'])\nnodes=[n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name in ('classify_source19_before_h_stderr','capture_source19_before_h_failure')]\nns={'re':re,'stat':stat,'os':os,'Path':pathlib.Path,'json':json,'sha':lambda raw:hashlib.sha256(raw).hexdigest(),'ROOT':pathlib.Path.cwd(),'ENTRY':pathlib.Path('.github/actions/save-owned-dmi-grib/index.cjs')}\nexec(compile(ast.Module(body=nodes,type_ignores=[]),'<actual-test-diagnostic-functions>','exec'),ns)\nclassify=ns['classify_source19_before_h_stderr']\ncases=[(b'Protected RavScore checkpoint read could not be reached','CHECKPOINT_PROTECTED','CHECKPOINT_PROTECTED_REFUSED'),(b'Private runtime pointer readback is missing','PRIVATE_POINTER','PRIVATE_POINTER_REFUSED'),(b'Protected private runtime bucket policy is incompatible','PRIVATE_BUCKET','PRIVATE_BUCKET_REFUSED'),(b'Protected private runtime object integrity is invalid','PRIVATE_B_RESTORE','PRIVATE_B_RESTORE_REFUSED'),(b'Error [ERR_MODULE_NOT_FOUND]: private-CANARY path','NODE_IMPORT','ERR_MODULE_NOT_FOUND'),(b\"code: 'MODULE_NOT_FOUND'\",'NODE_IMPORT','MODULE_NOT_FOUND'),(b'ReferenceError: private-CANARY value','NODE_RUNTIME','NODE_ERROR'),(b'SyntaxError: private-CANARY','NODE_RUNTIME','NODE_ERROR'),(b'RuntimeError: SOURCE_NORMAL_NODE22_REQUIRED','SOURCE_FIXED_GUARD','SOURCE_NORMAL_NODE22_REQUIRED'),(b'RuntimeError: SOURCE_FAKE_CANARY','UNKNOWN','UNKNOWN'),(b'private-CANARY unknown failure','UNKNOWN','UNKNOWN'),(b'DMI_RAW_SAVE_DIAGNOSTIC stage=INPUT reason=UNKNOWN','UNKNOWN','UNKNOWN')]\ncases += [(b'SOURCE_RUN_DIAGNOSTIC stage=CHECKPOINT_PROTECTED reason=SOURCE_PRELUDE_PROGRAM_FAILED node_class=ERROR rejection=NONE','CHECKPOINT_PROTECTED','SOURCE_PRELUDE_PROGRAM_FAILED'),(b'SOURCE_RUN_DIAGNOSTIC stage=SOURCE_IMPORT reason=ERR_MODULE_NOT_FOUND node_class=ERROR rejection=NONE','SOURCE_IMPORT','ERR_MODULE_NOT_FOUND'),(b'SOURCE_RUN_DIAGNOSTIC stage=PRIVATE_CANARY reason=SOURCE_PRIVATE_CANARY node_class=ERROR rejection=NONE','UNKNOWN','UNKNOWN')]\nfor raw,stage,code in cases:\n    result=classify(raw,{'SOURCE_NORMAL_NODE22_REQUIRED','SOURCE_PRELUDE_PROGRAM_FAILED'})\n    assert result[0]['stage']==stage and result[0]['code']==code\n    assert 'CANARY' not in json.dumps(result) and 'private-' not in json.dumps(result)\nwith tempfile.TemporaryDirectory(prefix='rr-s19-private-child-diagnostics-') as temporary:\n    own=pathlib.Path(temporary)\n    raw=b'private-CANARY\\n'+b'x'*32768+b'\\nError [ERR_MODULE_NOT_FOUND]: private-CANARY\\n'\n    # Complete the synthetic writer before the unchanged stable-read guard.\n    with (own/'stderr').open('xb') as writer:\n        writer.write(raw)\n        writer.flush()\n        os.fsync(writer.fileno())\n    pending=ns['capture_source19_before_h_failure'](own,False)\n    assert pending=={'capture':'PENDING_CHILD_STOP','sourceAdmission':False}\n    assert not (own/'source19-before-h-child-failure.json').exists()\n    result=ns['capture_source19_before_h_failure'](own,True)\n    assert result['capture']=='COMPLETE_STABLE' and result['stderrBytes']==len(raw)\n    assert result['stderrSha256']==hashlib.sha256(raw).hexdigest()\n    assert result['fixedFailures'][0]['code']=='ERR_MODULE_NOT_FOUND'\n    assert result['wholePrivateStderrRetained'] is True and result['sourceAdmission'] is False\n    assert (own/'stderr').read_bytes()==raw\n    assert json.loads((own/'source19-before-h-child-failure.json').read_text())==result\n    assert 'CANARY' not in json.dumps(result)\n    refused=ns['capture_source19_before_h_failure'](own,True)\n    assert refused['capture']=='UNPROVEN_RETAINED' and (own/'stderr').read_bytes()==raw\n    missing=ns['capture_source19_before_h_failure'](own/'absent',True)\n    assert missing['capture']=='UNPROVEN_RETAINED'\nprint(json.dumps({'status':'SOURCE19_BEFORE_H_DIAGNOSTICS_PASS','classificationCases':len(cases),'wholeStderrBeyond16KiB':True,'nativeActual':'UNRUN','sourceAdmission':False}))\n"], {
+    input: JSON.stringify(documents), encoding: 'utf8', timeout: 10_000, maxBuffer: 16_384,
+    env: {PATH: process.env.PATH, ...(process.env.SYSTEMROOT ? {SYSTEMROOT: process.env.SYSTEMROOT} : {})},
+  });
+  assert.equal(probe.error, undefined); assert.equal(probe.signal, null);
+  assert.equal(probe.status, 0, probe.stderr); assert.equal(probe.stderr, '');
+  const result=JSON.parse(probe.stdout);
+  assert.deepEqual(result,{status:'SOURCE19_BEFORE_H_DIAGNOSTICS_PASS',classificationCases:15,wholeStderrBeyond16KiB:true,nativeActual:'UNRUN',sourceAdmission:false});
+  return result;
+}
+// END TEST-ONLY closed diagnostic regression.
+
+// Exact additive diagnostics composition; historical fixtures remain frozen.
+const source19DiagnosticProducts = [{"path":".github/actions/save-owned-dmi-grib/index.cjs","beforeSha256":"008ba0937c85546f73c6713a63b27bab948a44c20ea57e70910ab921eb56ace1","afterSha256":"dd8bd752a5cef8c927db2c00e642ab240638e3ab10c56d9f57c9546ab4e02926","blockStart":"// SOURCE_ACTION_DIAGNOSTIC_BEGIN:","blockEnd":"// SOURCE_ACTION_DIAGNOSTIC_END","blockSha256":"82d37820dae7ccb105dfed78d4363f8a86f68c6e9cc1e2a6796695238d850e9e","rules":[{"before":"async function runSourceGeneration() {\n  fixedDistributionInputs();\n  if (process.argv.length !== 2 || process.env.INPUT_OPERATION !== 'source') {\n    throw refused('DMI_RAW_SAVE_ARGUMENT_REFUSED');\n  }\n  const normal = await import(pathToFileURL(path.join(ROOT,\n    'scripts/protected-private-production-runtime.mjs')).href);\n  // P awaits the fixed artifact/T consumer under the SAME issuer. A Set or\n  // an exit code is never used to replace those actual awaited operations.\n  // This action still emits no SOURCE-complete/READY/hosted-publication flag.\n  return normal.runSourceCompleteEntry();","after":"async function runSourceGeneration() {\n  fixedDistributionInputs();\n  if (process.argv.length !== 2 || process.env.INPUT_OPERATION !== 'source') {\n    throw refused('DMI_RAW_SAVE_ARGUMENT_REFUSED');\n  }\n  let normal;\n  try {\n    normal = await import(pathToFileURL(path.join(ROOT,\n      'scripts/protected-private-production-runtime.mjs')).href);\n  } catch (error) { sourceFailureImportError = error; throw error; }\n  sourceFailureDiagnosticReader = normal.sourceFailureDiagnostic;\n  // P awaits the fixed artifact/T consumer under the SAME issuer. A Set or\n  // an exit code is never used to replace those actual awaited operations.\n  // This action still emits no SOURCE-complete/READY/hosted-publication flag.\n  return normal.runSourceCompleteEntry();"},{"before":"    process.stderr.write(refusalDiagnostic(error));\n","after":"    process.stderr.write(refusalDiagnostic(error));\n    if (process.env.INPUT_OPERATION === 'source') process.stderr.write(sourceFailureDiagnosticLine(error));\n"}]},{"path":"scripts/protected-private-production-runtime.mjs","beforeSha256":"fd595ee0ebafc4a06b9516e404e674da56a3abdbdef7fc720a7a94b05b1c0e77","afterSha256":"a3ee076322bd4dcc9a1fa0b36948aadb1b8e672efa1f4d65c062b4e8c5852273","blockStart":"// SOURCE_DIAGNOSTIC_BEGIN:","blockEnd":"// SOURCE_DIAGNOSTIC_END","blockSha256":"e06db4f4f98064a721fc707e3f37c1a22710233a1e46d1b165cd4879de45c58f","rules":[{"before":"const sourceDeadlineFailure = code => { throw new Error(code); };\n","after":"const sourceDeadlineFailure = code => { throw sourceGuardError(code); };\n"},{"before":"function sourceOriginalFailure(code) { throw new Error(`SOURCE_ORIGINAL_${code}`); }\n","after":"function sourceOriginalFailure(code) { throw sourceGuardError(`SOURCE_ORIGINAL_${code}`); }\n"},{"before":"  issued.normalDriver = driver; // retain before the first authentic read or child\n","after":"  issued.normalDriver = driver; // retain before the first authentic read or child\n  sourceDriverDiagnosticStages.set(driver, 'ROUTE');\n"},{"before":"    await beginSourceNormalPrelude(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'PRELUDE');\n    await beginSourceNormalPrelude(holder);\n"},{"before":"    const preflight = await runSourceNormalPreflight(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'PREFLIGHT');\n    const preflight = await runSourceNormalPreflight(holder);\n"},{"before":"    await runSourceNormalAdminPrelude(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'ADMIN');\n    await runSourceNormalAdminPrelude(holder);\n"},{"before":"    await runSourceNormalHandoffSelection(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'HANDOFF');\n    await runSourceNormalHandoffSelection(holder);\n"},{"before":"    await runSourceNormalOriginalSelection(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'ORIGINAL_SELECTION');\n    await runSourceNormalOriginalSelection(holder);\n"},{"before":"    await runSourceNormalCheckpointRestore(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'CHECKPOINT_PROTECTED');\n    await runSourceNormalCheckpointRestore(holder);\n"},{"before":"    await prepareSourceNormalArchivedReaders(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'ARCHIVED_READERS');\n    await prepareSourceNormalArchivedReaders(holder);\n"},{"before":"    await prepareSourceNormalOriginalRoot(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'PRIVATE_ROOT');\n    await prepareSourceNormalOriginalRoot(holder);\n"},{"before":"    await acquireSourceNormalProgressCipher(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'PROGRESS_CACHE');\n    await acquireSourceNormalProgressCipher(holder);\n"},{"before":"    driver.original = await runSourceNormalOriginalInstall(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'ORIGINAL_INSTALL');\n    driver.original = await runSourceNormalOriginalInstall(holder);\n"},{"before":"    await runSourceNormalOriginalPostInstall(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'POST_INSTALL');\n    await runSourceNormalOriginalPostInstall(holder);\n"},{"before":"    await captureSourceNormalProgressBase(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'PROGRESS_BASE');\n    await captureSourceNormalProgressBase(holder);\n"},{"before":"    await runSourceNormalProgress(holder, driver.original);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'PROGRESS_UNION');\n    await runSourceNormalProgress(holder, driver.original);\n"},{"before":"    await resolveSourceNormalProtectedBootstrap(holder, driver.original);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'PRODUCER_CHAIN');\n    await resolveSourceNormalProtectedBootstrap(holder, driver.original);\n"},{"before":"    driver.firstFailure ??= [error];\n    const owner = sourceJobDeadlineBrands.get(holder)?.originalOwner;\n","after":"    driver.firstFailure ??= [error];\n    rememberSourceDriverFailure(driver, driver.firstFailure[0]);\n    const owner = sourceJobDeadlineBrands.get(holder)?.originalOwner;\n"}]}];
+const source19DiagnosticFixtures = [{"parent":"scripts/test-source19-cp-install-native-d504-fixture.mjs","next":"scripts/test-source19-cp-install-native-d504-diagnostics-fixture.mjs","parentSha256":"83642a2aead446a85eddc98c791d53e2331963082aa6e7c567beb94a6893169a","afterSha256":"9eef534316376da4fb850ff07347284b50f06a2f1db372657d36aa482ae556de","guard":"  const diagnosticParent = path.join(ROOT, fixtureIdentity.diagnosticParentFixture);\n  const diagnosticParentStat = await fs.lstat(diagnosticParent);\n  assert.ok(diagnosticParentStat.isFile() && !diagnosticParentStat.isSymbolicLink() && diagnosticParentStat.nlink === 1, 'DIAGNOSTIC_PARENT_REGULAR_SOURCE_REQUIRED');\n  assert.equal(digest(lf(await fs.readFile(diagnosticParent, 'utf8'))), fixtureIdentity.diagnosticParentSha256, 'FROZEN_D504_FIXTURE_BYTES_CHANGED');\n"},{"parent":"scripts/test-source19-union-native-d504-fixture.mjs","next":"scripts/test-source19-union-native-d504-diagnostics-fixture.mjs","parentSha256":"071b18ba7763a31452d00c4a1d4855b28e08227e48151a41c7ce67d9656775f6","afterSha256":"549f06d55b1bea3ecd8e1155d33ec49cf216697062b1b87612fca088004311f5","guard":"  const diagnosticParent = path.join(ROOT, fixtureIdentity.diagnosticParentFixture);\n  const diagnosticParentStat = await fs.lstat(diagnosticParent);\n  assert.ok(diagnosticParentStat.isFile() && !diagnosticParentStat.isSymbolicLink() && diagnosticParentStat.nlink === 1, 'DIAGNOSTIC_PARENT_REGULAR_SOURCE_REQUIRED');\n  assert.equal(digest(lf(await fs.readFile(diagnosticParent, 'utf8'))), fixtureIdentity.diagnosticParentSha256, 'FROZEN_D504_FIXTURE_BYTES_CHANGED');\n"}];
+export function projectSource19FixedDiagnosticProduct(file, actual) {
+  if (file === 'scripts/test-protected-private-production-runtime.mjs') {
+    actual=actual.replaceAll('\r\n','\n');
+    if (sha(actual)==='ad4056293d74a98e15304dc8c13c680e46da7600df14db368fe40297167dedd0') return actual;
+    assert.equal(sha(actual),'aa8a7d07881f7ccf743d56a0c8e60c0ab5c88d0174ef327a28d1d861ff03380a','Exact V2 observation test');
+    const queryLine="  moduleUrl.search = 'source-disposition-test=' + crypto.randomUUID();\n";
+    assert.equal(actual.split(queryLine).length,2);
+    const inverse=actual.replace(queryLine,'');
+    assert.equal(sha(inverse),'ad4056293d74a98e15304dc8c13c680e46da7600df14db368fe40297167dedd0','Whole historical observation test');
+    return inverse;
+  }
+  const row=source19DiagnosticProducts.find(row=>row.path===file);
+  if(!row)return actual;
+  actual=actual.replaceAll('\r\n','\n');
+  if(sha(actual)===row.beforeSha256)return actual;
+  assert.equal(sha(actual),row.afterSha256,'Exact reviewed diagnostic product afterimage');
+  const start=actual.indexOf(row.blockStart),end=actual.indexOf(row.blockEnd,start);
+  assert.ok(start>=0&&end>start);
+  const block=actual.slice(start,end+row.blockEnd.length)+'\n\n';
+  assert.equal(sha(block),row.blockSha256);
+  assert.equal(actual.split(block).length,2);let inverse=actual.replace(block,'');
+  for(const rule of [...row.rules].reverse()){
+    assert.equal(inverse.split(rule.after).length,2);inverse=inverse.replace(rule.after,()=>rule.before);
+  }
+  assert.equal(sha(inverse),row.beforeSha256,'Entire pre-diagnostic product, not selected guards');
+  return inverse;
+}
+function projectSource19FixedDiagnosticJobs(actual) {
+  if (sha(actual) === 'cfa875fcee557f018d3349abbe200547a9c491a692173fd40df63ed844f7c9fb') {
+    assert.equal(actual.split(' --composition integrated-d504-diagnostics-v2').length,3);
+    actual=actual.replaceAll(' --composition integrated-d504-diagnostics-v2',' --composition integrated-d504-diagnostics');
+    assert.equal(sha(actual),'2286dce6119d90c0c062061791665045f9a87ebe804058a324e38aa48495a138','Exact entire V2-to-V1 seven-job inverse');
+  }
+  if(sha(actual)!=="2286dce6119d90c0c062061791665045f9a87ebe804058a324e38aa48495a138")return actual;
+  assert.equal(actual.split(' --composition integrated-d504-diagnostics').length,3);
+  const inverse=actual.replaceAll(' --composition integrated-d504-diagnostics',' --composition integrated-d504');
+  assert.equal(sha(inverse),'b7414f8784e43f2c7c5560c73558d2b3cabcc8e9a35e24a3752323bacbfaaef4');
+  return inverse;
+}
+function projectSource19FixedDiagnosticScope(actual) {
+  if(sha(JSON.stringify(actual))!=="1a57c0d62f9b588d02de7a0aa366d67292fa653bebe0d9afebb1eacf1c1e089c")return actual;
+  const inverse=actual.filter(file=>!source19DiagnosticFixtures.some(row=>row.next===file));
+  assert.equal(actual.length-inverse.length,2);
+  assert.equal(sha(JSON.stringify(inverse)),'ac7b7639544f0507be3951b794383b6b70caf00894aa98e5bf6fe36f9dfe185d');
+  return inverse;
+}
+export async function assertSource19FixedDiagnosticComposition(documents = {}) {
+  const read=async file=>(documents[file]??await fs.readFile(path.join(process.cwd(),file),'utf8')).replaceAll('\r\n','\n');
+  const object=(text,name)=>{
+    const match=text.match(new RegExp('const '+name+'=Object\\.freeze\\((\\{[\\s\\S]*?\\})\\);'));
+    assert.ok(match);return {literal:match[0],value:JSON.parse(match[1])};
+  };
+  for(const row of source19DiagnosticProducts){
+    const actual=await read(row.path);
+    assert.equal(sha(actual),row.afterSha256);
+    assert.equal(sha(projectSource19FixedDiagnosticProduct(row.path,actual)),row.beforeSha256);
+  }
+  const observation=await read('scripts/test-protected-private-production-runtime.mjs');
+  assert.equal(sha(observation),'aa8a7d07881f7ccf743d56a0c8e60c0ab5c88d0174ef327a28d1d861ff03380a','Exact V2 observation test');
+  const queryLine="  moduleUrl.search = 'source-disposition-test=' + crypto.randomUUID();\n";
+  assert.equal(observation.split(queryLine).length,2);
+  assert.equal(sha(observation.replace(queryLine,'')),'ad4056293d74a98e15304dc8c13c680e46da7600df14db368fe40297167dedd0','Entire original test and every old assertion preserved');
+  for(const row of source19DiagnosticFixtures){
+    const parent=await read(row.parent),actual=await read(row.next);
+    assert.equal(sha(parent),row.parentSha256,'Frozen reviewed d504 fixture');
+    assert.equal(sha(actual),row.afterSha256,'Exact additive diagnostic fixture');
+    const oldIdentity=object(parent,'fixtureIdentity'),newIdentity=object(actual,'fixtureIdentity');
+    const oldPins=object(parent,'fixtureProductPins'),newPins=object(actual,'fixtureProductPins');
+    assert.deepEqual(Object.keys(newPins.value),Object.keys(oldPins.value));assert.equal(Object.keys(newPins.value).length,27);
+    const changed=Object.keys(newPins.value).filter(file=>newPins.value[file]!==oldPins.value[file]);
+    assert.deepEqual(changed,[...source19DiagnosticProducts.map(row=>row.path), 'scripts/test-protected-private-production-runtime.mjs']);
+    assert.equal(Object.keys(newPins.value).length-changed.length,24,'24 unchanged relative to the reviewed d504 parent; two product pins and one explicit observation-test delta');
+    assert.equal(newIdentity.value.diagnosticBaseHead,'6969e3c161ff076640aa958247506f4eebfeb765');
+    assert.equal(newIdentity.value.diagnosticCompositionId,"972618c2e0e139820f8547ca1183b7906988b0eda8d15c422a47eb4a95e2751a");
+    assert.equal(newIdentity.value.evidence,'LINUX_UNRUN_NO_ADMISSION');
+    for(const [file,expected] of Object.entries(newPins.value))assert.equal(sha(await read(file)),expected);
+    let inverse=actual.replace(newIdentity.literal,oldIdentity.literal).replace(newPins.literal,oldPins.literal);
+    assert.equal(inverse.split(row.guard).length,2);inverse=inverse.replace(row.guard,'');
+    inverse=inverse.replace("    '"+row.next+"',\n    '"+row.parent+"',\n","    '"+row.parent+"',\n")
+      .replace("      && file !== '"+row.next+"') continue;","      && file !== '"+row.parent+"') continue;");
+    assert.equal(inverse,parent,'Entire original d504 preparation and assertions remain frozen');
+    assert.equal(source19NativeCiRequired([row.next]),true);
+  }
+  return {status:'SOURCE19_DIAGNOSTIC_COMPOSITION_PASS',changedProductPins:2,changedObservationPins:1,unchangedParentPins:24,oldFixturesUnchanged:4,nativeActual:'UNRUN',sourceAdmission:false};
+}
+// END exact additive diagnostics composition.
+
+// Pure diagnostic boundary only; no SOURCE owner, H, child or admission is issued.
+export async function testSource19FixedProductDiagnostics(documents = null) {
+  const {types} = await import('node:util');
+  const {runInNewContext} = await import('node:vm');
+  const root=process.cwd();
+  documents ??= {
+    runtime:await fs.readFile(path.join(root,'scripts/protected-private-production-runtime.mjs'),'utf8'),
+    action:await fs.readFile(path.join(root,'.github/actions/save-owned-dmi-grib/index.cjs'),'utf8'),
+  };
+  const source=documents.runtime.replaceAll('\r\n','\n'), action=documents.action.replaceAll('\r\n','\n');
+  const select=(text,first,last)=>{
+    const start=text.indexOf(first),end=text.indexOf(last,start);
+    assert.ok(start>=0&&end>start,'Exact fixed diagnostic source block required');
+    return text.slice(start,end+last.length);
+  };
+  const block=select(source,'// SOURCE_DIAGNOSTIC_BEGIN:','// SOURCE_DIAGNOSTIC_END');
+  const deadlineConstructor=source.match(/^const sourceDeadlineFailure = code => .*$/m)?.[0];
+  const originalConstructor=source.match(/^function sourceOriginalFailure\(code\) .*$/m)?.[0];
+  assert.ok(deadlineConstructor&&originalConstructor);
+  const runtime=runInNewContext(block.replace('export function sourceFailureDiagnostic','function sourceFailureDiagnostic')+
+    '\n'+deadlineConstructor+'\n'+originalConstructor+
+    '\n({read:sourceFailureDiagnostic,guard:sourceGuardError,deadline:sourceDeadlineFailure,original:sourceOriginalFailure,remember:rememberSourceDriverFailure,drivers:sourceDriverDiagnosticStages,makeError:message=>new Error(message)})',{sourcePreludeTypes:types});
+  const plain=value=>JSON.parse(JSON.stringify(value));
+  const unknown={stage:'UNKNOWN',reason:'UNKNOWN',nodeClass:'UNKNOWN',rejection:'UNKNOWN'};
+  let real;
+  try{runtime.deadline('SOURCE_JOB_IDENTITY_INVALID')}catch(error){real=error}
+  assert.ok(types.isNativeError(real));
+  const prior=Object.getOwnPropertyDescriptors(real);
+  assert.deepEqual(plain(runtime.read(real)),{stage:'SOURCE_GUARD',reason:'SOURCE_JOB_IDENTITY_INVALID',nodeClass:'ERROR',rejection:'NONE'});
+  const originalReport=runtime.read(real);
+  assert.equal(originalReport.reason,real.message);assert.deepEqual(Object.getOwnPropertyDescriptors(real),prior);
+  let originalGuard;
+  try{runtime.original('NORMAL_INSTALL_INCOMPLETE')}catch(error){originalGuard=error}
+  assert.ok(types.isNativeError(originalGuard));
+  assert.equal(runtime.read(originalGuard).reason,'SOURCE_ORIGINAL_NORMAL_INSTALL_INCOMPLETE');
+  const driver={};runtime.drivers.set(driver,'CHECKPOINT_PROTECTED');
+  const failedProgram=runtime.makeError('SOURCE_PRELUDE_PROGRAM_FAILED');
+  const failedProgramDescriptors=Object.getOwnPropertyDescriptors(failedProgram);
+  runtime.remember(driver,failedProgram);
+  assert.deepEqual(plain(runtime.read(failedProgram)),{stage:'CHECKPOINT_PROTECTED',reason:'SOURCE_PRELUDE_PROGRAM_FAILED',nodeClass:'ERROR',rejection:'NONE'});
+  assert.deepEqual(Object.getOwnPropertyDescriptors(failedProgram),failedProgramDescriptors);
+  runtime.drivers.set(driver,'PRIVATE_ROOT');runtime.remember(driver,failedProgram);
+  assert.equal(runtime.read(failedProgram).stage,'CHECKPOINT_PROTECTED','first recorded error boundary is immutable');
+  let traps=0;
+  const proxy=new Proxy({}, {get(){traps++;throw 0},getOwnPropertyDescriptor(){traps++;throw 0},getPrototypeOf(){traps++;throw 0}});
+  const forged=runtime.makeError('SOURCE_JOB_IDENTITY_INVALID');
+  const getter=runtime.makeError('private-CANARY');
+  Object.defineProperty(getter,'code',{get(){traps++;throw 0}});
+  const badCode=Object.assign(runtime.makeError('private-CANARY'),{code:'PRIVATE_CANARY'});
+  for(const value of [undefined,null,123,'private-CANARY',{},proxy,forged,getter,badCode,runtime.guard('SOURCE_PRIVATE_CANARY')]){
+    assert.deepEqual(plain(runtime.read(value)),unknown);
+  }
+  runtime.remember(driver,getter);runtime.remember(driver,proxy);
+  assert.deepEqual(plain(runtime.read(getter)),unknown);assert.deepEqual(plain(runtime.read(proxy)),unknown);
+  assert.equal(traps,0);
+  const unissued=runtime.makeError('SOURCE_JOB_IDENTITY_INVALID');
+  runtime.remember({},unissued);assert.deepEqual(plain(runtime.read(unissued)),unknown);
+  const moduleFailure=Object.assign(runtime.makeError('private-CANARY module path'),{code:'ERR_MODULE_NOT_FOUND'});
+  runtime.drivers.set(driver,'ARCHIVED_READERS');runtime.remember(driver,moduleFailure);
+  assert.deepEqual(plain(runtime.read(moduleFailure)),{stage:'ARCHIVED_READERS',reason:'ERR_MODULE_NOT_FOUND',nodeClass:'ERROR',rejection:'NONE'});
+  const rejectedB=Object.assign(runtime.makeError('private-CANARY values'),{code:'PROTECTED_PRIVATE_RUNTIME_NO_COMPATIBLE_GENERATION',rejectionCodes:Object.freeze(['STORAGE_OR_OBJECT_INTEGRITY'])});
+  runtime.drivers.set(driver,'ORIGINAL_INSTALL');runtime.remember(driver,rejectedB);
+  assert.deepEqual(plain(runtime.read(rejectedB)),{stage:'ORIGINAL_INSTALL',reason:'PROTECTED_PRIVATE_RUNTIME_NO_COMPATIBLE_GENERATION',nodeClass:'ERROR',rejection:'STORAGE_OR_OBJECT_INTEGRITY'});
+  const unsafeArray=[];
+  Object.defineProperty(unsafeArray,'0',{get(){traps++;throw 0}});unsafeArray.length=1;
+  const unsafeRejection=Object.assign(runtime.makeError('private-CANARY'),{code:'PROTECTED_PRIVATE_RUNTIME_NO_COMPATIBLE_GENERATION',rejectionCodes:unsafeArray});
+  runtime.remember(driver,unsafeRejection);
+  assert.equal(runtime.read(unsafeRejection).rejection,'UNKNOWN');assert.equal(traps,0);
+  runtime.remember(driver,badCode);
+  assert.equal(runtime.read(badCode).reason,'UNKNOWN');
+  assert.ok(!JSON.stringify([runtime.read(moduleFailure),runtime.read(rejectedB),runtime.read(badCode)]).includes('CANARY'));
+  const actionBlock=select(action,'// SOURCE_ACTION_DIAGNOSTIC_BEGIN:','// SOURCE_ACTION_DIAGNOSTIC_END');
+  const formatterStart=action.indexOf('const REFUSAL_REASONS = new Set([');
+  const formatterEnd=action.indexOf('// SOURCE_ACTION_DIAGNOSTIC_BEGIN:',formatterStart);
+  const oldFormatter=action.slice(formatterStart,formatterEnd).trimEnd();
+  assert.equal(sha(oldFormatter+'\n'), '3239ed509ea5f0cde2f58ab5a55a236b1360db8885e72e9da181895c060df24b','Old formatter unchanged');
+  const catchStart=action.lastIndexOf('  }).catch(error => {\n');
+  const catchEnd=action.indexOf('\n  });\n}',catchStart);
+  const catchBody=action.slice(catchStart+'  }).catch(error => {\n'.length,catchEnd);
+  const added="    if (process.env.INPUT_OPERATION === 'source') process.stderr.write(sourceFailureDiagnosticLine(error));\n";
+  assert.equal(catchBody.split(added).length,2);
+  assert.equal(sha(catchBody.replace(added,'')),'d0f2fc9a8d268c58c497a2f0ac9d284de00f0ec13d2949000bbb0b135b2b7fca','Entire old catch survives');
+  let stderr='',exitCode=null;
+  const environment={INPUT_OPERATION:'source'};
+  const actionHooks=runInNewContext('let cliPhase="INPUT";\n'+oldFormatter+'\n'+actionBlock+
+    '\n({line:sourceFailureDiagnosticLine,setReader:value=>{sourceFailureDiagnosticReader=value},setImport:value=>{sourceFailureImportError=value},catchError:error=>{\n'+catchBody+'\n}})',{
+      types,process:{env:environment,stderr:{write:value=>{stderr+=value}},set exitCode(value){exitCode=value}},
+    });
+  actionHooks.setReader(runtime.read);
+  const fixedLine='SOURCE_RUN_DIAGNOSTIC stage=CHECKPOINT_PROTECTED reason=SOURCE_PRELUDE_PROGRAM_FAILED node_class=ERROR rejection=NONE\n';
+  assert.equal(actionHooks.line(failedProgram),fixedLine);
+  actionHooks.catchError(failedProgram);
+  assert.equal(stderr,'DMI_RAW_SAVE_REFUSED\nDMI_RAW_SAVE_DIAGNOSTIC stage=INPUT reason=UNKNOWN\n'+fixedLine);
+  assert.equal(exitCode,1);
+  environment.INPUT_OPERATION='save';stderr='';exitCode=null;
+  actionHooks.catchError(Object.assign(runtime.makeError('private-CANARY'),{code:'ENOENT'}));
+  assert.equal(stderr,'DMI_RAW_SAVE_REFUSED\nDMI_RAW_SAVE_DIAGNOSTIC stage=INPUT reason=ENOENT\n');
+  assert.equal(exitCode,1);environment.INPUT_OPERATION='source';
+  assert.equal(actionHooks.line(forged),'SOURCE_RUN_DIAGNOSTIC stage=UNKNOWN reason=UNKNOWN node_class=UNKNOWN rejection=UNKNOWN\n');
+  for(const value of [proxy,getter,undefined,null,'private-CANARY',badCode]){
+    const line=actionHooks.line(value);assert.ok(!line.includes('CANARY'));assert.ok(!line.includes('private-'));
+  }
+  actionHooks.setReader(null);
+  actionHooks.setImport(moduleFailure);
+  assert.equal(actionHooks.line(moduleFailure),'SOURCE_RUN_DIAGNOSTIC stage=SOURCE_IMPORT reason=ERR_MODULE_NOT_FOUND node_class=ERROR rejection=NONE\n');
+  const forgedModule=Object.assign(runtime.makeError('private-CANARY'),{code:'ERR_MODULE_NOT_FOUND'});
+  assert.equal(actionHooks.line(forgedModule),'SOURCE_RUN_DIAGNOSTIC stage=UNKNOWN reason=UNKNOWN node_class=UNKNOWN rejection=UNKNOWN\n');
+  actionHooks.setReader(()=>proxy);assert.ok(actionHooks.line(real).includes('stage=UNKNOWN reason=UNKNOWN'));
+  const reportGetter={reason:'SOURCE_JOB_IDENTITY_INVALID',nodeClass:'ERROR',rejection:'NONE'};
+  Object.defineProperty(reportGetter,'stage',{enumerable:true,get(){traps++;throw 0}});
+  actionHooks.setReader(()=>reportGetter);assert.ok(actionHooks.line(real).includes('stage=UNKNOWN reason=UNKNOWN'));
+  actionHooks.setReader(()=>{throw Error('private-CANARY')});assert.ok(actionHooks.line(real).includes('stage=UNKNOWN reason=UNKNOWN'));
+  assert.equal(traps,0);
+  return {status:'SOURCE19_FIXED_PRODUCT_DIAGNOSTICS_PASS',firstErrorIdentityAndPropertiesPreserved:true,oldDiagnosticAndExitPreserved:true,closedNegativeClasses:8,guardOrOwnerAuthorityIssued:false,nativeActual:'UNRUN',sourceAdmission:false};
+}
+// END pure fixed product diagnostics.
+
 export async function testSource19NativeCiWorkflow(input=null) {
   const workflow=(input??await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
   const historical=projectSource19NativeCiWorkflow(workflow);
@@ -389,6 +617,9 @@ export async function testSource19NativeCiWorkflow(input=null) {
   await testSource19FixtureWriterCachePrerequisite();
   await testSource19ProcDiscoveryRaces();
   await testSource19FixtureDiagnosticsPrerequisite();
+  await testSource19BeforeHFailureDiagnostics();
+  await testSource19FixedProductDiagnostics();
+  await assertSource19FixedDiagnosticComposition();
   return {status:'SOURCE19_NATIVE_CI_CONTRACT_PASS',scopePaths:SOURCE19_NATIVE_SCOPE_PATHS.length,cases:7,nativeActual:'UNRUN'};
 }
 

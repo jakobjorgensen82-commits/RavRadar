@@ -1,3 +1,15 @@
+## 89.250 En fejl skal kunne forklares uden at røbe private data
+
+**Kort fortalt:** En ukendt testfejl må ikke gøres grøn ved at svække kontrollen. Først skal den oprindelige fejl kunne skelnes sikkert uden private værdier.
+
+De syv isolerede SOURCE19-prøver fejlede i den seneste præcise kildekontrol. Den første undersøgte prøve nåede ikke sin native installationsgrænse; årsagen er endnu ikke bevist. Den gamle fejlformatter kunne skjule forskellige kildefejl som ukendt. Derfor tilføjes en lille, lukket diagnose ved den eksisterende fejlgrænse. Første fejl, alle afvisninger og den oprindelige fejlstatus bevares. Ingen rå fejltekst, privat sti eller vejrdata udskrives. Hele den oprindelige child-log bevares alene privat til undersøgelsen.
+
+Fire tidligere prøveoriginaler og deres kontrolsummer ændres ikke. Den nye komposition har sin egen identitet og bevarer alle syv normale Linuxprøver. Det lokale workflowmål består efter, at dets egen syntetiske logfil færdigskrives før stabilitetskontrollen; den første røde prøve bevares. Dette er ikke et bestået Linux-, H70-, H71- eller samlet kildebevis. Den fulde runtime-kildefingerprint ændres; gamle private pakker eller tidligere nativebeviser bliver ikke gyldige af den grund.
+
+SOURCE19 forbliver inaktiv. Ingen ny release, scoring, vejrhentning, SQL-installation eller offentlig levering følger af diagnostikken. Den separate produktion berøres ikke.
+
+En gammel test kunne ikke observere sin interne funktion, fordi den genbrugte et allerede indlæst modul. Én unik import-query retter kun denne prøveseam; alle fem oprindelige tilfælde og deres faktiske fil-close-kontroller består gennem det normale mål. V2-kompositionen registrerer denne ene prøvepin særskilt sammen med de to produktpins; 24 af de 27 pins og alle fire tidligere fixtures bevares. Hele den gamle prøvefil bevises ved eksakt inverse, ikke ved ny mærkning af tidligere beviser.
+
 ## 89.249 Gendannelse skal bevare indhold og oprindelige kontrolsummer
 
 **Kort fortalt:** Databasen kan gemme et objekts felter i en anden rækkefølge uden at ændre indholdet. En sikker gendannelse skal kunne håndtere dette uden at ændre værdier eller udstede nye kontrolsummer.

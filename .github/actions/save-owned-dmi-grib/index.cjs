@@ -49,6 +49,47 @@ function refusalDiagnostic(error) {
   return `DMI_RAW_SAVE_DIAGNOSTIC stage=${cliPhase} reason=${reason}\n`;
 }
 
+// SOURCE_ACTION_DIAGNOSTIC_BEGIN: extra fixed observation, never admission.
+let sourceFailureDiagnosticReader = null;
+let sourceFailureImportError = null;
+const SOURCE_ACTION_DIAGNOSTIC_STAGES = new Set(['UNKNOWN','SOURCE_IMPORT','SOURCE_GUARD','ROUTE','PRELUDE','PREFLIGHT','ADMIN','HANDOFF','ORIGINAL_SELECTION','CHECKPOINT_PROTECTED','ARCHIVED_READERS','PRIVATE_ROOT','PROGRESS_CACHE','ORIGINAL_INSTALL','POST_INSTALL','PROGRESS_BASE','PROGRESS_UNION','PRODUCER_CHAIN']);
+const SOURCE_ACTION_DIAGNOSTIC_NODE_CODES = new Set(['ERR_MODULE_NOT_FOUND','MODULE_NOT_FOUND','ERR_REQUIRE_ASYNC_MODULE','ERR_REQUIRE_ESM','ERR_UNKNOWN_FILE_EXTENSION','ERR_UNSUPPORTED_DIR_IMPORT','ERR_INVALID_ARG_TYPE','ERR_INVALID_ARG_VALUE','ERR_INVALID_URL']);
+const SOURCE_ACTION_DIAGNOSTIC_PRIVATE_CODES = new Set(['UNKNOWN','PROTECTED_PRIVATE_RUNTIME_INELIGIBLE','PROTECTED_PRIVATE_RUNTIME_EXPIRED','PROTECTED_PRIVATE_RUNTIME_REMOTE_ERROR','PROTECTED_PRIVATE_RUNTIME_NO_COMPATIBLE_GENERATION']);
+const SOURCE_ACTION_DIAGNOSTIC_NODE_CLASSES = new Set(['UNKNOWN','ERROR','TYPE_ERROR','REFERENCE_ERROR','SYNTAX_ERROR','RANGE_ERROR','AGGREGATE_ERROR']);
+const SOURCE_ACTION_DIAGNOSTIC_REJECTIONS = new Set(['NONE','UNKNOWN','EXPIRED','FILESYSTEM_CAPACITY','FILESYSTEM_PERMISSION','FILESYSTEM_READ_ONLY','FILESYSTEM_RESOURCE_LIMIT','STORAGE_OR_OBJECT_INTEGRITY','ARCHIVE_OR_PAYLOAD_INTEGRITY','MODEL_BINDING','CONTRACT_HASHES','DATASET_IDENTITY','TIME_BOUNDS','DESCRIPTOR_BUNDLE_MISMATCH','BUNDLE_STRUCTURE_OR_CONTENT','MODEL_OR_CONTRACT_INELIGIBLE','ARCHIVE_ENVELOPE_DECODE','ARCHIVE_STAGE_CREATE','ARCHIVE_FILE_PATH','ARCHIVE_FILE_PARENT','ARCHIVE_FILE_WRITE','ARCHIVE_STAGE_COMMIT']);
+function sourceFailureDiagnosticLine(error) {
+  let report = {stage:'UNKNOWN',reason:'UNKNOWN',nodeClass:'UNKNOWN',rejection:'UNKNOWN'};
+  try {
+    if (typeof sourceFailureDiagnosticReader === 'function') report = sourceFailureDiagnosticReader(error);
+    else if (error === sourceFailureImportError && error !== null && typeof error === 'object'
+      && !types.isProxy(error) && types.isNativeError(error)) {
+      const code = Object.getOwnPropertyDescriptor(error,'code');
+      if (code && Object.hasOwn(code,'value') && SOURCE_ACTION_DIAGNOSTIC_NODE_CODES.has(code.value)) {
+        report = {stage:'SOURCE_IMPORT',reason:code.value,nodeClass:'ERROR',rejection:'NONE'};
+      }
+    }
+    if (report === null || typeof report !== 'object' || types.isProxy(report)
+      || Object.getOwnPropertyNames(report).sort().join(',') !== 'nodeClass,reason,rejection,stage') throw null;
+    const fields = {};
+    for (const key of ['stage','reason','nodeClass','rejection']) {
+      const descriptor = Object.getOwnPropertyDescriptor(report,key);
+      if (!descriptor || !Object.hasOwn(descriptor,'value') || typeof descriptor.value !== 'string') throw null;
+      fields[key] = descriptor.value;
+    }
+    if (!SOURCE_ACTION_DIAGNOSTIC_STAGES.has(fields.stage)
+      || !(SOURCE_ACTION_DIAGNOSTIC_NODE_CODES.has(fields.reason)
+        || SOURCE_ACTION_DIAGNOSTIC_PRIVATE_CODES.has(fields.reason)
+        || /^SOURCE_[A-Z0-9_]{1,100}$/.test(fields.reason))
+      || !SOURCE_ACTION_DIAGNOSTIC_NODE_CLASSES.has(fields.nodeClass)
+      || !SOURCE_ACTION_DIAGNOSTIC_REJECTIONS.has(fields.rejection)) throw null;
+    return 'SOURCE_RUN_DIAGNOSTIC stage=' + fields.stage + ' reason=' + fields.reason
+      + ' node_class=' + fields.nodeClass + ' rejection=' + fields.rejection + '\n';
+  } catch {
+    return 'SOURCE_RUN_DIAGNOSTIC stage=UNKNOWN reason=UNKNOWN node_class=UNKNOWN rejection=UNKNOWN\n';
+  }
+}
+// SOURCE_ACTION_DIAGNOSTIC_END
+
 function fixedInputs() {
   const env = process.env;
   const key = env.INPUT_KEY;
@@ -839,8 +880,12 @@ async function runSourceGeneration() {
   if (process.argv.length !== 2 || process.env.INPUT_OPERATION !== 'source') {
     throw refused('DMI_RAW_SAVE_ARGUMENT_REFUSED');
   }
-  const normal = await import(pathToFileURL(path.join(ROOT,
-    'scripts/protected-private-production-runtime.mjs')).href);
+  let normal;
+  try {
+    normal = await import(pathToFileURL(path.join(ROOT,
+      'scripts/protected-private-production-runtime.mjs')).href);
+  } catch (error) { sourceFailureImportError = error; throw error; }
+  sourceFailureDiagnosticReader = normal.sourceFailureDiagnostic;
   // P awaits the fixed artifact/T consumer under the SAME issuer. A Set or
   // an exit code is never used to replace those actual awaited operations.
   // This action still emits no SOURCE-complete/READY/hosted-publication flag.
@@ -1192,6 +1237,7 @@ if (require.main === module) {
   }).catch(error => {
     process.stderr.write('DMI_RAW_SAVE_REFUSED\n');
     process.stderr.write(refusalDiagnostic(error));
+    if (process.env.INPUT_OPERATION === 'source') process.stderr.write(sourceFailureDiagnosticLine(error));
     process.exitCode = 1;
   });
 }

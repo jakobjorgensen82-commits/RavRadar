@@ -51,6 +51,8 @@ def select_fixture_composition(value):
         return Path('scripts/test-source19-cp-install-native-fixture.mjs'), {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_CP_INSTALL_H70_FINAL_PR634_FRESH_FIXTURE","compositionId":"19f6a6a2d12f9f80740675a0ba3fc178456571b7dcc7f6737919f4bd628d38b1","sourceBase":"d0cdbec4b8ea0f36e4abdd3801401aa748989266","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","unionH71":"OUTSIDE_H70_TARGET_SEPARATE_NATIVE_CALLER_REQUIRED","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT","syntheticAdminInput":"EXPLICIT_OWN_EMPTY_DOCUMENTS"}
     if value == 'integrated-d504':
         return Path('scripts/test-source19-cp-install-native-d504-fixture.mjs'), {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_CP_INSTALL_H70_FINAL_PR634_FRESH_FIXTURE_D504_SUCCESSOR","compositionId":"81ba8b9a448f5d475d019d5ce6c44dbd9fa3ee8bebeb9e4e4d816de2395f4dfa","sourceBase":"d5045bda33c4959c920ab71e79ca948f80857ece","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","unionH71":"OUTSIDE_H70_TARGET_SEPARATE_NATIVE_CALLER_REQUIRED","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT","syntheticAdminInput":"EXPLICIT_OWN_EMPTY_DOCUMENTS","sourceParent":"dbb16b65e4626aa55c3ab06f7f61ac4b60fb4c60","frozenFixturePath":"scripts/test-source19-cp-install-native-fixture.mjs","frozenFixtureSha256":"c8555c9901b36be7d26fff415ffa3014e7104b6336a9f502379d2965b481179a","successorCompositionId":"81ba8b9a448f5d475d019d5ce6c44dbd9fa3ee8bebeb9e4e4d816de2395f4dfa"}
+    if value == 'integrated-d504-diagnostics-v2':
+        return Path('scripts/test-source19-cp-install-native-d504-diagnostics-fixture.mjs'), {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_CP_INSTALL_H70_FINAL_PR634_FRESH_FIXTURE_D504_SUCCESSOR_FIXED_DIAGNOSTICS_OBSERVATION_V2","compositionId":"972618c2e0e139820f8547ca1183b7906988b0eda8d15c422a47eb4a95e2751a","sourceBase":"6969e3c161ff076640aa958247506f4eebfeb765","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","unionH71":"OUTSIDE_H70_TARGET_SEPARATE_NATIVE_CALLER_REQUIRED","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT","syntheticAdminInput":"EXPLICIT_OWN_EMPTY_DOCUMENTS","sourceParent":"dbb16b65e4626aa55c3ab06f7f61ac4b60fb4c60","frozenFixturePath":"scripts/test-source19-cp-install-native-fixture.mjs","frozenFixtureSha256":"c8555c9901b36be7d26fff415ffa3014e7104b6336a9f502379d2965b481179a","successorCompositionId":"81ba8b9a448f5d475d019d5ce6c44dbd9fa3ee8bebeb9e4e4d816de2395f4dfa","diagnosticBaseHead":"6969e3c161ff076640aa958247506f4eebfeb765","diagnosticParentFixture":"scripts/test-source19-cp-install-native-d504-fixture.mjs","diagnosticParentSha256":"83642a2aead446a85eddc98c791d53e2331963082aa6e7c567beb94a6893169a","diagnosticCompositionId":"972618c2e0e139820f8547ca1183b7906988b0eda8d15c422a47eb4a95e2751a","diagnosticCompositionVersion":2,"diagnosticV1CompositionId":"aa2fa16afd79a45f43992b38735b7dbc80bbda44d3ca2a708ec0578d01ba0420","diagnosticObservationTest":"scripts/test-protected-private-production-runtime.mjs","diagnosticObservationParentSha256":"ad4056293d74a98e15304dc8c13c680e46da7600df14db368fe40297167dedd0"}
     raise ValueError('SOURCE19_NATIVE_COMPOSITION_INVALID')
 CASE = None
 
@@ -58,6 +60,95 @@ CASE = None
 def sha(body):
     return hashlib.sha256(body).hexdigest()
 
+
+# TEST-ONLY before-H diagnostics. Never a result, guard bypass or owner receipt.
+def classify_source19_before_h_stderr(raw, known_source_codes):
+    if type(raw) is not bytes:
+        raise TypeError('SOURCE19_DIAGNOSTIC_BYTES_REQUIRED')
+    findings = []
+    node_codes = (b'ERR_MODULE_NOT_FOUND', b'MODULE_NOT_FOUND', b'ERR_REQUIRE_ASYNC_MODULE',
+        b'ERR_REQUIRE_ESM', b'ERR_UNKNOWN_FILE_EXTENSION', b'ERR_UNSUPPORTED_DIR_IMPORT',
+        b'ERR_INVALID_ARG_TYPE', b'ERR_INVALID_ARG_VALUE', b'ERR_INVALID_URL')
+    for line in raw.splitlines():
+        text = line.strip()
+        structured = re.fullmatch(rb'SOURCE_RUN_DIAGNOSTIC stage=([A-Z0-9_]{1,80}) reason=([A-Z0-9_]{1,120}) node_class=([A-Z_]{1,32}) rejection=([A-Z0-9_]{1,80})', text)
+        if structured:
+            stage, code, node_class, rejection = (item.decode('ascii') for item in structured.groups())
+            stages = {'UNKNOWN','SOURCE_IMPORT','SOURCE_GUARD','ROUTE','PRELUDE','PREFLIGHT','ADMIN','HANDOFF','ORIGINAL_SELECTION','CHECKPOINT_PROTECTED','ARCHIVED_READERS','PRIVATE_ROOT','PROGRESS_CACHE','ORIGINAL_INSTALL','POST_INSTALL','PROGRESS_BASE','PROGRESS_UNION','PRODUCER_CHAIN'}
+            private_codes = {'UNKNOWN','PROTECTED_PRIVATE_RUNTIME_INELIGIBLE','PROTECTED_PRIVATE_RUNTIME_EXPIRED','PROTECTED_PRIVATE_RUNTIME_REMOTE_ERROR','PROTECTED_PRIVATE_RUNTIME_NO_COMPATIBLE_GENERATION'}
+            classes = {'UNKNOWN','ERROR','TYPE_ERROR','REFERENCE_ERROR','SYNTAX_ERROR','RANGE_ERROR','AGGREGATE_ERROR'}
+            rejections = {'NONE','UNKNOWN','EXPIRED','FILESYSTEM_CAPACITY','FILESYSTEM_PERMISSION','FILESYSTEM_READ_ONLY','FILESYSTEM_RESOURCE_LIMIT','STORAGE_OR_OBJECT_INTEGRITY','ARCHIVE_OR_PAYLOAD_INTEGRITY','MODEL_BINDING','CONTRACT_HASHES','DATASET_IDENTITY','TIME_BOUNDS','DESCRIPTOR_BUNDLE_MISMATCH','BUNDLE_STRUCTURE_OR_CONTENT','MODEL_OR_CONTRACT_INELIGIBLE','ARCHIVE_ENVELOPE_DECODE','ARCHIVE_STAGE_CREATE','ARCHIVE_FILE_PATH','ARCHIVE_FILE_PARENT','ARCHIVE_FILE_WRITE','ARCHIVE_STAGE_COMMIT'}
+            if stage in stages and (code in known_source_codes or code in private_codes or code.encode('ascii') in node_codes) and node_class in classes and rejection in rejections:
+                finding = {'stage': stage, 'code': code, 'nodeClass': node_class, 'rejection': rejection}
+                if finding not in findings: findings.append(finding)
+            continue
+        if text.startswith(b'SOURCE_RUN_DIAGNOSTIC '):
+            continue  # Malformed/forged diagnostic fields never become code values.
+        found = None
+        for code in node_codes:
+            if re.search(rb'(?<![A-Z0-9_])' + code + rb'(?![A-Z0-9_])', text):
+                found = {'stage': 'NODE_IMPORT' if b'MODULE' in code else 'NODE_RUNTIME',
+                    'code': code.decode('ascii'), 'nodeClass': 'NONE'}
+                break
+        match = re.match(rb'^(Error|TypeError|ReferenceError|SyntaxError|RangeError|AggregateError)(?: \[[A-Z0-9_]+\])?:', text)
+        if match:
+            found = found or {'stage': 'NODE_RUNTIME', 'code': 'NODE_ERROR', 'nodeClass': 'NONE'}
+            found['nodeClass'] = match[1].decode('ascii')
+        body = re.sub(rb'^(?:Error|TypeError|ReferenceError|SyntaxError|RangeError|AggregateError)(?: \[[A-Z0-9_]+\])?:\s*', b'', text)
+        for prefix, stage, code in (
+            (b'Protected RavScore checkpoint', 'CHECKPOINT_PROTECTED', 'CHECKPOINT_PROTECTED_REFUSED'),
+            (b'SUPABASE_URL', 'CHECKPOINT_PROTECTED', 'CHECKPOINT_CONNECTION_REFUSED'),
+            (b'Supabase response body transport was interrupted', 'CHECKPOINT_PROTECTED', 'CHECKPOINT_BODY_TRANSPORT'),
+            (b'Private runtime pointer', 'PRIVATE_POINTER', 'PRIVATE_POINTER_REFUSED'),
+            (b'Protected private runtime bucket', 'PRIVATE_BUCKET', 'PRIVATE_BUCKET_REFUSED'),
+            (b'Protected private runtime', 'PRIVATE_B_RESTORE', 'PRIVATE_B_RESTORE_REFUSED'),
+            (b'Private runtime', 'PRIVATE_B_RESTORE', 'PRIVATE_B_RESTORE_REFUSED'),
+            (b'No eligible protected private runtime', 'PRIVATE_B_RESTORE', 'PRIVATE_B_RESTORE_REFUSED'),
+        ):
+            if body.startswith(prefix) and b'retrying' not in body:
+                found = {'stage': stage, 'code': code, 'nodeClass': match[1].decode('ascii') if match else 'NONE'}
+                break
+        for code in re.findall(rb'(?<![A-Z0-9_])(SOURCE_[A-Z0-9_]{1,100})(?![A-Z0-9_])', text):
+            if code.decode('ascii') in known_source_codes:
+                found = {'stage': 'SOURCE_FIXED_GUARD', 'code': code.decode('ascii'), 'nodeClass': 'NONE'}
+                break
+        if found is not None and found not in findings:
+            findings.append(found)
+    return findings or [{'stage': 'UNKNOWN', 'code': 'UNKNOWN', 'nodeClass': 'NONE'}]
+
+
+def capture_source19_before_h_failure(root, action_exited):
+    # stderr is the COMPLETE pre-existing private child capture. Never truncate,
+    # echo it, copy it into a public artifact, or delete the failed own fixture.
+    try:
+        if action_exited is not True:
+            return {'capture': 'PENDING_CHILD_STOP', 'sourceAdmission': False}
+        file = root / 'stderr'
+        identity = lambda s: (s.st_dev, s.st_ino, s.st_mode, s.st_nlink, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+        before = file.lstat()
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+            raise ValueError('SOURCE19_PRIVATE_STDERR_NOT_OWN_REGULAR_FILE')
+        with file.open('rb') as stream:
+            opened = os.fstat(stream.fileno())
+            raw = stream.read()
+            ended = os.fstat(stream.fileno())
+        if identity(before) != identity(opened) or identity(ended) != identity(file.lstat()) or identity(opened) != identity(ended) or len(raw) != before.st_size:
+            raise ValueError('SOURCE19_PRIVATE_STDERR_CHANGED')
+        known = set()
+        for relative in (ENTRY, Path('scripts/protected-private-production-runtime.mjs'), Path('scripts/lib/copernicus_component_process.py')):
+            known.update(re.findall(r"['\"](SOURCE_[A-Z0-9_]+)['\"]", (ROOT / relative).read_text(encoding='utf-8')))
+        result = {'capture': 'COMPLETE_STABLE', 'stderrBytes': len(raw), 'stderrSha256': sha(raw),
+            'fixedFailures': classify_source19_before_h_stderr(raw, known),
+            'wholePrivateStderrRetained': True, 'sourceAdmission': False}
+        # A private metadata receipt, not a replacement for the retained stderr.
+        with (root / 'source19-before-h-child-failure.json').open('x', encoding='utf-8') as stream:
+            json.dump(result, stream, sort_keys=True)
+        return result
+    except BaseException:
+        return {'capture': 'UNPROVEN_RETAINED', 'wholePrivateStderrRetained': True, 'sourceAdmission': False}
+
+
+# END TEST-ONLY before-H diagnostics.
 
 def strict_json(path, maximum=8 * 1024 * 1024):
     info = path.lstat()
@@ -102,6 +193,7 @@ class ProtocolFixture:
     def __init__(self, root, protocol, certificate, private_key):
         self.root, self.protocol = root, protocol
         self.calls, self.failures = [], []
+        self.before_h_stages = []  # Fixed test-only transport observations, never admission.
         self.lock = threading.Lock()
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         context.load_cert_chain(certificate, private_key)
@@ -288,9 +380,13 @@ class ProtocolFixture:
             known[data['checkpointDocumentKey']] = None
             if not keys or len(set(keys)) != len(keys) or any(key not in known for key in keys):
                 raise AssertionError('ADMIN_KEY_REFUSED')
+            with self.lock:
+                if keys == [data['checkpointDocumentKey']]: self.before_h_stages.append('CHECKPOINT_PROTECTED_READ')
+                if keys == [data['pointer']['document_key']]: self.before_h_stages.append('PRIVATE_POINTER_READ')
             request.reply(200, [known[key] for key in keys if known[key] is not None])
             return 'private-pointer' if keys == [data['pointer']['document_key']] else 'admin-read'
         if method == 'GET' and not query and route == '/storage/v1/bucket/' + data['bucket']['id']:
+            with self.lock: self.before_h_stages.append('PRIVATE_BUCKET_READ')
             request.reply(200, data['bucket'])
             return 'private-bucket'
         if method == 'GET' and not query and route.startswith('/storage/v1/object/authenticated/' + data['bucket']['id'] + '/'):
@@ -302,6 +398,7 @@ class ProtocolFixture:
             raw = (self.root / row['relativePath']).read_bytes()
             if len(raw) != row['bytes'] or sha(raw) != row['sha256']:
                 raise AssertionError('EXACT_B_OBJECT_CHANGED')
+            with self.lock: self.before_h_stages.append('PRIVATE_B_OBJECT_DOWNLOAD')
             request.reply(200, raw=raw)
             return 'private-B-read'
         return request.fixed_failure('UNEXPECTED_ROUTE_OR_WRITE')
@@ -386,7 +483,8 @@ class SourceOriginalCpInstallNative(unittest.TestCase):
         finally:
             # actual_case must prove kernel ECHILD before authorizing ANY own
             # namespace cleanup. Unknown cessation retains the entire fixture.
-            if not getattr(self, 'stop_unproved', False):
+            # Keep COMPLETE failed-fixture stdout/stderr and metadata until reviewed.
+            if not getattr(self, 'stop_unproved', False) and first is None:
                 self.assertEqual(own.parent, Path(tempfile.gettempdir()).resolve())
                 self.assertTrue(own.name.startswith('rr-source19-cp-install-native-'))
                 shutil.rmtree(own)
@@ -628,6 +726,7 @@ class SourceOriginalCpInstallNative(unittest.TestCase):
             case_failure = error
             # Preserve useful fixed first-boundary evidence without printing
             # child logs, source paths, tokens, protocol payloads or values.
+            before_h = capture_source19_before_h_failure(root, process is not None and process.poll() is not None)
             diagnostics = []
             try:
                 with (root / 'stderr').open('rb') as stream:
@@ -637,10 +736,11 @@ class SourceOriginalCpInstallNative(unittest.TestCase):
                 pass  # A missing diagnostic must not replace the actual failure.
             with transport.lock:
                 refusal = transport.failures[0] if transport.failures else None
+                before_h_stages = list(transport.before_h_stages)
                 last_route = transport.calls[-1] if transport.calls else None
             print(json.dumps({'source19CpInstallNativeCase': mode, 'status': 'FAIL',
                 'observedPrograms': sorted(seen_programs), 'transportRefusal': refusal,
-                'lastFixtureRoute': last_route, 'actionDiagnostics': diagnostics, 'h70Observed': observed is not None,
+                'lastFixtureRoute': last_route, 'actionDiagnostics': diagnostics, 'beforeHChildFailure': before_h, 'beforeHProtocolStages': before_h_stages, 'h70Observed': observed is not None,
                 'sourceAdmission': False, 'realUpstreamNetwork': 0}))
             raise
         finally:
@@ -710,7 +810,7 @@ if __name__ == '__main__':
     parser.add_argument('--node24-path', required=True)
     parser.add_argument('--node22-path', required=True)
     parser.add_argument('--case', choices=CASES, required=True)
-    parser.add_argument('--composition', choices=('original-d0', 'integrated-d504'), default='original-d0')
+    parser.add_argument('--composition', choices=('original-d0', 'integrated-d504', 'integrated-d504-diagnostics-v2'), default='original-d0')
     args, remaining = parser.parse_known_args()
     FIXTURE, FIXTURE_IDENTITY = select_fixture_composition(args.composition)
     NODE = Path(args.node24_path).resolve(strict=True)

@@ -4049,6 +4049,7 @@ await test('SOURCE disposition writer: physical close before normal artifact con
   const { registerHooks } = await import('node:module');
   const { fstatSync } = await import('node:fs');
   const moduleUrl = new URL('./protected-private-production-runtime.mjs', import.meta.url);
+  moduleUrl.search = 'source-disposition-test=' + crypto.randomUUID();
   const observation = registerHooks({
     load(url, context, next) {
       const result = next(url, context);
