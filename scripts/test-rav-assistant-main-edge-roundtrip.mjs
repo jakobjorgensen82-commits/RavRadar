@@ -305,6 +305,7 @@ try {
     const vm = await import('node:vm');
     const service = await import('../js/services/rav-assistant.js');
     const knowledge = await import('../knowledge/rav-assistant-local-v2.js');
+    const { createMapForecastController } = await import('../js/services/map-forecast-view.js');
     const appSource = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
     const appStart = appSource.includes('let assistantTopicState =')
       ? appSource.indexOf('let assistantTopicState =') : appSource.indexOf('function assistantContext(){');
@@ -312,6 +313,14 @@ try {
     assert.ok(appStart >= 0 && appEnd > appStart);
     const appBlock = appSource.slice(appStart, appEnd);
     const zoneBlock = appSource.slice(appSource.indexOf('function openZone('), appSource.indexOf('function renderRanking('));
+    const mapFrameStart = appSource.indexOf('function mapFrame(){');
+    const mapFrameEnd = appSource.indexOf('function mapConditions(){', mapFrameStart);
+    assert.ok(mapFrameStart >= 0 && mapFrameEnd > mapFrameStart);
+    const mapFrameBlock = appSource.slice(mapFrameStart, mapFrameEnd);
+    const mapScoresStart = appSource.indexOf('const mapScores=');
+    const mapScoresEnd = appSource.indexOf('const mapForecast=', mapScoresStart);
+    assert.ok(mapScoresStart >= 0 && mapScoresEnd > mapScoresStart);
+    const mapScoresBlock = appSource.slice(mapScoresStart, mapScoresEnd);
     const modeLine = appSource.split(/\r?\n/).find(line => line.startsWith('function setMode('));
     assert.ok(modeLine);
     const question = 'Når strømmen går langs stranden i stedet for mod land, er det så stadig godt at lede efter rav?';
@@ -346,8 +355,10 @@ try {
       };
       const box = { scrollHeight: 1, appendChild(node) { messages.push(node); } };
       const assistantDialog = { addEventListener(type, fn) { listen('dialog', type, fn); }, showModal() {} };
+      const mapForecast = createMapForecastController({ loadHour() { throw new Error('UNEXPECTED_FORECAST_LOAD'); } });
+      assert.equal(mapForecast.committed, null, 'The genuine unconfigured controller has no future frame.');
       let hold = false, release = null;
-      const context = vm.createContext({ state, assistantDialog,
+      const context = vm.createContext({ state, assistantDialog, mapForecast,
         getLanguage: () => browserLanguage,
         t: (key, params) => t(key, params, browserLanguage),
         quickQuestions: service.quickQuestions,
@@ -373,7 +384,8 @@ try {
             classList: { remove() {} } }; },
         },
       });
-      vm.runInContext(appBlock + '\n' + zoneBlock + '\n' + modeLine, context, { filename: 'actual-app-assistant-and-lifecycle.js' });
+      vm.runInContext(mapScoresBlock + '\n' + mapFrameBlock + '\n' + appBlock + '\n' + zoneBlock + '\n' + modeLine, context, { filename: 'actual-app-assistant-and-lifecycle.js' });
+      assert.equal(vm.runInContext('mapFrame()', context), null, 'Use the whole actual app mapFrame, not a function stub.');
       return { state, display, context,
         submit: vm.runInContext('submitAssistantQuestion', context),
         openZone: vm.runInContext('openZone', context), closeZone: vm.runInContext('closeZone', context),

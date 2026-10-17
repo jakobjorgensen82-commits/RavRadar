@@ -114,7 +114,19 @@ const replaced = new Map([
   ['node scripts/test-integrated-cutover-install-contract.mjs', [host('install')]],
   ['node scripts/test-integrated-cutover-readiness.mjs', [host('readiness')]],
 ]);
-assert.deepEqual(declared, historicalDeclared.flatMap(command => replaced.get(command) ?? [command]),
+const mapTimelineChecks = ['node scripts/test-map-forecast-timeline.mjs',
+  'node --test scripts/test-map-forecast-panel.mjs scripts/test-map-timeline-generation.mjs'];
+assert.equal(scripts['test:map-timeline'], mapTimelineChecks.join(' && '));
+const mapTimelineAnchor = 'node --test scripts/test-protected-operational-reentry-evidence.mjs';
+assert.equal(declared.filter(command => command === mapTimelineAnchor).length, 1);
+for (const check of mapTimelineChecks)
+  assert.equal(declared.filter(command => command === check).length, 1,
+    'Every actual timeline command must execute exactly once.');
+const mapTimelineAt = declared.indexOf(mapTimelineAnchor);
+assert.deepEqual(declared.slice(mapTimelineAt, mapTimelineAt + 3),
+  [mapTimelineAnchor, ...mapTimelineChecks], 'Both timeline commands keep their normal additive position.');
+assert.deepEqual(declared.filter(command => !mapTimelineChecks.includes(command)),
+  historicalDeclared.flatMap(command => replaced.get(command) ?? [command]),
   'Preserve every baseline command, order and duplicate count except the six exact historical routes and three separate warmup checks.');
 for (const check of [issuedCheck, frozenCurrentCheck, diagnosticCheck, currentBuilder,
   host('native'), host('epoch'), host('install'), host('readiness'), ...warmupChecks])
