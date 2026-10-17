@@ -1,3 +1,11 @@
+## 17. oktober — SOURCE19: privat integration af faktisk 4.0.579, stadig inaktiv
+
+Main d897f3eb indeholder den faktisk testede 4.0.579-kilde. Opvarmningens databaseovergang og genlæsning er nu faktisk gennemført særskilt af ROOT; en almindelig vejrhentning er fortsat åben. SOURCE19 aktiveres ikke. Den private integrationspakke bevarer begge forældres produktkontroller, dokumenthistorik og den normale rækkefølge.
+
+V6-kontrol 39002451199 bestod alle syv nativecases, låst SDK-import, acquisition/raw-save og native PostgreSQL. Den normale Linux-unit bestod også alle syv immutable-B-angrebsgrupper, frisk Git-/fristkontrol, genbrug uden ny læsning på hit og race-afvisning. Samlet source fejlede særskilt i to gamle kildeinverser og en direkte B/S-kalder efter routevalg uden normal prelude. Senere gates blev ikke kørt. Hele første log og ZIP er bevaret privat.
+
+Forslaget lægger to præcise SOURCE-inverser foran alle gamle assertions og holder standalone B/S før den samme routeassert. Produktguards, frister og gamle beviser bevares. En ny additiv V7-komposition ændrer udtrykkeligt producentens to releasefelter og den normale tests kildepin; 25 af 27 pins og alle tretten tidligere fixtures bevares. V7-native, samlet kildekontrol, nationalt heljob, holdbar SAVE/finalizer og aktivering er ikke bevist. Ingen main-, model-, SQL-installations-, provider- eller produktionsændring følger af den private forberedelse. Ældre daterede fronter bevares nedenfor.
+
 ## 17. oktober — 4.0.579: almindelig opvarmning skal bevare ærlig, ufuldstændig historik
 
 Den beskyttede genoptagelse har faktisk leveret offentlig 4.0.578. Den første almindelige efterfølger stoppede derimod 17. oktober kl. 04.00 dansk tid før ny privat slutpakke og Pages. Den konkrete fejl er reproduceret: en ekstra kalderkontrol accepterede kun én ufuldstændig status, selv om de normale producenter og validatorer lovligt danner andre. Manglende timer skal fortsat være manglende; ingen falsk READY, nuludfyldning eller ændret scoreformel.
@@ -77,6 +85,18 @@ Vejrkørslen stoppede 16. oktober kl. 14.41.44 dansk tid i beregningens trin 125
 DMI var delvis; CP og OM var gennemført før stoppet. Krypteret fremgang er gemt lokalt og registreret i fjerncachen, men er endnu ikke GCM-autentificeret ved restore. Ingen ny B/S, Pages eller offentlig generation blev leveret. Præcis CI, sikker kildelevering og produktionsvirkning udestår. Providerfri genoptagelse er en separat forberedelse, ikke del af denne rettelse. Cron er pauset; offentlig generation er fortsat fra 13. oktober/version 4.0.577. Alle fem mål er åbne til 18. oktober.
 
 Version 4.0.578 er uændret. Se håndbog 89.243. De tidligere daterede tekster bevares som historik; denne rettelse ændrer ikke øvrige leverings- eller sikkerhedskrav.
+
+## 16. oktober — procesrevision samlet til præcis kildekontrol
+
+SOURCE19 er nu samlet som én afgrænset kildekandidat med 37 produkt-, mål- og kildekontrolfiler. Den bevarer den normale nye-starts cacheisolering, originaler og alle tidligere kildegrænser. PR634s særskilte præcise kildekontrol er faktisk bestået; det er ikke SOURCE-kandidatens kontrol eller en aktivering af revisionen.
+
+16. oktober, opfølgning på prøvejobbenes tidsformat: Det andet forsøg på de syv Linuxprøver bestod prøveklargøringen, men nåede ikke H70/H71. Det syntetiske jobstarttidspunkt havde mikrosekunder, hvor den normale kontrol kræver hele sekunder eller millisekunder. Kun prøvedata er rettet til hele sekunder; produktets tids- og ejergrænser bevares. En lokal prøve af den præcise normale tidskontrol afviser det gamle format og accepterer de gyldige formater. Det er ikke et bestået Linux-, H70-, H71- eller slutfrigivelsesforløb. Alle syv nativeforløb og den samlede slutfrigivelse er fortsat åbne; SOURCE19 er inaktiv.
+
+16. oktober, opfølgning på prøveklargøringen: Første forsøg på de syv Linuxprøver stoppede allerede før selve procesprøverne. Klargøringen manglede en navngiven policy-JSON, læste tre administratordokumenter, som ikke findes i et friskt checkout, og overså H71-fixturens egen hjælperimport. Rettelserne bruger kun nødvendige kildefiler og egne syntetiske, tomme administratordokumenter; produktets kilde-, model- og ejerskabskontroller ændres ikke. Begge isolerede klargøringskald består nu lokalt med faktiske syntetiske NetCDF-originaler. Det er ikke et bestået Linux-, H70-, H71- eller samlet frigivelsesbevis. De syv normale Linuxforløb og den samlede slutfrigivelse er fortsat åbne; SOURCE19 forbliver inaktiv.
+
+Kandidaten kræver samme faktiske procesejer gennem originalinstallation, native genbrug, fysisk lukning og senere holdbar gemning. Syv selvstændige Linuxprøver skal køre på det samme præcise kildehoved. Fejl, ukendt udfald eller spring over en relevant nativeprøve må ikke give et grønt kildebevis. Den almindelige kildekontrol, herunder PostgreSQL, bevares uændret.
+
+Lokal syntaks, afgrænsede kontraktprøver og hele byteinverser består. Den endelige kildefortegnelse viser uændret C69/I71/T12, lagringskontrakt og offentlig projektion; model, scoreformel, SQL, kilder og administratorgeometri ændres ikke. Linuxprøverne og den samlede kæde frem til holdbar gemning, fysisk frigivelse, upload og deploy er fortsat åbne. SOURCE19 forbliver inaktiv. Version 4.0.578 og den hidtil dokumenterede offentlige 4.0.577 er uændrede; cron er pauset. Alle fem mål er åbne med frist 18. oktober. Se håndbog 89.241; tidligere dateret tekst bevares som historik.
 
 ## 16. oktober — isoleret gammel aktiv DMI-cache ved ny start
 

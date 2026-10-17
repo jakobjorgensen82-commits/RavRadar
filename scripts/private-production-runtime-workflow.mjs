@@ -83,6 +83,7 @@ const PRIVATE_RUNTIME_SOURCE_FILES = Object.freeze({
     'scripts/private-production-runtime-bundle.mjs',
     'scripts/private-production-runtime-workflow.mjs',
     'scripts/protected-private-production-runtime.mjs',
+    'scripts/migrate-post-cutover-private-runtime.mjs',
     'scripts/lib/r2-private-runtime-storage.mjs',
     'scripts/weather-component-progress-cache.mjs',
     'scripts/lib/copernicus-offline-environment.mjs',
@@ -162,6 +163,15 @@ const PRIVATE_RUNTIME_SOURCE_FILES = Object.freeze({
     'scripts/lib/regional_source_proofs.py',
     'data/current-live-pilot-control.json',
     'data/current-regional-proxy-policy.json',
+    'scripts/lib/copernicus_component_process.py',
+    'scripts/verified-weather-source-handoff.mjs',
+    'scripts/weather-source-gate.mjs',
+    'scripts/materialize-dmi-bulk-storage.py',
+    'scripts/check-dmi-bulk-operational-ready.py',
+    'scripts/source-progress-union-consumer.mjs',
+    'scripts/merge-verified-current-donor-banks.py',
+    'scripts/lib/source-union-birth-journal.mjs',
+    'scripts/lib/source_union_birth_journal.py',
   ]),
   publicProjectionContractSha256: Object.freeze([
     'js/core/ravscore-model-contract.js',
@@ -1527,13 +1537,28 @@ async function assertNoSymlinkComponents(root, candidate, label) {
   }
 }
 
-export async function installRestoredPrivateRuntime({
+const sourceInstallCompletions = new WeakMap();
+export function sourceOriginalInstallCompletion(operation) {
+  const completed = sourceInstallCompletions.get(operation);
+  if (!completed) throw new Error('SOURCE_ORIGINAL_INSTALL_COMPLETION_REQUIRED');
+  return completed;
+}
+export async function installSourceOriginalPrivateRuntime(holder, result, options) {
+  const owner = await import('./protected-private-production-runtime.mjs');
+  const operation = await owner.beginSourceOriginalInstall(holder, result, options);
+  try { return await installRestoredPrivateRuntimeOwned(options, { owner, holder, operation }); }
+  catch (error) { throw owner.retainSourceOriginalProgressFailure(holder, error); }
+}
+export async function installRestoredPrivateRuntime(options = {}) {
+  return installRestoredPrivateRuntimeOwned(options);
+}
+async function installRestoredPrivateRuntimeOwned({
   restoredRoot,
   repositoryRoot = PRIVATE_RUNTIME_REPOSITORY_ROOT,
   renameImpl = fs.rename,
   removeImpl = fs.rm,
   stateEpochInputView = null,
-} = {}) {
+} = {}, sourceOriginal = null) {
   const requestedSourceRoot = path.resolve(restoredRoot);
   const requestedRepository = path.resolve(repositoryRoot);
   const sourceRootStat = await fs.lstat(requestedSourceRoot).catch(() => null);
@@ -1588,12 +1613,17 @@ export async function installRestoredPrivateRuntime({
   let componentFiles = [];
   let componentInvocation = null;
   if (hasExtension) {
-    componentInvocation = unpackPrivateWeatherComponentPack({ restoredRoot: sourceRoot, outputRoot: componentStage, conditions,
+    const sourceInventoryContext = sourceOriginal
+      ? await sourceOriginal.owner.issueSourceOriginalCpInventoryContext(sourceOriginal.holder, sourceOriginal.operation, componentStage)
+      : null;
+    componentInvocation = unpackPrivateWeatherComponentPack({ restoredRoot: sourceRoot, outputRoot: componentStage, conditions, sourceInventoryContext,
       ...(stateEpochInputView === null ? {} : { stateEpochInputView }) });
+    if (sourceOriginal) sourceOriginal.owner.retainSourceOriginalPackInvocation(
+      sourceOriginal.holder, sourceOriginal.operation, componentInvocation, componentStage);
     try { componentFiles = await componentInvocation; }
     catch (error) {
       // Cleanup must not replace the original unpack/integrity failure.
-      if (privateWeatherPackJsonReadsClosed(componentInvocation)) {
+      if (!sourceOriginal && privateWeatherPackJsonReadsClosed(componentInvocation)) {
         await fs.rm(componentStage, { recursive: true, force: true }).catch(() => {});
       }
       throw error;
@@ -1625,7 +1655,9 @@ export async function installRestoredPrivateRuntime({
       }
       const temporary = `${destination}.private-restore-${transactionId}`;
       const previous = `${destination}.private-previous-${transactionId}`;
-      await fs.copyFile(source, temporary, fs.constants.COPYFILE_EXCL);
+      if (sourceOriginal) await sourceOriginal.owner.copySourceOriginalInstallFile(
+        sourceOriginal.holder, sourceOriginal.operation, source, temporary, destination);
+      else await fs.copyFile(source, temporary, fs.constants.COPYFILE_EXCL);
       staged.push({
         temporary,
         destination,
@@ -1646,6 +1678,11 @@ export async function installRestoredPrivateRuntime({
       row.installed = true;
     }
     await assertEpochActiveAbsent();
+    if (sourceOriginal) {
+      sourceInstallCompletions.set(sourceOriginal.operation, Object.freeze(staged.map(row =>
+        Object.freeze({ temporary: row.temporary, destination: row.destination }))));
+      await sourceOriginal.owner.finishSourceOriginalInstall(sourceOriginal.holder, sourceOriginal.operation);
+    }
     await Promise.all(staged.map(row => removeImpl(row.previous, { force: true }).catch(() => {})));
   } catch (error) {
     installFailed = true;
@@ -1671,7 +1708,7 @@ export async function installRestoredPrivateRuntime({
     }
     throw error;
   } finally {
-    if (componentStage && privateWeatherPackJsonReadsClosed(componentInvocation)) {
+    if (!sourceOriginal && componentStage && privateWeatherPackJsonReadsClosed(componentInvocation)) {
       try { await fs.rm(componentStage, { recursive: true, force: true }); }
       catch (error) {
         // A failed install/rollback is primary. Cleanup alone stays fatal.

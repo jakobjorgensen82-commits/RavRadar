@@ -491,8 +491,20 @@ test('shared normal DMI recovery module is import-safe, outside I71, and byte-ex
     /complete genuine pre-extraction updater/);
 });
 
+// Exact reviewed SOURCE-only layer, before every unchanged historical oracle.
+function inverseSource19DmiForecastFile(actual) {
+  assert.equal(digest(actual), "467c1f8ffd6a9a8440deda6d201c0d9f9389e61dfb8441276748256c389af11f", 'Entire actual SOURCE product');
+  const rules=[{"before":"","after":"import { sourceUnionBirthFileOpened, sourceUnionBirthFileClosed } from './source-union-birth-journal.mjs';\n"},{"before":"","after":"// SOURCE failures retain the actual wx handle; never convert uncertainty to unlink/retry.\nconst sourceUnionForecastWriters = new Set();\n"},{"before":"export async function writeDmiForecastRecords(file, index, zoneRecords, metadata = index.metadata) {\n","after":"export async function writeDmiForecastRecords(file, index, zoneRecords, metadata = index.metadata, sourceUnionBirthJournal = null) {\n"},{"before":"","after":"  const sourceWriter = sourceUnionBirthJournal !== null;\n  if (sourceWriter) sourceUnionForecastWriters.add(handle);\n  const sourceHash = sourceWriter ? crypto.createHash('sha256') : null;\n"},{"before":"","after":"    if (sourceWriter) sourceHash.update(text);\n"},{"before":"","after":"    if (sourceWriter) await sourceUnionBirthFileOpened(sourceUnionBirthJournal, file, handle);\n"},{"before":"","after":"    const sourceIdentity = sourceWriter ? await handle.stat({ bigint: true }) : null;\n"},{"before":"","after":"    // The journal checks the captured numeric FD is physically EBADF and the named inode is unchanged.\n    if (sourceWriter) await sourceUnionBirthFileClosed(sourceUnionBirthJournal, file, handle, sourceIdentity, bytes, sourceHash.digest('hex'));\n"},{"before":"","after":"    if (sourceWriter) sourceUnionForecastWriters.delete(handle);\n"},{"before":"","after":"    if (sourceWriter) throw error; // Preserve the first raw failure and retained output/handle.\n"}];
+  for(const rule of [...rules].reverse()){
+    assert.equal(actual.split(rule.after).length,2,'One exact reviewed SOURCE hunk');
+    actual=actual.replace(rule.after,()=>rule.before);
+  }
+  assert.equal(digest(actual), "ac1cbf3909daad48e126a23c1c724e942344750c8856308c2e2a74d842a053a6", 'Entire genuine pre-SOURCE product, not retagged');
+  return actual;
+}
+
 test('main parser policy, public readers, serializer and record writer are preserved by mechanical extraction', async () => {
-  const source = await sourceText(new URL('./lib/dmi-forecast-file.mjs', import.meta.url));
+  const source = inverseSource19DmiForecastFile(await sourceText(new URL('./lib/dmi-forecast-file.mjs', import.meta.url)));
   const branding = "// Actual in-process checkpoint state, not a cross-process owner or a receipt\n// that authorizes a replacement worker. Preserve an uncertain handle/stage.\nconst checkpointWriters = new Map(), checkpointStopErrors = new WeakSet();\nexport function isDmiForecastCheckpointStopUnproved(error) {\n  return checkpointStopErrors.has(error);\n}\n\n";
   assert.equal(source.split(branding).length, 2);
   let baseline = source.replace(branding, '');

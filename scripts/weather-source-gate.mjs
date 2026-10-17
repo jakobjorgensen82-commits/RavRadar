@@ -1,5 +1,8 @@
 import fs from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import { performance } from 'node:perf_hooks';
 import {
   decideSourceGate,
   discoverPullRequestSourceGate,
@@ -15,17 +18,49 @@ const locatorPath = '.cache/weather-source-validation.json';
 const pullRequestProofPath = '.cache/source-tree-content-proof.json';
 const env = process.env;
 
+// Timings are untrusted data for the future private issuer, not source,
+// job-deadline, owner or publication authority. This client takes no options.
+export function createWeatherGithubMetadataClient() {
+  if (arguments.length) throw new Error('GitHub metadata client accepts no caller options');
+  const token = env.GITHUB_TOKEN;
+  const repository = env.GITHUB_REPOSITORY;
+  const fetchMetadata = globalThis.fetch;
+  if (typeof token !== 'string' || !token || /[\r\n]/.test(token)
+    || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? '')
+    || typeof fetchMetadata !== 'function') throw new Error('GitHub metadata identity is unavailable');
+  const headers = Object.freeze({ Authorization: 'Bearer ' + token,
+    Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' });
+  const sample = () => {
+    const monoBefore = performance.now();
+    const wall = Date.now();
+    const monoAfter = performance.now();
+    return Object.freeze({ monoBefore, wall, monoAfter });
+  };
+  const readJsonWithTiming = async route => {
+    if (typeof route !== 'string' || !route.startsWith('/repos/' + repository + '/')) {
+      throw new Error('GitHub metadata route is invalid');
+    }
+    const url = new URL('https://api.github.com' + route);
+    if (url.origin !== 'https://api.github.com'
+      || !url.pathname.startsWith('/repos/' + repository + '/')
+      || url.hash || url.username || url.password) throw new Error('GitHub metadata route is invalid');
+    const before = sample();
+    const response = await fetchMetadata(url.href, { headers, redirect: 'error',
+      signal: AbortSignal.timeout(15000) });
+    if (!response.ok) throw new Error('GitHub proof is unavailable');
+    // Preserve the SAME signal through the normal response.json() body read.
+    // No Promise.race may report completion while that read remains unsettled.
+    const json = await response.json();
+    const after = sample();
+    return Object.freeze({ json, before, after,
+      serverDate: response.headers.get('date'),
+      hasNextPage: /rel="next"/i.test(response.headers.get('link') ?? '') });
+  };
+  return Object.freeze({ readJsonWithTiming,
+    getJson: async route => (await readJsonWithTiming(route)).json });
+}
 async function githubJson(route) {
-  const response = await fetch(`https://api.github.com${route}`, {
-    headers: {
-      Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-    },
-    signal: AbortSignal.timeout(15000),
-  });
-  if (!response.ok) throw new Error('GitHub proof is unavailable');
-  return response.json();
+  return createWeatherGithubMetadataClient().getJson(route);
 }
 
 function exactHead() {
@@ -37,6 +72,7 @@ async function writeJson(path, value) {
   await fs.writeFile(path, `${JSON.stringify(value)}\n`);
 }
 
+async function main() {
 const mode = process.argv[2];
 if (mode === 'digest') {
   const pullRequestNumber = Number(env.PULL_REQUEST_NUMBER);
@@ -92,4 +128,8 @@ if (mode === 'digest') {
   console.log(`Source gate: required=${decision.required}; reason=${decision.reason}`);
 } else {
   throw new Error('Expected check, digest or record');
+}
+}
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await main();
 }

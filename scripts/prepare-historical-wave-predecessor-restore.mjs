@@ -66,8 +66,8 @@ async function atomicWriteJson(file, value) {
   }
 }
 
-export async function prepareHistoricalWavePredecessorRestore(options) {
-  const sourceDescription = await readDescription(options.sourceDescriptionPath);
+export async function selectHistoricalWavePredecessorRestore({ sourceDescription, targetReferenceAt, now } = {}) {
+  const options = { targetReferenceAt, now };
   const historicalExpectation = buildHistoricalWavePredecessorRestoreExpectation({
     sourceDescription,
     targetReferenceAt: options.targetReferenceAt,
@@ -122,6 +122,16 @@ export async function prepareHistoricalWavePredecessorRestore(options) {
       ? BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceHead
       : ownerCurrentExpectation ? ownerCurrentExpectation.sourceHead
         : currentGridSamplingExpectation ? currentGridSamplingExpectation.sourceHead : '';
+  return Object.freeze({ required: Boolean(expectation), transitionKind: transitionKind || null,
+    sourceHead, expectation });
+}
+
+export async function prepareHistoricalWavePredecessorRestore(options) {
+  const sourceDescription = await readDescription(options.sourceDescriptionPath);
+  const selected = await selectHistoricalWavePredecessorRestore({ sourceDescription,
+    targetReferenceAt: options.targetReferenceAt, now: options.now });
+  const { expectation, sourceHead } = selected;
+  const transitionKind = selected.transitionKind ?? '';
   if (expectation) await atomicWriteJson(options.outputPath, expectation);
   await fs.appendFile(options.githubOutputPath, [
     `required=${expectation ? 'true' : 'false'}`,

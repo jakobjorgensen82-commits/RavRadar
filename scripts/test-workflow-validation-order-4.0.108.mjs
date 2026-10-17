@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { projectSource19NativeCiWorkflow } from './test-source19-native-ci-workflow.mjs';
 import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -325,7 +326,7 @@ if (/\b(?:push|pull_request|schedule|workflow_run):/.test(historicalWavePilot)) 
 if (/\.nc(?:\s|$)/m.test(historicalWavePilot)) {
   throw new Error('Den historiske bølgepilot må ikke uploade NetCDF-filer.');
 }
-const pullRequestValidation = fs.readFileSync(`${workflowDirectory}/validate-pull-request.yml`, 'utf8').replace(/\r\n/g, '\n');
+const pullRequestValidation = projectSource19NativeCiWorkflow(fs.readFileSync(`${workflowDirectory}/validate-pull-request.yml`, 'utf8').replace(/\r\n/g, '\n'));
 for (const marker of [
   'pull_request:',
   'permissions:\n  contents: read',

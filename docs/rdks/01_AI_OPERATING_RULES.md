@@ -70,6 +70,18 @@ DMI var delvis; CP og OM var gennemført før stoppet. Krypteret fremgang er gem
 
 Version 4.0.578 er uændret. Se håndbog 89.243. De tidligere daterede tekster bevares som historik; denne rettelse ændrer ikke øvrige leverings- eller sikkerhedskrav.
 
+## 16. oktober — procesrevision samlet til præcis kildekontrol
+
+SOURCE19 er nu samlet som én afgrænset kildekandidat med 37 produkt-, mål- og kildekontrolfiler. Den bevarer den normale nye-starts cacheisolering, originaler og alle tidligere kildegrænser. PR634s særskilte præcise kildekontrol er faktisk bestået; det er ikke SOURCE-kandidatens kontrol eller en aktivering af revisionen.
+
+16. oktober, opfølgning på prøvejobbenes tidsformat: Det andet forsøg på de syv Linuxprøver bestod prøveklargøringen, men nåede ikke H70/H71. Det syntetiske jobstarttidspunkt havde mikrosekunder, hvor den normale kontrol kræver hele sekunder eller millisekunder. Kun prøvedata er rettet til hele sekunder; produktets tids- og ejergrænser bevares. En lokal prøve af den præcise normale tidskontrol afviser det gamle format og accepterer de gyldige formater. Det er ikke et bestået Linux-, H70-, H71- eller slutfrigivelsesforløb. Alle syv nativeforløb og den samlede slutfrigivelse er fortsat åbne; SOURCE19 er inaktiv.
+
+16. oktober, opfølgning på prøveklargøringen: Første forsøg på de syv Linuxprøver stoppede allerede før selve procesprøverne. Klargøringen manglede en navngiven policy-JSON, læste tre administratordokumenter, som ikke findes i et friskt checkout, og overså H71-fixturens egen hjælperimport. Rettelserne bruger kun nødvendige kildefiler og egne syntetiske, tomme administratordokumenter; produktets kilde-, model- og ejerskabskontroller ændres ikke. Begge isolerede klargøringskald består nu lokalt med faktiske syntetiske NetCDF-originaler. Det er ikke et bestået Linux-, H70-, H71- eller samlet frigivelsesbevis. De syv normale Linuxforløb og den samlede slutfrigivelse er fortsat åbne; SOURCE19 forbliver inaktiv.
+
+Kandidaten kræver samme faktiske procesejer gennem originalinstallation, native genbrug, fysisk lukning og senere holdbar gemning. Syv selvstændige Linuxprøver skal køre på det samme præcise kildehoved. Fejl, ukendt udfald eller spring over en relevant nativeprøve må ikke give et grønt kildebevis. Den almindelige kildekontrol, herunder PostgreSQL, bevares uændret.
+
+Lokal syntaks, afgrænsede kontraktprøver og hele byteinverser består. Den endelige kildefortegnelse viser uændret C69/I71/T12, lagringskontrakt og offentlig projektion; model, scoreformel, SQL, kilder og administratorgeometri ændres ikke. Linuxprøverne og den samlede kæde frem til holdbar gemning, fysisk frigivelse, upload og deploy er fortsat åbne. SOURCE19 forbliver inaktiv. Version 4.0.578 og den hidtil dokumenterede offentlige 4.0.577 er uændrede; cron er pauset. Alle fem mål er åbne med frist 18. oktober. Se håndbog 89.241; tidligere dateret tekst bevares som historik.
+
 ## 16. oktober — isoleret gammel aktiv DMI-cache ved ny start
 
 Den normale kalder havde et betinget hul: den arkiverede aktive DMI-cache kunne blive installeret som arbejdskopi, selv om den nye start ellers holdt gammel strømtilstand adskilt. Det er kildebevist, ikke påvist som fejl i den igangværende vejrhentning. Rettelsen kræver den ægte, uigennemsigtige arkivbundne inputvisning og hele pakkens kontrolsum fra samme faktisk læste filbeskrivelse. Kun den gamle aktive arbejdskopi udelades; dens destination skal være fraværende. Intet flyttes eller slettes. Originale B/S, RAW, alle øvrige filer og normal adfærd uden denne inputvisning bevares.

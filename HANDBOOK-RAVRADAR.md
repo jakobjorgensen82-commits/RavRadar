@@ -1,3 +1,19 @@
+## 89.251 SOURCE19 forenes med den faktiske opvarmningskilde uden aktivering
+
+### 17. oktober: procesopstart må ikke gættes ud fra ét øjebliksbillede
+
+Seks V8-nativecases, også positiv H71, bestod faktisk. Én H70-case så tom cmdline efter normal Popen/exec og pidfd-open, før negativ rootændring. Tidligt exit/zombie er muligt; den gamle indre årsag er uafklaret, ikke bevist harmløs opstart. En test-only observer skal nu bevise samme beholdte proces, præcis argv og levetid inden for den uændrede 150-sekunders frist, samt bevare ægte exitstatus og stabil privat fejllog efter normal kernel-drain. Forkert, afsluttet og ukendt proces giver ikke godkendelse; ingen produktkontrol eller frist løsnes. Kun det ydre PR-kildejob får 60 i stedet for 45 minutter, med præcis inverse foran gamle testorakler. Alle 27 produktpins og sytten prøveoriginaler bevares. Nye Linux-childprøver er UNRUN lokalt og skal faktisk køres i normal CI. Samlet source, nationalt heljob, holdbar SAVE/finalizer og aktivering er fortsat åbne; SOURCE19 er inaktiv.
+
+### 17. oktober: prøvekopien skal indeholde sin normale JSON-kilde
+
+Den første integrerede kildekontrol stoppede før nogen H70/H71-prøve: alle syv jobs manglede samme eksplicit læste JSON-kildefil i deres syntetiske seed. V8 medtager alene den uændrede, præcist pinnede kildefil og bevarer alle femten tidligere fixtures samt samtlige 27 produktpins. Normal moduleinitialisering og den uændrede binding-policy-reader er den afgrænsede kontrol; det er ikke et nyt native- eller produktionsresultat. Alle syv Linuxcases, samlet kildekontrol, nationalt heljob og holdbar SAVE/finalizer er fortsat nødvendige. SOURCE19 er inaktiv, og ingen SQL installeres.
+
+Main d897f3eb indeholder den faktisk testede 4.0.579-kilde. Opvarmningens databaseovergang og genlæsning er nu faktisk gennemført særskilt af ROOT; en almindelig vejrhentning er fortsat åben. SOURCE19 aktiveres ikke. Den private integrationspakke bevarer begge forældres produktkontroller, dokumenthistorik og den normale rækkefølge.
+
+V6-kontrol 39002451199 bestod alle syv nativecases, låst SDK-import, acquisition/raw-save og native PostgreSQL. Den normale Linux-unit bestod også alle syv immutable-B-angrebsgrupper, frisk Git-/fristkontrol, genbrug uden ny læsning på hit og race-afvisning. Samlet source fejlede særskilt i to gamle kildeinverser og en direkte B/S-kalder efter routevalg uden normal prelude. Senere gates blev ikke kørt. Hele første log og ZIP er bevaret privat.
+
+Forslaget lægger to præcise SOURCE-inverser foran alle gamle assertions og holder standalone B/S før den samme routeassert. Produktguards, frister og gamle beviser bevares. En ny additiv V7-komposition ændrer udtrykkeligt producentens to releasefelter og den normale tests kildepin; 25 af 27 pins og alle tretten tidligere fixtures bevares. V7-native, samlet kildekontrol, nationalt heljob, holdbar SAVE/finalizer og aktivering er ikke bevist. Ingen main-, model-, SQL-installations-, provider- eller produktionsændring følger af den private forberedelse. Ældre daterede fronter bevares nedenfor.
+
 ## 89.250 Almindelig strømopvarmning med manglende historiktimer
 
 Den seneste samlede kildeprøve fandt to fejl i selve prøvekalderne. De gamle kommandoforventninger skal bruge deres faktiske historiske kilde, mens den nye leveringsvej kontrolleres særskilt. Den historiske testvært manglede også én fast workflowfil, som den uændrede normale prøve læser. Filen følger nu med uændret. Begge kommandoforløb og hele det normale readiness-mål består lokalt uden at ændre produkt, gamle kontroludsagn eller databasebindinger. Ny samlet kontrol og faktisk levering er stadig påkrævet.
@@ -11,6 +27,58 @@ En beskyttet genoptagelse leverede faktisk offentlig version 4.0.578. Dens førs
 Kun ved denne opvarmningsovergang gemmes og genlæses den nye beskyttede vejrpakke før den nye beregningstilstand publiceres. Dermed bevares det gamle sammenhørende par ved en tidlig afbrydelse, mens en senere afbrydelse kan genoptages fra den allerede verificerede nye pakke. Normale fejlprøver skal kontrollere begge stop og et tabt svar efter faktisk gemning, uden at gentage en ukendt skrivning eller ændre originalerne. De øvrige leveringsruter ændres ikke. Første samlede kildekontrol stoppede i databaseprøvens førkontrol. Efter det store prøveinventar blev gjort rækkevist, bestod den rigtige PostgreSQL-prøve faktisk. Derefter stoppede kildeplanen på målprøvens argumentformat før teststart; det er ikke en ny vejr- eller databasefejl. Den normale registrering skal rettes uden at ændre parseren eller hvilke prøver der udføres. Ny samlet kontrol på præcis kilde udestår.
 
 Krypteret fremgang fra den fejlede kørsel er gemt, men kræver sin oprindelige byteeksakte baseline. Den må ikke ommærkes til en ny binding. Efter verificeret metadataovergang bruges derfor den almindelige vej fra den nye beskyttede tilstand med den eksisterende råfilcache. En faktisk almindelig levering skal bestå, før den uændrede tidsplan genaktiveres. Ny samlet kildekontrol, installation og offentlig effekt er fortsat åbne; en præcis PostgreSQL-prøve er bestået; tidsskyderen og de andre mål er ikke færdige hermed.
+
+## 89.250 En fejl skal kunne forklares uden at røbe private data
+
+### 17. oktober: prøvens begrænsede logudsigt er ikke hele loggen
+
+Alle syv V5-nativeprøver, inklusive den positive H71-installation, og den låste SDK-import er nu faktisk bestået. Den almindelige kildekontrol stoppede senere i én negativ offline-cache-prøve, fordi dens npm-debugfil var større end prøveudsigtens 64 KiB. Prøven nåede ikke at bevise npm-fejlkoden.
+
+V6 ændrer alene den nye successor-prøve til at se højst de sidste 64 KiB af samme allerede lukkede log. Den samme læsegrænse og præcise fejlassertion bevares; gamle prøver og alle produktkontroller er uændrede. En egen syntetisk 1-MiB-fil viser forskellen og afvisning af manglende eller forkert slutfejl. Det er ikke hel logvalidering eller bevis for den afsluttede runners indre npm-fejl. Elleve gamle prøveoriginaler bevares, og alle syv Linuxcases kræves fortsat. V6-native, nye normale Linux-hit/race-prøver, samlet kildekontrol, SAVE/finalizer og aktivering er ikke godkendt. SOURCE19 forbliver inaktiv.
+
+### 17. oktober: en allerede kontrolleret original må kun genbruges med samme beviser
+
+Den seneste kildeprøve bestod seks af syv nativecases. Den positive H71-prøve nåede H70, H71, native CP og et resultat, men ikke bevist færdig working-install før observerens uændrede frist. CPU-målingen viser aktivitet, ikke den præcise indre årsag. Koden læser de samme beskyttede originaler gentagne gange. En afgrænset V5-ændring kan på Linux genbruge en tidligere fuld kontrolsum, men kun for præcis samme autentificerede B-original og uændrede fil- og ejerbeviser. Frisk kilde-/procesidentitet og frist kontrolleres stadig hver gang. Arbejdskopier og mutérbare filer får ikke denne mulighed, og ingen frist øges.
+
+Alle ni gamle prøveoriginaler og deres beviser bevares. To nye særskilte prøvekompositioner beskriver den ændrede kilde og bevarer alle syv Linuxcases. Lokale kompositionskontroller består; den normale Windows-prøve stopper ved operativsystemets afvisning af mappeombytning med åbne originalfiler. Linux-genbrug og de senere angreb er derfor endnu ukørte. Det er ikke ny native-, SAVE-, finalizer- eller leveringsgodkendelse. SOURCE19 er fortsat inaktiv, og produktionen ændres ikke.
+
+### 17. oktober: observeren måler uden at give mere tid
+
+På præcis 4c223 bestod fire H70-prøver og to H71-afvisninger. Den positive H71-prøve nåede H70, H71 og native CP, men fristen på 150 sekunder udløb før bevist installation. Den almindelige kildekontrol blev korrekt sprunget over. De tidligere syv beståede nativeprøver på 76d21 er særskilt historik; de beviser ikke dette head.
+
+Prøvens observer måler nu faste fasetider, procesidentitet, parent-skift, CPU-/I/O-forbrug og kendte journal-events. Journalen er kun et uforseglet øjebliksbillede, ikke en kvittering. Efter faktisk stop af alle egne børn kan den eksisterende strenge kontrol læse hele den private fejllog igen. Stopfejl efter oprydning er ikke i sig selv den oprindelige årsag. Ingen rå private oplysninger udskrives.
+
+Tidsgrænser, gamle assertions, produktkontroller og prøveoriginaler ændres ikke. De lokale målinger er ikke et Linuxbevis; Windows kan fortsat afvise stabil logindlæsning på grund af forskellige tidsstempelvisninger. Ny normal CI og faktisk SDK-import er åbne. SOURCE19 er inaktiv, og produktionen ændres ikke.
+
+### 17. oktober: syv nativeprøver er bestået, men samlet kildekontrol er rød
+
+Alle fire H70- og tre H71-prøver er faktisk bestået på præcis 76d21. Den efterfølgende almindelige kildekontrol fejlede: den gamle importtest kendte kun den tidligere cache-pakke, ikke den allerede indførte artifact-pakke. Senere kildekontroller blev ikke kørt. De beståede nativegrænser er ikke bevis for holdbar gemning, offentlig levering eller aktivering.
+
+Testrettelsen genbruger den uændrede normale distributionskontrol og beviser hele den gamle pakke igen; gamle kontrolsummer, versioner og assertions bevares. Modulerne må kun importeres og inspiceres, aldrig bruges til runtimekald. Den lokale afgrænsede prøve består med 16 afvisninger, men faktisk SDK-import efter rettelsen er endnu ukørt lokalt, fordi de installerede moduler mangler. Intet installeres. Ny samlet kontrol udestår.
+
+Alle produktpins og ni udstedte prøveoriginaler bevares. SOURCE19 er inaktiv, og produktionen ændres ikke. Kun de ældre åbne native-statusser nedenfor er erstattet; fejlbeviserne bevares.
+
+### 17. oktober: prøvedata skal også være ærlige og komplette nok
+
+Alle fire H70-prøver på V3 er nu faktisk bestået. De tre H71-prøver nåede ikke H71: deres egne manglende prøveinput blev korrekt afvist. En ny, særskilt prøvekomposition bruger normale pakkefabrikker til alle 673 kystdele, med manglende/null vejr og uden opdigtede scorer. Den bevarer alle otte tidligere prøveoriginaler og alle produktkontroller.
+
+Den normale kopiering af tidligere vejr fejler uden timepakken og består med pakken. Gemning og gendannelse af den autentificerede prøvetilstand samt alle 118 pakkefilers nøjagtige gendannelse består uden netkald. Det er ikke H71- eller samlet kildebevis: den lokale Windows-installation stopper senere ved kontrol af CP-originaler, og Linux-postinstall samt H71 på V4 er endnu ukørte. SOURCE19 forbliver inaktiv; produktionen ændres ikke.
+
+### 17. oktober: den normale restore skal have sine tidsgrænser
+
+En lokal normal prøve har nu påvist, at SOURCE-kalderen glemte at føre tre tidsgrænser videre til den eksisterende restorer. Kun disse oplysninger fra samme allerede kontrollerede forventning tilføjes. Den faktiske gamle kaldeform fejler; den rettede form gendanner atomisk med alle oprindelige filbytes bevaret. Fem tilfælde med ukendt tid, omvendte grænser eller for gamle data afvises fortsat. Kontrollerne selv er uændrede.
+
+Den seneste Linux-kørsel viste kun installationsgrænsen og en ukendt indre fejl. Hele jobloggen er bevaret privat, men den skjulte child-fejltekst er ikke genfundet; den lokale reproduktion er særskilt evidens. V3 får nye prøveoriginaler og bevarer alle seks tidligere moduler. Den normale workflowprøve består, men de syv nativeforløb på V3 er endnu ukørte. SOURCE19 er inaktiv; ingen produktion eller gammel evidens får ny godkendelse.
+
+**Kort fortalt:** En ukendt testfejl må ikke gøres grøn ved at svække kontrollen. Først skal den oprindelige fejl kunne skelnes sikkert uden private værdier.
+
+De syv isolerede SOURCE19-prøver fejlede i den seneste præcise kildekontrol. Den første undersøgte prøve nåede ikke sin native installationsgrænse; årsagen er endnu ikke bevist. Den gamle fejlformatter kunne skjule forskellige kildefejl som ukendt. Derfor tilføjes en lille, lukket diagnose ved den eksisterende fejlgrænse. Første fejl, alle afvisninger og den oprindelige fejlstatus bevares. Ingen rå fejltekst, privat sti eller vejrdata udskrives. Hele den oprindelige child-log bevares alene privat til undersøgelsen.
+
+Fire tidligere prøveoriginaler og deres kontrolsummer ændres ikke. Den nye komposition har sin egen identitet og bevarer alle syv normale Linuxprøver. Det lokale workflowmål består efter, at dets egen syntetiske logfil færdigskrives før stabilitetskontrollen; den første røde prøve bevares. Dette er ikke et bestået Linux-, H70-, H71- eller samlet kildebevis. Den fulde runtime-kildefingerprint ændres; gamle private pakker eller tidligere nativebeviser bliver ikke gyldige af den grund.
+
+SOURCE19 forbliver inaktiv. Ingen ny release, scoring, vejrhentning, SQL-installation eller offentlig levering følger af diagnostikken. Den separate produktion berøres ikke.
+
+En gammel test kunne ikke observere sin interne funktion, fordi den genbrugte et allerede indlæst modul. Én unik import-query retter kun denne prøveseam; alle fem oprindelige tilfælde og deres faktiske fil-close-kontroller består gennem det normale mål. V2-kompositionen registrerer denne ene prøvepin særskilt sammen med de to produktpins; 24 af de 27 pins og alle fire tidligere fixtures bevares. Hele den gamle prøvefil bevises ved eksakt inverse, ikke ved ny mærkning af tidligere beviser.
 
 ## 89.249 Gendannelse skal bevare indhold og oprindelige kontrolsummer
 
@@ -85,6 +153,26 @@ Vejrkørslen stoppede 16. oktober kl. 14.41.44 dansk tid i beregningens trin 125
 DMI var delvis; CP og OM var gennemført før stoppet. Krypteret fremgang er gemt lokalt og registreret i fjerncachen, men er endnu ikke GCM-autentificeret ved restore. Ingen ny B/S, Pages eller offentlig generation blev leveret. Præcis CI, sikker kildelevering og produktionsvirkning udestår. Providerfri genoptagelse er en separat forberedelse, ikke del af denne rettelse. Cron er pauset; offentlig generation er fortsat fra 13. oktober/version 4.0.577. Alle fem mål er åbne til 18. oktober.
 
 Version 4.0.578 er uændret. Tidligere daterede afsnit bevares som historik; øvrige leverings- og sikkerhedskrav består.
+
+## 89.241 Procesrevision klar som kildekandidat, ikke som aktiveret drift
+
+**Kort fortalt:** Procesrevisionen er samlet til én præcis kildekontrol, men skal stadig bestå syv faktiske Linuxprøver og hele den holdbare driftskæde før aktivering.
+
+16. oktober, opfølgning på prøvekopiernes afhængigheder: Tredje SOURCE635-kildekontrol stoppede før H70/H71, fordi de to friske prøvekopier manglede writer-modulet. Begge afhængighedslæsere følger nu også konkrete require/require.resolve-kald. Kun tre testfiler ændres; CI-fortegnelsens 311 paths, workflow-YAML, kernel-/produktpins og normale sikkerhedskrav bevares. Den lille normale prøve reproducerer MODULE_NOT_FOUND og består derefter med faktisk require.resolve/require og fire writer-exports i begge friske kopier. Det er alene støtte til prøveklargøringen, ikke H70/H71-, native-, samlet CI- eller produktionsbevis. SOURCE19 forbliver inaktiv; version 4.0.578 og alle fem åbne mål til 18. oktober er uændrede. Tidligere opfølgninger bevares som historik.
+
+Den isolerede SOURCE19-revision er samlet som en kildekandidat med 37 afgrænsede filer. Originalinstallation, Copernicus-kontrol og genbrug af krypteret fremgang skal følge den samme faktiske ejer. Ukendt procesophør, ulukkede filer eller manglende kvittering for holdbar gemning må ikke frigive ejeren. En afsluttet programventen eller en grøn statusmarkør er ikke i sig selv bevis for fysisk lukning.
+
+16. oktober, opfølgning på prøvejobbenes tidsformat: Det andet forsøg på de syv Linuxprøver bestod prøveklargøringen, men nåede ikke H70/H71. Det syntetiske jobstarttidspunkt havde mikrosekunder, hvor den normale kontrol kræver hele sekunder eller millisekunder. Kun prøvedata er rettet til hele sekunder; produktets tids- og ejergrænser bevares. En lokal prøve af den præcise normale tidskontrol afviser det gamle format og accepterer de gyldige formater. Det er ikke et bestået Linux-, H70-, H71- eller slutfrigivelsesforløb. Alle syv nativeforløb og den samlede slutfrigivelse er fortsat åbne; SOURCE19 er inaktiv.
+
+16. oktober, opfølgning på prøveklargøringen: Første forsøg på de syv Linuxprøver stoppede allerede før selve procesprøverne. Klargøringen manglede en navngiven policy-JSON, læste tre administratordokumenter, som ikke findes i et friskt checkout, og overså H71-fixturens egen hjælperimport. Rettelserne bruger kun nødvendige kildefiler og egne syntetiske, tomme administratordokumenter; produktets kilde-, model- og ejerskabskontroller ændres ikke. Begge isolerede klargøringskald består nu lokalt med faktiske syntetiske NetCDF-originaler. Det er ikke et bestået Linux-, H70-, H71- eller samlet frigivelsesbevis. De syv normale Linuxforløb og den samlede slutfrigivelse er fortsat åbne; SOURCE19 forbliver inaktiv.
+
+Den normale nye-starts cacheisolering er bevaret: arkivbundet inputvisning, hele pakkens kontrolsum fra samme faktisk læste fil, udeladelse af kun den gamle aktive arbejdskopi og krav om fraværende destination. Normal installation uden den særskilte inputvisning er uændret. Originale B/S, RAW, gamle scorer og administratorpunkter ændres ikke.
+
+Syv lukkede prøveforløb skal køres i syv friske Linuxjobs på samme præcise kildehoved. Den almindelige kildekontrol med PostgreSQL bevares. En relevant nativefejl, et ukendt udfald eller et sprunget relevant job blokerer kildebeviset; en irrelevant, sprunget prøve er ikke en bestået nativeprøve. Kun den faktiske afgrænsede kilde- og inputfortegnelse udløser disse ekstra jobs, ikke vilkårlige nye brugerfladefiler.
+
+Lokale syntaks- og kontraktprøver samt hele byteinverser består. Den endelige 37-fils sammenligning med de normale fortegnelser viser uændret C69, I71, T12, lagringskontrakt og offentlig projektion. Det er ikke modelgenopbygning, Linuxbevis, produktionsinstallation eller ny offentlig effekt. PR634s separate kildekontrol er bestået, men kan ikke erstatte SOURCE-kandidatens egne kontroller.
+
+Alle syv Linuxforløb og samlet frigivelse efter holdbar gemning og fysisk lukning er endnu uprøvet. Nationale heljob, fejlforløb, faktisk genlæsning, upload, deploy og selvstændig drift skal stadig dokumenteres. SOURCE19 er inaktiv, og kildegrønt aktiverer ikke revisionen. Lokal version er 4.0.578; den hidtil dokumenterede offentlige version er 4.0.577. Cron er pauset med bevaret tidsplan; alle fem mål og fristen 18. oktober består.
 
 ## 89.240 Gammel aktiv DMI-cache holdes ude af den nye start
 

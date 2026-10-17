@@ -18,8 +18,20 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const oldHead = '37e657867ff0f8c31f8e8489e5c9a1cf235192f9';
 
+// Exact reviewed SOURCE-only layer, before every unchanged historical oracle.
+function inverseSource19OwnedMigration(actual) {
+  assert.equal(sha(actual), "1f9daed66722801bcd6b4e710fd0c2a70fc82e73da03443ab8012afbb5effb53", 'Entire actual SOURCE product');
+  const rules=[{"before":"import { createProtectedPrivateRuntimeClients, describeTargetProtectedPrivateProductionRuntime }\n","after":"import { createProtectedPrivateRuntimeClients, describeTargetProtectedPrivateProductionRuntime,\n  beginSourceOriginalMigration, finishSourceOriginalMigration, retainSourceOriginalProgressFailure }\n"},{"before":"","after":"const sourceMigrationCompletions = new WeakMap();\nexport function sourceOriginalMigrationCompletion(operation, actual) {\n  if (sourceMigrationCompletions.get(operation) !== actual) throw new Error('SOURCE_ORIGINAL_MIGRATION_COMPLETION_REQUIRED');\n  return actual;\n}\nexport async function migrateSourceOriginalPrivateRuntime(holder, result, options) {\n  const operation = await beginSourceOriginalMigration(holder, result, options);\n  try { return await migratePrivateRuntimeCore(options, { holder, operation }); }\n  catch (error) { throw retainSourceOriginalProgressFailure(holder, error); }\n}\n"},{"before":"} = {}) {\n","after":"} = {}, sourceOriginal = null) {\n  if (sourceOriginal !== null && ownedI71WorkingContext !== null) {\n    throw new Error('SOURCE original migration cannot borrow an owned I71 working context');\n  }\n"},{"before":"","after":"  if (sourceOriginal) {\n    const actual = Object.freeze({ source, output, migrationResult,\n      conditionsDigest: Object.freeze({ ...migratedConditionsDigest }),\n      publicHourDigest: migrationResult.publicHourDeliveryRebound ? Object.freeze({\n        bytes: report.migratedPublicHourPackBytes, sha256: report.migratedPublicHourPackSha256 }) : null });\n    sourceMigrationCompletions.set(sourceOriginal.operation, actual);\n    await finishSourceOriginalMigration(sourceOriginal.holder, sourceOriginal.operation, actual);\n  }\n"}];
+  for(const rule of [...rules].reverse()){
+    assert.equal(actual.split(rule.after).length,2,'One exact reviewed SOURCE hunk');
+    actual=actual.replace(rule.after,()=>rule.before);
+  }
+  assert.equal(sha(actual), "1b097d22f4102dc80f8d2c917dbaead896ceb3e7b8f364992d3422c4d010d9f6", 'Entire genuine pre-SOURCE product, not retagged');
+  return actual;
+}
+
 test('OWNED extraction is an exact inverse of every old public migration and TARGET-validator byte', async () => {
-  let source = (await fs.readFile(new URL('./migrate-post-cutover-private-runtime.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  let source = inverseSource19OwnedMigration((await fs.readFile(new URL('./migrate-post-cutover-private-runtime.mjs', import.meta.url), 'utf8')).replace(/\r\n/g, '\n'));
   const addedStart = source.indexOf('// LOCAL metadata utility only.'), addedEnd = source.indexOf('function argument(argv, name)', addedStart);
   assert(addedStart > 0 && addedEnd > addedStart);
   source = source.slice(0, addedStart) + source.slice(addedEnd);

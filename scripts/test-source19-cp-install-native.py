@@ -1,0 +1,1022 @@
+"""PRIVATE NEW final-dd4 Linux SOURCE action -> normal prelude -> B INSTALL/H70.
+
+Exact dd4/final composition; earlier c115/d984 kernel identities remain historical, not reused.
+H71 native-union execution is OUTSIDE this H70 target and needs its separate genuine caller target.
+
+Synthetic protocol transport ONLY: the exact action, P/H, normal clocks, nonce,
+parent checks, genuine CP NetCDF parser and installer run without interception.
+All HTTP is owned loopback CONNECT/TLS; no upstream, production credentials,
+preload, argv rewrite, phase issuer, supplied ACK or SOURCE-complete claim.
+Windows/non-Node24/missing native dependencies are prerequisites, NOT a PASS.
+"""
+from __future__ import annotations
+
+import argparse
+import ctypes
+import errno
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import signal
+import ssl
+import stat
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+import unittest
+import urllib.parse
+import zlib
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+ROOT = Path(__file__).resolve().parents[1]
+ENTRY = Path('.github/actions/save-owned-dmi-grib/index.cjs')
+FIXTURE = Path('scripts/test-source19-cp-install-native-fixture.mjs')
+FIXED = Path('/tmp/ravradar-private-production-runtime')
+MAX_BODY = 4 * 1024 * 1024
+NODE = None
+NODE22 = None
+FIXTURE_IDENTITY = {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_CP_INSTALL_H70_FINAL_PR634_FRESH_FIXTURE","compositionId":"19f6a6a2d12f9f80740675a0ba3fc178456571b7dcc7f6737919f4bd628d38b1","sourceBase":"d0cdbec4b8ea0f36e4abdd3801401aa748989266","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","unionH71":"OUTSIDE_H70_TARGET_SEPARATE_NATIVE_CALLER_REQUIRED","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT"}
+CASES = ('normal-install', 'replace-bank', 'replace-root', 'lose-supervisor')
+FIXTURE_IDENTITY['syntheticAdminInput'] = 'EXPLICIT_OWN_EMPTY_DOCUMENTS'
+
+# Explicit test-only successor; the original fixture and default remain frozen.
+def select_fixture_composition(value):
+    if value == 'original-d0':
+        return Path('scripts/test-source19-cp-install-native-fixture.mjs'), {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_CP_INSTALL_H70_FINAL_PR634_FRESH_FIXTURE","compositionId":"19f6a6a2d12f9f80740675a0ba3fc178456571b7dcc7f6737919f4bd628d38b1","sourceBase":"d0cdbec4b8ea0f36e4abdd3801401aa748989266","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","unionH71":"OUTSIDE_H70_TARGET_SEPARATE_NATIVE_CALLER_REQUIRED","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT","syntheticAdminInput":"EXPLICIT_OWN_EMPTY_DOCUMENTS"}
+    if value == 'integrated-d504':
+        return Path('scripts/test-source19-cp-install-native-d504-fixture.mjs'), {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_CP_INSTALL_H70_FINAL_PR634_FRESH_FIXTURE_D504_SUCCESSOR","compositionId":"81ba8b9a448f5d475d019d5ce6c44dbd9fa3ee8bebeb9e4e4d816de2395f4dfa","sourceBase":"d5045bda33c4959c920ab71e79ca948f80857ece","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","unionH71":"OUTSIDE_H70_TARGET_SEPARATE_NATIVE_CALLER_REQUIRED","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT","syntheticAdminInput":"EXPLICIT_OWN_EMPTY_DOCUMENTS","sourceParent":"dbb16b65e4626aa55c3ab06f7f61ac4b60fb4c60","frozenFixturePath":"scripts/test-source19-cp-install-native-fixture.mjs","frozenFixtureSha256":"c8555c9901b36be7d26fff415ffa3014e7104b6336a9f502379d2965b481179a","successorCompositionId":"81ba8b9a448f5d475d019d5ce6c44dbd9fa3ee8bebeb9e4e4d816de2395f4dfa"}
+    if value == 'integrated-d504-diagnostics-v2':
+        return Path('scripts/test-source19-cp-install-native-d504-diagnostics-fixture.mjs'), {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_CP_INSTALL_H70_FINAL_PR634_FRESH_FIXTURE_D504_SUCCESSOR_FIXED_DIAGNOSTICS_OBSERVATION_V2","compositionId":"972618c2e0e139820f8547ca1183b7906988b0eda8d15c422a47eb4a95e2751a","sourceBase":"6969e3c161ff076640aa958247506f4eebfeb765","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","unionH71":"OUTSIDE_H70_TARGET_SEPARATE_NATIVE_CALLER_REQUIRED","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT","syntheticAdminInput":"EXPLICIT_OWN_EMPTY_DOCUMENTS","sourceParent":"dbb16b65e4626aa55c3ab06f7f61ac4b60fb4c60","frozenFixturePath":"scripts/test-source19-cp-install-native-fixture.mjs","frozenFixtureSha256":"c8555c9901b36be7d26fff415ffa3014e7104b6336a9f502379d2965b481179a","successorCompositionId":"81ba8b9a448f5d475d019d5ce6c44dbd9fa3ee8bebeb9e4e4d816de2395f4dfa","diagnosticBaseHead":"6969e3c161ff076640aa958247506f4eebfeb765","diagnosticParentFixture":"scripts/test-source19-cp-install-native-d504-fixture.mjs","diagnosticParentSha256":"83642a2aead446a85eddc98c791d53e2331963082aa6e7c567beb94a6893169a","diagnosticCompositionId":"972618c2e0e139820f8547ca1183b7906988b0eda8d15c422a47eb4a95e2751a","diagnosticCompositionVersion":2,"diagnosticV1CompositionId":"aa2fa16afd79a45f43992b38735b7dbc80bbda44d3ca2a708ec0578d01ba0420","diagnosticObservationTest":"scripts/test-protected-private-production-runtime.mjs","diagnosticObservationParentSha256":"ad4056293d74a98e15304dc8c13c680e46da7600df14db368fe40297167dedd0"}
+    if value == 'integrated-d504-restore-bounds-v3':
+        return Path('scripts/test-source19-cp-install-native-d504-restore-bounds-fixture.mjs'), {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_CP_INSTALL_H70_FINAL_PR634_FRESH_FIXTURE_D504_SUCCESSOR_FIXED_DIAGNOSTICS_OBSERVATION_V2_RESTORE_BOUNDS_V3","compositionId":"916ccf64aca16ffca20cca31a52dcae9fa8000cdb3ac5b3c7de1084db5001091","sourceBase":"62300ce2caec6ca3c47aa44e5f983446916ad637","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","unionH71":"OUTSIDE_H70_TARGET_SEPARATE_NATIVE_CALLER_REQUIRED","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT","syntheticAdminInput":"EXPLICIT_OWN_EMPTY_DOCUMENTS","sourceParent":"dbb16b65e4626aa55c3ab06f7f61ac4b60fb4c60","frozenFixturePath":"scripts/test-source19-cp-install-native-fixture.mjs","frozenFixtureSha256":"c8555c9901b36be7d26fff415ffa3014e7104b6336a9f502379d2965b481179a","successorCompositionId":"81ba8b9a448f5d475d019d5ce6c44dbd9fa3ee8bebeb9e4e4d816de2395f4dfa","diagnosticBaseHead":"6969e3c161ff076640aa958247506f4eebfeb765","diagnosticParentFixture":"scripts/test-source19-cp-install-native-d504-fixture.mjs","diagnosticParentSha256":"83642a2aead446a85eddc98c791d53e2331963082aa6e7c567beb94a6893169a","diagnosticCompositionId":"972618c2e0e139820f8547ca1183b7906988b0eda8d15c422a47eb4a95e2751a","diagnosticCompositionVersion":2,"diagnosticV1CompositionId":"aa2fa16afd79a45f43992b38735b7dbc80bbda44d3ca2a708ec0578d01ba0420","diagnosticObservationTest":"scripts/test-protected-private-production-runtime.mjs","diagnosticObservationParentSha256":"ad4056293d74a98e15304dc8c13c680e46da7600df14db368fe40297167dedd0","restoreBoundsCompositionId":"916ccf64aca16ffca20cca31a52dcae9fa8000cdb3ac5b3c7de1084db5001091","restoreBoundsParentCompositionId":"972618c2e0e139820f8547ca1183b7906988b0eda8d15c422a47eb4a95e2751a","restoreBoundsParentFixture":"scripts/test-source19-cp-install-native-d504-diagnostics-fixture.mjs","restoreBoundsParentSha256":"9eef534316376da4fb850ff07347284b50f06a2f1db372657d36aa482ae556de","restoreBoundsVersion":3}
+    if value == 'integrated-d504-immutable-b-v5':
+        return Path('scripts/test-source19-cp-install-native-d504-immutable-b-fixture.mjs'), {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_CP_INSTALL_H70_FINAL_PR634_FRESH_FIXTURE_D504_SUCCESSOR_FIXED_DIAGNOSTICS_OBSERVATION_V2_RESTORE_BOUNDS_V3_IMMUTABLE_B_V5","compositionId":"662b7058013388611b2e153a90e777b79419a0e1ae9da0cbb16cb0e804b3792d","sourceBase":"e79e097950f277ee4993e0c0f264853e7ec930c7","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","unionH71":"OUTSIDE_H70_TARGET_SEPARATE_NATIVE_CALLER_REQUIRED","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT","syntheticAdminInput":"EXPLICIT_OWN_EMPTY_DOCUMENTS","sourceParent":"dbb16b65e4626aa55c3ab06f7f61ac4b60fb4c60","frozenFixturePath":"scripts/test-source19-cp-install-native-fixture.mjs","frozenFixtureSha256":"c8555c9901b36be7d26fff415ffa3014e7104b6336a9f502379d2965b481179a","successorCompositionId":"81ba8b9a448f5d475d019d5ce6c44dbd9fa3ee8bebeb9e4e4d816de2395f4dfa","diagnosticBaseHead":"6969e3c161ff076640aa958247506f4eebfeb765","diagnosticParentFixture":"scripts/test-source19-cp-install-native-d504-fixture.mjs","diagnosticParentSha256":"83642a2aead446a85eddc98c791d53e2331963082aa6e7c567beb94a6893169a","diagnosticCompositionId":"972618c2e0e139820f8547ca1183b7906988b0eda8d15c422a47eb4a95e2751a","diagnosticCompositionVersion":2,"diagnosticV1CompositionId":"aa2fa16afd79a45f43992b38735b7dbc80bbda44d3ca2a708ec0578d01ba0420","diagnosticObservationTest":"scripts/test-protected-private-production-runtime.mjs","diagnosticObservationParentSha256":"ad4056293d74a98e15304dc8c13c680e46da7600df14db368fe40297167dedd0","restoreBoundsCompositionId":"916ccf64aca16ffca20cca31a52dcae9fa8000cdb3ac5b3c7de1084db5001091","restoreBoundsParentCompositionId":"972618c2e0e139820f8547ca1183b7906988b0eda8d15c422a47eb4a95e2751a","restoreBoundsParentFixture":"scripts/test-source19-cp-install-native-d504-diagnostics-fixture.mjs","restoreBoundsParentSha256":"9eef534316376da4fb850ff07347284b50f06a2f1db372657d36aa482ae556de","restoreBoundsVersion":3,"productIdentity":"393ba1ffd80b60b3e69f6e244f445bf6f742c2bd19e24b92c8939c7f18c62d95","immutableBCompositionId":"662b7058013388611b2e153a90e777b79419a0e1ae9da0cbb16cb0e804b3792d","immutableBParentCompositionId":"916ccf64aca16ffca20cca31a52dcae9fa8000cdb3ac5b3c7de1084db5001091","immutableBParentFixture":"scripts/test-source19-cp-install-native-d504-restore-bounds-fixture.mjs","immutableBParentSha256":"eb1938448887de4df7442261df2d3b71a22bd421de54ae4bb8fdadf229ec3227","immutableBVersion":5}
+    if value == 'integrated-d504-offline-suffix-v6':
+        return Path('scripts/test-source19-cp-install-native-d504-offline-suffix-fixture.mjs'), {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_CP_INSTALL_H70_FINAL_PR634_FRESH_FIXTURE_D504_SUCCESSOR_FIXED_DIAGNOSTICS_OBSERVATION_V2_RESTORE_BOUNDS_V3_IMMUTABLE_B_V5_OFFLINE_SUFFIX_VIEW_V6","compositionId":"2a917d25e89809de71e170c618f3926885d548e704e5817149db6dbcb3055624","sourceBase":"29420ec863f6394fe59d0d6879eb555da860ca5c","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","unionH71":"OUTSIDE_H70_TARGET_SEPARATE_NATIVE_CALLER_REQUIRED","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT","syntheticAdminInput":"EXPLICIT_OWN_EMPTY_DOCUMENTS","sourceParent":"dbb16b65e4626aa55c3ab06f7f61ac4b60fb4c60","frozenFixturePath":"scripts/test-source19-cp-install-native-fixture.mjs","frozenFixtureSha256":"c8555c9901b36be7d26fff415ffa3014e7104b6336a9f502379d2965b481179a","successorCompositionId":"81ba8b9a448f5d475d019d5ce6c44dbd9fa3ee8bebeb9e4e4d816de2395f4dfa","diagnosticBaseHead":"6969e3c161ff076640aa958247506f4eebfeb765","diagnosticParentFixture":"scripts/test-source19-cp-install-native-d504-fixture.mjs","diagnosticParentSha256":"83642a2aead446a85eddc98c791d53e2331963082aa6e7c567beb94a6893169a","diagnosticCompositionId":"972618c2e0e139820f8547ca1183b7906988b0eda8d15c422a47eb4a95e2751a","diagnosticCompositionVersion":2,"diagnosticV1CompositionId":"aa2fa16afd79a45f43992b38735b7dbc80bbda44d3ca2a708ec0578d01ba0420","diagnosticObservationTest":"scripts/test-protected-private-production-runtime.mjs","diagnosticObservationParentSha256":"ad4056293d74a98e15304dc8c13c680e46da7600df14db368fe40297167dedd0","restoreBoundsCompositionId":"916ccf64aca16ffca20cca31a52dcae9fa8000cdb3ac5b3c7de1084db5001091","restoreBoundsParentCompositionId":"972618c2e0e139820f8547ca1183b7906988b0eda8d15c422a47eb4a95e2751a","restoreBoundsParentFixture":"scripts/test-source19-cp-install-native-d504-diagnostics-fixture.mjs","restoreBoundsParentSha256":"9eef534316376da4fb850ff07347284b50f06a2f1db372657d36aa482ae556de","restoreBoundsVersion":3,"productIdentity":"671478dba02669d1eb4cfd405ce2821353fd3053f2d90c9418185b74034fc212","immutableBCompositionId":"662b7058013388611b2e153a90e777b79419a0e1ae9da0cbb16cb0e804b3792d","immutableBParentCompositionId":"916ccf64aca16ffca20cca31a52dcae9fa8000cdb3ac5b3c7de1084db5001091","immutableBParentFixture":"scripts/test-source19-cp-install-native-d504-restore-bounds-fixture.mjs","immutableBParentSha256":"eb1938448887de4df7442261df2d3b71a22bd421de54ae4bb8fdadf229ec3227","immutableBVersion":5,"offlineSuffixCompositionId":"2a917d25e89809de71e170c618f3926885d548e704e5817149db6dbcb3055624","offlineSuffixParentCompositionId":"662b7058013388611b2e153a90e777b79419a0e1ae9da0cbb16cb0e804b3792d","offlineSuffixParentFixture":"scripts/test-source19-cp-install-native-d504-immutable-b-fixture.mjs","offlineSuffixParentSha256":"f82a84ffa38b3ffef001daad83a3e7b19ef475ab7dd29f1bd1d4576bdbd4f502","offlineSuffixVersion":6}
+    if value == 'integrated-main579-v7':
+        return Path('scripts/test-source19-cp-install-native-main579-fixture.mjs'), {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_CP_INSTALL_H70_FINAL_PR634_FRESH_FIXTURE_D504_SUCCESSOR_FIXED_DIAGNOSTICS_OBSERVATION_V2_RESTORE_BOUNDS_V3_IMMUTABLE_B_V5_OFFLINE_SUFFIX_VIEW_V6_ACTUAL_MAIN579_INTEGRATION_V7","compositionId":"ac872a7f0771df689e743ebb1b069bae7fa485724c05e0e198146b8e5c746cea","sourceBase":"d897f3eb88239db85389fb798ff5d960a02ed6d4","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","unionH71":"OUTSIDE_H70_TARGET_SEPARATE_NATIVE_CALLER_REQUIRED","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT","syntheticAdminInput":"EXPLICIT_OWN_EMPTY_DOCUMENTS","sourceParent":"dbb16b65e4626aa55c3ab06f7f61ac4b60fb4c60","frozenFixturePath":"scripts/test-source19-cp-install-native-fixture.mjs","frozenFixtureSha256":"c8555c9901b36be7d26fff415ffa3014e7104b6336a9f502379d2965b481179a","successorCompositionId":"81ba8b9a448f5d475d019d5ce6c44dbd9fa3ee8bebeb9e4e4d816de2395f4dfa","diagnosticBaseHead":"6969e3c161ff076640aa958247506f4eebfeb765","diagnosticParentFixture":"scripts/test-source19-cp-install-native-d504-fixture.mjs","diagnosticParentSha256":"83642a2aead446a85eddc98c791d53e2331963082aa6e7c567beb94a6893169a","diagnosticCompositionId":"972618c2e0e139820f8547ca1183b7906988b0eda8d15c422a47eb4a95e2751a","diagnosticCompositionVersion":2,"diagnosticV1CompositionId":"aa2fa16afd79a45f43992b38735b7dbc80bbda44d3ca2a708ec0578d01ba0420","diagnosticObservationTest":"scripts/test-protected-private-production-runtime.mjs","diagnosticObservationParentSha256":"ad4056293d74a98e15304dc8c13c680e46da7600df14db368fe40297167dedd0","restoreBoundsCompositionId":"916ccf64aca16ffca20cca31a52dcae9fa8000cdb3ac5b3c7de1084db5001091","restoreBoundsParentCompositionId":"972618c2e0e139820f8547ca1183b7906988b0eda8d15c422a47eb4a95e2751a","restoreBoundsParentFixture":"scripts/test-source19-cp-install-native-d504-diagnostics-fixture.mjs","restoreBoundsParentSha256":"9eef534316376da4fb850ff07347284b50f06a2f1db372657d36aa482ae556de","restoreBoundsVersion":3,"productIdentity":"ed9f992551b768beafdd4d2ad27cdf1cb6f50cbe5edee4310d139be423701610","immutableBCompositionId":"662b7058013388611b2e153a90e777b79419a0e1ae9da0cbb16cb0e804b3792d","immutableBParentCompositionId":"916ccf64aca16ffca20cca31a52dcae9fa8000cdb3ac5b3c7de1084db5001091","immutableBParentFixture":"scripts/test-source19-cp-install-native-d504-restore-bounds-fixture.mjs","immutableBParentSha256":"eb1938448887de4df7442261df2d3b71a22bd421de54ae4bb8fdadf229ec3227","immutableBVersion":5,"offlineSuffixCompositionId":"2a917d25e89809de71e170c618f3926885d548e704e5817149db6dbcb3055624","offlineSuffixParentCompositionId":"662b7058013388611b2e153a90e777b79419a0e1ae9da0cbb16cb0e804b3792d","offlineSuffixParentFixture":"scripts/test-source19-cp-install-native-d504-immutable-b-fixture.mjs","offlineSuffixParentSha256":"f82a84ffa38b3ffef001daad83a3e7b19ef475ab7dd29f1bd1d4576bdbd4f502","offlineSuffixVersion":6,"main579CompositionId":"ac872a7f0771df689e743ebb1b069bae7fa485724c05e0e198146b8e5c746cea","main579SourceParent":"3b9c0de3ff6069d4f618a87877afa2d5a6edbea9","main579MainParent":"d897f3eb88239db85389fb798ff5d960a02ed6d4","main579MainTree":"d7343c62a8dc38cb6a9d07652906555f58500e7a","main579ParentCompositionId":"2a917d25e89809de71e170c618f3926885d548e704e5817149db6dbcb3055624","main579ParentFixture":"scripts/test-source19-cp-install-native-d504-offline-suffix-fixture.mjs","main579ParentSha256":"0aa3800c6283714840dd0e9755a3422b02a1f98069aa6b744b36587a9282e94a","main579Version":7}
+    if value == 'integrated-main579-seed-v8':
+        return Path('scripts/test-source19-cp-install-native-main579-seed-fixture.mjs'), {"schemaVersion":1,"kind":"PRIVATE_SOURCE19_CP_INSTALL_H70_FINAL_PR634_FRESH_FIXTURE_D504_SUCCESSOR_FIXED_DIAGNOSTICS_OBSERVATION_V2_RESTORE_BOUNDS_V3_IMMUTABLE_B_V5_OFFLINE_SUFFIX_VIEW_V6_ACTUAL_MAIN579_INTEGRATION_V7_EXPLICIT_STATISTICS_SOURCE_SEED_V8","compositionId":"ab298b1cd26e3ca6a5303131da6ca8b0bba89db5cf451a923dbba805ba7f36bd","sourceBase":"ccbf984611ed368891f8645cd833f44d02af1bf1","pathCount":27,"evidence":"LINUX_UNRUN_NO_ADMISSION","unionH71":"OUTSIDE_H70_TARGET_SEPARATE_NATIVE_CALLER_REQUIRED","syntheticProviderInput":"EXPLICIT_OWN_EMPTY_STATIONS_DOCUMENT","syntheticAdminInput":"EXPLICIT_OWN_EMPTY_DOCUMENTS","sourceParent":"dbb16b65e4626aa55c3ab06f7f61ac4b60fb4c60","frozenFixturePath":"scripts/test-source19-cp-install-native-fixture.mjs","frozenFixtureSha256":"c8555c9901b36be7d26fff415ffa3014e7104b6336a9f502379d2965b481179a","successorCompositionId":"81ba8b9a448f5d475d019d5ce6c44dbd9fa3ee8bebeb9e4e4d816de2395f4dfa","diagnosticBaseHead":"6969e3c161ff076640aa958247506f4eebfeb765","diagnosticParentFixture":"scripts/test-source19-cp-install-native-d504-fixture.mjs","diagnosticParentSha256":"83642a2aead446a85eddc98c791d53e2331963082aa6e7c567beb94a6893169a","diagnosticCompositionId":"972618c2e0e139820f8547ca1183b7906988b0eda8d15c422a47eb4a95e2751a","diagnosticCompositionVersion":2,"diagnosticV1CompositionId":"aa2fa16afd79a45f43992b38735b7dbc80bbda44d3ca2a708ec0578d01ba0420","diagnosticObservationTest":"scripts/test-protected-private-production-runtime.mjs","diagnosticObservationParentSha256":"ad4056293d74a98e15304dc8c13c680e46da7600df14db368fe40297167dedd0","restoreBoundsCompositionId":"916ccf64aca16ffca20cca31a52dcae9fa8000cdb3ac5b3c7de1084db5001091","restoreBoundsParentCompositionId":"972618c2e0e139820f8547ca1183b7906988b0eda8d15c422a47eb4a95e2751a","restoreBoundsParentFixture":"scripts/test-source19-cp-install-native-d504-diagnostics-fixture.mjs","restoreBoundsParentSha256":"9eef534316376da4fb850ff07347284b50f06a2f1db372657d36aa482ae556de","restoreBoundsVersion":3,"productIdentity":"ed9f992551b768beafdd4d2ad27cdf1cb6f50cbe5edee4310d139be423701610","immutableBCompositionId":"662b7058013388611b2e153a90e777b79419a0e1ae9da0cbb16cb0e804b3792d","immutableBParentCompositionId":"916ccf64aca16ffca20cca31a52dcae9fa8000cdb3ac5b3c7de1084db5001091","immutableBParentFixture":"scripts/test-source19-cp-install-native-d504-restore-bounds-fixture.mjs","immutableBParentSha256":"eb1938448887de4df7442261df2d3b71a22bd421de54ae4bb8fdadf229ec3227","immutableBVersion":5,"offlineSuffixCompositionId":"2a917d25e89809de71e170c618f3926885d548e704e5817149db6dbcb3055624","offlineSuffixParentCompositionId":"662b7058013388611b2e153a90e777b79419a0e1ae9da0cbb16cb0e804b3792d","offlineSuffixParentFixture":"scripts/test-source19-cp-install-native-d504-immutable-b-fixture.mjs","offlineSuffixParentSha256":"f82a84ffa38b3ffef001daad83a3e7b19ef475ab7dd29f1bd1d4576bdbd4f502","offlineSuffixVersion":6,"main579CompositionId":"ac872a7f0771df689e743ebb1b069bae7fa485724c05e0e198146b8e5c746cea","main579SourceParent":"3b9c0de3ff6069d4f618a87877afa2d5a6edbea9","main579MainParent":"d897f3eb88239db85389fb798ff5d960a02ed6d4","main579MainTree":"d7343c62a8dc38cb6a9d07652906555f58500e7a","main579ParentCompositionId":"2a917d25e89809de71e170c618f3926885d548e704e5817149db6dbcb3055624","main579ParentFixture":"scripts/test-source19-cp-install-native-d504-offline-suffix-fixture.mjs","main579ParentSha256":"0aa3800c6283714840dd0e9755a3422b02a1f98069aa6b744b36587a9282e94a","main579Version":7,"seedClosureCompositionId":"ab298b1cd26e3ca6a5303131da6ca8b0bba89db5cf451a923dbba805ba7f36bd","seedClosureParentCompositionId":"ac872a7f0771df689e743ebb1b069bae7fa485724c05e0e198146b8e5c746cea","seedClosureParentFixture":"scripts/test-source19-cp-install-native-main579-fixture.mjs","seedClosureParentSha256":"b2381f9735b54b9dc8c5aa1837843502d0e97034c91ec4f2ef83179fb11cffc0","seedClosureAsset":"scripts/fixtures/statistics-preference-revision-input.json","seedClosureAssetSha256":"4990770bb2b0ca4bbad5da97156b88a186ef6df95319415ca91819cef8ff49af","seedClosureVersion":8}
+    raise ValueError('SOURCE19_NATIVE_COMPOSITION_INVALID')
+CASE = None
+
+
+def sha(body):
+    return hashlib.sha256(body).hexdigest()
+
+
+# TEST-ONLY before-H diagnostics. Never a result, guard bypass or owner receipt.
+def classify_source19_before_h_stderr(raw, known_source_codes):
+    if type(raw) is not bytes:
+        raise TypeError('SOURCE19_DIAGNOSTIC_BYTES_REQUIRED')
+    findings = []
+    node_codes = (b'ERR_MODULE_NOT_FOUND', b'MODULE_NOT_FOUND', b'ERR_REQUIRE_ASYNC_MODULE',
+        b'ERR_REQUIRE_ESM', b'ERR_UNKNOWN_FILE_EXTENSION', b'ERR_UNSUPPORTED_DIR_IMPORT',
+        b'ERR_INVALID_ARG_TYPE', b'ERR_INVALID_ARG_VALUE', b'ERR_INVALID_URL')
+    for line in raw.splitlines():
+        text = line.strip()
+        structured = re.fullmatch(rb'SOURCE_RUN_DIAGNOSTIC stage=([A-Z0-9_]{1,80}) reason=([A-Z0-9_]{1,120}) node_class=([A-Z_]{1,32}) rejection=([A-Z0-9_]{1,80})', text)
+        if structured:
+            stage, code, node_class, rejection = (item.decode('ascii') for item in structured.groups())
+            stages = {'UNKNOWN','SOURCE_IMPORT','SOURCE_GUARD','ROUTE','PRELUDE','PREFLIGHT','ADMIN','HANDOFF','ORIGINAL_SELECTION','CHECKPOINT_PROTECTED','ARCHIVED_READERS','PRIVATE_ROOT','PROGRESS_CACHE','ORIGINAL_INSTALL','POST_INSTALL','PROGRESS_BASE','PROGRESS_UNION','PRODUCER_CHAIN'}
+            private_codes = {'UNKNOWN','PROTECTED_PRIVATE_RUNTIME_INELIGIBLE','PROTECTED_PRIVATE_RUNTIME_EXPIRED','PROTECTED_PRIVATE_RUNTIME_REMOTE_ERROR','PROTECTED_PRIVATE_RUNTIME_NO_COMPATIBLE_GENERATION'}
+            classes = {'UNKNOWN','ERROR','TYPE_ERROR','REFERENCE_ERROR','SYNTAX_ERROR','RANGE_ERROR','AGGREGATE_ERROR'}
+            rejections = {'NONE','UNKNOWN','EXPIRED','FILESYSTEM_CAPACITY','FILESYSTEM_PERMISSION','FILESYSTEM_READ_ONLY','FILESYSTEM_RESOURCE_LIMIT','STORAGE_OR_OBJECT_INTEGRITY','ARCHIVE_OR_PAYLOAD_INTEGRITY','MODEL_BINDING','CONTRACT_HASHES','DATASET_IDENTITY','TIME_BOUNDS','DESCRIPTOR_BUNDLE_MISMATCH','BUNDLE_STRUCTURE_OR_CONTENT','MODEL_OR_CONTRACT_INELIGIBLE','ARCHIVE_ENVELOPE_DECODE','ARCHIVE_STAGE_CREATE','ARCHIVE_FILE_PATH','ARCHIVE_FILE_PARENT','ARCHIVE_FILE_WRITE','ARCHIVE_STAGE_COMMIT'}
+            if stage in stages and (code in known_source_codes or code in private_codes or code.encode('ascii') in node_codes) and node_class in classes and rejection in rejections:
+                finding = {'stage': stage, 'code': code, 'nodeClass': node_class, 'rejection': rejection}
+                if finding not in findings: findings.append(finding)
+            continue
+        if text.startswith(b'SOURCE_RUN_DIAGNOSTIC '):
+            continue  # Malformed/forged diagnostic fields never become code values.
+        found = None
+        for code in node_codes:
+            if re.search(rb'(?<![A-Z0-9_])' + code + rb'(?![A-Z0-9_])', text):
+                found = {'stage': 'NODE_IMPORT' if b'MODULE' in code else 'NODE_RUNTIME',
+                    'code': code.decode('ascii'), 'nodeClass': 'NONE'}
+                break
+        match = re.match(rb'^(Error|TypeError|ReferenceError|SyntaxError|RangeError|AggregateError)(?: \[[A-Z0-9_]+\])?:', text)
+        if match:
+            found = found or {'stage': 'NODE_RUNTIME', 'code': 'NODE_ERROR', 'nodeClass': 'NONE'}
+            found['nodeClass'] = match[1].decode('ascii')
+        body = re.sub(rb'^(?:Error|TypeError|ReferenceError|SyntaxError|RangeError|AggregateError)(?: \[[A-Z0-9_]+\])?:\s*', b'', text)
+        for prefix, stage, code in (
+            (b'Protected RavScore checkpoint', 'CHECKPOINT_PROTECTED', 'CHECKPOINT_PROTECTED_REFUSED'),
+            (b'SUPABASE_URL', 'CHECKPOINT_PROTECTED', 'CHECKPOINT_CONNECTION_REFUSED'),
+            (b'Supabase response body transport was interrupted', 'CHECKPOINT_PROTECTED', 'CHECKPOINT_BODY_TRANSPORT'),
+            (b'Private runtime pointer', 'PRIVATE_POINTER', 'PRIVATE_POINTER_REFUSED'),
+            (b'Protected private runtime bucket', 'PRIVATE_BUCKET', 'PRIVATE_BUCKET_REFUSED'),
+            (b'Protected private runtime', 'PRIVATE_B_RESTORE', 'PRIVATE_B_RESTORE_REFUSED'),
+            (b'Private runtime', 'PRIVATE_B_RESTORE', 'PRIVATE_B_RESTORE_REFUSED'),
+            (b'No eligible protected private runtime', 'PRIVATE_B_RESTORE', 'PRIVATE_B_RESTORE_REFUSED'),
+        ):
+            if body.startswith(prefix) and b'retrying' not in body:
+                found = {'stage': stage, 'code': code, 'nodeClass': match[1].decode('ascii') if match else 'NONE'}
+                break
+        for code in re.findall(rb'(?<![A-Z0-9_])(SOURCE_[A-Z0-9_]{1,100})(?![A-Z0-9_])', text):
+            if code.decode('ascii') in known_source_codes:
+                found = {'stage': 'SOURCE_FIXED_GUARD', 'code': code.decode('ascii'), 'nodeClass': 'NONE'}
+                break
+        if found is not None and found not in findings:
+            findings.append(found)
+    return findings or [{'stage': 'UNKNOWN', 'code': 'UNKNOWN', 'nodeClass': 'NONE'}]
+
+
+def capture_source19_before_h_failure(root, action_exited, *, receipt_name='source19-before-h-child-failure.json'):
+    if type(receipt_name) is not str or receipt_name not in ('source19-before-h-child-failure.json', 'source19-after-echild-child-failure.json'):
+        raise ValueError('SOURCE19_PRIVATE_STDERR_RECEIPT_NAME_INVALID')
+    # stderr is the COMPLETE pre-existing private child capture. Never truncate,
+    # echo it, copy it into a public artifact, or delete the failed own fixture.
+    try:
+        if action_exited is not True:
+            return {'capture': 'PENDING_CHILD_STOP', 'sourceAdmission': False}
+        file = root / 'stderr'
+        identity = lambda s: (s.st_dev, s.st_ino, s.st_mode, s.st_nlink, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+        before = file.lstat()
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+            raise ValueError('SOURCE19_PRIVATE_STDERR_NOT_OWN_REGULAR_FILE')
+        with file.open('rb') as stream:
+            opened = os.fstat(stream.fileno())
+            raw = stream.read()
+            ended = os.fstat(stream.fileno())
+        if identity(before) != identity(opened) or identity(ended) != identity(file.lstat()) or identity(opened) != identity(ended) or len(raw) != before.st_size:
+            raise ValueError('SOURCE19_PRIVATE_STDERR_CHANGED')
+        known = set()
+        for relative in (ENTRY, Path('scripts/protected-private-production-runtime.mjs'), Path('scripts/lib/copernicus_component_process.py')):
+            known.update(re.findall(r"['\"](SOURCE_[A-Z0-9_]+)['\"]", (ROOT / relative).read_text(encoding='utf-8')))
+        result = {'capture': 'COMPLETE_STABLE', 'stderrBytes': len(raw), 'stderrSha256': sha(raw),
+            'fixedFailures': classify_source19_before_h_stderr(raw, known),
+            'wholePrivateStderrRetained': True, 'sourceAdmission': False}
+        # A private metadata receipt, not a replacement for the retained stderr.
+        with (root / receipt_name).open('x', encoding='utf-8') as stream:
+            json.dump(result, stream, sort_keys=True)
+        return result
+    except BaseException:
+        return {'capture': 'UNPROVEN_RETAINED', 'wholePrivateStderrRetained': True, 'sourceAdmission': False}
+
+
+# END TEST-ONLY before-H diagnostics.
+
+# TEST-ONLY startup observation. This never issues a P/H result or stop receipt.
+def source19_action_proc_identity(process, descriptor, expected_fd, expected_parent):
+    try:
+        opened = os.fstat(descriptor)
+        current_fd = (opened.st_dev, opened.st_ino, opened.st_mode)
+        if current_fd != expected_fd:
+            raise AssertionError('SOURCE19_ACTION_PIDFD_CHANGED')
+        info = Path(f'/proc/self/fdinfo/{descriptor}').read_text(encoding='ascii')
+        pids = re.findall(r'^Pid:\s*([0-9]+)\s*$', info, re.M)
+        if pids != [str(process.pid)]:
+            raise AssertionError('SOURCE19_ACTION_PIDFD_TARGET_CHANGED')
+        raw = Path(f'/proc/{process.pid}/stat').read_bytes()
+        if not raw.startswith(str(process.pid).encode('ascii') + b' ('):
+            raise AssertionError('SOURCE19_ACTION_PROCESS_UNKNOWN')
+        fields = raw.rsplit(b')', 1)[1].split()
+        if len(fields) < 20 or not fields[1].isdigit() or not fields[19].isdigit():
+            raise AssertionError('SOURCE19_ACTION_PROCESS_UNKNOWN')
+        parent, start = int(fields[1]), int(fields[19])
+        if parent != expected_parent or start <= 0:
+            raise AssertionError('SOURCE19_ACTION_PROCESS_IDENTITY_CHANGED')
+        if fields[0] in (b'Z', b'X', b'x'):
+            raise AssertionError('SOURCE19_ACTION_PROCESS_TERMINAL')
+        if fields[0] not in (b'R', b'S', b'D', b'T', b't', b'I', b'P'):
+            raise AssertionError('SOURCE19_ACTION_PROCESS_UNKNOWN')
+        return (current_fd, parent, start)
+    except (OSError, UnicodeError, ValueError, IndexError):
+        raise AssertionError('SOURCE19_ACTION_PROCESS_UNAVAILABLE') from None
+
+
+def source19_wait_action_identity(process, descriptor, expected_argv, owner, deadline):
+    pid, parent = process.pid, os.getpid()
+    if type(pid) is not int or pid <= 1 or type(descriptor) is not int or descriptor < 0:
+        raise AssertionError('SOURCE19_ACTION_PROCESS_UNKNOWN')
+    if type(expected_argv) is not list or len(expected_argv) != 2 or any(type(value) is not bytes or not value or b'\0' in value for value in expected_argv):
+        raise AssertionError('SOURCE19_ACTION_ARGV_UNKNOWN')
+    valid_clock = lambda value: type(value) in (int, float) and float('-inf') < value < float('inf')
+    if not valid_clock(deadline) or not valid_clock(owner.deadline):
+        raise AssertionError('SOURCE19_ACTION_DEADLINE_UNKNOWN')
+    opened = os.fstat(descriptor)
+    expected_fd = (opened.st_dev, opened.st_ino, opened.st_mode)
+    cutoff = min(deadline, owner.deadline)
+    identity, empty_samples = None, 0
+    while True:
+        if not valid_clock(owner.deadline):
+            raise AssertionError('SOURCE19_ACTION_DEADLINE_UNKNOWN')
+        cutoff = min(cutoff, owner.deadline)
+        if owner.active is not True or process.pid != pid:
+            raise AssertionError('SOURCE19_ACTION_OWNER_CHANGED')
+        if time.monotonic() >= cutoff:
+            raise AssertionError('ACTUAL_ACTION_OBSERVER_DEADLINE')
+        try:
+            ended = os.waitid(os.P_PIDFD, descriptor, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+        except OSError:
+            raise AssertionError('SOURCE19_ACTION_EXIT_OR_OWNERSHIP_UNKNOWN') from None
+        if ended is not None:
+            raise AssertionError('SOURCE19_ACTION_EXITED_BEFORE_IDENTITY')
+        before = source19_action_proc_identity(process, descriptor, expected_fd, parent)
+        if identity is None:
+            identity = before
+        if before != identity:
+            raise AssertionError('SOURCE19_ACTION_PROCESS_IDENTITY_CHANGED')
+        try:
+            raw = Path(f'/proc/{pid}/cmdline').read_bytes()
+        except OSError:
+            raise AssertionError('SOURCE19_ACTION_ARGV_UNAVAILABLE') from None
+        after = source19_action_proc_identity(process, descriptor, expected_fd, parent)
+        if after != identity:
+            raise AssertionError('SOURCE19_ACTION_PROCESS_IDENTITY_CHANGED')
+        if raw:
+            if not raw.endswith(b'\0') or raw.split(b'\0')[:-1] != expected_argv:
+                raise AssertionError('SOURCE19_ACTION_ARGV_CHANGED')
+            try:
+                ended = os.waitid(os.P_PIDFD, descriptor, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+            except OSError:
+                raise AssertionError('SOURCE19_ACTION_EXIT_OR_OWNERSHIP_UNKNOWN') from None
+            if ended is not None:
+                raise AssertionError('SOURCE19_ACTION_EXITED_BEFORE_IDENTITY')
+            if source19_action_proc_identity(process, descriptor, expected_fd, parent) != identity:
+                raise AssertionError('SOURCE19_ACTION_PROCESS_IDENTITY_CHANGED')
+            if not valid_clock(owner.deadline):
+                raise AssertionError('SOURCE19_ACTION_DEADLINE_UNKNOWN')
+            if owner.active is not True or process.pid != pid or time.monotonic() >= min(cutoff, owner.deadline):
+                raise AssertionError('ACTUAL_ACTION_OBSERVER_DEADLINE')
+            return {'status': 'EXACT_LIVE_ACTION_IDENTITY_OBSERVED', 'emptySamples': empty_samples,
+                'sourceAdmission': False}
+        # Empty alone grants nothing: same retained live child, FD, parent and
+        # start identity must be observed again within the EXISTING cutoff.
+        empty_samples += 1
+        remaining = min(cutoff, owner.deadline) - time.monotonic()
+        if remaining <= 0:
+            raise AssertionError('ACTUAL_ACTION_OBSERVER_DEADLINE')
+        time.sleep(min(0.002, remaining))
+
+
+def source19_waitid_returncode(value, pid):
+    try:
+        if value is None or type(value.si_pid) is not int or value.si_pid != pid:
+            return None
+        if type(value.si_code) is not int or type(value.si_status) is not int:
+            return None
+        if value.si_code == os.CLD_EXITED and 0 <= value.si_status <= 255:
+            return value.si_status
+        if value.si_code in (os.CLD_KILLED, os.CLD_DUMPED) and 1 <= value.si_status <= 64:
+            return -value.si_status
+    except BaseException:
+        pass
+    return None
+
+
+def source19_drain_action_observation(owner, helper, process, descriptor):
+    # Forward the SAME actual normal helper. No replacement owner/body, extra
+    # reaping, fabricated wait result or permission to skip kernel ECHILD.
+    original = helper._child_state
+    try:
+        pid = process.pid if process is not None else None
+        known = process.returncode if process is not None else None
+    except BaseException:
+        pid, known = None, None
+    known = known if type(known) is int and -64 <= known <= 255 else None
+    evidence = 'POPEN_WAITPID_BEFORE_DRAIN' if known is not None else 'UNKNOWN'
+    before_drain = 'EXITED' if known is not None else 'UNKNOWN'
+    observed, malformed = [], False
+    if process is not None and known is None and descriptor is not None:
+        try:
+            info = Path(f'/proc/self/fdinfo/{descriptor}').read_text(encoding='ascii')
+            if re.findall(r'^Pid:\s*([0-9]+)\s*$', info, re.M) != [str(pid)]:
+                raise ValueError('Unbound observer FD')
+            before = os.waitid(os.P_PIDFD, descriptor, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+            known = source19_waitid_returncode(before, pid)
+            before_drain = 'LIVE' if before is None else 'EXITED' if known is not None else 'UNKNOWN'
+            if known is not None:
+                evidence = 'WAITID_WNOWAIT_BEFORE_DRAIN'
+        except BaseException:
+            before_drain = 'UNKNOWN'
+    def forwarding(*args, **kwargs):
+        nonlocal malformed
+        value = original(*args, **kwargs)  # Same args/result/first exception.
+        try:
+            if value is not None and value.si_pid == pid:
+                code = source19_waitid_returncode(value, pid)
+                if code is None or len(observed) >= 8:
+                    malformed = True
+                else:
+                    observed.append(code)
+        except BaseException:
+            malformed = True
+        return value
+    helper._child_state = forwarding
+    try:
+        owner.drain()  # The unchanged actual normal owner must reach ECHILD.
+    finally:
+        helper._child_state = original
+    if observed:
+        if any(code != observed[0] for code in observed) or (known is not None and known != observed[0]):
+            malformed = True
+        elif known is None:
+            known, evidence = observed[0], 'ACTUAL_NORMAL_DRAIN_WAITID'
+    if malformed:
+        known, evidence = None, 'UNKNOWN'
+    return {'returncode': known, 'returncodeEvidence': evidence, 'beforeDrain': before_drain,
+        'timing': 'AFTER_CLEANUP_NOT_PRIMARY_CAUSE' if before_drain != 'EXITED' else 'EXIT_OBSERVED_BEFORE_CLEANUP',
+        'sourceAdmission': False}
+
+
+def source19_post_echild_failure(root, drained, action_exited, before):
+    if drained is not True:
+        return {'capture': 'ECHILD_UNPROVEN', 'sourceAdmission': False}
+    # P-exit never proved that inherited stderr writers had stopped. Keep the
+    # first capture/receipt and ALWAYS make a separate stable post-drain one.
+    return {'timing': 'AFTER_CLEANUP_NOT_PRIMARY_CAUSE', 'sourceAdmission': False,
+        'before': before, 'child': capture_source19_before_h_failure(root, action_exited,
+            receipt_name='source19-after-echild-child-failure.json')}
+# END TEST-ONLY startup observation.
+
+
+def strict_json(path, maximum=8 * 1024 * 1024):
+    info = path.lstat()
+    if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or not 2 <= info.st_size <= maximum:
+        raise AssertionError('FIXTURE_REGULAR_FILE_REQUIRED')
+    with path.open('rb') as stream:
+        raw = stream.read(maximum + 1)
+    if len(raw) != info.st_size:
+        raise AssertionError('FIXTURE_BYTES_CHANGED')
+    return json.loads(raw)
+
+
+def clean_environment():
+    # NEVER inherit project/account/cache/provider credentials or proxy settings.
+    return {key: value for key, value in os.environ.items()
+            if key in {'PATH', 'LD_LIBRARY_PATH', 'LIBRARY_PATH', 'LANG', 'LC_ALL', 'LC_CTYPE'}}
+
+
+def descendants(parent):
+    """Discovery only. Every signalled process is separately retained by pidfd."""
+    result, todo = [], [parent]
+    while todo:
+        pid = todo.pop()
+        try:
+            children = Path(f'/proc/{pid}/task/{pid}/children').read_text('ascii').split()
+        except (FileNotFoundError, ProcessLookupError) as error:
+            if error.errno not in (errno.ENOENT, errno.ESRCH):
+                raise
+            continue
+        for text in children:
+            child = int(text)
+            if child in result:
+                raise AssertionError('FIXTURE_PROCESS_GRAPH_CONFLICT')
+            result.append(child)
+            todo.append(child)
+    return result
+
+
+class ProtocolFixture:
+    HOSTS = frozenset({'api.github.com', 'fixture.invalid', 'fixture.github.io', 'cache.fixture.invalid'})
+
+    def __init__(self, root, protocol, certificate, private_key):
+        self.root, self.protocol = root, protocol
+        self.calls, self.failures = [], []
+        self.before_h_stages = []  # Fixed test-only transport observations, never admission.
+        self.lock = threading.Lock()
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(certificate, private_key)
+        owner = self
+
+        class Handler(BaseHTTPRequestHandler):
+            protocol_version = 'HTTP/1.1'
+
+            def log_message(self, *_args):
+                pass  # No URLs, authorization, questions, raw data or bodies.
+
+            def fixed_failure(self, code):
+                with owner.lock:
+                    owner.failures.append(code)
+                self.reply(403, {'code': 'SOURCE19_FIXTURE_ROUTE_REFUSED'})
+
+            def reply(self, status, value=None, *, raw=None):
+                data = raw if raw is not None else b'' if value is None else json.dumps(value).encode()
+                self.send_response(status)
+                self.send_header('Content-Type', 'application/octet-stream' if raw is not None else 'application/json')
+                self.send_header('Content-Length', str(len(data)))
+                self.send_header('Connection', 'close')
+                self.end_headers()
+                if self.command != 'HEAD':
+                    self.wfile.write(data)
+                    self.wfile.flush()
+                self.close_connection = True
+
+            def body(self):
+                try:
+                    length = int(self.headers.get('Content-Length', '0'))
+                except ValueError:
+                    raise AssertionError('FIXTURE_BODY_SIZE_INVALID')
+                if not 0 <= length <= MAX_BODY:
+                    raise AssertionError('FIXTURE_BODY_BOUND')
+                raw = self.rfile.read(length)
+                if len(raw) != length:
+                    raise AssertionError('FIXTURE_BODY_TRUNCATED')
+                return json.loads(raw) if raw else None
+
+            def do_CONNECT(self):
+                # Only owned TLS termination. No socket/connect to an upstream.
+                if self.path not in {host + ':443' for host in owner.HOSTS}:
+                    return self.fixed_failure('CONNECT_ORIGIN_REFUSED')
+                self.tunnel_host = self.path[:-4]
+                self.send_response_only(200)
+                self.end_headers()
+                self.wfile.flush()
+                try:
+                    self.connection.settimeout(20)
+                    self.connection = context.wrap_socket(self.connection, server_side=True)
+                    self.rfile = self.connection.makefile('rb')
+                    self.wfile = self.connection.makefile('wb')
+                    self.close_connection = True
+                    self.handle_one_request()
+                except (ssl.SSLError, ConnectionError, OSError):
+                    with owner.lock:
+                        owner.failures.append('TLS_TRANSPORT_FAILED')
+
+            def do_GET(self):
+                self.route()
+
+            def do_POST(self):
+                self.route()
+
+            def do_PUT(self):
+                self.fixed_failure('WRITE_METHOD_REFUSED')
+
+            do_PATCH = do_PUT
+            do_DELETE = do_PUT
+
+            def route(self):
+                try:
+                    host = getattr(self, 'tunnel_host', None)
+                    if host not in owner.HOSTS or self.headers.get('Host') != host:
+                        return self.fixed_failure('TLS_HOST_REFUSED')
+                    parsed = urllib.parse.urlsplit(self.path)
+                    if parsed.scheme or parsed.netloc or parsed.fragment:
+                        return self.fixed_failure('ABSOLUTE_REQUEST_REFUSED')
+                    tag = owner.route(self, host, parsed)
+                    if tag is not None:
+                        with owner.lock:
+                            owner.calls.append(tag)
+                except (AssertionError, ValueError, KeyError, TypeError, OSError):
+                    self.fixed_failure('PROTOCOL_CONTRACT_REFUSED')
+
+        class Server(ThreadingHTTPServer):
+            daemon_threads = False
+            block_on_close = True
+
+            def handle_error(self, _request, _address):
+                with owner.lock:
+                    owner.failures.append('LOOPBACK_HANDLER_FAILED')
+
+        self.server = Server(('127.0.0.1', 0), Handler)
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=False)
+        self.started = False
+
+    def start(self):
+        self.thread.start()
+        self.started = True
+
+    def close(self):
+        if self.started:
+            self.server.shutdown()
+        self.server.server_close()
+        if self.started:
+            self.thread.join(timeout=5)
+            if self.thread.is_alive():
+                raise AssertionError('FIXTURE_SERVER_CLOSE_UNPROVED')
+
+    def route(self, request, host, parsed):
+        data, method, route = self.protocol, request.command, parsed.path
+        query = urllib.parse.parse_qs(parsed.query, strict_parsing=True) if parsed.query else {}
+        if host == 'api.github.com' and method == 'GET' and not query:
+            if request.headers.get('Authorization') != 'Bearer source19-synthetic-github':
+                raise AssertionError('SYNTHETIC_GITHUB_AUTH_REQUIRED')
+            prefix = '/repos/fixture/repo/actions/runs/200/attempts/2'
+            if route == prefix:
+                request.reply(200, {'id': 200, 'run_attempt': 2, 'head_sha': data['head'],
+                    'head_branch': 'main', 'path': '.github/workflows/update-and-deploy.yml',
+                    'status': 'in_progress', 'conclusion': None, 'event': 'schedule',
+                    'repository': {'full_name': 'fixture/repo'}, 'head_repository': {'full_name': 'fixture/repo'}})
+                return 'github-run'
+        if host == 'api.github.com' and method == 'GET' and route == '/repos/fixture/repo/actions/runs/200/attempts/2/jobs':
+            if query != {'per_page': ['100']} or request.headers.get('Authorization') != 'Bearer source19-synthetic-github':
+                raise AssertionError('SYNTHETIC_JOBS_QUERY_REQUIRED')
+            # The exact producer name comes from the existing normal source-gate
+            # constructor, never a test-selected phase or deadline.
+            from datetime import datetime, timezone
+            started = datetime.fromtimestamp(time.time() - 600, timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
+            request.reply(200, {'total_count': 1, 'jobs': [{'id': 300, 'run_id': 200,
+                'head_sha': data['head'], 'name': data['sourceJobName'], 'status': 'in_progress',
+                'conclusion': None, 'completed_at': None, 'runner_id': 400,
+                'runner_name': 'source19-native-fixture', 'started_at': started}]})
+            return 'github-jobs'
+        if host == 'cache.fixture.invalid' and method == 'POST' and not query:
+            if route != '/twirp/github.actions.results.api.v1.CacheService/GetCacheEntryDownloadURL':
+                return request.fixed_failure('CACHE_WRITE_OR_ROUTE_REFUSED')
+            if request.headers.get('Authorization') != 'Bearer source19-synthetic-cache':
+                raise AssertionError('SYNTHETIC_CACHE_AUTH_REQUIRED')
+            body = request.body()
+            if not isinstance(body, dict) or not isinstance(body.get('key'), str) or not re.fullmatch(r'[a-f0-9]{64}', body.get('version', '')):
+                raise AssertionError('CACHE_RESTORE_REQUEST_INVALID')
+            if not body['key'].startswith(('weather-preflight-state-v1-Linux-', 'ravscore-continuation-schema6-v2-', 'weather-private-progress-encrypted-v2-Linux-main-')):
+                raise AssertionError('CACHE_SCOPE_REFUSED')
+            request.reply(200, {'ok': False, 'signed_download_url': ''})
+            return 'cache-miss'
+        if host == 'fixture.github.io' and method == 'GET' and route == '/repo/data/live/manifest.json':
+            if query != {'weather-preflight': ['200-2']}:
+                raise AssertionError('PUBLIC_MANIFEST_QUERY_REFUSED')
+            request.reply(404)
+            return 'normal-public-manifest-unavailable'
+        if host != 'fixture.invalid':
+            return request.fixed_failure('UNEXPECTED_ORIGIN_ROUTE')
+        auth = request.headers.get('apikey')
+        if auth != 'sb_secret_source19_synthetic':
+            # A genuine no-credential anonymous-denial request is not a download.
+            if method == 'GET' and route.startswith('/storage/v1/object/authenticated/') and auth is None:
+                request.reply(403)
+                return 'anonymous-denied'
+            raise AssertionError('SYNTHETIC_SUPABASE_AUTH_REQUIRED')
+        if method == 'POST' and not query and route in (
+                '/rest/v1/rpc/ravradar_integrated_cutover_contract',
+                '/rest/v1/rpc/ravradar_ravscore_checkpoint_contract'):
+            body = request.body()
+            if not isinstance(body, dict):
+                raise AssertionError('DB_READBACK_BODY_REQUIRED')
+            key = 'databaseReadback' if route.endswith('/ravradar_integrated_cutover_contract') else 'checkpointDatabaseReadback'
+            request.reply(200, data['rpc'][key])
+            return 'db-contract' if key == 'databaseReadback' else 'checkpoint-contract'
+        if method == 'GET' and route == '/rest/v1/admin_documents':
+            if set(query) - {'select', 'document_key', 'limit'} or len(query.get('document_key', [])) != 1:
+                raise AssertionError('ADMIN_QUERY_INVALID')
+            selector = query['document_key'][0]
+            if selector.startswith('in.(') and selector.endswith(')'):
+                keys = [key.strip('"') for key in selector[4:-1].split(',')]
+            elif selector.startswith('eq.'):
+                keys = [selector[3:]]
+            else:
+                raise AssertionError('ADMIN_SELECTOR_INVALID')
+            known = {row['document_key']: row for row in data['admin']}
+            known[data['pointer']['document_key']] = data['pointer']
+            known[data['checkpointDocumentKey']] = None
+            if not keys or len(set(keys)) != len(keys) or any(key not in known for key in keys):
+                raise AssertionError('ADMIN_KEY_REFUSED')
+            with self.lock:
+                if keys == [data['checkpointDocumentKey']]: self.before_h_stages.append('CHECKPOINT_PROTECTED_READ')
+                if keys == [data['pointer']['document_key']]: self.before_h_stages.append('PRIVATE_POINTER_READ')
+            request.reply(200, [known[key] for key in keys if known[key] is not None])
+            return 'private-pointer' if keys == [data['pointer']['document_key']] else 'admin-read'
+        if method == 'GET' and not query and route == '/storage/v1/bucket/' + data['bucket']['id']:
+            with self.lock: self.before_h_stages.append('PRIVATE_BUCKET_READ')
+            request.reply(200, data['bucket'])
+            return 'private-bucket'
+        if method == 'GET' and not query and route.startswith('/storage/v1/object/authenticated/' + data['bucket']['id'] + '/'):
+            key = urllib.parse.unquote(route.split('/storage/v1/object/authenticated/' + data['bucket']['id'] + '/', 1)[1])
+            rows = [row for row in data['objectRows'] if row['key'] == key]
+            if len(rows) != 1:
+                raise AssertionError('EXACT_B_OBJECT_REQUIRED')
+            row = rows[0]
+            raw = (self.root / row['relativePath']).read_bytes()
+            if len(raw) != row['bytes'] or sha(raw) != row['sha256']:
+                raise AssertionError('EXACT_B_OBJECT_CHANGED')
+            with self.lock: self.before_h_stages.append('PRIVATE_B_OBJECT_DOWNLOAD')
+            request.reply(200, raw=raw)
+            return 'private-B-read'
+        return request.fixed_failure('UNEXPECTED_ROUTE_OR_WRITE')
+
+
+class SourceOriginalCpInstallNative(unittest.TestCase):
+    def test_genuine_action_prelude_and_install_inventory_boundary(self):
+        self.assertEqual(sys.platform, 'linux', 'NATIVE_LINUX_REQUIRED; never a skip')
+        self.assertEqual(sys.version_info[:2], (3, 12), 'ACTUAL_PYTHON_312_REQUIRED')
+        info = subprocess.check_output([str(NODE), '--input-type=module', '-e',
+            'console.log(JSON.stringify({major:process.versions.node.split(".")[0],proxy:process.allowedNodeEnvironmentFlags.has("--use-env-proxy")}))'],
+            env=clean_environment(), text=True)
+        self.assertEqual(json.loads(info), {'major': '24', 'proxy': True})
+        normal_info = subprocess.check_output([str(NODE22), '--input-type=module', '-e',
+            'console.log(JSON.stringify({major:process.versions.node.split(".")[0],proxy:process.allowedNodeEnvironmentFlags.has("--use-env-proxy")}))'],
+            env=clean_environment(), text=True)
+        self.assertEqual(json.loads(normal_info), {'major': '22', 'proxy': True})
+        self.assertNotEqual(NODE, NODE22, 'SEPARATE_ACTUAL_NODE_RUNTIMES_REQUIRED')
+        spec = importlib.util.spec_from_file_location('source19_native_outer_owner', ROOT / 'scripts/lib/copernicus_component_process.py')
+        helper = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(helper)
+        self.assertFalse(FIXED.exists() or FIXED.is_symlink(), 'FIXED_PRIVATE_ROOT_EXISTS; never adopt/remove it')
+        own = Path(tempfile.mkdtemp(prefix='rr-source19-cp-install-native-')).resolve()
+        seed, fixtures = own / 'seed', own / 'fixture'
+        seed.mkdir(); fixtures.mkdir()
+        first = None
+        try:
+            result = subprocess.run([str(NODE), str(ROOT / FIXTURE), '--inventory'], cwd=ROOT,
+                env=clean_environment(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30, check=True)
+            inventory = json.loads(result.stdout)
+            self.assertEqual(inventory['fixtureIdentity'], FIXTURE_IDENTITY, 'NEW_COMPOSITION_FIXTURE_IDENTITY_REQUIRED')
+            self.assertLessEqual(len(inventory['files']), 900)
+            for row in inventory['files']:
+                relative = Path(row['relativePath'])
+                self.assertFalse(relative.is_absolute() or '..' in relative.parts)
+                body = (ROOT / relative).read_bytes()
+                self.assertEqual((len(body), sha(body)), (row['bytes'], row['sha256']))
+                output = seed / relative
+                output.parent.mkdir(parents=True, exist_ok=True)
+                output.write_bytes(body)
+            # One authentic existing commit object, copied into an OWN private
+            # object database. Never share parent .git/refs/index/remotes.
+            head = inventory['head']
+            commit = subprocess.check_output(['git', 'cat-file', 'commit', head], cwd=ROOT, env=clean_environment())
+            encoded = b'commit ' + str(len(commit)).encode() + b'\0' + commit
+            self.assertEqual(hashlib.sha1(encoded).hexdigest(), head)
+            git = seed / '.git'
+            (git / 'objects' / head[:2]).mkdir(parents=True)
+            (git / 'refs').mkdir()
+            (git / 'objects' / head[:2] / head[2:]).write_bytes(zlib.compress(encoded))
+            (git / 'HEAD').write_text(head + '\n', encoding='ascii')
+            (git / 'config').write_text('[core]\n repositoryformatversion = 0\n bare = false\n', encoding='ascii')
+            from datetime import datetime, timezone
+            target = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
+            prep_env = clean_environment()
+            prep_env['PATH'] = str(NODE.parent) + os.pathsep + prep_env.get('PATH', '')
+            prep_env['PYTHON'] = sys.executable
+            try:
+                subprocess.run([str(NODE), str(seed / FIXTURE), '--prepare', str(fixtures), target, sys.executable],
+                    cwd=seed, env=prep_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120, check=True)
+            except subprocess.CalledProcessError as error:
+                # This preparer has only explicit synthetic data and the clean
+                # environment above; keep its bounded first-cause diagnostic.
+                error.add_note('SYNTHETIC_FIXTURE_PREPARATION_STDERR\n' + error.stderr[:8192].decode('utf-8', errors='replace'))
+                raise
+            protocol = strict_json(fixtures / 'protocol.json')
+            self.assertEqual(protocol['fixtureIdentity'], FIXTURE_IDENTITY, 'PREPARED_FIXTURE_IDENTITY_CHANGED')
+            self.assertEqual(protocol['head'], head)
+            cert, key = own / 'test-ca.pem', own / 'test-server-key.pem'
+            subprocess.run(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1',
+                '-subj', '/CN=SOURCE19-test-only', '-addext', 'basicConstraints=critical,CA:TRUE',
+                '-addext', 'subjectAltName=DNS:api.github.com,DNS:fixture.invalid,DNS:fixture.github.io,DNS:cache.fixture.invalid',
+                '-keyout', str(key), '-out', str(cert)], env=clean_environment(),
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=20, check=True)
+            # Exactly ONE case per fresh disposable Linux job. FIXED is always
+            # retained: this observer has no typed P-owned root cleanup receipt.
+            self.assertIn(CASE, CASES)
+            self.actual_case(own, seed, fixtures, protocol, cert, key, helper, CASE)
+        except BaseException as error:
+            first = error
+            raise
+        finally:
+            # actual_case must prove kernel ECHILD before authorizing ANY own
+            # namespace cleanup. Unknown cessation retains the entire fixture.
+            # Keep COMPLETE failed-fixture stdout/stderr and metadata until reviewed.
+            if not getattr(self, 'stop_unproved', False) and first is None:
+                self.assertEqual(own.parent, Path(tempfile.gettempdir()).resolve())
+                self.assertTrue(own.name.startswith('rr-source19-cp-install-native-'))
+                shutil.rmtree(own)
+
+    def original_destinations(self, root, protocol):
+        snapshot = {}
+        for row in protocol['originals']:
+            relative = Path(row['relativePath'])
+            self.assertFalse(relative.is_absolute() or '..' in relative.parts)
+            self.assertNotIn(row['relativePath'], snapshot, 'DUPLICATE_ORIGINAL_DESTINATION')
+            destination = root / relative
+            try:
+                before = destination.lstat()
+            except FileNotFoundError:
+                snapshot[row['relativePath']] = None
+                continue
+            self.assertTrue(stat.S_ISREG(before.st_mode) and before.st_nlink == 1,
+                'ORIGINAL_DESTINATION_NOT_OWN_REGULAR_FILE')
+            self.assertLessEqual(before.st_size, 64 * 1024 * 1024)
+            with destination.open('rb') as stream:
+                opened = os.fstat(stream.fileno())
+                raw = stream.read(64 * 1024 * 1024 + 1)
+                ended = os.fstat(stream.fileno())
+            after = destination.lstat()
+            identity = lambda value: (value.st_dev, value.st_ino, value.st_mode,
+                value.st_nlink, value.st_size, value.st_mtime_ns, value.st_ctime_ns)
+            self.assertEqual(identity(before), identity(opened), 'DESTINATION_OPEN_CHANGED')
+            self.assertEqual(identity(opened), identity(ended), 'DESTINATION_READ_CHANGED')
+            self.assertEqual(identity(ended), identity(after), 'DESTINATION_PATH_CHANGED')
+            self.assertEqual(len(raw), before.st_size)
+            snapshot[row['relativePath']] = {'bytes': len(raw), 'sha256': sha(raw),
+                'identity': identity(before)}
+        return snapshot
+
+    def assert_no_originals_installed(self, snapshot, protocol):
+        self.assertEqual(set(snapshot), {row['relativePath'] for row in protocol['originals']})
+        for row in protocol['originals']:
+            value = snapshot[row['relativePath']]
+            self.assertTrue(value is None or (value['bytes'], value['sha256'])
+                != (row['bytes'], row['sha256']), 'ORIGINAL_ALREADY_INSTALLED_BEFORE_ACK')
+
+    def actual_case(self, own, seed, fixtures, protocol, cert, key, helper, mode):
+        root = own / mode
+        shutil.copytree(seed, root)
+        # The normal writer requires an existing private cache, never a prebuilt claim.
+        (root / '.cache').mkdir()
+        # Own empty output namespace required by the unchanged normal geometry prelude.
+        (root / 'data' / 'diagnostics').mkdir()
+        action = root / ENTRY
+        self.assertEqual(action.read_bytes(), (ROOT / ENTRY).read_bytes(), 'ACTUAL_ACTION_BYTES_CHANGED')
+        self.assertFalse(FIXED.exists() or FIXED.is_symlink(), 'FIXED_PRIVATE_ROOT_EXISTS')
+        npm = root / ENTRY.parent / '.npm-cache'
+        source_cache = ROOT / ENTRY.parent / '.npm-cache/_cacache'
+        self.assertTrue(source_cache.is_dir() and not source_cache.is_symlink(), 'FIXED_LOCKED_WARM_CACHE_REQUIRED')
+        self.assertEqual(source_cache.resolve(), source_cache)
+        for directory, directories, files in os.walk(source_cache, followlinks=False):
+            for name in [*directories, *files]:
+                entry = Path(directory) / name
+                self.assertFalse(entry.is_symlink(), 'Warm cache must not escape its own root')
+                self.assertTrue(entry.is_dir() or entry.is_file())
+        npm.mkdir()
+        shutil.copytree(source_cache, npm / '_cacache')
+        runner_temp = root / 'runner-temp'; runner_temp.mkdir()
+        output = root / 'action-output'; output.write_bytes(b'')
+        transport = ProtocolFixture(fixtures, protocol, cert, key)
+        proxy = f'http://127.0.0.1:{transport.server.server_port}'
+        environment = clean_environment()
+        environment.update({'PATH': str(NODE22.parent) + os.pathsep + str(Path(sys.executable).parent) + os.pathsep + environment.get('PATH', ''),
+            'GITHUB_ACTIONS': 'true', 'GITHUB_REPOSITORY': 'fixture/repo', 'GITHUB_RUN_ID': '200', 'GITHUB_RUN_ATTEMPT': '2',
+            'GITHUB_SHA': protocol['head'], 'GITHUB_REF': 'refs/heads/main', 'GITHUB_EVENT_NAME': 'schedule',
+            'GITHUB_SERVER_URL': 'https://github.com', 'RUNNER_OS': 'Linux', 'RUNNER_NAME': 'source19-native-fixture',
+            'RUNNER_TRACKING_ID': 'source19-synthetic-kernel-fixture', 'GITHUB_WORKSPACE': str(root),
+            'RUNNER_TEMP': str(runner_temp), 'GITHUB_OUTPUT': str(output),
+            'GITHUB_TOKEN': 'source19-synthetic-github', 'SUPABASE_URL': 'https://fixture.invalid',
+            'SUPABASE_SERVICE_ROLE_KEY': 'sb_secret_source19_synthetic', 'SUPABASE_PUBLISHABLE_KEY': 'sb_publishable_source19_synthetic',
+            'RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND': 'supabase',
+            'RAVRADAR_PRIVATE_RUNTIME_ROOT': str(FIXED), 'RAVRADAR_PRIVATE_RUNTIME_BUNDLE': str(FIXED / 'bundle'),
+            'RAVRADAR_PRIVATE_RUNTIME_RESTORE': str(FIXED / 'restored'),
+            'RAVRADAR_PRODUCTION_TARGET_HOUR': protocol['target'], 'INPUT_FORCE': 'true', 'INPUT_OPERATION': 'source',
+            'RAVRADAR_SOURCE_EXTENDED_PROVIDER_BOOTSTRAP': 'false',
+            'ACTIONS_CACHE_SERVICE_V2': '1', 'ACTIONS_RESULTS_URL': 'https://cache.fixture.invalid',
+            'ACTIONS_RUNTIME_TOKEN': 'source19-synthetic-cache', 'npm_config_offline': 'true',
+            'NODE_USE_ENV_PROXY': '1', 'HTTPS_PROXY': proxy, 'HTTP_PROXY': proxy, 'NO_PROXY': '',
+            'NODE_EXTRA_CA_CERTS': str(cert), 'SSL_CERT_FILE': str(cert), 'REQUESTS_CA_BUNDLE': str(cert), 'CURL_CA_BUNDLE': str(cert),
+            'PYTHON': sys.executable, 'PYTHONUTF8': '1', 'PYTHONDONTWRITEBYTECODE': '1', 'PYTHONNOUSERSITE': '1',
+        })
+        self.assertNotIn('NODE_OPTIONS', environment)
+        self.assertNotIn('NODE_TLS_REJECT_UNAUTHORIZED', environment)
+        owner = helper._LinuxSubsetOwner(time.monotonic() + 180)
+        process, logs, retained, observed, altered = None, [], [], None, False
+        case_failure = None
+        before_h, action_pidfd = None, None
+        cp_directory = None
+        pre_ack_originals = None
+        initial_originals = self.original_destinations(root, protocol)
+        self.assert_no_originals_installed(initial_originals, protocol)
+        seen_programs = set()
+        program_labels = {
+            'scripts/integrated-cutover-readiness.mjs': 'DATABASE_READBACK',
+            'scripts/refine-coastlines-constrained-4.0.48.py': 'GEOMETRY',
+            'scripts/sync-admin-config.py': 'ADMIN_SYNC',
+            'scripts/apply-central-zone-reviews.py': 'ADMIN_REVIEW',
+            'scripts/build-public-coastal-parts-v2.mjs': 'CENTRAL_PARTS',
+            'scripts/protected-ravscore-continuation-checkpoint.mjs': 'CHECKPOINT_RESTORE',
+            'scripts/run-copernicus-weather-components.py': 'CP_INVENTORY',
+        }
+        born_fixed = None
+        try:
+            owner.enter()
+        except BaseException as error:
+            case_failure = error
+            transport.close()
+            raise
+        try:
+            transport.start()
+            for name in ('stdout', 'stderr'):
+                logs.append((root / name).open('wb'))
+            end = time.monotonic() + 150
+            process = subprocess.Popen([str(NODE), str(action)], cwd=root, env=environment,
+                stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1])
+            action_pidfd = os.pidfd_open(process.pid); retained.append(action_pidfd)
+            source19_wait_action_identity(process, action_pidfd, [os.fsencode(NODE), os.fsencode(action)], owner, end)
+            self.assertEqual(Path(f'/proc/{process.pid}/cmdline').read_bytes().split(b'\0')[:-1],
+                [os.fsencode(NODE), os.fsencode(action)])
+            while process.poll() is None:
+                self.assertLess(time.monotonic(), end, 'ACTUAL_ACTION_OBSERVER_DEADLINE')
+                if FIXED.exists() and born_fixed is None:
+                    born_fixed = FIXED.lstat()
+                    self.assertTrue(stat.S_ISDIR(born_fixed.st_mode) and not FIXED.is_symlink())
+                if observed is not None:
+                    time.sleep(0.002)
+                    continue
+                for pid in descendants(process.pid):
+                    try:
+                        args = Path(f'/proc/{pid}/cmdline').read_bytes().split(b'\0')[:-1]
+                    except (FileNotFoundError, ProcessLookupError) as error:
+                        if error.errno not in (errno.ENOENT, errno.ESRCH):
+                            raise
+                        continue
+                    for relative, label in program_labels.items():
+                        if os.fsencode(root / relative) in args:
+                            seen_programs.add(label)  # Observation, never a phase/result authority.
+                    if (os.fsencode(root / 'scripts/run-copernicus-weather-components.py') not in args
+                            or b'--storage-inventory' not in args):
+                        continue
+                    pidfd = os.pidfd_open(pid); retained.append(pidfd)
+                    ppid = int(Path(f'/proc/{pid}/stat').read_text().rsplit(')', 1)[1].split()[1])
+                    parent_fd = os.pidfd_open(ppid); retained.append(parent_fd)
+                    h_args = Path(f'/proc/{ppid}/cmdline').read_bytes().split(b'\0')[:-1]
+                    self.assertEqual(h_args[1:], [b'-I', b'-B', os.fsencode(root / 'scripts/lib/copernicus_component_process.py'), b'--source-normal-program-cohort'])
+                    self.assertEqual(int(Path(f'/proc/{ppid}/stat').read_text().rsplit(')', 1)[1].split()[1]), process.pid)
+                    cp_path = Path(os.readlink(f'/proc/{ppid}/fd/6'))
+                    self.assertEqual(cp_path.parent, Path(tempfile.gettempdir()).resolve())
+                    self.assertRegex(cp_path.name, r'^rr-cp-storage-inventory-[A-Za-z0-9]{6}$')
+                    descriptor_stat, named_stat = os.stat(f'/proc/{ppid}/fd/6'), cp_path.lstat()
+                    self.assertTrue(stat.S_ISDIR(named_stat.st_mode) and not cp_path.is_symlink())
+                    self.assertEqual((descriptor_stat.st_dev, descriptor_stat.st_ino, descriptor_stat.st_mode),
+                        (named_stat.st_dev, named_stat.st_ino, named_stat.st_mode))
+                    cp_directory = (cp_path, named_stat)
+                    observed = {'child': pid, 'h': ppid, 'childFd': pidfd, 'hFd': parent_fd}
+                    if mode != 'normal-install' and not altered:
+                        # Stop only the actual retained H kernel object before
+                        # altering its OWN stage; no PID from a JSON report.
+                        # Keep the actual CP child LIVE and kernel-stopped
+                        # first: H cannot have drained it to ECHILD/sent ACK.
+                        signal.pidfd_send_signal(pidfd, signal.SIGSTOP)
+                        child_stopped_deadline = time.monotonic() + 1
+                        while True:
+                            child_fields = Path(f'/proc/{pid}/stat').read_text().rsplit(')', 1)[1].split()
+                            if child_fields[0] in ('T', 't'):
+                                self.assertEqual(int(child_fields[1]), ppid, 'CP_CHILD_REPARENTED_BEFORE_BASELINE')
+                                break
+                            self.assertLess(time.monotonic(), child_stopped_deadline, 'CP_NOT_STOPPED_BEFORE_H_ACK')
+                            time.sleep(0.001)
+                        signal.pidfd_send_signal(parent_fd, signal.SIGSTOP)
+                        # Wait for the ACTUAL retained H to be kernel-stopped;
+                        # no command/report field supplies this before-ACK fact.
+                        stopped_deadline = time.monotonic() + 1
+                        while True:
+                            h_state = Path(f'/proc/{ppid}/stat').read_text().rsplit(')', 1)[1].split()[0]
+                            if h_state in ('T', 't'):
+                                break
+                            self.assertLess(time.monotonic(), stopped_deadline, 'H_NOT_STOPPED_BEFORE_BASELINE')
+                            time.sleep(0.001)
+                        pre_ack_originals = self.original_destinations(root, protocol)
+                        self.assert_no_originals_installed(pre_ack_originals, protocol)
+                        stage = Path(os.readlink(f'/proc/{ppid}/fd/5')).parent.parent
+                        self.assertEqual(stage.parent, FIXED)
+                        self.assertRegex(stage.name, r'^restored\.weather-components-[0-9a-f-]{36}$')
+                        if mode == 'replace-bank':
+                            bank = stage / '.cache/copernicus-component-bank.json'
+                            same = bank.read_bytes(); replacement = bank.with_name(bank.name + '.own-test-replacement')
+                            replacement.write_bytes(same); replacement.replace(bank)
+                            signal.pidfd_send_signal(parent_fd, signal.SIGCONT)
+                        elif mode == 'replace-root':
+                            held = stage.with_name(stage.name + '.own-test-held')
+                            stage.rename(held); stage.mkdir()
+                            signal.pidfd_send_signal(parent_fd, signal.SIGCONT)
+                        elif mode == 'lose-supervisor':
+                            signal.pidfd_send_signal(parent_fd, signal.SIGKILL)
+                        altered = True
+                        if mode != 'lose-supervisor':
+                            signal.pidfd_send_signal(pidfd, signal.SIGCONT)
+                    break
+                time.sleep(0.002)
+            self.assertEqual(process.wait(timeout=1), 1, 'INSTALL-only target must not claim complete SOURCE; later refusal reason UNKNOWN')
+            self.assertIsNotNone(observed, 'ACTUAL_H70_CALL_NOT_REACHED; this is a prerequisite failure, not PASS')
+            if mode != 'normal-install':
+                self.assertTrue(altered, 'ACTUAL_PHYSICAL_NEGATIVE_NOT_EXERCISED')
+            with transport.lock:
+                self.assertEqual(transport.failures, [], 'NORMAL_TRANSPORT_CONTRACT_REFUSED')
+                tags = list(transport.calls)
+            self.assertIn('github-run', tags); self.assertIn('github-jobs', tags)
+            self.assertIn('db-contract', tags); self.assertIn('checkpoint-contract', tags)
+            self.assertIn('private-B-read', tags)
+            copied = 0
+            for row in protocol['originals']:
+                source = fixtures / 'originals' / row['relativePath']
+                self.assertEqual((source.stat().st_size, sha(source.read_bytes())), (row['bytes'], row['sha256']))
+                destination = root / row['relativePath']
+                if destination.exists() and sha(destination.read_bytes()) == row['sha256']:
+                    copied += 1
+            if mode == 'normal-install':
+                self.assertEqual(copied, len(protocol['originals']), 'NORMAL_INSTALL_NOT_COMPLETED')
+            else:
+                self.assertIsNotNone(pre_ack_originals, 'NO_ACTUAL_PRE_ACK_BASELINE')
+                self.assertEqual(copied, 0, 'UNKNOWN_H70_OUTCOME_INSTALLED_AN_ORIGINAL')
+                self.assertEqual(self.original_destinations(root, protocol), pre_ack_originals,
+                    'ORIGINAL_DESTINATIONS_CHANGED_AFTER_REFUSED_H70')
+            # P copy admission required real H70 drain/ACK/readback. We never
+            # supply that ACK or turn this intentional terminal refusal into T.
+            self.assertEqual(output.read_bytes(), b'')
+            for row in protocol['objectRows']:
+                raw = (fixtures / row['relativePath']).read_bytes()
+                self.assertEqual((len(raw), sha(raw)), (row['bytes'], row['sha256']))
+            print(json.dumps({'source19CpInstallNativeCase': mode, 'actualAction': True,
+                'actualH70Observed': True, 'originalBytesPreserved': True,
+                'installationCompleted': mode == 'normal-install', 'sourceAdmission': False,
+                'laterStop': 'UNKNOWN', 'fullPublication': 'UNRUN', 'realUpstreamNetwork': 0}))
+        except BaseException as error:
+            case_failure = error
+            # Preserve useful fixed first-boundary evidence without printing
+            # child logs, source paths, tokens, protocol payloads or values.
+            before_h = capture_source19_before_h_failure(root, process is not None and process.poll() is not None)
+            diagnostics = []
+            try:
+                with (root / 'stderr').open('rb') as stream:
+                    diagnostics = [dict(stage=stage.decode('ascii'), reason=reason.decode('ascii'))
+                        for stage, reason in re.findall(rb'DMI_RAW_SAVE_DIAGNOSTIC stage=([A-Z_]{1,80}) reason=([A-Z0-9_]{1,120})', stream.read(16384))]
+            except OSError:
+                pass  # A missing diagnostic must not replace the actual failure.
+            with transport.lock:
+                refusal = transport.failures[0] if transport.failures else None
+                before_h_stages = list(transport.before_h_stages)
+                last_route = transport.calls[-1] if transport.calls else None
+            print(json.dumps({'source19CpInstallNativeCase': mode, 'status': 'FAIL',
+                'observedPrograms': sorted(seen_programs), 'transportRefusal': refusal,
+                'lastFixtureRoute': last_route, 'actionDiagnostics': diagnostics, 'beforeHChildFailure': before_h, 'beforeHProtocolStages': before_h_stages, 'h70Observed': observed is not None,
+                'sourceAdmission': False, 'realUpstreamNetwork': 0}))
+            raise
+        finally:
+            # This outer actual subreaper is test cleanup only, never P's ACK.
+            # Unknown stop keeps every file. No Promise/child.close substitutes.
+            cleanup_failure = None
+            drained, action_exit = False, None
+            try:
+                owner.deadline = min(owner.deadline, time.monotonic() + 8)
+                if case_failure is None:
+                    owner.drain()
+                else:
+                    action_exit = source19_drain_action_observation(owner, helper, process, action_pidfd)
+                drained = True
+                owner.leave()
+                if process is not None:
+                    process.wait(timeout=1)
+            except BaseException as error:
+                cleanup_failure = error
+            for descriptor in retained:
+                try:
+                    os.close(descriptor)
+                except BaseException as error:
+                    cleanup_failure = cleanup_failure or error
+            for stream in logs:
+                try:
+                    stream.close()
+                except BaseException as error:
+                    cleanup_failure = cleanup_failure or error
+            if case_failure is not None:
+                try:
+                    post_echild = source19_post_echild_failure(root, drained,
+                        process is not None and process.poll() is not None, before_h)
+                    print(json.dumps({'source19CpPostECHILD': post_echild, 'outerECHILDObserved': drained,
+                        'actionExit': action_exit or {'returncode': None, 'returncodeEvidence': 'UNKNOWN'},
+                        'sourceAdmission': False}))
+                except BaseException as error:
+                    cleanup_failure = cleanup_failure or error
+            try:
+                transport.close()
+            except BaseException as error:
+                cleanup_failure = cleanup_failure or error
+            if cleanup_failure is None:
+                try:
+                    self.clean_actual_directories(cp_directory, born_fixed, fixtures)
+                except BaseException as error:
+                    cleanup_failure = error
+            if cleanup_failure is not None:
+                self.stop_unproved = True
+                print(json.dumps({'source19CpInstallNativeCleanup': 'RETAINED', 'sourceAdmission': False}))
+                if case_failure is None:
+                    raise cleanup_failure
+
+    def clean_actual_directories(self, cp_directory, born_fixed, fixtures):
+        if cp_directory is not None:
+            # Test-only cleanup of the actual H-held born output inode.
+            # The product keeps this directory on its intentional failure.
+            # No recursive cleanup, extra-file adoption or JSON-owned PID.
+            cp_path, born = cp_directory
+            live = cp_path.lstat()
+            self.assertEqual((live.st_dev, live.st_ino, live.st_mode), (born.st_dev, born.st_ino, born.st_mode))
+            entries = sorted(entry.name for entry in cp_path.iterdir())
+            self.assertIn(entries, [[], ['inventory.json']], 'UNKNOWN_CP_OUTPUT_RETAINED')
+            if entries:
+                report = cp_path / 'inventory.json'
+                inventory = strict_json(report, 32 * 1024 * 1024)
+                original_bank = strict_json(fixtures / 'originals/.cache/copernicus-component-bank.json')
+                self.assertEqual((inventory['kind'], inventory['schemaVersion'], inventory['bankSha256']),
+                    ('CP_COMPONENT_STORAGE_INVENTORY', 1, original_bank['bankSha256']))
+                report.unlink()
+            cp_path.rmdir()
+        if FIXED.exists() or FIXED.is_symlink():
+            # External observation (born_fixed) is NOT a typed P birth/cleanup
+            # receipt. Never recursively remove, adopt or traverse this root.
+            print(json.dumps({'source19FixedRootCleanup': 'RETAINED_NO_TYPED_P_BIRTH_RECEIPT',
+                'sourceAdmission': False}))
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--node24-path', required=True)
+    parser.add_argument('--node22-path', required=True)
+    parser.add_argument('--case', choices=CASES, required=True)
+    parser.add_argument('--composition', choices=('original-d0', 'integrated-d504', 'integrated-d504-diagnostics-v2', 'integrated-d504-restore-bounds-v3', 'integrated-d504-immutable-b-v5', 'integrated-d504-offline-suffix-v6', 'integrated-main579-v7', 'integrated-main579-seed-v8'), default='original-d0')
+    args, remaining = parser.parse_known_args()
+    FIXTURE, FIXTURE_IDENTITY = select_fixture_composition(args.composition)
+    NODE = Path(args.node24_path).resolve(strict=True)
+    NODE22 = Path(args.node22_path).resolve(strict=True)
+    CASE = args.case
+    unittest.main(argv=[sys.argv[0], *remaining])
