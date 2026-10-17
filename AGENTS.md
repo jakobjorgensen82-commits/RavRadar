@@ -1,3 +1,17 @@
+## 17. oktober — lokal 4.0.580: kortets tidsskyder, ingen ny scorebinding
+
+Den gennemgåede tidsskyder er nu lokalt sammenført som en særskilt 4.0.580-kildekandidat på præcis P0-kilde 355ce3b2. Det er bevidst forberedelse før P0-main, ikke offentlig levering eller en godkendelse af den igangværende P0-kontrol 39001572880. Offentlig version er fortsat 4.0.578. Den gamle UI-kandidat og dens historik bevares; der er ikke kopieret gamle modelbindinger, migrationer eller den separate assistentkandidat.
+
+Tidsskyderen ligger i fuld bredde under kortet og over forklaringen. Den viser hele ugedagen, dato og klokkeslæt i Europe/Copenhagen på dansk, tysk og engelsk. Nu, en time tilbage/frem, dagsmærker og tastatur/berøring vælger kun manifestets reelt resterende eksakte timer fra 118-timershorisonten. Kortet og den åbne zone følger den valgte time og søgemåde; rigtig klokke, Aktuelt/rangliste, ture og assistent beholder deres normale aktuelle grundlag.
+
+Visningen bruger eksisterende kontrolsums-, byte-, model- og generationsbundne timefiler uden forhåndshentning af horisonten. Hurtige valg samles i 200 millisekunder med ét fysisk timekald ad gangen og seneste ønske i kø. Kun den faktisk godkendte time må skifte kort og pile. Ved fejl holdes ønsket tidspunkt adskilt fra det sidst verificerede viste tidspunkt; manglende data erstattes ikke af en nærmeste time. Udløbet eller skiftet generation må ikke genbruge gamle lag. Nu og søgemådeskift bruger de normale kontroller, og strømpile kommer fra den valgte times egne data.
+
+Dette ændrer ikke scoreformel, vejr, kildeprioritet, administratorpunkter eller geometri. P0's C69/I71/T12, originalbevarende opvarmningsrettelse og alle udstedte migrationsfiler bevares; ingen ny SQL eller bindingsretag følger af UI. Normal 580-versionssynk, herunder browsercache, User-Agent og alene de to geodatafilers øverste versionsfelt, er særskilt mekanisk arbejde. Installationsfilens eneste indholdsændring ud over førkilden er den normale håndbogskopi, ikke schema.
+
+Den tidligere lokale syntetiske desktop-/mobillayout- og DA/DE/EN-browserprøve genbruges kun som afgrænset UI-bevis. Den er ikke offentlig kontrol, fysisk telefon, WAN-hastighed eller en hastighedsgaranti. Den normale tidsskyderkommando er faktisk bestået én gang på denne sammensætning: 30 tilfælde med 210 zoner og 673 dele, 250 hurtige valg, nul forhåndshentning og netkald samt panelprøven og seks normale generations-/livscyklustilfælde uden udeladelser. Nødvendige versions-, modul-, bindings-, RDKS-, håndbogs- og sikkerhedskontroller samt ROOT-review kræves før commit/push. Ny præcis source-CI, P0-main, sikker kode-only-levering og faktisk offentlig accept er fortsat åbne.
+
+Cron er senest bekræftet slået fra med uændret tidsplan. SOURCE19, assistent- og samlet statistikaktivering forbliver inaktive; alle fem hovedmål og fristen 18. oktober består. Ældre afsnit er kun erstattet på de her udtrykkeligt beviste kilde-/UI-punkter. Se håndbog 89.251.
+
 ## 17. oktober — 4.0.579: almindelig opvarmning skal bevare ærlig, ufuldstændig historik
 
 Den beskyttede genoptagelse har faktisk leveret offentlig 4.0.578. Den første almindelige efterfølger stoppede derimod 17. oktober kl. 04.00 dansk tid før ny privat slutpakke og Pages. Den konkrete fejl er reproduceret: en ekstra kalderkontrol accepterede kun én ufuldstændig status, selv om de normale producenter og validatorer lovligt danner andre. Manglende timer skal fortsat være manglende; ingen falsk READY, nuludfyldning eller ændret scoreformel.

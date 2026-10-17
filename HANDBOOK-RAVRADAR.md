@@ -1,3 +1,19 @@
+## 89.251 Kortet kan vises for en valgt prognosetime
+
+**Kort fortalt:** Tidsskyderen ændrer det tidspunkt, du ser på kortet og i den åbne zone. Den ændrer ikke vejret, RavScore eller det aktuelle tidspunkt for resten af appen.
+
+Kontrollen ligger i fuld bredde under kortet og over forklaringen. Den viser hele ugedagen, dato og klokkeslæt efter dansk tidszone på dansk, tysk eller engelsk. Brug Nu, en time tilbage eller frem, dagsmærker, tastatur eller berøring. Du kan kun vælge de eksakte timer, der faktisk er tilbage i det gyldige datasæts 118-timershorisont. Udløbne datoer forlænges ikke.
+
+Kortet og den åbne zones timevisning følger den valgte time og søgemåde. Strømpile bruger den samme times egne data. Aktuelt-listen, ranglisten, den rigtige klokke, ture og Spørg RavRadar beholder deres normale aktuelle grundlag. En fremtidig time får ikke et misvisende femdagespanel; Nu kan igen vise den normale fulde zoneprognose.
+
+Appen henter kun den nødvendige eksisterende timefil, ikke hele horisonten på forhånd. Hurtige valg samles i 200 millisekunder, og kun det seneste ønske får lov til at skifte visningen. Indhold, model, generation og kontrolsum skal stadig passe. Ved manglende eller afvist time bevares sidste verificerede kort med sit korrekte tidspunkt, mens det ønskede tidspunkt og fejlen vises særskilt. En anden eller udløbet generation må ikke blande gamle kortlag ind. Det er ikke en garanti for offline adgang til en time, som endnu ikke er hentet.
+
+4.0.580 er her kun en lokal kildekandidat på den præcise P0-kilde. Den gennemgåede funktionelle tidsskyder er sammenført uden gamle modelbindinger eller migrationsfiler. Normal versionssynk følger den nye lokale version; de to geodatafilers øverste versionsfelt følger med, men kystdele, geometri og land-/vandpunkter ændres ikke. P0's C69/I71/T12, scoreformel, originaler, opvarmningsrettelse og databaseovergang bevares. Installationsfilen får kun den normale opdaterede håndbogskopi, ikke et nyt databaseschema.
+
+Tidligere lokal syntetisk desktop-/mobillayoutkontrol og dansk/tysk/engelsk afprøvning genbruges som afgrænset UI-bevis. Det er hverken offentlig accept, en fysisk telefonprøve eller dokumentation for hastighed på en rigtig forbindelse. Den normale tidsskyderkommando er faktisk bestået én gang på denne sammensætning: 30 tilfælde med 210 zoner og 673 dele, 250 hurtige valg, nul forhåndshentning og netkald samt panelprøven og seks normale generations-/livscyklustilfælde uden udeladelser. Lokale kontroller og ROOT-review erstatter ikke den kommende præcise kildekontrol og sikre levering.
+
+Offentlig version er fortsat 4.0.578. P0-kontrollen 39001572880 på 355ce3b2, P0-main, installation, almindelig levering og tidsskyderens offentlige accept er endnu ikke afsluttet her. Den automatiske tidsplan er senest bekræftet slået fra og ændres ikke. SOURCE19 og de tilbageholdte assistent-/statistikleverancer aktiveres ikke. Alle fem hovedmål og fristen 18. oktober består; tidligere dateret dokumentation bevares som historik.
+
 ## 89.250 Almindelig strømopvarmning med manglende historiktimer
 
 Den seneste samlede kildeprøve fandt to fejl i selve prøvekalderne. De gamle kommandoforventninger skal bruge deres faktiske historiske kilde, mens den nye leveringsvej kontrolleres særskilt. Den historiske testvært manglede også én fast workflowfil, som den uændrede normale prøve læser. Filen følger nu med uændret. Begge kommandoforløb og hele det normale readiness-mål består lokalt uden at ændre produkt, gamle kontroludsagn eller databasebindinger. Ny samlet kontrol og faktisk levering er stadig påkrævet.
@@ -336,11 +352,11 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.579
+**Håndbogsversion:** 4.0.580
 
 ## Aktuel lokal kildebinding — 17. oktober 2026, 4.0.579 ikke installeret
 
-Den lokale kildekandidat til RavScore 4.0.579 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3` over 71 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=76a86277db106621e7f0952d0789f9038a4bf9cfe7993b88de5c9a49bf25b4b8` over 69 transitive filer. T12 er `a519a34e91e552623892e28f3c1fa9ee67b65d1fa08869a96e34fa24bd6d832f`. Scorekontrakterne er uændrede; forbrugerne følger `version.json.releaseContract.modelBindings`. Migration `20261017020000_current_memory_warmup_original_bound_successor.sql` er endnu ikke installeret. Offentlig 4.0.578 er leveret; det er ikke bevis for denne rettelse. Originaler og historiske værdier skal bevares gennem alle kontrol- og leveringstrin. Se 89.250.
+Den lokale kildekandidat til RavScore 4.0.580 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3` over 71 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=76a86277db106621e7f0952d0789f9038a4bf9cfe7993b88de5c9a49bf25b4b8` over 69 transitive filer. T12 er `a519a34e91e552623892e28f3c1fa9ee67b65d1fa08869a96e34fa24bd6d832f`. Scorekontrakterne er uændrede; forbrugerne følger `version.json.releaseContract.modelBindings`. Migration `20261017020000_current_memory_warmup_original_bound_successor.sql` er endnu ikke installeret. Offentlig 4.0.578 er leveret; det er ikke bevis for denne rettelse. Originaler og historiske værdier skal bevares gennem alle kontrol- og leveringstrin. Se 89.250.
 
 ## Historisk kildeblok — 16. oktober 2026, daværende 4.0.578-forberedelse
 
