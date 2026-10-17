@@ -1022,7 +1022,7 @@ export async function assertSupabaseMigrationPlan({
 }
 
 export function assertSupabaseMigrationsApplied(migrationListText) {
-  assertCurrentMemoryWarmupMigrationsApplied(migrationListText);
+  assertEstablishedNativeCurrentOriginMigrationsApplied(migrationListText);
   const rows = parseSupabaseMigrationList(migrationListText);
   const local = uniqueVersions(rows, 'local');
   const remote = uniqueVersions(rows, 'remote');

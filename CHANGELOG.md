@@ -1,5 +1,13 @@
 ## 4.0.581 — 2026-10-17
 
+### Normal genlæsning af allerede installeret databasefase
+
+PR652's præcise samlede kildekontrol bestod inklusive PostgreSQL, baseline og kapacitet, og samme træ er merget. Det efterfølgende kontrollerede rettelsesdeploy bevarede de autentificerede 0200-originaler og numeriske værdier. Databaseinstallationen sluttede 17. oktober kl. 20.59 dansk tid; den efterfølgende migrationstabel viser 20261017140000 både lokalt og centralt. Den fulde databasebindingskontrol blev ikke nået, og ny privat B/S-publicering, serverfunktioner, Pages og frisk vejrgeneration er ikke leveret.
+
+Den konkrete fejl er den normale genlæser: dens fælles applied-kommando kaldte stadig den strenge liste for forrige 0200-fase og afviste derfor den forventede 140000-migration. Kun kaldet skiftes til den allerede eksisterende strenge validator for den aktuelle fase. Den normale CLI-regression fejlede med samme årsag før rettelsen og består nu sammen med hele målfilens seks tilfælde. Alle 52 migrationer skal stadig findes på begge sider; mangler, dubletter, arkiverede og ukendte fremtidige versioner afvises. Gamle testkilder og orakler bevares.
+
+Ændringen tilføjer ingen SQL, modelbinding, nulstilling eller lempelse. Ny præcis samlet kildekontrol kræves. Derefter skal det normale installerede forløb genlæse den allerede registrerede migration uden at gentage installationsflaget eller db push. Faktisk B før S, offentlig rettelseslevering, ny almindelig vejrgeneration og efterfølger er fortsat åbne før cron. Offentlig 579 er senest verificeret; alle fem mål og de tilbageholdte aktiveringer er uændrede. Tidligere daterede statusbeskrivelser nedenfor er historik.
+
 ### Bevar autentisk H0 og fortsæt kun fremad
 
 Fremadrettet kontrol af den faktiske almindelige kalder fandt en ekstra integrationsfejl: vejropdatererens nye autentificerede B/S-læser kræver de eksisterende Supabase-adgangsoplysninger, men workflowets vejrtrin gav tomme værdier uden epoch-opstart. De to eksisterende felter skal også forsynes ved almindelig kørsel; R2-felternes epoch-afgrænsning bevares. Den normale workflow-regression skal kontrollere denne forbindelse, ikke blot syntetikkens egen transport. Ingen nye nøgler, origin-genvej, model-/SQL-ændring eller lempet datakontrol følger med. Levering afventer den samlede rettede kandidats præcise kontrol og faktisk produktion.

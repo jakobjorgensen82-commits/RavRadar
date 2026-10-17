@@ -2,6 +2,9 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import {spawnSync} from 'node:child_process';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {buildEstablishedNativeCurrentOriginBindingSuccessor} from './build-established-native-current-origin-successor.mjs';
@@ -11,7 +14,7 @@ import {ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING as NEXT,ESTABLISHED_NATIVE_CUR
 import {currentMemoryWarmupDefinition as definition,readCurrentMemoryWarmupCanonicalSource}
   from './lib/current-memory-warmup-successor-source.mjs';
 import {REQUIRED_CUTOVER_MIGRATIONS,CURRENT_MEMORY_WARMUP_REQUIRED_CUTOVER_MIGRATIONS,
-  expectedCheckpointCasContract,expectedTripBindingPolicy}
+  expectedCheckpointCasContract,expectedTripBindingPolicy,assertSupabaseMigrationsApplied}
   from './integrated-cutover-readiness.mjs';
 import {selectEstablishedNativeCurrentOriginRoute,verifyEstablishedNativeCurrentOriginPlan}
   from './verify-established-native-current-origin-plan.mjs';
@@ -100,6 +103,49 @@ test('prewrite caller cannot combine grants, bypass writer or use saved-weather 
     ['RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_RECOVERY_RUN_ID','123'],
     ['RAVRADAR_CURRENT_MEMORY_WARMUP_UPGRADE_OPT_IN','true'],['RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN','true']])
     assert.throws(()=>assertEstablishedNativeCurrentOriginPrewriteCaller({...environment,[key]:value}));
+});
+
+test('normal applied CLI reads the installed origin phase, not the historical0200 list',async()=>{
+  const required=REQUIRED_CUTOVER_MIGRATIONS.map(row=>row.version);
+  assert.equal(required.length,52);
+  assert.equal(required.at(-1),'20261017140000');
+  const rows=required.map(version=>({local:version,remote:version}));
+  const table=values=>'Local | Remote | Time (UTC)\n'+values.map(row=>
+    '`'+(row.local??'')+'` | `'+(row.remote??'')+'` | `source fixture`').join('\n');
+  const directory=await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()),'rr-origin-applied-'));
+  const filename=path.join(directory,'migration-list.txt');
+  const invoke=()=>spawnSync(process.execPath,[fileURLToPath(new URL('./integrated-cutover-readiness.mjs',import.meta.url)),
+    'applied','--migration-list',filename],{encoding:'utf8',timeout:10_000,
+    env:{...process.env,SUPABASE_URL:'',SUPABASE_SERVICE_ROLE_KEY:'',SUPABASE_ACCESS_TOKEN:'',SUPABASE_DB_PASSWORD:''}});
+  try{
+    await fs.writeFile(filename,table(rows),{flag:'wx'});
+    const accepted=invoke();
+    assert.equal(accepted.status,0,accepted.stderr);
+    assert.match(accepted.stdout,/Supabase migration metadata readback is complete:/);
+    assert(accepted.stdout.includes(required.join(', ')));
+    assert.deepEqual(assertSupabaseMigrationsApplied(table(rows)).appliedVersions,required);
+    // Every historical predecessor AND the current source must exist locally
+    // and remotely. Recognizing the current phase is not a broader whitelist.
+    for(const version of required)for(const side of ['local','remote']){
+      const missing=rows.map(row=>row[side]===version?{...row,[side]:null}:row);
+      assert.throws(()=>assertSupabaseMigrationsApplied(table(missing)));
+    }
+    for(const version of ['20261018140000','20261014140000','20261015030000','20261016030000']){
+      assert.throws(()=>assertSupabaseMigrationsApplied(table([...rows,{local:version,remote:version}])));
+    }
+    assert.throws(()=>assertSupabaseMigrationsApplied(table([...rows,rows.at(-1)])));
+    const missingCurrent=rows.map(row=>row.remote===required.at(-1)?{...row,remote:null}:row);
+    await fs.writeFile(filename,table(missingCurrent));
+    const refused=invoke();
+    assert.equal(refused.status,1);
+    assert.equal(refused.stdout,'');
+    assert(refused.stderr.length>0);
+    const olderHistory={local:'20260823',remote:'20260823'};
+    assert.deepEqual(assertSupabaseMigrationsApplied(table([olderHistory,...rows])).appliedVersions,required);
+  }finally{
+    await fs.unlink(filename);
+    await fs.rmdir(directory);
+  }
 });
 
 test('unchanged normal public projection drops the entire private origin without changing public bytes',async()=>{
