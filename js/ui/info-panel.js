@@ -1,8 +1,8 @@
-import { scoreRating } from "../core/score-presentation.js?v=4.0.578";
-import { formatNumber as localizedNumber, getLanguage, getLocale, t } from "../i18n.js?v=4.0.578";
-import { forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.578";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.578";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.578";
+import { scoreRating } from "../core/score-presentation.js?v=4.0.579";
+import { formatNumber as localizedNumber, getLanguage, getLocale, t } from "../i18n.js?v=4.0.579";
+import { forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.579";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.579";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.579";
 
 export const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 const formatMetric = (value, suffix, digits = 1) => hasNumber(value) ? `${localizedNumber(value, { minimumFractionDigits:digits, maximumFractionDigits:digits })} ${suffix}` : t('common.missing');
@@ -362,6 +362,8 @@ export function bindZoneInfoInteractions(element, zone, mode, history, options =
 }
 
 export function showZoneInfo(element, zone, result, condition, mode, options = {}) {
+  const mapHourView = typeof options.mapForecastTime === 'string'
+    && options.mapForecastTime === result.time;
   const modeName = t(mode === "waders" ? 'mode.waders' : 'mode.beachShort'), score = result.available ? result.score : "–", days = groupForecastHours(options.forecast);
   const componentHtml = result.available ? `<div class="component-list metric-sized">${componentDetails(t('score.huntability'),"huntability",result,t('score.huntabilityDefinition'))}${componentDetails(t('score.transport'),"transport",result,t('score.transportDefinition'))}${componentDetails(t('score.mobilisation'),"release",result,mobilisationDefinition())}</div>` : `<div class="metric-grid"><div class="metric"><span>${t('score.huntability')}</span><strong>–/100</strong></div><div class="metric"><span>${t('score.transport')}</span><strong>–/100</strong></div><div class="metric"><span>${t('score.mobilisation')}</span><strong>–/100</strong></div></div>`;
   element.innerHTML = `<button type="button" class="back-to-overview" data-close-zone>${t('score.backOverview')}</button><div class="zone-header"><div><h2>${escapeHtml(zone.name)}</h2><p class="zone-meta">${escapeHtml(zone.region)} · ${modeName}</p></div><div class="score-badge ${result.level}"><strong>${score}</strong><span>${escapeHtml(scoreLabel(result))}</span></div></div>
@@ -373,7 +375,7 @@ export function showZoneInfo(element, zone, result, condition, mode, options = {
     ${result.available ? integratedExplanationPanel(result) : ""}
     ${result.available ? debugPanel(zone,result,condition) : ""}
     ${result.available ? `<div class="metric-grid weather-grid"><div class="metric"><span>${t('weather.wind')}</span><strong>${directionMetric("wind",condition.windSpeedMps,"m/s",condition.windDirectionDeg)}</strong></div><div class="metric"><span>${t('weather.waves')}</span><strong>${formatMetric(condition.waveHeightM,"m")}</strong></div><div class="metric"><span>${t('weather.waterLevel')}</span><strong>${formatMetric(condition.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>${t('weather.current')}</span><strong>${directionMetric("current",condition.currentSpeedMps,"m/s",condition.currentDirectionDeg,2)}</strong></div><div class="metric"><span>${t('weather.waterTrend')}</span><strong>${formatMetric(condition.waterLevelTrendCm3h,"cm",0)}</strong></div><div class="metric"><span>${t('weather.waterTemperature')}</span><strong>${formatMetric(condition.waterTemperatureC,"°C")}</strong></div></div>` : ""}
-    ${forecastPanel(days,zone,mode,options.history||{},condition,result,options.bestByDate||{})}${tidePanel(days)}`;
+    ${mapHourView ? `<p class="map-timeline-zone-scope muted">${t('map.timeline.zoneScope')}</p>` : `${forecastPanel(days,zone,mode,options.history||{},condition,result,options.bestByDate||{})}${tidePanel(days)}`}`;
 }
 
 function capitalize(value="") { return value.charAt(0).toUpperCase()+value.slice(1); }

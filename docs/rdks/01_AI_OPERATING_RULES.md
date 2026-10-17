@@ -1,3 +1,9 @@
+## Aktuel indgang 17. oktober — særskilt kort-UI 4.0.579
+
+Den aktuelle UI-kandidat er kun tidsskyderen oven på den allerede installerede native0600/230-binding. Assistentkandidaten er særskilt og er ikke medleveret som 4.0.579. Se den nye status i `docs/ai/CODEX_START_HERE.md`, `docs/rdks/90_INDEX/CURRENT_TRUTH.md` og håndbog 89.250; ældre afventninger nedenfor er dateret historik.
+
+Offentlig 4.0.578 er faktisk genoprettet, og den almindelige efterfølger er endnu ikke dokumenteret afsluttet. Den lokale UI har mål- og syntetisk browserbevis, ikke offentlig levering. Præcis GitHub-kontrol, sikker levering efter aktiv writer og offentlig accept er åbne; alle fem hovedmål og 18. oktober-fristen består. Det seneste private checkpoint styrer faktisk kørsel og næste sikre trin.
+
 ## 17. oktober — beskyttet gendannelse bevarer de oprindelige kontrolsummer
 
 PR642 har faktisk bestået sin samlede præcise kildekontrol og er merget. Den efterfølgende særlige genoptagelse 38979426989 gendannede den færdige private beregningspakke, men stoppede i trin 58 ved normal gendannelse af den beskyttede beregningstilstand: `RavScore checkpoint state integrity is invalid`. Stoppet var før leverandører, scoring og Pages. De allerede publicerede nye private originaler bevares; ingen ny offentlig generation eller almindelig efterfølger er bevist.

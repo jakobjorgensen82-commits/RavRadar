@@ -1,5 +1,5 @@
-import { t } from "../i18n.js?v=4.0.578";
-import { loadCurrentArrowLandMask } from "./current-arrow-land-mask.js?v=4.0.578";
+import { t } from "../i18n.js?v=4.0.579";
+import { loadCurrentArrowLandMask } from "./current-arrow-land-mask.js?v=4.0.579";
 
 const palette = { good: "#168653", fair: "#e6a700", weak: "#d9822b", poor: "#d34a3a", unavailable: "#30383c" };
 
@@ -147,7 +147,7 @@ export function createMap(elementId) {
   return map;
 }
 
-export function renderZones(map, featureCollection, scoreForZone, onSelect) {
+export function renderZones(map, featureCollection, scoreForZone, onSelect, { fitBounds = true } = {}) {
   // Polygonerne bevares skjult til geofencing og beregninger.
   const geometryLayer = L.geoJSON(featureCollection, { style: { opacity: 0, fillOpacity: 0, weight: 0 }, interactive: false });
   const lineLayer = L.layerGroup().addTo(map);
@@ -225,7 +225,7 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
   }));
 
   const bounds = geometryLayer.getBounds();
-  if (bounds.isValid()) map.fitBounds(bounds, { padding: [18, 18], maxZoom: 10 });
+  if (fitBounds && bounds.isValid()) map.fitBounds(bounds, { padding: [18, 18], maxZoom: 10 });
 
   const api = { geometryLayer, lineLayer, lines, boundaryTicks, overviewBounds: bounds, map, selectedId: null };
   let localPartsLayer = null;
@@ -233,7 +233,7 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
     if (localPartsLayer) map.removeLayer(localPartsLayer);
     localPartsLayer = null;
   };
-  api.showLocalParts = (zoneId, parts = [], highlightedPartIds = []) => {
+  api.showLocalParts = (zoneId, parts = [], highlightedPartIds = [], { fitBounds = true } = {}) => {
     api.clearLocalParts();
     const highlighted = new Set(highlightedPartIds);
     localPartsLayer = L.layerGroup().addTo(map);
@@ -249,7 +249,7 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
       layer.bindTooltip(`${escapeHtml(part.name || t('map.coastalPart'))}${isHighlighted ? ` · ${t('map.amongBest')}` : ''}`, {permanent:true,direction:'top',className:`local-part-label${isHighlighted?' highlighted':''}`});
       partBounds.extend(layer.getBounds());
     });
-    if (partBounds.isValid()) map.fitBounds(partBounds,{padding:[34,34],maxZoom:12});
+    if (fitBounds && partBounds.isValid()) map.fitBounds(partBounds,{padding:[34,34],maxZoom:12});
     api.selectedId = zoneId;
   };
   api.showOverview = () => { if (api.overviewBounds?.isValid()) map.fitBounds(api.overviewBounds, {padding:[18,18], maxZoom:7}); };
@@ -292,6 +292,8 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
     api.clearLocalParts();
     map.off("zoomend", refreshZoomStyles);
     if (zoomFrame) cancelAnimationFrame(zoomFrame);
+    map.removeLayer(lineLayer);
+    lineLayer.clearLayers();
   };
   return api;
 }
@@ -345,7 +347,8 @@ function validDirection(value) {
   return value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
 }
 
-export function buildFlowArrowCandidates(featureCollection, conditionForZone, coastalParts = null, zoom = 7, landMask = null) {
+export function buildFlowArrowCandidates(featureCollection, conditionForZone, coastalParts = null, zoom = 7, landMask = null, forecast = null) {
+  if (forecast?.time) return buildSelectedHourFlowArrows(featureCollection, coastalParts, forecast, zoom, landMask);
   const verifiedCurrentGridSources = new Set(['dmi-marine-grid', 'copernicus-current-grid', 'dmi-regional-proxy-grid']);
   const candidates = [];
   const activeZoneIds = new Set();
@@ -422,6 +425,43 @@ export function buildFlowArrowCandidates(featureCollection, conditionForZone, co
   return displayable();
 }
 
+// Display-only forecast projection: H0 zone points are intentionally absent
+// from later hour packages. Use only each selected-hour part's real vector AND
+// real point; never pair a future vector with an H0/admin fallback location.
+export function buildSelectedHourFlowArrows(featureCollection, coastalParts, { time, mode = 'waders' }, zoom = 7, landMask = null) {
+  const active = new Set((featureCollection?.features ?? []).filter(feature => !feature.properties.zoneStatus
+    || feature.properties.zoneStatus === 'active').map(feature => feature.properties.id));
+  const currentSources = new Set(['dmi-marine-grid','copernicus-current-grid','dmi-regional-proxy-grid']);
+  const windSources = new Set(['dmi-atmospheric-grid','dmi-marine-wind-grid','open-meteo-wind-grid']);
+  const candidates = [];
+  if (coastalParts?.enabled !== true || !['waders','beach'].includes(mode)) return candidates;
+  for (const [partId, part] of Object.entries(coastalParts.parts ?? {}).sort(([a],[b]) => a < b ? -1 : a > b ? 1 : 0)) {
+    if (!active.has(part?.zoneId) || part.current?.time !== time) continue;
+    const zoneRow = coastalParts.zones?.[part.zoneId]?.hourly?.find(row => row.time === time);
+    if (!zoneRow) continue;
+    const weather = part.current.weather, points = part.flowPoints;
+    if (!weather || (weather.time && weather.time !== time) || !points) continue;
+    for (const type of ['current','wind']) {
+      const point = pointCoordinates(points[type]), direction = weather[type + 'DirectionDeg'];
+      const source = points.sources?.[type];
+      if (!point || !validDirection(direction) || !(type === 'current' ? currentSources : windSources).has(source)
+          || (type === 'current' && landMask?.classifyPoint(point) !== 'water')) continue;
+      const metadata = points.sourceMetadata?.[type] ?? {};
+      candidates.push({ type, zoneId: part.zoneId, partId, point, directionDeg: Number(direction), source,
+        sourceClass: typeof metadata.sourceClass === 'string' ? metadata.sourceClass : null,
+        distanceKm: typeof metadata.distanceKm === 'number' && Number.isFinite(metadata.distanceKm) ? metadata.distanceKm : null,
+        representative: zoneRow[mode]?.winningPartId === partId });
+    }
+  }
+  if (zoom >= 9) return candidates;
+  const representatives = new Map();
+  for (const candidate of candidates) {
+    const key = candidate.zoneId + ':' + candidate.type, previous = representatives.get(key);
+    if (!previous || (!previous.representative && candidate.representative)) representatives.set(key, candidate);
+  }
+  return [...representatives.values()];
+}
+
 function minArrowSeparationPx(zoom) {
   if (zoom <= 7) return 34;
   if (zoom <= 9) return 28;
@@ -436,7 +476,7 @@ function canPlaceAt(map, latLng, occupied, minDistance) {
   return true;
 }
 
-export function installFlowArrows(map, featureCollection, conditionForZone, coastalPartsForMap = () => null, { landMask: initialLandMask = null } = {}) {
+export function installFlowArrows(map, featureCollection, conditionForZone, coastalPartsForMap = () => null, { landMask: initialLandMask = null, forecastForMap = () => null } = {}) {
   if (!map.getPane("flowArrowsPane")) {
     const pane = map.createPane("flowArrowsPane");
     pane.style.zIndex = "440";
@@ -459,7 +499,7 @@ export function installFlowArrows(map, featureCollection, conditionForZone, coas
     const minDistance = minArrowSeparationPx(zoom);
     const occupied = { current: [], wind: [] };
 
-    const candidates = buildFlowArrowCandidates(featureCollection, conditionForZone, coastalPartsForMap?.(), zoom, landMask);
+    const candidates = buildFlowArrowCandidates(featureCollection, conditionForZone, coastalPartsForMap?.(), zoom, landMask, forecastForMap());
     for (const candidate of candidates) {
       try {
         const position = latLngFromPoint(candidate.point);

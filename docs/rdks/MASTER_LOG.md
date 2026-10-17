@@ -1,3 +1,13 @@
+## 17. oktober — særskilt korttidsskyder 4.0.579 uden ny modelbinding
+
+Ejeren har bestilt en tidsskyder under kortet med hele ugedagen, dato og dansk klokkeslæt. 4.0.579 er nu en særskilt UI-kandidat oven på den eksisterende native0600-kilde, ikke den separate assistentkandidat. Kun kortet og den åbne zone følger den valgte eksakte time og søgemåde. Aktuelt-listen, rigtig klokke, ture og Spørg RavRadar beholder deres normale aktuelle datagrundlag. Nu, en time tilbage/frem, dagsmærker og tastatur/berøring er med; ingen forhåndshentning af hele horisonten eller flere/større pile.
+
+Tidsvalget bruger kun manifestets reelt resterende eksakte timer og de eksisterende offentlige, kontrolsums- og modelbundne timefiler. Manglende eller afvist time bevarer sidste verificerede kort med dets korrekte tidspunkt og en fejlbesked, aldrig en nærmeste time. Gammel generationscache og gamle kortlag fjernes før ny visning; Nu genbruger aktuel verificeret visning og henter om nødvendigt den allerede eksisterende zonefil til den fulde zoneprognose. Nye pile bruger kun den valgte times egne kystdelsdata og gitterpunkter.
+
+C69, I71, scoremodel, kildevalg, adminpunkter, geometri, native0600/230 og alle udstedte migrationsfiler bevares. Kun den almindelige offentlige browserforsegling følger den nye UI. Normal versionssynkronisering og de tre nye måltests indgår i kildekontrollen, ikke som tunge ekstratests efter hver vejrhentning. Ingen ny SQL, assistentsemantik, retention, statistikfrigivelse, SOURCE19-aktivering eller produktionsændring er udført i denne lokale kandidat.
+
+Faktisk drift er rykket videre end de historiske tekster nedenfor: offentlig 4.0.578 er genoprettet, og en almindelig efterfølger kører, men dens succes og selvstændig drift er endnu ikke bevist. Dette er ikke offentlig levering af 4.0.579. Præcis kildekontrol, kontrolleret kode-only-levering og offentlig accept er åbne; alle fem hovedmål med frist 18. oktober består. Assistentkandidaten bevares særskilt og må senere følge den reelle næste release. Se håndbog 89.250 og privat checkpoint; tidligere status erstattes kun på disse konkrete punkter.
+
 ## 17. oktober — beskyttet gendannelse bevarer de oprindelige kontrolsummer
 
 PR642 har faktisk bestået sin samlede præcise kildekontrol og er merget. Den efterfølgende særlige genoptagelse 38979426989 gendannede den færdige private beregningspakke, men stoppede i trin 58 ved normal gendannelse af den beskyttede beregningstilstand: `RavScore checkpoint state integrity is invalid`. Stoppet var før leverandører, scoring og Pages. De allerede publicerede nye private originaler bevares; ingen ny offentlig generation eller almindelig efterfølger er bevist.

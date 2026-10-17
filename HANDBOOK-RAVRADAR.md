@@ -1,3 +1,17 @@
+## 89.250 Kortets tidsskyder – særskilt UI 4.0.579
+
+Kortet får et selvstændigt tidsvalg i fuld bredde under kortfladen. Den store tekst viser hele ugedagen, datoen og klokkeslættet i dansk tid. Skyderen vælger én time ad gangen; dagsmærker, en time tilbage/frem og **Nu** giver de samme valg med tastatur og berøring. Kun de resterende eksakte timer i det aktuelle manifests 118-timers akse er med. En ny generation eller rigtig klokke kan derfor forkorte eller erstatte valgmulighederne.
+
+Kortets farver, værktøjstips, den åbne zone og pile følger samme valgte time og søgemåde. Pilenes størrelse og tæthed ændres ikke. En fremtidig pil må kun bruge sin egen times dokumenterede kystdelsretning og gitterpunkt, aldrig et gammelt startpunkt. Manglende dokumentation betyder ingen pil, ikke nulstrøm eller en opfundet retning.
+
+Tidsvalget ændrer ikke den aktuelle rangliste, turens datagrundlag, Spørg RavRadar eller den virkelige klokke. En åben zone i fremtidsvisning forklares som én valgt prognosetime, ikke som en tom femdagesplan. **Nu** vender tilbage til den aktuelle verificerede visning og bruger den almindelige zoneindlæsning til hele zoneprognosen og tidevisningen. Zoom og valgt zone bevares ved et nyt tidsvalg.
+
+Under træk opdateres det ønskede tidspunkt straks, mens den senest indlæste kortvisnings tidspunkt stadig fremgår særskilt. Kun seneste valg hentes efter en kort pause eller ved slip. Kortet skifter først, når hele den eksakte time er kontrolleret mod manifest, byteantal, kontrolsum, model og generation. Fejl eller manglende time bevarer sidste klare kort med dets rigtige tidspunkt og en tydelig besked; nærmeste time må ikke bruges i stedet. Hele horisonten forhåndshentes ikke, og første sideindlæsning kræver ikke ekstra vejrdata på grund af skyderen.
+
+Ved nye data ryddes gamle scorecacher før det nye kort males, og gamle kortlag fjernes uden at slette de nye eller andre lag. De normale målprøver dækker også forsinkede svar, generationsskift, manglende timer, begge søgemåder og udløb. De tre nye måltests indgår i kildekontrollen, ikke som en ekstra tung national prøve efter hver vejrhentning.
+
+Dette er en særskilt lokal UI-kandidat på den eksisterende native0600-kilde. Scoremodel, C69/I71, alle udstedte migrationsfiler, adminpunkter, geometri, kildeprioritet og gemte originaler bevares. Der kræves ingen ny assistentbinding eller SQL; den normale offentlige browserforsegling følger naturligt den nye brugerflade. Offentlig 4.0.578 er faktisk genoprettet, mens en almindelig efterfølger endnu skal afsluttes og verificeres. Lokal 4.0.579 er ikke offentlig levering eller bevis for selvstændig drift; præcis kildekontrol, kontrolleret levering og offentlig accept er åbne. Den separate assistentkandidat og de øvrige mål forbliver særskilte. Tidligere daterede afventningsudsagn er kun erstattet på de her faktisk afsluttede trin.
+
 ## 89.249 Gendannelse skal bevare indhold og oprindelige kontrolsummer
 
 **Kort fortalt:** Databasen kan gemme et objekts felter i en anden rækkefølge uden at ændre indholdet. En sikker gendannelse skal kunne håndtere dette uden at ændre værdier eller udstede nye kontrolsummer.
@@ -322,17 +336,17 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.578
+**Håndbogsversion:** 4.0.579
 
-## Aktuel lokal kildebinding — 16. oktober 2026, 4.0.578 ikke installeret
+## Aktuel lokal kildebinding — 17. oktober 2026, særskilt UI 4.0.579
 
-LOKAL kildeblok — 16. oktober 2026, RavScore 4.0.578: udstedt, ikke installeret eller offentliggjort.
+LOKAL UI-kandidat — 17. oktober 2026, RavRadar 4.0.579: tidsskyderen er endnu ikke offentligt leveret. Den genbruger den allerede installerede native0600/230-modelbinding fra den faktisk genoprettede offentlige 4.0.578; der følger ingen ny SQL- eller assistentovergang med.
 
-Den lokale kildekandidat til RavScore 4.0.578 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=aa1e364bf6a0962725b6633fdc3487c6e626d51373302d7135023547a93c9855` over 71 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=2786145f7fc812cd658cab3a69927db625c2b8ffb3be81256acedd12288f4010` over 69 transitive filer.
+Den lokale UI-kandidat 4.0.579 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=aa1e364bf6a0962725b6633fdc3487c6e626d51373302d7135023547a93c9855` over 71 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=2786145f7fc812cd658cab3a69927db625c2b8ffb3be81256acedd12288f4010` over 69 transitive filer.
 
-Den lokale fortsættelseskontrakt er `15f0eb6748cf0a4f1c9d8971e43efc6823ec7d70c85984e6619e07db277702f1` (`15f0eb67…`) over 12 normaliserede kildefiler. Autoriteten er `version.json.releaseContract.modelBindings` og den normale fortsættelseskontrakt. Den nye selvstændige migration `20261016060000_native_sampling_identity_original_bound_successor.sql` er udstedt, men ikke installeret. Gamle 220/230-migrationer og deres bindinger bevares.
+Den uændrede fortsættelseskontrakt er `15f0eb6748cf0a4f1c9d8971e43efc6823ec7d70c85984e6619e07db277702f1` (`15f0eb67…`) over 12 normaliserede kildefiler. Autoriteten er `version.json.releaseContract.modelBindings` og den normale fortsættelseskontrakt. Migration `20261016060000_native_sampling_identity_original_bound_successor.sql` og den tidligere 230-statistikovergang er allerede installeret. Alle udstedte migrationsfiler og deres bindinger bevares uændret i UI-kandidaten.
 
-Den integrerede model er offentlig som modeltype og allerede leveret familie under 4.0.577. Det er ikke bevis for offentlig 4.0.578 eller den lokale nye I71/C69/T12-familie. Den fysiske scorekontrakt, formler, kildeprioritet og administratorpunkter er uændrede. Samlet præcis kildekontrol, Linux/native, PostgreSQL, sikker installation og faktisk ny offentlig generation er fortsat åbne.
+Offentlig 4.0.578 er faktisk genoprettet; en almindelig efterfølger kører og er endnu ikke dokumenteret afsluttet. Den fysiske scorekontrakt, formler, kildeprioritet og administratorpunkter er uændrede. Den særskilte UI-kandidat har bestået lokale målprøver; præcis samlet GitHub-kildekontrol, sikker kode-only-levering og faktisk offentlig UI-accept er fortsat åbne. Lokal syntetisk browserkontrol er ikke bevis for offentlig levering eller telefonens faktiske hentehastighed. Ældre daterede installations- og bindingsangivelser nedenfor er historik, ikke aktuel status.
 
 ## Historisk kildebinding — 14. oktober 2026, dengang ikke installeret
 
