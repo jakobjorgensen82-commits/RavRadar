@@ -1,3 +1,9 @@
+## Aktuel indgang 17. oktober — særskilt kort-UI 4.0.579
+
+Den aktuelle UI-kandidat er kun tidsskyderen oven på den allerede installerede native0600/230-binding. Assistentkandidaten er særskilt og er ikke medleveret som 4.0.579. Se den nye status i `docs/ai/CODEX_START_HERE.md`, `docs/rdks/90_INDEX/CURRENT_TRUTH.md` og håndbog 89.250; ældre afventninger nedenfor er dateret historik.
+
+Offentlig 4.0.578 er faktisk genoprettet, og den almindelige efterfølger er endnu ikke dokumenteret afsluttet. Den lokale UI har mål- og syntetisk browserbevis, ikke offentlig levering. Præcis GitHub-kontrol, sikker levering efter aktiv writer og offentlig accept er åbne; alle fem hovedmål og 18. oktober-fristen består. Det seneste private checkpoint styrer faktisk kørsel og næste sikre trin.
+
 # Lokal 4.0.575-kildekandidat – selektiv integration med aktuel main, 2026-10-12
 
 Den faktiske lokale sammensætning har nu bestået de berørte produktmål, originalbevarelse og de aktuelle normale kaldere. Det godkendte brugerdataforløb afgrænser også assistentens opdatering til ét forsøg uden automatisk gentagelse ved fejl; den øvrige leveringspolitik ændres ikke. De to præcist bytebundne migrationer bevares med deres originale LF-linjeskift på begge platforme, uden ændret SQL-indhold. Ny præcis GitHub-kontrol, faktisk installation og offentlig effekt afventes fortsat.
