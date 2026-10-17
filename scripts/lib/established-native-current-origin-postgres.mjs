@@ -89,9 +89,21 @@ async function artificialSelectorMechanics({ psql, after, atHour }) {
     await psql(projection + '\n' + cas + '\n' + attempt + ';\n' + functions.map(([name, signature]) =>
       'revoke all on function public.' + name + signature + ' from public,anon,authenticated;').join('\n')
       + '\nalter function public.' + casName + "(bigint,timestamptz,jsonb) set statement_timeout='55s';"
+      + '\ngrant execute on function public.' + casName + '(bigint,timestamptz,jsonb) to service_role;'
       + '\ngrant execute on function public.' + attemptName + '(boolean,bigint,jsonb) to service_role;');
+    // The invoker attempt must be allowed to ENTER the copied definer CAS.
+    // Its SECURITY DEFINER takes effect only after that EXECUTE check.
+    const acl = await psql("select has_function_privilege('service_role','public." + casName
+      + "(bigint,timestamptz,jsonb)','EXECUTE') and has_function_privilege('service_role','public."
+      + attemptName + "(boolean,bigint,jsonb)','EXECUTE') and not has_function_privilege('service_role','public."
+      + projectionName + "(jsonb,timestamptz)','EXECUTE') and "
+      + ['anon', 'authenticated'].flatMap(role => functions.map(([name, signature]) =>
+        "not has_function_privilege('" + role + "','public." + name + signature + "','EXECUTE')")).join(' and ') + ';');
+    console.log(JSON.stringify({ kind: 'ARTIFICIAL_SELECTOR_SQL_ACL_CHECK', passed: acl === 't', privatePayloadIncluded: false }));
+    assert.equal(acl, 't', 'Artificial selector retains only its normal service-role call chain');
     assert.equal(await psql('select public.' + projectionName
       + "((select payload from native_checkpoint_payloads where name='after0600-same'),'" + atHour(49) + "') is not null;"), 't');
+    let firstCaseError = null;
     for (const [name, incoming, version, code, disposition, storedVersion] of [
       ['artificial-same-metadata', 'same', 1, null, 'updated', 2],
       ['artificial-same-numeric-change', 'changed', 1, '23505', null, 1],
@@ -101,9 +113,16 @@ async function artificialSelectorMechanics({ psql, after, atHour }) {
       const observed = JSON.parse(await psql(reset('after0600-same')
         + "set request.jwt.claim.role='service_role';set role service_role;select public." + attemptName
         + '(false,' + version + ",(select payload from native_checkpoint_payloads where name='" + PREFIX + incoming + "'));"));
-      assertObserved(observed, code, disposition, storedVersion);
+      try { assertObserved(observed, code, disposition, storedVersion); }
+      catch (error) {
+        firstCaseError ??= error;
+        const safeCode = value => [null, '22023', '23505', '40001', '42501', '57014'].includes(value) ? value : 'UNKNOWN';
+        console.error(JSON.stringify({ kind: 'ARTIFICIAL_SELECTOR_SQL_CASE_FAILURE', case: name,
+          expectedSqlstate: safeCode(code), observedSqlstate: safeCode(observed?.sqlstate), privatePayloadIncluded: false }));
+      }
       reports.push({ case: name, sqlstate: code, disposition, storedVersion, artificialSelectorOnly: true });
     }
+    if (firstCaseError) throw firstCaseError;
   } finally {
     for (const [name, signature] of [...functions].reverse()) await psql('drop function if exists public.' + name + signature + ';');
   }

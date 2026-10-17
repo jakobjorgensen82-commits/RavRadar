@@ -55,7 +55,7 @@ test('artificial selector mechanism is internal and cannot be mistaken for nativ
   assert(!source.includes('readEstablishedNativeCurrentSeedOrigin('));
 });
 
-test('catalog-returned artificial attempt DDL has an explicit statement boundary and reverse cleanup', async () => {
+test('catalog-returned artificial attempt DDL retains statement, service-role call chain and reverse cleanup', async () => {
   const source = (await fs.readFile(new URL('./lib/established-native-current-origin-postgres.mjs', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
   const preambleStart = source.indexOf("const CP = 'ravradar_ravscore_checkpoint_'");
   const preambleEnd = source.indexOf('\nexport function assertEstablishedNativeCurrentOriginTransactionBounds', preambleStart);
@@ -79,7 +79,7 @@ test('catalog-returned artificial attempt DDL has an explicit statement boundary
     'drop function if exists public.native_origin_fixture_cas(bigint,timestamptz,jsonb);',
     'drop function if exists public.native_origin_fixture_projection(jsonb,timestamptz);',
   ];
-  async function exercise(functions, catalogSuffix) {
+  async function exercise(functions, catalogSuffix, firstCaseCode = null) {
     const execute = runInNewContext(preamble + '\n' + functions + '\nartificialSelectorMechanics;',
       { assert, crypto, definition, PROJECTION });
     const calls = [], drops = [];
@@ -95,11 +95,18 @@ test('catalog-returned artificial attempt DDL has an explicit statement boundary
           'Catalog-returned DDL must end before the following ACL statement');
         assert.equal((sql.match(/RETURN public\.native_origin_fixture_cas\(/g) ?? []).length, 1);
         assert(!sql.includes('RETURN public.ravradar_ravscore_checkpoint_cas('));
+        assert.match(sql, /grant execute on function public\.native_origin_fixture_cas\(bigint,timestamptz,jsonb\) to service_role;/,
+          'The invoker attempt needs EXECUTE on the copied definer CAS');
         return '';
+      }
+      if (sql.startsWith("select has_function_privilege('service_role','public.native_origin_fixture_cas")) {
+        assert.equal((sql.match(/not has_function_privilege\('/g) ?? []).length, 7);
+        assert.equal((sql.match(/has_function_privilege\('service_role'/g) ?? []).length, 3);
+        return 't';
       }
       if (sql.startsWith('select public.native_origin_fixture_projection')) return 't';
       if (sql.startsWith('truncate public.admin_documents;')) {
-        const sqlstate = [null, '23505', '40001', null][caseIndex++];
+        const sqlstate = [firstCaseCode, '23505', '40001', null][caseIndex++];
         const previous = { version: 1, ownerIsNull: false };
         return JSON.stringify({ sqlstate, previous,
           result: sqlstate ? null : { disposition: 'updated', centralVersion: 2 },
@@ -119,6 +126,7 @@ test('catalog-returned artificial attempt DDL has an explicit statement boundary
       return calls;
     } finally {
       assert.deepEqual(drops, expectedDrops, 'Both success and rejected CREATE clean up only their three owned functions in reverse order');
+      if (firstCaseCode !== null) assert.equal(caseIndex, 4, 'All independent cases run before rethrowing the first failure');
     }
   }
   await exercise(fullInternalFunctions, '\n');
@@ -128,4 +136,9 @@ test('catalog-returned artificial attempt DDL has an explicit statement boundary
   assert.equal(fullInternalFunctions.split(fixedBoundary).length, 2);
   await assert.rejects(exercise(fullInternalFunctions.replace(fixedBoundary, missingBoundary), '\n'),
     /Catalog-returned DDL must end before the following ACL statement/);
+  const casGrant = "      + '\\ngrant execute on function public.' + casName + '(bigint,timestamptz,jsonb) to service_role;'\n";
+  assert.equal(fullInternalFunctions.split(casGrant).length, 2);
+  await assert.rejects(exercise(fullInternalFunctions.replace(casGrant, ''), '\n'),
+    /The invoker attempt needs EXECUTE on the copied definer CAS/);
+  await assert.rejects(exercise(fullInternalFunctions, '\n', '42501'), { code: 'ERR_ASSERTION' });
 });
