@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import nativeFs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -8,7 +9,9 @@ import childProcess, { execFile } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { syncBuiltinESMExports } from 'node:module';
 import { promisify } from 'node:util';
-import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
+import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack,
+  privateWeatherPackJsonReadsClosed, ownFileDescriptorIdentity,
+  ownedFileDescriptorClosed } from './lib/private-weather-component-pack.mjs';
 import { mergeVerifiedProtectedProgressComponents } from './lib/verified-protected-progress-components.mjs';
 import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE,
   PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
@@ -57,6 +60,104 @@ async function seed(root) {
   await write(root, PRIVATE_WEATHER_COMPONENT_FILES.fallbackCursor,
     { kind: 'WEATHER_COMPONENT_FALLBACK_CURSOR', schemaVersion: 1, openMeteoLastAttemptedPartId: 'TEST' });
 }
+
+test('shared own-fd close proof refuses a real open original, then accepts its actual close', async t => {
+  const { source } = await fixture(t);
+  await seed(source);
+  const handle = await fs.open(path.join(source, PRIVATE_WEATHER_COMPONENT_FILES.selectedComponents), 'r');
+  const fd = handle.fd, before = ownFileDescriptorIdentity(fd);
+  try {
+    assert.ok(before);
+    assert.equal(await ownedFileDescriptorClosed(fd, before), false);
+    assert.equal(await ownedFileDescriptorClosed(fd, null), false);
+    const stillOpen = nativeFs.fstatSync(fd, { bigint: true });
+    assert.ok(stillOpen.isFile());
+    assert.equal(stillOpen.dev, before.dev); assert.equal(stillOpen.ino, before.ino);
+    await handle.close();
+    assert.equal(await ownedFileDescriptorClosed(fd, before), true);
+  } finally { await handle.close(); }
+});
+
+test('Linux owned stream closure accepts a genuinely reused directory fd', {
+  skip: process.platform !== 'linux' ? 'NATIVE_LINUX_REQUIRED_UNRUN_NOT_PASS' : false,
+}, async t => {
+  assert.equal(process.platform, 'linux', 'NATIVE_LINUX_REQUIRED; unsupported is not PASS');
+  const { source } = await fixture(t);
+  await seed(source);
+  const previous = await buildPrivateWeatherComponentPack({ repositoryRoot: source, conditions });
+  const previousBytes = await fs.readFile(previous.sourcePath);
+  const selected = path.join(source, PRIVATE_WEATHER_COMPONENT_FILES.openMeteoBank);
+  const directoryBefore = await fs.lstat(source, { bigint: true });
+  assert.ok(directoryBefore.isDirectory() && !directoryBefore.isSymbolicLink());
+  const original = { createReadStream: nativeFs.createReadStream, openSync: nativeFs.openSync,
+    closeSync: nativeFs.closeSync, fstatSync: nativeFs.fstatSync };
+  let stream, ownFd, ownIdentity, replacementFd, replacementIdentity;
+  let observations = 0, observationFailure, failure, result;
+  t.mock.method(nativeFs, 'createReadStream', (...args) => {
+    const selectedCopy = !stream && args[0] === selected
+      && new Error().stack.includes('at buildPackWithJsonReadLifetime (');
+    const created = Reflect.apply(original.createReadStream, nativeFs, args);
+    if (selectedCopy) {
+      stream = created;
+      created.once('open', fd => {
+        try { ownFd = fd; ownIdentity = original.fstatSync(fd, { bigint: true }); }
+        catch (error) { observationFailure ??= { error }; }
+      });
+      created.once('close', () => {
+        // Genuine native reuse: no timer, forged stat or supplied fd number.
+        try {
+          replacementFd = original.openSync(source, nativeFs.constants.O_RDONLY | nativeFs.constants.O_DIRECTORY);
+          replacementIdentity = original.fstatSync(replacementFd, { bigint: true });
+          observations++;
+        } catch (error) { observationFailure ??= { error }; }
+      });
+    }
+    return created;
+  });
+  syncBuiltinESMExports();
+  const invocation = buildPrivateWeatherComponentPack({ repositoryRoot: source, conditions });
+  try {
+    try { result = await invocation; } catch (error) { failure = error; }
+    if (observationFailure) throw observationFailure.error;
+    assert.equal(observations, 1);
+    assert.equal(replacementFd, ownFd, 'The numeric descriptor was genuinely reused; no retry or supplied value.');
+    assert.equal(stream.closed, true, 'Logical close alone is not the proof.');
+    assert.ok(ownIdentity.isFile());
+    assert.equal(typeof ownIdentity.dev, 'bigint'); assert.equal(typeof ownIdentity.ino, 'bigint');
+    assert.ok(replacementIdentity.isDirectory(), 'Actual kernel directory stat, not a hypothetical Stats object.');
+    assert.equal(replacementIdentity.dev, directoryBefore.dev);
+    assert.equal(replacementIdentity.ino, directoryBefore.ino);
+    assert.ok(replacementIdentity.dev !== ownIdentity.dev || replacementIdentity.ino !== ownIdentity.ino);
+    const stillOwnReplacement = original.fstatSync(replacementFd, { bigint: true });
+    assert.ok(stillOwnReplacement.isDirectory());
+    assert.equal(stillOwnReplacement.dev, replacementIdentity.dev);
+    assert.equal(stillOwnReplacement.ino, replacementIdentity.ino, 'The pack must not close another operation’s directory.');
+    assert.deepEqual(await fs.readFile(previous.sourcePath), previousBytes,
+      'Either identical publication or strict refusal must preserve every previous pack byte.');
+    t.diagnostic(JSON.stringify({ kind: 'OWN_STREAM_DIRECTORY_DESCRIPTOR_REUSE', identityPrecision: 'bigint',
+      actualSameNumericFd: true, actualDifferentDevIno: true, replacementIsOwnedDirectory: true,
+      replacementStillOpen: true, previousPackBytesUnchanged: true,
+      normalBuildReturned: result !== undefined, normalBuildRefused: failure !== undefined }));
+    assert.equal(failure, undefined, 'A genuinely different directory owner is not a leaked original stream.');
+    assert.equal(result.relativePath, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath);
+    assert.equal(privateWeatherPackJsonReadsClosed(invocation), true);
+  } finally {
+    t.mock.restoreAll();
+    syncBuiltinESMExports();
+    // Close only this test's retained, re-identified directory descriptor.
+    if (Number.isInteger(replacementFd)) {
+      let retained;
+      try { retained = original.fstatSync(replacementFd, { bigint: true }); }
+      catch (error) { if (error?.code !== 'EBADF') throw error; }
+      if (retained) {
+        assert.ok(retained.isDirectory());
+        assert.equal(retained.dev, directoryBefore.dev);
+        assert.equal(retained.ino, directoryBefore.ino);
+        original.closeSync(replacementFd);
+      }
+    }
+  }
+});
 
 test('fixed offline callers do not settle or clean inventory before the retained child closes', async t => {
   for (const caller of ['inventory', 'cp-union', 'current-union']) {
@@ -225,6 +326,70 @@ test('pack roundtrip keeps exact OM response, selection history and rotation, ex
   assert.deepEqual(actualBank, bank);
   assert.equal(Object.values(actualBank.responses)[0].responseText, responseText);
   await assert.rejects(fs.access(path.join(output, '.cache/secret-token.json')), /ENOENT/);
+});
+
+for (const replacement of ['different-file', 'same-file'])
+test('owned stream closure distinguishes physical fd reuse / ' + replacement, async t => {
+  const { source } = await fixture(t);
+  await seed(source);
+  const previous = await buildPrivateWeatherComponentPack({ repositoryRoot: source, conditions });
+  const previousBytes = await fs.readFile(previous.sourcePath);
+  const selected = path.join(source, PRIVATE_WEATHER_COMPONENT_FILES.openMeteoBank);
+  const other = path.join(source, PRIVATE_WEATHER_COMPONENT_FILES.fallbackCursor);
+  const original = { createReadStream: nativeFs.createReadStream, openSync: nativeFs.openSync,
+    closeSync: nativeFs.closeSync, fstatSync: nativeFs.fstatSync };
+  let stream, ownFd, ownIdentity, replacementFd, replacementIdentity, observations = 0, failure;
+  t.mock.method(nativeFs, 'createReadStream', (...args) => {
+    const selectedCopy = !stream && args[0] === selected
+      && new Error().stack.includes('at buildPackWithJsonReadLifetime (');
+    const created = Reflect.apply(original.createReadStream, nativeFs, args);
+    if (selectedCopy) {
+      stream = created;
+      created.once('open', fd => { ownFd = fd; ownIdentity = original.fstatSync(fd, { bigint: true }); });
+      created.once('close', () => {
+        // An actual new OS open, not a forged fstat/close result. This listener
+        // runs before the normal reader's post-close asynchronous probe.
+        replacementFd = original.openSync(replacement === 'same-file' ? selected : other, 'r');
+        replacementIdentity = original.fstatSync(replacementFd, { bigint: true });
+        observations++;
+      });
+    }
+    return created;
+  });
+  syncBuiltinESMExports();
+  const invocation = buildPrivateWeatherComponentPack({ repositoryRoot: source, conditions });
+  let result;
+  try {
+    try { result = await invocation; } catch (error) { failure = error; }
+    assert.equal(observations, 1);
+    assert.equal(replacementFd, ownFd, 'The same numeric descriptor was genuinely reused.');
+    assert.equal(stream.closed, true, 'Logical close is observed but is not the acceptance proof.');
+    assert.equal(replacementIdentity.dev, ownIdentity.dev);
+    assert.equal(replacementIdentity.ino === ownIdentity.ino, replacement === 'same-file');
+    const stillOwnReplacement = original.fstatSync(replacementFd, { bigint: true });
+    t.diagnostic(JSON.stringify({ kind: 'OWN_STREAM_DESCRIPTOR_REUSE', replacement,
+      identityPrecision: 'bigint', beforeDevType: typeof ownIdentity.dev, beforeInoType: typeof ownIdentity.ino,
+      afterDevType: typeof replacementIdentity.dev, afterInoType: typeof replacementIdentity.ino,
+      oldObjectDifferent: ownIdentity.dev !== replacementIdentity.dev || ownIdentity.ino !== replacementIdentity.ino }));
+    assert.equal(stillOwnReplacement.dev, replacementIdentity.dev);
+    assert.equal(stillOwnReplacement.ino, replacementIdentity.ino, 'The reader must never close the new owner.');
+    if (replacement === 'different-file') {
+      assert.equal(failure, undefined);
+      assert.equal(result.relativePath, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath);
+      assert.equal(privateWeatherPackJsonReadsClosed(invocation), true);
+    } else {
+      assert.equal(result, undefined);
+      assert.equal(failure?.message, 'WEATHER_PACK_STREAM_CLOSE_UNPROVED');
+      assert.equal(privateWeatherPackJsonReadsClosed(invocation), false);
+    }
+    assert.deepEqual(await fs.readFile(previous.sourcePath), previousBytes,
+      'Success is byte-identical; uncertain closure cannot replace the old pack.');
+  } finally {
+    t.mock.restoreAll();
+    syncBuiltinESMExports();
+    // Close only the actual new descriptor this test opened and still owns.
+    if (Number.isInteger(replacementFd)) original.closeSync(replacementFd);
+  }
 });
 
 test('used bank or selected-source ledger cannot be missing or silently changed', async t => {

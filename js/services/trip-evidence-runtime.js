@@ -1,7 +1,7 @@
-import { observationOriginFields } from './calibration-eligibility.js?v=4.0.579';
-import { createTripEvidenceController } from './trip-evidence-controller.js?v=4.0.579';
-import { createTripStartFromPublicState } from './trip-evidence-public-adapter.js?v=4.0.579';
-import { openTripEvidenceStartDialog } from '../ui/trip-evidence-dialog.js?v=4.0.579';
+import { observationOriginFields } from './calibration-eligibility.js?v=4.0.580';
+import { createTripEvidenceController } from './trip-evidence-controller.js?v=4.0.580';
+import { createTripStartFromPublicState } from './trip-evidence-public-adapter.js?v=4.0.580';
+import { openTripEvidenceStartDialog } from '../ui/trip-evidence-dialog.js?v=4.0.580';
 
 function defaultTripId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();

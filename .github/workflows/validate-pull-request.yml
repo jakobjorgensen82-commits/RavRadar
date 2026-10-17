@@ -14,7 +14,7 @@ jobs:
   validate:
     name: Source validation and release gate
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
         with:
@@ -42,6 +42,19 @@ jobs:
         env:
           SOURCE_GATE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+
+      # Reproduce the failing normal B/S caller before the long matrix. The
+      # observer only counts fixed categories around real native fs calls;
+      # it neither substitutes results nor relaxes the pack's close proof.
+      - name: Diagnose normal pack-reader closure on artificial data only
+        timeout-minutes: 2
+        run: >-
+          node --test scripts/test-owned-pack-close-probe.mjs && node
+          -e "require('node:assert/strict').equal(process.platform, 'linux')" && node --test
+          --test-name-pattern='^owned stream closure distinguishes physical fd reuse / (different-file|same-file)$|^Linux owned stream closure accepts a genuinely reused directory fd$|^shared own-fd close proof'
+          scripts/test-private-weather-component-pack.mjs && node --test
+          --test-name-pattern='^actual normal B/S admission'
+          scripts/test-completed-private-runtime-admission.mjs
 
       - uses: actions/setup-python@v7
         with:

@@ -2,7 +2,7 @@
 // Optional, encrypted acquisition progress only. Never production/state authority.
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
-import { createReadStream, createWriteStream, fstat, constants as fsConstants } from 'node:fs';
+import { createReadStream, createWriteStream, constants as fsConstants } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Transform } from 'node:stream';
@@ -13,7 +13,8 @@ import { spawn } from 'node:child_process';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 import { copernicusOfflineEnvironment } from './lib/copernicus-offline-environment.mjs';
 import { classifyProductionTargetFreshness } from './check-production-target-freshness.mjs';
-import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack, privateWeatherPackJsonReadsClosed } from './lib/private-weather-component-pack.mjs';
+import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack, privateWeatherPackJsonReadsClosed,
+  ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE } from './lib/private-weather-component-inventory.mjs';
 import { mergeVerifiedProtectedProgressComponents, protectedProgressUnionFailureCode, protectedProgressPackJsonReadsClosed } from './lib/verified-protected-progress-components.mjs';
 
@@ -417,6 +418,7 @@ async function epochProgressFiles({ view, root, productionReferenceAt, originalR
   const file = await checkedPath(original, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath);
   const named = await fs.lstat(file);
   const handle = await fs.open(file, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW ?? 0)), fd = handle.fd;
+  const descriptorIdentity = ownFileDescriptorIdentity(fd);
   let first = null, descriptor;
   try {
     const start = await handle.stat();
@@ -446,8 +448,7 @@ async function epochProgressFiles({ view, root, productionReferenceAt, originalR
         if (current[key] !== start[key]) fail('EPOCH_ORIGINAL_PACK_CHANGED');
   } catch (error) { first = { error }; }
   try { await handle.close(); } catch (error) { first ??= { error }; }
-  const probe = await new Promise(resolve => fstat(fd, error => resolve(error)));
-  if (probe?.code !== 'EBADF') {
+  if (!await ownedFileDescriptorClosed(fd, descriptorIdentity)) {
     retainedEpochOriginalReaders.add(handle);
     first ??= { error: Object.assign(new Error('EPOCH_ORIGINAL_PACK_CLOSE_UNPROVED'), { progressCode:'EPOCH_ORIGINAL_PACK_CLOSE_UNPROVED' }) };
   }

@@ -1,12 +1,12 @@
-import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.579';
+import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.580';
 import { publicDeliveryEntries, assertPublicDeliveryDocument, publicDeliveryGeneration,
-  reuseVerifiedPublicHour, refreshVerifiedPublicGeneration, createBoundedPublicMemory } from '../core/public-delivery-contract.js?v=4.0.579';
+  reuseVerifiedPublicHour, refreshVerifiedPublicGeneration, createBoundedPublicMemory } from '../core/public-delivery-contract.js?v=4.0.580';
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   RAVSCORE_CURRENT_SUPPLY_POLICY,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.579';
+} from '../core/ravscore-model-contract.js?v=4.0.580';
 import {
   RAVSCORE_PUBLIC_COASTAL_PART_COUNT,
   RAVSCORE_PUBLIC_DETAILS_KIND,
@@ -26,18 +26,18 @@ import {
   ravScorePublicHorizonValidUntil,
   selectPublicRuntimeAvailability,
   sameRavScoreModelBinding,
-} from '../core/ravscore-public-runtime-contract.js?v=4.0.579';
+} from '../core/ravscore-public-runtime-contract.js?v=4.0.580';
 import {
   assertExactPublicRavScoreProfile,
-} from '../core/ravscore-public-profile-contract.js?v=4.0.579';
+} from '../core/ravscore-public-profile-contract.js?v=4.0.580';
 import {
   assertRavScoreVerifiedEvidenceTrust,
-} from '../core/ravscore-evidence-trust-contract.js?v=4.0.579';
+} from '../core/ravscore-evidence-trust-contract.js?v=4.0.580';
 import {
   assertPublicWeatherSourceAge,
-} from '../core/ravscore-public-weather-source-age.js?v=4.0.579';
+} from '../core/ravscore-public-weather-source-age.js?v=4.0.580';
 
-export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.579';
+export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.580';
 
 const DEFAULT_PUBLIC_CONDITIONS_URL = './data/live/public-conditions.json';
 const DEFAULT_PUBLIC_DETAILS_URL = './data/live/public-condition-details.json';
@@ -71,6 +71,7 @@ async function fetchJson(url, {
   cache = 'default',
   expectedSha256 = null,
   expectedBytes = null,
+  timeoutMs = 0,
 } = {}) {
   const integrityRequired = expectedSha256 !== null || expectedBytes !== null;
   const expected = integrityRequired ? String(expectedSha256).toLowerCase() : null;
@@ -90,7 +91,10 @@ async function fetchJson(url, {
   const requestKey = `${url}|${expected}|${expectedBytes}`;
   if (inFlight.has(requestKey)) return inFlight.get(requestKey);
   const pending = (async () => {
-  const response = await fetch(url, { cache });
+  const controller = timeoutMs > 0 ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+  try {
+  const response = await fetch(url, { cache, ...(controller ? { signal: controller.signal } : {}) });
   if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
   let value;
   let actualSha256 = null;
@@ -114,6 +118,7 @@ async function fetchJson(url, {
   }
   if (ttlMs > 0) memory.remember(url, { at: Date.now(), value, sha256: actualSha256, bytes: actualBytes });
   return value;
+  } finally { if (timer !== null) clearTimeout(timer); }
   })();
   inFlight.set(requestKey, pending);
   try { return await pending; } finally { if (inFlight.get(requestKey) === pending) inFlight.delete(requestKey); }
@@ -1084,19 +1089,18 @@ export async function refreshPublicRuntimeGeneration({ manifest, conditions, now
   });
 }
 
-async function loadDelivery(manifest, kind, key) {
+async function loadDelivery(manifest, kind, key, { timeoutMs = 0 } = {}) {
   const entry = publicDeliveryEntries(manifest).find(entry => entry.kind === kind && entry.key === key);
   if (!entry) throw new Error('Den valgte time eller zone findes ikke i denne generation.');
   const url = contentAddressedUrl(`./data/live/${entry.path.slice(2)}`, manifest.datasetId, entry.sha256);
-  const data = await fetchJson(url, { ttlMs: 120000, cache: 'force-cache', expectedSha256: entry.sha256, expectedBytes: entry.bytes });
+  const data = await fetchJson(url, { ttlMs: 120000, cache: 'force-cache', expectedSha256: entry.sha256, expectedBytes: entry.bytes, timeoutMs });
   assertPublicDeliveryDocument(data, manifest, entry);
   assertPublicVerifiedEvidenceTrust(data, 'Den opdelte offentlige pakke');
   assertNestedModelBindings(data, manifest.ravScoreModelBinding);
   return data;
 }
 
-function projectDeliveryHour(startup, details, availability, manifest) {
-  const selectedReferenceAt = availability.selectedReferenceAt;
+function projectDeliveryHour(startup, details, availability, manifest, selectedReferenceAt = availability.selectedReferenceAt) {
   const zones = Object.fromEntries(Object.entries(details.zones).map(([id, zone]) => [id, {
     ...startup.zones[id], currentReferenceAt: selectedReferenceAt,
     // A startup source point belongs to H0, not every later forecast hour.
@@ -1112,6 +1116,34 @@ function projectDeliveryHour(startup, details, availability, manifest) {
     publicRuntimeAvailability: availability,
     deliveryGeneration: `${manifest.datasetId}|${manifest.publicConditionDetailsSha256}`,
     deliveryManifestIdentity: publicDeliveryGeneration(manifest) };
+}
+
+// Public, display-only seam around the unchanged manifest-bound hour reader.
+// Never fake the real runtime clock to obtain a forecast, and never install the
+// returned projection as current conditions/trip/assistant state.
+export function mapForecastTimeline({ manifest, conditions } = {}) {
+  assertManifest(manifest);
+  if (!manifest.detailDelivery || conditions?.available !== true
+      || conditions.datasetId !== manifest.datasetId) throw new Error('MAP_FORECAST_UNAVAILABLE');
+  const availability = selectPublicRuntimeAvailability(manifest, { modelBinding: ravScoreModelBinding() });
+  const times = publicDeliveryEntries(manifest).filter(row => row.kind === 'hour' && row.key >= availability.selectedReferenceAt).map(row => row.key);
+  return { generation: publicDeliveryGeneration(manifest), times, liveTime: availability.selectedReferenceAt };
+}
+
+export async function loadMapForecastHour({ manifest, conditions, time } = {}) {
+  const timeline = mapForecastTimeline({ manifest, conditions });
+  if (!timeline.times.includes(time)) throw new Error('MAP_FORECAST_EXACT_HOUR_UNAVAILABLE');
+  const availability = selectPublicRuntimeAvailability(manifest, { modelBinding: ravScoreModelBinding() });
+  assertPublicVerifiedEvidenceTrust(conditions, 'Kortets verificerede startpakke');
+  if (conditions.generatedAt !== manifest.generatedAt || conditions.productionReferenceAt !== manifest.productionReferenceAt
+      || conditions.deliveryManifestIdentity !== timeline.generation) throw new Error('MAP_FORECAST_GENERATION_MISMATCH');
+  const retained = time === availability.selectedReferenceAt ? reuseVerifiedPublicHour(conditions, manifest, availability) : null;
+  if (retained) return { generation: timeline.generation, time, conditions: retained };
+  const details = await loadDelivery(manifest, 'hour', time, { timeoutMs: 15000 });
+  const currentAvailability = selectPublicRuntimeAvailability(manifest, { modelBinding: ravScoreModelBinding() });
+  if (time < currentAvailability.selectedReferenceAt) throw new Error('MAP_FORECAST_EXACT_HOUR_EXPIRED');
+  const view = projectDeliveryHour(conditions, details, currentAvailability, manifest, time);
+  return { generation: timeline.generation, time, conditions: { ...view, mapForecastTime: time } };
 }
 
 function mergeDeliveryZone(conditions, details) {

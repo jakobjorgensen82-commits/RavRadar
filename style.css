@@ -34,6 +34,22 @@ main { width: min(1180px, 100%); margin: 0 auto; }
 .mode-button { min-height: 42px; padding: 8px 13px; border: 0; border-radius: 9px; color: var(--muted); background: transparent; cursor: pointer; font-weight: 700; }
 .mode-button.active { color: white; background: var(--brand-2); box-shadow: 0 2px 8px rgba(7,59,76,.2); }
 .map-shell { position: relative; }
+.map-timeline{width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--line);border-top:0;padding:12px 16px;color:var(--ink)}
+.map-timeline-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:.9rem}
+.map-timeline-actions{display:flex;gap:5px;flex-shrink:0}
+.map-timeline button{min-height:40px;border:1px solid var(--line);border-radius:8px;background:var(--surface-soft);color:var(--ink);font:inherit;font-size:.8rem;padding:6px 10px;cursor:pointer}
+.map-timeline button:focus-visible,.map-timeline input:focus-visible{outline:3px solid #1485ef;outline-offset:2px}
+.map-timeline button:disabled{opacity:.45;cursor:default}
+.map-timeline-committed{margin:7px 0 3px;font-size:clamp(1rem,1.7vw,1.22rem);font-weight:800;line-height:1.4}
+.map-timeline-requested{margin:3px 0;color:var(--muted);font-size:.88rem;line-height:1.35}
+.map-timeline-controls{display:block}
+.map-timeline-controls input{width:100%;min-width:0;min-height:44px;padding:0;margin:0;accent-color:#126e7d;cursor:pointer;touch-action:pan-y}
+.map-timeline-days{display:flex;flex-wrap:wrap;gap:4px;justify-content:space-between}
+.map-timeline-days button{flex:1 0 auto;min-height:32px;font-size:.68rem;padding:3px 6px;border-color:transparent;background:transparent}
+.map-timeline-status:empty{display:none}.map-timeline-status{margin:7px 0 0;font-size:.82rem;color:var(--muted)}
+.map-timeline-status[data-state=error]{color:#a13d16}.map-timeline-scope{margin:5px 0 0;font-size:.7rem;line-height:1.4;color:var(--muted)}
+.map-timeline-zone-time{margin:0 0 12px;padding:9px 12px;background:var(--surface-soft);border-radius:8px;font-weight:800}
+@media(max-width:680px){.map-timeline{padding:10px;border-left:0;border-right:0}.map-timeline-controls{gap:7px}.map-timeline-committed{font-size:1rem}.map-timeline-days button{font-size:.66rem}}
 #map { height: min(58vh, 620px); min-height: 390px; width: 100%; background: #dce8eb; }
 .legend { position: absolute; z-index: 500; left: 10px; bottom: 10px; display: flex; flex-wrap: wrap; gap: 6px 10px; max-width: calc(100% - 20px); padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.94); box-shadow: var(--shadow); font-size: .72rem; }
 .legend span { display: inline-flex; align-items: center; gap: 4px; }

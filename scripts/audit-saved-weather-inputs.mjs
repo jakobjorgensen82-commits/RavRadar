@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Stage A only: authenticated saved bytes and original-context availability.
-// No provider, semantic union, score/cache build, promotion or remote writes.
+// Default: no providers, union, scoring or remote writes. One exact opt-in
+// may rebuild normal inputs/score only in private scratch; no production authority.
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import os from 'node:os';
@@ -771,6 +772,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
   progressFile, progressSource, progressCacheKey, outputPath, repositoryRoot = REPOSITORY,
   includeRawManifest = false, rawCacheKey = null, rawManifestSource = null,
   includeRawFilePresence = false, progressBaselineTargetHour = null, includeSelectedCurrentPreflight = false,
+  includeCurrentWindowDiagnostic = false,
   repository = process.env.GITHUB_REPOSITORY, pythonExecutable = process.env.PYTHON ?? 'python',
   encryptionKey = process.env.WEATHER_PROGRESS_ENCRYPTION_KEY,
   masterSecret = process.env.WEATHER_PROGRESS_MASTER_SECRET,
@@ -780,6 +782,12 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
   let baselinePackInvocation = null;
   let normalProgressBaselineUsed = false;
   try {
+    if (typeof includeCurrentWindowDiagnostic !== 'boolean') fail('MODE_INVALID');
+    if (includeCurrentWindowDiagnostic && (mode !== 'audit' || includeRawManifest || includeRawFilePresence
+      || includeSelectedCurrentPreflight || rawCacheKey !== null || rawManifestSource !== null
+      || progressSource !== '39005745097-1'
+      || progressCacheKey !== 'weather-private-progress-encrypted-v2-Linux-main-39005745097-1'
+      || progressBaselineTargetHour !== '2026-10-17T05:00:00.000Z')) fail('MODE_INVALID');
     if (!['describe', 'audit'].includes(mode) || typeof includeRawManifest !== 'boolean'
       || typeof includeSelectedCurrentPreflight !== 'boolean'
       || typeof includeRawFilePresence !== 'boolean' || includeRawFilePresence && !includeRawManifest
@@ -878,10 +886,19 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
       });
     } catch { fail('BASELINE_COMPONENT_PACK_REJECTED'); }
     if (progressBaselineTargetHour !== null) phase = 'PROGRESS_BASELINE_RECONSTRUCTION';
-    const progressBaseline = progressBaselineTargetHour === null
-      ? { repositoryRoot: payloadRoot, normalProgressBaselineUsed: false }
-      : await withoutSavedAuditSecrets(() => prepareSavedAuditProgressBaseline({ privateRoot: ctx.root, workRoot: work, bundlePath,
-        descriptorPath, repositoryRoot: ctx.repository, progressBaselineTargetHour }));
+    // The exact B inventory is installed BEFORE any cipher is added. Never
+    // pass the audit's cipher-bearing working payload to the strict B installer.
+    const progressBaseline = includeCurrentWindowDiagnostic
+      ? await withoutSavedAuditSecrets(async () => {
+        const { prepareSavedCurrentWindowScratch } = await import('./saved-current-window-scratch.mjs');
+        return prepareSavedCurrentWindowScratch({
+          scratchRoot: await noSymlinks(ctx.root, path.join(ctx.root, 'current-window-source')),
+          logRoot: await noSymlinks(ctx.root, path.join(ctx.root, 'current-window-logs')), payloadRoot, source });
+      })
+      : progressBaselineTargetHour === null
+        ? { repositoryRoot: payloadRoot, normalProgressBaselineUsed: false }
+        : await withoutSavedAuditSecrets(() => prepareSavedAuditProgressBaseline({ privateRoot: ctx.root, workRoot: work, bundlePath,
+          descriptorPath, repositoryRoot: ctx.repository, progressBaselineTargetHour }));
     normalProgressBaselineUsed = progressBaseline.normalProgressBaselineUsed;
     const progressBaselineRoot = progressBaseline.repositoryRoot;
     const basePath = path.join(work, 'progress-base.json');
@@ -894,6 +911,10 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     const measured = await withoutSavedAuditSecrets(() => withAuthenticatedWeatherProgress({ repositoryRoot: progressBaselineRoot, basePath,
       repository, encryptionKey, masterSecret, pythonExecutable }, async ({ files, capacity }) => {
       if (Object.values(capacity).some(value => !integer(value))) fail('AUDIT_COUNTER_INVALID');
+      if (includeCurrentWindowDiagnostic) return {
+        progress: { encryptedBytes: capacity.encryptedBytes, compressedBytes: capacity.compressedBytes,
+          rawPackBytes: capacity.rawPackBytes, fileCount: capacity.fileCount, files: fileMetrics(files, progressFiles) },
+        currentWindowAuthenticatedOnly: true };
       phase = 'SAVED_INPUT_INSPECTION';
       const progressIndex = await forecastIndex(files.find(file => file.relativePath === 'data/live/dmi-forecast-cache.json')?.sourcePath);
       const donorFiles = {
@@ -933,6 +954,23 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
       forecasts: { baseline: forecastMetrics(baselineIndex), progress: forecastMetrics(progressIndex) },
       originalContext, nativeProofAvailability, ...(selectedCurrentPreflight ? { selectedCurrentPreflight } : {}) };
     }));
+    let currentWindowScratch;
+    if (includeCurrentWindowDiagnostic) {
+      phase = 'CURRENT_WINDOW_PRIVATE_SCRATCH';
+      try {
+        const { runSavedCurrentWindowScratch } = await import('./saved-current-window-scratch.mjs');
+        const scratchRoot = await noSymlinks(ctx.root, path.join(ctx.root, 'current-window-source'));
+        const logRoot = await noSymlinks(ctx.root, path.join(ctx.root, 'current-window-logs'));
+        currentWindowScratch = await withoutSavedAuditSecrets(() => runSavedCurrentWindowScratch({
+          scratchRoot, logRoot, basePath, source, repository, masterSecret, encryptionKey, pythonExecutable }));
+      } catch (error) {
+        const known = new Set(['SAVED_CURRENT_WINDOW_INPUT_CHANGED', 'SAVED_CURRENT_WINDOW_BASELINE_PAIR_REQUIRED',
+          'SAVED_CURRENT_WINDOW_PROGRESS_REJECTED', 'SAVED_CURRENT_WINDOW_PROCESS_TIMEOUT',
+          'SAVED_CURRENT_WINDOW_PROCESS_UNAVAILABLE', 'SAVED_CURRENT_WINDOW_LOG_BOUND', 'SAVED_CURRENT_WINDOW_SCRATCH_INVALID']);
+        currentWindowScratch = { status: 'UNAVAILABLE', firstErrorCode: known.has(error?.scratchCode) ? error.scratchCode : 'UNCLASSIFIED',
+          providerRequestsPerformed: false, remoteWrites: false, publicationInvoked: false, productionAuthority: false, privatePayloadIncluded: false };
+      }
+    }
     phase = 'FINAL_READBACK';
     if (!same(await oldProtected.describeCurrentProtectedPrivateProductionRuntime(clients), source)) fail('CURRENT_GENERATION_CHANGED');
     const report = { ...baseReport('AUDIT_COMPLETED'), protectedGenerationReadbackVerified: true,
@@ -946,6 +984,12 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
       forecasts: measured.forecasts, originalContext: measured.originalContext,
       nativeProofAvailability: measured.nativeProofAvailability,
       ...(measured.selectedCurrentPreflight ? { selectedCurrentPreflight: measured.selectedCurrentPreflight } : {}),
+      ...(currentWindowScratch ? { currentWindowScratch } : {}),
+      ...(includeCurrentWindowDiagnostic ? {
+        localWorkScope: 'OWNED_PRIVATE_SCRATCH_ONLY', productionAuthority: false,
+        semanticUnionPerformed: currentWindowScratch?.semanticUnionPerformedInPrivateScratch === true ? true : null,
+        replayPerformed: null, cacheBuilt: null,
+      } : {}),
       // This summary belongs to the protected, previously built baseline.
       // Acquisition progress does not contain a newly built conditions file.
       protectedBaselineComponentFallback: safeWeatherComponentSummary(conditions.weatherEngine?.componentFallback),
@@ -961,6 +1005,8 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
       : phase === 'PROGRESS_AUTHENTICATION' ? 'PROGRESS_AUTHENTICATION_REJECTED'
       : phase === 'PROGRESS_BASELINE_RECONSTRUCTION' ? 'PROGRESS_BASELINE_RECONSTRUCTION_REJECTED' : 'AUDIT_FAILED_CLOSED';
     const report = { ...baseReport('AUDIT_FAILED_CLOSED'), normalProgressBaselineUsed, phase, code,
+      ...(includeCurrentWindowDiagnostic ? { localWorkScope: 'OWNED_PRIVATE_SCRATCH_ONLY', productionAuthority: false,
+        semanticUnionPerformed: null, replayPerformed: null, cacheBuilt: null } : {}),
       ...(phase === 'PROGRESS_AUTHENTICATION' ? { progressAuthenticationCode:
         savedAuditProgressAuthenticationCode(error) } : {}) };
     if (safeOutput) await fs.writeFile(safeOutput, `${JSON.stringify(report)}\n`, { flag: 'wx', mode: 0o600 }).catch(() => {});
@@ -1104,10 +1150,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       '--include-raw-manifest': 'includeRawManifest', '--raw-cache-key': 'rawCacheKey',
       '--raw-manifest-source': 'rawManifestSource', '--include-raw-file-presence': 'includeRawFilePresence',
       '--include-selected-current-preflight': 'includeSelectedCurrentPreflight',
+      '--include-current-window-diagnostic': 'includeCurrentWindowDiagnostic',
       '--progress-baseline-target-hour': 'progressBaselineTargetHour' };
     while (args.length) { const key = args.shift(), value = args.shift();
       if (!names[key] || !value || value.startsWith('--') || Object.hasOwn(options, names[key])) fail('MODE_INVALID'); options[names[key]] = value; }
-    for (const key of ['includeRawManifest', 'includeRawFilePresence', 'includeSelectedCurrentPreflight']) {
+    for (const key of ['includeRawManifest', 'includeRawFilePresence', 'includeSelectedCurrentPreflight', 'includeCurrentWindowDiagnostic']) {
       if (!Object.hasOwn(options, key)) continue;
       if (!['true', 'false'].includes(options[key])) fail('MODE_INVALID');
       options[key] = options[key] === 'true';
