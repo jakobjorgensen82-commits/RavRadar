@@ -737,7 +737,8 @@ as $$
         'c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5',
         '994da006e4c91a1fc759d5ed58b74de80a9ccaad6753274d5abb0cb07eaed399',
         'aa1e364bf6a0962725b6633fdc3487c6e626d51373302d7135023547a93c9855',
-        '84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3'
+        '84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3',
+        '285edc56a4876d7a4da8fcb00977bf55a045893a4dacb4b9eae4cb894807bde8'
       )
     -- RAVSCORE_INTEGRATED_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
@@ -765,7 +766,8 @@ as $$
         '2fdc7426ea99382731c6f4d118eacf4fc271f505fcf121bc67c5349c62938af9',
         'd192e060cf47fde07a1ae2faf9a8db913dbbf4e1325cbf7bf2e33c720982e8d9',
         '2786145f7fc812cd658cab3a69927db625c2b8ffb3be81256acedd12288f4010',
-        '76a86277db106621e7f0952d0789f9038a4bf9cfe7993b88de5c9a49bf25b4b8'
+        '76a86277db106621e7f0952d0789f9038a4bf9cfe7993b88de5c9a49bf25b4b8',
+        'f452111fd41fb3abbdf4138d669317edf1b8680f0fb48d40506676d4eeb27e59'
       )
     -- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
@@ -5805,6 +5807,50 @@ end;
 $$;
 revoke all on function public.ravradar_ravscore_checkpoint_cmw_predecessor_projection(jsonb,timestamptz) from public, anon, authenticated;
 
+create or replace function public.ravradar_ravscore_checkpoint_ak_predecessor_projection(
+  p_payload jsonb,
+  p_target_reference timestamptz
+)
+returns jsonb
+language plpgsql
+stable
+set search_path = pg_catalog, public
+as $$
+declare
+  v_projected jsonb;
+  v_states jsonb;
+begin
+  if p_payload is null
+    or p_target_reference is null
+    or pg_catalog.octet_length(p_payload::text) > 16777216
+    or p_payload #>> '{modelBinding,modelBundleSha256}' is distinct from '84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3'
+    or p_payload ->> 'continuationStateContractSha256' is distinct from 'a519a34e91e552623892e28f3c1fa9ee67b65d1fa08869a96e34fa24bd6d832f'
+    or p_payload #>> '{candidateGRollbackCompanion,modelBinding,modelBundleSha256}'
+      is distinct from '76a86277db106621e7f0952d0789f9038a4bf9cfe7993b88de5c9a49bf25b4b8'
+    or pg_catalog.jsonb_typeof(p_payload -> 'states') is distinct from 'object'
+  then return null; end if;
+  if (select pg_catalog.count(*) from pg_catalog.jsonb_each(p_payload -> 'states')) <> 673
+    or exists (select 1 from pg_catalog.jsonb_each(p_payload -> 'states') as state(part_id,value)
+      where state.value ->> 'modelBundleSha256' is distinct from '84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3')
+  then return null; end if;
+  select pg_catalog.jsonb_object_agg(state.part_id, pg_catalog.jsonb_set(
+    state.value, '{modelBundleSha256}', pg_catalog.to_jsonb('285edc56a4876d7a4da8fcb00977bf55a045893a4dacb4b9eae4cb894807bde8'::text), false))
+    into v_states from pg_catalog.jsonb_each(p_payload -> 'states') as state(part_id,value);
+  v_projected := pg_catalog.jsonb_set(pg_catalog.jsonb_set(p_payload,
+    '{modelBinding,modelBundleSha256}', pg_catalog.to_jsonb('285edc56a4876d7a4da8fcb00977bf55a045893a4dacb4b9eae4cb894807bde8'::text), false),
+    '{states}', v_states, false);
+  v_projected := pg_catalog.jsonb_set(pg_catalog.jsonb_set(v_projected,
+    '{continuationStateContractSha256}', pg_catalog.to_jsonb('e1b9a8a82f70cd5a77956557dcf243b246a52f2ddbe736ebf12f580cac0a5ca3'::text), false),
+    '{candidateGRollbackCompanion,modelBinding,modelBundleSha256}',
+    pg_catalog.to_jsonb('f452111fd41fb3abbdf4138d669317edf1b8680f0fb48d40506676d4eeb27e59'::text), false);
+  if public.ravradar_ravscore_checkpoint_payload_valid(v_projected, p_target_reference)
+  then return v_projected; end if;
+  return null;
+exception when others then return null;
+end;
+$$;
+revoke all on function public.ravradar_ravscore_checkpoint_ak_predecessor_projection(jsonb,timestamptz) from public, anon, authenticated;
+
 create or replace function public.ravradar_ravscore_checkpoint_integrated_state_valid(
   p_state jsonb,
   p_reference_text text
@@ -5885,7 +5931,7 @@ begin
     or p_state ->> 'modelContractSha256'
       is distinct from 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b'
     or p_state ->> 'modelBundleSha256'
-      is distinct from '84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3'
+      is distinct from '285edc56a4876d7a4da8fcb00977bf55a045893a4dacb4b9eae4cb894807bde8'
     -- RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED_END
     or coalesce(p_state ->> 'samplingContextKey', '') !~ '^sha256:[0-9a-f]{64}$'
     or not public.ravradar_ravscore_checkpoint_canonical_time(p_reference_text)
@@ -6863,7 +6909,7 @@ begin
       '^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED_BEGIN
     or p_payload ->> 'continuationStateContractSha256' is distinct from
-      'a519a34e91e552623892e28f3c1fa9ee67b65d1fa08869a96e34fa24bd6d832f'
+      'e1b9a8a82f70cd5a77956557dcf243b246a52f2ddbe736ebf12f580cac0a5ca3'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED_END
     or coalesce(p_payload ->> 'generationSha256', '') !~ '^[0-9a-f]{64}$'
     or coalesce(p_payload ->> 'stateSha256', '') !~ '^[0-9a-f]{64}$'
@@ -6912,7 +6958,7 @@ begin
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3"
+    "modelBundleSha256": "285edc56a4876d7a4da8fcb00977bf55a045893a4dacb4b9eae4cb894807bde8"
   }'::jsonb then
     return false;
   end if;
@@ -6993,7 +7039,7 @@ begin
     "bestTimePolicyId": "score-water-tie-earliest-v2",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8",
-    "modelBundleSha256": "76a86277db106621e7f0952d0789f9038a4bf9cfe7993b88de5c9a49bf25b4b8"
+    "modelBundleSha256": "f452111fd41fb3abbdf4138d669317edf1b8680f0fb48d40506676d4eeb27e59"
   }'::jsonb then
     return false;
   end if;
@@ -7286,6 +7332,10 @@ stable
 set search_path = pg_catalog, public
 as $$
 begin
+  if p_current_implementation_sha256 = 'e1b9a8a82f70cd5a77956557dcf243b246a52f2ddbe736ebf12f580cac0a5ca3'
+    and p_payload #>> '{modelBinding,modelBundleSha256}' = '84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3'
+    and public.ravradar_ravscore_checkpoint_ak_predecessor_projection(p_payload, p_target_reference) is not null
+  then return true; end if;
   if p_current_implementation_sha256 = 'a519a34e91e552623892e28f3c1fa9ee67b65d1fa08869a96e34fa24bd6d832f'
     and p_payload #>> '{modelBinding,modelBundleSha256}' = 'aa1e364bf6a0962725b6633fdc3487c6e626d51373302d7135023547a93c9855'
     and public.ravradar_ravscore_checkpoint_cmw_predecessor_projection(p_payload, p_target_reference) is not null
@@ -7396,6 +7446,7 @@ declare
   v_water_level_predecessor_payload jsonb;
   v_userdata_predecessor_payload jsonb;
   v_account_assistant_predecessor_payload jsonb;
+  v_ak_predecessor_payload jsonb;
   v_cmw_predecessor_payload jsonb;
   v_disposition text;
   v_result jsonb;
@@ -7455,6 +7506,11 @@ begin
     then
       v_cmw_predecessor_payload := public.ravradar_ravscore_checkpoint_cmw_predecessor_projection(v_payload, v_central_reference);
     end if;
+    if p_payload ->> 'continuationStateContractSha256' = 'e1b9a8a82f70cd5a77956557dcf243b246a52f2ddbe736ebf12f580cac0a5ca3'
+      and v_payload #>> '{modelBinding,modelBundleSha256}' = '84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3'
+    then
+      v_ak_predecessor_payload := public.ravradar_ravscore_checkpoint_ak_predecessor_projection(v_payload, v_central_reference);
+    end if;
     if p_payload ->> 'continuationStateContractSha256' =
       '7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b'
     then
@@ -7480,7 +7536,8 @@ begin
         else null;
       end case;
     end if;
-    if v_cmw_predecessor_payload is not null
+    if v_ak_predecessor_payload is not null
+      or v_cmw_predecessor_payload is not null
       or v_account_assistant_predecessor_payload is not null
       or v_userdata_predecessor_payload is not null
       or v_water_level_predecessor_payload is not null
@@ -7489,6 +7546,18 @@ begin
       or v_top20_predecessor_payload is not null
     then
       v_central_is_compatible_predecessor := true;
+    elsif p_target_reference > v_central_reference
+      and p_payload ->> 'continuationStateContractSha256' = 'e1b9a8a82f70cd5a77956557dcf243b246a52f2ddbe736ebf12f580cac0a5ca3'
+      and (case v_payload #>> '{modelBinding,modelBundleSha256}'
+        when 'ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb' then public.ravradar_ravscore_checkpoint_grid_ffc_payload_valid(v_payload, v_central_reference)
+        when '249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932' then public.ravradar_ravscore_checkpoint_grid_249_payload_valid(v_payload, v_central_reference)
+        when 'c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5' then public.ravradar_ravscore_checkpoint_grid_c1ac_payload_valid(v_payload, v_central_reference)
+        when '994da006e4c91a1fc759d5ed58b74de80a9ccaad6753274d5abb0cb07eaed399' then public.ravradar_ravscore_checkpoint_native_identity_i71_payload_valid(v_payload, v_central_reference)
+        else false
+      end)
+    then
+      -- A genuinely newer current generation; no metadata projection or same-reference waiver.
+      v_central_is_compatible_predecessor := false;
     elsif p_target_reference > v_central_reference
       and p_payload ->> 'continuationStateContractSha256' = 'a519a34e91e552623892e28f3c1fa9ee67b65d1fa08869a96e34fa24bd6d832f'
       and (case v_payload #>> '{modelBinding,modelBundleSha256}'
@@ -7528,7 +7597,13 @@ begin
       raise exception 'protected RavScore checkpoint central row is invalid'
         using errcode = '22023';
     end if;
-    if v_central_is_compatible_predecessor and v_cmw_predecessor_payload is not null then
+    if v_central_is_compatible_predecessor and v_ak_predecessor_payload is not null then
+      v_exact_predecessor_same_target_transition := v_central_reference = p_target_reference
+        and (v_ak_predecessor_payload #- '{generationSha256}' #- '{stateSha256}'
+          #- '{candidateGRollbackCompanion,generationSha256}')
+        = (p_payload #- '{generationSha256}' #- '{stateSha256}'
+          #- '{candidateGRollbackCompanion,generationSha256}');
+    elsif v_central_is_compatible_predecessor and v_cmw_predecessor_payload is not null then
       v_exact_predecessor_same_target_transition := v_central_reference = p_target_reference
         and (v_cmw_predecessor_payload #- '{generationSha256}' #- '{stateSha256}'
           #- '{candidateGRollbackCompanion,generationSha256}')
@@ -7682,6 +7757,7 @@ declare
   v_grid_249_payload_definition text;
   v_grid_c1ac_state_definition text;
   v_grid_c1ac_payload_definition text;
+  v_ak_projection_definition text;
   v_cmw_projection_definition text;
   v_native_identity_i71_state_definition text;
   v_native_identity_i71_payload_definition text;
@@ -7728,7 +7804,8 @@ declare
     pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_grid_c1ac_payload_valid(jsonb,timestamptz)'),
     pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_native_identity_i71_state_valid(jsonb,text)'),
     pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_native_identity_i71_payload_valid(jsonb,timestamptz)'),
-    pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_cmw_predecessor_projection(jsonb,timestamptz)')
+    pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_cmw_predecessor_projection(jsonb,timestamptz)'),
+    pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_ak_predecessor_projection(jsonb,timestamptz)')
   ];
 begin
   if auth.role() is distinct from 'service_role' then
@@ -7800,6 +7877,9 @@ begin
   select pg_catalog.btrim(p.prosrc, E' \n\r\t') into v_cmw_projection_definition
   from pg_catalog.pg_proc p where p.oid = v_validator_oids[20];
 
+  select pg_catalog.btrim(p.prosrc, E' \n\r\t') into v_ak_projection_definition
+  from pg_catalog.pg_proc p where p.oid = v_validator_oids[21];
+
   v_checkpoint_definition := v_canonical_time_definition
     || E'\n-- forbidden-key-validator --\n' || v_forbidden_definition
     || E'\n-- integrated-state-validator --\n' || v_integrated_state_definition
@@ -7822,14 +7902,15 @@ begin
     || E'\n-- grid-original-c1ac-payload-validator --\n' || v_grid_c1ac_payload_definition
     || E'\n-- native-identity-i71-state-validator --\n' || v_native_identity_i71_state_definition
     || E'\n-- native-identity-i71-payload-validator --\n' || v_native_identity_i71_payload_definition
-    || E'\n-- current-memory-warmup-predecessor-projection --\n' || v_cmw_projection_definition;
+    || E'\n-- current-memory-warmup-predecessor-projection --\n' || v_cmw_projection_definition
+    || E'\n-- assistant-knowledge-predecessor-projection --\n' || v_ak_projection_definition;
 
   return pg_catalog.jsonb_build_object(
     'schemaVersion', 'ravscore-checkpoint-db-v1',
     'appliedMigrationVersion', case when exists (
       select 1
       from supabase_migrations.schema_migrations m
-      where m.version::text = '20261017020000'
+      where m.version::text = '20261017053000'
     ) then '20260920220000' else null end,
     'checkpointContract', pg_catalog.jsonb_build_object(
       'id', 'ravscore-checkpoint-metadata-cas-v1',

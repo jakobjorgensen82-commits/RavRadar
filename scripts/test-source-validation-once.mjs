@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { withFrozenNative0600TestSource } from './run-frozen-native0600-source-targets.mjs';
+import { withFrozen0200TestSource } from './run-frozen0200-source-targets.mjs';
 import {
   buildSourceValidationPlan,
   expandSourceCommands,
@@ -93,7 +94,7 @@ assert.ok(hostSource.includes('await exec(process.execPath,argv,{cwd:sourceRoot,
 const host = group => 'node scripts/run-frozen-native0600-source-targets.mjs ' + group;
 assert.equal(scripts['test:native-identity-successor'], host('native'));
 assert.equal(scripts['test:weather-state-epoch'], host('epoch'));
-const currentBuilder = 'node scripts/build-current-memory-warmup-successor.mjs --check';
+const currentBuilder = 'node scripts/build-assistant-knowledge-successor.mjs --check';
 const warmupTargets = ['scripts/test-current-memory-warmup-successor.mjs',
   'scripts/test-current-memory-warmup-current-consumers.mjs',
   'scripts/test-current-memory-warmup-postgres-source.mjs',
@@ -101,14 +102,24 @@ const warmupTargets = ['scripts/test-current-memory-warmup-successor.mjs',
 const warmupChecks = ['node --test --test-concurrency 2 ' + warmupTargets.join(' '),
   'node scripts/test-current-memory-warmup-runtime-transition.mjs',
   'node --test --test-name-pattern inner-unknown scripts/test-weather-state-epoch-input-view.mjs'];
-assert.equal(scripts['test:current-memory-warmup'], warmupChecks.join(' && '));
+const frozen0200 = await withFrozen0200TestSource('warmup', sourceRoot =>
+  JSON.parse(fs.readFileSync(path.join(sourceRoot, 'package.json'), 'utf8')).scripts);
+assert.equal(frozen0200.head, '229d11935776871083116c41b8e230b7841a4038');
+assert.equal(frozen0200.tree, '0265a6fc57a95557209f73a9fde2034e0151620b');
+assert.equal(frozen0200.result['test:current-memory-warmup'], warmupChecks.join(' && '));
+const warmupHost = 'node scripts/run-frozen0200-source-targets.mjs warmup';
+assert.equal(scripts['test:current-memory-warmup'], warmupHost);
+const assistantTargets = warmupTargets.map(file => file.replace('current-memory-warmup', 'assistant-knowledge'));
+const assistantChecks = ['node --test --test-concurrency 2 ' + assistantTargets.join(' '),
+  'node scripts/test-assistant-knowledge-runtime-transition.mjs'];
+assert.equal(scripts['test:assistant-knowledge'], assistantChecks.join(' && '));
 const epochSource = fs.readFileSync('scripts/test-weather-state-epoch-input-view.mjs', 'utf8');
 assert.deepEqual([...epochSource.matchAll(/^test\('([^']+)'/gm)].map(match => match[1])
   .filter(name => /inner-unknown/.test(name)),
 ['normal strict inner-unknown NEW checkpoint follows without relabeling history']);
 const replaced = new Map([
   [successorCheck, [currentBuilder]],
-  [nativeFrozenCheck, [host('native'), ...warmupChecks]],
+  [nativeFrozenCheck, [host('native'), warmupHost, ...assistantChecks]],
   [nativeCheck, []], // The same eight targets now execute in the genuine host.
   [epochCheck, [host('epoch')]],
   ['node scripts/test-integrated-cutover-install-contract.mjs', [host('install')]],
@@ -129,7 +140,7 @@ assert.deepEqual(declared.filter(command => !mapTimelineChecks.includes(command)
   historicalDeclared.flatMap(command => replaced.get(command) ?? [command]),
   'Preserve every baseline command, order and duplicate count except the six exact historical routes and three separate warmup checks.');
 for (const check of [issuedCheck, frozenCurrentCheck, diagnosticCheck, currentBuilder,
-  host('native'), host('epoch'), host('install'), host('readiness'), ...warmupChecks])
+  host('native'), host('epoch'), host('install'), host('readiness'), warmupHost, ...assistantChecks])
   assert.equal(declared.filter(command => command === check).length, 1,
     'Every genuine historical route and current warmup builder/target must execute exactly once.');
 assert.equal(declared.includes(successorCheck), false,
@@ -201,11 +212,16 @@ for (const changes of [
   { 'validate:source:checks': 'npm run missing' },
   { 'validate:source:checks': 'npm run validate:source:checks' },
   { 'validate:source:checks': 'echo ok || true && npm run source:critical-gate' },
-  { 'test:current-memory-warmup': scripts['test:current-memory-warmup']
+  { 'test:assistant-knowledge': scripts['test:assistant-knowledge']
     .replace('--test-concurrency 2', '--test-concurrency=2') },
-  { 'test:current-memory-warmup': scripts['test:current-memory-warmup']
-    .replace('--test-name-pattern inner-unknown', '--test-name-pattern="inner-unknown"') },
 ]) assert.throws(() => buildSourceValidationPlan({ ...scripts, ...changes }));
+// Both complete old0200 command mutations remain real against its exact package.
+for (const changes of [
+  { 'test:current-memory-warmup': frozen0200.result['test:current-memory-warmup']
+    .replace('--test-concurrency 2', '--test-concurrency=2') },
+  { 'test:current-memory-warmup': frozen0200.result['test:current-memory-warmup']
+    .replace('--test-name-pattern inner-unknown', '--test-name-pattern="inner-unknown"') },
+]) assert.throws(() => buildSourceValidationPlan({ ...frozen0200.result, ...changes }));
 // Keep the original historical concurrency refusal against its actual package.
 for (const changes of [
   { 'test:native-identity-successor': historicalScripts['test:native-identity-successor']

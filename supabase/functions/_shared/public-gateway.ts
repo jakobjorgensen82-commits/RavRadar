@@ -142,9 +142,12 @@ async function consume(scope: string, subjectHash: string, limit: number, window
   const url = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !serviceKey) throw new GatewayError(503, "RATE_LIMIT_NOT_CONFIGURED");
+  const headers: Record<string, string> = { apikey: serviceKey, "Content-Type": "application/json" };
+  // Opaque sb_secret_ keys are not JWTs; legacy service-role keys retain Bearer.
+  if (!serviceKey.startsWith("sb_secret_")) headers.Authorization = `Bearer ${serviceKey}`;
   const response = await fetchWithTimeout(`${url}/rest/v1/rpc/consume_public_request_limit`, {
     method: "POST",
-    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ p_scope: scope, p_subject_hash: subjectHash, p_limit: limit, p_window_seconds: windowSeconds }),
   }, 5_000);
   if (!response.ok) {

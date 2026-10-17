@@ -1,16 +1,16 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.580";
-import { localRavKnowledgeAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.580";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.580";
-import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.580";
-import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.580";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.581";
+import { localRavKnowledgeAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.581";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.581";
+import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.581";
+import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.581";
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   ravScoreModelBinding,
-} from "../core/ravscore-model-contract.js?v=4.0.580";
-import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.580";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.580";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.580";
-import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.580";
+} from "../core/ravscore-model-contract.js?v=4.0.581";
+import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.581";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.581";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.581";
+import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.581";
 
 // Compatibility name for existing source-contract tests. The implementation
 // now selects the only adapter matching the artifact's exact active binding.
@@ -42,7 +42,7 @@ const INTENT_PATTERNS = Object.freeze({
   origin:/hvor kommer rav(?:et)? fra|hvad er rav|hvordan (?:opstod|dannes|blev rav dannet)|rav.*(?:opstod|dannes|dannet)|ravets? (?:oprindelse|alder)|alder.*rav|hvor gammelt.*rav|rav.*hvor gammelt|fossili[st]|harpiks|woher kommt bernstein|was ist bernstein|wie (?:entsteht|entstand) bernstein|wie wurde bernstein gebildet|bernstein.*(?:entsteht|entstand|gebildet)|ursprung.*bernstein|alter.*bernstein|wie alt.*bernstein|bernstein.*wie alt|fossil(?:isiert)?|harz|where does amber come from|what is amber|how (?:is|was) amber formed|how did amber form|amber.*(?:formed|formation)|amber origin|age.*amber|how old.*amber|amber.*how old|fossili[sz]ed|resin/iu,
   identification:/ægte rav|identificer.*rav|kende forskel.*rav|teste? .*rav|rav.*plast|uv.*rav|rav.*uv|395\s*nm|varm nål|echt(?:er|es)? bernstein|bernstein.*erkennen|bernstein.*prüfen|bernstein.*plastik|uv.*bernstein|bernstein.*uv|heiße nadel|real amber|identify.*amber|test.*amber|amber.*plastic|uv.*amber|amber.*uv|hot needle/iu,
   lamp:/hvad er en ravlygte|ravlygte.*(?:virker|bruger|nm)|395\s*nm|uv.?lygte|was ist eine bernsteinlampe|bernsteinlampe.*(?:funktion|benutz|nm)|uv.?lampe|what is an amber (?:torch|light)|amber (?:torch|light).*(?:work|use|nm)|uv (?:torch|light)/iu,
-  colours:/rav.*(?:farve|sort|hvid|gul|brun)|hvilke farver|bernstein.*(?:farbe|schwarz|weiß|gelb|braun)|welche farben|amber.*(?:colour|color|black|white|yellow|brown)|what colou?r/iu,
+  colours:/(?<![\p{L}\p{N}_])rav(?:ets)?(?:(?![\p{L}\p{N}_])|(?=farve(?:r|n|rne)?(?![\p{L}\p{N}_]))).*(?:farve|sort|hvid|gul|brun)|hvilke farver|(?<![\p{L}\p{N}_])bernstein(?:s)?(?:(?![\p{L}\p{N}_])|(?=farbe(?:n)?(?![\p{L}\p{N}_]))).*(?:farbe|schwarz|weiß|gelb|braun)|welche farben|(?<![\p{L}\p{N}_])amber(?:'s)?(?![\p{L}\p{N}_]).*(?:colour|color|black|white|yellow|brown)|what colou?r/iu,
   care:/opbevar.*rav|rengør.*rav|pudse.*rav|fundet rav.*(?:gøre|behandle)|bernstein.*(?:aufbewahr|reinig|polier)|fund.*bernstein|store.*amber|clean.*amber|polish.*amber|found amber.*(?:do|care)/iu,
   seasons:/årstid|vinter.*rav|sommer.*rav|bedste måned|jahreszeit|winter.*bernstein|sommer.*bernstein|bester monat|season|winter.*amber|summer.*amber|best month/iu,
   geology:/istid|sekundært lager|ravførende lag|eiszeit|sekundär.*lager|bernsteinführende schicht|ice age|secondary store|amber-bearing layer/iu,
@@ -193,11 +193,15 @@ function isGeneralHighScoreNoFindQuestion(value) {
     /^(?:hvorfor|hvordan) kan (?:scoren|ravscore) være høj,? (?:uden at (?:jeg|vi|man) finder rav|(?:selv ?om|når) (?:jeg|vi|man) ikke finder rav)[?!.]*$/iu,
     /^(?:warum|wie) kann (?:der (?:bernsteinscore|ravscore|score)|bernsteinscore|ravscore) hoch sein,? (?:obwohl (?:ich keinen bernstein finde|wir keinen bernstein finden|man keinen bernstein findet)|ohne dass (?:ich bernstein finde|wir bernstein finden|man bernstein findet))[?!.]*$/iu,
     /^(?:why|how) can (?:the (?:amberscore|ravscore|score)|amberscore|ravscore) be high,? (?:without (?:me|us) finding (?:any )?amber|even (?:if|though) (?:i|we) (?:do not|don't) find (?:any )?amber)[?!.]*$/iu,
+    /^(?:(?:hvorfor|hvordan) kan (?:ravradar|ravscore|scoren) (?:vise grønt?|være grøn)|hvorfor (?:viser ravradar grønt?|er (?:ravscore|scoren) grøn)),? (?:når|selv ?om) stranden er tom for (?:opskyl og rav|rav og opskyl)[?!.]*$/iu,
+    /^(?:(?:warum|wie) kann (?:ravradar|der (?:bernsteinscore|ravscore|score)) (?:grün anzeigen|grün sein)|warum zeigt ravradar grün),? (?:obwohl|wenn) (?:am strand kein treibgut oder bernstein liegt|der strand leer von spülsaum und bernstein ist|es am strand weder spülsaum noch bernstein gibt)[?!.]*$/iu,
+    /^(?:(?:why|how) can (?:ravradar|(?:the )?(?:amberscore|ravscore|score)) (?:show green|be green)|why does ravradar show green),? (?:when|even (?:if|though)) (?:the beach (?:is empty of (?:wrack|wash) and amber|has no wrack or amber)|there is no (?:wrack|wash) or amber on the beach)[?!.]*$/iu,
   ].some(pattern => pattern.test(text));
 }
 
 export function classifyRavQuestion(question) {
   const text = String(question || '').trim();
+  if (isOriginIdentificationQuestion(text)) return 'origin-identification';
   if (practicalSearchPlan(text)) return 'practical-search-plan';
   if (isPracticalAlongshoreQuestion(text)) return 'practical-alongshore';
   for (const [intent, pattern] of Object.entries(INTENT_PATTERNS)) if (pattern.test(text)) return intent;
@@ -318,6 +322,33 @@ function fieldCompoundAnswer(question, language) {
   const raw = String(question || '').trim();
   if (raw.length > 600) return null;
   const text = raw.normalize('NFKC').replace(/\s+/gu, ' ');
+  const genericStarter = String.raw`(?:hvor|hvordan|hvorfor|wo|wie|warum|where|how|why)\b`;
+  const genericParts = text.split(new RegExp(
+    String.raw`[?？]\s*(?=\p{L})|[:;]\s*(?=\p{L})|[,.]\s*(?:(?:og|und|and)\s+)?(?=${genericStarter})|\s+(?:og|und|and)\s+(?=${genericStarter})`, 'iu'))
+    .map(part => part.trim().replace(/^(?:og|und|and)\s+/iu, '')).filter(Boolean);
+  const emptyBeach = [
+    /^(?:hvor (?:skal|bør|kan) (?:jeg|vi) (?:kigge|lede|søge)(?: efter rav)?|hvordan (?:skal|kan) (?:jeg|vi) (?:lede|søge)(?: efter rav)?) på (?:en (?:bred |tom |bar )?(?:sandstrand|strand)|stranden) (?:uden (?:tang(?: og (?:pindelag|opskyl))?|opskyl(?: og rav)?)|(?:når|hvis) der (?:ikke er|er (?:ingen|næsten ingen)) (?:tang|opskyl)(?: eller (?:pindelag|rav))?)[?!.]*$/iu,
+    /^(?:wo (?:soll|kann|sollte) (?:ich|wir)|wie (?:kann|sollte) (?:ich|wir)) (?:(?:nach bernstein )?suchen (?:an einem (?:breiten |leeren )?sandstrand|am strand) (?:ohne (?:seegras|tang|treibgut|spülsaum)(?: (?:und|oder) (?:treibgut|holz|bernstein))?|wenn es (?:kein|kaum) (?:seegras|treibgut) gibt)|(?:an einem (?:breiten |leeren )?sandstrand|am strand) (?:ohne (?:seegras|tang|treibgut|spülsaum)(?: (?:und|oder) (?:treibgut|holz|bernstein))?|wenn es (?:kein|kaum) (?:seegras|treibgut) gibt) (?:nach bernstein )?suchen)[?!.]*$/iu,
+    /^(?:where (?:should|can|do) (?:i|we)|how (?:should|can|do) (?:i|we)) (?:look|search)(?: for amber)? on (?:a (?:wide |bare )?(?:sandy beach|beach)|an empty (?:sandy beach|beach)|the beach) (?:without (?:seaweed|wrack)(?: (?:and|or) (?:wood|sticks|amber))?|when there is (?:no|little) (?:seaweed|wrack))[?!.]*$/iu,
+  ];
+  const scoreMeaning = [
+    /^hvorfor (?:kan (?:en høj (?:ravscore|score)|ravscore|scoren) ikke garantere (?:rav|et fund)|garanterer (?:en høj (?:ravscore|score)|ravscore|scoren) ikke (?:rav|et fund)|er en høj (?:ravscore|score) ikke en fundgaranti)[?!.]*$/iu,
+    /^warum (?:kann ein hoher (?:ravscore|bernsteinscore|score) (?:keinen fund|keinen bernstein) garantieren|garantiert ein hoher (?:ravscore|bernsteinscore|score) (?:keinen fund|keinen bernstein)|ist ein hoher (?:ravscore|bernsteinscore|score) keine fundgarantie)[?!.]*$/iu,
+    /^why (?:can(?:not|'t) a high (?:ravscore|amberscore|score) guarantee (?:amber|a find)|doesn't a high (?:ravscore|amberscore|score) guarantee (?:amber|a find)|does a high (?:ravscore|amberscore|score) not guarantee (?:amber|a find)|is a high (?:ravscore|amberscore|score) not a guarantee(?: of (?:amber|a find))?)[?!.]*$/iu,
+  ];
+  const genericUnits = genericParts.map(clause =>
+    /^(?:jeg spørger generelt|generelt|ich frage allgemein|allgemein|i (?:am asking|ask) generally|in general)[.!]*$/iu.test(clause) ? 'declaration'
+      : emptyBeach.some(pattern => pattern.test(clause)) ? 'empty-beach'
+      : scoreMeaning.some(pattern => pattern.test(clause)) || isGeneralHighScoreNoFindQuestion(clause) ? 'limitations' : null);
+  const genericPair = genericUnits.length === 2
+    || (genericUnits.length === 3 && genericUnits[0] === 'declaration');
+  if (genericPair && genericUnits.filter(unit => unit === 'empty-beach').length === 1
+    && genericUnits.filter(unit => unit === 'limitations').length === 1 && genericUnits.every(Boolean)) {
+    const answer = localRavKnowledgeAnswer('mørke striber', language) + '\n\n'
+      + t('assistant.local.limitations', {}, language) + '\n\n' + t('assistant.local.availability', {}, language);
+    return { answer:answer.length <= 900 ? answer : t('assistant.unknown', {}, language),
+      topic:answer.length <= 900 ? 'field-empty-beach-score' : null };
+  }
   const starter = String.raw`(?:hvor|hvordan|hvad|hvilk(?:et|en|e)|kan|er|betyder|wo|wie|was|welch(?:e|es|er)|kann|bin|bedeutet|where|how|what|which|can|am|does)\b`;
   const parts = text.split(new RegExp(
     String.raw`[?？]\s*(?=\p{L})|[,:.;]\s*(?:(?:og|und|and)\s+)?(?=${starter})|\s+(?:og|und|and)\s+(?=${starter})`, 'iu')).map(part => part.trim()).filter(Boolean);
@@ -509,6 +540,11 @@ export async function askRavRadar(question, context = {}, options = {}) {
   if (SECURITY_PATTERN.test(raw) || OUT_OF_SCOPE_PATTERN.test(raw)) return t('assistant.refusal', {}, language);
   const safe = raw.slice(0, 600);
   const route = routeRavQuestion(safe);
+  if (classifyRavQuestion(safe) === 'origin-identification') {
+    if (!isOriginIdentificationQuestion(raw)) return t('assistant.unknown', {}, language);
+    const answer = t('assistant.local.origin', {}, language) + '\n\n' + t('assistant.local.identification', {}, language);
+    return answer.length <= 900 ? answer : t('assistant.unknown', {}, language);
+  }
   if (classifyRavQuestion(safe) === 'practical-alongshore' && !isPracticalAlongshoreQuestion(question)) {
     return t('assistant.unknown', {}, language);
   }
@@ -618,12 +654,47 @@ function isPracticalAlongshoreQuestion(value) {
 }
 
 
-// Only this explicit authored topic may be retained by the local dialog.
+// Two whole, bounded clauses only. A pronoun is meaningful after the explicit
+// amber-origin clause, never from arbitrary dialog/history/context fields.
+function originIdentificationForms(subject, language) {
+  if (language === 'da') return '(?:hvordan (?:skelner|adskiller) (?:jeg|vi) ' + subject
+    + ' fra (?:en (?:almindelig )?sten|sten)|hvordan kan (?:jeg|vi) (?:skelne|kende) ' + subject + ' fra (?:en (?:almindelig )?sten|sten))';
+  if (language === 'de') return '(?:wie (?:unterscheide ich|unterscheiden wir) ' + subject
+    + ' von (?:einem (?:gewöhnlichen |normalen )?stein|steinen)|wie (?:kann ich|können wir) ' + subject
+    + ' von (?:einem (?:gewöhnlichen |normalen )?stein|steinen) unterscheiden)';
+  return 'how (?:do|can) (?:i|we) (?:distinguish ' + subject
+    + ' from|tell ' + subject + ' (?:apart )?from) (?:an? (?:ordinary |normal )?stone|stones)';
+}
+
+function isOriginIdentificationQuestion(value) {
+  const raw = String(value || '').trim();
+  if (raw.length > 600) return false;
+  const text = raw.normalize('NFKC').replace(/\s+/gu, ' ');
+  return [
+    ['da', 'hvad er rav', 'rav', '(?:rav|det)', 'og'],
+    ['de', 'was ist bernstein', 'bernstein', '(?:bernstein|es|ihn)', 'und'],
+    ['en', 'what is amber', 'amber', '(?:amber|it)', 'and'],
+  ].some(([language, origin, explicit, pronoun, conjunction]) => {
+    const join = '(?:,? ' + conjunction + ' |[?!.] (?:' + conjunction + ' )?)';
+    return new RegExp('^(?:' + origin + join + originIdentificationForms(pronoun, language)
+      + '|' + originIdentificationForms(explicit, language) + join + origin + ')[?!.]*$', 'iu').test(text);
+  });
+}
+
+function isAuthoredOriginQuestion(value) {
+  const raw = String(value || '').trim();
+  if (raw.length > 600) return false;
+  return /^(?:hvad er rav|was ist bernstein|what is amber)[?!.]*$/iu
+    .test(raw.normalize('NFKC').replace(/\s+/gu, ' '));
+}
+
+// Only an explicit authored topic may be retained by the local dialog.
 // No question, answer, location details or transcript is retained/sent.
 export function assistantTopicForQuestion(question) {
   const text = String(question || '').trim();
   if (SECURITY_PATTERN.test(text) || OUT_OF_SCOPE_PATTERN.test(text)) return null;
-  return fieldCompoundAnswer(text, getLanguage())?.topic
+  return (isOriginIdentificationQuestion(text) || isAuthoredOriginQuestion(text) ? 'amber-origin-identification' : null)
+    ?? fieldCompoundAnswer(text, getLanguage())?.topic
     ?? (isPracticalAlongshoreQuestion(text) ? 'alongshore' : null);
 }
 
@@ -631,6 +702,21 @@ export function assistantLocalFollowupAnswer(question, topic, language = getLang
   const raw = String(question || '').trim();
   if (raw.length > 600 || SECURITY_PATTERN.test(raw) || OUT_OF_SCOPE_PATTERN.test(raw)) return null;
   const text = raw.normalize('NFKC').replace(/\s+/gu, ' ');
+  if ([['da', 'det', 'og|så'], ['de', '(?:es|ihn)', 'und|also'], ['en', 'it', 'and|so']]
+    .some(([locale, pronoun, conjunction]) => new RegExp('^(?:(?:' + conjunction + ') )?'
+      + originIdentificationForms(pronoun, locale) + '[?!.]*$', 'iu').test(text))) {
+    if (topic !== 'amber-origin-identification') return t('assistant.unknown', {}, language);
+    return t('assistant.local.identification', {}, language);
+  }
+  const noGuaranteeFollowup = [
+    /^(?:(?:og|så) )?hvorfor (?:garanterer den ikke (?:rav|et fund)|er den ikke en fundgaranti)[?!.]*$/iu,
+    /^(?:(?:und|also) )?warum (?:garantiert er (?:keinen bernstein|keinen fund)|ist er keine fundgarantie)[?!.]*$/iu,
+    /^(?:(?:and|so) )?why (?:(?:doesn't it|does it not) guarantee (?:amber|a find)|is it not a guarantee)[?!.]*$/iu,
+  ];
+  if (noGuaranteeFollowup.some(pattern => pattern.test(text))) {
+    if (topic !== 'field-empty-beach-score') return t('assistant.unknown', {}, language);
+    return t('assistant.local.limitations', {}, language) + '\n\n' + t('assistant.local.availability', {}, language);
+  }
   const daylight = [
     /^(?:(?:og|så) )?hvis (?:jeg|vi) kun (?:leder|søger) i dagslys[?.!]*$/iu,
     /^(?:(?:und|also) )?wenn (?:ich nur bei tageslicht suche|wir nur bei tageslicht suchen)[?.!]*$/iu,
@@ -647,6 +733,7 @@ export function assistantLocalFollowupAnswer(question, topic, language = getLang
     /^(?:(?:and|so) )?where (?:should|can) (?:i|we) (?:look|search)(?: for amber)? (?:in that situation|in that case|then|there)[?.!]*$/iu,
   ];
   if (!patterns.some(pattern=>pattern.test(text))) return null;
+  if (topic === 'field-empty-beach-score') return localRavKnowledgeAnswer('mørke striber', language);
   if (topic !== 'alongshore') return t('assistant.unknown', {}, language);
   return localRavKnowledgeAnswer('Hvordan leder jeg systematisk på stranden?', language);
 }
