@@ -52,13 +52,31 @@ test('diagnostic source delta preserves every genuine historical updater oracle'
  const begin=oracle.indexOf('function inverseWeatherStateEpochIntegration(source) {');
  const end=oracle.indexOf('\n// Test-only inverse of the NEW explicit OLD-original donor integration.',begin);
  assert(begin>=0&&end>begin);
- const inverse=new Function('assert','digest','return ('+oracle.slice(begin,end).trim()+');')(assert,hash);
+ const dependencyBegin=oracle.indexOf('const establishedNativeCurrentUpdaterHunks = [');
+ assert(dependencyBegin>=0&&dependencyBegin<begin);
+ const dependencies=oracle.slice(dependencyBegin,begin),epochInverse=oracle.slice(begin,end).trim();
+ const inverse=new Function('assert','digest',dependencies+epochInverse+'\nreturn inverseWeatherStateEpochIntegration;')(assert,hash);
+ const positiveOrigin=new Function('assert',dependencies+'\nreturn {inverse:inverseEstablishedNativeCurrentUpdater,hunks:establishedNativeCurrentUpdaterHunks};')(assert);
  assert.equal(hash(inverse(updater)),'62bbe6eb4325dcba05afb922028150a9bdf7c45f2ebd7a7e975d85f3941d6288');
+ // Preserve every old diagnostic mutation oracle at its exact historical layer.
+ // Removing ONLY the new test-helper call restores the WHOLE genuine d7 helper.
+ const originCall='  source = inverseEstablishedNativeCurrentUpdater(source);\n';
+ assert.equal(epochInverse.split(originCall).length,2);
+ const historicalEpochInverse=epochInverse.replace(originCall,'');
+ assert.equal(hash(historicalEpochInverse),'fcb8fe5572739c599e54a7825966620a94c7fdcd3afac98505ba5986bbf65258');
+ const historicalInverse=new Function('assert','digest','return ('+historicalEpochInverse+');')(assert,hash);
+ const preOriginUpdater=positiveOrigin.inverse(updater);
+ assert.equal(hash(preOriginUpdater),'c360d7c6370b6ff4078ce94e306478bd3f5e38fdda90d4006f3e4329c976458c');
+ for(const hunk of positiveOrigin.hunks)
+  assert.throws(()=>inverse(updater.replace(hunk.after,()=>hunk.before)),/exact reviewed positive-origin hunk/);
+ {
+ const updater=preOriginUpdater,inverse=historicalInverse;
  const importLine="import { summarizeRavScoreInitialCurrentWindow } from './lib/ravscore-initial-current-window-audit.mjs';\n";
  for(const changed of [updater.replace(importLine,''),updater.replace(importLine,importLine+importLine),
   updater.replace('RAVSCORE_INITIAL_CURRENT_WINDOW_AUDIT_UNAVAILABLE','UNREVIEWED_DIAGNOSTIC')]){
   assert.notEqual(changed,updater);
   assert.throws(()=>inverse(changed),/exact reviewed current-window diagnostic hunk/);
+ }
  }
  assert.throws(()=>inverse(updater+'// unrelated source drift\n'),/genuine 903307 updater/);
 });

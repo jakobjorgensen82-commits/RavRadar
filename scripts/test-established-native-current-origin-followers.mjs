@@ -177,8 +177,21 @@ try {
     const raw = Buffer.from((await fs.readFile(file, 'utf8')).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n')); if (expected) assert.equal(sha(raw), expected);
     await write(HOST, relative, raw); composition.push({ path: relative, productSha256: sha(raw), bytes: raw.length });
   }
-  assert.equal(oldSaved.manifest.bundleContentSha256, 'd47f3671a44c14f100907d958dc2f05a6a1e42a5769ea65e48c675ec5257b7e4');
-  assert.equal(oldSaved.checkpoint.generationSha256, '199476623ca6b970c8d000f70769d6ddb51c7ca1751f97a81f0a01ef6a148018');
+  // These are synthetic NORMAL cold-start goldens, not production originals.
+  // Node22 and Node24 produce different floating-point wave moments from the
+  // same frozen inputs. Keep BOTH exact B/S goldens; never round or rewrite
+  // state to force one engine's freshly calculated fixture into the other's.
+  const coldGoldens = new Map([
+    ['22', ['9072f92745b446a71de4b8bfe7e0de92312078b77436ede193916412e9f0245f',
+      '82ce89ed58cf2a91ef9e665d4f99969e8cc85c86fad5998e982f19cdcfb75b5d']],
+    ['24', ['d47f3671a44c14f100907d958dc2f05a6a1e42a5769ea65e48c675ec5257b7e4',
+      '199476623ca6b970c8d000f70769d6ddb51c7ca1751f97a81f0a01ef6a148018']],
+  ]);
+  const runtimeMajor = process.versions.node.split('.')[0], coldGolden = coldGoldens.get(runtimeMajor);
+  assert(coldGolden, 'The normal cold fixture requires a reviewed Node runtime golden.');
+  assert.equal(oldSaved.manifest.bundleContentSha256, coldGolden[0]);
+  assert.equal(oldSaved.checkpoint.generationSha256, coldGolden[1]);
+  receipt.coldFixtureRuntime = { node: process.version, reviewedMajor: runtimeMajor, exactBAndSGoldens: true };
   const originPath = 'scripts/lib/established-native-current-origin.mjs';
   const originalOrigin = await fs.readFile(path.join(HOST, originPath), 'utf8');
   const seedLiteral = /const SEED = Object\.freeze\(\{[\s\S]*?\n\}\);/.exec(originalOrigin)?.[0]; assert(seedLiteral);

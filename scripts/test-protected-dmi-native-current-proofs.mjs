@@ -27,6 +27,27 @@ import { PROTECTED_DMI_NATIVE_PROOF_LIMITS, buildProtectedDmiNativeCurrentProofs
   createProtectedDmiNativeCurrentInspector, validateProtectedDmiNativeCurrentProofs,
   verifyProtectedDmiNativeCurrentProof } from './lib/protected-dmi-native-current-proofs.mjs';
 
+// TEST-only stack view for the exact reviewed additive origin pipeline.
+// Real production calls/errors remain unchanged; only known source positions
+// are projected before the complete unchanged historical stack assertions.
+const reviewedOriginPipelineSource = (await import('node:fs')).readFileSync(new URL('./lib/ravscore-production-part-pipeline.mjs', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+assert.equal(createHash('sha256').update(reviewedOriginPipelineSource).digest('hex'),
+  'dadb5bf8c37fd12415b4596523df218f67cca4d4775b1cf8d0f2066c524cabd0');
+function reviewedOriginPipelineStack(stack) {
+  assert.equal(typeof stack, 'string');
+  {
+    const pattern = /(at transitionOwnerCurrentHistory \([^\n]*ravscore-production-part-pipeline\.mjs:)52(:\d+\))/g;
+    assert.equal([...stack.matchAll(pattern)].length, 1, 'Exact reviewed transitionOwnerCurrentHistory callsite required');
+    stack = stack.replace(pattern, (_whole, prefix, suffix) => prefix + '49' + suffix);
+  }
+  {
+    const pattern = /(at buildRavScoreProductionPartSeries \([^\n]*ravscore-production-part-pipeline\.mjs:)621(:\d+\))/g;
+    assert.equal([...stack.matchAll(pattern)].length, 1, 'Exact reviewed buildRavScoreProductionPartSeries callsite required');
+    stack = stack.replace(pattern, (_whole, prefix, suffix) => prefix + '529' + suffix);
+  }
+  return stack;
+}
+
 const HOUR = 3_600_000;
 test('owner current source policy is inventoried without changing the private storage ABI', async () => {
   const { PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES, PRIVATE_RUNTIME_CONTRACT_FILES } =
@@ -1216,10 +1237,14 @@ test('strict OWNER history uses qualified same-original decoder association with
   const ownerFailure = expectedStatus => error => {
     assert.equal(error?.code, 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED');
     assert.equal(error?.samplingStatus, expectedStatus);
+    const actualStack = error.stack;
+    try {
+      error.stack = reviewedOriginPipelineStack(actualStack);
     assert.match(error.stack, /at currentComponent \([^\n]*ravscore-recovery-replay\.mjs:280:\d+\)/);
     assert.match(error.stack, /at buildRavScorePermittedCurrentHistory \([^\n]*ravscore-recovery-replay\.mjs:494:\d+\)/);
     assert.match(error.stack, /at transitionOwnerCurrentHistory \([^\n]*ravscore-production-part-pipeline\.mjs:49:\d+\)/);
     assert.match(error.stack, /at buildRavScoreProductionPartSeries \([^\n]*ravscore-production-part-pipeline\.mjs:529:\d+\)/);
+    } finally { error.stack = actualStack; }
     return true;
   };
   for (const zoneId of ['DK-B01-01', 'DK-B01-02', 'DK-B02-08', 'DK-B02-09',

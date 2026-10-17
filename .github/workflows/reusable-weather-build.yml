@@ -864,8 +864,23 @@ jobs:
       # The old protected checkpoint has the old model closure.  The 11Z
       # private conditions carry the exact continuation states and are rebound
       # below; restoring the old checkpoint here would reject a valid donor.
+      - name: Select current-family paired checkpoint restoration before any S restore
+        id: paired-checkpoint-route
+        if: steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.completed_private_runtime != true && steps.operational-action.outputs.action == 'integrated'
+        shell: bash
+        env:
+          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
+          NATIVE_IDENTITY_RECOVERY: ${{ inputs.native_sampling_identity_original_recovery }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          test "$GITHUB_REF" = 'refs/heads/main'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          node scripts/reconcile-private-runtime-checkpoint.mjs select
+
       - name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint
-        if: steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'
+        if: steps.paired-checkpoint-route.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'
         id: ravscore-checkpoint-cache
         uses: actions/cache/restore@v6
         with:
@@ -875,7 +890,7 @@ jobs:
             ravscore-continuation-schema6-v2-
 
       - name: Restore protected atomic RavScore checkpoint when cache is absent
-        if: steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == '' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'
+        if: steps.paired-checkpoint-route.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == '' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original'
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --restore
@@ -1305,6 +1320,24 @@ jobs:
       # The 4.0.500 private bundle predates persistent PART-hour DMI
       # continuity. Bootstrap once from the exact previous protected native
       # DMI generation, without installing any older score or cache state.
+      - name: Reconcile only authenticated CURRENT B to its exact protected S before providers
+        id: paired-checkpoint-reconcile
+        if: steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.completed_private_runtime != true && steps.operational-action.outputs.action == 'integrated' && steps.paired-checkpoint-route.outputs.required == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.private-runtime-install.outcome }}" = success
+          git fetch --no-tags origin main
+          test "$GITHUB_REF" = 'refs/heads/main'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          node scripts/reconcile-private-runtime-checkpoint.mjs reconcile
+        env:
+          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
+          NATIVE_IDENTITY_RECOVERY: ${{ inputs.native_sampling_identity_original_recovery }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
       - name: Classify one-time DMI PART continuity donor
         id: dmi-part-continuity-donor
         if: inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-install.outcome == 'success')
@@ -3195,25 +3228,6 @@ jobs:
           compression-level: 0
           if-no-files-found: error
 
-      - name: Reconfirm current main before protected RavScore write
-        if: steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED')
-        shell: bash
-        run: |
-          git fetch --no-tags origin main
-          test "$GITHUB_REF" = "refs/heads/main"
-          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
-
-      - name: Publish atomic RavScore checkpoint to protected admin storage
-        id: checkpoint-publish
-        if: steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run'
-        run: >-
-          node scripts/protected-ravscore-continuation-checkpoint.mjs
-          --publish
-          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-
       - name: Build dataminimized weather preflight state after final gates
         id: weather-preflight-state-build
         continue-on-error: true
@@ -3249,6 +3263,21 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: Refuse current-family B publication without a completable checkpoint disposition
+        if: steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run'
+        shell: bash
+        env:
+          CHECKPOINT_DISPOSITION: ${{ steps.checkpoint-disposition.outputs.disposition }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { assertPrivateRuntimeCheckpointPublicationDisposition }
+            from './scripts/reconcile-private-runtime-checkpoint.mjs';
+          const descriptor = JSON.parse(fs.readFileSync(process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE + '/manifest.json', 'utf8'));
+          assertPrivateRuntimeCheckpointPublicationDisposition(descriptor, process.env.CHECKPOINT_DISPOSITION);
+          NODE
+
       - name: Publish bounded private runtime with one protected rollback generation
         id: private-runtime-publish
         if: steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run'
@@ -3264,6 +3293,25 @@ jobs:
           RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
           RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Reconfirm current main before protected RavScore write
+        if: steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED')
+        shell: bash
+        run: |
+          git fetch --no-tags origin main
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+
+      - name: Publish atomic RavScore checkpoint to protected admin storage
+        id: checkpoint-publish
+        if: steps.private-runtime-publish.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run'
+        run: >-
+          node scripts/protected-ravscore-continuation-checkpoint.mjs
+          --publish
+          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+        env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 

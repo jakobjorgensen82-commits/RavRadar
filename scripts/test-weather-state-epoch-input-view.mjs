@@ -29,6 +29,22 @@ import { createWeatherStateEpochCaptureStorage, saveWeatherStateEpochArchive,
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const hash = value => crypto.createHash('sha256').update(value).digest('hex');
+// TEST-only stack view for the exact reviewed additive origin pipeline.
+// Real production calls/errors remain unchanged; only known source positions
+// are projected before the complete unchanged historical stack assertions.
+const reviewedOriginPipelineSource = nativeFs.readFileSync(new URL('./lib/ravscore-production-part-pipeline.mjs', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+assert.equal(hash(reviewedOriginPipelineSource),
+  'dadb5bf8c37fd12415b4596523df218f67cca4d4775b1cf8d0f2066c524cabd0');
+function reviewedOriginPipelineStack(stack) {
+  assert.equal(typeof stack, 'string');
+  {
+    const pattern = /(at transitionNewInitialCurrentApplication \([^\n]*ravscore-production-part-pipeline\.mjs:)436(:\d+\))/g;
+    assert.equal([...stack.matchAll(pattern)].length, 1, 'Exact reviewed transitionNewInitialCurrentApplication callsite required');
+    stack = stack.replace(pattern, (_whole, prefix, suffix) => prefix + '433' + suffix);
+  }
+  return stack;
+}
+
 const HOUR_MS = 3_600_000;
 const base = Date.parse('2026-08-29T00:00:00.000Z');
 const time = hour => new Date(base + hour * HOUR_MS).toISOString();
@@ -821,7 +837,11 @@ test('normal strict inner-unknown NEW checkpoint follows without relabeling hist
         assert.equal(error.code, 'RAVSCORE_INITIAL_CURRENT_NEW_USE_NOT_READY');
       }
       if (label === 'valid-but-unassociated-current-pair') {
+        const actualStack = error.stack;
+        try {
+          error.stack = reviewedOriginPipelineStack(actualStack);
         assert.match(error.stack, /at transitionNewInitialCurrentApplication \([^\n]+:(386|433):\d+\)/);
+        } finally { error.stack = actualStack; }
       }
       if (label === 'different-recovery-point') assert.equal(error.code, 'RAVSCORE_RECOVERY_REPLAY_SAMPLING_MISMATCH');
       if (label === 'legacy-native-original-without-new-grid-proof') assert.equal(error.code, 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED');

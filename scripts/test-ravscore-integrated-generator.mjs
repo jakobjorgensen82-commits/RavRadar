@@ -495,8 +495,10 @@ const inverseStart = entrypointOracle.indexOf('function inverseWeatherStateEpoch
 const inverseEnd = entrypointOracle.indexOf('\n// Test-only inverse of the NEW explicit OLD-original donor integration.', inverseStart);
 assert.ok(inverseStart >= 0 && inverseEnd > inverseStart);
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
+const inverseDependencyStart = entrypointOracle.indexOf('const establishedNativeCurrentUpdaterHunks = [');
+assert.ok(inverseDependencyStart >= 0 && inverseDependencyStart < inverseStart);
 const historicalUpdater = runInNewContext(
-  `(${entrypointOracle.slice(inverseStart, inverseEnd).trim()})`, { assert, digest },
+  entrypointOracle.slice(inverseDependencyStart, inverseEnd) + '\ninverseWeatherStateEpochIntegration;', { assert, digest },
 )(updater);
 assert.equal(digest(historicalUpdater),
   '62bbe6eb4325dcba05afb922028150a9bdf7c45f2ebd7a7e975d85f3941d6288');
