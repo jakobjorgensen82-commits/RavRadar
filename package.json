@@ -270,7 +270,7 @@
     "test:dmi-budget-rotation": "node scripts/test-dmi-budget-rotation-4.0.189.mjs",
     "test:national-coastal-parts-activation": "node scripts/test-national-coastal-parts-activation-4.0.176.mjs",
     "test:observation-production-mapping": "node scripts/test-observation-production-mapping.mjs",
-    "test:current-memory-warmup": "node --test --test-concurrency 2 scripts/test-current-memory-warmup-successor.mjs scripts/test-current-memory-warmup-current-consumers.mjs scripts/test-current-memory-warmup-postgres-source.mjs scripts/test-current-memory-warmup-workflow.mjs && node scripts/test-current-memory-warmup-runtime-transition.mjs && node --test --test-name-pattern=\"normal strict inner-unknown NEW checkpoint follows without relabeling history\" scripts/test-weather-state-epoch-input-view.mjs"
+    "test:current-memory-warmup": "node --test --test-concurrency 2 scripts/test-current-memory-warmup-successor.mjs scripts/test-current-memory-warmup-current-consumers.mjs scripts/test-current-memory-warmup-postgres-source.mjs scripts/test-current-memory-warmup-workflow.mjs && node scripts/test-current-memory-warmup-runtime-transition.mjs && node --test --test-name-pattern inner-unknown scripts/test-weather-state-epoch-input-view.mjs"
   },
   "engines": {
     "node": ">=22"
