@@ -192,13 +192,19 @@ for (const forbidden of [
 }
 assert.equal(
   (codeOnlyWorkflow.match(/supabase db push --linked/g) || []).length,
-  6,
-  'Code-only-workflowet må kun have de fem præcist afgrænsede dry-run-læsninger og én apply.',
+  7,
+  'Code-only-workflowet må kun have de seks præcist afgrænsede dry-run-læsninger og én apply.',
 );
-assert.equal((codeOnlyWorkflow.match(/supabase db push --linked --dry-run --skip-vault/g) || []).length, 5,
+assert.equal((codeOnlyWorkflow.match(/supabase db push --linked --dry-run --skip-vault/g) || []).length, 6,
   'Normal plan, historiske kontroller, ny assistentgenkontrol og installeret assistentplan skal være dry-run, ikke skrivninger.');
 assert.equal((codeOnlyWorkflow.match(/^\s*supabase db push --linked --skip-vault\s*$/gm) || []).length, 1,
   'Der skal fortsat være præcis én database-apply.');
+assert.match(codeOnlyWorkflow,
+  /if test "\$\{RAVRADAR_ASSISTANT_KNOWLEDGE_PHASE:-\}" = 'before'; then[\s\S]*?env -u SUPABASE_DB_PASSWORD node[\s\S]*?assistant-knowledge-prewrite\.mjs" --slot final[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?verify-assistant-knowledge-plan\.mjs"[\s\S]*?--phase before[\s\S]*?fi\s+supabase db push --linked --skip-vault/,
+  'Efter0200 kræver frisk autentisk originalkontrol og eksakt ny plan før den eneste apply.');
+assert.match(codeOnlyWorkflow,
+  /RAVRADAR_ASSISTANT_KNOWLEDGE_UPGRADE_OPT_IN=false node scripts\/verify-assistant-knowledge-plan\.mjs[\s\S]*?--phase installed[\s\S]*?echo "RAVRADAR_ASSISTANT_KNOWLEDGE_PHASE=installed"/,
+  'Ny installeret fase skal være genlæst før aktivering af de tre rebound serverfunktioner.');
 assert.match(codeOnlyWorkflow,
   /if test "\$\{RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED:-false\}" = "true"; then[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?--account-assistant-prewrite-plan --require-prewrite-gate[\s\S]*?--expected-pending-version 20261013210000[\s\S]*?fi\s+if test "\$\{RAVRADAR_STATISTICS_REVISION_PHASE:-\}" = "before"; then[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?verify-statistics-preference-revision-plan\.mjs[\s\S]*?--phase before[\s\S]*?fi\s+if test "\$\{RAVRADAR_CURRENT_MEMORY_WARMUP_PHASE:-\}" = 'before'; then[\s\S]*?env -u SUPABASE_DB_PASSWORD node[\s\S]*?current-memory-warmup-prewrite\.mjs"[\s\S]*?--slot final[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?verify-current-memory-warmup-plan\.mjs"[\s\S]*?--phase before[\s\S]*?fi\s+supabase db push --linked --skip-vault/,
   'Historiske gates bevares, og den nye assistentfase skal have frisk originalkontrol og egen eksakt plan før den ene apply.');

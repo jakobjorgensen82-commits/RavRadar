@@ -6,6 +6,13 @@ import fs from 'node:fs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 export function inverseCompletedRuntimeWorkflow(source, role) {
+  // Exact581 UA-only inverse; no workflow/phase guard normalization.
+  if (role === 'build' && sha(source) === 'c3f3f76aed3b1193d3c446f00018668ea165370bcdb92742c7139b2cd3e9ab7d') {
+    assert.equal(source.split('RavRadar/4.0.581').length, 6, 'Exactly five reviewed581 UA changes');
+    source = source.replaceAll('RavRadar/4.0.581', 'RavRadar/4.0.580');
+    assert.equal(sha(source), '41db6fb9dbde88f26cf6be776db5d712925e166ebc90e4db8f3d754954233615',
+      'Whole reviewed580 workflow must survive the581 inverse');
+  }
   // Exact release580 successor only; retain the reviewed579 inverse below.
   if (role === 'build' && sha(source) === '41db6fb9dbde88f26cf6be776db5d712925e166ebc90e4db8f3d754954233615') {
     assert.equal(source.split('RavRadar/4.0.580').length, 6, 'Exactly five reviewed580 UA changes');

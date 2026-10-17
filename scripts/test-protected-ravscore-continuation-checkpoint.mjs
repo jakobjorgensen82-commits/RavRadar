@@ -373,7 +373,8 @@ const rpcFailureIncludes = pattern => error => {
 // Pure classification of the real native caller's bounded failure output.
 // These assertions are not PostgreSQL/SQL/installation proof.
 if (!process.argv.includes('--native-postgres') && !process.argv.includes('--native-statistics-revision')
-    && !process.argv.includes('--native-sampling-identity') && !process.argv.includes('--current-memory-warmup')) {
+    && !process.argv.includes('--native-sampling-identity') && !process.argv.includes('--current-memory-warmup')
+    && !process.argv.includes('--assistant-knowledge')) {
   const { nativePostgresFailureDiagnostic: diagnose,
     nativePostgresFailureAnnotation: annotate } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -403,7 +404,7 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
 
 // Run the actual native SQL-prefix assertion before any historical PG phase.
 // Whole issued-source hashing separately protects the CAS 55-second timeout.
-if (process.argv.includes('--native-sampling-identity') || process.argv.includes('--native-identity-source-only')) {
+if (process.argv.includes('--native-sampling-identity') || process.argv.includes('--native-identity-source-only') || process.argv.includes('--assistant-knowledge')) {
   const { runInNewContext } = await import('node:vm');
   const { nativeIdentityMigration, nativeIdentitySourceSha256, assertNativeIdentityOutputFrozen } =
     await import('./lib/native-sampling-identity-successor-source.mjs');
@@ -528,7 +529,8 @@ if (process.argv.includes('--native-identity-source-only')) {
 // MemoryCentral/Windows representation proof. Reuse these exact 673 builders
 // and the normal checkpoint saver; do not run the simulated RPC tests here.
 if (process.argv.includes('--native-postgres') || process.argv.includes('--native-statistics-revision')
-    || process.argv.includes('--native-sampling-identity') || process.argv.includes('--current-memory-warmup')) {
+    || process.argv.includes('--native-sampling-identity') || process.argv.includes('--current-memory-warmup')
+    || process.argv.includes('--assistant-knowledge')) {
   try {
     const { runNativeCheckpointSqlComparison } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -536,9 +538,10 @@ if (process.argv.includes('--native-postgres') || process.argv.includes('--nativ
       repositoryRoot: path.resolve('.'), sourceDocumentAt, atHour,
       saveCheckpoint: saveRavScoreContinuationCheckpoint,
       includeStatisticsRevision: process.argv.includes('--native-statistics-revision')
-        || process.argv.includes('--native-sampling-identity') || process.argv.includes('--current-memory-warmup'),
-      includeNativeIdentity: process.argv.includes('--native-sampling-identity') || process.argv.includes('--current-memory-warmup'),
-      includeCurrentMemoryWarmup: process.argv.includes('--current-memory-warmup'),
+        || process.argv.includes('--native-sampling-identity') || process.argv.includes('--current-memory-warmup') || process.argv.includes('--assistant-knowledge'),
+      includeNativeIdentity: process.argv.includes('--native-sampling-identity') || process.argv.includes('--current-memory-warmup') || process.argv.includes('--assistant-knowledge'),
+      includeCurrentMemoryWarmup: process.argv.includes('--current-memory-warmup') || process.argv.includes('--assistant-knowledge'),
+      includeAssistantKnowledge: process.argv.includes('--assistant-knowledge'),
     });
     console.log(JSON.stringify(report));
   } catch (error) {

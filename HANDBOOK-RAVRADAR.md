@@ -1,3 +1,23 @@
+## 89.252 Spørg RavRadar skal forstå hele spørgsmålet
+
+**Kildeprøve 17. oktober:** Den første databaseprøve fandt en manglende kontrol af en allerede installeret forgænger. Den endnu ikke installerede assistentkandidat tilføjer kun denne kontrol og bevarer alle målinger, beregningskontrakter og gamle originaler. De fire relevante lokale kildeprøver og den normale SQL-udledning består; en ny rigtig database- og samlet kildekontrol mangler stadig. UI580s særskilte pakkelæserfejl og den fejlede almindelige vejropdatering undersøges separat. Offentlig 580 eller 581 er ikke godkendt her. Tidsplan og tilbageholdt statistik ændres ikke.
+
+**Lokal opfølgning 17. oktober kl. 06.26 UTC:** Den ene fulde normale 673-delsprøve for denne 581-komposition bestod med 1 bestået, 0 fejl og 0 udeladelser. Den beviser autentisk gammel 0200-afvisning, tabsfri metadataovergang ved samme og 13 timer nyere mål, ændrede originalers afslag samt den normale B-før-S-kædes stop og genindtræden. Native PostgreSQL, præcis samlet kildekontrol og offentlig ny assistentbinding er fortsat åbne. UI580 har separat head 2807766 og igangværende præcis kontrol 39008946309; kun kildejobbets 45-minuttersloft og den tilsvarende prøveforventning er hævet til 60 minutter. Ingen gate eller vejr-/providerfrist ændres. 581 bevarer dette som en selvstændig kildeforbedring oven på sin gennemgåede 229d-basis. Ældre 229d- eller endnu ikke kørte 673-statusser nedenfor er daterede førbilleder, ikke en påstand om offentlig 580 eller 581.
+
+**Kort fortalt:** Et spørgsmål om en grøn RavScore er ikke et spørgsmål om ravets farve. Spørger du både til, hvor du skal lede på en tom sandstrand, og hvorfor en høj score ikke lover fund, skal begge dele besvares.
+
+Den lokale assistentkandidat samler kun eksisterende gennemgået viden. Den skelner mellem score, mineralfarve, udstyr, oprindelse og naturlige opfølgninger på dansk, tysk og engelsk. Den bruger kun afgrænsede lokale emner, ikke en generel samtalehukommelse. Private spørgsmål og usikre eller ukendte tillæg må ikke forsvinde i et genkendt forled. Almindelige aktuelle zonespørgsmål kræver stadig den relevante zone; ægte ukendte spørgsmål beholder den normale eksterne AI-rute.
+
+Et højt tal er en vurdering af forholdene, ikke et løfte om rav eller opskyl på den valgte strand. Assistenten må hverken opfinde aktuelle vejrdata, gøre gamle data aktuelle eller love fund. Alle svar i de nye lokale forløb består af allerede kontrollerede hele vidensenheder.
+
+Den tekniske gatewayændring bevarer de samme tre kvotekontroller. Nye hemmelige API-nøgler sendes kun i det beregnede API-nøgleheaderfelt, mens den eksisterende JWT-nøglefamilie beholder sit hidtidige tokenheaderfelt. Der indføres ikke retry, nye hemmeligheder, kvoteomgåelse eller nye miljøvariabelvalg. En tidligere virkelig kvoteafvisning har fortsat ukendt konkret årsag.
+
+581 er en lokal kandidat oven på den selvstændige UI580-kilde, ikke en offentlig leveringskvittering. P0/0200 og offentlig 579 er særskilt verificeret; UI580 og den nye assistentbinding skal hver gennem deres egen normale kontrol og levering. Historiske private prøver eller et tidligere offentligt AI-svar godkender ikke denne nye version.
+
+Nye tekniske kildeidentiteter er beregnet normalt. Målinger, scorer, tidsstempler og gamle originaler skal bevares gennem en særskilt originalvalideret metadataovergang. Den nye0530-fase føjer én kontrakt til den autentiske0200-fase uden at ændre gamle migrationsfiler, fysiske formler eller administratorens grundlag. En gammel tilstand må aldrig blot få en ny mærkat.
+
+De afgrænsede lokale assistent-, Edge-, UI-, source- og kalderprøver består. Den nye fulde673-overgang og native databasekontrol er stadig åbne før ROOT-review og præcis CI. Installation, serverfunktioner, Pages og offentlig afprøvning mangler. Cron, SOURCE19 og samlet statistikaktivering ændres ikke. Alle fem mål til 18. oktober er fortsat åbne.
+
 ## 89.251 Kortet kan vises for en valgt prognosetime
 
 **Kildekontrol 17. oktober:** Den anden kontrol blev afbrudt omkring jobbets 45-minuttersloft med fortsat bestået aktivitet. Kun PR-jobbets loft og den normale tilsvarende forventning hæves til 60 minutter; ingen tests eller vejrfrister fjernes. Den samlede nye kontrol og offentlig 580-effekt mangler fortsat. Offentlig 579 er leveret med genbrugte data; den nye almindelige vejrhentning er ikke færdigverificeret. Ældre pending-udsagn herunder er dateret historik.
@@ -356,9 +376,13 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.580
+**Håndbogsversion:** 4.0.581
 
 ## Aktuel lokal kildebinding — 17. oktober 2026, 4.0.579 ikke installeret
+
+Den lokale kildekandidat til RavScore 4.0.581 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=285edc56a4876d7a4da8fcb00977bf55a045893a4dacb4b9eae4cb894807bde8` over 71 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=f452111fd41fb3abbdf4138d669317edf1b8680f0fb48d40506676d4eeb27e59` over 69 transitive filer. T12 er `e1b9a8a82f70cd5a77956557dcf243b246a52f2ddbe736ebf12f580cac0a5ca3`. De fysiske modelkontrakter er uændrede, og forbrugerne følger `version.json.releaseContract.modelBindings`. Ny append-only 0530, fuld normal 673-overgang, native PostgreSQL, præcis CI, installation og offentlig afprøvning er endnu åbne. Dette er en lokal kildekandidat, ikke en leveringskvittering. Se 89.252.
+
+**Dateret580/0200-førbillede:**
 
 Den lokale kildekandidat til RavScore 4.0.580 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3` over 71 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=76a86277db106621e7f0952d0789f9038a4bf9cfe7993b88de5c9a49bf25b4b8` over 69 transitive filer. T12 er `a519a34e91e552623892e28f3c1fa9ee67b65d1fa08869a96e34fa24bd6d832f`. Scorekontrakterne er uændrede; forbrugerne følger `version.json.releaseContract.modelBindings`. Migration `20261017020000_current_memory_warmup_original_bound_successor.sql` er faktisk installeret og genlæst i 39004552563/1 omkring kl. 05.09 UTC. Beskyttet B/S-publicering, tre serverfunktioner, Pages og offentlig 579 er endnu ikke bekræftet; UI-prøven er ikke bevis for disse trin. Offentlig 4.0.578 er leveret; det er ikke bevis for denne rettelse. Originaler og historiske værdier skal bevares gennem alle kontrol- og leveringstrin. Se 89.250.
 
