@@ -1,5 +1,7 @@
 ## 18. oktober — UI-build 4.0.581: mobil dagrække og fortsat vejrstoppunkt
 
+PR655's første præcise kildekontrol er faktisk rød på den gamle faste auth-cacheadresse; native PostgreSQL bestod, og senere baseline-/kapacitets-/kildebevistrin blev ikke kørt. Den normale auth-cacheprøve og en fremadrettet fundet cold-start-prøve er tilpasset de præcise aktuelle UI-adresser. Normal cacheadfærd, gamle cacheposter og alle øvrige kontroludsagn bevares. Begge mål og den tidligere fejlede privacy-gruppe består lokalt med gruppens eksisterende Windows-skip uændret. Nyt præcist samlet grønt kildebevis og offentlig mobilrettelse mangler fortsat; ingen driftsfejl erklæres lukket af disse testrettelser.
+
 Næste afgrænsede fejlaflæsning bruger den eksisterende saved-input-audit med særskilte nativeGridSampling-tællinger. De 55 lokale normale mål består; ny præcis kilde-CI og faktisk aflæsning er ikke gennemført. Opdelingen før/efter B's validerede tilstandstid vedrører persisterede kilder, ikke automatisk de valgte replay-rækker. Ingen garanti for løsning og ingen ændring af data- eller optagelseskontroller følger heraf.
 
 **Dokumenteret UI-fejl:** Ejerens iPhone viste sidste dagslabel på en ny række. Normal renderer/CSS holder nu alle labels på én række med kort ugedag/dato og tidsproportional placering. Den eksisterende testfil bevarer gammel adfærd og kontroller.

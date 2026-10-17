@@ -1,5 +1,7 @@
 ## 18. oktober — UI-build 4.0.581: gennemført lokalt og fortsat åbent
 
+Første præcise PR655-kontrol bestod native PostgreSQL, men sluttede rød i én kildekommandogruppe på en gammel auth-cacheadresse. En anden gammel adresse blev fundet skrivefrit i cold-start-prøven inden deploy. De to testlæsere følger nu de præcise gennemgåede adresser og beviser fortsat normal worker-hentning, genbrug og bevarelse af alle gamle cacheposter; de øvrige auth-, opstarts- og maskekontroller er uændrede. Begge normale mål og den tidligere fejlede samlede privacy-gruppe består lokalt. Gruppens ene eksisterende Windows-skip må ikke udlægges som gennemført Linux-prøve. Ny præcis samlet CI, sikker levering og offentlig effekt er fortsat åbne; produktkoden ændres ikke igen.
+
 Den eksisterende skrivefri saved-input-audit har en afgrænset kontroludvidelse med nativeGridSampling-tællinger og B's validerede tilstandstidsgrænse. Lokale normale mål: 55/55; præcis samlet kildekontrol og faktisk aflæsning er åbne. Tællingerne angår persisterede kilder og udpeger ikke automatisk replay-input eller en fejlrettelse. Ingen nye leverandørkald, dataskrivning, modelbindinger eller svækkede kontroller.
 
 - [x] Ret mobilens dokumenterede daglabel-wrap i normal renderer/CSS med bevaret timevalg, indlæsning og scorer.

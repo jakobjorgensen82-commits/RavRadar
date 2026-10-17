@@ -2,6 +2,8 @@
 
 ### Mobilens dagslabels og eksisterende browsercachevej
 
+Første præcise PR655-kildekontrol bestod native PostgreSQL, men fandt én gammel auth-cacheadresse i kildeprøven. Den og cold-start-prøvens tilsvarende adressekrav er rettet til de præcise gennemgåede indgangsadresser. De normale worker-prøver bevarer gamle cacheposter og kontrollerer faktisk hentning og genbrug af de nye filer. Øvrige auth-, opstarts- og maskekontroller er uændrede. Begge mål og den tidligere fejlede privacy-gruppe består lokalt; gruppens eksisterende Windows-skip og krav om ny præcis samlet CI bevares. Ingen yderligere produkt- eller cachepolitikændring.
+
 Den eksisterende interne saved-input-audit får særskilte, faste nativeGridSampling-tællinger omkring B's autentificerede tilstandstid. Originalbevis og korrekt gitterfortolkning holdes adskilt; ukendte grænser og faktisk replayudvælgelse udledes ikke af optællingen. 55 normale mål består lokalt; præcis kilde-CI og ny produktionsaflæsning er fortsat åbne. Ingen ændring af vejrdata, model, optagelsesregel eller leverandørkald.
 
 Ejerens iPhonefoto viste, at sidste dagslabel rykkede ned på en ny række. Den afgrænsede rettelse i js/ui/map-timeline.js og style.css holder alle dagslabels på én vandret dagrække med kort ugedag og dato på to linjer inde i hver label. Placeringen følger de faktiske timeintervaller, også delvise første og sidste dage; kun teksten forskydes ved risiko for overlap, mens daggrænserne står præcist. Den eksisterende normale test udvides i scripts/test-map-forecast-timeline.mjs. Timevalg, indlæsning, seneste-valg/racekontrol, model og scorer ændres ikke.
