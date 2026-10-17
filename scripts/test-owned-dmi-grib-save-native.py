@@ -1640,6 +1640,8 @@ class OwnedRawDistributionNative(unittest.TestCase):
                 debug_logs = list((own_cache / '_logs').glob('*-debug-0.log'))
                 self.assertEqual(len(debug_logs), 1)
                 with debug_logs[0].open('rb') as handle:
+                    if successor:
+                        handle.seek(max(0, os.fstat(handle.fileno()).st_size - 65536))
                     debug = handle.read(65537)
                 self.assertLessEqual(len(debug), 65536)
                 self.assertTrue(any(line.endswith(b' error code ENOTCACHED')

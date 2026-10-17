@@ -1,5 +1,11 @@
 ## 89.250 En fejl skal kunne forklares uden at røbe private data
 
+### 17. oktober: prøvens begrænsede logudsigt er ikke hele loggen
+
+Alle syv V5-nativeprøver, inklusive den positive H71-installation, og den låste SDK-import er nu faktisk bestået. Den almindelige kildekontrol stoppede senere i én negativ offline-cache-prøve, fordi dens npm-debugfil var større end prøveudsigtens 64 KiB. Prøven nåede ikke at bevise npm-fejlkoden.
+
+V6 ændrer alene den nye successor-prøve til at se højst de sidste 64 KiB af samme allerede lukkede log. Den samme læsegrænse og præcise fejlassertion bevares; gamle prøver og alle produktkontroller er uændrede. En egen syntetisk 1-MiB-fil viser forskellen og afvisning af manglende eller forkert slutfejl. Det er ikke hel logvalidering eller bevis for den afsluttede runners indre npm-fejl. Elleve gamle prøveoriginaler bevares, og alle syv Linuxcases kræves fortsat. V6-native, nye normale Linux-hit/race-prøver, samlet kildekontrol, SAVE/finalizer og aktivering er ikke godkendt. SOURCE19 forbliver inaktiv.
+
 ### 17. oktober: en allerede kontrolleret original må kun genbruges med samme beviser
 
 Den seneste kildeprøve bestod seks af syv nativecases. Den positive H71-prøve nåede H70, H71, native CP og et resultat, men ikke bevist færdig working-install før observerens uændrede frist. CPU-målingen viser aktivitet, ikke den præcise indre årsag. Koden læser de samme beskyttede originaler gentagne gange. En afgrænset V5-ændring kan på Linux genbruge en tidligere fuld kontrolsum, men kun for præcis samme autentificerede B-original og uændrede fil- og ejerbeviser. Frisk kilde-/procesidentitet og frist kontrolleres stadig hver gang. Arbejdskopier og mutérbare filer får ikke denne mulighed, og ingen frist øges.
