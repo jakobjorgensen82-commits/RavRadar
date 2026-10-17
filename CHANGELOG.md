@@ -2,6 +2,8 @@
 
 ### Bevar autentisk H0 og fortsæt kun fremad
 
+Første præcise CI på 7b467bb stoppede i den kunstige SQL-selectorprøves manglende separator efter en kataloglæst funktionsdefinition, efter den egentlige isolerede migrationsinstallation og genlæsning. Testklargøringen får det manglende semikolon og en normal regression; SQL, C/I/T og produktkontroller bevares. Almindelig checkout bruger desuden den eksisterende fulde Git-historik, så fremtidige kildeændringer ikke skjuler en autentisk pakkeforgænger. Hele historiske orakler og alle afslag bevares; syv inverseprøver og én direkte normal kildeprøve består lokalt. Samlet ny CI og faktisk offentlig vejropdatering er endnu åbne. Ingen produktionsændring følger af den røde kontrol.
+
 Historikgennemgangen genfinder den tidligere læring om bevaret punktvis historik og adskillelse af engangsovergang fra almindelig fortsættelse. Den aktuelle fejl skyldes konkret, at en engangskontrol genberegner allerede gemt strømtilstand fra et senere, flyttet kildevindue. Den normale videreberegner validerer allerede gemt tilstand og anvender kun timer efter dens tidspunkt. Ny historiknulstilling, ekstra stor originaljournal og svækkelse af no-loss er derfor ikke den valgte P0-løsning.
 
 Den lokale rettelse knytter den faktisk autentificerede nye H0-opstart og den efterfølgende tabsfri metadataovergang til en privat oprindelseskæde. Kun præcist validerede I/G-par med uændret delidentitet og kontekst kan bruge normal fremadrettet fortsættelse. Gamle eller ukendte tilstande, ændrede punkter og uægte kopier får ikke denne adgang; kildevalg, native/HOLD-grænser, scoreformel, administratorpunkter og geometri bevares. Den private attest må ikke følge offentlig eksport eller assistentviden.

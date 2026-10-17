@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
-import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
+import { inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout } from './lib/completed-private-runtime-workflow-review.mjs';
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
 const read = async relative => (await fs.readFile(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
-const build = await read('../.github/workflows/reusable-weather-build.yml');
+const actualBuild = await read('../.github/workflows/reusable-weather-build.yml');
+const build = inverseOrdinaryFullHistoryCheckout(actualBuild, 'build');
 const once = await read('../.github/workflows/run-current-weather-once.yml');
 const legacySha = '649f832d33e9efb1f2569c840b26818c23e39ffd98e7cf7b75de82afc3e62e6b';
 test('release581 inverse preserves whole reviewed580 and the original completed-runtime oracle', () => {
@@ -54,4 +55,39 @@ test('the original 96-edit build and seven-edit manual oracle is physically unch
   assert.deepEqual(Object.keys(review.inverseReview), ['build', 'once']);
   assert.equal(review.inverseReview.build.edits.length, 96);
   assert.equal(review.inverseReview.once.edits.length, 7);
+});
+
+test('ordinary full-history checkout has one exact inverse before every unchanged historical oracle', () => {
+  assert.equal(sha(actualBuild), '861fad7501e32d4b63c72caa598825b15fb5fb2758961a1187ed57858e5c01ce');
+  assert.equal(actualBuild.split("      - uses: actions/checkout@v7\n        with:\n          fetch-depth: 0\n").length, 2);
+  assert.equal(inverseOrdinaryFullHistoryCheckout(actualBuild, 'build'), build);
+  assert.equal(inverseOrdinaryFullHistoryCheckout(build, 'build'), build);
+  assert.equal(sha(build), 'c3f3f76aed3b1193d3c446f00018668ea165370bcdb92742c7139b2cd3e9ab7d');
+  assert.equal(inverseCompletedRuntimeWorkflow(actualBuild, 'build'),
+    inverseCompletedRuntimeWorkflow(build, 'build'));
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(actualBuild, 'build')), legacySha);
+  assert.equal(inverseOrdinaryFullHistoryCheckout(actualBuild, 'once'), actualBuild);
+  assert.throws(() => inverseCompletedRuntimeWorkflow(actualBuild, 'once'));
+});
+test('ordinary checkout rejects depth regression, missing or duplicate block and unrelated changes', () => {
+  const assertExactOrdinaryCheckout = source => {
+    assert.equal(sha(source), '861fad7501e32d4b63c72caa598825b15fb5fb2758961a1187ed57858e5c01ce', 'Only the whole reviewed ordinary workflow is current');
+    assert.equal(inverseOrdinaryFullHistoryCheckout(source, 'build'), build);
+  };
+  const mutations = [
+    actualBuild.replace("          fetch-depth: 0", '          fetch-depth: 1'),
+    actualBuild.replace("          fetch-depth: 0", "          fetch-depth: ${{ inputs.completed_private_runtime && '0' || '1' }}"),
+    actualBuild.replace("          fetch-depth: 0\n", ''),
+    actualBuild.replace("      - uses: actions/checkout@v7\n        with:\n          fetch-depth: 0\n", "      - uses: actions/checkout@v7\n        with:\n          fetch-depth: 0\n      - uses: actions/checkout@v7\n        with:\n          fetch-depth: 0\n"),
+    actualBuild.replace('actions/checkout@v7', 'actions/checkout@v6'),
+    actualBuild.replace('RavRadar/4.0.581', 'RavRadar/4.0.580'),
+    actualBuild + '\n# UNREVIEWED CHECKOUT CHANGE\n',
+  ];
+  for (const changed of mutations) {
+    assert.notEqual(changed, actualBuild);
+    assert.throws(() => assertExactOrdinaryCheckout(changed));
+  }
+  // The old conditional is still accepted only as the unchanged historical
+  // oracle, not as the new ordinary checkout configuration.
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(mutations[1], 'build')), legacySha);
 });

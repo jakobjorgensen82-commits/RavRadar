@@ -5,7 +5,19 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+// Exact test-only ordinary checkout inverse; no runtime source guard is changed.
+export function inverseOrdinaryFullHistoryCheckout(source, role) {
+  if (role !== 'build' || sha(source) !== '861fad7501e32d4b63c72caa598825b15fb5fb2758961a1187ed57858e5c01ce') return source;
+  const actual = "      - uses: actions/checkout@v7\n        with:\n          fetch-depth: 0\n";
+  const original = "      - uses: actions/checkout@v7\n        with:\n          fetch-depth: ${{ inputs.completed_private_runtime && '0' || '1' }}\n";
+  assert.equal(source.split(actual).length, 2, 'One reviewed checkout block');
+  const previous = source.replace(actual, original);
+  assert.equal(sha(previous), 'c3f3f76aed3b1193d3c446f00018668ea165370bcdb92742c7139b2cd3e9ab7d',
+    'The entire preceding workflow survives the one-line checkout inverse');
+  return previous;
+}
 export function inverseCompletedRuntimeWorkflow(source, role) {
+  source = inverseOrdinaryFullHistoryCheckout(source, role);
   // Exact release581 UA-only inverse; all historical guards below remain intact.
   if (role === 'build' && sha(source) === 'c3f3f76aed3b1193d3c446f00018668ea165370bcdb92742c7139b2cd3e9ab7d') {
     assert.equal(source.split('RavRadar/4.0.581').length, 6, 'Exactly five reviewed581 UA changes');

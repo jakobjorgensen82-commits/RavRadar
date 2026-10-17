@@ -86,7 +86,7 @@ async function artificialSelectorMechanics({ psql, after, atHour }) {
   for (const [name, signature] of functions) assert.equal(await psql("select to_regprocedure('public." + name + signature + "') is null;"), 't');
   const reports = [];
   try {
-    await psql(projection + '\n' + cas + '\n' + attempt + '\n' + functions.map(([name, signature]) =>
+    await psql(projection + '\n' + cas + '\n' + attempt + ';\n' + functions.map(([name, signature]) =>
       'revoke all on function public.' + name + signature + ' from public,anon,authenticated;').join('\n')
       + '\nalter function public.' + casName + "(bigint,timestamptz,jsonb) set statement_timeout='55s';"
       + '\ngrant execute on function public.' + attemptName + '(boolean,bigint,jsonb) to service_role;');
