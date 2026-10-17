@@ -1,3 +1,25 @@
+## 89.251 SOURCE19 forenes med den faktiske opvarmningskilde uden aktivering
+
+Main d897f3eb indeholder den faktisk testede 4.0.579-kilde. Opvarmningens databaseovergang og genlæsning er nu faktisk gennemført særskilt af ROOT; en almindelig vejrhentning er fortsat åben. SOURCE19 aktiveres ikke. Den private integrationspakke bevarer begge forældres produktkontroller, dokumenthistorik og den normale rækkefølge.
+
+V6-kontrol 39002451199 bestod alle syv nativecases, låst SDK-import, acquisition/raw-save og native PostgreSQL. Den normale Linux-unit bestod også alle syv immutable-B-angrebsgrupper, frisk Git-/fristkontrol, genbrug uden ny læsning på hit og race-afvisning. Samlet source fejlede særskilt i to gamle kildeinverser og en direkte B/S-kalder efter routevalg uden normal prelude. Senere gates blev ikke kørt. Hele første log og ZIP er bevaret privat.
+
+Forslaget lægger to præcise SOURCE-inverser foran alle gamle assertions og holder standalone B/S før den samme routeassert. Produktguards, frister og gamle beviser bevares. En ny additiv V7-komposition ændrer udtrykkeligt producentens to releasefelter og den normale tests kildepin; 25 af 27 pins og alle tretten tidligere fixtures bevares. V7-native, samlet kildekontrol, nationalt heljob, holdbar SAVE/finalizer og aktivering er ikke bevist. Ingen main-, model-, SQL-installations-, provider- eller produktionsændring følger af den private forberedelse. Ældre daterede fronter bevares nedenfor.
+
+## 89.250 Almindelig strømopvarmning med manglende historiktimer
+
+Den seneste samlede kildeprøve fandt to fejl i selve prøvekalderne. De gamle kommandoforventninger skal bruge deres faktiske historiske kilde, mens den nye leveringsvej kontrolleres særskilt. Den historiske testvært manglede også én fast workflowfil, som den uændrede normale prøve læser. Filen følger nu med uændret. Begge kommandoforløb og hele det normale readiness-mål består lokalt uden at ændre produkt, gamle kontroludsagn eller databasebindinger. Ny samlet kontrol og faktisk levering er stadig påkrævet.
+
+En ny strømhistorik bliver gradvis opbygget. De normale producenter kan beskrive flere forskellige former for ufuldstændighed. En ekstra kontrol må ikke afvise en ellers fuldt valideret tilstand, alene fordi dens ærlige status ikke hedder præcis det samme som en anden ufuldstændig tilstand. Rettelsen kræver stadig udtrykkeligt ikke-klar tilstand og alle normale kontroller af historik, kilde, tidsvindue og sammenhørende tilstande. Ukendte timer forbliver ukendte og bliver ikke nul eller gyldige strømdata.
+
+En beskyttet genoptagelse leverede faktisk offentlig version 4.0.578. Dens første almindelige efterfølger stoppede senere i denne ekstra kontrol, før ny slutpakke og offentlig levering. Den lokale 4.0.579-rettelse består den målrettede normale prøve med 17 tilfælde. En normal overgang for 673 dele bevarer de gamle originaler og værdier ved både samme og nyere referencetime. Den nye databasekilde er normalt genereret og kontrolleret; installation er endnu ikke udført.
+
+Ændret produktkode kræver ægte nye model- og tilstandsbindinger, selv om scoreformlen er uændret. Overgangen skal bevise bevarelse af gamle originaler, hele tilstande, databaseegenskaber og offentliggjort historik. En plan eller et testresultat er ikke installationsbevis. Alle normale sikkerheds-, databevarelses-, gemme-, genlæsnings- og leveringskontroller består.
+
+Kun ved denne opvarmningsovergang gemmes og genlæses den nye beskyttede vejrpakke før den nye beregningstilstand publiceres. Dermed bevares det gamle sammenhørende par ved en tidlig afbrydelse, mens en senere afbrydelse kan genoptages fra den allerede verificerede nye pakke. Normale fejlprøver skal kontrollere begge stop og et tabt svar efter faktisk gemning, uden at gentage en ukendt skrivning eller ændre originalerne. De øvrige leveringsruter ændres ikke. Første samlede kildekontrol stoppede i databaseprøvens førkontrol. Efter det store prøveinventar blev gjort rækkevist, bestod den rigtige PostgreSQL-prøve faktisk. Derefter stoppede kildeplanen på målprøvens argumentformat før teststart; det er ikke en ny vejr- eller databasefejl. Den normale registrering skal rettes uden at ændre parseren eller hvilke prøver der udføres. Ny samlet kontrol på præcis kilde udestår.
+
+Krypteret fremgang fra den fejlede kørsel er gemt, men kræver sin oprindelige byteeksakte baseline. Den må ikke ommærkes til en ny binding. Efter verificeret metadataovergang bruges derfor den almindelige vej fra den nye beskyttede tilstand med den eksisterende råfilcache. En faktisk almindelig levering skal bestå, før den uændrede tidsplan genaktiveres. Ny samlet kildekontrol, installation og offentlig effekt er fortsat åbne; en præcis PostgreSQL-prøve er bestået; tidsskyderen og de andre mål er ikke færdige hermed.
+
 ## 89.250 En fejl skal kunne forklares uden at røbe private data
 
 ### 17. oktober: prøvens begrænsede logudsigt er ikke hele loggen
@@ -394,9 +416,13 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.578
+**Håndbogsversion:** 4.0.579
 
-## Aktuel lokal kildebinding — 16. oktober 2026, 4.0.578 ikke installeret
+## Aktuel lokal kildebinding — 17. oktober 2026, 4.0.579 ikke installeret
+
+Den lokale kildekandidat til RavScore 4.0.579 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3` over 71 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=76a86277db106621e7f0952d0789f9038a4bf9cfe7993b88de5c9a49bf25b4b8` over 69 transitive filer. T12 er `a519a34e91e552623892e28f3c1fa9ee67b65d1fa08869a96e34fa24bd6d832f`. Scorekontrakterne er uændrede; forbrugerne følger `version.json.releaseContract.modelBindings`. Migration `20261017020000_current_memory_warmup_original_bound_successor.sql` er endnu ikke installeret. Offentlig 4.0.578 er leveret; det er ikke bevis for denne rettelse. Originaler og historiske værdier skal bevares gennem alle kontrol- og leveringstrin. Se 89.250.
+
+## Historisk kildeblok — 16. oktober 2026, daværende 4.0.578-forberedelse
 
 LOKAL kildeblok — 16. oktober 2026, RavScore 4.0.578: udstedt, ikke installeret eller offentliggjort.
 

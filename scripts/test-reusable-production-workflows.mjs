@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict';
+import path from 'node:path';
+import {pathToFileURL} from 'node:url';
+import {withFrozenNative0600TestSource} from './run-frozen-native0600-source-targets.mjs';
 import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 await import('./test-completed-private-runtime-admission.mjs');
 import fs from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { nativeIdentityMigration } from './lib/native-sampling-identity-successor-source.mjs';
+import { currentMemoryWarmupMigration } from './lib/current-memory-warmup-successor-source.mjs';
 
 // The same exact source proof must wait for every relevant SOURCE native job.
 await (await import('./test-source19-native-ci-workflow.mjs')).testSource19NativeCiWorkflow();
@@ -737,7 +741,7 @@ const casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.end
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
 assert.equal(casTimeoutSettings.at(-1).migration,
-  nativeIdentityMigration().filename);
+  currentMemoryWarmupMigration().filename);
 assert.deepEqual(casTimeoutSettings.find(item =>
   item.migration === '20261013220000_current_grid_original_bound_successor.sql'),
   { migration: '20261013220000_current_grid_original_bound_successor.sql', timeout: '55s' },
@@ -780,18 +784,19 @@ assert.doesNotMatch(restoredTimeoutMigration,
 console.log('Reusable production workflow interface and failure contracts passed.');
 
 // Current-grid publication changes only its exact historical-to-current route.
-{
+await withFrozenNative0600TestSource('routing',async frozenRoot=>{
+  const historicalImport = relative => import(pathToFileURL(path.join(frozenRoot,relative)).href);
   const { deferCurrentGridBindingEdges, currentGridEdgePublicationRequired, assertCurrentGridEdgeGeneration } =
-    await import('./lib/production-workflow-sources.mjs');
-  const { ravScoreModelBinding } = await import('../js/core/ravscore-model-contract.js');
+    await historicalImport('scripts/lib/production-workflow-sources.mjs');
+  const { ravScoreModelBinding } = await historicalImport('js/core/ravscore-model-contract.js');
   const { CURRENT_GRID_SAMPLING_PREDECESSOR_POLICY: ffc,
     CURRENT_GRID_SAMPLING_DELIVERED_575_POLICY: delivered,
     CURRENT_GRID_SAMPLING_SELECTED_PREDECESSOR_POLICY: selected } =
-    await import('./lib/bounded-conditions-predecessor-transition.mjs');
+    await historicalImport('scripts/lib/bounded-conditions-predecessor-transition.mjs');
   assert.equal(deferCurrentGridBindingEdges('20261013210000'), false);
   assert.equal(deferCurrentGridBindingEdges('20261013220000'), true);
   const { LATEST_RAVSCORE_BINDING_MIGRATION, LATEST_REQUIRED_CUTOVER_MIGRATION } =
-    await import('./integrated-cutover-readiness.mjs');
+    await historicalImport('scripts/integrated-cutover-readiness.mjs');
   assert.equal(LATEST_RAVSCORE_BINDING_MIGRATION.version, '20260920220000');
   assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, nativeIdentityMigration().version);
   assert.equal(deferCurrentGridBindingEdges(LATEST_RAVSCORE_BINDING_MIGRATION.version), false);
@@ -853,8 +858,8 @@ console.log('Reusable production workflow interface and failure contracts passed
     assert(indentedBody(binding, '      - name: ' + name).includes("if: inputs.diagnose_current_grid_original != true && steps.integrated-implementation.outputs.defer_edges != 'true'"),
       'Read-only diagnosis must exclude Edge while preserving the independent current-grid floor');
 
-  const { assertCurrentGridEdgeArtifact } = await import('./lib/production-workflow-sources.mjs');
-  const { sha256CanonicalJson } = await import('./ravscore-operational-pages-recovery.mjs');
+  const { assertCurrentGridEdgeArtifact } = await historicalImport('scripts/lib/production-workflow-sources.mjs');
+  const { sha256CanonicalJson } = await historicalImport('scripts/ravscore-operational-pages-recovery.mjs');
   const identity = { repository: 'synthetic/repository', runId: 123, runAttempt: 1,
     headSha: 'a'.repeat(40), ref: 'refs/heads/main', attemptId: 'pages-123-1' };
   const implementation = { modelBinding: ravScoreModelBinding(), implementationClosureSha256: 'c'.repeat(64) };
@@ -905,7 +910,7 @@ console.log('Reusable production workflow interface and failure contracts passed
     'plan.integratedManifestSha256, seal.targetPublicManifestSha256',
     'plan.activeModelBinding, seal.targetModelBinding']) assert(finalHandoff.includes(required), required);
   assert.doesNotMatch(edge, /classifyRavScoreOperationalPagesRecovery|--begin|--activate/);
-}
+});
 
 
 // The ordinary caller omits the new optional input and retains both default

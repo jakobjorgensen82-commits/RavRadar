@@ -4123,7 +4123,6 @@ await test('SOURCE fixed successor keeps genuine B paths and same-owner handles'
     const holder = await hooks.issuePrivateSourceJobDeadline(hooks.captureSourceDeadlineProcess(),
       metadata.createWeatherGithubMetadataClient());
     assert.equal(metadataReads, 2, 'normal timed transport; no clock/deadline replacement');
-    assert.equal((await hooks.readSourceOperationalRoute(holder)).action, 'integrated');
     const originalPath = path.join(fixedRoot, 'bundle'), restoredPath = path.join(fixedRoot, 'restored');
     const original = await hooks.restoreSourceOriginals(holder, 'single', {
       privateRoot: fixedRoot, bundlePath: originalPath, repositoryRoot: fixture.repository,
@@ -4177,6 +4176,12 @@ await test('SOURCE fixed successor keeps genuine B paths and same-owner handles'
     assert.equal(Object.hasOwn(verified, 'sourceComplete'), false);
     assert.equal(Object.hasOwn(verified, 'uploaded'), false);
     assert.equal(owner.artifact, undefined, 'normal bundle verification is not SOURCE artifact admission');
+    // This unit exercises the standalone same-owner B/S API, not the full
+    // normal driver. Selecting a route before that API requires the real
+    // prelude issued by runSourceNormalProgress; no pending flag is forged.
+    assert.equal((await hooks.readSourceOperationalRoute(holder)).action, 'integrated');
+    await assert.rejects(progress.installSourceOriginalProgress(holder, original),
+      /SOURCE_ORIGINAL_ORIGINAL_TARGET_NOT_AVAILABLE/);
   } catch (error) { firstFailure = [error]; }
   finally {
     globalThis.fetch = originalFetch;

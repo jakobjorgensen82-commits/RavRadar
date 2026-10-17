@@ -1,3 +1,19 @@
+## 17. oktober — SOURCE19: privat integration af faktisk 4.0.579, stadig inaktiv
+
+Main d897f3eb indeholder den faktisk testede 4.0.579-kilde. Opvarmningens databaseovergang og genlæsning er nu faktisk gennemført særskilt af ROOT; en almindelig vejrhentning er fortsat åben. SOURCE19 aktiveres ikke. Den private integrationspakke bevarer begge forældres produktkontroller, dokumenthistorik og den normale rækkefølge.
+
+V6-kontrol 39002451199 bestod alle syv nativecases, låst SDK-import, acquisition/raw-save og native PostgreSQL. Den normale Linux-unit bestod også alle syv immutable-B-angrebsgrupper, frisk Git-/fristkontrol, genbrug uden ny læsning på hit og race-afvisning. Samlet source fejlede særskilt i to gamle kildeinverser og en direkte B/S-kalder efter routevalg uden normal prelude. Senere gates blev ikke kørt. Hele første log og ZIP er bevaret privat.
+
+Forslaget lægger to præcise SOURCE-inverser foran alle gamle assertions og holder standalone B/S før den samme routeassert. Produktguards, frister og gamle beviser bevares. En ny additiv V7-komposition ændrer udtrykkeligt producentens to releasefelter og den normale tests kildepin; 25 af 27 pins og alle tretten tidligere fixtures bevares. V7-native, samlet kildekontrol, nationalt heljob, holdbar SAVE/finalizer og aktivering er ikke bevist. Ingen main-, model-, SQL-installations-, provider- eller produktionsændring følger af den private forberedelse. Ældre daterede fronter bevares nedenfor.
+
+## 17. oktober — 4.0.579: almindelig opvarmning skal bevare ærlig, ufuldstændig historik
+
+Den beskyttede genoptagelse har faktisk leveret offentlig 4.0.578. Den første almindelige efterfølger stoppede derimod 17. oktober kl. 04.00 dansk tid før ny privat slutpakke og Pages. Den konkrete fejl er reproduceret: en ekstra kalderkontrol accepterede kun én ufuldstændig status, selv om de normale producenter og validatorer lovligt danner andre. Manglende timer skal fortsat være manglende; ingen falsk READY, nuludfyldning eller ændret scoreformel.
+
+Den lokale 4.0.579-kandidat retter kun dette kalderkrav og forbereder den nødvendige originale-bevarende C/I/T- og databaseovergang. Målprøven består 17 tilfælde; en normal 673-dels metadataovergang og den nye SQL-kildeprøve består lokalt. Præcis samlet Linux/PostgreSQL-kontrol, installation/genlæsning og almindelig offentlig levering er endnu åbne. Gamle originalvalidatorer og offentliggjort historik bevares.
+
+Gammel krypteret fremgang kræver en byteeksakt baseline og må ikke ommærkes efter metadataovergangen. Næste sikre vej er derfor en almindelig vejrhentning fra det nye beskyttede B/S med eksisterende RAW-cache; ingen ny historiknulstilling eller GCM-genvej. Cron er pauset. Tidsskyderen holdes separat til efter P0, SOURCE19 forbliver inaktiv, og alle fem mål til 18. oktober er åbne. Se håndbog 89.250 og seneste private checkpoint; ældre status er kun erstattet på disse faktisk beviste punkter.
+
 ## 17. oktober — beskyttet gendannelse bevarer de oprindelige kontrolsummer
 
 PR642 har faktisk bestået sin samlede præcise kildekontrol og er merget. Den efterfølgende særlige genoptagelse 38979426989 gendannede den færdige private beregningspakke, men stoppede i trin 58 ved normal gendannelse af den beskyttede beregningstilstand: `RavScore checkpoint state integrity is invalid`. Stoppet var før leverandører, scoring og Pages. De allerede publicerede nye private originaler bevares; ingen ny offentlig generation eller almindelig efterfølger er bevist.

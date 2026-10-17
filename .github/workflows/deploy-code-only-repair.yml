@@ -22,6 +22,11 @@ on:
         required: false
         default: false
         type: boolean
+      upgrade_current_memory_warmup:
+        description: "Installer kun den nye opvarmningsrettelse efter faktisk native0600 og230"
+        required: false
+        default: false
+        type: boolean
       publish_newest_saved_weather:
         description: "Fortsæt den nyeste centralt gemte og allerede validerede vejrpakke uden providerkald"
         required: false
@@ -68,6 +73,7 @@ jobs:
           UPGRADE_EXISTING_OWNER_EXPORT: ${{ inputs.upgrade_existing_owner_export }}
           UPGRADE_ACCOUNT_ASSISTANT: ${{ inputs.upgrade_account_assistant }}
           UPGRADE_STATISTICS_REVISION: ${{ inputs.upgrade_statistics_preference_revision }}
+          UPGRADE_CURRENT_MEMORY_WARMUP: ${{ inputs.upgrade_current_memory_warmup }}
         run: |
           set -euo pipefail
           test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
@@ -86,6 +92,15 @@ jobs:
           if test "$UPGRADE_STATISTICS_REVISION" = "true"; then
             test "$UPGRADE_EXISTING_OWNER_EXPORT" != "true"
             test "$UPGRADE_ACCOUNT_ASSISTANT" != "true"
+            test "$GITHUB_RUN_ATTEMPT" = "1"
+            test "$CONFIRMATION" = "DEPLOY-CODE-ONLY-REPAIR"
+            test "$SAVED_WEATHER" != "true"
+            test -z "$RECOVER_PUBLIC_RUN_ID"
+          fi
+          if test "$UPGRADE_CURRENT_MEMORY_WARMUP" = "true"; then
+            test "$UPGRADE_EXISTING_OWNER_EXPORT" != "true"
+            test "$UPGRADE_ACCOUNT_ASSISTANT" != "true"
+            test "$UPGRADE_STATISTICS_REVISION" != "true"
             test "$GITHUB_RUN_ATTEMPT" = "1"
             test "$CONFIRMATION" = "DEPLOY-CODE-ONLY-REPAIR"
             test "$SAVED_WEATHER" != "true"
@@ -164,6 +179,14 @@ jobs:
       RAVRADAR_STATISTICS_REVISION_CONFIRMATION: ${{ inputs.confirmation }}
       RAVRADAR_STATISTICS_REVISION_SAVED_WEATHER: ${{ inputs.publish_newest_saved_weather }}
       RAVRADAR_STATISTICS_REVISION_RECOVERY_RUN_ID: ${{ inputs.recover_public_run_id }}
+      RAVRADAR_CURRENT_MEMORY_WARMUP_UPGRADE_OPT_IN: ${{ inputs.upgrade_current_memory_warmup == true && 'true' || 'false' }}
+      RAVRADAR_CURRENT_MEMORY_WARMUP_CONFIRMATION: ${{ inputs.confirmation }}
+      RAVRADAR_CURRENT_MEMORY_WARMUP_SAVED_WEATHER: ${{ inputs.publish_newest_saved_weather }}
+      RAVRADAR_CURRENT_MEMORY_WARMUP_RECOVERY_RUN_ID: ${{ inputs.recover_public_run_id }}
+      RAVRADAR_CURRENT_MEMORY_WARMUP_RECOVERY_GATE_RESULT: ${{ needs.operational-recovery-gate.result }}
+      # This job holds both unchanged production/trip-storage writer locks.
+      RAVRADAR_CURRENT_MEMORY_WARMUP_WRITER_ACTIVE: 'false'
+      RAVRADAR_CURRENT_MEMORY_WARMUP_METADATA_ONLY: 'false'
     steps:
       - uses: actions/checkout@v7
         with:
@@ -535,11 +558,18 @@ jobs:
           fs.appendFileSync(process.env.GITHUB_ENV, `RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED=${accountCurrent}\n`);
           NODE
 
-      - name: Select the exact statistics revision phase without fallback
+      - name: Select only an already-installed current-memory warmup successor before private work
         if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
-        run: >-
-          node scripts/verify-statistics-preference-revision-plan.mjs --select
-          --migration-list "$RUNNER_TEMP/code-only-migrations-before.txt"
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test "$RAVRADAR_CURRENT_MEMORY_WARMUP_UPGRADE_OPT_IN" = 'false'; then
+            node scripts/verify-current-memory-warmup-plan.mjs --select \
+              --migration-list "$RUNNER_TEMP/code-only-migrations-before.txt"
+          else
+            # Pending selection stays forbidden until actual B/S/no-loss proof.
+            test "$RAVRADAR_CURRENT_MEMORY_WARMUP_UPGRADE_OPT_IN" = 'true'
+          fi
 
       - name: Hydrate only already-applied migration identities
         if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
@@ -846,6 +876,11 @@ jobs:
           --expected "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT/expected.json"
           --output "$RAVRADAR_PREDECESSOR_PRIVATE_RESTORE"
 
+      - name: Select only the exact authenticated native0600 metadata bridge
+        if: steps.current-private-install.outcome != 'success' && steps.owner-current-original.outputs.transition_kind != 'owner-current-domain-original'
+        shell: bash
+        run: node scripts/current-memory-warmup-prewrite.mjs --slot select
+
       - name: Rebind saved private runtime to current source without changing measurements
         if: steps.current-private-install.outcome != 'success'
         shell: bash
@@ -868,6 +903,10 @@ jobs:
             migration_args+=(--metadata-only)
           fi
           if test "${RAVRADAR_ACCOUNT_ASSISTANT_METADATA_ONLY:-false}" = "true"; then
+            test "${{ steps.owner-current-original.outputs.transition_kind }}" != "owner-current-domain-original"
+            migration_args+=(--metadata-only)
+          fi
+          if test "${RAVRADAR_CURRENT_MEMORY_WARMUP_METADATA_ONLY:-false}" = "true"; then
             test "${{ steps.owner-current-original.outputs.transition_kind }}" != "owner-current-domain-original"
             migration_args+=(--metadata-only)
           fi
@@ -1021,6 +1060,20 @@ jobs:
             --report .geometry-v2-work/post-cutover-private-runtime-migration.json
           echo "RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_VERIFIED=true" >> "$GITHUB_ENV"
 
+      - name: Authenticate native0600 B/S and compare every prepared successor byte before new binding
+        if: env.RAVRADAR_CURRENT_MEMORY_WARMUP_METADATA_ONLY == 'true' && steps.migrated-private-install.outcome == 'success'
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/current-memory-warmup-prewrite.mjs --slot proof
+
+      - name: Select the sole pending current-memory warmup successor after actual original and no-loss proof
+        if: env.RAVRADAR_CURRENT_MEMORY_WARMUP_UPGRADE_OPT_IN == 'true'
+        run: >-
+          node scripts/verify-current-memory-warmup-plan.mjs --select
+          --migration-list "$RUNNER_TEMP/code-only-migrations-before.txt"
+
       - name: Verify unchanged current originals and schema1 before statistics revision
         if: env.RAVRADAR_STATISTICS_REVISION_PHASE == 'before'
         shell: bash
@@ -1050,10 +1103,9 @@ jobs:
           if test "${RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED:-false}" = "true"; then
             account_plan_args+=(--account-assistant-prewrite-plan --expected-pending-version 20261013210000)
           fi
-          if test "${RAVRADAR_STATISTICS_REVISION_PHASE:-}" = "before" \
-              || test "${RAVRADAR_STATISTICS_REVISION_PHASE:-}" = "installed"; then
-            node scripts/verify-statistics-preference-revision-plan.mjs \
-              --phase "$RAVRADAR_STATISTICS_REVISION_PHASE" \
+          if test -n "${RAVRADAR_CURRENT_MEMORY_WARMUP_PHASE:-}"; then
+            node scripts/verify-current-memory-warmup-plan.mjs \
+              --phase "$RAVRADAR_CURRENT_MEMORY_WARMUP_PHASE" \
               --migration-list "$RUNNER_TEMP/code-only-migrations-plan.txt" \
               --dry-run "$RUNNER_TEMP/code-only-migrations-dry-run.txt" \
               --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
@@ -1083,6 +1135,8 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           set -euo pipefail
           cd "${{ steps.migration-view.outputs.workdir }}"
@@ -1104,6 +1158,15 @@ jobs:
               --dry-run "$RUNNER_TEMP/code-only-statistics-final-dry-run.txt" \
               --migrations-directory "$PWD/supabase/migrations"
           fi
+          if test "${RAVRADAR_CURRENT_MEMORY_WARMUP_PHASE:-}" = 'before'; then
+            env -u SUPABASE_DB_PASSWORD node "$GITHUB_WORKSPACE/scripts/current-memory-warmup-prewrite.mjs" --slot final
+            supabase migration list --linked | tee "$RUNNER_TEMP/code-only-current-memory-warmup-final-plan.txt"
+            supabase db push --linked --dry-run --skip-vault 2>&1 | tee "$RUNNER_TEMP/code-only-current-memory-warmup-final-dry-run.txt"
+            node "$GITHUB_WORKSPACE/scripts/verify-current-memory-warmup-plan.mjs" \
+              --phase before --migration-list "$RUNNER_TEMP/code-only-current-memory-warmup-final-plan.txt" \
+              --dry-run "$RUNNER_TEMP/code-only-current-memory-warmup-final-dry-run.txt" \
+              --migrations-directory "$PWD/supabase/migrations"
+          fi
           supabase db push --linked --skip-vault
 
       - name: Read back migration and database binding
@@ -1123,10 +1186,12 @@ jobs:
             --migration-list "$RUNNER_TEMP/code-only-migrations-applied.txt"
           node scripts/integrated-cutover-readiness.mjs verify-db
           (cd "${{ steps.migration-view.outputs.workdir }}" && supabase db push --linked --dry-run --skip-vault) 2>&1 | tee "$RUNNER_TEMP/code-only-statistics-installed-dry-run.txt"
-          RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN=false node scripts/verify-statistics-preference-revision-plan.mjs \
+          RAVRADAR_CURRENT_MEMORY_WARMUP_UPGRADE_OPT_IN=false node scripts/verify-current-memory-warmup-plan.mjs \
             --phase installed --migration-list "$RUNNER_TEMP/code-only-migrations-applied.txt" \
             --dry-run "$RUNNER_TEMP/code-only-statistics-installed-dry-run.txt" \
             --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
+          echo "RAVRADAR_CURRENT_MEMORY_WARMUP_UPGRADE_OPT_IN=false" >> "$GITHUB_ENV"
+          echo "RAVRADAR_CURRENT_MEMORY_WARMUP_PHASE=installed" >> "$GITHUB_ENV"
           node scripts/verify-statistics-preference-revision-schema.mjs
 
       - name: Read unchanged Candidate quality before owner-export upgrade
@@ -1646,7 +1711,7 @@ jobs:
 
       - name: Publish measured continuation checkpoint without promoting rollback readiness
         id: checkpoint-publish
-        if: steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED'
+        if: (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && env.RAVRADAR_CURRENT_MEMORY_WARMUP_EDGE_REQUIRED != 'true'
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --publish
@@ -1790,6 +1855,20 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      # Only the named warmup transition defers S until B has uploaded,
+      # verified and committed its pointer. An interrupted installed retry can
+      # then restore current B normally instead of requiring the replaced old S.
+      - name: Publish measured continuation only after verified warmup private runtime
+        id: current-memory-warmup-checkpoint-publish
+        if: (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && env.RAVRADAR_CURRENT_MEMORY_WARMUP_EDGE_REQUIRED == 'true'
+        run: >-
+          node scripts/protected-ravscore-continuation-checkpoint.mjs
+          --publish
+          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
       - name: Prove private runtime is not anonymously readable
         run: node scripts/protected-private-production-runtime.mjs --audit-anon
         env:
@@ -1800,7 +1879,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Deploy exact rebound trip Edges without Worker or D1 replay
-        if: env.RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED == 'true'
+        if: env.RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED == 'true' || env.RAVRADAR_CURRENT_MEMORY_WARMUP_EDGE_REQUIRED == 'true'
         timeout-minutes: 7
         shell: bash
         env:
@@ -1813,6 +1892,10 @@ jobs:
         run: |
           set -euo pipefail
           test "${RAVRADAR_USERDATA_UPGRADE_OPT_IN:-false}" != "true"
+          if test "${RAVRADAR_CURRENT_MEMORY_WARMUP_EDGE_REQUIRED:-false}" = "true"; then
+            test "$RAVRADAR_CURRENT_MEMORY_WARMUP_PHASE" = "installed"
+            test "$RAVRADAR_CURRENT_MEMORY_WARMUP_UPGRADE_OPT_IN" = "false"
+          fi
           git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
           test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$GITHUB_SHA"
@@ -1827,7 +1910,8 @@ jobs:
           set -euo pipefail
           assistant_deploy_attempts=3
           if test "${RAVRADAR_USERDATA_UPGRADE_OPT_IN:-false}" = "true" \
-              || test "${RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN:-false}" = "true"; then
+              || test "${RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN:-false}" = "true" \
+              || test "${RAVRADAR_CURRENT_MEMORY_WARMUP_EDGE_REQUIRED:-false}" = "true"; then
             assistant_deploy_attempts=1
           fi
           for ((attempt = 1; attempt <= assistant_deploy_attempts; attempt++)); do
@@ -1900,7 +1984,7 @@ jobs:
             --arg checkpointRuntimeAuditSha256 "${{ steps.checkpoint-disposition.outputs.runtime_audit_sha256 }}" \
             --arg checkpointBuildOutcome "${{ steps.checkpoint-build.outcome }}" \
             --arg checkpointSaveOutcome "${{ steps.checkpoint-save.outcome }}" \
-            --arg checkpointPublishOutcome "${{ steps.checkpoint-publish.outcome }}" \
+            --arg checkpointPublishOutcome "${{ env.RAVRADAR_CURRENT_MEMORY_WARMUP_EDGE_REQUIRED == 'true' && steps.current-memory-warmup-checkpoint-publish.outcome || steps.checkpoint-publish.outcome }}" \
             --arg codeOnlyReuseReportSha256 "$code_only_sha256" \
             --arg sourceRepairId "${{ steps.public-source.outputs.repair_id }}" \
             --argjson codeOnlyRepair '${{ inputs.publish_newest_saved_weather != true }}' \

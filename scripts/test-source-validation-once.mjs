@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { withFrozenNative0600TestSource } from './run-frozen-native0600-source-targets.mjs';
 import {
   buildSourceValidationPlan,
   expandSourceCommands,
@@ -11,6 +13,16 @@ import {
 const scripts = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts;
 const plan = buildSourceValidationPlan(scripts);
 const declared = expandSourceCommands(scripts, 'validate:source:checks');
+
+// Historical assertions retain their actual immutable source, not a package
+// projection retagged as current. The normal host verifies every materialized
+// leaf and the complete native0600 migration catalog before this callback.
+const frozen = await withFrozenNative0600TestSource('native', sourceRoot =>
+  JSON.parse(fs.readFileSync(path.join(sourceRoot, 'package.json'), 'utf8')).scripts);
+assert.equal(frozen.head, '60d999a68136c43acb4d3664bbd66eed47283bb2');
+assert.equal(frozen.tree, 'ead5743dd9098035b0de5f748de2009460506971');
+const historicalScripts = frozen.result;
+const historicalDeclared = expandSourceCommands(historicalScripts, 'validate:source:checks');
 
 assert.deepEqual(plan.preflight, [...SOURCE_BINDING_PREFLIGHT]);
 assert.deepEqual(plan.remaining, declared.filter(command => command !== plan.gate
@@ -46,21 +58,70 @@ const epochTargets = [
   'scripts/test-weather-state-epoch-workflow.mjs',
 ];
 const epochCheck = 'node --test --test-concurrency 2 ' + epochTargets.join(' ');
-assert.equal(scripts['test:weather-state-epoch'], epochCheck);
-assert.equal(scripts['test:native-identity-successor'], nativeFrozenCheck + ' && ' + nativeCheck,
+assert.equal(historicalScripts['test:weather-state-epoch'], epochCheck);
+assert.equal(historicalScripts['test:native-identity-successor'], nativeFrozenCheck + ' && ' + nativeCheck,
   'All eight native targets and explicit concurrency2 must remain in the same normal group.');
 const successorChecks = [issuedCheck, frozenCurrentCheck, successorCheck, diagnosticCheck,
   nativeFrozenCheck, nativeCheck, epochCheck];
 for (const check of successorChecks) {
-  assert.equal(declared.filter(command => command === check).length, 1,
+  assert.equal(historicalDeclared.filter(command => command === check).length, 1,
     'Issued, genuine OLD, NEW, native and pure diagnostic source must each be checked exactly once.');
 }
 assert.equal(declared.includes('node scripts/build-account-assistant-binding-successor.mjs --check'), false,
   'The immutable issued213 builder must not be rerun against current220 source.');
 assert.equal(declared.includes('node scripts/build-current-grid-original-binding-successor.mjs --check'), false,
   'The immutable issued220 builder must run only inside its genuine frozen source, not against NEW.');
-assert.ok(declared.filter(command => !successorChecks.includes(command)).length <= 47,
-  `Kildegaten er igen blevet for bred uden den præcise efterfølgerkontrol: ${declared.length} kommandoer.`);
+assert.ok(historicalDeclared.filter(command => !successorChecks.includes(command)).length <= 47,
+  `Kildegaten er igen blevet for bred uden den præcise efterfølgerkontrol: ${historicalDeclared.length} kommandoer.`);
+
+// Check the real normal host's literal group inventory, not just wrapper names.
+// Its native producer above also physically verified these immutable sources.
+const hostSource = fs.readFileSync('scripts/run-frozen-native0600-source-targets.mjs', 'utf8').replace(/\r\n/g, '\n');
+function hostTargets(group) {
+  const body = new RegExp('^  ' + group + ':Object\\.freeze\\(\\[([\\s\\S]*?)\\]\\),$', 'm').exec(hostSource)?.[1];
+  assert.ok(body, 'The actual normal frozen group must be literal and bounded.');
+  assert.equal(body.replace(/'[^']+'/g, '').replace(/[\s,]/g, ''), '');
+  return [...body.matchAll(/'([^']+)'/g)].map(match => match[1]);
+}
+assert.deepEqual(hostTargets('native'), [nativeFrozenCheck.split(' ')[1], ...nativeTargets]);
+assert.deepEqual(hostTargets('epoch'), epochTargets);
+assert.deepEqual(hostTargets('install'), ['scripts/test-integrated-cutover-install-contract.mjs']);
+assert.deepEqual(hostTargets('readiness'), ['scripts/test-integrated-cutover-readiness.mjs']);
+assert.ok(hostSource.includes("group==='native'?[[GROUPS.native[0]],['--test','--test-concurrency','2',...GROUPS.native.slice(1)]]\n"
+  + "      :group==='epoch'?[['--test','--test-concurrency','2',...GROUPS.epoch]]:[[...GROUPS[group]]];"));
+assert.ok(hostSource.includes('await exec(process.execPath,argv,{cwd:sourceRoot,env:'));
+const host = group => 'node scripts/run-frozen-native0600-source-targets.mjs ' + group;
+assert.equal(scripts['test:native-identity-successor'], host('native'));
+assert.equal(scripts['test:weather-state-epoch'], host('epoch'));
+const currentBuilder = 'node scripts/build-current-memory-warmup-successor.mjs --check';
+const warmupTargets = ['scripts/test-current-memory-warmup-successor.mjs',
+  'scripts/test-current-memory-warmup-current-consumers.mjs',
+  'scripts/test-current-memory-warmup-postgres-source.mjs',
+  'scripts/test-current-memory-warmup-workflow.mjs'];
+const warmupChecks = ['node --test --test-concurrency 2 ' + warmupTargets.join(' '),
+  'node scripts/test-current-memory-warmup-runtime-transition.mjs',
+  'node --test --test-name-pattern inner-unknown scripts/test-weather-state-epoch-input-view.mjs'];
+assert.equal(scripts['test:current-memory-warmup'], warmupChecks.join(' && '));
+const epochSource = fs.readFileSync('scripts/test-weather-state-epoch-input-view.mjs', 'utf8');
+assert.deepEqual([...epochSource.matchAll(/^test\('([^']+)'/gm)].map(match => match[1])
+  .filter(name => /inner-unknown/.test(name)),
+['normal strict inner-unknown NEW checkpoint follows without relabeling history']);
+const replaced = new Map([
+  [successorCheck, [currentBuilder]],
+  [nativeFrozenCheck, [host('native'), ...warmupChecks]],
+  [nativeCheck, []], // The same eight targets now execute in the genuine host.
+  [epochCheck, [host('epoch')]],
+  ['node scripts/test-integrated-cutover-install-contract.mjs', [host('install')]],
+  ['node scripts/test-integrated-cutover-readiness.mjs', [host('readiness')]],
+]);
+assert.deepEqual(declared, historicalDeclared.flatMap(command => replaced.get(command) ?? [command]),
+  'Preserve every baseline command, order and duplicate count except the six exact historical routes and three separate warmup checks.');
+for (const check of [issuedCheck, frozenCurrentCheck, diagnosticCheck, currentBuilder,
+  host('native'), host('epoch'), host('install'), host('readiness'), ...warmupChecks])
+  assert.equal(declared.filter(command => command === check).length, 1,
+    'Every genuine historical route and current warmup builder/target must execute exactly once.');
+assert.equal(declared.includes(successorCheck), false,
+  'The immutable native0600 builder must run only inside its genuine frozen source.');
 assert.equal(declared.filter(command => command === 'python scripts/test-copernicus-current-pilot.py').length, 1);
 assert.ok(fs.readFileSync('scripts/test-copernicus-current-pilot.py', 'utf8').includes(
   'runpy.run_path(str(ROOT / "scripts/test-copernicus-dataset-updating.py"), run_name="__main__")'),
@@ -128,9 +189,16 @@ for (const changes of [
   { 'validate:source:checks': 'npm run missing' },
   { 'validate:source:checks': 'npm run validate:source:checks' },
   { 'validate:source:checks': 'echo ok || true && npm run source:critical-gate' },
-  { 'test:native-identity-successor': scripts['test:native-identity-successor']
+  { 'test:current-memory-warmup': scripts['test:current-memory-warmup']
     .replace('--test-concurrency 2', '--test-concurrency=2') },
+  { 'test:current-memory-warmup': scripts['test:current-memory-warmup']
+    .replace('--test-name-pattern inner-unknown', '--test-name-pattern="inner-unknown"') },
 ]) assert.throws(() => buildSourceValidationPlan({ ...scripts, ...changes }));
+// Keep the original historical concurrency refusal against its actual package.
+for (const changes of [
+  { 'test:native-identity-successor': historicalScripts['test:native-identity-successor']
+    .replace('--test-concurrency 2', '--test-concurrency=2') },
+]) assert.throws(() => buildSourceValidationPlan({ ...historicalScripts, ...changes }));
 
 const calls = [];
 assert.equal(runSourceValidation(plan, { execute(command) { calls.push(command); return 0; }, log() {} }), 0);

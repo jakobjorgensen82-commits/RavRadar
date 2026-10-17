@@ -325,7 +325,12 @@ export const SOURCE19_NATIVE_SCOPE_PATHS=Object.freeze([
   "scripts/test-source19-cp-install-native-d504-immutable-b-fixture.mjs",
   "scripts/test-source19-union-native-d504-immutable-b-fixture.mjs",
   "scripts/test-source19-cp-install-native-d504-offline-suffix-fixture.mjs",
-  "scripts/test-source19-union-native-d504-offline-suffix-fixture.mjs"
+  "scripts/test-source19-union-native-d504-offline-suffix-fixture.mjs",
+  "scripts/lib/current-memory-warmup-successor-source.mjs",
+  "scripts/lib/native0600-original-successor-source.mjs",
+  "scripts/test-source19-cp-install-native-main579-fixture.mjs",
+  "scripts/test-source19-union-native-main579-fixture.mjs",
+  "supabase/migrations/20261017020000_current_memory_warmup_original_bound_successor.sql"
 ]);
 export const SOURCE19_NATIVE_SCOPE_DIRECTORIES=Object.freeze([
   {

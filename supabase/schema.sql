@@ -736,7 +736,8 @@ as $$
         '249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932',
         'c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5',
         '994da006e4c91a1fc759d5ed58b74de80a9ccaad6753274d5abb0cb07eaed399',
-        'aa1e364bf6a0962725b6633fdc3487c6e626d51373302d7135023547a93c9855'
+        'aa1e364bf6a0962725b6633fdc3487c6e626d51373302d7135023547a93c9855',
+        '84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3'
       )
     -- RAVSCORE_INTEGRATED_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
@@ -763,7 +764,8 @@ as $$
         '55fd7dfa5ee36596c729d93225a448ea5b8f1e7142c44b8b1bda5c3d4d84c957',
         '2fdc7426ea99382731c6f4d118eacf4fc271f505fcf121bc67c5349c62938af9',
         'd192e060cf47fde07a1ae2faf9a8db913dbbf4e1325cbf7bf2e33c720982e8d9',
-        '2786145f7fc812cd658cab3a69927db625c2b8ffb3be81256acedd12288f4010'
+        '2786145f7fc812cd658cab3a69927db625c2b8ffb3be81256acedd12288f4010',
+        '76a86277db106621e7f0952d0789f9038a4bf9cfe7993b88de5c9a49bf25b4b8'
       )
     -- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
@@ -5759,6 +5761,50 @@ end;
 $$;
 revoke all on function public.ravradar_ravscore_checkpoint_native_identity_i71_payload_valid(jsonb,timestamptz) from public, anon, authenticated;
 
+create or replace function public.ravradar_ravscore_checkpoint_cmw_predecessor_projection(
+  p_payload jsonb,
+  p_target_reference timestamptz
+)
+returns jsonb
+language plpgsql
+stable
+set search_path = pg_catalog, public
+as $$
+declare
+  v_projected jsonb;
+  v_states jsonb;
+begin
+  if p_payload is null
+    or p_target_reference is null
+    or pg_catalog.octet_length(p_payload::text) > 16777216
+    or p_payload #>> '{modelBinding,modelBundleSha256}' is distinct from 'aa1e364bf6a0962725b6633fdc3487c6e626d51373302d7135023547a93c9855'
+    or p_payload ->> 'continuationStateContractSha256' is distinct from '15f0eb6748cf0a4f1c9d8971e43efc6823ec7d70c85984e6619e07db277702f1'
+    or p_payload #>> '{candidateGRollbackCompanion,modelBinding,modelBundleSha256}'
+      is distinct from '2786145f7fc812cd658cab3a69927db625c2b8ffb3be81256acedd12288f4010'
+    or pg_catalog.jsonb_typeof(p_payload -> 'states') is distinct from 'object'
+  then return null; end if;
+  if (select pg_catalog.count(*) from pg_catalog.jsonb_each(p_payload -> 'states')) <> 673
+    or exists (select 1 from pg_catalog.jsonb_each(p_payload -> 'states') as state(part_id,value)
+      where state.value ->> 'modelBundleSha256' is distinct from 'aa1e364bf6a0962725b6633fdc3487c6e626d51373302d7135023547a93c9855')
+  then return null; end if;
+  select pg_catalog.jsonb_object_agg(state.part_id, pg_catalog.jsonb_set(
+    state.value, '{modelBundleSha256}', pg_catalog.to_jsonb('84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3'::text), false))
+    into v_states from pg_catalog.jsonb_each(p_payload -> 'states') as state(part_id,value);
+  v_projected := pg_catalog.jsonb_set(pg_catalog.jsonb_set(p_payload,
+    '{modelBinding,modelBundleSha256}', pg_catalog.to_jsonb('84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3'::text), false),
+    '{states}', v_states, false);
+  v_projected := pg_catalog.jsonb_set(pg_catalog.jsonb_set(v_projected,
+    '{continuationStateContractSha256}', pg_catalog.to_jsonb('a519a34e91e552623892e28f3c1fa9ee67b65d1fa08869a96e34fa24bd6d832f'::text), false),
+    '{candidateGRollbackCompanion,modelBinding,modelBundleSha256}',
+    pg_catalog.to_jsonb('76a86277db106621e7f0952d0789f9038a4bf9cfe7993b88de5c9a49bf25b4b8'::text), false);
+  if public.ravradar_ravscore_checkpoint_payload_valid(v_projected, p_target_reference)
+  then return v_projected; end if;
+  return null;
+exception when others then return null;
+end;
+$$;
+revoke all on function public.ravradar_ravscore_checkpoint_cmw_predecessor_projection(jsonb,timestamptz) from public, anon, authenticated;
+
 create or replace function public.ravradar_ravscore_checkpoint_integrated_state_valid(
   p_state jsonb,
   p_reference_text text
@@ -5839,7 +5885,7 @@ begin
     or p_state ->> 'modelContractSha256'
       is distinct from 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b'
     or p_state ->> 'modelBundleSha256'
-      is distinct from 'aa1e364bf6a0962725b6633fdc3487c6e626d51373302d7135023547a93c9855'
+      is distinct from '84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3'
     -- RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED_END
     or coalesce(p_state ->> 'samplingContextKey', '') !~ '^sha256:[0-9a-f]{64}$'
     or not public.ravradar_ravscore_checkpoint_canonical_time(p_reference_text)
@@ -6817,7 +6863,7 @@ begin
       '^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED_BEGIN
     or p_payload ->> 'continuationStateContractSha256' is distinct from
-      '15f0eb6748cf0a4f1c9d8971e43efc6823ec7d70c85984e6619e07db277702f1'
+      'a519a34e91e552623892e28f3c1fa9ee67b65d1fa08869a96e34fa24bd6d832f'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED_END
     or coalesce(p_payload ->> 'generationSha256', '') !~ '^[0-9a-f]{64}$'
     or coalesce(p_payload ->> 'stateSha256', '') !~ '^[0-9a-f]{64}$'
@@ -6866,7 +6912,7 @@ begin
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "aa1e364bf6a0962725b6633fdc3487c6e626d51373302d7135023547a93c9855"
+    "modelBundleSha256": "84217430a712fec3e78c5c3115d86520a4011a388998af030d231a8433d52bb3"
   }'::jsonb then
     return false;
   end if;
@@ -6947,7 +6993,7 @@ begin
     "bestTimePolicyId": "score-water-tie-earliest-v2",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8",
-    "modelBundleSha256": "2786145f7fc812cd658cab3a69927db625c2b8ffb3be81256acedd12288f4010"
+    "modelBundleSha256": "76a86277db106621e7f0952d0789f9038a4bf9cfe7993b88de5c9a49bf25b4b8"
   }'::jsonb then
     return false;
   end if;
@@ -7240,6 +7286,10 @@ stable
 set search_path = pg_catalog, public
 as $$
 begin
+  if p_current_implementation_sha256 = 'a519a34e91e552623892e28f3c1fa9ee67b65d1fa08869a96e34fa24bd6d832f'
+    and p_payload #>> '{modelBinding,modelBundleSha256}' = 'aa1e364bf6a0962725b6633fdc3487c6e626d51373302d7135023547a93c9855'
+    and public.ravradar_ravscore_checkpoint_cmw_predecessor_projection(p_payload, p_target_reference) is not null
+  then return true; end if;
   if p_current_implementation_sha256 = '7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b'
     and public.ravradar_ravscore_checkpoint_account_assistant_predecessor_projection(p_payload, p_target_reference) is not null
   then return true; end if;
@@ -7346,6 +7396,7 @@ declare
   v_water_level_predecessor_payload jsonb;
   v_userdata_predecessor_payload jsonb;
   v_account_assistant_predecessor_payload jsonb;
+  v_cmw_predecessor_payload jsonb;
   v_disposition text;
   v_result jsonb;
 begin
@@ -7399,6 +7450,11 @@ begin
     -- top-level model hashes. Each non-null result has already passed the
     -- unchanged FULL current payload validator. Keep that result for equality;
     -- do not validate/copy it again through the predecessor boolean wrapper.
+    if p_payload ->> 'continuationStateContractSha256' = 'a519a34e91e552623892e28f3c1fa9ee67b65d1fa08869a96e34fa24bd6d832f'
+      and v_payload #>> '{modelBinding,modelBundleSha256}' = 'aa1e364bf6a0962725b6633fdc3487c6e626d51373302d7135023547a93c9855'
+    then
+      v_cmw_predecessor_payload := public.ravradar_ravscore_checkpoint_cmw_predecessor_projection(v_payload, v_central_reference);
+    end if;
     if p_payload ->> 'continuationStateContractSha256' =
       '7876390c0e99dc1926d57e3e5a51a0c88c8e72c190add1ebcfd07964e928ea3b'
     then
@@ -7424,7 +7480,8 @@ begin
         else null;
       end case;
     end if;
-    if v_account_assistant_predecessor_payload is not null
+    if v_cmw_predecessor_payload is not null
+      or v_account_assistant_predecessor_payload is not null
       or v_userdata_predecessor_payload is not null
       or v_water_level_predecessor_payload is not null
       or v_owner_current_predecessor_payload is not null
@@ -7432,6 +7489,18 @@ begin
       or v_top20_predecessor_payload is not null
     then
       v_central_is_compatible_predecessor := true;
+    elsif p_target_reference > v_central_reference
+      and p_payload ->> 'continuationStateContractSha256' = 'a519a34e91e552623892e28f3c1fa9ee67b65d1fa08869a96e34fa24bd6d832f'
+      and (case v_payload #>> '{modelBinding,modelBundleSha256}'
+        when 'ffc67b30f6018791f46e169ff039be8fba4c6935ba218d83f38340b886d2b9eb' then public.ravradar_ravscore_checkpoint_grid_ffc_payload_valid(v_payload, v_central_reference)
+        when '249c7720512216b10ebcbd8bb29329760170a5c610c7cdfb618c92fb74787932' then public.ravradar_ravscore_checkpoint_grid_249_payload_valid(v_payload, v_central_reference)
+        when 'c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5' then public.ravradar_ravscore_checkpoint_grid_c1ac_payload_valid(v_payload, v_central_reference)
+        when '994da006e4c91a1fc759d5ed58b74de80a9ccaad6753274d5abb0cb07eaed399' then public.ravradar_ravscore_checkpoint_native_identity_i71_payload_valid(v_payload, v_central_reference)
+        else false
+      end)
+    then
+      -- A genuinely newer current generation; no metadata projection or same-reference waiver.
+      v_central_is_compatible_predecessor := false;
     elsif p_target_reference > v_central_reference
       and p_payload ->> 'continuationStateContractSha256' = '15f0eb6748cf0a4f1c9d8971e43efc6823ec7d70c85984e6619e07db277702f1'
       and (case v_payload #>> '{modelBinding,modelBundleSha256}'
@@ -7459,7 +7528,13 @@ begin
       raise exception 'protected RavScore checkpoint central row is invalid'
         using errcode = '22023';
     end if;
-    if v_central_is_compatible_predecessor and v_account_assistant_predecessor_payload is not null then
+    if v_central_is_compatible_predecessor and v_cmw_predecessor_payload is not null then
+      v_exact_predecessor_same_target_transition := v_central_reference = p_target_reference
+        and (v_cmw_predecessor_payload #- '{generationSha256}' #- '{stateSha256}'
+          #- '{candidateGRollbackCompanion,generationSha256}')
+        = (p_payload #- '{generationSha256}' #- '{stateSha256}'
+          #- '{candidateGRollbackCompanion,generationSha256}');
+    elsif v_central_is_compatible_predecessor and v_account_assistant_predecessor_payload is not null then
       v_exact_predecessor_same_target_transition := v_central_reference = p_target_reference
         and (v_account_assistant_predecessor_payload #- '{generationSha256}' #- '{stateSha256}'
           #- '{candidateGRollbackCompanion,generationSha256}')
@@ -7607,6 +7682,7 @@ declare
   v_grid_249_payload_definition text;
   v_grid_c1ac_state_definition text;
   v_grid_c1ac_payload_definition text;
+  v_cmw_projection_definition text;
   v_native_identity_i71_state_definition text;
   v_native_identity_i71_payload_definition text;
   v_canonical_time_oid oid := pg_catalog.to_regprocedure(
@@ -7651,7 +7727,8 @@ declare
     pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_grid_c1ac_state_valid(jsonb,text)'),
     pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_grid_c1ac_payload_valid(jsonb,timestamptz)'),
     pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_native_identity_i71_state_valid(jsonb,text)'),
-    pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_native_identity_i71_payload_valid(jsonb,timestamptz)')
+    pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_native_identity_i71_payload_valid(jsonb,timestamptz)'),
+    pg_catalog.to_regprocedure('public.ravradar_ravscore_checkpoint_cmw_predecessor_projection(jsonb,timestamptz)')
   ];
 begin
   if auth.role() is distinct from 'service_role' then
@@ -7720,6 +7797,9 @@ begin
   select pg_catalog.btrim(p.prosrc, E' \n\r\t') into v_native_identity_i71_payload_definition
   from pg_catalog.pg_proc p where p.oid = v_validator_oids[19];
 
+  select pg_catalog.btrim(p.prosrc, E' \n\r\t') into v_cmw_projection_definition
+  from pg_catalog.pg_proc p where p.oid = v_validator_oids[20];
+
   v_checkpoint_definition := v_canonical_time_definition
     || E'\n-- forbidden-key-validator --\n' || v_forbidden_definition
     || E'\n-- integrated-state-validator --\n' || v_integrated_state_definition
@@ -7741,14 +7821,15 @@ begin
     || E'\n-- grid-original-c1ac-state-validator --\n' || v_grid_c1ac_state_definition
     || E'\n-- grid-original-c1ac-payload-validator --\n' || v_grid_c1ac_payload_definition
     || E'\n-- native-identity-i71-state-validator --\n' || v_native_identity_i71_state_definition
-    || E'\n-- native-identity-i71-payload-validator --\n' || v_native_identity_i71_payload_definition;
+    || E'\n-- native-identity-i71-payload-validator --\n' || v_native_identity_i71_payload_definition
+    || E'\n-- current-memory-warmup-predecessor-projection --\n' || v_cmw_projection_definition;
 
   return pg_catalog.jsonb_build_object(
     'schemaVersion', 'ravscore-checkpoint-db-v1',
     'appliedMigrationVersion', case when exists (
       select 1
       from supabase_migrations.schema_migrations m
-      where m.version::text = '20261016060000'
+      where m.version::text = '20261017020000'
     ) then '20260920220000' else null end,
     'checkpointContract', pg_catalog.jsonb_build_object(
       'id', 'ravscore-checkpoint-metadata-cas-v1',
@@ -7945,26 +8026,78 @@ comment on table public.account_activity_journal is
 
 create table public.account_statistics_preferences (
   user_id uuid primary key references public.profiles(id) on delete cascade,
-  enabled boolean not null
+  enabled boolean not null,
+  revision bigint not null default 0 check (revision >= 0)
 );
 alter table public.account_statistics_preferences enable row level security;
 revoke all on table public.account_statistics_preferences from public, anon, authenticated;
 
-create function public.get_own_statistics_preference()
+create or replace function public.get_own_statistics_preference()
 returns jsonb language plpgsql security definer set search_path = '' as $$
-declare own_user_id uuid := auth.uid(); stored_value boolean;
+declare
+  own_user_id uuid := auth.uid();
+  stored_value boolean;
+  stored_revision bigint;
 begin
   if own_user_id is null or auth.role() is distinct from 'authenticated'
     or not exists (select 1 from public.profiles where id = own_user_id) then
     raise exception 'ACCOUNT_PREFERENCE_AUTH_REQUIRED' using errcode = '42501';
   end if;
-  select enabled into stored_value from public.account_statistics_preferences where user_id = own_user_id;
-  if not found then return jsonb_build_object('enabled', true, 'source', 'default'); end if;
-  return jsonb_build_object('enabled', stored_value, 'source', 'stored');
+  select enabled, revision into stored_value, stored_revision
+    from public.account_statistics_preferences where user_id = own_user_id;
+  if not found then
+    return jsonb_build_object('enabled', true, 'source', 'default', 'revision', '0');
+  end if;
+  return jsonb_build_object('enabled', stored_value, 'source', 'stored', 'revision', stored_revision::text);
 end;
 $$;
 
-create function public.enable_own_statistics_preference()
+create function public.set_own_statistics_preference(p_enabled boolean, p_expected_revision bigint)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  own_user_id uuid := auth.uid();
+  stored_revision bigint;
+  next_revision bigint;
+  saved_value boolean;
+begin
+  if own_user_id is null or auth.role() is distinct from 'authenticated' then
+    raise exception 'ACCOUNT_PREFERENCE_AUTH_REQUIRED' using errcode = '42501';
+  end if;
+  -- One existing owner row serializes even the first absent-preference insert.
+  -- No caller owner, browser time, receipt JSON or aggregate processing authority.
+  perform 1 from public.profiles where id = own_user_id for update;
+  if not found then
+    raise exception 'ACCOUNT_PREFERENCE_AUTH_REQUIRED' using errcode = '42501';
+  end if;
+  if p_enabled is null or (p_expected_revision is not null and p_expected_revision < 0) then
+    raise exception 'ACCOUNT_PREFERENCE_INPUT_INVALID' using errcode = '22023';
+  end if;
+  select revision into stored_revision from public.account_statistics_preferences
+    where user_id = own_user_id for update;
+  if not found then stored_revision := 0; end if;
+  if p_enabled and (p_expected_revision is null or p_expected_revision <> stored_revision) then
+    raise exception 'ACCOUNT_PREFERENCE_REVISION_CONFLICT' using errcode = '40001';
+  end if;
+  -- OFF may use an older read, never a fabricated future revision. Legacy OFF
+  -- has no read receipt and is also safe: it still increments this owner revision.
+  if not p_enabled and p_expected_revision is not null and p_expected_revision > stored_revision then
+    raise exception 'ACCOUNT_PREFERENCE_REVISION_CONFLICT' using errcode = '40001';
+  end if;
+  if stored_revision = 9223372036854775807 then
+    raise exception 'ACCOUNT_PREFERENCE_REVISION_EXHAUSTED' using errcode = '22003';
+  end if;
+  next_revision := stored_revision + 1;
+  insert into public.account_statistics_preferences (user_id, enabled, revision)
+    values (own_user_id, p_enabled, next_revision)
+    on conflict (user_id) do update set enabled = excluded.enabled, revision = excluded.revision
+    returning enabled, revision into saved_value, next_revision;
+  return jsonb_build_object('enabled', saved_value, 'source', 'stored', 'revision', next_revision::text);
+end;
+$$;
+revoke all on function public.set_own_statistics_preference(boolean, bigint) from public, anon, authenticated;
+grant execute on function public.set_own_statistics_preference(boolean, bigint) to authenticated;
+
+create or replace function public.enable_own_statistics_preference()
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare own_user_id uuid := auth.uid();
 begin
@@ -7972,23 +8105,14 @@ begin
     or not exists (select 1 from public.profiles where id = own_user_id) then
     raise exception 'ACCOUNT_PREFERENCE_AUTH_REQUIRED' using errcode = '42501';
   end if;
-  insert into public.account_statistics_preferences (user_id, enabled) values (own_user_id, true)
-  on conflict (user_id) do update set enabled = excluded.enabled;
-  return public.get_own_statistics_preference();
+  raise exception 'ACCOUNT_PREFERENCE_REVISION_REQUIRED' using errcode = '22023';
 end;
 $$;
 
-create function public.disable_own_statistics_preference()
+create or replace function public.disable_own_statistics_preference()
 returns jsonb language plpgsql security definer set search_path = '' as $$
-declare own_user_id uuid := auth.uid();
 begin
-  if own_user_id is null or auth.role() is distinct from 'authenticated'
-    or not exists (select 1 from public.profiles where id = own_user_id) then
-    raise exception 'ACCOUNT_PREFERENCE_AUTH_REQUIRED' using errcode = '42501';
-  end if;
-  insert into public.account_statistics_preferences (user_id, enabled) values (own_user_id, false)
-  on conflict (user_id) do update set enabled = excluded.enabled;
-  return public.get_own_statistics_preference();
+  return public.set_own_statistics_preference(false, null);
 end;
 $$;
 revoke all on function public.get_own_statistics_preference() from public, anon;

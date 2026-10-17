@@ -33,7 +33,7 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 // returned or emitted; unknown state/phase remains explicitly UNKNOWN.
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
-  'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'NATIVE_IDENTITY0600', 'UNKNOWN']);
+  'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'NATIVE_IDENTITY0600', 'CURRENT_MEMORY_WARMUP', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -624,9 +624,11 @@ async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource
 // Its real 673 model builders and normal checkpoint saver supply the fixtures.
 export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   sourceDocumentAt, atHour, saveCheckpoint, includeStatisticsRevision = false,
-  includeNativeIdentity = false } = {}) {
+  includeNativeIdentity = false, includeCurrentMemoryWarmup = false } = {}) {
   assert.equal(typeof includeStatisticsRevision,'boolean');
   assert.equal(typeof includeNativeIdentity,'boolean');
+  assert.equal(typeof includeCurrentMemoryWarmup,'boolean');
+  assert(!includeCurrentMemoryWarmup || (includeNativeIdentity && includeStatisticsRevision), 'CurrentMemoryWarmup requires every unchanged historical native phase');
   assert(!includeNativeIdentity || includeStatisticsRevision, 'NEW requires the unchanged statistics230 phase');
   const programs = await nativePrograms();
   assert.ok(typeof sourceDocumentAt === 'function' && typeof atHour === 'function'
@@ -879,13 +881,26 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     if (includeNativeIdentity) {
       nativePhase = 'NATIVE_IDENTITY0600';
       try {
-        nativeIdentity=await compareNativeSamplingIdentitySuccessor({psql,runSql,root,
-          sourceDocumentAt,atHour,saveCheckpoint,oldSource});
+        const {withNative0600CheckpointFactory} = await import('./current-memory-warmup-postgres.mjs');
+        nativeIdentity=await withNative0600CheckpointFactory(async original =>
+          compareNativeSamplingIdentitySuccessor({psql,runSql,root,
+            sourceDocumentAt:original.sourceDocumentAt,atHour:original.atHour,
+            saveCheckpoint:original.saveRavScoreContinuationCheckpoint,oldSource}));
+      } catch (error) { statisticsRevisionFailure={error}; throw error; }
+    }
+    let currentMemoryWarmup;
+    if (includeCurrentMemoryWarmup) {
+      nativePhase = 'CURRENT_MEMORY_WARMUP';
+      try {
+        const {compareCurrentMemoryWarmupSuccessor} = await import('./current-memory-warmup-postgres.mjs');
+        currentMemoryWarmup=await compareCurrentMemoryWarmupSuccessor({psql,runSql,root,
+          sourceDocumentAt,atHour,saveCheckpoint});
       } catch (error) { statisticsRevisionFailure={error}; throw error; }
     }
     return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
       ...(includeStatisticsRevision?{statisticsRevision}:{}),
       ...(includeNativeIdentity?{nativeIdentity}:{}),
+      ...(includeCurrentMemoryWarmup?{currentMemoryWarmup}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,
