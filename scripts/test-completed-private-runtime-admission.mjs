@@ -28,6 +28,7 @@ import { buildPrivateWeatherComponentPack } from './lib/private-weather-componen
 import { PRIVATE_WEATHER_COMPONENT_FILES } from './lib/private-weather-component-inventory.mjs';
 import { buildPrivatePublicHourDeliveryPack, compactPrivateConditionsForPersistence }
   from './lib/public-hour-delivery-pack.mjs';
+import { observeOwnedPackCloseProbes } from './lib/owned-pack-close-probe.mjs';
 
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 const build = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
@@ -208,6 +209,13 @@ test('actual local Git ancestry rejects shallow/missing/nonancestor producer and
 });
 
 test('actual normal B/S admission + verify reject changed valid S; both packs recreate identical B with sourceHead-only readback', async t => {
+  // Test-only observation of the actual native close probes. Never replace a
+  // native result or interpret an unreproduced failure as a product fix.
+  const closeProbes = observeOwnedPackCloseProbes();
+  t.after(() => {
+    try { assert.equal(closeProbes.restore(), true, 'The observer must restore only its own wrappers.'); }
+    finally { t.diagnostic(JSON.stringify(closeProbes.summary())); }
+  });
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-completed-b-roundtrip-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const source = path.join(root, 'source'), privateRoot = path.join(root, 'private'), installed = path.join(root, 'installed');

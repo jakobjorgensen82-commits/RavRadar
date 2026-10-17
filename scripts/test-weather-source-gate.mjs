@@ -215,6 +215,7 @@ function assertNativeSqlEarly(source) {
   const names = [
     'Require exact pull-request source head',
     'Build deterministic source-tree content identity',
+    'Diagnose normal pack-reader closure on artificial data only',
     'Restore Node22 for existing source validation',
     'Validate bounded native current diagnosis on artificial data only',
     nativeSqlStep,
