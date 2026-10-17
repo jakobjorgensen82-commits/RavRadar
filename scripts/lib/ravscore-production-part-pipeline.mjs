@@ -381,9 +381,9 @@ function transitionNewInitialCurrentApplication({ part, zone, initialSelection,
     preserveNativeCadenceHolds: true });
   const incomplete = state.currentMemoryReady !== true || other.transportMemoryReady !== true;
   if (incomplete && ((state.currentMemoryReady !== true
-      && (state.currentMemoryReady !== false || state.currentMemoryStatus !== 'WINDOW_INCOMPLETE'))
+      && state.currentMemoryReady !== false)
     || (other.transportMemoryReady !== true
-      && (other.transportMemoryReady !== false || other.transportMemoryStatus !== 'WINDOW_INCOMPLETE')))) fail();
+      && other.transportMemoryReady !== false))) fail();
   const boundary = Date.parse(state.time) - 48 * 3_600_000;
   // A real selected native sample may support a boundary hold; it is never
   // copied into intermediate hours or used to relabel old compact evidence.

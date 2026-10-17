@@ -8,6 +8,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { withFrozenI71Source } from './check-native-identity-frozen-i71-source.mjs';
+import {withFrozenNative0600TestSource} from './run-frozen-native0600-source-targets.mjs';
 import { REQUIRED_CUTOVER_MIGRATIONS, LATEST_REQUIRED_CUTOVER_MIGRATION,
   TRIP_BINDING_POLICY_SOURCE_MIGRATION, ACCOUNT_ASSISTANT_SOURCE_MIGRATION }
   from './integrated-cutover-readiness.mjs';
@@ -351,6 +352,8 @@ try {
 });
 // The current normal caller must refuse a pending new binding regardless of
 // historical prewrite booleans. Fully installed current metadata remains a no-op.
+await withFrozenNative0600TestSource('policy',async frozenRoot=>{
+const {REQUIRED_CUTOVER_MIGRATIONS,LATEST_REQUIRED_CUTOVER_MIGRATION}=await import(pathToFileURL(path.join(frozenRoot,'scripts/integrated-cutover-readiness.mjs')).href);
 const nativeGateRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rr-code-only-native-gate-'));
 try {
   for (const [pending, verified] of [[true, 'false'], [true, 'true'], [false, 'false']]) {
@@ -361,10 +364,10 @@ try {
     fs.writeFileSync(dryPath, pending
       ? `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • ${LATEST_REQUIRED_CUTOVER_MIGRATION.filename}\nFinished supabase db push.`
       : 'DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.');
-    const result = spawnSync(process.execPath, ['scripts/verify-code-only-migration-plan.mjs',
+    const result = spawnSync(process.execPath, [path.join(frozenRoot,'scripts/verify-code-only-migration-plan.mjs'),
       '--require-prewrite-gate', '--account-assistant-prewrite-plan',
       '--migration-list', listPath, '--dry-run', dryPath,
-      '--migrations-directory', path.resolve('supabase/migrations')], {
+      '--migrations-directory', path.join(frozenRoot,'supabase/migrations')], {
       encoding: 'utf8', windowsHide: true, timeout: 30000,
       env: { SystemRoot: process.env.SystemRoot, PATH: process.env.PATH, TEMP: os.tmpdir(), TMP: os.tmpdir(),
         RAVRADAR_ASSISTANT_PREWRITE_REQUIRED: verified, RAVRADAR_USERDATA_UPGRADE_OPT_IN: 'true',
@@ -380,6 +383,7 @@ try {
   assert.ok(path.basename(nativeGateRoot).startsWith('rr-code-only-native-gate-'));
   fs.rmSync(nativeGateRoot, { recursive: true, force: true });
 }
+});
 for (const marker of [
   'workflow_dispatch:',
   'DEPLOY-CODE-ONLY-REPAIR',

@@ -51,10 +51,10 @@ async function syntheticNewFactory(readSource = file => fs.readFile(file, 'utf8'
   const samplingFactory = samplingSource.slice(samplingSource.indexOf(samplingStart), samplingSource.indexOf(samplingEnd));
   assert.equal(hash(samplingFactory), '2d81802ce221adfe65bcb1db37c8c0071cd2ab0c089478ebe2629081cbde48fa');
   const sampling = new Function('hash', samplingFactory + '\nreturn sampling;')(hash);
-  return part => {
+  return (part, { startHour = 0, hourCount = 12, weatherOptions = {} } = {}) => {
     const oldFactory = weather(part, time, HOUR_MS, vectorSelection, hash);
-    return Array.from({ length: 12 }, (_, hour) => {
-      const row = oldFactory(hour);
+    return Array.from({ length: hourCount }, (_, offset) => {
+      const row = oldFactory(startHour + offset, weatherOptions);
       // Synthetic NEW metadata only, not a claim of RAW/ecCodes execution.
       row.currentProvenance.nativeGridSampling = sampling(row.currentProvenance);
       row.currentProvenance.nativeSteps[0].nativeGridSampling = structuredClone(row.currentProvenance.nativeGridSampling);
@@ -668,4 +668,168 @@ test('epoch checkpoint reentry: genuine archive and GCM keep OLD active out of t
   // Real GCM/pack/union and genuine synthetic archive/view above. No provider,
   // installed SQL, real producer B/S or deploy claim. The normal originaltarget
   // ledger/candidate validator subprocess DID run on the synthetic673 registry.
+});
+
+test('normal strict inner-unknown NEW checkpoint follows without relabeling history', async t => {
+  // One-part normal source proportion: no archive/kernel/RAW/ecCodes claim.
+  // The existing hash-bound NEW fixture is constructed independently for each
+  // variant; no production receipt is copied or validator replaced.
+  const root = await ownedTemporary(t), makeRows = await syntheticNewFactory();
+  const part = { partId: 'EPOCH-INNER-UNKNOWN', zoneId: 'SYNTHETIC-ZONE',
+    parentZoneId: 'SYNTHETIC-ZONE', landPoint: [7.99, 55], waterPoint: [8, 55], onshoreDirectionDeg: 90 };
+  const zone = { id: part.zoneId, onshoreDirectionDeg: 90 };
+  const initialAt = time(10), targetAt = time(11), holeAt = time(-14);
+  const withoutCurrent = row => {
+    const value = structuredClone(row);
+    for (const key of ['currentSpeedMps', 'currentDirectionDeg', 'currentUMps',
+      'currentVMps', 'currentCoastNormalSpeedMps', 'currentProvenance']) delete value[key];
+    return value;
+  };
+  const construct = ({ startHour = -38, hole = null, speed = 0.09 } = {}) => {
+    const rows = makeRows(part, { startHour, hourCount: 12 - startHour, weatherOptions: { speed } })
+      .map(row => row.time === hole ? withoutCurrent(row) : row);
+    const initial = buildRavScoreProductionPartSeries({ part, zone,
+      initialSelection: { state: null, source: 'COLD_START', rejectedSources: [],
+        candidateGSourceDisposition: 'VALIDATED_ROLLBACK_ORACLE_REBUILT_FROM_MEASURED_HISTORY' },
+      targetReferenceAt: initialAt, recoverySources: [{ source: 'synthetic-own-new-native',
+        record: { point: part.waterPoint, hourly: rows.filter(row => row.time < initialAt) } }],
+      publicHourly: rows.filter(row => row.time === initialAt), requireNativeGridSampling: true,
+      candidateGRollbackMeasuredColdStart: true });
+    return { rows, initial };
+  };
+  const checkpoint = async (label, fixture) => {
+    const state = fixture.initial.ravScoreState.continuationState;
+    const other = fixture.initial.candidateGState.continuationState;
+    const source = { datasetId: 'rr-synthetic-inner-unknown-' + label, productionReferenceAt: initialAt,
+      coastalParts: { parts: { [part.partId]: { ...part, ravScoreModel: { currentState: state } } } },
+      ravScoreCandidateGWarmup: { schemaVersion: '1.0.0', kind: 'PRIVATE_CANDIDATE_G_MEASURED_WARMUP_RUNTIME',
+        privacyClass: 'PRIVATE_PRODUCTION_RUNTIME', status: 'BUILDING_MEASURED_ONLY', evidencePolicy: 'MEASURED_ONLY',
+        syntheticHistoryAllowed: false, sourceModelBinding: ravScoreModelBinding(), candidateModelBinding: candidateBinding(),
+        automaticActivationAllowed: false, publicDuringNormalOperation: false,
+        runtime: { schemaVersion: 1, enabled: true, status: 'BUILDING_MEASURED_ONLY', generatedAt: initialAt,
+          modelBinding: candidateBinding(), expectedPartCount: 1, measuredPartCount: 1,
+          parts: { [part.partId]: { ravScoreModel: { currentState: other } } } } } };
+    const sourcePath = path.join(root, label + '.source.json'), checkpointPath = path.join(root, label + '.checkpoint.json');
+    await exclusiveJson(sourcePath, source);
+    const sourceHash = hash(await fs.readFile(sourcePath));
+    const saved = await saveRavScoreContinuationCheckpoint({ sourcePath, checkpointPath, expectedPartCount: 1 });
+    assert.equal(saved.partCount, 1);
+    const checkpointHash = hash(await fs.readFile(checkpointPath));
+    const loaded = await loadRavScoreContinuationCheckpointForTarget({ checkpointPath,
+      targetReference: targetAt, expectedPartCount: 1 });
+    assert.equal(loaded.loaded, true); assert.equal(loaded.continuationAvailable, true);
+    assert.deepEqual(loaded.states[part.partId], state);
+    assert.deepEqual(loaded.candidateGRollbackStates[part.partId], other);
+    const initialSelection = selectRavScoreProductionInitialState({ part, existingPart: null,
+      checkpointStates: loaded.states, pointStateInjections: {}, targetReferenceAt: targetAt });
+    assert.equal(initialSelection.source, 'INTEGRATED_CHECKPOINT');
+    const companion = selectCoastalPointCandidateGRollbackContinuation({ partId: part.partId, part,
+      initialSelection, checkpointCandidateGContinuation: loaded.candidateGRollbackStates[part.partId],
+      targetReferenceAt: targetAt });
+    assert.equal(companion.source, 'CHECKPOINT_COMPANION');
+    const options = { part, zone, initialSelection, previousCandidateGContinuation: companion.state,
+      candidateGRollbackMeasuredWarmupContinuation: companion.state.transportMemoryReady === false,
+      targetReferenceAt: targetAt, recoverySources: [{ source: 'synthetic-own-new-native',
+        record: { point: part.waterPoint, hourly: fixture.rows.filter(row => row.time < targetAt) } }],
+      publicHourly: fixture.rows.filter(row => row.time === targetAt), requireNativeGridSampling: true };
+    return { options, sourcePath, checkpointPath, sourceHash, checkpointHash };
+  };
+  const inner = construct({ hole: holeAt });
+  assert.equal(inner.initial.recovery.coldStartHistoryLineage.completeCausalPositionCount, 47);
+  assert.equal(inner.initial.recovery.coldStartHistoryLineage.boundedUnknownPositionCount, 1);
+  for (const [state, prefix] of [[inner.initial.ravScoreState.continuationState, 'current'],
+    [inner.initial.candidateGState.continuationState, 'transport']]) {
+    assert.equal(state[prefix + 'MemoryReady'], false);
+    assert.equal(state[prefix + 'MemoryStatus'], 'WINDOW_HAS_MISSING_EVIDENCE');
+  }
+  const saved = await checkpoint('inner', inner), originals = JSON.stringify({ inner, options: saved.options });
+  const assertFollowed = (fixture, value) => {
+    assert.equal(value.recovery.coldStartBootstrapApplied, false);
+    assert.equal(value.recovery.coldStartHistoryLineage, null);
+    assert.equal(value.ravScoreState.initialStateAccepted, true);
+    assert.equal(value.candidateGState.initialStateAccepted, true);
+    assert.equal(value.candidateGState.initialStateResetReason, null);
+    assert.equal(value.candidateGState.initialStateSource, 'PREVIOUS_PRIVATE_ROLLBACK');
+    assert.equal(value.currentSourceDomainTransition, null);
+    assert.equal(value.ravScoreState.continuationState.time, targetAt);
+    assert.equal(value.candidateGState.continuationState.time, targetAt);
+    assert.deepEqual(value.scores.map(row => row.time), [targetAt]);
+    assert.deepEqual(value.candidateGRollbackScores.map(row => row.time), [targetAt]);
+    if (fixture === inner) {
+      assert.equal(value.ravScoreState.continuationState.currentMemoryReady, false);
+      assert.equal(value.candidateGState.continuationState.transportMemoryReady, false);
+      assert.equal(value.ravScoreState.continuationState.currentEvidence.find(row => row.time === holeAt).strength, null);
+      assert.equal(value.candidateGState.continuationState.transportEvidence.find(row => row.time === holeAt).strength, null);
+      for (const mode of ['waders', 'beach']) {
+        assert.equal(value.scores[0].ravScoreModel.modes[mode].scoreQuality, 'HISTORY_INCOMPLETE');
+        assert.equal(value.candidateGRollbackScores[0].candidateG.publicModes[mode].available, false);
+        assert.equal(value.candidateGRollbackScores[0].candidateG.publicModes[mode].score, null);
+        assert.equal(value.candidateGRollbackScores[0].candidateG.publicModes[mode].calibrationEligible, false);
+      }
+    }
+  };
+  await t.test('inner current unknown survives normal save/load and strict ordinary follower', () => {
+    // On the unmodified pipeline this genuine normal call throws the exact
+    // production RAVSCORE_INITIAL_CURRENT_NEW_USE_NOT_READY at its early gate.
+    assertFollowed(inner, buildRavScoreProductionPartSeries(saved.options));
+  });
+  for (const [label, fixture] of [['complete-window', construct()],
+    ['boundary-only-warmup', construct({ startHour: -37 })], ['ten-hour-warmup', construct({ startHour: 0 })]]) {
+    await t.test(label + ' keeps its existing normal strict continuation', async () => {
+      const value = await checkpoint(label, fixture);
+      assertFollowed(fixture, buildRavScoreProductionPartSeries(value.options));
+      assert.equal(hash(await fs.readFile(value.sourcePath)), value.sourceHash);
+      assert.equal(hash(await fs.readFile(value.checkpointPath)), value.checkpointHash);
+    });
+  }
+  const alternate = construct({ hole: holeAt, speed: 0.11 });
+  const swapNull = evidence => {
+    const unknown = evidence.find(row => row.time === holeAt), known = evidence.find(row => row.time === time(-13));
+    [unknown.strength, known.strength] = [known.strength, unknown.strength];
+  };
+  const negatives = [
+    ['current-ready-not-exact-false', v => { v.initialSelection.state.currentMemoryReady = 0; }],
+    ['transport-ready-not-exact-false', v => { v.previousCandidateGContinuation.transportMemoryReady = 'false'; }],
+    ['false-current-window-status', v => { v.initialSelection.state.currentMemoryStatus = 'WINDOW_INCOMPLETE'; }],
+    ['false-transport-window-status', v => { v.previousCandidateGContinuation.transportMemoryStatus = 'WINDOW_INCOMPLETE'; }],
+    ['unknown-current-status', v => { v.initialSelection.state.currentMemoryStatus = 'UNKNOWN_HISTORY_OK'; }],
+    ['current-null-mask-mismatch', v => { swapNull(v.initialSelection.state.currentEvidence); }],
+    ['transport-null-mask-mismatch', v => { swapNull(v.previousCandidateGContinuation.transportEvidence); }],
+    ['different-pair-time', v => { v.previousCandidateGContinuation.time = time(9); }],
+    ['different-sampling-context', v => { v.part.waterPoint[0] += 0.01; }],
+    ['different-recovery-point', v => {
+      v.recoverySources[0].record.point = [...v.recoverySources[0].record.point];
+      v.recoverySources[0].record.point[0] += 0.01;
+    }],
+    ['valid-but-unassociated-current-pair', v => {
+      v.initialSelection.state = structuredClone(alternate.initial.ravScoreState.continuationState);
+      v.previousCandidateGContinuation = structuredClone(alternate.initial.candidateGState.continuationState);
+    }],
+    ['legacy-native-original-without-new-grid-proof', v => {
+      const row = v.recoverySources[0].record.hourly.find(row => row.time === time(-13));
+      delete row.currentProvenance.nativeGridSampling;
+      for (const step of row.currentProvenance.nativeSteps) delete step.nativeGridSampling;
+    }],
+  ];
+  for (const [label, mutate] of negatives) await t.test(label + ' fails closed', () => {
+    const options = structuredClone(saved.options); mutate(options);
+    const before = JSON.stringify(options);
+    assert.throws(() => buildRavScoreProductionPartSeries(options), error => {
+      if (['false-transport-window-status',
+        'current-null-mask-mismatch', 'transport-null-mask-mismatch',
+        'valid-but-unassociated-current-pair'].includes(label)) {
+        assert.equal(error.code, 'RAVSCORE_INITIAL_CURRENT_NEW_USE_NOT_READY');
+      }
+      if (label === 'valid-but-unassociated-current-pair') {
+        assert.match(error.stack, /at transitionNewInitialCurrentApplication \([^\n]+:(386|433):\d+\)/);
+      }
+      if (label === 'different-recovery-point') assert.equal(error.code, 'RAVSCORE_RECOVERY_REPLAY_SAMPLING_MISMATCH');
+      if (label === 'legacy-native-original-without-new-grid-proof') assert.equal(error.code, 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED');
+      return true;
+    });
+    assert.equal(JSON.stringify(options), before, 'failed admission must not rewrite inputs');
+  });
+  assert.equal(JSON.stringify({ inner, options: saved.options }), originals);
+  assert.equal(hash(await fs.readFile(saved.sourcePath)), saved.sourceHash);
+  assert.equal(hash(await fs.readFile(saved.checkpointPath)), saved.checkpointHash);
 });
