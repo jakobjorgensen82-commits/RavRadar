@@ -1,5 +1,11 @@
 ## 89.250 En fejl skal kunne forklares uden at røbe private data
 
+### 17. oktober: en allerede kontrolleret original må kun genbruges med samme beviser
+
+Den seneste kildeprøve bestod seks af syv nativecases. Den positive H71-prøve nåede H70, H71, native CP og et resultat, men ikke bevist færdig working-install før observerens uændrede frist. CPU-målingen viser aktivitet, ikke den præcise indre årsag. Koden læser de samme beskyttede originaler gentagne gange. En afgrænset V5-ændring kan på Linux genbruge en tidligere fuld kontrolsum, men kun for præcis samme autentificerede B-original og uændrede fil- og ejerbeviser. Frisk kilde-/procesidentitet og frist kontrolleres stadig hver gang. Arbejdskopier og mutérbare filer får ikke denne mulighed, og ingen frist øges.
+
+Alle ni gamle prøveoriginaler og deres beviser bevares. To nye særskilte prøvekompositioner beskriver den ændrede kilde og bevarer alle syv Linuxcases. Lokale kompositionskontroller består; den normale Windows-prøve stopper ved operativsystemets afvisning af mappeombytning med åbne originalfiler. Linux-genbrug og de senere angreb er derfor endnu ukørte. Det er ikke ny native-, SAVE-, finalizer- eller leveringsgodkendelse. SOURCE19 er fortsat inaktiv, og produktionen ændres ikke.
+
 ### 17. oktober: observeren måler uden at give mere tid
 
 På præcis 4c223 bestod fire H70-prøver og to H71-afvisninger. Den positive H71-prøve nåede H70, H71 og native CP, men fristen på 150 sekunder udløb før bevist installation. Den almindelige kildekontrol blev korrekt sprunget over. De tidligere syv beståede nativeprøver på 76d21 er særskilt historik; de beviser ikke dette head.

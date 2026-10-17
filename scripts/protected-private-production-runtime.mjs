@@ -795,6 +795,61 @@ async function hashSourceOriginalHandle(owner, row) {
   await checkSourceOriginalRow(owner, row);
   if (position !== row.bytes || hash.digest('hex') !== row.sha256) sourceOriginalFailure('BYTES_CHANGED');
 }
+// Private reuse of an actually completed immutable B digest, never a new read.
+// Existing owned handles only; no marker, public issuer or added FD lifetime.
+const sourceOriginalBundleHashAdmissions = new WeakMap();
+const sourceOriginalBundleHashFields = Object.freeze(['dev','ino','mode','nlink','size','mtimeNs','ctimeNs']);
+const sourceOriginalBundleDirectoryFields = Object.freeze(['dev','ino','mode']);
+function sourceOriginalBundleHashOperands(owner, row) {
+  if (process.platform !== 'linux' || sourceJobDeadlineBrands.get(owner.holder)?.originalOwner !== owner
+    || owner.phase !== 'READY' || !owner.bundles.some(bundle => [...bundle.rows.values()].includes(row))
+    || !Number.isSafeInteger(row.handle.fd) || row.handle.fd < 0
+    || !Number.isSafeInteger(row.bytes) || row.bytes < 0 || !/^[0-9a-f]{64}$/.test(row.sha256 ?? '')
+    || sourceOriginalBundleHashFields.some(key => typeof row.stat[key] !== 'bigint')
+    || !Array.isArray(row.directories) || row.directories.some(directory =>
+      typeof directory.path !== 'string' || sourceOriginalBundleDirectoryFields.some(key => typeof directory.stat[key] !== 'bigint'))) return null;
+  return { owner, row, handle: row.handle, fd: row.handle.fd, path: row.path, bytes: row.bytes, sha256: row.sha256,
+    stat: row.stat, identity: sourceOriginalBundleHashFields.map(key => row.stat[key]), directories: row.directories,
+    directoryRows: row.directories.map(directory => ({ directory, path: directory.path, stat: directory.stat,
+      identity: sourceOriginalBundleDirectoryFields.map(key => directory.stat[key]) })) };
+}
+function sameSourceOriginalBundleHashOperands(left, right) {
+  return left !== null && right !== null
+    && ['owner','row','handle','fd','path','bytes','sha256','stat','directories'].every(key => left[key] === right[key])
+    && left.identity.every((value, index) => value === right.identity[index])
+    && left.directoryRows.length === right.directoryRows.length
+    && left.directoryRows.every((row, index) => {
+      const current = right.directoryRows[index];
+      return row.directory === current.directory && row.path === current.path && row.stat === current.stat
+        && row.identity.every((value, key) => value === current.identity[key]);
+    });
+}
+async function hashSourceOriginalBundleRow(owner, row) {
+  // Same current owner/Git/deadline and exact real FD/named/directory checks.
+  // A changed original is refused here, never refreshed into a new admission.
+  await checkSourceOriginalRow(owner, row);
+  const before = sourceOriginalBundleHashOperands(owner, row);
+  const prior = sourceOriginalBundleHashAdmissions.get(row);
+  if (prior && sameSourceOriginalBundleHashOperands(prior, before)) {
+    await checkSourceOriginalRow(owner, row);
+    sourceOriginalOwner(owner.holder);
+    const checked = sourceOriginalBundleHashOperands(owner, row);
+    if (sameSourceOriginalBundleHashOperands(prior, checked)) {
+      return; // Reused earlier whole digest; deliberately NOT a fresh byte read.
+    }
+    // An operand can change during awaited checks. Never return a stale hit;
+    // fall through to the old full read without refreshing the prior admission.
+  }
+  await hashSourceOriginalHandle(owner, row); // Whole old read/EOF/hash path.
+  sourceOriginalOwner(owner.holder);
+  const after = sourceOriginalBundleHashOperands(owner, row);
+  if (!prior && sameSourceOriginalBundleHashOperands(before, after)) {
+    for (const directory of after.directoryRows) { Object.freeze(directory.identity); Object.freeze(directory); }
+    Object.freeze(after.identity); Object.freeze(after.directoryRows);
+    sourceOriginalBundleHashAdmissions.set(row, Object.freeze(after));
+  }
+}
+
 async function pinAuthenticatedSourceOriginals(owner, context, selections) {
   if (sourceOriginalOwner(owner.holder) !== owner || owner.phase !== 'RESTORING'
     || owner.bundles.length) sourceOriginalFailure('ADMISSION_REUSED');
@@ -5548,7 +5603,7 @@ export async function assertSourceOriginalProgress(holder) {
   try {
     // Revalidate both originals in a pair, including the complete historical B.
     // Never replace them or reread a moving pointer to repair a late failure.
-    for (const bundle of owner.bundles) for (const row of bundle.rows.values()) await hashSourceOriginalHandle(owner, row);
+    for (const bundle of owner.bundles) for (const row of bundle.rows.values()) await hashSourceOriginalBundleRow(owner, row);
     for (const row of owner.workingReaders) await hashSourceOriginalHandle(owner, sourceRetainedWorkingRow(owner, row));
     if (owner.workingGeneration) for (const row of owner.workingGeneration.rows) await hashSourceOriginalHandle(owner, sourceRetainedWorkingRow(owner, row));
     if (owner.normalDeployedCopy?.completed) await hashSourceOriginalHandle(owner, owner.normalDeployedCopy.row);

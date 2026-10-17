@@ -2843,7 +2843,7 @@ await test('SOURCE normal progress: genuine installed packed B survives absent S
     load(url, context, next) {
       const result = next(url, context);
       if (url.startsWith(moduleUrl.href + '?')) return { ...result, source: String(result.source)
-        + '\nexport { captureSourceDeadlineProcess, issuePrivateSourceJobDeadline, restoreSourceOriginals, sourceOriginalResultOwners, retainedSourceOriginalOwners, runSourceNormalDeployedBulkCopy };\n' };
+        + '\nexport { captureSourceDeadlineProcess, issuePrivateSourceJobDeadline, restoreSourceOriginals, sourceOriginalResultOwners, retainedSourceOriginalOwners, runSourceNormalDeployedBulkCopy, sourceJobDeadlineBrands, hashSourceOriginalBundleRow, sourceOriginalBundleHashAdmissions };\n' };
       if (new URL(url).protocol === 'file:' && new URL(url).pathname.endsWith('/weather-component-progress-cache.mjs')) {
         return { ...result, source: String(result.source) + '\nexport { retainedSourceProgressOwners, sourceProgressPipeline, ownSourceProgressHandle, inspectOwnedSourceProgress };\n'
         + (String(result.source).includes('async function closeSourceProgressOwnerFileStreams(')
@@ -2973,6 +2973,166 @@ await test('SOURCE normal progress: genuine installed packed B survives absent S
     assert.equal(owned.state.workingGeneration, undefined);
     await assert.rejects(fs.lstat(path.join(repository, progress.WEATHER_PROGRESS_CIPHER_PATH)),
       error => error.code === 'ENOENT');
+    // Genuine B issuer/restore and existing real handles, not a cache issuer.
+    const { createRequire, syncBuiltinESMExports } = await import('node:module');
+    const childProcess = createRequire(import.meta.url)('node:child_process');
+    const realExecFileSync = childProcess.execFileSync;
+    let actualGitReads = 0;
+    childProcess.execFileSync = function(file, args, ...rest) {
+      if (file === 'git' && args?.join('\0') === 'rev-parse\0HEAD^{commit}') actualGitReads++;
+      return Reflect.apply(realExecFileSync, this, [file, args, ...rest]);
+    };
+    syncBuiltinESMExports();
+    const immutableBChecks = [];
+    const fixtureRealRoot = await fs.realpath(fixture.temp);
+    const assertOwnFixturePath = file => {
+      const relative = path.relative(fixtureRealRoot, path.resolve(file));
+      assert.ok(relative !== '' && !path.isAbsolute(relative)
+        && relative !== '..' && !relative.startsWith('..' + path.sep));
+    };
+    const genuineB = async label => {
+      const value = await restore('immutable-b-' + label);
+      const row = value.state.bundles[0].rows.get('payload/data/live/conditions.json');
+      assert.ok(row && value.state.phase === 'READY');
+      return { ...value, row };
+    };
+    const countRealReads = row => {
+      const own = Object.getOwnPropertyDescriptor(row.handle, 'read'), read = row.handle.read;
+      let count = 0;
+      row.handle.read = function(...args) { count++; return Reflect.apply(read, this, args); };
+      return { count: () => count, restore() {
+        if (own) Object.defineProperty(row.handle, 'read', own); else delete row.handle.read;
+      } };
+    };
+    const hashB = value => hooks.hashSourceOriginalBundleRow(value.state, value.row);
+    const certificate = value => hooks.sourceOriginalBundleHashAdmissions.get(value.row);
+    const prime = async label => { const value = await genuineB(label); await hashB(value); return value; };
+    try {
+      const value = await genuineB('read-count'), counter = countRealReads(value.row);
+      const clock = hooks.sourceJobDeadlineBrands.get(value.issued), initialCutoff = clock.deadline;
+      try {
+        const gitBefore = actualGitReads, monoBefore = clock.clock.lastMono;
+        await hashB(value); const firstReads = counter.count(), firstGit = actualGitReads;
+        assert.ok(firstReads > 0 && firstGit > gitBefore, 'miss executes the whole real read and native Git');
+        assert.ok(clock.clock.lastMono > monoBefore && clock.deadline <= initialCutoff);
+        const previous = certificate(value);
+        const monoAfterFirst = clock.clock.lastMono;
+        await hashB(value);
+        assert.ok(actualGitReads > firstGit && clock.clock.lastMono > monoAfterFirst,
+          'every reuse still checks the actual Git/process and issued clock');
+        if (process.platform === 'linux') {
+          assert.equal(counter.count(), firstReads, 'a hit reuses a previous digest, never a new byte read');
+          assert.ok(previous && Object.isFrozen(previous) && previous.handle === value.row.handle);
+          assert.equal(certificate(value), previous);
+        } else {
+          assert.ok(counter.count() > firstReads, 'non-Linux must keep the unchanged whole read');
+          assert.equal(previous, undefined); assert.equal(certificate(value), undefined);
+        }
+        const cloned = { ...value.row, immutableDigest: value.row.sha256 };
+        const beforeClone = counter.count();
+        await hooks.hashSourceOriginalBundleRow(value.state, cloned);
+        assert.ok(counter.count() > beforeClone); assert.equal(hooks.sourceOriginalBundleHashAdmissions.get(cloned), undefined);
+        for (const field of ['stat', 'directories']) {
+          const original = value.row[field], readsBeforeChange = counter.count();
+          value.row[field] = field === 'stat' ? { ...original } : [...original];
+          try { await hashB(value); assert.ok(counter.count() > readsBeforeChange, 'changed operands require the full read'); }
+          finally { value.row[field] = original; }
+          assert.equal(certificate(value), previous, 'changed operands never refresh the old admission');
+        }
+      } finally { counter.restore(); }
+      immutableBChecks.push('genuine-miss-hit-or-platform-fallback-and-forgery');
+
+      // Forward the real stat unchanged, but race one certificate operand after
+      // the hit's first snapshot, during its second genuine named/FD check.
+      // Linux must fall through to full hash and reject, never return a stale hit.
+      if (process.platform === 'linux') {
+        const race = await prime('second-check-race'), admission = certificate(race);
+        const handle = race.row.handle, ownStat = Object.getOwnPropertyDescriptor(handle, 'stat'), realStat = handle.stat;
+        const counter = countRealReads(race.row); let statCalls = 0;
+        handle.stat = async function(...args) {
+          const result = await Reflect.apply(realStat, this, args);
+          if (++statCalls === 2) race.row.sha256 = '0'.repeat(64);
+          return result;
+        };
+        try {
+          await assert.rejects(hashB(race), /SOURCE_ORIGINAL_BYTES_CHANGED/);
+          assert.ok(statCalls >= 2 && counter.count() > 0, 'raced hit must perform the unchanged real full read');
+          assert.equal(certificate(race), admission, 'raced operands cannot refresh an admission');
+        } finally {
+          counter.restore(); if (ownStat) Object.defineProperty(handle, 'stat', ownStat); else delete handle.stat;
+        }
+      }
+
+      const identity = await prime('changed-process'), oldSha = process.env.GITHUB_SHA;
+      process.env.GITHUB_SHA = '0'.repeat(40);
+      try { await assert.rejects(hashB(identity), /SOURCE_JOB_PROCESS_IDENTITY_CHANGED/); }
+      finally { process.env.GITHUB_SHA = oldSha; }
+      const expired = await prime('expired-clock');
+      hooks.sourceJobDeadlineBrands.get(expired.issued).endEpoch = Date.now() - 1;
+      await assert.rejects(hashB(expired), /SOURCE_JOB_DEADLINE_EXPIRED/);
+      const retained = await prime('first-failure'), firstRaw = Object.freeze({ synthetic: 'first raw cause' });
+      assert.equal(hooks.retainSourceOriginalProgressFailure(retained.issued, firstRaw), firstRaw);
+      await assert.rejects(hashB(retained), error => error === firstRaw);
+      await assert.rejects(hooks.hashSourceOriginalBundleRow({ holder: {} }, value.row), /SOURCE_JOB_DEADLINE_NOT_ISSUED/);
+      immutableBChecks.push('fresh-native-git-process-clock-and-first-error');
+
+      const changed = await prime('changed-bytes'), oldIdentity = changed.row.stat, oldAdmission = certificate(changed);
+      const bytes = await fs.readFile(changed.row.path), modified = Buffer.from(bytes); modified[0] ^= 1;
+      assertOwnFixturePath(changed.row.path);
+      await fs.writeFile(changed.row.path, modified);
+      realExecFileSync(process.env.PYTHON || 'python', ['-I', '-B', '-c',
+        'import os,sys;os.utime(sys.argv[1],ns=(int(sys.argv[2]),int(sys.argv[3])))', changed.row.path,
+        String(oldIdentity.atimeNs), String(oldIdentity.mtimeNs)]);
+      const changedStat = await fs.lstat(changed.row.path, { bigint: true });
+      assert.equal(changedStat.mtimeNs, oldIdentity.mtimeNs);
+      if (process.platform === 'linux') assert.notEqual(changedStat.ctimeNs, oldIdentity.ctimeNs);
+      await assert.rejects(hashB(changed), /SOURCE_ORIGINAL_(FILE|BYTES)_CHANGED/);
+      assert.equal(changed.row.stat, oldIdentity); assert.equal(certificate(changed), oldAdmission);
+      immutableBChecks.push('changed-bytes-restored-mtime-no-repin');
+
+      const exchanged = await prime('directory-exchange'), directory = path.dirname(exchanged.row.path);
+      assertOwnFixturePath(directory);
+      await fs.rename(directory, directory + '.own-negative-held'); await fs.mkdir(directory);
+      await assert.rejects(hashB(exchanged), /SOURCE_ORIGINAL_DIRECTORY_CHANGED/);
+      const linked = await prime('hardlink'), linkedPath = linked.row.path + '.own-negative-link';
+      assertOwnFixturePath(linkedPath); await fs.link(linked.row.path, linkedPath);
+      await assert.rejects(hashB(linked), /SOURCE_ORIGINAL_FILE_CHANGED/);
+      immutableBChecks.push('directory-exchange-and-hardlink');
+
+      const closed = await prime('closed-handle'), oldFd = closed.row.handle.fd;
+      await closed.row.handle.close(); const reopened = await fs.open(closed.row.path, 'r');
+      try {
+        assert.equal(closed.row.handle.fd, -1); assert.ok(oldFd >= 0 && reopened.fd >= 0);
+        await assert.rejects(hashB(closed), error => error.code === 'EBADF' || error.code === 'ERR_INVALID_STATE');
+      } finally { await reopened.close(); }
+      immutableBChecks.push('closed-real-handle-and-reopen');
+
+      const operand = await prime('changed-digest'), oldDigest = operand.row.sha256, operandAdmission = certificate(operand);
+      operand.row.sha256 = '0'.repeat(64);
+      await assert.rejects(hashB(operand), /SOURCE_ORIGINAL_BYTES_CHANGED/);
+      assert.equal(certificate(operand), operandAdmission);
+      assert.notEqual(operand.row.sha256, oldDigest, 'no producer or test repins the refused digest');
+      immutableBChecks.push('changed-certificate-operands-never-refreshed');
+
+      const working = owned.state.workingReaders[0], workingReads = countRealReads(working);
+      try {
+        await hooks.hashSourceOriginalBundleRow(owned.state, working); const count = workingReads.count();
+        await hooks.hashSourceOriginalBundleRow(owned.state, working);
+        assert.ok(count > 0 && workingReads.count() > count);
+        assert.equal(hooks.sourceOriginalBundleHashAdmissions.get(working), undefined);
+      } finally { workingReads.restore(); }
+      const unknown = await prime('unknown-time'), knownStat = unknown.row.stat;
+      unknown.row.stat = { ...knownStat, ctimeNs: Number(knownStat.ctimeNs) };
+      await assert.rejects(hashB(unknown), /SOURCE_ORIGINAL_FILE_CHANGED/);
+      immutableBChecks.push('working-row-and-unknown-timestamp-not-admitted');
+      assert.equal(immutableBChecks.length, 7);
+      console.log(JSON.stringify({ immutableBNormalDigestAdmission: 'PASS', attackGroups: immutableBChecks,
+        forwardingActualGitReads: actualGitReads, actualPlatform: process.platform,
+        actualLinuxReuse: process.platform === 'linux' ? 'PASS' : 'UNRUN', newByteReadsOnHit: process.platform === 'linux' ? false : 'UNRUN',
+        secondCheckOperandRace: process.platform === 'linux' ? 'PASS' : 'UNRUN',
+        oldHashFunctionReplaced: false, newOwnerOrFdLifetime: false, sourceAdmission: false, realNetwork: 0 }));
+    } finally { childProcess.execFileSync = realExecFileSync; syncBuiltinESMExports(); }
+
     const readsBeforeProgress = reads;
     // The real normal C caller authenticates absence, then invokes P's guarded
     // B-working admission. No prelude state, result flag or owner is fabricated.
