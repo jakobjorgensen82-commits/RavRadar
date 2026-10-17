@@ -1711,7 +1711,7 @@ jobs:
 
       - name: Publish measured continuation checkpoint without promoting rollback readiness
         id: checkpoint-publish
-        if: steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED'
+        if: (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && env.RAVRADAR_CURRENT_MEMORY_WARMUP_EDGE_REQUIRED != 'true'
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --publish
@@ -1855,6 +1855,20 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      # Only the named warmup transition defers S until B has uploaded,
+      # verified and committed its pointer. An interrupted installed retry can
+      # then restore current B normally instead of requiring the replaced old S.
+      - name: Publish measured continuation only after verified warmup private runtime
+        id: current-memory-warmup-checkpoint-publish
+        if: (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && env.RAVRADAR_CURRENT_MEMORY_WARMUP_EDGE_REQUIRED == 'true'
+        run: >-
+          node scripts/protected-ravscore-continuation-checkpoint.mjs
+          --publish
+          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
       - name: Prove private runtime is not anonymously readable
         run: node scripts/protected-private-production-runtime.mjs --audit-anon
         env:
@@ -1970,7 +1984,7 @@ jobs:
             --arg checkpointRuntimeAuditSha256 "${{ steps.checkpoint-disposition.outputs.runtime_audit_sha256 }}" \
             --arg checkpointBuildOutcome "${{ steps.checkpoint-build.outcome }}" \
             --arg checkpointSaveOutcome "${{ steps.checkpoint-save.outcome }}" \
-            --arg checkpointPublishOutcome "${{ steps.checkpoint-publish.outcome }}" \
+            --arg checkpointPublishOutcome "${{ env.RAVRADAR_CURRENT_MEMORY_WARMUP_EDGE_REQUIRED == 'true' && steps.current-memory-warmup-checkpoint-publish.outcome || steps.checkpoint-publish.outcome }}" \
             --arg codeOnlyReuseReportSha256 "$code_only_sha256" \
             --arg sourceRepairId "${{ steps.public-source.outputs.repair_id }}" \
             --argjson codeOnlyRepair '${{ inputs.publish_newest_saved_weather != true }}' \

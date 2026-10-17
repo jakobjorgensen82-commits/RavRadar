@@ -6,6 +6,8 @@ En beskyttet genoptagelse leverede faktisk offentlig version 4.0.578. Dens førs
 
 Ændret produktkode kræver ægte nye model- og tilstandsbindinger, selv om scoreformlen er uændret. Overgangen skal bevise bevarelse af gamle originaler, hele tilstande, databaseegenskaber og offentliggjort historik. En plan eller et testresultat er ikke installationsbevis. Alle normale sikkerheds-, databevarelses-, gemme-, genlæsnings- og leveringskontroller består.
 
+Kun ved denne opvarmningsovergang gemmes og genlæses den nye beskyttede vejrpakke før den nye beregningstilstand publiceres. Dermed bevares det gamle sammenhørende par ved en tidlig afbrydelse, mens en senere afbrydelse kan genoptages fra den allerede verificerede nye pakke. Normale fejlprøver skal kontrollere begge stop og et tabt svar efter faktisk gemning, uden at gentage en ukendt skrivning eller ændre originalerne. De øvrige leveringsruter ændres ikke. Første samlede kildekontrol bestod Linux-prøverne, men stoppede i databaseprøvens førkontrol før installation; den er ikke samlet bestået.
+
 Krypteret fremgang fra den fejlede kørsel er gemt, men kræver sin oprindelige byteeksakte baseline. Den må ikke ommærkes til en ny binding. Efter verificeret metadataovergang bruges derfor den almindelige vej fra den nye beskyttede tilstand med den eksisterende råfilcache. En faktisk almindelig levering skal bestå, før den uændrede tidsplan genaktiveres. Præcis samlet kildekontrol, rigtig PostgreSQL, installation og offentlig effekt er fortsat åbne; tidsskyderen og de andre mål er ikke færdige hermed.
 
 ## 89.249 Gendannelse skal bevare indhold og oprindelige kontrolsummer

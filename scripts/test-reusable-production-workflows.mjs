@@ -7,6 +7,7 @@ await import('./test-completed-private-runtime-admission.mjs');
 import fs from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { nativeIdentityMigration } from './lib/native-sampling-identity-successor-source.mjs';
+import { currentMemoryWarmupMigration } from './lib/current-memory-warmup-successor-source.mjs';
 
 // Keep the payload-free operational control report inside this existing cheap
 // workflow command so the source gate does not grow another process.
@@ -737,7 +738,7 @@ const casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.end
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
 assert.equal(casTimeoutSettings.at(-1).migration,
-  nativeIdentityMigration().filename);
+  currentMemoryWarmupMigration().filename);
 assert.deepEqual(casTimeoutSettings.find(item =>
   item.migration === '20261013220000_current_grid_original_bound_successor.sql'),
   { migration: '20261013220000_current_grid_original_bound_successor.sql', timeout: '55s' },

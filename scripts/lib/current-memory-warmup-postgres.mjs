@@ -61,6 +61,35 @@ export function assertCurrentMemoryWarmupTransactionBounds(sql){
   assert.match(sql,/begin;\n\nset local statement_timeout = '55s';\n\nset local lock_timeout = '5s';/);
 }
 
+export function currentMemoryWarmupPreservationInventorySql(scope){
+  assert(['preserved','original-bank'].includes(scope));
+  const tables=scope==='preserved'?[
+    ['checkpoint','admin_documents'],['history','admin_document_versions'],
+    ['activity','account_activity_journal'],['preference','account_statistics_preferences'],
+    ['bank','native_checkpoint_payloads'],
+  ]:[['bank','native_checkpoint_payloads']];
+  // Hash each COMPLETE row, including unknown fields, before any aggregation.
+  // Only fixed-size fingerprints enter the materialized relation. No combined
+  // checkpoint payload/whole-bank JSONB value is constructed or transported.
+  const rows=tables.map(([name,table])=>"select '"+name+"'::text as table_name,"
+    +"octet_length(row_bytes)::bigint as row_bytes,"
+    +"encode(extensions.digest(row_bytes,'sha256'),'hex') as row_sha256 "
+    +"from (select convert_to(to_jsonb(t)::text,'UTF8') as row_bytes from public."+table+" t"
+    +(scope==='original-bank'?" where t.name not like 'after0600-%'":"")+") as whole_rows").join('\nunion all\n');
+  return 'with row_fingerprints as materialized (\n'+rows+'\n),\n'
+    +"table_names(table_name) as (values "+tables.map(([name])=>"('"+name+"')").join(',')+"),\n"
+    +'inventory as (\n'
+    +"select n.table_name,0 as kind,''::text as row_sha256,0::bigint as row_bytes,"
+    +'count(f.row_sha256) as row_count,coalesce(sum(f.row_bytes),0) as total_bytes '
+    +'from table_names n left join row_fingerprints f using(table_name) group by n.table_name\n'
+    +'union all\n'
+    +'select table_name,1,row_sha256,row_bytes,count(*),0::numeric '
+    +'from row_fingerprints group by table_name,row_sha256,row_bytes\n)\n'
+    // Totals also identify empty tables; grouped copies preserve duplicates.
+    +'select jsonb_build_array(table_name,kind,row_sha256,row_bytes,row_count,total_bytes)::text '
+    +'from inventory order by table_name collate "C",kind,row_sha256 collate "C",row_bytes;';
+}
+
 export async function compareCurrentMemoryWarmupSuccessor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint}){
   let phase='SOURCE';
   try{
@@ -70,14 +99,14 @@ export async function compareCurrentMemoryWarmupSuccessor({psql,runSql,root,sour
     const expected={checkpoint:await expectedCheckpointCasContract(),trip:await expectedTripBindingPolicy()};
     assert.equal(expected.checkpoint.sha256,PINS.checkpointContractSha256);assert.equal(expected.trip.sha256,PINS.tripBindingPolicySha256);
     assertCurrentMemoryWarmupTransactionBounds(sql);
-    phase='BEFORE';assert.equal(await psql('select max(version) from supabase_migrations.schema_migrations;'),OLD.version);
+    phase='BEFORE_VERSION';assert.equal(await psql('select max(version) from supabase_migrations.schema_migrations;'),OLD.version);
     const names=[...before.canonicalSource.matchAll(/^create or replace function public\.([a-z0-9_]+)\(/gm)].map(m=>m[1]);
     // Full source keys; PostgreSQL OIDs/name truncation are NOT ordinal20 slots.
     const catalogSql=items=>"select jsonb_object_agg(requested.source_name,jsonb_build_object('oid',p.oid,'definer',p.prosecdef,'volatility',p.provolatile,'config',p.proconfig,'acl',p.proacl,'body',encode(extensions.digest(convert_to(btrim(p.prosrc,E' \\r\\n\\t'),'UTF8'),'sha256'),'hex'))) from pg_proc p join pg_namespace n on n.oid=p.pronamespace join (values "+items.map(n=>"('"+n+"')").join(',')+") as requested(source_name) on p.proname=requested.source_name::pg_catalog.name where n.nspname='public';";
-    const catalogBefore=JSON.parse(await psql(catalogSql(names)));assert.deepEqual(Object.keys(catalogBefore).sort(),[...names].sort());
+    phase='BEFORE_CATALOG';const catalogBefore=JSON.parse(await psql(catalogSql(names)));assert.deepEqual(Object.keys(catalogBefore).sort(),[...names].sort());
     for(const name of names)assert.equal(catalogBefore[name].body,sha(body(definition(before.canonicalSource,name))));
-    const preservedSql="select md5(jsonb_build_object('checkpoint',(select jsonb_agg(to_jsonb(t) order by document_key) from public.admin_documents t),'history',(select jsonb_agg(to_jsonb(t)) from public.admin_document_versions t),'activity',(select jsonb_agg(to_jsonb(t) order by user_id) from public.account_activity_journal t),'preference',(select jsonb_agg(to_jsonb(t) order by user_id) from public.account_statistics_preferences t),'bank',(select jsonb_agg(to_jsonb(t) order by name) from public.native_checkpoint_payloads t))::text);";
-    const preserved=await psql(preservedSql),archives=await fs.readdir(path.join(ROOT,'supabase/migrations'));
+    const preservedSql=currentMemoryWarmupPreservationInventorySql('preserved');
+    phase='BEFORE_INVENTORY';const preserved=await psql(preservedSql),archives=await fs.readdir(path.join(ROOT,'supabase/migrations'));
     const archivePins=new Map(await Promise.all(archives.filter(f=>f.endsWith('.sql')).map(async f=>[f,sha(await fs.readFile(path.join(ROOT,'supabase/migrations',f)))])));
     const guards=[
       ["delete from supabase_migrations.schema_migrations where version='20261016060000';","insert into supabase_migrations.schema_migrations values('20261016060000');"],
@@ -128,7 +157,7 @@ export async function compareCurrentMemoryWarmupSuccessor({psql,runSql,root,sour
     const restored=await restoreProtectedRavScoreContinuationCheckpoint({checkpointPath,targetReference:atHour(49),request});assert.equal(restored.restored,true);assert.equal(restored.objectMemberOrderRestored,true);
     const restoredBytes=await fs.readFile(checkpointPath);assert.deepEqual(JSON.parse(restoredBytes),current.same);
     assert.equal((await restoreProtectedRavScoreContinuationCheckpoint({checkpointPath,targetReference:atHour(49),request})).reason,'protected-checkpoint-equivalent');assert.deepEqual(await fs.readFile(checkpointPath),restoredBytes);
-    const originalBankSql="select md5(jsonb_agg(jsonb_build_array(name,payload) order by name)::text) from native_checkpoint_payloads where name not like 'after0600-%';";
+    const originalBankSql=currentMemoryWarmupPreservationInventorySql('original-bank');
     const originalBank=await psql(originalBankSql),accountSql="select md5(jsonb_build_object('activity',(select jsonb_agg(to_jsonb(t) order by user_id) from account_activity_journal t),'preference',(select jsonb_agg(to_jsonb(t) order by user_id) from account_statistics_preferences t))::text);",account=await psql(accountSql);
     phase='ORIGINAL_PROJECTION';assert.equal(await psql("select public."+PROJECTION+"((select payload from native_checkpoint_payloads where name='identity-same'),'"+atHour(49)+"') is not null;"),'t');
     const cases=[
