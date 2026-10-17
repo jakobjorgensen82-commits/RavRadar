@@ -26,7 +26,7 @@ export const ASSISTANT_KNOWLEDGE_BINDING=Object.freeze({
   integratedManifestSha256:'2856080c69f226c51f82bba795728148268e9fee439cde811fa9af4b62d8e40f',
 });
 export const ASSISTANT_KNOWLEDGE_OUTPUT=Object.freeze({
-  "migrationSha256": "7d9fac08e10e15b118cee0bc12c9b514a4e6a9c5a171363650b60ef7a4fda87a",
+  "migrationSha256": "b462eae922b1c70d0620ab4a1ff7a43cc08e1d5819a9dc1478d4faeb6b6a0747",
   "canonicalSha256": "dfe52715b3ac74c536bab2c12c2207f2a40ff651bae3771c42a48897823e7bdd",
   "checkpointContractSha256": "eeb1323286d9305b43bdc7e0680b15c10d9e5b774f89dad82d33b35786641c1e",
   "tripBindingPolicySha256": "305421dbcaf57c019fd085581dd992fa850329e71e4109d064395a4c3cb8d9d7"

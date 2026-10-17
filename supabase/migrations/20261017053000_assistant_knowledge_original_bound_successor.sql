@@ -13,6 +13,8 @@ declare original_catalog jsonb; after_catalog jsonb; account_observed jsonb; fun
 begin
   if (select max(version::text) from supabase_migrations.schema_migrations) is distinct from '20261017020000'
     then raise exception 'AK_SQL_EXACT_INSTALLED_CURRENT0200_REQUIRED'; end if;
+  if not exists(select 1 from supabase_migrations.schema_migrations where version::text='20261016060000')
+    then raise exception 'AK_SQL_INSTALLED0600_REQUIRED'; end if;
   if exists(select 1 from supabase_migrations.schema_migrations where version::text='20261014140000')
     then raise exception 'AK_SQL_ARCHIVED14140000_MUST_BE_ABSENT'; end if;
   if exists(select 1 from supabase_migrations.schema_migrations where version::text='20261015030000')

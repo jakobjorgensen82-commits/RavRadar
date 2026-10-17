@@ -153,3 +153,14 @@ test('whole issued SQL reader and sole pending/apply plan with authentic source 
     await fs.rm(fixture,{recursive:true,force:false});
   }
 });
+
+test('generated0530 rejects absent installed0600 before DDL; whole previous candidate inverse',async()=>{
+  const output=await buildAssistantKnowledgeBindingSuccessor();
+  const guard="  if not exists(select 1 from supabase_migrations.schema_migrations where version::text='20261016060000')\n    then raise exception 'AK_SQL_INSTALLED0600_REQUIRED'; end if;\n";
+  assert.equal(output.migration.split(guard).length,2,'Missing installed0600 must fail before definitions');
+  assert(output.migration.indexOf(guard)<output.migration.indexOf('  execute $ak_ddl_0$'));
+  assert.equal(sha(output.migration.replace(guard,'')),'7d9fac08e10e15b118cee0bc12c9b514a4e6a9c5a171363650b60ef7a4fda87a',
+    'The only SQL difference from genuine bb13 candidate is the additive ledger guard');
+  assert.equal(output.afterCanonicalSha256,PINS.canonicalSha256);
+  assert.equal(output.schema2InitializerSha256,'ee68e62d59e7d1c92ec0f0629c669f7e9c9756f30e86bc08af21cebdedbbe305');
+});
