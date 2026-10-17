@@ -1,3 +1,9 @@
+## 17. oktober — SOURCE19: én manglende seed-kildefil, ikke et nativebevis
+
+Normal CI 39007556989 på ccbf984 bestod scope, men alle syv nativejobs stoppede allerede under syntetisk fixtureforberedelse. Den normale opvarmningskildes renderer kunne ikke læse scripts/fixtures/statistics-preference-revision-input.json, fordi seed-inventaret fulgte JavaScript-imports, men manglede denne eksplicit læste JSON-kilde. H70/H71 blev ikke nået; samlet source blev korrekt sprunget over. Første hele jobresultat og den komplette eksisterende run-log-ZIP er bevaret privat.
+
+En additiv V8-komposition medtager kun denne uændrede, særskilt pinnede kildefil i den eksisterende normale seedmekanisme. Hele samme helperkædes SQL- og importinputs er gennemgået. To nye prøveproducenter har hel inverse til hver sin uændrede V7-parent; alle femten tidligere fixtures og alle 27 produktpins bevares. En afgrænset normal seed-/moduleinitialisering og expectedTripBindingPolicy-prøve kontrollerer den konkrete grænse uden scoring, providers, SQL-kørsel eller nativejob. Det er ikke H70/H71, nationalt heljob, holdbar SAVE/finalizer, samlet source eller produktionsbevis. Disse gates og SOURCE19-aktivering er fortsat åbne; SOURCE19 forbliver inaktiv. Ældre dokumenthistorik bevares nedenfor.
+
 ## 17. oktober — SOURCE19: privat integration af faktisk 4.0.579, stadig inaktiv
 
 Main d897f3eb indeholder den faktisk testede 4.0.579-kilde. Opvarmningens databaseovergang og genlæsning er nu faktisk gennemført særskilt af ROOT; en almindelig vejrhentning er fortsat åben. SOURCE19 aktiveres ikke. Den private integrationspakke bevarer begge forældres produktkontroller, dokumenthistorik og den normale rækkefølge.

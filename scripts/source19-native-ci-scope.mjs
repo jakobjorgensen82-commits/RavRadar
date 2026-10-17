@@ -330,7 +330,10 @@ export const SOURCE19_NATIVE_SCOPE_PATHS=Object.freeze([
   "scripts/lib/native0600-original-successor-source.mjs",
   "scripts/test-source19-cp-install-native-main579-fixture.mjs",
   "scripts/test-source19-union-native-main579-fixture.mjs",
-  "supabase/migrations/20261017020000_current_memory_warmup_original_bound_successor.sql"
+  "supabase/migrations/20261017020000_current_memory_warmup_original_bound_successor.sql",
+  "scripts/fixtures/statistics-preference-revision-input.json",
+  "scripts/test-source19-cp-install-native-main579-seed-fixture.mjs",
+  "scripts/test-source19-union-native-main579-seed-fixture.mjs"
 ]);
 export const SOURCE19_NATIVE_SCOPE_DIRECTORIES=Object.freeze([
   {

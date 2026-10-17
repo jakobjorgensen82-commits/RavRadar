@@ -1,5 +1,9 @@
 ## 89.251 SOURCE19 forenes med den faktiske opvarmningskilde uden aktivering
 
+### 17. oktober: prøvekopien skal indeholde sin normale JSON-kilde
+
+Den første integrerede kildekontrol stoppede før nogen H70/H71-prøve: alle syv jobs manglede samme eksplicit læste JSON-kildefil i deres syntetiske seed. V8 medtager alene den uændrede, præcist pinnede kildefil og bevarer alle femten tidligere fixtures samt samtlige 27 produktpins. Normal moduleinitialisering og den uændrede binding-policy-reader er den afgrænsede kontrol; det er ikke et nyt native- eller produktionsresultat. Alle syv Linuxcases, samlet kildekontrol, nationalt heljob og holdbar SAVE/finalizer er fortsat nødvendige. SOURCE19 er inaktiv, og ingen SQL installeres.
+
 Main d897f3eb indeholder den faktisk testede 4.0.579-kilde. Opvarmningens databaseovergang og genlæsning er nu faktisk gennemført særskilt af ROOT; en almindelig vejrhentning er fortsat åben. SOURCE19 aktiveres ikke. Den private integrationspakke bevarer begge forældres produktkontroller, dokumenthistorik og den normale rækkefølge.
 
 V6-kontrol 39002451199 bestod alle syv nativecases, låst SDK-import, acquisition/raw-save og native PostgreSQL. Den normale Linux-unit bestod også alle syv immutable-B-angrebsgrupper, frisk Git-/fristkontrol, genbrug uden ny læsning på hit og race-afvisning. Samlet source fejlede særskilt i to gamle kildeinverser og en direkte B/S-kalder efter routevalg uden normal prelude. Senere gates blev ikke kørt. Hele første log og ZIP er bevaret privat.
