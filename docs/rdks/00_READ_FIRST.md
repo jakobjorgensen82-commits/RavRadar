@@ -1,3 +1,11 @@
+## 17. oktober — 4.0.580: fysisk lukning og en anden gyldig filtype
+
+Den seneste præcise kildekontrol bestod PostgreSQL, men fejlede i én af 58 normale kommandogrupper ved pakkens B/S-rundtur. Observationen viste en anden gyldig, ikke-almindelig filtype efter lukning; det beviser hverken en konkret mappe eller en læk. Den tidlige isolerede prøve genfandt ikke fejlen. De senere baseline-, kapacitets- og trækontroller blev ikke kørt, og der kom intet leveringsartifact.
+
+Den lokale rettelse kræver stadig en almindelig oprindelig fil. Efterkontrollen må kun godkende filstatistik fra den normale OS-kontrol med samme prototype, egne BigInt-felter for identitet og filtype og en af syv kendte OS-filtyper, når en anden identitet er bevist. Samme identitet, ukendte typer, proxy og falsk lukning afvises; en anden ejer lukkes aldrig. Samme kontrol genbruges ved særskilt epoch-gendannelse, som ikke var årsagen til B/S-fejlen.
+
+De fire tidlige mål omfatter faktisk mappegenbrug på Linux, de to bevarede filprøver og en reel åben/lukket-prøve af den fælles kontrol. De placeres før B/S og PostgreSQL. Linux-tilfældet er ikke kørt på Windows og må ikke kaldes bestået. Lokale mål erstatter ikke ny præcis CI; push, merge og produktion er endnu ikke udført for rettelsen. Version 580, C/I/T, udstedt SQL og geodata er uændrede. Den almindelige strømhistorikfejl er fortsat åben; offentlig 579 genbruger vejrdata med referencetid 16. oktober kl. 12 dansk tid. Cron er slået fra, tilbageholdte leverancer er inaktive, og alle fem mål til 18. oktober er åbne. Ældre statusafsnit bevares som dateret historik.
+
 ## 17. oktober — 4.0.580: resterende pakkelæserfejl skal måles før nyt forsøg
 
 Den fjerde præcise PR648-kontrol bestod de native anskaffelses- og PostgreSQL-prøver, men hele kildeplanen fandt stadig én fejl i den normale B/S-rundtur: pakkelæserens fysiske lukning var ikke bevist. Den tidligere lokale genbrugsrettelse er derfor ikke en færdig løsning. Loggen viser endnu ikke, hvilken indre afvisningsgren der blev ramt. Ingen kilde- eller produktionssucces må udledes af de beståede deltrin.

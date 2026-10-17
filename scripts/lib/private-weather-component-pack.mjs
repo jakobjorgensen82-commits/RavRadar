@@ -41,7 +41,7 @@ const safePath = (relative, includeOperationalProgress = false) => Object.values
   || includeOperationalProgress === true && Object.values(PRIVATE_WEATHER_PROGRESS_ONLY_FILES).includes(relative)
   || relative.startsWith(CP_PREFIX) && [CP_OBJECT, CP_RECEIPT, CP_STATIC].some(pattern => pattern.test(relative.slice(CP_PREFIX.length)));
 
-function fileDescriptorIdentity(stat, expectedPrototype = null) {
+function fileDescriptorIdentity(stat, expectedPrototype = null, requireRegular = true) {
   if (stat === null || typeof stat !== 'object' || types.isProxy(stat)) return null;
   const prototype = Object.getPrototypeOf(stat);
   if (!prototype || types.isProxy(prototype)
@@ -51,24 +51,30 @@ function fileDescriptorIdentity(stat, expectedPrototype = null) {
   const ino = Object.getOwnPropertyDescriptor(stat, 'ino')?.value;
   const mode = Object.getOwnPropertyDescriptor(stat, 'mode')?.value;
   if (typeof dev !== 'bigint' || dev < 0n || typeof ino !== 'bigint' || ino < 0n
-    || typeof mode !== 'bigint' || (mode & 0o170000n) !== 0o100000n) return null;
+    || typeof mode !== 'bigint') return null;
+  const kind = mode & 0o170000n;
+  // Our original must be a regular file. A later numeric-fd owner may be
+  // another genuine kernel object; its different identity still proves that
+  // our original descriptor is gone. Unknown kinds never supply that proof.
+  if (requireRegular ? kind !== 0o100000n
+    : ![0o010000n, 0o020000n, 0o040000n, 0o060000n, 0o100000n, 0o120000n, 0o140000n].includes(kind)) return null;
   return { dev, ino, prototype };
 }
-function ownFileDescriptorIdentity(fd) {
+export function ownFileDescriptorIdentity(fd) {
   try { return fileDescriptorIdentity(fstatSync(fd, { bigint: true })); }
   catch { return null; } // Unknown identity never authorizes the reuse branch.
 }
-async function ownedFileDescriptorClosed(fd, before) {
+export async function ownedFileDescriptorClosed(fd, before) {
   try {
     const probe = await new Promise(resolve => fstat(fd, { bigint: true }, (error, stat) => resolve({ error, stat })));
     if (probe.error !== null && typeof probe.error === 'object' && !types.isProxy(probe.error)
       && Object.getOwnPropertyDescriptor(probe.error, 'code')?.value === 'EBADF') return true;
     // A close can finish before another OS open reuses the numeric fd. Only a
-    // validated different file identity proves that our original fd is gone.
+    // validated different object identity proves that our original fd is gone.
     // Same-inode reuse and unknown/null/proxy probes remain unproved. Never
     // close the replacement: it belongs to another operation, not this pack.
     if (probe.error !== null || before === null || before === undefined) return false;
-    const after = fileDescriptorIdentity(probe.stat, before.prototype);
+    const after = fileDescriptorIdentity(probe.stat, before.prototype, false);
     return Boolean(after && (after.dev !== before.dev || after.ino !== before.ino));
   } catch { return false; }
 }
