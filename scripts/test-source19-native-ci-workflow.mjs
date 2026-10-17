@@ -83,6 +83,23 @@ async function assertSource19SuccessorComposition() {
   }
 }
 
+// CI-only source job envelope. Native/weather/product clocks are unchanged.
+function projectSource19CiSourceBudget(actual) {
+  if(sha(actual)==="b2644643675a38bb58bb98018f5519692a21771afb5e9be49c4de4aabaf57b3e")return actual;
+  assert.equal(sha(actual),"ee191f96765af58c54896b1033ee590266f0bd4a39dde08e376fc97fc15363d1",'SOURCE19_CI_VALIDATE_WHOLE_JOB_CHANGED');
+  assert.equal(actual.split('    timeout-minutes: 60\n').length,2);
+  const inverse=actual.replace('    timeout-minutes: 60\n','    timeout-minutes: 45\n');
+  assert.equal(sha(inverse),"b2644643675a38bb58bb98018f5519692a21771afb5e9be49c4de4aabaf57b3e",'Whole old source job, not a clock waiver');return inverse;
+}
+export function assertSource19CiSourceBudgetWorkflow(actual) {
+  actual=actual.replaceAll('\r\n','\n');
+  assert.equal(sha(actual),"146a1c34679309ffb423de214df73dffc988d4862cd5fd54633f687c2f668899",'SOURCE19_ACTUAL_RAW_CI60_WORKFLOW_REQUIRED');
+  assert.equal(actual.split('    timeout-minutes: 60\n').length,2);
+  const inverse=actual.replace('    timeout-minutes: 60\n','    timeout-minutes: 45\n');
+  assert.equal(sha(inverse),"314715ce1827692f78d7007a5bfbba6646bd8ffbe5a0b43ca2a174c857c48a5e",'Entire actual V8 workflow preserved outside one CI-only number');
+  return{status:'SOURCE19_EXACT_RAW_CI_SOURCE_ENVELOPE_PASS',sourceJobMinutes:60,previousSourceJobMinutes:45,nativeJobMinutes:12,sourceScopeMinutes:3,productClockChanged:false};
+}
+
 export function projectSource19NativeCiWorkflow(input) {
   const source=input.replaceAll('\r\n','\n');
   assert.equal(source.split('\njobs:\n').length,2,'SOURCE19_NATIVE_CI_JOBS_REQUIRED');
@@ -90,7 +107,7 @@ export function projectSource19NativeCiWorkflow(input) {
   const validateAt=source.indexOf('  validate:\n',jobsAt);assert.ok(validateAt>jobsAt);
   const nativeJobs=projectSource19SuccessorNativeJobs(source.slice(jobsAt,validateAt));
   assert.equal(sha(nativeJobs),NATIVE_JOBS_SHA256,'SOURCE19_NATIVE_CI_EXACT_JOB_CONTRACT');
-  const validate=source.slice(validateAt);
+  const validate=projectSource19CiSourceBudget(source.slice(validateAt));
   assert.equal(validate.split(DEPENDENCY_GUARD).length,2,'SOURCE19_NATIVE_CI_HARD_SOURCE_DEPENDENCY');
   assert.ok(validate.startsWith('  validate:\n'+DEPENDENCY_GUARD));
   assert.doesNotMatch(nativeJobs,/secrets\.|(?:contents|actions|pages|id-token): write|continue-on-error|pull_request_target|workflow_dispatch|NODE_TLS_REJECT_UNAUTHORIZED|NODE_OPTIONS|upstream/);
@@ -341,6 +358,7 @@ export async function testSource19BeforeHFailureDiagnostics(documents = null) {
   const root = process.cwd();
   const names = ['scripts/test-source19-cp-install-native.py', 'scripts/test-source19-union-native.py'];
   documents ??= await Promise.all(names.map(async name => ({name, text: await fs.readFile(path.join(root, name), 'utf8')})));
+  documents = documents.map(row=>row.name==='scripts/test-source19-cp-install-native.py'?{...row,text:projectSource19H70CaptureDefault(row.text)}:row);
   assert.deepEqual(documents.map(row => row.name), names);
   const probe = spawnSync(process.env.PYTHON || 'python', ['-I', '-B', '-c', "import ast,hashlib,json,os,pathlib,re,stat,sys,tempfile\ndocuments=json.load(sys.stdin)\nunits=[]\nfor d in documents:\n    tree=ast.parse(d['text'])\n    nodes=[n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name in ('classify_source19_before_h_stderr','capture_source19_before_h_failure')]\n    assert len(nodes)==2\n    units.append(ast.dump(ast.Module(body=nodes,type_ignores=[])))\n    assert \"and first is None:\" in d['text']\n    assert d['text'].count(\"before_h = capture_source19_before_h_failure(root, process is not None and process.poll() is not None)\")==1\n    for marker in ('CHECKPOINT_PROTECTED_READ','PRIVATE_POINTER_READ','PRIVATE_BUCKET_READ','PRIVATE_B_OBJECT_DOWNLOAD'):\n        assert d['text'].count(\"append('\"+marker+\"')\")==1\nassert units[0]==units[1]\ntree=ast.parse(documents[0]['text'])\nnodes=[n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name in ('classify_source19_before_h_stderr','capture_source19_before_h_failure')]\nns={'re':re,'stat':stat,'os':os,'Path':pathlib.Path,'json':json,'sha':lambda raw:hashlib.sha256(raw).hexdigest(),'ROOT':pathlib.Path.cwd(),'ENTRY':pathlib.Path('.github/actions/save-owned-dmi-grib/index.cjs')}\nexec(compile(ast.Module(body=nodes,type_ignores=[]),'<actual-test-diagnostic-functions>','exec'),ns)\nclassify=ns['classify_source19_before_h_stderr']\ncases=[(b'Protected RavScore checkpoint read could not be reached','CHECKPOINT_PROTECTED','CHECKPOINT_PROTECTED_REFUSED'),(b'Private runtime pointer readback is missing','PRIVATE_POINTER','PRIVATE_POINTER_REFUSED'),(b'Protected private runtime bucket policy is incompatible','PRIVATE_BUCKET','PRIVATE_BUCKET_REFUSED'),(b'Protected private runtime object integrity is invalid','PRIVATE_B_RESTORE','PRIVATE_B_RESTORE_REFUSED'),(b'Error [ERR_MODULE_NOT_FOUND]: private-CANARY path','NODE_IMPORT','ERR_MODULE_NOT_FOUND'),(b\"code: 'MODULE_NOT_FOUND'\",'NODE_IMPORT','MODULE_NOT_FOUND'),(b'ReferenceError: private-CANARY value','NODE_RUNTIME','NODE_ERROR'),(b'SyntaxError: private-CANARY','NODE_RUNTIME','NODE_ERROR'),(b'RuntimeError: SOURCE_NORMAL_NODE22_REQUIRED','SOURCE_FIXED_GUARD','SOURCE_NORMAL_NODE22_REQUIRED'),(b'RuntimeError: SOURCE_FAKE_CANARY','UNKNOWN','UNKNOWN'),(b'private-CANARY unknown failure','UNKNOWN','UNKNOWN'),(b'DMI_RAW_SAVE_DIAGNOSTIC stage=INPUT reason=UNKNOWN','UNKNOWN','UNKNOWN')]\ncases += [(b'SOURCE_RUN_DIAGNOSTIC stage=CHECKPOINT_PROTECTED reason=SOURCE_PRELUDE_PROGRAM_FAILED node_class=ERROR rejection=NONE','CHECKPOINT_PROTECTED','SOURCE_PRELUDE_PROGRAM_FAILED'),(b'SOURCE_RUN_DIAGNOSTIC stage=SOURCE_IMPORT reason=ERR_MODULE_NOT_FOUND node_class=ERROR rejection=NONE','SOURCE_IMPORT','ERR_MODULE_NOT_FOUND'),(b'SOURCE_RUN_DIAGNOSTIC stage=PRIVATE_CANARY reason=SOURCE_PRIVATE_CANARY node_class=ERROR rejection=NONE','UNKNOWN','UNKNOWN')]\nfor raw,stage,code in cases:\n    result=classify(raw,{'SOURCE_NORMAL_NODE22_REQUIRED','SOURCE_PRELUDE_PROGRAM_FAILED'})\n    assert result[0]['stage']==stage and result[0]['code']==code\n    assert 'CANARY' not in json.dumps(result) and 'private-' not in json.dumps(result)\nwith tempfile.TemporaryDirectory(prefix='rr-s19-private-child-diagnostics-') as temporary:\n    own=pathlib.Path(temporary)\n    raw=b'private-CANARY\\n'+b'x'*32768+b'\\nError [ERR_MODULE_NOT_FOUND]: private-CANARY\\n'\n    # Complete the synthetic writer before the unchanged stable-read guard.\n    with (own/'stderr').open('xb') as writer:\n        writer.write(raw)\n        writer.flush()\n        os.fsync(writer.fileno())\n    pending=ns['capture_source19_before_h_failure'](own,False)\n    assert pending=={'capture':'PENDING_CHILD_STOP','sourceAdmission':False}\n    assert not (own/'source19-before-h-child-failure.json').exists()\n    result=ns['capture_source19_before_h_failure'](own,True)\n    assert result['capture']=='COMPLETE_STABLE' and result['stderrBytes']==len(raw)\n    assert result['stderrSha256']==hashlib.sha256(raw).hexdigest()\n    assert result['fixedFailures'][0]['code']=='ERR_MODULE_NOT_FOUND'\n    assert result['wholePrivateStderrRetained'] is True and result['sourceAdmission'] is False\n    assert (own/'stderr').read_bytes()==raw\n    assert json.loads((own/'source19-before-h-child-failure.json').read_text())==result\n    assert 'CANARY' not in json.dumps(result)\n    refused=ns['capture_source19_before_h_failure'](own,True)\n    assert refused['capture']=='UNPROVEN_RETAINED' and (own/'stderr').read_bytes()==raw\n    missing=ns['capture_source19_before_h_failure'](own/'absent',True)\n    assert missing['capture']=='UNPROVEN_RETAINED'\nprint(json.dumps({'status':'SOURCE19_BEFORE_H_DIAGNOSTICS_PASS','classificationCases':len(cases),'wholeStderrBeyond16KiB':True,'nativeActual':'UNRUN','sourceAdmission':False}))\n"], {
     input: JSON.stringify(documents), encoding: 'utf8', timeout: 10_000, maxBuffer: 16_384,
@@ -1183,8 +1201,182 @@ export async function assertSource19SeedClosureComposition(documents={}) {
 }
 // End V8 source-only composition. A module-import check is not H70/H71.
 
+// Normal test-only observer regressions. Scripted logic is NOT Linux evidence.
+export async function testSource19ActionIdentityObservation(documents={}) {
+  const {spawnSync}=await import('node:child_process');
+  const file='scripts/test-source19-cp-install-native.py';
+  const source=documents[file]??await fs.readFile(new URL('./test-source19-cp-install-native.py',import.meta.url),'utf8');
+  for(const[from,to]of [["receipt_name='source19-before-h-child-failure.json'","receipt_name='unknown.json'"],["    # stderr is the COMPLETE pre-existing private child capture.","    pass\n    # stderr is the COMPLETE pre-existing private child capture."],["with (root / receipt_name).open('x', encoding='utf-8') as stream:","with (root / 'unknown.json').open('x', encoding='utf-8') as stream:"]]){
+    const changed=source.replace(from,to);assert.notEqual(changed,source);assert.throws(()=>projectSource19H70CaptureDefault(changed));
+  }
+  const probe=spawnSync(process.env.PYTHON||'python',['-I','-B','-c',String.raw`
+import ast,hashlib,importlib.util,json,os,pathlib,re,signal,stat,subprocess,sys,tempfile,time,types
+p=json.load(sys.stdin);source=p['source'];tree=ast.parse(source)
+names={'source19_action_proc_identity','source19_wait_action_identity','source19_waitid_returncode','source19_drain_action_observation','source19_post_echild_failure','capture_source19_before_h_failure','classify_source19_before_h_stderr'}
+nodes=[n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name in names];assert len(nodes)==7
+ns={'os':os,'time':time,'Path':pathlib.Path,'re':re,'stat':stat,'json':json,'sha':lambda x:hashlib.sha256(x).hexdigest(),'ROOT':pathlib.Path.cwd(),'ENTRY':pathlib.Path('.github/actions/save-owned-dmi-grib/index.cjs')}
+exec(compile(ast.Module(body=nodes,type_ignores=[]),'<actual-test-observer-functions>','exec'),ns)
+class Kernel:
+ def __init__(self,frames):self.frames=frames;self.index=0;self.clock=0.;self.sleeps=0;self.reads=0;self.waits=0;self.process=types.SimpleNamespace(pid=123,returncode=None)
+ @property
+ def frame(self):return self.frames[min(self.index,len(self.frames)-1)]
+ def monotonic(self):return self.clock
+ def sleep(self,value):assert 0<value<=.002;self.sleeps+=1;self.clock+=value;self.index+=1
+ def fstat(self,fd):assert fd==9;return types.SimpleNamespace(st_dev=1,st_ino=4 if self.frame.get('fdAfter')and self.reads else self.frame.get('fd',2),st_mode=3)
+ def waitid(self,kind,fd,flags):
+  assert (kind,fd,flags)==(4,9,7);self.waits+=1
+  if self.frame.get('waitError'):raise OSError('private-CANARY')
+  return types.SimpleNamespace(si_pid=123,si_code=1,si_status=13) if self.frame.get('exit') or(self.frame.get('exitAfter') and self.waits>1)else None
+ def path(self,value):
+  k=self
+  class Proc:
+   def read_text(self,**kwargs):assert value=='/proc/self/fdinfo/9';return 'Pid:\t'+str(k.frame.get('fdpid',123))+'\n'
+   def read_bytes(self):
+    if value=='/proc/123/cmdline':k.reads+=1;return k.frame.get('argv',b'node\0action\0')
+    assert value=='/proc/123/stat'
+    if k.frame.get('unknown'):return b'unknown'
+    fields=['0']*20;fields[0]='R';fields[1]=str(k.frame.get('parent',42));fields[19]=str(k.frame.get('start',100))
+    return ('123 (private-CANARY) '+' '.join(fields)).encode()
+  return Proc()
+def script(frames,*,deadline=.01,active=True,owner_deadline=1.):
+ k=Kernel(frames);ns['os']=types.SimpleNamespace(fstat=k.fstat,waitid=k.waitid,getpid=lambda:42,P_PIDFD=4,WEXITED=1,WNOHANG=2,WNOWAIT=4)
+ ns['Path']=k.path;ns['time']=types.SimpleNamespace(monotonic=k.monotonic,sleep=k.sleep)
+ return k,lambda:ns['source19_wait_action_identity'](k.process,9,[b'node',b'action'],types.SimpleNamespace(active=active,deadline=owner_deadline),deadline)
+logic=0
+k,call=script([{'argv':b''},{}]);result=call();assert result=={'status':'EXACT_LIVE_ACTION_IDENTITY_OBSERVED','emptySamples':1,'sourceAdmission':False};assert k.sleeps==1;logic+=1
+for frames,options in [([{'exit':True}],{}),([{'exitAfter':True}],{}),([{'argv':b'wrong\0action\0'}],{}),([{'argv':b'partial'}],{}),([{'argv':b''}],{}),([{'argv':b''},{'start':101}],{}),([{'parent':43}],{}),([{'argv':b''},{'fd':4}],{}),([{'fdAfter':True}],{}),([{'fdpid':124}],{}),([{'unknown':True}],{}),([{'waitError':True}],{}),([{}],{'deadline':float('nan')}),([{}],{'owner_deadline':float('nan')}),([{}],{'active':False})]:
+ k,call=script(frames,**options)
+ try:call()
+ except (AssertionError,OSError):pass
+ else:raise AssertionError('UNKNOWN_EXIT_OR_IDENTITY_MISMATCH_ADMITTED')
+ assert k.clock<=.01
+ if frames[0].get('argv',b'').startswith(b'wrong'):assert k.sleeps==0
+ logic+=1
+ns.update(os=os,time=time,Path=pathlib.Path)
+# Pure forwarding oracle: preserve original result identity, args and exception.
+forward=0
+ns['os']=types.SimpleNamespace(CLD_EXITED=1,CLD_KILLED=2,CLD_DUMPED=3)
+for error in (None,RuntimeError('private-CANARY')):
+ calls=[];value=types.SimpleNamespace(si_pid=123,si_code=1,si_status=13)
+ def original(*args,**kwargs):
+  calls.append((args,kwargs))
+  if error is not None:raise error
+  return value
+ h=types.SimpleNamespace(_child_state=original)
+ class Owner:
+  def drain(self):assert h._child_state('sentinel',key=7)is value
+ try:result=ns['source19_drain_action_observation'](Owner(),h,types.SimpleNamespace(pid=123,returncode=None),None)
+ except BaseException as actual:assert actual is error
+ else:assert error is None;assert result['returncode']==13 and result['returncodeEvidence']=='ACTUAL_NORMAL_DRAIN_WAITID'
+ assert h._child_state is original and calls==[(('sentinel',),{'key':7})];forward+=1
+# Windows lacks CLD constants: use explicit constants only for this scripted
+# logic seam; it never becomes a real Linux/platform PASS.
+real_os=os;ns['os']=types.SimpleNamespace(CLD_EXITED=1,CLD_KILLED=2,CLD_DUMPED=3)
+for value,expected in [(types.SimpleNamespace(si_pid=123,si_code=1,si_status=13),13),(types.SimpleNamespace(si_pid=123,si_code=2,si_status=9),-9),(types.SimpleNamespace(si_pid=124,si_code=1,si_status=0),None),(types.SimpleNamespace(si_pid=123,si_code=1,si_status=True),None),(types.SimpleNamespace(si_pid=123,si_code=99,si_status=0),None),(None,None)]:assert ns['source19_waitid_returncode'](value,123)==expected
+ns['os']=real_os
+# An ordinary drain can reap before Popen.wait: never invent its fallback0.
+h=types.SimpleNamespace(_child_state=lambda:None)
+class SilentOwner:
+ def drain(self):assert h._child_state()is None
+result=ns['source19_drain_action_observation'](SilentOwner(),h,types.SimpleNamespace(pid=123,returncode=None),None)
+assert result['returncode']is None and result['returncodeEvidence']=='UNKNOWN';forward+=1
+assert ns['source19_post_echild_failure'](None,False,True,{'capture':'PENDING_CHILD_STOP'})['capture']=='ECHILD_UNPROVEN'
+post_cases=0;post_linux='UNRUN_PLATFORM'
+# Control-status fixtures exercise REAL capture-forwarding and both own files.
+# Windows' unchanged exact-ctime guard can honestly keep capture UNPROVEN.
+actual_capture=ns['capture_source19_before_h_failure']
+with tempfile.TemporaryDirectory(prefix='rr-source19-post-echild-logic-')as temporary:
+ for before_status in ('PENDING_CHILD_STOP','COMPLETE_STABLE','UNPROVEN_RETAINED'):
+  root=pathlib.Path(temporary)/before_status;root.mkdir();stderr=root/'stderr';stderr.write_bytes(b'Error [ERR_MODULE_NOT_FOUND]: private-CANARY\n')
+  before={'capture':before_status,'sourceAdmission':False};before_bytes=json.dumps(before,sort_keys=True).encode();old=root/'source19-before-h-child-failure.json';old.write_bytes(before_bytes)
+  calls=[]
+  def forwarding_capture(*args,**kwargs):
+   result=actual_capture(*args,**kwargs);calls.append((args,kwargs,result));return result
+  ns['capture_source19_before_h_failure']=forwarding_capture
+  post=ns['source19_post_echild_failure'](root,True,True,before)
+  assert len(calls)==1 and calls[0][0]==(root,True)and calls[0][1]=={'receipt_name':'source19-after-echild-child-failure.json'}
+  assert post['before']is before and post['child']is calls[0][2]and post['timing']=='AFTER_CLEANUP_NOT_PRIMARY_CAUSE'
+  assert old.read_bytes()==before_bytes and before=={'capture':before_status,'sourceAdmission':False}and 'CANARY'not in json.dumps(post)
+  new=root/'source19-after-echild-child-failure.json'
+  if sys.platform=='linux':
+   assert post['child']['capture']=='COMPLETE_STABLE'and new.is_file()and json.loads(new.read_text())==post['child'];post_linux='PASS'
+  else:assert post['child']['capture']in('COMPLETE_STABLE','UNPROVEN_RETAINED')
+  assert ns['source19_post_echild_failure'](root,False,True,before)['capture']=='ECHILD_UNPROVEN'and len(calls)==1
+  for invalid in ('unknown.json','../source19-after-echild-child-failure.json','/source19-after-echild-child-failure.json',None):
+   try:actual_capture(root,True,receipt_name=invalid)
+   except ValueError as error:assert str(error)=='SOURCE19_PRIVATE_STDERR_RECEIPT_NAME_INVALID'
+   else:raise AssertionError('UNKNOWN_OR_PATH_RECEIPT_ADMITTED')
+  post_cases+=1
+ns['capture_source19_before_h_failure']=actual_capture
+linux='UNRUN_PLATFORM';linux_cases=0
+if sys.platform=='linux':
+ for name in ('pidfd_open','waitid','P_PIDFD','WNOWAIT'):assert hasattr(os,name)
+ assert hasattr(signal,'pidfd_send_signal')
+ spec=importlib.util.spec_from_file_location('s19_real_owner_for_test',pathlib.Path.cwd()/'scripts/lib/copernicus_component_process.py');helper=importlib.util.module_from_spec(spec);spec.loader.exec_module(helper)
+ with tempfile.TemporaryDirectory(prefix='rr-source19-action-observation-')as temporary:
+  own=pathlib.Path(temporary)
+  for mode in ('live','wrong','exit13','expired','closed'):
+   script_file=own/(mode+'.py');body="import sys,time\n"
+   body+="sys.stderr.buffer.write(b'private-CANARY\\nError [ERR_MODULE_NOT_FOUND]: private-CANARY\\n');sys.stderr.buffer.flush();sys.exit(13)\n" if mode=='exit13' else 'time.sleep(30)\n'
+   script_file.write_text(body,encoding='utf8');log_root=own/mode;log_root.mkdir();writer=(log_root/'stderr').open('xb')
+   owner=helper._LinuxSubsetOwner(time.monotonic()+8);owner.enter();process=None;fd=None;drained=False
+   try:
+    process=subprocess.Popen([sys.executable,str(script_file)],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=writer,env={key:os.environ[key]for key in('PATH','Path','SystemRoot','TEMP','TMP')if key in os.environ})
+    fd=os.pidfd_open(process.pid);expected=[os.fsencode(sys.executable),os.fsencode(script_file)]
+    if mode=='exit13':
+     until=time.monotonic()+2
+     while os.waitid(os.P_PIDFD,fd,os.WEXITED|os.WNOHANG|os.WNOWAIT)is None:assert time.monotonic()<until;time.sleep(.002)
+    if mode=='closed':os.close(fd);fd=None
+    if mode=='wrong':expected[1]=b'not-the-actual-script'
+    try:observed=ns['source19_wait_action_identity'](process,fd if fd is not None else -1,expected,owner,time.monotonic()-1 if mode=='expired'else time.monotonic()+2)
+    except (AssertionError,OSError):assert mode!='live'
+    else:assert mode=='live' and observed['status']=='EXACT_LIVE_ACTION_IDENTITY_OBSERVED'
+    actual=ns['source19_drain_action_observation'](owner,helper,process,fd);drained=True;owner.leave();process.wait(timeout=1);writer.close()
+    if mode=='exit13':
+     assert actual['returncode']==13 and actual['beforeDrain']=='EXITED' and actual['returncodeEvidence']=='WAITID_WNOWAIT_BEFORE_DRAIN'
+     post=ns['source19_post_echild_failure'](log_root,True,True,{'capture':'PENDING_CHILD_STOP'})
+     assert post['child']['capture']=='COMPLETE_STABLE' and post['child']['wholePrivateStderrRetained']is True
+     assert post['child']['fixedFailures'][0]['code']=='ERR_MODULE_NOT_FOUND'
+     assert 'CANARY'not in json.dumps(post)
+    try:os.waitid(os.P_ALL,0,os.WEXITED|os.WNOHANG|os.WNOWAIT)
+    except ChildProcessError:pass
+    else:raise AssertionError('REAL_NORMAL_OWNER_ECHILD_MISSING')
+    linux_cases+=1
+   finally:
+    if not drained:owner.deadline=min(owner.deadline,time.monotonic()+2);owner.drain();owner.leave()
+    if process is not None:process.wait(timeout=1)
+    if fd is not None:os.close(fd)
+    writer.close()
+ assert linux_cases==5;linux='PASS'
+print(json.dumps({'status':'SOURCE19_ACTION_IDENTITY_OBSERVER_LOGIC_PASS','scriptedLogicCases':logic,'forwardingCases':forward,'postEchildActualCaptureForwardingCases':post_cases,'postEchildMissingDrainRefused':True,'unknownOrPathReceiptRefused':12,'postEchildTwoStableFilesLinux':post_linux,'realLinuxChildCases':linux_cases,'realLinux':linux,'actualNativeH':'UNRUN','sourceAdmission':False,'realNetwork':0}))
+`],{input:JSON.stringify({source}),encoding:'utf8',windowsHide:true,timeout:20_000,maxBuffer:65_536});
+  assert.equal(probe.status,0,probe.stderr);
+  const result=JSON.parse(probe.stdout);assert.equal(result.status,'SOURCE19_ACTION_IDENTITY_OBSERVER_LOGIC_PASS');
+  if(process.platform==='linux'){assert.equal(result.realLinux,'PASS');assert.equal(result.realLinuxChildCases,5);}
+  else{assert.equal(result.realLinux,'UNRUN_PLATFORM');assert.equal(result.realLinuxChildCases,0);}
+  return result;
+}
+
+// Only this reviewed H70 metadata-name delta projects into the old equal-AST
+// oracle. The genuine current capture is exercised separately, without a view.
+function projectSource19H70CaptureDefault(source) {
+  source=source.replaceAll('\r\n','\n');
+  const start=source.indexOf('def capture_source19_before_h_failure(');
+  const end=source.indexOf('\n\n# END TEST-ONLY before-H diagnostics.',start);
+  assert(start>=0&&end>start,'SOURCE19_CAPTURE_FUNCTION_BOUNDARY_UNKNOWN');
+  const actual=source.slice(start,end);
+  if(sha(actual)==="9830fcf953bd981dacfaa8dd4be932de3aa1295da6c2fa800f944b466119aedd")return source;
+  assert.equal(sha(actual),"5f6f82c4fecf4c01f793711baaa4f627bc47dc68a945cee12492fa306a7e51ab",'SOURCE19_EXACT_H70_CAPTURE_REQUIRED');
+  let inverse=actual;
+  for(const rule of [{"before":"with (root / 'source19-before-h-child-failure.json').open('x', encoding='utf-8') as stream:","after":"with (root / receipt_name).open('x', encoding='utf-8') as stream:"},{"before":"def capture_source19_before_h_failure(root, action_exited):\n","after":"def capture_source19_before_h_failure(root, action_exited, *, receipt_name='source19-before-h-child-failure.json'):\n    if type(receipt_name) is not str or receipt_name not in ('source19-before-h-child-failure.json', 'source19-after-echild-child-failure.json'):\n        raise ValueError('SOURCE19_PRIVATE_STDERR_RECEIPT_NAME_INVALID')\n"}]){assert.equal(inverse.split(rule.after).length,2);inverse=inverse.replace(rule.after,()=>rule.before);}
+  assert.equal(sha(inverse),"9830fcf953bd981dacfaa8dd4be932de3aa1295da6c2fa800f944b466119aedd",'Entire unchanged historical H71 capture function required');
+  return source.slice(0,start)+inverse+source.slice(end);
+}
+
 export async function testSource19NativeCiWorkflow(input=null) {
-  const rawWorkflow=projectSource19SeedClosureWorkflow((input??await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'));
+  const actualWorkflow=(input??await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  assertSource19CiSourceBudgetWorkflow(actualWorkflow);
+  const rawWorkflow=projectSource19SeedClosureWorkflow(actualWorkflow);
   const historical=projectSource19NativeCiWorkflow(rawWorkflow);
   const jobsAt=rawWorkflow.indexOf('\njobs:\n')+'\njobs:\n'.length,validateAt=rawWorkflow.indexOf('  validate:\n',jobsAt);
   const workflow=rawWorkflow.slice(0,jobsAt)+projectSource19Main579Jobs(rawWorkflow.slice(jobsAt,validateAt))+rawWorkflow.slice(validateAt);
@@ -1257,6 +1449,7 @@ export async function testSource19NativeCiWorkflow(input=null) {
   await assertSource19OfflineSuffixComposition();
   await assertSource19Main579Composition();
   await assertSource19SeedClosureComposition();
+  await testSource19ActionIdentityObservation();
   await testSource19OfflineLogSuffixView();
   await testSource19OriginalLocalRestoreBounds();
   return {status:'SOURCE19_NATIVE_CI_CONTRACT_PASS',scopePaths:SOURCE19_NATIVE_SCOPE_PATHS.length,cases:7,nativeActual:'UNRUN'};

@@ -1,5 +1,9 @@
 ## 89.251 SOURCE19 forenes med den faktiske opvarmningskilde uden aktivering
 
+### 17. oktober: procesopstart må ikke gættes ud fra ét øjebliksbillede
+
+Seks V8-nativecases, også positiv H71, bestod faktisk. Én H70-case så tom cmdline efter normal Popen/exec og pidfd-open, før negativ rootændring. Tidligt exit/zombie er muligt; den gamle indre årsag er uafklaret, ikke bevist harmløs opstart. En test-only observer skal nu bevise samme beholdte proces, præcis argv og levetid inden for den uændrede 150-sekunders frist, samt bevare ægte exitstatus og stabil privat fejllog efter normal kernel-drain. Forkert, afsluttet og ukendt proces giver ikke godkendelse; ingen produktkontrol eller frist løsnes. Kun det ydre PR-kildejob får 60 i stedet for 45 minutter, med præcis inverse foran gamle testorakler. Alle 27 produktpins og sytten prøveoriginaler bevares. Nye Linux-childprøver er UNRUN lokalt og skal faktisk køres i normal CI. Samlet source, nationalt heljob, holdbar SAVE/finalizer og aktivering er fortsat åbne; SOURCE19 er inaktiv.
+
 ### 17. oktober: prøvekopien skal indeholde sin normale JSON-kilde
 
 Den første integrerede kildekontrol stoppede før nogen H70/H71-prøve: alle syv jobs manglede samme eksplicit læste JSON-kildefil i deres syntetiske seed. V8 medtager alene den uændrede, præcist pinnede kildefil og bevarer alle femten tidligere fixtures samt samtlige 27 produktpins. Normal moduleinitialisering og den uændrede binding-policy-reader er den afgrænsede kontrol; det er ikke et nyt native- eller produktionsresultat. Alle syv Linuxcases, samlet kildekontrol, nationalt heljob og holdbar SAVE/finalizer er fortsat nødvendige. SOURCE19 er inaktiv, og ingen SQL installeres.

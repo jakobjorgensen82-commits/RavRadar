@@ -127,7 +127,9 @@ def classify_source19_before_h_stderr(raw, known_source_codes):
     return findings or [{'stage': 'UNKNOWN', 'code': 'UNKNOWN', 'nodeClass': 'NONE'}]
 
 
-def capture_source19_before_h_failure(root, action_exited):
+def capture_source19_before_h_failure(root, action_exited, *, receipt_name='source19-before-h-child-failure.json'):
+    if type(receipt_name) is not str or receipt_name not in ('source19-before-h-child-failure.json', 'source19-after-echild-child-failure.json'):
+        raise ValueError('SOURCE19_PRIVATE_STDERR_RECEIPT_NAME_INVALID')
     # stderr is the COMPLETE pre-existing private child capture. Never truncate,
     # echo it, copy it into a public artifact, or delete the failed own fixture.
     try:
@@ -151,7 +153,7 @@ def capture_source19_before_h_failure(root, action_exited):
             'fixedFailures': classify_source19_before_h_stderr(raw, known),
             'wholePrivateStderrRetained': True, 'sourceAdmission': False}
         # A private metadata receipt, not a replacement for the retained stderr.
-        with (root / 'source19-before-h-child-failure.json').open('x', encoding='utf-8') as stream:
+        with (root / receipt_name).open('x', encoding='utf-8') as stream:
             json.dump(result, stream, sort_keys=True)
         return result
     except BaseException:
@@ -159,6 +161,181 @@ def capture_source19_before_h_failure(root, action_exited):
 
 
 # END TEST-ONLY before-H diagnostics.
+
+# TEST-ONLY startup observation. This never issues a P/H result or stop receipt.
+def source19_action_proc_identity(process, descriptor, expected_fd, expected_parent):
+    try:
+        opened = os.fstat(descriptor)
+        current_fd = (opened.st_dev, opened.st_ino, opened.st_mode)
+        if current_fd != expected_fd:
+            raise AssertionError('SOURCE19_ACTION_PIDFD_CHANGED')
+        info = Path(f'/proc/self/fdinfo/{descriptor}').read_text(encoding='ascii')
+        pids = re.findall(r'^Pid:\s*([0-9]+)\s*$', info, re.M)
+        if pids != [str(process.pid)]:
+            raise AssertionError('SOURCE19_ACTION_PIDFD_TARGET_CHANGED')
+        raw = Path(f'/proc/{process.pid}/stat').read_bytes()
+        if not raw.startswith(str(process.pid).encode('ascii') + b' ('):
+            raise AssertionError('SOURCE19_ACTION_PROCESS_UNKNOWN')
+        fields = raw.rsplit(b')', 1)[1].split()
+        if len(fields) < 20 or not fields[1].isdigit() or not fields[19].isdigit():
+            raise AssertionError('SOURCE19_ACTION_PROCESS_UNKNOWN')
+        parent, start = int(fields[1]), int(fields[19])
+        if parent != expected_parent or start <= 0:
+            raise AssertionError('SOURCE19_ACTION_PROCESS_IDENTITY_CHANGED')
+        if fields[0] in (b'Z', b'X', b'x'):
+            raise AssertionError('SOURCE19_ACTION_PROCESS_TERMINAL')
+        if fields[0] not in (b'R', b'S', b'D', b'T', b't', b'I', b'P'):
+            raise AssertionError('SOURCE19_ACTION_PROCESS_UNKNOWN')
+        return (current_fd, parent, start)
+    except (OSError, UnicodeError, ValueError, IndexError):
+        raise AssertionError('SOURCE19_ACTION_PROCESS_UNAVAILABLE') from None
+
+
+def source19_wait_action_identity(process, descriptor, expected_argv, owner, deadline):
+    pid, parent = process.pid, os.getpid()
+    if type(pid) is not int or pid <= 1 or type(descriptor) is not int or descriptor < 0:
+        raise AssertionError('SOURCE19_ACTION_PROCESS_UNKNOWN')
+    if type(expected_argv) is not list or len(expected_argv) != 2 or any(type(value) is not bytes or not value or b'\0' in value for value in expected_argv):
+        raise AssertionError('SOURCE19_ACTION_ARGV_UNKNOWN')
+    valid_clock = lambda value: type(value) in (int, float) and float('-inf') < value < float('inf')
+    if not valid_clock(deadline) or not valid_clock(owner.deadline):
+        raise AssertionError('SOURCE19_ACTION_DEADLINE_UNKNOWN')
+    opened = os.fstat(descriptor)
+    expected_fd = (opened.st_dev, opened.st_ino, opened.st_mode)
+    cutoff = min(deadline, owner.deadline)
+    identity, empty_samples = None, 0
+    while True:
+        if not valid_clock(owner.deadline):
+            raise AssertionError('SOURCE19_ACTION_DEADLINE_UNKNOWN')
+        cutoff = min(cutoff, owner.deadline)
+        if owner.active is not True or process.pid != pid:
+            raise AssertionError('SOURCE19_ACTION_OWNER_CHANGED')
+        if time.monotonic() >= cutoff:
+            raise AssertionError('ACTUAL_ACTION_OBSERVER_DEADLINE')
+        try:
+            ended = os.waitid(os.P_PIDFD, descriptor, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+        except OSError:
+            raise AssertionError('SOURCE19_ACTION_EXIT_OR_OWNERSHIP_UNKNOWN') from None
+        if ended is not None:
+            raise AssertionError('SOURCE19_ACTION_EXITED_BEFORE_IDENTITY')
+        before = source19_action_proc_identity(process, descriptor, expected_fd, parent)
+        if identity is None:
+            identity = before
+        if before != identity:
+            raise AssertionError('SOURCE19_ACTION_PROCESS_IDENTITY_CHANGED')
+        try:
+            raw = Path(f'/proc/{pid}/cmdline').read_bytes()
+        except OSError:
+            raise AssertionError('SOURCE19_ACTION_ARGV_UNAVAILABLE') from None
+        after = source19_action_proc_identity(process, descriptor, expected_fd, parent)
+        if after != identity:
+            raise AssertionError('SOURCE19_ACTION_PROCESS_IDENTITY_CHANGED')
+        if raw:
+            if not raw.endswith(b'\0') or raw.split(b'\0')[:-1] != expected_argv:
+                raise AssertionError('SOURCE19_ACTION_ARGV_CHANGED')
+            try:
+                ended = os.waitid(os.P_PIDFD, descriptor, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+            except OSError:
+                raise AssertionError('SOURCE19_ACTION_EXIT_OR_OWNERSHIP_UNKNOWN') from None
+            if ended is not None:
+                raise AssertionError('SOURCE19_ACTION_EXITED_BEFORE_IDENTITY')
+            if source19_action_proc_identity(process, descriptor, expected_fd, parent) != identity:
+                raise AssertionError('SOURCE19_ACTION_PROCESS_IDENTITY_CHANGED')
+            if not valid_clock(owner.deadline):
+                raise AssertionError('SOURCE19_ACTION_DEADLINE_UNKNOWN')
+            if owner.active is not True or process.pid != pid or time.monotonic() >= min(cutoff, owner.deadline):
+                raise AssertionError('ACTUAL_ACTION_OBSERVER_DEADLINE')
+            return {'status': 'EXACT_LIVE_ACTION_IDENTITY_OBSERVED', 'emptySamples': empty_samples,
+                'sourceAdmission': False}
+        # Empty alone grants nothing: same retained live child, FD, parent and
+        # start identity must be observed again within the EXISTING cutoff.
+        empty_samples += 1
+        remaining = min(cutoff, owner.deadline) - time.monotonic()
+        if remaining <= 0:
+            raise AssertionError('ACTUAL_ACTION_OBSERVER_DEADLINE')
+        time.sleep(min(0.002, remaining))
+
+
+def source19_waitid_returncode(value, pid):
+    try:
+        if value is None or type(value.si_pid) is not int or value.si_pid != pid:
+            return None
+        if type(value.si_code) is not int or type(value.si_status) is not int:
+            return None
+        if value.si_code == os.CLD_EXITED and 0 <= value.si_status <= 255:
+            return value.si_status
+        if value.si_code in (os.CLD_KILLED, os.CLD_DUMPED) and 1 <= value.si_status <= 64:
+            return -value.si_status
+    except BaseException:
+        pass
+    return None
+
+
+def source19_drain_action_observation(owner, helper, process, descriptor):
+    # Forward the SAME actual normal helper. No replacement owner/body, extra
+    # reaping, fabricated wait result or permission to skip kernel ECHILD.
+    original = helper._child_state
+    try:
+        pid = process.pid if process is not None else None
+        known = process.returncode if process is not None else None
+    except BaseException:
+        pid, known = None, None
+    known = known if type(known) is int and -64 <= known <= 255 else None
+    evidence = 'POPEN_WAITPID_BEFORE_DRAIN' if known is not None else 'UNKNOWN'
+    before_drain = 'EXITED' if known is not None else 'UNKNOWN'
+    observed, malformed = [], False
+    if process is not None and known is None and descriptor is not None:
+        try:
+            info = Path(f'/proc/self/fdinfo/{descriptor}').read_text(encoding='ascii')
+            if re.findall(r'^Pid:\s*([0-9]+)\s*$', info, re.M) != [str(pid)]:
+                raise ValueError('Unbound observer FD')
+            before = os.waitid(os.P_PIDFD, descriptor, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+            known = source19_waitid_returncode(before, pid)
+            before_drain = 'LIVE' if before is None else 'EXITED' if known is not None else 'UNKNOWN'
+            if known is not None:
+                evidence = 'WAITID_WNOWAIT_BEFORE_DRAIN'
+        except BaseException:
+            before_drain = 'UNKNOWN'
+    def forwarding(*args, **kwargs):
+        nonlocal malformed
+        value = original(*args, **kwargs)  # Same args/result/first exception.
+        try:
+            if value is not None and value.si_pid == pid:
+                code = source19_waitid_returncode(value, pid)
+                if code is None or len(observed) >= 8:
+                    malformed = True
+                else:
+                    observed.append(code)
+        except BaseException:
+            malformed = True
+        return value
+    helper._child_state = forwarding
+    try:
+        owner.drain()  # The unchanged actual normal owner must reach ECHILD.
+    finally:
+        helper._child_state = original
+    if observed:
+        if any(code != observed[0] for code in observed) or (known is not None and known != observed[0]):
+            malformed = True
+        elif known is None:
+            known, evidence = observed[0], 'ACTUAL_NORMAL_DRAIN_WAITID'
+    if malformed:
+        known, evidence = None, 'UNKNOWN'
+    return {'returncode': known, 'returncodeEvidence': evidence, 'beforeDrain': before_drain,
+        'timing': 'AFTER_CLEANUP_NOT_PRIMARY_CAUSE' if before_drain != 'EXITED' else 'EXIT_OBSERVED_BEFORE_CLEANUP',
+        'sourceAdmission': False}
+
+
+def source19_post_echild_failure(root, drained, action_exited, before):
+    if drained is not True:
+        return {'capture': 'ECHILD_UNPROVEN', 'sourceAdmission': False}
+    # P-exit never proved that inherited stderr writers had stopped. Keep the
+    # first capture/receipt and ALWAYS make a separate stable post-drain one.
+    return {'timing': 'AFTER_CLEANUP_NOT_PRIMARY_CAUSE', 'sourceAdmission': False,
+        'before': before, 'child': capture_source19_before_h_failure(root, action_exited,
+            receipt_name='source19-after-echild-child-failure.json')}
+# END TEST-ONLY startup observation.
+
 
 def strict_json(path, maximum=8 * 1024 * 1024):
     info = path.lstat()
@@ -586,6 +763,7 @@ class SourceOriginalCpInstallNative(unittest.TestCase):
         owner = helper._LinuxSubsetOwner(time.monotonic() + 180)
         process, logs, retained, observed, altered = None, [], [], None, False
         case_failure = None
+        before_h, action_pidfd = None, None
         cp_directory = None
         pre_ack_originals = None
         initial_originals = self.original_destinations(root, protocol)
@@ -611,12 +789,13 @@ class SourceOriginalCpInstallNative(unittest.TestCase):
             transport.start()
             for name in ('stdout', 'stderr'):
                 logs.append((root / name).open('wb'))
+            end = time.monotonic() + 150
             process = subprocess.Popen([str(NODE), str(action)], cwd=root, env=environment,
                 stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1])
             action_pidfd = os.pidfd_open(process.pid); retained.append(action_pidfd)
+            source19_wait_action_identity(process, action_pidfd, [os.fsencode(NODE), os.fsencode(action)], owner, end)
             self.assertEqual(Path(f'/proc/{process.pid}/cmdline').read_bytes().split(b'\0')[:-1],
                 [os.fsencode(NODE), os.fsencode(action)])
-            end = time.monotonic() + 150
             while process.poll() is None:
                 self.assertLess(time.monotonic(), end, 'ACTUAL_ACTION_OBSERVER_DEADLINE')
                 if FIXED.exists() and born_fixed is None:
@@ -757,9 +936,14 @@ class SourceOriginalCpInstallNative(unittest.TestCase):
             # This outer actual subreaper is test cleanup only, never P's ACK.
             # Unknown stop keeps every file. No Promise/child.close substitutes.
             cleanup_failure = None
+            drained, action_exit = False, None
             try:
                 owner.deadline = min(owner.deadline, time.monotonic() + 8)
-                owner.drain()
+                if case_failure is None:
+                    owner.drain()
+                else:
+                    action_exit = source19_drain_action_observation(owner, helper, process, action_pidfd)
+                drained = True
                 owner.leave()
                 if process is not None:
                     process.wait(timeout=1)
@@ -773,6 +957,15 @@ class SourceOriginalCpInstallNative(unittest.TestCase):
             for stream in logs:
                 try:
                     stream.close()
+                except BaseException as error:
+                    cleanup_failure = cleanup_failure or error
+            if case_failure is not None:
+                try:
+                    post_echild = source19_post_echild_failure(root, drained,
+                        process is not None and process.poll() is not None, before_h)
+                    print(json.dumps({'source19CpPostECHILD': post_echild, 'outerECHILDObserved': drained,
+                        'actionExit': action_exit or {'returncode': None, 'returncodeEvidence': 'UNKNOWN'},
+                        'sourceAdmission': False}))
                 except BaseException as error:
                     cleanup_failure = cleanup_failure or error
             try:
