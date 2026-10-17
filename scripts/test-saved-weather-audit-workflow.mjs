@@ -180,7 +180,7 @@ test('older RAW source is one explicit fixed read scope and cannot relabel authe
   assert.match(text, /RAW_SOURCE_ARGS: \$\{\{ inputs\.raw_manifest_source != '' && format\('--raw-manifest-source \{0\}', inputs\.raw_manifest_source\) \|\| '' \}\}/);
   assert.ok(text.includes('${RAW_SOURCE_ARGS}'));
   assert.doesNotMatch(text, /restore-keys:|actions\/cache\/save|update-dmi-bulk\.py|sha256sum/);
-  assert.equal((text.match(/^      [a-z_]+:\n        description:/gm) ?? []).length, 10, 'all nine previous inputs plus one bounded default-off selected preflight');
+  assert.equal((text.match(/^      [a-z_]+:\n        description:/gm) ?? []).length, 11, 'all ten previous inputs plus one bounded default-off current-window diagnosis');
 });
 
 test('RAW file presence is separate default-off metadata inventory, not numeric inspection', () => {

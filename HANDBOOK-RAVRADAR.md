@@ -1,5 +1,9 @@
 ## 89.251 Kortet kan vises for en valgt prognosetime
 
+**Kildestatus 17. oktober:** Pakkelæserens lukningskontrol er rettet lokalt uden ændring af scoremodel eller gamle data. Den præcise samlede kildekontrol og offentlig 580-effekt mangler fortsat. Den almindelige vejropdatering fejlede særskilt under beregningen; et krypteret checkpoint er gemt til videre undersøgelse. Offentlig 579 bruger fortsat det gemte datasæt. Ældre pending-udsagn herunder er dateret historik.
+
+Den normale fejlgren får kun en afgrænset, privat rapport over forskelle i gemt og genberegnet strømhistorik. Det oprindelige stop og alle datakontroller bevares. Syv måltilfælde og 26 normale indgangstilfælde består. En særskilt frakoblet kontrol må kun bruge det præcise autentificerede checkpoint i en privat arbejdskopi uden ny vejrhentning eller offentlig levering. Den faktiske checkpoint-diagnose og en rettet almindelig levering er endnu ikke bevist. Tidsskyderen ændrer fortsat kun visningen.
+
 **Kildekontrol 17. oktober:** Den anden kontrol blev afbrudt omkring jobbets 45-minuttersloft med fortsat bestået aktivitet. Kun PR-jobbets loft og den normale tilsvarende forventning hæves til 60 minutter; ingen tests eller vejrfrister fjernes. Den samlede nye kontrol og offentlig 580-effekt mangler fortsat. Offentlig 579 er leveret med genbrugte data; den nye almindelige vejrhentning er ikke færdigverificeret. Ældre pending-udsagn herunder er dateret historik.
 
 **Kort fortalt:** Tidsskyderen ændrer det tidspunkt, du ser på kortet og i den åbne zone. Den ændrer ikke vejret, RavScore eller det aktuelle tidspunkt for resten af appen.

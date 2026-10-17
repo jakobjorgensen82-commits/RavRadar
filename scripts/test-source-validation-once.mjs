@@ -106,7 +106,14 @@ const epochSource = fs.readFileSync('scripts/test-weather-state-epoch-input-view
 assert.deepEqual([...epochSource.matchAll(/^test\('([^']+)'/gm)].map(match => match[1])
   .filter(name => /inner-unknown/.test(name)),
 ['normal strict inner-unknown NEW checkpoint follows without relabeling history']);
+const priorIntegratedTargets = 'node --test scripts/test-ravscore-integrated-generator.mjs scripts/test-ravscore-recovery-replay.mjs scripts/test-score-prognosis-plain-copy.mjs';
+const currentWindowAuditTarget = 'scripts/test-ravscore-initial-current-window-audit.mjs scripts/test-saved-current-window-scratch.mjs';
+const currentIntegratedTargets = priorIntegratedTargets + ' ' + currentWindowAuditTarget;
+assert.equal(declared.filter(command => command === currentIntegratedTargets).length, 1,
+  'The exact diagnostic target must execute once alongside the unchanged integrated targets.');
+assert.equal(currentIntegratedTargets.replace(' ' + currentWindowAuditTarget, ''), priorIntegratedTargets);
 const replaced = new Map([
+  [priorIntegratedTargets, [currentIntegratedTargets]],
   [successorCheck, [currentBuilder]],
   [nativeFrozenCheck, [host('native'), ...warmupChecks]],
   [nativeCheck, []], // The same eight targets now execute in the genuine host.

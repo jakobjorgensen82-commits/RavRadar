@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
-import { createReadStream, fstat, constants } from 'node:fs';
+import { createReadStream, fstat, fstatSync, Stats, constants } from 'node:fs';
 import { types } from 'node:util';
 import os from 'node:os';
 import path from 'node:path';
@@ -41,6 +41,38 @@ const safePath = (relative, includeOperationalProgress = false) => Object.values
   || includeOperationalProgress === true && Object.values(PRIVATE_WEATHER_PROGRESS_ONLY_FILES).includes(relative)
   || relative.startsWith(CP_PREFIX) && [CP_OBJECT, CP_RECEIPT, CP_STATIC].some(pattern => pattern.test(relative.slice(CP_PREFIX.length)));
 
+function fileDescriptorIdentity(stat, expectedPrototype = null) {
+  if (stat === null || typeof stat !== 'object' || types.isProxy(stat)) return null;
+  const prototype = Object.getPrototypeOf(stat);
+  if (!prototype || types.isProxy(prototype)
+    || Object.getPrototypeOf(prototype) !== Object.getPrototypeOf(Stats.prototype)
+    || expectedPrototype !== null && prototype !== expectedPrototype) return null;
+  const dev = Object.getOwnPropertyDescriptor(stat, 'dev')?.value;
+  const ino = Object.getOwnPropertyDescriptor(stat, 'ino')?.value;
+  const mode = Object.getOwnPropertyDescriptor(stat, 'mode')?.value;
+  if (typeof dev !== 'bigint' || dev < 0n || typeof ino !== 'bigint' || ino < 0n
+    || typeof mode !== 'bigint' || (mode & 0o170000n) !== 0o100000n) return null;
+  return { dev, ino, prototype };
+}
+function ownFileDescriptorIdentity(fd) {
+  try { return fileDescriptorIdentity(fstatSync(fd, { bigint: true })); }
+  catch { return null; } // Unknown identity never authorizes the reuse branch.
+}
+async function ownedFileDescriptorClosed(fd, before) {
+  try {
+    const probe = await new Promise(resolve => fstat(fd, { bigint: true }, (error, stat) => resolve({ error, stat })));
+    if (probe.error !== null && typeof probe.error === 'object' && !types.isProxy(probe.error)
+      && Object.getOwnPropertyDescriptor(probe.error, 'code')?.value === 'EBADF') return true;
+    // A close can finish before another OS open reuses the numeric fd. Only a
+    // validated different file identity proves that our original fd is gone.
+    // Same-inode reuse and unknown/null/proxy probes remain unproved. Never
+    // close the replacement: it belongs to another operation, not this pack.
+    if (probe.error !== null || before === null || before === undefined) return false;
+    const after = fileDescriptorIdentity(probe.stat, before.prototype);
+    return Boolean(after && (after.dev !== before.dev || after.ino !== before.ino));
+  } catch { return false; }
+}
+
 async function checkedFile(root, relative, { optional = false, maximumBytes = MAX_PACK_BYTES, includeOperationalProgress = false } = {}) {
   if (!safePath(relative, includeOperationalProgress) && relative !== PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath) fail('WEATHER_PACK_PATH_NOT_ALLOWLISTED');
   let current = path.resolve(root);
@@ -59,8 +91,8 @@ async function checkedFile(root, relative, { optional = false, maximumBytes = MA
 }
 async function* readPackChunks(absolute, readState) {
   const stream = createReadStream(absolute);
-  let fd, failure;
-  stream.once('open', number => { fd = number; });
+  let fd, identity, failure;
+  stream.once('open', number => { fd = number; identity = ownFileDescriptorIdentity(number); });
   const completion = new Promise(resolve => stream.once('close', resolve));
   stream.once('error', error => { failure ??= { error }; });
   try {
@@ -68,12 +100,7 @@ async function* readPackChunks(absolute, readState) {
   } catch (error) { failure ??= { error }; }
   finally {
     await completion;
-    let closed = false;
-    try {
-      const probe = await new Promise(resolve => fstat(fd, (error, stat) => resolve({ error, stat })));
-      closed = probe.error !== null && typeof probe.error === 'object' && !types.isProxy(probe.error)
-        && Object.getOwnPropertyDescriptor(probe.error, 'code')?.value === 'EBADF';
-    } catch { /* Unknown closure cannot authorize success or staging cleanup. */ }
+    const closed = await ownedFileDescriptorClosed(fd, identity);
     if (!closed) {
       readState.closed = false;
       retainedJsonReaders.add(stream);
@@ -105,21 +132,17 @@ export function privateWeatherPackJsonReadsClosed(invocation) {
 async function readSmallJson(file, maximumBytes = MAX_JSON_BYTES, readState) {
   const stat = await fs.lstat(file);
   if (!stat.isFile() || stat.isSymbolicLink() || stat.size > maximumBytes) fail('WEATHER_PACK_JSON_SIZE_INVALID');
-  let handle, fd, value, failure;
+  let handle, fd, identity, value, failure;
   try {
     handle = await fs.open(file, 'r');
     fd = handle.fd; // Capture this own descriptor before the next await.
+    identity = ownFileDescriptorIdentity(fd);
     value = JSON.parse(await handle.readFile('utf8'));
   } catch { failure = { error: new Error('WEATHER_PACK_JSON_INVALID') }; }
   if (handle) {
     try { await handle.close(); }
     catch { failure ??= { error: new Error('WEATHER_PACK_JSON_INVALID') }; }
-    let closed = false;
-    try {
-      const probe = await new Promise(resolve => fstat(fd, (error, stat) => resolve({ error, stat })));
-      closed = probe.error !== null && typeof probe.error === 'object' && !types.isProxy(probe.error)
-        && Object.getOwnPropertyDescriptor(probe.error, 'code')?.value === 'EBADF';
-    } catch { /* An unknown raw probe is not evidence of closure. */ }
+    const closed = await ownedFileDescriptorClosed(fd, identity);
     if (!closed) {
       readState.closed = false;
       retainedJsonReaders.add(handle);
@@ -292,7 +315,7 @@ async function buildPackWithJsonReadLifetime({
   if (parent !== path.join(await fs.realpath(packRoot), '.cache')) fail('WEATHER_PACK_PARENT_INVALID');
   const temporary = `${destination}.tmp-${process.pid}-${crypto.randomUUID()}`;
   const handle = await fs.open(temporary, 'wx', 0o600);
-  let outputFd, closeAttempted = false;
+  let outputFd, outputDescriptorIdentity, closeAttempted = false;
   const expectedHash = crypto.createHash('sha256');
   let expectedBytes = 0;
   const writeOutput = async bytes => {
@@ -339,12 +362,7 @@ async function buildPackWithJsonReadLifetime({
     let failure;
     try { await handle.close(); }
     catch (error) { failure = { error }; }
-    let closed = false;
-    try {
-      const probe = await new Promise(resolve => fstat(outputFd, (error, stat) => resolve({ error, stat })));
-      closed = probe.error !== null && typeof probe.error === 'object' && !types.isProxy(probe.error)
-        && Object.getOwnPropertyDescriptor(probe.error, 'code')?.value === 'EBADF';
-    } catch { /* Unknown output closure cannot authorize publication or cleanup. */ }
+    const closed = await ownedFileDescriptorClosed(outputFd, outputDescriptorIdentity);
     if (!closed) {
       readState.closed = false;
       retainedJsonReaders.add(handle);
@@ -354,7 +372,7 @@ async function buildPackWithJsonReadLifetime({
   };
   const verifyOutputBytes = async () => {
     if (expectedBytes !== size || outputIdentity.size !== BigInt(expectedBytes)) fail('WEATHER_PACK_OUTPUT_SIZE_INVALID');
-    let reader, readerFd, failure;
+    let reader, readerFd, readerDescriptorIdentity, failure;
     const unchanged = async () => {
       try {
         if (!sameFile(await reader.stat({ bigint: true }), outputIdentity)) fail('WEATHER_PACK_OUTPUT_IDENTITY_UNPROVED');
@@ -365,6 +383,7 @@ async function buildPackWithJsonReadLifetime({
       await requireOwnStage();
       reader = await fs.open(temporary, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
       readerFd = reader.fd; // Actual own scan descriptor before another await.
+      readerDescriptorIdentity = ownFileDescriptorIdentity(readerFd);
       await unchanged();
       const buffer = Buffer.allocUnsafe(256 * 1024), actualHash = crypto.createHash('sha256');
       let offset = 0;
@@ -379,12 +398,7 @@ async function buildPackWithJsonReadLifetime({
     } catch (error) { failure = { error }; }
     if (reader) {
       try { await reader.close(); } catch (error) { failure ??= { error }; }
-      let closed = false;
-      try {
-        const probe = await new Promise(resolve => fstat(readerFd, (error, stat) => resolve({ error, stat })));
-        closed = probe.error !== null && typeof probe.error === 'object' && !types.isProxy(probe.error)
-          && Object.getOwnPropertyDescriptor(probe.error, 'code')?.value === 'EBADF';
-      } catch { /* Unknown scan closure cannot authorize publication or cleanup. */ }
+      const closed = await ownedFileDescriptorClosed(readerFd, readerDescriptorIdentity);
       if (!closed) {
         readState.closed = false;
         retainedJsonReaders.add(reader);
@@ -395,6 +409,7 @@ async function buildPackWithJsonReadLifetime({
   };
   try {
     outputFd = handle.fd; // Actual own wx descriptor before another await.
+    outputDescriptorIdentity = ownFileDescriptorIdentity(outputFd);
     const length = Buffer.alloc(4);
     length.writeUInt32BE(manifestBytes.length);
     await writeOutput(Buffer.concat([MAGIC, length, manifestBytes]));
@@ -480,7 +495,7 @@ async function unpackPackWithJsonReadLifetime({
   const epochDigest = epochPack ? crypto.createHash('sha256') : null;
   const output = path.resolve(outputRoot);
   const handle = await fs.open(source.absolute, 'r');
-  let inputFd;
+  let inputFd, inputDescriptorIdentity;
   let unpackFailed = false;
   let position = 0;
   const read = async bytes => {
@@ -497,6 +512,7 @@ async function unpackPackWithJsonReadLifetime({
   };
   try {
     inputFd = handle.fd; // Own archive descriptor, captured before another await.
+    inputDescriptorIdentity = ownFileDescriptorIdentity(inputFd);
     await fs.mkdir(output, { mode: 0o700 }); // caller passes a new private stage
     if (!(await read(MAGIC.length)).equals(MAGIC)) fail('WEATHER_PACK_FORMAT_INVALID');
     const length = (await read(4)).readUInt32BE();
@@ -521,10 +537,11 @@ async function unpackPackWithJsonReadLifetime({
       await fs.mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
       const hash = crypto.createHash('sha256');
       const destinationHandle = await fs.open(destination, 'wx', 0o600);
-      let destinationFd;
+      let destinationFd, destinationDescriptorIdentity;
       let copyFailed = false;
       try {
         destinationFd = destinationHandle.fd; // Own output, before another await.
+        destinationDescriptorIdentity = ownFileDescriptorIdentity(destinationFd);
         for (let remaining = file.bytes; remaining > 0;) {
           const chunk = await read(Math.min(64 * 1024, remaining));
           remaining -= chunk.length;
@@ -538,12 +555,7 @@ async function unpackPackWithJsonReadLifetime({
         let closeFailure;
         try { await destinationHandle.close(); }
         catch (error) { closeFailure = { error }; }
-        let closed = false;
-        try {
-          const probe = await new Promise(resolve => fstat(destinationFd, (error, stat) => resolve({ error, stat })));
-          closed = probe.error !== null && typeof probe.error === 'object' && !types.isProxy(probe.error)
-            && Object.getOwnPropertyDescriptor(probe.error, 'code')?.value === 'EBADF';
-        } catch { /* Unknown output closure retains this exact invocation's work. */ }
+        const closed = await ownedFileDescriptorClosed(destinationFd, destinationDescriptorIdentity);
         if (!closed) {
           readState.closed = false;
           retainedJsonReaders.add(destinationHandle);
@@ -572,12 +584,7 @@ async function unpackPackWithJsonReadLifetime({
     let closeFailure;
     try { await handle.close(); }
     catch (error) { closeFailure = { error }; }
-    let closed = false;
-    try {
-      const probe = await new Promise(resolve => fstat(inputFd, (error, stat) => resolve({ error, stat })));
-      closed = probe.error !== null && typeof probe.error === 'object' && !types.isProxy(probe.error)
-        && Object.getOwnPropertyDescriptor(probe.error, 'code')?.value === 'EBADF';
-    } catch { /* Preserve the primary failure and the actual unknown handle. */ }
+    const closed = await ownedFileDescriptorClosed(inputFd, inputDescriptorIdentity);
     if (!closed) {
       readState.closed = false;
       retainedJsonReaders.add(handle);

@@ -2293,9 +2293,10 @@ test('main pack archive first-error and probe / ' + mode + ' / ' + fault, { time
     } catch (error) { observationFailure = { error }; throw error; }
   };
   hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_NATIVE_OR_PROVIDER_CHILD_ALLOWED'); }));
-  hooks.push(t.mock.method(native.default, 'fstat', (number, callback) => {
+  hooks.push(t.mock.method(native.default, 'fstat', (...args) => {
+    const number = args[0], callback = args.at(-1);
     const stack = new Error().stack;
-    if (!armed || !reader || number !== fd || !stack.includes('at unpackPackWithJsonReadLifetime (')) return originalFstat(number, callback);
+    if (!armed || !reader || number !== fd || !stack.includes('at unpackPackWithJsonReadLifetime (')) return originalFstat(...args);
     probeCalls++;
     if (fault === 'probe-callback-null') { callback(null); return; }
     if (fault === 'probe-proxy-ebadf') {
@@ -2304,7 +2305,7 @@ test('main pack archive first-error and probe / ' + mode + ' / ' + fault, { time
         getOwnPropertyDescriptor(target, key) { proxyTraps++; return Reflect.getOwnPropertyDescriptor(target, key); },
       })); return;
     }
-    return originalFstat(number, callback);
+    return originalFstat(...args);
   }));
   syncBuiltinESMExports();
   hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
@@ -2742,9 +2743,10 @@ test('main unpack destination output primary and probe / ' + mode + ' / ' + faul
     } catch (error) { observationFailure = { error }; throw error; }
   };
   hooks.push(t.mock.method(childProcess, 'spawn', () => { launches++; throw Error('NO_NATIVE_OR_PROVIDER_CHILD_ALLOWED'); }));
-  hooks.push(t.mock.method(native.default, 'fstat', (number, callback) => {
+  hooks.push(t.mock.method(native.default, 'fstat', (...args) => {
+    const number = args[0], callback = args.at(-1);
     const stack = new Error().stack;
-    if (!armed || !writer || number !== fd || !stack.includes('at unpackPackWithJsonReadLifetime (')) return originalFstat(number, callback);
+    if (!armed || !writer || number !== fd || !stack.includes('at unpackPackWithJsonReadLifetime (')) return originalFstat(...args);
     probeCalls++;
     if (fault === 'probe-callback-null') { callback(null); return; }
     if (fault === 'probe-proxy-ebadf') {
@@ -2753,7 +2755,7 @@ test('main unpack destination output primary and probe / ' + mode + ' / ' + faul
         getOwnPropertyDescriptor(target, key) { proxyTraps++; return Reflect.getOwnPropertyDescriptor(target, key); },
       })); return;
     }
-    return originalFstat(number, callback);
+    return originalFstat(...args);
   }));
   syncBuiltinESMExports();
   hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
@@ -3043,16 +3045,17 @@ test('main pack stream first error and probe / ' + fault, { timeout: 30_000 }, a
     };
     return hash;
   }));
-  hooks.push(t.mock.method(native, 'fstat', (number, callback) => {
+  hooks.push(t.mock.method(native, 'fstat', (...args) => {
+    const number = args[0], callback = args.at(-1);
     if (!armed || !stream || number !== fd || !new Error().stack.includes('at readPackChunks ('))
-      return Reflect.apply(original.fstat, native, [number, callback]);
+      return Reflect.apply(original.fstat, native, args);
     probes++; assert.equal(closeEvents, 1);
     if (fault === 'probe-null') { callback(null); return; }
     if (fault === 'probe-proxy') {
       callback(new Proxy({ code: 'EBADF' }, { get() { traps++; throw Error('NO_PROXY_GET'); },
         getOwnPropertyDescriptor() { traps++; throw Error('NO_PROXY_DESCRIPTOR'); } })); return;
     }
-    return Reflect.apply(original.fstat, native, [number, callback]);
+    return Reflect.apply(original.fstat, native, args);
   }));
   syncBuiltinESMExports();
   hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
@@ -3273,12 +3276,13 @@ test('main pack build output raw first error / ' + fault, { timeout: 30_000 }, a
     } catch (error) { observationFailure = { error }; throw error; }
     return opened;
   }));
-  hooks.push(t.mock.method(native, 'fstat', (number, callback) => {
+  hooks.push(t.mock.method(native, 'fstat', (...args) => {
+    const number = args[0], callback = args.at(-1);
     if (!armed || !writer || number !== fd || !new Error().stack.includes('at closeOutput ('))
-      return Reflect.apply(original.fstat, native, [number, callback]);
+      return Reflect.apply(original.fstat, native, args);
     probes++;
     if (fault === 'probe-null-open') { callback(null); return; }
-    return Reflect.apply(original.fstat, native, [number, callback]);
+    return Reflect.apply(original.fstat, native, args);
   }));
   syncBuiltinESMExports();
   hooks.push(t.mock.method(fs, 'mkdtemp', async (...args) => {
@@ -3668,12 +3672,13 @@ test('main pack publication raw first error / ' + fault, { timeout: 30_000 }, as
     } catch (error) { observationFailure = { error }; throw error; }
     return opened;
   }));
-  hooks.push(t.mock.method(native, 'fstat', (number, callback) => {
+  hooks.push(t.mock.method(native, 'fstat', (...args) => {
+    const number = args[0], callback = args.at(-1);
     if (!armed || !writer || number !== fd || !new Error().stack.includes('at closeOutput ('))
-      return Reflect.apply(original.fstat, native, [number, callback]);
+      return Reflect.apply(original.fstat, native, args);
     probes++;
     if (fault === 'probe-null-open') { callback(null); return; }
-    return Reflect.apply(original.fstat, native, [number, callback]);
+    return Reflect.apply(original.fstat, native, args);
   }));
   hooks.push(t.mock.method(fs, 'rename', async (from, to, ...args) => {
     if (!armed || !writer || path.resolve(String(from)) !== outputPath)
@@ -3979,9 +3984,10 @@ test('main pack own byte scan boundary / ' + fault, { timeout: 30_000 }, async t
     opened.close=async()=>{outputCloses++;await outputClose();assert.equal(rawState(outputFd,outputIdentity),'CLOSED');};
     return opened;
   }));
-  hooks.push(t.mock.method(native,'fstat',(fd,callback)=>{
+  hooks.push(t.mock.method(native,'fstat',(...args)=>{
+    const fd=args[0],callback=args.at(-1);
     if(!armed||!reader||fd!==readerFd||!new Error().stack.includes('at verifyOutputBytes ('))
-      return Reflect.apply(original.fstat,native,[fd,callback]);
+      return Reflect.apply(original.fstat,native,args);
     scanProbes++;
     if(fault==='probe-null-open'){callback(null);return;}
     if(fault==='probe-false-open'){callback(false);return;}
@@ -3989,7 +3995,7 @@ test('main pack own byte scan boundary / ' + fault, { timeout: 30_000 }, async t
     if(fault==='probe-inherited-open'){callback(Object.create({code:'EBADF'}));return;}
     if(fault==='probe-accessor-open'){callback(Object.defineProperty({},'code',{get(){traps++;return 'EBADF';}}));return;}
     if(fault==='probe-proxy-open'){callback(new Proxy({code:'EBADF'},{get(){traps++;return 'EBADF';},getOwnPropertyDescriptor(){traps++;return {value:'EBADF',configurable:true};}}));return;}
-    return Reflect.apply(original.fstat,native,[fd,callback]);
+    return Reflect.apply(original.fstat,native,args);
   }));
   hooks.push(t.mock.method(fs,'unlink',async(file,...rest)=>{
     if(armed&&output&&path.resolve(String(file))===stage)unlinks++;

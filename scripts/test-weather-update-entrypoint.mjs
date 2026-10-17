@@ -15,6 +15,16 @@ const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 // older exact-source oracles. The complete genuine 903307 updater remains the
 // immutable baseline; the actual epoch caller has its own normal-path tests.
 function inverseWeatherStateEpochIntegration(source) {
+  // Remove only the diagnostic import/catch before every genuine historical oracle.
+  // This issues no new product hash and preserves the original guard and throw.
+  for (const diagnosticHunk of [
+    "import { summarizeRavScoreInitialCurrentWindow } from './lib/ravscore-initial-current-window-audit.mjs';\n",
+    "        if (error?.code === 'RAVSCORE_INITIAL_CURRENT_NEW_USE_NOT_READY') {\n          // Diagnostic only: unchanged normal reconstruction and original throw.\n          // No private values, points, source identities or timestamps leave it.\n          try {\n            const diagnosis = summarizeRavScoreInitialCurrentWindow({\n              part: { ...part, zoneId }, zone, initialSelection,\n              previousCandidateGContinuation, recoverySources,\n              liveCurrentPilot, nativeCadenceHoldHours,\n            });\n            console.error('RAVSCORE_INITIAL_CURRENT_WINDOW_AUDIT ' + JSON.stringify(diagnosis));\n          } catch {\n            console.error('RAVSCORE_INITIAL_CURRENT_WINDOW_AUDIT_UNAVAILABLE');\n          }\n        }\n",
+  ]) {
+    assert.equal(source.split(diagnosticHunk).length, 2,
+      'each exact reviewed current-window diagnostic hunk must occur once');
+    source = source.replace(diagnosticHunk, '');
+  }
   // Only the four reviewed scalar-orchestration hunks are removed before
   // every unchanged historical whole-source oracle below.
   const scalarHunks = [

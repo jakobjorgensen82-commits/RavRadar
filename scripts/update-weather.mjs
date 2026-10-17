@@ -156,6 +156,7 @@ import {
   retainOwnerCurrentTransitionOriginal,
   selectRavScoreProductionInitialState,
 } from './lib/ravscore-production-part-pipeline.mjs';
+import { summarizeRavScoreInitialCurrentWindow } from './lib/ravscore-initial-current-window-audit.mjs';
 import {
   buildNewestValidRavScoreRecoverySources,
   summarizeIsolatedRavScoreWaveReplayConflicts,
@@ -2395,6 +2396,20 @@ function scoreCoastalPartsRuntime(
             ),
         });
       } catch (error) {
+        if (error?.code === 'RAVSCORE_INITIAL_CURRENT_NEW_USE_NOT_READY') {
+          // Diagnostic only: unchanged normal reconstruction and original throw.
+          // No private values, points, source identities or timestamps leave it.
+          try {
+            const diagnosis = summarizeRavScoreInitialCurrentWindow({
+              part: { ...part, zoneId }, zone, initialSelection,
+              previousCandidateGContinuation, recoverySources,
+              liveCurrentPilot, nativeCadenceHoldHours,
+            });
+            console.error('RAVSCORE_INITIAL_CURRENT_WINDOW_AUDIT ' + JSON.stringify(diagnosis));
+          } catch {
+            console.error('RAVSCORE_INITIAL_CURRENT_WINDOW_AUDIT_UNAVAILABLE');
+          }
+        }
         if (error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT'
           && error?.message === 'RavScore recovery replay has a conflicting current component') {
           // A failing cache build may have two differently projected, valid
