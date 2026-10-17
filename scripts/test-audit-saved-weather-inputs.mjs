@@ -329,6 +329,9 @@ async function fixture(t, { corrupt = false, changedAt = Infinity, wrongContract
   await write(predecessorRoot, 'scripts/protected-private-production-runtime.mjs', `export * from ${JSON.stringify(pathToFileURL(path.join(repositoryRoot, 'scripts/protected-private-production-runtime.mjs')).href)};`);
   await write(predecessorRoot, 'scripts/private-production-runtime-workflow.mjs', `export const privateRuntimeContractHashes = async () => (${JSON.stringify(wrongContracts ? { ...contractHashes, fullRuntimeContractSha256: 'd'.repeat(64) } : contractHashes)});`);
   await write(predecessorRoot, 'js/core/ravscore-model-contract.js', `export const ravScoreModelBinding = () => (${JSON.stringify(ravScoreModelBinding())});`);
+  for (const file of ['scripts/lib/coastal-point-staging-contract.mjs', 'scripts/lib/ravscore-sampling-context.mjs']) {
+    await write(predecessorRoot, file, `export * from ${JSON.stringify(pathToFileURL(path.join(repositoryRoot, file)).href)};`);
+  }
   await write(progressRoot, 'data/live/conditions.json', conditions);
   await write(progressRoot, '.cache/dmi-active-complete.json', nativeProofs ? nativeData.donor(nativeData.native.slice(1))
     : { zones: {}, weatherEngine: { componentFallback: { openMeteo: { requests: 999 } } } });
@@ -435,6 +438,70 @@ test('authenticated baseline component pack and exact progress expose all five n
   assert.deepEqual((await fs.readdir(privateRoot)).sort(), ['audit.json', 'describe.json', 'progress.encrypted', 'source.json']);
   await assert.rejects(fs.access(path.join(source, 'baseline-components')));
   safeReport(report, privateRoot);
+});
+
+test('embedded sampling categories do not confuse genuine legacy original proof with corrected lookup proof', async t => {
+  const folder = await temp(t);
+  const part = { partId: 'coastal-part-sensitive', zoneId: 'zone-sensitive', waterPoint: [8, 55] };
+  const parts = new Map([[part.partId, part]]);
+  for (const variant of ['legacy-absent', 'legacy-null', 'coherent', 'contradictory', 'source-invalid']) {
+    const f = nativeFixture(part);
+    for (const native of f.native) {
+      const source = native.sources.current;
+      if (variant === 'legacy-null') source.nativeGridSampling = null;
+      if (['coherent', 'source-invalid'].includes(variant)) source.nativeGridSampling = {
+        contractId: 'dmi-native-grid-sampling-v1', elementIndex: 71,
+        gridIndexIdentitySha256: 'd'.repeat(64), coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1',
+        gridDefinitionSha256: source.gridDefinitionSha256, gridPoint: [...source.gridPoint],
+        fieldSet: [...source.fieldSet], optionalFieldSet: [...source.optionalFieldSet],
+      };
+      if (variant === 'contradictory') source.nativeGridSampling = {};
+    }
+    const hourly = buildDmiForecastHourly({ ocean: f.native.map(row => ({ step: row.time,
+      'current-u': row['current-u'], 'current-v': row['current-v'], provenance: row.sources })),
+      generatedAt: f.reference, startAt: f.reference, hours: DMI_FORECAST_HOURS, sourceCadenceMinutes: 180 }).hourly;
+    if (variant === 'source-invalid') hourly[0].sources.current.entityId += '-different';
+    const donor = f.donor(f.native), before = JSON.stringify({ hourly, donor });
+    const index = await saveContinuity(folder, variant + '-forecast.json', [part], hourly, f.reference);
+    await write(folder, variant + '-donor.json', donor);
+    // Synthetic diagnostic split only; the real default caller obtains this
+    // time with the authenticated B producer's unchanged normal state parser.
+    const bStateTimes = new Map([[part.partId, new Date(Date.parse(f.reference) + 3_600_000).toISOString()]]);
+    const report = await measureSavedNativeProofAvailability({ baselineIndex: index, progressIndex: index, parts,
+      donorFiles: { baselineBulk: path.join(folder, variant + '-donor.json') }, bStateTimes });
+    for (const snapshot of ['baseline', 'progress']) {
+      const summary = report[snapshot].embeddedGridSampling, all = summary.all;
+      assert.equal(summary.sourceScope, 'PERSISTED_ROW_SOURCES_CURRENT_NOT_REPLAY_SELECTION');
+      assert.equal(summary.boundaryScope, 'AUTHENTICATED_B_INTEGRATED_STATE_TIME_NOT_CENTRAL_S');
+      assert.equal(summary.boundaryPartsKnown, 1); assert.equal(summary.boundaryPartsUnknown, 0);
+      assert.equal(all.rows, 5); assert.equal(summary.atOrBeforeBState.rows, 2);
+      assert.equal(summary.afterBState.rows, 3); assert.equal(summary.unknownBState.rows, 0);
+      const expected = variant.startsWith('legacy') ? 'unknown'
+        : variant === 'contradictory' ? 'contradictory' : 'coherent';
+      assert.equal(all[expected], variant === 'source-invalid' ? 4 : 5);
+      assert.equal(all.sourceInvalid, variant === 'source-invalid' ? 1 : 0);
+      assert.equal(report[snapshot].counts.completeProofInAtLeastOneDonor, variant === 'source-invalid' ? 4 : 5,
+        'normal old native proof is separate from embedded applicability status');
+      if (variant.startsWith('legacy')) {
+        const presence = variant === 'legacy-null' ? 'null' : 'absent';
+        assert.equal(all.topReceipt[presence], 5); assert.equal(all.endpointReceipt[presence], 7);
+        assert.equal(all.unknownNativeEndpoints, 7);
+      }
+      if (variant === 'coherent') {
+        assert.equal(all.topReceipt.present, 5); assert.equal(all.endpointReceipt.present, 7);
+        assert.equal(all.coherentNativeEndpoints, 7);
+      }
+    }
+    assert.equal(JSON.stringify({ hourly, donor }), before, 'diagnosis changes no original or provenance');
+    safeReport(report, folder);
+    if (variant === 'legacy-absent') {
+      const noBoundary = await measureSavedNativeProofAvailability({ baselineIndex: index, parts, donorFiles: {} });
+      assert.equal(noBoundary.baseline.embeddedGridSampling.unknownBState.rows, 5);
+      assert.equal(noBoundary.baseline.embeddedGridSampling.boundaryPartsKnown, 0);
+    }
+  }
+  await assert.rejects(measureSavedNativeProofAvailability({ parts, donorFiles: {},
+    bStateTimes: new Map([['unknown-private-part', 'secret-error-canary']]) }), /NATIVE_PROOF_INSPECTION_FAILED/);
 });
 
 test('outer archive authentication cannot excuse a corrupt inner baseline component pack', async t => {

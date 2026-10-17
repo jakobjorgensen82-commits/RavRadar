@@ -22,6 +22,7 @@ import { canonicalSavedDmiOriginalCapture as rawCapture } from './lib/saved-dmi-
 import { unpackDmiPartContinuity, assertDmiPartContinuityTotalSize } from './lib/dmi-part-continuity.mjs';
 import { originalContextForProtectedDmiCurrent } from './lib/protected-dmi-current-context.mjs';
 import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-native-current-proofs.mjs';
+import { inspectDmiForecastGridSampling } from './lib/dmi-forecast-store.mjs';
 import { dmiExpectedIdentityForPart, verifiedDmiNativeComponentSource,
   eligibleDmiNativeComponentSource, verifiedBulkCurrent } from './lib/ravscore-production-adapters.mjs';
 import { unpackPrivateWeatherComponentPack, privateWeatherPackJsonReadsClosed } from './lib/private-weather-component-pack.mjs';
@@ -575,18 +576,75 @@ const NATIVE_REJECTIONS = Object.freeze({
 const nativeRejections = () => Object.fromEntries([...new Set(Object.values(NATIVE_REJECTIONS)),
   'otherRejected'].map(key => [key, 0]));
 
+// Diagnostic only: exact persisted forecast source, never a donor-based receipt repair.
+function savedSamplingCounter() {
+  return { rows: 0, coherent: 0, unknown: 0, contradictory: 0, sourceInvalid: 0,
+    coherentNativeEndpoints: 0, unknownNativeEndpoints: 0, contradictoryNativeEndpoints: 0,
+    topReceipt: { absent: 0, null: 0, present: 0 },
+    endpointReceipt: { absent: 0, null: 0, present: 0, invalidStep: 0 }, missingEndpointList: 0 };
+}
+function savedReceiptShape(value) {
+  return !object(value) || !Object.hasOwn(value, 'nativeGridSampling') ? 'absent'
+    : value.nativeGridSampling === null ? 'null' : 'present';
+}
+function savedSamplingSummary(parts, bStateTimes) {
+  return { sourceScope: 'PERSISTED_ROW_SOURCES_CURRENT_NOT_REPLAY_SELECTION',
+    boundaryScope: 'AUTHENTICATED_B_INTEGRATED_STATE_TIME_NOT_CENTRAL_S',
+    boundaryPartsKnown: bStateTimes?.size ?? 0, boundaryPartsUnknown: parts.size - (bStateTimes?.size ?? 0),
+    all: savedSamplingCounter(), atOrBeforeBState: savedSamplingCounter(),
+    afterBState: savedSamplingCounter(), unknownBState: savedSamplingCounter() };
+}
+function countSavedSampling(summary, row, part, bStateTimes) {
+  const source = row.sources.current;
+  const inspected = inspectDmiForecastGridSampling(source, 'current', row.time, dmiExpectedIdentityForPart(part));
+  const stateTime = bStateTimes?.get(part.partId);
+  const boundary = stateTime === undefined ? 'unknownBState'
+    : Date.parse(row.time) <= Date.parse(stateTime) ? 'atOrBeforeBState' : 'afterBState';
+  for (const counter of [summary.all, summary[boundary]]) {
+    counter.rows++;
+    counter[inspected.status === 'source-invalid' ? 'sourceInvalid' : inspected.status]++;
+    counter.coherentNativeEndpoints += inspected.coherentNativeCount;
+    counter.unknownNativeEndpoints += inspected.unknownNativeCount;
+    counter.contradictoryNativeEndpoints += inspected.contradictoryNativeCount;
+    counter.topReceipt[savedReceiptShape(source)]++;
+    if (!Array.isArray(source.nativeSteps)) counter.missingEndpointList++;
+    else for (const step of source.nativeSteps) {
+      if (!object(step)) counter.endpointReceipt.invalidStep++;
+      else counter.endpointReceipt[savedReceiptShape(step)]++;
+    }
+  }
+}
+function authenticatedBStateTimes(conditions, parts, staging, sampling) {
+  const times = new Map();
+  for (const [partId, part] of parts) {
+    const state = conditions.coastalParts.parts[partId]?.ravScoreModel?.currentState;
+    try {
+      staging.assertIntegratedCoastalPointContinuation(state, {
+        samplingContextKey: sampling.ravScoreSamplingContextKey(part),
+      });
+      // No timestamp, identifier, state or exception leaves the aggregate.
+      times.set(partId, state.time);
+    } catch { /* No fabricated boundary for a legacy/missing/incompatible B state. */ }
+  }
+  return times;
+}
+
 // Inspect one authentic donor at a time, with only small PART/hour bit masks
 // retained between passes. A complete proof in one donor is not a semantic
 // union, an artifactgate pass, or proof that a future generation saves it.
 export async function measureSavedNativeProofAvailability({ baselineIndex, progressIndex,
-  parts, donorFiles, rawManifest = null, rawFileInventory = null } = {}) {
+  parts, donorFiles, rawManifest = null, rawFileInventory = null, bStateTimes = null } = {}) {
   if (!(parts instanceof Map) || parts.size < 1 || parts.size > 673 || !object(donorFiles)
     || Object.keys(donorFiles).some(key => !NATIVE_DONORS.includes(key))
+    || bStateTimes !== null && (!(bStateTimes instanceof Map) || bStateTimes.size > parts.size
+      || [...bStateTimes].some(([partId, time]) => !parts.has(partId) || typeof time !== 'string'
+        || !/^\d{4}-\d\d-\d\dT\d\d:00:00\.000Z$/.test(time) || !Number.isFinite(Date.parse(time))
+        || new Date(Date.parse(time)).toISOString() !== time))
     || rawFileInventory !== null && (rawManifest === null || !object(rawFileInventory)
       || !(rawFileInventory.byPrefix instanceof Map) || !['MEASURED', 'MISSING'].includes(rawFileInventory.status)
       || !integer(rawFileInventory.fileCandidates) || !integer(rawFileInventory.otherRegularFiles))) fail('NATIVE_PROOF_INSPECTION_FAILED');
   const snapshots = Object.entries({ baseline: baselineIndex, progress: progressIndex }).map(([name, index]) => ({
-    name, index, masks: new Map(), counts: null, donorProofs: Object.fromEntries(NATIVE_DONORS.map(label => [label,
+    name, index, masks: new Map(), counts: null, embeddedGridSampling: null, donorProofs: Object.fromEntries(NATIVE_DONORS.map(label => [label,
       { status: donorFiles[label] ? 'PRESENT' : 'NOT_PRESENT', completeProofPairs: 0,
         unprovedPairs: 0, rejections: nativeRejections() }])) }));
   const rawDonors = rawManifest ? Object.fromEntries(NATIVE_DONORS.map(label => [label, { status: 'NOT_PRESENT' }])) : null;
@@ -601,10 +659,12 @@ export async function measureSavedNativeProofAvailability({ baselineIndex, progr
     if (rawDonors) rawDonors[label] = measureSavedRawCaptureMatches(document, parts, rawManifest, rawFileInventory);
     const inspector = createProtectedDmiNativeCurrentInspector({ contexts: [document] });
     for (const snapshot of snapshots) {
+      const sampling = snapshot.embeddedGridSampling ? null : savedSamplingSummary(parts, bStateTimes);
       let finiteDmiCurrentSelections = 0;
       const measured = await visitSavedPartCurrents(snapshot.index, parts, (row, part) => {
         if (row.sources?.current?.provider !== 'dmi') return;
         finiteDmiCurrentSelections++;
+        if (sampling) countSavedSampling(sampling, row, part, bStateTimes);
         const key = `${part.partId}\u0000${row.time}`;
         if (!snapshot.masks.has(key)) {
           if (snapshot.masks.size >= 673 * 121) fail('NATIVE_PROOF_INSPECTION_FAILED');
@@ -626,15 +686,21 @@ export async function measureSavedNativeProofAvailability({ baselineIndex, progr
         nonDmiCurrentSelections: measured.counts.finiteCurrentPairs - finiteDmiCurrentSelections };
       if (snapshot.counts && !same(snapshot.counts, counts)) fail('NATIVE_PROOF_INSPECTION_FAILED');
       snapshot.counts = counts;
+      if (sampling) snapshot.embeddedGridSampling = sampling;
     }
   }
   const result = {};
   for (const snapshot of snapshots) {
     if (!snapshot.counts) {
+      const sampling = savedSamplingSummary(parts, bStateTimes);
       let finiteDmiCurrentSelections = 0;
-      const measured = await visitSavedPartCurrents(snapshot.index, parts, row => {
-        if (row.sources?.current?.provider === 'dmi') finiteDmiCurrentSelections++;
+      const measured = await visitSavedPartCurrents(snapshot.index, parts, (row, part) => {
+        if (row.sources?.current?.provider === 'dmi') {
+          finiteDmiCurrentSelections++;
+          countSavedSampling(sampling, row, part, bStateTimes);
+        }
       });
+      snapshot.embeddedGridSampling = sampling;
       snapshot.counts = { ...measured.counts, finiteDmiCurrentSelections,
         nonDmiCurrentSelections: measured.counts.finiteCurrentPairs - finiteDmiCurrentSelections };
     }
@@ -651,7 +717,7 @@ export async function measureSavedNativeProofAvailability({ baselineIndex, progr
     }
     counts.notProvedInAnyDonor = counts.finiteDmiCurrentSelections - counts.completeProofInAtLeastOneDonor;
     result[snapshot.name] = { status: snapshot.index?.continuity ? 'MEASURED' : 'NOT_PRESENT',
-      counts, donorProofs: snapshot.donorProofs };
+      counts, donorProofs: snapshot.donorProofs, embeddedGridSampling: snapshot.embeddedGridSampling };
   }
   return { geometryScope: 'AUTHENTICATED_BASELINE_PARTS_ONLY',
     selectionScope: 'PERSISTED_PART_CURRENT_CONTINUITY', registeredParts: parts.size,
@@ -847,8 +913,9 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     if (!predecessorTemp) fail('PREDECESSOR_ROOT_INVALID');
     await noSymlinks(predecessorTemp, requestedPredecessor);
     const importOld = async relative => import(`${pathToFileURL(await noSymlinks(predecessor, path.join(predecessor, relative))).href}?savedInput=${source.sourceHead}`);
-    const [oldProtected, oldWorkflow, oldBinding] = await Promise.all([
-      importOld('scripts/protected-private-production-runtime.mjs'), importOld('scripts/private-production-runtime-workflow.mjs'), importOld('js/core/ravscore-model-contract.js')]);
+    const [oldProtected, oldWorkflow, oldBinding, oldStaging, oldSampling] = await Promise.all([
+      importOld('scripts/protected-private-production-runtime.mjs'), importOld('scripts/private-production-runtime-workflow.mjs'), importOld('js/core/ravscore-model-contract.js'),
+      importOld('scripts/lib/coastal-point-staging-contract.mjs'), importOld('scripts/lib/ravscore-sampling-context.mjs')]);
     if (!same(oldBinding.ravScoreModelBinding(), source.modelBinding)
       || !same(await oldWorkflow.privateRuntimeContractHashes({ repositoryRoot: predecessor }), source.contractHashes)) fail('PREDECESSOR_CONTRACT_MISMATCH');
     const clients = createReadOnlySavedWeatherClients(credentials);
@@ -872,6 +939,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     const protectedFiles = fileMetrics(manifest.files, fixedFiles);
     const conditions = await readJson(path.join(payloadRoot, 'data/live/conditions.json'), 535_822_312);
     const parts = originalParts(conditions);
+    const bStateTimes = authenticatedBStateTimes(conditions, parts, oldStaging, oldSampling);
     const baselineIndex = await forecastIndex(path.join(payloadRoot, 'data/live/dmi-forecast-cache.json'));
     phase = 'BASELINE_COMPONENT_AUTHENTICATION';
     let baselineComponentFiles = [];
@@ -936,7 +1004,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
       const rawManifest = includeRawManifest ? await savedRawManifest(ctx.repository) : null;
       const rawFileInventory = includeRawFilePresence ? await inspectSavedRawFileInventory(ctx.repository) : null;
       const nativeProofAvailability = await measureSavedNativeProofAvailability({ baselineIndex, progressIndex, parts,
-        donorFiles, rawManifest, rawFileInventory });
+        donorFiles, rawManifest, rawFileInventory, bStateTimes });
       let selectedCurrentPreflight;
       if (includeSelectedCurrentPreflight) {
         if (!normalProgressBaselineUsed) fail('PROGRESS_BASELINE_RECONSTRUCTION_REJECTED');

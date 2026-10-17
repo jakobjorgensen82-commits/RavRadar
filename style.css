@@ -44,8 +44,9 @@ main { width: min(1180px, 100%); margin: 0 auto; }
 .map-timeline-requested{margin:3px 0;color:var(--muted);font-size:.88rem;line-height:1.35}
 .map-timeline-controls{display:block}
 .map-timeline-controls input{width:100%;min-width:0;min-height:44px;padding:0;margin:0;accent-color:#126e7d;cursor:pointer;touch-action:pan-y}
-.map-timeline-days{display:flex;flex-wrap:wrap;gap:4px;justify-content:space-between}
-.map-timeline-days button{flex:1 0 auto;min-height:32px;font-size:.68rem;padding:3px 6px;border-color:transparent;background:transparent}
+.map-timeline-days{position:relative;height:44px;min-width:0}
+.map-timeline-days button{position:absolute;top:7px;transform:translateX(-50%);box-sizing:border-box;min-width:0;min-height:34px;font-size:.68rem;line-height:1.35;padding:2px 1px;white-space:pre;border-color:transparent;background:transparent}
+.map-timeline-day-boundary{position:absolute;top:0;height:5px;border-left:1px solid var(--muted);pointer-events:none}
 .map-timeline-status:empty{display:none}.map-timeline-status{margin:7px 0 0;font-size:.82rem;color:var(--muted)}
 .map-timeline-status[data-state=error]{color:#a13d16}.map-timeline-scope{margin:5px 0 0;font-size:.7rem;line-height:1.4;color:var(--muted)}
 .map-timeline-zone-time{margin:0 0 12px;padding:9px 12px;background:var(--surface-soft);border-radius:8px;font-weight:800}

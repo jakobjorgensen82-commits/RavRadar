@@ -1,3 +1,22 @@
+## 18. oktober — UI-build 4.0.581: gennemført lokalt og fortsat åbent
+
+Den eksisterende skrivefri saved-input-audit har en afgrænset kontroludvidelse med nativeGridSampling-tællinger og B's validerede tilstandstidsgrænse. Lokale normale mål: 55/55; præcis samlet kildekontrol og faktisk aflæsning er åbne. Tællingerne angår persisterede kilder og udpeger ikke automatisk replay-input eller en fejlrettelse. Ingen nye leverandørkald, dataskrivning, modelbindinger eller svækkede kontroller.
+
+- [x] Ret mobilens dokumenterede daglabel-wrap i normal renderer/CSS med bevaret timevalg, indlæsning og scorer.
+- [x] Bevar uændret 581 og brug den eksisterende fuld-URL-ui-cachekæde; ingen assistent582, ny modelbinding, version:set eller SQL.
+- [x] ROOTs normale tidsskyderkommando: 66 tilfælde, panel og seks generations-/livscyklustilfælde, exit 0/1d225c; ingen netkald eller udeladelser.
+- [x] Normal cacheassert: bevaret AD0857 RED og A4826E GREEN med syv tilfælde.
+- [x] ROOTs normale lokale syntetiske Chrome3-preview: én dagrække uden vandret rulning ved 390 pixels/fire dage og 320 pixels/DA fem/DE seks; torsdagsklik vælger 22. oktober kl. 00 i syntetikken. Preview lukket og viewport nulstillet.
+- [x] Normale UI-cache-, model- og Pages-kontroller af 87 moduler består.
+- [ ] Verificér fysisk iPhone/Safari og præcis samlet kilde-CI på hotfixets faktiske head; Chrome-syntetik er ikke disse beviser.
+- [ ] Lever og verificér den offentlige UI-build gennem den normale kode-only-vej uden ny vejrhentning eller installationsflag.
+
+Fem dage er et maksimum, ikke et løfte om fem resterende datoer. Det faktisk genbrugte datasæt har reference 16. oktober kl. 12 dansk tid og slutter 21. oktober kl. 09 dansk tid. Fra 18. oktober er der derfor fire kalenderdage, 18.–21. oktober. En femte dag kræver en ny gyldig offentlig generation; der må ikke tilføjes tomme eller falske dage eller genberegnes vejr for denne UI-rettelse.
+
+Faktisk drift skal holdes adskilt fra UI-kandidaten: rettelsesdeploy 39064823783 bestod 17. oktober kl. 22.18 dansk tid og leverede 4.0.581 med genbrugte vejrdata. Den almindelige vejrhentning 39066350748 fejlede 18. oktober kl. 00.22 dansk tid ved native-gitterets replaykontrol før Pages. Krypteret cache er faktisk uploadet og genfundet som cachehit, men det er ikke bevis for ny offentlig generation eller fuld genoptagelse. Den skrivefri audit 39075947316 bestod på 6 minutter og 24 sekunder. Hele GCM-indholdet blev autentificeret, de eksakte gamle B-kontrakter bestod, og den aktuelle beskyttede pointer var uændret. Alle 55.195 persisterede DMI-rækker havde det traditionelle eksakte native-original-/projektionsbevis. Det beviser IKKE sammenhængende nativeGridSampling, og den konkrete række bag replayafvisningen er fortsat ukendt. Der påstås ingen lukning af denne fejl. Cron forbliver inaktiv, alle fem hovedmål er åbne, og SOURCE19 samt tilbageholdte aktiveringer er inaktive.
+
+Ældre daterede status- og pendingnoter nedenfor bevares som historik. Denne front erstatter kun deres aktuelle leveringsstatus på de udtrykkeligt dokumenterede punkter.
+
 ## 17. oktober — 4.0.581: installeret migration, men afvist normal genlæsning
 
 PR652's præcise samlede kildekontrol bestod inklusive PostgreSQL, baseline og kapacitet, og samme træ er merget. Det efterfølgende kontrollerede rettelsesdeploy bevarede de autentificerede 0200-originaler og numeriske værdier. Databaseinstallationen sluttede 17. oktober kl. 20.59 dansk tid; den efterfølgende migrationstabel viser 20261017140000 både lokalt og centralt. Den fulde databasebindingskontrol blev ikke nået, og ny privat B/S-publicering, serverfunktioner, Pages og frisk vejrgeneration er ikke leveret.
