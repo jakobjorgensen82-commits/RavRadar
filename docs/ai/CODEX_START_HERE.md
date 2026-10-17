@@ -1,3 +1,11 @@
+## 17. oktober — SOURCE19: ærlige H71-prøveinput, H70 særskilt bevist
+
+CI 38990293733 på 23b075 bestod alle fire H70-cases, mens de tre H71-cases fejlede før H71. Den første hele joblog er bevaret privat; den faste diagnose viste POST_INSTALL/NORMAL_CONTINUITY_PREDECESSOR_UNKNOWN. Den afsluttede runners rå child-stderr er ikke genfundet. Den almindelige kildekontrol blev korrekt sprunget over.
+
+V4 er alene en additiv H71-prøvekomposition: normal 673-PART-kontinuitet med manglende/null vejr og en ægte 118-timers public-hour-pack med ærligt fraværende score-/vejrrækker. Den bygger en NY egen B og autentificeret S gennem normale fabrikker; gamle B/fixtures omskrives ikke. Alle 27 produktpins, otte udstedte fixtures, produktguards og H70-v3 bevares. Normal whole-Bash previousHours-prøve er RED uden pack og GREEN med byteidentiske kopier; faktisk GCM-save/restore forener én vejrkomponent og native CP-originaler, og alle 118 packfiler materialiseres byteidentisk uden netkald.
+
+Windows-prøven stopper senere ved normal CP-originalkontrol i B-installation; samme B-restore og kort normal CP-unpack består. Det er ikke et bestået SOURCE-ejer-, Linux-postinstall-, H71- eller samlet kildebevis. V4 har egen identitet, hel inverse til V3 og bevarede syv nativecases; ny præcis Linuxkontrol udestår. SOURCE19 er inaktiv; ingen model, SQL-installation, release, provider eller produktion ændres. Tidligere dokumentation bevares som dateret historik.
+
 ## 17. oktober — SOURCE19: normale restore-tidsgrænser følger den faktiske kalder
 
 CI 38989055415 på 62300 fejlede i de syv nativecases. Den første faktiske fejl blev afgrænset til ORIGINAL_INSTALL, men den indre fejltekst var fortsat ukendt. Hele jobloggen er gemt privat; den er ikke hele child-stderr, som kun blev bevaret på den nu afsluttede runner. Ingen skjult CI-fejltekst hævdes genfundet.

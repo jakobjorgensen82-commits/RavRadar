@@ -320,7 +320,8 @@ export const SOURCE19_NATIVE_SCOPE_PATHS=Object.freeze([
   "scripts/test-source19-cp-install-native-d504-diagnostics-fixture.mjs",
   "scripts/test-source19-union-native-d504-diagnostics-fixture.mjs",
   "scripts/test-source19-cp-install-native-d504-restore-bounds-fixture.mjs",
-  "scripts/test-source19-union-native-d504-restore-bounds-fixture.mjs"
+  "scripts/test-source19-union-native-d504-restore-bounds-fixture.mjs",
+  "scripts/test-source19-union-native-d504-continuity-fixture.mjs"
 ]);
 export const SOURCE19_NATIVE_SCOPE_DIRECTORIES=Object.freeze([
   {

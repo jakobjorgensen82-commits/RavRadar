@@ -1,5 +1,11 @@
 ## 89.250 En fejl skal kunne forklares uden at røbe private data
 
+### 17. oktober: prøvedata skal også være ærlige og komplette nok
+
+Alle fire H70-prøver på V3 er nu faktisk bestået. De tre H71-prøver nåede ikke H71: deres egne manglende prøveinput blev korrekt afvist. En ny, særskilt prøvekomposition bruger normale pakkefabrikker til alle 673 kystdele, med manglende/null vejr og uden opdigtede scorer. Den bevarer alle otte tidligere prøveoriginaler og alle produktkontroller.
+
+Den normale kopiering af tidligere vejr fejler uden timepakken og består med pakken. Gemning og gendannelse af den autentificerede prøvetilstand samt alle 118 pakkefilers nøjagtige gendannelse består uden netkald. Det er ikke H71- eller samlet kildebevis: den lokale Windows-installation stopper senere ved kontrol af CP-originaler, og Linux-postinstall samt H71 på V4 er endnu ukørte. SOURCE19 forbliver inaktiv; produktionen ændres ikke.
+
 ### 17. oktober: den normale restore skal have sine tidsgrænser
 
 En lokal normal prøve har nu påvist, at SOURCE-kalderen glemte at føre tre tidsgrænser videre til den eksisterende restorer. Kun disse oplysninger fra samme allerede kontrollerede forventning tilføjes. Den faktiske gamle kaldeform fejler; den rettede form gendanner atomisk med alle oprindelige filbytes bevaret. Fem tilfælde med ukendt tid, omvendte grænser eller for gamle data afvises fortsat. Kontrollerne selv er uændrede.
