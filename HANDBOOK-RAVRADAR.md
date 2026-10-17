@@ -1,5 +1,13 @@
 ## 89.250 En fejl skal kunne forklares uden at røbe private data
 
+### 17. oktober: syv nativeprøver er bestået, men samlet kildekontrol er rød
+
+Alle fire H70- og tre H71-prøver er faktisk bestået på præcis 76d21. Den efterfølgende almindelige kildekontrol fejlede: den gamle importtest kendte kun den tidligere cache-pakke, ikke den allerede indførte artifact-pakke. Senere kildekontroller blev ikke kørt. De beståede nativegrænser er ikke bevis for holdbar gemning, offentlig levering eller aktivering.
+
+Testrettelsen genbruger den uændrede normale distributionskontrol og beviser hele den gamle pakke igen; gamle kontrolsummer, versioner og assertions bevares. Modulerne må kun importeres og inspiceres, aldrig bruges til runtimekald. Den lokale afgrænsede prøve består med 16 afvisninger, men faktisk SDK-import efter rettelsen er endnu ukørt lokalt, fordi de installerede moduler mangler. Intet installeres. Ny samlet kontrol udestår.
+
+Alle produktpins og ni udstedte prøveoriginaler bevares. SOURCE19 er inaktiv, og produktionen ændres ikke. Kun de ældre åbne native-statusser nedenfor er erstattet; fejlbeviserne bevares.
+
 ### 17. oktober: prøvedata skal også være ærlige og komplette nok
 
 Alle fire H70-prøver på V3 er nu faktisk bestået. De tre H71-prøver nåede ikke H71: deres egne manglende prøveinput blev korrekt afvist. En ny, særskilt prøvekomposition bruger normale pakkefabrikker til alle 673 kystdele, med manglende/null vejr og uden opdigtede scorer. Den bevarer alle otte tidligere prøveoriginaler og alle produktkontroller.

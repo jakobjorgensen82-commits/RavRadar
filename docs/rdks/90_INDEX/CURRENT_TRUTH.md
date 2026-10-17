@@ -1,3 +1,11 @@
+## 17. oktober — SOURCE19: syv nativecases bestået, samlet kildekontrol fortsat rød
+
+CI 38993322357 på præcis 76d21 bestod faktisk alle fire H70- og tre H71-cases. Det beviser deres isolerede nativegrænser, ikke finalizer, holdbar SAVE, offentlig levering eller aktivering. Den efterfølgende almindelige kildekontrol fejlede i den gamle cache-only-distributionsprøve; de senere kildegates blev ikke kørt. Hele første joblog er bevaret privat.
+
+Kun prøven rettes: den allerede indførte artifact-distribution skal bestå sin uændrede normale guard og hele 259→49-inversen, før samtlige gamle cache-hashes, versioner, assertions og importprobe genbruges. En særskilt artifact-import inspicerer kun det officielle modul; ingen runtime-API kaldes. Den gamle normale prøve er ægte RED; den afgrænsede distributionsprøve består med gammel default og 16 afvisninger. Faktisk SDK-import efter rettelsen er endnu UNRUN lokalt, fordi actionens installerede moduler mangler; intet installeres. Ny præcis samlet kildekontrol udestår.
+
+Alle 27 produktpins og ni nu udstedte prøveoriginaler bevares. SOURCE19 er inaktiv; ingen releaseversion, main, model, SQL-installation, provider eller produktion ændres. Denne opfølgning erstatter kun den ældre åbne native-status nedenfor; tidligere fejl og beviser bevares som dateret historik.
+
 ## 17. oktober — SOURCE19: ærlige H71-prøveinput, H70 særskilt bevist
 
 CI 38990293733 på 23b075 bestod alle fire H70-cases, mens de tre H71-cases fejlede før H71. Den første hele joblog er bevaret privat; den faste diagnose viste POST_INSTALL/NORMAL_CONTINUITY_PREDECESSOR_UNKNOWN. Den afsluttede runners rå child-stderr er ikke genfundet. Den almindelige kildekontrol blev korrekt sprunget over.
