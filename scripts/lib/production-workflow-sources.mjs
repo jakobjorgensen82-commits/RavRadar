@@ -1,6 +1,8 @@
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { NATIVE_IDENTITY_BINDING_REVIEW } from './native-sampling-identity-successor-source.mjs';
+import { CURRENT_MEMORY_WARMUP_BEFORE, currentMemoryWarmupMigration, requireCurrentMemoryWarmupBinding,
+  requireCurrentMemoryWarmupOutput } from './current-memory-warmup-successor-source.mjs';
 
 export const PRODUCTION_WORKFLOW_SOURCES = Object.freeze({
   orchestrator: '.github/workflows/update-and-deploy.yml',
@@ -161,7 +163,8 @@ export function concatenateProductionWorkflowSources(
 // Routing only: this neither admits original data nor authorizes installation.
 // Database prewrite and the normal artifact/activation gates remain mandatory.
 export function deferCurrentGridBindingEdges(migrationVersion) {
-  return migrationVersion === '20261013220000'
+  return migrationVersion === currentMemoryWarmupMigration().version
+    || migrationVersion === '20261013220000'
     || typeof migrationVersion === 'string' && /^\d{14}$/.test(migrationVersion)
       && migrationVersion === NATIVE_IDENTITY_BINDING_REVIEW.migrationVersion;
 }
@@ -169,6 +172,22 @@ export function deferCurrentGridBindingEdges(migrationVersion) {
 export async function currentGridEdgePublicationRequired(current, action) {
   const { LATEST_REQUIRED_CUTOVER_MIGRATION } = await import('../integrated-cutover-readiness.mjs');
   const native = await import('./native-sampling-identity-successor-source.mjs');
+  if (LATEST_REQUIRED_CUTOVER_MIGRATION.version === currentMemoryWarmupMigration().version) {
+    requireCurrentMemoryWarmupOutput();
+    const { isDeepStrictEqual } = await import('node:util');
+    const { ravScoreModelBinding } = await import('../../js/core/ravscore-model-contract.js');
+    const binding = ravScoreModelBinding(), next = requireCurrentMemoryWarmupBinding();
+    if (binding.modelBundleSha256 !== next.I)
+      throw new Error('Current-memory warmup Edge route requires its actual issued current binding');
+    if (isDeepStrictEqual(current?.modelBinding, binding)) return false;
+    const original = { ...binding, modelBundleSha256: CURRENT_MEMORY_WARMUP_BEFORE.integrated };
+    if (!isDeepStrictEqual(current?.modelBinding, original))
+      throw new Error('Current-memory warmup Edge route has an unknown public original binding');
+    if (current.model !== 'integrated' || current.status !== 'INTEGRATED_ACTIVE'
+      || current.pending !== false || action !== 'integrated-historical-maintenance')
+      throw new Error('Current-memory warmup late Edge publication requires the normal active historical route');
+    return true;
+  }
   if (LATEST_REQUIRED_CUTOVER_MIGRATION.version === native.nativeIdentityMigration().version) {
     const { isDeepStrictEqual } = await import('node:util');
     const { ravScoreModelBinding } = await import('../../js/core/ravscore-model-contract.js');

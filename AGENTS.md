@@ -1,3 +1,11 @@
+## 17. oktober — 4.0.579: almindelig opvarmning skal bevare ærlig, ufuldstændig historik
+
+Den beskyttede genoptagelse har faktisk leveret offentlig 4.0.578. Den første almindelige efterfølger stoppede derimod 17. oktober kl. 04.00 dansk tid før ny privat slutpakke og Pages. Den konkrete fejl er reproduceret: en ekstra kalderkontrol accepterede kun én ufuldstændig status, selv om de normale producenter og validatorer lovligt danner andre. Manglende timer skal fortsat være manglende; ingen falsk READY, nuludfyldning eller ændret scoreformel.
+
+Den lokale 4.0.579-kandidat retter kun dette kalderkrav og forbereder den nødvendige originale-bevarende C/I/T- og databaseovergang. Målprøven består 17 tilfælde; en normal 673-dels metadataovergang og den nye SQL-kildeprøve består lokalt. Præcis samlet Linux/PostgreSQL-kontrol, installation/genlæsning og almindelig offentlig levering er endnu åbne. Gamle originalvalidatorer og offentliggjort historik bevares.
+
+Gammel krypteret fremgang kræver en byteeksakt baseline og må ikke ommærkes efter metadataovergangen. Næste sikre vej er derfor en almindelig vejrhentning fra det nye beskyttede B/S med eksisterende RAW-cache; ingen ny historiknulstilling eller GCM-genvej. Cron er pauset. Tidsskyderen holdes separat til efter P0, SOURCE19 forbliver inaktiv, og alle fem mål til 18. oktober er åbne. Se håndbog 89.250 og seneste private checkpoint; ældre status er kun erstattet på disse faktisk beviste punkter.
+
 ## 17. oktober — beskyttet gendannelse bevarer de oprindelige kontrolsummer
 
 PR642 har faktisk bestået sin samlede præcise kildekontrol og er merget. Den efterfølgende særlige genoptagelse 38979426989 gendannede den færdige private beregningspakke, men stoppede i trin 58 ved normal gendannelse af den beskyttede beregningstilstand: `RavScore checkpoint state integrity is invalid`. Stoppet var før leverandører, scoring og Pages. De allerede publicerede nye private originaler bevares; ingen ny offentlig generation eller almindelig efterfølger er bevist.

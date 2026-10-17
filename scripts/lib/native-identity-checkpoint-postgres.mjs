@@ -17,8 +17,7 @@ import { nativeSamplingIdentityExpectedDatabaseContracts } from '../native-sampl
 import { statisticsPreferenceRevisionCatalogQuery, verifyStatisticsPreferenceRevisionCatalogMetadata }
   from '../verify-account-assistant-schema.mjs';
 import { LATEST_RAVSCORE_BINDING_MIGRATION } from '../integrated-cutover-readiness.mjs';
-import { restoreProtectedRavScoreContinuationCheckpoint }
-  from '../protected-ravscore-continuation-checkpoint.mjs';
+import { withCurrentMemoryWarmupPredecessorSource } from '../check-current-memory-warmup-predecessor-source.mjs';
 import { RAVSCORE_CONTINUATION_CHECKPOINT_POLICY }
   from '../ravscore-continuation-checkpoint.mjs';
 
@@ -110,8 +109,18 @@ export function nativeIdentityHistoricalCatalogSetup(oldSource) {
 
 // Only the actual owning native host calls this, after all old phases in its
 // still-live, TCP-disabled cluster. No fake executor run counts as SQL proof.
-export async function compareNativeSamplingIdentitySuccessor({ psql, runSql, root,
-  sourceDocumentAt, atHour, saveCheckpoint, oldSource }) {
+export async function compareNativeSamplingIdentitySuccessor(options) {
+  // Keep this entire historical SQL phase on its genuine normal protected
+  // producer/validator. Current T may not reinterpret native0600 as current.
+  return withCurrentMemoryWarmupPredecessorSource(async sourceRoot => {
+    const { restoreProtectedRavScoreContinuationCheckpoint } = await import(
+      pathToFileURL(path.join(sourceRoot, 'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
+    return compareNativeSamplingIdentityWithOriginalProtectedRestore(options,
+      restoreProtectedRavScoreContinuationCheckpoint);
+  });
+}
+async function compareNativeSamplingIdentityWithOriginalProtectedRestore({ psql, runSql, root,
+  sourceDocumentAt, atHour, saveCheckpoint, oldSource }, restoreProtectedRavScoreContinuationCheckpoint) {
   let phase = 'SOURCE_PREDECESSOR';
   try {
     const before = await readNativeIdentityPredecessorSource();
