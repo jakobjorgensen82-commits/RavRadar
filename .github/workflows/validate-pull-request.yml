@@ -124,10 +124,10 @@ jobs:
           set -euo pipefail
           case "$SOURCE_NATIVE_FAMILY/$SOURCE_NATIVE_CASE" in
             h70/normal-install|h70/replace-bank|h70/replace-root|h70/lose-supervisor)
-              python -I -B scripts/test-source19-cp-install-native.py --node22-path "$SOURCE_NODE22_PATH" --node24-path "$SOURCE_NODE24_PATH" --case "$SOURCE_NATIVE_CASE" --composition integrated-d504-diagnostics-v2
+              python -I -B scripts/test-source19-cp-install-native.py --node22-path "$SOURCE_NODE22_PATH" --node24-path "$SOURCE_NODE24_PATH" --case "$SOURCE_NATIVE_CASE" --composition integrated-d504-restore-bounds-v3
               ;;
             h71/native-union-install|h71/replace-union-root|h71/lose-union-supervisor)
-              python -I -B scripts/test-source19-union-native.py --node22-path "$SOURCE_NODE22_PATH" --node24-path "$SOURCE_NODE24_PATH" --case "$SOURCE_NATIVE_CASE" --composition integrated-d504-diagnostics-v2
+              python -I -B scripts/test-source19-union-native.py --node22-path "$SOURCE_NODE22_PATH" --node24-path "$SOURCE_NODE24_PATH" --case "$SOURCE_NATIVE_CASE" --composition integrated-d504-restore-bounds-v3
               ;;
             *) exit 1 ;;
           esac

@@ -1,3 +1,11 @@
+## 17. oktober — SOURCE19: normale restore-tidsgrænser følger den faktiske kalder
+
+CI 38989055415 på 62300 fejlede i de syv nativecases. Den første faktiske fejl blev afgrænset til ORIGINAL_INSTALL, men den indre fejltekst var fortsat ukendt. Hele jobloggen er gemt privat; den er ikke hele child-stderr, som kun blev bevaret på den nu afsluttede runner. Ingen skjult CI-fejltekst hævdes genfundet.
+
+Den normale lokale API-kæde reproducerer derimod en konkret kalderfejl: SOURCEs lokale bundle-restore sendte forventningsobjektet, men ikke de tre særskilte tidsgrænser, som den uændrede normale restorer kræver. Kun target-, minimum-reference- og minimum-genereringstid fra samme `second` føres nu videre, som den normale CLI allerede gør. Den nye normale regression udfører den faktiske kaldeexpression: ægte RED på den gamle kode og atomisk restore GREEN efter rettelsen. Alle oprindelige payloadbytes bevares. Fem normale afvisninger for ukendt tid, inverterede grænser og for gamle originaler består; ingen validator eller ejer-/donor-/deadlineguard lempes.
+
+V3 har egen identitet og to additive fixturemoduler. De seks allerede udstedte fixturemoduler og deres pins bevares byteeksakt; hele V3-fixturen inverteres til V2. Af de 27 inputs ændres kun runtime-pinnen siden V2; de to produktpins og én observationsprøvepin siden d504 samt 24 uændrede inputs er eksplicitte. Den normale workflowprøve består med 317 præcise scopepaths og alle syv nativecases. Dette er lokal kontraktevidens, ikke bevis for CI'ens skjulte indre fejltekst eller bestået H70/H71. Ny præcis CI er endnu ikke kørt; SOURCE19 forbliver inaktiv. Ingen ny releaseversion, mainændring, SQL-installation, provider eller produktionslevering følger heraf. Tidligere dokumentation bevares nedenfor.
+
 ## 17. oktober — SOURCE19: afgrænset fejldiagnostik, fortsat inaktiv
 
 Den isolerede kildekontrol 38983913174 på SOURCE-head 6969 fejlede i alle syv nativeprøver; den efterfølgende almindelige kildekontrol blev korrekt sprunget over. Den første undersøgte prøve nåede ikke H70, og den indre årsag er endnu ikke bevist. Hele dens joblog og de syv annotationer er bevaret privat før filtrering. Den normale actions lukkede fejlformatter skjulte faktisk flere kildefejl som ukendt; test-only stderr-opsamling alene var derfor utilstrækkelig.

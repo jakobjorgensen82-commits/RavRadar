@@ -2308,7 +2308,9 @@ async function runSourceNormalOriginalInstall(holder) {
     const identity = await writeSourceRestoredDescription(holder, source);
     invocation.localRestore = readers.bundle.restorePrivateProductionRuntimeBundle({
       privateRoot: paths.root, bundlePath: paths.bundle, outputPath: paths.restored,
-      repositoryRoot: readers.bundleRoot, expected: second });
+      repositoryRoot: readers.bundleRoot, expected: second,
+      targetReferenceAt: second.targetReferenceAt, minimumReferenceAt: second.minimumReferenceAt,
+      minimumGeneratedAt: second.minimumGeneratedAt });
     await invocation.localRestore;
     await assertSourceNormalArchivedReaders(holder);
     for (const original of owner.bundles) for (const row of original.rows.values()) await hashSourceOriginalHandle(owner, row);

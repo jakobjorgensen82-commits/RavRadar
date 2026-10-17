@@ -1,5 +1,11 @@
 ## 89.250 En fejl skal kunne forklares uden at røbe private data
 
+### 17. oktober: den normale restore skal have sine tidsgrænser
+
+En lokal normal prøve har nu påvist, at SOURCE-kalderen glemte at føre tre tidsgrænser videre til den eksisterende restorer. Kun disse oplysninger fra samme allerede kontrollerede forventning tilføjes. Den faktiske gamle kaldeform fejler; den rettede form gendanner atomisk med alle oprindelige filbytes bevaret. Fem tilfælde med ukendt tid, omvendte grænser eller for gamle data afvises fortsat. Kontrollerne selv er uændrede.
+
+Den seneste Linux-kørsel viste kun installationsgrænsen og en ukendt indre fejl. Hele jobloggen er bevaret privat, men den skjulte child-fejltekst er ikke genfundet; den lokale reproduktion er særskilt evidens. V3 får nye prøveoriginaler og bevarer alle seks tidligere moduler. Den normale workflowprøve består, men de syv nativeforløb på V3 er endnu ukørte. SOURCE19 er inaktiv; ingen produktion eller gammel evidens får ny godkendelse.
+
 **Kort fortalt:** En ukendt testfejl må ikke gøres grøn ved at svække kontrollen. Først skal den oprindelige fejl kunne skelnes sikkert uden private værdier.
 
 De syv isolerede SOURCE19-prøver fejlede i den seneste præcise kildekontrol. Den første undersøgte prøve nåede ikke sin native installationsgrænse; årsagen er endnu ikke bevist. Den gamle fejlformatter kunne skjule forskellige kildefejl som ukendt. Derfor tilføjes en lille, lukket diagnose ved den eksisterende fejlgrænse. Første fejl, alle afvisninger og den oprindelige fejlstatus bevares. Ingen rå fejltekst, privat sti eller vejrdata udskrives. Hele den oprindelige child-log bevares alene privat til undersøgelsen.

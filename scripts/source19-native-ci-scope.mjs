@@ -318,7 +318,9 @@ export const SOURCE19_NATIVE_SCOPE_PATHS=Object.freeze([
   "supabase/migrations/20261013230000_account_statistics_revision.sql",
   "supabase/migrations/20261016060000_native_sampling_identity_original_bound_successor.sql",
   "scripts/test-source19-cp-install-native-d504-diagnostics-fixture.mjs",
-  "scripts/test-source19-union-native-d504-diagnostics-fixture.mjs"
+  "scripts/test-source19-union-native-d504-diagnostics-fixture.mjs",
+  "scripts/test-source19-cp-install-native-d504-restore-bounds-fixture.mjs",
+  "scripts/test-source19-union-native-d504-restore-bounds-fixture.mjs"
 ]);
 export const SOURCE19_NATIVE_SCOPE_DIRECTORIES=Object.freeze([
   {

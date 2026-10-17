@@ -355,6 +355,7 @@ export async function testSource19BeforeHFailureDiagnostics(documents = null) {
 const source19DiagnosticProducts = [{"path":".github/actions/save-owned-dmi-grib/index.cjs","beforeSha256":"008ba0937c85546f73c6713a63b27bab948a44c20ea57e70910ab921eb56ace1","afterSha256":"dd8bd752a5cef8c927db2c00e642ab240638e3ab10c56d9f57c9546ab4e02926","blockStart":"// SOURCE_ACTION_DIAGNOSTIC_BEGIN:","blockEnd":"// SOURCE_ACTION_DIAGNOSTIC_END","blockSha256":"82d37820dae7ccb105dfed78d4363f8a86f68c6e9cc1e2a6796695238d850e9e","rules":[{"before":"async function runSourceGeneration() {\n  fixedDistributionInputs();\n  if (process.argv.length !== 2 || process.env.INPUT_OPERATION !== 'source') {\n    throw refused('DMI_RAW_SAVE_ARGUMENT_REFUSED');\n  }\n  const normal = await import(pathToFileURL(path.join(ROOT,\n    'scripts/protected-private-production-runtime.mjs')).href);\n  // P awaits the fixed artifact/T consumer under the SAME issuer. A Set or\n  // an exit code is never used to replace those actual awaited operations.\n  // This action still emits no SOURCE-complete/READY/hosted-publication flag.\n  return normal.runSourceCompleteEntry();","after":"async function runSourceGeneration() {\n  fixedDistributionInputs();\n  if (process.argv.length !== 2 || process.env.INPUT_OPERATION !== 'source') {\n    throw refused('DMI_RAW_SAVE_ARGUMENT_REFUSED');\n  }\n  let normal;\n  try {\n    normal = await import(pathToFileURL(path.join(ROOT,\n      'scripts/protected-private-production-runtime.mjs')).href);\n  } catch (error) { sourceFailureImportError = error; throw error; }\n  sourceFailureDiagnosticReader = normal.sourceFailureDiagnostic;\n  // P awaits the fixed artifact/T consumer under the SAME issuer. A Set or\n  // an exit code is never used to replace those actual awaited operations.\n  // This action still emits no SOURCE-complete/READY/hosted-publication flag.\n  return normal.runSourceCompleteEntry();"},{"before":"    process.stderr.write(refusalDiagnostic(error));\n","after":"    process.stderr.write(refusalDiagnostic(error));\n    if (process.env.INPUT_OPERATION === 'source') process.stderr.write(sourceFailureDiagnosticLine(error));\n"}]},{"path":"scripts/protected-private-production-runtime.mjs","beforeSha256":"fd595ee0ebafc4a06b9516e404e674da56a3abdbdef7fc720a7a94b05b1c0e77","afterSha256":"a3ee076322bd4dcc9a1fa0b36948aadb1b8e672efa1f4d65c062b4e8c5852273","blockStart":"// SOURCE_DIAGNOSTIC_BEGIN:","blockEnd":"// SOURCE_DIAGNOSTIC_END","blockSha256":"e06db4f4f98064a721fc707e3f37c1a22710233a1e46d1b165cd4879de45c58f","rules":[{"before":"const sourceDeadlineFailure = code => { throw new Error(code); };\n","after":"const sourceDeadlineFailure = code => { throw sourceGuardError(code); };\n"},{"before":"function sourceOriginalFailure(code) { throw new Error(`SOURCE_ORIGINAL_${code}`); }\n","after":"function sourceOriginalFailure(code) { throw sourceGuardError(`SOURCE_ORIGINAL_${code}`); }\n"},{"before":"  issued.normalDriver = driver; // retain before the first authentic read or child\n","after":"  issued.normalDriver = driver; // retain before the first authentic read or child\n  sourceDriverDiagnosticStages.set(driver, 'ROUTE');\n"},{"before":"    await beginSourceNormalPrelude(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'PRELUDE');\n    await beginSourceNormalPrelude(holder);\n"},{"before":"    const preflight = await runSourceNormalPreflight(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'PREFLIGHT');\n    const preflight = await runSourceNormalPreflight(holder);\n"},{"before":"    await runSourceNormalAdminPrelude(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'ADMIN');\n    await runSourceNormalAdminPrelude(holder);\n"},{"before":"    await runSourceNormalHandoffSelection(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'HANDOFF');\n    await runSourceNormalHandoffSelection(holder);\n"},{"before":"    await runSourceNormalOriginalSelection(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'ORIGINAL_SELECTION');\n    await runSourceNormalOriginalSelection(holder);\n"},{"before":"    await runSourceNormalCheckpointRestore(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'CHECKPOINT_PROTECTED');\n    await runSourceNormalCheckpointRestore(holder);\n"},{"before":"    await prepareSourceNormalArchivedReaders(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'ARCHIVED_READERS');\n    await prepareSourceNormalArchivedReaders(holder);\n"},{"before":"    await prepareSourceNormalOriginalRoot(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'PRIVATE_ROOT');\n    await prepareSourceNormalOriginalRoot(holder);\n"},{"before":"    await acquireSourceNormalProgressCipher(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'PROGRESS_CACHE');\n    await acquireSourceNormalProgressCipher(holder);\n"},{"before":"    driver.original = await runSourceNormalOriginalInstall(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'ORIGINAL_INSTALL');\n    driver.original = await runSourceNormalOriginalInstall(holder);\n"},{"before":"    await runSourceNormalOriginalPostInstall(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'POST_INSTALL');\n    await runSourceNormalOriginalPostInstall(holder);\n"},{"before":"    await captureSourceNormalProgressBase(holder);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'PROGRESS_BASE');\n    await captureSourceNormalProgressBase(holder);\n"},{"before":"    await runSourceNormalProgress(holder, driver.original);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'PROGRESS_UNION');\n    await runSourceNormalProgress(holder, driver.original);\n"},{"before":"    await resolveSourceNormalProtectedBootstrap(holder, driver.original);\n","after":"    sourceDriverDiagnosticStages.set(driver, 'PRODUCER_CHAIN');\n    await resolveSourceNormalProtectedBootstrap(holder, driver.original);\n"},{"before":"    driver.firstFailure ??= [error];\n    const owner = sourceJobDeadlineBrands.get(holder)?.originalOwner;\n","after":"    driver.firstFailure ??= [error];\n    rememberSourceDriverFailure(driver, driver.firstFailure[0]);\n    const owner = sourceJobDeadlineBrands.get(holder)?.originalOwner;\n"}]}];
 const source19DiagnosticFixtures = [{"parent":"scripts/test-source19-cp-install-native-d504-fixture.mjs","next":"scripts/test-source19-cp-install-native-d504-diagnostics-fixture.mjs","parentSha256":"83642a2aead446a85eddc98c791d53e2331963082aa6e7c567beb94a6893169a","afterSha256":"9eef534316376da4fb850ff07347284b50f06a2f1db372657d36aa482ae556de","guard":"  const diagnosticParent = path.join(ROOT, fixtureIdentity.diagnosticParentFixture);\n  const diagnosticParentStat = await fs.lstat(diagnosticParent);\n  assert.ok(diagnosticParentStat.isFile() && !diagnosticParentStat.isSymbolicLink() && diagnosticParentStat.nlink === 1, 'DIAGNOSTIC_PARENT_REGULAR_SOURCE_REQUIRED');\n  assert.equal(digest(lf(await fs.readFile(diagnosticParent, 'utf8'))), fixtureIdentity.diagnosticParentSha256, 'FROZEN_D504_FIXTURE_BYTES_CHANGED');\n"},{"parent":"scripts/test-source19-union-native-d504-fixture.mjs","next":"scripts/test-source19-union-native-d504-diagnostics-fixture.mjs","parentSha256":"071b18ba7763a31452d00c4a1d4855b28e08227e48151a41c7ce67d9656775f6","afterSha256":"549f06d55b1bea3ecd8e1155d33ec49cf216697062b1b87612fca088004311f5","guard":"  const diagnosticParent = path.join(ROOT, fixtureIdentity.diagnosticParentFixture);\n  const diagnosticParentStat = await fs.lstat(diagnosticParent);\n  assert.ok(diagnosticParentStat.isFile() && !diagnosticParentStat.isSymbolicLink() && diagnosticParentStat.nlink === 1, 'DIAGNOSTIC_PARENT_REGULAR_SOURCE_REQUIRED');\n  assert.equal(digest(lf(await fs.readFile(diagnosticParent, 'utf8'))), fixtureIdentity.diagnosticParentSha256, 'FROZEN_D504_FIXTURE_BYTES_CHANGED');\n"}];
 export function projectSource19FixedDiagnosticProduct(file, actual) {
+  actual=projectSource19RestoreBoundsProduct(file,actual);
   if (file === 'scripts/test-protected-private-production-runtime.mjs') {
     actual=actual.replaceAll('\r\n','\n');
     if (sha(actual)==='ad4056293d74a98e15304dc8c13c680e46da7600df14db368fe40297167dedd0') return actual;
@@ -382,6 +383,7 @@ export function projectSource19FixedDiagnosticProduct(file, actual) {
   return inverse;
 }
 function projectSource19FixedDiagnosticJobs(actual) {
+  actual=projectSource19RestoreBoundsJobs(actual);
   if (sha(actual) === 'cfa875fcee557f018d3349abbe200547a9c491a692173fd40df63ed844f7c9fb') {
     assert.equal(actual.split(' --composition integrated-d504-diagnostics-v2').length,3);
     actual=actual.replaceAll(' --composition integrated-d504-diagnostics-v2',' --composition integrated-d504-diagnostics');
@@ -394,6 +396,7 @@ function projectSource19FixedDiagnosticJobs(actual) {
   return inverse;
 }
 function projectSource19FixedDiagnosticScope(actual) {
+  actual=projectSource19RestoreBoundsScope(actual);
   if(sha(JSON.stringify(actual))!=="1a57c0d62f9b588d02de7a0aa366d67292fa653bebe0d9afebb1eacf1c1e089c")return actual;
   const inverse=actual.filter(file=>!source19DiagnosticFixtures.some(row=>row.next===file));
   assert.equal(actual.length-inverse.length,2);
@@ -401,7 +404,7 @@ function projectSource19FixedDiagnosticScope(actual) {
   return inverse;
 }
 export async function assertSource19FixedDiagnosticComposition(documents = {}) {
-  const read=async file=>(documents[file]??await fs.readFile(path.join(process.cwd(),file),'utf8')).replaceAll('\r\n','\n');
+  const read=async file=>projectSource19RestoreBoundsProduct(file,(documents[file]??await fs.readFile(path.join(process.cwd(),file),'utf8')).replaceAll('\r\n','\n'));
   const object=(text,name)=>{
     const match=text.match(new RegExp('const '+name+'=Object\\.freeze\\((\\{[\\s\\S]*?\\})\\);'));
     assert.ok(match);return {literal:match[0],value:JSON.parse(match[1])};
@@ -558,6 +561,157 @@ export async function testSource19FixedProductDiagnostics(documents = null) {
 }
 // END pure fixed product diagnostics.
 
+// Exact V3 projection precedes every older whole-file/job/scope inverse.
+const source19RestoreBoundsFixtures = [{"parent":"scripts/test-source19-cp-install-native-d504-diagnostics-fixture.mjs","next":"scripts/test-source19-cp-install-native-d504-restore-bounds-fixture.mjs","parentSha256":"9eef534316376da4fb850ff07347284b50f06a2f1db372657d36aa482ae556de","afterSha256":"eb1938448887de4df7442261df2d3b71a22bd421de54ae4bb8fdadf229ec3227","guard":"  const restoreBoundsParent = path.join(ROOT, fixtureIdentity.restoreBoundsParentFixture);\n  const restoreBoundsParentStat = await fs.lstat(restoreBoundsParent);\n  assert.ok(restoreBoundsParentStat.isFile() && !restoreBoundsParentStat.isSymbolicLink() && restoreBoundsParentStat.nlink === 1, 'RESTORE_BOUNDS_PARENT_REGULAR_SOURCE_REQUIRED');\n  assert.equal(digest(lf(await fs.readFile(restoreBoundsParent, 'utf8'))), fixtureIdentity.restoreBoundsParentSha256, 'FROZEN_V2_FIXTURE_BYTES_CHANGED');\n"},{"parent":"scripts/test-source19-union-native-d504-diagnostics-fixture.mjs","next":"scripts/test-source19-union-native-d504-restore-bounds-fixture.mjs","parentSha256":"549f06d55b1bea3ecd8e1155d33ec49cf216697062b1b87612fca088004311f5","afterSha256":"510ebb1230b460be71fffcefa62c14def7116fe5a2fc05f7dbd8caa25dfe692a","guard":"  const restoreBoundsParent = path.join(ROOT, fixtureIdentity.restoreBoundsParentFixture);\n  const restoreBoundsParentStat = await fs.lstat(restoreBoundsParent);\n  assert.ok(restoreBoundsParentStat.isFile() && !restoreBoundsParentStat.isSymbolicLink() && restoreBoundsParentStat.nlink === 1, 'RESTORE_BOUNDS_PARENT_REGULAR_SOURCE_REQUIRED');\n  assert.equal(digest(lf(await fs.readFile(restoreBoundsParent, 'utf8'))), fixtureIdentity.restoreBoundsParentSha256, 'FROZEN_V2_FIXTURE_BYTES_CHANGED');\n"}];
+function projectSource19RestoreBoundsProduct(file, actual) {
+  if(file !== 'scripts/protected-private-production-runtime.mjs') return actual;
+  actual=actual.replaceAll('\r\n','\n');
+  if(sha(actual)==='a3ee076322bd4dcc9a1fa0b36948aadb1b8e672efa1f4d65c062b4e8c5852273') return actual;
+  assert.equal(sha(actual),'9f6793a851b9a2181fe7353922474e754b059a02f32d82b9ca16424358784931');
+  const before="      repositoryRoot: readers.bundleRoot, expected: second });",after="      repositoryRoot: readers.bundleRoot, expected: second,\n      targetReferenceAt: second.targetReferenceAt, minimumReferenceAt: second.minimumReferenceAt,\n      minimumGeneratedAt: second.minimumGeneratedAt });";
+  assert.equal(actual.split(after).length,2);
+  const inverse=actual.replace(after,before);
+  assert.equal(sha(inverse),'a3ee076322bd4dcc9a1fa0b36948aadb1b8e672efa1f4d65c062b4e8c5852273','Whole V3 caller to V2 product');
+  return inverse;
+}
+function projectSource19RestoreBoundsJobs(actual) {
+  if(sha(actual)!=="276f9b99ad6d717f665af69450c351b8ce9e760c21b5692d7e67875c6eeb0e30")return actual;
+  assert.equal(actual.split(' --composition integrated-d504-restore-bounds-v3').length,3);
+  const inverse=actual.replaceAll(' --composition integrated-d504-restore-bounds-v3',' --composition integrated-d504-diagnostics-v2');
+  assert.equal(sha(inverse),"cfa875fcee557f018d3349abbe200547a9c491a692173fd40df63ed844f7c9fb",'Entire seven V3-to-V2 native jobs');
+  return inverse;
+}
+function projectSource19RestoreBoundsScope(actual) {
+  if(sha(JSON.stringify(actual))!=="01a1a951956d805c9759d62d01f10c96b37346edb851afed8c3250e90cf5b40a")return actual;
+  const inverse=actual.filter(file=>!source19RestoreBoundsFixtures.some(row=>row.next===file));
+  assert.equal(actual.length-inverse.length,2);assert.equal(sha(JSON.stringify(inverse)),"1a57c0d62f9b588d02de7a0aa366d67292fa653bebe0d9afebb1eacf1c1e089c");
+  return inverse;
+}
+export async function assertSource19RestoreBoundsComposition() {
+  const read=async file=>(await fs.readFile(path.join(process.cwd(),file),'utf8')).replaceAll('\r\n','\n');
+  const object=(text,name)=>{const match=text.match(new RegExp('const '+name+'=Object\\.freeze\\((\\{[\\s\\S]*?\\})\\);'));assert.ok(match);return {literal:match[0],value:JSON.parse(match[1])};};
+  const product=await read('scripts/protected-private-production-runtime.mjs');
+  assert.equal(sha(projectSource19RestoreBoundsProduct('scripts/protected-private-production-runtime.mjs',product)),'a3ee076322bd4dcc9a1fa0b36948aadb1b8e672efa1f4d65c062b4e8c5852273');
+  for(const row of source19RestoreBoundsFixtures){
+    const parent=await read(row.parent),actual=await read(row.next);
+    assert.equal(sha(parent),row.parentSha256);assert.equal(sha(actual),row.afterSha256);
+    const oi=object(parent,'fixtureIdentity'),ni=object(actual,'fixtureIdentity');
+    const op=object(parent,'fixtureProductPins'),np=object(actual,'fixtureProductPins');
+    assert.deepEqual(Object.keys(np.value),Object.keys(op.value));assert.equal(Object.keys(np.value).length,27);
+    assert.deepEqual(Object.keys(np.value).filter(file=>np.value[file]!==op.value[file]),['scripts/protected-private-production-runtime.mjs']);
+    assert.equal(ni.value.restoreBoundsCompositionId,"916ccf64aca16ffca20cca31a52dcae9fa8000cdb3ac5b3c7de1084db5001091");
+    assert.equal(ni.value.evidence,'LINUX_UNRUN_NO_ADMISSION');
+    for(const [file,expected]of Object.entries(np.value))assert.equal(sha(await read(file)),expected);
+    let inverse=actual.replace(ni.literal,oi.literal).replace(np.literal,op.literal);
+    assert.equal(inverse.split(row.guard).length,2);inverse=inverse.replace(row.guard,'');
+    inverse=inverse.replace("    '"+row.next+"',\n    '"+row.parent+"',\n","    '"+row.parent+"',\n")
+      .replace("      && file !== '"+row.next+"') continue;","      && file !== '"+row.parent+"') continue;");
+    assert.equal(inverse,parent,'Entire issued V2 fixture, not re-pinned evidence');
+    assert.equal(source19NativeCiRequired([row.next]),true);
+  }
+  return {status:'SOURCE19_RESTORE_BOUNDS_V3_COMPOSITION_PASS',changedRuntimePinFromV2:1,totalChangedPinsFromD504:3,unchangedPinsFromD504:24,frozenEarlierFixtures:6,nativeActual:'UNRUN',sourceAdmission:false};
+}
+// END exact V3 restoration composition.
+// Normal API regression for the actual SOURCE local-restore call only.
+// No issuer, holder, H70/H71, provider transport or SOURCE completion is fabricated.
+export async function testSource19OriginalLocalRestoreBounds() {
+  const os=await import('node:os');
+  const {pathToFileURL}=await import('node:url');
+  const {execFileSync}=await import('node:child_process');
+  const root=process.cwd();
+  const local=file=>import(pathToFileURL(path.join(root,file)).href);
+  const workflow=await local('scripts/private-production-runtime-workflow.mjs');
+  const bundle=await local('scripts/private-production-runtime-bundle.mjs');
+  const protectedRuntime=await local('scripts/protected-private-production-runtime.mjs');
+  const {ravScoreModelBinding}=await local('js/core/ravscore-model-contract.js');
+  const {secondRestoreExpectation}=await local('scripts/private-runtime-second-restore-expectation.mjs');
+  const test=(await fs.readFile(path.join(root,'scripts/test-protected-private-production-runtime.mjs'),'utf8')).replaceAll('\r\n','\n');
+  assert.equal(sha(test),'aa8a7d07881f7ccf743d56a0c8e60c0ab5c88d0174ef327a28d1d861ff03380a');
+  const first=test.indexOf('const clone = value =>');
+  const end=test.indexOf('\ntry {\n  await fs.mkdir(repository',first);
+  const setupEnd=test.indexOf('\n  const baselineContracts =',end);
+  assert.ok(first>=0&&end>first&&setupEnd>end);
+  const factory=test.slice(first,end),setup=test.slice(end+'\ntry {'.length,setupEnd);
+  assert.equal(sha(factory),'458cca26ba913f507307f2316e194fb1e0ac0826e27c82c7bcc4a119007dd065');
+  assert.equal(sha(setup),'2b57d6cfdcf3e7f1b5646739a7abeb8967a57cabdab44f9272e68c03776b061f');
+  const args={fs,os,path,crypto,process,Buffer,assert,
+    PRIVATE_RUNTIME_FILES:workflow.PRIVATE_RUNTIME_FILES,
+    PRIVATE_RUNTIME_CONTRACT_FILES:workflow.PRIVATE_RUNTIME_CONTRACT_FILES,
+    ravScoreModelBinding,buildPrivateRuntimeCreateSpec:workflow.buildPrivateRuntimeCreateSpec,
+    buildPrivateRuntimeExpectation:workflow.buildPrivateRuntimeExpectation,
+    createPrivateProductionRuntimeBundle:bundle.createPrivateProductionRuntimeBundle};
+  const fixture=await Function(...Object.keys(args),'return (async()=>{\n'+factory+setup
+    +'\nreturn {temp,repository,privateRoot,createGeneration,fakeDocuments,fakeStorage};})()')(...Object.values(args));
+  try {
+    const target=new Date(Math.floor(Date.now()/3600000)*3600000).toISOString();
+    const previous=new Date(Date.parse(target)-3600000).toISOString();
+    const generation=await fixture.createGeneration(0,{metadataOverride:{generatedAt:previous,productionReferenceAt:previous}});
+    const expected=await workflow.buildPrivateRuntimeExpectation({repositoryRoot:fixture.repository,targetReferenceAt:target,now:target});
+    const documents=fixture.fakeDocuments(),storage=fixture.fakeStorage();
+    const sourceHead=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+    await protectedRuntime.publishProtectedPrivateProductionRuntime({
+      privateRoot:fixture.privateRoot,bundlePath:generation.bundlePath,repositoryRoot:fixture.repository,
+      expected,now:target,sourceHead,request:documents.request,storage:storage.client});
+    const source=await protectedRuntime.describeCurrentProtectedPrivateProductionRuntime({request:documents.request});
+    const bundlePath=path.join(fixture.privateRoot,'source-bounds-restored-bundle');
+    const restored=await protectedRuntime.restoreProtectedPrivateProductionRuntime({
+      privateRoot:fixture.privateRoot,bundlePath,repositoryRoot:fixture.repository,expected,now:target,
+      request:documents.request,storage:storage.client});
+    assert.equal(restored.restored,true);
+    const exact=await protectedRuntime.describeTargetProtectedPrivateProductionRuntime({
+      request:documents.request,targetReferenceAt:previous,datasetId:source.datasetId,bundleContentSha256:source.bundleContentSha256});
+    const manifest=JSON.parse(await fs.readFile(path.join(bundlePath,'manifest.json'),'utf8'));
+    const second=secondRestoreExpectation({expected,source:exact,manifest});
+    const runtime=(await fs.readFile(path.join(root,'scripts/protected-private-production-runtime.mjs'),'utf8')).replaceAll('\r\n','\n');
+    const marker='    invocation.localRestore = readers.bundle.restorePrivateProductionRuntimeBundle({\n';
+    const start=runtime.indexOf(marker),last=runtime.indexOf(' });',start)+' });'.length;
+    assert.ok(start>0&&last>start&&runtime.split(marker).length===2);
+    const actualCall=runtime.slice(start,last).replace('    invocation.localRestore = ','').slice(0,-1);
+    const bounds=",\n      targetReferenceAt: second.targetReferenceAt, minimumReferenceAt: second.minimumReferenceAt,\n      minimumGeneratedAt: second.minimumGeneratedAt";
+    assert.ok(actualCall.split(bounds).length<=2);
+    const beforeCall=actualCall.replace(bounds,'');
+    assert.ok(!beforeCall.includes('targetReferenceAt:')&&!beforeCall.includes('minimumReferenceAt:')&&!beforeCall.includes('minimumGeneratedAt:'));
+    const readers={bundle,bundleRoot:fixture.repository};
+    const paths={root:fixture.privateRoot,bundle:bundlePath,restored:path.join(fixture.privateRoot,'source-local-restore')};
+    const invoke=(expression,value=second)=>Function('readers','paths','second','return '+expression)(readers,paths,value);
+    await assert.rejects(invoke(beforeCall),error=>error?.constructor===Error
+      &&error.message==='Private runtime restore target reference is not a valid time');
+    await assert.rejects(fs.lstat(paths.restored),error=>error.code==='ENOENT');
+    // This is the actual current caller, not a repaired test-only replacement.
+    const complete=await invoke(actualCall);
+    assert.equal(complete.restored,true);assert.equal(complete.targetWasAbsent,true);
+    assert.equal(complete.atomicDirectoryPublication,true);
+    const conditions=JSON.parse(await fs.readFile(path.join(paths.restored,'data/live/conditions.json'),'utf8'));
+    assert.equal(conditions.datasetId,manifest.datasetId);
+    for(const file of manifest.files){
+      const input=await fs.readFile(path.join(bundlePath,bundle.PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.payloadDirectoryName,file.relativePath));
+      const output=await fs.readFile(path.join(paths.restored,file.relativePath));
+      assert.equal(sha(input),file.sha256);assert.deepEqual(output,input);
+    }
+    const refusals=[
+      {name:'unknown-target',change:{targetReferenceAt:undefined},message:'Private runtime restore target reference is not a valid time'},
+      {name:'inverted-bounds',change:{minimumReferenceAt:new Date(Date.parse(target)+3600000).toISOString()},message:'Private runtime restore bounds are inverted'},
+      {name:'older-target-than-original',change:{targetReferenceAt:new Date(Date.parse(previous)-3600000).toISOString()},message:'Private runtime bundle is from the future relative to its restore target'},
+      {name:'older-generation-than-required',change:{minimumGeneratedAt:target},message:'Private runtime bundle would regress the generation time'},
+      {name:'unknown-generation-bound',change:{minimumGeneratedAt:'not-a-time'},message:'Private runtime minimum generation time is not a valid time'},
+    ];
+    for(const refusal of refusals){
+      paths.restored=path.join(fixture.privateRoot,'refused-'+refusal.name);
+      await assert.rejects(invoke(actualCall,{...second,...refusal.change}),
+        error=>error?.constructor===Error&&error.message===refusal.message);
+      await assert.rejects(fs.lstat(paths.restored),error=>error.code==='ENOENT');
+    }
+    return {status:'SOURCE19_ACTUAL_LOCAL_RESTORE_BOUNDS_PASS',genuineMissingBoundsRed:true,
+      actualCallerAtomicRestore:true,originalPayloadBytesPreserved:true,timeGuardNegatives:5,
+      realNetwork:0,nativeActual:'UNRUN',sourceAdmission:false};
+  } finally {
+    const own=await fs.realpath(fixture.temp);
+    assert.equal(path.dirname(own),await fs.realpath(os.tmpdir()));
+    assert.match(path.basename(own),/^ravradar-protected-private-runtime-/);
+    await fs.rm(own,{recursive:true,force:false}); // Only this genuine normal fixture's own temporary root.
+  }
+}
+
 export async function testSource19NativeCiWorkflow(input=null) {
   const workflow=(input??await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n');
   const historical=projectSource19NativeCiWorkflow(workflow);
@@ -620,6 +774,8 @@ export async function testSource19NativeCiWorkflow(input=null) {
   await testSource19BeforeHFailureDiagnostics();
   await testSource19FixedProductDiagnostics();
   await assertSource19FixedDiagnosticComposition();
+  await assertSource19RestoreBoundsComposition();
+  await testSource19OriginalLocalRestoreBounds();
   return {status:'SOURCE19_NATIVE_CI_CONTRACT_PASS',scopePaths:SOURCE19_NATIVE_SCOPE_PATHS.length,cases:7,nativeActual:'UNRUN'};
 }
 
