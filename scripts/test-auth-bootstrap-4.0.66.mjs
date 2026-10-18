@@ -58,8 +58,8 @@ const uiPaths = [
 // Only the three top-level mobile UI assets have a new key. The unchanged
 // account module must retain its original identity across all importers.
 const expectedUiMarkers = [
-  'account-timeline-20261018', 'account-timeline-20261018',
-  'account-timeline-20261018', 'account-20261006',
+  'account-timeline-20261018', 'account-timeline-now-20261018',
+  'account-timeline-now-20261018', 'account-20261006',
 ];
 const entries = new Map();
 const fetched = [];

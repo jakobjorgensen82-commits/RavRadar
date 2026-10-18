@@ -4,6 +4,10 @@ Den samlede kildeændring tilføjer nu den faste metadata-/tilstedeværelsesrapp
 
 PR659's samlede præcise kildekontrol er bestået, og samme træ er merget. Den efterfølgende faktiske genopretning passerede checkpoint og originalplan, men stoppede på et eksakt historisk katalogopslag med HTTP 404/410 før cachegemning. En skrivefri metadata-/tilstedeværelsesrapport forberedes, så næste genopretningsvej vælges ud fra faktiske originaler frem for gæt om modelalder. Ingen ny vejrgeneration, ændret scoreformel, kildeprioritet, geometri eller SQL-installation.
 
+## 4.0.581 — 18. oktober — femdøgnslistens zoneklik vælger Nu
+
+Klik fra forsiden femdøgnsliste vælger i den lokale UI-kandidat først eksisterende Nu og åbner derpå zonen normalt. Kortklik og øvrig tidsadfærd er uændrede; den annullerede større kontekstomlægning er ikke med. Kun de nødvendige bootstrap-/app-UI-adresser ændres, ikke versionsnummer, model eller data. Eksisterende lokale mål genbruges kun med hele kildepins; præcis CI, sikker levering og offentlig kontrol mangler.
+
 ## 4.0.581 — 2026-10-18 — kapacitetsprøvens transportinput
 
 PR659's næste kontrol bestod native Linux, PostgreSQL, hele kildegennemgangen og baseline, men stoppede i den afsluttende kapacitetsprøve. Tre fixtures placerede en uregistreret gammel fil på den indkommende destination og nåede derfor ikke længere deres deadline-/fejlbevaringsgren. Kun testinput adskiller nu den bevarede gamle fil fra en faktisk ny destination. Alle eksisterende timeout-, førsteårsags-, luknings-, checkpoint-, byte- og identitetskrav består; produktguard og Linux-prøven omgås ikke. Ny præcis samlet CI og faktisk originalgenopretning/deploy er fortsat påkrævet.

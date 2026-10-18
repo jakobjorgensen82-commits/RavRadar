@@ -6,6 +6,10 @@ PR659 er faktisk kvalificeret og merget. Den nye genopretning passerede autentif
 
 Modelalder, konkret afvist original og manifest-/filfordeling er endnu ukendte. De validerede fejltællere går tabt i koordinatorens fejlvej; en afgrænset skrivefri rapport forberedes, ikke en ny samplingadmission. Ingen ny RAW-SAVE, B/S eller offentlig generation. Ældre cachegenbrug er kun en ubekræftet mulighed og kræver fuldt originalmatch. Cron og øvrige aktiveringer er pauset; alle fem mål er åbne. Ingen blind gentagelse, historiknulstilling, gættede adresser eller lempede guards.
 
+## 18. oktober — femdøgnslistens zoneklik vælger Nu
+
+Åben indtil offentlig kontrol: Et zoneklik fra forsiden femdøgnsliste kan bevare kortets valgte fremtidstime og derfor åbne enkelttimepanelet. Den frosne lokale rettelse kalder kun eksisterende Nu før uændret zoneåbning. Den større kontekstadskillelse er annulleret. Lokale normale mål er ikke offentlig lukning; præcis CI, sikker levering og konkret browser-/mobilaccept mangler. Vejrhentningens P0 prioriteres uændret først.
+
 ## 18. oktober — kapacitetsprøvens transportinput
 
 Den anden PR659-kontrol stoppede i den sidste kapacitetsprøve efter faktisk bestået Linux/native, PostgreSQL, kildegennemgang og baseline. Tre gamle fixtures lod en uregistreret fil optage indkommende destination; det nye korrekte bevaringsafslag kom før den tilsigtede deadline-/cleanupfejl. Kun fixtures adskiller nu gammel original og ny destination. Alle gamle assertions og Linux-signalkrav bevares, produktguard er uændret. Ny præcis CI, egentlig genopretning og offentlig vejrgeneration er stadig åbne; ingen kilde- eller produktionssucces udledes af deltrin.

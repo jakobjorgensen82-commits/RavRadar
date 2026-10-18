@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
+import vm from 'node:vm';
 import { registerHooks } from 'node:module';
 import { setImmediate as turn } from 'node:timers/promises';
 import { createMapForecastController, exactMapZoneScore, mapCoastalPartsForDisplay } from '../js/services/map-forecast-view.js';
@@ -9,6 +10,10 @@ import '../js/ui/map-timeline-copy.js?v=4.0.579';
 import { buildSelectedHourFlowArrows } from '../js/map/map-view.js';
 import * as service from '../js/services/data-service.js';
 import { publicDeliveryGeneration } from '../js/core/public-delivery-contract.js';
+import { showZoneInfo, bindZoneInfoInteractions } from '../js/ui/info-panel.js';
+import { buildLocalZoneScore, selectLocalBestForDay, isCurrentForecastHour } from '../js/core/local-zone-score.js';
+import { forecastDateKeyInTimeZone, visibleForecastDays } from '../js/core/forecast-calendar.js';
+import { getLanguage, getLocale, t } from '../js/i18n.js';
 import { buildPublicConditions, buildPublicConditionDetails, buildPublicManifest, buildPublicDeliveryDocument,
   compactJson, sha256Text } from './public-conditions-lib.mjs';
 
@@ -59,11 +64,13 @@ manifest.detailDelivery={schemaVersion:1,forecastHours:118,sourceDetailsSha256:m
 const documents=new Map(),hourDocuments=new Map();
 function register(document,targetManifest=manifest){
   const text=compactJson(document),sha256=sha256Text(text),descriptor={path:`./forecast/${sha256}.json`,sha256,bytes:Buffer.byteLength(text)};
-  targetManifest.detailDelivery.hours[document.delivery.key]=descriptor;
+  targetManifest.detailDelivery[document.delivery.kind==='zone'?'zones':'hours'][document.delivery.key]=descriptor;
   const url=`./data/live/forecast/${sha256}.json?dataset=${targetManifest.datasetId}&sha=${sha256}`;
   documents.set(url,text);return{document,url,text};
 }
 for(const i of selectedIndices){const time=horizonTimes[i];hourDocuments.set(time,register(buildPublicDeliveryDocument(source,details,manifest,'hour',time)));}
+const rankedZoneIds=[...new Set(Object.values(startup.nationalForecast.modes).flatMap(days=>days.flatMap(day=>day.rows.slice(0,1).map(row=>row.zoneId))))];
+const zoneDocuments=new Map(rankedZoneIds.map(id=>[id,register(buildPublicDeliveryDocument(source,details,manifest,'zone',id))]));
 const startupUrl=`./data/live/public-conditions.json?dataset=${manifest.datasetId}&sha=${manifest.publicConditionsSha256}`;
 documents.set(startupUrl,startupText);
 const saved={fetch:globalThis.fetch,now:Date.now,document:globalThis.document,storage:globalThis.localStorage};
@@ -186,6 +193,111 @@ try{
   assert.match(app,/function assistantContext\(\).*currentDisplayFor\(zone\)/);
   assert.match(app,/conditions:state\.conditions,zones:state\.zones/);
   assert.doesNotMatch(app,/state\.conditions\s*=\s*(?:frame|mapForecast|mapConditions)/);cases++;
+
+  // Actual national ranking event -> existing Now controller -> actual app
+  // open/render/detail route. The normal bound zone envelope is loaded only
+  // on click; no score/model authority comes from this owned DOM fixture.
+  const appSource=app.replace(/\r\n/g,'\n');
+  const fragment=(start,end)=>{
+    const from=appSource.indexOf(start),to=appSource.indexOf(end,from+start.length);
+    assert.ok(from>=0&&to>from,'Normal zone caller boundary absent: '+start);return appSource.slice(from,to);
+  };
+  class Button {
+    constructor(dataset={}){this.dataset=dataset;this.events=new Map();this.classList={toggle(){}};}
+    addEventListener(event,callback){this.events.set(event,callback);}
+    click(){this.events.get('click')?.();}
+  }
+  const mapCallbacks=[...appSource.matchAll(/zone=>openZone\(zone,\{scroll:false\}\)/g)].map(row=>row[0]);
+  assert.equal(mapCallbacks.length,2,'Both actual map callbacks keep their old selected-hour entrypoint');
+  for(const language of ['da','de','en'])for(const mode of ['waders','beach']){
+    globalThis.localStorage={getItem:()=>language};
+    const panelCalls=[],loaded=[],errors=[];
+    const panel={innerHTML:'',hidden:true,querySelector:()=>null,addEventListener(){},removeEventListener(){},
+      prepend(){},scrollIntoView(){},replaceChildren(){this.innerHTML='';}};
+    const list={style:{setProperty(){}},buttons:[],querySelectorAll:()=>list.buttons,
+      set innerHTML(html){this.html=html;this.buttons=[...html.matchAll(/data-zone-id="([^"]+)"/g)].map(row=>new Button({zoneId:row[1]}));}};
+    const national={tabs:[],querySelector:()=>list,querySelectorAll:()=>national.tabs,
+      set innerHTML(html){this.tabs=[...html.matchAll(/data-day-index="(\d+)"/g)].map(row=>new Button({dayIndex:row[1]}));}};
+    let releaseLate=null,holdLate=false,currentLoad=null,verifiedLoad=null;
+    const uiState={mode,selectedZone:null,currentScores:new Map(),forecastGroups:new Map(),forecastRenderId:0,
+      zones:features,zoneLayer:{selectZone(){}},conditions:live,flowArrows:{refresh(){}}};
+    const context={state:uiState,Map,Promise,Date,Intl,console:{warn(){},error:error=>errors.push(error)},
+      infoPanel:panel,nationalForecast:national,coreViewReady:false,selectedZonePartsVisible:false,
+      activeManifest:manifest,runtimeGeneration:1,pendingZoneDetails:new Map(),conditionDetailsPromise:null,conditionDetailsReady:false,
+      performance:{mark(){}},mapScores:new Map(),resetAssistantTopic(){},
+      document:{querySelector:()=>null,createElement:()=>({}),body:{classList:{add(){},remove(){}}}},
+      map:{setView(){},getZoom:()=>7,invalidateSize(){}},requestAnimationFrame:callback=>callback(),
+      refreshZoneStyles(){},showSelectedZoneParts(){},renderRanking(){},yieldToBrowser:async()=>{},
+      hasNumber:Number.isFinite,isCurrentForecastHour,forecastDateKeyInTimeZone,visibleForecastDays,
+      buildLocalZoneScore,selectLocalBestForDay,exactMapZoneScore,getLanguage,getLocale,t,
+      mapTimelineDate,formatDateTime:value=>value,scoreRating:()=>({level:'good'}),exceptionalScoreMark:()=>'',scoreQualityMarker:()=>'',
+      loadConditionDetails:async options=>{loaded.push(options.zoneId);return service.loadConditionDetails(options);},
+      mergeConditionDetails:service.mergeConditionDetails,bindZoneInfoInteractions,
+      showZoneInfo:(...args)=>{panelCalls.push(args);return showZoneInfo(...args);}};
+    const controller=createMapForecastController({
+      loadHour:time=>{
+        verifiedLoad=service.loadMapForecastHour({manifest,conditions:live,time});
+        currentLoad=verifiedLoad.then(verified=>holdLate
+          ?new Promise(resolve=>{releaseLate=()=>resolve(verified);}):verified);
+        return currentLoad;
+      },onCommit:frame=>context.handleMapForecastCommit(frame)});
+    context.mapForecast=controller;
+    vm.createContext(context);
+    vm.runInContext([
+      fragment('function handleMapForecastCommit(frame)','function configureMapTimeline()'),
+      fragment('function refreshMapDisplay()','let publicTripEvidenceRuntime'),
+      fragment('function emergencySnapshotReferenceAt()','function resultFor(zone)'),
+      fragment('function currentScoreFor(zone)','function nationalRankingRow(row)'),
+      fragment('function renderSelectedZone()','function renderRanking()'),
+      fragment('function groupHoursForZone(zone)','const yieldToBrowser='),
+      fragment('async function renderNationalForecast()','function ensureConditionDetails('),
+      fragment('function ensureConditionDetails(','function nextConditionRuntimeGateAt('),
+    ].join('\n'),context,{filename:'normal-national-zone-now-callers.js'});
+    controller.configure({generation:timeline.generation,times:horizonTimes,live:{time:generatedAt,conditions:live}});
+    context.coreViewReady=true;
+    controller.select(h1,{immediate:true});await turn();await currentLoad;await turn();
+    assert.equal(controller.snapshot().status,'ready');
+    const mapOpen=vm.runInContext('('+mapCallbacks[0]+')',context),zone=features.features.find(row=>row.properties.id===rankedZoneIds[0]).properties;
+    mapOpen(zone);assert.equal(controller.snapshot().committedTime,h1);
+    assert.equal(panelCalls.at(-1)[5].mapForecastTime,h1);
+    assert.doesNotMatch(panel.innerHTML,/data-forecast-section|data-tide-section/);
+    assert.equal(loaded.length,0,'A future map click keeps the existing single-hour route');
+    assert.equal(await context.renderNationalForecast(),true);
+    // Select an available later national day first; resetting the map must not
+    // rewrite national dates/ranks or auto-select a different national day.
+    const lastTab=national.tabs.at(-1);lastTab.click();
+    const selectedDayMarkup=list.html,firstButton=list.buttons[0];assert.ok(firstButton);
+    firstButton.click();const pending=context.conditionDetailsPromise;if(pending)await pending;
+    assert.equal(controller.snapshot().committedTime,generatedAt,'National forecast zone click must synchronously select existing Now');
+    assert.equal(controller.snapshot().requestedTime,generatedAt);
+    assert.equal(panelCalls.at(-1)[5].mapForecastTime,null);
+    assert.equal(panelCalls.at(-1)[2].time,generatedAt,'Normal cards are current, not the selected future hour');
+    assert.match(panel.innerHTML,/data-forecast-section/);assert.match(panel.innerHTML,/data-tide-section/);
+    assert.doesNotMatch(panel.innerHTML,/map-timeline-zone-scope/);
+    const summary=JSON.parse(panel.innerHTML.match(/class="forecast-payload">([^<]+)</)[1]);
+    assert.equal(summary[0].date,forecastDateKeyInTimeZone(freshNow),'Calendar remains based on real Now');
+    assert.equal(summary.length,5);assert.equal(summary.flatMap(day=>day.hours).length,118);
+    assert.equal(list.html,selectedDayMarkup,'National selected day and ranking markup are unchanged');
+    assert.deepEqual(loaded,[firstButton.dataset.zoneId]);
+    assert.equal(uiState.conditions.publicRuntimeAvailability.selectedReferenceAt,generatedAt);
+    assert.equal(uiState.conditions.deliveryManifestIdentity,live.deliveryManifestIdentity);
+    const zoneLoads=requests.filter(url=>[...zoneDocuments.values()].some(row=>row.url===url));
+    assert.ok(zoneLoads.length<=rankedZoneIds.length,'Only explicitly opened zone envelopes are requested');
+    // A previously started selected-hour load may still finish after Now.
+    // It must not restore the future projection or selected-hour zone cards.
+    controller.select(h1,{immediate:true});await turn();await currentLoad;await turn();
+    assert.equal(controller.snapshot().status,'ready');
+    holdLate=true;controller.select(last,{immediate:true});
+    await turn();await verifiedLoad;await turn();assert.ok(releaseLate);
+    firstButton.click();assert.equal(controller.snapshot().committedTime,generatedAt);
+    releaseLate();await currentLoad;await turn();
+    assert.equal(controller.snapshot().committedTime,generatedAt);
+    assert.equal(controller.snapshot().requestedTime,generatedAt);
+    assert.equal(panelCalls.at(-1)[5].mapForecastTime,null);assert.match(panel.innerHTML,/data-forecast-section/);
+    assert.equal(errors.length,0);assert.equal(JSON.stringify(live),before,'Original live input is unchanged');
+    controller.destroy();cases++;
+  }
+  globalThis.localStorage={getItem:()=> 'da'};
   // The actual day renderer must keep every calendar day on one bounded row.
   // Pixel rectangles below are layout arithmetic, not a browser/font-paint claim.
   for(const language of ['da','de','en'])for(const count of [4,5,6])for(const viewport of [320,375,390,414]){

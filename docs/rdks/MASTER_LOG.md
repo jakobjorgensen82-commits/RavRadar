@@ -6,6 +6,12 @@ Præcis PR659-kontrol med Linux, PostgreSQL, baseline, kapacitet og kildebevis b
 
 En skrivefri, afgrænset plan-/manifestrapport forberedes før valg af næste genopretningsvej. Muligt genbrug af ældre cache er ikke bevist. Der er ikke gemt en ny RAW-cache eller leveret beregning, B/S eller Pages. Cron er pauset, alle fem mål er åbne, og isolerede kandidater forbliver inaktive. Bevar første fejl, autentiske originaler og alle grænser; ingen blind gentagelse eller ny historikstart.
 
+## 18. oktober — femdøgnslistens zoneklik vælger Nu
+
+Ejerens seneste afgrænsning er kun dette: Et zoneklik i forsiden femdøgnsprognose skal først vælge den eksisterende Nu-visning og derefter åbne zonen gennem det uændrede normale forløb. Nu er controllerens aktuelle verificerede livetime, ikke midnat eller første time i datasættet. Kortklik, manuel tidsskyder, rangering, valgt prognosedag, søgemåder, pile og øvrige brugerfunktioner bevares. Den tidligere større adskillelse af zone- og kortkontekst er annulleret og indgår ikke.
+
+Den særskilte frosne lokale kandidat består de eksisterende normale mål med 72 hovedtilfælde, inklusive dansk/tysk/engelsk og begge søgemåder, samt panel-, generations-, cache- og authprøver. De hele kildeafhængigheder er uændrede på denne førkilde; målene er ikke genkørt her. Det er ikke ny præcis samlet CI, sikker levering eller offentlig browseraccept. Versionsnummer 4.0.581, C/I/T, vejrdata, scoreformel, originaler, geometri og SQL-schema ændres ikke. Vejrfejlrettelsen har fortsat første prioritet; denne separate UI-forberedelse må ikke forsinke den.
+
 ## 18. oktober — kapacitetsprøvens transportinput
 
 PR659's næste kontrol bestod native Linux, PostgreSQL, hele kildegennemgangen og baseline, men stoppede i den afsluttende kapacitetsprøve. Tre fixtures placerede en uregistreret gammel fil på den indkommende destination og nåede derfor ikke længere deres deadline-/fejlbevaringsgren. Kun testinput adskiller nu den bevarede gamle fil fra en faktisk ny destination. Alle eksisterende timeout-, førsteårsags-, luknings-, checkpoint-, byte- og identitetskrav består; produktguard og Linux-prøven omgås ikke. Ny præcis samlet CI og faktisk originalgenopretning/deploy er fortsat påkrævet. Cron forbliver pauset; alle fem hovedmål er åbne.
