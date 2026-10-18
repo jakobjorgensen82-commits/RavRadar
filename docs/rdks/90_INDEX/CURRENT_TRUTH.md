@@ -1,3 +1,9 @@
+## 18. oktober — præcis kildekontrol fandt manglende VM-miljø
+
+PR656's første præcise kontrol bestod Linux/native PostgreSQL, men fejlede i én kildekommandogruppe: to normale VM-kalderprøver manglede `process`, da det faktiske integrationsudsnit læste diagnosens som udgangspunkt inaktive miljøflag. Resten af den lange kildeplan blev kørt; senere baseline-, kapacitets- og kildebevistrin blev ikke kørt. Der er intet nyt grønt kildebevis eller diagnoseudfald fra denne kørsel.
+
+Kun de to eksisterende VM-scopes får nu et fælles, frosset og credentialfrit tomt miljø. Det faktiske integrationsudsnit, alle gamle kontroludsagn og produktkoden bevares. Hele det berørte normale mål består lokalt med fem prøver uden fejl eller skip på 2,292 sekunder. Ny præcis samlet CI kræves stadig. Mobilens uændrede PR655-kontrol fortsætter særskilt; ingen produktionsændring, modelbinding, SQL eller vejrhentning følger af testrettelsen.
+
 ## 18. oktober — særskilt, inaktiv normal checkpoint-diagnose
 
 Den fremadrettede kildegennemgang fandt desuden, at den normale 673-dels efterfølgerprøve læste den nye updater under sin ægte gamle hele 140000-pin. Kun dens testinput inverterer nu de syv præcise diagnostikhunks før den uændrede 608b-pin og kopiering. Hele prøvefilens øvrige krop, alle otte produktpins og kontroludsagn er bevaret. Én ny afgrænset normal målcase består for den samme læser, ægte gammelt input, syv manglende hunks og ekstra drift; 673-kæden gentages ikke lokalt, men er fortsat obligatorisk i præcis CI. Den lille produktkritiske kildegate består med 123 browserfiler efter korrekt eksisterende Python/PATH; ingen Windows-aliasfejl blev rettet i produktet.

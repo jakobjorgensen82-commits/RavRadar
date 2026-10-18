@@ -1,3 +1,7 @@
+## 18. oktober — VM-kalderrettelse efter faktisk PR656-kildefejl
+
+PR656's første CI bestod Linux/native PostgreSQL, men to VM-prøver i én kildegruppe stoppede på `process is not defined`. Kun deres isolerede miljø er rettet til et fælles, frosset tomt env uden værtsoplysninger. Produktets integrationsudsnit og alle gamle assertions er uændrede. Hele det normale berørte mål består fem prøver uden fejl eller skip på 2,292 sekunder. Dette erstatter kun den lokale testafventning; ny præcis CI, faktisk checkpoint-diagnose, rettelse af driftsfejlen og ny offentlig vejrgeneration er fortsat åbne. PR655 fortsætter uændret og er ikke en fejlet vejrhentning. Ingen model-, SQL- eller produktionsændring.
+
 ## 18. oktober — checkpoint-diagnose for det aktuelle normale stop
 
 Et fremadrettet fund i efterfølgerprøvens gamle hele updater-pin er lukket alene i testinput: eksakt diagnostic-inverse før uændret 608b og de otte gamle pins. Hele øvrige kildeinverse består; én ny normal målcase består uden en ny lokal 673-kørsel. Den fulde kæde afventer fortsat præcis CI. Lille produktkritisk kildegate består med 123 browserfiler; produkt og normale historiske orakler er uændrede.

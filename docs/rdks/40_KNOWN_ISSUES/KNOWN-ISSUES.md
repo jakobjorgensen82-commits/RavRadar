@@ -1,3 +1,7 @@
+## 18. oktober — PR656's afgrænsede kildeprøvefejl
+
+Den første præcise CI bestod native PostgreSQL og gennemførte kildeplanen med én fejlet kommandogruppe. To normale VM-kaldere manglede et credentialfrit procesmiljø til diagnosens default-OFF-flag. Kun VM-scopes er tilpasset; hele deres normale mål består nu fem prøver lokalt uden skip. Alle gamle kontroludsagn og produktkoden bevares. Ny præcis samlet CI og faktisk diagnose mangler; den almindelige vejrhentningsfejl er ikke løst eller omklassificeret af dette. Mobilrettelsens uændrede kildekontrol fortsætter særskilt.
+
 ## 18. oktober — egentlig replay-fejl fortsat åben; afgrænset diagnosekandidat
 
 Det autentificerede originalbevis frikender ikke native-grid-UNKNOWN i den normale beregning. Den lokale, inaktive saved-input-diagnose følger nu det præcise 390663/20Z-forløbs normale B/GCM/registry/origin og delkald i en ægte Git-scratch med kun faste B/S-GETs. Første fejl genkastes før slutbygning, også hvis en anden guard senere standser optællingen. Observerede kandidater er ikke faktisk forbrug, alle nødvendige originaler eller en dokumenteret reparation. Gamle scopes og hele original-/kilde-/SQL-kontroller bevares. Faktisk diagnose, rettelse, gemning, upload, ny offentlig generation og almindelig efterfølger mangler; cron og tilbageholdte leverancer er fortsat inaktive. Den konservative tidligere 51-timers originalplan må ikke aktiveres som bevist nødvendighedsplan.
