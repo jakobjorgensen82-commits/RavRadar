@@ -73,7 +73,7 @@ concurrency:
 jobs:
   audit:
     name: Authenticate existing packages and report only bounded aggregates
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.include_current_window_diagnostic && 75 || 30 }}
     env:
       NODE_OPTIONS: --max-old-space-size=6144

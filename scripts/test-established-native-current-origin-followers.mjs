@@ -18,8 +18,8 @@ function normalOriginUpdaterTestInput(source, oracle) {
   const begin = oracle.indexOf('const savedCurrentReplayUpdaterHunks = [');
   const end = oracle.indexOf('function inverseEstablishedNativeCurrentUpdater(source) {', begin);
   assert(begin >= 0 && end > begin, 'The exact diagnostic test-input inverse must exist.');
-  const inverse = new Function('assert', oracle.slice(begin, end)
-    + '\nreturn inverseSavedCurrentReplayUpdater;')(assert);
+  const inverse = new Function('assert', 'digest', oracle.slice(begin, end)
+    + '\nreturn inverseSavedCurrentReplayUpdater;')(assert, sha);
   const restored = inverse(source);
   assert.equal(sha(restored), expected, 'The whole genuine140000 updater must remain unchanged.');
   return restored;

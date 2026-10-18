@@ -281,14 +281,14 @@ test('actual updater observation control preserves first genuine grid-error iden
   const build = (observe=observation, end=failure) => new Function('calls','counters','process','console',
     'summarizeSavedCurrentReplayGridFailure','part','zoneId','initialSelection','generatedAt','recoverySources','establishedNativeCurrentOrigin','contract',
     'deployedRecoverySource','progressiveRecoverySource','persistedDmiPartRows','buildRavScoreRecoveryReplay',
-    'hourly','targetMs','RAVSCORE_PUBLIC_FORECAST_HOURS','nativeCadenceHoldHours','liveCurrentPilot',
+    'hourly','targetMs','RAVSCORE_PUBLIC_FORECAST_HOURS','nativeCadenceHoldHours','liveCurrentPilot','savedCurrentForwardOriginalPlan',
     declaration+`for(const call of calls){try{savedCurrentReplayDiagnostic && savedCurrentReplayDiagnostic.observedParts++;counters.calls++;call();}
       catch(error){${observe}throw error;}}\n`+end+'counters.output++;counters.finalize++;counters.publish++;\n'+close);
   const invoke = (calls, enabled=true, observe=observation, end=failure) => build(observe,end)(calls,counters,
     {env:{RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC:enabled?'39066350748-1':''}}, {error:value=>logs.push(value)},
     summarizeSavedCurrentReplayGridFailure,f.part,f.part.zoneId,{source:'EXISTING_INTEGRATED',state:{time:'2026-10-17T18:00:00.000Z'}},
     SAVED_CURRENT_REPLAY_SCOPE.target,[{record:{hourly:[f.row]}}],null,{partCount:673},
-    null,null,new Map(),buildRavScoreRecoveryReplay,[],Date.parse(SAVED_CURRENT_REPLAY_SCOPE.target),118,0,null);
+    null,null,new Map(),buildRavScoreRecoveryReplay,[],Date.parse(SAVED_CURRENT_REPLAY_SCOPE.target),118,0,null,null);
   // The normal guard constructs these errors. No origin handle is invented:
   // null means safe observation UNAVAILABLE, not a native/authentication grant.
   assert.throws(()=>invoke([()=>{throw first;},()=>{throw second;}]),error=>error===first);

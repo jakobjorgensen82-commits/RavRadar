@@ -19,6 +19,7 @@ const HEAD = /^[a-f0-9]{40}$/;
 const EXACT_RESTORE_SCOPES = Object.freeze([
   ['38692413809-1', 'weather-private-progress-encrypted-v2-Linux-main-38692413809-1', '2026-10-14T18:00:00.000Z'],
   ['38768040429-1', 'weather-private-progress-encrypted-v2-Linux-main-38768040429-1', '2026-10-15T16:00:00.000Z'],
+  ['39066350748-1', 'weather-private-progress-encrypted-v2-Linux-main-39066350748-1', '2026-10-17T20:00:00.000Z'],
 ]);
 // Exact producer constructor/catch codes only. Never forward an arbitrary
 // uppercase library message just because it resembles an operational code.

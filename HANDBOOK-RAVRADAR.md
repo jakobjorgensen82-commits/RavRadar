@@ -1,3 +1,17 @@
+## 89.253 Genaflæs kun nødvendige strømoriginaler
+
+**Kort fortalt:** Originalfiler skal genaflæses og hele vejret leveres, før genopretningen er bevist. Kildekandidaten er under kontrol; driften er endnu ikke genoprettet.
+
+Den normale kalderprøve skal følge den faktiske kodeform, også når fejlbevaring kræver en særskilt erklæring og asynkron grænse. To tidligere tekstgrænser er faktisk reproduceret røde og rettet uden at fjerne kontroludsagn eller erstatte normal kode. Fem måltilfælde består; præcis samlet kildekontrol og faktisk drift skal stadig dokumenteres særskilt.
+
+En test kan også læse en kildeinverse i et isoleret miljø. Den faktisk fejlede VM skal ikke have generel procesadgang: inversen og dens andre kaldere skal modtage den eksisterende ægte hashfunktion eksplicit. Gamle hele kontrolsummer og kontroludsagn bevares. Dette retter testkæden; ny samlet kildekontrol og faktisk vejrgendannelse er fortsat nødvendige.
+
+En gemt original og dens kontrolsum er ikke i sig selv dokumentation for en senere korrekt gitteraflæsning. Når den normale fremadberegning mangler denne dokumentation, skal de faktiske kildevalg efter den gemte tilstand spores til hvert native-endepunkts egen komplette originalidentitet. Nødvendig interpolation og kvalificeret støtte til strømhukommelse må ikke bortfalde. Den gemte gyldige tilstand og gamle originale bytes skal bevares.
+
+En privat behovsplan giver hverken samplingbevis eller tilladelse til at fortsætte beregningen. Alle allerede lokale råfiler kontrolleres før eventuel netadgang. Kun reelt manglende, præcist identificerede originaler må genanskaffes, og det samlede plads- og downloadbehov skal passe inden for eksisterende grænser uden sletning. Korruption, uafklaret filudskiftning og manglende lukningsbevis er ikke et legitimt fravær.
+
+Genopretning af filerne skal følges af den normale numeriske genaflæsning, der selv udsteder den korrekte dokumentation, og derefter almindelig streng beregning, gemning og offentlig kontrol. Lokal plan, filkontrol eller grøn kildekontrol er ikke en ny offentlig vejrgeneration. Denne afgrænsede rettelse er under kontrol og er endnu ikke produktionsverificeret; normal genoptagelse og efterfølger skal bevise effekten. Ingen scoreformel, kildeprioritet, administratorpunkter eller geometri ændres.
+
 ## 89.252 Gemte strømtilstande skal fortsættes, ikke genstartes
 
 **Status 17. oktober kl. 21 dansk tid:** PR652's præcise samlede kildekontrol bestod inklusive PostgreSQL, baseline og kapacitet, og samme træ er merget. Det efterfølgende kontrollerede rettelsesdeploy bevarede de autentificerede 0200-originaler og numeriske værdier. Databaseinstallationen sluttede 17. oktober kl. 20.59 dansk tid; den efterfølgende migrationstabel viser 20261017140000 både lokalt og centralt. Den fulde databasebindingskontrol blev ikke nået, og ny privat B/S-publicering, serverfunktioner, Pages og frisk vejrgeneration er ikke leveret.

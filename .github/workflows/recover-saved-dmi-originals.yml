@@ -17,8 +17,8 @@ permissions:
   actions: read
   pull-requests: read
 
-# This is the one approved repair of saved originals, not a weather update.
-# No source-selected command, newer forecast, calculation, SQL or deploy.
+# Exact390663 post-H0 repair. Normal selection runs only in private scratch;
+# no newer forecast, production calculation, SQL or deploy is performed.
 concurrency:
   group: ravradar-weather-production-v2
   queue: max
@@ -27,8 +27,8 @@ concurrency:
 jobs:
   restore:
     name: Restore exact historical bytes and save the additive owned RAW cache
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
     env:
       NODE_OPTIONS: --max-old-space-size=6144
     steps:
@@ -52,10 +52,10 @@ jobs:
           test "$GITHUB_SHA" = "$EXPECTED_MAIN_HEAD"
           test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
-          gh api "repos/$GITHUB_REPOSITORY/actions/runs/38692413809/attempts/1" \
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/39066350748/attempts/1" \
             > "$RUNNER_TEMP/saved-input-source-run.json"
           jq -e --arg repo "$GITHUB_REPOSITORY" '
-            .id == 38692413809 and .run_attempt == 1
+            .id == 39066350748 and .run_attempt == 1
             and .repository.full_name == $repo and .head_repository.full_name == $repo
             and .head_branch == "main" and .event == "workflow_dispatch"
             and .path == ".github/workflows/run-current-weather-once.yml"
@@ -64,12 +64,12 @@ jobs:
           source_head="$(jq -er '.head_sha' "$RUNNER_TEMP/saved-input-source-run.json")"
           git merge-base --is-ancestor "$source_head" "$GITHUB_SHA"
           gh api --method GET "repos/$GITHUB_REPOSITORY/actions/caches" \
-            -f key=dmi-grib-v4-Linux-2026-W42-38692413809-1 \
+            -f key=dmi-grib-v4-Linux-2026-W42-39066350748-1 \
             -f ref=refs/heads/main -f per_page=100 \
             > "$RUNNER_TEMP/saved-input-raw-cache-metadata.json"
           jq -e '
             .total_count == 1 and (.actions_caches | length) == 1
-            and .actions_caches[0].key == "dmi-grib-v4-Linux-2026-W42-38692413809-1"
+            and .actions_caches[0].key == "dmi-grib-v4-Linux-2026-W42-39066350748-1"
             and .actions_caches[0].ref == "refs/heads/main"
             and .actions_caches[0].version == "9d434ae81d3120176028232ea936fc3f9dc0ed030022ff6d98bec91aa9cf117a"
             and (.actions_caches[0].size_in_bytes | type == "number" and . > 0)
@@ -108,7 +108,7 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-private-progress.encrypted
-          key: weather-private-progress-encrypted-v2-Linux-main-38692413809-1
+          key: weather-private-progress-encrypted-v2-Linux-main-39066350748-1
           fail-on-cache-miss: true
 
       - name: Require exact checkpoint hit and privately retain its original bytes
@@ -119,7 +119,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$CACHE_HIT" = true
-          test "$MATCHED_KEY" = weather-private-progress-encrypted-v2-Linux-main-38692413809-1
+          test "$MATCHED_KEY" = weather-private-progress-encrypted-v2-Linux-main-39066350748-1
           test -s .cache/weather-private-progress.encrypted
           test ! -L .cache/weather-private-progress.encrypted
           mkdir "$RUNNER_TEMP/ravradar-saved-input-audit"
@@ -131,7 +131,7 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: .cache/dmi-grib
-          key: dmi-grib-v4-Linux-2026-W42-38692413809-1
+          key: dmi-grib-v4-Linux-2026-W42-39066350748-1
           fail-on-cache-miss: true
 
       - name: Require the exact existing RAW cache before additive recovery
@@ -142,7 +142,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$CACHE_HIT" = true
-          test "$MATCHED_KEY" = dmi-grib-v4-Linux-2026-W42-38692413809-1
+          test "$MATCHED_KEY" = dmi-grib-v4-Linux-2026-W42-39066350748-1
           test -d .cache/dmi-grib
           test ! -L .cache
           test ! -L .cache/dmi-grib
@@ -171,17 +171,43 @@ jobs:
           mkdir "$RUNNER_TEMP/ravradar-saved-input-predecessor"
           git archive "$producer_head" | tar -x -C "$RUNNER_TEMP/ravradar-saved-input-predecessor"
 
+      - name: Prepare the exact normal caller only inside private scratch
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/ravradar-saved-input-audit"
+          mkdir "$root/current-window-logs"
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          git clone --shared --no-checkout "$GITHUB_WORKSPACE" "$root/current-window-source"
+          git -C "$root/current-window-source" -c core.autocrlf=false checkout --detach "$GITHUB_SHA"
+          cd "$root/current-window-source"
+          if ! (python scripts/refine-coastlines-constrained-4.0.48.py &&
+            python scripts/sync-admin-config.py &&
+            python scripts/apply-central-zone-reviews.py &&
+            node scripts/build-public-coastal-parts-v2.mjs) >"$root/current-window-logs/normal-admin-hydration.stdout" 2>"$root/current-window-logs/normal-admin-hydration.stderr"; then
+            echo SAVED_CURRENT_WINDOW_CENTRAL_HYDRATION_UNAVAILABLE >&2
+            exit 1
+          fi
+          test -s .cache/admin-config-sync.json
+          test -s data/live/coastal-parts-v2.json
+
       - name: Authenticate the checkpoint and prepare only demanded exact originals
         id: plan
         run: >-
-          node scripts/prepare-saved-dmi-original-restore.mjs prepare
+          node scripts/audit-saved-weather-inputs.mjs audit
           --private-root "$RUNNER_TEMP/ravradar-saved-input-audit"
           --descriptor "$RUNNER_TEMP/ravradar-saved-input-audit/current-source.json"
           --predecessor-root "$RUNNER_TEMP/ravradar-saved-input-predecessor"
           --progress-file "$RUNNER_TEMP/ravradar-saved-input-audit/progress.encrypted"
-          --progress-source 38692413809-1
-          --progress-cache-key weather-private-progress-encrypted-v2-Linux-main-38692413809-1
-          --progress-baseline-target-hour 2026-10-14T18:00:00.000Z
+          --progress-source 39066350748-1
+          --progress-cache-key weather-private-progress-encrypted-v2-Linux-main-39066350748-1
+          --progress-baseline-target-hour 2026-10-17T20:00:00.000Z
+          --include-current-window-diagnostic true
+          --prepare-current-forward-originals true
+          --output "$RUNNER_TEMP/ravradar-saved-input-audit/summary-safe.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -209,6 +235,9 @@ jobs:
         run: node scripts/run-exact-dmi-original-restore.mjs
         env:
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
+          DMI_EXACT_ORIGINAL_PREPARATION_STATUS: ${{ steps.plan.outputs.preparation_status }}
+          DMI_EXACT_ORIGINAL_COUNT: ${{ steps.plan.outputs.original_count }}
+          DMI_EXACT_ORIGINAL_PLAN_BYTES: ${{ steps.plan.outputs.plan_bytes }}
           DMI_EXACT_ORIGINAL_PLAN_SHA256: ${{ steps.plan.outputs.plan_sha256 }}
           DMI_BULK_MAX_DOWNLOAD_MB: 2048
           DMI_BULK_RAW_CACHE_MAX_MB: 4096

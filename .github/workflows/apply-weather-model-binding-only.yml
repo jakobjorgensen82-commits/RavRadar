@@ -35,7 +35,7 @@ concurrency:
 jobs:
   apply-binding:
     name: Apply exact database and assistant bindings without touching saved weather
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN: ${{ inputs.upgrade_current_grid_original }}

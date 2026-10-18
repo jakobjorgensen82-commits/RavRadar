@@ -1,3 +1,15 @@
+## 18. oktober — 4.0.581: CI's isolerede VM-fejl reproduceret
+
+Kontrol 39094806434 fejlede i kildefasen efter bestået PostgreSQL. Første fejl kl. 06.15 dansk tid var ReferenceError process i en ny testinverse, som den normale integrerede generator evaluerer i en isoleret VM. Hele jobresultatet er bevaret privat før afgrænset udlæsning. Den samme faktiske kalder fejlede på lokal Node 22.23.3. Den eksisterende digest bindes nu eksplicit i hele den tre-kalder-kæde; alle gamle historiske kontrolsummer og kontroludsagn bevares. Ny præcis CI og faktisk produktionseffekt er ikke erstattet af lokale prøver. Ingen produktionsændring blev gennemført på den røde kontrol.
+
+## 18. oktober — 4.0.581: faktisk testlæser-RED og afgrænset rettelse
+
+ROOTs fremadrettede gennemgang under PR658-CI fandt to forældede leksikalske grænser i test-weather-component-normal-wireup.mjs. Den faktiske målprøve var rød med tre beståede og to fejlede tilfælde. Kun de to grænser ændres til updaterens faktiske tildeling og erklæringen før den ydre try-blok; hele normale mål består derefter fem uden fejl eller skip. Alle gamle assertions, normal kode, produktværn, C/I/T, SQL og originaler bevares. Det rettede head kræver egen fuld præcis CI. Ingen ny vejrhentning eller offentlig levering er dermed bevist.
+
+## 18. oktober — 4.0.581: afgrænset originalgenopretning efter normal forward-diagnose
+
+Mobilrettelsen er faktisk offentlig med browserbevis. Præcis PR657-CI og merge er gennemført; den efterfølgende skrivefri diagnose nåede alle 673 normale delkald og fandt 33 forward-stop uden en samplingkvitteret efterfølger, selv om traditionelle originalbeviser bestod. Det nye lokale forløb planlægger kun de faktiske efter-H0-kandidaters egne endepunkter og kvalificerede HOLD-støtte. Planen er privat metadata, aldrig sampling- eller fortsættelsesautoritet. Den eksisterende RAW-restorer bliver local-first over alle filer og kontrollerer deduplikeret samlet plads/download før transport uden pruning. Normal numerisk genaflæsning og streng checkpoint-genoptagelse er separate, nødvendige eftertrin. Model, SQL, kilder, admin, geometri, originaler og historiske scorer bevares. Ny præcis kildekontrol, faktisk restore/SAVE, genaflæsning, offentlig generation og efterfølger er endnu åbne; alle fem mål og tilbageholdte aktiveringsgrænser består. Se håndbog 89.253 og privat checkpoint. Ældre noter bevares som dateret historik.
+
 ## 17. oktober — 4.0.581: normal fortsættelse og genoptagelse af delvis gemning
 
 Fremadrettet kontrol af den faktiske almindelige kalder fandt en ekstra integrationsfejl: vejropdatererens nye autentificerede B/S-læser kræver de eksisterende Supabase-adgangsoplysninger, men workflowets vejrtrin gav tomme værdier uden epoch-opstart. De to eksisterende felter skal også forsynes ved almindelig kørsel; R2-felternes epoch-afgrænsning bevares. Den normale workflow-regression skal kontrollere denne forbindelse, ikke blot syntetikkens egen transport. Ingen nye nøgler, origin-genvej, model-/SQL-ændring eller lempet datakontrol følger med. Levering afventer den samlede rettede kandidats præcise kontrol og faktisk produktion.

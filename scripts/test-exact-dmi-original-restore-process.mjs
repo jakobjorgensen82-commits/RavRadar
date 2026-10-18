@@ -63,6 +63,27 @@ test('exact restore process accepts only the two paired known checkpoint scopes'
   }
 });
 
+test('forward-only 390663 restore process accepts its exact tuple and rejects mixed scopes', () => {
+  const plan = fixturePlan();
+  Object.assign(plan.binding, { progressSource: '39066350748-1',
+    progressCacheKey: 'weather-private-progress-encrypted-v2-Linux-main-39066350748-1',
+    targetReferenceAt: '2026-10-17T20:00:00.000Z' });
+  const before = structuredClone(plan), bytes = bytesOf(plan);
+  assert.deepEqual(validateExactDmiOriginalRestorePlan(bytes, environment(bytes)), {
+    originalCount: 1, planSha256: sha(bytes),
+  });
+  assert.deepEqual(plan, before, 'scope validation leaves original captures unchanged');
+  for (const [key, value] of [['progressSource', '38692413809-1'],
+    ['progressCacheKey', 'weather-private-progress-encrypted-v2-Linux-main-38692413809-1'],
+    ['targetReferenceAt', '2026-10-14T18:00:00.000Z'],
+    ['progressSource', '39066350748-2'], ['targetReferenceAt', '2026-10-17T21:00:00.000Z']]) {
+    const changed = structuredClone(plan); changed.binding[key] = value;
+    const changedBytes = bytesOf(changed);
+    assert.throws(() => validateExactDmiOriginalRestorePlan(changedBytes, environment(changedBytes)),
+      { code: 'DMI_EXACT_ORIGINAL_PLAN_REJECTED' });
+  }
+});
+
 const noOriginals = { DMI_EXACT_ORIGINAL_PREPARATION_STATUS: 'NO_ORIGINAL_RESTORE_REQUIRED',
   DMI_EXACT_ORIGINAL_COUNT: '0', DMI_EXACT_ORIGINAL_PLAN_BYTES: '0', DMI_EXACT_ORIGINAL_PLAN_SHA256: '' };
 test('exact restore no-op is a complete strict tuple, never an empty plan or restore receipt', () => {

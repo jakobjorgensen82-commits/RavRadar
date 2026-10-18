@@ -1,3 +1,15 @@
+## 4.0.581 — 2026-10-18 — eksplicit hash i isolerede testlæsere
+
+PR658's samlede kildekontrol fejlede i den integrerede generators isolerede VM, fordi en ny testinverse brugte en skjult process-afhængighed. Den faktisk røde kalder reproduceres lokalt. Inversen bruger nu den eksisterende ægte SHA-256-funktion, og de to andre indirekte læsere binder samme afhængighed eksplicit. Alle gamle hele kontrolsummer, assertions og produktfiler bevares. Ny samlet præcis kildekontrol og faktisk vejrgendannelse er fortsat nødvendige.
+
+## 4.0.581 — 2026-10-18 — normale testlæsere efter asynkron fejlbevaring
+
+To faktisk fejlede tekstgrænser i komponentkalderprøven følger nu updaterens særskilte erklæring og tildeling. Alle gamle kontroludsagn og faktiske normale VM-kodeudsnit bevares; hele målet består fem tilfælde uden skip. Produkt, model, SQL og originaler ændres ikke. Ny præcis samlet kildekontrol og faktisk vejrgendannelse er fortsat åbne.
+
+## 4.0.581 — 2026-10-18 — præcis post-H0-originalplan og local-first-genopretning
+
+Den faktiske normaldiagnose har nået alle 673 dele og afgrænset 33 forward-stop uden en korrekt samplingkvitteret efterfølger. Den lokale default-OFF-forberedelse følger de faktiske normale prioriterede rækker og deres egne native-captures, ikke den gamle brede H0−51-plan. Alle deludfald, ægte B/S-origin, frisk pointer og faste private output kræves; plan er ikke numerisk admission. Den eksisterende eksakte RAW-restorer kontrollerer alle lokale originaler før transport og samlet manglende plads/download før første hentning uden pruning. Korruption, races og ukendt lukning afvises. Normal genaflæsning og checkpoint-genoptagelse skal fortsat gennemføre de strenge kontroller. Gamle orakler bevares gennem eksakte inverser; ingen model-, SQL-, kildeprioritets-, scoreformel-, geometri- eller originalændring. Fem relevante supportjob-linjer fastlåses til den allerede anvendte ubuntu-24.04 før leverandørens varslede imageovergang. Ny præcis CI og faktisk produktion er åbne; alle fem mål består.
+
 ## 4.0.581 — 2026-10-18 — offentlig mobilrettelse og afgrænset forward-gate-diagnose
 
 Mobil-PR655 er faktisk merget, og rettelsesdeploy 39084415873/1 bestod hele Pages-/210/673-/model-/terminalkæden kl. 03.03 dansk tid. Offentlig browserkontrol ved 375 og 320 pixels indholdsbredde viser én dagrække uden vandret rulning. Det genbrugte vejrsæt slutter fortsat 21. oktober kl. 09; en femte dag og den normale vejrhentning er ikke dermed leveret.

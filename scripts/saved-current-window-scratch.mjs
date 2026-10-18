@@ -8,6 +8,7 @@ import { weatherComponentProgressCache, WEATHER_PROGRESS_CIPHER_PATH } from './w
 import { copernicusOfflineEnvironment } from './lib/copernicus-offline-environment.mjs';
 import { selectRavScoreProductionInitialState } from './lib/ravscore-production-part-pipeline.mjs';
 import { fixedSavedCurrentReplayGridReport } from './lib/saved-current-replay-grid-audit.mjs';
+import { SAVED_CURRENT_FORWARD_PLAN_SOURCE } from './lib/saved-current-forward-original-plan.mjs';
 import { assertCandidateGRollbackContinuation } from './lib/ravscore-candidate-g-rollback-runtime.mjs';
 
 export const SAVED_CURRENT_WINDOW_SCOPE = Object.freeze({
@@ -235,6 +236,30 @@ export async function readSavedCurrentReplayProcessReport(result) {
     } } : {}), wholePrivateChildLogRetained: result.code !== 'SAVED_CURRENT_WINDOW_LOG_BOUND' };
 }
 
+// Preparation repeats the normal call, not the already completed prefix
+// diagnosis. Only this fixed collection summary may cross the private log.
+export async function readSavedCurrentForwardPreparationReport(result) {
+  const stderr = await fs.readFile(result.stderrPath, 'utf8');
+  const prefix = 'RAVSCORE_SAVED_CURRENT_REPLAY_COLLECTION ';
+  const rows = stderr.split(/\r?\n/).filter(line => line.startsWith(prefix));
+  let collection;
+  try { collection = rows.length === 1 ? JSON.parse(rows[0].slice(prefix.length)) : null; } catch { collection = null; }
+  const count = value => Number.isSafeInteger(value) && value >= 0 && value <= 673;
+  const valid = result.exitCode === 1 && result.signal === null && result.code === null
+    && !stderr.includes('SAVED_CURRENT_FORWARD_ORIGINAL_PLAN_UNAVAILABLE')
+    && collection?.schemaVersion === 1 && collection.kind === 'SAVED_CURRENT_REPLAY_COLLECTION'
+    && collection.observedParts === 673 && count(collection.gridUnknownParts) && collection.gridUnknownParts > 0
+    && collection.anotherGuardStoppedCollection === false && collection.allPartsReached === true
+    && collection.scope === 'NORMAL_CALLS_REACHED_BEFORE_FIRST_OTHER_STOP'
+    && ['allRowsActuallyConsumed', 'minimalNecessaryOriginalsProved', 'continuationIssued',
+      'publicationInvoked', 'productionAuthority'].every(key => collection[key] === false);
+  return { status: valid ? 'FORWARD_ORIGINAL_DEPENDENCIES_PREPARED' : 'UNAVAILABLE',
+    exitCode: Number.isInteger(result.exitCode) ? result.exitCode : null,
+    ...(valid ? { collection: { observedParts: 673, gridUnknownParts: collection.gridUnknownParts,
+      allPartsReached: true, anotherGuardStoppedCollection: false, diagnosticUnavailableParts: 0 } } : {}),
+    prefixProbesRepeated: false, privatePayloadIncluded: false };
+}
+
 export async function prepareSavedCurrentReplayScratch({ scratchRoot, logRoot, payloadRoot, source }) {
   const root = await fs.realpath(scratchRoot), logs = await fs.realpath(logRoot);
   if (root !== path.resolve(scratchRoot) || path.dirname(root) !== path.dirname(logs)
@@ -267,11 +292,13 @@ export async function prepareSavedCurrentReplayScratch({ scratchRoot, logRoot, p
 }
 
 export async function runSavedCurrentReplayScratch({ scratchRoot, logRoot, basePath, source, repository,
-  masterSecret, encryptionKey, pythonExecutable = 'python', privateRoot, bundlePath }) {
+  masterSecret, encryptionKey, pythonExecutable = 'python', privateRoot, bundlePath, prepareOriginals = false }) {
   const root = await fs.realpath(scratchRoot), logs = await fs.realpath(logRoot);
   if (root !== path.resolve(scratchRoot) || path.dirname(root) !== path.dirname(logs)
     || path.basename(root) !== 'current-window-source' || !/^[a-f0-9]{64}$/.test(source?.bundleContentSha256 ?? '')) fault('SAVED_CURRENT_WINDOW_SCRATCH_INVALID');
   const environment = savedCurrentReplayChildEnvironment(process.env, { privateRoot, bundlePath });
+  if (typeof prepareOriginals !== 'boolean') fault('SAVED_CURRENT_WINDOW_SCRATCH_INVALID');
+  if (prepareOriginals) environment.RAVRADAR_SAVED_CURRENT_FORWARD_ORIGINAL_PLAN = SAVED_CURRENT_FORWARD_PLAN_SOURCE;
   const restored = await weatherComponentProgressCache({ mode: 'restore', repositoryRoot: root, basePath, repository,
     masterSecret, encryptionKey, productionReferenceAt: SAVED_CURRENT_REPLAY_SCOPE.target, resumeOriginalTarget: true, pythonExecutable });
   if (restored.restored !== true || restored.requiresProtectedRestore === true || restored.fileCount < 1
@@ -290,7 +317,7 @@ export async function runSavedCurrentReplayScratch({ scratchRoot, logRoot, baseP
   const result = await captureSavedCurrentWindowProcess({ executable: process.execPath,
     args: ['--import', pathToFileURL(path.join(root, 'scripts/lib/saved-current-replay-readonly-network.mjs')).href, 'scripts/update-weather.mjs'],
     root, logRoot: logs, name: 'normal-updater', environment, maximumMilliseconds: 45 * 60_000 });
-  return { ...await readSavedCurrentReplayProcessReport(result),
+  return { ...await (prepareOriginals ? readSavedCurrentForwardPreparationReport(result) : readSavedCurrentReplayProcessReport(result)),
     normalOriginRequired: true, exactOriginalTargetRestoreVerified: true, protectedBaselinePairsRequired: true,
     checkpointCompanionUsedForInitialSelection: false, normalOriginLoadsCheckpointCompanion: true,
     cacheOnly: true, weatherProviderRequestsPerformed: false,

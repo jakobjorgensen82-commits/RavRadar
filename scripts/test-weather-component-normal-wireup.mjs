@@ -126,7 +126,7 @@ test('normal PART production plans on current central identity and passes the pr
 });
 
 test('durable selected-input marker precedes provenance, public shards and compact private output', () => {
-  const score = source.indexOf('const coastalPartScoreBuild =');
+  const score = source.indexOf('coastalPartScoreBuild = coastalPartsContract.enabled');
   const save = source.indexOf('output.weatherComponentInputs = await persistWeatherComponentSelections(weatherComponents);');
   const provenance = source.indexOf('enrichCurrentProvenanceDocuments({', save);
   const publicRuntime = source.indexOf('writePublicRuntimeFromFull(output)', provenance);
@@ -178,7 +178,7 @@ test('scalar planning and public current scoring use their own exact applicabili
   const scalarView = rows => rows.map(row => Object.fromEntries(
     ['time', ...scalarFields].map(key => [key, row[key]])));
   const routing = { sources: [], index: new Map(), routing: {}, haversineKm: () => 0 };
-  const planningEnd = source.indexOf('\nconst coastalPartScoreBuild =', start);
+  const planningEnd = source.indexOf('\nlet coastalPartScoreBuild;', start);
   const scoreStart = source.indexOf('      const operationalDmiRecord = applyFeggesundOperationalWaveProxy(');
   const scoreEnd = source.indexOf('\n      if (routedWater.diagnostic)', scoreStart);
   assert.ok(planningEnd > start && scoreStart >= 0 && scoreEnd > scoreStart);

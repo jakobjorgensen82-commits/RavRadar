@@ -1,3 +1,7 @@
+## 18. oktober 2026 — følg også indirekte isolerede testkaldere
+
+En kildeinverse kan bruges både direkte og ved leksikalsk ekstraktion i VM eller Function. Søgningen efter direkte updater-læsere er ikke nok. Følg alle faktiske extractor-kaldere, deres slice-ankre og eksplicitte afhængigheder. En ny hashkontrol skal bruge den eksisterende ægte digest-funktion; giv ikke den isolerede VM generel process-adgang for at skjule en manglende binding. Bevar hele historiske kontrolsummer og alle gamle mutationer. Reproducer den konkrete første fejl på GitHubs Node-version og prøv alle berørte kaldere før næste samlede kontrol. Kilde- og PostgreSQL-beviser skal stadig skelnes fra faktisk produktion.
+
 ## 17. oktober 2026 — gentag ikke engangsovergangen ved almindelig videreberegning
 
 Følg også den faktiske workflowkalders miljø helt ind i den normale produktfunktion. En syntetisk transport kan selv give URL og adgang, som den virkelige almindelige kalder har gjort tomme. Kontroller både standardflags og de eksisterende afgrænsninger; reparer forbindelsen frem for at opfinde endnu en autorisationsvej.
