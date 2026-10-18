@@ -23,7 +23,7 @@ import { createWeatherStateEpochCaptureStorage, saveWeatherStateEpochArchive,
 import { hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 import { inspectPrivatePublicHourDeliveryPack } from './lib/public-hour-delivery-pack.mjs';
 import { withoutCurrent } from './lib/private-dmi-recovery-record.mjs';
-import { readDmiBulkDocument, writeDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
+import { decodeDmiBulkWrapper, readDmiBulkDocument, writeDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 import { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './lib/private-weather-component-pack.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -235,13 +235,6 @@ async function acquisitions(state, workRoot) {
   await exactBytes(file, descriptor, 256 * MB);
   const document = scalarBulk(await readDmiBulkDocument(file));
   await exactBytes(file, descriptor, 256 * MB);
-  const rows = {}, seedPath = path.join(workRoot, 'acquisition-output-seed.json'), seedBytes = jsonBytes(document);
-  await writeNew(seedPath, seedBytes);
-  for (const [role, name] of Object.entries({
-    deployedFallbackPath: 'acquisition-fallback.json', publishedBaselinePath: 'acquisition-published-baseline.json' })) {
-    const destination = path.join(workRoot, name), bytes = jsonBytes(document);
-    await writeNew(destination, bytes); rows[role] = { path: destination, bytes: bytes.length, sha256: sha(bytes) };
-  }
   // Exactly one normal working-output exception. No caller chooses a path.
   // B (including its whole component pack) is already durably archived above.
   // Before replacing the normal installed working copy, identify its exact
@@ -270,8 +263,27 @@ async function acquisitions(state, workRoot) {
   await writeDmiBulkDocument(FIXED_CANDIDATE, document);
   same(await readDmiBulkDocument(FIXED_CANDIDATE), document, 'CANDIDATE_SEED_READBACK');
   const installed = await exactBytes(FIXED_CANDIDATE, null, 256 * MB);
+  // Preserve the normal lossless stored representation, not an expanded JSON
+  // copy. Repeated source provenance may legitimately exceed the stored-byte
+  // bound after decoding. Immutable copies still use exclusive owned writes,
+  // exact byte hashes and the unchanged 256-MiB stored-file limit.
+  const rows = {}, seedPath = path.join(workRoot, 'acquisition-output-seed.json'), seedBytes = installed;
+  await writeNew(seedPath, seedBytes);
+  for (const [role, name] of Object.entries({
+    deployedFallbackPath: 'acquisition-fallback.json', publishedBaselinePath: 'acquisition-published-baseline.json' })) {
+    const destination = path.join(workRoot, name);
+    await writeNew(destination, seedBytes);
+    rows[role] = { path: destination, bytes: seedBytes.length, sha256: sha(seedBytes) };
+  }
   rows.outputPath = { path: FIXED_CANDIDATE, bytes: installed.length, sha256: sha(installed) };
   return { rows, predecessor, outputSeed: { path: seedPath, bytes: seedBytes.length, sha256: sha(seedBytes) } };
+}
+async function verifyScalarAcquisition(row, originalBulk) {
+  const bytes = await exactBytes(row.path, row, 256 * MB);
+  // Decode only the bytes actually authenticated through the owned descriptor;
+  // do not reopen a path between the hash check and semantic comparison.
+  same(decodeDmiBulkWrapper(JSON.parse(bytes), { storedBytes: bytes.length }),
+    originalBulk, 'ACQUISITION_CHANGED');
 }
 // Same bounded v1 pack header used by the ordinary protected-quick caller.
 // This selects preservation identity only, NEVER current provenance/admission.
@@ -368,7 +380,7 @@ export async function loadCurrentFamilyColdStartForTarget({ contextPath, context
     targetReferenceAt, verifyOriginalSnapshot });
   const originalBulk = scalarBulk(await readDmiBulkDocument(path.join(state.payload, 'data/live/dmi-bulk-cache.json')));
   need(context.outputSeed?.path === path.join(context.workRoot, 'acquisition-output-seed.json'), 'ACQUISITION_PATH');
-  same(await exactBytes(context.outputSeed.path, context.outputSeed, 256 * MB), jsonBytes(originalBulk), 'ACQUISITION_CHANGED');
+  await verifyScalarAcquisition(context.outputSeed, originalBulk);
   const original = await originalFixedCandidate(state);
   if (original === null) need(context.fixedPredecessor === null, 'ORIGINAL_CANDIDATE_CHANGED');
   else {
@@ -387,7 +399,7 @@ export async function loadCurrentFamilyColdStartForTarget({ contextPath, context
       // this capability never authenticates or admits those numeric rows.
       await noLinks(row.path); const info = await fs.lstat(row.path);
       need(info.isFile() && info.nlink === 1 && info.size >= 2 && info.size <= 256 * MB, 'ACQUISITION_OUTPUT');
-    } else same(await exactBytes(row.path, row, 256 * MB), jsonBytes(originalBulk), 'ACQUISITION_CHANGED');
+    } else await verifyScalarAcquisition(row, originalBulk);
   }
   return mint(state, archive, context);
 }

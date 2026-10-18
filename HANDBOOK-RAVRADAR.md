@@ -1,3 +1,11 @@
+## 89.255 Hold prøvens klokke sammen med dens prognose
+
+Kort fortalt: En fast prøvedato kræver en fast prøveklokke. Rigtige brugere skal stadig kun se gyldige prognosedage.
+
+En prøve med en fast prognosedato skal bruge en tilsvarende fast klokke. Ellers kan en korrekt udløbsregel få en kildekontrol til at skifte resultat ved dansk midnat. Produktionsvisningen skal fortsat afvise udløbne dage; den må ikke gøres mindre streng for at få en prøve igennem.
+
+Status 19. oktober: Den konkrete panelprøve er reproduceret rød efter dansk midnat og består lokalt med fastlåst prøveklokke. Alle eksisterende kontroludsagn og begge søgemåder bevares. En ny prøve beviser desuden, at samme prognose faktisk udløber den følgende danske dag. De to panelprøver og syv normale generations-/livscyklustilfælde består. Der er ingen ændring af produktionskode, model, vejrdata eller scorer i denne opfølgning. Ny præcis samlet kildekontrol og faktisk offentlig vejrgeneration mangler; kildeprøver er ikke drift eller deploy. Ældre statusafsnit nedenfor er historik på disse punkter.
+
 ## 89.254 Gendan vejret gennem én sammenhængende vej
 
 Kort fortalt: Ved den godkendte nye start begynder strømhistorikken på ny. Tidligere data gemmes særskilt som arkiv og må ikke gøre gamle strømtimer nødvendige. Først en faktisk kontrolleret levering giver en ny offentlig prognose.
@@ -8,7 +16,9 @@ Alle leverandører, efterbehandling og beregning bruger samme normale arbejdsfil
 
 Kontrollen omfatter både første beregning, faktisk gemning/genlæsning og to almindelige efterfølgere med flyttet leverandørvindue. Den gamle H0 må ikke genberegnes som del af normal fortsættelse. Alle fem vejrtyper skal fortsat bestå den almindelige databevarelse, også strøm. Komplet cache betyder brugbare, kvalificerede data; ikke at alle leverandørfiler skal ligge på disken samtidig.
 
-Kandidaten er fortsat frakoblet. De to cacherettelser er kildeleveret. En privat prøve har gennemført første beregning og to almindelige efterfølgere for 673 kunstige dele med normal gemning og genlæsning; de nye strømdata bruges faktisk i begge strømhukommelser. Det er ikke virkelige nationale leverandørdata, fuld offentlig kapacitet eller nye offentlige vejrdata. Samlet kildekontrol, sikker levering og faktisk offentlig effekt mangler stadig. Det større samlede tidsrum garanterer ikke gennemløb, og særskilt tidsreserve til den nye indgang er fortsat en åben robusthedsopgave. Den første engangsindgang understøtter ikke særskilt checkpoint-genoptagelse. Modelbinding, SQL, scoreformel, kildeprioritet, administratorpunkter og geometri er uændrede.
+Status 18. oktober: Den præcise samlede kildekontrol og merge er gennemført. Den første faktiske engangsstart arkiverede originalerne, men stoppede ved efterfølgende genlæsning før leverandører og deploy. En lokal rettelse holder scalar-reserver i det eksisterende tabsfri ordbogsformat, så udpakket proveniens ikke sammenblandes med filens lagergrænse. De tre kopier beholder eksklusiv skrivning, fsync, fysisk lukning og præcise kontrolsummer. Kun autentificerede bytes afkodes, og indholdet skal være uændret. Den normale lille lagringsprøve består; størrelsesreproduktion, ny præcis samlet kontrol og faktisk offentlig effekt er fortsat åbne. Det er ikke en garanti for, at denne konflikt var det faktiske filafslag.
+
+De to cacherettelser er kildeleveret. Den tidligere private prøve med første beregning og to almindelige efterfølgere for 673 kunstige dele genbruges kun som syntetisk bevis, ikke som virkelige nationale leverandørdata eller offentlig kapacitet. Det større samlede tidsrum garanterer ikke gennemløb, og særskilt tidsreserve er fortsat en åben robusthedsopgave. Engangsindgangen understøtter ikke særskilt checkpoint-genoptagelse eller lovet genbrug af gamle rå klargøringskontekster. Den nye aktive strømhistorik begynder fra nu; gamle strømtimer og strømhukommelse forbliver udenfor. Modelbinding, SQL, scoreformel, kildeprioritet, administratorpunkter og geometri er uændrede.
 
 ## 89.253 Genaflæs kun nødvendige strømoriginaler
 
