@@ -1,3 +1,11 @@
+## 18. oktober — PR656's afgrænsede kildeprøvefejl
+
+Den første præcise CI bestod native PostgreSQL og gennemførte kildeplanen med én fejlet kommandogruppe. To normale VM-kaldere manglede et credentialfrit procesmiljø til diagnosens default-OFF-flag. Kun VM-scopes er tilpasset; hele deres normale mål består nu fem prøver lokalt uden skip. Alle gamle kontroludsagn og produktkoden bevares. Ny præcis samlet CI og faktisk diagnose mangler; den almindelige vejrhentningsfejl er ikke løst eller omklassificeret af dette. Mobilrettelsens uændrede kildekontrol fortsætter særskilt.
+
+## 18. oktober — egentlig replay-fejl fortsat åben; afgrænset diagnosekandidat
+
+Det autentificerede originalbevis frikender ikke native-grid-UNKNOWN i den normale beregning. Den lokale, inaktive saved-input-diagnose følger nu det præcise 390663/20Z-forløbs normale B/GCM/registry/origin og delkald i en ægte Git-scratch med kun faste B/S-GETs. Første fejl genkastes før slutbygning, også hvis en anden guard senere standser optællingen. Observerede kandidater er ikke faktisk forbrug, alle nødvendige originaler eller en dokumenteret reparation. Gamle scopes og hele original-/kilde-/SQL-kontroller bevares. Faktisk diagnose, rettelse, gemning, upload, ny offentlig generation og almindelig efterfølger mangler; cron og tilbageholdte leverancer er fortsat inaktive. Den konservative tidligere 51-timers originalplan må ikke aktiveres som bevist nødvendighedsplan.
+
 ## 18. oktober — UI-build 4.0.581: mobil dagrække og fortsat vejrstoppunkt
 
 PR655's første præcise kildekontrol er faktisk rød på den gamle faste auth-cacheadresse; native PostgreSQL bestod, og senere baseline-/kapacitets-/kildebevistrin blev ikke kørt. Den normale auth-cacheprøve og en fremadrettet fundet cold-start-prøve er tilpasset de præcise aktuelle UI-adresser. Normal cacheadfærd, gamle cacheposter og alle øvrige kontroludsagn bevares. Begge mål og den tidligere fejlede privacy-gruppe består lokalt med gruppens eksisterende Windows-skip uændret. Nyt præcist samlet grønt kildebevis og offentlig mobilrettelse mangler fortsat; ingen driftsfejl erklæres lukket af disse testrettelser.

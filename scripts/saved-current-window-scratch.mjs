@@ -7,11 +7,18 @@ import { installRestoredPrivateRuntime } from './private-production-runtime-work
 import { weatherComponentProgressCache, WEATHER_PROGRESS_CIPHER_PATH } from './weather-component-progress-cache.mjs';
 import { copernicusOfflineEnvironment } from './lib/copernicus-offline-environment.mjs';
 import { selectRavScoreProductionInitialState } from './lib/ravscore-production-part-pipeline.mjs';
+import { fixedSavedCurrentReplayGridReport } from './lib/saved-current-replay-grid-audit.mjs';
 import { assertCandidateGRollbackContinuation } from './lib/ravscore-candidate-g-rollback-runtime.mjs';
 
 export const SAVED_CURRENT_WINDOW_SCOPE = Object.freeze({
   source: '39005745097-1', target: '2026-10-17T05:00:00.000Z',
   cacheKey: 'weather-private-progress-encrypted-v2-Linux-main-39005745097-1',
+});
+// Separate fixed operation. The legacy390057 route and its no-network
+// environment/report are unchanged; this route requires genuine normal B/S.
+export const SAVED_CURRENT_REPLAY_SCOPE = Object.freeze({
+  source: '39066350748-1', target: '2026-10-17T20:00:00.000Z',
+  cacheKey: 'weather-private-progress-encrypted-v2-Linux-main-39066350748-1',
 });
 const fault = code => { throw Object.assign(new Error(code), { scratchCode: code }); };
 const canonical = value => JSON.stringify(value, (_key, row) => row && typeof row === 'object' && !Array.isArray(row)
@@ -160,6 +167,136 @@ export async function prepareSavedCurrentWindowScratch({ scratchRoot, logRoot, p
     if (other.time !== initial.state.time) fault('SAVED_CURRENT_WINDOW_BASELINE_PAIR_REQUIRED');
   }
   return { repositoryRoot: root, normalProgressBaselineUsed: false, scratchPrepared: true };
+}
+
+export function savedCurrentReplayChildEnvironment(source, { privateRoot, bundlePath } = {}) {
+  if (!source || !/^[a-f0-9]{40}$/.test(source.GITHUB_SHA ?? '')
+    || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(source.GITHUB_REPOSITORY ?? '')
+    || typeof privateRoot !== 'string' || !path.isAbsolute(privateRoot)
+    || typeof bundlePath !== 'string' || path.dirname(bundlePath) !== privateRoot
+    || typeof source.SUPABASE_URL !== 'string' || typeof source.SUPABASE_SERVICE_ROLE_KEY !== 'string'
+    || !source.SUPABASE_SERVICE_ROLE_KEY.trim()) fault('SAVED_CURRENT_REPLAY_ORIGIN_INPUTS_REQUIRED');
+  return { ...savedCurrentWindowChildEnvironment(source),
+    RAVRADAR_PRODUCTION_TARGET_HOUR: SAVED_CURRENT_REPLAY_SCOPE.target,
+    RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC: SAVED_CURRENT_REPLAY_SCOPE.source,
+    SUPABASE_URL: source.SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY: source.SUPABASE_SERVICE_ROLE_KEY,
+    RAVRADAR_PRIVATE_RUNTIME_ROOT: privateRoot, RAVRADAR_PRIVATE_RUNTIME_BUNDLE: bundlePath,
+    GITHUB_SHA: source.GITHUB_SHA, GITHUB_REPOSITORY: source.GITHUB_REPOSITORY };
+}
+
+export async function readSavedCurrentReplayProcessReport(result) {
+  const stderr = await fs.readFile(result.stderrPath, 'utf8');
+  const reports = []; let collection = null, collections = 0, unavailable = 0;
+  for (const line of stderr.split(/\r?\n/)) {
+    if (line === 'RAVSCORE_SAVED_CURRENT_REPLAY_AUDIT_UNAVAILABLE') unavailable++;
+    if (line.startsWith('RAVSCORE_SAVED_CURRENT_REPLAY_AUDIT ')) {
+      try {
+        const value = fixedSavedCurrentReplayGridReport(JSON.parse(line.slice('RAVSCORE_SAVED_CURRENT_REPLAY_AUDIT '.length)));
+        if (value && reports.length < 673) reports.push(value); else unavailable++;
+      } catch { unavailable++; }
+    }
+    if (line.startsWith('RAVSCORE_SAVED_CURRENT_REPLAY_COLLECTION ')) {
+      collections++;
+      try { collection = JSON.parse(line.slice('RAVSCORE_SAVED_CURRENT_REPLAY_COLLECTION '.length)); } catch { collection = null; }
+    }
+  }
+  const partCount = value => Number.isSafeInteger(value) && value >= 0 && value <= 673;
+  const fixed = collection && collections === 1 && collection.schemaVersion === 1
+    && collection.kind === 'SAVED_CURRENT_REPLAY_COLLECTION'
+    && partCount(collection.observedParts) && partCount(collection.gridUnknownParts)
+    && collection.gridUnknownParts > 0 && collection.gridUnknownParts <= collection.observedParts
+    && reports.length + unavailable === collection.gridUnknownParts
+    && typeof collection.anotherGuardStoppedCollection === 'boolean'
+    && collection.scope === 'NORMAL_CALLS_REACHED_BEFORE_FIRST_OTHER_STOP'
+    && collection.allPartsReached === (collection.observedParts === 673)
+    && ['allRowsActuallyConsumed', 'minimalNecessaryOriginalsProved', 'continuationIssued',
+      'publicationInvoked', 'productionAuthority'].every(key => collection[key] === false);
+  // Only fixed categories leave the retained whole child log. No raw exception.
+  const firstErrorCategory = result.code ? 'OWNED_PROCESS_REFUSED'
+    : fixed ? 'GRID_UNKNOWN_IN_NORMAL_PIPELINE'
+    : /(?:^|\n)Error: ESTABLISHED_CURRENT_ORIGIN_[A-Z_]+(?:\r?\n|$)/.test(stderr) ? 'NORMAL_ORIGIN_REFUSED'
+    : /SAVED_CURRENT_REPLAY_NETWORK_DISABLED/.test(stderr) ? 'READ_ONLY_NETWORK_REFUSED'
+    : result.exitCode === 0 ? 'UPDATER_COMPLETED_WITHOUT_GRID_UNKNOWN' : 'OTHER_NORMAL_STOP_UNCLASSIFIED';
+  return { status: result.exitCode !== 0 && result.signal === null && result.code === null && fixed && reports.length
+      ? 'NORMAL_PIPELINE_FIRST_STOP_OBSERVED' : 'UNAVAILABLE', firstErrorCategory,
+    exitCode: Number.isInteger(result.exitCode) ? result.exitCode : null,
+    ...(fixed ? { collection: {
+      observedParts: collection.observedParts, gridUnknownParts: collection.gridUnknownParts,
+      reportedParts: reports.length, diagnosticUnavailableParts: unavailable,
+      anotherGuardStoppedCollection: collection.anotherGuardStoppedCollection,
+      allPartsReached: collection.allPartsReached,
+      scope: 'FIRST_STOP_PER_OBSERVED_PART_PRIORITY_CANDIDATES_NOT_ACTUAL_CONSUMPTION',
+      counters: Object.fromEntries(Object.keys(reports[0]?.counters ?? {}).map(key =>
+        [key, reports.reduce((sum, report) => sum + report.counters[key], 0)])),
+      replayStackObservedParts: reports.filter(report => report.replayStackObserved).length,
+      allRowsActuallyConsumed: false, minimalNecessaryOriginalsProved: false,
+      actualOffendingRowsIdentified: false, nativeAdmissionPerformed: false,
+      continuationIssued: false, publicationInvoked: false, productionAuthority: false,
+    } } : {}), wholePrivateChildLogRetained: result.code !== 'SAVED_CURRENT_WINDOW_LOG_BOUND' };
+}
+
+export async function prepareSavedCurrentReplayScratch({ scratchRoot, logRoot, payloadRoot, source }) {
+  const root = await fs.realpath(scratchRoot), logs = await fs.realpath(logRoot);
+  if (root !== path.resolve(scratchRoot) || path.dirname(root) !== path.dirname(logs)
+    || path.basename(root) !== 'current-window-source' || !/^[a-f0-9]{64}$/.test(source?.bundleContentSha256 ?? '')) fault('SAVED_CURRENT_WINDOW_SCRATCH_INVALID');
+  // The workflow created a real isolated local Git clone at exact main. The
+  // normal origin reader later checks HEAD, required whole blobs and ancestry.
+  const git = await captureSavedCurrentWindowProcess({ executable: 'git', args: ['rev-parse', 'HEAD'],
+    root, logRoot: logs, name: 'source-head', environment: copernicusOfflineEnvironment(), maximumMilliseconds: 30_000 });
+  if (git.exitCode !== 0 || git.signal !== null || git.code
+    || (await fs.readFile(git.stdoutPath, 'utf8')).trim() !== process.env.GITHUB_SHA) fault('SAVED_CURRENT_WINDOW_INPUT_CHANGED');
+  await installRestoredPrivateRuntime({ restoredRoot: payloadRoot, repositoryRoot: root });
+  await fs.copyFile(path.join(root, 'data/live/dmi-bulk-cache.json'), path.join(root, '.cache/deployed-dmi-bulk-cache.json'), fs.constants.COPYFILE_EXCL);
+  const conditions = JSON.parse(await fs.readFile(path.join(root, 'data/live/conditions.json'), 'utf8'));
+  const registry = JSON.parse(await fs.readFile(path.join(root, 'data/live/coastal-parts-v2.json'), 'utf8'));
+  const model = await import(pathToFileURL(path.join(root, 'js/core/ravscore-model-contract.js')).href);
+  if (conditions.productionReferenceAt !== '2026-10-16T10:00:00.000Z'
+    || canonical(conditions.coastalParts?.modelBinding) !== canonical(model.ravScoreModelBinding())) fault('SAVED_CURRENT_WINDOW_INPUT_CHANGED');
+  const candidate = conditions.ravScoreCandidateGRollback?.runtime ?? conditions.ravScoreCandidateGWarmup?.runtime;
+  const parts = Object.entries(registry.zones ?? {}).flatMap(([zoneId, rows]) => rows.map(part => ({ ...part, zoneId })));
+  if (parts.length !== 673 || Object.keys(registry.zones ?? {}).length !== 210) fault('SAVED_CURRENT_WINDOW_BASELINE_PAIR_REQUIRED');
+  for (const part of parts) {
+    const initial = selectRavScoreProductionInitialState({ part, existingPart: conditions.coastalParts?.parts?.[part.partId],
+      targetReferenceAt: SAVED_CURRENT_REPLAY_SCOPE.target });
+    if (initial.source !== 'EXISTING_INTEGRATED') fault('SAVED_CURRENT_WINDOW_BASELINE_PAIR_REQUIRED');
+    const other = candidate?.parts?.[part.partId]?.ravScoreModel?.currentState;
+    assertCandidateGRollbackContinuation(other, part);
+    if (other.time !== initial.state.time) fault('SAVED_CURRENT_WINDOW_BASELINE_PAIR_REQUIRED');
+  }
+  return { repositoryRoot: root, normalProgressBaselineUsed: false, scratchPrepared: true };
+}
+
+export async function runSavedCurrentReplayScratch({ scratchRoot, logRoot, basePath, source, repository,
+  masterSecret, encryptionKey, pythonExecutable = 'python', privateRoot, bundlePath }) {
+  const root = await fs.realpath(scratchRoot), logs = await fs.realpath(logRoot);
+  if (root !== path.resolve(scratchRoot) || path.dirname(root) !== path.dirname(logs)
+    || path.basename(root) !== 'current-window-source' || !/^[a-f0-9]{64}$/.test(source?.bundleContentSha256 ?? '')) fault('SAVED_CURRENT_WINDOW_SCRATCH_INVALID');
+  const environment = savedCurrentReplayChildEnvironment(process.env, { privateRoot, bundlePath });
+  const restored = await weatherComponentProgressCache({ mode: 'restore', repositoryRoot: root, basePath, repository,
+    masterSecret, encryptionKey, productionReferenceAt: SAVED_CURRENT_REPLAY_SCOPE.target, resumeOriginalTarget: true, pythonExecutable });
+  if (restored.restored !== true || restored.requiresProtectedRestore === true || restored.fileCount < 1
+    || restored.restoredProductionReferenceAt !== SAVED_CURRENT_REPLAY_SCOPE.target) fault('SAVED_CURRENT_WINDOW_PROGRESS_REJECTED');
+  const py = async (name, args) => {
+    const result = await captureSavedCurrentWindowProcess({ executable: pythonExecutable, args, root, logRoot: logs, name,
+      environment: copernicusOfflineEnvironment(environment), maximumMilliseconds: 180_000 });
+    if (result.exitCode !== 0 || result.signal !== null || result.code) fault(result.code ?? 'SAVED_CURRENT_WINDOW_INPUT_CHANGED');
+  };
+  await py('registry', ['scripts/build-copernicus-target-registry.py', '--at', SAVED_CURRENT_REPLAY_SCOPE.target,
+    '--dmi', '.cache/dmi-candidate-progress.json']);
+  await py('closure', ['scripts/build-current-operational-closure.py', '--at', SAVED_CURRENT_REPLAY_SCOPE.target.replace('.000Z', 'Z'),
+    '--dmi', '.cache/dmi-candidate-progress.json']);
+  await py('pilot', ['scripts/build-live-current-pilot.py', '--at', SAVED_CURRENT_REPLAY_SCOPE.target,
+    '--dmi', '.cache/dmi-candidate-progress.json']);
+  const result = await captureSavedCurrentWindowProcess({ executable: process.execPath,
+    args: ['--import', pathToFileURL(path.join(root, 'scripts/lib/saved-current-replay-readonly-network.mjs')).href, 'scripts/update-weather.mjs'],
+    root, logRoot: logs, name: 'normal-updater', environment, maximumMilliseconds: 45 * 60_000 });
+  return { ...await readSavedCurrentReplayProcessReport(result),
+    normalOriginRequired: true, exactOriginalTargetRestoreVerified: true, protectedBaselinePairsRequired: true,
+    checkpointCompanionUsedForInitialSelection: false, normalOriginLoadsCheckpointCompanion: true,
+    cacheOnly: true, weatherProviderRequestsPerformed: false,
+    normalSupabaseReadOnlyOriginPermitted: true, remoteWrites: false, productionAuthority: false,
+    publicationInvoked: false, unchangedNormalSelectionAndGuards: true, semanticUnionPerformedInPrivateScratch: true,
+    privatePayloadIncluded: false, oldOriginalsChanged: false };
 }
 
 export async function runSavedCurrentWindowScratch({ scratchRoot, logRoot, basePath, source, repository,

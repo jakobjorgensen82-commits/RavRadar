@@ -39,13 +39,16 @@ assert.ok(start >= 0 && end > start);
 const reference = '2026-09-19T12:00:00.000Z';
 const part = { partId: 'P1', waterPoint: [10, 56], sourceZoneId: 'OLD' };
 const verifiedInputs = Object.freeze({ fromPrivateAuthority: true });
+// The actual producer reads its default-OFF diagnostic flag. Keep these
+// ordinary VM callers credential-free and independent of the host environment.
+const ordinaryProcess = Object.freeze({ env: Object.freeze({}) });
 
 test('normal PART production plans on current central identity and passes the prepared indexes into scoring', async () => {
   let planned = false, scored = false, originRead = false;
   const safeLogs = [];
   const output = { weatherEngine: {} };
   const waterSourceRoutingContext = { sources: [], index: new Map(), routing: {}, haversineKm: () => 0 };
-  const context = vm.createContext({ path, output, generatedAt: reference,
+  const context = vm.createContext({ path, process: ordinaryProcess, output, generatedAt: reference,
     safeWeatherComponentSummary, console: { log: line => safeLogs.push(JSON.parse(line)) },
     coastalPartsContract: { enabled: true, zones: { CURRENT: [part] } },
     features: [{ properties: { id: 'CURRENT' } }], nextDmiForecastStore: {}, dmiBulkCache: {},
@@ -179,7 +182,7 @@ test('scalar planning and public current scoring use their own exact applicabili
   const scoreStart = source.indexOf('      const operationalDmiRecord = applyFeggesundOperationalWaveProxy(');
   const scoreEnd = source.indexOf('\n      if (routedWater.diagnostic)', scoreStart);
   assert.ok(planningEnd > start && scoreStart >= 0 && scoreEnd > scoreStart);
-  const common = { path, generatedAt: at, liveCurrentPilot: null,
+  const common = { path, process: ordinaryProcess, generatedAt: at, liveCurrentPilot: null,
     applyVerifiedWaterSourceRoutingToPartHourly, assertDmiPartHourlyGridSamplingApplicable,
     verifiedIntegratedPartHourly, verifiedBulkCurrent, dmiExpectedIdentityForPart,
     mergeActiveNativeLiveCurrentPilotIntoRecord,
