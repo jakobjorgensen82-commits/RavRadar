@@ -1,3 +1,9 @@
+## 19. oktober — præcis versionsinverse i assistentens kildekontrol
+
+Den første PR668-kontrol stoppede i den tidlige B/S-prøves indlæsning, før PostgreSQL og den samlede kildekontrol. Workflowets eneste ændring på denne sti var fem klientnavne fra581 til583, men testlæserens hele kildeinverse genkendte kun581. En nøjagtigt hashbundet, test-only583-til581-inverse genbruges nu både før de gamle C-/RAW-/checkout-inverser og ved C-prøvens rå indlæsning. Alle gamle kildeorakler, kontroludsagn og mutationsafslag bevares; produktworkflow, modelbinding, SQL og P0-kode ændres ikke.
+
+Den normale B/S-prøve består lokalt én gang på Node22. Den normale workflowinverse består17 prøver uden fejl; den ene Linux-shellprøve er udtrykkeligt udeladt på Windows og skal fortsat køres i præcis CI. Den nye prøve afviser delvis versionssynk, ændret workflowindhold og forkert rolle. Det første røde CI-bevis bevares. Ny præcis samlet kildekontrol, PostgreSQL, sikker installation og offentlig effekt er fortsat åbne; ingen produktionsændring følger af denne testrettelse.
+
 ## 19. oktober — lokal assistentkandidat 4.0.583, ikke installeret
 
 Den nye afgrænsede kildekandidat samler de allerede gennemgåede assistentrettelser på den aktuelle P0-kilde. Grøn prognose skelnes fra ravets farve, og et blandet spørgsmål må ikke få et lokalt svar alene på første led. Hele genkendte begynderråd, praktiske planer og sikkerhedsforbehold bevares; et ukendt selvstændigt led går som helt spørgsmål til den normale fjernvej eller et ærligt ukendt svar. Der tilføjes ingen nye faglige fakta, interne fejlrapporter, private oplysninger eller tjenestenøgler i brugerens viden. Den eksisterende nøglefamilie-/transportrettelse og normal sprog-, kvote-, råspørgsmåls- og privatlivskontrol følger med.

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
-import { inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials, assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder, inverseCurrentFamilyColdStartWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
+import { inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials, assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder, inverseCurrentFamilyColdStartWorkflow, inverseRelease583WorkflowUserAgent } from './lib/completed-private-runtime-workflow-review.mjs';
 import { runInNewContext } from 'node:vm';
 import { spawnSync } from 'node:child_process';
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
@@ -53,7 +53,28 @@ test('all ten original completed-route source mutations still fail the exact inv
 // above retain their complete original assertions and exact predecessor bytes.
 const coldWorkflowReview = JSON.parse(await read('./lib/current-family-cold-start-workflow-review.json'));
 const coldActual = Object.fromEntries(await Promise.all(Object.entries(coldWorkflowReview.roles).map(async ([role, row]) =>
-  [role, (await fs.readFile(new URL('../' + row.relativePath, import.meta.url), 'utf8')).replaceAll('\r\n', '\n')])));
+  [role, inverseRelease583WorkflowUserAgent((await fs.readFile(new URL('../' + row.relativePath, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), role)])));
+test('release583 UA-only inverse preserves every C oracle and rejects partial UA, changed body and wrong role', async () => {
+  const source = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  assert.equal(sha(source), '4c86626e29537f51d48b0246fe33559f6efcdf0e1f431d879c2283290b0ad7a0');
+  assert.equal(source.split('RavRadar/4.0.583').length, 6, 'Exactly five actual UA fields');
+  const previous = inverseRelease583WorkflowUserAgent(source, 'build');
+  assert.equal(sha(previous), '4883b292423e162eec6f88d6402ef189adca71dc538fdfe22b7f91162f8ce4f0');
+  assert.equal(previous, coldActual.build, 'Whole reviewed C afterimage, not merely matching headers');
+  assert.equal(previous.replaceAll('RavRadar/4.0.581', 'RavRadar/4.0.583'), source);
+  for (const role of ['once', 'orchestrator', 'deploy', 'recovery', 'unknown'])
+    assert.equal(inverseRelease583WorkflowUserAgent(source, role), source, 'Wrong role cannot enter UA inverse');
+  assert.equal(inverseRelease583WorkflowUserAgent(previous, 'build'), previous, 'Historical afterimage is unchanged');
+  for (const changed of [
+    source.replace('RavRadar/4.0.583', 'RavRadar/4.0.581'),
+    source.replace('          fetch-depth: 0', '          fetch-depth: 1'),
+    source + '\n# RavRadar/4.0.583\n',
+  ]) {
+    assert.notEqual(changed, source);
+    assert.equal(inverseRelease583WorkflowUserAgent(changed, 'build'), changed, 'Unknown whole bytes cannot enter UA inverse');
+    assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'), 'Every historical downstream gate still refuses drift');
+  }
+});
 function coldBlock(source, header) {
   const marker = header + '\n', at = source.indexOf(marker);
   assert(at >= 0, 'Actual C workflow block: ' + header);
