@@ -3978,13 +3978,24 @@ def prepare_raw_cache_space(incoming_bytes=0, *, metadata_reserve=0, max_bytes=N
     manifest, entries = _raw_current_inventory()
     total = sum(info.st_size for _, info in entries.values())
     disposable = set()
+    nonmarine = set()
     for name, (path, info) in entries.items():
         row = manifest["assets"].get(name)
         capture = canonical_current_source_asset(row)
         href = row.get("canonicalHref") if isinstance(row, dict) else None
+        if (capture is None and isinstance(href, str)
+                and href == href.split("?", 1)[0].split("#", 1)[0]
+                and official_forecast_asset_identity(
+                    row.get("collection"), row.get("modelRun"), row,
+                    allowed_collections={"harmonie_dini_sf", "wam_dw", "wam_nsb"},
+                ) is not None):
+            # RAW transport ownership only, never current/native admission.
+            # Hash only candidates actually needed by this deletion plan.
+            capture = row
+            nonmarine.add(name)
         if (capture is not None and isinstance(href, str) and cached_asset_path(href) == path
                 and asset_identity_sha256(href) == capture["assetIdentitySha256"]
-                and info.st_size == capture["contentLengthBytes"]):
+                and info.st_size == capture.get("contentLengthBytes")):
             disposable.add(name)
     eligible = [(name, path, info) for name, (path, info) in entries.items()
         if _RAW_CURRENT_PROTECTED is not None and name not in _RAW_CURRENT_PROTECTED and name not in _raw_current_session_files()
@@ -3998,8 +4009,29 @@ def prepare_raw_cache_space(incoming_bytes=0, *, metadata_reserve=0, max_bytes=N
         total -= info.st_size
     if total + incoming_bytes + metadata_reserve > maximum:
         _raw_cache_protection_refuse("CACHE_BUDGET")
+    selected_nonmarine = False
+    for name, path, before in deletions:
+        if _OwnedGribRead._identity(path.lstat()) != _OwnedGribRead._identity(before):
+            _raw_cache_protection_refuse("ENTRY_CHANGED")
+        if name in nonmarine:
+            selected_nonmarine = True
+            row = manifest["assets"][name]
+            capture = raw_cache_source_capture(
+                path, row["collection"], row["modelRun"], row["validTime"],
+            )
+            after = path.lstat()
+            if (capture is None or after.st_nlink != 1
+                    or _OwnedGribRead._identity(after) != _OwnedGribRead._identity(before)):
+                _raw_cache_protection_refuse("ENTRY_CHANGED")
     # A corrupt/raced required file is a stop BEFORE any disposable deletion.
-    _raw_current_inventory()
+    observed_manifest, _ = _raw_current_inventory()
+    if selected_nonmarine and observed_manifest != manifest:
+        _raw_cache_protection_refuse("ENTRY_CHANGED")
+    if selected_nonmarine:
+        for name, path, before in deletions:
+            after = path.lstat()
+            if after.st_nlink != 1 or _OwnedGribRead._identity(after) != _OwnedGribRead._identity(before):
+                _raw_cache_protection_refuse("ENTRY_CHANGED")
     removed_bytes = 0
     for name, path, before in deletions:
         if _OwnedGribRead._identity(path.lstat()) != _OwnedGribRead._identity(before):
@@ -4712,13 +4744,17 @@ def download_asset(
             _raw_cache_protection_refuse("DEPENDENCY_CHANGED")
         if path.exists() and (_RAW_CURRENT_PROTECTED is None or path.name in _raw_current_session_files()):
             _raw_cache_protection_refuse("EXISTING_UNPROVED")
-        # Missing declared size cannot authorize unbounded streaming. Reserve
-        # the remaining EXISTING download allowance, never raise either cap.
+        # Known STAC sizes retain their pre-HTTP capacity guard. An absent
+        # STAC size stays absent: reserve the actual identity-encoded response
+        # length below, before creating a temporary file or reading its body.
         reservation = expected_size if expected_size is not None else MAX_DOWNLOAD_BYTES - budget["bytes"]
         metadata_reserve = (raw_cache_manifest_path().stat().st_size if raw_cache_manifest_path().exists() else 0)
         metadata_reserve += 4096 + sum(len(str(value).encode("utf-8")) for value in (
             href, collection, model_run, valid_time, item_id, item_created_at, item_updated_at))
-        prepare_raw_cache_space(reservation, metadata_reserve=metadata_reserve)
+        if expected_size is not None:
+            prepare_raw_cache_space(reservation, metadata_reserve=metadata_reserve)
+        else:
+            _raw_current_inventory()  # Ownership/integrity still precedes HTTP.
     response_context = None
     tmp_context = None
     tmp_path: pathlib.Path | None = None
@@ -4731,6 +4767,13 @@ def download_asset(
                                 else DOWNLOAD_SESSION.get(href, stream=True, timeout=REQUEST_TIMEOUT))
             response = response_context.__enter__()
             response.raise_for_status()
+            if exact is None and expected_size is None:
+                raw_length = response.headers.get("content-length")
+                encoding = response.headers.get("content-encoding", "identity")
+                if (not isinstance(raw_length, str) or re.fullmatch(r"[0-9]+", raw_length) is None
+                        or not isinstance(encoding, str) or encoding.lower() != "identity"
+                        or response.headers.get("transfer-encoding")):
+                    raise RuntimeError("DMI bulk asset has an invalid Content-Length")
             try:
                 content_length = int(response.headers.get("content-length", "0") or 0)
             except (TypeError, ValueError):
@@ -4748,6 +4791,11 @@ def download_asset(
                 raise RuntimeError("DMI bulk asset length conflicts with STAC metadata")
             if budget["bytes"] + content_length > MAX_DOWNLOAD_BYTES:
                 raise RuntimeError("DMI bulk download budget exceeded before next asset")
+            if exact is None and expected_size is None:
+                if content_length <= 0:
+                    raise RuntimeError("DMI bulk asset has an invalid Content-Length")
+                reservation = content_length
+                prepare_raw_cache_space(reservation, metadata_reserve=metadata_reserve)
             tmp_context = tempfile.NamedTemporaryFile(dir=RAW_DIR, delete=False)
             tmp_path = pathlib.Path(tmp_context.name)
             tmp = tmp_context.__enter__()
