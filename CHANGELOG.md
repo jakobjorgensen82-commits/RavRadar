@@ -1,3 +1,7 @@
+## 4.0.581 — 2026-10-18 — normal transportprøve følger den nye bevaring
+
+Den første PR659-kontrol stoppede på en ældre test, som krævede overskrivning af en ukendt lokal fil. Prøven kræver nu faktisk bevarelse og ingen HTTP ved afslaget, mens normal frisk download og fravær af exact-restore-indblanding efterprøves på en anden, ny sti. Samme fejl er reproduceret og alle 29 portable transportprøver består. Ingen produktguard eller tidligere gemte data ændres; præcis Linux/native og samlet kildekontrol kræves fortsat.
+
 ## 4.0.581 — 2026-10-18 — lokal rettelse af genopretningens cirkulære selvventning
 
 Den præcist kvalificerede PR658 er merget, men den efterfølgende genopretning fejlede før originalrestore og cache-SAVE. Den nye forward-gren genimporterede dynamisk sin egen uafsluttede modulcyklus. Kun de allerede statiske planbindingskald anvendes nu; kildebunden native RED/GREEN og genindført-fejl-mutation samt 74 normale auth-/planprøver består lokalt. Ingen autenticitet, scope, planbody, model eller SQL ændres. Faktisk RAW-oprydning og lokal normal regression kræver desuden varig B/S-bundet originalbeskyttelse før almindelige vejrhentninger/cron. Lokal cyklusrettelse og engangsgenopretning er ikke en samlet løst driftsfejl. Ny præcis CI og faktisk produktion er åbne.

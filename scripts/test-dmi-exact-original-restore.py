@@ -629,15 +629,29 @@ class ExactOriginalTests(unittest.TestCase):
         self.assertEqual(json.loads(self.manifest.read_text())["assets"], {})
 
     def test_default_download_behavior_and_signature_remain_normal(self):
-        target = producer.cached_asset_path(HREF)
-        target.write_bytes(b"old uncaptured ordinary file")
+        unregistered = producer.cached_asset_path(HREF)
+        original_bytes = b"old uncaptured ordinary file"
+        unregistered.write_bytes(original_bytes)
+        # Ordinary RAW retention now deliberately denies replacing unknown
+        # existing bytes. A new path must still use the normal downloader,
+        # never borrow the separately gated exact-restore transport/decoder.
+        fresh_href = HREF.replace("exact-original.grib", "ordinary-new.grib")
+        target = producer.cached_asset_path(fresh_href)
+        self.assertNotEqual(target, unregistered)
         producer.DOWNLOAD_SESSION.get.side_effect = [Response(BODY)]
         with patch.object(producer, "_exact_raw_state", side_effect=AssertionError("optin leaked")), \
              patch.object(producer, "_verify_exact_original_file", side_effect=AssertionError("optin leaked")):
-            actual, reused = producer.download_asset(HREF, len(BODY), {"bytes": 0})
+            with self.assertRaisesRegex(producer.AssetDownloadCleanupUnproven,
+                                        "^DMI_RAW_CURRENT_EXISTING_UNPROVED$"):
+                producer.download_asset(HREF, len(BODY), {"bytes": 0})
+            self.assertEqual(unregistered.read_bytes(), original_bytes)
+            producer.DOWNLOAD_SESSION.get.assert_not_called()
+            actual, reused = producer.download_asset(fresh_href, len(BODY), {"bytes": 0})
         self.assertEqual(actual, target)
         self.assertFalse(reused)
         self.assertEqual(target.read_bytes(), BODY)
+        self.assertEqual(unregistered.read_bytes(), original_bytes)
+        self.assertEqual(producer.DOWNLOAD_SESSION.get.call_args.args, (fresh_href,))
         self.assertNotIn("allow_redirects", producer.DOWNLOAD_SESSION.get.call_args.kwargs)
         producer.STAC_SESSION.get.assert_not_called()
 

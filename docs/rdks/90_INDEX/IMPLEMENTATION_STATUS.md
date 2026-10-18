@@ -1,3 +1,9 @@
+## 18. oktober — PR659 bevarer også ukendte transportinput
+
+- [x] Bevar første faktiske tidlige CI-fejl; reproducer afslag på uregistreret fil i den normale portable prøve.
+- [x] Kræv bevarelse/ingen transport ved afslaget og bevar normal frisk download/signatur uden exact-restore på en ny sti. Alle 29 portable tilfælde består; produktet er uændret.
+- [ ] Kvalificer det nye eksakte head gennem Linux/native og hele kildekontrollen før merge/genopretning.
+
 ## 18. oktober — genopretning og normal cache er to nødvendige leverancer
 
 - [x] Kvalificer og merge det eksakte PR658-træ gennem alle kildekontroller.

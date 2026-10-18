@@ -1,3 +1,7 @@
+## 18. oktober 2026 — ny bevaringsregel skal nå den gamle normaltransportprøve
+
+Søg alle normale kald til en ændret cachefunktion, også i exact-restore-målets default-ikke-opt-in-prøve. Hvis den gamle prøve kræver overskrivning af uregistrerede input, skal den nye no-loss-regel prøves som faktisk afslag med uændrede bytes og ingen HTTP. Afprøv derefter alle stadig gældende normale transportkrav på en særskilt fraværende destination. Svæk ikke produktets beskyttelse for at gøre en tidligere forventning grøn. Reproducer første CI-fejl lokalt og behold begge beviser.
+
 ## 18. oktober 2026 — genhentning er ikke cachebevarelse; følg også modulens evaluering
 
 Gemte numeriske resultater, oprindelige RAW-filer og faktisk committed B/S er forskellige livscyklusser. Afprøv en normal ny download efterfulgt af senere score-/publiceringsfejl: størrelsesbaseret oprydning må ikke fjerne et stadig nødvendigt, autentisk originalinput. En reserve, der blot sorteres sidst, er ikke hård beskyttelse. Kontroller plads før transport og udled afhængigheder fra det faktisk valgte B/S; lokal ny tilstand eller et grønt leverandørtrin er ikke tilladelse til at frigive gamle afhængigheder. Sammenhængende numeriske kvitteringer er ikke et generelt nyt behov for råfiler. Antal slettede filer må ikke forveksles med antal dokumenteret savnede originaler.

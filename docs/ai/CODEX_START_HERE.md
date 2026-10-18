@@ -1,3 +1,7 @@
+## 18. oktober — bevar ukendte filer også i den normale transportprøve
+
+PR659's første præcise kontrol stoppede i en eksisterende transportprøve, der forventede overskrivning af en uregistreret RAW-fil. Den nye bevaringsregel afviser korrekt dette før transport. Den samme fejl er reproduceret lokalt. Prøven bevarer nu den ukendte fil, kræver ingen HTTP ved afslaget og afprøver alle normale download-/signaturkrav på en særskilt ny filsti. Alle 29 portable originaltransportprøver består; produktguard, originaler, model og budgetter er uændrede. Linux/native og resten af den præcise samlede kontrol er stadig åbne.
+
 ## 18. oktober — genopretningens modulcyklus og varig RAW-bevarelse
 
 PR658 har faktisk bestået hele den præcise kildekontrol, inklusive Linux, PostgreSQL og kildebevis, og samme træ er merget. Genopretning 39099982619 stoppede derefter før originalhentning og cachegemning med Node exit 13. Den nye forward-gren ventede dynamisk på et modul i sin egen statiske importcyklus, mens CLI-indlæsningen stadig var uafsluttet. Den lokale rettelse bruger de allerede statisk bundne planfunktioner. En kildebunden prøve med de faktiske to importkanter og kald reproducerer exit 13, består efter rettelsen og fejler igen, når den gamle kant genskabes. De tre relevante normale mål består samlet 74 tilfælde uden fejl eller skip. Dette er lokal evidens, ikke en ny kvalificeret kilde eller faktisk filgenopretning.
