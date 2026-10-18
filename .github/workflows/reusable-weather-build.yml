@@ -3,6 +3,10 @@ name: Reusable RavRadar weather build and preparation
 on:
   workflow_call:
     inputs:
+      current_family_cold_start:
+        required: false
+        type: boolean
+        default: false
       completed_private_runtime:
         required: false
         type: boolean
@@ -205,7 +209,9 @@ jobs:
     runs-on: ubuntu-24.04
     # Normalrun skal kunne rumme DMI, 25 min Copernicus, 80 min cache og
     # efterfølgende gates/deployforberedelse inden næste 4-timersstart.
-    timeout-minutes: ${{ inputs.weather_state_epoch_bootstrap && 360 || inputs.extended_provider_bootstrap && 240 || 230 }}
+    # The explicit one-off also reserves time for normal post-processing.
+    # Daily defaults and every individual provider budget remain unchanged.
+    timeout-minutes: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && 360 || inputs.extended_provider_bootstrap && 240 || 230 }}
     permissions:
       contents: read
       actions: read
@@ -215,6 +221,7 @@ jobs:
       # readiness, even if the job crosses an hour boundary. The authoritative
       # Copernicus target list is derived from fresh DMI for this exact hour.
       RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ inputs.production_target_hour }}
+      RAVRADAR_CURRENT_FAMILY_COLD_START: ${{ inputs.current_family_cold_start }}
       RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP: ${{ inputs.weather_state_epoch_bootstrap }}
       RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY: ${{ inputs.weather_state_epoch_checkpoint_reentry }}
       RAVRADAR_WEATHER_STATE_EPOCH_RAW_CACHE_KEY: ${{ inputs.weather_state_epoch_raw_cache_key }}
@@ -299,6 +306,31 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 22
+
+      - name: Require the explicit fresh caller-only cold-start scope
+        if: inputs.current_family_cold_start == true
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "${{ inputs.force }}" = true
+          test "${{ inputs.extended_provider_bootstrap }}" = true
+          test "${{ inputs.weather_state_epoch_bootstrap }}" = false
+          test "${{ inputs.weather_state_epoch_checkpoint_reentry }}" = false
+          test "${{ inputs.native_sampling_identity_original_recovery }}" = false
+          test "${{ inputs.completed_private_runtime }}" = false
+          test "${{ inputs.quick_confirmation }}" = false
+          test "${{ inputs.checkpoint_only }}" = false
+          test -z "${{ inputs.quick_progress_source }}"
+          test "${{ inputs.produce_weather_handoff }}" = false
+          test "${{ inputs.ravscore_integrated_first_cutover }}" = false
+          test "${{ inputs.ravscore_integrated_return }}" = false
+          test -z "${{ inputs.ravscore_candidate_g_rollback_mode }}"
+          test -z "$RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID"
+          test -z "$RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_CATALOG_SHA256"
+          test -z "$RAVRADAR_WEATHER_STATE_EPOCH_RAW_CACHE_KEY"
 
       - name: Require the one-off epoch interface without changing its already locked target
         if: inputs.weather_state_epoch_bootstrap == true || inputs.weather_state_epoch_checkpoint_reentry == true
@@ -1519,7 +1551,7 @@ jobs:
         # conditions bytes and bundle hash. This also permits the exact 11Z
         # recovery to resume its own progress after a later no-loss stop;
         # a snapshot from the 15Z anchor is rejected by the binder below.
-        if: inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current'))
+        if: inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current'))
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-private-progress.encrypted
@@ -1580,6 +1612,12 @@ jobs:
             --report "$RUNNER_TEMP/weather-progress-base-report.json"
           captured="$(jq -r '.captured == true' "$RUNNER_TEMP/weather-progress-base-report.json")"
           echo "captured=$captured" >> "$GITHUB_OUTPUT"
+          if test "${{ inputs.current_family_cold_start }}" = true; then
+            # Keep the real protected-B capture for normal partial SAVE, but
+            # never install an automatically selected old numeric candidate.
+            test "$captured" = true
+            exit 0
+          fi
           if test "$captured" = "true" && test "$QUICK_PROTECTED_BASELINE" != "true"; then
             restore_arguments=()
             if test "$CHECKPOINT_ONLY" = true; then
@@ -2053,7 +2091,7 @@ jobs:
           mv data/live/dmi-bulk-cache.json.tmp data/live/dmi-bulk-cache.json
 
       - name: Prepare only an explicitly requested READY point activation
-        if: inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true')
+        if: inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true')
         run: node scripts/prepare-coastal-point-activation.mjs
 
       - name: Rebuild centrally reviewed coastal-part sampling points
@@ -2118,9 +2156,21 @@ jobs:
         id: dmi-generation-prepare
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')
         shell: bash
+        env:
+          RAVRADAR_R2_ACCOUNT_ID: ${{ inputs.current_family_cold_start && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ inputs.current_family_cold_start && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.current_family_cold_start && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}
+          SUPABASE_URL: ${{ inputs.current_family_cold_start && secrets.SUPABASE_URL || '' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.current_family_cold_start && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
         run: |
           set -euo pipefail
           mkdir -p .cache data/live "$RUNNER_TEMP/dmi-active-proof"
+          if test "${{ inputs.current_family_cold_start }}" = true; then
+            node scripts/run-current-family-cold-start.mjs prepare
+            echo "strict_active_ready=false" >> "$GITHUB_OUTPUT"
+            echo "candidate_seeded=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if test "${{ inputs.weather_state_epoch_bootstrap }}" = true && test "${{ inputs.weather_state_epoch_checkpoint_reentry }}" != true; then
             test "${{ steps.state-epoch-runtime-install.outcome }}" = success
             source_kind=empty
@@ -2186,11 +2236,11 @@ jobs:
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.historical-wave-transition.outputs.required != 'true')
         run: node scripts/plan-ravscore-current-history.mjs --retain-committed-raw
         env:
-          RAVRADAR_R2_ACCOUNT_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}
-          RAVRADAR_R2_ACCESS_KEY_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}
-          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}
-          SUPABASE_URL: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_URL || '' }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}
+          SUPABASE_URL: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.SUPABASE_URL || '' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
           RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ steps.private-runtime-install.outcome == 'success' && 'true' || 'false' }}
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
 
@@ -2239,8 +2289,18 @@ jobs:
         id: dmi-bulk
         continue-on-error: ${{ inputs.checkpoint_only != true }}
         timeout-minutes: ${{ inputs.quick_confirmation && 24 || (inputs.extended_provider_bootstrap || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true') && 70 || 55 }}
-        run: python -u scripts/run-dmi-bulk-supervised.py
+        run: |
+          if test "${{ inputs.current_family_cold_start }}" = true; then
+            node scripts/run-current-family-cold-start.mjs run-dmi
+          else
+            python -u scripts/run-dmi-bulk-supervised.py
+          fi
         env:
+          RAVRADAR_R2_ACCOUNT_ID: ${{ inputs.current_family_cold_start && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ inputs.current_family_cold_start && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.current_family_cold_start && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}
+          SUPABASE_URL: ${{ inputs.current_family_cold_start && secrets.SUPABASE_URL || '' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.current_family_cold_start && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
           DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json
           DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json
           DMI_BULK_PREFER_OUTPUT_CACHE: true
@@ -2281,15 +2341,26 @@ jobs:
           WEATHER_USER_AGENT: "RavRadar/4.0.581 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
+      - name: Require actual cold-start producer cessation before other consumers
+        if: inputs.current_family_cold_start == true && always() && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != ''
+        shell: bash
+        env:
+          PRODUCER_CLOSED: ${{ steps.dmi-bulk.outputs.current_family_cold_producer_closed }}
+        run: |
+          set -euo pipefail
+          # A finalized nonzero result may use the normal fallback chain.
+          # Unknown writer cessation must stop CP/OM, closure and scoring.
+          test "$PRODUCER_CLOSED" = true
+
       - name: Advance private point-candidate readiness without public score impact
         id: point-candidate-readiness
-        if: inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome == 'success')
+        if: inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome == 'success')
         continue-on-error: true
         run: node scripts/update-coastal-point-staging.mjs
 
       - name: Reconfirm exact main before shared DMI GRIB cache
         id: dmi-progress-write-authority
-        if: inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped')
+        if: (inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped')
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -2623,9 +2694,9 @@ jobs:
         timeout-minutes: 80
         run: npm run update:weather
         env:
-          RAVRADAR_R2_ACCOUNT_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}
-          RAVRADAR_R2_ACCESS_KEY_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}
-          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           DMI_PART_CONTINUITY_DONOR_PATH: ${{ steps.restored-dmi-part-continuity-donor.outputs.path }}
@@ -2733,7 +2804,7 @@ jobs:
         # An early restore/short-confirmation failure must never publish a new
         # run-id checkpoint that is only a copy of older progress. At least the
         # first real supplier step must have been attempted.
-        if: inputs.completed_private_runtime != true && (always() && github.ref == 'refs/heads/main' && steps.preflight.outputs.should_run == 'true' && steps.component-progress-restore.outcome == 'success' && steps.component-progress-restore.outputs.captured == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure'))
+        if: (inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && github.ref == 'refs/heads/main' && steps.preflight.outputs.should_run == 'true' && steps.component-progress-restore.outcome == 'success' && steps.component-progress-restore.outputs.captured == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure'))
         continue-on-error: true
         timeout-minutes: 4
         shell: bash
@@ -3132,7 +3203,7 @@ jobs:
       - name: Atomically promote the validated point candidate in central admin storage
         continue-on-error: true
         id: point-candidate-promotion
-        if: inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run')
+        if: inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run')
         run: python scripts/promote-coastal-point-activation.py
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

@@ -1,3 +1,4 @@
+import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import test from 'node:test';
@@ -67,7 +68,7 @@ function fixture({ coherent = [], collection = 'dkss_nsbs' } = {}) {
 const rowAt = (f, hours) => f.options.recoverySources[0].record.hourly.find(row => row.time === at(hours));
 
 test('actual planner checkpoint-only control omits only the new eviction projection', async () => {
-  const source = readFileSync(new URL('./plan-ravscore-current-history.mjs', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+  const source = inverseAlternativeCCaller(readFileSync(new URL('./plan-ravscore-current-history.mjs', import.meta.url), 'utf8').replace(/\r\n/g, '\n'), 'scripts/plan-ravscore-current-history.mjs');
   const environment = source.slice(source.indexOf('function environmentBoolean(name) {'), source.indexOf('async function main() {'));
   const checkpoint = source.match(/^  const checkpointOnly = environmentBoolean\('CHECKPOINT_ONLY'\);$/m)?.[0];
   const gate = source.match(/^  if \(retainCommittedRaw[^\n]+\) \{\n    demand.schemaVersion = 2;\n    demand.rawRetention = await readCommittedRawCurrentRetention\(registry.json, checkpointFile, productionReferenceAt\);\n  \}/m)?.[0];
@@ -300,4 +301,88 @@ test('committed B/S retention uses normal priority and UNKNOWN endpoints, never 
   invalid.zones[f.identity.entityId].hourly[at(3)].sources.current.contentSha256 = '';
   assert.throws(() => buildRavScoreRawCurrentRetention({ ...options, protectedBulk: coherent.document,
     progressCandidate: coherent.document, progressActive: invalid }), /RETENTION_CAPTURE_REQUIRED/);
+});
+
+test('normal one-PART native121 survives atomic continuity IO and newer model/window without inventing zero UNKNOWN demand', async t => {
+  // Synthetic schema-valid native originals through real normal constructors.
+  // Not GRIB decoding, authenticated B/S, a C capability or national capacity.
+  const fs = await import('node:fs/promises'), os = await import('node:os'), path = await import('node:path');
+  const dmi = await import('./lib/dmi-forecast-store.mjs');
+  const continuity = await import('./lib/dmi-part-continuity.mjs');
+  const io = await import('./lib/dmi-forecast-file.mjs');
+  assert.equal(dmi.DMI_FORECAST_HOURS, 121);
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-native121-continuity-'));
+  let complete = false;
+  t.after(async () => {
+    assert.equal(path.dirname(root), path.resolve(os.tmpdir()));
+    assert(path.basename(root).startsWith('rr-native121-continuity-'));
+    if (complete) await fs.rm(root, { recursive: true, force: true });
+  });
+  const f = fixture({ coherent: [-3, 0, 3, 6, 9] }), originalFixture = JSON.stringify(f.options);
+  const native = (shift, offset) => {
+    const hour = shift + offset, source = structuredClone(f.natives[1].sources.current);
+    Object.assign(source, { modelRun: at(shift), nativeValidTime: at(hour), leadTimeHours: offset,
+      itemId: `synthetic-native121-${shift}-${offset}`, assetIdentitySha256: sha(`native121-asset-${shift}-${offset}`),
+      contentSha256: sha(`native121-bytes-${shift}-${offset}`), acquiredAt: at(shift + 0.5),
+      itemCreatedAt: at(shift), itemUpdatedAt: at(shift) });
+    source.nativeGridSampling = sampling(source);
+    return { time: at(hour), 'current-u': 0.1 + hour / 1000 + shift / 100, 'current-v': 0.2,
+      sources: { current: source } };
+  };
+  const saveAndRestore = async shift => {
+    const originals = Array.from({ length: 121 }, (_, offset) => native(shift, offset));
+    const document = { ...structuredClone(f.document), generatedAt: at(shift + 6),
+      zones: { [f.identity.entityId]: { ...f.identity,
+        hourly: Object.fromEntries(originals.map(row => [row.time, row])) } } };
+    const before = JSON.stringify(document);
+    const projection = dmi.buildDmiForecastHourly({ ocean: originals.map(row => ({ step: row.time,
+      'current-u': row['current-u'], 'current-v': row['current-v'], provenance: row.sources })),
+    generatedAt: at(shift + 6), startAt: at(shift), hours: dmi.DMI_FORECAST_HOURS }).hourly;
+    const verified = verifiedIntegratedPartHourly({ point: f.part.waterPoint, hourly: projection },
+      document, f.identity.entityId, f.part, { requireNativeGridSampling: true });
+    assert.equal(verified.length, 121);
+    for (const row of verified) {
+      assert(Number.isFinite(row.currentUMps) && Number.isFinite(row.currentVMps));
+      assert.equal(inspectDmiForecastGridSampling(row.currentProvenance, 'current', row.time, f.identity).status, 'coherent');
+    }
+    const packed = await continuity.packDmiPartContinuity(new Map([[f.part.partId,
+      { point: f.part.waterPoint, zoneId: f.identity.entityId, hourly: verified }]]), [f.part], at(shift));
+    const file = path.join(root, `forecast-${shift}.json`);
+    await io.writeDmiForecastFileAtomic(file, { schemaVersion: 2, zones: {}, partContinuity: packed });
+    const saved = await fs.readFile(file), read = await io.readDmiForecastFile(file);
+    const restored = await continuity.unpackDmiPartContinuity(read.partContinuity, [f.part], at(shift + 6));
+    assert.deepEqual(restored.get(f.part.partId).hourly, verified);
+    assert.deepEqual(await fs.readFile(file), saved);
+    assert.equal(JSON.stringify(document), before, 'normal projection/pack/IO never changes actual native contexts');
+    return { document, record: restored.get(f.part.partId), file, saved };
+  };
+  const old = await saveAndRestore(0), fresh = await saveAndRestore(6);
+  const fallback = { source: 'deployed-private-runtime', nativeCurrentContexts: [old.document], record: old.record };
+  const preferred = { source: 'progressive-private-dmi', nativeCurrentContexts: [fresh.document], record: fresh.record };
+  const selected = buildNewestValidRavScoreRecoverySources({ fallbackSource: fallback, preferredSource: preferred,
+    protectedPreviousSource: fallback, productionReferenceAt: at(12), part: f.part });
+  for (let hour = 6; hour < 12; hour++) {
+    const actual = selected.flatMap(source => source.record.hourly).filter(row => row.time === at(hour) && Number.isFinite(row.currentUMps));
+    assert.equal(actual.length, 1, 'normal priority must suppress the old component, not merely include a fresh donor');
+    assert.equal(actual[0].currentProvenance.modelRun, at(6));
+    assert.equal(inspectDmiForecastGridSampling(actual[0].currentProvenance, 'current', actual[0].time, f.identity).status, 'coherent');
+  }
+  const options = { ...f.options, targetReferenceAt: at(12), recoverySources: selected };
+  assert.equal(collect(options).captures.length, 0, 'actual coherent saved/restored endpoints require no RAW originals');
+  const unknown = structuredClone(fresh.document);
+  delete unknown.zones[f.identity.entityId].hourly[at(8)].sources.current.nativeGridSampling;
+  const feature = { properties: { id: f.identity.entityId, dataPoint: f.part.waterPoint } };
+  const unknownRecord = buildPrivateDmiRecoveryRecord(feature, unknown, at(12),
+    { startAt: at(0), expectedIdentity: f.identity, protectPreviousDmi: false });
+  assert(unknownRecord);
+  const unknownSource = { source: 'progressive-private-dmi', nativeCurrentContexts: [unknown], record: {
+    ...unknownRecord, hourly: verifiedIntegratedPartHourly(unknownRecord, unknown, f.identity.entityId, f.part,
+      { requireNativeGridSampling: false }) } };
+  const demand = collect({ ...options, recoverySources: [unknownSource] });
+  assert(demand.captures.length > 0, 'a genuinely selected UNKNOWN endpoint must still require its original');
+  assert(demand.captures.some(capture => capture.validTime === captureAt(8)));
+  assert.equal(JSON.stringify(f.options), originalFixture);
+  assert.deepEqual(await fs.readFile(old.file), old.saved);
+  assert.deepEqual(await fs.readFile(fresh.file), fresh.saved);
+  complete = true;
 });

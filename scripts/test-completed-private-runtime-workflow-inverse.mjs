@@ -3,9 +3,16 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
-import { inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials, assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder } from './lib/completed-private-runtime-workflow-review.mjs';
+import { inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials, assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder, inverseCurrentFamilyColdStartWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
+import { runInNewContext } from 'node:vm';
+import { spawnSync } from 'node:child_process';
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
-const read = async relative => (await fs.readFile(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+const read = async relative => {
+  const source = (await fs.readFile(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const role = relative.endsWith('/reusable-weather-build.yml') ? 'build'
+    : relative.endsWith('/run-current-weather-once.yml') ? 'once' : null;
+  return role ? inverseCurrentFamilyColdStartWorkflow(source, role) : source;
+};
 const actualBuild = inversePairedPrivateRuntimePublication(await read('../.github/workflows/reusable-weather-build.yml'), 'build');
 const build = inverseOrdinaryFullHistoryCheckout(actualBuild, 'build');
 const once = await read('../.github/workflows/run-current-weather-once.yml');
@@ -40,6 +47,194 @@ test('all ten original completed-route source mutations still fail the exact inv
     assert.notEqual(changed, build);
     assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
   }
+});
+
+// Actual C afterimages are tested separately. The eleven historical cases
+// above retain their complete original assertions and exact predecessor bytes.
+const coldWorkflowReview = JSON.parse(await read('./lib/current-family-cold-start-workflow-review.json'));
+const coldActual = Object.fromEntries(await Promise.all(Object.entries(coldWorkflowReview.roles).map(async ([role, row]) =>
+  [role, (await fs.readFile(new URL('../' + row.relativePath, import.meta.url), 'utf8')).replaceAll('\r\n', '\n')])));
+function coldBlock(source, header) {
+  const marker = header + '\n', at = source.indexOf(marker);
+  assert(at >= 0, 'Actual C workflow block: ' + header);
+  const indent = header.match(/^ */)[0].length, kept = [];
+  for (const line of source.slice(at + marker.length).split('\n')) {
+    if (line.trim() && line.match(/^ */)[0].length <= indent) break;
+    kept.push(line);
+  }
+  return kept.join('\n');
+}
+const coldStep = (source, name) => coldBlock(source, '      - name: ' + name);
+const coldJob = name => coldBlock(coldActual.once, '  ' + name + ':');
+const coldInputs = Object.freeze({ current_family_cold_start: false, completed_private_runtime: false,
+  weather_state_epoch_bootstrap: false, weather_state_epoch_checkpoint_reentry: false,
+  native_sampling_identity_original_recovery: false, quick_confirmation: false, checkpoint_only: false,
+  quick_progress_source: '', produce_weather_handoff: false, ravscore_integrated_first_cutover: false,
+  ravscore_integrated_return: false, ravscore_candidate_g_rollback_mode: '', force: true,
+  extended_provider_bootstrap: false });
+function coldEvaluate(expression, context) {
+  return runInNewContext(expression.replace(/^\$\{\{\s*|\s*\}\}$/g, '')
+    .replace(/\b(needs|steps)\.([a-zA-Z0-9_-]+)/g, (_, root, key) => root + '[' + JSON.stringify(key) + ']'),
+  { inputs: { ...coldInputs }, always: () => true, cancelled: () => false, ...context });
+}
+function coldSelector(block) {
+  const match = /^    +if: (.+)$/m.exec(block); assert(match, 'Actual explicit C/default selector'); return match[1];
+}
+function coldOrdinaryContext(enabled, outcome = 'failure', closed) {
+  return { inputs: { ...coldInputs, current_family_cold_start: enabled },
+    github: { ref: 'refs/heads/main', event_name: 'workflow_dispatch' }, steps: {
+      preflight: { outputs: { should_run: 'true' } },
+      'private-runtime-install': { outcome: 'success' },
+      'weather-source-handoff': { outputs: { reused: 'false' } },
+      'component-progress-restore': { outcome: 'success', outputs: { captured: 'true' } },
+      'dmi-bulk': { outcome, outputs: { current_family_cold_producer_closed: closed } },
+    } };
+}
+test('current-family C whole inverse retains f644 and refuses every missing changed or duplicated hunk', () => {
+  assert.equal(coldWorkflowReview.baseHead, 'f6442a8bf16f631036bd7a310a1ce88dea655fd7');
+  assert.deepEqual(Object.keys(coldWorkflowReview.roles), ['build', 'once']);
+  for (const [role, row] of Object.entries(coldWorkflowReview.roles)) {
+    const source = coldActual[role]; assert.equal(sha(source), row.actualSha256);
+    const old = inverseCurrentFamilyColdStartWorkflow(source, role);
+    assert.equal(sha(old), row.predecessorSha256);
+    assert.equal(inverseCurrentFamilyColdStartWorkflow(old, role), old);
+    assert.equal(inverseCurrentFamilyColdStartWorkflow(source, role === 'build' ? 'once' : 'build'), source);
+    for (const [offset, actual] of row.edits) {
+      assert(actual.length > 0, 'Current C delta has no silent deletion-only inverse');
+      for (const substitute of ['', actual + actual, '?' + actual.slice(1)]) {
+        const changed = source.slice(0, offset) + substitute + source.slice(offset + actual.length);
+        assert.notEqual(changed, source);
+        assert.equal(inverseCurrentFamilyColdStartWorkflow(changed, role), changed, 'Unknown whole bytes never enter C inverse');
+        assert.throws(() => inverseCompletedRuntimeWorkflow(changed, role));
+      }
+    }
+    assert.equal(inverseCurrentFamilyColdStartWorkflow(source + '\n# UNREVIEWED C DRIFT\n', role), source + '\n# UNREVIEWED C DRIFT\n');
+  }
+});
+test('current-family C actual optional inventory and forwarding remain default false without new bindings', () => {
+  for (const source of Object.values(coldActual)) {
+    assert.equal((source.match(/^      current_family_cold_start:/gm) ?? []).length, source === coldActual.once ? 2 : 1);
+    const input = coldBlock(source, '      current_family_cold_start:');
+    assert.match(input, /^        required: false$/m); assert.match(input, /^        type: boolean$/m);
+    assert.match(input, /^        default: false$/m);
+  }
+  const caller = coldJob('build-and-prepare');
+  const field = key => { const rows = [...caller.matchAll(new RegExp('^      ' + key + ': (.+)$', 'gm'))]; assert.equal(rows.length, 1); return rows[0][1]; };
+  for (const inputs of [{}, { current_family_cold_start: false }, { current_family_cold_start: true }, { weather_state_epoch_bootstrap: true }]) {
+    assert.equal(coldEvaluate(field('current_family_cold_start'), { inputs }), inputs.current_family_cold_start === true);
+    assert.equal(coldEvaluate(field('extended_provider_bootstrap'), { inputs }), inputs.weather_state_epoch_bootstrap === true || inputs.current_family_cold_start === true);
+  }
+  assert.match(caller, /^      force: true$/m);
+  assert.equal(coldBlock(coldActual.build, '    secrets:'),
+    coldBlock(inverseCurrentFamilyColdStartWorkflow(coldActual.build, 'build'), '    secrets:'),
+    'No new reusable secret declaration or privilege');
+  for (const name of ['Require the explicit fresh caller-only cold-start scope', 'Prepare strict active DMI donor or resumable candidate', 'Update DMI bulk model cache']) {
+    const scope = coldStep(coldActual.build, name);
+    assert(!scope.includes('SUPABASE_DB_PASSWORD')); assert(!scope.includes('SUPABASE_ACCESS_TOKEN'));
+  }
+});
+test('current-family C actual reentry skip and target needs accept only the intended default or fresh path', () => {
+  const recovery = coldSelector(coldJob('operational-recovery-gate'));
+  const target = coldSelector(coldJob('current-main-target'));
+  for (const enabled of [undefined, false, true]) for (const result of ['success', 'skipped', 'failure', 'cancelled']) for (const cancelled of [false, true]) {
+    const inputs = { ...coldInputs }; if (enabled === undefined) delete inputs.current_family_cold_start; else inputs.current_family_cold_start = enabled;
+    const context = { inputs, needs: { 'operational-recovery-gate': { result } }, cancelled: () => cancelled };
+    assert.equal(coldEvaluate(recovery, context), enabled !== true);
+    assert.equal(coldEvaluate(target, context), !cancelled && result === (enabled === true ? 'skipped' : 'success'));
+  }
+  assert.match(coldJob('current-main-target'), /^    needs: operational-recovery-gate$/m);
+  assert(coldJob('build-and-prepare').includes('needs: [current-main-target, native-identity-prewrite, state-epoch-prewrite]'));
+  assert(coldActual.once.includes('group: ravradar-weather-production-v2\n  queue: max\n  cancel-in-progress: false'));
+});
+test('current-family C actual restore exclusion retains protected capture partial SAVE and sole fixed output', () => {
+  const source = coldActual.build;
+  const restore = coldStep(source, 'Restore encrypted private weather progress only');
+  for (const enabled of [false, true]) assert.equal(coldEvaluate(coldSelector(restore), coldOrdinaryContext(enabled)), !enabled);
+  const bind = coldStep(source, 'Bind optional progress to the exact protected baseline');
+  const captured = bind.indexOf('weather-component-progress-cache.mjs capture-base');
+  const isolated = bind.indexOf('if test "${{ inputs.current_family_cold_start }}" = true; then');
+  const restored = bind.indexOf('weather-component-progress-cache.mjs restore');
+  assert(captured >= 0 && captured < isolated && isolated < restored);
+  assert.match(bind.slice(isolated, restored), /test "\$captured" = true\n            exit 0/);
+  const prepare = coldStep(source, 'Prepare strict active DMI donor or resumable candidate');
+  assert.match(prepare, /if test "\$\{\{ inputs.current_family_cold_start \}\}" = true; then\n            node scripts\/run-current-family-cold-start.mjs prepare/);
+  assert(prepare.indexOf('run-current-family-cold-start.mjs prepare') < prepare.indexOf('source_kind=empty'));
+  const dmi = coldStep(source, 'Update DMI bulk model cache');
+  assert.match(dmi, /DMI_BULK_OUTPUT_PATH: \.cache\/dmi-candidate-progress\.json/);
+  assert.match(dmi, /run-current-family-cold-start\.mjs run-dmi\n          else\n            python -u scripts\/run-dmi-bulk-supervised\.py/);
+  for (const name of ['Reconfirm exact main before shared DMI GRIB cache', 'Encrypt newly saved private weather progress before later production steps']) {
+    const value = coldStep(source, name);
+    assert.equal(coldEvaluate(coldSelector(value), coldOrdinaryContext(false)), true);
+    for (const closed of [undefined, '', 'false', 'true']) assert.equal(coldEvaluate(coldSelector(value), coldOrdinaryContext(true, 'failure', closed)), closed === 'true');
+  }
+  const seal = coldStep(source, 'Encrypt newly saved private weather progress before later production steps');
+  assert(!seal.includes('steps.weather.outcome')); assert(seal.includes('steps.component-progress-restore.outputs.captured'));
+  assert(seal.includes('weather-component-progress-cache.mjs save'));
+  assert(source.indexOf(prepare) < source.indexOf('        id: current-history-demand\n'));
+  const promotion = coldStep(source, 'Atomically promote the validated point candidate in central admin storage');
+  assert.match(promotion, /run: python scripts\/promote-coastal-point-activation\.py/);
+  for (const enabled of [undefined, false, true]) {
+    const context = coldOrdinaryContext(enabled, 'success', 'true');
+    context.steps.weather = { outcome: 'success' };
+    context.steps['completed-runtime-admission'] = { outcome: 'success' };
+    context.steps['operational-action'] = { outputs: { action: 'integrated' } };
+    context.steps['point-candidate-readiness'] = { outcome: 'success', outputs: { ready: 'true', pending_promotion: 'true' } };
+    context.pendingPromotionFilePresent = true; // Preserved OLD B may contain it.
+    assert.equal(coldEvaluate(coldSelector(promotion), context), enabled !== true,
+      'C may never PATCH admin through a retained pending promotion; defaults stay normal');
+  }
+});
+test('current-family C actual hardstop precedes all later consumers and provider budgets are unchanged', () => {
+  const source = coldActual.build, prior = inverseCurrentFamilyColdStartWorkflow(source, 'build');
+  const dmiMarker = '      - name: Update DMI bulk model cache\n';
+  const hardMarker = '      - name: Require actual cold-start producer cessation before other consumers\n';
+  const at = source.indexOf(dmiMarker); assert(at >= 0);
+  assert.equal(source.indexOf('      - name: ', at + dmiMarker.length), source.indexOf(hardMarker));
+  const hard = coldStep(source, 'Require actual cold-start producer cessation before other consumers');
+  assert(!hard.includes('continue-on-error:')); assert.match(hard, /test "\$PRODUCER_CLOSED" = true/);
+  for (const outcome of ['success', 'failure', 'skipped', '']) assert.equal(coldEvaluate(coldSelector(hard), coldOrdinaryContext(true, outcome)), outcome !== 'skipped' && outcome !== '');
+  assert.equal(coldEvaluate(coldSelector(hard), coldOrdinaryContext(false)), false);
+  for (const name of ['Advance private point-candidate readiness without public score impact', 'Select exact-hour DMI gaps for targeted Copernicus supplement', 'Build exact DMI-first current operational closure', 'Update central weather cache'])
+    assert(source.indexOf(hardMarker) < source.indexOf('      - name: ' + name + '\n'));
+  const job = coldBlock(source, '  build-and-prepare:');
+  const budget = /^    timeout-minutes: (.+)$/m.exec(job)?.[1]; assert(budget);
+  for (const [inputs, expected] of [[{}, 230], [{ extended_provider_bootstrap: true }, 240], [{ current_family_cold_start: true }, 360], [{ weather_state_epoch_bootstrap: true }, 360]]) assert.equal(coldEvaluate(budget, { inputs }), expected);
+  const dmi = coldStep(source, 'Update DMI bulk model cache'), oldDmi = coldStep(prior, 'Update DMI bulk model cache');
+  for (const key of ['DMI_BULK_HOURS', 'DMI_BULK_MAX_DOWNLOAD_MB', 'DMI_BULK_RAW_CACHE_MAX_MB', 'DMI_BULK_MAX_RUNTIME_SECONDS',
+    'DMI_BULK_FINALIZE_RESERVE_SECONDS', 'DMI_BULK_MAX_ASSETS_PER_COLLECTION', 'DMI_BULK_COLLECTIONS_PER_RUN',
+    'DMI_BULK_REQUEST_TIMEOUT_SECONDS', 'DMI_BULK_ASSET_PROCESSING_TIMEOUT_SECONDS', 'DMI_BULK_SUPERVISED_FINALIZE_TIMEOUT_SECONDS']) {
+    const expression = new RegExp('^          ' + key + ': (.+)$', 'm');
+    assert.equal(expression.exec(dmi)?.[1], expression.exec(oldDmi)?.[1], 'Unchanged real provider budget: ' + key);
+  }
+});
+test('current-family C actual Linux shell guards reject all mixed scopes and unproved writer cessation', { skip: process.platform !== 'linux' ? 'Actual bash execution is required by normal Linux CI; this Windows target is not that proof' : false }, () => {
+  const render = (body, inputs) => body.split('        run: |\n')[1].replace(/^          /gm, '')
+    .replace(/\$\{\{ (.+?) \}\}/g, (_, expression) => String(coldEvaluate(expression, { inputs })));
+  const buildGuard = coldStep(coldActual.build, 'Require the explicit fresh caller-only cold-start scope');
+  const manualGuard = coldStep(coldActual.once, 'Reject mixed caller-only cold-start modes before target selection');
+  const inputs = { ...coldInputs, current_family_cold_start: true, extended_provider_bootstrap: true };
+  const env = { PATH: process.env.PATH, GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_REF: 'refs/heads/main', GITHUB_RUN_ATTEMPT: '1',
+    RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID: '', RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_CATALOG_SHA256: '', RAVRADAR_WEATHER_STATE_EPOCH_RAW_CACHE_KEY: '' };
+  const run = (script, environment) => {
+    assert(script.split('\n').every(line => !line.trim() || /^(?:#|set |test )/.test(line.trim())), 'Only actual read-only shell guards are executed');
+    const result = spawnSync('bash', ['--noprofile', '--norc', '-euo', 'pipefail', '-c', script], { env: environment, encoding: 'utf8', timeout: 3000 });
+    assert.equal(result.error, undefined); assert.equal(result.signal, null); assert.equal(result.stdout, ''); assert.equal(result.stderr, ''); return result.status;
+  };
+  assert.equal(run(render(buildGuard, inputs), env), 0);
+  for (const key of ['weather_state_epoch_bootstrap', 'weather_state_epoch_checkpoint_reentry', 'native_sampling_identity_original_recovery',
+    'completed_private_runtime', 'quick_confirmation', 'checkpoint_only', 'produce_weather_handoff', 'ravscore_integrated_first_cutover', 'ravscore_integrated_return'])
+    assert.notEqual(run(render(buildGuard, { ...inputs, [key]: true }), env), 0, key);
+  for (const [key, value] of [['force', false], ['extended_provider_bootstrap', false], ['quick_progress_source', '123-1'], ['ravscore_candidate_g_rollback_mode', 'unreviewed']])
+    assert.notEqual(run(render(buildGuard, { ...inputs, [key]: value }), env), 0, key);
+  for (const [key, value] of [['GITHUB_EVENT_NAME', 'push'], ['GITHUB_REF', 'refs/heads/other'], ['GITHUB_RUN_ATTEMPT', '2'],
+    ['RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID', 'synthetic'], ['RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_CATALOG_SHA256', 'synthetic'], ['RAVRADAR_WEATHER_STATE_EPOCH_RAW_CACHE_KEY', 'synthetic']])
+    assert.notEqual(run(render(buildGuard, inputs), { ...env, [key]: value }), 0, key);
+  const manualEnv = { ...env, COMPLETED: 'false', QUICK: 'false', PROGRESS: '', TARGET: '', EPOCH: 'false', REENTRY: 'false', NATIVE: 'false' };
+  assert.equal(run(render(manualGuard, inputs), manualEnv), 0);
+  for (const key of ['COMPLETED', 'QUICK', 'PROGRESS', 'TARGET', 'EPOCH', 'REENTRY', 'NATIVE', 'GITHUB_RUN_ATTEMPT'])
+    assert.notEqual(run(render(manualGuard, inputs), { ...manualEnv, [key]: key === 'GITHUB_RUN_ATTEMPT' ? '2' : 'true' }), 0, key);
+  const hard = render(coldStep(coldActual.build, 'Require actual cold-start producer cessation before other consumers'), inputs);
+  for (const closed of ['', 'false', 'true']) assert.equal(run(hard, { ...env, PRODUCER_CLOSED: closed }), closed === 'true' ? 0 : 1);
 });
 test('partial UA conversion, unrelated drift and wrong role cannot enter the new exact layer', () => {
   for (const changed of [build.replace('RavRadar/4.0.581', 'RavRadar/4.0.580'), build + '\n# UNREVIEWED\n']) {

@@ -1,3 +1,4 @@
+import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -48,6 +49,7 @@ function diagnose(options){
 }
 test('diagnostic source delta preserves every genuine historical updater oracle',async()=>{
  let updater=(await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replace(/\r\n/g,'\n');
+ updater=inverseAlternativeCCaller(updater,'scripts/update-weather.mjs');
  const oracle=(await fs.readFile(path.join(ROOT,'scripts/test-weather-update-entrypoint.mjs'),'utf8')).replace(/\r\n/g,'\n');
  const begin=oracle.indexOf('function inverseWeatherStateEpochIntegration(source) {');
  const end=oracle.indexOf('\n// Test-only inverse of the NEW explicit OLD-original donor integration.',begin);
@@ -83,6 +85,28 @@ test('diagnostic source delta preserves every genuine historical updater oracle'
  }
  assert.throws(()=>inverse(updater+'// unrelated source drift\n'),/genuine 903307 updater/);
 });
+test('current-family updater inverse preserves the genuine input and refuses every changed C hunk',async()=>{
+ const actual=(await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replace(/\r\n/g,'\n');
+ const review=(await fs.readFile(path.join(ROOT,'scripts/lib/alternative-c-caller-test-input.mjs'),'utf8')).replace(/\r\n/g,'\n');
+ const begin=review.indexOf('const SOURCE_INPUTS=')+'const SOURCE_INPUTS='.length;
+ const end=review.indexOf(';\nconst digest=',begin);
+ assert(begin>='const SOURCE_INPUTS='.length&&end>begin);
+ const row=JSON.parse(review.slice(begin,end)).find(item=>item.path==='scripts/update-weather.mjs');
+ assert(row);
+ assert.equal(hash(actual),row.after.sha256,'genuine whole C caller is the mutation input');
+ const historical=inverseAlternativeCCaller(actual,row.path);
+ assert.equal(hash(historical),row.before.sha256,'whole inverse restores the unmodified genuine predecessor');
+ assert.equal(inverseAlternativeCCaller(historical,row.path),historical);
+ for(const [before,after] of row.hunks){
+  assert.equal(actual.split(after).length,2,'each reviewed C hunk occurs exactly once');
+  for(const changed of [actual.replace(after,()=>before),actual.replace(after,()=>after+after)]){
+   assert.notEqual(changed,actual);
+   assert.throws(()=>inverseAlternativeCCaller(changed,row.path),/ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  }
+ }
+ assert.throws(()=>inverseAlternativeCCaller(actual+'// unrelated source drift\n',row.path),/ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+});
+
 test('normal updater fixed diagnostic catch emits safe categories and preserves original error',async()=>{
  const updater=await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8');
  const begin="        if (error?.code === 'RAVSCORE_INITIAL_CURRENT_NEW_USE_NOT_READY') {";

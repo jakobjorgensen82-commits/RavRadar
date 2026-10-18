@@ -1,5 +1,6 @@
 // Normal source-only regression; all originals/backend credentials are
 // SYNTHETIC TESTONLY. This cannot qualify the actual production seed.
+import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -13,6 +14,8 @@ import { normalBAndSTransports } from './lib/established-native-current-origin-t
 // TEST INPUT ONLY. Keep the genuine whole140000 updater and every historical
 // product pin below; remove only the separately reviewed diagnostic delta.
 function normalOriginUpdaterTestInput(source, oracle) {
+  if (source.includes('CURRENT_FAMILY_COLD_START_CONTEXT_ENV'))
+    source = inverseAlternativeCCaller(source, 'scripts/update-weather.mjs');
   const expected = '608b795d382d96fed7435ffd9437f589f8771ea742ec65f75053d25059b9d25d';
   if (sha(source) === expected) return source;
   const begin = oracle.indexOf('const savedCurrentReplayUpdaterHunks = [');

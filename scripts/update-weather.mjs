@@ -160,6 +160,10 @@ import {
   readEstablishedNativeCurrentOrigin,
   buildEstablishedNativeCurrentOriginAttestation,
 } from './lib/established-native-current-origin.mjs';
+import { CURRENT_FAMILY_COLD_START_CONTEXT_ENV,
+  loadCurrentFamilyColdStartForTarget, currentFamilyColdStartScoreInputs,
+  currentFamilyColdStartAcquisitionChoices, currentFamilyColdStartScalarRecord }
+  from './current-family-cold-start.mjs';
 import { summarizeRavScoreInitialCurrentWindow } from './lib/ravscore-initial-current-window-audit.mjs';
 import { summarizeSavedCurrentReplayGridFailure } from './lib/saved-current-replay-grid-audit.mjs';
 import { createSavedCurrentForwardOriginalPlan, persistSavedCurrentForwardOriginalPlan }
@@ -276,6 +280,20 @@ if (!Object.values(RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES)
   throw new Error('Unknown RavScore first-cutover bootstrap mode');
 }
 
+const coldPath = process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.path];
+const coldSha256 = process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.sha256];
+const coldRequested = coldPath !== undefined || coldSha256 !== undefined;
+if (coldRequested && (!coldPath || !coldSha256
+  || ![undefined, 'false'].includes(process.env.RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP)
+  || ![undefined, 'false'].includes(process.env.CHECKPOINT_ONLY)
+  || process.env.RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE !== 'true'
+  || process.env.RAVRADAR_DMI_LEGACY_CURRENT_EXPECTATION
+  || RAVSCORE_HISTORICAL_WAVE_TRANSITION_PATH
+  || RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED
+  || RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED
+  || RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE !== RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.automatic)) {
+  throw new Error('CURRENT_FAMILY_COLD_START_MODE_COLLISION');
+}
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 // Shared recovery record: numbers
 const round = (value, digits = 2) => Number.isFinite(value) ? Number(value.toFixed(digits)) : null;
@@ -1900,6 +1918,7 @@ function scoreCoastalPartsRuntime(
   previousCurrentSourceDomainTransitions = null,
   stateEpochView = null,
   establishedNativeCurrentOrigin = null,
+  currentFamilyColdStart = null,
 ) {
   // A separately authenticated, archived epoch omits OLD numerical state only
   // for this first calculation. The full original weather baseline remains
@@ -1921,10 +1940,28 @@ function scoreCoastalPartsRuntime(
       throw new Error('WEATHER_STATE_EPOCH_TRANSITION_COLLISION');
     }
   }
-  const calculationBootstrapMode = stateEpochView !== null
-    ? stateEpochView.candidateGBootstrapMode : RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE;
-  const calculationSourceValidated = stateEpochView !== null
-    ? stateEpochView.candidateGSourceValidated : RAVSCORE_EFFECTIVE_FIRST_CUTOVER_SOURCE_VALIDATED;
+  const coldInputs = currentFamilyColdStart === null ? null
+    : currentFamilyColdStartScoreInputs(currentFamilyColdStart,
+      { registry: contract, targetReferenceAt: generatedAt });
+  if (coldInputs !== null) {
+    if (stateEpochView !== null || historicalWaveInputTransition !== null) {
+      throw new Error('CURRENT_FAMILY_COLD_START_TRANSITION_COLLISION');
+    }
+    previousCoastalParts = coldInputs.previousCoastalParts;
+    previousCandidateGRollbackRuntime = coldInputs.previousCandidateGRollbackRuntime;
+    pointStateInjections = coldInputs.pointStateInjections;
+    checkpointStates = coldInputs.checkpointStates;
+    checkpointCandidateGRollbackStates = coldInputs.checkpointCandidateGRollbackStates;
+    deployedBulkCache = coldInputs.deployedBulkCache;
+    historicalDmiBulkCache = coldInputs.historicalDmiBulkCache;
+    persistedDmiPartRows = coldInputs.persistedDmiPartRows;
+    previousCurrentSourceDomainTransitions = coldInputs.previousCurrentSourceDomainTransitions;
+    establishedNativeCurrentOrigin = coldInputs.establishedNativeCurrentOrigin;
+  }
+  const calculationBootstrapMode = coldInputs?.candidateGBootstrapMode ?? (stateEpochView !== null
+    ? stateEpochView.candidateGBootstrapMode : RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE);
+  const calculationSourceValidated = coldInputs?.candidateGSourceValidated ?? (stateEpochView !== null
+    ? stateEpochView.candidateGSourceValidated : RAVSCORE_EFFECTIVE_FIRST_CUTOVER_SOURCE_VALIDATED);
   // This NEW calculation, including its actual protected/progressive replay
   // inputs, may not borrow corrected lookup proof from a newly parsed loser.
   // Original readers/admission stay unchanged; unsupported originals are kept.
@@ -3833,13 +3870,24 @@ const generatedAt = resolveProductionReferenceTime(process.env.RAVRADAR_PRODUCTI
 if (!['true', 'false'].includes(process.env.RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP ?? 'false')) {
   throw new Error('WEATHER_STATE_EPOCH_MODE_INVALID');
 }
+const currentFamilyColdStart = coldRequested
+  ? await loadCurrentFamilyColdStartForTarget({ contextPath: coldPath,
+    contextSha256: coldSha256, targetReferenceAt: generatedAt }) : null;
+const coldInputs = currentFamilyColdStart === null ? null
+  : currentFamilyColdStartScoreInputs(currentFamilyColdStart,
+    { registry: coastalPartsContract, targetReferenceAt: generatedAt });
+if (currentFamilyColdStart !== null && path.resolve(DMI_BULK_CACHE_PATH)
+  !== currentFamilyColdStartAcquisitionChoices(currentFamilyColdStart).outputPath) {
+  throw new Error('CURRENT_FAMILY_COLD_START_ACQUISITION_OUTPUT_PATH');
+}
 const stateEpochView = process.env.RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP === 'true'
   ? await (await import('./weather-state-epoch.mjs')).loadInstalledWeatherStateEpochInputView({
     targetReferenceAt: generatedAt, registry: coastalPartsContract,
   }) : null;
 // Pending/previous point staging remains archived and is not promoted into a
 // deliberately new numerical epoch. Ordinary point activation is unchanged.
-const coastalPointStateInjections = stateEpochView !== null ? {}
+const coastalPointStateInjections = coldInputs !== null ? coldInputs.pointStateInjections
+  : stateEpochView !== null ? {}
   : await readCoastalPointStateInjections();
 const activeParts = Object.entries(coastalPartsContract.zones ?? {}).flatMap(([zoneId, zoneParts]) =>
   zoneParts.map(part => ({ ...part, zoneId })));
@@ -3870,7 +3918,10 @@ const persistedDmiPartRows = await unpackDmiPartContinuity(
 );
 // The archived OLD checkpoint is preserved but never reattested/selected as
 // NEW state. Ordinary followers have no epoch flag and load their real NEW S.
-const ravScoreCheckpoint = stateEpochView !== null ? {
+const ravScoreCheckpoint = coldInputs !== null ? {
+  loaded: false, continuationAvailable: false, states: coldInputs.checkpointStates,
+  candidateGRollbackStates: coldInputs.checkpointCandidateGRollbackStates,
+} : stateEpochView !== null ? {
   loaded: false, continuationAvailable: false, states: stateEpochView.checkpointStates,
   candidateGRollbackStates: stateEpochView.checkpointCandidateGRollbackStates,
 } : await loadRavScoreContinuationCheckpointForTarget({
@@ -4329,10 +4380,10 @@ const historicalWaveInputTransition = await loadHistoricalWaveInputTransition({
   targetReferenceAt: generatedAt,
   currentBinding: ravScoreModelBinding(),
 });
-if (stateEpochView !== null && historicalWaveInputTransition !== null) {
+if ((stateEpochView !== null || currentFamilyColdStart !== null) && historicalWaveInputTransition !== null) {
   throw new Error('WEATHER_STATE_EPOCH_TRANSITION_COLLISION');
 }
-const previousPrivateCandidateGRuntime = stateEpochView !== null || historicalWaveInputTransition
+const previousPrivateCandidateGRuntime = coldInputs !== null || stateEpochView !== null || historicalWaveInputTransition
   ? null
   : selectPreviousPrivateCandidateGRuntime(previous);
 const waterSourceRoutingContext = {
@@ -4388,10 +4439,11 @@ if (coastalPartsContract.enabled) {
       return routed.hourly;
     },
   });
-  if (stateEpochView !== null) {
+  if (stateEpochView !== null || currentFamilyColdStart !== null) {
     weatherComponents.inputs.weatherStateEpochScalarPartRecords = new Map(
       [...planningRecords].map(([partId, record]) => {
-        const scalar = withoutCurrent(record);
+        const scalar = currentFamilyColdStart !== null
+          ? currentFamilyColdStartScalarRecord(currentFamilyColdStart, record) : withoutCurrent(record);
         for (const hour of scalar.hourly) {
           delete hour.currentStateOnlyHold;
           delete hour.currentCoastNormalSpeedMps;
@@ -4412,9 +4464,9 @@ if (coastalPartsContract.enabled) {
 // Authenticate the installed immutable B/S and its working H0 pair before
 // scoring. This never derives origin from a caller flag, model hash or new
 // provider record, and does not rewrite the old conditions/GCM baseline.
-const establishedNativeCurrentOrigin = coastalPartsContract.enabled
-  ? await readEstablishedNativeCurrentOrigin(coastalPartsContract)
-  : null;
+const establishedNativeCurrentOrigin = coldInputs !== null
+  ? coldInputs.establishedNativeCurrentOrigin : coastalPartsContract.enabled
+    ? await readEstablishedNativeCurrentOrigin(coastalPartsContract) : null;
 if (process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'
   && establishedNativeCurrentOrigin === null) throw new Error('SAVED_CURRENT_REPLAY_ORIGIN_REQUIRED');
 let coastalPartScoreBuild;
@@ -4443,6 +4495,7 @@ coastalPartScoreBuild = coastalPartsContract.enabled
     previous?.ravScoreCurrentSourceDomainTransitions ?? null,
     stateEpochView,
     establishedNativeCurrentOrigin,
+    currentFamilyColdStart,
   )
   : null;
 } catch (error) {

@@ -5,6 +5,12 @@
   "updatedAt": "2026-10-18",
   "sections": [
     {
+      "id": "current-family-archive-cold-start-4-0-581",
+      "chapter": "89.254",
+      "title": "Gendan vejret gennem én sammenhængende vej",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Ved den godkendte nye start begynder strømhistorikken på ny. Tidligere data gemmes særskilt som arkiv og må ikke gøre gamle strømtimer nødvendige. Først en faktisk kontrolleret levering giver en ny offentlig prognose.</div><p>En godkendt engangsstart skal først bevise og arkivere de eksisterende vejrpakker, beregningstilstande og offentliggjorte data. Den nye beregning kan derefter starte uden de gamle strømtilstande under den samme installerede model. En arkivkopi er ikke adgang til at genbruge ukvalificerede strømdata eller opfinde manglende timer.</p><p>Alle leverandører, efterbehandling og beregning bruger samme normale arbejdsfil. Den installerede forgænger bevares før klargøring. Kun den eksplicitte engangskørsel får et større samlet tidsrum; de almindelige kørselsbudgetter og tidsplanen bevares. Ved uafklaret ophør af en skrivende proces må næste forbruger ikke starte. Delvis fremdrift må kun gemmes gennem den normale kontrollerede vej.</p><p>Kontrollen omfatter både første beregning, faktisk gemning/genlæsning og to almindelige efterfølgere med flyttet leverandørvindue. Den gamle H0 må ikke genberegnes som del af normal fortsættelse. Alle fem vejrtyper skal fortsat bestå den almindelige databevarelse, også strøm. Komplet cache betyder brugbare, kvalificerede data; ikke at alle leverandørfiler skal ligge på disken samtidig.</p><p>Kandidaten er fortsat frakoblet. De to cacherettelser er kildeleveret. En privat prøve har gennemført første beregning og to almindelige efterfølgere for 673 kunstige dele med normal gemning og genlæsning; de nye strømdata bruges faktisk i begge strømhukommelser. Det er ikke virkelige nationale leverandørdata, fuld offentlig kapacitet eller nye offentlige vejrdata. Samlet kildekontrol, sikker levering og faktisk offentlig effekt mangler stadig. Det større samlede tidsrum garanterer ikke gennemløb, og særskilt tidsreserve til den nye indgang er fortsat en åben robusthedsopgave. Den første engangsindgang understøtter ikke særskilt checkpoint-genoptagelse. Modelbinding, SQL, scoreformel, kildeprioritet, administratorpunkter og geometri er uændrede.</p>"
+    },
+    {
       "id": "post-h0-exact-current-originals-4-0-581",
       "chapter": "89.253",
       "title": "Genaflæs kun nødvendige strømoriginaler",
