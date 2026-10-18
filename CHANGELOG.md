@@ -1,3 +1,23 @@
+## 4.0.581 — 2026-10-18 — UI-build på uændret releaseversion
+
+### Mobilens dagslabels og eksisterende browsercachevej
+
+Første præcise PR655-kildekontrol bestod native PostgreSQL, men fandt én gammel auth-cacheadresse i kildeprøven. Den og cold-start-prøvens tilsvarende adressekrav er rettet til de præcise gennemgåede indgangsadresser. De normale worker-prøver bevarer gamle cacheposter og kontrollerer faktisk hentning og genbrug af de nye filer. Øvrige auth-, opstarts- og maskekontroller er uændrede. Begge mål og den tidligere fejlede privacy-gruppe består lokalt; gruppens eksisterende Windows-skip og krav om ny præcis samlet CI bevares. Ingen yderligere produkt- eller cachepolitikændring.
+
+Den eksisterende interne saved-input-audit får særskilte, faste nativeGridSampling-tællinger omkring B's autentificerede tilstandstid. Originalbevis og korrekt gitterfortolkning holdes adskilt; ukendte grænser og faktisk replayudvælgelse udledes ikke af optællingen. 55 normale mål består lokalt; præcis kilde-CI og ny produktionsaflæsning er fortsat åbne. Ingen ændring af vejrdata, model, optagelsesregel eller leverandørkald.
+
+Ejerens iPhonefoto viste, at sidste dagslabel rykkede ned på en ny række. Den afgrænsede rettelse i js/ui/map-timeline.js og style.css holder alle dagslabels på én vandret dagrække med kort ugedag og dato på to linjer inde i hver label. Placeringen følger de faktiske timeintervaller, også delvise første og sidste dage; kun teksten forskydes ved risiko for overlap, mens daggrænserne står præcist. Den eksisterende normale test udvides i scripts/test-map-forecast-timeline.mjs. Timevalg, indlæsning, seneste-valg/racekontrol, model og scorer ændres ikke.
+
+Dette er en UI-build på uændret 4.0.581, ikke en 4.0.582-release. Den eksisterende fuld-URL-cachevej opdaterer ui-nøglen i index.htmls CSS- og bootstrap-adresser og bootstrap.js' app-adresse samt app.js' import af tidsskyderen med en afgrænset timeline-nøgle dateret 20261018. v=4.0.581 og de delte auth-/i18n-adresser bevares. Ingen version:set, nye C/I/T-bindinger, modelændring eller SQL følger med. Den ændrede offentlige kode kræver stadig normal ny kilde-/artifactforsegling og sikker levering.
+
+ROOTs direkte normale test:map-timeline-kommando bestod med 66 tilfælde, panelprøven og seks generations-/livscyklustilfælde uden netkald eller udeladelser (1d225c, exit 0). Efter den nye cacheassert er den normale målprøve bevaret RED→GREEN: AD0857 fejlede, A4826E bestod syv tilfælde. ROOTs faktiske normale Chrome3-kontrol af den lokale syntetiske preview viste én dagrække uden vandret rulning: fire dage ved 390 pixels samt fem dage på dansk og seks på tysk ved 320 pixels. Torsdagsklikket valgte 22. oktober kl. 00 korrekt i den særskilte syntetiske horisont; dette er ikke en ny offentlig prognosedag. Previewen er lukket, og viewporten er nulstillet. Normale UI-cache-, model- og Pages-kontroller af 87 moduler består. Fysisk iPhone/Safari, præcis samlet kilde-CI og offentlig hotfix-effekt er fortsat åbne.
+
+Fem dage er et maksimum, ikke et løfte om fem resterende datoer. Det faktisk genbrugte datasæt har reference 16. oktober kl. 12 dansk tid og slutter 21. oktober kl. 09 dansk tid. Fra 18. oktober er der derfor fire kalenderdage, 18.–21. oktober. En femte dag kræver en ny gyldig offentlig generation; der må ikke tilføjes tomme eller falske dage eller genberegnes vejr for denne UI-rettelse.
+
+Faktisk drift skal holdes adskilt fra UI-kandidaten: rettelsesdeploy 39064823783 bestod 17. oktober kl. 22.18 dansk tid og leverede 4.0.581 med genbrugte vejrdata. Den almindelige vejrhentning 39066350748 fejlede 18. oktober kl. 00.22 dansk tid ved native-gitterets replaykontrol før Pages. Krypteret cache er faktisk uploadet og genfundet som cachehit, men det er ikke bevis for ny offentlig generation eller fuld genoptagelse. Den skrivefri audit 39075947316 bestod på 6 minutter og 24 sekunder. Hele GCM-indholdet blev autentificeret, de eksakte gamle B-kontrakter bestod, og den aktuelle beskyttede pointer var uændret. Alle 55.195 persisterede DMI-rækker havde det traditionelle eksakte native-original-/projektionsbevis. Det beviser IKKE sammenhængende nativeGridSampling, og den konkrete række bag replayafvisningen er fortsat ukendt. Der påstås ingen lukning af denne fejl. Cron forbliver inaktiv, alle fem hovedmål er åbne, og SOURCE19 samt tilbageholdte aktiveringer er inaktive.
+
+Ældre daterede status- og pendingnoter nedenfor bevares som historik. Denne front erstatter kun deres aktuelle leveringsstatus på de udtrykkeligt dokumenterede punkter.
+
 ## 4.0.581 — 2026-10-17
 
 ### Normal genlæsning af allerede installeret databasefase

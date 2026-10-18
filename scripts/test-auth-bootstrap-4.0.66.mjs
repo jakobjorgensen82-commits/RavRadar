@@ -55,14 +55,30 @@ const uiPaths = [
   bootstrap.match(/import\("\.\/(app\.js\?[^"]+)"\)/)?.[1],
   app.match(/from "\.\/(js\/ui\/account-panel\.js\?[^"]+)"/)?.[1],
 ];
+// Only the three top-level mobile UI assets have a new key. The unchanged
+// account module must retain its original identity across all importers.
+const expectedUiMarkers = [
+  'account-timeline-20261018', 'account-timeline-20261018',
+  'account-timeline-20261018', 'account-20261006',
+];
 const entries = new Map();
 const fetched = [];
 let fetchListener;
 const origin = 'https://ravradar.example.invalid';
-for (const relative of uiPaths) {
-  assert.ok(relative?.includes('&ui=account-20261006'), 'Hele konto-/CSS-importkæden skal have den afgrænsede cachemarkør.');
-  entries.set(new URL(relative.replace('&ui=account-20261006', ''), `${origin}/`).href, { old: true });
+for (const [index, relative] of uiPaths.entries()) {
+  assert.ok(relative, 'Hele konto-/CSS-importkæden skal findes.');
+  const address = new URL(relative, `${origin}/`);
+  assert.equal(address.searchParams.getAll('ui').length, 1, 'Præcis én afgrænset cachemarkør pr. fil.');
+  assert.equal(address.searchParams.get('ui'), expectedUiMarkers[index],
+    'Den aktuelle UI-kæde skal have sine præcise gennemgåede cachemarkører.');
+  address.searchParams.delete('ui');
+  entries.set(address.href, { old: true });
+  if (index < 3) {
+    address.searchParams.set('ui', 'account-20261006');
+    entries.set(address.href, { old: true });
+  }
 }
+assert.equal(entries.size, 7, 'Både umarkerede og tidligere kontomarkerede cachefiler skal være til stede.');
 const workerScope = {
   URL, Response,
   self: { location: { origin }, addEventListener(name, listener) { if (name === 'fetch') fetchListener = listener; } },
@@ -83,7 +99,7 @@ for (const relative of uiPaths) {
   assert.equal(await (await responsePromise).text(), 'new account UI');
 }
 assert.equal(fetched.length, 4, 'Gamle præcis-key caches må ikke skjule de fire rettede UI-filer.');
-assert.equal([...entries.values()].filter(value => value.old).length, 4, 'Tidligere cacheindhold skal bevares, ikke nulstilles.');
+assert.equal([...entries.values()].filter(value => value.old).length, 7, 'Alt tidligere cacheindhold skal bevares, ikke nulstilles.');
 
 // Run the actual normal account renderer/submit listener, replacing only imports
 // and browser/service boundaries. No real Auth request, mail or account is made.

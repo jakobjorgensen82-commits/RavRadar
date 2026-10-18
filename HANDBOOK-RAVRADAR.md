@@ -32,6 +32,14 @@ En lokal syntetisk 673-dels kæde med tre efterfølgere har bestået normal gemn
 
 ## 89.251 Kortet kan vises for en valgt prognosetime
 
+Nyeste status 18. oktober — UI-build 4.0.581, endnu ikke offentligt verificeret: Ejerens iPhone viste, at onsdag rykkede ned på en ny dagrække. Alle dagslabels holdes nu på én vandret række. Hver label har kort ugedag og dato på to linjer. Den følger omtrent sin faktiske placering under timerne, mens præcise daggrænser og delvise første og sidste dage bevares. Klik vælger fortsat dagens første eksisterende time.
+
+Dette er en afgrænset visningsrettelse med uændret versionsnummer 4.0.581. Browserens allerede eksisterende UI-adressenøgler skiftes på de ændrede filer, så gamle cachede labels og CSS ikke genbruges. Timevalg, vejrdata, model og RavScore ændres ikke.
+
+Lokale automatiske prøver består. I en lokal Chrome-preview med tydeligt syntetiske timer blev fire dage ved 390 pixels samt fem dage på dansk og seks på tysk ved 320 pixels vist på én dagrække uden vandret rulning. Dagsklikket valgte den forventede time i prøvehorisonten. Det er ikke en kontrol af offentlige vejrdata eller Safari. En fysisk iPhone med Safari, samlet kildekontrol på den præcise nye kode og offentlig effekt af hotfixet er endnu ikke bevist.
+
+Femdagslisten viser højst fem tilgængelige kalenderdage. De genbrugte data har reference 16. oktober kl. 12 dansk tid og rækker til 21. oktober kl. 09. Fra den 18. er derfor kun datoerne 18.–21. tilbage. En femte dag kræver en ny gyldig offentlig generation; appen tilføjer ikke tomme eller falske dage.
+
 **Nyere lokal kildestatus 17. oktober:** Den seneste præcise kildekontrol bestod PostgreSQL, men fejlede i én af 58 normale kommandogrupper ved pakkens B/S-rundtur. Observationen viste en anden gyldig, ikke-almindelig filtype efter lukning; det beviser hverken en konkret mappe eller en læk. Den tidlige isolerede prøve genfandt ikke fejlen. De senere baseline-, kapacitets- og trækontroller blev ikke kørt, og der kom intet leveringsartifact.
 
 Den lokale rettelse kræver stadig en almindelig oprindelig fil. Efterkontrollen må kun godkende filstatistik fra den normale OS-kontrol med samme prototype, egne BigInt-felter for identitet og filtype og en af syv kendte OS-filtyper, når en anden identitet er bevist. Samme identitet, ukendte typer, proxy og falsk lukning afvises; en anden ejer lukkes aldrig. Samme kontrol genbruges ved særskilt epoch-gendannelse, som ikke var årsagen til B/S-fejlen.
