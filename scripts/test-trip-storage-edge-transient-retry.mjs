@@ -2561,3 +2561,176 @@ test('erasure workflow: the actual named source program runs plan/apply/check on
   ].join('\n'));
 });
 }
+
+
+// SAME_H0 Worker update: the existing command/VM seam, synthetic control-flow only.
+// Native Cloudflare/SQL/Worker runtime is not represented by these local cases.
+{
+const {test} = await import('node:test');
+const {compileFunction} = await import('node:vm');
+const {isDeepStrictEqual} = await import('node:util');
+const path=await import('node:path'),os=await import('node:os');
+const actualReadiness=await import('./integrated-cutover-readiness.mjs');
+// Genuine old52 source files are a VIEW-ONLY structural fixture, NOT an issued new53.
+// Actual new binding/db/catalogue gates remain mocked synthetic control-flow seams.
+const viewFixtureMigrations=actualReadiness.establishedNativeCurrentOriginRequiredMigrations();
+const workerUpdateSource=fs.readFileSync('scripts/update-assistant-same-h0-trip-worker.mjs','utf8');
+const workerUpdateBody=workerUpdateSource.replace(/^import[\s\S]*?;\r?\n/gm,'')
+  .replace(/^export /gm,'').split('\nif (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)')[0];
+async function sameH0WorkerFixture(options={}) {
+  const calls=[],listeners=new Map();let clock=1800000000000,version='11111111-1111-4111-8111-111111111111',deploys=0,stopped=true,issued=false;
+  const env={GITHUB_SHA:'a'.repeat(40),GITHUB_REF:'refs/heads/main',GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_RUN_ATTEMPT:'1',
+    GITHUB_WORKFLOW:'Deploy RavRadar code-only repair',RAVRADAR_ASSISTANT_SAME_H0_PHASE:'installed',
+    RAVRADAR_ASSISTANT_SAME_H0_CONFIRMATION:'DEPLOY-CODE-ONLY-REPAIR',RAVRADAR_ASSISTANT_SAME_H0_EDGE_REQUIRED:'true',
+    SUPABASE_URL:'https://synthetic.invalid',SUPABASE_PROJECT_ID:'afqhhdrkjfjtpadntdzo',SUPABASE_SERVICE_ROLE_KEY:'synthetic',
+    SUPABASE_DB_PASSWORD:'SYNTHETIC_PASSWORD_NOT_CREDENTIAL',
+    SUPABASE_PUBLISHABLE_KEY:'synthetic',CLOUDFLARE_ACCOUNT_ID:'synthetic',CLOUDFLARE_API_TOKEN:'synthetic',
+    ...options.env};
+  const tempParent=fs.realpathSync(os.tmpdir()),view=fs.mkdtempSync(path.join(tempParent,'rr-worker-view-only-'));
+  fs.mkdirSync(path.join(view,'supabase/.temp'),{recursive:true});
+  fs.mkdirSync(path.join(view,'supabase/migrations'));
+  fs.copyFileSync('supabase/config.toml',path.join(view,'supabase/config.toml'));
+  fs.writeFileSync(path.join(view,'supabase/.temp/project-ref'),options.wrongLink?'other':env.SUPABASE_PROJECT_ID);
+  for(const row of viewFixtureMigrations)fs.copyFileSync(path.join('supabase/migrations',row.filename),path.join(view,'supabase/migrations',row.filename));
+  if(options.changedMigration)fs.appendFileSync(path.join(view,'supabase/migrations',viewFixtureMigrations[0].filename),'-- synthetic tamper\n');
+  if(options.extraArchive)fs.writeFileSync(path.join(view,'supabase/migrations','20261016030000_unknown_archive.sql'),'-- synthetic extra\n');
+  if(options.normalPlaceholder)fs.writeFileSync(path.join(view,'supabase/migrations','20200101_remote_applied_history_placeholder.sql'),
+    '-- Temporary CI-only placeholder for already-applied remote migration 20200101.\n-- It is never committed and contains no executable SQL.\n');
+  env.RAVRADAR_ASSISTANT_SAME_H0_MIGRATION_VIEW=options.missingView?undefined:options.unknownView?path.join(view,'absent'):view;
+  if(options.missingPassword)delete env.SUPABASE_DB_PASSWORD;
+  const configuration={name:'ravradar-trip-gateway',d1_databases:Array.from({length:10},(_,i)=>({
+    binding:`TRIP_DB_${i}`,database_name:`ravradar-trips-${i}`,database_id:`00000000-0000-4000-8000-${String(i).padStart(12,'0')}`}))};
+  const schema=()=>({kind:'TRIP_OWNER_ERASURE_INSERT_FENCE_SCHEMA_PLAN',sourceSha:env.GITHUB_SHA,workerVersionId:version,
+    bindingMappingSha256:'b'.repeat(64),triggerDefinitionSha256:'c'.repeat(64),migrationSha256:'d'.repeat(64),
+    shardIdentities:Array.from({length:10},(_,i)=>i.toString(16).padStart(64,'0')),missingShards:options.missing003?[3]:[]});
+  const execFileSync=(command,args,{env:commandEnv,cwd})=>{
+    calls.push({command,args,env:commandEnv,cwd});
+    if(command==='git')return args[0]==='rev-parse'?(options.mainDrift?'e'.repeat(40):env.GITHUB_SHA):'';
+    if(command==='sleep'){clock+=20000;return '';}
+    if(command==='supabase'){
+      if(args[0]==='migration'){
+        assert.equal(cwd,view,'CLI must actually use the narrow linked view, not ROOT');
+        assert.equal(commandEnv.SUPABASE_DB_PASSWORD,'SYNTHETIC_PASSWORD_NOT_CREDENTIAL');
+        assert.equal(fs.readFileSync(path.join(cwd,'supabase/.temp/project-ref'),'utf8'),env.SUPABASE_PROJECT_ID);
+        return 'SYNTHETIC_STRICT_53_LIST';
+      }
+      assert.equal(cwd,process.cwd(),'unrelated commands retain repository cwd');
+      assert.equal(args[0],'secrets');assert.equal(args[1],'set');
+      if(options.cancelOnMaintenance&&args.at(-1).startsWith('TRIP_STORAGE_MODE=maintenance:'))listeners.get('SIGTERM')?.();
+      return '';
+    }
+    assert.equal(command,'node');
+    if(args[0]==='scripts/prepare-cloudflare-trip-storage.mjs'){
+      if(args[1]==='--existing-worker-repair'){
+        assert.equal(commandEnv.TRIP_STORAGE_OWNER_EXPORT_UPGRADE,'0');
+        if(options.missing002)throw Error('synthetic missing index');return '';
+      }
+      assert.equal(args[1],'--existing-owner-erasure-guard-plan');
+      assert.equal(commandEnv.TRIP_STORAGE_OWNER_ERASURE_GUARD,'1');return JSON.stringify(schema());
+    }
+    if(options.expireAtWorker&&args[0]==='scripts/verify-cloudflare-trip-gateway.mjs')clock+=21*60000;
+    if(args[0]==='scripts/verify-cloudflare-trip-gateway.mjs'&&commandEnv.EXPECTED_TRIP_WORKER_VERSION)
+      assert.equal(commandEnv.EXPECTED_TRIP_WORKER_VERSION,version);
+    assert.ok(['scripts/audit-cloudflare-trip-storage.mjs','scripts/verify-trip-storage-edge.mjs','scripts/verify-cloudflare-trip-gateway.mjs'].includes(args[0]));
+    return '';
+  };
+  const scope={path,fs:{...fs,lstatSync:file=>file==='/tmp/ravradar-assistant-same-h0-worker-wrangler.json'?({isFile:()=>true,isSymbolicLink:()=>false,size:3000}):fs.lstatSync(file),
+      readFileSync:(file,...args)=>file==='/tmp/ravradar-assistant-same-h0-worker-wrangler.json'?JSON.stringify(options.configDrift&&deploys?{...configuration,name:'other'}:configuration):fs.readFileSync(file,...args)},
+    execFileSync,isDeepStrictEqual,
+    assistantSameH0RequiredMigrations:()=>viewFixtureMigrations,
+    inspectMigrationSources:async request=>{assert.equal(request.sourcePhase,'assistant-same-h0');
+      return actualReadiness.inspectMigrationSources({...request,sourcePhase:'established-native-current-origin'});},
+    requireAssistantSameH0Output:()=>{calls.push({gate:'issued'});if(options.unissued)throw Error('UNISSUED');issued=true;},
+    assertAssistantSameH0MigrationsApplied:text=>{assert.equal(issued,true);assert.equal(text,'SYNTHETIC_STRICT_53_LIST');if(options.oldCatalogue)throw Error('OLD_CATALOGUE');},
+    verifyIntegratedDatabaseReadback:async request=>{calls.push({gate:'db',phase:request.sourcePhase});assert.equal(request.sourcePhase,'assistant-same-h0');if(options.oldDatabase)throw Error('OLD_DATABASE');},
+    verifyExistingWorkerBindings:async request=>{calls.push({binding:request.expectedVersion||'discover'});
+      assert.deepEqual(request.expectedBindings,configuration.d1_databases);if(request.expectedVersion)assert.equal(request.expectedVersion,version);
+      return {versionId:version};},
+    waitForTripStorageEdgeReadiness:async()=>({ok:options.recoveryEdgeUnavailable!==true}),
+    deployTripWorker:async ({configPath,env:deployEnv})=>{
+      calls.push({deploy:++deploys});assert.equal(deployEnv.SUPABASE_DB_PASSWORD,undefined);assert.equal(deployEnv.SUPABASE_SERVICE_ROLE_KEY,undefined);assert.equal(configPath,'/tmp/ravradar-assistant-same-h0-worker-wrangler.json');
+      assert.equal(deployEnv.TRIP_STORAGE_OWNER_EXPORT_UPGRADE,'0');
+      if(options.deployFails===true||options.deployFails===deploys){stopped=options.unknownStop!==true;
+        throw Object.assign(Error('synthetic private cause'),{terminationConfirmed:stopped});}
+      version=deploys===1?'22222222-2222-4222-8222-222222222222':'33333333-3333-4333-8333-333333333333';
+      return {terminationConfirmed:options.falseStop!==true,stdout:`Current Version ID: ${version}\n`};},
+    process:{env,platform:'linux',cwd:()=>process.cwd(),on:(event,fn)=>listeners.set(event,fn),off:event=>listeners.delete(event)},
+    Date:class extends Date{static now(){return clock;}},
+  };
+  let value,error;try{value=await compileFunction('return (async()=>{\n'+workerUpdateBody+'\nreturn updateAssistantSameH0TripWorker();})();',Object.keys(scope))(...Object.values(scope));}
+  catch(caught){error=caught;}
+  finally{assert.equal(path.dirname(view),tempParent);assert(path.basename(view).startsWith('rr-worker-view-only-'));fs.rmSync(view,{recursive:true,force:false});}
+  assert.equal(listeners.size,0,'owned signal listeners always removed');
+  return{calls,value,error,deploys,stopped};
+}
+const writes=result=>result.calls.filter(row=>row.deploy||row.command==='supabase'&&row.args[0]==='secrets');
+test('same-h0 Worker actual workflow runs only new route after B/S and before current Edges/Pages',()=>{
+  const workflow=fs.readFileSync('.github/workflows/deploy-code-only-repair.yml','utf8').replaceAll('\r\n','\n');
+  const marker='      - name: Update and attest the existing SELF_REPORTED Worker before new Edges\n';
+  assert.equal(workflow.split(marker).length,2);
+  const start=workflow.indexOf(marker),end=workflow.indexOf('      - name:',start+marker.length),step=workflow.slice(start,end);
+  assert.match(step,/if: env\.RAVRADAR_ASSISTANT_SAME_H0_EDGE_REQUIRED == 'true'/);
+  assert.doesNotMatch(step,/always\(|failure\(|USERDATA_PREWRITE|--.*apply|--.*upgrade|db push|functions deploy/);
+  assert.match(step,/run: node scripts\/update-assistant-same-h0-trip-worker\.mjs/);
+  assert.match(step,/RAVRADAR_ASSISTANT_SAME_H0_MIGRATION_VIEW: \$\{\{ steps\.migration-view\.outputs\.workdir \}\}/);
+  assert.match(step,/SUPABASE_DB_PASSWORD: \$\{\{ secrets\.SUPABASE_DB_PASSWORD \}\}/);
+  assert.ok(workflow.indexOf('Publish current bounded private runtime')<start);
+  assert.ok(workflow.indexOf('Publish measured continuation only after verified warmup private runtime')<start);
+  assert.ok(start<workflow.indexOf('Deploy exact rebound trip Edges without Worker or D1 replay'));
+  assert.ok(start<workflow.indexOf('Publish exact integrated backend and Edge readiness for this source'));
+  assert.ok(start<workflow.indexOf('Upload GitHub Pages artifact'));
+  const edges=workflow.slice(end,workflow.indexOf('      - name:',end+18));
+  assert.match(edges,/RAVRADAR_ASSISTANT_SAME_H0_EDGE_REQUIRED == 'true'/);
+  assert.match(edges,/supabase functions deploy trip-log/);assert.match(edges,/supabase functions deploy submit-observation/);
+  assert.match(edges,/node scripts\/verify-trip-storage-edge\.mjs/);
+});
+test('same-h0 Worker normal caller preserves installed53/schema/no-DDL/version/Edge gate',async()=>{
+  const result=await sameH0WorkerFixture();assert.equal(result.error,undefined);assert.equal(result.deploys,1);
+  assert.equal(result.value.currentEdgesAttested,false);assert.equal(result.value.edgeReadiness,'PRE_UPGRADE_ONLY');
+  assert.equal(result.value.versionId,'22222222-2222-4222-8222-222222222222');
+  assert.deepEqual(writes(result).map(row=>row.deploy?'deploy':row.args.at(-1).startsWith('TRIP_STORAGE_MODE=maintenance:')?'maintenance':'d1'),['maintenance','deploy','d1']);
+  assert.equal(result.calls.filter(row=>row.command==='supabase'&&row.args[0]==='migration').length,1);
+  assert.equal(result.calls.some(row=>row.args?.some(arg=>/apply|db push|functions deploy/.test(arg))),false);
+  assert.equal(result.value.sqlApplied,false);assert.equal(result.value.schemaApplied,false);assert.equal(result.value.statisticsActivated,false);
+});
+for(const option of ['unissued','oldCatalogue','oldDatabase','missing002','missing003','mainDrift'])
+test('same-h0 Worker refuses '+option+' before provider mutation',async()=>{
+  const result=await sameH0WorkerFixture({[option]:true});assert.equal(result.error.message,'ASSISTANT_SAME_H0_WORKER_UPDATE_FAILED');assert.deepEqual(writes(result),[]);
+  if(option==='unissued')assert.equal(result.calls.some(row=>row.command),false);
+});
+for(const option of ['missingView','unknownView','wrongLink','changedMigration','extraArchive','missingPassword'])
+test('same-h0 Worker physical migration-view refuses '+option,async()=>{
+  const result=await sameH0WorkerFixture({[option]:true});assert.equal(result.error.message,'ASSISTANT_SAME_H0_WORKER_UPDATE_FAILED');
+  assert.deepEqual(writes(result),[]);assert.equal(result.calls.some(row=>row.command==='supabase'&&row.args[0]==='migration'),false);
+});
+test('same-h0 Worker preserves exact normal pre-cutover placeholder and linked cwd',async()=>{
+  const result=await sameH0WorkerFixture({normalPlaceholder:true});assert.equal(result.error,undefined);assert.equal(result.deploys,1);
+});
+test('same-h0 Worker first before-route still requires actual installed database',async()=>{
+  const accepted=await sameH0WorkerFixture({env:{RAVRADAR_ASSISTANT_SAME_H0_PHASE:'before'}});
+  assert.equal(accepted.error,undefined);assert.equal(accepted.deploys,1);
+  const refused=await sameH0WorkerFixture({oldDatabase:true,env:{RAVRADAR_ASSISTANT_SAME_H0_PHASE:'before'}});
+  assert.equal(refused.error.message,'ASSISTANT_SAME_H0_WORKER_UPDATE_FAILED');assert.deepEqual(writes(refused),[]);
+});
+for(const env of [{RAVRADAR_ASSISTANT_SAME_H0_PHASE:'unknown'},
+  {RAVRADAR_ASSISTANT_SAME_H0_EDGE_REQUIRED:'false'},{GITHUB_RUN_ATTEMPT:'2'},{SUPABASE_PROJECT_ID:'other'},
+  {RAVRADAR_USERDATA_PREWRITE_REQUIRED:'true'},{RAVRADAR_USERDATA_UPGRADE_OPT_IN:'true'},
+  {GITHUB_WORKFLOW:'Deploy RavRadar trip storage'}])
+test('same-h0 Worker refuses route '+JSON.stringify(env),async()=>{
+  const result=await sameH0WorkerFixture({env});assert.equal(result.error.message,'ASSISTANT_SAME_H0_WORKER_UPDATE_FAILED');
+  assert.deepEqual(writes(result),[]);assert.equal(result.calls.some(row=>row.command),false);
+});
+test('same-h0 Worker known-stop failure permits only one recovery and preserves failure',async()=>{
+  const result=await sameH0WorkerFixture({deployFails:1});assert.equal(result.error.message,'ASSISTANT_SAME_H0_WORKER_UPDATE_FAILED');
+  assert.equal(result.error.recoveryAttempted,true);assert.equal(result.deploys,2);assert.equal(result.value,undefined);
+  const d1=writes(result).filter(row=>row.args?.at(-1)==='TRIP_STORAGE_MODE=d1');assert.equal(d1.length,1);
+  assert.equal(result.calls.filter(row=>row.gate==='db').length,2);
+});
+for(const options of [{deployFails:true},{deployFails:1,unknownStop:true},{falseStop:true},{cancelOnMaintenance:true},{configDrift:true},{expireAtWorker:true},{deployFails:1,recoveryEdgeUnavailable:true}])
+test('same-h0 Worker bounded failure '+JSON.stringify(options),async()=>{
+  const result=await sameH0WorkerFixture(options);assert.equal(result.error.message,'ASSISTANT_SAME_H0_WORKER_UPDATE_FAILED');assert.equal(result.value,undefined);
+  assert.ok(result.deploys<=2);if(options.unknownStop||options.falseStop||options.cancelOnMaintenance)assert.equal(result.error.recoveryAttempted,false);
+  if(options.unknownStop||options.falseStop||options.cancelOnMaintenance||options.configDrift||options.expireAtWorker||options.recoveryEdgeUnavailable)
+    assert.equal(writes(result).some(row=>row.args?.at(-1)==='TRIP_STORAGE_MODE=d1'),false);
+});
+}

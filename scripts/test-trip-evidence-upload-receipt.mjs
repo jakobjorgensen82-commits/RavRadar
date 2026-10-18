@@ -1722,7 +1722,7 @@ test('origin: canonical remote payload/readback preserves marker; origin change 
   } finally { h.finish(); }
 });
 
-function publicRuntime(h, { cancelled = false } = {}) {
+function publicRuntime(h, { cancelled = false, clock = null } = {}) {
   const scope = { ...quality, ...model, ...publicContract, ...weatherAge, resolvePublicRavScoreProfile,
     Date, createTripStartFromPublicState, createTripEvidenceController: h.createController,
     openTripEvidenceStartDialog() {} };
@@ -1731,7 +1731,7 @@ function publicRuntime(h, { cancelled = false } = {}) {
   scope.context = Function(...Object.keys(scope), publicFixture + '\nreturn publicStartInput;')(...Object.values(scope));
   vm.runInNewContext(runtimeBody + '\nthis.create=createPublicTripEvidenceRuntime;', scope);
   return scope.create({ getContext: () => scope.context, storage: h.storage,
-    persist: h.service.submitTripEvidenceObservation, now: () => '2026-08-21T04:10:00.000Z',
+    persist: h.service.submitTripEvidenceObservation, now: () => clock?.value ?? '2026-08-21T04:10:00.000Z',
     openStartDialog: async () => cancelled ? null : { mode: 'waders', zoneId: 'zone-42', coastalPartId: 'zone-42-part-2' },
     openDialog: async () => ({ ...answer, zoneId: 'zone-42', coastalPartId: 'zone-42-part-2' }) });
 }
@@ -1943,11 +1943,71 @@ test('origin-export: normal signed held owner-export returns marked originals by
   assert.equal(JSON.stringify(row), before);
 });
 
+// Source-bound synthetic rehearsal of the actual app click; never production data.
+function actualSelfReportTripClick(runtime) {
+  const text = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
+  const match = text.match(/tripButton\.addEventListener\('click',async\(\)=>\{[\s\S]*?\n\}\);/);
+  assert.ok(match, 'Exact existing app listener must be found');
+  let click;
+  const scope = { publicTripEvidenceRuntime: runtime,
+    tripButton: { disabled: false, addEventListener(name, callback) { assert.equal(name, 'click'); click = callback; } },
+    ensureConditionDetails: async () => {}, updateTripUi() {}, t };
+  vm.runInNewContext(match[0], scope);
+  return () => click();
+}
+
+test('self-reported: actual new app click marks the first autosave and exact queued retry', async () => {
+  const h = harness(), clock = { value: '2026-08-21T03:10:00.000Z' };
+  try {
+    const runtime = publicRuntime(h, { clock }), click = actualSelfReportTripClick(runtime);
+    await click();
+    assert.equal(runtime.active().observationOrigin, 'self-reported');
+    assert.equal(h.state.submits.length, 0, 'Disposition exists before the first completion/HTTP');
+    clock.value = '2026-08-21T04:10:00.000Z'; await click();
+    assert.equal(JSON.parse(h.state.submits[0]).observation_origin, 'self-reported');
+    const original = h.state.submits[0]; h.state.failSubmit = false;
+    await runtime.flush();
+    assert.equal(h.state.submits[1], original);
+    assert.equal(h.service.getLocalObservations()[0].observation_origin, 'self-reported');
+  } finally { h.finish(); }
+});
+
+test('self-reported: old unmarked active trip and cancelled new prompt are not reclassified', async () => {
+  for (const cancelled of [false, true]) {
+    const h = harness(), clock = { value: '2026-08-21T03:10:00.000Z' };
+    try {
+      const runtime = publicRuntime(h, { clock, cancelled });
+      if (!cancelled) runtime.start(null, { tripId: firstTrip, startedAt: clock.value });
+      clock.value = '2026-08-21T04:10:00.000Z';
+      await actualSelfReportTripClick(runtime)();
+      if (cancelled) { assert.equal(h.state.writes.length, 0); assert.equal(h.state.submits.length, 0); }
+      else {
+        assert.equal(Object.hasOwn(h.service.getLocalObservations()[0], 'observation_origin'), false);
+        assert.equal(Object.hasOwn(JSON.parse(h.state.submits[0]), 'observation_origin'), false);
+      }
+    } finally { h.finish(); }
+  }
+});
+
+for (const explicit of [undefined, 'synthetic-test', 'unknown'])
+test('self-reported: actual account report UI initial disposition preserves explicit ' + String(explicit), async () => {
+  const h = harness(), form = deferred(), panel = ui(h, form); let pending;
+  try {
+    form.resolve({ ...reportAnswer, ...(explicit === undefined ? {} : { observationOrigin: explicit }) });
+    pending = panel.showAccountTripReport(panel.dialog, {}); await pending;
+    const expected = explicit ?? 'self-reported';
+    assert.equal(h.service.getLocalObservations()[0].observation_origin, expected);
+    assert.equal(JSON.parse(h.state.submits[0]).observation_origin, expected);
+    assert.equal(h.service.getLocalObservations()[0].calibration_eligible, false);
+  } finally { form.resolve(null); if (pending) await pending; h.finish(); }
+});
+
 // END origin-only cases; owner-export companions require the actual held feature.
 }
 
 // A single local rehearsal of normal persistence, not hosted-installation proof.
-for (const manual of [false, true]) test(`origin persistence: ${manual ? 'manual-v1 control' : 'full-history-v3'} normal save then fresh owner LIST and EXPORT use actual SQLite rows`, async () => {
+for (const persistedOrigin of ['synthetic-test', 'self-reported'])
+for (const manual of [false, true]) test(`origin persistence: ${persistedOrigin}: ${manual ? 'manual-v1 control' : 'full-history-v3'} normal save then fresh owner LIST and EXPORT use actual SQLite rows`, async () => {
   const { DatabaseSync } = await import('node:sqlite');
   const { stripTypeScriptTypes } = await import('node:module');
   const external = await import('../supabase/functions/_shared/trip-storage.js');
@@ -2018,13 +2078,13 @@ for (const manual of [false, true]) test(`origin persistence: ${manual ? 'manual
     }
     const writer = client(A), controller = writer.controller();
     const columns = manual ? account.toAccountObservationColumns(account.buildAccountTripReport({
-      tripId: firstTrip, startedAt: start(firstTrip).startedAt, searchMinutes: 60, mode: 'waders', ...answer, observationOrigin: 'synthetic-test',
+      tripId: firstTrip, startedAt: start(firstTrip).startedAt, searchMinutes: 60, mode: 'waders', ...answer, observationOrigin: persistedOrigin,
     })) : trip.toObservationTripColumns(trip.completeTripEvidence(
-      trip.createTripStartRecord({ ...start(firstTrip), observationOrigin: 'synthetic-test' }), { ...answer, ...stop }));
+      trip.createTripStartRecord({ ...start(firstTrip), observationOrigin: persistedOrigin }), { ...answer, ...stop }));
     if (manual) {
       assert.equal((await writer.service.submitAccountTripReportObservation(columns)).stored, 'remote', JSON.stringify(fixtureFailures));
     } else {
-      controller.start({ ...start(firstTrip), observationOrigin: 'synthetic-test' });
+      controller.start({ ...start(firstTrip), observationOrigin: persistedOrigin });
       const stopped = await controller.stop(stop);
       assert.equal(stopped.status, 'submitted', JSON.stringify({ stopped, fixtureFailures, gatewayCalls, writes, reads }));
     }
@@ -2042,10 +2102,10 @@ for (const manual of [false, true]) test(`origin persistence: ${manual ? 'manual
     assert.deepEqual(clean(fresh.service.getLocalObservations()), [], 'No device row may impersonate remote readback');
     const rows = clean(await fresh.service.getOwnTripObservations());
     assert.equal(rows.length, 1); assert.equal(rows[0].trip_id, firstTrip);
-    assert.equal(rows[0].observation_origin, 'synthetic-test');
+    assert.equal(rows[0].observation_origin, persistedOrigin);
     const exported = clean(await fresh.service.getOwnTripExport());
     assert.equal(exported.stored_trips.length, 1);
-    assert.equal(exported.stored_trips[0].observation_origin, 'synthetic-test');
+    assert.equal(exported.stored_trips[0].observation_origin, persistedOrigin);
     assert.deepEqual(exported.device_trips, []); assert.deepEqual(exported.pending_trips, []);
     const stored = databases.flatMap(db => db.prepare('select payload_json from trip_observations').all())[0];
     assert.deepEqual(exported.stored_trips[0], JSON.parse(stored.payload_json));
@@ -2063,7 +2123,7 @@ for (const manual of [false, true]) test(`origin persistence: ${manual ? 'manual
     const learning = { ...quality, ...model, getLocalObservations: () => rows };
     vm.runInNewContext(source('../js/services/learning-analysis.js') + '\nthis.api={analyzeObservations};', learning);
     const coverage = learning.api.analyzeObservations();
-    assert.equal(coverage.sampleSize, 0); assert.equal(coverage.exclusionCounts.SYNTHETIC_TEST_OBSERVATION, 1);
+    assert.equal(coverage.sampleSize, 0); assert.equal(coverage.exclusionCounts.SYNTHETIC_TEST_OBSERVATION ?? 0, persistedOrigin === 'synthetic-test' ? 1 : 0);
     assert.equal(coverage.calibrationLocked, true); assert.deepEqual(clean(coverage.suggestions), []);
     assert.equal(writes.length, writesBeforeRead); assert.equal(snapshot(), original);
     assert.deepEqual(gatewayCalls, ['/v1/trips/store', '/v1/trips/store', '/v1/trips/list', '/v1/trips/export-page', '/v1/trips/list', '/v1/trips/export-page']);

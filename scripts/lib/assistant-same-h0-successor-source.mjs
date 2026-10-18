@@ -1,0 +1,128 @@
+// Source authority for the later SAME_H0_MODEL_METADATA event, not admission.
+// Fixed source issuance follows the actual final normal C/I/T rendering.
+// Source issuance is not B/S authentication, installation or production authority.
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import {withEstablishedNativeCurrentOrigin140000PredecessorSource}
+  from '../check-established-native-current-origin-predecessor-source.mjs';
+export const ASSISTANT_SAME_H0_BEFORE=Object.freeze({
+  version:'20261017140000',
+  C:'5cc38c658bf14513a029a62de8f5f9e98259630755bdd84bccbc5fb2c1797858',
+  I:'038d9b0cdc50d36dd10f207c6f33e909ddedbdacb28c89adbca12121cb2c7f5f',
+  T:'047db5f9c91b555eb47b886d200061456c9cbec450732743265f0f1739114447',
+  canonicalSha256:'97ba4b9b56ee514f7ce4f509ad17f64c65c3be9e3cdbbdb6a335e5b87191680a',
+  migrationSha256:'f1d12590cfc93047afa94cdf152fab6e77f2851807695f0771127a2fdf6122b5',
+});
+export const ASSISTANT_SAME_H0_BINDING=Object.freeze({
+  version:'20261017213500',
+  C:'3ce599247688acbf21062441f726e1e13d758cb1c52c5b85e6026df175973bca',
+  I:'504393dd6f819f6d5a1dc172092e26b10cae26fe684342aaaed001c51e466d94',
+  T:'eadf4569d28ee92dc6e196b284428c7838305d9d01998c2b751e05aa96880487',
+  candidateManifestSha256:'3ce599247688acbf21062441f726e1e13d758cb1c52c5b85e6026df175973bca',
+  integratedManifestSha256:'504393dd6f819f6d5a1dc172092e26b10cae26fe684342aaaed001c51e466d94',
+});
+export const ASSISTANT_SAME_H0_OUTPUT=Object.freeze({
+  migrationSha256:'99e23d614d1259d7820e4a2c7af84b2aa45ea1bcec87fbccffae13bcef1e71ac',
+  canonicalSha256:'e4feae9e3e0a2ee792e151f0988b90d27055c8d94e05bca7867d7e7446f0159e',
+  checkpointContractSha256:'bd7ed131954a7b2ca04e6f704016413f44f2a9693450f9b70ca37d8b27007a54',
+  tripBindingPolicySha256:'63bf2fbfd5cd4b54079b19abded0266746598c30a954327b12b505e6ce397881',
+});
+const CP='ravradar_ravscore_checkpoint_';
+export const ASSISTANT_SAME_H0_PROJECTION=CP+'assistant_same_h0_projection';
+export const ASSISTANT_SAME_H0_ALIASES=Object.freeze([
+  Object.freeze({name:CP+'origin140000_state_valid',signature:'(jsonb,text)'}),
+  Object.freeze({name:CP+'origin140000_payload_valid',signature:'(jsonb,timestamptz)'}),
+  Object.freeze({name:ASSISTANT_SAME_H0_PROJECTION,signature:'(jsonb,timestamptz)'}),
+]);
+export const ASSISTANT_SAME_H0_REPLACEMENTS=Object.freeze([
+  CP+'integrated_state_valid',CP+'payload_valid',CP+'integrated_state_reason',CP+'payload_reason',
+  CP+'native_origin_projection',CP+'predecessor_payload_valid','ravradar_trip_v3_binding_allowed',
+  CP+'cas',CP+'contract',
+]);
+const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
+const sha=x=>crypto.createHash('sha256').update(x).digest('hex');
+export function requireAssistantSameH0Binding(){
+  assert.equal(arguments.length,0,'No caller source, tuple, descriptor or phase override');
+  const value=ASSISTANT_SAME_H0_BINDING;
+  if(value===null)throw Object.assign(new Error('ASSISTANT_SAME_H0_UNISSUED'),{code:'ASSISTANT_SAME_H0_UNISSUED'});
+  assert(Object.isFrozen(value));
+  assert.deepEqual(Object.keys(value).sort(),['C','I','T','candidateManifestSha256','integratedManifestSha256','version']);
+  assert.match(value.version,/^\d{14}$/);assert(value.version>ASSISTANT_SAME_H0_BEFORE.version);
+  for(const key of ['C','I','T','candidateManifestSha256','integratedManifestSha256'])assert.match(value[key],/^[a-f0-9]{64}$/);
+  assert.equal(new Set(['C','I','T'].flatMap(k=>[value[k],ASSISTANT_SAME_H0_BEFORE[k]])).size,6);
+  return value;
+}
+export function requireAssistantSameH0Output(){
+  assert.equal(arguments.length,0);requireAssistantSameH0Binding();const value=ASSISTANT_SAME_H0_OUTPUT;
+  assert(value&&Object.isFrozen(value),'ASSISTANT_SAME_H0_SQL_UNISSUED');
+  assert.deepEqual(Object.keys(value).sort(),['canonicalSha256','checkpointContractSha256','migrationSha256','tripBindingPolicySha256']);
+  for(const pin of Object.values(value))assert.match(pin,/^[a-f0-9]{64}$/);return value;
+}
+export function assistantSameH0Migration(){
+  assert.equal(arguments.length,0);const {version}=requireAssistantSameH0Binding();
+  const id=version+'_assistant_same_h0_original_bound_successor';return Object.freeze({version,id,filename:id+'.sql'});
+}
+export function assistantSameH0Definition(source,name){
+  assert.match(name,/^[a-z0-9_]+$/);
+  const re=new RegExp('^create(?: or replace)? function public\\.'+name+'\\(','gm');
+  const found=[...source.matchAll(re)];assert.equal(found.length,1,'One complete definition: '+name);
+  const start=found[0].index,end=source.indexOf('\n$$;',start);assert(end>start);
+  return source.slice(start,end+4);
+}
+export async function readAssistantSameH0PredecessorCanonicalSource(){
+  assert.equal(arguments.length,0,'No caller old source, SQL or tuple override');
+  return withEstablishedNativeCurrentOrigin140000PredecessorSource(async frozenRoot=>{
+    const old=await import(pathToFileURL(path.join(frozenRoot,'scripts/lib/established-native-current-origin-successor-source.mjs')).href);
+    const source=await old.readEstablishedNativeCurrentOriginCanonicalSource();
+    const binding=old.requireEstablishedNativeCurrentOriginBinding(),pins=old.requireEstablishedNativeCurrentOriginOutput();
+    assert.deepEqual({version:binding.version,C:binding.C,I:binding.I,T:binding.T,
+      canonicalSha256:pins.canonicalSha256,migrationSha256:pins.migrationSha256},ASSISTANT_SAME_H0_BEFORE);
+    assert.equal(sha(source.canonicalSource),ASSISTANT_SAME_H0_BEFORE.canonicalSha256);
+    assert.equal(source.admission,'NO_ADMISSION');
+    const schema=await import(pathToFileURL(path.join(frozenRoot,'scripts/verify-account-assistant-schema.mjs')).href);
+    return Object.freeze({...source,statisticsCatalogQuery:schema.statisticsPreferenceRevisionCatalogQuery});
+  });
+}
+// Pure source renderer extension: never B/S, origin or installation authority.
+// The caller supplies the result of the EXISTING complete140000 renderer on
+// this same source; only the three new exact definitions are appended.
+export function assistantSameH0CheckpointContractFromBase(source,base){
+  assert.equal(arguments.length,2);assert.equal(typeof source,'string');
+  assert(base&&typeof base.definition==='string'&&sha(base.definition)===base.sha256);
+  const names=['origin140000_state_valid','origin140000_payload_valid','assistant_same_h0_projection'];
+  const labels=['origin140000-original-state-validator','origin140000-original-payload-validator','assistant-same-h0-metadata-projection'];
+  let value=base.definition;
+  for(let i=0;i<names.length;i++){
+    const whole=assistantSameH0Definition(source,CP+names[i]),start=whole.indexOf('as $$');assert(start>0);
+    const body=whole.slice(start+5,whole.lastIndexOf('$$;')).replace(/\r\n?/g,'\n').trim();
+    value+='\n-- '+labels[i]+' --\n'+body;
+  }
+  return Object.freeze({id:base.id,definition:value,sha256:sha(value)});
+}
+export async function readAssistantSameH0CanonicalSource(options){
+  const pins=requireAssistantSameH0Output(); // Fail CLOSED before any I/O.
+  assert(arguments.length<=1);let directory=path.join(ROOT,'supabase/migrations');
+  if(options!==undefined){assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+    assert.deepEqual(Object.keys(options),['migrationsDirectory']);assert(path.isAbsolute(options.migrationsDirectory));directory=path.resolve(options.migrationsDirectory);}
+  const prior=await readAssistantSameH0PredecessorCanonicalSource(),migration=assistantSameH0Migration();
+  const file=path.join(directory,migration.filename),stat=await fs.lstat(file);assert(stat.isFile()&&!stat.isSymbolicLink());
+  const raw=await fs.readFile(file);assert.equal(sha(raw),pins.migrationSha256,'Whole raw issued successor SQL');
+  const sql=raw.toString('utf8'),definition=assistantSameH0Definition;
+  assert.deepEqual([...sql.matchAll(/^create or replace function public\.([a-z0-9_]+)\(/gm)].map(m=>m[1]),
+    [...ASSISTANT_SAME_H0_ALIASES.map(r=>r.name),...ASSISTANT_SAME_H0_REPLACEMENTS]);
+  const once=(s,a,b)=>{assert.equal(s.split(a).length,2);return s.replace(a,()=>b);};
+  let canonicalSource=prior.canonicalSource;
+  for(const name of ASSISTANT_SAME_H0_REPLACEMENTS)canonicalSource=once(canonicalSource,definition(canonicalSource,name),definition(sql,name));
+  const insertion=ASSISTANT_SAME_H0_ALIASES.map(r=>definition(sql,r.name)+'\nrevoke all on function public.'+r.name+r.signature+' from public, anon, authenticated;\n\n').join('');
+  const anchor=definition(canonicalSource,CP+'integrated_state_valid');canonicalSource=once(canonicalSource,anchor,insertion+anchor);
+  assert.equal(sha(canonicalSource),pins.canonicalSha256);
+  let inverse=once(canonicalSource,insertion,'');
+  for(const name of [...ASSISTANT_SAME_H0_REPLACEMENTS].reverse())inverse=once(inverse,definition(inverse,name),definition(prior.canonicalSource,name));
+  assert.equal(inverse,prior.canonicalSource,'Whole actual140000 canonical inverse');
+  for(const row of prior.originalDefinitions)assert.equal(definition(canonicalSource,row.name),row.definition,'Every earlier original family unchanged');
+  assert.deepEqual(await fs.readFile(file),raw,'Issued source retained');
+  return Object.freeze({...prior,canonicalSource,migration,admission:'NO_ADMISSION'});
+}
