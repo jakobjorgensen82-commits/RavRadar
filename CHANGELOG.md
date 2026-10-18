@@ -1,3 +1,11 @@
+## 4.0.581 — 2026-10-18 — offentlig mobilrettelse og afgrænset forward-gate-diagnose
+
+Mobil-PR655 er faktisk merget, og rettelsesdeploy 39084415873/1 bestod hele Pages-/210/673-/model-/terminalkæden kl. 03.03 dansk tid. Offentlig browserkontrol ved 375 og 320 pixels indholdsbredde viser én dagrække uden vandret rulning. Det genbrugte vejrsæt slutter fortsat 21. oktober kl. 09; en femte dag og den normale vejrhentning er ikke dermed leveret.
+
+Den skrivefri standardaudit målte 833 manglende egne samplingkvitteringer efter B-state, men ingen modstridende/kildeugyldige blandt 55.195 originalbeviste DMI-rækker. Den lokale default-OFF-forbedring af præcis 390663/20Z-diagnosen bruger normal replay til et faktisk forward-gate-input og afgrænsede donor-/continuity-kategorier. Anden prefixguard afviser lokalisering, første fejl genkastes, og endelig unionvinder/native-admission påstås ikke. Ingen version-, model-, SQL-, sourceprioritets-, scoreformel- eller originalændring. Ny præcis CI, faktisk årsagsbevis og ny offentlig vejrgeneration er åbne; alle gamle kontroludsagn og kildeinverser bevares.
+
+Kun PR-kildejobbets ydre kapacitetsgrænse øges fra 60 til 75 minutter: den seneste faktisk grønne samlede kontrol tog 56 minutter og 59 sekunder, og den næste kontrol har stadig alle obligatoriske faser. Ingen trin, assertions eller ordenskrav fjernes. Kode-only-jobbets 60 minutter, vejrhentningens budgetter og underprocessernes grænser bevares; længere maksimal kildekontrol er ikke en produktionshastighedsgaranti.
+
 ## 4.0.581 — 2026-10-18 — credentialfrit miljø i normale VM-kildeprøver
 
 PR656's første præcise CI bestod native PostgreSQL, men fandt to `process is not defined` i én kildekommandogruppe. De to eksisterende VM-kaldere får et fælles, frosset tomt miljø til det faktiske integrationsudsnits default-OFF-diagnoseflag. Alle gamle assertions og produktkoden er uændrede. Det normale berørte mål består fem tilfælde lokalt uden skip; ny præcis samlet CI og faktisk checkpoint-diagnose er fortsat åbne. Ingen version-, model-, SQL-, score- eller produktionsændring; mobil-PR655 fortsætter uændret.

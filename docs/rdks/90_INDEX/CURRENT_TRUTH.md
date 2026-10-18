@@ -1,3 +1,19 @@
+## 18. oktober — offentlig mobilrettelse og præcis afgrænsning af strømstoppet
+
+Mobil-PR655 er faktisk kildekontrolleret og merget. Rettelsesdeploy 39084415873/1 afsluttede hele Pages-, model-, implementerings-, 210/673- og terminalkontrollen 18. oktober kl. 03.03 dansk tid. Den faktiske offentlige side er derefter browserkontrolleret ved 375 og 320 pixels indholdsbredde: alle fire resterende dage står på samme række uden vandret rulning. Normalt dagsklik genbruger den aktuelle time. Skærmbillederne er gemt privat; dette er ikke fysisk iPhone/Safari-bevis. Den tidligere Chrome-forbindelse var faktisk væk, så den tilgængelige in-app-browser blev brugt og nulstillet/lukket efter kontrollen.
+
+Den femte dag er fortsat åben af en anden grund: det uændrede offentlige datasæt fra 16. oktober kl. 12 slutter 21. oktober kl. 09 dansk tid. Fra 18. oktober er der fire resterende datoer. Kodelevering må ikke fremstilles som nye vejrdata, og en femte dag må ikke opfindes.
+
+Den skrivefri standardaudit 39083683060/1 har faktisk autentificeret de samme gemte originaler og krypteret fremgang. Af 55.195 persisterede DMI-strømrækker er 54.362 samplingbeviser sammenhængende, 833 mangler de egne kvitteringer, og ingen er modstridende eller kildeugyldige. Alle 668 målte rækker ved/før den autentificerede B-tilstand er sammenhængende; de 833 ligger efter denne grænse. Dette er persisterede kilder, ikke normalt replayvalg. Det traditionelle originalbevis er komplet for alle 55.195 og kan ikke i sig selv frikende samplingstoppet. Ingen konkret fejlrække eller donorårsag er endnu bevist.
+
+En særskilt, som udgangspunkt inaktiv diagnoseforbedring for præcis 390663/20Z lokaliserer kun et faktisk reproduceret forward-gate-input gennem den uændrede normale replayfunktion. Et andet stop i en ufuldstændig prefixprøve giver utilgængeligt resultat, ikke et bestået bevis. Faste donor-/matchkategorier holdes adskilt fra en endelig replay-unionvinder og native-admission. Den første produktionsfejl genkastes fortsat før output/slutbygning. Gamle normale scopes, guards, origin, kildeprioritet, C/I/T, SQL, scoreformel og originaler bevares. Ny præcis kildekontrol, faktisk nyttig diagnose, årsagsrettelse og ny offentlig vejrgeneration er fortsat åbne. Den brede gamle før-H0-preflight må ikke erstatte dette forbrugsbevis eller kombineres med current-window-flaget.
+
+ROOTs endelige normale Node22-kontrol af diagnose og updater-kalder bestod 45 tilfælde uden fejl/skip på 30,792 sekunder; workflowmålet bestod otte, og kildebevismålet bestod. Lille kildegate bestod med 123 browserfiler og 17+5 Python-prøver; modelbundlen er uændret på 91 filer. Windows/lokal evidens erstatter ikke ny præcis Linux/PostgreSQL-CI eller faktisk diagnose.
+
+Alle fem hovedmål er åbne; cron, SOURCE19, assistent582 og samlet statistik er fortsat inaktive. Daterede tidligere afventninger nedenfor er historik på de her faktisk dokumenterede punkter.
+
+PR-kildekontrollens ydre kapacitetsgrænse er særskilt hævet til 75 minutter efter en faktisk grøn kontrol på 56:59 og observeret variation i de obligatoriske faser. Alle gates og rækkefølger bevares, ligesom kode-only-jobbets 60 minutter og samtlige vejr-/underprocesbudgetter. Dette ændrer ingen C/I/T-input og er hverken grønt kildebevis eller produktionskapacitet i sig selv.
+
 ## 18. oktober — præcis kildekontrol fandt manglende VM-miljø
 
 PR656's første præcise kontrol bestod Linux/native PostgreSQL, men fejlede i én kildekommandogruppe: to normale VM-kalderprøver manglede `process`, da det faktiske integrationsudsnit læste diagnosens som udgangspunkt inaktive miljøflag. Resten af den lange kildeplan blev kørt; senere baseline-, kapacitets- og kildebevistrin blev ikke kørt. Der er intet nyt grønt kildebevis eller diagnoseudfald fra denne kørsel.

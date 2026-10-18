@@ -341,7 +341,7 @@ for (const marker of [
   'git diff --stat',
   'name: Upload tree-content source validation proof',
   'uses: actions/upload-artifact@v7',
-  'timeout-minutes: 60',
+  'timeout-minutes: 75',
   '-r requirements-dmi.txt',
   '-r requirements-geometry.txt',
   '-r requirements-copernicus.txt',
