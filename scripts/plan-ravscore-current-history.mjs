@@ -2,6 +2,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { assertRavScoreModelBinding, ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
@@ -15,7 +16,7 @@ import { dmiExpectedIdentityForPart, dmiOriginalWireIdentityMatchesCentralIdenti
   from './lib/ravscore-production-adapters.mjs';
 import { assertCoastalPointActivationStateInjection } from './lib/coastal-point-staging-contract.mjs';
 import { assertPrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
-import { loadRavScoreContinuationCheckpointForTarget } from './ravscore-continuation-checkpoint.mjs';
+import { loadRavScoreContinuationCheckpointForTarget, saveRavScoreContinuationCheckpoint } from './ravscore-continuation-checkpoint.mjs';
 import { resolveProductionReferenceTime } from './lib/production-reference-time.mjs';
 import { canonicalSavedDmiOriginalCapture } from './lib/saved-dmi-original-capture.mjs';
 import { createSavedDmiOriginalDependencyDiscovery, assertSavedDmiOriginalDependencyDiscoveryInputs,
@@ -24,8 +25,17 @@ import { buildPrivateDmiRecoveryRecord } from './lib/private-dmi-recovery-record
 import { buildNewestValidRavScoreRecoverySources } from './lib/ravscore-recovery-source-priority.mjs';
 import { createProtectedDmiNativeCurrentInspector } from './lib/protected-dmi-native-current-proofs.mjs';
 import { verifiedProtectedDmiPartHourly } from './lib/protected-dmi-current-context.mjs';
-import { inspectDmiForecastGridSampling } from './lib/dmi-forecast-store.mjs';
+import { inspectDmiForecastGridSampling, inspectDmiNativeGridSampling } from './lib/dmi-forecast-store.mjs';
 import { dmiMarineCollectionAllowedForZone } from './lib/dmi-marine-zone-exclusions.mjs';
+import { collectPostH0DmiOriginalDependencies } from './lib/post-h0-dmi-original-dependencies.mjs';
+import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
+import { unpackDmiPartContinuity, assertDmiPartContinuityTotalSize } from './lib/dmi-part-continuity.mjs';
+import { inspectDmiForecastFile, readDmiForecastRecord } from './lib/dmi-forecast-file.mjs';
+import { localPartRuntimeProperties } from './lib/local-part-runtime.mjs';
+import { readLiveCurrentPilot } from './lib/live-current-pilot.mjs';
+import { mergeProtectedLiveCurrentPilotIntoRecord } from './lib/protected-live-current-assembly.mjs';
+import { originalContextForProtectedDmiCurrent } from './lib/protected-dmi-current-context.mjs';
+import { verifyPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const HOUR = 3_600_000;
@@ -159,6 +169,174 @@ export function buildRavScoreCurrentHistoryDemand({
   };
 }
 
+// Retention only: normal immutable-B verification and actual S parity happen
+// in the fixed caller below. This pure projection never authenticates/admit rows.
+export function buildRavScoreRawCurrentRetention({ registry, conditions, checkpoint,
+  productionReferenceAt, boundary, protectedBulk, progressCandidate = null,
+  progressActive = null, historicalBulk = null, persistedHourlyByPart = new Map(), liveCurrentPilot = null, zones } = {}) {
+  const target = exactHour(productionReferenceAt), captures = new Map();
+  if (!object(boundary) || boundary.datasetId !== conditions?.datasetId
+    || boundary.productionReferenceAt !== conditions?.productionReferenceAt
+    || boundary.datasetId !== checkpoint?.datasetId || boundary.productionReferenceAt !== checkpoint?.productionReferenceAt
+    || boundary.checkpointGenerationSha256 !== checkpoint?.generationSha256
+    || !/^[a-f0-9]{64}$/.test(boundary.bundleContentSha256 ?? '')
+    || !/^[a-f0-9]{64}$/.test(boundary.conditionsSha256 ?? '')
+    || !object(registry?.zones) || !object(conditions?.coastalParts?.parts)
+    || !object(checkpoint?.states) || !Array.isArray(zones?.features)
+    || !(persistedHourlyByPart instanceof Map)) refuse('RETENTION_INPUT_INVALID');
+  let partCount = 0;
+  for (const [zoneId, entries] of Object.entries(registry.zones)) for (const entry of entries) {
+    const part = { ...entry, zoneId }, expected = dmiExpectedIdentityForPart(part);
+    const selected = selectRavScoreProductionInitialState({ part,
+      existingPart: conditions.coastalParts.parts[part.partId], targetReferenceAt: target });
+    // Never release an OLD point's dependencies by a local point/cold rewrite.
+    // A changed context must first use a separately reviewed normal transition.
+    if (selected.source !== 'EXISTING_INTEGRATED' || selected.state.time !== boundary.productionReferenceAt
+      || !isDeepStrictEqual(selected.state, checkpoint.states[part.partId])) {
+      refuse('RETENTION_COMMITTED_STATE_REQUIRED');
+    }
+    partCount++;
+    const startAt = ravScoreOwnerCurrentHistoryStartAt(part, selected.state,
+      ravScoreRecoverySourceStartAt(selected.state, target), { requireNativeGridSampling: true });
+    const feature = { properties: localPartRuntimeProperties(
+      zones.features.find(row => row?.properties?.id === zoneId)?.properties ?? {}, part, expected.entityId) };
+    const protectedContexts = [protectedBulk, historicalBulk];
+    const records = [];
+    for (const [document, previous] of [[protectedBulk, true], [progressCandidate, false]]) {
+      let record = buildPrivateDmiRecoveryRecord(feature, document, target, { startAt, expectedIdentity: expected,
+        ...(previous ? { persistedHourly: persistedHourlyByPart.get(part.partId)?.hourly ?? [],
+          historicalBulkCache: historicalBulk, protectPreviousDmi: true } : {}) });
+      if (!record) { records.push(null); continue; }
+      const contexts = previous ? protectedContexts : [document];
+      record = mergeProtectedLiveCurrentPilotIntoRecord(record, part, liveCurrentPilot, {
+        currentContexts: contexts, bulkId: expected.entityId, productionReferenceAt: target,
+        includePrivateNativeCadenceReferences: true,
+        primaryCurrentVerified: hour => previous ? Boolean(originalContextForProtectedDmiCurrent(
+          hour, contexts, expected.entityId, part)) : Boolean(verifiedBulkCurrent(document,
+            document?.zones?.[expected.entityId], part.waterPoint, hour?.sources?.current, hour?.time, expected)),
+      });
+      const hourly = previous ? verifiedProtectedDmiPartHourly(record, contexts, expected.entityId, part,
+        { requireNativeGridSampling: false, liveCurrentPilot }) : verifiedIntegratedPartHourly(record,
+          document, expected.entityId, part, { requireNativeGridSampling: false, liveCurrentPilot });
+      records.push({ source: previous ? 'deployed-private-runtime' : 'progressive-private-dmi',
+        nativeCurrentContexts: contexts, record: { ...record, hourly } });
+    }
+    const recoverySources = buildNewestValidRavScoreRecoverySources({ fallbackSource: records[0],
+      preferredSource: records[1], protectedPreviousSource: records[0], productionReferenceAt: target, part });
+    const dependencies = collectPostH0DmiOriginalDependencies({ part, initialSelection: selected,
+      targetReferenceAt: target, recoverySources, liveCurrentPilot });
+    for (const capture of dependencies.captures) captures.set(canonical(capture), capture);
+    // Python load_previous additionally sanitizes/merges OUTPUT, active and
+    // published before decoding. Protect that bounded POSSIBLE native support
+    // too, not merely a prediction of its eventual priority/replay union.
+    // The ±3h are normal interpolation-bracket support, not H0-minus-51.
+    for (const document of [protectedBulk, progressCandidate, progressActive]) {
+      if (document === null) continue;
+      if (!object(document?.zones)) refuse('RETENTION_DONOR_INVALID');
+      const nativeZone = document.zones[expected.entityId];
+      if (nativeZone === undefined) continue;
+      if (!object(nativeZone?.hourly) || Object.keys(nativeZone.hourly).length > 10_000) refuse('RETENTION_DONOR_INVALID');
+      for (const row of Object.values(nativeZone.hourly)) {
+        const ms = Date.parse(row?.time), source = row?.sources?.current;
+        if (!Number.isFinite(ms) || ms < Date.parse(selected.state.time) - 3 * HOUR
+          || ms > Date.parse(target) + 3 * HOUR || source?.provider !== 'dmi'
+          || ![row?.['current-u'], row?.['current-v']].some(Number.isFinite)) continue;
+        if (!dmiMarineCollectionAllowedForZone(source.collection, expected.parentZoneId)) continue;
+        if (['nativeSteps', 'nativeValidTimes', 'temporalResolution', 'forecastAgeHours'].some(key => Object.hasOwn(source, key))) {
+          refuse('RETENTION_NATIVE_REQUIRED');
+        }
+        if (![row['current-u'], row['current-v']].every(Number.isFinite)
+          || !verifiedDmiNativeComponentSource(source, row.time, 'current', expected)
+          || !verifiedBulkCurrent(document, nativeZone, part.waterPoint, source, row.time, expected)) refuse('RETENTION_NATIVE_INVALID');
+        const sampling = inspectDmiNativeGridSampling(source).status;
+        if (sampling === 'coherent') continue;
+        if (sampling !== 'unknown' || source.nativeGridSampling != null) refuse('RETENTION_NATIVE_INVALID');
+        const capture = canonicalSavedDmiOriginalCapture(source);
+        if (!capture) refuse('RETENTION_CAPTURE_REQUIRED');
+        captures.set(canonical(capture), capture);
+      }
+    }
+    if (captures.size > 4096) refuse('RETENTION_BOUND');
+  }
+  if (partCount !== registry.partCount || Object.keys(checkpoint.states).length !== partCount) refuse('RETENTION_INVENTORY');
+  return { schemaVersion: 1, kind: 'COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION', boundary: { ...boundary },
+    captures: [...captures].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([, value]) => value) };
+}
+
+async function readCommittedRawCurrentRetention(registry, checkpointFile, productionReferenceAt) {
+  const privateRoot = process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT;
+  const bundlePath = process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE;
+  if (!path.isAbsolute(privateRoot ?? '') || !path.isAbsolute(bundlePath ?? '')
+    || path.dirname(bundlePath) !== privateRoot || !process.env.RUNNER_TEMP) refuse('RETENTION_B_PATH');
+  // Already authenticated CURRENT from the ordinary restore/reconcile, not a
+  // caller-supplied old manifest or newly calculated/local H0. No network here.
+  const descriptor = JSON.parse(await fs.readFile(path.join(process.env.RUNNER_TEMP,
+    'private-runtime-current-source.json'), 'utf8'));
+  const verify = () => verifyPrivateProductionRuntimeBundle({ privateRoot, bundlePath,
+    repositoryRoot: ROOT, expected: descriptor });
+  const verified = await verify();
+  if (verified.bundleContentSha256 !== descriptor.bundleContentSha256) refuse('RETENTION_B_CHANGED');
+  const file = path.join(bundlePath, 'payload/data/live/conditions.json');
+  const fileInfo = await fs.lstat(file);
+  if (!fileInfo.isFile() || fileInfo.isSymbolicLink() || fileInfo.size > 256 * 1024 * 1024) refuse('RETENTION_B_CHANGED');
+  const bytes = await fs.readFile(file);
+  const conditionsSha256 = hash(bytes).slice(7);
+  const listed = verified.files.find(row => row.relativePath === 'data/live/conditions.json');
+  if (!listed || listed.bytes !== bytes.length || listed.sha256 !== conditionsSha256 || !checkpointFile) refuse('RETENTION_B_CHANGED');
+  const conditions = JSON.parse(bytes.toString('utf8'));
+  const work = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-raw-retention-'));
+  let checkpoint;
+  try {
+    const output = path.join(work, 'checkpoint.json');
+    await saveRavScoreContinuationCheckpoint({ sourcePath: file, checkpointPath: output,
+      expectedPartCount: registry.partCount, repositoryRoot: ROOT });
+    checkpoint = JSON.parse(await fs.readFile(output, 'utf8'));
+    if (!isDeepStrictEqual(checkpoint, checkpointFile.json)) refuse('RETENTION_B_S_DIFFER');
+  } finally { await fs.rm(work, { recursive: true }); }
+  const parts = Object.entries(registry.zones).flatMap(([zoneId, entries]) => entries.map(part => ({ ...part, zoneId })));
+  const forecast = await inspectDmiForecastFile(path.join(ROOT, 'data/live/dmi-forecast-cache.json'));
+  const protectedBulk = await readDmiBulkDocument(path.join(ROOT, '.cache/deployed-dmi-bulk-cache.json'));
+  const candidate = await readDmiBulkDocument(path.join(ROOT, '.cache/dmi-candidate-progress.json'), { optional: true });
+  const active = await readDmiBulkDocument(path.join(ROOT, '.cache/dmi-active-complete.json'), { optional: true });
+  // The normal historical donor is optional; never replace a missing donor with
+  // a guessed document or a freshly resealed/copy-labelled native receipt.
+  const historicalBulk = process.env.DMI_PART_CONTINUITY_DONOR_PATH
+    ? await readDmiBulkDocument(process.env.DMI_PART_CONTINUITY_DONOR_PATH) : null;
+  const boundary = { datasetId: verified.datasetId, productionReferenceAt: verified.productionReferenceAt,
+    bundleContentSha256: verified.bundleContentSha256, checkpointGenerationSha256: checkpoint.generationSha256, conditionsSha256 };
+  const liveCurrentPilot = await readLiveCurrentPilot(registry), zones = (await readFixed('data/zones.geojson')).json;
+  const all = new Map(), byPart = new Map(parts.map(part => [part.partId, part]));
+  const collect = (part, persistedHourlyByPart) => {
+    const result = buildRavScoreRawCurrentRetention({
+      registry: { ...registry, partCount: 1, zones: { [part.zoneId]: [part] } },
+      conditions: { ...conditions, coastalParts: { ...conditions.coastalParts,
+        parts: { [part.partId]: conditions.coastalParts.parts[part.partId] } } },
+      checkpoint: { ...checkpoint, states: { [part.partId]: checkpoint.states[part.partId] } },
+      productionReferenceAt, boundary, protectedBulk, progressCandidate: candidate ?? active, progressActive: active,
+      historicalBulk, persistedHourlyByPart, liveCurrentPilot, zones });
+    for (const capture of result.captures) all.set(canonical(capture), capture);
+    if (all.size > 4096) refuse('RETENTION_BOUND');
+  };
+  if (forecast.continuity) {
+    const metadata = forecast.continuity.metadata, seen = new Set();
+    if (metadata.partCount !== parts.length || forecast.continuity.entries.length !== parts.length) refuse('RETENTION_INVENTORY');
+    assertDmiPartContinuityTotalSize(metadata.rawBytes, metadata.compressedBytes);
+    let raw = 0, compressed = 0;
+    for (const descriptor of forecast.continuity.entries) {
+      const entry = await readDmiForecastRecord(forecast, descriptor), part = byPart.get(entry.partId);
+      if (!part || seen.has(entry.partId)) refuse('RETENTION_INVENTORY');
+      seen.add(entry.partId); raw += entry.rawBytes; compressed += entry.compressedBytes;
+      const persisted = await unpackDmiPartContinuity({ ...metadata, partCount: 1,
+        rawBytes: entry.rawBytes, compressedBytes: entry.compressedBytes, entries: [entry] }, [part], productionReferenceAt);
+      collect(part, persisted); // Never materialize 673 inflated continuity records together.
+    }
+    if (raw !== metadata.rawBytes || compressed !== metadata.compressedBytes) refuse('RETENTION_INVENTORY');
+  } else for (const part of parts) collect(part, new Map());
+  await verify();
+  return { schemaVersion: 1, kind: 'COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION', boundary,
+    captures: [...all].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([, value]) => value) };
+}
+
 const LEGACY_SIGNATURE = /^parser:20\|params:4\|grid:9\|eccodes-api:2\.48\.(?:0|2)\|eccodes-binding:2\.48\.0\|zones:[a-f0-9]{16}$/;
 const ORIGINAL_HEADER_FIELDS = ['generatedAt', 'currentVectorSemanticsVersion', 'currentVectorSelection',
   'currentMaxDistanceKm', 'timeStrideHours'];
@@ -254,7 +432,10 @@ export function buildRavScoreLegacyCurrentOriginalRequests({ registry, zones, hi
   if (!object(registry?.zones) || registry.schemaVersion !== 2 || registry.enabled !== true
     || !Number.isSafeInteger(registry.partCount) || registry.partCount < 1 || registry.partCount > 673
     || !Array.isArray(zones?.features) || !SHA.test(historyDemandSha256 ?? '')
-    || historyDemand.schemaVersion !== 1 || historyDemand.kind !== 'RAVSCORE_CURRENT_HISTORY_ACQUISITION_DEMAND'
+    || !(historyDemand.schemaVersion === 1 && !Object.hasOwn(historyDemand, 'rawRetention')
+      || historyDemand.schemaVersion === 2 && (historyDemand.rawRetention === null
+        || historyDemand.rawRetention?.kind === 'COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION'))
+    || historyDemand.kind !== 'RAVSCORE_CURRENT_HISTORY_ACQUISITION_DEMAND'
     || !SHA.test(historyDemand.registrySha256 ?? '') || !Array.isArray(historyDemand.demands)
     || historyDemand.demands.length !== registry.partCount || !object(protectedBulk?.zones)
     || progressCandidate !== null && !object(progressCandidate?.zones)
@@ -464,11 +645,13 @@ function environmentBoolean(name) {
 
 
 async function main() {
-  if (process.argv.length !== 2) refuse('ARGUMENTS_INVALID');
+  const retainCommittedRaw = process.argv.length === 3 && process.argv[2] === '--retain-committed-raw';
+  if (process.argv.length !== 2 && !retainCommittedRaw) refuse('ARGUMENTS_INVALID');
   const productionReferenceAt = workflowTargetHour(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR);
   const baselineRequired = environmentBoolean('RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE');
   const stateLessRecovery = environmentBoolean('RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED');
   const epochRequested = environmentBoolean('RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP');
+  const checkpointOnly = environmentBoolean('CHECKPOINT_ONLY');
   const registry = await readFixed(SOURCE_PATHS.registry);
   const baseline = await readFixed(SOURCE_PATHS.conditions, !baselineRequired);
   const conditions = baseline?.json ?? { zones: {} };
@@ -515,6 +698,12 @@ async function main() {
     // archived input view; acquisition grants no numeric source admission.
     stateLessRecovery: epochView?.stateLessRecovery ?? stateLessRecovery,
   });
+  // Historic/epoch APIs keep their existing acquisition behavior. Ordinary
+  // installed B cannot silently fall back to local H0 or an empty pin set.
+  if (retainCommittedRaw && !checkpointOnly && baselineRequired && epochView === null && !stateLessRecovery) {
+    demand.schemaVersion = 2;
+    demand.rawRetention = await readCommittedRawCurrentRetention(registry.json, checkpointFile, productionReferenceAt);
+  }
   // Existing private .cache only; no directory creation, original rewrite,
   // provider operation, public artifact, checkpoint save or state promotion.
   await fs.writeFile(path.join(ROOT, RAVSCORE_CURRENT_HISTORY_DEMAND_PATH),

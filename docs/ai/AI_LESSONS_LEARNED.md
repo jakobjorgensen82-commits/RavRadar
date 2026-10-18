@@ -1,3 +1,19 @@
+## 18. oktober 2026 — deadlineprøven skal faktisk nå transporten
+
+En kapacitets-/deadlineprøve kan stoppe før sin tiltænkte fejlgren, når dens gamle fixture samtidig kræver overskrivning af en ukendt fil. Adskil den bevarede gamle original fra en reelt fraværende indkommende destination, og kræv fortsat de oprindelige bytes, inode, første fejl, lukning og checkpointadfærd. Et tidligt sikkerhedsafslag er ikke bevis for mistet førsteårsag i transportens fejlbehandling. Søg alle direkte downloader-fixtures og behold den faktiske Linux-signalprøve; hverken tomt beskyttelsessæt, mock af pladsbevis eller fjernede assertions må skjule sammenstødet. Beståede tidligere CI-faser er ikke et grønt kildebevis, når den sidste obligatoriske fase fejler.
+
+## 18. oktober 2026 — ny bevaringsregel skal nå den gamle normaltransportprøve
+
+Søg alle normale kald til en ændret cachefunktion, også i exact-restore-målets default-ikke-opt-in-prøve. Hvis den gamle prøve kræver overskrivning af uregistrerede input, skal den nye no-loss-regel prøves som faktisk afslag med uændrede bytes og ingen HTTP. Afprøv derefter alle stadig gældende normale transportkrav på en særskilt fraværende destination. Svæk ikke produktets beskyttelse for at gøre en tidligere forventning grøn. Reproducer første CI-fejl lokalt og behold begge beviser.
+
+## 18. oktober 2026 — genhentning er ikke cachebevarelse; følg også modulens evaluering
+
+Gemte numeriske resultater, oprindelige RAW-filer og faktisk committed B/S er forskellige livscyklusser. Afprøv en normal ny download efterfulgt af senere score-/publiceringsfejl: størrelsesbaseret oprydning må ikke fjerne et stadig nødvendigt, autentisk originalinput. En reserve, der blot sorteres sidst, er ikke hård beskyttelse. Kontroller plads før transport og udled afhængigheder fra det faktisk valgte B/S; lokal ny tilstand eller et grønt leverandørtrin er ikke tilladelse til at frigive gamle afhængigheder. Sammenhængende numeriske kvitteringer er ikke et generelt nyt behov for råfiler. Antal slettede filer må ikke forveksles med antal dokumenteret savnede originaler.
+
+Den tidligere preparer-CLI-læring om cirkulær top-level await gælder også i den modsatte retning. Et dynamisk import i en senere gren kan vente på hele sin egen uafsluttede statiske modulcyklus, selv om modulets funktioner allerede er brugbare. Brug den eksisterende statiske binding. Test de faktiske importkanter og den nye call-body med den normale native loader, også ved den senere forward-gren; tidlige ugyldige CLI-input alene finder ikke denne fejl. Bevar en negativ mutation, som genskaber exit 13. Ingen generel proces-keepalive eller svækket guard må skjule problemet.
+
+En konservativ overmængde til cachebeskyttelse er ikke den endelige replay-union og må ikke kræve hentning af uvalgte donorers filer. Manglende fysisk bevis skal bevare filerne og nægte oprydning, ikke opfinde et tomt behov. Følg også nye filer og gentagne cachehits gennem processen; ændret brugstid må ikke udløse en falsk identitetsfejl på en hårdt beskyttet fil. En cache-only-kalder, som aldrig henter eller rydder op, må ikke få nye krav alene fra den almindelige oprydningsplan.
+
 ## 18. oktober 2026 — følg også indirekte isolerede testkaldere
 
 En kildeinverse kan bruges både direkte og ved leksikalsk ekstraktion i VM eller Function. Søgningen efter direkte updater-læsere er ikke nok. Følg alle faktiske extractor-kaldere, deres slice-ankre og eksplicitte afhængigheder. En ny hashkontrol skal bruge den eksisterende ægte digest-funktion; giv ikke den isolerede VM generel process-adgang for at skjule en manglende binding. Bevar hele historiske kontrolsummer og alle gamle mutationer. Reproducer den konkrete første fejl på GitHubs Node-version og prøv alle berørte kaldere før næste samlede kontrol. Kilde- og PostgreSQL-beviser skal stadig skelnes fra faktisk produktion.

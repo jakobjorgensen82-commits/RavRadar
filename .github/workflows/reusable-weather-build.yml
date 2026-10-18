@@ -2060,19 +2060,6 @@ jobs:
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')
         run: node scripts/build-public-coastal-parts-v2.mjs
 
-      - name: Plan bounded current history from the actual selected continuation
-        id: current-history-demand
-        if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.historical-wave-transition.outputs.required != 'true')
-        run: node scripts/plan-ravscore-current-history.mjs
-        env:
-          RAVRADAR_R2_ACCOUNT_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}
-          RAVRADAR_R2_ACCESS_KEY_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}
-          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}
-          SUPABASE_URL: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_URL || '' }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
-          RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ steps.private-runtime-install.outcome == 'success' && 'true' || 'false' }}
-          RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
-
       - name: Refresh DMI water-source registry
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && inputs.checkpoint_only != true)
         run: node scripts/update-water-source-registry.mjs
@@ -2194,6 +2181,19 @@ jobs:
             echo "::notice title=DMI candidate resumed::The protected DMI cache is preserved as resumable work; it is not classified as READY before the DMI producer repairs and verifies it."
           fi
 
+      - name: Plan bounded current history from the actual selected continuation
+        id: current-history-demand
+        if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.historical-wave-transition.outputs.required != 'true')
+        run: node scripts/plan-ravscore-current-history.mjs --retain-committed-raw
+        env:
+          RAVRADAR_R2_ACCOUNT_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}
+          SUPABASE_URL: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_URL || '' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
+          RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ steps.private-runtime-install.outcome == 'success' && 'true' || 'false' }}
+          RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
+
       - name: Bind causal OLD current reconstruction to the materialized saved inputs
         id: legacy-current-requests
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.checkpoint_only == true && steps.current-history-demand.outcome == 'success' && steps.dmi-generation-prepare.outcome == 'success')
@@ -2249,6 +2249,7 @@ jobs:
           DMI_BULK_DKSS_PRIMARY_MODE: true
           DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH: .cache/weather-current-acquisition-plan.json
           DMI_BULK_CURRENT_HISTORY_DEMAND_PATH: ${{ steps.current-history-demand.outcome == 'success' && '.cache/ravscore-current-history-demand.json' || '' }}
+          DMI_BULK_REQUIRE_COMMITTED_RAW_RETENTION: ${{ steps.private-runtime-install.outcome == 'success' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && inputs.weather_state_epoch_bootstrap != true && steps.legacy-bootstrap.outputs.stateless_integrated_recovery != 'true' && steps.historical-wave-transition.outputs.required != 'true' && 'true' || 'false' }}
           DMI_BULK_LEGACY_CURRENT_ORIGINAL_REQUEST_PATH: ${{ steps.legacy-current-requests.outcome == 'success' && '.cache/dmi-legacy-current-original-requests.json' || '' }}
           DMI_BULK_LEGACY_CURRENT_ORIGINAL_REQUEST_SHA256: ${{ steps.legacy-current-requests.outputs.requests_sha256 }}
           DMI_BULK_ADAPTIVE_RECOVERY: ${{ inputs.quick_confirmation != true && steps.dmi-recovery-budget.outputs.extended == 'true' }}

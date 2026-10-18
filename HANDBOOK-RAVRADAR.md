@@ -12,6 +12,10 @@ En privat behovsplan giver hverken samplingbevis eller tilladelse til at fortsæ
 
 Genopretning af filerne skal følges af den normale numeriske genaflæsning, der selv udsteder den korrekte dokumentation, og derefter almindelig streng beregning, gemning og offentlig kontrol. Lokal plan, filkontrol eller grøn kildekontrol er ikke en ny offentlig vejrgeneration. Denne afgrænsede rettelse er under kontrol og er endnu ikke produktionsverificeret; normal genoptagelse og efterfølger skal bevise effekten. Ingen scoreformel, kildeprioritet, administratorpunkter eller geometri ændres.
 
+Genopretningen den 18. oktober er faktisk stoppet før originalhentning og cachegemning. En forberedelse må ikke vente på sin egen uafsluttede indlæsning. Den lokale rettelse bruger allerede indlæste planfunktioner; den samme ventefejl er reproduceret før og efterprøvet efter ændringen. Det er ikke endnu en vellykket filgenopretning eller vejropdatering.
+
+En genhentning løser heller ikke en oprydning, som kan fjerne filerne igen. En nødvendig original skal beskyttes, så længe den faktisk gemte vejrpakke og beregningstilstand stadig kræver den, også når en senere beregning eller levering fejler. Plads skal kontrolleres før ny transport. Korrekt dokumenterede numeriske resultater må ikke pålægges en ny generel råfilpligt. Den lokale fejlprøve har påvist tab ved normal oprydning; den varige rettelse, præcis kildekontrol og faktisk almindelig efterfølger er fortsat åbne før cron.
+
 ## 89.252 Gemte strømtilstande skal fortsættes, ikke genstartes
 
 **Status 17. oktober kl. 21 dansk tid:** PR652's præcise samlede kildekontrol bestod inklusive PostgreSQL, baseline og kapacitet, og samme træ er merget. Det efterfølgende kontrollerede rettelsesdeploy bevarede de autentificerede 0200-originaler og numeriske værdier. Databaseinstallationen sluttede 17. oktober kl. 20.59 dansk tid; den efterfølgende migrationstabel viser 20261017140000 både lokalt og centralt. Den fulde databasebindingskontrol blev ikke nået, og ny privat B/S-publicering, serverfunktioner, Pages og frisk vejrgeneration er ikke leveret.

@@ -1,3 +1,26 @@
+## 18. oktober — PR659's afsluttende kapacitetsprøve
+
+- [x] Bevar den faktiske røde kontrol efter bestået Linux/native, PostgreSQL, kildegennemgang og baseline; ingen proofupload eller merge på det røde udfald.
+- [x] Adskil alene de tre downloader-fixtures' bevarede gamle filer fra faktisk nye destinationer. Bevar alle gamle deadline-, førsteårsags-, luknings- og checkpointassertions samt den faktiske Linux-prøve uden guardmock.
+- [ ] Bestå ny præcis samlet CI, faktisk originalrestore/SAVE, checkpoint-genoptagelse og offentlig levering. Beståede delfaser er ikke genoprettet drift.
+
+## 18. oktober — PR659 bevarer også ukendte transportinput
+
+- [x] Bevar første faktiske tidlige CI-fejl; reproducer afslag på uregistreret fil i den normale portable prøve.
+- [x] Kræv bevarelse/ingen transport ved afslaget og bevar normal frisk download/signatur uden exact-restore på en ny sti. Alle 29 portable tilfælde består; produktet er uændret.
+- [ ] Kvalificer det nye eksakte head gennem Linux/native og hele kildekontrollen før merge/genopretning.
+
+## 18. oktober — genopretning og normal cache er to nødvendige leverancer
+
+- [x] Kvalificer og merge det eksakte PR658-træ gennem alle kildekontroller.
+- [x] Bevar faktisk 390999-fejl før originalrestore/SAVE; reproducer den nye modulcyklus som native exit 13 og ret alene den dynamiske selvventning. Tre normale mål: 74 PASS, ingen skip.
+- [x] Reproducer særskilt normal RAW-eviction efter simuleret senere scorefejl; bevar forskellen på lokal prøve og autentificeret B/S.
+- [x] Materialiser den lokale B/S-bundne cachebeskyttelse efter helkædegennemgang: mulige normale UNKNOWN-endepunkter, ingen oprydning ved ufuldstændigt fysisk inventar, beskyttelse af den aktuelle proces' marine filer og kontrol af hele pladsbehovet før transport. Ukendte sidefiler er ikke sletbare. Coherent kvitteringer får ingen blanket-RAW-pligt; cache-only beholder sin normale vej.
+- [ ] Kvalificer samme samlede kilde og den faktiske almindelige cachelivscyklus i GitHub/produktion; lokale syntetiske fejlforløb er ikke autentificeret B/S-publicering eller heljobskapacitet.
+- [ ] Bestå præcis ny kildekontrol, faktisk originalrestore/SAVE, normal numerisk genaflæsning, checkpoint-deploy og senere almindelig efterfølger før cron.
+
+Den nye start fra 16. oktober kl. 12 bevares. Alle fem mål og øvrige aktiveringsgrænser er åbne. Tidligere PR658-afventninger nedenfor er historiske.
+
 ## 18. oktober — isoleret testinverse får eksplicit SHA-256-afhængighed
 
 - [x] Bevar første konkrete CI-fejl og reproducer den samme integrerede generators VM-fejl på Node 22.23.3.

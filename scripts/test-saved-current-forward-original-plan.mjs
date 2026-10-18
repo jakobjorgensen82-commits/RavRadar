@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildPrivateDmiRecoveryRecord } from './lib/private-dmi-recovery-record.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
@@ -33,6 +34,75 @@ const createOptions = { environment, establishedNativeCurrentOrigin: NON_AUTHORI
   targetReferenceAt: SAVED_CURRENT_FORWARD_PLAN_TARGET, expectedPartCount: 673 };
 let instance = 0;
 const freshCollectorModule = () => import(collectorPath.href + '?normalCollectorTest=' + ++instance);
+
+test('source-bound forward preparation closes its real native ESM cycle without awaiting its own evaluation', async t => {
+  const audit = (await fs.readFile(new URL('./audit-saved-weather-inputs.mjs', import.meta.url), 'utf8')).replace(/\r\n?/g, '\n');
+  const preparation = (await fs.readFile(new URL('./prepare-saved-dmi-original-restore.mjs', import.meta.url), 'utf8')).replace(/\r\n?/g, '\n');
+  const auditImport = audit.match(/import \{ SAVED_DMI_ORIGINAL_SCOPES,[\s\S]*?from '\.\/prepare-saved-dmi-original-restore\.mjs';/);
+  const reverseImport = preparation.match(/import \{ prepareAuthenticatedSavedDmiOriginalRestore,[\s\S]*?from '\.\/audit-saved-weather-inputs\.mjs';/);
+  assert.ok(auditImport && reverseImport, 'use the actual two-way static module edge');
+  const start = audit.indexOf("      const prepare = await import('./prepare-saved-dmi-original-restore.mjs');", audit.indexOf("phase = 'FORWARD_ORIGINAL_PREPARATION'"));
+  const staticStart = audit.indexOf('      const plan = buildSavedDmiOriginalRestorePlan(', audit.indexOf("phase = 'FORWARD_ORIGINAL_PREPARATION'"));
+  const end = audit.indexOf('\n    }\n    const report =', Math.max(start, staticStart));
+  assert.ok(end > Math.max(start, staticStart) && Math.max(start, staticStart) > 0);
+  const body = audit.slice(start >= 0 ? start : staticStart, end)
+    .replaceAll("'./prepare-saved-dmi-original-restore.mjs'", "'./preparation.mjs'");
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-forward-native-esm-cycle-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const entry = path.join(root, 'audit.mjs');
+  // Only the two existing import edges and exact normal forward call body are
+  // projected here. The pure fixtures provide no archive/authentication grant,
+  // provider, score, filesystem publication or production data.
+  await fs.writeFile(entry, auditImport[0].replace('./prepare-saved-dmi-original-restore.mjs', './preparation.mjs') + `
+    export function prepareAuthenticatedSavedDmiOriginalRestore() { throw Error('NOT_IN_SCOPE'); }
+    export function savedAuditOriginalPreparationFailureCode() { throw Error('NOT_IN_SCOPE'); }
+    async function forward() {
+      const document = { captures: [], demands: [] }, source = {}, progressSource = 'synthetic',
+        progressCacheKey = 'synthetic', progressBaselineTargetHour = '2026-10-17T20:00:00.000Z',
+        ctx = { repository: 'synthetic' };
+      let originalRestorePreparation;
+      ${body}
+      return originalRestorePreparation;
+    }
+    const result = await forward();
+    if (result.status !== 'PURE_CALLS_COMPLETED') throw Error('FORWARD_CALLS_NOT_COMPLETED');
+    console.log('FORWARD_MODULE_EVALUATION_COMPLETED');
+  `);
+  await fs.writeFile(path.join(root, 'preparation.mjs'), reverseImport[0].replace('./audit-saved-weather-inputs.mjs', './audit.mjs') + `
+    export const SAVED_DMI_ORIGINAL_SCOPES = Object.freeze([]);
+    export function savedDmiOriginalHistoryDemand() { throw Error('NOT_IN_SCOPE'); }
+    export function inspectSelectedSavedDmiOriginalCaptures() { throw Error('NOT_IN_SCOPE'); }
+    export function createSavedDmiOriginalDependencyDiscovery() { throw Error('NOT_IN_SCOPE'); }
+    export function buildSavedDmiOriginalRestorePlan(value) {
+      if (!Array.isArray(value.captures) || value.progressSource !== 'synthetic') throw Error('WRONG_CALL');
+      return { synthetic: true };
+    }
+    export async function writeSavedDmiOriginalRestorePlan(value) {
+      if (value.plan.synthetic !== true || value.repositoryRoot !== 'synthetic') throw Error('WRONG_CALL');
+      return { status: 'PURE_CALLS_COMPLETED' };
+    }
+  `);
+  const allowed = new Set(['PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'TMPDIR', 'COMSPEC', 'PATHEXT']);
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => allowed.has(key.toUpperCase())));
+  env.GITHUB_SHA = 'a'.repeat(40);
+  const run = () => spawnSync(process.execPath, [entry], { cwd: root, env, encoding: 'utf8',
+    timeout: 10_000, killSignal: 'SIGKILL', maxBuffer: 64 * 1024, windowsHide: true });
+  const result = run();
+  assert.equal(result.error, undefined); assert.equal(result.signal, null);
+  assert.equal(result.status, 0, 'native cycle must settle, not Node exit13: ' + result.stderr);
+  assert.equal(result.stdout.trim(), 'FORWARD_MODULE_EVALUATION_COMPLETED'); assert.equal(result.stderr, '');
+  // Restore just the former dynamic edge. The same native loader must again
+  // exhibit exit13; no test-only import shortcut may hide the actual hazard.
+  if (start < 0) {
+    const text = await fs.readFile(entry, 'utf8');
+    await fs.writeFile(entry, text.replace('      const plan = buildSavedDmiOriginalRestorePlan(',
+      "      const prepare = await import('./preparation.mjs');\n      const plan = prepare.buildSavedDmiOriginalRestorePlan(")
+      .replace('await writeSavedDmiOriginalRestorePlan(', 'await prepare.writeSavedDmiOriginalRestorePlan('));
+    const former = run();
+    assert.equal(former.error, undefined); assert.equal(former.signal, null); assert.equal(former.status, 13);
+    assert.match(former.stderr, /unsettled top-level await/i); assert.equal(former.stdout, '');
+  }
+});
 
 async function normalFixtureFactory() {
   const text = (await fs.readFile(new URL('./test-post-h0-dmi-original-dependencies.mjs', import.meta.url), 'utf8')).replace(/\r\n?/g, '\n');

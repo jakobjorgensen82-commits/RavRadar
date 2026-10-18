@@ -3983,7 +3983,15 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                     patch.object(producer.tempfile, "NamedTemporaryFile", observe_temp),
                 ):
                     href = "https://example.invalid/synthetic-deadline.grib"
-                    old_path = producer.cached_asset_path(href)
+                    incoming_path = producer.cached_asset_path(href)
+                    # An unregistered destination is deliberately no longer
+                    # replaceable. Retain a distinct previous original while
+                    # the genuine new destination reaches the deadline body.
+                    old_path = producer.cached_asset_path(
+                        "https://example.invalid/synthetic-retained-deadline.grib"
+                    )
+                    self.assertNotEqual(incoming_path, old_path)
+                    self.assertFalse(incoming_path.exists())
                     old_path.write_bytes(original)
                     old_identity = old_path.stat()
                     asset_dict = {"href": href, "valid": TARGET, "id": "synthetic-deadline", "size": 10}
@@ -4033,6 +4041,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                         self.assertEqual(len(exits), count)
                         self.assertTrue(all(error is failure for error in exits))
                         self.assertEqual(budget["bytes"], 17 + 4 * count)
+                        self.assertFalse(incoming_path.exists())
                         self.assertEqual(old_path.read_bytes(), original)
                         actual = old_path.stat()
                         self.assertEqual((actual.st_dev, actual.st_ino), (old_identity.st_dev, old_identity.st_ino))
@@ -4237,8 +4246,14 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                     patch.object(producer.tempfile, "NamedTemporaryFile", own_temp),
                 ):
                     href = "https://example.invalid/synthetic-fatal.grib"
-                    old_path = producer.cached_asset_path(href)
+                    incoming_path = producer.cached_asset_path(href)
+                    old_path = producer.cached_asset_path(
+                        "https://example.invalid/synthetic-retained-fatal.grib"
+                    )
+                    self.assertNotEqual(incoming_path, old_path)
+                    self.assertFalse(incoming_path.exists())
                     old_path.write_bytes(b"unchanged synthetic original")
+                    old_identity = old_path.stat()
                     budget = {"bytes": 17}
                     controller = producer.ProgressCheckpointController(result, set(), budget)
                     controller.mark_bulk_dirty()
@@ -4263,7 +4278,10 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                     register.assert_not_called()
                     parse.assert_not_called()
                     self.assertEqual(budget["bytes"], 21)
+                    self.assertFalse(incoming_path.exists())
                     self.assertEqual(old_path.read_bytes(), b"unchanged synthetic original")
+                    actual = old_path.stat()
+                    self.assertEqual((actual.st_dev, actual.st_ino), (old_identity.st_dev, old_identity.st_ino))
                     self.assertEqual(len(retained), 1)
                     self.assertEqual(len(files), 1)
                     self.assertIs(retained[0][0], files[0])
@@ -4383,7 +4401,10 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                         patch.object(producer.requests.Response, "close", observe_response_close),
                         patch.object(producer.tempfile, "NamedTemporaryFile", observe_temp),
                     ):
-                        old_path = producer.cached_asset_path(href)
+                        incoming_path = producer.cached_asset_path(href)
+                        old_path = producer.cached_asset_path(f"{href}.retained")
+                        self.assertNotEqual(incoming_path, old_path)
+                        self.assertFalse(incoming_path.exists())
                         original = b"synthetic retained original; not qualified for this new asset"
                         old_path.write_bytes(original)
                         old_identity = old_path.stat()
@@ -4411,6 +4432,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                         if phase == "retry-request":
                             self.assertEqual((observed["retrySleep"], observed["retrySleepReturned"]), (1, 1))
                         self.assertEqual(budget["bytes"], 17 + (chunk_bytes if phase == "chunks" else 0))
+                        self.assertFalse(incoming_path.exists())
                         self.assertEqual(old_path.read_bytes(), original)
                         actual = old_path.stat()
                         self.assertEqual((actual.st_dev, actual.st_ino), (old_identity.st_dev, old_identity.st_ino))

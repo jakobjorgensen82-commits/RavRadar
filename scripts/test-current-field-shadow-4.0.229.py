@@ -514,22 +514,34 @@ assert target in limfjord_parameter_targets and regional_target in limfjord_para
 
 with tempfile.TemporaryDirectory() as directory:
     original_raw_dir = bulk.RAW_DIR
+    original_retention = (bulk._RAW_CURRENT_PROTECTED, dict(bulk._RAW_CURRENT_IDENTITIES),
+        set(bulk._RAW_CURRENT_UNPROVED_NAMES), dict(bulk._RAW_CURRENT_SESSION_PROTECTED))
     bulk.RAW_DIR = pathlib.Path(directory)
     try:
+        bulk._RAW_CURRENT_PROTECTED = {}  # Synthetic qualified-empty retention; no native/state grant.
         first_path = bulk.cached_asset_path("https://example.test/current.grib?sig=first")
         second_path = bulk.cached_asset_path("https://example.test/current.grib?sig=second")
         assert first_path == second_path
         first_path.write_bytes(b"12345678")
         valid = (now + timedelta(hours=1)).isoformat().replace("+00:00", "Z")
         bulk.register_raw_cache_asset(first_path, "https://example.test/current.grib?sig=first", "dkss_idw", now_iso, valid)
-        disposable = bulk.RAW_DIR / "disposable.grib"
+        disposable_href = "https://example.test/disposable.grib"
+        disposable = bulk.cached_asset_path(disposable_href)
         disposable.write_bytes(b"abcdefgh")
-        removed = bulk.prune_raw_cache(max_bytes=10)
+        bulk.register_raw_cache_asset(disposable, disposable_href, "dkss_idw", now_iso, valid,
+            item_id="synthetic-disposable", item_created_at=now_iso, acquired_at=now_iso,
+            expected_size=8, content_sha256=bulk.hashlib.sha256(b"abcdefgh").hexdigest())
+        bulk._RAW_CURRENT_SESSION_PROTECTED.clear()  # Both artificial files represent an earlier session.
+        removed = bulk.prune_raw_cache(max_bytes=bulk.raw_cache_manifest_path().stat().st_size + 10)
         assert removed["removedFiles"] == 1
         assert first_path.exists() and not disposable.exists()
         assert first_path.name in bulk.reserved_current_replay_files(bulk.load_raw_cache_manifest())
     finally:
         bulk.RAW_DIR = original_raw_dir
+        bulk._RAW_CURRENT_PROTECTED, identities, unproved, session = original_retention
+        bulk._RAW_CURRENT_IDENTITIES.clear(); bulk._RAW_CURRENT_IDENTITIES.update(identities)
+        bulk._RAW_CURRENT_UNPROVED_NAMES.clear(); bulk._RAW_CURRENT_UNPROVED_NAMES.update(unproved)
+        bulk._RAW_CURRENT_SESSION_PROTECTED.clear(); bulk._RAW_CURRENT_SESSION_PROTECTED.update(session)
 
 original_download = bulk.download_asset
 original_process = bulk.process_grib

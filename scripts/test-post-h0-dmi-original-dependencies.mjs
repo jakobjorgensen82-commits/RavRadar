@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
 import { collectPostH0DmiOriginalDependencies as collect } from './lib/post-h0-dmi-original-dependencies.mjs';
+import { buildRavScoreRawCurrentRetention } from './plan-ravscore-current-history.mjs';
 import { buildPrivateDmiRecoveryRecord } from './lib/private-dmi-recovery-record.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
 import { dmiExpectedIdentityForPart, verifiedIntegratedPartHourly } from './lib/ravscore-production-adapters.mjs';
@@ -62,6 +65,28 @@ function fixture({ coherent = [], collection = 'dkss_nsbs' } = {}) {
     options: { part, initialSelection: { source: 'EXISTING_INTEGRATED', state }, targetReferenceAt: at(6), recoverySources } };
 }
 const rowAt = (f, hours) => f.options.recoverySources[0].record.hourly.find(row => row.time === at(hours));
+
+test('actual planner checkpoint-only control omits only the new eviction projection', async () => {
+  const source = readFileSync(new URL('./plan-ravscore-current-history.mjs', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+  const environment = source.slice(source.indexOf('function environmentBoolean(name) {'), source.indexOf('async function main() {'));
+  const checkpoint = source.match(/^  const checkpointOnly = environmentBoolean\('CHECKPOINT_ONLY'\);$/m)?.[0];
+  const gate = source.match(/^  if \(retainCommittedRaw[^\n]+\) \{\n    demand.schemaVersion = 2;\n    demand.rawRetention = await readCommittedRawCurrentRetention\(registry.json, checkpointFile, productionReferenceAt\);\n  \}/m)?.[0];
+  assert(checkpoint && gate, 'read the actual normal caller, not a copied predicate');
+  for (const [flag, expected] of [['true', 0], ['false', 1]]) {
+    let reads = 0;
+    const context = { process: { env: { CHECKPOINT_ONLY: flag } }, refuse: code => { throw Error(code); },
+      retainCommittedRaw: true, baselineRequired: true, epochView: null, stateLessRecovery: false,
+      demand: { schemaVersion: 1 }, registry: { json: {} }, checkpointFile: {}, productionReferenceAt: at(6),
+      readCommittedRawCurrentRetention: () => { reads++; return {}; } };
+    const run = vm.runInNewContext(`(async () => { ${environment}\n${checkpoint}\n${gate}\n })`, context);
+    await run();
+    assert.equal(reads, expected);
+    assert.equal(context.demand.schemaVersion, expected ? 2 : 1);
+  }
+  assert.throws(() => vm.runInNewContext(`${environment}\nenvironmentBoolean('CHECKPOINT_ONLY')`, {
+    process: { env: { CHECKPOINT_ONLY: 'unknown' } }, refuse: code => { throw Error(code); },
+  }), /ENVIRONMENT_INVALID/);
+});
 const reject = (options, code) => assert.throws(() => collect(options), error =>
   error.message === `POST_H0_DMI_ORIGINAL_${code}` && error.originalDependencyCode === error.message);
 
@@ -224,4 +249,55 @@ test('normal optional null historical donor slots preserve actual whole native p
   }
   f.options.recoverySources[0].nativeCurrentContexts = [null];
   reject(f.options, 'SELECTED_ENDPOINT_UNAVAILABLE');
+});
+
+test('committed B/S retention uses normal priority and UNKNOWN endpoints, never a local advanced H0', () => {
+  const f = fixture();
+  const part = { ...f.part, name: 'Synthetic retained PART', landPoint: [8.001, 55] };
+  const state = f.options.initialSelection.state;
+  const conditions = { datasetId: 'rr-synthetic-committed', productionReferenceAt: at(0),
+    coastalParts: { parts: { [part.partId]: { ravScoreModel: { currentState: state } } } } };
+  const checkpoint = { datasetId: conditions.datasetId, productionReferenceAt: conditions.productionReferenceAt,
+    generationSha256: sha('synthetic-committed-S'), states: { [part.partId]: state } };
+  const registry = { partCount: 1, zones: { [part.zoneId]: [part] } };
+  const boundary = { datasetId: conditions.datasetId, productionReferenceAt: conditions.productionReferenceAt,
+    bundleContentSha256: sha('synthetic-committed-B'), checkpointGenerationSha256: checkpoint.generationSha256,
+    conditionsSha256: sha(JSON.stringify(conditions)) };
+  // Structural normal caller fixture, NOT authenticated B/S or production proof.
+  const options = { registry, conditions, checkpoint, boundary, productionReferenceAt: at(6),
+    protectedBulk: f.document, zones: { features: [{ properties: { id: part.zoneId } }] } };
+  const before = JSON.stringify(options);
+  const plan = buildRavScoreRawCurrentRetention(options);
+  const protectedCaptures = new Set(plan.captures.map(JSON.stringify));
+  for (const capture of collect(f.options).captures) assert(protectedCaptures.has(JSON.stringify(capture)));
+  assert.deepEqual(plan.captures.map(c => c.validTime).sort(), [-3, 0, 3, 6, 9].map(captureAt),
+    'also retain the bounded possible normal Python merge/bracket endpoints, not a claimed exact final union');
+  assert.deepEqual(plan.boundary, boundary);
+  assert.equal(JSON.stringify(options), before);
+  const advanced = buildIntegratedPartScoreSeries({ part, zone: { id: part.zoneId, onshoreDirectionDeg: 90 },
+    hourly: [{ time: at(4) }] }).ravScoreState.continuationState;
+  const local = structuredClone(conditions);
+  local.coastalParts.parts[part.partId].ravScoreModel.currentState = advanced;
+  assert.throws(() => buildRavScoreRawCurrentRetention({ ...options, conditions: local }),
+    /RETENTION_COMMITTED_STATE_REQUIRED/, 'local score cannot unpin committed B/S');
+  assert.deepEqual(buildRavScoreRawCurrentRetention(options).captures, plan.captures,
+    'later score failure/no B/S publication leaves the exact requirements unchanged');
+  const successor = { ...local, datasetId: 'rr-synthetic-successor', productionReferenceAt: at(4) };
+  const nextCheckpoint = { ...checkpoint, datasetId: successor.datasetId, productionReferenceAt: at(4),
+    generationSha256: sha('synthetic-new-S'), states: { [part.partId]: advanced } };
+  const next = { ...options, conditions: successor, checkpoint: nextCheckpoint,
+    boundary: { ...boundary, datasetId: successor.datasetId, productionReferenceAt: at(4),
+      bundleContentSha256: sha('synthetic-new-B'), conditionsSha256: sha(JSON.stringify(successor)),
+      checkpointGenerationSha256: nextCheckpoint.generationSha256 } };
+  assert.deepEqual(buildRavScoreRawCurrentRetention(next).captures.map(c => c.validTime).sort(),
+    [captureAt(3), captureAt(6), captureAt(9)], 'only the separately selected matching B/S releases older possible support');
+  const coherent = fixture({ coherent: [-3, 0, 3, 6, 9] });
+  assert.deepEqual(buildRavScoreRawCurrentRetention({ ...options, protectedBulk: coherent.document }).captures, []);
+  const merged = buildRavScoreRawCurrentRetention({ ...options, protectedBulk: coherent.document,
+    progressCandidate: coherent.document, progressActive: f.document });
+  assert.equal(merged.captures.length, 5, 'normal active backfill cannot be lost behind an already coherent candidate');
+  const invalid = structuredClone(f.document);
+  invalid.zones[f.identity.entityId].hourly[at(3)].sources.current.contentSha256 = '';
+  assert.throws(() => buildRavScoreRawCurrentRetention({ ...options, protectedBulk: coherent.document,
+    progressCandidate: coherent.document, progressActive: invalid }), /RETENTION_CAPTURE_REQUIRED/);
 });

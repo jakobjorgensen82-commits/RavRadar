@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
-import { inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials } from './lib/completed-private-runtime-workflow-review.mjs';
+import { inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials, assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder } from './lib/completed-private-runtime-workflow-review.mjs';
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
 const read = async relative => (await fs.readFile(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
 const actualBuild = inversePairedPrivateRuntimePublication(await read('../.github/workflows/reusable-weather-build.yml'), 'build');
@@ -168,4 +168,52 @@ test('weather credential scope refuses conditional missing duplicate wrong-key R
     assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,'build'));
   }
   assert.throws(()=>inverseCompletedRuntimeWorkflow(source+'\n# UNREVIEWED CREDENTIAL DRIFT\n','build'));
+});
+
+test('actual committed RAW caller has one exact inverse before every unchanged historical layer', async () => {
+  const source = await read('../.github/workflows/reusable-weather-build.yml');
+  assertCurrentHistoryRawRetentionOrder(source);
+  const previous = inverseCurrentHistoryRawRetentionOrder(source, 'build');
+  assert.notEqual(previous, source);
+  assert.equal(sha(previous), 'fd1cd664bdbdcf41ef2ad32e6ad5caf058a980b3093a3f4fc226ca1797854b49');
+  assert.equal(inverseCurrentHistoryRawRetentionOrder(previous, 'build'), previous);
+  assert.equal(inverseOriginWeatherReadCredentials(source, 'build'), inverseOriginWeatherReadCredentials(previous, 'build'));
+  assert.equal(inversePairedPrivateRuntimePublication(source, 'build'), actualBuild);
+  assert.equal(sha(inverseCompletedRuntimeWorkflow(source, 'build')), legacySha);
+  assert.equal(inverseCurrentHistoryRawRetentionOrder(source, 'once'), source);
+  assert.throws(() => inverseCompletedRuntimeWorkflow(source, 'once'));
+});
+test('actual RAW caller refuses missing duplicate misplaced changed and unrelated source mutations', async () => {
+  const source = await read('../.github/workflows/reusable-weather-build.yml');
+  assertCurrentHistoryRawRetentionOrder(source);
+  const demand = "      - name: Plan bounded current history from the actual selected continuation\n", refresh = "      - name: Refresh DMI water-source registry\n", legacy = "      - name: Bind causal OLD current reconstruction to the materialized saved inputs\n";
+  const start = source.indexOf(demand), end = source.indexOf(legacy, start);
+  assert(end > start);
+  const block = source.slice(start, end);
+  const without = source.slice(0, start) + source.slice(end);
+  const requirement = "          DMI_BULK_REQUIRE_COMMITTED_RAW_RETENTION: ${{ steps.private-runtime-install.outcome == 'success' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && inputs.weather_state_epoch_bootstrap != true && steps.legacy-bootstrap.outputs.stateless_integrated_recovery != 'true' && steps.historical-wave-transition.outputs.required != 'true' && 'true' || 'false' }}\n";
+  const replaceOnce = (input, from, to) => {
+    assert.equal(input.split(from).length, 2); return input.replace(from, to);
+  };
+  const mutations = [
+    without,
+    replaceOnce(source, block, block + block),
+    replaceOnce(without, refresh, block + refresh),
+    replaceOnce(without, legacy, legacy + block),
+    replaceOnce(source, '--retain-committed-raw', '--retain-committed-raw-unreviewed'),
+    replaceOnce(source, ' --retain-committed-raw', ''),
+    replaceOnce(source, requirement, ''),
+    replaceOnce(source, requirement, requirement + requirement),
+    replaceOnce(source, requirement, requirement.replace("steps.private-runtime-install.outcome == 'success'", 'true')),
+    replaceOnce(source, "        id: current-history-demand\n", "        id: unreviewed-current-history-demand\n"),
+    source + '\n# UNREVIEWED RAW-RETENTION DRIFT\n',
+  ];
+  assert.equal(mutations.length, 11);
+  for (const changed of mutations) {
+    assert.notEqual(changed, source);
+    assert.throws(() => assertCurrentHistoryRawRetentionOrder(changed));
+    assert.equal(inverseCurrentHistoryRawRetentionOrder(changed, 'build'), changed,
+      'Unknown bytes never enter this exact layer');
+    assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
+  }
 });
