@@ -272,6 +272,26 @@ class ExactOriginalTests(unittest.TestCase):
         producer.STAC_SESSION.get.assert_not_called()
         producer.DOWNLOAD_SESSION.get.assert_not_called()
 
+    def test_forward_only_390663_restore_scope_accepts_exact_tuple_not_mixed_scopes(self):
+        plan = self.make_plan()
+        plan["binding"].update(progressSource="39066350748-1",
+            progressCacheKey="weather-private-progress-encrypted-v2-Linux-main-39066350748-1",
+            targetReferenceAt="2026-10-17T20:00:00.000Z")
+        before = copy.deepcopy(plan)
+        self.assertEqual(self.read_plan(plan), before)
+        self.assertEqual(plan, before, "scope validation must not retag original captures")
+        for key, value in (("progressSource", "38692413809-1"),
+                           ("progressCacheKey", "weather-private-progress-encrypted-v2-Linux-main-38692413809-1"),
+                           ("targetReferenceAt", "2026-10-14T18:00:00.000Z"),
+                           ("progressSource", "39066350748-2"),
+                           ("targetReferenceAt", "2026-10-17T21:00:00.000Z")):
+            changed = copy.deepcopy(plan)
+            changed["binding"][key] = value
+            with self.subTest(key=key), self.expect_refusal("PLAN_REJECTED"):
+                self.read_plan(changed)
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
     def test_bad_plan_shape_and_extra_capture_fields_fail_before_network(self):
         for original in ({**capture(), "url": HREF}, {**capture(), "values": [1, 2]}):
             with self.subTest(extra=sorted(set(original) - set(capture()))), self.expect_refusal("CAPTURE_INVALID"):
@@ -475,6 +495,108 @@ class ExactOriginalTests(unittest.TestCase):
                 self.download()
         self.assertEqual(original.read_bytes(), b"immutable-other-original")
         self.assertEqual(self.manifest.read_bytes(), before)
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+    def test_restore_all_missing_total_budgets_refuse_before_any_transport(self):
+        first = capture()
+        second = {**capture(), "itemId": "another-original", "assetIdentitySha256": "0" * 64}
+        existing = self.raw / "unrelated-original.grib"
+        existing.write_bytes(b"unrelated immutable original")
+        before = existing.read_bytes(), self.manifest.read_bytes()
+        _, used = producer._exact_raw_state()
+        missing_bytes = first["contentLengthBytes"] + second["contentLengthBytes"]
+        for budget_name, code in (("RAW_CACHE_MAX_BYTES", "CACHE_BUDGET"),
+                                  ("MAX_DOWNLOAD_BYTES", "DOWNLOAD_BUDGET")):
+            with self.subTest(budget=budget_name), \
+                 patch.object(producer, "RAW_CACHE_MAX_BYTES", used + missing_bytes), \
+                 patch.object(producer, "MAX_DOWNLOAD_BYTES", missing_bytes), \
+                 patch.object(producer, budget_name,
+                     used + missing_bytes - 1 if budget_name == "RAW_CACHE_MAX_BYTES" else missing_bytes - 1), \
+                 patch.object(producer, "resolve_exact_original_item", side_effect=AssertionError("metadata before total preflight")) as resolve, \
+                 patch.object(producer, "download_asset", side_effect=AssertionError("download before total preflight")) as download, \
+                 patch.object(producer, "prune_raw_cache", side_effect=AssertionError("pruning forbidden")) as prune:
+                with self.expect_refusal(code):
+                    producer.restore_exact_original_assets([first, second, first])
+                resolve.assert_not_called()
+                download.assert_not_called()
+                prune.assert_not_called()
+            self.assertEqual((existing.read_bytes(), self.manifest.read_bytes()), before)
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+    def test_restore_mixed_plan_verifies_all_local_then_budgets_only_missing_bytes(self):
+        local = capture()
+        absent_href = HREF.replace("exact-original", "absent-original")
+        absent = {**capture(), "itemId": "absent-original",
+                  "assetIdentitySha256": hashlib.sha256(absent_href.encode()).hexdigest()}
+        target = self.local_original(local)
+        before = target.read_bytes(), self.manifest.read_bytes()
+        _, used = producer._exact_raw_state()
+        events = []
+
+        def verify(path, wanted, *, work_deadline, require_capture=False):
+            self.assertEqual((path, wanted, require_capture), (target, local, True))
+            self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), wanted["contentSha256"])
+            events.append("local-verified")
+
+        def resolve(wanted, *, work_deadline):
+            self.assertEqual(events, ["local-verified"], "every local must precede even STAC")
+            self.assertEqual(wanted, absent)
+            events.append("resolve-absent")
+            metadata = item(absent)
+            metadata["assets"]["data"]["href"] = absent_href
+            return producer.canonical_stac_item_identity(metadata)
+
+        def download(href, declared, budget, **kwargs):
+            self.assertEqual(events, ["local-verified", "resolve-absent"])
+            self.assertEqual((href, declared), (absent_href, absent["assetSizeBytes"]))
+            self.assertEqual(kwargs["expected_capture"], absent)
+            self.assertEqual(budget, {"bytes": 0})
+            budget["bytes"] += absent["contentLengthBytes"]
+            events.append("download-absent")
+            return self.raw / "synthetic-absent-result", False
+
+        with patch.object(producer, "_verify_exact_original_file", side_effect=verify), \
+             patch.object(producer, "resolve_exact_original_item", side_effect=resolve) as resolve_mock, \
+             patch.object(producer, "download_asset", side_effect=download) as download_mock, \
+             patch.object(producer, "RAW_CACHE_MAX_BYTES", used + absent["contentLengthBytes"]), \
+             patch.object(producer, "MAX_DOWNLOAD_BYTES", absent["contentLengthBytes"]), \
+             patch.object(producer, "prune_raw_cache", side_effect=AssertionError("pruning forbidden")) as prune:
+            report = producer.restore_exact_original_assets([absent, local, absent])
+        self.assertEqual(events, ["local-verified", "resolve-absent", "download-absent"])
+        self.assertEqual((report["uniqueAssetCount"], report["reusedAssetCount"],
+                          report["downloadedAssetCount"], report["downloadedBytes"]),
+                         (2, 1, 1, absent["contentLengthBytes"]))
+        self.assertEqual(report["status"], "RESTORED")
+        resolve_mock.assert_called_once()
+        download_mock.assert_called_once()
+        prune.assert_not_called()
+        self.assertEqual((target.read_bytes(), self.manifest.read_bytes()), before)
+        producer.STAC_SESSION.get.assert_not_called()
+        producer.DOWNLOAD_SESSION.get.assert_not_called()
+
+    def test_restore_missing_first_never_transports_before_later_local_failure(self):
+        local = capture()
+        absent = {**capture(), "itemId": "absent-original", "assetIdentitySha256": "0" * 64}
+        self.assertLess(producer._exact_original_json(absent), producer._exact_original_json(local))
+        target = self.local_original(local)
+        before = target.read_bytes(), self.manifest.read_bytes()
+        failures = [producer.ExactOriginalRestoreRejected("DMI_EXACT_ORIGINAL_CONTENT_MISMATCH"),
+                    producer.GribReadUnproven("owned close unproved"),
+                    FileNotFoundError("local disappeared during verification")]
+        for error in failures:
+            with self.subTest(kind=type(error).__name__), \
+                 patch.object(producer, "_verify_exact_original_file", side_effect=error) as verify, \
+                 patch.object(producer, "resolve_exact_original_item", side_effect=AssertionError("metadata before all locals verified")) as resolve, \
+                 patch.object(producer, "download_asset", side_effect=AssertionError("download before all locals verified")) as download:
+                with self.assertRaises(type(error)) as raised:
+                    producer.restore_exact_original_assets([absent, local])
+                self.assertIs(raised.exception, error)
+                verify.assert_called_once()
+                resolve.assert_not_called()
+                download.assert_not_called()
+            self.assertEqual((target.read_bytes(), self.manifest.read_bytes()), before)
+        producer.STAC_SESSION.get.assert_not_called()
         producer.DOWNLOAD_SESSION.get.assert_not_called()
 
     def test_wrong_content_or_length_never_publishes_or_registers(self):

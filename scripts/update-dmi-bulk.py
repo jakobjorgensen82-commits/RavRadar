@@ -4253,7 +4253,8 @@ def read_exact_original_restore_plan(*, observed_names=None):
             "protectedGeneratedAt", "modelBindingSha256", "historyDemandSha256", "originalsSha256", "nonce"}
             or (binding["progressSource"], binding["progressCacheKey"], binding["targetReferenceAt"]) not in (
                 ("38692413809-1", "weather-private-progress-encrypted-v2-Linux-main-38692413809-1", "2026-10-14T18:00:00.000Z"),
-                ("38768040429-1", "weather-private-progress-encrypted-v2-Linux-main-38768040429-1", "2026-10-15T16:00:00.000Z"))
+                ("38768040429-1", "weather-private-progress-encrypted-v2-Linux-main-38768040429-1", "2026-10-15T16:00:00.000Z"),
+                ("39066350748-1", "weather-private-progress-encrypted-v2-Linux-main-39066350748-1", "2026-10-17T20:00:00.000Z"))
             or not all(isinstance(binding[key], str) and re.fullmatch(r"[0-9a-f]{40}", binding[key])
                        for key in ("sourceHead", "executionHead"))
             or binding["executionHead"] != os.getenv("GITHUB_SHA")
@@ -4358,12 +4359,28 @@ def restore_exact_original_assets(originals, *, report=None, observed_names=None
     if CACHE_ONLY or FINALIZE_ONLY:
         _exact_original_refuse("NETWORK_DISABLED")
     budget = {"bytes": 0}
+    missing = []
     try:
+        # Verify every local original before any metadata or asset transport.
+        # Corruption, a raced disappearance or an unproved close propagates;
+        # only the normal reader's actual absence can enter the second pass.
         for key in sorted(assets):
             capture = assets[key]
             if _reuse_exact_original_file(capture, work_deadline=WORK_DEADLINE, observed_names=observed_names):
                 report["reusedAssetCount"] += 1
-                continue
+            else:
+                missing.append(capture)
+        if missing:
+            # The plan is already deduplicated by immutable capture identity.
+            # Re-measure current RAW occupancy; local reuse consumes neither
+            # download budget nor additional space. Never prune to make room.
+            _, used = _exact_raw_state(observed_names=observed_names)
+            missing_bytes = sum(capture["contentLengthBytes"] for capture in missing)
+            if used + missing_bytes > RAW_CACHE_MAX_BYTES:
+                _exact_original_refuse("CACHE_BUDGET")
+            if missing_bytes > MAX_DOWNLOAD_BYTES:
+                _exact_original_refuse("DOWNLOAD_BUDGET")
+        for capture in missing:
             identity = resolve_exact_original_item(capture, work_deadline=WORK_DEADLINE)
             supervised_identity = supervised_asset_identity(capture["collection"], capture["modelRun"], {
                 "valid": identity["validTime"], "id": identity["itemId"], "href": identity["href"],

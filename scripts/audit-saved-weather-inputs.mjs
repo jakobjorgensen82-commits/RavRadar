@@ -839,6 +839,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
   includeRawManifest = false, rawCacheKey = null, rawManifestSource = null,
   includeRawFilePresence = false, progressBaselineTargetHour = null, includeSelectedCurrentPreflight = false,
   includeCurrentWindowDiagnostic = false,
+  prepareCurrentForwardOriginals = false,
   repository = process.env.GITHUB_REPOSITORY, pythonExecutable = process.env.PYTHON ?? 'python',
   encryptionKey = process.env.WEATHER_PROGRESS_ENCRYPTION_KEY,
   masterSecret = process.env.WEATHER_PROGRESS_MASTER_SECRET,
@@ -850,6 +851,8 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
   try {
     if (typeof includeCurrentWindowDiagnostic !== 'boolean') fail('MODE_INVALID');
     const currentReplayDiagnostic = includeCurrentWindowDiagnostic && progressSource === '39066350748-1';
+    if (typeof prepareCurrentForwardOriginals !== 'boolean'
+      || prepareCurrentForwardOriginals && !currentReplayDiagnostic) fail('MODE_INVALID');
     if (currentReplayDiagnostic && (mode !== 'audit' || includeRawManifest || includeRawFilePresence
       || includeSelectedCurrentPreflight || rawCacheKey !== null || rawManifestSource !== null
       || progressCacheKey !== 'weather-private-progress-encrypted-v2-Linux-main-39066350748-1'
@@ -1041,7 +1044,8 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
         const logRoot = await noSymlinks(ctx.root, path.join(ctx.root, 'current-window-logs'));
         currentWindowScratch = currentReplayDiagnostic
           ? await runSavedCurrentReplayScratch({ scratchRoot, logRoot, basePath, source, repository,
-            masterSecret, encryptionKey, pythonExecutable, privateRoot: work, bundlePath })
+            masterSecret, encryptionKey, pythonExecutable, privateRoot: work, bundlePath,
+            prepareOriginals: prepareCurrentForwardOriginals })
           : await withoutSavedAuditSecrets(() => runSavedCurrentWindowScratch({
             scratchRoot, logRoot, basePath, source, repository, masterSecret, encryptionKey, pythonExecutable }));
       } catch (error) {
@@ -1055,6 +1059,27 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
     }
     phase = 'FINAL_READBACK';
     if (!same(await oldProtected.describeCurrentProtectedPrivateProductionRuntime(clients), source)) fail('CURRENT_GENERATION_CHANGED');
+    let originalRestorePreparation;
+    if (prepareCurrentForwardOriginals) {
+      phase = 'FORWARD_ORIGINAL_PREPARATION';
+      if (currentWindowScratch?.status !== 'FORWARD_ORIGINAL_DEPENDENCIES_PREPARED'
+        || currentWindowScratch.collection?.allPartsReached !== true
+        || currentWindowScratch.collection?.anotherGuardStoppedCollection !== false
+        || currentWindowScratch.collection?.diagnosticUnavailableParts !== 0) fail('NATIVE_PROOF_INSPECTION_FAILED');
+      const forward = await import('./lib/saved-current-forward-original-plan.mjs');
+      const file = await noSymlinks(ctx.root, path.join(ctx.root, 'current-window-source', forward.SAVED_CURRENT_FORWARD_PLAN_PATH));
+      const stat = await fs.lstat(file, { bigint: true });
+      if (!stat.isFile() || stat.nlink !== 1n || stat.size < 2n || stat.size > 16n * 1024n * 1024n) fail('LOCAL_METADATA_INVALID');
+      const bytes = await fs.readFile(file), after = await fs.lstat(file, { bigint: true });
+      if (['dev', 'ino', 'size', 'mtimeNs'].some(key => stat[key] !== after[key])) fail('LOCAL_METADATA_INVALID');
+      const document = forward.validateSavedCurrentForwardOriginalDocument(bytes, { parts, conditions });
+      if (document.gridUnknownParts !== currentWindowScratch.collection.gridUnknownParts) fail('LOCAL_METADATA_INVALID');
+      const prepare = await import('./prepare-saved-dmi-original-restore.mjs');
+      const plan = prepare.buildSavedDmiOriginalRestorePlan({ captures: document.captures, source,
+        demands: document.demands, executionHead: process.env.GITHUB_SHA,
+        progressSource, progressCacheKey, targetReferenceAt: progressBaselineTargetHour });
+      originalRestorePreparation = await prepare.writeSavedDmiOriginalRestorePlan({ repositoryRoot: ctx.repository, plan });
+    }
     const report = { ...baseReport('AUDIT_COMPLETED'), protectedGenerationReadbackVerified: true,
       exactArchivedSourceContractsVerified: true, exactProgressAuthenticated: true,
       normalProgressBaselineUsed,
@@ -1067,6 +1092,7 @@ export async function auditSavedWeatherInputs({ mode, privateRoot, descriptorPat
       nativeProofAvailability: measured.nativeProofAvailability,
       ...(measured.selectedCurrentPreflight ? { selectedCurrentPreflight: measured.selectedCurrentPreflight } : {}),
       ...(currentWindowScratch ? { currentWindowScratch } : {}),
+      ...(originalRestorePreparation ? { originalRestorePreparation } : {}),
       ...(includeCurrentWindowDiagnostic ? {
         localWorkScope: 'OWNED_PRIVATE_SCRATCH_ONLY', productionAuthority: false,
         semanticUnionPerformed: currentWindowScratch?.semanticUnionPerformedInPrivateScratch === true ? true : null,
@@ -1233,15 +1259,21 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       '--raw-manifest-source': 'rawManifestSource', '--include-raw-file-presence': 'includeRawFilePresence',
       '--include-selected-current-preflight': 'includeSelectedCurrentPreflight',
       '--include-current-window-diagnostic': 'includeCurrentWindowDiagnostic',
+      '--prepare-current-forward-originals': 'prepareCurrentForwardOriginals',
       '--progress-baseline-target-hour': 'progressBaselineTargetHour' };
     while (args.length) { const key = args.shift(), value = args.shift();
       if (!names[key] || !value || value.startsWith('--') || Object.hasOwn(options, names[key])) fail('MODE_INVALID'); options[names[key]] = value; }
-    for (const key of ['includeRawManifest', 'includeRawFilePresence', 'includeSelectedCurrentPreflight', 'includeCurrentWindowDiagnostic']) {
+    for (const key of ['includeRawManifest', 'includeRawFilePresence', 'includeSelectedCurrentPreflight', 'includeCurrentWindowDiagnostic', 'prepareCurrentForwardOriginals']) {
       if (!Object.hasOwn(options, key)) continue;
       if (!['true', 'false'].includes(options[key])) fail('MODE_INVALID');
       options[key] = options[key] === 'true';
     }
     const report = await auditSavedWeatherInputs(options);
+    if (options.prepareCurrentForwardOriginals && report.status === 'AUDIT_COMPLETED' && report.originalRestorePreparation && process.env.GITHUB_OUTPUT) {
+      const plan = report.originalRestorePreparation;
+      await fs.appendFile(process.env.GITHUB_OUTPUT,
+        `preparation_status=${plan.status}\nplan_sha256=${plan.planSha256}\noriginal_count=${plan.originalCount}\nplan_bytes=${plan.planBytes}\n`);
+    }
     console.log(JSON.stringify(report));
     if (report.status === 'AUDIT_FAILED_CLOSED') process.exitCode = 1;
   } catch { console.error('SAVED_WEATHER_INPUT_AUDIT_FAILED_CLOSED'); process.exitCode = 1; }

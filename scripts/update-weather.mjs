@@ -162,6 +162,8 @@ import {
 } from './lib/established-native-current-origin.mjs';
 import { summarizeRavScoreInitialCurrentWindow } from './lib/ravscore-initial-current-window-audit.mjs';
 import { summarizeSavedCurrentReplayGridFailure } from './lib/saved-current-replay-grid-audit.mjs';
+import { createSavedCurrentForwardOriginalPlan, persistSavedCurrentForwardOriginalPlan }
+  from './lib/saved-current-forward-original-plan.mjs';
 import {
   buildNewestValidRavScoreRecoverySources,
   summarizeIsolatedRavScoreWaveReplayConflicts,
@@ -1949,6 +1951,9 @@ function scoreCoastalPartsRuntime(
     throw new Error('Coastal-point activation-state injection contains a non-active part');
   }
   const expectedByZone = new Map();
+  const savedCurrentForwardOriginalPlan = createSavedCurrentForwardOriginalPlan({
+    establishedNativeCurrentOrigin, targetReferenceAt: generatedAt, expectedPartCount: Number(contract?.partCount),
+  });
   const savedCurrentReplayDiagnostic = process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'
     ? { firstError: null, observedParts: 0, gridUnknownParts: 0 } : null;
   try {
@@ -2373,6 +2378,8 @@ function scoreCoastalPartsRuntime(
         },
       });
       let productionSeries;
+      savedCurrentForwardOriginalPlan?.observe({ part: { ...part, zoneId }, initialSelection,
+        targetReferenceAt: generatedAt, recoverySources, liveCurrentPilot });
       try {
         if (savedCurrentReplayDiagnostic) savedCurrentReplayDiagnostic.observedParts++;
         productionSeries = buildRavScoreProductionPartSeries({
@@ -2409,11 +2416,13 @@ function scoreCoastalPartsRuntime(
               { projection: 'candidate-g-legacy-quantized', requireNativeGridSampling: true, expectedHold },
             ),
         });
+        savedCurrentForwardOriginalPlan?.passed(part.partId);
       } catch (error) {
         if (process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'
           && error?.code === 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED' && error.samplingStatus === 'unknown') {
           // Observation only of this ACTUAL normal call. Preserve first error,
           // every source/guard, the whole old H0 pair and all numeric output.
+          if (!savedCurrentForwardOriginalPlan) {
           try {
             console.error('RAVSCORE_SAVED_CURRENT_REPLAY_AUDIT ' + JSON.stringify(summarizeSavedCurrentReplayGridFailure({
               error, part: { ...part, zoneId }, initialSelection, targetReferenceAt: generatedAt,
@@ -2429,8 +2438,10 @@ function scoreCoastalPartsRuntime(
               }),
             })));
           } catch { console.error('RAVSCORE_SAVED_CURRENT_REPLAY_AUDIT_UNAVAILABLE'); }
+          }
           savedCurrentReplayDiagnostic.firstError ??= error;
           savedCurrentReplayDiagnostic.gridUnknownParts++;
+          savedCurrentForwardOriginalPlan?.refused(part.partId, error);
           // Continue only this private diagnosis to the next normally built
           // PART input. There is no fabricated result, state or retry. The
           // SAME first error is rethrown before any output/finalizer below.
@@ -2731,6 +2742,11 @@ function scoreCoastalPartsRuntime(
     }
   }
 
+  if (savedCurrentForwardOriginalPlan && !savedCurrentReplayDiagnostic?.firstError) {
+    throw new Error('SAVED_CURRENT_FORWARD_ORIGINAL_PLAN_NO_STOP');
+  }
+  if (savedCurrentReplayDiagnostic?.firstError)
+    savedCurrentForwardOriginalPlan?.seal(savedCurrentReplayDiagnostic.firstError, savedCurrentReplayDiagnostic);
   if (savedCurrentReplayDiagnostic?.firstError) throw savedCurrentReplayDiagnostic.firstError;
 
   // Aggregate fixed component labels only; never log a private part, hour,
@@ -4401,7 +4417,9 @@ const establishedNativeCurrentOrigin = coastalPartsContract.enabled
   : null;
 if (process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'
   && establishedNativeCurrentOrigin === null) throw new Error('SAVED_CURRENT_REPLAY_ORIGIN_REQUIRED');
-const coastalPartScoreBuild = coastalPartsContract.enabled
+let coastalPartScoreBuild;
+try {
+coastalPartScoreBuild = coastalPartsContract.enabled
   ? scoreCoastalPartsRuntime(
     coastalPartsContract,
     features,
@@ -4427,6 +4445,13 @@ const coastalPartScoreBuild = coastalPartsContract.enabled
     establishedNativeCurrentOrigin,
   )
   : null;
+} catch (error) {
+  if (process.env.RAVRADAR_SAVED_CURRENT_FORWARD_ORIGINAL_PLAN) {
+    try { await persistSavedCurrentForwardOriginalPlan(error); }
+    catch { console.error('SAVED_CURRENT_FORWARD_ORIGINAL_PLAN_UNAVAILABLE'); }
+  }
+  throw error;
+}
 if (coastalPartScoreBuild) {
   nextDmiForecastStore.partContinuity = await packDmiPartContinuity(
     coastalPartScoreBuild.selectedDmiPartRecords,

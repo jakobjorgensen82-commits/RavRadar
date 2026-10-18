@@ -1,3 +1,14 @@
+## 18. oktober — præcis originalplan efter faktisk normal forward-diagnose
+
+- [x] PR657 bestået på præcis head inklusive PostgreSQL og faktisk merget med samme træ.
+- [x] Faktisk skrivefri diagnose nåede alle 673 normale delkald; 33 forward-stop med komplet traditionelt originalbevis, men ukendt sampling på både gammel og ny kandidat. Ingen kvalificeret efterfølger til disse målte stop.
+- [x] Afgræns løsningen til ægte genaflæsning fra præcise originaler; afvis kvitteringskopiering, H0-genstart og blind ny vejrhentning som rettelse.
+- [ ] Bestå den lokale samlede måltest og præcis kilde-CI for den nye default-OFF post-H0-plan, local-first/budgetkontrol og uændrede gamle orakler.
+- [ ] Udfør præcis autentificeret originalplan, verificér faktisk RAW-genbrug/fravær, genopret kun manglende originale bytes uden pruning, og bevis faktisk cache-SAVE.
+- [ ] Gennemfør normal numerisk genaflæsning og streng checkpoint-genoptagelse; bevis ny offentlig generation samt almindelig efterfølger før cron.
+
+Mobilens dagrække er allerede offentligt verificeret. Den femte dag mangler fortsat nye vejrdata. Ny kildekode og en headerverificeret RAW-fil er ikke native sampling eller produktion. Alle fem hovedmål er åbne; SOURCE19, assistent582 og statistik er inaktive. Se håndbog 89.253. Ældre daterede afventninger nedenfor er historik på de udtrykkeligt erstattede punkter.
+
 ## 18. oktober — mobil leveret; årsagen til det normale strømstop fortsat åben
 
 - [x] PR655 bestået på præcis kilde og faktisk merget; rettelsesdeploy 39084415873/1 bestod hele efterkæden og sluttede 18. oktober kl. 03.03 dansk tid.

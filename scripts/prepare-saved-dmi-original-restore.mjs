@@ -27,6 +27,13 @@ export const SAVED_DMI_ORIGINAL_PLAN_PATH = '.cache/dmi-grib/.original-recovery-
 export const SAVED_DMI_ORIGINAL_PROGRESS = '38692413809-1';
 export const SAVED_DMI_ORIGINAL_PROGRESS_KEY = `weather-private-progress-encrypted-v2-Linux-main-${SAVED_DMI_ORIGINAL_PROGRESS}`;
 export const SAVED_DMI_ORIGINAL_TARGET = '2026-10-14T18:00:00.000Z';
+// Separate post-H0 preparation only. The old H0-51 collectors below retain
+// their two historical scopes and must never plan this forward-only repair.
+export const SAVED_DMI_FORWARD_ORIGINAL_SCOPE = Object.freeze({
+  progressSource: '39066350748-1',
+  progressCacheKey: 'weather-private-progress-encrypted-v2-Linux-main-39066350748-1',
+  progressBaselineTargetHour: '2026-10-17T20:00:00.000Z',
+});
 export const SAVED_DMI_ORIGINAL_SCOPES = Object.freeze([
   Object.freeze({ progressSource: SAVED_DMI_ORIGINAL_PROGRESS, progressCacheKey: SAVED_DMI_ORIGINAL_PROGRESS_KEY,
     progressBaselineTargetHour: SAVED_DMI_ORIGINAL_TARGET }),
@@ -283,7 +290,11 @@ export function buildSavedDmiOriginalRestorePlan({ captures, source, demands, ex
   progressSource = SAVED_DMI_ORIGINAL_PROGRESS, progressCacheKey = SAVED_DMI_ORIGINAL_PROGRESS_KEY,
   targetReferenceAt = SAVED_DMI_ORIGINAL_TARGET,
   nonce = crypto.randomBytes(16).toString('hex') } = {}) {
-  assertSavedDmiOriginalRestoreScope({ progressSource, progressCacheKey, progressBaselineTargetHour: targetReferenceAt, executionHead });
+  const forward = SAVED_DMI_FORWARD_ORIGINAL_SCOPE;
+  if (!(progressSource === forward.progressSource && progressCacheKey === forward.progressCacheKey
+    && targetReferenceAt === forward.progressBaselineTargetHour && /^[a-f0-9]{40}$/.test(executionHead ?? ''))) {
+    assertSavedDmiOriginalRestoreScope({ progressSource, progressCacheKey, progressBaselineTargetHour: targetReferenceAt, executionHead });
+  }
   if (!Array.isArray(captures) || captures.length > 5 * 4096 || !Array.isArray(demands) || !demands.length
     || !object(source?.modelBinding) || !/^[a-f0-9]{40}$/.test(source.sourceHead ?? '')
     || !/^[a-f0-9]{64}$/.test(source.bundleContentSha256 ?? '') || !/^[a-f0-9]{32}$/.test(nonce)

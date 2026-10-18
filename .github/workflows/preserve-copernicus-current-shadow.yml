@@ -27,7 +27,7 @@ jobs:
     # Permanently retired. Provider progress is now restored and saved only as
     # an authenticated encrypted snapshot bound to protected production data.
     if: (github.event_name != 'workflow_run' || github.event.action == 'requested') && false
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Check out trusted default-branch helper
@@ -59,7 +59,7 @@ jobs:
 
   retry-failed-production:
     if: github.event_name == 'workflow_run' && github.event.action == 'completed' && github.event.workflow_run.event == 'schedule' && contains(fromJSON('["failure","timed_out","startup_failure"]'), github.event.workflow_run.conclusion)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     permissions:
       actions: write

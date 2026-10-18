@@ -1,3 +1,9 @@
+## 18. oktober — traditionelt originalbevis er ikke en samplingkvittering
+
+Den faktiske nye normaldiagnose har nået alle 673 dele og lokaliseret 33 forward-stop. Ved disse første stop har både gammel og ny kandidat komplet traditionelt originalbevis, men ukendt sampling; ingen korrekt dokumenteret efterfølger er påvist. Dette afkræfter, at en præferenceændring alene løser de målte stop. Første-stop- og kandidatantal er ikke en minimal filliste, og DMI-data er ikke dermed påvist ugyldige.
+
+Den lokale rettelse forbereder præcise post-H0-afhængigheder gennem de normale autentificerede kaldere. Alle lokale RAW-originaler skal verificeres før netadgang, og samlet manglende plads/download skal kunne rummes uden pruning. Korruption/races er ikke fravær. Header-/hashverificeret restore udsteder ikke numerisk sampling; normal genaflæsning, strict replay, offentlig generation og efterfølger er fortsat nødvendige og åbne. Ingen historiknulstilling, originalretag eller lempelse. De gamle diagnoseafventninger nedenfor er historik alene på disse punkter.
+
 ## 18. oktober — mobilens dagrække leveret; femte dag og replayfejl er ikke lukket
 
 PR655 og rettelsesdeploy 39084415873/1 har faktisk leveret mobilrettelsen med alle efterkontroller. Offentlig browserkontrol ved 375/320 pixels indholdsbredde viser én vandret dagrække uden overflow; skærmbilleder er gemt privat. Fysisk Safari er ikke afprøvet. Den femte dag mangler, fordi det genbrugte datasæt slutter 21. oktober kl. 09 dansk tid, ikke på grund af labelrækken. Ny gyldig generation mangler stadig.

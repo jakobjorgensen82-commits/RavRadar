@@ -8,7 +8,10 @@ import { writeDmiForecastFileAtomic, isDmiForecastCheckpointStopUnproved } from 
 import { withFrozenNative0600TestSource } from './run-frozen-native0600-source-targets.mjs';
 
 const producerPath = new URL('./update-weather.mjs', import.meta.url);
-const sourceText = async file => (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
+const sourceText = async file => {
+  const source = (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
+  return file === producerPath ? inverseSavedCurrentForwardOriginalPlan(source) : source;
+};
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 
 // Invert only the separately reviewed tuple import and archived-epoch orchestration before the
@@ -86,12 +89,67 @@ const savedCurrentReplayUpdaterHunks = [
     "after": "const establishedNativeCurrentOrigin = coastalPartsContract.enabled\n  ? await readEstablishedNativeCurrentOrigin(coastalPartsContract)\n  : null;\nif (process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'\n  && establishedNativeCurrentOrigin === null) throw new Error('SAVED_CURRENT_REPLAY_ORIGIN_REQUIRED');\nconst coastalPartScoreBuild = coastalPartsContract.enabled\n  ? scoreCoastalPartsRuntime(\n    coastalPartsContract,\n"
   }
 ];
+// Exact default-OFF private original-plan view, before every old oracle.
+// This is only a source inverse: no origin, sampling, restore or publication grant.
+const savedCurrentForwardOriginalPlanUpdaterHunks = [
+  {
+    "before": "} from './lib/established-native-current-origin.mjs';\nimport { summarizeRavScoreInitialCurrentWindow } from './lib/ravscore-initial-current-window-audit.mjs';\nimport { summarizeSavedCurrentReplayGridFailure } from './lib/saved-current-replay-grid-audit.mjs';\nimport {\n  buildNewestValidRavScoreRecoverySources,\n  summarizeIsolatedRavScoreWaveReplayConflicts,\n",
+    "after": "} from './lib/established-native-current-origin.mjs';\nimport { summarizeRavScoreInitialCurrentWindow } from './lib/ravscore-initial-current-window-audit.mjs';\nimport { summarizeSavedCurrentReplayGridFailure } from './lib/saved-current-replay-grid-audit.mjs';\nimport { createSavedCurrentForwardOriginalPlan, persistSavedCurrentForwardOriginalPlan }\n  from './lib/saved-current-forward-original-plan.mjs';\nimport {\n  buildNewestValidRavScoreRecoverySources,\n  summarizeIsolatedRavScoreWaveReplayConflicts,\n"
+  },
+  {
+    "before": "    throw new Error('Coastal-point activation-state injection contains a non-active part');\n  }\n  const expectedByZone = new Map();\n  const savedCurrentReplayDiagnostic = process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'\n    ? { firstError: null, observedParts: 0, gridUnknownParts: 0 } : null;\n  try {\n",
+    "after": "    throw new Error('Coastal-point activation-state injection contains a non-active part');\n  }\n  const expectedByZone = new Map();\n  const savedCurrentForwardOriginalPlan = createSavedCurrentForwardOriginalPlan({\n    establishedNativeCurrentOrigin, targetReferenceAt: generatedAt, expectedPartCount: Number(contract?.partCount),\n  });\n  const savedCurrentReplayDiagnostic = process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'\n    ? { firstError: null, observedParts: 0, gridUnknownParts: 0 } : null;\n  try {\n"
+  },
+  {
+    "before": "        },\n      });\n      let productionSeries;\n      try {\n        if (savedCurrentReplayDiagnostic) savedCurrentReplayDiagnostic.observedParts++;\n        productionSeries = buildRavScoreProductionPartSeries({\n",
+    "after": "        },\n      });\n      let productionSeries;\n      savedCurrentForwardOriginalPlan?.observe({ part: { ...part, zoneId }, initialSelection,\n        targetReferenceAt: generatedAt, recoverySources, liveCurrentPilot });\n      try {\n        if (savedCurrentReplayDiagnostic) savedCurrentReplayDiagnostic.observedParts++;\n        productionSeries = buildRavScoreProductionPartSeries({\n"
+  },
+  {
+    "before": "              { projection: 'candidate-g-legacy-quantized', requireNativeGridSampling: true, expectedHold },\n            ),\n        });\n      } catch (error) {\n        if (process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'\n          && error?.code === 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED' && error.samplingStatus === 'unknown') {\n          // Observation only of this ACTUAL normal call. Preserve first error,\n          // every source/guard, the whole old H0 pair and all numeric output.\n          try {\n            console.error('RAVSCORE_SAVED_CURRENT_REPLAY_AUDIT ' + JSON.stringify(summarizeSavedCurrentReplayGridFailure({\n              error, part: { ...part, zoneId }, initialSelection, targetReferenceAt: generatedAt,\n",
+    "after": "              { projection: 'candidate-g-legacy-quantized', requireNativeGridSampling: true, expectedHold },\n            ),\n        });\n        savedCurrentForwardOriginalPlan?.passed(part.partId);\n      } catch (error) {\n        if (process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'\n          && error?.code === 'DMI_GRID_SAMPLING_APPLICABILITY_REQUIRED' && error.samplingStatus === 'unknown') {\n          // Observation only of this ACTUAL normal call. Preserve first error,\n          // every source/guard, the whole old H0 pair and all numeric output.\n          if (!savedCurrentForwardOriginalPlan) {\n          try {\n            console.error('RAVSCORE_SAVED_CURRENT_REPLAY_AUDIT ' + JSON.stringify(summarizeSavedCurrentReplayGridFailure({\n              error, part: { ...part, zoneId }, initialSelection, targetReferenceAt: generatedAt,\n"
+  },
+  {
+    "before": "              }),\n            })));\n          } catch { console.error('RAVSCORE_SAVED_CURRENT_REPLAY_AUDIT_UNAVAILABLE'); }\n          savedCurrentReplayDiagnostic.firstError ??= error;\n          savedCurrentReplayDiagnostic.gridUnknownParts++;\n          // Continue only this private diagnosis to the next normally built\n          // PART input. There is no fabricated result, state or retry. The\n          // SAME first error is rethrown before any output/finalizer below.\n",
+    "after": "              }),\n            })));\n          } catch { console.error('RAVSCORE_SAVED_CURRENT_REPLAY_AUDIT_UNAVAILABLE'); }\n          }\n          savedCurrentReplayDiagnostic.firstError ??= error;\n          savedCurrentReplayDiagnostic.gridUnknownParts++;\n          savedCurrentForwardOriginalPlan?.refused(part.partId, error);\n          // Continue only this private diagnosis to the next normally built\n          // PART input. There is no fabricated result, state or retry. The\n          // SAME first error is rethrown before any output/finalizer below.\n"
+  },
+  {
+    "before": "    }\n  }\n\n  if (savedCurrentReplayDiagnostic?.firstError) throw savedCurrentReplayDiagnostic.firstError;\n\n  // Aggregate fixed component labels only; never log a private part, hour,\n",
+    "after": "    }\n  }\n\n  if (savedCurrentForwardOriginalPlan && !savedCurrentReplayDiagnostic?.firstError) {\n    throw new Error('SAVED_CURRENT_FORWARD_ORIGINAL_PLAN_NO_STOP');\n  }\n  if (savedCurrentReplayDiagnostic?.firstError)\n    savedCurrentForwardOriginalPlan?.seal(savedCurrentReplayDiagnostic.firstError, savedCurrentReplayDiagnostic);\n  if (savedCurrentReplayDiagnostic?.firstError) throw savedCurrentReplayDiagnostic.firstError;\n\n  // Aggregate fixed component labels only; never log a private part, hour,\n"
+  },
+  {
+    "before": "  : null;\nif (process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'\n  && establishedNativeCurrentOrigin === null) throw new Error('SAVED_CURRENT_REPLAY_ORIGIN_REQUIRED');\nconst coastalPartScoreBuild = coastalPartsContract.enabled\n  ? scoreCoastalPartsRuntime(\n    coastalPartsContract,\n    features,\n",
+    "after": "  : null;\nif (process.env.RAVRADAR_SAVED_CURRENT_REPLAY_DIAGNOSTIC === '39066350748-1'\n  && establishedNativeCurrentOrigin === null) throw new Error('SAVED_CURRENT_REPLAY_ORIGIN_REQUIRED');\nlet coastalPartScoreBuild;\ntry {\ncoastalPartScoreBuild = coastalPartsContract.enabled\n  ? scoreCoastalPartsRuntime(\n    coastalPartsContract,\n    features,\n"
+  },
+  {
+    "before": "    establishedNativeCurrentOrigin,\n  )\n  : null;\nif (coastalPartScoreBuild) {\n  nextDmiForecastStore.partContinuity = await packDmiPartContinuity(\n    coastalPartScoreBuild.selectedDmiPartRecords,\n",
+    "after": "    establishedNativeCurrentOrigin,\n  )\n  : null;\n} catch (error) {\n  if (process.env.RAVRADAR_SAVED_CURRENT_FORWARD_ORIGINAL_PLAN) {\n    try { await persistSavedCurrentForwardOriginalPlan(error); }\n    catch { console.error('SAVED_CURRENT_FORWARD_ORIGINAL_PLAN_UNAVAILABLE'); }\n  }\n  throw error;\n}\nif (coastalPartScoreBuild) {\n  nextDmiForecastStore.partContinuity = await packDmiPartContinuity(\n    coastalPartScoreBuild.selectedDmiPartRecords,\n"
+  }
+];
+function inverseSavedCurrentForwardOriginalPlan(source) {
+  // The normal follower's existing lexical extraction includes this function.
+  // Use Node's actual built-in rather than requiring a new product/test hook.
+  const whole = value => process.getBuiltinModule('node:crypto').createHash('sha256').update(value).digest('hex');
+  const expected = '4e5b24d8f535c6074a6612b402157b8426b08ef20e507d9817b47d45bb32b034';
+  if (whole(source) === expected) return source;
+  for (const hunk of [...savedCurrentForwardOriginalPlanUpdaterHunks].reverse()) {
+    assert.equal(source.split(hunk.after).length, 2, 'exact default-OFF original-plan updater hunk required');
+    source = source.replace(hunk.after, () => hunk.before);
+  }
+  assert.equal(whole(source), expected, 'whole FFD updater before every old inverse');
+  return source;
+}
 // Additive diagnostic input inverse; the whole153 and older oracles below stay unchanged.
 const savedCurrentForwardGateHunk = {
   before: "              recoverySources, establishedNativeCurrentOrigin,\n            })));",
   after: "              recoverySources, establishedNativeCurrentOrigin,\n              fallbackSource: deployedRecoverySource, preferredSource: progressiveRecoverySource,\n              persistedHourly: persistedDmiPartRows.get(part.partId)?.hourly ?? [],\n              publicHourly: hourly.filter(hour => Date.parse(hour.time) >= targetMs\n                && Date.parse(hour.time) < targetMs + RAVSCORE_PUBLIC_FORECAST_HOURS * 3_600_000),\n              replayCandidate: (sourceRecords, publicHourly) => buildRavScoreRecoveryReplay({\n                part: { ...part, zoneId }, initialState: initialSelection.state,\n                targetReferenceAt: generatedAt, sourceRecords, publicHourly,\n                nativeCadenceHoldHours, requireNativeGridSampling: true, liveCurrentPilot,\n              }),\n            })));",
 };
 function inverseSavedCurrentForwardGate(source) {
+  // Raw current input is whole-checked by the normal loader. Once projected,
+  // historical mutations must reach their unchanged own layer and refusal.
+  if (source.includes('savedCurrentForwardOriginalPlan')
+    || source.includes('createSavedCurrentForwardOriginalPlan')) {
+    source = inverseSavedCurrentForwardOriginalPlan(source);
+  }
   assert.equal(source.split(savedCurrentForwardGateHunk.after).length, 2, 'exact forward gate diagnostic hunk required');
   return source.replace(savedCurrentForwardGateHunk.after, () => savedCurrentForwardGateHunk.before);
 }
@@ -996,4 +1054,27 @@ test('forward gate diagnostic input has a whole153 inverse before every unchange
   const oracle = await sourceText(new URL('./test-weather-update-entrypoint.mjs', import.meta.url));
   assert.equal(normalInput(actual, oracle), inverseSavedCurrentReplayUpdater(actual));
   assert.throws(() => normalInput(actual + '// unreviewed drift\n', oracle), /whole genuine140000/);
+});
+
+test('default-OFF original-plan caller preserves the whole FFD updater and all existing normal reader inverses', async () => {
+  const actual = (await fs.readFile(producerPath, 'utf8')).replace(/\r\n/g, '\n');
+  assert.equal(digest(actual), '06892b9200406b2529430a4227d18a36fc8438b334a1ff0c303f42b4503a0c6d', 'exact actual original-plan caller');
+  const before = inverseSavedCurrentForwardOriginalPlan(actual);
+  assert.equal(digest(before), '4e5b24d8f535c6074a6612b402157b8426b08ef20e507d9817b47d45bb32b034');
+  assert.equal(inverseSavedCurrentForwardOriginalPlan(before), before, 'genuine old source stays unchanged');
+  assert.equal(digest(inverseSavedCurrentReplayUpdater(actual)), '608b795d382d96fed7435ffd9437f589f8771ea742ec65f75053d25059b9d25d');
+  for (const hunk of savedCurrentForwardOriginalPlanUpdaterHunks) {
+    const changed = actual.replace(hunk.after, () => hunk.before);
+    assert.notEqual(changed, actual, 'each missing-hunk mutation changes its own current baseline');
+    assert.throws(() => inverseSavedCurrentForwardOriginalPlan(changed), /exact default-OFF original-plan|whole FFD updater/);
+  }
+  assert.throws(() => inverseSavedCurrentForwardOriginalPlan(actual + '// unreviewed drift\n'), /whole FFD updater/);
+  const follower = await sourceText(new URL('./test-established-native-current-origin-followers.mjs', import.meta.url));
+  const begin = follower.indexOf('function normalOriginUpdaterTestInput(source, oracle) {');
+  const end = follower.indexOf('\nconst P0 =', begin);
+  assert(begin >= 0 && end > begin);
+  const normalInput = new Function('assert', 'sha', follower.slice(begin, end)
+    + '\nreturn normalOriginUpdaterTestInput;')(assert, digest);
+  const oracle = await sourceText(new URL('./test-weather-update-entrypoint.mjs', import.meta.url));
+  assert.equal(normalInput(actual, oracle), inverseSavedCurrentReplayUpdater(actual), 'same actual normal follower reader, not another host');
 });

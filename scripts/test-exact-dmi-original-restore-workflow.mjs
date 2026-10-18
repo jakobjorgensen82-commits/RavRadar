@@ -1,8 +1,38 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
+import crypto from 'node:crypto';
 
-const workflow = fs.readFileSync('.github/workflows/recover-saved-dmi-originals.yml', 'utf8').replace(/\r\n/g, '\n');
+const currentWorkflow = fs.readFileSync('.github/workflows/recover-saved-dmi-originals.yml', 'utf8').replace(/\r\n/g, '\n');
+// Reconstitute the WHOLE genuine old workflow before its unchanged historical
+// assertions. Current390663 behavior is tested separately below, never retagged.
+function inverseForwardRecovery(source) {
+  const hydration = source.indexOf('      - name: Prepare the exact normal caller only inside private scratch\n');
+  const next = source.indexOf('      - name: Authenticate the checkpoint and prepare only demanded exact originals\n', hydration);
+  assert.ok(hydration > 0 && next > hydration);
+  const step = source.slice(hydration, next);
+  assert.equal(crypto.createHash('sha256').update(step).digest('hex'),
+    '2c7ed1f20b0750e30f57ef78a6fe9223462ac98a445179d99abd50d391ee8e8a', 'entire reviewed private hydration step');
+  source = source.slice(0, hydration) + source.slice(next);
+  const once = (after, before) => {
+    assert.equal(source.split(after).length, 2, 'exact reviewed forward recovery hunk');
+    source = source.replace(after, () => before);
+  };
+  once('# Exact390663 post-H0 repair. Normal selection runs only in private scratch;\n# no newer forecast, production calculation, SQL or deploy is performed.',
+    '# This is the one approved repair of saved originals, not a weather update.\n# No source-selected command, newer forecast, calculation, SQL or deploy.');
+  once('    runs-on: ubuntu-24.04\n    timeout-minutes: 75', '    runs-on: ubuntu-latest\n    timeout-minutes: 45');
+  assert.equal((source.match(/39066350748/g) ?? []).length, 10);
+  source = source.replaceAll('39066350748', '38692413809');
+  once('node scripts/audit-saved-weather-inputs.mjs audit\n          --private-root',
+    'node scripts/prepare-saved-dmi-original-restore.mjs prepare\n          --private-root');
+  once('          --progress-baseline-target-hour 2026-10-17T20:00:00.000Z\n          --include-current-window-diagnostic true\n          --prepare-current-forward-originals true\n          --output "$RUNNER_TEMP/ravradar-saved-input-audit/summary-safe.json"',
+    '          --progress-baseline-target-hour 2026-10-14T18:00:00.000Z');
+  once('          DMI_EXACT_ORIGINAL_PREPARATION_STATUS: ${{ steps.plan.outputs.preparation_status }}\n          DMI_EXACT_ORIGINAL_COUNT: ${{ steps.plan.outputs.original_count }}\n          DMI_EXACT_ORIGINAL_PLAN_BYTES: ${{ steps.plan.outputs.plan_bytes }}\n', '');
+  assert.equal(crypto.createHash('sha256').update(source).digest('hex'),
+    'c5c03074348f2b5fc0f536d0ed28f64e7019f4412a0cebcb483976a68e3ef18f', 'whole genuine predecessor workflow');
+  return source;
+}
+const workflow = inverseForwardRecovery(currentWorkflow);
 const gh = value => '${{ ' + value + ' }}';
 const step = name => {
   const start = workflow.indexOf(`      - name: ${name}\n`);
@@ -73,4 +103,22 @@ test('only a complete, physically closed recovery may enter the one existing own
   assert.ok(workflow.indexOf(guard) < workflow.indexOf(save));
   assert.match(workflow, /test "\$SAVED" = true/);
   assert.doesNotMatch(workflow, /uses: actions\/upload-artifact|path: .*\*|cat .*progress|env\s*$/m);
+});
+
+test('390663 forward repair authenticates genuine normal choices and preserves the exact cache/SAVE boundaries', () => {
+  assert.match(currentWorkflow, /actions\/runs\/39066350748\/attempts\/1/);
+  assert.match(currentWorkflow, /--progress-source 39066350748-1/);
+  assert.match(currentWorkflow, /--progress-baseline-target-hour 2026-10-17T20:00:00\.000Z/);
+  assert.match(currentWorkflow, /--include-current-window-diagnostic true\n          --prepare-current-forward-originals true/);
+  assert.match(currentWorkflow, /git clone --shared --no-checkout "\$GITHUB_WORKSPACE"/);
+  assert.match(currentWorkflow, /git -C "\$root\/current-window-source" -c core.autocrlf=false checkout --detach "\$GITHUB_SHA"/);
+  for (const command of ['refine-coastlines-constrained-4.0.48.py', 'sync-admin-config.py',
+    'apply-central-zone-reviews.py', 'build-public-coastal-parts-v2.mjs']) assert.ok(currentWorkflow.includes(command));
+  assert.equal((currentWorkflow.match(/uses: actions\/cache\/restore@v6/g) ?? []).length, 2);
+  assert.equal((currentWorkflow.match(/fail-on-cache-miss: true/g) ?? []).length, 2);
+  assert.equal((currentWorkflow.match(/uses: \.\/\.github\/actions\/save-owned-dmi-grib/g) ?? []).length, 1);
+  assert.match(currentWorkflow, /test "\$ORIGINALS_RESTORED" = true/);
+  assert.match(currentWorkflow, /test "\$SAVED" = true/);
+  assert.doesNotMatch(currentWorkflow, /restore-keys:|workflow run|--publish|wrangler|supabase db|continue-on-error/);
+  assert.match(currentWorkflow, /runs-on: ubuntu-24.04\n    timeout-minutes: 75/);
 });

@@ -155,6 +155,37 @@ test('only the two exact checkpoint-target pairs are accepted and bound without 
   assert.throws(() => savedDmiOriginalHistoryDemand({ ...f, targetReferenceAt: at(1) }), /SCOPE_INVALID/);
 });
 
+test('forward-only 390663 restore-plan tuple does not widen the old H0-51 collectors', () => {
+  const f = fixture(), captures = collectSavedDmiOriginalCaptures(f);
+  const forward = { progressSource: '39066350748-1',
+    progressCacheKey: 'weather-private-progress-encrypted-v2-Linux-main-39066350748-1',
+    targetReferenceAt: '2026-10-17T20:00:00.000Z' };
+  // Synthetic metadata binding only: these expectations confer no native,
+  // authenticated-checkpoint, forward-selection or download authority.
+  const demands = [{ partId: f.part.partId, initialStateAt: '2026-10-16T10:00:00.000Z',
+    initialStateSha256: sha(savedOriginalCanonicalJson(f.conditions.coastalParts.parts[f.part.partId].ravScoreModel.currentState)),
+    endAt: forward.targetReferenceAt }];
+  const input = { ...f, ...forward, demands, captures, executionHead, nonce: '1'.repeat(32) };
+  const before = savedOriginalCanonicalJson(input), plan = buildSavedDmiOriginalRestorePlan(input);
+  for (const key of ['progressSource', 'progressCacheKey', 'targetReferenceAt']) {
+    assert.equal(plan.binding[key], forward[key]);
+  }
+  assert.deepEqual(plan.originals, captures);
+  assert.equal(plan.binding.historyDemandSha256, sha(savedOriginalCanonicalJson(demands)));
+  assert.equal(savedOriginalCanonicalJson(input), before, 'metadata planning never retags its inputs');
+  for (const delta of [{ progressSource }, { progressCacheKey }, { targetReferenceAt: target },
+    { progressSource: '39066350748-2' }, { executionHead: '' }]) {
+    assert.throws(() => buildSavedDmiOriginalRestorePlan({ ...input, ...delta }), /SCOPE_INVALID/);
+  }
+  assert.throws(() => assertSavedDmiOriginalRestoreScope({ ...forward,
+    progressBaselineTargetHour: forward.targetReferenceAt, executionHead }), /SCOPE_INVALID/);
+  assert.throws(() => savedDmiOriginalHistoryDemand({ ...f,
+    targetReferenceAt: forward.targetReferenceAt }), /SCOPE_INVALID/);
+  assert.throws(() => collectSelectedSavedDmiOriginalCaptures({ ...f, protectedBulk: f.document,
+    targetReferenceAt: forward.targetReferenceAt }), /SCOPE_INVALID/);
+  assert.throws(() => collectSavedDmiOriginalCaptures({ ...f, demands }), /DEMAND_INVALID/);
+});
+
 test('zero selected original demand reports a no-op without any plan or cache directory', async t => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-original-noop-test-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
