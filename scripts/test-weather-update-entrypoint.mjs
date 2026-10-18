@@ -1,3 +1,4 @@
+import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -10,7 +11,7 @@ import { withFrozenNative0600TestSource } from './run-frozen-native0600-source-t
 const producerPath = new URL('./update-weather.mjs', import.meta.url);
 const sourceText = async file => {
   const source = (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
-  return file === producerPath ? inverseSavedCurrentForwardOriginalPlan(source) : source;
+  return file === producerPath ? inverseSavedCurrentForwardOriginalPlan(inverseAlternativeCCaller(source, 'scripts/update-weather.mjs')) : source;
 };
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 
@@ -1057,7 +1058,7 @@ test('forward gate diagnostic input has a whole153 inverse before every unchange
 });
 
 test('default-OFF original-plan caller preserves the whole FFD updater and all existing normal reader inverses', async () => {
-  const actual = (await fs.readFile(producerPath, 'utf8')).replace(/\r\n/g, '\n');
+  const actual = inverseAlternativeCCaller((await fs.readFile(producerPath, 'utf8')).replace(/\r\n/g, '\n'), 'scripts/update-weather.mjs');
   assert.equal(digest(actual), '06892b9200406b2529430a4227d18a36fc8438b334a1ff0c303f42b4503a0c6d', 'exact actual original-plan caller');
   const before = inverseSavedCurrentForwardOriginalPlan(actual);
   assert.equal(digest(before), '4e5b24d8f535c6074a6612b402157b8426b08ef20e507d9817b47d45bb32b034');

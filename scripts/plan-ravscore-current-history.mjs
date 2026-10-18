@@ -36,6 +36,9 @@ import { readLiveCurrentPilot } from './lib/live-current-pilot.mjs';
 import { mergeProtectedLiveCurrentPilotIntoRecord } from './lib/protected-live-current-assembly.mjs';
 import { originalContextForProtectedDmiCurrent } from './lib/protected-dmi-current-context.mjs';
 import { verifyPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
+import { CURRENT_FAMILY_COLD_START_CONTEXT_ENV,
+  loadCurrentFamilyColdStartForTarget, currentFamilyColdStartScoreInputs,
+  currentFamilyColdStartRawRetention } from './current-family-cold-start.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const HOUR = 3_600_000;
@@ -652,6 +655,13 @@ async function main() {
   const stateLessRecovery = environmentBoolean('RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED');
   const epochRequested = environmentBoolean('RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP');
   const checkpointOnly = environmentBoolean('CHECKPOINT_ONLY');
+  const coldPath = process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.path];
+  const coldSha256 = process.env[CURRENT_FAMILY_COLD_START_CONTEXT_ENV.sha256];
+  const coldRequested = coldPath !== undefined || coldSha256 !== undefined;
+  if (coldRequested && (!coldPath || !coldSha256 || epochRequested || checkpointOnly
+    || stateLessRecovery || !baselineRequired || !retainCommittedRaw)) {
+    refuse('CURRENT_FAMILY_COLD_START_MODE_COLLISION');
+  }
   const registry = await readFixed(SOURCE_PATHS.registry);
   const baseline = await readFixed(SOURCE_PATHS.conditions, !baselineRequired);
   const conditions = baseline?.json ?? { zones: {} };
@@ -665,12 +675,22 @@ async function main() {
     ? await (await import('./weather-state-epoch.mjs')).loadInstalledWeatherStateEpochInputView({
       targetReferenceAt: productionReferenceAt, registry: registry.json,
     }) : null;
+  const currentFamilyColdStart = coldRequested
+    ? await loadCurrentFamilyColdStartForTarget({ contextPath: coldPath,
+      contextSha256: coldSha256, targetReferenceAt: productionReferenceAt }) : null;
+  const coldInputs = currentFamilyColdStart === null ? null
+    : currentFamilyColdStartScoreInputs(currentFamilyColdStart,
+      { registry: registry.json, targetReferenceAt: productionReferenceAt });
   const activation = await readFixed(SOURCE_PATHS.activation, true);
-  const activationPairs = epochView !== null ? {}
+  const activationPairs = coldInputs !== null ? coldInputs.pointStateInjections
+    : epochView !== null ? {}
     : activation ? assertCoastalPointActivationStateInjection(activation.json) : {};
   // This is the SAME normal cache validator/compatible-reattest operation used
   // by Weather. It may update only its usual cache checkpoint, never B/S.
-  const checkpoint = epochView !== null ? {
+  const checkpoint = coldInputs !== null ? {
+    loaded: false, continuationAvailable: false, states: coldInputs.checkpointStates,
+    candidateGRollbackStates: coldInputs.checkpointCandidateGRollbackStates,
+  } : epochView !== null ? {
     loaded: false, continuationAvailable: false, states: epochView.checkpointStates,
     candidateGRollbackStates: epochView.checkpointCandidateGRollbackStates,
   } : await loadRavScoreContinuationCheckpointForTarget({
@@ -678,7 +698,7 @@ async function main() {
     targetReference: productionReferenceAt, repositoryRoot: ROOT,
   });
   const checkpointFile = await readFixed(SOURCE_PATHS.checkpoint, true);
-  if (epochView === null && (checkpoint.loaded !== Boolean(checkpointFile)
+  if (epochView === null && coldInputs === null && (checkpoint.loaded !== Boolean(checkpointFile)
     || (checkpoint.loaded && (checkpointFile.json.generationSha256 !== checkpoint.generationSha256
       || checkpointFile.json.productionReferenceAt !== checkpoint.checkpointAt
       || (checkpoint.continuationAvailable
@@ -688,7 +708,9 @@ async function main() {
   // The hash describes post-validation/normal-reattest cache bytes, not a new
   // authentication token. The returned genuine states determine demand only.
   const demand = buildRavScoreCurrentHistoryDemand({
-    registry: registry.json, conditions: epochView?.plannerConditions ?? conditions,
+    registry: registry.json, conditions: coldInputs !== null
+      ? { ...conditions, coastalParts: coldInputs.previousCoastalParts }
+      : epochView?.plannerConditions ?? conditions,
     checkpoint, activationPairs, productionReferenceAt,
     registrySha256: registry.sha256,
     sourceHashes: { conditions: baseline?.sha256 ?? null,
@@ -696,11 +718,17 @@ async function main() {
     // These hashes still describe the actual preserved input artifacts, not
     // fabricated empty files. Selection is separately authorized by the real
     // archived input view; acquisition grants no numeric source admission.
-    stateLessRecovery: epochView?.stateLessRecovery ?? stateLessRecovery,
+    stateLessRecovery: coldInputs?.stateLessRecovery ?? epochView?.stateLessRecovery ?? stateLessRecovery,
   });
   // Historic/epoch APIs keep their existing acquisition behavior. Ordinary
   // installed B cannot silently fall back to local H0 or an empty pin set.
-  if (retainCommittedRaw && !checkpointOnly && baselineRequired && epochView === null && !stateLessRecovery) {
+  if (currentFamilyColdStart !== null) {
+    // This separate eviction policy is minted by the real archive capability;
+    // it never describes OLD committed S dependencies as an empty ordinary set.
+    demand.schemaVersion = 2;
+    demand.rawRetention = currentFamilyColdStartRawRetention(currentFamilyColdStart,
+      { registry: registry.json, targetReferenceAt: productionReferenceAt });
+  } else if (retainCommittedRaw && !checkpointOnly && baselineRequired && epochView === null && !stateLessRecovery) {
     demand.schemaVersion = 2;
     demand.rawRetention = await readCommittedRawCurrentRetention(registry.json, checkpointFile, productionReferenceAt);
   }

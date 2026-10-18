@@ -571,8 +571,177 @@ def check_raw_nonmarine_retention():
     print("RAW nonmarine LRU: 3 normal registered families, capture/identity/ownership/pin refusals and pre-delete late races passed")
 
 
+def check_archive_isolated_raw_retention():
+    """Real fixed loader/catalog bytes; SYNTHETIC archive, not JS authority."""
+    import gzip
+    import hashlib
+    from unittest.mock import patch
+    p = producer
+    old = p.ROOT, p.RAW_DIR, p._RAW_CURRENT_PROTECTED
+    policies = dict(p._RAW_CURRENT_IDENTITIES), set(p._RAW_CURRENT_UNPROVED_NAMES), dict(p._RAW_CURRENT_SESSION_PROTECTED)
+    with tempfile.TemporaryDirectory(prefix="rr-archive-raw-retention-") as directory:
+        p.ROOT = Path(directory)
+        p.RAW_DIR = p.ROOT / ".cache/dmi-grib"
+        p.RAW_DIR.mkdir(parents=True)
+        p._RAW_CURRENT_PROTECTED = None
+        p._RAW_CURRENT_IDENTITIES.clear()
+        p._RAW_CURRENT_UNPROVED_NAMES.clear()
+        p._RAW_CURRENT_SESSION_PROTECTED.clear()
+        def write(relative, value):
+            destination = p.ROOT / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            raw = value if isinstance(value, bytes) else json.dumps(value).encode()
+            destination.write_bytes(raw)
+            return raw
+        h0, target = "2026-01-01T02:00:00Z", "2026-01-01T04:00:00Z"
+        part_doc = {"zones": {zone["parentZoneId"]: [{"partId": "TEST", "waterPoint": [2, 1]}]}}
+        part_bytes = json.dumps(part_doc).encode()
+        registry_sha = "sha256:" + hashlib.sha256(part_bytes).hexdigest()
+        targets = [{"partId": "TEST", "parentZoneId": zone["parentZoneId"], "waterPoint": [2, 1]}]
+        checkpoint = {"datasetId": "rr-synthetic-archive", "productionReferenceAt": h0, "generationSha256": "3" * 64}
+        conditions_bytes = write("data/live/conditions.json", {"synthetic": True})
+        checkpoint_bytes = write(".cache/ravscore-continuation-checkpoint/checkpoint.json", checkpoint)
+        source_hashes = {"conditions": "sha256:" + hashlib.sha256(conditions_bytes).hexdigest(),
+            "checkpoint": "sha256:" + hashlib.sha256(checkpoint_bytes).hexdigest(), "activation": None}
+        boundary = {"datasetId": checkpoint["datasetId"], "productionReferenceAt": h0,
+            "bundleContentSha256": "2" * 64, "checkpointGenerationSha256": checkpoint["generationSha256"],
+            "conditionsSha256": hashlib.sha256(conditions_bytes).hexdigest()}
+        description = {key: boundary[key] for key in ("datasetId", "productionReferenceAt", "bundleContentSha256")}
+        write("private/bundle/manifest.json", description)
+        write("private/bundle/payload/data/live/conditions.json", conditions_bytes)
+        write("cold/archive/original-file-000.bin", checkpoint_bytes)
+        catalog = {"schemaVersion": 1, "kind": "RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE", "admission": "NO_ADMISSION",
+            "targetReferenceAt": target, "source": {"originalDescription": description,
+                "originalPointerRow": {"version": 7, "payload": {"current": description}}, "checkpointVersion": 9},
+            "originalBObjects": [], "originalFiles": [], "files": [{"role": "checkpoint", "relativePath": "original-S.json",
+                "localFile": "original-file-000.bin", "bytes": len(checkpoint_bytes),
+                "sha256": hashlib.sha256(checkpoint_bytes).hexdigest()}]}
+        identity = {key: catalog[key] for key in ("schemaVersion", "kind", "admission", "targetReferenceAt", "source", "originalBObjects", "originalFiles")}
+        catalog["archiveId"] = hashlib.sha256(p._current_history_json(identity).encode()).hexdigest()
+        catalog_bytes = gzip.compress(p._current_history_json(catalog).encode())
+        catalog_path = p.ROOT / "cold/archive/catalog.json.gz"
+        write("cold/archive/catalog.json.gz", catalog_bytes)
+        retention = {"schemaVersion": 1, "kind": "ARCHIVE_ISOLATED_COLD_RAW_RETENTION", "boundary": boundary,
+            "archive": {"archiveId": catalog["archiveId"], "archiveCatalogSha256": hashlib.sha256(catalog_bytes).hexdigest(),
+                "catalogPath": str(catalog_path), "pointerVersion": 7, "checkpointVersion": 9,
+                "targetReferenceAt": target, "registrySha256": registry_sha,
+                "selection": "MEASURED_COLD_WITHOUT_OLD_CURRENT_STATE"}, "captures": []}
+        history = {"schemaVersion": 2, "kind": "RAVSCORE_CURRENT_HISTORY_ACQUISITION_DEMAND", "productionReferenceAt": target,
+            "modelBinding": {}, "registrySha256": registry_sha, "sourceHashes": source_hashes, "demands": [], "rawRetention": retention}
+        env = {"RUNNER_TEMP": str(p.ROOT), "DMI_BULK_REQUIRE_COMMITTED_RAW_RETENTION": "true",
+            "DMI_BULK_CURRENT_HISTORY_DEMAND_PATH": str(p.ROOT / ".cache/ravscore-current-history-demand.json"),
+            "RAVRADAR_PRIVATE_RUNTIME_ROOT": str(p.ROOT / "private"), "RAVRADAR_PRIVATE_RUNTIME_BUNDLE": str(p.ROOT / "private/bundle")}
+        read = lambda: p.read_current_history_demands(part_doc, part_bytes, targets, [zone], target)
+        try:
+            with patch.dict(os.environ, env):
+                write(".cache/ravscore-current-history-demand.json", history)
+                assert read() == {} and p._RAW_CURRENT_PROTECTED == {}, "validated local archive scope did not enable bounded LRU"
+                assert not p._RAW_CURRENT_SESSION_PROTECTED, "policy must not invent a marine receipt"
+                negatives = []
+                for key, value in (("archiveId", "0" * 64), ("archiveCatalogSha256", "0" * 64),
+                                   ("pointerVersion", 8), ("pointerVersion", True), ("checkpointVersion", 10),
+                                   ("targetReferenceAt", h0), ("registrySha256", "sha256:" + "0" * 64),
+                                   ("selection", "COMMITTED_OLD_S"), ("catalogPath", str(catalog_path.parent / "missing.gz"))):
+                    changed = copy.deepcopy(history); changed["rawRetention"]["archive"][key] = value; negatives.append(changed)
+                changed = copy.deepcopy(history); changed["rawRetention"]["captures"] = [{"not": "an empty archived-current scope"}]; negatives.append(changed)
+                changed = copy.deepcopy(history); changed["rawRetention"]["kind"] = "COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION"; negatives.append(changed)
+                changed = copy.deepcopy(history); changed["rawRetention"]["archive"]["extra"] = True; negatives.append(changed)
+                for changed in negatives:
+                    p._RAW_CURRENT_PROTECTED = None
+                    write(".cache/ravscore-current-history-demand.json", changed)
+                    try: read()
+                    except (p.AssetDownloadCleanupUnproven, ValueError, OSError): pass
+                    else: raise AssertionError("false archive retention was accepted")
+                    assert p._RAW_CURRENT_PROTECTED is None, "a refused policy changed eviction authority"
+                write(".cache/ravscore-current-history-demand.json", history)
+                write("cold/archive/original-file-000.bin", {**checkpoint, "generationSha256": "0" * 64})
+                try: read()
+                except (p.AssetDownloadCleanupUnproven, ValueError, OSError): pass
+                else: raise AssertionError("changed archived S was accepted")
+                assert p._RAW_CURRENT_PROTECTED is None
+                write("cold/archive/original-file-000.bin", checkpoint_bytes)
+                accepted_boolean_cases = []
+                for label in ("catalog-schema", "catalog-pointer-version", "catalog-checkpoint-version", "retention-schema"):
+                    altered_catalog, altered_history = copy.deepcopy(catalog), copy.deepcopy(history)
+                    if label == "catalog-schema": altered_catalog["schemaVersion"] = True
+                    if label == "catalog-pointer-version":
+                        altered_catalog["source"]["originalPointerRow"]["version"] = True
+                        altered_history["rawRetention"]["archive"]["pointerVersion"] = 1
+                    if label == "catalog-checkpoint-version":
+                        altered_catalog["source"]["checkpointVersion"] = True
+                        altered_history["rawRetention"]["archive"]["checkpointVersion"] = 1
+                    if label == "retention-schema": altered_history["rawRetention"]["schemaVersion"] = True
+                    altered_catalog["archiveId"] = hashlib.sha256(p._current_history_json(
+                        {key: altered_catalog[key] for key in identity}).encode()).hexdigest()
+                    altered_bytes = gzip.compress(p._current_history_json(altered_catalog).encode())
+                    altered_history["rawRetention"]["archive"].update(archiveId=altered_catalog["archiveId"],
+                        archiveCatalogSha256=hashlib.sha256(altered_bytes).hexdigest())
+                    write("cold/archive/catalog.json.gz", altered_bytes)
+                    write(".cache/ravscore-current-history-demand.json", altered_history)
+                    p._RAW_CURRENT_PROTECTED = None
+                    try: read()
+                    except (p.AssetDownloadCleanupUnproven, ValueError, OSError): pass
+                    else: accepted_boolean_cases.append(label)
+                assert not accepted_boolean_cases, "archive booleans accepted as integer versions: " + str(accepted_boolean_cases)
+                write("cold/archive/catalog.json.gz", catalog_bytes)
+                write(".cache/ravscore-current-history-demand.json", history)
+                assert read() == {} and p._RAW_CURRENT_PROTECTED == {}
+                inner = p.ROOT / "inside"
+                inner.mkdir()
+                escaped = copy.deepcopy(history)
+                escaped["rawRetention"]["archive"]["catalogPath"] = str(inner / ".." / "cold/archive/catalog.json.gz")
+                write(".cache/ravscore-current-history-demand.json", escaped)
+                p._RAW_CURRENT_PROTECTED = None
+                with patch.dict(os.environ, {"RUNNER_TEMP": str(inner)}):
+                    try: read()
+                    except (p.AssetDownloadCleanupUnproven, ValueError, OSError): pass
+                    else: raise AssertionError("lexical temp-parent escape was accepted")
+                assert p._RAW_CURRENT_PROTECTED is None
+
+                # The new archive scope must exercise the actual common disk
+                # lifecycle too, not merely report an empty committed pin set.
+                write(".cache/ravscore-current-history-demand.json", history)
+                body = b"synthetic archive-scope RAW bytes, not provider GRIB".ljust(32768, b"x")
+                def seed_raw(label, mtime):
+                    href = f"https://owned-fixture.invalid/{label}.grib"
+                    destination = p.cached_asset_path(href)
+                    destination.write_bytes(body)
+                    p.register_raw_cache_asset(destination, href, "dkss_nsbs", valid_time, valid_time,
+                        item_id=label, item_created_at=valid_time, expected_size=len(body),
+                        acquired_at=valid_time, content_sha256=hashlib.sha256(body).hexdigest())
+                    os.utime(destination, (mtime, mtime))
+                    return destination
+                disposable = seed_raw("archived-prior-process-cache", 1)
+                p._RAW_CURRENT_SESSION_PROTECTED.clear()  # Only the simulated prior process ends here.
+                session = seed_raw("new-process-marine-hard-pin", 2)
+                unknown = p.RAW_DIR / "unregistered-private-original.grib"
+                unknown.write_bytes(b"unregistered remains unowned")
+                retained = {file: (file.read_bytes(), p._OwnedGribRead._identity(file.lstat()))
+                    for file in (session, unknown)}
+                assert read() == {} and p._RAW_CURRENT_PROTECTED == {}
+                assert session.name in p._raw_current_session_files()
+                freed = p.prepare_raw_cache_space(len(body), metadata_reserve=4096,
+                    max_bytes=2 * len(body) + 12000)
+                assert freed == {"removedFiles": 1, "removedBytes": len(body)}
+                assert not disposable.exists() and disposable.name not in p.load_raw_cache_manifest()["assets"]
+                for file, (raw, identity) in retained.items():
+                    assert file.read_bytes() == raw and p._OwnedGribRead._identity(file.lstat()) == identity
+                assert (p.ROOT / "cold/archive/original-file-000.bin").read_bytes() == checkpoint_bytes
+                assert catalog_path.read_bytes() == catalog_bytes
+        finally:
+            p.ROOT, p.RAW_DIR, p._RAW_CURRENT_PROTECTED = old
+            p._RAW_CURRENT_IDENTITIES.clear(); p._RAW_CURRENT_IDENTITIES.update(policies[0])
+            p._RAW_CURRENT_UNPROVED_NAMES.clear(); p._RAW_CURRENT_UNPROVED_NAMES.update(policies[1])
+            p._RAW_CURRENT_SESSION_PROTECTED.clear(); p._RAW_CURRENT_SESSION_PROTECTED.update(policies[2])
+    print("Archive-isolated RAW retention: actual fixed catalog/S reads, 18 false-boundary cases and actual bounded LRU preserving session/unknown/archive bytes; no numeric admission")
+
+
+if sys.argv[1:] == ["--archive-isolated-raw-retention-only"]:
+    check_archive_isolated_raw_retention()
+    raise SystemExit(0)
 check_raw_current_retention()
 check_raw_nonmarine_retention()
+check_archive_isolated_raw_retention()
 if sys.argv[1:] == ["--raw-current-retention-only"]:
     print("RAW current retention: normal download -> later score failure -> unchanged B/S -> next replay plan passed")
     raise SystemExit(0)

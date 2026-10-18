@@ -4,7 +4,21 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
+const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-start-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+// Test-only additive C layer. Only these two whole reviewed afterimages may
+// enter; every byte of the genuine f644 predecessor remains the old oracle.
+export function inverseCurrentFamilyColdStartWorkflow(source, role) {
+  const row = coldReview.roles[role];
+  if (!row || sha(source) !== row.actualSha256) return source;
+  let previous = source;
+  for (const [offset, actual, original] of row.edits) {
+    assert.equal(previous.slice(offset, offset + actual.length), actual, 'Exact C inverse segment');
+    previous = previous.slice(0, offset) + original + previous.slice(offset + actual.length);
+  }
+  assert.equal(sha(previous), row.predecessorSha256, 'Whole genuine f644 workflow survives the C inverse');
+  return previous;
+}
 // Exact test-only ordinary checkout inverse; no runtime source guard is changed.
 export function inverseOrdinaryFullHistoryCheckout(source, role) {
   if (role !== 'build' || sha(source) !== '861fad7501e32d4b63c72caa598825b15fb5fb2758961a1187ed57858e5c01ce') return source;
@@ -47,6 +61,7 @@ export function assertCurrentHistoryRawRetentionOrder(source) {
   assert.equal(sha(source), '46c88e4cca919ecc288c006db443106b1f8ce8fed1dbca3a87b74d7aea8a3e34', 'The entire current RAW-retention workflow is reviewed');
 }
 export function inverseCurrentHistoryRawRetentionOrder(source, role) {
+  source = inverseCurrentFamilyColdStartWorkflow(source, role);
   if (role !== 'build' || sha(source) !== '46c88e4cca919ecc288c006db443106b1f8ce8fed1dbca3a87b74d7aea8a3e34') return source;
   assertCurrentHistoryRawRetentionOrder(source);
   let previous = source.replace(rawRetentionEnv, '').replace(rawRetentionBlock, '');

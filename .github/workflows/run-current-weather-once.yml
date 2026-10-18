@@ -3,6 +3,11 @@ name: Run current RavRadar weather once
 on:
   workflow_dispatch:
     inputs:
+      current_family_cold_start:
+        description: 'Archive authenticated current-family B/S and measure a new cold start without changing model/SQL; fresh one-off only'
+        required: false
+        type: boolean
+        default: false
       completed_private_runtime:
         description: 'Reuse the exact newest authenticated completed private generation without providers or scoring'
         required: false
@@ -70,6 +75,7 @@ concurrency:
 
 jobs:
   operational-recovery-gate:
+    if: inputs.current_family_cold_start != true
     name: Finish an interrupted generation before new work
     permissions:
       contents: read
@@ -84,6 +90,7 @@ jobs:
 
   current-main-target:
     needs: operational-recovery-gate
+    if: ${{ !cancelled() && ((inputs.current_family_cold_start == true && needs.operational-recovery-gate.result == 'skipped') || (inputs.current_family_cold_start != true && needs.operational-recovery-gate.result == 'success')) }}
     name: Lock one normal run to exact current main and UTC hour
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -95,6 +102,28 @@ jobs:
       completed_private_runtime_pin: ${{ steps.completed-target.outputs.completed_private_runtime_pin }}
     steps:
       - uses: actions/checkout@v7
+
+      - name: Reject mixed caller-only cold-start modes before target selection
+        if: inputs.current_family_cold_start == true
+        shell: bash
+        env:
+          COMPLETED: ${{ inputs.completed_private_runtime }}
+          QUICK: ${{ inputs.quick_confirmation }}
+          PROGRESS: ${{ inputs.quick_progress_source }}
+          TARGET: ${{ inputs.checkpoint_target_hour }}
+          EPOCH: ${{ inputs.weather_state_epoch_bootstrap }}
+          REENTRY: ${{ inputs.weather_state_epoch_checkpoint_reentry }}
+          NATIVE: ${{ inputs.native_sampling_identity_original_recovery }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$COMPLETED" = false
+          test "$QUICK" = false
+          test -z "$PROGRESS"
+          test -z "$TARGET"
+          test "$EPOCH" = false
+          test "$REENTRY" = false
+          test "$NATIVE" = false
 
       - name: Require checked-out HEAD to equal current origin/main
         shell: bash
@@ -843,7 +872,8 @@ jobs:
       completed_private_runtime: ${{ inputs.completed_private_runtime }}
       completed_private_runtime_pin: ${{ needs.current-main-target.outputs.completed_private_runtime_pin }}
       force: true
-      extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true }}
+      extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true }}
+      current_family_cold_start: ${{ inputs.current_family_cold_start == true }}
       weather_state_epoch_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true || inputs.weather_state_epoch_checkpoint_reentry == true }}
       weather_state_epoch_checkpoint_reentry: ${{ inputs.weather_state_epoch_checkpoint_reentry }}
       weather_state_epoch_raw_cache_key: ${{ inputs.weather_state_epoch_raw_cache_key }}

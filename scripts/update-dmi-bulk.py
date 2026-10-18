@@ -3897,6 +3897,111 @@ def _raw_current_inventory():
     return manifest, files
 
 
+def _archive_raw_retention_json(path, maximum, expected_sha256=None, *, compressed=False):
+    """Remeasure an owned local archive file; never an admission/HTTP reader."""
+    import zlib
+    for entry in [*reversed(path.parents), path]:
+        if entry.is_symlink():
+            _raw_cache_protection_refuse("ARCHIVE_PATH_INVALID")
+    before = path.lstat()
+    if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1
+            or before.st_size < 1 or before.st_size > maximum):
+        _raw_cache_protection_refuse("ARCHIVE_FILE_INVALID")
+    with path.open("rb") as handle:
+        identity = _OwnedGribRead._identity(before)
+        opened_identity = _OwnedGribRead._identity(os.fstat(handle.fileno()))
+        # Windows path/handle ctime are distinct observed clocks. Preserve
+        # EACH clock across the read; never compare unlike clocks as identity.
+        # POSIX still requires the entire original identity across both views.
+        if (opened_identity[:5] != identity[:5]
+                or (os.name != "nt" and opened_identity != identity)):
+            _raw_cache_protection_refuse("ARCHIVE_FILE_CHANGED")
+        raw = handle.read(maximum + 1)
+        if (len(raw) != before.st_size or len(raw) > maximum
+                or _OwnedGribRead._identity(os.fstat(handle.fileno())) != opened_identity
+                or _OwnedGribRead._identity(path.lstat()) != identity):
+            _raw_cache_protection_refuse("ARCHIVE_FILE_CHANGED")
+    if expected_sha256 is not None and hashlib.sha256(raw).hexdigest() != expected_sha256:
+        _raw_cache_protection_refuse("ARCHIVE_FILE_CHANGED")
+    if compressed:
+        decoder = zlib.decompressobj(31)
+        raw = decoder.decompress(raw, maximum + 1)
+        if (len(raw) > maximum or not decoder.eof or decoder.unused_data or decoder.unconsumed_tail):
+            _raw_cache_protection_refuse("ARCHIVE_FILE_INVALID")
+    return json.loads(raw, object_pairs_hook=_exact_unique_fields)
+
+
+def _validate_archive_isolated_raw_retention(retention):
+    """Eviction scope from the JS archive caller, not committed OLD-S pins.
+
+    The genuine JS capability owns authentication and three-donor isolation.
+    Python additionally binds actual local catalog/S bytes to the unchanged
+    normal B/S boundary. Nothing here authenticates a new vector or receipt.
+    """
+    archive = retention.get("archive")
+    keys = {"archiveId", "archiveCatalogSha256", "catalogPath", "pointerVersion",
+            "checkpointVersion", "targetReferenceAt", "registrySha256", "selection"}
+    if (type(retention["schemaVersion"]) is not int
+            or not isinstance(archive, dict) or set(archive) != keys or retention["captures"] != []
+            or archive["selection"] != "MEASURED_COLD_WITHOUT_OLD_CURRENT_STATE"
+            or any(not re.fullmatch(r"[0-9a-f]{64}", str(archive[key]))
+                   for key in ("archiveId", "archiveCatalogSha256"))
+            or not re.fullmatch(r"sha256:[0-9a-f]{64}", str(archive["registrySha256"]))
+            or any(type(archive[key]) is not int or archive[key] < 1
+                   for key in ("pointerVersion", "checkpointVersion"))
+            or not canonical_time(archive["targetReferenceAt"])
+            or epoch(archive["targetReferenceAt"]) <= epoch(retention["boundary"]["productionReferenceAt"])):
+        _raw_cache_protection_refuse("ARCHIVE_SCOPE_INVALID")
+    temporary = pathlib.Path(os.getenv("RUNNER_TEMP", ""))
+    catalog_path = pathlib.Path(archive["catalogPath"]) if isinstance(archive["catalogPath"], str) else pathlib.Path()
+    if (not temporary.is_absolute() or not catalog_path.is_absolute()
+            or catalog_path.name != "catalog.json.gz" or catalog_path.parent.name != "archive"
+            or ".." in temporary.parts or ".." in catalog_path.parts
+            or temporary not in catalog_path.parents
+            or not catalog_path.resolve(strict=True).is_relative_to(temporary.resolve(strict=True))):
+        _raw_cache_protection_refuse("ARCHIVE_PATH_INVALID")
+    catalog = _archive_raw_retention_json(catalog_path, 1024 * 1024,
+        archive["archiveCatalogSha256"], compressed=True)
+    if (not isinstance(catalog, dict) or type(catalog.get("schemaVersion")) is not int or catalog["schemaVersion"] != 1
+            or catalog.get("kind") != "RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE"
+            or catalog.get("admission") != "NO_ADMISSION" or catalog.get("archiveId") != archive["archiveId"]
+            or catalog.get("targetReferenceAt") != archive["targetReferenceAt"]):
+        _raw_cache_protection_refuse("ARCHIVE_CATALOG_INVALID")
+    identity_keys = ("schemaVersion", "kind", "admission", "targetReferenceAt", "source", "originalBObjects", "originalFiles")
+    if (any(key not in catalog for key in identity_keys)
+            or hashlib.sha256(_current_history_json({key: catalog[key] for key in identity_keys}).encode()).hexdigest() != archive["archiveId"]):
+        _raw_cache_protection_refuse("ARCHIVE_CATALOG_CHANGED")
+    source, boundary = catalog.get("source"), retention["boundary"]
+    description = source.get("originalDescription") if isinstance(source, dict) else None
+    pointer = source.get("originalPointerRow") if isinstance(source, dict) else None
+    pointer_payload = pointer.get("payload") if isinstance(pointer, dict) else None
+    current = pointer_payload.get("current") if isinstance(pointer_payload, dict) else None
+    if (not isinstance(description, dict) or not isinstance(pointer, dict)
+            or not isinstance(current, dict)
+            or type(pointer.get("version")) is not int or type(source.get("checkpointVersion")) is not int
+            or pointer.get("version") != archive["pointerVersion"]
+            or source.get("checkpointVersion") != archive["checkpointVersion"]
+            or any(description.get(key) != boundary[key] for key in ("datasetId", "productionReferenceAt", "bundleContentSha256"))
+            or any(current.get(key) != description.get(key) for key in
+                   ("sourceHead", "datasetId", "productionReferenceAt", "generatedAt", "bundleContentSha256", "modelBinding", "contractHashes"))):
+        _raw_cache_protection_refuse("ARCHIVE_BOUNDARY_CHANGED")
+    files = catalog.get("files")
+    checkpoints = [row for row in files if isinstance(row, dict) and row.get("relativePath") == "original-S.json"] if isinstance(files, list) else []
+    if (len(checkpoints) != 1 or checkpoints[0].get("role") != "checkpoint"
+            or not re.fullmatch(r"original-file-[0-9]{3}\.bin", str(checkpoints[0].get("localFile")))
+            or type(checkpoints[0].get("bytes")) is not int or not 0 < checkpoints[0]["bytes"] <= 16 * 1024 * 1024
+            or not re.fullmatch(r"[0-9a-f]{64}", str(checkpoints[0].get("sha256")))):
+        _raw_cache_protection_refuse("ARCHIVE_CHECKPOINT_INVALID")
+    old_s_file = catalog_path.parent / checkpoints[0]["localFile"]
+    if old_s_file.lstat().st_size != checkpoints[0]["bytes"]:
+        _raw_cache_protection_refuse("ARCHIVE_CHECKPOINT_CHANGED")
+    old_s = _archive_raw_retention_json(old_s_file, 16 * 1024 * 1024, checkpoints[0]["sha256"])
+    working_s = _archive_raw_retention_json(ROOT / ".cache/ravscore-continuation-checkpoint/checkpoint.json", 16 * 1024 * 1024)
+    if (old_s != working_s or old_s.get("generationSha256") != boundary["checkpointGenerationSha256"]
+            or any(old_s.get(key) != boundary[key] for key in ("datasetId", "productionReferenceAt"))):
+        _raw_cache_protection_refuse("ARCHIVE_CHECKPOINT_CHANGED")
+
+
 def configure_raw_current_retention(retention):
     """Eviction only. The fixed JS caller binds the immutable committed B/S.
 
@@ -3904,10 +4009,12 @@ def configure_raw_current_retention(retention):
     A local successful decode/score never releases this process's boundary.
     """
     global _RAW_CURRENT_PROTECTED
-    if not isinstance(retention, dict) or set(retention) != {"schemaVersion", "kind", "boundary", "captures"}:
+    archive_isolated = isinstance(retention, dict) and retention.get("kind") == "ARCHIVE_ISOLATED_COLD_RAW_RETENTION"
+    expected_keys = {"schemaVersion", "kind", "boundary", "captures"} | ({"archive"} if archive_isolated else set())
+    if not isinstance(retention, dict) or set(retention) != expected_keys:
         _raw_cache_protection_refuse("RETENTION_INVALID")
     boundary = retention["boundary"]
-    if (retention["schemaVersion"] != 1 or retention["kind"] != "COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION"
+    if (retention["schemaVersion"] != 1 or retention["kind"] not in ("COMMITTED_POST_H0_UNKNOWN_RAW_RETENTION", "ARCHIVE_ISOLATED_COLD_RAW_RETENTION")
             or not isinstance(boundary, dict) or set(boundary) != {"datasetId", "productionReferenceAt",
                 "bundleContentSha256", "checkpointGenerationSha256", "conditionsSha256"}
             or not isinstance(boundary["datasetId"], str) or not boundary["datasetId"].startswith("rr-")
@@ -3916,6 +4023,8 @@ def configure_raw_current_retention(retention):
                 "bundleContentSha256", "checkpointGenerationSha256", "conditionsSha256"))
             or not isinstance(retention["captures"], list) or len(retention["captures"]) > 4096):
         _raw_cache_protection_refuse("RETENTION_INVALID")
+    if archive_isolated:
+        _validate_archive_isolated_raw_retention(retention)
     manifest, files = _raw_current_inventory()
     by_capture = {}
     for name, asset in manifest["assets"].items():
@@ -3958,6 +4067,8 @@ def configure_raw_current_retention(retention):
     _RAW_CURRENT_UNPROVED_NAMES.update(str((RAW_DIR / name).absolute()) for name in unproved)
     try:
         _raw_current_inventory()
+        if archive_isolated:
+            _validate_archive_isolated_raw_retention(retention)
     except BaseException:
         _RAW_CURRENT_PROTECTED = previous
         _RAW_CURRENT_IDENTITIES.clear()
@@ -11147,6 +11258,14 @@ def read_current_history_demands(part_doc, part_bytes, coastal_part_targets, zon
         _raw_cache_protection_refuse("RETENTION_REQUIRED")
     if not CACHE_ONLY and "rawRetention" in document and document["rawRetention"] is not None:
         retention = document["rawRetention"]
+        if isinstance(retention, dict) and retention.get("kind") == "ARCHIVE_ISOLATED_COLD_RAW_RETENTION":
+            archive = retention.get("archive")
+            if (not isinstance(archive, dict) or archive.get("targetReferenceAt") != document["productionReferenceAt"]
+                    or archive.get("registrySha256") != document["registrySha256"]
+                    or any(not isinstance(row, dict) or row.get("initialSource") != "COLD_START"
+                           or row.get("initialStateAt") is not None or row.get("initialStateSha256") is not None
+                           for row in document["demands"])):
+                _raw_cache_protection_refuse("ARCHIVE_SCOPE_INVALID")
         boundary = retention.get("boundary") if isinstance(retention, dict) else None
         bundle = pathlib.Path(os.getenv("RAVRADAR_PRIVATE_RUNTIME_BUNDLE", ""))
         root = pathlib.Path(os.getenv("RAVRADAR_PRIVATE_RUNTIME_ROOT", ""))

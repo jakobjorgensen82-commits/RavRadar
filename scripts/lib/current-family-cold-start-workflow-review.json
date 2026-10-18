@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "kind": "TEST_ONLY_EXACT_CURRENT_FAMILY_COLD_WORKFLOW_INVERSE",
+  "baseHead": "f6442a8bf16f631036bd7a310a1ce88dea655fd7",
+  "roles": {
+    "build": {
+      "relativePath": ".github/workflows/reusable-weather-build.yml",
+      "actualSha256": "4883b292423e162eec6f88d6402ef189adca71dc538fdfe22b7f91162f8ce4f0",
+      "predecessorSha256": "46c88e4cca919ecc288c006db443106b1f8ce8fed1dbca3a87b74d7aea8a3e34",
+      "edits": [
+        [
+          200754,
+          "        if: inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run')\n",
+          "        if: inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run')\n"
+        ],
+        [
+          175669,
+          "        if: (inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && github.ref == 'refs/heads/main' && steps.preflight.outputs.should_run == 'true' && steps.component-progress-restore.outcome == 'success' && steps.component-progress-restore.outputs.captured == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure'))\n",
+          "        if: inputs.completed_private_runtime != true && (always() && github.ref == 'refs/heads/main' && steps.preflight.outputs.should_run == 'true' && steps.component-progress-restore.outcome == 'success' && steps.component-progress-restore.outputs.captured == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure'))\n"
+        ],
+        [
+          167535,
+          "          RAVRADAR_R2_ACCOUNT_ID: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}\n",
+          "          RAVRADAR_R2_ACCOUNT_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}\n"
+        ],
+        [
+          146724,
+          "        if: (inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped')\n",
+          "        if: inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped')\n"
+        ],
+        [
+          146293,
+          "        if: inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome == 'success')\n",
+          "        if: inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome == 'success')\n"
+        ],
+        [
+          145593,
+          "      - name: Require actual cold-start producer cessation before other consumers\n        if: inputs.current_family_cold_start == true && always() && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != ''\n        shell: bash\n        env:\n          PRODUCER_CLOSED: ${{ steps.dmi-bulk.outputs.current_family_cold_producer_closed }}\n        run: |\n          set -euo pipefail\n          # A finalized nonzero result may use the normal fallback chain.\n          # Unknown writer cessation must stop CP/OM, closure and scoring.\n          test \"$PRODUCER_CLOSED\" = true\n\n",
+          ""
+        ],
+        [
+          139480,
+          "          RAVRADAR_R2_ACCOUNT_ID: ${{ inputs.current_family_cold_start && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ inputs.current_family_cold_start && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.current_family_cold_start && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}\n          SUPABASE_URL: ${{ inputs.current_family_cold_start && secrets.SUPABASE_URL || '' }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.current_family_cold_start && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}\n",
+          ""
+        ],
+        [
+          139227,
+          "        run: |\n          if test \"${{ inputs.current_family_cold_start }}\" = true; then\n            node scripts/run-current-family-cold-start.mjs run-dmi\n          else\n            python -u scripts/run-dmi-bulk-supervised.py\n          fi\n",
+          "        run: python -u scripts/run-dmi-bulk-supervised.py\n"
+        ],
+        [
+          135021,
+          "          RAVRADAR_R2_ACCOUNT_ID: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}\n          SUPABASE_URL: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.SUPABASE_URL || '' }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}\n",
+          "          RAVRADAR_R2_ACCOUNT_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}\n          SUPABASE_URL: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_URL || '' }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.weather_state_epoch_bootstrap && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}\n"
+        ],
+        [
+          130507,
+          "          if test \"${{ inputs.current_family_cold_start }}\" = true; then\n            node scripts/run-current-family-cold-start.mjs prepare\n            echo \"strict_active_ready=false\" >> \"$GITHUB_OUTPUT\"\n            echo \"candidate_seeded=true\" >> \"$GITHUB_OUTPUT\"\n            exit 0\n          fi\n",
+          ""
+        ],
+        [
+          129807,
+          "        env:\n          RAVRADAR_R2_ACCOUNT_ID: ${{ inputs.current_family_cold_start && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}\n          RAVRADAR_R2_ACCESS_KEY_ID: ${{ inputs.current_family_cold_start && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}\n          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ inputs.current_family_cold_start && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}\n          SUPABASE_URL: ${{ inputs.current_family_cold_start && secrets.SUPABASE_URL || '' }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.current_family_cold_start && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}\n",
+          ""
+        ],
+        [
+          125881,
+          "        if: inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true')\n",
+          "        if: inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true')\n"
+        ],
+        [
+          96550,
+          "          if test \"${{ inputs.current_family_cold_start }}\" = true; then\n            # Keep the real protected-B capture for normal partial SAVE, but\n            # never install an automatically selected old numeric candidate.\n            test \"$captured\" = true\n            exit 0\n          fi\n",
+          ""
+        ],
+        [
+          91613,
+          "        if: inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current'))\n",
+          "        if: inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current'))\n"
+        ],
+        [
+          15207,
+          "      - name: Require the explicit fresh caller-only cold-start scope\n        if: inputs.current_family_cold_start == true\n        shell: bash\n        run: |\n          set -euo pipefail\n          test \"$GITHUB_EVENT_NAME\" = workflow_dispatch\n          test \"$GITHUB_REF\" = refs/heads/main\n          test \"$GITHUB_RUN_ATTEMPT\" = 1\n          test \"${{ inputs.force }}\" = true\n          test \"${{ inputs.extended_provider_bootstrap }}\" = true\n          test \"${{ inputs.weather_state_epoch_bootstrap }}\" = false\n          test \"${{ inputs.weather_state_epoch_checkpoint_reentry }}\" = false\n          test \"${{ inputs.native_sampling_identity_original_recovery }}\" = false\n          test \"${{ inputs.completed_private_runtime }}\" = false\n          test \"${{ inputs.quick_confirmation }}\" = false\n          test \"${{ inputs.checkpoint_only }}\" = false\n          test -z \"${{ inputs.quick_progress_source }}\"\n          test \"${{ inputs.produce_weather_handoff }}\" = false\n          test \"${{ inputs.ravscore_integrated_first_cutover }}\" = false\n          test \"${{ inputs.ravscore_integrated_return }}\" = false\n          test -z \"${{ inputs.ravscore_candidate_g_rollback_mode }}\"\n          test -z \"$RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_ID\"\n          test -z \"$RAVRADAR_WEATHER_STATE_EPOCH_ARCHIVE_CATALOG_SHA256\"\n          test -z \"$RAVRADAR_WEATHER_STATE_EPOCH_RAW_CACHE_KEY\"\n\n",
+          ""
+        ],
+        [
+          9317,
+          "      RAVRADAR_CURRENT_FAMILY_COLD_START: ${{ inputs.current_family_cold_start }}\n",
+          ""
+        ],
+        [
+          8606,
+          "    # The explicit one-off also reserves time for normal post-processing.\n    # Daily defaults and every individual provider budget remain unchanged.\n    timeout-minutes: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && 360 || inputs.extended_provider_bootstrap && 240 || 230 }}\n",
+          "    timeout-minutes: ${{ inputs.weather_state_epoch_bootstrap && 360 || inputs.extended_provider_bootstrap && 240 || 230 }}\n"
+        ],
+        [
+          88,
+          "      current_family_cold_start:\n        required: false\n        type: boolean\n        default: false\n",
+          ""
+        ]
+      ]
+    },
+    "once": {
+      "relativePath": ".github/workflows/run-current-weather-once.yml",
+      "actualSha256": "445964fbbc697ec86848744a9413897d3418b011c4218fb10336734b5e5055a2",
+      "predecessorSha256": "6f656e559219da67b042a79d161510db2573385cef7ce6d1d793437d23800ace",
+      "edits": [
+        [
+          44688,
+          "      extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true }}\n      current_family_cold_start: ${{ inputs.current_family_cold_start == true }}\n",
+          "      extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true }}\n"
+        ],
+        [
+          4077,
+          "      - name: Reject mixed caller-only cold-start modes before target selection\n        if: inputs.current_family_cold_start == true\n        shell: bash\n        env:\n          COMPLETED: ${{ inputs.completed_private_runtime }}\n          QUICK: ${{ inputs.quick_confirmation }}\n          PROGRESS: ${{ inputs.quick_progress_source }}\n          TARGET: ${{ inputs.checkpoint_target_hour }}\n          EPOCH: ${{ inputs.weather_state_epoch_bootstrap }}\n          REENTRY: ${{ inputs.weather_state_epoch_checkpoint_reentry }}\n          NATIVE: ${{ inputs.native_sampling_identity_original_recovery }}\n        run: |\n          set -euo pipefail\n          test \"$GITHUB_RUN_ATTEMPT\" = 1\n          test \"$COMPLETED\" = false\n          test \"$QUICK\" = false\n          test -z \"$PROGRESS\"\n          test -z \"$TARGET\"\n          test \"$EPOCH\" = false\n          test \"$REENTRY\" = false\n          test \"$NATIVE\" = false\n\n",
+          ""
+        ],
+        [
+          3352,
+          "    if: ${{ !cancelled() && ((inputs.current_family_cold_start == true && needs.operational-recovery-gate.result == 'skipped') || (inputs.current_family_cold_start != true && needs.operational-recovery-gate.result == 'success')) }}\n",
+          ""
+        ],
+        [
+          2820,
+          "    if: inputs.current_family_cold_start != true\n",
+          ""
+        ],
+        [
+          78,
+          "      current_family_cold_start:\n        description: 'Archive authenticated current-family B/S and measure a new cold start without changing model/SQL; fresh one-off only'\n        required: false\n        type: boolean\n        default: false\n",
+          ""
+        ]
+      ]
+    }
+  }
+}
