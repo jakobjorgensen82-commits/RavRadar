@@ -126,9 +126,9 @@ const savedCurrentForwardOriginalPlanUpdaterHunks = [
   }
 ];
 function inverseSavedCurrentForwardOriginalPlan(source) {
-  // The normal follower's existing lexical extraction includes this function.
-  // Use Node's actual built-in rather than requiring a new product/test hook.
-  const whole = value => process.getBuiltinModule('node:crypto').createHash('sha256').update(value).digest('hex');
+  // Historical VM and Function callers supply their genuine SHA-256 dependency.
+  // Keep the inverse pure; an isolated reader must not require ambient process.
+  const whole = digest;
   const expected = '4e5b24d8f535c6074a6612b402157b8426b08ef20e507d9817b47d45bb32b034';
   if (whole(source) === expected) return source;
   for (const hunk of [...savedCurrentForwardOriginalPlanUpdaterHunks].reverse()) {

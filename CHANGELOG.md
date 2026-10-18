@@ -1,3 +1,7 @@
+## 4.0.581 — 2026-10-18 — eksplicit hash i isolerede testlæsere
+
+PR658's samlede kildekontrol fejlede i den integrerede generators isolerede VM, fordi en ny testinverse brugte en skjult process-afhængighed. Den faktisk røde kalder reproduceres lokalt. Inversen bruger nu den eksisterende ægte SHA-256-funktion, og de to andre indirekte læsere binder samme afhængighed eksplicit. Alle gamle hele kontrolsummer, assertions og produktfiler bevares. Ny samlet præcis kildekontrol og faktisk vejrgendannelse er fortsat nødvendige.
+
 ## 4.0.581 — 2026-10-18 — normale testlæsere efter asynkron fejlbevaring
 
 To faktisk fejlede tekstgrænser i komponentkalderprøven følger nu updaterens særskilte erklæring og tildeling. Alle gamle kontroludsagn og faktiske normale VM-kodeudsnit bevares; hele målet består fem tilfælde uden skip. Produkt, model, SQL og originaler ændres ikke. Ny præcis samlet kildekontrol og faktisk vejrgendannelse er fortsat åbne.

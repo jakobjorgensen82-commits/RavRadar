@@ -4,6 +4,8 @@
 
 Den normale kalderprøve skal følge den faktiske kodeform, også når fejlbevaring kræver en særskilt erklæring og asynkron grænse. To tidligere tekstgrænser er faktisk reproduceret røde og rettet uden at fjerne kontroludsagn eller erstatte normal kode. Fem måltilfælde består; præcis samlet kildekontrol og faktisk drift skal stadig dokumenteres særskilt.
 
+En test kan også læse en kildeinverse i et isoleret miljø. Den faktisk fejlede VM skal ikke have generel procesadgang: inversen og dens andre kaldere skal modtage den eksisterende ægte hashfunktion eksplicit. Gamle hele kontrolsummer og kontroludsagn bevares. Dette retter testkæden; ny samlet kildekontrol og faktisk vejrgendannelse er fortsat nødvendige.
+
 En gemt original og dens kontrolsum er ikke i sig selv dokumentation for en senere korrekt gitteraflæsning. Når den normale fremadberegning mangler denne dokumentation, skal de faktiske kildevalg efter den gemte tilstand spores til hvert native-endepunkts egen komplette originalidentitet. Nødvendig interpolation og kvalificeret støtte til strømhukommelse må ikke bortfalde. Den gemte gyldige tilstand og gamle originale bytes skal bevares.
 
 En privat behovsplan giver hverken samplingbevis eller tilladelse til at fortsætte beregningen. Alle allerede lokale råfiler kontrolleres før eventuel netadgang. Kun reelt manglende, præcist identificerede originaler må genanskaffes, og det samlede plads- og downloadbehov skal passe inden for eksisterende grænser uden sletning. Korruption, uafklaret filudskiftning og manglende lukningsbevis er ikke et legitimt fravær.

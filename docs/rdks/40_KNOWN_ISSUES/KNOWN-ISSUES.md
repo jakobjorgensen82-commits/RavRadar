@@ -1,3 +1,7 @@
+## 18. oktober — PR658: manglende hash-afhængighed i isoleret VM
+
+Den præcise CI på 81e fejlede i test-ravscore-integrated-generator efter bestået PostgreSQL: process findes ikke i dens isolerede VM. Fejlen er reproduceret lokalt. Den nye testinverse bruger nu den allerede definerede SHA-256-funktion, og alle tre indirekte læseres faktiske afhængigheder følges samlet. Ingen gamle kontrolsummer, assertions, produktdata eller produktionskontroller fjernes. Den nye samlede CI, genaflæsning af originalerne og offentlig vejrgeneration er fortsat åbne.
+
 ## 18. oktober — to testlæsergrænser efter asynkron fejlbevaring
 
 Den normale komponentkalderprøve søgte stadig en const-erklæring, som den nye ydre asynkrone fejlgrænse har opdelt. Begge fejl er faktisk reproduceret. Kun to tekstgrænser tilpasses den aktuelle tildeling og erklæringen før try; eksisterende assertions og normal VM-/scalar-/strøm-/epoch-adfærd bevares. Hele målfilen består fem tilfælde uden skip. Ny samlet præcis CI er fortsat nødvendig; dette løser ikke i sig selv produktionsstoppet eller den manglende femte dag. Ingen produktguard eller modelbinding lempes.

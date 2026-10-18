@@ -1,3 +1,7 @@
+## 18. oktober — faktisk CI-fejl i en indirekte isoleret testlæser
+
+PR658's kontrol 39094806434 bestod PostgreSQL, men hele kildekontrollen fejlede: den integrerede generators VM mangler process i den nye originalplan-inverse. Hele jobresultatet og første konkrete fejl er bevaret privat; samme fejl er faktisk reproduceret på Node 22.23.3. Brug den eksisterende ægte digest-afhængighed, og bind den eksplicit i begge andre indirekte Function-læsere. VM'en får ikke generel process-adgang. Hele historiske kontrolsummer og alle gamle assertions bevares; produkt, model, originaler og SQL ændres ikke. Ny samlet præcis CI og faktisk genopretning kræves stadig. Ingen merge eller produktionsgenoptagelse på det røde bevis.
+
 ## 18. oktober — præcise kaldergrænser efter asynkron fejlbevaring
 
 Den første PR658-kontrol bestod native Linux/PostgreSQL og fortsatte til kildeplanen. En samtidig målrettet gennemgang reproducerede to fejl i den normale komponentkalderprøve: den søgte stadig den tidligere const-erklæring efter indførelsen af den asynkrone ydre fejlgrænse. Kun to leksikalske grænser ændres til den faktiske tildeling og erklæringen før try-blokken. Alle eksisterende kontroludsagn og den faktisk udførte normale kode bevares. Hele målet består nu fem tilfælde uden fejl eller skip; ny præcis samlet CI kræves. Dette er test/support, ikke en ændret produktguard eller en vellykket vejrhentning. Model, SQL, originaler og alle fem åbne mål er uændrede.

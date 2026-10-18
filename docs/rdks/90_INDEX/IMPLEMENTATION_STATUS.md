@@ -1,3 +1,11 @@
+## 18. oktober — isoleret testinverse får eksplicit SHA-256-afhængighed
+
+- [x] Bevar første konkrete CI-fejl og reproducer den samme integrerede generators VM-fejl på Node 22.23.3.
+- [x] Følg alle tre faktiske indirekte læsere; behold isoleret VM uden process, og brug den eksisterende ægte digest-funktion.
+- [ ] Bestå ny præcis samlet kildekontrol samt faktisk originalgenopretning, beregning, gemning og offentlig levering.
+
+Ældre kontrolsummer, assertions, C/I/T, SQL, geometri og produktdata bevares. Alle fem hovedmål er fortsat åbne.
+
 ## 18. oktober — afgrænset komponentkalderprøve efter fejlwrapperen
 
 - [x] Reproducer to gamle const-afgrænsninger mod den faktiske nye updater: tre tilfælde bestod og to fejlede.

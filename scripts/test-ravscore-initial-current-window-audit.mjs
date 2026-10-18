@@ -57,9 +57,9 @@ test('diagnostic source delta preserves every genuine historical updater oracle'
  const dependencies=oracle.slice(dependencyBegin,begin),epochInverse=oracle.slice(begin,end).trim();
  // The old mutation oracles run on their genuine full608b input. Their exact
  // strings must not silently become no-ops inside a newer diagnostic wrapper.
- updater=new Function('assert',dependencies+'\nreturn inverseSavedCurrentReplayUpdater;')(assert)(updater);
+ updater=new Function('assert','digest',dependencies+'\nreturn inverseSavedCurrentReplayUpdater;')(assert,hash)(updater);
  const inverse=new Function('assert','digest',dependencies+epochInverse+'\nreturn inverseWeatherStateEpochIntegration;')(assert,hash);
- const positiveOrigin=new Function('assert',dependencies+'\nreturn {inverse:inverseEstablishedNativeCurrentUpdater,hunks:establishedNativeCurrentUpdaterHunks};')(assert);
+ const positiveOrigin=new Function('assert','digest',dependencies+'\nreturn {inverse:inverseEstablishedNativeCurrentUpdater,hunks:establishedNativeCurrentUpdaterHunks};')(assert,hash);
  assert.equal(hash(inverse(updater)),'62bbe6eb4325dcba05afb922028150a9bdf7c45f2ebd7a7e975d85f3941d6288');
  // Preserve every old diagnostic mutation oracle at its exact historical layer.
  // Removing ONLY the new test-helper call restores the WHOLE genuine d7 helper.

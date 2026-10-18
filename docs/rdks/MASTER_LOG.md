@@ -1,3 +1,7 @@
+## 18. oktober — 4.0.581: CI's isolerede VM-fejl reproduceret
+
+Kontrol 39094806434 fejlede i kildefasen efter bestået PostgreSQL. Første fejl kl. 06.15 dansk tid var ReferenceError process i en ny testinverse, som den normale integrerede generator evaluerer i en isoleret VM. Hele jobresultatet er bevaret privat før afgrænset udlæsning. Den samme faktiske kalder fejlede på lokal Node 22.23.3. Den eksisterende digest bindes nu eksplicit i hele den tre-kalder-kæde; alle gamle historiske kontrolsummer og kontroludsagn bevares. Ny præcis CI og faktisk produktionseffekt er ikke erstattet af lokale prøver. Ingen produktionsændring blev gennemført på den røde kontrol.
+
 ## 18. oktober — 4.0.581: faktisk testlæser-RED og afgrænset rettelse
 
 ROOTs fremadrettede gennemgang under PR658-CI fandt to forældede leksikalske grænser i test-weather-component-normal-wireup.mjs. Den faktiske målprøve var rød med tre beståede og to fejlede tilfælde. Kun de to grænser ændres til updaterens faktiske tildeling og erklæringen før den ydre try-blok; hele normale mål består derefter fem uden fejl eller skip. Alle gamle assertions, normal kode, produktværn, C/I/T, SQL og originaler bevares. Det rettede head kræver egen fuld præcis CI. Ingen ny vejrhentning eller offentlig levering er dermed bevist.

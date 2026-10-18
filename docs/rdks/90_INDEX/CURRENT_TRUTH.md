@@ -1,3 +1,7 @@
+## 18. oktober — afgrænset rettelse af faktisk fejlet VM-kalder
+
+PR658's 81e-kontrol er rød i kildefasen, trods bestået PostgreSQL. Den første konkrete fejl er en skjult process-afhængighed i testinversen, ikke et bevis for ændrede DMI-værdier. Den samme faktiske VM-kalder fejlede lokalt. Kun testinversens eksplicitte digest og de to øvrige indirekte Function-læseres bindinger ændres; normale hele historiske inverser, sikkerhedskrav og produktfiler bevares. Ny samlet præcis CI og faktisk drift mangler. Mobilrækken er allerede leveret, men den femte offentlige prognosedag er ikke genoprettet.
+
 ## 18. oktober — normal komponentprøve følger den faktiske asynkrone kalder
 
 Mens PR658's første præcise kontrol efter bestået native PostgreSQL kørte kildeplanen, reproducerede ROOT to lokale kalderprøvefejl. Den normale testlæser søgte den gamle const-erklæring; produktet har nu en særskilt erklæring og asynkron fejlbevaring. Kun de to afgrænsninger opdateres. Alle gamle assertions, faktisk normal VM-kode, scalar-/strømhorisonter, Feggesund og epoch-rundtur bevares. Hele målet består fem tilfælde uden skip efter det faktiske røde udfald. Ny præcis samlet kontrol og faktisk vejrgendannelse er fortsat åbne; ingen produkt-, model-, SQL- eller dataændring følger af testrettelsen.
